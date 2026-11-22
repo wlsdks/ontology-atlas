@@ -1,8 +1,8 @@
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
-import enMessages from "../../../../../messages/en.json";
-import koMessages from "../../../../../messages/ko.json";
+import enMessages from "../../../../messages/en.json";
+import koMessages from "../../../../messages/ko.json";
 import type { VaultDoc } from "@/entities/docs-vault";
 import type { AgentActivityStatus } from "@/entities/vault-session";
 import { DocFrontmatterBlock } from "./DocFrontmatterBlock";

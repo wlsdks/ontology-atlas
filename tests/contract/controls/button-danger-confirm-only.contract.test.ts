@@ -12,7 +12,7 @@ const CONFIRM_ROWS: Record<string, { uses: number; row: string }> = {
     uses: 1,
     row: "Remove a schedule — shown only after the trash icon was pressed, beside Cancel.",
   },
-  "src/views/docs-vault/ui/parts/doc-actions/DeleteDocDialog.tsx": {
+  "src/views/docs-vault/ui/doc-actions/DeleteDocDialog.tsx": {
     uses: 1,
     row: "Delete a document — the alert dialog opened by the page's delete door or the palette, beside Cancel.",
   },

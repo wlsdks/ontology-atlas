@@ -56,13 +56,13 @@ import { useSkillParity } from '../lib/agent-files/use-skill-parity';
 import { DocsVaultHeader } from './DocsVaultHeader';
 import { DocsVaultDocumentPane } from './DocsVaultDocumentPane';
 import { DocsVaultSidebar } from './DocsVaultSidebar';
-import { DocsSidebarBody } from './parts/sidebar/DocsSidebarBody';
-import { DesktopVaultWelcome } from './parts/welcome/DesktopVaultWelcome';
-import { DocsVaultAuditModal } from './parts/DocsVaultAuditModal';
-import { DeleteDocDialog } from './parts/doc-actions/DeleteDocDialog';
-import { DocsVaultEmptyState } from './parts/welcome/DocsVaultEmptyState';
-import { NewDocKindDialog } from './parts/doc-actions/NewDocKindDialog';
-import { RenameDocDialog } from './parts/doc-actions/RenameDocDialog';
+import { DocsSidebarBody } from './sidebar/DocsSidebarBody';
+import { DesktopVaultWelcome } from './welcome/DesktopVaultWelcome';
+import { DocsVaultAuditModal } from './DocsVaultAuditModal';
+import { DeleteDocDialog } from './doc-actions/DeleteDocDialog';
+import { DocsVaultEmptyState } from './welcome/DocsVaultEmptyState';
+import { NewDocKindDialog } from './doc-actions/NewDocKindDialog';
+import { RenameDocDialog } from './doc-actions/RenameDocDialog';
 
 function DocsVaultContent({
   initialCollection,

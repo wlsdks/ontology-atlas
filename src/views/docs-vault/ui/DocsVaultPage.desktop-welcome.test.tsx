@@ -3,7 +3,7 @@ import { NextIntlClientProvider } from "next-intl";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import enMessages from "../../../../messages/en.json";
-import { DesktopVaultWelcome } from "./parts/welcome/DesktopVaultWelcome";
+import { DesktopVaultWelcome } from "./welcome/DesktopVaultWelcome";
 import { DOGFOOD_VAULT_PATH } from "../lib/vault-source/dogfood-vault-path";
 
 vi.mock("@/i18n/navigation", () => ({

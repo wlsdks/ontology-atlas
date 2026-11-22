@@ -8,7 +8,7 @@ import { usePanelPresence } from "@/shared/lib/render-timing/use-presence";
 import { AGENT_DOCK_INSET_SURFACE_CLASS, agentDockReflowStyle, OntologyMapKindGlyph, Surface } from "@/shared/ui";
 import { AcpChatPanel, AcpChatResizeHandle, AcpDockHeader } from "@/widgets/acp-chat-panel";
 
-import type { ProjectAgentOpeningRequest, ProjectAgentRuntime } from "../../lib/use-project-agent";
+import type { ProjectAgentOpeningRequest, ProjectAgentRuntime } from "../lib/use-project-agent";
 
 /**
  * The guarded ACP conversation docked to a project page. The process starts after the frame's

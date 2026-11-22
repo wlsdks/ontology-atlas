@@ -15,7 +15,7 @@ import {
   AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND,
 } from "@/entities/knowledge-graph";
 import type { VaultManifest } from "@/entities/docs-vault";
-import type { SkillParityModel, SkillParityRow } from "../../lib/agent-files/skill-parity";
+import type { SkillParityModel, SkillParityRow } from "../lib/agent-files/skill-parity";
 
 const SOURCE_VAULT_RUNTIME_REPLAY_MARKERS = [
   "relation_name_parity",

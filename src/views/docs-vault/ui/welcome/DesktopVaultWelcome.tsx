@@ -6,7 +6,7 @@ import { AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT } from "@/entities/knowledge-gr
 import { useCopyFeedback } from "@/shared/lib/clipboard/use-copy-feedback";
 import { Chip, StaggeredFadeIn } from "@/shared/ui";
 import { RecentVaultList } from "@/features/vault-switch";
-import { DOGFOOD_VAULT_PATH } from "../../../lib/vault-source/dogfood-vault-path";
+import { DOGFOOD_VAULT_PATH } from "../../lib/vault-source/dogfood-vault-path";
 import { controlClass } from '@/shared/ui/control-class';
 
 const DOGFOOD_VERIFICATION_LOOP = [

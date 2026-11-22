@@ -44,7 +44,7 @@ where they find their way, in this order of priority:
   "Write wiki pages for the next #").
 - **The three columns share nothing.** Sources: a two-column grid of three outlined buttons over
   a list with word badges. Wiki: two buttons, a row, a line and cards. Ontology
-  (`src/views/docs-vault/ui/parts/sidebar/DocsSidebarBody.tsx`): an icon tool row, group labels such as
+  (`src/views/docs-vault/ui/sidebar/DocsSidebarBody.tsx`): an icon tool row, group labels such as
   "Needs a decision · 10" (`ReviewQueueSection.tsx`), and borderless two-line rows whose reasons
   wrap to a third line.
 - **The fixture's summaries.** All 60 `summary:` values follow one of three fixed sentences
@@ -289,7 +289,7 @@ leave once nothing reads them (I-2).
 | I-2 | Mount `WikiIndex` in the Wiki half; remove its `SectionActions`, the report row and `LibraryShelf`; view rows; Check wiki and `AgentMissingNotice` into the report head; New page into "+"; the changed copy keys; criteria 2-4, 6, 7 | `LibrarySection.tsx` (Wiki half), `LibraryShelf.tsx` (delete), `LibraryIndexColumn.tsx`, `check-report/LibraryCheckReport.tsx`, `messages/*/library.json` (the changed keys) | After S-2, which edits `LibrarySection.tsx` |
 | I-3 | Log view: the model keeps every log entry; selection kind `log`; Recently written's heading opens it; criterion 5 | `src/features/library/model/use-library-model.ts`, `library-selection.ts`, `LibraryPage.tsx`, `LibraryDocumentColumn.tsx`, new `parts/wiki/LibraryWikiLog.tsx`, `src/widgets/library-sources-overview/**` (heading link) | After S3 (owns the model and `LibraryPage.tsx`) and S-1 |
 | I-4 | Sources half on `IndexRow`: tool row, add dialog, folder groups | `LibrarySection.tsx` (Sources half), new `parts/index-column/AddSourcesDialog.tsx` | After I-2 |
-| I-5 | Ontology column on the shared metrics; headings split label and count | `src/views/docs-vault/ui/parts/sidebar/DocsSidebarBody.tsx`, `ReviewQueueSection.tsx`, `messages/*/vaultWidgets.json` (`review.*Header`) | After I-1; parallel with I-2 |
+| I-5 | Ontology column on the shared metrics; headings split label and count | `src/views/docs-vault/ui/sidebar/DocsSidebarBody.tsx`, `ReviewQueueSection.tsx`, `messages/*/vaultWidgets.json` (`review.*Header`) | After I-1; parallel with I-2 |
 
 ## Risks
 

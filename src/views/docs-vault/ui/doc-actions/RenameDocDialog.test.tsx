@@ -2,10 +2,10 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
 
-import koMessages from "../../../../../../messages/ko.json";
+import koMessages from "../../../../../messages/ko.json";
 import { VaultConflictError } from "@/entities/vault-session";
 import { RenameDocDialog } from "./RenameDocDialog";
-import type { RenameDocTarget } from "../../../model/use-doc-write-actions";
+import type { RenameDocTarget } from "../../model/use-doc-write-actions";
 
 const target: RenameDocTarget = {
   slug: "capabilities/mcp-tool-server",

@@ -2,7 +2,7 @@ import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import enMessages from "../../../../../messages/en.json";
+import enMessages from "../../../../messages/en.json";
 
 const bridge = vi.hoisted(() => ({
   sent: [] as Array<Record<string, unknown>>,

@@ -1,7 +1,7 @@
 import { fireEvent, render as rtlRender, screen, waitFor, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import enMessages from "../../../../../../messages/en.json";
+import enMessages from "../../../../../messages/en.json";
 import { NewDocKindDialog } from "./NewDocKindDialog";
 
 function render(ui: React.ReactElement) {

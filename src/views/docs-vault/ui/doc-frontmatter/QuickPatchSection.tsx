@@ -9,8 +9,8 @@ import { LOCALE_NAME_KEY } from "@/i18n/locales";
 import { Select, controlClass } from "@/shared/ui";
 import { Input } from "@/shared/ui/fields/input";
 import { fieldClass, fieldLabel } from "@/shared/ui/control-class";
-import { EDITABLE_KINDS } from "../../../lib/doc-frontmatter/quick-patch";
-import { useReferrerListName } from "../../../model/use-doc-write-actions";
+import { EDITABLE_KINDS } from "../../lib/doc-frontmatter/quick-patch";
+import { useReferrerListName } from "../../model/use-doc-write-actions";
 import type { FailureCopy } from "@/shared/lib/failures/use-failure-sentence";
 
 const KIND_CHANGE_ROWS_MAX = 4;

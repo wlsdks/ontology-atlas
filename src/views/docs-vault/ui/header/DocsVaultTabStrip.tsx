@@ -6,7 +6,7 @@ import { FileText, X } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { cn } from "@/shared/lib/cn";
 import { IconButton } from "@/shared/ui";
-import type { DocTab } from "../../../lib/doc-tabs/doc-tabs";
+import type { DocTab } from "../../lib/doc-tabs/doc-tabs";
 import { controlClass } from '@/shared/ui/control-class';
 
 export interface DocsVaultTabStripProps {

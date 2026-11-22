@@ -49,7 +49,7 @@ import { buildProjectOntologyMetrics, resolveNodeAgentTarget } from "@/entities/
 import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
 import { useChatWidth } from "@/widgets/acp-chat-panel";
 import { useProjectAgent } from "../lib/use-project-agent";
-import { ProjectAgentDock } from "./parts/ProjectAgentDock";
+import { ProjectAgentDock } from "./ProjectAgentDock";
 import { useOntologyInsight, type StaleEvidencePath } from "@/features/vault-ontology";
 import { useDocumentTitle } from "@/shared/lib/public-pages/use-document-title";
 import { useViewportBelow } from "@/shared/lib/use-viewport-below";

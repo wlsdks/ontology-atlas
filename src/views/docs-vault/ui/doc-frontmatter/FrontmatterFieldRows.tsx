@@ -1,7 +1,7 @@
 import { Fragment } from "react";
 import { useTranslations } from "next-intl";
 import { controlClass } from "@/shared/ui";
-import { isNodeReference } from "../../../lib/doc-frontmatter/fields";
+import { isNodeReference } from "../../lib/doc-frontmatter/fields";
 
 export interface FrontmatterFieldRow {
   key: string;

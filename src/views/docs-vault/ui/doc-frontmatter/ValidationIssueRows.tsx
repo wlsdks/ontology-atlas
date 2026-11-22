@@ -4,8 +4,8 @@ import { useOntologyKindLabel } from "@/entities/ontology-class";
 import type { VaultDocumentIssue, VaultIssueCode } from "@/shared/lib/vault-document/validate-vault-document";
 import { mapVaultIssueCodeToPlainMessage } from "@/shared/lib/vault-document/vault-issue-plain-message";
 import { controlClass } from "@/shared/ui";
-import type { MisfiledRef } from "../../../lib/doc-frontmatter/reference-checks";
-import { useReferrerListName } from "../../../model/use-doc-write-actions";
+import type { MisfiledRef } from "../../lib/doc-frontmatter/reference-checks";
+import { useReferrerListName } from "../../model/use-doc-write-actions";
 
 const DANGLING_NAMED_MAX = 3;
 

@@ -97,7 +97,7 @@ function writeCleanWorkbenchFixtures(root) {
   );
   writeFixture(
     root,
-    "src/views/docs-vault/ui/parts/DocsVaultAuditModal.tsx",
+    "src/views/docs-vault/ui/DocsVaultAuditModal.tsx",
     [
       "function DocsVaultAuditModal() {}",
       "sourceContract.filesLabel",
@@ -247,7 +247,7 @@ test("ontology design surface reports a real use at its own line and column afte
 test("ontology design surface does not accept a workbench marker that survives only in a comment", () => {
   const root = makeFixture();
   writeCleanWorkbenchFixtures(root);
-  const modal = "src/views/docs-vault/ui/parts/DocsVaultAuditModal.tsx";
+  const modal = "src/views/docs-vault/ui/DocsVaultAuditModal.tsx";
   writeFixture(
     root,
     modal,
@@ -269,7 +269,7 @@ test("ontology design surface reports missing workspace execution cells", () => 
   writeCleanWorkbenchFixtures(root);
   writeFixture(
     root,
-    "src/views/docs-vault/ui/parts/DocsVaultAuditModal.tsx",
+    "src/views/docs-vault/ui/DocsVaultAuditModal.tsx",
     [
       "function DocsVaultAuditModal() {}",
       "AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND",

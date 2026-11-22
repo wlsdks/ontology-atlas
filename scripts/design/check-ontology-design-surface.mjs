@@ -40,7 +40,7 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
     id: "source-vault-execution-contract",
     files: [
       "src/views/docs-vault/ui/DocsVaultPage.tsx",
-      "src/views/docs-vault/ui/parts/DocsVaultAuditModal.tsx",
+      "src/views/docs-vault/ui/DocsVaultAuditModal.tsx",
     ],
     markers: [
       "function DocsVaultAuditModal",
