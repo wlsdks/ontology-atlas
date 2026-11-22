@@ -29,6 +29,17 @@ describe('layoutBuilding', () => {
     expectNoOverlap([...result.rooms.values(), result.shelf!]);
   });
 
+  it('grows a stage of three rooms to fill its band, never much taller than wide', () => {
+    const result = layout({ height: 1020, stage: keys('s', 3), floors: [{ key: 'a', rooms: ['m0'] }], hasShelf: false });
+    const stage = keys('s', 3).map(key => result.rooms.get(key)!);
+    const mini = result.rooms.get('m0')!;
+    const above = stage[0].y - 24;
+    const below = mini.y - 16 - (stage[0].y + stage[0].h);
+    expect(Math.max(above, below)).toBeLessThan(130);
+    expect(stage[0].h).toBeLessThanOrEqual(stage[0].w * 1.1);
+    expectNoOverlap([...result.rooms.values()]);
+  });
+
   it('bands forty worktrees by session under one row of six, all inside the window', () => {
     const floors = [{ key: 'a', rooms: keys('a', 5) }, { key: 'b', rooms: keys('b', 5) }, { key: 'c', rooms: keys('c', 5) }, { key: 'd', rooms: keys('d', 5) }, { key: 'none', rooms: keys('n', 5) }];
     const result = layout({ height: 1020, stage: keys('s', 6), floors, workingBelow: 4 });

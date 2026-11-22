@@ -65,7 +65,13 @@ const LARGE_MIN_W = 260;
 /** From this width a stage room hangs its monitor at the right; narrower, above Moru. */
 export const WIDE_ROOM_W = 520;
 const LARGE_MIN_H = 300;
-const ONE_ROW_CAP_H = 500;
+/**
+ * One row of stage rooms grows with the room's width up to this height, so a stage of few rooms fills
+ * its band instead of standing short in the middle of it, and no room is drawn much taller than wide.
+ */
+const ONE_ROW_CAP_H = 640;
+const ONE_ROW_MAX_ASPECT = 1.1;
+const ONE_ROW_MIN_CAP_H = 500;
 const TWO_ROW_CAP_H = 416;
 const TWO_ROW_MIN_H = 300;
 /** The belt under a large room's scene, with its top edge. */
@@ -141,9 +147,10 @@ export function layoutBuilding(input: LayoutInput): BuildingLayout {
     let rows = count >= 4 && (available - STAGE_GAP) / 2 >= TWO_ROW_MIN_H ? 2 : 1;
     while (Math.ceil(count / rows) > maxCols) rows += 1;
     const cols = rows === 1 ? Math.max(count, Math.min(2, maxCols)) : Math.ceil(count / rows);
-    const fitted = rows === 1 ? Math.min(available, ONE_ROW_CAP_H) : Math.min((available - (rows - 1) * STAGE_GAP) / rows, TWO_ROW_CAP_H);
-    const roomH = Math.max(Math.floor(fitted), LARGE_MIN_H);
     const roomW = Math.floor((width - (cols - 1) * STAGE_GAP) / cols / 2) * 2;
+    const oneRowCap = Math.min(ONE_ROW_CAP_H, Math.max(ONE_ROW_MIN_CAP_H, Math.floor(roomW * ONE_ROW_MAX_ASPECT)));
+    const fitted = rows === 1 ? Math.min(available, oneRowCap) : Math.min((available - (rows - 1) * STAGE_GAP) / rows, TWO_ROW_CAP_H);
+    const roomH = Math.max(Math.floor(fitted), LARGE_MIN_H);
     const stageH = rows * roomH + (rows - 1) * STAGE_GAP;
     overflow = Math.max(0, stageH - available);
     const top = EDGE_TOP + Math.max(0, Math.round((available - stageH) / 2));
