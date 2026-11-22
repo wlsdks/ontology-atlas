@@ -1,7 +1,11 @@
 import { FULL_STAGES, NO_SESSION_FLOOR, type RoomEntry, type RoomPlan, type RoomStage, type RoomState } from '@/shared/lib/work-status/work-tracks';
+import type { RoomMotion } from '@/shared/ui/marks/moru/moru-rows';
 
-/** Moru's rows a room plays, all existing catalogue rows (`docs/design/brand.md`, "Contextual motion"). */
-export type RoomClip = 'code' | 'read' | 'waiting' | 'clap';
+/** Moru's rows a room plays (`docs/design/brand.md`, "Contextual motion"): the room rows and the waiting row's neutral pose. */
+export type RoomClip = RoomMotion | 'waiting';
+
+/** A row a room plays once over its state, from the neutral pose back to it. */
+export type RoomOnce = 'crate-send' | 'merge-cheer' | 'settle-in' | 'galumph' | 'galumph-left';
 
 export type CrateKind = 'plain' | 'taped' | 'ghost' | 'dusty';
 
@@ -10,46 +14,61 @@ export interface RoomLook {
   running: boolean;
   monitorOff: boolean;
   crate: CrateKind;
-  /** No Moru when nobody is in the room: a session ended, the folder is gone, or none ever held it. */
+  /** No Moru when nobody ever held the folder. */
   cast: 'none' | 'one' | 'two';
+  /** The row Moru loops in this state. */
   clip: RoomClip;
-  /** The first Moru's clip when two tools share the folder; the second plays `clip`. */
+  /** The first Moru's row when two tools share the folder; the second plays `clip`. */
   backClip: RoomClip;
-  /** A still Moru holds the clip's neutral pose. */
+  /** A still Moru holds the row's neutral pose. */
   still: boolean;
   dozing: boolean;
 }
 
 /**
- * A moment a room plays over its state: `landed`, a commit just reached the cart. Its pose is an
- * existing row until Moru's own clip for it exists.
+ * Every room's poses are chosen here, so a new Moru clip drops in at one place. Only what Git and
+ * the locks show picks a row: working types at the desk, a pair reads the monitor behind, a room
+ * quiet for long nods off, and a lock left behind or a folder gone sighs. Nothing here reads whether
+ * a session waits on its person, so `heads-up` has no state to play yet.
  */
-export type RoomMoment = 'landed';
-
-/** Every room's poses are chosen here, so a new Moru clip drops in at one place. */
-export function roomLook(state: RoomState, moment: RoomMoment | null = null): RoomLook {
-  const quiet = { running: false, monitorOff: false, crate: 'plain', cast: 'one', clip: 'waiting', backClip: 'read', still: true, dozing: false } as const;
+export function roomLook(state: RoomState): RoomLook {
+  const quiet = { running: false, monitorOff: false, crate: 'plain', cast: 'one', clip: 'waiting', backClip: 'monitor-read', still: true, dozing: false } as const;
   switch (state.kind) {
     case 'working':
-      // A landed commit: Moru looks down at the cart for a moment, then types on.
-      return { ...quiet, running: true, cast: state.tools.length > 1 ? 'two' : 'one', clip: moment === 'landed' ? 'read' : 'code', still: false };
+      return { ...quiet, running: true, cast: state.tools.length > 1 ? 'two' : 'one', clip: 'desk-type', still: false };
     case 'resting':
     case 'locked':
+    case 'merged':
       return quiet;
     case 'dozing':
-      return { ...quiet, dozing: true };
-    case 'merged':
-      return { ...quiet, clip: 'clap', still: false };
+      return { ...quiet, clip: 'nod-off', still: false, dozing: true };
     case 'lockLeft':
-      return { ...quiet, monitorOff: true, crate: 'taped', cast: 'none' };
+      return { ...quiet, monitorOff: true, crate: 'taped', clip: 'sigh', still: false };
     case 'missing':
-      return { ...quiet, monitorOff: true, crate: 'ghost', cast: 'none' };
+      return { ...quiet, monitorOff: true, crate: 'ghost', clip: 'sigh', still: false };
     case 'unheld':
       return { ...quiet, crate: 'dusty', cast: 'none' };
   }
 }
 
-/** Moru's work loop has 24 poses; each room starts at its own, so rooms side by side never type in step. */
+/** What a room has just observed, each a row Moru plays once. */
+export interface RoomMoments {
+  /** The worktree's merge was just observed, and the room is about to retire. */
+  merged: boolean;
+  /** A commit beyond the base branch just reached the cart. */
+  landed: boolean;
+  /** The room is new to the building, or newly on the stage. */
+  entered: boolean;
+}
+
+/** The one row to play now: a merge cheers, a landed commit is sent down, a new room is settled into. */
+export function roomOnce(state: RoomState, { merged, landed, entered }: RoomMoments): RoomOnce | null {
+  if (merged) return 'merge-cheer';
+  if (landed && state.kind === 'working') return 'crate-send';
+  return entered && roomLook(state).cast !== 'none' ? 'settle-in' : null;
+}
+
+/** Each room's Moru starts his loop at a pose of his own, so rooms side by side never move in step. */
 const LOOP_POSES = 24;
 
 /** The fraction of the loop a room's Moru starts at: a whole pose picked from its worktree's key. */

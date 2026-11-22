@@ -25,10 +25,12 @@ const TONE: Record<StatusTone, string> = {
 export function MiniRoom({ room, copy, tint, showOwner }: { room: RoomEntry; copy: RoomCopy; tint: string | null; showOwner: boolean }) {
   const look = roomLook(room.state);
   const status = copy.status(room);
+  // A mini Moru holds his pose, so a sigh would not show: a lock left behind or a folder gone keeps its crate.
+  const crateOnly = look.cast === 'none' || look.monitorOff;
   return (
     <div className={styles.mini} data-lit={look.running}>
       <i className={styles.miniLamp} />
-      {look.cast === 'none' ? (
+      {crateOnly ? (
         <i className={styles.miniCrateBig} data-kind={look.crate} />
       ) : (
         <span className={styles.miniActor}>

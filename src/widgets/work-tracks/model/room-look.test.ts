@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { WorkStatusSnapshot, WorktreeRow } from '@/shared/lib/work-status/tauri-work-status';
 import { buildWorkTracks, planRooms, type RoomPlan } from '@/shared/lib/work-status/work-tracks';
-import { ROOM_PROPS, cartLoad, moruPhase, retireeOf, roomIdentity, roomLook, withRetirees } from './room-look';
+import { ROOM_PROPS, cartLoad, moruPhase, retireeOf, roomIdentity, roomLook, roomOnce, withRetirees } from './room-look';
 
 const NOW_MS = 1_795_260_000_000;
 
@@ -32,13 +32,15 @@ function plan(worktrees: WorktreeRow[]): RoomPlan {
 }
 
 describe('roomLook', () => {
-  it('lights only a room where something runs and leaves the empty rooms without Moru', () => {
-    expect(roomLook({ kind: 'working', tools: ['codex'] })).toMatchObject({ running: true, cast: 'one', clip: 'code' });
-    expect(roomLook({ kind: 'working', tools: ['claudeCode', 'codex'] }).cast).toBe('two');
-    expect(roomLook({ kind: 'dozing', quietSinceMs: 0 })).toMatchObject({ running: false, dozing: true, still: true });
-    expect(roomLook({ kind: 'lockLeft', tool: 'claudeCode' })).toMatchObject({ cast: 'none', monitorOff: true, crate: 'taped' });
-    expect(roomLook({ kind: 'missing' })).toMatchObject({ cast: 'none', crate: 'ghost' });
-    expect(roomLook({ kind: 'merged' })).toMatchObject({ running: false, clip: 'clap', still: false });
+  it('plays the row of what Git and the locks show, and leaves a folder nobody held without Moru', () => {
+    expect(roomLook({ kind: 'working', tools: ['codex'] })).toMatchObject({ running: true, cast: 'one', clip: 'desk-type', still: false });
+    expect(roomLook({ kind: 'working', tools: ['claudeCode', 'codex'] })).toMatchObject({ cast: 'two', backClip: 'monitor-read' });
+    expect(roomLook({ kind: 'resting', quietSinceMs: 0 })).toMatchObject({ running: false, still: true });
+    expect(roomLook({ kind: 'dozing', quietSinceMs: 0 })).toMatchObject({ running: false, dozing: true, clip: 'nod-off', still: false });
+    expect(roomLook({ kind: 'lockLeft', tool: 'claudeCode' })).toMatchObject({ clip: 'sigh', monitorOff: true, crate: 'taped' });
+    expect(roomLook({ kind: 'missing' })).toMatchObject({ clip: 'sigh', crate: 'ghost' });
+    expect(roomLook({ kind: 'merged' })).toMatchObject({ running: false, still: true });
+    expect(roomLook({ kind: 'unheld', lastCommitAt: null }).cast).toBe('none');
   });
 });
 
@@ -100,11 +102,16 @@ describe('roomIdentity', () => {
   });
 });
 
-describe('roomLook moments', () => {
-  it('turns a working Moru to the cart while a commit lands, and plays no moment for any other state', () => {
-    const working = { kind: 'working', tools: ['claude'] } as unknown as Parameters<typeof roomLook>[0];
-    expect(roomLook(working, 'landed').clip).not.toBe(roomLook(working).clip);
-    const resting = { kind: 'resting' } as unknown as Parameters<typeof roomLook>[0];
-    expect(roomLook(resting, 'landed')).toEqual(roomLook(resting));
+describe('roomOnce', () => {
+  const working = { kind: 'working', tools: ['claudeCode'] } as const;
+  const none = { merged: false, landed: false, entered: false };
+
+  it('cheers only a merge it observed, sends a landed commit only from a working room, and settles into a new room', () => {
+    expect(roomOnce({ kind: 'merged' }, { ...none, merged: true })).toBe('merge-cheer');
+    expect(roomOnce({ kind: 'merged' }, none)).toBeNull();
+    expect(roomOnce(working, { ...none, landed: true })).toBe('crate-send');
+    expect(roomOnce({ kind: 'resting', quietSinceMs: null }, { ...none, landed: true })).toBeNull();
+    expect(roomOnce(working, { ...none, entered: true })).toBe('settle-in');
+    expect(roomOnce({ kind: 'unheld', lastCommitAt: null }, { ...none, entered: true })).toBeNull();
   });
 });

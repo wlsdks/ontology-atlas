@@ -37,6 +37,24 @@ const shownFace = (element: HTMLElement) => facesOf(element).find(isOld) ?? face
 /** The parts of a stage room that fade while it travels resized: its monitor and its belt. */
 const partsOf = (element: HTMLElement) => [...(shownFace(element)?.querySelectorAll<HTMLElement>('[data-room-part]') ?? [])];
 const opacityOf = (element: HTMLElement) => Number(getComputedStyle(element).opacity);
+/** Travel shorter than this along the floor is not a walk. */
+const WALK_MIN_PX = 8;
+let walks = 0;
+
+/**
+ * A room that keeps its content while it moves sideways: its Moru galumphs once the way it goes,
+ * which is the other way in a mirrored room, whose Moru is drawn flipped.
+ */
+function walk(element: HTMLElement, move: RoomMove) {
+  const dx = move.to.x - move.from.x;
+  if (Math.abs(dx) < WALK_MIN_PX) return;
+  const face = shownFace(element);
+  const mirrored = face?.querySelector<HTMLElement>('[data-scene]')?.dataset.mirror === 'true';
+  const clip = (dx > 0) !== mirrored ? 'galumph' : 'galumph-left';
+  walks += 1;
+  for (const sprite of face?.querySelectorAll<HTMLElement>('[data-moru-live]') ?? []) sprite.dataset.moruTravel = `${clip}@walk${walks}`;
+}
+
 /** A move that keeps the room's content: the face on screen stays the room's own, and the waiting one goes. */
 const keepShownFace = (element: HTMLElement) => {
   for (const face of facesOf(element)) if (isOld(face)) face.dispatchEvent(new Event(FACE_KEPT_EVENT));
@@ -145,12 +163,16 @@ export function useRoomMotion(
       if (move && shows) {
         const timing: MoveTiming = { sequence, total: totalMs, at, shows };
         if (move.mode === 'resized') {
+          walk(element, move);
           keepShownFace(element);
           animations.push(...playResized(element, move, timing, boxes.get(key)!.unit));
         } else {
           animations.push(...playMove(element, move, timing));
           if (move.mode === 'wall') animations.push(...playWall(element, move, timing));
-          else keepShownFace(element);
+          else {
+            walk(element, move);
+            keepShownFace(element);
+          }
         }
         continue;
       }

@@ -143,11 +143,11 @@ room goes to its new box at once; a room taking another's box arrives before
 that room leaves it. Then content fades back in, room by room, and new rooms
 rise into place. Fades out are linear, so nothing cuts. A merge plays first
 where the room stands: its crate rides into the `main` hatch, the hatch turns
-green, blinking twice, the lights go out, the room fades away and a crate
+green, blinking twice, the lights go out, Moru cheers the merge once, the room fades away and a crate
 lands on the shelf as its count ticks; only then do the others move. An update
 that lands mid-sequence starts the next from where each room is drawn. When a
 commit lands, the newest crate drops onto the cart in three small steps, the
-count cross-fades and Moru looks down at the cart for a moment.
+count cross-fades and Moru heaves a crate and pats it down through the floor.
 
 Rooms tell themselves apart from the branch name alone: half are drawn the other
 way round, with Moru facing left and the lamp on his right, and each has one of
@@ -155,9 +155,20 @@ six props, on a wall shelf in a narrow room or on the floor in a wide one. A lit
 lamp throws a stepped cone down the wall and a pool on the floor and rims Moru's
 side that faces it; an idle room has none. Pointing at a room or floor steps
 that session's rooms and floor up and the rest down; rooms have no action, so
-they take no press or focus. Moru, the lamp, the monitor and the belt move only
-in a stage room where something runs, on screen, in a visible window; a mini
-room's Moru holds still. Reduced motion shows the end states without movement.
+they take no press or focus.
+
+Moru acts what Git and the locks show: he types at a laptop while work runs
+(the second tool's Moru reads the monitor behind him), nods off in a room quiet
+for long, and sighs in a room whose lock was left behind or whose folder is
+gone. He settles into a room new to the building or to the stage, and
+galumphs when his room moves sideways with him in it. Each change of what he
+does waits for his neutral pose, so he never jumps from one pose to another.
+Atlas does not yet read whether a session waits for its person, so no room
+shows that. The lamp, the monitor and the belt move only in a stage room where
+something runs, and Moru only in a stage room, each on screen in a visible
+window; a mini room's Moru holds still, and a mini room with a lock left
+behind or a missing folder shows its crate. Reduced motion shows the end
+states without movement.
 
 ## States
 

@@ -330,13 +330,12 @@
   animation-play-state: running;
 }
 
-/* One native row of 24 cells; the board's clock steps a looping one, a still one shows its first cell. */
+/* One native row of 128px cells: the board's clock steps a large room's, a mini room's holds a pose. */
 .moruCells {
   width: 128px;
   height: 128px;
   background-repeat: no-repeat;
-  background-position: 0 0;
-  background-size: 3072px 128px;
+  background-position-y: 0;
   image-rendering: pixelated;
 }
 
@@ -1027,10 +1026,6 @@
   opacity: 1;
 }
 
-/* A dozing Moru holds the waiting row's closed-eye cell. */
-.dozing .moruCells {
-  background-position-x: -1152px;
-}
 
 /* ---------- floors, the line under the stage, the shelf */
 
