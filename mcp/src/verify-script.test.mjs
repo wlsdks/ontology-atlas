@@ -5659,7 +5659,7 @@ describe('verify.mjs first-contact gates', () => {
     try {
       const result = spawnSync(
         process.execPath,
-        [VERIFY_SCRIPT, root, '--timeout-ms', '15000'],
+        [VERIFY_SCRIPT, root],
         { cwd: join(__dirname, '..'), encoding: 'utf8' },
       );
 
