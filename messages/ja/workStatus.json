@@ -60,7 +60,11 @@
     "unreadableLock": "Atlasが読めるセッション名がロックにありません",
     "workingMinutes": "{count}分間作業中",
     "workingWholeHours": "{count}時間作業中",
-    "workingHours": "{hours}時間{minutes}分作業中"
+    "workingHours": "{hours}時間{minutes}分作業中",
+    "editing": "ファイル{count}個を編集中",
+    "workedMinutes": "{count}分経過",
+    "workedWholeHours": "{count}時間経過",
+    "workedHours": "{hours}時間{minutes}分経過"
   },
   "belt": {
     "notRead": "以降の段階はまだ読めません"

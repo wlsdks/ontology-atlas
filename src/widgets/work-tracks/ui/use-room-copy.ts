@@ -2,12 +2,14 @@
 
 import { useMemo } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import type { RoomEntry, SessionTool, Track, TrackSession } from '@/shared/lib/work-status/work-tracks';
+import { folderName, type RoomEntry, type SessionTool, type Track, type TrackSession } from '@/shared/lib/work-status/work-tracks';
 import { clockTime, timeAgo } from '../model/format';
 
 const MINUTE_MS = 60_000;
 const HOUR_MS = 60 * MINUTE_MS;
 const DAY_MS = 24 * HOUR_MS;
+/** A large room's monitor lists at most this many commit subjects; a short monitor clips the second. */
+const LARGE_SUBJECTS = 2;
 
 export type StatusTone = 'ink' | 'warning' | 'success' | 'plain';
 
@@ -72,6 +74,41 @@ function roomCopy(t: ReturnType<typeof useTranslations<'workStatus'>>, locale: s
         ? t('monitor.workingWholeHours', { count: minutes / 60 })
         : t('monitor.workingHours', { hours: Math.floor(minutes / 60), minutes: minutes % 60 });
   };
+  /** The same length of work, short, for the quiet line under a commit subject. */
+  const workedFor = (session: TrackSession | null) => {
+    if (!session?.startedAt) return null;
+    const minutes = Math.max(1, Math.floor((nowMs - session.startedAt * 1000) / MINUTE_MS));
+    return minutes < 60
+      ? t('monitor.workedMinutes', { count: minutes })
+      : minutes % 60 === 0
+        ? t('monitor.workedWholeHours', { count: minutes / 60 })
+        : t('monitor.workedHours', { hours: Math.floor(minutes / 60), minutes: minutes % 60 });
+  };
+  /** The newest commit subject beyond the base branch, as plain text; the hash when it has none. */
+  const newestSubject = (track: Track) => {
+    const newest = track.activity?.commits?.[0];
+    return newest ? newest.subject || newest.hash : null;
+  };
+  /**
+   * What the worktree is doing in words: its newest commit subjects, or with none beyond the base
+   * branch, how many files it is editing and the name of the one that changed last.
+   */
+  const workRows = (track: Track): string[] | null => {
+    const activity = track.activity;
+    if (!activity) return null;
+    const commits = activity.commits ?? [];
+    if (commits.length > 0) return commits.slice(0, LARGE_SUBJECTS).map(line => line.subject || line.hash);
+    if (activity.commits && activity.uncommitted) return [t('monitor.editing', { count: activity.uncommitted })];
+    return null;
+  };
+  /** The name, not the path, of the uncommitted file that changed last, on either separator. */
+  const latestFile = (track: Track) => (track.activity?.latestFile ? folderName(track.activity.latestFile) : null);
+  /** `2 minutes ago · 9 h 40 min`: when the newest commit landed, and how long the session has worked. */
+  const commitLine = (track: Track, session: TrackSession | null) => {
+    const at = track.activity?.commits?.[0]?.at;
+    if (at == null) return null;
+    return [timeAgo(at, nowMs, locale), workedFor(session)].filter(Boolean).join(' · ');
+  };
   const lastCommit = (track: Track) => (track.lastCommitAt === null ? null : t('room.lastCommit', { ago: timeAgo(track.lastCommitAt, nowMs, locale) }));
 
   /** Who a room belongs to, under a mini room's status when there is room for it. */
@@ -99,7 +136,7 @@ function roomCopy(t: ReturnType<typeof useTranslations<'workStatus'>>, locale: s
         const days = state.lastCommitAt === null ? 0 : Math.floor((nowMs - state.lastCommitAt * 1000) / DAY_MS);
         return days >= 1
           ? { lead: t('room.untouched', { count: days }), tone: 'plain', rest: commits(track) }
-          : { lead: lastCommit(track) ?? t('session.none'), tone: 'plain', rest: commits(track) };
+          : { lead: newestSubject(track) ?? lastCommit(track) ?? t('session.none'), tone: 'plain', rest: commits(track) };
       }
     }
   }
@@ -119,11 +156,25 @@ function roomCopy(t: ReturnType<typeof useTranslations<'workStatus'>>, locale: s
             figure: t('monitor.twoTools'),
             note: t('monitor.twoToolsNote'),
           }
-          : { ...quiet, label: t('monitor.running'), labelInk: true, figure: commits(track), note: null, rows: rows(workingFor(room.session), lastCommit(track)), live: true };
+          : {
+            ...quiet,
+            label: t('monitor.running'),
+            labelInk: true,
+            figure: commits(track),
+            note: commitLine(track, room.session) ?? (workRows(track) ? latestFile(track) : null),
+            rows: workRows(track) ?? rows(workingFor(room.session), lastCommit(track)),
+            live: true,
+          };
       case 'resting':
-        return { ...quiet, label: t('monitor.idle'), figure: commits(track) ?? t('room.resting'), note: sinceBase(track), rows: rows(lastCommit(track), lockedAt(track)) };
+        return {
+          ...quiet,
+          label: t('monitor.idle'),
+          figure: commits(track) ?? t('room.resting'),
+          note: commitLine(track, null) ?? (workRows(track) ? latestFile(track) : null) ?? sinceBase(track),
+          rows: workRows(track) ?? rows(lastCommit(track), lockedAt(track)),
+        };
       case 'dozing':
-        return { ...quiet, label: t('monitor.idle'), aside: lockedAt(track), figure: quietFor(state.quietSinceMs), note: sinceBase(track) };
+        return { ...quiet, label: t('monitor.idle'), aside: lockedAt(track), figure: quietFor(state.quietSinceMs), note: sinceBase(track), rows: workRows(track) ?? [] };
       case 'merged':
         return {
           ...quiet,
@@ -145,7 +196,7 @@ function roomCopy(t: ReturnType<typeof useTranslations<'workStatus'>>, locale: s
       case 'missing':
         return { ...quiet, label: t('monitor.noSession'), figure: t('room.missing'), note: t.markup('monitor.prune', { code: chunks => chunks }) };
       case 'unheld':
-        return { ...quiet, label: t('monitor.noSession'), aside: commits(track), figure: status(room).lead, note: lastCommit(track) };
+        return { ...quiet, label: t('monitor.noSession'), aside: commits(track), figure: status({ ...room, track: { ...track, activity: null } }).lead, note: lastCommit(track), rows: workRows(track) ?? [] };
     }
   }
 

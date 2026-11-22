@@ -60,7 +60,11 @@
     "unreadableLock": "The lock names no session Atlas can read",
     "workingMinutes": "{count, plural, one {Working for # minute} other {Working for # minutes}}",
     "workingWholeHours": "{count, plural, one {Working for # hour} other {Working for # hours}}",
-    "workingHours": "Working for {hours} h {minutes} min"
+    "workingHours": "Working for {hours} h {minutes} min",
+    "editing": "{count, plural, one {Editing # file} other {Editing # files}}",
+    "workedMinutes": "working {count} min",
+    "workedWholeHours": "working {count} h",
+    "workedHours": "working {hours} h {minutes} min"
   },
   "belt": {
     "notRead": "Later steps are not read yet"

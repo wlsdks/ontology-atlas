@@ -60,7 +60,11 @@
     "unreadableLock": "锁中没有 Atlas 能读取的会话名",
     "workingMinutes": "已工作 {count} 分钟",
     "workingWholeHours": "已工作 {count} 小时",
-    "workingHours": "已工作 {hours} 小时 {minutes} 分钟"
+    "workingHours": "已工作 {hours} 小时 {minutes} 分钟",
+    "editing": "正在编辑 {count} 个文件",
+    "workedMinutes": "已 {count} 分钟",
+    "workedWholeHours": "已 {count} 小时",
+    "workedHours": "已 {hours} 小时 {minutes} 分钟"
   },
   "belt": {
     "notRead": "之后的步骤还读不到"

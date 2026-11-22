@@ -99,7 +99,11 @@ behind, up and to the right, closer where the room is narrow but never so close
 that his face is hidden, and never smaller. The lamp stands left of the first
 Moru's tail, or out of view where the room has no width for it. The room's top
 edge splits between the two sessions' inks. The second tool is a session of its own, numbered and inked
-(**Codex 1**), with a floor row even when the shared folder is its only one. An
+(**Codex 1**), with a floor row even when the shared folder is its only one. Under the
+commit count the monitor shows the newest commit subject beyond the base branch, as plain text cut
+with an ellipsis, and a quiet line with when it landed and how long the session has worked; with no
+commits yet it shows how many files are being edited and the name of the one changed last. A mini
+room on the No session floor shows that subject in place of its last commit's age. An
 idle room's monitor names its last commit when nothing else needs saying. A held room with nothing seen running for five minutes
 dozes; a lock left behind shows a taped crate and a dark monitor; a missing
 folder shows a dashed crate and the `git worktree prune` command as text.
@@ -131,7 +135,14 @@ branch's ref once a second, and asks whether each locked pid still runs
 of that changed: a worktree added or removed, locked or unlocked, committed to,
 merged into the base branch, or its session ended. A change shows within about
 two seconds: one interval plus one read. A hidden screen asks nothing and reads
-once when it shows again; relative ages move once a minute.
+once when it shows again; relative ages move once a minute. What each room is
+doing comes from a second read of one worktree at a time (`work_status_activity`:
+`git log -3` beyond the base branch and `git status`, about 150 ms of Git CPU on
+this repository): after a stat of that worktree's `HEAD`, `index` or reflog moved,
+or on its beat, which shares about four reads a minute across the running
+worktrees, and never more than once in ten seconds for one worktree. A subject
+is capped at 200 characters with control and direction-override characters
+removed.
 
 Every change plays as one sequence of about a second, and every frame shows
 one copy of each room with at least one name tag on the stage. First what

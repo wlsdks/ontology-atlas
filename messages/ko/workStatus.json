@@ -60,7 +60,11 @@
     "unreadableLock": "Atlas가 읽을 수 있는 세션 이름이 잠금에 없어요",
     "workingMinutes": "{count}분째 작업 중",
     "workingWholeHours": "{count}시간째 작업 중",
-    "workingHours": "{hours}시간 {minutes}분째 작업 중"
+    "workingHours": "{hours}시간 {minutes}분째 작업 중",
+    "editing": "파일 {count}개 수정 중",
+    "workedMinutes": "{count}분째",
+    "workedWholeHours": "{count}시간째",
+    "workedHours": "{hours}시간 {minutes}분째"
   },
   "belt": {
     "notRead": "이후 단계는 아직 읽지 못해요"

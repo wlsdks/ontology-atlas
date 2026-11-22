@@ -9,7 +9,7 @@ import { useArrivalMemory } from '@/shared/lib/navigation/route-arrival-memory';
 import { pickTauriSourceDirectory } from '@/shared/lib/vault-folder/native-vault/tauri-project-source';
 import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { isWorkStatusAvailable } from '@/shared/lib/work-status/tauri-work-status';
-import { buildWorkTracks, folderName, planRooms } from '@/shared/lib/work-status/work-tracks';
+import { buildWorkTracks, folderName, planRooms, withActivity } from '@/shared/lib/work-status/work-tracks';
 import { Button, PageHeaderBar } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { PAGE_FRAME_FORM, PAGE_STAGE_FILL } from '@/shared/ui/tokens/page-frame';
@@ -18,6 +18,7 @@ import { useMinuteClock } from '../model/use-minute-clock';
 import { useRunningMemory } from '../model/use-running-memory';
 import { useSessionIdentity } from '../model/use-session-identity';
 import { useWorkStatus } from '../model/use-work-status';
+import { useWorktreeActivity } from '../model/use-worktree-activity';
 import { WorkStatusStage } from './WorkStatusStage';
 
 const subscribe = () => () => {};
@@ -39,6 +40,13 @@ export function WorkStatusPage() {
   const tracks = useSessionIdentity(read);
   const seenRunningAt = useRunningMemory(tracks, readAtMs);
   const plan = useMemo(() => (tracks ? planRooms(tracks, nowMs, seenRunningAt) : null), [tracks, nowMs, seenRunningAt]);
+  const roomKeys = useMemo(() => (plan ? [...plan.stage, ...plan.floors.flatMap(floor => floor.rooms)].map(room => room.key) : []), [plan]);
+  const runningKeys = useMemo(
+    () => new Set(plan ? [...plan.stage, ...plan.floors.flatMap(floor => floor.rooms)].filter(room => room.track.running).map(room => room.key) : []),
+    [plan],
+  );
+  const activity = useWorktreeActivity(snapshot?.status === 'ready' ? snapshot.root : null, snapshot?.baseBranch ?? null, roomKeys, runningKeys);
+  const shownTracks = useMemo(() => (tracks ? withActivity(tracks, activity) : null), [tracks, activity]);
   const sameFolder = tracks ? [...tracks.sessions.flatMap(session => session.tracks), ...tracks.unheld].filter(track => track.running && track.tools.length > 1).length : 0;
   const cleanup = tracks?.stuck.length ?? 0;
   const reduced = usePrefersReducedMotion();
@@ -119,7 +127,7 @@ export function WorkStatusPage() {
           </div>
         </EmptyRoom>
       ) : (
-        <WorkBuilding tracks={tracks} seenRunningAt={seenRunningAt} baseBranch={baseBranch} nowMs={nowMs} />
+        <WorkBuilding tracks={shownTracks ?? tracks} seenRunningAt={seenRunningAt} baseBranch={baseBranch} nowMs={nowMs} />
       )}
     </main>
   );

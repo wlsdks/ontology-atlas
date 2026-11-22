@@ -40,31 +40,57 @@ const SIX = [
   row("fix/rail-tooltip", { standing: "merged", ahead: 0 }),
 ];
 
-async function openWorkStatus(page: Page, rows: Row[]) {
+type Activity = Record<string, { commits: { hash: string; subject: string; at: number }[] | null; uncommitted: number; latestFile: string | null }>;
+
+async function openWorkStatus(page: Page, rows: Row[], activity: Activity = {}) {
   await seedFirstRunSeen(page);
-  await page.addInitScript((initial: Row[]) => {
-    const state = { rows: initial, version: 1 };
+  await page.addInitScript(({ initial, reads }: { initial: Row[]; reads: Activity }) => {
+    const state = { rows: initial, version: 1, activity: reads, activityVersion: 1 };
     const target = window as unknown as Record<string, unknown>;
     target.__workStatusRows = (next: Row[]) => { state.rows = next; state.version += 1; };
+    target.__workStatusActivity = (next: Activity) => { state.activity = next; state.activityVersion += 1; };
     target.isTauri = true;
     target.__TAURI_EVENT_PLUGIN_INTERNALS__ = { unregisterListener: () => undefined };
     target.__TAURI_INTERNALS__ = {
       transformCallback: () => 1,
-      invoke(command: string) {
+      invoke(command: string, args: { worktreeId?: string } = {}) {
         const answer = (value: unknown) => new Promise(resolve => setTimeout(() => resolve(value), 60));
         if (command === "pick_source_directory") return answer("/Users/probe/repo");
         if (command === "work_status_fingerprint") return answer(`v${state.version}`);
+        if (command === "work_status_activity_stamps") {
+          return answer(Object.fromEntries(Object.keys(state.activity).map((id) => [id, `s${state.activityVersion}`])));
+        }
+        if (command === "work_status_activity") {
+          const read = state.activity[args.worktreeId ?? ""];
+          return answer(read ? { stamp: `s${state.activityVersion}`, ...structuredClone(read) } : null);
+        }
         if (command === "work_status_read") {
           return answer({ status: "ready", root: "/Users/probe/repo", repository: "repo", host: "github.com", baseBranch: "main", worktrees: structuredClone(state.rows) });
         }
         return Promise.reject(new Error(`unstubbed native command: ${command}`));
       },
     };
-  }, rows);
+  }, { initial: rows, reads: activity });
   await page.setViewportSize({ width: 1920, height: 1080 });
   await page.goto("/en/work-status/");
   await page.getByTestId("work-status-choose").click();
 }
+
+/** Commit subjects are anyone's text: one past the monitor's width, Korean, and an emoji. */
+const LONG_SUBJECT = `feat(work-status): ${"show what each worktree is doing, in words a person reads at a glance, ".repeat(3)}`.slice(0, 200);
+const ACTIVITY: Activity = {
+  "feat-library-stage": {
+    commits: [
+      { hash: "a1b2c3d", subject: LONG_SUBJECT, at: NOW_S - 120 },
+      { hash: "b2c3d4e", subject: "fix(library): 첫 화면 문구를 짧게 🚀", at: NOW_S - 900 },
+    ],
+    uncommitted: 3,
+    latestFile: "src/views/library/LibraryPage.tsx",
+  },
+  "feat-work-status-rooms": { commits: [], uncommitted: 12, latestFile: "src\\widgets\\work-tracks\\ui\\LargeRoom.tsx" },
+  "feat-map-light": { commits: [{ hash: "c3d4e5f", subject: "design(map): 빛 레이어를 부드럽게 ✨", at: NOW_S - 300 }], uncommitted: 0, latestFile: null },
+  "fix-rail-copy": { commits: [{ hash: "d4e5f60", subject: "fix: 레일 툴팁 문구 🧭", at: NOW_S - 600 }], uncommitted: 0, latestFile: null },
+};
 
 const room = (page: Page, branch: string) => page.getByTestId("work-room").filter({ hasText: branch });
 
@@ -552,6 +578,46 @@ test.describe("work status rooms", () => {
     const rises = frames.flatMap((frame, index) => frames.slice(index + 1).filter((later) => later.time - frame.time <= 40 && later.shown - frame.shown > 0.35).map((later) => `${frame.shown.toFixed(2)}→${later.shown.toFixed(2)}`));
     expect(rises.slice(0, 4), "the building cut in").toEqual([]);
     expect(frames.at(-1)!.shown).toBe(1);
+  });
+
+  test("names what each worktree is doing on its monitor, inside the screen, and cross-fades a new commit in", async ({ page }) => {
+    await openWorkStatus(page, [...SIX, row("fix/rail-copy")], ACTIVITY);
+    const stage = room(page, "feat/library-stage").getByTestId("work-room-monitor");
+    await expect(stage).toContainText(LONG_SUBJECT.slice(0, 40));
+    // The quiet line: when the newest commit landed, then how long the session has worked.
+    await expect(stage).toContainText(/\d+ minutes? ago · working \d+ h/);
+    await expect(room(page, "feat/map-light").getByTestId("work-room-monitor")).toContainText("빛 레이어를 부드럽게 ✨");
+    const editing = room(page, "feat/work-status-rooms").getByTestId("work-room-monitor");
+    await expect(editing).toContainText("Editing 12 files");
+    await expect(editing).toContainText("LargeRoom.tsx");
+    await expect(editing).not.toContainText("widgets");
+    await expect(room(page, "fix/rail-copy")).toHaveAttribute("data-room-size", "mini");
+    await expect(room(page, "fix/rail-copy")).toContainText("레일 툴팁 문구 🧭");
+    await waitForAnimationsDone(page.getByTestId("work-building"));
+
+    // Text is whole on its screen or wholly clipped away; none runs past the screen's edge.
+    const spills = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>("[data-testid=work-room-monitor]")].flatMap((screen) => {
+      const edge = screen.getBoundingClientRect();
+      return [...screen.querySelectorAll<HTMLElement>("span, div")].filter((element) => element.childElementCount === 0 && element.textContent).flatMap((element) => {
+        const box = element.getBoundingClientRect();
+        // A row that does not fit wraps into a column the screen clips whole.
+        const outside = box.left >= edge.right - 1 || box.top >= edge.bottom - 1;
+        const inside = box.left >= edge.left - 0.5 && box.right <= edge.right + 0.5 && box.top >= edge.top - 0.5 && box.bottom <= edge.bottom + 0.5;
+        return outside || inside ? [] : [`${element.textContent}`];
+      });
+    }));
+    expect(spills, "text past a monitor's edge").toEqual([]);
+
+    await page.evaluate((next) => (window as unknown as { __workStatusActivity: (next: unknown) => void }).__workStatusActivity(next), {
+      ...ACTIVITY,
+      "feat-library-stage": { ...ACTIVITY["feat-library-stage"], commits: [{ hash: "e5f6071", subject: "fix: 새 커밋이 들어왔어요", at: NOW_S - 5 }, ...ACTIVITY["feat-library-stage"].commits!] },
+    });
+    // The old subject fades out over the new one in the same cell: both are drawn for a moment.
+    await page.waitForFunction((old) => {
+      const screen = [...document.querySelectorAll("[data-testid=work-room]")].find((element) => element.textContent?.includes("feat/library-stage"))?.querySelector("[data-testid=work-room-monitor]");
+      const leaving = [...(screen?.querySelectorAll("[aria-hidden=true]") ?? [])].some((element) => element.textContent === old);
+      return leaving && screen?.textContent?.includes("새 커밋이 들어왔어요");
+    }, LONG_SUBJECT, { timeout: 15_000, polling: "raf" });
   });
 
   test("shows one room for the base branch when no worktree exists", async ({ page }) => {
