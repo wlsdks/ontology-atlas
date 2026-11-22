@@ -2,6 +2,8 @@
 import fs from "node:fs";
 import path from "node:path";
 
+import { parseReleaseTag } from "../lib/release-tag.mjs";
+
 const root = process.cwd();
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
 const tauriConfig = JSON.parse(
@@ -28,12 +30,14 @@ const nextConfigFeedsVersion =
   /packageJson[\s\S]{0,120}version/.test(nextConfig);
 
 function printHelp() {
-  console.log(`Usage: pnpm desktop:release-tag -- --tag=vX.Y.Z
+  console.log(`Usage: pnpm desktop:release-tag -- --tag=vX.Y.Z|vX.Y.Z-beta.N [--github-output]
 
-Fails unless the macOS release tag is a plain vMAJOR.MINOR.PATCH (release
-candidates are retired) and matches every version declaration:
-package.json, src-tauri/tauri.conf.json and src-tauri/Cargo.toml, and unless
-/download still derives its version from package.json rather than declaring one.
+Fails unless the release tag is vMAJOR.MINOR.PATCH (a stable release) or
+vMAJOR.MINOR.PATCH-beta.N with N from 1 (a beta release), and its X.Y.Z matches
+every version declaration: package.json, src-tauri/tauri.conf.json and
+src-tauri/Cargo.toml. A beta carries no suffix in those files; only the tag does.
+It also fails unless /download still derives its version from package.json.
+--github-output appends channel=stable|beta and version=X.Y.Z to $GITHUB_OUTPUT.
 In GitHub Actions the tag can also come from GITHUB_REF_NAME.
 `);
 }
@@ -45,6 +49,7 @@ function fail(message) {
 
 function parseArgs(argv) {
   let tag = "";
+  let githubOutput = false;
   for (const arg of argv) {
     if (arg === "--") {
       continue;
@@ -53,16 +58,20 @@ function parseArgs(argv) {
       printHelp();
       process.exit(0);
     }
+    if (arg === "--github-output") {
+      githubOutput = true;
+      continue;
+    }
     if (arg.startsWith("--tag=")) {
       tag = arg.slice("--tag=".length).trim();
       continue;
     }
     fail(`unknown argument: ${arg}`);
   }
-  return tag || (process.env.GITHUB_REF_NAME ?? "").trim();
+  return { tag: tag || (process.env.GITHUB_REF_NAME ?? "").trim(), githubOutput };
 }
 
-const tag = parseArgs(process.argv.slice(2));
+const { tag, githubOutput } = parseArgs(process.argv.slice(2));
 if (!tag) {
   fail("release tag is required. Pass --tag=vX.Y.Z or set GITHUB_REF_NAME.");
 }
@@ -70,17 +79,21 @@ if (!tag) {
 if (!tag.startsWith("v")) {
   fail(`release tag must be v-prefixed, got ${tag}.`);
 }
-const suffixed = tag.match(/^v(\d+\.\d+\.\d+)[-+]/);
-if (suffixed) {
-  fail(
-    `release tag ${tag} has a pre-release or build suffix. Release candidates are retired: every release is a plain vX.Y.Z tag, so tag v${suffixed[1]} instead.`,
-  );
-}
-if (!/^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(tag)) {
-  fail(`release tag must be vMAJOR.MINOR.PATCH, got ${tag}.`);
+
+let parsedTag;
+try {
+  parsedTag = parseReleaseTag(tag);
+} catch {
+  const suffixed = tag.match(/^v(\d+\.\d+\.\d+)[-+]/);
+  if (suffixed) {
+    fail(
+      `release tag ${tag} has a pre-release or build suffix other than -beta.N (N from 1), so tag v${suffixed[1]} instead, or v${suffixed[1]}-beta.1 for a beta release.`,
+    );
+  }
+  fail(`release tag must be vMAJOR.MINOR.PATCH or vMAJOR.MINOR.PATCH-beta.N, got ${tag}.`);
 }
 
-const tagVersion = tag.slice(1);
+const tagVersion = parsedTag.version;
 if (releaseFactsLiteral) {
   fail(
     `src/views/download/lib/release/release-facts.ts declares RELEASE_VERSION as the literal "${releaseFactsLiteral}". It must read process.env.NEXT_PUBLIC_RELEASE_VERSION so the download page cannot state a version the app does not have.`,
@@ -107,6 +120,12 @@ if (mismatches.length > 0) {
   );
 }
 
+if (githubOutput) {
+  const outputPath = process.env.GITHUB_OUTPUT;
+  if (!outputPath) fail("--github-output needs GITHUB_OUTPUT to name a file.");
+  fs.appendFileSync(outputPath, `channel=${parsedTag.channel}\nversion=${parsedTag.version}\n`);
+}
+
 console.log(
-  `[desktop-release-tag] ${tag} matches package, Tauri and Cargo versions, and /download derives its own from package.json`,
+  `[desktop-release-tag] ${tag} is a ${parsedTag.channel} release; ${tagVersion} matches package, Tauri and Cargo versions, and /download derives its own from package.json`,
 );
