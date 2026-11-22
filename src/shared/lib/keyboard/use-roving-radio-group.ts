@@ -5,7 +5,8 @@ import { useRef, type KeyboardEvent } from "react";
 /**
  * Behaviour layer of a radiogroup: roving tabindex, arrow-key wrapping, selection-follows-focus; the
  * container belongs to the site. No Home/End, no Escape handling, no group-level `disabled` (it
- * would remove the only tab stop). Gate: `radiogroup-behavior-ratchet.contract.test.ts`.
+ * would remove the only tab stop). A literal `role="radiogroup"` is refused by lint
+ * (`handAssembledRoleSelectors` in `eslint.config.mjs`), so a hand-built group comes here.
  */
 
 export interface RovingRadioGroupOptions<T> {

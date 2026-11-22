@@ -147,6 +147,22 @@ const disabledAffordanceSelectors = [
 ];
 
 /*
+ * A literal dialog, tab or radiogroup role means the site wires focus and keys by hand, which the
+ * primitive owns: Dialog traps focus, handles Escape and locks scroll; TabBar and the roving
+ * radio-group hook own the arrow keys. The primitives pass the role through a prop or an object,
+ * so they never match. A site that cannot move states why on its own disable line.
+ */
+const HAND_ASSEMBLED_ROLE = '/^(?:dialog|tab|radiogroup)$/';
+const handAssembledRoleMessage =
+  'A hand-built dialog, tab or radiogroup role skips the focus and keyboard contract its primitive owns. Use Dialog (shared/ui/surfaces/dialog.tsx), TabBar (shared/ui/controls/tab-bar.tsx), SegmentedControl or useRovingRadioGroup. A site that cannot move says why: `// eslint-disable-next-line no-restricted-syntax -- <reason>`.';
+const handAssembledRoleSelectors = [
+  `JSXAttribute[name.name="role"] > Literal[value=${HAND_ASSEMBLED_ROLE}]`,
+  `JSXAttribute[name.name="role"] > JSXExpressionContainer > Literal[value=${HAND_ASSEMBLED_ROLE}]`,
+  `JSXAttribute[name.name="role"] > JSXExpressionContainer > TemplateLiteral[expressions.length=0] > TemplateElement[value.raw=${HAND_ASSEMBLED_ROLE}]`,
+  `JSXAttribute[name.name="role"] ConditionalExpression > Literal[value=${HAND_ASSEMBLED_ROLE}]`,
+].map((selector) => ({ selector, message: handAssembledRoleMessage }));
+
+/*
  * Closes three axes: `tracking-[…em]` (use `--tracking-*`), `font-[NNN]` (use `--font-weight-*`)
  * and Tailwind palette utilities. White text on indigo is `--color-text-on-accent`;
  * `--color-text-primary` there drops contrast to 4.42 and fails AA.
@@ -731,6 +747,7 @@ const eslintConfig = defineConfig([
         ...layerSelectors,
         ...colorLiteralSelectors,
         ...closureScopeSelectors,
+        ...handAssembledRoleSelectors,
       ],
     },
   },
@@ -756,6 +773,7 @@ const eslintConfig = defineConfig([
         ...typographyAxisSelectors,
         ...layerSelectors,
         ...closureScopeSelectors,
+        ...handAssembledRoleSelectors,
       ],
     },
   },
@@ -777,6 +795,7 @@ const eslintConfig = defineConfig([
         ...typographyAxisSelectors,
         ...layerSelectors,
         ...closureScopeSelectors,
+        ...handAssembledRoleSelectors,
       ],
     },
   },
@@ -810,6 +829,7 @@ const eslintConfig = defineConfig([
             'Do not use the docs-surface decorative quarantine amber in the settings sheet (template literal). Use the --color-amber-source-* / --color-amber-source-text-* ladders.',
         },
         ...closureScopeSelectors,
+        ...handAssembledRoleSelectors,
       ],
     },
   },

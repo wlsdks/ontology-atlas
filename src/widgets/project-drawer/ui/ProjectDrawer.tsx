@@ -63,6 +63,7 @@ export function ProjectDrawer({
           data-testid="project-drawer"
           ref={mergeRefs(asideRef, asideLockoutRef)}
           onAnimationStart={asideLockoutOnAnimationStart}
+          // eslint-disable-next-line no-restricted-syntax -- an edge drawer; Dialog has no edge variant yet
           role="dialog"
           aria-modal="true"
           aria-label={t("ariaLabelWithName", { name: project.name })}

@@ -177,6 +177,7 @@ export function DocsVaultDocumentPane({
             <button
               key={mode ? 'edit' : 'preview'}
               type="button"
+              // eslint-disable-next-line no-restricted-syntax -- hand-built tabs not yet moved to TabBar
               role="tab"
               aria-selected={editing === mode}
               onClick={() => setEditing(mode)}
