@@ -22,94 +22,76 @@ import {
 export const INFER_IMPORTS_TOOL = {
   name: 'infer_imports',
   description:
-    'Walk TS/JS files in a code repo and infer file-level + module-level import edges; also bounded root Python packages ' +
-    '(and src layouts), Rust use/module/include dependencies, and a root Go module\'s typed local package imports. ' +
-    '`coverage` names the languages; all of it is static text evidence, never runtime impact. ' +
-    'side effect 0 (vault frontmatter NOT modified). `moduleEdges` are source-backed review candidates, never ' +
-    'self-approving `depends_on` relations. Knowing an implementation file, set `focusPath` before considering full: ' +
-    'bounded exact incoming/outgoing import receipts with a cursor, no vault needed. Omit `reviewMode` for size-safe ' +
-    'delivery: up to 128 KiB the complete response; larger reconciled scans return exactly one compact, non-writing ' +
-    '`nextRelationReview:v1` packet with a delivery receipt and cursor (reviewMode:"next" asks for it). ' +
-    'reviewMode:"full" over 128 KiB also needs allowLargeResponse:true; an oversized scan without a reconciliation ' +
-    'vault fails with an actionable error. A candidate with `absentEndpoints` has empty `nextCalls`: model the ' +
-    'endpoints first, never from a path-derived slug. Each module edge carries role and usage counts, `kindCounts` ' +
-    'and a bounded exact file-edge `evidence` receipt. Missing vault edges stay rationale_review_required: inspect ' +
-    'both concepts and the direction, ask the user, then call add_relation with an explicit `why`; test-only or ' +
-    'type-only evidence alone is no product depends_on question. Aliases: tsconfig.json compilerOptions.paths ' +
-    'aliases first, then fallback common @/* aliases, resolved to internal files when the target exists, otherwise ' +
-    'unresolved as alias-not-found. Use after analyze_repo_structure to pull real dependency edges, not just ' +
-    'suggestedRelations heuristics; unless reconcile:false, `reconciliation` diffs them against the vault\'s ' +
-    'depends_on edges. Single source of truth preserved: a missing edge carries evidence, never a write action.',
+    'Walk TS/JS files in a code repo and infer file-level + module-level import edges (also root Python packages, Rust and a root Go module). Use after analyze_repo_structure to pull real dependency edges, not just suggestedRelations heuristics. side effect 0 (vault frontmatter NOT modified); static text evidence, never runtime impact. `moduleEdges` are source-backed review candidates, never self-approving `depends_on` relations; each carries `kindCounts` and a bounded exact file-edge `evidence` receipt. Knowing one file, set `focusPath` for its incoming/outgoing receipts. Omit `reviewMode` for size-safe delivery: up to 128 KiB the complete scan, above it exactly one compact, non-writing `nextRelationReview:v1` packet with a delivery receipt and cursor. A candidate with `absentEndpoints` has no `nextCalls`: model the endpoints first. A missing vault edge stays rationale_review_required: inspect both concepts, ask the user, then add_relation with a `why`. Single source of truth preserved: a missing edge carries evidence, never a write action.',
   inputSchema: {
     type: 'object',
     properties: {
       rootPath: {
         ...NON_BLANK_STRING_SCHEMA,
-        description: 'Repository root to analyze. Defaults to the active resolved repository root from connection_info.',
+        description: 'Defaults to the active repository root.',
       },
       sourceFolders: {
         type: 'array',
         maxItems: SOURCE_FOLDER_ARRAY_MAX_ITEMS,
         items: NON_BLANK_STRING_SCHEMA,
         description:
-          "Source folders to walk (default: ['src','source','lib','app','apps','packages']). Nested scopes preserve repository-relative ontology endpoints. " +
-          'If none exist, falls back to rootPath.',
+          'Default src, source, lib, app, apps, packages; else rootPath.',
       },
       ignore: {
         type: 'array',
         maxItems: IGNORE_ARRAY_MAX_ITEMS,
         items: NON_BLANK_STRING_SCHEMA,
         description:
-          "Extra folder names to skip (added to defaults: node_modules, dist, build, …).",
+          'Extra folder names to skip.',
       },
       maxFiles: {
         type: 'integer',
         minimum: 1,
         maximum: 50000,
         description:
-          'Positive integer cap on files walked (default 5000, max 50000). Hard stop to avoid pathological monorepos.',
+          'Default 5000, to avoid pathological monorepos.',
       },
       reconcile: {
         type: 'boolean',
         description:
-          'Default true. When true, diff the inferred module edges against the vault\'s compiled depends_on edges and include `reconciliation` + `reconciliationSummary`. Set false to skip (raw scan only / no vault).',
+          'Default true: diff against the vault\'s depends_on edges.',
       },
       reviewMode: {
         type: 'string',
         enum: ['full', 'next', 'focus'],
         description:
-          'Omit for automatic delivery unless focusPath is present. `focus` returns a bounded exact file-level import neighborhood for focusPath. Otherwise responses estimated at or below 128 KiB keep the complete scan, while larger reconciled scans return one compact, non-writing review packet. `full` requests the complete scan; when it exceeds 128 KiB, also pass allowLargeResponse:true. `next` explicitly requests one compact packet and requires reconciliation.',
+          'Omit for automatic delivery. `focus`: bounded exact file-level import neighborhood for focusPath. `full` requests the complete scan (over 128 KiB with allowLargeResponse:true). `next` explicitly requests one compact packet.',
       },
       allowLargeResponse: {
         type: 'boolean',
         description:
-          'Confirmation for reviewMode:"full" only. Required when the estimated complete MCP result exceeds 128 KiB. It never changes scan contents or writes the vault.',
+          'reviewMode:"full" when the result exceeds 128 KiB.',
       },
       afterReviewId: {
         ...NON_BLANK_STRING_SCHEMA,
         description:
-          '`reviewMode:"next"` only. Pass the prior packet cursor.nextAfterReviewId to advance deterministically; omit to start at the first current candidate.',
+          'reviewMode:"next": the prior cursor.nextAfterReviewId.',
       },
       focusPath: {
         ...NON_BLANK_STRING_SCHEMA,
         description:
-          'Repository-relative implementation file to inspect. Supplying focusPath with omitted reviewMode selects focus mode automatically. Returns bounded incoming/outgoing supported static import receipts; it does not claim runtime or semantic impact.',
+          'Repository-relative implementation file for focus mode.',
       },
       focusDirection: {
         type: 'string',
         enum: ['incoming', 'outgoing', 'both'],
-        description: 'Focus mode only. Which exact file-level import direction to page (default both).',
+        description: 'Default both.',
       },
       focusLimit: {
         type: 'integer',
         minimum: 1,
         maximum: 100,
-        description: 'Focus mode only. Maximum exact import receipts returned in one page (default 50, max 100).',
+        description: 'Default 50.',
       },
       focusAfterEdgeId: {
         ...NON_BLANK_STRING_SCHEMA,
         description:
-          'Focus mode only. Pass the prior focusReview.cursor.nextAfterEdgeId to advance deterministically; omit to start at the first current edge.',
+          'Focus mode: the prior focusReview.cursor.nextAfterEdgeId.',
       },
     },
   },

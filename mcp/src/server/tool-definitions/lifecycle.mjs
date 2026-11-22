@@ -20,41 +20,29 @@ import {
 export const RENAME_CONCEPT_TOOL = {
   name: 'rename_concept',
   description:
-    '⚠ MULTI-FILE WRITE — change a slug and update every backlink in one atomic graph-level operation. ' +
-    'The node UID is preserved; only its current human-readable slug changes. ' +
-    'Renames the .md file (oldSlug → newSlug, directory move OK), updates the moved file\'s ' +
-    'frontmatter `slug:` key, and rewrites every backlink — frontmatter array entries (capabilities / ' +
-    'elements / dependencies / relates / contains / describes), inline-string keys, and body links ' +
-    '`[[oldSlug]]` / `(oldSlug.md)`. Tail-only references (`mcp-server` for `capabilities/mcp-server`) ' +
-    'are also redirected to the new tail. Two-stage safety:\n' +
-    '  1. Without confirm: true the call is a dry-run — returns `updates` (each affected file with ' +
-    'before/after array keys + bodyChanged flag) without writing.\n' +
-    '  2. With confirm: true the file is moved and all backlinks are rewritten in one pass.\n' +
-    'Throws if oldSlug missing or newSlug already taken (unless overwrite: true). Use this instead ' +
-    'of patch_concept + N find_backlinks + N patch_concept loops. Confirmed writes return ' +
-    POST_WRITE_MAINTENANCE_GUIDANCE + ' for the final graph.',
+    '⚠ MULTI-FILE WRITE: change a node\'s slug and rewrite every backlink (frontmatter, body links, tail-only references) in one operation, keeping its UID; use it instead of patch_concept loops. Dry-run returns `updates` unless confirm: true. Throws if oldSlug is missing or newSlug taken (unless overwrite). Confirmed writes return ' + POST_WRITE_MAINTENANCE_GUIDANCE + '.',
   inputSchema: {
     type: 'object',
     properties: {
-      oldSlug: nonBlankStringSchema('Current vault-relative slug (omit the .md extension).'),
+      oldSlug: nonBlankStringSchema('Current slug.'),
       newSlug: nonBlankStringSchema(
-        'Target vault-relative slug (omit the .md extension). Directories are created if needed.',
+        'New slug; directories are created.',
       ),
       confirm: {
         type: 'boolean',
         description:
-          'Actually perform the rename when true. Omit or false for a dry-run preview.',
+          'True to write; default dry-run.',
       },
       overwrite: {
         type: 'boolean',
         description:
-          'Allow overwriting an existing file at newSlug. Defaults to false (throws if newSlug exists).',
+          'Replace an existing newSlug file.',
       },
       expected_mtime: {
         type: 'number',
         minimum: 0,
         description:
-          'Optional conflict guard for oldSlug. Pass the `mtime` from get_concept; throws VaultConflictError if the source has been modified externally since you read it.',
+          'Conflict guard for oldSlug.',
       },
     },
     required: ['oldSlug', 'newSlug'],
@@ -85,7 +73,7 @@ export const RENAME_CONCEPT_TOOL = {
 export const RECLASSIFY_CONCEPT_TOOL = {
   name: 'reclassify_concept',
   description:
-    '⚠ MULTI-FILE WRITE — change a concept kind and optionally its canonical slug/domain in one previewable transaction. The permanent UID is preserved. Redirects backlinks like rename_concept, and a referrer that lists the node under domains/capabilities/elements moves the entry to the list for the new kind when its own kind keeps that list; otherwise the entry stays and `warnings` names it. Replaces a generated starter body with the new kind template while preserving custom prose. Defaults to dry-run.',
+    '⚠ MULTI-FILE WRITE: change a node\'s kind, and optionally its slug and domain, keeping its UID and redirecting backlinks like rename_concept; entries a referrer cannot keep are named in `warnings`. Defaults to dry-run.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -121,37 +109,28 @@ export const RECLASSIFY_CONCEPT_TOOL = {
 export const MERGE_CONCEPTS_TOOL = {
   name: 'merge_concepts',
   description:
-    '⚠ DESTRUCTIVE MULTI-FILE WRITE — fold one node into another. Every backlink to fromSlug is ' +
-    'redirected to intoSlug (frontmatter array entries + body links), then fromSlug is deleted. The ' +
-    'survivor keeps its UID while the source UID/history is recorded in canonical `merged_uids`. The ' +
-    'intoSlug prose and non-identity frontmatter are preserved as-is — they are not merged automatically (use ' +
-    'patch_concept after if you want to combine descriptions). Tail-only references are also ' +
-    'redirected. Two-stage safety:\n' +
-    '  1. Without confirm: true the call is a dry-run — returns the redirect plan + list of deletions ' +
-    'without writing.\n' +
-    '  2. With confirm: true the rewrites and the delete happen in one pass.\n' +
-    'Throws if either slug is missing. Confirmed writes return ' + POST_WRITE_MAINTENANCE_GUIDANCE + ' for the final graph.',
+    '⚠ DESTRUCTIVE MULTI-FILE WRITE: fold a duplicate node into another: backlinks to fromSlug move to intoSlug, fromSlug is deleted, its UID goes to `merged_uids`; prose is not merged. Dry-run unless confirm: true. Confirmed writes return ' + POST_WRITE_MAINTENANCE_GUIDANCE + '.',
   inputSchema: {
     type: 'object',
     properties: {
-      fromSlug: nonBlankStringSchema('Slug to dissolve. Its file is deleted after backlinks redirect.'),
-      intoSlug: nonBlankStringSchema('Slug to keep. Receives every redirected backlink.'),
+      fromSlug: nonBlankStringSchema('Slug to dissolve and delete.'),
+      intoSlug: nonBlankStringSchema('Slug to keep.'),
       confirm: {
         type: 'boolean',
         description:
-          'Actually perform the merge when true. Omit or false for a dry-run.',
+          'True to write; default dry-run.',
       },
       expected_mtime: {
         type: 'number',
         minimum: 0,
         description:
-          'Optional conflict guard for fromSlug. Throws if the source has been modified externally.',
+          'Conflict guard for fromSlug.',
       },
       expected_into_mtime: {
         type: 'number',
         minimum: 0,
         description:
-          'Optional conflict guard for intoSlug. Pass the survivor mtime from get_concept so a concurrent edit or identity-history change is never overwritten.',
+          'Conflict guard for the survivor intoSlug.',
       },
     },
     required: ['fromSlug', 'intoSlug'],
@@ -188,15 +167,7 @@ export const MERGE_CONCEPTS_TOOL = {
 export const DELETE_CONCEPT_TOOL = {
   name: 'delete_concept',
   description:
-    '⚠ DESTRUCTIVE — permanently deletes the vault .md file. Two-stage safety:\n' +
-    'Both preview and confirmed responses identify the node by permanent `uid` plus current `slug`. ' +
-    '  1. Without confirm: true the call is a dry-run — returns a backlinks preview without deleting.\n' +
-    '  2. If any backlinks exist the call throws — refuses while other nodes still reference this slug. ' +
-    'Pass force: true to delete anyway (the referrers become dangling).\n' +
-    'Successful deletion returns the frontmatter + body so a user who deleted by mistake ' +
-    'can recreate the node via add_concept. Directories are left untouched. Pass ' +
-    '`expected_mtime` to guard against concurrent external edits — throws if the file ' +
-    'changed on disk since you read it. Confirmed deletes return ' + POST_WRITE_MAINTENANCE_GUIDANCE + ' for the final graph.',
+    '⚠ DESTRUCTIVE: permanently delete one node\'s .md file. Dry-run with a backlinks preview unless confirm: true; throws while backlinks exist unless force: true. Responses name the permanent `uid` plus current `slug`, and a deletion returns frontmatter and body for add_concept to recreate it. Confirmed deletes return ' + POST_WRITE_MAINTENANCE_GUIDANCE + '.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -204,18 +175,18 @@ export const DELETE_CONCEPT_TOOL = {
       confirm: {
         type: 'boolean',
         description:
-          'Actually delete when true. Omit or false for a dry-run (backlinks preview, no delete).',
+          'True to delete; default dry-run.',
       },
       force: {
         type: 'boolean',
         description:
-          'Delete even when backlinks exist (referrers become dangling). Defaults to false.',
+          'Delete despite backlinks; the referrers are left dangling.',
       },
       expected_mtime: {
         type: 'number',
         minimum: 0,
         description:
-          'Optional conflict guard — file mtimeMs at read time. If it differs at delete time, the call throws.',
+          'Conflict guard.',
       },
     },
     required: ['slug'],
