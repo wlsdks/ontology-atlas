@@ -17,8 +17,3 @@ export function timeAgo(epochSeconds: number, nowMs: number, locale: string): st
   if (elapsed < DAY_S) return format.format(-Math.round(elapsed / HOUR_S), 'hour');
   return format.format(-Math.round(elapsed / DAY_S), 'day');
 }
-
-/** The first characters of an agent id, enough to tell siblings apart at a glance. */
-export function shortAgentId(id: string): string {
-  return id.slice(0, 4);
-}

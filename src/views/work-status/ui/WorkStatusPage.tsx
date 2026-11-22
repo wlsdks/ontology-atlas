@@ -1,44 +1,51 @@
 'use client';
 
 import { useMemo, useSyncExternalStore } from 'react';
+import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { useTranslations } from 'next-intl';
-import { AnimatePresence, motion } from 'framer-motion';
 import { FolderGit2 } from 'lucide-react';
 import { useLocalVault } from '@/entities/vault-session';
-import { cn } from '@/shared/lib/cn';
 import { useArrivalMemory } from '@/shared/lib/navigation/route-arrival-memory';
-import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { pickTauriSourceDirectory } from '@/shared/lib/vault-folder/native-vault/tauri-project-source';
 import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { isWorkStatusAvailable } from '@/shared/lib/work-status/tauri-work-status';
-import { buildWorkTracks, folderName, headlineOf, type WorkTracks } from '@/shared/lib/work-status/work-tracks';
-import { EXIT_TRANSITION, MOTION, OVERLAY_RISE, OVERLAY_RISE_REDUCED, OVERLAY_SETTLED } from '@/shared/motion';
+import { buildWorkTracks, folderName, planRooms } from '@/shared/lib/work-status/work-tracks';
 import { Button, PageHeaderBar } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
-import { PAGE_FRAME, PAGE_FRAME_FORM, PAGE_STAGE_FILL } from '@/shared/ui/tokens/page-frame';
-import { SwapText, WorkTracksBoard } from '@/widgets/work-tracks';
+import { PAGE_FRAME_FORM, PAGE_STAGE_FILL } from '@/shared/ui/tokens/page-frame';
+import { EmptyRoom, RoomShelf, WorkBuilding, pointToRooms, type RoomAlert } from '@/widgets/work-tracks';
 import { useMinuteClock } from '../model/use-minute-clock';
+import { useRunningMemory } from '../model/use-running-memory';
+import { useSessionIdentity } from '../model/use-session-identity';
 import { useWorkStatus } from '../model/use-work-status';
 import { WorkStatusStage } from './WorkStatusStage';
 
 const subscribe = () => () => {};
 const webSnapshot = () => false;
-const EMPTY_TRACKS: WorkTracks = { stuck: [], sessions: [], unheld: [], merged: [], counts: { running: 0, stuck: 0 }, worktreeCount: 0 };
-const COUNT_CLASS = 'font-[var(--font-weight-strong)] tabular-nums text-[color:var(--color-text-primary)]';
 const MAIN_CLASS = 'flex min-h-full flex-col bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]';
+const BRANCH_CLASS = 'font-mono';
 
 export function WorkStatusPage() {
   const t = useTranslations('workStatus');
   const git = useTranslations('atlasGit');
   const native = useSyncExternalStore(subscribe, isWorkStatusAvailable, webSnapshot);
-  const reduced = usePrefersReducedMotion();
   const vault = useLocalVault();
   const [chosen, setChosen] = useArrivalMemory<string | null>('work-status:repository', null);
   const vaultRoot = native && vault.handle ? getTauriVaultRootPath(vault.handle) ?? null : null;
   const root = native ? chosen ?? vaultRoot : null;
   const { snapshot, failed, readAtMs } = useWorkStatus(root);
   const nowMs = useMinuteClock(readAtMs);
-  const tracks = useMemo(() => (snapshot?.status === 'ready' ? buildWorkTracks(snapshot) : null), [snapshot]);
+  const read = useMemo(() => (snapshot?.status === 'ready' ? buildWorkTracks(snapshot) : null), [snapshot]);
+  const tracks = useSessionIdentity(read);
+  const seenRunningAt = useRunningMemory(tracks, readAtMs);
+  const plan = useMemo(() => (tracks ? planRooms(tracks, nowMs, seenRunningAt) : null), [tracks, nowMs, seenRunningAt]);
+  const sameFolder = tracks ? [...tracks.sessions.flatMap(session => session.tracks), ...tracks.unheld].filter(track => track.running && track.tools.length > 1).length : 0;
+  const cleanup = tracks?.stuck.length ?? 0;
+  const reduced = usePrefersReducedMotion();
+  const alerts = [
+    sameFolder > 0 ? { kind: 'sameFolder' as RoomAlert, label: t('header.sameFolder', { count: sameFolder }) } : null,
+    cleanup > 0 ? { kind: 'cleanup' as RoomAlert, label: t('header.cleanup', { count: cleanup }) } : null,
+  ].filter(alert => alert !== null);
 
   async function chooseRepository() {
     const picked = await pickTauriSourceDirectory(t('choose.title'));
@@ -68,62 +75,52 @@ export function WorkStatusPage() {
   if (status === 'no-history') {
     return stagePage(<WorkStatusStage state="not-repository" title={t('notRepository', { folder })} action={chooseButton('lg')} />);
   }
-  if (tracks && snapshot && snapshot.worktrees.length <= 1 && tracks.sessions.length === 0) {
-    return stagePage(<WorkStatusStage state="empty" title={t('empty.title', { repo: snapshot.repository })} body={t('empty.body')} action={chooseButton('lg')} />);
-  }
 
-  const shown = tracks ?? EMPTY_TRACKS;
-  const headline = headlineOf(shown);
-  const headlineText = !tracks ? null : headline.kind === 'idle'
-    ? t('headline.idle', { repo: snapshot?.repository ?? folder })
-    : t(`headline.${headline.kind}`, { count: headline.count });
+  const baseBranch = snapshot?.baseBranch ?? 'main';
+  const branch = (chunks: React.ReactNode) => <code className={BRANCH_CLASS}>{chunks}</code>;
+  const empty = plan !== null && plan.stage.length === 0 && plan.floors.length === 0;
+  const onlyMain = empty && snapshot !== null && snapshot.worktrees.length <= 1;
 
   return (
-    <main id="main" data-work-status-surface aria-busy={!tracks} className="flex h-[calc(100%_-_var(--topology-mobile-bottom-tab-reserve))] min-h-0 flex-col overflow-y-auto bg-[color:var(--color-canvas)] pb-10 text-[color:var(--color-text-primary)] lg:h-full">
+    <main id="main" data-work-status-surface aria-busy={!plan} className="flex h-[calc(100%_-_var(--topology-mobile-bottom-tab-reserve))] min-h-0 flex-col bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)] lg:h-full">
       <PageHeaderBar
         frame="page"
         title={t('title')}
+        className="md:[&>[data-page-header-row]]:px-10"
         meta={snapshot ? (
           <span className="truncate text-body leading-body text-[color:var(--color-text-tertiary)]">
-            {t('repoLine', { repo: snapshot.repository, count: shown.worktreeCount })}
+            {t('repoLine', { repo: snapshot.repository, count: snapshot.worktrees.length })}
+            {alerts.map(alert => (
+              <span key={alert.kind}>
+                {' · '}
+                <button
+                  type="button"
+                  data-testid={`work-status-alert-${alert.kind}`}
+                  title={t('header.pointTo')}
+                  onClick={() => pointToRooms(alert.kind, reduced)}
+                  className="font-[var(--font-weight-emphasis)] text-[color:var(--color-status-warning)] underline-offset-4 hover:underline focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]"
+                >
+                  {alert.label}
+                </button>
+              </span>
+            ))}
           </span>
         ) : null}
         actions={chooseButton('sm')}
       />
-      <div className={cn(PAGE_FRAME, 'flex flex-col gap-5 md:pt-8 [--work-sticky-top:3.75rem]')}>
-        <div className="flex min-h-15 flex-col justify-end gap-1">
-          <AnimatePresence mode="popLayout" initial={false}>
-            {headlineText ? (
-              <motion.h2
-                key={headlineText}
-                data-testid="work-status-headline"
-                initial={reduced ? OVERLAY_RISE_REDUCED : OVERLAY_RISE}
-                animate={OVERLAY_SETTLED}
-                exit={{ opacity: 0, transition: EXIT_TRANSITION }}
-                transition={reduced ? MOTION.fast : MOTION.slow}
-                className="text-hero leading-hero font-[var(--font-weight-strong)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]"
-              >
-                {headlineText}
-              </motion.h2>
-            ) : null}
-          </AnimatePresence>
-          <p data-testid="work-status-summary" className="text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
-            {tracks ? t.rich('summary', {
-              ...shown.counts,
-              runningCount: () => <strong className={COUNT_CLASS}><SwapText value={String(shown.counts.running)} /></strong>,
-              stuckCount: () => <strong className={COUNT_CLASS}><SwapText value={String(shown.counts.stuck)} ink={shown.counts.stuck > 0 ? 'text-[color:var(--color-danger-text-strong)]' : undefined} /></strong>,
-            }) :' '}
-          </p>
-        </div>
-        <WorkTracksBoard
-          tracks={shown}
-          folder={folder}
-          host={snapshot?.host ?? null}
-          baseBranch={snapshot?.baseBranch ?? 'main'}
-          nowMs={nowMs}
-          reading={!tracks}
-        />
-      </div>
+      {plan === null || tracks === null ? (
+        <div className="min-h-0 flex-1" />
+      ) : onlyMain ? (
+        <EmptyRoom branch={baseBranch} title={t.rich('empty.title', { branch: baseBranch, code: branch })} body={t('empty.body')} />
+      ) : empty ? (
+        <EmptyRoom branch={baseBranch} title={t('quiet.title', { repo: snapshot?.repository ?? folder })} body={t('quiet.body')}>
+          <div className="relative h-10">
+            <RoomShelf merged={plan.shelf.merged} untouched={plan.shelf.untouched} baseBranch={baseBranch} nowMs={nowMs} inline={false} />
+          </div>
+        </EmptyRoom>
+      ) : (
+        <WorkBuilding tracks={tracks} seenRunningAt={seenRunningAt} baseBranch={baseBranch} nowMs={nowMs} />
+      )}
     </main>
   );
 }

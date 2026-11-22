@@ -1,35 +1,12 @@
 {
   "title": "Work status",
-  "summary": "<runningCount>{running}</runningCount> held by a live session · <stuckCount>{stuck}</stuckCount> stuck",
   "repoLine": "{repo} · {count, plural, one {# worktree} other {# worktrees}} on this Mac",
-  "headline": {
-    "running": "{count, plural, one {# worktree is held by a live session} other {# worktrees are held by live sessions}}",
-    "stuck": "{count, plural, one {# worktree is stuck} other {# worktrees are stuck}}",
-    "idle": "No worktree in {repo} is locked by a live session"
-  },
   "band": {
-    "mac": "On this Mac",
-    "server": "On the server",
     "seam": "push"
   },
   "ruler": {
-    "working": "Working",
-    "checks": "Checks",
     "prePush": "pre-push",
-    "pr": "PR",
-    "ci": "CI",
-    "ready": "Ready to merge",
     "main": "main"
-  },
-  "group": {
-    "stuck": "Stuck",
-    "merged": "Merged ({count})",
-    "unheld": "No session lock"
-  },
-  "session": {
-    "header": "{tool} · session {number}",
-    "started": "started {time}",
-    "subagents": "{count, plural, one {# subagent} other {# subagents}}"
   },
   "tool": {
     "acp": "Claude Agent in Atlas",
@@ -37,47 +14,86 @@
     "codex": "Codex",
     "unknown": "An agent"
   },
-  "holder": {
-    "locked": "{tool} subagent {id} · locked at {time}",
-    "lockedUnnamed": "Locked at {time}",
-    "process": "{tool} is running in this folder",
-    "noLock": "No lock · last commit {ago} by {author}",
-    "noLockQuiet": "No lock",
-    "subagent": "Subagent {id}",
-    "lastCommit": "{ago} by {author}",
-    "staleLock": "Locked by a {tool} session that has ended",
-    "ended": "Session ended"
+  "session": {
+    "name": "{tool} {number}",
+    "none": "No session",
+    "ended": "Session ended",
+    "started": "started {time}",
+    "worktrees": "{count, plural, one {# worktree} other {# worktrees}}",
+    "cleanup": "{count} to clean up",
+    "onStage": "{count} on stage",
+    "below": "{count} below"
   },
-  "row": {
-    "noCommits": "No commits beyond {branch}",
-    "commits": "{count, plural, one {# commit} other {# commits}} beyond {branch}",
-    "missing": "The folder {folder} is missing. git worktree prune removes its record.",
-    "lockLeft": "The {tool} session that locked this worktree has ended. {count, plural, =0 {It has no commits beyond {branch}.} one {Its # commit beyond {branch} is not merged.} other {Its # commits beyond {branch} are not merged.}}",
-    "unknown": "Not measured against {branch}"
+  "stage": {
+    "label": "Worktrees at work",
+    "moreBelow": "<lead>{count} more working</lead> on the floors below"
   },
-  "chip": {
+  "room": {
+    "working": "Working",
+    "twoTools": "Two tools at work",
+    "resting": "Resting",
+    "quietMinutes": "{count, plural, one {Quiet for # minute} other {Quiet for # minutes}}",
+    "quietHours": "{count, plural, one {Quiet for # hour} other {Quiet for # hours}}",
+    "quietDays": "{count, plural, one {Quiet for # day} other {Quiet for # days}}",
+    "merged": "Merged into {branch}",
+    "locked": "Locked",
+    "lockLeft": "Only the lock is left",
     "missing": "Folder missing",
-    "lockLeft": "Lock left behind"
+    "untouched": "{count, plural, one {Untouched for # day} other {Untouched for # days}}",
+    "lastCommit": "Last commit {ago}",
+    "commits": "{count, plural, one {# commit} other {# commits}}",
+    "noCommits": "No commits yet",
+    "onlyInGit": "Only in Git now"
   },
-  "station": {
-    "mergedInto": "Merged into {branch}"
+  "monitor": {
+    "running": "Running a command",
+    "twoTools": "Two tools in one folder",
+    "twoToolsNote": "Their changes can mix",
+    "idle": "Nothing running",
+    "lockedAt": "Locked at {time}",
+    "ended": "Session ended",
+    "noSession": "No session",
+    "noCommitsNote": "No commits beyond {branch}",
+    "notMeasured": "Not measured against {branch}",
+    "prune": "<code>git worktree prune</code> removes its record",
+    "heldBy": "{session} still holds this folder",
+    "unreadableLock": "The lock names no session Atlas can read",
+    "workingMinutes": "{count, plural, one {Working for # minute} other {Working for # minutes}}",
+    "workingWholeHours": "{count, plural, one {Working for # hour} other {Working for # hours}}",
+    "workingHours": "Working for {hours} h {minutes} min"
   },
-  "connect": {
-    "notConnected": "{host} is not connected. Connecting shows PRs and CI."
+  "belt": {
+    "notRead": "Later steps are not read yet"
   },
-  "noRemote": "No remote, so there are no PRs or CI to show.",
+  "shelf": {
+    "merged": "Merged into {branch}",
+    "untouched": "Untouched 7+ days",
+    "mergedList": "{count, plural, one {# worktree merged into {branch}} other {# worktrees merged into {branch}}}",
+    "untouchedList": "{count, plural, one {# worktree untouched for 7+ days} other {# worktrees untouched for 7+ days}}",
+    "lastCommit": "last commit {ago}",
+    "close": "Close"
+  },
   "unreadable": "{repo} could not be read. Choose the repository folder again to grant access.",
   "choose": {
     "title": "Choose the Git repository your agents work in",
     "action": "Choose repository folder"
   },
   "empty": {
-    "title": "{repo} has only its main checkout",
-    "body": "Each worktree an agent creates gets a row in Work status, with the session that holds it."
+    "title": "Only <code>{branch}</code> for now",
+    "body": "Each new worktree opens a room here. When Claude Code or Codex starts working, you see it."
+  },
+  "quiet": {
+    "title": "Nothing in {repo} is at work",
+    "body": "Merged and long-untouched worktrees wait on the shelf below."
   },
   "web": {
     "title": "Work status runs in the desktop app",
     "body": "A browser cannot run git or read this computer's processes. In this browser you can still open your folder's map and Library."
   },
-  "notRepository": "{folder} is not a Git repository. Choose the folder that holds your project's .git."
+  "notRepository": "{folder} is not a Git repository. Choose the folder that holds your project's .git.",
+  "header": {
+    "sameFolder": "{count} in one folder",
+    "cleanup": "{count} to clean up",
+    "pointTo": "Show which worktrees"
+  }
 }

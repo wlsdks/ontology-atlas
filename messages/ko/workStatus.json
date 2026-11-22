@@ -1,35 +1,12 @@
 {
   "title": "작업 현황",
-  "summary": "살아 있는 세션이 잡은 워크트리 <runningCount>{running}</runningCount> · 막힘 <stuckCount>{stuck}</stuckCount>",
   "repoLine": "{repo} · 이 Mac의 워크트리 {count}개",
-  "headline": {
-    "running": "살아 있는 세션이 워크트리 {count}개를 잡고 있어요",
-    "stuck": "워크트리 {count}개가 막혔어요",
-    "idle": "{repo}에 살아 있는 세션이 잠근 워크트리가 없어요"
-  },
   "band": {
-    "mac": "이 Mac",
-    "server": "서버",
     "seam": "push"
   },
   "ruler": {
-    "working": "작업 중",
-    "checks": "검사",
     "prePush": "pre-push",
-    "pr": "PR",
-    "ci": "CI",
-    "ready": "머지 가능",
     "main": "main"
-  },
-  "group": {
-    "stuck": "막힘",
-    "merged": "머지됨 ({count})",
-    "unheld": "세션 잠금 없음"
-  },
-  "session": {
-    "header": "{tool} · 세션 {number}",
-    "started": "{time} 시작",
-    "subagents": "서브에이전트 {count}개"
   },
   "tool": {
     "acp": "Atlas 안의 Claude Agent",
@@ -37,47 +14,86 @@
     "codex": "Codex",
     "unknown": "에이전트"
   },
-  "holder": {
-    "locked": "{tool} 서브에이전트 {id} · {time}에 잠금",
-    "lockedUnnamed": "{time}에 잠금",
-    "process": "이 폴더에서 {tool} 실행 중",
-    "noLock": "잠금 없음 · 마지막 커밋 {ago}, {author}",
-    "noLockQuiet": "잠금 없음",
-    "subagent": "서브에이전트 {id}",
-    "lastCommit": "{ago}, {author}",
-    "staleLock": "끝난 {tool} 세션이 잠근 워크트리",
-    "ended": "세션 끝남"
+  "session": {
+    "name": "{tool} {number}",
+    "none": "세션 없음",
+    "ended": "세션 끝남",
+    "started": "{time} 시작",
+    "worktrees": "워크트리 {count}",
+    "cleanup": "정리 필요 {count}",
+    "onStage": "무대 {count}",
+    "below": "아래 {count}"
   },
-  "row": {
-    "noCommits": "{branch} 이후 커밋 없음",
-    "commits": "{branch} 이후 커밋 {count}개",
-    "missing": "{folder} 폴더가 없어요. git worktree prune을 실행하면 이 기록이 지워져요.",
-    "lockLeft": "이 워크트리를 잠근 {tool} 세션이 끝났어요. {count, plural, =0 {{branch} 이후 커밋은 없어요.} other {{branch} 이후 커밋 #개가 머지되지 않았어요.}}",
-    "unknown": "{branch} 기준으로 비교하지 못했어요"
+  "stage": {
+    "label": "작업 중인 워크트리",
+    "moreBelow": "아래 층에서 <lead>{count}개 더 작업 중</lead>"
   },
-  "chip": {
+  "room": {
+    "working": "작업 중",
+    "twoTools": "두 도구가 작업 중",
+    "resting": "쉬는 중",
+    "quietMinutes": "{count}분째 조용해요",
+    "quietHours": "{count}시간째 조용해요",
+    "quietDays": "{count}일째 조용해요",
+    "merged": "{branch}에 머지됨",
+    "locked": "잠김",
+    "lockLeft": "잠금만 남음",
     "missing": "폴더 없음",
-    "lockLeft": "잠금만 남음"
+    "untouched": "{count}일째 그대로",
+    "lastCommit": "마지막 커밋 {ago}",
+    "commits": "커밋 {count}개",
+    "noCommits": "아직 커밋 없음",
+    "onlyInGit": "Git에만 남음"
   },
-  "station": {
-    "mergedInto": "{branch}에 머지됨"
+  "monitor": {
+    "running": "명령 실행 중",
+    "twoTools": "두 도구가 같은 폴더에",
+    "twoToolsNote": "변경이 섞일 수 있어요",
+    "idle": "실행 중인 명령 없음",
+    "lockedAt": "{time}에 잠금",
+    "ended": "세션 끝남",
+    "noSession": "세션 없음",
+    "noCommitsNote": "{branch} 이후 커밋이 없어요",
+    "notMeasured": "{branch} 기준으로 비교하지 못했어요",
+    "prune": "<code>git worktree prune</code>을 실행하면 기록이 지워져요",
+    "heldBy": "{session}가 아직 이 폴더를 잡고 있어요",
+    "unreadableLock": "Atlas가 읽을 수 있는 세션 이름이 잠금에 없어요",
+    "workingMinutes": "{count}분째 작업 중",
+    "workingWholeHours": "{count}시간째 작업 중",
+    "workingHours": "{hours}시간 {minutes}분째 작업 중"
   },
-  "connect": {
-    "notConnected": "{host}에 연결되지 않았어요. 연결하면 PR과 CI가 표시돼요."
+  "belt": {
+    "notRead": "이후 단계는 아직 읽지 못해요"
   },
-  "noRemote": "원격 저장소가 없어서 보여 줄 PR과 CI가 없어요.",
+  "shelf": {
+    "merged": "{branch}에 머지됨",
+    "untouched": "7일 넘게 그대로",
+    "mergedList": "{branch}에 머지된 워크트리 {count}개",
+    "untouchedList": "7일 넘게 그대로인 워크트리 {count}개",
+    "lastCommit": "마지막 커밋 {ago}",
+    "close": "닫기"
+  },
   "unreadable": "{repo}를 읽을 수 없어요. 저장소 폴더를 다시 골라 접근을 허용하세요.",
   "choose": {
     "title": "에이전트가 작업하는 Git 저장소를 고르세요",
     "action": "저장소 폴더 고르기"
   },
   "empty": {
-    "title": "{repo}에는 기본 체크아웃만 있어요",
-    "body": "에이전트가 워크트리를 만들 때마다 작업 현황에 한 줄씩 생기고, 그 워크트리를 잡은 세션이 함께 표시돼요."
+    "title": "지금은 <code>{branch}</code> 하나뿐이에요",
+    "body": "워크트리가 생기면 방이 하나씩 열려요. Claude Code나 Codex가 일을 시작하면 여기서 보여요."
+  },
+  "quiet": {
+    "title": "{repo}에서 작업 중인 곳이 없어요",
+    "body": "머지됐거나 오래 그대로인 워크트리는 아래 선반에 있어요."
   },
   "web": {
     "title": "작업 현황은 데스크톱 앱에서 열려요",
     "body": "브라우저는 git을 실행하거나 이 컴퓨터의 프로세스를 읽을 수 없어요. 이 브라우저에서도 폴더의 지도와 자료실은 열 수 있어요."
   },
-  "notRepository": "{folder} 폴더는 Git 저장소가 아니에요. 프로젝트의 .git이 있는 폴더를 고르세요."
+  "notRepository": "{folder} 폴더는 Git 저장소가 아니에요. 프로젝트의 .git이 있는 폴더를 고르세요.",
+  "header": {
+    "sameFolder": "같은 폴더 {count}",
+    "cleanup": "정리 {count}",
+    "pointTo": "어느 워크트리인지 보기"
+  }
 }

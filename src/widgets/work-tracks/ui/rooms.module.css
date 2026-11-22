@@ -1,0 +1,1327 @@
+/*
+ * The building of rooms. Every prop is flat pixel geometry on one grid: `--u` is the room's pixel
+ * unit (Moru is 128 × u pixels), `--s` one drawn pixel and `--p` two. A room sets `--ink` to its
+ * session's ink. Light exists only where something runs: the lamp, the glow behind Moru, the
+ * monitor's cursor and Moru's own cells move only under `[data-room-motion='running']`, which the
+ * board sets while the room's work runs and the room is on screen in a visible window. Every loop
+ * here animates opacity or transform, which the compositor runs; Moru's cells change on a clock.
+ */
+
+.notched {
+  --n: 4px;
+  clip-path: polygon(
+    var(--n) 0, calc(100% - var(--n)) 0, calc(100% - var(--n)) var(--n), 100% var(--n),
+    100% calc(100% - var(--n)), calc(100% - var(--n)) calc(100% - var(--n)), calc(100% - var(--n)) 100%,
+    var(--n) 100%, var(--n) calc(100% - var(--n)), 0 calc(100% - var(--n)), 0 var(--n), var(--n) var(--n)
+  );
+}
+
+.building {
+  position: absolute;
+  inset-inline: -12px;
+  top: 0;
+  background: var(--work-room-building);
+  transition: transform var(--motion-slow) var(--motion-ease);
+}
+
+/* ---------- one room: the mover holds its place, the plate its size, the faces its content */
+
+.room {
+  position: absolute;
+  left: 0;
+  top: 0;
+  will-change: transform;
+}
+
+/* A header warning points here: the room is outlined in warning amber for a moment. */
+@keyframes roomPointedAt {
+  0%, 100% {
+    opacity: 0;
+  }
+  12%, 70% {
+    opacity: 1;
+  }
+}
+
+.room[data-flash='true']::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  border: 3px solid var(--color-status-warning);
+  pointer-events: none;
+  animation: roomPointedAt calc(var(--motion-choreography) * 3) var(--motion-ease) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .room[data-flash='true']::after {
+    animation-timing-function: steps(1, end);
+  }
+}
+
+.plate {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 0;
+  background: color-mix(in srgb, var(--ink) 6%, var(--work-room-wall));
+}
+
+/* The wall keeps its session's hue along its top while it travels without its content, unscaled. */
+.edge {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 3px;
+  transform-origin: 0 0;
+  background: var(--ink);
+  pointer-events: none;
+}
+
+.face {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: hidden;
+}
+
+/* ---------- large room: the scene, then the belt to main */
+
+.large {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* The unit eases between scales while a stage room travels to a new size. */
+@property --u {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 1;
+}
+
+/* The plaque a travelling wall carries: the stage sign, shown only while the room's content is away. */
+.sign.plaque {
+  z-index: 3;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* A stage room's top edge in its session's hue, the same bar its floor and mini rooms stand on. */
+.large::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  z-index: 4;
+  height: 3px;
+  background: var(--ink);
+}
+
+/* Two tools in one folder: the edge splits between their hues, each over its own Moru. */
+.large[data-pair='true']::before {
+  background: linear-gradient(90deg, var(--ink) 50%, var(--guest-ink) 50%);
+}
+
+.scene {
+  /* Where Moru stands: the middle of a narrow room, left of the monitor in a wide one. */
+  --ax-room: 50%;
+  --ax: var(--ax-room);
+  /* The light of the room: the session's ink, or warning amber when two tools share the folder. */
+  --room-ink: var(--ink);
+  --s: calc(1px * var(--u));
+  --p: calc(2px * var(--u));
+  --floor: calc(20 * var(--s));
+  --wall: color-mix(in srgb, var(--room-ink) 4%, var(--work-room-wall));
+  --glow-1: color-mix(in srgb, var(--room-ink) 15%, var(--work-room-wall));
+  --glow-2: color-mix(in srgb, var(--room-ink) 23%, var(--work-room-wall));
+  --shade: var(--work-room-lamp-off);
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--wall);
+  transition: background-color var(--motion-expressive) var(--motion-ease);
+}
+
+.scene[data-lit='true'] {
+  --wall: color-mix(in srgb, var(--room-ink) 10%, var(--work-room-wall-lit));
+  --shade: color-mix(in srgb, var(--room-ink) 30%, var(--color-text-primary));
+}
+
+/* Two tools in one folder: the room's light, lamp and screen turn warning amber. */
+.scene[data-alarm='true'] {
+  --room-ink: var(--color-status-warning);
+}
+
+.scene[data-alarm='true'][data-lit='true'] {
+  --shade: var(--color-status-warning);
+}
+
+.scene[data-alarm='true'] .screen {
+  background: color-mix(in srgb, var(--color-status-warning) 20%, var(--work-room-screen));
+}
+
+.scene[data-alarm='true'] .screenFigure,
+.scene[data-alarm='true'] .screenRow [data-ink='true'] {
+  color: var(--color-status-warning);
+}
+
+.signAlert {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 18px;
+  margin-right: 8px;
+  background: var(--color-status-warning);
+  color: var(--work-room-pit);
+}
+
+/* Lights out: the dim layer fades over the whole scene. */
+.dim {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  background: var(--work-room-dark);
+  opacity: 0;
+  transition: opacity var(--motion-expressive) var(--motion-ease);
+}
+
+.scene[data-dark='true'] .dim {
+  opacity: 1;
+  /* The lights go out once the crate is in, the hatch has turned green and Moru has cheered (`--lights-out`). */
+  transition-delay: var(--lights-out);
+}
+
+.scene[data-dark='true'],
+.scene[data-dark='true'] .glow,
+.scene[data-dark='true'] .lampLight {
+  transition-delay: var(--lights-out);
+}
+
+.glow {
+  position: absolute;
+  left: calc(var(--ax) - 112 * var(--s));
+  bottom: calc(var(--floor) - var(--p));
+  width: calc(192 * var(--s));
+  height: calc(120 * var(--s));
+  opacity: 0;
+  transition: opacity var(--motion-expressive) var(--motion-ease);
+}
+
+.glowLight {
+  position: absolute;
+  inset: 0;
+  animation: roomBreathe calc(var(--motion-base) * 48) var(--motion-ease) infinite;
+  animation-play-state: paused;
+  background:
+    linear-gradient(var(--glow-2), var(--glow-2)) 50% 100% / 52% 60% no-repeat,
+    linear-gradient(var(--glow-2), var(--glow-2)) 50% 100% / 40% 74% no-repeat,
+    linear-gradient(var(--glow-1), var(--glow-1)) 50% 100% / 100% 64% no-repeat,
+    linear-gradient(var(--glow-1), var(--glow-1)) 50% 100% / 84% 84% no-repeat,
+    linear-gradient(var(--glow-1), var(--glow-1)) 50% 100% / 62% 100% no-repeat;
+}
+
+.scene[data-lit='true'] .glow {
+  opacity: 1;
+}
+
+/*
+ * The ambient loops run on the compositor, but each iteration's end still costs the page a frame.
+ * Each therefore holds two to four of its beats per iteration, at the same pace as one beat would.
+ */
+@keyframes roomBreathe {
+  25%, 75% {
+    opacity: 0.72;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.wainscot {
+  position: absolute;
+  inset-inline: 0;
+  bottom: var(--floor);
+  height: calc(24 * var(--s));
+  background: var(--work-room-wainscot);
+  border-top: var(--p) solid var(--work-room-wainscot);
+}
+
+.floor {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: var(--floor);
+  background: var(--work-room-floor);
+  border-top: var(--p) solid var(--work-room-floor-edge);
+}
+
+.shadow {
+  position: absolute;
+  left: clamp(calc(18 * var(--s)), calc(var(--ax) - 46 * var(--s) + var(--dx, 0px)), calc(100% - 110 * var(--s)));
+  bottom: calc(var(--floor) * 0.4 - 2 * var(--s));
+  width: calc(92 * var(--s));
+  height: calc(4 * var(--s));
+  background:
+    linear-gradient(var(--work-room-monitor-shadow), var(--work-room-monitor-shadow)) 50% 50% / 100% 50% no-repeat,
+    linear-gradient(var(--work-room-monitor-shadow), var(--work-room-monitor-shadow)) 50% 50% / 86% 100% no-repeat;
+}
+
+/* The floor lamp: a stepped shade on a steel pole. Its shade takes the session's ink when lit. */
+.lamp {
+  position: absolute;
+  left: calc(var(--ax) - 66 * var(--s));
+  bottom: calc(var(--floor) * 0.4);
+  width: calc(16 * var(--s));
+  height: calc(72 * var(--s));
+  background:
+    linear-gradient(var(--work-room-steel), var(--work-room-steel)) 50% calc(12 * var(--s)) / calc(2 * var(--s)) calc(58 * var(--s)) no-repeat,
+    linear-gradient(var(--work-room-steel), var(--work-room-steel)) 50% 100% / 62% calc(2 * var(--s)) no-repeat;
+}
+
+.lampShade,
+.lampFlicker {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: calc(12 * var(--s));
+  background:
+    linear-gradient(var(--c), var(--c)) 50% 0 / 50% calc(4 * var(--s)) no-repeat,
+    linear-gradient(var(--c), var(--c)) 50% calc(4 * var(--s)) / 75% calc(4 * var(--s)) no-repeat,
+    linear-gradient(var(--c), var(--c)) 50% calc(8 * var(--s)) / 100% calc(4 * var(--s)) no-repeat;
+}
+
+.lampShade {
+  --c: var(--work-room-lamp-off);
+}
+
+.lampLight {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity var(--motion-expressive) var(--motion-ease);
+}
+
+.scene[data-lit='true'] .lampLight {
+  opacity: 1;
+}
+
+@keyframes roomLampFlicker {
+  0%, 23%, 27%, 73%, 77%, 100% {
+    opacity: 1;
+  }
+  25%, 75% {
+    opacity: 0.78;
+  }
+}
+
+.lampFlicker {
+  --c: color-mix(in srgb, var(--room-ink) 30%, var(--color-text-primary));
+  animation: roomLampFlicker calc(var(--motion-base) * 36) linear infinite;
+  animation-play-state: paused;
+}
+
+[data-room-motion='running'] .lampFlicker,
+[data-room-motion='running'] .glowLight,
+[data-room-motion='running'] .cursor,
+[data-room-motion='running'] .beltLive {
+  animation-play-state: running;
+}
+
+/* One native row of 128px cells: the board's clock steps a large room's, a mini room's holds a pose. */
+.moruCells {
+  width: 128px;
+  height: 128px;
+  background-repeat: no-repeat;
+  background-position-y: 0;
+  image-rendering: pixelated;
+}
+
+.actor {
+  position: absolute;
+  /* Inside the room's walls whatever its box and scale do mid-glide: a tail never passes the wall. */
+  left: clamp(0px, calc(var(--ax) - 64 * var(--s) + var(--dx, 0px)), calc(100% - 128 * var(--s)));
+  bottom: calc(var(--floor) * 0.4 - 28 * var(--s));
+  width: calc(128 * var(--s));
+  height: calc(128 * var(--s));
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+}
+
+/*
+ * Two tools in one folder: two Moru at the room's own scale, never smaller. The second stands a step
+ * behind and up, to the right of the first, at least far enough that his face clears the first's
+ * outline and up to 100 drawn pixels where the room has width. The lamp stands left of the first
+ * Moru's tail; where the room is too narrow it stands out of view rather than on him.
+ */
+.scene[data-cast='two'] {
+  --rise: calc(12 * var(--s));
+  --pair-step: clamp(calc(44 * var(--s)), calc(100% - 16px - var(--monitor-reach, 0px) - 102 * var(--s)), calc(100 * var(--s)));
+  --ax: min(
+    calc(100% - 8px - var(--monitor-reach, 0px) - var(--pair-step) / 2 - 47 * var(--s)),
+    max(calc(8px + var(--pair-step) / 2 + 75 * var(--s)), var(--ax-room))
+  );
+}
+
+.scene[data-cast='two'] .lamp {
+  left: calc(var(--ax) - var(--pair-step) / 2 - 75 * var(--s));
+  height: calc(56 * var(--s));
+}
+
+.actorBack {
+  --dx: calc(var(--pair-step) / 2);
+  z-index: 1;
+  bottom: calc(var(--floor) * 0.4 - 28 * var(--s) + var(--rise));
+}
+
+.shadow.actorBack {
+  bottom: calc(var(--floor) * 0.4 - 2 * var(--s) + var(--rise));
+}
+
+.actorFront {
+  --dx: calc(var(--pair-step) / -2);
+}
+
+.tag {
+  position: absolute;
+  left: calc(var(--ax) + var(--dx, 0px));
+  bottom: calc(var(--floor) * 0.4 + 62 * var(--s));
+  transform: translateX(-50%);
+  z-index: 3;
+  height: 20px;
+  padding-inline: 8px;
+  background: var(--work-room-pit);
+  color: color-mix(in srgb, var(--ink) 80%, var(--color-text-primary));
+  white-space: nowrap;
+}
+
+.tag::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -4px;
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
+  background: var(--work-room-pit);
+}
+
+/* A pair's tags hang outward from each Moru, so however long the names they never meet. */
+.tagBack,
+.tagFront {
+  display: flex;
+  align-items: center;
+}
+
+.tagFront {
+  --dx: calc(var(--pair-step) / -2);
+  max-width: calc(var(--ax) - var(--pair-step) / 2 + 4px);
+  transform: translateX(calc(-100% + 12px));
+}
+
+.tagFront::after {
+  left: calc(100% - 12px);
+}
+
+.tagBack {
+  --dx: calc(var(--pair-step) / 2);
+  bottom: calc(var(--floor) * 0.4 + 62 * var(--s) + var(--rise));
+  max-width: calc(100% - var(--ax) - var(--pair-step) / 2 + 4px - var(--monitor-reach, 0px));
+  transform: translateX(-12px);
+}
+
+.tagBack::after {
+  left: 12px;
+}
+
+/* The wall sign: the branch name, the only mono text in a room. */
+.sign {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  z-index: 1;
+  max-width: calc(100% - 24px);
+  height: 28px;
+  padding-inline: 10px;
+  display: flex;
+  align-items: center;
+  background: var(--work-room-sign);
+  border-bottom: 4px solid var(--work-room-sign-edge);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* ---------- the monitor on the wall */
+
+.monitor {
+  --n: var(--p);
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: 52px;
+  /* Above Moru in a narrow room, its shadow stops 8px short of the name tag over his head. */
+  height: clamp(48px, calc(100% - 52px - 70 * var(--s) - 28px - var(--p)), 128px);
+  z-index: 1;
+}
+
+.monitor > i {
+  position: absolute;
+}
+
+.monitorShadow {
+  inset: var(--p) calc(-1 * var(--p)) calc(-1 * var(--p)) var(--p);
+  background: var(--work-room-monitor-shadow);
+}
+
+.monitorFrame {
+  inset: 0;
+  background: var(--work-room-monitor-frame);
+}
+
+.monitorBezel {
+  inset: var(--p);
+  background: var(--work-room-monitor-bezel);
+  transition: background-color var(--motion-expressive) var(--motion-ease);
+}
+
+.monitor[data-off='true'] .monitorBezel {
+  background: var(--work-room-monitor-bezel-off);
+}
+
+.monitorBadge {
+  left: calc(3 * var(--p));
+  bottom: calc(2 * var(--p));
+  width: calc(5 * var(--p));
+  height: var(--p);
+  background: var(--work-room-monitor-badge);
+}
+
+.monitorLed {
+  right: calc(3 * var(--p));
+  bottom: calc(2 * var(--p));
+  width: var(--p);
+  height: var(--p);
+  background: var(--color-status-success);
+  transition: background-color var(--motion-expressive) var(--motion-ease);
+}
+
+.monitor[data-off='true'] .monitorLed {
+  background: var(--work-room-led-off);
+}
+
+.screen {
+  position: absolute;
+  inset: calc(3 * var(--p)) calc(3 * var(--p)) calc(5 * var(--p));
+  overflow: hidden;
+  background: var(--work-room-screen);
+  transition: background-color var(--motion-expressive) var(--motion-ease);
+}
+
+/* What the screen says; when it says something else, the old text fades out over the new. */
+.screenText {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: calc(2 * var(--p)) calc(2.5 * var(--p));
+}
+
+.monitor[data-off='true'] .screen {
+  background: var(--work-room-screen-off);
+}
+
+.monitor[data-off='true'] .screenText > * {
+  opacity: 0.42;
+}
+
+.screenRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  white-space: nowrap;
+  color: var(--color-text-tertiary);
+}
+
+.screenRow > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.screenRow [data-ink='true'] {
+  color: color-mix(in srgb, var(--ink) 78%, var(--color-text-primary));
+}
+
+.screenFigure {
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--color-text-primary);
+}
+
+.screenFigure[data-tone='success'] {
+  color: var(--color-success-text-a94);
+}
+
+.screenNote {
+  margin-top: auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--color-text-tertiary);
+}
+
+/*
+ * The terminal under the commit count: one row per real fact of the worktree. A row that does not
+ * fit wraps into a second column, which the screen clips, so a short monitor drops whole rows.
+ */
+.terminal {
+  display: flex;
+  flex: 1 1 0;
+  flex-flow: column wrap;
+  align-content: flex-start;
+  min-height: 0;
+  overflow: hidden;
+  margin-top: var(--p);
+  color: var(--color-text-secondary);
+}
+
+.terminalRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.prompt {
+  flex: none;
+  color: color-mix(in srgb, var(--ink) 70%, var(--color-text-primary));
+}
+
+@keyframes roomCursorBlink {
+  0%, 25%, 50%, 75% {
+    opacity: 1;
+  }
+  12.5%, 37.5%, 62.5%, 87.5% {
+    opacity: 0;
+  }
+}
+
+.cursor {
+  flex: none;
+  width: calc(3 * var(--s));
+  height: 1em;
+  background: color-mix(in srgb, var(--ink) 70%, var(--color-text-primary));
+  animation: roomCursorBlink calc(var(--motion-base) * 32) steps(1) infinite;
+  animation-play-state: paused;
+}
+
+/*
+ * A face at least `WIDE_ROOM_W` across carries `data-wide`, set from its box. A size container query
+ * would read the same width, but it makes every face a container whose subtree restyles during layout.
+ */
+:where(.face[data-wide='true']) .scene {
+  --ax-room: 27%;
+  /* The monitor's span from the right edge, which a pair and its tags keep clear of. */
+  --monitor-reach: calc(min(46%, calc(124px * var(--u))) + 16px);
+}
+
+:where(.face[data-wide='true']) .monitor {
+  left: auto;
+  right: 16px;
+  top: 16px;
+  width: min(46%, calc(124px * var(--u)));
+  height: calc(64px * var(--u));
+}
+
+:where(.face[data-wide='true']) .sign {
+  max-width: calc(100% - min(46%, calc(124px * var(--u))) - 52px);
+}
+
+/* ---------- the belt: this worktree on its way to main */
+
+.belt {
+  position: relative;
+  flex: none;
+  height: 64px;
+  background: var(--work-room-pit);
+  border-top: 4px solid var(--work-room-monitor-shadow);
+}
+
+.track {
+  position: absolute;
+  inset: 0 16px;
+}
+
+.rail {
+  position: absolute;
+  inset-inline: 0;
+  top: 26px;
+  height: 6px;
+  overflow: hidden;
+  background: var(--work-room-steel);
+  box-shadow: 0 4px 0 var(--work-room-sign-edge);
+}
+
+.railUnknown {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  background: repeating-linear-gradient(90deg, var(--work-room-steel) 0 6px, var(--work-room-pit) 6px 14px);
+}
+
+/* The part of the rail the work has covered: a full-width bar scaled from its left end. */
+.railPast {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 50%;
+  background: color-mix(in srgb, var(--ink) 52%, var(--work-room-steel));
+  transition: transform var(--motion-choreography) var(--motion-ease);
+}
+
+@keyframes roomBeltRun {
+  to {
+    transform: translateX(144px);
+  }
+}
+
+.beltLive {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -144px;
+  right: 0;
+  background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--ink) 78%, var(--color-text-primary)) 0 20px, transparent 20px 72px);
+  animation: roomBeltRun calc(var(--motion-base) * 28) linear infinite;
+  animation-play-state: paused;
+}
+
+.station {
+  position: absolute;
+  top: 42px;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  color: var(--color-text-quaternary);
+}
+
+
+
+
+
+.stationMain {
+  transform: translateX(-100%);
+  margin-left: 8px;
+  color: var(--color-text-primary);
+  transition: color var(--motion-expressive) var(--motion-ease);
+}
+
+
+
+.hatch {
+  position: absolute;
+  right: -8px;
+  top: 4px;
+  width: 22px;
+  height: 28px;
+  background: var(--work-room-steel-light);
+}
+
+.hatch::before {
+  content: "";
+  position: absolute;
+  inset: 4px 4px 0;
+  background: var(--work-room-monitor-shadow);
+}
+
+.hatchOpen {
+  position: absolute;
+  inset: 4px 4px 0;
+  background: var(--work-room-hatch-open);
+  opacity: 0;
+  transition: opacity var(--motion-expressive) var(--motion-ease);
+}
+
+.hatchLight {
+  position: absolute;
+  left: 9px;
+  top: -6px;
+  width: 4px;
+  height: 4px;
+  background: var(--work-room-steel-light);
+}
+
+.hatchLight::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--color-status-success);
+  opacity: 0;
+  transition: opacity var(--motion-expressive) var(--motion-ease);
+}
+
+.track[data-arrived='true'] .hatchOpen,
+.track[data-arrived='true'] .hatchLight::after {
+  opacity: 1;
+  /* The hatch turns green as the riding crate reaches it, not when it sets off. */
+  transition-delay: calc(var(--motion-choreography) * 0.8);
+}
+
+.track[data-arrived='true'] .stationMain {
+  color: var(--color-success-text-a94);
+}
+
+/* The work's crate rides a full-width carriage, so its place is a transform of the track's width. */
+.carriage {
+  position: absolute;
+  inset-inline: 0;
+  top: 4px;
+  height: 20px;
+  transition: transform var(--motion-choreography) var(--motion-ease);
+}
+
+/* The cart: a low platform carrying one crate per commit, led by its first crate. */
+.cart {
+  position: absolute;
+  left: -12px;
+  top: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 20px;
+  padding: 0 2px 2px;
+  border-bottom: 2px solid var(--work-room-steel-light);
+  transition: transform var(--motion-choreography) var(--motion-ease);
+}
+
+.track[data-arrived='true'] .cart {
+  transform: translateX(calc(-100% + 24px));
+}
+
+.crate {
+  position: relative;
+  flex: none;
+  width: 20px;
+  height: 16px;
+  background: var(--work-room-crate);
+  box-shadow: inset 0 -5px 0 var(--work-room-crate-shade), 0 0 0 2px var(--work-room-outline);
+  transition: opacity var(--motion-settle) var(--motion-ease);
+}
+
+.cartMore {
+  align-self: center;
+  margin-left: 2px;
+  color: var(--color-text-secondary);
+}
+
+.crate::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 4px;
+  height: 4px;
+  background: var(--ink);
+}
+
+.crate[data-kind='taped'] {
+  background: var(--work-room-crate-taped);
+  box-shadow: inset 0 -6px 0 var(--work-room-crate-taped-shade), 0 0 0 2px var(--work-room-outline);
+}
+
+.crate[data-kind='taped']::after {
+  background: repeating-linear-gradient(90deg, var(--color-status-warning) 0 4px, var(--work-room-outline) 4px 8px);
+}
+
+.crate[data-kind='dusty'] {
+  background: var(--work-room-crate-dusty);
+  box-shadow: inset 0 -6px 0 var(--work-room-crate-dusty-shade), 0 0 0 2px var(--work-room-outline);
+}
+
+.crate[data-kind='dusty']::after,
+.crate[data-kind='ghost']::after {
+  display: none;
+}
+
+.crate[data-kind='ghost'] {
+  background: none;
+  box-shadow: none;
+  outline: 2px dashed var(--work-room-crate-ghost);
+  outline-offset: -2px;
+}
+
+.track[data-arrived='true'] .crate {
+  opacity: 0;
+  transition-delay: var(--motion-choreography);
+}
+
+:where(.face:not([data-wide='true'])) .station:not([data-now='true']):not(.stationMain) {
+  font-size: 0;
+}
+
+/* ---------- mini room: a wall, a floor, a small Moru; the floor edge is its belt */
+
+.mini {
+  --mini-wall: color-mix(in srgb, var(--ink) 4%, var(--work-room-wall));
+  --mini-shade: var(--work-room-lamp-off);
+  position: absolute;
+  inset: 0;
+  background: var(--mini-wall);
+  transition: background-color var(--motion-expressive) var(--motion-ease);
+}
+
+.mini[data-lit='true'] {
+  --mini-wall: color-mix(in srgb, var(--ink) 10%, var(--work-room-wall-lit));
+  --mini-shade: color-mix(in srgb, var(--ink) 30%, var(--color-text-primary));
+}
+
+.miniLamp {
+  position: absolute;
+  left: 4px;
+  bottom: 14px;
+  width: 12px;
+  height: 42px;
+  background:
+    linear-gradient(var(--mini-shade), var(--mini-shade)) 50% 0 / 50% 3px no-repeat,
+    linear-gradient(var(--mini-shade), var(--mini-shade)) 50% 3px / 100% 5px no-repeat,
+    linear-gradient(var(--work-room-steel), var(--work-room-steel)) 50% 8px / 2px 32px no-repeat,
+    linear-gradient(var(--work-room-steel), var(--work-room-steel)) 50% 100% / 8px 2px no-repeat;
+}
+
+.miniActor {
+  position: absolute;
+  left: 12px;
+  bottom: 0;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: flex-end;
+}
+
+.miniZ {
+  position: absolute;
+  left: 62px;
+  bottom: 46px;
+  line-height: 8px;
+  color: var(--color-text-tertiary);
+}
+
+.miniText {
+  position: absolute;
+  left: 88px;
+  right: 12px;
+  top: 11px;
+  min-width: 0;
+}
+
+.miniText > * {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.miniFloor {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 14px;
+  background: var(--work-room-pit);
+}
+
+.miniRail {
+  position: absolute;
+  left: 0;
+  right: 14px;
+  top: 4px;
+  height: 4px;
+  overflow: hidden;
+  background: var(--work-room-steel);
+}
+
+.miniRail > i {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 50%;
+  background: color-mix(in srgb, var(--ink) 52%, var(--work-room-steel));
+  transition: transform var(--motion-choreography) var(--motion-ease);
+}
+
+.miniCarriage {
+  position: absolute;
+  left: 0;
+  right: 14px;
+  bottom: 10px;
+  height: 9px;
+  transition: transform var(--motion-choreography) var(--motion-ease);
+}
+
+.miniCrate {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 12px;
+  height: 9px;
+  margin-left: -6px;
+  background: var(--work-room-crate);
+  box-shadow: inset 0 3px 0 var(--work-room-crate), inset 0 6px 0 var(--ink), 0 0 0 2px var(--work-room-outline);
+}
+
+/* A worktree nobody works in shows its crate on the floor where Moru would stand. */
+.miniCrateBig {
+  position: absolute;
+  left: 30px;
+  bottom: 14px;
+  width: 28px;
+  height: 20px;
+  background: var(--work-room-crate-dusty);
+  box-shadow: inset 0 -6px 0 var(--work-room-crate-dusty-shade), 0 0 0 2px var(--work-room-outline);
+}
+
+.miniCrateBig[data-kind='taped'] {
+  background: var(--work-room-crate-taped);
+  box-shadow: inset 0 -6px 0 var(--work-room-crate-taped-shade), 0 0 0 2px var(--work-room-outline);
+}
+
+.miniCrateBig[data-kind='taped']::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 4px;
+  height: 4px;
+  background: repeating-linear-gradient(90deg, var(--color-status-warning) 0 4px, var(--work-room-outline) 4px 8px);
+}
+
+.miniCrateBig[data-kind='ghost'] {
+  background: none;
+  box-shadow: none;
+  outline: 2px dashed var(--work-room-crate-ghost);
+  outline-offset: -2px;
+}
+
+.miniHatch {
+  position: absolute;
+  right: 4px;
+  top: -6px;
+  width: 8px;
+  height: 14px;
+  background: var(--work-room-steel-light);
+}
+
+.miniHatch::before {
+  content: "";
+  position: absolute;
+  inset: 2px 2px 0;
+  background: var(--work-room-monitor-shadow);
+}
+
+.miniHatch > i {
+  position: absolute;
+  inset: 2px 2px 0;
+  background: var(--work-room-hatch-open);
+  opacity: 0;
+  transition: opacity var(--motion-expressive) var(--motion-ease);
+}
+
+.miniFloor[data-arrived='true'] .miniHatch > i {
+  opacity: 1;
+}
+
+
+/* ---------- floors, the line under the stage, the shelf */
+
+.floorPlate {
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: 11px 0 0 16px;
+  border-top: 3px solid var(--ink);
+}
+
+/* A mini room's session hue runs along its top edge, as on a stage room and a floor plate. */
+.miniBar {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 3px;
+  background: var(--ink);
+}
+
+.floorMark {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 8px;
+  background: var(--ink);
+}
+
+.shelf {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  padding-bottom: 8px;
+  white-space: nowrap;
+  border-bottom: 4px solid var(--work-room-steel);
+}
+
+.shelf[data-inline='true'] {
+  justify-content: flex-end;
+}
+
+.crates {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+}
+
+.crates > i {
+  width: 14px;
+  height: 11px;
+  background: var(--work-shelf-crate);
+  box-shadow: inset 0 -4px 0 var(--work-shelf-crate-shade);
+}
+
+.crates[data-old='true'] > i {
+  background: var(--work-shelf-crate-old);
+  box-shadow: inset 0 -4px 0 var(--work-shelf-crate-old-shade);
+}
+
+.inkText {
+  color: color-mix(in srgb, var(--ink) 80%, var(--color-text-primary));
+}
+
+.ownerText {
+  color: color-mix(in srgb, var(--ink) 70%, var(--color-text-tertiary));
+}
+
+/* ---------- what tells rooms apart: mirroring, a prop, a lamp that lights */
+
+/* A mirrored room: Moru faces left and the lamp stands on his right. Text never mirrors. */
+.scene[data-mirror='true'] .actor {
+  scale: -1 1;
+}
+
+.scene[data-mirror='true'] .lamp {
+  left: calc(var(--ax) + 50 * var(--s));
+}
+
+/*
+ * The room's own prop, picked from its branch name, on a wall shelf at the side away from the lamp;
+ * in a wide room it stands on the floor past Moru, under the monitor.
+ */
+.prop {
+  --prop-accent: color-mix(in srgb, var(--ink) 45%, var(--work-room-steel));
+  position: absolute;
+  right: 8px;
+  bottom: calc(var(--floor) * 0.4 + 66 * var(--s));
+  width: calc(20 * var(--s));
+  height: calc(20 * var(--s));
+  pointer-events: none;
+}
+
+.prop::after {
+  content: "";
+  position: absolute;
+  left: calc(-4 * var(--s));
+  right: calc(-4 * var(--s));
+  bottom: calc(-2 * var(--s));
+  height: calc(2 * var(--s));
+  background: var(--work-room-steel);
+}
+
+.scene[data-mirror='true'] .prop {
+  left: 8px;
+  right: auto;
+}
+
+:where(.face[data-wide='true']) .prop,
+:where(.face[data-wide='true']) .scene[data-mirror='true'] .prop {
+  left: calc(var(--ax) + 74 * var(--s));
+  right: auto;
+  bottom: calc(var(--floor) * 0.4);
+}
+
+:where(.face[data-wide='true']) .prop::after {
+  content: none;
+}
+
+/* plant */
+.prop[data-prop='0'] {
+  background:
+    linear-gradient(var(--work-room-steel), var(--work-room-steel)) calc(5 * var(--s)) calc(13 * var(--s)) / calc(10 * var(--s)) calc(7 * var(--s)) no-repeat,
+    linear-gradient(var(--work-room-steel-light), var(--work-room-steel-light)) calc(4 * var(--s)) calc(12 * var(--s)) / calc(12 * var(--s)) calc(2 * var(--s)) no-repeat,
+    linear-gradient(var(--prop-accent), var(--prop-accent)) calc(9 * var(--s)) calc(4 * var(--s)) / calc(2 * var(--s)) calc(8 * var(--s)) no-repeat,
+    linear-gradient(var(--prop-accent), var(--prop-accent)) calc(4 * var(--s)) calc(6 * var(--s)) / calc(5 * var(--s)) calc(3 * var(--s)) no-repeat,
+    linear-gradient(var(--prop-accent), var(--prop-accent)) calc(11 * var(--s)) calc(3 * var(--s)) / calc(5 * var(--s)) calc(3 * var(--s)) no-repeat,
+    linear-gradient(var(--prop-accent), var(--prop-accent)) calc(6 * var(--s)) calc(2 * var(--s)) / calc(3 * var(--s)) calc(3 * var(--s)) no-repeat;
+}
+
+/* books */
+.prop[data-prop='1'] {
+  background:
+    linear-gradient(var(--prop-accent), var(--prop-accent)) calc(2 * var(--s)) calc(15 * var(--s)) / calc(16 * var(--s)) calc(5 * var(--s)) no-repeat,
+    linear-gradient(var(--work-room-steel), var(--work-room-steel)) calc(4 * var(--s)) calc(11 * var(--s)) / calc(13 * var(--s)) calc(4 * var(--s)) no-repeat,
+    linear-gradient(var(--work-room-lamp-off), var(--work-room-lamp-off)) calc(3 * var(--s)) calc(7 * var(--s)) / calc(11 * var(--s)) calc(4 * var(--s)) no-repeat,
+    linear-gradient(var(--work-room-steel-light), var(--work-room-steel-light)) calc(6 * var(--s)) calc(4 * var(--s)) / calc(7 * var(--s)) calc(3 * var(--s)) no-repeat;
+}
+
+/* mug */
+.prop[data-prop='2'] {
+  background:
+    linear-gradient(var(--work-room-steel-light), var(--work-room-steel-light)) calc(5 * var(--s)) calc(9 * var(--s)) / calc(9 * var(--s)) calc(11 * var(--s)) no-repeat,
+    linear-gradient(var(--prop-accent), var(--prop-accent)) calc(5 * var(--s)) calc(12 * var(--s)) / calc(9 * var(--s)) calc(2 * var(--s)) no-repeat,
+    linear-gradient(var(--work-room-steel-light), var(--work-room-steel-light)) calc(14 * var(--s)) calc(11 * var(--s)) / calc(3 * var(--s)) calc(2 * var(--s)) no-repeat,
+    linear-gradient(var(--work-room-steel-light), var(--work-room-steel-light)) calc(15 * var(--s)) calc(13 * var(--s)) / calc(2 * var(--s)) calc(3 * var(--s)) no-repeat,
+    linear-gradient(var(--work-room-steel-light), var(--work-room-steel-light)) calc(14 * var(--s)) calc(16 * var(--s)) / calc(3 * var(--s)) calc(2 * var(--s)) no-repeat;
+}
+
+/* radio */
+.prop[data-prop='3'] {
+  background:
+    linear-gradient(var(--work-room-steel), var(--work-room-steel)) calc(1 * var(--s)) calc(8 * var(--s)) / calc(18 * var(--s)) calc(12 * var(--s)) no-repeat,
+    linear-gradient(var(--work-room-lamp-off), var(--work-room-lamp-off)) calc(3 * var(--s)) calc(10 * var(--s)) / calc(8 * var(--s)) calc(8 * var(--s)) no-repeat,
+    linear-gradient(var(--prop-accent), var(--prop-accent)) calc(13 * var(--s)) calc(11 * var(--s)) / calc(4 * var(--s)) calc(3 * var(--s)) no-repeat,
+    linear-gradient(var(--work-room-steel-light), var(--work-room-steel-light)) calc(15 * var(--s)) calc(1 * var(--s)) / calc(1 * var(--s)) calc(7 * var(--s)) no-repeat;
+}
+
+/* cactus */
+.prop[data-prop='4'] {
+  background:
+    linear-gradient(var(--work-room-lamp-off), var(--work-room-lamp-off)) calc(5 * var(--s)) calc(14 * var(--s)) / calc(10 * var(--s)) calc(6 * var(--s)) no-repeat,
+    linear-gradient(var(--prop-accent), var(--prop-accent)) calc(8 * var(--s)) calc(3 * var(--s)) / calc(4 * var(--s)) calc(11 * var(--s)) no-repeat,
+    linear-gradient(var(--prop-accent), var(--prop-accent)) calc(4 * var(--s)) calc(6 * var(--s)) / calc(3 * var(--s)) calc(5 * var(--s)) no-repeat,
+    linear-gradient(var(--prop-accent), var(--prop-accent)) calc(4 * var(--s)) calc(10 * var(--s)) / calc(4 * var(--s)) calc(2 * var(--s)) no-repeat,
+    linear-gradient(var(--prop-accent), var(--prop-accent)) calc(13 * var(--s)) calc(5 * var(--s)) / calc(3 * var(--s)) calc(4 * var(--s)) no-repeat,
+    linear-gradient(var(--prop-accent), var(--prop-accent)) calc(12 * var(--s)) calc(8 * var(--s)) / calc(4 * var(--s)) calc(2 * var(--s)) no-repeat;
+}
+
+/* globe */
+.prop[data-prop='5'] {
+  background:
+    linear-gradient(var(--work-room-steel), var(--work-room-steel)) calc(7 * var(--s)) calc(18 * var(--s)) / calc(6 * var(--s)) calc(2 * var(--s)) no-repeat,
+    linear-gradient(var(--work-room-steel), var(--work-room-steel)) calc(9 * var(--s)) calc(15 * var(--s)) / calc(2 * var(--s)) calc(3 * var(--s)) no-repeat,
+    linear-gradient(var(--prop-accent), var(--prop-accent)) calc(5 * var(--s)) calc(4 * var(--s)) / calc(10 * var(--s)) calc(11 * var(--s)) no-repeat,
+    linear-gradient(var(--work-room-steel-light), var(--work-room-steel-light)) calc(5 * var(--s)) calc(8 * var(--s)) / calc(10 * var(--s)) calc(2 * var(--s)) no-repeat,
+    linear-gradient(var(--work-room-steel-light), var(--work-room-steel-light)) calc(7 * var(--s)) calc(6 * var(--s)) / calc(3 * var(--s)) calc(2 * var(--s)) no-repeat;
+}
+
+/* A lit lamp throws a stepped cone down the wall and a pool on the floor; an idle room has neither. */
+.lampCone,
+.lampPool {
+  position: absolute;
+  left: 50%;
+  translate: -50% 0;
+  pointer-events: none;
+}
+
+.lampCone {
+  top: calc(12 * var(--s));
+  width: calc(40 * var(--s));
+  height: calc(36 * var(--s));
+  background:
+    linear-gradient(var(--cone-1), var(--cone-1)) 50% 0 / calc(18 * var(--s)) calc(12 * var(--s)) no-repeat,
+    linear-gradient(var(--cone-2), var(--cone-2)) 50% calc(12 * var(--s)) / calc(28 * var(--s)) calc(12 * var(--s)) no-repeat,
+    linear-gradient(var(--cone-3), var(--cone-3)) 50% calc(24 * var(--s)) / 100% calc(12 * var(--s)) no-repeat;
+  --cone-1: color-mix(in srgb, var(--room-ink) 16%, transparent);
+  --cone-2: color-mix(in srgb, var(--room-ink) 11%, transparent);
+  --cone-3: color-mix(in srgb, var(--room-ink) 7%, transparent);
+}
+
+.lampPool {
+  bottom: calc(-2 * var(--s));
+  width: calc(64 * var(--s));
+  height: calc(4 * var(--s));
+  background:
+    linear-gradient(var(--pool-1), var(--pool-1)) 50% 0 / calc(36 * var(--s)) 100% no-repeat,
+    linear-gradient(var(--pool-2), var(--pool-2)) 50% 0 / 100% 100% no-repeat;
+  --pool-1: color-mix(in srgb, var(--room-ink) 22%, transparent);
+  --pool-2: color-mix(in srgb, var(--room-ink) 10%, transparent);
+}
+
+/*
+ * The lamp rims Moru's side that faces it, and his top under its shade, with one drawn pixel of its
+ * light: two offsets, so the rim follows his stepped outline as one line rather than broken dashes.
+ * The filter is drawn before a mirrored room flips him, so it turns toward that room's lamp too.
+ */
+.scene[data-lit='true'] .actor {
+  --rim: color-mix(in srgb, var(--room-ink) 40%, var(--color-text-primary));
+  filter: drop-shadow(calc(-1 * var(--s)) 0 0 var(--rim)) drop-shadow(0 calc(-1 * var(--s)) 0 var(--rim));
+}
+
+/* ---------- moments: a commit lands, a merge reaches main */
+
+/* The newest crate drops onto the cart in three 2px steps as a commit lands. */
+@keyframes roomCrateLand {
+  from {
+    translate: 0 -6px;
+  }
+  to {
+    translate: 0 0;
+  }
+}
+
+.crate[data-landing] {
+  animation: roomCrateLand calc(var(--motion-base) * 2) steps(3, end) both;
+}
+
+/* The hatch blinks green twice as the crate reaches main, then stays open. */
+@keyframes roomHatchBlink {
+  0%, 50%, 100% {
+    opacity: 0;
+  }
+  25%, 75% {
+    opacity: 1;
+  }
+}
+
+.hatchOpen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--color-status-success);
+  opacity: 0;
+}
+
+.track[data-arrived='true'] .hatchOpen::after {
+  animation: roomHatchBlink calc(var(--motion-base) * 6) steps(1, end) calc(var(--motion-choreography) * 0.8) both;
+}
+
+/* ---------- pointing at a session: its rooms and floor step up, the rest step down, both ways over --motion-base */
+
+.room,
+.floorPlate {
+  transition: opacity var(--motion-base) var(--motion-ease), background-color var(--motion-base) var(--motion-ease);
+}
+
+.room > [data-room-plate] {
+  transition: background-color var(--motion-base) var(--motion-ease);
+}
+
+.room[data-emphasis='down'],
+.floorPlate[data-emphasis='down'] {
+  opacity: 0.6;
+}
+
+.room[data-emphasis='up'] > [data-room-plate] {
+  background: color-mix(in srgb, var(--ink) 12%, var(--work-room-wall));
+}
+
+.floorPlate[data-emphasis='up'] {
+  background: color-mix(in srgb, var(--ink) 10%, var(--work-room-pit));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crate[data-landing],
+  .track[data-arrived='true'] .hatchOpen::after {
+    animation: none;
+  }
+}

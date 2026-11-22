@@ -1,35 +1,12 @@
 {
   "title": "作業状況",
-  "summary": "稼働中のセッションが保持<runningCount>{running}</runningCount> · 停止<stuckCount>{stuck}</stuckCount>",
   "repoLine": "{repo} · このMacのワークツリー{count}個",
-  "headline": {
-    "running": "稼働中のセッションが{count}個のワークツリーを保持しています",
-    "stuck": "{count}個のワークツリーが止まっています",
-    "idle": "{repo}に稼働中のセッションがロックしたワークツリーはありません"
-  },
   "band": {
-    "mac": "このMac",
-    "server": "サーバー",
     "seam": "push"
   },
   "ruler": {
-    "working": "作業中",
-    "checks": "チェック",
     "prePush": "pre-push",
-    "pr": "PR",
-    "ci": "CI",
-    "ready": "マージ可能",
     "main": "main"
-  },
-  "group": {
-    "stuck": "停止",
-    "merged": "マージ済み ({count})",
-    "unheld": "セッションのロックなし"
-  },
-  "session": {
-    "header": "{tool} · セッション{number}",
-    "started": "{time}開始",
-    "subagents": "サブエージェント{count}個"
   },
   "tool": {
     "acp": "Atlas内のClaude Agent",
@@ -37,47 +14,86 @@
     "codex": "Codex",
     "unknown": "エージェント"
   },
-  "holder": {
-    "locked": "{tool}のサブエージェント{id} · {time}にロック",
-    "lockedUnnamed": "{time}にロック",
-    "process": "このフォルダで{tool}が実行中",
-    "noLock": "ロックなし · 最後のコミットは{ago}、{author}",
-    "noLockQuiet": "ロックなし",
-    "subagent": "サブエージェント{id}",
-    "lastCommit": "{ago}、{author}",
-    "staleLock": "終了した{tool}セッションがロックしたワークツリー",
-    "ended": "セッション終了"
+  "session": {
+    "name": "{tool} {number}",
+    "none": "セッションなし",
+    "ended": "セッション終了",
+    "started": "{time}開始",
+    "worktrees": "ワークツリー{count}個",
+    "cleanup": "要整理{count}",
+    "onStage": "ステージ{count}",
+    "below": "下に{count}"
   },
-  "row": {
-    "noCommits": "{branch}以降のコミットなし",
-    "commits": "{branch}以降のコミット{count}個",
-    "missing": "{folder}フォルダがありません。git worktree pruneを実行するとこの記録が削除されます。",
-    "lockLeft": "このワークツリーをロックした{tool}セッションは終了しました。{count, plural, =0 {{branch}以降のコミットはありません。} other {{branch}以降のコミット#個は未マージです。}}",
-    "unknown": "{branch}と比較できませんでした"
+  "stage": {
+    "label": "作業中のワークツリー",
+    "moreBelow": "下の階で<lead>さらに{count}個が作業中</lead>"
   },
-  "chip": {
+  "room": {
+    "working": "作業中",
+    "twoTools": "2つのツールが作業中",
+    "resting": "休止中",
+    "quietMinutes": "{count}分間静かです",
+    "quietHours": "{count}時間静かです",
+    "quietDays": "{count}日間静かです",
+    "merged": "{branch}にマージ済み",
+    "locked": "ロック中",
+    "lockLeft": "ロックだけが残っています",
     "missing": "フォルダなし",
-    "lockLeft": "ロックのみ残存"
+    "untouched": "{count}日間そのまま",
+    "lastCommit": "最後のコミットは{ago}",
+    "commits": "コミット{count}個",
+    "noCommits": "まだコミットなし",
+    "onlyInGit": "Gitにだけ残っています"
   },
-  "station": {
-    "mergedInto": "{branch}にマージ済み"
+  "monitor": {
+    "running": "コマンドを実行中",
+    "twoTools": "2つのツールが同じフォルダに",
+    "twoToolsNote": "変更が混ざる可能性があります",
+    "idle": "実行中のコマンドなし",
+    "lockedAt": "{time}にロック",
+    "ended": "セッション終了",
+    "noSession": "セッションなし",
+    "noCommitsNote": "{branch}以降のコミットはありません",
+    "notMeasured": "{branch}と比較できませんでした",
+    "prune": "<code>git worktree prune</code>を実行すると記録が消えます",
+    "heldBy": "{session}がまだこのフォルダを保持しています",
+    "unreadableLock": "Atlasが読めるセッション名がロックにありません",
+    "workingMinutes": "{count}分間作業中",
+    "workingWholeHours": "{count}時間作業中",
+    "workingHours": "{hours}時間{minutes}分作業中"
   },
-  "connect": {
-    "notConnected": "{host}は未接続です。接続でPRとCIを表示します。"
+  "belt": {
+    "notRead": "以降の段階はまだ読めません"
   },
-  "noRemote": "リモートがないため、表示するPRとCIはありません。",
+  "shelf": {
+    "merged": "{branch}にマージ済み",
+    "untouched": "7日以上そのまま",
+    "mergedList": "{branch}にマージ済みのワークツリー{count}個",
+    "untouchedList": "7日以上そのままのワークツリー{count}個",
+    "lastCommit": "最後のコミットは{ago}",
+    "close": "閉じる"
+  },
   "unreadable": "{repo}を読み込めませんでした。リポジトリフォルダをもう一度選んでアクセスを許可してください。",
   "choose": {
     "title": "エージェントが作業するGitリポジトリを選んでください",
     "action": "リポジトリフォルダを選ぶ"
   },
   "empty": {
-    "title": "{repo}にはメインのチェックアウトしかありません",
-    "body": "エージェントがワークツリーを作るたびに作業状況に1行ずつ増え、そのワークツリーを保持するセッションも表示されます。"
+    "title": "今は<code>{branch}</code>だけです",
+    "body": "ワークツリーができるたびに部屋が1つ開きます。Claude CodeやCodexが作業を始めると、ここに表示されます。"
+  },
+  "quiet": {
+    "title": "{repo}で作業中の場所はありません",
+    "body": "マージ済みのワークツリーや長くそのままのワークツリーは下の棚にあります。"
   },
   "web": {
     "title": "作業状況はデスクトップアプリで開きます",
     "body": "ブラウザはgitを実行したり、このコンピュータのプロセスを読んだりできません。このブラウザでも、フォルダのマップとライブラリは開けます。"
   },
-  "notRepository": "{folder}フォルダはGitリポジトリではありません。リポジトリの最上位フォルダを選んでください。"
+  "notRepository": "{folder}フォルダはGitリポジトリではありません。リポジトリの最上位フォルダを選んでください。",
+  "header": {
+    "sameFolder": "同じフォルダ{count}",
+    "cleanup": "整理{count}",
+    "pointTo": "どのワークツリーか表示"
+  }
 }
