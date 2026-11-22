@@ -2,6 +2,7 @@ use std::hash::{DefaultHasher, Hash, Hasher};
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
+use super::agent_processes::AgentProcess;
 use super::git_read::read_admin_file;
 use super::worktrees::lock::{parse_lock_reason, process_start};
 
@@ -13,9 +14,10 @@ const BASE_CANDIDATES: &[&str] = &["main", "master"];
 const REMOTE_HEAD_PREFIX: &str = "ref: refs/remotes/origin/";
 
 /// Stats a fixed set of administrative files and asks whether each locked pid still runs, so an
-/// ended session changes the digest even though no file did. Reads no content beyond the `.git`
-/// pointer, `origin/HEAD` and the lock reasons.
-pub(super) fn admin_fingerprint(root: &Path) -> Option<String> {
+/// ended session changes the digest even though no file did; adds which agent works in which
+/// worktree folder. Reads no content beyond the `.git` pointer, `origin/HEAD`, the lock reasons and
+/// each record's `gitdir`.
+pub(super) fn admin_fingerprint(root: &Path, processes: &[AgentProcess]) -> Option<String> {
     let common = common_dir(root)?;
     let mut hasher = DefaultHasher::new();
     for name in REPOSITORY_FILES {
@@ -28,6 +30,30 @@ pub(super) fn admin_fingerprint(root: &Path) -> Option<String> {
         .map(|entries| entries.flatten().map(|entry| entry.file_name()).collect())
         .unwrap_or_default();
     ids.sort();
+    let mut folders: Vec<PathBuf> = vec![root.to_path_buf()];
+    for id in &ids {
+        let gitdir = read_admin_file(&common.join("worktrees").join(id).join("gitdir"));
+        let folder = gitdir
+            .as_deref()
+            .and_then(|text| Path::new(text.trim()).parent());
+        // A removed worktree keeps its folder, so work there never counts for its parent.
+        folders.extend(
+            folder.map(|folder| std::fs::canonicalize(folder).unwrap_or_else(|_| folder.into())),
+        );
+    }
+    let mut placed: Vec<(u32, &PathBuf)> = processes
+        .iter()
+        .filter_map(|process| {
+            let worktree = folders
+                .iter()
+                .filter(|folder| process.folder.starts_with(folder))
+                .max_by_key(|folder| folder.components().count())?;
+            Some((process.pid, worktree))
+        })
+        .collect();
+    placed.sort();
+    placed.dedup();
+    placed.hash(&mut hasher);
     for id in ids {
         id.hash(&mut hasher);
         let admin = common.join("worktrees").join(&id);

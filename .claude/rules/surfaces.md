@@ -89,6 +89,21 @@ The second written exception, for Harness only:
 
 A new path, or any value, needs a new decision record.
 
+### Reading the person's own agent processes
+
+The third written exception, for Work status only:
+
+| | |
+|---|---|
+| Read | the person's own processes (uid filter first): parent, start time, working folder, and the executable path of one whose kernel name looks like an agent |
+| Returned to the page | for each worktree, the agent's pid, tool (Claude Code or Codex) and start time; never a folder, path or other process |
+| Never read | arguments or environment (`KERN_PROCARGS2`, `/proc/<pid>/environ`), open files, another user's processes |
+| Platforms | macOS and Linux; Windows reads none |
+| Gate | `src-tauri/src/work_status/worktrees/tests.rs` |
+| Record | `docs/records/decisions/2026-11-22-work-status-agent-processes-87d3ada9-4740-430a-8cee-a580ce7e638e.md` |
+
+A new field, a signal or a send needs a new decision record.
+
 ### Folder watch is latency, not degradation
 
 The app applies the changed paths the OS watcher's `vault-changed` event

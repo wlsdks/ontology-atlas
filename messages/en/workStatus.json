@@ -34,11 +34,13 @@
   "tool": {
     "acp": "Claude Agent in Atlas",
     "claudeCode": "Claude Code",
+    "codex": "Codex",
     "unknown": "An agent"
   },
   "holder": {
     "locked": "{tool} subagent {id} · locked at {time}",
     "lockedUnnamed": "Locked at {time}",
+    "process": "{tool} is running in this folder",
     "noLock": "No lock · last commit {ago} by {author}",
     "noLockQuiet": "No lock",
     "subagent": "Subagent {id}",

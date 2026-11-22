@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import type { LockTool } from '@/shared/lib/work-status/tauri-work-status';
+import type { AgentTool, LockTool } from '@/shared/lib/work-status/tauri-work-status';
 import { folderName, type Track } from '@/shared/lib/work-status/work-tracks';
 import { cn } from '@/shared/lib/cn';
 import { clockTime, shortAgentId, timeAgo } from '../model/format';
@@ -27,8 +27,8 @@ interface TrackRowProps {
 
 type Translate = ReturnType<typeof useTranslations<'workStatus'>>;
 
-function toolName(tool: LockTool, t: Translate): string {
-  return t(tool === 'claudeCode' ? 'tool.claudeCode' : 'tool.unknown');
+function toolName(tool: LockTool | AgentTool, t: Translate): string {
+  return t(tool === 'claudeCode' ? 'tool.claudeCode' : tool === 'codex' ? 'tool.codex' : 'tool.unknown');
 }
 
 function useHolderLine(track: Track, nowMs: number): string {
@@ -44,6 +44,8 @@ function useHolderLine(track: Track, nowMs: number): string {
       });
     case 'acp':
       return t('tool.acp');
+    case 'process':
+      return t('holder.process', { tool: toolName(holder.tool, t) });
     case 'locked':
       return holder.lockedAt ? t('holder.lockedUnnamed', { time: clockTime(holder.lockedAt, nowMs, locale) }) : t('holder.noLockQuiet');
     case 'ended':

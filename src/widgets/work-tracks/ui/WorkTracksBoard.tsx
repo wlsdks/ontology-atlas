@@ -68,12 +68,13 @@ function GroupLabel({ id, children, tone }: { id: string; children: string; tone
 function SessionHeader({ session, order, nowMs }: { session: TrackSession; order: number; nowMs: number }) {
   const t = useTranslations('workStatus');
   const locale = useLocale();
-  const tool = t(session.tool === 'acp' ? 'tool.acp' : session.tool === 'claudeCode' ? 'tool.claudeCode' : 'tool.unknown');
+  const tool = t(session.tool === 'acp' ? 'tool.acp' : session.tool === 'claudeCode' ? 'tool.claudeCode' : session.tool === 'codex' ? 'tool.codex' : 'tool.unknown');
   // The tool's name wears the session's ink wherever the locale puts it in the sentence.
   const [headerBefore = '', headerAfter = ''] = t('session.header', { tool: TOOL_SLOT, number: session.ordinal }).split(TOOL_SLOT);
+  const subagents = session.tracks.filter(track => track.holder.kind === 'subagent').length;
   const facts = [
     session.startedAt ? t('session.started', { time: clockTime(session.startedAt * 1000, nowMs, locale) }) : null,
-    t('session.subagents', { count: session.tracks.length }),
+    subagents > 0 ? t('session.subagents', { count: subagents }) : null,
   ].filter(Boolean).join(' · ');
   return (
     <div
