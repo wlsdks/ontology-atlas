@@ -62,7 +62,9 @@ function TintFilters() {
 interface FaceState {
   current: FaceSize;
   /** The face on screen while the room's new one waits to show: it keeps its element until it leaves or is kept. */
-  leaving: FaceSize | null;
+  leaving: LeavingFace | null;
+  /** The entry the current face was last drawn from: what it goes on showing if it starts to leave. */
+  room: RoomEntry;
   windowKey: string;
   next: number;
   /** Whether the current face draws its content; a hidden new face draws it a few frames later. */
@@ -79,6 +81,9 @@ interface FaceSize {
   /** Which drawn face this is: a face keeps its element, and what it is playing, while it changes role. */
   id: number;
 }
+
+/** A leaving face fades out the room it showed, not the room's new state: its Moru, tag and monitor stay as they were. */
+type LeavingFace = FaceSize & { room: RoomEntry };
 
 function RoomFace({ room, face, copy, retiring, showOwner }: { room: RoomEntry; face: FaceSize; copy: RoomCopy; retiring: boolean; showOwner: boolean }) {
   return face.size === 'large'
@@ -120,7 +125,7 @@ const Room = memo(DrawnRoom, sameRoomProps);
 
 /**
  * One room's frame. Its element sits at its box by transform. When the building gives it a new size,
- * its old face stays at the old size only while its content fades to the room's wall
+ * its old face stays at the old size, showing what it showed, only while its content fades to the room's wall
  * (`useRoomMotion` plays that); the new face is drawn hidden and fades in once the room has arrived,
  * so a room never shows two faces. When the window itself resizes, the face takes the new size at once.
  */
@@ -130,6 +135,7 @@ function DrawnRoom({ room, box, copy, retiring, showOwner, reduced, windowKey, e
   const [faces, setFaces] = useState<FaceState>({
     current: { size: box.size, unit: box.unit, w: box.w, h: box.h, id: 0, entered: entered && box.size === 'large' },
     leaving: null,
+    room,
     windowKey,
     next: 1,
     ready: true,
@@ -139,16 +145,18 @@ function DrawnRoom({ room, box, copy, retiring, showOwner, reduced, windowKey, e
     const sized = { size: box.size, unit: box.unit, w: box.w, h: box.h };
     if (faces.windowKey !== windowKey) {
       // A window resize takes the new size at once.
-      setFaces({ current: { ...sized, id: current.size === box.size ? current.id : faces.next, entered: current.entered && box.size === current.size }, leaving: null, windowKey, next: faces.next + 1, ready: true });
+      setFaces({ current: { ...sized, id: current.size === box.size ? current.id : faces.next, entered: current.entered && box.size === current.size }, leaving: null, room, windowKey, next: faces.next + 1, ready: true });
     } else {
-      const shown = faces.leaving ?? current;
+      const shown = faces.leaving ?? { ...current, room: faces.room };
       // The face on screen keeps its element and how far it has faded, and becomes the one that may
       // leave; the new face is drawn hidden, its content a few frames later. A move that keeps the
       // room's content hands the face back (`FACE_KEPT_EVENT`) before anything paints.
-      setFaces({ current: { ...sized, id: faces.next, entered: box.size === 'large' && shown.size !== 'large' }, leaving: shown, windowKey, next: faces.next + 1, ready: false });
+      setFaces({ current: { ...sized, id: faces.next, entered: box.size === 'large' && shown.size !== 'large' }, leaving: shown, room, windowKey, next: faces.next + 1, ready: false });
     }
   } else if (faces.windowKey !== windowKey) {
-    setFaces({ ...faces, leaving: null, windowKey, ready: true });
+    setFaces({ ...faces, leaving: null, room, windowKey, ready: true });
+  } else if (faces.room !== room) {
+    setFaces({ ...faces, room });
   }
   const oldFace = useCallback((element: HTMLDivElement) => {
     const left = () => setFaces(state => ({ ...state, leaving: null, ready: true }));
@@ -223,7 +231,7 @@ function DrawnRoom({ room, box, copy, retiring, showOwner, reduced, windowKey, e
           className={cn(styles.face, styles.notched)}
           style={{ width: faces.leaving.w, height: faces.leaving.h }}
         >
-          <RoomFace room={room} face={faces.leaving} copy={copy} retiring={retiring} showOwner={showOwner} />
+          <RoomFace room={faces.leaving.room} face={faces.leaving} copy={copy} retiring={retiring} showOwner={showOwner} />
         </div>
       ) : null}
       <div key={`face-${current.id}`} data-room-face data-wide={current.w >= WIDE_ROOM_W} className={cn(styles.face, styles.notched, 'h-full w-full')}>

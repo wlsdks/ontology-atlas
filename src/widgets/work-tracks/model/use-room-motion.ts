@@ -322,6 +322,11 @@ function playWall(element: HTMLElement, move: RoomMove, timing: MoveTiming): Ani
       ], { duration: fadeEnd, fill: 'forwards' });
       fade.addEventListener('finish', () => face.dispatchEvent(new Event(FACE_LEFT_EVENT)));
       played.push(fade);
+      // It fades at the size and scale it is drawn at, not those of the move an update cut short.
+      const held = { width: `${move.from.w}px`, height: `${move.from.h}px` };
+      played.push(face.animate([held, held], { duration: fadeEnd, fill: 'forwards' }));
+      const scene = face.querySelector<HTMLElement>('[data-scene]');
+      if (scene) played.push(scene.animate([{ '--u': timing.shows.unit }, { '--u': timing.shows.unit }], { duration: fadeEnd, fill: 'forwards' }));
       continue;
     }
     played.push(face.animate(fadeFrames(hasOld ? 0 : timing.shows.face, steps), { duration: timing.total }));

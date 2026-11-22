@@ -94,6 +94,10 @@ interface PaintFrame {
   tags: number;
   /** How much of each room's content shows: its faces and each of their fading parts, by room. */
   content: Record<string, number>;
+  /** Per room: how much of its Moru or name tag shows inside its plate, the better of them. */
+  held: Record<string, number>;
+  /** Parts drawn past their room's plate while they show. */
+  spills: string[];
   /** How wide each room's showing Moru is drawn, so a scale change can be checked for a jump. */
   moru: Record<string, number>;
   /** The thickest and thinnest hue edge any room draws: it stays 3 px however its wall scales. */
@@ -168,6 +172,21 @@ async function startPaintSampler(page: Page) {
           });
         }
       }
+      const held: Record<string, number> = {};
+      const spills: string[] = [];
+      for (const element of all) {
+        const plate = plateOf(element);
+        const inside = (rect: DOMRect) => {
+          const w = Math.min(rect.right, plate.right) - Math.max(rect.left, plate.left);
+          const h = Math.min(rect.bottom, plate.bottom) - Math.max(rect.top, plate.top);
+          return rect.width * rect.height > 0 ? (Math.max(0, w) * Math.max(0, h)) / (rect.width * rect.height) : 0;
+        };
+        held[keyOf(element)] = Math.max(0, ...[...element.querySelectorAll<HTMLElement>(":scope > [data-room-face] :is([data-room-moru], [data-room-tag])")].map((figure) => seen(figure) * inside(figure.getBoundingClientRect())));
+        element.querySelectorAll<HTMLElement>(":scope > [data-room-face] [data-room-part]").forEach((part) => {
+          const rect = part.getBoundingClientRect();
+          if (seen(part) > 0.05 && rect.width > 0 && (rect.right > plate.right + 2 || rect.bottom > plate.bottom + 2 || rect.left < plate.left - 2 || rect.top < plate.top - 2)) spills.push(keyOf(element));
+        });
+      }
       const moru: Record<string, number> = {};
       for (const element of all) {
         // The room's Moru as drawn: from its most visible face, so a swap of faces at a new scale counts.
@@ -191,7 +210,7 @@ async function startPaintSampler(page: Page) {
           boxes[`cart:${keyOf(element)}`] = [box.x, box.y, box.width, box.height];
         }
       }
-      frames.push({ copies: Math.max(0, ...copies.values()), overlaps, covered, litGhost, time: frameTime, tags, content: visible, moru, edges, boxes });
+      frames.push({ copies: Math.max(0, ...copies.values()), overlaps, covered, litGhost, time: frameTime, tags, content: visible, held, spills, moru, edges, boxes });
       if (frames.length < 900) requestAnimationFrame(sample);
     };
     requestAnimationFrame(sample);
@@ -219,6 +238,12 @@ async function expectCleanPaint(page: Page, { slots: handed = 0 } = {}) {
   expect.soft(frames.filter((frame) => handedOver.some((index) => !frame.covered[index])).length, "frames with a bare slot").toBe(0);
   expect.soft(frames.filter((frame) => frame.litGhost).length, "frames where a leaving room is lit").toBe(0);
   expect.soft(frames.filter((frame) => frame.tags === 0).length, "frames with no name tag on the stage").toBe(0);
+  // A room's Moru and name tag leave by fading, never from one frame to the next.
+  const pops = frames.slice(1).flatMap((frame, index) => Object.entries(frames[index].held)
+    .filter(([key, before]) => frame.time - frames[index].time <= 40 && before > 0.5 && key in frame.held && frame.held[key] < 0.1)
+    .map(([key]) => `${key} at ${Math.round(frame.time - frames[0].time)}ms`));
+  expect.soft(pops.slice(0, 4), "rooms whose content vanished in one frame").toEqual([]);
+  expect.soft([...new Set(frames.flatMap((frame) => frame.spills))], "rooms drawing parts past their plate").toEqual([]);
   // Content fades, never cuts: within any 40 ms, one frame of a 25 fps recording, it loses at most 0.35.
   const cuts: string[] = [];
   frames.forEach((frame, index) => {
@@ -484,6 +509,22 @@ test.describe("work status rooms", () => {
     await waitForAnimationsDone(page.getByTestId("work-building"));
     // A second rise reflows the stage, so no stage box ends up handed over whole.
     await expectCleanPaint(page);
+    await expectSmoothMotion(page);
+  });
+
+  test("lets a room that stops mid-move leave from where it is drawn, its content fading", async ({ page }) => {
+    await openWorkStatus(page, SWAP);
+    await expect(room(page, "feat/work-status-rooms")).toHaveAttribute("data-room-size", "large");
+    await startPaintSampler(page);
+    const first = SWAP.map((entry) => entry.branch === "feat/idle-one" ? working("feat/idle-one", CLAUDE) : entry);
+    await setRows(page, first);
+    // The next update goes out once the first move has played a quarter second, so it lands mid-move.
+    await page.waitForFunction(() => document.querySelector("[data-testid=work-building]")!.getAnimations({ subtree: true })
+      .some((a) => a.playState === "running" && Number(a.currentTime) >= 250));
+    await setRows(page, first.map((entry) => entry.branch === "feat/work-status-rooms" ? row("feat/work-status-rooms") : entry));
+    await expect(room(page, "feat/work-status-rooms")).toHaveAttribute("data-room-size", "mini", { timeout: 10_000 });
+    await waitForAnimationsDone(page.getByTestId("work-building"));
+    await expectCleanPaint(page, { slots: 2 });
     await expectSmoothMotion(page);
   });
 
