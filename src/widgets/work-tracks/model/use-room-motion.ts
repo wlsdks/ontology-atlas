@@ -16,6 +16,8 @@ interface Playing {
   sequence: RoomSequence;
   startedAt: number;
   animations: Animation[];
+  /** Rooms this sequence animates, moving, fading or arriving: the only ones it can leave mid-way. */
+  keys: Set<string>;
 }
 
 const now = () => Number(document.timeline.currentTime ?? 0);
@@ -77,11 +79,11 @@ export function useRoomMotion(
     const previous = playing.current;
     // Only a room of a sequence still playing can be drawn part-faded, mid-path or mid-scale; reading
     // any other room's styles would force the whole building's style before the frame does it anyway.
-    const playingNow = previous !== null && now() - previous.startedAt < previous.sequence.totalMs ? previous : null;
+    const playingNow = previous?.animations.some(animation => animation.playState === 'running') ? previous : null;
     const drawn = new Map<string, Drawn>();
     for (const [key, box] of placed.current) {
       const element = elements.get(key);
-      if (!playingNow?.sequence.moves.has(key)) {
+      if (!playingNow?.keys.has(key)) {
         drawn.set(key, { box, face: 1, parts: 1, unit: box.unit });
         continue;
       }
@@ -166,7 +168,10 @@ export function useRoomMotion(
         { duration: totalMs },
       ));
     }
-    if (animations.length > 0) playing.current = { sequence, startedAt: now(), animations };
+    if (animations.length > 0) {
+      const keys = new Set(animations.map(animation => (animation.effect as KeyframeEffect | null)?.target?.closest<HTMLElement>('[data-room-key]')?.dataset.roomKey).filter((key): key is string => key !== undefined));
+      playing.current = { sequence, startedAt: now(), animations, keys };
+    }
   }, [boardRef, boxes, reduced, sizeKey, onRemovedRef]);
 }
 

@@ -100,7 +100,8 @@ function Room({ room, box, copy, retiring, showOwner, reduced, windowKey, ghost 
   const { current } = faces;
   if (current.size !== box.size || current.unit !== box.unit || Math.abs(current.w - box.w) > 1 || Math.abs(current.h - box.h) > 1) {
     const moved = faces.windowKey === windowKey;
-    setFaces({ current: { size: box.size, unit: box.unit, w: box.w, h: box.h }, leaving: moved ? faces.leaving ?? current : null, windowKey });
+    // The face showing now is what fades out; one already leaving faded during the last sequence's fade step.
+    setFaces({ current: { size: box.size, unit: box.unit, w: box.w, h: box.h }, leaving: moved ? current : null, windowKey });
   } else if (faces.windowKey !== windowKey) {
     setFaces({ ...faces, leaving: null, windowKey });
   }

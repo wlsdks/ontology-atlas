@@ -98,6 +98,8 @@ interface PaintFrame {
   moru: Record<string, number>;
   /** The thickest and thinnest hue edge any room draws: it stays 3 px however its wall scales. */
   edges: [number, number];
+  /** Where each room's plate is drawn: x, y, width and height. */
+  boxes: Record<string, [number, number, number, number]>;
 }
 
 /**
@@ -167,7 +169,13 @@ async function startPaintSampler(page: Page) {
       }
       const thickness = all.flatMap((element) => [...element.querySelectorAll(":scope > [data-room-edge]")].map((edge) => edge.getBoundingClientRect().height));
       const edges: [number, number] = [Math.max(3, ...thickness), Math.min(3, ...thickness)];
-      frames.push({ copies: Math.max(0, ...copies.values()), overlaps, covered, litGhost, time: frameTime, tags, content: visible, moru, edges });
+      const boxes: Record<string, [number, number, number, number]> = {};
+      for (const element of all) {
+        if (element.dataset.roomKey === undefined) continue;
+        const plate = plateOf(element);
+        boxes[keyOf(element)] = [plate.x, plate.y, plate.width, plate.height];
+      }
+      frames.push({ copies: Math.max(0, ...copies.values()), overlaps, covered, litGhost, time: frameTime, tags, content: visible, moru, edges, boxes });
       if (frames.length < 900) requestAnimationFrame(sample);
     };
     requestAnimationFrame(sample);
@@ -220,7 +228,48 @@ async function expectCleanPaint(page: Page, { slots: handed = 0 } = {}) {
   expect.soft(frames.filter((frame) => frame.edges[0] > 3.5 || frame.edges[1] < 2.5).length, "frames where a hue edge scaled with its wall").toBe(0);
 }
 
+/**
+ * Every room glides: no frame moves a room far more than the frames before it did (a jump, or a
+ * restart from where it began), and no room turns back on its path while it moves.
+ */
+async function expectSmoothMotion(page: Page) {
+  const frames = await page.evaluate(() => (window as unknown as { __paint: { frames: PaintFrame[] } }).__paint.frames);
+  const jumps: string[] = [];
+  const reversals: string[] = [];
+  const keys = new Set(frames.flatMap((frame) => Object.keys(frame.boxes)));
+  for (const key of keys) {
+    const steps: { dx: number; dy: number; size: number; at: number }[] = [];
+    for (let index = 1; index < frames.length; index += 1) {
+      const [a, b] = [frames[index - 1].boxes[key], frames[index].boxes[key]];
+      if (!a || !b) continue;
+      steps.push({ dx: b[0] - a[0], dy: b[1] - a[1], size: Math.max(Math.abs(b[2] - a[2]), Math.abs(b[3] - a[3])), at: Math.round(frames[index].time - frames[0].time) });
+    }
+    steps.forEach((step, index) => {
+      const length = Math.max(Math.hypot(step.dx, step.dy), step.size);
+      const before = Math.max(0, ...steps.slice(Math.max(0, index - 3), index).map((s) => Math.max(Math.hypot(s.dx, s.dy), s.size)));
+      if (length > Math.max(48, 2.5 * before)) jumps.push(`${key} ${Math.round(length)}px at ${step.at}ms after ${Math.round(before)}px`);
+      const previous = steps[index - 1];
+      if (previous && Math.hypot(previous.dx, previous.dy) > 2 && Math.hypot(step.dx, step.dy) > 2 && previous.dx * step.dx + previous.dy * step.dy < -0.5 * Math.hypot(previous.dx, previous.dy) * Math.hypot(step.dx, step.dy)) {
+        reversals.push(`${key} at ${step.at}ms`);
+      }
+    });
+  }
+  expect.soft(jumps.slice(0, 6), "rooms that jumped").toEqual([]);
+  expect.soft(reversals.slice(0, 6), "rooms that turned back").toEqual([]);
+}
+
 test.describe("work status rooms", () => {
+  // The rooms run clean: no console error or warning in any test.
+  const noise: string[] = [];
+  test.beforeEach(({ page }) => {
+    noise.length = 0;
+    page.on("console", (message) => { if (message.type() === "error" || message.type() === "warning") noise.push(`${message.type()}: ${message.text()}`); });
+    page.on("pageerror", (error) => noise.push(`pageerror: ${error.message}`));
+  });
+  test.afterEach(() => {
+    expect(noise.filter((text) => !/was preloaded using link preload but not used/.test(text)), "console errors and warnings").toEqual([]);
+  });
+
   test("puts work on the stage, keeps a left lock as a mini and counts the rest on the shelf", async ({ page }) => {
     await openWorkStatus(page, SIX);
 
@@ -285,6 +334,27 @@ test.describe("work status rooms", () => {
     await expect(room(page, "feat/library-stage")).toHaveAttribute("data-room-size", "mini");
     await waitForAnimationsDone(page.getByTestId("work-building"));
     await expectCleanPaint(page, { slots: 1 });
+  });
+
+  // Known failing at commit time: retargeting during a face swap cuts a room's half-shown content to 0 in
+  // one frame and jumps a room 48 px. The guard stays so the fix is measured, not assumed.
+  test.fixme("retargets mid-sequence when the next update lands before the last one finished", async ({ page }) => {
+    await openWorkStatus(page, SWAP);
+    await expect(room(page, "feat/library-stage")).toHaveAttribute("data-room-size", "large");
+    await startPaintSampler(page);
+    const first = SWAP.map((entry) =>
+      entry.branch === "feat/library-stage" ? row("feat/library-stage")
+        : entry.branch === "feat/idle-one" ? working("feat/idle-one", CLAUDE) : entry);
+    await setRows(page, first);
+    // Git says something new 150 ms into the sequence; the page reads it on its next tick, mid-sequence.
+    await page.waitForFunction(() => document.querySelector("[data-testid=work-building]")!.getAnimations({ subtree: true }).some((a) => a.playState === "running"));
+    await page.waitForTimeout(150);
+    await setRows(page, first.map((entry) => entry.branch === "feat/idle-two" ? working("feat/idle-two", CLAUDE_LATER) : entry));
+    await expect(room(page, "feat/idle-two")).toHaveAttribute("data-room-size", "large", { timeout: 10_000 });
+    await waitForAnimationsDone(page.getByTestId("work-building"));
+    // A second rise reflows the stage, so no stage box ends up handed over whole.
+    await expectCleanPaint(page);
+    await expectSmoothMotion(page);
   });
 
   test("shows one room for the base branch when no worktree exists", async ({ page }) => {
