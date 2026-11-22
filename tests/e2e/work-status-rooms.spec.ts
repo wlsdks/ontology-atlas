@@ -348,6 +348,7 @@ test.describe("work status rooms", () => {
     await setRows(page, first);
     // Git says something new 150 ms into the sequence; the page reads it on its next tick, mid-sequence.
     await page.waitForFunction(() => document.querySelector("[data-testid=work-building]")!.getAnimations({ subtree: true }).some((a) => a.playState === "running"));
+    // measurement window: the next update must land 150 ms into the running sequence, the gap the owner set.
     await page.waitForTimeout(150);
     await setRows(page, first.map((entry) => entry.branch === "feat/idle-two" ? working("feat/idle-two", CLAUDE_LATER) : entry));
     await expect(room(page, "feat/idle-two")).toHaveAttribute("data-room-size", "large", { timeout: 10_000 });
