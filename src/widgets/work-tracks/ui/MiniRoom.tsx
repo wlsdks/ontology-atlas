@@ -7,10 +7,13 @@ import { BranchName } from './BranchName';
 import { CommitLog } from './CommitLog';
 import { RoomMoru } from './RoomMoru';
 import { SwapText } from './SwapText';
-import { SCREEN_COMMITS, type StatusTone, type useRoomCopy } from './use-room-copy';
+import type { StatusTone, useRoomCopy } from './use-room-copy';
 import styles from './rooms.module.css';
 
 type RoomCopy = ReturnType<typeof useRoomCopy>;
+
+/** Commit rows a spread mini room lists in its height. */
+const MINI_LOG_ROWS = 3;
 
 const TONE: Record<StatusTone, string> = {
   ink: styles.inkText,
@@ -61,7 +64,7 @@ export function MiniRoom({ room, copy, tint, showOwner, character }: { room: Roo
         ) : null}
       </div>
       <div className={styles.miniCols}>
-        {commits.length > 0 ? <CommitLog commits={commits} rows={SCREEN_COMMITS} /> : <span className="flex-1" />}
+        {commits.length > 0 ? <CommitLog commits={commits.slice(0, MINI_LOG_ROWS)} rows={MINI_LOG_ROWS} /> : <span className="flex-1" />}
         {files ? (
           <span className={cn(styles.miniFacts, 'text-label leading-label')}>
             <SwapText value={files.text} />

@@ -19,7 +19,8 @@ use super::worktrees::{is_plain_ref_name, points_back};
 
 /// A commit subject is text anyone with push access wrote; the page shows at most this much of it.
 pub(crate) const SUBJECT_MAX_CHARS: usize = 200;
-const COMMITS_READ: usize = 3;
+/// The most commits a screen lists: three, and up to two more where the room has height for them.
+const COMMITS_READ: usize = 5;
 /// A worktree with more uncommitted entries than this is counted in full, but only these are
 /// stat'd for the one that changed last.
 const STAT_LIMIT: usize = 500;

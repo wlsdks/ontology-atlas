@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SCREEN_H, WIDE_ROOM_W, layoutBuilding, pairUnit, stageCapacity, type Box, type LayoutInput } from './building-layout';
+import { SCREEN_H, SCREEN_ROW_H, WIDE_ROOM_W, layoutBuilding, pairUnit, screenRows, stageCapacity, type Box, type LayoutInput } from './building-layout';
 
 const keys = (prefix: string, count: number) => Array.from({ length: count }, (_, index) => `${prefix}${index}`);
 
@@ -35,8 +35,9 @@ describe('layoutBuilding', () => {
     const stage = keys('s', 3).map(key => result.rooms.get(key)!);
     const mini = result.rooms.get('m0')!;
     expect(stage[0].y).toBe(24);
-    // The screen over its console and the floor, nothing more.
-    expect(stage[0].h).toBe(24 + SCREEN_H + 45 * stage[0].unit);
+    // The screen over its console and the floor, and the height to spare as two more commit rows.
+    expect(stage[0].h).toBe(24 + SCREEN_H + 45 * stage[0].unit + 2 * SCREEN_ROW_H);
+    expect(screenRows(stage[0])).toBe(5);
     expect(mini.y - (stage[0].y + stage[0].h)).toBe(16);
     expectNoOverlap([...result.rooms.values()]);
   });
@@ -56,7 +57,7 @@ describe('layoutBuilding', () => {
     expect(new Set(stage.map(room => room.y)).size).toBe(1);
     expect(result.banded).toBe(true);
     expect(result.floors.size).toBe(5);
-    expect(result.height).toBe(1020);
+    expect(result.height).toBeLessThanOrEqual(1020);
     expect(result.heading?.kind).toBe('line');
     expectNoOverlap([...result.rooms.values(), ...result.floors.values(), result.shelf!, result.heading!]);
   });
@@ -66,6 +67,11 @@ describe('layoutBuilding', () => {
     const minis = keys('a', 14).map(key => result.rooms.get(key)!);
     expect(Math.min(...minis.map(room => room.w))).toBeGreaterThanOrEqual(240);
     expect(new Set(minis.map(room => room.y)).size).toBeGreaterThan(1);
+    // Every row ends at the floor's right edge: no hole after its last room.
+    for (const y of new Set(minis.map(room => room.y))) {
+      const row = minis.filter(room => room.y === y);
+      expect(Math.max(...row.map(room => room.x + room.w))).toBeGreaterThan(1776 - row.length - 8);
+    }
     expectNoOverlap([...result.rooms.values(), ...result.floors.values(), result.shelf!]);
   });
 
@@ -145,5 +151,12 @@ describe('floor rows', () => {
     expect(882 - 20 - 272 * pairUnit(882, 3)).toBeGreaterThanOrEqual(400);
     expect(pairUnit(1200, 3)).toBe(2.5);
     expect(pairUnit(428, 2)).toBe(1);
+  });
+
+  it('draws Moru at a half step in the owner\'s 1368px board, so he is not a speck beside his screen', () => {
+    const result = layout({ width: 1368, height: 820, stage: keys('s', 4), hasShelf: false });
+    const room = result.rooms.get('s0')!;
+    expect(room.unit).toBe(1.5);
+    expect(room.w - 20 - 152 * room.unit).toBeGreaterThanOrEqual(400);
   });
 });

@@ -16,10 +16,12 @@ fn a_subject_holding_the_separators_stays_one_whole_plain_line() {
          0f0f0f0{SEP}1699999000{SEP}한국어 제목 🚀 e\u{301}mojis\0\
          ffff000{SEP}1699990000{SEP}\u{202e}txt.exe\u{202c} spoof\0\
          notahash{SEP}1{SEP}dropped\0\
-         abcdef0{SEP}1{SEP}fourth is past the three read\0"
+         abcdef0{SEP}1{SEP}fourth\0\
+         1111111{SEP}1{SEP}fifth\0\
+         2222222{SEP}1{SEP}sixth is past the five read\0"
     );
     let lines = parse_log(&text);
-    assert_eq!(lines.len(), 3);
+    assert_eq!(lines.len(), 5);
     assert_eq!(lines[0].hash, "a1b2c3d");
     assert_eq!(lines[0].at, Some(1_700_000_000));
     assert_eq!(lines[0].subject, "fix: keep a b and tab here");

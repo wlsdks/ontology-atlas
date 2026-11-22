@@ -56,7 +56,7 @@ export interface MiniSubject {
 }
 
 /** The most commits a screen lists. */
-export const SCREEN_COMMITS = 3;
+export const SCREEN_COMMITS = 5;
 
 /**
  * Every sentence a room says, from its entry and the clock; the only place room copy is chosen. It

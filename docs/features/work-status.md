@@ -88,19 +88,23 @@ clean-up chore and always waits as a mini room under **No session**. The stage r
 order. A large room is one scene with one floor line and one light: Moru on
 the floor faces a screen on a console, and the screen is the only place in the
 room with words. Its head is the branch (the only mono text); under it the
-newest commits beyond the base branch, at most three, each one ellipsised line
+newest commits beyond the base branch, three, or up to five where the window
+leaves the room height for them, each one ellipsised line
 with how long ago it landed; at its foot what is not committed, with the name of
 the file changed last, and the commit count. When a commit lands it slides in at
 the top and the oldest fades out. The bezel under the screen names the holding
 session and the state with how long it has worked, beside a light that is green
 while something runs. The screen keeps its text size and at least 400 px of
 width, so a subject of about 55 characters reads whole; Moru's scale gives way
-instead, and each room is as tall as its screen or its Moru needs. A room
+instead, in half steps so his drawn pixels stay whole, and each room is as tall
+as its screen or its Moru needs. A quiet room's screen is not dimmed: its words
+keep their contrast and the bezel says it is quiet. The building ends under what
+it holds. A room
 narrower than 572 px hangs its screen on the wall above Moru. A track in the floor carries a cart with
 one crate per commit, six at most and then `+n`, through a hatch in the side wall
 marked `main`; Git does not tell pre-push, push, PR or CI yet, so nothing is drawn
-for them. Two tools in one folder are the alarm: the room's light and screen turn
-warning amber, the bezel says **Two tools in one folder**, and two Moru stand side by side
+for them. Two tools in one folder are the alarm: the room is framed in amber, its screen
+says so in amber beside the branch, its light and screen turn warning amber, the bezel says **Two tools in one folder**, and two Moru stand side by side
 and apart, one at the console and one beside him, both facing the screen, at a
 scale that leaves the screen its width. The room's top edge splits between the two sessions' inks.
 The second tool is a session of its own, numbered and inked (**Codex 1**), with a

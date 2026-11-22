@@ -134,6 +134,16 @@
   --lit: 0.7;
 }
 
+/* A room that needs a person is framed in amber, so it wins over the healthy lit rooms beside it. */
+.scene[data-tone='warning']::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--color-status-warning) 70%, transparent);
+}
+
 .scene > i,
 .scene > div,
 .scene > span {
@@ -517,7 +527,8 @@
 }
 
 .scene[data-lit='true'] .screen {
-  background: radial-gradient(
+  background-color: color-mix(in srgb, var(--room-ink) 13%, var(--work-room-screen));
+  background-image: radial-gradient(
     ellipse 90% 120% at 50% 40%,
     color-mix(in srgb, var(--room-ink) 13%, var(--work-room-screen)),
     color-mix(in srgb, var(--room-ink) 6%, var(--work-room-screen))
@@ -528,9 +539,6 @@
   background: color-mix(in srgb, var(--room-ink) 9%, var(--work-room-screen));
 }
 
-.scene:not([data-lit='true']):not([data-tone]) .screenText > * {
-  opacity: 0.5;
-}
 
 /* What the screen says, every line one line: the branch, the newest commits, then the files and the count. */
 .screenText {
@@ -550,6 +558,14 @@
   border-bottom: 1px solid color-mix(in srgb, var(--room-ink) 16%, color-mix(in srgb, var(--color-text-primary) 6%, transparent));
   color: var(--color-text-primary);
   white-space: nowrap;
+}
+
+/* What needs a person, at the top of the screen beside the branch. */
+.screenAlert {
+  flex: none;
+  margin-left: auto;
+  padding-left: 12px;
+  color: var(--color-status-warning);
 }
 
 .screenBranch {
@@ -629,7 +645,7 @@
 
 .commitAgo {
   flex: none;
-  color: var(--color-text-quaternary);
+  color: var(--color-text-tertiary);
   font-variant-numeric: tabular-nums;
 }
 
@@ -712,9 +728,6 @@
   color: var(--color-text-secondary);
 }
 
-.monitor[data-off='true'] .screenText > * {
-  opacity: 0.42;
-}
 
 /*
  * A room narrower than `WIDE_ROOM_W` hangs its screen across the wall above Moru, on a shelf; Moru
@@ -750,8 +763,7 @@
 }
 
 :where(.face:not([data-wide='true'])) .prop {
-  left: auto;
-  right: calc(18 * var(--s));
+  left: 12px;
   bottom: calc(var(--floor) - 2 * var(--s));
 }
 
@@ -922,7 +934,7 @@
 .niche {
   position: relative;
   flex: none;
-  width: 96px;
+  width: 72px;
   align-self: stretch;
 }
 
@@ -938,7 +950,7 @@
 .niche::after {
   content: "";
   position: absolute;
-  left: 14px;
+  left: 4px;
   right: 6px;
   bottom: 15px;
   height: 6px;
@@ -947,7 +959,7 @@
 
 .miniActor {
   position: absolute;
-  left: 16px;
+  left: 4px;
   bottom: 12px;
   z-index: 1;
   width: 64px;
@@ -958,7 +970,7 @@
 
 .miniZ {
   position: absolute;
-  left: 70px;
+  left: 56px;
   bottom: 58px;
   z-index: 1;
   line-height: 8px;
@@ -968,7 +980,7 @@
 .niche .crate {
   --s: 3px;
   position: absolute;
-  left: 34px;
+  left: 24px;
   bottom: 16px;
   z-index: 1;
 }

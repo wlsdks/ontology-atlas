@@ -7,7 +7,7 @@ import { MOTION } from '@/shared/motion';
 import { CART_CRATES, cartLoad, moruPhase, roomIdentity, roomLook, roomOnce, type MoruCharacter } from '../model/room-look';
 import { MERGE_LIGHTS_OUT_MS } from '../model/moru-clock';
 import { useRise } from '../model/use-rise';
-import type { RoomUnit } from '../model/building-layout';
+import { SCREEN_H, SCREEN_ROW_H, type RoomUnit } from '../model/building-layout';
 import { BranchName } from './BranchName';
 import { CommitLog } from './CommitLog';
 import { RoomMoru } from './RoomMoru';
@@ -18,8 +18,6 @@ import styles from './rooms.module.css';
 type RoomCopy = ReturnType<typeof useRoomCopy>;
 
 const LABEL = 'text-label leading-label';
-/** Commit rows on every screen: its height in pixels holds three whatever the room's size. */
-const SCREEN_ROWS = 3;
 
 /** How long a screen that says something else takes to hand over: the old text fades as the new comes up. */
 const SCREEN_SWAP_MS = MOTION.slow.duration * 1000;
@@ -65,6 +63,8 @@ function ScreenText({ screen, rows }: { screen: MonitorCopy; rows: number }) {
     <>
       <div className={styles.screenHead}>
         <BranchName branch={screen.branch} className={cn(styles.screenBranch, 'font-mono font-[var(--font-weight-strong)]')} />
+        {/* A room that needs a person says so at the top of its screen, in amber, not only on the bezel. */}
+        {screen.state.tone === 'warning' ? <span className={cn(styles.screenAlert, 'text-body leading-body font-[var(--font-weight-strong)]')}>{screen.state.lead}</span> : null}
       </div>
       {screen.commits.length > 0 ? (
         <CommitLog commits={screen.commits.slice(0, rows)} rows={rows} className={styles.screenLog} />
@@ -90,11 +90,10 @@ function ScreenText({ screen, rows }: { screen: MonitorCopy; rows: number }) {
 }
 
 /** The screen standing on its console: the room's light and the only place in it with words. */
-function Monitor({ room, copy }: { room: RoomEntry; copy: RoomCopy }) {
+function Monitor({ room, copy, rows }: { room: RoomEntry; copy: RoomCopy; rows: number }) {
   const look = roomLook(room.state);
   const screen = copy.monitor(room);
   const { leaving, serial } = useScreenSwap(room.state.kind, screen);
-  const rows = SCREEN_ROWS;
   return (
     <div className={styles.monitor} data-off={look.monitorOff}>
       <i className={styles.neck} />
@@ -171,11 +170,13 @@ function Cart({ room, landing }: { room: RoomEntry; landing: number }) {
  * hatch in the side wall, and the belt is a track in the floor that leaves through it. Two tools in
  * one folder: the second Moru stands behind the first on his tail side, both facing the screen.
  */
-export function LargeRoom({ room, unit, pairScale, copy, tint, guestTint, retiring, entered, faceId, character }: {
+export function LargeRoom({ room, unit, rows, pairScale, copy, tint, guestTint, retiring, entered, faceId, character }: {
   room: RoomEntry;
   /** The room's Moru, cast across the building. */
   character: MoruCharacter;
   unit: RoomUnit;
+  /** Commit rows its screen lists (`screenRows`): the screen grows by a row for each. */
+  rows: number;
   /** The share of `unit` two Moru take when two tools share the folder (`pairUnit`). */
   pairScale: number;
   /** The room is new to the building, or newly on the stage: Moru settles in once. */
@@ -204,7 +205,7 @@ export function LargeRoom({ room, unit, pairScale, copy, tint, guestTint, retiri
       <div
         data-scene
         className={styles.scene}
-        style={{ '--u': unit, '--pair': pairScale, '--lights-out': `${MERGE_LIGHTS_OUT_MS}ms` } as CSSProperties}
+        style={{ '--u': unit, '--pair': pairScale, '--screen-h': `${SCREEN_H + (rows - 3) * SCREEN_ROW_H}px`, '--lights-out': `${MERGE_LIGHTS_OUT_MS}ms` } as CSSProperties}
         data-lit={look.running}
         data-tone={tone}
         data-dark={retiring}
@@ -237,7 +238,7 @@ export function LargeRoom({ room, unit, pairScale, copy, tint, guestTint, retiri
             </span>
           </>
         ) : null}
-        <Monitor room={room} copy={copy} />
+        <Monitor room={room} copy={copy} rows={rows} />
         <i className={styles.dim} />
       </div>
     </div>
