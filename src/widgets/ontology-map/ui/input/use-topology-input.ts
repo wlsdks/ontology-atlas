@@ -40,7 +40,7 @@ import {
 import { type TierRevealConfig } from "../../model/visibility/tier-visibility";
 import type { ClusterBarLabels } from "../../render/cluster-chips/control-placement";
 import { centerForInsets } from "../camera/target/safe-insets";
-import { computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin } from "../camera/target/zoom-range";
+import { computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin, drawsFlatGraph } from "../camera/target/zoom-range";
 import { createTopologyPointerHandlers } from "./topology-pointer-handlers";
 import type { HoverAvoidRect, NodeDragState, TopologyPointerHandlers } from "./topology-pointer-types";
 import { readOntologyMapTokensOrNull } from "../../tokens/topology-read-tokens";
@@ -413,7 +413,7 @@ export function useTopologyInput({
       const target = cameraTargetRef.current;
       const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
       const scaleMax = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax, worldRef.current?.dialScaleMax ?? undefined);
-      let scaleMin = computeEffectiveCameraScaleMin(overviewEntryScale, tokens.cameraMinZoomRatio, tokens.cameraScaleMin);
+      let scaleMin = computeEffectiveCameraScaleMin(overviewEntryScale, tokens.cameraMinZoomRatio, tokens.cameraScaleMin, drawsFlatGraph(worldRef.current));
       const dome = domeRuntimeRef.current;
       if (dome !== null && dome.active) {
         if (dome.fitScale !== null) scaleMin = Math.min(scaleMin, dome.fitScale);
