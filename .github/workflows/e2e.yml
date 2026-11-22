@@ -125,8 +125,8 @@ jobs:
     needs: [changes, build]
     if: ${{ !cancelled() }}
     runs-on: macos-15
-    # budget: 300s (cache-hit; the cold path adds the bounded browser install,
-    # whose 12-minute worst case ci-bounded-network.contract.test.ts owns)
+    # budget: 180s (159 s in run 45020130503, 2026-11-22; the cold path adds the bounded
+    # browser install, whose 12-minute worst case ci-bounded-network.contract.test.ts owns)
     timeout-minutes: 30
     env:
       ACTIVE: ${{ needs.changes.outputs.static == 'true' || needs.changes.outputs.web == 'true' }}
@@ -190,15 +190,18 @@ jobs:
           retention-days: 7
 
   # Three shards of two workers each: a macos-15 runner has three cores, and the free account runs
-  # five macOS jobs at once, which the shards, the surfaces and the quarantined specs fill.
+  # five macOS jobs at once, which the shards, the surfaces and the quarantined specs fill. The first
+  # whole run (45020130503, 2026-11-22) took 16.3, 21.3 and 23.3 minutes per shard and 25 minutes
+  # end to end, with no queue; 6,605 test-seconds against 4,071 on Linux. Its timings now weight
+  # the shards (`pnpm e2e:durations`).
   suite:
     name: Browser suite (macOS ${{ matrix.shard }}/3)
     needs: [changes, build]
     if: ${{ !cancelled() }}
     runs-on: macos-15
-    # budget: 900s (cache-hit; the cold path adds the bounded browser install,
-    # whose 12-minute worst case ci-bounded-network.contract.test.ts owns)
-    timeout-minutes: 40
+    # budget: 1400s (the widest shard of run 45020130503 before rebalancing; the cold path adds
+    # the bounded browser install, whose 12-minute worst case ci-bounded-network.contract.test.ts owns)
+    timeout-minutes: 35
     strategy:
       fail-fast: false
       matrix:
@@ -276,8 +279,8 @@ jobs:
     if: ${{ !cancelled() && needs.changes.outputs.playwright == 'full' && needs.changes.outputs.quarantined != '0' && needs.build.result == 'success' }}
     runs-on: macos-15
     continue-on-error: true
-    # budget: 600s (cache-hit; the cold path adds the bounded browser install,
-    # whose 12-minute worst case ci-bounded-network.contract.test.ts owns)
+    # budget: 600s (not yet measured: the registry was empty in the first run; the cold path adds
+    # the bounded browser install, whose 12-minute worst case ci-bounded-network.contract.test.ts owns)
     timeout-minutes: 30
     env:
       PLAYWRIGHT_PREBUILT: "1"
