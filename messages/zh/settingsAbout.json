@@ -74,7 +74,7 @@
     "versionReading": "正在读取版本…",
     "versionUnknown": "无法读取版本。检查更新时会再次读取。",
     "versionUnknownRetried": "无法读取版本。",
-    "autoOn": "每 4 小时检查一次。打开应用时，如果距上次检查已超过 4 小时，会立即检查。",
+    "autoOn": "每小时检查一次。打开应用时，如果距上次检查已超过 1 小时，会立即检查。",
     "autoOff": "Atlas 不会自行检查。按下“检查更新”时仍会去询问。",
     "autoLast": "上次检查：{when}。",
     "autoNever": "这台电脑上还没检查过。",

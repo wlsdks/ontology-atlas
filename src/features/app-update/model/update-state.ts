@@ -14,8 +14,8 @@ export type UpdatePhase =
   | { kind: 'ready'; version: string }
   | { kind: 'failed'; operation: 'check' | 'install'; message: string };
 
-/** An app left open for days still hears about a release within a working session. */
-export const CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000;
+/** An app left open hears about a release within the hour it is published. */
+export const CHECK_INTERVAL_MS = 60 * 60 * 1000;
 
 /** How often an open app asks itself whether a check is due; at most one automatic request per tick. */
 export const AUTO_CHECK_TICK_MS = 30 * 60 * 1000;
