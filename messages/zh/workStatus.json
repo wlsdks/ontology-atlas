@@ -25,8 +25,7 @@
     "below": "下方 {count}"
   },
   "stage": {
-    "label": "工作中的工作树",
-    "moreBelow": "楼下还有 <lead>{count}</lead> 个工作中"
+    "label": "工作中的工作树"
   },
   "room": {
     "working": "工作中",
@@ -43,27 +42,18 @@
     "lastCommit": "最后一次提交 {ago}",
     "commits": "{count} 个提交",
     "noCommits": "还没有提交",
-    "onlyInGit": "只留在 Git 中"
+    "onlyInGit": "只留在 Git 中",
+    "notInBase": "{count} 个提交不在 {branch} 中"
   },
   "monitor": {
-    "running": "正在运行命令",
-    "twoTools": "两个工具在同一文件夹",
-    "twoToolsNote": "它们的更改可能混在一起",
-    "idle": "没有运行中的命令",
     "lockedAt": "{time} 锁定",
-    "ended": "会话已结束",
-    "noSession": "没有会话",
     "noCommitsNote": "{branch} 之后没有提交",
     "notMeasured": "无法与 {branch} 比较",
     "prune": "运行 <code>git worktree prune</code> 会删除它的记录",
-    "heldBy": "{session} 仍占用此文件夹",
     "unreadableLock": "锁中没有 Atlas 能读取的会话名",
-    "workingMinutes": "已工作 {count} 分钟",
-    "workingWholeHours": "已工作 {count} 小时",
-    "workingHours": "已工作 {hours} 小时 {minutes} 分钟"
-  },
-  "belt": {
-    "notRead": "之后的步骤还读不到"
+    "workedMinutes": "已 {count} 分钟",
+    "workedWholeHours": "已 {count} 小时",
+    "workedHours": "已 {hours} 小时 {minutes} 分钟"
   },
   "shelf": {
     "merged": "已合并到 {branch}",
@@ -95,5 +85,14 @@
     "sameFolder": "同一文件夹 {count}",
     "cleanup": "待清理 {count}",
     "pointTo": "显示是哪些工作树"
+  },
+  "git": {
+    "uncommitted": "{count} 个文件未提交",
+    "clean": "全部已提交"
+  },
+  "floor": {
+    "below": "下面几层",
+    "working": "{count} 个工作中",
+    "worktrees": "{count} 个工作树"
   }
 }

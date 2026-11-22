@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { WorkStatusSnapshot, WorktreeRow } from './tauri-work-status';
-import { DOZE_AFTER_MS, NO_SESSION_FLOOR, UNTOUCHED_AFTER_MS, branchTitle, buildWorkTracks, keepSessionIdentity, planRooms, stageOf } from './work-tracks';
+import { DOZE_AFTER_MS, NO_SESSION_FLOOR, UNTOUCHED_AFTER_MS, branchTitle, buildWorkTracks, keepSessionIdentity, planRooms, stageOf, withActivity } from './work-tracks';
 
 function row(id: string, patch: Partial<WorktreeRow> = {}): WorktreeRow {
   return {
@@ -251,5 +251,16 @@ describe('keepSessionIdentity', () => {
       row('b', { lock: live(2, 200, 2) }), row('c', { lock: live(3, 300, 3) }), row('d', { lock: live(4, 400, 4) }),
     ]));
     expect(keepSessionIdentity(third, after.identities).tracks.sessions.at(-1)).toMatchObject({ ink: 0, ordinal: 1 });
+  });
+});
+
+describe('withActivity', () => {
+  it('joins a read onto its worktree without moving any room', () => {
+    const tracks = buildWorkTracks(snapshot([row('a', { lock: live(7, 1, 1) }), row('b')]));
+    const read = { stamp: 's', commits: [{ hash: 'abc1234', subject: 'fix: 한국어 🚀', at: 1 }], uncommitted: 0, latestFile: null };
+    const joined = withActivity(tracks, new Map([['b', read]]));
+    expect(joined.unheld[0].activity).toBe(read);
+    expect(joined.sessions[0].tracks[0]).toBe(tracks.sessions[0].tracks[0]);
+    expect(planRooms(joined, 0).stage.map(room => room.key)).toEqual(planRooms(tracks, 0).stage.map(room => room.key));
   });
 });

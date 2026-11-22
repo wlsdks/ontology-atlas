@@ -40,31 +40,58 @@ const SIX = [
   row("fix/rail-tooltip", { standing: "merged", ahead: 0 }),
 ];
 
-async function openWorkStatus(page: Page, rows: Row[]) {
+type Activity = Record<string, { commits: { hash: string; subject: string; at: number }[] | null; uncommitted: number; latestFile: string | null }>;
+
+async function openWorkStatus(page: Page, rows: Row[], activity: Activity = {}) {
   await seedFirstRunSeen(page);
-  await page.addInitScript((initial: Row[]) => {
-    const state = { rows: initial, version: 1 };
+  await page.addInitScript(({ initial, reads }: { initial: Row[]; reads: Activity }) => {
+    const state = { rows: initial, version: 1, activity: reads, activityVersion: 1 };
     const target = window as unknown as Record<string, unknown>;
     target.__workStatusRows = (next: Row[]) => { state.rows = next; state.version += 1; };
+    target.__workStatusActivity = (next: Activity) => { state.activity = next; state.activityVersion += 1; };
     target.isTauri = true;
     target.__TAURI_EVENT_PLUGIN_INTERNALS__ = { unregisterListener: () => undefined };
     target.__TAURI_INTERNALS__ = {
       transformCallback: () => 1,
-      invoke(command: string) {
+      invoke(command: string, args: { worktreeId?: string } = {}) {
         const answer = (value: unknown) => new Promise(resolve => setTimeout(() => resolve(value), 60));
         if (command === "pick_source_directory") return answer("/Users/probe/repo");
         if (command === "work_status_fingerprint") return answer(`v${state.version}`);
+        if (command === "work_status_activity_stamps") {
+          return answer(Object.fromEntries(Object.keys(state.activity).map((id) => [id, `s${state.activityVersion}`])));
+        }
+        if (command === "work_status_activity") {
+          const read = state.activity[args.worktreeId ?? ""];
+          return answer(read ? { stamp: `s${state.activityVersion}`, ...structuredClone(read) } : null);
+        }
         if (command === "work_status_read") {
           return answer({ status: "ready", root: "/Users/probe/repo", repository: "repo", host: "github.com", baseBranch: "main", worktrees: structuredClone(state.rows) });
         }
         return Promise.reject(new Error(`unstubbed native command: ${command}`));
       },
     };
-  }, rows);
+  }, { initial: rows, reads: activity });
   await page.setViewportSize({ width: 1920, height: 1080 });
   await page.goto("/en/work-status/");
   await page.getByTestId("work-status-choose").click();
 }
+
+/** Commit subjects are anyone's text: one past the monitor's width, Korean, and an emoji. */
+const LONG_SUBJECT = `feat(work-status): ${"show what each worktree is doing, in words a person reads at a glance, ".repeat(3)}`.slice(0, 200);
+const ACTIVITY: Activity = {
+  "feat-library-stage": {
+    commits: [
+      { hash: "a1b2c3d", subject: LONG_SUBJECT, at: NOW_S - 120 },
+      { hash: "b2c3d4e", subject: "fix(library): 첫 화면 문구를 짧게 🚀", at: NOW_S - 900 },
+      { hash: "f6a7b8c", subject: "test(library): the first screen's copy", at: NOW_S - 3600 },
+    ],
+    uncommitted: 3,
+    latestFile: "src/views/library/LibraryPage.tsx",
+  },
+  "feat-work-status-rooms": { commits: [], uncommitted: 12, latestFile: "src\\widgets\\work-tracks\\ui\\LargeRoom.tsx" },
+  "feat-map-light": { commits: [{ hash: "c3d4e5f", subject: "design(map): 빛 레이어를 부드럽게 ✨", at: NOW_S - 300 }], uncommitted: 0, latestFile: null },
+  "fix-rail-copy": { commits: [{ hash: "d4e5f60", subject: "fix: 레일 툴팁 문구 🧭", at: NOW_S - 600 }], uncommitted: 0, latestFile: null },
+};
 
 const room = (page: Page, branch: string) => page.getByTestId("work-room").filter({ hasText: branch });
 
@@ -552,6 +579,89 @@ test.describe("work status rooms", () => {
     const rises = frames.flatMap((frame, index) => frames.slice(index + 1).filter((later) => later.time - frame.time <= 40 && later.shown - frame.shown > 0.35).map((later) => `${frame.shown.toFixed(2)}→${later.shown.toFixed(2)}`));
     expect(rises.slice(0, 4), "the building cut in").toEqual([]);
     expect(frames.at(-1)!.shown).toBe(1);
+  });
+
+  test("names what each worktree is doing on its screen, inside the screen, and slides a new commit in", async ({ page }) => {
+    await openWorkStatus(page, [...SIX, row("fix/rail-copy")], ACTIVITY);
+    const stage = room(page, "feat/library-stage").getByTestId("work-room-monitor");
+    await expect(stage).toContainText(LONG_SUBJECT.slice(0, 40));
+    // Under the commits: what is not committed, with the file changed last; the bezel says how long the session has worked.
+    await expect(stage).toContainText("3 files changed, not committed");
+    await expect(stage).toContainText("LibraryPage.tsx");
+    await expect(room(page, "feat/library-stage")).toContainText(/working \d+ h/);
+    await expect(room(page, "feat/map-light").getByTestId("work-room-monitor")).toContainText("빛 레이어를 부드럽게 ✨");
+    const editing = room(page, "feat/work-status-rooms").getByTestId("work-room-monitor");
+    await expect(editing).toContainText("12 files changed, not committed");
+    await expect(editing).toContainText("LargeRoom.tsx");
+    await expect(editing).not.toContainText("widgets");
+    await expect(room(page, "fix/rail-copy")).toHaveAttribute("data-room-size", "mini");
+    await expect(room(page, "fix/rail-copy")).toContainText("레일 툴팁 문구 🧭");
+    await waitForAnimationsDone(page.getByTestId("work-building"));
+
+    // Text is whole on its screen or wholly clipped away; none runs past the screen's edge.
+    const spills = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>("[data-testid=work-room-monitor]")].flatMap((screen) => {
+      const edge = screen.getBoundingClientRect();
+      return [...screen.querySelectorAll<HTMLElement>("span, div")].filter((element) => element.childElementCount === 0 && element.textContent).flatMap((element) => {
+        const box = element.getBoundingClientRect();
+        const outside = box.left >= edge.right - 1 || box.top >= edge.bottom - 1;
+        const inside = box.left >= edge.left - 0.5 && box.right <= edge.right + 0.5 && box.top >= edge.top - 0.5 && box.bottom <= edge.bottom + 0.5;
+        return outside || inside ? [] : [`${element.textContent}`];
+      });
+    }));
+    expect(spills, "text past a screen's edge").toEqual([]);
+
+    // Every frame from here, each commit row's place and opacity as the page computes them.
+    await page.evaluate(() => {
+      const log = () => [...document.querySelectorAll("[data-testid=work-room]")].find((element) => element.textContent?.includes("feat/library-stage"))?.querySelector("[data-testid=work-room-log]");
+      const trace: { time: number; rows: Record<string, { y: number; opacity: number; leaving: boolean }> }[] = [];
+      Object.assign(window, { __commitTrace: trace });
+      let last = Number.NaN;
+      const sample = () => {
+        const time = Number(document.timeline.currentTime);
+        if (time !== last) {
+          last = time;
+          const rows: (typeof trace)[number]["rows"] = {};
+          for (const element of log()?.querySelectorAll<HTMLElement>("[data-commit]") ?? []) {
+            const style = getComputedStyle(element);
+            rows[element.dataset.commit!] = { y: new DOMMatrix(style.transform).m42, opacity: Number(style.opacity), leaving: element.dataset.leaving !== undefined };
+          }
+          trace.push({ time, rows });
+          // Keep a few frames from before the new commit lands, then ninety after it.
+          if (!trace.some((frame) => "e5f6071" in frame.rows) && trace.length > 4) trace.shift();
+        }
+        if (trace.filter((frame) => "e5f6071" in frame.rows).length < 90) requestAnimationFrame(sample);
+      };
+      requestAnimationFrame(sample);
+    });
+    await page.evaluate((next) => (window as unknown as { __workStatusActivity: (next: unknown) => void }).__workStatusActivity(next), {
+      ...ACTIVITY,
+      "feat-library-stage": { ...ACTIVITY["feat-library-stage"], commits: [{ hash: "e5f6071", subject: "fix: 새 커밋이 들어왔어요", at: NOW_S - 5 }, ...ACTIVITY["feat-library-stage"].commits!.slice(0, 2)] },
+    });
+    await expect(stage).toContainText("새 커밋이 들어왔어요", { timeout: 15_000 });
+    await page.waitForFunction(() => (window as unknown as { __commitTrace: { rows: object }[] }).__commitTrace.filter((frame) => "e5f6071" in frame.rows).length >= 90, null, { timeout: 15_000 });
+    const trace = await page.evaluate(() => (window as unknown as { __commitTrace: { time: number; rows: Record<string, { y: number; opacity: number; leaving: boolean }> }[] }).__commitTrace);
+    const rowH = await stage.locator("[data-commit]").first().evaluate((element) => element.getBoundingClientRect().height);
+    const series = (key: string) => trace.filter((frame) => key in frame.rows).map((frame) => ({ time: frame.time, ...frame.rows[key] }));
+    const steps = (values: { time: number; y: number; opacity: number }[], field: "y" | "opacity") =>
+      values.slice(1).map((value, index) => ({ change: value[field] - values[index][field], dt: value.time - values[index].time }));
+
+    // The new commit fades in at the top and stays there.
+    const fresh = series("e5f6071");
+    expect(fresh[0].opacity, "the new row starts unseen").toBeLessThan(0.5);
+    expect(fresh.at(-1)!.opacity).toBe(1);
+    expect(fresh.every((frame) => frame.y === 0), "the new row stays at the top").toBe(true);
+    expect(steps(fresh, "opacity").every(({ change }) => change >= -0.01), "the new row only brightens").toBe(true);
+    // Every older row moves down only, a little each frame, never a whole row at once.
+    for (const key of ["a1b2c3d", "b2c3d4e", "f6a7b8c"]) {
+      const moves = steps(series(key), "y");
+      expect(moves.every(({ change }) => change >= -0.5), `${key} only moves down`).toBe(true);
+      expect(moves.filter(({ dt }) => dt <= 40).every(({ change }) => change <= rowH * 0.6), `${key} never jumps a row`).toBe(true);
+    }
+    // The row pushed past the last place fades out where it goes, then leaves.
+    const gone = series("f6a7b8c").filter((frame) => frame.leaving);
+    expect(gone.length, "the oldest row is drawn while it leaves").toBeGreaterThan(3);
+    expect(steps(gone, "opacity").every(({ change }) => change <= 0.01), "the oldest row only fades").toBe(true);
+    expect(trace.at(-1)!.rows).not.toHaveProperty("f6a7b8c");
   });
 
   test("shows one room for the base branch when no worktree exists", async ({ page }) => {
