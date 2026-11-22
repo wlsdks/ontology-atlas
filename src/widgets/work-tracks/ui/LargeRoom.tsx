@@ -1,5 +1,6 @@
 'use client';
 
+import type { CSSProperties } from 'react';
 import { useTranslations } from 'next-intl';
 import type { RoomEntry } from '@/shared/lib/work-status/work-tracks';
 import { cn } from '@/shared/lib/cn';
@@ -120,7 +121,7 @@ export function LargeRoom({ room, unit, copy, tint, guestTint, retiring }: {
   const guestInk = guest ? `var(--work-session-${guest.ink + 1})` : 'var(--work-unheld)';
   return (
     <div className={cn(styles.large, 'h-full w-full')} data-pair={pair || undefined} style={pair ? { ['--guest-ink' as string]: guestInk } : undefined}>
-      <div data-scene className={styles.scene} style={{ ['--u' as string]: unit }} data-lit={look.running} data-dark={retiring} data-cast={pair ? 'two' : look.cast} data-alarm={pair}>
+      <div data-scene className={styles.scene} style={{ '--u': unit } as CSSProperties} data-lit={look.running} data-dark={retiring} data-cast={pair ? 'two' : look.cast} data-alarm={pair}>
         <i className={styles.glow}><i className={styles.glowLight} /></i>
         <i className={styles.wainscot} />
         <i className={styles.floor} />
