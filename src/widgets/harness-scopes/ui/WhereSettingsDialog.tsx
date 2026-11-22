@@ -327,6 +327,11 @@ function WhereSettingsBody({
                         <span className={cn('shrink-0 text-body', selected ? 'font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]' : 'text-[color:var(--color-text-secondary)]')}>
                           {entry.name}
                         </span>
+                        {entry.picked ? (
+                          <span className="shrink-0 rounded-chip border border-[color:var(--color-indigo-line-a35)] px-1.5 text-label text-[color:var(--color-text-secondary)]">
+                            {say({ key: 'scopes.picked' })}
+                          </span>
+                        ) : null}
                         {entry.pathIsCode && !entry.picked ? (
                           <span className={cn('min-w-0 truncate font-mono text-label', selected ? 'text-[color:var(--color-text-tertiary)]' : 'text-[color:var(--color-text-quaternary)]')}>
                             {entry.shortPath}

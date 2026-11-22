@@ -268,7 +268,7 @@
       "claude": "It runs together with the hooks in every other file. The same hook in two files runs once.",
       "codex": "It runs together with the hooks in every other file. The same command in two files can run twice."
     },
-    "webNote": "This browser shows what each file is. The desktop app also shows what is in yours.",
+    "webNote": "Only what each file is. The desktop app also shows what is in yours.",
     "webStageNote": "What each settings file is and who it affects can be seen in the browser too.",
     "notRead": {
       "claude": "A policy your organisation sends without a file, whether you trusted this folder in Claude Code, and the skills, subagents and instruction files in your home folder. A settings folder moved with CLAUDE_CONFIG_DIR is read only after you choose its file with Show another settings file.",

@@ -149,7 +149,7 @@ function ScopeFileHeading({
   return (
     <div
       data-scope-heading={file.id}
-      className="sticky top-0 z-[1] flex flex-col gap-px border-t border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-2.5 pb-1 pt-[7px]"
+      className="sticky -top-4 z-[1] flex flex-col gap-px border-t border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-2.5 pb-1 pt-[7px]"
     >
       <div className="flex h-5 min-w-0 items-center gap-2">
         <ReachMark reach={SCOPE_REACH[file.scope]} />
@@ -271,7 +271,8 @@ export function ScopeHookList({
                             <span className={cn('min-w-0 flex-1 truncate font-mono text-body', selected ? 'text-[color:var(--color-text-primary)]' : 'text-[color:var(--color-text-secondary)]')}>
                               {hookLabel(hook)}
                             </span>
-                            {item ? <ItemStatus item={item} oneLine t={t} /> : null}
+                            {/* A wired hook needs no mark; only a missing or unresolved script does. */}
+                            {item && item.hookStatus !== 'wired' ? <ItemStatus item={{ ...item, approvalGate: undefined }} oneLine t={t} /> : null}
                             <HookTags file={heading.file} tags={tags} t={t} />
                           </span>
                           <span className="flex min-w-0 items-baseline gap-2 overflow-hidden font-mono text-label">
