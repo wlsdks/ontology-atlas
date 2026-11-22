@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 
 import { seedFirstRunSeen } from "../../first-run-seed";
-import { stubDirectoryPicker } from "../../vault-picker-stub";
+import { stubDirectoryPicker, writeFolderBeforePick } from "../../vault-picker-stub";
 
 /**
  * The Wiki column is the wiki's index (`docs/specs/2026-11-21-library-index-column.md`, criteria
@@ -83,9 +83,11 @@ function manyPages(count: number): Record<string, string> {
 async function openWiki(page: Page, vault: Record<string, string>, { locale = "en", width = 1920, height = 1080 } = {}) {
   await page.setViewportSize({ width, height });
   await seedFirstRunSeen(page);
-  await stubDirectoryPicker(page, vault);
+  await stubDirectoryPicker(page, {});
   await page.goto(`/${locale}/library/?tab=wiki`);
   await page.waitForLoadState("networkidle");
+  // Written before the press, so the wait below times the Library reading the folder, not the fixture writing it.
+  await writeFolderBeforePick(page, vault);
   const picker = page.getByTestId("library-open-vault");
   await picker.waitFor({ timeout: 25_000 });
   await picker.click();

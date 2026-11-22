@@ -172,6 +172,9 @@ async function openAndAudit(page: Page, o: Opener) {
     const harness = await openLibraryWorkScenario(page);
     await harness.read(page);
     await expect(page.getByTestId("library-work-current")).toBeVisible();
+    // Recent lists finished work only, so the read finishes before the list has a row to open.
+    await harness.wait(page);
+    await expect(page.getByTestId("library-work-current")).toHaveAttribute("data-work-kind", "waiting");
   }
   if (o.dogfood) {
     await page.addInitScript(() => {
