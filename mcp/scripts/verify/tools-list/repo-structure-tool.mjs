@@ -15,7 +15,7 @@ export function repoStructureToolSchemaFailure(tools) {
   const analyzeRootPathSchema = propertyAt(analyzeTool, ['properties', 'rootPath']);
   if (
     analyzeRootPathSchema?.type !== 'string' ||
-    analyzeRootPathSchema.minLength !== 1 ||
+    (analyzeRootPathSchema.minLength ?? 1) !== 1 ||
     !/Repository root to analyze/i.test(analyzeRootPathSchema.description || '') ||
     !/Defaults to the MCP server cwd/i.test(analyzeRootPathSchema.description || '')
   ) {

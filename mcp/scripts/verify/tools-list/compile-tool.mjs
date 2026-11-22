@@ -20,7 +20,7 @@ export function compileToolSchemaFailure(tools) {
   const compileSummarySchema = propertyAt(compileTool, ['properties', 'summary']);
   if (
     compileSummarySchema?.type !== 'boolean' ||
-    !/omit `nodes` \/ `edges` \/ `aliases`/i.test(compileSummarySchema.description || '') ||
+    !/counts/i.test(compileSummarySchema.description || '') ||
     !/Cheap polling for cache invalidation/i.test(compileSummarySchema.description || '')
   ) {
     return 'compile_ontology summary schema guidance drift';
@@ -30,8 +30,7 @@ export function compileToolSchemaFailure(tools) {
     compileNodesLimitSchema?.type !== 'integer' ||
     compileNodesLimitSchema.minimum !== 1 ||
     compileNodesLimitSchema.maximum !== 500 ||
-    !/Pair with `nodesOffset` to paginate/i.test(compileNodesLimitSchema.description || '') ||
-    !/max 500/i.test(compileNodesLimitSchema.description || '')
+    !/`nodesOffset`/i.test(compileNodesLimitSchema.description || '')
   ) {
     return 'compile_ontology nodesLimit pagination guidance drift';
   }

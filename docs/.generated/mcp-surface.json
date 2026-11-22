@@ -25,6 +25,7 @@
           "body",
           "capabilities",
           "domain",
+          "domains",
           "elements",
           "kind",
           "labels",

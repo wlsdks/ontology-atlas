@@ -235,7 +235,7 @@ export function vaultQueryToolsSchemaFailure(tools) {
   const orphanKindSchema = propertyAt(findOrphansTool, ['properties', 'kind']);
   if (
     orphanKindSchema?.type !== 'string' ||
-    orphanKindSchema.minLength !== 1 ||
+    (orphanKindSchema.minLength ?? 1) !== 1 ||
     !sameArray(orphanKindSchema.enum, NODE_KIND_VALUES) ||
     !/Restrict to one kind/i.test(orphanKindSchema.description || '') ||
     !/Omit for all kinds/i.test(orphanKindSchema.description || '')
