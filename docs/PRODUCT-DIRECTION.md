@@ -90,7 +90,7 @@ current value emphasis and workflow priorities where wording differs.
 
 > **[v10 Identity, 2026-07-18] — agent-native, human-sovereign (agents write directly, humans make final judgments).**
 > This product is not a "system *for* agents." It is **a single layer of meaning that humans and AI agents read and edit together**, with agents being formal users just like humans. Here, *meaning layer* refers to the markdown folder where each part of the product's identity, responsibility, and proof are recorded.
-> Agents maintain this folder in its latest state and are also the ones who read it most (MCP/CLI), while humans make the final judgment on what the correct meaning is — what humans see is ordinary markdown and git diffs, and the original files are on their own disks. These two categories and locations differ. One is a repository only machines read (vector DB · auto extraction), which loses in automation scale competition. The other is a wiki only humans use, which quickly becomes outdated.
+> Agents maintain this folder in its latest state and are also the ones who read it most (MCP), while humans make the final judgment on what the correct meaning is — what humans see is ordinary markdown and git diffs, and the original files are on their own disks. These two categories and locations differ. One is a repository only machines read (vector DB · auto extraction), which loses in automation scale competition. The other is a wiki only humans use, which quickly becomes outdated.
 > **Marketing copy starts from the friction experienced while using agents, but the product's core remains "a set used together by both."** Every screen must satisfy two things: can agents use it directly (typed facts · redirect text), and can humans read and judge it (plain language · visible priority)?
 > The first screen is also split. The public web has an introduction page (the place to bring people in), and the installed app has a first-run screen that opens folders immediately like Obsidian (no marketing copy).
 
@@ -118,7 +118,7 @@ Historical launch framing (v4, 2026-05-18; superseded by v11):
 
 - Product name split (v6, 2026-06-03): **Ontology Atlas** is the user-facing
   desktop app / website brand and the release asset identity.
-  `ontology-atlas` stays the repository, CLI binary, and MCP package name. The
+  `ontology-atlas` stays the repository and MCP package name. The
   Tauri bundle product name is `Ontology Atlas`, the bundle identifier is
   `dev.jinan.ontology-atlas`, and DMG filenames use `ontology-atlas_*`.
   The Tauri bundle product name remains the installed app identity users see in
@@ -200,7 +200,7 @@ The coding-agent promise is not that Atlas replaces source search or stores an
 exhaustive symbol graph. Built-in search, grep, language servers, Serena,
 CodeGraph, and AST indexes should remain optional structural layers for
 definitions, callers, imports, and local code impact. Atlas must work for plain
-Claude Code or Codex after only the Atlas MCP server or CLI is connected; no
+Claude Code or Codex after only the Atlas MCP server is connected; no
 external code index, source-intelligence service, or extra agent plugin may be a
 precondition for first value. Source tools are accelerators after the Atlas
 meaning packet has narrowed the work. Atlas should tell the agent which
@@ -323,8 +323,8 @@ This is the differentiator. **Generic ontology workbench (Protégé etc.) → "w
 |---|---|---|
 | **Planner / PM / marketer** | Understand what the product's codebase implements, which capabilities and policies it carries, and how a proposed change reaches the product | installed desktop app (`/topology` and Docs; `/ontology` is a compatibility redirect; macOS, Windows x64 beta), static/shared vault exports |
 | **C-level / decision-maker** | Judge the product capabilities and implementation evidence behind a technical or strategic change | overview, topology, graph proof/impact summaries |
-| **Developer** | Maintain the graph as implementation changes; connect code artifacts to domains/capabilities | CLI (`ontology-atlas init/list/validate/add/find/import/index`), installed desktop app (`/topology`, `/docs`; `/ontology` is a compatibility redirect) |
-| **AI agent** (Claude Code, Codex, Cursor, …) | Read for context · write back findings · keep the graph current through verified MCP/CLI loops | MCP server (runtime-advertised read/write inventory), vault-scoped Git evidence/checkpoint, contextual topology handoff, agent heartbeat, explicit-project agent brief |
+| **Developer** | Maintain the graph as implementation changes; connect code artifacts to domains/capabilities | installed desktop app (`/topology`, `/docs`; `/ontology` is a compatibility redirect) |
+| **AI agent** (Claude Code, Codex, Cursor, …) | Read for context · write back findings · keep the graph current through verified MCP loops | MCP server (runtime-advertised read/write inventory), vault-scoped Git evidence/checkpoint, contextual topology handoff, agent heartbeat, explicit-project agent brief |
 
 The single artifact serves every audience **when the decision is about a
 codebase or the product it implements**: a local, git-backed ontology linking
@@ -374,22 +374,13 @@ Frontmatter alone auto-stubs capabilities + elements + edges (already implemente
 
 ### 3-B. Write path (works)
 
-While analyzing code, the AI agent commits newly discovered facts to the ontology:
-
-```bash
-# example: after the agent inspects a file
-$ ohmy add element src/features/billing/lib/cycle-rule.ts \
-    --kind element \
-    --capability "Subscription cycle calculation" \
-    --project billing-service
-```
+While analyzing code, the AI agent commits newly discovered facts to the ontology.
 
 Options:
 
-1. **CLI** — `ontology-atlas add ...` or the current source-checkout CLI
-2. **MCP server** — Claude Code/Codex calls `add_concept` / `add_relation`
+1. **MCP server** — Claude Code/Codex calls `add_concept` / `add_relation`
    after read-first and duplicate checks
-3. **Contextual topology writing** — a person fills one typed relation socket
+2. **Contextual topology writing** — a person fills one typed relation socket
    beside the map and reviews the resulting frontmatter write
 
 An agent can propose concepts and, once they are accepted, write them through
@@ -406,7 +397,7 @@ human edits Markdown or the contextual map writer
 ontology graph (vault frontmatter)
         ▲
         │
-AI agent reads codebase → adds nodes via MCP/CLI
+AI agent reads codebase → adds nodes via MCP
 ```
 
 Same graph. Same vault. Different input paths.
@@ -421,7 +412,7 @@ from. It does not save the raw answers or the private path to your code, and
 `ok: true` means one thing only: the receipt was written.
 
 Asking again with `query_ontology({ operation: "agent_brief", project: SLUG })`
-— or `ontology-atlas agent-brief --project SLUG` — works the
+works the
 `meaningAssessment` out from scratch. Three things stay separate: whether the
 structure is complete, whether each competency answer has evidence behind it,
 and whether the source has been rechecked. If a piece of evidence is still
@@ -439,7 +430,7 @@ project an unnamed answer would be misleading.
 
 The installable macOS app is the first-class writable workbench, not a future
 exploration. The user opens a vault folder from disk and keeps the same
-markdown + MCP + CLI graph loop without a backend. On the hosted web, root is
+markdown + MCP graph loop without a backend. On the hosted web, root is
 the gateway until a vault is loaded; `/topology` is the explicit map address.
 
 Quality bar: it has to feel like a real Mac app, not a web page in a window.
@@ -461,7 +452,7 @@ Current distribution contract:
    product surfaces.
 4. Signing, notarization, release slots, checksums, and installed-app proof
    remain tag-release gates.
-5. Packaged MCP/CLI sidecars and auto-update remain separate distribution
+5. Packaged MCP sidecars and auto-update remain separate distribution
    slices. npm distribution is retired; agent setup fails closed and points
    source contributors at local entry points.
 
@@ -538,8 +529,7 @@ desktop:verify-hosted` when the public `/ko/download/` route is expected to be
 live.
 `pnpm desktop:release-preflight`
 is the local pre-tag command for readiness, docs-vault freshness, desktop
-checker tests, runtime split tests, native bridge tests, runtime doctor, CLI/MCP
-handoff against `docs/ontology`, the agent JSON setup/performance gate, build,
+checker tests, runtime split tests, native bridge tests, runtime doctor, build,
 route smoke, LaunchServices app content proof (`--open-app --require-window
 --require-owner-name="Ontology Atlas" --min-window-size=1040x720
 --require-accessibility-text="Ontology Atlas"`), DMG verification, and temporary
@@ -583,7 +573,7 @@ web gateway fallback when installation is not the visitor's path.
 
 ### Option A — npm package + CLI (historical, retired)
 
-> **Result (2026-07-27, `docs/DECISIONS.md`)**: The part distributed via npm within this was **abandoned**. The paragraph below is only a record of content reviewed at that time, not an actually executed command — so it is not written as a copy-pasteable code block. The CLI itself continues to live via source checkout path.
+> **Result (2026-07-27, `docs/DECISIONS.md`)**: The part distributed via npm within this was **abandoned**. The paragraph below is only a record of content reviewed at that time, not an actually executed command — so it is not written as a copy-pasteable code block.
 
 Reviewed proposal: Download and run the latest CLI with one `npx` line from the project folder. View the current folder as a vault, launch the source development workbench on localhost:3210, open the browser to an alternative path during source checkout, and perform actual visual work in the signed macOS app.
 
@@ -607,7 +597,7 @@ Cons:
 Pros: feels local-first by default, removes the hosted-site mental model, and
 can make folder picking / recent vaults / app launch more natural on macOS.
 Cons: adds native packaging, signing, notarization, updater, and sidecar
-questions that the web and CLI surfaces do not have.
+questions that the web surface does not have.
 
 ### Option C — Just Next.js static export + a guide
 
@@ -616,7 +606,7 @@ Use after `pnpm dev`. No packaging. Document with environment variables.
 Pros: fastest. Zero new deps.
 Cons: blocks distribution (clone overhead).
 
-### Recommendation: installed desktop app (carrying the MCP server) + CLI as the daily workbench
+### Recommendation: installed desktop app (carrying the MCP server) as the daily workbench
 
 > **2026-07-27 Update**: The distribution path was narrowed to **Option B** — a DMG with Apple signing and notarization. Here, *signing* is stamping the app with "who made this app" using a developer certificate issued by Apple, and *notarization* is sending that app to Apple's server for malware inspection. macOS blocks execution if either is missing.
 > The app bundles and runs a compiled MCP server within its own bundle, and the 「Agent Connection」 button writes the agent-side config file on behalf of the user. Thus, **both the human-facing screen and the agent connection channel** are installed with one download. Option A's CLI remains via source checkout path; npm is not a distribution channel.
@@ -628,14 +618,13 @@ Cons: blocks distribution (clone overhead).
 The desktop proof has graduated from exploration into the primary visual
 distribution track. Ontology Atlas should be the daily local workbench for users
 who want to pick a vault folder, browse the ontology, repair relations, and run
-graph proof without opening a hosted web editor. The CLI and MCP server remain
-the developer/agent execution track: `ontology-atlas` owns init, bootstrap,
-validation, graph DB-style queries, and write preflights; the MCP server exposes
-the same graph to Claude Code, Codex, Cursor, and other agents.
+graph proof without opening a hosted web editor. The MCP server remains the
+agent execution track: it exposes the same graph to Claude Code, Codex, Cursor,
+and other agents.
 
 The hosted website is the product introduction and download entry point. It
 should not be treated as the writable workbench. Keep browser-based local vault
-flows as the install-free/degraded fallback, while the installed app + CLI/MCP carry the
+flows as the install-free/degraded fallback, while the installed app + MCP carry the
 real local-first product promise.
 
 ---
@@ -708,9 +697,9 @@ superseded; the current static website host is GitHub Pages.
 
 1. ✅ `mcp/` package — MCP server (`ontology-atlas-mcp`)
 2. ✅ Runtime-advertised MCP inventory: connection/root/toolset proof, vault-scoped Git status/history and local snapshots, persisted Workshop context (`builder_context` compatibility operation), list/get/find/query/compile/validate/analyze/index reads, batch concept/relation writes, narrow relation removal/replacement, concept patch/reclassification, dry-run-first rename/merge/delete/absorb writes, project-source connect/disconnect, and project-meaning finalization. `tools/list` is the exact current set; `mcp-verify` checks it.
-3. ✅ CLI command (`ontology-atlas`) — `node <checkout>/cli/src/index.mjs init <folder>` scaffolds the vault from a source checkout. The installed app `/docs` "Create starter seed" button is the no-terminal alternative. (npm publishing retired 2026-07-27; there is no `npx` channel.)
+3. ✅ Vault scaffold — the installed app `/docs` "Create starter seed" button creates the starter vault. (npm publishing retired 2026-07-27; there is no `npx` channel.)
 4. ⏸ Auto-generated AGENTS.md — DEFERRED (manual updates + dogfood vault cover this)
-5. ✅ `docs/ontology/` dogfood vault — describes our own mental model, including agent-practice notes as document nodes (census: `node cli/src/index.mjs overview`)
+5. ✅ `docs/ontology/` dogfood vault — describes our own mental model, including agent-practice notes as document nodes (census: `query_ontology` with `overview`)
 
 ### Agent practitioner concerns map
 
@@ -736,7 +725,7 @@ However, using it to mean "the product's entire user base is only developers" is
 
 ### ⏳ Phase 4 execution — Wedge + shared surface
 
-1. ✅ CLI command expansion — 54 commands across vault scaffold, MCP verify, import, repo bootstrap, deterministic compile, relationship explanation, transitive reachability, relation preflight + write, agent handoff, live agent activity heartbeat, growth/maintenance queue, graph CRUD, and graph deep dive
+1. ✅ CLI command expansion (retired 2026-11-22; only `init` remains, every other read and write is MCP) — 54 commands across vault scaffold, MCP verify, import, repo bootstrap, deterministic compile, relationship explanation, transitive reachability, relation preflight + write, agent handoff, live agent activity heartbeat, growth/maintenance queue, graph CRUD, and graph deep dive
 2. ✅ AI agent dogfood cycle — Claude Code verifies codebase analysis + add_concept workflow via mcp (R12 + R14 meta-verification)
 3. ⏳ 10-minute shared understanding loop proof — Verify if core grasp via `init → bootstrap → topology/ontology` → MCP answer quality improvement → agent sync proposal → git diff review → improved next planning/development work is visible within 10 minutes in a new repository. If this doesn't happen, it's still just well-made components, not a product.
 4. ⏳ Stakeholder-readable topology proof — Verify if non-developers can explain "what the core domain/capability is, what proves its implementation, and where changes have impact" by looking at `/topology` (with its current map/detail surfaces).
@@ -758,14 +747,14 @@ and identity live in `AGENTS.md`; neither statement below is current authority.
 > **A repo-native memory layer for AI coding agents, backed by an ontology of one codebase.**
 >
 > - Humans: review and refine the repo-local memory as normal markdown/git diffs.
-> - AI agents (Claude Code, Cursor, Codex): read, query, and propose updates via MCP or CLI.
+> - AI agents (Claude Code, Cursor, Codex): read, query, and propose updates via MCP.
 > - Bootstrap and sync reduce manual ontology authoring; the graph is maintained as a side effect of real code work.
 > - All inputs share one vault graph. The current read/inspect workbench is the
 >   Topology map with its INDEX and detail surfaces; retired tree and ERD
 >   descriptions are historical records, not current product surfaces.
-> - Distributed as an installed workbench plus source-checkout CLI/MCP entry
->   points for terminal and AI-agent workflows; npm is not a distribution
->   channel.
+> - Distributed as an installed workbench plus a source-checkout MCP server and
+>   `init` command for terminal and AI-agent workflows; npm is not a
+>   distribution channel.
 
 What changed:
 
@@ -790,7 +779,7 @@ judgment, and reuse across real tasks need their own evidence under V1–V4.
   `/ontology/studio` redirect into `/topology` and translate legacy edit query
   strings; `/ontology/insights` redirects to the map, the Library Wiki or
   Harness At a glance. None of those redirects owns current chrome.
-- Agent/CLI graph DB packs still expose health, scans, paths, relation checks,
+- Agent graph DB packs still expose health, scans, paths, relation checks,
   and explanation contracts without turning a screen into a query cockpit.
-- CLI/MCP proof gates must stay runnable over `docs/ontology` before the goal is
+- MCP proof gates must stay runnable over `docs/ontology` before the goal is
   treated as complete.

@@ -14,7 +14,7 @@ export const DESKTOP_PERFORMANCE_BUDGETS = {
 
 const STATIC_ASSET_EXTENSIONS = new Set([".js", ".css"]);
 export const DESKTOP_PERFORMANCE_EVIDENCE_BOUNDARY =
-  "This check measures static artifact sizes only; runtime startup is verified by desktop:verify-app and MCP startup by cli:mcp-verify.";
+  "This check measures static artifact sizes only; runtime startup is verified by desktop:verify-app and MCP startup by dogfood:verify.";
 
 function formatMiB(bytes) {
   if (bytes === null) return "not measured";

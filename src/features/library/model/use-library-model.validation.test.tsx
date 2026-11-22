@@ -118,7 +118,7 @@ describe("Library validation follows the current folder", () => {
     expect(result.current.verdicts.size).toBe(0);
   });
 
-  it("reports a page whose described concept was deleted, as wiki-validate does", async () => {
+  it("reports a page whose described concept was deleted, as validate_wiki does", async () => {
     const linked = page().replace("status: draft", "status: draft\ndescribes:\n  - capabilities/login");
     const login = doc("capabilities/login", "---\nkind: capability\ntitle: Login\n---\nA person signs in.\n");
     const props = input([["wiki/plan", linked]]);
@@ -128,7 +128,7 @@ describe("Library validation follows the current folder", () => {
 
     rerender(props);
     await waitFor(() => expect(result.current.verdicts.get("wiki/plan")?.ok).toBe(false));
-    // The CLI and validate_wiki run the MCP module over the same folder.
+    // validate_wiki runs the MCP module over the same folder.
     const nodes = buildNodesMcp(props.docs.map((entry) => ({ slug: entry.slug, kind: entry.frontmatter.kind })));
     const cli = [
       ...validatePageMcp(linked, { knownSources: new Set(["sources/plan.md"]), nodes }).problems,

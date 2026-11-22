@@ -101,37 +101,6 @@ export function manualConnectConfig(
   return { client, file, body };
 }
 
-function shellQuote(value: string): string {
-  return /^[A-Za-z0-9_./:@%+-]+$/.test(value) ? value : `'${value.replaceAll("'", `'\\''`)}'`;
-}
-
-/**
- * One CLI line that writes all four configs. `agent-setup` creates only missing files and never
- * overwrites one; `--root` at the vault narrows it to one set.
- */
-export function manualSetupCommand({ vaultAbsolute, checkoutAbsolute }: ManualConnectInput): string {
-  return [
-    'node',
-    shellQuote(`${checkoutAbsolute}/cli/src/index.mjs`),
-    'agent-setup',
-    shellQuote(vaultAbsolute),
-    '--root',
-    shellQuote(vaultAbsolute),
-    '--write',
-  ].join(' ');
-}
-
-export function manualVerifyCommand({ vaultAbsolute, checkoutAbsolute }: ManualConnectInput): string {
-  return [
-    'node',
-    shellQuote(`${checkoutAbsolute}/cli/src/index.mjs`),
-    'mcp-verify',
-    shellQuote(vaultAbsolute),
-    '--timeout-ms',
-    '15000',
-  ].join(' ');
-}
-
 /** For someone with no checkout; the destination becomes the checkout path. */
 export const ATLAS_CLONE_COMMAND =
   'git clone https://github.com/wlsdks/ontology-atlas.git';

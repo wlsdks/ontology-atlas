@@ -1,4 +1,3 @@
-import { fileURLToPath } from 'node:url';
 
 import { createArtifactContext } from './ontology-engine/graph-context/artifact-context.mjs';
 import { createContextOperations } from './ontology-engine/graph-context/context-operations.mjs';
@@ -64,6 +63,7 @@ import { createTraversalQueries } from './ontology-engine/traversal/traversal-qu
 import { createTraversalAnalysis } from './ontology-engine/traversal/traversal-analysis.mjs';
 import {
   buildAgentBriefHandoffPrompt,
+  MCP_UNAVAILABLE_GUIDANCE,
 } from './ontology-engine/briefs/agent-responses.mjs';
 
 import { defaultBody } from './schema.mjs';
@@ -94,15 +94,9 @@ const AGENT_WORKFLOW_GUIDE = Object.freeze({
   path: 'docs/AGENT-GRAPH-WORKFLOW.md',
   title: 'Agent Graph Workflow',
   description:
-    'CLI-only use, MCP-connected use, graph DB differences, graph query packs, and verification checks.',
+    'MCP-connected use, graph DB differences, graph query packs, and verification checks.',
 });
 const AGENT_MODE_COMPARISON = Object.freeze([
-  Object.freeze({
-    id: 'cli_only',
-    label: 'CLI-only',
-    when: 'No MCP client is connected or the user wants terminal-only inspection.',
-    gives: 'validate, workspace-brief, graph scans, graph DB pack, and fallback timing over the same local vault.',
-  }),
   Object.freeze({
     id: 'mcp_connected',
     label: 'MCP-connected',
@@ -116,10 +110,10 @@ const AGENT_MODE_COMPARISON = Object.freeze([
     gives: 'bounded query plans, node/edge scans, domain matrix, path evidence, and proof follow-ups.',
   }),
   Object.freeze({
-    id: 'setup_gate',
-    label: 'Setup gate',
-    when: 'Setup is unclear or the agent was opened from a separate codebase root.',
-    gives: 'config repair commands, JSON readiness, performance timing, and restart guidance before edits.',
+    id: 'mcp_unavailable',
+    label: 'MCP unavailable',
+    when: 'The ontology-atlas MCP server is not connected in this session.',
+    gives: MCP_UNAVAILABLE_GUIDANCE,
   }),
 ]);
 const GRAPH_SCAN_PROOF_CHECKLIST = Object.freeze([
@@ -257,30 +251,7 @@ export function queryCompiledOntology(artifact, query = {}, options = {}) {
     QUERY_ONTOLOGY_OPERATIONS,
   );
 }
-/**
- * The runnable prefix of the "use this when MCP is unavailable" line. No
- * global `ontology-atlas` command exists, so the default is this repository's CLI entry
- * point derived from this file's location; a caller that knows its entry point
- * (the CLI passes `cliInvocation()`) supplies it.
- */
-function defaultCliInvocation() {
-  try {
-    const entry = fileURLToPath(new URL('../../cli/src/index.mjs', import.meta.url));
-    return `node ${/[\s"'$`\\]/.test(entry) ? `'${entry.replace(/'/g, "'\\''")}'` : entry}`;
-  } catch {
-    /*
-     * Not loaded from a file (browser bundle, test harness): the relative path still
-     * runs inside the repository, the value `cli/src/lib/self-invocation.mjs` uses.
-     */
-    return 'node cli/src/index.mjs';
-  }
-}
-
 export function createOntologyEngine(artifact, options = {}) {
-  const cliPrefix =
-    typeof options.cliInvocation === 'string' && options.cliInvocation.trim()
-      ? options.cliInvocation.trim()
-      : defaultCliInvocation();
   const ontologyAtlasIgnorePatterns = Array.isArray(options.ontologyAtlasIgnorePatterns)
     ? options.ontologyAtlasIgnorePatterns
     : [];
@@ -412,7 +383,7 @@ export function createOntologyEngine(artifact, options = {}) {
     unassignedNodeCandidates, emptyDomainCandidates, capabilityWithoutEvidenceCandidates,
     unearnedNodeCandidates,
   } = createGrowthQueries({
-    cliPrefix, nodes, edges, nodeBySlug, sourceDocFor, ontologyAtlasIgnorePatterns,
+    nodes, edges, nodeBySlug, sourceDocFor, ontologyAtlasIgnorePatterns,
     relationTypeForKey: RELATION_TYPE_FOR_KEY, bodyIsStarterTemplate, compareEdges,
     containmentChildren, containmentParentsFor, findNearMatchSlug, hasResolvedContainmentParent,
     hasResolvedEdge, inferKindFromRelation, normalizeRecommendRelationKind, resolveOptional,
@@ -424,7 +395,7 @@ export function createOntologyEngine(artifact, options = {}) {
     topHubs,
   });
   const { matchNodes, matchEdges, relationCheck, similarNodes } = createMatchQueries({
-    cliPrefix, edges, nodes, nodeBySlug, resolve, traversalEdges, compareEdges, compareNodeRows,
+    edges, nodes, nodeBySlug, resolve, traversalEdges, compareEdges, compareNodeRows,
     formatCompiledEdge, nearbySchemaPatterns, normalizeEdgeTargetKind, normalizeMatchEdgesTypes,
     normalizeNodeKind, normalizeNodeSort, normalizeNonNegativeInteger, normalizeOptionalString,
     publicRelationTypes, roundScore, schemaPatterns, similarityScore, writeRelationType,
@@ -454,7 +425,7 @@ export function createOntologyEngine(artifact, options = {}) {
   });
 
   const { workspaceBrief, agentBrief } = createBriefQueries({
-    cliPrefix, agentWorkflowGuide: AGENT_WORKFLOW_GUIDE,
+    agentWorkflowGuide: AGENT_WORKFLOW_GUIDE,
     agentModeComparison: AGENT_MODE_COMPARISON, graphScanProofChecklist: GRAPH_SCAN_PROOF_CHECKLIST,
     nodeBySlug, nodes, edges, growthPlan, health: (...args) => health(...args), overview, projectMap,
     projectRootSlugs, resolve, workspaceNextActions,
@@ -508,12 +479,9 @@ export function createOntologyEngine(artifact, options = {}) {
   };
 }
 
-export function refreshAgentBriefHandoffPrompt(brief, options = {}) {
-  const cliPrefix = typeof options.cliInvocation === 'string' && options.cliInvocation.trim()
-    ? options.cliInvocation.trim()
-    : defaultCliInvocation();
+export function refreshAgentBriefHandoffPrompt(brief) {
   return {
     ...brief,
-    handoffPrompt: buildAgentBriefHandoffPrompt(brief, cliPrefix),
+    handoffPrompt: buildAgentBriefHandoffPrompt(brief),
   };
 }

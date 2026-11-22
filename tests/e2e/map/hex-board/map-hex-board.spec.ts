@@ -312,10 +312,10 @@ for (const viewport of [{ width: 1512, height: 982 }]) {
     await expect.poll(async () => (await readBoard(page)).frame.dimT).toBe(0);
     await settled(page);
     board = await readBoard(page);
-    const cli = board.tiles.find((t) => t.name.trim() === "CLI 명령")!;
-    await page.mouse.move(board.canvas!.x + cli.mark.x, board.canvas!.y + cli.mark.y);
-    await expect(tip).toContainText("CLI 명령");
-    await shot("g-hover-cli");
+    const initializer = board.tiles.find((t) => t.name.trim() === "볼트 초기화")!;
+    await page.mouse.move(board.canvas!.x + initializer.mark.x, board.canvas!.y + initializer.mark.y);
+    await expect(tip).toContainText("볼트 초기화");
+    await shot("g-hover-initializer");
     await page.mouse.move(2, H - 2);
     await expect(tip).toBeHidden();
 

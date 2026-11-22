@@ -9,7 +9,7 @@ import { createOntologyEngine } from "../../../mcp/src/ontology-engine.mjs";
 import { parseFrontmatter } from "../../../mcp/src/parser.mjs";
 
 /**
- * The web, the CLI and MCP must answer with the same concepts for the same vault; identities and
+ * The web and MCP must answer with the same concepts for the same vault; identities and
  * set equalities are pinned rather than counts, because the dogfood vault grows.
  */
 
@@ -89,7 +89,7 @@ const insight = derivationToInsight(derivation, "ko", {
   agentSlugPrefix: resolveStaticVaultSource("dogfood").agentSlugPrefix,
 });
 
-describe("screen · CLI · MCP concept parity (bundled dogfood == docs/ontology)", () => {
+describe("screen · MCP concept parity (bundled dogfood == docs/ontology)", () => {
   it("the number of concepts with a document equals the number of compiled nodes", () => {
     const documented = insight.nodes.filter((node) => node.hasOwnDocument !== false);
     expect(documented).toHaveLength(compiled.nodeCount);
@@ -103,7 +103,7 @@ describe("screen · CLI · MCP concept parity (bundled dogfood == docs/ontology)
     );
     // No value may exist on only one side — one that does means the two layers read
     // the same reference differently, and that node exists only on the screen (or
-    // only in the CLI).
+    // only in MCP).
     expect([...webRefs].filter((ref) => !referencedOnlyRefs.has(ref))).toEqual([]);
     expect([...referencedOnlyRefs].filter((ref) => !webRefs.has(ref))).toEqual([]);
   });

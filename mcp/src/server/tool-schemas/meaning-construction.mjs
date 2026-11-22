@@ -24,11 +24,18 @@ const MEANING_PROPOSAL_CONCEPT_INPUT_PROPERTIES = Object.freeze({
     minItems: 1,
     maxItems: 20,
     uniqueItems: true,
-    description:
-      'Repository evidence sources. Element proposals may keep an ordinary citation and append reviewed navigation:<primary|supporting|test>:<path>#<symbol> strings (limits 1/1/3); they are current structural navigation, never behavior proof.',
     items: NON_BLANK_STRING_SCHEMA,
   },
   confidence: { type: 'number', minimum: 0, maximum: 1 },
+});
+const MEANING_PROPOSAL_ELEMENT_INPUT_PROPERTIES = Object.freeze({
+  ...MEANING_PROPOSAL_CONCEPT_INPUT_PROPERTIES,
+  evidence: {
+    ...MEANING_PROPOSAL_CONCEPT_INPUT_PROPERTIES.evidence,
+    description:
+      'May append reviewed navigation:<primary|supporting|test>:<path>#<symbol> strings (limits 1/1/3) to an ordinary citation; they are current structural navigation, never behavior proof.',
+  },
+  domain: NON_BLANK_STRING_SCHEMA,
 });
 const COMPETENCY_RELATION_WITNESS_SCHEMA = Object.freeze({
   type: 'object',
@@ -133,10 +140,7 @@ const MEANING_PROPOSAL_INPUT_SCHEMA = Object.freeze({
       maxItems: 100,
       items: {
         type: 'object',
-        properties: {
-          ...MEANING_PROPOSAL_CONCEPT_INPUT_PROPERTIES,
-          domain: NON_BLANK_STRING_SCHEMA,
-        },
+        properties: MEANING_PROPOSAL_ELEMENT_INPUT_PROPERTIES,
         required: [
           'slug',
           'title',

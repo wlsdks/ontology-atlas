@@ -1,5 +1,3 @@
-const AGENT_SETUP_INVOCATION = "node cli/src/index.mjs agent-brief docs/ontology";
-
 const DESKTOP_PREFLIGHT_ORDER = [
   "pnpm desktop:check",
   "pnpm notice:check",
@@ -44,51 +42,13 @@ function flagCount(command, flag) {
   return [...command.matchAll(pattern)].length;
 }
 
-function flagValues(command, flag) {
-  const pattern = new RegExp(
-    `(?:^|\\s)${escapeRegExp(flag)}(?:=|\\s+)([^\\s]+)`,
-    "g",
-  );
-  return [...command.matchAll(pattern)].map((match) => match[1]);
-}
-
 function requireFlag(command, flag, errors) {
   const count = flagCount(command, flag);
   if (count !== 1) errors.push(`${flag} must appear exactly once (found ${count})`);
 }
 
-function requirePositiveIntegerFlag(command, flag, errors) {
-  const values = flagValues(command, flag);
-  if (values.length !== 1 || !/^[1-9][0-9]*$/.test(values[0])) {
-    errors.push(`${flag} must be a positive integer`);
-  }
-}
-
 function requireLiteral(command, literal, errors) {
   if (!command.includes(literal)) errors.push(`missing required argument ${literal}`);
-}
-
-export function evaluateAgentSetupGate(script) {
-  const commands = splitScriptCommands(script);
-  const errors = [];
-  if (commands.length !== 1) {
-    errors.push(`dogfood:agent-setup-gate must contain exactly one command (found ${commands.length})`);
-  }
-  const command = commands[0] ?? "";
-  if (!matchesInvocation(command, AGENT_SETUP_INVOCATION)) {
-    errors.push(`agent setup gate must invoke ${AGENT_SETUP_INVOCATION}`);
-  }
-  for (const flag of ["--verify-fallbacks", "--json", "--exit-zero"]) {
-    requireFlag(command, flag, errors);
-  }
-  for (const flag of [
-    "--fallback-timeout-ms",
-    "--fallback-slow-ms",
-    "--fallback-concurrency",
-  ]) {
-    requirePositiveIntegerFlag(command, flag, errors);
-  }
-  return { ok: errors.length === 0, errors, commandCount: commands.length };
 }
 
 export function evaluateDesktopReleasePreflight(script) {
@@ -118,7 +78,7 @@ export function evaluateDesktopReleasePreflight(script) {
   }
 
   for (const command of commands) {
-    if (command.startsWith("pnpm dogfood:") || matchesInvocation(command, "pnpm cli:mcp-verify")) {
+    if (command.startsWith("pnpm dogfood:")) {
       errors.push(`desktop preflight contains source dogfood command: ${command}`);
     }
   }

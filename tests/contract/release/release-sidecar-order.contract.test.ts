@@ -156,11 +156,9 @@ describe("release workflow — the sidecar is built before the first cargo call"
     expect(desktopCommands.length, "desktop:release-preflight is empty").toBeGreaterThan(0);
     expect(dogfoodCommands.length, "dogfood:release-gate is empty").toBeGreaterThan(0);
     expect(desktopCommands).toContain("pnpm vault:validate");
-    expect(desktopCommands).not.toContain("pnpm cli:mcp-verify docs/ontology --timeout-ms 90000");
     expect(desktopCommands.some((command) => command.startsWith("pnpm dogfood:"))).toBe(false);
     expect(dogfoodCommands).toContain("pnpm dogfood:verify");
     expect(dogfoodCommands).toContain("OATLAS_DOGFOOD_TIMEOUT_MS=90000 pnpm dogfood:walk");
-    expect(dogfoodCommands).toContain("pnpm dogfood:agent-setup-gate");
     expect(dogfoodCommands).toContain("pnpm test:mcp:dogfood");
   });
 });

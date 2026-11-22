@@ -56,7 +56,7 @@ vault="$target/atlas"
 # without a word. Pass --starter to reproduce the "start fresh" door instead.
 if [ ! -d "$vault" ]; then
   if [ "$starter" = "1" ]; then
-    node "$repo_root/cli/src/index.mjs" init "$vault" >/dev/null
+    node "$repo_root/cli" init "$vault" >/dev/null
   else
     mkdir -p "$vault"
   fi

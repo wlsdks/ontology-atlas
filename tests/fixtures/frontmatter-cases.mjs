@@ -1,14 +1,13 @@
-// 4-way frontmatter parser contract — the same input must give the same output.
+// 3-way frontmatter parser contract — the same input must give the same output.
 //
 // Single source of truth: this fixture. Verified against:
 //   - src/shared/lib/vault-document/parse-frontmatter.ts        (runtime)
 //   - mcp/src/parser.mjs                         (AI agent surface, separate package)
 //   - scripts/lib/parse-frontmatter.mjs          (build scripts + validator CLI)
-//   - cli/src/lib/mcp-bridge/parse-frontmatter.mjs          (developer CLI, separate package)
 //
-// If one drifts, the contract test catches it immediately. `mcp/` and `cli/` ship
-// separately and cannot be folded into one physical module, so the contract test is
-// what unifies them in effect.
+// If one drifts, the contract test catches it immediately. `mcp/` ships separately
+// and cannot be folded into one physical module, so the contract test is what
+// unifies them in effect.
 
 export const CASES = [
   {

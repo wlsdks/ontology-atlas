@@ -18,6 +18,14 @@ export function graphDiscRadiusPx(kind: GraphKind, elementCount: number, tokens:
   return Math.min(tokens.capDiscMaxPx, tokens.capDiscMinPx + tokens.capDiscGainPx * Math.sqrt(elementCount)) * growth;
 }
 
+/** The most of the pitch between two elements a dot's radius takes, so a lit dot (`LIT_DOT_SHARE`) still stops short of its neighbour. */
+const ELEMENT_PITCH_FILL = 0.33;
+
+/** An element dot's drawn radius at `scale`: its full size, or less where its elements stand closer than that, `elementPitch` apart in world units. */
+export function elementDotRadiusPx(tokens: FlatGraphPaintTokens, growth: number, elementPitch: number, scale: number): number {
+  return Math.min(graphDiscRadiusPx("element", 0, tokens, growth), elementPitch * scale * ELEMENT_PITCH_FILL);
+}
+
 /** The share of the distance between a crowded pair's centres that their two radii fill; the rest is the air between them. */
 const CROWD_FILL = 0.8;
 

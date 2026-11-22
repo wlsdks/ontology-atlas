@@ -510,7 +510,7 @@
     "fixMyselfTooltip": "Finder에서 이 문서 파일을 선택해요. 어느 편집기에서 고쳐도 목록에 반영돼요.",
     "technical": "기술 정보 · 점검 코드와 줄 번호",
     "technicalOpen": "점검 코드 보기",
-    "technicalNote": "wiki-validate 명령과 validate_wiki 도구가 아래와 같은 코드를 알려 줘요.",
+    "technicalNote": "validate_wiki 도구가 아래와 같은 코드를 알려 줘요.",
     "technicalFile": "파일: {path}",
     "goToPlace": "{place}로 가기",
     "openPage": "{name} 열기",

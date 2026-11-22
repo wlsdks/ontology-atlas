@@ -24,7 +24,7 @@ Lets a person explore the compiled ontology through geometric maps or a named me
 
 ## Excludes
 - Storing the graph; the map draws the compiled files and never becomes the record.
-- Being the only way to edit; the same changes are reachable from the CLI and MCP.
+- Being the only way to edit; the same changes are reachable through MCP.
 
 ## Uncertainty
 - Domain structure replaces the retired Galaxy renderer. The current static-export browser journey reaches a domain, capability, and its existing reader without spatial zoom; this is presentation evidence, not semantic acceptance or a universal performance result.

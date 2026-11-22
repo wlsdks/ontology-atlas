@@ -35,6 +35,7 @@
     "src/server/tool-schemas/vault-node-shapes.mjs",
     "src/server/instructions.mjs",
     "src/server/registry.mjs",
+    "src/server/shared-subschemas.mjs",
     "src/server/tool-definitions/absorb-document.mjs",
     "src/server/tool-definitions/analyze-repo-structure.mjs",
     "src/server/tool-definitions/constellations.mjs",

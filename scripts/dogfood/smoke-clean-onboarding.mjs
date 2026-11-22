@@ -11,17 +11,11 @@ import {
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { parseMcpToolMetadataFromDescription } from '../../cli/src/lib/mcp-bridge/mcp-metadata.mjs';
 
 const ROOT = resolve(fileURLToPath(new URL('../..', import.meta.url)));
-const CLI = join(ROOT, 'cli', 'src', 'index.mjs');
+// `node <checkout>/cli` runs init through the `main` of cli/package.json.
+const INIT_PACKAGE = join(ROOT, 'cli');
 const VERIFY = join(ROOT, 'mcp', 'scripts', 'verify.mjs');
-const MCP_PKG = JSON.parse(readFileSync(join(ROOT, 'mcp', 'package.json'), 'utf-8'));
-const mcpToolMetadata = parseMcpToolMetadataFromDescription(MCP_PKG.description);
-const expectedToolCount = mcpToolMetadata?.toolCount;
-const expectedToolSplitRe = mcpToolMetadata?.splitPattern;
-
-assert.ok(mcpToolMetadata, 'mcp/package.json description must include the current tool count and split');
 
 function run(cmd, args, options = {}) {
   const result = spawnSync(cmd, args, {
@@ -64,14 +58,11 @@ writeFileSync(
   '# Clean Onboarding App\n\n## Capture\n\nCapture short notes.\n',
 );
 
-const init = run('node', [CLI, 'init', 'ontology'], { cwd: project });
+const init = run('node', [INIT_PACKAGE, 'init', 'ontology'], { cwd: project });
 const initOutput = stripAnsi(init.stdout);
 assert.match(initOutput, /codex mcp add ontology-atlas/);
 assert.match(initOutput, /\.codex\/config\.toml/);
-assert.match(initOutput, new RegExp(`${expectedToolCount} tools`));
-assert.match(initOutput, expectedToolSplitRe);
-assert.match(initOutput, /analyze \. --vault \.\/ontology/);
-assert.match(initOutput, /bootstrap \. --vault \.\/ontology/);
+assert.match(initOutput, /\/atlas-grow/);
 assert.doesNotMatch(initOutput, /\/path\/to\/your\/repo/);
 
 const mcpConfig = JSON.parse(readFileSync(join(project, '.mcp.json'), 'utf-8'));
@@ -93,18 +84,6 @@ run('node', [VERIFY], {
   env: { ...process.env, OATLAS_VAULT: join(project, 'ontology') },
 });
 
-const bootstrap = run(
-  'node',
-  [CLI, 'bootstrap', '.', '--vault', './ontology', '--skip-imports', '--json'],
-  { cwd: project, allowFailure: true },
-);
-assert.equal(bootstrap.status, 3);
-const bootstrapJson = JSON.parse(bootstrap.stdout);
-assert.equal(bootstrapJson.mode, 'review');
-assert.equal(bootstrapJson.writeEligible, false);
-assert.equal(bootstrapJson.reason, 'approval_required');
-assert.equal(bootstrapJson.next.writes, 0);
-assert.equal(bootstrapJson.guard.qualification, 'constructionQualification:v1');
 assert.equal(existsSync(join(project, 'ontology', 'project.md')), true);
 assert.equal(existsSync(join(project, 'ontology', 'domains', 'example-domain.md')), true);
 assert.equal(existsSync(join(project, 'ontology', 'capabilities', 'example-capability.md')), true);
@@ -112,7 +91,6 @@ assert.equal(existsSync(join(project, 'ontology', 'elements', 'example-element.m
 assert.equal(existsSync(join(project, 'ontology', 'clean-onboarding-app.md')), false);
 assert.equal(existsSync(join(project, 'ontology', 'domains', 'capture.md')), false);
 assert.equal(existsSync(join(project, 'ontology', 'capabilities', 'capture.md')), false);
-run('node', [CLI, 'validate', join(project, 'ontology')], { cwd: project });
 
 if (hasCommand('claude')) {
   const claude = run('claude', ['mcp', 'list'], {

@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import en from '../../../messages/en.json';
 import ko from '../../../messages/ko.json';
 import { column } from '../../../scripts/lib/i18n/locale-vocabulary.mjs';
-import { GLOSSARY_TERMS, type GlossaryTerm } from '../../../src/shared/config/term-glossary';
+import type { GlossaryTerm } from '../../../src/shared/config/term-glossary';
 
 /**
  * Every string a person reads in the `ko` tree is scanned, not hand-picked namespaces. Counts are
@@ -206,12 +206,12 @@ describe('Korean catalog — untranslated English sentences', () => {
 /**
  * Terms developers say in English stay as written, explained by a `TermHint` tooltip: each term needs
  * a glossary entry (expansion and one sentence, both locales) and a screen that draws its `TermHint`.
+ * `cli` keeps its glossary entry, which the acronym gate below still requires, but no screen draws it.
  */
-const TERM_PATTERNS: Record<GlossaryTerm, RegExp> = {
+const TERM_PATTERNS: Record<Exclude<GlossaryTerm, 'cli'>, RegExp> = {
   mcp: /\bMCP\b/,
   acp: /\bACP\b/,
   apiKey: /\bAPI key\b/,
-  cli: /\bCLI\b/,
 };
 
 const ACRONYMS = ['MCP', 'ACP', 'CLI'] as const;
@@ -252,7 +252,7 @@ describe('technical terms — kept as they are, explained by TermHint', () => {
   it('every term the catalog uses has at least one screen that draws a TermHint', () => {
     const texts = flatten(CATALOG).map(({ text }) => text);
     const source = sourceFiles(join(process.cwd(), 'src')).map((file) => readFileSync(file, 'utf8')).join('\n');
-    const missing = GLOSSARY_TERMS.filter(
+    const missing = (Object.keys(TERM_PATTERNS) as (keyof typeof TERM_PATTERNS)[]).filter(
       (term) => texts.some((text) => TERM_PATTERNS[term].test(text)) && !source.includes(`term="${term}"`),
     );
     expect(missing, 'Put a TermHint at the first prominent occurrence of each term.').toEqual([]);

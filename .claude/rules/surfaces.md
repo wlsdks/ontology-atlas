@@ -148,7 +148,7 @@ exposed to any injected script) and writing agent config from the web (no
 absolute path; `WebManualConnectPanel.tsx` renders the config locally instead).
 
 A degradation card states why the ability is unavailable, where it works
-(usually `/download/` or one CLI command), and what remains possible here, as
+(usually `/download/`), and what remains possible here, as
 in `atlas-git-web-get-app` and `ai-connection-web-degraded`. "Coming soon" is
 not a reason, and calling an available path unavailable is equally false.
 
@@ -169,7 +169,8 @@ app separately".
 ## Two distribution channels only
 
 The app bundle, whose connect button writes absolute paths, or a source checkout
-run as `node <checkout>/cli/src/index.mjs`. Neither `ontology-atlas` nor
+whose MCP server runs as `node <checkout>/mcp/src/index.js` and whose only
+command, `node <checkout>/cli init`, scaffolds a vault. Neither `ontology-atlas` nor
 `ontology-atlas-mcp` exists on npm; `npx ontology-atlas init` is a 404. Code
 authority: `src/shared/config/mcp/mcp-server-launch.ts`. Gate:
 `tests/contract/release/npm-channel-retired.contract.test.ts`.

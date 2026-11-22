@@ -5,8 +5,9 @@ interface VaultDocRef {
 }
 
 /**
- * Web mirror of `cli/src/lib/agent-setup/agent-files.mjs`, held together by
- * `tests/contract/harness/agent-files.contract.test.ts`. Detection and display only; nothing is written.
+ * Which AI tool reads which instruction file, plus drift checks. The app's Harness tab and
+ * `pnpm agents:check` (`.agents/check-instructions.mjs`) both classify through this module.
+ * Detection and display only; nothing is written.
  */
 
 const CODEX_PROJECT_DOC_CAP_BYTES = 32 * 1024;
@@ -176,7 +177,7 @@ export interface AgentFilesAnalysis {
   };
 }
 
-function classifyAgentFilePath(
+export function classifyAgentFilePath(
   path: string,
 ): { ruleId: string; kind: AgentFileKind; tools: AgentTool[] } | null {
   for (const rule of AGENT_FILE_RULES) {
@@ -194,7 +195,7 @@ const AT_REF_EXTENSIONS = Object.freeze([
 const AT_REF_RE = /(?:^|[\s(`"'])@([A-Za-z0-9._/-]+)/gm;
 
 /** Boundary rules (no emails, npm scopes or CSS at-rules) match the CLI twin. */
-function extractAtRefs(content: string | null | undefined): Array<{ ref: string; line: number }> {
+export function extractAtRefs(content: string | null | undefined): Array<{ ref: string; line: number }> {
   const out: Array<{ ref: string; line: number }> = [];
   const seen = new Set<string>();
   const lines = String(content ?? '').split('\n');

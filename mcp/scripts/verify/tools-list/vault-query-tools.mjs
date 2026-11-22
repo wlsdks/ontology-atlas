@@ -14,8 +14,6 @@ import { NODE_UID_PATTERN } from '../../../src/schema.mjs';
 import { sameArray } from '../value-checks.mjs';
 import { outputPropertyAt, propertyAt } from './schema-primitives.mjs';
 
-const NODE_KIND_DESCRIPTION = NODE_KIND_VALUES.join(', ');
-const EDGE_TARGET_KIND_DESCRIPTION = EDGE_TARGET_KIND_VALUES.join(', ');
 
 export function vaultQueryToolsSchemaFailure(tools) {
   const queryTool = tools.find((tool) => tool?.name === 'query_ontology');
@@ -158,40 +156,35 @@ export function vaultQueryToolsSchemaFailure(tools) {
     }
   }
   const kindDescription = propertyAt(queryTool, ['properties', 'kind'])?.description ?? '';
-  if (!kindDescription.includes(`(${NODE_KIND_DESCRIPTION})`) || !/recommend_relations currently supports capability or element/.test(kindDescription)) {
-    return 'query_ontology kind graph kind description drift';
+  if (!/recommend_relations takes capability or element/.test(kindDescription)) {
+    return 'query_ontology kind description drift';
   }
   const fromKindDescription = propertyAt(queryTool, ['properties', 'fromKind'])?.description ?? '';
-  if (!fromKindDescription.includes(`(${NODE_KIND_DESCRIPTION})`) || !/Source must be a real ontology node, not external\/unresolved/.test(fromKindDescription)) {
-    return 'query_ontology fromKind graph kind description drift';
+  if (!/always a real node/.test(fromKindDescription)) {
+    return 'query_ontology fromKind description drift';
   }
   const toKind = propertyAt(queryTool, ['properties', 'toKind']);
   if (toKind?.type !== 'string' || !sameArray(toKind.enum, EDGE_TARGET_KIND_VALUES)) {
     return 'query_ontology toKind graph kind enum schema drift';
   }
-  const toKindDescription = toKind?.description ?? '';
-  if (!toKindDescription.includes(`(${EDGE_TARGET_KIND_DESCRIPTION})`) || !/Use external or unresolved for non-node refs/.test(toKindDescription)) {
-    return 'query_ontology toKind graph kind description drift';
+  if (!/external and unresolved select refs that are not nodes/.test(toKind?.description ?? '')) {
+    return 'query_ontology toKind description drift';
   }
-  if (!/current-page `nextExecutableAction` \/ `nextReviewAction` pointers/.test(queryTool.description || '')) {
-    return 'query_ontology description missing current-page maintenance next pointers';
+  const queryDescription = queryTool.description || '';
+  if (!/impact and blast_radius follow declared `depends_on` only/.test(queryDescription)) {
+    return 'query_ontology description missing the declared depends_on impact rule';
   }
-  if (!/cursor `nextAfterActionId`\/`hasMore` pagination metadata/.test(queryTool.description || '')) {
-    return 'query_ontology description missing maintenance cursor pagination metadata';
+  if (!/`approvalGate` writes nothing until[\s\S]*the human explicitly approves/.test(queryDescription)) {
+    return 'query_ontology description missing the relation_check approval gate';
   }
-  if (
-    !/agent_brief[\s\S]*resultContracts[\s\S]*all_paths completeness/.test(queryTool.description || '') ||
-    !/all_paths[\s\S]*limit\/searchBudget\/exhaustive\/truncatedByBudget\/totalPathsExact metadata and evidence guidance/.test(queryTool.description || '')
-  ) {
-    return 'query_ontology description missing agent result contract guidance';
+  if (!/agent_brief with detail:"compact" and `task` right after connection_info/.test(queryDescription)) {
+    return 'query_ontology description missing the compact agent_brief order';
   }
-
-  if (!/agent_brief[\s\S]*graphDbQueryPack[\s\S]*facets[\s\S]*schema[\s\S]*match_nodes[\s\S]*match_edges[\s\S]*domain_matrix[\s\S]*centrality[\s\S]*all_paths[\s\S]*explain_relation/.test(queryTool.description || '')) {
-    return 'query_ontology description missing agent graph DB query pack guidance';
+  if (!/never searches the repository, never proves source behavior, never persists the task, never approves meaning and never writes/.test(queryDescription)) {
+    return 'query_ontology description missing the task evidence limit';
   }
-
-  if (!/agent_brief[\s\S]*traversalStrategy[\s\S]*plan_before_enumeration[\s\S]*bounded_path_evidence[\s\S]*containment_cross_check/.test(queryTool.description || '')) {
-    return 'query_ontology description missing agent traversal strategy guidance';
+  if (!/Required: `slug` for neighbors[\s\S]*`from` and `to` for path/.test(queryDescription)) {
+    return 'query_ontology description missing the per-operation required arguments';
   }
 
   const phases = propertyAt(queryTool, ['properties', 'phases']);
@@ -207,20 +200,8 @@ export function vaultQueryToolsSchemaFailure(tools) {
     return 'query_ontology maintenance kinds enum schema drift';
   }
   const afterActionId = propertyAt(queryTool, ['properties', 'afterActionId']);
-  if (!/nextExecutableAction\/nextReviewAction point only at the first executable\/review action in the current returned page/.test(afterActionId?.description || '')) {
-    return 'query_ontology afterActionId description missing current-page next pointers';
-  }
-  if (!/action id, executable flag, phase, kind, and severity/.test(afterActionId?.description || '')) {
-    return 'query_ontology afterActionId description missing current-page next pointer detail fields';
-  }
-  if (!/cursor\.nextAfterActionId matches the last returned action id/.test(afterActionId?.description || '')) {
-    return 'query_ontology afterActionId description missing nextAfterActionId pagination guidance';
-  }
-  if (!/cursor\.hasMore matches whether more remaining actions exist after this page/.test(afterActionId?.description || '')) {
-    return 'query_ontology afterActionId description missing hasMore pagination guidance';
-  }
-  if (!/cursor\.nextAfterActionId=null, cursor\.hasMore=false/.test(afterActionId?.description || '')) {
-    return 'query_ontology afterActionId description missing unknown-cursor pagination guidance';
+  if (!/cursor\.nextAfterActionId while cursor\.hasMore/.test(afterActionId?.description || '')) {
+    return 'query_ontology afterActionId description missing cursor pagination guidance';
   }
   for (const propertyName of ['componentLimit', 'cycleLimit', 'recommendationLimit', 'orderLimit', 'nodeLimit']) {
     const option = propertyAt(queryTool, ['properties', propertyName]);

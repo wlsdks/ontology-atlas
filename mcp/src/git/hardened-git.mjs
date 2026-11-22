@@ -1,8 +1,8 @@
 // Git hardening for every runtime `git` the MCP server spawns. An opened
 // vault or connected project source may be attacker-authored, so each invocation
 // carries config that neutralises code execution driven by the repository's own
-// git config before git honours it. The Rust desktop (`src-tauri/src/git/runner.rs`) and
-// the CLI (`cli/src/lib/git/hardened-git.mjs`) mirror these rules.
+// git config before git honours it. The Rust desktop (`src-tauri/src/git/runner.rs`) mirrors
+// these rules.
 
 import { spawnSync } from 'node:child_process';
 

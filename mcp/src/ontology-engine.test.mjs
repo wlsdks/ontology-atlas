@@ -2284,16 +2284,15 @@ describe('queryCompiledOntology', () => {
     assert.deepEqual(result.docs.workflowGuide, {
       path: 'docs/AGENT-GRAPH-WORKFLOW.md',
       title: 'Agent Graph Workflow',
-      description: 'CLI-only use, MCP-connected use, graph DB differences, graph query packs, and verification checks.',
+      description: 'MCP-connected use, graph DB differences, graph query packs, and verification checks.',
     });
     assert.deepEqual(result.docs.modeComparison.map((mode) => mode.id), [
-      'cli_only',
       'mcp_connected',
       'graph_db_pack',
-      'setup_gate',
+      'mcp_unavailable',
     ]);
     assert.ok(result.docs.modeComparison.find((mode) => mode.id === 'mcp_connected').gives.includes('structured repair fields'));
-    assert.ok(result.docs.modeComparison.find((mode) => mode.id === 'setup_gate').gives.includes('JSON readiness'));
+    assert.match(result.docs.modeComparison.find((mode) => mode.id === 'mcp_unavailable').gives, /write nothing to the vault/);
     assert.deepEqual(result.docs.graphScanProofChecklist.map((row) => row.id), [
       'report_scan_scope',
       'prove_node_rows',
@@ -2325,28 +2324,9 @@ describe('queryCompiledOntology', () => {
     assert.match(result.handoffPrompt, /MATCH \(n:capability\) WHERE degree\(n\) >= 2/);
     assert.match(result.handoffPrompt, /query_ontology \{"operation":"explain_relation"/);
     assert.match(result.handoffPrompt, /Investigation playbooks/);
-    assert.match(result.handoffPrompt, /CLI fallback commands when the MCP connector is unavailable/);
-    assert.match(result.handoffPrompt, /node .*cli\/src\/index\.mjs hubs \[vault\] --plan --limit 10 --types depends_on,relates/);
-    assert.match(result.handoffPrompt, /node .*cli\/src\/index\.mjs domain-matrix \[vault\] --limit 10/);
-    assert.match(result.handoffPrompt, /node .*cli\/src\/index\.mjs match-nodes \[vault\] --plan --kind capability --min-degree 2 --sort degree --limit 10/);
-    assert.match(result.handoffPrompt, /node .*cli\/src\/index\.mjs match-edges \[vault\] --plan --types depends_on --limit 20/);
-    assert.match(result.handoffPrompt, /node .*cli\/src\/index\.mjs all-paths capabilities\/login domains\/auth \[vault\] --plan --force --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10/);
-    assert.ok(Array.isArray(result.cliFallbackCommands));
-    assert.ok(result.cliFallbackCommands.some((c) => c.endsWith(' facets [vault] --limit 10')));
-    assert.ok(result.cliFallbackCommands.some((c) => c.endsWith(' schema [vault] --limit 20')));
-    assert.ok(result.cliFallbackCommands.some((c) => c.endsWith(' hubs [vault] --plan --limit 10 --types depends_on,relates')));
-    assert.ok(result.cliFallbackCommands.some((c) => c.endsWith(' domain-matrix [vault] --limit 10')));
-    assert.ok(result.cliFallbackCommands.some((c) => c.endsWith(' match-nodes [vault] --plan --kind capability --min-degree 2 --sort degree --limit 10')));
-    assert.ok(result.cliFallbackCommands.some((c) => c.endsWith(' match-edges [vault] --plan --types depends_on --limit 20')));
-    assert.ok(result.cliFallbackCommands.some((c) => c.endsWith(' all-paths capabilities/login domains/auth [vault] --plan --force --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10')));
-    assert.ok(
-      result.cliFallbackCommands
-        .filter((command) => /node .*cli\/src\/index\.mjs all-paths /.test(command) && / --plan /.test(command))
-        .every((command) => / --force /.test(command)),
-      'all all-paths --plan fallbacks should include --force so connector-less agents can execute warning-only query plans',
-    );
-    assert.ok(!result.cliFallbackCommands.some((command) => command.includes('<project-slug>')));
-    assert.ok(result.cliFallbackCommands.some((c) => c.endsWith(' explain capabilities/login domains/auth [vault] --direction undirected --max-hops 5 --types depends_on,relates --limit 10')));
+    assert.match(result.handoffPrompt, /When the ontology-atlas MCP server is unavailable: read the vault's Markdown files directly, write nothing to the vault/);
+    assert.doesNotMatch(result.handoffPrompt, /cli\/src\/index\.mjs/);
+    assert.equal(Object.hasOwn(result, 'cliFallbackCommands'), false);
     assert.deepEqual(result.graphDbQueryPack.map((item) => item.id), [
       'graph_facets',
       'node_scan',
@@ -2576,7 +2556,6 @@ describe('queryCompiledOntology', () => {
     const result = queryCompiledOntology(graph, { operation: 'agent_brief', project: 'project-b' });
     assert.equal(result.projectSlug, 'project-b');
     assert.equal(result.graphDbQueryPack.find((pack) => pack.id === 'business_questions').calls[0].arguments.operation, 'facets');
-    assert.ok(result.cliFallbackCommands.some((command) => command.includes('project-map project-b')));
     assert.throws(
       () => queryCompiledOntology(graph, { operation: 'agent_brief', project: 'domain-b' }),
       /project must resolve to a project node/,
@@ -2634,9 +2613,6 @@ describe('queryCompiledOntology', () => {
       includeUnresolved: true,
       limit: 20,
     });
-    assert.ok(result.followUp.cliFallbackCommands.some((c) => c.endsWith(' node capabilities/login [vault] --limit 12')));
-    assert.ok(result.followUp.cliFallbackCommands.some((c) => c.endsWith(' match-edges [vault] --from capabilities/login --include-external --include-unresolved --limit 20')));
-    assert.ok(result.followUp.cliFallbackCommands.some((c) => c.endsWith(' blast-radius capabilities/login [vault] --depth 2 --direction incoming')));
 
     const outbound = queryCompiledOntology(artifact(), {
       operation: 'match_nodes',
@@ -2810,8 +2786,6 @@ describe('queryCompiledOntology', () => {
       maxHops: 5,
       limit: 10,
     });
-    assert.ok(result.followUp.cliFallbackCommands.some((c) => c.endsWith(' explain capabilities/login domains/auth [vault] --direction undirected --max-hops 5 --types depends_on --limit 10')));
-    assert.ok(result.followUp.cliFallbackCommands.some((c) => c.endsWith(' relation-check capabilities/login domains/auth depends_on [vault]')));
 
     const external = queryCompiledOntology(artifact(), {
       operation: 'match_edges',
@@ -3983,7 +3957,7 @@ describe('queryCompiledOntology', () => {
     assert.equal(row.didYouMean, 'domains/checkout');
     assert.equal(row.proposedAction, null);
     assert.match(row.reason, /domains\/checkout/);
-    assert.match(row.reason, /node .*cli\/src\/index\.mjs relate capabilities\/refund domains\/checkout relates/);
+    assert.match(row.reason, /`replace_relation` from "capabilities\/refund", oldTo "check", newTo "domains\/checkout", oldType and newType "relates"/);
   });
 
   // An ambiguous near-match tail must not produce a confident guess.

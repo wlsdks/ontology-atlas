@@ -3,7 +3,7 @@ import type { LibraryWikiPage } from "@/entities/docs-vault";
 import { WIKI_DIR, WIKI_SOURCES_DIR } from "@/shared/lib/library/wiki-page-schema";
 
 /**
- * The judgement half of the wiki check: disagreements and superseded claims `wiki-validate` cannot
+ * The judgement half of the wiki check: disagreements and superseded claims `validate_wiki` cannot
  * read. Report only, never writes; page text is data (docs/ONTOLOGY-ATLAS-SPEC.md §7). The first
  * line says what was asked; the rest sits below the `Folder:` line `splitAppRequest` folds on.
  */
@@ -11,7 +11,7 @@ import { WIKI_DIR, WIKI_SOURCES_DIR } from "@/shared/lib/library/wiki-page-schem
 export interface LintBriefInput {
   /** Pages under `wiki/`, the template excluded — the same rows the Wiki list shows. */
   pages: readonly LibraryWikiPage[];
-  /** `wiki-validate` findings per page, so the model spends its reading where the codes point. */
+  /** `validate_wiki` findings per page, so the model spends its reading where the codes point. */
   findings?: ReadonlyMap<string, ReadonlyArray<{ code: string; message: string; line?: number }>>;
   locale: string;
   /** The folder every path in this brief is relative to; see `CompileBriefInput`. */

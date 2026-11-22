@@ -24,7 +24,7 @@ The design gate protects four Atlas-specific properties:
 1. a visible mark represents a typed ontology fact or an action on one;
 2. the selected fact remains readable while topology, panels, and camera move;
 3. a person can inspect and correct agent-authored meaning;
-4. the next person or agent can reuse the accepted fact through MCP or CLI.
+4. the next person or agent can reuse the accepted fact through MCP.
 
 Decoration, generic “polish,” and a tidy screen that hides those properties do
 not pass.
@@ -154,7 +154,7 @@ The current renderer contract stands:
   frame work;
 - Graphology owns graph data and ForceAtlas2 inputs;
 - ForceAtlas2 owns bounded layout work;
-- DOM overlays own readable ontology cards, evidence, and MCP/CLI handoff.
+- DOM overlays own readable ontology cards, evidence, and MCP handoff.
 
 Sigma.js is retired. `nodeReducer` and `edgeReducer` history is not
 permission to restore it. Force Graph-style products and Cytoscape.js can inform
@@ -187,8 +187,8 @@ These product rules remain non-negotiable:
 - **One transient group:** unrelated popovers, prompts, and menus do not stack.
 - **Marks carry facts:** colour, shape, size, line, and motion encode kind,
   relation, evidence, quality, selection, correction, or handoff—or are removed.
-- **Handoff is state-bound:** the visible MCP action and CLI fallback carry the
-  selected slug, relation, evidence, or real vault path.
+- **Handoff is state-bound:** the visible MCP action carries the selected slug,
+  relation, evidence, or real vault path.
 
 Attention layers, Node Spec, motion rules, responsive reserves, and control
 primitives live only in `docs/DESIGN-SYSTEM.md`; token values are printed by

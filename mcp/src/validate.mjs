@@ -249,7 +249,7 @@ export function validateFramedVaultDocument({ frontmatter, diagnostics = [] }, o
       message: `\`kind: ${rawKind.trim()}\` is not a recognised value.`,
     });
   } else {
-    // Expected-field advisory from schema.mjs, the dictionary UI, CLI and MCP share.
+    // Expected-field advisory from schema.mjs, the dictionary the UI and MCP share.
     const trimmedKind = rawKind.trim();
     for (const key of missingExpectedFields(trimmedKind, frontmatter)) {
       issues.push({
@@ -292,7 +292,7 @@ function resolveDocumentSlug(frontmatter, options) {
  * from `meaning-findings.mjs`, never re-derived; all warnings (valid but
  * thin). `folder-only-evidence`, `dependency-unwitnessed` and `starter-example-node`
  * need a repository root or every other node, so they run as whole-vault passes
- * in validate_vault and the CLI.
+ * in validate_vault.
  */
 function pushMeaningIssues({ frontmatter, bodyFindings, slug, issues }) {
   const kind = typeof frontmatter?.kind === 'string' ? frontmatter.kind.trim() : '';
