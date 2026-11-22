@@ -18,8 +18,6 @@ import { Button, StaggeredFadeIn, controlClass } from "@/shared/ui";
 import { useRovingRadioGroup } from "@/shared/lib/keyboard/use-roving-radio-group";
 
 import { useFirstRunStarter } from "../model/use-first-run-starter";
-import { CliBridgeBody } from "./CliBridgeBody";
-import { CliBridgeDialog } from "./CliBridgeDialog";
 import { GlossaryDialog } from "./GlossaryDialog";
 import {
   readVaultGuideAutoOpened,
@@ -93,7 +91,6 @@ export function FirstRunStarterModule({
   } = useFirstRunStarter({ mapSelectionActive: nodeSelected });
   const [sampleSource, setSampleSource] = useSampleSource();
   const [glossaryOpen, setGlossaryOpen] = useState(false);
-  const [cliOpen, setCliOpen] = useState(false);
   const focusReopenRef = useRef(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -298,18 +295,9 @@ export function FirstRunStarterModule({
               <p className="text-label leading-label text-[color:var(--color-status-danger)]">{errorText}</p>
             </div>
           ) : null}
-          {/* Without folder access the folder guide never opens, so the terminal start takes the create button's place. */}
+          {/* Without folder access there is no folder to create, so only the glossary stays. */}
           <div data-testid="first-run-starter-secondary" className="flex items-center gap-4">
-            {fsaUnsupported ? (
-              <button
-                type="button"
-                onClick={() => setCliOpen(true)}
-                data-testid="first-run-starter-cli-open"
-                className={SECONDARY_ACTION_CLASS}
-              >
-                {t("cliBridgeToggle")}
-              </button>
-            ) : (
+            {fsaUnsupported ? null : (
               <button
                 type="button"
                 onClick={() => setGuideOpen(true)}
@@ -398,14 +386,6 @@ export function FirstRunStarterModule({
           setGuideOpen(false);
           void createVault();
         }}
-        lastSection={
-          <section>
-            <h3 className="mb-2 text-label font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
-              {t("cliBridgeToggle")}
-            </h3>
-            <CliBridgeBody />
-          </section>
-        }
       />
       <GlossaryDialog
         open={glossaryOpen}
@@ -413,7 +393,6 @@ export function FirstRunStarterModule({
         onEnablePlainMode={onEnablePlainMode}
         audiencePlain={audiencePlain}
       />
-      <CliBridgeDialog open={cliOpen} onClose={() => setCliOpen(false)} />
     </div>
   );
 }

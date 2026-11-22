@@ -4,26 +4,19 @@ import { useTranslations } from 'next-intl';
 import { Check, Copy } from 'lucide-react';
 
 import { Chip } from '@/shared/ui';
-import {
-  ATLAS_CLI,
-  ATLAS_CLI_HINT_EN,
-  shellQuoteForPacket,
-  vaultPathForPacket,
-} from '@/shared/config/agent/cli-invocation';
+import { vaultPathForPacket } from '@/shared/config/agent/cli-invocation';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { useCopyFeedback } from '@/shared/lib/clipboard/use-copy-feedback';
 
 /**
- * The commands are built, not frozen, so they run wherever the packet is pasted: `ATLAS_CLI`
- * gives the one invocation form, `vaultPathForPacket` the absolute path or a fill-in
- * instruction, and `shellQuoteForPacket` keeps a path with spaces intact.
+ * Every step is an MCP call the agent makes itself; `vaultPathForPacket` gives the absolute path
+ * or a fill-in instruction, so the agent knows which folder the server should be reading.
  */
 function buildMcpFirstCallsPacket(vaultName: string, vaultPath: string | null): string {
-  const vaultArg = shellQuoteForPacket(vaultPathForPacket(vaultName, vaultPath));
   return [
     'Ontology Atlas MCP first-contact proof packet',
     '',
-    ATLAS_CLI_HINT_EN,
+    `Ontology vault: ${vaultPathForPacket(vaultName, vaultPath)}`,
     '',
     // Step 1 is `tools/list`, which every client can answer, not one client's command.
     'Direct MCP proof inside the current agent session:',
@@ -32,8 +25,7 @@ function buildMcpFirstCallsPacket(vaultName: string, vaultPath: string | null): 
     '3. query_ontology({"operation":"workspace_brief"})',
     '4. query_ontology({"operation":"health"})',
     '',
-    'If direct MCP tools are missing, this is CLI fallback proof only:',
-    `${ATLAS_CLI} mcp-verify ${vaultArg} --timeout-ms 15000`,
+    'If direct MCP tools are missing, the agent is not connected: connect it in the Ontology Atlas app under Agents > MCP, then restart it.',
     '',
     // The stale-cache hint compares against `connection_info`'s count, never a literal that goes stale.
     'Stale client cache hint:',
@@ -42,7 +34,6 @@ function buildMcpFirstCallsPacket(vaultName: string, vaultPath: string | null): 
     'Project ontology indexing checkpoint (side effect 0):',
     'Replace [codebase-root] with the current checkout path before running project indexing.',
     'index_project({"rootPath":"[codebase-root]"})',
-    `${ATLAS_CLI} index [codebase-root] --vault ${vaultArg} --json --threshold 2`,
     '',
     'Meaning gate: report the business/product domain and capability first, then cite code index rows as implementation evidence.',
     'Business evidence: include meaningGate.businessOntology.evidence rows from README and docs/ontology.',
