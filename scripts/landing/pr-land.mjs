@@ -7,7 +7,9 @@
  * queued PRs into a train with one CI run, bisecting red trains.
  */
 
-import { runMainCopyIfStale } from '../lib/landing/run-main-copy.mjs';
+import { fileURLToPath } from 'node:url';
+
+import { mainCopyIfStale } from '../lib/landing/run-main-copy.mjs';
 import { DEFAULT_BATCH, QUEUE_LABEL, landingRoute, waiterOutcome, waiterPollSeconds } from '../lib/landing/landing-train.mjs';
 import { awaitOwnCi, tryFastPath } from '../lib/landing/pr-land/direct-merge.mjs';
 import { worktreeToRemove, defaultDeps } from '../lib/landing/pr-land/landing-deps.mjs';
@@ -18,6 +20,7 @@ import { planLanding, printQueue } from '../lib/landing/pr-land/landing-reports.
 import { parseArgs } from '../lib/landing/pr-land/land-args.mjs';
 import { mainHealthWarnings } from '../lib/landing/pr-land/main-health.mjs';
 import { conduct } from '../lib/landing/pr-land/train-conductor.mjs';
+import { superviseConductor } from '../lib/landing/pr-land/conductor-supervisor.mjs';
 
 /** Conduct the queue a direct merge would otherwise leave unconducted. `null` when there was none. */
 function conductLeftovers({ deps, args, requiredContexts, token, deadline, except }) {
@@ -247,7 +250,21 @@ export function runPrLand(argv, io = console, makeDeps = defaultDeps) {
 }
 
 if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {
-  // The conductor's code is shared infrastructure: run main's copy when this checkout's is older.
   const argv = process.argv.slice(2);
-  process.exitCode = runMainCopyIfStale({ entry: 'scripts/landing/pr-land.mjs', argv }) ?? runPrLand(argv);
+  if (process.env.ATLAS_PR_LAND_CONDUCTOR === '1') {
+    process.exitCode = runPrLand(argv);
+  } else {
+    // The conductor's code is shared infrastructure: run main's copy when this checkout's is older.
+    // Either copy runs as a supervised child, so a signal still releases the lock it holds.
+    const copy = mainCopyIfStale({ entry: 'scripts/landing/pr-land.mjs' });
+    superviseConductor({
+      script: copy?.script ?? fileURLToPath(import.meta.url),
+      argv,
+      cwd: copy?.cwd ?? process.cwd(),
+      env: { ...process.env, ...copy?.env, ATLAS_PR_LAND_CONDUCTOR: '1' },
+    }).then((code) => {
+      copy?.cleanup();
+      process.exit(code);
+    });
+  }
 }
