@@ -1,9 +1,10 @@
 /*
  * The building of rooms. Every prop is flat pixel geometry on one grid: `--u` is the room's pixel
  * unit (Moru is 128 × u pixels), `--s` one drawn pixel and `--p` two. A room sets `--ink` to its
- * session's ink. Light exists only where something runs: the lamp, the glow behind Moru and the
- * monitor's cursor move only under `[data-room-motion='running']`, which the board sets
- * while the room's work runs and the room is on screen in a visible window.
+ * session's ink. Light exists only where something runs: the lamp, the glow behind Moru, the
+ * monitor's cursor and Moru's own cells move only under `[data-room-motion='running']`, which the
+ * board sets while the room's work runs and the room is on screen in a visible window. Every loop
+ * here animates opacity or transform, which the compositor runs; Moru's cells change on a clock.
  */
 
 .notched {
@@ -213,7 +214,7 @@
 .glowLight {
   position: absolute;
   inset: 0;
-  animation: roomBreathe calc(var(--motion-base) * 24) var(--motion-ease) infinite;
+  animation: roomBreathe calc(var(--motion-base) * 48) var(--motion-ease) infinite;
   animation-play-state: paused;
   background:
     linear-gradient(var(--glow-2), var(--glow-2)) 50% 100% / 52% 60% no-repeat,
@@ -227,9 +228,16 @@
   opacity: 1;
 }
 
+/*
+ * The ambient loops run on the compositor, but each iteration's end still costs the page a frame.
+ * Each therefore holds two to four of its beats per iteration, at the same pace as one beat would.
+ */
 @keyframes roomBreathe {
-  50% {
+  25%, 75% {
     opacity: 0.72;
+  }
+  50% {
+    opacity: 1;
   }
 }
 
@@ -302,17 +310,17 @@
 }
 
 @keyframes roomLampFlicker {
-  0%, 46%, 54%, 100% {
+  0%, 23%, 27%, 73%, 77%, 100% {
     opacity: 1;
   }
-  50% {
+  25%, 75% {
     opacity: 0.78;
   }
 }
 
 .lampFlicker {
   --c: color-mix(in srgb, var(--room-ink) 30%, var(--color-text-primary));
-  animation: roomLampFlicker calc(var(--motion-base) * 18) linear infinite;
+  animation: roomLampFlicker calc(var(--motion-base) * 36) linear infinite;
   animation-play-state: paused;
 }
 
@@ -323,9 +331,14 @@
   animation-play-state: running;
 }
 
-/* Each Moru starts his loop at his own pose, a negative delay of whole poses. */
-.moru :global(.atlas-waiting-mark) {
-  animation-delay: calc(var(--moru-phase, 0) * var(--motion-base) * -16);
+/* One native row of 24 cells; the board's clock steps a looping one, a still one shows its first cell. */
+.moruCells {
+  width: 128px;
+  height: 128px;
+  background-repeat: no-repeat;
+  background-position: 0 0;
+  background-size: 3072px 128px;
+  image-rendering: pixelated;
 }
 
 .actor {
@@ -588,7 +601,10 @@
 }
 
 @keyframes roomCursorBlink {
-  50% {
+  0%, 25%, 50%, 75% {
+    opacity: 1;
+  }
+  12.5%, 37.5%, 62.5%, 87.5% {
     opacity: 0;
   }
 }
@@ -598,7 +614,7 @@
   width: calc(3 * var(--s));
   height: 1em;
   background: color-mix(in srgb, var(--ink) 70%, var(--color-text-primary));
-  animation: roomCursorBlink calc(var(--motion-base) * 8) steps(1) infinite;
+  animation: roomCursorBlink calc(var(--motion-base) * 32) steps(1) infinite;
   animation-play-state: paused;
 }
 
@@ -666,7 +682,7 @@
 
 @keyframes roomBeltRun {
   to {
-    transform: translateX(72px);
+    transform: translateX(144px);
   }
 }
 
@@ -674,10 +690,10 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  left: -72px;
+  left: -144px;
   right: 0;
   background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--ink) 78%, var(--color-text-primary)) 0 20px, transparent 20px 72px);
-  animation: roomBeltRun calc(var(--motion-base) * 14) linear infinite;
+  animation: roomBeltRun calc(var(--motion-base) * 28) linear infinite;
   animation-play-state: paused;
 }
 
@@ -1013,8 +1029,8 @@
 }
 
 /* A dozing Moru holds the waiting row's closed-eye cell. */
-.dozing [data-waiting-motion='still'] {
-  background-position-x: -576px;
+.dozing .moruCells {
+  background-position-x: -1152px;
 }
 
 /* ---------- floors, the line under the stage, the shelf */

@@ -105,7 +105,7 @@ per session in the order the sessions started, plus **No session**, and a
 session whose rooms are all on the stage keeps its row; each has
 its start time and worktree count, how many need clean-up, and how many of
 its rooms stand on the stage and on the floor (**2 on stage · 3 below**). Every
-mini room is the same size: half-size Moru, the branch and one status line;
+mini room is the same size: a half-size Moru holding still, the branch and one status line;
 only a merged one shows its crate in `main`. A floor that wraps spreads its
 rooms evenly over its rows, so none stands alone on a row.
 With six mini rooms or fewer they sit in one row without bands. When working
@@ -156,8 +156,8 @@ lamp throws a stepped cone down the wall and a pool on the floor and rims Moru's
 side that faces it; an idle room has none. Pointing at a room or floor steps
 that session's rooms and floor up and the rest down; rooms have no action, so
 they take no press or focus. Moru, the lamp, the monitor and the belt move only
-in a room where something runs, on screen, in a visible window. Reduced motion
-shows the end states without movement.
+in a stage room where something runs, on screen, in a visible window; a mini
+room's Moru holds still. Reduced motion shows the end states without movement.
 
 ## States
 

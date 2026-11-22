@@ -8,6 +8,7 @@ import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-
 import { MOTION } from '@/shared/motion';
 import { layoutBuilding, stageCapacity, type Box, type RoomBox, type RoomSize, type RoomUnit } from '../model/building-layout';
 import { clockTime } from '../model/format';
+import { createMoruClock } from '../model/moru-clock';
 import { retireeOf, roomAlertOf, roomLook, withRetirees, type Retiree } from '../model/room-look';
 import { FADE_MS, MOVE_MS } from '../model/room-sequence';
 import { FACE_LEFT_EVENT, exitRoom, translate, useRoomMotion } from '../model/use-room-motion';
@@ -271,12 +272,16 @@ function useRetirees(plan: RoomPlan, stageLimit: number, reduced: boolean) {
   return retirees;
 }
 
-/** Sets which rooms may move: only a running room on screen in a visible window, never under reduced motion. */
+/**
+ * Sets which rooms may move: only a running room on screen in a visible window, never under reduced
+ * motion. The same rooms' Moru step on one shared clock.
+ */
 function useAmbientMotion(boardRef: React.RefObject<HTMLElement | null>, layoutKey: unknown, reduced: boolean) {
   useEffect(() => {
     const board = boardRef.current;
     if (!board || typeof IntersectionObserver === 'undefined') return;
     const visible = new Set<Element>();
+    const clock = createMoruClock(board);
     const update = (element: HTMLElement) => {
       const moving = !reduced && !document.hidden && visible.has(element) && element.dataset.roomRunning === 'true';
       element.dataset.roomMotion = moving ? 'running' : 'paused';
@@ -288,16 +293,21 @@ function useAmbientMotion(boardRef: React.RefObject<HTMLElement | null>, layoutK
         else visible.delete(entry.target);
         update(entry.target as HTMLElement);
       }
+      clock.sync(!reduced);
     });
     rooms().forEach(element => observer.observe(element));
-    const onVisibility = () => rooms().forEach(update);
-    document.addEventListener('visibilitychange', onVisibility);
-    const mutations = new MutationObserver(() => rooms().forEach(update));
-    mutations.observe(board, { subtree: true, attributes: true, attributeFilter: ['data-room-running'] });
+    const updateAll = () => {
+      rooms().forEach(update);
+      clock.sync(!reduced);
+    };
+    document.addEventListener('visibilitychange', updateAll);
+    const mutations = new MutationObserver(updateAll);
+    mutations.observe(board, { subtree: true, attributes: true, attributeFilter: ['data-room-running', 'data-moru-loop'] });
     return () => {
       observer.disconnect();
       mutations.disconnect();
-      document.removeEventListener('visibilitychange', onVisibility);
+      clock.stop();
+      document.removeEventListener('visibilitychange', updateAll);
     };
   }, [boardRef, layoutKey, reduced]);
 }
