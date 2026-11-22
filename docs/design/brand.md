@@ -72,7 +72,6 @@ outline are the catalogue's own pixels.
 | Dragon | `#B1DDC5` / `#E4F8E4` | none yet |
 | Rabbit | `#E8CEC2` / `#FEF0E6` | two upright ears with pink insides |
 | Builder | `#D1CCC0` / `#F7EDD9` | a hard hat |
-| Scholar | `#CAD4E3` / `#ECF3FF` | none yet |
 
 Each Work status room has one of these. A palette swaps only the body fill and
 the belly tone, and a head piece drawn in them; the outline, the eyes, the indigo
@@ -90,7 +89,8 @@ character is costume only: every character plays the same rows, so a pose means
 what it means on the grey Moru, and it says nothing about which agent or model
 is at work. The pieces are generic pastel costume shapes; none copies an
 existing character's design or colouring. Body costumes, raised-flipper poses
-and the dragon's and scholar's pieces are not shipped.
+and the dragon's pieces are not shipped. The scholar's blue-grey `#CAD4E3` waits
+for its glasses and scarf: alone, under a room's light, it reads as the grey Moru.
 
 Source sheets, generation prompts and discarded explorations remain in that pack.
 `moru-source.json` records source cells and sequence constituents; `moru.json`

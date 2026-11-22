@@ -45,3 +45,31 @@ test('the 64px poses come from the catalogue reducer with exact ink and no stray
     }
   }
 });
+
+/** Pixels in one pose that differ from the grey pose in the character's palette: its head piece, where it wears one. */
+const PIECE_FLOOR = 100;
+
+test('a character with a head piece wears it in every pose of every row a room plays', async () => {
+  for (const row of Object.keys(CAST_ROWS)) {
+    const grey = await raw(`public/brand/mascot-${row}-row-128.png`);
+    for (const [character, look] of Object.entries(CAST)) {
+      if (look.pieces.length === 0) continue;
+      const shipped = await raw(castFile(row, character)), bare = recoloured(grey, look), width = shipped.length / 4 / 128;
+      for (let frame = 0; frame < width / 128; frame++) {
+        let worn = 0;
+        for (let y = 0; y < 128; y++) for (let x = 0; x < 128; x++) {
+          const p = (y * width + frame * 128 + x) * 4;
+          if (shipped[p + 3] && shipped.readUInt32BE(p) !== bare.readUInt32BE(p)) worn++;
+        }
+        assert.ok(worn >= PIECE_FLOOR, `${row} for ${character} pose ${frame + 1} shows ${worn} piece pixels`);
+      }
+    }
+  }
+});
+
+test('a character with no head piece has a body colour far enough from the grey to tell apart', () => {
+  const chroma = hex => { const c = [0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16)); return Math.max(...c) - Math.min(...c); };
+  for (const [character, look] of Object.entries(CAST)) {
+    if (look.pieces.length === 0) assert.ok(chroma(look.body) >= 40, `${character}'s body ${look.body} reads as grey under a room's light`);
+  }
+});

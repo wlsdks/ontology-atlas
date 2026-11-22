@@ -100,7 +100,7 @@ export function roomIdentity(branch: string): RoomIdentity {
  * piece (`docs/design/brand.md`, "Cast"). A costume only: every character plays the same rows, so
  * a pose means the same thing whoever wears it.
  */
-export const MORU_CAST = ['horn', 'unicorn', 'dragon', 'rabbit', 'builder', 'scholar'] as const;
+export const MORU_CAST = ['horn', 'unicorn', 'dragon', 'rabbit', 'builder'] as const;
 export type MoruCharacter = 'grey' | (typeof MORU_CAST)[number];
 
 /**

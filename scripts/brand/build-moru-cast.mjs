@@ -63,6 +63,8 @@ const HARD_HAT = piece(['       lll        ', '     iilllii      ', '    iiillll
  * outline, the eyes, the indigo flippers and tail and the shading stay, so every row means what it
  * means on the grey Moru. Each tint has the original tone's luminance, so contrast holds by
  * construction. A head piece sits at 128px coordinates on the neutral pose and follows the crown.
+ * The scholar's blue-grey (`#cad4e3`) waits for its glasses and scarf: alone, under a room's light,
+ * it reads as the grey original.
  */
 export const CAST = {
   horn: { body: 'e8d1a7', belly: 'fff1d6', pieces: [[HORN, 62, 36], [flipped(HORN), 86, 36]] },
@@ -70,7 +72,6 @@ export const CAST = {
   dragon: { body: 'b1ddc5', belly: 'e4f8e4', pieces: [] },
   rabbit: { body: 'e8cec2', belly: 'fef0e6', pieces: [[EAR_RIGHT, 80, 26], [EAR_LEFT, 62, 26]] },
   builder: { body: 'd1ccc0', belly: 'f7edd9', pieces: [[HARD_HAT, 60, 36]] },
-  scholar: { body: 'cad4e3', belly: 'ecf3ff', pieces: [] },
 };
 
 const SIZE = 128, WORK = 256;

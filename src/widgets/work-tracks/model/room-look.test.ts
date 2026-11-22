@@ -109,9 +109,9 @@ describe('moruCharacter', () => {
     const characters = branches.map(branch => moruCharacter(branch, false));
     expect(branches.map(branch => moruCharacter(branch, false))).toEqual(characters);
     const counts = MORU_CAST.map(character => characters.filter(found => found === character).length);
-    // 20 each on an even spread; no character is missing or takes twice its share.
-    for (const count of counts) expect(count).toBeGreaterThan(8);
-    for (const count of counts) expect(count).toBeLessThan(40);
+    // 24 each on an even spread; no character is missing or takes twice its share.
+    for (const count of counts) expect(count).toBeGreaterThan(12);
+    for (const count of counts) expect(count).toBeLessThan(48);
     expect(characters).not.toContain('grey');
   });
 
