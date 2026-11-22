@@ -242,7 +242,7 @@ function pathFrames(move: RoomMove, { sequence, at }: MoveTiming, frame: (box: B
   const frames: Keyframe[] = [{ ...frame(move.from), offset: 0, easing: 'linear' }];
   for (let index = 0; index <= PATH_SAMPLES; index += 1) {
     const progress = index / PATH_SAMPLES;
-    frames.push({ ...frame(boxOnPath(move, sequence.waves, sequence.path, progress, sequence.corner)), offset: at(sequence.moveAtMs + progress * sequence.moveMs), easing: 'linear' });
+    frames.push({ ...frame(boxOnPath(move, sequence.waves, sequence.path, progress, sequence.overlap)), offset: at(sequence.moveAtMs + progress * sequence.moveMs), easing: 'linear' });
   }
   frames.push({ ...frame(move.to), offset: 1 });
   return frames;
@@ -261,7 +261,8 @@ function fadeFrames(from: number, steps: ReturnType<typeof stepsOf>): Keyframe[]
 }
 
 /** Earlier waves are drawn over later ones: a room arriving in a box covers the one about to leave it. */
-const layerOf = (move: RoomMove) => 5 - move.wave;
+/** A room that keeps its content passes above every wall; among either, an earlier wave passes above a later one. */
+const layerOf = (move: RoomMove) => (move.mode === 'wall' ? 0 : 10) + 5 - move.wave;
 
 /**
  * A stage room that stays one: its box itself grows or shrinks along its path, so its Moru, name tag,

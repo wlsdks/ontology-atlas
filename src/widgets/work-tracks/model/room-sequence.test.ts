@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Box } from './building-layout';
-import { FADE_MS, MOVE_MS, SHOW_MS, boxAt, boxOnPath, planSequence, type RoomSequence } from './room-sequence';
+import { FADE_MS, MOVE_MS, SHOW_MS, boxAt, boxOnPath, planSequence, type RoomMove, type RoomSequence } from './room-sequence';
 
 const box = (x: number, y: number, w = 100, h = 80): Box => ({ x, y, w, h });
 type Rooms = [string, Box][];
@@ -16,6 +16,21 @@ function frames(sequence: RoomSequence): Map<string, Box>[] {
     out.push(new Map([...sequence.moves].map(([key, move]) => [key, boxAt(move, sequence, time)])));
   }
   return out;
+}
+
+/**
+ * Steps of a move, each 10 ms, slower than 15% of its peak between the first and the last step that
+ * reach half of it: a stop inside a move, which reads as two moves.
+ */
+function dips(sequence: RoomSequence, move: RoomMove): string[] {
+  const speeds: number[] = [];
+  for (let time = 0; time < sequence.moveMs; time += 10) {
+    const [a, b] = [boxAt(move, sequence, sequence.moveAtMs + time), boxAt(move, sequence, sequence.moveAtMs + time + 10)];
+    speeds.push(Math.max(Math.abs(b.x - a.x), Math.abs(b.y - a.y), Math.abs(b.x + b.w - a.x - a.w), Math.abs(b.y + b.h - a.y - a.h), Math.hypot(b.x - a.x, b.y - a.y)));
+  }
+  const peak = Math.max(...speeds);
+  const [first, last] = [speeds.findIndex(value => value >= peak / 2), speeds.findLastIndex(value => value >= peak / 2)];
+  return speeds.flatMap((value, index) => index > first && index < last && value < 0.15 * peak ? [`${index * 10} ms: ${value.toFixed(1)} of ${peak.toFixed(1)}`] : []);
 }
 
 describe('planSequence', () => {
@@ -52,60 +67,47 @@ describe('planSequence', () => {
     }
   });
 
-  it('resizes the rooms of a merge relayout, their fades staggered, without two of them meeting', () => {
-    // Two rows of two at 1920 px become one row of three once the top right room has merged.
+  it('moves the rooms of a merge relayout on one curve each, crossing rooms as walls, without two drawn rooms meeting', () => {
+    // Two rows of two at 1920 px become one row of three once the top right room has merged. The top
+    // left room and the one below it overlap across the whole move, so no curve keeps both drawn.
     const from: Rooms = [['a', box(104, 94, 882, 416)], ['b', box(104, 522, 882, 416)], ['c', box(998, 522, 882, 416)]];
     const to: Rooms = [['a', box(104, 266, 584, 500)], ['b', box(700, 266, 584, 500)], ['c', box(1296, 266, 584, 500)]];
     const sequence = plan(from, to, { keeps: ['a', 'b', 'c'] });
-    expect([...sequence.moves.values()].map(move => move.mode)).toEqual(['resized', 'resized', 'resized']);
     expect(new Set([...sequence.moves.values()].map(move => move.offsetMs)).size).toBe(3);
     for (const frame of frames(sequence)) {
-      const [a, b, c] = ['a', 'b', 'c'].map(key => frame.get(key)!);
-      expect([meet(a, b), meet(b, c), meet(a, c)]).toEqual([false, false, false]);
+      const drawn = [...frame].filter(([key]) => sequence.moves.get(key)?.mode !== 'wall').map(([, at]) => at);
+      drawn.forEach((one, index) => drawn.slice(index + 1).forEach(other => expect(meet(one, other)).toBe(false)));
     }
+    for (const move of sequence.moves.values()) expect(dips(sequence, move)).toEqual([]);
     expect(sequence.totalMs).toBeLessThanOrEqual(FADE_MS + MOVE_MS + SHOW_MS + 2 * 160);
   });
 
-  it('turns a two-leg move between rows smoothly: no side stops dead, and the turn takes two frames at most', () => {
-    const from: Rooms = [['a', box(104, 94, 882, 416)], ['b', box(104, 522, 882, 416)], ['c', box(998, 522, 882, 416)]];
-    const to: Rooms = [['a', box(104, 266, 584, 500)], ['b', box(700, 266, 584, 500)], ['c', box(1296, 266, 584, 500)]];
-    const sequence = plan(from, to, { keeps: ['a', 'b', 'c'] });
+  it('bends a room around a still one on an arc, both axes moving together through the middle', () => {
+    const sequence = plan([['a', box(0, 0)], ['still', box(150, 90, 60, 40)]], [['a', box(300, 200)], ['still', box(150, 90, 60, 40)]], { keeps: ['a'] });
+    const move = sequence.moves.get('a')!;
     expect(sequence.path).not.toBe('straight');
-    for (const move of sequence.moves.values()) {
-      const sides = (box: ReturnType<typeof boxAt>) => [box.x, box.y, box.x + box.w, box.y + box.h];
-      const steps: number[][] = [];
-      for (let time = 0; time < sequence.moveMs; time += 10) {
-        const [a, b] = [sides(boxAt(move, sequence, sequence.moveAtMs + time)), sides(boxAt(move, sequence, sequence.moveAtMs + time + 10))];
-        steps.push(a.map((value, side) => Math.abs(b[side] - value)));
-      }
-      const speed = steps.map(step => Math.hypot(...step));
-      const across = Math.max(...steps.map(([x, , right]) => Math.hypot(x, right)));
-      const down = Math.max(...steps.map(([, y, , bottom]) => Math.hypot(y, bottom)));
-      // Rooms a row apart ease into the corner and out of it: past the easing at either end of the move,
-      // the room is slow for 40 ms at most, two frames.
-      expect(speed.slice(12, -12).filter(value => value < Math.min(across, down) / 3).length).toBeLessThanOrEqual(4);
-      for (let side = 0; side < 4; side += 1) {
-        const run = steps.map(step => step[side]);
-        const peak = run.indexOf(Math.max(...run));
-        // A side slows over several steps; one that loses half its pace in 10 ms has stopped dead.
-        run.forEach((value, index) => expect(index === 0 || run[index - 1] - value <= 0.45 * run[peak]).toBe(true));
-        run.forEach((value, index) => {
-          if (index > 0 && index <= peak) expect(value).toBeGreaterThanOrEqual(run[index - 1] - 0.01);
-          if (index > peak) expect(value).toBeLessThanOrEqual(run[index - 1] + 0.01);
-        });
-      }
+    expect(move.mode).toBe('carried');
+    let together = 0;
+    for (let time = 0; time < sequence.moveMs; time += 10) {
+      const [a, b] = [boxAt(move, sequence, sequence.moveAtMs + time), boxAt(move, sequence, sequence.moveAtMs + time + 10)];
+      expect(meet(a, box(150, 90, 60, 40))).toBe(false);
+      if (Math.abs(b.x - a.x) > 0.5 && Math.abs(b.y - a.y) > 0.5) together += 1;
     }
+    expect(together * 10).toBeGreaterThanOrEqual(60);
+    expect(dips(sequence, move)).toEqual([]);
   });
 
-  it('keeps one pace through a paced corner, however unequal the two legs', () => {
-    const move = { from: box(997, 122, 882, 416), to: box(104, 196, 584, 640), mode: 'resized' as const, wave: 0, offsetMs: 0 };
-    const speeds: number[] = [];
-    for (let step = 0; step < 48; step += 1) {
-      const [a, b] = [boxOnPath(move, 1, 'acrossFirstPaced', step / 48), boxOnPath(move, 1, 'acrossFirstPaced', (step + 1) / 48)];
-      speeds.push(Math.max(Math.abs(b.x - a.x), Math.abs(b.y - a.y), Math.abs(b.x + b.w - a.x - a.w), Math.abs(b.y + b.h - a.y - a.h)));
+  it('keeps one pace on an arc, however unequal the two legs', () => {
+    const move: RoomMove = { from: box(998, 122, 882, 416), to: box(104, 224, 584, 640), mode: 'resized', wave: 0, offsetMs: 0 };
+    for (const overlap of [0.6, 0.4, 0.2]) {
+      const speeds: number[] = [];
+      for (let step = 0; step < 48; step += 1) {
+        const [a, b] = [boxOnPath(move, 1, 'acrossFirst', step / 48, overlap), boxOnPath(move, 1, 'acrossFirst', (step + 1) / 48, overlap)];
+        speeds.push(Math.max(Math.abs(b.x - a.x), Math.abs(b.y - a.y), Math.abs(b.x + b.w - a.x - a.w), Math.abs(b.y + b.h - a.y - a.h)));
+      }
+      const median = [...speeds].sort((a, b) => a - b)[24];
+      expect(Math.max(...speeds), `overlap ${overlap}`).toBeLessThan(3 * median);
     }
-    const median = [...speeds].sort((a, b) => a - b)[24];
-    expect(Math.max(...speeds)).toBeLessThan(3 * median);
   });
 
   it('lets a floor shift with its content while a room rises to the stage and the stopped one drops after it', () => {
