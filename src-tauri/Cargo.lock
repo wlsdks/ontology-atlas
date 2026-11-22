@@ -3361,6 +3361,7 @@ dependencies = [
  "objc2-foundation",
  "rfd",
  "safetensors",
+ "semver",
  "serde",
  "serde_json",
  "sha2 0.11.1",
