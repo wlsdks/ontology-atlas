@@ -121,7 +121,16 @@ async function startPaintSampler(page: Page) {
     });
     const frames: PaintFrame[] = [];
     Object.assign(window, { __paint: { frames, slots } });
-    const sample = (frameTime: number) => {
+    let lastTime = Number.NaN;
+    const sample = () => {
+      // The clock the rooms' animations read, so a frame is timed by what it shows. A callback that
+      // comes before that clock moves on shows the last frame again, and is not a frame.
+      const frameTime = Number(document.timeline.currentTime);
+      if (frameTime === lastTime) {
+        requestAnimationFrame(sample);
+        return;
+      }
+      lastTime = frameTime;
       const all = rooms();
       const copies = new Map<string, number>();
       for (const element of all) copies.set(keyOf(element), (copies.get(keyOf(element)) ?? 0) + content(element).filter((value) => value > 0.05).length);
@@ -174,6 +183,13 @@ async function startPaintSampler(page: Page) {
         if (element.dataset.roomKey === undefined) continue;
         const plate = plateOf(element);
         boxes[keyOf(element)] = [plate.x, plate.y, plate.width, plate.height];
+        // The cart is drawn as a box too, so its crates riding into the hatch are held to the same glide.
+        const face = [...element.querySelectorAll(":scope > [data-room-face]")].sort((a, b) => seen(b) - seen(a))[0];
+        const cart = face?.querySelector("[data-testid=work-room-cart]");
+        if (cart && seen(cart) > 0.5) {
+          const box = cart.getBoundingClientRect();
+          boxes[`cart:${keyOf(element)}`] = [box.x, box.y, box.width, box.height];
+        }
       }
       frames.push({ copies: Math.max(0, ...copies.values()), overlaps, covered, litGhost, time: frameTime, tags, content: visible, moru, edges, boxes });
       if (frames.length < 900) requestAnimationFrame(sample);
@@ -214,14 +230,18 @@ async function expectCleanPaint(page: Page, { slots: handed = 0 } = {}) {
     }
   });
   expect.soft([...new Set(cuts)].slice(0, 6), "content that cut instead of fading").toEqual([]);
-  // Moru glides to a new scale: within any 40 ms its drawn width changes by at most a fifth.
+  // Moru glides to a new scale: within any 40 ms its drawn width changes by at most a fifth. A frame
+  // that came late and repeated the one before is timed from that one, so it is not read as a jump.
   const jumps: string[] = [];
   frames.forEach((frame, index) => {
     const next = frames[index + 1];
-    if (!next || next.time - frame.time > 40) return;
+    if (!next) return;
     for (const [name, width] of Object.entries(frame.moru)) {
       const after = next.moru[name];
-      if (after !== undefined && width > 0 && Math.abs(after - width) / width > 0.2) jumps.push(`${name} ${Math.round(width)}→${Math.round(after)}px`);
+      if (after === undefined || width <= 0 || after === width) continue;
+      const repeated = frames[index - 1]?.moru[name] === width && frames[index - 2]?.moru[name] !== width;
+      const from = repeated ? frames[index - 1].time : frame.time;
+      if (next.time - from <= 40 && Math.abs(after - width) / width > 0.2) jumps.push(`${name} ${Math.round(width)}→${Math.round(after)}px`);
     }
   });
   expect.soft([...new Set(jumps)].slice(0, 6), "Moru that jumped to a new scale").toEqual([]);
@@ -261,6 +281,74 @@ async function expectSmoothMotion(page: Page) {
   }
   expect.soft(jumps.slice(0, 6), "rooms that jumped").toEqual([]);
   expect.soft(reversals.slice(0, 6), "rooms that turned back").toEqual([]);
+  expect.soft(movesOf(frames).flatMap(spikesIn).slice(0, 6), "steps far faster than the rest of their move").toEqual([]);
+  expect.soft(stopsBetween(movesOf(frames)).slice(0, 6), "moves that stopped and set off again").toEqual([]);
+}
+
+interface Step { speed: number; at: number; px: number }
+interface Move { key: string; steps: Step[] }
+
+/**
+ * Each room's and cart's moves: runs of frames in which it travels, in px per ms, so a dropped frame
+ * is no spike. One still frame inside a run is a late frame that repeated the last one, not a stop:
+ * its time goes to the next step. Two still frames end the run.
+ */
+function movesOf(frames: PaintFrame[]): Move[] {
+  const moves: Move[] = [];
+  for (const key of new Set(frames.flatMap((frame) => Object.keys(frame.boxes)))) {
+    let run: Step[] = [];
+    let still = 0;
+    let carried = 0;
+    for (let index = 1; index <= frames.length; index += 1) {
+      const [a, b] = [frames[index - 1]?.boxes[key], frames[index]?.boxes[key]];
+      const px = a && b ? Math.max(...a.map((value, side) => Math.abs((b[side] ?? value) - value)), Math.hypot(b[0] - a[0], b[1] - a[1])) : 0;
+      const dt = index < frames.length ? Math.max(1, frames[index].time - frames[index - 1].time) : 1;
+      if (px / dt > 0.02) {
+        if (still > 1 && run.length > 0) {
+          moves.push({ key, steps: run });
+          run = [];
+        }
+        run.push({ speed: px / (dt + (still === 1 ? carried : 0)), at: Math.round(frames[index].time - frames[0].time), px });
+        still = 0;
+        carried = 0;
+      } else {
+        still += 1;
+        carried += dt;
+      }
+    }
+    if (run.length > 0) moves.push({ key, steps: run });
+  }
+  return moves;
+}
+
+/**
+ * A step more than three times the median step of its own move: a jump inside a glide. Each step's
+ * pace is read over it and its neighbours, so an uneven frame is not a jump; a real one-frame jump of
+ * a few hundred pixels still stands far above the steps around it.
+ */
+function spikesIn({ key, steps }: Move): string[] {
+  if (steps.length < 5) return [];
+  const dt = (step: Step) => step.px / step.speed;
+  const paces = steps.map((_, index) => {
+    const near = steps.slice(Math.max(0, index - 1), index + 2);
+    return near.reduce((sum, step) => sum + step.px, 0) / near.reduce((sum, step) => sum + dt(step), 0);
+  });
+  const median = [...paces].sort((a, b) => a - b)[Math.floor(paces.length / 2)];
+  return steps.flatMap((step, index) => paces[index] > 3 * median && paces[index] > 0.5 ? [`${key} ${paces[index].toFixed(2)}px/ms at ${step.at}ms, median ${median.toFixed(2)}`] : []);
+}
+
+/** A move that comes to rest and sets off again within 400 ms: two motions where one curve was meant. */
+function stopsBetween(moves: Move[]): string[] {
+  const travelled = (move: Move) => move.steps.reduce((sum, step) => sum + step.px, 0);
+  const stops: string[] = [];
+  for (const move of moves) {
+    for (const next of moves) {
+      if (next === move || next.key !== move.key) continue;
+      const gap = next.steps[0].at - move.steps.at(-1)!.at;
+      if (gap > 0 && gap <= 400 && travelled(move) > 8 && travelled(next) > 8) stops.push(`${move.key} stopped at ${move.steps.at(-1)!.at}ms and set off at ${next.steps[0].at}ms`);
+    }
+  }
+  return stops;
 }
 
 test.describe("work status rooms", () => {
@@ -313,7 +401,8 @@ test.describe("work status rooms", () => {
   });
 
   test("keeps one painted copy of each room, apart from the others, while a merge and a rise move them", async ({ page }) => {
-    await openWorkStatus(page, SIX);
+    // A full cart, so the crates riding into the hatch are a row long enough to show a jump.
+    await openWorkStatus(page, SIX.map((entry) => entry.branch === "feat/library-stage" ? { ...entry, ahead: 7 } : entry));
     await expect(room(page, "feat/library-stage")).toHaveAttribute("data-room-size", "large");
     await startPaintSampler(page);
     await setRows(page, [
@@ -325,6 +414,20 @@ test.describe("work status rooms", () => {
     await expect(room(page, "feat/harness-tab")).toHaveAttribute("data-room-size", "large");
     await waitForAnimationsDone(page.getByTestId("work-building"));
     await expectCleanPaint(page);
+    await expectSmoothMotion(page);
+  });
+
+  test("rides a merged room's full cart into the hatch in one glide", async ({ page }) => {
+    const full = SIX.map((entry) => entry.branch === "feat/library-stage" ? { ...entry, ahead: 7 } : entry);
+    await openWorkStatus(page, full);
+    await expect(room(page, "feat/library-stage")).toHaveAttribute("data-room-size", "large");
+    await startPaintSampler(page);
+    await setRows(page, full.map((entry) => entry.branch === "feat/library-stage" ? row("feat/library-stage", { standing: "merged", ahead: 0 }) : entry));
+    await expect(room(page, "feat/library-stage").locator("[data-arrived=true]")).toHaveCount(1);
+    await expect(room(page, "feat/library-stage").getByTestId("work-room-cart")).toHaveAttribute("data-crates", "7");
+    // The crate ride, the hatch turning green and Moru's cheer, before the room leaves.
+    await page.waitForTimeout(2500);
+    await expectSmoothMotion(page);
   });
 
   test("hands a stage slot from a room that stops to one that starts without a bare frame", async ({ page }) => {
@@ -339,6 +442,7 @@ test.describe("work status rooms", () => {
     await expect(room(page, "feat/library-stage")).toHaveAttribute("data-room-size", "mini");
     await waitForAnimationsDone(page.getByTestId("work-building"));
     await expectCleanPaint(page, { slots: 1 });
+    await expectSmoothMotion(page);
   });
 
   test("retargets mid-sequence when the next update lands before the last one finished", async ({ page }) => {
@@ -359,6 +463,32 @@ test.describe("work status rooms", () => {
     // A second rise reflows the stage, so no stage box ends up handed over whole.
     await expectCleanPaint(page);
     await expectSmoothMotion(page);
+  });
+
+  test("fades the building up from the bare page instead of cutting it in", async ({ page }) => {
+    await page.addInitScript(() => {
+      const frames: { rooms: number; shown: number; time: number }[] = [];
+      Object.assign(window, { __entry: frames });
+      const sample = (time: number) => {
+        const building = document.querySelector("[data-testid=work-building]");
+        const rooms = building?.querySelectorAll("[data-room-key]").length ?? 0;
+        let shown = 1;
+        for (let node: Element | null = building; node; node = node.parentElement) shown *= Number(getComputedStyle(node).opacity);
+        if (rooms > 0) frames.push({ rooms, shown, time });
+        if (frames.length < 120) requestAnimationFrame(sample);
+      };
+      requestAnimationFrame(sample);
+    });
+    await openWorkStatus(page, SIX);
+    await expect(room(page, "feat/library-stage")).toBeVisible();
+    await page.waitForTimeout(800);
+    const frames = await page.evaluate(() => (window as unknown as { __entry: { rooms: number; shown: number; time: number }[] }).__entry);
+    expect(frames.length).toBeGreaterThan(10);
+    // The first frame with rooms is still mostly the page behind them, and no 40 ms raises the building by more than a third.
+    expect(frames[0].shown, "the building's first frame").toBeLessThan(0.5);
+    const rises = frames.flatMap((frame, index) => frames.slice(index + 1).filter((later) => later.time - frame.time <= 40 && later.shown - frame.shown > 0.35).map((later) => `${frame.shown.toFixed(2)}→${later.shown.toFixed(2)}`));
+    expect(rises.slice(0, 4), "the building cut in").toEqual([]);
+    expect(frames.at(-1)!.shown).toBe(1);
   });
 
   test("shows one room for the base branch when no worktree exists", async ({ page }) => {
