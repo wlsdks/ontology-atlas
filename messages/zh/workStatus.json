@@ -26,7 +26,7 @@
   },
   "stage": {
     "label": "工作中的工作树",
-    "moreBelow": "楼下还有 <lead>{count} 个工作中</lead>"
+    "moreBelow": "楼下还有 <lead>{count}</lead> 个工作中"
   },
   "room": {
     "working": "工作中",
