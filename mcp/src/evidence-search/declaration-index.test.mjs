@@ -8,11 +8,24 @@ import test from 'node:test';
 import { callSitesOf, declarationIndex } from './declaration-index.mjs';
 import { decidesLine } from './symbol-context.mjs';
 
+/**
+ * The work's own time is at most both the wall clock (inflated by other processes) and this
+ * process's CPU time (inflated by collector threads), so take the smaller.
+ */
+function spentMs(run) {
+  const wallStarted = performance.now();
+  const cpuStarted = process.cpuUsage();
+  run();
+  const cpu = process.cpuUsage(cpuStarted);
+  return Math.min(performance.now() - wallStarted, (cpu.user + cpu.system) / 1000);
+}
+
 test('one very long line is judged in linear time, with the same answers as before', () => {
   const line = `x${' ? y'.repeat(62_000)}`;
-  const started = performance.now();
-  assert.equal(decidesLine(line), false);
-  assert.ok(performance.now() - started < 500, 'a 248 KB line with no colon took seconds when the ternary match backtracked');
+  let decided;
+  const ms = spentMs(() => { decided = decidesLine(line); });
+  assert.equal(decided, false);
+  assert.ok(ms < 500, `a 248 KB line with no colon took seconds when the ternary match backtracked: ${ms.toFixed(0)} ms`);
   assert.equal(decidesLine('const v = ready ? run() : wait();'), true);
   assert.equal(decidesLine('const v = a ? b: c ? d : e;'), true, 'a later ternary still counts');
   assert.equal(decidesLine('const v = a ? b:c;'), false, 'the colon needs spaces, as before');
