@@ -14,7 +14,7 @@ function expectNoOverlap(boxes: Box[]) {
 }
 
 function layout(patch: Partial<LayoutInput>) {
-  return layoutBuilding({ width: 1776, height: 1000, stage: [], floors: [], hasShelf: true, workingBelow: 0, ...patch });
+  return layoutBuilding({ width: 1776, height: 1000, stage: [], floors: [], hasShelf: true, ...patch });
 }
 
 describe('layoutBuilding', () => {
@@ -25,31 +25,30 @@ describe('layoutBuilding', () => {
     expect(new Set(stage.map(room => room.h)).size).toBe(1);
     expect(stage.every(room => room.size === 'large' && room.unit >= 2)).toBe(true);
     expect(result.banded).toBe(false);
-    expect(result.shelf?.inline).toBe(true);
-    expectNoOverlap([...result.rooms.values(), result.shelf!]);
+    expect(result.heading?.kind).toBe('plate');
+    expectNoOverlap([...result.rooms.values(), result.shelf!, result.heading!]);
   });
 
-  it('grows a stage of three rooms to fill its band, never much taller than wide', () => {
+  it('keeps a one-row stage no taller than 0.72 of its width, with the floors right under it', () => {
     const result = layout({ height: 1020, stage: keys('s', 3), floors: [{ key: 'a', rooms: ['m0'] }], hasShelf: false });
     const stage = keys('s', 3).map(key => result.rooms.get(key)!);
     const mini = result.rooms.get('m0')!;
-    const above = stage[0].y - 24;
-    const below = mini.y - 16 - (stage[0].y + stage[0].h);
-    expect(Math.max(above, below)).toBeLessThan(130);
-    expect(stage[0].h).toBeLessThanOrEqual(stage[0].w * 1.1);
+    expect(stage[0].y).toBe(24);
+    expect(stage[0].h).toBeLessThanOrEqual(stage[0].w * 0.72);
+    expect(mini.y - (stage[0].y + stage[0].h)).toBe(16);
     expectNoOverlap([...result.rooms.values()]);
   });
 
   it('bands forty worktrees by session under one row of six, all inside the window', () => {
     const floors = [{ key: 'a', rooms: keys('a', 5) }, { key: 'b', rooms: keys('b', 5) }, { key: 'c', rooms: keys('c', 5) }, { key: 'd', rooms: keys('d', 5) }, { key: 'none', rooms: keys('n', 5) }];
-    const result = layout({ height: 1020, stage: keys('s', 6), floors, workingBelow: 4 });
+    const result = layout({ height: 1020, stage: keys('s', 6), floors });
     const stage = keys('s', 6).map(key => result.rooms.get(key)!);
     expect(new Set(stage.map(room => room.y)).size).toBe(1);
     expect(result.banded).toBe(true);
     expect(result.floors.size).toBe(5);
     expect(result.height).toBe(1020);
-    expect(result.moreTop).not.toBeNull();
-    expectNoOverlap([...result.rooms.values(), ...result.floors.values(), result.shelf!]);
+    expect(result.heading?.kind).toBe('line');
+    expectNoOverlap([...result.rooms.values(), ...result.floors.values(), result.shelf!, result.heading!]);
   });
 
   it('wraps a floor wider than its row instead of squeezing its rooms', () => {
@@ -61,7 +60,7 @@ describe('layoutBuilding', () => {
   });
 
   it('keeps rooms legible in the smallest window and lets the board grow', () => {
-    const result = layout({ width: 896, height: 620, stage: keys('s', 6), floors: [{ key: 'a', rooms: keys('a', 8) }], workingBelow: 2 });
+    const result = layout({ width: 896, height: 620, stage: keys('s', 6), floors: [{ key: 'a', rooms: keys('a', 8) }] });
     const stage = keys('s', 6).map(key => result.rooms.get(key)!);
     expect(Math.min(...stage.map(room => room.w))).toBeGreaterThanOrEqual(260);
     expect(Math.min(...stage.map(room => room.h))).toBeGreaterThanOrEqual(300);
@@ -99,16 +98,21 @@ describe('mini rooms', () => {
 });
 
 describe('few mini rooms', () => {
-  it('share the width left beside them, up to 600px, so a branch name cuts only when it is really longer', () => {
-    const inline = layout({ stage: keys('s', 3), floors: [{ key: 'a', rooms: keys('a', 2) }] });
-    const minis = keys('a', 2).map(key => inline.rooms.get(key)!);
-    expect(inline.shelf?.inline).toBe(true);
-    expect(minis.map(room => room.w)).toEqual([600, 600]);
-    expectNoOverlap([...minis, inline.shelf!]);
-    const bare = layout({ stage: keys('s', 3), floors: [{ key: 'a', rooms: keys('a', 2) }], hasShelf: false });
-    expect(keys('a', 2).map(key => bare.rooms.get(key)!.w)).toEqual([600, 600]);
-    const full = layout({ stage: keys('s', 3), floors: [{ key: 'a', rooms: keys('a', 5) }], hasShelf: false });
-    expect(Math.max(...keys('a', 5).map(key => full.rooms.get(key)!.w))).toBeLessThan(400);
+  it('share the whole width beside the floor plate, and a lone one spreads across it', () => {
+    const two = layout({ stage: keys('s', 3), floors: [{ key: 'a', rooms: keys('a', 2) }] });
+    const minis = keys('a', 2).map(key => two.rooms.get(key)!);
+    expect(two.heading).toMatchObject({ kind: 'plate', x: 0, w: 188 });
+    expect(minis[0].x).toBe(196);
+    expect(minis[1].x + minis[1].w).toBe(1776);
+    expect(minis.every(room => room.h === 96)).toBe(true);
+    expect(two.shelf!.y).toBeGreaterThan(minis[0].y + minis[0].h);
+    expectNoOverlap([...minis, two.shelf!, two.heading!]);
+    const one = layout({ stage: keys('s', 3), floors: [{ key: 'a', rooms: ['a0'] }], hasShelf: false });
+    expect(one.rooms.get('a0')!.w).toBe(1776 - 196);
+    const five = layout({ width: 1296, stage: keys('s', 3), floors: [{ key: 'a', rooms: keys('a', 4) }], hasShelf: false });
+    expect(five.heading?.kind).toBe('line');
+    expect(five.rooms.get('a0')!.x).toBe(0);
+    expect(five.rooms.get('a0')!.y).toBe(five.heading!.y + 30);
   });
 });
 
@@ -116,7 +120,7 @@ describe('floor rows', () => {
   it('spreads a wrapping floor evenly over its rows instead of leaving one room alone', () => {
     const keys = (n: number, prefix: string) => Array.from({ length: n }, (_, index) => `${prefix}${index}`);
     const floors = [{ key: 'a', rooms: keys(4, 'a') }, { key: 'b', rooms: keys(7, 'b') }, { key: 'c', rooms: keys(3, 'c') }];
-    const layout = layoutBuilding({ width: 1296, height: 900, stage: [], floors, hasShelf: false, workingBelow: 0 });
+    const layout = layoutBuilding({ width: 1296, height: 900, stage: [], floors, hasShelf: false });
     const rows = (prefix: string, n: number) => {
       const ys = keys(n, prefix).map(key => layout.rooms.get(key)!.y);
       return [...new Set(ys)].map(y => ys.filter(other => other === y).length);

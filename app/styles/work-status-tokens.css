@@ -18,30 +18,27 @@
 
     /*
      * The building of rooms is drawn on Moru's pixel grid with flat fills: the building and its
-     * pits are near-black graphite, steel is the rails and lamp poles, and a room's walls take
-     * a little of its session's ink only while its lamp is lit. None of these is Moru's own
-     * raster ink; the crate is a warm neutral paper, outlined in the pit's black.
+     * pits are near-black graphite, steel is the rails, the console and the side wall a room's
+     * track leaves through, and a room's walls take a little of its session's ink only while its
+     * screen is lit. None of these is Moru's own raster ink; the crate is a warm neutral paper,
+     * outlined in the pit's black.
      */
     --work-room-building: #131312;
     --work-room-pit: #0c0c0b;
     --work-room-wall: #161514;
     --work-room-wall-lit: #1a1918;
-    --work-room-wainscot: rgba(0, 0, 0, 0.2);
     --work-room-floor: #0f0f0e;
     --work-room-floor-edge: #24231f;
     --work-room-steel: #2b2a27;
     --work-room-steel-light: #3a3935;
     --work-room-lamp-off: #383733;
+    --work-room-console: #232220;
+    --work-room-side-wall: #141312;
+    --work-room-screen-frame: #1d1e25;
     --work-room-sign: #2d2c27;
     --work-room-sign-edge: #201f1b;
-    --work-room-monitor-frame: #121318;
-    --work-room-monitor-bezel: #3b3d49;
-    --work-room-monitor-bezel-off: #26262b;
-    --work-room-monitor-badge: #565868;
-    --work-room-monitor-shadow: #0b0b0a;
     --work-room-screen: #0b0e16;
     --work-room-screen-off: #0a0a0b;
-    --work-room-screen-line: #3a4052;
     --work-room-led-off: #5a2a2c;
     --work-room-crate: #c9c5ba;
     --work-room-crate-shade: #a9a59a;

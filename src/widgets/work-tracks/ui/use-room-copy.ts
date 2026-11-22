@@ -8,8 +8,6 @@ import { clockTime, timeAgo } from '../model/format';
 const MINUTE_MS = 60_000;
 const HOUR_MS = 60 * MINUTE_MS;
 const DAY_MS = 24 * HOUR_MS;
-/** A large room's monitor lists at most this many commit subjects; a short monitor clips the second. */
-const LARGE_SUBJECTS = 2;
 
 export type StatusTone = 'ink' | 'warning' | 'success' | 'plain';
 
@@ -20,18 +18,45 @@ export interface StatusLine {
   rest: string | null;
 }
 
-export interface MonitorCopy {
-  label: string;
-  labelInk: boolean;
-  aside: string | null;
-  figure: string | null;
-  figureTone: 'plain' | 'success';
-  note: string | null;
-  /** The screen's terminal rows: real facts of this worktree, so no two monitors read alike. */
-  rows: string[];
-  /** A cursor blinks after the last row while the room's work runs. */
-  live: boolean;
+/** A commit on the screen: its subject as plain text and when it landed. */
+export interface ScreenCommit {
+  /** The commit's hash: a row keeps its element while newer commits push it down. */
+  key: string;
+  subject: string;
+  ago: string | null;
 }
+
+/** The screen's last line: what is not committed, or what the room needs said. */
+export interface LastLine {
+  text: string;
+  /** The name of the uncommitted file changed last, drawn in mono after the text. */
+  file: string | null;
+  tone: 'plain' | 'warning';
+}
+
+/** What a large room's screen and its bezel say. */
+export interface MonitorCopy {
+  branch: string;
+  /** The session, or sessions, on the bezel; `null` when no session holds the folder. */
+  who: string | null;
+  state: StatusLine;
+  /** Newest first, at most three. */
+  commits: ScreenCommit[];
+  /** In place of commits when there are none to list: no commits beyond the base, or the prune command. */
+  note: string | null;
+  lastLine: LastLine | null;
+  /** The commits beyond the base branch, at the end of the last line. */
+  count: string | null;
+}
+
+/** A mini room's newest subject with its time. */
+export interface MiniSubject {
+  subject: string;
+  ago: string | null;
+}
+
+/** The most commits a screen lists. */
+export const SCREEN_COMMITS = 3;
 
 /**
  * Every sentence a room says, from its entry and the clock; the only place room copy is chosen. It
@@ -64,17 +89,7 @@ function roomCopy(t: ReturnType<typeof useTranslations<'workStatus'>>, locale: s
     track.standing === 'unknown' || track.ahead === null
       ? t('monitor.notMeasured', { branch: baseBranch })
       : track.ahead > 0 ? null : t('monitor.noCommitsNote', { branch: baseBranch });
-  /** How long the session has worked, in hours and minutes: what tells two running rooms apart at a glance. */
-  const workingFor = (session: TrackSession | null) => {
-    if (!session?.startedAt) return null;
-    const minutes = Math.max(1, Math.floor((nowMs - session.startedAt * 1000) / MINUTE_MS));
-    return minutes < 60
-      ? t('monitor.workingMinutes', { count: minutes })
-      : minutes % 60 === 0
-        ? t('monitor.workingWholeHours', { count: minutes / 60 })
-        : t('monitor.workingHours', { hours: Math.floor(minutes / 60), minutes: minutes % 60 });
-  };
-  /** The same length of work, short, for the quiet line under a commit subject. */
+  /** How long the session has worked, short, on the bezel beside its state. */
   const workedFor = (session: TrackSession | null) => {
     if (!session?.startedAt) return null;
     const minutes = Math.max(1, Math.floor((nowMs - session.startedAt * 1000) / MINUTE_MS));
@@ -84,30 +99,25 @@ function roomCopy(t: ReturnType<typeof useTranslations<'workStatus'>>, locale: s
         ? t('monitor.workedWholeHours', { count: minutes / 60 })
         : t('monitor.workedHours', { hours: Math.floor(minutes / 60), minutes: minutes % 60 });
   };
-  /** The newest commit subject beyond the base branch, as plain text; the hash when it has none. */
-  const newestSubject = (track: Track) => {
+  const agoOf = (at: number | null) => (at === null ? null : timeAgo(at, nowMs, locale));
+  /** The newest commits beyond the base branch as plain text; a subject left empty shows its hash. */
+  const screenCommits = (track: Track): ScreenCommit[] =>
+    (track.activity?.commits ?? []).slice(0, SCREEN_COMMITS).map(line => ({ key: line.hash, subject: line.subject || line.hash, ago: agoOf(line.at) }));
+  /** The newest subject a mini room shows in place of its last commit's age. */
+  const newestSubject = (track: Track): MiniSubject | null => {
     const newest = track.activity?.commits?.[0];
-    return newest ? newest.subject || newest.hash : null;
+    return newest ? { subject: newest.subject || newest.hash, ago: agoOf(newest.at) } : null;
   };
-  /**
-   * What the worktree is doing in words: its newest commit subjects, or with none beyond the base
-   * branch, how many files it is editing and the name of the one that changed last.
-   */
-  const workRows = (track: Track): string[] | null => {
+  /** What is not committed: how many files and the one changed last, or that everything is committed. */
+  const uncommitted = (track: Track): LastLine | null => {
     const activity = track.activity;
-    if (!activity) return null;
-    const commits = activity.commits ?? [];
-    if (commits.length > 0) return commits.slice(0, LARGE_SUBJECTS).map(line => line.subject || line.hash);
-    if (activity.commits && activity.uncommitted) return [t('monitor.editing', { count: activity.uncommitted })];
-    return null;
-  };
-  /** The name, not the path, of the uncommitted file that changed last, on either separator. */
-  const latestFile = (track: Track) => (track.activity?.latestFile ? folderName(track.activity.latestFile) : null);
-  /** `2 minutes ago · 9 h 40 min`: when the newest commit landed, and how long the session has worked. */
-  const commitLine = (track: Track, session: TrackSession | null) => {
-    const at = track.activity?.commits?.[0]?.at;
-    if (at == null) return null;
-    return [timeAgo(at, nowMs, locale), workedFor(session)].filter(Boolean).join(' · ');
+    if (activity?.uncommitted == null) return null;
+    if (activity.uncommitted === 0) return { text: t('git.clean'), file: null, tone: 'plain' };
+    return {
+      text: t('git.uncommitted', { count: activity.uncommitted }),
+      file: activity.latestFile ? folderName(activity.latestFile) : null,
+      tone: 'plain',
+    };
   };
   const lastCommit = (track: Track) => (track.lastCommitAt === null ? null : t('room.lastCommit', { ago: timeAgo(track.lastCommitAt, nowMs, locale) }));
 
@@ -136,69 +146,61 @@ function roomCopy(t: ReturnType<typeof useTranslations<'workStatus'>>, locale: s
         const days = state.lastCommitAt === null ? 0 : Math.floor((nowMs - state.lastCommitAt * 1000) / DAY_MS);
         return days >= 1
           ? { lead: t('room.untouched', { count: days }), tone: 'plain', rest: commits(track) }
-          : { lead: newestSubject(track) ?? lastCommit(track) ?? t('session.none'), tone: 'plain', rest: commits(track) };
+          : { lead: lastCommit(track) ?? t('session.none'), tone: 'plain', rest: commits(track) };
       }
+    }
+  }
+
+  /** The bezel's state: its few words and how long, or since when. */
+  function bezelState(room: RoomEntry): StatusLine {
+    const { state, track } = room;
+    switch (state.kind) {
+      case 'working':
+        return { lead: t(state.tools.length > 1 ? 'room.twoTools' : 'room.working'), tone: state.tools.length > 1 ? 'warning' : 'ink', rest: workedFor(room.session) };
+      case 'resting':
+        return { lead: t('room.resting'), tone: 'plain', rest: lastCommit(track) };
+      case 'dozing':
+        return { lead: quietFor(state.quietSinceMs), tone: 'plain', rest: lockedAt(track) };
+      case 'locked':
+        return { lead: t('room.locked'), tone: 'plain', rest: lockedAt(track) };
+      case 'lockLeft':
+        return { lead: t('room.lockLeft'), tone: 'warning', rest: t('session.ended') };
+      case 'merged':
+      case 'missing':
+      case 'unheld':
+        return status(room);
     }
   }
 
   function monitor(room: RoomEntry): MonitorCopy {
     const { state, track } = room;
-    const quiet = { labelInk: false, aside: null, figureTone: 'plain', rows: [] as string[], live: false } as const;
-    const rows = (...facts: (string | null)[]) => facts.filter((fact): fact is string => fact !== null);
-    switch (state.kind) {
-      case 'working':
-        return state.tools.length > 1
-          ? {
-            ...quiet,
-            label: state.tools.map(toolName).join(' · '),
-            labelInk: true,
-            aside: commits(track),
-            figure: t('monitor.twoTools'),
-            note: t('monitor.twoToolsNote'),
-          }
-          : {
-            ...quiet,
-            label: t('monitor.running'),
-            labelInk: true,
-            figure: commits(track),
-            note: commitLine(track, room.session) ?? (workRows(track) ? latestFile(track) : null),
-            rows: workRows(track) ?? rows(workingFor(room.session), lastCommit(track)),
-            live: true,
-          };
-      case 'resting':
-        return {
-          ...quiet,
-          label: t('monitor.idle'),
-          figure: commits(track) ?? t('room.resting'),
-          note: commitLine(track, null) ?? (workRows(track) ? latestFile(track) : null) ?? sinceBase(track),
-          rows: workRows(track) ?? rows(lastCommit(track), lockedAt(track)),
-        };
-      case 'dozing':
-        return { ...quiet, label: t('monitor.idle'), aside: lockedAt(track), figure: quietFor(state.quietSinceMs), note: sinceBase(track), rows: workRows(track) ?? [] };
-      case 'merged':
-        return {
-          ...quiet,
-          label: sessionName(room.session) ?? t('session.none'),
-          figure: t('room.merged', { branch: baseBranch }),
-          figureTone: 'success',
-          note: room.session ? t('monitor.heldBy', { session: sessionName(room.session) ?? '' }) : null,
-        };
-      case 'locked':
-        return { ...quiet, label: t('room.locked'), aside: lockedAt(track), figure: commits(track) ?? t('room.locked'), note: t('monitor.unreadableLock') };
-      case 'lockLeft':
-        return {
-          ...quiet,
-          label: t('monitor.ended'),
-          aside: commits(track),
-          figure: t('room.lockLeft'),
-          note: sinceBase(track),
-        };
-      case 'missing':
-        return { ...quiet, label: t('monitor.noSession'), figure: t('room.missing'), note: t.markup('monitor.prune', { code: chunks => chunks }) };
-      case 'unheld':
-        return { ...quiet, label: t('monitor.noSession'), aside: commits(track), figure: status({ ...room, track: { ...track, activity: null } }).lead, note: lastCommit(track), rows: workRows(track) ?? [] };
-    }
+    const others = room.guests.map(guest => sessionName(guest)).filter((name): name is string => name !== null);
+    const who = [sessionName(room.session), ...others].filter((name): name is string => name !== null).join(' · ') || null;
+    const listed = screenCommits(track);
+    const notInBase = state.kind === 'lockLeft' && track.ahead ? t('room.notInBase', { count: track.ahead, branch: baseBranch }) : null;
+    const files = uncommitted(track);
+    const lastLine: LastLine | null = state.kind === 'missing'
+      ? null
+      : notInBase
+        ? { text: [notInBase, files?.file ? files.text : null].filter(Boolean).join(' · '), file: files?.file ?? null, tone: 'warning' }
+        : files;
+    const note = listed.length > 0
+      ? null
+      : state.kind === 'missing'
+        ? t.markup('monitor.prune', { code: chunks => chunks })
+        : state.kind === 'locked'
+          ? t('monitor.unreadableLock')
+          : sinceBase(track);
+    return {
+      branch: track.branch ?? track.title,
+      who,
+      state: bezelState(room),
+      commits: listed,
+      note,
+      lastLine,
+      count: notInBase ? null : track.ahead && track.ahead > 0 ? t('room.commits', { count: track.ahead }) : null,
+    };
   }
 
-  return { toolName, sessionName, owner, status, monitor };
+  return { toolName, sessionName, owner, status, monitor, newestSubject, uncommitted, screenCommits };
 }

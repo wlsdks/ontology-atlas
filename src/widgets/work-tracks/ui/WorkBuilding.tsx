@@ -21,6 +21,8 @@ import { RoomShelf } from './RoomShelf';
 import { useRoomCopy } from './use-room-copy';
 import styles from './rooms.module.css';
 
+/** From this width a mini room spreads its newest commits and what is not committed into columns. */
+const SPREAD_MINI_W = 900;
 /** The building's side margin: rooms line up with the page title above them. */
 const SIDE_PADDING_PX = 40;
 const TINT_ID = 'work-room-tint';
@@ -87,7 +89,7 @@ type LeavingFace = FaceSize & { room: RoomEntry };
 
 function RoomFace({ room, face, copy, retiring, showOwner }: { room: RoomEntry; face: FaceSize; copy: RoomCopy; retiring: boolean; showOwner: boolean }) {
   return face.size === 'large'
-    ? <LargeRoom room={room} unit={face.unit} copy={copy} tint={tintOf(room.session)} guestTint={tintOf(room.guests[0] ?? null)} retiring={retiring} entered={face.entered} faceId={face.id} />
+    ? <LargeRoom room={room} unit={face.unit} wide={face.w >= WIDE_ROOM_W} copy={copy} tint={tintOf(room.session)} guestTint={tintOf(room.guests[0] ?? null)} retiring={retiring} entered={face.entered} faceId={face.id} />
     : <MiniRoom room={room} copy={copy} tint={tintOf(room.session)} showOwner={showOwner} />;
 }
 
@@ -225,6 +227,8 @@ function DrawnRoom({ room, box, copy, retiring, showOwner, reduced, windowKey, e
           data-room-face
           data-face-leaving="true"
           data-wide={faces.leaving.w >= WIDE_ROOM_W}
+          data-spread={faces.leaving.size === 'mini' && faces.leaving.w >= SPREAD_MINI_W}
+          data-unit={faces.leaving.unit}
           // Hidden from assistive technology only: rooms hold nothing to press or focus, and `inert`
           // would restyle the whole face the moment it starts to leave.
           aria-hidden
@@ -234,7 +238,7 @@ function DrawnRoom({ room, box, copy, retiring, showOwner, reduced, windowKey, e
           <RoomFace room={faces.leaving.room} face={faces.leaving} copy={copy} retiring={retiring} showOwner={showOwner} />
         </div>
       ) : null}
-      <div key={`face-${current.id}`} data-room-face data-wide={current.w >= WIDE_ROOM_W} className={cn(styles.face, styles.notched, 'h-full w-full')}>
+      <div key={`face-${current.id}`} data-room-face data-wide={current.w >= WIDE_ROOM_W} data-spread={current.size === 'mini' && current.w >= SPREAD_MINI_W} data-unit={current.unit} className={cn(styles.face, styles.notched, 'h-full w-full')}>
         {faces.ready ? <RoomFace room={room} face={current} copy={copy} retiring={retiring} showOwner={showOwner} /> : null}
       </div>
     </div>
@@ -285,6 +289,29 @@ function FloorPlate({ session, total, attention, onStage, below, copy, nowMs }: 
       <div className="mt-0.5 truncate text-label leading-label font-[var(--font-weight-emphasis)] text-[color:var(--color-text-tertiary)]">
         {summary.flatMap((part, index) => (index === 0 ? [part] : [' · ', part]))}
       </div>
+    </div>
+  );
+}
+
+/**
+ * The lower floor's heading: what the floors below hold, with how many of their rooms are working.
+ * A plate beside a single row of rooms, or a line above them.
+ */
+function FloorHeading({ kind, working, total }: { kind: 'plate' | 'line'; working: number; total: number }) {
+  const t = useTranslations('workStatus');
+  const sum = (
+    <span className="truncate">
+      {working > 0 ? <><strong className="font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">{t('floor.working', { count: working })}</strong> · </> : null}
+      {t('floor.worktrees', { count: total })}
+    </span>
+  );
+  return (
+    <div className={cn(styles.floorHeading, 'h-full w-full')} data-kind={kind} data-testid="work-floor-heading">
+      <div className={cn(styles.floorHeadingName, 'text-body leading-body font-[var(--font-weight-emphasis)]')}>
+        <i aria-hidden className={styles.stairs} />
+        {t('floor.below')}
+      </div>
+      {kind === 'plate' ? <div className="mt-0.5 text-label leading-label">{sum}</div> : <span className="text-body leading-body">{sum}</span>}
     </div>
   );
 }
@@ -450,7 +477,6 @@ export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs }: {
     stage: shown.stage.map(room => room.key),
     floors: shown.floors.map(floor => ({ key: floor.key, rooms: floor.rooms.map(room => room.key) })),
     hasShelf,
-    workingBelow: shown.workingBelow,
   }), [size, shown, hasShelf]);
 
   const lastDrawn = useRef(new Map<string, { room: RoomEntry; box: RoomBox; retiring: boolean }>());
@@ -523,14 +549,13 @@ export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs }: {
                 </Placed>
               ) : null;
             })}
-            {layout.moreTop !== null ? (
-              <Placed box={{ x: 0, y: layout.moreTop, w: size.width, h: 28 }} className="flex items-center justify-end">
-                <span data-testid="work-more-below" className="text-body leading-body text-[color:var(--color-text-tertiary)]">
-                  {t.rich('stage.moreBelow', {
-                    count: shown.workingBelow,
-                    lead: chunks => <strong className="font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">{chunks}</strong>,
-                  })}
-                </span>
+            {layout.heading ? (
+              <Placed box={layout.heading}>
+                <FloorHeading
+                  kind={layout.heading.kind}
+                  working={shown.floors.reduce((sum, floor) => sum + floor.rooms.filter(room => room.tier === 'working').length, 0)}
+                  total={shown.floors.reduce((sum, floor) => sum + floor.rooms.length, 0)}
+                />
               </Placed>
             ) : null}
             {ghosts.map(ghost => (
@@ -544,7 +569,7 @@ export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs }: {
             })}
             {layout.shelf ? (
               <Placed box={layout.shelf} id={SHELF_DOM_ID}>
-                <RoomShelf merged={shelfMerged} untouched={plan.shelf.untouched} baseBranch={baseBranch} nowMs={nowMs} inline={layout.shelf.inline} />
+                <RoomShelf merged={shelfMerged} untouched={plan.shelf.untouched} baseBranch={baseBranch} nowMs={nowMs} />
               </Placed>
             ) : null}
           </>

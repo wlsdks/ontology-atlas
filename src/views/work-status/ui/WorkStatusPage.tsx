@@ -123,7 +123,7 @@ export function WorkStatusPage() {
       ) : empty ? (
         <EmptyRoom branch={baseBranch} title={t('quiet.title', { repo: snapshot?.repository ?? folder })} body={t('quiet.body')}>
           <div className="relative h-10">
-            <RoomShelf merged={plan.shelf.merged} untouched={plan.shelf.untouched} baseBranch={baseBranch} nowMs={nowMs} inline={false} />
+            <RoomShelf merged={plan.shelf.merged} untouched={plan.shelf.untouched} baseBranch={baseBranch} nowMs={nowMs} />
           </div>
         </EmptyRoom>
       ) : (

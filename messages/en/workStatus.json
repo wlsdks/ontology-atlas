@@ -25,8 +25,7 @@
     "below": "{count} below"
   },
   "stage": {
-    "label": "Worktrees at work",
-    "moreBelow": "<lead>{count} more working</lead> on the floors below"
+    "label": "Worktrees at work"
   },
   "room": {
     "working": "Working",
@@ -43,31 +42,18 @@
     "lastCommit": "Last commit {ago}",
     "commits": "{count, plural, one {# commit} other {# commits}}",
     "noCommits": "No commits yet",
-    "onlyInGit": "Only in Git now"
+    "onlyInGit": "Only in Git now",
+    "notInBase": "{count, plural, one {# commit not in {branch}} other {# commits not in {branch}}}"
   },
   "monitor": {
-    "running": "Running a command",
-    "twoTools": "Two tools in one folder",
-    "twoToolsNote": "Their changes can mix",
-    "idle": "Nothing running",
     "lockedAt": "Locked at {time}",
-    "ended": "Session ended",
-    "noSession": "No session",
     "noCommitsNote": "No commits beyond {branch}",
     "notMeasured": "Not measured against {branch}",
     "prune": "<code>git worktree prune</code> removes its record",
-    "heldBy": "{session} still holds this folder",
     "unreadableLock": "The lock names no session Atlas can read",
-    "workingMinutes": "{count, plural, one {Working for # minute} other {Working for # minutes}}",
-    "workingWholeHours": "{count, plural, one {Working for # hour} other {Working for # hours}}",
-    "workingHours": "Working for {hours} h {minutes} min",
-    "editing": "{count, plural, one {Editing # file} other {Editing # files}}",
     "workedMinutes": "working {count} min",
     "workedWholeHours": "working {count} h",
     "workedHours": "working {hours} h {minutes} min"
-  },
-  "belt": {
-    "notRead": "Later steps are not read yet"
   },
   "shelf": {
     "merged": "Merged into {branch}",
@@ -99,5 +85,14 @@
     "sameFolder": "{count} in one folder",
     "cleanup": "{count} to clean up",
     "pointTo": "Show which worktrees"
+  },
+  "git": {
+    "uncommitted": "{count, plural, one {# file changed, not committed} other {# files changed, not committed}}",
+    "clean": "Everything committed"
+  },
+  "floor": {
+    "below": "Floors below",
+    "working": "{count} working",
+    "worktrees": "{count, plural, one {# worktree} other {# worktrees}}"
   }
 }

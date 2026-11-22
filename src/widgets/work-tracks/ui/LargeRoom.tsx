@@ -1,24 +1,23 @@
 'use client';
 
 import { useEffect, useState, type CSSProperties } from 'react';
-import { useTranslations } from 'next-intl';
 import type { RoomEntry } from '@/shared/lib/work-status/work-tracks';
 import { cn } from '@/shared/lib/cn';
 import { MOTION } from '@/shared/motion';
-import { KNOWN_UNTIL, STAGE_AT, cartLoad, moruPhase, roomIdentity, roomLook, roomOnce } from '../model/room-look';
+import { CART_CRATES, cartLoad, moruPhase, roomIdentity, roomLook, roomOnce } from '../model/room-look';
 import { MERGE_LIGHTS_OUT_MS } from '../model/moru-clock';
 import { useRise } from '../model/use-rise';
 import type { RoomUnit } from '../model/building-layout';
 import { BranchName } from './BranchName';
+import { CommitLog } from './CommitLog';
 import { RoomMoru } from './RoomMoru';
 import { SwapText } from './SwapText';
-import type { MonitorCopy, useRoomCopy } from './use-room-copy';
+import type { MonitorCopy, StatusTone, useRoomCopy } from './use-room-copy';
 import styles from './rooms.module.css';
 
 type RoomCopy = ReturnType<typeof useRoomCopy>;
 
 const LABEL = 'text-label leading-label';
-const BODY = 'text-body leading-body';
 
 /** How long a screen that says something else takes to hand over: the old text fades as the new comes up. */
 const SCREEN_SWAP_MS = MOTION.slow.duration * 1000;
@@ -26,9 +25,9 @@ const SCREEN_EASE = `cubic-bezier(${MOTION.slow.ease.join(', ')})`;
 const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
- * The screen of the state the room is in. A change of state hands the whole screen over at once,
- * headline, rows and note together, so no frame shows an old headline over a new footer; a change
- * within a state cross-fades only the words that changed (`SwapText`).
+ * The screen of the state the room is in. A change of state hands the whole screen over at once, so
+ * no frame shows an old branch over a new footer; a change within a state moves only what changed:
+ * a new commit slides the list (`CommitLog`), a count or a line cross-fades (`SwapText`).
  */
 function useScreenSwap(kind: string, screen: MonitorCopy) {
   const [swap, setSwap] = useState<{ kind: string; screen: MonitorCopy; leaving: MonitorCopy | null; serial: number }>({ kind, screen, leaving: null, serial: 0 });
@@ -51,57 +50,73 @@ const leaveScreen = (element: HTMLElement | null) => {
   else element.animate([{ opacity: 1 }, { opacity: 0 }], { duration: SCREEN_SWAP_MS, easing: 'linear', fill: 'forwards' });
 };
 
-function ScreenText({ screen, leaving = false }: { screen: MonitorCopy; leaving?: boolean }) {
+const STATE_TONE: Record<StatusTone, string> = {
+  ink: styles.stateInk,
+  warning: styles.stateWarning,
+  success: styles.stateSuccess,
+  plain: styles.statePlain,
+};
+
+/** What the screen says: the branch, the newest commits with their times, then what is not committed and the count. */
+function ScreenText({ screen, rows }: { screen: MonitorCopy; rows: number }) {
   return (
     <>
-      <div className={cn(styles.screenRow, LABEL)}>
-        <span data-ink={screen.labelInk} className={screen.labelInk ? 'font-[var(--font-weight-emphasis)]' : undefined}>
-          <SwapText value={screen.label} />
-        </span>
-        {screen.aside ? <span className="tabular-nums"><SwapText value={screen.aside} /></span> : null}
+      <div className={styles.screenHead}>
+        <BranchName branch={screen.branch} className={cn(styles.screenBranch, 'font-mono font-[var(--font-weight-strong)]')} />
       </div>
-      {screen.figure ? (
-        <div className={cn(styles.screenFigure, 'text-display leading-display font-[var(--font-weight-strong)] tracking-[var(--tracking-display)]')} data-tone={screen.figureTone}>
-          <SwapText value={screen.figure} />
+      {screen.commits.length > 0 ? (
+        <CommitLog commits={screen.commits.slice(0, rows)} rows={rows} className={styles.screenLog} />
+      ) : screen.note ? (
+        <div className={cn(styles.screenNote, 'text-body leading-body')}><SwapText value={screen.note} wrap /></div>
+      ) : null}
+      {screen.lastLine || screen.count ? (
+        <div className={cn(styles.screenFoot, LABEL)} data-tone={screen.lastLine?.tone}>
+          <span className="flex min-w-0 items-baseline">
+            {screen.lastLine ? <SwapText value={screen.lastLine.text} /> : null}
+            {screen.lastLine?.file ? (
+              <span className="flex min-w-0 items-baseline">
+                <span className="flex-none">&nbsp;·&nbsp;</span>
+                <SwapText value={screen.lastLine.file} className={cn(styles.screenFile, 'font-mono')} />
+              </span>
+            ) : null}
+          </span>
+          {screen.count ? <span className="flex-none tabular-nums"><SwapText value={screen.count} /></span> : null}
         </div>
       ) : null}
-      {screen.rows.length > 0 ? (
-        <div className={cn(styles.terminal, LABEL)}>
-          {screen.rows.map((row, index) => (
-            <div key={index} className={styles.terminalRow}>
-              <span aria-hidden className={styles.prompt}>›</span>
-              <span className="truncate"><SwapText value={row} /></span>
-              {screen.live && !leaving && index === screen.rows.length - 1 ? <i aria-hidden className={styles.cursor} /> : null}
-            </div>
-          ))}
-        </div>
-      ) : null}
-      {screen.note ? <div className={cn(styles.screenNote, LABEL)}><SwapText value={screen.note} /></div> : null}
     </>
   );
 }
 
-function Monitor({ room, copy }: { room: RoomEntry; copy: RoomCopy }) {
+/** The screen standing on its console: the room's light and the only place in it with words. */
+function Monitor({ room, copy, unit, wide }: { room: RoomEntry; copy: RoomCopy; unit: RoomUnit; wide: boolean }) {
   const look = roomLook(room.state);
   const screen = copy.monitor(room);
   const { leaving, serial } = useScreenSwap(room.state.kind, screen);
+  // A narrow room's screen hangs on the wall above Moru: room for the newest commit only.
+  const rows = unit === 1 || !wide ? 1 : 3;
   return (
-    <div className={cn(styles.monitor, styles.notched)} data-off={look.monitorOff} data-room-part>
-      <i className={cn(styles.monitorShadow, styles.notched)} />
-      <i className={cn(styles.monitorFrame, styles.notched)} />
-      <i className={cn(styles.monitorBezel, styles.notched)} />
-      <div className={styles.screen} data-testid="work-room-monitor">
+    <div className={styles.monitor} data-off={look.monitorOff}>
+      <i className={styles.neck} />
+      <i className={cn(styles.screenFrame, styles.notched)} />
+      <div className={styles.screen} data-testid="work-room-monitor" data-room-part>
         <div key={`now:${serial}`} ref={serial > 0 ? enterScreen : undefined} className={styles.screenText}>
-          <ScreenText screen={screen} />
+          <ScreenText screen={screen} rows={rows} />
         </div>
         {leaving ? (
           <div key={`was:${serial}`} ref={leaveScreen} aria-hidden className={cn(styles.screenText, 'pointer-events-none')}>
-            <ScreenText screen={leaving} leaving />
+            <ScreenText screen={leaving} rows={rows} />
           </div>
         ) : null}
       </div>
-      <i className={styles.monitorBadge} />
-      <i className={styles.monitorLed} />
+      {/* The bezel names who works here: a name tag fixed to the screen, kept while the room travels. */}
+      <div data-room-tag className={cn(styles.bezel, LABEL, 'font-[var(--font-weight-emphasis)]')} data-held={screen.who !== null}>
+        {screen.who ? <span className={cn(styles.bezelWho, 'truncate')}>{screen.who}</span> : null}
+        <span className={styles.bezelState}>
+          <SwapText value={screen.state.lead} ink={STATE_TONE[screen.state.tone]} />
+          {screen.state.rest ? <span className="flex min-w-0 font-normal">&nbsp;·&nbsp;<SwapText value={screen.state.rest} /></span> : null}
+        </span>
+        <i className={styles.bezelLed} />
+      </div>
     </div>
   );
 }
@@ -127,61 +142,39 @@ function useFrameAfter<T>(value: T): T {
   return shown;
 }
 
-function Belt({ room, landing }: { room: RoomEntry; landing: number }) {
-  const t = useTranslations('workStatus');
+/** The cart on the floor's track: one crate per commit, at most six, riding through the side wall's hatch into `main`. */
+function Cart({ room, landing }: { room: RoomEntry; landing: number }) {
   // The ride to `main` starts once the merge's own update has drawn.
-  const stage = useFrameAfter(room.stage);
-  const at = STAGE_AT[stage];
+  const arrived = useFrameAfter(room.stage) === 'main';
   const look = roomLook(room.state);
-  const arrived = stage === 'main';
   const load = room.track.missing ? { crates: 1, more: 0 } : cartLoad(room.track.ahead, arrived);
+  const drawn = Math.min(load.crates, CART_CRATES);
   return (
-    <div className={styles.belt} data-room-part>
-      <div className={styles.track} data-arrived={arrived}>
-        <div className={styles.rail}>
-          <i
-            className={styles.railUnknown}
-            role={arrived ? undefined : 'img'}
-            aria-label={arrived ? undefined : t('belt.notRead')}
-            style={{ left: `${KNOWN_UNTIL * 100}%`, opacity: arrived ? 0 : 1 }}
-          />
-          <i className={styles.railPast} style={{ transform: `scaleX(${at})` }} />
-          {look.running ? (
-            <span className="absolute inset-0" style={{ clipPath: `inset(0 ${(1 - at) * 100}% 0 0)` }}>
-              <i className={styles.beltLive} />
-            </span>
-          ) : null}
-        </div>
-        <span className={cn(styles.station, styles.stationMain, LABEL, 'font-mono font-[var(--font-weight-strong)]')} style={{ left: '100%' }}>
-          {t('ruler.main')}
-        </span>
-        <i className={styles.hatch}>
-          <i className={styles.hatchOpen} />
-          <i className={styles.hatchLight} />
-        </i>
-        <div className={styles.carriage} style={{ transform: `translateX(${at * 100}%)` }}>
-          <span className={styles.cart} data-testid="work-room-cart" data-crates={load.crates + load.more}>
-            {Array.from({ length: load.crates }, (_, index) => {
-              // The newest crate drops onto the cart each time a commit lands.
-              const newest = landing > 0 && index === load.crates - 1;
-              return <i key={newest ? `landed-${landing}` : index} className={styles.crate} data-kind={look.crate} data-landing={newest || undefined} />;
-            })}
-            {load.more > 0 ? <span className={cn(styles.cartMore, LABEL, 'font-[var(--font-weight-strong)] tabular-nums')}><SwapText value={`+${load.more}`} /></span> : null}
-          </span>
-        </div>
+    <div className={styles.way} data-room-part>
+      <div className={styles.carriage} data-arrived={arrived}>
+      <span className={styles.cart} data-testid="work-room-cart" data-crates={load.crates + load.more}>
+        {Array.from({ length: drawn }, (_, index) => {
+          // The newest crate drops onto the cart each time a commit lands.
+          const newest = landing > 0 && index === drawn - 1;
+          return <i key={newest ? `landed-${landing}` : index} className={styles.crate} data-kind={look.crate} data-landing={newest || undefined} />;
+        })}
+      </span>
       </div>
     </div>
   );
 }
 
 /**
- * One worktree on the front stage: its branch on the wall sign, the monitor with what is known,
- * Moru with the session's name tag beside a floor lamp lit only while something runs, and the belt
- * that carries the work's crate toward the `main` hatch.
+ * One worktree on the front stage, as one scene: Moru on the floor facing a screen on a console. The
+ * screen is the room's only light and its only words; the session is on its bezel, `main` on the
+ * hatch in the side wall, and the belt is a track in the floor that leaves through it. Two tools in
+ * one folder: the second Moru stands behind the first on his tail side, both facing the screen.
  */
-export function LargeRoom({ room, unit, copy, tint, guestTint, retiring, entered, faceId }: {
+export function LargeRoom({ room, unit, wide, copy, tint, guestTint, retiring, entered, faceId }: {
   room: RoomEntry;
   unit: RoomUnit;
+  /** At least `WIDE_ROOM_W`: the screen stands on a console beside Moru, not on the wall above him. */
+  wide: boolean;
   /** The room is new to the building, or newly on the stage: Moru settles in once. */
   entered: boolean;
   /** Which drawn face this is, so each new entry settles in once. */
@@ -198,55 +191,50 @@ export function LargeRoom({ room, unit, copy, tint, guestTint, retiring, entered
   const once = roomOnce(room.state, { merged: retiring, landed: commit.fresh, entered });
   // A new token plays the row again: each landed commit, and each time the room is newly entered.
   const request = once === null ? null : `${once}@${once === 'crate-send' ? commit.serial : once === 'settle-in' ? `face${faceId}` : 'merge'}`;
-  const session = copy.sessionName(room.session);
-  const tools = room.state.kind === 'working' ? room.state.tools : [];
-  const second = tools[1];
-  const pair = look.cast === 'two' && second !== undefined;
-  const guest = room.guests[0] ?? null;
-  const guestInk = guest ? `var(--work-session-${guest.ink + 1})` : 'var(--work-unheld)';
+  const pair = look.cast === 'two';
   const identity = roomIdentity(room.track.branch ?? room.key);
+  const tone = pair || room.state.kind === 'lockLeft' ? 'warning' : undefined;
   return (
-    <div className={cn(styles.large, 'h-full w-full')} data-pair={pair || undefined} style={pair ? { ['--guest-ink' as string]: guestInk } : undefined}>
-      <div data-scene className={styles.scene} style={{ '--u': unit, '--lights-out': `${MERGE_LIGHTS_OUT_MS}ms` } as CSSProperties} data-lit={look.running} data-dark={retiring} data-cast={pair ? 'two' : look.cast} data-alarm={pair} data-mirror={!pair && identity.mirrored}>
-        <i className={styles.glow}><i className={styles.glowLight} /></i>
-        <i className={styles.wainscot} />
-        <i className={styles.floor} />
-        <div className={cn(styles.sign, styles.notched, BODY, 'font-mono font-[var(--font-weight-strong)]')} >
-          {pair ? <span aria-hidden className={styles.signAlert}>!</span> : null}
-          <BranchName branch={room.track.branch ?? room.track.title} />
+    <div className={cn(styles.large, 'h-full w-full')}>
+      <div
+        data-scene
+        className={styles.scene}
+        style={{ '--u': unit, '--lights-out': `${MERGE_LIGHTS_OUT_MS}ms` } as CSSProperties}
+        data-lit={look.running}
+        data-tone={tone}
+        data-dark={retiring}
+        data-cast={look.cast}
+      >
+        <i className={styles.halo} />
+        <i className={styles.shade} />
+        <i className={styles.skirting} />
+        <i className={styles.floor}><i className={styles.pool} /></i>
+        <div className={styles.sideWall}>
+          <i className={styles.mainLight} />
+          <span className={cn(styles.mainPlate, LABEL, 'font-mono font-[var(--font-weight-strong)]')}>main</span>
+          <i className={styles.hatch} data-open={room.stage === 'main'} />
         </div>
-        <Monitor room={room} copy={copy} />
-        {pair ? null : <i className={styles.prop} data-prop={identity.prop} />}
-        <i className={styles.lamp}>
-          <i className={styles.lampLight}><i className={styles.lampCone} /><i className={styles.lampPool} /></i>
-          <i className={styles.lampShade} />
-          <i className={styles.lampLight}><i className={styles.lampFlicker} /></i>
-        </i>
-        {pair && second ? (
+        <i className={styles.track} />
+        <Cart room={room} landing={commit.serial} />
+        <i className={styles.console} />
+        <i className={styles.prop} data-prop={identity.prop} />
+        {pair ? (
           <>
-            <i className={cn(styles.shadow, styles.actorBack)} />
-            <span className={cn(styles.actor, styles.actorBack)}><RoomMoru live slot="back" clip={look.backClip} still={look.still} zoom="var(--u)" tint={tint} phase={(moruPhase(room.key) + 0.5) % 1} /></span>
-            <span data-room-tag className={cn(styles.tag, styles.tagBack, LABEL, 'font-[var(--font-weight-emphasis)]')}>
-              <span className="truncate">{session ?? copy.toolName(tools[0])}</span>
-            </span>
-            <i className={cn(styles.shadow, styles.actorFront)} />
-            <span className={cn(styles.actor, styles.actorFront)}><RoomMoru live clip={look.clip} still={look.still} zoom="var(--u)" tint={guestTint} phase={moruPhase(room.key)} once={request} /></span>
-            <span data-room-tag className={cn(styles.tag, styles.tagFront, LABEL, 'font-[var(--font-weight-emphasis)]')} style={{ ['--ink' as string]: guestInk }}>
-              <span className="truncate">{copy.sessionName(guest) ?? copy.toolName(second)}</span>
-            </span>
+            <i className={cn(styles.contact, styles.actorBack)} />
+            <span className={cn(styles.actor, styles.actorBack)}><RoomMoru live slot="back" clip={look.backClip} still={look.still} zoom="var(--u)" tint={guestTint} phase={(moruPhase(room.key) + 0.5) % 1} /></span>
           </>
-        ) : look.cast === 'one' ? (
+        ) : null}
+        {look.cast !== 'none' ? (
           <>
-            <i className={styles.shadow} />
+            <i className={styles.contact} />
             <span className={styles.actor}>
               <RoomMoru live clip={look.clip} still={look.still} zoom="var(--u)" tint={tint} phase={moruPhase(room.key)} once={request} />
             </span>
-            {session ? <span data-room-tag className={cn(styles.tag, LABEL, 'font-[var(--font-weight-emphasis)]')}>{session}</span> : null}
           </>
         ) : null}
+        <Monitor room={room} copy={copy} unit={unit} wide={wide} />
         <i className={styles.dim} />
       </div>
-      <Belt room={room} landing={commit.serial} />
     </div>
   );
 }

@@ -29,7 +29,6 @@ export interface LayoutInput {
   stage: readonly string[];
   floors: readonly { key: string; rooms: readonly string[] }[];
   hasShelf: boolean;
-  workingBelow: number;
 }
 
 export interface BuildingLayout {
@@ -37,9 +36,12 @@ export interface BuildingLayout {
   /** Floor name plates, one per session band; none when every mini room fits one row. */
   floors: Map<string, Box>;
   banded: boolean;
-  /** The line that counts working rooms below the stage. */
-  moreTop: number | null;
-  shelf: (Box & { inline: boolean }) | null;
+  /**
+   * The lower floor's heading, which counts its working rooms: a plate at the left of a single row
+   * whose rooms each keep 300px beside it, otherwise a line above the rooms.
+   */
+  heading: (Box & { kind: 'plate' | 'line' }) | null;
+  shelf: Box | null;
   height: number;
 }
 
@@ -48,22 +50,15 @@ const MINI_GAP = 8;
 const EDGE_TOP = 24;
 const EDGE_BOTTOM = 20;
 const BAND_GAP = 16;
-const MORE_LINE_H = 28;
 const SHELF_H = 40;
-const SHELF_INLINE_W = 560;
-const MINI_H_BANDED = 76;
-const MINI_H_ROW = 92;
-const MINI_W_INLINE = 300;
+/** Every mini room, banded or not: Moru's corner, the branch, the status and the newest subject. */
+export const MINI_H = 96;
 const MINI_MIN_W = 300;
-/**
- * Mini rooms that do not fill a row share the width left beside them up to this, so a branch name
- * uses the room there is and cuts only when it really is longer.
- */
-const MINI_MAX_W = 600;
+/** The lower floor's heading as a line above its rooms, under its rule. */
+const HEADING_LINE_H = 30;
 const MINI_ROW_LIMIT = 6;
 /** Mini rooms stand five to a row at most, never narrower than `MINI_MIN_W`. */
 const MINI_COLUMNS = 5;
-const INLINE_SHELF_ROOMS = 4;
 const FLOOR_LABEL_W = 196;
 const LARGE_MIN_W = 260;
 /** From this width a room hangs its monitor beside Moru. */
@@ -71,20 +66,19 @@ const LARGE_MIN_W = 260;
 export const WIDE_ROOM_W = 520;
 const LARGE_MIN_H = 300;
 /**
- * One row of stage rooms grows with the room's width up to this height, so a stage of few rooms fills
- * its band instead of standing short in the middle of it, and no room is drawn much taller than wide.
+ * One row of stage rooms grows with the room's width up to this height and no taller than this share
+ * of its width: a room is one scene on one floor line, so a taller one is only empty wall.
  */
 const ONE_ROW_CAP_H = 640;
-const ONE_ROW_MAX_ASPECT = 1.1;
-const ONE_ROW_MIN_CAP_H = 500;
+const ONE_ROW_MAX_ASPECT = 0.72;
 const TWO_ROW_CAP_H = 416;
 const TWO_ROW_MIN_H = 300;
-/** The belt under a large room's scene, with its top edge. */
-export const BELT_H = 68;
+/** A large room's belt is a track in its floor: the scene is the whole room. */
+export const BELT_H = 0;
 
 /**
- * A wide room hangs its monitor beside Moru; a narrow one hangs it above him and shortens it to stay
- * clear of his name tag, so Moru takes twice his size there once the scene is 300px tall.
+ * A wide room stands its screen on a console beside Moru; a narrow one mounts it above him, so Moru
+ * takes twice his size there once the room is 300px tall.
  */
 function unitOf(width: number, sceneHeight: number): RoomUnit {
   if (width >= WIDE_ROOM_W) return width >= 760 && sceneHeight >= 300 ? 3 : 2;
@@ -92,7 +86,7 @@ function unitOf(width: number, sceneHeight: number): RoomUnit {
 }
 
 /** What a board keeps under two rows of rooms: the edges, one row of mini rooms and the shelf. */
-const UNDER_STAGE_H = EDGE_TOP + BAND_GAP + MINI_H_ROW + BAND_GAP + SHELF_H + EDGE_BOTTOM;
+const UNDER_STAGE_H = EDGE_TOP + BAND_GAP + MINI_H + BAND_GAP + SHELF_H + EDGE_BOTTOM;
 
 /**
  * How many large rooms the stage takes on a board this size: four when exactly two wide rooms fit
@@ -126,29 +120,26 @@ export function layoutBuilding(input: LayoutInput): BuildingLayout {
   const floorPlates = new Map<string, Box>();
   const minis = input.floors.flatMap(floor => floor.rooms);
   const banded = minis.length > MINI_ROW_LIMIT;
-  const miniH = banded ? MINI_H_BANDED : MINI_H_ROW;
-  const labelW = banded ? FLOOR_LABEL_W : 0;
-  const inline = !banded && minis.length > 0 && minis.length <= INLINE_SHELF_ROOMS && input.hasShelf && width >= MINI_W_INLINE * minis.length + SHELF_INLINE_W;
-  const fit = Math.max(1, Math.floor((width - labelW + MINI_GAP) / (MINI_MIN_W + MINI_GAP)));
-  const perRow = Math.min(fit, MINI_COLUMNS);
+  const fit = (labelW: number) => Math.max(1, Math.floor((width - labelW + MINI_GAP) / (MINI_MIN_W + MINI_GAP)));
+  // A single row whose rooms each keep 300px beside a plate takes the plate; otherwise a line above.
+  const plated = !banded && minis.length > 0 && minis.length <= Math.min(fit(FLOOR_LABEL_W), MINI_COLUMNS);
+  const labelW = banded || plated ? FLOOR_LABEL_W : 0;
+  const perRow = Math.min(fit(labelW), MINI_COLUMNS);
   const shared = (across: number, count: number) => Math.floor((across - (count - 1) * MINI_GAP) / count);
-  const miniW = inline
-    ? Math.min(MINI_MAX_W, Math.max(MINI_W_INLINE, shared(width - SHELF_INLINE_W - MINI_GAP, minis.length)))
-    : !banded && minis.length < perRow
-      ? Math.min(MINI_MAX_W, Math.max(shared(width, perRow), shared(width, minis.length)))
-      : shared(width - labelW, perRow);
+  const miniW = shared(width - labelW, Math.max(1, Math.min(perRow, banded ? perRow : minis.length)));
+  const headingH = minis.length > 0 && !plated ? HEADING_LINE_H : 0;
   // Banded, every floor keeps its row, even one whose rooms are all on the stage: its plate says so.
-  const groups = banded ? input.floors : minis.length > 0 ? [{ key: '', rooms: minis }] : [];
+  // A session whose rooms are all on the stage has no band below: its bezels already name it.
+  const groups = banded ? input.floors.filter(floor => floor.rooms.length > 0) : minis.length > 0 ? [{ key: '', rooms: minis }] : [];
   const groupHeight = (count: number) => {
     const rows = Math.max(1, Math.ceil(count / perRow));
-    return rows * miniH + (rows - 1) * MINI_GAP;
+    return rows * MINI_H + (rows - 1) * MINI_GAP;
   };
-  const backH = groups.reduce((sum, group) => sum + groupHeight(group.rooms.length), 0) + Math.max(0, groups.length - 1) * MINI_GAP;
-  const shelfH = input.hasShelf && !inline ? SHELF_H : 0;
+  const backH = headingH + groups.reduce((sum, group) => sum + groupHeight(group.rooms.length), 0) + Math.max(0, groups.length - 1) * MINI_GAP;
+  const shelfH = input.hasShelf ? SHELF_H : 0;
   const shelfTop = height - EDGE_BOTTOM - shelfH;
-  const backTop = inline ? height - EDGE_TOP - miniH : shelfTop - (shelfH ? BAND_GAP : 0) - backH;
-  const moreH = input.workingBelow > 0 ? MORE_LINE_H : 0;
-  const available = backTop - (backH > 0 ? BAND_GAP : 0) - moreH - EDGE_TOP;
+  const backTop = shelfTop - (shelfH ? BAND_GAP : 0) - backH;
+  const available = backTop - (backH > 0 ? BAND_GAP : 0) - EDGE_TOP;
 
   let overflow = 0;
   const count = stage.length;
@@ -158,12 +149,13 @@ export function layoutBuilding(input: LayoutInput): BuildingLayout {
     while (Math.ceil(count / rows) > maxCols) rows += 1;
     const cols = rows === 1 ? Math.max(count, Math.min(2, maxCols)) : Math.ceil(count / rows);
     const roomW = Math.floor((width - (cols - 1) * STAGE_GAP) / cols / 2) * 2;
-    const oneRowCap = Math.min(ONE_ROW_CAP_H, Math.max(ONE_ROW_MIN_CAP_H, Math.floor(roomW * ONE_ROW_MAX_ASPECT)));
+    const oneRowCap = Math.min(ONE_ROW_CAP_H, Math.max(LARGE_MIN_H, Math.floor(roomW * ONE_ROW_MAX_ASPECT)));
     const fitted = rows === 1 ? Math.min(available, oneRowCap) : Math.min((available - (rows - 1) * STAGE_GAP) / rows, TWO_ROW_CAP_H);
     const roomH = Math.max(Math.floor(fitted), LARGE_MIN_H);
     const stageH = rows * roomH + (rows - 1) * STAGE_GAP;
-    overflow = Math.max(0, stageH - available);
-    const top = EDGE_TOP + Math.max(0, Math.round((available - stageH) / 2));
+    // The floors follow right under the stage; what the window has left stays under the shelf.
+    overflow = stageH - available;
+    const top = EDGE_TOP;
     const left = count < cols ? Math.round((width - roomW) / 2) : 0;
     const unit = unitOf(roomW, roomH - BELT_H);
     stage.forEach((key, index) => {
@@ -181,7 +173,12 @@ export function layoutBuilding(input: LayoutInput): BuildingLayout {
     overflow = EDGE_TOP - backTop;
   }
 
-  let floorTop = backTop + overflow;
+  const heading = minis.length === 0
+    ? null
+    : plated
+      ? { x: 0, y: backTop + overflow, w: FLOOR_LABEL_W - MINI_GAP, h: MINI_H, kind: 'plate' as const }
+      : { x: 0, y: backTop + overflow, w: width, h: HEADING_LINE_H, kind: 'line' as const };
+  let floorTop = backTop + overflow + headingH;
   for (const group of groups) {
     const groupH = groupHeight(group.rooms.length);
     if (banded) floorPlates.set(group.key, { x: 0, y: floorTop, w: labelW - MINI_GAP, h: groupH });
@@ -189,9 +186,9 @@ export function layoutBuilding(input: LayoutInput): BuildingLayout {
       const { row, column } = spreadOver(group.rooms.length, perRow, index);
       rooms.set(key, {
         x: labelW + column * (miniW + MINI_GAP),
-        y: floorTop + row * (miniH + MINI_GAP),
+        y: floorTop + row * (MINI_H + MINI_GAP),
         w: miniW,
-        h: miniH,
+        h: MINI_H,
         size: 'mini',
         unit: 1,
       });
@@ -199,17 +196,13 @@ export function layoutBuilding(input: LayoutInput): BuildingLayout {
     floorTop += groupH + MINI_GAP;
   }
 
-  const shelf = !input.hasShelf
-    ? null
-    : inline
-      ? { x: width - SHELF_INLINE_W, y: backTop + overflow + (miniH - SHELF_H) / 2, w: SHELF_INLINE_W, h: SHELF_H, inline: true }
-      : { x: 0, y: Math.max(shelfTop + overflow, floorTop - MINI_GAP + BAND_GAP), w: width, h: SHELF_H, inline: false };
-  const bottom = Math.max(height, (shelf ? shelf.y + shelf.h : floorTop) + EDGE_BOTTOM);
+  const shelf = input.hasShelf ? { x: 0, y: groups.length > 0 ? floorTop - MINI_GAP + BAND_GAP : shelfTop + overflow, w: width, h: SHELF_H } : null;
+  const bottom = Math.max(height, (shelf ? shelf.y + shelf.h : floorTop - MINI_GAP) + EDGE_BOTTOM);
   return {
     rooms,
     floors: floorPlates,
     banded,
-    moreTop: moreH > 0 ? backTop + overflow - BAND_GAP - moreH : null,
+    heading,
     shelf,
     height: bottom,
   };
