@@ -41,6 +41,7 @@ never a parallel router or surface fork.
 | Gray-area evidence | `src/shared/lib/project-source/tauri-gray-area.ts`, `src-tauri/src/gray_area.rs` | degradation card; local folder confirmation and secure bounded reads are macOS-only |
 | Source-folder read grant | `pickTauriSourceDirectory` in `src/shared/lib/vault-folder/tauri-vault-fs.ts`, `src-tauri/src/source_access.rs` | unavailable; native picker grants read-only source access, not vault write access |
 | Harness source read | `src/shared/lib/project-source/tauri-harness-source.ts`, `src-tauri/src/harness_source/` | unavailable; a browser cannot see dot directories, so Harness names what it cannot reach |
+| Agent settings scopes | `src/shared/lib/harness-scopes/tauri-harness-scopes.ts`, `src-tauri/src/harness_scopes/` | unavailable; a browser cannot open a home or dot folder, so the popup explains each scope without reading it |
 | Jev evidence check (experimental) | `src/shared/lib/llm-connection/tauri-jev.ts`, `src-tauri/src/jev.rs` | covered by the models tab's degradation card |
 | LLM call | `src/shared/lib/llm-connection/tauri-llm.ts` | action not rendered |
 | Agent setup | `src/shared/lib/desktop-shell/tauri-agent-setup.ts` | degradation card; no absolute path to write a config |
@@ -103,6 +104,23 @@ The third written exception, for Work status only:
 | Record | `docs/records/decisions/2026-11-22-work-status-agent-processes-87d3ada9-4740-430a-8cee-a580ce7e638e.md` |
 
 A new field, a signal or a send needs a new decision record.
+
+### Reading agent settings from every scope
+
+The fourth written exception, for Harness only:
+
+| | |
+|---|---|
+| Files | the constant table in `src-tauri/src/harness_scopes/paths.rs`: `~/.claude/settings.json`, the Local `.claude/settings.local.json` where Claude Code reads it, Claude Code's managed file, `~/.codex/hooks.json`, Codex's System `hooks.json`, the connected repository's `.claude/settings.json` and `.codex/hooks.json`, and `[hooks.<Event>]` headers in `~/.codex/config.toml` and the repository's; plus a `settings.json` or `hooks.json` the person picked, held by Rust until the app closes |
+| Returned | per hook: event, matcher, type, and for a `command` hook its command, timeout and `async`; per file: status, size, modified time, `disableAllHooks`, `allowManagedHooksOnly`, permission-rule counts; whether Git tracks or ignores the Local file |
+| Never returned | `env`, `apiKeyHelper` or any other key; an `http` hook's address or headers; a `prompt` or `agent` hook's text; permission-rule text; any `[hooks.state]` header; a parse error; `~/.claude/.credentials.json`, `~/.codex/auth.json` or any other file |
+| How | fixed names, never a folder listing or a path the page sends; every component below the home, repository or system folder opened without following a link; a regular file of at most 1 MiB parsed into allow-listed structs; a picked file inside a Git work tree refused unless it is that repository's own settings file |
+| Direction | read only |
+| Gate | `no_planted_value_leaves_any_reader_result` and the `harness_scopes` tests over `tests/fixtures/harness-scope-files.json` |
+
+`settings.local.json` stays in `DENIED_NAMES` for the second exception's text
+reads; only this reader opens it. A new path, or any value, needs a new
+decision record.
 
 ### Folder watch is latency, not degradation
 
