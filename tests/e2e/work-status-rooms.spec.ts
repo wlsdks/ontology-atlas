@@ -88,6 +88,14 @@ interface PaintFrame {
   /** For each stage room drawn before the change: whether its box's centre is covered by some room. */
   covered: boolean[];
   litGhost: boolean;
+  /** The frame's own time, the clock its animations run on, in milliseconds. */
+  time: number;
+  /** Name tags showing on the stage, so the stage never reads as empty. */
+  tags: number;
+  /** How much of each room's content shows: its faces and each of their fading parts, by room. */
+  content: Record<string, number>;
+  /** How wide each room's showing Moru is drawn, so a scale change can be checked for a jump. */
+  moru: Record<string, number>;
 }
 
 /**
@@ -109,7 +117,7 @@ async function startPaintSampler(page: Page) {
     });
     const frames: PaintFrame[] = [];
     Object.assign(window, { __paint: { frames, slots } });
-    const sample = () => {
+    const sample = (frameTime: number) => {
       const all = rooms();
       const copies = new Map<string, number>();
       for (const element of all) copies.set(keyOf(element), (copies.get(keyOf(element)) ?? 0) + content(element).filter((value) => value > 0.05).length);
@@ -129,7 +137,33 @@ async function startPaintSampler(page: Page) {
         return slot.x >= box.left && slot.x <= box.right && slot.y >= box.top && slot.y <= box.bottom;
       }));
       const litGhost = all.some((element) => element.dataset.ghostKey !== undefined && element.querySelector("[data-dark]")?.getAttribute("data-dark") === "false");
-      frames.push({ copies: Math.max(0, ...copies.values()), overlaps, covered, litGhost });
+      const building = document.querySelector("[data-testid=work-building]");
+      const seen = (element: Element) => {
+        let value = 1;
+        for (let node: Element | null = element; node && node !== building; node = node.parentElement) value *= Number(getComputedStyle(node).opacity);
+        return value;
+      };
+      const tags = [...document.querySelectorAll("[data-testid=work-building] [data-room-tag]")].filter((tag) => seen(tag) > 0.5).length;
+      const visible: Record<string, number> = {};
+      for (const element of all) {
+        const faces = [...element.querySelectorAll(":scope > [data-room-face]")];
+        visible[`${keyOf(element)}:face`] = Math.max(visible[`${keyOf(element)}:face`] ?? 0, ...faces.map(seen));
+        for (const face of faces) {
+          face.querySelectorAll("[data-room-part]").forEach((part, index) => {
+            const name = `${keyOf(element)}:part${index}`;
+            visible[name] = Math.max(visible[name] ?? 0, seen(part));
+          });
+        }
+      }
+      const moru: Record<string, number> = {};
+      for (const element of all) {
+        // The room's Moru as drawn: from its most visible face, so a swap of faces at a new scale counts.
+        const face = [...element.querySelectorAll<HTMLElement>(":scope > [data-room-face]")].sort((a, b) => seen(b) - seen(a))[0];
+        face?.querySelectorAll("[data-room-moru]").forEach((figure, index) => {
+          if (seen(figure) > 0.5) moru[`${keyOf(element)}:${index}`] = figure.getBoundingClientRect().width;
+        });
+      }
+      frames.push({ copies: Math.max(0, ...copies.values()), overlaps, covered, litGhost, time: frameTime, tags, content: visible, moru });
       if (frames.length < 900) requestAnimationFrame(sample);
     };
     requestAnimationFrame(sample);
@@ -152,10 +186,33 @@ async function expectCleanPaint(page: Page, { slots: handed = 0 } = {}) {
   });
   expect(frames.length).toBeGreaterThan(60);
   expect(handedOver).toHaveLength(handed);
-  expect.soft(frames.filter((frame) => frame.copies > 1), "frames with two copies of one room").toHaveLength(0);
-  expect.soft(frames.filter((frame) => frame.overlaps > 0), "frames where rooms overlap").toHaveLength(0);
-  expect.soft(frames.filter((frame) => handedOver.some((index) => !frame.covered[index])), "frames with a bare slot").toHaveLength(0);
-  expect.soft(frames.filter((frame) => frame.litGhost), "frames where a leaving room is lit").toHaveLength(0);
+  expect.soft(frames.filter((frame) => frame.copies > 1).length, "frames with two copies of one room").toBe(0);
+  expect.soft(frames.filter((frame) => frame.overlaps > 0).length, "frames where rooms overlap").toBe(0);
+  expect.soft(frames.filter((frame) => handedOver.some((index) => !frame.covered[index])).length, "frames with a bare slot").toBe(0);
+  expect.soft(frames.filter((frame) => frame.litGhost).length, "frames where a leaving room is lit").toBe(0);
+  expect.soft(frames.filter((frame) => frame.tags === 0).length, "frames with no name tag on the stage").toBe(0);
+  // Content fades, never cuts: within any 40 ms, one frame of a 25 fps recording, it loses at most 0.35.
+  const cuts: string[] = [];
+  frames.forEach((frame, index) => {
+    for (let later = index + 1; later < frames.length && frames[later].time - frame.time <= 40; later += 1) {
+      for (const [name, value] of Object.entries(frame.content)) {
+        const drop = value - (frames[later].content[name] ?? 0);
+        if (drop > 0.35) cuts.push(`${name} ${value.toFixed(2)}→${(frames[later].content[name] ?? 0).toFixed(2)} at ${Math.round(frame.time - frames[0].time)}ms`);
+      }
+    }
+  });
+  expect.soft([...new Set(cuts)].slice(0, 6), "content that cut instead of fading").toEqual([]);
+  // Moru glides to a new scale: within any 40 ms its drawn width changes by at most a fifth.
+  const jumps: string[] = [];
+  frames.forEach((frame, index) => {
+    const next = frames[index + 1];
+    if (!next || next.time - frame.time > 40) return;
+    for (const [name, width] of Object.entries(frame.moru)) {
+      const after = next.moru[name];
+      if (after !== undefined && width > 0 && Math.abs(after - width) / width > 0.2) jumps.push(`${name} ${Math.round(width)}→${Math.round(after)}px`);
+    }
+  });
+  expect.soft([...new Set(jumps)].slice(0, 6), "Moru that jumped to a new scale").toEqual([]);
 }
 
 test.describe("work status rooms", () => {
