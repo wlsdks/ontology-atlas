@@ -186,8 +186,9 @@ Repositories read through `gh api` on 2026-11-22, and public write-ups. Most pay
      complete and without a manifest; no release holds `vX.Y.Z`; the browser gate passes for that commit;
      `download:release-facts:check` passes. ACP registry freshness was checked at the cut and is not rechecked.
   2. `stage-promotion` (`contents: write`): `pnpm desktop:release-promote -- --from=<beta tag>` downloads the beta's
-     assets, checks each against its `.sha256`, builds `latest.json` pinned to `vX.Y.Z`, creates the draft `vX.Y.Z`
-     from those files and runs `desktop:verify-download -- --allow-draft --require-updater`. No job builds or signs
+     assets, checks each against its `.sha256`, builds `latest.json` pinned to `vX.Y.Z` with version
+     `X.Y.Z+<12-hex commit>`, creates the draft `vX.Y.Z` from those files and runs
+     `desktop:verify-download -- --allow-draft --require-updater --commit=<sha>`. No job builds or signs
      and the file names no signing secret.
   3. `publish-promotion` (`environment: release`): pin recheck, `gh release edit --draft=false --prerelease=false`,
      public verification, the release-facts artifact. The facts pull request then merges as today, and its push to
@@ -318,3 +319,7 @@ quarantine exists.
   after a day, names an expired state, and counts only push, schedule and dispatch runs; promotion refuses a
   superseded beta and late-uploaded assets, and compares digests again before publishing; the person table says no
   waiting period.
+- 2026-11-22: a stable `latest.json` names its commit. Its `version` is `X.Y.Z+<12-hex commit>`; the app embeds its
+  build commit (`ATLAS_BUILD_COMMIT`) and its updater comparator offers an equal version only when that commit
+  differs, so someone on beta.1 is offered a stable promoted from beta.2. Precedence still decides every other case,
+  and the update card shows `X.Y.Z`.

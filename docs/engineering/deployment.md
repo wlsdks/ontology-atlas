@@ -121,6 +121,16 @@ pnpm desktop:release-run -- --tag=v2.5.1 --ref=main
 writes the download page. A fix found in a beta merges to `main` and is cut as
 the next `-beta.N`.
 
+**Versions in `latest.json`.** Both stable paths write `version` as
+`X.Y.Z+<first 12 hex digits of the release commit>`, and
+`desktop:verify-download -- --require-updater --commit=<sha>` refuses anything
+else. A release build embeds its commit (`ATLAS_BUILD_COMMIT`), and the app
+offers an equal version only when the commits differ
+(`src-tauri/src/update_offer.rs`): someone on `v2.5.0-beta.1` is offered a
+`v2.5.0` promoted from `-beta.2`, and the promoted build is not offered itself.
+The update card shows `X.Y.Z` alone. A local build embeds no commit and compares
+versions alone.
+
 ## macOS release — rehearse before protected dispatch
 
 ```bash

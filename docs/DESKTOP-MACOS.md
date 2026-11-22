@@ -134,6 +134,11 @@ A release tag has one of two shapes, read by `scripts/lib/release-tag.mjs`:
 suffix (`-rc.1`, `-beta.0`, `-beta.1.2`, build metadata). Version files say
 `X.Y.Z` on a beta; only the tag carries `-beta.N`, because promotion publishes
 the beta's bytes unchanged as `vX.Y.Z` and the updater compares versions.
+A stable `latest.json` therefore says `X.Y.Z+<12-hex commit>`: a release build
+embeds its commit (`ATLAS_BUILD_COMMIT`), and the app offers an equal version
+only when the commits differ (`src-tauri/src/update_offer.rs`), so someone on
+an earlier beta of that version is offered the stable. The update card shows
+`X.Y.Z` alone.
 
 Four places keep a beta off the updater feed and the download page, each with a
 test that fails when it is removed: `stage-macos` builds no manifest for a beta
@@ -284,8 +289,9 @@ above it, no release holding `vX.Y.Z`, the browser gate on that commit, and curr
 `stage-promotion` runs `pnpm desktop:release-promote -- --from=vX.Y.Z-beta.N
 --mode=stage`: it downloads every beta asset, checks each against the SHA-256
 GitHub recorded and its `.sha256` sibling, builds `latest.json` pinned to
-`vX.Y.Z`, creates the draft from exactly those files, and runs
-`desktop:verify-download -- --allow-draft --require-updater`. No job builds or
+`vX.Y.Z` with the beta's commit in its version, creates the draft from exactly
+those files, and runs `desktop:verify-download -- --allow-draft
+--require-updater --commit=<sha>`. No job builds or
 signs. `publish-promotion` waits for the `release` approval, pins both tags
 again, compares the draft's digests with the beta's (`--mode=verify`),
 publishes, pins both tags once more, and verifies. The watcher then starts the MCP Registry listing
