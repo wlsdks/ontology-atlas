@@ -7,10 +7,10 @@ import { join } from 'node:path';
 import test from 'node:test';
 
 import { schemaErrors } from '../../../scripts/lib/output-schema-errors.mjs';
-import { TOOLS_FOR_LIST } from './registry.mjs';
+import { TOOL_OUTPUT_CONTRACT_BY_NAME } from './registry.mjs';
 import { ok } from './rpc.mjs';
 
-const outputSchemaOf = (name) => TOOLS_FOR_LIST.find((tool) => tool.name === name).outputSchema;
+const outputSchemaOf = (name) => TOOL_OUTPUT_CONTRACT_BY_NAME.get(name);
 
 function assertConforms(toolName, structured) {
   assert.deepEqual(schemaErrors(outputSchemaOf(toolName), structured).slice(0, 5), [], `${toolName} answer must match its outputSchema`);

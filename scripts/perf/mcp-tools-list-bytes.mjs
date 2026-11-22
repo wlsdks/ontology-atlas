@@ -6,7 +6,9 @@
  *
  * Model-read bytes are a tool's name, description and input schema as one JSON
  * object; wire bytes are the whole tool entry, output schema and annotations
- * included.
+ * included. Output-schema bytes are the advertised output schemas, which a
+ * host may also fold into what the model reads; response bytes are the whole
+ * JSON-RPC line.
  *
  * Usage: pnpm mcp:tools-list-bytes [-- --json]
  */
@@ -96,6 +98,6 @@ if (process.argv.includes('--json')) {
       process.stdout.write(`${row.name.padEnd(28)}${String(row.modelRead).padStart(12)}${String(row.output).padStart(10)}${String(row.wire).padStart(10)}\n`);
     }
     process.stdout.write(`${'total'.padEnd(28)}${String(totals.modelRead).padStart(12)}${String(totals.output).padStart(10)}${String(totals.wire).padStart(10)}\n`);
-    process.stdout.write(`description ${totals.description} B, input schemas ${totals.input} B, tools/list response ${totals.response} B\n`);
+    process.stdout.write(`description ${totals.description} B, input schemas ${totals.input} B, output schemas ${totals.output} B, tools/list response ${totals.response} B\n`);
   }
 }

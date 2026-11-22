@@ -1463,6 +1463,16 @@ answers with its summary, `find_evidence` with its best 50 matches,
 `validate_vault` with one page, and the three briefs with 20 problem files;
 each names the call that returns the rest.
 
+`tools/list` advertises each `outputSchema` cut to its top level: the root
+keeps `type`, `required` and `additionalProperties`, each property keeps its
+type, and nested objects and arrays are open. The full result contract stays
+in the tool definition. Every answer that satisfies the contract also
+satisfies the advertised schema a client may validate `structuredContent`
+against, and the tests check real answers against both. On the full profile
+the advertised output schemas measure 19,728 bytes against 197,504 for the
+contracts, and the whole `tools/list` response 85,784 bytes against 263,560
+(`pnpm mcp:tools-list-bytes`).
+
 ### Bounded implementation source evidence
 
 `analyze_repo_structure` accepts optional `sourceReads` when an implementation
@@ -1923,7 +1933,9 @@ The `tools/list` gate also checks that every tool rejects unknown arguments via
 `annotations.openWorldHint:false` for the local vault-only boundary. It also checks `annotations.idempotentHint`
 for retry-safe relation writers (`add_relation` / `add_relations`), and that required `query_ontology.operation` plus
 the `query_ontology.operation` / `query_ontology.targetOperation` enums match
-the graph engine's runtime allow-lists. It also checks the `list_kinds`
+the graph engine's runtime allow-lists. It checks that each advertised
+`outputSchema` is the top-level cut of the tool's full result contract, then
+checks those contracts: the `list_kinds`
 `outputSchema` and matching `structuredContent` census payload, the `validate_vault`
 `outputSchema` and matching `structuredContent` health payload, the `list_concepts`
 `outputSchema` and matching `structuredContent` node table payload, the `get_concept`

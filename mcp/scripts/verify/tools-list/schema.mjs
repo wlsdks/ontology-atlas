@@ -1,4 +1,3 @@
-import { inlineSharedSubschemas } from '../../../src/server/shared-subschemas.mjs';
 import { authoringToolsSchemaFailure } from './authoring-tools.mjs';
 import { compileToolSchemaFailure } from './compile-tool.mjs';
 import { conceptReadToolsSchemaFailure } from './concept-read-tools.mjs';
@@ -130,20 +129,8 @@ function nestedObjectSchemaFailure(tools) {
   return null;
 }
 
-// Output schemas list each repeated subschema once under `$defs`; the checks
-// below read the same tree inlined.
-function inlineOutputSchemas(tools) {
-  try {
-    return tools.map((tool) => (tool?.outputSchema?.$defs ? { ...tool, outputSchema: inlineSharedSubschemas(tool.outputSchema) } : tool));
-  } catch (error) {
-    return `tools/list outputSchema ${error.message}`;
-  }
-}
-
-export function toolsListSchemaFailure(listedTools) {
-  if (!Array.isArray(listedTools)) return 'tools/list response missing tools array';
-  const tools = inlineOutputSchemas(listedTools);
-  if (typeof tools === 'string') return tools;
+export function toolsListSchemaFailure(tools) {
+  if (!Array.isArray(tools)) return 'tools/list response missing tools array';
   const schemaDriftTool = tools.find((tool) => tool?.inputSchema?.additionalProperties !== false);
   if (schemaDriftTool) {
     return `tools/list schema missing additionalProperties:false: ${schemaDriftTool.name || '(unknown)'}`;

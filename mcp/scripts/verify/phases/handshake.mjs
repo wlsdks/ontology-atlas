@@ -8,6 +8,7 @@ import {
   toolsListAnnotationSummary,
   toolsListInventoryFailure,
 } from '../tools-list/inventory.mjs';
+import { advertisedOutputSchemaFailure, withOutputContracts } from '../tools-list/output-contracts.mjs';
 import {
   TOOLS_LIST_SCHEMA_CONTRACT_SUMMARY,
   toolsListSchemaFailure,
@@ -40,7 +41,13 @@ export function verifyHandshake(responses, { initRes }) {
   log('ok', `tools/list ${toolNames.length}/${EXPECTED_TOOLS.length} (${toolsListAnnotationSummary(listRes.result.tools)}): ${toolNames.join(' · ')}`);
   log('ok', 'tools/list inventory names: missing/extra/duplicate/invalid checks passed');
   log('ok', 'initialize tool inventory: counts and read/write names match tools/list exactly');
-  const schemaFailure = toolsListSchemaFailure(listRes.result.tools);
+  const advertisedFailure = advertisedOutputSchemaFailure(listRes.result.tools);
+  if (advertisedFailure) {
+    log('fail', advertisedFailure);
+    return false;
+  }
+  log('ok', 'tools/list output schemas: each is the top-level cut of its full result contract');
+  const schemaFailure = toolsListSchemaFailure(withOutputContracts(listRes.result.tools));
   if (schemaFailure) {
     log('fail', schemaFailure);
     return false;
