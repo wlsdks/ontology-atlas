@@ -55,10 +55,8 @@
     "lockedAt": "{time}にロック",
     "ended": "セッション終了",
     "noSession": "セッションなし",
-    "aheadNote": "まだ{branch}にありません",
     "noCommitsNote": "{branch}以降のコミットはありません",
     "notMeasured": "{branch}と比較できませんでした",
-    "notMerged": "{branch}に未マージです",
     "prune": "<code>git worktree prune</code>を実行すると記録が消えます",
     "heldBy": "{session}がまだこのフォルダを保持しています",
     "unreadableLock": "Atlasが読めるセッション名がロックにありません"

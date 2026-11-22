@@ -55,10 +55,8 @@
     "lockedAt": "{time} 锁定",
     "ended": "会话已结束",
     "noSession": "没有会话",
-    "aheadNote": "尚未进入 {branch}",
     "noCommitsNote": "{branch} 之后没有提交",
     "notMeasured": "无法与 {branch} 比较",
-    "notMerged": "尚未合并到 {branch}",
     "prune": "运行 <code>git worktree prune</code> 会删除它的记录",
     "heldBy": "{session} 仍占用此文件夹",
     "unreadableLock": "锁中没有 Atlas 能读取的会话名"

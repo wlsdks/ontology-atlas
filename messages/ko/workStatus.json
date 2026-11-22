@@ -55,10 +55,8 @@
     "lockedAt": "{time}에 잠금",
     "ended": "세션 끝남",
     "noSession": "세션 없음",
-    "aheadNote": "아직 {branch}에 없어요",
     "noCommitsNote": "{branch} 이후 커밋이 없어요",
     "notMeasured": "{branch} 기준으로 비교하지 못했어요",
-    "notMerged": "{branch}에 머지되지 않았어요",
     "prune": "<code>git worktree prune</code>을 실행하면 기록이 지워져요",
     "heldBy": "{session}가 아직 이 폴더를 잡고 있어요",
     "unreadableLock": "Atlas가 읽을 수 있는 세션 이름이 잠금에 없어요"

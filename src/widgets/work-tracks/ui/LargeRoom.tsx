@@ -64,7 +64,12 @@ function Belt({ room }: { room: RoomEntry }) {
     <div className={styles.belt}>
       <div className={styles.track} data-arrived={arrived}>
         <div className={styles.rail}>
-          <i className={styles.railUnknown} style={{ left: `${KNOWN_UNTIL * 100}%`, opacity: arrived ? 0 : 1 }} />
+          <i
+            className={styles.railUnknown}
+            role={arrived ? undefined : 'img'}
+            aria-label={arrived ? undefined : t('belt.notRead')}
+            style={{ left: `${KNOWN_UNTIL * 100}%`, opacity: arrived ? 0 : 1 }}
+          />
           <i className={styles.railPast} style={{ transform: `scaleX(${at})` }} />
           {look.running ? (
             <span className="absolute inset-0" style={{ clipPath: `inset(0 ${(1 - at) * 100}% 0 0)` }}>
@@ -83,7 +88,6 @@ function Belt({ room }: { room: RoomEntry }) {
         <span className={cn(styles.station, styles.stationMain, LABEL, 'font-mono font-[var(--font-weight-strong)]')} style={{ left: '100%' }}>
           {t('ruler.main')}
         </span>
-        {!arrived && !room.track.missing ? <span className={cn(styles.unknownNote, LABEL)}>{t('belt.notRead')}</span> : null}
         <i className={styles.hatch}>
           <i className={styles.hatchOpen} />
           <i className={styles.hatchLight} />

@@ -566,13 +566,6 @@
   display: none;
 }
 
-.unknownNote {
-  position: absolute;
-  right: 26px;
-  top: 6px;
-  white-space: nowrap;
-  color: var(--color-text-quaternary);
-}
 
 .hatch {
   position: absolute;
@@ -691,10 +684,6 @@
 @container (max-width: 519px) {
   .station:not([data-now='true']):not(.stationMain) {
     font-size: 0;
-  }
-
-  .unknownNote {
-    display: none;
   }
 }
 

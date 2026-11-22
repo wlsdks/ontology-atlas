@@ -45,10 +45,11 @@ export function useRoomCopy(baseBranch: string, nowMs: number) {
   const commits = (track: Track) =>
     track.standing === 'unknown' || track.ahead === null ? null : track.ahead > 0 ? t('room.commits', { count: track.ahead }) : t('room.noCommits');
   const lockedAt = (track: Track) => (track.lockedAt ? t('monitor.lockedAt', { time: clockTime(track.lockedAt, nowMs, locale) }) : null);
+  /** Only what the belt cannot show: no commits beyond the base branch, or no comparison read. */
   const sinceBase = (track: Track) =>
     track.standing === 'unknown' || track.ahead === null
       ? t('monitor.notMeasured', { branch: baseBranch })
-      : track.ahead > 0 ? t('monitor.aheadNote', { branch: baseBranch }) : t('monitor.noCommitsNote', { branch: baseBranch });
+      : track.ahead > 0 ? null : t('monitor.noCommitsNote', { branch: baseBranch });
   const lastCommit = (track: Track) => (track.lastCommitAt === null ? null : t('room.lastCommit', { ago: timeAgo(track.lastCommitAt, nowMs, locale) }));
 
   /** Who a room belongs to, under a mini room's status when there is room for it. */
@@ -109,7 +110,7 @@ export function useRoomCopy(baseBranch: string, nowMs: number) {
           label: t('monitor.ended'),
           aside: commits(track),
           figure: t('room.lockLeft'),
-          note: track.ahead ? t('monitor.notMerged', { branch: baseBranch }) : sinceBase(track),
+          note: sinceBase(track),
         };
       case 'missing':
         return { ...quiet, label: t('monitor.noSession'), figure: t('room.missing'), note: t.markup('monitor.prune', { code: chunks => chunks }) };

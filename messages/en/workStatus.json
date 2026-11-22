@@ -55,10 +55,8 @@
     "lockedAt": "Locked at {time}",
     "ended": "Session ended",
     "noSession": "No session",
-    "aheadNote": "Not in {branch} yet",
     "noCommitsNote": "No commits beyond {branch}",
     "notMeasured": "Not measured against {branch}",
-    "notMerged": "Not merged into {branch}",
     "prune": "<code>git worktree prune</code> removes its record",
     "heldBy": "{session} still holds this folder",
     "unreadableLock": "The lock names no session Atlas can read"
