@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import type { RoomEntry } from '@/shared/lib/work-status/work-tracks';
 import { cn } from '@/shared/lib/cn';
 import { MOTION } from '@/shared/motion';
-import { KNOWN_UNTIL, STAGE_AT, cartLoad, moruPhase, roomIdentity, roomLook, roomOnce } from '../model/room-look';
+import { KNOWN_UNTIL, STAGE_AT, cartLoad, moruPhase, roomIdentity, roomLook, roomOnce, type MoruCharacter } from '../model/room-look';
 import { MERGE_LIGHTS_OUT_MS } from '../model/moru-clock';
 import { useRise } from '../model/use-rise';
 import type { RoomUnit } from '../model/building-layout';
@@ -179,8 +179,10 @@ function Belt({ room, landing }: { room: RoomEntry; landing: number }) {
  * Moru with the session's name tag beside a floor lamp lit only while something runs, and the belt
  * that carries the work's crate toward the `main` hatch.
  */
-export function LargeRoom({ room, unit, copy, tint, guestTint, retiring, entered, faceId }: {
+export function LargeRoom({ room, unit, copy, tint, guestTint, retiring, entered, faceId, character }: {
   room: RoomEntry;
+  /** The room's Moru, cast across the building. */
+  character: MoruCharacter;
   unit: RoomUnit;
   /** The room is new to the building, or newly on the stage: Moru settles in once. */
   entered: boolean;
@@ -225,12 +227,12 @@ export function LargeRoom({ room, unit, copy, tint, guestTint, retiring, entered
         {pair && second ? (
           <>
             <i className={cn(styles.shadow, styles.actorBack)} />
-            <span className={cn(styles.actor, styles.actorBack)}><RoomMoru live slot="back" clip={look.backClip} still={look.still} zoom="var(--u)" tint={tint} phase={(moruPhase(room.key) + 0.5) % 1} /></span>
+            <span className={cn(styles.actor, styles.actorBack)}><RoomMoru live slot="back" character={character} clip={look.backClip} still={look.still} zoom="var(--u)" tint={tint} phase={(moruPhase(room.key) + 0.5) % 1} /></span>
             <span data-room-tag className={cn(styles.tag, styles.tagBack, LABEL, 'font-[var(--font-weight-emphasis)]')}>
               <span className="truncate">{session ?? copy.toolName(tools[0])}</span>
             </span>
             <i className={cn(styles.shadow, styles.actorFront)} />
-            <span className={cn(styles.actor, styles.actorFront)}><RoomMoru live clip={look.clip} still={look.still} zoom="var(--u)" tint={guestTint} phase={moruPhase(room.key)} once={request} /></span>
+            <span className={cn(styles.actor, styles.actorFront)}><RoomMoru live character={character} clip={look.clip} still={look.still} zoom="var(--u)" tint={guestTint} phase={moruPhase(room.key)} once={request} /></span>
             <span data-room-tag className={cn(styles.tag, styles.tagFront, LABEL, 'font-[var(--font-weight-emphasis)]')} style={{ ['--ink' as string]: guestInk }}>
               <span className="truncate">{copy.sessionName(guest) ?? copy.toolName(second)}</span>
             </span>
@@ -239,7 +241,7 @@ export function LargeRoom({ room, unit, copy, tint, guestTint, retiring, entered
           <>
             <i className={styles.shadow} />
             <span className={styles.actor}>
-              <RoomMoru live clip={look.clip} still={look.still} zoom="var(--u)" tint={tint} phase={moruPhase(room.key)} once={request} />
+              <RoomMoru live character={character} clip={look.clip} still={look.still} zoom="var(--u)" tint={tint} phase={moruPhase(room.key)} once={request} />
             </span>
             {session ? <span data-room-tag className={cn(styles.tag, LABEL, 'font-[var(--font-weight-emphasis)]')}>{session}</span> : null}
           </>
