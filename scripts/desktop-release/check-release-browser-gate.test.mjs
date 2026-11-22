@@ -5,19 +5,23 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import { judgeBrowserRuns } from "./check-release-browser-gate.mjs";
+import { WHOLE_RUN_TITLE, judgeBrowserRuns } from "./check-release-browser-gate.mjs";
 
 const sha = "d".repeat(40);
 const FULL = ["playwright-timings-full-1", "playwright-timings-full-2", "playwright-report"];
 const SMOKE = ["playwright-timings-smoke-1"];
 
-const run = (databaseId, createdAt, status, conclusion) => ({
+const run = (databaseId, createdAt, status, conclusion, extra = {}) => ({
   databaseId,
   createdAt,
   status,
   conclusion,
+  event: "workflow_dispatch",
+  displayTitle: "E2E smoke",
   url: `https://github.test/runs/${databaseId}`,
+  ...extra,
 });
+const whole = { displayTitle: WHOLE_RUN_TITLE };
 
 function judge(runs, artifacts = {}) {
   return judgeBrowserRuns({ runs, artifactsOf: (id) => artifacts[id] ?? [] });
@@ -47,7 +51,7 @@ test("refuses a red run, even when an older run on the commit was green", () => 
 });
 
 test("refuses a green run that ran only part of the suite", () => {
-  for (const artifacts of [SMOKE, ["playwright-timings-targeted-1"], []]) {
+  for (const artifacts of [SMOKE, ["playwright-timings-targeted-1"]]) {
     const verdict = judge([run(3, "2026-11-22T10:00:00Z", "completed", "success")], { 3: artifacts });
     assert.deepEqual([verdict.ok, verdict.state], [false, "partial"], artifacts.join(","));
   }
@@ -133,4 +137,35 @@ test("the command has no flag that skips the gate", () => {
     assert.equal(absent.status, 1);
     assert.match(absent.stderr, /no finished browser-suite run exists/);
   });
+});
+
+test("a run titled as whole passes days later, after its artifacts expired", () => {
+  const verdict = judge([run(9, "2026-11-19T10:00:00Z", "completed", "success", whole)], { 9: [] });
+  assert.deepEqual([verdict.ok, verdict.state], [true, "success"]);
+});
+
+test("a whole-titled run that went red still refuses", () => {
+  const verdict = judge([run(9, "2026-11-19T10:00:00Z", "completed", "failure", whole)]);
+  assert.deepEqual([verdict.ok, verdict.state], [false, "red"]);
+});
+
+test("an untitled green run whose artifacts expired has its own state and message", () => {
+  const verdict = judge([run(10, "2026-11-19T10:00:00Z", "completed", "success")], { 10: [] });
+  assert.deepEqual([verdict.ok, verdict.state], [false, "expired"]);
+  assert.match(verdict.message, /its artifacts have expired, so nothing shows what it ran/);
+});
+
+test("a pull-request run on the release commit never counts, even as the newest", () => {
+  const forkRun = run(12, "2026-11-22T11:00:00Z", "completed", "success", { event: "pull_request", ...whole });
+  const red = judge([run(11, "2026-11-22T10:00:00Z", "completed", "failure", whole), forkRun], { 12: FULL });
+  assert.deepEqual([red.ok, red.state, red.run.databaseId], [false, "red", 11]);
+  for (const event of ["pull_request", "pull_request_target", "merge_group"]) {
+    const alone = judge([{ ...forkRun, event }], { 12: FULL });
+    assert.deepEqual([alone.ok, alone.state], [false, "absent"], event);
+  }
+});
+
+test("a run waiting for approval is no verdict", () => {
+  const verdict = judge([run(13, "2026-11-22T11:00:00Z", "completed", "action_required", whole)]);
+  assert.deepEqual([verdict.ok, verdict.state], [false, "absent"]);
 });

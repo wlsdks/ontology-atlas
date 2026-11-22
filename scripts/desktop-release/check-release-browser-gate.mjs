@@ -1,8 +1,15 @@
 #!/usr/bin/env node
 /**
  * The browser gate of a stable release: the newest finished `e2e.yml` run on the release commit must
- * be a whole run that concluded `success`. A run still going, a red run, a partial run and no run at
- * all each refuse and print the command that starts a whole run. No flag skips it.
+ * be a whole run that concluded `success`. A run still going, a red run, a partial run, a run whose
+ * evidence expired and no run at all each refuse and print the command that starts a whole run.
+ * No flag skips it.
+ *
+ * Only runs this repository started count: a push to main, the nightly schedule and a manual
+ * dispatch. A pull request from a fork can carry the release commit as its head, so its runs are
+ * never read. A run is whole when its title says so (`e2e.yml` `run-name`, durable) or, for a run
+ * started before that title existed, when its shards uploaded `playwright-timings-full-*`; those
+ * artifacts expire after the repository's one-day retention.
  */
 import { spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
@@ -13,26 +20,33 @@ const DEFAULT_REPO = "wlsdks/ontology-atlas";
 const WORKFLOW = "e2e.yml";
 const FULL_SHA = /^[0-9a-f]{40}$/i;
 const RUN_LIMIT = 30;
+/** The `run-name` `e2e.yml` gives a scheduled run and a dispatch with no `plan_from`. */
+export const WHOLE_RUN_TITLE = "Browser suite: whole run";
+/** Runs this repository started; a pull-request or merge-group run never counts. */
+export const COUNTED_EVENTS = new Set(["push", "schedule", "workflow_dispatch"]);
 
 function printHelp() {
   console.log(`Usage: pnpm desktop:release-browser-gate -- --sha=COMMIT [--tag=vX.Y.Z] [--repo=${DEFAULT_REPO}]
 
-Passes only when the newest finished ${WORKFLOW} run on COMMIT is a whole run
-(its shards uploaded playwright-timings-full-* artifacts) that concluded
-success. A running, red, partial or absent run refuses, and the refusal prints
-the dispatch command for a whole run. --tag names the ref that command uses.
+Passes only when the newest finished ${WORKFLOW} run on COMMIT, among push,
+schedule and workflow_dispatch runs, is a whole run that concluded success.
+Its title "${WHOLE_RUN_TITLE}" marks it whole; a run without that title counts
+only while its playwright-timings-full-* artifacts exist. A running, red,
+partial, expired or absent run refuses, and the refusal prints the dispatch
+command for a whole run. --tag names the ref that command uses.
 `);
 }
 
 /** Cancelled and skipped runs carry no verdict, so they never hide an older one. */
-const VERDICTS = new Set(["success", "failure", "timed_out", "startup_failure", "action_required", "neutral", "stale"]);
+const VERDICTS = new Set(["success", "failure", "timed_out", "startup_failure", "neutral", "stale"]);
 
 /**
- * @param {{ runs: Array<{ databaseId: number, status: string, conclusion: string, createdAt: string, url?: string, event?: string }>, artifactsOf: (id: number) => string[] }} input
- * @returns {{ ok: boolean, state: 'success' | 'running' | 'red' | 'partial' | 'absent', run: object | null, message: string }}
+ * @param {{ runs: Array<{ databaseId: number, status: string, conclusion: string, createdAt: string, displayTitle?: string, url?: string, event: string }>, artifactsOf: (id: number) => string[] }} input
+ * @returns {{ ok: boolean, state: 'success' | 'running' | 'red' | 'partial' | 'expired' | 'absent', run: object | null, message: string }}
  */
 export function judgeBrowserRuns({ runs, artifactsOf }) {
-  const newestFirst = [...(Array.isArray(runs) ? runs : [])].sort(
+  const counted = (Array.isArray(runs) ? runs : []).filter((run) => COUNTED_EVENTS.has(run?.event));
+  const newestFirst = [...counted].sort(
     (a, b) => Date.parse(b?.createdAt ?? "") - Date.parse(a?.createdAt ?? ""),
   );
   const finished = newestFirst.find((run) => run?.status === "completed" && VERDICTS.has(run?.conclusion));
@@ -57,7 +71,24 @@ export function judgeBrowserRuns({ runs, artifactsOf }) {
       message: `the newest finished browser-suite run on this commit concluded ${finished.conclusion}${where}. Fix it, or quarantine the failing spec with that run as evidence, then run the suite again.`,
     };
   }
-  if (fullBrowserRunKind(finished.conclusion, artifactsOf(finished.databaseId)) !== "full") {
+  if (finished.displayTitle === WHOLE_RUN_TITLE) {
+    return {
+      ok: true,
+      state: "success",
+      run: finished,
+      message: `the newest finished browser-suite run on this commit is a whole run and passed${where}.`,
+    };
+  }
+  const artifacts = artifactsOf(finished.databaseId);
+  if (artifacts.length === 0) {
+    return {
+      ok: false,
+      state: "expired",
+      run: finished,
+      message: `the newest finished browser-suite run on this commit passed${where}, but its title does not mark a whole run and its artifacts have expired, so nothing shows what it ran.`,
+    };
+  }
+  if (fullBrowserRunKind(finished.conclusion, artifacts) !== "full") {
     return {
       ok: false,
       state: "partial",
@@ -114,7 +145,7 @@ function main() {
     runs = JSON.parse(
       gh([
         "run", "list", "--repo", options.repo, "--workflow", WORKFLOW, "--commit", options.sha,
-        "--limit", String(RUN_LIMIT), "--json", "databaseId,status,conclusion,createdAt,url,event",
+        "--limit", String(RUN_LIMIT), "--json", "databaseId,status,conclusion,createdAt,url,event,displayTitle",
       ]),
     );
   } catch (error) {

@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
+import { WHOLE_RUN_TITLE } from "../../../scripts/desktop-release/check-release-browser-gate.mjs";
+
 /**
  * A `vX.Y.Z-beta.N` tag never writes `latest.json` and never writes `/download`. In the cut that
  * holds as workflow conditions on the channel `admit-release` reads from the tag; this file pins
@@ -107,4 +109,14 @@ describe("a beta release never writes the updater feed or /download", () => {
       expect(() => assertBetaChannel(workflow.replace(from, to))).toThrow();
     });
   }
+});
+
+describe("the browser gate can tell a whole run after its artifacts expire", () => {
+  it("e2e.yml titles a scheduled run and a dispatch with no plan_from as whole, and nothing else", () => {
+    const e2e = readFileSync(".github/workflows/e2e.yml", "utf8");
+    const runName = /^run-name: (.+)$/m.exec(e2e)?.[1] ?? "";
+    expect(runName).toBe(
+      `\${{ (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.plan_from == '')) && '${WHOLE_RUN_TITLE}' || '' }}`,
+    );
+  });
 });
