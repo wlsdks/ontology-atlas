@@ -95,13 +95,13 @@ export function stageCapacity(width: number, height: number): number {
 }
 
 /**
- * Two Moru at the room's scale: each is 114 drawn pixels wide, and the second stands at least 60
- * past the first, enough for the first one's face to show beside the second's head. The lamp stands
- * under the monitor of a wide room, and takes 20 drawn pixels beside the pair in a narrow one.
+ * Two Moru at the room's scale, each 114 drawn pixels wide. In a wide room the second stands at
+ * least 60 past the first, enough for the first one's face to show beside the second's head, left
+ * of the monitor. In a narrow room the first stands on a riser, so 20 apart is enough.
  */
 const MORU_W = 114;
-const PAIR_MIN_STEP = 60;
-const PAIR_LAMP = 20;
+const PAIR_STEP_WIDE = 60;
+const PAIR_STEP_NARROW = 20;
 const PAIR_MARGIN_PX = 16;
 
 /**
@@ -110,8 +110,10 @@ const PAIR_MARGIN_PX = 16;
  */
 export function pairUnit(width: number, unit: RoomUnit): RoomUnit {
   for (let fitting = unit; ; fitting = (fitting - 1) as RoomUnit) {
-    const reach = width >= WIDE_ROOM_W ? Math.min(0.46 * width, 124 * fitting) + 16 : PAIR_LAMP * fitting;
-    if (fitting === 1 || (MORU_W + PAIR_MIN_STEP) * fitting + PAIR_MARGIN_PX + reach <= width) return fitting;
+    const wide = width >= WIDE_ROOM_W;
+    const reach = wide ? Math.min(0.46 * width, 124 * fitting) + 16 : 0;
+    const step = wide ? PAIR_STEP_WIDE : PAIR_STEP_NARROW;
+    if (fitting === 1 || (MORU_W + step) * fitting + PAIR_MARGIN_PX + reach <= width) return fitting;
   }
 }
 

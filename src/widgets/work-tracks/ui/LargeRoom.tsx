@@ -146,6 +146,7 @@ export function LargeRoom({ room, unit, width, copy, tint, guestTint, retiring }
         </i>
         {pair && second ? (
           <>
+            <i className={styles.riser} />
             <i className={cn(styles.shadow, styles.actorBack)} />
             <span className={cn(styles.actor, styles.actorBack)}><RoomMoru clip="read" still={false} zoom={sceneUnit} tint={tint} phase={(moruPhase(room.key) + 0.5) % 1} /></span>
             <span className={cn(styles.tag, styles.tagBack, LABEL, 'font-[var(--font-weight-emphasis)]')}>

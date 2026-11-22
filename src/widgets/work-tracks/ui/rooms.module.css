@@ -315,30 +315,52 @@
 }
 
 /*
- * Two tools in one folder: two Moru at the room's scale, the second a step behind and 60 to 100
- * drawn pixels to the left, so the first one's face shows beside the second's head. The lamp
- * stands at the far right, under the monitor of a wide room, clear of both Moru and their tags.
+ * Two tools in one folder: two Moru at the room's scale, the first a step behind and to the left.
+ * A narrow room has height to spare: the first stands on a riser, close beside the second, so his
+ * face shows over the second's head, and the lamp gives way. A wide room (below) has width: the
+ * pair stands on the floor 60 to 100 drawn pixels apart, and the lamp stands under the monitor.
  */
 .scene[data-cast='two'] {
-  --lamp-room: calc(20 * var(--s));
-  --pair-step: clamp(calc(60 * var(--s)), calc(100% - 16px - var(--monitor-reach, var(--lamp-room)) - 114 * var(--s)), calc(100 * var(--s)));
+  --pair-rise: calc(50 * var(--s));
+  --pair-behind: 0px;
+  /* The second's tag hangs further right, off the first one's face over his head. */
+  --tag-shift: calc(24 * var(--s));
+  --pair-step: clamp(calc(20 * var(--s)), calc(100% - 16px - 114 * var(--s)), calc(40 * var(--s)));
   --ax: clamp(
     calc(8px + var(--pair-step) / 2 + 57 * var(--s)),
     var(--ax-room),
-    calc(100% - 8px - var(--monitor-reach, var(--lamp-room)) - var(--pair-step) / 2 - 57 * var(--s))
+    calc(100% - 8px - var(--monitor-reach, 0px) - var(--pair-step) / 2 - 57 * var(--s))
   );
 }
 
 .scene[data-cast='two'] .lamp {
-  left: auto;
-  right: 16px;
-  height: calc(44 * var(--s));
+  display: none;
 }
 
+/* The step the first Moru stands on in a narrow room: a steel block with a lighter top. */
+.riser {
+  position: absolute;
+  left: calc(var(--ax) - var(--pair-step) / 2 - 40 * var(--s));
+  bottom: calc(var(--floor) * 0.4);
+  width: calc(80 * var(--s));
+  height: var(--pair-rise);
+  z-index: 1;
+  background:
+    linear-gradient(var(--work-room-steel-light), var(--work-room-steel-light)) 0 0 / 100% calc(3 * var(--s)) no-repeat,
+    var(--work-room-steel);
+  box-shadow: 0 0 0 var(--s) var(--work-room-outline);
+}
+
+/* The first Moru stands a step behind: a little up the floor, or on the riser. */
 .actorBack {
   --dx: calc(var(--pair-step) / -2);
+  --back-lift: calc(var(--pair-rise, 0px) + var(--pair-behind, 3 * var(--p)));
   z-index: 1;
-  bottom: calc(var(--floor) * 0.4 - 28 * var(--s) + 3 * var(--p));
+  bottom: calc(var(--floor) * 0.4 - 28 * var(--s) + var(--back-lift));
+}
+
+.shadow.actorBack {
+  bottom: calc(var(--floor) * 0.4 - 2 * var(--s) + var(--back-lift));
 }
 
 .actorFront {
@@ -378,6 +400,7 @@
 
 .tagBack {
   --dx: calc(var(--pair-step) / -2);
+  bottom: calc(var(--floor) * 0.4 + 62 * var(--s) + var(--pair-rise, 0px));
   max-width: calc(var(--ax) - var(--pair-step) / 2 + 4px);
   transform: translateX(calc(-100% + 12px));
 }
@@ -387,8 +410,8 @@
 }
 
 .tagFront {
-  --dx: calc(var(--pair-step) / 2);
-  max-width: calc(100% - var(--ax) - var(--pair-step) / 2 + 4px - var(--monitor-reach, 0px));
+  --dx: calc(var(--pair-step) / 2 + var(--tag-shift, 0px));
+  max-width: calc(100% - var(--ax) - var(--pair-step) / 2 - var(--tag-shift, 0px) + 4px - var(--monitor-reach, 0px));
   transform: translateX(-12px);
 }
 
@@ -576,6 +599,24 @@
     --ax-room: 27%;
     /* The monitor's span from the right edge, which a pair and its tags keep clear of. */
     --monitor-reach: calc(min(46%, calc(124px * var(--u))) + 16px);
+  }
+
+  .scene[data-cast='two'] {
+    --pair-rise: 0px;
+    --pair-behind: calc(3 * var(--p));
+    --tag-shift: 0px;
+    --pair-step: clamp(calc(60 * var(--s)), calc(100% - 16px - var(--monitor-reach) - 114 * var(--s)), calc(100 * var(--s)));
+  }
+
+  .scene[data-cast='two'] .lamp {
+    display: block;
+    left: auto;
+    right: 16px;
+    height: calc(44 * var(--s));
+  }
+
+  .riser {
+    display: none;
   }
 
   .monitor {
