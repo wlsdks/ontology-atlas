@@ -9,6 +9,7 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { parseSha256Checksum } from "../lib/macos-artifact/macos-checksum.mjs";
+import { isReleaseTag, parseReleaseTag } from "../lib/release-tag.mjs";
 
 const ROOT = process.cwd();
 const OUTPUT_PATH = path.join(
@@ -32,7 +33,6 @@ function fail(message) {
 function parseArgs(argv) {
   let tag = "";
   let unpublished = false;
-  let allowPrerelease = false;
   let allowDraft = false;
   let allowMissingWindows = false;
   let check = false;
@@ -40,19 +40,17 @@ function parseArgs(argv) {
     if (arg === "--") continue;
     if (arg === "--help" || arg === "-h") {
       console.log(
-        `Usage: pnpm download:release-facts [-- --tag=vX.Y.Z] [--unpublished] [--allow-draft] [--allow-prerelease] [--allow-missing-windows] [--check]\n\n` +
+        `Usage: pnpm download:release-facts [-- --tag=vX.Y.Z] [--unpublished] [--allow-draft] [--allow-missing-windows] [--check]\n\n` +
           `--check writes nothing. It regenerates the module for the newest published\n` +
-          `release (or --tag) and fails when the committed file differs, so a release\n` +
-          `whose facts were never applied cannot ship quietly.\n`,
+          `stable release (or --tag) and fails when the committed file differs, so a release\n` +
+          `whose facts were never applied cannot ship quietly.\n\n` +
+          `The page names stable releases only: a vX.Y.Z-beta.N tag or a release GitHub marks\n` +
+          `as a pre-release is refused, and no flag accepts one.\n`,
       );
       process.exit(0);
     }
     if (arg === "--unpublished") {
       unpublished = true;
-      continue;
-    }
-    if (arg === "--allow-prerelease") {
-      allowPrerelease = true;
       continue;
     }
     if (arg === "--allow-draft") {
@@ -73,7 +71,7 @@ function parseArgs(argv) {
     }
     fail(`unknown argument: ${arg}`);
   }
-  return { tag, unpublished, allowDraft, allowPrerelease, allowMissingWindows, check };
+  return { tag, unpublished, allowDraft, allowMissingWindows, check };
 }
 
 function defaultTag() {
@@ -81,16 +79,40 @@ function defaultTag() {
   return `v${pkg.version}`;
 }
 
-/** The newest published release (drafts and not-yet-run releases excluded): `--check` cannot default to the package version, because between a version bump and its release the repository is ahead of every published build. */
+function isStableTag(tagName) {
+  return isReleaseTag(tagName) && parseReleaseTag(tagName).channel === "stable";
+}
+
+/**
+ * The newest published stable release. Drafts, GitHub pre-releases and beta tags are skipped, so a
+ * beta published after the last stable release changes nothing this check compares. `--check`
+ * cannot default to the package version, because between a version bump and its release the
+ * repository is ahead of every published build.
+ */
+function newestStableTag(releases) {
+  if (!Array.isArray(releases)) return "";
+  const stable = releases.find(
+    (release) => release?.draft === false && release?.prerelease === false && isStableTag(release?.tag_name),
+  );
+  return stable?.tag_name ?? "";
+}
+
 function latestPublishedTag() {
-  const tagName = gh([
+  const listed = gh([
     "api",
-    `repos/${REPOSITORY}/releases`,
+    `repos/${REPOSITORY}/releases?per_page=50`,
     "--jq",
-    "[.[] | select(.draft == false)] | first | .tag_name // \"\"",
-  ]).trim();
+    "[.[] | {tag_name, draft, prerelease}]",
+  ]);
+  let releases;
+  try {
+    releases = JSON.parse(listed);
+  } catch (error) {
+    fail(`the release list is not JSON: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  const tagName = newestStableTag(releases);
   if (!tagName) {
-    fail(`${REPOSITORY} has no published (non-draft) release to compare against.`);
+    fail(`${REPOSITORY} has no published stable release to compare against.`);
   }
   return tagName;
 }
@@ -269,7 +291,7 @@ function compareModule(release) {
       `  published: ${release.tag}\n` +
       `The release workflow uploads this file as an artifact because its token cannot push to main.\n` +
       `Apply it, or regenerate locally:\n` +
-      `  pnpm download:release-facts -- --tag=${release.tag}${release.prerelease ? " --allow-prerelease" : ""}`,
+      `  pnpm download:release-facts -- --tag=${release.tag}`,
   );
 }
 
@@ -295,7 +317,7 @@ function writeModule(release) {
   }
 }
 
-const { tag: tagArg, unpublished, allowDraft, allowPrerelease, allowMissingWindows, check } =
+const { tag: tagArg, unpublished, allowDraft, allowMissingWindows, check } =
   parseArgs(process.argv.slice(2));
 
 if (check && unpublished) {
@@ -304,12 +326,17 @@ if (check && unpublished) {
 
 const tag = tagArg || (check ? latestPublishedTag() : defaultTag());
 
-/** `--check` does not re-litigate the prerelease decision: blocking a prerelease is an editorial guard on the write; the check only asks whether the committed facts still describe what is published. */
 const emit = check ? compareModule : writeModule;
-const prereleaseAllowed = allowPrerelease || check;
 
 if (!/^v/.test(tag)) {
   fail(`release tag must be v-prefixed, got ${tag}.`);
+}
+
+/** The beta channel never reaches `/download`: its tag is refused before any release is read. */
+if (isReleaseTag(tag) && parseReleaseTag(tag).channel === "beta") {
+  fail(
+    `${tag} is a beta release. The download page names stable releases only; promote the beta to ${parseReleaseTag(tag).stableTag} and generate the facts for that tag.`,
+  );
 }
 
 if (unpublished) {
@@ -340,11 +367,9 @@ if (release.draft && !allowDraft) {
   );
 }
 
-/** A prerelease is not what this page advertises: a release candidate must not be presented as the official build, so it is blocked unless featuring it is said with `--allow-prerelease`. */
-if (release.prerelease && !prereleaseAllowed) {
+if (release.prerelease) {
   fail(
-    `release ${tag} is a prerelease — the download page advertises the stable build.\n` +
-      `To pin a prerelease deliberately, pass --allow-prerelease. If you are waiting for a stable release, leave it as --unpublished.`,
+    `release ${tag} is a GitHub pre-release; the download page names stable releases only, and no flag accepts one.`,
   );
 }
 

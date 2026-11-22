@@ -10,7 +10,7 @@ const admittedSha = "a".repeat(40);
 function writeFakeGh(root, scenario) {
   const binPath = join(root, "fake-gh.mjs");
   const statePath = join(root, "state.json");
-  writeFileSync(statePath, JSON.stringify({ dispatched: false, runListCalls: 0 }));
+  writeFileSync(statePath, JSON.stringify({ dispatched: false, runListCalls: 0, calls: [] }));
   writeFileSync(
     binPath,
     `#!/usr/bin/env node
@@ -22,8 +22,32 @@ const state = JSON.parse(readFileSync(statePath, "utf8"));
 function save() { writeFileSync(statePath, JSON.stringify(state)); }
 function out(value) { process.stdout.write(typeof value === "string" ? value : JSON.stringify(value)); }
 function err(value) { process.stderr.write(value); }
+const tag = scenario.tag ?? "v0.1.0";
+state.calls.push(args.join(" "));
+save();
+if (args[0] === "workflow" && args[1] === "run" && args[2] === "e2e.yml") {
+  if (args[args.indexOf("--ref") + 1] !== tag) { err("browser suite dispatched on the wrong ref: " + args.join(" ")); process.exit(2); }
+  process.exit(scenario.browserDispatchFails ? 1 : 0);
+}
+if (args[0] === "workflow" && args[1] === "run" && args[2] === "publish-mcp-registry.yml") {
+  process.exit(0);
+}
+if (args[0] === "workflow" && args[1] === "run" && args[2] === "promote-release.yml") {
+  if (args[args.indexOf("--ref") + 1] !== "main" || !args.includes("beta_tag=" + scenario.promoteFrom)) { err("unsafe promotion dispatch: " + args.join(" ")); process.exit(2); }
+  state.dispatched = true;
+  save();
+  process.exit(0);
+}
+if (args[0] === "run" && args[1] === "list" && args.includes("promote-release.yml")) {
+  if (!state.dispatched) { err("run list queried before dispatch"); process.exit(2); }
+  out([
+    { databaseId: 777, displayTitle: "Promote Desktop Beta " + scenario.promoteFrom, headBranch: "main", headSha: "f".repeat(40), event: "workflow_dispatch", createdAt: "2000-01-01T00:00:00Z" },
+    { databaseId: 12345, displayTitle: "Promote Desktop Beta " + scenario.promoteFrom, headBranch: "main", headSha: "f".repeat(40), event: "workflow_dispatch", createdAt: new Date().toISOString(), url: "https://github.test/run/12345" },
+  ]);
+  process.exit(0);
+}
 if (args[0] === "workflow" && args[1] === "run") {
-  if (args[2] !== "release-macos.yml" || !args.includes("--ref") || !args.includes("main") || !args.includes("tag=v0.1.0")) {
+  if (args[2] !== "release-macos.yml" || !args.includes("--ref") || !args.includes("main") || !args.includes("tag=" + tag)) {
     err("unsafe dispatch args: " + args.join(" "));
     process.exit(2);
   }
@@ -52,7 +76,7 @@ if (args[0] === "run" && args[1] === "list") {
   }
   out([
     { databaseId: 99999, displayTitle: "Unrelated maintenance", headBranch: "main", headSha: "${"a".repeat(40)}", event: "workflow_dispatch", workflowName: "Release Desktop" },
-    { databaseId: 12345, displayTitle: "Release Desktop v0.1.0", headBranch: "main", status: "in_progress", conclusion: "", url: "https://github.test/run/12345", headSha: "${"a".repeat(40)}", event: "workflow_dispatch", workflowName: "Release Desktop" },
+    { databaseId: 12345, displayTitle: "Release Desktop " + tag, headBranch: "main", status: "in_progress", conclusion: "", url: "https://github.test/run/12345", headSha: "${"a".repeat(40)}", event: "workflow_dispatch", workflowName: "Release Desktop" },
   ]);
   process.exit(0);
 }
@@ -87,7 +111,7 @@ function withFakeGh(scenario, run) {
   const root = mkdtempSync(join(tmpdir(), "omo-release-run-"));
   try {
     const fakeGhPath = writeFakeGh(root, scenario);
-    run(fakeGhPath);
+    run(fakeGhPath, () => JSON.parse(readFileSync(join(root, "state.json"), "utf8")).calls);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -165,4 +189,62 @@ test("desktop release run help describes protected-main dispatch and watch", () 
   assert.match(stdout, /protected ref/);
   assert.match(stdout, /refreshes what \/download says/);
   assert.match(stdout, /Merging\s+that PR is what moves the public download page/);
+});
+
+test("a direct stable cut also starts the whole browser suite on its tag", () => {
+  withFakeGh({}, (fakeGhPath, calls) => {
+    const result = runReleaseRun(fakeGhPath);
+    assert.equal(result.status, 0, result.stderr);
+    assert.ok(calls().some((call) => call.startsWith("workflow run e2e.yml") && call.includes("--ref v0.1.0")), calls().join("\n"));
+    assert.match(result.stdout, /started e2e\.yml on v0\.1\.0/);
+  });
+});
+
+test("a beta cut starts the browser suite, never refreshes /download, and prints the promotion", () => {
+  withFakeGh({ tag: "v0.1.0-beta.1" }, (fakeGhPath, calls) => {
+    const result = runReleaseRun(fakeGhPath, ["--tag=v0.1.0-beta.1", `--sha=${admittedSha}`, "--attempts=2", "--interval-ms=1"]);
+    assert.equal(result.status, 0, result.stderr);
+    assert.ok(calls().some((call) => call.startsWith("workflow run e2e.yml") && call.includes("--ref v0.1.0-beta.1")));
+    assert.ok(calls().some((call) => call.startsWith("workflow run release-macos.yml") && call.includes("tag=v0.1.0-beta.1")));
+    assert.match(result.stdout, /published as a beta release: a GitHub pre-release with no latest\.json/);
+    assert.match(result.stdout, /git tag v0\.1\.0 "v0\.1\.0-beta\.1\^\{commit\}" && git push origin v0\.1\.0/);
+    assert.match(result.stdout, /pnpm desktop:release-run -- --tag=v0\.1\.0 --promote-from=v0\.1\.0-beta\.1/);
+    assert.doesNotMatch(result.stdout, /refreshing \/download/);
+  });
+});
+
+test("a failed browser-suite dispatch is reported and does not stop the cut", () => {
+  withFakeGh({ tag: "v0.1.0-beta.1", browserDispatchFails: true }, (fakeGhPath) => {
+    const result = runReleaseRun(fakeGhPath, ["--tag=v0.1.0-beta.1", `--sha=${admittedSha}`, "--attempts=2", "--interval-ms=1"]);
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /start it yourself: gh workflow run e2e\.yml --repo wlsdks\/ontology-atlas --ref v0\.1\.0-beta\.1/);
+  });
+});
+
+test("promotion dispatches the promote workflow from main, watches this run, lists the registry and refreshes /download", () => {
+  withFakeGh({ promoteFrom: "v0.1.0-beta.1" }, (fakeGhPath, calls) => {
+    const result = runReleaseRun(fakeGhPath, ["--tag=v0.1.0", "--promote-from=v0.1.0-beta.1", "--attempts=2", "--interval-ms=1"]);
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /watching promote-release\.yml run 12345/);
+    assert.ok(calls().some((call) => call === "workflow run publish-mcp-registry.yml --repo wlsdks/ontology-atlas --ref main -f tag=v0.1.0"));
+    assert.equal(calls().some((call) => call.includes("release-macos.yml") || call.includes("e2e.yml")), false, "promotion must not cut or rebuild");
+    assert.match(result.stdout, /refreshing \/download for v0\.1\.0/);
+  });
+});
+
+test("refuses a tag outside the two shapes and a promotion that does not match its tag", () => {
+  withFakeGh({}, (fakeGhPath, calls) => {
+    const cases = [
+      [["--tag=v0.1.0-rc.1"], /--tag must be vMAJOR\.MINOR\.PATCH or vMAJOR\.MINOR\.PATCH-beta\.N/],
+      [["--tag=v0.2.0", "--promote-from=v0.1.0-beta.1"], /promotes to v0\.1\.0, not v0\.2\.0/],
+      [["--tag=v0.1.0", "--promote-from=v0.1.0"], /--promote-from must name a beta tag/],
+      [["--tag=v0.1.0-beta.1", "--refresh-only"], /nothing to refresh/],
+    ];
+    for (const [args, message] of cases) {
+      const result = runReleaseRun(fakeGhPath, args);
+      assert.equal(result.status, 1, args.join(" "));
+      assert.match(result.stderr, message);
+    }
+    assert.deepEqual(calls(), []);
+  });
 });

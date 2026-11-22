@@ -193,6 +193,14 @@ export function phaseAfterFailedCheck({
 
 const BYTES_PER_MEGABYTE = 1024 * 1024;
 
+/**
+ * The feed's version is `X.Y.Z+<commit>` so the app can tell two builds of one version apart
+ * (`src-tauri/src/update_offer.rs`). A person reads `X.Y.Z`, and Later remembers that.
+ */
+export function releaseVersion(feedVersion: string): string {
+  return feedVersion.split('+', 1)[0] ?? feedVersion;
+}
+
 export function formatMegabytes(bytes: number): string {
   return (Math.max(0, bytes) / BYTES_PER_MEGABYTE).toFixed(1);
 }

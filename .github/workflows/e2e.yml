@@ -17,6 +17,10 @@
 # and GitHub's own merge queue becomes available. Until then no merge group is
 # ever created, so the trigger is inert rather than wrong.
 name: E2E smoke
+# A whole run says so in its title, because the title outlives the repository's one-day artifact
+# retention: `pnpm desktop:release-browser-gate` reads it to admit a stable release days later.
+# Every other run keeps GitHub's default title.
+run-name: ${{ (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.plan_from == '')) && 'Browser suite: whole run' || '' }}
 
 on:
   pull_request:
