@@ -12,6 +12,7 @@
     "**/globals.css"
   ],
   "scripts": {
+    "brand:cast-preview": "node scripts/brand/moru-cast/preview.mjs",
     "brand:sprites": "node scripts/brand/build-moru-sprites.mjs",
     "brand:work-clips": "node scripts/brand/author-moru-work-clips.mjs",
     "brand:cast": "node scripts/brand/build-moru-cast.mjs",
