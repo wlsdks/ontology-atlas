@@ -180,7 +180,7 @@ export const DELETE_CONCEPT_TOOL = {
       force: {
         type: 'boolean',
         description:
-          'Delete despite backlinks.',
+          'Delete despite backlinks; the referrers are left dangling.',
       },
       expected_mtime: {
         type: 'number',

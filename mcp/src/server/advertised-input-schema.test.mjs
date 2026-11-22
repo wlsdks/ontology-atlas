@@ -107,3 +107,17 @@ test('an add_concepts row says what a body holds and that it is written in this 
   }
   assert.equal(TOOL_BY_NAME.get('add_concept').inputSchema.properties.body.description.startsWith(body.description), true);
 });
+
+test('absorb_document asks for the reviewed dry-run first and calls the outside-repo flag a destructive opt-in', () => {
+  const tool = TOOL_BY_NAME.get('absorb_document');
+  assert.match(tool.description, /Review the dry-run first: without confirm: true nothing is written\./);
+  assert.match(tool.description, /reviewed dry-run plus allowOutsideRepo:true/);
+  assert.match(tool.inputSchema.properties.allowOutsideRepo.description, /^Explicit destructive opt-in/);
+});
+
+test('destructive and approval limits keep their meaning in tools/list', () => {
+  assert.match(TOOL_BY_NAME.get('delete_concept').inputSchema.properties.force.description, /referrers are left dangling/);
+  for (const name of ['add_relation', 'add_relations']) {
+    assert.match(TOOL_BY_NAME.get(name).description, /infer_imports\.moduleEdges.*(human approval|the user's acceptance) first/, name);
+  }
+});

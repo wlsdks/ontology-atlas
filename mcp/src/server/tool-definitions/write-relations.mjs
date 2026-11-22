@@ -60,7 +60,7 @@ export const ADD_RELATIONS_TOOL = {
   name: 'add_relations',
   description:
     'Add several typed relations in one call (max 50), each row shaped like `add_relation`; use it for the edges of a construction batch. ' +
-    'Imports alone do not justify an edge: review exact evidence and give every new `depends_on` a nonblank `why`. ' +
+    'Give every new `depends_on` a nonblank `why`; an edge from imports alone, such as `infer_imports.moduleEdges`, needs exact-evidence review and the user\'s acceptance first. ' +
     'Rows are independent, idempotent and not rolled back: an existing edge returns `alreadyExists: true`; a bad row (missing slug, unknown type, unknown field) returns `{ok: false, error}` labelled `relations[n]` with a closest-value hint and repair fields, in input order. ' +
     '`mtimes` maps each source whose first changed row passed `expected_mtime` to its new mtime; when rows share one `from`, guard only its first row. ' +
     'Invalid-only batches return no row-level `changed` / `alreadyExists` write metadata and no top-level `findings`; otherwise the response includes ' + WRITE_FINDINGS_GUIDANCE + '.',
