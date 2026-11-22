@@ -169,6 +169,7 @@ What each contributor command answers, sorted by command.
 | `node scripts/ci/run-playwright-ci.mjs --help` | Browser shard options, including `--only` for a named set of spec files, without discovering or running tests; unknown options fail before execution |
 | `pnpm agents:check` | Each harness's instruction files are valid; Codex and Claude files need not match |
 | `pnpm brand:cast` | Redraw the Work status rows for each Moru cast character (body palette and head piece) into `public/brand/mascot-<row>-row-128-<character>.png`; run after `pnpm brand:sprites` |
+| `pnpm brand:cast-preview` | Regenerate the whole Moru cast preview from `scripts/brand/moru-cast/` (every clip as strips and GIFs, measurements, contact sheets, the life prototype page and the farm page) into git-ignored `output/moru-cast/`; nothing it writes ships. Plan: `docs/specs/2026-11-22-moru-cast.md` |
 | `pnpm brand:sprites` | Rebuild Moru sprites, 85 animation exports, 16 poses and compass sizes from retained project sources; inspect `assets/brand/moru/preview.html` |
 | `pnpm brand:work-clips` | Redraw the eleven code-drawn Work status clips from `scripts/brand/moru-work-clips.mjs` into `assets/brand/moru/source/motion-v10/` and their `moru-source.json` entries; run `pnpm brand:sprites` after it |
 | `pnpm brief:new -- --slug=<slug> --owns=<path,...>` | A delegation brief with the port, scratch, checks and merge lines filled in |
@@ -198,7 +199,7 @@ What each contributor command answers, sorted by command.
 | `pnpm integration:start <topic>` | Create `integration/<topic>-<yyyy-mm-dd>` from `origin/main` in `.claude/worktrees/integration-<topic>`, push it, and install that worktree offline; no CI runs |
 | `pnpm knip` | Dead files, exports and types |
 | `pnpm licenses:check` · `pnpm notice:build` · `pnpm notice:check` | Shipped packages are on the license allow-list, and `NOTICE.md` is current ([rules](engineering/third-party-code.md)) |
-| `pnpm mcp:tools-list-bytes` | What `tools/list` costs a connected agent, read from the booted stdio server for the full and the construction profile: per tool, the model-read bytes (name, description and input schema), the output schema and the whole entry, then the totals; `-- --json` prints the same as JSON |
+| `pnpm mcp:tools-list-bytes` | What `tools/list` costs a connected agent, read from the booted stdio server for the full and the construction profile: per tool, the model-read bytes (name, description and input schema), the output schema and the whole entry, then the totals and the whole `tools/list` response; `-- --json` prints the same as JSON |
 | `pnpm messages:build` · `pnpm messages:check` · `pnpm messages:adopt` | Compose `messages/<locale>.json` from one file per namespace, prove it current, and carry an old branch's edits |
 | `pnpm messages:coverage -- --locale <code>` | Checks one locale's strings against `en`: arguments, plurals, script, keep-terms and typography |
 | `pnpm og:build` | Re-render the 1200×630 link-preview card for each locale into `public/og/` and `public/og-image.png` from the download headline; macOS for the Japanese and Chinese faces |

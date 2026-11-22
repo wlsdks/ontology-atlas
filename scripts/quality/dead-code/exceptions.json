@@ -466,6 +466,60 @@
       "reason": "The output-schema conformance test runs real answers through the MCP SDK's own client validator, the one an SDK host runs on structuredContent; mcp/package.json lists the SDK, but the root lanes take every *.test.mjs as an entry and judge it against the root manifest.",
       "consumer": "mcp/src/server/output-schema-conformance.test.mjs",
       "witness": "@modelcontextprotocol/server/validators/ajv"
+    },
+    {
+      "key": "scripts:runtime:files:scripts/brand/moru-cast/actor-gap.mjs:scripts/brand/moru-cast/actor-gap.mjs",
+      "reason": "A Moru cast measuring script run by hand from the command line; preview.mjs lists how to run it.",
+      "consumer": "scripts/brand/moru-cast/preview.mjs",
+      "witness": "scripts/brand/moru-cast/actor-gap.mjs"
+    },
+    {
+      "key": "scripts:runtime:files:scripts/brand/moru-cast/life/behaviour.mjs:scripts/brand/moru-cast/life/behaviour.mjs",
+      "reason": "The Moru life runtime is inlined into the preview page as text by life/build-page.mjs and imported by the measuring scripts that preview.mjs lists.",
+      "consumer": "scripts/brand/moru-cast/preview.mjs",
+      "witness": "scripts/brand/moru-cast/life/behaviour.mjs"
+    },
+    {
+      "key": "scripts:runtime:files:scripts/brand/moru-cast/life/browser/capture.mjs:scripts/brand/moru-cast/life/browser/capture.mjs",
+      "reason": "A Moru cast measuring script run by hand from the command line; preview.mjs lists how to run it.",
+      "consumer": "scripts/brand/moru-cast/preview.mjs",
+      "witness": "scripts/brand/moru-cast/life/browser/capture.mjs"
+    },
+    {
+      "key": "scripts:runtime:files:scripts/brand/moru-cast/life/browser/cover-page.mjs:scripts/brand/moru-cast/life/browser/cover-page.mjs",
+      "reason": "A Moru cast measuring script run by hand from the command line; preview.mjs lists how to run it.",
+      "consumer": "scripts/brand/moru-cast/preview.mjs",
+      "witness": "scripts/brand/moru-cast/life/browser/cover-page.mjs"
+    },
+    {
+      "key": "scripts:runtime:files:scripts/brand/moru-cast/life/browser/cpu.mjs:scripts/brand/moru-cast/life/browser/cpu.mjs",
+      "reason": "A Moru cast measuring script run by hand from the command line; preview.mjs lists how to run it.",
+      "consumer": "scripts/brand/moru-cast/preview.mjs",
+      "witness": "scripts/brand/moru-cast/life/browser/cpu.mjs"
+    },
+    {
+      "key": "scripts:runtime:files:scripts/brand/moru-cast/life/browser/heap.mjs:scripts/brand/moru-cast/life/browser/heap.mjs",
+      "reason": "A Moru cast measuring script run by hand from the command line; preview.mjs lists how to run it.",
+      "consumer": "scripts/brand/moru-cast/preview.mjs",
+      "witness": "scripts/brand/moru-cast/life/browser/heap.mjs"
+    },
+    {
+      "key": "scripts:runtime:files:scripts/brand/moru-cast/life/browser/where.mjs:scripts/brand/moru-cast/life/browser/where.mjs",
+      "reason": "A Moru cast measuring script run by hand from the command line; preview.mjs lists how to run it.",
+      "consumer": "scripts/brand/moru-cast/preview.mjs",
+      "witness": "scripts/brand/moru-cast/life/browser/where.mjs"
+    },
+    {
+      "key": "scripts:runtime:files:scripts/brand/moru-cast/life/measure-life.mjs:scripts/brand/moru-cast/life/measure-life.mjs",
+      "reason": "A Moru cast measuring script run by hand from the command line; preview.mjs lists how to run it.",
+      "consumer": "scripts/brand/moru-cast/preview.mjs",
+      "witness": "scripts/brand/moru-cast/life/measure-life.mjs"
+    },
+    {
+      "key": "scripts:runtime:files:scripts/brand/moru-cast/life/pose-variety.mjs:scripts/brand/moru-cast/life/pose-variety.mjs",
+      "reason": "A Moru cast measuring script run by hand from the command line; preview.mjs lists how to run it.",
+      "consumer": "scripts/brand/moru-cast/preview.mjs",
+      "witness": "scripts/brand/moru-cast/life/pose-variety.mjs"
     }
   ]
 }
