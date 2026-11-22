@@ -301,8 +301,6 @@ export type RoomState =
   | { kind: 'missing' }
   | { kind: 'unheld'; lastCommitAt: number | null };
 
-export type RoomStateKind = RoomState['kind'];
-
 /** Front-stage priority: what needs a person, then what runs, then what a session holds idle. */
 export type RoomTier = 'attention' | 'working' | 'held' | 'unheld';
 

@@ -1,7 +1,8 @@
+import { existsSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { WorkStatusSnapshot, WorktreeRow } from '@/shared/lib/work-status/tauri-work-status';
 import { buildWorkTracks, planRooms, type RoomPlan } from '@/shared/lib/work-status/work-tracks';
-import { ROOM_PROPS, cartLoad, moruPhase, retireeOf, roomIdentity, roomLook, roomOnce, withRetirees } from './room-look';
+import { MORU_CAST, ROOM_PROPS, cartLoad, castRooms, moruCharacter, moruPhase, retireeOf, roomIdentity, roomLook, roomOnce, withRetirees, type RoomClip } from './room-look';
 
 const NOW_MS = 1_795_260_000_000;
 
@@ -91,14 +92,62 @@ describe('moruPhase', () => {
 });
 
 describe('roomIdentity', () => {
-  it('keeps a branch its own mirroring and prop, and spreads both across branches', () => {
+  it('keeps a branch its own prop, and spreads the props across branches', () => {
     const branches = Array.from({ length: 60 }, (_, index) => `feat/branch-${index}`);
     const identities = branches.map(roomIdentity);
     expect(roomIdentity('feat/branch-7')).toEqual(identities[7]);
-    const mirrored = identities.filter(identity => identity.mirrored).length;
-    expect(mirrored).toBeGreaterThan(18);
-    expect(mirrored).toBeLessThan(42);
     expect(new Set(identities.map(identity => identity.prop)).size).toBe(ROOM_PROPS);
+  });
+});
+
+describe('moruCharacter', () => {
+  it('gives a branch the same preferred Moru every time, and spreads the preference across the cast', () => {
+    const branches = Array.from({ length: 120 }, (_, index) => `feat/branch-${index}`);
+    const characters = branches.map(moruCharacter);
+    expect(branches.map(moruCharacter)).toEqual(characters);
+    // 24 each on an even spread; no character is missing or takes twice its share.
+    for (const character of MORU_CAST) expect(characters.filter(found => found === character).length).toBeGreaterThan(12);
+    for (const character of MORU_CAST) expect(characters.filter(found => found === character).length).toBeLessThan(48);
+  });
+});
+
+describe('castRooms', () => {
+  const rooms = (...branches: string[]) => branches.map(branch => ({ key: branch, branch, base: false }));
+  // Five branches the cast's preferences collide on: two prefer one character, two another.
+  const five = rooms('feat/library-stage', 'feat/work-status-rooms', 'feat/map-light', 'feat/moru-cast-rooms', 'fix/rail-tooltip');
+
+  it('gives five rooms five different characters, and the main checkout the grey original', () => {
+    const cast = castRooms([{ key: 'main', branch: 'main', base: true }, ...five]);
+    expect(cast.get('main')).toBe('grey');
+    expect(new Set(five.map(room => cast.get(room.key)))).toEqual(new Set(MORU_CAST));
+    expect(cast.get('feat/library-stage')).toBe(moruCharacter('feat/library-stage'));
+  });
+
+  it('leaves the older rooms their Moru when a newer room arrives, and repeats the least used only once all are in use', () => {
+    const before = castRooms(five);
+    const after = castRooms([...five, ...rooms('feat/sixth', 'feat/seventh')]);
+    for (const room of five) expect(after.get(room.key)).toBe(before.get(room.key));
+    expect(after.get('feat/sixth')).not.toBe(after.get('feat/seventh'));
+  });
+
+  it('changes no room older than one that leaves', () => {
+    const before = castRooms(five);
+    const after = castRooms(five.filter(room => room.key !== 'feat/map-light'));
+    for (const room of five.slice(0, 2)) expect(after.get(room.key)).toBe(before.get(room.key));
+  });
+
+  it('has every row a room can play drawn for every character', () => {
+    const states = [
+      { kind: 'working', tools: ['codex', 'claudeCode'] }, { kind: 'resting', quietSinceMs: 0 }, { kind: 'dozing', quietSinceMs: 0 },
+      { kind: 'merged' }, { kind: 'locked' }, { kind: 'lockLeft', tool: 'claudeCode' }, { kind: 'missing' },
+    ] as const;
+    const rows = new Set<RoomClip>(['galumph', 'galumph-left', 'merge-cheer', 'crate-send', 'settle-in']);
+    for (const state of states) {
+      const look = roomLook(state);
+      rows.add(look.clip).add(look.backClip);
+    }
+    const missing = [...rows].flatMap(row => MORU_CAST.map(character => `public/brand/mascot-${row}-row-128-${character}.png`)).filter(file => !existsSync(file));
+    expect(missing).toEqual([]);
   });
 });
 

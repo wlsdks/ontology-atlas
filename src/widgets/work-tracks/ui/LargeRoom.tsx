@@ -4,7 +4,7 @@ import { useEffect, useState, type CSSProperties } from 'react';
 import type { RoomEntry } from '@/shared/lib/work-status/work-tracks';
 import { cn } from '@/shared/lib/cn';
 import { MOTION } from '@/shared/motion';
-import { CART_CRATES, cartLoad, moruPhase, roomIdentity, roomLook, roomOnce } from '../model/room-look';
+import { CART_CRATES, cartLoad, moruPhase, roomIdentity, roomLook, roomOnce, type MoruCharacter } from '../model/room-look';
 import { MERGE_LIGHTS_OUT_MS } from '../model/moru-clock';
 import { useRise } from '../model/use-rise';
 import type { RoomUnit } from '../model/building-layout';
@@ -170,8 +170,10 @@ function Cart({ room, landing }: { room: RoomEntry; landing: number }) {
  * hatch in the side wall, and the belt is a track in the floor that leaves through it. Two tools in
  * one folder: the second Moru stands behind the first on his tail side, both facing the screen.
  */
-export function LargeRoom({ room, unit, wide, copy, tint, guestTint, retiring, entered, faceId }: {
+export function LargeRoom({ room, unit, wide, copy, tint, guestTint, retiring, entered, faceId, character }: {
   room: RoomEntry;
+  /** The room's Moru, cast across the building. */
+  character: MoruCharacter;
   unit: RoomUnit;
   /** At least `WIDE_ROOM_W`: the screen stands on a console beside Moru, not on the wall above him. */
   wide: boolean;
@@ -221,14 +223,14 @@ export function LargeRoom({ room, unit, wide, copy, tint, guestTint, retiring, e
         {pair ? (
           <>
             <i className={cn(styles.contact, styles.actorBack)} />
-            <span className={cn(styles.actor, styles.actorBack)}><RoomMoru live slot="back" clip={look.backClip} still={look.still} zoom="var(--u)" tint={guestTint} phase={(moruPhase(room.key) + 0.5) % 1} /></span>
+            <span className={cn(styles.actor, styles.actorBack)}><RoomMoru live slot="back" character={character} clip={look.backClip} still={look.still} zoom="var(--u)" tint={guestTint} phase={(moruPhase(room.key) + 0.5) % 1} /></span>
           </>
         ) : null}
         {look.cast !== 'none' ? (
           <>
             <i className={styles.contact} />
             <span className={styles.actor}>
-              <RoomMoru live clip={look.clip} still={look.still} zoom="var(--u)" tint={tint} phase={moruPhase(room.key)} once={request} />
+              <RoomMoru live character={character} clip={look.clip} still={look.still} zoom="var(--u)" tint={tint} phase={moruPhase(room.key)} once={request} />
             </span>
           </>
         ) : null}

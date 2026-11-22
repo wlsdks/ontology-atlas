@@ -9,7 +9,7 @@ import { NON_BLANK_STRING_SCHEMA } from './field-primitives.mjs';
 import { RELATION_ARRAY_PATCH_SCHEMA } from './vault-node-shapes.mjs';
 
 const POST_WRITE_MAINTENANCE_GUIDANCE =
-  'compact `postWriteMaintenance`: the remaining maintenance_plan queue in `byPhase` / `bySeverity` / `byKind` buckets, actions with `score` and executable `proposedAction`, and the page\'s `nextExecutableAction` / `nextReviewAction`';
+  '`postWriteMaintenance` (byPhase, bySeverity, byKind, score, proposedAction, nextExecutableAction, nextReviewAction)';
 const COMPACT_MAINTENANCE_PROPOSED_ACTION_TOOLS = Object.freeze(['add_concept', 'add_relation', 'patch_concept']);
 const COMPACT_MAINTENANCE_PROPOSED_ACTION_ARGS_OUTPUT_SCHEMA = Object.freeze({
   oneOf: [
@@ -33,7 +33,7 @@ const COMPACT_MAINTENANCE_PROPOSED_ACTION_ARGS_OUTPUT_SCHEMA = Object.freeze({
           type: 'string',
           maxLength: 300,
           description:
-            'One-line rationale for this relation ("A leans on B because ..."). Stored in the SAME frontmatter write as the ref (relation_notes map) — write it whenever you know the reason; a graph edge without a why is a mind-map line, not an ontology claim.',
+            'One-line rationale ("A leans on B because ..."), stored in relation_notes in the same write. Required for a new depends_on.',
         },
       },
       required: ['from', 'to', 'type'],

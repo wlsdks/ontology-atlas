@@ -21,6 +21,20 @@ export function nonBlankStringSchemaFailure(schema) {
   );
 }
 
+/**
+ * A top-level non-blank input string is advertised as a bare string: the server
+ * refuses a blank or padded value before the handler runs
+ * (`mcp/src/server/advertised-input-schema.mjs`). A pattern, if present, must
+ * still be the non-blank one.
+ */
+export function topLevelInputStringSchemaFailure(schema) {
+  return !(
+    schema?.type === 'string' &&
+    (schema.minLength === undefined || schema.minLength === 1) &&
+    (schema.pattern === undefined || schema.pattern === NON_BLANK_STRING_PATTERN)
+  );
+}
+
 const BACKLINK_IDENTITY_BRANCHES = [
   {
     properties: { isNode: { const: true } },

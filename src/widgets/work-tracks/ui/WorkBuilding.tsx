@@ -14,6 +14,8 @@ import { retireeOf, roomAlertOf, roomLook, withRetirees, type Retiree } from '..
 import { FADE_MS, MOVE_MS } from '../model/room-sequence';
 import { FACE_KEPT_EVENT, FACE_LEFT_EVENT, exitRoom, translate, useRoomMotion } from '../model/use-room-motion';
 import { useStableOrder } from '../model/use-stable-order';
+import { useRoomCast } from '../model/use-room-cast';
+import type { MoruCharacter } from '../model/room-look';
 import { BranchName } from './BranchName';
 import { LargeRoom } from './LargeRoom';
 import { MiniRoom } from './MiniRoom';
@@ -87,10 +89,10 @@ interface FaceSize {
 /** A leaving face fades out the room it showed, not the room's new state: its Moru, tag and monitor stay as they were. */
 type LeavingFace = FaceSize & { room: RoomEntry };
 
-function RoomFace({ room, face, copy, retiring, showOwner }: { room: RoomEntry; face: FaceSize; copy: RoomCopy; retiring: boolean; showOwner: boolean }) {
+function RoomFace({ room, face, copy, retiring, showOwner, character }: { room: RoomEntry; face: FaceSize; copy: RoomCopy; retiring: boolean; showOwner: boolean; character: MoruCharacter }) {
   return face.size === 'large'
-    ? <LargeRoom room={room} unit={face.unit} wide={face.w >= WIDE_ROOM_W} copy={copy} tint={tintOf(room.session)} guestTint={tintOf(room.guests[0] ?? null)} retiring={retiring} entered={face.entered} faceId={face.id} />
-    : <MiniRoom room={room} copy={copy} tint={tintOf(room.session)} showOwner={showOwner} />;
+    ? <LargeRoom room={room} unit={face.unit} wide={face.w >= WIDE_ROOM_W} copy={copy} tint={tintOf(room.session)} guestTint={tintOf(room.guests[0] ?? null)} retiring={retiring} entered={face.entered} faceId={face.id} character={character} />
+    : <MiniRoom room={room} copy={copy} tint={tintOf(room.session)} showOwner={showOwner} character={character} />;
 }
 
 /** A merged room fades its content to its own wall, then the wall fades, in the last moments of its stay. */
@@ -109,6 +111,8 @@ interface RoomProps {
   entered: boolean;
   /** A room that left: drawn once more from where it was, fading away. */
   ghost?: { from: Box; onDone: (key: string) => void };
+  /** The room's Moru, cast across the whole building. */
+  character: MoruCharacter;
 }
 
 const sameBox = (a: RoomBox, b: RoomBox) => a.x === b.x && a.y === b.y && a.w === b.w && a.h === b.h && a.size === b.size && a.unit === b.unit;
@@ -119,7 +123,7 @@ const sameBox = (a: RoomBox, b: RoomBox) => a.x === b.x && a.y === b.y && a.w ==
  */
 function sameRoomProps(a: RoomProps, b: RoomProps) {
   return a.copy === b.copy && a.retiring === b.retiring && a.showOwner === b.showOwner && a.reduced === b.reduced && a.entered === b.entered
-    && a.windowKey === b.windowKey && a.ghost === b.ghost && sameBox(a.box, b.box)
+    && a.windowKey === b.windowKey && a.ghost === b.ghost && a.character === b.character && sameBox(a.box, b.box)
     && (a.room === b.room || JSON.stringify(a.room) === JSON.stringify(b.room));
 }
 
@@ -131,7 +135,7 @@ const Room = memo(DrawnRoom, sameRoomProps);
  * (`useRoomMotion` plays that); the new face is drawn hidden and fades in once the room has arrived,
  * so a room never shows two faces. When the window itself resizes, the face takes the new size at once.
  */
-function DrawnRoom({ room, box, copy, retiring, showOwner, reduced, windowKey, entered, ghost }: RoomProps) {
+function DrawnRoom({ room, box, copy, retiring, showOwner, reduced, windowKey, entered, ghost, character }: RoomProps) {
   const ghostFrom = ghost?.from;
   const onGhostDone = ghost?.onDone;
   const [faces, setFaces] = useState<FaceState>({
@@ -235,11 +239,11 @@ function DrawnRoom({ room, box, copy, retiring, showOwner, reduced, windowKey, e
           className={cn(styles.face, styles.notched)}
           style={{ width: faces.leaving.w, height: faces.leaving.h }}
         >
-          <RoomFace room={faces.leaving.room} face={faces.leaving} copy={copy} retiring={retiring} showOwner={showOwner} />
+          <RoomFace room={faces.leaving.room} face={faces.leaving} copy={copy} retiring={retiring} showOwner={showOwner} character={character} />
         </div>
       ) : null}
       <div key={`face-${current.id}`} data-room-face data-wide={current.w >= WIDE_ROOM_W} data-spread={current.size === 'mini' && current.w >= SPREAD_MINI_W} data-unit={current.unit} className={cn(styles.face, styles.notched, 'h-full w-full')}>
-        {faces.ready ? <RoomFace room={room} face={current} copy={copy} retiring={retiring} showOwner={showOwner} /> : null}
+        {faces.ready ? <RoomFace room={room} face={current} copy={copy} retiring={retiring} showOwner={showOwner} character={character} /> : null}
       </div>
     </div>
   );
@@ -411,6 +415,8 @@ const SHELF_DOM_ID = 'work-room-shelf';
 interface Ghost {
   room: RoomEntry;
   box: RoomBox;
+  /** The Moru it had, kept while it fades. */
+  character: MoruCharacter;
   /** A merged room leaves with its lights already out. */
   retiring: boolean;
   from: Box;
@@ -479,14 +485,14 @@ export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs }: {
     hasShelf,
   }), [size, shown, hasShelf]);
 
-  const lastDrawn = useRef(new Map<string, { room: RoomEntry; box: RoomBox; retiring: boolean }>());
+  const lastDrawn = useRef(new Map<string, { room: RoomEntry; box: RoomBox; retiring: boolean; character: MoruCharacter }>());
   const [ghosts, setGhosts] = useState<Ghost[]>([]);
   const onRemoved = useCallback((removed: Map<string, Box>) => {
     const left: Ghost[] = [];
     for (const [key, from] of removed) {
       const drawn = lastDrawn.current.get(key);
       // A merged room has already faded where it stood; only a room that left otherwise fades now.
-      if (drawn && !drawn.retiring) left.push({ room: drawn.room, box: drawn.box, retiring: drawn.retiring, from });
+      if (drawn && !drawn.retiring) left.push({ room: drawn.room, box: drawn.box, retiring: drawn.retiring, character: drawn.character, from });
     }
     if (left.length > 0) setGhosts(current => [...current.filter(ghost => !removed.has(ghost.room.key)), ...left]);
   }, []);
@@ -496,12 +502,13 @@ export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs }: {
   useAmbientMotion(boardRef, layout.rooms, reduced);
 
   const entries = useMemo(() => allRooms(shown).map(({ room }) => room), [shown]);
+  const characterOf = useRoomCast(entries);
   useLayoutEffect(() => {
     lastDrawn.current = new Map(entries.flatMap(room => {
       const box = layout.rooms.get(room.key);
-      return box ? [[room.key, { room, box, retiring: retiring.has(room.key) }] as const] : [];
+      return box ? [[room.key, { room, box, retiring: retiring.has(room.key), character: characterOf(room) }] as const] : [];
     }));
-  }, [entries, layout, retiring]);
+  }, [entries, layout, retiring, characterOf]);
 
   // Elements keep their first order; the region reads them in the plan's order.
   const drawnRooms = useStableOrder(entries, roomKeyOf);
@@ -559,12 +566,12 @@ export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs }: {
               </Placed>
             ) : null}
             {ghosts.map(ghost => (
-              <Room key={`ghost:${ghost.room.key}`} room={ghost.room} box={ghost.box} copy={copy} retiring={ghost.retiring} showOwner={!layout.banded} reduced={reduced} windowKey={windowKey} entered={false} ghost={{ from: ghost.from, onDone: forgetGhost }} />
+              <Room key={`ghost:${ghost.room.key}`} room={ghost.room} box={ghost.box} copy={copy} retiring={ghost.retiring} showOwner={!layout.banded} reduced={reduced} windowKey={windowKey} entered={false} ghost={{ from: ghost.from, onDone: forgetGhost }} character={ghost.character} />
             ))}
             {drawnRooms.map(room => {
               const box = layout.rooms.get(room.key);
               return box ? (
-                <Room key={room.key} room={room} box={box} copy={copy} retiring={retiring.has(room.key)} showOwner={!layout.banded} reduced={reduced} windowKey={windowKey} entered={firstDrawn !== null && !firstDrawn.has(room.key)} />
+                <Room key={room.key} room={room} box={box} copy={copy} retiring={retiring.has(room.key)} showOwner={!layout.banded} reduced={reduced} windowKey={windowKey} entered={firstDrawn !== null && !firstDrawn.has(room.key)} character={characterOf(room)} />
               ) : null;
             })}
             {layout.shelf ? (

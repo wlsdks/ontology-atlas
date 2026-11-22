@@ -2,7 +2,7 @@
 
 import type { RoomEntry } from '@/shared/lib/work-status/work-tracks';
 import { cn } from '@/shared/lib/cn';
-import { roomLook } from '../model/room-look';
+import { STAGE_AT, roomLook, type MoruCharacter } from '../model/room-look';
 import { BranchName } from './BranchName';
 import { CommitLog } from './CommitLog';
 import { RoomMoru } from './RoomMoru';
@@ -19,9 +19,6 @@ const TONE: Record<StatusTone, string> = {
   plain: 'text-[color:var(--color-text-secondary)]',
 };
 
-/** How far along its track a mini room's work has come: a commit is a step, `main` the whole way. */
-const FILLED = { worktree: 0.04, commits: 0.18, main: 1 } as const;
-
 /**
  * A worktree on the lower floor: its own corner of floor where a small Moru, or its crate, stands in
  * the room's light; then the branch, the status and the newest commit subject with its time. With the
@@ -29,7 +26,7 @@ const FILLED = { worktree: 0.04, commits: 0.18, main: 1 } as const;
  * committed into columns. The small Moru holds his clip's still pose: a floor of forty rooms would
  * otherwise step forty sprites every frame.
  */
-export function MiniRoom({ room, copy, tint, showOwner }: { room: RoomEntry; copy: RoomCopy; tint: string | null; showOwner: boolean }) {
+export function MiniRoom({ room, copy, tint, showOwner, character }: { room: RoomEntry; copy: RoomCopy; tint: string | null; showOwner: boolean; character: MoruCharacter }) {
   const look = roomLook(room.state);
   const status = copy.status(room);
   const subject = copy.newestSubject(room.track);
@@ -45,7 +42,7 @@ export function MiniRoom({ room, copy, tint, showOwner }: { room: RoomEntry; cop
           <i className={styles.crate} data-kind={look.crate} />
         ) : (
           <span className={styles.miniActor}>
-            <RoomMoru key={look.clip} clip={look.clip} still zoom={0.5} tint={tint} dozing={look.dozing} />
+            <RoomMoru key={look.clip} clip={look.clip} character={character} still zoom={0.5} tint={tint} dozing={look.dozing} />
           </span>
         )}
         {look.dozing ? <span aria-hidden className={cn(styles.miniZ, 'text-label font-mono font-[var(--font-weight-strong)]')}>z<br />&nbsp;z</span> : null}
@@ -73,7 +70,7 @@ export function MiniRoom({ room, copy, tint, showOwner }: { room: RoomEntry; cop
         ) : null}
       </div>
       <div className={styles.miniTrack} data-arrived={room.stage === 'main'}>
-        <i className={styles.miniFill} style={{ transform: `scaleX(${FILLED[room.stage]})` }} />
+        <i className={styles.miniFill} style={{ transform: `scaleX(${STAGE_AT[room.stage]})` }} />
       </div>
     </div>
   );

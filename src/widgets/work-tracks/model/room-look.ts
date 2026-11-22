@@ -82,8 +82,6 @@ export function moruPhase(key: string): number {
 export const ROOM_PROPS = 6;
 
 export interface RoomIdentity {
-  /** The room drawn the other way round: Moru faces left, the lamp stands on his right. */
-  mirrored: boolean;
   /** Which of the `ROOM_PROPS` props stands in the room. */
   prop: number;
 }
@@ -92,7 +90,54 @@ export interface RoomIdentity {
 export function roomIdentity(branch: string): RoomIdentity {
   let hash = 0x811c9dc5;
   for (const char of branch) hash = Math.imul(hash ^ char.charCodeAt(0), 0x01000193) >>> 0;
-  return { mirrored: (hash & 8) !== 0, prop: hash % ROOM_PROPS };
+  return { prop: hash % ROOM_PROPS };
+}
+
+/**
+ * The Moru a room has: the grey original, or one of the cast, each a body palette and at most one head
+ * piece (`docs/design/brand.md`, "Cast"). A costume only: every character plays the same rows, so
+ * a pose means the same thing whoever wears it.
+ */
+export const MORU_CAST = ['horn', 'unicorn', 'dragon', 'rabbit', 'builder'] as const;
+export type MoruCharacter = 'grey' | (typeof MORU_CAST)[number];
+
+/** The character a branch prefers: a hash of the name of its own, so it says nothing the mirror or the wall prop already say. */
+export function moruCharacter(branch: string): (typeof MORU_CAST)[number] {
+  let hash = 0x9e3779b9;
+  for (const char of branch) hash = Math.imul(hash ^ char.charCodeAt(0), 0x85ebca6b) >>> 0;
+  hash = Math.imul(hash ^ (hash >>> 13), 0xc2b2ae35) >>> 0;
+  return MORU_CAST[((hash ^ (hash >>> 16)) >>> 0) % MORU_CAST.length];
+}
+
+/** A room as the cast sees it: its key, its branch, and whether it is the main checkout. */
+export interface CastRoom {
+  key: string;
+  branch: string | null;
+  /** The base branch's room, the main checkout: it keeps the grey original. */
+  base: boolean;
+}
+
+/**
+ * Each room's Moru, the rooms given oldest first. A room takes the character its branch prefers, or
+ * the next one in the cast's order that no older room has; only once every character is in use does
+ * one repeat, the least used first. A room's Moru depends only on the rooms older than it, so a new
+ * room never changes an older room's Moru, and a room that leaves changes none older than it.
+ */
+export function castRooms(rooms: readonly CastRoom[]): Map<string, MoruCharacter> {
+  const cast = new Map<string, MoruCharacter>();
+  const used = new Map<MoruCharacter, number>(MORU_CAST.map(character => [character, 0]));
+  for (const room of rooms) {
+    if (room.base) {
+      cast.set(room.key, 'grey');
+      continue;
+    }
+    const preferred = MORU_CAST.indexOf(moruCharacter(room.branch ?? room.key));
+    const fewest = Math.min(...used.values());
+    const character = MORU_CAST.map((_, step) => MORU_CAST[(preferred + step) % MORU_CAST.length]).find(candidate => used.get(candidate) === fewest)!;
+    used.set(character, fewest + 1);
+    cast.set(room.key, character);
+  }
+  return cast;
 }
 
 /** A warning the page header counts: two tools in one folder, or a worktree to clean up. */
@@ -103,7 +148,7 @@ export function roomAlertOf(state: RoomState): RoomAlert | null {
   return state.kind === 'lockLeft' || state.kind === 'missing' ? 'cleanup' : null;
 }
 
-/** Where a stage puts the crate along the belt, as a fraction of its length. */
+/** How far along a mini room's track its work has come, as a fraction of the track. */
 export const STAGE_AT: Record<RoomStage, number> = { worktree: 0.04, commits: 0.2, main: 1 };
 
 /** The most crates a cart carries before the rest are counted as `+n`. */
@@ -117,9 +162,6 @@ export function cartLoad(ahead: number | null, merged: boolean): { crates: numbe
   const count = Math.max(ahead ?? 0, merged ? 1 : 0);
   return { crates: Math.min(count, CART_CRATES), more: Math.max(0, count - CART_CRATES) };
 }
-
-/** Where the known part of the belt ends: the commits station, plus a step of rail. */
-export const KNOWN_UNTIL = 0.27;
 
 /** A room on its way out after its worktree merged: drawn once more where it stood. */
 export interface Retiree {

@@ -41,16 +41,12 @@ const opacityOf = (element: HTMLElement) => Number(getComputedStyle(element).opa
 const WALK_MIN_PX = 8;
 let walks = 0;
 
-/**
- * A room that keeps its content while it moves sideways: its Moru galumphs once the way it goes,
- * which is the other way in a mirrored room, whose Moru is drawn flipped.
- */
+/** A room that keeps its content while it moves sideways: its Moru galumphs once the way it goes. */
 function walk(element: HTMLElement, move: RoomMove) {
   const dx = move.to.x - move.from.x;
   if (Math.abs(dx) < WALK_MIN_PX) return;
   const face = shownFace(element);
-  const mirrored = face?.querySelector<HTMLElement>('[data-scene]')?.dataset.mirror === 'true';
-  const clip = (dx > 0) !== mirrored ? 'galumph' : 'galumph-left';
+  const clip = dx > 0 ? 'galumph' : 'galumph-left';
   walks += 1;
   for (const sprite of face?.querySelectorAll<HTMLElement>('[data-moru-live]') ?? []) sprite.dataset.moruTravel = `${clip}@walk${walks}`;
 }
