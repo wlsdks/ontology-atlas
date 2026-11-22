@@ -106,11 +106,34 @@ function Monitor({ room, copy }: { room: RoomEntry; copy: RoomCopy }) {
   );
 }
 
+/**
+ * A value that follows `value` two frames after it changes. A transition it starts then begins in a
+ * frame of its own, not in the frame the whole update commits in, which would hold it and then skip
+ * it ahead to where its clock already is.
+ */
+function useFrameAfter<T>(value: T): T {
+  const [shown, setShown] = useState(value);
+  useEffect(() => {
+    if (Object.is(shown, value)) return;
+    let second = 0;
+    const first = requestAnimationFrame(() => {
+      second = requestAnimationFrame(() => setShown(value));
+    });
+    return () => {
+      cancelAnimationFrame(first);
+      cancelAnimationFrame(second);
+    };
+  }, [value, shown]);
+  return shown;
+}
+
 function Belt({ room, landing }: { room: RoomEntry; landing: number }) {
   const t = useTranslations('workStatus');
-  const at = STAGE_AT[room.stage];
+  // The ride to `main` starts once the merge's own update has drawn.
+  const stage = useFrameAfter(room.stage);
+  const at = STAGE_AT[stage];
   const look = roomLook(room.state);
-  const arrived = room.stage === 'main';
+  const arrived = stage === 'main';
   const load = room.track.missing ? { crates: 1, more: 0 } : cartLoad(room.track.ahead, arrived);
   return (
     <div className={styles.belt} data-room-part>

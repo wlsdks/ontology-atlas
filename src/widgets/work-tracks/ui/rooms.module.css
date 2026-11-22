@@ -1295,11 +1295,15 @@
   animation: roomHatchBlink calc(var(--motion-base) * 6) steps(1, end) calc(var(--motion-choreography) * 0.8) both;
 }
 
-/* ---------- pointing at a session: its rooms and floor step up, the rest step down */
+/* ---------- pointing at a session: its rooms and floor step up, the rest step down, both ways over --motion-base */
 
 .room,
 .floorPlate {
-  transition: opacity var(--motion-fast) var(--motion-ease);
+  transition: opacity var(--motion-base) var(--motion-ease), background-color var(--motion-base) var(--motion-ease);
+}
+
+.room > [data-room-plate] {
+  transition: background-color var(--motion-base) var(--motion-ease);
 }
 
 .room[data-emphasis='down'],
