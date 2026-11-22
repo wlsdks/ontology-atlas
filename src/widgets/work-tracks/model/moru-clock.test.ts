@@ -12,8 +12,15 @@ const cellOf = (sprite: HTMLElement) => Math.abs(Number.parseInt(sprite.style.ba
 const rowOf = (sprite: HTMLElement) => /mascot-(.+)-row-128/.exec(sprite.style.backgroundImage)?.[1];
 
 describe('createMoruClock', () => {
-  beforeEach(() => vi.useFakeTimers());
-  afterEach(() => vi.useRealTimers());
+  beforeEach(() => {
+    vi.useFakeTimers();
+    // jsdom's window is never the key window; these run at the key window's pace.
+    vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
 
   it('loops a Moru on screen from his own pose, one cell per step', () => {
     const { element, sprite } = board({ phase: 5 });

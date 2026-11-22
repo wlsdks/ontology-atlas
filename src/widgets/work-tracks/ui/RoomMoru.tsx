@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState, type CSSProperties } from 'react';
-import { prepareCast } from '../model/cast-strip';
-import { MORU_CELL_PX, moruCells, moruRow } from '../model/moru-clock';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { prepareCast, prepareTint } from '../model/cast-strip';
+import { MORU_CELL_PX, moruCells, moruRow, moruRowSource } from '../model/moru-clock';
 import type { MoruCharacter, RoomClip } from '../model/room-look';
 import styles from './rooms.module.css';
 
@@ -12,7 +12,9 @@ const DOZING_CELL = 9;
 /**
  * Moru in a room: an existing native 128px row, enlarged by whole pixels on a large room and
  * halved on a mini one. A session's ink retints only the saturated indigo of the flippers, tail and
- * laptop through the board's filter; the silhouette and every other pixel stay as drawn.
+ * laptop through the board's filter; the silhouette and every other pixel stay as drawn. A live Moru's
+ * strips are tinted once ahead (`prepareTint`) and then shown without the filter, so a step does not
+ * run it again.
  *
  * A large room's Moru is `live`: the board's clock (`createMoruClock`) steps his row and swaps rows
  * on the neutral pose, so the element keeps what it draws and React only says which row to loop and
@@ -42,9 +44,20 @@ export function RoomMoru({ clip, character = 'grey', still, zoom, tint, phase = 
 }) {
   // The cast clips he may play are dressed for him ahead, so each is ready on the neutral pose it starts from.
   const wanted = [clip, ...(loops ?? []), ...(talks ?? []), ...(once ?? '').split(' ').map(request => request.split('@')[0])].filter(Boolean).join(' ');
+  const figureRef = useRef<HTMLSpanElement>(null);
+  const [ink, setInk] = useState<string | null>(null);
   useEffect(() => {
-    if (live) void prepareCast(character, wanted.split(' '));
-  }, [live, character, wanted]);
+    if (!live || !tint || !figureRef.current) return setInk(null);
+    setInk(inkOf(figureRef.current, tint));
+  }, [live, tint]);
+  useEffect(() => {
+    if (!live) return;
+    let gone = false;
+    void prepareCast(character, wanted.split(' ')).then(() => {
+      if (!gone && ink) void prepareTint(wanted.split(' ').map(each => moruRowSource(each, character)), ink);
+    });
+    return () => { gone = true; };
+  }, [live, character, wanted, ink]);
   const cells = moruCells(clip);
   const start = live && !still ? Math.floor(phase * cells) % cells : !live && dozing ? DOZING_CELL : 0;
   const row = !live && dozing ? 'waiting' : clip;
@@ -57,6 +70,7 @@ export function RoomMoru({ clip, character = 'grey', still, zoom, tint, phase = 
   return (
     <span
       aria-hidden
+      ref={figureRef}
       data-room-moru={clip}
       className={styles.moru}
       style={{ zoom, filter: tint ? `url(#${tint})` : undefined, display: 'inline-flex', width: MORU_CELL_PX }}
@@ -73,6 +87,8 @@ export function RoomMoru({ clip, character = 'grey', still, zoom, tint, phase = 
           data-moru-once={once ?? undefined}
           data-moru-loops={loops?.join(' ') || undefined}
           data-moru-talks={talks?.join(' ') || undefined}
+          data-moru-ink={ink ?? undefined}
+          data-moru-filter={tint ? `url(#${tint})` : undefined}
           style={first}
         />
       ) : (
@@ -87,4 +103,17 @@ export function RoomMoru({ clip, character = 'grey', still, zoom, tint, phase = 
       )}
     </span>
   );
+}
+
+/** A tint filter's session ink as `r,g,b`: the colour its `--work-session-N` resolves to where this Moru stands. */
+function inkOf(element: HTMLElement, tint: string): string | null {
+  const ink = /-(\d+)$/.exec(tint)?.[1];
+  const colour = ink ? getComputedStyle(element).getPropertyValue(`--work-session-${ink}`).trim() : '';
+  if (!colour || typeof OffscreenCanvas === 'undefined') return null;
+  const canvas = new OffscreenCanvas(1, 1), g = canvas.getContext('2d', { willReadFrequently: true });
+  if (!g) return null;
+  g.fillStyle = colour;
+  g.fillRect(0, 0, 1, 1);
+  const [r, gr, b] = g.getImageData(0, 0, 1, 1).data;
+  return `${r},${gr},${b}`;
 }

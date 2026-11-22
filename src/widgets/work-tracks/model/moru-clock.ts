@@ -2,7 +2,7 @@ import { MOTION } from '@/shared/motion';
 import { PIXEL_BEAT_MS, onPixelBeat } from '@/shared/motion/pixel-beat';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { ROOM_ROW_FRAMES } from '@/shared/ui/marks/moru/moru-rows';
-import { castClip, castStripUrl } from './cast-strip';
+import { castClip, castStripUrl, tintedStripUrl } from './cast-strip';
 
 export const MORU_CELL_PX = 128;
 /** A room row's cell time: the page's pixel beat, which the lobby steps on too. */
@@ -24,10 +24,9 @@ export const moruCells = (clip: string): number => castClip(clip)?.n ?? (ROOM_RO
 /** A cell's width: 128px, wider for a cast clip whose tool or partner stands beside Moru. */
 export const moruCellWidth = (clip: string): number => castClip(clip)?.w ?? MORU_CELL_PX;
 /** A row's sheet: the grey original's, a cast character's (`pnpm brand:cast`), or a cast clip dressed for him (`cast-strip.ts`). */
-export const moruRow = (clip: string, character = 'grey') => {
-  const dressed = castClip(clip) ? castStripUrl(clip, character) : null;
-  return `url(${dressed ?? withBasePath(`/brand/mascot-${clip}-row-128${character === 'grey' ? '' : `-${character}`}.png`)})`;
-};
+export const moruRowSource = (clip: string, character = 'grey') =>
+  (castClip(clip) ? castStripUrl(clip, character) : null) ?? withBasePath(`/brand/mascot-${clip}-row-128${character === 'grey' ? '' : `-${character}`}.png`);
+export const moruRow = (clip: string, character = 'grey') => `url(${moruRowSource(clip, character)})`;
 /** A clip can be shown: a room row always, a cast clip once it is dressed for this Moru. */
 const ready = (clip: string, character = 'grey') => !castClip(clip) || castStripUrl(clip, character) !== null;
 /** Where the room's second Moru stands from the first, in drawn pixels: the front one shows a talk from there. */
@@ -106,15 +105,20 @@ export function createMoruClock(board: HTMLElement) {
   };
   const draw = (sprite: HTMLElement, state: Shown) => {
     const width = moruCellWidth(state.clip);
-    if (state.drawn !== `${state.clip}@${state.offset}`) {
-      sprite.style.backgroundImage = moruRow(state.clip, sprite.dataset.moruCast);
+    // A strip already carrying the session's ink replaces the board's filter, so a step repaints only pixels.
+    const source = moruRowSource(state.clip, sprite.dataset.moruCast), ink = sprite.dataset.moruInk;
+    const inked = ink ? tintedStripUrl(source, ink) : null;
+    if (state.drawn !== `${state.clip}@${state.offset}@${inked ?? ''}`) {
+      sprite.style.backgroundImage = `url(${inked ?? source})`;
+      const figure = sprite.parentElement;
+      if (figure && sprite.dataset.moruFilter) figure.style.filter = inked ? 'none' : sprite.dataset.moruFilter;
       sprite.style.backgroundSize = `${state.cells * width}px ${MORU_CELL_PX}px`;
       // A wider cell paints past the 128px box on the screen's side; the figure around it keeps 128px, and so the room's layout.
       // A talk is shown through two 128px windows, one per Moru, so neither draws the other twice.
       const beyond = castClip(state.clip)?.kind === 'talk' ? 0 : width - MORU_CELL_PX - state.offset;
       sprite.style.width = beyond > 0 ? `${MORU_CELL_PX + beyond}px` : '';
       sprite.style.flexShrink = beyond > 0 ? '0' : '';
-      state.drawn = `${state.clip}@${state.offset}`;
+      state.drawn = `${state.clip}@${state.offset}@${inked ?? ''}`;
     }
     // A Moru holding a pose is not written again, so a held room costs the page nothing per step.
     const position = `${-(state.cell * width + state.offset)}px`;
@@ -126,7 +130,7 @@ export function createMoruClock(board: HTMLElement) {
     if (known) return known;
     const state = loopOf(sprite, sprite.dataset.moruHold === 'true' ? 0 : Number(sprite.dataset.moruPhase ?? 0), sprite.dataset.moruClip ?? 'waiting');
     // React draws a live Moru's first row; the clock draws every row after it.
-    return { ...state, drawn: sprite.style.backgroundImage.includes(`mascot-${state.clip}-row`) ? `${state.clip}@0` : '' };
+    return { ...state, drawn: sprite.style.backgroundImage.includes(`mascot-${state.clip}-row`) ? `${state.clip}@0@` : '' };
   };
 
   /** On the neutral pose with a talk pending for his room: waits there, and starts with his partner. */
@@ -209,6 +213,7 @@ export function createMoruClock(board: HTMLElement) {
       if (wanted && !leave) leave = onPixelBeat(at => {
         ticks += 1;
         for (const sprite of board.querySelectorAll<HTMLElement>(STEPPING)) step(sprite, at);
+        return 1;
       });
       if (!wanted && leave) {
         leave();

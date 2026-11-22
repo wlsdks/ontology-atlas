@@ -108,3 +108,62 @@ export async function prepareCast(character: string, clips: readonly string[]) {
     if (url) dressed.set(key, url);
   }
 }
+
+/**
+ * A strip with a session's ink laid on its saturated indigo (flippers, tail, laptop), by the same arithmetic
+ * as the board's tint filter (`WorkBuilding.tsx`, `TintFilters`), done once per strip and ink instead of on
+ * every step's repaint. Keyed by the strip's address and the ink as `r,g,b`.
+ */
+const tinted = new Map<string, string>();
+const tinting = new Map<string, Promise<string | null>>();
+
+/** The tinted strip's address, if it is ready. */
+export const tintedStripUrl = (source: string, ink: string) => tinted.get(`${source}|${ink}`) ?? null;
+
+/** Lays `ink` (`r,g,b`, 0 to 255) on one strip's pixels, as the filter does in sRGB. */
+export function tintPixels(data: Uint8ClampedArray, ink: readonly number[]) {
+  const [ir, ig, ib] = ink.map(value => value / 255);
+  for (let p = 0; p < data.length; p += 4) {
+    const A = data[p + 3] / 255;
+    if (!A) continue;
+    const R = data[p] / 255, G = data[p + 1] / 255, B = data[p + 2] / 255;
+    // The indigo mask, the inked lightness (premultiplied), the mask applied, then laid over the source.
+    const mask = Math.min(1, Math.max(0, -7 * R + 7 * B - 1.1));
+    if (!mask) continue;
+    const L = 0.3 * R + 0.5 * G + 0.2 * B, alpha = Math.min(1, 2.1 * A);
+    const inked = [ir, ig, ib].map(channel => Math.min(alpha, 2.1 * L * A * channel));
+    const accentA = alpha * mask;
+    const outA = accentA + A * (1 - accentA);
+    for (let k = 0; k < 3; k++) {
+      const source = [R, G, B][k] * A;
+      data[p + k] = Math.round(((inked[k] * mask + source * (1 - accentA)) / outA) * 255);
+    }
+    data[p + 3] = Math.round(outA * 255);
+  }
+}
+
+async function tint(source: string, ink: string): Promise<string | null> {
+  const bitmap = await createImageBitmap(await (await fetch(source)).blob());
+  const canvas = new OffscreenCanvas(bitmap.width, bitmap.height), g = canvas.getContext('2d', { willReadFrequently: true })!;
+  g.drawImage(bitmap, 0, 0);
+  bitmap.close();
+  const image = g.getImageData(0, 0, canvas.width, canvas.height);
+  tintPixels(image.data, ink.split(',').map(Number));
+  g.putImageData(image, 0, 0);
+  const blob = await canvas.convertToBlob({ type: 'image/png' });
+  canvas.width = canvas.height = 0;
+  return URL.createObjectURL(blob);
+}
+
+/** Tints the strips a room's Moru may show, one after another, before any is asked for. */
+export async function prepareTint(sources: readonly string[], ink: string) {
+  for (const source of sources) {
+    const key = `${source}|${ink}`;
+    if (tinted.has(key)) continue;
+    let pending = tinting.get(key);
+    if (!pending) { pending = tint(source, ink).catch(() => null); tinting.set(key, pending); }
+    const url = await pending;
+    tinting.delete(key);
+    if (url) tinted.set(key, url);
+  }
+}

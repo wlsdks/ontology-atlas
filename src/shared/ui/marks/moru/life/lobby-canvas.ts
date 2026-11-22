@@ -26,12 +26,17 @@ export const LIFE_SHEETS = {
 };
 /** How many ticks' time it sleeps at most while nothing changes. */
 const SLOWEST = 2;
+/** How many poses ahead of each Moru the idle page composes. */
+const AHEAD = 4;
+/** Clips of a Moru only standing: its idle poses advance every `STANDING_BEATS` beats. */
+const STANDING = new Set(['rest', 'blink']);
+const STANDING_BEATS = 4;
 /**
- * The time to the lobby's next tick: every pixel beat while a Moru walks, rolls or tiptoes across the floor,
- * every other one otherwise (an on-the-spot clip keeps its own time).
+ * The time to the lobby's next tick: every pixel beat while a Moru walks or plays a clip, every fourth
+ * (600 ms) while every Moru only stands or blinks. A clip keeps its own time across a longer tick.
  */
 export const lobbyTickMs = (world: Pick<World, 'morus' | 'atlas'>) =>
-  (world.morus.some(m => m.door || world.atlas.clips[m.clip]?.travel) ? 1 : 2) * PIXEL_BEAT_MS;
+  (world.morus.some(m => m.door || !STANDING.has(m.clip) || m.plan.length) ? 1 : STANDING_BEATS) * PIXEL_BEAT_MS;
 /** The composed-pose store's cap: under the spec's 24 MB, for a floor of five. */
 export const CACHE_BYTES = 8 * 1048576;
 /** Lanes are this far apart; the back lane's feet stand `BACK_FEET` px from the canvas top. */
@@ -81,6 +86,8 @@ export interface LobbyStats {
   keptBytes: number;
   peakKeptBytes: number;
   composed: number;
+  /** Poses composed on the beat because none was ready; the rest were composed ahead while the page was idle. */
+  composedOnBeat: number;
   found: number;
 }
 
@@ -201,7 +208,9 @@ export async function createLobby(canvas: HTMLCanvasElement, { width, unit = 1, 
   const kept = new Map<string, Kept>();
   const shot = new ImageData(CW, CH), px = new Uint32Array(shot.data.buffer), fill = new Uint8Array(CW * CH);
   const pad = new OffscreenCanvas(8, 8), padCtx = pad.getContext('2d', { willReadFrequently: true })!;
-  let keptBytes = 0, peakBytes = 0, found = 0, composed = 0;
+  let keptBytes = 0, peakBytes = 0, found = 0, composed = 0, onBeat = 0;
+  const bodyKey = (palette: string, id: string, fr: number, skin: Placed[]) =>
+    `${palette}|${id}|${fr}|${skin.map(({ part }) => `${part.sx},${part.x},${part.y}`).join()}`;
   const keep = (key: string, make: () => Kept) => {
     let e = kept.get(key);
     if (e) { kept.delete(key); kept.set(key, e); found++; return e; }
@@ -286,9 +295,10 @@ export async function createLobby(canvas: HTMLCanvasElement, { width, unit = 1, 
       const far = turned ? Math.ceil(Math.hypot(p.w, p.h)) + 40 : 0;
       c0 = Math.min(c0, x0 - far); c1 = Math.max(c1, x0 + p.w + far); r0 = Math.min(r0, Y - far);
     }
-    const skinKey = skin.map(({ part }) => `${part.sx},${part.x},${part.y}`).join();
-    const body = keep(`${m.palette}|${id}|${fr}|${skinKey}`, () => layer(BASE, c, fr, f, s.lut, skin));
+    const before = composed;
+    const body = keep(bodyKey(m.palette, id, fr, skin), () => layer(BASE, c, fr, f, s.lut, skin));
     const over = keep(`over|${id}|${fr}`, () => layer(OVER, c, fr, f, plain, []));
+    onBeat += composed - before;
     const X = Math.round(m.x), Y = Math.round(BACK_FEET + m.depth * LANE_DY - m.height) - 100, left = m.facing < 0;
     c0 = Math.min(c0, cx - reach); c1 = Math.max(c1, cx + reach);
     if (s.body) s.body.shown--;
@@ -371,16 +381,45 @@ export async function createLobby(canvas: HTMLCanvasElement, { width, unit = 1, 
     }
   };
 
-  let leave: (() => void) | null = null, slow = 0, running = false, next = PIXEL_BEAT_MS, since = 0;
-  const beat = () => {
-    since += PIXEL_BEAT_MS;
-    if (since < next) return;
-    tick(world, since);
-    since = 0;
+  /**
+   * Composes the next poses of every Moru on the floor while the page is idle, so the beat only copies kept
+   * pictures. A pose the guess missed is still composed on the beat.
+   */
+  let aheadQueued = false;
+  const whenIdle: (run: (deadline: { timeRemaining(): number }) => void) => void =
+    typeof window.requestIdleCallback === 'function'
+      ? run => window.requestIdleCallback(run, { timeout: 2 * PIXEL_BEAT_MS })
+      : run => window.setTimeout(() => run({ timeRemaining: () => 8 }), 0);
+  const ahead = () => {
+    if (aheadQueued) return;
+    aheadQueued = true;
+    whenIdle(deadline => {
+      aheadQueued = false;
+      for (const s of drawn.values()) {
+        const m = s.m, id = facingClip(atlas, m.clip, m.facing), c = clips[id];
+        if (!c) continue;
+        const worn = { ...s.worn, levels: { ...s.worn.levels } }, lut = lutOf(m.palette);
+        for (let k = 1; k <= AHEAD; k++) {
+          if (deadline.timeRemaining() < 2) return;
+          const fr = (m.frame + k) % c.f.length, f = c.f[fr];
+          const { skin } = placeWear(atlas, c, id, fr, m, worn);
+          keep(bodyKey(m.palette, id, fr, skin), () => layer(BASE, c, fr, f, lut, skin));
+          keep(`over|${id}|${fr}`, () => layer(OVER, c, fr, f, plain, []));
+        }
+      }
+    });
+  };
+
+  let leave: (() => void) | null = null, slow = 0, running = false;
+  /** One tick on the beat over the time since the last; returns the beats until the next. */
+  const beat = (_now: number, elapsedMs: number) => {
+    tick(world, elapsedMs || PIXEL_BEAT_MS);
     tend(world, presence);
     paint();
+    // Composes, while the page is idle, the poses the Moru on the floor will show next.
+    ahead();
     slow = moved ? 0 : Math.min(slow + 1, SLOWEST);
-    next = lobbyTickMs(world) * (1 + slow);
+    return Math.round(lobbyTickMs(world) / PIXEL_BEAT_MS) * (1 + slow);
   };
   const redrawAll = () => {
     for (const s of drawn.values()) { s.rect = null; s.m.changed = true; }
@@ -406,7 +445,7 @@ export async function createLobby(canvas: HTMLCanvasElement, { width, unit = 1, 
     sync(allowed) {
       const wasStill = still;
       still = !allowed;
-      if (allowed && !running) { running = true; next = PIXEL_BEAT_MS; since = 0; leave = onPixelBeat(beat); }
+      if (allowed && !running) { running = true; leave = onPixelBeat(beat); }
       if (!allowed && running) { running = false; leave?.(); leave = null; }
       if (wasStill !== still) redrawAll();
       canvas.dataset.lobbyRunning = String(running);
@@ -415,7 +454,7 @@ export async function createLobby(canvas: HTMLCanvasElement, { width, unit = 1, 
       running,
       visible: world.morus.filter(m => centre(m) - 48 > 0 && centre(m) + 48 < world.width).length,
       gap: nearestGap(world),
-      keptBytes, peakKeptBytes: peakBytes, composed, found,
+      keptBytes, peakKeptBytes: peakBytes, composed, found, composedOnBeat: onBeat,
     }),
     destroy() {
       leave?.();
