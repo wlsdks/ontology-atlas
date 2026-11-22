@@ -222,6 +222,30 @@ describe('the conductor runs trains', () => {
     assert.ok(world.pulls.get(8).comments.at(-1).body.startsWith(EJECTED_MARKER));
   });
 
+  it('settles a train red within minutes when a required lane can never report, without a rerun', () => {
+    // Train #3825's head, recorded: e2e.yml did not parse, so its Playwright contexts never appeared.
+    const e2e = { id: 45021128174, name: '.github/workflows/e2e.yml', path: '.github/workflows/e2e.yml', status: 'completed', conclusion: 'failure', url: 'https://github.com/wlsdks/ontology-atlas/actions/runs/45021128174' };
+    const checksRun = { id: 45021138677, name: 'Checks', path: '.github/workflows/checks.yml', status: 'completed', conclusion: 'success', url: 'https://github.com/wlsdks/ontology-atlas/actions/runs/45021138677' };
+    const withoutPlaywright = () => green().filter((check) => !check.name.startsWith('Playwright'));
+    const started = (world) => world.deps.now();
+
+    const parse = fakeWorld({ prs: [component(3824)], queued: [3824], ci: withoutPlaywright, runs: () => [e2e, checksRun], jobs: (id) => (id === e2e.id ? 0 : 9) });
+    const parseStart = started(parse);
+    assert.deepEqual(runConductor(parse).landed, []);
+    assert.ok(parse.deps.now() - parseStart < 5 * 60_000, 'red in minutes, not after the 90-minute timeout');
+    assert.equal(called(parse, 'rerunFailed').length, 0, 'a file GitHub cannot parse is never rerun');
+    const ejected = parse.pulls.get(3824).comments.at(-1).body;
+    assert.ok(ejected.startsWith(EJECTED_MARKER));
+    assert.match(ejected, /\.github\/workflows\/e2e\.yml failed before any job ran \(workflow file error\) https:\/\/github\.com\/wlsdks\/ontology-atlas\/actions\/runs\/45021128174/);
+
+    const silent = fakeWorld({ prs: [component(3826)], queued: [3826], ci: withoutPlaywright, runs: () => [checksRun], jobs: () => 9 });
+    const silentStart = started(silent);
+    assert.deepEqual(runConductor(silent).landed, []);
+    const waited = silent.deps.now() - silentStart;
+    assert.ok(waited >= 3 * 60_000 && waited < 10 * 60_000, `the grace passed, then red: ${waited / 60_000} min`);
+    assert.match(silent.pulls.get(3826).comments.at(-1).body, /Playwright \(chromium 1\/3\) never reported, though every workflow run for this head finished/);
+  });
+
   it('rebuilds a green train when main moved into its files while CI ran', () => {
     const world = fakeWorld({
       prs: [component(5)],
