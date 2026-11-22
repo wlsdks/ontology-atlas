@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SCREEN_H, SCREEN_ROW_H, WIDE_ROOM_W, layoutBuilding, pairTools, pairUnit, screenRows, stageCapacity, type Box, type LayoutInput } from './building-layout';
+import { SCREEN_H, SCREEN_ROW_H, WIDE_ROOM_W, layoutBuilding, pairUnit, screenRows, stageCapacity, type Box, type LayoutInput } from './building-layout';
 
 const keys = (prefix: string, count: number) => Array.from({ length: count }, (_, index) => `${prefix}${index}`);
 
@@ -154,10 +154,8 @@ describe('floor rows', () => {
     for (const width of [424, 448]) {
       expect(pairUnit(width, 2)).toBe(1.5);
       expect(218 * pairUnit(width, 2)).toBeLessThanOrEqual(width - 32 - 16);
-      expect(pairTools(width, 2)).toBe(false);
     }
     expect(pairUnit(320, 1)).toBe(1);
-    expect(pairTools(584, 1)).toBe(true);
   });
 
   it('draws Moru at a half step in the owner\'s 1368px board, so he is not a speck beside his screen', () => {

@@ -57,11 +57,15 @@ const STATE_TONE: Record<StatusTone, string> = {
   plain: styles.statePlain,
 };
 
-/** What the screen says: the branch, the newest commits with their times, then what is not committed and the count. */
-function ScreenText({ screen, rows }: { screen: MonitorCopy; rows: number }) {
+/**
+ * What the screen says: the branch, the newest commits with their times, then what is not committed and the count.
+ * `stacked`, on a screen too narrow to set them side by side: the alert goes under the branch and the file under
+ * what is not committed, each read whole, in the room of one commit row.
+ */
+function ScreenText({ screen, rows, stacked }: { screen: MonitorCopy; rows: number; stacked: boolean }) {
   return (
     <>
-      <div className={styles.screenHead}>
+      <div className={styles.screenHead} data-stacked={stacked || undefined}>
         <BranchName branch={screen.branch} className={cn(styles.screenBranch, 'font-mono font-[var(--font-weight-strong)]')} />
         {/* A room that needs a person says so at the top of its screen, in amber, not only on the bezel. */}
         {screen.state.tone === 'warning' ? <span className={cn(styles.screenAlert, 'text-body leading-body font-[var(--font-weight-strong)]')}>{screen.state.lead}</span> : null}
@@ -75,7 +79,7 @@ function ScreenText({ screen, rows }: { screen: MonitorCopy; rows: number }) {
         <div className={cn(styles.screenFoot, LABEL)} data-tone={screen.lastLine?.tone}>
           <span className="flex min-w-0 items-baseline">
             {screen.lastLine ? <SwapText value={screen.lastLine.text} /> : null}
-            {screen.lastLine?.file ? (
+            {screen.lastLine?.file && !stacked ? (
               <span className="flex min-w-0 items-baseline">
                 <span className="flex-none">&nbsp;·&nbsp;</span>
                 <SwapText value={screen.lastLine.file} className={cn(styles.screenFile, 'font-mono')} />
@@ -85,12 +89,15 @@ function ScreenText({ screen, rows }: { screen: MonitorCopy; rows: number }) {
           {screen.count ? <span className="flex-none tabular-nums"><SwapText value={screen.count} /></span> : null}
         </div>
       ) : null}
+      {stacked && screen.lastLine?.file ? (
+        <div className={cn(styles.screenFootFile, LABEL)}><SwapText value={screen.lastLine.file} className={cn(styles.screenFile, 'font-mono')} /></div>
+      ) : null}
     </>
   );
 }
 
 /** The screen standing on its console: the room's light and the only place in it with words. */
-function Monitor({ room, copy, rows }: { room: RoomEntry; copy: RoomCopy; rows: number }) {
+function Monitor({ room, copy, rows, stacked }: { room: RoomEntry; copy: RoomCopy; rows: number; stacked: boolean }) {
   const look = roomLook(room.state);
   const screen = copy.monitor(room);
   const { leaving, serial } = useScreenSwap(room.state.kind, screen);
@@ -100,11 +107,11 @@ function Monitor({ room, copy, rows }: { room: RoomEntry; copy: RoomCopy; rows: 
       <i className={cn(styles.screenFrame, styles.notched)} />
       <div className={styles.screen} data-testid="work-room-monitor" data-room-part>
         <div key={`now:${serial}`} ref={serial > 0 ? enterScreen : undefined} className={styles.screenText}>
-          <ScreenText screen={screen} rows={rows} />
+          <ScreenText screen={screen} rows={stacked ? rows - 1 : rows} stacked={stacked} />
         </div>
         {leaving ? (
           <div key={`was:${serial}`} ref={leaveScreen} aria-hidden className={cn(styles.screenText, 'pointer-events-none')}>
-            <ScreenText screen={leaving} rows={rows} />
+            <ScreenText screen={leaving} rows={stacked ? rows - 1 : rows} stacked={stacked} />
           </div>
         ) : null}
       </div>
@@ -112,9 +119,9 @@ function Monitor({ room, copy, rows }: { room: RoomEntry; copy: RoomCopy; rows: 
       <div data-room-tag className={cn(styles.bezel, LABEL, 'font-[var(--font-weight-emphasis)]')} data-held={screen.who !== null}>
         {screen.who ? <span className={cn(styles.bezelWho, 'truncate')}>{screen.who}</span> : null}
         <span className={styles.bezelState}>
-          {/* How long gives way before what the state is. */}
-          <span className="flex-none"><SwapText value={screen.state.lead} ink={STATE_TONE[screen.state.tone]} /></span>
-          {screen.state.rest ? <span className="flex min-w-0 font-normal">&nbsp;·&nbsp;<SwapText value={screen.state.rest} /></span> : null}
+          {/* A stacked screen says the state at its top already; the bezel keeps how long. */}
+          {stacked && screen.state.tone === 'warning' ? null : <span className="flex-none"><SwapText value={screen.state.lead} ink={STATE_TONE[screen.state.tone]} /></span>}
+          {screen.state.rest ? <span className="flex flex-none font-normal">{stacked && screen.state.tone === 'warning' ? null : <>&nbsp;·&nbsp;</>}<SwapText value={screen.state.rest} /></span> : null}
         </span>
         <i className={styles.bezelLed} />
       </div>
@@ -171,7 +178,7 @@ function Cart({ room, landing }: { room: RoomEntry; landing: number }) {
  * hatch in the side wall, and the belt is a track in the floor that leaves through it. Two tools in
  * one folder: the second Moru stands behind the first on his tail side, both facing the screen.
  */
-export function LargeRoom({ room, unit, rows, pairScale, pairTools, copy, tint, guestTint, retiring, entered, faceId, character }: {
+export function LargeRoom({ room, unit, rows, pairScale, besideConsole, copy, tint, guestTint, retiring, entered, faceId, character }: {
   room: RoomEntry;
   /** The room's Moru, cast across the building. */
   character: MoruCharacter;
@@ -180,8 +187,8 @@ export function LargeRoom({ room, unit, rows, pairScale, pairTools, copy, tint, 
   rows: number;
   /** The share of `unit` two Moru take when two tools share the folder (`pairUnit`). */
   pairScale: number;
-  /** The one in front of a pair has room past his face for his tools (`pairTools`). */
-  pairTools: boolean;
+  /** The screen stands on a console beside Moru, not hung above him. */
+  besideConsole: boolean;
   /** The room is new to the building, or newly on the stage: Moru settles in once. */
   entered: boolean;
   /** Which drawn face this is, so each new entry settles in once. */
@@ -203,7 +210,8 @@ export function LargeRoom({ room, unit, rows, pairScale, pairTools, copy, tint, 
   const after = once === 'crate-send' ? `@${commit.serial}` : null;
   const frontOnce = request && after ? `${request} ${AFTER_CRATE.front}${after}` : request;
   const backOnce = after ? `${AFTER_CRATE.back}${after}` : null;
-  const loops = room.state.kind === 'working' && (!pair || pairTools) ? workLoops(room.key) : null;
+  // A pair types and talks; tools would reach past the floor, onto the cart or into the screen.
+  const loops = room.state.kind === 'working' && !pair ? workLoops(room.key) : null;
   const identity = roomIdentity(room.track.branch ?? room.key);
   const tone = pair || room.state.kind === 'lockLeft' ? 'warning' : undefined;
   // Two Moru share a smaller scale, as a share of the room's unit so it eases with the room.
@@ -246,7 +254,7 @@ export function LargeRoom({ room, unit, rows, pairScale, pairTools, copy, tint, 
             </span>
           </>
         ) : null}
-        <Monitor room={room} copy={copy} rows={rows} />
+        <Monitor room={room} copy={copy} rows={rows} stacked={pair && besideConsole} />
         <i className={styles.dim} />
       </div>
     </div>

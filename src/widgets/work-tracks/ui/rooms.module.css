@@ -423,17 +423,18 @@
   --ax: calc((100% - 16 * var(--s)) / 2 + 61 * var(--ps));
 }
 
-/* The cart waits at the front one's feet, as it does at a single Moru's. */
+/* The cart waits at the feet of the one behind, clear of the tablet the one in front types on. */
 .scene[data-cast='two'] .way {
-  left: calc(var(--ax) + 38 * var(--ps));
+  left: calc(var(--ax) - 146 * var(--ps));
 }
 
+/* A pair works without tools, so the screen comes in to the face of the one in front. */
 :where(.face[data-wide='true']) .scene[data-cast='two'] .monitor {
-  left: calc(var(--ax) + 70 * var(--ps));
+  left: calc(var(--ax) + 56 * var(--ps));
 }
 
 :where(.face[data-wide='true']) .scene[data-cast='two'] .console {
-  left: calc(var(--ax) + 46 * var(--ps));
+  left: calc(var(--ax) + 32 * var(--ps));
 }
 
 /* The second Moru takes the prop's place. */
@@ -483,7 +484,8 @@
 
 .prop {
   --prop-accent: color-mix(in srgb, var(--ink) 45%, var(--work-room-steel));
-  left: calc(var(--ax) + 48 * var(--s));
+  /* Clear of every working pose, whose tablet reaches 53 drawn pixels past Moru's axis, tucked against the screen. */
+  left: calc(var(--ax) + 54 * var(--s));
   bottom: calc(var(--floor) + 11 * var(--s));
   width: calc(20 * var(--s));
   height: calc(20 * var(--s));
@@ -625,6 +627,24 @@
 
 .screenFile {
   color: var(--color-text-secondary);
+}
+
+/* The file under what is not committed, on a stacked screen. */
+.screenFootFile {
+  flex: none;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.screenHead[data-stacked] {
+  flex-direction: column;
+  align-items: flex-start;
+  height: auto;
+}
+
+.screenHead[data-stacked] .screenAlert {
+  margin-left: 0;
+  padding-left: 0;
 }
 
 /* The commit rows: each keeps its element and moves one row down when a newer commit lands. */

@@ -6,7 +6,7 @@ import { planRooms, sessionsIn, type RoomEntry, type RoomPlan, type TrackSession
 import { cn } from '@/shared/lib/cn';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { MOTION } from '@/shared/motion';
-import { WIDE_ROOM_W, layoutBuilding, pairTools, pairUnit, screenRows, stageCapacity, type Box, type RoomBox, type RoomSize, type RoomUnit } from '../model/building-layout';
+import { WIDE_ROOM_W, layoutBuilding, pairUnit, screenRows, stageCapacity, type Box, type RoomBox, type RoomSize, type RoomUnit } from '../model/building-layout';
 import { mountWhenFree } from '../model/face-mount-queue';
 import { clockTime } from '../model/format';
 import { MERGE_LIGHTS_OUT_MS, createMoruClock } from '../model/moru-clock';
@@ -92,7 +92,7 @@ type LeavingFace = FaceSize & { room: RoomEntry };
 
 function RoomFace({ room, face, copy, retiring, showOwner, character }: { room: RoomEntry; face: FaceSize; copy: RoomCopy; retiring: boolean; showOwner: boolean; character: MoruCharacter }) {
   return face.size === 'large'
-    ? <LargeRoom room={room} unit={face.unit} rows={screenRows(face)} pairScale={pairUnit(face.w, face.unit) / face.unit} pairTools={pairTools(face.w, face.unit)} copy={copy} tint={tintOf(room.session)} guestTint={tintOf(room.guests[0] ?? null)} retiring={retiring} entered={face.entered} faceId={face.id} character={character} />
+    ? <LargeRoom room={room} unit={face.unit} rows={screenRows(face)} pairScale={pairUnit(face.w, face.unit) / face.unit} besideConsole={face.w >= WIDE_ROOM_W} copy={copy} tint={tintOf(room.session)} guestTint={tintOf(room.guests[0] ?? null)} retiring={retiring} entered={face.entered} faceId={face.id} character={character} />
     : <MiniRoom room={room} copy={copy} tint={tintOf(room.session)} showOwner={showOwner} character={character} />;
 }
 
