@@ -64,7 +64,7 @@ interface FaceSize {
 
 function RoomFace({ room, face, copy, retiring, showOwner }: { room: RoomEntry; face: FaceSize; copy: RoomCopy; retiring: boolean; showOwner: boolean }) {
   return face.size === 'large'
-    ? <LargeRoom room={room} unit={face.unit} width={face.w} height={face.h} copy={copy} tint={tintOf(room.session)} guestTint={tintOf(room.guests[0] ?? null)} retiring={retiring} />
+    ? <LargeRoom room={room} unit={face.unit} copy={copy} tint={tintOf(room.session)} guestTint={tintOf(room.guests[0] ?? null)} retiring={retiring} />
     : <MiniRoom room={room} copy={copy} tint={tintOf(room.session)} showOwner={showOwner} />;
 }
 

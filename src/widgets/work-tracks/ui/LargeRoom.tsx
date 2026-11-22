@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import type { RoomEntry } from '@/shared/lib/work-status/work-tracks';
 import { cn } from '@/shared/lib/cn';
 import { KNOWN_UNTIL, STAGE_AT, cartLoad, moruPhase, roomLook } from '../model/room-look';
-import { pairUnit, type RoomUnit } from '../model/building-layout';
+import type { RoomUnit } from '../model/building-layout';
 import { BranchName } from './BranchName';
 import { RoomMoru } from './RoomMoru';
 import { SwapText } from './SwapText';
@@ -109,12 +109,9 @@ function Belt({ room }: { room: RoomEntry }) {
  * Moru with the session's name tag beside a floor lamp lit only while something runs, and the belt
  * that carries the work's crate toward the `main` hatch.
  */
-export function LargeRoom({ room, unit, width, height, copy, tint, guestTint, retiring }: {
+export function LargeRoom({ room, unit, copy, tint, guestTint, retiring }: {
   room: RoomEntry;
   unit: RoomUnit;
-  /** The room's size in CSS pixels, to fit two Moru when two tools share the folder. */
-  width: number;
-  height: number;
   copy: RoomCopy;
   tint: string | null;
   /** The tint of the second tool's session, when two tools share the folder. */
@@ -128,11 +125,10 @@ export function LargeRoom({ room, unit, width, height, copy, tint, guestTint, re
   const second = tools[1];
   const pair = look.cast === 'two' && second !== undefined;
   const guest = room.guests[0] ?? null;
-  const sceneUnit = pair ? pairUnit(width, unit, height) : unit;
   const guestInk = guest ? `var(--work-session-${guest.ink + 1})` : 'var(--work-unheld)';
   return (
     <div className={cn(styles.large, 'h-full w-full')} data-pair={pair || undefined} style={pair ? { ['--guest-ink' as string]: guestInk } : undefined}>
-      <div className={styles.scene} style={{ ['--u' as string]: sceneUnit }} data-lit={look.running} data-dark={retiring} data-cast={pair ? 'two' : look.cast} data-alarm={pair}>
+      <div className={styles.scene} style={{ ['--u' as string]: unit }} data-lit={look.running} data-dark={retiring} data-cast={pair ? 'two' : look.cast} data-alarm={pair}>
         <i className={styles.glow}><i className={styles.glowLight} /></i>
         <i className={styles.wainscot} />
         <i className={styles.floor} />
@@ -147,14 +143,13 @@ export function LargeRoom({ room, unit, width, height, copy, tint, guestTint, re
         </i>
         {pair && second ? (
           <>
-            <i className={styles.riser} />
             <i className={cn(styles.shadow, styles.actorBack)} />
-            <span className={cn(styles.actor, styles.actorBack)}><RoomMoru clip="read" still={false} zoom={sceneUnit} tint={tint} phase={(moruPhase(room.key) + 0.5) % 1} /></span>
+            <span className={cn(styles.actor, styles.actorBack)}><RoomMoru clip={look.backClip} still={look.still} zoom={unit} tint={tint} phase={(moruPhase(room.key) + 0.5) % 1} /></span>
             <span className={cn(styles.tag, styles.tagBack, LABEL, 'font-[var(--font-weight-emphasis)]')}>
               <span className="truncate">{session ?? copy.toolName(tools[0])}</span>
             </span>
             <i className={cn(styles.shadow, styles.actorFront)} />
-            <span className={cn(styles.actor, styles.actorFront)}><RoomMoru clip="code" still={false} zoom={sceneUnit} tint={guestTint} phase={moruPhase(room.key)} /></span>
+            <span className={cn(styles.actor, styles.actorFront)}><RoomMoru clip={look.clip} still={look.still} zoom={unit} tint={guestTint} phase={moruPhase(room.key)} /></span>
             <span className={cn(styles.tag, styles.tagFront, LABEL, 'font-[var(--font-weight-emphasis)]')} style={{ ['--ink' as string]: guestInk }}>
               <span className="truncate">{copy.sessionName(guest) ?? copy.toolName(second)}</span>
             </span>

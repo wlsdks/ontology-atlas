@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { layoutBuilding, pairUnit, stageCapacity, type Box, type LayoutInput } from './building-layout';
+import { layoutBuilding, stageCapacity, type Box, type LayoutInput } from './building-layout';
 
 const keys = (prefix: string, count: number) => Array.from({ length: count }, (_, index) => `${prefix}${index}`);
 
@@ -84,20 +84,6 @@ describe('mini rooms', () => {
     expect(Math.min(...row.map(room => room.w))).toBeGreaterThanOrEqual(300);
     const narrow = layout({ width: 1296, stage: keys('s', 4), floors: [{ key: 'a', rooms: keys('a', 9) }] });
     expect(Math.min(...keys('a', 9).map(key => narrow.rooms.get(key)!.w))).toBeGreaterThanOrEqual(300);
-  });
-});
-
-describe('pairUnit', () => {
-  it('keeps two Moru at the room scale wherever the first one\'s face shows, and never into the monitor', () => {
-    expect([pairUnit(882, 2), pairUnit(640, 2), pairUnit(584, 2), pairUnit(290, 2), pairUnit(286, 1)]).toEqual([2, 2, 1, 2, 1]);
-    expect([pairUnit(290, 2, 500), pairUnit(290, 2, 460)]).toEqual([2, 1]);
-    for (const [width, unit] of [[260, 1], [290, 2], [640, 2], [882, 2], [882, 3]] as const) {
-      const fitted = pairUnit(width, unit);
-      if (fitted === 1) continue;
-      const wide = width >= 520;
-      const reach = wide ? Math.min(0.46 * width, 124 * fitted) + 16 : 0;
-      expect((wide ? 174 : 134) * fitted + 16 + reach).toBeLessThanOrEqual(width);
-    }
   });
 });
 

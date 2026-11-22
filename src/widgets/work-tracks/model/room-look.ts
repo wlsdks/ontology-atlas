@@ -13,13 +13,16 @@ export interface RoomLook {
   /** No Moru when nobody is in the room: a session ended, the folder is gone, or none ever held it. */
   cast: 'none' | 'one' | 'two';
   clip: RoomClip;
+  /** The first Moru's clip when two tools share the folder; the second plays `clip`. */
+  backClip: RoomClip;
   /** A still Moru holds the clip's neutral pose. */
   still: boolean;
   dozing: boolean;
 }
 
+/** Every room's poses are chosen here, so a new Moru clip drops in at one place. */
 export function roomLook(state: RoomState): RoomLook {
-  const quiet = { running: false, monitorOff: false, crate: 'plain', cast: 'one', clip: 'waiting', still: true, dozing: false } as const;
+  const quiet = { running: false, monitorOff: false, crate: 'plain', cast: 'one', clip: 'waiting', backClip: 'read', still: true, dozing: false } as const;
   switch (state.kind) {
     case 'working':
       return { ...quiet, running: true, cast: state.tools.length > 1 ? 'two' : 'one', clip: 'code', still: false };
