@@ -63,7 +63,7 @@
 
 ## すべてのケイパビリティに根拠を付ける
 
-ケイパビリティを作るときは、同時に、開いて確かめられるものを付けます。`path:`に実装の入口を1つ書くか、`elements:`に少なくとも1つの要素を書きます。どちらもないケイパビリティは、誰も確かめられない主張です。それでも書き込まれはしますが、何かを指すようになるまでは`capability_without_evidence`として整理キューに残ります。このキューは`query_ontology`の`maintenance_plan`、または`node cli/src/index.mjs maintenance`で確認できます。
+ケイパビリティを作るときは、同時に、開いて確かめられるものを付けます。`path:`に実装の入口を1つ書くか、`elements:`に少なくとも1つの要素を書きます。どちらもないケイパビリティは、誰も確かめられない主張です。それでも書き込まれはしますが、何かを指すようになるまでは`capability_without_evidence`として整理キューに残ります。このキューは`query_ontology`の`maintenance_plan`で確認できます。
 
 ```markdown
 ---

@@ -5,6 +5,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { isAfterLastIntel } from '../lib/last-intel-release.mjs';
+import { isReleaseTag, parseReleaseTag, splitUpdaterManifestVersion } from '../lib/release-tag.mjs';
 import { updaterArchiveName } from './stage-macos-release-assets.mjs';
 
 const DEFAULT_REPO = 'wlsdks/ontology-atlas';
@@ -14,11 +15,21 @@ function fail(message) {
   throw new Error(`[hosted-updater] ${message}`);
 }
 
+/** A beta release is a GitHub pre-release and carries `-beta.N`; either one keeps it off the feed. */
+function isStableRelease(entry) {
+  return (
+    entry?.draft !== true &&
+    entry?.prerelease !== true &&
+    isReleaseTag(entry?.tag_name) &&
+    parseReleaseTag(entry.tag_name).channel === 'stable'
+  );
+}
+
 export function pickPublishedRelease(releases, requestedTag = null) {
   if (!Array.isArray(releases) || releases.length === 0) {
     fail('GitHub returned no releases.');
   }
-  const published = releases.filter((entry) => entry?.draft !== true && entry?.prerelease !== true);
+  const published = releases.filter(isStableRelease);
   const release = requestedTag
     ? published.find((entry) => entry?.tag_name === requestedTag)
     : published.reduce((newest, entry) => {
@@ -32,8 +43,8 @@ export function pickPublishedRelease(releases, requestedTag = null) {
   if (!release) {
     fail(
       requestedTag
-        ? `no published plain release matches ${requestedTag}; drafts and GitHub pre-releases are never staged`
-        : 'no published plain release is available',
+        ? `no published stable release matches ${requestedTag}; drafts, GitHub pre-releases and beta tags are never staged`
+        : 'no published stable release is available',
     );
   }
   return release;
@@ -46,10 +57,16 @@ export function validateHostedUpdaterManifest(value, releaseTag, repo = DEFAULT_
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     fail('latest.json must be an object');
   }
-  const version = value.version;
+  // `X.Y.Z+<commit>` since releases name their commit; a release cut before that says `X.Y.Z`.
+  let version;
+  try {
+    version = splitUpdaterManifestVersion(value.version).version;
+  } catch {
+    version = null;
+  }
   const expectedVersion = releaseTag.replace(/^v/, '');
-  if (typeof version !== 'string' || version !== expectedVersion) {
-    fail(`latest.json version ${String(version)} does not match ${releaseTag}`);
+  if (version !== expectedVersion) {
+    fail(`latest.json version ${String(value.version)} does not match ${releaseTag}`);
   }
   const platforms = value.platforms;
   if (!platforms || typeof platforms !== 'object' || Array.isArray(platforms)) {

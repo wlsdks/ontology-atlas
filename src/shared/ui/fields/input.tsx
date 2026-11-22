@@ -20,7 +20,7 @@ import { RowDisclosure } from "../controls/row-disclosure";
  * Behaviour layer of a form field, not styling: a required accessible name, and
  * one `error`/`hint` prop that wires `aria-invalid`, `aria-describedby` (error first)
  * and `role="alert"` through `useId`. The className is `fieldClass(...)` verbatim, asserted by
- * a contract; `field-adoption-ratchet` holds raw text fields in new files at 0.
+ * a contract. New text fields use this instead of a raw `<input>` or `<textarea>`.
  */
 
 /** The type requires one of the three; a nameless field does not compile. */

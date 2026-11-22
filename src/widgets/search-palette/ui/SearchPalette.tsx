@@ -347,6 +347,7 @@ function SearchPaletteDialog({
         data-search-palette-panel="true"
         onClick={(event) => event.stopPropagation()}
         {...transientSurface("sheet")}
+        // eslint-disable-next-line no-restricted-syntax -- a command palette; Dialog has no palette variant yet
       role="dialog"
         aria-modal="true"
         aria-labelledby="search-palette-title"
@@ -418,6 +419,7 @@ function SearchPaletteDialog({
               <button
                 key={option.value}
                 type="button"
+                // eslint-disable-next-line no-restricted-syntax -- hand-built tabs not yet moved to TabBar
                 role="tab"
                 aria-selected={active}
                 onClick={() => {

@@ -371,7 +371,6 @@ export function VaultAgentSetupPanel({
               agentSetupReady={agentSetupReady}
               vaultLoaded={localVault.status === 'loaded'}
               docCount={localVault.manifest?.docs.length ?? 0}
-              vaultRootPath={vaultRootPath}
               validationSummary={validationSummary}
               canEditCurrent={canEditCurrent}
               repairBusy={agentSetupBusy}

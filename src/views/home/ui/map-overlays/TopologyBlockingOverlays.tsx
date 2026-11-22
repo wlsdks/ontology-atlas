@@ -34,6 +34,7 @@ export function TopologyBlockingOverlays(props: TopologyBlockingOverlaysProps) {
             onClick={props.closeBootstrap}
           />
           <div
+          // eslint-disable-next-line no-restricted-syntax -- the map composer stays in the map scrim layer; a body portal at the dialog layer would break the chrome order on the map
             role="dialog"
             aria-modal="true"
             aria-label={props.bootstrapPlan.existingProjectSlug ? t("bootstrap.headingAddToMap") : t("bootstrap.heading")}
@@ -79,6 +80,7 @@ export function TopologyBlockingOverlays(props: TopologyBlockingOverlaysProps) {
             onClick={props.closeCreateNode}
           />
           <div
+          // eslint-disable-next-line no-restricted-syntax -- the map composer stays in the map scrim layer; a body portal at the dialog layer would break the chrome order on the map
             role="dialog"
             aria-modal="true"
             aria-labelledby="topology-create-node-unavailable-title"

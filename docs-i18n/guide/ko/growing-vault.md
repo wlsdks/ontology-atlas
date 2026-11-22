@@ -19,7 +19,7 @@
 이름을 바꿨다고 개념 이름까지 바꿀 필요는 없어요. 의미가 바뀐 건지, 파일만 바뀐
 건지 판단하세요. 파일만 옮겼다면 개념의 `path`만 고치면 돼요.
 
-`init`은 Claude Code와 Codex용 시작 스킬 세 개를 설치해요. `atlas-review`는
+Atlas가 만든 온톨로지 폴더에는 Claude Code와 Codex용 시작 스킬 세 개가 들어 있어요. `atlas-review`는
 깨지거나 끊어진 곳을 알려 주고, `atlas-grow`는 다음에 더할 것을 제안하고,
 `atlas-absorb`는 메모나 명세에서 개념을 뽑아내요. 셋 다 내가 고르기 전에는
 아무것도 쓰지 않아요.
@@ -32,58 +32,33 @@
 설명해요. 이 표시에는 폴더의 Git 기록이 필요해서, 웹사이트나 Git이 없는
 폴더에서는 나오지 않아요.
 
-터미널에서는 `health`가 전체 점검을 실행해요. 개념이 인용한 소스 경로가 아직
-있는지도 확인해요.
-
-```bash
-node ~/tools/ontology-atlas/cli/src/index.mjs health ./atlas
-```
-
-`validate`는 마크다운과 참조만 확인하고 코드는 보지 않아요. 그래서 인용된
-파일을 지운 리팩터링은 `validate`를 통과해도 `health`에서는 실패할 수 있어요.
+에이전트의 `validate_vault`는 마크다운과 참조를 확인하고, `pathDrift` 목록으로
+개념이 인용했지만 이제는 없는 소스 경로를 알려 줘요. 하나씩 `patch_concept`로
+고치면 돼요.
 
 앱의 **변경** 화면은 내가 고른 코드 저장소의 Git 기록을 읽어요. 정한 기간 안에
 머지된 내용을 요약하고, 변경마다 그 변경이 건드린 코드 경로에 연결된 **영향받는
 개념**을 보여 줘요. 바쁜 한 주를 보낸 뒤라면 여기부터 보세요.
 
-커밋하기 전에 `preflight --staged`를 실행하면 스테이징한 파일마다 그 파일을
-인용하는 개념을 찾아, 어떤 개념에 영향이 가는지 출력해요. 커밋을 막지는 않고,
-해당하는 개념이 없으면 아무것도 출력하지 않아요.
-
 ## 중복 피하기
 
 지도가 망가지는 가장 흔한 경우는 같은 개념을 다른 이름으로 두 번 만드는
-거예요. 새 개념을 더하기 전에 확인하세요.
-
-```bash
-node ~/tools/ontology-atlas/cli/src/index.mjs similar "order acceptance" ./atlas
-```
-
-점수가 높으면 새로 만들지 말고 기존 개념을 고치세요. 에이전트에게도 같은
-안전장치가 있어요. 제목이 비슷한 개념이 이미 있으면 `add_concept`이 경고를
-돌려줘요. 이미 두 개념으로 갈라졌다면 합치세요. 합치면 모든 참조가 남는 개념으로
-옮겨져요.
-
-```bash
-node ~/tools/ontology-atlas/cli/src/index.mjs merge capabilities/checkout capabilities/order-acceptance --vault ./atlas
-```
+거예요. 에이전트는 새 개념을 더하기 전에 `query_ontology`의 `similar_nodes`로
+제안한 제목과 겹치는 개념이 있는지 물어볼 수 있어요. 겹치는 개념이 있으면 새로
+만들지 말고 기존 개념을 고쳐요. 제목이 비슷한 개념이 이미 있으면 `add_concept`도
+경고를 돌려줘요. 이미 두 개념으로 갈라졌다면 `merge_concepts`로 합치세요. 합치면
+모든 참조가 남는 개념으로 옮겨져요.
 
 ## 참조를 깨지 않고 이름 바꾸기
 
-개념 이름을 손으로 바꾸면 참조를 놓치기 쉬워요. `rename`은 파일을 옮기고, 그
-개념을 가리키는 모든 개념을 관계 이유(`relation_notes`)까지 포함해 고쳐 써요.
-
-```bash
-node ~/tools/ontology-atlas/cli/src/index.mjs backlinks capabilities/checkout --vault ./atlas
-node ~/tools/ontology-atlas/cli/src/index.mjs rename capabilities/checkout capabilities/order-acceptance --vault ./atlas
-```
+개념 이름을 손으로 바꾸면 참조를 놓치기 쉬워요. 에이전트는 먼저
+`find_backlinks`로 참조를 확인하고, `rename_concept`로 파일을 옮기면서 그 개념을
+가리키는 모든 개념을 관계 이유(`relation_notes`)까지 포함해 고쳐 써요.
 
 slug는 바뀌어도 `uid`는 그대로라서, 에이전트도, 내보낸 파일도 여전히 같은
-개념을 알아봐요. `rename`, `merge`, `delete`는 기본으로 미리 보기만 해요.
-적용하려면 `--confirm`을 붙이세요. `delete`는 다른 개념이 아직 그 개념을
-가리키고 있으면 거부해요. 에이전트는 같은 일을 하는 MCP 도구 `rename_concept`,
-`merge_concepts`, `delete_concept`를 쓰고, 이 도구들도 똑같이 먼저 미리 보기를
-보여 줘요.
+개념을 알아봐요. `rename_concept`, `merge_concepts`, `delete_concept`는 먼저
+미리 보기를 보여 주고, 확인을 받아야 적용해요. `delete_concept`는 다른 개념이
+아직 그 개념을 가리키고 있으면 거부해요.
 
 ## 지도에서 검토 결과 보기
 
@@ -109,12 +84,7 @@ slug는 바뀌어도 `uid`는 그대로라서, 에이전트도, 내보낸 파일
 온톨로지 폴더는 Git으로 관리하는 평범한 파일이라서, 개념 변경도 코드와 같은 풀
 리퀘스트에서 리뷰해요. 앱의 **Git** 화면은 커밋하지 않은 변경을 문서별로 보여
 주고 바뀐 줄을 표시해요. 변경 수가 적힌 **커밋** 버튼을 누르면 커밋돼요. 이
-화면에서 문서 하나를 이전 버전으로 되돌릴 수도 있어요. 터미널에서는 `snapshot`이
-온톨로지 폴더만 골라, 바뀐 내용 요약과 함께 커밋해요.
+화면에서 문서 하나를 이전 버전으로 되돌릴 수도 있어요. 에이전트의 `git_snapshot`은
+온톨로지 폴더만 골라 커밋하고, 기본으로는 무엇을 커밋할지 미리 보여 주기만 해요.
 
-```bash
-node ~/tools/ontology-atlas/cli/src/index.mjs snapshot ./atlas --dry-run
-```
-
-여기서 쓴 명령은 모두 [CLI 장](/guide/cli)에 정리돼 있어요. 개념과 관계의 모양은
-[개념 사이의 관계](/guide/relations)에서 다뤄요.
+개념과 관계의 모양은 [개념 사이의 관계](/guide/relations)에서 다뤄요.

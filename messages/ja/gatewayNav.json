@@ -26,7 +26,6 @@
     "fromYourRepo": "コードから最初のマップを作る",
     "connectAgent": "MCPでコーディングエージェントを接続",
     "growingVault": "コードの変更に合わせてマップを最新に保つ",
-    "cli": "CLIとMCPの関係",
     "trust": "データ、プライバシー、安全性"
   },
   "guidePrev": "前の章",

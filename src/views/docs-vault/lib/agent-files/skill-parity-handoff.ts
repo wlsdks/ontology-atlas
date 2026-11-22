@@ -1,8 +1,7 @@
 import type { SkillParityRow } from './skill-parity';
 
 /**
- * A sentence, not a shell command: the CLI's location is unknown (`.claude/rules/surfaces.md`),
- * and which copy is newer takes reading. Paths are absolute because the receiving session's cwd
+ * A sentence, not a shell command: which copy is newer takes reading. Paths are absolute because the receiving session's cwd
  * may be another folder.
  */
 export function buildSkillParityHandoff(

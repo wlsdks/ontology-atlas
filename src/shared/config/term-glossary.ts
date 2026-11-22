@@ -6,5 +6,3 @@ export const TERM_GLOSSARY = {
 } as const;
 
 export type GlossaryTerm = keyof typeof TERM_GLOSSARY;
-
-export const GLOSSARY_TERMS = Object.keys(TERM_GLOSSARY) as GlossaryTerm[];

@@ -94,6 +94,7 @@ export function OntologyMapEdgePanel({
   return (
     <aside
       ref={dialogRef}
+      // eslint-disable-next-line no-restricted-syntax -- a non-modal panel beside the map; Dialog is modal only
       role="dialog"
       aria-label={sentence}
       tabIndex={-1}

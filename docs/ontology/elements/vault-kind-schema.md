@@ -13,7 +13,7 @@ created_by: "agent:claude-code"
 Declares, once, what frontmatter each node kind must carry, which folder its slug lives under, and how a new node's permanent identity is minted.
 
 ## Includes
-- The per-kind required and expected fields every writer follows, whether the write came from an agent, the terminal, or the app.
+- The per-kind required and expected fields every writer follows, whether the write came from an agent or the app.
 - The folder each kind belongs in, and the default body a new node starts from.
 - Minting the immutable node identity that survives a rename.
 - Which kinds keep which kind-named lists (`containmentKeyFor`: a project keeps domains; a project or domain keeps capabilities; a project, domain or capability keeps elements), and what a removal leaves when it empties a relation list (`emptiedRelationListValue`: the key goes, except a kind's scaffold list, which returns to `[]`).
@@ -23,5 +23,5 @@ Declares, once, what frontmatter each node kind must carry, which folder its slu
 - Enforcing itself; the write paths call it, it does not intercept them.
 
 ## Uncertainty
-- Read from the module header and its stated role as the single source for both the agent and terminal write paths. The terminal side, `cli/src/lib/mcp-bridge/schema.mjs`, was read on 2026-11-19: it loads this module through `loadMcpModule` and re-exports the constants the CLI uses instead of carrying a copy, and `tests/contract/architecture/schema-copy-sync.contract.test.ts`, which refuses logic of its own there, passed that day. The rest of this module's body was read only where the re-read below names it.
+- Read from the module header and its stated role as the single source for the agent write path; since the old terminal commands were removed on 2026-11-22 no second write path loads it. The rest of this module's body was read only where the re-read below names it.
 - Re-read 2026-09-26: `containmentKeyFor` and `emptiedRelationListValue` in `mcp/src/schema.mjs` (bundles #1874 and #1883); the app copy in `src/shared/lib/vault-document/containment-keys.ts` is held to it by `tests/contract/vault-format/vault-schema.contract.test.ts`.

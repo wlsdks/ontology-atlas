@@ -166,7 +166,7 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   **Import Block** reads `.md` folders and, if present, `block-manifest.json`, showing **only what is coming in and what conflicts with existing files first**
   (dry-run — running it tentatively without writing anything). Then only the files approved by the person are written via the vault's existing `createDoc` path. **Export this realm's source .mds as a block folder** on the realm expansion screen copies only the source files of the child nodes contained in that realm. The folder picker window uses
   `showDirectoryPicker()` on the web, and Tauri's own picker following the same `FileSystemDirectoryHandle`
-  protocol on the installed app. Canceling that window is neither an error nor a write. For terminal-only use, run `ontology-atlas import <path...>`.
+  protocol on the installed app. Canceling that window is neither an error nor a write.
 - **Tab** → keyboard cycle to neighbor hub
 - **Empty state** (0–1 nodes) → `TopologyEmptyState` explains whether the
   vault lacks projects or relations, then offers the applicable next actions:

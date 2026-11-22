@@ -29,10 +29,10 @@ pnpm build                        # static export
 
 The most valuable contributions today:
 
-1. **Scaffold a vault and tell us what's confusing** — from a source
-   checkout, `node cli/src/index.mjs init ./ontology` inside your own
-   repository (setup steps: [cli/README.md](cli/README.md#set-up-from-a-source-checkout)).
-   File an issue with what you tried and where you got stuck.
+1. **Build a first map and tell us what's confusing** — in the installed
+   app, press **Build ontology from code** on the start card and pick your
+   own repository. File an issue with what you tried and where you got
+   stuck.
 2. **Bring your own vault** — point the workbench `/docs` picker at a
    real codebase ontology you maintain. Tell us what missing tools or
    visualizations would change your day.
@@ -138,6 +138,18 @@ cloud-collab phase reintroduces server APIs, the barrel must stay clean
 so first-paint chunks of local-first routes don't pull them in. See
 [`.claude/rules/architecture.md`](.claude/rules/architecture.md) for the
 full rule.
+
+### Releases
+
+Maintainers cut desktop releases; the commands are in
+[`docs/engineering/deployment.md`](docs/engineering/deployment.md#desktop-release-paths).
+
+- **Beta, then promotion**: cut `vX.Y.Z-beta.N`, install it by hand, then
+  promote the same bytes to `vX.Y.Z`. No waiting period is required; promotion
+  needs only a green browser-suite run on that commit.
+- **Direct stable cut**: cut `vX.Y.Z` with no beta, for example a same-day fix.
+- **Hard rule**: a beta never writes the updater feed (`latest.json`) or the
+  download page, so no installed app is offered it.
 
 ## Mission v3 alignment
 

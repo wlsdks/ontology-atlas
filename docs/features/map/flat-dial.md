@@ -357,8 +357,8 @@ folder. Mark objects are reused across frames. Level of detail for 2,000- and
 
 What the graph draws, an agent can ask for:
 
-- `query_ontology({operation:"domain_matrix", types:["depends_on"]})` or `ontology-atlas domain-matrix --types depends_on`: the counted lines.
-- `query_ontology({operation:"blast_radius", slug, direction:"incoming"})` or `ontology-atlas blast-radius <slug> --direction incoming`: what a focused capability is used by, the warm tapers.
+- `query_ontology({operation:"domain_matrix", types:["depends_on"]})`: the counted lines.
+- `query_ontology({operation:"blast_radius", slug, direction:"incoming"})`: what a focused capability is used by, the warm tapers.
 
 The overview fits the graph into the free map, whose top sits below the tool
 row and any band beneath it. The first fit, the fit tile and closing an

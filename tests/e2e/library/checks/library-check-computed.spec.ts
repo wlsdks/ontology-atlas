@@ -143,7 +143,7 @@ test.describe("the structural check is the app's own", () => {
       .toEqual(expectedBlockingRows);
     await expect(page.getByTestId("library-advisory-fold")).toContainText("3");
 
-    // Every planted finding, grouped by the code `wiki-validate` prints, with a page door.
+    // Every planted finding, grouped by the code `validate_wiki` returns, with a page door.
     await openAdvisoryFold(page);
     await expect
       .poll(() => readReport(page), { timeout: 20_000 })

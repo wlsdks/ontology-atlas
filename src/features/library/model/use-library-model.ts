@@ -38,7 +38,7 @@ export interface LibraryUiModel extends LibraryModel {
   /** Last Compile and Check runs from `wiki/_log.md`; null when the log has no such line. */
   log: { lastCompile: WikiLogEntry | null; lastLint: WikiLogEntry | null };
   /**
-   * Verdicts regrouped by `mcp/src/library/wiki-report.mjs`, the module the CLI and MCP use, so the app
+   * Verdicts regrouped by `mcp/src/library/wiki-report.mjs`, the module MCP uses, so the app
    * and a terminal count one folder one way. The `unmeasured` field names pages not yet read.
    */
   structural: WikiReport;
@@ -325,7 +325,7 @@ export function useLibraryModel({
   }, [cacheFacts, enabled, fileHandles, latestFileHandles, latestPageInputs, latestFactsByStamp, pageInputs, pageReadRound, termIntern, vaultRootPath]);
 
   // The folder's concepts, so a `describes:` entry whose concept is gone is reported here as
-  // `wiki-validate` reports it.
+  // `validate_wiki` reports it.
   const concepts = useMemo(() => wikiNodeIndexOfDocs(docs), [docs]);
   const knownSources = useMemo(() => new Set((sources ?? []).map((source) => source.path)), [sources]);
   const pageFacts = useMemo(() => {
@@ -342,8 +342,8 @@ export function useLibraryModel({
   );
 
   /*
-   * The pages are judged with the inputs `wiki-validate` passes (the folder's sources and its
-   * concepts), and one aggregator decides both numbers, so the footer and `wiki-validate` agree.
+   * The pages are judged with the inputs `validate_wiki` passes (the folder's sources and its
+   * concepts), and one aggregator decides both numbers, so the footer and `validate_wiki` agree.
    */
   const structural = useMemo(
     () => libraryWikiReport(verdicts, pageInputs.filter(({ slug }) => !verdicts.has(slug)).map(({ slug }) => slug)),

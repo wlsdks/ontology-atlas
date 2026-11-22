@@ -44,7 +44,7 @@ or a test that parses them pins their path.
 | `benchmark/` | the agent benchmark protocol, tasks and rubric | no |
 | `assets/readme/` | images the root README shows | no |
 
-The vault's frontmatter is graph data; use the MCP/CLI rather than manually
+The vault's frontmatter is graph data; use the MCP server rather than manually
 guessing graph facts. Folders that do not ship still open from an in-app link,
 which resolves to their GitHub page.
 
@@ -59,7 +59,7 @@ them when a specific historical question requires it.
 ## Updating documentation
 
 Update the authority that owns the change: public behavior in `README.md` and
-`features/`; MCP/CLI contracts in their own READMEs; routes in
+`features/`; MCP and init contracts in their own READMEs; routes in
 `ARCHITECTURE.md`; decisions and user-visible changes as `records/` fragments
 (`pnpm record:new`); and new ontology meaning through the ontology-sync workflow.
 

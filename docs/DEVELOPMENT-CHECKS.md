@@ -128,7 +128,7 @@ before relying on it.
 | Checks · Check impact plan | 25 s | 21 s avg | a missing plan is RED |
 | Checks · Types · Lint · Docs | 260 s | 150 s avg / 238 s max | type, lint and documentation gates |
 | Checks · Unit · Contract (x3) | 310 s | 2026-11-18, 22 trains: shards 79-340 s, 4-201 s, 4-285 s; full sweep 271 / 222 / 186 s by file count | affected unit tests and reached plus core contracts; the full sweep after merge |
-| Checks · MCP | 390 s | 146 s avg / 382 s max | the MCP and CLI boundary |
+| Checks · MCP | 390 s | 146 s avg / 382 s max | the MCP boundary |
 | Checks · Required checks | 10 s | not yet measured | the one context `main` requires: plan, gates, unit and MCP each `success` |
 | Browser surfaces (macOS) | 180 s | 159 s (run 45020130503, 2026-11-22: setup 46 s, static 27 s, web 49 s) | static-export-only behaviour, the unattended gateway; nightly and before a stable release |
 | Browser suite (macOS x3) | 1400 s | 16.3, 21.3 and 23.3 min per shard before rebalancing, 25 min end to end, no queue; 6,605 test-seconds against 4,071 on Linux (run 45020130503, 2026-11-22) | rendered journeys and measurements; nightly and before a stable release, never before merge |
@@ -197,6 +197,7 @@ What each contributor command answers, sorted by command.
 | `pnpm integration:start <topic>` | Create `integration/<topic>-<yyyy-mm-dd>` from `origin/main` in `.claude/worktrees/integration-<topic>`, push it, and install that worktree offline; no CI runs |
 | `pnpm knip` | Dead files, exports and types |
 | `pnpm licenses:check` · `pnpm notice:build` · `pnpm notice:check` | Shipped packages are on the license allow-list, and `NOTICE.md` is current ([rules](engineering/third-party-code.md)) |
+| `pnpm mcp:tools-list-bytes` | What `tools/list` costs a connected agent, read from the booted stdio server for the full and the construction profile: per tool, the model-read bytes (name, description and input schema), the output schema and the whole entry, then the totals; `-- --json` prints the same as JSON |
 | `pnpm messages:build` · `pnpm messages:check` · `pnpm messages:adopt` | Compose `messages/<locale>.json` from one file per namespace, prove it current, and carry an old branch's edits |
 | `pnpm messages:coverage -- --locale <code>` | Checks one locale's strings against `en`: arguments, plurals, script, keep-terms and typography |
 | `pnpm og:build` | Re-render the 1200×630 link-preview card for each locale into `public/og/` and `public/og-image.png` from the download headline; macOS for the Japanese and Chinese faces |

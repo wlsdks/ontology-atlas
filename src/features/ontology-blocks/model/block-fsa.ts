@@ -33,7 +33,7 @@ export interface BlockDirectoryReadResult {
   manifestRaw: string | null;
 }
 
-/** Recursive walk. Dotfile directories and files, and node_modules, are skipped exactly as in the CLI import. */
+/** Recursive walk. Dotfile directories and files, and node_modules, are skipped. */
 export async function readBlockDirectory(
   directory: BlockDirectoryHandleLike,
 ): Promise<BlockDirectoryReadResult> {

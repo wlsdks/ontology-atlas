@@ -18,7 +18,7 @@ disagree, the code wins; a feature file's history is its Git log
 
 The compass identifies Atlas in app/browser icons and gateway chrome. Moru, the gray-and-indigo pixel seal, accompanies existing welcome, pending and verified-work states; see [Brand](design/brand.md).
 
-Compact MCP/CLI task handoffs carry whole uncertainty statements, per-document
+Compact MCP task handoffs carry whole uncertainty statements, per-document
 omissions and project-inclusive full-body recovery; see [MCP server](features/mcp-server.md).
 Exact navigation, scope boundaries and runner manifests exclude literal
 Markdown examples, HTML blocks/comments and blockquotes from their authored evidence.
@@ -51,7 +51,7 @@ native 128px art. Work and completion poses still require their existing evidenc
 Agent setup names the connected vault in its post-change sync guidance, including
 when the vault and codebase are separate folders.
 
-MCP and CLI meaning checks distinguish a parseable project document changed since
+MCP meaning checks distinguish a parseable project document changed since
 finalization from malformed input. Source and inventory prerequisites remain in
 force; the recovery asks for review and explicit finalization without accepting
 incomplete answers. MCP bundles also retain nested modules declared as package
@@ -108,7 +108,6 @@ Closing a concept's full reading view returns to its selected map concept and in
 | Surface | Entry | Reference |
 |---|---|---|
 | Desktop app (macOS; Windows x64 beta) | Installed local workbench over a folder on disk | [`DESKTOP-MACOS.md`](DESKTOP-MACOS.md), [Download](features/download.md) |
-| CLI | `node cli/src/index.mjs <command>` from a source checkout | [`cli/README.md`](../cli/README.md); the command list is `node cli/src/index.mjs --help` |
 | MCP | JSON-RPC server an agent registers against a vault | [`mcp/README.md`](../mcp/README.md); the tool list is the server's `tools/list` answer; optional first-construction discovery exposes 20 existing tools, with full discovery as the default; exact `sourceOnly` continuations reuse bounded evidence without rescanning |
 | Website | Static export; `/` is the gateway until a vault is loaded | [Gateway](features/gateway.md) |
 
@@ -235,11 +234,11 @@ work here, and where it can.
 | Explore overlooked areas | ❌ reason + app link; recorded map stays usable | macOS local evidence reader; Windows stays unmeasured | selected scope + explicit bound-folder confirmation; native re-selection recovers missing source access without rebinding or scanning automatically; no agent or service needed |
 | Work offline | ❌ | ✅ | |
 | Search by meaning in the Wiki question desk | ❌ the line under the field says it works in the app | ✅ off until set up per folder | finds passages in other words or another language beside word matches, each row labelled Same words, Similar meaning or both; setup downloads bge-m3 (BAAI, MIT) once from huggingface.co, or uses an Ollama embedding model already on this computer; nothing from the folder is sent; the prepared passages sit beside the search index in the OS cache folder; a **Model** chip on the desk line opens one dialog that switches between the built-in model and Ollama models, shows where the model is kept and deletes it in one press; Settings › Privacy · data also deletes the model and the prepared passages ([workspace](features/library/workspace.md)) |
-| Git history and snapshots | ❌ degraded card + `ontology-atlas snapshot` | ✅ | a browser has no right to run git on your machine |
+| Git history and snapshots | ❌ degraded card | ✅ | a browser has no right to run git on your machine |
 | Sent-log count and five recent records | FSA complete read | macOS bounded native pulls; other native platforms keep existing reads | changed, failed or expired reads offer Retry without publishing zero or stale rows; original history is preserved |
 | API keys / in-app **agent** chat | ❌ **and will not be built** | ✅ native credential store | keys in browser storage leak to a single XSS, and vendors name the direct-call header `…-dangerous-direct-browser-access` |
 | Write agent config (`.mcp.json`) into the vault | ⚠️ folder writes work, but there is no absolute path to record | ✅ | MCP registration needs a real path |
-| In-app updates | ❌ | ✅ | checks after launch and every hour while the app stays open (macOS); a notice with Moru offers the install, shows the download and asks for the restart, and Later holds that version back for a day; the automatic check can be turned off in Settings → About, where Check for updates still works |
+| In-app updates | ❌ | ✅ | checks after launch and every hour while the app stays open (macOS); a notice with Moru offers the install, shows the download and asks for the restart, and Later holds that version back for a day; the automatic check can be turned off in Settings → About, where Check for updates still works; it offers stable releases only, so a beta release (a GitHub pre-release) reaches only someone who installs it by hand, and someone on a beta is offered the stable release of that version |
 
 **Windows**: an unsigned x64 beta carries the same local folder and MCP
 surface as the desktop app. `/download` states the SmartScreen unknown-publisher

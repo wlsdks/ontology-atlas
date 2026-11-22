@@ -88,11 +88,11 @@ export const rules = [
   {
     order: 250,
     command: 'pnpm docs:surface:check',
-    reason: 'MCP tool registry, CLI command registry, or their READMEs changed',
+    reason: 'MCP tool registry, the init command list, or their READMEs changed',
     matches: [
       /^mcp\/src\/index\.js$/,
       /^mcp\/src\/server\/(?:registry\.mjs|tool-definitions\/[^/]+\.mjs|tool-schemas\/[^/]+\.mjs)$/,
-      /^cli\/src\/lib\/cli-commands\.mjs$/,
+      /^cli\/src\/commands\.mjs$/,
       /^mcp\/README\.md$/,
       /^cli\/README\.md$/,
       /^docs\/\.generated\/mcp-surface\.json$/,

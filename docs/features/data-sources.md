@@ -46,8 +46,8 @@ manifest (root README → project title · 1-depth folders → domains · each d
 element with `domain:`), and on confirm writes only frontmatter to the accepted
 docs (bodies untouched) plus one new `project.md`. Candidate derivation is pure:
 `src/features/docs-vault-local/lib/bootstrap-candidates.ts`, the browser
-equivalent of CLI `bootstrap` / MCP `analyze_repo_structure`, so all three
-ingress paths converge on the same shape. The dialog never says "ontology".
+equivalent of MCP `analyze_repo_structure`, so both ingress paths converge on
+the same shape. The dialog never says "ontology".
 
 ## 3. Meaning and time surfaces
 

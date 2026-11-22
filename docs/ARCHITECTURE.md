@@ -87,26 +87,14 @@ area: architecture
 │ query_ontology answers graph-database-like questions    │
 │ over that artifact without introducing a server DB.     │
 └────────────────────────────────────────────────────────┘
-
-       ↑ stdio JSON-RPC (separate process)
-
-┌────────────────────────────────────────────────────────┐
-│ CLI (cli/, v0.11.0 — 62 commands)                      │
-│ ├─ init/agent-activity/add/import/list/find/validate/query│
-│ ├─ mcp-verify/analyze/infer-imports/architecture       │
-│ ├─ bootstrap/compile                                   │
-│ ├─ constellations/constellation (read-only scope)      │
-│ ├─ preflight (commit preflight + pre-commit hook)      │
-│ └─ graph CRUD + deep dive commands                     │
-│                                                         │
-│ Developer-primary daily entry point. Same `.md` files. │
-└────────────────────────────────────────────────────────┘
 ```
 
 There is no backend, no server database, no login provider. The user's markdown
 folder — called the **vault** everywhere in this repo — is the single source of
-truth. Both the MCP server (used by the AI agent) and the CLI (used by the
-developer) read and write that same folder.
+truth. The app and the MCP server (used by the AI agent) read and write that
+same folder. `cli/` holds one command, `node <checkout>/cli init`, which
+scaffolds a vault and wires the checkout's MCP server into it; every other
+read and write goes through the MCP server.
 
 ### MCP server modules (2026-09-12)
 
@@ -169,7 +157,7 @@ does not establish a working custom-instructions loader.
 
 The public app/website brand is **Ontology Atlas**. The macOS app bundle,
 bundle identifier, and DMG assets use the Ontology Atlas identity, while the
-repo, CLI binary, and MCP package remain under `ontology-atlas`, so product
+repo, init command, and MCP package remain under `ontology-atlas`, so product
 naming does not imply a backend, Firebase data dependency, or package rename.
 
 Atlas answers graph-database questions by computing the answer in memory when
@@ -294,7 +282,7 @@ Architecture intent uses a parallel, non-ontology record. A Markdown file with
 `architecture_schema: architecture-profile/v1` has no `kind:` and therefore
 never becomes a Map node. It declares pattern axes, scoped implementation roles,
 path mappings, allowed dependency direction, and reviewed evidence. MCP
-`inspect_architecture` and CLI `architecture` derive the usage-qualified
+`inspect_architecture` derives the usage-qualified
 observed import model from the connected source and compare it with that
 declaration. Optional `dependency_usages` says which known import usages the
 dependency rules govern; missing v1 fields preserve value plus type-only
@@ -312,7 +300,7 @@ O(path length × program length) work and O(program length) retained working
 space, without recursive backtracking or path-result caches. The
 `/architecture?view=architecture` Living Blueprint
 renders the declared model and copies the typed pre/post agent plan, while source
-analysis remains in MCP/CLI rather than being duplicated into Markdown. It moved off the default
+analysis remains in MCP rather than being duplicated into Markdown. It moved off the default
 address on 2026-09-19: the layer ladder is the product's architecture, which a harness *regulates*
 (maintainability · architecture fitness · behaviour), and not a part of the harness itself.
 
@@ -488,7 +476,7 @@ owns diagnostic Markdown and `entities/analysis-record` re-exports it for the ap
 results and architecture measurements; `widgets/analysis-workbench` renders
 meaning, immutable history, and the still-mounted conversation. The native
 `analysis_archive` module exclusively appends inside the captured vault's
-`.ontology-atlas/analyses/`. MCP/CLI read the same format without compiling it
+`.ontology-atlas/analyses/`. MCP reads the same format without compiling it
 into ontology nodes. The Architecture view may reconstruct a dated observation
 only against its matching profile snapshot. [Contract and boundaries](contracts/analysis-records.md).
 
@@ -566,7 +554,7 @@ graph. The separation is a property of the **walk**, not a filter applied later.
   fingerprint that counted a different file set would make the app rebuild constantly or
   miss a dropped document.
 - The wiki page contract is `docs/ONTOLOGY-ATLAS-SPEC.md` §11. Its machine half is
-  `mcp/src/library/wiki-schema.mjs` (executed by the CLI's `wiki-validate`), mirrored for the web
+  `mcp/src/library/wiki-schema.mjs` (executed by MCP `validate_wiki`), mirrored for the web
   bundle by `src/shared/lib/library/wiki-page-schema.ts` and held together by
   `tests/contract/library/wiki-page-schema.contract.test.ts`.
 - `tests/contract/library/library-never-enters-the-graph.contract.test.ts` runs one fixture
@@ -634,7 +622,7 @@ graph. The separation is a property of the **walk**, not a filter applied later.
   web build lacks a native folder root.
 - `src/entities/library-collection/` owns the compatible `v1` saved-constellation
   schema and UID-based member resolution. The selected vault sidecar is shared by
-  Map and Library; MCP and CLI mirror it for read-only recovery. The Map
+  Map and Library; MCP mirrors it for read-only recovery. The Map
   candidate carries a separate `mapId` for map focus, while persisted
   `lastKnownPath` keeps the manifest's exact `document.path`
   (for example `capabilities/x.md`) for display only. A saved membership is neither
@@ -862,7 +850,7 @@ until a local manifest, or the first part of one, exists.
                            missing hook script or Codex's AGENTS.md over its
                            default limit, and no score, grade or percentage;
                            architecture — reviewed architecture profiles, the
-                           stable role blueprint, and the typed MCP/CLI handoff,
+                           stable role blueprint, and the typed MCP handoff,
                            where every ?role= deep link still lands. ?view=guides,
                            ?view=structure, ?view=coverage and ?view=sensors
                            rewrite to overview. Never an ontology map
@@ -1083,7 +1071,7 @@ pnpm vault:validate        # R11+ — frontmatter integrity + graph array drift
 pnpm test:vault:validate   # focused validator CLI argument contract
 pnpm vault:audit           # dogfood ontology capability/element paths exist in repo
 pnpm test:vault:audit      # focused vault audit CLI argument contract
-pnpm package:check         # MCP/CLI package files contract + self-test
+pnpm package:check         # MCP and init package files contract + self-test
 pnpm test:contracts        # focused cross-package parser/schema/validator contracts
 pnpm vault:migrate --list  # R11 — schema migration runner (dry-run default)
 ```

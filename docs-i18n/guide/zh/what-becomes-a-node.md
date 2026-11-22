@@ -63,7 +63,7 @@
 
 ## 为每项能力提供依据
 
-创建一项能力时，要在同一步里给它一个可以打开查看的东西：在 `path:` 中写一个实现入口，或者在 `elements:` 中至少写一个元素。两者都没有的能力，是一个无人能核实的说法。它仍然会写入，但会一直以 `capability_without_evidence` 的形式留在清理队列中，直到它指向某个东西为止。可以用 `query_ontology` 的 `maintenance_plan`，或 `node cli/src/index.mjs maintenance` 查看这个队列。
+创建一项能力时，要在同一步里给它一个可以打开查看的东西：在 `path:` 中写一个实现入口，或者在 `elements:` 中至少写一个元素。两者都没有的能力，是一个无人能核实的说法。它仍然会写入，但会一直以 `capability_without_evidence` 的形式留在清理队列中，直到它指向某个东西为止。可以用 `query_ontology` 的 `maintenance_plan` 查看这个队列。
 
 ```markdown
 ---

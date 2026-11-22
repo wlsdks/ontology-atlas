@@ -7,7 +7,6 @@ import { useTranslations } from 'next-intl';
 import { copyText } from '@/shared/lib/clipboard/copy-text';
 import { useFailureSentence } from '@/shared/lib/failures/use-failure-sentence';
 import type { FailureCopy } from '@/shared/lib/failures/use-failure-sentence';
-import { ATLAS_CLI } from '@/shared/config/agent/cli-invocation';
 import { controlClass } from '@/shared/ui/control-class';
 
 /**
@@ -20,23 +19,29 @@ const NEUTRAL_CHIP_SKIN =
 const INDIGO_SOLID_SKIN =
   'border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a18)] hover:bg-[color:var(--color-indigo-a28)]';
 
-export const ONTOLOGY_STARTER_AGENT_VERIFY_PROMPT =
-  [
+/**
+ * The read-first check handed to an agent. Every step is an MCP call: a person with only the
+ * installed app has no terminal command to fall back on, and connecting is the app's job.
+ */
+export function buildOntologyStarterAgentVerifyPrompt(
+  vaultPath?: string | null,
+): string {
+  return [
     'Use the ontology-atlas MCP server to run validate_vault, then query_ontology({ "operation": "workspace_brief" }), then query_ontology({ "operation": "agent_brief" }).',
+    ...(vaultPath ? [`The ontology folder is ${vaultPath}.`] : []),
     'Tell me whether this vault is readable and the write tools are available before proposing changes.',
-    `If the MCP connector is unavailable, run this terminal setup gate from the vault folder instead: ${ATLAS_CLI} agent-brief . --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4.`,
-    'Parse ok separately from performanceOk: ok=false means setup or fallback execution is broken; performanceOk=false with ok=true means the graph fallback works but local latency needs attention.',
+    'If the ontology-atlas MCP tools are not available, stop and tell me: I connect you in the Ontology Atlas app under Agents > MCP (for example "Connect to Claude Code"), then restart you.',
     'After any non-trivial code change, sync docs/ontology before finishing when the change introduces or renames a domain, capability, element, or relation. Skip sync for typos, comments, one-line style, lint config, or fixture-only changes.',
-    'Do not write to the ontology until one of those read-first checks succeeds.',
+    'Do not write to the ontology until those read-first checks succeed.',
   ].join(' ');
+}
 
-export const ONTOLOGY_STARTER_JSON_GATE_COMMAND =
-  `${ATLAS_CLI} agent-brief . --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`;
+export const ONTOLOGY_STARTER_AGENT_VERIFY_PROMPT = buildOntologyStarterAgentVerifyPrompt();
 
 export const ONTOLOGY_POST_CHANGE_SYNC_LINES = [
   'Post-change ontology sync:',
   '- If a code change introduces or renames a domain, capability, element, or relation, sync docs/ontology before finishing.',
-  '- Use MCP write tools when connected; otherwise update the markdown vault deliberately and run health/validate gates.',
+  '- Write through the MCP tools (add_concepts, add_relations, patch_concept), then call validate_vault.',
   '- Skip sync for typos, comments, one-line style, lint config, or fixture-only changes.',
 ];
 
@@ -45,48 +50,6 @@ interface Props {
   /** 0 means an empty vault; above 0 shows the add-to-existing-vault tone. */
   docCount: number;
   vaultPath?: string | null;
-}
-
-function shellQuotePath(path: string): string {
-  return `'${path.replaceAll("'", "'\\''")}'`;
-}
-
-function commandTarget(vaultPath?: string | null): string {
-  return vaultPath ? shellQuotePath(vaultPath) : '.';
-}
-
-export function buildOntologyStarterCliVerifyCommands(
-  vaultPath?: string | null,
-): string {
-  const target = commandTarget(vaultPath);
-  return [
-    `${ATLAS_CLI} validate ${target}`,
-    `${ATLAS_CLI} workspace-brief ${target}`,
-    `${ATLAS_CLI} agent-brief ${target} --prompt`,
-    `${ATLAS_CLI} agent-brief ${target} --graph-db-pack`,
-    `${ATLAS_CLI} agent-brief ${target} --verify-fallbacks`,
-    `${ATLAS_CLI} mcp-verify ${target} --timeout-ms 15000`,
-  ].join('\n');
-}
-
-export function buildOntologyStarterJsonGateCommand(
-  vaultPath?: string | null,
-): string {
-  return `${ATLAS_CLI} agent-brief ${commandTarget(vaultPath)} --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`;
-}
-
-export function buildOntologyStarterAgentVerifyPrompt(
-  vaultPath?: string | null,
-): string {
-  const jsonGate = buildOntologyStarterJsonGateCommand(vaultPath);
-  return [
-    'Use the ontology-atlas MCP server to run validate_vault, then query_ontology({ "operation": "workspace_brief" }), then query_ontology({ "operation": "agent_brief" }).',
-    'Tell me whether this vault is readable and the write tools are available before proposing changes.',
-    `If the MCP connector is unavailable, run this terminal setup gate instead: ${jsonGate}.`,
-    'Parse ok separately from performanceOk: ok=false means setup or fallback execution is broken; performanceOk=false with ok=true means the graph fallback works but local latency needs attention.',
-    'After any non-trivial code change, sync docs/ontology before finishing when the change introduces or renames a domain, capability, element, or relation. Skip sync for typos, comments, one-line style, lint config, or fixture-only changes.',
-    'Do not write to the ontology until one of those read-first checks succeeds.',
-  ].join(' ');
 }
 
 /**
@@ -103,16 +66,8 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
    */
   const [error, setError] = useState<FailureCopy | null>(null);
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
-  const [cliCopyState, setCliCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
-  const [jsonGateCopyState, setJsonGateCopyState] = useState<
-    'idle' | 'copied' | 'failed'
-  >('idle');
   const isEmpty = docCount === 0;
-  const verificationSteps = [
-    t('verifyStepFiles'),
-    t('verifyStepMcp'),
-    t('verifyStepCli'),
-  ];
+  const verificationSteps = [t('verifyStepFiles'), t('verifyStepMcp')];
   const proofCards = [
     { label: t('proofLocalLabel'), body: t('proofLocalBody') },
     { label: t('proofGraphLabel'), body: t('proofGraphBody') },
@@ -136,34 +91,12 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
     setCopyState(copied ? 'copied' : 'failed');
   }
 
-  async function handleCopyCliVerify() {
-    const copied = await copyText(buildOntologyStarterCliVerifyCommands(vaultPath));
-    setCliCopyState(copied ? 'copied' : 'failed');
-  }
-
-  async function handleCopyJsonGate() {
-    const copied = await copyText(buildOntologyStarterJsonGateCommand(vaultPath));
-    setJsonGateCopyState(copied ? 'copied' : 'failed');
-  }
-
   const copyPromptLabel =
     copyState === 'copied'
       ? t('copyPromptCopied')
       : copyState === 'failed'
         ? t('copyPromptFailed')
         : t('copyPromptLabel');
-  const copyCliLabel =
-    cliCopyState === 'copied'
-      ? t('copyCliCopied')
-      : cliCopyState === 'failed'
-        ? t('copyCliFailed')
-        : t('copyCliLabel');
-  const copyJsonGateLabel =
-    jsonGateCopyState === 'copied'
-      ? t('copyJsonGateCopied')
-      : jsonGateCopyState === 'failed'
-        ? t('copyJsonGateFailed')
-        : t('copyJsonGateLabel');
 
   if (isEmpty) {
     return (
@@ -242,14 +175,15 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
           </div>
 
           <div className="grid w-full gap-3">
-            <div className="grid w-full grid-cols-1 gap-2 @min-[32rem]/ontology-starter:grid-cols-3">
+            <div className="grid w-full grid-cols-1 gap-2 @min-[32rem]/ontology-starter:flex @min-[32rem]/ontology-starter:justify-end">
               <button
                 type="button"
                 onClick={handleCopyPrompt}
                 className={controlClass({
                   shape: 'chip',
+                  size: 'lg',
                   tone: 'secondary',
-                  className: `w-full min-w-0 justify-center text-center ${NEUTRAL_CHIP_SKIN}`,
+                  className: `w-full min-w-0 justify-center text-center @min-[32rem]/ontology-starter:w-auto ${NEUTRAL_CHIP_SKIN}`,
                 })}
               >
                 <ClipboardCopy size={ICON_SIZE.sm} className="shrink-0" aria-hidden />
@@ -257,43 +191,19 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
               </button>
               <button
                 type="button"
-                onClick={handleCopyCliVerify}
+                onClick={handleClick}
+                disabled={busy}
                 className={controlClass({
                   shape: 'chip',
-                  tone: 'secondary',
-                  className: `w-full min-w-0 justify-center text-center ${NEUTRAL_CHIP_SKIN}`,
+                  size: 'lg',
+                  tone: 'strong',
+                  className: `w-full justify-center @min-[32rem]/ontology-starter:w-auto ${INDIGO_SOLID_SKIN}`,
                 })}
               >
-                <ClipboardCopy size={ICON_SIZE.sm} className="shrink-0" aria-hidden />
-                {copyCliLabel}
-              </button>
-              <button
-                type="button"
-                onClick={handleCopyJsonGate}
-                className={controlClass({
-                  shape: 'chip',
-                  tone: 'secondary',
-                  className: `w-full min-w-0 justify-center text-center ${NEUTRAL_CHIP_SKIN}`,
-                })}
-              >
-                <ClipboardCopy size={ICON_SIZE.sm} className="shrink-0" aria-hidden />
-                {copyJsonGateLabel}
+                <Sparkles size={ICON_SIZE.sm} aria-hidden />
+                {busy ? t('emptyBusy') : t('emptyCta')}
               </button>
             </div>
-            <button
-              type="button"
-              onClick={handleClick}
-              disabled={busy}
-              className={controlClass({
-                shape: 'chip',
-                size: 'lg',
-                tone: 'strong',
-                className: `w-full justify-center @min-[32rem]/ontology-starter:w-auto @min-[32rem]/ontology-starter:justify-self-end ${INDIGO_SOLID_SKIN}`,
-              })}
-            >
-              <Sparkles size={ICON_SIZE.sm} aria-hidden />
-              {busy ? t('emptyBusy') : t('emptyCta')}
-            </button>
             {error ? (
               <p
                 role="alert"
@@ -337,32 +247,6 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
       >
         <ClipboardCopy size={ICON_SIZE.sm} aria-hidden />
         {copyPromptLabel}
-      </button>
-      <button
-        type="button"
-        onClick={handleCopyCliVerify}
-        title={t('secondaryCliTitle')}
-        className={controlClass({
-          shape: 'chip',
-          tone: 'secondary',
-          className: `w-full justify-center ${NEUTRAL_CHIP_SKIN}`,
-        })}
-      >
-        <ClipboardCopy size={ICON_SIZE.sm} aria-hidden />
-        {copyCliLabel}
-      </button>
-      <button
-        type="button"
-        onClick={handleCopyJsonGate}
-        title={t('secondaryJsonGateTitle')}
-        className={controlClass({
-          shape: 'chip',
-          tone: 'secondary',
-          className: `w-full justify-center ${NEUTRAL_CHIP_SKIN}`,
-        })}
-      >
-        <ClipboardCopy size={ICON_SIZE.sm} aria-hidden />
-        {copyJsonGateLabel}
       </button>
     </div>
   );

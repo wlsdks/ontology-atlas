@@ -11,8 +11,8 @@ import { Link } from "@/i18n/navigation";
 import { useCopyFeedback } from "@/shared/lib/clipboard/use-copy-feedback";
 import { CloseButton, controlClass, useToast } from "@/shared/ui";
 import {
-  AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT,
-  AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND,
+  DOGFOOD_MCP_WALK_CHECK_COUNT,
+  DOGFOOD_MCP_WALK_COMMAND,
 } from "@/entities/knowledge-graph";
 import type { VaultManifest } from "@/entities/docs-vault";
 import type { SkillParityModel, SkillParityRow } from "../lib/agent-files/skill-parity";
@@ -150,13 +150,13 @@ export function DocsVaultAuditModal({
       icon: Bot,
       label: t("sourceContract.agentLabel"),
       value: t("sourceContract.agentValue", {
-        count: AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT,
+        count: DOGFOOD_MCP_WALK_CHECK_COUNT,
       }),
       body: t("sourceContract.agentBody"),
       chip: t("sourceContract.agentChip"),
       href: "/topology/",
       cta: t("sourceContract.agentCta"),
-      copyText: AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND,
+      copyText: DOGFOOD_MCP_WALK_COMMAND,
       copyCta: t("sourceContract.agentCopyGate"),
       copyAriaLabel: t("sourceContract.agentCopyGateAriaLabel"),
       copySuccess: t("sourceContract.agentCopyGateSuccess"),
@@ -202,6 +202,7 @@ export function DocsVaultAuditModal({
           <div
             id="docs-source-contract"
             ref={dialogRef}
+            // eslint-disable-next-line no-restricted-syntax -- a hand-built modal not yet moved to Dialog
             role="dialog"
             aria-modal="true"
             aria-labelledby="docs-audit-modal-title"

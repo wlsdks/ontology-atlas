@@ -390,8 +390,8 @@ export const FIND_PATH_TOOL = {
   inputSchema: {
     type: 'object',
     properties: {
-      from: nonBlankStringSchema('Source slug.'),
-      to: nonBlankStringSchema('Target slug.'),
+      from: NON_BLANK_STRING_SCHEMA,
+      to: NON_BLANK_STRING_SCHEMA,
       maxHops: {
         type: 'integer',
         minimum: 0,

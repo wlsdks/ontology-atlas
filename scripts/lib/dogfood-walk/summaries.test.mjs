@@ -666,10 +666,6 @@ describe("rpc response completion helpers", () => {
     assert.match(usage, /OATLAS_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk/);
     assert.match(usage, /Lighter dogfood gates:/);
     assert.match(usage, /pnpm dogfood:compile\s+Fast compile_ontology summary over docs\/ontology/);
-    assert.match(
-      usage,
-      /pnpm dogfood:compile-fix\s+compile --fix idempotence gate over docs\/ontology; changed vaults need pnpm docs-vault:build; success ends with \[dogfood:compile-fix\] docs\/ontology unchanged/,
-    );
     assert.match(usage, /pnpm dogfood:health\s+Fail-closed health JSON gate over docs\/ontology/);
     assert.match(usage, /pnpm dogfood:agent\s+Claude Code\/Codex agent_brief JSON handoff over docs\/ontology/);
     assert.match(usage, /pnpm dogfood:brief\s+First-contact workspace_brief JSON snapshot over docs\/ontology/);
@@ -682,7 +678,6 @@ describe("rpc response completion helpers", () => {
     assert.match(usage, /pnpm dogfood:verify\s+Installed-style verify gate over docs\/ontology before the full walk/);
     assert.match(usage, /pnpm test:dogfood:args\s+Shared dogfood shortcut argument helper contract/);
     assert.match(usage, /pnpm test:dogfood:script-refs\s+Shared help\/package-script reference \+ focused filter parser\/wrapper summary contract/);
-    assert.match(usage, /pnpm test:dogfood:compile-fix\s+Narrow dogfood compile --fix idempotence runner contract/);
     assert.match(usage, /pnpm test:dogfood:status\s+Narrow dogfood status shortcut runner contract/);
     assert.match(usage, /pnpm test:mcp:registration\s+Narrow source-checkout .mcp.json\/.mcp.json.example\/.codex\/config.toml registration template contract/);
     assert.match(usage, /pnpm test:mcp:maintenance\s+Narrow maintenance_plan filter\/cursor\/resume\/work-queue formatter gates/);
