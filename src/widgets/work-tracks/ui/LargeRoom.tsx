@@ -4,7 +4,7 @@ import { useEffect, useState, type CSSProperties } from 'react';
 import type { RoomEntry } from '@/shared/lib/work-status/work-tracks';
 import { cn } from '@/shared/lib/cn';
 import { MOTION } from '@/shared/motion';
-import { CART_CRATES, cartLoad, moruPhase, roomIdentity, roomLook, roomOnce, type MoruCharacter } from '../model/room-look';
+import { AFTER_CRATE, CART_CRATES, ROOM_TALKS, cartLoad, moruPhase, roomIdentity, roomLook, roomOnce, workLoops, type MoruCharacter } from '../model/room-look';
 import { MERGE_LIGHTS_OUT_MS } from '../model/moru-clock';
 import { useRise } from '../model/use-rise';
 import { SCREEN_H, SCREEN_ROW_H, type RoomUnit } from '../model/building-layout';
@@ -196,6 +196,11 @@ export function LargeRoom({ room, unit, rows, pairScale, copy, tint, guestTint, 
   // A new token plays the row again: each landed commit, and each time the room is newly entered.
   const request = once === null ? null : `${once}@${once === 'crate-send' ? commit.serial : once === 'settle-in' ? `face${faceId}` : 'merge'}`;
   const pair = look.cast === 'two';
+  // A sent crate is followed by pride in front and joy behind; a working Moru walks his tools; a working pair talks now and then.
+  const after = once === 'crate-send' ? `@${commit.serial}` : null;
+  const frontOnce = request && after ? `${request} ${AFTER_CRATE.front}${after}` : request;
+  const backOnce = after ? `${AFTER_CRATE.back}${after}` : null;
+  const loops = room.state.kind === 'working' ? workLoops(room.key) : null;
   const identity = roomIdentity(room.track.branch ?? room.key);
   const tone = pair || room.state.kind === 'lockLeft' ? 'warning' : undefined;
   // Two Moru share a smaller scale, as a share of the room's unit so it eases with the room.
@@ -227,14 +232,14 @@ export function LargeRoom({ room, unit, rows, pairScale, copy, tint, guestTint, 
         {pair ? (
           <>
             <i className={cn(styles.contact, styles.actorBack)} />
-            <span className={cn(styles.actor, styles.actorBack)}><RoomMoru live slot="back" character={character} clip={look.backClip} still={look.still} zoom={zoom} tint={guestTint} phase={(moruPhase(room.key) + 0.5) % 1} /></span>
+            <span className={cn(styles.actor, styles.actorBack)}><RoomMoru live slot="back" character={character} clip={look.backClip} still={look.still} zoom={zoom} tint={guestTint} phase={(moruPhase(room.key) + 0.5) % 1} once={backOnce} talks={look.running ? ROOM_TALKS : null} /></span>
           </>
         ) : null}
         {look.cast !== 'none' ? (
           <>
             <i className={styles.contact} />
             <span className={styles.actor}>
-              <RoomMoru live character={character} clip={look.clip} still={look.still} zoom={zoom} tint={tint} phase={moruPhase(room.key)} once={request} />
+              <RoomMoru live character={character} clip={look.clip} still={look.still} zoom={zoom} tint={tint} phase={moruPhase(room.key)} once={frontOnce} loops={loops} />
             </span>
           </>
         ) : null}

@@ -10,6 +10,7 @@
 import { facingClip, type LifeAtlas, type LifeClip, type LifePose, type PiecePart } from './atlas';
 import { centre, createWorld, tick, type Moru, type World } from './behaviour';
 import { crewSize, nearestGap, openLobby, setCrew, tend, type Presence } from './presence';
+import { drawFixtures, lobbySpots } from './lobby-props';
 import { freshWorn, placeWear, type Placed, type Worn } from './wardrobe';
 
 export const LIFE_SHEETS = {
@@ -84,7 +85,7 @@ export interface Lobby {
 }
 
 /** Loads the sheets and returns a lobby drawing into `canvas`, or null when the page went away meanwhile. */
-export async function createLobby(canvas: HTMLCanvasElement, { width, resting, rand, basePath = '' }: {
+export async function createLobby(canvas: HTMLCanvasElement, fixtures: HTMLCanvasElement, { width, resting, rand, basePath = '' }: {
   width: number; resting: number; rand: () => number; basePath?: string;
 }): Promise<Lobby | null> {
   const colours = [0];
@@ -168,15 +169,21 @@ export async function createLobby(canvas: HTMLCanvasElement, { width, resting, r
   const scale = Math.max(1, Math.round(window.devicePixelRatio || 1));
   const ctx = canvas.getContext('2d')!;
   const fit = () => {
-    canvas.width = width_ * scale;
-    canvas.height = LOBBY_H * scale;
-    canvas.style.width = `${width_}px`;
-    canvas.style.height = `${LOBBY_H}px`;
+    for (const el of [canvas, fixtures]) {
+      el.width = width_ * scale;
+      el.height = LOBBY_H * scale;
+      el.style.width = `${width_}px`;
+      el.style.height = `${LOBBY_H}px`;
+    }
     ctx.imageSmoothingEnabled = false;
+    // The fixtures are drawn once a size, behind the Moru.
+    const g = fixtures.getContext('2d')!;
+    g.setTransform(scale, 0, 0, scale, 0, 0);
+    drawFixtures(g, width_, BACK_FEET, BACK_FEET + 2 * LANE_DY);
   };
   fit();
 
-  const world: World = createWorld({ atlas, width: width_, lanes: 3, rand, busyMax: LOBBY_BUSY, sep: LOBBY_SEP, extra: 1 });
+  const world: World = createWorld({ atlas, width: width_, lanes: 3, rand, busyMax: LOBBY_BUSY, sep: LOBBY_SEP, extra: 1, spots: lobbySpots(width_) });
   const presence: Presence = openLobby(world, crewSize(resting));
 
   // The kept pictures, least recently shown first. A picture on screen is never given up.
@@ -372,6 +379,7 @@ export async function createLobby(canvas: HTMLCanvasElement, { width, resting, r
       if (w === width_) return;
       width_ = w;
       world.width = w;
+      world.spots = lobbySpots(w);
       // A Moru the narrower floor left outside walks back in as a newcomer would; none is moved.
       fit();
       redrawAll();

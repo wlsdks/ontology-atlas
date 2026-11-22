@@ -64,7 +64,7 @@ test.describe("work status lobby", () => {
     test(`shows a few Moru at a time, far apart, at ${width}px`, async ({ page }) => {
       const canvas = await openWorkStatus(page, width, height);
       await expect(canvas).toHaveAttribute("data-lobby-running", "true");
-      await expect(page.getByTestId("work-lobby-note")).toHaveText(/says nothing about any worktree/);
+      await expect(page.getByTestId("work-lobby-name")).toHaveText("Lobby");
       let most = 0, nearest = Infinity;
       for (let i = 0; i < 20; i++) {
         const now = await stats(page);

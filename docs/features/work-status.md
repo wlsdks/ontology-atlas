@@ -129,10 +129,10 @@ over its rows, so none stands alone on a row.
 
 The **lobby** is the building's ground floor, under the floors and above the
 shelf. A few Moru of a crew (four, and one more for each worktree no live session
-holds, at most twelve) come in from an edge, wander, greet, high-five, swap hats,
-nap and prank on tiptoe, and go out again: two to four at a time, never more
-than five. Nothing there stands for a worktree, and one line on the floor says
-so. It holds still under reduced motion and stops while the window is hidden or
+holds, at most twelve) come in through a doorway at an edge, wander, greet,
+high-five, swap hats, nap on the bench, play on the mat and prank on tiptoe, and
+go out again: two to four at a time, never more than five. Nothing there stands
+for a worktree; the floor is named "Lobby" like the floors above it. It holds still under reduced motion and stops while the window is hidden or
 the lobby is off screen.
 
 The **shelf** at the bottom counts worktrees merged into the base branch and
@@ -195,8 +195,10 @@ that session's rooms and floor up and the rest down; rooms have no action, so
 they take no press or focus.
 
 Moru acts what Git and the locks show: he types at a laptop while work runs
-(the second tool's Moru reads the screen behind him), nods off in a room quiet
-for long, and sighs in a room whose lock was left behind or whose folder is
+and picks up a tool between typing loops (the second tool's Moru reads the
+screen behind him, and now and then the two turn to each other and talk),
+looks proud after he sends a commit down, nods off in a room quiet for long,
+worries in a room whose lock was left behind, and sighs in one whose folder is
 gone. He settles into a room new to the building or to the stage, and
 galumphs when his room moves sideways with him in it. Each change of what he
 does waits for his neutral pose, so he never jumps from one pose to another.

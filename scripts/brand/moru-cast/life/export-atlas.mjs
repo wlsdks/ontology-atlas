@@ -17,7 +17,7 @@ const C = (id, frames, beats, extra = {}) => ({ id, frames, actors: solo(beats),
 const say = (icon, style, from, to) => [{ who: 'm', from, to, style, icon }];
 const cum = steps => steps.reduce((out, s) => [...out, (out.at(-1) ?? 0) + s], []);
 const FUME = { brow: 'angry', eyes: 'half', mouth: 'frown' }, SHRUG = { lx: -8, ly: -14, rx: 8, ry: -14, fy: -1 };
-const TURN = [{ pose: { sq: 1, wd: 1, tx: 4, tail: 1 }, shapes: { eyes: 'line' } }, { pose: { lift: 2, fx: -6, sq: -1, x: -2, tx: 10, tail: 3 }, shapes: {} }, { pose: { lift: 3, fx: -12, x: -6 }, shapes: { front: true, eyes: 'line' } }, { pose: { lift: 3, fx: -6, x: -6, tx: 10, tail: 3 }, shapes: { flip: true } }, { pose: { lift: 1, fx: -2, x: -8, tx: 4, tail: 1 }, shapes: { flip: true } }];
+export const TURN = [{ pose: { sq: 1, wd: 1, tx: 4, tail: 1 }, shapes: { eyes: 'line' } }, { pose: { lift: 2, fx: -6, sq: -1, x: -2, tx: 10, tail: 3 }, shapes: {} }, { pose: { lift: 3, fx: -12, x: -6 }, shapes: { front: true, eyes: 'line' } }, { pose: { lift: 3, fx: -6, x: -6, tx: 10, tail: 3 }, shapes: { flip: true } }, { pose: { lift: 1, fx: -2, x: -8, tx: 4, tail: 1 }, shapes: { flip: true } }];
 const old = id => { const c = CLIPS.find(c => c.id === id); return { ...c, group: undefined }; };
 // How the head piece travels in a swap: off the head, out in front to the midpoint between the two, where it changes owner.
 const SWAP_OFF = [[0, 0], [0, 0], [0, -2], [2, -6], [8, -12], [18, -16], [28, -18], [38, -16], [28, -18], [18, -16], [8, -12], [2, -6], [0, -2], [0, 0], [0, 0], [0, 0]];

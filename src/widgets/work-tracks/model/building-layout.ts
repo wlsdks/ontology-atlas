@@ -58,8 +58,8 @@ const EDGE_TOP = 24;
 const EDGE_BOTTOM = 20;
 const BAND_GAP = 16;
 const SHELF_H = 40;
-/** The lobby: three lanes of Moru at their drawn scale, and the line under them that says what it is. */
-export const LOBBY_BOX_H = LOBBY_H + 22;
+/** The lobby: its name plate over three lanes of Moru at their drawn scale. */
+export const LOBBY_BOX_H = LOBBY_H + 24;
 /** Every mini room, banded or not: Moru's corner, the branch, the status and the newest subject. */
 export const MINI_H = 96;
 const MINI_MIN_W = 300;
@@ -87,8 +87,6 @@ const MORU_LEFT = 20;
 const CONSOLE_PER_UNIT = 152;
 /** From this width a stage room stands its screen on a console beside Moru; narrower, it hangs it above him. */
 export const WIDE_ROOM_W = MORU_LEFT + CONSOLE_PER_UNIT + SCREEN_MIN_W;
-/** A large room's belt is a track in its floor: the scene is the whole room. */
-export const BELT_H = 0;
 
 /** Moru as large as the screen beside him leaves room for, in half steps: the screen keeps its width, Moru gives way. */
 function unitOf(width: number): RoomUnit {

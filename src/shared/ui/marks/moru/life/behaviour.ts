@@ -310,7 +310,8 @@ function advance(world: World, m: Moru, dt: number) {
   m.changed = true;
   if (c.travel && !back) m.x += m.facing * (c.travel[m.frame] - c.travel[m.frame - 1]) * (m.cur.scale ?? 1);
   if (c.travelY) m.height = c.travelY[m.frame];
-  if (m.cur.laneTo != null) m.depth = m.cur.laneFrom! + (m.cur.laneTo - m.cur.laneFrom!) * Math.min(1, m.frame / 5);
+  // Half a lane over the whole stride, so the body never moves more than 2px a pose sideways in depth.
+  if (m.cur.laneTo != null) m.depth = m.cur.laneFrom! + (m.cur.laneTo - m.cur.laneFrom!) * Math.min(1, m.frame / (c.n - 1));
   if (c.wear && m.frame === c.wear.swapAt && m.cur.swapWith && m.id < m.cur.swapWith.id) {
     const o = m.cur.swapWith, slot = c.wear.slot;
     [m.wear[slot], o.wear[slot]] = [o.wear[slot], m.wear[slot]];
@@ -500,12 +501,6 @@ function decide(world: World, m: Moru, only: string | null = null): boolean {
   return true;
 }
 
-/** Gives a free Moru one intention out of its own repertoire. */
-export function nudge(world: World, id: string, kind: string) {
-  const m = world.morus.find(o => o.id === id);
-  return !!m && free(m) && decide(world, m, kind);
-}
-
 /** The edge a Moru comes in at: the left or the right, each only while nobody stands or walks near it in any lane. */
 function freeEdge(world: World, prefer: 1 | -1): 1 | -1 | 0 {
   const clearAt = (side: 1 | -1) => {
@@ -612,11 +607,4 @@ export function tick(world: World, dt: number) {
       }
     }
   }
-}
-
-/** Milliseconds until anything can change: the host sleeps that long. */
-export function due(world: World) {
-  let ms = 100;
-  for (const m of world.morus) if (m.clip !== 'rest') ms = Math.min(ms, world.atlas.clips[m.clip].ms[m.frame] - m.t);
-  return Math.max(33, ms);
 }

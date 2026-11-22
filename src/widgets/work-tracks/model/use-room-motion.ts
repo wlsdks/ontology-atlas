@@ -275,9 +275,23 @@ function playResized(element: HTMLElement, move: RoomMove, timing: MoveTiming, u
     // The scale keeps pace with the box along its own path, so Moru never outgrows the room he stands in.
     const [start, end] = move.from.w !== move.to.w ? [move.from.w, move.to.w] : [move.from.h, move.to.h];
     const share = (box: Box) => (end === start ? 1 : ((move.from.w !== move.to.w ? box.w : box.h) - start) / (end - start));
-    played.push(scene.animate(pathFrames(move, timing, box => ({ ['--u' as string]: from + (unit - from) * share(box) })), { duration: timing.total }));
+    played.push(gliding(scene, scene.animate(pathFrames(move, timing, box => ({ ['--u' as string]: from + (unit - from) * share(box) })), { duration: timing.total })));
   }
   return played;
+}
+
+/**
+ * Marks a scene whose scale glides until the glide ends: a stepping Moru gives up his own layer meanwhile
+ * (`rooms.module.css`, `.moruCells`), as WebKit would size it anew on every frame and drop frames.
+ */
+function gliding(scene: HTMLElement, animation: Animation) {
+  scene.dataset.gliding = 'true';
+  const done = () => {
+    if (!scene.getAnimations().some(other => other !== animation && other.playState === 'running')) delete scene.dataset.gliding;
+  };
+  animation.addEventListener?.('finish', done);
+  animation.addEventListener?.('cancel', done);
+  return animation;
 }
 
 /**
