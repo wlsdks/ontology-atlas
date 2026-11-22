@@ -12,7 +12,7 @@ import { NO_FULL_RUN, fullBrowserRunKind } from './main-health.mjs';
 const TRAIN_TITLE_SEARCHES = ['chore(merge):', 'chore(train): land'];
 
 const MAIN_FULL_RUN_CANDIDATES = 5;
-/** A reused push that ran nothing finishes in about 45 s; any run that ran the suite takes 5 minutes or more. */
+/** A run that executed nothing finishes in about 45 s; any run that ran the suite takes 5 minutes or more. */
 const MAIN_FULL_RUN_MIN_MS = 2 * 60_000;
 
 function describeReadFailure(output) {
@@ -187,8 +187,8 @@ export function createGithub(slug, run = ghRun) {
       return typeof out === 'string' ? out.split('\n').filter(Boolean) : null;
     },
     /**
-     * The newest verdict of a check on main, for the event it names. Pushes to main may be
-     * cancelled, so the verdict can sit behind a cancelled run. With `fullBrowser`, a run counts
+     * The newest verdict of a check on main, for the event it names. A run may be cancelled, so
+     * the verdict can sit behind a cancelled one. With `fullBrowser`, a run counts
      * only by what its shards uploaded (`fullBrowserRunKind`), and a red one carries the spec files
      * its shards annotated as failing.
      */
@@ -226,7 +226,7 @@ export function createGithub(slug, run = ghRun) {
         }
         return { ...result, failingSpecs: [...failingSpecs].sort() };
       }
-      // Push runs exist but none of the latest ran the whole suite: say so rather than look green.
+      // Runs exist but none of the latest ran the whole suite: say so rather than look green.
       const newest = rows.find((row) => row.conclusion && row.conclusion !== 'cancelled');
       const examined = rows.filter((row) => row.conclusion && row.conclusion !== 'cancelled').length;
       return newest ? { conclusion: NO_FULL_RUN, createdAt: newest.createdAt, url: newest.url, examined } : null;

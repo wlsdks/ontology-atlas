@@ -29,8 +29,8 @@ export const rules = [
   {
     order: 50,
     command: 'node --test scripts/ci/run-playwright-ci.test.mjs',
-    reason: 'browser file allocation, coverage verification, or timing estimates changed',
-    matches: [/^scripts\/ci\/run-playwright-ci(?:\.test)?\.mjs$/, /^scripts\/data\/playwright-file-durations\.json$/, /^scripts\/ci\/refresh-playwright-durations\.mjs$/, /^scripts\/ci\/run-ci-lane(?:\.test)?\.mjs$/],
+    reason: 'browser file allocation, coverage verification, timing estimates, or the quarantine changed',
+    matches: [/^scripts\/ci\/run-playwright-ci(?:\.test)?\.mjs$/, /^scripts\/data\/playwright-file-durations\.json$/, /^scripts\/ci\/refresh-playwright-durations\.mjs$/, /^scripts\/ci\/run-ci-lane(?:\.test)?\.mjs$/, /^scripts\/(?:lib\/)?ci\/quarantine\.mjs$/, /^tests\/quarantine\.json$/],
   },
   {
     order: 52,
