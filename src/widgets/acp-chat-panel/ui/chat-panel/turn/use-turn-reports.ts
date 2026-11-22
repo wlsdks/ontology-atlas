@@ -10,8 +10,8 @@ import {
   type AcpTurnToolActivity,
 } from '@/features/acp-session';
 
-import { EMPTY_KNOWN_SLUGS } from '../constants';
-import type { SessionState } from '../types';
+import { EMPTY_KNOWN_SLUGS } from '../empty-known-names';
+import type { SessionState } from '../chat-panel-props';
 
 interface TurnReportsOptions {
   status: SessionState['status'];

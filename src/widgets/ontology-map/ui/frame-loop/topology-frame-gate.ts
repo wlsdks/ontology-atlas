@@ -1,4 +1,4 @@
-import type { MapArrangement } from "@/shared/lib/preferences/appearance-preferences";
+import type { MapArrangement } from "@/shared/lib/preferences/map-view-preferences";
 import { MOTION } from "@/shared/motion";
 import {
   type RefObject
@@ -59,7 +59,7 @@ interface Dependencies {
   navYieldUntilRef: RefObject<number>;
   cameraRef: RefObject<CameraAxes>;
   cameraTargetRef: RefObject<CameraTarget>;
-  prevCameraSampleRef: RefObject<{ x: number; y: number; s: number; } | null>;
+  previousCameraSampleRef: RefObject<{ x: number; y: number; s: number; } | null>;
   lastInputMsRef: RefObject<number>;
   ambientSleepDelayRef: RefObject<number | undefined>;
   domeRuntimeRef: RefObject<DomeRuntime | null>;
@@ -138,7 +138,7 @@ export function createFrameGate({
   navYieldUntilRef,
   cameraRef,
   cameraTargetRef,
-  prevCameraSampleRef,
+  previousCameraSampleRef,
   lastInputMsRef,
   ambientSleepDelayRef,
   domeRuntimeRef,
@@ -290,18 +290,18 @@ export function createFrameGate({
         {
             const cam = cameraRef.current;
             const target = cameraTargetRef.current;
-            const prev = prevCameraSampleRef.current;
+            const previous = previousCameraSampleRef.current;
             // Watching only the camera's value movement would ignore a wheel tick
             // during an idle skip forever, because a wheel changes the target
             // alone. An unsettled spring (target ≠ value) is activity too — the
             // idle-gate contract.
             const cameraUnsettled = isCameraUnsettled({ x: cam.x.value, y: cam.y.value, scale: cam.scale.value }, target);
-            const cameraMoving = prev === null ||
+            const cameraMoving = previous === null ||
                 cameraUnsettled ||
-                Math.abs(cam.x.value - prev.x) > 0.01 ||
-                Math.abs(cam.y.value - prev.y) > 0.01 ||
-                Math.abs(cam.scale.value - prev.s) > 0.0001;
-            prevCameraSampleRef.current = { x: cam.x.value, y: cam.y.value, s: cam.scale.value };
+                Math.abs(cam.x.value - previous.x) > 0.01 ||
+                Math.abs(cam.y.value - previous.y) > 0.01 ||
+                Math.abs(cam.scale.value - previous.s) > 0.0001;
+            previousCameraSampleRef.current = { x: cam.x.value, y: cam.y.value, s: cam.scale.value };
             // Comets and the fresh breathe sleep rather than switch off (`model/ambient/ambient-sleep.ts`).
             const ambientFactor = ambientSleepFactor(now, lastInputMsRef.current, ambientSleepDelayRef.current);
             const ambientAsleep = isAmbientAsleep(ambientFactor);

@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { buildDocsVaultHref } from "@/entities/docs-vault";
-import { getTopologyFocusHref } from "@/entities/project";
+import { buildTopologyFocusHref } from "@/entities/project";
 import type { MapEvidenceAvailability } from "@/features/vault-ontology";
 import { Button, Dialog, DialogBody, DialogFooter, OntologyMapKindGlyph } from "@/shared/ui";
 import { EXIT_TRANSITION, MOTION } from "@/shared/motion";
@@ -157,7 +157,7 @@ function ToCheckRowLink({ row }: { row: ToCheckRow }) {
   const t = useTranslations("projectPages.detail");
   const sentenceOf = useReasonSentence();
   const opensDocument = REVIEW_REASONS.has(row.reason) && row.docSlug !== null;
-  const href = opensDocument ? buildDocsVaultHref({ slug: row.docSlug! }) : getTopologyFocusHref(row.nodeId);
+  const href = opensDocument ? buildDocsVaultHref({ slug: row.docSlug! }) : buildTopologyFocusHref(row.nodeId);
   const sentence = sentenceOf(row);
   const id = useId();
   const labelledBy = [`${id}-name`, row.domainName ? `${id}-domain` : null, `${id}-reason`].filter(Boolean).join(" ");

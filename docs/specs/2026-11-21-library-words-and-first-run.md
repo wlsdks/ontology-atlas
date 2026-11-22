@@ -34,7 +34,7 @@ happens next.
 
 Lines are against `main` at 62bab6da6 unless named.
 
-- **The stage** (`src/views/library/ui/parts/first-run/LibraryStartStage.tsx`): artwork labelled
+- **The stage** (`src/views/library/ui/first-run/LibraryStartStage.tsx`): artwork labelled
   with `kindSourcesTitle`/`kindWikiTitle` (`:93`), title `emptyTitle` (`:94`), body
   `emptyFoundBody` when candidates exist (`:95`), a primary `emptyFoundAction` button opening the
   find dialog (`:100`), then two chips, Add files and Bring from a service (`:51`, `:75`), and a
@@ -42,20 +42,20 @@ Lines are against `main` at 62bab6da6 unless named.
   (`src/views/library/ui/library-page/LibraryEmptyFolderStage.tsx:38`). A dot-and-hairline field
   runs behind it (`:30`). Discovery runs on mount (`:22`). S-2 (cd351399c, branch
   `feat/library-sources-home`) mounts the same stage a second time, in the Sources home of a folder
-  with wiki pages and no sources (its `LibraryPage.tsx:787`).
+  with wiki pages and no sources (its `LibraryPage.tsx:602`).
 - **There is no drag and drop.** Add files opens a picker in the app (`add-sources.ts:181`); the
   browser path already copies `File` objects (`add-sources.ts:43`). The app imports only paths the
   picker or discovery offered; any other path fails `source-not-offered`
-  (`src-tauri/src/library.rs:338-355`). Each import call re-hashes all of `sources/` once
+  (`src-tauri/src/library/discovery_rules.rs:156-173`). Each import call re-hashes all of `sources/` once
   (`index_existing_files`, `:245`, called at `:333`).
-- **Discovery's filter** keeps 14 document extensions (`library.rs:62`), prunes 11 folder names,
+- **Discovery's filter** keeps 14 document extensions (`src-tauri/src/library/source_offer.rs:51`), prunes 11 folder names,
   none of them `public` or `output` (`:68`), refuses secret-like names (`:118`), and stops at 500
   (`:108`); the TS mirror is `src/entities/docs-vault/lib/library/source-discovery.ts`. It walks the
   open folder and bound project roots (`src/features/library/lib/sources/discover-sources.ts:66`).
   Run over this repository on 2026-11-21 it returns exactly the owner's three files (32 B, 1.2 KB,
   790 KB); `output/` is Git-ignored (`.gitignore:78`).
-- **Reveal** selects a file only (`library.rs:677`); the call underneath works on macOS, Windows
-  and Linux (`src-tauri/src/app_shell/mod.rs:85`). Every catalogue says "Finder", Windows included
+- **Reveal** selects a file only (`src-tauri/src/library/running_imports.rs:28`); the call underneath works on macOS, Windows
+  and Linux (`src-tauri/src/app_shell/mod.rs:86`). Every catalogue says "Finder", Windows included
   (`library.sources.revealFailed`).
 - **What reads `sources/` and leaves the computer**: a coding-agent turn the person starts (Compile,
   Ask from the question desk, rounds), any connected outside agent calling MCP `read_source`
@@ -70,7 +70,7 @@ Lines are against `main` at 62bab6da6 unless named.
 - **After adding**, the Sources home (#3742, mounted by S-2) shows the band, one folder row,
   `recent.none` explaining a wiki page, and Next to write. With no agent the band's button is
   disabled with its reason; on the web it reads `progress.webLine`
-  (`src/views/library/ui/parts/progress/SourceProgressBand.tsx:453-476`).
+  (`src/views/library/ui/progress/ProgressAction.tsx`).
 - **Unknown:** how a non-developer reads the stage; time to copy a 2,000-file drop.
 
 ## Problem and alternatives
@@ -173,16 +173,22 @@ filtered-out file is one a person expected and looked for.
    opens the dialog, where `find.declined` and `find.forgetDeclined` bring them back.
 8. When a suggested file is not a real document (the filter misfired), the person hides it; when a
    real one was filtered out, `find.empty` names what is skipped and the drop area still takes it.
-9. When a dropped item is a folder, Atlas copies nothing and shows `start.drop.folderRefused`.
+9. When a dropped item is a folder, Atlas walks it under the discovery rules and copies it with its
+   structure (Decision 6); a folder that is, or holds, the open folder is refused whole with
+   `drop.holdsOpenFolder`, and a drop while a copy runs copies nothing and shows `drop.busy`.
 10. When a copy fails, the drop area shows `start.drop.failed` and lists the names with
     `start.drop.failedNames`; files that did copy stay; dropping again or Add files retries.
 11. When the app has no coding agent connected, `start.noAgent` sits under the body with
     `start.noAgentLink` to Agents; on the web `start.web` takes its place.
 
-**Security.** The page never names a path to import. Rust takes dropped paths from the native
-window event (`WindowEvent::DragDrop(Drop { paths })`), offers them exactly as the picker does, and
-the page passes back only what was offered; no new command takes a path list from the page, and
-any path never offered fails `source-not-offered`.
+**Security.** The page sends offer keys only. Rust takes dropped paths from the native window
+event (`WindowEvent::DragDrop(Drop { paths })`), offers them exactly as the picker does, and the
+page passes back only the keys Rust offered; no command takes a path list from the page, and a key
+never offered fails `source-not-offered`. Each offer records the file's device, inode and length;
+the copy reopens it without following a link or waiting on a FIFO and fails
+`source-changed-since-offered` when anything else is there now. The copy never replaces a file in
+`sources/`, and one copy runs per open folder. The large-copy confirm happens only in the page:
+Rust copies what it is sent and does not ask again.
 
 ## States
 
@@ -196,7 +202,7 @@ any path never offered fails `source-not-offered`.
 | Dragging over | `start.drop.over` | Same, from the native drop |
 | Copying | `start.drop.copying`; input stays live | Same |
 | Copy failed (all or some) | `start.drop.failed`, `start.drop.failedNames`; retry by drop or Add files | Same |
-| Folder dropped | `start.drop.folderRefused` (web branch) | `start.drop.folderRefused` naming `start.fileManagerName` |
+| Folder dropped | Walked under the discovery rules and copied with its folders (decision 6) | Same; a folder that is, or holds, the open folder shows `drop.holdsOpenFolder` |
 | Duplicate only | `sources.duplicate` toast; the stage stays | Same |
 | No agent | `start.web` line | `start.noAgent` and `start.noAgentLink` |
 | Reveal failed | Out of scope: the web has no reveal | `sources.revealFailed` toast; the folder line stays |
@@ -215,7 +221,7 @@ body and a ready patch; F2 applies them (spec prose stays English, `pnpm docs:la
 | `start.title` | h1 | Add the documents you already have |
 | `start.body` | Under the title | {agent} reads your sources and writes wiki pages. Each sentence in a page names the source it came from. (`{agent}` is the connected agent's name, else "Your coding agent".) |
 | `start.bodyWikiOnly` | Same, wiki pages but no sources | This folder has wiki pages but no sources yet. Add the documents they came from, so every claim can cite one. |
-| `start.drop.title` | Drop area | Drop files or folders here |
+| `start.drop.title` | Drop area | Drop files or folders to copy them into the sources folder |
 | `start.drop.or` | Before `sources.add` (Add files, unchanged) | or |
 | `start.drop.formats` | Drop area foot | PDF, Word, Excel, PowerPoint, text or any other format. Files are copied without changes. |
 | `start.drop.over` | While dragging | Drop to copy into the sources folder |
@@ -255,10 +261,10 @@ Added 2026-11-21 after the installed-app check. A test folder held 40 documents 
 - **Discovery skips Markdown and most text formats.** Its allow-list has 14 extensions; `md` is
   left out "because Markdown is already a vault file kind" (`source-discovery.ts`, `library.rs:59`),
   and `html`, `tsv` and `log` are absent too. Of the 40 files, discovery offers the 9 txt and csv.
-- **Import flattens.** Every file lands at `sources/<name>` (`library.rs:519`); a second
+- **Import flattens.** Every file lands at `sources/<name>` (`library.rs`); a second
   `meetings/weekly.md` from another folder becomes `weekly (2).md`, and the folder table shows one row.
-- **A dropped folder is refused** (flow 9 above), so the one gesture that matches "these 40 files"
-  does nothing.
+- **A dropped folder was refused** before F2, so the one gesture that matches "these 40 files"
+  did nothing.
 - **Copies do not follow their original.** Atlas copies, never moves, and keeps no link back; when
   a person edits the note the copy came from, the source and the pages citing it go stale silently.
 
@@ -290,8 +296,12 @@ Added 2026-11-21 after the installed-app check. A test folder held 40 documents 
    files may be anything.
 6. **A dropped folder is accepted.** Rust walks only the dropped root from the native drop event,
    with the discovery rules (allow-list, pruned folders, dot folders, secret names, notices, hash
-   names, 64-byte floor) and keeps its structure. A single dropped file is still copied whatever
-   its format: dropping it is the person's explicit choice.
+   names, 64-byte floor) and keeps its structure; the walk stops at 20,000 files or 200,000
+   visited entries and names at most 1,000 skipped files while counting all of them. A folder
+   that is, or holds, the open folder is refused whole. A single dropped file is still copied
+   whatever its format, since dropping it is the person's explicit choice, unless its name reads
+   as a secret: agents read `sources/` and Git may push it, so such a file is skipped under
+   `secretName` and Add files stays the explicit way to add it (revised 2026-11-21).
 7. **A large copy asks first and never blocks.** At 500 files or 500 MB and above, Atlas shows
    the count and total size and asks before copying (`drop.confirmLarge`). Copying streams in the
    background, files appear in the Sources home as they land, and `drop.stop` stops it; what
@@ -360,7 +370,7 @@ elsewhere" (elsewhere names no place). Every string in this spec, in every local
 | `found.where` | Under it, with folder counts | In {folder}, outside the sources folder · {folderCounts} |
 | `found.copyAll` | Primary | {count, plural, one {Copy it into the sources folder} other {Copy all # into the sources folder}} |
 | `found.choose` | Quiet | Choose files to copy |
-| `drop.confirmLarge` | Before a large copy | Copy {count, number} files ({size}) into the sources folder? The original files stay where they are. |
+| `drop.confirmLarge` | Before a large copy | Copy {count} files ({size}) into the sources folder? The original files stay where they are. (plural: one file / # files) |
 | `drop.confirm` / `drop.cancel` | Its buttons | Copy / Cancel |
 | `drop.stop` | Copy line | Stop copying |
 | `drop.stopped` | After Stop | Copying stopped. The {count, number} files copied before that stay in the sources folder. |
@@ -426,8 +436,7 @@ elsewhere" (elsewhere names no place). Every string in this spec, in every local
 ## Out of scope
 
 - **Git-ignore as a filter**: no matcher exists on either side; the folder list covers the case.
-- **Stopping a copy midway, and a long-work card for copies**: next once a measured drop takes
-  over 10 s.
+- **A long-work card for copies**: next once a measured drop takes over 10 s.
 - **The Sources home and its first-day copy**: #3742 and S-2 own them; F3 rewords them.
 - **Renaming `sources/` or `wiki/`**: MCP and CLI contracts use them.
 
@@ -437,19 +446,20 @@ elsewhere" (elsewhere names no place). Every string in this spec, in every local
    `public/39b8c5bebbe326f89097083d57514dcc.txt` 32 B, `output/promo/<name>.txt` 1.2 KB), when
    Rust and TS discovery judge it, then both return zero candidates; and given one fixture per
    filter row, each rule catches its case and keeps each named survivor (`2026111509301500.pdf`,
-   a 700-byte `budget.csv`). `source-discovery.test.ts`, `src-tauri/src/library/tests.rs`.
+   a 700-byte `budget.csv`). `source-discovery.test.ts`, `src-tauri/src/library/*/tests.rs`.
 2. Given F1, when it runs over one JVM and one C/C++ Apache-2.0 repository chosen for the probe,
    then the pull request lists every file each rule drops and every file kept, a reader marks none
    of the dropped files a document and none of the kept files a build or test file; the
    repositories are named only in the pull request.
 3. Given an empty folder on the web, when two files are dropped, then both land in `sources/`, the
-   Sources home shows two waiting sources and `sources.added` counts 2; given a folder is dropped,
-   nothing is copied and `start.drop.folderRefused` shows. `tests/e2e/library/first-run-drop.spec.ts`.
+   Sources home lists the two sources and `sources.added` counts 2; given a folder is dropped,
+   its documents copy with their folders and the skipped line counts the rest.
+   `tests/e2e/library/first-run-drop.spec.ts`.
 4. Given the installed macOS app, when three files are dragged from Finder onto the drop area, then
    they copy in one import with streamed progress and the reveal action selects `sources/`.
    Installed-app walk with a PR capture. Given the page side sends `$HOME/.ssh/id_ed25519` to the
    import, then it fails `source-not-offered` and nothing is read. Rust test in
-   `src-tauri/src/library/tests.rs`, run on the macOS and Windows CI jobs.
+   `src-tauri/src/library/*/tests.rs`, run on the macOS and Windows CI jobs.
 5. Recovery: given `sources/` refuses writes, when two files are dropped, then `start.drop.failed`
    names both and the reason, the drop area stays ready, and after the permission returns Add
    files copies them. `first-run-drop.spec.ts` with a refusing handle.
@@ -470,7 +480,7 @@ Order: S-2 merges, then F1 and F3 in parallel, then F2, then F4.
 
 | Slice | What | Files | Overlap |
 |---|---|---|---|
-| F1 | Filter rules, parity test; criteria 1, 2 | `src-tauri/src/library.rs`, `src-tauri/src/library/tests.rs`, `src/entities/docs-vault/lib/library/source-discovery{,.test}.ts` | None |
+| F1 | Filter rules, parity test; criteria 1, 2 | `src-tauri/src/library.rs`, `src-tauri/src/library/*/tests.rs`, `src/entities/docs-vault/lib/library/source-discovery{,.test}.ts` | None |
 | F3 | Word sweep and `sourceWord` row; criterion 8 | `messages/{ko,ja,zh}/*.json`, `scripts/lib/i18n/locale-vocabulary.mjs`, `docs/GLOSSARY.md:137` (the ko/ja words) | Right after S-2, which edits `library.json` and deletes `graph.*` |
 | F2 | Stage, drop, folder reveal, suggestion, streamed import; criteria 3-7 | `src/views/library/ui/parts/first-run/**`, `LibraryEmptyFolderStage.tsx`, `src/views/library/ui/LibraryPage.tsx`, `use-library-sources.ts`, `add-sources.ts`, `library.rs` and `app_shell/mod.rs` (after F1), `messages/*/library.json` (`start.*`, keys above), `docs/features/library/workspace.md:316-330`; old test IDs in `tests/e2e/library/library.spec.ts:508-529`, `library-import-service.spec.ts:13,62-64`, `source-import-motion.spec.ts`, `source-import-fixture.ts:31-34`, `import-from-empty-library.spec.ts:69` | After S-2 and F3 |
 | F4 | Plain find dialog: title, one line, sheet rows, search only above 12; removes `find.searchHint`, `find.walkedRoots` | `src/features/library/ui/FindDocumentsDialog.tsx`, `messages/*/library.json` | After F2 |
@@ -531,3 +541,11 @@ None. Decided: ko jaryo, ja shiryo, zh unchanged, wiki kept. Reversing is a cata
   counted, and a changed original is noticed (F2b).
 - 2026-11-21: wording rules after the owner rejected "the Library works" and "elsewhere"; every
   first-run string rewritten to name the folder, the app or the service, and Usage rows added.
+- 2026-11-21: security review of #3782. An offer records the file's identity and the copy
+  refuses anything swapped in since (`source-changed-since-offered`); the copy never replaces a
+  file in `sources/`, folder names match in any letter case, and one copy runs per open folder;
+  the dropped-folder walk is capped, a newer drop wins over an older walk, a reload disarms the
+  drop, and a folder holding the open folder is refused. Decision 6 revised: a single dropped
+  file named like a secret is skipped. Flow 9 and criterion 3 now describe the accepted folder
+  drop, stopping a copy left Out of scope, and the drop title names the sources folder.
+- 2026-11-22: source line cites follow the code into the files and lines that hold it after the structure cleanup; a cite whose code changed keeps its file and drops the line; no plan changed.

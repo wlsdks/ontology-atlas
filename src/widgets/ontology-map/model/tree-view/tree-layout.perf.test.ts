@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { TreeInputEdge, TreeInputNode } from "../containment-tree";
 import { layoutTree } from "./tree-layout";
 import { buildTreeModel, type TreeWork } from "./tree-model";
-import type { TreeModel } from "./types";
+import type { TreeModel } from "./tree-shapes";
 
 const PER_NODE_ARRAYS = ["ids", "labels", "kinds", "parent", "subtreeEnd", "concepts", "capabilities", "elements", "needsStart", "needs", "usedByStart", "usedBy"] as const;
 

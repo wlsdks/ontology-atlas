@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { VaultManifest } from '../../model/types';
+import type { VaultManifest } from '../../model/vault-manifest';
 
 /**
  * With native stamps, an incremental rebuild opens only changed files. Counts `getFile()` calls,
@@ -9,10 +9,12 @@ import type { VaultManifest } from '../../model/types';
 
 const nativeVaultFingerprint = vi.fn();
 const readTauriVaultTextFile = vi.fn();
-vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
-  nativeVaultFingerprint: (rootPath: string) => nativeVaultFingerprint(rootPath),
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-files', () => ({
   readTauriVaultTextFile: (rootPath: string, path: string) => readTauriVaultTextFile(rootPath, path),
   readTauriVaultTextFiles: async () => null,
+}));
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-fingerprint', () => ({
+  nativeVaultFingerprint: (rootPath: string) => nativeVaultFingerprint(rootPath),
 }));
 
 const { buildLocalManifest, buildLocalManifestWithEntries, rebuildLocalManifestIncremental } =

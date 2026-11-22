@@ -1,6 +1,6 @@
 "use client";
 
-import type { GlyphSet } from "@/shared/lib/preferences/appearance-preferences";
+import type { GlyphSet } from "@/shared/lib/preferences/canvas-appearance-preferences";
 import {
   useEffect,
   type RefObject
@@ -23,7 +23,7 @@ interface Dependencies {
   onHoverEdge: ((edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null; } | null, position: { x: number; y: number; avoid: readonly HoverAvoidRect[]; } | null) => void) | undefined;
   onEnterRealmRef: RefObject<((slug: string) => void) | undefined>;
   onEnterRealm: ((slug: string) => void) | undefined;
-  realmEnterButtonElRef: RefObject<HTMLButtonElement | null>;
+  realmEnterButtonElementRef: RefObject<HTMLButtonElement | null>;
   realmEnterButtonRef: RefObject<HTMLButtonElement | null> | undefined;
   trailLensPropRef: RefObject<RefObject<boolean> | null>;
   trailLensActiveRef: RefObject<boolean> | undefined;
@@ -61,7 +61,7 @@ export function useTopologyObserverBindings({ onGrowthReplayingChangeRef,
   onHoverEdge,
   onEnterRealmRef,
   onEnterRealm,
-  realmEnterButtonElRef,
+  realmEnterButtonElementRef,
   realmEnterButtonRef,
   trailLensPropRef,
   trailLensActiveRef,
@@ -108,7 +108,7 @@ export function useTopologyObserverBindings({ onGrowthReplayingChangeRef,
   });
 
   useEffect(() => {
-    realmEnterButtonElRef.current = realmEnterButtonRef?.current ?? null;
+    realmEnterButtonElementRef.current = realmEnterButtonRef?.current ?? null;
   });
 
   useEffect(() => {

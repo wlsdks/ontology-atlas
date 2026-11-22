@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { VaultTreeNode } from '../../../model/types';
+import type { VaultTreeNode } from '../../../model/vault-manifest';
 import { insertIntoTree, sortTree } from '../vault-tree';
 import { TreeEditor } from './tree-editor';
 

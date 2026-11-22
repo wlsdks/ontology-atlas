@@ -27,7 +27,7 @@ export function createMatchHighlighter(highlightQuery: string | undefined): Matc
       );
     }
     if (Array.isArray(children)) {
-      return children.map((c, idx) => hl(c, q, `${key}-${idx}`));
+      return children.map((c, index) => hl(c, q, `${key}-${index}`));
     }
     return children;
   };

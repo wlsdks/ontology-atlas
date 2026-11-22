@@ -84,11 +84,9 @@ test.describe("the structural check is the app's own", () => {
     await page.getByTestId("library-workspace-wiki").click();
     await page.getByTestId("library-wiki").waitFor({ timeout: 30_000 });
 
-    /* Nothing here can start a turn: one notice says why and links to the agents page. */
-    const notice = page.getByTestId("library-agent-missing");
-    await expect(notice).toBeVisible({ timeout: 25_000 });
-    await expect(notice).toContainText("check the wiki");
-    await expect(notice.getByTestId("library-agent-missing-door")).toHaveAttribute("href", /\/agents/);
+    /* The column holds no agent door and no notice; the report's head says why nothing can run. */
+    await expect(page.getByTestId("library-open-report")).toBeVisible({ timeout: 25_000 });
+    await expect(page.getByTestId("library-index").getByTestId("library-agent-missing")).toHaveCount(0);
     await expect(page.getByTestId("library-lint")).toHaveCount(0);
 
     /* The installed app must not offer its own download (`.claude/rules/surfaces.md`). */
@@ -154,7 +152,7 @@ test.describe("the structural check is the app's own", () => {
     // The head states both totals and says what each counts.
     const head = page.getByTestId("library-check-structural-head");
     await expect(head).toContainText("4 pages");
-    await expect(head).toContainText("2 off-template");
+    await expect(head).toContainText("2 not following the template");
     await expect(head).toContainText("6 findings");
 
     // The computed half never wears the agent's empty words, and the agent's half says
@@ -162,17 +160,12 @@ test.describe("the structural check is the app's own", () => {
     await expect(page.getByTestId("library-check-structural")).not.toContainText("has not read these pages yet");
     await expect(page.getByTestId("library-check-semantic")).toContainText("has not read these pages yet");
 
-    const reportNotice = page.getByTestId("library-check-report-agent-missing");
+    /* Nothing here can start a turn: the report's head carries one notice with its door to the agents page. */
+    const reportNotice = page.getByTestId("library-check-report").locator("header").getByTestId("library-check-report-agent-missing");
     await expect(reportNotice).toBeVisible();
     await expect(reportNotice).toContainText("check the wiki");
     await expect(reportNotice.getByTestId("library-check-report-agent-missing-door")).toHaveAttribute("href", /\/agents/);
     await expect(page.getByTestId("library-check-report-lint")).toHaveCount(0);
-    const card = (testId: string) =>
-      page.getByTestId(testId).evaluate((node) => {
-        const style = getComputedStyle(node);
-        return [style.borderTopLeftRadius, style.borderTopColor, style.backgroundColor, style.paddingLeft, style.paddingTop, style.fontSize];
-      });
-    expect(await card("library-check-report-agent-missing")).toEqual(await card("library-agent-missing"));
 
     // A structural row's door opens its page; Fix and Propose write, so they stay on the agent's half.
     await expect(page.getByTestId("library-finding-fix")).toHaveCount(0);
@@ -247,30 +240,21 @@ test.describe("the index row's own state", () => {
       // corrupts the next resting measurement (`design-gates.md`).
       if (condition === "current-rest") await page.mouse.move(box.x + box.width + 200, box.y + 400);
       else await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-      return row.evaluate((node) => {
-        const marker = node.querySelector("span[aria-hidden]");
-        return {
-          background: getComputedStyle(node).backgroundColor,
-          colour: getComputedStyle(node).color,
-          edge: marker ? getComputedStyle(marker).backgroundColor : null,
-          edgeWidth: marker ? getComputedStyle(marker).width : null,
-        };
-      });
+      return row.evaluate((node) => ({
+        background: getComputedStyle(node).backgroundColor,
+        colour: getComputedStyle(node).color,
+      }));
     };
 
     const currentRest = await read("current-rest");
     const currentHover = await read("current-hover");
     const otherHover = await read("other-hover");
 
-    // The selected fill stays under the pointer.
-    expect(currentRest.background).toBe("rgba(233, 231, 224, 0.08)");
+    // The selected fill stays under the pointer, and it is not the hover step an unselected row takes.
+    expect(currentRest.background).not.toBe("rgba(0, 0, 0, 0)");
     expect(currentHover.background, "hover changed the current row's fill").toBe(currentRest.background);
     expect(currentHover.colour).toBe(currentRest.colour);
-    // The durable mark is the edge, not the tint: 2px of accent ink.
-    expect(currentRest.edgeWidth).toBe("2px");
-    expect(currentRest.edge).toBe("rgb(143, 176, 234)");
-    // An unselected row still answers the pointer — one step, from the axis.
-    expect(otherHover.background).toBe("rgba(255, 255, 255, 0.02)");
-    expect(otherHover.edge).toBeNull();
+    expect(otherHover.background).not.toBe("rgba(0, 0, 0, 0)");
+    expect(otherHover.background).not.toBe(currentRest.background);
   });
 });

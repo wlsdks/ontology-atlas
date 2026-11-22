@@ -91,8 +91,8 @@ function requireUuid(meta, file) {
   if (!basename.endsWith(`-${meta.id}`)) throw new RecordLedgerError(`${file}: filename must end with its id`);
 }
 
-function readFragments(root, dir, kind) {
-  return filesBelow(root, dir).map((file) => {
+function readFragments(root, directory, kind) {
+  return filesBelow(root, directory).map((file) => {
     const raw = readFileSync(path.join(root, file), 'utf8');
     const parsed = parseFrontmatter(raw, file);
     requireUuid(parsed.meta, file);

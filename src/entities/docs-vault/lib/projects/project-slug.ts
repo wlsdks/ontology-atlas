@@ -1,4 +1,4 @@
-import type { VaultDoc, VaultManifest } from "../../model/types";
+import type { VaultDoc, VaultManifest } from "../../model/vault-manifest";
 
 /**
  * `fm.slug` (trimmed) or the last path segment (`projects/foo` → `foo`); shared by project

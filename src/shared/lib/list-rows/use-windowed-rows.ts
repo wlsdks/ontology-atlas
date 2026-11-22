@@ -59,9 +59,9 @@ export function rowTop(heights: ArrayLike<number>, gap: number, index: number): 
 }
 
 function scrollParent(node: HTMLElement | null): HTMLElement | null {
-  for (let el = node?.parentElement ?? null; el; el = el.parentElement) {
-    const overflowY = getComputedStyle(el).overflowY;
-    if (overflowY === "auto" || overflowY === "scroll") return el;
+  for (let element = node?.parentElement ?? null; element; element = element.parentElement) {
+    const overflowY = getComputedStyle(element).overflowY;
+    if (overflowY === "auto" || overflowY === "scroll") return element;
   }
   return null;
 }

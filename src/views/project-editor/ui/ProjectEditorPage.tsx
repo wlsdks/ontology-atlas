@@ -17,7 +17,7 @@ import {
 import { VaultConflictError } from "@/entities/vault-session";
 import { OpenVaultCta } from "@/features/docs-vault-local";
 import {
-  getProjectRuntimeDetailHref,
+  buildProjectRuntimeDetailHref,
   projectDisplayName,
   type Project,
   type ProjectInput,
@@ -79,7 +79,7 @@ function EditorContent({
   );
   const safeReturnTo = normalizeReturnTo(returnTo);
   const safeReturnLabel = t(resolveReturnLabelKey(normalizeReturnTo(returnTo)));
-  const publicProjectHref = slug ? getProjectRuntimeDetailHref(slug) : null;
+  const publicProjectHref = slug ? buildProjectRuntimeDetailHref(slug) : null;
   const [project, setProject] = useState<Project | null>(null);
   const projectName = project ? projectDisplayName(project, locale) : undefined;
   const { projects: allProjects, loaded: projectsLoaded } = useProjects();
@@ -126,7 +126,7 @@ function EditorContent({
         await projectMutations.createProject(input);
         if (options.behavior === "stay") {
           toast.show(t("createdToast", { name: input.name }), "success");
-          const detailHref = getProjectRuntimeDetailHref(input.slug);
+          const detailHref = buildProjectRuntimeDetailHref(input.slug);
           navigateWithViewTransition(() => router.replace(detailHref));
           return;
         }
@@ -139,18 +139,18 @@ function EditorContent({
       }
       toast.show(t(mode === "create" ? "createdToast" : "savedToast", { name: input.name }), "success", {
         label: t("openPublicLabel"),
-        onClick: () => router.push(getProjectRuntimeDetailHref(input.slug)),
+        onClick: () => router.push(buildProjectRuntimeDetailHref(input.slug)),
       });
       router.push(safeReturnTo);
-    } catch (err) {
-      if (err instanceof VaultConflictError) {
+    } catch (error) {
+      if (error instanceof VaultConflictError) {
         throw new Error(t("vaultConflict"));
       }
       // The writeDisabled gate normally blocks this; never show the raw English message.
-      if (err instanceof ProjectStaticModeError) {
+      if (error instanceof ProjectStaticModeError) {
         throw new Error(t("demoModeSaveFailed"));
       }
-      throw err;
+      throw error;
     }
   };
 

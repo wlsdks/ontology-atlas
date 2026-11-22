@@ -34,24 +34,24 @@ const NOT_SHIPPED_TOP_DIRS = new Set(['archive', 'audits', 'benchmark', 'plans',
 
 // `product: false` lists every Markdown file under `dir` with no exclusion; the
 // staleness check uses it on the public output so a leftover file is reported.
-export async function walk(dir, { root = dir, product = true } = {}) {
+export async function walk(directory, { root = directory, product = true } = {}) {
   const out = [];
   // Sorted by name: readdir order is not guaranteed, and an unsorted walk would make key order
   // machine-dependent, so "same source, same bytes" could report stale.
-  const entries = (await readdir(dir, { withFileTypes: true })).sort((a, b) =>
+  const entries = (await readdir(directory, { withFileTypes: true })).sort((a, b) =>
     a.name < b.name ? -1 : a.name > b.name ? 1 : 0,
   );
-  const atRoot = dir === root;
+  const atRoot = directory === root;
   for (const entry of entries) {
     if (entry.name.startsWith('.')) continue;
     if (product && entry.isDirectory() && NOT_PRODUCT_DOCS.has(entry.name)) {
       // The recording guide is linked by composed ledgers; fragments are consumed there.
-      const guide = path.join(dir, entry.name, 'README.md');
+      const guide = path.join(directory, entry.name, 'README.md');
       if (entry.name === 'records' && existsSync(guide)) out.push(guide);
       continue;
     }
     if (product && atRoot && entry.isDirectory() && NOT_SHIPPED_TOP_DIRS.has(entry.name)) continue;
-    const full = path.join(dir, entry.name);
+    const full = path.join(directory, entry.name);
     if (entry.isDirectory()) {
       const nested = await walk(full, { root, product });
       out.push(...nested);
@@ -99,8 +99,8 @@ function sortTree(node) {
   for (const c of node.children) sortTree(c);
 }
 
-export async function ensureDir(dir) {
-  if (!existsSync(dir)) await mkdir(dir, { recursive: true });
+export async function ensureDir(directory) {
+  if (!existsSync(directory)) await mkdir(directory, { recursive: true });
 }
 
 // The stamp is the most recent `updatedAt` date among source documents, never the build wall clock
@@ -167,7 +167,7 @@ function meaningFindingCodes({ kind, slug, title, body }) {
  * byte-identical output (`check: true` writes nothing).
  */
 export async function scanVaultDir(
-  dir,
+  directory,
   {
     rootDir = ROOT,
     publicOutDir = null,
@@ -180,8 +180,8 @@ export async function scanVaultDir(
     movedFrom = {},
   } = {},
 ) {
-  const files = await walk(dir);
-  const gitDays = gitLastCommitDays(rootDir, dir);
+  const files = await walk(directory);
+  const gitDays = gitLastCommitDays(rootDir, directory);
   const docs = [];
   const publicFiles = [];
   const content = {};
@@ -196,7 +196,7 @@ export async function scanVaultDir(
       if (composed) break;
     }
     const raw = composed?.content ?? await readFile(full, 'utf8');
-    const slug = slugFromPath(full, dir);
+    const slug = slugFromPath(full, directory);
     const { frontmatter, body, diagnostics } = parseFrontmatter(raw);
     const headings = extractHeadings(body);
     const title =

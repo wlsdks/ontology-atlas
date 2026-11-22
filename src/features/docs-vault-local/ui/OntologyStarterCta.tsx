@@ -7,7 +7,7 @@ import { useTranslations } from 'next-intl';
 import { copyText } from '@/shared/lib/clipboard/copy-text';
 import { useFailureSentence } from '@/shared/lib/failures/use-failure-sentence';
 import type { FailureCopy } from '@/shared/lib/failures/use-failure-sentence';
-import { ATLAS_CLI } from '@/shared/config/cli-invocation';
+import { ATLAS_CLI } from '@/shared/config/agent/cli-invocation';
 import { controlClass } from '@/shared/ui/control-class';
 
 /**
@@ -124,8 +124,8 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
     setBusy(true);
     try {
       await onScaffold();
-    } catch (err) {
-      setError(failureSentence(err, t('errorFallback')));
+    } catch (error) {
+      setError(failureSentence(error, t('errorFallback')));
     } finally {
       setBusy(false);
     }

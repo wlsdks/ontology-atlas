@@ -51,10 +51,10 @@ export function returnFocusIfDropped(testId: string, doc: Document = document): 
 
 function findReachable(testIds: readonly string[], doc: Document): HTMLElement | null {
   for (const testId of testIds) {
-    for (const el of doc.querySelectorAll<HTMLElement>(`[data-testid="${testId}"]`)) {
-      if (el.closest("[inert]") || el.closest('[aria-hidden="true"]')) continue;
-      if (el.getClientRects().length === 0) continue;
-      return el;
+    for (const htmlElement of doc.querySelectorAll<HTMLElement>(`[data-testid="${testId}"]`)) {
+      if (htmlElement.closest("[inert]") || htmlElement.closest('[aria-hidden="true"]')) continue;
+      if (htmlElement.getClientRects().length === 0) continue;
+      return htmlElement;
     }
   }
   return null;

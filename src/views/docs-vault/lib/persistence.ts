@@ -184,17 +184,17 @@ export async function persistEditorSave(
   saveDoc: (
     slug: string,
     content: string,
-    opts: { expectedMtime?: number },
+    options: { expectedMtime?: number },
   ) => Promise<unknown>,
   args: { slug: string; content: string; expectedMtime?: number },
-  onConflict?: (err: VaultConflictError) => void,
+  onConflict?: (error: VaultConflictError) => void,
 ): Promise<void> {
   try {
     await saveDoc(args.slug, args.content, { expectedMtime: args.expectedMtime });
-  } catch (err) {
-    if (err instanceof VaultConflictError) {
-      onConflict?.(err);
+  } catch (error) {
+    if (error instanceof VaultConflictError) {
+      onConflict?.(error);
     }
-    throw err; // never swallow — the editor needs the throw to keep the buffer dirty
+    throw error; // never swallow — the editor needs the throw to keep the buffer dirty
   }
 }

@@ -5,10 +5,10 @@ import forceAtlas2Helpers from "graphology-layout-forceatlas2/helpers.js";
 // @ts-expect-error -- see above.
 import forceAtlas2Iterate from "graphology-layout-forceatlas2/iterate.js";
 
-import type { Box, DialCapabilityDependency, DialModel, Point } from "../dial/types";
+import type { Box, DialCapabilityDependency, DialModel, Point } from "../dial/dial-shapes";
 import { GOLDEN_ANGLE, byId, seedAngle, seedUnit } from "./seed";
 import { separate, type Body } from "./separate";
-import type { FlatGraphCluster, FlatGraphFrame, FlatGraphItem, FlatGraphLayout, FlatGraphLayoutTokens, FlatGraphPins, FlatGraphTitle } from "./types";
+import type { FlatGraphCluster, FlatGraphFrame, FlatGraphItem, FlatGraphLayout, FlatGraphLayoutTokens, FlatGraphPins, FlatGraphTitle } from "./flat-graph-shapes";
 
 const HUB_ID = "\u0000hub";
 const TITLE_LEFT = "\u0000title-left";

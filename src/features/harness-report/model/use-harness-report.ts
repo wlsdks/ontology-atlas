@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { scanHarness, type HarnessReport, type HarnessScanProgress } from '@/entities/agent-files';
 import { failureCodeOf, failureDetailOf } from '@/shared/lib/failures/failure-code';
 import { createVaultFileProjectSourceStore } from '@/shared/lib/project-source/project-source-store';
-import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 
 import { bridgePort } from './bridge-port';
 

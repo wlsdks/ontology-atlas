@@ -126,7 +126,7 @@ export interface OntologyMapTokens {
   /**
    * `--map-camera-pan-leash`: the world radius the camera may stray from the fit while nothing is focused; 0 (default) means
    * no leash. A surface with no "fit the map" chrome (the gateway `/download`) switches it on, since an irreversible pan
-   * there leaves the stage empty (`topology-camera-math.ts#computeUnfocusedPanBounds`).
+   * there leaves the stage empty (`target/pan-leash.ts#computeUnfocusedPanBounds`).
    */
   cameraPanLeash: number;
   altitudeFarHighRatio: number;
@@ -467,7 +467,7 @@ let cached: OntologyMapTokens | null = null;
  * returned thereafter. Call `clearOntologyMapTokensCache()` first at any point where
  * the token values can change, such as a dark/light theme switch.
  */
-export function getOntologyMapTokens(element?: Element): OntologyMapTokens {
+export function readOntologyMapTokens(element?: Element): OntologyMapTokens {
     if (cached)
         return cached;
     cached = readFromElement(element ?? document.documentElement);

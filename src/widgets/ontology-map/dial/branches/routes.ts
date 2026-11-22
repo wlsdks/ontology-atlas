@@ -1,7 +1,7 @@
 import type { FlowMarksInput } from "../flow-marks";
 import { crossesBox } from "../label-marks";
 import { domainOfEnd, type DialLink } from "../links";
-import type { Point } from "../types";
+import type { Point } from "../dial-shapes";
 import { quadAt, trimmedPiece } from "../flow/geometry";
 import { localRelationControl } from "../flow/local-control";
 import { branchPortFraction } from "./ports";
@@ -58,12 +58,12 @@ export function createBranchRouter(input: FlowMarksInput, control: (link: DialLi
     const run = (from: string, to: string, start: BranchEnd, end: BranchEnd, count: number, offset: number) => {
       const dx = end.p.x - start.p.x;
       const dy = end.p.y - start.p.y;
-      const len = Math.max(1, Math.hypot(dx, dy));
+      const vectorLength = Math.max(1, Math.hypot(dx, dy));
       const fromCluster = input.scene.clusterByDomain.get(from);
       const toCluster = input.scene.clusterByDomain.get(to);
       const sameColumn = fromCluster && toCluster && fromCluster.branchPair === toCluster.branchPair && fromCluster.branchSide === toCluster.branchSide;
       const local = localRelationControl(sameColumn ? boundary(from, to, start, base) : start.p, sameColumn ? boundary(to, from, end, base) : end.p, base);
-      let c = { x: local.x - dy / len * offset, y: local.y + dx / len * offset };
+      let c = { x: local.x - dy / vectorLength * offset, y: local.y + dx / vectorLength * offset };
       let turn = false;
       if (input.avoidTexts?.length || curves.length > 0) {
         const geometry = (control: Point, edge: boolean) => {
@@ -94,14 +94,14 @@ export function createBranchRouter(input: FlowMarksInput, control: (link: DialLi
           const controls = [c];
           for (const along of [0.5, 0.25, 0.75, 0.125, 0.875, 0.0625, 0.9375]) for (const normal of [0, 24, -24, 48, -48, 72, -72, 96, -96, 120, -120, 144, -144]) {
             const bend = normal + offset;
-            controls.push({ x: start.p.x + dx * along - dy / len * bend, y: start.p.y + dy * along + dx / len * bend });
+            controls.push({ x: start.p.x + dx * along - dy / vectorLength * bend, y: start.p.y + dy * along + dx / vectorLength * bend });
           }
           if (domainOfEnd(input.model, from) !== domainOfEnd(input.model, to)) {
             const free = input.freeRect;
             const mid = { x: (start.p.x + end.p.x) / 2, y: (start.p.y + end.p.y) / 2 };
             const startX = boundary(from, to, start, c).x - (input.scene.clusterByDomain.get(from)?.branchSide ?? 0) * 8;
             const endX = boundary(to, from, end, c).x - (input.scene.clusterByDomain.get(to)?.branchSide ?? 0) * 8;
-            controls.push({ x: base.x - dy / len * offset, y: base.y + dx / len * offset },
+            controls.push({ x: base.x - dy / vectorLength * offset, y: base.y + dx / vectorLength * offset },
               { x: free.minX + 8, y: mid.y }, { x: free.maxX - 8, y: mid.y },
               ...[c.x, mid.x, startX, endX].flatMap(x => [{ x, y: free.minY + 8 }, { x, y: free.maxY - 8 },
                 { x, y: Math.min(start.p.y, end.p.y) - input.tokens.ledgerGapPx * 3 },

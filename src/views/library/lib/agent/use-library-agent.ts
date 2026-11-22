@@ -16,7 +16,7 @@ import type { LibrarySourceRow, WikiRetrievalPage } from "@/entities/docs-vault"
 
 import { isLoopbackAuthority } from "@/shared/lib/llm-connection/loopback";
 import { resolveCompileBrain, useCompileBrainChoice } from "../compile/compile-brain";
-import type { LibraryAgentOpeningRequest } from "../../ui/parts/agent/LibraryAgentDock";
+import type { LibraryAgentOpeningRequest } from "../../ui/agent/LibraryAgentDock";
 
 /**
  * Whether the Library can start an in-app agent turn. `route` is `agent` only when a verified
@@ -102,10 +102,8 @@ export function useLibraryAgent(
    * can point at rather than an empty step.
    */
   /*
-   * Each brain's availability is asked separately now, because the picker needs both
-   * answers rather than one winner. `checking` still comes first while the bridge is
-   * present and the runtime scan is unfinished: naming a brain before the scan lands would
-   * make the shelf change its mind under the reader.
+   * Each brain's availability is asked separately, because the picker needs both answers. `checking`
+   * comes first while the runtime scan is unfinished: naming a brain early would change under the reader.
    */
   const agentAvailable = vaultAgent.route === "agent";
   const localAvailable = localModel !== null;

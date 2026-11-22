@@ -4,7 +4,7 @@ import {
   putVaultRows,
   vaultRowsAvailable,
   type VaultRowWrite,
-} from '@/shared/lib/vault-folder/tauri-vault-index-rows';
+} from '@/shared/lib/vault-folder/vault-index/tauri-vault-index-rows';
 import { mdEntryRowValue, storedMdEntry, type BuiltVaultEntry } from './md-entry';
 import type { WalkEntry } from './walk-vault';
 

@@ -10,9 +10,9 @@ import { AppSettingsMenu } from '@/widgets/app-settings-menu';
 import { cn } from '@/shared/lib/cn';
 import { Chip, controlClass } from '@/shared/ui';
 import type { VaultManifest } from '@/entities/docs-vault';
-import { DocsHeaderTile } from './parts/DocsHeaderTile';
-import { DocsVaultVaultChip } from './parts/DocsVaultVaultChip';
-import { DocsVaultTabStrip } from './parts/DocsVaultTabStrip';
+import { DocsHeaderTile } from './parts/header/DocsHeaderTile';
+import { DocsVaultVaultChip } from './parts/header/DocsVaultVaultChip';
+import { DocsVaultTabStrip } from './parts/header/DocsVaultTabStrip';
 import { resolveVaultChipIdentity } from '../lib/vault-source/vault-chip-identity';
 import type { DocsVaultSource as Source, DocsVaultView } from '../lib/persistence';
 

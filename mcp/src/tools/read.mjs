@@ -11,7 +11,7 @@ import {
   CONSTRUCTION_GUIDE_TOPICS,
 } from '../construction/construction-card.mjs';
 import { META_MODEL_RULES_EN } from '../construction/construction-rules.mjs';
-import { scoreEvidence } from '../evidence-search/evidence-rank.mjs';
+import { scoreEvidence } from '../evidence-search/evidence-score.mjs';
 import {
   buildFindEvidenceZeroHitsGrowthHint,
   buildFindPathGrowthHint,
@@ -61,16 +61,16 @@ import {
   collectNeighborRefs,
   normalizeRelationRefs,
   relationNoteFor,
-} from '../vault/relation-refs.mjs';
-import { slugToPath } from '../vault/slug-paths.mjs';
-import { docBodyIncluder, loadedDocIsEmpty, validateLoadedVaultDocument } from '../vault/doc-facts.mjs';
-import { FULL_BODY_MAX_CHARS, GET_CONCEPTS_FULL_BODY_MAX, describeBodyDelivery } from '../vault/body-delivery.mjs';
+} from '../vault/graph/relation-refs.mjs';
+import { slugToPath } from '../vault/documents/slug-paths.mjs';
+import { docBodyIncluder, loadedDocIsEmpty, validateLoadedVaultDocument } from '../vault/documents/doc-facts.mjs';
+import { FULL_BODY_MAX_CHARS, GET_CONCEPTS_FULL_BODY_MAX, describeBodyDelivery } from '../vault/documents/body-delivery.mjs';
 import {
   loadVaultDocs,
   readDoc,
   readVaultDocText,
-} from '../vault/documents.mjs';
-import { findBacklinks, findOrphans, findPath, listKinds } from '../vault/graph-queries.mjs';
+} from '../vault/documents/document-cache.mjs';
+import { findBacklinks, findOrphans, findPath, listKinds } from '../vault/graph/graph-queries.mjs';
 import {
   normalizeGraphRelationKey,
   relationRefsFor,

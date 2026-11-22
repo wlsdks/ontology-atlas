@@ -7,7 +7,7 @@ import { CLI_COMMANDS as REGISTERED_CLI_COMMANDS } from "../../../cli/src/lib/cl
 /**
  * Guidance must not resurrect the retired npm channel (`docs/DECISIONS.md`). The gate is an allowlist,
  * so history is untouched. Tier A bans any `npx` outright, Tier B only inside code blocks, and Tier C
- * bare invocations in source; the live form comes from `src/shared/config/cli-invocation.ts`.
+ * bare invocations in source; the live form comes from `src/shared/config/agent/cli-invocation.ts`.
  */
 
 /**
@@ -69,7 +69,6 @@ const TIER_A_GLOBS = [
 const TIER_B_FILES = [
   "README.md",
   "AGENTS.md",
-  "CLAUDE.md",
   "docs/AGENT-GRAPH-WORKFLOW.md",
   "docs/FEATURES.md",
   // The feature inventory split into one file per surface.
@@ -91,8 +90,8 @@ const TIER_B_FILES = [
  * is the signal that the rule is leaking.
  */
 const TIER_C_ALLOWED = [
-  "src/shared/config/cli-invocation.ts",
-  "src/shared/config/mcp-server-launch.ts",
+  "src/shared/config/agent/cli-invocation.ts",
+  "src/shared/config/mcp/mcp-server-launch.ts",
 ];
 
 interface Offence {
@@ -162,7 +161,7 @@ describe("the npm channel is retired: block dead npx instructions", () => {
       offences,
       offences.length
         ? `A bare CLI call that cannot run: no global binary has this name.\n` +
-            `Build it with \`ATLAS_CLI\` (src/shared/config/cli-invocation.ts).\n${report(offences)}`
+            `Build it with \`ATLAS_CLI\` (src/shared/config/agent/cli-invocation.ts).\n${report(offences)}`
         : "",
     ).toEqual([]);
   });

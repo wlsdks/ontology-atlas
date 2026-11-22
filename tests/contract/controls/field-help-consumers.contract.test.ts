@@ -18,7 +18,7 @@ import { compileOntology } from '../../../mcp/src/ontology-compiler.mjs';
 import { queryCompiledOntology } from '../../../mcp/src/ontology-engine.mjs';
 import { buildProjectSourceReceipt } from '../../../mcp/src/project-source/project-source-mint.mjs';
 import { deriveProjectSourceWitnessesFromDocs } from '../../../mcp/src/project-source/project-source-witnesses.mjs';
-import { loadVaultDocs } from '../../../mcp/src/vault/documents.mjs';
+import { loadVaultDocs } from '../../../mcp/src/vault/documents/document-cache.mjs';
 
 /**
  * Help naming a consumer is worth reading only if the consumer does what it says.

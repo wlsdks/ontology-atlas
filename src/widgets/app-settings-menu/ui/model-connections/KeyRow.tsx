@@ -83,8 +83,8 @@ export function KeyRow({
         setVerify({ kind: 'failed', message: result.message ?? String(result.httpStatus ?? '') });
         announce(`${label} · ${t('statusFailed')}`);
       }
-    } catch (err) {
-      setVerify({ kind: 'failed', message: secretErrorMessage(err, nativeErrors) });
+    } catch (caughtError) {
+      setVerify({ kind: 'failed', message: secretErrorMessage(caughtError, nativeErrors) });
       announce(`${label} · ${t('statusFailed')}`);
     } finally {
       // Success or denial, the call was logged — so the count moves immediately.
@@ -204,8 +204,8 @@ export function KeyRow({
                       setVerify({ kind: 'idle' });
                       if (next) onStatus(next);
                       announce(`${label} · ${t('cleared')}`);
-                    } catch (err) {
-                      setError(secretErrorMessage(err, nativeErrors));
+                    } catch (caughtError) {
+                      setError(secretErrorMessage(caughtError, nativeErrors));
                     }
                   }}
                 />

@@ -7,7 +7,7 @@ import { findProjectDocInList } from "@/entities/docs-vault";
 import { MOTION, OVERLAY_RISE, OVERLAY_RISE_REDUCED, OVERLAY_SETTLED } from "@/shared/motion";
 import { framerSpring, SPRING } from "@/shared/motion/spring";
 import { usePrefersReducedMotion } from "@/shared/lib/render-timing/use-prefers-reduced-motion";
-import { getProjectRuntimeDetailHref, getTopologyProjectNodeHref, projectDisplayName, type Project } from "@/entities/project";
+import { buildProjectRuntimeDetailHref, buildTopologyProjectNodeHref, projectDisplayName, type Project } from "@/entities/project";
 import { OpenVaultCta } from "@/features/docs-vault-local";
 import { useDataSourceMode, VaultSourceHydrationBoundary, useLocalVault, useVaultIdentityScope } from "@/entities/vault-session";
 import { Link } from "@/i18n/navigation";
@@ -214,7 +214,7 @@ function ProjectCard({
 }) {
   const locale = useLocale();
   const name = projectDisplayName(project, locale);
-  const detailHref = getProjectRuntimeDetailHref(project.slug);
+  const detailHref = buildProjectRuntimeDetailHref(project.slug);
   const ago = formatAgo(resolveRecentActivityAgo(project.updatedAt, new Date()), t);
 
   return (
@@ -271,7 +271,7 @@ function ProjectCard({
           {t("cardUpdatedPrefix")} {ago}
         </span>
         <Link
-          href={getTopologyProjectNodeHref(project.slug)}
+          href={buildTopologyProjectNodeHref(project.slug)}
           prefetch={false}
           className={controlClass({ shape: "chip", size: "md", tone: "secondary", className: "relative z-[1]" })}
         >

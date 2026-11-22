@@ -3,7 +3,7 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type RefObject } from "react";
 import { AnimatePresence, motion, useIsPresent, useReducedMotion } from "framer-motion";
 import { Link } from "@/i18n/navigation";
-import { getTopologyFocusHref } from "@/entities/project";
+import { buildTopologyFocusHref } from "@/entities/project";
 import { OntologyMapKindGlyph } from "@/shared/ui";
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
@@ -189,7 +189,7 @@ function DomainList({
     if (!option) return;
     const next = { y: option.offsetTop, height: option.offsetHeight };
     // eslint-disable-next-line react-hooks/set-state-in-effect -- the tint follows a measured row, known only after layout.
-    setTint((prev) => (prev && prev.y === next.y && prev.height === next.height ? prev : next));
+    setTint((previous) => (previous && previous.y === next.y && previous.height === next.height ? previous : next));
   }, [selectedId, optionRefs, domains]);
 
   return (
@@ -391,7 +391,7 @@ function SelectedDomain({
             {labels.counts(domain)}
           </p>
           <Link
-            href={getTopologyFocusHref(domain.id)}
+            href={buildTopologyFocusHref(domain.id)}
             data-testid="project-detail-domain-map-link"
             className={controlClass({ shape: "link", tone: "accent", className: "touch-hit-expand whitespace-nowrap" })}
           >
@@ -414,7 +414,7 @@ function SelectedDomain({
                 transition={{ ...(reducedMotion ? MOTION.fast : MOTION.base), delay: reducedMotion ? 0 : Math.min(index, STAGGERED_ROWS) * STAGGER }}
               >
                 <Link
-                  href={getTopologyFocusHref(capability.id)}
+                  href={buildTopologyFocusHref(capability.id)}
                   aria-label={[
                     labels.capabilityLinkAria(capability.title),
                     marks.staleIds.has(capability.id) ? labels.staleMark : null,

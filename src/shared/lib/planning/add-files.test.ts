@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const bridge = vi.hoisted(() => ({ pick: vi.fn(), import: vi.fn() }));
-vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({ pickTauriSourceFiles: bridge.pick, importTauriSourceFiles: bridge.import }));
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-library-sources', () => ({ pickTauriSourceFiles: bridge.pick, importTauriSourceFiles: bridge.import }));
 
 import { addPlanningFilesInBrowser, pickPlanningFiles } from './add-files';
 

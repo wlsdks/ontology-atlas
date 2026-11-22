@@ -5,7 +5,7 @@ import { DOME_PITCH_DEFAULT, DOME_YAW_DEFAULT } from './orbit';
 import { domeWorldBounds, projectDomeCoord } from './projection';
 import { domeFitFocusLeash } from '../runtime';
 import { domeTurnFollowTarget, domeTurnReach, followTurnWithZoom } from './turn-follow';
-import type { DomeInputNode, DomeModel } from '../types';
+import type { DomeInputNode, DomeModel } from '../dome-shapes';
 
 const DEG = Math.PI / 180;
 const FREE = { halfW: 520, halfH: 330 };

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { HeldRequest, SeatedDetail } from '../types';
+import type { HeldRequest, SeatedDetail } from '../chat-panel-props';
 import { heldRequestStillMeant, planSubmit, seatedRequestText } from './outgoing-request';
 
 const seated: SeatedDetail = { lead: 'Check refunds', detail: 'Look at the billing module.', full: 'Check refunds\n\nLook at the billing module.' };

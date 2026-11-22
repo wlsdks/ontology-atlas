@@ -5,17 +5,13 @@ import {
   IDLE,
   ITEM,
   NEUTRAL_FRAME,
-  ROUND_MS,
+  POWER_MS,
   SETTLE,
   STEP_MS,
-  COMBO_STEP,
-  backOut,
   clipTimeline,
-  easeOut,
   fitTimeline,
   headLine,
   leanFor,
-  multiplierFor,
   newRound,
   poseAt,
   shadowScale,
@@ -32,7 +28,22 @@ import {
   type Sheet,
   type Timeline,
 } from './moru-play';
-import { BIG_GLYPHS, BUG_ROWS, GOLD_ROWS, STAR_ROWS, pixelSprite, textRows } from './moru-play-art';
+import { BIG_GLYPHS, FLOOR_BAND } from './moru-play-art';
+import { createHud, type HudNodes } from './moru-play-hud';
+import {
+  bubbleOpacity,
+  bubbleRise,
+  countdownDigit,
+  countdownOpacity,
+  countdownSize,
+  scoreFloatOpacity,
+  scoreFloatRise,
+  scoreFloatSize,
+  tierBadgeOpacity,
+  tierBadgeRise,
+  tierBadgeSize,
+} from './moru-play-ramps';
+import { SKY, TWINKLE, createSprites, readFieldColors, type SpriteSources } from './moru-play-sprites';
 
 /**
  * The Play with Moru round on one canvas. One clock drives Moru, the drops and every effect: the
@@ -52,49 +63,24 @@ export interface Result {
   reason: EndReason;
 }
 
-export interface SheetSource {
-  src: string;
-  cell: number;
-  columns: number;
-}
-
-export interface GameNodes {
+export interface GameNodes extends HudNodes {
   field: HTMLElement;
   canvas: HTMLCanvasElement;
-  score: HTMLElement | null;
-  scoreLabel: HTMLElement | null;
-  multiplier: HTMLElement | null;
-  pips: Array<HTMLElement | null>;
-  lives: Array<HTMLElement | null>;
-  time: HTMLElement | null;
-  timeBar: HTMLElement | null;
-  toast: HTMLElement | null;
 }
 
-export interface GameOptions {
+export interface GameOptions extends SpriteSources {
   best: number;
   calm: boolean;
   scale: number;
-  sheets: Record<Sheet, SheetSource>;
-  emote: (glyph: 'note' | 'heart' | 'spark') => string;
-  fish: { frame: number; x: number; y: number; width: number; height: number };
   scoreLabel: (score: number) => string;
   onPhase: (phase: Phase) => void;
   onEnd: (result: Result) => void;
 }
 
-export const FLOOR_BAND = 28;
 export const COUNTDOWN_MS = 3000;
 const END_BEAT_MS = 700;
-const TOAST_MS = 1400;
 const HIT_MS = 300;
 const SQUASH_MS = 180;
-
-const SKY = [
-  [6, 14, 2], [14, 30, 3], [22, 9, 2], [31, 22, 2], [39, 12, 3], [47, 34, 2], [55, 7, 2],
-  [63, 26, 3], [71, 15, 2], [79, 31, 2], [87, 10, 3], [93, 24, 2], [10, 44, 2], [84, 46, 2],
-] as const;
-const TWINKLE = [1, 4, 7, 10, 12];
 
 const TIER_CLIP: Record<number, PlayClip> = { 2: 'clap', 3: 'laugh', 4: 'hearts' };
 
@@ -125,45 +111,12 @@ function pool<T>(size: number, make: () => T): T[] {
   return Array.from({ length: size }, make);
 }
 
-/** A colour token's value; canvas cannot read `var()`, so each is resolved once from the field. */
-function token(styles: CSSStyleDeclaration, name: string): string {
-  return styles.getPropertyValue(name).trim();
-}
-
-function loadImage(src: string, onReady: () => void): HTMLImageElement {
-  const image = new Image();
-  image.decoding = 'async';
-  image.onload = () => {
-    // Decode before the first draw so the frame that first shows it is not the one that pays.
-    void (image.decode?.() ?? Promise.resolve()).catch(() => undefined).then(onReady);
-  };
-  image.src = src;
-  return image;
-}
-
 export function createGame(nodes: GameNodes, options: GameOptions) {
   const { field, canvas } = nodes;
   const ctx = canvas.getContext('2d');
   const dpr = Math.max(1, Math.min(3, Math.round(window.devicePixelRatio || 1)));
   const snap = (value: number) => Math.round(value * dpr) / dpr;
-  const styles = getComputedStyle(field);
-  const color = {
-    panel: token(styles, '--color-panel'),
-    canvas: token(styles, '--color-canvas'),
-    shadow: token(styles, '--color-canvas-a70'),
-    text: token(styles, '--color-text-primary'),
-    muted: token(styles, '--color-text-tertiary'),
-    accent: token(styles, '--color-indigo-accent'),
-    accentHalf: token(styles, '--color-indigo-accent-a50'),
-    accentWash: token(styles, '--color-indigo-accent-a12'),
-    starBright: token(styles, '--color-indigo-line-a54'),
-    starDim: token(styles, '--color-indigo-line-a35'),
-    ground: token(styles, '--color-overlay-2'),
-    gold: token(styles, '--color-amber-docs-a100'),
-    goldDeep: token(styles, '--color-amber-signal-a60'),
-    danger: token(styles, '--color-danger-text-strong'),
-    dangerWash: token(styles, '--color-danger-a12'),
-  };
+  const color = readFieldColors(field);
 
   let calm = options.calm;
   let scale = options.scale;
@@ -175,97 +128,17 @@ export function createGame(nodes: GameNodes, options: GameOptions) {
   let round: Round | null = null;
   let ending: { at: number; reason: EndReason } | null = null;
   let mover: Mover = { x: 0, v: 0, facing: 1 };
-  let prevX = 0;
+  let previousX = 0;
   let target: number | undefined;
   let keys = { left: false, right: false };
   let motion: 'idle' | 'bounce' | 'settle' = 'idle', motionStart = 0;
   let clip: { line: Timeline; start: number; kind: PlayClip } | null = null;
-  let squashAt = -Infinity, hitAt = -Infinity, tierAt = -Infinity, tier = 1, bubbleAt = -Infinity, toastAt = -Infinity;
-  let heartAt = -Infinity, heartIndex = -1, multAt = -Infinity;
+  let squashAt = -Infinity, hitAt = -Infinity, tierAt = -Infinity, tier = 1, bubbleAt = -Infinity;
   let powerWash = 0;
-  const hud = { score: -1, mult: -1, pips: -1, lives: -1, time: -1, hurry: false, power: '' };
+  const hud = createHud(field, nodes, options.scoreLabel);
 
-  const sheets: Record<Sheet, HTMLImageElement> = {
-    companion: loadImage(options.sheets.companion.src, () => buildFish()),
-    reactions: loadImage(options.sheets.reactions.src, () => buildFish()),
-  };
-  const sprites: Partial<Record<ItemKind | 'spark-small', HTMLCanvasElement>> = {};
-  const paint = (size: { w: number; h: number }, draw: (c: CanvasRenderingContext2D) => void) => {
-    const sprite = document.createElement('canvas');
-    sprite.width = Math.round(size.w * dpr);
-    sprite.height = Math.round(size.h * dpr);
-    const c = sprite.getContext('2d');
-    if (c) {
-      c.imageSmoothingEnabled = false;
-      c.scale(dpr, dpr);
-      draw(c);
-    }
-    return sprite;
-  };
-  // Each sprite names what it shows, so a scripted player in a browser test can read the field.
-  const keep = (kind: keyof typeof sprites, sprite: HTMLCanvasElement) => {
-    sprite.dataset.sprite = kind;
-    sprites[kind] = sprite;
-  };
-  keep('star', pixelSprite(STAR_ROWS, { f: color.text }, 4, dpr, color.canvas));
-  keep('gold', pixelSprite(GOLD_ROWS, { f: color.gold, h: color.text, d: color.goldDeep }, 4, dpr, color.canvas));
-  keep('bug', pixelSprite(BUG_ROWS, { r: color.danger, k: color.canvas, g: color.muted, l: color.muted }, 4, dpr, color.canvas));
-  const emoteImages = {
-    note: loadImage(options.emote('note'), () => {
-      keep('note', paint({ w: ITEM, h: ITEM }, (c) => c.drawImage(emoteImages.note, 0, 0, ITEM, ITEM)));
-    }),
-    heart: loadImage(options.emote('heart'), () => {
-      keep('heart', paint({ w: ITEM, h: ITEM }, (c) => c.drawImage(emoteImages.heart, 0, 0, ITEM, ITEM)));
-    }),
-    spark: loadImage(options.emote('spark'), () => {
-      keep('slow', paint({ w: ITEM, h: ITEM }, (c) => c.drawImage(emoteImages.spark, 0, 0, ITEM, ITEM)));
-      keep('spark-small', paint({ w: 24, h: 24 }, (c) => c.drawImage(emoteImages.spark, 0, 0, 24, 24)));
-    }),
-  };
-  function buildFish() {
-    const sheet = sheets.reactions;
-    if (sprites.magnet || !sheet.complete || !sheet.naturalWidth) return;
-    const { frame: cell, x, y, width: w, height: h } = options.fish;
-    const source = options.sheets.reactions;
-    const sx = (cell % source.columns) * source.cell + x;
-    const sy = Math.floor(cell / source.columns) * source.cell + y;
-    keep('magnet', paint({ w: w * 2, h: h * 2 }, (c) => c.drawImage(sheet, sx, sy, w, h, 0, 0, w * 2, h * 2)));
-  }
-  const floaters = new Map<string, HTMLCanvasElement>();
-  const textSprite = (text: string, fill: string, unit: number, face?: typeof BIG_GLYPHS) => {
-    const key = `${text}|${fill}|${unit}|${face ? 'big' : 'small'}`;
-    let sprite = floaters.get(key);
-    if (!sprite) {
-      sprite = pixelSprite(textRows(text, face), { f: fill }, unit, dpr, color.canvas);
-      floaters.set(key, sprite);
-    }
-    return sprite;
-  };
-  for (const base of [10, 50]) for (let m = 1; m <= 4; m += 1) for (const fill of [color.text, color.accent, color.gold]) textSprite(`+${base * m}`, fill, 3);
-  for (let m = 2; m <= 4; m += 1) textSprite(`×${m}`, m === 4 ? color.gold : color.accent, 5, BIG_GLYPHS);
-  const countdown = Object.fromEntries(Object.entries(BIG_GLYPHS).map(([digit, rows]) => [digit, pixelSprite(rows, { f: color.text }, 12, dpr, color.accentHalf)]));
-
+  const { sheets, sprites, textSprite, countdown, paintSky } = createSprites(dpr, color, options);
   let sky: HTMLCanvasElement | null = null;
-  function paintSky() {
-    if (width <= 0 || height <= 0) return;
-    sky = paint({ w: width, h: height }, (c) => {
-      c.fillStyle = color.panel;
-      c.fillRect(0, 0, width, height);
-      const wash = c.createLinearGradient(0, 0, 0, height * 0.75);
-      wash.addColorStop(0, color.accentWash);
-      wash.addColorStop(1, 'transparent');
-      c.fillStyle = wash;
-      c.fillRect(0, 0, width, height);
-      for (const [left, top, size] of SKY) {
-        c.fillStyle = size === 3 ? color.starBright : color.starDim;
-        c.fillRect(Math.round((left / 100) * width), Math.round((top / 100) * height), size, size);
-      }
-      c.fillStyle = color.ground;
-      c.fillRect(0, height - FLOOR_BAND, width, FLOOR_BAND);
-      for (let x = 0; x < width; x += 8) c.fillRect(x, height - FLOOR_BAND - 4, 4, 4);
-    });
-    sky.dataset.sprite = 'sky';
-  }
 
   const particles = pool<Particle>(220, () => ({ on: false, x: 0, y: 0, vx: 0, vy: 0, age: 0, life: 0, size: 0, color: '', sprite: null, spin: 0 }));
   const pops = pool<Effect>(24, () => ({ on: false, kind: 'note', x: 0, y: 0, age: 0, sprite: null }));
@@ -385,7 +258,7 @@ export function createGame(nodes: GameNodes, options: GameOptions) {
       case 'tier':
         tier = event.multiplier;
         tierAt = clock;
-        multAt = clock;
+        hud.beatMultiplier(clock);
         if (TIER_CLIP[event.multiplier]) playClip(TIER_CLIP[event.multiplier], clipTimeline(TIER_CLIP[event.multiplier], 1.35));
         break;
       case 'miss':
@@ -397,14 +270,12 @@ export function createGame(nodes: GameNodes, options: GameOptions) {
       }
       case 'hit':
         hitAt = clock;
-        heartAt = clock;
-        heartIndex = event.lives;
+        hud.beatHeart(clock, event.lives);
         burst(event.x, event.y - ITEM / 2, 12, color.danger, 0.9);
         playClip('hurt', clipTimeline('hurt'), true);
         break;
       case 'power':
-        toastAt = clock;
-        if (nodes.toast) nodes.toast.dataset.power = event.kind;
+        hud.showToast(clock, event.kind);
         burst(mover.x, headY(), 16, color.accent, 1.2);
         break;
       case 'power-end':
@@ -439,72 +310,6 @@ export function createGame(nodes: GameNodes, options: GameOptions) {
     phaseAt = clock;
     field.dataset.phase = next;
     options.onPhase(next);
-  }
-
-  function writeHud() {
-    const r = round;
-    const score = r?.score ?? 0;
-    if (score !== hud.score) {
-      hud.score = score;
-      if (nodes.score) nodes.score.textContent = String(score);
-      if (nodes.scoreLabel) nodes.scoreLabel.textContent = options.scoreLabel(score);
-      field.dataset.score = String(score);
-    }
-    const combo = r?.combo ?? 0;
-    const mult = multiplierFor(combo);
-    if (mult !== hud.mult) {
-      hud.mult = mult;
-      if (nodes.multiplier) {
-        nodes.multiplier.textContent = `×${mult}`;
-        nodes.multiplier.dataset.level = String(mult);
-      }
-      field.dataset.multiplier = String(mult);
-    }
-    const pips = mult >= 4 ? COMBO_STEP : combo % COMBO_STEP;
-    if (pips !== hud.pips) {
-      hud.pips = pips;
-      nodes.pips.forEach((pip, i) => pip?.toggleAttribute('data-on', i < pips));
-      field.dataset.combo = String(combo);
-    }
-    const lives = r?.lives ?? 3;
-    if (lives !== hud.lives) {
-      hud.lives = lives;
-      nodes.lives.forEach((heart, i) => heart?.toggleAttribute('data-lost', i >= lives));
-      field.dataset.lives = String(lives);
-    }
-    const left = r ? Math.max(0, ROUND_MS - r.t) : ROUND_MS;
-    const seconds = Math.ceil(left / 1000);
-    if (seconds !== hud.time) {
-      hud.time = seconds;
-      if (nodes.time) nodes.time.textContent = String(seconds);
-    }
-    const hurry = Boolean(r) && seconds <= 10;
-    if (hurry !== hud.hurry) {
-      hud.hurry = hurry;
-      field.toggleAttribute('data-hurry', hurry);
-    }
-    if (nodes.timeBar) nodes.timeBar.style.transform = `scaleX(${(left / ROUND_MS).toFixed(4)})`;
-    const power = r?.power?.kind ?? '';
-    if (power !== hud.power) {
-      hud.power = power;
-      if (power) field.dataset.power = power;
-      else delete field.dataset.power;
-    }
-    nodes.lives.forEach((heart, i) => {
-      if (!heart) return;
-      const age = clock - heartAt;
-      const beat = !calm && i === heartIndex && age < 420 ? 1 + 0.45 * Math.sin(Math.PI * easeOut(age / 420)) : 1;
-      heart.style.transform = beat === 1 ? '' : `scale(${beat.toFixed(3)})`;
-    });
-    if (nodes.multiplier) {
-      const age = clock - multAt;
-      const beat = !calm && age < 360 ? 1 + 0.35 * Math.sin(Math.PI * easeOut(age / 360)) : 1;
-      nodes.multiplier.style.transform = beat === 1 ? '' : `scale(${beat.toFixed(3)})`;
-    }
-    if (nodes.toast) {
-      const age = clock - toastAt;
-      nodes.toast.style.opacity = String(age < 0 || age > TOAST_MS ? 0 : age < 160 ? smooth(age / 160) : 1 - smooth((age - TOAST_MS + 300) / 300));
-    }
   }
 
   function drawSprite(c: CanvasRenderingContext2D, sprite: HTMLCanvasElement | undefined | null, cx: number, bottom: number, alpha = 1, size = 1) {
@@ -577,7 +382,7 @@ export function createGame(nodes: GameNodes, options: GameOptions) {
     }
 
     const endFade = ending ? 1 - smooth((clock - ending.at) / 400) : 1;
-    const x = prevX + (mover.x - prevX) * alpha;
+    const x = previousX + (mover.x - previousX) * alpha;
     if (round) {
       for (const item of round.items) {
         const ix = item.px + (item.x - item.px) * alpha;
@@ -656,27 +461,21 @@ export function createGame(nodes: GameNodes, options: GameOptions) {
 
     for (const shown of scores) {
       if (!shown.on) continue;
-      const rise = calm ? 0 : 38 * easeOut(shown.age / 520);
-      const opacity = shown.age < 80 ? shown.age / 80 : 1 - smooth((shown.age - 480) / 260);
-      const size = calm ? 1 : 0.7 + 0.3 * backOut(shown.age / 260);
-      drawSprite(ctx, shown.sprite, shown.x, shown.y - rise, opacity, size);
+      drawSprite(ctx, shown.sprite, shown.x, shown.y - scoreFloatRise(shown.age, calm), scoreFloatOpacity(shown.age), scoreFloatSize(shown.age, calm));
     }
 
     const tierAge = clock - tierAt;
     if (tierAge < 900 && tier > 1) {
-      const opacity = tierAge < 120 ? tierAge / 120 : 1 - smooth((tierAge - 600) / 300);
-      const size = calm ? 1 : 0.6 + 0.4 * backOut(tierAge / 320);
-      drawSprite(ctx, textSprite(`×${tier}`, tier === 4 ? color.gold : color.accent, 5, BIG_GLYPHS), x, headY() - 40 * s - (calm ? 0 : 16 * easeOut(tierAge / 900)), opacity, size);
+      drawSprite(ctx, textSprite(`×${tier}`, tier === 4 ? color.gold : color.accent, 5, BIG_GLYPHS), x, headY() - 40 * s - tierBadgeRise(tierAge, calm), tierBadgeOpacity(tierAge), tierBadgeSize(tierAge, calm));
     }
 
     const bubbleAge = clock - bubbleAt;
     if (bubbleAge < 900) {
-      const opacity = bubbleAge < 90 ? bubbleAge / 90 : 1 - smooth((bubbleAge - 650) / 250);
-      drawSprite(ctx, sprites['spark-small'], x + (mover.facing === 1 ? 44 : -44) * s, headY() - 6 * s - (calm ? 0 : 6 * easeOut(bubbleAge / 200)), opacity);
+      drawSprite(ctx, sprites['spark-small'], x + (mover.facing === 1 ? 44 : -44) * s, headY() - 6 * s - bubbleRise(bubbleAge, calm), bubbleOpacity(bubbleAge));
     }
 
     if (round?.power) {
-      const total = round.power.kind === 'magnet' ? 5000 : 4000;
+      const total = POWER_MS[round.power.kind];
       const share = Math.max(0, round.power.left / total);
       const side = x - mover.facing * (48 * s + 30);
       const cx = snap(Math.min(width - 24, Math.max(24, side))), cy = snap(headY() + 12 * s);
@@ -701,13 +500,9 @@ export function createGame(nodes: GameNodes, options: GameOptions) {
 
     if (phase === 'countdown') {
       const into = clock - phaseAt;
-      const digit = 3 - Math.floor(into / 1000);
+      const digit = countdownDigit(into);
       const local = into % 1000;
-      if (digit >= 1) {
-        const opacity = local < 80 ? local / 80 : local > 760 ? 1 - smooth((local - 760) / 240) : 1;
-        const size = calm ? 1 : 1.45 - 0.45 * backOut(local / 320);
-        drawSprite(ctx, countdown[String(digit)], width / 2, height * 0.42 + 54, opacity, size);
-      }
+      if (digit >= 1) drawSprite(ctx, countdown[String(digit)], width / 2, height * 0.42 + 54, countdownOpacity(local), countdownSize(local, calm));
     }
 
     if (!calm && hitAge < 240) {
@@ -722,7 +517,7 @@ export function createGame(nodes: GameNodes, options: GameOptions) {
   function fixedStep() {
     const min = half(), max = Math.max(half(), width - half());
     const direction = ((keys.right ? 1 : 0) - (keys.left ? 1 : 0)) as -1 | 0 | 1;
-    prevX = mover.x;
+    previousX = mover.x;
     mover = steer(mover, STEP_MS, direction !== 0 ? { direction } : { target }, min, max, topSpeed(width));
     if (phase === 'playing' && round && !ending) {
       for (const event of stepRound(round, STEP_MS, { width, floor, scale }, mover.x)) {
@@ -776,7 +571,7 @@ export function createGame(nodes: GameNodes, options: GameOptions) {
       acc = 0;
     }
     if (ending && clock - ending.at >= END_BEAT_MS) settleEnd();
-    writeHud();
+    hud.write(round, clock, calm);
     draw(Math.min(1, acc / STEP_MS));
     run();
   };
@@ -803,8 +598,8 @@ export function createGame(nodes: GameNodes, options: GameOptions) {
     canvas.style.height = `${height}px`;
     const x = Math.min(Math.max(half(), first ? width / 2 : mover.x), Math.max(half(), width - half()));
     mover = { ...mover, x };
-    prevX = x;
-    paintSky();
+    previousX = x;
+    sky = paintSky(width, height) ?? sky;
     draw(1);
   };
   measure();
@@ -835,8 +630,8 @@ export function createGame(nodes: GameNodes, options: GameOptions) {
       ending = null;
       for (const list of [pops, misses, scores]) for (const effect of list) effect.on = false;
       for (const p of particles) p.on = false;
-      hud.score = hud.mult = hud.pips = hud.lives = hud.time = -1;
-      tierAt = hitAt = bubbleAt = toastAt = heartAt = multAt = -Infinity;
+      hud.reset();
+      tierAt = hitAt = bubbleAt = -Infinity;
       setPhase('countdown');
       playClip('wave', fitTimeline(clipTimeline('wave'), COUNTDOWN_MS), true);
       run();

@@ -28,7 +28,9 @@ import {
 import { drawDiffractionSpike } from "../../../render/starfield";
 import { isNodeCulled } from "../../../render/viewport-cull";
 import { isPreviewEndpoint, isPreviewEndpointHidden } from "../../../render/preview-edge";
-import { isSpineNode, radiusForKind, type WorldNode } from "../../world/topology-world";
+import { isSpineNode } from "../../world/geometry/spine-node";
+import { radiusForKind } from "../../world/geometry/node-radius";
+import { type WorldNode } from "../../world/topology-world";
 import { pressResponse } from "../../../expressive/mass-spring";
 import { drawNodeBloom } from "../../../expressive/ego-light";
 import {
@@ -324,13 +326,13 @@ export function paintNodes(frame: FrameInputs, focus: FrameFocus, alpha: NodeAlp
     if (domeOn && !litOn && nodeDome.a > 0.01) {
       const haloPx = domeHaloPx(nodeDome.u) * nodeDome.a * domeDetail;
       if (haloPx > 0.05) {
-        const prevAlpha = ctx.globalAlpha;
-        ctx.globalAlpha = Math.min(DOME_HALO_ALPHA_CAP, prevAlpha * DOME_HALO_ALPHA_GAIN);
+        const previousAlpha = ctx.globalAlpha;
+        ctx.globalAlpha = Math.min(DOME_HALO_ALPHA_CAP, previousAlpha * DOME_HALO_ALPHA_GAIN);
         ctx.fillStyle = domeHaloColor;
         ctx.beginPath();
         ctx.arc(screen.x, screen.y, screenRadius + haloPx, 0, Math.PI * 2);
         ctx.fill();
-        ctx.globalAlpha = prevAlpha;
+        ctx.globalAlpha = previousAlpha;
       }
     }
     if (!domeOn) {

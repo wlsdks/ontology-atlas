@@ -7,7 +7,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { GatewayNav, GatewayReadingLinks } from '@/widgets/gateway-chrome';
 import { cn } from '@/shared/lib/cn';
 import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/public-pages/gateway-frame';
-import { GITHUB_REPO_URL } from '@/shared/config/social-links';
+import { GITHUB_REPO_URL } from '@/shared/config/site/social-links';
 import { ChevronRight, Languages } from 'lucide-react';
 import { GithubMark } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
@@ -428,17 +428,17 @@ function GuidePager({ activeSegment }: { activeSegment?: string }) {
   const segment = activeSegment ?? GUIDE_ENTRY_PAGE.segment;
   const index = GUIDE_PAGES.findIndex((page) => page.segment === segment);
   if (index === -1) return null;
-  const prev = GUIDE_PAGES[index - 1] ?? null;
+  const previous = GUIDE_PAGES[index - 1] ?? null;
   const next = GUIDE_PAGES[index + 1] ?? null;
-  if (!prev && !next) return null;
+  if (!previous && !next) return null;
   return (
     <nav
       aria-label={t('guidePagerLabel')}
       data-testid="guide-pager"
       className="mt-12 flex w-full max-w-[var(--measure-prose)] items-stretch gap-3 border-t border-[color:var(--color-divider)] pt-4"
     >
-      {prev ? (
-        <GuidePagerLink page={prev} eyebrow={t('guidePrev')} edge="start" testId="guide-pager-prev" />
+      {previous ? (
+        <GuidePagerLink page={previous} eyebrow={t('guidePrev')} edge="start" testId="guide-pager-prev" />
       ) : (
         <span aria-hidden className="flex-1" />
       )}

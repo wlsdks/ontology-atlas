@@ -6,7 +6,7 @@ pub(crate) fn bounded_output(
     command: std::process::Command,
     limit: std::time::Duration,
 ) -> Option<String> {
-    crate::process::command_output::run(command, limit, MAX_PROBE_OUTPUT_BYTES)
+    crate::child_process::command_output::run(command, limit, MAX_PROBE_OUTPUT_BYTES)
         .ok()
         .map(|(_, stdout)| stdout)
 }
@@ -15,7 +15,7 @@ pub(crate) fn bounded_output(
 /// proves a write; a false yes would delete the working credential links.
 #[cfg(any(target_os = "macos", test))]
 pub(super) fn bounded_success(command: std::process::Command, limit: std::time::Duration) -> bool {
-    crate::process::command_output::run(command, limit, MAX_PROBE_OUTPUT_BYTES)
+    crate::child_process::command_output::run(command, limit, MAX_PROBE_OUTPUT_BYTES)
         .map(|(success, _)| success)
         .unwrap_or(false)
 }

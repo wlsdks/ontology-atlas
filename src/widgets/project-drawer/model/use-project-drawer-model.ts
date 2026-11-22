@@ -9,7 +9,7 @@ import { useTaxonomy } from "@/features/taxonomy";
 import {
   formatProjectIntegrityIssue,
   getProjectIntegrityIssues,
-  getProjectRuntimeDetailHref,
+  buildProjectRuntimeDetailHref,
   projectDisplayName,
   resolveProjectCompletenessInsight,
   resolveProjectFreshnessInsight,
@@ -157,7 +157,7 @@ export function useProjectDrawerModel({
     relatedDocs,
     relatedDocDetails,
     primaryRelatedDocSlug,
-    detailHref: project ? getProjectRuntimeDetailHref(project.slug) : "#",
+    detailHref: project ? buildProjectRuntimeDetailHref(project.slug) : "#",
     docsVaultHref: buildDocsVaultHref({ slug: primaryRelatedDocSlug }),
   };
 }

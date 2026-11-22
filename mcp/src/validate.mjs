@@ -85,10 +85,10 @@ export function rawSourceKindIssues(rootPath) {
     ? [VAULT_SOURCES_DIR]
     : [];
   while (stack.length > 0) {
-    const dir = stack.pop();
-    for (const entry of directoryEntries(join(rootPath, dir))) {
+    const directory = stack.pop();
+    for (const entry of directoryEntries(join(rootPath, directory))) {
       if (entry.name.startsWith('.')) continue;
-      const path = `${dir}/${entry.name}`;
+      const path = `${directory}/${entry.name}`;
       if (entry.isDirectory()) stack.push(path);
       else if (entry.isFile() && entry.name.endsWith('.md')) {
         const vaultPath = path.normalize('NFC');

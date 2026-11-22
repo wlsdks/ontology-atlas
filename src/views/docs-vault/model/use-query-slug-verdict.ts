@@ -33,11 +33,11 @@ export function useQuerySlugVerdict({
     }
     if (docsBySlug.has(normalizedQuerySlug)) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- the verdict outlives the address it was read from
-      setMissingQuerySlug((prev) => (prev === normalizedQuerySlug ? null : prev));
+      setMissingQuerySlug((previousValue) => (previousValue === normalizedQuerySlug ? null : previousValue));
       return;
     }
     if (!vaultScopeSettled) return;
-    setMissingQuerySlug((prev) => prev ?? normalizedQuerySlug);
+    setMissingQuerySlug((previousValue) => previousValue ?? normalizedQuerySlug);
   }, [normalizedQuerySlug, docsBySlug, vaultScopeSettled]);
 
   /**

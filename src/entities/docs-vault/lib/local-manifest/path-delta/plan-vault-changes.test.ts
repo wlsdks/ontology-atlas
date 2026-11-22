@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { StampedVaultEntry } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import type { StampedVaultEntry } from '@/shared/lib/vault-folder/native-vault/tauri-vault-files';
 import type { VaultPathChange } from '@/shared/lib/vault-folder/vault-change-batch';
-import type { VaultDoc, VaultManifest } from '../../../model/types';
+import type { VaultDoc, VaultManifest } from '../../../model/vault-manifest';
 import type { BuiltVaultEntry } from '../md-entry';
 import { deltaCeiling, planChanges, sameStamp, type ListDir } from './plan-vault-changes';
 import { takeState } from './vault-delta-state';

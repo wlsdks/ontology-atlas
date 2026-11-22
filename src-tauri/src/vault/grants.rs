@@ -195,6 +195,16 @@ pub(crate) fn is_vault_granted(path: &Path) -> bool {
     lock().is_vault_granted(path)
 }
 
+/// Whether `path` (canonical) is a granted vault root or a folder above one. A drop of such a
+/// folder would copy the open folder into its own `sources/`.
+pub(crate) fn holds_a_vault_root(path: &Path) -> bool {
+    let holds = |reg: &Registry| reg.vaults.iter().any(|root| root.starts_with(path));
+    if let Some(answer) = thread_override(holds) {
+        return answer;
+    }
+    holds(&lock())
+}
+
 pub(crate) fn is_selected_source(path: &Path) -> bool {
     if let Some(answer) = thread_override(|reg| reg.selected_sources.contains(path)) {
         return answer;

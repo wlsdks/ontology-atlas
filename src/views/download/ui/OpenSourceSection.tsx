@@ -3,7 +3,7 @@
 import { Star } from 'lucide-react';
 import { useFormatter, useTranslations } from 'next-intl';
 
-import { GITHUB_REPO_URL } from '@/shared/config/social-links';
+import { GITHUB_REPO_URL } from '@/shared/config/site/social-links';
 import { cn } from '@/shared/lib/cn';
 import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/public-pages/gateway-frame';
 import { cubicBezierAt } from '@/shared/motion/ease';

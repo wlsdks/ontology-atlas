@@ -3,6 +3,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { describe, expect, it, vi } from 'vitest';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 import enMessages from '../../../../messages/en.json';
+import type { RecentVaultRow } from '../lib/recent-vault-row';
 import { RecentVaultList } from './RecentVaultList';
 import { RAIL_LABEL_MAX_CHARS, railLabel } from './VaultSwitchRailTile';
 
@@ -210,7 +211,7 @@ describe('RecentVaultList gathers missing folders at the end', () => {
 
   function renderGathered(
     onForgetAll?: (records: readonly LocalFsHandleRecord[]) => void,
-    missingReview?: 'dialog' | 'inline',
+    onReviewMissing?: (rows: readonly RecentVaultRow[]) => void,
   ) {
     const onForget = vi.fn();
     render(
@@ -223,7 +224,7 @@ describe('RecentVaultList gathers missing folders at the end', () => {
           onForget={onForget}
           onForgetAll={onForgetAll}
           onLocate={vi.fn()}
-          missingReview={missingReview}
+          onReviewMissing={onReviewMissing}
           footnote={<p data-testid="release-valve">release valve</p>}
         />
       </NextIntlClientProvider>,
@@ -277,17 +278,18 @@ describe('RecentVaultList gathers missing folders at the end', () => {
     expect(onForget.mock.calls[0]?.[0].desktopRootPath).toBe('/Users/dana/qa-run-b');
   });
 
-  it('opens in place in the rail popover, which grows downward', () => {
+  it('hands the review to the caller that owns the dialog, as the rail popover does', () => {
     mocks.reachability.mockReturnValue(reachability);
-    renderGathered(vi.fn(), 'inline');
+    const onReviewMissing = vi.fn();
+    renderGathered(vi.fn(), onReviewMissing);
 
-    const toggle = screen.getByTestId('recent-vault-missing-toggle');
-    expect(toggle.getAttribute('aria-expanded')).toBe('false');
-    fireEvent.click(toggle);
-    expect(toggle.getAttribute('aria-expanded')).toBe('true');
-    const group = screen.getByTestId('recent-vault-missing-group');
-    expect(group.getAttribute('data-state')).toBe('open');
-    expect(group.querySelectorAll('[data-testid="recent-vault-row"]')).toHaveLength(3);
+    fireEvent.click(screen.getByTestId('recent-vault-missing-toggle'));
+    expect(onReviewMissing).toHaveBeenCalledTimes(1);
+    expect(onReviewMissing.mock.calls[0]?.[0].map((row: RecentVaultRow) => row.path)).toEqual([
+      '/Users/dana/qa-run-a',
+      '/Users/dana/qa-run-b',
+      '/Users/dana/qa-run-c',
+    ]);
     expect(screen.queryByTestId('recent-vault-missing-review')).toBeNull();
   });
 

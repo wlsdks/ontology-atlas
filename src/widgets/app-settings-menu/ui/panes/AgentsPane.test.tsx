@@ -35,7 +35,7 @@ beforeEach(() => {
 });
 
 const anchors = (container: HTMLElement) =>
-  [...container.querySelectorAll('[data-setting-id]')].map((el) => el.getAttribute('data-setting-id'));
+  [...container.querySelectorAll('[data-setting-id]')].map((domElement) => domElement.getAttribute('data-setting-id'));
 
 describe('AgentsPane', () => {
   it('on desktop anchors every agents catalog entry and counts the stored keys', () => {

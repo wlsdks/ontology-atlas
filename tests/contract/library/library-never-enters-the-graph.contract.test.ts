@@ -6,8 +6,8 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { buildLocalManifest } from '@/entities/docs-vault/lib/local-manifest/build-local-manifest';
 import { deriveOntologyFromVault } from '@/entities/docs-vault/lib/derive-ontology-from-vault';
 import { walkMd as walkCliVault } from '../../../cli/src/lib/vault-files/walk-vault.mjs';
-import { walkMd } from '../../../mcp/src/vault/slug-paths.mjs';
-import { loadVaultDocs } from '../../../mcp/src/vault/documents.mjs';
+import { walkMd } from '../../../mcp/src/vault/documents/slug-paths.mjs';
+import { loadVaultDocs } from '../../../mcp/src/vault/documents/document-cache.mjs';
 
 /**
  * Only files with a frontmatter `kind:` are graph nodes. Raw sources must never enter the document

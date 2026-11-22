@@ -14,7 +14,7 @@ import type { CameraAxes, CameraTarget } from "../../engine/camera";
 import { type CameraTween, type CameraTweenEase } from "../../model/camera/camera-easing";
 import { recordSelectionCamera, selectionZoomBase, type SelectionCamera } from "../../model/camera/flat-selection-camera";
 import type { DomeFitTarget, DomeRuntime } from "../../model/dome-view/runtime";
-import type { DomeModel } from "../../model/dome-view/types";
+import type { DomeModel } from "../../model/dome-view/dome-shapes";
 import { isPathTargetPick, type TopologyMapLensKind } from "../../model/visibility/path-lens";
 import {
   type RealmTransitionState
@@ -23,15 +23,19 @@ import { resolveViewportReframeMode } from "../../model/camera/viewport-reframe"
 import { spotlightRevealsHidden } from "../../model/visibility/tier-visibility";
 import { landTierAssembly } from "../../morph/tier-assembly";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
-import { computeFocusCameraTarget, computeLensFitTarget, computeOverviewCameraTarget, computeOverviewFitScale, type FocusLeashPx } from "./topology-camera-math";
+import { computeLensFitTarget, computeOverviewCameraTarget, computeOverviewFitScale } from "./target/fit-targets";
+import { computeFocusCameraTarget } from "./target/focus-fit";
+import { type FocusLeashPx } from "./target/pan-leash";
 import {
   foldedPanelTokens,
   overviewBoundsFor,
   overviewFitTokens
 } from "./topology-overview-fit";
 import { readOntologyMapTokensOrNull } from "../../tokens/topology-read-tokens";
-import { realmCameraTarget, realmVisibleBounds, type RealmRuntimeData } from "../world/topology-realm-runtime";
-import { computeDrawnSpineBounds, computePathPickBounds, dialOverviewFit, type TopologyWorld } from "../world/topology-world";
+import { realmCameraTarget, realmVisibleBounds, type RealmRuntimeData } from "../world/realm/topology-realm-runtime";
+import { computeDrawnSpineBounds, computePathPickBounds } from "../world/framing/world-bounds";
+import { dialOverviewFit } from "../world/framing/dial-world-framing";
+import { type TopologyWorld } from "../world/topology-world";
 import { liveDialFocusFrame } from "./use-topology-focus-navigation";
 import {
   type ViewportReframeMotion

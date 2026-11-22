@@ -110,9 +110,9 @@ function isTargetFile(name) {
   return !name.includes(".test.");
 }
 
-function walk(dir, out = []) {
-  for (const entry of readdirSync(dir)) {
-    const full = join(dir, entry);
+function walk(directory, out = []) {
+  for (const entry of readdirSync(directory)) {
+    const full = join(directory, entry);
     const stat = statSync(full);
     if (stat.isDirectory()) {
       if (shouldSkipDir(entry)) continue;

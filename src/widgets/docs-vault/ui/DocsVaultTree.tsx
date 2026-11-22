@@ -58,9 +58,9 @@ function DocKindGlyph({
   docsBySlug?: Map<string, VaultDoc>;
 }) {
   const kind = docsBySlug?.get(slug)?.frontmatter?.kind;
-  const kindStr = typeof kind === 'string' ? kind : '';
-  if (kindStr && isOntologyMapRenderableKind(kindStr)) {
-    return <OntologyMapKindGlyph kind={kindStr} size={12} className="shrink-0" />;
+  const kindText = typeof kind === 'string' ? kind : '';
+  if (kindText && isOntologyMapRenderableKind(kindText)) {
+    return <OntologyMapKindGlyph kind={kindText} size={12} className="shrink-0" />;
   }
   return (
     <FileText

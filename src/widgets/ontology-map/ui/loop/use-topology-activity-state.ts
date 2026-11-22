@@ -63,11 +63,11 @@ export function useTopologyActivityState() {
   const lastInputMsRef = useRef(0);
 
   /** Previous frame's camera values, for movement detection. */
-  const prevCameraSampleRef = useRef<{ x: number; y: number; s: number; } | null>(null);
+  const previousCameraSampleRef = useRef<{ x: number; y: number; s: number; } | null>(null);
   return {
     lastActiveCausesRef, idleDebugEnabledRef, lastFrameTimeRef, navYieldUntilRef, reducedMotionRef,
     selectionPulseRef, pulsesRef, hasDependsEdgesRef, hasContainsEdgesRef, lastActiveMsRef, lastInputMsRef,
-    prevCameraSampleRef, wakeFrameLoopRef,
+    previousCameraSampleRef, wakeFrameLoopRef,
   };
 }
 

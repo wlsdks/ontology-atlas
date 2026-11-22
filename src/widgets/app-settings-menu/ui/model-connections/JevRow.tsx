@@ -129,8 +129,8 @@ export function JevRow({
                         const next = await jevSecretClear();
                         if (next) onStatus(next);
                         announce(`${tJev('name')} · ${t('cleared')}`);
-                      } catch (err) {
-                        setError(secretErrorMessage(err, nativeErrors));
+                      } catch (caughtError) {
+                        setError(secretErrorMessage(caughtError, nativeErrors));
                       }
                     }}
                   />

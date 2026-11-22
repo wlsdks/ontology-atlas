@@ -11,7 +11,7 @@ import type { useHomeWorkbenchController } from "../use-home-workbench-controlle
 import { type ProjectImpactMode } from "@/entities/project";
 import { useFirstRunSampleModeSettled } from "@/features/first-run-starter";
 import { useClaimShellKey } from "@/shared/lib/keyboard/shell-key-claims";
-import { useFlatMapView } from "@/shared/lib/preferences/appearance-preferences";
+import { useFlatMapView } from "@/shared/lib/preferences/map-view-preferences";
 import { useTypingShortcuts } from "@/shared/lib/keyboard/use-typing-shortcut";
 import { useCallback, useEffect, useEffectEvent } from "react";
 import { shouldSuppressGlobalShortcuts } from "../../lib/keyboard/blocking-surface";

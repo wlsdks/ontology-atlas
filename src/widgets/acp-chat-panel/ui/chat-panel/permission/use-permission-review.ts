@@ -4,7 +4,7 @@ import { buildOntologyChangeSet } from '@/entities/knowledge-graph';
 import { EXIT_WINDOW_MS, useHeldValue } from '@/shared/lib/render-timing/use-presence';
 import { MOTION } from '@/shared/motion';
 
-import type { ChatT, SessionState } from '../types';
+import type { ChatT, SessionState } from '../chat-panel-props';
 
 export function usePermissionReview({
   pending,

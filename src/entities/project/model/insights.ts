@@ -3,7 +3,7 @@ import {
   collectProjectDependencyClosure,
   collectProjectDependentClosure,
 } from "./dependencies";
-import type { Project } from "./types";
+import type { Project } from "./project";
 
 export type ProjectImpactMode = "none" | "upstream" | "downstream" | "network";
 

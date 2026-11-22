@@ -105,27 +105,27 @@ export function parseValidateVaultArgs({
 
 async function validateVaultDir(vaultDir) {
   try {
-    const info = await stat(vaultDir);
-    if (!info.isDirectory()) {
+    const stats = await stat(vaultDir);
+    if (!stats.isDirectory()) {
       return `Vault path is not a directory: ${vaultDir}`;
     }
     return null;
-  } catch (err) {
-    if (err?.code === "ENOENT") {
+  } catch (error) {
+    if (error?.code === "ENOENT") {
       return `Vault path does not exist: ${vaultDir}`;
     }
-    throw err;
+    throw error;
   }
 }
 
-async function walk(dir, root = dir) {
+async function walk(directory, root = directory) {
   const out = [];
-  const entries = await readdir(dir, { withFileTypes: true });
+  const entries = await readdir(directory, { withFileTypes: true });
   for (const entry of entries) {
     if (entry.name.startsWith(".")) continue;
-    const full = path.join(dir, entry.name);
+    const full = path.join(directory, entry.name);
     if (entry.isDirectory()) {
-      if (dir === root && entry.name === VAULT_SOURCES_DIR) continue;
+      if (directory === root && entry.name === VAULT_SOURCES_DIR) continue;
       out.push(...(await walk(full, root)));
     } else if (entry.isFile() && entry.name.endsWith(".md")) {
       out.push(full);
@@ -579,8 +579,8 @@ function isPathLikeGraphRef(ref) {
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main().then((code) => {
     process.exit(code);
-  }).catch((err) => {
-    console.error(err);
+  }).catch((error) => {
+    console.error(error);
     process.exit(2);
   });
 }

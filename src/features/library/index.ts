@@ -1,4 +1,20 @@
-export { addSources, addSourcesInBrowser, summarizeAddSources } from "./lib/sources/add-sources";
+export {
+  addSources,
+  addSourcesInBrowser,
+  copyNeedsConfirm,
+  dismissSourceCopy,
+  readSourceCopy,
+  startSourceCopy,
+  stopSourceCopy,
+  subscribeSourceCopy,
+  summarizeAddSources,
+  type BrowserSourcePick,
+  type SkippedUnlisted,
+  type SourceCopyJob,
+  type SourceCopyPlan,
+  type SourceCopySkip,
+  type SourceCopySkipReason,
+} from "./lib/sources/add-sources";
 export { useSourceImportFeedback } from './model/use-source-import-feedback';
 export {
   discoverSources,
@@ -11,12 +27,8 @@ export {
   readDeclinedCandidates,
   rememberDeclinedCandidates,
 } from "./lib/sources/declined-candidates";
-export {
-  buildCompileBrief,
-  COMPILE_BATCH_SIZE,
-  selectCompileBatch,
-  selectCompileTargets,
-} from "./lib/wiki/compile-brief";
+export { buildCompileBrief } from "./lib/wiki/compile/compile-brief";
+export { COMPILE_BATCH_SIZE, selectCompileBatch, selectCompileTargets } from "./lib/wiki/compile/compile-batch";
 export { buildLintBrief, isMapKind, parseLintCandidates, parseLintFindings, dropCandidatesWithNodes } from "./lib/wiki/lint-brief";
 export type { LintFinding } from "./lib/wiki/lint-brief";
 export { buildFixBrief } from "./lib/wiki/fix-brief";
@@ -74,7 +86,6 @@ export type { LibraryUiModel } from "./model/use-library-model";
 export type { LibraryPageFacts } from "./model/library-page-facts";
 export { sectionSlices } from "./lib/wiki/section-slices";
 export {
-  isAdvisoryWikiCode,
   isWikiFolderCode,
   libraryDanglingLinkCount,
   libraryOffTemplateCount,

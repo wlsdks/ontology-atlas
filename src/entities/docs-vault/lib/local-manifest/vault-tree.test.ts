@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { VaultTreeNode } from '../../model/types';
+import type { VaultTreeNode } from '../../model/vault-manifest';
 import { compareTreeNodes, insertIntoTree, sortTree } from './vault-tree';
 
 function treeOf(docs: Array<[slug: string, title: string]>): VaultTreeNode {

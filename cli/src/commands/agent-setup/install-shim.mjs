@@ -58,8 +58,8 @@ export function inspectTarget(path) {
   return text.includes(SHIM_SIGNATURE) ? { state: 'ours', text } : { state: 'foreign', text };
 }
 
-export function onPath(dir, pathEnv = process.env.PATH ?? '') {
-  return pathEnv.split(':').filter(Boolean).some((entry) => resolve(entry) === resolve(dir));
+export function onPath(directory, pathEnv = process.env.PATH ?? '') {
+  return pathEnv.split(':').filter(Boolean).some((entry) => resolve(entry) === resolve(directory));
 }
 
 function parseArgs(args) {
@@ -104,8 +104,8 @@ export async function runInstallShim(args) {
     return 1;
   }
 
-  const dir = parsed.dir ? resolve(parsed.dir) : defaultShimDir();
-  const target = join(dir, 'atlas');
+  const directory = parsed.dir ? resolve(parsed.dir) : defaultShimDir();
+  const target = join(directory, 'atlas');
   const found = inspectTarget(target);
 
   if (parsed.uninstall) {
@@ -158,11 +158,11 @@ export async function runInstallShim(args) {
     return 1;
   }
 
-  mkdirSync(dir, { recursive: true });
+  mkdirSync(directory, { recursive: true });
   writeFileSync(target, body, 'utf8');
   chmodSync(target, 0o755);
 
-  const reachable = onPath(dir);
+  const reachable = onPath(directory);
   if (parsed.json) {
     process.stdout.write(JSON.stringify({ target, entrypoint, written: true, state: found.state, onPath: reachable, shim: body }, null, 2) + '\n');
     return 0;
@@ -173,8 +173,8 @@ export async function runInstallShim(args) {
   } else {
     // Saying this plainly beats a shim that exists and does nothing when typed.
     process.stdout.write(
-      `\n${COLORS.yellow}note${COLORS.reset}  ${dir} is not on your PATH yet. Add this to your shell profile:\n\n` +
-        `  export PATH="${dir}:$PATH"\n`,
+      `\n${COLORS.yellow}note${COLORS.reset}  ${directory} is not on your PATH yet. Add this to your shell profile:\n\n` +
+        `  export PATH="${directory}:$PATH"\n`,
     );
   }
   return 0;

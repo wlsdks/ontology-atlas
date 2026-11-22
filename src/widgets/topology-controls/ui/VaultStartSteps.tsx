@@ -205,7 +205,7 @@ export function VaultStartSteps({
          */
         run: () => {
           void copyPrompt(analyzePrompt).then((ok) => {
-            if (ok) setActed((prev) => new Set(prev).add("analyze"));
+            if (ok) setActed((previous) => new Set(previous).add("analyze"));
           });
         },
       };

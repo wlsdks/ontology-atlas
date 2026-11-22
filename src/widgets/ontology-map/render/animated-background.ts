@@ -92,8 +92,8 @@ export function createAnimatedBackground(
   let bh = 0;
   let bdpr = 1;
   let seeds: Seed[] = [];
-  let prevOriginX: number | null = null;
-  let prevOriginY: number | null = null;
+  let previousOriginX: number | null = null;
+  let previousOriginY: number | null = null;
   let settled = false;
 
   const baseAlpha = Math.min(tokens.inkMax * 0.7, 0.055);
@@ -174,10 +174,10 @@ export function createAnimatedBackground(
       const ctx = bctx;
       if (!ctx || bw <= 0 || bh <= 0) return;
 
-      const dx = prevOriginX === null ? 0 : a.originX - prevOriginX;
-      const dy = prevOriginY === null ? 0 : a.originY - prevOriginY;
-      prevOriginX = a.originX;
-      prevOriginY = a.originY;
+      const dx = previousOriginX === null ? 0 : a.originX - previousOriginX;
+      const dy = previousOriginY === null ? 0 : a.originY - previousOriginY;
+      previousOriginX = a.originX;
+      previousOriginY = a.originY;
       shift(dx, dy);
 
       if (a.reducedMotion) {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { VaultDoc } from '../../../model/types';
+import type { VaultDoc } from '../../../model/vault-manifest';
 import type { BuiltVaultEntry } from '../md-entry';
 import { indexEntry, mdSlug, resolverOf, takeState } from './vault-delta-state';
 

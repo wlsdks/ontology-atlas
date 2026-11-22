@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { DEFAULT_EXPAND } from "@/shared/lib/preferences/appearance-preferences";
+import { DEFAULT_EXPAND } from "@/shared/lib/preferences/expand-preferences";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import type { OntologyMapEdge, OntologyMapNode } from "../OntologyMap";
 import { clusterBatchShownCount, createClusterFrameStage } from "./topology-cluster-frame-stage";
-import type { RealmRuntimeData } from "../world/topology-realm-runtime";
+import type { RealmRuntimeData } from "../world/realm/topology-realm-runtime";
 import { buildTopologyWorld } from "../world/topology-world";
 
 describe("clusterBatchShownCount", () => {
@@ -76,7 +76,7 @@ function stageSources() {
     expandPrefRef: { current: { ...DEFAULT_EXPAND, batchSize: 8 } },
     egoRevealBatchesRef: { current: 1 },
     clusterRevealBatchesRef: { current: new Map<string, number>() },
-    prevBatchVisibleRef: { current: new Set<string>() },
+    previousBatchVisibleRef: { current: new Set<string>() },
     batchAppearRef: { current: new Map<string, number>() },
     batchAppearStartRef: { current: new Map<string, number>() },
   };
@@ -90,7 +90,7 @@ function observed(frame: ReturnType<ReturnType<typeof createClusterFrameStage>>,
     clusteredIds: [...frame.frameClusteredIds].sort(),
     chips: frame.frameChips.map((chip) => ({ ...chip, anchor: { ...chip.anchor } })),
     batchAppearVisible: [...frame.batchAppearVisible].sort(),
-    prevBatchVisible: [...sources.prevBatchVisibleRef.current].sort(),
+    previousBatchVisible: [...sources.previousBatchVisibleRef.current].sort(),
     batchAppear: [...sources.batchAppearRef.current].sort(),
     batchAppearStart: [...sources.batchAppearStartRef.current].sort(),
     revealBatches: [...sources.clusterRevealBatchesRef.current].sort(),

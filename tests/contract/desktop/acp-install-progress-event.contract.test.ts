@@ -20,7 +20,7 @@ const read = (relative: string) => readFileSync(path.join(repoRoot, relative), '
 
 /** Extracts just the value from `const ACP_INSTALL_PROGRESS_EVENT: &str = "…";`. */
 function rustEventName(): string {
-  const source = read('src-tauri/src/acp_runtime/mod.rs');
+  const source = read('src-tauri/src/acp/runtime.rs');
   const match = /const ACP_INSTALL_PROGRESS_EVENT: &str = "([^"]+)"/.exec(source);
   if (!match) throw new Error('could not find the Rust event name constant — was the name changed?');
   return match[1];

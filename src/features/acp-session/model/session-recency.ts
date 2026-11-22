@@ -1,4 +1,4 @@
-import type { AcpSessionSummary } from './acp-client';
+import type { AcpSessionSummary } from './session-summaries';
 
 /** `session/list` order is the adapter's, so sort by readable `updatedAt`, newest first; rows without one keep adapter order below dated ones, since unknown time is not old. */
 function timeOf(session: AcpSessionSummary): number | null {

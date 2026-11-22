@@ -1,7 +1,7 @@
 use super::{confined::open_root, session::PlanningSession};
 use crate::{
     git::briefing::git_source_briefing,
-    library::{discover_source_candidates, SourceDiscoveryRoot},
+    library::source_discovery::{discover_source_candidates, SourceDiscoveryRoot},
     project_source::inspect_project_source,
     vault::{
         grants::{self, EnforcedScope},
@@ -81,6 +81,7 @@ fn planning_selection_does_not_grant_existing_vault_or_source_commands() {
             root_path: root,
             label: "selected".into(),
             skip_relative: vec![],
+            open_folder: false,
         }])
         .unwrap();
         assert!(result.candidates.is_empty());

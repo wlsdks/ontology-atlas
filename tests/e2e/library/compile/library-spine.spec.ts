@@ -102,11 +102,12 @@ test.describe('the Library spine at one saved answer', () => {
     await expect(guide).toHaveCount(0);
 
     /*
-     * At one saved answer the questions door is that question, so one press opens the page;
+     * At one saved answer the door opens that answer, so one press opens the page;
      * a `Questions 1` door opening a one-row list would take two.
      */
     const door = page.getByTestId('library-questions-open');
-    await expect(door).toContainText('What is the retention policy?');
+    await expect(door).toHaveText('Open saved answer');
+    await expect(door).toHaveAttribute('title', 'What is the retention policy?');
     await door.click();
     await expect(page.getByTestId('library-reading-pane')).toBeVisible();
     await expect(page.getByTestId('retained-answer-context')).toBeVisible();
@@ -201,7 +202,7 @@ test.describe('the Library index with an empty wiki', () => {
     await page.getByRole('button', { name: /Open (?:a|my) folder|폴더 열기/i }).click();
     await page.getByTestId('app-nav-rail-item-library').click();
     await page.getByTestId('library-workspace-wiki').click();
-    await expect(page.getByTestId('library-wiki-empty')).toBeVisible();
+    await expect(page.getByTestId('wiki-index')).toHaveAttribute('data-state', 'empty');
 
     const door = page.getByTestId('library-new-page');
     await expect(door).toBeVisible();
@@ -316,7 +317,7 @@ async function openLocalRouteLibrary(page: Page, keepLocalAddress: boolean) {
 }
 
 /**
- * At exactly one saved answer the questions door is the question; the list with Ask and its reason
+ * At exactly one saved answer the door opens that answer; the list with Ask and its reason
  * is reached through the answer's `Back to questions`.
  */
 async function openQuestionsSurface(page: Page) {

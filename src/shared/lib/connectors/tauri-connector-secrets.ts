@@ -85,8 +85,8 @@ export function subscribeConnectorSecretChange(handler: () => void): () => void 
 }
 
 export function connectorSecretErrorMessage(
-  err: unknown,
+  error: unknown,
   lookup?: NativeErrorLookup,
 ): string {
-  return nativeErrorMessage(err, lookup);
+  return nativeErrorMessage(error, lookup);
 }

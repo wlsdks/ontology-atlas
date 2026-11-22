@@ -1,4 +1,4 @@
-import type { ScreenContextSnapshot } from './types';
+import type { ScreenContextSnapshot } from './agent-turn';
 
 /** What the screen shows, injected every turn; map state arrives as a prop to respect FSD direction. */
 

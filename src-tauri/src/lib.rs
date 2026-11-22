@@ -2,15 +2,16 @@ use std::io::Write;
 use tauri::{Manager, RunEvent};
 
 mod acp;
-mod acp_runtime;
-mod acp_session;
 mod agent_setup;
 mod analysis_archive;
 mod app_shell;
 mod audit_read;
 mod blocking;
+mod child_process;
+mod coded_error;
+#[cfg(unix)]
+mod confined_files;
 mod connectors;
-mod errors;
 mod git;
 mod gray_area;
 mod harness_source;
@@ -21,14 +22,14 @@ mod llm_audit;
 mod lower_hex;
 mod meaning_transition_archive;
 mod planning;
-mod process;
 mod project_source;
 mod secrets;
 mod vault;
 mod webview_verify;
+mod work_status;
 
-use acp_runtime::AcpInstallProgressState;
-use acp_session::{terminate_all_acp_sessions, AcpSessions};
+use acp::runtime::AcpInstallProgressState;
+use acp::session::{terminate_all_acp_sessions, AcpSessions};
 #[cfg(desktop)]
 use app_shell::answer_deep_link;
 use app_shell::app_log::{install_panic_logger, QuietStderr};
@@ -81,7 +82,10 @@ pub fn run_embed_worker() -> i32 {
 pub fn run() {
     install_panic_logger();
     if let Some(path) = std::env::var_os("PATH") {
-        std::env::set_var("PATH", acp::search_path::sanitized_process_path(&path));
+        std::env::set_var(
+            "PATH",
+            acp::detection::search_path::sanitized_process_path(&path),
+        );
     }
     let verify_webview = std::env::var_os(WEBVIEW_VERIFY_ENV).is_some();
     let mut context = tauri::generate_context!();
@@ -155,6 +159,12 @@ pub fn run() {
         .manage(AcpInstallProgressState::default())
         .manage(AcpSessions::default())
         .manage(planning::PlanningSession::default())
+        // A reload never runs the stage's cleanup, so arming would outlive the drop area.
+        .on_page_load(|_, payload| {
+            if payload.event() == tauri::webview::PageLoadEvent::Started {
+                library::dropped::disarm_source_drop();
+            }
+        })
         .setup(move |app| {
             // Seed the vault-grant registry before any command can run: turn the
             // boundary on, choose where grants persist, and re-grant the app's own
@@ -235,20 +245,20 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            acp_runtime::acp_detect_runtimes,
-            acp_runtime::acp_diagnose,
-            acp_runtime::acp_repair,
-            acp_runtime::acp_reset_connection,
+            acp::runtime::acp_detect_runtimes,
+            acp::runtime::acp_diagnose,
+            acp::runtime::acp_repair,
+            acp::runtime::acp_reset_connection,
             app_shell::open_external_url,
-            acp_runtime::acp_node_plan,
-            acp_runtime::acp_install_node,
-            acp_runtime::acp_install_plan,
-            acp_runtime::acp_install_cli,
-            acp_runtime::acp_install_progress,
-            acp_session::acp_start,
-            acp_session::acp_send,
-            acp_session::acp_stop,
-            acp_session::acp_permission_verdict,
+            acp::runtime::acp_node_plan,
+            acp::runtime::acp_install_node,
+            acp::runtime::acp_install_plan,
+            acp::runtime::acp_install_cli,
+            acp::runtime::acp_install_progress,
+            acp::session::acp_start,
+            acp::session::acp_send,
+            acp::session::acp_stop,
+            acp::session::acp_permission_verdict,
             vault::location::pick_vault_directory,
             project_source::access::pick_source_directory,
             planning::commands::planning_supported,
@@ -271,8 +281,8 @@ pub fn run() {
             vault::index::vault_index_search,
             vault::index::vault_index_clear,
             vault::index::vault_index_forget,
-            vault::index_rows::vault_index_rows_get,
-            vault::index_rows::vault_index_rows_put,
+            vault::index::rows::vault_index_rows_get,
+            vault::index::rows::vault_index_rows_put,
             vault::vectors::commands::vault_vectors_probe,
             vault::vectors::commands::vault_vectors_status,
             vault::vectors::commands::vault_vectors_prepare,
@@ -308,14 +318,18 @@ pub fn run() {
             vault::location::open_vault_in_finder,
             app_shell::app_log::reveal_app_log_dir,
             vault::location::ensure_default_vault_parent_dir,
-            library::hash_vault_files,
+            library::file_hashing::hash_vault_files,
             gray_area::read_gray_area_evidence,
             gray_area::preview_gray_area_scope,
             gray_area::check_gray_area_evidence,
-            library::pick_source_files,
-            library::import_source_files,
-            library::discover_source_candidates,
-            library::reveal_vault_file,
+            library::source_picker::pick_source_files,
+            library::source_import::import_source_files,
+            library::source_import::import_offered_sources,
+            library::running_imports::stop_source_import,
+            library::source_discovery::discover_source_candidates,
+            library::reveal::reveal_vault_file,
+            library::reveal::reveal_sources_folder,
+            library::dropped::arm_source_drop,
             vault::watch::start_vault_watch,
             app_shell::app_log::log_webview_error,
             secrets::secret_set,
@@ -366,6 +380,8 @@ pub fn run() {
             connectors::secrets::connector_secret_set,
             connectors::secrets::connector_secret_status,
             connectors::secrets::connector_secret_delete,
+            work_status::work_status_read,
+            work_status::work_status_fingerprint,
         ])
         .build(context)
         .expect("error while building ontology-atlas desktop app")
@@ -435,6 +451,10 @@ fn on_run_event(app_handle: &tauri::AppHandle, event: RunEvent) {
             llm::requests::cancel_owner(Some(&label));
             audit_read::cancel_owner(Some(&label));
         }
+        RunEvent::WindowEvent {
+            event: tauri::WindowEvent::DragDrop(drop),
+            ..
+        } => app_shell::answer_drag_drop(app_handle, &drop),
         _ => {}
     }
 }

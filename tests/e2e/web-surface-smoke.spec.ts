@@ -160,7 +160,9 @@ test.describe("web smoke 2: fallback workbench", () => {
     await page.getByTestId("library-open-vault").click();
     await expect(page.getByTestId("sources-table")).toBeVisible({ timeout: 20_000 });
     await expect(page.getByTestId("sources-row")).toHaveCount(1);
-    await expect(page.getByTestId("sources-panel")).toContainText("위키 문서는 앱에서만 써요. 앱에서는 이 자료부터 시작해요.");
+    await expect(page.getByTestId("sources-panel")).toContainText("앱에서는 이 자료부터 위키 문서를 써요.");
+    // Said once, in the band; the panel does not repeat it.
+    await expect(page.getByText("위키 문서는 앱에서만 써요")).toHaveCount(1);
     await expect(page.getByTestId("library-progress-continue")).toHaveCount(0);
   });
 
@@ -284,6 +286,13 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
     card: "briefing-stage",
     reason: /로컬 Git 저장소는 설치한 앱에서만 읽을 수 있어요/,
     destination: "briefing-get-app",
+  },
+  {
+    name: "work status: the browser cannot run git or read this computer's processes",
+    url: "/ko/work-status/",
+    card: "work-status-stage",
+    reason: /브라우저는[\s\S]*git[\s\S]*프로세스를 읽을 수 없어요/,
+    destination: "work-status-get-app",
   },
   {
     // Registering it on the web would promise nothing could keep: it keeps a clock and opens a headless

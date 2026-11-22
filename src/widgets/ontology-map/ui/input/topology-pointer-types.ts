@@ -6,9 +6,10 @@ import type { SelectionSource } from "../../model/camera/flat-selection-camera";
 import type { ForceSimulation } from "../../model/layout/force-layout";
 import type { TierRevealConfig } from "../../model/visibility/tier-visibility";
 import type { DragTugSets } from "../../interaction/drag-tug";
-import type { ClusterBarLabels } from "../../render/cluster-chips";
+import type { ClusterBarLabels } from "../../render/cluster-chips/control-placement";
 import type { ClusterChip } from "../../model/layout/density-gate";
-import type { ExpandPreference, MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";
+import type { ExpandPreference } from "@/shared/lib/preferences/expand-preferences";
+import type { MapNavigationSpeed } from "@/shared/lib/preferences/map-navigation-speed-preferences";
 import type { DepthParallaxOffset } from "../../model/realm/realm-depth-parallax";
 import type { DomeRuntime } from "../../model/dome-view/runtime";
 import type { WorldOffset } from "../../interaction/node-drag";
@@ -205,7 +206,7 @@ export interface PointerHandlerRefs {
    * contract as the edge hover card).
    */
   onHoverCluster?: (
-    info: {
+    cluster: {
       parentId: string;
       /** Direct gated children collapsed (hidden) at this tier — the chip's `+N`. */
       count: number;

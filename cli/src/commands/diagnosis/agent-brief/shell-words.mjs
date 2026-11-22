@@ -1,5 +1,3 @@
-
-
 export function graphDbShellQuote(value) {
   const text = String(value);
   return /^[A-Za-z0-9_./:@-]+$/.test(text) ? text : `'${text.replaceAll("'", "'\\''")}'`;
@@ -8,31 +6,36 @@ export function graphDbShellQuote(value) {
 export function splitShellWords(input) {
   const tokens = [];
   let current = '';
+  let hasToken = false;
   let quote = null;
-  for (let i = 0; i < input.length; i += 1) {
-    const ch = input[i];
+  for (let index = 0; index < input.length; index += 1) {
+    const character = input[index];
     if (quote) {
-      if (ch === quote) quote = null;
-      else if (quote === "'" && input.slice(i, i + 4) === "'\\''") {
-        current += "'";
-        i += 3;
-      } else current += ch;
+      if (character === quote) quote = null;
+      else current += character;
       continue;
     }
-    if (ch === "'" || ch === '"') {
-      quote = ch;
+    if (character === "'" || character === '"') {
+      quote = character;
+      hasToken = true;
       continue;
     }
-    if (/\s/.test(ch)) {
-      if (current) {
-        tokens.push(current);
-        current = '';
-      }
+    if (character === '\\' && index + 1 < input.length) {
+      index += 1;
+      current += input[index];
+      hasToken = true;
       continue;
     }
-    current += ch;
+    if (/\s/.test(character)) {
+      if (hasToken) tokens.push(current);
+      current = '';
+      hasToken = false;
+      continue;
+    }
+    current += character;
+    hasToken = true;
   }
   if (quote) return [];
-  if (current) tokens.push(current);
+  if (hasToken) tokens.push(current);
   return tokens;
 }

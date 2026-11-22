@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import enMessages from '../../../../messages/en.json';
 import { shouldHideBottomTabBar } from '@/widgets/bottom-tab-bar';
-import { GITHUB_REPO_URL, MAKER_LINKEDIN_URL } from '@/shared/config/social-links';
+import { GITHUB_REPO_URL, MAKER_LINKEDIN_URL } from '@/shared/config/site/social-links';
 import { DEMO_CLIPS } from '../model/demo-clips';
 import { FAQ_KEYS } from '../model/faq';
 import { RELEASE_VERSION } from '../lib/release/release-facts';
@@ -126,7 +126,7 @@ const IntlWrapper = ({ children }: { children: ReactNode }) => (
 function filledIds() {
   return Array.from(
     document.querySelectorAll('a[class*="--color-indigo-brand"], button[class*="--color-indigo-brand"]'),
-  ).map((el) => el.getAttribute('data-testid'));
+  ).map((domElement) => domElement.getAttribute('data-testid'));
 }
 
 function renderDownloadPage() {

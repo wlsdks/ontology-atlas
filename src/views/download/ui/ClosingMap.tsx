@@ -16,7 +16,7 @@ import {
   type Route,
 } from '../lib/closing-map';
 import { buildFilmScene, labelBox, placeLabels, type FilmScene } from '../lib/film/film-scene';
-import { easeInOut, easeOut, lerp } from '../lib/film/film-kit';
+import { easeInOut, easeOut, lerp } from '../lib/film/timeline/film-easing';
 import { registerGatedFrameClient } from '../lib/page-motion/gateway-frame-loop';
 import type { StageGraph } from '../lib/stage-graph';
 
@@ -423,11 +423,11 @@ export function ClosingMap({ graph, className }: { graph: StageGraph; className?
   const signalCanvas = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    const el = mapCanvas.current;
-    const glowEl = signalCanvas.current;
-    const ctx = el?.getContext('2d');
-    const glow = glowEl?.getContext('2d');
-    if (!el || !glowEl || !ctx || !glow || scene.nodes.length === 0) return;
+    const canvasElement = mapCanvas.current;
+    const glowElement = signalCanvas.current;
+    const ctx = canvasElement?.getContext('2d');
+    const glow = glowElement?.getContext('2d');
+    if (!canvasElement || !glowElement || !ctx || !glow || scene.nodes.length === 0) return;
     const palette = readPalette();
     const sprites: Sprites = { amber: softSprite(palette.amber), bright: softSprite(palette.bright), ground: softSprite(palette.ground) };
     const scratch: Point = { x: 0, y: 0 };
@@ -449,20 +449,20 @@ export function ClosingMap({ graph, className }: { graph: StageGraph; className?
     };
     const resize = () => {
       const dpr = Math.min(2, window.devicePixelRatio || 1);
-      w = el.clientWidth;
-      h = el.clientHeight;
-      el.width = Math.round(w * dpr);
-      el.height = Math.round(h * dpr);
+      w = canvasElement.clientWidth;
+      h = canvasElement.clientHeight;
+      canvasElement.width = Math.round(w * dpr);
+      canvasElement.height = Math.round(h * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       /* Soft light only, so one device pixel per CSS pixel is enough and costs a quarter. */
-      glowEl.width = Math.round(w);
-      glowEl.height = Math.round(h);
+      glowElement.width = Math.round(w);
+      glowElement.height = Math.round(h);
       layout = layoutMap(ctx, scene, palette, w, h);
       paintMap();
       paintSignals();
     };
     const observer = new ResizeObserver(resize);
-    observer.observe(el);
+    observer.observe(canvasElement);
     resize();
     if (still) {
       paintMap();
@@ -477,7 +477,7 @@ export function ClosingMap({ graph, className }: { graph: StageGraph; className?
     };
     if (elapsed < DRAW_MS) {
       stopDraw = registerGatedFrameClient(
-        el,
+        canvasElement,
         ({ dtMs }) => {
           elapsed = Math.min(DRAW_MS, elapsed + dtMs);
           paintMap();
@@ -489,7 +489,7 @@ export function ClosingMap({ graph, className }: { graph: StageGraph; className?
       );
     }
     const stopSignals = registerGatedFrameClient(
-      glowEl,
+      glowElement,
       ({ dtMs, factor }) => {
         if (elapsed < DRAW_MS) return;
         clock += dtMs * factor;

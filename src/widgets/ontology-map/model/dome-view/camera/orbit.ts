@@ -1,6 +1,6 @@
 import { DOME_PLANE, TAU } from '../cone-layout';
 import { MOMENTUM_TAU_MS } from '../../motion-physics';
-import type { DomeCoord, DomeModel, DomeViewKind } from '../types';
+import type { DomeCoord, DomeModel, DomeViewKind } from '../dome-shapes';
 
 /**
  * Neural's clusters are seen from well above, so neighbours stay apart at most turns

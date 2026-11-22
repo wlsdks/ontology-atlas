@@ -1,7 +1,8 @@
 import type { RoundKind } from '@/entities/library-round';
 import { isWikiFurnitureSlug } from '@/shared/lib/library/wiki-page-schema';
 
-import { pageIdentity, roundDraftProblem } from './pass-pages';
+import { pageIdentity } from './pass-pages';
+import { roundDraftProblem } from './round-draft-problem';
 
 /**
  * One unattended pass may only allow or reject, never ask, and fails closed on anything

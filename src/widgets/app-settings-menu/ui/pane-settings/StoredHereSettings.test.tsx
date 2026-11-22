@@ -26,16 +26,16 @@ const vectors = vi.hoisted(() => ({
 vi.mock('@/entities/vault-session', () => ({
   useLocalVault: () => ({ handle: bridge.rootPath === null ? null : { rootPath: bridge.rootPath } }),
 }));
-vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', () => ({
   getTauriVaultRootPath: (handle: { rootPath: string }) => handle.rootPath,
 }));
-vi.mock('@/shared/lib/vault-folder/tauri-vault-index', () => ({
+vi.mock('@/shared/lib/vault-folder/vault-index/tauri-vault-index', () => ({
   clearVaultIndex: bridge.clear,
   syncVaultIndex: bridge.sync,
   vaultIndexStatus: bridge.status,
   vaultIndexPreference: { use: () => bridge.indexSwitch, write: vi.fn() },
 }));
-vi.mock('@/shared/lib/vault-folder/tauri-vault-vectors', () => ({ probeVectors: vectors.probe }));
+vi.mock('@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors', () => ({ probeVectors: vectors.probe }));
 vi.mock('@/features/vault-vectors', () => ({
   useVectorStatus: () => ({ vectorsBytes: vectors.vectorsBytes }),
   remove: vectors.remove,

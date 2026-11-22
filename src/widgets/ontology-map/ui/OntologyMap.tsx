@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import type { HoverAvoidRect } from "./input/topology-pointer-types";
 import type { FlatDialState, FlatRingMemoryStore } from "./loop/topology-loop-contract";
-import type { DialEvidence, DialLabels } from "../dial/types";
+import type { DialEvidence, DialLabels } from "../dial/dial-shapes";
 import { Orbit } from "lucide-react";
 import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/map-canvas/focus-map-canvas";
 import { copyCanvasAtCssSize, isMapLayoutMorphArmed, publishMapLayoutSnapshot } from "@/shared/lib/map-canvas/map-layout-morph-store";
@@ -13,10 +13,21 @@ import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { useTopologyLoop } from "./loop/use-topology-loop";
 import type { TierRevealConfig } from "../model/visibility/tier-visibility";
 import type { TopologyMapLensKind } from "../model/visibility/path-lens";
-import type { ClusterBarLabels } from "../render/cluster-chips";
+import type { ClusterBarLabels } from "../render/cluster-chips/control-placement";
 import type { SelectionSource } from "../model/camera/flat-selection-camera";
-import { DEFAULT_EXPAND, DEFAULT_MAP_ARRANGEMENT, DEFAULT_MAP_NAVIGATION_SPEED } from "@/shared/lib/preferences/appearance-preferences";
-import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet, MapArrangement, MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";
+import { DEFAULT_EXPAND } from "@/shared/lib/preferences/expand-preferences";
+import {
+  DEFAULT_MAP_NAVIGATION_SPEED,
+} from "@/shared/lib/preferences/map-navigation-speed-preferences";
+import { DEFAULT_MAP_ARRANGEMENT } from "@/shared/lib/preferences/map-view-preferences";
+import type {
+  CanvasBackground,
+  GlyphSet,
+} from "@/shared/lib/preferences/canvas-appearance-preferences";
+import type { ExpandPreference } from "@/shared/lib/preferences/expand-preferences";
+import type { FootprintPreference } from "@/shared/lib/preferences/footprint-preferences";
+import type { MapNavigationSpeed } from "@/shared/lib/preferences/map-navigation-speed-preferences";
+import type { MapArrangement } from "@/shared/lib/preferences/map-view-preferences";
 import { controlClass } from '@/shared/ui/control-class';
 import { usePanelPresence } from "@/shared/lib/render-timing/use-presence";
 import { measureCanvasInsets } from "../interaction/free-area";
@@ -180,7 +191,7 @@ export interface OntologyMapProps {
   onToggleCluster?: (parentId: string) => void;
   /** The cluster chip hover tooltip (fires on an identity change; null clears it). */
   onHoverCluster?: (
-    info: {
+    cluster: {
       parentId: string;
   /** Direct gated children collapsed at this tier (the chip's `+N`). */
       count: number;

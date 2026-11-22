@@ -8,7 +8,7 @@ import { inspectProjectSource } from '../../project-source/project-source-inspec
 import { SERVER_VERSION } from '../../server-version.mjs';
 import { REPO_ROOT, VAULT_ROOT, assertScanRootAllowed } from '../../server/runtime.mjs';
 import { requireOptionalNonBlankString, requireOptionalPositiveInteger } from '../../server/validate.mjs';
-import { loadVaultDocs } from '../../vault/documents.mjs';
+import { loadVaultDocs } from '../../vault/documents/document-cache.mjs';
 import { selectArchitectureProfile } from './architecture-profile-selection.mjs';
 
 export function inspectArchitectureTool({ rootPath, profileSlug, maxFiles } = {}) {

@@ -93,8 +93,8 @@ test('a hostile clean filter is neutralised on a hardened add', () => {
   try {
     const marker = join(base, 'CLEAN_FILTER_EXECUTED');
     const repo = buildCleanFilterRepo(base, marker);
-    const res = spawnSync('git', hardenedGitArgs(repo, ['add', '-A', '--', '.']), { cwd: repo, encoding: 'utf8' });
-    assert.equal(res.status, 0, `add still succeeds: ${res.stderr}`);
+    const result = spawnSync('git', hardenedGitArgs(repo, ['add', '-A', '--', '.']), { cwd: repo, encoding: 'utf8' });
+    assert.equal(result.status, 0, `add still succeeds: ${result.stderr}`);
     assert.ok(!existsSync(marker), 'a repo-local clean filter must not run under the hardened args');
     const staged = spawnSync('git', hardenedGitArgs(repo, ['diff', '--cached', '--name-only']), { cwd: repo, encoding: 'utf8' });
     assert.match(staged.stdout, /note\.md/, 'the file is still staged');
@@ -148,8 +148,8 @@ for (const scope of Object.keys(FILTER_CASES)) {
       }
       writeFileSync(join(repo, 'note.md'), '# two changed\n');
 
-      const res = spawnSync('git', hardenedGitArgs(repo, ['add', '-A', '--', '.']), { cwd: repo, encoding: 'utf8' });
-      assert.equal(res.status, 0, `${scope}: add still succeeds: ${res.stderr}`);
+      const result = spawnSync('git', hardenedGitArgs(repo, ['add', '-A', '--', '.']), { cwd: repo, encoding: 'utf8' });
+      assert.equal(result.status, 0, `${scope}: add still succeeds: ${result.stderr}`);
       assert.ok(!existsSync(marker), `${scope}: the filter command must not run`);
     } finally {
       rmSync(base, { recursive: true, force: true });

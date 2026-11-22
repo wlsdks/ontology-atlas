@@ -3,7 +3,7 @@
 import { Clipboard } from "lucide-react";
 import { useState, type HTMLAttributes } from "react";
 import type { CopyFeedbackState } from "@/shared/lib/clipboard/use-copy-feedback";
-import { FeedbackGlyph } from "@/shared/motion/feedback-glyph";
+import { FeedbackGlyph } from "@/shared/motion/status-glyphs/FeedbackGlyph";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { controlClass } from '@/shared/ui/control-class';
 

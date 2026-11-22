@@ -35,11 +35,13 @@ import { bridgePort } from '@/features/harness-report';
 import { detectAcpRuntimes, isAcpBridgeAvailable } from '@/shared/lib/agent-chat/tauri-acp';
 import { useRememberedTool } from '@/widgets/acp-chat-panel';
 import {
-  getTauriVaultRootPath,
-  isTauriVaultRuntime,
   listTauriVaultEntries,
   readTauriVaultText,
-} from '@/shared/lib/vault-folder/tauri-vault-fs';
+} from '@/shared/lib/vault-folder/native-vault/tauri-vault-files';
+import {
+  getTauriVaultRootPath,
+  isTauriVaultRuntime,
+} from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { deriveRoleConcepts, type RoleConcept } from '../model/role-concepts';
 import {
   deriveRoleSourceModules,

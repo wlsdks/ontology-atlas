@@ -68,7 +68,7 @@ export function HarnessFilmWindow({
           setGeneration((value) => value + 1);
           setProgress(null);
         }),
-      commit: (fn) => flushSync(fn),
+      commit: (update) => flushSync(update),
       scale: () => handlers.current.scale(),
     });
     handlers.current.onReady(director);

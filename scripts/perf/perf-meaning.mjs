@@ -67,7 +67,7 @@ function parseArgs(argv) {
 
 const load = () => loadavg()[0].toFixed(1);
 
-function markdownFiles(dir) {
+function markdownFiles(directory) {
   const out = [];
   const visit = (folder) => {
     for (const entry of readdirSync(folder, { withFileTypes: true })) {
@@ -76,17 +76,17 @@ function markdownFiles(dir) {
       else if (entry.name.endsWith('.md')) out.push(path);
     }
   };
-  visit(dir);
+  visit(directory);
   return out.sort();
 }
 
 /** Passage and character counts for one vault, plus a seeded reservoir sample of passage texts. */
 async function survey(files, shape, sampleSize) {
-  const dir = join(WORK, `${shape}-${files}`);
-  if (!existsSync(join(dir, 'atlas.md'))) {
-    rmSync(dir, { recursive: true, force: true });
-    mkdirSync(dir, { recursive: true });
-    generateScaleVault(dir, files, shape);
+  const directory = join(WORK, `${shape}-${files}`);
+  if (!existsSync(join(directory, 'atlas.md'))) {
+    rmSync(directory, { recursive: true, force: true });
+    mkdirSync(directory, { recursive: true });
+    generateScaleVault(directory, files, shape);
   }
   let seed = 7;
   const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
@@ -94,8 +94,8 @@ async function survey(files, shape, sampleSize) {
   let passages = 0;
   let chars = 0;
   let bytes = 0;
-  for (const path of markdownFiles(dir)) bytes += statSync(path).size;
-  for await (const passage of cratePassages(dir)) {
+  for (const path of markdownFiles(directory)) bytes += statSync(path).size;
+  for await (const passage of cratePassages(directory)) {
     passages += 1;
     chars += passage.text.length;
     if (sample.length < sampleSize) sample.push(passage.text);
@@ -104,7 +104,7 @@ async function survey(files, shape, sampleSize) {
       if (at < sampleSize) sample[at] = passage.text;
     }
   }
-  return { files, shape, dir, passages, chars, bytes, sample };
+  return { files, shape, dir: directory, passages, chars, bytes, sample };
 }
 
 async function post(base, path, body, timeout = 120_000) {

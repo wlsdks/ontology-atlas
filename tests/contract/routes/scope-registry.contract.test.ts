@@ -97,7 +97,7 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "app-update:last-check", kind: "storage", scope: "global", note: "time of the last update check" },
   { key: "app-update:auto-check", kind: "storage", scope: "global", file: "src/features/app-update/model/update-state.ts", note: "Automatic update check on this computer: on (default) or off" },
   { key: "atlas.appearance.text-size", kind: "storage", scope: "global", file: "src/shared/lib/preferences/text-size.ts", note: "Text size: default, large or larger" },
-  { key: "library.wikiWriteMode", kind: "storage", scope: "global", file: "src/shared/lib/preferences/appearance-preferences.ts", note: "How an agent's wiki page lands on this computer: auto or ask" },
+  { key: "library.wikiWriteMode", kind: "storage", scope: "global", file: "src/shared/lib/preferences/library-preferences.ts", note: "How an agent's wiki page lands on this computer: auto or ask" },
   { key: "atlas.appearance.frameMeter", kind: "storage", scope: "global", note: "frame meter display preference" },
   { key: "atlas.appearance.view3d", kind: "storage", scope: "global", note: "3D view (the tree) preference, off (2D) by default" },
   { key: "atlas.appearance.structure", kind: "storage", scope: "global", note: "Domain structure preference" },
@@ -115,7 +115,7 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "ontology-atlas:canvas-background:v1", kind: "storage", scope: "global", note: "canvas background preference" },
   { key: "ontology-atlas:glyph-set:v1", kind: "storage", scope: "global", note: "glyph set preference" },
   { key: "ontology-atlas:vault-index:v1", kind: "storage", scope: "global", note: "search index on/off preference" },
-  { key: "ontology-atlas:vault-vectors:v1", kind: "storage", scope: "global", file: "src/shared/lib/vault-folder/vault-vector-source.ts", note: "One machine-wide map from a folder's absolute path to its search-by-meaning choice and pause; the path keys each folder's entry" },
+  { key: "ontology-atlas:vault-vectors:v1", kind: "storage", scope: "global", file: "src/shared/lib/vault-folder/vault-vectors/vault-vector-source.ts", note: "One machine-wide map from a folder's absolute path to its search-by-meaning choice and pause; the path keys each folder's entry" },
   { key: "ontology-atlas:footprint:v1", kind: "storage", scope: "global", note: "footprint trail preference" },
   // Expansion affordance, structure, and three numbers. Screen preferences like the
   // footprint and the background, so vault-independent — changing folder must not
@@ -192,8 +192,8 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
     kind: "storage",
     scope: "vault-scoped",
     scopedBy: "setChangeBaselineScope",
-    file: "src/entities/knowledge-graph/lib/ontology-tree/change-baseline-store.ts",
-    provenBy: "src/entities/knowledge-graph/lib/ontology-tree/change-baseline-store.test.ts",
+    file: "src/entities/knowledge-graph/lib/ontology-tree/changes/change-baseline-store.ts",
+    provenBy: "src/entities/knowledge-graph/lib/ontology-tree/changes/change-baseline-store.test.ts",
     note: "Change baseline per folder, hashed per node; other folders' entries give way only when storage refuses a save",
   },
   {
@@ -201,8 +201,8 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
     kind: "storage",
     scope: "vault-scoped",
     scopedBy: "setChangeBaselineScope",
-    file: "src/entities/knowledge-graph/lib/ontology-tree/change-baseline-store.ts",
-    provenBy: "src/entities/knowledge-graph/lib/ontology-tree/change-baseline-store.test.ts",
+    file: "src/entities/knowledge-graph/lib/ontology-tree/changes/change-baseline-store.ts",
+    provenBy: "src/entities/knowledge-graph/lib/ontology-tree/changes/change-baseline-store.test.ts",
     note: "The first form: each folder's entry is converted once to its own v2 key, then removed",
   },
   {
@@ -326,7 +326,7 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "ontology-atlas:appearance-preference-change", kind: "event", scope: "global", note: "" },
   { key: "ontology-atlas:audience-preference-change", kind: "event", scope: "global", note: "" },
   { key: "ontology-atlas:guide-auto-start-change", kind: "event", scope: "global", note: "" },
-  { key: "ontology-atlas:preference-change", kind: "event", scope: "global", file: "src/shared/lib/preferences/define-preference.ts", note: "Same-tab change of a definePreference store" },
+  { key: "ontology-atlas:preference-change", kind: "event", scope: "global", file: "src/shared/lib/preferences/preference-storage/define-preference.ts", note: "Same-tab change of a definePreference store" },
   { key: "ontology-atlas:open-settings", kind: "event", scope: "global", file: "src/shared/lib/keyboard/surface-requests.ts", note: "Request that a visible settings trigger open the sheet" },
   { key: "ontology-atlas:open-shortcuts", kind: "event", scope: "global", file: "src/shared/lib/keyboard/surface-requests.ts", note: "Request that the keyboard shortcut sheet open" },
   { key: "ontology-atlas:local-endpoint-change", kind: "event", scope: "global", note: "" },

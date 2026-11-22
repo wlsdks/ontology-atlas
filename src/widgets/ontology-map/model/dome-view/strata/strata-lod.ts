@@ -3,7 +3,7 @@ import { DOME_PLANE } from "../cone-layout";
 import { projectDomePlanePoint, type DomePlaneSample } from "../frame";
 import { DOME_NODE_PX } from "../ink";
 import type { DomeNodeFrame, DomeRuntime } from "../runtime";
-import type { DomeModel, DomeViewKind } from "../types";
+import type { DomeModel, DomeViewKind } from "../dome-shapes";
 
 export type StrataLodPlane = "capability" | "element";
 
@@ -486,14 +486,14 @@ export function stepStrataLod(state: StrataLodState, input: StrataLodInput): Str
 function writePresence(state: StrataLodState, index: StrataLodIndex): void {
   const presence = state.presence;
   const resolveCap = state.planeResolve.capability;
-  const resolveEl = state.planeResolve.element;
+  const resolveElement = state.planeResolve.element;
   for (let i = 0; i < presence.length; i += 1) {
     const kind = index.kindOf[i];
     if (kind !== "capability" && kind !== "element") {
       presence[i] = 1;
       continue;
     }
-    const plane = kind === "capability" ? resolveCap : resolveEl;
+    const plane = kind === "capability" ? resolveCap : resolveElement;
     const slot = index.domainSlotOf[i];
     presence[i] = slot < 0 ? plane : Math.max(plane, state.ramps[slot]);
   }
@@ -627,11 +627,11 @@ function buildShapes(
   state.regionCount = 0;
   if (!state.active) return;
   const rampCap = runtime.kindRamp.capability;
-  const rampEl = runtime.kindRamp.element;
+  const rampElement = runtime.kindRamp.element;
   const resolveCap = state.planeResolve.capability;
-  const resolveEl = state.planeResolve.element;
+  const resolveElement = state.planeResolve.element;
   const capR = DOME_PLANE.capability.r * ARC_LANE_FILL;
-  const elR = DOME_PLANE.element.r * ARC_LANE_FILL;
+  const elementRadius = DOME_PLANE.element.r * ARC_LANE_FILL;
 
   for (const domain of index.domains) {
     const node = world.nodes[domain.nodeIndex];
@@ -670,17 +670,17 @@ function buildShapes(
     }
 
     if (domain.capability !== null && domain.element !== null) {
-      const weight = rampEl * (1 - Math.max(Math.min(resolveCap, resolveEl), ramp));
+      const weight = rampElement * (1 - Math.max(Math.min(resolveCap, resolveElement), ramp));
       const top = inset(domain.capability, domain);
       const bottom = inset(domain.element, domain);
       const shape = takeShape(state, "curtain", domain.slot);
       const topDepth = pushArc(shape, runtime, camera, "capability", capR, top.lo, top.hi);
-      const bottomDepth = pushArc(shape, runtime, camera, "element", elR, bottom.hi, bottom.lo);
+      const bottomDepth = pushArc(shape, runtime, camera, "element", elementRadius, bottom.hi, bottom.lo);
       const upper = arcMid(runtime, "capability", capR, (top.lo + top.hi) / 2);
       shape.x0 = toScreenX(camera, upper.wx);
       shape.y0 = toScreenY(camera, upper.wy);
       shape.u0 = upper.u;
-      const lower = arcMid(runtime, "element", elR, (bottom.lo + bottom.hi) / 2);
+      const lower = arcMid(runtime, "element", elementRadius, (bottom.lo + bottom.hi) / 2);
       shape.x1 = toScreenX(camera, lower.wx);
       shape.y1 = toScreenY(camera, lower.wy);
       shape.u1 = lower.u;
@@ -689,14 +689,14 @@ function buildShapes(
     }
 
     if (domain.direct !== null) {
-      const weight = rampEl * (1 - Math.max(resolveEl, ramp));
+      const weight = rampElement * (1 - Math.max(resolveElement, ramp));
       const span = inset(domain.direct, domain);
       const shape = takeShape(state, "direct", domain.slot);
       shape.xs[0] = apexX;
       shape.ys[0] = apexY;
       shape.length = 1;
-      const baseDepth = pushArc(shape, runtime, camera, "element", elR, span.lo, span.hi);
-      const mid = arcMid(runtime, "element", elR, (span.lo + span.hi) / 2);
+      const baseDepth = pushArc(shape, runtime, camera, "element", elementRadius, span.lo, span.hi);
+      const mid = arcMid(runtime, "element", elementRadius, (span.lo + span.hi) / 2);
       shape.x0 = apexX;
       shape.y0 = apexY;
       shape.u0 = frame.u;

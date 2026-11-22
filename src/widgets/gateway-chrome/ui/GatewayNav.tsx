@@ -6,7 +6,7 @@ import { LocaleSwitch } from '@/features/locale-switch';
 import { cn } from '@/shared/lib/cn';
 import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/public-pages/gateway-frame';
 import { stripLocalePrefix } from '@/shared/lib/navigation/nav-destination';
-import { GITHUB_REPO_URL, MAKER_LINKEDIN_URL, xProfileUrl } from '@/shared/config/social-links';
+import { GITHUB_REPO_URL, MAKER_LINKEDIN_URL, xProfileUrl } from '@/shared/config/site/social-links';
 import { GithubMark, LinkedInMark, XMark } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
 import { AtlasSymbol } from '@/shared/ui/marks/brand-mark';

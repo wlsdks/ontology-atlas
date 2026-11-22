@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 
 import { Link } from '@/i18n/navigation';
-import { getTopologyFocusHref } from '@/entities/project';
+import { buildTopologyFocusHref } from '@/entities/project';
 import { agentDisplayName } from '@/shared/lib/agent-activity/agent-display-name';
 import { cn } from '@/shared/lib/cn';
 import { controlClass } from '@/shared/ui/control-class';
@@ -15,7 +15,7 @@ import {
   problemSummary,
   writeSentence,
 } from '../../model/inbox-row-copy';
-import { ROW_HEADLINE_CLASS, RowMark } from './inbox-row-parts';
+import { ROW_HEADLINE_CLASS, RowMark } from './inbox-row-primitives';
 
 /**
  * Control mark, not the panel's indigo: indigo means this needs you, and a settled timeline needs
@@ -99,7 +99,7 @@ export function HistoryRow({
               </button>
             ) : (
               <Link
-                href={getTopologyFocusHref(row.node.slug)}
+                href={buildTopologyFocusHref(row.node.slug)}
                 title={row.node.slug}
                 aria-label={t('openOnMap', { name: row.node.name })}
                 className={HISTORY_OBJECT_CLASS}

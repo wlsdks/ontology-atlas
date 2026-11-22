@@ -2,7 +2,7 @@
 //! app action sends the exact previewed JSON to the fixed TypeSafe endpoint.
 
 use crate::blocking::run_blocking;
-use crate::errors::coded;
+use crate::coded_error::coded;
 use crate::llm::curl::{curl_argv_with_timeout, curl_config_for, run_curl};
 use crate::llm_audit::{self, AuditDraft, AuditOutcome, AuditScope};
 use crate::secrets::{is_cleared, Step};

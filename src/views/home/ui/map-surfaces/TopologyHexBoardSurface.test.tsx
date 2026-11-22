@@ -2,7 +2,9 @@ import { render } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
-import { DEFAULT_MAP_NAVIGATION_SPEED } from "@/shared/lib/preferences/appearance-preferences";
+import {
+  DEFAULT_MAP_NAVIGATION_SPEED,
+} from "@/shared/lib/preferences/map-navigation-speed-preferences";
 import type { HexBoardLabels, OntologyMapNode } from "@/widgets/ontology-map";
 import en from "../../../../../messages/en.json";
 import { TopologyHexBoardSurface } from "./TopologyHexBoardSurface";

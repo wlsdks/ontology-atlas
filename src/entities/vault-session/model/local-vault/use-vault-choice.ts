@@ -12,16 +12,18 @@ import {
   type LocalFsHandleRecord,
 } from '@/entities/local-fs-handle';
 import {
-  getTauriVaultRootPath,
-  isTauriVaultRuntime,
   pickTauriVaultDirectory,
   vaultRootRejectionReason,
-} from '@/shared/lib/vault-folder/tauri-vault-fs';
-import { classifyVaultAccessError, isMissingFolderError } from '../classify-vault-access-error';
+} from '@/shared/lib/vault-folder/native-vault/tauri-vault-location';
+import {
+  getTauriVaultRootPath,
+  isTauriVaultRuntime,
+} from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
+import { classifyVaultAccessError, isMissingFolderError } from '../vault-opening/classify-vault-access-error';
 import { toErrorMessage } from '@/shared/lib/failures/error-message';
 import { isPickerAbort } from '@/shared/lib/failures/picker-abort';
-import { forgetVaultIndex } from '@/shared/lib/vault-folder/tauri-vault-index';
-import { vaultVectorSource } from '@/shared/lib/vault-folder/vault-vector-source';
+import { forgetVaultIndex } from '@/shared/lib/vault-folder/vault-index/tauri-vault-index';
+import { vaultVectorSource } from '@/shared/lib/vault-folder/vault-vectors/vault-vector-source';
 import { emptyAgentActivityStatus } from '../agent-activity-status';
 import {
   isSupported,
@@ -87,7 +89,7 @@ export function useVaultChoice({
         ? await pickTauriVaultDirectory()
         : await (
             window as unknown as {
-              showDirectoryPicker: (opts?: {
+              showDirectoryPicker: (options?: {
                 mode?: 'read' | 'readwrite';
               }) => Promise<FileSystemDirectoryHandle>;
             }
@@ -125,15 +127,15 @@ export function useVaultChoice({
       await refreshRecentVaults();
       if (!isCurrent()) return NOT_OPENED;
       return loaded ? { opened: true, ...loaded } : NOT_OPENED;
-    } catch (err) {
+    } catch (error) {
       if (!isCurrent()) return NOT_OPENED;
-      if (isPickerAbort(err)) {
+      if (isPickerAbort(error)) {
         setState(previousState);
         return NOT_OPENED;
       }
       // A "cannot be a vault root" rejection is not a failure: the cause string `vault-root-rejected:filesystem-root` would
       // read badly, and "please try again" is false guidance when every retry gives the same result.
-      const rejection = vaultRootRejectionReason(err);
+      const rejection = vaultRootRejectionReason(error);
       if (rejection) {
         setState((s) => ({
           ...s,
@@ -147,9 +149,9 @@ export function useVaultChoice({
       setState((s) => ({
         ...s,
         status: 'error',
-        errorMessage: toErrorMessage(err),
+        errorMessage: toErrorMessage(error),
         errorCode:
-          classifyVaultAccessError(err) === 'permission-denied'
+          classifyVaultAccessError(error) === 'permission-denied'
             ? 'permission-denied'
             : 'access-failed',
       }));
@@ -207,15 +209,15 @@ export function useVaultChoice({
         const loaded = await load(resolvedHandle.handle, options);
         if (!isCurrent()) return NOT_OPENED;
         return loaded ? { opened: true, ...loaded } : NOT_OPENED;
-      } catch (err) {
+      } catch (error) {
         if (!isCurrent()) return NOT_OPENED;
         // `toErrorMessage` — a Tauri `invoke` rejects with `Err(String)` as a plain string.
         setState((s) => ({
           ...s,
           status: 'error',
-          errorMessage: toErrorMessage(err),
+          errorMessage: toErrorMessage(error),
           errorCode:
-            classifyVaultAccessError(err) === 'permission-denied'
+            classifyVaultAccessError(error) === 'permission-denied'
               ? 'permission-denied'
               : 'access-failed',
         }));

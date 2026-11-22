@@ -25,18 +25,27 @@ function readText(relativePath) {
   return blankComments(relativePath, fs.readFileSync(absolute, "utf8").replace(/\r\n?/g, "\n"));
 }
 
-// verify-macos-app-launch.mjs is a thin orchestrator plus scripts/lib/verify-macos/*.mjs modules; the
-// `.includes(...)` gates below check the combined surface, so read all of them.
-function readVerifyMacosAppLaunchScript() {
-  const entry = readText("scripts/verify-macos/verify-macos-app-launch.mjs");
-  const libDir = path.join(root, "scripts/lib/verify-macos");
-  const libFiles = fs.existsSync(libDir)
-    ? fs.readdirSync(libDir).filter((name) => name.endsWith(".mjs")).sort()
+// A script that is an entry plus a folder of modules: the `.includes(...)` gates check the combined
+// surface, so read the entry and every non-test module of the folder.
+function readEntryWithModules(entryPath, moduleDirectory) {
+  const entry = readText(entryPath);
+  const absoluteDirectory = path.join(root, moduleDirectory);
+  const moduleFiles = fs.existsSync(absoluteDirectory)
+    ? fs.readdirSync(absoluteDirectory).filter((name) => name.endsWith(".mjs") && !name.endsWith(".test.mjs")).sort()
     : [];
-  const libText = libFiles
-    .map((name) => readText(path.join("scripts/lib/verify-macos", name)))
+  const moduleText = moduleFiles
+    .map((name) => readText(path.join(moduleDirectory, name)))
     .join("\n");
-  return `${entry}\n${libText}`;
+  return `${entry}\n${moduleText}`;
+}
+
+function readTypeScriptFolder(directory) {
+  const absoluteDirectory = path.join(root, directory);
+  const names = fs.existsSync(absoluteDirectory)
+    ? fs.readdirSync(absoluteDirectory).filter((name) => name.endsWith(".ts") && !name.endsWith(".test.ts")).sort()
+    : [];
+  if (names.length === 0) fail(`tracked source folder is empty or missing — ${directory}.`);
+  return names.map((name) => readText(path.join(directory, name))).join("\n");
 }
 
 function fail(message) {
@@ -73,11 +82,21 @@ const enMessages = JSON.parse(readText("messages/en.json"));
 const koMessages = JSON.parse(readText("messages/ko.json"));
 const rootLayout = readText("app/layout.tsx");
 // The site Organization and WebSite JSON-LD the root layout renders (`siteEntityGraph`).
-const siteEntity = readText("src/shared/config/site-entity.ts");
+const siteEntity = readText("src/shared/config/site/site-entity.ts");
 const webManifest = JSON.parse(readText("public/manifest.webmanifest"));
 const cargoToml = readText("src-tauri/Cargo.toml");
 const rootReadme = readText("README.md");
-const downloadPage = readText("src/views/download/ui/DownloadPage.tsx");
+/** The page and the parts it is built from: the hero and the release controls own the claims this gate reads. */
+const downloadPage = [
+  "src/views/download/ui/DownloadPage.tsx",
+  "src/views/download/ui/hero/HeroSection.tsx",
+  "src/views/download/ui/ClosingSection.tsx",
+  "src/views/download/ui/release/DownloadActions.tsx",
+  "src/views/download/ui/release/FactsStrip.tsx",
+  "src/views/download/ui/release/TrustLine.tsx",
+]
+  .map(readText)
+  .join("\n");
 /** The gateway's top chrome, where the brand name is drawn. The brand gate reads page and chrome together, so it does not pin the brand to one file path. */
 const gatewayChrome = readText("src/widgets/gateway-chrome/ui/GatewayNav.tsx");
 const gatewaySurfaceSource = `${downloadPage}\n${gatewayChrome}`;
@@ -86,13 +105,15 @@ const bottomTabBar = readText("src/widgets/bottom-tab-bar/ui/BottomTabBar.tsx");
 const bottomTabBarPolicy = readText("src/widgets/bottom-tab-bar/lib/is-tab-active.ts");
 const tauriLib = readText("src-tauri/src/lib.rs");
 const tauriVaultScope = readText("src-tauri/src/vault/scope.rs");
-const tauriShim = readText("src/shared/lib/vault-folder/tauri-vault-fs.ts");
+const tauriShim = readTypeScriptFolder("src/shared/lib/vault-folder/native-vault");
+const tauriRuntimeShim = readText("src/shared/lib/vault-folder/native-vault/tauri-vault-runtime.ts");
+const tauriHandleShim = readText("src/shared/lib/vault-folder/native-vault/tauri-vault-handle.ts");
 const tauriInfoPlist = readText("src-tauri/Info.plist");
 const packageMacosDmgScript = readText("scripts/desktop/package-macos-dmg.mjs");
 const cleanTauriMacosAppsScript = readText("scripts/desktop/clean-tauri-macos-apps.mjs");
 const desktopPerformanceScript = readText("scripts/desktop/check-desktop-performance.mjs");
 const verifyDmgScript = readText("scripts/verify-macos/verify-macos-dmg.mjs");
-const verifyAppScript = readVerifyMacosAppLaunchScript();
+const verifyAppScript = readEntryWithModules("scripts/verify-macos/verify-macos-app-launch.mjs", "scripts/lib/verify-macos");
 const verifyInstallScript = readText("scripts/verify-macos/verify-macos-install-smoke.mjs");
 const deployMacosAppLocalScript = readText("scripts/desktop/deploy-macos-app-local.mjs");
 const codexBuildRunScript = readText("script/build_and_run.sh");
@@ -108,7 +129,7 @@ const releaseTagScript = readText("scripts/desktop-release/check-macos-release-t
 const releaseSlotScript = readText("scripts/desktop-release/check-macos-release-slot.mjs");
 const releaseGithubScript = readText("scripts/desktop-release/check-macos-release-github.mjs");
 const releaseRunScript = readText("scripts/desktop-release/watch-macos-release-run.mjs");
-const releaseStatusScript = readText("scripts/desktop-release/check-macos-release-status.mjs");
+const releaseStatusScript = readEntryWithModules("scripts/desktop-release/check-macos-release-status.mjs", "scripts/desktop-release/release-status");
 const goalAuditScript = readText("scripts/desktop-release/check-desktop-goal-audit.mjs");
 const macosReleaseNamesHelper = readText("scripts/lib/macos-release-names.mjs");
 const hostedDownloadSurfaceScript = readText("scripts/download/check-hosted-download-surface.mjs");
@@ -127,7 +148,7 @@ const docsVaultPageFiles = [
 ];
 const docsVaultPage = docsVaultPageFiles.map(readText).join("\n");
 // The docs surface's local-source control lives in the vault chip menu.
-const vaultChipSurface = readText("src/views/docs-vault/ui/parts/DocsVaultVaultChip.tsx");
+const vaultChipSurface = readText("src/views/docs-vault/ui/parts/header/DocsVaultVaultChip.tsx");
 const topologyEmptyState = readText("src/widgets/topology-controls/ui/TopologyEmptyState.tsx");
 const vaultAgentSetupPanel = readText("src/widgets/app-settings-menu/ui/agent-setup/VaultAgentSetupPanel.tsx");
 const vaultAgentSetupCopySources = [
@@ -162,7 +183,7 @@ const cargoPackageName = cargoToml.match(/\[package\][\s\S]*?\nname\s*=\s*"([^"]
 // mcp/ and cli/ are separate install roots; without the same pin they run whatever pnpm is
 // installed globally, and an older one ignores their supply-chain settings.
 const unpinnedInstallRoots = ["mcp", "cli"].filter(
-  (dir) => JSON.parse(readText(`${dir}/package.json`)).packageManager !== pinnedPnpm,
+  (directory) => JSON.parse(readText(`${directory}/package.json`)).packageManager !== pinnedPnpm,
 );
 if (unpinnedInstallRoots.length === 0) {
   pass(`mcp/ and cli/ pin the same pnpm as the root (${pinnedPnpm})`);
@@ -412,7 +433,7 @@ if (
  */
 if (
   pkg.scripts?.["test:desktop:bridge"] ===
-  "pnpm exec vitest run src/shared/lib/vault-folder/tauri-vault-fs.test.ts src/entities/local-fs-handle/api/store.test.ts src/entities/vault-session/model/local-vault/agent-config-status.test.ts && pnpm mcp:build-binary && cargo test --manifest-path src-tauri/Cargo.toml --workspace && node scripts/perf/vault-rows-equality.mjs"
+  "pnpm exec vitest run src/shared/lib/vault-folder/native-vault src/entities/local-fs-handle/api/store.test.ts src/entities/vault-session/model/local-vault/agent-config-status.test.ts && pnpm mcp:build-binary && cargo test --manifest-path src-tauri/Cargo.toml --workspace && node scripts/perf/vault-rows-equality.mjs"
 ) {
   pass(
     "desktop native vault bridge tests build the sidecar, then cover WebView handle shim, agent config validation, Rust path guard, and a manifest from cached rows equal to one from files",
@@ -783,9 +804,9 @@ if (
 }
 
 // README prose is editable; its download and release references follow runtime config.
-const configuredSite = readText("src/shared/config/site.ts")
+const configuredSite = readText("src/shared/config/site/site.ts")
   .match(/export const SITE_URL = ["']([^"']+)["']/)?.[1];
-const configuredRepository = readText("src/shared/config/social-links.ts")
+const configuredRepository = readText("src/shared/config/site/social-links.ts")
   .match(/export const GITHUB_REPO_URL = ["']([^"']+)["']/)?.[1];
 const readmeLinks = [...rootReadme.matchAll(/(?:href=["']|\]\()(https?:\/\/[^"')\s>]+)/g)]
   .flatMap((match) => {
@@ -798,7 +819,7 @@ if (
 ) {
   pass("root README links to the configured download and release destinations");
 } else {
-  fail("README.md must link to the configured hosted download route and repository releases; check src/shared/config/site.ts and social-links.ts");
+  fail("README.md must link to the configured hosted download route and repository releases; check src/shared/config/site/site.ts and social-links.ts");
 }
 
 /*
@@ -860,9 +881,9 @@ if (
   downloadPage.includes("formatAssetSize") &&
   // The page reads release facts from the generated module: the hero reads the Windows asset
   // (`windowsAsset`) and names the in-development version when nothing is published
-  // (`resolveDisplayReleaseTag`).
+  // (`displayReleaseTag`).
   downloadPage.includes("windowsAsset") &&
-  downloadPage.includes("resolveDisplayReleaseTag") &&
+  downloadPage.includes("displayReleaseTag") &&
   downloadPage.includes("gateway-hero-windows") &&
   internalPipelineLeaks.every(
     (marker) => !downloadPage.includes(marker) && !downloadRoute.includes(marker),
@@ -1581,26 +1602,26 @@ if (missingTauriCommands.length === 0) {
 }
 
 if (
-  tauriShim.includes("from '@tauri-apps/api/core'") &&
-  tauriShim.includes("isTauri()") &&
-  tauriShim.includes("tauriInvoke(command, args)") &&
+  tauriRuntimeShim.includes("from '@tauri-apps/api/core'") &&
+  tauriRuntimeShim.includes("isTauri()") &&
+  tauriRuntimeShim.includes("tauriInvoke(command, args)") &&
   !tauriShim.includes("__TAURI_INTERNALS__")
 ) {
   pass("Tauri vault bridge uses the supported JavaScript invoke API");
 } else {
-  fail("src/shared/lib/vault-folder/tauri-vault-fs.ts must use @tauri-apps/api/core invoke/isTauri instead of private Tauri internals");
+  fail("src/shared/lib/vault-folder/native-vault/tauri-vault-runtime.ts must use @tauri-apps/api/core invoke/isTauri instead of private Tauri internals");
 }
 
 if (
-  tauriShim.includes("options.create") &&
-  tauriShim.includes("'vault_path_exists'") &&
-  tauriShim.includes("if (!exists)") &&
-  tauriShim.includes("'write_vault_text_file'")
+  tauriHandleShim.includes("options.create") &&
+  tauriHandleShim.includes("'vault_path_exists'") &&
+  tauriHandleShim.includes("if (!exists)") &&
+  tauriHandleShim.includes("'write_vault_text_file'")
 ) {
   pass("Tauri getFileHandle create semantics avoid truncating existing vault files");
 } else {
   fail(
-    "src/shared/lib/vault-folder/tauri-vault-fs.ts must match File System Access create semantics: create missing files without truncating existing ones",
+    "src/shared/lib/vault-folder/native-vault/tauri-vault-handle.ts must match File System Access create semantics: create missing files without truncating existing ones",
   );
 }
 
@@ -1735,7 +1756,7 @@ const tauriScaffoldFiles = [
   "src-tauri/capabilities/default.json",
   "src-tauri/icons/icon.png",
   "src-tauri/icons/icon.icns",
-  "src/shared/lib/vault-folder/tauri-vault-fs.test.ts",
+  "src/shared/lib/vault-folder/native-vault/tauri-vault-handle.test.ts",
   // The settings sheet carries recent-vault recovery and copy path / Finder, covered by its test.
   "src/widgets/app-settings-menu/ui/AppSettingsMenu.test.tsx",
   "src/views/root-entry/ui/RootEntryPage.test.tsx",
@@ -1750,7 +1771,7 @@ const tauriScaffoldFiles = [
   "scripts/desktop-release/check-macos-release-github.mjs",
   "scripts/desktop/sign-macos-app.mjs",
   "scripts/desktop-release/notarize-macos-dmg.mjs",
-  "src/shared/lib/vault-folder/tauri-vault-fs.ts",
+  "src/shared/lib/vault-folder/native-vault/tauri-vault-runtime.ts",
 ];
 const missingTauriFiles = tauriScaffoldFiles.filter(
   (relativePath) => !fs.existsSync(path.join(root, relativePath)),

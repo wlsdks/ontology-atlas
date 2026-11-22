@@ -5,14 +5,14 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRowDisclosure } from '@/shared/lib/list-rows/use-row-disclosure';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { MOTION } from '@/shared/motion';
-import { WorkTrail } from '@/shared/motion/work-trail';
+import { WorkTrail } from '@/shared/motion/status-glyphs/WorkTrail';
 import { BrandWaitingMark } from '@/shared/ui/marks/moru/brand-waiting-mark';
 import { CELEBRATION_MOTIONS, PLAY_ROW_FRAMES, WORK_ROW_FRAMES } from '@/shared/ui/marks/moru/moru-rows';
 
 import type { TurnActivity, TurnWrites } from '../../turn-activity';
 import { workingShimmer } from '../../working-ink';
 import { celebrationClip, stageClip } from './moru-playlist';
-import type { ChatT, SessionState } from '../types';
+import type { ChatT, SessionState } from '../chat-panel-props';
 
 const STAGE_ROWS = [...Object.keys(WORK_ROW_FRAMES), ...Object.keys(PLAY_ROW_FRAMES), ...CELEBRATION_MOTIONS];
 

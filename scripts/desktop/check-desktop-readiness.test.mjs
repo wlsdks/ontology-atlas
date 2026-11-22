@@ -448,8 +448,8 @@ test("desktop release helper scripts expose credential-aware help", () => {
  * real tag of that version would collide with the fixture. `OATLAS_GIT_BIN` injects a fake git;
  * `tagExists: false` makes `git rev-parse --verify --quiet` answer 1 (absent).
  */
-function writeFakeGit(dir, { tagExists = false } = {}) {
-  const gitPath = join(dir, "git");
+function writeFakeGit(directory, { tagExists = false } = {}) {
+  const gitPath = join(directory, "git");
   writeFileSync(
     gitPath,
     `#!/usr/bin/env node
@@ -466,8 +466,8 @@ process.exit(1);
 }
 
 test("desktop GitHub release readiness gate reports missing Developer ID direct-download secrets", () => {
-  const dir = mkdtempSync(join(tmpdir(), "ontology-atlas-gh-"));
-  const ghPath = join(dir, "gh");
+  const directory = mkdtempSync(join(tmpdir(), "ontology-atlas-gh-"));
+  const ghPath = join(directory, "gh");
   writeFileSync(
     ghPath,
     `#!/usr/bin/env node
@@ -500,7 +500,7 @@ process.exit(1);
 `,
   );
   chmodSync(ghPath, 0o755);
-  const gitPath = writeFakeGit(dir);
+  const gitPath = writeFakeGit(directory);
   try {
     const result = spawnSync(
       process.execPath,
@@ -519,13 +519,13 @@ process.exit(1);
     assert.doesNotMatch(result.stderr, /gh secret set APPLE_CERTIFICATE_P12_BASE64/);
     assert.match(result.stderr, /gh secret set APPLE_API_ISSUER_ID --env release-signing --repo wlsdks\/ontology-atlas/);
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(directory, { recursive: true, force: true });
   }
 });
 
 test("desktop GitHub release readiness gate reports missing workflow on GitHub", () => {
-  const dir = mkdtempSync(join(tmpdir(), "ontology-atlas-gh-"));
-  const ghPath = join(dir, "gh");
+  const directory = mkdtempSync(join(tmpdir(), "ontology-atlas-gh-"));
+  const ghPath = join(directory, "gh");
   writeFileSync(
     ghPath,
     `#!/usr/bin/env node
@@ -550,7 +550,7 @@ process.exit(1);
 `,
   );
   chmodSync(ghPath, 0o755);
-  const gitPath = writeFakeGit(dir);
+  const gitPath = writeFakeGit(directory);
   try {
     const result = spawnSync(
       process.execPath,
@@ -568,13 +568,13 @@ process.exit(1);
     assert.match(result.stderr, /commit and push \.github\/workflows\/release-macos\.yml/i);
     assert.doesNotMatch(result.stderr, /gh api repos/);
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(directory, { recursive: true, force: true });
   }
 });
 
 test("desktop GitHub release readiness gate accepts active workflow and required secret names", () => {
-  const dir = mkdtempSync(join(tmpdir(), "ontology-atlas-gh-"));
-  const ghPath = join(dir, "gh");
+  const directory = mkdtempSync(join(tmpdir(), "ontology-atlas-gh-"));
+  const ghPath = join(directory, "gh");
   const secretNames = ENVIRONMENT_SECRET_NAMES;
   writeFileSync(
     ghPath,
@@ -612,7 +612,7 @@ process.exit(1);
 `,
   );
   chmodSync(ghPath, 0o755);
-  const gitPath = writeFakeGit(dir);
+  const gitPath = writeFakeGit(directory);
   try {
     const result = spawnSync(
       process.execPath,
@@ -629,13 +629,13 @@ process.exit(1);
     assert.match(result.stdout, new RegExp(`${APP_TAG_PATTERN} matches package, Tauri, and Cargo versions`));
     assert.match(result.stdout, new RegExp(`${APP_TAG_PATTERN} has no existing GitHub Release`));
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(directory, { recursive: true, force: true });
   }
 });
 
 test("desktop GitHub release readiness gate rejects an occupied release slot", () => {
-  const dir = mkdtempSync(join(tmpdir(), "ontology-atlas-gh-"));
-  const ghPath = join(dir, "gh");
+  const directory = mkdtempSync(join(tmpdir(), "ontology-atlas-gh-"));
+  const ghPath = join(directory, "gh");
   const secretNames = ENVIRONMENT_SECRET_NAMES;
   writeFileSync(
     ghPath,
@@ -673,7 +673,7 @@ process.exit(1);
 `,
   );
   chmodSync(ghPath, 0o755);
-  const gitPath = writeFakeGit(dir);
+  const gitPath = writeFakeGit(directory);
   try {
     const result = spawnSync(
       process.execPath,
@@ -689,7 +689,7 @@ process.exit(1);
     assert.match(result.stderr, new RegExp(`release ${APP_TAG_PATTERN} already exists`));
     assert.match(result.stderr, /Delete the existing public release/);
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(directory, { recursive: true, force: true });
   }
 });
 
@@ -778,19 +778,19 @@ test("desktop readiness check fails readably when a tracked source file disappea
 function readinessWith(edits) {
   const repo = process.cwd();
   const root = mkdtempSync(join(tmpdir(), "desktop-readiness-tree-"));
-  const link = (dir) => {
-    for (const name of readdirSync(join(repo, dir))) symlinkSync(join(repo, dir, name), join(root, dir, name));
+  const link = (directory) => {
+    for (const name of readdirSync(join(repo, directory))) symlinkSync(join(repo, directory, name), join(root, directory, name));
   };
   try {
     link("");
     for (const [file, edit] of Object.entries(edits)) {
       const parts = file.split("/");
       for (let depth = 1; depth < parts.length; depth += 1) {
-        const dir = parts.slice(0, depth).join("/");
-        if (lstatSync(join(root, dir)).isSymbolicLink()) {
-          unlinkSync(join(root, dir));
-          mkdirSync(join(root, dir));
-          link(dir);
+        const directory = parts.slice(0, depth).join("/");
+        if (lstatSync(join(root, directory)).isSymbolicLink()) {
+          unlinkSync(join(root, directory));
+          mkdirSync(join(root, directory));
+          link(directory);
         }
       }
       const before = readFileSync(join(repo, file), "utf8");
@@ -824,7 +824,7 @@ test("desktop readiness verdicts survive deleting comments and comments that nam
     ["scripts/download/check-macos-download-release.mjs", (source) => `${source}// aarch64|x64|universal\n`],
     ["src/views/download/ui/DownloadPage.tsx", (source) => `${source}// /docs/?intent=local\n`],
     ["app/(gateway)/[locale]/download/page.tsx", (source) => `${source}// NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING\n`],
-    ["src/shared/lib/vault-folder/tauri-vault-fs.ts", (source) => `${source}// __TAURI_INTERNALS__\n`],
+    ["src/shared/lib/vault-folder/native-vault/tauri-vault-runtime.ts", (source) => `${source}// __TAURI_INTERNALS__\n`],
   ]));
 
   assert.equal(result.status, 0, result.stderr);
@@ -832,7 +832,7 @@ test("desktop readiness verdicts survive deleting comments and comments that nam
 
 test("desktop readiness does not pass a check on text that survives only in a comment", () => {
   const result = readinessWith({
-    "src/shared/lib/vault-folder/tauri-vault-fs.ts": (source) =>
+    "src/shared/lib/vault-folder/native-vault/tauri-vault-runtime.ts": (source) =>
       `${source.replace("from '@tauri-apps/api/core'", "from '@tauri-apps/api/mocks'")}// from '@tauri-apps/api/core'\n`,
     ".github/workflows/deploy-pages.yml": (source) =>
       source.replace(/uses: (actions\/setup-node)@([0-9a-f]{40})/g, "uses: $1@v6 # uses: $1@$2"),
@@ -847,8 +847,8 @@ test("desktop readiness does not pass a check on text that survives only in a co
 });
 
 test("desktop release slot gate rejects an existing same-tag release", () => {
-  const dir = mkdtempSync(join(tmpdir(), "ontology-atlas-gh-slot-"));
-  const ghPath = join(dir, "gh");
+  const directory = mkdtempSync(join(tmpdir(), "ontology-atlas-gh-slot-"));
+  const ghPath = join(directory, "gh");
   writeFileSync(
     ghPath,
     `#!/usr/bin/env node
@@ -877,13 +877,13 @@ process.exit(1);
     assert.match(result.stderr, new RegExp(`release ${APP_TAG_PATTERN} already exists`));
     assert.match(result.stderr, /Delete the existing draft release/);
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(directory, { recursive: true, force: true });
   }
 });
 
 test("desktop release slot gate accepts a missing same-tag release", () => {
-  const dir = mkdtempSync(join(tmpdir(), "ontology-atlas-gh-slot-"));
-  const ghPath = join(dir, "gh");
+  const directory = mkdtempSync(join(tmpdir(), "ontology-atlas-gh-slot-"));
+  const ghPath = join(directory, "gh");
   writeFileSync(
     ghPath,
     `#!/usr/bin/env node
@@ -911,7 +911,7 @@ process.exit(1);
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /has no existing GitHub Release/);
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(directory, { recursive: true, force: true });
   }
 });
 

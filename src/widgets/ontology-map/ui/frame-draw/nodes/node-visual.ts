@@ -1,6 +1,6 @@
 import type { NodeEgoState } from "../../../model/visibility/focus-state";
 import { resolveFreshnessVisual } from "../../../model/ambient/freshness";
-import type { DomeViewKind } from "../../../model/dome-view/types";
+import type { DomeViewKind } from "../../../model/dome-view/dome-shapes";
 import { hexToRgb, mixRgbHex } from "../../../render/dome-view/dome-light";
 import { lerpColorHex } from "../../../render/grid";
 import type { OntologyMapTokens } from "../../../tokens/read-map-tokens";

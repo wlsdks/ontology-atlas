@@ -15,7 +15,7 @@ import { buildOntologyDeeplinkForDoc } from '@/entities/docs-vault';
 import { useDocumentTitle } from '@/shared/lib/public-pages/use-document-title';
 import { firstHeading, parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
 import { resolveLocaleDisplayName } from '@/shared/lib/locale-text/locale-display-name';
-import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { useClaimShellKey } from '@/shared/lib/keyboard/shell-key-claims';
 import { useLatestRef } from '@/shared/lib/use-latest-ref';
 import { usePanelPresence } from '@/shared/lib/render-timing/use-presence';
@@ -56,13 +56,13 @@ import { useSkillParity } from '../lib/agent-files/use-skill-parity';
 import { DocsVaultHeader } from './DocsVaultHeader';
 import { DocsVaultDocumentPane } from './DocsVaultDocumentPane';
 import { DocsVaultSidebar } from './DocsVaultSidebar';
-import { DocsSidebarBody } from './parts/DocsSidebarBody';
-import { DesktopVaultWelcome } from './parts/DesktopVaultWelcome';
+import { DocsSidebarBody } from './parts/sidebar/DocsSidebarBody';
+import { DesktopVaultWelcome } from './parts/welcome/DesktopVaultWelcome';
 import { DocsVaultAuditModal } from './parts/DocsVaultAuditModal';
-import { DeleteDocDialog } from './parts/DeleteDocDialog';
-import { EmptyState } from './parts/EmptyState';
-import { NewDocKindDialog } from './parts/NewDocKindDialog';
-import { RenameDocDialog } from './parts/RenameDocDialog';
+import { DeleteDocDialog } from './parts/doc-actions/DeleteDocDialog';
+import { DocsVaultEmptyState } from './parts/welcome/DocsVaultEmptyState';
+import { NewDocKindDialog } from './parts/doc-actions/NewDocKindDialog';
+import { RenameDocDialog } from './parts/doc-actions/RenameDocDialog';
 
 function DocsVaultContent({
   initialCollection,
@@ -628,7 +628,7 @@ function DocsVaultContent({
               </div>
             </div>
           ) : (
-            <EmptyState
+            <DocsVaultEmptyState
               docCount={scopedDocs.length}
               onOpenAgentWorkflow={handleOpenAgentGraphWorkflowGuide}
               onOpenTree={() => setSourceTreeOpen(true)}

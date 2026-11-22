@@ -14,15 +14,15 @@ import {
   type VaultManifest,
 } from '@/entities/docs-vault';
 import { recordLocalFsHandleContents, verifyHandlePermission } from '@/entities/local-fs-handle';
-import { isTauriVaultRuntime } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { isTauriVaultRuntime } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import type { VaultChangeBatch, VaultPathChange } from '@/shared/lib/vault-folder/vault-change-batch';
-import { classifyVaultAccessError } from '../classify-vault-access-error';
+import { classifyVaultAccessError } from '../vault-opening/classify-vault-access-error';
 import { toErrorMessage } from '@/shared/lib/failures/error-message';
 import { codedFailure } from '@/shared/lib/failures/failure-code';
 import { AGENT_ACTIVITY_STALE_AFTER_MS, emptyAgentActivityStatus } from '../agent-activity-status';
 import { createAdaptivePoller, type PollCadenceConfig } from './poll-cadence';
-import { createVaultLoadProgressStore } from '../vault-load-progress';
-import { createVaultArrivalStore } from '../vault-arrival';
+import { createVaultLoadProgressStore } from '../vault-opening/vault-load-progress';
+import { createVaultArrivalStore } from '../vault-opening/vault-arrival';
 import {
   comparableAgentActivityStatus,
   structurallyEqualStatus,
@@ -217,7 +217,7 @@ export function useLocalVaultInternal() {
         /* The counts stay absent; the row says so. */
       }
       return { starterWritten, starterError };
-    } catch (err) {
+    } catch (error) {
       if (!isCurrent()) return null;
       lastBuildRef.current = null;
       lastFingerprintRef.current = null;
@@ -236,11 +236,11 @@ export function useLocalVaultInternal() {
         fileHandles: new Map(),
         imageHandles: new Map(),
     sourceHandles: new Map(),
-        errorMessage: toErrorMessage(err),
+        errorMessage: toErrorMessage(error),
         // A refusal by the operating system is not the same event as a broken folder, and sending
         // somebody to System Settings to fix a folder that is simply gone would be worse than vague.
         errorCode:
-          classifyVaultAccessError(err) === 'permission-denied' ? 'permission-denied' : 'access-failed',
+          classifyVaultAccessError(error) === 'permission-denied' ? 'permission-denied' : 'access-failed',
         lastLoadedAt: null,
         manifestHandle: null,
         partialTotal: 0,

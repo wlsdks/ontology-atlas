@@ -74,8 +74,8 @@ export function OntologyBootstrapForm({
   const canConfirm = (addingToMap || projectTitle.trim().length > 0) && pickedCount > 0 && !busy;
 
   const toggleDomain = (name: string) => {
-    setAccepted((prev) => {
-      const next = new Set(prev);
+    setAccepted((previous) => {
+      const next = new Set(previous);
       if (next.has(name)) next.delete(name);
       else next.add(name);
       return next;
@@ -88,8 +88,8 @@ export function OntologyBootstrapForm({
     setError(null);
     try {
       await onConfirm({ projectTitle: projectTitle.trim() || plan.projectTitle, acceptedDomains: accepted });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : String(caughtError));
       setBusy(false);
     }
   };

@@ -3,7 +3,7 @@ export type {
   VaultManifest,
   VaultSourceFile,
   VaultTreeNode,
-} from './model/types';
+} from './model/vault-manifest';
 // The bundled samples are built by `scripts/docs-vault/build-docs-vault.mjs` from `docs/ontology/`
 // and `samples/storefront/`. The browser reads them through the loader; only build-time callers
 // and `/download` take the synchronous resolver, whose static JSON imports a screen must not reach.
@@ -15,7 +15,7 @@ export { dogfoodManifest } from './lib/bundled-vault/dogfood-manifest';
 export { DOGFOOD_AGENT_SLUG_PREFIX } from './lib/bundled-vault/dogfood-slug-prefix';
 export { bundledSamples } from './lib/bundled-vault/load-static-vault-source';
 export {
-  loadStaticVaultHeadings,
+  importStaticVaultHeadings,
   type StaticVaultHeadings,
 } from './lib/bundled-vault/static-headings';
 export { deriveDocumentDetail, type DocumentRef, type VaultDocDetail } from './store/document-detail';
@@ -42,28 +42,27 @@ export type {
 export type { BuiltVaultEntry } from './lib/local-manifest/md-entry';
 export { VAULT_SOURCES_DIR } from './lib/local-manifest/walk-vault';
 export { createSourceCopyBatch } from './lib/library/source-copy-publication';
-export {
-  buildLibraryModel,
-  createLibraryModelBuilder,
-  selectWikiPages,
-  countWikiPages,
-  countSourceFormats,
-  formatSourceBytes,
-  isWikiPage,
-  newestWikiPage,
-  sourceNeedsCompile,
-} from './lib/library/vault-library';
-export type {
-  LibraryModel,
-  LibraryOriginalLink,
-  LibrarySourceRow,
-  LibraryWikiPage,
-  LibraryWriteUpLink,
-} from './lib/library/vault-library';
+export { buildLibraryModel, createLibraryModelBuilder, sourceNeedsCompile } from './lib/library/vault-library';
+export type { LibraryModel, LibraryOriginalLink, LibrarySourceRow, LibraryWriteUpLink } from './lib/library/vault-library';
+export { countWikiPages, isWikiPage, newestWikiPage, selectWikiPages } from './lib/library/wiki-page-facts';
+export type { LibraryWikiPage } from './lib/library/wiki-page-facts';
+export { countSourceFormats, formatSourceBytes } from './lib/library/source-list-summary';
 export { deriveSourceProgress, recordedInstantMs, recordedLocalDay } from './lib/library/source-progress';
 export type { SourceProgress, SourceProgressPoint } from './lib/library/source-progress';
-export { candidateKey, discoverCandidatesInHandle } from './lib/library/source-discovery';
-export type { SourceCandidate, SourceDiscoveryReport } from './lib/library/source-discovery';
+export {
+  candidateKey,
+  discoverCandidatesInHandle,
+  discoverySkipReason,
+  walkDroppedFolder,
+  withoutVaultOwnedMarkdown,
+} from './lib/library/source-discovery';
+export { sourceFolderOf } from './lib/library/source-folder';
+export type {
+  DiscoverySkipReason,
+  DroppedEntry,
+  SourceCandidate,
+  SourceDiscoveryReport,
+} from './lib/library/source-discovery';
 export {
   buildProjectMarkdown,
   projectToFrontmatter,

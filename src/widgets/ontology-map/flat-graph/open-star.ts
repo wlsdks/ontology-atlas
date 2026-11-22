@@ -1,5 +1,5 @@
-import type { DialModel, Point } from "../dial/types";
-import type { FlatGraphLayout, FlatGraphPaintTokens } from "./types";
+import type { DialModel, Point } from "../dial/dial-shapes";
+import type { FlatGraphLayout, FlatGraphPaintTokens } from "./flat-graph-shapes";
 
 export type OpenKind = "capability" | "element";
 

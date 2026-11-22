@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 
 import { expect, test, type Page } from "@playwright/test";
 
-import type { VectorStatus } from "../../../src/shared/lib/vault-folder/tauri-vault-vectors";
+import type { VectorStatus } from "../../../src/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors";
 import { seedFirstRunSeen } from "../first-run-seed";
 import { goToMap, harnessCalls, rail, startCheck } from "../library/library-check-run-fixture";
 import {

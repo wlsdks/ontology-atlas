@@ -95,7 +95,7 @@ export type ConnectorProblem =
 
 /**
  * `command-not-absolute`: the agent's spawned connectors inherit an environment without `PATH`
- * (`SHARED_RUNTIME_ENV` in `src-tauri/src/acp/runtime_environment.rs`), so a bare `npx` silently
+ * (`SHARED_RUNTIME_ENV` in `src-tauri/src/acp/launch/runtime_environment.rs`), so a bare `npx` silently
  * attaches no tools.
  */
 export function connectorProblems(

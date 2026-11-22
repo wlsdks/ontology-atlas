@@ -5,15 +5,15 @@ import { useLocale, useTranslations } from 'next-intl';
 import { forgetChoices, remove as removeVectors, removeModel, useVectorStatus } from '@/features/vault-vectors';
 import { formatSize } from '@/shared/lib/format-size';
 import { useLocalVault } from '@/entities/vault-session';
-import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import {
   clearVaultIndex,
   syncVaultIndex,
   vaultIndexPreference,
   vaultIndexStatus,
   type VaultIndexStatus,
-} from '@/shared/lib/vault-folder/tauri-vault-index';
-import { probeVectors } from '@/shared/lib/vault-folder/tauri-vault-vectors';
+} from '@/shared/lib/vault-folder/vault-index/tauri-vault-index';
+import { probeVectors } from '@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors';
 import { ArmedChip, SegmentSwitch, SettingsGroup, SettingsRow } from '../settings-primitives';
 
 const BUILDING_POLL_MS = 1000;

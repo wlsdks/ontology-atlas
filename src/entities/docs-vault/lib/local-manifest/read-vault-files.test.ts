@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const readTauriVaultTextFile = vi.fn();
 const readTauriVaultTextFiles = vi.fn();
-vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-files', () => ({
   readTauriVaultTextFile: (...args: unknown[]) => readTauriVaultTextFile(...args),
   readTauriVaultTextFiles: (...args: unknown[]) => readTauriVaultTextFiles(...args),
 }));

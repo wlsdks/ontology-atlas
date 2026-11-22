@@ -57,11 +57,11 @@ async function dragNode(page, box, target, moves) {
     if (!window.__wrapped) {
       window.__wrapped = true;
       const raf = window.requestAnimationFrame.bind(window);
-      window.requestAnimationFrame = (fn) =>
+      window.requestAnimationFrame = (callback) =>
         raf((t) => {
           const s = performance.now();
           try {
-            fn(t);
+            callback(t);
           } finally {
             window.__work.push(performance.now() - s);
           }

@@ -11,7 +11,7 @@ import { useLocalVault } from "@/entities/vault-session";
 import type { RoundsRunnerValue } from "@/features/library-rounds";
 import { isScheduledActive, useAutomationsStage, useScheduledRuns } from "@/features/work-run";
 import { useRouter } from "@/i18n/navigation";
-import { isTauriVaultRuntime } from "@/shared/lib/vault-folder/tauri-vault-fs";
+import { isTauriVaultRuntime } from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
 import { cn } from "@/shared/lib/cn";
 import { usePanelPresence } from "@/shared/lib/render-timing/use-presence";
 import { usePrefersReducedMotion } from "@/shared/lib/render-timing/use-prefers-reduced-motion";
@@ -24,7 +24,7 @@ import { BrandPortrait } from "@/shared/ui/marks/moru/brand-portrait";
 
 import { PAGE_FRAME_FORM, PAGE_LEDE, PAGE_STAGE_FILL, PAGE_WAIT_LIFT } from "@/shared/ui/tokens/page-frame";
 import { AutomationScheduleRow } from "./AutomationScheduleRow";
-import { AutomationLaneFacts, AutomationListPanel } from "./AutomationListFrame";
+import { AutomationLaneFacts, AutomationListPanel } from "./automation-list-layout";
 import { AutomationHistoryHeading, AutomationRunHistory, AutomationUnrecorded } from "./AutomationRunHistory";
 import { AUTOMATIONS_RUNNING_ID } from "./AutomationScheduleActions";
 import { AutomationScheduleArtwork } from "./AutomationScheduleArtwork";

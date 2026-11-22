@@ -4,7 +4,7 @@ import "../../atlas-map-probe";
 import { seedFirstRunSeen } from "../../first-run-seed";
 import { useDogfoodSample } from "../../sample-source";
 import { waitForMapSettled, waitForMapStill } from "../../settle";
-import type { DialProbe } from "../../../../src/widgets/ontology-map/dial/types";
+import type { DialProbe } from "../../../../src/widgets/ontology-map/dial/dial-shapes";
 
 const IDLE_QUIET_MS = 3_000;
 const PAN_STEPS = 40;

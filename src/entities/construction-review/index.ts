@@ -2,4 +2,4 @@ export { parseConstructionReviewEnvelope } from "./lib/parse-construction-review
 export type {
   ConstructionEnvelopeState,
   ConstructionReviewProjection,
-} from "./model/types";
+} from "./model/construction-review";

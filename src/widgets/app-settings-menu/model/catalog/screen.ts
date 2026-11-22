@@ -1,4 +1,4 @@
-import type { SettingsCatalogEntry } from './types';
+import type { SettingsCatalogEntry } from './settings-catalog-entry';
 
 export const SCREEN_CATALOG: readonly SettingsCatalogEntry[] = [
   { id: 'language', section: 'screen', labelKey: 'settingsScreen.languageLabel', surface: 'both' },

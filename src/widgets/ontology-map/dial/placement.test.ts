@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import en from "../../../../messages/en/mapDial.json";
 import ko from "../../../../messages/ko/mapDial.json";
 import { capabilityTierRead, createDialPlacement, dialPlacementLine } from "./placement";
-import type { DialDomain, DialMemory, DialModel } from "./types";
+import type { DialDomain, DialMemory, DialModel } from "./dial-shapes";
 
 function model(dependents: Record<string, number>): DialModel {
   const domains: DialDomain[] = Object.keys(dependents).map((id) => ({ id, label: id, capabilityIds: [], directElementIds: [], elementCount: 0 }));

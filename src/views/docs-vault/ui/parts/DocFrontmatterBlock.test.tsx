@@ -252,7 +252,7 @@ describe("DocFrontmatterBlock", () => {
     );
     const row = screen
       .getAllByTestId("doc-frontmatter-issue")
-      .find((el) => el.getAttribute("data-issue-code") === "dangling-graph-reference");
+      .find((element) => element.getAttribute("data-issue-code") === "dangling-graph-reference");
     expect(row).toBeDefined();
     expect(row).toHaveAttribute("data-severity", "warning");
     expect(row).toHaveTextContent("capabilities/qa-probe-delete-me");
@@ -313,13 +313,13 @@ describe("DocFrontmatterBlock", () => {
       </NextIntlClientProvider>,
     );
     const rows = screen.getAllByTestId("doc-frontmatter-issue");
-    const row = rows.find((el) => el.getAttribute("data-issue-code") === "kind-list-mismatch");
+    const row = rows.find((element) => element.getAttribute("data-issue-code") === "kind-list-mismatch");
     expect(row).toBeDefined();
     expect(row).toHaveAttribute("data-severity", "warning");
     expect(row).toHaveTextContent("elements/companion-memories (Element, in capabilities)");
     expect(row?.textContent).not.toContain("agent-work-visibility");
     expect(row?.textContent).not.toContain("map-camera");
-    expect(rows.some((el) => el.getAttribute("data-issue-code") === "dangling-graph-reference")).toBe(false);
+    expect(rows.some((element) => element.getAttribute("data-issue-code") === "dangling-graph-reference")).toBe(false);
   });
 
   it("names, before Save, each document whose list a kind change moves or leaves", () => {

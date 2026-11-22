@@ -1,8 +1,8 @@
 import type { Metadata, Viewport } from 'next';
 import { LangBootScript, JsonLd, WebviewErrorReporter } from '@/shared/ui';
 import { SITE_URL } from '@/shared/config';
-import { SITE_NAME, siteEntityGraph } from '@/shared/config/site-entity';
-import { WEB_CONTENT_SECURITY_POLICY } from '@/shared/config/web-content-security-policy';
+import { SITE_NAME, siteEntityGraph } from '@/shared/config/site/site-entity';
+import { WEB_CONTENT_SECURITY_POLICY } from '@/shared/config/site/web-content-security-policy';
 import { jetbrainsMono, pretendard, pretendardLatinStack } from '@/shared/config/fonts';
 import { LOCALE_META } from '@/i18n/locales';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';

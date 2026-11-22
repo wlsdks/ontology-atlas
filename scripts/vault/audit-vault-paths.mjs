@@ -81,12 +81,12 @@ if (!statSync(REPO).isDirectory()) {
   process.exit(2);
 }
 
-function walkMd(dir, out = [], root = dir) {
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+function walkMd(directory, out = [], root = directory) {
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
     if (entry.name.startsWith(".")) continue;
-    const full = join(dir, entry.name);
+    const full = join(directory, entry.name);
     if (entry.isDirectory()) {
-      if (dir !== root || entry.name !== VAULT_SOURCES_DIR) walkMd(full, out, root);
+      if (directory !== root || entry.name !== VAULT_SOURCES_DIR) walkMd(full, out, root);
     } else if (entry.isFile() && entry.name.endsWith(".md")) out.push(full);
   }
   return out;

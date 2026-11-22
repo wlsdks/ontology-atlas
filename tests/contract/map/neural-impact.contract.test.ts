@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { resolveStaticVaultSource } from "@/entities/docs-vault";
 import { deriveOntologyFromVault } from "@/entities/docs-vault/lib/derive-ontology-from-vault";
-import type { VaultDoc, VaultManifest } from "@/entities/docs-vault/model/types";
+import type { VaultDoc, VaultManifest } from "@/entities/docs-vault/model/vault-manifest";
 import { derivationToInsight } from "@/features/vault-ontology/model/use-ontology-insight";
 import { buildOntologyMapGraph } from "@/views/home/lib/map-canvas/map-adapter";
 import { neuralImpactOfMapEdges } from "@/widgets/ontology-map";

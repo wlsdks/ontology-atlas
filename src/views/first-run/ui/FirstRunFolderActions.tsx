@@ -1,18 +1,20 @@
 'use client';
 
 import { useEffect, type RefObject } from 'react';
-import { ChevronDown, FolderOpen, FolderPlus } from 'lucide-react';
+import { FolderOpen, FolderPlus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useDismissibleMenu } from '@/shared/lib/overlays/use-dismissible-menu';
 import { Button, RowButton, Surface } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
+/** Returning users choose a folder; the ways to create one wait in a popover under one plain button. */
 export function FirstRunFolderActions({ busy, showJustStart, onOpen, onCreate, onCodeProject, trigger }: {
   trigger: RefObject<HTMLButtonElement | null>;
   busy: boolean;
   showJustStart: boolean;
   onOpen: () => void;
   onCreate: (kind: 'just-start' | 'create') => void;
+  /** Starts the project picker; the path is confirmed in a dialog before anything is written. */
   onCodeProject: () => void;
 }) {
   const t = useTranslations('vaultSwitch.choose');
@@ -44,7 +46,6 @@ export function FirstRunFolderActions({ busy, showJustStart, onOpen, onCreate, o
           data-testid="first-run-create-menu">
           <FolderPlus size={ICON_SIZE.sm} aria-hidden />
           {t('createAction')}
-          <ChevronDown size={ICON_SIZE.sm} aria-hidden />
         </Button>
         <Surface open={open} className="absolute left-0 top-full z-20 mt-2 w-64 max-w-full origin-top-left rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-2 shadow-[var(--shadow-elevation-2)] sm:right-0 sm:left-auto sm:origin-top-right">
           <div id="first-run-create-options" className="grid gap-1">

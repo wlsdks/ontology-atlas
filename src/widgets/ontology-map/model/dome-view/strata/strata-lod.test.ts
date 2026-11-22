@@ -4,7 +4,7 @@ import { DOME_ASSEMBLE_TOTAL_MS, updateDomeFrame } from "../frame";
 import { DOME_NODE_PX } from "../ink";
 import { buildDomeModel } from "../model-build";
 import { createDomeRuntime, type DomeRuntime } from "../runtime";
-import type { DomeViewKind } from "../types";
+import type { DomeViewKind } from "../dome-shapes";
 import {
   buildStrataLodIndex,
   createStrataLodChords,

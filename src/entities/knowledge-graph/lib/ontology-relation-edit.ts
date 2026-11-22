@@ -17,7 +17,7 @@ const RELATION_FRONTMATTER_KEY: Record<MeaningEditRelation, string> = {
   relates: 'relates',
 };
 
-/** Spellings the read layer folds into a key (`NEIGHBOR_KEY_ALIASES` in `mcp/src/vault/relation-refs.mjs`). */
+/** Spellings the read layer folds into a key (`NEIGHBOR_KEY_ALIASES` in `mcp/src/vault/graph/relation-refs.mjs`). */
 const KEY_ALIASES: Readonly<Record<string, readonly string[]>> = {
   dependencies: ['depends_on'],
 };

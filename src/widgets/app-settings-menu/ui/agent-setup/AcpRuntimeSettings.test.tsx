@@ -278,7 +278,7 @@ describe('runtime list: what the app cannot block', () => {
       const row = screen.getByTestId(`app-settings-runtime-${id}`);
       // The only visible badge is the state.
       const visible = [...row.querySelectorAll('[data-runtime-state], [data-runtime-guarded]')];
-      expect(visible.map((el) => el.getAttribute('data-runtime-state')), id).toEqual(['ready']);
+      expect(visible.map((element) => element.getAttribute('data-runtime-state')), id).toEqual(['ready']);
     }
   });
 

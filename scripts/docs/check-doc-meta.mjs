@@ -33,10 +33,10 @@ export const MIN_CHECKED = 40;
 
 export function listLivingDocs(root = ROOT) {
   const found = [];
-  const walk = (dir) => {
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+  const walk = (directory) => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
       if (entry.name.startsWith('.')) continue;
-      const full = path.join(dir, entry.name);
+      const full = path.join(directory, entry.name);
       if (entry.isDirectory()) walk(full);
       else if (entry.name.endsWith('.md')) {
         const repoPath = path.relative(root, full).split(path.sep).join('/');
@@ -69,25 +69,25 @@ export function routeExists(route, root = ROOT) {
 }
 
 function routeExistsUnder(localeRoot, segments) {
-  let dir = localeRoot;
+  let directory = localeRoot;
   for (const segment of segments) {
-    const exact = path.join(dir, segment);
+    const exact = path.join(directory, segment);
     if (existsSync(exact)) {
-      dir = exact;
+      directory = exact;
       continue;
     }
-    const dynamic = existsSync(dir)
-      ? readdirSync(dir, { withFileTypes: true }).find((entry) => entry.isDirectory() && /^\[.+\]$/.test(entry.name))
+    const dynamic = existsSync(directory)
+      ? readdirSync(directory, { withFileTypes: true }).find((entry) => entry.isDirectory() && /^\[.+\]$/.test(entry.name))
       : null;
     if (!dynamic) return false;
-    dir = path.join(dir, dynamic.name);
+    directory = path.join(directory, dynamic.name);
   }
-  return existsSync(path.join(dir, 'page.tsx'));
+  return existsSync(path.join(directory, 'page.tsx'));
 }
 
 function decisionIds(root) {
-  const dir = path.join(root, 'docs', 'records', 'decisions');
-  return existsSync(dir) ? readdirSync(dir).filter((name) => name.endsWith('.md')) : [];
+  const directory = path.join(root, 'docs', 'records', 'decisions');
+  return existsSync(directory) ? readdirSync(directory).filter((name) => name.endsWith('.md')) : [];
 }
 
 function asList(value) {
@@ -241,18 +241,18 @@ const HISTORY_PREFIX = 'docs/history/';
  */
 export function isInstructionPath(repoPath) {
   return (
-    ['AGENTS.md', 'CLAUDE.md', 'docs/README.md'].includes(repoPath) ||
+    ['AGENTS.md', 'docs/README.md'].includes(repoPath) ||
     /^\.claude\/(rules|skills|agents)\/.+\.md$/.test(repoPath) ||
     /^\.(agents|codex)\/.+\.md$/.test(repoPath)
   );
 }
 
-function walkMarkdown(root, dir, out) {
-  const full = path.join(root, dir);
+function walkMarkdown(root, directory, out) {
+  const full = path.join(root, directory);
   if (!existsSync(full)) return out;
   for (const entry of readdirSync(full, { withFileTypes: true })) {
     if (entry.name === 'node_modules') continue;
-    const child = dir ? `${dir}/${entry.name}` : entry.name;
+    const child = directory ? `${directory}/${entry.name}` : entry.name;
     if (entry.isDirectory()) walkMarkdown(root, child, out);
     else if (entry.name.endsWith('.md')) out.push(child);
   }
@@ -260,12 +260,12 @@ function walkMarkdown(root, dir, out) {
 }
 
 export function citedPaths(repoPath, raw) {
-  const dir = path.posix.dirname(repoPath);
+  const directory = path.posix.dirname(repoPath);
   const cited = new Set();
   const add = (target, relative) => {
     const clean = target.split('#')[0].split('?')[0];
     if (!clean || isExternalTarget(clean) || clean.startsWith('/')) return;
-    const resolved = relative ? path.posix.normalize(path.posix.join(dir, clean)) : path.posix.normalize(clean);
+    const resolved = relative ? path.posix.normalize(path.posix.join(directory, clean)) : path.posix.normalize(clean);
     if (!resolved.startsWith('..')) cited.add(resolved);
   };
   for (const { target } of collectMarkdownLinks(raw)) add(target, true);
@@ -295,9 +295,9 @@ export function citationProblems(root = ROOT) {
     return statusCache.get(repoPath);
   };
   const sources = [
-    ...['AGENTS.md', 'CLAUDE.md'].filter((file) => existsSync(path.join(root, file))),
+    ...['AGENTS.md'].filter((file) => existsSync(path.join(root, file))),
     ...walkMarkdown(root, 'docs', []),
-    ...['.claude/rules', '.claude/skills', '.claude/agents', '.agents', '.codex'].flatMap((dir) => walkMarkdown(root, dir, [])),
+    ...['.claude/rules', '.claude/skills', '.claude/agents', '.agents', '.codex'].flatMap((directory) => walkMarkdown(root, directory, [])),
   ];
   const problems = [];
   for (const repoPath of [...new Set(sources)].sort()) {

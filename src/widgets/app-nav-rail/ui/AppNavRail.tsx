@@ -14,6 +14,7 @@ import {
   CalendarClock,
   Download,
   FolderKanban,
+  GitFork,
   // Aliased: a bare `History` can resolve to the DOM History constructor under some HMR states.
   History as HistoryIcon,
   Library,
@@ -33,7 +34,7 @@ import {
 } from "@/shared/ui/routing/route-focus-manager";
 import { resolveActiveNavRailItem, type AppNavRailItemId } from "../lib/resolve-active-item";
 import { shouldShowGetAppTile } from "@/shared/lib/navigation/show-get-app-tile";
-import { isTauriVaultRuntime } from "@/shared/lib/vault-folder/tauri-vault-fs";
+import { isTauriVaultRuntime } from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
 
 /** The runtime never changes after load, so subscribing is a formality — a no-op. */
 const subscribeToRuntime = () => () => {};
@@ -155,6 +156,7 @@ export function AppNavRail({
     },
     { id: "changes", href: DESTINATION_HREF.changes, label: t("changes"), Icon: Newspaper },
     { id: "git", href: DESTINATION_HREF.git, label: t("git"), Icon: HistoryIcon, badgeCount: gitDirtyCount },
+    { id: "workStatus", href: DESTINATION_HREF.workStatus, label: t("workStatus"), Icon: GitFork },
   ];
   const destinations = allDestinations.filter(
     (destination) => !visibleDestinations || visibleDestinations.has(destination.id),

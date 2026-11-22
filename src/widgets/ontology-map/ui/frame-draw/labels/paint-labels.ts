@@ -35,7 +35,8 @@ import {
 } from "../../../render/label-layout";
 import { isPreviewEndpoint, isPreviewEndpointHidden } from "../../../render/preview-edge";
 import { rankedDiscChildren, rankedEgoNeighbors } from "../../frame-cache/structure";
-import { radiusForKind, type WorldNode } from "../../world/topology-world";
+import { radiusForKind } from "../../world/geometry/node-radius";
+import { type WorldNode } from "../../world/topology-world";
 import { passState } from "../frame-state";
 import type { FrameInputs } from "../frame-begin";
 import type { FrameFocus } from "../frame-focus";
@@ -45,7 +46,7 @@ import type { NodeLayer } from "../nodes/node-layer";
 const LABEL_SIDE_GAP = 3;
 const labelScreenScratch = { x: 0, y: 0 };
 
-let prevPlacedLabelIds: ReadonlySet<string> = new Set();
+let previousPlacedLabelIds: ReadonlySet<string> = new Set();
 
 let lastLabelRampNow = 0;
 
@@ -279,7 +280,7 @@ export function paintLabels(frame: FrameInputs, focus: FrameFocus, alpha: NodeAl
     candidate.payload.baselineY = slot.baselineY;
     labelBboxById.set(nodeId, flipped);
   }
-  const placedResult = greedyPlaceLabels(placedLabelCandidates, (c) => prevPlacedLabelIds.has(c.payload.nodeId), chipReservations.length === 0 ? discIndex : [...chipReservations, ...nodeDiscReservations]);
+  const placedResult = greedyPlaceLabels(placedLabelCandidates, (c) => previousPlacedLabelIds.has(c.payload.nodeId), chipReservations.length === 0 ? discIndex : [...chipReservations, ...nodeDiscReservations]);
   for (const candidate of placedResult) {
     if (!candidate.usedAlt)
       continue;
@@ -304,10 +305,10 @@ export function paintLabels(frame: FrameInputs, focus: FrameFocus, alpha: NodeAl
       const id = candidate.payload.nodeId;
       onScreenIds.add(id);
       const target = placedIds.has(id) ? 1 : 0;
-      const prev = presenceById.get(id) ?? (target === 1 && prevPlacedLabelIds.has(id) ? 1 : 0);
+      const previous = presenceById.get(id) ?? (target === 1 && previousPlacedLabelIds.has(id) ? 1 : 0);
       const next = reducedMotion
         ? target
-        : Math.min(1, Math.max(0, prev + (target === 1 ? stepPer : -stepPer)));
+        : Math.min(1, Math.max(0, previous + (target === 1 ? stepPer : -stepPer)));
       presenceById.set(id, next);
       if (next > 0.02)
         drawList.push({ payload: candidate.payload, presenceAlpha: next });
@@ -323,7 +324,7 @@ export function paintLabels(frame: FrameInputs, focus: FrameFocus, alpha: NodeAl
   if (domeOn) {
     drawList = filterFadingLabelCollisions(drawList, entry => placedIds.has(entry.payload.nodeId), entry => labelBboxById.get(entry.payload.nodeId));
   }
-  prevPlacedLabelIds = placedIds;
+  previousPlacedLabelIds = placedIds;
   if (domeOn)
     drawList.sort((a, b) => b.payload.depthU - a.payload.depthU);
   passState.drawnLabelBoxes = [];

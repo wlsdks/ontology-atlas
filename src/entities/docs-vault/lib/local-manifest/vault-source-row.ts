@@ -1,4 +1,4 @@
-import type { VaultSourceFile } from '../../model/types';
+import type { VaultSourceFile } from '../../model/vault-manifest';
 import type { BuiltVaultEntry } from './md-entry';
 import { nameOf } from './vault-paths';
 

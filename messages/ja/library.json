@@ -262,13 +262,12 @@
       "error": "要対応"
     },
     "complete": {
-      "read": "読み込み済み",
-      "proposal": "書き込みを提案",
-      "waiting": "許可を要求",
-      "write": "ファイルを変更",
-      "error": "失敗"
-    },
-    "recentCount": "最近{count, number}"
+      "read": "ファイルを読み込みました",
+      "proposal": "書き込みが提案されました",
+      "waiting": "許可が求められました",
+      "write": "{count, plural, =1 {Wikiページが変更されました} other {Wikiページ#件が変更されました}}",
+      "error": "失敗しました"
+    }
   },
   "eyebrow": "このフォルダ",
   "lede": "形式を問わず集めた文書と、それを読んで書いたWikiページです。資料は受け取ったままの状態で保持され、Wikiページの主張はどれも資料を引用します。",
@@ -281,23 +280,95 @@
     "collapse": "索引を隠す",
     "expand": "索引を表示"
   },
-  "emptyTitle": "資料もWikiもまだありません",
-  "emptyBody": "すでにある文書を取り込みましょう。企画書、スライド、表、書き出したページなど何でも構いません。「sources/」にそのままコピーし、依頼するまで開きません。",
-  "emptyFoundBody": "取り込める文書を{count, number}件見つけました。名前と形式だけを読み、選んだものだけを「sources/」にコピーします。",
-  "emptyFoundAction": "見つけた文書{count, number}件を見る",
+  "start": {
+    "title": "手元にある資料を追加してください",
+    "body": "{agent}が資料を読んでWikiページを書きます。Wikiページの文ごとに、どの資料から来たかが書かれます。",
+    "agentFallback": "コーディングエージェント",
+    "bodyWikiOnly": "このフォルダにはWikiページがありますが、資料はまだありません。Wikiページのもとになった文書を追加すると、文ごとにどの資料から来たかを書けます。",
+    "where": "資料室には「{folder}」フォルダ内のsourcesフォルダにあるファイルだけが表示されます。{fileManagerName}で直接入れることもできます。",
+    "whereWeb": "資料室には「{folder}」フォルダ内のsourcesフォルダにあるファイルだけが表示されます。",
+    "copyNote": "sourcesフォルダの外にあるファイルはコピーして追加します。元のファイルは移動も削除もしません。",
+    "reveal": "{fileManager, select, finder {Finderで表示} explorer {エクスプローラーで表示} other {ファイルマネージャーで表示}}",
+    "fileManagerName": "{fileManager, select, finder {Finder} explorer {エクスプローラー} other {ファイルマネージャー}}",
+    "privacy": "Atlasは資料をどこにも送らず、エージェントに任せた作業だけがそのエージェントのサービスを通ります。",
+    "noAgent": "コーディングエージェントがまだ接続されていません。資料は今追加して、エージェントは後で接続できます。",
+    "noAgentLink": "エージェントを接続",
+    "web": "ブラウザでは資料の追加と閲覧ができます。Wikiページの作成にはAtlasアプリが必要です。",
+    "drop": {
+      "title": "ファイルやフォルダをドロップするとsourcesフォルダにコピーします",
+      "or": "または",
+      "formats": "PDF、Word、Excel、PowerPoint、テキストなど、どの形式でも変更せずにそのままコピーします。",
+      "over": "ドロップするとsourcesフォルダにコピーします",
+      "copying": "sourcesフォルダにコピー中 · {done, number}/{total, number}",
+      "failed": "{count, number}件をコピーできませんでした：{reason}。もう一度ドロップするか、「ファイルを追加」を押してください。",
+      "failedNames": "コピーできなかったファイル：{names}"
+    },
+    "found": {
+      "title": "「{folders}」にすでにあるファイル{count, number}件",
+      "basis": "ファイル名・形式・サイズだけで選びました。ファイルの中身は開いていません。",
+      "more": "{count, number}件すべて表示",
+      "hide": "この提案を隠す",
+      "hidden": "隠しました。「フォルダ内の文書を探す」でもう一度表示できます。"
+    }
+  },
+  "found": {
+    "title": "文書が{count, number}件見つかりました",
+    "titleTruncated": "文書が{count, number}件以上見つかりました",
+    "where": "「{folder}」フォルダ内、sourcesフォルダの外 · ファイル名・形式・サイズだけで探しました · {folderCounts}",
+    "folderCount": "{folder} {count, number}",
+    "copyAll": "{count, plural, =1 {sourcesフォルダにコピー} other {#件すべてsourcesフォルダにコピー}}",
+    "choose": "コピーするファイルを選ぶ"
+  },
+  "drop": {
+    "confirmLarge": "{count, plural, other {#件のファイル（{size}）をsourcesフォルダにコピーしますか？}}元のファイルはそのまま残ります。",
+    "confirm": "コピー",
+    "cancel": "キャンセル",
+    "stop": "コピーを止める",
+    "stopped": "{count, plural, =0 {コピーを止めました。コピーしたファイルはありません。} other {コピーを止めました。それまでにコピーした#件はsourcesフォルダに残っています。}}",
+    "skipped": "{count, number}件はコピーしませんでした",
+    "skippedReasons": {
+      "same": "追加済みの資料と同じファイル",
+      "notDocument": "文書ではないファイル（画像、プログラムファイルなど）",
+      "secretName": "パスワードや鍵のファイルに見える名前",
+      "licence": "ライセンス・告知ファイル"
+    },
+    "reasonCount": "{reason}：{count, number}件",
+    "skippedShow": "コピーしなかったファイルを表示",
+    "truncated": "フォルダ内のファイルは最初の{count, number}件だけを一覧にしました。残りは別にドロップしてください。",
+    "busy": "まだコピー中です。終わってからもう一度ドロップしてください。",
+    "holdsOpenFolder": "「{names}」は開いているフォルダそのもの、またはそれを含むフォルダなので、コピーしませんでした。開いているフォルダの文書は上のコピーボタンで追加してください。",
+    "skippedUnlisted": "ここに載せていないものがほかに{count, number}件あります",
+    "failureReasons": {
+      "sourceChanged": "ドロップした後にファイルが変わりました",
+      "sourceMissing": "ファイルがその場所にありません",
+      "sourceUnreadable": "ファイルを読み取れません",
+      "notOffered": "後からドロップしたファイルがこの一覧に置き換わりました",
+      "destination": "sourcesフォルダに書き込めません",
+      "permission": "権限がありません",
+      "diskFull": "ディスクの空き容量が足りません",
+      "nameLimit": "そのフォルダに同じ名前のファイルが多すぎます",
+      "unusableName": "使えないファイル名です",
+      "busy": "別のコピーが進行中でした",
+      "other": "コピー中に問題が起きました"
+    }
+  },
+  "usage": {
+    "where": "資料室の資料はすべて「{folder}」フォルダ内のsourcesフォルダにあるファイルです。{fileManagerName}で追加や削除をすると、資料室にもそのまま反映されます。",
+    "copy": "「ファイルを追加」、ドラッグ＆ドロップ、「すべてコピー」は、ファイルをsourcesフォルダにコピーします。元のフォルダ構成はそのまま保たれ、元のファイルは移動も削除もしません。",
+    "read": "Atlasは資料をどこにも送りません。Wikiページの作成や質問をエージェントに任せたときだけ、そのエージェントが資料を読み、読んだ内容はそのエージェントのサービスに送られることがあります。"
+  },
   "stageTitle": "手元の文書を、出典を引用するWikiに",
   "stageBody": "フォルダを開いてファイルを追加しましょう。資料はそのまま保持され、資料ごとに、すべての主張が元のファイルを引用するWikiページが1つできます。",
   "sources": {
     "listAria": "このフォルダの資料",
     "add": "ファイルを追加",
     "addTooltip": "文書をこのフォルダの「sources/」にコピーします",
-    "find": "文書を探す",
+    "find": "フォルダ内の文書を探す",
     "findTooltip": "このフォルダと、接続したコードフォルダにある文書を候補として提示します。選ぶまでコピーはしません。",
     "empty": "資料はまだありません。すでにある文書を追加してください。形式は問わず、受け取ったままの状態で保持します。",
     "noFormat": "ファイル",
     "statesAria": "資料の状態：最も多い状態はここで1回だけ示し、例外だけが各行に残ります",
     "needsCompile": "Wikiページがまだないもの{count, number}件",
-    "dropHint": "または、Finderで{folder}の中に「sources/」フォルダを作ってファイルをドロップしてください。一覧は自動で更新されます。",
     "state": {
       "nobody": "なし",
       "not-compiled": {
@@ -325,17 +396,17 @@
         "hint": "Atlasがこのファイルを開いて確認できなかったため、数に入れていません。ディスクを再接続するか、ファイルの権限を確認してください。"
       }
     },
-    "added": "文書{count, number}件を「sources/」に追加しました",
+    "added": "資料を{count, number}件追加しました",
     "duplicate": "{count, number}件はすでにあります。内容が同じため、コピーしていません。",
     "failed": "{count, number}件をコピーできませんでした",
     "failedReason": "追加できませんでした：{reason}",
-    "revealFailed": "Finderで表示できませんでした：{reason}",
+    "revealFailed": "{fileManagerName}で表示できませんでした：{reason}",
     "openFailed": "そのファイルを開けませんでした。",
     "savedInstead": "{name}はこのページで開くとコードが実行される可能性がある種類のファイルなので、代わりにダウンロードしました。",
     "needsCompileSplit": "Wikiページがまだないもの{notCompiled, number}件 · 資料のバージョン確認が必要なもの{stale, number}件",
     "staleOnly": "要確認の資料のバージョン{count, number}件",
     "partialOnly": "一部のみ読み込み済み{count, number}件",
-    "import": "サービスから取り込む",
+    "import": "Notion・Jiraなどから取り込む",
     "importTooltip": "サービスを選んで接続し、このフォルダに取り込む文書を指定します",
     "importedToPlanning": "取り込んだ文書を企画フォルダに入れました",
     "openPlanning": "企画で開く",
@@ -346,9 +417,7 @@
   "wiki": {
     "listAria": "このフォルダのWikiページ",
     "compile": "Wikiページを作成",
-    "compileTooltip": "エージェントが資料を読み、Wikiページを書いたり更新したりします。保存した回答は別途レビューが必要だと知らせます。",
     "lint": "Wikiを検査",
-    "lintTooltip": "エージェントがWikiページを読み、食い違い、置き換えられた主張、欠けているリンク、ページのない名前を報告します。何も書き込みません。",
     "candidateKind": {
       "domain": "ドメイン",
       "capability": "ケイパビリティ",
@@ -361,21 +430,14 @@
     "propose": "概念として提案",
     "proposeTooltip": "エージェントがこれらのページを読み、オントロジーの概念を1つ提案します。書き込む前に許可を求めます。",
     "logLint": "前回の検査{when}：{summary}",
-    "empty": "Wikiページはまだありません。ページは、kind: のないMarkdownで、「wiki/_template.md」にある形式に従います。",
     "unknownAuthor": "不明",
-    "offTemplate": "テンプレート外",
-    "offTemplateCount": "テンプレートに合わないページ{count, number}件",
     "transfer": "コーディングエージェントはプロバイダに直接リクエストを送り、Atlasはその通信を記録しません。テンプレートに合うWikiページは自動で保存できますが、保存した回答には必ず別途レビューが必要です。",
     "compileFailed": "エージェントを起動できませんでした：{reason}",
-    "compileWebLimit": "Wikiページを書くには、このコンピュータで動くコーディングエージェントが必要で、起動できるのはアプリだけです。ページの閲覧と編集はここでも行えます。",
     "compileWebGetApp": "アプリを入手",
     "agentMissing": "コーディングエージェントを接続すると、Wikiの検査とWikiページの作成を任せられます。",
     "agentMissingDoor": "エージェントを接続",
-    "offTemplateReason": "Wikiのテンプレートに合っていません：{code}。ページを開いて、直す箇所を確認してください。",
     "offTemplateAriaLabel": "このページとWikiテンプレートの違い",
     "offTemplateTitle": "修正が必要な箇所{count, number}件 · ページテンプレート",
-    "offTemplateBody": "以下を直すと、ほかのページと同じ形で読めるようになります。",
-    "writtenBy": "作成者：{author}",
     "writer": {
       "human": "人",
       "agent": "{name}（エージェント）",
@@ -390,7 +452,7 @@
     "compileModifyFile": "{path}を置き換え",
     "logCount": {
       "disagreement": "食い違い{count, number}件",
-      "superseded": "置き換え{count, number}件",
+      "superseded": "新しい資料と違う{count, number}件",
       "missingLink": "欠けているリンク{count, number}件",
       "nameWithoutPage": "ページのない名前{count, number}件"
     },
@@ -398,8 +460,6 @@
     "logNew": "新規",
     "logRevised": "改訂",
     "logNothingNew": "新しいものなし",
-    "emptyNoTemplate": "Wikiページはまだなく、テンプレートもありません。設定 › オントロジーフォルダでWikiを始めると「wiki/_template.md」が作成され、ページはその形式に従います。",
-    "folderMark": "リンク",
     "candidatesMore": "ほか{count, number}件の名前",
     "candidatesLess": "名前を減らす",
     "candidatesTooltip": "前回の検査で3ページ以上に出てきたのに、専用のページがない名前です。マップの概念として提案できるのは、コードが作るもの（ドメイン、ケイパビリティ、要素）だけで、人物と組織はWikiに残ります。",
@@ -409,13 +469,12 @@
     "fileAnswerRejected": "保存しませんでした。回答がページの形式に合っていません（{code}）。引用を付けるよう頼んで、もう一度質問してください。",
     "findingKind": {
       "disagreement": "食い違い",
-      "superseded": "置き換えられた主張",
+      "superseded": "新しい資料と違う",
       "missingLink": "欠けているリンク"
     },
     "fix": "修正",
     "fixTooltip": "エージェントが、名前の挙がったページでこの項目を直します。食い違いは両方の値を両方の引用つきで、置き換えられた主張は現在の値を先頭に、欠けているリンクは双方向に書きます。",
     "newPage": "新規ページ",
-    "newPageTooltip": "自分で書くページを始めます。テンプレートのセクションとcreated_by: humanだけの空のページで、どのエディタで書いても一覧は自動で更新されます。",
     "newPageDialogTitle": "新規Wikiページ",
     "newPageDialogBody": "標準の構成を用意したMarkdownの下書きを作成します。",
     "newPageTitle": "ページのタイトル",
@@ -444,13 +503,13 @@
     "undoFailed": "元に戻せませんでした。ファイルがすでにないか、フォルダに書き込めません。",
     "linkFindingsAriaLabel": "このページがフォルダ内でどうつながっているか",
     "linkFindingsTitle": "確認が必要なつながり{count, number}件",
-    "linkFindingsBody": "このページはテンプレートに合っています。以下はフォルダについてのことで、1ページだけでは自分では気づけない点です。",
     "fixWithAgent": "エージェントで直す",
     "fixWithAgentTooltip": "エージェントがこのページをテンプレートに合わせて直します。直したページがテンプレートに合えばそのまま保存され、合わなければ保存の前に許可を求めます。",
     "fixWithAgentTooltipAsk": "エージェントがこのページをテンプレートに合わせて直します。書き込む前に許可を求めます。",
     "fixMyself": "自分で直す",
     "fixMyselfTooltip": "このページのファイルをFinderで選択します。どのエディタで直しても一覧に反映されます。",
     "technical": "技術的な詳細 · チェックコードと行番号",
+    "technicalOpen": "チェックコードを表示",
     "technicalNote": "wiki-validateコマンドとvalidate_wikiツールも、これと同じコードを報告します。",
     "technicalFile": "ファイル：{path}",
     "goToPlace": "{place}へ移動",
@@ -513,40 +572,34 @@
       },
       "dangling-wikilink": {
         "what": "{where}のリンクは{target}を指していますが、このフォルダにそのページはありません。",
-        "do": "存在するページにリンクするか、そのページを書いてください。"
+        "do": "存在するページにリンクするか、そのページを書いてください。",
+        "short": "{page}の{where}でリンクした{target}は、このフォルダにありません",
+        "shortDo": "存在するページにリンクするか、そのページを書いてください"
       },
       "orphan-page": {
         "what": "このページを指している別のページは、まだありません。",
-        "do": "その話題を扱っているページからリンクすると、見つけやすくなります。"
+        "do": "その話題を扱っているページからリンクすると、見つけやすくなります。",
+        "short": "{page}にリンクしているページはまだありません",
+        "shortDo": "同じ話題のページからリンクしてください"
       },
       "shared-source-unlinked": {
         "what": "{other}も同じ資料（{sources}）から書かれていますが、2つのページは互いを指していません。",
-        "do": "どちらか一方から、もう一方へリンクしてください。"
+        "do": "どちらか一方から、もう一方へリンクしてください。",
+        "short": "{page}と{other}は同じ資料（{sources}）を使っていますが、互いにリンクしていません",
+        "shortDo": "一方から他方へリンクしてください"
       },
       "shared-source-unlinked-more": {
-        "what": "同じ資料から書かれたページがほかに{count, number}件あり、どれもこのページと互いを指していません。",
-        "do": "同じ資料から書かれたページ同士をリンクしてください。"
+        "what": "同じ資料から書かれたページがほかに{count}件あり、どれもこのページと互いを指していません。",
+        "do": "同じ資料から書かれたページ同士をリンクしてください。",
+        "short": "{page}と同じ資料を使うページがほかに{count}件あり、互いにリンクしていません",
+        "shortDo": "同じ資料のページ同士をリンクしてください"
       }
     }
-  },
-  "shelf": {
-    "commonState": "{count, number}ページ · {state}",
-    "listAria": "Wikiページと資料のバージョン",
-    "freshness": {
-      "fresh": "確認済みの資料のバージョンに変更はありません。",
-      "stale": "資料が変更されたか、このページと照合されていません。",
-      "unverified": "このページをファイルと照合したことはありません"
-    },
-    "state": {
-      "fresh": "確認済みの資料に変更なし",
-      "stale": "資料の確認が必要",
-      "unverified": "資料未確認"
-    },
-    "compiling": "資料を読み直して、Wikiページを書いています。"
   },
   "home": {
     "guide": "使い方",
     "questions": "{count, plural, =0 {質問} other {質問#}}",
+    "openAnswer": "保存した回答を開く",
     "more": "その他",
     "compileNext": "Wikiページを作成：{source}",
     "staleClause": "変更された資料{count, number}件",
@@ -558,12 +611,12 @@
     "searchCount": "全{total, number}件中{visible, number}件 · {selected, number}件を選択",
     "noMatches": "一致するファイル名やパスはありません。",
     "clearSearch": "検索をクリア",
-    "title": "許可したフォルダ内の文書",
-    "preamble": "名前、形式、サイズだけを読みました。ファイルは開いていません。選ぶまでコピーはしません。",
+    "title": "「{folders}」で見つかった文書",
+    "preamble": "ファイル名・形式・サイズだけで選びました。「追加」を押すまで何もコピーしません。",
     "webLimit": "ここで読めるのは、開いているフォルダだけです。接続したコードフォルダはアプリでのみ読めます。",
     "walkedRoots": "あわせて読んだ場所：{roots}",
     "walking": "フォルダの一覧を読み込み中…",
-    "empty": "提案できるものはありません。これらのフォルダの文書はすべて「sources/」にあるか、Atlasが扱える文書形式のものがありません。",
+    "empty": "「{folders}」には文書に見えるファイルがありません。ライセンス・告知ファイル、ランダムな英数字の名前のファイル、ビルド・テストのファイル、空のファイル、public・output・buildなどのフォルダはスキップします。",
     "rootHeader": "{root} · {count, number}",
     "truncated": "一覧は最初の500件で止まっています。すべてではありません。",
     "unreadable": "読み取れませんでした：{roots}",
@@ -649,11 +702,11 @@
       "title": "読む",
       "startWith": "まず{title}から",
       "nothingYet": "Wikiページはまだありません。「Wikiページを作成」で最初のページを作ります。",
-      "coveredLine": "資料{total, number}件中{compiled, number}件にWikiページあり",
-      "coveredChecking": "資料{total, number}件中{compiled, number}件にWikiページあり · {checking, number}件を確認中",
-      "coveredPartial": "資料{total, number}件中{compiled, number}件にWikiページあり · {partial, number}件は一部のみ読み込み",
-      "coveredStale": "資料{total, number}件中{compiled, number}件にWikiページあり · {stale, number}件は資料が変更",
-      "coveredUnreadable": "資料{total, number}件中{compiled, number}件にWikiページあり · {unreadable, number}件は読み込めない"
+      "coveredLine": "資料{total, number}件中{compiled, number}件にWikiページがあります",
+      "coveredChecking": "資料{total, number}件中{compiled, number}件にWikiページがあります · {checking, number}件は確認中です",
+      "coveredPartial": "資料{total, number}件中{compiled, number}件にWikiページがあります · {partial, number}件は一部だけ読み込みました",
+      "coveredStale": "資料{total, number}件中{compiled, number}件にWikiページがあります · {stale, number}件は資料が変わりました",
+      "coveredUnreadable": "資料{total, number}件中{compiled, number}件にWikiページがあります · {unreadable, number}件は読み込めません"
     },
     "brainAgent": "{name}",
     "brainLocal": "{host}上の{model}",
@@ -731,7 +784,7 @@
   "report": {
     "title": "検査結果",
     "structuralTitle": "アプリの検査",
-    "structuralHead": "ページ{pages, number}件 · テンプレート外{offTemplate, number}件 · 指摘{findings, number}件",
+    "structuralHead": "ページ{pages, number}件 · テンプレートに沿っていない{offTemplate, number}件 · 指摘{findings, number}件",
     "structuralClean": "すべてのページがテンプレートに合い、すべてのリンクが開き、同じ資料から書かれたページどうしが互いにリンクしています。",
     "advisoryMark": "参考",
     "advisoryFold": "参考の指摘{count, number}件",
@@ -759,7 +812,6 @@
       "shared-source-unlinked": "同じ資料のページがリンクしていません"
     },
     "namesTitle": "ページのない名前",
-    "open": "検査結果{count, number}",
     "running": "Wikiを検査中…",
     "unseen": "新規"
   },
@@ -1053,18 +1105,17 @@
     "first": "Wikiページがある資料はまだありません",
     "today": "今日 +{count, number}",
     "chartAria": "Wikiページがある資料の数（各ページに記された日付順）",
-    "chartTitle": "Wikiページがある資料数",
-    "chartNow": "今日{count, number}",
+    "chartTitle": "{date}からの、Wikiページがある資料数",
     "point": "{date}：現在の資料{total, number}件中{count, number}件（{percent, number}%）",
     "dateBasis": "各点はWikiページに記された日付です。",
     "undated": "日付なし{count, number}件",
     "continue": "{count, plural, =1 {資料1件からWikiページを作成} other {次の#件のWikiページを作成}}",
-    "batchRest": "この後に{count, number}件が待っています。",
+    "batchRest": "ほかに{count, number}件あります。",
     "writer": "<name>{agent}</name>が書きます",
     "writerAnyAgent": "接続したコーディングエージェントが書きます",
     "batchReturned": "前回のリクエストの資料{count, number}件はまだWikiページがないため、一覧の最後に移しました。",
     "webLine": "Wikiページを書けるのはアプリだけです。閲覧はここでもできます。",
-    "allDone": "すべての資料にWikiページがあります"
+    "allDone": "書くWikiページはもうありません"
   },
   "sourcesHome": {
     "aria": "フォルダまたはファイル形式でまとめた資料と、Wikiページがある資料の数",
@@ -1078,7 +1129,7 @@
       "type": "ファイル形式",
       "sources": "資料",
       "withPage": "Wikiページあり",
-      "waiting": "待機中",
+      "waiting": "書くWikiページ",
       "latest": "最新のWikiページ"
     },
     "topLevel": "sources/ 直下",
@@ -1088,15 +1139,15 @@
       "none": "まだなし",
       "undated": "日付なし"
     },
-    "rowAria": "{name}：資料{total, number}件のうちWikiページあり{withPage, number}件、作成待ち{waiting, number}件。押すと表の横に一覧が出ます。",
+    "rowAria": "{name}：資料{total, number}件のうちWikiページあり{withPage, number}件、Wikiページを書く資料{waiting, number}件。押すと表の横に一覧が出ます。",
     "writing": "ここにある資料からWikiページを作成中です",
     "panel": {
-      "nextTitle": "次に書く資料",
+      "nextTitle": "Wikiページを書く順番",
       "lead": "「{action}」を押すと、エージェントが下の資料を上から読み、Wikiページを書きます。",
       "leadRunning": "エージェントが上からWikiページを書いています。書き終えた資料はこのリストから消えます。",
-      "privacy": "Atlasは資料をどこにも送りません。Wikiページの作成や質問をエージェントに頼むと、そのエージェントが必要な資料を読み、読んだ内容はそのエージェントのサービスに送られることがあります。",
-      "webNote": "Wikiページはアプリだけが作成します。アプリではここから始めます。",
-      "waitingTitle": "ここで待機中",
+      "privacy": "Atlasは資料をどこにも送らず、エージェントに任せた作業だけがそのエージェントのサービスを通ります。",
+      "webNote": "アプリではこの資料からWikiページを書きます。",
+      "waitingTitle": "ここでWikiページを書く資料",
       "nextEmpty": "ここにある資料にはすべて、今の内容と合うWikiページがあります。",
       "unreadable": "ここで読み込めない資料{count, number}件",
       "showInList": "リストで{count, number}件すべて表示",

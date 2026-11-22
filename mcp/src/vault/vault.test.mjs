@@ -7,11 +7,11 @@ import fs from 'node:fs';
 import { syncBuiltinESMExports } from 'node:module';
 import { defaultBody, nodeUidIssue } from '../schema.mjs';
 
-import { canonicalDiskSlug, suggestSimilarSlugs, vaultSlugExists } from './slug-paths.mjs';
-import { FULL_BODY_MAX_CHARS, describeBodyDelivery, extractSummaryExcerpt } from './body-delivery.mjs';
-import { drainNodeEligibilityFindings, resetNodeEligibilityGate } from './eligibility-gate.mjs';
-import { deleteDoc, patchFrontmatter, updateDoc, writeDoc } from './doc-writes.mjs';
-import { detectDuplicateTitle, findOrphans, findPath } from './graph-queries.mjs';
+import { canonicalDiskSlug, suggestSimilarSlugs, vaultSlugExists } from './documents/slug-paths.mjs';
+import { FULL_BODY_MAX_CHARS, describeBodyDelivery, extractSummaryExcerpt } from './documents/body-delivery.mjs';
+import { drainNodeEligibilityFindings, resetNodeEligibilityGate } from './writes/eligibility-gate.mjs';
+import { deleteDoc, patchFrontmatter, updateDoc, writeDoc } from './writes/doc-writes.mjs';
+import { detectDuplicateTitle, findOrphans, findPath } from './graph/graph-queries.mjs';
 
 let root;
 
@@ -377,8 +377,8 @@ describe('actionable error messages', () => {
       writeDoc(errRoot, 'capabilities/mcp-server', {
         frontmatter: { slug: 'capabilities/mcp-server', kind: 'capability', title: 'X' },
       });
-    } catch (e) {
-      caught = e;
+    } catch (error) {
+      caught = error;
     }
     assert.ok(caught, 'should throw');
     assert.match(caught.message, /already exists/);
@@ -390,8 +390,8 @@ describe('actionable error messages', () => {
     let caught;
     try {
       deleteDoc(errRoot, 'capabilities/mcp-server-x');
-    } catch (e) {
-      caught = e;
+    } catch (error) {
+      caught = error;
     }
     assert.ok(caught);
     assert.match(caught.message, /not found/i);
@@ -403,8 +403,8 @@ describe('actionable error messages', () => {
     let caught;
     try {
       deleteDoc(errRoot, 'totally/unrelated-xyz');
-    } catch (e) {
-      caught = e;
+    } catch (error) {
+      caught = error;
     }
     assert.ok(caught);
     assert.match(caught.message, /not found/i);

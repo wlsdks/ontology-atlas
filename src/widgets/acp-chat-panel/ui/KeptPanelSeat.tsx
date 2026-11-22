@@ -3,7 +3,7 @@
 import { useLayoutEffect, useRef, useSyncExternalStore } from 'react';
 
 import { folderHolder, keptPanels } from '../model/kept-panels';
-import type { AcpChatPanelProps } from './chat-panel/types';
+import type { AcpChatPanelProps } from './chat-panel/chat-panel-props';
 
 /**
  * While another conversation's turn holds this folder, this one is seated with its session off:

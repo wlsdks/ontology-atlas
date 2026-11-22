@@ -28,8 +28,8 @@ function rustConstant(name: string): string {
  */
 describe('source inventory bounds — the app and the MCP probe must agree', () => {
   it('the file cap is one number on both sides', () => {
-    expect(mcpConstant('SOURCE_INVENTORY_MAX_FILES')).toBe('8000');
-    expect(rustConstant('SOURCE_INVENTORY_MAX_FILES')).toBe('8000');
+    expect(mcpConstant('SOURCE_INVENTORY_MAX_FILES')).toBe('16000');
+    expect(rustConstant('SOURCE_INVENTORY_MAX_FILES')).toBe('16000');
   });
 
   it('the depth cap is one number on both sides', () => {

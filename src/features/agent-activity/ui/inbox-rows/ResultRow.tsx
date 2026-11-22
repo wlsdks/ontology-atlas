@@ -12,7 +12,7 @@ import {
   type BellFact,
 } from '../../model/inbox-row-copy';
 import { ResultFactLine } from './ResultFactLine';
-import { ROW_HEADLINE_CLASS, RowMark } from './inbox-row-parts';
+import { ROW_HEADLINE_CLASS, RowMark } from './inbox-row-primitives';
 
 /** One finished task or decision: its sentence and object on line one, its facts on line two. */
 export function ResultRow({

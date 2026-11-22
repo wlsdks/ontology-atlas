@@ -111,11 +111,11 @@ export function GlobalSearch({
   );
 
   const toggleKind = useCallback((kind: MeaningfulOntologyKind) => {
-    setSelectedKinds((prev) => toggledSet(prev, kind));
+    setSelectedKinds((previous) => toggledSet(previous, kind));
   }, []);
 
   const toggleProjectId = useCallback((projectId: string) => {
-    setSelectedProjectIds((prev) => toggledSet(prev, projectId));
+    setSelectedProjectIds((previous) => toggledSet(previous, projectId));
   }, []);
 
   // Count what the map draws: a `vault-readme` is a document, not a node (same predicate as the

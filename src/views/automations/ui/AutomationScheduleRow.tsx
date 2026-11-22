@@ -13,7 +13,7 @@ import { AutomationRemoveConfirm, AutomationScheduleActions, useScheduleChange }
 import { useRunLead, useUnrecordedText, WARNING_INK } from './AutomationRunHistory';
 import { runsNewestFirst } from '../model/run-order';
 import { automationDate } from './automation-date';
-import { AUTOMATION_CELL, AUTOMATION_ROW_GRID } from './AutomationListFrame';
+import { AUTOMATION_CELL, AUTOMATION_ROW_GRID } from './automation-list-layout';
 
 const ROW_SELECTOR = '[data-schedule-row]';
 

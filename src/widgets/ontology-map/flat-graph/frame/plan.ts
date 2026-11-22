@@ -3,17 +3,19 @@ import { createMeasureText } from "../../dial/fit";
 import type { MeasureText } from "../../dial/label-marks";
 import { dialChordPresence } from "../../dial/frame/frame";
 import { dialPlacementLine, dialPlacementOf } from "../../dial/placement";
-import type { Box, DialFrameInput, DialFrameResult, DialModel, DialPick, DialRowPick, Point } from "../../dial/types";
+import type { Box, DialFrameInput, DialFrameResult, DialModel, DialPick, DialRowPick, Point } from "../../dial/dial-shapes";
 import { labelFontFamily } from "../../render/labels";
 import { AGENT_FOCUS_RING_OFFSET } from "../../render/node-shapes";
 import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
 import { FLAT_LINE_BITS, type GraphAttention } from "../attention";
 import { graphDiscRadiusPx, restArcs, smoothstep, zoomGrowth } from "../marks";
 import { MOTION_SHARE, type GraphMotion } from "../motion";
-import { admittedNames, boxUnderAny, nameBlockEnd, selectedDiscRadius, stepScale, zoomStep, type PlacedName } from "../names";
+import { admittedNames, boxUnderAny, nameBlockEnd, selectedDiscRadius } from "../names";
+import { type PlacedName } from "../names/placed-name";
+import { stepScale, zoomStep } from "../names/zoom-step";
 import { openedElements } from "../open";
 import { openRadiusPx } from "../open-star";
-import type { FlatGraphLayout, FlatGraphTokens } from "../types";
+import type { FlatGraphLayout, FlatGraphTokens } from "../flat-graph-shapes";
 import { planFanPushes } from "./fan-push";
 import { planName, placeName, NAME_RANKS, nameRanks, plannedNames, nameRank, blockShows, memberBlockShows, planMemberFallbacks } from "./name-plan";
 import { grownMarks, collectGrownMarks } from "./name-room";
@@ -223,7 +225,7 @@ export function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion
   plan.agentRing = null;
   const alphas = cacheFor(alphaCache, layout);
   if (alphas.size === 0) for (const id of model.domainOf.keys()) alphas.set(id, 0);
-  for (let elIndex = 0; elIndex < shownElements.size; elIndex += 1) alphas.set(shownElements.items[elIndex]!, 0);
+  for (let elementIndex = 0; elementIndex < shownElements.size; elementIndex += 1) alphas.set(shownElements.items[elementIndex]!, 0);
   shownElements.restart();
   const picks = framePicks;
   picks.restart();
@@ -420,10 +422,10 @@ export function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion
 
   L.names.seal();
 
-  if (plan.dots.length > 0) for (let elIndex = 0; elIndex < shownElements.size; elIndex += 1) {
-    const el = shownElements.items[elIndex]!;
-    const at = screenAt(el);
-    if (at && pickable(at)) picks.add(elementPick(el, at));
+  if (plan.dots.length > 0) for (let elementIndex = 0; elementIndex < shownElements.size; elementIndex += 1) {
+    const elementId = shownElements.items[elementIndex]!;
+    const at = screenAt(elementId);
+    if (at && pickable(at)) picks.add(elementPick(elementId, at));
   }
   const elementPicks = picks.size;
   for (let dIndex = 0; dIndex < plan.discs.length; dIndex += 1) {

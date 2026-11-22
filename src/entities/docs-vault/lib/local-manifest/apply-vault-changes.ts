@@ -1,8 +1,8 @@
 import {
   listTauriVaultStamped,
-  tauriVaultFileHandleAt,
   type StampedVaultEntry,
-} from '@/shared/lib/vault-folder/tauri-vault-fs';
+} from '@/shared/lib/vault-folder/native-vault/tauri-vault-files';
+import { tauriVaultFileHandleAt } from '@/shared/lib/vault-folder/native-vault/tauri-vault-handle';
 import type { VaultPathChange } from '@/shared/lib/vault-folder/vault-change-batch';
 import { pendingSourceCopyPaths } from '../library/source-copy-publication';
 import type { WalkEntry } from './walk-vault';
@@ -43,7 +43,7 @@ import {
 } from './read-vault-files';
 import { addStamp, fingerprintText, parseFingerprint } from './vault-fingerprint';
 import { vaultSourceRow } from './vault-source-row';
-import type { VaultDoc, VaultManifest, VaultSourceFile } from '../../model/types';
+import type { VaultDoc, VaultManifest, VaultSourceFile } from '../../model/vault-manifest';
 
 export interface LocalVaultSnapshot {
   build: LocalVaultBuild;

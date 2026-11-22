@@ -1,6 +1,6 @@
 "use client";
 
-import type { ExpandPreference } from "@/shared/lib/preferences/appearance-preferences";
+import type { ExpandPreference } from "@/shared/lib/preferences/expand-preferences";
 import {
   useCallback,
   useRef
@@ -35,7 +35,7 @@ export function useTopologyVisibilityState({
   const expandedParentsRef = useRef<ReadonlySet<string>>(expandedParents);
 
   /** Previous expanded set, diffed to find newly expanded parents for the camera dive. */
-  const prevExpandedParentsRef = useRef<ReadonlySet<string>>(expandedParents);
+  const previousExpandedParentsRef = useRef<ReadonlySet<string>>(expandedParents);
 
   /** Density gate — this frame's cluster chips (world-anchored). Hit-testing reads it. */
   const clusterChipsRef = useRef<readonly ClusterChip[]>([]);
@@ -77,7 +77,7 @@ export function useTopologyVisibilityState({
   const batchAppearStartRef = useRef<Map<string, number>>(new Map());
 
   /** High-fan-out batch reveal — children visible via a batch last frame, for the newly-revealed diff. */
-  const prevBatchVisibleRef = useRef<Set<string>>(new Set());
+  const previousBatchVisibleRef = useRef<Set<string>>(new Set());
 
   const emphasisRef = useRef<Map<string, number>>(new Map());
 
@@ -143,7 +143,7 @@ export function useTopologyVisibilityState({
     onGrowthReplayingChangeRef.current?.(false);
   }, []);
 
-  const prevNodeIdsRef = useRef<Set<string>>(new Set());
+  const previousNodeIdsRef = useRef<Set<string>>(new Set());
 
   /**
    * Ids of nodes born during this session. At overview zoom a new capability's tier alpha is 0, so the
@@ -166,10 +166,10 @@ export function useTopologyVisibilityState({
 
   const rippleStartRef = useRef<Map<string, number>>(new Map());
   return {
-    expandPrefRef, expandedParentsRef, prevExpandedParentsRef, clusterChipsRef, clusteredIdsRef,
+    expandPrefRef, expandedParentsRef, previousExpandedParentsRef, clusterChipsRef, clusteredIdsRef,
     hoveredClusterIdRef, egoRevealBatchesRef, clusterRevealBatchesRef, batchAppearRef, batchAppearStartRef,
-    prevBatchVisibleRef, emphasisRef, egoRevealRef, focusRampRef, chipRevealRef, expandRevealRef, appearRef,
+    previousBatchVisibleRef, emphasisRef, egoRevealRef, focusRampRef, chipRevealRef, expandRevealRef, appearRef,
     growthReplayRef, growthReplayAppearRef, growthReplayTokenSeenRef, onGrowthReplayingChangeRef,
-    endGrowthReplay, prevNodeIdsRef, bornNodeIdsRef, labelPresentRef, colorFocusRef, rippleStartRef,
+    endGrowthReplay, previousNodeIdsRef, bornNodeIdsRef, labelPresentRef, colorFocusRef, rippleStartRef,
   };
 }

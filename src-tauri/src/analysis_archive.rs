@@ -121,7 +121,8 @@ pub(crate) fn read_analysis_record_text(
     {
         let root = super::canonical_root(&root_path)?;
         use std::os::fd::{AsRawFd, FromRawFd};
-        let parent = crate::agent_setup::open_absolute_directory_no_follow(&root.join(DIRECTORY))?;
+        let parent =
+            crate::confined_files::open_absolute_directory_no_follow(&root.join(DIRECTORY))?;
         let name = std::ffi::CString::new(file_name).map_err(|error| error.to_string())?;
         let fd = unsafe {
             libc::openat(
@@ -210,8 +211,8 @@ fn append_after_open(
 
     #[cfg(unix)]
     let created = {
-        let root_handle = crate::agent_setup::open_absolute_directory_no_follow(&root)?;
-        let (parent, name) = crate::agent_setup::open_entry_parent(&root_handle, &relative)?;
+        let root_handle = crate::confined_files::open_absolute_directory_no_follow(&root)?;
+        let (parent, name) = crate::confined_files::open_entry_parent(&root_handle, &relative)?;
         after_open();
         // The FD pins the destination. A replaced name must not be reported as
         // the file we wrote, even when the old directory is still inside the vault.
@@ -345,7 +346,7 @@ fn publish_exclusively(
 
 /// The vault-open sweep removes a leftover only under a name it recognises.
 fn temporary_name() -> String {
-    crate::vault::temporary_names::next_create_temporary_name()
+    crate::vault::temporary_files::names::next_create_temporary_name()
 }
 
 #[cfg(not(unix))]
@@ -402,12 +403,12 @@ mod tests {
         fs::write(&leftover, "partial").unwrap();
         let root = fs::canonicalize(root).unwrap();
         let later = std::time::SystemTime::now()
-            + crate::vault::temp_sweep::STALE_AFTER
+            + crate::vault::temporary_files::sweep::STALE_AFTER
             + std::time::Duration::from_secs(1);
-        let removed = crate::vault::temp_sweep::sweep_stale_temporaries(
+        let removed = crate::vault::temporary_files::sweep::sweep_stale_temporaries(
             &root,
             later,
-            crate::vault::temp_sweep::STALE_AFTER,
+            crate::vault::temporary_files::sweep::STALE_AFTER,
         );
         assert_eq!(removed, 1);
         fs::remove_dir_all(root).ok();

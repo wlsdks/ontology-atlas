@@ -7,13 +7,13 @@ import {
   CARGO_MANIFEST_MAX_FEATURES,
   CARGO_MANIFEST_MAX_FEATURE_VALUES,
   CARGO_MANIFEST_MAX_TOKEN_LENGTH,
-  CARGO_PACKAGE_EVIDENCE_FIELDS,
   NODE_PACKAGE_DEPENDENCY_LIMIT,
   NODE_PACKAGE_DESCRIPTION_MAX_LENGTH,
   NODE_PACKAGE_EXPORT_LIMIT,
   NODE_PACKAGE_SCRIPT_LIMIT,
   SEMANTIC_EVIDENCE_MAX_EXCERPT,
-} from '../constants.mjs';
+} from '../scan-limits.mjs';
+import { CARGO_PACKAGE_EVIDENCE_FIELDS } from '../scan-tables.mjs';
 
 export function extractPythonSetupPackageContract(text) {
   const packageFields = new Map();

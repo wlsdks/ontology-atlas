@@ -38,13 +38,13 @@ where they find their way, in this order of priority:
   (`.claude/rules/forbidden.md:24`). The cause is `line-clamp-2` titles plus an optional caption
   (`src/views/library/ui/parts/index-column/LibraryShelf.tsx:237`, `:251`).
 - **Where the parts come from.** The buttons are the `SectionActions` grid
-  (`LibrarySection.tsx:280`, `:995`, `:1008`); the report row is at `:1068`; the shelf at
+  (`LibrarySection.tsx:134`, `:995`, `:1008`); the report row is at `:1068`; the shelf at
   `:1201`; the folded line folds the majority caption past 12 pages (`LibraryShelf.tsx:24`,
   `:77`, `:128`). The ingest button already sits in the Sources band (`progress.continue`,
   "Write wiki pages for the next #").
 - **The three columns share nothing.** Sources: a two-column grid of three outlined buttons over
   a list with word badges. Wiki: two buttons, a row, a line and cards. Ontology
-  (`src/views/docs-vault/ui/parts/DocsSidebarBody.tsx`): an icon tool row, group labels such as
+  (`src/views/docs-vault/ui/parts/sidebar/DocsSidebarBody.tsx`): an icon tool row, group labels such as
   "Needs a decision · 10" (`ReviewQueueSection.tsx`), and borderless two-line rows whose reasons
   wrap to a third line.
 - **The fixture's summaries.** All 60 `summary:` values follow one of three fixed sentences
@@ -58,9 +58,9 @@ where they find their way, in this order of priority:
 |---|---|---|
 | Raw sources, immutable | `sources/**`, never read as a page (`docs/ONTOLOGY-ATLAS-SPEC.md` §11) | None |
 | Wiki pages | `wiki/**.md` with no `kind:`; `title`, `summary`, `sources`, `compiled_at`, `status`, `created_by`, `describes` (§11.1, lines 795-810) | No page type field |
-| Entity and concept pages | `kind:` nodes in the Ontology tab, linked by `describes:`; people and organisations stay in the wiki (`wiki.candidateKind`) | Ingest never writes them: the compile brief says "Write ONE page for this source" (`src/features/library/lib/wiki/compile-brief.ts:110`) |
+| Entity and concept pages | `kind:` nodes in the Ontology tab, linked by `describes:`; people and organisations stay in the wiki (`wiki.candidateKind`) | Ingest never writes them: the compile brief says "Write ONE page for this source" (`src/features/library/lib/wiki/compile/compile-brief-rules.ts:29`) |
 | Comparisons, syntheses | Pages citing several sources: 5 of 60 in the fixture (`carrier-terms-compared`, `money-timelines`, …) | Written only when a person or a later batch does |
-| Filed-back answers | `wiki/answers/**`, which ingest must not touch (`compile-brief.ts:113`); 3 in the fixture | None |
+| Filed-back answers | `wiki/answers/**`, which ingest must not touch (`src/features/library/lib/wiki/compile/compile-brief-rules.ts:32`); 3 in the fixture | None |
 | `index.md` | No file; the app derives the index from frontmatter | The column is the index |
 | `log.md` | `wiki/_log.md`, gist's own line shape `## [date] op \| …`; kinds `compile`, `lint`, `fix` (`src/features/library/lib/wiki/wiki-log.ts:12`, `:33`). Spec §11.4 line 921 still names only compile and lint | Queries are not logged; the model keeps only the last compile and lint (`src/features/library/model/use-library-model.ts:45`) |
 | Ingest | Band button `progress.continue` on Sources | None |
@@ -149,7 +149,7 @@ pane.
    keep their places and the group count counts up. The Log row's date reads `day.now`.
 10. **When the evidence is missing or wrong**: a page whose source file is gone keeps its row,
     and its reason reads `report.rule.citation-target-missing`. When the open page's file
-    disappears, Atlas clears the selection and the right pane says `pageGone` once. A finding
+    disappears, Atlas clears the selection and a toast says `pageGone` once. A finding
     from a Check that is no longer held after reopening (`report.gone`) is simply absent; the
     app checks come back by themselves.
 11. **Sources (I-4)** uses the same anatomy: the tool row's "+" is `sourcesIndex.add`, opening a
@@ -175,7 +175,7 @@ pane.
 | Filter typed | Ranked list as today, same rows | Same |
 | Agent writing | Out of scope: the web writes no pages | New page enters its group's top with the arrival wash; Log row `day.now` |
 | Check running / new results | `report.running` glyph on the Check results row; then the unseen dot | Same |
-| No agent | Check wiki in the report head is disabled with `wiki.compileWebLimit` | `AgentMissingNotice` in the report head |
+| No agent | Check wiki in the report head is disabled with `stage.blockedWeb` | `AgentMissingNotice` in the report head |
 | Open page deleted | `pageGone` once; selection cleared | Same |
 | Reduced motion | End state at once; no wash | Same |
 
@@ -286,10 +286,10 @@ leave once nothing reads them (I-2).
 | Slice | What | Files | Order |
 |---|---|---|---|
 | I-1 | Grouping model with reasons and caps; `IndexRow`, `IndexGroup`, `WikiIndex` (reads `LibraryUiModel`, takes agent findings as a prop); catalogue patch; criteria 1, 8 (part) | New `src/views/library/lib/wiki/wiki-index.ts`, new files in `src/views/library/ui/parts/index-column/`; `messages/*/library.json` (`wikiIndex`, `wikiLog`, `sourcesIndex`) | Now, parallel with S3 and S-1: new files; the catalogue edits are distinct keys |
-| I-2 | Mount `WikiIndex` in the Wiki half; remove its `SectionActions`, the report row and `LibraryShelf`; view rows; Check wiki and `AgentMissingNotice` into the report head; New page into "+"; the changed copy keys; criteria 2-4, 6, 7 | `LibrarySection.tsx` (Wiki half), `LibraryShelf.tsx` (delete), `LibraryIndexColumn.tsx`, `parts/wiki/LibraryCheckReport.tsx`, `messages/*/library.json` (the changed keys) | After S-2, which edits `LibrarySection.tsx` |
-| I-3 | Log view: the model keeps every log entry; selection kind `log`; Recently written's heading opens it; criterion 5 | `src/features/library/model/use-library-model.ts`, `library-page-state.ts`, `LibraryPage.tsx`, `LibraryDocumentColumn.tsx`, new `parts/wiki/LibraryWikiLog.tsx`, `src/widgets/library-sources-overview/**` (heading link) | After S3 (owns the model and `LibraryPage.tsx`) and S-1 |
+| I-2 | Mount `WikiIndex` in the Wiki half; remove its `SectionActions`, the report row and `LibraryShelf`; view rows; Check wiki and `AgentMissingNotice` into the report head; New page into "+"; the changed copy keys; criteria 2-4, 6, 7 | `LibrarySection.tsx` (Wiki half), `LibraryShelf.tsx` (delete), `LibraryIndexColumn.tsx`, `check-report/LibraryCheckReport.tsx`, `messages/*/library.json` (the changed keys) | After S-2, which edits `LibrarySection.tsx` |
+| I-3 | Log view: the model keeps every log entry; selection kind `log`; Recently written's heading opens it; criterion 5 | `src/features/library/model/use-library-model.ts`, `library-selection.ts`, `LibraryPage.tsx`, `LibraryDocumentColumn.tsx`, new `parts/wiki/LibraryWikiLog.tsx`, `src/widgets/library-sources-overview/**` (heading link) | After S3 (owns the model and `LibraryPage.tsx`) and S-1 |
 | I-4 | Sources half on `IndexRow`: tool row, add dialog, folder groups | `LibrarySection.tsx` (Sources half), new `parts/index-column/AddSourcesDialog.tsx` | After I-2 |
-| I-5 | Ontology column on the shared metrics; headings split label and count | `src/views/docs-vault/ui/parts/DocsSidebarBody.tsx`, `ReviewQueueSection.tsx`, `messages/*/vaultWidgets.json` (`review.*Header`) | After I-1; parallel with I-2 |
+| I-5 | Ontology column on the shared metrics; headings split label and count | `src/views/docs-vault/ui/parts/sidebar/DocsSidebarBody.tsx`, `ReviewQueueSection.tsx`, `messages/*/vaultWidgets.json` (`review.*Header`) | After I-1; parallel with I-2 |
 
 ## Risks
 
@@ -335,3 +335,13 @@ one commit.
   change. Motion gains the late check-results row, drawn by the new
   `src/views/library/ui/parts/index-column/index-motion.ts`, which joins the unmounted files and
   their dead-code exceptions until I-2.
+- 2026-11-21: I-2 mounts the index. Decisions the flow left open: view rows are 32 px and page
+  rows 44 px; the tool row is 32 px on both halves, so the Sources search field grows from 28 px;
+  the Log row shows its date but opens nothing until I-3, as `wiki/_log.md` read as a page drew
+  each line as a heading; `pageGone` is a toast, since the right pane has nothing open to say it
+  in; on the web the report head keeps the reason it already gave (`stage.blockedWeb`), and
+  `wiki.compileWebLimit` leaves with `shelf.*`, `wiki.offTemplate*`, `wiki.folderMark` and the
+  other keys only the old column read. With every source written, the band says all done and the
+  guide's Compile step is the one press that rechecks an outdated page.
+- 2026-11-22: source cites follow the files into the subfolders that now own them (structure cleanup); no plan changed.
+- 2026-11-22: source line cites follow the code into the files and lines that hold it after the structure cleanup; a cite whose code changed keeps its file and drops the line; no plan changed.

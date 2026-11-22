@@ -26,16 +26,16 @@ export function useExitLockout<T extends HTMLElement>(): {
   const locked = useRef<{ element: T; pointerEvents: string } | null>(null);
 
   const onAnimationStart = useCallback((definition: TargetAndTransition | VariantLabels) => {
-    const el = ref.current;
+    const currentElement = ref.current;
     const exiting = typeof definition === 'object' && definition !== null
       && (definition as TargetAndTransition).transition === EXIT_TRANSITION;
-    if (exiting && el) {
-      if (locked.current?.element !== el) {
-        locked.current = { element: el, pointerEvents: el.style.pointerEvents };
+    if (exiting && currentElement) {
+      if (locked.current?.element !== currentElement) {
+        locked.current = { element: currentElement, pointerEvents: currentElement.style.pointerEvents };
       }
-      el.style.pointerEvents = 'none';
+      currentElement.style.pointerEvents = 'none';
     } else if (locked.current) {
-      if (locked.current.element === el) el.style.pointerEvents = locked.current.pointerEvents;
+      if (locked.current.element === currentElement) currentElement.style.pointerEvents = locked.current.pointerEvents;
       locked.current = null;
     }
   }, []);

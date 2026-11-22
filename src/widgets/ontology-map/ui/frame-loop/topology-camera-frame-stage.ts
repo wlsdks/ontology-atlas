@@ -23,9 +23,9 @@ import {
 import { updatePulses, type Pulse } from "../../render/edge-fireflies";
 import { lastDialFrame } from "../../dial/frame/frame";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
-import type { FocusLeashPx } from "../camera/topology-camera-math";
+import type { FocusLeashPx } from "../camera/target/pan-leash";
 import { stepTopologyPhysics } from "./topology-physics-step";
-import type { RealmRuntimeData } from "../world/topology-realm-runtime";
+import type { RealmRuntimeData } from "../world/realm/topology-realm-runtime";
 import type { TopologyWorld } from "../world/topology-world";
 
 type SourceRef<T> = { current: T; };
@@ -92,7 +92,7 @@ export interface CameraFrameStageSources {
     depth2: DepthParallaxOffset;
     depth3: DepthParallaxOffset;
   } | null>;
-  prevCameraCenterRef: SourceRef<{ x: number; y: number; } | null>;
+  previousCameraCenterRef: SourceRef<{ x: number; y: number; } | null>;
   lastZoomTierRef: SourceRef<ZoomTier | null>;
   onZoomTierChangeRef: SourceRef<((tier: ZoomTier) => void) | undefined>;
 }
@@ -138,7 +138,7 @@ export function createCameraFrameStage(sources: CameraFrameStageSources) {
     realmParallaxDepth2Ref,
     realmParallaxDepth3Ref,
     realmParallaxRef,
-    prevCameraCenterRef,
+    previousCameraCenterRef,
     lastZoomTierRef,
     onZoomTierChangeRef,
   } = sources;
@@ -340,9 +340,9 @@ export function createCameraFrameStage(sources: CameraFrameStageSources) {
         realmDataRef.current !== null &&
         realmTransitionRef.current.phase === "active" &&
         !reducedMotionRef.current;
-      const prevC = prevCameraCenterRef.current;
-      if (realmActive && prevC) {
-        const delta = { x: camera.x.value - prevC.x, y: camera.y.value - prevC.y };
+      const previousC = previousCameraCenterRef.current;
+      if (realmActive && previousC) {
+        const delta = { x: camera.x.value - previousC.x, y: camera.y.value - previousC.y };
         const depthById = realmDataRef.current!.depthById;
         realmParallaxDepth2Ref.current = stepDepthParallax(
           realmParallaxDepth2Ref.current,
@@ -367,7 +367,7 @@ export function createCameraFrameStage(sources: CameraFrameStageSources) {
         realmParallaxDepth3Ref.current = ZERO_PARALLAX;
         realmParallaxRef.current = null;
       }
-      prevCameraCenterRef.current = { x: camera.x.value, y: camera.y.value };
+      previousCameraCenterRef.current = { x: camera.x.value, y: camera.y.value };
     }
 
     // Emit the semantic-zoom tier only when it changes, on the draw pass's reveal bands so the readout and the visible nodes cannot contradict.

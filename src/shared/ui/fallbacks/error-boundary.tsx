@@ -8,7 +8,7 @@ import { Component, type ReactNode } from 'react';
  */
 
 interface ErrorBoundaryProps {
-  fallback: (info: { error: Error; reset: () => void }) => ReactNode;
+  fallback: (failure: { error: Error; reset: () => void }) => ReactNode;
   resetKey?: string | number;
   onError?: (error: Error) => void;
   children: ReactNode;

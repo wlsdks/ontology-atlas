@@ -1,5 +1,5 @@
 import { clampDomePitch, DOME_PITCH_DEFAULT, DOME_YAW_DEFAULT, type DomeDragSpring } from './camera/orbit';
-import type { DomeCircle, DomeCoord, DomeModel, DomeViewKind } from './types';
+import type { DomeCircle, DomeCoord, DomeModel, DomeViewKind } from './dome-shapes';
 import type { DomeTurnReach } from './camera/turn-follow';
 
 type CameraPose = { tx: number; ty: number; tscale: number };
@@ -62,12 +62,19 @@ export interface DomeNodeFrame {
  * (reduced motion).
  */
 export function beginDomeMorph(runtime: DomeRuntime, next: DomeModel, nowMs: number, durationMs: number): void {
-  const prev = runtime.model;
+  const previous = runtime.model;
   runtime.model = next;
   runtime.morph =
     durationMs > 0
-      ? { fromCoords: prev.coords, fromCircles: prev.circles, startMs: nowMs, durationMs }
+      ? { fromCoords: previous.coords, fromCircles: previous.circles, startMs: nowMs, durationMs }
       : null;
+}
+
+/** Records `target` as the whole-cloud fit at the current pose, and as the fit a turn's zoom follows. */
+export function restDomeAtFit(runtime: DomeRuntime, target: DomeFitTarget): void {
+  runtime.fitScale = target.tscale;
+  runtime.restFit = { target: { ...target }, yaw: runtime.yaw, pitch: runtime.pitch };
+  runtime.turnFollow = { target: runtime.restFit.target, yaw: runtime.yaw, followed: null };
 }
 
 /**

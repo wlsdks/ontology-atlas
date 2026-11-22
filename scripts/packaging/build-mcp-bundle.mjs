@@ -73,13 +73,13 @@ function resolvePackageDir(name, fromDir) {
     // the directory whose manifest carries that name.
   }
   try {
-    let dir = path.dirname(require.resolve(name));
+    let directory = path.dirname(require.resolve(name));
     for (let depth = 0; depth < 12; depth += 1) {
-      const manifest = packageManifest(dir);
-      if (manifest?.name === name) return dir;
-      const parent = path.dirname(dir);
-      if (parent === dir) break;
-      dir = parent;
+      const manifest = packageManifest(directory);
+      if (manifest?.name === name) return directory;
+      const parent = path.dirname(directory);
+      if (parent === directory) break;
+      directory = parent;
     }
   } catch {
     return null;
@@ -87,8 +87,8 @@ function resolvePackageDir(name, fromDir) {
   return null;
 }
 
-function packageManifest(dir) {
-  const file = path.join(dir, 'package.json');
+function packageManifest(directory) {
+  const file = path.join(directory, 'package.json');
   return existsSync(file) ? readJson(file) : null;
 }
 

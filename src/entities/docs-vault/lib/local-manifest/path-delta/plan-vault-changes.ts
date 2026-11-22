@@ -1,7 +1,7 @@
 import { isAtlasTemporaryName } from '@/shared/lib/vault-folder/atlas-temporary-names';
-import type { StampedVaultEntry } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import type { StampedVaultEntry } from '@/shared/lib/vault-folder/native-vault/tauri-vault-files';
 import type { VaultPathChange } from '@/shared/lib/vault-folder/vault-change-batch';
-import type { VaultManifest } from '../../../model/types';
+import type { VaultManifest } from '../../../model/vault-manifest';
 import type { BuiltVaultEntry } from '../md-entry';
 import {
   CACHE_DIR_TAG,

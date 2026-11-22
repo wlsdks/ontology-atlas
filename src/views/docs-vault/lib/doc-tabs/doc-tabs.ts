@@ -119,10 +119,10 @@ export function openOrActivateDocTab(
   next: { slug: string; title: string },
   now: number = Date.now(),
 ): DocTab[] {
-  const idx = tabs.findIndex((tab) => tab.slug === next.slug);
-  if (idx >= 0) {
+  const index = tabs.findIndex((tab) => tab.slug === next.slug);
+  if (index >= 0) {
     const updated = tabs.slice();
-    updated[idx] = { ...updated[idx], title: next.title, lastActivatedAt: now };
+    updated[index] = { ...updated[index], title: next.title, lastActivatedAt: now };
     return updated;
   }
   const added = [...tabs, { slug: next.slug, title: next.title, lastActivatedAt: now }];
@@ -139,10 +139,10 @@ export function closeDocTab(
   slug: string,
   activeSlug: string | null,
 ): CloseDocTabResult {
-  const idx = tabs.findIndex((tab) => tab.slug === slug);
-  if (idx === -1) return { tabs, nextActiveSlug: activeSlug };
+  const index = tabs.findIndex((tab) => tab.slug === slug);
+  if (index === -1) return { tabs, nextActiveSlug: activeSlug };
 
-  const nextTabs = [...tabs.slice(0, idx), ...tabs.slice(idx + 1)];
+  const nextTabs = [...tabs.slice(0, index), ...tabs.slice(index + 1)];
 
   if (activeSlug !== slug) {
     return { tabs: nextTabs, nextActiveSlug: activeSlug };
@@ -150,8 +150,8 @@ export function closeDocTab(
   if (nextTabs.length === 0) {
     return { tabs: nextTabs, nextActiveSlug: null };
   }
-  const leftNeighbor = idx > 0 ? tabs[idx - 1] : null;
-  const rightNeighbor = idx < tabs.length - 1 ? tabs[idx + 1] : null;
+  const leftNeighbor = index > 0 ? tabs[index - 1] : null;
+  const rightNeighbor = index < tabs.length - 1 ? tabs[index + 1] : null;
   const neighbor = leftNeighbor ?? rightNeighbor;
   return { tabs: nextTabs, nextActiveSlug: neighbor?.slug ?? null };
 }

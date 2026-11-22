@@ -23,9 +23,9 @@ export function formerPaths(repoPath, movedMap) {
 
 export function citingRecords(paths, root = ROOT) {
   const out = [];
-  const walk = (dir) => {
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
-      const full = path.join(dir, entry.name);
+  const walk = (directory) => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      const full = path.join(directory, entry.name);
       if (entry.isDirectory()) walk(full);
       else if (entry.name.endsWith('.md') && entry.name !== 'README.md') {
         const text = readFileSync(full, 'utf8');

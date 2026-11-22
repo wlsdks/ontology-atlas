@@ -1,4 +1,4 @@
-import { PATH_ARGUMENT_KEYS, type AcpPermissionRequest } from '../acp-client';
+import { PATH_ARGUMENT_KEYS, type AcpPermissionRequest } from './permission-request';
 import { atlasToolMode } from './atlas-tool-policy';
 
 /** The additive or rewording Atlas writes a Git diff can undo; every other write, including a tool added later, still shows the card. */

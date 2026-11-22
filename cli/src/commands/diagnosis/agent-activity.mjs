@@ -74,9 +74,9 @@ export async function runAgentActivity(args) {
       heartbeat: buildHeartbeat(parsed),
       json: parsed.json,
     });
-  } catch (err) {
+  } catch (error) {
     process.stderr.write(
-      `${COLORS.red}error${COLORS.reset}  ${err instanceof Error ? err.message : String(err)}\n`,
+      `${COLORS.red}error${COLORS.reset}  ${error instanceof Error ? error.message : String(error)}\n`,
     );
     return 1;
   }
@@ -618,7 +618,7 @@ function printUsage(stream = process.stderr) {
 }
 
 async function showActivityLog({ vaultRoot, json, limit }) {
-  const { readActivityEntries } = await loadMcpModule('vault/activity-log.mjs');
+  const { readActivityEntries } = await loadMcpModule('vault/sidecar/activity-log.mjs');
   const entries = readActivityEntries(vaultRoot, { limit });
   if (json) {
     process.stdout.write(`${JSON.stringify({ entries, total: entries.length }, null, 2)}\n`);

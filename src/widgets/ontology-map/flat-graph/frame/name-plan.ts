@@ -1,7 +1,8 @@
-import type { Box, Point } from "../../dial/types";
+import type { Box, Point } from "../../dial/dial-shapes";
 import { inkUnder } from "../attention";
 import { FLAT_MOTION } from "../motion";
-import { nameBlockDraws, type PlacedName } from "../names";
+import { nameBlockDraws } from "../names";
+import { type PlacedName } from "../names/placed-name";
 import { FLAT_TIER_TIMING, tierNameAlpha } from "../../morph/tier-assembly";
 import { grownMarks, nameClear, onGrownDot, CAPTION_ROWS } from "./name-room";
 import { loadInk, screenAt, discRadius, dotRadius } from "./place";

@@ -60,10 +60,10 @@ export function createPointerMoveHandler(
           const cam = cameraRef.current;
           const spread = Math.pow(dist / pinch.dist, navigationSpeedRef.current.zoom);
           const newScale = scaleWithinZoomBounds(tokens, cam.scale.value * spread);
-          const worldAtPrevMidX = (pinch.midX - width / 2) / cam.scale.value + cam.x.value;
-          const worldAtPrevMidY = (pinch.midY - height / 2) / cam.scale.value + cam.y.value;
-          const afterX = worldAtPrevMidX - (midX - width / 2) / newScale;
-          const afterY = worldAtPrevMidY - (midY - height / 2) / newScale;
+          const worldAtPreviousMidX = (pinch.midX - width / 2) / cam.scale.value + cam.x.value;
+          const worldAtPreviousMidY = (pinch.midY - height / 2) / cam.scale.value + cam.y.value;
+          const afterX = worldAtPreviousMidX - (midX - width / 2) / newScale;
+          const afterY = worldAtPreviousMidY - (midY - height / 2) / newScale;
           cameraTargetRef.current = { tx: afterX, ty: afterY, tscale: newScale };
           cameraRef.current = {
             x: { value: afterX, velocity: 0 },
@@ -237,13 +237,13 @@ export function createPointerMoveHandler(
       ? hitTestEdges(buildEdgeCandidates(), point.x, point.y, 6)
       : null;
     if (hoveredEdgeRef && onHoverEdge) {
-      const prev = hoveredEdgeRef.current;
+      const previousHoveredEdge = hoveredEdgeRef.current;
       const sameEdge = edgeHit !== null &&
-        prev !== null &&
-        prev.sourceId === edgeHit.sourceId &&
-        prev.targetId === edgeHit.targetId &&
-        prev.relationType === edgeHit.relationType;
-      if (!sameEdge && (edgeHit !== null || prev !== null)) {
+        previousHoveredEdge !== null &&
+        previousHoveredEdge.sourceId === edgeHit.sourceId &&
+        previousHoveredEdge.targetId === edgeHit.targetId &&
+        previousHoveredEdge.relationType === edgeHit.relationType;
+      if (!sameEdge && (edgeHit !== null || previousHoveredEdge !== null)) {
         const payload = edgeHit
           ? {
             sourceId: edgeHit.sourceId,

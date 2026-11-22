@@ -6,10 +6,12 @@ import type { VaultDoc, VaultSourceFile } from '@/entities/docs-vault';
 import { SOURCE_HASH_CHUNK, SOURCE_HASH_PUBLISH_MS, useLibraryModel } from './use-library-model';
 
 const native = vi.hoisted(() => ({ hash: vi.fn(), readMany: vi.fn(), readOne: vi.fn() }));
-vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
-  nativeVaultFileHashResults: native.hash,
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-files', () => ({
   readTauriVaultTextFiles: native.readMany,
   readTauriVaultTextFile: native.readOne,
+}));
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-fingerprint', () => ({
+  nativeVaultFileHashResults: native.hash,
 }));
 
 const HASH = 'a'.repeat(64);

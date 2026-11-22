@@ -14,7 +14,7 @@ import {
   CHECK_RULES_DIRECTORY,
   composeCheckRules,
   formatFocusedCheckSuggestions,
-  loadCheckRules,
+  importCheckRules,
   normalizeChangedPath,
   suggestFocusedChecks,
 } from './focused-check-suggestions.mjs';
@@ -100,8 +100,8 @@ describe('focused check suggestions', () => {
       ['mcp/src/server/tool-schemas/git-results.mjs', 'pnpm docs:surface:check'],
       ['mcp/src/server/tool-schemas/git-results.mjs', 'pnpm integration:mcp:surface'],
       ['mcp/src/server/tool-schemas/destructive-preview.mjs', 'pnpm integration:mcp:write'],
-      ['mcp/src/tools/repo-analysis.mjs', 'pnpm integration:mcp:repo-analysis'],
-      ['mcp/src/tools/repo-analysis.mjs', 'pnpm integration:cli:repo-analysis'],
+      ['mcp/src/tools/repo-analysis/inspect-architecture.mjs', 'pnpm integration:mcp:repo-analysis'],
+      ['mcp/src/tools/repo-analysis/inspect-architecture.mjs', 'pnpm integration:cli:repo-analysis'],
       ['mcp/src/construction/construction-card.mjs', 'pnpm dogfood:verify'],
       ['mcp/src/server/instructions.mjs', 'pnpm dogfood:verify'],
       ['mcp/src/analyze/candidates/repo-structure.mjs', 'pnpm integration:cli:repo-analysis'],
@@ -412,7 +412,7 @@ describe('focused check suggestions', () => {
     const result = suggestFocusedChecks([
       'mcp/src/analyze.mjs',
       'mcp/src/ontology-compiler.test.mjs',
-      'mcp/src/vault/documents.mjs',
+      'mcp/src/vault/documents/document-cache.mjs',
       'mcp/scripts/json-rpc-lines.mjs',
     ]);
 
@@ -428,6 +428,24 @@ describe('focused check suggestions', () => {
       'pnpm vault:validate',
     ]);
     assert.deepEqual(result.escalations.map((row) => row.command), ['pnpm dogfood:verify']);
+  });
+
+  it('treats a vault source one folder down as vault read and write surface, and its test as neither', () => {
+    const source = suggestFocusedChecks(['mcp/src/vault/writes/doc-writes.mjs']);
+    assert.ok(source.commands.some((row) => row.command === 'pnpm integration:mcp:vault-read'));
+    assert.ok(source.commands.some((row) => row.command === 'pnpm integration:mcp:write'));
+
+    const test = suggestFocusedChecks(['mcp/src/vault/writes/conflict-detection.test.mjs']);
+    assert.ok(!test.commands.some((row) => row.command === 'pnpm integration:mcp:vault-read'));
+    assert.ok(!test.commands.some((row) => row.command === 'pnpm integration:mcp:write'));
+  });
+
+  it('treats an infer-imports source one folder down as repo-analysis surface, and its test as not', () => {
+    const source = suggestFocusedChecks(['mcp/src/infer-imports/languages/go-imports.mjs']);
+    assert.ok(source.commands.some((row) => row.command === 'pnpm integration:mcp:repo-analysis'));
+
+    const test = suggestFocusedChecks(['mcp/src/infer-imports/languages/go-imports.test.mjs']);
+    assert.ok(!test.commands.some((row) => row.command === 'pnpm integration:mcp:repo-analysis'));
   });
 
   it('discovers a new MCP source and sibling test without a hand-maintained allowlist', () => {
@@ -502,7 +520,7 @@ describe('focused check suggestions', () => {
 
   it('suggests focused MCP read integration for read/query tool implementation changes', () => {
     const result = suggestFocusedChecks([
-      'mcp/src/vault/documents.mjs',
+      'mcp/src/vault/documents/document-cache.mjs',
       'mcp/src/query.mjs',
       'mcp/src/ontology-engine.mjs',
       'mcp/src/ontology-compiler.mjs',
@@ -600,17 +618,17 @@ describe('focused check suggestions', () => {
 
   it('suggests focused MCP write integration for server write handler changes', () => {
     const result = suggestFocusedChecks([
-      'mcp/src/vault/documents.mjs',
+      'mcp/src/vault/documents/document-cache.mjs',
       'mcp/src/index.js',
-      'mcp/src/vault/redirect-backlinks.test.mjs',
-      'mcp/src/vault/conflict-detection.test.mjs',
+      'mcp/src/vault/writes/redirect-backlinks.test.mjs',
+      'mcp/src/vault/writes/conflict-detection.test.mjs',
     ]);
 
     assert.deepEqual(domainCommands(result), [
       'pnpm docs:surface:check',
       'pnpm exec node --test mcp/src/vault/vault.test.mjs',
-      'pnpm exec node --test mcp/src/vault/redirect-backlinks.test.mjs',
-      'pnpm exec node --test mcp/src/vault/conflict-detection.test.mjs',
+      'pnpm exec node --test mcp/src/vault/writes/redirect-backlinks.test.mjs',
+      'pnpm exec node --test mcp/src/vault/writes/conflict-detection.test.mjs',
       'pnpm test:mcp:unit',
       'pnpm integration:mcp:surface',
       'pnpm integration:mcp:vault-read',
@@ -622,7 +640,7 @@ describe('focused check suggestions', () => {
 
   it('suggests focused MCP vault-read integration for vault read handlers', () => {
     const result = suggestFocusedChecks([
-      'mcp/src/vault/documents.mjs',
+      'mcp/src/vault/documents/document-cache.mjs',
       'mcp/src/validate.mjs',
     ]);
 
@@ -658,13 +676,13 @@ describe('focused check suggestions', () => {
 
   it('routes each infer-imports family module to its own test and to repo-analysis integration', () => {
     const result = suggestFocusedChecks([
-      'mcp/src/infer-imports/go-imports.mjs',
-      'mcp/src/infer-imports/path-confinement.mjs',
+      'mcp/src/infer-imports/languages/go-imports.mjs',
+      'mcp/src/infer-imports/confinement/path-confinement.mjs',
     ]);
 
     assert.deepEqual(domainCommands(result), [
-      'pnpm exec node --test mcp/src/infer-imports/go-imports.test.mjs',
-      'pnpm exec node --test mcp/src/infer-imports/confined-source-fs.test.mjs',
+      'pnpm exec node --test mcp/src/infer-imports/languages/go-imports.test.mjs',
+      'pnpm exec node --test mcp/src/infer-imports/confinement/confined-source-fs.test.mjs',
       'pnpm test:mcp:unit',
       'pnpm integration:mcp:repo-analysis',
       'pnpm vault:validate',
@@ -907,7 +925,7 @@ describe('focused check suggestions', () => {
       'src-tauri/src/acp-registry.json',
       'src-tauri/src/acp.rs',
       'src-tauri/src/acp/isolation.rs',
-      'src-tauri/src/acp/runtime_environment/tests.rs',
+      'src-tauri/src/acp/launch/runtime_environment/tests.rs',
       '.github/workflows/release-macos.yml',
     ];
     assert.ok(subjects.length > 0, 'the ACP launch-boundary subject inventory must not be empty');
@@ -939,8 +957,8 @@ describe('focused check suggestions', () => {
       'scripts/lib/desktop-release/redact-command.mjs',
       'scripts/download/check-macos-download-release.mjs',
       'docs/DESKTOP-MACOS.md',
-      'src/shared/lib/vault-folder/tauri-vault-fs.ts',
-      'src/shared/lib/vault-folder/tauri-vault-fs.test.ts',
+      'src/shared/lib/vault-folder/native-vault/tauri-vault-handle.ts',
+      'src/shared/lib/vault-folder/native-vault/tauri-vault-handle.test.ts',
       'src/views/root-entry/ui/RootEntryPage.tsx',
       'src/views/root-entry/ui/RootEntryPage.test.tsx',
       'src/views/docs-vault/lib/persistence.ts',
@@ -957,11 +975,11 @@ describe('focused check suggestions', () => {
       'pnpm exec node --test scripts/verify-macos/verify-macos-install-smoke.test.mjs',
       'pnpm exec node --test scripts/lib/macos-artifact/macos-dmg-layout.test.mjs',
       'pnpm exec node --test scripts/lib/desktop-release/redact-command.test.mjs',
-      'pnpm exec eslint --max-warnings 0 src/shared/lib/vault-folder/tauri-vault-fs.ts src/shared/lib/vault-folder/tauri-vault-fs.test.ts ' +
+      'pnpm exec eslint --max-warnings 0 src/shared/lib/vault-folder/native-vault/tauri-vault-handle.ts src/shared/lib/vault-folder/native-vault/tauri-vault-handle.test.ts ' +
         'src/views/root-entry/ui/RootEntryPage.tsx src/views/root-entry/ui/RootEntryPage.test.tsx ' +
         'src/views/docs-vault/lib/persistence.ts src/views/docs-vault/ui/DocsVaultPage.tsx ' +
         'src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx',
-      'pnpm exec vitest run src/shared/lib/vault-folder/tauri-vault-fs.test.ts',
+      'pnpm exec vitest run src/shared/lib/vault-folder/native-vault/tauri-vault-handle.test.ts',
       'pnpm exec vitest run src/views/root-entry/ui/RootEntryPage.test.tsx',
       'pnpm docs-vault:build',
       'pnpm exec vitest run tests/contract/vault-data/bundled-vault-budget.contract.test.ts',
@@ -1006,6 +1024,18 @@ describe('focused check suggestions', () => {
   it('runs the native bridge tests for code split out of the crate root', () => {
     for (const path of ['src-tauri/src/vault/write.rs', 'src-tauri/src/webview_verify/mod.rs']) {
       assert.ok(commandNames(suggestFocusedChecks([path])).includes('pnpm test:desktop:bridge'), path);
+    }
+  });
+
+  it('runs the native bridge tests, the readiness check and the security contracts for every native vault bridge file', () => {
+    const folder = 'src/shared/lib/vault-folder/native-vault';
+    for (const name of ['tauri-vault-files', 'tauri-library-sources', 'tauri-audit-source']) {
+      const path = `${folder}/${name}.ts`;
+      assert.ok(existsSync(path), path);
+      const suggested = suggestFocusedChecks([path]);
+      assert.ok(commandNames(suggested).includes('pnpm test:desktop:bridge'), path);
+      assert.ok(commandNames(suggested).includes('pnpm desktop:check'), path);
+      assert.ok(commandNames(suggested).includes(SECURITY_COMMAND), path);
     }
   });
 
@@ -1064,6 +1094,22 @@ describe('focused check suggestions', () => {
     assert.ok(!commands.some((command) => command.includes('mcp-connector-add')));
   });
 
+  it('points every download page section and its release controls at the scroll-budget and stillness specs', () => {
+    for (const file of [
+      'src/views/download/ui/DownloadPage.tsx',
+      'src/views/download/ui/hero/HeroSection.tsx',
+      'src/views/download/ui/film/FilmSection.tsx',
+      'src/views/download/ui/ClosingSection.tsx',
+      'src/views/download/ui/ScreensSection.tsx',
+      'src/views/download/ui/release/DownloadActions.tsx',
+      'src/views/download/ui/release/FactsStrip.tsx',
+    ]) {
+      const commands = domainCommands(suggestFocusedChecks([file]));
+      assert.ok(commands.includes('pnpm exec playwright test tests/e2e/gateway/download-scroll-budget.spec.ts'), file);
+      assert.ok(commands.includes('pnpm exec playwright test tests/e2e/gateway/download-still.spec.ts'), file);
+    }
+  });
+
   it('points folder-switch and download-hero changes at the leak specs that measure them', () => {
     const cases = [
       ['src/entities/vault-session/model/local-vault/use-local-vault.ts', 'tests/e2e/vault-session/vault-switch-release.spec.ts'],
@@ -1082,6 +1128,19 @@ describe('focused check suggestions', () => {
       assert.ok(existsSync(path), `${path} moved; move its mapping with it`);
       assert.ok(commandNames(suggestFocusedChecks([path])).includes(`pnpm exec playwright test ${spec}`), `${path} → ${spec}`);
     }
+  });
+
+  it('points every Flat name admission file at the star-motion spec that measures names in motion', () => {
+    const command = 'pnpm exec playwright test tests/e2e/map/flat-graph/map-flat-graph-star-motion.spec.ts';
+    for (const path of [
+      'src/widgets/ontology-map/flat-graph/names.ts',
+      'src/widgets/ontology-map/flat-graph/names/admit.ts',
+      'src/widgets/ontology-map/flat-graph/names/sides.ts',
+    ]) {
+      assert.ok(existsSync(path), `${path} moved; move its mapping with it`);
+      assert.ok(commandNames(suggestFocusedChecks([path])).includes(command), path);
+    }
+    assert.ok(!commandNames(suggestFocusedChecks(['src/widgets/ontology-map/flat-graph/names/zoom-step.test.ts'])).includes(command));
   });
 
   it('routes the vault session files the desktop readiness gate reads to that gate', () => {
@@ -1316,12 +1375,12 @@ describe('focused check suggestions', () => {
 
   it('suggests lint, related suites and typecheck for app/source TypeScript files without sibling tests', () => {
     const result = suggestFocusedChecks([
-      'src/shared/config/site.ts',
+      'src/shared/config/site/site.ts',
       'src/shared/lib/theme.ts',
     ]);
 
     assert.deepEqual(domainCommands(result), [
-      'pnpm exec eslint --max-warnings 0 src/shared/config/site.ts src/shared/lib/theme.ts',
+      'pnpm exec eslint --max-warnings 0 src/shared/config/site/site.ts src/shared/lib/theme.ts',
       'pnpm typecheck',
     ]);
   });
@@ -1673,10 +1732,29 @@ describe('focused check suggestions', () => {
     ]);
   });
 
+  it('suggests the landing tests when a module the lander is built from changes', () => {
+    for (const path of ['scripts/lib/landing/pr-land/landing-lock.mjs', 'scripts/lib/landing/pr-land/landing-lock.test.mjs', 'scripts/lib/landing/pr-land/fake-github.mjs']) {
+      assert.ok(commandNames(suggestFocusedChecks([path])).includes('pnpm test:pr:land'), `${path} must recommend the landing tests`);
+    }
+  });
+
+  it('suggests the desktop checker tests when the release-status entry or a module changes', () => {
+    for (const path of [
+      'scripts/desktop-release/check-macos-release-status.mjs',
+      'scripts/desktop-release/check-macos-release-status.test.mjs',
+      'scripts/desktop-release/release-status/status-report.mjs',
+      'scripts/desktop-release/release-status/status-report.test.mjs',
+    ]) {
+      assert.ok(commandNames(suggestFocusedChecks([path])).includes('pnpm test:desktop:check'), `${path} must recommend the desktop checker tests`);
+    }
+  });
+
   it('routes every CI impact surface to its planner and executor contract', () => {
     const paths = [
       'scripts/ci/classify-change.mjs',
       'scripts/ci/classify-change.test.mjs',
+      'scripts/ci/plan-base.mjs',
+      'scripts/ci/plan-base.test.mjs',
       'scripts/ci/run-ci-lane.mjs',
       'scripts/ci/run-ci-lane.test.mjs',
       'scripts/lib/ci/focused-check-suggestions.mjs',
@@ -1917,7 +1995,7 @@ describe('rule files under scripts/lib/check-rules are the registry', () => {
     try {
       const directory = join(scratch, 'check-rules');
       cpSync(CHECK_RULES_DIRECTORY, directory, { recursive: true });
-      const before = await loadCheckRules(pathToFileURL(`${directory}/`));
+      const before = await importCheckRules(pathToFileURL(`${directory}/`));
       writeFileSync(
         join(directory, 'zz-new-area.mjs'),
         [
@@ -1930,7 +2008,7 @@ describe('rule files under scripts/lib/check-rules are the registry', () => {
           '',
         ].join('\n'),
       );
-      const after = await loadCheckRules(pathToFileURL(`${directory}/`));
+      const after = await importCheckRules(pathToFileURL(`${directory}/`));
 
       assert.deepEqual(after.rules.slice(0, -1), before.rules);
       assert.equal(after.rules.at(-1).command, 'pnpm test:new-area');
@@ -1981,13 +2059,14 @@ describe('security surfaces', () => {
 
   it('asks for the security lens where untrusted input meets a capability', () => {
     for (const path of [
-      'mcp/src/vault/documents.mjs',
+      'mcp/src/vault/documents/document-cache.mjs',
       'src-tauri/src/lib.rs',
       '.github/workflows/checks.yml',
       'pnpm-lock.yaml',
       'mcp/pnpm-lock.yaml',
       'src/shared/lib/desktop-shell/tauri-external-link.ts',
       'src/features/acp-session/model/acp-client.ts',
+      'src/features/acp-session/model/permissions/permission-answer.ts',
     ]) {
       assert.match(securityRow(path)?.reason ?? '', /`security` lens/, path);
     }
@@ -1998,6 +2077,18 @@ describe('security surfaces', () => {
       const row = securityRow(path);
       assert.ok(row, path);
       assert.doesNotMatch(row.reason, /`security` lens/, path);
+    }
+  });
+
+  it('keeps the Library screens and the model files behind them on the security contracts', () => {
+    for (const path of [
+      'src/views/library/ui/wiki/WikiCitationPopover.tsx',
+      'src/views/library/ui/check-report/SemanticLedger.tsx',
+      'src/views/library/ui/questions/desk/DeskReport.tsx',
+      'src/views/library/model/turns/use-library-turns.ts',
+      'src/views/library/model/reader/reader-landing.ts',
+    ]) {
+      assert.ok(securityRow(path), path);
     }
   });
 
@@ -2064,6 +2155,39 @@ describe('rendered UI audit coverage', () => {
       const commands = commandNames(suggestFocusedChecks([path]));
       assert.ok(commands.includes('pnpm test:ui:audit'), path);
       assert.ok(commands.includes('pnpm exec playwright test tests/e2e/design-audits/ui-audit-probe.spec.ts'), path);
+    }
+  });
+});
+
+describe('files moved into a subfolder keep their rules', () => {
+  it('checks the committed MCP catalogue and runs the security contracts for the site content security policy', () => {
+    const subjects = [
+      ['src/shared/config/mcp/mcp-catalogue.generated.ts', 'pnpm mcp:catalogue:check'],
+      ['src/shared/config/site/web-content-security-policy.ts', SECURITY_COMMAND],
+    ];
+    for (const [path, command] of subjects) {
+      assert.ok(existsSync(path), path);
+      assert.ok(commandNames(suggestFocusedChecks([path])).includes(command), `${path} -> ${command}`);
+    }
+  });
+
+  it('runs the security contracts for a native bridge in a nested folder such as the vector search commands', () => {
+    const path = 'src/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors.ts';
+    assert.ok(existsSync(path), path);
+    assert.ok(commandNames(suggestFocusedChecks([path])).includes(SECURITY_COMMAND));
+  });
+
+  it('runs the security contracts for the folder watch bridge and the folder-name proof for the vault provider', () => {
+    const subjects = [
+      ['src/entities/vault-session/model/vault-provider/TauriVaultWatchBridge.tsx', SECURITY_COMMAND],
+      [
+        'src/entities/vault-session/model/vault-provider/LocalVaultProvider.tsx',
+        'pnpm exec playwright test tests/e2e/map/map-open-folder-stays-named.spec.ts',
+      ],
+    ];
+    for (const [path, command] of subjects) {
+      assert.ok(existsSync(path), path);
+      assert.ok(commandNames(suggestFocusedChecks([path])).includes(command), `${path} -> ${command}`);
     }
   });
 });

@@ -6,7 +6,8 @@ export const rules = [
     matches: [
       /^src\/views\/download\/ui\/DownloadPage\.tsx$/,
       /^src\/views\/download\/(?:lib\/page-motion\/gateway-frame-loop\.ts|ui\/GatewayFx\.tsx)$/,
-      /^src\/views\/download\/ui\/(?:film\/)?[A-Za-z]+Section\.tsx$/,
+      /^src\/views\/download\/ui\/(?:(?:film|hero)\/)?[A-Za-z]+Section\.tsx$/,
+      /^src\/views\/download\/ui\/release\/[A-Za-z]+\.tsx$/,
     ],
   },
   {
@@ -16,7 +17,8 @@ export const rules = [
     matches: [
       /^src\/views\/download\/ui\/DownloadPage\.tsx$/,
       /^src\/views\/download\/(?:lib\/page-motion\/gateway-frame-loop\.ts|ui\/GatewayFx\.tsx)$/,
-      /^src\/views\/download\/ui\/(?:film\/)?[A-Za-z]+Section\.tsx$/,
+      /^src\/views\/download\/ui\/(?:(?:film|hero)\/)?[A-Za-z]+Section\.tsx$/,
+      /^src\/views\/download\/ui\/release\/[A-Za-z]+\.tsx$/,
     ],
   },
   {
@@ -33,7 +35,7 @@ export const rules = [
     command: 'pnpm exec playwright test tests/e2e/git/git-workbench-stacked-floor.spec.ts',
     reason: 'the stacked Git reader at the window floor changed',
     matches: [
-      /^src\/widgets\/atlas-git-panel\/ui\/(AtlasGitPanel|DesktopBody|StepList|ActionDock|RemoteControls|SetupMode)\.tsx$/,
+      /^src\/widgets\/atlas-git-panel\/ui\/(AtlasGitPanel|DesktopBody|StepList|ActionDock|remote-controls|setup-panels)\.tsx$/,
       /^src\/widgets\/atlas-git-panel\/ui\/CommitDetail\.tsx$/,
       /^src\/widgets\/atlas-git-panel\/ui\/commit-detail\/[^/]+\.tsx$/,
     ],
@@ -52,8 +54,8 @@ export const rules = [
     command: 'pnpm exec playwright test tests/e2e/library/answers/library-question-desk.spec.ts',
     reason: 'the library question desk changed',
     matches: [
-      /^src\/views\/library\/ui\/parts\/questions\/LibraryQuestionDesk\.tsx$/,
-      /^src\/views\/library\/ui\/parts\/questions\/desk\/[^/]+\.tsx?$/,
+      /^src\/views\/library\/ui\/questions\/LibraryQuestionDesk\.tsx$/,
+      /^src\/views\/library\/ui\/questions\/desk\/[^/]+\.tsx?$/,
     ],
   },
   {
@@ -62,7 +64,7 @@ export const rules = [
     reason: "the library constellation renderer's disposal changed",
     matches: [
       /^src\/views\/library\/ui\/LibraryConstellations\.tsx$/,
-      /^src\/views\/library\/ui\/parts\/first-run\/LibraryConstellation\.tsx$/,
+      /^src\/views\/library\/ui\/first-run\/LibraryConstellation\.tsx$/,
     ],
   },
   {
@@ -70,9 +72,10 @@ export const rules = [
     command: 'pnpm exec playwright test tests/e2e/library/wiki/library-wiki-reader.spec.ts',
     reason: 'the library wiki reader or the source passage it reads on a press changed',
     matches: [
-      /^src\/views\/library\/ui\/parts\/wiki\/[^/]+\.tsx?$/,
+      /^src\/views\/library\/ui\/(?:check-report|wiki)\/[^/]+\.tsx?$/,
+      /^src\/views\/library\/model\/reader\/(?:reader-landing|wiki-reader-facts|use-wiki-reader-facts)[^/]*\.tsx?$/,
       /^src\/views\/library\/lib\/sources\/use-cited-passage\.ts$/,
-      /^src\/shared\/lib\/library\/source-passage\.ts$/,
+      /^src\/shared\/lib\/library\/source-(?:passage|units|zip|markup-scan)\.ts$/,
     ],
   },
 ]

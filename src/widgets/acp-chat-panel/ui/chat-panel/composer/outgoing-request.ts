@@ -1,4 +1,4 @@
-import type { HeldRequest, SeatedDetail, SessionState } from '../types';
+import type { HeldRequest, SeatedDetail, SessionState } from '../chat-panel-props';
 
 /**
  * What a draft sends: the lead the person sees, or, while the seated lead is untouched, the whole

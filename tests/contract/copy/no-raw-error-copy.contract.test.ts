@@ -439,12 +439,12 @@ export function thrownMessageOutsideDeveloperReach(path: string, text: string): 
  */
 const REPAIRED = [
   'src/views/library/ui/LibraryPage.tsx',
-  'src/views/library/ui/library-page/use-library-sources.ts',
-  'src/views/library/ui/library-page/use-library-turns.ts',
-  'src/views/library/ui/library-page/use-wiki-template-problems.ts',
+  'src/views/library/model/sources/use-library-sources.ts',
+  'src/views/library/model/turns/use-library-turns.ts',
+  'src/views/library/model/reader/use-wiki-template-problems.ts',
   'src/views/library/lib/questions/use-answer-refresh.ts',
-  'src/views/library/ui/parts/questions/RetainedAnswerContext.tsx',
-  'src/views/library/ui/parts/questions/AnswerRevisionComparison.tsx',
+  'src/views/library/ui/questions/RetainedAnswerContext.tsx',
+  'src/views/library/ui/questions/AnswerRevisionComparison.tsx',
   'src/views/home/ui/HomePage.tsx',
   'src/views/first-run/ui/FirstRunPage.tsx',
   'src/views/project-detail/ui/ProjectDetailPage.tsx',

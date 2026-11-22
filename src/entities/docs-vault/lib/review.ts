@@ -4,7 +4,7 @@
  * person was authenticated.
  */
 
-import type { VaultDoc } from '../model/types';
+import type { VaultDoc } from '../model/vault-manifest';
 
 const REVIEW_STATE_KEY = 'review_state';
 const REVIEW_NOTE_KEY = 'review_note';

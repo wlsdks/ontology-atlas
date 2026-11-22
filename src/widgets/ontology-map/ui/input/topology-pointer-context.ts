@@ -1,8 +1,10 @@
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
-import { DEFAULT_MAP_NAVIGATION_SPEED } from "@/shared/lib/preferences/appearance-preferences";
+import {
+  DEFAULT_MAP_NAVIGATION_SPEED,
+} from "@/shared/lib/preferences/map-navigation-speed-preferences";
 import { commitDomeEntrySweep } from "../../model/dome-view/frame";
 import type { DomeNodeFrame, DomeRuntime } from "../../model/dome-view/runtime";
-import { computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin } from "../camera/topology-camera-math";
+import { computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin } from "../camera/target/zoom-range";
 import type { PointerHandlerRefs } from "./topology-pointer-types";
 
 export type PointerContext = ReturnType<typeof createPointerContext>;
@@ -66,10 +68,10 @@ export function createPointerContext(refs: PointerHandlerRefs) {
   };
 
   /** Reuse the cached rect during a gesture; refresh lazily if we somehow don't have one yet. */
-  const currentRect = (el: HTMLCanvasElement): { left: number; top: number } => {
+  const currentRect = (canvasElement: HTMLCanvasElement): { left: number; top: number } => {
     const cached = canvasRectRef.current;
     if (cached) return cached;
-    const rect = el.getBoundingClientRect();
+    const rect = canvasElement.getBoundingClientRect();
     const snapshot = { left: rect.left, top: rect.top };
     canvasRectRef.current = snapshot;
     return snapshot;

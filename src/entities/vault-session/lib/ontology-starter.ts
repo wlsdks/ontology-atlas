@@ -1,6 +1,6 @@
 /** The ontology starter: 5 .md files, the agent guide and the agent skills scaffolded into an empty folder. Mirrors `cli/templates/vault/`; keep both in sync. */
 
-import { ATLAS_CLI } from '@/shared/config/cli-invocation';
+import { ATLAS_CLI } from '@/shared/config/agent/cli-invocation';
 
 interface StarterFile {
   relPath: string;

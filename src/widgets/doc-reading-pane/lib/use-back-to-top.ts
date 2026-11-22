@@ -26,23 +26,23 @@ export function useBackToTop(
 
   useEffect(() => {
     scheduleStateSync(() => setVisible(false));
-    const el = scrollRef.current;
-    if (!el) return;
+    const htmlElement = scrollRef.current;
+    if (!htmlElement) return;
     const onScroll = () => {
-      setVisible(shouldShowBackToTop(el.scrollTop, threshold));
+      setVisible(shouldShowBackToTop(htmlElement.scrollTop, threshold));
     };
-    el.addEventListener("scroll", onScroll, { passive: true });
-    return () => el.removeEventListener("scroll", onScroll);
+    htmlElement.addEventListener("scroll", onScroll, { passive: true });
+    return () => htmlElement.removeEventListener("scroll", onScroll);
   }, [scrollRef, dependencyKey, threshold]);
 
   const scrollToTop = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el) return;
+    const htmlElement = scrollRef.current;
+    if (!htmlElement) return;
     const prefersReducedMotion =
       typeof window !== "undefined" &&
       typeof window.matchMedia === "function" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    el.scrollTo({ top: 0, behavior: prefersReducedMotion ? "auto" : "smooth" });
+    htmlElement.scrollTo({ top: 0, behavior: prefersReducedMotion ? "auto" : "smooth" });
   }, [scrollRef]);
 
   return { visible, scrollToTop };

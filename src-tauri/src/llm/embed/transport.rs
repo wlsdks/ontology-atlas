@@ -145,7 +145,7 @@ impl Transport for CurlTransport {
         config.push_str(&format!("max-time = {}\n", limits.total.as_secs().max(1)));
         config.push_str(&format!("connect-timeout = {}\n", request.timeout));
         let mut child = KillOnDrop(
-            crate::process::no_console::hide_console(&mut Command::new("curl"))
+            crate::child_process::no_console::hide_console(&mut Command::new("curl"))
                 .args([
                     "--disable",
                     "--silent",
@@ -252,7 +252,7 @@ impl Transport for CurlTransport {
         if !status.success() {
             return Err(match status.code() {
                 Some(28) => EmbedError::TimedOut,
-                _ => EmbedError::Request(crate::errors::squeeze(&stderr)),
+                _ => EmbedError::Request(crate::coded_error::squeeze(&stderr)),
             });
         }
         held.as_deref()

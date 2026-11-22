@@ -42,11 +42,11 @@ export function MentionTargetMenu({ held, open, at, onHover, onPick }: Props) {
         </p>
       ) : null}
       <ul className="overflow-auto py-0.5" style={{ maxHeight: MENTION_MENU_MAX_HEIGHT - 64 }}>
-        {held.matches.map((d, idx) => (
+        {held.matches.map((d, itemIndex) => (
           <li key={d.slug}>
             <RowButton
-              active={idx === held.active}
-              onMouseEnter={() => onHover(idx)}
+              active={itemIndex === held.active}
+              onMouseEnter={() => onHover(itemIndex)}
               onClick={() => onPick(d)}
               className="hover:bg-[color:var(--color-overlay-1)]"
             >

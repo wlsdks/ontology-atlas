@@ -26,5 +26,5 @@ Returns exact repository source lines or declaration outlines under fixed reques
 - Write plans, human approval or semantic qualification.
 
 ## Uncertainty
-- The limits, stable-read and selector implementation is in `mcp/src/evidence-search/source-evidence.mjs`; source-only dispatch is in `mcp/src/tools/repo-analysis.mjs`. Sixteen existing source-evidence unit cases and MCP source-only parity/refusal cases ran on 2026-10-03.
+- The limits, stable-read and selector implementation is in `mcp/src/evidence-search/source-evidence.mjs`; source-only dispatch is in `mcp/src/tools/repo-analysis/analyze-structure.mjs`. Sixteen existing source-evidence unit cases and MCP source-only parity/refusal cases ran on 2026-10-03.
 - Exact evidence equality and smaller delivery were measured on one calibration range. General host token savings, runtime correctness and ontology quality do not follow from those measurements.

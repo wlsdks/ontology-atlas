@@ -1,11 +1,10 @@
 /** The compiled-graph tool handlers: `compile_ontology` and `query_ontology`. */
 
-export { meaningSourceFromProjectSource, projectSourceScope, projectMeaningContext } from './meaning-readiness.mjs';
 export { compileOntologyTool, queryOntologyTool };
 
 import { buildCompactAgentBrief } from '../agent-brief/agent-brief-compact.mjs';
 import { buildMeaningRepairReviewPage } from '../meaning/meaning-repair.mjs';
-import { loadOntologyAtlasIgnore } from '../vault/ontology-atlas-ignore.mjs';
+import { readOntologyAtlasIgnore } from '../vault/sidecar/ontology-atlas-ignore.mjs';
 import { queryCompiledOntology, refreshAgentBriefHandoffPrompt } from '../ontology-engine.mjs';
 import { deriveProjectSourceWitnessesFromDocs } from '../project-source/project-source-witnesses.mjs';
 import { COMPILED_ONTOLOGY_CACHE, VAULT_ROOT } from '../server/runtime.mjs';
@@ -14,14 +13,14 @@ import {
   requireOptionalNonNegativeInteger,
   requireOptionalPositiveInteger,
 } from '../server/validate.mjs';
-import { attachVaultValidation } from './maintenance.mjs';
+import { attachVaultValidation } from './result-attachments.mjs';
 import { buildSummaryFreshness } from './vault-nodes.mjs';
-import { scopedAgentBriefInput, privateCurrentProjectSourceAccess } from './agent-brief-scope.mjs';
+import { scopedAgentBriefInput, privateCurrentProjectSourceAccess } from './agent-brief/agent-brief-scope.mjs';
 import {
   attachMeaningReadiness,
   attachProjectMeaning,
   projectMeaningContext,
-} from './meaning-readiness.mjs';
+} from './agent-brief/meaning-readiness.mjs';
 import { validateQueryOntologyArgs } from './query-ontology-args.mjs';
 
 const COMPILE_SUMMARY_DELIVERY = Object.freeze({
@@ -95,7 +94,7 @@ async function queryOntologyTool(args = {}) {
     return readAnalysisRecord(VAULT_ROOT, args.recordId);
   }
   const { artifact, docs: loadedDocs } = COMPILED_ONTOLOGY_CACHE.getWithDocs();
-  const ontologyAtlasIgnorePatterns = loadOntologyAtlasIgnore(VAULT_ROOT);
+  const ontologyAtlasIgnorePatterns = readOntologyAtlasIgnore(VAULT_ROOT);
   if (args.operation === 'meaning_repair_review') {
     const agentBrief = queryCompiledOntology(artifact, {
       operation: 'agent_brief',

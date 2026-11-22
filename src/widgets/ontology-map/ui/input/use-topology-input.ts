@@ -1,6 +1,7 @@
 "use client";
 
-import type { ExpandPreference, MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";
+import type { ExpandPreference } from "@/shared/lib/preferences/expand-preferences";
+import type { MapNavigationSpeed } from "@/shared/lib/preferences/map-navigation-speed-preferences";
 import {
   useCallback,
   useEffect,
@@ -37,8 +38,9 @@ import {
   type DepthParallaxOffset
 } from "../../model/realm/realm-depth-parallax";
 import { type TierRevealConfig } from "../../model/visibility/tier-visibility";
-import type { ClusterBarLabels } from "../../render/cluster-chips";
-import { centerForInsets, computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin } from "../camera/topology-camera-math";
+import type { ClusterBarLabels } from "../../render/cluster-chips/control-placement";
+import { centerForInsets } from "../camera/target/safe-insets";
+import { computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin } from "../camera/target/zoom-range";
 import { createTopologyPointerHandlers } from "./topology-pointer-handlers";
 import type { HoverAvoidRect, NodeDragState, TopologyPointerHandlers } from "./topology-pointer-types";
 import { readOntologyMapTokensOrNull } from "../../tokens/topology-read-tokens";
@@ -97,7 +99,7 @@ interface Dependencies {
   onContextMenuNode: ((slug: string, position: { x: number; y: number; }) => void) | undefined;
   onContextMenuPane: ((position: { x: number; y: number; }) => void) | undefined;
   onToggleCluster: ((parentId: string) => void) | undefined;
-  onHoverCluster: ((info: { parentId: string; count: number; descendantTotal: number; expanded: boolean; position: { x: number; y: number; }; } | null) => void) | undefined;
+  onHoverCluster: ((cluster: { parentId: string; count: number; descendantTotal: number; expanded: boolean; position: { x: number; y: number; }; } | null) => void) | undefined;
   egoRevealBatchesRef: RefObject<number>;
   clusterRevealBatchesRef: RefObject<Map<string, number>>;
   realmEnterButtonRef: RefObject<HTMLButtonElement | null> | undefined;
@@ -307,15 +309,15 @@ export function useTopologyInput({
   // targeted. rAF updates the button's position every frame; the target slug is
   // shared through `realmEnterTargetRef`.
   useEffect(() => {
-    const btn = realmEnterButtonRef?.current;
-    if (!btn) return;
+    const button = realmEnterButtonRef?.current;
+    if (!button) return;
     const listener = (e: MouseEvent) => {
       e.stopPropagation();
       const slug = realmEnterTargetRef.current;
       if (slug) onEnterRealmRef.current?.(slug);
     };
-    btn.addEventListener("click", listener);
-    return () => btn.removeEventListener("click", listener);
+    button.addEventListener("click", listener);
+    return () => button.removeEventListener("click", listener);
   }, [onEnterRealmRef, realmEnterButtonRef, realmEnterTargetRef]);
 
   /**
@@ -510,17 +512,17 @@ export function useTopologyInput({
      * every step would keep the map sliding. Test and target both use the free area.
      */
     const { width, height } = viewportRef.current;
-    const canvasEl = canvasRef.current;
-    if (width > 0 && height > 0 && canvasEl) {
+    const canvasElement = canvasRef.current;
+    if (width > 0 && height > 0 && canvasElement) {
       const scale = camera.scale.value;
-      const canvasBox = canvasEl.getBoundingClientRect();
+      const canvasBox = canvasElement.getBoundingClientRect();
       const canvasRect: Rect = {
         x: canvasBox.x,
         y: canvasBox.y,
         width: canvasBox.width,
         height: canvasBox.height,
       };
-      const obstacles = collectCanvasObstacles(canvasEl, canvasRect);
+      const obstacles = collectCanvasObstacles(canvasElement, canvasRect);
       const free = computeFreeArea(canvasRect, obstacles);
 
       // Is the focus comfortably inside the free area (compared in document
@@ -538,7 +540,7 @@ export function useTopologyInput({
          * The target comes from the camera-math formula (`centerForInsets`); a local copy would be the one that goes missing (the focus dive
          * was). The free area stays only in the "has it gone outside" test, which needs a containing rectangle that insets cannot express.
          */
-        const centered = centerForInsets(target.x, target.y, { ...measureCanvasInsets(canvasEl, canvasRect), top: 0, bottom: 0 }, scale);
+        const centered = centerForInsets(target.x, target.y, { ...measureCanvasInsets(canvasElement, canvasRect), top: 0, bottom: 0 }, scale);
         const cameraTarget = { tx: centered.tx, ty: centered.ty, tscale: scale };
         /*
          * Starting the tween alone is not enough: when it ends the spring takes over from `cameraTargetRef`, and a stale one pulls the

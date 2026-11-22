@@ -209,8 +209,8 @@ export function createVaultAcpWorkReceiptStore(
   return {
     append(receipt) {
       return enqueue(async () => {
-        const dir = await handle.getDirectoryHandle(ACP_WORK_RECEIPT_DIR, { create: true });
-        const fileHandle = await dir.getFileHandle(ACP_WORK_RECEIPT_FILE, { create: true });
+        const directory = await handle.getDirectoryHandle(ACP_WORK_RECEIPT_DIR, { create: true });
+        const fileHandle = await directory.getFileHandle(ACP_WORK_RECEIPT_FILE, { create: true });
         let current = '';
         try {
           current = await (await fileHandle.getFile()).text();

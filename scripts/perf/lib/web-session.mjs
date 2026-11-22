@@ -10,8 +10,8 @@ const ROOT = new URL('../../..', import.meta.url).pathname;
 const require = createRequire(join(ROOT, 'package.json'));
 const PROBE_SOURCE = readFileSync(new URL('./page-probe.js', import.meta.url), 'utf8');
 
-export async function startStaticServer(dir, port) {
-  const server = spawn(process.execPath, [join(ROOT, 'scripts/web/serve-static-export.mjs'), `--port=${port}`, `--dir=${dir}`], { stdio: ['ignore', 'pipe', 'pipe'] });
+export async function startStaticServer(directory, port) {
+  const server = spawn(process.execPath, [join(ROOT, 'scripts/web/serve-static-export.mjs'), `--port=${port}`, `--dir=${directory}`], { stdio: ['ignore', 'pipe', 'pipe'] });
   const origin = `http://localhost:${port}`;
   const deadline = Date.now() + 15000;
   while (Date.now() < deadline) {
@@ -32,8 +32,8 @@ async function fillOpfs(context, origin, vault) {
   await page.goto(`${origin}/en/`);
   const filled = await page.evaluate(async (name) => {
     try {
-      const dir = await (await navigator.storage.getDirectory()).getDirectoryHandle(name);
-      await dir.getFileHandle('.perf-complete');
+      const directory = await (await navigator.storage.getDirectory()).getDirectoryHandle(name);
+      await directory.getFileHandle('.perf-complete');
       return true;
     } catch {
       return false;

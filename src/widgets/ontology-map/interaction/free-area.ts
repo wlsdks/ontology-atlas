@@ -4,7 +4,7 @@
  * `centerForInsets`. Shape decides the side: a tall panel is a side panel, a wide one a top bar.
  */
 
-import type { Box } from "../dial/types";
+import type { Box } from "../dial/dial-shapes";
 
 export interface Rect {
   readonly x: number;
@@ -91,22 +91,22 @@ export function collectCanvasObstacles(
 ): Rect[] {
   const out: Rect[] = [];
   const MIN_SIDE = minSide;
-  for (const el of canvas.ownerDocument.querySelectorAll('body *')) {
-    if (el === canvas || canvas.contains(el) || el.contains(canvas)) continue;
-    const box = el.getBoundingClientRect();
+  for (const domElement of canvas.ownerDocument.querySelectorAll('body *')) {
+    if (domElement === canvas || canvas.contains(domElement) || domElement.contains(canvas)) continue;
+    const box = domElement.getBoundingClientRect();
     if (box.width < MIN_SIDE || box.height < MIN_SIDE) continue;
     if (box.right <= canvasRect.x || box.left >= canvasRect.x + canvasRect.width) continue;
     if (box.bottom <= canvasRect.y || box.top >= canvasRect.y + canvasRect.height) continue;
-    if (el.closest('details:not([open])')) continue;
+    if (domElement.closest('details:not([open])')) continue;
     // Screen-reader-only content is clipped to a pixel: its children report their full boxes
     // but cover nothing (the hex board's tile list is 40 buttons down the canvas's left edge).
-    if (el.closest('.sr-only')) continue;
-    if (el.closest('[aria-hidden="true"]')) continue;
-    if (el.closest('[aria-modal="true"], [data-topology-camera-obstacle="none"]')) continue;
-    const style = getComputedStyle(el);
+    if (domElement.closest('.sr-only')) continue;
+    if (domElement.closest('[aria-hidden="true"]')) continue;
+    if (domElement.closest('[aria-modal="true"], [data-topology-camera-obstacle="none"]')) continue;
+    const style = getComputedStyle(domElement);
     if (style.visibility === 'hidden' || style.display === 'none') continue;
     if (Number(style.opacity) < 0.05) continue;
-    const cameraObstacle = el.getAttribute("data-topology-camera-obstacle") === "side-panel" ? "side-panel" as const : undefined;
+    const cameraObstacle = domElement.getAttribute("data-topology-camera-obstacle") === "side-panel" ? "side-panel" as const : undefined;
     // Keep outer geometry without losing an explicit panel's role.
     if (out.some((r) => (!cameraObstacle || r.cameraObstacle === cameraObstacle) && r.x <= box.x && r.y <= box.y && r.x + r.width >= box.right && r.y + r.height >= box.bottom)) {
       continue;
@@ -155,10 +155,10 @@ export function measureCanvasInsets(canvas: Element, canvasRect: Rect, panels: r
 }
 
 /** A declared fit obstacle that is really on screen — the same discipline as `collectCanvasObstacles`. */
-function isShownObstacle(el: Element, box: DOMRect): boolean {
+function isShownObstacle(domElement: Element, box: DOMRect): boolean {
   if (box.width <= 0 || box.height <= 0) return false;
-  if (el.closest('details:not([open])') || el.closest('[aria-hidden="true"]')) return false;
-  const style = getComputedStyle(el);
+  if (domElement.closest('details:not([open])') || domElement.closest('[aria-hidden="true"]')) return false;
+  const style = getComputedStyle(domElement);
   return style.visibility !== 'hidden' && style.display !== 'none' && Number(style.opacity) >= 0.05;
 }
 
@@ -179,9 +179,9 @@ export function measureEdgeFitObstacle(canvas: Element, side: "left" | "right"):
   const c = canvas.getBoundingClientRect();
   if (c.width <= 0 || c.height <= 0) return null;
   let found: EdgeFitObstacle | null = null;
-  for (const el of canvas.ownerDocument.querySelectorAll(`[data-map-fit-obstacle="${side}"]`)) {
-    const box = el.getBoundingClientRect();
-    if (!isShownObstacle(el, box)) continue;
+  for (const domElement of canvas.ownerDocument.querySelectorAll(`[data-map-fit-obstacle="${side}"]`)) {
+    const box = domElement.getBoundingClientRect();
+    if (!isShownObstacle(domElement, box)) continue;
     if (box.right <= c.left || box.left >= c.right || box.bottom <= c.top || box.top >= c.bottom) continue;
     const reach = side === "right" ? c.right - box.left : box.right - c.left;
     const top = box.top - c.top;
@@ -204,9 +204,9 @@ export interface PanelInsets extends CanvasInsets {
 /** The pointer-taking islands of a pass-through lane: what of a wide tool row the reader can see. */
 function laneControls(lane: Element): Element[] {
   const out: Element[] = [];
-  for (const el of lane.querySelectorAll("*")) {
-    const parent = el.parentElement;
-    if (parent && getComputedStyle(el).pointerEvents !== "none" && getComputedStyle(parent).pointerEvents === "none") out.push(el);
+  for (const domElement of lane.querySelectorAll("*")) {
+    const parent = domElement.parentElement;
+    if (parent && getComputedStyle(domElement).pointerEvents !== "none" && getComputedStyle(parent).pointerEvents === "none") out.push(domElement);
   }
   return out;
 }
@@ -236,9 +236,9 @@ export function measureNameObstacles(canvas: Element, sides: { left: boolean; ri
   }
   for (const declared of canvas.ownerDocument.querySelectorAll("[data-map-name-obstacle]")) {
     const parts = declared.getAttribute("data-map-name-obstacle") === "controls" ? laneControls(declared) : [declared];
-    for (const el of parts) {
-      const box = el.getBoundingClientRect();
-      if (!isShownObstacle(el, box) || box.right <= c.left || box.left >= c.right || box.bottom <= c.top || box.top >= c.bottom) continue;
+    for (const domElement of parts) {
+      const box = domElement.getBoundingClientRect();
+      if (!isShownObstacle(domElement, box) || box.right <= c.left || box.left >= c.right || box.bottom <= c.top || box.top >= c.bottom) continue;
       out.push({ minX: box.left - c.left, maxX: box.right - c.left, minY: box.top - c.top, maxY: box.bottom - c.top });
     }
   }
@@ -255,8 +255,8 @@ export function measureBottomFitObstacle(canvas: Element): number {
   const c = canvas.getBoundingClientRect();
   if (c.width <= 0 || c.height <= 0) return 0;
   let reserve = 0;
-  for (const el of canvas.ownerDocument.querySelectorAll('[data-map-fit-obstacle="bottom"]')) {
-    const box = el.getBoundingClientRect();
+  for (const domElement of canvas.ownerDocument.querySelectorAll('[data-map-fit-obstacle="bottom"]')) {
+    const box = domElement.getBoundingClientRect();
     if (box.width <= 0 || box.height <= 0) continue;
     if (box.right <= c.left || box.left >= c.right || box.bottom <= c.top || box.top >= c.bottom) continue;
     reserve = Math.max(reserve, c.bottom - box.top + BOTTOM_OBSTACLE_GAP_PX);

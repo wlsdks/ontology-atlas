@@ -50,10 +50,10 @@ export function resolveArchDir(root, arch) {
 }
 
 /** Collects every `.app.tar.gz` under a folder, at any depth. */
-function collectArchives(dir) {
+function collectArchives(directory) {
   const found = [];
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
+  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+    const full = path.join(directory, entry.name);
     if (entry.isDirectory()) {
       found.push(...collectArchives(full));
     } else if (entry.isFile() && entry.name.endsWith(".app.tar.gz")) {
@@ -68,14 +68,14 @@ function collectArchives(dir) {
  * step's common-ancestor root decides the depth. Exactly one archive per arch: with
  * several, a wrong-architecture app could ship.
  */
-export function findUpdaterArtifacts(dir) {
-  if (!dir || !fs.existsSync(dir)) return null;
-  const archives = collectArchives(dir);
+export function findUpdaterArtifacts(directory) {
+  if (!directory || !fs.existsSync(directory)) return null;
+  const archives = collectArchives(directory);
   if (archives.length === 0) return null;
   if (archives.length > 1) {
     fail(
-      `${dir} holds ${archives.length} .app.tar.gz files: ` +
-        `${archives.map((file) => path.relative(dir, file)).join(", ")} — cannot decide which one to ship.`,
+      `${directory} holds ${archives.length} .app.tar.gz files: ` +
+        `${archives.map((file) => path.relative(directory, file)).join(", ")} — cannot decide which one to ship.`,
     );
   }
   const archivePath = archives[0];
@@ -83,7 +83,7 @@ export function findUpdaterArtifacts(dir) {
   const signaturePath = `${archivePath}.sig`;
   if (!fs.existsSync(signaturePath)) {
     fail(
-      `${dir} has ${archive} but no ${archive}.sig.\n` +
+      `${directory} has ${archive} but no ${archive}.sig.\n` +
         "Building without TAURI_SIGNING_PRIVATE_KEY produces the archive without its signature — " +
         "shipping it that way makes the app refuse the update (it silently looks like 'no update').",
     );

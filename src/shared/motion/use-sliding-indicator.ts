@@ -39,8 +39,8 @@ export function useSlidingIndicator(
   shape: IndicatorShape,
   speed: "base" | "fast" = "base",
 ): {
-  containerRef: (el: HTMLElement | null) => void;
-  itemRef: (key: string) => (el: HTMLElement | null) => void;
+  containerRef: (element: HTMLElement | null) => void;
+  itemRef: (key: string) => (element: HTMLElement | null) => void;
   indicatorStyle: CSSProperties | undefined;
   placed: boolean;
   animated: boolean;
@@ -51,18 +51,18 @@ export function useSlidingIndicator(
   const [animated, setAnimated] = useState(false);
 
   const measure = useCallback(() => {
-    const el =
+    const element =
       activeKey === null || !container
         ? null
         : Array.from(container.querySelectorAll<HTMLElement>("[data-indicator-item]")).find(
             (item) => item.dataset.indicatorItem === `${group}:${activeKey}`,
           );
-    if (!el || !container) {
+    if (!element || !container) {
       setBox(null);
       return;
     }
     const c = container.getBoundingClientRect();
-    const r = el.getBoundingClientRect();
+    const r = element.getBoundingClientRect();
     const scale = container.offsetWidth > 0 && c.width > 0 ? c.width / container.offsetWidth : 1;
     const next = {
       x: (r.left - c.left) / scale - container.clientLeft + container.scrollLeft,
@@ -70,7 +70,7 @@ export function useSlidingIndicator(
       w: r.width / scale,
       h: r.height / scale,
     };
-    setBox((prev) => (sameBox(prev, next) ? prev : next));
+    setBox((previous) => (sameBox(previous, next) ? previous : next));
   }, [activeKey, container, group]);
 
   useLayoutEffect(() => {
@@ -82,7 +82,7 @@ export function useSlidingIndicator(
     if (!container || typeof ResizeObserver === "undefined") return;
     const observer = new ResizeObserver(() => measure());
     observer.observe(container);
-    for (const el of container.querySelectorAll("[data-indicator-item]")) observer.observe(el);
+    for (const element of container.querySelectorAll("[data-indicator-item]")) observer.observe(element);
     return () => observer.disconnect();
   }, [container, measure]);
 
@@ -94,8 +94,8 @@ export function useSlidingIndicator(
   }, [placed, animated]);
 
   const itemRef = useCallback(
-    (key: string) => (el: HTMLElement | null) => {
-      if (el) el.dataset.indicatorItem = `${group}:${key}`;
+    (key: string) => (element: HTMLElement | null) => {
+      if (element) element.dataset.indicatorItem = `${group}:${key}`;
     },
     [group],
   );

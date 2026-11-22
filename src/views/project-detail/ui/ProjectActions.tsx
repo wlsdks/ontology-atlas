@@ -4,7 +4,7 @@ import { useRef, useState, type InputHTMLAttributes, type ReactNode } from "reac
 import { useLocale, useTranslations } from "next-intl";
 import { BookOpen, FileText, FilePlus2, Link2, NotebookPen, PencilLine } from "lucide-react";
 import { Link } from "@/i18n/navigation";
-import { getProjectRuntimeDetailUrl, getTopologyProjectNodeHref, type Project } from "@/entities/project";
+import { buildProjectRuntimeDetailUrl, buildTopologyProjectNodeHref, type Project } from "@/entities/project";
 import { ProjectQuickEditPanel } from "@/features/project-quick-edit";
 import { useCopyFeedback } from "@/shared/lib/clipboard/use-copy-feedback";
 import { BASE_PATH } from "@/shared/lib/public-pages/base-path";
@@ -73,7 +73,7 @@ export function ProjectActions({
     let copied = false;
     try {
       copied = await linkCopy.copy(
-        getProjectRuntimeDetailUrl(window.location.origin, project.slug, { locale, basePath: BASE_PATH }),
+        buildProjectRuntimeDetailUrl(window.location.origin, project.slug, { locale, basePath: BASE_PATH }),
       );
     } catch {
       // An address that cannot be built is a copy that failed.
@@ -119,7 +119,7 @@ export function ProjectActions({
     <div data-testid="project-detail-actions" data-agent-route={brief.startAgent ? "agent" : "copy"} className="flex min-w-0 flex-col items-start gap-2 @5xl/project-page:items-end">
       <div className="flex flex-wrap items-center gap-2">
         <Link
-          href={getTopologyProjectNodeHref(project.slug)}
+          href={buildTopologyProjectNodeHref(project.slug)}
           data-testid="project-detail-topology-link"
           className={cn(buttonVariants({ variant: "primary", size: "sm" }), "atlas-touch-floor")}
         >

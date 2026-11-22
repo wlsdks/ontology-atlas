@@ -50,10 +50,10 @@ function toPosix(relativePath) {
   return relativePath.split(path.sep).join("/");
 }
 
-function sizeOf(dir) {
+function sizeOf(directory) {
   let bytes = 0;
   let files = 0;
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true, recursive: true })) {
+  for (const entry of fs.readdirSync(directory, { withFileTypes: true, recursive: true })) {
     if (!entry.isFile()) continue;
     bytes += fs.statSync(path.join(entry.parentPath, entry.name)).size;
     files += 1;

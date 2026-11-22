@@ -1,7 +1,7 @@
 import { NUMERAL_FONT_PX, numeralFont, scaledLabelFont, scaledLabelFontSize, tabularWidth } from "../render/labels";
 import { inkIndex, type DialInks } from "./ink";
 import { overlaps } from "./label-marks";
-import type { Box, DialMarks, DialModel, DialTokens, Point } from "./types";
+import type { Box, DialMarks, DialModel, DialTokens, Point } from "./dial-shapes";
 
 interface FarInput {
   model: DialModel;
@@ -39,9 +39,9 @@ function besideChip(count: FarCount, w: number, h: number): Point[] {
   const { p, r } = count.chip;
   const dx = count.toward.x - p.x;
   const dy = count.toward.y - p.y;
-  const len = Math.hypot(dx, dy) || 1;
-  const ux = dx / len;
-  const uy = dy / len;
+  const length = Math.hypot(dx, dy) || 1;
+  const ux = dx / length;
+  const uy = dy / length;
   const along = r + FAR_GAP_PX + (Math.abs(ux) * w + Math.abs(uy) * h) / 2;
   return [
     { x: p.x + ux * along, y: p.y + uy * along },

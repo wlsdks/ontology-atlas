@@ -26,10 +26,10 @@ Observed baseline before this change at `43d02994ffd36ab3e301b11a5d0e3425eaaf1fa
   `docs/design/brand.md:39`). Moru's manifest labels animations as candidates (`assets/brand/moru/moru.json:4`).
 - README uses raster lockups and existing download/browser links (`README.md:3`,
   `README.md:18`). The download view serves the gateway and selects its CTA from release/platform facts
-  (`src/views/download/ui/DownloadPage.tsx:56`, `src/views/download/ui/DownloadPage.tsx:64`).
+  (`src/views/download/ui/DownloadPage.tsx:56`, `src/views/download/ui/release/DownloadActions.tsx:19`).
 - Gateway chrome has a decorative mark beside the Atlas name; folder entry and
   404 have portraits (`src/widgets/gateway-chrome/ui/GatewayNav.tsx:60`,
-  `src/views/first-run/ui/FirstRunPage.tsx:169`, `src/views/terminal-state/ui/NotFoundScreen.tsx:82`).
+  `src/views/first-run/ui/FirstRunPage.tsx`, `src/views/terminal-state/ui/NotFoundScreen.tsx:75`).
 - Pending art is decorative; its parent owns status/cancellation. It pauses
   offscreen/hidden and stays still under reduced motion
   (`src/shared/ui/marks/moru/brand-waiting-mark.tsx:7`, `src/shared/ui/marks/moru/brand-waiting-mark.tsx:28`).
@@ -272,3 +272,4 @@ pack. Existing scene framing keeps blanket peekaboo in the catalogue.
 - 2026-11-12: first draft, with the owner's choice of Moru.
 - 2026-11-13: Moru motions, friends, pups and weather scenes added; hops grounded and playback kept in the context menu.
 - 2026-11-14: prop gestures, wordless emotions, playful encounters and the 32-pose dance added; motion refined and variations quieted.
+- 2026-11-22: source line cites follow the code into the files and lines that hold it after the structure cleanup; a cite whose code changed keeps its file and drops the line; no plan changed.

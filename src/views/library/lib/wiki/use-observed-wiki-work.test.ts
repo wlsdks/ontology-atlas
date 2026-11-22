@@ -22,4 +22,20 @@ describe("session-scoped wiki observations", () => {
     rerender({ scope: "local:ontology#2", revisions: new Map([["wiki/plan", 100]]) });
     expect(onReceipts).toHaveBeenCalledTimes(2);
   });
+
+  it("counts each page that differs from the folder's first listing once", () => {
+    const first = new Map([["wiki/plan", 10], ["wiki/notes", 10], ["wiki/_log", 10]]);
+    const { result, rerender } = renderHook(
+      ({ scope, revisions }) => useObservedWikiWork(scope, revisions, vi.fn(), vi.fn()),
+      { initialProps: { scope: "local:ontology#1", revisions: first } },
+    );
+    expect(result.current).toBe(0);
+    rerender({ scope: "local:ontology#1", revisions: new Map([["wiki/plan", 11], ["wiki/notes", 10], ["wiki/_log", 11]]) });
+    expect(result.current).toBe(1);
+    // The same page again is still one page; a new page is a second.
+    rerender({ scope: "local:ontology#1", revisions: new Map([["wiki/plan", 12], ["wiki/notes", 10], ["wiki/new", 1]]) });
+    expect(result.current).toBe(2);
+    rerender({ scope: "local:ontology#2", revisions: new Map([["wiki/plan", 99]]) });
+    expect(result.current).toBe(0);
+  });
 });

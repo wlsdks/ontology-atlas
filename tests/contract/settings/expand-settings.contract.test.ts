@@ -8,7 +8,8 @@ import {
   EXPAND_STRUCTURES,
   resolveExpand,
   type ExpandStructure,
-} from "@/shared/lib/preferences/appearance-preferences";
+} from "@/shared/lib/preferences/expand-preferences";
+import { drawClusterChip, type ClusterChipColors } from "@/widgets/ontology-map/render/cluster-chips";
 import {
   CLUSTER_BADGE_HEIGHT,
   CLUSTER_BAR_HEIGHT,
@@ -19,13 +20,11 @@ import {
   clusterChipOccupancyRect,
   clusterChipRect,
   clusterControlForm,
-  drawClusterChip,
-  estimateCanvasTextWidth,
   orbitButtonRect,
   type ClusterBarLabels,
-  type ClusterChipColors,
   type ClusterChipRect,
-} from "@/widgets/ontology-map/render/cluster-chips";
+} from "@/widgets/ontology-map/render/cluster-chips/control-placement";
+import { estimateCanvasTextWidth } from "@/widgets/ontology-map/render/cluster-chips/text-width";
 import {
   EGO_NEIGHBOR_LIMIT,
   selectiveEgoNeighbors,

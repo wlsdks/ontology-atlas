@@ -3,7 +3,7 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { MODEL_DOWNLOAD_HOSTS } from '@/shared/lib/vault-folder/tauri-vault-vectors';
+import { MODEL_DOWNLOAD_HOSTS } from '@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors';
 import { OUTBOUND_PATHS } from '@/widgets/app-settings-menu/model/outbound-paths';
 
 const DOWNLOAD_SOURCE = join(process.cwd(), 'src-tauri/src/llm/embed/builtin/download.rs');

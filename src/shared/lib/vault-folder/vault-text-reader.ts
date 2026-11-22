@@ -1,8 +1,5 @@
-import {
-  readTauriVaultTextFile,
-  readTauriVaultTextFiles,
-  type NativeVaultTextRead,
-} from './tauri-vault-fs';
+import { readTauriVaultTextFile, readTauriVaultTextFiles } from './native-vault/tauri-vault-files';
+import { type NativeVaultTextRead } from './vault-text-frames';
 
 export interface VaultTextRef {
   slug: string;

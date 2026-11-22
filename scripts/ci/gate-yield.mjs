@@ -96,9 +96,9 @@ export function readCache(root) {
   if (!existsSync(root)) return [];
   const records = [];
   for (const entry of readdirSync(root, { withFileTypes: true })) {
-    const dir = join(root, entry.name);
-    if (!entry.isDirectory() || !existsSync(join(dir, 'run.json'))) continue;
-    const meta = JSON.parse(readFileSync(join(dir, 'run.json'), 'utf8'));
+    const directory = join(root, entry.name);
+    if (!entry.isDirectory() || !existsSync(join(directory, 'run.json'))) continue;
+    const meta = JSON.parse(readFileSync(join(directory, 'run.json'), 'utf8'));
     const walk = (folder) => {
       for (const item of readdirSync(folder, { withFileTypes: true })) {
         const path = join(folder, item.name);
@@ -106,7 +106,7 @@ export function readCache(root) {
         else if (item.name.endsWith('.jsonl')) records.push(...parseReport(readFileSync(path, 'utf8'), { at: meta.at, runId: String(meta.id) }));
       }
     };
-    walk(dir);
+    walk(directory);
   }
   return records;
 }
@@ -178,9 +178,9 @@ export function main({ argv = process.argv.slice(2), env = process.env, gh = rea
         const batch = listing.workflow_runs ?? [];
         for (const run of batch.slice(0, limit - listed)) {
           listed += 1;
-          const dir = join(root, String(run.id));
-          if (existsSync(join(dir, 'run.json'))) continue;
-          fetchRun({ run, dir, gh: counted });
+          const directory = join(root, String(run.id));
+          if (existsSync(join(directory, 'run.json'))) continue;
+          fetchRun({ run, dir: directory, gh: counted });
           fetched += 1;
         }
         if (batch.length < 100) break;

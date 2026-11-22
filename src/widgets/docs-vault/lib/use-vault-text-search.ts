@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { VaultDoc } from '@/entities/docs-vault';
 import { useLocalVault } from '@/entities/vault-session';
-import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
-import type { VaultIndexStatus } from '@/shared/lib/vault-folder/tauri-vault-index';
-import { useVaultIndexHits } from '@/shared/lib/vault-folder/use-vault-index-hits';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
+import type { VaultIndexStatus } from '@/shared/lib/vault-folder/vault-index/tauri-vault-index';
+import { useVaultIndexHits } from '@/shared/lib/vault-folder/vault-index/use-vault-index-hits';
 import { buildBodyEntry, docBodyCacheKey, type DocsBodyEntry, type DocsBodyIndex } from './body-index';
 
 /** As many as the palette lists; the hit files are read to show the matching line. */

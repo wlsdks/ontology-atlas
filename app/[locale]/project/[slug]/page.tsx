@@ -6,7 +6,7 @@ import { isAppLocale, LOCALE_META } from '@/i18n/locales';
 import { getTranslations } from 'next-intl/server';
 import { ProjectDetailPage, projectBreadcrumb } from '@/views/project-detail';
 import { absoluteUrl } from '@/shared/config';
-import { SITE_ORGANIZATION_REF } from '@/shared/config/site-entity';
+import { SITE_ORGANIZATION_REF } from '@/shared/config/site/site-entity';
 import { buildPageMetadata } from '@/shared/lib/public-pages/page-metadata';
 import { JsonLd, RouteLoadingFallback } from '@/shared/ui';
 

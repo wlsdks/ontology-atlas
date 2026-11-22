@@ -6,7 +6,7 @@ import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
  * loudly it is stated. Prints sit beside relation lines, only for pairs that have a relation.
  */
 
-import { type FootprintPreference } from "../preferences/appearance-preferences";
+import { type FootprintPreference } from "../preferences/footprint-preferences";
 
 export type FootprintInk = readonly [number, number, number];
 

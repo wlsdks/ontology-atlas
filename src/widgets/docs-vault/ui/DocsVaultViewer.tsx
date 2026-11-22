@@ -16,7 +16,7 @@ import { normalizeOriginalPaths, rewriteWikilinks } from '@/shared/lib/library/s
 import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
 import { fetchServerDocContent } from '../lib/server-doc-content';
 import { readerTree } from '../lib/viewer/reader-tree';
-import { getTopologyProjectHref } from '@/entities/project';
+import { buildTopologyProjectHref } from '@/entities/project';
 import { createMatchHighlighter } from './viewer/create-match-highlighter';
 import { createMarkdownComponents } from './viewer/create-markdown-components';
 import type { ViewerCitation } from './viewer/render-markdown-link';
@@ -78,7 +78,7 @@ export function DocsVaultViewer({
   basePath = '/docs',
   getDocHref = defaultDocHref,
   // Map links point to /topology; a locale-less root redirect would drop the query.
-  getProjectHref = getTopologyProjectHref,
+  getProjectHref = buildTopologyProjectHref,
   getDocContent,
   bundledContent: bundledContentOverride,
   highlightQuery,
@@ -117,10 +117,10 @@ export function DocsVaultViewer({
   useEffect(() => {
     if (!raw || !highlightQuery) return;
     const handle = requestAnimationFrame(() => {
-      const el = document.querySelector<HTMLElement>(
+      const htmlElement = document.querySelector<HTMLElement>(
         '[data-docs-viewer] mark.docs-match',
       );
-      el?.scrollIntoView({
+      htmlElement?.scrollIntoView({
         behavior: reducedMotion ? 'auto' : 'smooth',
         block: 'center',
       });
@@ -152,9 +152,9 @@ export function DocsVaultViewer({
         cleaned = rewriteWikilinks(cleaned);
         setRaw(cleaned);
       })
-      .catch((err) => {
+      .catch((caughtError) => {
         if (cancelled) return;
-        setError(err instanceof Error ? err.message : String(err));
+        setError(caughtError instanceof Error ? caughtError.message : String(caughtError));
       });
     return () => {
       cancelled = true;

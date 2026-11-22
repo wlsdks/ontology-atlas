@@ -1,7 +1,4 @@
-import {
-  SEMANTIC_EVIDENCE_MAX_EXCERPT,
-  SEMANTIC_EVIDENCE_MAX_HEADINGS,
-} from '../constants.mjs';
+import { SEMANTIC_EVIDENCE_MAX_EXCERPT, SEMANTIC_EVIDENCE_MAX_HEADINGS } from '../scan-limits.mjs';
 import { cleanHeadingLabel } from '../text.mjs';
 
 export function semanticSectionTextRows(sections) {

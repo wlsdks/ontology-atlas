@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
 import type { VaultDoc } from '@/entities/docs-vault';
-import { sourceUnits } from '@/shared/lib/library/source-passage';
-import { MAX_VECTOR_PREFIX_BYTES, MAX_VECTOR_PREFIXES } from '@/shared/lib/vault-folder/tauri-vault-vectors';
+import { sourceUnits } from '@/shared/lib/library/source-units';
+import { MAX_VECTOR_PREFIX_BYTES, MAX_VECTOR_PREFIXES } from '@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors';
 import { countDeskReadablePages, deskBriefEvidence, deskPageClaims, deskLeadTermRuns, deskMeaningLeads, deskSearchPrefixes, deskSentenceWindow, DESK_SENTENCE_LIMIT, findDeskClaims, findDeskSourceHits, fuseDeskLeads, jevClaimEligibility, jevPayloadEligibility, newestDeskQuestions, planDeskSourceReads, questionDeskReportFileCurrent, questionTermRuns, questionTerms, recentDeskPages, type DeskClaim } from './question-desk';
 import { buildQuestionDeskBrief, buildQuestionDeskReportBrief, questionDeskReportFilename, serializeQuestionDeskReport, splitQuestionDeskReportSections, QUESTION_DESK_BRIEF_MAX_CHARS } from './question-desk-brief';
 import { planQuestionDeskReportFile } from './question-desk-brief';
@@ -418,6 +418,19 @@ describe('question desk home and lead order', () => {
     expect(recentDeskPages([page('wiki/b', day), page('wiki/c', day), page('wiki/a', day)], 2).map((row) => row.slug)).toEqual(['wiki/a', 'wiki/b']);
   });
 
+  it('dates and orders recent pages by their recorded compiled_at, falling back to the listed day only when it is missing', () => {
+    const docs = [
+      page('wiki/old-run', '2026-11-21T09:00:00Z', 'compiled_at: 2026-11-16T14:48:55Z\n'),
+      page('wiki/new-run', '2026-11-21T08:00:00Z', 'compiled_at: 2026-11-20T14:48:55Z\n'),
+      page('wiki/unrecorded', '2026-11-18T00:00:00Z'),
+    ];
+    const recent = recentDeskPages(docs, 3);
+    expect(recent.map((row) => row.slug)).toEqual(['wiki/new-run', 'wiki/unrecorded', 'wiki/old-run']);
+    expect(recent.map((row) => row.writtenAtMs)).toEqual([
+      Date.parse('2026-11-20T14:48:55Z'), Date.parse('2026-11-18T00:00:00Z'), Date.parse('2026-11-16T14:48:55Z'),
+    ]);
+  });
+
   it('lists saved questions newest first by the day their page records', () => {
     const docs = [
       page('wiki/answers/old', '2026-11-20T00:00:00Z', 'compiled_at: 2026-10-01T00:00:00Z\n'),
@@ -427,7 +440,7 @@ describe('question desk home and lead order', () => {
     ];
     const saved = newestDeskQuestions(docs, 3);
     expect(saved.map((row) => row.head.slug)).toEqual(['wiki/answers/new', 'wiki/answers/listed', 'wiki/answers/old']);
-    expect(saved[1]!.savedAt).toBe('2026-10-15T00:00:00Z');
+    expect(saved[1]!.savedAtMs).toBe(Date.parse('2026-10-15T00:00:00Z'));
     expect(newestDeskQuestions(docs, 1)).toHaveLength(1);
   });
 

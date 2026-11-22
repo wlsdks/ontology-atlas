@@ -2,7 +2,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { posix } from 'node:path';
 
 import { isSupportedSourcePath } from '../../quality/source-language/source-paths.mjs';
-import { loadTestReach } from '../import-graph/test-reach.mjs';
+import { readTestReach } from '../import-graph/test-reach.mjs';
 
 /**
  * The changed-path focused-check advisor: which checks a set of changed paths
@@ -43,7 +43,7 @@ function listCheckRuleFiles(directory = CHECK_RULES_DIRECTORY) {
 }
 
 /** Imports every rule file of `directory` and merges it into one registry. */
-export async function loadCheckRules(directory = CHECK_RULES_DIRECTORY) {
+export async function importCheckRules(directory = CHECK_RULES_DIRECTORY) {
   const modules = [];
   for (const name of listCheckRuleFiles(directory)) {
     modules.push({ name, module: await import(new URL(name, directory).href) });
@@ -109,7 +109,7 @@ export function composeCheckRules(modules) {
   };
 }
 
-const { rules: RULES, escalations: ESCALATIONS, directTests: DIRECT_TESTS } = await loadCheckRules();
+const { rules: RULES, escalations: ESCALATIONS, directTests: DIRECT_TESTS } = await importCheckRules();
 
 export function normalizeChangedPath(path) {
   const normalized = String(path || '').trim().replace(/\\/g, '/').replace(/^\.\//, '');
@@ -196,7 +196,7 @@ function directSourceLanguageSuggestions(paths) {
  * related`; a deleted file's importers run by name.
  */
 function directVitestTestSuggestions(paths, deletedPaths, { allContractsRun }) {
-  const reach = loadTestReach();
+  const reach = readTestReach();
   const rows = [];
   const sources = [];
   for (const path of paths) {
@@ -331,19 +331,19 @@ function directMcpUnitTestSuggestions(paths) {
 /** A source maps to its declared test; a declared test maps to itself. */
 let scriptTestImports = null;
 
-function scriptTestFiles(dir = 'scripts') {
-  if (!existsSync(dir)) return [];
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const path = `${dir}/${entry.name}`;
+function scriptTestFiles(directory = 'scripts') {
+  if (!existsSync(directory)) return [];
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const path = `${directory}/${entry.name}`;
     if (entry.isDirectory()) return entry.name === 'node_modules' ? [] : scriptTestFiles(path);
     return entry.name.endsWith('.test.mjs') ? [path] : [];
   });
 }
 
 function importedModules(testFile) {
-  const dir = posix.dirname(testFile);
+  const directory = posix.dirname(testFile);
   const text = readFileSync(testFile, 'utf8');
-  return [...text.matchAll(/(?:\bfrom\s*|\bimport\s*\(\s*)['"](\.{1,2}\/[^'"]+)['"]/g)].map((match) => posix.normalize(posix.join(dir, match[1])));
+  return [...text.matchAll(/(?:\bfrom\s*|\bimport\s*\(\s*)['"](\.{1,2}\/[^'"]+)['"]/g)].map((match) => posix.normalize(posix.join(directory, match[1])));
 }
 
 function scriptTestsFor(path) {
@@ -429,7 +429,28 @@ function rulesToSuggestions(rules, paths, commentOnly = new Set()) {
   return suggestions;
 }
 
-export function formatFocusedCheckSuggestions({ paths = [], commands = [], escalations = [] } = {}) {
+/**
+ * The lanes a parallel slice leaves to the lead's one run on the integration tree, chosen by cost:
+ * the full contract sweep, knip, typecheck, a production build and the MCP suites each take tens of
+ * seconds to minutes over the whole tree. Per-file gates stay with the slice.
+ */
+const REPO_WIDE_COMMAND = /^pnpm (?:test:contracts|knip|typecheck|build|test:mcp:[\w:-]+)(?:\s|$)/;
+
+function isSliceCommand(command) {
+  return !REPO_WIDE_COMMAND.test(command);
+}
+
+/** Keeps the slice's own commands; the rest are returned as `deferred` for the integration tree. */
+export function sliceOnlySuggestions(suggestions) {
+  return {
+    ...suggestions,
+    commands: suggestions.commands.filter((row) => isSliceCommand(row.command)),
+    deferred: suggestions.commands.filter((row) => !isSliceCommand(row.command)),
+    escalations: [],
+  };
+}
+
+export function formatFocusedCheckSuggestions({ paths = [], commands = [], escalations = [], deferred = [] } = {}) {
   if (paths.length === 0) {
     return [
       '[focused-checks] no changed paths against HEAD or untracked files',
@@ -448,6 +469,9 @@ export function formatFocusedCheckSuggestions({ paths = [], commands = [], escal
       lines.push(`  ${suggestion.command}  # ${suggestion.reason}`);
     }
     lines.push('Run these before broad lint/build/test; escalate only when the change risk requires it.');
+  }
+  if (deferred.length > 0) {
+    lines.push(`--slice: ${deferred.length} repo-wide check(s) left for the lead's run on the integration tree.`);
   }
   if (escalations.length > 0) {
     lines.push('Escalate when needed:');

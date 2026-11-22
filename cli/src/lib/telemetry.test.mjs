@@ -22,12 +22,12 @@ import {
   stampMomentIfFirst,
 } from './telemetry.mjs';
 
-function withTempVault(fn) {
-  const dir = mkdtempSync(join(tmpdir(), 'oatlas-telemetry-'));
+function withTempVault(callback) {
+  const directory = mkdtempSync(join(tmpdir(), 'oatlas-telemetry-'));
   try {
-    return fn(dir);
+    return callback(directory);
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(directory, { recursive: true, force: true });
   }
 }
 

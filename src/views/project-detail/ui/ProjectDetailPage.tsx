@@ -29,8 +29,8 @@ import {
 } from "@/shared/ui";
 import { cn } from "@/shared/lib/cn";
 import {
-  getProjectEditHref,
-  getProjectRuntimeDetailHref,
+  buildProjectEditHref,
+  buildProjectRuntimeDetailHref,
   projectDisplayName,
   projectHasDisplayName,
   type Project,
@@ -46,7 +46,7 @@ import {
 import { buildDocsVaultHref, countWikiPages, findProjectDocInList } from "@/entities/docs-vault";
 import { VaultConflictError, useLocalVault } from "@/entities/vault-session";
 import { buildProjectOntologyMetrics, resolveNodeAgentTarget } from "@/entities/knowledge-graph";
-import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/tauri-vault-fs";
+import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
 import { useChatWidth } from "@/widgets/acp-chat-panel";
 import { useProjectAgent } from "../lib/use-project-agent";
 import { ProjectAgentDock } from "./parts/ProjectAgentDock";
@@ -67,7 +67,7 @@ import { resolveProjectLead } from "../model/project-lead";
 import { buildProjectToCheck, isProjectConcept } from "../model/project-to-check";
 import { buildProjectChanged } from "../model/project-changed";
 import { DomainMasterDetail } from "./DomainMasterDetail";
-import { ProjectNowFactsReader, type ProjectNowFacts } from "./now/ProjectNowFacts";
+import { ProjectNowFactsReader, type ProjectNowFacts } from "./now/ProjectNowFactsReader";
 import { ToCheckSection } from "./now/ToCheckSection";
 import { ChangedSection } from "./now/ChangedSection";
 import { SECTION_HEADING_CLASS } from "./now/now-parts";
@@ -245,7 +245,7 @@ export function ProjectDetailPage({
     (nextSlug: string) => {
       setSearchOpen(false);
       if (nextSlug === slug) return;
-      router.push(getProjectRuntimeDetailHref(nextSlug));
+      router.push(buildProjectRuntimeDetailHref(nextSlug));
     },
     [router, slug],
   );
@@ -385,9 +385,9 @@ export function ProjectDetailPage({
 
     const canManageProject = projectMutations.canEdit;
     /* A sentence in the page's language inside `saveErrorPrefix`; the raw error goes to the console only. */
-    const projectSaveErrorMessage = (err: unknown) => {
-      if (err instanceof VaultConflictError) return t("saveErrorConflict");
-      const failure = failureSentence(err, t("saveErrorGeneric"));
+    const projectSaveErrorMessage = (error: unknown) => {
+      if (error instanceof VaultConflictError) return t("saveErrorConflict");
+      const failure = failureSentence(error, t("saveErrorGeneric"));
       if (failure.detail) console.error("project save failed", failure.detail);
       return failure.sentence;
     };
@@ -406,10 +406,10 @@ export function ProjectDetailPage({
             : { description: next.trim() ? next : null },
         );
         showToast(field === "name" ? t("saveSuccessName") : t("saveSuccessDescription"), "success");
-      } catch (err) {
-        const message = projectSaveErrorMessage(err);
+      } catch (error) {
+        const message = projectSaveErrorMessage(error);
         showToast(t("saveErrorPrefix", { message }), "error");
-        throw err;
+        throw error;
       }
     };
 
@@ -424,7 +424,7 @@ export function ProjectDetailPage({
     ]
       .filter(Boolean)
       .join(" · ");
-    const projectHref = getProjectRuntimeDetailHref(project.slug);
+    const projectHref = buildProjectRuntimeDetailHref(project.slug);
     const documentHref = projectDoc ? buildDocsVaultHref({ slug: projectDoc.slug }) : "/docs/";
     const briefIsStructured = splitProjectBrief(dedupedBodyContent).sections.length > 0;
     const hasLibrary = librarySources + libraryWikiPages > 0;
@@ -477,7 +477,7 @@ export function ProjectDetailPage({
               project={project}
               displayName={displayName ?? null}
               canManage={canManageProject}
-              fullEditHref={getProjectEditHref(project.slug, { returnTo: projectHref })}
+              fullEditHref={buildProjectEditHref(project.slug, { returnTo: projectHref })}
               projectHref={projectHref}
               documentHref={documentHref}
               handoffSnippet={buildAgentHandoffSnippet(project.slug)}
@@ -705,7 +705,7 @@ export function ProjectDetailPage({
           {connectedProjects.length > 0 ? (
             <span data-testid="project-detail-connected" className="flex min-w-0 flex-wrap items-baseline gap-x-2">
               {t("connectedTitle")}
-              <Link href={getProjectRuntimeDetailHref(connectedProjects[0].slug)} className={quietLinkClass}>
+              <Link href={buildProjectRuntimeDetailHref(connectedProjects[0].slug)} className={quietLinkClass}>
                 {projectDisplayName(connectedProjects[0], locale)}
               </Link>
               {connectedProjects.length > 1 ? <span>{t("connectedMoreNote", { count: connectedProjects.length - 1 })}</span> : null}

@@ -75,8 +75,8 @@ describe("appendWikiLog writes a file a person and grep can both read", () => {
         close: async () => {},
       }),
     };
-    const dir = { getFileHandle: async () => file };
-    const vault = { getDirectoryHandle: async () => dir } as unknown as FileSystemDirectoryHandle;
+    const directory = { getFileHandle: async () => file };
+    const vault = { getDirectoryHandle: async () => directory } as unknown as FileSystemDirectoryHandle;
     return { vault, read: () => content };
   }
 

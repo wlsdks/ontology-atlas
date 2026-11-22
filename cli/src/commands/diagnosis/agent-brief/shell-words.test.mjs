@@ -10,7 +10,7 @@ describe('shell words', () => {
   });
 
   it('splits back exactly what graphDbShellQuote wrote, spaces and double quotes included', () => {
-    for (const word of ['plain', 'two words', 'a"b', '$HOME']) {
+    for (const word of ['plain', 'two words', 'a"b', '$HOME', "it's", "'", "a'b'c", '']) {
       assert.deepEqual(splitShellWords(`cmd ${graphDbShellQuote(word)}`), ['cmd', word]);
     }
   });

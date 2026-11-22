@@ -1,6 +1,7 @@
 'use client';
 
-import { isTauriVaultRuntime, pickTauriSourceDirectory } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { pickTauriSourceDirectory } from '@/shared/lib/vault-folder/native-vault/tauri-project-source';
+import { isTauriVaultRuntime } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { cn } from '@/shared/lib/cn';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { copyText } from '@/shared/lib/clipboard/copy-text';

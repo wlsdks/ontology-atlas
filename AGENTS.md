@@ -68,8 +68,8 @@ ships (`committed-media.contract.test.ts`). Skill design:
 | Meaningful code change in an existing vault | `/ontology-sync` |
 | Requested extraction from prose or wiki | `/ontology-extract`; a wiki page only through the user's registered third-party MCP |
 | Construction rules or MCP behavior that can change vault quality | `/ontology-field-trial`; wording-only changes that keep evidence/approval/write contracts skip it |
-| Authorized parallel work | `/delegate` |
-| Returned or ready branches | `/merge`; your own branch merges with `pnpm pr:land` |
+| Authorized parallel work | `/delegate` to brief, `/integrate` to merge |
+| Returned or ready branches | Parallel slices: `/integrate`; one branch: `/merge`, then `pnpm pr:land` |
 
 Delegate only large, independent, parallelizable work; finish what a handful of
 tool calls can do yourself, and never delegate to verify or double-check your
@@ -133,16 +133,40 @@ only with `pnpm pr:land <number>`. Never use `--no-verify`, force-push main,
 `git reset --hard`, or `git push --force` without explicit user authority.
 Publishing needs an explicit request and `npm pack --dry-run` first.
 
-`CLAUDE.md` imports this file and owns Claude loading details. Keep root plus
-the largest nested instruction file below 32 KiB; nested `AGENTS.md` files only
-point to the `.claude/rules/` relevant to their paths, which Codex does not
-auto-load. Keep host-specific skill metadata and agent briefs separate. Shared
-procedures may have one owner; byte identity is not required. Codex briefs
-inherit the caller's model, effort and tools; `access` defines scope, not a grant.
-Run `pnpm agents:check` after editing agent
-files. `.claude/settings.json` owns Claude hooks and `.codex/hooks.json` Codex
-hooks; Codex skips a new or changed entry until a person trusts it in `/hooks`.
-Do not change Claude files while optimizing Codex instructions.
+Parallel work reaches `main` through one integration branch (`/integrate`),
+never a train or a pull request per slice: unpushed slices run
+`pnpm checks:changed -- --run --slice`, the lead merges each `--no-ff` as it
+returns, and repo-wide lanes and CI run once. Never squash, rebase or
+cherry-pick a slice; delete a branch only once `origin/main` holds its head.
+
+Keep root plus the largest nested instruction file below 32 KiB; nested
+`AGENTS.md` files only point to the `.claude/rules/` relevant to their paths.
+Keep host-specific skill metadata and agent briefs separate. Shared procedures
+may have one owner; byte identity is not required. Codex briefs inherit the
+caller's model, effort and tools; `access` defines scope, not a grant. Run
+`pnpm agents:check` after editing agent files. Do not change Claude files while
+optimizing Codex instructions.
+
+## Harness loading and hooks
+
+This file is the only root instruction file: Claude Code reads it directly, and
+a root `CLAUDE.md` would replace it. `.claude/rules/` always loads `forbidden`,
+`git` and `local-first`; `design`, `design-gates`, `architecture`, `testing`,
+`surfaces` and `documentation` load by their frontmatter paths
+(`rules-path-scope.contract.test.ts`). Making a rule resident updates that
+contract, this sentence, and the commit's reason together. Codex loads no rule
+by itself. Claude discovers skills in `.claude/skills/`, Codex in
+`.agents/skills/`.
+
+`.claude/settings.json` owns Claude permissions and hooks, `.codex/hooks.json`
+Codex hooks; Codex skips a new or changed entry until a person trusts it in
+`/hooks`. Hooks block irreversible commands, report lint and language findings
+at edit time, and inject the vault census at session start; each header says
+why. Each has a `.codex/hooks/` adaptation (a Codex edit is an `apply_patch`
+envelope), not a copy, except Codex-only
+`block-secret-read.sh` (Claude uses `permissions.deny`) and Claude-only
+`session-length.sh` (it reads Claude's transcript). `pnpm test:claude:hooks`
+guards the wiring.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

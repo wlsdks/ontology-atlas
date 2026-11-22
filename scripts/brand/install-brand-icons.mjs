@@ -119,24 +119,24 @@ const COPY_PLAN = [
  * Width/height 256 is written as 0 (the field is one byte, so 256 does not fit).
  */
 function buildIco(frames) {
-  const dir = Buffer.alloc(6 + frames.length * 16);
-  dir.writeUInt16LE(0, 0);
-  dir.writeUInt16LE(1, 2); // type 1 = icon
-  dir.writeUInt16LE(frames.length, 4);
-  let offset = dir.length;
+  const directory = Buffer.alloc(6 + frames.length * 16);
+  directory.writeUInt16LE(0, 0);
+  directory.writeUInt16LE(1, 2); // type 1 = icon
+  directory.writeUInt16LE(frames.length, 4);
+  let offset = directory.length;
   frames.forEach(([size, buf], i) => {
     const e = 6 + i * 16;
-    dir.writeUInt8(size >= 256 ? 0 : size, e);
-    dir.writeUInt8(size >= 256 ? 0 : size, e + 1);
-    dir.writeUInt8(0, e + 2); // No palette
-    dir.writeUInt8(0, e + 3);
-    dir.writeUInt16LE(1, e + 4); // color planes
-    dir.writeUInt16LE(32, e + 6); // bpp
-    dir.writeUInt32LE(buf.length, e + 8);
-    dir.writeUInt32LE(offset, e + 12);
+    directory.writeUInt8(size >= 256 ? 0 : size, e);
+    directory.writeUInt8(size >= 256 ? 0 : size, e + 1);
+    directory.writeUInt8(0, e + 2); // No palette
+    directory.writeUInt8(0, e + 3);
+    directory.writeUInt16LE(1, e + 4); // color planes
+    directory.writeUInt16LE(32, e + 6); // bpp
+    directory.writeUInt32LE(buf.length, e + 8);
+    directory.writeUInt32LE(offset, e + 12);
     offset += buf.length;
   });
-  return Buffer.concat([dir, ...frames.map(([, b]) => b)]);
+  return Buffer.concat([directory, ...frames.map(([, b]) => b)]);
 }
 
 const written = [];

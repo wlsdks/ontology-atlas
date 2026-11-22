@@ -5,7 +5,7 @@ import {
   domeHash01,
   TAU,
 } from '../cone-layout';
-import type { DomeCircle, DomeCoord, DomeInputNode, DomeSector, DomeViewKind } from '../types';
+import type { DomeCircle, DomeCoord, DomeInputNode, DomeSector, DomeViewKind } from '../dome-shapes';
 
 /**
  * Strata: the tiers as four stacked planes at the cone's `DOME_PLANE` heights; height is the tier.

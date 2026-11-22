@@ -5,24 +5,26 @@
 import { readFileSync, readdirSync, statSync, existsSync, realpathSync } from 'node:fs';
 import { join, basename, relative, isAbsolute, dirname } from 'node:path';
 import {
-  AUTOTOOLS_IDENTITY_FILES,
-  AUTOTOOLS_IMPLEMENTATION_MANIFESTS,
   AUTOTOOLS_ROLE_ASSIGNMENT_LIMIT,
-  AUTOTOOLS_ROLE_CLASSIFICATION_PRIORITY,
   AUTOTOOLS_ROLE_LITERAL_PATH_MAX_LENGTH,
   AUTOTOOLS_ROLE_MANIFEST_MAX_BYTES,
-  AUTOTOOLS_ROLE_SELECTION_PRIORITY,
   AUTOTOOLS_ROLE_TARGET_LIMIT,
   CARGO_MANIFEST_MAX_BYTES,
   NATIVE_DOC_BUILD_ELEMENT_LIMIT,
-  NATIVE_ROLE_EVIDENCE_FILE,
   NATIVE_SOURCE_ELEMENT_LIMIT,
-  NATIVE_SOURCE_FILE,
   RUST_IMPLEMENTATION_ELEMENT_LIMIT,
   RUST_MODULES_PER_TARGET_LIMIT,
   RUST_SOURCE_MAX_BYTES,
+} from '../scan-limits.mjs';
+import {
+  AUTOTOOLS_IDENTITY_FILES,
+  AUTOTOOLS_IMPLEMENTATION_MANIFESTS,
+  AUTOTOOLS_ROLE_CLASSIFICATION_PRIORITY,
+  AUTOTOOLS_ROLE_SELECTION_PRIORITY,
+  NATIVE_ROLE_EVIDENCE_FILE,
+  NATIVE_SOURCE_FILE,
   SOURCE_FOLDERS,
-} from '../constants.mjs';
+} from '../scan-tables.mjs';
 import { forwardFinder, humanize, slugify } from '../text.mjs';
 import {
   packageContractPathIssue,
@@ -319,11 +321,11 @@ export function discoverAutotoolsImplementationEvidence(rootPath, { ignore, skip
     }
   };
 
-  const visitSourceRoot = (dir, depth, descend = true) => {
+  const visitSourceRoot = (directory, depth, descend = true) => {
     if (depth > 3 || entriesSeen >= 2000) return;
     let realDirectory;
     try {
-      realDirectory = realpathSync(dir);
+      realDirectory = realpathSync(directory);
       if (visitedDirectories.has(realDirectory)) return;
       visitedDirectories.add(realDirectory);
     } catch {
@@ -331,7 +333,7 @@ export function discoverAutotoolsImplementationEvidence(rootPath, { ignore, skip
     }
     let entries;
     try {
-      entries = readdirSync(dir).sort();
+      entries = readdirSync(directory).sort();
     } catch {
       return;
     }
@@ -339,7 +341,7 @@ export function discoverAutotoolsImplementationEvidence(rootPath, { ignore, skip
       if (entriesSeen >= 2000) break;
       entriesSeen += 1;
       if (ignore.has(entry) || entry.startsWith('.')) continue;
-      const path = join(dir, entry);
+      const path = join(directory, entry);
       let pathStat;
       try {
         if (!pathResolvesInsideRoot(rootPath, path)) continue;

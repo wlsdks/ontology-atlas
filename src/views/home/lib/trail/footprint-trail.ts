@@ -1,4 +1,4 @@
-import { ATLAS_CLI } from "@/shared/config/cli-invocation";
+import { ATLAS_CLI } from "@/shared/config/agent/cli-invocation";
 
 export const FOOTPRINT_TRAIL_MAX = 30;
 
@@ -78,9 +78,9 @@ export interface TrailStepCaption {
 }
 
 export function graphIdToConceptSlug(nodeId: string): string {
-  const idx = nodeId.indexOf(":");
-  if (idx < 0) return nodeId;
-  const tail = nodeId.slice(idx + 1).trim();
+  const index = nodeId.indexOf(":");
+  if (index < 0) return nodeId;
+  const tail = nodeId.slice(index + 1).trim();
   return tail || nodeId;
 }
 

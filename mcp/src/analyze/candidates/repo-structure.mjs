@@ -9,19 +9,21 @@ import { evaluateConstructionLifecycle } from '../../construction/construction-l
 import { discoverDeclaredWorkspacePackages } from '../../infer-imports/workspace-packages.mjs';
 import { collectRustFeatureConfigurationEvidence } from '../../rust-feature-evidence.mjs';
 import {
+  IGNORE_ARRAY_MAX_ITEMS,
+  IMPLEMENTATION_SOURCE_ELEMENT_LIMIT,
+  LIBRARY_SOURCE_ELEMENT_LIMIT,
+  SOURCE_LAYOUT_COORDINATION_ELEMENT_LIMIT,
+} from '../scan-limits.mjs';
+import {
   BUSINESS_CAPABILITY_CLUES,
   DEFAULT_IGNORE,
   ELEMENT_ENTRY_FILES,
   FSD_SCAN_ROOTS,
-  IGNORE_ARRAY_MAX_ITEMS,
   IMPLEMENTATION_ONLY_SOURCE_FOLDERS,
-  IMPLEMENTATION_SOURCE_ELEMENT_LIMIT,
-  LIBRARY_SOURCE_ELEMENT_LIMIT,
   SOURCE_FOLDERS,
   SOURCE_LAYOUT_CODE_FILE,
-  SOURCE_LAYOUT_COORDINATION_ELEMENT_LIMIT,
   SOURCE_LAYOUT_COORDINATION_ROLE,
-} from '../constants.mjs';
+} from '../scan-tables.mjs';
 import { humanize, matchDomainSlug, slugify } from '../text.mjs';
 import {
   optionalNonNegativeInteger,
@@ -159,14 +161,14 @@ export function analyzeRepoStructure(rootPath, options = {}) {
       // basenames that collide across layers get a singular layer suffix.
       const elementCandidates = [];
       for (const r of fsdRoots) {
-        const dir = join(srcDir, r);
-        if (!existsSync(dir)) continue;
-        for (const sub of readdirSync(dir).sort()) {
+        const directory = join(srcDir, r);
+        if (!existsSync(directory)) continue;
+        for (const sub of readdirSync(directory).sort()) {
           if (ignore.has(sub) || sub.startsWith('.')) {
-            skipped.push({ path: join(dir, sub), reason: 'dotfile/ignore' });
+            skipped.push({ path: join(directory, sub), reason: 'dotfile/ignore' });
             continue;
           }
-          const subPath = join(dir, sub);
+          const subPath = join(directory, sub);
           if (!statSync(subPath).isDirectory()) continue;
           // FSD semantics: features are user-facing capability candidates;
           // entities/widgets/views are implementation evidence, not business

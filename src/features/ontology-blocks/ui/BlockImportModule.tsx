@@ -14,10 +14,8 @@ import {
 } from '@/shared/motion';
 import { useBodyScrollLock } from "@/shared/lib/overlays/use-body-scroll-lock";
 import { isPickerAbort } from "@/shared/lib/failures/picker-abort";
-import {
-  isTauriVaultRuntime,
-  pickTauriVaultDirectory,
-} from "@/shared/lib/vault-folder/tauri-vault-fs";
+import { pickTauriVaultDirectory } from "@/shared/lib/vault-folder/native-vault/tauri-vault-location";
+import { isTauriVaultRuntime } from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
 import { useRovingRadioGroup } from "@/shared/lib/keyboard/use-roving-radio-group";
 import { controlClass } from "@/shared/ui/control-class";
 import { CloseButton } from "@/shared/ui/controls/close-button";
@@ -169,17 +167,17 @@ export function BlockImportModule({
     if (!vaultLoaded) return;
     dispatchImportUi({ type: "set-inline-text", inlineText: null });
     try {
-      const dir = (isTauriVaultRuntime()
+      const directory = (isTauriVaultRuntime()
         ? await pickTauriVaultDirectory(t("importAria"))
         : await (
             window as unknown as {
-              showDirectoryPicker: (opts?: {
+              showDirectoryPicker: (options?: {
                 mode?: "read" | "readwrite";
               }) => Promise<unknown>;
             }
           ).showDirectoryPicker({ mode: "read" })) as BlockDirectoryHandleLike | null;
-      if (!dir) return;
-      const { files, manifestRaw } = await readBlockDirectory(dir);
+      if (!directory) return;
+      const { files, manifestRaw } = await readBlockDirectory(directory);
       if (files.length === 0) {
         dispatchImportUi({ type: "set-inline-text", inlineText: { kind: "error", text: t("importEmpty") } });
         return;
@@ -194,13 +192,13 @@ export function BlockImportModule({
         type: "open-preview",
         preview: {
           files,
-          blockName: blockManifest?.blockName?.trim() || dir.name,
-          sourceProject: blockManifest?.sourceProject?.trim() || dir.name,
+          blockName: blockManifest?.blockName?.trim() || directory.name,
+          sourceProject: blockManifest?.sourceProject?.trim() || directory.name,
           ...(blockManifest ? { manifest: blockManifest } : {}),
         },
       });
-    } catch (err) {
-      if (isPickerAbort(err)) return;
+    } catch (error) {
+      if (isPickerAbort(error)) return;
       dispatchImportUi({ type: "set-inline-text", inlineText: { kind: "error", text: t("importError") } });
     }
   };

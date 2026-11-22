@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import playwrightConfig, { resolvePlaywrightWorkers } from '../../../playwright.config';
-import { loadCheckRules } from '../../../scripts/lib/ci/focused-check-suggestions.mjs';
+import { importCheckRules } from '../../../scripts/lib/ci/focused-check-suggestions.mjs';
 import { MERGE_SMOKE_SPECS } from '../../../scripts/ci/merge-smoke-specs.mjs';
 import { POST_MERGE_SPECS } from '../../e2e/post-merge-specs';
 
@@ -144,7 +144,7 @@ const UNMAPPED_POST_MERGE_SPECS = [
 
 describe('post-merge specs reach the pull requests that change their owner', () => {
   it('maps every post-merge spec to a source owner unless it is a named sweep', async () => {
-    const registry = await loadCheckRules();
+    const registry = await importCheckRules();
     const commands = [...registry.rules, ...registry.escalations].map((rule) => rule.command).join('\n');
     const unmapped = POST_MERGE_SPECS.filter((file) => !commands.includes(`tests/e2e/${file}`));
     expect([...unmapped].sort()).toEqual(UNMAPPED_POST_MERGE_SPECS);

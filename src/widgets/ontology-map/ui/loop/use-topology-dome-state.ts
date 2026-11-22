@@ -1,13 +1,13 @@
 "use client";
 
-import type { MapArrangement } from "@/shared/lib/preferences/appearance-preferences";
+import type { MapArrangement } from "@/shared/lib/preferences/map-view-preferences";
 import {
   useRef
 } from "react";
 import type { CameraTarget } from "../../engine/camera";
 import type { DomeModelBuild } from "../../model/dome-view/model-build";
 import type { DomeRuntime } from "../../model/dome-view/runtime";
-import type { DomeViewKind } from "../../model/dome-view/types";
+import type { DomeViewKind } from "../../model/dome-view/dome-shapes";
 import { type TierNameAnchor } from "../../model/dome-view/strata/tier-names";
 interface Dependencies {
     view3d: boolean;

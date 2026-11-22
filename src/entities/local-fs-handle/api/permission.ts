@@ -13,13 +13,13 @@ export async function verifyHandlePermission(
   mode: FsPermissionMode,
   options: VerifyOptions = {},
 ): Promise<FsPermissionState> {
-  const opts = { mode };
-  const query = (await handle.queryPermission?.(opts)) ?? ('granted' as const);
+  const permissionDescriptor = { mode };
+  const query = (await handle.queryPermission?.(permissionDescriptor)) ?? ('granted' as const);
   if (query === 'granted') return 'granted';
   if (options.ask) {
-    const req =
-      (await handle.requestPermission?.(opts)) ?? ('granted' as const);
-    return req;
+    const request =
+      (await handle.requestPermission?.(permissionDescriptor)) ?? ('granted' as const);
+    return request;
   }
   return query;
 }

@@ -81,12 +81,12 @@ export function humanizeCodePathTitle(title: string): string | null {
   if (!looksLikeCodePath(title)) return null;
   const segs = title.trim().split("/").filter(Boolean);
   if (segs.length === 0) return null;
-  let idx = segs.length - 1;
-  let leaf = segs[idx].replace(KNOWN_CODE_EXT, "");
+  let index = segs.length - 1;
+  let leaf = segs[index].replace(KNOWN_CODE_EXT, "");
   let promotions = 0;
-  while (isGenericSegment(leaf) && idx > 0 && promotions < MAX_PROMOTIONS) {
-    idx -= 1;
-    leaf = segs[idx];
+  while (isGenericSegment(leaf) && index > 0 && promotions < MAX_PROMOTIONS) {
+    index -= 1;
+    leaf = segs[index];
     promotions += 1;
   }
   const words = leaf

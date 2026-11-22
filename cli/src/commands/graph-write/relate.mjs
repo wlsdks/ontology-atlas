@@ -1,6 +1,6 @@
 // `ontology-atlas relate <from> <to> <type> [vault]`: the CLI writer for `relation-check`, with the same argument
 // shape. Validates through relation-check's MCP call (../lib/relation-preflight.mjs), then writes the `from` doc's
-// frontmatter directly like `add`/`import`, mirroring mcp/src/tools/write-relations.mjs addRelation (canonical, sorted, deduped; domain is a scalar).
+// frontmatter directly like `add`/`import`, mirroring mcp/src/tools/writes/write-relations.mjs addRelation (canonical, sorted, deduped; domain is a scalar).
 
 import { COLORS } from '../../lib/colors.mjs';
 import { runRelationCheckQuery, renderRelationCheckResult } from '../../lib/relation-preflight.mjs';
@@ -83,9 +83,9 @@ export async function runRelate(args, runtimeOverrides = {}) {
   let check;
   try {
     check = await runtime.runRelationCheckQuery(vaultRoot, from, to, type);
-  } catch (err) {
+  } catch (error) {
     process.stderr.write(
-      `${COLORS.red}error${COLORS.reset}  ${err instanceof Error ? err.message : String(err)}\n`,
+      `${COLORS.red}error${COLORS.reset}  ${error instanceof Error ? error.message : String(error)}\n`,
     );
     return 2;
   }
@@ -107,9 +107,9 @@ export async function runRelate(args, runtimeOverrides = {}) {
     try {
       const { frontmatter } = runtime.readDocFrontmatter(vaultRoot, check.from);
       refusal = relationWriteRefusal({ frontmatter, relation: check.relation, to: check.to, why });
-    } catch (err) {
+    } catch (error) {
       process.stderr.write(
-        `${COLORS.red}error${COLORS.reset}  ${err instanceof Error ? err.message : String(err)}\n`,
+        `${COLORS.red}error${COLORS.reset}  ${error instanceof Error ? error.message : String(error)}\n`,
       );
       return 1;
     }
@@ -152,9 +152,9 @@ export async function runRelate(args, runtimeOverrides = {}) {
       process.stdout.write(`\n${COLORS.green}ok${COLORS.reset}    wrote ${filePath}\n`);
     }
     return 0;
-  } catch (err) {
+  } catch (error) {
     process.stderr.write(
-      `${COLORS.red}error${COLORS.reset}  ${err instanceof Error ? err.message : String(err)}\n`,
+      `${COLORS.red}error${COLORS.reset}  ${error instanceof Error ? error.message : String(error)}\n`,
     );
     return 1;
   }
@@ -183,7 +183,7 @@ export function relationWriteRefusal({ frontmatter, relation, to, why = null }) 
 }
 
 /**
- * relation_check returned canonical slugs. As in mcp/src/tools/write-relations.mjs addRelation, `domain`
+ * relation_check returned canonical slugs. As in mcp/src/tools/writes/write-relations.mjs addRelation, `domain`
  * replaces a scalar and refuses a different value; other keys append, then normalizeRelationRefs sorts and dedupes.
  */
 function writeRelation(rootPath, { from, to, relation, why = null }, runtime) {

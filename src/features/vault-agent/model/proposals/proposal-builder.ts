@@ -11,7 +11,7 @@ import type {
   ProposalChange,
   ProposalToolName,
   ProposedFileChange,
-} from '../types';
+} from '../agent-turn';
 import type { VaultReadPort } from '../agent-tools/vault-read-port';
 import { containmentKeyFor } from '@/shared/lib/vault-document/containment-keys';
 import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
@@ -48,7 +48,7 @@ function asArgs(value: unknown): Args {
   return value && typeof value === 'object' ? (value as Args) : {};
 }
 
-function str(value: unknown): string | undefined {
+function stringOrUndefined(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim() ? value.trim() : undefined;
 }
 
@@ -166,19 +166,19 @@ function buildAddConcept(
   input: BuildProposalInput,
   pending: Map<string, { before: string | null; after: string }>,
 ): ProposalChange | null {
-  const title = str(args.title);
-  const kind = str(args.kind);
+  const title = stringOrUndefined(args.title);
+  const kind = stringOrUndefined(args.kind);
   if (!title || !kind) return null;
-  const slug = str(args.slug) ?? `${vaultFolderForKind(kind)}/${title}`;
+  const slug = stringOrUndefined(args.slug) ?? `${vaultFolderForKind(kind)}/${title}`;
   const labels = asArgs(args.labels);
   const draft = buildVaultMarkdown({
     kind,
     title,
     slug,
-    domain: str(args.domain),
+    domain: stringOrUndefined(args.domain),
     localeLabels: {
   // Fill the screen locale's name field, or the raw title shows to that locale's speakers.
-      [input.locale]: str(labels[input.locale]) ?? title,
+      [input.locale]: stringOrUndefined(labels[input.locale]) ?? title,
       ...Object.fromEntries(
         Object.entries(labels).filter(([, value]) => typeof value === 'string'),
       ),
@@ -192,8 +192,8 @@ function buildAddConcept(
     if (Array.isArray(args[key])) metadata[key] = args[key].filter((value): value is string => typeof value === 'string');
   }
   const markdown = Object.keys(metadata).length ? applyFrontmatterUpdates(draft, metadata) : draft;
-  const withBody = str(args.body)
-    ? markdown.replace(/\n{2}[\s\S]*$/, `\n\n${str(args.body)}\n`)
+  const withBody = stringOrUndefined(args.body)
+    ? markdown.replace(/\n{2}[\s\S]*$/, `\n\n${stringOrUndefined(args.body)}\n`)
     : markdown;
   return {
     id: nextChangeId(),
@@ -210,9 +210,9 @@ async function buildAddRelation(
   pending: Map<string, { before: string | null; after: string }>,
   currentText: (slug: string) => Promise<string | null>,
 ): Promise<ProposalChange | null> {
-  const from = str(args.from);
-  const to = str(args.to);
-  const type = str(args.type);
+  const from = stringOrUndefined(args.from);
+  const to = stringOrUndefined(args.to);
+  const type = stringOrUndefined(args.type);
   if (!from || !to || !type) return null;
   const key = RELATION_KEY[type];
   if (!key) return null;
@@ -242,7 +242,7 @@ async function buildAddRelation(
     key === 'domain'
       ? { domain: to }
       : { [key]: appendRef(frontmatter[key], to) };
-  const why = str(args.why);
+  const why = stringOrUndefined(args.why);
   if (why) {
     const notes = frontmatter.relation_notes;
     updates.relation_notes = {
@@ -269,7 +269,7 @@ async function buildPatch(
   pending: Map<string, { before: string | null; after: string }>,
   currentText: (slug: string) => Promise<string | null>,
 ): Promise<ProposalChange | null> {
-  const slugInput = str(args.slug);
+  const slugInput = stringOrUndefined(args.slug);
   if (!slugInput) return null;
   const doc = input.port.docs.find(
     (candidate) => candidate.slug === slugInput || candidate.slug.endsWith(`/${slugInput}`),

@@ -1,13 +1,20 @@
 import type { NeuralLabels } from "../frame-draw/neural/paint-neural";
-import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet, MapArrangement, MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";
+import type {
+  CanvasBackground,
+  GlyphSet,
+} from "@/shared/lib/preferences/canvas-appearance-preferences";
+import type { ExpandPreference } from "@/shared/lib/preferences/expand-preferences";
+import type { FootprintPreference } from "@/shared/lib/preferences/footprint-preferences";
+import type { MapNavigationSpeed } from "@/shared/lib/preferences/map-navigation-speed-preferences";
+import type { MapArrangement } from "@/shared/lib/preferences/map-view-preferences";
 import type { RefObject } from "react";
 import type { DialFrameSummary } from "../../dial/frame/frame";
-import type { DialEvidence, DialLabels, DialMemory } from "../../dial/types";
+import type { DialEvidence, DialLabels, DialMemory } from "../../dial/dial-shapes";
 import type { TopologyMapLensKind } from "../../model/visibility/path-lens";
 import type { SelectionSource } from "../../model/camera/flat-selection-camera";
 import { type TierNameAnchor } from "../../model/dome-view/strata/tier-names";
 import { type TierRevealConfig, type ZoomTier } from "../../model/visibility/tier-visibility";
-import type { ClusterBarLabels } from "../../render/cluster-chips";
+import type { ClusterBarLabels } from "../../render/cluster-chips/control-placement";
 import type { HoverAvoidRect } from "../input/topology-pointer-types";
 
 import type { OntologyMapProps } from "../OntologyMap";
@@ -125,7 +132,7 @@ export interface UseTopologyLoopArgs {
   onToggleCluster?: (parentId: string) => void;
   /** Cluster-chip hover tooltip. Fires only when the identified chip changes; null clears. */
   onHoverCluster?: (
-    info: {
+    cluster: {
       parentId: string;
       /** Direct children collapsed by the density gate at this tier (the chip's `+N`). */
       count: number;

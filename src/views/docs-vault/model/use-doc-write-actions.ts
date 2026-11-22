@@ -296,8 +296,8 @@ export function useDocWriteActions({
       }
       try {
         await commitCreateDoc(slug, markdown);
-      } catch (err) {
-        return t('dialog.createFailed', { message: err instanceof Error ? err.message : String(err) });
+      } catch (error) {
+        return t('dialog.createFailed', { message: error instanceof Error ? error.message : String(error) });
       }
       return undefined;
     },
@@ -315,8 +315,8 @@ export function useDocWriteActions({
     if (!pendingSimilarDoc) return;
     const { slug, markdown } = pendingSimilarDoc;
     setPendingSimilarDoc(null);
-    void commitCreateDoc(slug, markdown).catch((err: unknown) => {
-      toast.show(t('dialog.createFailed', { message: err instanceof Error ? err.message : String(err) }), 'error');
+    void commitCreateDoc(slug, markdown).catch((error: unknown) => {
+      toast.show(t('dialog.createFailed', { message: error instanceof Error ? error.message : String(error) }), 'error');
     });
   }, [pendingSimilarDoc, commitCreateDoc, toast, t]);
 
@@ -367,11 +367,11 @@ export function useDocWriteActions({
       await localVault.saveDoc(selectedSlug, next, {
         expectedMtime: file.lastModified,
       });
-    } catch (err) {
+    } catch (error) {
       toast.show(
-        err instanceof VaultConflictError
+        error instanceof VaultConflictError
           ? t('dialog.vaultConflict')
-          : failureSentence(err, t('dialog.tocFailed')).sentence,
+          : failureSentence(error, t('dialog.tocFailed')).sentence,
         'error',
       );
     }
@@ -516,11 +516,11 @@ export function useDocWriteActions({
   const handleMoveToKindFolder = useCallback(
     (target: string) => {
       if (!selectedDoc) return;
-      moveDoc(selectedDoc.slug, target, { expectedMtime: selectedDoc.mtime }).catch((err: unknown) => {
+      moveDoc(selectedDoc.slug, target, { expectedMtime: selectedDoc.mtime }).catch((error: unknown) => {
         toast.show(
-          err instanceof VaultConflictError
+          error instanceof VaultConflictError
             ? t('dialog.vaultConflict')
-            : failureSentence(err, t('dialog.moveFailed')).sentence,
+            : failureSentence(error, t('dialog.moveFailed')).sentence,
           'error',
         );
       });

@@ -21,12 +21,14 @@ import {
   type ProjectSourceStoreReadResult,
 } from "@/shared/lib/project-source/project-source-store";
 import {
-  getTauriVaultRootPath,
   inspectTauriProjectSource,
-  isTauriVaultRuntime,
-  pickTauriVaultDirectory,
   type ProjectSourceInspection,
-} from "@/shared/lib/vault-folder/tauri-vault-fs";
+} from "@/shared/lib/vault-folder/native-vault/tauri-project-source";
+import { pickTauriVaultDirectory } from "@/shared/lib/vault-folder/native-vault/tauri-vault-location";
+import {
+  getTauriVaultRootPath,
+  isTauriVaultRuntime,
+} from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
 import { resolveProjectSourceRepair } from "./project-source-repair";
 import { deriveProjectSourceWitnesses } from "../lib/project-source-witnesses";
 
@@ -106,7 +108,7 @@ export interface ProjectSourceSnapshot {
   readStatus: ProjectSourceStoreReadResult["status"];
 }
 
-export async function loadProjectSourceSnapshot(input: {
+export async function readProjectSourceSnapshot(input: {
   store: ProjectSourceStore;
   projectSlug: string;
   graphHash: string;
@@ -250,7 +252,7 @@ export function useProjectSourceModel(input: {
       });
       return () => { cancelled = true; };
     }
-    void loadProjectSourceSnapshot({
+    void readProjectSourceSnapshot({
       store,
       projectSlug: input.projectSlug,
       graphHash,

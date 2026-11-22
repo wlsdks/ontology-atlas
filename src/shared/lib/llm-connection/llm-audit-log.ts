@@ -1,4 +1,4 @@
-import { openTauriAuditSource } from '../vault-folder/tauri-vault-fs';
+import { openTauriAuditSource } from '../vault-folder/native-vault/tauri-audit-source';
 
 /**
  * Read-only: Rust writes the log (`src-tauri/src/llm_audit.rs`) because whoever owns a
@@ -309,9 +309,9 @@ export async function readLlmAuditSummary(
     if (native?.missing) return empty();
     let file: File | null = null;
     if (!native) {
-      const dir = await handle.getDirectoryHandle('.ontology-atlas');
+      const directory = await handle.getDirectoryHandle('.ontology-atlas');
       if (signal?.aborted) return empty();
-      const fileHandle = await dir.getFileHandle('llm-audit.jsonl');
+      const fileHandle = await directory.getFileHandle('llm-audit.jsonl');
       if (signal?.aborted) return empty();
       file = await fileHandle.getFile();
     }

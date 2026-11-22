@@ -14,9 +14,9 @@ test('reads every locale from the app table', () => {
 test('gives each localized page its own root language and leaves English alone', () => {
   const out = mkdtempSync(join(tmpdir(), 'html-lang-'));
   const page = '<!DOCTYPE html><html lang="en" class="x"><body></body></html>';
-  for (const dir of ['en/download', 'ko/download', 'zh/guide/cli']) {
-    mkdirSync(join(out, dir), { recursive: true });
-    writeFileSync(join(out, dir, 'index.html'), page);
+  for (const directory of ['en/download', 'ko/download', 'zh/guide/cli']) {
+    mkdirSync(join(out, directory), { recursive: true });
+    writeFileSync(join(out, directory, 'index.html'), page);
   }
   assert.equal(localizeExport(out, { en: 'en', ko: 'ko', zh: 'zh-Hans' }), 2);
   assert.match(readFileSync(join(out, 'ko/download/index.html'), 'utf8'), /<html lang="ko" class="x">/);

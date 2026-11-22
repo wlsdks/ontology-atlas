@@ -264,7 +264,7 @@ pub(super) fn from_worker(code: &str, detail: String) -> EmbedError {
         "embed-batch-too-large" => EmbedError::BatchTooLarge,
         "embed-passage-too-long" => EmbedError::PassageTooLong(detail.parse().unwrap_or(0)),
         "embed-response-invalid" => EmbedError::ResponseInvalid("worker"),
-        _ => EmbedError::WorkerFailed(crate::errors::coded(
+        _ => EmbedError::WorkerFailed(crate::coded_error::coded(
             &code.chars().take(80).collect::<String>(),
             detail,
         )),

@@ -6,6 +6,12 @@ import {
   DISCOVERY_BUILD_FILE_NAMES,
   DISCOVERY_DENIED_NAME_FRAGMENTS,
   DISCOVERY_DOCUMENT_EXTENSIONS,
+  DISCOVERY_GUIDE_STEMS,
+  DISCOVERY_MARKDOWN_EXTENSIONS,
+  DISCOVERY_VAULT_OWNED_DIRS,
+  DROP_MAX_FILES,
+  DROP_MAX_VISITED,
+  DROP_SKIPPED_NAMES,
   DISCOVERY_MAX_CANDIDATES,
   DISCOVERY_MAX_DEPTH,
   DISCOVERY_MIN_FILE_BYTES,
@@ -34,10 +40,18 @@ import {
  *
  * The gate compares the **rules**, not the walks. Both walks run one table,
  * `tests/fixtures/source-discovery-cases.json`, through `source-discovery.test.ts`
- * (TypeScript) and `src-tauri/src/library/tests.rs` (Rust), planting each row as a file.
+ * (TypeScript) and the `tests.rs` files under `src-tauri/src/library/` (Rust), planting each row as
+ * a file.
  */
 const repoRoot = resolve(__dirname, '../../..');
-const rustSource = readFileSync(resolve(repoRoot, 'src-tauri/src/library.rs'), 'utf8');
+const rustSource = readFileSync(
+  resolve(repoRoot, 'src-tauri/src/library/discovery_rules.rs'),
+  'utf8',
+);
+const walkSource = readFileSync(
+  resolve(repoRoot, 'src-tauri/src/library/source_discovery.rs'),
+  'utf8',
+);
 
 function rustList(name: string): string[] {
   const match = new RegExp(`const ${name}: &\\[&str\\] = &\\[([\\s\\S]*?)\\];`).exec(rustSource);
@@ -101,13 +115,30 @@ describe('the discovery rule is the same in both walks', () => {
   });
 
   /**
-   * Markdown is already a vault file kind. Copying a project's Markdown into `sources/`
-   * would put the same text in two places with no way to say which one is the source, so
-   * neither list may grow it.
+   * Markdown is offered only when the vault does not own it: from the open folder, outside
+   * Atlas's own folders, never a repository guide, and never a node (the page's filter reads
+   * `kind:` from the index it already holds). Both walks must hold the same lists.
    */
-  it('never offers Markdown as a raw source', () => {
-    expect(rustList('DISCOVERY_DOCUMENT_EXTENSIONS')).not.toContain('md');
-    expect([...DISCOVERY_DOCUMENT_EXTENSIONS]).not.toContain('md');
+  it('offers Markdown under the same limits', () => {
+    expect(rustList('DISCOVERY_MARKDOWN_EXTENSIONS').sort()).toEqual(
+      [...DISCOVERY_MARKDOWN_EXTENSIONS].sort(),
+    );
+    expect(rustList('DISCOVERY_GUIDE_STEMS').sort()).toEqual([...DISCOVERY_GUIDE_STEMS].sort());
+    expect(rustList('DISCOVERY_VAULT_OWNED_DIRS').sort()).toEqual(
+      [...DISCOVERY_VAULT_OWNED_DIRS].sort(),
+    );
+    expect(walkSource).toMatch(/root\.open_folder \|\| !is_markdown_name\(&name\)/);
+  });
+
+  it('caps a dropped folder at the same file, visit and skipped-name counts', () => {
+    const dropSource = readFileSync(resolve(repoRoot, 'src-tauri/src/library/dropped.rs'), 'utf8');
+    for (const [name, value] of [
+      ['DROP_MAX_FILES', DROP_MAX_FILES],
+      ['DROP_MAX_VISITED', DROP_MAX_VISITED],
+      ['DROP_SKIPPED_NAMES', DROP_SKIPPED_NAMES],
+    ] as const) {
+      expect(dropSource).toMatch(new RegExp(`const ${name}: usize = ${value.toLocaleString('en').replaceAll(',', '_')};`));
+    }
   });
 
   /**
@@ -123,7 +154,7 @@ describe('the discovery rule is the same in both walks', () => {
 
   /** Discovery proposes; only an approved copy writes. Rust must hold no writer. */
   it('the discovery walk writes nothing', () => {
-    const walk = /fn walk_candidates\([\s\S]*?\n\}/.exec(rustSource)?.[0] ?? '';
+    const walk = /fn walk_candidates\([\s\S]*?\n\}/.exec(walkSource)?.[0] ?? '';
     expect(walk).toBeTruthy();
     expect(walk).not.toMatch(/fs::(write|copy|remove_file|create_dir|rename)/);
     // It also opens nothing: `read_dir` and `metadata` are listings, `fs::read` is a read.

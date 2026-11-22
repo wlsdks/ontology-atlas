@@ -8,7 +8,7 @@ import {
   writeMapDragSpeed,
   writeMapZoomSpeed,
   type MapSpeed,
-} from '@/shared/lib/preferences/appearance-preferences';
+} from '@/shared/lib/preferences/map-navigation-speed-preferences';
 import { SegmentedControl } from '@/shared/ui/fields/segmented-control';
 import { SettingsRow } from '../settings-primitives';
 

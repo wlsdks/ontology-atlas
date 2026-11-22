@@ -15,7 +15,7 @@ import {
   searchCatalogue,
   type CatalogueEntry,
   type CatalogueVariant,
-} from '@/shared/config/mcp-catalogue';
+} from '@/shared/config/mcp/mcp-catalogue';
 import {
   resolveConnectorRuntimes,
   runtimePath,

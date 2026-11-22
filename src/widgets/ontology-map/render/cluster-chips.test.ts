@@ -11,7 +11,7 @@ import {
   clusterChipTravelPoint,
   CLUSTER_BADGE_HEIGHT,
   CLUSTER_CHIP_HEIGHT,
-} from "./cluster-chips";
+} from "./cluster-chips/control-placement";
 
 /**
  * Hit-testing (`topology-pointer-hit-tests.ts`) and drawing

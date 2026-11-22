@@ -18,7 +18,7 @@ import { controlClass } from '@/shared/ui/control-class';
 import { Chip } from '@/shared/ui/controls/controls';
 import { Dialog, InfoHint } from '@/shared/ui';
 import { useRowDisclosure } from '@/shared/lib/list-rows/use-row-disclosure';
-import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 import type { AgentServerAvailability } from '@/shared/config';
 import {
@@ -112,16 +112,16 @@ export function VaultAgentSetupPanel({
     setAgentSetupBusy(true);
     try {
       await localVault.ensureAgentConfigs(client);
-    } catch (err) {
+    } catch (error) {
       const files = configFilesFor(client);
-      const detail = err instanceof Error ? err.message.trim() : '';
+      const detail = error instanceof Error ? error.message.trim() : '';
       // Never print empty brackets: with no cause to quote, the sentence stands without one.
       setAgentSetupError(
         detail
           ? t('agentSetup.writeFailed', { files, detail })
           : t('agentSetup.writeFailedNoDetail', { files }),
       );
-      throw err;
+      throw error;
     } finally {
       setAgentSetupBusy(false);
     }

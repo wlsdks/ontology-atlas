@@ -90,21 +90,57 @@ pub(crate) fn reveal_in_file_manager(path: &Path) -> Result<(), String> {
             .spawn(|| tauri_plugin_opener::reveal_item_in_dir(path))
             .join()
     })
-    .map_err(|_| crate::errors::coded("reveal-failed", "the file manager call panicked"))?
-    .map_err(|error| crate::errors::coded("reveal-failed", error))
+    .map_err(|_| crate::coded_error::coded("reveal-failed", "the file manager call panicked"))?
+    .map_err(|error| crate::coded_error::coded("reveal-failed", error))
 }
 
 #[cfg(any(windows, target_os = "linux", test))]
 fn reveal_target_present(path: &Path) -> Result<(), String> {
     match std::fs::symlink_metadata(path) {
         Ok(_) => Ok(()),
-        Err(error) => Err(crate::errors::coded("reveal-failed", error)),
+        Err(error) => Err(crate::coded_error::coded("reveal-failed", error)),
     }
 }
 
 #[cfg(not(any(target_os = "macos", windows, target_os = "linux")))]
 pub(crate) fn reveal_in_file_manager(_path: &Path) -> Result<(), String> {
     Err("reveal-unsupported-on-this-platform".into())
+}
+
+/// The native window drop is the only way a dropped path reaches the Library: Rust offers
+/// what was dropped and the page gets the offer, never a path it could name itself. The
+/// walk runs on its own thread because this callback is on the main thread.
+pub(crate) fn answer_drag_drop(app: &AppHandle, event: &tauri::DragDropEvent) {
+    use crate::library::dropped::{
+        begin_armed_drop, drop_armed, offer_drop, SourceDropEvent, SOURCE_DROP_EVENT,
+    };
+    use tauri::Emitter;
+
+    if !drop_armed() {
+        return;
+    }
+    match event {
+        tauri::DragDropEvent::Enter { .. } => {
+            let _ = app.emit(SOURCE_DROP_EVENT, SourceDropEvent::Over);
+        }
+        tauri::DragDropEvent::Leave => {
+            let _ = app.emit(SOURCE_DROP_EVENT, SourceDropEvent::Leave);
+        }
+        tauri::DragDropEvent::Drop { paths, .. } => {
+            let Some(drop) = begin_armed_drop() else {
+                return;
+            };
+            let _ = app.emit(SOURCE_DROP_EVENT, SourceDropEvent::Reading);
+            let app = app.clone();
+            let paths = paths.clone();
+            std::thread::spawn(move || {
+                offer_drop(drop, &paths, |offer| {
+                    let _ = app.emit(SOURCE_DROP_EVENT, SourceDropEvent::Offered { offer });
+                });
+            });
+        }
+        _ => {}
+    }
 }
 
 /// The URL is never logged: it may be a trick link and its payload a server config.

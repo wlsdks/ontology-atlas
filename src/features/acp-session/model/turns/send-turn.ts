@@ -1,6 +1,8 @@
 import type { Dispatch, RefObject, SetStateAction } from 'react';
 
-import type { AcpClient, AcpPermissionRequest, AcpSessionChoices } from '../acp-client';
+import type { AcpClient } from '../acp-client';
+import type { AcpPermissionRequest } from '../permissions/permission-request';
+import type { AcpSessionChoices } from '../session-choices/acp-session-choices';
 import { nextEventId, type AcpEvent, type AcpSessionStatus } from '../conversation/acp-events';
 import { investigationPermissionVerified, type InvestigationSendGuard } from '../investigation/guard';
 import type { ReportedPlan } from '../investigation/reported-plan';
@@ -153,12 +155,12 @@ export async function sendTurn(
       setLastTurnUpdateAt(null);
       setStatusTracked('ready');
     }
-  } catch (err) {
+  } catch (error) {
     if (generationRef.current !== generation || statusRef.current === 'exited') return true;
     finishTurn('failed', null);
     setApprovedOntologyWriteTracked(null);
     setLastTurnUpdateAt(null);
-    setError(err instanceof Error ? err.message : String(err));
+    setError(error instanceof Error ? error.message : String(error));
     setStatusTracked('error');
   }
   return true;

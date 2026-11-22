@@ -103,7 +103,7 @@ export const rules = [
     command: 'pnpm exec playwright test tests/e2e/web-surface-smoke.spec.ts',
     reason: 'desktop capability bridge or local-vault entry changed — the web surface is unattended',
     matches: [
-      /^src\/shared\/lib\/(?:vault-folder\/tauri-vault-fs|git\/tauri-git|llm-connection\/tauri-(?:secrets|llm))\.ts$/,
+      /^src\/shared\/lib\/(?:vault-folder\/native-vault\/tauri-[a-z-]+|git\/tauri-git|llm-connection\/tauri-(?:secrets|llm))\.ts$/,
       /^src\/shared\/lib\/desktop-shell\/desktop-shell\.ts$/,
       /^src\/entities\/vault-session\/model\/local-vault\/[^/]+(?<!\.test)\.ts$/,
       /^src\/features\/first-run-starter\/ui\/FirstRunStarterModule\.tsx$/,

@@ -1,6 +1,6 @@
 import { readDisplayNames, type Project } from '@/entities/project';
 import { buildExcerpt } from '@/shared/lib/vault-document/parse-frontmatter';
-import type { VaultDoc, VaultManifest } from '../../model/types';
+import type { VaultDoc, VaultManifest } from '../../model/vault-manifest';
 import { computeProjectSlug, isProjectVaultDoc } from './project-slug';
 
 export function deriveProjectsFromVault(manifest: VaultManifest): Project[] {

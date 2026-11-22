@@ -45,17 +45,17 @@ export interface AdaptivePoller {
  * Self-rescheduling poll loop with a generation token: an in-flight `poll()` that resolves after a stop/restart must not
  * re-arm an orphaned second loop, which a boolean flag leaks when hide→show brackets a poll. Timers and clock are injectable.
  */
-export function createAdaptivePoller(opts: {
+export function createAdaptivePoller(options: {
   poll: () => Promise<boolean>;
   config?: PollCadenceConfig;
   now?: () => number;
-  setTimer?: (cb: () => void, ms: number) => unknown;
+  setTimer?: (callback: () => void, ms: number) => unknown;
   clearTimer?: (handle: unknown) => void;
 }): AdaptivePoller {
-  const config = opts.config ?? DEFAULT_POLL_CADENCE;
-  const now = opts.now ?? (() => Date.now());
-  const setTimer = opts.setTimer ?? ((cb, ms) => setTimeout(cb, ms));
-  const clearTimer = opts.clearTimer ?? ((h) => clearTimeout(h as ReturnType<typeof setTimeout>));
+  const config = options.config ?? DEFAULT_POLL_CADENCE;
+  const now = options.now ?? (() => Date.now());
+  const setTimer = options.setTimer ?? ((callback, ms) => setTimeout(callback, ms));
+  const clearTimer = options.clearTimer ?? ((h) => clearTimeout(h as ReturnType<typeof setTimeout>));
 
   let generation = 0; // bumped on every start AND stop; stale callbacks bail
   let active = false;
@@ -69,7 +69,7 @@ export function createAdaptivePoller(opts: {
       if (gen !== generation) return; // stopped/restarted before this fired
       void (async () => {
         const startedAt = now();
-        const changed = await opts.poll();
+        const changed = await options.poll();
         lastPollMs = Math.max(0, now() - startedAt);
         if (gen !== generation) return; // stopped/restarted during the await — do NOT re-arm
         if (changed) lastChangeAt = now();

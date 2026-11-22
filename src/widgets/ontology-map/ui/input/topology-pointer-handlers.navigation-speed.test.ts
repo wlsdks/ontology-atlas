@@ -18,7 +18,10 @@ vi.mock("../../tokens/topology-read-tokens", () => ({
   })),
 }));
 
-import type { MapNavigationSpeed, MapSpeed } from "@/shared/lib/preferences/appearance-preferences";
+import type {
+  MapNavigationSpeed,
+  MapSpeed,
+} from "@/shared/lib/preferences/map-navigation-speed-preferences";
 import { listenForGesturePinch } from "../../interaction/gesture-pinch";
 import { INITIAL_POINTER_MACHINE_STATE } from "../../interaction/pointer-state-machine";
 import { MOMENTUM_TAU_MS } from "../../model/motion-physics";

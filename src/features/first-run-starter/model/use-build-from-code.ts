@@ -5,13 +5,15 @@ import { useCallback, useState } from 'react';
 import { CURRENT_LOCAL_FS_HANDLE_ID, type LocalFsHandleRecord } from '@/entities/local-fs-handle';
 import { failureCodeOf } from '@/shared/lib/failures/failure-code';
 import {
-  createTauriVaultHandle,
-  isTauriVaultRuntime,
   listTauriDirectoryNames,
   ensureTauriChildDirectory,
+} from '@/shared/lib/vault-folder/native-vault/tauri-vault-files';
+import { createTauriVaultHandle } from '@/shared/lib/vault-folder/native-vault/tauri-vault-handle';
+import { pickTauriVaultDirectory } from '@/shared/lib/vault-folder/native-vault/tauri-vault-location';
+import {
+  isTauriVaultRuntime,
   getTauriVaultRootPath,
-  pickTauriVaultDirectory,
-} from '@/shared/lib/vault-folder/tauri-vault-fs';
+} from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 
 import {
   PROJECT_VAULT_DIR,
@@ -83,8 +85,8 @@ export function useBuildFromCode({ openRecord, handoff }: BuildFromCodeDeps) {
         // surfaces a permission problem.
       }
       setState({ stage: 'confirm', location, reusesExisting, pickedMapFolder, errorText: null });
-    } catch (err) {
-      setState({ ...IDLE, errorText: failureCodeOrEmpty(err) });
+    } catch (error) {
+      setState({ ...IDLE, errorText: failureCodeOrEmpty(error) });
     }
   }, []);
 
@@ -106,9 +108,9 @@ export function useBuildFromCode({ openRecord, handoff }: BuildFromCodeDeps) {
       });
       handoff(location);
       setState(IDLE);
-    } catch (err) {
+    } catch (error) {
       // Staying on `confirm` keeps the path and button, so a fixable failure is one press from retry.
-      setState((s) => ({ ...s, stage: 'confirm', errorText: failureCodeOrEmpty(err) }));
+      setState((s) => ({ ...s, stage: 'confirm', errorText: failureCodeOrEmpty(error) }));
     }
   }, [state.location, state.stage, openRecord, handoff]);
 
@@ -116,6 +118,6 @@ export function useBuildFromCode({ openRecord, handoff }: BuildFromCodeDeps) {
 }
 
 /** Never the thrown English, which cannot know the reader's language. */
-function failureCodeOrEmpty(err: unknown): string {
-  return failureCodeOf(err) ?? '';
+function failureCodeOrEmpty(error: unknown): string {
+  return failureCodeOf(error) ?? '';
 }

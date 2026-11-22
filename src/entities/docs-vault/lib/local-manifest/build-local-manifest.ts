@@ -35,14 +35,14 @@ import { insertIntoTree, sortTree } from './vault-tree';
 import {
   nativeVaultFingerprint,
   type NativeVaultStamp,
-} from '@/shared/lib/vault-folder/tauri-vault-fs';
+} from '@/shared/lib/vault-folder/native-vault/tauri-vault-fingerprint';
 import { walkVault, type WalkEntry } from './walk-vault';
 import type {
   VaultDoc,
   VaultManifest,
   VaultSourceFile,
   VaultTreeNode,
-} from '../../model/types';
+} from '../../model/vault-manifest';
 
 export interface LocalVaultBuild {
   manifest: VaultManifest;

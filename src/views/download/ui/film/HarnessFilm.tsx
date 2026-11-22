@@ -9,8 +9,8 @@ import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/public-pages/gateway-frame';
 import { isMotionPaused, subscribeMotionPause } from '@/shared/motion/motion-pause';
 
-import { createFilmClock } from '../../lib/film/film-clock';
-import { clamp01 as clamp, easeInOut as inOut } from '../../lib/film/film-kit';
+import { createFilmClock } from '../../lib/film/timeline/film-clock';
+import { clamp01 as clamp, easeInOut as inOut } from '../../lib/film/timeline/film-easing';
 import { registerGatedFrameClient } from '../../lib/page-motion/gateway-frame-loop';
 import type { Director } from '../../lib/harness-film/harness-director';
 import type { ExampleRead } from '../../lib/harness-film/harness-example';
@@ -80,10 +80,10 @@ function shotAt(i: number, T: number) {
   };
 }
 
-function setRise(el: HTMLElement | null | undefined, lit: number) {
-  if (!el) return;
-  el.style.opacity = String(lit);
-  el.style.transform = `translateY(${(1 - lit) * CAPTION_RISE}px)`;
+function setRise(htmlElement: HTMLElement | null | undefined, lit: number) {
+  if (!htmlElement) return;
+  htmlElement.style.opacity = String(lit);
+  htmlElement.style.transform = `translateY(${(1 - lit) * CAPTION_RISE}px)`;
 }
 
 type WindowComponent = ComponentType<{ example: ExampleRead; scale: () => number; onReady: (director: Director | null) => void }>;

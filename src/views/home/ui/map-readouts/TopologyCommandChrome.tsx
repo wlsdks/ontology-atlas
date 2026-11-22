@@ -1,12 +1,12 @@
 import { AgentActivityChip } from "@/features/agent-activity";
 import { buildConstellationAgentPrompt } from "@/features/saved-constellations";
 import { Link } from "@/i18n/navigation";
-import { writeMapView } from "@/shared/lib/preferences/appearance-preferences";
+import { writeMapView } from "@/shared/lib/preferences/map-view-preferences";
 import { armMapLayoutMorph } from "@/shared/lib/map-canvas/map-layout-morph-store";
-import { VAULT_AGENT_PANEL_ID } from "@/shared/config/agent-panel";
+import { VAULT_AGENT_PANEL_ID } from "@/shared/config/agent/agent-panel";
 import { withBasePath } from "@/shared/lib/public-pages/base-path";
 import { cn } from "@/shared/lib/cn";
-import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/tauri-vault-fs";
+import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
 import type { useToast } from "@/shared/ui";
 import { CHROME_CHIP_COMPACT_BELOW_XL, ChromeChip, Tooltip } from "@/shared/ui";
 import { CONTROL_PRESS_TRAVEL, CONTROL_TRANSITION } from "@/shared/ui/control-class";

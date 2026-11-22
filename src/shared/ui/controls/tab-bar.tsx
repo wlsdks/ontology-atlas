@@ -66,9 +66,9 @@ export function TabBar({
     vertical ? 'surface-y' : segmented ? 'surface-x' : 'underline-x',
   );
   const attachStrip = useCallback(
-    (el: HTMLDivElement | null) => {
-      stripRef.current = el;
-      containerRef(el);
+    (element: HTMLDivElement | null) => {
+      stripRef.current = element;
+      containerRef(element);
     },
     [containerRef],
   );
@@ -80,8 +80,8 @@ export function TabBar({
     const maxScroll = strip.scrollWidth - strip.clientWidth;
     const left = strip.scrollLeft > 1;
     const right = strip.scrollLeft < maxScroll - 1;
-    setEdgeOverflow((prev) =>
-      prev.left === left && prev.right === right ? prev : { left, right },
+    setEdgeOverflow((previous) =>
+      previous.left === left && previous.right === right ? previous : { left, right },
     );
   }, []);
 

@@ -32,14 +32,12 @@ import type {
 } from "../input/topology-pointer-types";
 import { lastTierPlanes } from "../frame-loop/topology-presentation-frame-stage";
 import { describeLastDialFrame, lastDialFrame } from "../../dial/frame/frame";
-import type { DialProbe } from "../../dial/types";
+import type { DialProbe } from "../../dial/dial-shapes";
 import { requestOntologyMapFrame } from "../frame-loop/use-topology-frame-loop";
 import { readOntologyMapTokensOrNull } from "../../tokens/topology-read-tokens";
-import {
-  radiusForKind,
-  type TopologyWorld,
-} from "../world/topology-world";
-import { lastFocusFrame } from "../camera/topology-camera-math";
+import { radiusForKind } from "../world/geometry/node-radius";
+import { type TopologyWorld } from "../world/topology-world";
+import { lastFocusFrame } from "../camera/target/focus-fit";
 import { neuralPainterOf } from "../../neural-gl/neural-gl-stage";
 
 type SourceRef<T> = { current: T; };

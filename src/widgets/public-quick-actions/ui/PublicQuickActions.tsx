@@ -8,7 +8,7 @@ import { CopyPlus, PencilLine } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { Button, InfoHint } from "@/shared/ui";
 import { cn } from "@/shared/lib/cn";
-import { getProjectEditHref } from "@/entities/project";
+import { buildProjectEditHref } from "@/entities/project";
 
 interface Props {
   projectSlug?: string | null;
@@ -40,7 +40,7 @@ export function PublicQuickActions({
   }, [returnTo]);
 
   const editProjectHref = useMemo(
-    () => (projectSlug ? getProjectEditHref(projectSlug, { returnTo }) : null),
+    () => (projectSlug ? buildProjectEditHref(projectSlug, { returnTo }) : null),
     [projectSlug, returnTo],
   );
 

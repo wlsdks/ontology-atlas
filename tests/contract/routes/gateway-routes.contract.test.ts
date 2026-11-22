@@ -141,12 +141,12 @@ describe('guide table of contents', () => {
 
 describe('X link slot', () => {
   const source = readFileSync(
-    resolve(repoRoot, 'src/shared/config/social-links.ts'),
+    resolve(repoRoot, 'src/shared/config/site/social-links.ts'),
     'utf8',
   );
 
   it('the URL is null when the handle is empty, and that handle\'s address when filled', async () => {
-    const { X_HANDLE, xProfileUrl } = await import('@/shared/config/social-links');
+    const { X_HANDLE, xProfileUrl } = await import('@/shared/config/site/social-links');
     /**
      * `X_HANDLE` is typed `string` so the `=== ''` comparison stays valid when the handle is filled in;
      * both states must hold.

@@ -64,11 +64,11 @@ export function parseArgs(argv) {
 
 export function listMarkdownFiles(root = ROOT) {
   const found = [];
-  const walk = (dir) => {
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+  const walk = (directory) => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
       if (entry.name.startsWith('.') && !KEEP_DOT_DIRS.has(entry.name)) continue;
       if (SKIP_DIRS.has(entry.name)) continue;
-      const full = path.join(dir, entry.name);
+      const full = path.join(directory, entry.name);
       if (entry.isDirectory()) walk(full);
       else if (entry.name.endsWith('.md')) found.push(full);
     }
@@ -215,8 +215,8 @@ async function checkExternal(root) {
       try {
         const response = await fetch(url, { method: 'HEAD', redirect: 'follow', signal: AbortSignal.timeout(10_000) });
         if (response.status >= 400) failures.push(`${origin} → ${url} (HTTP ${response.status})`);
-      } catch (err) {
-        failures.push(`${origin} → ${url} (${err.message ?? err})`);
+      } catch (error) {
+        failures.push(`${origin} → ${url} (${error.message ?? error})`);
       }
     }
   };
@@ -264,8 +264,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     .then((code) => {
       process.exitCode = code;
     })
-    .catch((err) => {
-      console.error('[doc-links] failed:', err.message ?? err);
+    .catch((error) => {
+      console.error('[doc-links] failed:', error.message ?? error);
       process.exitCode = 1;
     });
 }

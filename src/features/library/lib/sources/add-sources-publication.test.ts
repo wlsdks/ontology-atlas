@@ -16,7 +16,12 @@ function fixture(existing: string[] = [], failure = false) {
   const sources = {
     kind: 'directory', name: 'sources',
     async *entries() { yield* entries; },
-    async getFileHandle(name: string) {
+    async getDirectoryHandle() { throw new DOMException('missing', 'NotFoundError'); },
+    async getFileHandle(name: string, options?: { create?: boolean }) {
+      if (!options?.create) {
+        if (entries.has(name)) return file(name);
+        throw new DOMException('missing', 'NotFoundError');
+      }
       entries.set(name, file(name));
       const swap = `${name}.crswap`;
       const hadSwap = entries.has(swap);
@@ -39,7 +44,7 @@ function fixture(existing: string[] = [], failure = false) {
 }
 
 async function paths(root: FileSystemDirectoryHandle) {
-  return (await walkVault(root)).entries.map(e => e.relativePath).sort();
+  return (await walkVault(root)).entries.map(entry => entry.relativePath).sort();
 }
 
 describe('source copy publication', () => {
@@ -52,7 +57,7 @@ describe('source copy publication', () => {
     f.entries.set('kept.txt', { ...f.file('kept.txt'), getFile: async () => ({ arrayBuffer: async () => new ArrayBuffer(8) }) });
     expect(await paths(f.root)).toEqual(['changed.md', 'sources/external.txt', 'sources/kept.txt']);
     expect(await paths(f.reopened)).toEqual(['changed.md', 'sources/external.txt', 'sources/kept.txt']);
-    const kept = (await walkVault(f.root)).entries.find(e => e.relativePath === 'sources/kept.txt')!;
+    const kept = (await walkVault(f.root)).entries.find(entry => entry.relativePath === 'sources/kept.txt')!;
     expect((await (await kept.handle.getFile()).arrayBuffer()).byteLength).toBe(8);
     f.release();
     const result = await importing;
@@ -93,7 +98,7 @@ describe('source copy publication', () => {
     expect(await paths(f.root)).toEqual(['sources/kept.txt']);
     f.release();
     const outcome = await importing;
-    expect(outcome.results).toEqual([expect.objectContaining({ status: 'failed', reason: 'Copy refused' })]);
+    expect(outcome.results).toEqual([expect.objectContaining({ status: 'failed', reason: 'import-destination-unwritable' })]);
     expect(f.abort).toHaveBeenCalledOnce();
     expect(await paths(f.root)).toEqual(['sources/kept.txt', 'sources/new.txt']);
   });

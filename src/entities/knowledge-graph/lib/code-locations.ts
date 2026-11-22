@@ -1,6 +1,6 @@
 import { looksLikeCodePath } from "@/shared/lib/concept-display/humanize-code-path-title";
 import { buildConnections, groupConnectionsByRole } from "./ontology-tree/connections";
-import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "../model/types";
+import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "../model/knowledge-graph";
 
 /**
  * Code paths for a node: its own raw title when path-like, plus path-titled `contains` children.

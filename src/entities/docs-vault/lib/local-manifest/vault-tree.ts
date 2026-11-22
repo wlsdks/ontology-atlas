@@ -1,4 +1,4 @@
-import type { VaultTreeNode } from '../../model/types';
+import type { VaultTreeNode } from '../../model/vault-manifest';
 import { compareCollated } from './collated-order';
 
 export function compareTreeNodes(a: VaultTreeNode, b: VaultTreeNode): number {

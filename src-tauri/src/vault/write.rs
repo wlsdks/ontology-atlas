@@ -3,9 +3,9 @@ use super::scope::{
 };
 #[cfg(not(unix))]
 use super::scope::{ensure_inside_canonical, resolve_write_target_inside};
-#[cfg(unix)]
-use crate::agent_setup;
 use crate::blocking::run_blocking;
+#[cfg(unix)]
+use crate::confined_files;
 use std::fs;
 #[cfg(unix)]
 use std::path::Path;
@@ -34,7 +34,7 @@ pub(super) fn write_text_atomically(path: &std::path::Path, content: &str) -> Re
     let mut created = None;
     for _ in 0..64 {
         let sequence = TEMP_SEQUENCE.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        let candidate = parent.join(crate::vault::temporary_names::atomic_temporary_name(
+        let candidate = parent.join(crate::vault::temporary_files::names::atomic_temporary_name(
             &file_name,
             std::process::id(),
             nonce,
@@ -109,10 +109,10 @@ fn write_vault_text_file_after_validation(
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
             Err(error) => return Err(error.to_string()),
         }
-        let root_handle = agent_setup::open_absolute_directory_no_follow(&root)?;
-        let (parent, file_name) = agent_setup::open_entry_parent(&root_handle, &relative_path)?;
+        let root_handle = confined_files::open_absolute_directory_no_follow(&root)?;
+        let (parent, file_name) = confined_files::open_entry_parent(&root_handle, &relative_path)?;
         after_validation();
-        agent_setup::write_entry_atomically(&parent, &file_name, &content, 0o666)
+        confined_files::write_entry_atomically(&parent, &file_name, &content, 0o666)
     }
 
     #[cfg(not(unix))]
@@ -218,11 +218,11 @@ fn ensure_vault_directory_after_validation(
             .file_name()
             .ok_or_else(|| "directory target must include a final name".to_string())?;
         let parent_path = relative.parent().unwrap_or_else(|| Path::new(""));
-        let root_handle = agent_setup::open_absolute_directory_no_follow(&root)?;
+        let root_handle = confined_files::open_absolute_directory_no_follow(&root)?;
         let parent =
-            agent_setup::open_or_create_relative_directory(&root_handle, parent_path, 0o777)?;
+            confined_files::open_or_create_relative_directory(&root_handle, parent_path, 0o777)?;
         after_validation();
-        let directory = agent_setup::open_or_create_relative_directory(
+        let directory = confined_files::open_or_create_relative_directory(
             &parent,
             Path::new(directory_name),
             0o777,

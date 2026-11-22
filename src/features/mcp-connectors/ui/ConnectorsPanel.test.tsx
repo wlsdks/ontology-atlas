@@ -64,7 +64,7 @@ vi.mock('@/shared/lib/connectors/tauri-connector-secrets', async () => {
   };
 });
 
-import { MCP_CATALOGUE } from '@/shared/config/mcp-catalogue';
+import { MCP_CATALOGUE } from '@/shared/config/mcp/mcp-catalogue';
 import type { ConnectorRecord } from '@/shared/lib/connectors/connector-record';
 
 import { ConnectorsPanel } from './ConnectorsPanel';
@@ -738,7 +738,7 @@ describe('connectors panel explains what runs before enabling', () => {
       'claude-user codex-user',
     );
     // Both tools are named, once each.
-    expect(screen.getAllByTestId('connectors-found-source').map((el) => el.textContent)).toEqual([
+    expect(screen.getAllByTestId('connectors-found-source').map((element) => element.textContent)).toEqual([
       'claude',
       'codex',
     ]);

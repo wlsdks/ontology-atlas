@@ -1,4 +1,4 @@
-import type { Project } from '../model/types';
+import type { Project } from '../model/project';
 
 /**
  * `display_<locale>` when present, else the canonical `title`/`name`, so every screen names a

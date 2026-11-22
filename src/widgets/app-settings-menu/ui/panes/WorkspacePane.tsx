@@ -13,18 +13,18 @@ import { cn } from '@/shared/lib/cn';
 import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import { createVaultFileProjectSourceStore } from '@/shared/lib/project-source/project-source-store';
 import { gitStatus, type GitStatusResult } from '@/shared/lib/git/tauri-git';
+import { openTauriVaultInFinder } from '@/shared/lib/vault-folder/native-vault/tauri-vault-location';
 import {
   getTauriVaultRootPath,
   isTauriVaultRuntime,
-  openTauriVaultInFinder,
-} from '@/shared/lib/vault-folder/tauri-vault-fs';
+} from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { useCopyFeedback } from '@/shared/lib/clipboard/use-copy-feedback';
 import { vaultValidationCounts } from '../../model/vault-validation-counts';
 import { controlClass } from '@/shared/ui/control-class';
 import { Chip, RowButton } from '@/shared/ui/controls/controls';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { buildRouteFocusHref, rememberRouteFocusIntent } from '@/shared/ui/routing/route-focus-manager';
-import { SETTINGS_SECTION_SCOPE } from '../../model/catalog/types';
+import { SETTINGS_SECTION_SCOPE } from '../../model/catalog/settings-catalog-entry';
 import {
   ArmedChip,
   DETAIL_TOGGLE_CHIP,

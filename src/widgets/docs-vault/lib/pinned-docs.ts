@@ -37,9 +37,9 @@ export function togglePinnedDoc(
   slug: string,
 ): string[] {
   const current = readPinnedDocs(key);
-  const idx = current.indexOf(slug);
+  const index = current.indexOf(slug);
   let next: string[];
-  if (idx === -1) {
+  if (index === -1) {
     next = [slug, ...current];
   } else {
     next = current.filter((s) => s !== slug);

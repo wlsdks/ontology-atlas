@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useSyncExternalStore } from "react";
 
-import { getProjectRuntimeDetailHref } from "@/entities/project";
+import { buildProjectRuntimeDetailHref } from "@/entities/project";
 import { useVaultSessionIdentityScope } from "@/entities/vault-session";
 
 import { readSelectedProject, recordSelectedProject, resolveSelectedProjectSlug, subscribeSelectedProject } from "./selected-project";
@@ -25,7 +25,7 @@ export function useSelectedProjectSlug(options?: { demand?: boolean }): string |
  */
 export function useProjectsDoorHref(): string | null {
   const slug = useSelectedProjectSlug({ demand: false });
-  return slug ? getProjectRuntimeDetailHref(slug) : null;
+  return slug ? buildProjectRuntimeDetailHref(slug) : null;
 }
 
 export function useRecordSelectedProject(slug: string | null): void {

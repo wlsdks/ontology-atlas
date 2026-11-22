@@ -1,4 +1,4 @@
-import type { VaultTreeNode } from '../../../model/types';
+import type { VaultTreeNode } from '../../../model/vault-manifest';
 import { compareTreeNodes } from '../vault-tree';
 import { findSorted, insertionIndex } from './patch-sorted';
 

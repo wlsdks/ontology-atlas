@@ -18,14 +18,14 @@ function withEnvPath(value, run) {
 }
 
 test('OATLAS_MCP_PATH names the server file and wins over every other location', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'oatlas-init-mcp-'));
+  const directory = mkdtempSync(join(tmpdir(), 'oatlas-init-mcp-'));
   try {
-    const file = join(dir, 'index.js');
+    const file = join(directory, 'index.js');
     writeFileSync(file, '', 'utf-8');
     assert.deepEqual(withEnvPath(file, resolveMcpServerCommand), { command: 'node', args: [file] });
-    assert.throws(() => withEnvPath(dir, resolveMcpServerCommand), /OATLAS_MCP_PATH is not a file/);
+    assert.throws(() => withEnvPath(directory, resolveMcpServerCommand), /OATLAS_MCP_PATH is not a file/);
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(directory, { recursive: true, force: true });
   }
 });
 

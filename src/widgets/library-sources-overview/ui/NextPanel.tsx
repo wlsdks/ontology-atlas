@@ -3,7 +3,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import type { useTranslations } from "next-intl";
 
-import type { LibrarySourceRow } from "@/entities/docs-vault";
+import { sourceFolderOf, type LibrarySourceRow } from "@/entities/docs-vault";
 import { cn } from "@/shared/lib/cn";
 import { badgeClass } from "@/shared/ui/badge-class";
 import { controlClass } from "@/shared/ui/control-class";
@@ -130,7 +130,14 @@ export function NextPanel({
                   {i + 1}
                 </span>
                 <Sheet variant="source" name={row.name} format={row.format} reading={writing} />
-                <span className="min-w-0 flex-1 truncate">{row.name}</span>
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className="truncate">{row.name}</span>
+                  {sourceFolderOf(row.path) ? (
+                    <span data-testid="sources-panel-file-folder" className="truncate text-label leading-label text-[color:var(--color-text-tertiary)]">
+                      {sourceFolderOf(row.path)}
+                    </span>
+                  ) : null}
+                </span>
                 {writing ? <span className="sr-only">{t("sourcesHome.writing")}</span> : null}
                 {row.state === PANEL_DEFAULT_STATE ? null : <SourceStateWord state={row.state} t={t} />}
               </button>

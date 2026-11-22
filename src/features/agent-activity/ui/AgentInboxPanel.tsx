@@ -16,7 +16,7 @@ import type { BellFact } from '../model/inbox-row-copy';
 import { openingTab, readStoredTab, writeStoredTab } from '../model/inbox-tab';
 import type { AgentActivityFeed } from '../model/use-agent-activity-feed';
 import { HistoryRow } from './inbox-rows/HistoryRow';
-import { InboxEmpty, MAP_TIDY_LIST_HREF } from './inbox-rows/inbox-row-parts';
+import { InboxEmpty, MAP_TIDY_LIST_HREF } from './inbox-rows/inbox-row-primitives';
 import { ResultRow } from './inbox-rows/ResultRow';
 import { TodoRow } from './inbox-rows/TodoRow';
 

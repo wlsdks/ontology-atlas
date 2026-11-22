@@ -154,9 +154,9 @@ export function paintNeuralNames(ctx: CanvasRenderingContext2D, frame: FrameInpu
     const fy = farIsTarget ? aby[e] : ay[e];
     const nx = farIsTarget ? ax[e] : abx[e];
     const into = arrival.get(far) ?? { dx: 0, dy: 0 };
-    const len = Math.hypot(acx[e] - fx, acy[e] - fy) || 1;
-    into.dx += (acx[e] - fx) / len;
-    into.dy += (acy[e] - fy) / len;
+    const length = Math.hypot(acx[e] - fx, acy[e] - fy) || 1;
+    into.dx += (acx[e] - fx) / length;
+    into.dy += (acy[e] - fy) / length;
     arrival.set(far, into);
     if (nf.litHop[k] <= 1) {
       litOwn += 1;

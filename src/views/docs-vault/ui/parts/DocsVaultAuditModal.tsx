@@ -82,7 +82,7 @@ export function DocsVaultAuditModal({
     const trapHandler = (event: KeyboardEvent) => {
       if (event.key !== "Tab") return;
       const items = Array.from(dialog.querySelectorAll<HTMLElement>(selector)).filter(
-        (el) => !el.hasAttribute("disabled"),
+        (htmlElement) => !htmlElement.hasAttribute("disabled"),
       );
       if (items.length === 0) return;
       const first = items[0];

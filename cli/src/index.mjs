@@ -118,12 +118,12 @@ async function main() {
     }
     try {
       return await run(ARGS.slice(1));
-    } catch (err) {
-      if (err?.name === 'VaultRootError') {
-        fail(err.message);
+    } catch (error) {
+      if (error?.name === 'VaultRootError') {
+        fail(error.message);
         return 2;
       }
-      throw err;
+      throw error;
     }
   }
 

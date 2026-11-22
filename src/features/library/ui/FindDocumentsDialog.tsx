@@ -1,6 +1,6 @@
 "use client";
 
-import { ActionFeedbackGlyph, type ActionFeedbackState } from '@/shared/motion/action-feedback-glyph';
+import { ActionFeedbackGlyph, type ActionFeedbackState } from '@/shared/motion/status-glyphs/ActionFeedbackGlyph';
 import { useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { FilePlus2, SearchX } from "lucide-react";
@@ -24,6 +24,8 @@ export interface FindDocumentsDialogProps {
   onClose: () => void;
   /** Null while the walk is still running. */
   outcome: DiscoveryOutcome | null;
+  /** The walked folders' names, never their paths, for the title and the empty line. */
+  folders: string;
   /** Candidates already refused on this machine, and hidden from the list. */
   declinedCount: number;
   onForgetDeclined: () => void;
@@ -41,6 +43,7 @@ export function FindDocumentsDialog({
   open,
   onClose,
   outcome,
+  folders,
   declinedCount,
   onForgetDeclined,
   onAdd,
@@ -97,7 +100,7 @@ export function FindDocumentsDialog({
           id="find-documents-title"
           className="min-w-0 text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
         >
-          {t("title")}
+          {t("title", { folders })}
         </h2>
         <CloseButton
           label={t("close")}
@@ -168,7 +171,7 @@ export function FindDocumentsDialog({
               size="compact"
               tone="solid"
               icon={<SearchX />}
-              title={declinedCount > 0 ? t("emptyAllDeclined", { count: declinedCount }) : t("empty")}
+              title={declinedCount > 0 ? t("emptyAllDeclined", { count: declinedCount }) : t("empty", { folders })}
               action={
                 onAddFiles && addFilesLabel ? (
                   <Chip

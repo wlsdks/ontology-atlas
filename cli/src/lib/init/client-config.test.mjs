@@ -26,11 +26,11 @@ async function quietly(run) {
 }
 
 async function withTempDir(run) {
-  const dir = mkdtempSync(join(tmpdir(), 'oatlas-init-config-'));
+  const directory = mkdtempSync(join(tmpdir(), 'oatlas-init-config-'));
   try {
-    return await run(dir);
+    return await run(directory);
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(directory, { recursive: true, force: true });
   }
 }
 
@@ -71,43 +71,43 @@ test('the global Codex command breaks lines before each --env and before --, and
 });
 
 test('an existing parseable .mcp.json keeps its other servers and gains ours', async () => {
-  await withTempDir(async (dir) => {
-    writeFileSync(join(dir, '.mcp.json'), JSON.stringify({ mcpServers: { other: { command: 'x' } } }), 'utf-8');
+  await withTempDir(async (directory) => {
+    writeFileSync(join(directory, '.mcp.json'), JSON.stringify({ mcpServers: { other: { command: 'x' } } }), 'utf-8');
     const binding = { serverCommand, clientBindingIssues: [] };
-    await quietly(() => writeMcpJson(binding, dir, '.', '.', 'vault'));
-    const written = JSON.parse(readFileSync(join(dir, '.mcp.json'), 'utf-8'));
+    await quietly(() => writeMcpJson(binding, directory, '.', '.', 'vault'));
+    const written = JSON.parse(readFileSync(join(directory, '.mcp.json'), 'utf-8'));
     assert.deepEqual(Object.keys(written.mcpServers).sort(), ['ontology-atlas', 'other']);
     assert.deepEqual(binding.clientBindingIssues, []);
   });
 });
 
 test('a malformed .mcp.json is left untouched, reported, and gets a merge example', async () => {
-  await withTempDir(async (dir) => {
-    writeFileSync(join(dir, '.mcp.json'), '{ not json', 'utf-8');
+  await withTempDir(async (directory) => {
+    writeFileSync(join(directory, '.mcp.json'), '{ not json', 'utf-8');
     const binding = { serverCommand, clientBindingIssues: [] };
-    await quietly(() => writeMcpJson(binding, dir, '.', '.', 'cwd'));
-    assert.equal(readFileSync(join(dir, '.mcp.json'), 'utf-8'), '{ not json');
+    await quietly(() => writeMcpJson(binding, directory, '.', '.', 'cwd'));
+    assert.equal(readFileSync(join(directory, '.mcp.json'), 'utf-8'), '{ not json');
     assert.deepEqual(binding.clientBindingIssues, ['cwd/.mcp.json']);
-    assert.match(readFileSync(join(dir, '.mcp.json.example'), 'utf-8'), /ontology-atlas/);
+    assert.match(readFileSync(join(directory, '.mcp.json.example'), 'utf-8'), /ontology-atlas/);
   });
 });
 
 test('a missing Codex config is created inside .codex', async () => {
-  await withTempDir(async (dir) => {
+  await withTempDir(async (directory) => {
     const binding = { serverCommand, clientBindingIssues: [] };
-    await quietly(() => writeCodexConfig(binding, dir, '.', '.', 'vault'));
-    assert.match(readFileSync(join(dir, '.codex', 'config.toml'), 'utf-8'), /\[mcp_servers\.ontology-atlas\]/);
+    await quietly(() => writeCodexConfig(binding, directory, '.', '.', 'vault'));
+    assert.match(readFileSync(join(directory, '.codex', 'config.toml'), 'utf-8'), /\[mcp_servers\.ontology-atlas\]/);
   });
 });
 
 test('an ambiguous Codex config is preserved and reported', async () => {
-  await withTempDir(async (dir) => {
-    mkdirSync(join(dir, '.codex'));
+  await withTempDir(async (directory) => {
+    mkdirSync(join(directory, '.codex'));
     const original = '[mcp_servers.ontology-atlas]\ncommand = "a"\n[mcp_servers.ontology-atlas]\ncommand = "b"\n';
-    writeFileSync(join(dir, '.codex', 'config.toml'), original, 'utf-8');
+    writeFileSync(join(directory, '.codex', 'config.toml'), original, 'utf-8');
     const binding = { serverCommand, clientBindingIssues: [] };
-    await quietly(() => writeCodexConfig(binding, dir, '.', '.', 'vault'));
-    assert.equal(readFileSync(join(dir, '.codex', 'config.toml'), 'utf-8'), original);
+    await quietly(() => writeCodexConfig(binding, directory, '.', '.', 'vault'));
+    assert.equal(readFileSync(join(directory, '.codex', 'config.toml'), 'utf-8'), original);
     assert.deepEqual(binding.clientBindingIssues, ['vault/.codex/config.toml']);
   });
 });

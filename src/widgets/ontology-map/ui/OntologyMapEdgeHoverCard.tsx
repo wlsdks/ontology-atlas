@@ -40,19 +40,19 @@ function collectHoverChromeRects(doc: Document, card: Element | null): Rect[] {
   const c = canvas.getBoundingClientRect();
   const canvasRect = { x: c.x, y: c.y, width: c.width, height: c.height };
   const out: Rect[] = [];
-  const keep = (el: Element, box: DOMRect) => {
-    if (card?.contains(el) || box.width <= 0 || box.height <= 0) return;
+  const keep = (domElement: Element, box: DOMRect) => {
+    if (card?.contains(domElement) || box.width <= 0 || box.height <= 0) return;
     if (box.width * box.height > 0.5 * c.width * c.height) return;
     if (box.right <= c.x || box.left >= c.right || box.bottom <= c.y || box.top >= c.bottom) return;
-    if (getComputedStyle(el).pointerEvents === "none") return;
+    if (getComputedStyle(domElement).pointerEvents === "none") return;
     out.push({ x: box.x, y: box.y, w: box.width, h: box.height });
   };
   for (const panel of collectCanvasObstacles(canvas, canvasRect)) {
     out.push({ x: panel.x, y: panel.y, w: panel.width, h: panel.height });
   }
-  for (const el of doc.querySelectorAll(CONTROL_SELECTOR)) {
-    if (canvas.contains(el) || el.closest('[aria-hidden="true"], [inert]')) continue;
-    keep(el, el.getBoundingClientRect());
+  for (const domElement of doc.querySelectorAll(CONTROL_SELECTOR)) {
+    if (canvas.contains(domElement) || domElement.closest('[aria-hidden="true"], [inert]')) continue;
+    keep(domElement, domElement.getBoundingClientRect());
   }
   return out.filter((r) => r.w * r.h <= 0.5 * c.width * c.height);
 }

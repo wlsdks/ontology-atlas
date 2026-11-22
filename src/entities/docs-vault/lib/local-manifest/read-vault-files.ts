@@ -3,8 +3,8 @@
 import {
   readTauriVaultTextFile,
   readTauriVaultTextFiles,
-  type NativeVaultTextRead,
-} from '@/shared/lib/vault-folder/tauri-vault-fs';
+} from '@/shared/lib/vault-folder/native-vault/tauri-vault-files';
+import { type NativeVaultTextRead } from '@/shared/lib/vault-folder/vault-text-frames';
 import type { WalkEntry } from './walk-vault';
 
 export const VAULT_READ_CONCURRENCY = 64;

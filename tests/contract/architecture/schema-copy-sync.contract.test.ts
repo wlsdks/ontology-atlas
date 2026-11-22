@@ -16,9 +16,9 @@ const SHIMS = [
   { cli: "absorb.mjs", mcp: "vault/absorb.mjs" },
   { cli: "suggestions.mjs", mcp: "suggestions.mjs" },
   { cli: "parse-frontmatter.mjs", mcp: "parser.mjs" },
-  { cli: "vault-sidecar.mjs", mcp: "vault/vault-sidecar.mjs" },
+  { cli: "vault-sidecar.mjs", mcp: "vault/sidecar/vault-sidecar.mjs" },
   { cli: "architecture-record.mjs", mcp: "architecture/architecture-record.mjs" },
-  { cli: "activity-log.mjs", mcp: "vault/activity-log.mjs" },
+  { cli: "activity-log.mjs", mcp: "vault/sidecar/activity-log.mjs" },
 ];
 
 /**

@@ -23,9 +23,9 @@ export interface BlockDirectoryHandleLike {
   values(): AsyncIterableIterator<BlockDirEntryLike> | AsyncIterable<BlockDirEntryLike>;
   getDirectoryHandle(
     name: string,
-    opts?: { create?: boolean },
+    options?: { create?: boolean },
   ): Promise<BlockDirectoryHandleLike>;
-  getFileHandle(name: string, opts?: { create?: boolean }): Promise<BlockFileHandleLike>;
+  getFileHandle(name: string, options?: { create?: boolean }): Promise<BlockFileHandleLike>;
 }
 
 export interface BlockDirectoryReadResult {
@@ -35,7 +35,7 @@ export interface BlockDirectoryReadResult {
 
 /** Recursive walk. Dotfile directories and files, and node_modules, are skipped exactly as in the CLI import. */
 export async function readBlockDirectory(
-  dir: BlockDirectoryHandleLike,
+  directory: BlockDirectoryHandleLike,
 ): Promise<BlockDirectoryReadResult> {
   const files: BlockImportFile[] = [];
   let manifestRaw: string | null = null;
@@ -56,7 +56,7 @@ export async function readBlockDirectory(
     }
   }
 
-  await walk(dir, '');
+  await walk(directory, '');
   files.sort((a, b) => a.path.localeCompare(b.path));
   return { files, manifestRaw };
 }

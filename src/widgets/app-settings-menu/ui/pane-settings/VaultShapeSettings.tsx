@@ -27,8 +27,8 @@ export function VaultShapeSettings() {
     try {
       await localVault.scaffoldOntology(locale, chosen);
       toast.show(t('workspaceShapeStarted'), 'success');
-    } catch (err) {
-      toast.show(failureSentence(err, t('workspaceShapeFailed')).sentence, 'error');
+    } catch (error) {
+      toast.show(failureSentence(error, t('workspaceShapeFailed')).sentence, 'error');
     } finally {
       setBusy(null);
     }

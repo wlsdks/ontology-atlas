@@ -346,19 +346,47 @@ both index lists were already saying the same emptiness.
 
 So there are now two shapes and neither is that one.
 
-**An empty folder is an empty state.** With no sources *and* no pages — exactly the
-condition that makes the canvas draw nothing — the whole screen is one centred stage in the
-repository's own empty-state grammar (`PAGE_COLUMN_STAGE`, 640px, dashed edge, first
-overlay): eyebrow, one title, one sentence, the two doors **Add files** and **Find
-documents**, and one quiet line naming the folder a drop goes into. No index, no canvas, no
-caption, no status strip, no popup. Page hairlines at 1512 fell 63 → 12.
+**An empty folder is one drop-first stage** (2026-11-21, F2 in
+`docs/specs/2026-11-21-library-words-and-first-run.md`). With no sources the screen is one
+640px column anchored at the top, so a block that arrives later moves nothing above it: one
+title, one sentence naming the connected agent (or the folder-only sentence when wiki pages
+exist without sources), the drop area with **Add files**, a line naming the sources folder
+inside the open folder (with **Show in Finder** or **Show in File Explorer** in the app and
+**Find documents**), the line that copying leaves the original files where they are, the
+sentence about what leaves the computer, and **Bring from Notion, Jira and more**. Without a
+connected agent the app adds one line and a link to the agents page; the web says writing
+wiki pages needs the app. No index, canvas, status strip or popup.
 
-**The empty stage looks first.** On arrival it runs the same metadata-only walk **Find
-documents** runs (names, formats and sizes in the open folder and each bound project root;
-no file is opened and nothing is copied). When the walk finds documents the sentence states
-the count and one filled button, **Review N found documents**, leads on its own row and
-opens the dialog already filled; **Add files** and **Bring from a service** sit beneath it.
-When it finds none the stage keeps its three equal doors.
+**Documents already in the folder lead.** On arrival the stage runs the metadata-only walk
+**Find documents** runs. Files inside the open folder but outside the sources folder sit
+above the drop area: the count, a chip per first-level folder with its count, **Copy all N
+into the sources folder** and **Choose files to copy** (the find dialog, filled). Markdown is
+offered only from the open folder, never a file the ontology knows as a concept (`kind:`),
+never under `sources/`, `wiki/` or `.ontology-atlas/`, and never a repository guide; Rust and
+the browser apply the same rules (`source-discovery-rules.contract.test.ts`). Files only a
+connected code folder holds stay a quiet suggestion below the folder line: up to four sheets,
+**Add N**, and **Hide this suggestion**, which the find dialog can undo.
+
+**Drops copy in the background.** A file or folder dropped anywhere on the window while the
+stage is open is copied into the sources folder, a folder keeping its structure below its own
+name. In the app Rust takes the paths from the native drop event, walks a dropped folder
+under the discovery rules, and offers each file; the page only sends back strings Rust
+offered, and anything else fails `source-not-offered`, as does a landing path that would
+leave the sources folder or pass through a link. Each offer records which file it named, and
+the copy refuses anything swapped in since (a link, a FIFO, another file) with "the file
+changed after it was dropped". A copy never replaces a file in the sources folder: a name
+taken in any letter case, even one taken a moment ago, moves to the next `(2)`. A folder that
+is, or holds, the open folder is refused whole. A single dropped file is copied whatever its
+format unless its name reads like a password or key file. The walk stops at 20,000 files or
+200,000 entries and names the first 1,000 files it skipped. One copy runs per open folder: a
+drop during a copy says so, and **Add files** and the find dialog's **Add** wait. At 500 files
+or 500 MB the count and size are asked about first. Progress streams to one line with **Stop
+copying**; input stays live, and files already copied stay. A failure is said in words, never
+as a system error. The first
+copied file turns the stage into the Sources home, and the same line follows there. After a
+copy, the files not copied are counted by reason (same as a source already added, not a
+document, named like a password or key file, licence or notice file) and one press lists
+their names in a centred dialog.
 
 **With content, guidance is a compact stepper.** **What to do next** in the page header
 opens a 360px `transientSurface("anchored")` panel of three rows, each one head line
@@ -402,7 +430,7 @@ One `SegmentedControl` at the top of the column now names both lists with their 
 draws **one** of them. The inactive list is not in the document: `hidden` would keep its
 rows in the tab order and its doors reachable from a keyboard while nothing on screen named
 them. The doors travel with the list — on Sources, Add files as one full-width chip over Find
-documents and Bring from a service as two quiet rows on the same text line; Check the wiki, Compile and the brain picker on Wiki — and the section eyebrow
+documents and Bring from a service as two quiet rows on the same text line; New page (the "+" beside the search field) on Wiki — and the section eyebrow
 is gone, because a head repeating *SOURCES · 7* under a segment reading *Sources 7* is the
 same fact twice. The choice is remembered per machine
 (`atlas.library.index-segment`), and opening a file from the home, from the guide or from a
@@ -457,26 +485,25 @@ grow to that dialog's inset plus its padding, so the box lands inside the dialog
 across its edge; a dialog that asks a question clears toasts instead, which is what Find
 documents does.
 
-The Wiki half carries what the wiki's own work needs, in this shape (merged from the LLM
-Wiki round, 2026-09-07): the count on the switch above, then **Check the wiki** and
-**Compile** on one unwrapping line so reading stands to the left of writing, then the brain
-picker on the line beneath when this computer offers two, and beneath that the single
-compile disclosure — only while Compile can be pressed; a reason it cannot is the status
-strip's to say. **The column is an index and nothing else** (owner, 2026-09-07, direction
-B of three): the switch, the search field, the door row — Check the wiki and Compile — one
-row that says where the check's answer is (*Check results N*, above the list, present once
-the wiki was ever checked), and the list, whose last row is *New page*. The design council
-(2026-09-07) moved the report's door from the canvas header, which is hidden the moment a
-page is open, into the column, and New page from an icon chip beside the two agent doors
-into the list it acts on, with its own glyph. The app's own record of the last check, the check's findings and the names
-without a page moved out of it to a page in the reading pane (*Check results*, below); the
-write setting moved to Settings; filing an answer moved beside the answer. **The folder's
-findings are not a pill.** A page that misses the
-wiki template still wears the amber `off-template` pill, because the fix is in that page's
-own bytes; a folder finding — `dangling-wikilink`, `orphan-page`,
-`shared-source-unlinked` — is about where the page sits, is true of nearly every row on a
-young wiki, and shows as one quiet word on the row with the count carried once in the
-header strip. It is the same reasoning that took the green chip off every compiled source.
+The Wiki half is the wiki's index (`docs/specs/2026-11-21-library-index-column.md`, I-2):
+the search field with a "+" for **New page** beside it, two 32px view rows — **Log**, with
+the date of the last compile or check, and **Check results**, with the count of findings,
+its running glyph and its unseen dot — a hairline, then the pages in groups: *Needs a look*
+with each page's first reason, *Saved answers*, one group per first-level folder under
+`wiki/`, then pages from several sources, one source and none. Every page row is 44px, two
+lines: the title, then where it came from and when it was written. Above 200 pages a group
+shows its five newest and *Show all*, which shows that group alone under a chip; Escape
+returns to the index at the scroll it had. Typing in the field swaps the groups for the
+ranked matches in the same rows. **The column holds no agent door**: Check the wiki and the
+missing-agent notice stand in the *Check results* head, and writing pages is the Sources
+band's press. When the open page's file leaves `wiki/`, a toast says so once and the
+selection clears. The app's own record of the last check, the check's findings and the names
+without a page live on the *Check results* page in the reading pane (below); the
+write setting moved to Settings; filing an answer moved beside the answer. **Advisory findings stay in Check results.** A page
+that misses the wiki template is listed under *Needs a look*, because the fix is in that
+page's own bytes; an advisory folder finding — `orphan-page`, `shared-source-unlinked` — is
+about where the page sits, is true of nearly every row on a young wiki, and is counted on
+the *Check results* page rather than marked on the row.
 **Names without a page** keeps its list and its **Propose as node** chips on the *Check
 results* page in the pane, five at a time with the map kinds first.
 
@@ -539,7 +566,7 @@ sha256 it recorded and its own truncation record
 — and, when no page cites it, the Compile button in that row's place. `not checked` is its
 own word because hashing is lazy: reporting an unmeasured file as `behind` made this pane
 contradict its own state row, which reads `checking` in exactly that window. Both directions are derived in
-`buildLibraryPairing` (`src/entities/docs-vault/lib/library/vault-library.ts`) from the same
+`buildLibraryModel` (`src/entities/docs-vault/lib/library/vault-library.ts`, its pairing field) from the same
 `sources:` and `source_hash:` frontmatter the state machine already reads, so no second
 store can drift from it.
 
@@ -559,7 +586,7 @@ walk already granted (`read_vault_binary_file` in the app, the File System Acces
 a browser, one ability on both surfaces), the text is stored nowhere and dropped when the
 pane closes, and nothing leaves the computer; the pane therefore stops saying Atlas has
 never opened the file, and its sha256 row says it was measured on this read. The splitter
-is `src/shared/lib/library/source-passage.ts`, the MCP `read_source` reader's twin, pinned unit for
+is `src/shared/lib/library/source-units.ts` (the zip reader is `source-zip.ts`), the MCP `read_source` reader's twin, pinned unit for
 unit by `tests/contract/vault-format/source-passage-parity.contract.test.ts`; it carries its own
 raw-DEFLATE decoder (a Word or Excel file is a zip, and the app's macOS floor does not
 guarantee `DecompressionStream`) and verifies each zip entry's CRC-32, because what it

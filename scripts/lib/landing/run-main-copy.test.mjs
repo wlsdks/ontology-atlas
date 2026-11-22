@@ -38,9 +38,9 @@ test('a checkout with an older script runs main\'s copy; an opt-out runs its own
     git(seed, 'init', '-q', '-b', 'main');
     git(seed, 'config', 'user.name', 'Fixture');
     git(seed, 'config', 'user.email', 'fixture@example.invalid');
-    const write = (dir, body) => {
-      writeFileSync(join(dir, 'scripts/entry.mjs'), `import { word } from './lib/word.mjs';\nconsole.log(word, process.argv.slice(2).join(' '));\n`);
-      writeFileSync(join(dir, 'scripts/lib/word.mjs'), `export const word = '${body}';\n`);
+    const write = (directory, body) => {
+      writeFileSync(join(directory, 'scripts/entry.mjs'), `import { word } from './lib/word.mjs';\nconsole.log(word, process.argv.slice(2).join(' '));\n`);
+      writeFileSync(join(directory, 'scripts/lib/word.mjs'), `export const word = '${body}';\n`);
     };
     write(seed, 'old');
     git(seed, 'add', '.');
