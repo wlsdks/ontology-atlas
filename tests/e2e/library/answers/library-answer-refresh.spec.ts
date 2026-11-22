@@ -14,6 +14,7 @@ const REVISED = 'Keep records for 18 days, replacing the previous 24-day guidanc
 const AUDIT_TEXT = 'The audit worksheet lists 24 days.\nThe worksheet review is pending.\n';
 const hash = (text: string) => createHash('sha256').update(text).digest('hex');
 const TURN_INCOMPLETE = enMessages.failures['answer-turn-incomplete'];
+const REFRESH_LABEL = enMessages.library.answers.refresh;
 const OLD_BODY = `## Summary
 The recorded period is 24 days.
 
@@ -226,7 +227,7 @@ test('a Library without code nodes opens retained questions and routes an inline
 test('a running refresh remains visibly reopenable and can be stopped after closing the conversation', async ({ page }) => {
   const harness = await openLibrary(page);
   await page.getByTestId('library-questions-open').click();
-  await expect(page.getByTestId('answer-refresh-start')).toContainText('Ask agent');
+  await expect(page.getByTestId('answer-refresh-start')).toHaveText(REFRESH_LABEL);
   await page.getByTestId('answer-refresh-start').click();
   await expect.poll(async () => (await harness.snapshot(page)).calls.some((call) => call.method === 'session/prompt')).toBe(true);
   await page.getByRole('button', { name: 'Close conversation', exact: true }).click();
