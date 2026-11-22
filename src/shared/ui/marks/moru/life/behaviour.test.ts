@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { LifeAtlas } from './atlas';
-import { addMoru, CALM_BLINK_MS, centre, createWorld, middle, raise, seeded, standing, tick, TRAVEL, type World } from './behaviour';
+import { addMoru, centre, createWorld, middle, raise, seeded, standing, tick, TRAVEL, type World } from './behaviour';
 import { MOST_ON_FLOOR, nearestGap, openLobby, tend } from './presence';
 import { pickLook } from './wardrobe';
 
@@ -107,7 +107,7 @@ describe('the lobby crew', () => {
     expect(new Set(present.map(look => look.wear.head)).size).toBe(5);
   });
 
-  it('rests a calm floor: walks end at a stride, everybody stands, and only a rare blink moves it', () => {
+  it('rests a calm floor: walks end at a stride, everybody stands, and only a blink the screen asks for moves it', () => {
     const world = createWorld({ atlas, width: 1512, rand: seeded(5), busyMax: 2, extra: 1 });
     for (let i = 0; i < 4; i++) addMoru(world, { id: `m${i}`, x: 80 + i * 340, lane: i % 3, ...pickLook(world.rand, world.morus) });
     // Lively first, until somebody is walking.
@@ -121,6 +121,8 @@ describe('the lobby crew', () => {
     const started: string[] = [];
     let prev = new Map(world.morus.map(m => [m.id, m.clip]));
     for (let t = 0; t < 120_000; t += 100) {
+      // Twice the screen asks for a breath.
+      if (t === 60_000 || t === 90_000) world.breathe = true;
       const walking = new Map(world.morus.filter(m => m.clip === 'step').map(m => [m.id, m.i]));
       tick(world, 100);
       // A walker who stopped did so from his stride's last pose, never mid-stride, and stands.
@@ -133,8 +135,7 @@ describe('the lobby crew', () => {
     expect(settledAt!).toBeLessThan(6000);
     expect(strideEnds.length).toBeGreaterThan(0);
     expect(strideEnds.every(Boolean)).toBe(true);
-    // Only blinks, at most one per CALM_BLINK_MS across the floor.
-    expect(new Set(started)).toEqual(new Set(['blink']));
-    expect(started.length).toBeLessThanOrEqual(Math.ceil((120_000 - settledAt!) / CALM_BLINK_MS));
+    // Nothing starts on its own; each breath is one blink.
+    expect(started).toEqual(['blink', 'blink']);
   });
 });

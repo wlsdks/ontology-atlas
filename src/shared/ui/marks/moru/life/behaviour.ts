@@ -93,11 +93,11 @@ export interface World {
   extra: number;
   /**
    * Resting between the screen's turns: nothing new starts, a walk stops at the end of its stride and
-   * the Moru stands, and only one blink now and then (`CALM_BLINK_MS`) moves the floor.
+   * the Moru stands, and only a blink the screen asks for (`breathe`) moves the floor.
    */
   calm: boolean;
-  /** The world time before which a resting floor does not blink again. */
-  blinkAt: number;
+  /** A resting floor is asked for one blink: the first Moru standing free plays it. */
+  breathe: boolean;
   rand: Random;
   now: number;
   sinceDecide: number;
@@ -125,7 +125,7 @@ export function createWorld({ atlas, width, rand, lanes = 3, spots = [], busyMax
   atlas: Pick<LifeAtlas, 'clips'>; width: number; rand: Random; lanes?: number; spots?: Spot[]; busyMax?: number; sep?: number; extra?: number;
 }): World {
   return {
-    atlas, width, lanes, spots, busyMax, sep, extra, calm: false, blinkAt: 0, rand, now: 0, sinceDecide: 0, morus: [], lastReply: null, log: [],
+    atlas, width, lanes, spots, busyMax, sep, extra, calm: false, breathe: false, rand, now: 0, sinceDecide: 0, morus: [], lastReply: null, log: [],
     stats: { actions: {}, declines: 0, missed: 0, interactions: 0, pranks: 0, swaps: 0, eventLatency: [], entered: 0, left: 0 },
   };
 }
@@ -197,8 +197,6 @@ function play(world: World, m: Moru, clip: string, cur: Current = {}) {
   world.stats.actions[clip] = (world.stats.actions[clip] ?? 0) + 1;
 }
 function rest(m: Moru) { m.clip = 'rest'; m.i = 0; m.frame = 0; m.t = 0; m.cur = {}; m.changed = true; }
-/** A resting floor blinks once in about this long, at the most. */
-export const CALM_BLINK_MS = 20_000;
 /** On a resting floor a walk ends with the stride under way; a walk through a doorway still finishes. */
 const stopWalking = (world: World, m: Moru) => { if (world.calm && !m.door && m.plan[0]?.go) drop(m); };
 const drop = (m: Moru) => { m.plan = []; m.steps = 0; };
@@ -295,14 +293,14 @@ function advance(world: World, m: Moru, dt: number) {
     stopWalking(world, m);
     if (m.plan.length) { next(world, m); return; }
     m.think -= dt; m.idleIn -= dt;
+    // A resting floor only blinks, once when the screen asks.
+    if (world.calm) {
+      if (world.breathe && !m.door) { world.breathe = false; play(world, m, 'blink'); }
+      return;
+    }
     if (m.idleIn <= 0) {
       // Micro-motion: a look toward whoever is passing, else a blink or a small sway.
       m.idleIn = 900 + world.rand() * 2600;
-      // A resting floor only blinks, one Moru now and then.
-      if (world.calm) {
-        if (world.now >= world.blinkAt) { world.blinkAt = world.now + CALM_BLINK_MS * (1 + world.rand()); play(world, m, 'blink'); }
-        return;
-      }
       const passing = world.morus.find(o => o !== m && o.clip === 'step' && Math.abs(centre(o) - centre(m)) < 260);
       // Under an activity budget the idle beat is the cheap one: a blink redraws the eyes only.
       const cheap = world.busyMax < Infinity && world.rand() < 0.85;

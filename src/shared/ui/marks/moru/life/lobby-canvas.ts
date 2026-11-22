@@ -30,8 +30,11 @@ const SLOWEST = 2;
 /** How many poses ahead of each Moru the idle page composes. */
 const AHEAD = 4;
 /** Clips of a Moru only standing: its idle poses advance every `STANDING_BEATS` beats. */
-const STANDING = new Set(['rest', 'blink']);
+/** Only standing still slows the tick; a blink plays at the beat, so it is over in a moment. */
+const STANDING = new Set(['rest']);
 const STANDING_BEATS = 4;
+/** The most beats a resting floor waits before it looks in again. */
+const CALM_BEATS = 8;
 /**
  * The time to the lobby's next tick: every pixel beat while a Moru walks or plays a clip, every fourth
  * (600 ms) while every Moru only stands or blinks. A clip keeps its own time across a longer tick.
@@ -430,7 +433,8 @@ export async function createLobby(canvas: HTMLCanvasElement, { width, unit = 1, 
     world.busyMax = lively ? LOBBY_BUSY : may ? 1 : 0;
     world.extra = lively ? 1 : 0;
     tick(world, elapsedMs || PIXEL_BEAT_MS);
-    if (may) tend(world, presence);
+    // Moru come and go while the screen is lively; a turn is one short thing on the floor.
+    if (lively) tend(world, presence);
     paint();
     if (moved) painted++;
     // Composes, while the page is idle, the poses the Moru on the floor will show next.
@@ -441,9 +445,15 @@ export async function createLobby(canvas: HTMLCanvasElement, { width, unit = 1, 
       // The turn is over once the floor stands again, or when nobody took it up within a few ticks.
       turnTicks++;
       if (settled() && (turnTicks > 3 || moved)) { stage.release(ACTOR, now); turnTicks = 0; }
-    } else if (!lively && settled()) granted = stage.ask(ACTOR, now);
+    } else if (!lively && settled()) {
+      granted = stage.ask(ACTOR, now);
+      // Still too long: one Moru blinks.
+      if (!granted && stage.breathe(ACTOR, now)) world.breathe = true;
+    }
     slow = moved ? 0 : Math.min(slow + 1, SLOWEST);
-    return granted ? 1 : Math.round(lobbyTickMs(world) / PIXEL_BEAT_MS) * (1 + slow);
+    const beats = Math.round(lobbyTickMs(world) / PIXEL_BEAT_MS) * (1 + slow);
+    // A resting floor still looks in every 1.2 s, to ask for its turn or blink a long rest awake.
+    return granted ? 1 : world.calm ? Math.min(beats, CALM_BEATS) : beats;
   };
   const offStage = () => {
     if (!onStage) return;
