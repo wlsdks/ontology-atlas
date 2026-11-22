@@ -210,7 +210,7 @@ export function withDependencyCutoff(normalized, committed, now = new Date()) {
 }
 
 export function hardenedRuntimeIds() {
-  const rust = readFileSync(join(ROOT, 'src-tauri', 'src', 'acp', 'runtime_environment.rs'), 'utf8');
+  const rust = readFileSync(join(ROOT, 'src-tauri', 'src', 'acp', 'launch', 'runtime_environment.rs'), 'utf8');
   const list = /NPM_HARDENED_RUNTIMES: &\[&str\] = &\[([^\]]*)\]/.exec(rust)?.[1] ?? '';
   const ids = [...list.matchAll(/"([^"]+)"/g)].map((m) => m[1]);
   if (ids.length === 0) {
