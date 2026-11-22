@@ -45,6 +45,11 @@ function placeKey(file: ScopeFile): string {
   return `scopes.place.${file.scope}`;
 }
 
+/** A script path as a person reads it: without Claude Code's `$CLAUDE_PROJECT_DIR` prefix. */
+function readableScript(title: string): string {
+  return title.replace(/^\$\{?CLAUDE_PROJECT_DIR(?::-\.)?\}?\//, '');
+}
+
 /** The script's file name, and the folder it sits in when the command names one. */
 function splitTitle(title: string): { name: string; folder: string } {
   const cut = Math.max(title.lastIndexOf('/'), title.lastIndexOf('\\'));
@@ -264,8 +269,9 @@ export function ScopeHookList({
             aria-current={name === activeName ? 'true' : undefined}
             onClick={() => jump(name)}
             className={cn(
-              'inline-flex items-baseline gap-1.5 border-b-[1.5px] py-1 hover:text-[color:var(--color-text-primary)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]',
-              name === activeName ? 'border-[color:var(--color-text-primary)] text-[color:var(--color-text-primary)]' : 'border-transparent',
+              'relative inline-flex items-baseline gap-1.5 py-1 hover:text-[color:var(--color-text-primary)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]',
+              name === activeName &&
+                'text-[color:var(--color-text-primary)] after:absolute after:inset-x-0 after:-bottom-px after:h-[length:var(--tabbar-underline)] after:bg-[color:var(--color-indigo-accent)]',
             )}
           >
             {name}
@@ -292,7 +298,7 @@ export function ScopeHookList({
                     const selected = key === selectedKey;
                     const item = reportItemFor(heading.file, hook, scopes, reportItems);
                     const tags = findings.tags.get(scopeHookKey(heading.file.id, hook)) ?? [];
-                    const title = displayPath(hookTitle(hook), scopes);
+                    const title = readableScript(displayPath(hookTitle(hook), scopes));
                     const { name, folder } = splitTitle(title);
                     return (
                       <li role="none" key={key}>
@@ -367,7 +373,7 @@ export function ScopeHookDetail({
     <div data-testid="scope-hook-detail" data-scope-hook={scopeOptionKey(file, hook)}>
       <div className="flex items-start gap-3">
         <h2 id={headingId} className="min-w-0 flex-1 break-all font-mono text-body-lg text-[color:var(--color-text-primary)]">
-          {displayPath(hookTitle(hook), scopes)}
+          {readableScript(displayPath(hookTitle(hook), scopes))}
         </h2>
         {action}
       </div>
