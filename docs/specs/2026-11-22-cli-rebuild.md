@@ -472,8 +472,8 @@ A sealed probe in the manner of the 2026-09-13 one, on `brief` alone.
 - **Arms.** A: `git diff --stat` and the change's own description. B: A plus the text of
   `ontology-atlas brief <range>`, produced by a throwaway script kept outside the repository and run
   under that name. No MCP, no app.
-- **The name.** The owner's run for acceptance criterion 1 types `ontology-atlas brief`. The
-  recording notes whether they call the name too long to type or make an alias.
+- **The name.** The owner, watching the recording for acceptance criterion 1, is asked whether
+  `ontology-atlas` is too long to type.
 - **Readers.** Three fresh agent readers per arm per change, not told the hypothesis. Each answers:
   what behaviour changed, what else is affected, what do you not know.
 - **Key.** Written from the full diff before any reader runs.
@@ -499,10 +499,12 @@ A sealed probe in the manner of the 2026-09-13 one, on `brief` alone.
 
 ## Acceptance criteria
 
-1. **Given** the owner after a real agent change in their own repository, **when** they run the
-   probe's brief script in their terminal, **then** a screen recording shows what they do next, and it is
-   opening a listed document or naming a decision. Checked by the recording attached to the pull
-   request. If they do neither, this spec returns to Problem.
+1. **Given** a real agent change in this repository, **when** the lead runs the probe's brief
+   script in a terminal and follows its last line into the app, **then** a recording of at most one
+   minute shows the brief, the `open` step and the app on the named document, and the owner, after
+   watching it, says whether it is useful. Checked by the recording attached to the pull request and
+   the owner's answer quoted in it. A "not useful" returns this spec to Problem. This proves the
+   output and the path into the app; the owner's answer is the only person-side evidence.
 2. **Given** the ten changes and two arms, **when** the probe runs, **then** it meets the pass line.
    Checked by the decision record that states the four numbers. This is the recovery proof.
 3. **Given** a fixture repository whose change modifies one named file, moves another, edits one
@@ -591,3 +593,7 @@ Two drafts, which the lead lists in `decisions:` once the owner accepts the word
 - 2026-11-22: the owner accepted the plan after a plain-language walk-through of its value (what a
   person must re-check after an agent change, without reading the whole diff) and asked to build it
   in this order; both decision records are listed.
+- 2026-11-22: the owner asked the lead to run and record criterion 1 instead of doing it
+  themselves; the criterion now proves the output and the path into the app, and the owner's
+  verdict on the recording is the person-side evidence. Probe readers run on a smaller model to
+  keep usage down.
