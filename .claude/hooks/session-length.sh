@@ -13,21 +13,25 @@ process.stdin.on("end", () => {
   const hours = Number(process.env.SESSION_LENGTH_HOURS || 8);
   const ids = new Set();
   let first = null;
-  for (const line of fs.readFileSync(transcript, "utf8").split("\n")) {
+  // Line by line: a long transcript outgrows the largest string Node can hold.
+  const lines = require("readline").createInterface({ input: fs.createReadStream(transcript), crlfDelay: Infinity });
+  lines.on("line", (line) => {
     if (!first) first = /"timestamp":"([^"]+)"/.exec(line)?.[1] ?? null;
     if (line.includes("\"type\":\"assistant\"")) {
       const id = /"id":"(msg_[^"]+)"/.exec(line)?.[1];
       if (id) ids.add(id);
     }
-  }
-  const ageHours = first ? (Date.now() - Date.parse(first)) / 3600000 : 0;
-  const state = path.join(process.env.TMPDIR || "/tmp", `claude-session-length-${String(payload.session_id || "unknown").replace(/[^\w-]/g, "")}`);
-  const last = fs.existsSync(state) ? Number(fs.readFileSync(state, "utf8")) || 0 : 0;
-  const due = ids.size >= turns || ageHours >= hours;
-  if (!due || ids.size < last + turns / 2) return;
-  fs.writeFileSync(state, String(ids.size));
-  process.stdout.write(JSON.stringify({
-    systemMessage: `This session has run ${ids.size} turns over ${Math.round(ageHours)}h, and every turn re-reads its whole context. Finish the current task, then start a fresh session with /clear.`,
-  }));
+  });
+  lines.on("close", () => {
+    const ageHours = first ? (Date.now() - Date.parse(first)) / 3600000 : 0;
+    const state = path.join(process.env.TMPDIR || "/tmp", `claude-session-length-${String(payload.session_id || "unknown").replace(/[^\w-]/g, "")}`);
+    const last = fs.existsSync(state) ? Number(fs.readFileSync(state, "utf8")) || 0 : 0;
+    const due = ids.size >= turns || ageHours >= hours;
+    if (!due || ids.size < last + turns / 2) return;
+    fs.writeFileSync(state, String(ids.size));
+    process.stdout.write(JSON.stringify({
+      systemMessage: `This session has run ${ids.size} turns over ${Math.round(ageHours)}h, and every turn re-reads its whole context. Finish the current task, then start a fresh session with /clear.`,
+    }));
+  });
 });
 '
