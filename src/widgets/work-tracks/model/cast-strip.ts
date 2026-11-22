@@ -29,6 +29,12 @@ let source: Promise<RoomClips | null> | null = null;
 let known: RoomClips | null = null;
 const dressed = new Map<string, string>();
 const making = new Map<string, Promise<string | null>>();
+/**
+ * The pixels behind each strip this page made, by its address: the app's content security policy lets
+ * an image show a `blob:` address but not `fetch` read one, so a dressed strip is tinted from here.
+ */
+const made = new Map<string, Blob>();
+const pixelsOf = async (url: string) => made.get(url) ?? (await fetch(url)).blob();
 
 const loadSource = () => (source ??= fetch(withBasePath(SOURCE))
   .then(response => (response.ok ? (response.json() as Promise<RoomClips>) : null))
@@ -81,7 +87,7 @@ async function make(clip: string, character: string): Promise<string | null> {
   if (!all || !info) return null;
   const url = withBasePath(`/brand/${info.file}`);
   if (character === 'grey' || !all.cast[character]) return url;
-  const bitmap = await createImageBitmap(await (await fetch(url)).blob());
+  const bitmap = await createImageBitmap(await pixelsOf(url));
   const canvas = new OffscreenCanvas(bitmap.width, bitmap.height), g = canvas.getContext('2d', { willReadFrequently: true })!;
   g.drawImage(bitmap, 0, 0);
   bitmap.close();
@@ -90,7 +96,9 @@ async function make(clip: string, character: string): Promise<string | null> {
   g.putImageData(image, 0, 0);
   const blob = await canvas.convertToBlob({ type: 'image/png' });
   canvas.width = canvas.height = 0;
-  return URL.createObjectURL(blob);
+  const dressedUrl = URL.createObjectURL(blob);
+  made.set(dressedUrl, blob);
+  return dressedUrl;
 }
 
 /** Dresses the strips a room may play for its Moru, one after another, so each is ready before it is asked for. */
@@ -143,7 +151,7 @@ export function tintPixels(data: Uint8ClampedArray, ink: readonly number[]) {
 }
 
 async function tint(source: string, ink: string): Promise<string | null> {
-  const bitmap = await createImageBitmap(await (await fetch(source)).blob());
+  const bitmap = await createImageBitmap(await pixelsOf(source));
   const canvas = new OffscreenCanvas(bitmap.width, bitmap.height), g = canvas.getContext('2d', { willReadFrequently: true })!;
   g.drawImage(bitmap, 0, 0);
   bitmap.close();
