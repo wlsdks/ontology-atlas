@@ -431,7 +431,12 @@ function skillDirectories(files: readonly SetupItem[]): SetupItem[] {
  * O(records + hooks + declarations). With a tool filter, an item another tool reads is left out, and
  * so is a file none of the listed agents reads; a repository-wide check stays.
  */
-export function buildHarnessSetup(report: HarnessReport, filter: ToolFilter = null): HarnessSetup {
+export function buildHarnessSetup(
+  report: HarnessReport,
+  filter: ToolFilter = null,
+  /** Groups listed even when the report has nothing for them, such as hooks that only other files hold. */
+  keep: ReadonlySet<SetupGroupId> = new Set(),
+): HarnessSetup {
   const rules = declarationsById(report.declarations, 'rule');
   const pairs = differingPairs(report);
   const byGroup = new Map<SetupGroupId, SetupItem[]>();
@@ -465,7 +470,7 @@ export function buildHarnessSetup(report: HarnessReport, filter: ToolFilter = nu
   const items = new Map<string, SetupItem>();
   const visibleGroup = (id: SetupGroupId): SetupGroup | null => {
     const visible = (byGroup.get(id) ?? []).filter((item) => visibleTo(item, filter));
-    if (visible.length === 0) return null;
+    if (visible.length === 0 && !keep.has(id)) return null;
     for (const item of visible) for (const shown of [item, ...(item.files ?? [])]) items.set(shown.key, shown);
     return { id, items: visible, bytes: visible.reduce((sum, item) => sum + (item.bytes ?? 0), 0) };
   };

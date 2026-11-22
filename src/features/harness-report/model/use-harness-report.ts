@@ -29,13 +29,13 @@ interface HarnessReportSnapshot {
   state: HarnessReportState;
 }
 
-interface SourceBinding {
+export interface SourceBinding {
   projectSlug: string;
   rootPath: string;
 }
 
 /** The one project source bound to this folder; several distinct roots return `null`, not a guess. */
-async function resolveSourceBinding(
+export async function resolveSourceBinding(
   handle: FileSystemDirectoryHandle,
   projectSlugs: readonly string[],
 ): Promise<SourceBinding | null> {

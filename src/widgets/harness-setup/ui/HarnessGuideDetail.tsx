@@ -22,7 +22,7 @@ const FACT_LABEL = 'text-label text-[color:var(--color-text-quaternary)]';
 
 export type TranslateFn = ReturnType<typeof useTranslations<'harness'>>;
 
-function Fact({ label, children }: { label: string; children: ReactNode }) {
+export function Fact({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="grid gap-1 py-2.5 @min-[26rem]/guide-detail:grid-cols-[6.5rem_minmax(0,1fr)] @min-[26rem]/guide-detail:gap-4">
       <dt className={cn(FACT_LABEL, '@min-[26rem]/guide-detail:pt-px')}>{label}</dt>
@@ -162,7 +162,7 @@ export function ItemStatus({ item, oneLine = false, t }: { item: SetupItem; oneL
 }
 
 /** What each status means, as text a person can read without hovering. */
-function StatusHints({ item, t }: { item: SetupItem; t: TranslateFn }) {
+export function StatusHints({ item, t }: { item: SetupItem; t: TranslateFn }) {
   const hints = statusTags(item).flatMap((tag) => tagText(tag, item, t).hint ?? []);
   if (hints.length === 0) return null;
   return (

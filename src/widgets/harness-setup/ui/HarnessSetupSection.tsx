@@ -21,6 +21,12 @@ export interface SetupCategory {
   items: readonly SetupItem[];
   bytes: number;
   problems: number;
+  /** Hooks from every settings file, when the app read them; the items count otherwise. */
+  count?: number;
+}
+
+export function categorySize(category: SetupCategory): number {
+  return category.count ?? category.items.length;
 }
 
 export interface SetupArea {
@@ -128,7 +134,7 @@ function CategoryOption({
   onSelect: (key: string) => void;
   t: TranslateFn;
 }) {
-  const empty = category.items.length === 0;
+  const empty = categorySize(category) === 0;
   return (
     <li role="none">
       <RowButton
@@ -150,7 +156,7 @@ function CategoryOption({
         <ProblemMark count={category.problems} t={t} />
         {category.bytes > 0 ? <span className={COUNT}>{formatBytes(category.bytes)}</span> : null}
         <span data-harness-group-count className="w-6 shrink-0 text-right text-label tabular-nums text-[color:var(--color-text-secondary)]">
-          {category.items.length}
+          {categorySize(category)}
         </span>
       </RowButton>
     </li>
