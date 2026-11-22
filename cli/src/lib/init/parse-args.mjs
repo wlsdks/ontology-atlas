@@ -1,23 +1,24 @@
+import { dirname, resolve } from 'node:path';
 import { stderr } from 'node:process';
+import { fileURLToPath } from 'node:url';
 import { COLORS } from '../colors.mjs';
 import { formatUnknownFlagError } from '../cli-args.mjs';
+import { shellQuote } from './shell-quote.mjs';
 
-const INIT_ALLOWED_FLAGS = ['--help', '--quick-start', '--locale', '--documents'];
+/** The runnable form: there is no global binary, so usage names this checkout's `cli/` folder. */
+const INIT = `node ${shellQuote(resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..'))} init`;
+
+const INIT_ALLOWED_FLAGS = ['--help', '--locale', '--documents'];
 
 export function parseInitArgs(args) {
   if (args.includes('--help') || args.includes('-h')) {
     return { help: true };
   }
   const positional = [];
-  let quickStart = false;
   let documents = false;
   let locale = 'en';
   for (let i = 0; i < args.length; i += 1) {
     const arg = args[i];
-    if (arg === '--quick-start') {
-      quickStart = true;
-      continue;
-    }
     if (arg === '--documents') {
       documents = true;
       continue;
@@ -41,19 +42,17 @@ export function parseInitArgs(args) {
   if (positional.length > 1) {
     return { error: `too many arguments: ${positional.slice(1).join(' ')}` };
   }
-  if (documents && quickStart) return { error: '--documents and --quick-start do not combine: a documents folder has no code to bootstrap from' };
-  return { target: positional[0], quickStart, locale, documents };
+  return { target: positional[0], locale, documents };
 }
 
 export function printInitUsage(stream = stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  ontology-atlas init [folder]\n` +
-      `  ontology-atlas init [folder] --quick-start\n` +
-      `  ontology-atlas init [folder] --locale=ko\n\n` +
-      `Scaffold a local ontology vault. Default folder: ./atlas\n\n` +
-      `${COLORS.bold}--quick-start${COLORS.reset}  no-prompt one-liner: scaffold + bootstrap from\n` +
-      `  this repo + .mcp.json (already unconditional) + an absorb suggestion when\n` +
-      `  CLAUDE.md/AGENTS.md exists (never auto-absorbed) + a compact next-steps block.\n`,
+      `  ${INIT} [folder]\n` +
+      `  ${INIT} [folder] --locale=ko\n` +
+      `  ${INIT} [folder] --documents\n\n` +
+      `Scaffold a local ontology vault and wire this checkout's MCP server into\n` +
+      `.mcp.json and .codex/config.toml. Default folder: ./atlas\n\n` +
+      `${COLORS.bold}--documents${COLORS.reset}  a documents folder (sources/ and wiki/) without the map's nodes.\n`,
   );
 }
