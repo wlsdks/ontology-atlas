@@ -20,7 +20,7 @@ const DEFAULT_MCP_KILL_GRACE_MS = 1_000;
 const MCP_CALL_TIMEOUT_ENV = 'OATLAS_MCP_CALL_TIMEOUT_MS';
 const MCP_KILL_GRACE_ENV = 'OATLAS_MCP_CALL_KILL_GRACE_MS';
 
-export const SCRIPT_CLIENT_INFO = Object.freeze({
+const SCRIPT_CLIENT_INFO = Object.freeze({
   name: 'ontology-atlas-scripts',
   version: MCP_PKG.version,
 });

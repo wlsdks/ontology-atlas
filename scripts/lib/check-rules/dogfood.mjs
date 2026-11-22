@@ -12,7 +12,6 @@ export const rules = [
       /^scripts\/lib\/dogfood-walk\/check-mcp-source-dependencies\.(?:mjs|test\.mjs)$/,
       /^scripts\/ci\/run-focused-node-test\.(?:mjs|test\.mjs)$/,
       /^scripts\/dogfood\/dogfood-mcp-walk\.(?:mjs|test\.mjs)$/,
-      /^cli\/src\/commands\/agent-setup\/mcp-verify\.mjs$/,
       /^mcp\/scripts\/verify(?:\.mjs|\/.+\.mjs)$/,
       /^README\.md$/,
       /^docs\/DEVELOPMENT-CHECKS\.md$/,
@@ -96,6 +95,12 @@ export const rules = [
     command: 'pnpm test:mcp:dogfood:timeout',
     reason: 'MCP dogfood timeout/argument diagnostics changed',
     matches: [/^scripts\/dogfood\/dogfood-mcp-walk\.(?:mjs|test\.mjs)$/],
+  },
+  {
+    order: 1120,
+    command: 'pnpm test:mcp:maintenance',
+    reason: 'the dogfood maintenance queue reader changed',
+    matches: [/^scripts\/dogfood\/dogfood-status\.(?:mjs|test\.mjs)$/],
   },
   {
     order: 1080,

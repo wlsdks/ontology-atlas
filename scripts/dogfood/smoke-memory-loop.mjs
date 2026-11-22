@@ -8,7 +8,8 @@ import { fileURLToPath } from 'node:url';
 import { callMcpTool } from '../../mcp/scripts/call-tool.mjs';
 
 const ROOT = resolve(fileURLToPath(new URL('../..', import.meta.url)));
-const CLI = join(ROOT, 'cli', 'src', 'index.mjs');
+// `node <checkout>/cli` runs init through the `main` of cli/package.json.
+const INIT_PACKAGE = join(ROOT, 'cli');
 
 function run(cmd, args, options = {}) {
   const result = spawnSync(cmd, args, {
@@ -81,28 +82,14 @@ writeFileSync(
   "import { notes } from '../../shared/store';\nexport function search(q: string) { return [...notes.entries()].filter(([, body]) => body.includes(q)); }\n",
 );
 
-const init = run('node', [CLI, 'init', 'ontology'], { cwd: project });
+const init = run('node', [INIT_PACKAGE, 'init', 'ontology'], { cwd: project });
 const initOutput = stripAnsi(init.stdout);
-assert.match(initOutput, /bootstrap \. --vault \.\/ontology/);
+assert.match(initOutput, /\/atlas-grow/);
 assert.equal(existsSync(join(project, '.mcp.json')), true);
 assert.equal(existsSync(join(project, '.codex', 'config.toml')), true);
 
-const bootstrap = run('node', [CLI, 'bootstrap', '.', '--vault', './ontology', '--json'], {
-  cwd: project,
-  allowFailure: true,
-});
-assert.equal(bootstrap.status, 3);
-const bootstrapJson = JSON.parse(bootstrap.stdout);
-assert.equal(bootstrapJson.mode, 'review');
-assert.equal(bootstrapJson.writeEligible, false);
-assert.equal(bootstrapJson.reason, 'approval_required');
-assert.equal(bootstrapJson.next.writes, 0);
-assert.equal(bootstrapJson.guard.qualification, 'constructionQualification:v1');
-assert.equal(existsSync(join(vault, 'memory-loop-proof-app.md')), false);
-assert.equal(existsSync(join(vault, 'capabilities', 'capture.md')), false);
-assert.equal(existsSync(join(vault, 'capabilities', 'search.md')), false);
-
-run('node', [CLI, 'validate', vault], { cwd: project });
+const validation = await callMcpTool(vault, 'validate_vault', {});
+assert.equal(validation.summary.errorFiles, 0, JSON.stringify(validation.problems));
 
 const workspaceBrief = await callMcpTool(vault, 'query_ontology', {
   operation: 'workspace_brief',

@@ -9,7 +9,6 @@ import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { describe, it } from 'node:test';
 
-import './smoke-vault-fixtures.test.mjs';
 
 import { expectedToolsListAnnotationSummary } from '../../mcp/scripts/verify/tools-list/inventory.mjs';
 import {
@@ -19,7 +18,6 @@ import {
   RELATION_TYPE_VALUES,
   WRITE_RELATION_TYPE_VALUES,
 } from '../../mcp/src/ontology-engine.mjs';
-import { RELATION_TYPE_VALUES as CLI_RELATION_TYPE_VALUES } from '../../cli/src/lib/relation-types.mjs';
 import { SERVER_VERSION } from '../../mcp/src/server-version.mjs';
 import { parseMcpToolMetadataFromDescription } from '../../mcp/scripts/package-metadata.mjs';
 import {
@@ -166,36 +164,20 @@ describe('package contract helpers', () => {
     assert.match(codexConfig, /OATLAS_VAULT\s*=\s*"\.\/docs\/ontology"/);
   });
 
-  /**
-   * Checks that the shortcuts the README advertises actually run. Help text is prose and is not
-   * pinned verbatim; a help line naming a missing shortcut is caught by `assertPnpmScriptsExist` via
-   * `pnpm test:dogfood:script-refs`.
-   */
-  it('keeps the root README mcp-verify shortcut executable from source checkout', () => {
-    const result = runNodeScript(['cli/src/index.mjs', 'mcp-verify', '--help']);
+  it('keeps the init entrypoint on natural exit so large stdout can flush', () => {
+    const entry = join('cli', 'src', 'index.mjs');
+    const source = readFileSync(entry, 'utf-8');
+    // The entry delegates init and its status lines to these modules; any of them could end the process.
+    const delegated = readdirSync(join('cli', 'src', 'lib', 'init'))
+      .filter((name) => name.endsWith('.mjs') && !name.endsWith('.test.mjs'))
+      .map((name) => join('cli', 'src', 'lib', 'init', name))
+      .concat(join('cli', 'src', 'lib', 'status-lines.mjs'));
 
-    assert.equal(result.status, 0);
-    assert.match(result.stdout, /Usage:/);
-    assert.match(result.stdout, /ontology-atlas mcp-verify \[vault\] \[--timeout-ms N\]/);
-    assert.equal(result.stderr, '');
-  });
-
-  it('keeps the CLI entrypoint on natural exit so large stdout can flush', () => {
-    const source = readFileSync('cli/src/index.mjs', 'utf-8');
-    // The entry delegates init, help and status lines to these modules; any of them could end the process.
-    const delegated = ['lib/init', 'lib/help']
-      .flatMap((folder) =>
-        readdirSync(join('cli/src', folder))
-          .filter((name) => name.endsWith('.mjs') && !name.endsWith('.test.mjs'))
-          .map((name) => `cli/src/${folder}/${name}`),
-      )
-      .concat('cli/src/lib/status-lines.mjs');
-
-    for (const [file, text] of [['cli/src/index.mjs', source], ...delegated.map((file) => [file, readFileSync(file, 'utf-8')])]) {
+    for (const [file, text] of [[entry, source], ...delegated.map((file) => [file, readFileSync(file, 'utf-8')])]) {
       assert.doesNotMatch(text, /import\s*\{[^}]*\bexit\b[^}]*\}\s+from ['"]node:process['"]/, file);
       assert.doesNotMatch(text, /\bexit\s*\(/, file);
     }
-    assert.match(source, /process\.exitCode\s*=\s*await main\(\)/);
+    assert.match(source, /process\.exitCode\s*=\s*await main\(argv\.slice\(2\)\)/);
   });
 
   it('keeps the MCP npm test verify entrypoint on natural exit so large stdout can flush', () => {
@@ -204,17 +186,6 @@ describe('package contract helpers', () => {
     assert.doesNotMatch(source, /import\s*\{[^}]*\bexit\b[^}]*\}\s+from ['"]node:process['"]/);
     assert.doesNotMatch(source, /\bprocess\.exit\s*\(/);
     assert.match(source, /process\.exitCode\s*=\s*await main\(\)/);
-  });
-
-  it('keeps the CLI MCP dependency aligned with the local MCP package version', () => {
-    const cliPkg = JSON.parse(readFileSync('cli/package.json', 'utf-8'));
-    const mcpPkg = JSON.parse(readFileSync('mcp/package.json', 'utf-8'));
-
-    assert.equal(cliPkg.dependencies?.['ontology-atlas-mcp'], `^${mcpPkg.version}`);
-  });
-
-  it('keeps CLI relation type validation aligned with MCP query filters', () => {
-    assert.deepEqual(CLI_RELATION_TYPE_VALUES, RELATION_TYPE_VALUES);
   });
 
   /**
@@ -341,27 +312,18 @@ describe('package contract helpers', () => {
     assert.equal(isCoveredByFiles('src/verify-script.test.mjs', pkg.files), false);
   });
 
-  it('keeps CLI npm test runnable from the published tarball', () => {
+  it('keeps the init package test runnable from its files list', () => {
     const pkg = JSON.parse(readFileSync('cli/package.json', 'utf-8'));
     const cliLibTests = readdirSync('cli/src/lib', { recursive: true })
       .filter((file) => file.endsWith('.test.mjs'))
       .sort();
 
-    assert.equal(isCoveredByFiles('src/lib/cli-args.test.mjs', pkg.files), true);
     assert.ok(cliLibTests.length > 0, 'CLI test script must have concrete lib test subjects');
     for (const testFile of cliLibTests) {
       assert.equal(existsSync(join('cli/src/lib', testFile)), true, `${testFile} must still exist`);
       assert.equal(isCoveredByFiles(`src/lib/${testFile}`, pkg.files), true, `${testFile} must ship for CLI npm test`);
     }
-    assert.equal(isCoveredByFiles('src/lib/analysis-results/import-analysis-results.mjs', pkg.files), true);
-    assert.equal(isCoveredByFiles('src/lib/analysis-results/import-analysis-results.test.mjs', pkg.files), true);
-    assert.equal(isCoveredByFiles('src/lib/analysis-results/repo-analysis-results.mjs', pkg.files), true);
-    assert.equal(isCoveredByFiles('src/lib/analysis-results/repo-analysis-results.test.mjs', pkg.files), true);
-    assert.equal(isCoveredByFiles('src/lib/cli-commands.test.mjs', pkg.files), true);
-    assert.equal(isCoveredByFiles('src/lib/mcp-bridge/mcp-call.test.mjs', pkg.files), true);
     assert.equal(isCoveredByFiles('src/index.mjs', pkg.files), true);
-    assert.equal(isCoveredByFiles('src/commands/agent-setup/mcp-verify.mjs', pkg.files), true);
-    assert.equal(isCoveredByFiles('src/lib/cli-commands.mjs', pkg.files), true);
     assert.equal(isCoveredByFiles('templates/vault/project.md', pkg.files), true);
   });
 
@@ -429,23 +391,6 @@ writeFileSync('fixture.mjs', "import './not-real.mjs';");
       './re-export.mjs',
       './multi-line.mjs',
       './dynamic.mjs',
-    ].sort());
-  });
-
-  it('parses CLI command registry runner entries as reachable command modules', () => {
-    const source = `
-function runner(moduleFile, exportName) {
-  return { modulePath: \`./commands/\${moduleFile}\`, moduleFile, exportName };
-}
-export const CLI_COMMAND_RUNNERS = Object.freeze({
-  list: runner('local-vault/list.mjs', 'runList'),
-  'mcp-verify': runner("agent-setup/mcp-verify.mjs", 'runMcpVerify'),
-});
-`;
-
-    assert.deepEqual(importedSpecifiers(source).sort(), [
-      '../commands/local-vault/list.mjs',
-      '../commands/agent-setup/mcp-verify.mjs',
     ].sort());
   });
 
