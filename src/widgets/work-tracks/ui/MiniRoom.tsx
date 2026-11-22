@@ -2,7 +2,7 @@
 
 import type { RoomEntry } from '@/shared/lib/work-status/work-tracks';
 import { cn } from '@/shared/lib/cn';
-import { roomLook } from '../model/room-look';
+import { roomCharacter, roomLook } from '../model/room-look';
 import { BranchName } from './BranchName';
 import { RoomMoru } from './RoomMoru';
 import { SwapText } from './SwapText';
@@ -34,7 +34,7 @@ export function MiniRoom({ room, copy, tint, showOwner }: { room: RoomEntry; cop
         <i className={styles.miniCrateBig} data-kind={look.crate} />
       ) : (
         <span className={styles.miniActor}>
-          <RoomMoru key={look.clip} clip={look.clip} still zoom={0.5} tint={tint} dozing={look.dozing} />
+          <RoomMoru key={look.clip} clip={look.clip} character={roomCharacter(room.track, room.key)} still zoom={0.5} tint={tint} dozing={look.dozing} />
         </span>
       )}
       {look.dozing ? <span aria-hidden className={cn(styles.miniZ, 'text-label font-mono font-[var(--font-weight-strong)]')}>z<br />&nbsp;z</span> : null}

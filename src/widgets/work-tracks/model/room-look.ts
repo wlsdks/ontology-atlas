@@ -1,4 +1,4 @@
-import { FULL_STAGES, NO_SESSION_FLOOR, type RoomEntry, type RoomPlan, type RoomStage, type RoomState } from '@/shared/lib/work-status/work-tracks';
+import { FULL_STAGES, NO_SESSION_FLOOR, type RoomEntry, type Track, type RoomPlan, type RoomStage, type RoomState } from '@/shared/lib/work-status/work-tracks';
 import type { RoomMotion } from '@/shared/ui/marks/moru/moru-rows';
 
 /** Moru's rows a room plays (`docs/design/brand.md`, "Contextual motion"): the room rows and the waiting row's neutral pose. */
@@ -94,6 +94,31 @@ export function roomIdentity(branch: string): RoomIdentity {
   for (const char of branch) hash = Math.imul(hash ^ char.charCodeAt(0), 0x01000193) >>> 0;
   return { mirrored: (hash & 8) !== 0, prop: hash % ROOM_PROPS };
 }
+
+/**
+ * The Moru a room has: the grey original, or one of the cast, each a body palette and at most one head
+ * piece (`docs/design/brand.md`, "Cast"). A costume only: every character plays the same rows, so
+ * a pose means the same thing whoever wears it.
+ */
+export const MORU_CAST = ['horn', 'unicorn', 'dragon', 'rabbit', 'builder', 'scholar'] as const;
+export type MoruCharacter = 'grey' | (typeof MORU_CAST)[number];
+
+/**
+ * The room's Moru, from its branch name alone, so a room always has the same one. The base branch's
+ * room, the main checkout, keeps the grey original; every other branch draws from the cast by a hash
+ * of its own, so the character says nothing the mirror or the wall prop already say.
+ */
+export function moruCharacter(branch: string, base: boolean): MoruCharacter {
+  if (base) return 'grey';
+  let hash = 0x9e3779b9;
+  for (const char of branch) hash = Math.imul(hash ^ char.charCodeAt(0), 0x85ebca6b) >>> 0;
+  hash = Math.imul(hash ^ (hash >>> 13), 0xc2b2ae35) >>> 0;
+  return MORU_CAST[((hash ^ (hash >>> 16)) >>> 0) % MORU_CAST.length];
+}
+
+/** The character of the room a worktree has. */
+export const roomCharacter = (track: Pick<Track, 'branch' | 'standing'>, key: string): MoruCharacter =>
+  moruCharacter(track.branch ?? key, track.standing === 'base');
 
 /** A warning the page header counts: two tools in one folder, or a worktree to clean up. */
 export type RoomAlert = 'sameFolder' | 'cleanup';

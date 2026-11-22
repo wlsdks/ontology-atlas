@@ -170,6 +170,7 @@ What each contributor command answers, sorted by command.
 | `pnpm agents:check` | Each harness's instruction files are valid; Codex and Claude files need not match |
 | `pnpm brand:sprites` | Rebuild Moru sprites, 85 animation exports, 16 poses and compass sizes from retained project sources; inspect `assets/brand/moru/preview.html` |
 | `pnpm brand:work-clips` | Redraw the eleven code-drawn Work status clips from `scripts/brand/moru-work-clips.mjs` into `assets/brand/moru/source/motion-v10/` and their `moru-source.json` entries; run `pnpm brand:sprites` after it |
+| `pnpm brand:cast` | Redraw the Work status rows for each Moru cast character (body palette and head piece) into `public/brand/mascot-<row>-row-128-<character>.png`; run after `pnpm brand:sprites` |
 | `pnpm brief:new -- --slug=<slug> --owns=<path,...>` | A delegation brief with the port, scratch, checks and merge lines filled in |
 | `pnpm build:first-load -- out en en/topology` | Per route, the JavaScript its HTML loads up front (raw and brotli KB) and any generated JSON literal over 50 KB; fails on a page naming no chunks, a missing chunk, or an oversize literal. `pnpm build` runs it for `en`, `en/topology` and `en/download`; `--allow-json=<route>` exempts a route |
 | `pnpm build:static` | Reuse `out/` only for matching build inputs; fail without a reuse stamp if inputs change during the build |

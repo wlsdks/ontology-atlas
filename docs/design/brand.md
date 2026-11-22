@@ -62,6 +62,36 @@ room. They are
 drawn in code from the neutral pose (see "Rebuild"), so the body, face and
 outline are the catalogue's own pixels.
 
+### Cast
+
+| Character | Body / belly | Head piece |
+|---|---|---|
+| Moru (grey) | `#D6D3C9` / `#FFF1D7` | none |
+| Horn | `#E8D1A7` / `#FFF1D6` | two short horns |
+| Unicorn | `#DACDF1` / `#F8F0FF` | a striped horn and a pastel mane |
+| Dragon | `#B1DDC5` / `#E4F8E4` | none yet |
+| Rabbit | `#E8CEC2` / `#FEF0E6` | two upright ears with pink insides |
+| Builder | `#D1CCC0` / `#F7EDD9` | a hard hat |
+| Scholar | `#CAD4E3` / `#ECF3FF` | none yet |
+
+Each Work status room has one of these. A palette swaps only the body fill and
+the belly tone, and a head piece drawn in them; the outline, the eyes, the indigo
+flippers and tail and the shading stay, so the cast reads as one family. Each
+tint has the original tone's luminance (the builder's body 7% less), so contrast
+on the canvas and against the outline is the grey Moru's. The one added hue,
+pink `#F2B3C6`, is the unicorn's mane and the rabbit's inner ears: character ink
+that says which Moru it is, never a token or a status. A head piece is a typed
+pixel map on the 64px grid that follows where each pose carries the head,
+mirrored on a pose turned to the left, and stays behind a flipper or a prop over
+the head; `pnpm brand:cast` doubles it onto the work grid and reduces it with the
+catalogue's reducer. A room's Moru comes from a hash of its branch name, so a
+room always has the same one; the main checkout keeps the grey original. A
+character is costume only: every character plays the same rows, so a pose means
+what it means on the grey Moru, and it says nothing about which agent or model
+is at work. The pieces are generic pastel costume shapes; none copies an
+existing character's design or colouring. Body costumes, raised-flipper poses
+and the dragon's and scholar's pieces are not shipped.
+
 Source sheets, generation prompts and discarded explorations remain in that pack.
 `moru-source.json` records source cells and sequence constituents; `moru.json`
 records every export, timing and contextual runtime mapping.
@@ -322,11 +352,12 @@ and personal-record surfaces remain retired; existing local saves are untouched.
 # Only after changing a clip in scripts/brand/moru-work-clips.mjs:
 pnpm brand:work-clips
 pnpm brand:sprites
+pnpm brand:cast
 node scripts/brand/build-brand-assets.mjs
 node scripts/brand/build-brand-raster.mjs
 # Open the printed loopback URL once to bake the PNG family.
 node scripts/brand/install-brand-icons.mjs
-node --test scripts/brand/build-moru-sprites.test.mjs
+node --test scripts/brand/build-moru-sprites.test.mjs scripts/brand/build-moru-cast.test.mjs
 ```
 
 Generation is not part of rebuilding. The Node/sharp exporter uses retained

@@ -158,7 +158,10 @@ count cross-fades and Moru heaves a crate and pats it down through the floor.
 
 Rooms tell themselves apart from the branch name alone: half are drawn the other
 way round, with Moru facing left and the lamp on his right, and each has one of
-six props, on a wall shelf in a narrow room or on the floor in a wide one. A lit
+six props, on a wall shelf in a narrow room or on the floor in a wide one. Each
+worktree's room also has its own Moru from the cast, a body colour and at most
+one head piece chosen by the branch name, while the main checkout keeps the grey
+original; the costume never changes what a pose means. A lit
 lamp throws a stepped cone down the wall and a pool on the floor and rims Moru's
 side that faces it; an idle room has none. Pointing at a room or floor steps
 that session's rooms and floor up and the rest down; rooms have no action, so

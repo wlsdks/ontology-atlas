@@ -1,7 +1,8 @@
+import { existsSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { WorkStatusSnapshot, WorktreeRow } from '@/shared/lib/work-status/tauri-work-status';
 import { buildWorkTracks, planRooms, type RoomPlan } from '@/shared/lib/work-status/work-tracks';
-import { ROOM_PROPS, cartLoad, moruPhase, retireeOf, roomIdentity, roomLook, roomOnce, withRetirees } from './room-look';
+import { MORU_CAST, ROOM_PROPS, cartLoad, moruCharacter, moruPhase, retireeOf, roomCharacter, roomIdentity, roomLook, roomOnce, withRetirees, type RoomClip } from './room-look';
 
 const NOW_MS = 1_795_260_000_000;
 
@@ -99,6 +100,39 @@ describe('roomIdentity', () => {
     expect(mirrored).toBeGreaterThan(18);
     expect(mirrored).toBeLessThan(42);
     expect(new Set(identities.map(identity => identity.prop)).size).toBe(ROOM_PROPS);
+  });
+});
+
+describe('moruCharacter', () => {
+  it('gives a branch the same Moru every time, and spreads the cast across branches', () => {
+    const branches = Array.from({ length: 120 }, (_, index) => `feat/branch-${index}`);
+    const characters = branches.map(branch => moruCharacter(branch, false));
+    expect(branches.map(branch => moruCharacter(branch, false))).toEqual(characters);
+    const counts = MORU_CAST.map(character => characters.filter(found => found === character).length);
+    // 20 each on an even spread; no character is missing or takes twice its share.
+    for (const count of counts) expect(count).toBeGreaterThan(8);
+    for (const count of counts) expect(count).toBeLessThan(40);
+    expect(characters).not.toContain('grey');
+  });
+
+  it('keeps the grey original for the main checkout, whatever its branch is called', () => {
+    for (const branch of ['main', 'master', 'trunk', 'feat/branch-7']) expect(moruCharacter(branch, true)).toBe('grey');
+    expect(roomCharacter({ branch: 'main', standing: 'base' }, 'repo')).toBe('grey');
+    expect(roomCharacter({ branch: null, standing: 'ahead' }, 'detached-key')).toBe(moruCharacter('detached-key', false));
+  });
+
+  it('has every row a room can play drawn for every character', () => {
+    const states = [
+      { kind: 'working', tools: ['codex', 'claudeCode'] }, { kind: 'resting', quietSinceMs: 0 }, { kind: 'dozing', quietSinceMs: 0 },
+      { kind: 'merged' }, { kind: 'locked' }, { kind: 'lockLeft', tool: 'claudeCode' }, { kind: 'missing' },
+    ] as const;
+    const rows = new Set<RoomClip>(['galumph', 'galumph-left', 'merge-cheer', 'crate-send', 'settle-in']);
+    for (const state of states) {
+      const look = roomLook(state);
+      rows.add(look.clip).add(look.backClip);
+    }
+    const missing = [...rows].flatMap(row => MORU_CAST.map(character => `public/brand/mascot-${row}-row-128-${character}.png`)).filter(file => !existsSync(file));
+    expect(missing).toEqual([]);
   });
 });
 
