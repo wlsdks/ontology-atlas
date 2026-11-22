@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Existing v-prefixed tag whose commit must equal the current default-branch head"
+        description: "Existing vX.Y.Z (stable) or vX.Y.Z-beta.N (beta) tag whose commit must equal the current default-branch head"
         required: true
         type: string
 
@@ -33,6 +33,9 @@ jobs:
     outputs:
       release_sha: ${{ steps.admit.outputs.release_sha }}
       release_tag: ${{ steps.admit.outputs.release_tag }}
+      # `stable` for vX.Y.Z, `beta` for vX.Y.Z-beta.N (scripts/lib/release-tag.mjs). A beta is a
+      # GitHub pre-release that never carries latest.json and never writes /download.
+      release_channel: ${{ steps.tag.outputs.channel }}
     steps:
       - name: Require protected main dispatch context
         env:
@@ -66,7 +69,8 @@ jobs:
           pnpm --version
 
       - name: Verify requested release version
-        run: pnpm desktop:release-tag -- --tag="$RELEASE_TAG"
+        id: tag
+        run: pnpm desktop:release-tag -- --tag="$RELEASE_TAG" --github-output
 
       # The *previous* release's facts must already be on main: this token cannot push them, so
       # a person lands the uploaded file, and a forgotten handoff leaves /download naming an older
@@ -758,6 +762,7 @@ jobs:
     env:
       RELEASE_TAG: ${{ needs.admit-release.outputs.release_tag }}
       RELEASE_SHA: ${{ needs.admit-release.outputs.release_sha }}
+      RELEASE_CHANNEL: ${{ needs.admit-release.outputs.release_channel }}
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -802,7 +807,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
+      # The one feed installed apps read is copied from a release's latest.json, so a beta
+      # release never has one: this step runs for the stable channel alone.
       - name: Build updater manifest
+        if: ${{ needs.admit-release.outputs.release_channel == 'stable' }}
         run: |
           node scripts/desktop-release/build-updater-manifest.mjs \
             --dir=release-assets --out=release-assets/latest.json \
@@ -824,11 +832,20 @@ jobs:
           cd release-assets/mcp
           for bundle in *.mcpb; do shasum -a 256 "$bundle" > "$bundle.sha256"; done
 
+      - name: Refuse an updater manifest on a beta release
+        if: ${{ needs.admit-release.outputs.release_channel != 'stable' }}
+        run: |
+          if [[ -e release-assets/latest.json ]]; then
+            echo "A beta release never carries latest.json; ${RELEASE_TAG} staged one." >&2
+            exit 1
+          fi
+
       - name: Upload draft GitHub Release assets
         uses: softprops/action-gh-release@c12583777ecdfd3be55c69cf75464299dc01057e # v3
         with:
           tag_name: ${{ needs.admit-release.outputs.release_tag }}
           draft: true
+          prerelease: ${{ needs.admit-release.outputs.release_channel == 'beta' }}
           generate_release_notes: true
           files: |
             release-assets/*/*.dmg
@@ -843,7 +860,14 @@ jobs:
             release-assets/latest.json
 
       - name: Verify draft release assets
+        if: ${{ needs.admit-release.outputs.release_channel == 'stable' }}
         run: pnpm desktop:verify-download -- --tag="${RELEASE_TAG}" --allow-draft --require-updater
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Verify draft beta release assets
+        if: ${{ needs.admit-release.outputs.release_channel == 'beta' }}
+        run: pnpm desktop:verify-download -- --tag="${RELEASE_TAG}" --allow-draft --beta
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
@@ -851,7 +875,7 @@ jobs:
         run: |
           release_url="$(gh release view "${RELEASE_TAG}" --json url --jq .url)"
           {
-            echo "## Draft desktop release — awaiting approval"
+            echo "## Draft desktop ${RELEASE_CHANNEL} release — awaiting approval"
             echo ""
             echo "The Apple Silicon DMG and the unsigned Windows x64 beta are staged at ${release_url}."
             echo "The Windows artifact passed the native Windows Server 2022 build, Defender scan,"
@@ -865,6 +889,8 @@ jobs:
   # reviewers (repo Settings → Environments → release) so a first public
   # release cannot happen without someone installing the draft build first —
   # the workflow alone cannot prove the app launches on a clean machine.
+  # For a beta the approval may come without installing the draft: the beta
+  # release itself is what the owner installs by hand.
   publish-macos:
     name: Publish Desktop Release
     runs-on: ubuntu-latest
@@ -873,12 +899,15 @@ jobs:
     timeout-minutes: 3
     environment: release
     permissions:
+      # The browser gate reads e2e.yml runs and their artifact names.
+      actions: read
       # Publish the verified GitHub Release. Generated download facts leave this
       # job only as an artifact and cross protected main through a normal PR.
       contents: write
     env:
       RELEASE_TAG: ${{ needs.admit-release.outputs.release_tag }}
       RELEASE_SHA: ${{ needs.admit-release.outputs.release_sha }}
+      RELEASE_CHANNEL: ${{ needs.admit-release.outputs.release_channel }}
     steps:
       # fetch-depth: 0 — the generated manifest's determinism contract needs the full history
       # (`generated-vault-determinism.contract.test.ts`).
@@ -921,11 +950,28 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
+      # A stable release publishes only over a whole green browser run on its own commit.
+      # `desktop:release-run` started one on the tag at the cut; a beta does not wait for it.
+      # **When blocked**: wait for that run, or follow the printed dispatch command, then
+      # rerun this job.
+      - name: Require a whole green browser run on the release commit
+        if: ${{ needs.admit-release.outputs.release_channel == 'stable' }}
+        run: pnpm desktop:release-browser-gate -- --repo="${GITHUB_REPOSITORY}" --sha="${RELEASE_SHA}" --tag="${RELEASE_TAG}"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
       - name: Publish verified stable release
+        if: ${{ needs.admit-release.outputs.release_channel == 'stable' }}
         run: |
           # Clears a pre-release flag set by hand on the draft: the hosted updater skips a GitHub
           # pre-release, and `desktop:verify-download` and `download:release-facts` below refuse one.
           gh release edit "${RELEASE_TAG}" --draft=false --prerelease=false
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Publish verified beta release
+        if: ${{ needs.admit-release.outputs.release_channel == 'beta' }}
+        run: gh release edit "${RELEASE_TAG}" --draft=false --prerelease=true
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
@@ -935,11 +981,20 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
 
       - name: Verify public download assets
+        if: ${{ needs.admit-release.outputs.release_channel == 'stable' }}
         run: pnpm desktop:verify-download -- --tag="${RELEASE_TAG}" --require-updater
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
+      - name: Verify public beta release assets
+        if: ${{ needs.admit-release.outputs.release_channel == 'beta' }}
+        run: pnpm desktop:verify-download -- --tag="${RELEASE_TAG}" --beta
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      # /download names stable releases only; a beta writes no facts.
       - name: Generate verified release facts from admitted source
+        if: ${{ needs.admit-release.outputs.release_channel == 'stable' }}
         run: |
           pnpm download:release-facts -- --tag="${RELEASE_TAG}"
           cp src/views/download/model/macos-release.generated.ts "$RUNNER_TEMP/macos-release.generated.ts"
@@ -951,6 +1006,7 @@ jobs:
       # A locally authenticated operator applies this artifact in a normal PR; that PR receives
       # the ordinary required checks, and its human-token merge triggers deploy-pages.yml.
       - name: Upload protected release facts handoff
+        if: ${{ needs.admit-release.outputs.release_channel == 'stable' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: ontology-atlas-release-facts-${{ env.RELEASE_TAG }}
@@ -962,7 +1018,7 @@ jobs:
         run: |
           release_url="$(gh release view "${RELEASE_TAG}" --json url --jq .url)"
           {
-            echo "## Published desktop release"
+            echo "## Published desktop ${RELEASE_CHANNEL} release"
             echo ""
             echo "Release: ${release_url}"
             echo ""
