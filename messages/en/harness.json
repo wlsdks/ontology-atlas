@@ -217,6 +217,17 @@
       "homeUnread": "Atlas does not read the names inside your home folder.",
       "listed": "{count} here. They are listed under {group} on this page."
     },
+    "heading": {
+      "codexTrust": "Codex reads this file only in projects you trusted.",
+      "codexReview": "Codex runs a new or changed hook only after you approve it in /hooks."
+    },
+    "place": {
+      "outside": "This file is outside this repository. Teammates who clone it do not get this hook.",
+      "project": "This file is in this repository. Teammates who pull it get this hook too.",
+      "local": "This file is in this repository on this computer only. Teammates do not get this hook.",
+      "managed": "Your organisation placed this file on this computer. It applies whatever repository you open."
+    },
+    "readNote": "From files outside this repository Atlas reads only hook entries and how many permission rules there are, and sends nothing off this computer.",
     "reason": {
       "link": "it is a link to another file",
       "notAFile": "it is not a file",

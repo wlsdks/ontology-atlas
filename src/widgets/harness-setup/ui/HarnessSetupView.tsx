@@ -376,7 +376,10 @@ export function HarnessSetupView({
           t={t}
         />
       ))}
-      <p className="mt-auto break-all px-2.5 text-label text-[color:var(--color-text-quaternary)]">{t('sourceRoot', { path: sourceRoot })}</p>
+      <div className="mt-auto flex flex-col gap-1 px-2.5 text-label text-[color:var(--color-text-quaternary)]">
+        <p className="break-all">{t('sourceRoot', { path: sourceRoot })}</p>
+        {scopes ? <p data-testid="harness-scopes-read-note" className="text-pretty">{t('scopes.readNote')}</p> : null}
+      </div>
     </div>
   );
 

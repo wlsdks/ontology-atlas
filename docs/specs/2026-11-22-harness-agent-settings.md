@@ -275,7 +275,7 @@ A fact from files, never a score, drawn only when true. Each sits where it appli
 | Hooks set outside this repository | line `scope.outside` with a chip that selects the first | an entry in a User, Managed or System file |
 | The same hook in two files | `tag.twoFilesClaude` or `tag.twoFilesCodex` | identical event, matcher and command in two files of one tool |
 | One tool blocks and the other does not | line `finding.toolGap` on Blocking hooks | both tools have files here; one has an entry on a guardrail event and the other none |
-| Codex has not reviewed it | today's `hookApprovalGate` on every Codex row | always: Atlas does not read the review state |
+| Codex has not reviewed it | one line under each Codex file heading, `scopes.heading.codexReview` (with `scopes.heading.codexTrust` first on the Project file), and `hookApprovalGate` in the selected hook's detail; never a tag on every row | always: Atlas does not read the review state |
 | All hooks off | line `finding.allOff`, read only | the highest file that sets `disableAllHooks` sets it true |
 | Added by Work status | tag `tag.workStatus` | the entry's command is Work status's helper |
 | Only the organisation's hooks run | line `finding.managedOnly` | the managed file sets `allowManagedHooksOnly` |
@@ -847,3 +847,7 @@ words that a hook ran.
 - 2026-11-22: the Work status spec renumbered its slices: the agent config writer and its version
   store are its slice 9, "Hook entries", optional there because Claude Code's own session list now
   carries the waiting state. References updated; this spec may build the writer first.
+- 2026-11-22: Codex's review note is stated once under each Codex file heading instead of as a
+  tag on every Codex row, where thirteen identical tags hid the rows' differences; the hook's
+  detail keeps `hookApprovalGate`. The trust note moved out of the heading's reach caption into
+  that line, so the caption is never cut.

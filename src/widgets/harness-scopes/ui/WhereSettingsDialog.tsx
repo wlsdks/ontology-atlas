@@ -273,7 +273,7 @@ function WhereSettingsBody({
         />
         <CloseButton label={say({ key: 'close' })} onClick={onClose} data-testid="where-settings-close" className="-mr-2 shrink-0" />
       </header>
-      <p className="max-w-[80ch] text-pretty px-6 pt-1.5 text-body text-[color:var(--color-text-secondary)]">{say({ key: whatKey(tool, shownKind) })}</p>
+      <p className="min-h-[calc(2lh+0.375rem)] max-w-[80ch] text-pretty px-6 pt-1.5 text-body text-[color:var(--color-text-secondary)]">{say({ key: whatKey(tool, shownKind) })}</p>
       <div className="mt-3 px-6">
         <TabBar
           ariaLabel={say({ key: 'scopes.kindsAria' })}
@@ -321,7 +321,7 @@ function WhereSettingsBody({
                     onClick={() => setChosenRow(entry.key)}
                     className="grid h-14 w-full grid-cols-[1rem_minmax(0,1fr)_auto] items-center gap-x-3 rounded-none px-3.5 text-left"
                   >
-                    <ReachMark reach={entry.reach} active={selected} />
+                    <ReachMark reach={entry.reach} size="md" active={selected} />
                     <span className="flex min-w-0 flex-col">
                       <span className="flex min-w-0 items-baseline gap-2">
                         <span className={cn('shrink-0 text-body', selected ? 'font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]' : 'text-[color:var(--color-text-secondary)]')}>

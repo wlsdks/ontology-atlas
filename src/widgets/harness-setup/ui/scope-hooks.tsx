@@ -36,9 +36,19 @@ function scopeName(file: ScopeFile): string {
 }
 
 function captionKey(file: ScopeFile): string {
-  if (file.picked) return 'scopes.picked';
-  if (file.scope === 'project' && file.tool === 'codex') return 'scopes.caption.projectCodex';
-  return `scopes.caption.${file.scope}`;
+  return file.picked ? 'scopes.picked' : `scopes.caption.${file.scope}`;
+}
+
+function placeKey(file: ScopeFile): string {
+  if (file.picked || file.scope === 'user') return 'scopes.place.outside';
+  if (file.scope === 'managed' || file.scope === 'system') return 'scopes.place.managed';
+  return `scopes.place.${file.scope}`;
+}
+
+/** The script's file name, and the folder it sits in when the command names one. */
+function splitTitle(title: string): { name: string; folder: string } {
+  const cut = Math.max(title.lastIndexOf('/'), title.lastIndexOf('\\'));
+  return cut > 0 ? { name: title.slice(cut + 1), folder: title.slice(0, cut) } : { name: title, folder: '' };
 }
 
 function affectsKey(file: ScopeFile): string {
@@ -96,13 +106,13 @@ function findingsOfFile(file: ScopeFile, findings: ScopeFindings): ScopeFinding[
 function FileNotes({ file, scopes, t }: { file: ScopeFile; scopes: HarnessScopes; t: TranslateFn }) {
   const say = t as unknown as (key: string, values?: Record<string, string | number>) => string;
   if (file.status === 'invalid') {
-    return <p data-scope-file-note="invalid" className={cn('pb-1 pl-[1.875rem] pr-2.5', NOTE)}>{say('scopes.now.invalid', { file: displayPath(file.path, scopes) })}</p>;
+    return <p data-scope-file-note="invalid" className={cn('pl-5 pt-0.5', NOTE)}>{say('scopes.now.invalid', { file: displayPath(file.path, scopes) })}</p>;
   }
   if (file.status === 'unreadable') {
     const reason = file.failure ?? 'io';
     const reasonKey = `scopes.reason.${reason.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase())}`;
     return (
-      <p data-scope-file-note="unreadable" className={cn('pb-1 pl-[1.875rem] pr-2.5', NOTE)}>
+      <p data-scope-file-note="unreadable" className={cn('pl-5 pt-0.5', NOTE)}>
         {say('scopes.now.unreadable', { file: displayPath(file.path, scopes), reason: say(reasonKey) })}
       </p>
     );
@@ -111,12 +121,12 @@ function FileNotes({ file, scopes, t }: { file: ScopeFile; scopes: HarnessScopes
   return (
     <>
       {file.hooksTruncated > 0 ? (
-        <p data-scope-file-note="truncated" className={cn('pb-1 pl-[1.875rem] pr-2.5', NOTE)}>
+        <p data-scope-file-note="truncated" className={cn('pl-5 pt-0.5', NOTE)}>
           {say('scopes.now.truncated', { shown, total: shown + file.hooksTruncated })}
         </p>
       ) : null}
       {file.unknownEvents > 0 ? (
-        <p data-scope-file-note="unknown-events" className={cn('pb-1 pl-[1.875rem] pr-2.5', NOTE)}>
+        <p data-scope-file-note="unknown-events" className={cn('pl-5 pt-0.5', NOTE)}>
           {say('scopes.now.unknownEvents', { count: file.unknownEvents })}
         </p>
       ) : null}
@@ -124,10 +134,9 @@ function FileNotes({ file, scopes, t }: { file: ScopeFile; scopes: HarnessScopes
   );
 }
 
-function HookTags({ file, tags, t }: { file: ScopeFile; tags: readonly ScopeHookTag[]; t: TranslateFn }) {
+function HookTags({ tags, t }: { tags: readonly ScopeHookTag[]; t: TranslateFn }) {
   const say = t as unknown as (key: string) => string;
   const labels = [
-    ...(file.tool === 'codex' ? [['review', say('scopes.tag.needsReview')]] : []),
     ...tags.map((tag) =>
       tag.kind === 'work-status' ? ['work-status', say('scopes.tag.workStatus')]
       : ['two-files', say(tag.tool === 'codex' ? 'scopes.tag.twoFilesCodex' : 'scopes.tag.twoFilesClaude')],
@@ -164,9 +173,9 @@ function ScopeFileHeading({
   return (
     <div
       data-scope-heading={file.id}
-      className="sticky -top-4 z-[1] flex flex-col gap-px border-t border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-2.5 pb-1 pt-[7px]"
+      className="sticky -top-4 z-[1] flex flex-col gap-px border-t border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-2.5 pb-1.5 pt-[7px] shadow-[inset_0_-1px_0_var(--color-overlay-1)] before:pointer-events-none before:absolute before:inset-x-0 before:bottom-full before:h-4 before:bg-[color:var(--color-canvas)]"
     >
-      <div className="flex h-5 min-w-0 items-center gap-2">
+      <div className="flex min-h-5 min-w-0 items-center gap-2">
         <ReachMark reach={SCOPE_REACH[file.scope]} />
         <span className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">{scopeName(file)}</span>
         <span className="shrink-0 whitespace-nowrap rounded-chip border border-[color:var(--color-border-soft)] px-1.5 text-label text-[color:var(--color-text-tertiary)]">
@@ -183,9 +192,7 @@ function ScopeFileHeading({
             <CircleHelp size={ICON_SIZE.sm} aria-hidden />
           </IconButton>
         ) : null}
-        <span className="min-w-0 flex-1 truncate text-right text-label text-[color:var(--color-text-secondary)]">
-          {file.picked ? say('scopes.picked') : say(captionKey(file))}
-        </span>
+        <span className="min-w-0 flex-1 text-pretty text-right text-label text-[color:var(--color-text-secondary)]">{say(captionKey(file))}</span>
       </div>
       <div className="flex h-4 min-w-0 items-center gap-2 pl-5">
         <ScopePath path={path} className="flex-1 text-label text-[color:var(--color-text-tertiary)]" />
@@ -193,6 +200,12 @@ function ScopeFileHeading({
           <span className="shrink-0 text-label tabular-nums text-[color:var(--color-text-secondary)]">{say('sectionTotal', { count: heading.hooks.length })}</span>
         ) : null}
       </div>
+      {file.tool === 'codex' ? (
+        <p data-scope-file-note="codex-review" className={cn('pl-5 pt-0.5', NOTE)}>
+          {file.scope === 'project' ? `${say('scopes.heading.codexTrust')} ` : null}
+          {say('scopes.heading.codexReview')}
+        </p>
+      ) : null}
       <FileNotes file={file} scopes={scopes} t={t} />
       {findingsOfFile(file, findings).map((finding) => (
         <FindingLine key={finding.kind} finding={finding} scopes={scopes} t={t} />
@@ -234,6 +247,8 @@ export function ScopeHookList({
     const name = scopeName(heading.file);
     byScope.set(name, (byScope.get(name) ?? 0) + heading.hooks.length);
   }
+  const activeScope = group.headings.find((heading) => heading.hooks.some((hook) => scopeOptionKey(heading.file, hook) === selectedKey));
+  const activeName = activeScope ? scopeName(activeScope.file) : null;
   const jump = (name: string) => {
     const heading = group.headings.find((entry) => scopeName(entry.file) === name);
     if (!heading) return;
@@ -243,7 +258,16 @@ export function ScopeHookList({
     <div data-testid="scope-hook-list" className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-x-3.5 px-2.5 text-label text-[color:var(--color-text-tertiary)]">
         {[...byScope].map(([name, count]) => (
-          <button key={name} type="button" onClick={() => jump(name)} className="inline-flex items-baseline gap-1.5 rounded-chip py-0.5 hover:text-[color:var(--color-text-primary)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]">
+          <button
+            key={name}
+            type="button"
+            aria-current={name === activeName ? 'true' : undefined}
+            onClick={() => jump(name)}
+            className={cn(
+              'inline-flex items-baseline gap-1.5 border-b-[1.5px] py-1 hover:text-[color:var(--color-text-primary)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]',
+              name === activeName ? 'border-[color:var(--color-text-primary)] text-[color:var(--color-text-primary)]' : 'border-transparent',
+            )}
+          >
             {name}
             <em className="not-italic tabular-nums text-[color:var(--color-text-quaternary)]">{count}</em>
           </button>
@@ -268,6 +292,8 @@ export function ScopeHookList({
                     const selected = key === selectedKey;
                     const item = reportItemFor(heading.file, hook, scopes, reportItems);
                     const tags = findings.tags.get(scopeHookKey(heading.file.id, hook)) ?? [];
+                    const title = displayPath(hookTitle(hook), scopes);
+                    const { name, folder } = splitTitle(title);
                     return (
                       <li role="none" key={key}>
                         <RowButton
@@ -280,20 +306,21 @@ export function ScopeHookList({
                           hoverSurface="lift"
                           size="md"
                           onClick={() => onSelect(key)}
+                          title={title}
                           className="h-13 w-full flex-col items-stretch justify-center gap-0.5 py-1.5"
                         >
                           <span className="flex min-w-0 items-baseline gap-2">
-                            <ScopePath
-                              path={displayPath(hookTitle(hook), scopes)}
-                              className={cn('flex-1 text-body', selected ? 'text-[color:var(--color-text-primary)]' : 'text-[color:var(--color-text-secondary)]')}
-                            />
+                            <span className={cn('min-w-0 flex-1 truncate font-mono text-body', selected ? 'text-[color:var(--color-text-primary)]' : 'text-[color:var(--color-text-secondary)]')}>
+                              {name}
+                            </span>
                             {/* A wired hook needs no mark; only a missing or unresolved script does. */}
                             {item && item.hookStatus !== 'wired' ? <ItemStatus item={{ ...item, approvalGate: undefined }} oneLine t={t} /> : null}
-                            <HookTags file={heading.file} tags={tags} t={t} />
+                            <HookTags tags={tags} t={t} />
                           </span>
                           <span className="flex min-w-0 items-baseline gap-2 overflow-hidden font-mono text-label">
                             <span className="shrink-0 text-[color:var(--color-text-tertiary)]">{hook.event}</span>
-                            {hook.matcher ? <span className="min-w-0 truncate text-[color:var(--color-text-quaternary)]">{hook.matcher}</span> : null}
+                            {hook.matcher ? <span className="min-w-0 max-w-[40%] shrink truncate text-[color:var(--color-text-quaternary)]">{hook.matcher}</span> : null}
+                            {folder ? <ScopePath path={folder} title={title} className="ml-auto min-w-0 max-w-[55%] text-[color:var(--color-text-quaternary)]" /> : null}
                           </span>
                         </RowButton>
                       </li>
@@ -359,7 +386,7 @@ export function ScopeHookDetail({
             ) : null}
           </p>
           <p className="mt-1 break-all font-mono text-label text-[color:var(--color-text-secondary)]">{file.path}</p>
-          <p className={cn('mt-1', NOTE)}>{say(captionKey(file))}</p>
+          <p className={cn('mt-1', NOTE)}>{say(placeKey(file))}</p>
           {onExplain ? (
             <button
               type="button"
@@ -373,7 +400,7 @@ export function ScopeHookDetail({
           ) : null}
         </Fact>
         <Fact label={say('scopes.label.affects')}>
-          <div className="flex items-start justify-between gap-6">
+          <div className="flex flex-col items-start gap-2.5">
             <p className="min-w-0 text-pretty text-body text-[color:var(--color-text-primary)]">{affects}</p>
             <ReachGrid
               reach={SCOPE_REACH[file.scope]}
