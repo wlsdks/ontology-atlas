@@ -5,6 +5,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { inventoryFiles, balanceFiles, failingSpecFiles, runPlaywrightCi } from './run-playwright-ci.mjs';
 import { measureReport, mergeDurations } from './refresh-playwright-durations.mjs';
+import { runQuarantine } from './quarantine.mjs';
+import { passingRepeats } from '../lib/ci/quarantine.mjs';
 
 const passed = { expectedStatus: 'passed', status: 'expected', results: [{ status: 'passed' }] };
 const skipped = { expectedStatus: 'skipped', status: 'skipped', results: [{ status: 'skipped' }] };
@@ -246,4 +248,70 @@ test('a red shard annotates each failing spec file once, for pr:land to read bac
       '::error file=tests/e2e/c/d.spec.ts,title=failing spec::tests/e2e/c/d.spec.ts',
     ]);
   } finally { rmSync(cwd, { recursive: true, force: true }); }
+});
+
+test('a quarantined spec leaves every gating run, also when a plan names it, and the assignment says so', (t) => {
+  const cwd = mkdtempSync(join(tmpdir(), 'atlas-playwright-quarantine-'));
+  const lines = [];
+  t.mock.method(console, 'log', (line) => lines.push(line));
+  const quarantine = { entries: [{ file: 'tests/e2e/b/flaky.spec.ts' }] };
+  try {
+    const executed = [];
+    const spawn = (_bin, args, options) => {
+      if (args.includes('--list')) return { status: 0, stdout: JSON.stringify(report(['a.spec.ts', 'b/flaky.spec.ts'])) };
+      const files = ['a.spec.ts', 'b/flaky.spec.ts'].filter((file) => args.some((arg) => arg.endsWith(`/${file.replaceAll('.', '\\.')}$`)));
+      executed.push(...files);
+      writeFileSync(options.env.PLAYWRIGHT_JSON_OUTPUT_NAME, JSON.stringify(report(files)));
+      return { status: 0 };
+    };
+    for (const argv of [['--shard=1/1'], ['--shard=1/1', '--only=a.spec.ts', '--only=b/flaky.spec.ts']]) {
+      assert.equal(runPlaywrightCi(argv, { cwd, spawn, quarantine }), 0, argv.join(' '));
+    }
+    assert.deepEqual(executed, ['a.spec.ts', 'a.spec.ts']);
+    assert.ok(lines.some((line) => /1 quarantined file\(s\) left out: b\/flaky\.spec\.ts/.test(line)));
+    const assignment = JSON.parse(readFileSync(join(cwd, 'output/playwright/assignment-1.json'), 'utf8'));
+    assert.deepEqual(assignment.quarantined, ['b/flaky.spec.ts']);
+    assert.deepEqual(assignment.assignment.flatMap((shard) => shard.files), ['a.spec.ts']);
+    assert.throws(() => runPlaywrightCi(['--shard=1/1', '--only=gone.spec.ts'], { cwd, spawn, quarantine }), /not discovered/);
+  } finally { rmSync(cwd, { recursive: true, force: true }); }
+});
+
+test('the nightly runs the quarantined specs without failing on their result, only on a missing one', () => {
+  const entry = { file: 'tests/e2e/b/flaky.spec.ts', owner: 'octocat', expires: '2026-12-06', issue: 'https://github.com/example/atlas/issues/7' };
+  const lines = [];
+  const log = (line) => lines.push(line);
+  const cwd = mkdtempSync(join(tmpdir(), 'atlas-quarantine-browser-'));
+  try {
+    assert.equal(runQuarantine(['run-browser'], { cwd, log, registry: { entries: [] }, spawn: () => { throw new Error('unexpected spawn'); } }), 0);
+    assert.equal(lines.at(-1), '[quarantine] run-browser: nothing is quarantined');
+    let written = report(['b/flaky.spec.ts'], [{ expectedStatus: 'passed', status: 'unexpected', results: [{ status: 'failed' }] }]);
+    const calls = [];
+    const spawn = (_bin, args, options) => {
+      calls.push(args);
+      if (written) writeFileSync(options.env.PLAYWRIGHT_JSON_OUTPUT_NAME, JSON.stringify(written));
+      return { status: 1 };
+    };
+    assert.equal(runQuarantine(['run-browser'], { cwd, log, registry: { entries: [entry] }, spawn, env: { GITHUB_ACTIONS: 'true' } }), 0);
+    assert.ok(calls[0].includes('/tests/e2e/b/flaky\\.spec\\.ts$'));
+    assert.ok(lines.some((line) => /^\[quarantine\] failed +tests\/e2e\/b\/flaky\.spec\.ts {2}\(owner octocat/.test(line)));
+    assert.ok(lines.some((line) => line.startsWith('::warning file=tests/e2e/b/flaky.spec.ts,title=quarantined test failed::')));
+    written = undefined;
+    assert.equal(runQuarantine(['run-browser'], { cwd, log, registry: { entries: [entry] }, spawn, env: {} }), 1);
+    assert.match(lines.at(-1), /0 passed, 0 failed, 1 without a result/);
+  } finally { rmSync(cwd, { recursive: true, force: true }); }
+});
+
+test('a repeat batch counts the whole repeats that passed before the first failure', () => {
+  const ok = { status: 'expected', results: [{ status: 'passed' }] };
+  const failed = { status: 'unexpected', results: [{ status: 'failed' }] };
+  const stopped = { status: 'skipped', results: [] };
+  const declaredSkip = { status: 'skipped', results: [{ status: 'skipped' }] };
+  const batch = (tests) => ({ suites: [{ specs: tests.map((test) => ({ file: 'a.spec.ts', tests: [test] })) }] });
+  // Two tests a repeat, ten repeats: the seventh repeat's first test fails and the rest are skipped.
+  const seventhFails = [...Array(12).fill(ok), failed, ...Array(7).fill(stopped)];
+  assert.equal(passingRepeats(batch(seventhFails), 10, 1), 6);
+  assert.equal(passingRepeats(batch([...Array(13).fill(ok), failed, ...Array(6).fill(stopped)]), 10, 1), 6);
+  assert.equal(passingRepeats(batch([...Array(9).fill(ok), declaredSkip]), 5, 0), 5);
+  assert.equal(passingRepeats(batch(Array(10).fill(ok)), 5, 1), 4, 'a red exit is never a full batch');
+  assert.equal(passingRepeats(batch([]), 5, 1), 0);
 });
