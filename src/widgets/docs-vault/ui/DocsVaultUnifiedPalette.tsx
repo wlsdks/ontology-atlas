@@ -531,6 +531,7 @@ export function DocsVaultUnifiedPalette({
         exit={{ opacity: 0, y: -8, scale: 0.98, transition: EXIT_TRANSITION }}
         transition={MOTION.base}
         onClick={(e) => e.stopPropagation()}
+        // eslint-disable-next-line no-restricted-syntax -- a command palette; Dialog has no palette variant yet
         role="dialog"
         aria-modal="true"
         aria-label={t('dialogAriaLabel')}

@@ -31,7 +31,7 @@ describe("resolveAgentFocusNodeId", () => {
     node("domain:views", ["ontology/domains/views"], "domain"),
   ];
 
-  it("resolves the CLI heartbeat's plural-folder slug form", () => {
+  it("resolves a heartbeat's plural-folder slug form", () => {
     expect(
       resolveAgentFocusNodeId("capabilities/agent-live-activity-contract", nodes),
     ).toBe("capability:agent-live-activity-contract");

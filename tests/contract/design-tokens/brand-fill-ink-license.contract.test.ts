@@ -101,9 +101,8 @@ describe("ink on brand fills — the licence comes from contrast, not from the v
  * arguments to `cn()`, and extracted constants all become the same unit.
  *
  * One cost: a pair whose fill and ink are split across **different literals**
- * (conditional className) is invisible. So the count of "literals with a fill but no
- * ink" is tracked below, and a rise in that number is read as this blind spot
- * growing.
+ * (conditional className) is invisible here; the rendered contrast audit
+ * (`tests/e2e/design-audits/contrast-ratchet.spec.ts`) measures it on screen.
  */
 describe("brand fill × ink pairing — full source census", () => {
   const FILL_RE = /bg-\[color:var\(--color-indigo-brand(?:-hover)?\)\]/;
@@ -159,20 +158,17 @@ describe("brand fill × ink pairing — full source census", () => {
   const scan = () => {
     const offenders: string[] = [];
     let fillsSeen = 0;
-    let inklessFills = 0;
     for (const file of [join(ROOT, "src"), join(ROOT, "app")].flatMap((d) => walk(d))) {
       const src = stripComments(readFileSync(file, "utf8"));
       if (!FILL_RE.test(src)) continue;
       for (const literal of literals(src)) {
         if (!FILL_RE.test(literal)) continue;
         fillsSeen += 1;
-        if (!INK_RE.test(literal)) inklessFills += 1;
-        INK_RE.lastIndex = 0;
         const bad = unlicensedInks(literal);
         if (bad.length) offenders.push(`${file.replace(ROOT, ".")}: ${bad.join(" · ")}`);
       }
     }
-    return { offenders, fillsSeen, inklessFills };
+    return { offenders, fillsSeen };
   };
 
   it("the detector really sees brand fills — the universe is not empty", () => {
@@ -189,27 +185,6 @@ describe("brand fill × ink pairing — full source census", () => {
         "primitive and value layer already use.\n" +
         offenders.join("\n"),
     ).toEqual([]);
-  });
-
-  it("the blind spot does not grow — ceiling on brand-fill literals without ink", () => {
-    /*
-     * Blind spot: a fill and its ink split across different literals. The count of ink-less brand fill
-     * literals bounds it; open the place before raising the ceiling.
-     */
-    const { inklessFills } = scan();
-    expect(inklessFills, "brand-fill literals without ink grew — check that each spot is really a fill with no text").toBeLessThanOrEqual(12);
-  });
-
-  it("when the blind spot shrinks the ceiling comes down too — slack is not left free", () => {
-    /*
-     * Lower the ceiling when the blind spot shrinks, so slack cannot become a free pass for the next
-     * genuine pair.
-     */
-    const { inklessFills } = scan();
-    expect(
-      inklessFills,
-      "brand-fill literals without ink shrank — lower the ceiling of 12 above too.",
-    ).toBeGreaterThanOrEqual(12);
   });
 
   it("the detector catches the planted violation and lets the proper pair go", () => {

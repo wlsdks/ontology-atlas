@@ -17,7 +17,7 @@ describe('gateway reading comes from vault documents', () => {
   });
 
   it('renders a guide page without its frontmatter block, starting at the title', () => {
-    for (const slug of ['guide/what-is-atlas', 'guide/cli']) {
+    for (const slug of ['guide/what-is-atlas', 'guide/trust']) {
       const body = readVaultDoc(slug) ?? '';
       expect(body.startsWith('# '), slug).toBe(true);
       expect(body).not.toMatch(/^doc_type:/m);

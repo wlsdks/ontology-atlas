@@ -28,8 +28,8 @@ Renaming code does not mean the concept must be renamed. Decide whether the
 meaning changed or only the file did. If only the file moved, update the
 concept's `path`.
 
-`init` installs three starter skills for Claude Code and Codex.
-`atlas-review` reports what is broken or disconnected, `atlas-grow` proposes
+An ontology folder that Atlas creates carries three starter skills for Claude
+Code and Codex. `atlas-review` reports what is broken or disconnected, `atlas-grow` proposes
 what to add next, and `atlas-absorb` pulls concepts out of notes or specs. None
 of them writes anything until you choose what to keep.
 
@@ -41,59 +41,36 @@ own document last changed. Each map view marks stale concepts in amber or gold,
 and its legend names the mark. This needs the folder's Git history, so the
 browser version and a folder without Git show no stale marks.
 
-In a terminal, `health` runs the full set of checks, including whether the
-source paths that concepts cite still exist:
-
-```bash
-node ~/tools/ontology-atlas/cli/src/index.mjs health ./atlas
-```
-
-`validate` checks only the Markdown and its references, not the code. A
-refactor that deletes a cited file can pass `validate` and still fail `health`.
+An agent's `validate_vault` checks the Markdown and its references, and its
+`pathDrift` list names the source paths that concepts cite but that no longer
+exist. Fix each one with `patch_concept`.
 
 The **Changes** screen in the app reads the Git history of a code repository
 you choose. It summarizes what was merged in a time period, and each change
 lists the **Affected concepts** whose code paths it touched. Look there after a
 busy week.
 
-Before you commit, `preflight --staged` matches your staged files to the
-concepts that cite them and prints what they affect. It never blocks a commit,
-and it prints nothing when no concept matches.
-
 ## Avoid duplicates
 
 The most common way a map decays is the same concept written twice under two
-names. Check before you add one:
-
-```bash
-node ~/tools/ontology-atlas/cli/src/index.mjs similar "order acceptance" ./atlas
-```
-
-When the score is high, update the existing concept instead. Agents get the
-same protection: `add_concept` returns a warning when a concept with a similar
-title already exists. If the same concept already exists twice, merge the two.
-The merge moves every reference to the surviving concept:
-
-```bash
-node ~/tools/ontology-atlas/cli/src/index.mjs merge capabilities/checkout capabilities/order-acceptance --vault ./atlas
-```
+names. Before the agent adds one, it can ask `query_ontology` with
+`similar_nodes` for concepts that overlap the proposed title. When one matches,
+it updates the existing concept instead. `add_concept` also returns a warning
+when a concept with a similar title already exists. If the same concept already
+exists twice, `merge_concepts` merges the two and moves every reference to the
+surviving concept.
 
 ## Rename without breaking references
 
-Renaming a concept by hand misses references. `rename` moves the file and
-rewrites every concept that points at it, relation notes included:
-
-```bash
-node ~/tools/ontology-atlas/cli/src/index.mjs backlinks capabilities/checkout --vault ./atlas
-node ~/tools/ontology-atlas/cli/src/index.mjs rename capabilities/checkout capabilities/order-acceptance --vault ./atlas
-```
+Renaming a concept by hand misses references. The agent first lists them with
+`find_backlinks`, then `rename_concept` moves the file and rewrites every
+concept that points at it, relation notes included.
 
 The slug changes, but the concept's `uid` stays the same, so agents and
-exports still recognize it. By default, `rename`, `merge` and `delete` only
-preview. Add `--confirm` to apply the change. `delete` refuses while other
-concepts still point at the concept you want to delete. Agents use the
-matching MCP tools, `rename_concept`, `merge_concepts` and `delete_concept`,
-which also preview first.
+exports still recognize it. `rename_concept`, `merge_concepts` and
+`delete_concept` preview first and apply the change only when confirmed.
+`delete_concept` refuses while other concepts still point at the concept you
+want to delete.
 
 ## Review findings on the map
 
@@ -121,12 +98,9 @@ The ontology folder is ordinary files in Git, so you review concept changes in
 the same pull request as the code. In the app, the **Git** screen lists the
 uncommitted changes by document, with the changed lines marked. The **Commit**
 button shows how many changes there are and commits them. You can also restore
-a single document to an earlier version there. In a terminal, `snapshot`
-commits only the ontology folder, with a summary of what changed:
+a single document to an earlier version there. An agent's `git_snapshot`
+commits only the ontology folder, and by default only previews what it would
+commit.
 
-```bash
-node ~/tools/ontology-atlas/cli/src/index.mjs snapshot ./atlas --dry-run
-```
-
-Every command used here is listed in [The CLI](/guide/cli). How concepts and
-relations are shaped is covered in [Relations between concepts](/guide/relations).
+How concepts and relations are shaped is covered in
+[Relations between concepts](/guide/relations).

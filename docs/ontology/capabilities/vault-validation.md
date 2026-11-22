@@ -18,7 +18,7 @@ Reports, file by file, whether the vault's Markdown still forms a well-formed gr
 ## Includes
 - Frontmatter, kind, identity, required-field and dangling-reference checks across every document at once.
 - Two checks that need a repository root and the whole vault: `dependency-unwitnessed`, a declared dependency no file it can open ever names, and `starter-example-node`, a starter example still present after the vault has grown a real map.
-- A stable code per issue, so the CLI and the MCP surface report the same finding by the same name.
+- A stable code per issue, so every MCP caller and the app report the same finding by the same name.
 
 ## Excludes
 - Whether a well-formed meaning is a true or useful description of the product.
@@ -27,4 +27,4 @@ Reports, file by file, whether the vault's Markdown still forms a well-formed gr
 
 ## Uncertainty
 - Read today in the detector (`mcp/src/meaning/meaning-findings.mjs`): `dependency-unwitnessed` is pushed by `dependencyWitnessFinding`, which opens the citing node's own `path:` file and every file the edge's `why` names, then fires only when none of them mentions the target. `starter-example-node` is pushed by `starterExampleFinding`, and `isStarterExampleNode` deliberately never consults the body, so a starter somebody rewrote but did not rename still counts. Neither is part of the `meaningFindings` aggregate, which carries the five body-and-path findings only, so the write door reaches these two by separate calls, and that wiring was not read here.
-- Read earlier: the two codes in `VAULT_ISSUE_CODE_VALUES` (`mcp/src/validate.mjs`), the note above `pushMeaningIssues` giving why they are deliberately absent from the single-document path, and their wiring into the whole-vault run (`findDependencyWitnessIssues` and `findStarterExampleIssues` in `mcp/src/tools/validate-vault.mjs`). The mirrored `cli/src/lib/mcp-bridge/validate.mjs` was read only at its two re-exports (`dependencyWitnessFinding` and `starterExampleFindings`), so the two surfaces' agreement still rests on the repository's contract test rather than on anything checked here.
+- Read earlier: the two codes in `VAULT_ISSUE_CODE_VALUES` (`mcp/src/validate.mjs`), the note above `pushMeaningIssues` giving why they are deliberately absent from the single-document path, and their wiring into the whole-vault run (`findDependencyWitnessIssues` and `findStarterExampleIssues` in `mcp/src/tools/validate-vault.mjs`).

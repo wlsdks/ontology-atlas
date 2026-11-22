@@ -1,12 +1,11 @@
 /**
  * The measurement specs, the `post-merge` Playwright project. CI runs them in
- * the full suite on every push to main, and before merge only when the impact
- * plan maps a change to them; `pnpm pr:land` names main's failing specs while
- * that run is red. A train otherwise runs its mapped specs and the merge smoke
- * set in `scripts/ci/merge-smoke-specs.mjs`, so the split below now chooses
- * what `--project=smoke` runs locally rather than what a train runs.
+ * the nightly whole run on macOS, and in a planned dispatch only when the
+ * impact plan maps a change to them; `pnpm pr:land` names main's failing specs
+ * while the nightly is red. No browser spec runs before merge, so the split
+ * below chooses what `--project=smoke` runs locally.
  *
- * The pull-request gate keeps user journeys and behaviour, security and
+ * The smoke project keeps user journeys and behaviour, security and
  * privacy boundaries, the accessibility and contrast ratchets, and one smoke
  * per screen. Measurement moves here: frame, motion and performance samples,
  * scale, pixel placement and geometry, and width, locale and text-size sweeps.

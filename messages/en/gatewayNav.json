@@ -26,7 +26,6 @@
     "fromYourRepo": "Build the first map from your code",
     "connectAgent": "Connect a coding agent over MCP",
     "growingVault": "Keep the map current as code changes",
-    "cli": "The CLI and how it relates to MCP",
     "trust": "Data, privacy and safety"
   },
   "guidePrev": "Previous chapter",

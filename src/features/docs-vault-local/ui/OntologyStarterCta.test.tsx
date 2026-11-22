@@ -3,9 +3,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import koMessages from '../../../../messages/ko.json';
 import {
-  buildOntologyStarterCliVerifyCommands,
-  buildOntologyStarterJsonGateCommand,
-  ONTOLOGY_STARTER_JSON_GATE_COMMAND,
+  buildOntologyStarterAgentVerifyPrompt,
   OntologyStarterCta,
 } from './OntologyStarterCta';
 import { copyText } from '@/shared/lib/clipboard/copy-text';
@@ -48,15 +46,8 @@ describe('OntologyStarterCta', () => {
     expect(screen.getByText(/validate_vault/)).toBeInTheDocument();
     expect(screen.getAllByText(/workspace_brief/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/agent_brief/).length).toBeGreaterThan(0);
-    expect(screen.getByText(/mcp-verify/)).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: '검증 프롬프트 복사' }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: 'CLI 점검 복사' }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: 'JSON 점검 복사' }),
     ).toBeInTheDocument();
   });
 
@@ -75,12 +66,6 @@ describe('OntologyStarterCta', () => {
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('agent_brief'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('performanceOk=false'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('Do not write to the ontology'),
@@ -104,66 +89,16 @@ describe('OntologyStarterCta', () => {
     expect(await screen.findByRole('button', { name: '프롬프트 복사됨' })).toBeInTheDocument();
   });
 
-  it('copies a terminal evidence bundle reproducible without AI', async () => {
-    copyTextMock.mockResolvedValue(true);
-    render(<OntologyStarterCta docCount={3} onScaffold={vi.fn()} />);
-
-    fireEvent.click(screen.getByRole('button', { name: 'CLI 점검 복사' }));
-
-    await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
-    expect(copyTextMock).toHaveBeenCalledWith(buildOntologyStarterCliVerifyCommands());
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('node $ATLAS/cli/src/index.mjs agent-brief . --graph-db-pack'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('node $ATLAS/cli/src/index.mjs mcp-verify . --timeout-ms 15000'),
-    );
-    expect(await screen.findByRole('button', { name: '터미널 근거 복사됨' })).toBeInTheDocument();
-  });
-
-  it('copies a machine-readable JSON gate command', async () => {
-    copyTextMock.mockResolvedValue(true);
-    render(<OntologyStarterCta docCount={0} onScaffold={vi.fn()} />);
-
-    fireEvent.click(screen.getByRole('button', { name: 'JSON 점검 복사' }));
-
-    await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
-    expect(copyTextMock).toHaveBeenCalledWith(ONTOLOGY_STARTER_JSON_GATE_COMMAND);
-    expect(copyTextMock).toHaveBeenCalledWith(
-      'node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4',
-    );
-    expect(await screen.findByRole('button', { name: '자동 점검 명령을 복사했어요' })).toBeInTheDocument();
-  });
-
-  it('copies a runnable proof command when the desktop vault path is known', async () => {
-    copyTextMock.mockResolvedValue(true);
-    render(
-      <OntologyStarterCta
-        docCount={3}
-        onScaffold={vi.fn()}
-        vaultPath="/Users/dana/Team Vault/docs/ontology"
-      />,
-    );
-
-    fireEvent.click(screen.getByRole('button', { name: 'CLI 점검 복사' }));
-
-    await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
-    expect(copyTextMock).toHaveBeenCalledWith(
-      buildOntologyStarterCliVerifyCommands('/Users/dana/Team Vault/docs/ontology'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "node $ATLAS/cli/src/index.mjs validate '/Users/dana/Team Vault/docs/ontology'",
-      ),
-    );
-  });
-
-  it('keeps the JSON gate command shell-safe when the vault path has a single quote', () => {
-    expect(buildOntologyStarterJsonGateCommand("/Users/dana/Client's Vault")).toContain(
-      "node $ATLAS/cli/src/index.mjs agent-brief '/Users/dana/Client'\\''s Vault' --verify-fallbacks --json --exit-zero",
-    );
+  it('hands the agent only MCP calls, so a person with only the app can follow every step', () => {
+    for (const prompt of [
+      buildOntologyStarterAgentVerifyPrompt(),
+      buildOntologyStarterAgentVerifyPrompt('/Users/dana/Team Vault/docs/ontology'),
+    ]) {
+      expect(prompt).not.toMatch(/\$ATLAS|cli\/src\/index\.mjs|--verify-fallbacks/);
+      expect(prompt).toContain('Agents > MCP');
+    }
+    expect(
+      buildOntologyStarterAgentVerifyPrompt('/Users/dana/Team Vault/docs/ontology'),
+    ).toContain('The ontology folder is /Users/dana/Team Vault/docs/ontology.');
   });
 });

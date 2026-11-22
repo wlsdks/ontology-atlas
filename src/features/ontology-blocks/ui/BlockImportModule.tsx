@@ -78,7 +78,7 @@ function importUiReducer(state: ImportUiState, action: ImportUiAction): ImportUi
   }
 }
 
-/** Zero writes before approval; conflicts skip or take a block prefix like the CLI's `import --rename` (`merge-plan.ts`). */
+/** Zero writes before approval; conflicts skip or take a block prefix (`merge-plan.ts`). */
 export function BlockImportModule({
   renderTrigger,
 }: {
@@ -320,6 +320,7 @@ export function BlockImportModule({
               exit={{ ...SHEET_RISE, transition: EXIT_TRANSITION }}
               transition={MOTION.base}
               onClick={(event) => event.stopPropagation()}
+              // eslint-disable-next-line no-restricted-syntax -- a rising sheet; Dialog has no sheet variant yet
               role="dialog"
               aria-modal="true"
               aria-label={t("dialogAria")}

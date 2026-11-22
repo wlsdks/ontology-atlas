@@ -368,6 +368,28 @@ describe('automatic checks while the app stays open', () => {
     expect(result.current.pendingVersion).toBe('2.2.0');
   });
 
+  it('shows and remembers the plain version when the feed names its commit', async () => {
+    const update = found('2.5.0+0123456789ab');
+    check.mockResolvedValue(update);
+    const { result } = mount();
+    await advance(FIRST_CHECK_MS);
+    expect(result.current.phase).toMatchObject({ kind: 'available', version: '2.5.0' });
+    expect(result.current.pendingVersion).toBe('2.5.0');
+    await act(async () => {
+      await result.current.install();
+    });
+    expect(result.current.phase).toEqual({ kind: 'ready', version: '2.5.0' });
+    expect(result.current.readyVersion).toBe('2.5.0');
+  });
+
+  it('remembers Later under the plain version when the feed names its commit', async () => {
+    check.mockResolvedValue(found('2.5.0+0123456789ab'));
+    const { result } = mount();
+    await advance(FIRST_CHECK_MS);
+    act(() => result.current.dismiss());
+    expect(window.localStorage.getItem('app-update:dismissed-version')).toBe('2.5.0');
+  });
+
   it('silences a version put off with Later and speaks again for a newer one', async () => {
     check.mockResolvedValueOnce(found('2.1.0')).mockResolvedValueOnce(found('2.1.0')).mockResolvedValue(found('2.2.0'));
     const { result } = mount();

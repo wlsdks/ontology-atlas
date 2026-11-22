@@ -21,12 +21,16 @@ import { otherCheckState, requiredCheckState, runInFlight, runStillGoing } from 
 import { takeFastLock } from './direct-merge.mjs';
 import { FAST_LOCK_REF } from './landing-lock.mjs';
 import { mainBrowserNotes } from './main-health.mjs';
+import { UNREPORTED_GRACE_MS, allRunsFinished, brokenRuns } from './workflow-runs.mjs';
 
 /**
  * A train with no result after this long is closed and the conductor stops, leaving the queue
  * intact. Four times the slowest CI run, so only a stuck run reaches it.
  */
 const TRAIN_TIMEOUT_MINUTES = 90;
+
+/** How often a train still missing a required context reads its head's workflow runs. */
+const RUN_READ_INTERVAL_MS = 60_000;
 
 export function eject(deps, number, body) {
   deps.gh.comment(number, body);
@@ -125,6 +129,14 @@ export function pollTrain({ train, deps, requiredContexts, args }) {
   const other = otherCheckState({ rollup, requiredContexts, allowFailing: args.allowFailing });
   const step = trainCiStep({ checks, other, inFlight: runInFlight(trainPr), emptyRollupObservations: train.empty, refires: train.refires });
 
+  if (step.action !== 'red') {
+    const lanes = lanesThatCannotReport({ train, trainPr, rollup, checks, step, deps });
+    if (lanes) {
+      for (const lane of lanes) log(`train #${train.pr}: ${lane.name} ${lane.conclusion}${lane.url ? ` ${lane.url}` : ''}; no rerun can change that, settling it as red`);
+      train.verdict = { kind: 'red', plan: redTrainPlan({ components: train.included.map((c) => c.number), failed: lanes, mayRerun: false }), failed: lanes };
+      return;
+    }
+  }
   if (step.action === 'wait') return;
   if (step.action === 'refire') {
     log(`train #${train.pr} reported no run after ${train.empty} polls; toggling draft to ask GitHub once`);
@@ -158,6 +170,29 @@ export function pollTrain({ train, deps, requiredContexts, args }) {
     return;
   }
   train.verdict = { kind: 'green', trainPr, other };
+}
+
+/**
+ * The lanes that can never report on this train, or `null`: a workflow that never started or
+ * failed before any job, or, once every run for the head finished and a grace passed, the required
+ * contexts still unreported. Read once before a green verdict, and every minute while a required
+ * context is missing.
+ */
+function lanesThatCannotReport({ train, trainPr, rollup, checks, step, deps }) {
+  const due = step.action === 'green' || (checks.unrun.length > 0 && deps.now() - (train.runsReadAt ?? Number.NEGATIVE_INFINITY) >= RUN_READ_INTERVAL_MS);
+  if (!due) return null;
+  train.runsReadAt = deps.now();
+  const runs = deps.gh.listWorkflowRuns(trainPr.headRefOid ?? train.head);
+  if (!runs) return null;
+  const broken = brokenRuns({ runs, rollup, jobCount: (id) => deps.gh.countRunJobs(id) });
+  if (broken.length > 0) return broken;
+  if (checks.unrun.length === 0 || !allRunsFinished(runs)) {
+    train.unreportedSince = null;
+    return null;
+  }
+  train.unreportedSince ??= deps.now();
+  if (deps.now() - train.unreportedSince < UNREPORTED_GRACE_MS) return null;
+  return checks.unrun.map((name) => ({ name, conclusion: 'never reported, though every workflow run for this head finished', url: null }));
 }
 
 /**
@@ -241,6 +276,30 @@ export function settleHead({ train, deps, requiredContexts, token }) {
   finishComponents({ deps, components: included, trainNumber: number, trainUrl: train.url });
   gh.deleteBranch(branch);
   return { outcome: 'merged', train: number, landed: included.map((c) => c.number) };
+}
+
+/**
+ * The first train in flight carrying a pull request whose head moved since the train took it, with
+ * each move; `null` when none moved or the heads could not be fetched.
+ */
+export function firstMovedTrain({ flight, deps }) {
+  const refs = flight.flatMap((train) => train.included.map((c) => c.headRefName));
+  if (refs.length === 0 || !deps.git.fetch(refs)) return null;
+  for (let index = 0; index < flight.length; index += 1) {
+    const moves = flight[index].included
+      .map((c) => ({ number: c.number, from: c.headRefOid, to: deps.git.revParse(`origin/${c.headRefName}`) }))
+      .filter((move) => move.to && move.to !== move.from);
+    if (moves.length > 0) return { index, moves };
+  }
+  return null;
+}
+
+/** Close a train that carries a moved head: it tests code its author already replaced. Nothing is ejected. */
+export function closeMovedTrain({ train, moves, deps }) {
+  const described = moves.map((m) => `#${m.number} moved from ${m.from.slice(0, 9)} to ${m.to.slice(0, 9)}`);
+  for (const line of described) deps.log(`${line} while train #${train.pr} was in flight; rebuilding the train from the current heads`);
+  deps.gh.closePr(train.pr, `Closed: ${described.join(', ')} while CI ran. Rebuilt from the current heads; nothing is ejected.`);
+  deps.gh.deleteBranch(train.branch);
 }
 
 /** Close a speculative train whose parent did not land. It never merges; its components stay queued. */

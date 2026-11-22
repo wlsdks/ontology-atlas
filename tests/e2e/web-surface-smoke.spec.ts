@@ -267,6 +267,15 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
     destination: "gray-area-get-app",
   },
   {
+    // Agent settings live in dot folders and the home folder, which a browser cannot open; what each
+    // settings file is and who it reaches stays readable here through Where settings live.
+    name: "harness: the browser cannot open the folders that hold agent settings",
+    url: "/ko/architecture/?view=overview",
+    card: "harness-unread-stage",
+    reason: /점으로 시작하는 폴더[\s\S]*브라우저가 보지 못해요/,
+    destination: "harness-get-app",
+  },
+  {
     name: "history (git): the browser cannot run git on this computer",
     url: "/ko/git/?focus=main",
     card: "atlas-git-panel",
@@ -512,7 +521,6 @@ test.describe("web smoke 3: honest downgrade", () => {
     await expect(body).toContainText('"OATLAS_VAULT": "/Users/me/notes"');
     await expect(body).toContainText("/Users/me/ontology-atlas/mcp/src/index.js");
     await expect(page.getByTestId("web-manual-connect-copy-config")).toBeEnabled();
-    await expect(page.getByTestId("web-manual-connect-copy-cli")).toBeEnabled();
 
     /*
      * The docs link is not the main path: the task finishes without leaving this place, and building a

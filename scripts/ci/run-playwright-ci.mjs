@@ -5,6 +5,8 @@ import { readFileSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { quarantinedBrowserSpecs, readQuarantine } from '../lib/ci/quarantine.mjs';
+
 const CI_MAX_FAILURES = 5;
 
 function* specsIn(suite) {
@@ -122,12 +124,14 @@ function executionSummary(report) {
   return summary;
 }
 
-export function runPlaywrightCi(argv, { spawn = spawnSync, cwd = process.cwd(), env = process.env } = {}) {
+export function runPlaywrightCi(argv, { spawn = spawnSync, cwd = process.cwd(), env = process.env, quarantine } = {}) {
   const { shard, index, total, project, excluded, only, help } = parseArguments(argv);
   if (help) {
-    console.log('Usage: node scripts/ci/run-playwright-ci.mjs [--shard=N/M] [--project=smoke|post-merge] [--exclude=SPEC] [--only=SPEC...]\nDefaults: shard 1/3, both projects, every file. Exclusions: web-surface-smoke.spec.ts, contextual-meaning-editor.spec.ts. --only names files under tests/e2e/; one that discovery cannot find is an error.\nUse --help or -h alone to display this help without running tests.');
+    console.log('Usage: node scripts/ci/run-playwright-ci.mjs [--shard=N/M] [--project=smoke|post-merge] [--exclude=SPEC] [--only=SPEC...]\nDefaults: shard 1/3, both projects, every file. Exclusions: web-surface-smoke.spec.ts, contextual-meaning-editor.spec.ts. --only names files under tests/e2e/; one that discovery cannot find is an error.\nFiles in tests/quarantine.json never run here; `node scripts/ci/quarantine.mjs run-browser` runs them.\nUse --help or -h alone to display this help without running tests.');
     return 0;
   }
+  // Every gating run leaves the quarantined specs out, so they block neither a merge nor a release.
+  const quarantined = quarantinedBrowserSpecs(quarantine ?? readQuarantine());
   const discovered = spawn('pnpm', ['exec', 'playwright', 'test', ...project, '--list', '--reporter=json'], {
     cwd, env, encoding: 'utf8', maxBuffer: 32 * 1024 * 1024,
   });
@@ -139,13 +143,17 @@ export function runPlaywrightCi(argv, { spawn = spawnSync, cwd = process.cwd(), 
     const missing = only.filter((file) => !discovered.has(file));
     if (missing.length > 0) throw new Error(`named spec(s) not discovered: ${missing.join(', ')}`);
   }
-  const files = inventory.filter((row) => !excluded.includes(row.file) && (only.length === 0 || only.includes(row.file)));
+  const held = inventory.filter((row) => quarantined.includes(row.file) && (only.length === 0 || only.includes(row.file)))
+    .map((row) => row.file);
+  if (held.length > 0) console.log(`[playwright-ci] ${held.length} quarantined file(s) left out: ${held.join(', ')}`);
+  const files = inventory.filter((row) => !excluded.includes(row.file) && !held.includes(row.file)
+    && (only.length === 0 || only.includes(row.file)));
   if (files.length === 0) throw new Error('no suite files remain after surface allocation');
   const history = JSON.parse(readFileSync(new URL('../data/playwright-file-durations.json', import.meta.url), 'utf8'));
   const assignment = balanceFiles(files, history, total);
   const selected = assignment[index - 1];
   mkdirSync(resolve(cwd, 'output/playwright'), { recursive: true });
-  writeFileSync(resolve(cwd, `output/playwright/assignment-${index}.json`), JSON.stringify({ shard, excluded, assignment }, null, 2));
+  writeFileSync(resolve(cwd, `output/playwright/assignment-${index}.json`), JSON.stringify({ shard, excluded, quarantined: held, assignment }, null, 2));
   console.log(`[playwright-ci] shard ${shard}: ${selected.files.length} files, ${selected.tests} tests, estimated ${selected.seconds.toFixed(1)} test-seconds`);
   const unmeasured = files.filter((row) => !history.files?.[row.file]).map((row) => row.file);
   if (unmeasured.length > 0) {

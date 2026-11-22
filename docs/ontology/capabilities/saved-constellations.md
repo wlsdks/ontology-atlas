@@ -18,7 +18,7 @@ Keeps a named selection of ontology concepts, with its purpose, so a person or a
 - Immutable member UIDs with lastKnownPath as display context. Library resolves current documents by identity, keeps missing or ambiguous members inspectable, and distinguishes source/Wiki references from ontology members.
 - Persistent Concept documents/Concept sets navigation within Ontology, including when no current ontology nodes exist. Legacy tab=collections links become tab=ontology&ontologyView=sets while retaining other parameters and fragments; the document reader's state remains separate.
 - Conflict recovery that preserves the edited draft, rereads the latest saved set without writing, and applies only after the explicit action. Recreating a deleted set receives a new ID.
-- The same saved scopes being readable through MCP/CLI. Explicit agent preparation does not itself send or authorize a write.
+- The same saved scopes being readable through MCP. Explicit agent preparation does not itself send or authorize a write.
 
 ## Excludes
 - Changing node meaning or adding a graph relation because two nodes share a set.

@@ -18,39 +18,21 @@ export const VOCABULARY = {
     },
     ko: { words: ['토폴로지'] },
   },
-  aiWord: {
-    applies: ['ko'],
-    notApplicable: {
-      ja: 'the baseline counts a Korean wording of AI that the ja catalog never had',
-      zh: 'the baseline counts a Korean wording of AI that the zh catalog never had',
-    },
-    ko: { word: 'AI', baseline: 82 },
-  },
   projectKindWord: {
     applies: ['ko'],
     notApplicable: {
-      ja: 'the baseline counts a Korean overload of the project word; プロジェクト is one term in the glossary',
-      zh: 'the baseline counts a Korean overload of the project word; 项目 is one term in the glossary',
+      ja: 'the empty-map check reads a Korean overload of the project word; プロジェクト is one term in the glossary',
+      zh: 'the empty-map check reads a Korean overload of the project word; 项目 is one term in the glossary',
     },
-    // Analysis adds one actual project-kind count for a multi-project folder.
-    ko: { word: '프로젝트', baseline: 145 },
-  },
-  softenedKindNames: {
-    applies: ['ko'],
-    notApplicable: {
-      ja: 'the Korean list names softened labels for kinds; the glossary gives ja one fixed name per kind',
-      zh: 'the Korean list names softened labels for kinds; the glossary gives zh one fixed name per kind',
-    },
-    ko: { baselines: { 영역: 14, 기능: 7 } },
+    ko: { word: '프로젝트' },
   },
   nodeWord: {
-    applies: ['ko', 'en'],
+    applies: ['ko'],
     notApplicable: {
-      ja: 'the glossary writes 概念 and never lists ノード as a candidate; no ratchet has been measured for ja',
-      zh: 'the glossary writes 概念 and never lists 节点 as a candidate; no ratchet has been measured for zh',
+      ja: 'the glossary writes 概念 and never lists ノード as a candidate, so there is no second name to ban',
+      zh: 'the glossary writes 概念 and never lists 节点 as a candidate, so there is no second name to ban',
     },
     ko: { banned: ['노드'] },
-    en: { pattern: /\bnodes?\b/i, ignore: /\{nodes\}/g, baseline: 9 },
   },
   internalTerms: {
     applies: ['ko'],
@@ -142,16 +124,6 @@ export const VOCABULARY = {
         { word: /(^|[^가-힣])인덱스/, use: '검색 준비' },
       ],
     },
-  },
-  surfaceNaming: {
-    applies: ['ko', 'en'],
-    notApplicable: {
-      ja: 'the ratchet compares ko and en counts of the word browser; ja has not been baselined against en',
-      zh: 'the ratchet compares ko and en counts of the word browser; zh has not been baselined against en',
-    },
-    fallback: 25,
-    ko: { pattern: /브라우저|browser/i },
-    en: { pattern: /브라우저|browser/i },
   },
   installedApp: {
     applies: ['ko', 'en', 'ja', 'zh'],

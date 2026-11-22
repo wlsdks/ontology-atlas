@@ -34,6 +34,7 @@ export function CommitLensTabs({
         return (
           <button
             key={id}
+            // eslint-disable-next-line no-restricted-syntax -- hand-built tabs not yet moved to TabBar
             role="tab"
             type="button"
             data-testid={`atlas-git-lens-${id}`}

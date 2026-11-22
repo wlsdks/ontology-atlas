@@ -10,17 +10,6 @@ import {
   VAULT_KINDS as KINDS_MCP,
   VAULT_KIND_SCHEMA as SCHEMA_MCP,
 } from "../../../mcp/src/schema.mjs";
-/*
- * Only names the CLI runtime re-exports: `cli/src/lib/mcp-bridge/schema.mjs` executes `mcp/src/schema.mjs`, so a
- * cli === mcp assertion over any other name would compare an object with itself.
- */
-import {
-  buildFrontmatter as buildCli,
-  missingExpectedFields as missingCli,
-  agentCreatedBy as agentCli,
-  CREATED_BY_KEY as KEY_CLI,
-  CREATED_BY_HUMAN as HUMAN_CLI,
-} from "../../../cli/src/lib/mcp-bridge/schema.mjs";
 import { parseFilter } from "../../../mcp/src/query.mjs";
 import { buildNewNodeDoc } from "@/entities/docs-vault";
 import { buildProposal } from "@/features/vault-agent/model/proposals/proposal-builder";
@@ -29,7 +18,7 @@ import { VAULT_CREATED_BY_HUMAN } from "@/entities/docs-vault";
 const TEST_UID = "01890f3e-7b5d-4c0a-8f14-123456789abc";
 
 /**
- * Value is `human` or `agent:<name>`, shared by mcp, cli and web; normalisation preserves but never
+ * Value is `human` or `agent:<name>`, shared by mcp and web; normalisation preserves but never
  * invents a value; absence is unknown, not a defect. MCP write paths are covered by
  * `mcp/src/integration.test.mjs`.
  */
@@ -42,18 +31,15 @@ function fmOf(frontmatter: unknown): Record<string, unknown> {
   return frontmatter as Record<string, unknown>;
 }
 
-describe("created_by value convention: three packages use the same constants", () => {
-  it("the key name and the human value are identical in mcp, cli and web", () => {
+describe("created_by value convention: mcp and web use the same constants", () => {
+  it("the key name and the human value are identical in mcp and web", () => {
     expect(KEY_MCP).toBe("created_by");
-    expect(KEY_CLI).toBe(KEY_MCP);
     expect(HUMAN_MCP).toBe("human");
-    expect(HUMAN_CLI).toBe(HUMAN_MCP);
     expect(VAULT_CREATED_BY_HUMAN).toBe(HUMAN_MCP);
   });
 
-  it("agentCreatedBy produces `agent:<name>` and the two copies agree", () => {
+  it("agentCreatedBy produces `agent:<name>`", () => {
     expect(agentMcp("codex")).toBe("agent:codex");
-    expect(agentCli("codex")).toBe(agentMcp("codex"));
     expect(agentMcp("  claude-code  ")).toBe("agent:claude-code");
   });
 
@@ -62,7 +48,6 @@ describe("created_by value convention: three packages use the same constants", (
     // route that falls back to human.
     for (const noName of [null, undefined, "", "   "]) {
       expect(agentMcp(noName)).toBe(UNKNOWN_MCP);
-      expect(agentCli(noName)).toBe(UNKNOWN_MCP);
     }
     expect(UNKNOWN_MCP).toBe("agent:unknown");
     expect(UNKNOWN_MCP.startsWith("agent:")).toBe(true);
@@ -83,9 +68,6 @@ describe("schema: registered as an optional field and preserved across a round t
     expect(fmOf(buildMcp({ ...base, created_by: agentMcp("codex") })).created_by).toBe(
       "agent:codex",
     );
-    expect(buildCli({ ...base, created_by: HUMAN_CLI })).toEqual(
-      buildMcp({ ...base, created_by: HUMAN_MCP }),
-    );
   });
 
   it("when no value is given the key itself does not appear, with zero retroactive derivation", () => {
@@ -93,7 +75,6 @@ describe("schema: registered as an optional field and preserved across a round t
       const input = { uid: TEST_UID, slug: `${kind}-x`, kind, title: "X" };
       const fm = buildMcp(input);
       expect(Object.prototype.hasOwnProperty.call(fm, KEY_MCP)).toBe(false);
-      expect(buildCli(input)).toEqual(fm);
     }
   });
 
@@ -101,7 +82,6 @@ describe("schema: registered as an optional field and preserved across a round t
     for (const kind of KINDS_MCP) {
       const fm = { slug: "x", kind, title: "X", domain: "d" };
       expect(missingMcp(kind, fm)).not.toContain(KEY_MCP);
-      expect(missingCli(kind, fm)).toEqual(missingMcp(kind, fm));
     }
   });
 });

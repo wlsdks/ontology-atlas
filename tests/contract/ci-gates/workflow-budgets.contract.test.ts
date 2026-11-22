@@ -113,9 +113,9 @@ describe("CI job budgets — a lane cannot grow in silence", () => {
     // this file would start contradicting ci-bounded-network.contract.test.ts.
     const exempt = owned.filter((job) => job.preparesPlaywright).map((job) => `${job.file}:${job.key}`);
     expect(exempt.sort()).toEqual([
-      "e2e.yml:static-export",
+      "e2e.yml:quarantined",
       "e2e.yml:suite",
-      "e2e.yml:web-smoke",
+      "e2e.yml:surfaces",
     ]);
   });
 
@@ -144,16 +144,14 @@ describe("CI job budgets — a lane cannot grow in silence", () => {
    * `main` requires these contexts by exact name; a renamed job would leave a pull request waiting for
    * a check that no longer exists. The names are pinned here, not read from the API, because a test
    * must not need the network. Changing branch protection changes this list in the same pull request.
+   * `Required checks` is the one context `main` is meant to require; the three lane names stay here
+   * until the owner replaces them with it in branch protection.
    */
   const REQUIRED_CONTEXTS = [
+    "Required checks",
     "Types · Lint · Docs",
     "Unit · Contract",
     "MCP",
-    "Playwright (static export)",
-    "Playwright (web surface)",
-    "Playwright (chromium 1/3)",
-    "Playwright (chromium 2/3)",
-    "Playwright (chromium 3/3)",
   ];
 
   it("still produces every status context main requires, by exact name", () => {
@@ -192,7 +190,7 @@ describe("CI job budgets — a lane cannot grow in silence", () => {
    */
   it("keeps the draft guard in every matrix job header, as the draft-cost decision requires", () => {
     const guard = "github.event.pull_request.draft == false";
-    for (const file of ["checks.yml", "e2e.yml"]) {
+    for (const file of ["checks.yml"]) {
       const text = readFileSync(path.join(WORKFLOWS, file), "utf8");
       const matrixJobs = text.split(/^ {2}(?=[A-Za-z][\w-]*:\s*$)/m).filter((block) => /^ {4}strategy:/m.test(block));
       expect(matrixJobs.length, `${file}: no matrix job found — this test would be idling`).toBeGreaterThan(0);
@@ -213,11 +211,17 @@ describe("CI job budgets — a lane cannot grow in silence", () => {
         expect(text, "the release must not cancel in progress").toContain("cancel-in-progress: false");
         continue;
       }
+      // The browser suite gates stable releases on the run of their exact commit, so a run on a tag
+      // must finish; it runs on no pull request or push, so there is nothing to supersede.
+      if (file === "e2e.yml") {
+        expect(text, "the browser suite must not cancel in progress").toContain("cancel-in-progress: false");
+        continue;
+      }
       if (!/pull_request|push:/.test(text)) continue;
-      // The push to main runs the full Checks set and the full browser suite after the trains'
-      // affected checks, and `pnpm pr:land` reads both, so they must finish; pull requests and
-      // trains still cancel their superseded runs.
-      if (file === "checks.yml" || file === "e2e.yml") {
+      // The push to main runs the full Checks set after the trains' affected checks, and
+      // `pnpm pr:land` reads it, so it must finish; pull requests and trains still cancel their
+      // superseded runs.
+      if (file === "checks.yml") {
         expect(text, `${file} must cancel everything but a push to main`).toContain(
           "cancel-in-progress: ${{ github.event_name != 'push' }}",
         );

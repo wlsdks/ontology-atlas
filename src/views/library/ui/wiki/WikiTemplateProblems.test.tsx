@@ -164,7 +164,6 @@ describe("WikiTemplateProblems — the sentence is in the reader's language", ()
       expect(text).not.toContain("`");
       expect(text).not.toContain("uncited-fact");
       expect(text).not.toContain("shared-source-unlinked");
-      expect(text).not.toContain("wiki-validate");
       expect(text).not.toContain("validate_wiki");
     }
   });
@@ -334,11 +333,10 @@ describe("WikiTemplateProblems — the machine's vocabulary is one press away, n
     expect(codes[0]!.textContent).toContain("names a page that is not in this folder");
   });
 
-  it("says there that the command and the tool report the same codes, and only there", () => {
+  it("says there that the tool reports the same codes, and only there", () => {
     renderPanel([LINK_PROBLEM]);
-    expect(screen.getByTestId("library-wiki-link-findings").textContent).not.toContain("wiki-validate");
+    expect(screen.getByTestId("library-wiki-link-findings").textContent).not.toContain("validate_wiki");
     const dialog = openTechnical();
-    expect(dialog.textContent).toContain("wiki-validate");
     expect(dialog.textContent).toContain("validate_wiki");
   });
 

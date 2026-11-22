@@ -35,7 +35,7 @@ export function measureReads(docs, reads, repoRoot) {
  * Capabilities whose body states a rule (a paragraph after the definition with a
  * condition, order or default) but cites no read lines that hold a condition.
  * With this session's reads, a cite counts only when every cited line was served;
- * without them (a restarted server, the CLI), only the cited lines are checked.
+ * without them (a restarted server), only the cited lines are checked.
  */
 export function measureRules(docs, reads, repoRoot) {
   const capabilities = docs.filter((doc) => kindOf(doc) === 'capability');

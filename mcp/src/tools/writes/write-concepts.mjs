@@ -73,7 +73,7 @@ function addConcept({ slug, kind, title, domain, capabilities, elements, path, b
     throw new Error(formatAllowedValueError('kind', kind, [...ADD_CONCEPT_KINDS]));
   }
   // The schema fills the per-kind shape so partial input still leaves consistent
-  // frontmatter; the CLI `add` shares it under a contract test. `labels` become
+  // frontmatter. `labels` become
   // `display_<locale>`; `title` stays the single source for search and identity.
   const localeLabels = normalizeLocaleLabels(labels);
   const fm = buildFrontmatter({

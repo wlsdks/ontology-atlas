@@ -90,9 +90,8 @@ they cannot undo or prevent an agent's independent edit.
 
 An agent can read a retained page with `get_concept` or `get_concepts` using its
 vault-relative slug and `body: "full"`. Non-kind wiki pages expose their full
-Markdown and metadata without joining the ontology graph. The source-checkout
-CLI's `wiki-index <vault> --json` provides the wiki catalogue; a terminal reader
-can then read the named Markdown files directly. `wiki-validate` checks the
+Markdown and metadata without joining the ontology graph. A terminal reader
+reads the wiki's Markdown files directly. MCP `validate_wiki` checks the
 existing page/folder contract, not entailment or semantic superiority. A newest
 answer may still have an advisory orphan finding until another page links it.
 

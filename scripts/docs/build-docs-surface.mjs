@@ -9,7 +9,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import { CLI_COMMANDS } from '../../cli/src/lib/cli-commands.mjs';
+import { CLI_COMMANDS } from '../../cli/src/commands.mjs';
 import {
   buildSurface,
   cliCommandsMissingFromDoc,

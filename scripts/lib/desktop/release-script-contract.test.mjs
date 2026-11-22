@@ -2,44 +2,15 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-import {
-  evaluateAgentSetupGate,
-  evaluateDesktopReleasePreflight,
-} from "./release-script-contract.mjs";
+import { evaluateDesktopReleasePreflight } from "./release-script-contract.mjs";
 
 const scripts = JSON.parse(readFileSync("package.json", "utf8")).scripts;
 
 test("release script contracts accept the current package scripts", () => {
-  const setup = evaluateAgentSetupGate(scripts["dogfood:agent-setup-gate"]);
   const desktop = evaluateDesktopReleasePreflight(scripts["desktop:release-preflight"]);
 
-  assert.equal(setup.ok, true, setup.errors.join("\n"));
   assert.equal(desktop.ok, true, desktop.errors.join("\n"));
   assert.ok(desktop.commandCount >= 16, "desktop preflight subject scan went idle");
-});
-
-test("agent setup gate accepts reordered flags and different positive bounds", () => {
-  const variant = scripts["dogfood:agent-setup-gate"].replace(
-    "--verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
-    "--fallback-concurrency 2 --exit-zero --fallback-slow-ms 7000 --json --verify-fallbacks --fallback-timeout-ms 20000",
-  );
-
-  const result = evaluateAgentSetupGate(variant);
-  assert.equal(result.ok, true, result.errors.join("\n"));
-});
-
-test("agent setup gate rejects a missing automation flag and malformed bounds", () => {
-  const missingExitZero = scripts["dogfood:agent-setup-gate"].replace(" --exit-zero", "");
-  const malformedConcurrency = scripts["dogfood:agent-setup-gate"].replace(
-    "--fallback-concurrency 4",
-    "--fallback-concurrency many",
-  );
-
-  assert.match(evaluateAgentSetupGate(missingExitZero).errors.join("\n"), /--exit-zero/);
-  assert.match(
-    evaluateAgentSetupGate(malformedConcurrency).errors.join("\n"),
-    /--fallback-concurrency must be a positive integer/,
-  );
 });
 
 test("desktop preflight accepts harmless extra checks and reordered verify-app flags", () => {

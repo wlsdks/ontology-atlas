@@ -126,10 +126,7 @@ describe("DesktopVaultWelcome dogfood handoff", () => {
       );
     });
     expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("pnpm dogfood:agent-setup-gate"),
-    );
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("pnpm dogfood:graph-db"),
+      expect.stringContaining("pnpm dogfood:walk"),
     );
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining("pnpm dogfood:verify"),

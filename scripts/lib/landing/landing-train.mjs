@@ -205,11 +205,11 @@ export function splitTrain(numbers) {
  * More than one component: split into halves, run as successive trains. One component: eject it,
  * naming the contexts.
  */
-export function redTrainPlan({ components, failed = [], flaky = [], reruns = 0 }) {
+export function redTrainPlan({ components, failed = [], flaky = [], reruns = 0, mayRerun = true }) {
   const names = unique(failed.map((check) => check.name));
   const flakySet = new Set(flaky);
   const lone = components.length === 1;
-  if (names.length > 0 && (lone || names.every((name) => flakySet.has(name))) && reruns < FLAKY_RERUNS) {
+  if (mayRerun && names.length > 0 && (lone || names.every((name) => flakySet.has(name))) && reruns < FLAKY_RERUNS) {
     return { action: 'rerun', names };
   }
   if (components.length > 1) return { action: 'split', halves: splitTrain(components), names };

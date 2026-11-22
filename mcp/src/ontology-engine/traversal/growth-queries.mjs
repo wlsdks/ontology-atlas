@@ -6,7 +6,6 @@ import { normalizeLimit, summarizeNode } from '../query-operation/query-primitiv
 
 /** What the vault should add, repair or read next: relation recommendations and every growth candidate group. */
 export function createGrowthQueries({
-  cliPrefix,
   nodes,
   edges,
   nodeBySlug,
@@ -94,7 +93,7 @@ export function createGrowthQueries({
           suggestedSlug: kind ? suggestedSlugForReference(edge.ref, kind) : null,
           didYouMean: didYouMean || null,
           reason: didYouMean
-            ? `Graph reference "${edge.ref}" from "${edge.from}" via "${edge.via}" does not resolve, but "${didYouMean}" is an existing node with a matching name: likely a missing folder prefix or typo. Fix the "${edge.via}" reference on "${edge.from}" (e.g. \`${cliPrefix} relate ${edge.from} ${didYouMean} ${relationTypeForKey[edge.via] || edge.via}\`, or edit the "domain:" field directly for a scalar reference) instead of creating a duplicate node.`
+            ? `Graph reference "${edge.ref}" from "${edge.from}" via "${edge.via}" does not resolve, but "${didYouMean}" is an existing node with a matching name: likely a missing folder prefix or typo. Fix the "${edge.via}" reference on "${edge.from}" (e.g. \`replace_relation\` from "${edge.from}", oldTo "${edge.ref}", newTo "${didYouMean}", oldType and newType "${relationTypeForKey[edge.via] || edge.via}", or edit the "domain:" field directly for a scalar reference) instead of creating a duplicate node.`
             : `Graph reference "${edge.ref}" from "${edge.from}" via "${edge.via}" does not resolve to a vault node.`,
           proposedAction: didYouMean
             ? null

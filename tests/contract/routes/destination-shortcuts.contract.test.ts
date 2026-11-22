@@ -200,18 +200,6 @@ describe("the rail, the sheet and the shell read the same table", () => {
     ).not.toContain(NAV_LEADER_KEY);
   });
 
-  /**
-   * The Planning decision permits ten. The scrollable rail remains necessary at minimum height,
-   * zoom, and longer translations.
-   */
-  it("destinations do not exceed ten without a new decision", () => {
-    expect(
-      DESTINATION_IDS.length,
-      `The rail has ${DESTINATION_IDS.length} destinations. ` +
-        `Adding another needs its own decision record and an update to this cap`,
-    ).toBeLessThanOrEqual(10);
-  });
-
   it("the current list has ten including Planning, source changes and Work status", () => {
     /*
      * A ceiling far above the current count turns slack into a free pass, so the exact inventory is

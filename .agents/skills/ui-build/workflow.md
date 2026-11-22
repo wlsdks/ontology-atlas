@@ -152,7 +152,8 @@ belong to the primitive/ramp interface.
 `Surface` supplies exit presence, the exit animation, inert/pointer blocking, and
 one completion callback. A blocking surface uses `<Dialog>`, which supplies scrim,
 dialog semantics, Escape, focus trap/restoration, scroll lock, and canonical
-widths. `dialog-adoption-ratchet` blocks hand-built dialog markup.
+widths. Lint (`handAssembledRoleSelectors` in `eslint.config.mjs`) refuses a
+hand-built dialog, tab or radiogroup role.
 
 Popover origin follows the invoking control; a centre-origin popover is grounds
 for rejection.

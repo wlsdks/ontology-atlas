@@ -3,20 +3,17 @@
   "version": "0.11.0",
   "packageManager": "pnpm@10.34.9",
   "private": true,
-  "description": "AI-native codebase ontology workbench with a 62-command local vault CLI and runtime-advertised MCP agent surface.",
+  "description": "Scaffold an Ontology Atlas vault and wire the checkout MCP server into the agents that will read it.",
   "type": "module",
+  "main": "src/main.mjs",
   "bin": {
-    "atlas": "src/index.mjs",
-    "ontology-atlas": "src/index.mjs"
+    "ontology-atlas": "src/main.mjs"
   },
   "scripts": {
-    "test": "node --test src/lib/*.test.mjs src/lib/query-result-contract/*.test.mjs src/lib/query-result-contract/agent-brief/*.test.mjs"
+    "test": "node --test src/*.test.mjs src/lib/*.test.mjs src/lib/*/*.test.mjs"
   },
   "files": [
-    "src/index.mjs",
-    "src/integration.test.mjs",
-    "src/commands",
-    "src/lib",
+    "src",
     "templates",
     "CHANGELOG.md",
     "README.md"
@@ -43,7 +40,6 @@
   },
   "dependencies": {
     "jsonc-parser": "3.3.1",
-    "ontology-atlas-mcp": "^0.13.0",
     "smol-toml": "1.9.1"
   }
 }

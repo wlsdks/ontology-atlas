@@ -139,7 +139,7 @@ export const WIKI_REPORT_EXPECTED_GROUPS = Object.freeze([
  *
  * `blockingPageCount` is pages whose own bytes are wrong — merchant-onboarding and
  * refund-timing. `fitPageCount` is pages with no finding at all, and it is 0, because the
- * other two carry advisory folder findings. `wiki-validate` prints the second as
+ * other two carry advisory folder findings. `validate_wiki` returns the second as
  * `0/4 pages fit`; the Library's footer says the first. Both were always correct, and a
  * screen showing them as two bare numbers is what the licensing record's falsifier
  * describes.

@@ -250,6 +250,7 @@ export function TabBar({
               itemRef(item.key)(element);
             }}
             type="button"
+            // eslint-disable-next-line no-restricted-syntax -- TabBar is the tab primitive and owns the arrow keys
             role="tab"
             aria-selected={active}
             aria-controls={`${idPrefix}-tabpanel-${item.key}`}

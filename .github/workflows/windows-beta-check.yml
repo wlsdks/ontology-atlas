@@ -29,7 +29,7 @@ name: Windows x64 Beta Check
 # merges main in, runs the local lanes and marks the pull request ready, and `ready_for_review` is
 # what fires this job once, on the tree that is about to land.
 #
-# **This workflow deliberately carries no `merge_group` trigger, unlike `checks.yml` and `e2e.yml`.**
+# **This workflow deliberately carries no `merge_group` trigger, unlike `checks.yml`.**
 # `merge_group` supports no `paths` filter, so the trigger would run this 17-to-20-minute Windows job
 # on every merge group whatever it contains, and neither job here produces a required status context,
 # so it would gate nothing while doing so. The pre-merge signal is the `pull_request` trigger below

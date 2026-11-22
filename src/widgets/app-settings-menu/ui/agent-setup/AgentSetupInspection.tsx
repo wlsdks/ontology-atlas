@@ -119,13 +119,6 @@ export function AgentSetupInspection({
       state: agentSetupReady ? 'manual' : 'warning',
       href: null,
     },
-    {
-      key: 'jsonGate',
-      label: t('agentSetup.proofJsonGate'),
-      value: t('agentSetup.proofJsonGateManual'),
-      state: 'manual',
-      href: null,
-    },
   ] as const;
 
   return (

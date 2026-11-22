@@ -105,6 +105,7 @@ test('a stylesheet change runs the token gates that read it whole', () => {
     for (const gate of [
       'tests/contract/design-tokens/design-doc-token-integrity.contract.test.ts',
       'tests/contract/design-tokens/undeclared-token-ref.contract.test.ts',
+      'tests/contract/design-tokens/quaternary-ink-surface.contract.test.ts',
     ]) assert.ok(contractFiles.includes(gate), `${file} -> ${gate}`);
   }
 });
@@ -211,15 +212,15 @@ test('MCP is skipped when untouched and focused by handler family when touched',
 
 test('a focused MCP wrapper is dropped only when another planned script runs its whole file', () => {
   const scripts = {
-    'integration:cli': 'node --test cli/src/integration.test.mjs',
-    'integration:cli:mcp-verify': 'node scripts/ci/run-focused-node-test.mjs --test-name-pattern "mcp-verify" cli/src/integration.test.mjs',
+    'integration:mcp': 'node --test mcp/src/integration.test.mjs',
     'integration:mcp:write': 'node scripts/ci/run-focused-node-test.mjs --test-name-pattern "^(add_concepts|patch_concept)" mcp/src/integration.test.mjs',
+    'test:mcp:maintenance': 'node scripts/ci/run-focused-node-test.mjs --test-name-pattern "maintenance" mcp/src/maintenance.test.mjs',
   };
-  const planned = ['pnpm integration:cli:mcp-verify', 'pnpm integration:mcp:write', 'pnpm docs:surface:check'];
+  const planned = ['pnpm integration:mcp:write', 'pnpm test:mcp:maintenance', 'pnpm docs:surface:check'];
   assert.deepEqual(withoutSubsetsOfWholeFiles(planned, scripts), planned);
   assert.deepEqual(
-    withoutSubsetsOfWholeFiles(['pnpm integration:cli', ...planned], scripts),
-    ['pnpm integration:cli', 'pnpm integration:mcp:write', 'pnpm docs:surface:check'],
+    withoutSubsetsOfWholeFiles(['pnpm integration:mcp', ...planned], scripts),
+    ['pnpm integration:mcp', 'pnpm test:mcp:maintenance', 'pnpm docs:surface:check'],
   );
 });
 
@@ -505,10 +506,8 @@ test('token, toc, and package gates reach the PRs that touch their inputs', () =
   const toc = buildImpactPlan({ files: ['docs/DESIGN-SYSTEM.md'] });
   assert.ok(toc.lanes.gates.commands.includes('pnpm design:toc:check'));
 
-  const cli = buildImpactPlan({ files: ['cli/src/commands/graph-write/relate.mjs'] });
-  assert.ok(cli.lanes.gates.commands.includes('pnpm test:cli:commands'));
-  // The command tests spawn the source MCP server, so the lane must install mcp/node_modules first.
-  assert.equal(cli.lanes.gates.needsMcp, true);
+  const init = buildImpactPlan({ files: ['cli/src/lib/init/run-init.mjs'] });
+  assert.ok(init.lanes.gates.commands.includes('pnpm test:cli'));
 });
 
 test('per-file lint carries the warning ratchet', () => {
@@ -637,8 +636,8 @@ test('only the Checks workflow asks its planner for the full set after a merge',
 
 test('ratchets run for the files they count, and message parts reach their catalogue readers', () => {
   const ratchets = ratchetContractFiles();
-  assert.ok(ratchets.includes('tests/contract/control-adoption/tab-adoption-ratchet.contract.test.ts'));
-  assert.ok(ratchets.includes('tests/contract/design-tokens/quaternary-ink-surface.contract.test.ts'));
+  assert.ok(ratchets.includes('tests/contract/security/security-surfaces.contract.test.ts'));
+  assert.ok(ratchets.includes('tests/contract/ci-gates/test-title-language.contract.test.ts'));
   const ui = buildImpactPlan({ files: ['src/views/download/ui/ScreensStage.tsx'] }).lanes.unit.contractFiles;
   for (const ratchet of ratchets) assert.ok(ui.includes(ratchet), ratchet);
   assert.ok(!buildImpactPlan({ files: ['README.md'] }).lanes.unit.contractFiles.some((path) => ratchets.includes(path) && !path.includes('/security/')));
@@ -655,18 +654,21 @@ test('the forbidden-pattern contracts run before every merge', () => {
 
 test('both workflows retain exhaustive triggers isolated from ordinary push cancellation', async () => {
   const { readFileSync } = await import('node:fs');
+  const read = (name) => readFileSync(new URL(`../../.github/workflows/${name}.yml`, import.meta.url), 'utf8');
   for (const name of ['checks', 'e2e']) {
-    const source = readFileSync(new URL(`../../.github/workflows/${name}.yml`, import.meta.url), 'utf8');
-    assert.match(source, /^  schedule:\n    - cron:/m);
-    assert.match(source, /^  workflow_dispatch:/m);
-    assert.match(source, /PUSH_BEFORE: \$\{\{ github\.event\.before \}\}/);
-    const group = source.split('\n').find((line) => line.startsWith('  group:'));
-    assert.match(group, /github\.event_name == 'schedule'/);
-    assert.match(group, /github\.event_name == 'workflow_dispatch'/);
-    assert.match(group, /'full(?:\{0\}', inputs\.plan_from\))?'? \|\|.*'change' \}\}$/);
-    // A rehearsal that plans from a named base gets its own group, so it never cancels the full run.
-    if (name === 'e2e') assert.match(group, /format\('full\{0\}', inputs\.plan_from\)/);
+    assert.match(read(name), /^  schedule:\n    - cron:/m);
+    assert.match(read(name), /^  workflow_dispatch:/m);
   }
+  const checks = read('checks');
+  assert.match(checks, /PUSH_BEFORE: \$\{\{ github\.event\.before \}\}/);
+  const group = checks.split('\n').find((line) => line.startsWith('  group:'));
+  assert.match(group, /github\.event_name == 'schedule'/);
+  assert.match(group, /github\.event_name == 'workflow_dispatch'/);
+  assert.match(group, /'full'? \|\|.*'change' \}\}$/);
+  // The browser suite runs only on the schedule and dispatch, never cancelled; a dispatch that plans
+  // from a named base gets its own group, so it never replaces a whole run waiting on the same ref.
+  const e2eGroup = read('e2e').split('\n').find((line) => line.startsWith('  group:'));
+  assert.match(e2eGroup, /inputs\.plan_from \|\| 'whole'/);
 });
 
 test('browser execution inputs promote only browser evidence, while shared routing remains exhaustive', () => {
@@ -695,7 +697,7 @@ test('unit distribution keeps all full file sweeps and avoids setup for empty fo
 
 test('exhaustive architecture coverage is owned once across the three lanes', () => {
   assert.ok(!FULL_LANE_COMMANDS.gates.includes('pnpm test:architecture'));
-  for(const command of ['pnpm package:check','pnpm integration:cli:architecture']) assert.ok(FULL_LANE_COMMANDS.gates.includes(command));
+  for(const command of ['pnpm package:check']) assert.ok(FULL_LANE_COMMANDS.gates.includes(command));
   for(const command of ['pnpm test:mcp:unit','pnpm integration:mcp']) assert.ok(FULL_LANE_COMMANDS.mcp.includes(command));
   assert.ok(FULL_LANE_COMMANDS.unit.includes('pnpm test:run'));
 });

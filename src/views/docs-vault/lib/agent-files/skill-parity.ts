@@ -40,7 +40,7 @@ function skillOf(path: string): string | null {
 
 /**
  * Folds `analyzeAgentFiles`' per-file verdicts by skill. It adds no comparison logic, or the
- * screen and the CLI could silently disagree.
+ * screen and `agents:check` could silently disagree.
  */
 export function buildSkillParityModel(analysis: AgentFilesAnalysis): SkillParityModel {
   const present = new Map<string, Set<'.claude/skills' | '.agents/skills'>>();
@@ -66,7 +66,7 @@ export function buildSkillParityModel(analysis: AgentFilesAnalysis): SkillParity
   }
 
   // With one tree present the parity question does not arise ("Codex was never set up"), as the
-  // CLI answers `not-applicable`; one-sided rows per skill would make a clean vault look broken.
+  // analyzer answers `not-applicable`; one-sided rows per skill would make a clean vault look broken.
   const treesInPlay = new Set<string>();
   for (const set of present.values()) for (const tree of set) treesInPlay.add(tree);
   if (treesInPlay.size < 2) return { rows: [], disagreeing: 0 };

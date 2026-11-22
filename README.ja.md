@@ -41,7 +41,7 @@
 2. **フォルダを開く**: Atlas はフォルダ内の Markdown をその場で読むか、リポジトリに `atlas/` フォルダを新しく作ります。何かを書き込む前に、必ずパスを表示します。
 3. **エージェントを接続**: **エージェント › MCP** で使っているツールの **接続** を押し、エージェントを再起動して、次のタスクについて質問してみましょう。
 
-macOS（Apple Silicon）版は署名と公証済みで、アプリ内に MCP サーバーを同梱しています。Windows x64 は未署名のベータ版です。Linux では、ブラウザ版を使うか、[ソースのチェックアウトから CLI と MCP サーバーを実行](cli/README.md#set-up-from-a-source-checkout)してください。[Releases](https://github.com/wlsdks/ontology-atlas/releases) に、各バージョンのファイルとチェックサムがあります。
+macOS（Apple Silicon）版は署名と公証済みで、アプリ内に MCP サーバーを同梱しています。Windows x64 は未署名のベータ版です。Linux では、ブラウザ版を使うか、[ソースのチェックアウトから MCP サーバーを実行](mcp/README.md#1-register-with-an-agent)してください。[Releases](https://github.com/wlsdks/ontology-atlas/releases) に、各バージョンのファイルとチェックサムがあります。GitHub で **Pre-release** と表示されたリリースはベータ版です。インストール済みのアプリは正式リリースにしか更新されないため、ベータ版は手動でインストールした人にだけ届きます。
 
 ## 画面を見る
 
@@ -145,7 +145,7 @@ Atlas はまだ初期段階です。私たちのベンチマークでは、Atlas
 
 ## ドキュメント
 
-[Atlasとは](docs/guide/what-is-atlas.md) · [Atlas との比較](docs/guide/atlas-compared.md) · [最初の5分](docs/guide/first-five-minutes.md) · [コードから最初のマップを作る](docs/guide/from-your-repo.md) · [概念になるもの](docs/guide/what-becomes-a-node.md) · [つながり](docs/guide/relations.md) · [仕様](docs/ONTOLOGY-ATLAS-SPEC.md) · [機能](docs/FEATURES.md) · [CLI](cli/README.md) · [アーキテクチャ](docs/ARCHITECTURE.md)
+[Atlasとは](docs/guide/what-is-atlas.md) · [Atlas との比較](docs/guide/atlas-compared.md) · [最初の5分](docs/guide/first-five-minutes.md) · [コードから最初のマップを作る](docs/guide/from-your-repo.md) · [概念になるもの](docs/guide/what-becomes-a-node.md) · [つながり](docs/guide/relations.md) · [仕様](docs/ONTOLOGY-ATLAS-SPEC.md) · [機能](docs/FEATURES.md) · [アーキテクチャ](docs/ARCHITECTURE.md)
 
 ## コントリビュート
 

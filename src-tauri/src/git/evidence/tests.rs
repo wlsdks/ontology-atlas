@@ -7,8 +7,8 @@ fn safe_relative_path_refuses_escapes_and_options() {
         Some("src/widgets/app-nav-rail".into())
     );
     assert_eq!(
-        safe_relative_path("  cli/src/index.mjs "),
-        Some("cli/src/index.mjs".into())
+        safe_relative_path("  mcp/src/index.js "),
+        Some("mcp/src/index.js".into())
     );
     assert_eq!(safe_relative_path("../secrets"), None);
     assert_eq!(safe_relative_path("src/../../etc"), None);

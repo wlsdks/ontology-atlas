@@ -36,11 +36,7 @@ Atlas 不与 Notion 同步。在桌面应用的 **资料库** 中使用 **从服
 
 智能体每次开始会话时都会读取 `CLAUDE.md` 和 `AGENTS.md`。它们适合写构建命令、编码约定，以及智能体不能做的事。正因为每次都要读取，它们必须保持简短，所以装不下整个系统的地图，也记录不了哪段代码实现了哪项能力、这些又是什么时候变化的。
 
-Atlas 通过三种方式与这些文件配合。由 Atlas 创建的本体文件夹自带一份 `AGENTS.md`，以及导入它的 `CLAUDE.md`，告诉智能体在扫描文件之前先询问 Atlas MCP 服务器。CLI 命令 `absorb` 会把你现有文件中的章节转成概念（[从代码构建第一张地图](/guide/from-your-repo)）。应用中的 **Harness** 标签页和下面的命令一样，只读取这些文件而不修改它们，并指出其中的问题，例如没有导入 `AGENTS.md` 的 `CLAUDE.md`，或超过 Codex 默认 32 KiB 上限的 `AGENTS.md`：
-
-```bash
-node ~/tools/ontology-atlas/cli/src/index.mjs agent-files --root .
-```
+Atlas 通过三种方式与这些文件配合。由 Atlas 创建的本体文件夹自带一份 `AGENTS.md`，以及导入它的 `CLAUDE.md`，告诉智能体在扫描文件之前先询问 Atlas MCP 服务器。智能体的 `absorb_document` 工具会把你现有文件中的章节转成概念（[从代码构建第一张地图](/guide/from-your-repo)）。应用中的 **Harness** 标签页只读取这些文件而不修改它们，并指出其中的问题，例如没有导入 `AGENTS.md` 的 `CLAUDE.md`，或超过 Codex 默认 32 KiB 上限的 `AGENTS.md`。
 
 把规则留在指令文件里，把含义放在本体文件夹中。
 

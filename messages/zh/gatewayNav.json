@@ -26,7 +26,6 @@
     "fromYourRepo": "从代码构建第一张地图",
     "connectAgent": "通过 MCP 连接编码智能体",
     "growingVault": "在代码变化时让地图保持最新",
-    "cli": "CLI 及其与 MCP 的关系",
     "trust": "数据、隐私与安全"
   },
   "guidePrev": "上一章",

@@ -3,13 +3,9 @@ import { mkdtemp, mkdir, writeFile, readFile, symlink, rm } from 'node:fs/promis
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 
 import { analysisDigest, analysisRecordFileName, serializeAnalysisRecord } from './analysis-record.mts';
 import { listAnalysisRecords, readAnalysisRecord } from './analysis-records.mjs';
-const CLI_ENTRY = fileURLToPath(new URL('../../../cli/src/index.mjs', import.meta.url));
 
 function fixture(id, at = '2026-09-05T08:00:00.000Z') {
   return {
@@ -38,10 +34,6 @@ test('analysis history pages and reads exact immutable Markdown without a graph'
     assert.equal(older.records[0].id, records[0].id);
     assert.equal(older.pagination.hasMore, false);
     assert.deepEqual((await readAnalysisRecord(root, records[0].id)).record, records[0]);
-    const cli = JSON.parse(execFileSync(process.execPath, [CLI_ENTRY, 'analysis', `--vault=${root}`, '--history', '--limit=1', '--json'], { encoding: 'utf8' }));
-    assert.equal(cli.records[0].id, records[1].id);
-    const restored = JSON.parse(execFileSync(process.execPath, [CLI_ENTRY, 'analysis', `--vault=${root}`, `--record=${records[0].id}`, '--json'], { encoding: 'utf8' }));
-    assert.deepEqual(restored.record, records[0]);
     assert.equal(await readFile(path.join(directory, analysisRecordFileName(records[0])), 'utf8'), serializeAnalysisRecord(records[0]));
   } finally { await rm(root, { recursive: true, force: true }); }
 });
@@ -89,21 +81,4 @@ test('analysis readers reject altered evidence even when metadata still claims g
     assert.match(page.problems[0].reason, /evidence_digest_mismatch/);
     await assert.rejects(readAnalysisRecord(root, record.id), /evidence_digest_mismatch/);
   } finally { await rm(root, { recursive: true, force: true }); }
-});
-
-test('archive CLI accepts separated values and never falls through to a write on malformed read flags', async () => {
-  const parent = await mkdtemp(path.join(tmpdir(), 'atlas-record-cli-'));
-  const root = path.join(parent, 'vault');
-  try {
-    await mkdir(path.join(root, '.ontology-atlas/analyses'), { recursive: true });
-    const record = fixture('95f4ba81-41f7-483b-a617-2a4be815be32');
-    await writeFile(path.join(root, '.ontology-atlas/analyses', analysisRecordFileName(record)), serializeAnalysisRecord(record));
-    const restored = JSON.parse(execFileSync(process.execPath, [CLI_ENTRY, 'analysis', '--vault', root, '--record', record.id, '--json'], { encoding: 'utf8', cwd: parent }));
-    assert.deepEqual(restored.record, record);
-    for (const flags of [['--record'], ['--mode=meaning'], ['--histroy'], ['--history', '--out=other'], ['--record', record.id, '--limit=1'], ['--history', '--limit']]) {
-      const result = spawnSync(process.execPath, [CLI_ENTRY, 'analysis', `--vault=${root}`, ...flags], { encoding: 'utf8', cwd: parent });
-      assert.equal(result.status, 2, result.stdout || result.stderr);
-      assert.equal(existsSync(path.join(parent, 'analyses')), false, 'a malformed read must not create a legacy report');
-    }
-  } finally { await rm(parent, { recursive: true, force: true }); }
 });

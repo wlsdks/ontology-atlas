@@ -44,7 +44,6 @@
     "fromYourRepo": "从你的仓库构建第一个代码库本体：编码智能体通过 MCP 读取代码，提出概念和关系，由你批准后再保存。",
     "connectAgent": "通过 MCP 把 Claude Code、Codex、Cursor 或 Antigravity 连接到你的代码库本体，检查连接，并了解智能体能读写什么。",
     "growingVault": "在代码变化时让代码库本体保持最新：改动后同步，借助反向链接重命名，发现过时的依据，避免重复，并用 Git 提交。",
-    "cli": "Ontology Atlas CLI：从源码运行，查询和编辑概念，检查健康状况，并了解它如何与智能体使用的 MCP 服务器共用同一个引擎。",
     "trust": "Ontology Atlas 的数据、隐私与安全：哪些内容留在你的磁盘上，哪些内容会在何时离开，MCP 智能体，以及已签名的 macOS 版和未签名的 Windows 版。"
   }
 }

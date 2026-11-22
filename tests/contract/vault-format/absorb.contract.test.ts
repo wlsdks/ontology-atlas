@@ -5,24 +5,11 @@ import {
   INJECTION_CASES,
   PLAN_CASES,
 } from "../../fixtures/absorb-cases.mjs";
-import * as absorbCli from "../../../cli/src/lib/mcp-bridge/absorb.mjs";
 import * as absorbMcp from "../../../mcp/src/vault/absorb.mjs";
-
-/**
- * The CLI re-exports `mcp/src/vault/absorb.mjs`, so only `buildAbsorptionPlan` runs through both bindings;
- * later stages run on the canonical module alone (a `cli === mcp` check would compare a function
- * with itself).
- */
 
 const IMPLEMENTATIONS = [{ label: "mcp", mod: absorbMcp }];
 
-/** Entry points the CLI calls directly, so both bindings are worth running. */
-const PLAN_IMPLEMENTATIONS = [
-  { label: "cli", mod: absorbCli },
-  { label: "mcp", mod: absorbMcp },
-];
-
-describe("absorb contract — cli & mcp agree", () => {
+describe("absorb contract", () => {
   describe("splitDocumentSections", () => {
     for (const { label, mod } of IMPLEMENTATIONS) {
       for (const c of SPLIT_CASES) {
@@ -68,7 +55,7 @@ describe("absorb contract — cli & mcp agree", () => {
   });
 
   describe("buildAbsorptionPlan", () => {
-    for (const { label, mod } of PLAN_IMPLEMENTATIONS) {
+    for (const { label, mod } of IMPLEMENTATIONS) {
       for (const c of PLAN_CASES) {
         it(`${c.name} (${label})`, () => {
           const existing = new Set(c.existingSlugs || []);

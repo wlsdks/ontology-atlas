@@ -3,13 +3,13 @@
 export const SCHEDULED_CHECKS = [
   {
     workflow: 'e2e.yml',
-    name: 'full browser run',
-    // Every push to main runs the whole browser suite; a train runs only its mapped specs and the
-    // merge smoke set, so this line is where a defect the train did not reach is announced.
-    event: 'push',
-    afterMerge: true,
-    red: 'trains run only their mapped specs and the merge smoke set, so these stay red until someone fixes them; landing continues',
-    idle: null,
+    name: 'nightly browser run',
+    // No landing lane runs a browser spec, so the night's whole run is where a screen defect a merge
+    // brought in is announced, and the release browser gate refuses a stable release over it.
+    event: 'schedule',
+    wholeBrowserRun: true,
+    red: 'merging continues, but a stable release of that commit cannot publish until the specs are fixed or quarantined with this run as evidence',
+    idle: 'a screen defect merged since then is unknown, and a stable release cannot publish without a green whole run on its commit',
   },
   {
     workflow: 'acp-registry.yml',
@@ -28,19 +28,19 @@ export const SCHEDULED_CHECKS = [
 ];
 const SCHEDULED_RUN_STALE_HOURS = 48;
 
-/** A reader verdict: main's latest push runs finished, but none of them ran the full browser suite. */
+/** A reader verdict: main's latest browser runs finished, but none of them ran the whole suite. */
 export const NO_FULL_RUN = 'no-full-run';
 
 export function describeScheduledRun(check, run, nowMs = Date.now()) {
   if (!run) return null;
   const day = String(run.createdAt ?? '').slice(0, 10);
   if (run.conclusion === NO_FULL_RUN) {
-    return `main's latest ${run.examined} push runs did not run the full browser suite (newest: ${run.url}); last full run: none among them, so a red outside the merge smoke set would not show here`;
+    return `main's latest ${run.examined} ${check.name}s did not run the whole browser suite (newest: ${run.url}), so a red spec would not show here`;
   }
   if (run.conclusion === 'failure') {
     const specs = Array.isArray(run.failingSpecs) && run.failingSpecs.length > 0
       ? `: ${run.failingSpecs.length > 6 ? `${run.failingSpecs.slice(0, 6).join(', ')} and ${run.failingSpecs.length - 6} more` : run.failingSpecs.join(', ')}`
-      : check.afterMerge ? ', with no failing spec annotated (open the run)' : '';
+      : check.wholeBrowserRun ? ', with no failing spec annotated (open the run)' : '';
     return `the ${check.name} on main failed on ${day} (${run.url})${specs}; ${check.red}`;
   }
   const ageHours = (nowMs - Date.parse(run.createdAt)) / 3_600_000;
@@ -51,7 +51,7 @@ export function describeScheduledRun(check, run, nowMs = Date.now()) {
 /**
  * What a finished run on main proves about the browser suite, from its timing artifacts, which
  * carry the plan's mode (`playwright-timings-<mode>-<shard>`). `full`: the whole suite ran.
- * `partial`: it ran only a change's plan (smoke or targeted timings, or a push from before the mode
+ * `partial`: it ran only a change's plan (smoke or targeted timings, or a run from before the mode
  * was named). A green run that uploaded none executed nothing; a red one that uploaded none failed
  * before its specs and still counts, so a broken build on main is not hidden behind a green run.
  */
@@ -69,14 +69,14 @@ export function mainHealthWarnings(deps) {
     .filter(Boolean);
 }
 
-/** One reader for every check on main: the event it names (a push, not the nightly run) included. */
+/** One reader for every check on main: the event it names (the nightly run or a push) included. */
 function readCheckRun(deps, check) {
-  return deps.gh.readScheduledRun?.(check.workflow, check.event, { fullBrowser: Boolean(check.afterMerge) }) ?? null;
+  return deps.gh.readScheduledRun?.(check.workflow, check.event, { fullBrowser: Boolean(check.wholeBrowserRun) }) ?? null;
 }
 
-/** The red after-merge browser run, for the body of the train being cut. */
+/** The red nightly browser run, for the body of the train being cut. */
 export function mainBrowserNotes(deps) {
-  const check = SCHEDULED_CHECKS.find((row) => row.afterMerge);
+  const check = SCHEDULED_CHECKS.find((row) => row.wholeBrowserRun);
   const run = readCheckRun(deps, check);
   return run?.conclusion === 'failure' ? [describeScheduledRun(check, run, deps.now())] : [];
 }

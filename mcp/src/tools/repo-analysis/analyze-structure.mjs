@@ -74,8 +74,8 @@ export function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, sourceRea
   // Reads without a proposal return the reads alone: the map was already sent once,
   // and repeating it on every outline call cost more than the outlines.
   if (sourceOnly || (sourceReads !== undefined && !reviewing)) return sourceOnlyAnswer(target, sourceReads, ignore);
-  // The CLI readers ask for the structural analysis by name; an agent gets the map
-  // that writes and validate_vault then measure against.
+  // A caller asks for the structural analysis by name; an agent gets the map that
+  // writes and validate_vault then measure against.
   if (!reviewing && view !== 'analysis') {
     return cachedSurvey(target, { ignore, vaultRoot: VAULT_ROOT }).survey;
   }
@@ -123,7 +123,7 @@ export function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, sourceRea
 }
 
 /**
- * The structural analysis the CLI asks for by name. Relations that only restate
+ * The structural analysis a caller asks for by name. Relations that only restate
  * "the project contains every candidate" or connect folder-named element candidates
  * are not sent (infer_imports carries the import edges with their evidence), and a
  * scan that found no ability says so in one line.

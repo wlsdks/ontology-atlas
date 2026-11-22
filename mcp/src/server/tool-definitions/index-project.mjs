@@ -22,7 +22,7 @@ export const INDEX_PROJECT_TOOL = {
     'Use for large or already-existing projects where the agent needs a resumable ontology indexing checkpoint before writing. ' +
     'Its extractionContract treats source facts as observed evidence, README/folder meanings as proposals, and only persisted ontology meanings as shared; it also returns competency questions, uncertainty, approval gates, and whether active-vault validation actually applies to the analyzed project. ' +
     'The plan distinguishes raw candidates into existing, ambiguous-alias review, and genuinely new buckets, then returns exact reviewCalls for retrieving full rows. ' +
-    'side effect 0: this tool never writes markdown. CLI `index --apply` may write analyzer-proposed concepts and containment, but inferred imports remain review-only and are never auto-promoted to depends_on.',
+    'side effect 0: this tool never writes markdown. Concepts are written with add_concepts after review, and inferred imports remain review-only and are never auto-promoted to depends_on.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -242,7 +242,6 @@ export const INDEX_PROJECT_TOOL = {
         type: 'object',
         properties: {
           applyTool: NON_BLANK_STRING_SCHEMA,
-          cliApply: NON_BLANK_STRING_SCHEMA,
           review: NON_BLANK_STRING_SCHEMA,
           reviewCalls: {
             type: 'array',
@@ -269,7 +268,7 @@ export const INDEX_PROJECT_TOOL = {
             },
           },
         },
-        required: ['applyTool', 'cliApply', 'review', 'reviewCalls'],
+        required: ['applyTool', 'review', 'reviewCalls'],
         additionalProperties: false,
       },
     },

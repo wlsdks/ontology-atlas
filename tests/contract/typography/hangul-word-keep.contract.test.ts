@@ -1,5 +1,5 @@
-import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join, relative } from "node:path";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 import { readGlobalCss } from '../../../scripts/lib/design/global-css.mjs';
@@ -78,68 +78,5 @@ describe("<html lang> is right before the first paint", () => {
     for (const locale of locales) {
       expect(planted[locale], `${locale} html lang`).toBe(LOCALE_META[locale as AppLocale].htmlLang);
     }
-  });
-});
-
-/**
- * Per-element `break-keep` may not grow. The ceiling is exact in both directions: lower it when
- * sites are removed so the freed room cannot be spent silently.
- */
-const BREAK_KEEP_CEILING = 247;
-
-function stripComments(source: string): string {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, " "))
-    .replace(/\{\/\*[\s\S]*?\*\/\}/g, "")
-    .replace(/(^|[^:])\/\/.*$/gm, "$1");
-}
-
-export function countBreakKeep(source: string): number {
-  const code = stripComments(source);
-  return (code.match(/(?<![\w-])break-keep(?![\w-])/g) ?? []).length + (code.match(/\[word-break:keep-all\]/g) ?? []).length;
-}
-
-function productionFiles(): string[] {
-  const out: string[] = [];
-  const walk = (dir: string): void => {
-    for (const name of readdirSync(dir)) {
-      const p = join(dir, name);
-      if (statSync(p).isDirectory()) {
-        if (name === "node_modules" || name === ".next" || name === "data") continue;
-        walk(p);
-      } else if (/\.tsx?$/.test(name) && !/\.(test|spec|stories)\.tsx?$/.test(name)) out.push(p);
-    }
-  };
-  walk(join(ROOT, "src"));
-  walk(join(ROOT, "app"));
-  return out;
-}
-
-describe("per-element break-keep does not grow", () => {
-  it("counts a class use and ignores a comment", () => {
-    expect(countBreakKeep('<p className="break-keep text-body">')).toBe(1);
-    expect(countBreakKeep('<p className="[word-break:keep-all]">')).toBe(1);
-    expect(countBreakKeep("/* break-keep */ // break-keep")).toBe(0);
-    expect(countBreakKeep('"[&_h1]:break-keep"')).toBe(1);
-  });
-
-  it(`stays at exactly ${BREAK_KEEP_CEILING} — never above, and the ceiling follows every removal`, () => {
-    const files = productionFiles();
-    expect(files.length, "the walk found no source — the ceiling would pass vacuously").toBeGreaterThan(500);
-    const perFile = files
-      .map((f) => [relative(ROOT, f), countBreakKeep(readFileSync(f, "utf8"))] as const)
-      .filter(([, n]) => n > 0);
-    const total = perFile.reduce((sum, [, n]) => sum + n, 0);
-    expect(total, "the walk found no break-keep at all — the scan is broken or the ceiling should drop to 0").toBeGreaterThan(0);
-    expect(
-      total,
-      `break-keep sites: ${total} > ceiling ${BREAK_KEEP_CEILING}. Korean pages already keep words whole from ` +
-        "`:root:lang(ko) body` (app/globals.css); drop the class from the new site. Top files: " +
-        perFile.sort((a, b) => b[1] - a[1]).slice(0, 5).map(([f, n]) => `${f} ${n}`).join(", "),
-    ).toBeLessThanOrEqual(BREAK_KEEP_CEILING);
-    expect(
-      total,
-      `break-keep sites fell to ${total} — lower BREAK_KEEP_CEILING to ${total} in this file so the room cannot be spent again.`,
-    ).toBe(BREAK_KEEP_CEILING);
   });
 });

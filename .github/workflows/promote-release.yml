@@ -1,0 +1,246 @@
+name: Promote Desktop Beta
+run-name: Promote Desktop Beta ${{ inputs.beta_tag }}
+
+# Publishes a beta release's own bytes as the stable release of the same version. Nothing here
+# builds or signs, and no step names a signing secret: the assets are downloaded from the beta
+# release, checked against the SHA-256 GitHub recorded for each, and uploaded unchanged beside
+# the one file a beta never carries, latest.json. The operator pushes vX.Y.Z at the beta's commit
+# first; this workflow creates no tag and names no target commit.
+on:
+  workflow_dispatch:
+    inputs:
+      beta_tag:
+        description: "Published beta tag vX.Y.Z-beta.N; vX.Y.Z must already point at its commit"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ inputs.beta_tag }}
+  cancel-in-progress: false
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  BETA_TAG: ${{ inputs.beta_tag }}
+
+jobs:
+  # No write token: every check that can refuse a promotion runs before anything is staged.
+  admit-promotion:
+    name: Admit beta promotion
+    runs-on: ubuntu-latest
+    # budget: 150s (no run measured yet: the cut's admission takes 40 s, and the completeness
+    # check downloads and hashes the beta's DMG and installer, about 150 MB)
+    timeout-minutes: 3
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      release_sha: ${{ steps.admit.outputs.release_sha }}
+      release_tag: ${{ steps.admit.outputs.release_tag }}
+    steps:
+      - name: Require protected main dispatch context
+        env:
+          DISPATCH_EVENT: ${{ github.event_name }}
+          DISPATCH_REF: ${{ github.ref }}
+          DISPATCH_REF_TYPE: ${{ github.ref_type }}
+          DISPATCH_SHA: ${{ github.sha }}
+          WORKFLOW_SHA: ${{ github.workflow_sha }}
+        run: |
+          [[ "$DISPATCH_EVENT" == "workflow_dispatch" ]] || { echo "Unexpected promotion event: $DISPATCH_EVENT" >&2; exit 1; }
+          [[ "$DISPATCH_REF" == "refs/heads/main" ]] || { echo "Promotion must be dispatched from refs/heads/main, got $DISPATCH_REF" >&2; exit 1; }
+          [[ "$DISPATCH_REF_TYPE" == "branch" ]] || { echo "Promotion ref must be a branch, got $DISPATCH_REF_TYPE" >&2; exit 1; }
+          [[ "$WORKFLOW_SHA" == "$DISPATCH_SHA" ]] || { echo "Workflow source $WORKFLOW_SHA differs from event source $DISPATCH_SHA" >&2; exit 1; }
+
+      - name: Checkout admitted workflow source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+
+      - name: Enable Corepack pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.34.9 --activate
+          pnpm --version
+
+      # Both tags peel to one commit; the beta release is published, a pre-release, and
+      # carries no latest.json.
+      - name: Admit the beta and stable tags at one commit
+        id: admit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: pnpm desktop:release-promote -- --repo="$GITHUB_REPOSITORY" --from="$BETA_TAG" --mode=admit --github-output
+
+      - name: Verify the beta release is complete
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: pnpm desktop:verify-download -- --repo="$GITHUB_REPOSITORY" --tag="$BETA_TAG" --beta
+
+      - name: Require no release to hold the stable tag
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.admit.outputs.release_tag }}
+        run: pnpm desktop:release-slot -- --repo="$GITHUB_REPOSITORY" --tag="$RELEASE_TAG"
+
+      # **When blocked**: wait for the browser suite `desktop:release-run` started on the beta tag,
+      # or follow the printed dispatch command, then dispatch the promotion again.
+      - name: Require a whole green browser run on the release commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ steps.admit.outputs.release_sha }}
+        run: pnpm desktop:release-browser-gate -- --repo="$GITHUB_REPOSITORY" --sha="$RELEASE_SHA" --tag="$BETA_TAG"
+
+      - name: Verify the download page names the newest published release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: pnpm download:release-facts:check
+
+  stage-promotion:
+    name: Stage the stable draft from the beta's assets
+    needs: admit-promotion
+    runs-on: ubuntu-latest
+    # budget: 240s (no run measured yet: one download and one upload of the beta's assets,
+    # about 200 MB, at the release runners' observed rate)
+    timeout-minutes: 6
+    permissions:
+      contents: write
+    env:
+      RELEASE_TAG: ${{ needs.admit-promotion.outputs.release_tag }}
+      RELEASE_SHA: ${{ needs.admit-promotion.outputs.release_sha }}
+    steps:
+      - name: Checkout admitted workflow source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+
+      - name: Enable Corepack pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.34.9 --activate
+          pnpm --version
+
+      - name: Recheck both tags before staging
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          pnpm desktop:release-source -- --mode=pin --tag="${RELEASE_TAG}" --sha="${RELEASE_SHA}"
+          pnpm desktop:release-source -- --mode=pin --tag="${BETA_TAG}" --sha="${RELEASE_SHA}"
+
+      # Repeated with the write token, which can see a leftover draft the admission could not.
+      - name: Require clean GitHub Release slot
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: pnpm desktop:release-slot -- --repo="$GITHUB_REPOSITORY" --tag="${RELEASE_TAG}"
+
+      - name: Create the stable draft from the beta's checked assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: pnpm desktop:release-promote -- --repo="$GITHUB_REPOSITORY" --from="$BETA_TAG" --mode=stage --dir="$RUNNER_TEMP/promoted-assets"
+
+      - name: Verify draft release assets
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: pnpm desktop:verify-download -- --repo="$GITHUB_REPOSITORY" --tag="${RELEASE_TAG}" --allow-draft --require-updater --commit="${RELEASE_SHA}"
+
+  publish-promotion:
+    name: Publish the promoted release
+    needs: [admit-promotion, stage-promotion]
+    runs-on: ubuntu-latest
+    # budget: 120s (the same publication, verification and facts steps as the cut's publish job)
+    timeout-minutes: 3
+    environment: release
+    permissions:
+      # Publish the verified GitHub Release. Generated download facts leave this
+      # job only as an artifact and cross protected main through a normal PR.
+      contents: write
+    env:
+      RELEASE_TAG: ${{ needs.admit-promotion.outputs.release_tag }}
+      RELEASE_SHA: ${{ needs.admit-promotion.outputs.release_sha }}
+    steps:
+      - name: Checkout admitted workflow source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+
+      - name: Enable Corepack pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.34.9 --activate
+          pnpm --version
+
+      - name: Recheck both tags after publication approval
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          pnpm desktop:release-source -- --mode=pin --tag="${RELEASE_TAG}" --sha="${RELEASE_SHA}"
+          pnpm desktop:release-source -- --mode=pin --tag="${BETA_TAG}" --sha="${RELEASE_SHA}"
+
+      # The draft's digests are compared with the beta's again: approval may come long after staging.
+      - name: Compare the draft with the beta again
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: pnpm desktop:release-promote -- --repo="$GITHUB_REPOSITORY" --from="$BETA_TAG" --mode=verify
+
+      - name: Publish the promoted stable release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: gh release edit "${RELEASE_TAG}" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease=false
+
+      - name: Recheck both tags after publication
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          pnpm desktop:release-source -- --mode=pin --tag="${RELEASE_TAG}" --sha="${RELEASE_SHA}"
+          pnpm desktop:release-source -- --mode=pin --tag="${BETA_TAG}" --sha="${RELEASE_SHA}"
+
+      - name: Verify public download assets
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: pnpm desktop:verify-download -- --repo="$GITHUB_REPOSITORY" --tag="${RELEASE_TAG}" --require-updater --commit="${RELEASE_SHA}"
+
+      - name: Generate verified release facts
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          pnpm download:release-facts -- --tag="${RELEASE_TAG}"
+          cp src/views/download/model/macos-release.generated.ts "$RUNNER_TEMP/macos-release.generated.ts"
+
+      # The release token cannot push to protected main. `desktop:release-run` opens the
+      # facts pull request with the operator's credentials; this artifact is the fallback.
+      - name: Upload protected release facts handoff
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: ontology-atlas-release-facts-${{ env.RELEASE_TAG }}
+          path: ${{ runner.temp }}/macos-release.generated.ts
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Summarize the promoted release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          release_url="$(gh release view "${RELEASE_TAG}" --repo "$GITHUB_REPOSITORY" --json url --jq .url)"
+          {
+            echo "## Promoted desktop release"
+            echo ""
+            echo "${RELEASE_TAG} is published with the bytes of ${BETA_TAG}: ${release_url}"
+          } >> "$GITHUB_STEP_SUMMARY"
