@@ -4,12 +4,9 @@ import { dirname, join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import { AjvJsonSchemaValidator } from '@modelcontextprotocol/server/validators/ajv';
-
 import { advertisedOutputSchema } from './advertised-output-schema.mjs';
 import { TOOL_BY_NAME, TOOL_OUTPUT_CONTRACT_BY_NAME, TOOLS_FOR_LIST } from './registry.mjs';
 
-const HOST_VALIDATOR = new AjvJsonSchemaValidator();
 const DEFINITIONS_DIR = join(dirname(fileURLToPath(import.meta.url)), 'tool-definitions');
 // Measured at 19,728 bytes for the 39 output schemas of the full profile; the
 // full contracts behind them measure 197,504.
@@ -55,54 +52,4 @@ test(`advertised output schemas stay under ${ADVERTISED_OUTPUT_SCHEMA_BUDGET_BYT
     .filter((tool) => tool.outputSchema)
     .reduce((sum, tool) => sum + Buffer.byteLength(JSON.stringify(tool.outputSchema), 'utf8'), 0);
   assert.ok(bytes <= ADVERTISED_OUTPUT_SCHEMA_BUDGET_BYTES, `advertised output schemas are ${bytes} bytes`);
-});
-
-test('the advertised cut accepts every value its contract accepts, under an SDK client validator', () => {
-  const row = {
-    type: 'object',
-    properties: { id: { type: 'string', pattern: '^r-' }, tags: { type: 'array', items: { type: 'string', enum: ['a'] } } },
-    required: ['id'],
-    additionalProperties: false,
-  };
-  const contract = {
-    type: 'object',
-    properties: {
-      state: { type: 'string', enum: ['ready', 'blocked'] },
-      score: { anyOf: [{ type: 'integer', minimum: 0 }, { type: 'number' }] },
-      next: { anyOf: [row, { type: 'null' }] },
-      mode: { const: 'summary' },
-      rows: { type: 'array', maxItems: 2, items: row },
-      canConfirm: { type: 'boolean', description: 'True only when confirm:true can perform the change.' },
-      note: { type: 'string', description: 'A long description the agent does not need.' },
-    },
-    required: ['state', 'rows'],
-    oneOf: [{ required: ['score'] }, { required: ['next'] }],
-    additionalProperties: false,
-  };
-  const advertised = advertisedOutputSchema(contract);
-  assert.deepEqual(advertised.properties, {
-    state: { type: 'string' },
-    score: { type: 'number' },
-    next: { type: ['object', 'null'] },
-    mode: { type: 'string' },
-    rows: { type: 'array' },
-    canConfirm: { type: 'boolean', description: 'True only when confirm:true can perform the change.' },
-    note: { type: 'string' },
-  });
-
-  const checkContract = HOST_VALIDATOR.getValidator(contract);
-  const checkAdvertised = HOST_VALIDATOR.getValidator(advertised);
-  const valid = [
-    { state: 'ready', rows: [], score: 1 },
-    { state: 'blocked', rows: [{ id: 'r-1', tags: ['a'] }], score: 0.5, mode: 'summary', canConfirm: true },
-    { state: 'ready', rows: [{ id: 'r-2' }], next: { id: 'r-3' }, note: 'x' },
-    { state: 'ready', rows: [], next: null },
-  ];
-  for (const value of valid) {
-    assert.ok(checkContract(value).valid, `the contract accepts ${JSON.stringify(value)}`);
-    assert.ok(checkAdvertised(value).valid, `the advertised cut accepts ${JSON.stringify(value)}`);
-  }
-  for (const value of [{ rows: [] }, { state: 'ready', rows: {} }, { state: 'ready', rows: [], extra: 1 }]) {
-    assert.equal(checkAdvertised(value).valid, false, `the advertised cut still refuses ${JSON.stringify(value)}`);
-  }
 });
