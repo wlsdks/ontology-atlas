@@ -108,7 +108,6 @@ Closing a concept's full reading view returns to its selected map concept and in
 | Surface | Entry | Reference |
 |---|---|---|
 | Desktop app (macOS; Windows x64 beta) | Installed local workbench over a folder on disk | [`DESKTOP-MACOS.md`](DESKTOP-MACOS.md), [Download](features/download.md) |
-| CLI | `node cli/src/index.mjs <command>` from a source checkout | [`cli/README.md`](../cli/README.md); the command list is `node cli/src/index.mjs --help` |
 | MCP | JSON-RPC server an agent registers against a vault | [`mcp/README.md`](../mcp/README.md); the tool list is the server's `tools/list` answer; optional first-construction discovery exposes 20 existing tools, with full discovery as the default; exact `sourceOnly` continuations reuse bounded evidence without rescanning |
 | Website | Static export; `/` is the gateway until a vault is loaded | [Gateway](features/gateway.md) |
 
@@ -235,7 +234,7 @@ work here, and where it can.
 | Explore overlooked areas | ❌ reason + app link; recorded map stays usable | macOS local evidence reader; Windows stays unmeasured | selected scope + explicit bound-folder confirmation; native re-selection recovers missing source access without rebinding or scanning automatically; no agent or service needed |
 | Work offline | ❌ | ✅ | |
 | Search by meaning in the Wiki question desk | ❌ the line under the field says it works in the app | ✅ off until set up per folder | finds passages in other words or another language beside word matches, each row labelled Same words, Similar meaning or both; setup downloads bge-m3 (BAAI, MIT) once from huggingface.co, or uses an Ollama embedding model already on this computer; nothing from the folder is sent; the prepared passages sit beside the search index in the OS cache folder; a **Model** chip on the desk line opens one dialog that switches between the built-in model and Ollama models, shows where the model is kept and deletes it in one press; Settings › Privacy · data also deletes the model and the prepared passages ([workspace](features/library/workspace.md)) |
-| Git history and snapshots | ❌ degraded card + `ontology-atlas snapshot` | ✅ | a browser has no right to run git on your machine |
+| Git history and snapshots | ❌ degraded card | ✅ | a browser has no right to run git on your machine |
 | Sent-log count and five recent records | FSA complete read | macOS bounded native pulls; other native platforms keep existing reads | changed, failed or expired reads offer Retry without publishing zero or stale rows; original history is preserved |
 | API keys / in-app **agent** chat | ❌ **and will not be built** | ✅ native credential store | keys in browser storage leak to a single XSS, and vendors name the direct-call header `…-dangerous-direct-browser-access` |
 | Write agent config (`.mcp.json`) into the vault | ⚠️ folder writes work, but there is no absolute path to record | ✅ | MCP registration needs a real path |

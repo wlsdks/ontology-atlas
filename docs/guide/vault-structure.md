@@ -58,7 +58,7 @@ The frontmatter is the graph: kind, name, parent and relations. The body is the 
 
 ### Identity: uid and slug
 
-Whatever creates a concept (the app, the MCP server or the CLI) generates its `uid` once. You do not choose it. Renaming a concept changes its `slug` and rewrites every relation that points to it, but keeps the `uid`. Merging two concepts keeps the surviving concept's `uid` and records the other one in `merged_uids`, so an old `uid` still leads to the right concept. Do not write `merged_uids` by hand.
+Whatever creates a concept (the app or the MCP server) generates its `uid` once. You do not choose it. Renaming a concept changes its `slug` and rewrites every relation that points to it, but keeps the `uid`. Merging two concepts keeps the surviving concept's `uid` and records the other one in `merged_uids`, so an old `uid` still leads to the right concept. Do not write `merged_uids` by hand.
 
 Use the slug when you write relations and links, because it is what people read in the file. Use the `uid` when a tool or a handoff note must point at the same concept even after a rename.
 
@@ -86,17 +86,10 @@ Projects and documents sit at the root of the folder. Domains, capabilities and 
 
 Files under `sources/` are raw material, such as documents a wiki page cites, and are never read as concepts. `.ontology-atlas/` holds files the app writes beside your ontology, such as review results and the link to your code folder. When Atlas first writes that link, it also adds a `.gitignore` there so that the folder stays out of Git.
 
-To start a folder from the command line, in a checkout of the Atlas source:
-
-```bash
-node cli/src/index.mjs init docs/ontology
-node cli/src/index.mjs validate docs/ontology
-```
-
-`validate` reports broken references, unknown kinds and malformed identities. Most findings are warnings that do not stop your work; a duplicate `uid` is an error. [The CLI](/guide/cli) lists the other commands.
+An agent's `validate_vault` reports broken references, unknown kinds and malformed identities. Most findings are warnings that do not stop your work; a duplicate `uid` is an error.
 
 ## The files are the truth
 
-Atlas always reads the ontology from the files. Edit a file in your editor, through the CLI or through an agent, and the map picks up the change within seconds. There is no sync button and no hidden state. Every change, including one an agent makes, shows up in `git diff`, where you can review, keep or revert it.
+Atlas always reads the ontology from the files. Edit a file in your editor, in the app or through an agent, and the map picks up the change within seconds. There is no sync button and no hidden state. Every change, including one an agent makes, shows up in `git diff`, where you can review, keep or revert it.
 
 Next: [Choosing concepts](/guide/what-becomes-a-node).

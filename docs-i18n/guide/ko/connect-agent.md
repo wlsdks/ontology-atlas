@@ -59,17 +59,8 @@ cd ~/tools/ontology-atlas && pnpm install
 pnpm --dir mcp install --frozen-lockfile
 ```
 
-그다음 내 저장소 루트에서, 이미 있는 온톨로지 폴더를 가리키는 설정을 써요.
-
-```bash
-node ~/tools/ontology-atlas/cli/src/index.mjs agent-setup ./atlas --write
-```
-
-`agent-setup`은 Claude Code용 `.mcp.json`과 Codex용 `.codex/config.toml`을
-만들거나 고쳐요. `ontology-atlas` 항목만 바꾸고 다른 MCP 서버는 그대로 둬요.
-파싱할 수 없는 파일은 건드리지 않고, 직접 합칠 수 있게 템플릿을 출력해요.
-
-stdio로 MCP 서버를 띄우는 다른 클라이언트도 같은 세 필드로 등록하면 돼요.
+그다음 에이전트에 서버를 등록해요. Claude Code는 내 저장소 루트의 `.mcp.json`에서
+읽고, stdio로 MCP 서버를 띄우는 다른 클라이언트도 같은 세 필드로 등록하면 돼요.
 
 ```json
 {
@@ -110,15 +101,7 @@ Codex는 그 폴더를 신뢰한다고 표시해야 프로젝트의 `.codex/conf
 설정부터 고치세요.
 
 앱에서는 제목 옆의 **연결 확인**을 누르면 에이전트를 다시 시작하는 단계와
-도구별 파일 상태가 나와요. 터미널에서는 `mcp-verify`가 서버를 띄우고, 도구
-목록을 보여 주고, 폴더에 실제 쿼리를 실행해요.
-
-```bash
-node ~/tools/ontology-atlas/cli/src/index.mjs mcp-verify ./atlas
-```
-
-이 명령으로 서버와 폴더가 동작하는지는 확인할 수 있지만, 에이전트가 설정을
-불러왔는지까지는 알 수 없어요.
+도구별 파일 상태가 나와요.
 
 ## 에이전트가 읽고 쓸 수 있는 것
 

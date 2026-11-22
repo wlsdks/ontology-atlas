@@ -103,8 +103,8 @@ revert it in Git.
   unknown-publisher warning, and a managed computer may block it. Before
   release, the build is scanned with Microsoft Defender, installed silently,
   and launched.
-- **Linux**: there is no app yet. Use the browser version, or run the CLI and MCP
-  server from source ([The CLI](/guide/cli)).
+- **Linux**: there is no app yet. Use the browser version, or run the MCP server
+  from source ([Connect a coding agent](/guide/connect-agent)).
 
 On the [releases page](https://github.com/wlsdks/ontology-atlas/releases),
 each installer (`.dmg`, `.exe`) and the MCP bundle (`.mcpb`) has a `.sha256`
@@ -125,7 +125,7 @@ Get-FileHash <file> -Algorithm SHA256
 
 ## Open source
 
-The app, the MCP server and the CLI are in one public repository under the MIT
+The app and the MCP server are in one public repository under the MIT
 license: [github.com/wlsdks/ontology-atlas](https://github.com/wlsdks/ontology-atlas).
 The outbound paths listed above come from one file in the source,
 [outbound-paths.ts](https://github.com/wlsdks/ontology-atlas/blob/main/src/widgets/app-settings-menu/model/outbound-paths.ts).
