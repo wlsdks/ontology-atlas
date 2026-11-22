@@ -1,8 +1,9 @@
 name: Setup Playwright
 description: >-
   Set up Node, pnpm, dependencies, the browser cache, and bounded system
-  dependencies. Five E2E checks share this preparation, so it stays in one
-  local action rather than five drifting copies.
+  dependencies. Every browser job shares this preparation, so it stays in one
+  local action rather than drifting copies. It runs on macOS and Linux: the
+  browser cache path follows the system, and the apt steps run on Linux only.
 
   Checkout cannot live here: a local composite action must already exist in the
   workspace before the runner can load it. The workflow classifies changes first
@@ -34,18 +35,19 @@ runs:
         version=$(node -e "console.log(require('@playwright/test/package.json').version)")
         echo "version=$version" >> "$GITHUB_OUTPUT"
 
-    # Since the cache key is identical across jobs, five jobs share the same browser cache.
+    # Since the cache key is identical across jobs, every job on one system shares the browser cache.
     - name: Cache Playwright browsers
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
       id: playwright-cache
       with:
-        path: ~/.cache/ms-playwright
+        path: ${{ runner.os == 'macOS' && '~/Library/Caches/ms-playwright' || '~/.cache/ms-playwright' }}
         key: playwright-chromium-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
 
     # apt waits on a silent mirror until the job timeout, so its network waits are bounded.
     # A retry after a timed-out attempt waits for the dpkg lock that attempt's root apt-get
     # still holds (the group kill cannot reach it) instead of failing on the lock at once.
     - name: Bound apt network waits
+      if: runner.os == 'Linux'
       shell: bash
       run: |
         sudo tee /etc/apt/apt.conf.d/99-oatlas-bounded-network >/dev/null <<'CONF'
@@ -70,6 +72,7 @@ runs:
     # the entire PR just because a mirror wobbled for a moment. Nor do we silently pass:
     # if both attempts fail, a `::warning` is left.
     - name: Install Playwright system deps (best effort)
+      if: runner.os == 'Linux'
       shell: bash
       run: >-
         node scripts/ci/run-with-retry.mjs
