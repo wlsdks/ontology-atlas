@@ -1,4 +1,4 @@
-import type { AgentTool, LockTool, WorkStatusSnapshot, WorktreeRow, WorktreeStanding } from './tauri-work-status';
+import type { AgentTool, LockTool, WorkStatusSnapshot, WorktreeActivity, WorktreeRow, WorktreeStanding } from './tauri-work-status';
 
 /** Who holds a worktree, as far as Git, the pids its lock names and the agent programs running in it can say. */
 export type TrackHolder =
@@ -32,6 +32,8 @@ export interface Track {
   lastCommitAt: number | null;
   /** Milliseconds since the epoch: when a live or unreadable lock was taken. */
   lockedAt: number | null;
+  /** Its newest commit subjects and uncommitted files, once read (`withActivity`). */
+  activity: WorktreeActivity | null;
 }
 
 export type SessionTool = LockTool | AgentTool | 'acp';
@@ -148,6 +150,7 @@ function toTrack(row: WorktreeRow, lockKeysByPid: ReadonlyMap<number, string>): 
     guestSessionKeys: guestSessionKeysOf(row, sessionKey, lockKeysByPid),
     lastCommitAt: row.lastCommitAt,
     lockedAt: row.lock && row.lock.state !== 'stale' ? row.lock.lockedAt : null,
+    activity: null,
   };
 }
 
@@ -211,6 +214,25 @@ export function buildWorkTracks(snapshot: WorkStatusSnapshot): WorkTracks {
     unheld: tracks.filter(track => track.place === 'unheld').sort(byRecentCommit),
     merged: tracks.filter(track => track.place === 'merged'),
     worktreeCount: snapshot.worktrees.length,
+  };
+}
+
+/**
+ * The tracks with each worktree's last activity read joined on. Rooms are placed without it, so a
+ * read that lands never moves a room; a track whose activity did not change keeps its object.
+ */
+export function withActivity(tracks: WorkTracks, activity: ReadonlyMap<string, WorktreeActivity>): WorkTracks {
+  if (activity.size === 0) return tracks;
+  const join = (track: Track): Track => {
+    const read = activity.get(track.key) ?? null;
+    return read === track.activity ? track : { ...track, activity: read };
+  };
+  return {
+    ...tracks,
+    stuck: tracks.stuck.map(join),
+    sessions: tracks.sessions.map(session => ({ ...session, tracks: session.tracks.map(join) })),
+    unheld: tracks.unheld.map(join),
+    merged: tracks.merged.map(join),
   };
 }
 

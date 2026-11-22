@@ -392,6 +392,8 @@ pub fn run() {
             connectors::secrets::connector_secret_delete,
             work_status::work_status_read,
             work_status::work_status_fingerprint,
+            work_status::work_status_activity_stamps,
+            work_status::work_status_activity,
         ])
         .build(context)
         .expect("error while building ontology-atlas desktop app")

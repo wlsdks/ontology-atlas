@@ -1159,3 +1159,8 @@ in the coordination spec.
   moved to `docs/specs/2026-11-22-work-status-design.md`; the acceptance criteria and the decision
   record texts to `docs/specs/2026-11-22-work-status-criteria.md`. Names used here ("Cases",
   "criterion 27", "Record 4") mean those files.
+- 2026-11-22: the commit-subject part of the Git facts read, pulled forward for the owner ("what is
+  it doing"): per worktree, the three newest subjects beyond the base, the uncommitted count and the
+  newest uncommitted file (`work_status_activity`), after a stat of its `HEAD`, `index` or reflog or
+  on a beat of four reads a minute shared by the running worktrees; measured about 150 ms of Git CPU
+  per read on this repository, so the 15 s unstaged-edit bound waits for slice 3's file notices.

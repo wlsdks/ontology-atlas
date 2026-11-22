@@ -25,8 +25,7 @@
     "below": "下に{count}"
   },
   "stage": {
-    "label": "作業中のワークツリー",
-    "moreBelow": "下の階で<lead>さらに{count}個が作業中</lead>"
+    "label": "作業中のワークツリー"
   },
   "room": {
     "working": "作業中",
@@ -43,27 +42,18 @@
     "lastCommit": "最後のコミットは{ago}",
     "commits": "コミット{count}個",
     "noCommits": "まだコミットなし",
-    "onlyInGit": "Gitにだけ残っています"
+    "onlyInGit": "Gitにだけ残っています",
+    "notInBase": "{branch}にないコミット{count}個"
   },
   "monitor": {
-    "running": "コマンドを実行中",
-    "twoTools": "2つのツールが同じフォルダに",
-    "twoToolsNote": "変更が混ざる可能性があります",
-    "idle": "実行中のコマンドなし",
     "lockedAt": "{time}にロック",
-    "ended": "セッション終了",
-    "noSession": "セッションなし",
     "noCommitsNote": "{branch}以降のコミットはありません",
     "notMeasured": "{branch}と比較できませんでした",
     "prune": "<code>git worktree prune</code>を実行すると記録が消えます",
-    "heldBy": "{session}がまだこのフォルダを保持しています",
     "unreadableLock": "Atlasが読めるセッション名がロックにありません",
-    "workingMinutes": "{count}分間作業中",
-    "workingWholeHours": "{count}時間作業中",
-    "workingHours": "{hours}時間{minutes}分作業中"
-  },
-  "belt": {
-    "notRead": "以降の段階はまだ読めません"
+    "workedMinutes": "{count}分経過",
+    "workedWholeHours": "{count}時間経過",
+    "workedHours": "{hours}時間{minutes}分経過"
   },
   "shelf": {
     "merged": "{branch}にマージ済み",
@@ -95,5 +85,14 @@
     "sameFolder": "同じフォルダ{count}",
     "cleanup": "整理{count}",
     "pointTo": "どのワークツリーか表示"
+  },
+  "git": {
+    "uncommitted": "未コミットのファイル{count}個",
+    "clean": "すべてコミット済み"
+  },
+  "floor": {
+    "below": "下の階",
+    "working": "{count}個が作業中",
+    "worktrees": "ワークツリー{count}"
   }
 }
