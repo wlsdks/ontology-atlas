@@ -15,6 +15,10 @@ export const WRITE_FINDINGS_SCHEMA = {
   description: 'One line per kind of maintenance finding on the nodes this call wrote: the first finding with the call that settles it, then the other nodes it applies to.',
 };
 
+/** What a capability's body holds, said where the builder writes it. */
+const CONCEPT_BODY_DESCRIPTION =
+  'All five parts, written now: definition; the deciding rule with the cite of its lines; `## Includes` naming in code form each surveyed ability it covers; `## Excludes`, what it is often taken for and is not; `## Uncertainty`, what was not read. A missing part is repaired later one patch_concept per node.';
+
 export const ADD_CONCEPT_TOOL = {
   name: 'add_concept',
   description:
@@ -61,7 +65,7 @@ export const ADD_CONCEPT_TOOL = {
       ),
       body: {
         type: 'string',
-        description: 'Markdown body; a starter body when omitted.',
+        description: `${CONCEPT_BODY_DESCRIPTION} A starter body when omitted.`,
       },
       labels: LOCALE_LABELS_SCHEMA,
     },
@@ -112,7 +116,7 @@ export const ADD_CONCEPTS_TOOL = {
             path: nonBlankStringSchema(
               'Entry file or folder, repo-relative.',
             ),
-            body: { type: 'string' },
+            body: { type: 'string', description: CONCEPT_BODY_DESCRIPTION },
             labels: LOCALE_LABELS_SCHEMA,
           },
           required: ['slug', 'kind', 'title'],
