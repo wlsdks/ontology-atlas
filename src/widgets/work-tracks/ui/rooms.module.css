@@ -321,7 +321,8 @@
  * pair stands on the floor 60 to 100 drawn pixels apart, and the lamp stands under the monitor.
  */
 .scene[data-cast='two'] {
-  --pair-rise: calc(50 * var(--s));
+  /* Up to 50 drawn pixels, as far as the room's height above the tallest monitor allows. */
+  --pair-rise: clamp(0px, calc(100% - 52px - 112px - 28px - 72 * var(--s)), calc(50 * var(--s)));
   --pair-behind: 0px;
   /* The second's tag hangs further right, off the first one's face over his head. */
   --tag-shift: calc(24 * var(--s));
