@@ -6014,7 +6014,7 @@ describe('verify.mjs first-contact gates', () => {
           { name: 'titel', suggestion: 'title' },
           { name: 'domian', suggestion: 'domain' },
         ],
-        allowedFields: ['slug', 'kind', 'title', 'domain', 'capabilities', 'elements', 'path', 'body', 'labels'],
+        allowedFields: ['slug', 'kind', 'title', 'domain', 'domains', 'capabilities', 'elements', 'path', 'body', 'labels'],
         receivedFields: ['domian', 'kind', 'slug', 'titel', 'title'],
       },
       {
@@ -6045,7 +6045,7 @@ describe('verify.mjs first-contact gates', () => {
         rowName: 'concepts[4]',
         receivedField: 'titel',
         unknownFields: [{ name: 'titel', suggestion: 'title' }],
-        allowedFields: ['slug', 'kind', 'title', 'domain', 'capabilities', 'elements', 'path', 'body', 'labels'],
+        allowedFields: ['slug', 'kind', 'title', 'domain', 'domains', 'capabilities', 'elements', 'path', 'body', 'labels'],
         receivedFields: ['kind', 'slug', 'titel', 'title'],
       },
     ];

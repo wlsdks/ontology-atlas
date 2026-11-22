@@ -6878,6 +6878,33 @@ await test("add_concepts — batch write keeps order and returns partial results
   }
 });
 
+// Builders list a project's domains on its row (7 of 9 field-trial builds did),
+// so the row takes them; only a project keeps that list.
+await test("add_concepts — a project row lists its domains; another kind is told to use domain", async () => {
+  const root = makeVault([]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "add_concepts", {
+        concepts: [
+          { slug: "shop", kind: "project", title: "Shop", domains: ["domains/catalog"] },
+          { slug: "domains/catalog", kind: "domain", title: "Catalog" },
+          { slug: "capabilities/list", kind: "capability", title: "List products", domains: ["domains/catalog"] },
+        ],
+      }),
+      callTool(3, "get_concepts", { slugs: ["shop"] }),
+    ]);
+    const rows = getCallParsed(responses, 2).concepts;
+    assert.equal(rows[0].ok, true);
+    assert.equal(rows[1].ok, true);
+    assert.equal(rows[2].ok, false);
+    assert.match(rows[2].error, /a capability names its one parent domain in `domain`/);
+    assert.deepEqual(getCallParsed(responses, 3).concepts[0].frontmatter.domains, ["domains/catalog"]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test("add_concept/add_concepts — implementation path is preserved as evidence", async () => {
   const root = makeVault([]);
   try {

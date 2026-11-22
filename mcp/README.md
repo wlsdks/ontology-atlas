@@ -669,6 +669,8 @@ those surfaces.
 For `add_concept` / `add_concepts`, `path` is one canonical repo-relative
 implementation entrypoint for a capability or element. `elements` contains only
 real element-node slugs; a raw file path is evidence, not a graph child.
+A project row may list its domain slugs in `domains`; any other kind is
+refused there and names its one parent in `domain`.
 Literal `.` is the explicit bound repository root. It is valid in node paths and
 persisted competency Evidence/Paths, but it does not identify a canonical child
 file or prove dependency/runtime completeness. Unsafe sibling paths still make

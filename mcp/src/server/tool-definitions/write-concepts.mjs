@@ -38,6 +38,12 @@ export const ADD_CONCEPT_TOOL = {
       domain: nonBlankStringSchema(
         'Parent domain slug; expected for a capability or element.',
       ),
+      domains: {
+        type: 'array',
+        maxItems: GRAPH_REF_ARRAY_MAX_ITEMS,
+        items: NON_BLANK_STRING_SCHEMA,
+        description: 'Domain slugs this project owns.',
+      },
       capabilities: {
         type: 'array',
         maxItems: GRAPH_REF_ARRAY_MAX_ITEMS,
@@ -100,6 +106,7 @@ export const ADD_CONCEPTS_TOOL = {
             },
             title: NON_BLANK_STRING_SCHEMA,
             domain: NON_BLANK_STRING_SCHEMA,
+            domains: { type: 'array', maxItems: GRAPH_REF_ARRAY_MAX_ITEMS, items: NON_BLANK_STRING_SCHEMA },
             capabilities: { type: 'array', maxItems: GRAPH_REF_ARRAY_MAX_ITEMS, items: NON_BLANK_STRING_SCHEMA },
             elements: { type: 'array', maxItems: GRAPH_REF_ARRAY_MAX_ITEMS, items: NON_BLANK_STRING_SCHEMA },
             path: nonBlankStringSchema(
