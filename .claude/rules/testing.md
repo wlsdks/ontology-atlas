@@ -51,10 +51,10 @@ sleeping.
 
 | Shape | Allowed | Form |
 |---|---|---|
-| Condition wait | yes, the default | `waitFor`, `findBy*`, `expect.poll`, `page.waitForFunction` |
-| Work count | yes, first for "done once" | count the calls a repeated input makes; a cache's speed ratio drifts with GC; model: `node-name-match.test.ts` |
-| Relative in one run | yes | measure both sides in one process and assert the ratio; model: `validate-vault-document.perf.test.ts` |
-| Product budget with headroom | yes | print the measured value, keep the bound at 5x or more, and comment the measurement and date |
+| Work count | yes, first for any perf guard | count the calls, visits or reads the regression multiplies; plant it red once; model: `full-detail-groups.perf.test.ts` |
+| Condition wait | yes, the default wait | `waitFor`, `findBy*`, `expect.poll`, `page.waitForFunction` |
+| Relative in one run | only with no count (regex backtracking, work the code's own structures hide) | both sides in one process, the ratio asserted, each side `startWorkClock()` (`tests/helpers/work-clock.ts`); model: `validate-vault-document.perf.test.ts` |
+| Product budget with headroom | only for a budget a spec, decision or frame rate sets | as above, the measured value printed, the bound 5x or more, the measurement and date commented |
 | Absolute wall clock or fixed sleep | no | an unmeasured `toBeLessThan(n)`, `waitForTimeout(n)`, or `setTimeout` used as a wait |
 
 - `testTimeout` (30 s) and `asyncUtilTimeout` (15 s) are hang detectors, not

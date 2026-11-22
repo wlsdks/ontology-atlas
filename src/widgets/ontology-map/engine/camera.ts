@@ -111,8 +111,10 @@ export function stepCamera(input: CameraStepInput): CameraAxes {
     angularFrequency,
     SCALE_CRITICAL_DAMPING,
   );
+  // A bound that moves past the camera (a resize, another vault) holds it where it stands, never
+  // jumps it there: the spring, aimed inside the bounds, eases it in.
   const scale: SpringAxisState = {
-    value: Math.min(scaleMax, Math.max(scaleMin, steppedScale.value)),
+    value: Math.min(Math.max(scaleMax, camera.scale.value), Math.max(Math.min(scaleMin, camera.scale.value), steppedScale.value)),
     velocity: steppedScale.velocity,
   };
 

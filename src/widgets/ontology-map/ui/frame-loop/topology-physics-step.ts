@@ -12,7 +12,7 @@ import { selectEgoContainsComets, updateParticles, type ParticleEdge } from "../
 import { computeZoomRatio, DEFAULT_TIER_REVEAL, isSpineOnlyZoom, type TierRevealConfig } from "../../model/visibility/tier-visibility";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import { computeUnfocusedPanBounds, focusPanBounds, type FocusLeashPx } from "../camera/target/pan-leash";
-import { computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin } from "../camera/target/zoom-range";
+import { computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin, drawsFlatGraph } from "../camera/target/zoom-range";
 import type { TopologyWorld } from "../world/topology-world";
 
 export interface PhysicsStepInput {
@@ -215,13 +215,14 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
   // audit finding this fixes (capability/element tiers were unreachable).
   const effectiveScaleMax = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax, world.dialScaleMax ?? undefined);
   const effectiveScaleMin = Math.min(
-    computeEffectiveCameraScaleMin(overviewEntryScale, tokens.cameraMinZoomRatio, tokens.cameraScaleMin),
+    computeEffectiveCameraScaleMin(overviewEntryScale, tokens.cameraMinZoomRatio, tokens.cameraScaleMin, drawsFlatGraph(world)),
     // 3D dome — if the dome's fit zoom sits below the 2D minimum, drop that far (`DomeRuntime.fitScale`).
     scaleMinOverride ?? Infinity,
   );
   // The spring aims inside the same box the elastic clamp holds; aimed past it, the two would hold
   // the camera still-moving at a stalemate outside the box for as long as the target stood there.
-  const heldTarget = isDragging ? target : { ...target, ...clampTargetToPanBounds(target, panBounds) };
+  const tscale = Math.min(effectiveScaleMax, Math.max(effectiveScaleMin, target.tscale));
+  const heldTarget = isDragging ? { ...target, tscale } : { ...target, ...clampTargetToPanBounds(target, panBounds), tscale };
   const nextCamera: CameraAxes = freezeCamera
     ? { x: { ...camera.x }, y: { ...camera.y }, scale: { ...camera.scale } }
     : stepCamera({

@@ -15,6 +15,7 @@ import { paintFlatGraphFrame } from "./frame";
 import { domainStarIds } from "./open-star";
 import { buildFlatGraphScene } from "./scene";
 import { resolveFlatGraphTokens } from "./tokens";
+import { startWorkClock } from "../../../../tests/helpers/work-clock";
 
 const W = 1410;
 const H = 840;
@@ -113,13 +114,11 @@ function cameraOn(model: DialModel, centreId: string, free: Free) {
   };
 }
 
-function cpuMs(): number {
-  const { user, system } = process.cpuUsage();
-  return (user + system) / 1000;
-}
-
 /**
- * The median CPU time of one frame of `domainId`'s star, opened from the overview to `zoom` and
+ * Timed, not counted: the frame has a 60 Hz requirement, and the clearance and push work it
+ * guards runs inside the paint with no count it exposes.
+ *
+ * The median time of one frame of `domainId`'s star, opened from the overview to `zoom` and
  * settled, while the reader pans it a few px. The open pushes every fan its members cover on the way.
  */
 function frameCpuMs(model: DialModel, domainId: string, free: Free, zoom: number): number {
@@ -128,7 +127,7 @@ function frameCpuMs(model: DialModel, domainId: string, free: Free, zoom: number
 
 /**
  * `frameCpuMs`, with the median heap a settled frame leaves allocated before the collector runs, in
- * KiB, and the median CPU of a frame while the star opens and the camera zooms.
+ * KiB, and the median time of a frame while the star opens and the camera zooms.
  */
 function frameCost(model: DialModel, domainId: string, free: Free, zoom: number): { cpuMs: number; heapKiB: number; zoomingMs: number } {
   clearDialFrame();
@@ -138,9 +137,9 @@ function frameCost(model: DialModel, domainId: string, free: Free, zoom: number)
   for (let i = 0; i < 400; i += 1, now += FRAME_MS) {
     const t = Math.min(1, now / 600);
     const at = Math.pow(zoom, (1 - Math.cos(Math.PI * t)) / 2);
-    const t0 = cpuMs();
+    const spent = startWorkClock();
     const painted = paintFlatGraphFrame(camera(at, now, { x: 0, y: 0 }), TOKENS);
-    if (t < 1) zooming.push(cpuMs() - t0);
+    if (t < 1) zooming.push(spent());
     else if (!painted.branchMembersAnimating) break;
   }
   const times: number[] = [];
@@ -148,9 +147,9 @@ function frameCost(model: DialModel, domainId: string, free: Free, zoom: number)
   for (let i = 0; i < 60; i += 1, now += FRAME_MS) {
     const input = camera(zoom, now, { x: Math.sin(i / 20) * 6, y: Math.cos(i / 20) * 6 });
     const heap = process.memoryUsage().heapUsed;
-    const t0 = cpuMs();
+    const spent = startWorkClock();
     paintFlatGraphFrame(input, TOKENS);
-    times.push(cpuMs() - t0);
+    times.push(spent());
     // A collection during the frame shows as a fall, which says nothing of what the frame allocated.
     const grew = process.memoryUsage().heapUsed - heap;
     if (grew >= 0) heaps.push(grew / 1024);

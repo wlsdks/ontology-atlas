@@ -3,6 +3,7 @@ import { runInNewContext } from 'node:vm';
 
 import { describe, expect, it } from 'vitest';
 import { MemoryVault } from '../../../../../tests/helpers/memory-vault';
+import { startWorkClock } from '../../../../../tests/helpers/work-clock';
 import { deriveOntologyFromVault } from '../derive-ontology-from-vault';
 import { applyVaultChanges, type LocalVaultSnapshot } from './apply-vault-changes';
 import {
@@ -12,9 +13,10 @@ import {
   rebuildLocalManifestIncremental,
 } from './build-local-manifest';
 
-/** Fingerprinting must stay below 85% of a build's time, a ratio that survives jsdom noise. */
-
 const FILE_COUNT = 200;
+
+/** Body reads through the handles below: fingerprinting reads modified times, never a body. */
+const bodyReads = { count: 0 };
 
 function makeFileHandle(name: string, mtime: number): FileSystemFileHandle {
   // Average-length bodies.
@@ -36,7 +38,10 @@ function makeFileHandle(name: string, mtime: number): FileSystemFileHandle {
     name,
     getFile: async () =>
       ({
-        text: async () => body,
+        text: async () => {
+          bodyReads.count += 1;
+          return body;
+        },
         lastModified: mtime,
       }) as unknown as File,
   } as unknown as FileSystemFileHandle;
@@ -55,32 +60,26 @@ function makeLargeRoot(count: number): FileSystemDirectoryHandle {
   } as unknown as FileSystemDirectoryHandle;
 }
 
-function ms(): number {
-  return performance.now();
-}
-
-describe('large vault perf', () => {
-  it(`${FILE_COUNT} files: fingerprint < build * 0.85`, async () => {
+describe('large vault fingerprint', () => {
+  it(`${FILE_COUNT} files: the fingerprint reads no body the build reads`, async () => {
     const root = makeLargeRoot(FILE_COUNT);
 
-    const t0 = ms();
+    bodyReads.count = 0;
     const built = await buildLocalManifest(root);
-    const buildMs = ms() - t0;
+    const buildReads = bodyReads.count;
 
-    const t1 = ms();
+    bodyReads.count = 0;
     const fp = await computeLocalVaultFingerprint(root);
-    const fingerprintMs = ms() - t1;
 
     expect(built.manifest.docs.length).toBe(FILE_COUNT);
     expect(fp).toBe(built.fingerprint);
-
-    console.log(
-      `[perf] ${FILE_COUNT} files — build: ${buildMs.toFixed(1)}ms, fingerprint: ${fingerprintMs.toFixed(1)}ms, ratio: ${(fingerprintMs / buildMs).toFixed(2)}`,
-    );
-
-    expect(fingerprintMs).toBeLessThan(buildMs * 0.85);
+    expect(buildReads).toBe(FILE_COUNT);
+    expect(bodyReads.count).toBe(0);
   });
 });
+
+/** Reads waiting at once in `makeFlatRoot`'s handles, and the most at any moment. */
+const inFlight = { now: 0, most: 0 };
 
 /** A flat folder handle; `read` builds each body on demand so the handle holds no text. */
 function makeFlatRoot(
@@ -100,7 +99,12 @@ function makeFlatRoot(
             kind: 'file',
             name,
             getFile: async () => {
-              if (wait) await wait();
+              if (wait) {
+                inFlight.now += 1;
+                inFlight.most = Math.max(inFlight.most, inFlight.now);
+                await wait();
+                inFlight.now -= 1;
+              }
               return {
                 text: async () => read(i),
                 lastModified: 1_700_000_000_000 + i,
@@ -114,25 +118,23 @@ function makeFlatRoot(
 }
 
 describe('manifest build at scale', () => {
-  it('reads through a pool at least four times faster than one read at a time when each read waits', async () => {
+  it('keeps many reads waiting at once through a pool, and one at a time when asked', async () => {
     const count = 400;
-    // measurement window: each read waits 0.5 ms, standing in for one bridge or FSA round trip.
-    const wait = () => new Promise<void>((resolve) => setTimeout(resolve, 0.5));
+    // Each read yields once, standing in for one bridge or FSA round trip.
+    const wait = () => Promise.resolve();
     const read = (i: number) => `---\ntitle: N ${i}\n---\n\n# N ${i}\n`;
+    const mostInFlight = async (concurrency?: number) => {
+      inFlight.most = 0;
+      const built = await buildLocalManifest(makeFlatRoot(count, read, wait), concurrency);
+      return { docs: built.manifest.docs, most: inFlight.most };
+    };
 
-    const t0 = ms();
-    const serial = await buildLocalManifest(makeFlatRoot(count, read, wait), 1);
-    const serialMs = ms() - t0;
+    const serial = await mostInFlight(1);
+    const pooled = await mostInFlight();
 
-    const t1 = ms();
-    const pooled = await buildLocalManifest(makeFlatRoot(count, read, wait));
-    const pooledMs = ms() - t1;
-
-    expect(pooled.manifest.docs).toEqual(serial.manifest.docs);
-    console.log(
-      `[perf] ${count} waiting reads — serial: ${serialMs.toFixed(0)}ms, pooled: ${pooledMs.toFixed(0)}ms, ratio: ${(serialMs / pooledMs).toFixed(1)}`,
-    );
-    expect(pooledMs * 4).toBeLessThanOrEqual(serialMs);
+    expect(pooled.docs).toEqual(serial.docs);
+    expect(serial.most).toBe(1);
+    expect(pooled.most).toBeGreaterThanOrEqual(4);
   });
 
   it('does not keep whole file texts alive through the kept fields', async () => {
@@ -209,11 +211,6 @@ function ontologyVault(total: number, notesPerFolder = 1000): MemoryVault {
   return vault;
 }
 
-function cpuMs(): number {
-  const { user, system } = process.cpuUsage();
-  return (user + system) / 1000;
-}
-
 function median(values: number[]): number {
   return [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)];
 }
@@ -233,10 +230,10 @@ describe('one changed file in a 50,000-file vault', () => {
     const walked: number[] = [];
     for (let round = 0; round < 3; round += 1) {
       edit(round);
-      const start = cpuMs();
+      const spent = startWorkClock();
       const next = await rebuildLocalManifestIncremental(vault.root(), first.entries);
       deriveOntologyFromVault(next.build.manifest);
-      walked.push(cpuMs() - start);
+      walked.push(spent());
     }
 
     // After: the watcher's path delta. The first call indexes the snapshot once.
@@ -244,12 +241,12 @@ describe('one changed file in a 50,000-file vault', () => {
     const delta: number[] = [];
     for (let round = 0; round < 7; round += 1) {
       const path = edit(round);
-      const start = cpuMs();
+      const spent = startWorkClock();
       const result = await applyVaultChanges(vault.root(), snapshot, [vault.change(path)]);
       if (result.kind !== 'applied') throw new Error(`expected a delta, got ${result.kind}`);
       snapshot = result.snapshot;
       deriveOntologyFromVault(snapshot.build.manifest);
-      delta.push(cpuMs() - start);
+      delta.push(spent());
     }
     const steady = median(delta.slice(1));
     console.log(
@@ -267,15 +264,15 @@ describe('one changed file in a 50,000-file vault', () => {
 /** CPU for one burst: the walk the focus check runs, against the path delta (and its walk, when it asks for one). */
 async function burstCosts(vault: MemoryVault, first: LocalVaultSnapshot, paths: readonly string[]) {
   const changes = paths.map((path) => vault.change(path));
-  let start = cpuMs();
+  let spent = startWorkClock();
   const walked = await rebuildLocalManifestIncremental(vault.root(), first.entries);
   deriveOntologyFromVault(walked.build.manifest);
-  const walkMs = cpuMs() - start;
-  start = cpuMs();
+  const walkMs = spent();
+  spent = startWorkClock();
   const result = await applyVaultChanges(vault.root(), first, changes);
   const next = result.kind === 'applied' ? result.snapshot : result.kind === 'rescan' ? await rebuildLocalManifestIncremental(vault.root(), first.entries) : first;
   deriveOntologyFromVault(next.build.manifest);
-  const deltaMs = cpuMs() - start;
+  const deltaMs = spent();
   expect(next.build.fingerprint).toBe(walked.build.fingerprint);
   return { walkMs, deltaMs, kind: result.kind };
 }

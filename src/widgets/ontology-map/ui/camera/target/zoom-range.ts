@@ -16,13 +16,21 @@ export function computeEffectiveCameraScaleMax(
 /**
  * The camera's interactive zoom-out floor, viewport-relative: `overviewEntryScale x minZoomRatio`
  * (`--map-camera-min-zoom-ratio`) replaces the absolute `--map-camera-scale-min` for the spring
- * and wheel clamps. The fit computations keep the absolute floor as their own sanity bound.
+ * and wheel clamps. The fit computations keep the absolute floor as their own sanity bound. The
+ * Flat graph floors at its overview entry itself: its layout keeps every member off its domain's
+ * name only down to that zoom, and past it the map only shrinks into empty canvas.
  */
 export function computeEffectiveCameraScaleMin(
   overviewEntryScale: number,
   minZoomRatio: number,
   absoluteFallback: number,
+  flatGraph = false,
 ): number {
   if (!(overviewEntryScale > 0)) return absoluteFallback;
-  return overviewEntryScale * minZoomRatio;
+  return overviewEntryScale * (flatGraph ? Math.max(1, minZoomRatio) : minZoomRatio);
+}
+
+/** Whether `world` draws the Flat graph, whose zoom-out floor is its overview entry. */
+export function drawsFlatGraph(world: { dial?: { scene: { graph?: unknown } } | null } | null | undefined): boolean {
+  return world?.dial?.scene.graph != null;
 }

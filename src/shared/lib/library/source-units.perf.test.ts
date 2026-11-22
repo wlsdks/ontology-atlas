@@ -1,10 +1,15 @@
 import { describe, expect, it } from "vitest";
 
 import { zipFile } from "../../../../tests/fixtures/source-passage-cases.mjs";
+import { startWorkClock } from "../../../../tests/helpers/work-clock";
 import { sourceUnits } from "./source-units";
 
 const FILE_BYTES = 256 * 1024;
-// The budget is generous on purpose: it catches a change of shape, not small slowdowns.
+/*
+ * Timed, not counted: the splitter's steps are string searches and pattern matches inside its
+ * markup scan, which expose no count. Measured 2026-11-23 on an Apple-silicon Mac: the six shapes took 33 ms
+ * together, so the bound sits far above one shape and catches a change of shape, not a slowdown.
+ */
 const BUDGET_MS = 1000;
 
 const workbook = { name: "xl/workbook.xml", text: '<sheet name="a" r:id="r1"/>' };
@@ -23,9 +28,9 @@ describe("hostile document sources cost time linear in their size", () => {
     for (const [name, path, bytes] of cases) {
       let fastest = Infinity;
       for (let attempt = 0; attempt < 3; attempt += 1) {
-        const started = performance.now();
+        const spent = startWorkClock();
         sourceUnits(bytes, path);
-        fastest = Math.min(fastest, performance.now() - started);
+        fastest = Math.min(fastest, spent());
         if (fastest < BUDGET_MS || fastest > BUDGET_MS * 10) break;
       }
       expect(fastest, `${name} took ${fastest.toFixed(0)} ms`).toBeLessThan(BUDGET_MS);

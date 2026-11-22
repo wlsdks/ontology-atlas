@@ -27,6 +27,7 @@ import { DRAWN_INK, ELEMENT_PICK_PX, type Disc, REST_ARC, type Name, type Ring, 
 const F = frameState;
 
 const LIGHT_SINK_GAIN = 1.4;
+const FLOOR_STEPS_PER_OCTAVE = 4096;
 
 /** One width memo per model, so a closed folder's names leave with its model. */
 const measureByModel = new WeakMap<DialModel, MeasureText>();
@@ -330,13 +331,17 @@ export function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion
   }
 
   const fontFamily = labelFontFamily();
+  // The Flat camera's zoom-out floor is its overview entry, where the zoom ratio is 1; a camera below
+  // it (the floor rose past it) only climbs, so names need hold no lower than where it stands. Read
+  // back from the zoom it carries noise, so it is rounded down to 1/4096 octave: names cached per floor keep it.
+  const zoomFloorScale = input.zoomRatio > 0 ? 2 ** (Math.floor(Math.log2(input.scale / Math.max(1, input.zoomRatio)) * FLOOR_STEPS_PER_OCTAVE) / FLOOR_STEPS_PER_OCTAVE) : 0;
   const unmeasuredLine = evidence !== null && !evidence.measured ? input.labels?.evidenceUnmeasured?.() ?? null : null;
   const admitUnder = (a: GraphAttention) => admittedNames({
     model, layout, tokens: P, labels: input.labels, measureText, fontFamily, scale: input.scale, growth: stepGrowth,
     elementLabel: input.elementLabel, staleByDomain: measured ? evidence!.staleByDomain : null,
     lit: contextMode ? null : a.lit, focusId: a.focusId, attentionKey: a.key, openStarId: F.starNow ? input.focusedNodeId : null, agentFocusId: contextMode ? null : input.agentFocusNodeId,
     selected: a.selected, named: a.named, reach: a.reach, lines: contextMode ? NO_LINES : a.lines,
-    discRadius: stepRadius, elementSpacingPx, hubCaption: unmeasuredLine,
+    discRadius: stepRadius, elementSpacingPx, hubCaption: unmeasuredLine, zoomFloorScale,
   });
   collectGrownMarks();
   const admission = admitUnder(attention);
