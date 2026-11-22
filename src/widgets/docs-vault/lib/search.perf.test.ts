@@ -1,9 +1,27 @@
 import { describe, expect, it } from 'vitest';
 import type { VaultDoc } from '@/entities/docs-vault';
-import { buildBodyEntry } from './body-index';
+import { buildBodyEntry, type DocsBodyEntry } from './body-index';
 import { searchDocs } from './search';
 
-describe('document search performance', () => {
+/** Reads of a body's original text, which the phrase match and each snippet take. */
+const rawReads = { count: 0 };
+
+function counted(entry: DocsBodyEntry): DocsBodyEntry {
+  return new Proxy(entry, {
+    get(target, key, receiver) {
+      if (key === 'raw') rawReads.count += 1;
+      return Reflect.get(target, key, receiver);
+    },
+  });
+}
+
+function rawReadsOf(run: () => void): number {
+  rawReads.count = 0;
+  run();
+  return rawReads.count;
+}
+
+describe('document search work', () => {
   it('returns the same top 15 without materializing every body match', () => {
     const docs: VaultDoc[] = Array.from({ length: 5000 }, (_, i) => ({
       slug: `documents/doc-${i}`, path: `documents/doc-${i}.md`, title: `Document ${i}`,
@@ -11,26 +29,19 @@ describe('document search performance', () => {
       updatedAt: '2026-01-01', linksOut: [],
     }));
     const bodies = new Map(docs.map((d, i) => [d.slug,
-      buildBodyEntry(`${' \n\t'.repeat(i % 50)}needle\nphrase${' \n\t'.repeat(50)}`, d.slug),
+      counted(buildBodyEntry(`${' \n\t'.repeat(i % 50)}needle\nphrase${' \n\t'.repeat(50)}`, d.slug)),
     ]));
+    // The first search caches each body's excerpt, one read a body.
     searchDocs('needle phrase', docs, 15, bodies);
-    searchDocs('needle phrase', docs, Infinity, bodies);
-    let bestLimited = Infinity;
-    let bestFull = Infinity;
-    for (let run = 0; run < 3; run += 1) {
-      let start = performance.now();
-      const limited = searchDocs('needle phrase', docs, 15, bodies);
-      bestLimited = Math.min(bestLimited, performance.now() - start);
-      start = performance.now();
-      const full = searchDocs('needle phrase', docs, Infinity, bodies);
-      bestFull = Math.min(bestFull, performance.now() - start);
-      expect(full).toHaveLength(docs.length);
-      expect(limited).toHaveLength(15);
-      expect(limited).toEqual(full.slice(0, 15));
-      expect(limited[0].bodyHit?.text).toContain('needle phrase');
-    }
-    const ratio = bestFull / bestLimited;
-    console.info(`[docs-search] limited=${bestLimited.toFixed(2)}ms exhaustive=${bestFull.toFixed(2)}ms ratio=${ratio.toFixed(2)}`);
-    expect(ratio, 'A 15-result search should avoid constructing all 5000 body snippets').toBeGreaterThan(1.4);
+    let limited: ReturnType<typeof searchDocs> = [];
+    let full: ReturnType<typeof searchDocs> = [];
+    const limitedReads = rawReadsOf(() => { limited = searchDocs('needle phrase', docs, 15, bodies); });
+    const fullReads = rawReadsOf(() => { full = searchDocs('needle phrase', docs, Infinity, bodies); });
+    expect(full).toHaveLength(docs.length);
+    expect(limited).toHaveLength(15);
+    expect(limited).toEqual(full.slice(0, 15));
+    expect(limited[0].bodyHit?.text).toContain('needle phrase');
+    // Measured 2026-11-23: 5,015 reads for 15 results and 10,000 for all: one a body to match it, one a snippet.
+    expect(fullReads - limitedReads, `${limitedReads} reads for 15 results, ${fullReads} for all`).toBeGreaterThanOrEqual(docs.length - 15);
   });
 });

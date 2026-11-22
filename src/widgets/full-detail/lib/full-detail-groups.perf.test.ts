@@ -5,6 +5,18 @@ import {
 } from "@/entities/knowledge-graph";
 import { buildFullDetailGroups, type FullDetailGroups } from "./full-detail-groups";
 
+/** Field reads of the edges, the work a per-row scan multiplies by the rows. */
+const reads = { count: 0 };
+
+function counted(edge: ConnectionSourceEdge): ConnectionSourceEdge {
+  return new Proxy(edge, {
+    get(target, key, receiver) {
+      reads.count += 1;
+      return Reflect.get(target, key, receiver);
+    },
+  });
+}
+
 function scanPerRow(nodeId: string, nodes: ConnectionSourceNode[], edges: ConnectionSourceEdge[]): FullDetailGroups {
   const grouped = groupConnectionsByRole(buildConnections(nodeId, nodes, edges));
   const toView = (connections: readonly DatasheetConnection[]) => {
@@ -34,24 +46,13 @@ it("builds the same large detail groups without scanning every edge for each row
   for (let i = 0; i < 1500; i++) {
     const id = `child:${i}`;
     nodes.push({ id, title: `연결 ${i}`, kind: "capability" });
-    edges.push({ from: "root", to: id, type: "contains" });
-    edges.push({ from: `leaf:${i}`, to: id, type: "belongs_to" });
+    edges.push(counted({ from: "root", to: id, type: "contains" }));
+    edges.push(counted({ from: `leaf:${i}`, to: id, type: "belongs_to" }));
   }
-  const indexed = () => buildFullDetailGroups("root", nodes, edges);
-  const scanned = () => scanPerRow("root", nodes, edges);
-  expect(indexed()).toEqual(scanned());
-  expect(indexed().contains.total).toBe(1500);
-  const median = (run: () => FullDetailGroups) => {
-    const samples = [];
-    for (let round = 0; round < 7; round++) {
-      const start = performance.now();
-      run();
-      samples.push(performance.now() - start);
-    }
-    return samples.sort((a, b) => a - b)[3];
-  };
-  const before = median(scanned), after = median(indexed);
-  console.info(`[full-detail-groups] nodes=${nodes.length} edges=${edges.length} perRow=${before.toFixed(2)}ms indexed=${after.toFixed(2)}ms ratio=${(before / after).toFixed(2)}`);
-  // Same-process comparison with headroom for removed rows × edges work.
-  expect(after).toBeLessThan(before / 5);
+  expect(buildFullDetailGroups("root", nodes, edges)).toEqual(scanPerRow("root", nodes, edges));
+  reads.count = 0;
+  const groups = buildFullDetailGroups("root", nodes, edges);
+  expect(groups.contains.total).toBe(1500);
+  // Measured 2026-11-23: 18,000 reads, six an edge; a count per row that scans the edges reads millions.
+  expect(reads.count).toBeLessThanOrEqual(10 * edges.length);
 });

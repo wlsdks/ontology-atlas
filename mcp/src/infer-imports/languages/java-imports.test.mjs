@@ -264,14 +264,16 @@ test('doubling a hostile JVM file at most about doubles the time to read its imp
     ['Kotlin', 'enum class A { B, '],
     ['Java', 'static <A, '],
   ];
-  // Processor time, not wall clock: on a busy machine a run longer than a scheduler slice waits its
-  // turn and a shorter one does not, which reads as a worse-than-linear curve. Fastest of seven each.
+  // Timed, not counted: the scanners are regular expressions, whose backtracking has no count. The
+  // smaller of wall and CPU time: a busy machine stretches the wall clock of a run longer than a
+  // scheduler slice, and collector threads stretch CPU time. Fastest of seven each.
   const timedPair = (path, small, large) => {
     const once = (text) => {
-      const started = process.cpuUsage();
+      const wallStarted = performance.now();
+      const cpuStarted = process.cpuUsage();
       parseJvmSource(text, path);
-      const spent = process.cpuUsage(started);
-      return (spent.user + spent.system) / 1000;
+      const cpu = process.cpuUsage(cpuStarted);
+      return Math.min(performance.now() - wallStarted, (cpu.user + cpu.system) / 1000);
     };
     once(small);
     once(large);

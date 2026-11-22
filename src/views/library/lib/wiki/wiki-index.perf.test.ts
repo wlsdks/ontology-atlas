@@ -2,14 +2,17 @@ import { describe, expect, it } from "vitest";
 
 import type { LibraryWikiPage, LibraryWriteUpLink } from "@/entities/docs-vault";
 
+import { startWorkClock } from "../../../../../tests/helpers/work-clock";
 import { WikiIndexBuilder, type WikiIndexFacts } from "./wiki-index";
 
 const COUNT = 50_000;
 const NOW = Date.parse("2026-11-21T12:00:00Z");
 const HOUR = 3_600_000;
-/** Measured 2026-11-21 on an M-series Mac: 23 ms CPU to place; a re-sweep of rebuilt, unchanged facts costs 0.3 of that. */
+/**
+ * The index-column spec's criterion: 50,000 pages placed in under 100 ms. Measured 2026-11-21 on an
+ * M-series Mac: 23 ms of CPU.
+ */
 const PLACE_BUDGET_MS = 100;
-const RESWEEP_SHARE_OF_PLACE = 0.5;
 
 const SHARED_SOURCE = "sources/team/handbook.pdf";
 
@@ -35,14 +38,13 @@ function factsFor(all: readonly LibraryWikiPage[]): WikiIndexFacts {
   };
 }
 
-function cpuMedianMs(run: () => void): number {
+function medianMs(run: () => void): number {
   for (let warm = 0; warm < 3; warm += 1) run();
   const runs: number[] = [];
   for (let i = 0; i < 5; i += 1) {
-    const started = process.cpuUsage();
+    const spent = startWorkClock();
     run();
-    const used = process.cpuUsage(started);
-    runs.push((used.user + used.system) / 1000);
+    runs.push(spent());
   }
   return [...runs].sort((a, b) => a - b)[2]!;
 }
@@ -52,33 +54,26 @@ describe("the wiki index at 50,000 pages", () => {
   const facts = factsFor(all);
 
   it("places every page within its budget", () => {
-    const median = cpuMedianMs(() => {
+    const median = medianMs(() => {
       const index = new WikiIndexBuilder("en");
       index.retarget(all, facts);
       index.advance();
       index.groups();
     });
-    console.info(`wiki index place: ${median.toFixed(1)} ms CPU for ${COUNT} pages`);
+    console.info(`wiki index place: ${median.toFixed(1)} ms for ${COUNT} pages`);
     expect(median).toBeLessThan(PLACE_BUDGET_MS);
   });
 
-  it("re-sweeps fresh but unchanged pages and facts for under half of what placing them costs", () => {
-    const place = cpuMedianMs(() => {
-      const index = new WikiIndexBuilder("en");
-      index.retarget(all, facts);
-      index.advance();
-    });
+  it("re-sweeps fresh but unchanged pages and facts without placing any page again", () => {
     const index = new WikiIndexBuilder("en");
     index.retarget(all, facts);
     index.advance();
+    const placed = index.version;
     const rebuilt = all.map((page) => ({ ...page }));
-    // One fresh set per run, built outside the timed region: the model pays for these, not the index.
-    const batches = Array.from({ length: 8 }, () => factsFor(rebuilt));
-    const resweep = cpuMedianMs(() => {
-      index.retarget(rebuilt, batches.pop()!);
-      index.advance();
-    });
-    console.info(`wiki index re-sweep: ${resweep.toFixed(1)} ms CPU against ${place.toFixed(1)} ms to place`);
-    expect(resweep / place).toBeLessThan(RESWEEP_SHARE_OF_PLACE);
+    index.retarget(rebuilt, factsFor(rebuilt));
+    index.advance();
+    // `version` rises once per page placed; a sweep that re-placed the rows would add 50,000.
+    expect(placed).toBeGreaterThanOrEqual(COUNT);
+    expect(index.version - placed).toBe(0);
   });
 });

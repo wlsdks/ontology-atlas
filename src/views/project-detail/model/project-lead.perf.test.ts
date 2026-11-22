@@ -1,6 +1,9 @@
 import { expect, it } from "vitest";
 
+import { startWorkClock } from "../../../../tests/helpers/work-clock";
 import { resolveProjectLead } from "./project-lead";
+
+/* Timed, not counted: the lead is read by regular expressions, whose backtracking has no count. */
 
 it("reads a lead paragraph of unclosed brackets and a long heading in time proportional to its length", () => {
   const measure = (size: number) => {
@@ -8,9 +11,9 @@ it("reads a lead paragraph of unclosed brackets and a long heading in time propo
     resolveProjectLead(body);
     const times = [];
     for (let run = 0; run < 5; run++) {
-      const start = performance.now();
+      const spent = startWorkClock();
       expect(resolveProjectLead(body)).toHaveLength(size);
-      times.push(performance.now() - start);
+      times.push(spent());
     }
     return times.sort((a, b) => a - b)[2];
   };

@@ -1,11 +1,15 @@
-import { performance } from 'node:perf_hooks';
-
 import { describe, expect, it } from 'vitest';
 
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from '@/entities/knowledge-graph';
 
 import { createToolExecutor } from './tool-executor';
 import type { VaultReadPort } from './vault-read-port';
+import { startWorkClock } from '../../../../../tests/helpers/work-clock';
+
+/*
+ * Timed, not counted: a hub's cost was copied adjacency lists and a shifted queue, work on arrays
+ * the search builds itself, so it reads no input the test could count.
+ */
 
 function pathFixture(shape: 'hub' | 'chain', edgeCount: number) {
   const nodes: KnowledgeGraphNode[] = Array.from({ length: edgeCount + 2 }, (_, index) => ({
@@ -74,9 +78,9 @@ describe('vault agent path-query cost', () => {
     for (let round = 0; round < 7; round += 1) {
       const order = round % 2 === 0 ? [hub, chain] : [chain, hub];
       for (const fixture of order) {
-        const start = performance.now();
+        const spent = startWorkClock();
         await fixture.execute(fixture.call);
-        (fixture === hub ? hubTimes : chainTimes).push(performance.now() - start);
+        (fixture === hub ? hubTimes : chainTimes).push(spent());
       }
     }
     const hubMs = median(hubTimes);

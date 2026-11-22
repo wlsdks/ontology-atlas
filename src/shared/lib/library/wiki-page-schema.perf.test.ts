@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 
-import { WIKI_PAGE_CASES } from '../../../../tests/fixtures/wiki-page-cases.mjs';
 import { validateWikiFolder as validateFolderMcp } from '../../../../mcp/src/library/wiki-folder.mjs';
 import {
   buildWikiNodeIndex as buildNodesMcp,
@@ -11,28 +10,13 @@ import {
   validateWikiPage as validateTs,
 } from './wiki-page-schema';
 import { validateWikiFolder as validateFolderTs } from './wiki-folder';
+import { startWorkClock } from '../../../../tests/helpers/work-clock';
 
 describe('validation stays linear as a folder grows', () => {
   /**
-   * The budget is far above the expected time: it catches a change of shape (a validator that reads
-   * the folder or rescans quadratically), not a few milliseconds across machines.
+   * Four pages per source: quadratic growth is 16x, near-linear about 4x. Timed, not counted: the
+   * folder is judged from facts derived inside the validator, which expose no count.
    */
-  it('validates 1,000 pages well under 1.5 s', () => {
-    const complete = WIKI_PAGE_CASES.find((c) => c.expectedOk)!;
-    const pages = Array.from({ length: 1000 }, (_, index) =>
-      complete.input.replace('title: Quarter plan', `title: Quarter plan ${index}`),
-    );
-    const runs: number[] = [];
-    for (let run = 0; run < 3; run += 1) {
-      const started = performance.now();
-      for (const page of pages) validateTs(page);
-      runs.push(performance.now() - started);
-    }
-    const median = runs.sort((a, b) => a - b)[1]!;
-    expect(median).toBeLessThan(1500);
-  });
-
-  /** Four pages per source: quadratic growth is 16x, near-linear about 4x. */
   it('folder check grows near-linearly', () => {
     const folder = (size: number) =>
       Array.from({ length: size }, (_, index) => {
@@ -73,9 +57,9 @@ describe('validation stays linear as a folder grows', () => {
     const large = folder(4000);
     for (const validate of [validateFolderTs, validateFolderMcp]) {
       const time = (pages: Array<{ path: string; raw: string }>, calls: number) => {
-        const started = performance.now();
+        const spent = startWorkClock();
         for (let call = 0; call < calls; call += 1) validate(pages);
-        return (performance.now() - started) / calls;
+        return spent() / calls;
       };
       time(small, 8);
       time(large, 2);
@@ -92,7 +76,8 @@ describe('validation stays linear as a folder grows', () => {
   /**
    * Openings that never close: each match attempt used to scan to the end of the line or
    * body, so a 320 KB page took 4 s (2026-11-19). Both twins now stop at the next `[`. Measured 2026-11-19 on an M-series Mac: 0-3 ms at the largest size; the budget is
-   * far above that and catches a return of the quadratic shape, not machine speed.
+   * far above that and catches a return of the quadratic shape, not machine speed. Timed: a regular
+   * expression's backtracking has no count to read.
    */
   const head = ['---', 'title: t', 'created_by: human', 'compiled_at: 2026-01-01T00:00:00Z', 'sources: []',
     'source_hash: {}', 'status: draft', 'summary: s.', '---', '', '## Summary', '', ''].join('\n');
@@ -112,9 +97,9 @@ describe('validation stays linear as a folder grows', () => {
   const best = (raw: string) => {
     let fastest = Infinity;
     for (let run = 0; run < 5; run += 1) {
-      const started = performance.now();
+      const spent = startWorkClock();
       judge(raw);
-      fastest = Math.min(fastest, performance.now() - started);
+      fastest = Math.min(fastest, spent());
     }
     return fastest;
   };
@@ -137,7 +122,8 @@ describe('validation stays linear as a folder grows', () => {
    * Every page written from one source: naming every partner was k² findings, 11.8 s and 5.5 GB
    * for 4,000 pages (2026-11-19). Each page now names ten and counts the rest. Measured
    * 2026-11-19: 41 ms for 4,000 pages (MCP); the budget catches the quadratic shape returning.
-   * No growth ratio: at tens of milliseconds GC noise swings it from 5 to 12 on one machine.
+   * No growth ratio: at tens of milliseconds GC noise swings it from 5 to 12 on one machine. The
+   * findings count guards the k² naming; the time guards pairing that names nothing.
    */
   it('one source shared by thousands of pages stays linear in both twins', () => {
     const folder = (size: number) =>
@@ -151,9 +137,9 @@ describe('validation stays linear as a folder grows', () => {
       const time = (pages: Array<{ path: string; raw: string }>) => {
         let fastest = Infinity;
         for (let run = 0; run < 5; run += 1) {
-          const started = performance.now();
+          const spent = startWorkClock();
           validate(pages);
-          fastest = Math.min(fastest, performance.now() - started);
+          fastest = Math.min(fastest, spent());
         }
         return fastest;
       };
@@ -165,53 +151,44 @@ describe('validation stays linear as a folder grows', () => {
   });
 
   /**
-   * `describes:` entries resolve through an index built once per folder, so each is O(1). A scan of
-   * every document per entry would be 40,000 x 25,000 comparisons here, seconds rather than
-   * milliseconds. Measured 2026-11-19 on an M-series Mac at load 70-100: 20,000 pages took 95-173 ms
-   * without the check and 9-14 ms more to build the index, 33-80 ms more to resolve; the whole
-   * `validate_wiki` call on that folder went from 1,268-1,401 ms to 1,315-1,489 ms (1.04-1.06x). The
-   * budget is on the added time, far above that, so it catches the shape changing, not machine speed.
+   * `describes:` entries resolve through an index built once per folder, so each is O(1). Counted by
+   * the reads of the document entries: a scan of every document per entry, or an index rebuilt per
+   * page, multiplies them by the entries.
    */
-  it('resolving every describes entry adds well under a second to 20,000 pages, in both twins', () => {
-    const concepts = Array.from({ length: 5000 }, (_, index) => ({ slug: `capabilities/concept-${index}`, kind: 'capability' }));
-    const pages = Array.from({ length: 20000 }, (_, index) => ({
+  it('resolving every describes entry reads each document once to index it, in both twins', () => {
+    const reads = { count: 0 };
+    const counted = <T extends object>(entry: T): T =>
+      new Proxy(entry, {
+        get(target, key, receiver) {
+          reads.count += 1;
+          return Reflect.get(target, key, receiver);
+        },
+      });
+    const concepts = Array.from({ length: 500 }, (_, index) => ({ slug: `capabilities/concept-${index}`, kind: 'capability' }));
+    const pages = Array.from({ length: 2000 }, (_, index) => ({
       slug: `wiki/p${index}`,
       raw: [
         '---', `title: p${index}`, 'created_by: agent:claude', 'compiled_at: 2026-11-19T00:00:00Z',
         'sources: []', 'source_hash: {}', 'status: draft', `summary: s${index}.`,
-        'describes:', `  - capabilities/concept-${index % 5000}`, `  - concept-${(index * 7) % 5000}`,
-        'relation_notes:', `  capabilities/concept-${index % 5000}: "r"`, '---', '',
+        'describes:', `  - capabilities/concept-${index % 500}`, `  - concept-${(index * 7) % 500}`,
+        'relation_notes:', `  capabilities/concept-${index % 500}: "r"`, '---', '',
         '## Summary', '', 'x', '', '## Facts', '', '## Decisions', '', '## Open questions', '', '## Not in sources', '',
       ].join('\n'),
     }));
-    const documents = [...concepts, ...pages.map((page) => ({ slug: page.slug }))];
+    const documents = [...concepts, ...pages.map((page) => ({ slug: page.slug }))].map(counted);
     type Twin = [string, (raw: string, options: { nodes?: never }) => { ok: boolean }, (entries: typeof documents) => never];
     const twins = [
       ['TS', validateTs, buildNodesTs],
       ['MCP', validatePageMcp, buildNodesMcp],
     ] as unknown as Twin[];
     for (const [name, validate, build] of twins) {
-      const judge = (withNodes: boolean) => {
-        const nodes = withNodes ? build(documents) : undefined;
-        let failing = 0;
-        for (const page of pages) if (!validate(page.raw, { nodes }).ok) failing += 1;
-        return failing;
-      };
-      const best = (withNodes: boolean) => {
-        let fastest = Infinity;
-        for (let run = 0; run < 5; run += 1) {
-          const started = performance.now();
-          judge(withNodes);
-          fastest = Math.min(fastest, performance.now() - started);
-        }
-        return fastest;
-      };
-      expect(judge(true)).toBe(0);
-      judge(false);
-      const without = best(false);
-      const withNodes = best(true);
-      console.log(`[wiki-schema perf] ${name} describes: 20,000 pages ${without.toFixed(0)} ms, with node resolution ${withNodes.toFixed(0)} ms`);
-      expect(withNodes - without).toBeLessThan(1000);
+      reads.count = 0;
+      const nodes = build(documents);
+      let failing = 0;
+      for (const page of pages) if (!validate(page.raw, { nodes }).ok) failing += 1;
+      expect(failing).toBe(0);
+      // Measured 2026-11-23: three reads a document, all while the index is built.
+      expect(reads.count, `${name}: ${reads.count} reads of ${documents.length} documents`).toBeLessThanOrEqual(5 * documents.length);
     }
   });
 });

@@ -239,14 +239,16 @@ test('doubling a hostile file at most about doubles the time to read it', () => 
     if (shape === null) return `package p;\nimport jakarta.ws.rs.Path;\n@Path("a")\nclass A {\n${'a'.repeat(bytes)}\n}\n`;
     return `package p;\nimport jakarta.ws.rs.*;\n@Path("a")\npublic class Resource extends Base {\n${shape.repeat(Math.floor(bytes / shape.length))}`;
   };
-  // Processor time, not wall clock: on a busy machine a run longer than a scheduler slice waits its
-  // turn and a shorter one does not, which reads as a worse-than-linear curve. Fastest of seven each.
+  // Timed, not counted: the scanners are regular expressions, whose backtracking has no count. The
+  // smaller of wall and CPU time: a busy machine stretches the wall clock of a run longer than a
+  // scheduler slice, and collector threads stretch CPU time. Fastest of seven each.
   const timedPair = (path, small, large) => {
     const once = (text) => {
-      const started = process.cpuUsage();
+      const wallStarted = performance.now();
+      const cpuStarted = process.cpuUsage();
       abilities({ [path]: text });
-      const spent = process.cpuUsage(started);
-      return (spent.user + spent.system) / 1000;
+      const cpu = process.cpuUsage(cpuStarted);
+      return Math.min(performance.now() - wallStarted, (cpu.user + cpu.system) / 1000);
     };
     once(small);
     once(large);
