@@ -38,10 +38,11 @@ makes that capture; criterion 2 is the probe.
   (`src/shared/config/agent/cli-invocation.ts:12-14`, `cli/README.md:21-25`, `AGENTS.md:15-16`).
   `cli/package.json:5` is `private`, and `:42` requires Node 24.
 - It has 62 commands: `init` plus 61 registered runners (`cli/src/lib/cli-commands.mjs:9-71`, `:82`).
-- App screens show copyable commands in that form. They come from 9 source files that build them:
+- App screens show copyable commands in that form. They come from 11 source files that build them:
   `OntologyStarterCta.tsx:27-75`, `agent-setup-packets.ts:26-194`, `agent-readiness.ts:109-173`,
   `topology-analysis.ts:223-416`, `footprint-trail.ts:160`, `vault-health.ts:13`,
-  `AgentSetupTroubleshooting.tsx:142,294`, `McpProofPacket.tsx:36,45`, `CliBridgeBody.tsx:7-8`.
+  `AgentSetupTroubleshooting.tsx:142,294`, `McpProofPacket.tsx:36,45`, `CliBridgeBody.tsx:7-8`,
+  `src/features/docs-vault-local/lib/manual-connect.ts:110-133` and `AgentSetupSection.tsx:28-29`.
   The app tells the person so: "This command runs inside an ontology-atlas source checkout"
   (`messages/en/firstRunStarter.json:39`); "There is no npm package" (`messages/en/atlasGit.json:98`).
 - `cli/src/integration.test.mjs` is 10,336 lines and calls its launcher `run(` (`:59`) at 465 sites.
@@ -51,7 +52,14 @@ makes that capture; criterion 2 is the probe.
   `package.json:237`), ten `dogfood:*` scripts (`package.json:192,222-230,234`), the session hook
   (`.claude/hooks/inject-ontology-summary.sh:39-40`), the vault validator
   (`scripts/vault/validate-vault.mjs:16,25`), and the MCP server, which prints old commands as its
-  "when MCP is unavailable" line (`mcp/src/ontology-engine.mjs:261-277`).
+  "when MCP is unavailable" line (`mcp/src/ontology-engine.mjs:261-277`). The MCP verifier fails
+  unless those printed commands run (`mcp/scripts/verify/checks/agent-brief.mjs:153-190`).
+- A script run here on 2026-11-22 found 29 files outside `cli/` that import 18 modules inside it;
+  the table under "What is deleted" names each. The Codex session hook
+  (`.codex/hooks/inject-ontology-summary.sh:42-43`), the docs surface builder
+  (`scripts/docs/build-docs-surface.mjs:12`) and the shared sync workflow, which tells an agent to
+  fall back to `add|import|validate` (`.agents/skills/ontology-sync/workflow.md:28-32`), lean on it
+  too.
 - The rule that says whether a document still stands on its code exists once, in
   `mcp/src/drift/evidence-verdict.mjs:26-69`, with four answers: `current`, `stale`, `missing`,
   `unknown`. `validate_vault` returns it as `evidenceDrift` (`mcp/src/tools/validate-vault.mjs:619-680`).
@@ -66,7 +74,14 @@ makes that capture; criterion 2 is the probe.
 - The app answers one address, `ontology-atlas://mcp?install=`, and nothing else
   (`src-tauri/src/app_shell/deep_link.rs:1-3`, `src-tauri/tauri.conf.json:70-74`,
   `tests/contract/security/url-scheme-one-door.contract.test.ts:5-9`). A second launch only brings
-  the window forward and drops its arguments (`src-tauri/src/lib.rs:106-108`).
+  the window forward and drops its arguments (`src-tauri/src/lib.rs:106-108`). The single-instance
+  plugin is built with its `deep-link` feature (`src-tauri/Cargo.toml:95`), which on Windows and
+  Linux hands a pressed scheme URL to the app as a launch argument.
+- The app re-applies the folder picker's refusals (a home folder, a disk root, system folders, an
+  app bundle) to any folder named at launch (`src-tauri/src/vault/grants.rs:140-146`, `:174-185`).
+- The app finds its bundled programs beside its own executable, with no check for a disk image or
+  a relocated copy (`src-tauri/src/agent_setup.rs:52-59`).
+- A stock macOS login PATH holds no folder inside the person's home (`/etc/paths`, read here).
 - The app bundles one program, the MCP server (`src-tauri/tauri.conf.json:45-47`).
 - The cognitive-diff probe of 2026-09-13 "found the one fact that cut missed impacts by 75% —
   meaning unchanged, the code under it moved"
@@ -77,7 +92,9 @@ makes that capture; criterion 2 is the probe.
   for `ontology-atlas` and for `@ontology-atlas/cli`, so both names are free; `atlas` is taken
   (version `1.0.0-alpha.0`). A name is not reserved until the first publish.
 - Unknown: whether the engine runs on Node 20 or 22; whether the map's side panel shows the
-  "changed after this document was written" line.
+  "changed after this document was written" line; whether the document editor asks before an
+  in-app move away from unsaved edits (its guard at `DocsVaultEditor.tsx:366-372` covers closing the
+  window; the planning editor asks at `PlanningPage.tsx:317-321`).
 
 ## Problem and alternatives
 
@@ -116,8 +133,11 @@ that now have MCP. So the rebuilt command is specified from one moment, not from
 - `check` reports and exits 0 unless the caller names states with `--fail-on`. A default that turns
   a pull request red on a timestamp trains people to bypass it.
 - `open` is a command, not a link. A node address in the `ontology-atlas://` scheme is what
-  `docs/DECISIONS.md:599` kept out ("no uid or node addresses"). The command starts the app with
-  arguments instead; a web page cannot do that, and the one-door rule stands.
+  `docs/DECISIONS.md:599` kept out ("no uid or node addresses"), and that stays out. The command
+  starts the app with arguments instead. That is a second inbound door, so `docs/DECISIONS.md:599`
+  is narrowed, not left standing whole. On macOS a web page cannot reach it. On Windows and Linux a
+  pressed scheme URL arrives as an argument too, so there the door is only as closed as its
+  grammar, written under "The `open` door".
 - Output ends with one `ontology-atlas open` line, for the first document to check, not one per row.
 - The command has one name, `ontology-atlas`, and no short `atlas`. MongoDB's Atlas CLI is common
   among tier-1 developers and installs `atlas` through Homebrew and npm. Two names would put a
@@ -125,8 +145,10 @@ that now have MCP. So the rebuilt command is specified from one moment, not from
   npm install would collide with the existing file. With one name the package, the command, the
   plugin and the brand match, and a person who wants it shorter makes their own alias.
 - Sources are stated per group, in plain words, not as a tag on every line.
-- The four states are the engine's own four, not three: a path that is gone needs a different act
-  (fix the path) than a file that changed (re-read the meaning).
+- The states are the engine's own four, not three: a path that is gone needs a different act
+  (fix the path) than a file that changed (re-read the meaning). The brief adds a fifth, `updated`,
+  for a document changed in the same change as its code. The engine's date rule would call that
+  document current, and Atlas has not checked the new text, so it is never reported as current.
 
 ## Flow
 
@@ -140,14 +162,19 @@ that now have MCP. So the rebuilt command is specified from one moment, not from
    does not vouch for it.
 4. When a document names only a folder, or Git cannot date a file, Atlas lists it under "Unknown"
    with the reason. It is never counted as fine.
-5. When they run `ontology-atlas open capabilities/checkout-total`, the app comes forward on that folder with
-   the document selected on the map and its panel open. The command prints one line and returns.
-6. When the folder is one the app has not opened before, the app asks before opening it, because
-   the command may have been run by an agent.
+5. When they run `ontology-atlas open capabilities/checkout-total`, the app comes forward. If it
+   is already showing that folder and nothing is waiting on the person, it selects the document on
+   the map and opens its panel. The command prints one line and returns; it cannot see what the
+   app then did, and says so.
+6. When opening would change something the person has not agreed to, the app asks first, because
+   the command may have been run by an agent. It asks for a folder the app has not opened before,
+   for a switch away from the folder on screen, for unsaved edits, and for an agent approval that
+   is waiting. "Not now" changes nothing.
 7. When a pull request is opened, CI runs `ontology-atlas check origin/main..HEAD --comment`, and a
    workflow step the team wrote posts the printed Markdown. Atlas itself posts nothing.
-8. When the person presses "Install the ontology-atlas command" in the app's Settings, the app shows the one
-   file it will write and its contents, writes it, and says whether a terminal will find it.
+8. When the person presses "Install the ontology-atlas command" in the app's Settings, the app
+   shows the one file it will write and its contents, writes it, and says whether a new terminal
+   will find it. Until a terminal will, the app shows no command line on any other screen.
 
 ## States
 
@@ -160,11 +187,18 @@ that now have MCP. So the rebuilt command is specified from one moment, not from
 | Unknown | `cli.brief.unknownHeading` with the reason per document | Out of scope — same reason | Unchanged |
 | Largest measured change (3,468 files, 99 documents) | First 20 rows per group, then `cli.more` with the count and `--all` | Out of scope — same reason | "To check" keeps its own row limit (`toCheckDialogMore`) |
 | `open`: app not installed | `cli.error.noApp`, exit 2; names the document's file path and the download page | Out of scope — a web page cannot be told a local path | Not reached |
-| `open`: folder the app has not opened | Prints `cli.open.asked`, exit 0 | Out of scope — same reason | Dialog `appCommand.openTitle`; "Open folder" or "Not now" |
+| `open`: same folder, nothing waiting | `cli.open.sent`, exit 0 | Out of scope — same reason | Map focused on the document, panel open |
+| `open`: a new folder, another folder on screen, unsaved edits, or an approval waiting | `cli.open.sent`, exit 0 | Out of scope — same reason | Dialog `appCommand.openTitle` with one `appCommand.openReason*` line per fact; "Open" or "Not now" |
+| `open`: a folder the app refuses (home, disk root, system folder, app bundle) | `cli.open.sent`, exit 0 | Out of scope — same reason | Notice `appCommand.openRefused`; the window does not move |
+| `open`: arguments outside the grammar | Not reached from the command | Out of scope — same reason | Nothing on screen; the reason is logged, the argument is not |
 | `open`: no such document | `cli.error.noDocument` with the closest slug, exit 2 | Out of scope — same reason | Not reached |
-| Command not installed | Shell reports command not found | Out of scope — a browser cannot write to PATH | Settings row `appCommand.body`, button `appCommand.install` |
-| Command installed | `ontology-atlas --version` prints version and where it runs from | Out of scope — same reason | `appCommand.installed`, button `appCommand.remove` |
-| A file is already at the install path | Not reached | Out of scope — same reason | `appCommand.fileExists`; the app never writes over an existing file; remove or rename it, then install again |
+| Command not installed | Shell reports command not found | Out of scope — a browser cannot write to PATH | Settings row `appCommand.body`, button `appCommand.install`; no other screen shows a command line |
+| Installed, and a new terminal finds it | `ontology-atlas --version` prints the version and where it runs from | Out of scope — same reason | `appCommand.installed`, button `appCommand.remove`; other screens may show command lines |
+| Installed, and a new terminal does not find it | Shell reports command not found | Out of scope — same reason | `appCommand.notOnPath` with the line to copy and "Check again"; no other screen shows a command line |
+| A file or link is already at the install path | Not reached | Out of scope — same reason | `appCommand.fileExists`; the app never writes over or follows it |
+| Another copy comes first on PATH | Runs the other copy; `--version` names its location | Out of scope — same reason | `appCommand.otherCopyFirst` names that path; no other screen shows a command line |
+| The app runs from a disk image or a temporary copy | Not reached | Out of scope — same reason | `appCommand.moveAppFirst`; install is not offered |
+| Remove, after the file was replaced | Not reached | Out of scope — same reason | `appCommand.notOurs`; the file is left as it is |
 | Install could not write | Not reached | Out of scope — same reason | `appCommand.failed`; nothing changed; choose another folder |
 
 ## Copy
@@ -174,6 +208,17 @@ Human output follows the terminal's language (`--lang`, then `ATLAS_LANG`, then 
 translated. Colour is used only on a terminal and never when `NO_COLOR` is set. Paths are relative
 to the repository and use `/` on every platform. The command has one name, so every printed line
 names `ontology-atlas` literally.
+
+**A name is data, never layout and never a command.** A slug, a title and a path come from files
+that anyone who can commit wrote. Three rules hold for every output:
+
+- Each name prints on one line. A control character in it (a newline, an escape sequence, a
+  direction override) prints as a visible escape such as `\n` or `\x1b`.
+- On the `Next` line and in the JSON `open` field the slug is quoted for a shell by the rule the
+  app's copied packets use (`src/shared/config/agent/cli-invocation.ts:28-30`), unless it holds only
+  ASCII letters, digits, `/`, `.`, `_` and `-`.
+- In `--comment` every name sits inside a code span fenced with more backticks than the name holds,
+  so a link, a mention or HTML in a name is shown as text and not rendered.
 
 This spec holds English only: `pnpm docs:language` counts any Hangul line under `docs/specs/` as a
 violation (`scripts/quality/markdown-language/check.mjs:17-22`). Three sentences are reused word for
@@ -234,7 +279,7 @@ Result   failed: 2 documents are in a state named by --fail-on stale,missing
 
 ```text
 $ ontology-atlas open capabilities/checkout-total
-Opened Checkout total in Ontology Atlas.
+Asked Ontology Atlas to open Checkout total. If the app asks a question, answer it there.
 ```
 
 | Key | Where it appears | English |
@@ -260,7 +305,7 @@ Opened Checkout total in Ontology Atlas.
 | `cli.next.open` | last line of `brief` | `Next   ontology-atlas open {slug}` |
 | `cli.check.reported` | `check`, no `--fail-on` | `Result   reported, not failed (no --fail-on given)` |
 | `cli.check.passed` / `.failed` | `check --fail-on` | `Result   passed: no document is in a state named by --fail-on {states}` / `Result   failed: {count} documents are in a state named by --fail-on {states}` |
-| `cli.open.done` / `.asked` | `open` | `Opened {title} in Ontology Atlas.` / `Ontology Atlas is asking whether to open {folder}. Answer in the app.` |
+| `cli.open.sent` | `open` | `Asked Ontology Atlas to open {title}. If the app asks a question, answer it there.` |
 | `cli.error.noFolder` | stderr, exit 2 | `ontology-atlas: no Atlas folder in {path} or above it. Open this folder in the Ontology Atlas app, or run: ontology-atlas init` |
 | `cli.error.noGit` | stderr, exit 2 | `ontology-atlas: {path} is not in a Git repository, so Atlas cannot tell which files changed. ontology-atlas status still counts the documents.` |
 | `cli.error.noCommit` | stderr, exit 2 | `ontology-atlas: Git has no commit named {name} here. On a CI runner, fetch the full history first (actions/checkout with fetch-depth: 0).` |
@@ -270,15 +315,53 @@ Opened Checkout total in Ontology Atlas.
 | `appCommand.title` / `.body` | app Settings | `ontology-atlas command` / `Run Atlas from a terminal in any project. Installing writes one file, {path}, which starts the copy of the command inside this app.` |
 | `appCommand.install` / `.remove` | buttons | `Install the ontology-atlas command` / `Remove the command` |
 | `appCommand.installed` | after install | `The ontology-atlas command is at {path}. It runs version {version} from this app.` |
-| `appCommand.notOnPath` | after install | `{dir} is not on your PATH, so a terminal will not find ontology-atlas yet. Add this line to your shell profile: {line}` |
+| `appCommand.notOnPath` | after install, not found | `The command is at {path}, but a new terminal will not find it yet: {dir} is not on your PATH. Add this line to your shell profile, open a new terminal, then press Check again: {line}` |
+| `appCommand.checkAgain` | button | `Check again` |
 | `appCommand.fileExists` | before install | `A file that Atlas did not write is already at {path}. Atlas left it as it is. Remove or rename that file, then install again.` |
+| `appCommand.otherCopyFirst` | after install | `A terminal runs {otherPath} first, not this app's copy at {path}. Remove one of the two so that commands shown in Atlas match what runs.` |
+| `appCommand.moveAppFirst` | instead of install | `Ontology Atlas is running from a disk image or a temporary copy, so the command would stop working when it closes. Move Ontology Atlas to the Applications folder, open it from there, then install the command.` |
+| `appCommand.notOurs` | on remove | `The file at {path} is no longer the one Atlas wrote. Atlas left it as it is.` |
 | `appCommand.removed` / `.failed` | after remove / on error | `Removed {path}. Nothing else was changed.` / `Could not write {path}: {reason}. Nothing was changed. Choose another folder.` |
-| `appCommand.openTitle` / `.openBody` | dialog | `Open {folder} in Atlas?` / `A terminal command asked to open this folder. Atlas has not opened it before.` |
-| `appCommand.openConfirm` / `.openDismiss` | dialog buttons | `Open folder` / `Not now` |
+| `appCommand.openTitle` / `.openBody` | dialog | `Open {title} in {folder}?` / `A terminal command asked for this.` |
+| `appCommand.openReasonNewFolder` | dialog, new folder | `Atlas has not opened {folder} before.` |
+| `appCommand.openReasonOtherFolder` | dialog, other folder on screen | `Atlas is showing {current} now and will switch to {folder}.` |
+| `appCommand.openReasonUnsaved` | dialog, unsaved edits | `{document} has edits that are not saved.` |
+| `appCommand.openReasonApproval` | dialog, approval waiting | `An agent in {current} is waiting for your answer.` |
+| `appCommand.openConfirm` / `.openDismiss` | dialog buttons | `Open` / `Not now` |
+| `appCommand.openRefused` | notice | `A terminal command asked to open {folder}. Atlas does not open that folder: {reason}.` |
 
 `check --comment` prints Markdown with the same sentences: a heading `Atlas: {count} documents to
 check`, one bullet per document, the unknown and in-no-document counts, and a last line naming
-`ontology-atlas open {slug}` in backticks. It carries no absolute path.
+`ontology-atlas open {slug}` in a code span. It carries no absolute path.
+
+## The `open` door
+
+`open` lets a local process ask the app to show one document. It is the app's second inbound door
+after `ontology-atlas://mcp?install=`, and it follows the same manner: reject, never repair.
+
+- **Grammar.** The app answers exactly three launch arguments in this order: the literal
+  `--open-document`, one absolute folder path, one slug. Any other count, order or flag is refused
+  whole. A launch in which any argument holds `://` or starts with `ontology-atlas:` is never read
+  as this door.
+  The slug is at most 512 bytes, in NFC, with no `..` segment, no leading `/`, no backslash, no
+  control character and none of `?`, `#`, `%`; a `uid` is never accepted. Nothing is trimmed,
+  decoded or corrected.
+- **Folder.** Rust canonicalises the folder and applies the refusals it applies to a folder named
+  at launch (`src-tauri/src/vault/grants.rs:174-185`). A refused folder is named in a notice and the
+  window does not move.
+- **The grant.** Rust keeps the pending folder and gives the page only a request number, the
+  folder's name and the slug. Rust grants the folder only when the person presses "Open", from the
+  request it kept; a path sent by the page is never granted through this door. A newer request
+  replaces an older one, and "Not now" forgets it.
+- **Asking.** A folder already granted and on screen, with nothing waiting, opens the document with
+  no dialog. Every other case asks: a new folder, another folder on screen, unsaved edits, an agent
+  approval waiting. After "Open" the app moves exactly as it does when the person navigates by
+  hand, so an editor with unsaved edits asks its own question next.
+- **What a refusal does.** It is logged with its reason and dropped. The argument itself is not
+  logged. Nothing is written, enabled or run.
+- **Gate.** `tests/contract/security/launch-argument-one-door.contract.test.ts`, added through
+  `/gate-probe` beside `url-scheme-one-door`, holds the grammar, holds that a scheme URL in the
+  arguments never reaches this door, and holds that the grant is called only from the press.
 
 ## Exit codes
 
@@ -291,8 +374,8 @@ input could be answered, not whether the answer is empty.
 | 1 | Answered, and a state the caller named with `--fail-on` was found | `check --fail-on stale` with one stale document. Only `check` returns 1 |
 | 2 | Could not answer | No Atlas folder, no Git for `brief` or `check`, unknown commit, unknown document, unknown command or flag, app not installed for `open` |
 
-`--fail-on` takes `stale`, `missing`, `unknown`, comma-separated. Any other value is exit 2 with the
-closest value named.
+`--fail-on` takes `stale`, `missing`, `unknown`, `updated`, comma-separated. Any other value is exit
+2 with the closest value named.
 
 ## JSON for agents and CI
 
@@ -313,7 +396,7 @@ every path, including errors. Field names and state values never change with the
       "open": "ontology-atlas open capabilities/checkout-total" },
     { "slug": "capabilities/coupon-rules", "state": "missing", "source": "atlas", "documentChanged": false,
       "files": [{ "path": "src/cart/coupon.ts", "change": "renamed", "to": "src/pricing/coupon.ts", "added": 0, "removed": 0 }] },
-    { "slug": "capabilities/order-history", "state": "current", "source": "author", "documentChanged": true },
+    { "slug": "capabilities/order-history", "state": "updated", "source": "author", "documentChanged": true },
     { "slug": "domains/cart", "state": "unknown", "source": "unknown", "reason": "folder-only" }
   ],
   "filesInNoDocument": { "total": 6, "listed": ["src/cart/tax.ts", "src/cart/tax.test.ts"], "truncated": true },
@@ -321,10 +404,14 @@ every path, including errors. Field names and state values never change with the
 }
 ```
 
-- `state` is one of `current`, `stale`, `missing`, `unknown`, the values of
-  `mcp/src/drift/evidence-verdict.mjs:24`. `source` is `atlas`, `author` or `unknown`.
+- In a brief, `state` is one of `stale`, `missing`, `unknown`, `updated`. The first three are
+  values of `mcp/src/drift/evidence-verdict.mjs:24`. `updated` is the brief's own: the document
+  changed with the code and Atlas did not check its text. A brief never says `current`.
+  `source` is `atlas`, `author` or `unknown`.
+- The `open` field is a shell line, with the slug quoted by the rule under Copy.
 - `result` appears only on `check`. `status` uses `atlas.status/v1` with `sinceWritten` counts in the
-  shape of `evidenceDrift.counts`. `open` uses `atlas.open/v1` with `opened`, `asked` or neither.
+  shape of `evidenceDrift.counts`. `open` uses `atlas.open/v1` with `"sent": true`; the command
+  cannot see whether the app opened the document or asked.
 - An error is `{ "schema": "atlas.error/v1", "ok": false, "error": { "code": "no_folder", "message": "…", "next": "…" } }`,
   with codes `no_folder`, `no_git`, `no_commit`, `no_document`, `no_app`, `usage`.
 - No absolute path and no file content appear in any JSON or `--comment` output.
@@ -343,12 +430,14 @@ every path, including errors. Field names and state values never change with the
   an empty answer.
 - **Windows paths.** A document path written with `\` is read as `/`. Output always uses `/`. A
   path that differs from Git's only by letter case is reported as gone, with the closest path named.
-  Windows runs are confirmed by CI only.
+  The `Next` line is quoted for PowerShell there (a single quote doubled). Windows runs are
+  confirmed by CI only.
 - **Hangul.** Slugs, titles and file paths print as written; a typed slug is normalized to NFC
   before matching; Git's octal path quoting is never shown.
 - **Folder moved, renamed or unreadable.** The folder is found by its contents from the working
   directory upward, so a rename needs no setting. An unreadable document is one `unknown` row.
-- **Two edits at once.** The four commands write nothing, so a concurrent edit cannot be lost.
+- **Two edits at once.** `status`, `brief`, `check` and `open` write nothing, so a concurrent edit
+  cannot be lost.
 - **Offline.** No command uses the network. `check --comment` prints; it does not post.
 - **A folder inside a larger repository.** When document paths are relative to a sub-folder that Git
   does not mark, `--repo <path>` names it. The app's own binding lives in the ignored
@@ -356,8 +445,9 @@ every path, including errors. Field names and state values never change with the
   cannot read it.
 - **The app moved or deleted after the command was installed.** The installed file prints
   `cli.error.noApp` with its expected location instead of a shell error.
-- **Several copies on one machine.** `ontology-atlas --version` prints the version and the path it runs
-  from. The command, the plugin and the app share the app's version number.
+- **Several copies on one machine.** `ontology-atlas --version` prints the version and the path it
+  runs from. The command, the plugin and the app share the app's version number. The app's row
+  names another copy that a terminal would run first.
 
 ## What is deleted, and in what order
 
@@ -370,46 +460,114 @@ GraphML) and `wiki-index --write` have no MCP twin; they go, and return on the f
 `integration:cli*` scripts, and their rows in `scripts/lib/check-rules/cli.mjs:36-113`. One test
 file per kept command replaces them.
 
-**Screens.** The copyable command lines built by the 9 files listed under Today. Lines whose work
+**Screens.** The copyable command lines built by the 11 files listed under Today. Lines whose work
 the app already does (connect, verify, validate) are removed. Lines inside text handed to an agent
-are rewritten to name the MCP tool. `CliBridgeBody` is rewritten around `ontology-atlas init` at step 3.
+are rewritten to name the MCP tool. `CliBridgeBody` is rewritten around `ontology-atlas init` at
+step 3. This slice is being built now.
 
 **Internal scripts.** The ten `dogfood:*` scripts and the release gate call the engine under
-`mcp/src/` and `mcp/scripts/verify.mjs` directly, and so does the session hook. They are internal
-checks and need no public command.
+`mcp/src/` and `mcp/scripts/verify.mjs` directly, and so do both session hooks
+(`.claude/hooks/inject-ontology-summary.sh:39-40`, `.codex/hooks/inject-ontology-summary.sh:42-43`).
+They are internal checks and need no public command. `scripts/docs/build-docs-surface.mjs:12` keeps
+reading the command list, which shrinks to five.
+
+**When MCP is unavailable.** Today the server prints old commands as a way around itself, its
+verifier requires them to run (`mcp/scripts/verify/checks/agent-brief.mjs:153-190`), and the sync
+workflow tells an agent to write through `add|import|validate`
+(`.agents/skills/ontology-sync/workflow.md:28-32`). From step 4 there is no write path around MCP.
+An agent without MCP reads the vault's Markdown files directly, writes nothing to the vault, and
+tells the person that the Atlas connection is missing and that the app's Connect Agent button
+restores it. `ontology-atlas status` and `brief` still answer, read-only, where the command is
+installed. The server's `cliFallbackCommands` field, its verifier check and the workflow paragraph
+go together at step 4.
+
+**Modules that code outside `cli/` imports.** Regenerated by script on 2026-11-22: 29 files import
+18 modules. Each module is kept, moved, or deleted with the contract that needed it.
+
+| Module under `cli/src/` | Imported by | What happens |
+|---|---|---|
+| `lib/cli-commands.mjs` | docs surface builder and its test, `launch-docs-current.test.ts`, `npm-channel-retired` | Kept; lists five commands |
+| `lib/mcp-bridge/schema.mjs`, `parse-frontmatter.mjs`, `validate.mjs`, `absorb.mjs` | 2 scripts, 8 vault-format, MCP and CLI contracts | Deleted. Each only re-exports an `mcp/src` module; importers name that module. `absorb.contract` loses its "both bindings" case |
+| `lib/mcp-bridge/mcp-module.mjs` | `check-mcp-source-dependencies.mjs` | Deleted with the two-package resolver; the dependency check moves to `mcp/` |
+| `lib/mcp-bridge/mcp-call.mjs`, `lib/query-result-contract/agent-brief/agent-brief.mjs` | an MCP restart test, `smoke-memory-loop.mjs` | Moved to `mcp/` as test support |
+| `lib/mcp-bridge/mcp-metadata.mjs` | 2 packaging checks, `smoke-clean-onboarding.mjs` | Moved to `mcp/src` |
+| `lib/relation-types.mjs` | `check-package-contracts.test.mjs` | Deleted with `relate`; the check reads the MCP schema's list |
+| `lib/vault-files/atomic-write.mjs`, `write-vault.mjs`, `walk-vault.mjs` | `vault-integrity-guards`, `library-never-enters-the-graph` | Deleted: the kept commands write nothing to a vault, and `init` only creates new files. The contracts keep their MCP half |
+| `lib/agent-setup/agent-files.mjs` | `agent-instruction-files`, `agent-files`, `skill-parity`, `vault-agent-guide` | Deleted. The app's copy (`src/entities/agent-files/`) becomes the one classifier; `agent-files.contract`, which held the two copies equal, goes |
+| `lib/export-format/interop-format.mjs` | `interop-format.contract` | Deleted with `export` and that contract; the app's copy stays |
+| `lib/git/git-snapshot.mjs` | `atlas-git-summary.contract` | Deleted with `snapshot`; the contract keeps the app copy against its fixtures |
+| `commands/library/wiki-validate.mjs` | `wiki-report.contract` | Deleted; the contract keeps its MCP and app surfaces |
+| `commands/local-vault/validate.mjs` | `known-codes-drift.contract` | Deleted with that contract and the other `tests/contract/cli/` files that test deleted commands |
+
+Two of these are security contracts, and each keeps the half that guards a write:
+
+- `tests/contract/security/vault-integrity-guards.contract.test.ts:25-27` imports the CLI's writer
+  and walker beside MCP's. The MCP half (atomic write, slug-to-path, walk) survives unchanged. The
+  CLI half goes only when no kept command writes into a vault.
+- `tests/contract/security/agent-instruction-files.contract.test.ts:4` reads the classifier's rules
+  from the CLI copy. Both of its assertions survive: every instruction file the classifier names is
+  refused by the vault write tools and by auto-approve. It reads the rules from the app's copy.
 
 | Step | What happens | What still works after it |
 |---|---|---|
 | 0 | Probe (below). Nothing in the product changes | Everything |
 | 1 | App screens stop showing lines that cannot run: lines whose work the app does are removed, lines handed to an agent name the MCP tool. Does not wait for the probe | Old commands, all callers |
-| 2 | `status`, `brief`, `check`, `open` are added beside the old commands; the app accepts `open` | Old commands, all callers |
-| 3 | The app bundles the command and gains the install row. A screen shows an `ontology-atlas` line only when the command is installed, and the install row otherwise | Old commands, internal callers |
-| 4 | Internal callers move off the old commands; MCP answers stop printing old commands | Old commands exist, unused |
-| 5 | Old commands and their tests are deleted; `npm-channel-retired` is rewritten to hold "only the published form" | The five commands |
-| 6 | The plugin is built from the packed package and tried from a local folder | Unchanged |
-| 7 | The package is published to npm, after `npm pack --dry-run` and the owner's yes at that moment | Unchanged |
+| 2 | `status`, `brief`, `check`, `open` are added beside the old commands; the app accepts the `open` arguments, with its contract | Old commands, all callers |
+| 3 | The app bundles the command and gains the install row. A screen shows an `ontology-atlas` line only when the command is installed and a new terminal finds it. `npm-channel-retired` is rewritten through `/gate-probe` to allow that line in those screens only; every npm form stays banned | Old commands, internal callers |
+| 4 | Internal callers and the 29 importers move off the old modules; MCP answers stop printing old commands | Old commands exist, unused |
+| 5 | Old commands, their modules and their tests are deleted | The five commands |
+| 6 | The plugin is built from the packed package and tried from a local folder, under its own decision record | Unchanged |
+| 7 | The package is published to npm, after `npm pack --dry-run` and the owner's yes at that moment; `npm-channel-retired` admits the published form | Unchanged |
 | 8 | The plugin is listed in this repository's own marketplace; then the Homebrew tap | Unchanged |
 
-Steps 2, 4, 5 and 7 each change a public contract (the command set, what MCP answers, what is
-published) and need the decision record named below to be accepted first.
+Steps 2, 3, 4, 5 and 7 each change a public contract: the command set, what the app may write
+outside a vault, what MCP answers, what is published. Each waits for the decision record named
+below. Two standing rules are amended in the slice that first contradicts them:
+`.claude/rules/surfaces.md:151-164` ("Two distribution channels only", and "installs into an
+app-owned location") at step 3 and again at step 7, and `AGENTS.md:16` ("There is no npm package")
+at step 7.
 
 ## Distribution
 
 - **App.** The app carries the command beside its MCP server and adds one Settings row. Pressing
-  the button shows the file and its contents, then writes one file in a folder the person owns
-  (`~/.local/bin/ontology-atlas` on macOS; a per-user folder already on PATH on Windows). No administrator
-  password, no edit to a shell profile, no download. "Remove the command" deletes that file. The
-  file names this app's own location, so it cannot start another copy. The app never replaces a
-  file it did not write.
-- **npm, last.** One package, `ontology-atlas`, with one command of the same name. It holds the
-  command, the MCP server (`ontology-atlas mcp`) and the plugin files. `ontology-atlas-mcp` is not
-  published as a second package. The name was free on 2026-11-22 and is not reserved until the first
-  publish. Publishing needs `npm pack --dry-run` and the owner's explicit yes at that moment
-  (`.claude/rules/forbidden.md:84`).
+  the button shows the file and its contents, then writes one file. The folder is one inside the
+  person's home that is already on their login PATH; when there is none, as on a stock macOS
+  account, it is `~/.local/bin` and the row shows the one line to add to the shell profile. The app
+  does not edit a shell profile, ask for an administrator password or download anything.
+- **Installed means found.** The app counts the command as installed only when the file is written
+  and a new terminal would run that file. Until then the row says what is missing and no other
+  screen shows a command line.
+- **What the app refuses.** It never writes over or follows a file or link already at the path. It
+  does not offer install while it runs from a disk image or a temporary copy, because the file
+  would name a location that disappears. "Remove the command" deletes only a file the app wrote and
+  can still recognise.
+- **No bare line in a public release before step 7.** Until the package is published, nothing a
+  release hands a reader as an instruction (the root README, the guide, release notes, the download
+  page, a screenshot) shows a bare `ontology-atlas <command>` line or any npm form. A stranger could
+  publish that name first, and a reader who then installed it by name would run the stranger's
+  code. The app's own screens are the exception, and only in the installed-and-found state. Where
+  a command must be documented earlier (`cli/README.md`, this spec), the text beside it says the
+  command comes from the app's install row and is not on npm.
+- **npm, last.** One package, `ontology-atlas`, with one command of the same name. It is one bundled
+  file with no `dependencies` and no lifecycle scripts, and the `npm pack --dry-run` output is read
+  for exactly that before the owner is asked. It holds the command, the MCP server
+  (`ontology-atlas mcp`) and the plugin files. Publishing needs the owner's explicit yes at that
+  moment (`.claude/rules/forbidden.md:84`).
+- **`ontology-atlas-mcp` is never published.** Old guidance told people to run the server through
+  `npx` (`docs/DECISIONS.md:4624`; both package names are in `.claude/rules/surfaces.md:153-154`),
+  so that name stays one a stranger could take.
+- **Owner option: reserve the names early.** Publishing an empty placeholder under `ontology-atlas`
+  and `ontology-atlas-mcp` now would close both openings. It is a publish, so it needs the owner's
+  yes; this spec does not assume it.
 - **Homebrew.** An own tap (`wlsdks/tap`) with a formula named `ontology-atlas` that installs the
   published package at a pinned checksum. homebrew-core is not attempted.
 
 ## Agent plugins
+
+The plugin stays in the order at step 6, but this spec does not decide its details: it cannot test
+them yet. The plugin slice writes its own decision record and its own acceptance criteria, one of
+which is that the hook's line is seen in a real session and is printed once per change of its
+count, not at every stop. What follows is the intended shape.
 
 Plugin format facts were read on 2026-11-22 by the coordinating session from
 `code.claude.com/docs/en/plugins/`, `developers.openai.com/plugins/build/plugins`,
@@ -428,7 +586,7 @@ its plugin entry names the npm package as its source at a pinned version. The pl
 | MCP server | The server inside the installed plugin, started as `node ${CLAUDE_PLUGIN_ROOT}/…`. Not `npx`: a session start then downloads nothing, and the version is the one the person installed | Starts with the session. Read tools answer without asking |
 | Vault writes | The server's write tools | Never. The host's permission prompt decides; the Codex manifest sets write tools to ask |
 | Skills | `brief`, `sync`, `bootstrap`, `extract`, `review`, `grow`, `absorb`, invoked in Claude Code as `/ontology-atlas:brief` and so on. Codex documents no slash commands, so there they are skills only | Only when the person or the agent invokes them |
-| Hook | Claude Code only: when the agent stops, one line if uncommitted changes touch files named by documents that were not updated: `Atlas: 2 documents name files this session changed and were not updated. /ontology-atlas:brief`. Silent at zero | Yes, so it is read-only, has no network, writes nothing, blocks nothing, and gives up silently after 2 s |
+| Hook | Claude Code only: when the agent stops, the `status` sentence, because it measures uncommitted changes and not the session: `Atlas: uncommitted changes touch files named by 2 documents that were not updated. /ontology-atlas:brief`. Silent at zero | Yes, so it is read-only, has no network, writes nothing, blocks nothing, and gives up silently after 2 s |
 | Command | `bin/ontology-atlas`, the same program | No |
 
 - **Codex ships without the hook.** Codex skips plugin hooks until the person trusts them, and a
@@ -439,9 +597,10 @@ its plugin entry names the npm package as its source at a pinned version. The pl
 - **The extension rule changes first.** `.claude/rules/forbidden.md:71-75` names MCP tools and
   skills as the extension mechanism. A hook that Atlas ships is a third kind of thing that runs in
   the host. The slice that ships it amends that rule to name hooks with the limits above.
-- **One Atlas server per session.** When the project already has an Atlas server written by the
-  app's Connect Agent, the plugin's server lists no tools and `connection_info` says which
-  configuration to remove. Two servers would be two writers on the same documents.
+- **Two Atlas servers in one session are allowed.** The plugin does not look for a server the app
+  configured: reading agent configuration is fenced to the app's own reader
+  (`.claude/rules/surfaces.md:57-70`), and `patch_concept(expected_mtime)` already refuses the
+  second of two writers (`.claude/rules/surfaces.md:118-119`).
 - **Install flow, Claude Code.** `/plugin marketplace add wlsdks/ontology-atlas`, then
   `/plugin install ontology-atlas@ontology-atlas` (plugin and marketplace share the name). The
   install pane lists the server, skills and hook. Updates are by `claude plugin update`; automatic
@@ -466,20 +625,27 @@ its plugin entry names the npm package as its source at a pinned version. The pl
 
 A sealed probe in the manner of the 2026-09-13 one, on `brief` alone.
 
-- **Changes.** Ten real, merged, agent-written changes to product code in this repository, each
-  read at its own commit with the vault as it stood then. At least five touch files that documents
-  name. One is a mechanical change (renames or import rewrites only).
-- **Arms.** A: `git diff --stat` and the change's own description. B: A plus the text of
-  `ontology-atlas brief <range>`, produced by a throwaway script kept outside the repository and run
-  under that name. No MCP, no app.
+- **Changes.** Ten merged changes in this repository, each read at its own commit with the vault as
+  it stood then: seven real agent-written changes to product code, and three mechanical controls
+  (renames or import rewrites that change no behaviour).
+- **Keys.** One per change, written from the diff and the pull request text alone, before the
+  brief exists, in terms of code and behaviour and never in vault slugs. The keys are hashed before
+  any packet is built, and the hashes go into the result.
+- **Arms.** A: `git diff --stat` and the change's own description. A': the same packet, read again,
+  as the noise floor. B: A plus the text of `ontology-atlas brief <range>`, produced by a throwaway
+  script kept outside the repository. C: the full diff, as the ceiling.
+- **Readers.** Text only: a reader gets its packet and no repository access. Two fresh readers per
+  arm per change, on a smaller model, not told the hypothesis. Each answers: what behaviour
+  changed, what else is affected, what do you not know.
+- **Scoring.** The scorer gets the answers with the arm labels stripped.
+- **Pass line.** All three hold, summed over the ten changes:
+  1. B's missed impacts are below A's by at least 30%, and by more than the gap between A and A'.
+  2. B's wrong beliefs are not above A's.
+  3. On the three controls, no B reader reports a behaviour change that the key does not hold.
+- **Ceiling.** C is reported beside them: how much of what a full-diff reading finds B recovers.
+  It is not part of the pass line.
 - **The name.** The owner, watching the recording for acceptance criterion 1, is asked whether
   `ontology-atlas` is too long to type.
-- **Readers.** Three fresh agent readers per arm per change, not told the hypothesis. Each answers:
-  what behaviour changed, what else is affected, what do you not know.
-- **Key.** Written from the full diff before any reader runs.
-- **Pass line.** Summed over the ten changes: missed impacts in B are at least 30% below A; wrong
-  beliefs in B are not above A; B misses more than A in at most two changes; on the mechanical
-  change no B reader reports a behaviour change that the key does not hold.
 - **If it fails.** No public command is built. Steps 1, 4 and 5 still run, because app screens that
   show lines nobody can run are a defect either way and the mirrored commands still cost every
   change. What remains of `cli/` is `init`. Steps 2, 3 and 6 to 8 do not happen.
@@ -489,7 +655,7 @@ A sealed probe in the manner of the 2026-09-13 one, on `brief` alone.
 
 - Posting the pull request comment: it needs a token and sends data off the machine; the team's
   own workflow step does it.
-- A node address in the `ontology-atlas://` scheme: `docs/DECISIONS.md:599` stands.
+- A node address in the `ontology-atlas://` scheme: that part of `docs/DECISIONS.md:599` stands.
 - Blocking a merge by default: the timestamp rule over-reports after a mechanical change.
 - Impact lists, backlinks and scores in any output: the lead reports that the 2026-09-13 probe
   found they changed no answer; a declared edge that is absent is not evidence that a change is safe.
@@ -505,13 +671,19 @@ A sealed probe in the manner of the 2026-09-13 one, on `brief` alone.
    watching it, says whether it is useful. Checked by the recording attached to the pull request and
    the owner's answer quoted in it. A "not useful" returns this spec to Problem. This proves the
    output and the path into the app; the owner's answer is the only person-side evidence.
-2. **Given** the ten changes and two arms, **when** the probe runs, **then** it meets the pass line.
-   Checked by the decision record that states the four numbers. This is the recovery proof.
+2. **Given** the ten changes and four arms, **when** the probe runs, **then** it meets all three
+   parts of the pass line. Checked by the decision record that states the key hashes, missed impacts
+   and wrong beliefs per arm, the gap between A and A', and the ceiling. This is the recovery proof.
 3. **Given** a fixture repository whose change modifies one named file, moves another, edits one
    document and adds two unnamed files, **when** `ontology-atlas brief` runs, **then** the output is the
    block under Copy, the same run under `LANG=ko_KR.UTF-8` prints the three reused sentences exactly
    as `messages/ko/projectPages.json:166-167,183` holds them, and `--json` is byte-identical under both
-   languages. Checked by `cli/src/commands/brief.test.mjs`.
+   languages. The fixture also plants four names: a document file `capabilities/a$(touch X).md`, a
+   title holding a newline followed by a forged `Next` line, a title holding an escape sequence, and
+   the title `](https://example.invalid) @org/team`. Then: running the printed `Next` line through
+   `sh` creates no file `X`; stdout holds one line that starts with `Next` and no escape byte; and
+   in `--comment` each planted name appears only inside a code span. Checked by
+   `cli/src/commands/brief.test.mjs`.
 4. **Given** the same fixture, **when** each row of the exit code table is reproduced, **then** the
    code and the one-document JSON rule hold, and an empty change exits 0. Checked by
    `cli/src/commands/exit-codes.test.mjs`.
@@ -520,29 +692,39 @@ A sealed probe in the manner of the 2026-09-13 one, on `brief` alone.
    answers in under 2 s of CPU time, lists moved-only files as moved, and prints no absolute path.
    Checked by `cli/src/commands/brief-large-range.test.mjs`. The fixture is generated because a CI
    checkout holds one commit.
-6. **Given** the installed app and a terminal, **when** `ontology-atlas open <slug>` runs, **then** the app
-   comes forward with that document selected and its panel names the file the terminal named; a
-   folder the app has not opened shows the dialog first. Checked by an installed-app walk.
-7. **Given** a Mac with the installed app and no checkout, **when** the person presses "Install the
-   atlas command" and opens a new terminal, **then** `ontology-atlas --version` prints the app's version, and
-   "Remove the command" leaves no file behind. Checked by an installed-app walk; Windows by CI.
+6. **Given** the installed app and a terminal, **when** `ontology-atlas open <slug>` runs, **then**
+   the app comes forward with that document selected and its panel names the file the terminal
+   named. A new folder, another folder on screen, unsaved edits and a waiting approval each show the
+   dialog first, and "Not now" changes nothing and loses no edit. Checked by an installed-app walk.
+   Launch arguments outside the grammar, a scheme URL among them, and a grant without a press are
+   refused: checked by `tests/contract/security/launch-argument-one-door.contract.test.ts`.
+7. **Given** a clean macOS account with the installed app, a stock PATH and no checkout, **when**
+   the person presses "Install the ontology-atlas command", **then** the row says a new terminal
+   will not find the command yet and shows the line to add, and no other screen shows a command
+   line. After they add the line, open a new terminal and press "Check again",
+   `ontology-atlas --version` prints the app's version and the screens show command lines. "Remove
+   the command" leaves no file behind. Checked by an installed-app walk on a clean account; Windows
+   by CI.
 8. **Given** the app's message catalogues and source after step 3, **when** the contract runs,
-   **then** no screen holds a command line that fails on a machine with only the installed app.
-   Checked by the rewritten `tests/contract/release/npm-channel-retired.contract.test.ts`.
+   **then** no screen holds a command line that fails on a machine with only the installed app, a
+   bare `ontology-atlas` line appears only in screens that check the installed-and-found state, and
+   no npm form appears anywhere. Checked by the rewritten
+   `tests/contract/release/npm-channel-retired.contract.test.ts`.
 
 ## Risks
 
 1. **The brief cries wolf.** One structure cleanup left 75 of 96 documents stale (measured today).
-   Answer: measure the change, not history; say "moved" for a move; print line counts; put a
-   mechanical change in the probe; never fail `check` by default.
+   Answer: measure the change, not history; say "moved" for a move; print line counts; put three
+   mechanical controls in the probe; never fail `check` by default.
 2. **There is nothing to check against.** The brief is as good as the documents; a repository with
    few documents sees only "In no document". Answer: that group is printed as a fact, and the probe
-   requires five changes that touch named files. Outside this repository this is unknown.
-3. **The command is not reached.** `ontology-atlas` is fourteen characters to type, and the engine
-   requires Node 24. Answer: one name that matches the package, the plugin and the brand, so no
-   reader is shown a command they lack; a person can alias it; the probe records whether the name is
-   called too long; `--version` prints where the command runs from; the Node floor is measured
-   before step 7.
+   result states, per change, whether any document names a changed file, so a pass that rests on
+   two changes is visible. Outside this repository this is unknown.
+3. **The command is not reached.** A stock macOS PATH holds no folder the app can write without a
+   password, `ontology-atlas` is fourteen characters to type, and the engine requires Node 24.
+   Answer: installed means found, and screens wait for it; one name that matches the package, the
+   plugin and the brand; a person can alias it; the probe records whether the name is called too
+   long; the Node floor is measured before step 7.
 
 ## Later
 
@@ -565,11 +747,12 @@ name was checked and is free.
 
 ## Decision record
 
-Two drafts, which the lead lists in `decisions:` once the owner accepts the wording:
+Two records, listed in `decisions:`:
 
 - `docs/records/decisions/2026-11-22-atlas-command-rebuilt-and-published-e64b4ebe-ea86-48bc-a629-6cc1b8a3dd30.md`:
-  the rebuild, the deletion and the publishing. A record is capped at 2,000 bytes, so the reasons it
-  compresses are given in the table below.
+  the rebuild, the `open` door, the deletion and the publishing. A record is capped at 2,000 bytes,
+  so the reasons it compresses are given in the table below. It decides no plugin detail; the
+  plugin slice writes its own record at step 6.
 - `docs/records/decisions/2026-11-22-one-command-name-ontology-atlas-3f104892-dbc1-43c1-a8a5-5e8bfa734e8a.md`:
   the one name. Its falsifier is a probe participant calling the name too long to type; the name is
   then revisited with a short one that the npm registry and Homebrew both show is free.
@@ -578,11 +761,12 @@ Two drafts, which the lead lists in `decisions:` once the owner accepts the word
 |---|---|---|
 | 2026-07-27 "The app embeds MCP … and the npm publish plan is dropped" (`docs/DECISIONS.md:4622`) | Its npm clause is overturned. The embedded server and Connect Agent stand | It dropped npm because an installed app could not connect an agent and the only guidance was a failing `npx` line. Connect Agent fixed that. What is published now is a terminal command for a person in review and for CI, which the app bundle cannot reach |
 | 2026-09-11 "… a release bundle; the image is prepared, not published" (`docs/DECISIONS.md:248`) | Its clause that the npm door stays shut until registry inflow is observed is overturned. The `.mcpb` bundle stands as one more door | Its own dissent, "npm is still the one-line install for a CLI agent", was conceded and deferred. The owner has now decided it |
-| 2026-08-20 (88) "The app installs the agent CLI for you" (`docs/DECISIONS.md:2210`) | Condition three (an app-only location) is overturned for Atlas's own command only. It stands for another vendor's CLI | A command that a terminal cannot find is not installed. The other three conditions hold: a press, the exact file shown first, a version that is the app's own |
+| 2026-08-20 (88) "The app installs the agent CLI for you" (`docs/DECISIONS.md:2210`) | Condition three (an app-only location) is overturned for Atlas's own command only. It stands for another vendor's CLI | A command that a terminal cannot find is not installed, so the file goes in a folder on the person's PATH. The other three conditions hold: a press, the exact file shown first, a version that is the app's own |
 | 2026-08-30 "The CLI executes the MCP modules instead of copying them" (`docs/DECISIONS.md:1472`) | Stands, extended to one package | No second copy of the logic |
 | 2026-09-04 "A CLI exit code says whether the input could be answered" (`docs/DECISIONS.md:977`) | Stands | The exit code table follows it |
-| 2026-09-07 "The installed app answers one address" (`docs/DECISIONS.md:599`) | Stands | `ontology-atlas open` passes arguments and mints no URL |
-| `tests/contract/release/npm-channel-retired.contract.test.ts` | Rewritten at step 5 | From "no npm form anywhere" to "only the published form" |
+| 2026-09-07 "The installed app answers one address" (`docs/DECISIONS.md:599`) | Narrowed. One URL address, no node address in a URL and no URL that writes or runs all stand. "No second address vocabulary" gives way to one launch-argument door | A local process needs a way to name a document. It gets a fixed grammar, a press before any grant, and its own contract |
+| `tests/contract/release/npm-channel-retired.contract.test.ts` | Rewritten at step 3 through `/gate-probe`; admits the published form at step 7 | Screens show the command once it is installed and found, while every npm form stays banned until there is a package |
+| `.claude/rules/surfaces.md:151-164`, `AGENTS.md:16` | Amended at steps 3 and 7 | They state two channels, an app-owned install location and no npm package |
 
 ## Revisions
 
@@ -597,3 +781,9 @@ Two drafts, which the lead lists in `decisions:` once the owner accepts the word
   themselves; the criterion now proves the output and the path into the app, and the owner's
   verdict on the recording is the person-side evidence. Probe readers run on a smaller model to
   keep usage down.
+- 2026-11-22: an independent review, verdict "build, with changes". Names in output are data (one
+  line, quoted, code spans in `--comment`); `open` gets a written grammar, a press before any grant
+  and its own contract, and 2026-09-07 is narrowed, not left standing; installed means found on the
+  login PATH; a document changed with its code is `updated`, never `current`; the probe has four
+  arms, hashed keys and a noise floor; the importer inventory is regenerated by script (29 files,
+  18 modules); no bare command line is public before step 7; the plugin gets its own record.
