@@ -4,9 +4,10 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * The five branch-protected browser statuses must remain visible, but only jobs
- * assigned evidence by the checkout-only impact planner may install pnpm,
- * Chromium, system packages, or the app. Missing plans fail every protected job.
+ * The browser suite runs after merge on macOS: nightly, on a release tag and on a dispatched
+ * branch, never on a pull request. Its jobs install pnpm, Chromium and the app only when the
+ * checkout-only impact planner assigns them evidence, and a missing plan turns each red. Read as
+ * text: this repository has no YAML parser in its dependency tree.
  */
 
 const ROOT = process.cwd();
@@ -16,7 +17,7 @@ const setupAction = readFileSync(
   'utf8',
 );
 
-const PROTECTED_JOB_IDS = ['static-export', 'web-smoke', 'suite'] as const;
+const BROWSER_JOB_IDS = ['surfaces', 'suite'] as const;
 
 function jobBlock(id: string): string {
   const lines = workflow.split('\n');
@@ -36,17 +37,42 @@ function stepBlock(job: string, name: string): string {
   return lines.slice(start, next < 0 ? undefined : next).join('\n');
 }
 
-describe('E2E impact planning precedes expensive setup', () => {
-  it('keeps all five protected statuses alive', () => {
-    expect(PROTECTED_JOB_IDS.length).toBe(3);
-    for (const id of PROTECTED_JOB_IDS) {
-      expect(jobBlock(id), `${id} job is missing`).not.toBe('');
-    }
-    expect(jobBlock('suite'), 'the eight Playwright shards disappeared').toContain(
-      'shard: [1, 2, 3, 4, 5, 6, 7, 8]',
-    );
+/** The keys directly under `on:`. */
+function triggers(): string[] {
+  const block = /^on:\n((?: {2}.*\n|\s*\n)+)/m.exec(workflow)?.[1] ?? '';
+  return [...block.matchAll(/^ {2}([a-z_]+):/gm)].map((match) => match[1]);
+}
+
+describe('merging never waits for the browser suite', () => {
+  it('runs on the schedule and on dispatch only', () => {
+    expect(triggers()).toEqual(['schedule', 'workflow_dispatch']);
   });
 
+  it('titles a whole run with a value GitHub can parse', () => {
+    // An unquoted YAML value may not hold ': ' or ' #'; GitHub then rejects the whole file and
+    // every run of it, nightly and release gate alike, fails before a job starts.
+    const value = /^run-name: (.+)$/m.exec(workflow)?.[1] ?? '';
+    expect(value, 'e2e.yml lost its run-name').toContain('whole run');
+    if (!/^["']/.test(value)) expect(value).not.toMatch(/: | #/);
+  });
+
+  it('never cancels a run, so a release-gate run on a tag finishes', () => {
+    expect(workflow).toMatch(/^ {2}cancel-in-progress: false$/m);
+    expect(workflow).toMatch(/^ {2}group: .*inputs\.plan_from/m);
+  });
+
+  it('runs every browser job on macOS and keeps the plan and the build on Linux', () => {
+    expect(jobBlock('suite'), 'the three shards disappeared').toContain('shard: [1, 2, 3]');
+    for (const id of [...BROWSER_JOB_IDS, 'quarantined']) {
+      expect(jobBlock(id), `${id} job is missing`).toMatch(/^ {4}runs-on: macos-15$/m);
+    }
+    for (const id of ['changes', 'build', 'quarantine-expiry']) {
+      expect(jobBlock(id), `${id} job is missing`).toMatch(/^ {4}runs-on: ubuntu-latest$/m);
+    }
+  });
+});
+
+describe('E2E impact planning precedes expensive setup', () => {
   it('one checkout-only job publishes the encoded plan and three browser decisions', () => {
     const changes = jobBlock('changes');
     expect(changes, 'changes job is missing').not.toBe('');
@@ -58,22 +84,17 @@ describe('E2E impact planning precedes expensive setup', () => {
     const planner = stepBlock(changes, 'Build impact plan');
     expect(planner).toContain('node scripts/ci/classify-change.mjs');
     expect(planner).toContain('EVENT_NAME: ${{ github.event_name }}');
-    expect(planner).toContain('BASE_REF: ${{ github.base_ref }}');
-    // A merge group has no base branch ref, so the comparison falls back to the SHA GitHub provides for
-    // the group. Both spellings must be present: dropping either plans a merge group from nothing.
-    expect(planner).toContain('MERGE_GROUP_BASE_SHA: ${{ github.event.merge_group.base_sha }}');
-    expect(planner).toContain('--event="$EVENT_NAME" --base="${MERGE_GROUP_BASE_SHA:-origin/$BASE_REF}"');
+    // A planned dispatch names a commit; anything else would let a branch name choose the base.
+    expect(planner).toContain("grep -Eq '^[0-9a-f]{40}$'");
+    expect(planner).toContain('--event=pull_request --base="$PLAN_FROM"');
   });
 
-  it.each(PROTECTED_JOB_IDS)('%s refuses a missing plan', (id) => {
+  it.each(BROWSER_JOB_IDS)('%s refuses a missing plan', (id) => {
     const job = jobBlock(id);
     expect(job, 'job does not wait for the impact plan').toContain('needs: [changes, build]');
-    // `!cancelled()` keeps the required status alive when the planner fails; the draft clause keeps a
-    // draft pull request from spending a runner. They are one expression, so both halves are pinned.
-    expect(job, 'required status disappears after upstream failure').toContain('!cancelled()');
-    expect(job, 'a draft pull request would pay for this job').toContain(
-      "github.event.pull_request.draft == false",
-    );
+    // `!cancelled()` keeps the job alive when the planner fails, so the run turns red instead of
+    // finishing green over skipped jobs.
+    expect(job, 'the job disappears after an upstream failure').toContain('!cancelled()');
     const guard = stepBlock(job, 'Require impact plan');
     expect(guard, 'plan failure guard is missing').toContain(
       "if: needs.changes.result != 'success'",
@@ -81,7 +102,7 @@ describe('E2E impact planning precedes expensive setup', () => {
     expect(guard, 'plan failure does not turn the job red').toContain('exit 1');
   });
 
-  it.each(PROTECTED_JOB_IDS)('%s prepares Playwright only when assigned evidence', (id) => {
+  it.each(BROWSER_JOB_IDS)('%s prepares Playwright only when assigned evidence', (id) => {
     const job = jobBlock(id);
     const setup = stepBlock(job, 'Setup Playwright');
     expect(setup, 'conditional setup step is missing').toContain("if: env.ACTIVE == 'true'");
@@ -94,15 +115,15 @@ describe('E2E impact planning precedes expensive setup', () => {
     );
   });
 
-  it('routes static, web, exact, and broad browser evidence independently', () => {
-    expect(jobBlock('static-export')).toContain(
-      'ACTIVE: ${{ needs.changes.outputs.static }}',
-    );
-    expect(jobBlock('web-smoke')).toContain('ACTIVE: ${{ needs.changes.outputs.web }}');
-    // Every non-skip verdict uses every shard: before merge they balance the mapped specs and the
-    // merge smoke set, and the push to main runs the full suite.
+  it('routes static, web and suite evidence independently', () => {
+    const surfaces = jobBlock('surfaces');
+    expect(surfaces).toContain("ACTIVE: ${{ needs.changes.outputs.static == 'true' || needs.changes.outputs.web == 'true' }}");
+    expect(stepBlock(surfaces, 'Run static-export evidence')).toContain("if: env.STATIC == 'true'");
+    expect(stepBlock(surfaces, 'Run static-export evidence')).toContain('run-ci-lane.mjs --lane=static');
+    // The web lane runs after a red static lane too, so one night shows both verdicts.
+    expect(stepBlock(surfaces, 'Run web-surface evidence')).toContain("if: ${{ !cancelled() && env.WEB == 'true' }}");
+    expect(stepBlock(surfaces, 'Run web-surface evidence')).toContain('run-ci-lane.mjs --lane=web');
     expect(jobBlock('suite')).toContain("ACTIVE: ${{ needs.changes.outputs.playwright != 'skip' }}");
-    expect(stepBlock(jobBlock('changes'), 'Build impact plan')).toContain('--full-browser-after-merge');
   });
 
   it('keeps classification out of the expensive setup action', () => {
@@ -111,23 +132,44 @@ describe('E2E impact planning precedes expensive setup', () => {
   });
 });
 
-describe('one immutable build feeds every protected browser job', () => {
+describe('quarantined specs run without deciding the night, and an expired entry decides it', () => {
+  it('runs the quarantined specs on a whole run, on a job that cannot turn the run red', () => {
+    const job = jobBlock('quarantined');
+    expect(job).toMatch(/^ {4}continue-on-error: true$/m);
+    expect(job).toContain("needs.changes.outputs.playwright == 'full'");
+    expect(job).toContain('run: node scripts/ci/quarantine.mjs run-browser');
+  });
+
+  it('checks expiry on a whole run, on a job that turns the run red', () => {
+    const job = jobBlock('quarantine-expiry');
+    expect(job).not.toContain('continue-on-error');
+    expect(job).toContain("if: ${{ needs.changes.outputs.playwright == 'full' }}");
+    expect(job).toContain('run: node scripts/ci/quarantine.mjs check-expiry');
+  });
+});
+
+describe('one immutable build feeds every browser job', () => {
   it('builds once and publishes a run-local artifact for this source SHA', () => {
     expect((workflow.match(/run: pnpm build/g) ?? []).length).toBe(1);
     const build = jobBlock('build');
     expect(build).toContain('if-no-files-found: error');
     expect(build).not.toContain('continue-on-error');
     expect(stepBlock(jobBlock('suite'), 'Upload timing evidence')).toContain('continue-on-error: true');
+    // The release browser gate and `pnpm pr:land` tell a whole run by this artifact name.
+    expect(stepBlock(jobBlock('suite'), 'Upload timing evidence')).toContain(
+      'name: playwright-timings-${{ needs.changes.outputs.playwright }}-${{ matrix.shard }}',
+    );
     expect(readFileSync(join(ROOT, '.github', 'workflows', 'checks.yml'), 'utf8').match(/- name: Upload lane report\n\s+continue-on-error: true\n/g)).toHaveLength(4);
     expect(build).toContain('name: playwright-export-${{ github.sha }}');
   });
-  it.each(PROTECTED_JOB_IDS)('%s fails if the shared build fails and downloads the same source', (id) => {
-    const job=jobBlock(id);
+
+  it.each(BROWSER_JOB_IDS)('%s fails if the shared build fails and downloads the same source', (id) => {
+    const job = jobBlock(id);
     expect(job).toContain('needs: [changes, build]');
     expect(job).toContain('PLAYWRIGHT_PREBUILT: "1"');
-    const guard=stepBlock(job,'Require browser artifact');
+    const guard = stepBlock(job, 'Require browser artifact');
     expect(guard).toContain("needs.build.result != 'success'");
     expect(guard).toContain('run: exit 1');
-    expect(stepBlock(job,'Download static export')).toContain('name: playwright-export-${{ github.sha }}');
+    expect(stepBlock(job, 'Download static export')).toContain('name: playwright-export-${{ github.sha }}');
   });
 });

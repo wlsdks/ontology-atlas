@@ -16,7 +16,8 @@
 # reproduces locally. The static export is built once on Linux and downloaded. A free account runs
 # five macOS jobs at once: three shards, the surfaces and the quarantined specs.
 name: Browser suite
-run-name: ${{ (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.plan_from == '')) && 'Browser suite: whole run' || '' }}
+# Quoted: an unquoted YAML value may not hold ': ', and the title holds one.
+run-name: "${{ (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.plan_from == '')) && 'Browser suite: whole run' || '' }}"
 
 on:
   schedule:
