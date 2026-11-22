@@ -9,7 +9,8 @@ import { MOTION } from '@/shared/motion';
 import { layoutBuilding, stageCapacity, type Box, type RoomBox, type RoomSize, type RoomUnit } from '../model/building-layout';
 import { clockTime } from '../model/format';
 import { retireeOf, roomAlertOf, roomLook, withRetirees, type Retiree } from '../model/room-look';
-import { exitRoom, fadeFace, translate, useRoomMotion } from '../model/use-room-motion';
+import { EXIT_MS, MOVE_MS } from '../model/room-sequence';
+import { FACE_LEFT_EVENT, exitRoom, translate, useRoomMotion } from '../model/use-room-motion';
 import { LargeRoom } from './LargeRoom';
 import { MiniRoom } from './MiniRoom';
 import { RoomShelf } from './RoomShelf';
@@ -67,13 +68,14 @@ function RoomFace({ room, face, copy, retiring, showOwner }: { room: RoomEntry; 
     : <MiniRoom room={room} copy={copy} tint={tintOf(room.session)} showOwner={showOwner} />;
 }
 
-const area = (face: FaceSize) => face.w * face.h;
+/** A merged room fades its content to its own wall, then the wall fades, in the last moments of its stay. */
+const RETIRE_FADE_MS = EXIT_MS;
 
 /**
- * One room's frame. Its element sits at its box by transform. When the building moves it to a new
- * size, the old face stays at the old size while the plate grows or shrinks: the larger of the two
- * faces lies underneath, fully drawn, and the smaller crossfades over it, so the plate never shows.
- * When the window itself resizes, the face takes the new size at once.
+ * One room's frame. Its element sits at its box by transform. When the building gives it a new size,
+ * its old face stays at the old size only while its content fades to the room's wall
+ * (`useRoomMotion` plays that); the new face is drawn hidden and fades in once the room has arrived,
+ * so a room never shows two faces. When the window itself resizes, the face takes the new size at once.
  */
 function Room({ room, box, copy, retiring, showOwner, reduced, windowKey, ghost }: {
   room: RoomEntry;
@@ -97,23 +99,28 @@ function Room({ room, box, copy, retiring, showOwner, reduced, windowKey, ghost 
   const { current } = faces;
   if (current.size !== box.size || current.unit !== box.unit || Math.abs(current.w - box.w) > 1 || Math.abs(current.h - box.h) > 1) {
     const moved = faces.windowKey === windowKey;
-    setFaces({ current: { size: box.size, unit: box.unit, w: box.w, h: box.h }, leaving: moved ? current : null, windowKey });
+    setFaces({ current: { size: box.size, unit: box.unit, w: box.w, h: box.h }, leaving: moved ? faces.leaving ?? current : null, windowKey });
   } else if (faces.windowKey !== windowKey) {
-    setFaces({ ...faces, windowKey });
+    setFaces({ ...faces, leaving: null, windowKey });
   }
-  // The smaller face crossfades over the larger: the new one fading in, or the old one fading out.
-  const leavingOnTop = faces.leaving !== null && area(faces.leaving) < area(current);
-  const enterFace = useCallback((element: HTMLDivElement | null) => {
-    if (element?.dataset.faceChange === 'true') fadeFace(element, 'in', reduced);
-  }, [reduced]);
-  const leaveFace = useCallback((element: HTMLDivElement | null) => {
-    if (!element) return;
-    fadeFace(element, element.dataset.faceOnTop === 'true' ? 'away' : 'out', reduced).addEventListener('finish', () => setFaces(state => ({ ...state, leaving: null })));
-  }, [reduced]);
+  const oldFace = useCallback((element: HTMLDivElement | null) => {
+    element?.addEventListener(FACE_LEFT_EVENT, () => setFaces(state => ({ ...state, leaving: null })), { once: true });
+  }, []);
   const ghostRef = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     if (ghostFrom && onGhostDone && ghostRef.current) exitRoom(ghostRef.current, ghostFrom, reduced, () => onGhostDone(room.key));
   }, [ghostFrom, onGhostDone, reduced, room.key]);
+  const roomRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const element = roomRef.current;
+    if (!retiring || !element || reduced) return;
+    const fades = [
+      ...[...element.querySelectorAll<HTMLElement>(':scope > [data-room-face]')].map(face =>
+        face.animate([{ opacity: 1 }, { opacity: 0 }], { duration: RETIRE_FADE_MS, delay: RETIRE_MS - 2 * RETIRE_FADE_MS, fill: 'forwards' })),
+      element.animate([{ opacity: 1 }, { opacity: 0 }], { duration: RETIRE_FADE_MS, delay: RETIRE_MS - RETIRE_FADE_MS, fill: 'forwards' }),
+    ];
+    return () => fades.forEach(fade => fade.cancel());
+  }, [retiring, reduced]);
 
   const look = roomLook(room.state);
   const style = {
@@ -124,12 +131,14 @@ function Room({ room, box, copy, retiring, showOwner, reduced, windowKey, ghost 
   } as CSSProperties;
   return (
     <div
-      ref={ghost ? ghostRef : undefined}
+      ref={ghost ? ghostRef : roomRef}
       data-room-key={ghost ? undefined : room.key}
+      data-ghost-key={ghost ? room.key : undefined}
       data-testid={ghost ? undefined : 'work-room'}
       data-room-size={box.size}
       data-room-state={room.state.kind}
       data-room-running={look.running}
+      data-room-retiring={retiring || undefined}
       data-room-alert={ghost ? undefined : roomAlertOf(room.state) ?? undefined}
       aria-hidden={ghost ? true : undefined}
       inert={ghost ? true : undefined}
@@ -140,18 +149,18 @@ function Room({ room, box, copy, retiring, showOwner, reduced, windowKey, ghost 
       {faces.leaving ? (
         <div
           key="leaving"
-          ref={leaveFace}
+          ref={oldFace}
           data-room-face
-          data-face-on-top={leavingOnTop}
+          data-face-leaving="true"
           aria-hidden
           inert
           className={cn(styles.face, styles.notched)}
-          style={{ width: faces.leaving.w, height: faces.leaving.h, zIndex: leavingOnTop ? 1 : undefined }}
+          style={{ width: faces.leaving.w, height: faces.leaving.h }}
         >
           <RoomFace room={room} face={faces.leaving} copy={copy} retiring={retiring} showOwner={showOwner} />
         </div>
       ) : null}
-      <div key={current.size} ref={enterFace} data-room-face data-face-change={faces.leaving !== null && !leavingOnTop} className={cn(styles.face, styles.notched, 'h-full w-full')}>
+      <div key={current.size} data-room-face className={cn(styles.face, styles.notched, 'h-full w-full')}>
         <RoomFace room={room} face={current} copy={copy} retiring={retiring} showOwner={showOwner} />
       </div>
     </div>
@@ -162,8 +171,8 @@ function Placed({ box, children, className, testId }: { box: Box; children: Reac
   return (
     <div
       data-testid={testId}
-      className={cn('absolute left-0 top-0 transition-transform duration-[calc(var(--motion-slow)*2)]', className)}
-      style={{ transform: translate(box), width: box.w, height: box.h }}
+      className={cn('absolute left-0 top-0 transition-transform', className)}
+      style={{ transform: translate(box), width: box.w, height: box.h, transitionDuration: `${MOVE_MS}ms`, transitionDelay: `${EXIT_MS}ms` }}
     >
       {children}
     </div>
@@ -334,7 +343,8 @@ export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs }: {
     const left: Ghost[] = [];
     for (const [key, from] of removed) {
       const drawn = lastDrawn.current.get(key);
-      if (drawn) left.push({ room: drawn.room, box: drawn.box, retiring: drawn.retiring, from });
+      // A merged room has already faded where it stood; only a room that left otherwise fades now.
+      if (drawn && !drawn.retiring) left.push({ room: drawn.room, box: drawn.box, retiring: drawn.retiring, from });
     }
     if (left.length > 0) setGhosts(current => [...current.filter(ghost => !removed.has(ghost.room.key)), ...left]);
   }, []);

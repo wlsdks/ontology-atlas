@@ -125,12 +125,16 @@ merged into the base branch, or its session ended. A change shows within about
 two seconds: one interval plus one read. A hidden screen asks nothing and reads
 once when it shows again; relative ages move once a minute.
 
-Every change moves from where each room was last drawn, with transform and
-opacity only: a room that changes tier glides to its new place and size, a new
-room fades in rising, a room that leaves fades and sinks. A merge plays where
-the room stands: its crate rides into the `main` hatch, the hatch turns green,
-the lights go out, then the room folds away and a crate lands on the shelf. An
-update that lands mid-motion continues from the current position. Moru, the
+Every change plays as one sequence of about a second, with transform and
+opacity only, and every frame shows one copy of each room. First what leaves
+fades, and a room that will change tier or cross another fades its content to
+its own wall. Then each room that moves goes to its new box in one piece; a
+room taking another's box arrives before that room leaves it. Then content
+fades back in and new rooms rise into place. A merge plays first where the room
+stands: its crate rides into the `main` hatch, the hatch turns green, the
+lights go out, the room fades away and a crate lands on the shelf; only then do
+the others move. An update that lands mid-sequence starts the next from where
+each room is drawn. Moru, the
 lamp, the monitor and the belt move only in a room where something runs, on
 screen, in a visible window. Reduced motion shows the end states without
 movement.
