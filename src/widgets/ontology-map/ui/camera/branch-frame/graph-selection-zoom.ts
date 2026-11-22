@@ -1,6 +1,6 @@
 import type { Box, DialLabels, DialModel } from "../../../dial/dial-shapes";
 import type { GraphAttention } from "../../../flat-graph/attention";
-import { graphDiscRadiusPx, zoomGrowth } from "../../../flat-graph/marks";
+import { elementDotRadiusPx, graphDiscRadiusPx, zoomGrowth } from "../../../flat-graph/marks";
 import { admitNamesAt, selectedDiscRadius } from "../../../flat-graph/names";
 import { type NameAdmission } from "../../../flat-graph/names/placed-name";
 import { stepScale, zoomStep } from "../../../flat-graph/names/zoom-step";
@@ -31,6 +31,10 @@ export interface GraphSelectionZoomInput {
   /** The scale the map opens at, against which discs grow. */
   entryScale: number;
   maxScale: number;
+}
+
+function isElement(model: DialModel, id: string): boolean {
+  return !model.domainById.has(id) && !model.capabilityById.has(id) && model.domainOf.has(id);
 }
 
 function radiusOf(model: DialModel, paint: FlatGraphPaintTokens, id: string, growth: number): number {
@@ -76,12 +80,16 @@ function zoomReading(input: GraphSelectionZoomInput): ZoomReading {
     const step = zoomStep(scale, paint.zoomStepsPerOctave);
     let admission = admissions.get(step);
     if (admission) return admission;
-    const stepGrowth = zoomGrowth(stepScale(step, paint.zoomStepsPerOctave) / input.entryScale, paint);
+    const stepAt = stepScale(step, paint.zoomStepsPerOctave);
+    const stepGrowth = zoomGrowth(stepAt / input.entryScale, paint);
+    const discRadius = (id: string) => (isElement(model, id) ? elementDotRadiusPx(paint, stepGrowth, input.medianElementPitch, stepAt) : radiusOf(model, paint, id, stepGrowth));
     admission = admitNamesAt({
       model, layout, tokens: paint, labels: input.labels, measureText: input.measureText, fontFamily: input.fontFamily, scale, growth: stepGrowth,
       elementLabel: input.elementLabel, staleByDomain: input.staleByDomain, lit: attention.lit, focusId: focus, selected: true,
       named: attention.named, reach: attention.reach, lines: attention.lines, agentFocusId: null, attentionKey: attention.key,
-      discRadius: (id) => radiusOf(model, paint, id, stepGrowth), elementSpacingPx: input.medianElementPitch * scale, hubCaption: input.hubCaption,
+      // A selected capability's elements open round it as the frame draws it, and its names keep off every other element dot.
+      openStarId: model.capabilityById.has(focus) ? focus : null,
+      discRadius, elementSpacingPx: input.medianElementPitch * scale, hubCaption: input.hubCaption,
     });
     admissions.set(step, admission);
     return admission;
