@@ -61,7 +61,10 @@ function ok(result) {
 
 function error(err) {
   const message = err instanceof Error ? err.message : String(err);
-  const details = structuredErrorDetails(message);
+  // A thrower that names its errorCode also names its repair fields; its text is
+  // prose for the reader, never parsed back into fields.
+  const explicitCode = err && typeof err === 'object' && typeof err.errorCode === 'string' ? err.errorCode : null;
+  const details = explicitCode ? {} : structuredErrorDetails(message);
   // Slug-unresolved paths (`get_concept`, `node_profile`) attach a growthHint to
   // the Error instance; this is the one place that collects them and lifts them
   // into `structuredContent`. Never present on a success response.
@@ -74,7 +77,7 @@ function error(err) {
     isError: true,
     structuredContent: {
       ok: false,
-      errorCode: classifyErrorCode(err, message),
+      errorCode: explicitCode ?? classifyErrorCode(err, message),
       error: message,
       ...details,
       ...repairFields,

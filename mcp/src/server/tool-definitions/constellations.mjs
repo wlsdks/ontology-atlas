@@ -264,20 +264,20 @@ const CONSTELLATION_CONTEXT_OUTPUT_SCHEMA = {
 export const LIST_CONSTELLATIONS_TOOL = {
   name: 'list_constellations',
   description:
-    'List saved constellation metadata from this configured vault only. Returns bounded names, user-purpose state, timestamps, member counts, exact sidecar revision, and honest unavailable status for missing/corrupt/unsupported data. Saved membership is task scope, not an ontology relation, review decision, or complete impact claim.',
+    'List the saved constellations (task-scoped node sets) in this vault with their names, purpose, member counts and revision. Membership is task scope, not an ontology relation.',
   inputSchema: {
     type: 'object',
     properties: {
       offset: {
         type: 'integer',
         minimum: 0,
-        description: 'Zero-based offset in deterministic saved-constellation order.',
+        description: 'Zero-based offset.',
       },
       limit: {
         type: 'integer',
         minimum: 1,
         maximum: 100,
-        description: 'Maximum metadata rows to return. Defaults to 50; maximum 100.',
+        description: 'Default 50.',
       },
     },
   },
@@ -287,7 +287,7 @@ export const LIST_CONSTELLATIONS_TOOL = {
 export const GET_CONSTELLATION_TOOL = {
   name: 'get_constellation',
   description:
-    'Read one saved constellation by immutable ID from this configured vault. Returns paged saved membership and user purpose separately from current UID-resolved node facts, review currentness, bounded evidence starting points, real declared internal relations, unresolved identities, and direct outside-scope dependencies. UID and merged-UID claims are the only identity source; display paths/titles never retarget. No writes or external sending.',
+    'Read one saved constellation (a task-scoped node set) by immutable ID: paged members with current UID-resolved facts, review currentness, internal relations and outside-scope dependencies. Read-only.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -297,25 +297,25 @@ export const GET_CONSTELLATION_TOOL = {
       offset: {
         type: 'integer',
         minimum: 0,
-        description: 'Zero-based offset into saved members after deterministic order.',
+        description: 'Zero-based member offset.',
       },
       limit: {
         type: 'integer',
         minimum: 1,
         maximum: 100,
-        description: 'Maximum saved members and their current facts to return. Defaults to 50; maximum 100.',
+        description: 'Members per page, default 50.',
       },
       relationLimit: {
         type: 'integer',
         minimum: 1,
         maximum: 200,
-        description: 'Maximum real declared relations between resolved saved members. Defaults to 100; maximum 200.',
+        description: 'Relations between members, default 100.',
       },
       dependencyLimit: {
         type: 'integer',
         minimum: 1,
         maximum: 200,
-        description: 'Maximum direct declared dependency edges crossing the saved scope. Defaults to 100; maximum 200.',
+        description: 'Dependency edges leaving the scope, default 100.',
       },
     },
     required: ['id'],
