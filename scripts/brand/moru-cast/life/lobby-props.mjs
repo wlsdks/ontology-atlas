@@ -1,6 +1,6 @@
 // The lobby's fixtures, drawn as the cast is: a letter is a 2px block of Moru's own palette, and every piece wears the
 // cast's 2px ink outline. Each stands on the floor at its `foot`: the point of the sprite that goes on the back lane's
-// feet line. The bench and the crate show their top from a little above, and that top lies on the feet line, so a Moru
+// feet line. The back wall behind them is the one piece in the building's own graphite, not Moru's palette. The bench and the crate show their top from a little above, and that top lies on the feet line, so a Moru
 // standing in the back lane is on them and their front shows below it.
 import { join } from 'node:path';
 import { KEY, px, flipSprite } from '../engine.mjs';
@@ -13,56 +13,88 @@ const fill = (w, at) => Array.from({ length: w }, (_, c) => at(c)).join('');
 /** A row from runs of `[first, last, letter]`; a later run lies over an earlier one. */
 const span = (w, runs) => fill(w, c => runs.findLast(([a, z]) => c >= a && c <= z)?.[2] ?? ' ');
 
-// A long low bench: two end posts with a back rail between them, a pale seat, an apron and two short legs. A small
+/**
+ * A box seen from the front and a little from above and the left: its front face `w` by `h` letters, its top and its
+ * right side going back `deep` letters, one letter right and one up for each. `front`, `top` and `side` give the letter
+ * at a place on each face.
+ */
+const box = ({ w, h, deep, front, top, side }) => Array.from({ length: h + deep }, (_, r) => fill(w + deep, c => {
+  if (r >= deep && c < w) return front(c, r - deep);
+  for (let d = 1; d <= deep; d++) {
+    if (r === deep - d && c >= d && c < w + d) return top(c - d, d);
+    if (c === w - 1 + d && r >= deep - d && r < h + deep - d) return side(d, r - (deep - d));
+  }
+  return ' ';
+}));
+/** Lays `over` on `rows` with its corner at letter (`left`, `top`); its spaces leave what is under them. */
+const lay = (rows, over, left, top) => rows.map((row, r) => { const o = over[r - top]; return o ? fill(row.length, c => (o[c - left] && o[c - left] !== ' ' ? o[c - left] : row[c])) : row; });
+
+// A long low bench with volume: a seat slab whose pale top goes back three letters, a lit front edge, a shaded end, four
+// legs (the far two in shadow), and a back rest of two posts and two rails standing on the seat's far edge. A small
 // cushion lies at the end a napping Moru's head is, clear of its body.
-const BENCH_W = 68, POSTS = [[0, 2, 's'], [3, 3, 'g'], [64, 66, 's'], [67, 67, 'g']];
-const BENCH = [
-  span(BENCH_W, [[1, 2, 's'], [65, 66, 's']]),
+const SEAT_W = 68, SEAT_DEEP = 3, REST_H = 12, LEG_H = 5, BENCH_W = SEAT_W + SEAT_DEEP;
+const SEAT = box({ w: SEAT_W, h: 3, deep: SEAT_DEEP, top: () => '.', side: (d, r) => (r === 0 ? 'g' : 'h'), front: (c, r) => 'sgh'[r] });
+const POSTS = [[3, 5, 's'], [6, 6, 'g'], [67, 69, 's'], [70, 70, 'g']];
+const REST = [
+  span(BENCH_W, [[4, 5, 's'], [68, 69, 's']]),
   span(BENCH_W, POSTS),
-  span(BENCH_W, [...POSTS, [4, 63, 's']]),
-  span(BENCH_W, [...POSTS, [4, 63, 'g']]),
+  span(BENCH_W, [...POSTS, [7, 66, 's']]),
+  span(BENCH_W, [...POSTS, [7, 66, 'g']]),
   span(BENCH_W, POSTS),
   span(BENCH_W, POSTS),
-  span(BENCH_W, [...POSTS, [4, 63, 's']]),
-  span(BENCH_W, [...POSTS, [4, 63, 'g']]),
+  span(BENCH_W, [...POSTS, [7, 66, 's']]),
+  span(BENCH_W, [...POSTS, [7, 66, 'g']]),
   span(BENCH_W, POSTS),
-  span(BENCH_W, [...POSTS, [57, 61, 'l']]),
-  span(BENCH_W, [...POSTS, [56, 62, 'i'], [56, 56, 'l'], [62, 62, 'm']]),
-  span(BENCH_W, [...POSTS, [56, 62, 'i'], [56, 56, 'l'], [62, 62, 'm']]),
-  span(BENCH_W, [[0, 67, '.']]),
-  span(BENCH_W, [[0, 67, '.']]),
-  span(BENCH_W, [[0, 67, 's']]),
-  span(BENCH_W, [[0, 67, 'g']]),
-  span(BENCH_W, [[0, 67, 'h']]),
-  ...Array.from({ length: 5 }, () => span(BENCH_W, [[2, 4, 'g'], [5, 5, 'h'], [62, 64, 'g'], [65, 65, 'h']])),
+  span(BENCH_W, [...POSTS, [59, 63, 'l']]),
+  span(BENCH_W, [...POSTS, [58, 64, 'i'], [58, 58, 'l'], [64, 64, 'm']]),
+  span(BENCH_W, [...POSTS, [58, 64, 'i'], [58, 58, 'l'], [64, 64, 'm']]),
 ];
-/** The seat's rows: the feet line runs through their middle. */
-const BENCH_SEAT = [12, 14];
+// Under the seat: the far legs first, three letters right and up and so cut short by the seat, then the near ones.
+const LEGS = Array.from({ length: LEG_H }, (_, r) => span(BENCH_W, [...(r < LEG_H - SEAT_DEEP ? [[6, 8, 'h'], [66, 68, 'h']] : []), [2, 4, 'g'], [5, 5, 'h'], [62, 64, 'g'], [65, 65, 'h']]));
+const BENCH = [...REST, ...SEAT, ...LEGS];
+/** The seat's top rows: the feet line runs through their middle. */
+const BENCH_SEAT = [REST_H, REST_H + SEAT_DEEP - 1];
 
-// A shipping crate: three planks on top, a framed front, and a fish stencilled on it.
-const CRATE_W = 48, FISH = ['  ....   .', ' ......  ..', '...........', ' ......  ..', '  ....   .'], FISH_AT = [18, 7];
-const crateFront = r => fill(CRATE_W, c => {
-  const fish = FISH[r - FISH_AT[1]]?.[c - FISH_AT[0]];
-  return fish === '.' ? '.' : c < 2 || c > CRATE_W - 3 || r < 5 || r > 13 ? 'm' : 'i';
-});
-const CRATE = [
-  ...Array.from({ length: 3 }, () => fill(CRATE_W, c => (c === 15 || c === 32 ? 'i' : 'l'))),
-  fill(CRATE_W, () => 'i'),
-  ...Array.from({ length: 11 }, (_, k) => crateFront(k + 4)),
-];
-const CRATE_TOP = [0, 3];
+// A shipping crate with volume: three lit planks on a top that goes back four letters, a framed front with a fish
+// stencilled on it and a darker foot rail, and a right side in shadow.
+const CRATE_W = 44, CRATE_H = 11, CRATE_DEEP = 4, FISH = ['  ....   .', ' ......  ..', '...........', ' ......  ..', '  ....   .'], FISH_AT = [16, 3];
+const CRATE = box({ w: CRATE_W, h: CRATE_H, deep: CRATE_DEEP,
+  top: (c, d) => (c === 14 || c === 29 ? 'i' : d === 1 ? '.' : 'l'),
+  side: (d, r) => (r === 0 ? 'i' : 'm'),
+  front: (c, r) => (FISH[r - FISH_AT[1]]?.[c - FISH_AT[0]] === '.' ? '.' : r === 0 ? 'l' : r >= CRATE_H - 2 || c < 2 || c > CRATE_W - 3 ? 'm' : 'i') });
+const CRATE_TOP = [0, CRATE_DEEP - 1];
 
-// A play mat on the floor: a border, a pale line inside it, and one lozenge in the middle.
-const MAT_W = 76, lozenge = half => [[38 - half, 37 + half, '.']];
+// A play mat lying on the floor: narrower at its far edge, a pale border, one lozenge in the middle, and its thickness
+// showing dark along the near edge.
+const MAT_W = 76, MAT_DEEP = 9, lozenge = half => [[38 - half, 37 + half, '.']];
 const MAT = [
-  span(MAT_W, [[2, 73, 'i']]),
-  span(MAT_W, [[1, 74, 'i']]),
-  span(MAT_W, [[0, 75, 'i'], [2, 73, 'l']]),
-  ...[1, 3, 5, 3, 1].map(half => span(MAT_W, [[0, 75, 'i'], [2, 73, 'l'], [3, 72, 'm'], ...lozenge(half)])),
-  span(MAT_W, [[0, 75, 'i'], [2, 73, 'l']]),
-  span(MAT_W, [[1, 74, 'i']]),
-  span(MAT_W, [[2, 73, 'i']]),
+  ...Array.from({ length: MAT_DEEP }, (_, r) => { const cut = Math.ceil((MAT_DEEP - 1 - r) / 2), a = cut, z = MAT_W - 1 - cut, edge = r === 0 || r === MAT_DEEP - 1;
+    return span(MAT_W, [[a, z, 'l'], ...(edge ? [] : [[a + 2, z - 2, 'i'], ...(r >= 2 && r <= 6 ? lozenge([1, 3, 5, 3, 1][r - 2]) : [])])]); }),
+  span(MAT_W, [[0, MAT_W - 1, 'm']]),
 ];
+
+// A window for the back wall: a stone arch with a sill, four panes of night, and a small moon in one.
+const WIN_W = 20, WIN_H = 23, WIN_ARCH = [6, 4, 2, 1, 0];
+const inWindow = (r, c, inset) => { const top = r - inset; if (top < 0 || c < inset || c > WIN_W - 1 - inset) return false; const cut = WIN_ARCH[top] ?? 0; return c >= cut + inset && c <= WIN_W - 1 - cut - inset; };
+const WINDOW = [
+  ...Array.from({ length: WIN_H }, (_, r) => ' ' + fill(WIN_W, c => {
+    if (!inWindow(r, c, 0)) return ' ';
+    if (!inWindow(r, c, 2) || r >= WIN_H - 2) return 's';
+    if (c === 9 || c === 10 || r === 12) return 'g';
+    if (r >= 5 && r <= 7 && c >= 13 && c <= 15 && !(r === 5 && c === 13) && !(r === 7 && c === 15)) return '.';
+    return r > 12 ? 'm' : 'i';
+  }) + ' '),
+  span(WIN_W + 2, [[0, WIN_W + 1, 's']]),
+  span(WIN_W + 2, [[0, WIN_W + 1, 'g']]),
+];
+
+// A notice board for the back wall: a stone frame, and three notes pinned to it with room between them.
+const BOARD_W = 28, BOARD_H = 16;
+const BOARD = lay(lay(lay(
+  Array.from({ length: BOARD_H }, (_, r) => fill(BOARD_W, c => (r < 2 || c < 2 || c > BOARD_W - 3 ? 's' : r > BOARD_H - 3 ? 'g' : 'h'))),
+  [' i   ', '.....', '.mmm.', '.....', '.mm..', '.....'], 4, 4),
+  ['  m  ', 'lllll', 'lllll', 'lllll', 'llll '], 12, 6),
+  [' i  ', '....', '.mm.', '....'], 20, 4);
 
 // A plant in a stone pot: five broad leaves, each lit above and shaded below, on dark stems.
 const PLANT = [
@@ -110,10 +142,33 @@ const DOOR = Array.from({ length: DOOR_H }, (_, r) => fill(DOOR_W, c => {
   return step ? (r === step[0] ? 'i' : 'm') : '#';
 }));
 
+// The back wall, one panel wide, in the graphite the rooms' walls are painted in (`app/styles/work-status-tokens.css`)
+// and without an outline: set side by side it runs the lobby's width. From the top: a picture rail under the floor
+// above, a panel with a seam at its left edge, a chair rail, and a skirting board that ends on the floor's edge line.
+const WALL_W = 192, WALL_H = 98, CHAIR_RAIL = 64;
+const GRAPHITE = { wall: '161514', lit: '1a1918', building: '131312', pit: '0c0c0b', floorEdge: '24231f', steel: '2b2a27', console: '232220' };
+const wallAt = (x, y) => {
+  if (y < 2) return 'pit';
+  if (y < 4) return 'floorEdge';
+  if (y < 6) return 'building';
+  if (y < CHAIR_RAIL) return x < 2 ? 'building' : x < 4 ? 'lit' : 'wall';
+  if (y < CHAIR_RAIL + 2) return 'lit';
+  if (y < CHAIR_RAIL + 4) return 'building';
+  if (y < WALL_H - 10) return 'wall';
+  if (y < WALL_H - 8) return 'steel';
+  if (y < WALL_H - 4) return 'console';
+  return y < WALL_H - 2 ? 'pit' : 'floorEdge';
+};
+const wall = (() => {
+  const rgba = Buffer.alloc(WALL_W * WALL_H * 4);
+  for (let y = 0; y < WALL_H; y++) for (let x = 0; x < WALL_W; x++) rgba.writeUInt32BE(parseInt(GRAPHITE[wallAt(x, y)] + 'ff', 16), (y * WALL_W + x) * 4);
+  return { rgba, w: WALL_W, h: WALL_H, pad: 0 };
+})();
+
 const door = art(DOOR), UNIT = 2;
 /** Each fixture's sprite and its `foot`: the sprite point set on its place on the back lane's feet line. */
 const LOBBY_PROPS = (() => {
-  const bench = art(BENCH), crate = art(CRATE), mat = art(MAT), plant = art(PLANT);
+  const bench = art(BENCH), crate = art(CRATE), mat = art(MAT), plant = art(PLANT), window = art(WINDOW), board = art(BOARD);
   const middle = s => Math.round(s.w / 2), rowsMiddle = ([a, z], s) => s.pad + (a + z + 1) * UNIT / 2;
   return {
     bench: { s: bench, foot: [middle(bench), rowsMiddle(BENCH_SEAT, bench)] },
@@ -122,6 +177,9 @@ const LOBBY_PROPS = (() => {
     plant: { s: plant, foot: [plant.pad + 23, plant.h - plant.pad] },
     door: { s: door, foot: [door.pad, door.h - door.pad] },
     doorRight: { s: flipSprite(door), foot: [door.w - door.pad, door.h - door.pad] },
+    wall: { s: wall, foot: [0, wall.h] },
+    window: { s: window, foot: [middle(window), window.h - window.pad] },
+    board: { s: board, foot: [middle(board), board.h - board.pad] },
   };
 })();
 
@@ -130,7 +188,7 @@ export async function writeLobbyProps(dir, name) {
   const list = Object.entries(LOBBY_PROPS), W = list.reduce((a, [, p]) => a + p.s.w + 2, 0), H = Math.max(...list.map(([, p]) => p.s.h)), sheet = Buffer.alloc(W * H * 4), meta = {};
   let sx = 0;
   for (const [id, { s, foot }] of list) {
-    const rgba = toRGBA(s.data);
+    const rgba = s.rgba ?? toRGBA(s.data);
     for (let y = 0; y < s.h; y++) rgba.copy(sheet, (y * W + sx) * 4, y * s.w * 4, (y + 1) * s.w * 4);
     meta[id] = { sx, w: s.w, h: s.h, fx: foot[0], fy: foot[1] };
     sx += s.w + 2;
