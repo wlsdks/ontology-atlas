@@ -105,6 +105,7 @@ test('a stylesheet change runs the token gates that read it whole', () => {
     for (const gate of [
       'tests/contract/design-tokens/design-doc-token-integrity.contract.test.ts',
       'tests/contract/design-tokens/undeclared-token-ref.contract.test.ts',
+      'tests/contract/design-tokens/quaternary-ink-surface.contract.test.ts',
     ]) assert.ok(contractFiles.includes(gate), `${file} -> ${gate}`);
   }
 });
@@ -635,8 +636,8 @@ test('only the Checks workflow asks its planner for the full set after a merge',
 
 test('ratchets run for the files they count, and message parts reach their catalogue readers', () => {
   const ratchets = ratchetContractFiles();
-  assert.ok(ratchets.includes('tests/contract/control-adoption/tab-adoption-ratchet.contract.test.ts'));
-  assert.ok(ratchets.includes('tests/contract/design-tokens/quaternary-ink-surface.contract.test.ts'));
+  assert.ok(ratchets.includes('tests/contract/security/security-surfaces.contract.test.ts'));
+  assert.ok(ratchets.includes('tests/contract/ci-gates/test-title-language.contract.test.ts'));
   const ui = buildImpactPlan({ files: ['src/views/download/ui/ScreensStage.tsx'] }).lanes.unit.contractFiles;
   for (const ratchet of ratchets) assert.ok(ui.includes(ratchet), ratchet);
   assert.ok(!buildImpactPlan({ files: ['README.md'] }).lanes.unit.contractFiles.some((path) => ratchets.includes(path) && !path.includes('/security/')));
