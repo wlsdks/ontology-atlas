@@ -89,7 +89,7 @@ function ShellColumn({ children }: { children: ReactNode }) {
     pathname,
     crossfadeTo: (href, { replace, scroll, locale }) => {
       cancelMapNavigation();
-      navigateWithViewTransition(() => (replace ? router.replace(href, { scroll, locale }) : router.push(href, { scroll, locale })));
+      navigateWithViewTransition(href, () => (replace ? router.replace(href, { scroll, locale }) : router.push(href, { scroll, locale })));
     },
   }), [pathname, router]);
 
@@ -288,7 +288,7 @@ function AppNavRailSlot() {
       }
       cancelMapNavigation();
       if (id === "map" || resolveActiveNavDestination(pathname) === id) router.push(href);
-      else navigateWithViewTransition(() => router.push(href));
+      else navigateWithViewTransition(href, () => router.push(href));
       /* The canvas needs focus before arrow keys walk it (`shared/lib/map-canvas/focus-map-canvas.ts`). */
       if (id === "map") focusMapCanvasWhenReady();
     },

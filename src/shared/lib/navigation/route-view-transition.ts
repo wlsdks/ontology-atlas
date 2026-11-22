@@ -4,6 +4,8 @@
  * because a captured document is not hit-testable.
  */
 
+import { keepsRoute } from "./nav-destination";
+
 export const ROUTE_VIEW_TRANSITION_SETTLE_TIMEOUT_MS = 900;
 
 type StartViewTransition = (update: () => Promise<void> | void) => unknown;
@@ -116,14 +118,22 @@ function viewTransitionApi(): StartViewTransition | null {
   return typeof candidate === "function" ? (candidate as StartViewTransition).bind(document) : null;
 }
 
+function currentPathname(): string | null {
+  return typeof window === "undefined" ? null : window.location.pathname;
+}
+
 /**
- * Run `navigate` inside a view transition when the browser offers one; call it
- * directly otherwise. `navigate` must trigger a client-side route change.
+ * Run `navigate`, a client-side navigation to `href`, inside a view transition when the browser
+ * offers one and `href` leaves the current route; call it directly otherwise. The transition
+ * pauses rendering until the pathname changes, which a query or hash change never does.
  */
 export function navigateWithViewTransition(
+  href: string,
   navigate: () => void,
   options?: {
     startViewTransition?: StartViewTransition | null;
+    /** The pathname on screen, for tests; the document's location otherwise. */
+    currentPathname?: string;
     timeoutMs?: number;
     setTimeoutFn?: typeof setTimeout;
     crossfadeMs?: number;
@@ -132,7 +142,10 @@ export function navigateWithViewTransition(
   },
 ): "transition" | "direct" {
   const start = options?.startViewTransition === undefined ? viewTransitionApi() : options.startViewTransition;
-  if (!start) {
+  const from = options?.currentPathname ?? currentPathname();
+  if (!start || (from !== null && keepsRoute(href, from))) {
+    // A transition still holding its snapshot would wait for a route this navigation may replace.
+    pendingSettle?.();
     navigate();
     return "direct";
   }

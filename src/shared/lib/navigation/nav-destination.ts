@@ -89,3 +89,17 @@ export function stripLocalePrefix(
   }
   return pathname || "/";
 }
+
+/**
+ * Whether going to `href` keeps the screen at `currentPathname`: only the query or hash differ.
+ * Either side may carry a locale prefix or a trailing slash.
+ */
+export function keepsRoute(href: string, currentPathname: string): boolean {
+  if (href.startsWith("?") || href.startsWith("#")) return true;
+  return routePath(href) === routePath(currentPathname);
+}
+
+function routePath(href: string): string {
+  const path = stripLocalePrefix(href.split(/[?#]/, 1)[0] || "/");
+  return path.length > 1 ? path.replace(/\/+$/, "") : path;
+}

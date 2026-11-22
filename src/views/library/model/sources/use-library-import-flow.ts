@@ -22,11 +22,12 @@ export function useLibraryImportFlow({ handle, t, toast }: {
   const connectors = useVaultConnectors(handle);
   const router = useRouter();
   const openConcept = useCallback((slug: string) => {
-    navigateWithViewTransition(() => router.push(`/library/?tab=ontology&slug=${encodeURIComponent(slug)}`));
+    const href = `/library/?tab=ontology&slug=${encodeURIComponent(slug)}`;
+    navigateWithViewTransition(href, () => router.push(href));
   }, [router]);
   const openImport = useCallback(() => { setImportDestination("sources"); setImportOpen(true); }, []);
-  const openPlanning = useCallback(() => { navigateWithViewTransition(() => router.push("/planning/")); }, [router]);
-  const openConnectorSettings = useCallback(() => { navigateWithViewTransition(() => router.push(MCP_CONNECTORS_HREF)); }, [router]);
+  const openPlanning = useCallback(() => { navigateWithViewTransition("/planning/", () => router.push("/planning/")); }, [router]);
+  const openConnectorSettings = useCallback(() => { navigateWithViewTransition(MCP_CONNECTORS_HREF, () => router.push(MCP_CONNECTORS_HREF)); }, [router]);
   const routeCrossfading = useSyncExternalStore(subscribeRouteCrossfade, isRouteCrossfadeRunning, () => false);
   const importHeadsToPlanningRef = useRef(false);
   const offerPlanningAfterImport = useCallback(() => {
