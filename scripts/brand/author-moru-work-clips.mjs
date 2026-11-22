@@ -199,9 +199,9 @@ function cutNeutral(neutral, size) {
   const wallRight = rowRight(top - 1);
   for (let y = top; y <= floor; y++) {
     if (rowLeft(y) <= wallLeft + DRAWN) wallLeft = Math.min(wallLeft, rowLeft(y));
-    // The corners round as the catalogue's belly does when Moru is off the floor: five drawn pixels at the floor, then three, two and one.
-    const round = DRAWN * ([5, 3, 2, 1][Math.floor((floor - y) / DRAWN)] ?? 0);
-    for (let x = wallLeft + round; x <= wallRight - round; x++) {
+    // The corners round as the catalogue's belly does when Moru is off the floor, the flank under the face less than the tail side.
+    const band = Math.floor((floor - y) / DRAWN), roundLeft = DRAWN * ([5, 3, 2, 1][band] ?? 0), roundRight = DRAWN * ([3, 2, 2, 1][band] ?? 0);
+    for (let x = wallLeft + roundLeft; x <= wallRight - roundRight; x++) {
       const p = y * size + x;
       if (!inBody[p] && (hidden[p] || isInk(bare[p]))) { bare[p] = x >= firstIvory ? IVORY : STONE; inBody[p] = 1; hidden[p] = 1; }
     }
@@ -257,6 +257,8 @@ const REST = {
   leftX: 0, leftY: 0, rightX: 0, rightY: 0,
   /** How far all of Moru has moved to the right; only a prop gives a reason to. */
   slide: 0,
+  /** The belly's spread against the head's, how far the head alone leans, and how far the head tips toward its lean. */
+  bulge: 0, bend: 0, cant: 0,
 };
 
 function stamp(canvas, size, sprite, left, top, only) {
@@ -271,13 +273,20 @@ function drawPose(rig, pose, shapes, props, art) {
   const { size, bare, inBody, ivory } = rig, canvas = new Uint8Array(size * size);
   const height = rig.floor - rig.bodyBox.y0, lift = snap(pose.lift), slide = snap(pose.slide);
   for (const prop of props) if (prop.behind) prop.draw(canvas, size);
-  const leanAt = y => snap(pose.lean * Math.min(1, (rig.floor - y) / height));
+  // How far up the posed body a row is: 0 on the floor, 1 at the crown.
+  const up = y => Math.max(0, Math.min(1, (rig.floor - y) / (height * pose.tall)));
+  // `lean` shears the whole body; `bend` carries the head further than the belly, so the weight stays where it sits.
+  const leanAt = y => snap(pose.lean * Math.min(1, (rig.floor - y) / height) + pose.bend * up(y) ** 2);
+  // `bulge` spreads the belly and draws the head in, as a squash does; below zero it lifts the chest.
+  const wideAt = y => pose.wide * (1 + pose.bulge * (1 - 2 * up(y)));
+  // `cant` tips the head: the side the body leans toward drops and the far side rises.
+  const cantAt = (x, y) => pose.cant ? snap(pose.cant * (x - rig.centre - leanAt(y) - slide) / (rig.bodyBox.w / 2) * up(y) ** 2) : 0;
   const body = new Uint8Array(size * size);
   const flipperOf = side => {
     const flipper = rig.flippers[side === 'left' ? 0 : 1], dx = snap(pose[`${side}X`]), dy = snap(pose[`${side}Y`]);
     // Off the floor a flipper is the round paw the catalogue draws there; on it, the flat-footed one.
     const shape = shapes[side] ?? (dy - lift < -DRAWN ? 'raised' : 'rest');
-    const x = snap(rig.centre + (flipper.box.x0 - rig.centre) * pose.wide) + dx + slide, y = flipper.box.y0 + dy - lift;
+    const x = snap(rig.centre + (flipper.box.x0 - rig.centre) * pose.wide * (1 + pose.bulge)) + dx + slide, y = flipper.box.y0 + dy - lift;
     const paw = shape === 'rest' || shape === 'hidden' ? undefined : art.flippers[shape];
     if (shape !== 'rest' && shape !== 'hidden' && !paw) throw new Error(`no flipper drawing is called "${shape}"`);
     return { flipper, shape, x, y, paw, behind: shapes[`${side}Behind`] ?? false, left: paw && x + snap((flipper.box.w - paw.w) / 2), top: paw && y + flipper.box.h + DRAWN - paw.h };
@@ -285,8 +294,8 @@ function drawPose(rig, pose, shapes, props, art) {
   const placedFlippers = [flipperOf('left'), flipperOf('right')];
   const drawFlipper = ({ flipper, shape, x, y, paw, left, top }) => {
     if (shape === 'hidden') return;
-    // Over the body a paw keeps the arc above it, as the catalogue draws a raised flipper; off the body it keeps its whole outline.
-    if (paw) return stamp(canvas, size, paw, left, top, (xx, yy) => !(body[yy * size + xx] && yy >= top + paw.h - paw.pad - DRAWN && paw.data[(yy - top) * paw.w + xx - left] === INK));
+    // A paw resting on the belly's lower edge keeps the arc above it, as the catalogue draws it there; anywhere else it keeps its whole outline.
+    if (paw) return stamp(canvas, size, paw, left, top, (xx, yy) => !(body[yy * size + xx] && yy >= top + paw.h - paw.pad - DRAWN && paw.data[(yy - top) * paw.w + xx - left] === INK && !body[Math.min(size - 1, yy + 2 * DRAWN) * size + xx]));
     // In its own place the flipper is the neutral pose's pixels; moved, it carries a whole outline.
     if (x === flipper.box.x0 && y === flipper.box.y0) stamp(canvas, size, flipper.rest, flipper.rest.x0, flipper.rest.y0);
     else stamp(canvas, size, flipper.loose, x - DRAWN, y - DRAWN);
@@ -295,11 +304,10 @@ function drawPose(rig, pose, shapes, props, art) {
 
   const faceX = snap(pose.faceX), faceY = snap(pose.faceY);
   for (let y = 0; y < size; y++) {
-    const sy = Math.round(rig.floor - (rig.floor - (y + lift)) / pose.tall);
-    if (sy < 0 || sy >= size) continue;
-    const lean = leanAt(y + lift) + slide;
     for (let x = 0; x < size; x++) {
-      const sx = Math.round(rig.centre + (x - lean - rig.centre) / pose.wide);
+      const row = y + lift - cantAt(x, y + lift), sy = Math.round(rig.floor - (rig.floor - row) / pose.tall);
+      if (sy < 0 || sy >= size) continue;
+      const sx = Math.round(rig.centre + (x - leanAt(row) - slide - rig.centre) / wideAt(row));
       if (sx < 0 || sx >= size) continue;
       // The tail swings about its root: a column farther from the body is raised more.
       const reach = Math.max(0, Math.min(1, (rig.tailEdge - sx) / rig.tailReach));
@@ -307,7 +315,8 @@ function drawPose(rig, pose, shapes, props, art) {
       if (ty < 0 || ty >= size) continue;
       const source = ty * size + sx;
       let colour = bare[source];
-      if (!colour) continue;
+      // Facing the viewer, the tail is behind the body.
+      if (!colour || shapes.front && !inBody[source] && sx < rig.tailEdge + DRAWN) continue;
       if (inBody[source]) {
         body[y * size + x] = 1;
         if (faceX || faceY) colour = ivory[Math.max(0, Math.min(size - 1, ty - faceY)) * size + Math.max(0, Math.min(size - 1, sx - faceX))] ? IVORY : STONE;
@@ -319,8 +328,8 @@ function drawPose(rig, pose, shapes, props, art) {
   // The face is drawn on a dome: a mark on the side the face turns toward travels less than the others.
   const turned = (x, gaze) => { const turn = pose.faceX + gaze; return (turn > 0 ? x > rig.nose.x : x < rig.nose.x) ? turn * FAR_SIDE : turn; };
   const place = (x, y, gaze = 0) => {
-    const py = rig.floor - (rig.floor - (y + faceY)) * pose.tall;
-    return [rig.centre + (x + turned(x, gaze) - rig.centre) * pose.wide + leanAt(py) + slide, py - lift];
+    const py = rig.floor - (rig.floor - (y + faceY)) * pose.tall, px = rig.centre + (x + turned(x, gaze) - rig.centre) * wideAt(py) + leanAt(py) + slide;
+    return [px, py - lift + cantAt(px, py)];
   };
   // A mark is drawn only on the body, a drawn pixel clear of its edge, so a slid face never pokes through the outline.
   const clear = (x, y) => [[0, 0], [-DRAWN, 0], [DRAWN, 0], [0, -DRAWN], [0, DRAWN]].every(([dx, dy]) => body[(y + dy) * size + x + dx]);
@@ -354,8 +363,10 @@ function seal(canvas, size) {
   for (let depth = 0; depth < DRAWN && layer.length; depth++) {
     const next = [];
     for (const p of layer) {
-      const x = p % size;
-      for (const n of [x > 0 ? p - 1 : -1, x + 1 < size ? p + 1 : -1, p - size, p + size]) if (n >= 0 && n < canvas.length && !canvas[n]) { canvas[n] = INK; next.push(n); }
+      const x = p % size, left = x > 0, right = x + 1 < size;
+      // The first two layers also turn corners, so the outline survives the export's halving where a posed edge runs in steps.
+      const around = [left ? p - 1 : -1, right ? p + 1 : -1, p - size, p + size, ...(depth < 2 ? [left ? p - size - 1 : -1, right ? p - size + 1 : -1, left ? p + size - 1 : -1, right ? p + size + 1 : -1] : [])];
+      for (const n of around) if (n >= 0 && n < canvas.length && !canvas[n]) { canvas[n] = INK; next.push(n); }
     }
     layer = next;
   }
@@ -380,15 +391,26 @@ function posesOf(rig, clip, art) {
   const rest = { ...REST, ...clip.rest }, last = clip.frames - 1;
   const keys = [{ at: 0, pose: {}, shapes: {} }, ...clip.keys, { at: last, pose: {}, shapes: {} }].map(key => ({ ease: 'inOut', shapes: {}, ...key, pose: { ...rest, ...key.pose } }));
   for (let i = 1; i < keys.length; i++) if (keys[i].at <= keys[i - 1].at) throw new Error(`${clip.id}: key ${keys[i].at} does not follow key ${keys[i - 1].at}`);
-  const frames = [];
+  const timeline = [];
   for (let index = 1; index < last; index++) {
     const next = keys.findIndex(key => key.at >= index), to = keys[next], from = keys[next - 1];
     const t = EASE[to.ease]((index - from.at) / (to.at - from.at));
-    const pose = Object.fromEntries(Object.keys(rest).map(name => [name, lerp(from.pose[name], to.pose[name], t)]));
-    const shapes = to.at === index ? to.shapes : from.shapes;
-    frames.push(drawPose(rig, pose, shapes, (clip.props ?? []).flatMap(prop => prop(pose, shapes, index, art) ?? []), art));
+    timeline.push({ index, pose: Object.fromEntries(Object.keys(rest).map(name => [name, lerp(from.pose[name], to.pose[name], t)])), shapes: to.at === index ? to.shapes : from.shapes });
   }
-  return frames;
+  if (!clip.airborne && !clip.travel) settle(timeline, rest);
+  return timeline.map(({ index, pose, shapes }) => drawPose(rig, pose, shapes, (clip.props ?? []).flatMap(prop => prop(pose, shapes, index, art) ?? []), art));
+}
+
+/** The most a grounded body changes between two poses, so its centre moves no faster than the catalogue's grounded clips do. */
+const PACE = { tall: 0.03, wide: 0.04, lean: 2, bend: 4, cant: 2, bulge: 0.04 };
+/** Holds a grounded clip's body to that pace from the neutral pose it opens on and back to the one it closes on. */
+function settle(timeline, rest) {
+  for (const [name, pace] of Object.entries(PACE)) {
+    let before = rest[name];
+    for (const { pose } of timeline) before = pose[name] = Math.max(before - pace, Math.min(before + pace, pose[name]));
+    let after = rest[name];
+    for (const { pose } of [...timeline].reverse()) after = pose[name] = Math.max(after - pace, Math.min(after + pace, pose[name]));
+  }
 }
 
 /** Whether a drawing comes within one exported pixel of the cell edge at 64px, where the export would clip it. */

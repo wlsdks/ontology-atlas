@@ -53,9 +53,10 @@ return hop in each longer three-phrase sequence; waiting has no bubble. These or
 ornaments stay within the actor bounds, ignore pointer input and share its pause,
 visibility and reduced-motion behavior. A still response uses a still bubble.
 
-Eleven gestures for the Work status rooms add typing at a laptop taken out and put
-away, reading the room monitor, nodding off, a heads-up for a waiting session, a
-sigh, a crate carried on the head and lowered through the floor, a belt lever, a
+Eleven gestures for the Work status rooms add typing at a laptop that rises in
+front of Moru, reading the room monitor, nodding off, a heads-up for a waiting
+session, a sigh, a crate heaved onto the head and patted down through the
+floor, a belt lever, a
 merge cheer, a galumph along the floor in each direction and settling into a new
 room. They are
 drawn in code from the neutral pose (see "Rebuild"), so the body, face and
@@ -208,16 +209,24 @@ and its eyes, raised flipper and props as typed pixel maps;
 the facial marks and the two flippers, poses them through the keys and writes
 one sheet per clip to `source/motion-v10/`. A part moves by two work pixels, a
 whole pixel at 128px. A flipper off the floor becomes the round paw the
-catalogue draws there; over the body it keeps only the arc above it, and a
-whisker it would half cover is left out. An effort narrows the eyes and opens
-a small mouth. A hop is keyed pose by pose along a thrown arc, and between two
-poses the centre of the body fill moves no further than it does in the
-catalogue's `hop` (6.6 exported pixels). A grounded clip may shuffle the body
-aside for a prop, bunching and reaching as it goes. Every pose ends with any
-body fill left open to the canvas given its outline, so no fill touches the
-background. `galumph-left` squeezes the body, mirrors it about a column left
-of its centre so the tail stays in the cell, and turns back before the row
-ends. A drawing that comes within one 64px pixel of the cell edge stops the
+catalogue draws there, with its whole outline unless it rests on the belly's
+lower edge, and a whisker it would half cover is left out. An effort narrows
+the eyes and opens a small mouth. Beside scaling and leaning, a pose can spread
+the belly against the head, carry the head further than the belly, and tip the
+head toward its lean: a load or a slump spreads the belly on the floor, a pull
+throws the head after the lever while the belly stays, and off the floor the
+chest lifts. A hop is keyed pose by pose along a thrown arc. Between two poses
+the centre of the body fill moves no further than the 90th percentile of the
+catalogue's own steps: 5.3 exported pixels off the floor or bounding, and 1.4
+on it, which the script holds a grounded body to. The body never shuffles
+aside for a prop: a laptop, a crate or a lever stands in front of the near
+flank, as the catalogue's laptop does, and rises from the floor line or a
+slot. Every pose ends with any body fill left open to the canvas given its
+outline, so no fill touches the background. `galumph-left` squeezes the body,
+passes through a pose facing the viewer with the tail behind, mirrors it about
+a column left of its centre so the tail stays in the cell, and turns back in
+its last poses; poses 5 to 18 are the travel and loop without the turns.
+A drawing that comes within one 64px pixel of the cell edge stops the
 script.
 
 ## Contextual motion

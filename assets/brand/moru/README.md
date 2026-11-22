@@ -153,16 +153,16 @@ fan-out is documented in [Brand](../../../docs/design/brand.md#rebuild).
 ### Work status rooms
 
 <p>
-<img src="animated/gif/authored/moru-desk-type.gif" width="128" height="128" alt="Moru taking out a laptop and typing" />
+<img src="animated/gif/authored/moru-desk-type.gif" width="128" height="128" alt="Moru typing at a laptop that rises in front of it" />
 <img src="animated/gif/authored/moru-monitor-read.gif" width="128" height="128" alt="Moru reading a monitor above it" />
 <img src="animated/gif/authored/moru-nod-off.gif" width="128" height="128" alt="Moru nodding off and snoring" />
 <img src="animated/gif/authored/moru-heads-up.gif" width="128" height="128" alt="Moru perking up, hopping and looking out" />
 <img src="animated/gif/authored/moru-sigh.gif" width="128" height="128" alt="Moru looking round for someone and sighing" />
-<img src="animated/gif/authored/moru-crate-send.gif" width="128" height="128" alt="Moru carrying a crate on its head and lowering it through the floor" />
+<img src="animated/gif/authored/moru-crate-send.gif" width="128" height="128" alt="Moru heaving a crate onto its head and patting it down through the floor" />
 <img src="animated/gif/authored/moru-lever-pull.gif" width="128" height="128" alt="Moru throwing a floor lever" />
 <img src="animated/gif/authored/moru-merge-cheer.gif" width="128" height="128" alt="Moru jumping, flapping and clapping" />
 <img src="animated/gif/authored/moru-galumph.gif" width="128" height="128" alt="Moru galumphing along the floor" />
-<img src="animated/gif/authored/moru-galumph-left.gif" width="128" height="128" alt="Moru turning round and galumphing to the left" />
+<img src="animated/gif/authored/moru-galumph-left.gif" width="128" height="128" alt="Moru turning round through a front-facing pose and galumphing to the left" />
 <img src="animated/gif/authored/moru-settle-in.gif" width="128" height="128" alt="Moru looking round a new room, hopping and settling" />
 </p>
 

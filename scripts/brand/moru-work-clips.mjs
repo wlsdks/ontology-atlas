@@ -77,18 +77,16 @@ const PAW = [
   ' mmiii ',
 ];
 
-/** The room's crate: a pale lid, the session's band and a dark base, so it never reads as part of the stone head it rides on. */
+/** The room's crate: a pale lid, the session's band and a deep base, so it never reads as part of the stone head it rides on. */
 const CRATE = [
-  '.............',
-  '.............',
-  '.............',
-  'iiiiiiiiiiiii',
-  'iiiiiiiiiiiii',
-  'iiiiiiiiiiiii',
-  'ggggggggggggg',
-  'ggggggggggggg',
-  'ggggggggggggg',
-  'ggggggggggggg',
+  '.........',
+  '.........',
+  '.........',
+  'iiiiiiiii',
+  'iiiiiiiii',
+  'mmmmmmmmm',
+  'mmmmmmmmm',
+  'mmmmmmmmm',
 ];
 
 /** The laptop of the catalogue's laptop scene: a slanted dark panel with three pale lines. */
@@ -114,8 +112,8 @@ const SPARK = {
 };
 /** A breath let out. */
 const PUFF = {
-  small: [' ## ', '####', ' ## '],
-  large: [' ### ', '#####', '#####', ' ### '],
+  small: [' # ', '###', ' # '],
+  large: [' ## ', '####', '####', ' ## '],
 };
 /** Three strokes over the head when something catches Moru's attention. */
 const NOTICE = {
@@ -137,11 +135,11 @@ const UNIT = 4;
 /** Work pixels of outline round a prop: as thick as Moru's own. */
 const RING = 5;
 
-function art({ pixelMap, stamp, snap, rig, INK, MUTED, INDIGO, GRAY, STONE, IVORY }) {
+function art({ pixelMap, stamp, snap, rig, INK, MUTED, INDIGO, STONE, IVORY }) {
   const maps = (drawings, key, unit, ring) => Object.fromEntries(Object.entries(drawings).map(([name, rows]) => [name, pixelMap(rows, key, unit, ring)]));
-  /** A floor lever on a square sheet: a plate, a bare pole two squares thick whose top leans `tilt` squares, and a knob on it. */
+  /** A stubby floor lever on a square sheet: a plate, a bare pole two squares thick whose top leans `tilt` squares, and a knob on it, all below Moru's eyes. */
   const lever = tilt => {
-    const side = 88, pole = 10, mid = side / 2 - UNIT, data = new Uint8Array(side * side);
+    const side = 64, pole = 5, mid = side / 2 - UNIT, data = new Uint8Array(side * side);
     const plate = pixelMap(PLATE, { s: STONE }, UNIT, RING), knob = pixelMap(KNOB, { i: INDIGO }, UNIT, RING), piece = pixelMap(['ii'], { i: INDIGO }, UNIT);
     const poleTop = side - plate.h - pole * UNIT, at = row => mid + UNIT * Math.round(tilt * (pole - row) / pole);
     for (let row = 0; row < pole; row++) stamp(data, side, piece, at(row), poleTop + row * UNIT);
@@ -154,7 +152,7 @@ function art({ pixelMap, stamp, snap, rig, INK, MUTED, INDIGO, GRAY, STONE, IVOR
     eyes: Object.fromEntries(Object.entries(EYES).map(([name, eye]) => [name, { ...pixelMap(eye.rows, { '#': INK }, 1), drop: eye.drop }])),
     mouths: maps(MOUTHS, { '#': INK }, 1),
     flippers: { raised: pixelMap(PAW, { i: INDIGO, m: MUTED }, 5, 5) },
-    crate: pixelMap(CRATE, { '.': IVORY, i: INDIGO, g: GRAY }, UNIT, RING),
+    crate: pixelMap(CRATE, { '.': IVORY, i: INDIGO, m: MUTED }, UNIT, RING),
     laptop: pixelMap(LAPTOP, { m: MUTED, '.': IVORY }, UNIT, RING),
     snore: maps(SNORE, { z: INDIGO }, UNIT),
     spark: maps(SPARK, { '#': INDIGO }, UNIT),
@@ -168,7 +166,7 @@ function art({ pixelMap, stamp, snap, rig, INK, MUTED, INDIGO, GRAY, STONE, IVOR
 /** A drawing placed by its left and top, in front of Moru unless `behind`. */
 const placed = (art, sprite, left, top, { behind = false, only } = {}) => ({ behind, draw: (canvas, size) => art.stamp(canvas, size, sprite, art.snap(left), art.snap(top), only) });
 /** Where the top of Moru's head is in a pose. */
-const crownOf = (pose, { rig }) => ({ x: rig.centre + (rig.crownX - rig.centre) * pose.wide + pose.lean + pose.slide, y: rig.floor - (rig.floor - rig.crown) * pose.tall - pose.lift });
+const crownOf = (pose, { rig }) => ({ x: rig.centre + (rig.crownX - rig.centre) * pose.wide * (1 - pose.bulge) + pose.lean + pose.bend + pose.slide, y: rig.floor - (rig.floor - rig.crown) * pose.tall - pose.lift });
 
 const GLAD = { eyes: 'happy' };
 const BLINK = { eyes: 'squint' };
@@ -233,11 +231,12 @@ const NOD_OFF = {
   })],
 };
 
-/** One key per pose of a hop: `[lift, tall]` pairs from the pose `at`, so no pose moves the body further than the catalogue's hop does. */
-const hop = (at, arc, base, shapes = {}) => arc.map(([lift, tall], i) => ({ at: at + i, pose: { ...base, lift, tall, wide: 1 - (tall - 1) * 0.7, tail: tall > 1 ? 4 + lift / 4 : -2 }, shapes }));
+/** One key per pose of a hop: `[lift, tall, bulge]` from the pose `at`, so no pose moves the body further than the catalogue's hop does. */
+const hop = (at, arc, base, shapes = {}) => arc.map(([lift, tall, bulge = 0], i) => ({ at: at + i, pose: { ...base, lift, tall, bulge, wide: 1 - (tall - 1) * 0.7, tail: tall > 1 ? 4 + lift / 4 : -2 }, shapes }));
 
 const LEAN_IN = { tall: 1.05, wide: 1.02, faceY: -4 };
-const SMALL_HOP = [[5, 1.05], [11, 1.04], [14, 1.01], [11, 1.03], [5, 1.05], [0, 0.95]];
+const SMALL_HOP = [[4, 1.04, -0.03], [9, 1.04, -0.05], [12, 1.02, -0.06], [9, 1.03, -0.04], [4, 1.04, -0.02], [0, 1]];
+const CROUCH = { tall: 0.96, wide: 1.02, bulge: 0.08, faceY: -1 };
 const HEADS_UP = {
   id: 'heads-up',
   label: 'Heads up',
@@ -250,20 +249,20 @@ const HEADS_UP = {
     { at: 2, pose: { tall: 1.05, wide: 0.97, faceY: -4, tail: 8 }, shapes: { mouth: 'open' } },
     { at: 3, pose: { tall: 1.1, wide: 0.94, faceY: -7, tail: 12 }, shapes: { mouth: 'open' } },
     { at: 4, pose: { tall: 1.06, wide: 0.96, faceY: -5, tail: 6 }, shapes: { mouth: 'open' } },
-    { at: 5, pose: { tall: 0.96, wide: 1.03, faceY: -1, tail: -2 } },
+    { at: 5, pose: { ...CROUCH, tail: -2 } },
     ...hop(6, SMALL_HOP, { faceY: -4 }),
-    ...hop(12, SMALL_HOP, { faceY: -4 }),
-    { at: 18, pose: { ...LEAN_IN, tall: 1.02, tail: 6 } },
-    { at: 19, pose: { ...LEAN_IN, tail: 8 } },
-    { at: 21, pose: { ...LEAN_IN, gazeX: -3, tail: 10 } },
-    { at: 23, pose: { ...LEAN_IN, gazeX: 3, tail: 4 } },
-    { at: 24, pose: { ...LEAN_IN, gazeX: 2, tail: 6 }, shapes: BLINK },
-    { at: 25, pose: { ...LEAN_IN, tail: 10 } },
-    { at: 26, pose: { ...LEAN_IN, tail: 4 } },
+    { at: 12, pose: { ...CROUCH, tail: -4 }, shapes: BLINK },
+    ...hop(13, SMALL_HOP, { faceY: -4 }),
+    { at: 19, pose: { ...CROUCH, tail: -6 } },
+    { at: 20, pose: { ...LEAN_IN, tall: 1.01, tail: 10 } },
+    { at: 21, pose: { ...LEAN_IN, tail: 4 } },
+    { at: 23, pose: { ...LEAN_IN, gazeX: -3, tail: 8 } },
+    { at: 25, pose: { ...LEAN_IN, gazeX: 3, tail: 4 } },
+    { at: 26, pose: { ...LEAN_IN, gazeX: 2, tail: 6 }, shapes: BLINK },
     { at: 27, pose: { ...LEAN_IN, tail: 10 } },
     { at: 28, pose: { ...LEAN_IN, tail: 4 } },
-    { at: 29, pose: { tall: 1.02, faceY: -2, tail: 2 } },
-    { at: 30, pose: { tall: 0.98, wide: 1.02, faceY: 1 } },
+    { at: 29, pose: { tall: 1.02, faceY: -2, tail: 6 } },
+    { at: 30, pose: { tall: 0.99, wide: 1.01, faceY: 1, tail: 2 } },
   ],
   // The strokes show short, long, then short again before they go.
   props: [(pose, shapes, index, art) => {
@@ -273,12 +272,15 @@ const HEADS_UP = {
   }],
 };
 
-const FLAP_UP = { leftX: -10, leftY: -18, rightX: 10, rightY: -18 };
-const FLAP_DOWN = { leftX: -6, leftY: -6, rightX: 6, rightY: -6 };
+/** Both flippers stay at the belly's corners while they flap, flung out and let fall, each drawn whole. */
+const FLAP_UP = { leftX: -8, leftY: -8, rightX: 8, rightY: -8 };
+const FLAP_DOWN = { leftX: -2, leftY: 0, rightX: 2, rightY: 0 };
+const FLAPPING = { ...GLAD, mouth: 'open', left: 'rest', right: 'rest' };
 /** Paws brought together along the floor line, as the catalogue claps. */
 const CLAP_APART = { leftX: 16, rightX: -16 }, CLAP = { leftX: 28, rightX: -30 };
 const CLAPPING = { ...GLAD, left: 'raised', right: 'raised' };
-const CHEER_HOP = [[6, 1.08], [16, 1.08], [25, 1.06], [31, 1.04], [35, 1.02], [36, 1], [35, 1], [31, 1.02], [25, 1.04], [16, 1.06], [6, 1.08], [0, 1]];
+/** Off the floor the chest lifts and the belly draws in; the squash before and after spreads it. */
+const CHEER_HOP = [[5, 1.05, -0.03], [13, 1.06, -0.06], [22, 1.06, -0.08], [29, 1.04, -0.1], [33, 1.02, -0.11], [35, 1, -0.12], [33, 1, -0.1], [29, 1.02, -0.08], [22, 1.04, -0.06], [13, 1.06, -0.03], [5, 1.05], [0, 1, 0.04]];
 const MERGE_CHEER = {
   id: 'merge-cheer',
   label: 'Merge cheer',
@@ -290,11 +292,11 @@ const MERGE_CHEER = {
     { at: 1, pose: { faceX: 4, gazeX: 2, lean: 3 }, ease: 'out' },
     { at: 2, pose: { faceX: 6, gazeX: 4, lean: 6, tall: 1.03, wide: 0.98, tail: 4 } },
     { at: 3, pose: { faceX: 4, gazeX: 2, tall: 0.95, wide: 1.04, faceY: 1 } },
-    { at: 4, pose: { tall: 0.89, wide: 1.09, faceY: 3, leftX: -6, rightX: 6, tail: -4 } },
+    { at: 4, pose: { tall: 0.9, wide: 1.05, bulge: 0.12, faceY: 3, leftX: -6, rightX: 6, tail: -4 }, shapes: BLINK },
     { at: 5, pose: { tall: 1, faceY: -2, tail: 2 }, shapes: { mouth: 'open' } },
-    ...hop(6, CHEER_HOP, { faceY: -5 }, { ...GLAD, mouth: 'open' }).map((key, i) => ({ ...key, pose: { ...key.pose, ...(i === 11 ? {} : i % 2 ? FLAP_UP : FLAP_DOWN) } })),
-    { at: 18, pose: { tall: 0.9, wide: 1.08, faceY: 3, leftX: -6, rightX: 6, tail: -6 }, shapes: GLAD },
-    { at: 19, pose: { tall: 1.03, wide: 0.98, faceY: -2, tail: 6 }, shapes: GLAD },
+    ...hop(6, CHEER_HOP, { faceY: -5 }, FLAPPING).map((key, i) => ({ ...key, pose: { ...key.pose, ...(i === 11 ? {} : i % 2 ? FLAP_UP : FLAP_DOWN) } })),
+    { at: 18, pose: { tall: 0.92, wide: 1.04, bulge: 0.12, faceY: 3, leftX: -6, rightX: 6, tail: -6 }, shapes: GLAD },
+    { at: 19, pose: { tall: 1.03, wide: 0.98, faceY: -2, tail: 12 }, shapes: GLAD },
     { at: 20, pose: { ...CLAP_APART, tail: 6 }, shapes: CLAPPING },
     { at: 21, pose: { ...CLAP, tall: 0.99, wide: 1.01, tail: 2 }, shapes: CLAPPING },
     { at: 22, pose: { ...CLAP_APART, tall: 1.02, wide: 0.99, tail: 8 }, shapes: CLAPPING },
@@ -327,6 +329,7 @@ const GALUMPH_PHRASE = [
 ];
 const GALUMPH = {
   id: 'galumph',
+  travel: true,
   label: 'Galumph',
   context: 'Work status rooms: moving along the floor to the right when a room is entered, left or changes size. The room moves the cell; the clip moves only the body.',
   frames: 24,
@@ -341,34 +344,40 @@ const TURN_PHRASE = [
   { at: 2, pose: REACH, ease: 'out' },
   { at: 3, pose: { ...REACH, tall: 0.9, wide: 1.11, lean: 8 } },
   { at: 5, pose: { tall: 1.1, wide: 0.91, lean: -3, faceX: 2, faceY: -4, leftX: -2, rightX: -4, tail: 14 } },
-  { at: 7, pose: { tall: 0.96, wide: 1.04, faceY: 2, tail: -4 }, ease: 'in' },
+  { at: 6, pose: { tall: 0.96, wide: 1.04, faceY: 2, tail: -4 }, ease: 'in' },
 ];
-const SQUEEZED = { tall: 1.04, wide: 0.72, faceX: -8, tail: 8 };
+const SQUEEZED = { tall: 1.03, wide: 0.8, faceX: -10, tail: 8 };
+/** Facing the viewer between the two sides: the tail is behind and the face sits in the middle of the body. */
+const FRONT = { pose: { tall: 1.05, wide: 0.74, slide: -19, faceX: -20 }, shapes: { front: true } };
+const TURNED_REST = { tall: 0.98, wide: 0.96, slide: -4, tail: 2 };
 const GALUMPH_LEFT = {
   id: 'galumph-left',
+  travel: true,
   label: 'Galumph left',
-  context: 'Work status rooms: moving along the floor to the left. Moru turns round, galumphs and turns back, so the row still opens and closes on the neutral pose.',
+  context: 'Work status rooms: moving along the floor to the left. Moru turns round through a pose facing the viewer, galumphs and turns back; poses 5 to 18 are the travel and loop on their own.',
   frames: 24,
-  durationsMs: [110, 100, 90, 90, 110, 130, 130, 150, 110, 120, 110, 110, 130, 130, 150, 110, 120, 110, 110, 130, 90, 90, 100, 110],
+  durationsMs: [110, 100, 90, 90, 90, 110, 130, 130, 150, 110, 120, 110, 130, 130, 150, 110, 120, 110, 110, 90, 90, 90, 100, 110],
   keys: [
-    { at: 1, pose: { tall: 0.97, wide: 0.9, slide: -6, faceX: -4, tail: 4 } },
-    { at: 2, pose: { ...SQUEEZED, slide: -12 } },
+    { at: 1, pose: { tall: 0.99, wide: 0.93, slide: -4, faceX: -4, tail: 4 } },
+    { at: 2, pose: { ...SQUEEZED, slide: -11 } },
+    { at: 3, ...FRONT },
     ...turned([
-      { at: 3, pose: { ...SQUEEZED, slide: -10 } },
-      { at: 4, pose: { tall: 0.97, wide: 0.94, slide: -4, tail: 2 } },
-      ...later(TURN_PHRASE, 4),
+      { at: 4, pose: { ...SQUEEZED, slide: -11 } },
+      { at: 5, pose: TURNED_REST },
+      ...later(TURN_PHRASE, 5),
       ...later(TURN_PHRASE, 11),
-      { at: 19, pose: { tall: 0.98, wide: 0.94, slide: -4, tail: 2 } },
-      { at: 20, pose: { ...SQUEEZED, slide: -10 } },
+      { at: 18, pose: TURNED_REST },
+      { at: 19, pose: { ...SQUEEZED, slide: -11 } },
     ]),
-    { at: 21, pose: { ...SQUEEZED, slide: -12 } },
-    { at: 22, pose: { tall: 0.98, wide: 0.92, slide: -6, faceX: -4, tail: 2 } },
+    { at: 20, ...FRONT },
+    { at: 21, pose: { ...SQUEEZED, slide: -11 } },
+    { at: 22, pose: { tall: 0.99, wide: 0.93, slide: -4, faceX: -4, tail: 2 } },
   ],
 };
 
 const LOOK_UP = { faceX: 6, faceY: -8, gazeX: 3, lean: 6, tall: 1.04, wide: 0.97 };
 const LOOK_LEFT = { faceX: -10, gazeX: -4, lean: -6, tall: 1.03, wide: 0.98 };
-const SETTLE_HOP = [[6, 1.06], [14, 1.05], [19, 1.02], [20, 1], [17, 1.02], [10, 1.04], [2, 1.05], [0, 0.97]];
+const SETTLE_HOP = [[5, 1.05, -0.03], [13, 1.05, -0.06], [19, 1.02, -0.08], [20, 1, -0.08], [17, 1.02, -0.06], [10, 1.04, -0.03], [3, 1.04], [0, 1, 0.04]];
 const SETTLE_IN = {
   id: 'settle-in',
   label: 'Settle in',
@@ -384,10 +393,10 @@ const SETTLE_IN = {
     { at: 6, pose: { ...LOOK_UP, tail: 8 }, shapes: BLINK },
     { at: 7, pose: { ...LOOK_UP, tail: 6 } },
     { at: 8, pose: { tall: 0.95, wide: 1.04, faceY: 1 } },
-    { at: 9, pose: { tall: 0.9, wide: 1.07, faceY: 3, tail: -4 } },
+    { at: 9, pose: { tall: 0.92, wide: 1.04, bulge: 0.1, faceY: 3, tail: -4 } },
     { at: 10, pose: { tall: 1, faceY: -1, tail: 2 } },
     ...hop(11, SETTLE_HOP, { faceY: -3 }, GLAD),
-    { at: 19, pose: { tall: 0.9, wide: 1.08, faceY: 4, leftX: -6, rightX: 6, tail: -6 }, shapes: GLAD },
+    { at: 19, pose: { tall: 0.93, wide: 1.04, bulge: 0.1, faceY: 4, leftX: -6, rightX: 6, tail: -6 }, shapes: GLAD },
     { at: 20, pose: { tall: 1.03, wide: 0.98, faceY: -2, tail: 6 }, shapes: GLAD },
     { at: 21, pose: { tall: 0.98, wide: 1.02, faceY: 1, tail: -2 }, shapes: GLAD },
     { at: 22, pose: { tall: 1.01 }, shapes: GLAD },
@@ -402,7 +411,8 @@ const SETTLE_IN = {
   ],
 };
 
-const SLUMP = { tall: 0.9, wide: 1.08, faceY: 6, tail: -8, leftX: -4, rightX: 4 };
+/** The slump of a sigh: the belly spreads on the floor and the head sinks forward into it. */
+const SLUMP = { tall: 0.93, wide: 1.03, bulge: 0.1, bend: 4, cant: 3, faceY: 6, tail: -8, leftX: -4, rightX: 4 };
 const LOOK_RIGHT = { faceX: 8, gazeX: 4, lean: 6, tall: 1.05, wide: 0.97 };
 const SIGH = {
   id: 'sigh',
@@ -418,26 +428,27 @@ const SIGH = {
     { at: 8, pose: { ...LOOK_RIGHT, tail: 8 } },
     { at: 9, pose: { ...LOOK_RIGHT, gazeX: 2, tail: 4 }, shapes: BLINK },
     { at: 10, pose: { ...LOOK_RIGHT, tail: 4 } },
-    { at: 11, pose: { faceY: -2, tall: 1.04, wide: 0.97, tail: 4 } },
-    { at: 12, pose: { faceY: -4, tall: 1.07, wide: 0.95, tail: 6 } },
-    { at: 16, pose: SLUMP, shapes: { eyes: 'half', mouth: 'open' } },
-    { at: 17, pose: { ...SLUMP, tall: 0.89, wide: 1.09, tail: -10 }, shapes: { eyes: 'half' } },
-    { at: 19, pose: SLUMP, shapes: BLINK },
-    { at: 20, pose: { tall: 0.95, wide: 1.04, faceY: 3, tail: -4 }, shapes: { eyes: 'half' } },
-    { at: 21, pose: { tall: 1.01, tail: 2 } },
-    { at: 22, pose: { tall: 0.99, wide: 1.01 } },
-  ].map(key => key.at === 16 ? [13, 14, 15, 16].map((at, i) => ({ ...key, at, pose: { faceY: [-2, 1, 4, 6][i], tall: [1.03, 0.98, 0.93, 0.9][i], wide: [0.98, 1.02, 1.05, 1.08][i], tail: [2, -2, -6, -8][i], leftX: -i - 1, rightX: i + 1 } })) : key).flat(),
-  // The breath leaves the mouth across the cheek and rises clear of the body: small, large, large, then small before it goes.
+    { at: 11, pose: { faceY: -2, tall: 1.03, wide: 0.98, tail: 4 } },
+    { at: 12, pose: { faceY: -4, tall: 1.06, wide: 0.96, bulge: -0.04, tail: 8 } },
+    { at: 13, pose: { faceY: -3, tall: 1.05, wide: 0.97, bulge: -0.02, tail: 6 }, shapes: { eyes: 'half', mouth: 'open' } },
+    { at: 17, pose: SLUMP, shapes: { eyes: 'half' }, ease: 'linear' },
+    { at: 18, pose: { ...SLUMP, tail: -12 }, shapes: { eyes: 'half' } },
+    { at: 19, pose: { ...SLUMP, tail: -8 }, shapes: BLINK },
+    { at: 20, pose: { tall: 0.96, wide: 1.02, bulge: 0.05, bend: 2, cant: 1, faceY: 3, tail: -2 }, shapes: { eyes: 'half' } },
+    { at: 21, pose: { tall: 0.99, tail: 4 } },
+    { at: 22, pose: { tail: 2 } },
+  ],
+  // The breath leaves beside the cheek at the height of the mouth and rises clear of the body: small, large, large, then small before it goes.
   props: [(pose, shapes, index, art) => {
     const age = index - 14;
     if (age < 0 || age > 3) return [];
     const puff = art.puff[age === 0 || age === 3 ? 'small' : 'large'];
-    return [placed(art, puff, 190 + age * 16 - puff.w / 2, 164 - age * 8 - puff.h / 2)];
+    return [placed(art, puff, [232, 230, 232, 236][age], 152 - age * 12)];
   }],
 };
 
 /** The floor slot a prop sinks through or rises from: its centre and its widest, in squares. */
-const CRATE_SLOT = { centre: 216, squares: 15 }, LEVER_SLOT = { centre: 226, squares: 11 };
+const CRATE_SLOT = { centre: 226, squares: 12 }, LEVER_SLOT = { centre: 226, squares: 11 };
 const slotOf = (slot, pose, art) => {
   const squares = Math.round(pose.slot * slot.squares);
   return squares > 0 ? [placed(art, art.slot(squares), slot.centre - squares * UNIT / 2, art.rig.ground - UNIT)] : [];
@@ -447,91 +458,101 @@ const aboveSlot = art => (x, y) => y < art.rig.ground - UNIT;
 /** The crate carried on the head: its lower outline lies on the head's. */
 const onHead = (pose, art) => { const crown = crownOf(pose, art); return [crown.x - art.crate.w / 2, crown.y - art.crate.h]; };
 
-const DUCKED = { tall: 0.86, wide: 1.11, faceY: 5, tail: -6 };
-const CARRYING = { tall: 1.09, wide: 0.94, faceY: -5, tail: 8 };
-const CARRY_DIP = { tall: 1.06, wide: 0.96, faceY: -5, tail: 4 };
-const AT_SLOT = { slide: -16, lean: 6, faceX: 6, faceY: 2, gazeX: 3, slot: 1, crateX: 185, crateY: 146 };
-const CARRIED = { crate: 'carried' }, RISING = { crate: 'rising' }, FALLING = { crate: 'falling' }, SINKING = { crate: 'sinking' };
+/** Looking down at the slot beside it, the near flipper drawn back out of the crate's way. */
+const BESIDE = { faceX: 6, faceY: 3, gazeX: 3, slot: 1, rightX: -18 };
+/** The crate standing on its slot, beside Moru's near flank. */
+const ON_SLOT = { crateX: 204, crateY: 154 };
+/** The crate's weight on the head: the belly spreads on the floor under it. */
+const LOADED = { tall: 0.92, wide: 1.03, bulge: 0.12, faceY: 4, slot: 1 };
+const RISING = { crate: 'rising' }, HELD = { crate: 'held' }, CARRIED = { crate: 'carried' }, SINKING = { crate: 'sinking' };
 const CRATE_SEND = {
   id: 'crate-send',
   label: 'Crate send',
-  context: 'Work status rooms: a commit was observed. Moru carries a crate on its head and lowers it through the floor toward the belt; it claims nothing about the commit\'s content.',
+  context: 'Work status rooms: a commit was observed. A crate comes up through the floor; Moru heaves it onto its head, tips it back and pats it down toward the belt. It claims nothing about the commit\'s content.',
   frames: 32,
-  durationsMs: [420, 120, 120, 110, 110, 110, 130, 110, 130, 160, 180, 180, 150, 130, 120, 80, 70, 70, 70, 110, 140, 200, 110, 100, 100, 160, 110, 100, 130, 200, 140, 600],
-  rest: { crateX: 125, crateY: 100, slot: 0 },
+  durationsMs: [420, 120, 120, 110, 110, 130, 150, 90, 90, 90, 90, 160, 180, 110, 110, 110, 200, 130, 110, 80, 80, 80, 140, 110, 160, 100, 100, 110, 130, 180, 140, 600],
+  rest: { crateX: 204, crateY: 198, slot: 0 },
   keys: [
-    { at: 1, pose: { tall: 0.96, wide: 1.03, faceY: 2 }, ease: 'out' },
-    { at: 2, pose: { tall: 0.9, wide: 1.08, faceY: 4 }, shapes: RISING },
-    { at: 3, pose: { ...DUCKED, crateY: 89 }, shapes: { ...RISING, ...BLINK } },
-    { at: 6, pose: { ...DUCKED, crateY: 56 }, shapes: { ...CARRIED, ...BLINK }, ease: 'linear' },
-    { at: 7, pose: { tall: 1, faceY: -2, tail: 4 }, shapes: { ...CARRIED, ...EFFORT } },
-    { at: 8, pose: { tall: 1.1, wide: 0.94, faceY: -6, tail: 12 }, shapes: { ...CARRIED, ...EFFORT } },
-    { at: 9, pose: CARRY_DIP, shapes: CARRIED },
-    { at: 10, pose: CARRYING, shapes: { ...CARRIED, ...GLAD } },
-    { at: 11, pose: { ...CARRY_DIP, faceX: 4, gazeX: 3, slot: 0.5 }, shapes: CARRIED },
-    { at: 12, pose: { ...CARRY_DIP, lean: -6, faceX: 4, gazeX: 3, slot: 1 }, shapes: CARRIED },
-    { at: 13, pose: { tall: 1.04, wide: 0.97, lean: 6, slide: -6, faceX: 6, gazeX: 4, slot: 1, tail: 8 }, shapes: CARRIED },
-    { at: 14, pose: { tall: 0.98, wide: 1.01, lean: 14, slide: -12, faceX: 6, faceY: 2, gazeX: 4, slot: 1, tail: 12 }, shapes: { ...CARRIED, ...EFFORT } },
-    { at: 15, pose: { ...AT_SLOT, lean: 12, slide: -12, tail: 8, crateX: 138, crateY: 50 }, shapes: { ...FALLING, ...EFFORT } },
-    { at: 16, pose: { ...AT_SLOT, lean: 10, slide: -14, tail: 6, crateX: 154, crateY: 70 }, shapes: FALLING },
-    { at: 17, pose: { ...AT_SLOT, lean: 8, tail: 4, crateX: 170, crateY: 98 }, shapes: FALLING },
-    { at: 18, pose: { ...AT_SLOT, crateX: 182, crateY: 128 }, shapes: FALLING },
-    { at: 19, pose: { ...AT_SLOT, tall: 0.97, wide: 1.02 }, shapes: FALLING },
-    { at: 20, pose: { ...AT_SLOT, rightX: 20, rightY: -56 }, shapes: FALLING },
-    { at: 21, pose: { ...AT_SLOT, rightX: 20, rightY: -46 }, shapes: FALLING },
-    { at: 22, pose: { ...AT_SLOT, crateY: 162, rightX: 20, rightY: -30 }, shapes: SINKING },
-    { at: 23, pose: { ...AT_SLOT, crateY: 180, rightX: 18, rightY: -14 }, shapes: SINKING },
-    { at: 24, pose: { ...AT_SLOT, crateY: 198, rightX: 12, tall: 0.98, wide: 1.01 }, shapes: SINKING },
-    { at: 25, pose: { ...AT_SLOT, rightX: 6 } },
-    { at: 26, pose: { slide: -16, faceX: 6, faceY: 2, gazeX: 3, slot: 1, tall: 0.96, wide: 1.03 } },
-    { at: 27, pose: { slide: -8, faceX: 4, slot: 0.5, tall: 1.05, wide: 0.96, tail: 10 } },
-    { at: 28, pose: { faceX: 2, tall: 0.98, wide: 1.02, tail: 2 }, shapes: GLAD },
-    { at: 29, pose: { faceY: 3, tall: 0.97, wide: 1.02, tail: 6 }, shapes: GLAD },
-    { at: 30, pose: { tall: 1.01, tail: 2 }, shapes: GLAD },
+    { at: 1, pose: { tall: 0.98, wide: 1.01, faceX: 4, faceY: 2, gazeX: 2, slot: 0.4, rightX: -8 }, ease: 'out' },
+    { at: 2, pose: { ...BESIDE, tail: 4 } },
+    { at: 3, pose: { ...BESIDE, crateY: 184, bend: -2 }, shapes: RISING },
+    { at: 4, pose: { ...BESIDE, crateY: 168, bend: -3, rightX: -14, rightY: -8, tail: 6 }, shapes: RISING },
+    { at: 5, pose: { ...BESIDE, ...ON_SLOT, bend: -2, tall: 1.01, rightX: -6, rightY: -22, tail: 2 }, shapes: { ...RISING, ...BLINK } },
+    { at: 6, pose: { ...BESIDE, ...ON_SLOT, bend: 1, cant: 1, rightX: 16, rightY: -46, tail: -2 }, shapes: HELD },
+    { at: 7, pose: { faceX: 4, gazeX: 2, gazeY: -2, slot: 1, bend: 2, tall: 1.01, crateX: 206, crateY: 122, rightX: 14, rightY: -52, tail: 6 }, shapes: { ...HELD, ...EFFORT } },
+    { at: 8, pose: { faceX: 2, faceY: -2, gazeY: -2, slot: 1, tall: 1.02, bulge: -0.03, crateX: 206, crateY: 88, rightX: 10, rightY: -40, tail: 10 }, shapes: { ...HELD, ...EFFORT } },
+    { at: 9, pose: { faceY: -3, gazeY: -2, slot: 1, tall: 1.01, crateX: 194, crateY: 58, rightX: 4, rightY: -24, tail: 8 }, shapes: { ...HELD, ...EFFORT } },
+    { at: 10, pose: { faceY: -1, slot: 1, tall: 0.98, wide: 1.01, bulge: 0.04, crateX: 166, crateY: 44, rightY: -8, tail: 2 }, shapes: { ...HELD, ...EFFORT } },
+    { at: 11, pose: { ...LOADED, tall: 0.95, bulge: 0.08, tail: -4 }, shapes: { ...CARRIED, ...EFFORT } },
+    { at: 12, pose: { ...LOADED, leftX: -4, rightX: 4, tail: -8 }, shapes: { ...CARRIED, ...BLINK } },
+    { at: 13, pose: { tall: 0.95, wide: 1.02, bulge: 0.08, faceY: 2, slot: 1, tail: -2 }, shapes: { ...CARRIED, ...EFFORT } },
+    { at: 14, pose: { tall: 0.98, bulge: 0.04, faceY: -1, slot: 1, tail: 6 }, shapes: { ...CARRIED, ...EFFORT } },
+    { at: 15, pose: { tall: 1.01, faceY: -3, slot: 1, tail: 12 }, shapes: CARRIED },
+    { at: 16, pose: { tall: 1.04, wide: 0.98, bulge: -0.04, faceY: -5, slot: 1, tail: 8 }, shapes: { ...CARRIED, ...GLAD } },
+    { at: 17, pose: { tall: 1.03, wide: 0.98, bulge: -0.02, bend: -4, cant: -1.5, faceX: 4, faceY: -3, gazeX: 3, slot: 1, tail: 2 }, shapes: CARRIED },
+    { at: 18, pose: { tall: 1.01, bend: 0, faceX: 6, gazeX: 4, slot: 1, tail: 8 }, shapes: { ...CARRIED, ...EFFORT } },
+    { at: 19, pose: { tall: 0.99, bend: 4, cant: 2, faceX: 6, faceY: 2, gazeX: 4, slot: 1, tail: 12, crateX: 164, crateY: 48 }, shapes: { ...HELD, ...EFFORT } },
+    { at: 20, pose: { tall: 0.98, bend: 6, cant: 3, bulge: 0.03, faceX: 6, faceY: 2, gazeX: 4, slot: 1, rightX: -8, tail: 8, crateX: 196, crateY: 62 }, shapes: HELD },
+    { at: 21, pose: { ...BESIDE, bend: 4, cant: 2, tail: 4, crateX: 206, crateY: 106 }, shapes: HELD },
+    { at: 22, pose: { ...BESIDE, ...ON_SLOT, bend: 2, tall: 0.98, bulge: 0.04, tail: -4 }, shapes: { ...HELD, ...BLINK } },
+    { at: 23, pose: { ...BESIDE, ...ON_SLOT, rightX: 16, rightY: -54, tail: 4 }, shapes: HELD },
+    { at: 24, pose: { ...BESIDE, ...ON_SLOT, rightX: 16, rightY: -46, tall: 0.99, tail: 0 }, shapes: HELD },
+    { at: 25, pose: { ...BESIDE, crateY: 168, rightX: 16, rightY: -34 }, shapes: SINKING },
+    { at: 26, pose: { ...BESIDE, crateY: 182, rightX: 12, rightY: -24 }, shapes: SINKING },
+    { at: 27, pose: { ...BESIDE, crateY: 198, rightX: 6, rightY: -14 }, shapes: SINKING },
+    { at: 28, pose: { faceX: 4, slot: 0.5, rightX: 2, rightY: -6, tall: 1.01, tail: 10 }, shapes: GLAD },
+    { at: 29, pose: { faceY: 3, tall: 0.98, wide: 1.01, tail: 2 }, shapes: GLAD },
+    { at: 30, pose: { tail: 4 }, shapes: { eyes: 'half' } },
   ],
   props: [
     (pose, shapes, index, art) => {
       if (!shapes.crate) return [];
       const [left, top] = shapes.crate === 'carried' ? onHead(pose, art) : [pose.crateX, pose.crateY];
-      return [placed(art, art.crate, left, top, { behind: shapes.crate === 'rising' || shapes.crate === 'carried', only: shapes.crate === 'sinking' ? aboveSlot(art) : undefined })];
+      return [placed(art, art.crate, left, top, { behind: shapes.crate === 'carried', only: shapes.crate === 'rising' || shapes.crate === 'sinking' ? aboveSlot(art) : undefined })];
     },
     (pose, shapes, index, art) => slotOf(CRATE_SLOT, pose, art),
   ],
 };
 
 /** The lever's tilts, in squares its knob leans from upright: toward Moru, then thrown toward main. */
-const TILT = { back: -3, thrown: 2 };
-const AT_LEVER = { slide: -14, faceX: 6, faceY: 2, gazeX: 3, slot: 1, rise: 1 };
-/** The right flipper against the knob at a tilt, from the floor place it left. */
-const onKnob = tilt => ({ rightX: 16 + UNIT * tilt, rightY: -44 });
+const TILT = { back: -2, thrown: 2 };
+/** Looking down at the lever, the near flipper drawn back off its plate. */
+const AT_LEVER = { faceX: 6, faceY: 2, gazeX: 3, slot: 1, rise: 1, rightX: -14 };
+/** The right flipper against the knob at a tilt, from its place on the floor. */
+const onKnob = tilt => ({ rightX: 2 + UNIT * tilt, rightY: -24 });
 const THROWN = { ...AT_LEVER, tilt: TILT.thrown };
+/** The weight thrown after the lever: the head goes with it and tips, and the belly stays on the floor. */
+const PULLED = { ...THROWN, bend: 10, cant: 4, bulge: 0.08, tall: 0.97, wide: 1.02 };
 const LEVER_PULL = {
   id: 'lever-pull',
   label: 'Lever pull',
   context: 'Work status rooms: a commit was observed. Moru throws the belt lever toward main; it claims nothing about the commit\'s content.',
   frames: 24,
-  durationsMs: [420, 130, 110, 130, 110, 110, 130, 130, 180, 80, 110, 110, 150, 240, 160, 180, 180, 160, 120, 120, 130, 110, 130, 600],
+  durationsMs: [420, 130, 110, 110, 110, 130, 130, 160, 200, 80, 80, 100, 200, 220, 130, 130, 160, 180, 160, 110, 110, 120, 130, 600],
   rest: { slot: 0, rise: 0, tilt: TILT.back },
   keys: [
-    { at: 1, pose: { faceX: 5, faceY: 2, gazeX: 3, tall: 0.96, wide: 1.03 }, ease: 'out' },
-    { at: 2, pose: { slide: -8, faceX: 6, faceY: 2, gazeX: 3, slot: 0.5, tall: 1.05, wide: 0.96, tail: 8 } },
-    { at: 3, pose: { slide: -14, faceX: 6, faceY: 2, gazeX: 3, slot: 1, tall: 0.98, wide: 1.01 }, ease: 'out' },
-    { at: 5, pose: { ...AT_LEVER, rise: 1.1, tail: 4 }, ease: 'out' },
-    { at: 6, pose: AT_LEVER },
-    { at: 7, pose: { ...AT_LEVER, rightX: 6, rightY: -22, tail: 2 } },
-    { at: 8, pose: { ...AT_LEVER, lean: -4, tall: 0.97, wide: 1.02, ...onKnob(TILT.back), tail: -4 }, shapes: BLINK },
-    { at: 9, pose: { ...AT_LEVER, lean: 4, ...onKnob(-1), tilt: -1, tail: 6 }, shapes: EFFORT },
-    { at: 10, pose: { ...THROWN, lean: 12, tall: 1.03, wide: 0.98, ...onKnob(TILT.thrown), tail: 12 }, shapes: EFFORT },
-    { at: 11, pose: { ...AT_LEVER, lean: 9, ...onKnob(1), tilt: 1, tail: 6 }, shapes: BLINK },
-    { at: 12, pose: { ...THROWN, lean: 10, ...onKnob(TILT.thrown), tail: 2 } },
-    { at: 13, pose: { ...THROWN, lean: 6, rightX: 16, rightY: -24, tail: 4 } },
-    { at: 14, pose: { ...THROWN, lean: 2, rightX: 6, tail: 4 } },
-    { at: 15, pose: { ...THROWN, faceY: 4, tall: 0.96, wide: 1.03, tail: 6 }, shapes: GLAD },
-    { at: 17, pose: { ...THROWN, faceY: 0, tall: 1.02, wide: 0.99 }, shapes: GLAD },
-    { at: 18, pose: THROWN, shapes: { eyes: 'half' } },
-    { at: 20, pose: { ...THROWN, rise: 0, tall: 0.97, wide: 1.02 }, ease: 'in' },
-    { at: 21, pose: { slide: -6, faceX: 4, slot: 0.5, tilt: TILT.thrown, tall: 1.05, wide: 0.96, tail: 8 } },
-    { at: 22, pose: { slot: 0, tilt: TILT.thrown, tall: 0.98, wide: 1.02 }, ease: 'out' },
+    { at: 1, pose: { faceX: 5, faceY: 2, gazeX: 3, tall: 0.98, wide: 1.01, slot: 0.4, rightX: -6 }, ease: 'out' },
+    { at: 2, pose: { ...AT_LEVER, rise: 0, tall: 1.01, tail: 6 } },
+    { at: 3, pose: { ...AT_LEVER, rise: 0.4, bend: -2, tail: 8 } },
+    { at: 4, pose: { ...AT_LEVER, rise: 0.8, bend: -2, tail: 4 } },
+    { at: 5, pose: { ...AT_LEVER, rise: 1.08, rightX: -12, rightY: -8, tail: 2 }, shapes: BLINK },
+    { at: 6, pose: { ...AT_LEVER, rightX: -10, rightY: -16, tail: 4 } },
+    { at: 7, pose: { ...AT_LEVER, bend: -4, cant: -1.5, bulge: 0.04, tall: 0.99, ...onKnob(TILT.back), tail: -2 } },
+    { at: 8, pose: { ...AT_LEVER, bend: -5, cant: -2, bulge: 0.05, tall: 0.98, ...onKnob(TILT.back), tail: -6 }, shapes: BLINK },
+    { at: 9, pose: { ...AT_LEVER, bend: -1, tall: 0.99, ...onKnob(-1), tilt: -1, tail: 2 }, shapes: EFFORT },
+    { at: 10, pose: { ...THROWN, bend: 3, cant: 1, ...onKnob(TILT.thrown), tail: 10 }, shapes: EFFORT },
+    { at: 11, pose: { ...THROWN, bend: 7, cant: 2.5, bulge: 0.05, tall: 0.98, ...onKnob(TILT.thrown), tail: 14 }, shapes: EFFORT },
+    { at: 12, pose: { ...PULLED, ...onKnob(TILT.thrown), tail: 8 }, shapes: BLINK },
+    { at: 13, pose: { ...PULLED, ...onKnob(TILT.thrown), tail: 2 } },
+    { at: 14, pose: { ...THROWN, bend: 6, cant: 2, bulge: 0.04, rightX: 4, rightY: -16, tail: 4 } },
+    { at: 15, pose: { ...THROWN, bend: 2, rightX: -4, rightY: -8, tail: 6 }, shapes: GLAD },
+    { at: 16, pose: { ...THROWN, faceY: 4, tall: 0.97, wide: 1.02, tail: 2 }, shapes: GLAD },
+    { at: 17, pose: { ...THROWN, faceY: 0, tall: 1.01, tail: 6 }, shapes: GLAD },
+    { at: 18, pose: { ...THROWN, rise: 0.7, tail: 2 }, shapes: { eyes: 'half' } },
+    { at: 19, pose: { ...THROWN, rise: 0.35 } },
+    { at: 20, pose: { ...THROWN, rise: 0, slot: 0.6, rightX: -10 } },
+    { at: 21, pose: { faceX: 4, slot: 0.2, tilt: TILT.thrown, rightX: -4, tall: 1.02, tail: 8 } },
+    { at: 22, pose: { tilt: TILT.thrown, tall: 0.99, wide: 1.01, tail: 2 } },
   ],
   props: [
     (pose, shapes, index, art) => {
@@ -543,52 +564,54 @@ const LEVER_PULL = {
   ],
 };
 
-/** The laptop's left edge tucked behind Moru, and out beside it. */
-const LAPTOP_AT = { away: 150, out: 198 };
-const AT_DESK = { slide: -20, lap: 1, faceX: 6, faceY: 2, gazeX: 3 };
-const TAP = { ...AT_DESK, rightX: 8, rightY: -10, tail: 4 };
-const STRIKE = { ...AT_DESK, rightX: 8, rightY: -2, faceY: 4, tail: 0 };
+/** The laptop's left edge: it stands in front of Moru's near flank, as the catalogue's laptop scene has it. */
+const LAPTOP_LEFT = 180;
+const AT_DESK = { lap: 1, faceX: 6, faceY: 2, gazeX: 3 };
+/** The far flipper over the keys, lifted and struck; the head dips a pixel with each strike. */
+const TAP = { ...AT_DESK, leftX: 46, leftY: -12, tail: 4 };
+const STRIKE = { ...AT_DESK, leftX: 46, leftY: -6, faceY: 4, tall: 0.98, wide: 1.01, tail: 0 };
+const READ = { ...AT_DESK, leftX: 46, leftY: -10, gazeX: 5, faceY: 0, tall: 1.01 };
 const DESK_TYPE = {
   id: 'desk-type',
   label: 'Desk type',
-  context: 'Work status rooms: a session is writing. Moru takes out a laptop, types and puts it away, so the row opens and closes on the neutral pose.',
+  context: 'Work status rooms: a session is writing. A laptop comes up in front of Moru; it types, reads and lets it down, so the row opens and closes on the neutral pose.',
   frames: 32,
-  durationsMs: [360, 130, 90, 90, 160, 180, 110, 110, 110, 110, 110, 110, 110, 240, 200, 110, 220, 110, 110, 110, 110, 110, 110, 110, 180, 90, 220, 160, 90, 90, 170, 500],
+  durationsMs: [360, 130, 100, 100, 130, 150, 110, 110, 110, 110, 110, 110, 110, 240, 200, 110, 220, 110, 110, 110, 110, 110, 110, 110, 180, 90, 220, 160, 100, 100, 170, 500],
   rest: { lap: 0 },
   keys: [
-    { at: 1, pose: { faceX: 5, gazeX: 3, tall: 0.95, wide: 1.04 }, ease: 'out' },
-    { at: 2, pose: { slide: -8, faceX: 6, faceY: 2, gazeX: 3, tall: 1.05, wide: 0.96, tail: 8 } },
-    { at: 3, pose: { ...AT_DESK, slide: -16, lap: 0.75, tall: 1.06, wide: 0.95, tail: 10 } },
-    { at: 4, pose: { ...AT_DESK, tall: 0.97, wide: 1.02, tail: -2 } },
-    { at: 5, pose: { ...TAP, rightY: -6 } },
-    { at: 6, pose: STRIKE },
-    { at: 7, pose: TAP },
-    { at: 8, pose: { ...STRIKE, leftY: -6 }, shapes: { left: 'rest' } },
-    { at: 9, pose: TAP, shapes: BLINK },
-    { at: 10, pose: STRIKE },
-    { at: 11, pose: { ...TAP, leftY: -6, tail: 8 }, shapes: { left: 'rest' } },
-    { at: 12, pose: STRIKE },
-    { at: 13, pose: { ...TAP, rightY: -6, gazeX: 5, faceY: 0 } },
-    { at: 14, pose: { ...TAP, rightY: -6, gazeX: 5, faceY: 0, tail: 8 } },
-    { at: 15, pose: { ...TAP, rightY: -6, gazeX: 5, faceY: 0 }, shapes: BLINK },
-    { at: 16, pose: { ...TAP, rightY: -6, gazeX: 4, faceY: 1 } },
+    { at: 1, pose: { faceX: 4, faceY: 1, gazeX: 3, lap: 0.25, tall: 0.99, wide: 1.01 }, ease: 'out' },
+    { at: 2, pose: { ...AT_DESK, lap: 0.5, tail: 6 } },
+    { at: 3, pose: { ...AT_DESK, lap: 0.75, tall: 1.01, tail: 10 } },
+    { at: 4, pose: { ...AT_DESK, leftX: 12, leftY: -4, tail: 4 }, shapes: BLINK },
+    { at: 5, pose: { ...AT_DESK, leftX: 28, leftY: -8, tail: 2 } },
+    { at: 6, pose: TAP },
+    { at: 7, pose: STRIKE },
+    { at: 8, pose: TAP },
+    { at: 9, pose: STRIKE, shapes: BLINK },
+    { at: 10, pose: TAP },
+    { at: 11, pose: STRIKE },
+    { at: 12, pose: { ...TAP, tail: 8 } },
+    { at: 13, pose: READ },
+    { at: 14, pose: { ...READ, tail: 8 } },
+    { at: 15, pose: READ, shapes: BLINK },
+    { at: 16, pose: { ...READ, gazeX: 4, faceY: 1, tall: 1 } },
     { at: 17, pose: STRIKE },
-    { at: 18, pose: { ...TAP, leftY: -6 }, shapes: { left: 'rest' } },
+    { at: 18, pose: TAP },
     { at: 19, pose: STRIKE },
     { at: 20, pose: { ...TAP, tail: 8 } },
-    { at: 21, pose: { ...STRIKE, leftY: -6 }, shapes: { left: 'rest' } },
+    { at: 21, pose: STRIKE },
     { at: 22, pose: TAP, shapes: BLINK },
-    { at: 23, pose: STRIKE },
-    { at: 24, pose: { ...AT_DESK, rightX: 8, rightY: -22, tall: 1.03, wide: 0.98, tail: 8 } },
-    { at: 25, pose: { ...AT_DESK, rightX: 8, rightY: 0, tall: 0.96, wide: 1.03, faceY: 4, tail: -4 }, shapes: GLAD },
-    { at: 26, pose: { ...AT_DESK, rightX: 4, rightY: -4, tall: 1.01, tail: 4 }, shapes: GLAD },
-    { at: 27, pose: { ...AT_DESK, tall: 0.96, wide: 1.03 }, shapes: GLAD },
-    { at: 28, pose: { slide: -16, lap: 0.75, faceX: 5, tall: 1.05, wide: 0.96, tail: 10 } },
-    { at: 29, pose: { slide: -8, faceX: 4, tall: 1.04, wide: 0.97, tail: 6 } },
-    { at: 30, pose: { faceX: 2, tall: 0.98, wide: 1.02 } },
+    { at: 23, pose: { ...STRIKE, tail: -4 }, shapes: GLAD },
+    { at: 24, pose: { ...TAP, tail: 6 }, shapes: GLAD },
+    { at: 25, pose: { ...AT_DESK, leftX: 28, leftY: -8, tail: 2 }, shapes: GLAD },
+    { at: 26, pose: { ...AT_DESK, leftX: 12, leftY: -4 }, shapes: GLAD },
+    { at: 27, pose: { faceX: 5, faceY: 1, gazeX: 3, lap: 0.75, tall: 1.01, tail: 8 } },
+    { at: 28, pose: { faceX: 4, gazeX: 2, lap: 0.5, tail: 4 } },
+    { at: 29, pose: { faceX: 2, lap: 0.25, tail: 2 } },
+    { at: 30, pose: { tall: 0.99, wide: 1.01 } },
   ],
-  // The laptop stands a little behind Moru's flippers, on the floor line of its body.
-  props: [(pose, shapes, index, art) => pose.lap > 0.02 ? [placed(art, art.laptop, LAPTOP_AT.away + pose.lap * (LAPTOP_AT.out - LAPTOP_AT.away), art.rig.floor - art.laptop.h, { behind: true })] : []],
+  // The laptop rises from the floor line in front of the near flipper and sinks back behind it.
+  props: [(pose, shapes, index, art) => pose.lap > 0.02 ? [placed(art, art.laptop, LAPTOP_LEFT, art.rig.ground - art.snap(pose.lap * art.laptop.h), { only: (x, y) => y < art.rig.ground })] : []],
 };
 
 export const WORK_CLIPS = { art, clips: [MONITOR_READ, DESK_TYPE, NOD_OFF, HEADS_UP, SIGH, CRATE_SEND, LEVER_PULL, MERGE_CHEER, GALUMPH, SETTLE_IN, GALUMPH_LEFT] };
