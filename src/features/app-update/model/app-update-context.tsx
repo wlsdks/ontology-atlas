@@ -8,7 +8,7 @@ import { useAppUpdate, type UpdateSessionState } from './use-app-update';
  * Exactly one updater wiring for the app, or the periodic timers run twice. Absent (the web),
  * consumers get `null` and draw nothing.
  */
-export interface AppUpdateValue extends UpdateSessionState {
+export interface AppUpdateValue extends Omit<UpdateSessionState, 'dismissedAt'> {
   /** The user pressed it themselves — check now, ignoring the interval. */
   readonly checkNow: () => void;
   readonly install: () => void;

@@ -5,6 +5,7 @@ import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import {
   AUTO_CHECK_TICK_MS,
   CHECK_TIMEOUT_MS,
+  DISMISSED_AT_KEY,
   DISMISSED_VERSION_KEY,
   LAST_CHECK_KEY,
   feedServesPlatform,
@@ -45,6 +46,7 @@ export interface UpdateSessionState {
   /** The last successful check, from storage at start and from memory after. */
   readonly lastCheckedAt: number | null;
   readonly dismissedVersion: string | null;
+  readonly dismissedAt: number | null;
 }
 
 const SERVER_STATE: UpdateSessionState = {
@@ -54,6 +56,7 @@ const SERVER_STATE: UpdateSessionState = {
   readyVersion: null,
   lastCheckedAt: null,
   dismissedVersion: null,
+  dismissedAt: null,
 };
 
 /*
@@ -71,10 +74,12 @@ let installing = false;
 function readSession(): UpdateSessionState {
   if (!session) {
     const last = Number(readStored(LAST_CHECK_KEY));
+    const dismissedAt = Number(readStored(DISMISSED_AT_KEY));
     session = {
       ...SERVER_STATE,
       lastCheckedAt: Number.isFinite(last) && last > 0 ? last : null,
       dismissedVersion: readStored(DISMISSED_VERSION_KEY) || null,
+      dismissedAt: Number.isFinite(dismissedAt) && dismissedAt > 0 ? dismissedAt : null,
     };
   }
   return session;
@@ -122,6 +127,8 @@ async function requestCheck(manual: boolean): Promise<void> {
       phase: state.phase,
       readyVersion: state.readyVersion,
       dismissedVersion: state.dismissedVersion,
+      dismissedAt: state.dismissedAt,
+      now,
     });
     patchSession({
       lastCheckedAt: now,
@@ -233,7 +240,7 @@ async function restart(): Promise<void> {
   await relaunch();
 }
 
-/** "Not now" or "Close": a dismissal is remembered for an offered version only. */
+/** "Later" or "Close": an offered version is held back for a day. */
 function dismiss(): void {
   const { phase } = readSession();
   if (phase.kind === 'downloading') {
@@ -241,8 +248,10 @@ function dismiss(): void {
     return;
   }
   if (phase.kind === 'available') {
+    const now = Date.now();
     writeStored(DISMISSED_VERSION_KEY, phase.version);
-    patchSession({ dismissedVersion: phase.version, phase: { kind: 'idle' } });
+    writeStored(DISMISSED_AT_KEY, String(now));
+    patchSession({ dismissedVersion: phase.version, dismissedAt: now, phase: { kind: 'idle' } });
     return;
   }
   patchSession({ phase: { kind: 'idle' } });
