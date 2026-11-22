@@ -26,17 +26,18 @@ import { circularDomainOrder } from "../dial/order";
 import type { DialLabels, DialModel } from "../dial/dial-shapes";
 import { cachedGraphAttention, inkUnder, resolveGraphAttention } from "./attention";
 import { layoutFlatGraph } from "./layout";
-import { arcPathInto, crowdShare, emptyArcPath, graphDiscRadiusPx, litLineTrimsInto, zoomGrowth } from "./marks";
+import { arcPathInto, capabilityDiscRadiusPx, crowdShare, emptyArcPath, graphDiscRadiusPx, litLineTrimsInto, ORPHAN_ROOM, zoomGrowth } from "./marks";
 import { capabilityLineTurns, openedElements } from "./open";
 import { admittedNames, nameBlockClear, nameBlockDraws, nameBlockEnd, selectedDiscRadius } from "./names";
 import { leaderSegment, linePolylines, segmentCrossesBox } from "./names/lit-lines";
 import { type PlacedName } from "./names/placed-name";
 import { chooseSide } from "./names/sides";
-import { domainTitleBlocks, reachText } from "./names/titles";
+import { domainTitleBlocks, hubBlockReachPx, reachText } from "./names/titles";
 import { stepScale, zoomStep } from "./names/zoom-step";
 import { buildFlatGraphScene, claimFlatGraphFolder, flatGraphPins, settleFlatGraph } from "./scene";
 import { resolveFlatGraphTokens } from "./tokens";
 import type { FlatGraphFrame, FlatGraphLayout } from "./flat-graph-shapes";
+import { computeEffectiveCameraScaleMin } from "../ui/camera/target/zoom-range";
 
 const KINDS = new Set(["project", "domain", "capability", "element"]);
 type Node = { id: string; kind: string; title?: string };
@@ -324,6 +325,50 @@ describe.each(VAULTS)("flat graph layout: %s", (_, model) => {
                 if (air < 0) over.push(`${n.id} over ${id} by ${(-air).toFixed(1)} px at ${scale.toFixed(3)} beside ${cap.id}${lens ? " in a lens" : ""}`);
               }
             }
+          }
+        }
+      }
+    }
+    expect(over.length, over.slice(0, 8).join("; ")).toBe(0);
+  });
+
+  it.each([1, 1.14])("keeps every domain name off every disc not its own at every zoom the camera reaches, down to its floor, its text set %sx as wide", (wide) => {
+    const t = TOKENS.paint;
+    const css = cssValues();
+    const pad = t.namePadPx;
+    const measureWide = (text: string, font: string) => measure(text, font) * wide;
+    const input = { model, tokens: t, labels: LABELS, measureText: measureWide, fontFamily: `sans-serif ${wide}` };
+    const over: string[] = [];
+    for (const area of [{ width: 1216, height: 760 }, { width: 1856, height: 1040 }]) {
+      const fitted = layoutFlatGraph(model, circularDomainOrder(model, null).order, TOKENS.layout, null, {
+        areaPx: area, titles: domainTitleBlocks(input), compactTitles: domainTitleBlocks(input, "name"), capDiscPx: t.capDiscMaxPx, hubPx: hubBlockReachPx({ model, tokens: t }),
+      });
+      const e = fitted.extent;
+      const entry = Math.min(area.width / (e.maxX - e.minX), area.height / (e.maxY - e.minY)) * Number(css.get("--map-overview-entry-ratio"));
+      const floor = computeEffectiveCameraScaleMin(entry, Number(css.get("--map-camera-min-zoom-ratio")), 0, true);
+      const discIds = [model.projectId, ...fitted.clusters.flatMap((c) => [c.domainId, ...c.items.filter((it) => !it.direct).map((it) => it.id)]), ...fitted.orphanIds]
+        .filter((id): id is string => id !== null && fitted.positions.has(id));
+      // From the floor up an octave, in eighths: every zoom step the camera reaches from the floor, both ends.
+      for (let k = 0; k <= 8; k += 1) {
+        const scale = floor * 2 ** (k / 8);
+        const growth = zoomGrowth(scale / entry, t);
+        const radius = (id: string) => (id === model.projectId ? graphDiscRadiusPx("project", 0, t, growth) : model.domainById.has(id) ? graphDiscRadiusPx("domain", 0, t, growth)
+          : capabilityDiscRadiusPx(fitted, model.domainOf.get(id) ?? ORPHAN_ROOM, model.capabilityById.get(id)?.elementIds.length ?? 0, t, scale, growth));
+        const admitted = admittedNames({
+          model, layout: fitted, tokens: t, labels: LABELS, measureText: measureWide, fontFamily: `sans-serif ${wide}`, scale, growth,
+          elementLabel: (id) => id, staleByDomain: null, lit: null, focusId: null, attentionKey: "rest", agentFocusId: null, selected: false,
+          named: new Set(), reach: null, lines: [], discRadius: radius, elementSpacingPx: 0, hubCaption: null, zoomFloorScale: floor,
+        });
+        for (const n of admitted.names) {
+          if (n.role !== "domain") continue;
+          const at = fitted.positions.get(n.id)!;
+          for (const id of discIds) {
+            if (id === n.id) continue;
+            const p = fitted.positions.get(id)!;
+            const dx = Math.max((at.x - p.x) * scale + n.box.minX + pad, 0, (p.x - at.x) * scale - n.box.maxX + pad);
+            const dy = Math.max((at.y - p.y) * scale + n.box.minY + pad, 0, (p.y - at.y) * scale - n.box.maxY + pad);
+            const air = Math.hypot(dx, dy) - radius(id);
+            if (air < 0) over.push(`${n.id} over ${id} by ${(-air).toFixed(1)} px at ${(scale / entry).toFixed(2)} of the ${area.width}x${area.height} entry`);
           }
         }
       }

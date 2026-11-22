@@ -73,4 +73,6 @@ export interface NameInput {
   elementSpacingPx: number;
   /** The line the project carries under its disc while it has one; names keep off its row. */
   hubCaption: string | null;
+  /** The least scale the camera reaches: a zoom step that spans past it is held apart only down to it. */
+  zoomFloorScale?: number;
 }
