@@ -59,6 +59,8 @@ const MINI_ROW_LIMIT = 6;
 const INLINE_SHELF_ROOMS = 4;
 const FLOOR_LABEL_W = 196;
 const LARGE_MIN_W = 260;
+/** From this width a room hangs its monitor beside Moru. */
+const WIDE_ROOM_W = 520;
 const LARGE_MIN_H = 300;
 const ONE_ROW_CAP_H = 500;
 const TWO_ROW_CAP_H = 416;
@@ -71,8 +73,17 @@ export const BELT_H = 68;
  * his size there only when the scene is tall enough to keep his head and name tag under it.
  */
 function unitOf(width: number, sceneHeight: number): RoomUnit {
-  if (width >= 520) return width >= 760 && sceneHeight >= 300 ? 3 : 2;
+  if (width >= WIDE_ROOM_W) return width >= 760 && sceneHeight >= 300 ? 3 : 2;
   return width >= 270 && sceneHeight >= 390 ? 2 : 1;
+}
+
+/**
+ * How many large rooms the stage takes at this board width: four when exactly two wide rooms fit
+ * side by side, so each keeps its monitor beside Moru, otherwise six.
+ */
+export function stageCapacity(width: number): number {
+  const wideColumns = Math.floor((width + STAGE_GAP) / (WIDE_ROOM_W + STAGE_GAP));
+  return wideColumns === 2 ? 4 : 6;
 }
 
 export function layoutBuilding(input: LayoutInput): BuildingLayout {

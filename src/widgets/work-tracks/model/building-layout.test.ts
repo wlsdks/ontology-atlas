@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { layoutBuilding, type Box, type LayoutInput } from './building-layout';
+import { layoutBuilding, stageCapacity, type Box, type LayoutInput } from './building-layout';
 
 const keys = (prefix: string, count: number) => Array.from({ length: count }, (_, index) => `${prefix}${index}`);
 
@@ -63,5 +63,13 @@ describe('layoutBuilding', () => {
     const room = result.rooms.get('only')!;
     expect(room.w).toBe(882);
     expect(room.x + room.w / 2).toBeCloseTo(888, 0);
+  });
+});
+
+describe('stageCapacity', () => {
+  it('keeps four wide rooms where two fit side by side, and six elsewhere', () => {
+    expect(stageCapacity(1296)).toBe(4);
+    expect(stageCapacity(1776)).toBe(6);
+    expect(stageCapacity(896)).toBe(6);
   });
 });

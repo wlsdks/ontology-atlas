@@ -89,6 +89,14 @@
 
 .scene[data-dark='true'] .dim {
   opacity: 1;
+  /* The lights go out once the crate is in and the hatch has turned green. */
+  transition-delay: calc(var(--motion-choreography) + var(--motion-slow));
+}
+
+.scene[data-dark='true'],
+.scene[data-dark='true'] .glow,
+.scene[data-dark='true'] .lampLight {
+  transition-delay: calc(var(--motion-choreography) + var(--motion-slow));
 }
 
 .glow {
@@ -611,6 +619,8 @@
 .track[data-arrived='true'] .hatchOpen,
 .track[data-arrived='true'] .hatchLight::after {
   opacity: 1;
+  /* The hatch turns green as the riding crate reaches it, not when it sets off. */
+  transition-delay: calc(var(--motion-choreography) * 0.8);
 }
 
 .track[data-arrived='true'] .stationMain {

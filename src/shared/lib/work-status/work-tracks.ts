@@ -312,7 +312,13 @@ export function stageOf(track: Track): RoomStage {
  * Within a tier, rooms keep the order the tracks already have: stuck as Git lists them, sessions
  * by start, a session's worktrees by lock time.
  */
-export function planRooms(tracks: WorkTracks, nowMs: number, seenRunningAt: ReadonlyMap<string, number> = new Map()): RoomPlan {
+export function planRooms(
+  tracks: WorkTracks,
+  nowMs: number,
+  seenRunningAt: ReadonlyMap<string, number> = new Map(),
+  /** How many large rooms the front stage has room for; never more than six. */
+  stageLimit: number = STAGE_ROOM_LIMIT,
+): RoomPlan {
   const entry = (track: Track, session: TrackSession | null): RoomEntry => {
     const state = roomStateOf(track, nowMs, seenRunningAt);
     return { key: track.key, track, state, tier: tierOf(state), stage: stageOf(track), session };
@@ -328,7 +334,7 @@ export function planRooms(tracks: WorkTracks, nowMs: number, seenRunningAt: Read
     (room.session ? (sessionOrder.get(room.session.key) ?? 0) * 10_000 : -10_000) + (order.get(room.key) ?? 0);
   const byTier = (a: RoomEntry, b: RoomEntry) => TIER_ORDER[a.tier] - TIER_ORDER[b.tier] || sourceOrder(a) - sourceOrder(b);
 
-  const stage = all.filter(room => room.tier !== 'unheld').sort(byTier).slice(0, STAGE_ROOM_LIMIT);
+  const stage = all.filter(room => room.tier !== 'unheld').sort(byTier).slice(0, Math.min(stageLimit, STAGE_ROOM_LIMIT));
   const onStage = new Set(stage.map(room => room.key));
   const floorOf = (key: string, session: TrackSession | null, members: RoomEntry[]): RoomFloor => ({
     key,

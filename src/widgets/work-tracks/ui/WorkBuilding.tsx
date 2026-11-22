@@ -2,11 +2,11 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { STAGE_ROOM_LIMIT, type RoomEntry, type RoomPlan, type TrackSession } from '@/shared/lib/work-status/work-tracks';
+import { planRooms, type RoomEntry, type RoomPlan, type TrackSession, type WorkTracks } from '@/shared/lib/work-status/work-tracks';
 import { cn } from '@/shared/lib/cn';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { MOTION } from '@/shared/motion';
-import { layoutBuilding, type Box, type RoomBox, type RoomSize, type RoomUnit } from '../model/building-layout';
+import { layoutBuilding, stageCapacity, type Box, type RoomBox, type RoomSize, type RoomUnit } from '../model/building-layout';
 import { clockTime } from '../model/format';
 import { retireeOf, roomLook, withRetirees, type Retiree } from '../model/room-look';
 import { exitRoom, fadeFace, translate, useRoomMotion } from '../model/use-room-motion';
@@ -193,7 +193,7 @@ function allRooms(plan: RoomPlan): { room: RoomEntry; floor: string | null; inde
  * Keeps a room whose worktree just merged where it stood until its merge has played: the crate
  * rides into main and the lights go out, then the room folds away and its crate lands on the shelf.
  */
-function useRetirees(plan: RoomPlan, reduced: boolean) {
+function useRetirees(plan: RoomPlan, stageLimit: number, reduced: boolean) {
   const [state, setState] = useState<{ source: RoomPlan; retirees: Retiree[] }>({ source: plan, retirees: [] });
   let { retirees } = state;
   if (state.source !== plan) {
@@ -202,7 +202,7 @@ function useRetirees(plan: RoomPlan, reduced: boolean) {
     const leaving = (key: string) => !present.has(key) && merged.has(key);
     const kept = retirees.filter(retiree => leaving(retiree.entry.key));
     const keptKeys = new Set(kept.map(retiree => retiree.entry.key));
-    const fresh = reduced ? [] : allRooms(withRetirees(state.source, retirees, STAGE_ROOM_LIMIT))
+    const fresh = reduced ? [] : allRooms(withRetirees(state.source, retirees, stageLimit))
       .filter(({ room }) => leaving(room.key) && !keptKeys.has(room.key))
       .map(({ room, floor, index }) => retireeOf(room, floor, index));
     retirees = [...kept, ...fresh];
@@ -261,7 +261,12 @@ interface Ghost {
  * rooms under them and the shelf. Rooms keep their place by transform, so a change glides from
  * where each room was drawn, and nothing reads the DOM to lay them out.
  */
-export function WorkBuilding({ plan, baseBranch, nowMs }: { plan: RoomPlan; baseBranch: string; nowMs: number }) {
+export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs }: {
+  tracks: WorkTracks;
+  seenRunningAt: ReadonlyMap<string, number>;
+  baseBranch: string;
+  nowMs: number;
+}) {
   const t = useTranslations('workStatus');
   const reduced = usePrefersReducedMotion();
   const copy = useRoomCopy(baseBranch, nowMs);
@@ -282,9 +287,11 @@ export function WorkBuilding({ plan, baseBranch, nowMs }: { plan: RoomPlan; base
     return () => observer.disconnect();
   }, []);
 
-  const retirees = useRetirees(plan, reduced);
+  const stageLimit = stageCapacity(size?.width ?? 0);
+  const plan = useMemo(() => planRooms(tracks, nowMs, seenRunningAt, stageLimit), [tracks, nowMs, seenRunningAt, stageLimit]);
+  const retirees = useRetirees(plan, stageLimit, reduced);
   const retiring = useMemo(() => new Set(retirees.map(retiree => retiree.entry.key)), [retirees]);
-  const shown = useMemo(() => withRetirees(plan, retirees, STAGE_ROOM_LIMIT), [plan, retirees]);
+  const shown = useMemo(() => withRetirees(plan, retirees, stageLimit), [plan, retirees, stageLimit]);
   const shelfMerged = useMemo(() => plan.shelf.merged.filter(track => !retiring.has(track.key)), [plan, retiring]);
   const hasShelf = shelfMerged.length > 0 || plan.shelf.untouched.length > 0;
   const layout = useMemo(() => layoutBuilding({

@@ -82,7 +82,7 @@ export function WorkStatusPage() {
         ) : null}
         actions={chooseButton('sm')}
       />
-      {plan === null ? (
+      {plan === null || tracks === null ? (
         <div className="min-h-0 flex-1" />
       ) : onlyMain ? (
         <EmptyRoom branch={baseBranch} title={t.rich('empty.title', { branch: baseBranch, code: branch })} body={t('empty.body')} />
@@ -93,7 +93,7 @@ export function WorkStatusPage() {
           </div>
         </EmptyRoom>
       ) : (
-        <WorkBuilding plan={plan} baseBranch={baseBranch} nowMs={nowMs} />
+        <WorkBuilding tracks={tracks} seenRunningAt={seenRunningAt} baseBranch={baseBranch} nowMs={nowMs} />
       )}
     </main>
   );
