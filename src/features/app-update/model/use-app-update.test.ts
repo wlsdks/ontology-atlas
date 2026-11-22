@@ -382,6 +382,18 @@ describe('automatic checks while the app stays open', () => {
     expect(result.current.phase).toMatchObject({ kind: 'available', version: '2.2.0' });
   });
 
+  it('asks again about the same version a day after Later, and not before', async () => {
+    check.mockResolvedValue(found('2.1.0'));
+    const { result } = mount();
+    await advance(FIRST_CHECK_MS);
+    act(() => result.current.dismiss());
+    expect(window.localStorage.getItem('app-update:dismissed-at')).toBe(String(Date.now()));
+    await advance(23 * HOUR_MS);
+    expect(result.current.phase.kind, 'Later spoke again within the day').toBe('idle');
+    await advance(2 * HOUR_MS);
+    expect(result.current.phase).toMatchObject({ kind: 'available', version: '2.1.0' });
+  });
+
   it('fails an automatic check silently and retries on the next tick', async () => {
     check.mockRejectedValueOnce(new Error('offline')).mockResolvedValue(found('2.1.0'));
     const start = Date.now();
