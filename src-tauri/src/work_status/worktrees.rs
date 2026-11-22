@@ -250,9 +250,27 @@ fn folder_name(root: &Path) -> String {
         .unwrap_or_default()
 }
 
+/// The canonical path, or for a folder that is gone, its nearest existing ancestor's canonical
+/// path with the rest joined on, so a removed worktree compares in the same spelling as live ones
+/// (Windows canonical paths are `\\?\C:\...`, Git's listing `C:/...`).
 fn normalize(path: &str) -> PathBuf {
     let path = PathBuf::from(path);
-    std::fs::canonicalize(&path).unwrap_or(path)
+    if let Ok(canonical) = std::fs::canonicalize(&path) {
+        return canonical;
+    }
+    let mut rest = Vec::new();
+    let mut current = path.as_path();
+    while let Some(parent) = current.parent() {
+        rest.extend(current.file_name());
+        if let Ok(canonical) = std::fs::canonicalize(parent) {
+            return rest
+                .iter()
+                .rev()
+                .fold(canonical, |joined, part| joined.join(part));
+        }
+        current = parent;
+    }
+    path
 }
 
 /// `<common>/worktrees/<id>/gitdir` names `<worktree>/.git`; this maps each worktree back to its id.
