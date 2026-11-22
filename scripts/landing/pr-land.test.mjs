@@ -222,6 +222,51 @@ describe('the conductor runs trains', () => {
     assert.ok(world.pulls.get(8).comments.at(-1).body.startsWith(EJECTED_MARKER));
   });
 
+  it('settles a train red within minutes when a required lane can never report, without a rerun', () => {
+    // Train #3825's head, recorded: e2e.yml did not parse, so its Playwright contexts never appeared.
+    const e2e = { id: 45021128174, name: '.github/workflows/e2e.yml', path: '.github/workflows/e2e.yml', status: 'completed', conclusion: 'failure', url: 'https://github.com/wlsdks/ontology-atlas/actions/runs/45021128174' };
+    const checksRun = { id: 45021138677, name: 'Checks', path: '.github/workflows/checks.yml', status: 'completed', conclusion: 'success', url: 'https://github.com/wlsdks/ontology-atlas/actions/runs/45021138677' };
+    const withoutPlaywright = () => green().filter((check) => !check.name.startsWith('Playwright'));
+    const started = (world) => world.deps.now();
+
+    const parse = fakeWorld({ prs: [component(3824)], queued: [3824], ci: withoutPlaywright, runs: () => [e2e, checksRun], jobs: (id) => (id === e2e.id ? 0 : 9) });
+    const parseStart = started(parse);
+    assert.deepEqual(runConductor(parse).landed, []);
+    assert.ok(parse.deps.now() - parseStart < 5 * 60_000, 'red in minutes, not after the 90-minute timeout');
+    assert.equal(called(parse, 'rerunFailed').length, 0, 'a file GitHub cannot parse is never rerun');
+    const ejected = parse.pulls.get(3824).comments.at(-1).body;
+    assert.ok(ejected.startsWith(EJECTED_MARKER));
+    assert.match(ejected, /\.github\/workflows\/e2e\.yml failed before any job ran \(workflow file error\) https:\/\/github\.com\/wlsdks\/ontology-atlas\/actions\/runs\/45021128174/);
+
+    const silent = fakeWorld({ prs: [component(3826)], queued: [3826], ci: withoutPlaywright, runs: () => [checksRun], jobs: () => 9 });
+    const silentStart = started(silent);
+    assert.deepEqual(runConductor(silent).landed, []);
+    const waited = silent.deps.now() - silentStart;
+    assert.ok(waited >= 3 * 60_000 && waited < 10 * 60_000, `the grace passed, then red: ${waited / 60_000} min`);
+    assert.match(silent.pulls.get(3826).comments.at(-1).body, /Playwright \(chromium 1\/3\) never reported, though every workflow run for this head finished/);
+  });
+
+  it('rebuilds a train from the current heads when a component is pushed while it flies, without ejecting it', () => {
+    const fixed = 'f1xed'.padEnd(40, '0');
+    let world;
+    world = fakeWorld({
+      prs: [component(3824)],
+      queued: [3824],
+      ci: () => (world.pulls.get(3824).headRefOid === fixed ? green() : red(['MCP'], 3825)),
+    });
+    const readPr = world.deps.gh.readPr;
+    world.deps.gh.readPr = (number) => {
+      if (number === 2001) world.pulls.get(3824).headRefOid = fixed;
+      return readPr(number);
+    };
+    assert.deepEqual(runConductor(world).landed, [3824]);
+    assert.equal(called(world, 'openPr').length, 2, 'the train was rebuilt once');
+    assert.equal(called(world, 'mergeInto').at(-1)[2], fixed, 'the rebuilt train carries the pushed head');
+    assert.equal(called(world, 'rerunFailed').length, 0, 'the old head was not judged');
+    assert.ok(world.out.includes(`#3824 moved from ${component(3824).headRefOid.slice(0, 9)} to f1xed0000 while train #2001 was in flight; rebuilding the train from the current heads`));
+    assert.ok(!world.pulls.get(3824).comments.some((c) => c.body.startsWith(EJECTED_MARKER)));
+  });
+
   it('rebuilds a green train when main moved into its files while CI ran', () => {
     const world = fakeWorld({
       prs: [component(5)],

@@ -31,6 +31,9 @@ pnpm test:run -t "specific case"     # one test block
 pnpm build:static && PLAYWRIGHT_STATIC=1 pnpm exec playwright test <spec>   # e2e as CI runs it
 ```
 
+No browser spec runs before merge; the suite runs nightly on macOS. A rendered
+change runs the specs `checks:changed` maps, locally, before its pull request.
+
 Without `PLAYWRIGHT_STATIC=1` the config starts `pnpm dev`, which renders
 differently from the static export. The static export serves on 3110 and never
 reuses a running server; `checks:changed` runs three or more specs that way,

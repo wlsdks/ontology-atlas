@@ -12,7 +12,7 @@ import { NO_FULL_RUN, fullBrowserRunKind } from './main-health.mjs';
 const TRAIN_TITLE_SEARCHES = ['chore(merge):', 'chore(train): land'];
 
 const MAIN_FULL_RUN_CANDIDATES = 5;
-/** A reused push that ran nothing finishes in about 45 s; any run that ran the suite takes 5 minutes or more. */
+/** A run that executed nothing finishes in about 45 s; any run that ran the suite takes 5 minutes or more. */
 const MAIN_FULL_RUN_MIN_MS = 2 * 60_000;
 
 function describeReadFailure(output) {
@@ -187,8 +187,8 @@ export function createGithub(slug, run = ghRun) {
       return typeof out === 'string' ? out.split('\n').filter(Boolean) : null;
     },
     /**
-     * The newest verdict of a check on main, for the event it names. Pushes to main may be
-     * cancelled, so the verdict can sit behind a cancelled run. With `fullBrowser`, a run counts
+     * The newest verdict of a check on main, for the event it names. A run may be cancelled, so
+     * the verdict can sit behind a cancelled one. With `fullBrowser`, a run counts
      * only by what its shards uploaded (`fullBrowserRunKind`), and a red one carries the spec files
      * its shards annotated as failing.
      */
@@ -226,7 +226,7 @@ export function createGithub(slug, run = ghRun) {
         }
         return { ...result, failingSpecs: [...failingSpecs].sort() };
       }
-      // Push runs exist but none of the latest ran the whole suite: say so rather than look green.
+      // Runs exist but none of the latest ran the whole suite: say so rather than look green.
       const newest = rows.find((row) => row.conclusion && row.conclusion !== 'cancelled');
       const examined = rows.filter((row) => row.conclusion && row.conclusion !== 'cancelled').length;
       return newest ? { conclusion: NO_FULL_RUN, createdAt: newest.createdAt, url: newest.url, examined } : null;
@@ -268,6 +268,17 @@ export function createGithub(slug, run = ghRun) {
     markReady: (number) => ok(['pr', 'ready', String(number)]),
     markDraft: (number) => ok(['pr', 'ready', String(number), '--undo']),
     rerunFailed: (runId) => ok(['run', 'rerun', String(runId), '--failed']),
+    /** Every workflow run for one head sha, or `null` when unreadable. */
+    listWorkflowRuns: (sha) => {
+      const runs = read(['api', `repos/${slug}/actions/runs?head_sha=${sha}&per_page=100`,
+        '--jq', '[.workflow_runs[] | {id, name, path, status, conclusion, url: .html_url}]']);
+      return Array.isArray(runs.value) ? runs.value : null;
+    },
+    /** How many jobs a workflow run has; `null` when unreadable. */
+    countRunJobs: (runId) => {
+      const count = read(['api', `repos/${slug}/actions/runs/${runId}/jobs?per_page=1`, '--jq', '.total_count']);
+      return Number.isInteger(count.value) ? count.value : null;
+    },
     /** Which attempt a workflow run is on: 1 until someone reran it. `null` when unreadable. */
     readRunAttempt: (runId) => {
       const run = read(['api', `repos/${slug}/actions/runs/${runId}`]);

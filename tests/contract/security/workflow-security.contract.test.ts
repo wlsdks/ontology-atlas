@@ -671,14 +671,15 @@ describe("workflow security contract", () => {
 describe("landing: draft, ready_for_review, and the merge group", () => {
   const all = workflows();
 
-  /** The eight contexts `main` requires, as their job `name:` lines. */
+  /**
+   * The contexts `main` requires, as their job `name:` lines: `Required checks`, and the three lanes
+   * it aggregates until branch protection names it alone.
+   */
   const REQUIRED_CONTEXT_JOB_NAMES = [
+    "Required checks",
     "Types · Lint · Docs",
     "Unit · Contract",
     "MCP",
-    "Playwright (static export)",
-    "Playwright (web surface)",
-    "Playwright (chromium ${{ matrix.shard }}/3)",
   ];
 
   const producesRequiredContext = (source: string): boolean =>
@@ -693,13 +694,27 @@ describe("landing: draft, ready_for_review, and the merge group", () => {
 
   const DRAFT_GUARD = "github.event.pull_request.draft == false";
 
-  it("finds exactly the two workflows that produce a required context", () => {
-    // Idle-scan guard: if this pair ever reads empty, every assertion below
+  it("finds exactly the one workflow that produces a required context", () => {
+    // Idle-scan guard: if this ever reads empty, every assertion below
     // passes by measuring nothing.
     expect(all.filter((w) => producesRequiredContext(w.source)).map((w) => w.name).sort()).toEqual([
       "checks.yml",
-      "e2e.yml",
     ]);
+  });
+
+  it("goes green only when the plan and every lane succeeded, never over a skipped one", () => {
+    const checks = all.find((w) => w.name === "checks.yml")!.source;
+    const header = jobHeader(checks, "required");
+    expect(header).toContain("    name: Required checks\n");
+    expect(header).toContain("    needs: [plan, gates, unit-required, mcp]\n");
+    const job = jobBlock(checks, "required");
+    for (const [variable, lane] of [["PLAN", "plan"], ["GATES", "gates"], ["UNIT", "unit-required"], ["MCP", "mcp"]]) {
+      expect(job, `${lane} is not read`).toContain(`${variable}: \${{ needs.${lane}.result }}`);
+      expect(job, `${lane} is not compared`).toContain(`=$${variable}"`);
+    }
+    // "not failure" would pass a skipped or cancelled lane.
+    expect(job).toContain('if [ "${lane#*=}" != "success" ]; then');
+    expect(job).toContain('if [ "$red" -ne 0 ]; then exit 1; fi');
   });
 
   it("runs a required context on the merge group, and runs nothing else there", () => {

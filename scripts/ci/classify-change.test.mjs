@@ -654,18 +654,21 @@ test('the forbidden-pattern contracts run before every merge', () => {
 
 test('both workflows retain exhaustive triggers isolated from ordinary push cancellation', async () => {
   const { readFileSync } = await import('node:fs');
+  const read = (name) => readFileSync(new URL(`../../.github/workflows/${name}.yml`, import.meta.url), 'utf8');
   for (const name of ['checks', 'e2e']) {
-    const source = readFileSync(new URL(`../../.github/workflows/${name}.yml`, import.meta.url), 'utf8');
-    assert.match(source, /^  schedule:\n    - cron:/m);
-    assert.match(source, /^  workflow_dispatch:/m);
-    assert.match(source, /PUSH_BEFORE: \$\{\{ github\.event\.before \}\}/);
-    const group = source.split('\n').find((line) => line.startsWith('  group:'));
-    assert.match(group, /github\.event_name == 'schedule'/);
-    assert.match(group, /github\.event_name == 'workflow_dispatch'/);
-    assert.match(group, /'full(?:\{0\}', inputs\.plan_from\))?'? \|\|.*'change' \}\}$/);
-    // A rehearsal that plans from a named base gets its own group, so it never cancels the full run.
-    if (name === 'e2e') assert.match(group, /format\('full\{0\}', inputs\.plan_from\)/);
+    assert.match(read(name), /^  schedule:\n    - cron:/m);
+    assert.match(read(name), /^  workflow_dispatch:/m);
   }
+  const checks = read('checks');
+  assert.match(checks, /PUSH_BEFORE: \$\{\{ github\.event\.before \}\}/);
+  const group = checks.split('\n').find((line) => line.startsWith('  group:'));
+  assert.match(group, /github\.event_name == 'schedule'/);
+  assert.match(group, /github\.event_name == 'workflow_dispatch'/);
+  assert.match(group, /'full'? \|\|.*'change' \}\}$/);
+  // The browser suite runs only on the schedule and dispatch, never cancelled; a dispatch that plans
+  // from a named base gets its own group, so it never replaces a whole run waiting on the same ref.
+  const e2eGroup = read('e2e').split('\n').find((line) => line.startsWith('  group:'));
+  assert.match(e2eGroup, /inputs\.plan_from \|\| 'whole'/);
 });
 
 test('browser execution inputs promote only browser evidence, while shared routing remains exhaustive', () => {

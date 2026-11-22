@@ -54,10 +54,14 @@ test('a checkout with an older script runs main\'s copy; an opt-out runs its own
 
     const moduleUrl = new URL('./run-main-copy.mjs', import.meta.url).href;
     const run = (extraEnv = {}) => spawnSync(process.execPath, ['--input-type=module', '-e', `
-      import { runMainCopyIfStale } from ${JSON.stringify(moduleUrl)};
-      const status = runMainCopyIfStale({ entry: 'scripts/entry.mjs', argv: ['--flag'] });
-      if (status === null) console.log('ran local');
-      else process.exitCode = status;
+      import { spawnSync } from 'node:child_process';
+      import { mainCopyIfStale } from ${JSON.stringify(moduleUrl)};
+      const copy = mainCopyIfStale({ entry: 'scripts/entry.mjs' });
+      if (copy === null) console.log('ran local');
+      else {
+        process.exitCode = spawnSync(process.execPath, [copy.script, '--flag'], { cwd: copy.cwd, stdio: 'inherit', env: { ...process.env, ...copy.env } }).status;
+        copy.cleanup();
+      }
     `], { cwd: clone, encoding: 'utf8', env: { ...cleanEnv, ...extraEnv } });
 
     const stale = run();

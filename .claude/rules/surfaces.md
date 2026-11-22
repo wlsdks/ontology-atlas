@@ -158,7 +158,8 @@ not a reason, and calling an available path unavailable is equally false.
 gateway renders a real map with facts and two live next actions; the fallback
 workbench reads a fake folder with correct counts; every `DEGRADED_SURFACES`
 entry gives a reason and a destination that opens. Add every new app-only
-ability to `DEGRADED_SURFACES`. Its CI job runs for any runtime change,
+ability to `DEGRADED_SURFACES`. It runs in every nightly browser run and
+before every stable release; a planned dispatch runs it for any runtime change,
 including `src-tauri/**`.
 
 `DEGRADED_SURFACES` holds only web-versus-app absence. Absence below a viewport
