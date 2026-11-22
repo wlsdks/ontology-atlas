@@ -127,5 +127,5 @@ if (githubOutput) {
 }
 
 console.log(
-  `[desktop-release-tag] ${tag} is a ${parsedTag.channel} release; ${tagVersion} matches package, Tauri and Cargo versions, and /download derives its own from package.json`,
+  `[desktop-release-tag] ${tag} matches package, Tauri and Cargo versions, and /download derives its own from package.json (a ${parsedTag.channel} release)`,
 );
