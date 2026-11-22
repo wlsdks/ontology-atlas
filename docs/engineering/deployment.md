@@ -88,6 +88,39 @@ npx serve out
 # visit http://localhost:3000
 ```
 
+## Desktop release paths
+
+A release goes out on one of three paths. `docs/DESKTOP-MACOS.md` ("Release
+versions", "Release runbook") explains each gate; these are the commands.
+
+**Beta, then promotion.** A beta release is a GitHub pre-release: no
+`latest.json`, so no installed app is offered it, and `/download` never names
+it. The cut also starts the whole browser suite on the tag. Promotion needs no
+waiting period, only that browser run green on the beta's commit; it publishes
+the beta's bytes unchanged.
+
+```bash
+pnpm desktop:release-github -- --tag=v2.5.0-beta.1 && pnpm desktop:release-preflight
+git fetch origin main --tags && git tag v2.5.0-beta.1 origin/main && git push origin v2.5.0-beta.1
+pnpm desktop:release-run -- --tag=v2.5.0-beta.1 --ref=main       # cut; also starts e2e.yml on the tag
+# install the DMG from the pre-release page; promote whenever the browser run is green
+git tag v2.5.0 "v2.5.0-beta.1^{commit}" && git push origin v2.5.0
+pnpm desktop:release-run -- --tag=v2.5.0 --promote-from=v2.5.0-beta.1   # promote, registry listing, facts PR
+```
+
+**Direct stable cut**, for example a same-day fix. It publishes only once the
+browser run on its commit is green.
+
+```bash
+pnpm desktop:release-github -- --tag=v2.5.1 && pnpm desktop:release-preflight
+git fetch origin main --tags && git tag v2.5.1 origin/main && git push origin v2.5.1
+pnpm desktop:release-run -- --tag=v2.5.1 --ref=main
+```
+
+**The hard rule**: a `vX.Y.Z-beta.N` tag never writes `latest.json` and never
+writes the download page. A fix found in a beta merges to `main` and is cut as
+the next `-beta.N`.
+
 ## macOS release — rehearse before protected dispatch
 
 ```bash

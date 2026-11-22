@@ -122,18 +122,36 @@ not, so a blank screen with a clean log points at the frontend.
 
 ## Release versions
 
-Every release is a plain `vX.Y.Z` tag published as a normal GitHub release.
-`pnpm desktop:release-tag`, the admission job's first check of the tag, refuses a
-tag with a pre-release or build suffix such as `v1.4.0-rc.1`, so there is no
-release-candidate channel; to soak a build, install the draft the workflow
-stages before approving publication. The public `/download` facts describe the
-release the workflow published, and the hosted updater manifest
-(`scripts/download/stage-hosted-updater-manifest.mjs`, served at the updater endpoint in
-`src-tauri/tauri.conf.json`) follows the newest published plain release, which
-the app checks for automatically
+A release tag has one of two shapes, read by `scripts/lib/release-tag.mjs`:
+
+- `vX.Y.Z` is a **stable release**: a normal GitHub release with `latest.json`,
+  which installed apps update to and `/download` names.
+- `vX.Y.Z-beta.N` (N from 1) is a **beta release**: a GitHub pre-release with no
+  `latest.json`. No installed app is offered it and `/download` never names it;
+  it reaches only someone who installs its DMG by hand.
+
+`pnpm desktop:release-tag`, the admission job's first check, refuses every other
+suffix (`-rc.1`, `-beta.0`, `-beta.1.2`, build metadata). Version files say
+`X.Y.Z` on a beta; only the tag carries `-beta.N`, because promotion publishes
+the beta's bytes unchanged as `vX.Y.Z` and the updater compares versions.
+
+Four places keep a beta off the updater feed and the download page, each with a
+test that fails when it is removed: `stage-macos` builds no manifest for a beta
+and fails if one appears (`tests/contract/release/beta-release-channel.contract.test.ts`);
+`desktop:verify-download -- --beta` refuses a beta that is not a pre-release or
+carries `latest.json`; the hosted updater stager
+(`scripts/download/stage-hosted-updater-manifest.mjs`, served at the single
+endpoint in `src-tauri/tauri.conf.json`) skips pre-releases and beta tags; and
+`download:release-facts` refuses a beta tag or a pre-release, with no flag that
+accepts one. The app checks the feed automatically
 (`src/features/app-update/model/use-app-update.ts`).
-`pnpm desktop:verify-download` refuses a GitHub release someone marks as a
-pre-release by hand.
+
+A stable release publishes only over a whole green browser run on its own commit:
+`pnpm desktop:release-browser-gate -- --sha=<commit>` passes only when the newest
+finished `e2e.yml` run there ran the whole suite and passed, and refuses a
+running, red, partial or absent run with the dispatch command. A beta does not
+wait for it, and promotion has no waiting period: it may follow the cut as soon
+as that run is green.
 
 ## Release runbook
 
@@ -142,6 +160,12 @@ from `main`; pushing a tag alone starts nothing. An unprivileged admission job
 checks `workflow_dispatch`, `refs/heads/main`, and that the tag resolves to the
 current `main` head; later jobs pin that admitted SHA and recheck it before
 signing, draft creation, and publication.
+
+Three paths use it. **Beta, then promotion**: cut `vX.Y.Z-beta.N`, install it by
+hand, then promote the same bytes to `vX.Y.Z` (steps 1 to 3, then step 7).
+**Direct stable cut**: cut `vX.Y.Z` (steps 1 to 6), for example a same-day fix.
+A fix found while using a beta merges to `main` and is cut as the next
+`-beta.N`; a promotion is never patched.
 
 **1. Check GitHub prerequisites.** `desktop:release-github` checks `gh` auth,
 the active workflow, the `release-signing` policy, secret names at their scopes,
@@ -174,9 +198,11 @@ git push origin <tag>
 pnpm desktop:release-source -- --mode=admit --tag=<tag> --sha="$(git rev-parse origin/main)"
 ```
 
-**3. Dispatch and watch.** This dispatches with `--ref main`, waits for the
-exact `workflow_dispatch` run for the admitted commit, and runs
-`gh run watch --exit-status` on it.
+**3. Dispatch and watch.** This dispatches with `--ref main`, starts the whole
+browser suite (`e2e.yml`) on the tag, waits for the exact `workflow_dispatch`
+run for the admitted commit, and runs `gh run watch --exit-status` on it. A beta
+cut ends here: the release is published as a pre-release and the command prints
+the promotion commands.
 
 ```bash
 pnpm desktop:release-run -- --tag=<tag> --ref=main
@@ -199,7 +225,9 @@ release therefore names no `target_commitish`; the tag pins the commit and
 
 **4. Install the draft before publication.** The run pauses at the `release`
 environment. Install that exact draft DMG on a real Mac, launch it, open a
-vault, then approve. Publication rechecks the admitted source, publishes, runs
+vault, then approve. A beta's approval may come without installing the draft:
+the published beta is what the owner installs. Publication rechecks the
+admitted source; a stable release then requires the browser gate, publishes, runs
 `pnpm desktop:verify-download -- --tag="${RELEASE_TAG}" --require-updater`
 (a reachable Apple Silicon DMG, one Windows x64 installer, matching
 checksums, `latest.json` pointing at real archives), writes the public URL and
@@ -237,6 +265,27 @@ it records `local_preflight` as skipped; `desktop:goal-audit` runs the
 preflight first and passes `OATLAS_RELEASE_STATUS_LOCAL_PREFLIGHT=1`. The
 hosted website deploys separately (`.github/workflows/deploy-pages.yml`);
 check it with `pnpm desktop:verify-hosted`.
+
+**7. Promote a beta.** Push the stable tag at the beta's commit, then dispatch
+`.github/workflows/promote-release.yml` through the watcher:
+
+```bash
+git fetch origin --tags
+git tag vX.Y.Z "vX.Y.Z-beta.N^{commit}" && git push origin vX.Y.Z
+pnpm desktop:release-run -- --tag=vX.Y.Z --promote-from=vX.Y.Z-beta.N
+```
+
+`admit-promotion` (no write token) requires both tags at one commit, a
+published, complete beta pre-release without `latest.json`, no release holding
+`vX.Y.Z`, the browser gate on that commit, and current download facts.
+`stage-promotion` runs `pnpm desktop:release-promote -- --from=vX.Y.Z-beta.N
+--mode=stage`: it downloads every beta asset, checks each against the SHA-256
+GitHub recorded and its `.sha256` sibling, builds `latest.json` pinned to
+`vX.Y.Z`, creates the draft from exactly those files, and runs
+`desktop:verify-download -- --allow-draft --require-updater`. No job builds or
+signs. `publish-promotion` waits for the `release` approval, pins both tags
+again, publishes, and verifies. The watcher then starts the MCP Registry listing
+and opens the `/download` facts pull request, as in step 5.
 
 ## Signing and notarization
 
