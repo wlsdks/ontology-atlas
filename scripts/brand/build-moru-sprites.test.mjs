@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { createHash } from 'node:crypto';
+import { drawWorkClips } from './author-moru-work-clips.mjs';
 import { NATIVE_ROWS } from './build-moru-companion.mjs';
 import { despeckle, faintMarks, holdBody, inkFringe, ivoryFringe, liftFreeInk, moruBodyAnchor, moruColor, reduceMoru } from './build-moru-sprites.mjs';
 
@@ -689,5 +690,17 @@ test('a clip that stays on the ground keeps the body on one floor line', async (
     for (let frame = 0; frame < clip.frames; frame++) bottoms.push(moruBodyAnchor(await frameOf(`${root}/${clips[clip.id].sprite}`, frame, 128), 128).bottom);
     // Two native pixels: a breath or a squash moves the belly edge that far.
     assert.ok(Math.max(...bottoms) - Math.min(...bottoms) <= 2, `${clip.id} leaves the floor: body bottoms ${Math.min(...bottoms)}–${Math.max(...bottoms)}`);
+  }
+});
+
+test('each clip drawn in code has the sheet and the manifest entry the script draws today', async () => {
+  const root = 'assets/brand/moru';
+  const spec = JSON.parse(await readFile(`${root}/moru-source.json`, 'utf8'));
+  const drawn = await drawWorkClips();
+  assert.deepEqual(spec.authored.filter(clip => clip.drawn).map(clip => clip.id), drawn.map(({ entry }) => entry.id), 'the manifest and the script name different drawn clips');
+  for (const { entry, sheet } of drawn) {
+    assert.deepEqual(spec.authored.find(clip => clip.id === entry.id), entry, `${entry.id} has a stale manifest entry; run pnpm brand:work-clips`);
+    const [committed, fresh] = await Promise.all([`${root}/${entry.source}`, sheet].map(input => sharp(input).ensureAlpha().raw().toBuffer()));
+    assert.ok(committed.equals(fresh), `${entry.id} has a stale source sheet; run pnpm brand:work-clips`);
   }
 });
