@@ -20,7 +20,7 @@ const SHEETS = 'source/motion-v10';
 const COLUMNS = 4;
 
 const PALETTE = ['171923', '17192d', '50569c', '6d73d2', '555451', '777572', '99968f', 'aaa9a5', 'b8b4aa', 'd6d3c9', 'fff1d7', '9399e5'];
-const [INK, MUTED, INDIGO, STONE, IVORY] = [1, 3, 4, 10, 11];
+const [INK, MUTED, INDIGO, GRAY, STONE, IVORY] = [1, 3, 4, 6, 10, 11];
 const RGB = PALETTE.map(hex => [0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16)));
 const isSkin = colour => colour === STONE || colour === IVORY;
 const isInk = colour => colour === 1 || colour === 2;
@@ -199,8 +199,8 @@ function cutNeutral(neutral, size) {
   const wallRight = rowRight(top - 1);
   for (let y = top; y <= floor; y++) {
     if (rowLeft(y) <= wallLeft + DRAWN) wallLeft = Math.min(wallLeft, rowLeft(y));
-    // The corners round as the catalogue's belly does when Moru is off the floor: four drawn pixels, then two, then one.
-    const fromFloor = Math.floor((floor - y) / DRAWN), round = DRAWN * (fromFloor === 0 ? 4 : fromFloor === 1 ? 2 : fromFloor === 2 ? 1 : 0);
+    // The corners round as the catalogue's belly does when Moru is off the floor: five drawn pixels at the floor, then three, two and one.
+    const round = DRAWN * ([5, 3, 2, 1][Math.floor((floor - y) / DRAWN)] ?? 0);
     for (let x = wallLeft + round; x <= wallRight - round; x++) {
       const p = y * size + x;
       if (!inBody[p] && (hidden[p] || isInk(bare[p]))) { bare[p] = x >= firstIvory ? IVORY : STONE; inBody[p] = 1; hidden[p] = 1; }
@@ -272,25 +272,28 @@ function drawPose(rig, pose, shapes, props, art) {
   const height = rig.floor - rig.bodyBox.y0, lift = snap(pose.lift), slide = snap(pose.slide);
   for (const prop of props) if (prop.behind) prop.draw(canvas, size);
   const leanAt = y => snap(pose.lean * Math.min(1, (rig.floor - y) / height));
-  const drawFlipper = (side, behind) => {
+  const body = new Uint8Array(size * size);
+  const flipperOf = side => {
     const flipper = rig.flippers[side === 'left' ? 0 : 1], dx = snap(pose[`${side}X`]), dy = snap(pose[`${side}Y`]);
     // Off the floor a flipper is the round paw the catalogue draws there; on it, the flat-footed one.
     const shape = shapes[side] ?? (dy - lift < -DRAWN ? 'raised' : 'rest');
-    if (shape === 'hidden' || behind !== (shapes[`${side}Behind`] ?? false)) return;
     const x = snap(rig.centre + (flipper.box.x0 - rig.centre) * pose.wide) + dx + slide, y = flipper.box.y0 + dy - lift;
-    if (shape !== 'rest') {
-      const drawn = art.flippers[shape];
-      if (!drawn) throw new Error(`no flipper drawing is called "${shape}"`);
-      return stamp(canvas, size, drawn, x + snap((flipper.box.w - drawn.w) / 2), y + flipper.box.h + DRAWN - drawn.h);
-    }
+    const paw = shape === 'rest' || shape === 'hidden' ? undefined : art.flippers[shape];
+    if (shape !== 'rest' && shape !== 'hidden' && !paw) throw new Error(`no flipper drawing is called "${shape}"`);
+    return { flipper, shape, x, y, paw, behind: shapes[`${side}Behind`] ?? false, left: paw && x + snap((flipper.box.w - paw.w) / 2), top: paw && y + flipper.box.h + DRAWN - paw.h };
+  };
+  const placedFlippers = [flipperOf('left'), flipperOf('right')];
+  const drawFlipper = ({ flipper, shape, x, y, paw, left, top }) => {
+    if (shape === 'hidden') return;
+    // Over the body a paw keeps the arc above it, as the catalogue draws a raised flipper; off the body it keeps its whole outline.
+    if (paw) return stamp(canvas, size, paw, left, top, (xx, yy) => !(body[yy * size + xx] && yy >= top + paw.h - paw.pad - DRAWN && paw.data[(yy - top) * paw.w + xx - left] === INK));
     // In its own place the flipper is the neutral pose's pixels; moved, it carries a whole outline.
     if (x === flipper.box.x0 && y === flipper.box.y0) stamp(canvas, size, flipper.rest, flipper.rest.x0, flipper.rest.y0);
     else stamp(canvas, size, flipper.loose, x - DRAWN, y - DRAWN);
   };
-  drawFlipper('left', true);
-  drawFlipper('right', true);
+  for (const placed of placedFlippers) if (placed.behind) drawFlipper(placed);
 
-  const faceX = snap(pose.faceX), faceY = snap(pose.faceY), body = new Uint8Array(size * size);
+  const faceX = snap(pose.faceX), faceY = snap(pose.faceY);
   for (let y = 0; y < size; y++) {
     const sy = Math.round(rig.floor - (rig.floor - (y + lift)) / pose.tall);
     if (sy < 0 || sy >= size) continue;
@@ -327,12 +330,46 @@ function drawPose(rig, pose, shapes, props, art) {
   for (const at of rig.eyes) { const [x, y] = place(at.x, at.y + pose.gazeY + (eye.drop ?? 0), pose.gazeX); markAt(eye, x, y); }
   const [noseX, noseY] = place(rig.nose.x, rig.nose.y + pose.gazeY / 2, pose.gazeX / 2);
   markAt(rig.nose, noseX, noseY);
-  for (const whisker of rig.whiskers) { const [x, y] = place(whisker.x, whisker.y); markAt(whisker, x, y); }
+  if (shapes.mouth) {
+    const mouth = art.mouths[shapes.mouth];
+    if (!mouth) throw new Error(`no mouth drawing is called "${shapes.mouth}"`);
+    const [x, y] = place(rig.nose.x, rig.nose.y + rig.nose.h / 2 + DRAWN + mouth.h / 2, pose.gazeX / 2);
+    markAt(mouth, x, y);
+  }
+  // A whisker a raised paw would half cover is left out, so the paw never wears it as a rim.
+  const underPaw = (sprite, x, y) => placedFlippers.some(({ paw, behind, left, top }) => paw && !behind
+    && x + sprite.w / 2 > left - DRAWN && x - sprite.w / 2 < left + paw.w + DRAWN && y + sprite.h / 2 > top - DRAWN && y - sprite.h / 2 < top + paw.h + DRAWN);
+  for (const whisker of rig.whiskers) { const [x, y] = place(whisker.x, whisker.y); if (!underPaw(whisker, x, y)) markAt(whisker, x, y); }
 
-  drawFlipper('left', false);
-  drawFlipper('right', false);
+  for (const placed of placedFlippers) if (!placed.behind) drawFlipper(placed);
   for (const prop of props) if (!prop.behind) prop.draw(canvas, size);
-  return canvas;
+  seal(canvas, size);
+  return shapes.mirror ? mirrored(canvas, size) : canvas;
+}
+
+/** Gives any body fill left open to the canvas its outline, layer by layer to the outline's thickness. */
+function seal(canvas, size) {
+  let layer = [];
+  for (let p = 0; p < canvas.length; p++) if (isSkin(canvas[p])) layer.push(p);
+  for (let depth = 0; depth < DRAWN && layer.length; depth++) {
+    const next = [];
+    for (const p of layer) {
+      const x = p % size;
+      for (const n of [x > 0 ? p - 1 : -1, x + 1 < size ? p + 1 : -1, p - size, p + size]) if (n >= 0 && n < canvas.length && !canvas[n]) { canvas[n] = INK; next.push(n); }
+    }
+    layer = next;
+  }
+}
+
+/** The column a turned Moru is mirrored about: left of the body's centre, so the tail it swings to the right stays in the cell. */
+const TURN_AXIS = 131;
+function mirrored(canvas, size) {
+  const out = new Uint8Array(canvas.length);
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+    const from = 2 * TURN_AXIS - 1 - x;
+    if (from >= 0 && from < size) out[y * size + x] = canvas[y * size + from];
+  }
+  return out;
 }
 
 /**
@@ -371,7 +408,7 @@ async function sheet(frames, size, rows) {
 /** Every work clip as its manifest entry, its poses and its source sheet, drawn in memory. */
 export async function drawWorkClips() {
   const grid = await moruWorkGrid(), size = grid.size, rig = cutNeutral(grid.clean(grid.neutral), size);
-  const art = WORK_CLIPS.art({ pixelMap, stamp, snap, rig: { floor: rig.floor, ground: rig.floor + DRAWN, centre: rig.centre, crown: rig.bodyBox.y0, crownX: rig.crownX }, INK, MUTED, INDIGO, STONE, IVORY });
+  const art = WORK_CLIPS.art({ pixelMap, stamp, snap, rig: { floor: rig.floor, ground: rig.floor + DRAWN, centre: rig.centre, crown: rig.bodyBox.y0, crownX: rig.crownX }, INK, MUTED, INDIGO, GRAY, STONE, IVORY });
   return Promise.all(WORK_CLIPS.clips.map(async clip => {
     if (clip.durationsMs.length !== clip.frames) throw new Error(`${clip.id} times ${clip.durationsMs.length} of its ${clip.frames} poses`);
     const poses = posesOf(rig, clip, art);

@@ -55,6 +55,7 @@ export const ROOM_ROW_FRAMES = {
   'lever-pull': 24,
   'merge-cheer': 32,
   galumph: 24,
+  'galumph-left': 24,
   'settle-in': 32,
 } as const;
 export type RoomMotion = keyof typeof ROOM_ROW_FRAMES;

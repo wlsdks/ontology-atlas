@@ -5,8 +5,8 @@ server and provides Play/Pause, frame scrubbing, 64/128px inspection, light/dark
 backgrounds and individual downloads. Reduced motion stays still; offscreen and
 hidden canvases pause.
 
-The pack contains **84 clips: 68 authored motions and 16 labelled compositions**.
-There are **49 authored clips with 24 timed poses** and **19 with 32**. Each composition has **47**. These are authored pose counts, not display fps.
+The pack contains **85 clips: 69 authored motions and 16 labelled compositions**.
+There are **50 authored clips with 24 timed poses** and **19 with 32**. Each composition has **47**. These are authored pose counts, not display fps.
 The pack also has **16 static poses**, including separately simplified 32px/16px faces.
 Singing with notes, a fish friend, a happy dance and a tiny Moru chorus are
 included as expressive clips. Shy smiles, a ball game with a friend, three cuddling
@@ -31,7 +31,7 @@ Use `preview.html?clip=pup-peek` to open a particular motion.
 - [Source manifest](moru-source.json): source-sheet cells and composed sequences.
 - Source prompts: [v1](source/generation-v1.json), [v2](source/generation-v2.json),
   [v3](source/generation-v3.json), [v4](source/generation-v4.json), [v5](source/generation-v5.json), [v6](source/generation-v6.json), [v7](source/generation-v7.json), [v8](source/generation-v8.json), and [v9](source/generation-v9.json).
-- Clips drawn in code: [the ten Work status clips](../../../scripts/brand/moru-work-clips.mjs), posed from the neutral pose into `source/motion-v10/` by `pnpm brand:work-clips`.
+- Clips drawn in code: [the eleven Work status clips](../../../scripts/brand/moru-work-clips.mjs), posed from the neutral pose into `source/motion-v10/` by `pnpm brand:work-clips`.
 - [Pose showcase](moru-poses-showcase.png) and [1024px app icon](icons/atlas-compass-1024.png).
 
 `sprites/{64,128}/{authored,composed}` contains transparent frame strips.
@@ -70,7 +70,7 @@ fan-out is documented in [Brand](../../../docs/design/brand.md#rebuild).
 
 <img src="moru-poses-showcase.png" width="400" height="400" alt="Moru's 16 poses" />
 
-## All 68 drawn motions
+## All 69 drawn motions
 
 ### Waiting
 
@@ -162,6 +162,7 @@ fan-out is documented in [Brand](../../../docs/design/brand.md#rebuild).
 <img src="animated/gif/authored/moru-lever-pull.gif" width="128" height="128" alt="Moru throwing a floor lever" />
 <img src="animated/gif/authored/moru-merge-cheer.gif" width="128" height="128" alt="Moru jumping, flapping and clapping" />
 <img src="animated/gif/authored/moru-galumph.gif" width="128" height="128" alt="Moru galumphing along the floor" />
+<img src="animated/gif/authored/moru-galumph-left.gif" width="128" height="128" alt="Moru turning round and galumphing to the left" />
 <img src="animated/gif/authored/moru-settle-in.gif" width="128" height="128" alt="Moru looking round a new room, hopping and settling" />
 </p>
 
@@ -182,7 +183,7 @@ state. The catalogue's story sequences do not establish work, approval, progress
 or accepted meaning. Completion art requires the existing completion evidence.
 
 The built-in Image Gen tool created the art using this session's selected designs;
-no third-party logo or character was supplied as a generation reference. The ten
+no third-party logo or character was supplied as a generation reference. The eleven
 Work status clips were hand-authored as pixel art in code from those designs,
 with no third-party reference and no generated image.
 See [Sources and rights](../../../docs/design/brand.md#sources-and-rights) for the

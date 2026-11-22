@@ -155,8 +155,8 @@ What each contributor command answers, sorted by command.
 |---|---|
 | `node scripts/ci/run-playwright-ci.mjs --help` | Browser shard options, including `--only` for a named set of spec files, without discovering or running tests; unknown options fail before execution |
 | `pnpm agents:check` | Each harness's instruction files are valid; Codex and Claude files need not match |
-| `pnpm brand:sprites` | Rebuild Moru sprites, 84 animation exports, 16 poses and compass sizes from retained project sources; inspect `assets/brand/moru/preview.html` |
-| `pnpm brand:work-clips` | Redraw the ten code-drawn Work status clips from `scripts/brand/moru-work-clips.mjs` into `assets/brand/moru/source/motion-v10/` and their `moru-source.json` entries; run `pnpm brand:sprites` after it |
+| `pnpm brand:sprites` | Rebuild Moru sprites, 85 animation exports, 16 poses and compass sizes from retained project sources; inspect `assets/brand/moru/preview.html` |
+| `pnpm brand:work-clips` | Redraw the eleven code-drawn Work status clips from `scripts/brand/moru-work-clips.mjs` into `assets/brand/moru/source/motion-v10/` and their `moru-source.json` entries; run `pnpm brand:sprites` after it |
 | `pnpm brief:new -- --slug=<slug> --owns=<path,...>` | A delegation brief with the port, scratch, checks and merge lines filled in |
 | `pnpm build:first-load -- out en en/topology` | Per route, the JavaScript its HTML loads up front (raw and brotli KB) and any generated JSON literal over 50 KB; fails on a page naming no chunks, a missing chunk, or an oversize literal. `pnpm build` runs it for `en`, `en/topology` and `en/download`; `--allow-json=<route>` exempts a route |
 | `pnpm build:static` | Reuse `out/` only for matching build inputs; fail without a reuse stamp if inputs change during the build |

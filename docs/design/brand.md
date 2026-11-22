@@ -31,7 +31,7 @@ a curled forked left tail with an ivory notch. Preserve the selected silhouette.
 Moru is a character, not an ontology kind, assistant persona or work detector.
 
 The complete project pack is [assets/brand/moru](../../assets/brand/moru/):
-68 authored motions (49 with 24 poses and 19 with 32), 16 explicitly labelled composed sequences and
+69 authored motions (50 with 24 poses and 19 with 32), 16 explicitly labelled composed sequences and
 16 static poses. Sizes/formats never count as additional designs.
 Open [preview.html](../../assets/brand/moru/preview.html) locally to play, pause,
 scrub frames, inspect 64/128px exports, and download individual assets.
@@ -53,10 +53,11 @@ return hop in each longer three-phrase sequence; waiting has no bubble. These or
 ornaments stay within the actor bounds, ignore pointer input and share its pause,
 visibility and reduced-motion behavior. A still response uses a still bubble.
 
-Ten gestures for the Work status rooms add typing at a laptop taken out and put
+Eleven gestures for the Work status rooms add typing at a laptop taken out and put
 away, reading the room monitor, nodding off, a heads-up for a waiting session, a
 sigh, a crate carried on the head and lowered through the floor, a belt lever, a
-merge cheer, a galumph along the floor and settling into a new room. They are
+merge cheer, a galumph along the floor in each direction and settling into a new
+room. They are
 drawn in code from the neutral pose (see "Rebuild"), so the body, face and
 outline are the catalogue's own pixels.
 
@@ -206,11 +207,18 @@ and its eyes, raised flipper and props as typed pixel maps;
 `author-moru-work-clips.mjs` cuts the cleaned neutral pose into a bare torso,
 the facial marks and the two flippers, poses them through the keys and writes
 one sheet per clip to `source/motion-v10/`. A part moves by two work pixels, a
-whole pixel at 128px; a flipper off the floor becomes the round paw the
-catalogue draws there; a hop is keyed pose by pose and moves the body at most
-seven exported pixels between poses; a grounded clip may shuffle the body aside
-for a prop, bunching and reaching as it goes; and a drawing that comes within
-one 64px pixel of the cell edge stops the script.
+whole pixel at 128px. A flipper off the floor becomes the round paw the
+catalogue draws there; over the body it keeps only the arc above it, and a
+whisker it would half cover is left out. An effort narrows the eyes and opens
+a small mouth. A hop is keyed pose by pose along a thrown arc, and between two
+poses the centre of the body fill moves no further than it does in the
+catalogue's `hop` (6.6 exported pixels). A grounded clip may shuffle the body
+aside for a prop, bunching and reaching as it goes. Every pose ends with any
+body fill left open to the canvas given its outline, so no fill touches the
+background. `galumph-left` squeezes the body, mirrors it about a column left
+of its centre so the tail stays in the cell, and turns back before the row
+ends. A drawing that comes within one 64px pixel of the cell edge stops the
+script.
 
 ## Contextual motion
 
@@ -229,7 +237,7 @@ one 64px pixel of the cell edge stops the script.
 | In-app agent asks before a file or tool action (permission card) | `await-permission` for an ask inside the folder, `uncertain` for one outside it or with no path; `tail` / tail-wag row while Allow once is hovered or focused, `stop` while Reject is hovered | Native 128px rows at the play pace, centred above the question where the work stage stood, which is hidden while the turn waits. No row here is played by another surface. A new row fades in over the one it replaces, which plays on until it is gone; reduced motion swaps the held neutral pose with no fade. Moru is absent at window heights of 800px or less, where the slot halves the card and the path needs the room, and from the task-bound ontology change review, whose evidence needs the height. The card's words still name the agent's action; Moru only accompanies the ask |
 | Planning empty stage | `folder-open` once, then `blink` / waiting row with `compare` every second loop; `hop` when the action is hovered or focused | Native 128px rows. Moru opens the folder as the two sheets rise, then looks from the document to the screen while visible; the stage's pause holds him on his clip's first frame, and reduced motion shows the settled picture |
 | Automations empty stage | `blink` / waiting row, `source-read` / read row on each pass of the dial hand; `tilt` / curious row when the action is hovered or focused | Native 128px rows. Moru reads once per example run as a proposal lands in the tray; same pause and reduced-motion rest. The schedule is marked as an example in words, so he claims no real run |
-| Work status rooms: what a worktree's room observed | Writing: `desk-type`, `laptop-code` / code row. Reading: `monitor-read`, `source-read` / read row. Thinking: `thinking` / think row, `pondering`. Idle: `blink` / waiting row. Untouched for a while: `nod-off`. Waiting for the person: `heads-up`. Commit observed: `crate-send` or `lever-pull`. Merge observed: `merge-cheer`, `clap`. Stuck, or a lock left with nobody working: `sigh`. Entering a new room: `settle-in`. Moving in or out as a room changes size: `galumph`. Two tools in one room: `monitor-read` behind and `desk-type` or the code row in front | Native 128px rows at the play pace; the 32-cell rows keep each cell's time. Every new row opens and closes on the shared neutral pose, so a state change swaps there, and reduced motion holds that pose. The room moves the cell; `galumph` faces right and moves only the body. A row claims no progress and nothing about a commit's content, the cheer needs the observed merge, and the permission card's `await-permission` and `uncertain` are never played here |
+| Work status rooms: what a worktree's room observed | Writing: `desk-type`, `laptop-code` / code row. Reading: `monitor-read`, `source-read` / read row. Thinking: `thinking` / think row, `pondering`. Idle: `blink` / waiting row. Untouched for a while: `nod-off`. Waiting for the person: `heads-up`. Commit observed: `crate-send` or `lever-pull`. Merge observed: `merge-cheer`, `clap`. Stuck, or a lock left with nobody working: `sigh`. Entering a new room: `settle-in`. Moving in or out as a room changes size: `galumph` to the right, `galumph-left` to the left. Two tools in one room: `monitor-read` behind and `desk-type` or the code row in front | Native 128px rows at the play pace; the 32-cell rows keep each cell's time. Every new row opens and closes on the shared neutral pose, so a state change swaps there, and reduced motion holds that pose. The room moves the cell; the two galumphs move only the body, and their loop closes without a hold. A row claims no progress and nothing about a commit's content, the cheer needs the observed merge, and the permission card's `await-permission` and `uncertain` are never played here |
 | Verified entrance (`walk`) | `wave` | Existing finite entrance |
 | Verified read (`read`) | `source-read` | Existing finite cycle, then still |
 | Verified completion (`success`) | `dance` | One finite celebration, then existing hide timer |
@@ -311,7 +319,7 @@ node --test scripts/brand/build-moru-sprites.test.mjs
 ```
 
 Generation is not part of rebuilding. The Node/sharp exporter uses retained
-Image Gen sources and no new dependency. The ten Work status clips have no
+Image Gen sources and no new dependency. The eleven Work status clips have no
 generated source: their sheets in `source/motion-v10/` are the output of
 `author-moru-work-clips.mjs`, which reads the neutral pose from the first
 catalogue clip and rewrites those sheets and their `moru-source.json` entries. Browser canvas disables smoothing for
@@ -325,12 +333,13 @@ selected designs. No third-party character or logo was supplied as a generation
 reference. Prompts and raw outputs preserve this provenance; they do not prove
 global uniqueness or legal clearance.
 
-The ten Work status clips (`desk-type`, `monitor-read`, `nod-off`, `heads-up`,
-`sigh`, `crate-send`, `lever-pull`, `merge-cheer`, `galumph`, `settle-in`) were
+The eleven Work status clips (`desk-type`, `monitor-read`, `nod-off`,
+`heads-up`, `sigh`, `crate-send`, `lever-pull`, `merge-cheer`, `galumph`,
+`galumph-left`, `settle-in`) were
 hand-authored as pixel art in code in this session from the existing designs,
 with no third-party reference: the body, tail, flippers and facial marks are
-cut from the catalogue's neutral pose, and the closed eyes, the raised paw and
-every prop are pixel maps typed in `scripts/brand/moru-work-clips.mjs`. No
+cut from the catalogue's neutral pose, and the closed eyes, the mouth, the
+raised paw and every prop are pixel maps typed in `scripts/brand/moru-work-clips.mjs`. No
 image was generated for them.
 
 Use of generated output and exclusive copyright protection are different questions.
