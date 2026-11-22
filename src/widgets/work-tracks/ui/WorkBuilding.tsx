@@ -1,17 +1,19 @@
 'use client';
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { planRooms, sessionsIn, type RoomEntry, type RoomPlan, type TrackSession, type WorkTracks } from '@/shared/lib/work-status/work-tracks';
 import { cn } from '@/shared/lib/cn';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { MOTION } from '@/shared/motion';
-import { layoutBuilding, stageCapacity, type Box, type RoomBox, type RoomSize, type RoomUnit } from '../model/building-layout';
+import { WIDE_ROOM_W, layoutBuilding, stageCapacity, type Box, type RoomBox, type RoomSize, type RoomUnit } from '../model/building-layout';
+import { mountWhenFree } from '../model/face-mount-queue';
 import { clockTime } from '../model/format';
 import { createMoruClock } from '../model/moru-clock';
 import { retireeOf, roomAlertOf, roomLook, withRetirees, type Retiree } from '../model/room-look';
 import { FADE_MS, MOVE_MS } from '../model/room-sequence';
-import { FACE_LEFT_EVENT, exitRoom, translate, useRoomMotion } from '../model/use-room-motion';
+import { FACE_KEPT_EVENT, FACE_LEFT_EVENT, exitRoom, translate, useRoomMotion } from '../model/use-room-motion';
+import { useStableOrder } from '../model/use-stable-order';
 import { BranchName } from './BranchName';
 import { LargeRoom } from './LargeRoom';
 import { MiniRoom } from './MiniRoom';
@@ -57,6 +59,16 @@ function TintFilters() {
   );
 }
 
+interface FaceState {
+  current: FaceSize;
+  /** The face on screen while the room's new one waits to show: it keeps its element until it leaves or is kept. */
+  leaving: FaceSize | null;
+  windowKey: string;
+  next: number;
+  /** Whether the current face draws its content; a hidden new face draws it a few frames later. */
+  ready: boolean;
+}
+
 interface FaceSize {
   size: RoomSize;
   unit: RoomUnit;
@@ -75,13 +87,7 @@ function RoomFace({ room, face, copy, retiring, showOwner }: { room: RoomEntry; 
 /** A merged room fades its content to its own wall, then the wall fades, in the last moments of its stay. */
 const RETIRE_FADE_MS = FADE_MS;
 
-/**
- * One room's frame. Its element sits at its box by transform. When the building gives it a new size,
- * its old face stays at the old size only while its content fades to the room's wall
- * (`useRoomMotion` plays that); the new face is drawn hidden and fades in once the room has arrived,
- * so a room never shows two faces. When the window itself resizes, the face takes the new size at once.
- */
-function Room({ room, box, copy, retiring, showOwner, reduced, windowKey, ghost }: {
+interface RoomProps {
   room: RoomEntry;
   box: RoomBox;
   copy: RoomCopy;
@@ -92,35 +98,66 @@ function Room({ room, box, copy, retiring, showOwner, reduced, windowKey, ghost 
   windowKey: string;
   /** A room that left: drawn once more from where it was, fading away. */
   ghost?: { from: Box; onDone: (key: string) => void };
-}) {
+}
+
+const sameBox = (a: RoomBox, b: RoomBox) => a.x === b.x && a.y === b.y && a.w === b.w && a.h === b.h && a.size === b.size && a.unit === b.unit;
+
+/**
+ * A plan builds every entry afresh, so a room compares what it draws from: its entry is plain data,
+ * and an update that leaves it and its box alone does not draw the room again.
+ */
+function sameRoomProps(a: RoomProps, b: RoomProps) {
+  return a.copy === b.copy && a.retiring === b.retiring && a.showOwner === b.showOwner && a.reduced === b.reduced
+    && a.windowKey === b.windowKey && a.ghost === b.ghost && sameBox(a.box, b.box)
+    && (a.room === b.room || JSON.stringify(a.room) === JSON.stringify(b.room));
+}
+
+const Room = memo(DrawnRoom, sameRoomProps);
+
+/**
+ * One room's frame. Its element sits at its box by transform. When the building gives it a new size,
+ * its old face stays at the old size only while its content fades to the room's wall
+ * (`useRoomMotion` plays that); the new face is drawn hidden and fades in once the room has arrived,
+ * so a room never shows two faces. When the window itself resizes, the face takes the new size at once.
+ */
+function DrawnRoom({ room, box, copy, retiring, showOwner, reduced, windowKey, ghost }: RoomProps) {
   const ghostFrom = ghost?.from;
   const onGhostDone = ghost?.onDone;
-  const [faces, setFaces] = useState<{ current: FaceSize; leaving: FaceSize | null; windowKey: string; next: number }>({
+  const [faces, setFaces] = useState<FaceState>({
     current: { size: box.size, unit: box.unit, w: box.w, h: box.h, id: 0 },
     leaving: null,
     windowKey,
     next: 1,
+    ready: true,
   });
   const { current } = faces;
   if (current.size !== box.size || current.unit !== box.unit || Math.abs(current.w - box.w) > 1 || Math.abs(current.h - box.h) > 1) {
-    const moved = faces.windowKey === windowKey;
     const sized = { size: box.size, unit: box.unit, w: box.w, h: box.h };
-    // The face showing now is what fades out, keeping its element and how far it has faded; one already
-    // leaving faded during the last sequence's fade step. A room that stays the same kind keeps drawing
-    // its face, so Moru plays on, and leaves a copy of it to fade.
-    const same = current.size === box.size;
-    setFaces({
-      current: { ...sized, id: same ? current.id : faces.next },
-      leaving: moved ? { ...current, id: same ? faces.next : current.id } : null,
-      windowKey,
-      next: faces.next + 1,
-    });
+    if (faces.windowKey !== windowKey) {
+      // A window resize takes the new size at once.
+      setFaces({ current: { ...sized, id: current.size === box.size ? current.id : faces.next }, leaving: null, windowKey, next: faces.next + 1, ready: true });
+    } else {
+      // The face on screen keeps its element and how far it has faded, and becomes the one that may
+      // leave; the new face is drawn hidden, its content a few frames later. A move that keeps the
+      // room's content hands the face back (`FACE_KEPT_EVENT`) before anything paints.
+      setFaces({ current: { ...sized, id: faces.next }, leaving: faces.leaving ?? current, windowKey, next: faces.next + 1, ready: false });
+    }
   } else if (faces.windowKey !== windowKey) {
-    setFaces({ ...faces, leaving: null, windowKey });
+    setFaces({ ...faces, leaving: null, windowKey, ready: true });
   }
-  const oldFace = useCallback((element: HTMLDivElement | null) => {
-    element?.addEventListener(FACE_LEFT_EVENT, () => setFaces(state => ({ ...state, leaving: null })), { once: true });
+  const oldFace = useCallback((element: HTMLDivElement) => {
+    const left = () => setFaces(state => ({ ...state, leaving: null, ready: true }));
+    const kept = () => setFaces(state => (state.leaving && state.leaving.size === state.current.size
+      ? { ...state, current: { ...state.current, id: state.leaving.id }, leaving: null, ready: true }
+      : { ...state, leaving: null, ready: true }));
+    element.addEventListener(FACE_LEFT_EVENT, left);
+    element.addEventListener(FACE_KEPT_EVENT, kept);
+    return () => {
+      element.removeEventListener(FACE_LEFT_EVENT, left);
+      element.removeEventListener(FACE_KEPT_EVENT, kept);
+    };
   }, []);
+  useEffect(() => (faces.ready ? undefined : mountWhenFree(() => setFaces(state => ({ ...state, ready: true })))), [faces.ready]);
   const ghostRef = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     if (ghostFrom && onGhostDone && ghostRef.current) exitRoom(ghostRef.current, ghostFrom, reduced, () => onGhostDone(room.key));
@@ -147,6 +184,7 @@ function Room({ room, box, copy, retiring, showOwner, reduced, windowKey, ghost 
   return (
     <div
       ref={ghost ? ghostRef : roomRef}
+      id={ghost ? undefined : roomDomId(room.key)}
       data-room-key={ghost ? undefined : room.key}
       data-ghost-key={ghost ? room.key : undefined}
       data-testid={ghost ? undefined : 'work-room'}
@@ -173,24 +211,27 @@ function Room({ room, box, copy, retiring, showOwner, reduced, windowKey, ghost 
           ref={oldFace}
           data-room-face
           data-face-leaving="true"
+          data-wide={faces.leaving.w >= WIDE_ROOM_W}
+          // Hidden from assistive technology only: rooms hold nothing to press or focus, and `inert`
+          // would restyle the whole face the moment it starts to leave.
           aria-hidden
-          inert
           className={cn(styles.face, styles.notched)}
           style={{ width: faces.leaving.w, height: faces.leaving.h }}
         >
           <RoomFace room={room} face={faces.leaving} copy={copy} retiring={retiring} showOwner={showOwner} />
         </div>
       ) : null}
-      <div key={`face-${current.id}`} data-room-face className={cn(styles.face, styles.notched, 'h-full w-full')}>
-        <RoomFace room={room} face={current} copy={copy} retiring={retiring} showOwner={showOwner} />
+      <div key={`face-${current.id}`} data-room-face data-wide={current.w >= WIDE_ROOM_W} className={cn(styles.face, styles.notched, 'h-full w-full')}>
+        {faces.ready ? <RoomFace room={room} face={current} copy={copy} retiring={retiring} showOwner={showOwner} /> : null}
       </div>
     </div>
   );
 }
 
-function Placed({ box, children, className, testId }: { box: Box; children: ReactNode; className?: string; testId?: string }) {
+function Placed({ box, children, className, testId, id }: { box: Box; children: ReactNode; className?: string; testId?: string; id?: string }) {
   return (
     <div
+      id={id}
       data-testid={testId}
       className={cn('absolute left-0 top-0 transition-transform', className)}
       style={{ transform: translate(box), width: box.w, height: box.h, transitionDuration: `${MOVE_MS}ms`, transitionDelay: `${FADE_MS}ms` }}
@@ -312,6 +353,12 @@ function useAmbientMotion(boardRef: React.RefObject<HTMLElement | null>, layoutK
   }, [boardRef, layoutKey, reduced]);
 }
 
+const roomKeyOf = (room: RoomEntry) => room.key;
+const floorKeyOf = (floor: { key: string }) => floor.key;
+/** A worktree key has no whitespace, so it can name an element the region reads in order. */
+const roomDomId = (key: string) => `work-room-${key}`;
+const SHELF_DOM_ID = 'work-room-shelf';
+
 interface Ghost {
   room: RoomEntry;
   box: RoomBox;
@@ -408,6 +455,11 @@ export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs }: {
     }));
   }, [entries, layout, retiring]);
 
+  // Elements keep their first order; the region reads them in the plan's order.
+  const drawnRooms = useStableOrder(entries, roomKeyOf);
+  const drawnFloors = useStableOrder(shown.floors, floorKeyOf);
+  const readingOrder = [...entries.filter(room => layout.rooms.has(room.key)).map(room => roomDomId(room.key)), ...(layout.shelf ? [SHELF_DOM_ID] : [])].join(' ');
+
   const stageTop = Math.min(...shown.stage.map(room => layout.rooms.get(room.key)?.y ?? Number.POSITIVE_INFINITY), layout.height);
   const building: CSSProperties = { transform: `translateY(${Math.max(0, stageTop - 12)}px)`, height: layout.height };
 
@@ -420,6 +472,7 @@ export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs }: {
         ref={boardRef}
         data-testid="work-building"
         aria-label={t('stage.label')}
+        aria-owns={readingOrder || undefined}
         role="region"
         onPointerOver={emphasiseSession}
         onPointerLeave={emphasiseSession}
@@ -429,7 +482,7 @@ export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs }: {
         {size ? (
           <>
             {shown.stage.length + shown.floors.length > 0 ? <i aria-hidden className={cn(styles.building, styles.notched)} style={building} /> : null}
-            {shown.floors.map(floor => {
+            {drawnFloors.map(floor => {
               const plate = layout.floors.get(floor.key);
               return plate ? (
                 <Placed key={`floor:${floor.key}`} box={plate} testId="work-floor">
@@ -458,14 +511,14 @@ export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs }: {
             {ghosts.map(ghost => (
               <Room key={`ghost:${ghost.room.key}`} room={ghost.room} box={ghost.box} copy={copy} retiring={ghost.retiring} showOwner={!layout.banded} reduced={reduced} windowKey={windowKey} ghost={{ from: ghost.from, onDone: forgetGhost }} />
             ))}
-            {entries.map(room => {
+            {drawnRooms.map(room => {
               const box = layout.rooms.get(room.key);
               return box ? (
                 <Room key={room.key} room={room} box={box} copy={copy} retiring={retiring.has(room.key)} showOwner={!layout.banded} reduced={reduced} windowKey={windowKey} />
               ) : null;
             })}
             {layout.shelf ? (
-              <Placed box={layout.shelf}>
+              <Placed box={layout.shelf} id={SHELF_DOM_ID}>
                 <RoomShelf merged={shelfMerged} untouched={plan.shelf.untouched} baseBranch={baseBranch} nowMs={nowMs} inline={layout.shelf.inline} />
               </Placed>
             ) : null}

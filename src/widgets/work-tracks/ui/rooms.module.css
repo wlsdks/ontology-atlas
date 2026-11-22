@@ -82,7 +82,6 @@
   left: 0;
   top: 0;
   overflow: hidden;
-  container-type: size;
 }
 
 /* ---------- large room: the scene, then the belt to main */
@@ -618,24 +617,26 @@
   animation-play-state: paused;
 }
 
-@container (min-width: 520px) {
-  .scene {
-    --ax-room: 27%;
-    /* The monitor's span from the right edge, which a pair and its tags keep clear of. */
-    --monitor-reach: calc(min(46%, calc(124px * var(--u))) + 16px);
-  }
+/*
+ * A face at least `WIDE_ROOM_W` across carries `data-wide`, set from its box. A size container query
+ * would read the same width, but it makes every face a container whose subtree restyles during layout.
+ */
+:where(.face[data-wide='true']) .scene {
+  --ax-room: 27%;
+  /* The monitor's span from the right edge, which a pair and its tags keep clear of. */
+  --monitor-reach: calc(min(46%, calc(124px * var(--u))) + 16px);
+}
 
-  .monitor {
-    left: auto;
-    right: 16px;
-    top: 16px;
-    width: min(46%, calc(124px * var(--u)));
-    height: calc(64px * var(--u));
-  }
+:where(.face[data-wide='true']) .monitor {
+  left: auto;
+  right: 16px;
+  top: 16px;
+  width: min(46%, calc(124px * var(--u)));
+  height: calc(64px * var(--u));
+}
 
-  .sign {
-    max-width: calc(100% - min(46%, calc(124px * var(--u))) - 52px);
-  }
+:where(.face[data-wide='true']) .sign {
+  max-width: calc(100% - min(46%, calc(124px * var(--u))) - 52px);
 }
 
 /* ---------- the belt: this worktree on its way to main */
@@ -854,10 +855,8 @@
   transition-delay: var(--motion-choreography);
 }
 
-@container (max-width: 519px) {
-  .station:not([data-now='true']):not(.stationMain) {
-    font-size: 0;
-  }
+:where(.face:not([data-wide='true'])) .station:not([data-now='true']):not(.stationMain) {
+  font-size: 0;
 }
 
 /* ---------- mini room: a wall, a floor, a small Moru; the floor edge is its belt */
@@ -1142,17 +1141,15 @@
   right: auto;
 }
 
-@container (min-width: 520px) {
-  .prop,
-  .scene[data-mirror='true'] .prop {
-    left: calc(var(--ax) + 74 * var(--s));
-    right: auto;
-    bottom: calc(var(--floor) * 0.4);
-  }
+:where(.face[data-wide='true']) .prop,
+:where(.face[data-wide='true']) .scene[data-mirror='true'] .prop {
+  left: calc(var(--ax) + 74 * var(--s));
+  right: auto;
+  bottom: calc(var(--floor) * 0.4);
+}
 
-  .prop::after {
-    content: none;
-  }
+:where(.face[data-wide='true']) .prop::after {
+  content: none;
 }
 
 /* plant */

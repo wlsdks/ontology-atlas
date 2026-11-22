@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import type { RoomEntry, SessionTool, Track, TrackSession } from '@/shared/lib/work-status/work-tracks';
 import { clockTime, timeAgo } from '../model/format';
@@ -30,10 +31,18 @@ export interface MonitorCopy {
   live: boolean;
 }
 
-/** Every sentence a room says, from its entry and the clock; the only place room copy is chosen. */
+/**
+ * Every sentence a room says, from its entry and the clock; the only place room copy is chosen. It
+ * stays the same object until the minute, the locale or the base branch changes, so a room whose
+ * entry did not change need not draw again.
+ */
 export function useRoomCopy(baseBranch: string, nowMs: number) {
   const t = useTranslations('workStatus');
   const locale = useLocale();
+  return useMemo(() => roomCopy(t, locale, baseBranch, nowMs), [t, locale, baseBranch, nowMs]);
+}
+
+function roomCopy(t: ReturnType<typeof useTranslations<'workStatus'>>, locale: string, baseBranch: string, nowMs: number) {
 
   const toolName = (tool: SessionTool) =>
     t(tool === 'acp' ? 'tool.acp' : tool === 'claudeCode' ? 'tool.claudeCode' : tool === 'codex' ? 'tool.codex' : 'tool.unknown');

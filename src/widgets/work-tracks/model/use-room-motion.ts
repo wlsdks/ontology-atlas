@@ -9,6 +9,8 @@ const EASE_CSS = `cubic-bezier(${MOTION_EASE.join(', ')})`;
 const ENTER_RISE_PX = 16;
 /** A face that finished fading out tells its room, which then stops drawing it. */
 export const FACE_LEFT_EVENT = 'roomfaceleft';
+/** Dispatched on a leaving face when the room's move keeps its content: the face stays the room's own. */
+export const FACE_KEPT_EVENT = 'roomfacekept';
 
 export const translate = (box: Box, rise = 0) => `translate(${box.x}px, ${box.y + rise}px)`;
 
@@ -30,12 +32,14 @@ function drawnBox(playing: Playing, key: string): Box | null {
 
 const facesOf = (element: HTMLElement) => [...element.querySelectorAll<HTMLElement>(':scope > [data-room-face]')];
 const isOld = (face: HTMLElement) => face.dataset.faceLeaving === 'true';
-const currentFace = (element: HTMLElement) => facesOf(element).find(face => !isOld(face));
+/** The face on screen: one that may leave while the room's new face waits, else the room's own. */
+const shownFace = (element: HTMLElement) => facesOf(element).find(isOld) ?? facesOf(element).find(face => !isOld(face));
 /** The parts of a stage room that fade while it travels resized: its monitor and its belt. */
-const partsOf = (element: HTMLElement) => [...(currentFace(element)?.querySelectorAll<HTMLElement>('[data-room-part]') ?? [])];
+const partsOf = (element: HTMLElement) => [...(shownFace(element)?.querySelectorAll<HTMLElement>('[data-room-part]') ?? [])];
 const opacityOf = (element: HTMLElement) => Number(getComputedStyle(element).opacity);
-const dropOldFaces = (element: HTMLElement) => {
-  for (const face of facesOf(element)) if (isOld(face)) face.dispatchEvent(new Event(FACE_LEFT_EVENT));
+/** A move that keeps the room's content: the face on screen stays the room's own, and the waiting one goes. */
+const keepShownFace = (element: HTMLElement) => {
+  for (const face of facesOf(element)) if (isOld(face)) face.dispatchEvent(new Event(FACE_KEPT_EVENT));
 };
 
 /** What one room shows as an update lands: where it is, its content, its fading parts and its scene's unit. */
@@ -87,7 +91,7 @@ export function useRoomMotion(
         drawn.set(key, { box, face: 1, parts: 1, unit: box.unit });
         continue;
       }
-      const face = element && currentFace(element);
+      const face = element && shownFace(element);
       const scene = face?.querySelector<HTMLElement>('[data-scene]');
       drawn.set(key, {
         box: drawnBox(playingNow, key) ?? box,
@@ -114,7 +118,7 @@ export function useRoomMotion(
         if (reduced && !arriving && !instant && !drawn.has(key)) {
           element.animate([{ opacity: 0 }, { opacity: 1 }], { duration: ms(MOTION.fast.duration), easing: 'linear' });
         }
-        dropOldFaces(element);
+        keepShownFace(element);
       }
       return;
     }
@@ -141,20 +145,20 @@ export function useRoomMotion(
       if (move && shows) {
         const timing: MoveTiming = { sequence, total: totalMs, at, shows };
         if (move.mode === 'resized') {
-          dropOldFaces(element);
+          keepShownFace(element);
           animations.push(...playResized(element, move, timing, boxes.get(key)!.unit));
         } else {
           animations.push(...playMove(element, move, timing));
           if (move.mode === 'wall') animations.push(...playWall(element, move, timing));
-          else dropOldFaces(element);
+          else keepShownFace(element);
         }
         continue;
       }
-      dropOldFaces(element);
+      keepShownFace(element);
       const to = boxes.get(key);
       if (shows && (shows.face < 0.99 || shows.parts < 0.99)) {
         // Interrupted while some of it was faded: it comes back from where it was, not at once.
-        const face = currentFace(element);
+        const face = shownFace(element);
         if (face) animations.push(face.animate([{ opacity: shows.face }, { opacity: 1 }], { duration: SHOW_MS, easing: EASE_CSS }));
         for (const part of partsOf(element)) animations.push(part.animate([{ opacity: shows.parts }, { opacity: 1 }], { duration: SHOW_MS, easing: EASE_CSS }));
       }
@@ -231,7 +235,7 @@ function playResized(element: HTMLElement, move: RoomMove, timing: MoveTiming, u
   const steps = stepsOf(move, timing);
   const played = [element.animate(pathFrames(move, timing, box => ({ transform: translate(box), width: `${box.w}px`, height: `${box.h}px`, zIndex: layerOf(move) })), { duration: timing.total })];
   for (const part of partsOf(element)) played.push(part.animate(fadeFrames(timing.shows.parts, steps), { duration: timing.total }));
-  const scene = currentFace(element)?.querySelector<HTMLElement>('[data-scene]');
+  const scene = shownFace(element)?.querySelector<HTMLElement>('[data-scene]');
   const from = timing.shows.unit;
   if (scene && from !== unit) {
     played.push(scene.animate([
