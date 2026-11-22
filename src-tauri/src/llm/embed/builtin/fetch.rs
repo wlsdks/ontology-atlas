@@ -134,7 +134,7 @@ impl Drop for KillOnDrop {
 }
 
 fn request_error(error: impl std::fmt::Display) -> EmbedError {
-    EmbedError::Request(crate::errors::squeeze(&error.to_string()))
+    EmbedError::Request(crate::coded_error::squeeze(&error.to_string()))
 }
 
 impl Fetch for CurlFetch {
@@ -146,7 +146,7 @@ impl Fetch for CurlFetch {
         sink: &mut dyn Sink,
     ) -> Result<(), EmbedError> {
         let mut child = KillOnDrop(
-            crate::no_console::hide_console(&mut Command::new("curl"))
+            crate::child_process::no_console::hide_console(&mut Command::new("curl"))
                 .args([
                     "--disable",
                     "--silent",
@@ -221,7 +221,7 @@ impl Fetch for CurlFetch {
                 Some(28) => EmbedError::TimedOut,
                 // Could not resolve the host, or could not connect to it.
                 Some(6 | 7) => connect_failed((self.proxy_named)()),
-                _ => EmbedError::Request(crate::errors::squeeze(&stderr)),
+                _ => EmbedError::Request(crate::coded_error::squeeze(&stderr)),
             })
         }
     }

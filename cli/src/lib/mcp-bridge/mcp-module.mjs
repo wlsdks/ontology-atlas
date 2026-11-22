@@ -156,7 +156,6 @@ export function sourceCheckoutMcpDependencyError(
   return makeSourceCheckoutMcpDependencyError(issues);
 }
 
-/** Resolved module namespaces, keyed by file name. */
 const cache = new Map();
 
 async function importMcpModule(fileName) {

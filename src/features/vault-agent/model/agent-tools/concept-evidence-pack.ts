@@ -1,4 +1,4 @@
-import { AGENT_TOOL_RESULT_CHAR_CAP } from '../types';
+import { AGENT_TOOL_RESULT_CHAR_CAP } from '../agent-turn';
 
 type ConceptEvidenceRow = Record<string, unknown>;
 
@@ -197,11 +197,11 @@ function packedConceptEvidence(content: string): PackedConceptEvidence {
     row.found !== false && typeof row.slug === 'string' ? [row.slug] : [],
   );
   const vaultChars = rows.reduce((sum, row) => {
-    const info =
+    const bodyDelivery =
       row.bodyInfo && typeof row.bodyInfo === 'object'
         ? (row.bodyInfo as Record<string, unknown>)
         : null;
-    return sum + (typeof info?.returnedChars === 'number' ? info.returnedChars : 0);
+    return sum + (typeof bodyDelivery?.returnedChars === 'number' ? bodyDelivery.returnedChars : 0);
   }, 0);
   return {
     content,

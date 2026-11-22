@@ -3,9 +3,6 @@ import { failureCodeOf } from '@/shared/lib/failures/failure-code';
 import type { VaultShape } from '@/shared/lib/vault-folder/vault-shape';
 import type { VaultOpenOptions, VaultOpenResult } from '@/entities/vault-session';
 
-/**
- * The narrow part of `useLocalVault()` this hook needs, so a test double can supply it.
- */
 export interface VaultCreateFlowVault {
   status: string;
   open: (options?: VaultOpenOptions) => Promise<VaultOpenResult>;
@@ -17,7 +14,6 @@ export interface VaultCreateFlowVault {
  * mounted (the INDEX starter card) omits them and reads `actionError`.
  */
 export interface CreationReport {
-  /** The folder opened but its starter failed; the raw failure, for the screen to translate. */
   starterFailed?: (error: unknown) => void;
 }
 
@@ -36,7 +32,6 @@ export function useVaultCreateFlow(
   const [actionError, setActionError] = useState<string | null>(null);
   const { starterFailed } = report;
 
-  /** `null` keeps the full starter. */
   const handleCreate = useCallback(async (chosen: VaultShape | null = null) => {
     setActionError(null);
     setCreating(true);
@@ -59,7 +54,6 @@ export function useVaultCreateFlow(
 
   return {
     handleCreate,
-    /** The chosen folder is being read and, when empty, seeded; not the picker itself. */
     scaffolding: creating && vault.status === 'loading',
     actionError,
     setActionError,

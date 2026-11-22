@@ -10,11 +10,6 @@ interface Props {
   reset: () => void;
 }
 
-/**
- * The last line of defence for the root layout itself throwing during render. `error.tsx` works only
- * while the layout is fine, so without global-error that situation shows the browser's default error
- * screen and the product identity breaks.
- */
 export default function GlobalError({ error, reset }: Props) {
   useEffect(() => {
     console.error("[global-error]", error);

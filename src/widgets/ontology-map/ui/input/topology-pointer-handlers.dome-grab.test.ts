@@ -7,7 +7,7 @@ vi.mock("../../tokens/topology-read-tokens", () => ({
 
 import { buildDomeModel } from "../../model/dome-view/model-build";
 import { createDomeRuntime } from "../../model/dome-view/runtime";
-import type { DomeInputNode } from "../../model/dome-view/types";
+import type { DomeInputNode } from "../../model/dome-view/dome-shapes";
 import { createTopologyPointerHandlers } from "./topology-pointer-handlers";
 import type { PointerHandlerRefs } from "./topology-pointer-types";
 

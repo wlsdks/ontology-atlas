@@ -6,15 +6,15 @@ import { freePort, main, suggestedChecks } from './brief-new.mjs';
 
 async function run(argv, extra = {}) {
   let out = '';
-  let err = '';
+  let error = '';
   const code = await main({
     argv,
     stdout: { write: (s) => { out += s; } },
-    stderr: { write: (s) => { err += s; } },
+    stderr: { write: (s) => { error += s; } },
     checks: () => ['pnpm test:example'],
     ...extra,
   });
-  return { code, out, err };
+  return { code, out, err: error };
 }
 
 test('port selection skips a port held open', async () => {

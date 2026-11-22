@@ -80,15 +80,15 @@ export function readContainmentTree(
   const elementParent = new Map<string, string>();
   const capabilityElements = new Map<string, string[]>();
   const domainElementCount = new Map<string, number>();
-  for (const el of nodes.filter((n) => n.kind === "element").sort(byId)) {
-    const cap = firstParentOfKind(el.id, "capability");
-    const dom = cap ? capabilityDomain.get(cap) ?? null : firstParentOfKind(el.id, "domain");
+  for (const elementNode of nodes.filter((n) => n.kind === "element").sort(byId)) {
+    const cap = firstParentOfKind(elementNode.id, "capability");
+    const dom = cap ? capabilityDomain.get(cap) ?? null : firstParentOfKind(elementNode.id, "domain");
     const owner = cap ?? dom;
-    if (owner) elementParent.set(el.id, owner);
+    if (owner) elementParent.set(elementNode.id, owner);
     if (cap) {
       const list = capabilityElements.get(cap);
-      if (list) list.push(el.id);
-      else capabilityElements.set(cap, [el.id]);
+      if (list) list.push(elementNode.id);
+      else capabilityElements.set(cap, [elementNode.id]);
     }
     if (dom) domainElementCount.set(dom, (domainElementCount.get(dom) ?? 0) + 1);
   }

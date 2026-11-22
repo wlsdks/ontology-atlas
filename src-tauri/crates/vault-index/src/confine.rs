@@ -1,15 +1,12 @@
-//! Which files the index may read, decided here rather than trusted from the caller's listing: a
-//! `.md` file under the canonical root, reached through real folders only, with no component that
-//! is empty, `.`, `..` or starts with a dot. Symlinks are never followed, so a link cannot bring a
-//! file from outside the vault, and dotfiles (where credentials such as `.env` live) are never
-//! read; credential files are not `.md` files either.
+//! Which files the index may read: a `.md` file under the canonical root, reached through real folders
+//! only, with no empty, `.`, `..` or dot-leading component. Symlinks are never followed and dotfiles
+//! (where credentials live) are never read.
 
 use crate::stamps::{Stamp, Volume};
 use std::collections::HashMap;
 use std::fs::{File, Metadata};
 use std::path::{Path, PathBuf};
 
-/// Whether a listed path can name an indexable file at all.
 pub(crate) fn admits_name(relative: &str) -> bool {
     relative.ends_with(".md")
         && !relative.contains('\\')

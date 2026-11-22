@@ -1,4 +1,8 @@
-import { getTauriVaultRootPath, readTauriLibraryCollections, writeTauriLibraryCollections } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import {
+  readTauriLibraryCollections,
+  writeTauriLibraryCollections,
+} from '@/shared/lib/vault-folder/native-vault/tauri-library-collections';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { LIBRARY_COLLECTIONS_MAX_BYTES, parseLibraryCollections, serializeLibraryCollections, type LibraryCollections, type LibraryCollectionsParseResult } from '../model/library-collection';
 
 export interface LibraryCollectionsSnapshot {

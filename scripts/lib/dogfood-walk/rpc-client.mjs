@@ -1,6 +1,5 @@
 // JSON-RPC client for the dogfood MCP walk: spawns the stdio server, chunks
 // write batches, decodes stdout/stderr, and exposes response lookup helpers.
-// Split out of scripts/dogfood/dogfood-mcp-walk.mjs (structural decomposition, logic unchanged).
 import { spawn } from "node:child_process";
 import { StringDecoder } from "node:string_decoder";
 import { fileURLToPath } from "node:url";
@@ -115,7 +114,7 @@ export function rpc(requests, timeoutMs = 3000) {
     const chunks = chunkRequests(requests, RPC_WRITE_BATCH_SIZE);
     const sentIds = new Set();
     let nextChunkIndex = 0;
-    const proc = spawn(process.execPath, [SERVER], {
+    const serverProcess = spawn(process.execPath, [SERVER], {
       env: { ...process.env, OATLAS_VAULT: VAULT },
       stdio: ["pipe", "pipe", "pipe"],
     });
@@ -133,15 +132,15 @@ export function rpc(requests, timeoutMs = 3000) {
       for (const id of expectedResponseIds(chunk)) {
         sentIds.add(id);
       }
-      proc.stdin.write(chunk.map((r) => JSON.stringify(r)).join("\n") + "\n");
+      serverProcess.stdin.write(chunk.map((r) => JSON.stringify(r)).join("\n") + "\n");
     };
-    proc.stdout.on("data", (b) => {
+    serverProcess.stdout.on("data", (b) => {
       stdout = stdoutDecoder.write(b);
       if (completed) return;
       if (hasAnyErrorResponse(stdout, expectedIds)) {
         completed = true;
         if (timer) clearTimeout(timer);
-        proc.kill("SIGTERM");
+        serverProcess.kill("SIGTERM");
         return;
       }
       while (nextChunkIndex < chunks.length && hasAllResponses(stdout, sentIds)) {
@@ -150,27 +149,27 @@ export function rpc(requests, timeoutMs = 3000) {
       if (hasAllResponses(stdout, expectedIds)) {
         completed = true;
         if (timer) clearTimeout(timer);
-        proc.kill("SIGTERM");
+        serverProcess.kill("SIGTERM");
       }
     });
-    proc.stderr.on("data", (b) => {
+    serverProcess.stderr.on("data", (b) => {
       stderr = stderrDecoder.write(b);
     });
 
     writeNextChunk();
     timer = setTimeout(() => {
       timedOut = true;
-      proc.kill("SIGTERM");
+      serverProcess.kill("SIGTERM");
     }, timeoutMs);
 
-    proc.on("close", () => {
+    serverProcess.on("close", () => {
       if (timer) clearTimeout(timer);
       stdout = stdoutDecoder.end();
       stderr = stderrDecoder.end();
       const responses = parseRpcResponses(stdout);
       resolveP({ responses, stderr, timedOut });
     });
-    proc.on("error", rejectP);
+    serverProcess.on("error", rejectP);
   });
 }
 
@@ -208,10 +207,10 @@ export function shouldFinishRpc(stdout, expectedIds) {
 }
 
 export function getResult(responses, id) {
-  const res = responses.find((r) => r.id === id);
-  if (!res) return null;
-  if (res.error) return { error: res.error };
-  const text = res.result?.content?.[0]?.text;
+  const response = responses.find((r) => r.id === id);
+  if (!response) return null;
+  if (response.error) return { error: response.error };
+  const text = response.result?.content?.[0]?.text;
   if (!text) return null;
   try {
     return JSON.parse(text);
@@ -221,10 +220,10 @@ export function getResult(responses, id) {
 }
 
 export function getRpcResult(responses, id) {
-  const res = responses.find((r) => r.id === id);
-  if (!res) return null;
-  if (res.error) return { error: res.error };
-  return res.result ?? null;
+  const response = responses.find((r) => r.id === id);
+  if (!response) return null;
+  if (response.error) return { error: response.error };
+  return response.result ?? null;
 }
 
 export function getRpcResponse(responses, id) {

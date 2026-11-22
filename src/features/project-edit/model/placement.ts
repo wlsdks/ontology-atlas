@@ -104,7 +104,6 @@ export function findProjectPlacement(category: Category | undefined, projects: P
 
   const occupied = projects
     .filter((project) => project.category === category.id)
-    // Without coordinates overlap cannot be computed.
     .filter((project) => project.position !== undefined)
     .map((project) => expandRect(toRect(project.position!), OVERLAP_PADDING));
 
@@ -130,7 +129,6 @@ export function buildOutOfBoundsRepairUpdates(
 
   for (const category of [...categories].sort((a, b) => a.order - b.order)) {
     const categoryProjects = projects.filter((project) => project.category === category.id);
-    // A project with no position counts as misplaced.
     const placedProjects = categoryProjects.filter(
       (project) =>
         project.position !== undefined &&

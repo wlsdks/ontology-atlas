@@ -21,7 +21,7 @@ import { buildDocsVaultHref, type VaultDoc } from '@/entities/docs-vault';
 import { IconButton, LiveAnnouncer, controlClass } from '@/shared/ui';
 import { searchDocs, type DocsSearchMatch } from '../lib/search';
 import { useVaultTextSearch } from '../lib/use-vault-text-search';
-import type { VaultIndexStatus } from '@/shared/lib/vault-folder/tauri-vault-index';
+import type { VaultIndexStatus } from '@/shared/lib/vault-folder/vault-index/tauri-vault-index';
 import { githubBlobUrl } from '../lib/resolve-doc-link';
 import type { VaultCommand } from '../model/command';
 import { isImeComposing } from '@/shared/lib/keyboard/ime-composition';
@@ -42,24 +42,19 @@ interface Props {
   pinnedSlugs: string[];
   commands: VaultCommand[];
   tagCounts: Array<{ tag: string; count: number }>;
-  /** Document selection handler. The second argument, query, is for match highlighting. */
   onDocSelect: (slug: string, query?: string) => void;
-  /** Tag selection handler — applied to the tree filter immediately. */
   onTagSelect: (tag: string) => void;
-  /** The initial query — `> ` (commands) / `#` (tags) / '' (default). */
   initialQuery?: string;
   getDocHref?: (slug: string) => string;
-  /** Reads a hit document's text for its matching line; without it search covers titles only. */
   getDocContent?: (slug: string) => Promise<string>;
 }
 
 // One id rule for the listbox option and the input's aria-activedescendant (WAI-ARIA combobox).
 const PALETTE_LISTBOX_ID = 'docs-vault-palette-listbox';
-const paletteOptionId = (idx: number) => `docs-vault-palette-option-${idx}`;
+const paletteOptionId = (index: number) => `docs-vault-palette-option-${index}`;
 
 type ResultKind = 'doc' | 'command' | 'tag';
 
-/** A command answers to its label or to any of its unshown keywords; `query` is lowercased. */
 function commandMatches(command: Pick<VaultCommand, 'label' | 'keywords'>, query: string): boolean {
   if (command.label.toLowerCase().includes(query)) return true;
   return command.keywords !== undefined && command.keywords.toLowerCase().includes(query);
@@ -70,9 +65,7 @@ interface PaletteRow {
   key: string;
   label: React.ReactNode;
   hint?: string;
-  /** Supporting text shown on the right — shortcut, slug or count. */
   meta?: string;
-  /** A second line below the label — a body hit snippet, for instance. */
   sub?: React.ReactNode;
   icon: React.ReactNode;
   onRun: () => void;
@@ -97,7 +90,6 @@ function Highlight({
   );
 }
 
-/** Says what search covers while the index builds, or why it covers titles only. */
 function IndexStatusLine({ status }: { status: VaultIndexStatus }) {
   const t = useTranslations('vaultWidgets.palette.indexStatus');
   const formatNumber = useFormatter().number;
@@ -166,7 +158,7 @@ export function DocsVaultUnifiedPalette({
   const t = useTranslations('vaultWidgets.palette');
   const locale = useLocale();
   const [query, setQuery] = useState(initialQuery);
-  const [activeIdx, setActiveIdx] = useState(0);
+  const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const { ref: scrimLockoutRef, onAnimationStart: scrimLockoutOnAnimationStart } = useExitLockout<HTMLDivElement>();
   const { ref: panelLockoutRef, onAnimationStart: panelLockoutOnAnimationStart } = useExitLockout<HTMLDivElement>();
@@ -189,7 +181,6 @@ export function DocsVaultUnifiedPalette({
     previousFocusRef.current = document.activeElement as HTMLElement | null;
     const handle = requestAnimationFrame(() => {
       inputRef.current?.focus();
-      // With a `> ` prefix injected, put the caret after it.
       const ql = initialQuery.length;
       inputRef.current?.setSelectionRange(ql, ql);
     });
@@ -199,13 +190,12 @@ export function DocsVaultUnifiedPalette({
     };
   }, [initialQuery]);
 
-  // Scroll the list to follow activeIdx.
   useEffect(() => {
     const list = listRef.current;
     if (!list) return;
-    const el = list.querySelector<HTMLElement>(`[data-idx="${activeIdx}"]`);
-    el?.scrollIntoView({ block: 'nearest' });
-  }, [activeIdx]);
+    const htmlElement = list.querySelector<HTMLElement>(`[data-idx="${activeIndex}"]`);
+    htmlElement?.scrollIntoView({ block: 'nearest' });
+  }, [activeIndex]);
 
   const { rows, sections } = useMemo(() => {
     const trimmed = query.trim();
@@ -270,7 +260,6 @@ export function DocsVaultUnifiedPalette({
         sections.push({ title: t('secRecent'), icon: <Clock size={ICON_SIZE.sm} aria-hidden />, size: recentRows.length });
         out.push(...recentRows);
       }
-      // Suggested commands (top 5 visible)
       const cmdRows: PaletteRow[] = commands
         .filter((c) => c.visible !== false)
         .slice(0, 5)
@@ -307,8 +296,8 @@ export function DocsVaultUnifiedPalette({
         .filter((c) => !q || commandMatches(c, q))
         .slice(0, 30)
         .map((c) => {
-          const idx = q ? c.label.toLowerCase().indexOf(q) : -1;
-          const hit = idx >= 0 ? { start: idx, end: idx + q.length } : null;
+          const index = q ? c.label.toLowerCase().indexOf(q) : -1;
+          const hit = index >= 0 ? { start: index, end: index + q.length } : null;
           return {
             kind: 'command' as const,
             key: `cmd:${c.id}`,
@@ -342,8 +331,8 @@ export function DocsVaultUnifiedPalette({
         .filter((tagItem) => !q || tagItem.tag.toLowerCase().includes(q))
         .slice(0, 20)
         .map((tagItem) => {
-          const idx = q ? tagItem.tag.toLowerCase().indexOf(q) : -1;
-          const hit = idx >= 0 ? { start: idx, end: idx + q.length } : null;
+          const index = q ? tagItem.tag.toLowerCase().indexOf(q) : -1;
+          const hit = index >= 0 ? { start: index, end: index + q.length } : null;
           return {
             kind: 'tag' as const,
             key: `tag:${tagItem.tag}`,
@@ -382,7 +371,6 @@ export function DocsVaultUnifiedPalette({
       kind: 'doc' as const,
       key: `doc:${m.doc.slug}`,
       label: sameAsTitle ? <Highlight text={m.doc.title} hit={m.titleHit} /> : displayTitle,
-      // Body hit snippet — not shown on a row whose title already shows the match.
       sub:
         m.bodyHit && !m.titleHit ? (
           <Highlight text={m.bodyHit.text} hit={m.bodyHit.hit} />
@@ -406,7 +394,6 @@ export function DocsVaultUnifiedPalette({
       });
       out.push(...docRows);
     }
-    // Commands with a partial match are shown after (up to 5).
     const qLc = trimmed.toLowerCase();
     const cmdMatches = commands
       .filter((c) => c.visible !== false)
@@ -420,8 +407,8 @@ export function DocsVaultUnifiedPalette({
       });
       out.push(
         ...cmdMatches.map((c) => {
-          const idx = c.label.toLowerCase().indexOf(qLc);
-          const hit = idx >= 0 ? { start: idx, end: idx + qLc.length } : null;
+          const index = c.label.toLowerCase().indexOf(qLc);
+          const hit = index >= 0 ? { start: index, end: index + qLc.length } : null;
           return {
             kind: 'command' as const,
             key: `cmd:${c.id}`,
@@ -456,7 +443,6 @@ export function DocsVaultUnifiedPalette({
     t,
   ]);
 
-    // Per-section start indices — where to insert headers at render time.
   const sectionOffsets = useMemo(() => {
     const offsets = new Map<number, { title: string; icon: React.ReactNode }>();
     let offset = 0;
@@ -486,7 +472,7 @@ export function DocsVaultUnifiedPalette({
 
   const handleQueryChange = (next: string) => {
     setQuery(next);
-    setActiveIdx(0);
+    setActiveIndex(0);
   };
 
   const handleKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -494,14 +480,14 @@ export function DocsVaultUnifiedPalette({
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       if (rows.length === 0) return;
-      setActiveIdx((i) => (i + 1) % rows.length);
+      setActiveIndex((i) => (i + 1) % rows.length);
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       if (rows.length === 0) return;
-      setActiveIdx((i) => (i - 1 + rows.length) % rows.length);
+      setActiveIndex((i) => (i - 1 + rows.length) % rows.length);
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      const row = rows[activeIdx];
+      const row = rows[activeIndex];
       if (!row) return;
       row.onRun();
       onClose();
@@ -509,18 +495,17 @@ export function DocsVaultUnifiedPalette({
       e.preventDefault();
       onClose();
     } else if (e.key === 'Tab') {
-      // Tab cycles the prefix — '' → '>' → '#' → ''
       e.preventDefault();
       const t = query.trim();
       if (t.startsWith('>')) setQuery('#');
       else if (t.startsWith('#')) setQuery('');
       else setQuery('> ');
-      setActiveIdx(0);
+      setActiveIndex(0);
       requestAnimationFrame(() => {
         const input = inputRef.current;
         if (!input) return;
-        const len = input.value.length;
-        input.setSelectionRange(len, len);
+        const length = input.value.length;
+        input.setSelectionRange(length, length);
       });
     }
   };
@@ -544,7 +529,6 @@ export function DocsVaultUnifiedPalette({
         initial={{ opacity: 0, y: -8, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: -8, scale: 0.98, transition: EXIT_TRANSITION }}
-      // The ramp's movement step.
         transition={MOTION.base}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
@@ -571,7 +555,7 @@ export function DocsVaultUnifiedPalette({
             aria-controls={PALETTE_LISTBOX_ID}
             aria-autocomplete="list"
             aria-activedescendant={
-              rows.length > 0 ? paletteOptionId(activeIdx) : undefined
+              rows.length > 0 ? paletteOptionId(activeIndex) : undefined
             }
             className={fieldClass({ frame: "bare", className: "min-w-0 flex-1" })}
           />
@@ -637,9 +621,9 @@ export function DocsVaultUnifiedPalette({
               </li>
             )
           ) : (
-            rows.map((row, idx) => {
-              const active = idx === activeIdx;
-              const sectionHeader = sectionOffsets.get(idx);
+            rows.map((row, index) => {
+              const active = index === activeIndex;
+              const sectionHeader = sectionOffsets.get(index);
               return (
                 <Fragment key={row.key}>
                   {sectionHeader ? (
@@ -653,15 +637,15 @@ export function DocsVaultUnifiedPalette({
                   ) : null}
                   <li
                     key={row.key}
-                    id={paletteOptionId(idx)}
-                    data-idx={idx}
+                    id={paletteOptionId(index)}
+                    data-idx={index}
                     role="option"
                     aria-selected={active}
                   >
                     <ResultRow
                       row={row}
                       active={active}
-                      onHover={() => setActiveIdx(idx)}
+                      onHover={() => setActiveIndex(index)}
                       onClose={onClose}
                       getDocHref={getDocHref}
                     />
@@ -752,7 +736,6 @@ function ResultRow({
       ) : null}
     </>
   );
-  // Document rows render as Link — new-tab capable plus prefetch.
   if (row.kind === 'doc' && typeof row.meta === 'string') {
     return (
       <Link

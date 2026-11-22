@@ -34,20 +34,18 @@ import type { IndexAddConcept } from "./TopologyIndexAddRow";
 import { type IndexAddLabels, TopologyIndexTreeRow } from "./TopologyIndexTreeRow";
 import { fieldClass } from '@/shared/ui/control-class';
 
-/** INDEX lenses — 「All」 (all) and 「Recently Changed」 (recently changed). */
 export type IndexLens = "all" | "recent";
+
+const WINDOW_CHIP_VALUES = ["auto", 1, 7, 30] as const;
+type RecentWindow = (typeof WINDOW_CHIP_VALUES)[number];
 
 /**
  * Above this many concepts the map counts as built and the make-a-map-from-code door steps aside,
  * since it would read as starting over; the unbound-source row still offers the connect path. Set
  * above the starter vault's seed count; it does not judge quality.
  */
-const WINDOW_CHIP_VALUES = ["auto", 1, 7, 30] as const;
-type RecentWindow = (typeof WINDOW_CHIP_VALUES)[number];
-
 const UNBUILT_MAP_CONCEPT_CEILING = 8;
 
-/** One row grammar for every tidy row: a fact on the left, one indigo action word on the right. */
 const TIDY_ROW_CLASS = controlClass({
   shape: "row",
   size: "sm",
@@ -65,24 +63,17 @@ interface TopologyIndexPanelLabels {
   censusRelations: string;
   censusDomains: string;
   sourceDocumentsReading?: string;
-  /** Hidden text on the closed row that holds the selection. */
   holdsSelection: string;
   capabilitiesShort: string;
   elementsShort: string;
-  /** What those two kind names mean — see `TopologyIndexTreeRowLabels.subcountsTitle`. */
   subcountsTitle?: string;
   freshTitle: string;
-  /** Hover explanation for the domain badge (multi-membership is counted more than once). */
   domainCountTitle: string;
-  /** The scope word for the domain row's large number ("everything below"). */
   subtotalTitle?: string;
   emptyHint: string;
-  /** Lens segment "all". */
   segmentAll: string;
-  /** Lens segment "recently changed N" (the caller has already formatted the count). */
   segmentRecent: string;
   segmentRecentAria: string;
-  /** Shown when the "recently changed" lens is active and yields zero results. */
   recentEmptyHint: string;
   /** Spotlight window preset chips (while the lens is active) — the chip row renders only when all of them are supplied. */
   windowChipAuto?: string;
@@ -90,26 +81,18 @@ interface TopologyIndexPanelLabels {
   windowChip7?: string;
   windowChip30?: string;
   windowChipsAria?: string;
-  /** Heartbeat attribution badge. */
   agentBadge: string;
-  /** "N documents not on the map" (the caller has already formatted the count). */
   uncatalogedDocsLabel: string;
   uncatalogedDocsAction: string;
-  /** "N documents the checks caught" (count formatted by the caller) plus the action that opens
-   *  the document library, where the per-document explanation and repair already live. */
   brokenDocsLabel: string;
   brokenDocsAction: string;
-  /** The eyebrow over the list of things to tidy (uncataloged and broken rows). */
   tidyHeading: string;
   /** Says the map inside the picked project was opened, so the substitution is never silent. */
   openedInsideLabel: string;
-  /** Accessible name for the control that closes that notice once it has been read. */
   openedInsideDismiss: string;
   /** A quiet hint that element rows are absent in plain mode; renders only with `plainMode`. */
   plainHint?: string;
-  /** The header's create control; required with `onCreateConcept`. */
   createConcept?: string;
-  /** The add rows' words; required with `onAddInGroup`. */
   add?: IndexAddLabels;
 }
 
@@ -124,7 +107,6 @@ export interface TopologyIndexPanelProps {
   searchQuery?: string;
   onSearchQueryChange?: (query: string) => void;
   onCollapse: () => void;
-  /** The first-run card's plain-words toggle; HomePage owns audiencePlain. */
   onEnablePlainMode?: () => void;
   labels: TopologyIndexPanelLabels;
   className?: string;
@@ -134,12 +116,9 @@ export interface TopologyIndexPanelProps {
    */
   recentChanges?: {
     ids: ReadonlySet<string>;
-    /** The one node (if any) matching a fresh heartbeat's focus. */
     agentAttributedNodeId: string | null;
   } | null;
-  /** How many documents are in the vault but still have no kind (so are not on the map). */
   uncatalogedDocCount?: number;
-  /** Documents carrying at least one error-severity validation issue. At 0 the row is absent. */
   brokenDocCount?: number;
   /**
    * The node id of a project with no code folder bound, for the first-run door only; the project's
@@ -148,13 +127,9 @@ export interface TopologyIndexPanelProps {
   unboundProjectNodeId?: string | null;
   /** The vault holds no project node at all — distinct from "every project already has code bound". */
   noProjectsYet?: boolean;
-  /** Truthy when "open a folder" opened the map inside the folder that was picked. */
   openedInsidePickedFolder?: string | null;
-  /** Whether any agent runtime exists to hand 「make a map from my code」 to. */
   agentAvailable?: boolean;
-  /** Clears the notice above. Omitted where nothing can clear it, and the control is then not drawn. */
   onDismissOpenedInside?: () => void;
-  /** Clicking the row above → the "build a map from my documents" dialog (`bootstrapOpen`). */
   onPromoteUncatalogedDocs?: (() => void) | null;
   /**
    * Domain size from the graph BFS census (`computeDomainCensusRows`), the same numbers as
@@ -167,7 +142,6 @@ export interface TopologyIndexPanelProps {
    */
   lens?: IndexLens;
   onLensChange?: (lens: IndexLens) => void;
-  /** The spotlight window — "auto" (an adaptive ramp) or the 1/7/30 presets. Used to mark the active chip. */
   recentWindow?: RecentWindow;
   /** A preset chip click switches the window (applied immediately — no popup or confirmation, by contract). */
   onWindowChange?: (window: RecentWindow) => void;
@@ -176,7 +150,6 @@ export interface TopologyIndexPanelProps {
    * (`filterTreeExcludeKind`).
    */
   plainMode?: boolean;
-  /** Shows maintenance controls only for an opened vault. */
   vaultLoaded?: boolean;
   /**
    * Basename of the folder being read; a basename because the File System Access API offers
@@ -184,17 +157,13 @@ export interface TopologyIndexPanelProps {
    */
   sourceName?: string | null;
   sourceLoadProgress?: { read: number; total: number } | null;
-  /** Opens the create card; omitted where the folder cannot be written. */
   onCreateConcept?: () => void;
-  /** Creates a concept from an open group's add row; omitted where the folder cannot be written. */
   onAddInGroup?: IndexAddConcept;
 }
 
 /**
- * INDEX: the left panel floating over the topology map with `--topology-index-*` tokens
- * (`app/globals.css`); `TopologyIndexTab` is its
- * collapsed form. Search reuses `filterTreeByQuery` so ancestor-keeping cannot drift between
- * surfaces.
+ * INDEX: the left panel floating over the topology map with `--topology-index-*` tokens; `TopologyIndexTab`
+ * is its collapsed form. Search reuses `filterTreeByQuery` so ancestor-keeping cannot drift between surfaces.
  */
 export function TopologyIndexPanel({
   searchQuery,
@@ -294,7 +263,6 @@ export function TopologyIndexPanel({
     [treeResult.roots, isFiltering, trimmedQuery],
   );
   const maxDomainDescendantCount = useMemo(() => {
-    // The meter's denominator comes from the same source of truth — with a census, the largest BFS total.
     if (domainCensus && domainCensus.size > 0) {
       return Math.max(0, ...Array.from(domainCensus.values(), (row) => row.total));
     }
@@ -315,7 +283,6 @@ export function TopologyIndexPanel({
       return { ...current, openIds: next };
     });
   };
-  // An active lens auto-expands narrowed ancestor paths, like search.
   const isOpen = (nodeId: string) => isFiltering || lensActive || openIds.has(nodeId);
 
   // Roving tabindex over the visible rows (the same `isOpen` as the auto-expansion); arrow keys are
@@ -349,12 +316,11 @@ export function TopologyIndexPanel({
 
   // Align the active row to wherever focus lands, so the entry point is the row focused last.
   const handleTreeFocus = (event: ReactFocusEvent<HTMLElement>) => {
-    const rowEl = (event.target as HTMLElement).closest?.("[data-index-row]") as HTMLElement | null;
-    const id = rowEl?.dataset.indexRow;
+    const rowElement = (event.target as HTMLElement).closest?.("[data-index-row]") as HTMLElement | null;
+    const id = rowElement?.dataset.indexRow;
     if (id && id !== activeRowId) setActiveRowId(id);
   };
 
-  // Rows a person can tidy from here; each exists only while its condition holds.
   const tidyRows: Array<{
     key: string;
     testId: string;
@@ -537,10 +503,6 @@ export function TopologyIndexPanel({
         </div>
       ) : null}
 
-      {/*
-       * Spotlight window presets apply on click, shown only when the lens is active, controlled and
-       * fully labelled.
-       */}
       {lensActive && onWindowChange && labels.windowChipAuto && labels.windowChip1 && labels.windowChip7 && labels.windowChip30 ? (
         <div
           {...windowGroup.groupProps}
@@ -555,10 +517,6 @@ export function TopologyIndexPanel({
               {...windowGroup.itemProps(index)}
               type="button"
               data-testid={`topology-index-window-chip-${value}`}
-              /*
-               * Chips follow the segments above: 24px high, 11px text, 7px corner, a uniform 48px
-               * width; 44px under touch.
-               */
               className={`inline-flex h-6 min-w-12 items-center justify-center rounded-[var(--chrome-radius-inner)] border text-label transition-colors [@media(pointer:coarse)]:h-[var(--touch-target-min)] ${
                 recentWindow === value
                   ? "border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] text-[color:var(--map-panel-text-primary)]"
@@ -571,8 +529,6 @@ export function TopologyIndexPanel({
         </div>
       ) : null}
 
-      {/* A quiet one-liner explaining why element rows are missing in plain
-          (non-developer) mode. Above the tree, below the lens and preset chips. */}
       {plainMode && labels.plainHint ? (
         <p
           data-testid="topology-index-plain-hint"
@@ -596,7 +552,6 @@ export function TopologyIndexPanel({
         onFocusCapture={handleTreeFocus}
         // min-h 24 keeps the tree from collapsing to 0 in a short window beside the first-run card.
         className="min-h-24 shrink overflow-y-auto"
-        // A 12px bottom mask fade instead of a hard-clipped last row.
         style={{
           maskImage: "linear-gradient(to bottom, black calc(100% - 12px), transparent)",
           WebkitMaskImage: "linear-gradient(to bottom, black calc(100% - 12px), transparent)",
@@ -643,10 +598,6 @@ export function TopologyIndexPanel({
 
       </div>
 
-      {/*
-       * One titled list of things to tidy, directly under the tree; each row exists only while its
-       * condition holds.
-       */}
       {tidyRows.length > 0 ? (
         <section data-testid="topology-index-tidy" aria-labelledby={tidyHeadingId} className="mt-3 shrink-0 border-t border-[color:var(--map-panel-zone-divider)] pt-2">
           <p
@@ -675,10 +626,6 @@ export function TopologyIndexPanel({
         </section>
       ) : null}
 
-      {/*
-       * States that the map inside the picked project was opened, so the substitution is never
-       * silent.
-       */}
       {openedInsidePickedFolder ? (
         <div
           data-testid="topology-index-opened-inside"
@@ -687,7 +634,6 @@ export function TopologyIndexPanel({
           <p className="min-w-0 flex-1 break-keep text-caption leading-caption text-[color:var(--map-panel-text-tertiary)]">
             {labels.openedInsideLabel}
           </p>
-          {/* The notice can be closed; nothing else clears it. */}
           {onDismissOpenedInside ? (
             <button
               type="button"

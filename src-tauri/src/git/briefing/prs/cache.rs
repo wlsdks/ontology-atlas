@@ -142,8 +142,8 @@ fn app_directory(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     let root = app.path().app_local_data_dir().map_err(|_| "unavailable")?;
     let parent = root.parent().ok_or("unavailable")?;
     let name = root.file_name().ok_or("unavailable")?;
-    let directory = crate::agent_setup::open_absolute_directory_no_follow(parent)?;
-    crate::agent_setup::open_or_create_relative_directory(&directory, Path::new(name), 0o700)?;
+    let directory = crate::confined_files::open_absolute_directory_no_follow(parent)?;
+    crate::confined_files::open_or_create_relative_directory(&directory, Path::new(name), 0o700)?;
     Ok(root)
 }
 #[cfg(unix)]

@@ -1,4 +1,4 @@
-import type { DialModel } from "./types";
+import type { DialModel } from "./dial-shapes";
 
 export function ladderStep(n: number): number {
   if (n < 2) return 0;

@@ -7,7 +7,6 @@ import {
   type VaultOntologyDerivation,
 } from '@/entities/docs-vault';
 
-/** Nodes and edges derived live from the local vault's frontmatter; empty plus a warning unless loaded. */
 export function useVaultOntology(): VaultOntologyDerivation {
   const vault = useLocalVault();
   // A same-folder re-read keeps the last graph, or every save blanks the screen; false while

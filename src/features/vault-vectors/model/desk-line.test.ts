@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { OFF_VECTOR_STATUS, type VectorFailure, type VectorStatus } from '@/shared/lib/vault-folder/tauri-vault-vectors';
+import { OFF_VECTOR_STATUS, type VectorFailure, type VectorStatus } from '@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors';
 import { deskLine, type DeskLineInput } from './desk-line';
 
 const status = (fields: Partial<VectorStatus>): VectorStatus => ({ ...OFF_VECTOR_STATUS, ...fields });

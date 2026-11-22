@@ -11,27 +11,9 @@ import {
 } from '../model/panel-width';
 
 /**
- * **The panel's left edge, grabbed and dragged.**
- *
- * ## Why it is not a button
- *
- * This is not something you press but **the boundary between two panes**. ARIA has
- * a role for exactly that (`separator` — focusable, it is a window splitter), and
- * that role also states the current, minimum and maximum values. As a button it
- * would tell assistive technology the lie that it is "pressable", and nothing would
- * explain why the arrow keys work.
- *
- * ## Why the keyboard works too
- *
- * A feature discoverable only by dragging and usable only by dragging is the
- * *drag-only discovery* this repository forbids. It takes focus and moves 16px per
- * ← / →.
- *
- * ## Why the visible line is 1px while the grab area is wider
- *
- * Making someone hit exactly 1px with a mouse is not a target but a test (Fitts).
- * All that is visible is the panel's own boundary line, and the area the hand
- * reaches is widened either side of it — nothing extra is drawn on screen.
+ * The panel's left edge: a `separator` (window splitter), not a button, so assistive technology gets
+ * its current, minimum and maximum. It takes focus and moves 16px per arrow, since drag-only
+ * discovery is forbidden. The visible line is 1px; the grab area is wider either side.
  */
 export function AcpChatResizeHandle({
   width,
@@ -39,9 +21,7 @@ export function AcpChatResizeHandle({
   onCommit,
 }: {
   width: number;
-  /** Every frame during the drag — it does not store. */
   onWidth: (width: number) => void;
-  /** Once on release — that is when it stores. */
   onCommit: (width: number) => void;
 }) {
   const t = useTranslations('acpChat');
@@ -51,16 +31,12 @@ export function AcpChatResizeHandle({
 
   const onPointerDown = useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
-  // Primary button only. A window is not dragged with the right or an auxiliary button.
       if (event.button !== 0) return;
       event.preventDefault();
       originRef.current = { x: event.clientX, width };
       setDragging(true);
-      /*
-       * **Capture the pointer** to this element. Without it, a fast drag carries the
-       * pointer over the map canvas, the move events go there, and the panel stops
-       * following the hand.
-       */
+      /* Capture the pointer: a fast drag would otherwise carry it over the map canvas and the panel would
+       * stop following the hand. */
       event.currentTarget.setPointerCapture(event.pointerId);
     },
     [width],
@@ -70,7 +46,6 @@ export function AcpChatResizeHandle({
     (event: React.PointerEvent<HTMLDivElement>) => {
       const origin = originRef.current;
       if (!origin) return;
-  // The panel is docked right — dragging **left** widens it.
       onWidth(origin.width + (origin.x - event.clientX));
     },
     [onWidth],
@@ -120,10 +95,7 @@ export function AcpChatResizeHandle({
       onPointerUp={endDrag}
       onPointerCancel={endDrag}
       onKeyDown={onKeyDown}
-  /*
-   * Double-click returns to this screen's default width (`defaultChatWidth`), not the constant:
-   * on a 1040px window the two differ.
-   */
+  /* Double-click returns to this screen's default width, not the constant: the two differ at 1040px. */
       onDoubleClick={() => onCommit(defaultChatWidth(viewport))}
       /*
        * The grab area lies inside the left edge: `overflow-hidden` on the panel would clip an outer half.

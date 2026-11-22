@@ -9,15 +9,15 @@ import { stampInitCompleted, stampMomentIfFirst } from '../../lib/telemetry.mjs'
 // `ontology-atlas moment`; lib/telemetry.mjs says why only
 // init, absorb --write and agent-brief are auto-stamped.
 
-let tmp;
+let temporaryDirectory;
 let vault;
 let stdout;
 let stderr;
 let restoreWrite;
 
 beforeEach(() => {
-  tmp = mkdtempSync(join(tmpdir(), 'ontology-atlas-moment-test-'));
-  vault = join(tmp, 'vault');
+  temporaryDirectory = mkdtempSync(join(tmpdir(), 'ontology-atlas-moment-test-'));
+  vault = join(temporaryDirectory, 'vault');
   mkdirSync(vault, { recursive: true });
   stdout = [];
   stderr = [];
@@ -39,7 +39,7 @@ beforeEach(() => {
 
 afterEach(() => {
   restoreWrite();
-  rmSync(tmp, { recursive: true, force: true });
+  rmSync(temporaryDirectory, { recursive: true, force: true });
 });
 
 const ANSI_RE = /\x1b\[[0-9;]*m/g;

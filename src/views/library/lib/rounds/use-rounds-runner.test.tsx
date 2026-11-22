@@ -98,14 +98,18 @@ vi.mock('@/shared/lib/agent-chat/tauri-acp', () => ({
   detectAcpRuntimes: vi.fn(async () => h.runtimes),
   isAcpBridgeAvailable: () => true,
 }));
-vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
-  getTauriVaultRootPath: () => '/vault',
-  nativeVaultFileHashes: async () => new Map(),
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-files', () => ({
   listTauriVaultLinks: async () => [],
   readTauriVaultText: async (_root: string, path: string) => {
     h.onRead?.(path);
     return h.files[path] ?? null;
   },
+}));
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-fingerprint', () => ({
+  nativeVaultFileHashes: async () => new Map(),
+}));
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', () => ({
+  getTauriVaultRootPath: () => '/vault',
 }));
 
 const noWiki = { name: 'vault', getDirectoryHandle: async () => { throw Object.assign(new Error('missing'), { name: 'NotFoundError' }); } };

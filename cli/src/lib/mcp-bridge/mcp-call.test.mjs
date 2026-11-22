@@ -33,15 +33,15 @@ describe('mcp-call response parsing', () => {
   it('handles MCP stdin write errors with an explicit stream listener', () => {
     const source = readFileSync(mcpCallSourcePath, 'utf-8');
 
-    assert.match(source, /proc\.stdin\.on\('error'/);
+    assert.match(source, /serverProcess\.stdin\.on\('error'/);
     assert.match(source, /formatMcpStdinError/);
   });
 
   it('parses MCP responses after stdio streams close', () => {
     const source = readFileSync(mcpCallSourcePath, 'utf-8');
 
-    assert.match(source, /proc\.on\('close'/);
-    assert.doesNotMatch(source, /proc\.on\('exit'/);
+    assert.match(source, /serverProcess\.on\('close'/);
+    assert.doesNotMatch(source, /serverProcess\.on\('exit'/);
   });
 
   it('formats MCP spawn errors with tool, vault, and entry context', () => {

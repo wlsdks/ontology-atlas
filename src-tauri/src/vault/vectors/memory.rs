@@ -58,3 +58,33 @@ impl Keeper {
         true
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_worker_leaves_two_minutes_after_the_last_question_and_never_mid_job() {
+        let at = Duration::from_secs;
+        let mut keeper = Keeper::default();
+        keeper.job_started();
+        keeper.question(at(0));
+        assert!(!keeper.due(at(600)), "a running job keeps it");
+        keeper.job_ended(at(600));
+        assert!(
+            keeper.due(at(600)),
+            "no question in the last two minutes: at once"
+        );
+
+        keeper.job_started();
+        keeper.question(at(1000));
+        keeper.job_ended(at(1060));
+        assert!(!keeper.due(at(1060)));
+        assert!(!keeper.due(at(1000) + RELEASE_AFTER - Duration::from_millis(1)));
+        assert!(keeper.due(at(1000) + RELEASE_AFTER));
+        assert!(!keeper.due(at(5000)), "released once");
+
+        keeper.question(at(6000));
+        assert!(keeper.due(at(6000) + RELEASE_AFTER));
+    }
+}

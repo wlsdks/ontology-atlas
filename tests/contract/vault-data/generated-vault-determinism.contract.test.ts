@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { FULL_LANE_COMMANDS } from '../../../scripts/ci/classify-change.mjs';
@@ -62,10 +62,16 @@ describe.each(MANIFESTS)('%s: the committed output has no wall clock', (name) =>
 });
 
 describe('build-docs-vault.mjs: the generator does not read the wall clock', () => {
-  const source = readFileSync(
-    path.join(process.cwd(), 'scripts', 'docs-vault', 'build-docs-vault.mjs'),
-    'utf8',
-  );
+  const scriptDir = path.join(process.cwd(), 'scripts', 'docs-vault');
+  const partsDir = path.join(scriptDir, 'generator');
+  const source = [
+    path.join(scriptDir, 'build-docs-vault.mjs'),
+    ...readdirSync(partsDir)
+      .filter((name) => name.endsWith('.mjs') && !name.endsWith('.test.mjs'))
+      .map((name) => path.join(partsDir, name)),
+  ]
+    .map((file) => readFileSync(file, 'utf8'))
+    .join('\n');
 
   it('no call reads the current time', () => {
     // The moment the generator reads "now", its output depends on when it ran and the

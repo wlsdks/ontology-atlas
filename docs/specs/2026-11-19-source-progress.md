@@ -19,20 +19,20 @@ The person runs a coding agent and is turning a folder of their own documents (`
 
 ## Facts in the code today
 
-- **The definition already exists.** A source is `compiled` when a wiki page lists it in `sources:` with a `source_hash` equal to the file's sha256, and the page did not read the file only in part (`src/entities/docs-vault/lib/library/vault-library.ts:127-139`).
+- **The definition already exists.** A source is `compiled` when a wiki page lists it in `sources:` with a `source_hash` equal to the file's sha256, and the page did not read the file only in part (`src/entities/docs-vault/lib/library/vault-library.ts`).
   - The other states are `not-compiled`, `partial`, `stale` and `checking` (`:21`).
   - Hashing is lazy, covers cited files only, and is cached in memory by path and mtime (`src/features/library/model/use-library-model.ts:93-160`).
-- **An unreadable file never leaves "checking".** It returns `sha256: None` (`src-tauri/src/library.rs:168-191`). The client drops that result, so the row stays `checking` forever (`use-library-model.ts:137-152`).
+- **An unreadable file never leaves "checking".** It returns `sha256: None` (`src-tauri/src/library.rs`). The client drops that result, so the row stays `checking` forever (`use-library-model.ts:137-152`).
 - **Labels.** "has wiki page", "no wiki page", "needs review", "read in part", "checking", in all four locales (`messages/*/library.json`, `sources.state`). 
-- **The rate is hidden.** "{compiled} of {total} sources have a wiki page" (`messages/en/library.json:557`) prints only as a caption in the guide popover (`src/views/library/lib/compile/stage-steps.ts:124-140`, `src/views/library/ui/library-page/LibraryHomePopovers.tsx:56-87`).
+- **The rate is hidden.** "{compiled} of {total} sources have a wiki page" (`messages/en/library.json:557`) prints only as a caption in the guide popover (`src/views/library/lib/compile/stage-steps.ts:124-140`, `src/views/library/ui/home/LibraryHomePopovers.tsx:56-87`).
 - **Rows.** A `compiled` row draws a check. A state line above the list counts rows per state, but it is plain text, not a filter (`src/views/library/ui/parts/index-column/LibrarySection.tsx:414-426, 641-670, 727-740`). The list is windowed (`:427`).
-- **The Sources home.** With nothing selected, it shows the Library graph (`src/views/library/ui/LibraryPage.tsx:552-597`, `src/widgets/library-graph/ui/LibraryGraph.tsx:359-386`). The decision of 2026-09-12 makes the graph the home (`docs/DECISIONS.md:194`).
+- **The Sources home.** With nothing selected, it shows the Library graph (`src/views/library/ui/LibraryPage.tsx:367-412`, `src/widgets/library-graph/ui/LibraryGraph.tsx:359-386`). The decision of 2026-09-12 makes the graph the home (`docs/DECISIONS.md:194`).
   - `docs/ARCHITECTURE.md:540-543` says the graph mounts only inside a dialog. That is wrong: the code is the fact, so fix the document.
-- **The Continue press is unbounded.** The strip reads "Write wiki page: {source}" (`messages/en/library.json:456`), naming one file, but the press sends every waiting source (`LibraryPage.tsx:246-268` passes `model.sources`; `compile-brief.ts:34-38, 247`).
-  - The brief also lists every wiki page (`compile-brief.ts:114-123`).
+- **The Continue press is unbounded.** The strip reads "Write wiki page: {source}" (`messages/en/library.json:456`), naming one file, but the press sends every waiting source (`LibraryPage.tsx` passes `model.sources`; `compile-brief.ts:34-38, 247`).
+  - The brief also lists every wiki page (`compile-brief.ts`).
   - The local model caps a turn at 3 (`src/features/vault-agent/model/compile/compile-tool-catalog.ts:13`). The coding-agent route has no cap.
-- **Defect, rule g.** It tells the agent to write nothing for a source that adds nothing new (`compile-brief.ts:50`), so that source stays "no wiki page" forever.
-- **Defect, Hangul citations.** Folder paths are NFC-normalised (`src/entities/docs-vault/lib/local-manifest/walk-vault.ts:88`), but citation paths are not (`vault-library.ts:50-56`). An NFD Hangul citation therefore never matches its file.
+- **Defect, rule g.** It tells the agent to write nothing for a source that adds nothing new (`compile-batch.ts:19`), so that source stays "no wiki page" forever.
+- **Defect, Hangul citations.** Folder paths are NFC-normalised (`src/entities/docs-vault/lib/local-manifest/walk-vault.ts:84`), but citation paths are not (`vault-library.ts`). An NFD Hangul citation therefore never matches its file.
 - **Dates.** Every wiki page must carry `compiled_at` (`docs/ONTOLOGY-ATLAS-SPEC.md:796`). The brief fills it with the request's start time (`compile-brief.ts` rule b). Nothing draws these dates over time.
 - **Scale data is missing.** `scripts/perf/gen-scale-vault.mjs` makes no `sources/`, so there is no Library figure at 10k or 50k.
 
@@ -216,7 +216,7 @@ All keys go in `messages/{en,ko,ja,zh}/library.json`. Keys already in the catalo
   - Every new `messages/*/library.json` key.
   - Reviewer required: date bucketing is algorithmic code.
 - **B: bounded request.**
-  - `src/features/library/lib/wiki/compile-brief.ts`: `selectCompileBatch`, the 200-page list, rules g and i.
+  - `src/features/library/lib/wiki/compile/compile-brief.ts`: `selectCompileBatch`, the 200-page list, rules g and i.
   - `src/views/library/lib/compile/use-compile-batch.ts`: new; holds the session-only returned set.
   - `LibraryHomePopovers.tsx`: the compile popover lists the batch.
   - Reviewer required, because this changes what the agent writes.
@@ -237,3 +237,4 @@ Order: A first; then B and C in parallel on A's model API; C merges last.
 
 - 2026-11-19: first draft. "Has a wiki page" is the counted state; reaching the map is left for the wiki–ontology link spec.
 - 2026-11-20: design review of #3649. Criterion 7 revised: on the web the band shows one `progress.webLine` line and a Get the app button instead of a disabled Continue that can never run. The chart is capped near 26rem and 52 px and captions its first date and today; state counts carry their bar colour. On a first open the sentence's count moves with the percent, and neither is drawn until the count starts, so "0%" never stands beside "26 of 60".
+- 2026-11-22: source line cites follow the code into the files and lines that hold it after the structure cleanup; a cite whose code changed keeps its file and drops the line; no plan changed.

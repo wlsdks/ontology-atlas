@@ -3,12 +3,12 @@ import { spawnSync } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { loadMacosReleaseNames } from "../lib/macos-release-names.mjs";
+import { readMacosReleaseNames } from "../lib/macos-release-names.mjs";
 import { isTransientHdiutilFailure, stalePathForVolume } from "../lib/desktop/hdiutil-retry.mjs";
 import { dmgImageSizeMiB, parseDuKiB } from "../lib/macos-artifact/macos-dmg-layout.mjs";
 
 const root = process.cwd();
-const names = loadMacosReleaseNames(root);
+const names = readMacosReleaseNames(root);
 const { appName, appBundleName, releaseAssetName, version, arch } = names;
 const bundleRoot = path.join(root, "src-tauri", "target", "release", "bundle");
 const appPath = path.join(bundleRoot, "macos", appBundleName);
@@ -23,12 +23,8 @@ function fail(message) {
 }
 
 /**
- * Runs a command and hands back its result instead of exiting.
- *
- * ⚠️ The binary name is a parameter on purpose, not only for reuse: a literal
- * `spawnSync("hdiutil", …)` is read by the dead-code gate as an undeclared binary
- * dependency, which is exactly the signal that gate exists to give. `run` has always
- * taken the name as an argument for the same reason; this is its non-fatal twin.
+ * Runs a command and hands back its result instead of exiting. The binary name is a parameter so a
+ * literal `spawnSync("hdiutil", …)` is not read by the dead-code gate as an undeclared binary dependency.
  */
 function attempt(command, args, options = {}) {
   return spawnSync(command, args, {
@@ -101,16 +97,10 @@ if (stagedKiB === null) fail(`could not read the staged folder's size from du -s
 const imageSizeMiB = dmgImageSizeMiB(stagedKiB);
 
 /*
- * ⚠️ **The DMG step is retried, and only for a busy resource.** rc.15 built, signed and
- * notarized on aarch64 and then died on x64 with `hdiutil: create failed - Resource busy`.
- * Nothing was wrong with it: something on the runner held the staging folder open for a
- * moment. Because this is the last step before staging, both publish jobs were skipped and
- * the whole release had to be dispatched again.
- *
- * The retry is deliberately narrow. Attempting every failure three times would turn a real
- * error -- an unsignable bundle, a full disk -- into three identical ones reported as the
- * last, hiding both the cause and the fact that it never varied. So only a failure whose
- * text names a busy resource is retried; everything else still fails on the first attempt.
+ * The DMG step is retried, and only for a busy resource: something on the runner can hold the staging
+ * folder open (`hdiutil: create failed - Resource busy`), and as the last step before staging that
+ * skips both publish jobs. Retrying every failure would turn a real error (an unsignable bundle, a
+ * full disk) into three identical ones, so only a failure whose text names a busy resource is retried.
  */
 const DMG_CREATE_ATTEMPTS = 3;
 for (let attemptNumber = 1; attemptNumber <= DMG_CREATE_ATTEMPTS; attemptNumber += 1) {

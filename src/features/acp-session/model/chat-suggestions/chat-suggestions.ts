@@ -1,20 +1,13 @@
-/**
- * Next steps measured from this folder's map. A row exists only when its number is counted from the
- * graph and is above zero; the screen translates the keys, and a press sends the request at once.
- */
+/** Next steps measured from this folder's map: a row exists only when its number is counted from the graph and is above zero. */
 
 import type { UnreadCapability } from './measured-facts';
 
 /** How many measured fixes are shown at once, before the whole-map check. Given too many choices, people choose none (Hick). */
 export const SUGGESTION_LIMIT = 3;
 
-/** How many slugs a request names before it says only the count. */
 const NAMED_SLUG_LIMIT = 12;
 
-/**
- * Capabilities one read request names: the agent finishes a bounded request of this size in one
- * turn, while a whole-map read is never done in one.
- */
+/** The agent finishes a read request of this size in one turn; a whole-map read is never done in one. */
 export const READ_BATCH_LIMIT = 8;
 
 type SuggestionKind =
@@ -52,22 +45,15 @@ export interface ChatSuggestion {
 export interface SuggestionInput {
   nodeCount: number;
   sourceState?: 'loading' | 'unbound' | 'bound' | 'unavailable' | 'no-projects';
-  /** Groups that fell outside the main cluster, as canonical slugs. */
   islands: readonly (readonly string[])[];
-  /** Capabilities whose body cites no read lines, and how many capabilities were measured. */
   withoutReadRule?: { unread: readonly UnreadCapability[]; measured: number };
-  /** Capabilities with neither `depends_on` nor `elements`. */
   withoutDependency: readonly string[];
-  /** Concepts whose title reads like code. */
   codeShaped: readonly string[];
   /** Concepts whose cited file changed after their document; `null` when not measured. */
   changedSource: readonly string[] | null;
 }
 
-/**
- * The boundary of "not started yet". `init` plants five starter nodes, so at or below that nobody has
- * built this map yet.
- */
+// `init` plants five starter nodes, so at or below that nobody has built this map yet.
 const STARTER_NODE_CEILING = 5;
 
 /**
@@ -85,10 +71,7 @@ export function isPressableSuggestion(suggestion: ChatSuggestion): boolean {
   return suggestion.kind !== 'nothingLeft' && suggestion.kind !== 'nothingCounted';
 }
 
-/**
- * Whether a press may send the request at once. A picked-concept row sends only its validated slug;
- * one whose slug fails the shape fills the message box instead, so the person reads it first.
- */
+/** A picked-concept row sends only its validated slug; one whose slug fails the shape fills the message box so the person reads it first. */
 export function isSendableSuggestion(suggestion: ChatSuggestion): boolean {
   if (suggestion.kind === 'explainSubject' || suggestion.kind === 'subjectImpact') {
     return isSafeSlug(suggestion.params.slug);
@@ -96,7 +79,6 @@ export function isSendableSuggestion(suggestion: ChatSuggestion): boolean {
   return true;
 }
 
-/** Asks about one picked concept; the label shows its name, the request names only its slug. */
 export function subjectSuggestions(subject: { slug: string; label: string }): ChatSuggestion[] {
   const params = { slug: subject.slug.replace(/^ontology\//, ''), subject: subject.label };
   return [

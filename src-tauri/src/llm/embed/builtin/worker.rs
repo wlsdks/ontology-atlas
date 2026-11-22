@@ -7,7 +7,8 @@ use super::protocol::{
     decode_request, encode_reply, encode_vectors, read_frame, write_frame, Reply, Request,
     MAX_REQUEST_BYTES, PROTOCOL,
 };
-use super::{check_conversion, load_from_store, pins, ModelStore};
+use super::reference::check_conversion;
+use super::{load_from_store, pins, ModelStore};
 use crate::llm::embed::{check_passages, EmbedError, MAX_BATCH_BYTES, MAX_BATCH_PASSAGES};
 use std::cell::Cell;
 use std::io::{Read, Write};
@@ -27,7 +28,6 @@ const EXIT_OUTPUT: i32 = 1;
 const EXIT_REQUEST: i32 = 2;
 const EXIT_NO_DATA_DIR: i32 = 3;
 
-/// A loaded model as the worker uses it.
 pub(crate) trait Model {
     fn embed(&self, texts: &[&str], stop: &AtomicBool) -> Result<Vec<Vec<f32>>, EmbedError>;
     fn runtime(&self) -> Runtime;

@@ -1,6 +1,6 @@
 use super::*;
+use crate::acp::detection::login_probe::{real_probe, LOGIN_PROBE};
 use crate::acp::launch::resolve_launch;
-use crate::acp::login_probe::{real_probe, LOGIN_PROBE};
 #[cfg(not(windows))]
 use crate::acp::test_support::npx_package;
 use crate::acp::test_support::{empty_dirs, probe_with, test_bin, test_path_env};

@@ -10,7 +10,7 @@ import {
   SidecarPathError,
   readVaultSidecarText,
   replaceVaultSidecarText,
-} from '../vault/vault-sidecar.mjs';
+} from '../vault/sidecar/vault-sidecar.mjs';
 import { isPersistableEvidenceReference, isPersistablePathWitness } from '../meaning/source-range-citation.mjs';
 
 export const PROJECT_MEANING_RECEIPT_VERSION = 1;

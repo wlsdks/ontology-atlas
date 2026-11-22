@@ -1,6 +1,6 @@
 import type { TurnRunDoor } from "@/features/work-run";
 
-import type { LibraryAgentOpeningRequest } from "../../ui/parts/agent/LibraryAgentDock";
+import type { LibraryAgentOpeningRequest } from "../../ui/agent/LibraryAgentDock";
 
 /**
  * The door a Library turn that may write was started from. A desk question, its report and an

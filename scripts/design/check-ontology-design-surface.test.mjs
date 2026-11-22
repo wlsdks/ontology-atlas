@@ -49,28 +49,22 @@ function writeCleanWorkbenchFixtures(root) {
     "src/views/home/ui/HomePage.tsx",
     [
       "<MeaningEditorPanel",
-      "create-node-change-review",
       "<TopologyCanvasSurface",
     ].join("\n"),
   );
   writeFixture(
     root,
-    "src/views/home/ui/TopologyCanvasSurface.tsx",
+    "src/views/home/ui/map-surfaces/TopologyCanvasSurface.tsx",
     "previewEdge={mapRelationPreview}",
   );
-  writeFixture(root, "src/views/home/ui/TopologyMapRenderer.tsx", "");
-  writeFixture(
-    root,
-    "src/views/home/ui/CreateNodeForm.tsx",
-    "create-node-change-review",
-  );
+  writeFixture(root, "src/views/home/ui/map-surfaces/TopologyMapRenderer.tsx", "");
+  writeFixture(root, "src/views/home/ui/create/CreateNodeForm.tsx", "");
   writeFixture(
     root,
     "src/features/ontology-meaning-editor/ui/MeaningEditorPanel.tsx",
     [
       "export function MeaningEditorPanel() {}",
       "buildOntologyRelationEditPlan",
-      "meaning-editor-change-review",
     ].join("\n"),
   );
   writeFixture(
@@ -84,8 +78,12 @@ function writeCleanWorkbenchFixtures(root) {
     [
       "acp-ontology-change-review",
       "request.reviewKind === 'ontology-write'",
-      "allowAlways && !ontologyWrite",
     ].join("\n"),
+  );
+  writeFixture(
+    root,
+    "src/widgets/acp-chat-panel/ui/chat-panel/permission/PermissionDecisions.tsx",
+    "allowAlways && !ontologyWrite",
   );
   writeFixture(
     root,
@@ -99,7 +97,7 @@ function writeCleanWorkbenchFixtures(root) {
   );
   writeFixture(
     root,
-    "src/views/docs-vault/ui/parts/DocsVaultAuditModal.tsx",
+    "src/views/docs-vault/ui/DocsVaultAuditModal.tsx",
     [
       "function DocsVaultAuditModal() {}",
       "sourceContract.filesLabel",
@@ -249,7 +247,7 @@ test("ontology design surface reports a real use at its own line and column afte
 test("ontology design surface does not accept a workbench marker that survives only in a comment", () => {
   const root = makeFixture();
   writeCleanWorkbenchFixtures(root);
-  const modal = "src/views/docs-vault/ui/parts/DocsVaultAuditModal.tsx";
+  const modal = "src/views/docs-vault/ui/DocsVaultAuditModal.tsx";
   writeFixture(
     root,
     modal,
@@ -271,7 +269,7 @@ test("ontology design surface reports missing workspace execution cells", () => 
   writeCleanWorkbenchFixtures(root);
   writeFixture(
     root,
-    "src/views/docs-vault/ui/parts/DocsVaultAuditModal.tsx",
+    "src/views/docs-vault/ui/DocsVaultAuditModal.tsx",
     [
       "function DocsVaultAuditModal() {}",
       "AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND",

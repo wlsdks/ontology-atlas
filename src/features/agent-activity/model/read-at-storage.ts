@@ -4,11 +4,7 @@
  */
 const READ_AT_KEY_PREFIX = 'atlas.agentActivity.readAt:';
 
-/**
- * The global key from before vaults were scoped. **It is never read back** — there is no way to know
- * which vault that timestamp was stamped in, and reading it back is precisely the defect above. It is
- * cleared once.
- */
+/** The global key from before vaults were scoped is never read back (the vault it was stamped in is unknowable); it is only cleared once. */
 export const LEGACY_UNSCOPED_READ_AT_KEY = 'atlas.agentActivity.readAt';
 
 export function readAtStorageKey(vaultScope: string): string {

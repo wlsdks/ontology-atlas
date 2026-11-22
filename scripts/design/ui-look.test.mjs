@@ -12,12 +12,12 @@ after(() => rmSync(SCRATCH, { recursive: true, force: true }));
 const scratchDir = () => mkdtempSync(path.join(SCRATCH, "case-"));
 
 test("parseLookArgs defaults to the fixture vault at one 1440 width", () => {
-  const opts = parseLookArgs(["--", "--route=/ko/topology/"]);
-  assert.deepEqual(opts, { routes: ["/ko/topology/"], vault: "fixture", widths: [1440], height: 900, audit: false });
+  const options = parseLookArgs(["--", "--route=/ko/topology/"]);
+  assert.deepEqual(options, { routes: ["/ko/topology/"], vault: "fixture", widths: [1440], height: 900, audit: false });
 });
 
 test("parseLookArgs repeats routes and reads every flag", () => {
-  const opts = parseLookArgs([
+  const options = parseLookArgs([
     "--route=/ko/topology/",
     "--route=/ko/docs/",
     "--vault=sample",
@@ -27,7 +27,7 @@ test("parseLookArgs repeats routes and reads every flag", () => {
     "--out=shots",
     "--audit",
   ]);
-  assert.deepEqual(opts, {
+  assert.deepEqual(options, {
     routes: ["/ko/topology/", "/ko/docs/"],
     vault: "sample",
     widths: [768, 1920],
@@ -64,15 +64,15 @@ test("resolveVaultSource refuses synthetic vaults and paths that are not directo
 });
 
 test("readVaultFiles keys Markdown by vault path and skips dot entries and other files", () => {
-  const dir = scratchDir();
-  mkdirSync(path.join(dir, "capabilities"));
-  mkdirSync(path.join(dir, ".git"));
-  writeFileSync(path.join(dir, "project.md"), "a");
-  writeFileSync(path.join(dir, "capabilities/pay.md"), "b");
-  writeFileSync(path.join(dir, ".git/HEAD.md"), "c");
-  writeFileSync(path.join(dir, ".hidden.md"), "d");
-  writeFileSync(path.join(dir, "image.png"), "e");
-  assert.deepEqual(readVaultFiles(dir), { "project.md": "a", "capabilities/pay.md": "b" });
+  const directory = scratchDir();
+  mkdirSync(path.join(directory, "capabilities"));
+  mkdirSync(path.join(directory, ".git"));
+  writeFileSync(path.join(directory, "project.md"), "a");
+  writeFileSync(path.join(directory, "capabilities/pay.md"), "b");
+  writeFileSync(path.join(directory, ".git/HEAD.md"), "c");
+  writeFileSync(path.join(directory, ".hidden.md"), "d");
+  writeFileSync(path.join(directory, "image.png"), "e");
+  assert.deepEqual(readVaultFiles(directory), { "project.md": "a", "capabilities/pay.md": "b" });
 });
 
 test("routeLocale takes a known locale prefix and falls back to en", () => {

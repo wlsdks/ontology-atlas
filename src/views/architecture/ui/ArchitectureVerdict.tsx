@@ -6,13 +6,8 @@ import type { ArchitectureRecord, ArchitectureRecordStatus } from '@/entities/ar
 import { cn } from '@/shared/lib/cn';
 
 type Conformance = ArchitectureRecord['brief']['conformance'];
-/** What the verdict stands on: a record's result, or why there is none to show yet. */
 type VerdictState = ArchitectureRecordStatus | 'loading' | 'missing';
 
-/**
- * The answer the tab is opened for: how many imports break the rules, as the screen's one large
- * numeral, with the totals it was counted from and when and against what it was checked.
- */
 export function ArchitectureVerdict({
   conformance,
   loading,
@@ -27,11 +22,8 @@ export function ArchitectureVerdict({
   loading: boolean;
   crossRoleImports: number;
   layers: number;
-  /** Modules across every role; null where none can be listed. */
   modules: number | null;
-  /** When and from what the record was taken; null without a record. */
   stamp: string | null;
-  /** The dependency rule in one sentence. */
   rule: string;
   roleLabel: (id: string) => string;
 }) {
@@ -43,7 +35,6 @@ export function ArchitectureVerdict({
     { key: 'layers', value: layers, label: t('figureLayers') },
     ...(modules === null ? [] : [{ key: 'modules', value: modules, label: t('figureModules') }]),
   ];
-  /* The unknown result in plain words, from what the record could not settle. */
   const unknown = conformance?.status === 'unknown' ? conformance.unknown : undefined;
   const reasons = [
     unknown?.unruledEdges ? t('unknownReasons.unruled', { count: unknown.unruledEdges }) : null,

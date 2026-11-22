@@ -74,11 +74,11 @@ export function offRampFindings(samples, ramps) {
   };
   for (const s of samples) {
     if (s.fontSize !== undefined) {
-      const fs = parseFloat(s.fontSize);
-      if (!textPx.some((v) => near(v, fs, 0.05))) push({ selector: s.selector, property: "font-size", value: s.fontSize });
+      const fontSizePx = parseFloat(s.fontSize);
+      if (!textPx.some((v) => near(v, fontSizePx, 0.05))) push({ selector: s.selector, property: "font-size", value: s.fontSize });
       if (s.lineHeight !== "normal") {
         const lh = parseFloat(s.lineHeight);
-        const ok = leadingPx.some((v) => near(v, lh, 0.5)) || leadingRatio.some((r) => near(r * fs, lh, 0.5));
+        const ok = leadingPx.some((v) => near(v, lh, 0.5)) || leadingRatio.some((r) => near(r * fontSizePx, lh, 0.5));
         if (!ok) push({ selector: s.selector, property: "line-height", value: s.lineHeight });
       }
     }

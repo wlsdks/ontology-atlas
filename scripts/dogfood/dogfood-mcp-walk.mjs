@@ -5,7 +5,7 @@
 
 import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
-import { runDogfoodWalk as main } from "../lib/dogfood-walk/report.mjs";
+import { runDogfoodWalk as main } from "../lib/dogfood-walk/run-dogfood-walk.mjs";
 
 export {
   toolsListAnnotationSummary,
@@ -71,8 +71,8 @@ export {
 } from "../lib/dogfood-walk/gate-evaluator.mjs";
 
 if (fileURLToPath(import.meta.url) === resolve(process.argv[1] ?? "")) {
-  process.exitCode = await main().catch((err) => {
-    console.error("dogfood walk failed:", err);
+  process.exitCode = await main().catch((error) => {
+    console.error("dogfood walk failed:", error);
     return 1;
   });
 }

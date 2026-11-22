@@ -3,7 +3,7 @@ use super::local_endpoint::{
     local_endpoint, normalize_base_url, LOCAL_DEFAULT_BASE_URL, LOCAL_MODELS_PATH, LOCAL_PROVIDER,
 };
 use super::{host_of, AUDIT_BLOCKED_PREFIX};
-use crate::errors::coded;
+use crate::coded_error::coded;
 use crate::llm_audit::{self, AuditDraft, AuditOutcome, AuditScope};
 use crate::secrets;
 use serde::Serialize;

@@ -14,9 +14,7 @@ import {
 const STORAGE_KEY = 'ontology-atlas:local-endpoint';
 
 export interface LocalEndpointSettings {
-  /** The runner's base URL. Empty means this path is not configured yet. */
   baseUrl: string;
-  /** The model the user picked from the list. Empty string until they pick. */
   model: string;
 }
 
@@ -25,11 +23,7 @@ const EMPTY_LOCAL_ENDPOINT: LocalEndpointSettings = {
   model: '',
 };
 
-/**
- * Is this path **actually usable**. An address with no model chosen is not configured:
- * sending anyway kills the first round trip with "model is required", and the user has
- * no way to tell what they left out.
- */
+/** An address without a model is not configured: sending would fail with "model is required". */
 export function isLocalEndpointReady(settings: LocalEndpointSettings): boolean {
   return settings.baseUrl.trim().length > 0 && settings.model.trim().length > 0;
 }
@@ -79,11 +73,7 @@ export function clearLocalEndpoint(): void {
   notifyLocalEndpointChange();
 }
 
-/**
- * Signal that the settings just changed — same reason as `subscribeSecretChange` on the
- * keychain side. The address is entered in one place (the settings sheet) and comes
- * alive in another (the map's right dock); without a signal the user has to reload.
- */
+/** Same reason as `subscribeSecretChange`: entered on one surface, used on another. */
 const LOCAL_ENDPOINT_CHANGE_EVENT = 'ontology-atlas:local-endpoint-change';
 
 function notifyLocalEndpointChange(): void {
@@ -142,31 +132,22 @@ export function parseOpenAiModelList(body: string): string[] {
   }
 }
 
-/** How many of these are usable for chat — the count minus the certain embeddings. */
 export function countChatCapableModels(models: string[]): number {
   return models.filter((model) => !isEmbeddingOnlyModel(model)).length;
 }
 
-/**
- * **Why** the verify failed — split so the screen can prescribe a different next action
- * for each. Collapsing them into one "couldn't verify" leaves the user unable to tell
- * whether to start the runner, fix the port, or evict another program from that port.
- */
+/** Split so the screen can prescribe a different next action for each. */
 export type LocalVerifyReason =
   | 'ok'
-  /** Nothing answered — the runner is off, or the port is different. */
   | 'unreachable'
   /** Something answered, but it is not an OpenAI-compatible endpoint (usually another program on that port). */
   | 'not-compatible'
-  /** Compatible endpoint, but no models are installed. */
   | 'no-models'
-  /** Anything else — the status code / message is shown verbatim. */
   | 'failed';
 
 export interface LocalVerifyVerdict {
   reason: LocalVerifyReason;
   models: string[];
-  /** The fact the screen appends — a status code, or the one line Rust returned. */
   detail: string;
 }
 

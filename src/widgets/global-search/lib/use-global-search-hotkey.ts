@@ -1,10 +1,6 @@
 import { useEffect } from "react";
 
 export interface GlobalSearchHotkeyOptions {
-  /**
-   * Disable the hotkey binding itself (used on a controlled mount, where an external
-   * hotkey manages the open state).
-   */
   disabled?: boolean;
 }
 
@@ -19,10 +15,6 @@ export function isGlobalSearchHotkey(
   return event.code === "KeyK" || event.key.toLowerCase() === "k";
 }
 
-/**
- * Global search toggle hotkey; inert in inputs except for closing an open search, and fully inert
- * when disabled.
- */
 export function useGlobalSearchHotkey(
   open: boolean,
   setOpen: (next: boolean) => void,

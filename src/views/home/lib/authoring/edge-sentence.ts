@@ -16,7 +16,6 @@ export function normalizeEdgeSentenceKey(type: string): EdgeSentenceKey {
   return "related";
 }
 
-/** [particle after `from`, particle after `to`]. */
 const PARTICLES: Record<EdgeSentenceKey, [JosaKind, JosaKind | null]> = {
   contains: ["subject", "object"],
   depends: ["subject", "object"],

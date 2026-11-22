@@ -102,7 +102,7 @@ fn the_part_and_sync_handles_may_write_and_do_not_append() {
     assert_eq!(flags(&opened) & libc::O_APPEND, 0);
     assert_ne!(flags(&opened) & libc::O_ACCMODE, libc::O_RDONLY);
     assert_eq!(opened.stream_position().unwrap(), 3, "opened at its end");
-    let synced = super::super::open_for_sync(&part).unwrap();
+    let synced = super::super::disk::open_for_sync(&part).unwrap();
     assert_ne!(flags(&synced) & libc::O_ACCMODE, libc::O_RDONLY);
     fs::remove_dir_all(&dir).ok();
 }

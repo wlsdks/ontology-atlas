@@ -15,7 +15,7 @@ import { createWriteStream, mkdirSync, writeFileSync } from 'node:fs';
 import { cpus, loadavg } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadBudgets, printBudgetTable } from './lib/budgets.mjs';
+import { getBudgets, printBudgetTable } from './lib/budgets.mjs';
 import { describeWindows, profileWindows } from './lib/cpu-profile.mjs';
 import { EXPORT_DIR, ensurePerfExport } from './lib/perf-export.mjs';
 import { capSeconds, cleanVaults, parseOpenArgs, PERF_WORK, prepareVault } from './lib/vaults.mjs';
@@ -23,9 +23,9 @@ import { openWebSession, startStaticServer } from './lib/web-session.mjs';
 
 const ROOT = fileURLToPath(new URL('../..', import.meta.url));
 const MB = 1048576;
-const opts = parseOpenArgs(process.argv.slice(2), { walks: ['map', 'library'] });
-const profileCpu = Boolean(opts.extra.profile);
-const heapSnapshot = !opts.extra['no-heap-snapshot'];
+const options = parseOpenArgs(process.argv.slice(2), { walks: ['map', 'library'] });
+const profileCpu = Boolean(options.extra.profile);
+const heapSnapshot = !options.extra['no-heap-snapshot'];
 const RUNS = join(PERF_WORK, 'runs');
 mkdirSync(RUNS, { recursive: true });
 
@@ -33,17 +33,17 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 // The losing timer is unref'd, or a long cap keeps the process alive after the run ends.
 const withTimeout = (promise, ms) => Promise.race([promise.catch(() => null), new Promise((resolve) => setTimeout(resolve, ms, null).unref())]);
 
-if (opts.clean) cleanVaults();
-ensurePerfExport({ rebuild: Boolean(opts.extra.build) });
+if (options.clean) cleanVaults();
+ensurePerfExport({ rebuild: Boolean(options.extra.build) });
 console.log(`web-open perf · ${cpus().length} cores · load ${loadavg().map((n) => n.toFixed(1)).join(' ')}`);
-const server = await startStaticServer(EXPORT_DIR, opts.port);
+const server = await startStaticServer(EXPORT_DIR, options.port);
 let broken = 0;
 try {
-  for (const shape of opts.shapes) for (const files of opts.files) broken += await measure(shape, files);
+  for (const shape of options.shapes) for (const files of options.files) broken += await measure(shape, files);
 } finally {
   server.stop();
 }
-if (opts.check && broken > 0) {
+if (options.check && broken > 0) {
   console.error(`${broken} budget row(s) over their limit`);
   process.exit(1);
 }
@@ -51,7 +51,7 @@ if (opts.check && broken > 0) {
 async function measure(shape, files) {
   const vault = prepareVault(files, shape);
   const label = `web-${shape}-${files}-${new Date().toISOString().replace(/[:.]/g, '-')}`;
-  const capMs = capSeconds(files, opts.walks, opts.capS) * 1000;
+  const capMs = capSeconds(files, options.walks, options.capS) * 1000;
   const { context, page, filledOpfs } = await openWebSession({ origin: server.origin, vault });
   const cdp = await context.newCDPSession(page);
   let crashedAt = null;
@@ -91,7 +91,7 @@ async function measure(shape, files) {
   const openPeakMb = Math.max(...heap.map((s) => s.mb ?? 0));
   let steadyMb = null;
   if (!crashedAt && probe?.marks.loaded !== undefined) {
-    for (let waited = 0; waited < opts.settleS * 1000 && !crashedAt; waited += 1000) {
+    for (let waited = 0; waited < options.settleS * 1000 && !crashedAt; waited += 1000) {
       await sampleHeap('settle');
       await sleep(1000);
     }
@@ -100,7 +100,7 @@ async function measure(shape, files) {
   }
 
   const walkResults = {};
-  for (const walk of opts.walks) {
+  for (const walk of options.walks) {
     if (crashedAt || steadyMb === null) break;
     const remaining = capMs - (Date.now() - started);
     const ticker = setInterval(() => void sampleHeap(walk), 1000);
@@ -167,7 +167,7 @@ async function measure(shape, files) {
     command: 'perf:web-open',
     shape,
     files,
-    gated: files <= loadBudgets().webGatedUpTo,
+    gated: files <= getBudgets().webGatedUpTo,
     measured: {
       'web-heap-steady': steadyMb,
       'web-heap-peak': heap.length ? Math.max(...heap.map((s) => s.mb ?? 0)) : null,
@@ -178,8 +178,8 @@ async function measure(shape, files) {
     },
     notes: {
       'web-heap-steady': crashedAt ? 'the tab crashed' : probe?.marks.loaded === undefined ? `not loaded within the ${capMs / 1000} s cap` : null,
-      'frame-p95': opts.walks.includes('map') ? 'the map walk did not finish' : 'add --walk=map',
-      'row-pick-first-frame': opts.walks.includes('library') ? (probe?.log ?? []).slice(-1)[0] ?? 'the Library walk did not pick a row' : 'add --walk=library',
+      'frame-p95': options.walks.includes('map') ? 'the map walk did not finish' : 'add --walk=map',
+      'row-pick-first-frame': options.walks.includes('library') ? (probe?.log ?? []).slice(-1)[0] ?? 'the Library walk did not pick a row' : 'add --walk=library',
     },
   });
   console.log('\nMeasured beside the budgets:');

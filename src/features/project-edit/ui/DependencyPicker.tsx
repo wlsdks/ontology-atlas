@@ -16,16 +16,13 @@ import { useTaxonomy } from '@/features/taxonomy';
 interface Props {
   value: string[];
   onChange: (next: string[]) => void;
-  /** The options to pick from — normally every project except this one. */
   options: Project[];
-  /** The slug of the project being edited. It cannot select itself. */
   selfSlug?: string;
   invalidSlugs?: string[];
   /** Names of other projects found in the description; accepted into `value`, rejected for the session. */
   suggestions?: SuggestedDependency[];
 }
 
-/** A slug-chip multi-select, far safer than typed CSV. */
 export function DependencyPicker({
   value,
   onChange,

@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import test from 'node:test';
 
-import { assertConstellationContextShape } from '../../lib/query-result-contract/constellation-result-contract.mjs';
+import { assertConstellationContextShape } from '../../lib/query-result-contract/constellations.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const CLI_ENTRY = resolve(__dirname, '../../index.mjs');

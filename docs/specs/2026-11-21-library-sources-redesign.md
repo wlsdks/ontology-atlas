@@ -57,21 +57,21 @@ or a file.
 - **What the picture ignored.** The generator puts sources in 40 folders of 500
   (`scripts/perf/gen-scale-vault.mjs:166`), and the fixture in 8 named folders. Every source
   row already carries its path, format, size, state, citing pages and the day its page was
-  written (`src/entities/docs-vault/lib/library/vault-library.ts:254-265`); every page carries
+  written (`src/entities/docs-vault/lib/library/vault-library.ts`); every page carries
   its title, sources and `compiled_at` (`:46-62`).
 - **The band works.** `SourceProgressBand`
-  (`src/views/library/ui/parts/progress/SourceProgressBand.tsx:108`), built by the rooms spec's
+  (`src/views/library/model/progress/source-progress-shapes.ts:13`), built by the rooms spec's
   H1, shows the share with a page, a state bar whose presses filter the list, the write button
   and the work line. The home is the band plus `LibraryGraph`
-  (`src/views/library/ui/LibraryPage.tsx:722-763`). The write button sends every source that
+  (`src/views/library/ui/LibraryPage.tsx:537-578`). The write button sends every source that
   needs writing, in list order: no page, changed, or read in part (`sourceNeedsCompile`,
-  `vault-library.ts:268`). While it runs the button stays, disabled (`SourceProgressBand.tsx:467`).
+  `vault-library.ts:36`). While it runs the button stays, disabled (`SourceProgressBand.tsx`).
 - **Colours and numbers today.** The bar has three inks: a page in indigo, "needs review" and
   "read in part" in one amber, checking and unreadable in a 20% white; a source with no page is
   the empty track (`src/views/library/ui/parts/progress/progress-inks.ts:6-13`). The band's
-  number is a fraction under ten sources and a percent above (`SourceProgressBand.tsx:76`,
+  number is a fraction under ten sources and a percent above (`src/widgets/library-sources-overview/ui/SourcesOverview.tsx:32`,
   `:167-174`). The index list shows each unfinished file's state as a word badge
-  (`src/views/library/ui/parts/index-column/LibrarySection.tsx:736-762`).
+  (`src/views/library/ui/index-column/LibrarySection.tsx`).
 - **Unknown.** How real piles are foldered beyond the fixture; no installed-app capture of the
   50,000-source home.
 
@@ -332,7 +332,7 @@ final consonant, so `nextNote`'s particle is fixed. `graph.*` keys leave in S-3.
 | Slice | What | Files | Order |
 |---|---|---|---|
 | S-1 | The widget: grouping and sorting model, table, Recently written, panel, copy in four locales; the state tokens and the band's inks, share rule and chart label; criteria 2, 3, 8 | New `src/widgets/library-sources-overview/**`; `messages/*/library.json` (`sourcesHome`, `progress`); `app/styles/tokens.css`, `docs/DESIGN-SYSTEM.md`, `cn.ts`; `parts/progress/progress-inks.ts`, `SourceProgressBand.tsx` | Now, parallel with S3: none of its files |
-| S-2 | Mount it in place of `LibraryGraph`, the list chip and the index list's state dots, drop `cardFacts`; criteria 1, 4-7, 9 | `LibraryPage.tsx:722-763`, `use-library-graph-cards.ts`, `use-source-filter.ts`, `parts/index-column/LibrarySection.tsx` | After S3 (it owns `LibraryPage.tsx` and `use-library-graph-cards.ts`) |
+| S-2 | Mount it in place of `LibraryGraph`, the list chip and the index list's state dots, drop `cardFacts`; criteria 1, 4-7, 9 | `LibraryPage.tsx:537-578`, `use-library-graph-cards.ts`, `use-source-filter.ts`, `index-column/LibrarySection.tsx` | After S3 (it owns `LibraryPage.tsx` and `use-library-graph-cards.ts`) |
 | S-3 | Retire `src/widgets/library-graph/**`, `tests/e2e/library/graph/**`, `graph.*` keys and the Library graph ink tokens; update `docs/features/library/workspace.md`; decision record | Those paths | After S-2 |
 
 S-1 reads source rows, `LibraryWikiPage` (title, sources, `compiled_at`) and `ContinueBatch`.
@@ -414,3 +414,4 @@ with the pull request, so the owner can reverse this by choosing the treemap.
   count. Pointing at the button lights on the bar the share its sources would add. The work
   line reads "6 wiki pages changed · <page title>", counting pages that differ from the
   folder's first listing this session, and is hidden while the button is blocked.
+- 2026-11-22: source line cites follow the code into the files and lines that hold it after the structure cleanup; a cite whose code changed keeps its file and drops the line; no plan changed.

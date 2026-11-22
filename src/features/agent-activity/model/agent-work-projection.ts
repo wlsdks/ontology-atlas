@@ -18,7 +18,6 @@ export interface AgentWorkProjection {
   startedAt?: number | null;
 }
 
-/** The current state the in-app ACP already observed. Session memory that arrives before sidecar polling. */
 export interface AgentLiveWorkInput {
   rawAgentName: string | null;
   phase: Exclude<AgentActivityState, 'complete'>;
@@ -26,7 +25,6 @@ export interface AgentLiveWorkInput {
   targetSlug: string | null;
   lastTool: string | null;
   updatedAt: number;
-  /** When this turn began, so the chip can say how long the agent has been at it. */
   startedAt?: number | null;
 }
 

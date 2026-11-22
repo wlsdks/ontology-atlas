@@ -14,13 +14,10 @@ interface HubRailProps {
   projects: Project[];
   selectedSlug?: string | null;
   onSelect: (slug: string) => void;
-  /** Hides the rail and its tab so it does not overlap the expanded Hero panel. */
   suppressed?: boolean;
-  /** Inside Layer 1, strips each hub name's container prefix; unset keeps the name. */
   stripNamePrefix?: string;
 }
 
-/** Left hub shortcut bar: one click reaches a hub; collapsed, only a thin tab remains. */
 export function HubRail({
   projects,
   selectedSlug,
@@ -57,9 +54,9 @@ export function HubRail({
   );
   useEffect(() => {
     if (!open) return;
-    const btn = activeButtonRef.current;
-    if (!btn) return;
-    btn.scrollIntoView({
+    const button = activeButtonRef.current;
+    if (!button) return;
+    button.scrollIntoView({
       behavior: prefersReducedMotion ? 'auto' : 'smooth',
       block: 'nearest',
     });
@@ -110,8 +107,8 @@ export function HubRail({
   }
 
   const moveFocusToSlug = (slug: string) => {
-    const el = buttonsRef.current.get(slug);
-    if (el) el.focus();
+    const buttonElement = buttonsRef.current.get(slug);
+    if (buttonElement) buttonElement.focus();
     onSelect(slug);
   };
 
@@ -147,7 +144,7 @@ export function HubRail({
           </button>
         </Tooltip>
       </div>
-      {hubs.map((hub, idx) => {
+      {hubs.map((hub, index) => {
         const active = selectedSlug === hub.slug;
         const degree = degreeBySlug.get(hub.slug) ?? 0;
         const dotColor = active
@@ -156,24 +153,24 @@ export function HubRail({
         return (
           <button
             key={hub.slug}
-            ref={(el) => {
-              if (el) buttonsRef.current.set(hub.slug, el);
+            ref={(buttonElement) => {
+              if (buttonElement) buttonsRef.current.set(hub.slug, buttonElement);
               else buttonsRef.current.delete(hub.slug);
-              if (active) activeButtonRef.current = el;
+              if (active) activeButtonRef.current = buttonElement;
             }}
             type="button"
             role="option"
             aria-selected={active}
-            tabIndex={active || (!hasActiveOption && idx === 0) ? 0 : -1}
+            tabIndex={active || (!hasActiveOption && index === 0) ? 0 : -1}
             onClick={() => onSelect(hub.slug)}
             onKeyDown={(e) => {
               if (e.key === 'ArrowDown') {
                 e.preventDefault();
-                moveFocusToSlug(hubs[(idx + 1) % hubs.length].slug);
+                moveFocusToSlug(hubs[(index + 1) % hubs.length].slug);
               } else if (e.key === 'ArrowUp') {
                 e.preventDefault();
                 moveFocusToSlug(
-                  hubs[(idx - 1 + hubs.length) % hubs.length].slug,
+                  hubs[(index - 1 + hubs.length) % hubs.length].slug,
                 );
               } else if (e.key === 'Home') {
                 e.preventDefault();

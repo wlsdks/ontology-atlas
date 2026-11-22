@@ -29,7 +29,7 @@ export const rules = [
     // The materialization test copies a hand-picked file set into a scratch repository, so a new
     // import in any of those files breaks it without touching the test.
     matches: [
-      /^scripts\/(?:docs-vault\/(?:build-docs-vault|resolve-docs-vault-conflicts)|i18n\/build-messages|prepare-worktree|records\/new-record|worktree-materialization)\.(?:mjs|test\.mjs)$/,
+      /^scripts\/(?:docs-vault\/(?:build-docs-vault|generator\/[^/]+|resolve-docs-vault-conflicts)|i18n\/build-messages|prepare-worktree|records\/new-record|worktree-materialization)\.(?:mjs|test\.mjs)$/,
       /^\.githooks\/post-(?:checkout|merge)$/,
       /^scripts\/lib\/(?:records\/)?(?:record-ledgers|po-pilot-records|parse-frontmatter)\.(?:mjs|test\.mjs)$/,
     ],
@@ -159,6 +159,13 @@ export const directTests = {
   script: [
     ['scripts/docs-vault/build-docs-vault.mjs', 'scripts/docs-vault/build-docs-vault.test.mjs'],
     ['scripts/docs-vault/build-docs-vault.test.mjs', 'scripts/docs-vault/build-docs-vault.test.mjs'],
+    ['scripts/docs-vault/generator/backlinks.mjs', 'scripts/docs-vault/build-docs-vault.test.mjs'],
+    ['scripts/docs-vault/generator/freshness-check.mjs', 'scripts/docs-vault/build-docs-vault.test.mjs'],
+    ['scripts/docs-vault/generator/git-history.mjs', 'scripts/docs-vault/build-docs-vault.test.mjs'],
+    ['scripts/docs-vault/generator/markdown-fields.mjs', 'scripts/docs-vault/build-docs-vault.test.mjs'],
+    ['scripts/docs-vault/generator/output-paths.mjs', 'scripts/docs-vault/build-docs-vault.test.mjs'],
+    ['scripts/docs-vault/generator/shipped-shape.mjs', 'scripts/docs-vault/build-docs-vault.test.mjs'],
+    ['scripts/docs-vault/generator/vault-scan.mjs', 'scripts/docs-vault/build-docs-vault.test.mjs'],
     ['scripts/docs-vault/resolve-docs-vault-conflicts.mjs', 'scripts/docs-vault/resolve-docs-vault-conflicts.test.mjs'],
     ['scripts/docs-vault/resolve-docs-vault-conflicts.test.mjs', 'scripts/docs-vault/resolve-docs-vault-conflicts.test.mjs'],
   ],

@@ -13,7 +13,7 @@ import { GH_FILE_CAP, listOpenPullRequests, parseArgs, runScan, scanConflicts } 
 // fixture calls and the script's own git calls inherit process.env, so strip it.
 for (const key of Object.keys(process.env)) if (key.startsWith('GIT_')) delete process.env[key];
 
-function fixture(fn) {
+function fixture(callback) {
   const root = realpathSync(mkdtempSync(join(tmpdir(), 'atlas-conflicts-')));
   const sh = (...argv) => execFileSync('git', argv, { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
   const commit = (file, body, message) => {
@@ -33,7 +33,7 @@ function fixture(fn) {
     sh('switch', '-q', '-c', 'feat/theirs-clean', 'main'); commit('shared.txt', 'one\ntwo\nthree\nfour\n', 'append');
     sh('switch', '-q', '-c', 'feat/theirs-disjoint', 'main'); commit('elsewhere.txt', 'e\n', 'elsewhere');
     sh('switch', '-q', '-c', 'feat/mine', 'main'); commit('shared.txt', 'uno\ntwo\nthree\n', 'mine');
-    fn({ root, sh, git: makeGit(root) });
+    callback({ root, sh, git: makeGit(root) });
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

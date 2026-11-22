@@ -6,7 +6,7 @@ import type { VaultDoc, VaultSourceFile } from '@/entities/docs-vault';
 import { SOURCE_HASH_CHUNK, SOURCE_HASH_PUBLISH_MS, useLibraryModel } from './use-library-model';
 
 const native = vi.hoisted(() => ({ hash: vi.fn() }));
-vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-fingerprint', () => ({
   nativeVaultFileHashResults: native.hash,
 }));
 

@@ -28,6 +28,14 @@ fall (`same-layer-cross-import-ratchet.contract.test.ts`).
 - When one folder holds about 15 source files, group them into subfolders
   named for what they own (`composer/`, `permission/`), never by kind
   (`hooks/`, `utils/`, `components/`).
+- A folder or file name says what it owns, in the product's words. No mockup,
+  option or work-order labels (`a1`, `option-b`, `new`, `old`, `v2`) and no
+  kind names (`utils`, `helpers`, `common`); a version belongs in a name only
+  when it is the version of a data format the code reads or writes.
+- Spelling: folders and modules are kebab-case (`acp-session/`,
+  `use-acp-session.ts`); a file holding one React component is PascalCase and
+  named after it (`AcpChatPanel.tsx`), while `shared/ui` primitives keep
+  kebab-case (`button.tsx`); Rust modules are snake_case.
 - Idiomatic TypeScript: function components and hooks; data as types plus
   pure functions in `model/`. A class only for something with a lifetime or a
   resource (a cache, a connection, a worker); no service, manager or
@@ -60,7 +68,7 @@ a vault is chosen, and a selected vault always wins. Server-runtime bans:
 The condition that renders a surface also guards building its model:
 `{open && <Card model={model} />}` is still expensive when `model` is computed
 unconditionally. Gate this by call count, never milliseconds
-(`src/views/home/model/inspector/use-full-detail-a1-model.test.ts`).
+(`src/views/home/model/inspector/use-full-detail-model.test.ts`).
 
 ## Code explains itself
 
@@ -69,7 +77,13 @@ current need requires, so the source alone carries the meaning.
 
 - Names carry intent: a function names what it returns or does, a boolean
   reads as a question, a unit sits in the name (`delayMs`, `widthPx`), and a
-  meaningful literal is a named constant beside its use.
+  meaningful literal is a named constant beside its use. Write words out
+  (`index`, `value`, `process`, not `idx`, `val`, `proc`); only `id`, `url`,
+  `ctx` and `i` in a short loop stay short. One concept keeps one name across
+  layers, and one verb keeps one meaning (`read` from disk, `load` into state).
+- A file's name is the name of what it exports: a PascalCase file holds the
+  component of that name; a file of several small parts is kebab-case and
+  named for what they share (`settings-primitives.tsx`).
 - One function, one job. When a comment explains what a block does, rename or
   extract so the code says it, then delete the comment.
 - Add no wrapper layer, option object, parameter or defensive branch that no
@@ -85,7 +99,26 @@ current need requires, so the source alone carries the meaning.
   data structure on purpose, and lands only after an independent `reviewer`.
 - Split a file when it stops being one job, by responsibility into a cohesive
   subfolder within its layer; add an `index` only where the layer's public API
-  already has one. `pnpm review:facts` marks a changed file over 800 lines.
+  already has one. `pnpm review:facts` marks a changed file over 800 lines:
+  a prompt to look, never a reason to split.
 - Dependencies, adapted code and borrowed assets follow
   `docs/engineering/third-party-code.md`; its `// Adapted from` license marker
   is a required comment, never cleanup.
+
+## When to split a file
+
+Split when any of these holds, and say which in the commit:
+
+- **Mixed reasons to change.** Parts change for different reasons (what is
+  drawn, what state is kept, what rule decides, what is read or written), so
+  one edit means reading the others.
+- **An untestable rule.** A condition, calculation, parse or security decision
+  sits inside a component, effect or I/O call, so testing it needs a render or
+  a disk. Extract it as a pure function with a test beside it.
+- **A copy.** The same rule lives in two places; keep one and import it.
+- **No one-sentence name.** Saying what the file does needs "and".
+
+Do not split for length alone: a table of data, a fixture, or one algorithm
+whose steps share per-frame state stays whole. A split is done when each new
+file has a one-sentence job, each extracted rule has a test that can fail, and
+behaviour is unchanged, proven by the tests that already covered it.

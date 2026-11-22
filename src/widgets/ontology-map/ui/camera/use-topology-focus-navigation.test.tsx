@@ -3,7 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CameraTarget } from "../../engine/camera";
 import type { SelectionCamera, SelectionSource } from "../../model/camera/flat-selection-camera";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
-import { computeOverviewCameraTarget, type FocusLeashPx } from "./topology-camera-math";
+import { computeOverviewCameraTarget } from "./target/fit-targets";
+import { type FocusLeashPx } from "./target/pan-leash";
 import type { TopologyWorld } from "../world/topology-world";
 
 const tokens = vi.hoisted(

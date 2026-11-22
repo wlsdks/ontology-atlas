@@ -30,10 +30,6 @@ export function resolveNodeLastEditSubject(params: {
   ]);
 }
 
-/**
- * True only when the document's freshness moved from the panel-open baseline and our own write does
- * not explain it. Same rule as docs-vault (`hasUnaccountedMtimeChange`).
- */
 export function hasNodeMtimeConflict(params: {
   sourceSlug: string | null;
   baselineFreshnessIso: string | null;

@@ -1,20 +1,7 @@
 /**
- * Reading and writing `<vault>/.ontology-atlas/connectors.json`.
- *
- * The same shape as `project-source-store.ts`: a `medium` that knows how to move text, a serialized
- * queue so two saves cannot interleave, and a vault-file implementation over the File System Access
- * handle — which is what makes this work identically in the installed app and in a browser, because
- * both hold the same folder.
- *
- * ## What this refuses to do
- *
- * A **malformed** file blocks every write. The file may hold connectors somebody spent time on, or
- * it may be a newer version of this format written by a later build; overwriting it with what this
- * build happens to have in memory turns "Atlas could not read your file" into "Atlas deleted your
- * file". The screen reports it and points at the file.
- *
- * Writes go through `serializeConnectorState`, which throws rather than put a credential-shaped
- * literal into the vault folder. That throw is surfaced, not swallowed.
+ * Same shape as `project-source-store.ts`. A malformed file blocks every write: it may be a newer
+ * format, and overwriting it would delete someone's connectors. The serializer's refusal of a
+ * credential-shaped literal is surfaced, not swallowed.
  */
 import {
   ConnectorSecretLiteralError,
@@ -37,7 +24,6 @@ export type ConnectorReadResult =
   | {
       status: 'ok';
       connectors: ConnectorRecord[];
-      /** `<connector>.<variable>` for every plaintext credential the file held. */
       secretLiteralKeys: string[];
     }
   | { status: 'missing'; connectors: []; secretLiteralKeys: [] }
@@ -58,11 +44,9 @@ export type ConnectorWriteResult =
 
 export interface ConnectorStore {
   read(): Promise<ConnectorReadResult>;
-  /** Replace the whole list. Every mutation is expressed as a replacement of what was just read. */
   save(connectors: ConnectorRecord[]): Promise<ConnectorWriteResult>;
   /** Turn one connector on or off, re-reading first so a concurrent edit is not lost. */
   setEnabled(id: string, enabled: boolean): Promise<ConnectorWriteResult>;
-  /** Add or replace one connector by id. */
   upsert(connector: ConnectorRecord): Promise<ConnectorWriteResult>;
   remove(id: string): Promise<ConnectorWriteResult>;
   /** Library setup only: compare the exact prior row and sibling names inside the queue. */

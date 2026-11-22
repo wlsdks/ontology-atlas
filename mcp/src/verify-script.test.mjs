@@ -437,7 +437,7 @@ function humanMeaningRepair(projectSlug) {
   };
 }
 import { expectedResponseIds, missingResponseLabels } from '../scripts/json-rpc-lines.mjs';
-import { GRAPH_ARRAY_KEYS } from './vault/relation-refs.mjs';
+import { GRAPH_ARRAY_KEYS } from './vault/graph/relation-refs.mjs';
 import { NODE_UID_PATTERN } from './schema.mjs';
 import { assertPnpmScriptsExist } from '../../scripts/lib/pnpm-script-refs.mjs';
 import { buildAbsorptionPlan } from './vault/absorb.mjs';
@@ -5659,7 +5659,7 @@ describe('verify.mjs first-contact gates', () => {
     try {
       const result = spawnSync(
         process.execPath,
-        [VERIFY_SCRIPT, root, '--timeout-ms', '15000'],
+        [VERIFY_SCRIPT, root],
         { cwd: join(__dirname, '..'), encoding: 'utf8' },
       );
 
@@ -8265,7 +8265,7 @@ Continue.`;
     assert.ok(infer?.params?.arguments?.rootPath, 'infer_imports rootPath should be populated');
     assert.equal(inferFocus?.params?.name, 'infer_imports');
     assert.equal(inferFocus?.params?.arguments?.reviewMode, 'focus');
-    assert.equal(inferFocus?.params?.arguments?.focusPath, 'src/entities/knowledge-graph/model/types.ts');
+    assert.equal(inferFocus?.params?.arguments?.focusPath, 'src/entities/knowledge-graph/model/knowledge-graph.ts');
     assert.equal(inferFocus?.params?.arguments?.focusLimit, 25);
     assert.equal(conceptBatchCap?.params?.name, 'add_concepts');
     assert.equal(conceptBatchCap?.params?.arguments?.concepts?.length, 51);

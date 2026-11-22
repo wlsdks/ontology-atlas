@@ -1,18 +1,12 @@
 /**
- * Identifies which data source is in play. Two modes:
- *
- * - **static** — the dogfood manifest baked by `pnpm build`; the fallback when no vault is
- *   selected.
- * - **local** — the user's own `.md` vault, read through the File System Access API.
- *
- * Pure: the mode follows from the vault-loaded flag alone. The UI layer consumes the composed
- * result through the `useDataSourceMode` hook.
+ * Which data source is in play: `static` (the dogfood manifest baked by `pnpm build`, the fallback
+ * with no vault selected) or `local` (the user's own `.md` vault via the File System Access API).
+ * Pure: the mode follows from the vault-loaded flag alone.
  */
 
 export type DataSourceMode = 'static' | 'local';
 
 interface ModeInputs {
-  /** `useLocalVault().status === 'loaded'` */
   vaultLoaded: boolean;
 }
 

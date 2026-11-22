@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { PointerEvent as ReactPointerEvent } from "react";
-import type { DialCluster, DialFrameResult, DialScene } from "../../dial/types";
+import type { DialCluster, DialFrameResult, DialScene } from "../../dial/dial-shapes";
 import { branchMemberCount } from "../../dial/branches/member-disclosure";
 import type { PointerHandlerRefs } from "./topology-pointer-types";
 

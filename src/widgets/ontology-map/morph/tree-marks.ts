@@ -3,7 +3,7 @@ import { createTreeProjector, TREE_POSE_REST } from "../model/tree-view/tree-cam
 import { layoutTree } from "../model/tree-view/tree-layout";
 import { buildTreeModel } from "../model/tree-view/tree-model";
 import { trunkBlockReservePx } from "../model/tree-view/tree-names";
-import type { TreeDrawList, TreeDrawMark, TreeModel } from "../model/tree-view/types";
+import type { TreeDrawList, TreeDrawMark, TreeModel } from "../model/tree-view/tree-shapes";
 import { readTreeTokens, type TreeTokens } from "../tokens/read-tree-tokens";
 import type { OntologyMapEdge, OntologyMapNode } from "../ui/OntologyMap";
 import { cutTreeAtPose, readTreeFreeArea, treeFitRect } from "../ui/tree-view/use-tree-frame";

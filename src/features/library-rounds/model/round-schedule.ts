@@ -36,11 +36,11 @@ export function planTick({ rounds, now, lastTickAt, running, allowedHere, ready 
   if (running) return { asleep, due: [] };
   const due = rounds
     .filter((round) => isRoundDue(round, now) && allowedHere(round) && ready(round))
-    .sort((a, b) => rank(a) - rank(b) || Date.parse(a.nextDueAt) - Date.parse(b.nextDueAt));
+    .sort((a, b) => kindRank(a) - kindRank(b) || Date.parse(a.nextDueAt) - Date.parse(b.nextDueAt));
   return { asleep, due };
 }
 
-function rank(round: RoundRecord): number {
+function kindRank(round: RoundRecord): number {
   if (round.kind === 'consistency') return 0;
   if (round.kind === 'ontology') return 1;
   return 2;

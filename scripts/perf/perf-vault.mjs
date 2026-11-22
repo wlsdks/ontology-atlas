@@ -60,15 +60,15 @@ function generateVault(root, n) {
   }
 }
 
-function walkMd(dir) {
+function walkMd(directory) {
   const out = [];
-  const stack = [dir];
+  const stack = [directory];
   while (stack.length > 0) {
-    const cur = stack.pop();
-    const entries = readdirSync(cur, { withFileTypes: true });
+    const current = stack.pop();
+    const entries = readdirSync(current, { withFileTypes: true });
     for (const e of entries) {
       if (e.name.startsWith('.')) continue;
-      const full = join(cur, e.name);
+      const full = join(current, e.name);
       if (e.isDirectory()) stack.push(full);
       else if (e.name.endsWith('.md')) out.push(full);
     }
@@ -76,9 +76,9 @@ function walkMd(dir) {
   return out;
 }
 
-function measure(label, fn) {
+function measure(label, callback) {
   const t0 = performance.now();
-  const result = fn();
+  const result = callback();
   const t1 = performance.now();
   return { label, ms: t1 - t0, result };
 }

@@ -4,7 +4,7 @@ import { join, relative } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { WEB_CONTENT_SECURITY_POLICY } from '@/shared/config/web-content-security-policy';
+import { WEB_CONTENT_SECURITY_POLICY } from '@/shared/config/site/web-content-security-policy';
 import {
   OUTBOUND_DESTINATION_PLACEHOLDERS,
   OUTBOUND_HOST_EXCEPTIONS,

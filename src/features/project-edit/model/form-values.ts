@@ -68,7 +68,6 @@ export function buildInitialValues({
   };
 }
 
-/** Keeps a preserved-missing or unknown taxonomy value selectable in front of the known options. */
 export function withKeptTaxonomyOption(
   options: { value: string; label: string }[],
   value: string,
@@ -128,7 +127,6 @@ export function previewProjectFromValues(
   };
 }
 
-/* Create scores only the four fields it asks for; optional fields are scored on edit. */
 export function createCompleteness(project: Project) {
   const required = [
     project.name,

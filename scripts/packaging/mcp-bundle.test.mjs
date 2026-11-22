@@ -122,7 +122,7 @@ describe('bundle contents', () => {
         if (name === 'zod' && fromDir === '/store/server') return '/store/server/node_modules/zod';
         return null;
       },
-      readManifest: (dir) => tree[dir] ?? null,
+      readManifest: (directory) => tree[directory] ?? null,
     });
 
     assert.deepEqual(missing, []);

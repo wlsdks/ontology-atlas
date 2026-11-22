@@ -9,7 +9,7 @@ vi.mock('next-intl', () => ({
   useLocale: () => 'en',
   useTranslations: () => (key: string) => key,
 }));
-vi.mock('../model/use-static-vault-source', () => ({
+vi.mock('../model/vault-source/use-static-vault-source', () => ({
   useStaticVaultGate: () => ({ status: 'failed', wait: () => Promise.resolve(), retry: gate.retry }),
 }));
 

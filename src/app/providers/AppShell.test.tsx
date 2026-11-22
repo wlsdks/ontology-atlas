@@ -35,21 +35,21 @@ vi.mock("@/entities/vault-session/model/use-agent-server", async (importOriginal
     reason: "The bundled MCP server is only available in the installed app.",
   }),
 }));
-vi.mock("@/entities/vault-session/model/LocalVaultProvider", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/entities/vault-session/model/LocalVaultProvider")>()),
+vi.mock("@/entities/vault-session/model/vault-provider/LocalVaultProvider", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/entities/vault-session/model/vault-provider/LocalVaultProvider")>()),
   useLocalVault: () => shellMocks.vault,
 }));
-vi.mock("@/entities/vault-session/model/vault-arrival", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/entities/vault-session/model/vault-arrival")>()),
+vi.mock("@/entities/vault-session/model/vault-opening/vault-arrival", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/entities/vault-session/model/vault-opening/vault-arrival")>()),
   useArrivingManifest: () => shellMocks.arriving,
 }));
-vi.mock("@/entities/vault-session/model/use-data-source-mode", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/entities/vault-session/model/use-data-source-mode")>()),
+vi.mock("@/entities/vault-session/model/vault-source/use-data-source-mode", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/entities/vault-session/model/vault-source/use-data-source-mode")>()),
   useDataSourceMode: () => "static",
 }));
 
-vi.mock("@/shared/lib/vault-folder/tauri-vault-fs", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/shared/lib/vault-folder/tauri-vault-fs")>()),
+vi.mock("@/shared/lib/vault-folder/native-vault/tauri-vault-runtime", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/shared/lib/vault-folder/native-vault/tauri-vault-runtime")>()),
   getTauriVaultRootPath: (handle: { rootPath?: string }) => handle.rootPath,
 }));
 

@@ -28,7 +28,7 @@ export const rules = [
       /^tests\/fixtures\/(?:frontmatter|frontmatter-writer|validate-vault|vault-schema)-cases\.mjs$/,
       /^mcp\/src\/(?:parser|schema|validate)\.mjs$/,
       /^cli\/src\/lib\/mcp-bridge\/(?:parse-frontmatter|schema|validate)\.mjs$/,
-      /^cli\/src\/commands\/local-vault\/validate\.mjs$/,
+      /^cli\/src\/commands\/local-vault\/validate(?:\.mjs|\/[a-z-]+\.mjs)$/,
       /^scripts\/lib\/parse-frontmatter\.mjs$/,
       /^src\/shared\/lib\/vault-document\/(?:parse-frontmatter|validate-vault-document)\.ts$/,
       /^scripts\/vault\/migrate-vault\.mjs$/,

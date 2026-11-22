@@ -17,8 +17,8 @@ function runFrames(count: number) {
 
 beforeEach(() => {
   frames = [];
-  vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
-    frames.push(() => cb(0));
+  vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+    frames.push(() => callback(0));
     return frames.length;
   });
   vi.stubGlobal('cancelAnimationFrame', () => {});

@@ -40,12 +40,12 @@ test.describe("map canvas focus on the dogfood vault", () => {
             expect(selected).toBeTruthy();
             const selectedAddress = new URL(page.url()).searchParams.get("p");
             await page.getByTestId("map-detail-panel-open-full-detail").click();
-            const fullDetail = page.getByTestId("topology-full-detail-a1-positioner");
+            const fullDetail = page.getByTestId("topology-full-detail-positioner");
             await expect(fullDetail).toBeVisible();
             await waitForAnimationsDone(fullDetail);
             // The scrim is the dialog's parent; a click on its corner lands outside the sheet.
             if (action === "scrim") await page.mouse.click(8, 8);
-            else await page.getByTestId("full-detail-a1-close").click();
+            else await page.getByTestId("full-detail-close").click();
             await expect(fullDetail).toHaveCount(0);
             await expect(panel).toHaveAttribute("data-selected-node-id", selected!);
             await expect.poll(() => new URL(page.url()).searchParams.get("p")).toBe(selectedAddress);
@@ -70,7 +70,7 @@ test.describe("map canvas focus on the dogfood vault", () => {
         await page.mouse.click(domain.x, domain.y);
         await expect(page.getByTestId("map-detail-panel")).toBeVisible();
         await page.getByTestId("map-detail-panel-open-full-detail").click();
-        const fullDetail = page.getByTestId("topology-full-detail-a1-positioner");
+        const fullDetail = page.getByTestId("topology-full-detail-positioner");
         await expect(fullDetail).toBeVisible();
         await waitForAnimationsDone(fullDetail);
         await page.keyboard.press("Escape");

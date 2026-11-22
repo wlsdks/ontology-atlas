@@ -9,7 +9,7 @@ import {
   type VaultDoc,
   type VaultSourceFile,
 } from "@/entities/docs-vault";
-import { nativeVaultFileHashResults } from "@/shared/lib/vault-folder/tauri-vault-fs";
+import { nativeVaultFileHashResults } from "@/shared/lib/vault-folder/native-vault/tauri-vault-fingerprint";
 import { isRetainedAnswerPath, retainedAnswerHeads, type RetainedAnswerHead } from "../lib/questions/answer-revision";
 import { parseWikiLog, type WikiLogEntry } from "../lib/wiki/wiki-log";
 import { wikiNodeIndexOfDocs } from "../lib/wiki/judge-page-write";

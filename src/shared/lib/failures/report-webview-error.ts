@@ -1,21 +1,10 @@
 import { invoke as tauriInvoke, isTauri } from '@tauri-apps/api/core';
 
 /**
- * WebView crash reporting — **the installed app's only way to see a JavaScript
- * failure.**
- *
- * In a browser an uncaught error lands in the console the developer already has
- * open. Inside the macOS shell's WKWebView nobody is watching that console, so a
- * render crash, a rejected promise, or a script error simply looks like "the panel
- * went blank". This module forwards those three shapes to the Rust side, which owns
- * the app log.
- *
- * **It never becomes a second failure.** Outside Tauri it is a no-op, the invoke
- * result is swallowed, and a page may report at most `WEBVIEW_ERROR_REPORT_CAP`
- * times — an error loop that fires every frame must not turn into an IPC flood.
+ * Nobody watches the WKWebView console, so failures go to the Rust app log. Never a second failure:
+ * a no-op outside Tauri, invoke results swallowed, and at most `WEBVIEW_ERROR_REPORT_CAP` per page.
  */
 
-/** The three shapes a WebView failure arrives in. Mirrored by the Rust command. */
 type WebviewErrorKind = 'error' | 'unhandledrejection' | 'render';
 
 /**
@@ -31,7 +20,7 @@ interface WebviewErrorReport {
   kind: WebviewErrorKind;
 }
 
-/** Per page load. A crash loop reports the first 20 occurrences and then goes quiet. */
+/** Per page load, so an error loop firing every frame cannot flood IPC. */
 const WEBVIEW_ERROR_REPORT_CAP = 20;
 
 let reportsSent = 0;

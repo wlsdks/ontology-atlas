@@ -43,7 +43,6 @@ const shared = createHistoryWriteGuard(HISTORY_WRITE_BUDGET, HISTORY_WRITE_WINDO
   );
 });
 
-/** `history.replaceState` / `pushState` through the shared budget. Returns whether it wrote. */
 export function guardedHistoryWrite(mode: 'replace' | 'push', url: string): boolean {
   if (typeof window === 'undefined') return false;
   if (!shared.allow(Date.now())) return false;

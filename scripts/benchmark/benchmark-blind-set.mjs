@@ -1,23 +1,8 @@
 #!/usr/bin/env node
 
-// Builds a grading packet from a saved lifecycle run.
-//
-// The machine score counts whether an answer contained the right words. It
-// cannot tell whether the answer was true, whether the boundary was right, or
-// whether the next step was worth taking. A person has to read the answers for
-// that — and a person who knows which side wrote each answer will find what
-// they expect to find.
-//
-// So this writes two files: a packet where the answers carry opaque ids in a
-// shuffled order, and a key that maps those ids back. Grade the packet, save the
-// grades, and only then open the key. The shuffle is seeded from the run id, so
-// two people grading the same run receive the same packet in the same order.
-//
-// One limit this cannot remove: an answer written with a vault names its
-// concepts, and an answer written without one does not. A grader will often be
-// able to tell the sides apart from the wording alone. Blinding here protects
-// against grading in a convenient order and against scoring the label instead of
-// the answer; it is not a claim that the grader cannot guess.
+// Builds a grading packet from a saved lifecycle run: answers under opaque ids in an
+// order shuffled from the run id, plus a key that maps ids back. Grade first, open the key after.
+// It cannot stop a grader guessing the side from wording (vault answers name concepts).
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -27,8 +12,7 @@ const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const DEFAULT_RESULT_ROOT = join(REPO_ROOT, 'docs/benchmark/results');
 const TRANSCRIPT_STDERR_MARKER = '\n[stderr]\n';
 
-// A tiny deterministic generator, so the packet is reproducible from the run id
-// alone and nobody has to trust a shuffle they cannot repeat.
+// Deterministic, so the packet is reproducible from the run id alone.
 export function seededShuffle(items, seedText) {
   let seed = 0;
   for (const character of seedText) seed = (Math.imul(seed, 31) + character.codePointAt(0)) >>> 0;

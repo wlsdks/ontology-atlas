@@ -1,11 +1,7 @@
 #!/usr/bin/env node
 
-// End-to-end meaning-to-change benchmark.
-//
-// The earlier lifecycle benchmark measured only whether a prepared Atlas vault
-// improved a final answer. This runner lets the agent make a small, fixed code
-// change and then measures the repository outcome: tests, scope, commit, local
-// push, merge/recovery, post-merge tests, ontology freshness, and owned cleanup.
+// End-to-end meaning-to-change benchmark: the agent makes a small fixed code change, then the
+// repository outcome is measured (tests, scope, commit, push, merge/recovery, ontology freshness, cleanup).
 
 import { spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';

@@ -46,7 +46,7 @@ export function drawStrataLodSheets(
   for (let i = 0; i < count; i += 1) if (sheets[i].weight > 0.004 && sheets[i].length >= 3) sheetOrder.push(i);
   if (sheetOrder.length === 0) return;
   sheetOrder.sort((a, b) => sheets[b].depth - sheets[a].depth);
-  const prevAlpha = ctx.globalAlpha;
+  const previousAlpha = ctx.globalAlpha;
   ctx.globalAlpha = 1;
   for (const i of sheetOrder) {
     const sheet = sheets[i];
@@ -64,7 +64,7 @@ export function drawStrataLodSheets(
     ctx.closePath();
     ctx.fill();
   }
-  ctx.globalAlpha = prevAlpha;
+  ctx.globalAlpha = previousAlpha;
 }
 
 export type StrataLodDustPlane = "capability" | "element";
@@ -183,7 +183,7 @@ export function drawStrataLodDust(
   bucketOrder.length = 0;
   for (const bucket of dust.buckets.values()) if (bucket.count > 0) bucketOrder.push(bucket);
   bucketOrder.sort((a, b) => b.fog - a.fog);
-  const prevAlpha = ctx.globalAlpha;
+  const previousAlpha = ctx.globalAlpha;
   ctx.globalAlpha = 1;
   let drawn = 0;
   for (const bucket of bucketOrder) {
@@ -231,7 +231,7 @@ export function drawStrataLodDust(
   }
   // O(N) equality checks; only this frame's paths survive, owned weakly by the context.
   if (nextPaths !== null) dustPaths.set(ctx, nextPaths);
-  ctx.globalAlpha = prevAlpha;
+  ctx.globalAlpha = previousAlpha;
   return drawn;
 }
 
@@ -276,7 +276,7 @@ export function drawStrataLodChords(
   chordOrder.length = 0;
   for (let i = 0; i < count; i += 1) if (chords[i].weight > 0.004 && chords[i].lift > 0.004) chordOrder.push(i);
   chordOrder.sort((a, b) => chords[b].depth - chords[a].depth);
-  const prevAlpha = ctx.globalAlpha;
+  const previousAlpha = ctx.globalAlpha;
   ctx.globalAlpha = 1;
   let drawn = 0;
   for (const i of chordOrder) {
@@ -297,6 +297,6 @@ export function drawStrataLodChords(
     arrowHead(ctx, ex, ey, endA, head);
     drawn += 1;
   }
-  ctx.globalAlpha = prevAlpha;
+  ctx.globalAlpha = previousAlpha;
   return drawn;
 }

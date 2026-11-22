@@ -34,7 +34,7 @@ happens next.
 
 Lines are against `main` at 62bab6da6 unless named.
 
-- **The stage** (`src/views/library/ui/parts/first-run/LibraryStartStage.tsx`): artwork labelled
+- **The stage** (`src/views/library/ui/first-run/LibraryStartStage.tsx`): artwork labelled
   with `kindSourcesTitle`/`kindWikiTitle` (`:93`), title `emptyTitle` (`:94`), body
   `emptyFoundBody` when candidates exist (`:95`), a primary `emptyFoundAction` button opening the
   find dialog (`:100`), then two chips, Add files and Bring from a service (`:51`, `:75`), and a
@@ -42,20 +42,20 @@ Lines are against `main` at 62bab6da6 unless named.
   (`src/views/library/ui/library-page/LibraryEmptyFolderStage.tsx:38`). A dot-and-hairline field
   runs behind it (`:30`). Discovery runs on mount (`:22`). S-2 (cd351399c, branch
   `feat/library-sources-home`) mounts the same stage a second time, in the Sources home of a folder
-  with wiki pages and no sources (its `LibraryPage.tsx:787`).
+  with wiki pages and no sources (its `LibraryPage.tsx:602`).
 - **There is no drag and drop.** Add files opens a picker in the app (`add-sources.ts:181`); the
   browser path already copies `File` objects (`add-sources.ts:43`). The app imports only paths the
   picker or discovery offered; any other path fails `source-not-offered`
-  (`src-tauri/src/library.rs:338-355`). Each import call re-hashes all of `sources/` once
+  (`src-tauri/src/library/discovery_rules.rs:156-173`). Each import call re-hashes all of `sources/` once
   (`index_existing_files`, `:245`, called at `:333`).
-- **Discovery's filter** keeps 14 document extensions (`library.rs:62`), prunes 11 folder names,
+- **Discovery's filter** keeps 14 document extensions (`src-tauri/src/library/source_offer.rs:51`), prunes 11 folder names,
   none of them `public` or `output` (`:68`), refuses secret-like names (`:118`), and stops at 500
   (`:108`); the TS mirror is `src/entities/docs-vault/lib/library/source-discovery.ts`. It walks the
   open folder and bound project roots (`src/features/library/lib/sources/discover-sources.ts:66`).
   Run over this repository on 2026-11-21 it returns exactly the owner's three files (32 B, 1.2 KB,
   790 KB); `output/` is Git-ignored (`.gitignore:78`).
-- **Reveal** selects a file only (`library.rs:677`); the call underneath works on macOS, Windows
-  and Linux (`src-tauri/src/app_shell/mod.rs:85`). Every catalogue says "Finder", Windows included
+- **Reveal** selects a file only (`src-tauri/src/library/running_imports.rs:28`); the call underneath works on macOS, Windows
+  and Linux (`src-tauri/src/app_shell/mod.rs:86`). Every catalogue says "Finder", Windows included
   (`library.sources.revealFailed`).
 - **What reads `sources/` and leaves the computer**: a coding-agent turn the person starts (Compile,
   Ask from the question desk, rounds), any connected outside agent calling MCP `read_source`
@@ -70,7 +70,7 @@ Lines are against `main` at 62bab6da6 unless named.
 - **After adding**, the Sources home (#3742, mounted by S-2) shows the band, one folder row,
   `recent.none` explaining a wiki page, and Next to write. With no agent the band's button is
   disabled with its reason; on the web it reads `progress.webLine`
-  (`src/views/library/ui/parts/progress/SourceProgressBand.tsx:453-476`).
+  (`src/views/library/ui/progress/ProgressAction.tsx`).
 - **Unknown:** how a non-developer reads the stage; time to copy a 2,000-file drop.
 
 ## Problem and alternatives
@@ -261,7 +261,7 @@ Added 2026-11-21 after the installed-app check. A test folder held 40 documents 
 - **Discovery skips Markdown and most text formats.** Its allow-list has 14 extensions; `md` is
   left out "because Markdown is already a vault file kind" (`source-discovery.ts`, `library.rs:59`),
   and `html`, `tsv` and `log` are absent too. Of the 40 files, discovery offers the 9 txt and csv.
-- **Import flattens.** Every file lands at `sources/<name>` (`library.rs:519`); a second
+- **Import flattens.** Every file lands at `sources/<name>` (`library.rs`); a second
   `meetings/weekly.md` from another folder becomes `weekly (2).md`, and the folder table shows one row.
 - **A dropped folder was refused** before F2, so the one gesture that matches "these 40 files"
   did nothing.
@@ -446,7 +446,7 @@ elsewhere" (elsewhere names no place). Every string in this spec, in every local
    `public/39b8c5bebbe326f89097083d57514dcc.txt` 32 B, `output/promo/<name>.txt` 1.2 KB), when
    Rust and TS discovery judge it, then both return zero candidates; and given one fixture per
    filter row, each rule catches its case and keeps each named survivor (`2026111509301500.pdf`,
-   a 700-byte `budget.csv`). `source-discovery.test.ts`, `src-tauri/src/library/tests.rs`.
+   a 700-byte `budget.csv`). `source-discovery.test.ts`, `src-tauri/src/library/*/tests.rs`.
 2. Given F1, when it runs over one JVM and one C/C++ Apache-2.0 repository chosen for the probe,
    then the pull request lists every file each rule drops and every file kept, a reader marks none
    of the dropped files a document and none of the kept files a build or test file; the
@@ -459,7 +459,7 @@ elsewhere" (elsewhere names no place). Every string in this spec, in every local
    they copy in one import with streamed progress and the reveal action selects `sources/`.
    Installed-app walk with a PR capture. Given the page side sends `$HOME/.ssh/id_ed25519` to the
    import, then it fails `source-not-offered` and nothing is read. Rust test in
-   `src-tauri/src/library/tests.rs`, run on the macOS and Windows CI jobs.
+   `src-tauri/src/library/*/tests.rs`, run on the macOS and Windows CI jobs.
 5. Recovery: given `sources/` refuses writes, when two files are dropped, then `start.drop.failed`
    names both and the reason, the drop area stays ready, and after the permission returns Add
    files copies them. `first-run-drop.spec.ts` with a refusing handle.
@@ -480,7 +480,7 @@ Order: S-2 merges, then F1 and F3 in parallel, then F2, then F4.
 
 | Slice | What | Files | Overlap |
 |---|---|---|---|
-| F1 | Filter rules, parity test; criteria 1, 2 | `src-tauri/src/library.rs`, `src-tauri/src/library/tests.rs`, `src/entities/docs-vault/lib/library/source-discovery{,.test}.ts` | None |
+| F1 | Filter rules, parity test; criteria 1, 2 | `src-tauri/src/library.rs`, `src-tauri/src/library/*/tests.rs`, `src/entities/docs-vault/lib/library/source-discovery{,.test}.ts` | None |
 | F3 | Word sweep and `sourceWord` row; criterion 8 | `messages/{ko,ja,zh}/*.json`, `scripts/lib/i18n/locale-vocabulary.mjs`, `docs/GLOSSARY.md:137` (the ko/ja words) | Right after S-2, which edits `library.json` and deletes `graph.*` |
 | F2 | Stage, drop, folder reveal, suggestion, streamed import; criteria 3-7 | `src/views/library/ui/parts/first-run/**`, `LibraryEmptyFolderStage.tsx`, `src/views/library/ui/LibraryPage.tsx`, `use-library-sources.ts`, `add-sources.ts`, `library.rs` and `app_shell/mod.rs` (after F1), `messages/*/library.json` (`start.*`, keys above), `docs/features/library/workspace.md:316-330`; old test IDs in `tests/e2e/library/library.spec.ts:508-529`, `library-import-service.spec.ts:13,62-64`, `source-import-motion.spec.ts`, `source-import-fixture.ts:31-34`, `import-from-empty-library.spec.ts:69` | After S-2 and F3 |
 | F4 | Plain find dialog: title, one line, sheet rows, search only above 12; removes `find.searchHint`, `find.walkedRoots` | `src/features/library/ui/FindDocumentsDialog.tsx`, `messages/*/library.json` | After F2 |
@@ -548,3 +548,4 @@ None. Decided: ko jaryo, ja shiryo, zh unchanged, wiki kept. Reversing is a cata
   drop, and a folder holding the open folder is refused. Decision 6 revised: a single dropped
   file named like a secret is skipped. Flow 9 and criterion 3 now describe the accepted folder
   drop, stopping a copy left Out of scope, and the drop title names the sources folder.
+- 2026-11-22: source line cites follow the code into the files and lines that hold it after the structure cleanup; a cite whose code changed keeps its file and drops the line; no plan changed.

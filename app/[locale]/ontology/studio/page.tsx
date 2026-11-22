@@ -19,11 +19,6 @@ export async function generateMetadata({
   };
 }
 
-/**
- * Compatibility entry only. The map now owns manual ontology writing through
- * its contextual editor; old node/edit/create query strings are translated by
- * the same redirect component as `/ontology/edit`.
- */
 export default function Page() {
   return (
     <Suspense fallback={<RouteLoadingFallback />}>

@@ -60,7 +60,7 @@ export function applyFrontmatterUpdates(
     updatedKeys.add(key);
     swallowingBlock = entry.value === '' || /^[|>](?:[1-9][-+]?|[-+][1-9]?)?$/.test(entry.value);
     const value = updates[key];
-    if (value === null) continue; // delete
+    if (value === null) continue;
     nextLines.push(`${serializeKey(key)}: ${serializeFrontmatterValue(value)}`);
   }
   for (const [key, value] of Object.entries(updates)) {
@@ -92,11 +92,11 @@ function serializeFrontmatterValue(
   if (typeof v === 'number') return String(v);
   if (typeof v === 'object') {
     // Inline one-level object, the form `parseFrontmatter` round-trips.
-    const entries = Object.entries(v).map(([k, val]) => {
+    const entries = Object.entries(v).map(([k, value]) => {
       let serialized: string;
-      if (typeof val === 'boolean') serialized = val ? 'true' : 'false';
-      else if (typeof val === 'number') serialized = String(val);
-      else serialized = needsQuote(val) ? `"${escapeQuoted(val)}"` : val;
+      if (typeof value === 'boolean') serialized = value ? 'true' : 'false';
+      else if (typeof value === 'number') serialized = String(value);
+      else serialized = needsQuote(value) ? `"${escapeQuoted(value)}"` : value;
       return `${serializeKey(k)}: ${serialized}`;
     });
     return `{ ${entries.join(', ')} }`;
@@ -114,7 +114,6 @@ function needsQuote(s: string): boolean {
   return s === 'true' || s === 'false' || (s !== '' && !Number.isNaN(Number(s)));
 }
 
-/** Folds newlines to the two-character `\n` escape. */
 function escapeQuoted(s: string): string {
   return s
     .replace(/\\/g, '\\\\')

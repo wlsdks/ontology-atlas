@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { deriveOntologyFromVault } from './derive-ontology-from-vault';
-import type { VaultDoc, VaultManifest } from '../model/types';
+import type { VaultDoc, VaultManifest } from '../model/vault-manifest';
 
 /**
  * Guards the full-derive cost on the live-update path (every vault change reruns it). jsdom

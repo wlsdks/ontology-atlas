@@ -3,7 +3,6 @@ import type { DocsVaultSource } from './persistence';
 
 export type DocsVaultCollection = 'all' | 'guides' | 'ontology';
 
-/** 'all' is a filter, not a document property. */
 export type DocsVaultDocCollection = Exclude<DocsVaultCollection, 'all'>;
 
 const ONTOLOGY_KINDS = new Set(['project', 'domain', 'capability', 'element']);
@@ -48,7 +47,6 @@ export function resolveDocsVaultCollection(
   return 'guides';
 }
 
-/** Listed in Docs but never auto-opened and never in the ontology graph. */
 export function isArchitectureProfile(doc: Pick<VaultDoc, 'frontmatter'>): boolean {
   return doc.frontmatter.architecture_schema === 'architecture-profile/v1';
 }
@@ -57,7 +55,6 @@ export function isArchitectureProfile(doc: Pick<VaultDoc, 'frontmatter'>): boole
 export function firstReadableSlug<T extends { slug: string; frontmatter: Record<string, unknown> }>(
   docs: readonly T[],
 ): string | undefined {
-  // No fallback to `docs[0]`; callers handle "no document".
   return docs.find((doc) => !isArchitectureProfile(doc))?.slug;
 }
 
@@ -69,10 +66,6 @@ export function filterDocsByCollection<T extends Pick<VaultDoc, 'frontmatter' | 
   return docs.filter((doc) => resolveDocsVaultCollection(doc) === collection);
 }
 
-/**
- * Open on a collection that has documents, so the first screen does not claim N documents over
- * an empty list. An empty vault keeps the preferred collection.
- */
 export function resolveInitialDocsCollection<
   T extends Pick<VaultDoc, 'frontmatter' | 'path' | 'slug'>,
 >(docs: T[], preferred: DocsVaultDocCollection = 'guides'): DocsVaultCollection {
@@ -93,7 +86,6 @@ export function buildTagIndexForDocs(docs: Pick<VaultDoc, 'slug' | 'tags'>[]): R
   return tags;
 }
 
-/** Maps saved slugs through the moved-document aliases, keeping order and dropping repeats. */
 export function followMovedSlugs(slugs: readonly string[], aliases?: Record<string, string>): string[] {
   if (!aliases) return [...slugs];
   return [...new Set(slugs.map((slug) => aliases[slug] ?? slug))];
@@ -134,10 +126,6 @@ export function shouldDeferDocsVaultDefaultSelection({
   return Boolean(normalizedQuerySlug && selectedSlug !== normalizedQuerySlug);
 }
 
-/**
- * Only in sample mode without a `?slug=` deeplink, until the person picks a document
- * (`dismissed`), so a non-developer gets context above the English default document.
- */
 export function shouldShowSampleWelcomeNote({
   source,
   normalizedQuerySlug,

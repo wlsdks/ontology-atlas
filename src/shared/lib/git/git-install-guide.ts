@@ -23,7 +23,6 @@ export interface GitInstallGuide {
   alternatives: GitInstallOption[];
 }
 
-/** Last resort on every platform. */
 export const GIT_DOWNLOAD_URL = 'https://git-scm.com/downloads';
 
 export function gitInstallGuide(platform: GitHostPlatform): GitInstallGuide {

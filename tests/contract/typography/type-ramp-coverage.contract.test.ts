@@ -20,7 +20,7 @@ import {
 
 /**
  * Debt ledger for exception files, empty. An empty array must not make the checks green for free,
- * so when it is empty they instead measure that a formerly exempt file receives the ramp selectors.
+ * so when it is empty they instead measure that a once-exempt file receives the ramp selectors.
  */
 const EXEMPT_DEBT: ReadonlyArray<readonly [string, number]> = [];
 

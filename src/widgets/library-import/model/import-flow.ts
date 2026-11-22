@@ -1,10 +1,8 @@
 /**
- * Model for bringing documents in from a service: connect (write the connector descriptor and
- * stage it off, confirm token storage, then activate it), say what to bring, then hand a bounded brief to
- * the Library's agent turn. Atlas is not the MCP client, so the agent lists and picks results
- * inside its turn and every file lands under `sources/<service>/`, or `planning/<service>/` when
- * Planning asked, through the permission card;
- * Atlas writes nothing itself.
+ * Bringing documents in from a service: connect (stage the connector off, confirm token storage,
+ * activate), say what to bring, then hand a bounded brief to the Library's agent turn. Atlas is not
+ * the MCP client: the agent picks results and every file lands under `sources/<service>/` (or
+ * `planning/<service>/`) through the permission card. Atlas writes nothing itself.
  */
 import {
   MCP_CATALOGUE,
@@ -13,14 +11,12 @@ import {
   variantSecrets,
   type CatalogueEntry,
   type CatalogueVariant,
-} from '@/shared/config/mcp-catalogue';
+} from '@/shared/config/mcp/mcp-catalogue';
 import type { ConnectorRecord } from '@/shared/lib/connectors/connector-record';
+import type { SetupFailure, SetupInspection } from '@/shared/lib/connectors/connector-setup';
 import type { ImportDestination } from '@/shared/lib/library-import/destination';
 
-/**
- * The tiles in draw order; `other` is always last. `IMPORT_SERVICES` is the list and its `id` is
- * checked against this union.
- */
+/** The tiles in draw order; `other` is always last. */
 export type ImportServiceId = 'notion' | 'github' | 'other';
 
 export interface ImportService {
@@ -37,9 +33,7 @@ export interface ImportService {
 }
 
 /**
- * The tiles require a committed catalogue entry and a connection path this surface supports.
- */
-/*
+ * Each tile needs a committed catalogue entry and a connection path this surface supports.
  * Confluence and Jira wait for an adapter that can sign in: a hosted OAuth address given to the
  * in-app session only reports "requires authentication".
  */
@@ -78,10 +72,10 @@ export function serviceVariant(entry: CatalogueEntry): CatalogueVariant {
   );
 }
 
-/** What this door will ask of a person before it can bring anything. `null` means nothing. */
-export function serviceAsk(
-  service: ImportService,
-): { kind: 'browser' } | { kind: 'token'; name: string; issueUrl?: string } | { kind: 'manual' } {
+export type ImportAsk = { kind: 'browser' } | { kind: 'token'; name: string; issueUrl?: string } | { kind: 'manual' };
+
+/** What this door will ask of a person before it can bring anything. */
+export function serviceAsk(service: ImportService): ImportAsk {
   const entry = serviceEntry(service);
   if (!entry) return { kind: 'manual' };
   const variant = serviceVariant(entry);
@@ -114,7 +108,7 @@ export function importConnector(
 
 export type ImportStep = 'pick' | 'connect' | 'choose' | 'bring';
 
-/** What a person typed in step two. */
+/** What a person typed in the choose step. */
 export interface ImportRequest {
   /** Free text: "the API design pages", "everything in the Handbook space". */
   what: string;
@@ -164,4 +158,38 @@ export function nextStep(state: {
   if (!state.connected) return 'connect';
   if (!state.request) return 'choose';
   return 'bring';
+}
+
+export type ImportSetupFailure = SetupFailure | 'setupRuntimeUnavailable';
+
+/** Running the check again cannot change these: another window holds the setup, it was stopped, or no runtime exists. */
+export function isUnretryableSetupFailure(failed: ImportSetupFailure | null): boolean {
+  return failed === 'setupConflict' || failed === 'setupStopped' || failed === 'setupRuntimeUnavailable';
+}
+
+export interface ConnectStepState {
+  inspection: SetupInspection | null;
+  failed: ImportSetupFailure | null;
+  checking: boolean;
+  pending: boolean;
+  token: string;
+}
+
+/** A failed check with nothing inspected is run again by the connect press instead of saving. */
+export function shouldRecheckSetup({ inspection, checking, failed }: ConnectStepState): boolean {
+  return !inspection && !checking && failed !== null && !isUnretryableSetupFailure(failed);
+}
+
+export function isConnectActionDisabled(state: ConnectStepState): boolean {
+  const { inspection, failed, checking, pending, token } = state;
+  if (pending || checking || isUnretryableSetupFailure(failed)) return true;
+  if (!inspection) return failed === null;
+  return !inspection.hasSecret && !token.trim();
+}
+
+export function connectActionLabelKey({ pending, failed, inspection }: ConnectStepState):
+  'savePending' | 'retrySave' | 'resumeSetup' | 'connectAction' {
+  if (pending) return 'savePending';
+  if (failed) return 'retrySave';
+  return inspection?.existing ? 'resumeSetup' : 'connectAction';
 }

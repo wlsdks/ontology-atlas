@@ -277,3 +277,11 @@ export function sortTableRows(
   });
   return order.map((i) => rows[i]!);
 }
+
+/** The newest page day of a row: for an alike row, of its newest member. -1 when none is dated. */
+export function rowLatestDay(row: SourceTableRow, latestDay: (group: SourceGroup) => number): number {
+  if (!row.members) return latestDay(row.group);
+  let latest = -1;
+  for (const member of row.members) latest = Math.max(latest, latestDay(member));
+  return latest;
+}

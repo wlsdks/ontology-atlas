@@ -1,25 +1,19 @@
 #!/usr/bin/env node
-// R13 #58 — vault path drift audit.
-//
-// Verifies that the capability/element nodes in the dogfood vault
-// (docs/ontology/) have not drifted from the real code paths. For each node's
-// frontmatter:
-//   - `path:` (string)       — the element's source-file path
-//   - `elements:` (string[]) — the source paths a capability owns
-// it checks the path exists on disk. A path that cannot be found is drift.
+// Vault path drift audit: for each capability/element node of the dogfood vault (docs/ontology/), the
+// frontmatter `path:` (string) and `elements:` (string[]) must exist on disk; a path that cannot be
+// found is drift.
 //
 // Usage:
 //   node scripts/vault/audit-vault-paths.mjs                    # default: docs/ontology vs cwd
 //   node scripts/vault/audit-vault-paths.mjs <vault> <repo>     # explicit
-//   pnpm vault:audit                                       # package.json script
+//   pnpm vault:audit
 //
-// exit 1 if drift, 0 if clean — CI gateable.
+// Exit 1 if drift, 0 if clean.
 
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { parseFrontmatter } from "../lib/parse-frontmatter.mjs";
-// R13 #58 logic now lives in the MCP package (shared with the agent-callable
-// validate_vault pathDrift surface) — single source of truth. Atlas Track A #2.
+// The detection lives in the MCP package, shared with the agent-callable validate_vault pathDrift surface.
 import { detectVaultPathDrift } from "../../mcp/src/drift/detect-drift.mjs";
 import { VAULT_SOURCES_DIR } from "../../mcp/src/schema.mjs";
 
@@ -87,20 +81,19 @@ if (!statSync(REPO).isDirectory()) {
   process.exit(2);
 }
 
-function walkMd(dir, out = [], root = dir) {
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+function walkMd(directory, out = [], root = directory) {
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
     if (entry.name.startsWith(".")) continue;
-    const full = join(dir, entry.name);
+    const full = join(directory, entry.name);
     if (entry.isDirectory()) {
-      if (dir !== root || entry.name !== VAULT_SOURCES_DIR) walkMd(full, out, root);
+      if (directory !== root || entry.name !== VAULT_SOURCES_DIR) walkMd(full, out, root);
     } else if (entry.isFile() && entry.name.endsWith(".md")) out.push(full);
   }
   return out;
 }
 
-// Build parsed docs, then delegate to the shared detector (single source of
-// truth with the MCP validate_vault pathDrift surface). slug preserves the
-// previous behavior (frontmatter.slug, else the file path).
+// Delegates to the shared detector (one source of truth with validate_vault pathDrift); slug is
+// frontmatter.slug, else the file path.
 const docs = walkMd(VAULT).map((filePath) => {
   const { frontmatter } = parseFrontmatter(readFileSync(filePath, "utf-8"));
   return { slug: String(frontmatter.slug ?? "").trim() || filePath, frontmatter };
@@ -122,7 +115,6 @@ console.log(
   `${COLORS.bold}[audit-vault-paths]${COLORS.reset} ${nodesScanned} nodes · ${pathsChecked} paths checked · ${COLORS.red}${drifts.length} drift${COLORS.reset}\n`,
 );
 
-// Group by slug for readability
 const bySlug = new Map();
 for (const d of drifts) {
   if (!bySlug.has(d.slug)) bySlug.set(d.slug, { kind: d.kind, items: [] });

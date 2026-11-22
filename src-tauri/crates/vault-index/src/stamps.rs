@@ -31,7 +31,6 @@ impl Stamp {
         regular_file_stamp(path).map(|(stamp, _)| stamp)
     }
 
-    /// Whether the stamp may stand for the file's content (see `Volume`).
     pub(crate) fn is_vouched(&self) -> bool {
         self.ctime_ns != 0
     }
@@ -60,7 +59,6 @@ impl Volume {
         regular_file_stamp(path).map(|(stamp, device)| self.vouch(stamp, device))
     }
 
-    /// The stamp of a file already open, from its own handle.
     pub fn stamp_open(&self, file: &File, metadata: &Metadata) -> Stamp {
         let (stamp, device) = open_stamp(file, metadata);
         self.vouch(stamp, device)

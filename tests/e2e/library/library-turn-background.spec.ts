@@ -100,7 +100,7 @@ test.describe("a writing Library turn keeps running away from the Library", () =
     await expect.poll(async () => (await processes(page)).cancels, { message: "Stop asks the agent to end" }).toBe(1);
 
     const later = await askWrite(page, "wiki/later.md", wikiPage("Later"));
-    await expect.poll(async () => (await answers(page))[later], { message: "a request after Stop is refused, write mode auto or not" }).toBe("reject");
+    await expect.poll(async () => (await answers(page))[later], { message: "a request after Stop is answered cancelled, write mode auto or not" }).toBe("cancelled");
     await expect(card(page)).toHaveAttribute("data-phase", "stopping");
 
     await expect.poll(async () => (await processes(page)).stops, { message: "the process ends after the grace", timeout: 15_000 }).toBe(1);
@@ -109,7 +109,7 @@ test.describe("a writing Library turn keeps running away from the Library", () =
     expect(await writesTo(page, "wiki/later.md"), "a write after Stop reached the folder").toBe(0);
   });
 
-  test("Stop on a waiting turn closes its request unanswered", async ({ page }) => {
+  test("Stop on a waiting turn answers its request cancelled", async ({ page }) => {
     await startWritingTurn(page);
     await goToMap(page);
     await ignoreCancel(page);
@@ -118,7 +118,7 @@ test.describe("a writing Library turn keeps running away from the Library", () =
     await expect(page.getByTestId("acp-permission-card")).toBeVisible();
 
     await page.getByTestId("acp-chat-stop").click();
-    await expect.poll(async () => (await answers(page))[waiting], { message: "the waiting request closes" }).toBe("reject");
+    await expect.poll(async () => (await answers(page))[waiting], { message: "the waiting request is answered cancelled" }).toBe("cancelled");
     await expect(page.getByTestId("acp-permission-card")).toHaveCount(0);
     await expect.poll(async () => (await processes(page)).stops, { message: "the process ends after the grace", timeout: 15_000 }).toBe(1);
     expect(await writesTo(page, "wiki/architecture.md")).toBe(0);

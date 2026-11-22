@@ -248,17 +248,17 @@ export function drawBoard(
   for (const t of floors ? [] : tiles) {
     const x = sx(t.x);
     if (x < -R || x > width + R) continue;
-    const arr = arrivalOf(t.ring, state.arrivalMs, state.reducedMotion);
-    if (arr.a <= 0.001) continue;
+    const arrival = arrivalOf(t.ring, state.arrivalMs, state.reducedMotion);
+    if (arrival.a <= 0.001) continue;
     const ev = t.kind === "capability" ? (state.evidence.get(t.id) ?? "unknown") : "current";
     const isSel = t.id === state.selectedId;
     const isHov = t.id === state.hoverId || t.id === state.focusId;
     const h = lift(t);
-    const yb = groundY(t.y) + arr.dy;
+    const yb = groundY(t.y) + arrival.dy;
     const yt = yb - h;
     if (yt - FAPO * c > height + 2 || yb + FAPO * c < -2) continue;
-    const ri = RI * arr.s;
-    const alpha = alphaOf(t) * arr.a;
+    const ri = RI * arrival.s;
+    const alpha = alphaOf(t) * arrival.a;
     const m = tileMaterial(T, t.kind, t.bucket, ev, isSel, isHov, light);
     ctx.globalAlpha = alpha;
     if (isSel && t.kind === "capability" && pose.pitch !== 0) {
@@ -281,7 +281,7 @@ export function drawBoard(
       }
     } else {
       const depth = t.kind === "project" ? 6 : t.kind === "domain" ? 5 : 2 + 0.8 * t.bucket;
-      const d = (R >= 28 ? depth : depth * 0.5) * (1 - light) * arr.s;
+      const d = (R >= 28 ? depth : depth * 0.5) * (1 - light) * arrival.s;
       if (d > 0.2) {
         ctx.beginPath();
         face(ctx, x + d * 0.5, yb + d, ri, c);
@@ -334,11 +334,11 @@ export function drawBoard(
     if ((isSel || isHov) && ev === "stale") ring(x, yt, ri - 4, T.stale, 1.2, alpha * 0.9);
     if (usedBy.has(t.id)) ring(x, yt, ri - 3.5, T.usedBy, 1.4, 0.8 * dimT);
     if (band !== "regions" && t.kind === "capability" && t.elementCount > 0) {
-      pips(ctx, t, x, yt + FAPO * c, R, c, alphaOf(t) * arr.a, names, (id) => state.evidence.get(id) === "stale", T);
+      pips(ctx, t, x, yt + FAPO * c, R, c, alphaOf(t) * arrival.a, names, (id) => state.evidence.get(id) === "stale", T);
     }
     const count = t.kind === "capability" ? counts?.capability.get(t.id) : undefined;
     const dimmed = isDimmed(t.id);
-    ctx.globalAlpha = arr.a * numberAlpha;
+    ctx.globalAlpha = arrival.a * numberAlpha;
     if (names) {
       const { lines, numberAt } = placeLinesWithNumber(lineSets(layout, t, R, state), room, count != null);
       if (count != null && numberAt != null && lines) {
@@ -357,7 +357,7 @@ export function drawBoard(
           if (line.role === "mono") return T.staleInk;
           return dimmed ? T.inkDim : strong ? T.inkHi : T.ink;
         };
-        ctx.globalAlpha = arr.a;
+        ctx.globalAlpha = arrival.a;
         textBoxes.push(drawLines(ctx, t.id, lines, x, yt, inkOf, state.measure));
         stats.names += 1;
       }

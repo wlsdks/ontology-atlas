@@ -1,4 +1,4 @@
-import type { AgentProposal, ProposalChange, ProposedFileChange } from '../types';
+import type { AgentProposal, ProposalChange, ProposedFileChange } from '../agent-turn';
 import {
   changesCompetencyQualification,
   SOURCE_BACKED_COMPETENCY_MESSAGE,
@@ -10,13 +10,10 @@ import {
  */
 
 export interface VaultWritePort {
-  /** A new file. Must fail if one already exists. */
   createDoc(slug: string, content: string): Promise<void>;
-  /** Overwrite an existing file. */
   saveDoc(slug: string, content: string, options?: { expectedMtime?: number }): Promise<void>;
   /** The current mtime on disk. Undefined when unknown. */
   currentMtime(slug: string): number | undefined;
-  /** Reload the manifest, refreshing the map. */
   refresh(): Promise<void>;
   /** A git save point before applying; null outside git, which the card states. */
   snapshot(label: string): Promise<string | null>;
@@ -98,7 +95,6 @@ export async function applyProposal(
     }
   }
   if (conflicted.length > 0) {
-    // Zero files changed.
     return { status: 'conflict', conflictedPaths: conflicted };
   }
 
@@ -142,7 +138,6 @@ export async function applyProposal(
   return { status: 'applied', snapshotSha, writtenPaths: written };
 }
 
-/** For a read-only vault — the string [copy this change] gives instead of [apply]. */
 export function proposalToClipboardPacket(proposal: AgentProposal): string {
   const plan = planProposalFiles(proposal.changes);
   if (plan.conflict) throw new Error(selectionConflictMessage(plan.conflict));
@@ -160,7 +155,6 @@ export function proposalToClipboardPacket(proposal: AgentProposal): string {
   return lines.join('\n');
 }
 
-/** The card header's totals, such as "3 files · +42 −3". */
 export function summarizeChangeVolume(changes: readonly ProposalChange[]): {
   files: number;
   added: number;

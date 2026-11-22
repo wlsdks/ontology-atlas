@@ -17,7 +17,6 @@ export const CHAT_MARKDOWN = [
   '[&_a]:text-[color:var(--color-indigo-accent)] [&_a]:underline-offset-2',
 ].join(' ');
 
-/** One step quieter than the answer. */
 export const WORK_MARKDOWN = [
   'break-keep text-label leading-label text-[color:var(--color-text-tertiary)]',
   '[&>*:first-child]:mt-0 [&>*:last-child]:mb-0',

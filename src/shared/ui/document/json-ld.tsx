@@ -24,7 +24,6 @@ export interface JsonLdProps {
   data: unknown;
 }
 
-/** JSON-LD surface that guards the HTML script boundary in one place. */
 export function JsonLd({ data }: JsonLdProps) {
   return (
     <script

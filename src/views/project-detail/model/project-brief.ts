@@ -4,12 +4,10 @@
  */
 interface ProjectBriefSection {
   title: string;
-  /** Up to the next `##`. */
   markdown: string;
 }
 
 export interface ProjectBrief {
-  /** Markdown above the first `##` heading; empty when the body opens with a heading. */
   lead: string;
   sections: ProjectBriefSection[];
 }

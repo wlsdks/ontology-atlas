@@ -15,10 +15,12 @@ vi.mock('@/shared/lib/project-source/project-source-store', () => ({
   }),
 }));
 
-vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
-  getTauriVaultRootPath: (handle: { root?: string } | null) => handle?.root ?? null,
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-files', () => ({
   listTauriVaultEntries: vi.fn(),
   readTauriVaultTextFile: vi.fn(),
+}));
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', () => ({
+  getTauriVaultRootPath: (handle: { root?: string } | null) => handle?.root ?? null,
 }));
 
 vi.mock('@/entities/agent-files', () => ({ scanHarness: mocks.scan }));

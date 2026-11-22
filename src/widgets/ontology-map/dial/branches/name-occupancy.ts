@@ -1,6 +1,6 @@
 import type { DialFrameMarks, DialMarksInput } from "../frame/marks";
 import { crossesBox, overlaps } from "../label-marks";
-import type { Box, DialRowPick, Point, TextMark } from "../types";
+import type { Box, DialRowPick, Point, TextMark } from "../dial-shapes";
 
 const isName = (text: TextMark) => text.role === "project" || text.role === "domain" || text.role === "capability" || text.role === "element";
 

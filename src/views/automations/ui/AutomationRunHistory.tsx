@@ -16,19 +16,16 @@ import { runsNewestFirst } from '../model/run-order';
 import { automationDate } from './automation-date';
 import listStyles from './automation-list-frame.module.css';
 
-/** No agent is a warning a person can act on (sign in), in the Library ledger's ink wherever it stands. */
 export const WARNING_INK = 'text-[color:var(--color-amber-source-a90)]';
 
 const RUNS_PER_PAGE = 10;
 
 interface RunLead {
   text: string;
-  /** Set when the run's note, not its own result, is the sentence. */
   note: RoundPassEntry['note'] | null;
   warning: boolean;
 }
 
-/** The one sentence a run is remembered by: what went wrong, else its summary, else its note. */
 export function useRunLead(): (entry: RoundPassEntry) => RunLead & { undone: string | null; noteText: string | null } {
   const t = useTranslations('automations');
   const ledgerText = useTranslations('library.rounds.ledger');
@@ -55,7 +52,6 @@ export function useRunLead(): (entry: RoundPassEntry) => RunLead & { undone: str
   };
 }
 
-/** The sentence a run that finished but could not be written down leaves instead of its record. */
 export function useUnrecordedText(): (unrecorded: RoundUnrecorded) => string {
   const t = useTranslations('automations');
   const locale = useLocale();
@@ -71,7 +67,6 @@ export function AutomationUnrecorded({ unrecorded }: { unrecorded: readonly Roun
   </p>;
 }
 
-/** The history's title, narrowed to one schedule while one is selected, with the way back to every run. */
 export function AutomationHistoryHeading({ name, onShowAll }: { name: string | null; onShowAll: () => void }) {
   const t = useTranslations('automations');
   return <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
@@ -84,12 +79,9 @@ export function AutomationHistoryHeading({ name, onShowAll }: { name: string | n
   </div>;
 }
 
-/** The Ontology lane's runs, newest first; a long history grows by a page at a time. */
 export function AutomationRunHistory({ entries, named, landedRunId = null }: {
   entries: readonly RoundPassEntry[];
-  /** Every schedule's runs are shown, so each run names its schedule. */
   named: boolean;
-  /** The run a door led here for: its page is shown, and it is scrolled to, focused and marked. */
   landedRunId?: string | null;
 }) {
   const t = useTranslations('automations');

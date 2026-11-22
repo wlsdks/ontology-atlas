@@ -8,7 +8,7 @@ import {
   type SecretProvider,
   type SecretStatus,
 } from '@/shared/lib/llm-connection/tauri-secrets';
-import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { jevSecretStatus, type JevSecretStatus } from '@/shared/lib/llm-connection/tauri-jev';
 import { AuditReadError, readLlmAuditSummary, type AuditReadFailure, type LlmAuditEntry } from '@/shared/lib/llm-connection/llm-audit-log';
 
@@ -17,19 +17,16 @@ import { AuditReadError, readLlmAuditSummary, type AuditReadFailure, type LlmAud
  * footer see one value after a save. No key lives here, only `stored` and `last4`.
  */
 export interface AiConnectionState {
-  /** Whether this is the desktop runtime — at false the screen renders no input field at all. */
   bridgeAvailable: boolean;
   statuses: Record<SecretProvider, SecretStatus | null>;
   /** Reflect a save or delete result directly, so the screen states the fact immediately with no re-query round trip. */
   applyStatus: (provider: SecretProvider, next: SecretStatus) => void;
   /** The experimental Jev key (a separate Keychain account, never one of the three model vendors). */
   jevStatus: JevSecretStatus | null;
-  /** Whether all model-key lookups have answered. */
   keysRead: boolean;
   keyReads: Record<SecretProvider, boolean>;
   jevRead: boolean;
   applyJevStatus: (next: JevSecretStatus) => void;
-  /** The newest lines of the vault's sent log, oldest first. */
   auditEntries: LlmAuditEntry[];
   /** How many transfers the log holds in all; `null` until read, so "nothing sent" never flashes. */
   auditTotal: number | null;
@@ -43,7 +40,6 @@ const EMPTY_STATUSES: Record<SecretProvider, SecretStatus | null> = {
   gemini: null,
 };
 
-/** How many recent lines the footer lists; the count above them is the whole file. */
 const AUDIT_TAIL = 5;
 
 export function useAiConnection({
@@ -82,10 +78,10 @@ export function useAiConnection({
           status = null;
         }
         if (cancelled) return;
-        setStatuses((prev) => statusEpochs.current[provider] === initialEpochs[provider]
-          ? { ...prev, [provider]: status }
-          : prev);
-        setKeyReads((prev) => ({ ...prev, [provider]: true }));
+        setStatuses((previous) => statusEpochs.current[provider] === initialEpochs[provider]
+          ? { ...previous, [provider]: status }
+          : previous);
+        setKeyReads((previous) => ({ ...previous, [provider]: true }));
       })();
     }
     void (async () => {
@@ -96,7 +92,7 @@ export function useAiConnection({
         status = null;
       }
       if (cancelled) return;
-      setJevStatus((prev) => jevEpoch.current === initialJevEpoch ? status : prev);
+      setJevStatus((previous) => jevEpoch.current === initialJevEpoch ? status : previous);
       setJevRead(true);
     })();
     return () => {
@@ -116,7 +112,7 @@ export function useAiConnection({
   useEffect(() => {
     const handle = vaultHandleRef.current;
     if (!enabled || !handle) {
-      setAuditEntries((prev) => (prev.length === 0 ? prev : []));
+      setAuditEntries((previous) => (previous.length === 0 ? previous : []));
       setAuditTotal(0);
       setAuditError(null);
       return undefined;
@@ -144,7 +140,7 @@ export function useAiConnection({
 
   const applyStatus = useCallback((provider: SecretProvider, next: SecretStatus) => {
     statusEpochs.current[provider] = (statusEpochs.current[provider] ?? 0) + 1;
-    setStatuses((prev) => ({ ...prev, [provider]: next }));
+    setStatuses((previous) => ({ ...previous, [provider]: next }));
   }, []);
 
   const applyJevStatus = useCallback((next: JevSecretStatus) => {

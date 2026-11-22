@@ -32,7 +32,7 @@ import {
 } from "../model/schema";
 import { buildInitialValues, withKeptTaxonomyOption } from "../model/form-values";
 import { checkProjectSubmission, projectPlacement } from "../model/submission";
-import { CreateExtras, ExtrasGroup, FormSection } from "./project-form-parts";
+import { CreateExtras, ExtrasGroup, FormSection } from "./project-form-primitives";
 import {
   CategoryStatusFields,
   DependenciesField,
@@ -46,17 +46,17 @@ import {
   SlugField,
   TagsStackFields,
   type ProjectFormBinding,
-} from "./ProjectFormFields";
-import { ActionRow, DangerRow, EditSaveBand, SectionNav } from "./ProjectFormActions";
-import { ErrorBanner, WriteDisabledBanner } from "./ProjectFormBanners";
+} from "./project-form-fields";
+import { ActionRow, DangerRow, EditSaveBand } from "./project-form-action-rows";
+import { ErrorBanner, WriteDisabledBanner } from "./project-form-banners";
 import { ProjectFormPreview } from "./ProjectFormPreview";
+import { ProjectFormSectionNav } from "./ProjectFormSectionNav";
 
 interface Props {
   mode: "create" | "edit";
   initialProject?: Project;
   initialCategoryId?: string;
   initialStatusId?: string;
-  /** Every project, for the dependency picker. */
   allProjects: Project[];
   onSubmit: (
     input: ProjectInput,
@@ -65,13 +65,11 @@ interface Props {
   onCancel: () => void;
   onDelete?: () => Promise<void>;
   onDirtyChange?: (dirty: boolean) => void;
-  /** Demo mode with no vault: a banner shows and every submit is disabled up front. */
   writeDisabled?: boolean;
   /** Opens a folder from the write-locked banner; injected because FSD forbids feature→feature imports. */
   openVaultAction?: ReactNode;
 }
 
-/** The create screen's first view; everything else folds into "add more". */
 const CREATE_ESSENTIAL_FIELDS = new Set<keyof ProjectFormValues>([
   "name",
   "category",
@@ -171,7 +169,6 @@ export function ProjectForm({
   >({});
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  /* A failed save keeps the banner sentence and the English cause for `data-failure-detail`. */
   const [globalError, setGlobalError] = useState<FailureCopy | null>(null);
   const [saveNotice, setSaveNotice] = useState<string | null>(null);
   const submitBehaviorRef = useRef<"stay" | "return">("stay");
@@ -250,7 +247,7 @@ export function ProjectForm({
     v: ProjectFormValues[K],
   ) => {
     setSaveNotice(null);
-    setValues((prev) => ({ ...prev, [key]: v }));
+    setValues((previous) => ({ ...previous, [key]: v }));
     // `Path<T>` is not compatible with `keyof T` in RHF 7.x, hence `as never`.
     rhfSetValue(
       key as Parameters<typeof rhfSetValue>[0],
@@ -281,7 +278,7 @@ export function ProjectForm({
     if (mode !== "create") return;
     if (slugManuallyEdited) return;
     const nextSlug = slugify(name);
-    setValues((prev) => ({ ...prev, slug: nextSlug }));
+    setValues((previous) => ({ ...previous, slug: nextSlug }));
     rhfSetValue("slug", nextSlug, { shouldDirty: true, shouldValidate: false });
   };
 
@@ -323,8 +320,8 @@ export function ProjectForm({
             : t("actions.editNoticeStay"),
         );
       }
-    } catch (err) {
-      setGlobalError(failureSentence(err, t("validation.saveFailed")));
+    } catch (error) {
+      setGlobalError(failureSentence(error, t("validation.saveFailed")));
     } finally {
       setSubmitting(false);
     }
@@ -336,8 +333,8 @@ export function ProjectForm({
     setDeleting(true);
     try {
       await onDelete();
-    } catch (err) {
-      setGlobalError(failureSentence(err, t("validation.deleteFailed")));
+    } catch (error) {
+      setGlobalError(failureSentence(error, t("validation.deleteFailed")));
     } finally {
       setDeleting(false);
     }
@@ -349,7 +346,6 @@ export function ProjectForm({
     submitBehaviorRef.current = behavior;
   };
 
-  // Create and edit share one set of field fragments; only the arrangement differs.
   const slugField = (
     <SlugField
       form={form}
@@ -415,7 +411,6 @@ export function ProjectForm({
 
   const errorBanner = <ErrorBanner globalError={globalError} errors={errors} />;
 
-  // Actions come after the form so nothing is pressed before the inputs are seen.
   const actionRow = (
     <ActionRow
       mode={mode}
@@ -427,7 +422,6 @@ export function ProjectForm({
     />
   );
 
-  // Create shows the four required fields; the slug is a caption under the name.
   const createForm = (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
       {writeDisabledBanner}
@@ -474,8 +468,6 @@ export function ProjectForm({
         {descriptionField}
       </div>
 
-      {/* A new project needs only the four fields above; the rest is filled on its edit screen. A
-          duplicate carries the source's values, so it shows them before they are saved again. */}
       {initialProject ? (
       <CreateExtras
         open={createExtrasOpen}
@@ -500,7 +492,6 @@ export function ProjectForm({
     </form>
   );
 
-  // Edit shows every field expanded, with the save row sticky at the top.
   const editForm = (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
       {writeDisabledBanner}
@@ -516,7 +507,7 @@ export function ProjectForm({
         onChooseBehavior={chooseBehavior}
       />
 
-      <SectionNav />
+      <ProjectFormSectionNav />
 
       {errorBanner}
 
@@ -579,7 +570,6 @@ export function ProjectForm({
 
       {actionRow}
 
-      {/* Edit-only danger row: the only home for deletion, dashed border as the category signal. */}
       {onDelete && (
         <DangerRow submitting={submitting} deleting={deleting} onDelete={handleDelete} />
       )}
@@ -587,11 +577,7 @@ export function ProjectForm({
   );
 
   return (
-    /*
-     * The input column takes the remaining width and only the preview is fixed; `minmax(0,…)`
-     * keeps long content inside the frame. The 640px form width is a single column, not a
-     * sidebar track.
-     */
+    /* `minmax(0,…)` keeps long content inside the frame; the 640px form width is a single column, not a sidebar track. */
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_260px]">
       {mode === "create" ? createForm : editForm}
 

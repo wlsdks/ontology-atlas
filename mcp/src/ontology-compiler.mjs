@@ -6,7 +6,7 @@ import {
   GRAPH_ARRAY_KEYS,
   collectNeighborRefs,
   normalizeRelationRefs,
-} from './vault/relation-refs.mjs';
+} from './vault/graph/relation-refs.mjs';
 
 const COMPILER_VERSION = 2;
 

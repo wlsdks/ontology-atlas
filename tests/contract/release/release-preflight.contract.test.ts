@@ -343,11 +343,9 @@ describe("the rehearsal covers every release job", () => {
 
 describe("the download smoke wording comes from the live catalog", () => {
   /**
-   * #730 rebuilt the download screen and removed a sentence, but `desktop:smoke` was
-   * left demanding **yesterday's sentence**, and its unit test only checked that the
-   * constant equalled its own literal. With 249 tests green, the defect surfaced only
-   * in the release build after tagging (the second step of
-   * `desktop:release-artifact`).
+   * A smoke contract demanding a hard-coded sentence goes stale when the screen changes, and a
+   * unit test that only checks the constant equals its own literal stays green: the defect would
+   * surface only in the release build (the second step of `desktop:release-artifact`).
    */
   it("the smoke contract has no hard-coded download sentence", () => {
     const smoke = readFileSync(join(root, "scripts/desktop/desktop-smoke.mjs"), "utf8");

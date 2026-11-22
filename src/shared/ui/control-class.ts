@@ -8,8 +8,8 @@ import { cn } from '@/shared/lib/cn';
  */
 
 /**
- * What cannot be pressed must not look pressable. Exported so hand-rolled controls compose the
- * whole set. `disabledAffordanceSelectors` in `eslint.config.mjs` blocks other opacities.
+ * Exported so hand-rolled controls compose the whole set; `disabledAffordanceSelectors` in
+ * `eslint.config.mjs` blocks other opacities.
  */
 export const CONTROL_DISABLED_CLASS =
   'disabled:cursor-not-allowed disabled:opacity-55 disabled:shadow-none disabled:hover:border-inherit disabled:hover:bg-inherit disabled:hover:text-inherit';
@@ -36,79 +36,27 @@ const TOUCH_FLOOR = 'atlas-touch-floor';
 
 const control = cva(`${DISABLED} ${FOCUS}`, {
   variants: {
-    /**
-     * What it presses like. The six above are all of them, and **adding a
-     * seventh requires re-running the inventory** — a new shape means the
-     * classification missed a population.
-     */
+    /** A new shape needs a fresh control inventory: it means the classification missed a population. */
     shape: {
-      /*
-       * A small pill-shaped control with a label; the most common in this app
-       * (128).
-       *
-       * The only shape whose radius is not here — the size compounds emit it
-       * (`xs`=micro, `sm`~`lg`=chip). The micro tier (one step below chip, not
-       * below 24px) also drops a radius step: 96 inventoried sites carried 4px
-       * (`rounded-micro`). Keeping radius out of the base stops two radii from
-       * coexisting in one output; `cn`'s radius group merge
-       * (`RADIUS_RAMP_STEPS`) would resolve it, but a single class is honest.
-       */
+      /* The size compounds emit the radius, so one output never carries two radii. */
       chip: `${TOUCH_FLOOR} inline-flex items-center gap-1.5 border ${CONTROL_TRANSITION} ${CONTROL_PRESS_TRAVEL}`,
       /**
        * Square icon control, so an accessible name is required. `touch-hit-expand` widens the hit area
        * under `pointer: coarse` through a pseudo-element without changing the visible box.
        */
       icon: `touch-hit-expand inline-flex shrink-0 items-center justify-center rounded-chip ${CONTROL_TRANSITION} ${CONTROL_PRESS_TRAVEL}`,
-      /**
-       * A whole list row that is pressable; left alignment is its identity (39).
-       *
-       * ⚠️ `rounded-chip` was **missing at first**, so normalised list rows drew
-       * a square hover background (radius 6 → 0). Defining a shape without
-       * giving it a radius caused it; measurement caught it.
-       */
       row: `${TOUCH_FLOOR} flex w-full items-center text-left ${CONTROL_TRANSITION}`,
-      /** Fully rounded control carrying a state or a count (32). */
       pill: `${TOUCH_FLOOR} inline-flex items-center rounded-full border ${CONTROL_TRANSITION} ${CONTROL_PRESS_TRAVEL}`,
-      /** A whole card as one large pressable surface (18). */
       card: `flex items-center rounded-card border ${CONTROL_TRANSITION}`,
       /**
-       * Text-only, no border and no background (85). Floor is WCAG 2.5.8 (AA)
-       * 24 (`min-h-6`) — the 44 for coarse pointers comes from
-       * `.touch-hit-expand` (zero layout shift), not from height. See the
-       * removed `inline` axis below.
+       * Floor is WCAG 2.5.8 (AA) 24px (`min-h-6`); the 44 for coarse pointers comes from
+       * `.touch-hit-expand` (zero layout shift), not from height.
        */
       link: `inline-flex min-h-6 items-center gap-1 rounded-chip ${CONTROL_TRANSITION}`,
       tile: `flex flex-col items-center justify-start rounded-card border text-center ${CONTROL_TRANSITION} ${CONTROL_PRESS_TRAVEL}`,
       /**
-       * **Borderless inset** — segmented items, tabs, ghost buttons.
-       *
-       * **Why an eighth shape.** The rule against adding a seventh on instinct
-       * demands **repeat count**, and the adoption ratchet ledger reported the
-       * same hole four rounds running:
-       *
-       * | Round | What the ledger called it | Unmigrated |
-       * |---|---|---:|
-       * | settings sheet | borderless control inside a bordered container | 1 file · 3 repeats |
-       * | two map widgets | segmented tabs | 3 |
-       * | features | no borderless inset (ghost) shape | 9 |
-       * | widgets | borderless segments/tabs | 6 |
-       *
-       * Four identical conclusions are evidence the shape **exists**, not a
-       * preference. `chip`/`pill`/`card`/`tile` all require a border, so inside
-       * an already-bordered container they become a box in a box; `link` has
-       * zero inset, so a segment loses its hit area. This shape is the gap
-       * between them.
-       *
-       * **Radius — `--chrome-radius-inner` is not a new value.** Five consumers
-       * use `rounded-[var(--chrome-radius-inner)]`, and in `app/globals.css`
-       * that token is an **alias of `var(--radius-chip)`** (6px). Moving to
-       * `rounded-chip` therefore changes bytes and not pixels — no off-ramp
-       * radius needed.
-       *
-       * **Size — `md` is the measured mode.** Inset distribution across the
-       * remaining 12 segment/ghost controls: `px-2 py-1`/`text-label` 6 ·
-       * `px-2.5 py-1`/`text-label` 2 · `px-2.5` + fixed 28px 5 · `px-3` family 3.
-       * The single mode was placed exactly on `md`.
+       * Borderless inset for segments, tabs and ghost buttons: bordered shapes draw a box in a box
+       * inside a bordered container, and `link` has no inset, so a segment would lose its hit area.
        */
       // Segments use `TOUCH_FLOOR`: their gap-px packing rules out `touch-hit-expand`, so real height is
       // the only option.
@@ -120,37 +68,25 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
      * rather than hard `h-*` so wrapped content grows instead of clipping.
      */
     size: {
-      /**
-       * Micro tier for command tags and kbd-class controls. Differs from `sm` on chips only: inset
-       * `px-1.5` and the micro radius, on the same 24px floor and its `label` type. On other shapes
-       * it is an alias of `sm`, which the contract asserts.
-       */
+      /** Differs from `sm` on chips only (inset and micro radius); elsewhere an alias the contract asserts. */
       xs: '',
-      /** On a chip, the ramp floor 24px (the WCAG 2.5.8 minimum target) with `text-label`. */
       sm: '',
-      /** On a chip, `--control-h-md` 32px with `text-body`: the measured mode. */
       md: '',
-      /** On a chip, the same 32px and type with a wider inset. */
       lg: '',
     },
-    /**
-     * Colour is **hierarchy**, not decoration. The charter fixes neutrals plus a
-     * single indigo, so that is the whole range available here.
-     */
+    /** Colour is hierarchy, not decoration: neutrals plus the one indigo. */
     tone: {
-      /** Default — tertiary text. The most common on screen. */
       default: 'text-[color:var(--color-text-tertiary)]',
-      /** Further back — quaternary. The mode for icon controls. */
       muted: 'text-[color:var(--color-text-quaternary)]',
       secondary: 'text-[color:var(--color-text-secondary)]',
-      /** What must win right now — primary. Several on one screen means no hierarchy. */
+      /** Several on one screen means no hierarchy. */
       strong: 'text-[color:var(--color-text-primary)]',
       /**
        * The one accent ink, AA on every base and every tint the app lays under it. Gate:
        * `tests/contract/design-tokens/accent-ink-contrast.contract.test.ts`.
        */
       accent: 'text-[color:var(--color-indigo-accent)]',
-      /** The three signals the charter allows — warning · error · success. Do not extend. */
+      /** The three signals the charter allows; do not extend. */
       warning: 'text-[color:var(--color-status-warning)]',
       danger: 'text-[color:var(--color-danger-text)]',
       /* `success` is a text-role token, like `danger`, so it reads on the pale success tint. */
@@ -169,9 +105,7 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
      * this.
      */
     scope: {
-      /** Over the app-wide ground (`--color-canvas` family). The default. */
       app: '',
-      /** Over the map panel (`--map-panel-surface`, `#17171c`). */
       panel: '',
     },
     /**
@@ -190,30 +124,14 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
      * The three hover axes are opt-in and never emit under `active`, so selected and about-to-be-
      * selected do not look alike. Values come from existing ramps.
      */
-    /**
-     * Hover ink. Of 331 measured declarations the top 4 (app·panel ×
-     * primary·secondary) account for **95.2%**, and those 4 are two steps of the
-     * two ramps `scope` already carries. So this axis picks **only the
-     * brightness step** and `scope` decides the value.
-     */
+    /** Picks only the brightness step; `scope` decides the value. */
     hoverInk: { none: '', strong: '', secondary: '' },
     /**
-     * Hover surface — raising "what is under the cursor" by one step. Counting
-     * the 216 measured declarations by role, this neutral lift is **57%**, and
-     * the branching (row vs part, app vs panel) is already carried by `shape`
-     * and `scope`. Intensifying an indigo tint is **not an axis**: 16 variants
-     * with no majority, and a tint step is a hierarchy judgement rather than a
-     * value.
+     * One neutral step up; `shape` and `scope` pick the value. A stronger indigo tint is a
+     * hierarchy judgement, not an axis.
      */
     hoverSurface: { none: '', lift: '' },
-    /**
-     * Hover border — the edge becoming crisper. There is one option because of
-     * measurement: the indigo family is more common at 70%, but it is **spread
-     * over 13 steps whose neighbours are indistinguishable** (composite contrast
-     * 1.0–1.2:1 — this repo has already rejected 1.14 as "not separable by
-     * brightness"). Thirteen steps nobody can tell apart are noise, not
-     * information, so the value layer has nothing to choose from.
-     */
+    /** One option: neighbouring indigo border steps are indistinguishable (1.0–1.2:1). */
     hoverBorder: { none: '', strong: '' },
   },
   compoundVariants: [
@@ -223,12 +141,7 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
     { hoverInk: 'strong', scope: 'panel', active: false, class: 'hover:text-[color:var(--map-panel-text-primary)]' },
     { hoverInk: 'secondary', scope: 'panel', active: false, class: 'hover:text-[color:var(--map-panel-text-secondary)]' },
 
-    /*
-     * Surface — "one step brighter". Measurement decided the branching: a **row**
-     * whose rest state is transparent gets `overlay-1`; a **part** whose rest
-     * state already sits one step up gets `overlay-2` (the next slot on the
-     * ramp); panel scope gets that scope's row-hover token.
-     */
+    /* A row rests transparent and lifts to `overlay-1`; a part rests one step up and lifts to `overlay-2`. */
     { hoverSurface: 'lift', shape: 'row', scope: 'app', active: false, class: 'hover:bg-[color:var(--color-overlay-1)]' },
     { hoverSurface: 'lift', shape: 'chip', scope: 'app', active: false, class: 'hover:bg-[color:var(--color-overlay-2)]' },
     { hoverSurface: 'lift', shape: 'pill', scope: 'app', active: false, class: 'hover:bg-[color:var(--color-overlay-2)]' },
@@ -236,7 +149,6 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
     { hoverSurface: 'lift', shape: 'segment', scope: 'app', active: false, class: 'hover:bg-[color:var(--color-overlay-2)]' },
     { hoverSurface: 'lift', scope: 'panel', active: false, class: 'hover:bg-[color:var(--map-panel-row-hover)]' },
 
-    // Border — the edge sharpens. Exactly one option (see "13 steps are noise" above).
     { hoverBorder: 'strong', active: false, class: 'hover:border-[color:var(--color-border-strong)]' },
 
     /*
@@ -244,15 +156,9 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
      * hover backgrounds round piecewise and open gaps.
      */
     { shape: 'row', stacked: false, class: 'rounded-chip' },
-    // ── Size: "large" means something different per shape. Give a square `px` and it stops being square.
     /*
-     * Chip — 24 / 32 / 32, and the height picks the type: `label` at 24, `body` from 28 to 36,
-     * `body-lg` from 40. `min-h` only ever raises, so the padding keeps each natural height under
-     * its floor.
-     *
-     * Chip radius — micro (4px) on `xs`, chip (6px) elsewhere. Consumer bytes are
-     * the evidence: every inventoried micro tag wore `rounded` (4px), and no site
-     * moved a radius during the migration.
+     * The height picks the type: `label` at 24, `body` from 28 to 36, `body-lg` from 40. `min-h`
+     * only raises, so the padding keeps each natural height under its floor.
      */
     { shape: 'chip', size: 'xs', class: 'rounded-micro min-h-6 gap-1 px-1.5 py-0.5 text-label' },
     { shape: 'chip', size: ['sm', 'md', 'lg'], class: 'rounded-chip' },
@@ -262,28 +168,12 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
     { shape: 'icon', size: ['xs', 'sm'], class: 'h-6 w-6' },
     { shape: 'icon', size: 'md', class: 'h-7 w-7' },
     { shape: 'icon', size: 'lg', class: 'h-8 w-8' },
-    /*
-     * Row — 28 / 36 / 44. All three already had that natural height (leading +
-     * padding), so the floors move 0 pixels. `lg` is the exception: its natural
-     * 42 is not in the vocabulary, so it is lifted to `min-h-11`
-     * (44, `--touch-target-min`). With 0 consumers that move
-     * is also 0 — the step was put on the ramp before anything could adopt 42.
-     */
     { shape: 'row', size: ['xs', 'sm'], class: 'min-h-7 gap-1.5 px-2 py-1 text-body' },
     { shape: 'row', size: 'md', class: 'min-h-9 gap-2 px-2.5 py-2 text-body' },
     { shape: 'row', size: 'lg', class: 'min-h-11 gap-2.5 px-3 py-2.5 text-body-lg' },
     { shape: 'pill', size: ['xs', 'sm'], class: 'min-h-6 px-2 py-0.5 text-label' },
     { shape: 'pill', size: 'md', class: 'min-h-8 px-2.5 py-0.5 text-body' },
     { shape: 'pill', size: 'lg', class: 'min-h-8 px-3 py-1 text-body' },
-    /*
-     * Card — 32 / 36 / 40 (+4 steps, all inside the height vocabulary). Found by
-     * the second inventory: natural heights were sm 30 and md 34, where 30 is
-     * outside the vocabulary and 34 was an accidental occupation of the
-     * chrome-locked `--docs-header-tile-size`. Floors stand them at 32/36 — only
-     * single-line cards move (+2px, table in the PR); multi-line cards already
-     * exceed the floor, so they move 0. `lg` keeps its natural 40 =
-     * `--control-h-lg`.
-     */
     { shape: 'card', size: ['xs', 'sm'], class: 'min-h-8 gap-1.5 px-2.5 py-1 text-body' },
     { shape: 'card', size: 'md', class: 'min-h-9 gap-1.5 px-3 py-1.5 text-body' },
     { shape: 'card', size: 'lg', class: 'min-h-10 gap-2 px-3.5 py-2 text-body-lg' },
@@ -314,24 +204,15 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
     { shape: 'link', scope: 'app', active: false, class: 'active:text-[color:var(--color-text-primary)]' },
     { shape: 'link', scope: 'panel', active: false, class: 'active:text-[color:var(--map-panel-text-primary)]' },
 
-    // ── Pressed: expressed with **the single indigo** only. A new hue violates the charter.
     { shape: 'chip', active: true, class: 'border-[color:var(--color-indigo-pale-a28)] bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]' },
     { shape: 'pill', active: true, class: 'border-[color:var(--color-indigo-pale-a28)] bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]' },
     { shape: 'card', active: true, class: 'border-[color:var(--color-indigo-pale-a28)] bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]' },
     { shape: 'row', active: true, class: 'bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-primary)]' },
     { shape: 'icon', active: true, class: 'bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-primary)]' },
     { shape: 'link', active: true, class: 'text-[color:var(--color-text-primary)]' },
-    // Pressed borderless inset — inside a box, "this one, now" is said with an
-    // indigo tint alone. All 12 measured consumers used the `--color-indigo-a16`
-    // or `a26` tint, and 0 used a border.
     { shape: 'segment', active: true, class: 'bg-[color:var(--color-indigo-a24)] text-[color:var(--color-text-primary)]' },
 
-    /*
-     * ── The second neutral ramp. Its values were nudged by measuring contrast
-     * over the panel ground (#17171c), so it is not a new colour system but **the
-     * same neutral ramp's second solution**. The three signals and indigo are not
-     * here — colours decided by meaning do not depend on the ground.
-     */
+    /* The panel ground's neutral ramp; signal and indigo tones do not depend on the ground. */
     { scope: 'panel', tone: 'default', class: 'text-[color:var(--map-panel-text-tertiary)]' },
     /*
      * No panel compound for `muted`: both ramps' quaternary are one value. If they diverge, the
@@ -345,11 +226,7 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
     { scope: 'panel', shape: 'row', active: true, class: 'text-[color:var(--map-panel-text-primary)]' },
     { scope: 'panel', shape: 'link', active: true, class: 'text-[color:var(--map-panel-text-primary)]' },
 
-    /*
-     * ── A filled tone clears the border. It must sit here for ordering reasons:
-     * **after** the `border-[…divider]` compounds above, so it wins in
-     * tailwind-merge.
-     */
+    /* Must follow the border compounds above so the filled tone's clear border wins in tailwind-merge. */
     { tone: 'onAccent', class: 'border-transparent focus-visible:ring-0 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-indigo-focus-ring)] active:bg-[color:var(--color-indigo-brand)] active:text-[color:var(--color-text-on-accent)] active:shadow-[var(--shadow-control-press)]' },
   ],
   defaultVariants: {
@@ -378,22 +255,10 @@ export type ControlHoverSurface = NonNullable<VariantProps<typeof control>['hove
 export type ControlHoverBorder = NonNullable<VariantProps<typeof control>['hoverBorder']>;
 
 export interface ControlClassOptions extends VariantProps<typeof control> {
-  /**
-   * Only what is true of **this one site** — placement, width, order. Putting
-   * shape, size or colour here makes this function pointless; the answer then is
-   * to add a step to the ramp.
-   */
+  /** Only what is true of this one site: placement, width, order. Shape, size or colour go on the ramp. */
   className?: string;
 }
 
-/**
- * Returns the className for a pressable element.
- *
- * ```tsx
- * <button type="button" className={controlClass({ shape: 'chip' })}>Domain</button>
- * <button type="button" aria-label="Close" className={controlClass({ shape: 'icon', size: 'sm' })}>
- * ```
- */
 export function controlClass({ className, ...variants }: ControlClassOptions = {}): string {
   return cn(control(variants), className);
 }
@@ -404,53 +269,27 @@ export function controlClass({ className, ...variants }: ControlClassOptions = {
  * `--control-h-{sm,md,lg}`.
  */
 /**
- * ⚠️ **Type is paired with size, not fixed in the base** — corrected by looking
- * at the screen.
- *
- * The first version emitted a single `text-body` (12.5px). Placing `/project/new`
- * before and after side by side showed a **regression in the primary form**: its
- * inputs had been 14px, and dropping to 12.5px put **the value the user typed at
- * nearly the same rank as the label the app wrote** (11px). In a form, the user's
- * own value must be the most legible thing.
- *
- * So it follows the ramp's own rule that a size step carries its own leading:
- * **wide steps (md·lg) get `text-body-lg` (14), tight steps (xs·sm) get
- * `text-body` (12.5).** A tight step is a 28px box, where 14px would leave no
- * vertical room.
+ * Type pairs with size, not the base: the user's typed value must outrank the 11px label, yet a
+ * tight 28px step has no vertical room for 14px.
  */
 const fieldBase =
   'text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-quaternary)] transition-colors';
 
 const field = cva(`${fieldBase} ${DISABLED}`, {
   variants: {
-    /**
-     * **Who draws the box.**
-     *
-     * `bare` **must not** emit dimensions, border, radius or a touch floor — the
-     * parent already drew the box, and emitting one here pushes against it from
-     * the inside.
-     */
+    /** `bare` must not emit dimensions, border, radius or a touch floor: the parent draws the box. */
     frame: {
-      /*
-       * **Emits no width.** `w-full` was tried and removed: consumers differ
-       * (`ProjectQuickEditPanel` and `WebManualConnectPanel` want `w-full`,
-       * while `CreateNodeForm` gets its width from a parent grid). A base that
-       * emits width makes the latter **not a 0px migration**.
-       */
+      /* Emits no width: some consumers take their width from a parent grid. */
       boxed:
         'atlas-touch-floor border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] focus-visible:border-[color:var(--color-indigo-focus-ring)] focus-visible:outline-hidden',
       bare: 'bg-transparent text-body focus:outline-hidden',
     },
-    /** Single line or growing. **Not a separate shape** — border, background, radius, focus and placeholder are identical; only the dimension grammar differs. */
+    /** Not a separate shape: only the dimension grammar differs. */
     multiline: { false: '', true: 'resize-none' },
     size: { xs: '', sm: '', md: '', lg: '' },
   },
   compoundVariants: [
-    /*
-     * Heights are 1:1 with `--control-h-*`: sm=28 · md=32 · lg=40. `xs` is not a
-     * height step but a tier that **only drops the radius one level** — the same
-     * grammar `chip`'s `xs` uses. Consumers: 3 sites in `DocFrontmatterBlock`.
-     */
+    /* `xs` is not a height step: it only drops the radius one level, as `chip`'s `xs` does. */
     { frame: 'boxed', multiline: false, size: 'xs', class: 'h-7 rounded-micro px-2 text-body' },
     { frame: 'boxed', multiline: false, size: 'sm', class: 'h-7 rounded-chip px-2 text-body' },
     { frame: 'boxed', multiline: false, size: 'md', class: 'h-8 rounded-chip px-2.5 text-body' },
@@ -468,23 +307,10 @@ export type FieldFrame = NonNullable<VariantProps<typeof field>['frame']>;
 export type FieldSize = NonNullable<VariantProps<typeof field>['size']>;
 
 export interface FieldClassOptions extends VariantProps<typeof field> {
-  /** Only what is true of **this one field** — width (`w-full`, `flex-1`) and placement. Spec values do not go here. */
+  /** Only what is true of this one field: width (`w-full`, `flex-1`) and placement. */
   className?: string;
 }
 
-/**
- * Returns the className for a form field.
- *
- * ```tsx
- * <input className={fieldClass({ size: 'lg' })} />                       // recording
- * <input className={fieldClass({ frame: 'bare', className: 'flex-1' })} /> // look-up
- * <textarea className={fieldClass({ multiline: true, size: 'lg' })} />
- * ```
- *
- * **Emits no width** — only `boxed` emits `w-full`; `bare` rides its parent's
- * flex layout, so `flex-1`/`min-w-0` belong to the site. Same boundary
- * `controlClass` above draws between spec and placement.
- */
 export function fieldClass({ className, ...variants }: FieldClassOptions = {}): string {
   return cn(field(variants), className);
 }
@@ -496,11 +322,7 @@ export function fieldClass({ className, ...variants }: FieldClassOptions = {}): 
  */
 const fieldLabelVariants = cva('text-label text-[color:var(--color-text-secondary)]', {
   variants: {
-    /**
-     * Is the whole row pressable. Wrapping a checkbox makes **the label itself
-     * the target** (WCAG 2.5.8), so it carries both the 24px floor and the touch
-     * floor.
-     */
+    /** Wrapping a checkbox makes the label the target (WCAG 2.5.8), so it carries both floors. */
     row: {
       false: '',
       true: `${TOUCH_FLOOR} flex min-h-6 cursor-pointer items-center gap-2`,
@@ -514,14 +336,6 @@ export interface FieldLabelOptions extends VariantProps<typeof fieldLabelVariant
   className?: string;
 }
 
-/**
- * Returns the className for a field's name.
- *
- * ```tsx
- * <label htmlFor={id} className={fieldLabel()}>Name</label>
- * <label className={fieldLabel({ row: true })}><input type="checkbox" />Mark as hub</label>
- * ```
- */
 export function fieldLabel({ className, ...variants }: FieldLabelOptions = {}): string {
   return cn(fieldLabelVariants(variants), className);
 }
