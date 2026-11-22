@@ -163,7 +163,8 @@ describe('planRooms', () => {
       row('nobody', { lastCommitAt: recent }),
     ]);
     expect(keys(rooms.stage)).toEqual(['idle', 'runs', 'other', 'codex']);
-    expect(rooms.floors.map(floor => [floor.key, keys(floor.rooms)])).toEqual([[NO_SESSION_FLOOR, ['ended', 'nobody']]]);
+    expect(rooms.floors.map(floor => keys(floor.rooms))).toEqual([[], [], [], ['ended', 'nobody']]);
+    expect(rooms.floors.at(-1)?.key).toBe(NO_SESSION_FLOOR);
   });
 
   it('gives each session one room before any session gets a second, and two tools in one folder go first', () => {
@@ -172,6 +173,16 @@ describe('planRooms', () => {
     const rooms = planRooms(buildWorkTracks(snapshot([...busy, pair, row('b0', { lock: live(400, 4_000, 1), ...working(400) })])), NOW_MS, new Map(), 4);
     expect(keys(rooms.stage)).toEqual(['a0', 'a1', 'pair', 'b0']);
     expect(rooms.workingBelow).toBe(3);
+  });
+
+  it('numbers the second tool in a shared folder as its own session and gives it a floor', () => {
+    const pair = row('pair', { lock: live(100, 1_000, 1), agentProcesses: [{ pid: 100, tool: 'claudeCode', startedAt: 1_000 }, { pid: 300, tool: 'codex', startedAt: 3_000 }] });
+    const tracks = buildWorkTracks(snapshot([pair]));
+    const codex = tracks.sessions.find(session => session.tool === 'codex');
+    expect(codex).toMatchObject({ ordinal: 1, tracks: [] });
+    const rooms = planRooms(tracks, NOW_MS);
+    expect(rooms.stage[0].guests.map(guest => guest.key)).toEqual([codex?.key]);
+    expect(rooms.floors.map(floor => [floor.key, floor.rooms.length, floor.total])).toEqual([[tracks.sessions[0].key, 0, 1], [codex?.key, 0, 1]]);
   });
 
   it('counts a two-tool room as its session turn, so another session comes next', () => {

@@ -963,10 +963,11 @@
   border-top: 3px solid var(--ink);
 }
 
+/* A mini room's session hue runs along its top edge, as on a stage room and a floor plate. */
 .miniBar {
   position: absolute;
   inset-inline: 0;
-  bottom: 0;
+  top: 0;
   height: 3px;
   background: var(--ink);
 }

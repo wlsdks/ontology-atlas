@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { NO_SESSION_FLOOR, planRooms, type RoomEntry, type RoomPlan, type TrackSession, type WorkTracks } from '@/shared/lib/work-status/work-tracks';
+import { planRooms, sessionsIn, type RoomEntry, type RoomPlan, type TrackSession, type WorkTracks } from '@/shared/lib/work-status/work-tracks';
 import { cn } from '@/shared/lib/cn';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { MOTION } from '@/shared/motion';
@@ -63,7 +63,7 @@ interface FaceSize {
 
 function RoomFace({ room, face, copy, retiring, showOwner }: { room: RoomEntry; face: FaceSize; copy: RoomCopy; retiring: boolean; showOwner: boolean }) {
   return face.size === 'large'
-    ? <LargeRoom room={room} unit={face.unit} width={face.w} copy={copy} tint={tintOf(room.session)} retiring={retiring} />
+    ? <LargeRoom room={room} unit={face.unit} width={face.w} copy={copy} tint={tintOf(room.session)} guestTint={tintOf(room.guests[0] ?? null)} retiring={retiring} />
     : <MiniRoom room={room} copy={copy} tint={tintOf(room.session)} showOwner={showOwner} />;
 }
 
@@ -355,7 +355,7 @@ export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs }: {
                     session={floor.session}
                     total={floor.total}
                     attention={floor.attention}
-                    onStage={shown.stage.filter(room => (room.session?.key ?? NO_SESSION_FLOOR) === floor.key).length}
+                    onStage={shown.stage.filter(room => sessionsIn(room).includes(floor.key)).length}
                     below={floor.rooms.length}
                     copy={copy}
                     nowMs={nowMs}

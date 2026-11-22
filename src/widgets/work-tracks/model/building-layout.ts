@@ -139,9 +139,10 @@ export function layoutBuilding(input: LayoutInput): BuildingLayout {
   const fit = Math.max(1, Math.floor((width - labelW + MINI_GAP) / (MINI_MIN_W + MINI_GAP)));
   const perRow = Math.min(fit, MINI_COLUMNS);
   const miniW = inline ? MINI_W_INLINE : Math.floor((width - labelW - (perRow - 1) * MINI_GAP) / perRow);
-  const groups = banded ? input.floors.filter(floor => floor.rooms.length > 0) : minis.length > 0 ? [{ key: '', rooms: minis }] : [];
+  // Banded, every floor keeps its row, even one whose rooms are all on the stage: its plate says so.
+  const groups = banded ? input.floors : minis.length > 0 ? [{ key: '', rooms: minis }] : [];
   const groupHeight = (count: number) => {
-    const rows = Math.ceil(count / perRow);
+    const rows = Math.max(1, Math.ceil(count / perRow));
     return rows * miniH + (rows - 1) * MINI_GAP;
   };
   const backH = groups.reduce((sum, group) => sum + groupHeight(group.rooms.length), 0) + Math.max(0, groups.length - 1) * MINI_GAP;

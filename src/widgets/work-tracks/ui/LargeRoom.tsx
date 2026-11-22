@@ -102,13 +102,15 @@ function Belt({ room }: { room: RoomEntry }) {
  * Moru with the session's name tag beside a floor lamp lit only while something runs, and the belt
  * that carries the work's crate toward the `main` hatch.
  */
-export function LargeRoom({ room, unit, width, copy, tint, retiring }: {
+export function LargeRoom({ room, unit, width, copy, tint, guestTint, retiring }: {
   room: RoomEntry;
   unit: RoomUnit;
   /** The room's width in CSS pixels, to fit two Moru when two tools share the folder. */
   width: number;
   copy: RoomCopy;
   tint: string | null;
+  /** The tint of the second tool's session, when two tools share the folder. */
+  guestTint: string | null;
   /** The worktree just merged: once the crate is in, the lights go out. */
   retiring: boolean;
 }) {
@@ -117,6 +119,7 @@ export function LargeRoom({ room, unit, width, copy, tint, retiring }: {
   const tools = room.state.kind === 'working' ? room.state.tools : [];
   const second = tools[1];
   const pair = look.cast === 'two' && second !== undefined;
+  const guest = room.guests[0] ?? null;
   const sceneUnit = pair ? pairUnit(width, unit) : unit;
   return (
     <div className={cn(styles.large, 'h-full w-full')}>
@@ -141,9 +144,9 @@ export function LargeRoom({ room, unit, width, copy, tint, retiring }: {
               <span className="truncate">{session ?? copy.toolName(tools[0])}</span>
             </span>
             <i className={cn(styles.shadow, styles.actorFront)} />
-            <span className={cn(styles.actor, styles.actorFront)}><RoomMoru clip="code" still={false} zoom={sceneUnit} tint={null} phase={moruPhase(room.key)} /></span>
-            <span className={cn(styles.tag, styles.tagFront, LABEL, 'font-[var(--font-weight-emphasis)]')} style={{ ['--ink' as string]: 'var(--work-unheld)' }}>
-              <span className="truncate">{copy.toolName(second)}</span>
+            <span className={cn(styles.actor, styles.actorFront)}><RoomMoru clip="code" still={false} zoom={sceneUnit} tint={guestTint} phase={moruPhase(room.key)} /></span>
+            <span className={cn(styles.tag, styles.tagFront, LABEL, 'font-[var(--font-weight-emphasis)]')} style={{ ['--ink' as string]: guest ? `var(--work-session-${guest.ink + 1})` : 'var(--work-unheld)' }}>
+              <span className="truncate">{copy.sessionName(guest) ?? copy.toolName(second)}</span>
             </span>
           </>
         ) : look.cast === 'one' ? (

@@ -26,6 +26,8 @@ export interface Track {
   running: boolean;
   /** Every agent tool seen at work in the folder, the lock's first; two means their changes can mix. */
   tools: SessionTool[];
+  /** Sessions of the other tools at work in the folder, besides the one that holds it. */
+  guestSessionKeys: string[];
   /** Seconds since the epoch. */
   lastCommitAt: number | null;
   /** Milliseconds since the epoch: when a live or unreadable lock was taken. */
@@ -96,7 +98,18 @@ function sessionKeyOf(row: WorktreeRow, lockKeysByPid: ReadonlyMap<number, strin
   if (row.acpPid !== null) return `acp:${row.acpPid}`;
   const process = row.agentProcesses[0];
   if (!process) return null;
+  return processSessionKey(process, lockKeysByPid);
+}
+
+function processSessionKey(process: WorktreeRow['agentProcesses'][number], lockKeysByPid: ReadonlyMap<number, string>): string {
   return lockKeysByPid.get(process.pid) ?? `${PROCESS_SESSION_PREFIX}${process.tool}:${process.pid}:${process.startedAt ?? ''}`;
+}
+
+/** The sessions of every other program at work in a folder its own session holds: the second of two tools. */
+function guestSessionKeysOf(row: WorktreeRow, sessionKey: string | null, lockKeysByPid: ReadonlyMap<number, string>): string[] {
+  if (!sessionKey || row.missing) return [];
+  const keys = row.agentProcesses.map(process => processSessionKey(process, lockKeysByPid)).filter(key => key !== sessionKey);
+  return [...new Set(keys)];
 }
 
 /** A live session keeps its rows under it even once merged: the session is still in that folder. */
@@ -132,6 +145,7 @@ function toTrack(row: WorktreeRow, lockKeysByPid: ReadonlyMap<number, string>): 
     sessionKey,
     running: !row.missing && (row.acpPid !== null || row.agentProcesses.length > 0),
     tools: toolsOf(row),
+    guestSessionKeys: guestSessionKeysOf(row, sessionKey, lockKeysByPid),
     lastCommitAt: row.lastCommitAt,
     lockedAt: row.lock && row.lock.state !== 'stale' ? row.lock.lockedAt : null,
   };
@@ -169,6 +183,15 @@ export function buildWorkTracks(snapshot: WorkStatusSnapshot): WorkTracks {
       ink: 0,
       tracks: [track],
     });
+  });
+  // A program at work only beside another tool's session still is a session of its own: it is
+  // numbered and drawn in its own ink, though no worktree is its to hold.
+  rows.forEach((row, index) => {
+    for (const process of row.agentProcesses) {
+      const key = processSessionKey(process, lockKeysByPid);
+      if (!tracks[index].guestSessionKeys.includes(key) || sessionsByKey.has(key)) continue;
+      sessionsByKey.set(key, { key, tool: process.tool, startedAt: process.startedAt, ordinal: 0, ink: 0, tracks: [] });
+    }
   });
   const sessionsPerTool = new Map<SessionTool, number>();
   // Sessions seen only by their processes come and go with commands, so they sort after the
@@ -271,6 +294,8 @@ export interface RoomEntry {
   tier: RoomTier;
   stage: RoomStage;
   session: TrackSession | null;
+  /** The sessions of other tools at work in the same folder. */
+  guests: TrackSession[];
 }
 
 export interface RoomFloor {
@@ -278,7 +303,7 @@ export interface RoomFloor {
   key: string;
   session: TrackSession | null;
   rooms: RoomEntry[];
-  /** Every worktree of the floor's session, its rooms on the front stage included. */
+  /** Every worktree of the floor's session, its rooms on the front stage and the folders it visits included. */
   total: number;
   working: number;
   attention: number;
@@ -395,6 +420,11 @@ function admitToStage(candidates: RoomEntry[], limit: number, sourceOrder: (room
   return [...chosen, ...spare.slice(0, full - chosen.length)].sort(bySource);
 }
 
+/** Every session at work in a room: the one that holds it, then the other tools beside it. */
+export function sessionsIn(room: RoomEntry): string[] {
+  return [room.session?.key ?? NO_SESSION_FLOOR, ...room.guests.map(guest => guest.key)];
+}
+
 export function planRooms(
   tracks: WorkTracks,
   nowMs: number,
@@ -402,9 +432,11 @@ export function planRooms(
   /** How many large rooms the front stage has room for; never more than six. */
   stageLimit: number = STAGE_ROOM_LIMIT,
 ): RoomPlan {
+  const sessionsByKey = new Map(tracks.sessions.map(session => [session.key, session]));
   const entry = (track: Track, session: TrackSession | null): RoomEntry => {
     const state = roomStateOf(track, nowMs, seenRunningAt);
-    return { key: track.key, track, state, tier: tierOf(state), stage: stageOf(track), session };
+    const guests = track.guestSessionKeys.flatMap(key => sessionsByKey.get(key) ?? []);
+    return { key: track.key, track, state, tier: tierOf(state), stage: stageOf(track), session, guests };
   };
   const untouched = (track: Track) =>
     track.lastCommitAt !== null && nowMs - track.lastCommitAt * 1000 >= UNTOUCHED_AFTER_MS && track.holder.kind === 'none';
@@ -419,18 +451,19 @@ export function planRooms(
 
   const stage = admitToStage(all.filter(room => room.tier !== 'unheld'), Math.min(stageLimit, STAGE_ROOM_LIMIT), sourceOrder);
   const onStage = new Set(stage.map(room => room.key));
+  const visited = (key: string) => all.filter(room => room.guests.some(guest => guest.key === key)).length;
   const floorOf = (key: string, session: TrackSession | null, members: RoomEntry[]): RoomFloor => ({
     key,
     session,
     rooms: members.filter(room => !onStage.has(room.key)).sort(byTier),
-    total: members.length,
+    total: members.length + visited(key),
     working: members.filter(room => room.tier === 'working').length,
     attention: members.filter(room => room.tier === 'attention').length,
   });
   const floors = [
     ...tracks.sessions.map(session => floorOf(session.key, session, held.filter(room => room.session === session))),
     floorOf(NO_SESSION_FLOOR, null, loose),
-  ].filter(floor => floor.rooms.length > 0);
+  ].filter(floor => floor.rooms.length > 0 || (floor.session !== null && stage.some(room => sessionsIn(room).includes(floor.key))));
 
   return {
     stage,
