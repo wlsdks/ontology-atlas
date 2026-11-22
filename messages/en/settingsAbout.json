@@ -74,7 +74,7 @@
     "versionReading": "Reading the version…",
     "versionUnknown": "Could not read the version. Checking for updates reads it again.",
     "versionUnknownRetried": "Could not read the version.",
-    "autoOn": "Checks every 4 hours. When the app opens, it checks right away if the last check was more than 4 hours ago.",
+    "autoOn": "Checks every hour. When the app opens, it checks right away if the last check was more than an hour ago.",
     "autoOff": "Atlas does not check by itself. Check for updates still asks when you press it.",
     "autoLast": "Last checked {when}.",
     "autoNever": "It has not checked on this computer yet.",
