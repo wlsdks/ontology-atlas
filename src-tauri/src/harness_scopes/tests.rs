@@ -7,6 +7,12 @@ use std::fs;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 const SECRET: &str = "sk-planted-7f3a";
+/// Shaped like an identifier, so a check that admits any plain name lets it through.
+const IDENT: &str = "skplanted7f3aZ9";
+
+fn leaks(text: &str) -> bool {
+    text.contains(SECRET) || text.contains(IDENT)
+}
 
 static NEXT: AtomicUsize = AtomicUsize::new(0);
 
@@ -72,7 +78,7 @@ fn file<'a>(scopes: &'a Value, id: &str) -> &'a Value {
 
 fn claude_settings_with_planted_values(command: &str) -> String {
     json!({
-        "env": { "TOKEN": SECRET },
+        "env": { "TOKEN": SECRET, (IDENT): IDENT },
         "apiKeyHelper": format!("echo {SECRET}"),
         "unknownKey": { "nested": SECRET },
         "statusLine": { "type": "command", "command": SECRET },
@@ -96,7 +102,9 @@ fn claude_settings_with_planted_values(command: &str) -> String {
                     ]
                 }
             ],
-            (format!("Event{SECRET}")): [ { "hooks": [ { "type": "command", "command": "x" } ] } ]
+            (format!("Event{SECRET}")): [ { "hooks": [ { "type": "command", "command": "x" } ] } ],
+            (IDENT): [ { "hooks": [ { "type": "command", "command": "x" } ] } ],
+            (format!("ghp_{IDENT}")): [ { "hooks": [ { "type": "command", "command": "x" } ] } ]
         }
     })
     .to_string()
@@ -106,6 +114,8 @@ fn codex_hooks_with_planted_values(command: &str) -> String {
     json!({
         "token": SECRET,
         "hooks": {
+            (IDENT): [ { "hooks": [ { "type": "command", "command": "x" } ] } ],
+            "Notification": [ { "hooks": [ { "type": "command", "command": "x" } ] } ],
             "Stop": [
                 {
                     "hooks": [
@@ -128,6 +138,8 @@ command = "sk-planted-7f3a"
 [hooks.state."/Users/a/.codex/hooks.json:PreToolUse:0:0"]
 trusted_hash = "sk-planted-7f3a"
 [hooks."sk-planted-7f3a"]
+[hooks.skplanted7f3aZ9]
+[[hooks."skplanted7f3aZ9".hooks]]
 [ hooks . 'SessionStart' ] # sk-planted-7f3a
 notes = """
 [hooks.Notification]
@@ -269,8 +281,9 @@ fn no_planted_value_leaves_any_reader_result() {
 
     let scopes = read(&host, &repository, &picked);
     let serialized = scopes.to_string();
-    assert!(!serialized.contains(SECRET), "{serialized}");
+    assert!(!leaks(&serialized), "{serialized}");
     assert!(!serialized.contains("hooks.example"));
+    assert!(!serialized.contains("AKIA"));
 
     for id in [
         "claude-project",
@@ -291,6 +304,8 @@ fn no_planted_value_leaves_any_reader_result() {
     );
     assert_eq!(user["disableAllHooks"], false);
     assert_eq!(user["allowManagedHooksOnly"], Value::Null);
+    assert_eq!(user["unknownEvents"], 3);
+    assert_eq!(file(&scopes, "codex-user")["unknownEvents"], 2);
     let hooks = user["hooks"].as_array().unwrap();
     let kinds: Vec<&str> = hooks
         .iter()
@@ -316,6 +331,7 @@ fn no_planted_value_leaves_any_reader_result() {
             config["events"],
             json!(["PreToolUse", "Stop", "SessionStart"])
         );
+        assert_eq!(config["unknownEvents"], 2);
     }
 
     let mut allowed: Vec<PathBuf> = Vec::new();
@@ -349,13 +365,16 @@ fn a_file_that_is_not_json_returns_its_name_and_nothing_from_it() {
         "repo/.claude/settings.json",
         format!("{{\"env\": {{\"TOKEN\": \"{SECRET}\"}}, "),
     );
-    scratch.put("repo/.codex/hooks.json", format!("[\"{SECRET}\"]"));
+    scratch.put(
+        "repo/.codex/hooks.json",
+        format!("[\"{SECRET}\", {{\"{IDENT}\": 1}}]"),
+    );
     scratch.put(
         "home/.claude/settings.json",
-        format!("{{\"hooks\": \"{SECRET}\"}}"),
+        format!("{{\"hooks\": \"{SECRET}\", \"{IDENT}\": \"{IDENT}\"}}"),
     );
     let scopes = read(&host, &repository, &[]);
-    assert!(!scopes.to_string().contains(SECRET));
+    assert!(!leaks(&scopes.to_string()));
     assert_eq!(file(&scopes, "claude-project")["status"], "invalid");
     assert_eq!(file(&scopes, "codex-project")["status"], "invalid");
     assert_eq!(file(&scopes, "claude-user")["status"], "read");
@@ -392,7 +411,7 @@ fn a_file_returns_at_most_the_hook_cap_and_counts_the_rest() {
             let command = if n < parse::HOOKS_PER_FILE_MAX {
                 format!("kept-{n}.sh")
             } else {
-                format!("{SECRET}-{n}.sh")
+                format!("{SECRET}-{IDENT}-{n}.sh")
             };
             json!({ "type": "command", "command": command })
         })
@@ -416,7 +435,7 @@ fn a_file_returns_at_most_the_hook_cap_and_counts_the_rest() {
     assert_eq!(hooks.last().unwrap()["command"], "kept-499.sh");
     assert_eq!(codex["hooksTruncated"], 3);
     let serialized = scopes.to_string();
-    assert!(!serialized.contains(SECRET), "{serialized}");
+    assert!(!leaks(&serialized), "{serialized}");
 }
 
 #[cfg(unix)]
@@ -441,7 +460,7 @@ fn a_link_anywhere_below_a_base_is_refused() {
     .unwrap();
 
     let scopes = read(&host, &repository, &[]);
-    assert!(!scopes.to_string().contains(SECRET));
+    assert!(!leaks(&scopes.to_string()));
     for id in ["claude-project", "claude-local", "codex-project"] {
         assert_eq!(file(&scopes, id)["status"], "unreadable", "{id}");
         assert_eq!(file(&scopes, id)["failure"], "link", "{id}");
@@ -626,7 +645,7 @@ fn the_parser_keeps_positions_and_skips_values_of_the_wrong_type() {
     assert_eq!(
         parsed.hooks,
         vec![parse::ScopeHook {
-            event: "Stop".into(),
+            event: "Stop",
             group: 1,
             handler: 1,
             matcher: None,
@@ -658,19 +677,19 @@ fn thread_cpu_seconds() -> f64 {
 }
 
 #[test]
-fn a_flood_of_inline_headers_is_read_in_one_capped_pass() {
-    let mut text = String::new();
+fn a_flood_of_inline_headers_is_read_in_one_pass_and_only_counted() {
+    let mut text = String::from("[hooks.Stop]\n");
     let mut count = 0;
     while text.len() < open::SETTINGS_MAX_BYTES as usize - 32 {
         text.push_str(&format!("[hooks.A{count:x}]\n"));
         count += 1;
     }
     let started = thread_cpu_seconds();
-    let events = parse::inline_hook_events(&text);
+    let (events, unknown) = parse::inline_hook_events(&text);
     // One pass takes milliseconds; the earlier scan, quadratic in names, took seconds.
     assert!(thread_cpu_seconds() - started < 1.0);
-    assert_eq!(events.len(), 64);
-    assert_eq!(events[0], "A0");
+    assert_eq!(events, ["Stop"]);
+    assert_eq!(unknown, count);
     assert!(count > 70_000);
 }
 

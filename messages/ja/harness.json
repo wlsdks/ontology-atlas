@@ -211,6 +211,7 @@
       "invalid": "{file}は正しいJSONではないため、Atlasは何も読みませんでした。エディタで直してから、ファイルを読み直してください。",
       "unreadable": "Atlasは{file}を開けませんでした（{reason}）。このファイルからは何も表示していません。",
       "truncated": "{file}のフック{total}個のうち、最初の{shown}個だけを表示しています。",
+      "unknownEvents": "{file}には、ツールの説明書にないイベントが{count}個あります。Atlasはその名前も、その下のフックも表示しません。",
       "notReadFolder": "Atlasはこのフォルダを読みません。",
       "notReadFile": "Atlasはこのファイルを読みません。",
       "homeUnread": "Atlasはホームフォルダ内の名前を読みません。",

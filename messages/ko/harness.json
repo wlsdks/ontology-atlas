@@ -211,6 +211,7 @@
       "invalid": "{file} 파일이 올바른 JSON이 아니라서 Atlas가 아무것도 읽지 않았어요. 편집기에서 고친 다음 파일을 다시 읽어 주세요.",
       "unreadable": "Atlas가 {file} 파일을 열지 못했어요: {reason}. 이 파일에서는 아무것도 보여 주지 않아요.",
       "truncated": "{file} 파일의 훅 {total}개 중 처음 {shown}개만 보여 줘요.",
+      "unknownEvents": "{file} 파일에 도구 문서에 없는 이벤트가 {count}개 있어요. Atlas는 그 이름도, 그 아래 훅도 보여 주지 않아요.",
       "notReadFolder": "Atlas는 이 폴더를 읽지 않아요.",
       "notReadFile": "Atlas는 이 파일을 읽지 않아요.",
       "homeUnread": "Atlas는 홈 폴더 안의 이름을 읽지 않아요.",

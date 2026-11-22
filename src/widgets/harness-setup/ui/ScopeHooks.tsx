@@ -107,15 +107,22 @@ function FileNotes({ file, scopes, t }: { file: ScopeFile; scopes: HarnessScopes
       </p>
     );
   }
-  if (file.hooksTruncated > 0) {
-    const shown = file.hooks.length;
-    return (
-      <p data-scope-file-note="truncated" className={cn('pb-1 pl-[1.875rem] pr-2.5', NOTE)}>
-        {say('scopes.now.truncated', { file: displayPath(file.path, scopes), shown, total: shown + file.hooksTruncated })}
-      </p>
-    );
-  }
-  return null;
+  const where = displayPath(file.path, scopes);
+  const shown = file.hooks.length;
+  return (
+    <>
+      {file.hooksTruncated > 0 ? (
+        <p data-scope-file-note="truncated" className={cn('pb-1 pl-[1.875rem] pr-2.5', NOTE)}>
+          {say('scopes.now.truncated', { file: where, shown, total: shown + file.hooksTruncated })}
+        </p>
+      ) : null}
+      {file.unknownEvents > 0 ? (
+        <p data-scope-file-note="unknown-events" className={cn('pb-1 pl-[1.875rem] pr-2.5', NOTE)}>
+          {say('scopes.now.unknownEvents', { file: where, count: file.unknownEvents })}
+        </p>
+      ) : null}
+    </>
+  );
 }
 
 function HookTags({ file, tags, t }: { file: ScopeFile; tags: readonly ScopeHookTag[]; t: TranslateFn }) {

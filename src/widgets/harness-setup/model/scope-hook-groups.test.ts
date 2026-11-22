@@ -11,7 +11,7 @@ function hook(event: string, command: string): ScopeHook {
 function file(id: string, tool: ScopeFile['tool'], scope: ScopeFile['scope'], path: string, hooks: ScopeHook[]): ScopeFile {
   return {
     id, tool, scope, path, picked: false, status: 'read', failure: null, bytes: 2, modifiedMs: 0,
-    hooks, hooksTruncated: 0, disableAllHooks: null, allowManagedHooksOnly: null, permissionCounts: null,
+    hooks, hooksTruncated: 0, unknownEvents: 0, disableAllHooks: null, allowManagedHooksOnly: null, permissionCounts: null,
   };
 }
 

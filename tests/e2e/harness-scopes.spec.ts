@@ -23,6 +23,7 @@ function file(id: string, tool: "claude-code" | "codex", scope: string, path: st
     modifiedMs: null,
     hooks,
     hooksTruncated: 0,
+    unknownEvents: 0,
     disableAllHooks: null,
     allowManagedHooksOnly: null,
     permissionCounts: status === "read" ? { allow: 2, deny: 0, ask: 0 } : null,
@@ -47,6 +48,7 @@ const SCOPES_FIXTURE = {
         hook("Stop", "bash ~/.claude/hooks/agent-status.sh stop"),
       ]),
       hooksTruncated: 497,
+      unknownEvents: 2,
     },
     file("claude-managed", "claude-code", "managed", "/Library/Application Support/ClaudeCode/managed-settings.json", [], "missing"),
     file("codex-project", "codex", "project", `${HARNESS_SOURCE_ROOT}/.codex/hooks.json`, [
@@ -137,6 +139,7 @@ test.describe("Where settings live", () => {
     await expect(detail).toContainText("~/.claude/hooks/agent-status.sh");
     await expect(page.locator('[data-scope-heading="claude-user"]')).toBeVisible();
     await expect(page.locator('[data-scope-file-note="truncated"]').first()).toContainText("훅 499개 중 처음 2개만");
+    await expect(page.locator('[data-scope-file-note="unknown-events"]').first()).toContainText("도구 문서에 없는 이벤트가 2개");
 
     await detail.locator("[data-scope-explain-detail]").click();
     const dialog = page.getByTestId("where-settings");

@@ -148,7 +148,8 @@ impl HookKind {
 #[derive(Debug, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ScopeHook {
-    pub event: String,
+    /// Always one of the tool's documented names, never text from the file.
+    pub event: &'static str,
     /// Position of the group within the event's array.
     pub group: usize,
     /// Position of the handler within the group's `hooks` array.
@@ -173,6 +174,8 @@ pub(super) struct ParsedSettings {
     pub hooks: Vec<ScopeHook>,
     /// Handlers past `HOOKS_PER_FILE_MAX`, counted and not returned.
     pub hooks_truncated: usize,
+    /// Event keys that are not on the tool's documented list: counted, their text never kept.
+    pub unknown_events: usize,
     pub disable_all_hooks: Option<bool>,
     pub allow_managed_hooks_only: Option<bool>,
     pub permission_counts: Option<PermissionCounts>,
@@ -182,10 +185,11 @@ pub(super) struct ParsedSettings {
 /// because it can quote a value.
 pub(super) fn parse_claude_settings(bytes: &[u8]) -> Option<ParsedSettings> {
     let document: ClaudeSettingsDocument = serde_json::from_slice(json_object(bytes)?).ok()?;
-    let (hooks, hooks_truncated) = flatten_hooks(known(document.hooks));
+    let flat = flatten_hooks(known(document.hooks), CLAUDE_CODE_EVENTS);
     Some(ParsedSettings {
-        hooks,
-        hooks_truncated,
+        hooks: flat.hooks,
+        hooks_truncated: flat.truncated,
+        unknown_events: flat.unknown_events,
         disable_all_hooks: known(document.disable_all_hooks),
         allow_managed_hooks_only: known(document.allow_managed_hooks_only),
         permission_counts: known(document.permissions).map(|lists| PermissionCounts {
@@ -198,10 +202,11 @@ pub(super) fn parse_claude_settings(bytes: &[u8]) -> Option<ParsedSettings> {
 
 pub(super) fn parse_codex_hooks(bytes: &[u8]) -> Option<ParsedSettings> {
     let document: CodexHooksDocument = serde_json::from_slice(json_object(bytes)?).ok()?;
-    let (hooks, hooks_truncated) = flatten_hooks(known(document.hooks));
+    let flat = flatten_hooks(known(document.hooks), CODEX_EVENTS);
     Some(ParsedSettings {
-        hooks,
-        hooks_truncated,
+        hooks: flat.hooks,
+        hooks_truncated: flat.truncated,
+        unknown_events: flat.unknown_events,
         ..ParsedSettings::default()
     })
 }
@@ -216,14 +221,68 @@ fn json_object(bytes: &[u8]) -> Option<&[u8]> {
 /// A 1 MiB file of empty handlers holds hundreds of thousands; a real one holds dozens.
 pub(crate) const HOOKS_PER_FILE_MAX: usize = 500;
 
-/// The first `HOOKS_PER_FILE_MAX` handlers in file order, and how many more there are.
-fn flatten_hooks(events: Option<HookEvents>) -> (Vec<ScopeHook>, usize) {
+/// Hook events in the Claude Code hooks reference.
+pub(super) const CLAUDE_CODE_EVENTS: &[&str] = &[
+    "SessionStart",
+    "Setup",
+    "InstructionsLoaded",
+    "UserPromptSubmit",
+    "PreToolUse",
+    "PermissionRequest",
+    "PermissionDenied",
+    "PostToolUse",
+    "PostToolUseFailure",
+    "Notification",
+    "SubagentStart",
+    "SubagentStop",
+    "TaskCreated",
+    "TaskCompleted",
+    "TeammateIdle",
+    "Stop",
+    "StopFailure",
+    "PreCompact",
+    "PostCompact",
+    "ConfigChange",
+    "CwdChanged",
+    "FileChanged",
+    "WorktreeCreate",
+    "WorktreeRemove",
+    "Elicitation",
+    "ElicitationResult",
+    "SessionEnd",
+];
+
+/// Hook events in the Codex hooks documentation.
+pub(super) const CODEX_EVENTS: &[&str] = &[
+    "SessionStart",
+    "UserPromptSubmit",
+    "PreToolUse",
+    "PostToolUse",
+    "Stop",
+];
+
+/// The list's own copy of `key`, so the returned name is never text read from the file.
+fn documented_event(events: &[&'static str], key: &str) -> Option<&'static str> {
+    events.iter().copied().find(|event| *event == key)
+}
+
+struct FlatHooks {
+    hooks: Vec<ScopeHook>,
+    truncated: usize,
+    unknown_events: usize,
+}
+
+/// The first `HOOKS_PER_FILE_MAX` handlers under documented events in file order, how many more
+/// there are, and how many event keys were not documented.
+fn flatten_hooks(events: Option<HookEvents>, documented: &[&'static str]) -> FlatHooks {
     let mut out = Vec::new();
     let mut truncated = 0;
-    for (event, groups) in events.map(|events| events.0).unwrap_or_default() {
-        if !is_event_name(&event) {
+    let mut unknown_events = 0;
+    for (key, groups) in events.map(|events| events.0).unwrap_or_default() {
+        let Some(event) = documented_event(documented, &key) else {
+            unknown_events += 1;
             continue;
-        }
+        };
         for (group_index, group) in groups.unwrap_or_default().into_iter().enumerate() {
             let Some(group) = group else { continue };
             let matcher = known(group.matcher);
@@ -239,7 +298,7 @@ fn flatten_hooks(events: Option<HookEvents>) -> (Vec<ScopeHook>, usize) {
                 let kind = HookKind::from_type(known(handler.kind).as_deref());
                 let is_command = kind == HookKind::Command;
                 out.push(ScopeHook {
-                    event: event.clone(),
+                    event,
                     group: group_index,
                     handler: handler_index,
                     matcher: matcher.clone(),
@@ -251,31 +310,32 @@ fn flatten_hooks(events: Option<HookEvents>) -> (Vec<ScopeHook>, usize) {
             }
         }
     }
-    (out, truncated)
+    FlatHooks {
+        hooks: out,
+        truncated,
+        unknown_events,
+    }
 }
 
-const EVENT_NAME_MAX_CHARS: usize = 64;
-
-/// Distinct event names one `config.toml` can return.
-const INLINE_EVENTS_MAX: usize = 64;
-
-/// Event names from `[hooks.<Event>]` and `[[hooks.<Event>...]]` headers, in one pass over the
-/// text. Only a plain identifier is kept, so a quoted `[hooks.state."<path>:..."]` key never is,
-/// and a header written inside a multi-line string is not a header.
-pub(super) fn inline_hook_events(text: &str) -> Vec<String> {
-    let mut events: Vec<String> = Vec::new();
+/// Codex events from `[hooks.<Event>]` and `[[hooks.<Event>...]]` headers, in one pass over the
+/// text, and how many other names the headers use. A header written inside a multi-line string is
+/// not a header, and `[hooks.state."<path>:..."]` is Codex's review record, not an event.
+pub(super) fn inline_hook_events(text: &str) -> (Vec<&'static str>, usize) {
+    let mut events: Vec<&'static str> = Vec::new();
+    let mut unknown: std::collections::HashSet<&str> = std::collections::HashSet::new();
     for line in lines_outside_strings(text) {
-        let Some(event) = inline_hook_event(line) else {
+        let Some(name) = inline_hook_event(line) else {
             continue;
         };
-        if events.len() == INLINE_EVENTS_MAX {
-            break;
-        }
-        if !events.contains(&event) {
-            events.push(event);
+        match documented_event(CODEX_EVENTS, name) {
+            Some(event) if !events.contains(&event) => events.push(event),
+            Some(_) => {}
+            None => {
+                unknown.insert(name);
+            }
         }
     }
-    events
+    (events, unknown.len())
 }
 
 #[derive(Clone, Copy)]
@@ -342,7 +402,7 @@ fn string_end(rest: &[u8], quote: u8, escapes: bool) -> usize {
     rest.len()
 }
 
-fn inline_hook_event(line: &str) -> Option<String> {
+fn inline_hook_event(line: &str) -> Option<&str> {
     let header = line.trim_start().strip_prefix('[')?;
     let header = header.strip_prefix('[').unwrap_or(header).trim_start();
     let rest = ["hooks", "\"hooks\"", "'hooks'"]
@@ -362,12 +422,5 @@ fn inline_hook_event(line: &str) -> Option<String> {
             &rest[..end]
         }
     };
-    (is_event_name(name) && name != "state").then(|| name.to_string())
-}
-
-/// Vendors name events in plain identifiers; any other key is never returned.
-fn is_event_name(name: &str) -> bool {
-    name.len() <= EVENT_NAME_MAX_CHARS
-        && name.chars().next().is_some_and(|c| c.is_ascii_alphabetic())
-        && name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
+    (name != "state").then_some(name)
 }

@@ -164,6 +164,7 @@ describe('what Setup points out', () => {
           status: 'read',
           failure: null,
           events: ['PreToolUse'],
+          unknownEvents: 0,
         },
         {
           id: 'codex-project-config',
@@ -173,6 +174,7 @@ describe('what Setup points out', () => {
           status: 'read',
           failure: null,
           events: [],
+          unknownEvents: 0,
         },
       ],
     });

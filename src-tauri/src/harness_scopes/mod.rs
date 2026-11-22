@@ -46,6 +46,8 @@ pub(crate) struct ScopeFile {
     hooks: Vec<ScopeHook>,
     /// Handlers past the per-file cap, counted and not returned.
     hooks_truncated: usize,
+    /// Event keys not on the tool's documented list; their text is never returned.
+    unknown_events: usize,
     disable_all_hooks: Option<bool>,
     allow_managed_hooks_only: Option<bool>,
     permission_counts: Option<PermissionCounts>,
@@ -61,7 +63,9 @@ pub(crate) struct InlineHooks {
     path: String,
     status: FileStatus,
     failure: Option<OpenFailure>,
-    events: Vec<String>,
+    events: Vec<&'static str>,
+    /// Header names not on Codex's documented list; their text is never returned.
+    unknown_events: usize,
 }
 
 #[derive(Debug, Serialize)]
@@ -209,6 +213,7 @@ fn scope_file(
         modified_ms: opened.modified_ms,
         hooks: parsed.hooks,
         hooks_truncated: parsed.hooks_truncated,
+        unknown_events: parsed.unknown_events,
         disable_all_hooks: parsed.disable_all_hooks,
         allow_managed_hooks_only: parsed.allow_managed_hooks_only,
         permission_counts: parsed.permission_counts,
@@ -221,6 +226,10 @@ fn inline_hooks(location: &Location, opened: Opened) -> InlineHooks {
         Some(Err(_)) => FileStatus::Invalid,
         _ => opened.status,
     };
+    let (events, unknown_events) = text
+        .and_then(Result::ok)
+        .map(inline_hook_events)
+        .unwrap_or_default();
     InlineHooks {
         id: location.id,
         tool: location.tool,
@@ -228,10 +237,8 @@ fn inline_hooks(location: &Location, opened: Opened) -> InlineHooks {
         path: opened.path,
         status,
         failure: opened.failure,
-        events: text
-            .and_then(Result::ok)
-            .map(inline_hook_events)
-            .unwrap_or_default(),
+        events,
+        unknown_events,
     }
 }
 

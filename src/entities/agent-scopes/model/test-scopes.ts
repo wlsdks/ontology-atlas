@@ -44,6 +44,7 @@ export function testFile(id: string, overrides: Partial<ScopeFile> = {}): ScopeF
     modifiedMs: 0,
     hooks: [],
     hooksTruncated: 0,
+    unknownEvents: 0,
     disableAllHooks: null,
     allowManagedHooksOnly: null,
     permissionCounts: null,

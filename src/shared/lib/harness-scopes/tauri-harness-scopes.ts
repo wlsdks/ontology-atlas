@@ -56,6 +56,8 @@ export interface ScopeFile {
   hooks: ScopeHook[];
   /** Handlers past that cap: counted, never returned. */
   hooksTruncated: number;
+  /** Event keys the tool does not document: counted, their text never returned. */
+  unknownEvents: number;
   disableAllHooks: boolean | null;
   allowManagedHooksOnly: boolean | null;
   permissionCounts: ScopePermissionCounts | null;
@@ -69,7 +71,10 @@ export interface ScopeInlineHooks {
   path: string;
   status: ScopeFileStatus;
   failure: ScopeOpenFailure | null;
+  /** Only names the Codex documentation lists. */
   events: string[];
+  /** Other header names: counted, their text never returned. */
+  unknownEvents: number;
 }
 
 export interface HarnessScopes {
