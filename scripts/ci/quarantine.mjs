@@ -176,6 +176,21 @@ function parseArguments(argv) {
   throw new Error(`unknown command: ${command}`);
 }
 
+/**
+ * Runs one command and returns its exit code; a malformed argument throws. Tests pass `spawn`,
+ * `env`, `log` and a `registry` in place of the file.
+ *
+ * @param {string[]} argv
+ * @param {{
+ *   spawn?: (command: string, args: string[], options: object) => { status: number | null, stdout?: string, stderr?: string },
+ *   cwd?: string,
+ *   env?: Record<string, string | undefined>,
+ *   log?: (line: string) => void,
+ *   registry?: { entries: Array<Record<string, string>> },
+ *   now?: Date,
+ * }} [options]
+ * @returns {number}
+ */
 export function runQuarantine(argv, {
   spawn = spawnSync,
   cwd = REPOSITORY_ROOT,
