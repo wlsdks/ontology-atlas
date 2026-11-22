@@ -36,6 +36,8 @@ import { renderProjectCompetencyMarkdown } from "./project-meaning/project-meani
 import { defaultBody } from "./schema.mjs";
 import { inlineSharedSubschemas } from "./server/shared-subschemas.mjs";
 import { proposalCoverageRefs } from "./construction/construction-lifecycle.mjs";
+import { CONSTRUCTION_QUALIFICATION_INPUT_SCHEMA } from "./construction/construction-qualification.mjs";
+import { MEANING_PROPOSAL_INPUT_SCHEMA } from "./server/tool-schemas/meaning-construction.mjs";
 import {
   formatNoTestMatchMessage,
   formatTestFilterSuffix,
@@ -730,10 +732,13 @@ await test("tools/list — each single-item tool description cross-references it
     assert.equal(analyzeRepo?.outputSchema, undefined, "the breadth map and source reads are text rows, so the tool declares no outputSchema");
     assert.deepEqual(analyzeRepo?.inputSchema?.properties?.proposal?.required, ["project", "domains", "capabilities", "elements", "relations", "competencyAnswers"]);
     assert.equal(analyzeRepo?.inputSchema?.properties?.proposal?.additionalProperties, false);
-    assert.deepEqual(analyzeRepo?.inputSchema?.properties?.proposal?.properties?.elements?.items?.required, ["slug", "title", "definition", "evidence", "confidence", "domain", "path"]);
-    assert.deepEqual(analyzeRepo?.inputSchema?.properties?.proposal?.properties?.relations?.items?.required, ["from", "to", "type", "why", "evidence", "confidence"]);
+    assert.deepEqual(analyzeRepo?.inputSchema?.properties?.proposal?.properties?.elements?.type, "array");
+    assert.match(analyzeRepo?.inputSchema?.properties?.proposal?.description ?? "", /refused with its path and expected shape/);
     assert.equal(analyzeRepo?.inputSchema?.additionalProperties, false);
-    assert.deepEqual(analyzeRepo?.inputSchema?.properties?.qualification?.required, [
+    assert.deepEqual(analyzeRepo?.inputSchema?.properties?.qualification?.properties?.contract?.enum, ["constructionQualification:v1"]);
+    assert.deepEqual(MEANING_PROPOSAL_INPUT_SCHEMA.properties.elements.items.required, ["slug", "title", "definition", "evidence", "confidence", "domain", "path"]);
+    assert.deepEqual(MEANING_PROPOSAL_INPUT_SCHEMA.properties.relations.items.required, ["from", "to", "type", "why", "evidence", "confidence"]);
+    assert.deepEqual(CONSTRUCTION_QUALIFICATION_INPUT_SCHEMA.required, [
       "contract",
       "qualificationId",
       "subject",
@@ -752,15 +757,15 @@ await test("tools/list — each single-item tool description cross-references it
       "resourceUse",
       "acceptance",
     ]);
-    assert.equal(analyzeRepo?.inputSchema?.properties?.qualification?.additionalProperties, false);
-    assert.deepEqual(analyzeRepo?.inputSchema?.properties?.qualification?.properties?.claims?.items?.required, [
+    assert.equal(CONSTRUCTION_QUALIFICATION_INPUT_SCHEMA.additionalProperties, false);
+    assert.deepEqual(CONSTRUCTION_QUALIFICATION_INPUT_SCHEMA.properties.claims.items.required, [
       "id",
       "statement",
       "status",
       "witnessRefs",
       "proposalRefs",
     ]);
-    const competencyAnswerSchema = analyzeRepo?.inputSchema?.properties?.proposal?.properties?.competencyAnswers?.properties?.scope;
+    const competencyAnswerSchema = MEANING_PROPOSAL_INPUT_SCHEMA.properties.competencyAnswers.properties.scope;
     assert.deepEqual(competencyAnswerSchema?.required, ["answer", "status", "witnesses"]);
     assert.deepEqual(competencyAnswerSchema?.properties?.status?.enum, ["answered", "partial", "visible-gap"]);
     assert.deepEqual(competencyAnswerSchema?.properties?.witnesses?.required, ["concepts", "relations", "evidence", "paths"]);
@@ -2901,13 +2906,12 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
         proposal: legacyProposal,
       }),
     ]);
-    const legacyResult = getCallParsed(legacyResponses, 2);
-    assert.equal(legacyResult.proposalValidation.status, "fail");
-    assert.equal(legacyResult.proposalValidation.canWrite, false);
-    assert.equal(legacyResult.proposalValidation.writePlan, undefined);
-    assert.ok(legacyResult.proposalValidation.findings.some(
-      (finding) => finding.code === "unstructured-competency-answer",
-    ));
+    const legacyResult = legacyResponses.find((row) => row.id === 2).result;
+    assert.equal(legacyResult.isError, true);
+    assert.match(
+      legacyResult.structuredContent.error,
+      /^proposal\.competencyAnswers\.scope must be an object; received a string\..*Example proposal\.competencyAnswers\.scope: \{"answer"/,
+    );
 
     const malformedBoundaryProposal = {
       ...proposal,
@@ -2920,13 +2924,12 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
         proposal: malformedBoundaryProposal,
       }),
     ]);
-    const malformedBoundaryResult = getCallParsed(malformedBoundaryResponses, 2);
-    assert.equal(malformedBoundaryResult.proposalValidation.status, "fail");
-    assert.equal(malformedBoundaryResult.proposalValidation.canWrite, false);
-    assert.equal(malformedBoundaryResult.proposalValidation.writePlan, undefined);
-    assert.ok(malformedBoundaryResult.proposalValidation.findings.some(
-      (finding) => finding.code === "invalid-concept-boundary-list",
-    ));
+    const malformedBoundaryResult = malformedBoundaryResponses.find((row) => row.id === 2).result;
+    assert.equal(malformedBoundaryResult.isError, true);
+    assert.match(
+      malformedBoundaryResult.structuredContent.error,
+      /^proposal\.project\.includes must be an array; received a string\..*Example proposal\.project\.includes\[0\]: "<includes>"/,
+    );
   } finally {
     rmSync(vaultRoot, { recursive: true, force: true });
     rmSync(repoRoot, { recursive: true, force: true });

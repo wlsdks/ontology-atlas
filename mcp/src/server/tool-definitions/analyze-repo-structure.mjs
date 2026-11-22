@@ -1,7 +1,5 @@
-import { CONSTRUCTION_QUALIFICATION_INPUT_SCHEMA } from '../../construction/construction-qualification.mjs';
 import { IGNORE_ARRAY_MAX_ITEMS } from '../tool-schemas/array-limits.mjs';
 import { NON_BLANK_STRING_SCHEMA } from '../tool-schemas/field-primitives.mjs';
-import { MEANING_PROPOSAL_INPUT_SCHEMA } from '../tool-schemas/meaning-construction.mjs';
 
 /*
  * No outputSchema: hosts forward structuredContent in place of the text, so the
@@ -81,14 +79,36 @@ export const ANALYZE_REPO_STRUCTURE_TOOL = {
         description: 'Return only the reads, as text, without rescanning. Requires sourceReads; forbids proposal and qualification, even null.',
       },
       proposal: {
-        ...MEANING_PROPOSAL_INPUT_SCHEMA,
+        type: 'object',
         description:
-          'Older route: a business ontology proposal to validate against repository evidence before any write. Python proposals may select at most 4 observed import endpoints beyond the analyzer candidates.',
+          'Older route: a business ontology proposal validated against repository evidence before any write. ' +
+          '{project, domains[≤50], capabilities[≤100], elements[≤100], relations[≤200], competencyAnswers}. ' +
+          'A concept row is {slug, title, definition, evidence[1-20], confidence 0..1, path?, includes?, excludes?, uncertainty?}; ' +
+          'capabilities add domain, elements add domain and path. A relation is {from, to, type, why, evidence, confidence}. ' +
+          'competencyAnswers has scope, domains, abilities, evidence and impact, each {answer, status, gap?, witnesses: {concepts, relations, evidence, paths}}. ' +
+          'Python proposals may select at most 4 observed import endpoints beyond the analyzer candidates. ' +
+          'A field off this shape is refused with its path and expected shape.',
+        properties: {
+          project: { type: 'object' },
+          domains: { type: 'array' },
+          capabilities: { type: 'array' },
+          elements: { type: 'array' },
+          relations: { type: 'array' },
+          competencyAnswers: { type: 'object' },
+        },
+        required: ['project', 'domains', 'capabilities', 'elements', 'relations', 'competencyAnswers'],
+        additionalProperties: false,
       },
       qualification: {
-        ...CONSTRUCTION_QUALIFICATION_INPUT_SCHEMA,
+        type: 'object',
         description:
-          "Older route: independent evaluation and declared human acceptance bound to this proposal's planDigest, planRevision and sourceDigest. The evaluator must not be the builder and must run the source-hidden task. Omit on the first review call.",
+          "Older route: a `constructionQualification:v1` packet, independent evaluation and declared human acceptance bound to this proposal's planDigest, planRevision and sourceDigest. " +
+          'The evaluator must not be the builder and must run the source-hidden task. Omit on the first review call. ' +
+          'Any field off the contract is refused with its path, the expected shape and the rule for that field.',
+        properties: {
+          contract: { type: 'string', enum: ['constructionQualification:v1'] },
+        },
+        required: ['contract'],
       },
     },
     additionalProperties: false,

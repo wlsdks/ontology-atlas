@@ -11,7 +11,10 @@ import {
   validateSourceReadSelectors,
 } from '../../evidence-search/source-evidence.mjs';
 import { REPO_ROOT, VAULT_ROOT, assertScanRootAllowed } from '../../server/runtime.mjs';
+import { CONSTRUCTION_QUALIFICATION_INPUT_SCHEMA } from '../../construction/construction-qualification.mjs';
+import { checkAgainstSchema } from '../../server/schema-check.mjs';
 import { IGNORE_ARRAY_MAX_ITEMS } from '../../server/tool-schemas/array-limits.mjs';
+import { MEANING_PROPOSAL_INPUT_SCHEMA } from '../../server/tool-schemas/meaning-construction.mjs';
 import {
   requireOptionalBoolean,
   requireOptionalNonBlankString,
@@ -68,6 +71,8 @@ export function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, sourceRea
   if (sourceOnly && sourceReads === undefined) {
     throw new Error('sourceOnly requires sourceReads with 1–16 exact selectors.');
   }
+  if (proposal != null) checkAgainstSchema(proposal, MEANING_PROPOSAL_INPUT_SCHEMA, 'proposal');
+  if (qualification != null) checkAgainstSchema(qualification, CONSTRUCTION_QUALIFICATION_INPUT_SCHEMA, 'qualification');
   const target = rootPath ? assertScanRootAllowed(rootPath) : REPO_ROOT;
   if (sourceReads !== undefined) validateSourceReadSelectors(sourceReads);
   const reviewing = proposal != null || qualification != null;
