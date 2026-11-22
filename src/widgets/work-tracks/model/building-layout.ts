@@ -84,7 +84,7 @@ export const BELT_H = 0;
 
 /** Moru as large as the screen beside him leaves room for, in half steps: the screen keeps its width, Moru gives way. */
 function unitOf(width: number): RoomUnit {
-  if (width < WIDE_ROOM_W) return width >= 400 ? 2 : width >= 300 ? 1.5 : 1;
+  if (width < WIDE_ROOM_W) return width >= 400 ? 2 : 1;
   return Math.min(3, Math.max(1, Math.floor((2 * (width - MORU_LEFT - SCREEN_MIN_W)) / CONSOLE_PER_UNIT) / 2));
 }
 
@@ -188,9 +188,10 @@ export function layoutBuilding(input: LayoutInput): BuildingLayout {
     const cols = rows === 1 ? Math.max(count, Math.min(2, maxCols)) : Math.ceil(count / rows);
     const roomW = Math.floor((width - (cols - 1) * STAGE_GAP) / cols / 2) * 2;
     const unit = unitOf(roomW);
-    // Height the window has to spare goes to more commit rows on each screen, never to bare wall.
+    // Height the window has to spare goes to more commit rows on a one-row stage's screens. Two
+    // rows keep their fitted height, so a room moving between rows never changes height on the way.
     const fitted = roomHeight(roomW, unit);
-    const spare = roomW >= WIDE_ROOM_W ? Math.floor((available - (rows - 1) * STAGE_GAP) / rows) - fitted : 0;
+    const spare = rows === 1 && roomW >= WIDE_ROOM_W ? Math.floor((available - (rows - 1) * STAGE_GAP) / rows) - fitted : 0;
     const roomH = fitted + Math.min(MAX_SCREEN_ROWS - BASE_SCREEN_ROWS, Math.max(0, Math.floor(spare / SCREEN_ROW_H))) * SCREEN_ROW_H;
     const stageH = rows * roomH + (rows - 1) * STAGE_GAP;
     // The floors follow right under the stage; what the window has left stays under the shelf.

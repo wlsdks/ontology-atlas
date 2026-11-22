@@ -88,7 +88,7 @@ clean-up chore and always waits as a mini room under **No session**. The stage r
 order. A large room is one scene with one floor line and one light: Moru on
 the floor faces a screen on a console, and the screen is the only place in the
 room with words. Its head is the branch (the only mono text); under it the
-newest commits beyond the base branch, three, or up to five where the window
+newest commits beyond the base branch, three, or up to five where a one-row stage
 leaves the room height for them, each one ellipsised line
 with how long ago it landed; at its foot what is not committed, with the name of
 the file changed last, and the commit count. When a commit lands it slides in at

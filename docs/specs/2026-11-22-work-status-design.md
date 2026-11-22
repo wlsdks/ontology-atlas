@@ -441,7 +441,7 @@ None — the owner's answers are in the Work status spec.
   and wall monitor become one screen on a console with the newest three commits and a bezel; the
   belt becomes a track through a hatch in the side wall; mini rooms show the newest subject; the
   "more below" line moves into the floors' heading. Rooms are no longer drawn mirrored.
-- 2026-11-23: At the owner's 1512 px window Moru takes a half step (1.5) instead of 1; spare height
+- 2026-11-23: At the owner's 1512 px window Moru takes a half step (1.5) instead of 1; a one-row stage's spare height
   becomes up to five commit rows; quiet screens are no longer dimmed (every word at least 4.5:1); a
   room that needs a person is framed in amber; the building ends under its content.
 - 2026-11-23: The screen keeps its text and 400 px; Moru's scale gives way and a room is as tall
