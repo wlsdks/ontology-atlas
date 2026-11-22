@@ -1,17 +1,9 @@
 import type { GitStatusResult } from "@/shared/lib/git/tauri-git";
 
 /**
- * Where this branch's steps can go, read from one status. Only `no-remote` may offer to
- * register `origin`; offering it elsewhere would rewrite a real remote. Each state's next step:
- *
- * - `tracking` — the branch follows an upstream; Fetch, Pull and Push work.
- * - `no-remote` — there is no `origin`; the next step is connecting one.
- * - `never-sent` — `origin` exists and this branch was never sent to it; the next step is
- *   sending it, which records the upstream. Nothing registers or rewrites a remote.
- * - `detached` — HEAD names a commit, not a branch; nothing can be sent until a branch is
- *   checked out, and nothing on screen offers to.
- * - `unknown` — the bridge did not say whether `origin` exists (one older than the field).
- *   The screen claims neither remote nor its absence, and offers nothing that could rewrite one.
+ * Where this branch's steps can go, read from one status. Only `no-remote` may offer to register
+ * `origin`; elsewhere it would rewrite a real remote. `unknown` (a bridge older than the field)
+ * claims neither a remote nor its absence; `detached` offers nothing.
  */
 export type GitRemoteState = "tracking" | "no-remote" | "never-sent" | "detached" | "unknown";
 

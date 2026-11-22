@@ -14,12 +14,12 @@ import {
 
 const SCRIPT = 'scripts/ci/run-focused-node-test.mjs';
 
-function withFixture(body, fn) {
+function withFixture(body, callback) {
   const root = mkdtempSync(join(tmpdir(), 'ontology-atlas-focused-test-'));
   const file = join(root, 'fixture.test.mjs');
   try {
     writeFileSync(file, body);
-    return fn(file);
+    return callback(file);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

@@ -36,6 +36,10 @@ function err(value) {
   process.stderr.write(value);
 }
 if (args[0] === "auth" && args[1] === "status") {
+  if (scenario.authFails) {
+    err("You are not logged into any GitHub hosts.");
+    process.exit(1);
+  }
   process.exit(0);
 }
 if (args[0] === "repo" && args[1] === "view") {
@@ -346,6 +350,21 @@ test("desktop release status emits machine-readable blockers for automation", ()
       assert.match(result.stderr, /blocked: 3 release requirement/);
     },
   );
+});
+
+test("desktop release status stops after one report when gh is not authenticated", () => {
+  withFakeGh({ authFails: true }, (fakeGhPath) => {
+    const json = runStatus(fakeGhPath, [`--tag=${APP_TAG}`, "--pr=274", "--json"]);
+    assert.equal(json.status, 1);
+    const payload = JSON.parse(json.stdout);
+    assert.deepEqual(payload.checks.map((check) => [check.id, check.status]), [["github_cli_auth", "blocked"]]);
+    assert.equal(payload.blockerCount, 1);
+
+    const text = runStatus(fakeGhPath);
+    assert.equal(text.status, 1);
+    assert.equal(text.stdout.match(/GitHub CLI auth:/g).length, 1);
+    assert.doesNotMatch(text.stdout, /✓ GitHub CLI auth/);
+  });
 });
 
 test("desktop release status writes machine-readable blockers to a JSON file", () => {

@@ -29,9 +29,9 @@ function injectProbe(probe) {
   cpSync(join(ROOT, 'src-tauri', 'target', 'desktop-frontend'), FRONTEND, { recursive: true });
   writeFileSync(join(FRONTEND, PROBE_FILE), probe);
   let pages = 0;
-  const visit = (dir) => {
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
-      const path = join(dir, entry.name);
+  const visit = (directory) => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      const path = join(directory, entry.name);
       if (entry.isDirectory()) visit(path);
       else if (entry.name.endsWith('.html')) {
         const html = readFileSync(path, 'utf8');

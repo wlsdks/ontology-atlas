@@ -9,7 +9,7 @@ import { useSurfaceSwap } from "@/shared/lib/render-timing/use-presence";
 import { VAULT_START_STEPS_DISMISSED_KEY } from "@/widgets/topology-controls";
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { FLAT_SELECTION_KEEPS_INDEX_FROM_PX, resolveContextualIndexState } from "../../lib/index-panel/resolve-contextual-index-state";
-import { useFlatMapView } from "@/shared/lib/preferences/appearance-preferences";
+import { useFlatMapView } from "@/shared/lib/preferences/map-view-preferences";
 import { useViewportBelow } from "@/shared/lib/use-viewport-below";
 import { useIndexSelectionOverride } from "./use-index-selection-override";
 import type { NodeDatasheetDerivation } from "../inspector/use-node-datasheet-model";
@@ -60,7 +60,6 @@ export function useTopologyIndexPresentation({
     setIndexPreference("expanded");
     // A manual expand wins for the rest of the selection; the selection-session hook resets it.
     markIndexManualExpandDuringSelection();
-    // Same for the empty-map demotion, or it re-collapses every render.
     setIndexManualExpandWhileEmpty(true);
     if (analysisMode !== "overview") {
       setRouteState((current) => ({ ...current, analysisMode: "overview" }));
@@ -129,11 +128,6 @@ export function useTopologyIndexPresentation({
     emptyManualExpand: indexManualExpandWhileEmpty,
     agentDockOpen: agentDockRequestedOpen,
   });
-  /**
-   * Collapse and expand are one event: leaving, arriving and the map start on the same frame,
-   *
-   * within `--motion-fast`. The exit window is the shared `EXIT_WINDOW_MS`.
-   */
   const indexSlotSwap = useSurfaceSwap(renderedIndexState);
   return {
     indexSlotSwap, renderedIndexState, agentDockRequestedOpen, handleIndexTabExpand,

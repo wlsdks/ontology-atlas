@@ -24,38 +24,38 @@ describe("useBackToTop", () => {
   });
 
   function makeScrollableDiv() {
-    const el = document.createElement("div");
-    document.body.appendChild(el);
-    return el;
+    const divElement = document.createElement("div");
+    document.body.appendChild(divElement);
+    return divElement;
   }
 
   it("toggles visible based on scrollTop crossing the threshold", () => {
-    const el = makeScrollableDiv();
+    const divElement = makeScrollableDiv();
     const ref = createRef<HTMLDivElement | null>();
-    ref.current = el;
+    ref.current = divElement;
 
     const { result } = renderHook(() => useBackToTop(ref, "doc-a"));
     expect(result.current.visible).toBe(false);
 
     act(() => {
-      Object.defineProperty(el, "scrollTop", { value: 700, configurable: true });
-      el.dispatchEvent(new Event("scroll"));
+      Object.defineProperty(divElement, "scrollTop", { value: 700, configurable: true });
+      divElement.dispatchEvent(new Event("scroll"));
     });
     expect(result.current.visible).toBe(true);
 
     act(() => {
-      Object.defineProperty(el, "scrollTop", { value: 10, configurable: true });
-      el.dispatchEvent(new Event("scroll"));
+      Object.defineProperty(divElement, "scrollTop", { value: 10, configurable: true });
+      divElement.dispatchEvent(new Event("scroll"));
     });
     expect(result.current.visible).toBe(false);
 
-    document.body.removeChild(el);
+    document.body.removeChild(divElement);
   });
 
   it("resets visible to false when the dependency key (selected doc) changes", async () => {
-    const el = makeScrollableDiv();
+    const divElement = makeScrollableDiv();
     const ref = createRef<HTMLDivElement | null>();
-    ref.current = el;
+    ref.current = divElement;
 
     const { result, rerender } = renderHook(
       ({ key }: { key: string }) => useBackToTop(ref, key),
@@ -63,8 +63,8 @@ describe("useBackToTop", () => {
     );
 
     act(() => {
-      Object.defineProperty(el, "scrollTop", { value: 900, configurable: true });
-      el.dispatchEvent(new Event("scroll"));
+      Object.defineProperty(divElement, "scrollTop", { value: 900, configurable: true });
+      divElement.dispatchEvent(new Event("scroll"));
     });
     expect(result.current.visible).toBe(true);
 
@@ -75,15 +75,15 @@ describe("useBackToTop", () => {
     });
     expect(result.current.visible).toBe(false);
 
-    document.body.removeChild(el);
+    document.body.removeChild(divElement);
   });
 
   it("scrollToTop calls scrollTo with smooth behavior by default", () => {
-    const el = makeScrollableDiv();
+    const divElement = makeScrollableDiv();
     const scrollTo = vi.fn();
-    el.scrollTo = scrollTo;
+    divElement.scrollTo = scrollTo;
     const ref = createRef<HTMLDivElement | null>();
-    ref.current = el;
+    ref.current = divElement;
 
     const { result } = renderHook(() => useBackToTop(ref, "doc-a"));
     act(() => {
@@ -91,15 +91,15 @@ describe("useBackToTop", () => {
     });
 
     expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: "smooth" });
-    document.body.removeChild(el);
+    document.body.removeChild(divElement);
   });
 
   it("scrollToTop uses instant behavior when the user prefers reduced motion", () => {
-    const el = makeScrollableDiv();
+    const divElement = makeScrollableDiv();
     const scrollTo = vi.fn();
-    el.scrollTo = scrollTo;
+    divElement.scrollTo = scrollTo;
     const ref = createRef<HTMLDivElement | null>();
-    ref.current = el;
+    ref.current = divElement;
 
     vi.stubGlobal(
       "matchMedia",
@@ -112,6 +112,6 @@ describe("useBackToTop", () => {
     });
 
     expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: "auto" });
-    document.body.removeChild(el);
+    document.body.removeChild(divElement);
   });
 });

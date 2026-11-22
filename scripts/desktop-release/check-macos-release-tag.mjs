@@ -15,7 +15,7 @@ const cargoVersion = cargoToml.match(/\[package\][\s\S]*?\nversion\s*=\s*"([^"]+
  * asserts the derivation still exists, because comparing the value with itself proves nothing.
  */
 const releaseFacts = fs.readFileSync(
-  path.join(root, "src", "views", "download", "lib", "release-facts.ts"),
+  path.join(root, "src", "views", "download", "lib", "release", "release-facts.ts"),
   "utf8",
 );
 const releaseFactsLiteral = releaseFacts.match(/RELEASE_VERSION\s*=\s*["'`]([^"'`]+)["'`]/)?.[1];
@@ -83,7 +83,7 @@ if (!/^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(tag)) {
 const tagVersion = tag.slice(1);
 if (releaseFactsLiteral) {
   fail(
-    `src/views/download/lib/release-facts.ts declares RELEASE_VERSION as the literal "${releaseFactsLiteral}". It must read process.env.NEXT_PUBLIC_RELEASE_VERSION so the download page cannot state a version the app does not have.`,
+    `src/views/download/lib/release/release-facts.ts declares RELEASE_VERSION as the literal "${releaseFactsLiteral}". It must read process.env.NEXT_PUBLIC_RELEASE_VERSION so the download page cannot state a version the app does not have.`,
   );
 }
 if (!releaseFactsDerived || !nextConfigFeedsVersion) {

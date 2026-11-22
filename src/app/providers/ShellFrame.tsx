@@ -11,13 +11,9 @@ import { installStandInFocusHandoff } from "@/shared/ui/routing/stand-in-focus-h
 installStandInFocusHandoff();
 
 /**
- * The viewport frame both shells draw: the workbench `AppShell` and the gateway's `GatewayShell`.
- * One component, so a gateway page scrolls in the same body slot, with the same route focus and
- * crossfade, as it did when the workbench shell carried it.
- *
  * The frame owns viewport height: an `h-dvh overflow-hidden` column where only the body slot
- * scrolls. A page root fills the slot with `h-full` / `min-h-full`; a page using the classes
- * `h-screen` or `min-h-screen` pushes whatever the shell puts below the body off screen.
+ * scrolls. A page root fills the slot with `h-full` / `min-h-full`; `h-screen` or `min-h-screen`
+ * pushes whatever the shell puts below the body off screen.
  */
 export function ShellFrame({
   rail,
@@ -87,7 +83,6 @@ function RouteViewTransitionSettle() {
   return null;
 }
 
-/** Called first by each shell, above its providers, so it runs before anything they render. */
 export function useShellSetup(): void {
   useGuideOverride();
   /*

@@ -28,7 +28,6 @@ export function isStarterProjectDescription(
   );
 }
 
-/** `display_<locale>` updates for keys still at a starter default. */
 export function buildStarterDisplaySync(
   existingFrontmatter: Record<string, unknown>,
   newName: string,
@@ -46,7 +45,6 @@ export function buildStarterDisplaySync(
   return updates;
 }
 
-/** The serializable subset shared by `Project` and `ProjectInput`. */
 export interface ProjectFrontmatterShape {
   slug: string;
   name: string;
@@ -77,11 +75,9 @@ export function projectToFrontmatter(
   project: ProjectFrontmatterShape,
 ): Record<string, string | number | boolean | string[]> {
   const out: Record<string, string | number | boolean | string[]> = {};
-  // `kind` is always normalized so writes keep the graph-node contract.
   out.kind = 'project';
   out.name = project.name;
   out.slug = project.slug;
-  // An unset category stays absent rather than fabricated.
   if (project.category) out.category = project.category;
   if (project.status) out.status = project.status;
   if (project.description?.trim()) out.description = project.description;
@@ -101,7 +97,6 @@ export function projectToFrontmatter(
   return out;
 }
 
-/** Full markdown for `createDoc`. */
 export function buildProjectMarkdown(
   project: ProjectFrontmatterShape,
   options: { body?: string; uid?: string } = {},
@@ -133,7 +128,6 @@ function needsQuote(s: string): boolean {
   return s === 'true' || s === 'false' || (s !== '' && !Number.isNaN(Number(s)));
 }
 
-/** Folds newlines to the two-character `\n` escape. */
 function escapeQuoted(s: string): string {
   return s
     .replace(/\\/g, '\\\\')

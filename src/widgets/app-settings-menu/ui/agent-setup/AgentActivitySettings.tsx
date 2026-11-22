@@ -1,0 +1,109 @@
+'use client';
+
+import { useTranslations } from 'next-intl';
+
+import { AGENT_NOTIFICATION_KINDS } from '@/shared/lib/agent-activity/agent-notifications';
+import {
+  useAgentActivityStatusEnabled,
+  useAgentNotificationsEnabled,
+  useMutedAgentNotificationKinds,
+  writeAgentActivityStatus,
+  writeAgentNotificationsEnabled,
+  writeMutedAgentNotificationKinds,
+} from '@/shared/lib/preferences/agent-activity-preferences';
+import { SegmentSwitch, SettingsGroup, SettingsRow } from '../settings-primitives';
+import { controlClass } from '@/shared/ui/control-class';
+
+export function AgentActivitySettings() {
+  const t = useTranslations('nav.settingsMenu');
+  const tEvent = useTranslations('agentActivity');
+  const statusOn = useAgentActivityStatusEnabled();
+  const notificationsOn = useAgentNotificationsEnabled();
+  const muted = useMutedAgentNotificationKinds();
+
+  const onOff = [
+    { value: true, label: t('toggleOn') },
+    { value: false, label: t('toggleOff') },
+  ];
+
+  return (
+    <SettingsGroup>
+      <SettingsRow
+        settingId="work-in-progress"
+        testId="app-settings-agent-status"
+        label={t('agentStatusLabel')}
+        caption={t('agentStatusCaption')}
+        control={
+          <SegmentSwitch
+            ariaLabel={t('agentStatusLabel')}
+            testId="app-settings-agent-status-switch"
+            value={statusOn}
+            onChange={writeAgentActivityStatus}
+            options={onOff}
+          />
+        }
+      />
+      <SettingsRow
+        settingId="notifications"
+        testId="app-settings-agent-notifications"
+        label={t('agentNotificationsLabel')}
+        caption={t('agentNotificationsCaption')}
+        control={
+          <SegmentSwitch
+            ariaLabel={t('agentNotificationsLabel')}
+            testId="app-settings-agent-notifications-switch"
+            value={notificationsOn}
+            onChange={writeAgentNotificationsEnabled}
+            options={onOff}
+          />
+        }
+      />
+      {notificationsOn ? (
+        <div data-testid="app-settings-agent-notification-kinds" data-setting-id="notification-kinds" className="min-w-0 px-4 py-3">
+          <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">{t('agentNotificationKindsLabel')}</p>
+          <p className="mt-0.5 text-body leading-body text-[color:var(--color-text-tertiary)]">{t('agentNotificationKindsCaption')}</p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+              {AGENT_NOTIFICATION_KINDS.map((kind) => {
+                const on = !muted.has(kind);
+                return (
+                  <button
+                    key={kind}
+                    type="button"
+                    role="switch"
+                    aria-checked={on}
+                    data-testid={`app-settings-agent-kind-${kind}`}
+                    onClick={() => {
+                      const next = new Set(muted);
+                      if (on) next.add(kind);
+                      else next.delete(kind);
+                      writeMutedAgentNotificationKinds(next);
+                    }}
+                    className={controlClass({
+                      shape: 'chip',
+                      size: 'md',
+                      tone: on ? 'accent' : 'muted',
+                      hoverInk: on ? 'none' : 'secondary',
+                      className: on
+                        ? 'border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-a14)]'
+                        : 'border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)]',
+                    })}
+                  >
+                    {tEvent(EVENT_LABEL_KEY[kind])}
+                  </button>
+                );
+              })}
+          </div>
+        </div>
+      ) : null}
+    </SettingsGroup>
+  );
+}
+
+const EVENT_LABEL_KEY: Readonly<Record<(typeof AGENT_NOTIFICATION_KINDS)[number], string>> = {
+  'task-start': 'event.taskStart',
+  'task-end': 'event.taskEnd',
+  'domain-added': 'event.domainAdded',
+  'domain-removed': 'event.domainRemoved',
+  'bridge-inserted': 'event.bridgeInserted',
+  'vault-problem': 'event.vaultProblem',
+};

@@ -5,13 +5,14 @@ import { useFormatter, useTranslations } from 'next-intl';
 import { Bell } from 'lucide-react';
 
 import { Link } from '@/i18n/navigation';
-import { getTopologyFocusHref } from '@/entities/project';
+import { buildTopologyFocusHref } from '@/entities/project';
 import { ChromeChip, CHROME_STATUS_CHIP_CLASS } from '@/shared/ui/controls/chrome-chip';
 import { controlClass } from '@/shared/ui/control-class';
 import { Surface } from '@/shared/ui/surfaces/surface';
 import { cn } from '@/shared/lib/cn';
 import { elapsedParts } from '@/shared/lib/agent-activity/elapsed';
-import { AgentInboxPanel, MarkAllReadDoor } from './AgentInboxPanel';
+import { AgentInboxPanel } from './AgentInboxPanel';
+import { MarkAllReadDoor } from './MarkAllReadDoor';
 import { AgentWorkFact } from './AgentWorkFact';
 import { AgentMascotPresence } from './AgentMascotPresence';
 import { deriveBellInbox } from '../model/bell-inbox';
@@ -19,16 +20,8 @@ import { useAgentActivityFeed } from '../model/use-agent-activity-feed';
 import type { AgentLiveWorkInput } from '../model/agent-work-projection';
 
 /**
- * Verified 「Current/Last Task」 reading and past notifications are presented in one feed, in two lines.
- *
- * - The status row opens only the current agent·step·target below the top-right map toolbar.
- * - The bell is a square tile at the **far right** of the toolbar, opening only notification/task receipts.
- * - The unread count is an absolute badge inside the tile, so it does not increase button width.
- *
- * We do not create separate hooks for them to avoid duplicating disk polling and read criteria.
- * This root owns the feed, outer click, Escape, and focus return together.
- * Atlas does not claim the agent is 「Connected」. Only fresh heartbeats are in present tense,
- * otherwise it says 「Last task N minutes ago」.
+ * The status segment and the bell share one feed (no separate hooks, to avoid duplicating disk polling and read criteria); this root owns the feed, outer click, Escape and focus return.
+ * Atlas does not claim the agent is "Connected": only fresh heartbeats are present tense, otherwise "Last task N minutes ago".
  */
 export function AgentActivityChip({
   suppressed = false,
@@ -40,7 +33,6 @@ export function AgentActivityChip({
   onOpenConversation,
 }: {
   suppressed?: boolean;
-  /** The current state the in-app ACP on the right already knows. Updates the same chip before file polling. */
   liveWork?: AgentLiveWorkInput | null;
   /**
    * The conversation panel is open beside the map and already streams the in-app turn, so an in-app
@@ -58,26 +50,14 @@ export function AgentActivityChip({
    * the scrim (`--z-map-scrim`, 25) can still cover it.
    */
   onOpenChange?: (open: boolean) => void;
-  /** Already on the map: updates the same HomePage selection state without a route remount. */
   onOpenNode?: (slug: string) => void;
-  /**
-   * Opens the conversation dock.
-   *
-   * The todo tab's door for a waiting request. Atlas cannot answer that request from
-   * here: the allow/reject callback lives inside `useAcpSession`, owned by the chat panel,
-   * and an ontology write is reviewed against a directional diff (`OntologyChangeReview`)
-   * inside the permission card. A 352px popover is the wrong place to decide that, so the
-   * row states the fact and this door goes to the place that can decide it.
-   */
+  /** The todo tab's door for a waiting request: the allow/reject callback lives in `useAcpSession` and an ontology write is reviewed against a directional diff in the permission card, so a 352px popover is the wrong place to decide it. */
   onOpenConversation?: () => void;
 } = {}) {
   const t = useTranslations('agentActivity');
   const format = useFormatter();
   const feed = useAgentActivityFeed(liveWork);
-  /*
-   * Derived here rather than inside the panel: the bell's own badge has to know whether
-   * anything waits on the person **before** the panel is ever opened.
-   */
+  // Derived here: the bell's badge must know whether anything waits on the person before the panel opens.
   const inbox = useMemo(
     () =>
       deriveBellInbox({
@@ -91,22 +71,10 @@ export function AgentActivityChip({
     [feed.sessions, feed.notifications, feed.workReceipts, feed.work, feed.readAt, feed.nowMs],
   );
   const todoCount = inbox.todos.length;
-  /*
-   * One badge, two grades: something waiting on the person wins, otherwise it counts unread results.
-   * Not `feed.unreadCount`, which counts raw notifications while a task's start and end fold into one
-   * row.
-   */
+  // One badge, two grades: something waiting on the person wins, else unread results. Not `feed.unreadCount`, which counts raw notifications while a task's start and end fold into one row.
   const badgeCount = todoCount > 0 ? todoCount : inbox.unreadResults;
   const [openSurface, setOpenSurface] = useState<'status' | 'notifications' | null>(null);
-  /*
-   * **Which of the two views the box holds, kept through the exit.**
-   *
-   * `openSurface` goes null the moment the box starts closing, so a child conditioned on
-   * it unmounted in the same frame and the rounded box faded out **empty** — the content
-   * hard-cut while its own container was still animating. This is set by the press that
-   * opens a view and never cleared, so the two views are a swap (the box always holds one
-   * of them) rather than two appearances.
-   */
+  /* Which view the box holds, kept through the exit: `openSurface` goes null as the box starts closing, so a child conditioned on it would unmount and the rounded box fade out empty. Set by the press that opens a view and never cleared. */
   const [renderedSurface, setRenderedSurface] = useState<'status' | 'notifications'>('notifications');
   const open = openSurface !== null;
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -247,9 +215,7 @@ export function AgentActivityChip({
       data-work-mode={feed.work.mode}
     >
       {!suppressed && <AgentMascotPresence feed={feed} />}
-      {/* The status is a segment of the activity control in the toolbar row, not a box hanging under it, so
-         it cannot float over the map or collide with a lane. The node it names lives in the status view
-         this segment opens; the map already rings it. */}
+      {/* The status is a segment of the toolbar's activity control, not a box hanging under it, so it cannot float over the map or collide with a lane. */}
       {showStatus || showBell ? (
         <div
           className="flex shrink-0 items-center"
@@ -274,9 +240,6 @@ export function AgentActivityChip({
                 hoverInk: 'strong',
                 hoverSurface: 'lift',
                 hoverBorder: 'strong',
-                // The row's status-chip geometry (one source with the realm and return
-                // chips) over the shared control's focus and hover axes — the same lift
-                // and border `ChromeChip` gives the bell beside it.
                 className: cn(
                   CHROME_STATUS_CHIP_CLASS,
                   'min-w-0',
@@ -303,11 +266,7 @@ export function AgentActivityChip({
                     : 'bg-[color:var(--color-text-quaternary)]',
                 )}
               />
-              {/*
-                Who and which step. Folded to the screen reader where the lane is compact
-                (a docked panel beside it) or narrower than `xl`; the button's
-                `aria-label` and `title` keep the whole sentence.
-              */}
+              {/* Who and which step; folded to the screen reader where the lane is compact or narrower than `xl`, while `aria-label` and `title` keep the whole sentence. */}
               <span
                 data-testid="agent-activity-status"
                 className={cn(
@@ -359,10 +318,7 @@ export function AgentActivityChip({
               }
               data-testid="agent-activity-bell"
               data-agent-activity-bell-slot="utility-row-end"
-              /*
-               * The bell carries its own state: filling the glyph and lifting it to primary ink changes shape and
-               * weight, so unread survives a squint and does not rely on a small badge or colour alone.
-               */
+              /* The bell carries its own state: filling the glyph and lifting it to primary ink changes shape and weight, so unread survives a squint and does not rely on a small badge or colour alone. */
               className={cn(
                 'relative shrink-0 overflow-visible',
                 showStatus && 'rounded-l-none',
@@ -407,7 +363,6 @@ export function AgentActivityChip({
            * tab bar below `lg`.
            */
           'absolute z-30 flex max-h-[calc(100dvh-var(--chrome-inset)-var(--chrome-tile-size)-60px-var(--map-panel-bottom-reserve))] w-[var(--map-panel-width)] flex-col overflow-hidden whitespace-normal rounded-[var(--map-panel-radius)] border border-[color:var(--topology-floating-panel-border)] bg-[color:var(--topology-floating-panel-surface)] shadow-[var(--topology-floating-panel-shadow)]',
-          // The status now stands in the row itself, so both views hang from the row.
           'top-[calc(100%+8px)]',
         )}
       >
@@ -415,10 +370,7 @@ export function AgentActivityChip({
           <span className="min-w-0 flex-1 truncate">
             {t(renderedSurface === 'notifications' ? 'notificationTitle' : 'inboxTitle')}
           </span>
-          {/*
-            The one door that moves the read boundary in a single press. It appears only
-            with something unread behind it — a control that can change nothing is noise.
-          */}
+          {/* Moves the read boundary in one press; shown only with something unread behind it, since a control that can change nothing is noise. */}
           {renderedSurface === 'notifications' && inbox.unreadResults > 0 ? (
             <MarkAllReadDoor
               onPress={feed.markAllRead}
@@ -479,7 +431,7 @@ export function AgentActivityChip({
                       </button>
                     ) : (
                       <Link
-                        href={getTopologyFocusHref(feed.lastNode.slug)}
+                        href={buildTopologyFocusHref(feed.lastNode.slug)}
                         data-testid="agent-activity-target"
                         aria-label={t('openOnMap', { name: feed.lastNode.name })}
                         className={controlClass({

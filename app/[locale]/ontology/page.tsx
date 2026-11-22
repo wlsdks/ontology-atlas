@@ -12,21 +12,14 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "metadata" });
-  // ⚠️ This route is **a redirect, not a destination** (see the component comment below). Declaring
-  // itself canonical would hand a search engine a second address with the same content. The
-  // canonical is `/topology/`, which actually has the content.
-  // No hreflang is set — advertising this address's language pair while its canonical points
-  // elsewhere makes two signals say different things.
+  // A redirect, not a destination: canonical is `/topology/`, and no hreflang is set, so search
+  // engines see no second address for the same content.
   return {
     title: t("pages.ontology"),
     alternates: { canonical: absoluteUrl(`/${locale}/topology/`) },
   };
 }
 
-/**
- * Redirects to `/topology` with INDEX expanded, translating `?node=<id>` into `?p=<id>` so links
- * built via `buildOntologyNodeHref` keep resolving.
- */
 export default function Page() {
   return (
     <Suspense fallback={<RouteLoadingFallback />}>

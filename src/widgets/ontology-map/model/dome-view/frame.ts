@@ -1,10 +1,10 @@
 import { DOME_PLANE, TAU } from './cone-layout';
 import { easeOutCubic, TIER_ASSEMBLE_TOTAL_MS, tierProgress } from '../../morph/tier-assembly';
 import { DOME_NODE_PX, DOME_RING_SAMPLES } from './ink';
-import { clampDomePitch, DOME_PITCH_DEFAULT, DOME_PITCH_MAX } from './orbit';
-import { projectWithTrig } from './projection';
+import { clampDomePitch, DOME_PITCH_DEFAULT, DOME_PITCH_MAX } from './camera/orbit';
+import { projectWithTrig } from './camera/projection';
 import { DOME_TIER_RAMP_START, type DomeRuntime, type DomeTierRampAnchor } from './runtime';
-import type { DomeCircle, DomeCoord, DomeViewKind } from './types';
+import type { DomeCircle, DomeCoord, DomeViewKind } from './dome-shapes';
 
 export const DOME_TIER_LAG: Readonly<Record<DomeViewKind, number>> = {
   project: 0,

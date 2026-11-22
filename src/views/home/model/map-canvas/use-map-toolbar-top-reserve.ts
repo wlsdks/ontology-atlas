@@ -6,7 +6,6 @@ import { refreshIndexDependentTokens } from "@/widgets/ontology-map";
 const TOP_RESERVE_VAR = "--map-safe-inset-top";
 const RAIL_TOP_VAR = "--topology-floating-control-desktop-top";
 
-/** Keep map fits and the utility rail below a wrapping toolbar, including its status chip. */
 export function useMapToolbarTopReserve(toolbar: HTMLElement | null): void {
   useEffect(() => {
     if (!toolbar || typeof ResizeObserver === "undefined") return;

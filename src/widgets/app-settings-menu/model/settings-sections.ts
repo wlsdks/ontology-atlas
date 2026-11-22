@@ -2,7 +2,7 @@ import {
   SETTINGS_SECTION_SCOPE,
   type SettingsScope,
   type SettingsSectionId,
-} from './catalog/types';
+} from './catalog/settings-catalog-entry';
 
 export const SETTINGS_SECTIONS: readonly SettingsSectionId[] = [
   'screen',

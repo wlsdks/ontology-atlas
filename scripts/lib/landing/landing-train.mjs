@@ -1,14 +1,14 @@
 /**
  * The landing train's decisions, as pure functions.
  *
- * `scripts/landing/pr-land.mjs` owns the input/output: `gh`, `git`, the clock and the lock. Everything that
+ * `scripts/landing/pr-land.mjs` and `scripts/lib/landing/pr-land/` own the input/output: `gh`, `git`, the clock and the lock. Everything that
  * decides something — which pull requests ride the next train, how a red train splits, whether a
  * pull request may skip the train, what integration merge metadata says, what a waiter's exit code is — lives
  * here, so it is tested from literals with no network at all. The header of `pr-land.mjs` carries
  * the measurements and the why.
  */
 
-/** The label that is the queue. See `pr-land.mjs`, "Why a label". */
+/** The label that is the queue. */
 export const QUEUE_LABEL = 'landing-queue';
 
 /** The largest train, and the size used while there is too little history to measure a red rate. */
@@ -23,7 +23,7 @@ export const MIN_HISTORY = 8;
 /** Recent train pull requests read to measure the red rate. One GraphQL page. */
 export const TRAIN_HISTORY_LIMIT = 60;
 
-/** The first words of the conductor's close comment on a red train (`pr-land.mjs`, `settleHead`). */
+/** The first words of the conductor's close comment on a red train (`settleHead` in `pr-land/train-steps.mjs`). */
 export const RED_CLOSE_PREFIX = 'Red on ';
 
 /** Train branches live under this prefix so a person reading the branch list knows what they are. */
@@ -95,13 +95,8 @@ export function nextTrain({ queue = [], splits = [], batchSize = DEFAULT_BATCH }
   return { batch: queue.slice(0, Math.max(1, batchSize)), splits: [], source: 'queue' };
 }
 
-/*
- * ------------------------------------------------------------------------------------------------
- * Adaptive batch size. A train of `n` is green with `(1 - p)^n` for a per-PR red rate `p`, and a
- * red train bisects sequentially, so the default size is the largest `n` that is green at least
- * half the time on the measured `p`.
- * ------------------------------------------------------------------------------------------------
- */
+// Adaptive batch size: a train of `n` is green with `(1 - p)^n` for a per-PR red rate `p`, and a red
+// train bisects sequentially, so the default is the largest `n` green at least half the time on the measured `p`.
 
 /** Pull requests a train carried, from its title: `land #1 #2 and 3 more` is five. */
 export function trainSizeFromTitle(title) {
@@ -170,12 +165,6 @@ export function adaptiveBatch(rows = [], { max = DEFAULT_BATCH, min = MIN_BATCH,
   };
 }
 
-/*
- * ------------------------------------------------------------------------------------------------
- * Speculation: at most two trains in flight, the second cut from the first one's head.
- * ------------------------------------------------------------------------------------------------
- */
-
 /** Trains in flight at once: one on `main`, one speculating on top of it. */
 const MAX_IN_FLIGHT = 2;
 
@@ -208,16 +197,13 @@ export function splitTrain(numbers) {
 }
 
 /**
- * What a red train does next.
- *
- * - This train has not spent its rerun, and it carries one pull request or every failing context
- *   is in the flaky set: **rerun** only the failed jobs, on the unchanged head. Ejecting a lone
- *   pull request costs its author a fix-and-requeue round; in 4 of the 20 red trains before
- *   2026-11-18 the next train carrying the same head went green. A run with jobs still going,
- *   only cancelled contexts, or a refused rerun request settles as red without one. For several, a bisect over a flaky context costs
- *   `log2(n)` CI runs to learn nothing, so a named one reruns at every size.
- * - More than one component: **split** into halves, run as successive trains (bors-style).
- * - One component: **eject** it, naming the contexts.
+ * What a red train does next. A train that has not spent its rerun and carries one pull request, or
+ * whose failing contexts are all flaky, reruns only the failed jobs on the unchanged head: ejecting a
+ * lone pull request costs its author a fix-and-requeue round. A run with jobs still going, only
+ * cancelled contexts, or a refused rerun settles as red without one. For several components a bisect
+ * over a flaky context costs `log2(n)` CI runs to learn nothing, so a named one reruns at every size.
+ * More than one component: split into halves, run as successive trains. One component: eject it,
+ * naming the contexts.
  */
 export function redTrainPlan({ components, failed = [], flaky = [], reruns = 0 }) {
   const names = unique(failed.map((check) => check.name));
@@ -233,7 +219,7 @@ export function redTrainPlan({ components, failed = [], flaky = [], reruns = 0 }
 /**
  * The train pull request's CI, one poll at a time.
  *
- * `checks` and `other` are `requiredCheckState` and `otherCheckState` from `pr-land.mjs` on the
+ * `checks` and `other` are `requiredCheckState` and `otherCheckState` from `pr-land/check-state.mjs` on the
  * train's rollup. A train pull request is opened ready, so its `opened` event is the CI request; the
  * conductor asks again (a draft toggle) only after `EMPTY_BEFORE_REFIRE` empty readings with
  * nothing in flight, once.

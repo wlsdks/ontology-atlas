@@ -10,46 +10,21 @@ import {
 } from '@/shared/config/destinations';
 
 /**
- * Destination shortcuts — press `G`, then the destination's letter.
- *
- * The grammar and the reason for a leader key live in
- * `shared/config/destinations.ts`; this file only turns that grammar into
- * keyboard events.
- *
- * **Three places it must not fire.**
- *
- * 1. **While typing** — `input`, `textarea`, `contentEditable`. Navigating away
- *    mid-word is a defect, not a shortcut.
- * 2. **With a modifier held** — `⌘G` (find next) and `⌃G` belong to the browser
- *    and the OS. The leader is `G` pressed with **no** modifier.
- * 3. **While a blocking surface is open** — modals and sheets are meant to block
- *    what is behind them (`.claude/rules/design.md` forbids a modal without
- *    modality), and that promise has to hold for the keyboard too. `G D` with
- *    the settings sheet open would leave the sheet up while the screen behind it
- *    changed.
- *
- *    **The check reads the DOM instead of trusting the caller.** As a `disabled`
- *    prop, whoever writes the next modal forgets the wiring — this repo has
- *    already paid that once (the rail utility slot was registered per page and
- *    the studio missed it). `aria-modal="true"` is something these surfaces
- *    **already** carry, so the accessibility attribute *is* the wiring and a new
- *    modal is covered for free. `disabled` stays anyway: a caller needs some way
- *    to report a non-modal state that owns the keyboard, such as the gateway.
- *
- * **Why the leader lives in a `useRef`.** Having pressed the leader changes
- * nothing on screen. In `useState` it would re-render the whole app on every
- * leader press, charging that cost to the most frequent input.
+ * Never fires while typing, with a modifier held (`⌘G` and `⌃G` belong to the browser and OS), or
+ * under a blocking surface, read from `aria-modal` in the DOM so a new modal needs no wiring. The
+ * leader lives in a ref: pressing it changes nothing on screen, so it must not re-render the app.
  */
+
 /**
  * Is a blocking surface actually rendered. Surfaces stay in the DOM through their exit animation, so
  * the first `querySelector` match may be off screen; scan all and skip leaving ones. Exported for
  * the shell's `?`, so the sheet and destination keys agree.
  */
 export function blockingSurfaceOpen(): boolean {
-  for (const el of document.querySelectorAll('[aria-modal="true"]')) {
-    if (isLeavingSurface(el)) continue;
-    if (el.getClientRects().length === 0) continue;
-    const style = getComputedStyle(el);
+  for (const element of document.querySelectorAll('[aria-modal="true"]')) {
+    if (isLeavingSurface(element)) continue;
+    if (element.getClientRects().length === 0) continue;
+    const style = getComputedStyle(element);
     if (style.visibility === 'hidden' || style.display === 'none') continue;
     if (Number(style.opacity) < 0.05) continue;
     return true;
@@ -62,10 +37,10 @@ export function blockingSurfaceOpen(): boolean {
  * `aria-hidden`, `data-state="closed"`, `pointer-events: none`), not opacity. An open modal never
  * computes `pointer-events: none`, so these marks cannot let a key through.
  */
-function isLeavingSurface(el: Element): boolean {
-  if (el.closest('[aria-hidden="true"], [inert]')) return true;
-  if (el.getAttribute('data-state') === 'closed') return true;
-  return getComputedStyle(el).pointerEvents === 'none';
+function isLeavingSurface(element: Element): boolean {
+  if (element.closest('[aria-hidden="true"], [inert]')) return true;
+  if (element.getAttribute('data-state') === 'closed') return true;
+  return getComputedStyle(element).pointerEvents === 'none';
 }
 
 /**
@@ -80,7 +55,6 @@ function matchesLetter(event: Pick<KeyboardEvent, 'key' | 'code'>, letter: strin
 /** The rail tile an alias destination is reached through; a destination with its own tile is absent. */
 const HOST_TILE: Partial<Record<DestinationId, DestinationId>> = { docs: 'library', mcp: 'agents' };
 
-/** Which destination's letter this event is, or `null`. */
 function destinationForEvent(
   event: Pick<KeyboardEvent, 'key' | 'code'>,
 ): DestinationId | null {
@@ -93,7 +67,6 @@ function destinationForEvent(
 export interface DestinationShortcutOptions {
   /** Takes the user to a destination. The caller owns the router so that `shared` never knows about it. */
   navigate: (href: string, id: DestinationId) => void;
-  /** True while a blocking surface is open. */
   disabled?: boolean;
   /** Context-dependent overrides for the default href; falls back to `DESTINATION_HREF`. */
   hrefOverrides?: Partial<Record<DestinationId, string>>;
@@ -102,7 +75,6 @@ export interface DestinationShortcutOptions {
    * named a destination. A modal must not let shortcuts through, so say why instead of staying silent.
    */
   onBlockedByOverlay?: (() => void) | null;
-  /** The destinations the rail draws; a key for a hidden one does nothing. */
   visible?: ReadonlySet<DestinationId> | null;
 }
 
@@ -148,11 +120,9 @@ export function useDestinationShortcuts({
         if (visible && !visible.has(HOST_TILE[id] ?? id)) return;
         event.preventDefault();
         /*
-         * With a blocking surface up, **say so instead of navigating** (rule 3
-         * above, `onBlockedByOverlay`). The check is deferred to here because it
-         * should only speak once the user has named a destination — checking on
-         * every key would pour guidance out while they type inside the modal.
-        */
+         * Checked only once a destination is named: checking every key would pour guidance out
+         * while the user types inside the modal.
+         */
         if (blockingSurfaceOpen()) {
           reportBlockedByOverlay();
           return;
@@ -162,15 +132,8 @@ export function useDestinationShortcuts({
       }
 
       /*
-       * **The leader is remembered even while a blocking surface is up.** Cutting
-       * out here would stop `G` then `P` from ever counting as naming a
-       * destination, so the branch above would never run and the silence would
-       * come back (a test caught this). The refusal lives in that one branch, so
-       * "blocked" and "told about it" stay in the same place.
-       *
-       * Start a new leader. `G G` (git) requires the leader itself to be usable
-       * as the second letter, and the block above decides that first — so the
-       * order matters.
+       * Remembered under a blocking surface too, or the refusal above never runs. Set after that
+       * branch so `G G` can use the leader as its second letter.
        */
       leaderAt.current = matchesLetter(event, NAV_LEADER_KEY) ? now : null;
     };

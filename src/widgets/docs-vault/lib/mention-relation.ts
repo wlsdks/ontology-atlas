@@ -9,7 +9,6 @@ import { buildDocLinkMarkdown } from './relative-doc-path';
  * in `lib/relative-doc-path.ts`.
  */
 
-/** What an `@` trigger caught — the query before the caret and where it started. */
 export interface MentionTrigger {
   query: string;
   start: number;
@@ -50,7 +49,6 @@ export const MENTION_RELATIONS = [
 
 export type MentionRelationId = (typeof MENTION_RELATIONS)[number]['id'];
 
-/** Relation id to the studio's label key, so both screens use the same words. */
 export const RELATION_LABEL_KEY: Record<MentionRelationId, string> = {
   broader: 'isA',
   contains: 'contains',
@@ -73,18 +71,11 @@ function canonicalRefs(values: readonly string[]): string[] {
 }
 
 export interface MentionInsertResult {
-  /** The updated full source (frontmatter included). */
   content: string;
-  /** Where the caret should sit after the insertion. */
   caret: number;
-  /** Whether this insertion actually added a **new** relation (false if it already existed). */
   relationAdded: boolean;
 }
 
-/**
- * Write the `@` choice as a relation and leave its link in the body; `caret` is an absolute offset
- * into `content`.
- */
 export function insertMentionRelation({
   content,
   editingSlug,
@@ -115,7 +106,6 @@ export function insertMentionRelation({
     );
   }
 
-  // Body: replace `@query` with a standard markdown link.
   const inserted = buildDocLinkMarkdown({
     fromSlug: editingSlug,
     toSlug: target.slug,
@@ -127,7 +117,6 @@ export function insertMentionRelation({
     content.slice(trigger.start + 1 + trigger.query.length);
   const caretAfterLabel = trigger.start + inserted.length;
 
-  // ② Frontmatter — add the relation. If it is already there, the file is untouched.
   const { frontmatter } = parseFrontmatter(withLabel);
   const existingRaw = frontmatter[key];
   const existing = Array.isArray(existingRaw)

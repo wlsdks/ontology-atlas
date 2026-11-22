@@ -244,7 +244,6 @@ function profileFingerprint(frontmatter: Record<string, unknown>): string {
   );
 }
 
-/** One document the vault carries as an architecture profile and this surface could not read. */
 export interface ArchitectureProfileProblem {
   documentSlug: string;
   message: string;

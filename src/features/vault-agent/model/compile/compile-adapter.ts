@@ -2,7 +2,6 @@ import type { NormalizedResponse, ProviderAdapter, TurnAssembly } from '../provi
 import { isCompileWikiPath } from './compile-wiki-reader';
 import { openaiAdapter } from '../providers/openai';
 
-/** How many times one turn may be told to stop answering in prose and propose the page. */
 const COMPILE_NUDGE_CAP = 2;
 
 function readablePathsRead(exchanges: TurnAssembly['exchanges']): string[] {
@@ -106,7 +105,6 @@ export const compileAdapter: ProviderAdapter = {
     return openaiAdapter.parseResponse(body);
   },
 
-  /** A turn that read a file and answered in prose is nudged to propose, at most twice. */
   reviewResponse(turn: TurnAssembly, parsed: NormalizedResponse) {
     if (parsed.toolCalls.length > 0) return { action: 'accept' as const };
     if (turn.tools.length === 0) return { action: 'accept' as const };

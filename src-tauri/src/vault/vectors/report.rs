@@ -88,3 +88,46 @@ impl Rate {
         Some(done_now.saturating_sub(done_then) as f64 / seconds)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn progress_events_are_throttled_by_count_on_the_clock() {
+        let mut throttle = Throttle::default();
+        let mut sent = 0;
+        // A batch every 10 ms for one second: the first, then at most one per 250 ms.
+        for step in 0..100u64 {
+            if throttle.due(Duration::from_millis(step * 10), true) {
+                sent += 1;
+            }
+        }
+        assert_eq!(sent, 4);
+        // Nothing moves for ten seconds: still one every two seconds.
+        let mut quiet = Throttle::default();
+        let mut alive = 0;
+        for step in 0..=100u64 {
+            if quiet.due(Duration::from_millis(step * 100), false) {
+                alive += 1;
+            }
+        }
+        assert_eq!(alive, 1 + (10_000 / MAX_GAP.as_millis() as u64));
+    }
+
+    #[test]
+    fn the_rate_is_measured_over_at_least_thirty_seconds() {
+        let mut rate = Rate::default();
+        let at = Duration::from_secs;
+        rate.record(at(0), 0);
+        rate.record(at(10), 100);
+        assert_eq!(rate.per_second(at(10)), None);
+        rate.record(at(30), 300);
+        assert_eq!(rate.per_second(at(30)), Some(10.0));
+        for second in 31..=90 {
+            rate.record(at(second), 300 + (second - 30) * 20);
+        }
+        // The last 30 s ran at 20 passages a second; the slow start no longer counts.
+        assert_eq!(rate.per_second(at(90)), Some(20.0));
+    }
+}

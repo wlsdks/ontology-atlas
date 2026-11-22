@@ -20,11 +20,8 @@ const user = (id: string): AcpEvent => ({ kind: 'user', id, text: `question-${id
 
 const kinds = (events: readonly AcpEvent[]) => groupEvents(events).map((item) => item.kind);
 /**
- * Every event id in drawn order, *including* the ones inside a thinking disclosure.
- *
- * `ids` below reports a work group as its own id alone, which is the first thought's. That made
- * it blind to the defect this file now gates: a second thought swallowed by an earlier group
- * simply disappeared from the list instead of showing up in the wrong place.
+ * Every event id in drawn order, including those inside a thinking disclosure. `ids` below reports a
+ * work group as its first thought's id alone, so it cannot see a later thought swallowed by a group.
  */
 const drawnIds = (events: readonly AcpEvent[]) =>
   groupEvents(events).flatMap((item) =>

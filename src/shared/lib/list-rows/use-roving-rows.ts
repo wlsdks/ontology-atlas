@@ -18,9 +18,7 @@ export function useRovingRows({
 }: {
   count: number;
   listRef: RefObject<HTMLElement | null>;
-  /** Rows a PageDown/PageUp press moves by. */
   pageSize?: number;
-  /** Brings a row into the scroller before focus moves onto it; a windowed list supplies it. */
   scrollToRow?: (index: number) => void;
   /**
    * The rows a windowed list has in the DOM. When the stop has scrolled out of them, the nearest

@@ -221,7 +221,6 @@ const subset91 = localFont({
   declarations: [{ prop: 'unicode-range', value: 'U+20-22, U+27-2A, U+2C-39, U+3A-3B, U+3F, U+41-4E, U+4F-5D, U+61-7B, U+7D, U+A0-A1, U+AB, U+AD-AE, U+B7, U+BB, U+BF, U+2013-2014, U+2122' }],
 });
 
-/** The families in subset order, for `--font-pretendard-latin`. */
 const PRETENDARD_LATIN_SUBSETS = [subset68, subset69, subset70, subset71, subset72, subset73, subset74, subset75, subset76, subset77, subset78, subset79, subset80, subset81, subset82, subset83, subset84, subset85, subset86, subset87, subset88, subset89, subset91] as const;
 
 export const pretendardLatinStack = PRETENDARD_LATIN_SUBSETS.map((font) => font.style.fontFamily).join(', ');

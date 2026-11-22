@@ -5,26 +5,28 @@
 
 pub(crate) mod client;
 mod convert;
+mod disk;
 mod download;
 mod fetch;
 pub(crate) mod infer;
 pub(crate) mod pins;
 mod protocol;
+mod reference;
 pub(crate) mod worker;
 
 use super::audit;
 use super::EmbedError;
-use crate::lower_hex::lower_hex;
-use candle_core::{DType, Device};
-use download::{remove_if_present, remove_link, write_synced, Downloader};
+use disk::{
+    file_len, free_space, remove_if_present, sha256_file, store_error, sweep_dir, sync_dir,
+    sync_file, write_synced,
+};
+use download::Downloader;
 use fetch::Fetch;
 use infer::Encoder;
 use pins::{PinnedFile, MODEL_NAME};
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
 use std::collections::HashSet;
 use std::fs;
-use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{LazyLock, Mutex};
@@ -189,19 +191,6 @@ struct ManifestFile {
     sha256: String,
 }
 
-#[derive(Debug, Deserialize)]
-struct References {
-    /// The least cosine each probe may show against its reference vector.
-    floor: f32,
-    probes: Vec<Probe>,
-}
-
-#[derive(Debug, Deserialize)]
-struct Probe {
-    text: String,
-    vector: Vec<f32>,
-}
-
 /// Model directories being prepared or deleted in this process, whichever window
 /// asked; a second request for the same directory is refused, not queued.
 static BUSY: LazyLock<Mutex<HashSet<PathBuf>>> = LazyLock::new(|| Mutex::new(HashSet::new()));
@@ -223,92 +212,6 @@ impl Drop for Busy {
         BUSY.lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .remove(&self.0);
-    }
-}
-
-/// Bytes the current user may still write on the volume holding `path`.
-#[cfg(unix)]
-fn free_space(path: &Path) -> std::io::Result<u64> {
-    use std::os::unix::ffi::OsStrExt;
-    let name = std::ffi::CString::new(path.as_os_str().as_bytes())?;
-    // SAFETY: `statvfs` only writes into the zeroed struct it is given.
-    let mut stat: libc::statvfs = unsafe { std::mem::zeroed() };
-    // SAFETY: `name` is a valid C string and `stat` outlives the call.
-    if unsafe { libc::statvfs(name.as_ptr(), &mut stat) } != 0 {
-        return Err(std::io::Error::last_os_error());
-    }
-    #[allow(
-        clippy::useless_conversion,
-        reason = "the field widths differ by platform"
-    )]
-    let free = u64::from(stat.f_bavail).saturating_mul(u64::from(stat.f_frsize));
-    Ok(free)
-}
-
-#[cfg(windows)]
-fn free_space(path: &Path) -> std::io::Result<u64> {
-    use std::os::windows::ffi::OsStrExt;
-    let wide: Vec<u16> = path.as_os_str().encode_wide().chain(Some(0)).collect();
-    let mut available = 0u64;
-    // SAFETY: `wide` is NUL-terminated and `available` outlives the call.
-    let ok = unsafe {
-        windows_sys::Win32::Storage::FileSystem::GetDiskFreeSpaceExW(
-            wide.as_ptr(),
-            &mut available,
-            std::ptr::null_mut(),
-            std::ptr::null_mut(),
-        )
-    };
-    if ok == 0 {
-        return Err(std::io::Error::last_os_error());
-    }
-    Ok(available)
-}
-
-fn file_len(path: &Path) -> u64 {
-    fs::symlink_metadata(path)
-        .ok()
-        .filter(fs::Metadata::is_file)
-        .map_or(0, |meta| meta.len())
-}
-
-/// Makes the renames in `dir` survive a power loss; Windows has no directory handle
-/// to sync and journals the rename itself.
-fn sync_dir(dir: &Path) -> Result<(), EmbedError> {
-    #[cfg(unix)]
-    fs::File::open(dir)
-        .and_then(|file| file.sync_all())
-        .map_err(store_error)?;
-    #[cfg(not(unix))]
-    let _ = dir;
-    Ok(())
-}
-
-fn sync_file(path: &Path) -> Result<(), EmbedError> {
-    open_for_sync(path)
-        .and_then(|file| file.sync_all())
-        .map_err(store_error)
-}
-
-/// Windows flushes only through a handle that may write (`FlushFileBuffers`), and answers
-/// "Access is denied" for a read-only one.
-fn open_for_sync(path: &Path) -> std::io::Result<fs::File> {
-    fs::OpenOptions::new().write(true).open(path)
-}
-
-fn sha256_file(path: &Path, cancel: &AtomicBool) -> Result<String, EmbedError> {
-    let mut file = fs::File::open(path).map_err(store_error)?;
-    let mut hasher = Sha256::new();
-    let mut buffer = vec![0u8; 1024 * 1024];
-    loop {
-        if cancel.load(Ordering::Relaxed) {
-            return Err(EmbedError::Cancelled);
-        }
-        let read = file.read(&mut buffer).map_err(store_error)?;
-        match buffer.get(..read) {
-            Some(chunk) if !chunk.is_empty() => hasher.update(chunk),
-            _ => return Ok(lower_hex(&hasher.finalize())),
-        }
     }
 }
 
@@ -662,73 +565,6 @@ impl ModelStore {
             Err(error) => Err(store_error(error)),
         }
     }
-}
-
-/// Deletes every entry of `dir` that `keep` rejects; a link is removed, never followed.
-fn sweep_dir(dir: &Path, keep: &dyn Fn(&str, &fs::Metadata) -> bool) -> Result<(), EmbedError> {
-    let entries = match fs::read_dir(dir) {
-        Ok(entries) => entries,
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(()),
-        Err(error) => return Err(store_error(error)),
-    };
-    for entry in entries {
-        let entry = entry.map_err(store_error)?;
-        let path = entry.path();
-        let meta = fs::symlink_metadata(&path).map_err(store_error)?;
-        let name = entry.file_name();
-        if keep(&name.to_string_lossy(), &meta) {
-            continue;
-        }
-        if meta.is_dir() {
-            fs::remove_dir_all(&path).map_err(store_error)?;
-        } else {
-            remove_link(&path)?;
-            remove_if_present(&path)?;
-        }
-    }
-    Ok(())
-}
-
-/// The converted file must turn each reference text into a vector within the floor
-/// of the one recorded from an independent implementation of the same model.
-pub(crate) fn check_conversion(
-    references: &str,
-    config: &str,
-    (device, dtype): (Device, DType),
-    weights: &Path,
-    tokenizer: &Path,
-) -> Result<(), EmbedError> {
-    let references: References =
-        serde_json::from_str(references).map_err(|_| EmbedError::ModelLoad("references".into()))?;
-    if references.probes.is_empty() {
-        return Err(EmbedError::ModelLoad("references".into()));
-    }
-    let config = infer::config(config)?;
-    let encoder = Encoder::load(weights, tokenizer, &config, device, dtype)?;
-    let texts: Vec<&str> = references
-        .probes
-        .iter()
-        .map(|probe| probe.text.as_str())
-        .collect();
-    let vectors = encoder.embed(&texts)?;
-    for (index, (vector, probe)) in vectors.iter().zip(&references.probes).enumerate() {
-        let mut expected = probe.vector.clone();
-        if vector.len() != config.hidden_size || expected.len() != vector.len() {
-            return Err(EmbedError::ModelLoad(format!("reference {index} width")));
-        }
-        infer::normalize(&mut expected)?;
-        let cosine: f32 = vector.iter().zip(&expected).map(|(a, b)| a * b).sum();
-        if cosine < references.floor {
-            return Err(EmbedError::ModelLoad(format!(
-                "reference {index} cosine {cosine:.4}"
-            )));
-        }
-    }
-    Ok(())
-}
-
-fn store_error(error: std::io::Error) -> EmbedError {
-    EmbedError::Store(crate::errors::squeeze(&error.to_string()))
 }
 
 fn load_from_store(store: &ModelStore) -> Result<Encoder, EmbedError> {

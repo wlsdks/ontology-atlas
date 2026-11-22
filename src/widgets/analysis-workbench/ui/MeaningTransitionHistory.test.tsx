@@ -5,7 +5,7 @@ import type { MeaningTransitionV2 } from '@/shared/lib/meaning-transition/meanin
 const archive = vi.hoisted(() => ({ available: true, history: vi.fn(), observe: vi.fn(), read: vi.fn(), translate: (key: string, values?: { count?: number }) => values?.count === undefined ? key : `${key}:${values.count}` }));
 vi.mock('next-intl', () => ({ useLocale: () => 'en', useTranslations: () => archive.translate }));
 vi.mock('@/entities/meaning-transition', () => ({ readMeaningTransitionHistory: archive.history }));
-vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({ getTauriVaultRootPath: (handle: { root?: string }) => handle.root ?? null }));
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', () => ({ getTauriVaultRootPath: (handle: { root?: string }) => handle.root ?? null }));
 vi.mock('@/shared/lib/meaning-transition/tauri-meaning-transition-archive', () => ({
   canArchiveMeaningTransitions: () => archive.available,
   observeMeaningTransitionRoot: archive.observe,

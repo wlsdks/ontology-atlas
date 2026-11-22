@@ -38,7 +38,6 @@ function toggledSet<T>(set: ReadonlySet<T>, value: T): ReadonlySet<T> {
 
 const EMPTY_PROJECT_PAGE = { results: [], total: 0 } as const;
 
-/** The copy that depends on where the dialog opened: each key exists plain and under `onMap`. */
 type PlacedCopyKey =
   | "dialogAriaLabel"
   | "dialogTitle"
@@ -52,17 +51,10 @@ type PlacedCopyKey =
 export interface GlobalSearchProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Ontology nodes — the first search source (vault frontmatter plus build-time dogfood, unified). */
   nodes: readonly KnowledgeGraphNode[];
-  /** Ontology node selection callback. */
   onSelectNode: (node: KnowledgeGraphNode) => void;
-  /**
-   * Optional projects, searched together with ontology by one Cmd+K; must arrive
-   * with `onSelectProject`.
-   */
   projects?: readonly Project[];
   onSelectProject?: (project: Project) => void;
-  /** Inline selection can hand focus to its destination after the dialog releases it. */
   onSelectionFocus?: (keyboard: boolean) => void;
   /**
    * Opened on the map, where it may call itself "Search this map". Off by default, so other
@@ -111,8 +103,6 @@ export function GlobalSearch({
     if (holder instanceof HTMLElement && contentRef.current?.contains(holder)) holder.blur();
   }, [open]);
   const [query, setQuery] = useState("");
-  // Kind and project filter chips narrow ontology results; multi-select sets, cleared with the
-  // query on close.
   const [selectedKinds, setSelectedKinds] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
@@ -121,11 +111,11 @@ export function GlobalSearch({
   );
 
   const toggleKind = useCallback((kind: MeaningfulOntologyKind) => {
-    setSelectedKinds((prev) => toggledSet(prev, kind));
+    setSelectedKinds((previous) => toggledSet(previous, kind));
   }, []);
 
   const toggleProjectId = useCallback((projectId: string) => {
-    setSelectedProjectIds((prev) => toggledSet(prev, projectId));
+    setSelectedProjectIds((previous) => toggledSet(previous, projectId));
   }, []);
 
   // Count what the map draws: a `vault-readme` is a document, not a node (same predicate as the
@@ -154,15 +144,10 @@ export function GlobalSearch({
   const projectNodes = useMemo(() => drawnNodes.filter((node) => node.kind === "project"), [drawnNodes]);
   const projectNodeCount = projectNodes.length;
   const totalCorpus = ontologySize + Math.max(0, projectSize - projectNodeCount);
-  /**
-   * Names the searched scope: the single loaded project's name, otherwise "this folder" ("this map"
-   * on the map).
-   */
   const locale = useLocale();
   const scopeName = useMemo(() => {
     if (projects?.length !== 1) return null;
     const project = projects[0];
-    // The project node's display name, as the map label and INDEX row show it.
     const projectNode = drawnNodes.find(
       (node) => node.kind === "project" && (node.id === `project:${project.slug}` || node.id.endsWith(`:${project.slug}`)),
     );
@@ -232,8 +217,6 @@ export function GlobalSearch({
     <Dialog.Root
       open={open}
       onOpenChange={(next) => {
-        // Escape, a scrim click and the close button converge here, clearing the input and the
-        // filters.
         if (!next) {
           closeAndClear();
           return;
@@ -332,9 +315,6 @@ export function GlobalSearch({
           <CloseButton label={t(placed("closeAriaLabel"))} onClick={closeAndClear} data-testid="global-search-close" />
         </div>
 
-        {/*
-         * Kind and project chips narrow ontology results only; expanded by default, multi-select.
-         */}
         <div
           className="flex flex-col gap-1 border-b border-[color:var(--color-border-soft)] px-3 py-2"
           aria-label={t('filterAriaLabel')}
@@ -474,8 +454,6 @@ export function GlobalSearch({
                 // Results use the name the map and INDEX draw.
                 const label = node.display ?? node.title;
                 const pathLike = node.kind === "element" && isPathLikeTitle(label);
-                // The trailing column is the row's reason: the summary as context when the drawn
-                // name matched, otherwise the text that earned the row.
                 const reason = describeMatchReason({ matched, label, summary: node.summary, query });
                 return (
                   <Command.Item
@@ -486,14 +464,11 @@ export function GlobalSearch({
                       onSelectNode(node);
                       closeAndClear();
                     }}
-                    // Result rows stand on the control ladder (`--control-h-lg`, 44 under a coarse
-                    // pointer).
                     className="flex min-h-[var(--control-h-lg)] cursor-pointer items-center gap-2 rounded-chip px-3 py-2 text-body-lg text-[color:var(--color-text-secondary)] aria-selected:bg-[color:var(--color-indigo-a14)] aria-selected:text-[color:var(--color-text-primary)]"
                   >
                     <span className="inline-flex shrink-0 items-center rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-1.5 py-[1px] font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-tertiary)]">
                       {kindLabel(node.kind)}
                     </span>
-                    {/* Beside the name from `md` up, under it below; see `reasonLineClass`. */}
                     <div className="flex min-w-0 flex-1 flex-col md:flex-row md:items-center md:gap-2">
                       <span
                         data-search-result-path-like={pathLike ? "true" : undefined}
@@ -544,7 +519,6 @@ export function GlobalSearch({
                     onSelectProject(project);
                     closeAndClear();
                   }}
-                  // Same control-ladder height as the concept rows.
                   className="flex min-h-[var(--control-h-lg)] cursor-pointer items-center gap-2 rounded-chip px-3 py-2 text-body-lg text-[color:var(--color-text-secondary)] aria-selected:bg-[color:var(--color-indigo-a14)] aria-selected:text-[color:var(--color-text-primary)]"
                 >
                   <span className="inline-flex shrink-0 items-center rounded-full border border-[color:var(--color-indigo-a20)] bg-[color:var(--color-indigo-a06)] px-1.5 py-[1px] font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-indigo-text-strong)]">
@@ -554,7 +528,6 @@ export function GlobalSearch({
                   {/* The reason: the slug until another field earned the row. */}
                   <div className="flex min-w-0 flex-1 flex-col md:flex-row md:items-center md:gap-2">
                     <span className="min-w-0 truncate text-[color:var(--color-text-primary)] md:flex-1">
-                      {/* The word this screen draws for the project, with the match still lit. */}
                       <HighlightedText
                         text={projectDisplayName(project, locale)}
                         query={isEmptyQuery ? undefined : query}

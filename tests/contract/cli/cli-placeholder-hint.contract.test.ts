@@ -2,7 +2,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { ATLAS_CHECKOUT_PLACEHOLDER } from "@/shared/config/cli-invocation";
+import { ATLAS_CHECKOUT_PLACEHOLDER } from "@/shared/config/agent/cli-invocation";
 
 /**
  * A file that shows the placeholder to a person must also use the hint message key; a tooltip
@@ -14,7 +14,7 @@ const HINT_KEY = "cliPlaceholderHint";
 const AGENT_HINT = "ATLAS_CLI_HINT_EN";
 
 /** The files that define and assemble the placeholder — correctly carrying no hint. */
-const DEFINITION_FILES = ["src/shared/config/cli-invocation.ts"];
+const DEFINITION_FILES = ["src/shared/config/agent/cli-invocation.ts"];
 
 /**
  * **Not fixed yet — the ratchet.**

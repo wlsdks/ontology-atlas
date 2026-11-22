@@ -289,11 +289,11 @@ const BROKEN_VAULT = {
 const hasPython = spawnSync('python3', ['--version']).status === 0;
 
 async function writeVault(files) {
-  const dir = await mkdtemp(join(tmpdir(), 'ontology-atlas-hook-'));
+  const directory = await mkdtemp(join(tmpdir(), 'ontology-atlas-hook-'));
   for (const [name, content] of Object.entries(files)) {
-    await writeFile(join(dir, name), content);
+    await writeFile(join(directory, name), content);
   }
-  return dir;
+  return directory;
 }
 
 function runInjectHook(hookPath, vaultDir) {
@@ -309,10 +309,10 @@ describe('inject-ontology-summary health awareness', () => {
       t.skip('python3 unavailable — hook is silent by design');
       return;
     }
-    const dir = await writeVault(CLEAN_VAULT);
+    const directory = await writeVault(CLEAN_VAULT);
     try {
       for (const hook of INJECT_HOOKS) {
-        const result = runInjectHook(hook, dir);
+        const result = runInjectHook(hook, directory);
         assert.equal(result.status, 0, `${hook}: ${result.stderr}`);
         assert.match(result.stdout, /Ontology vault: 2 nodes/, `${hook}: census present`);
         assert.ok(result.stdout.length < 500, `${hook}: session context stays compact`);
@@ -323,7 +323,7 @@ describe('inject-ontology-summary health awareness', () => {
         );
       }
     } finally {
-      await rm(dir, { recursive: true, force: true });
+      await rm(directory, { recursive: true, force: true });
     }
   });
 
@@ -332,10 +332,10 @@ describe('inject-ontology-summary health awareness', () => {
       t.skip('python3 unavailable — hook is silent by design');
       return;
     }
-    const dir = await writeVault(DRIFT_VAULT);
+    const directory = await writeVault(DRIFT_VAULT);
     try {
       for (const hook of INJECT_HOOKS) {
-        const result = runInjectHook(hook, dir);
+        const result = runInjectHook(hook, directory);
         assert.equal(result.status, 0, `${hook}: ${result.stderr}`);
         assert.match(result.stdout, /Needs attention/, `${hook}: drift surfaced`);
         assert.match(result.stdout, /unresolved edge/, `${hook}: names the unresolved edge`);
@@ -346,7 +346,7 @@ describe('inject-ontology-summary health awareness', () => {
         );
       }
     } finally {
-      await rm(dir, { recursive: true, force: true });
+      await rm(directory, { recursive: true, force: true });
     }
   });
 
@@ -360,10 +360,10 @@ describe('inject-ontology-summary health awareness', () => {
       t.skip('python3 unavailable — hook is silent by design');
       return;
     }
-    const dir = await writeVault(BROKEN_VAULT);
+    const directory = await writeVault(BROKEN_VAULT);
     try {
       for (const hook of INJECT_HOOKS) {
-        const result = runInjectHook(hook, dir);
+        const result = runInjectHook(hook, directory);
         // It never blocks the session — a SessionStart hook always exits 0.
         assert.equal(result.status, 0, `${hook}: ${result.stderr}`);
         assert.match(result.stdout, /will not compile/, `${hook}: does not stay silent`);
@@ -372,7 +372,7 @@ describe('inject-ontology-summary health awareness', () => {
         assert.ok(result.stdout.length < 700, `${hook}: session context stays short`);
       }
     } finally {
-      await rm(dir, { recursive: true, force: true });
+      await rm(directory, { recursive: true, force: true });
     }
   });
 
@@ -380,15 +380,15 @@ describe('inject-ontology-summary health awareness', () => {
   // no vault is this hook's original contract. This measures that the check above
   // did not widen it.
   it('stays silent, as before, when there is no vault at all', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'ontology-atlas-hook-empty-'));
+    const directory = await mkdtemp(join(tmpdir(), 'ontology-atlas-hook-empty-'));
     try {
       for (const hook of INJECT_HOOKS) {
-        const result = runInjectHook(hook, dir);
+        const result = runInjectHook(hook, directory);
         assert.equal(result.status, 0, `${hook}: ${result.stderr}`);
         assert.equal(result.stdout, '', `${hook}: says nothing in an empty folder`);
       }
     } finally {
-      await rm(dir, { recursive: true, force: true });
+      await rm(directory, { recursive: true, force: true });
     }
   });
 });
@@ -445,9 +445,9 @@ function runPublishHook(hookPath, payload) {
 // and trusting that the wiring around it works.
 describe('commit-msg language gate', () => {
   const runHook = async (message) => {
-    const dir = await mkdtemp(join(tmpdir(), 'commit-msg-'));
+    const directory = await mkdtemp(join(tmpdir(), 'commit-msg-'));
     try {
-      const file = join(dir, 'COMMIT_EDITMSG');
+      const file = join(directory, 'COMMIT_EDITMSG');
       await writeFile(file, message, 'utf8');
       const result = spawnSync('sh', ['.githooks/commit-msg', file], {
         cwd: process.cwd(),
@@ -455,7 +455,7 @@ describe('commit-msg language gate', () => {
       });
       return { status: result.status, stderr: result.stderr ?? '' };
     } finally {
-      await rm(dir, { recursive: true, force: true });
+      await rm(directory, { recursive: true, force: true });
     }
   };
 
@@ -669,14 +669,14 @@ describe('Codex secret read guard', () => {
 // branch without this repository's docs. The eslint branch runs against the real repository once.
 async function sensorFixture() {
   const { mkdir } = await import('node:fs/promises');
-  const dir = await mkdtemp(join(tmpdir(), 'fast-sensor-'));
-  await mkdir(join(dir, 'scripts/quality/markdown-language'), { recursive: true });
+  const directory = await mkdtemp(join(tmpdir(), 'fast-sensor-'));
+  await mkdir(join(directory, 'scripts/quality/markdown-language'), { recursive: true });
   await writeFile(
-    join(dir, 'scripts/quality/markdown-language/check.mjs'),
+    join(directory, 'scripts/quality/markdown-language/check.mjs'),
     'console.error("planted language finding"); process.exit(1);\n',
   );
-  await mkdir(join(dir, 'docs'), { recursive: true });
-  return dir;
+  await mkdir(join(directory, 'docs'), { recursive: true });
+  return directory;
 }
 
 describe('fast-sensor lane', () => {
@@ -692,17 +692,17 @@ describe('fast-sensor lane', () => {
   const editPayload = (file) => ({ tool_name: 'Edit', tool_input: { file_path: file } });
 
   it('hands a Markdown gate finding back as additional context', async () => {
-    const dir = await sensorFixture();
+    const directory = await sensorFixture();
     try {
-      const doc = join(dir, 'docs', 'note.md');
+      const doc = join(directory, 'docs', 'note.md');
       await writeFile(doc, 'A note.\n');
-      const result = fireHook(SENSOR, editPayload(doc), dir);
+      const result = fireHook(SENSOR, editPayload(doc), directory);
       assert.equal(result.status, 0, result.stderr);
       assert.match(result.stdout, /additionalContext/);
       assert.match(result.stdout, /planted language finding/);
       assert.match(result.stdout, /docs\/note\.md/);
     } finally {
-      await rm(dir, { recursive: true, force: true });
+      await rm(directory, { recursive: true, force: true });
     }
   });
 
@@ -713,16 +713,16 @@ describe('fast-sensor lane', () => {
   });
 
   it('leaves a file outside the repository alone', async () => {
-    const dir = await sensorFixture();
+    const directory = await sensorFixture();
     const elsewhere = await mkdtemp(join(tmpdir(), 'sensor-elsewhere-'));
     try {
       const doc = join(elsewhere, 'note.md');
       await writeFile(doc, 'A note that is not ours.\n');
-      const result = fireHook(SENSOR, editPayload(doc), dir);
+      const result = fireHook(SENSOR, editPayload(doc), directory);
       assert.equal(result.status, 0, result.stderr);
       assert.equal(result.stdout, '', 'a scratch file outside the root must not be judged');
     } finally {
-      await rm(dir, { recursive: true, force: true });
+      await rm(directory, { recursive: true, force: true });
       await rm(elsewhere, { recursive: true, force: true });
     }
   });
@@ -764,23 +764,23 @@ describe('Codex apply_patch payload parity', () => {
   });
 
   it('the Codex sensor reads a patch envelope, including a symlinked root', async () => {
-    const dir = await sensorFixture();
+    const directory = await sensorFixture();
     try {
       const { realpath } = await import('node:fs/promises');
-      await writeFile(join(dir, 'docs', 'probe.md'), 'A probe.\n');
+      await writeFile(join(directory, 'docs', 'probe.md'), 'A probe.\n');
       // macOS reports /private/tmp for a /tmp root; the sensor must still judge
       // the file as repository-relative rather than silently finding nothing.
-      const reported = join(await realpath(dir), 'docs', 'probe.md');
+      const reported = join(await realpath(directory), 'docs', 'probe.md');
       const result = fire(
         '.codex/hooks/fast-sensor.sh',
         { ...codexEdit(reported), hook_event_name: 'PostToolUse' },
-        dir,
+        directory,
       );
       assert.equal(result.status, 0, result.stderr);
       assert.match(result.stdout, /planted language finding/);
       assert.match(result.stdout, /docs\/probe\.md/);
     } finally {
-      await rm(dir, { recursive: true, force: true });
+      await rm(directory, { recursive: true, force: true });
     }
   });
 });
@@ -901,8 +901,8 @@ describe('inject-ontology-summary executable recovery', () => {
 });
 
 describe('session length notice', () => {
-  const runNotice = async (responses, dir) => {
-    const transcript = join(dir, 'session.jsonl');
+  const runNotice = async (responses, directory) => {
+    const transcript = join(directory, 'session.jsonl');
     const lines = [];
     for (let i = 0; i < responses; i += 1) {
       lines.push(JSON.stringify({ type: 'assistant', timestamp: new Date().toISOString(), message: { id: `msg_${i}` } }));
@@ -912,20 +912,20 @@ describe('session length notice', () => {
     return spawnSync('bash', ['.claude/hooks/session-length.sh'], {
       input: JSON.stringify({ transcript_path: transcript, session_id: 'notice' }),
       encoding: 'utf8',
-      env: { ...process.env, TMPDIR: dir },
+      env: { ...process.env, TMPDIR: directory },
     });
   };
 
   it('tells the owner once a session passes the turn budget, counting each response once', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'session-length-'));
+    const directory = await mkdtemp(join(tmpdir(), 'session-length-'));
     try {
-      assert.equal((await runNotice(299, dir)).stdout, '');
-      const first = await runNotice(300, dir);
+      assert.equal((await runNotice(299, directory)).stdout, '');
+      const first = await runNotice(300, directory);
       assert.match(JSON.parse(first.stdout).systemMessage, /300 turns .* start a fresh session with \/clear/);
-      assert.equal((await runNotice(301, dir)).stdout, '');
-      assert.match(JSON.parse((await runNotice(450, dir)).stdout).systemMessage, /450 turns/);
+      assert.equal((await runNotice(301, directory)).stdout, '');
+      assert.match(JSON.parse((await runNotice(450, directory)).stdout).systemMessage, /450 turns/);
     } finally {
-      await rm(dir, { recursive: true, force: true });
+      await rm(directory, { recursive: true, force: true });
     }
   });
 });

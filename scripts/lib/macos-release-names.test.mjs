@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { loadMacosReleaseNames, resolveMacosExecutable } from "./macos-release-names.mjs";
+import { readMacosReleaseNames, resolveMacosExecutable } from "./macos-release-names.mjs";
 
 function makeFixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "ontology-atlas-macos-names-"));
@@ -26,7 +26,7 @@ function makeFixture() {
 test("loads Ontology Atlas as app bundle name and release asset basename", () => {
   const root = makeFixture();
   try {
-    const names = loadMacosReleaseNames(root);
+    const names = readMacosReleaseNames(root);
 
     assert.equal(names.appName, "Ontology Atlas");
     assert.equal(names.appBundleName, "Ontology Atlas.app");
@@ -41,7 +41,7 @@ test("loads Ontology Atlas as app bundle name and release asset basename", () =>
 test("resolves the executable from Info.plist before falling back to naming conventions", () => {
   const root = makeFixture();
   try {
-    const names = loadMacosReleaseNames(root);
+    const names = readMacosReleaseNames(root);
     const appPath = path.join(root, "Ontology Atlas.app");
     const macosDir = path.join(appPath, "Contents", "MacOS");
     fs.mkdirSync(macosDir, { recursive: true });

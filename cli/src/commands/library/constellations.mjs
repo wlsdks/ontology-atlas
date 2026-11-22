@@ -1,8 +1,6 @@
-// Read-only saved constellation discovery through MCP list_constellations.
-
 import { COLORS } from '../../lib/colors.mjs';
 import { callMcpTool } from '../../lib/mcp-bridge/mcp-call.mjs';
-import { assertConstellationListShape } from '../../lib/query-result-contract/constellation-result-contract.mjs';
+import { assertConstellationListShape } from '../../lib/query-result-contract/constellations.mjs';
 import { resolveVaultRoot } from '../../lib/resolve-vault.mjs';
 import {
   formatUnknownFlagError,

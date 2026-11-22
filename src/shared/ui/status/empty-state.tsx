@@ -2,16 +2,13 @@ import type { ReactNode } from 'react';
 import { cn } from '@/shared/lib/cn';
 
 interface EmptyStateProps {
-  /** A node, so it may contain a link. */
   title: ReactNode;
   /**
    * Pass `h1` where this card is the whole page body, so the page has a heading. Only the tag
    * changes: preflight resets heading size and weight, so the classes still decide.
    */
   titleAs?: 'p' | 'h1' | 'h2';
-  /** A node, so it may contain a link. */
   description?: ReactNode;
-  /** Framed in a muted square: above the title when centred, left of it otherwise. */
   icon?: ReactNode;
   /**
    * Passing `true` draws three muted bars, a node draws that shape: the shape the content will

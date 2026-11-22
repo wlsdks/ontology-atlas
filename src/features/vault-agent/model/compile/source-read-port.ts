@@ -4,15 +4,10 @@
  * outside `sources/` is refused. Do not add a write here.
  */
 
-/** One raw source, as the folder's walk found it. */
 export interface SourceReadEntry {
-  /** Vault-relative path, always beginning `sources/`. */
   path: string;
-  /** File name as it sits on disk. */
   name: string;
-  /** Lowercase extension without the dot (`pdf`), or `''` when the name has none. */
   format: string;
-  /** Byte length from the directory entry. */
   bytes: number;
 }
 

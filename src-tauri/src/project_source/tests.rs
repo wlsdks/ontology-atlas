@@ -303,7 +303,7 @@ fn inspect_project_source_reports_when_the_file_inventory_is_truncated() {
     ));
     fs::create_dir_all(&root).unwrap();
     for index in 0..=SOURCE_INVENTORY_MAX_FILES {
-        fs::write(root.join(format!("{index:04}.txt")), "x").unwrap();
+        fs::write(root.join(format!("{index:05}.txt")), "x").unwrap();
     }
 
     let inspection = inspect_project_source(root.to_string_lossy().to_string(), None).unwrap();
@@ -312,11 +312,11 @@ fn inspect_project_source_reports_when_the_file_inventory_is_truncated() {
     assert_eq!(inspection.files.len(), SOURCE_INVENTORY_MAX_FILES);
     assert_eq!(
         inspection.files.first().map(String::as_str),
-        Some("0000.txt")
+        Some("00000.txt")
     );
     assert_eq!(
         inspection.files.last().map(String::as_str),
-        Some(format!("{:04}.txt", SOURCE_INVENTORY_MAX_FILES - 1).as_str())
+        Some(format!("{:05}.txt", SOURCE_INVENTORY_MAX_FILES - 1).as_str())
     );
 
     fs::remove_dir_all(root).ok();

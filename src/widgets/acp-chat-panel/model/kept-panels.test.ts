@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { awayProps, folderHolder, keptAwayRuntimeId, keptPanels } from './kept-panels';
-import type { AcpChatPanelProps } from '../ui/chat-panel/types';
+import type { AcpChatPanelProps } from '../ui/chat-panel/chat-panel-props';
 
 const props = (vaultRoot: string, extra: Partial<AcpChatPanelProps> = {}): AcpChatPanelProps => ({
   runtimeId: 'claude',

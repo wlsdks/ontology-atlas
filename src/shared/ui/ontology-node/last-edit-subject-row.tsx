@@ -6,11 +6,8 @@ type LastEditSubjectKind = "agent" | "human";
 
 export interface LastEditSubjectRowProps {
   kind: LastEditSubjectKind;
-  /** Resolved by the caller via i18n. */
   prefixLabel: string;
-  /** Agent or person, resolved by the caller via i18n. */
   subjectLabel: string;
-  /** Resolved by the caller from `computeEditAge` plus i18n (tabular-nums). */
   ageLabel: string;
   className?: string;
 }

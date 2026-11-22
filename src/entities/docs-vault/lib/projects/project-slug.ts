@@ -1,4 +1,4 @@
-import type { VaultDoc, VaultManifest } from "../../model/types";
+import type { VaultDoc, VaultManifest } from "../../model/vault-manifest";
 
 /**
  * `fm.slug` (trimmed) or the last path segment (`projects/foo` → `foo`); shared by project
@@ -15,12 +15,10 @@ export function computeProjectSlug(doc: VaultDoc): string | null {
   return fmSlug ?? (fileSlug || null);
 }
 
-/** Frontmatter `kind`, or a legacy `projects/` path. */
 export function isProjectVaultDoc(doc: VaultDoc): boolean {
   return doc.frontmatter?.kind === "project" || doc.slug.startsWith("projects/");
 }
 
-/** `Project.slug` → its `VaultDoc`, the first hop of the lazy body load. */
 export function findProjectVaultDoc(
   manifest: VaultManifest,
   slug: string,

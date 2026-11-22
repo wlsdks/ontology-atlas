@@ -109,12 +109,12 @@ test('uses unique scratch directories and atomic shrink writes', async () => {
   assert.equal(a.exitCode, 2); assert.equal(b.exitCode, 2);
   assert.notEqual(dirname(paths[0][0]), dirname(paths[1][0]));
   assert.equal(dirname(paths[0][0]), dirname(paths[0][1]));
-  const dir = mkdtempSync(join(parent, 'atomic-')); const path = join(dir, 'baseline.json');
+  const directory = mkdtempSync(join(parent, 'atomic-')); const path = join(directory, 'baseline.json');
   writeBaselineAtomically(path, empty());
-  assert.equal(existsSync(path), true); assert.equal(existsSync(join(dir, '.baseline.json.tmp')), false);
+  assert.equal(existsSync(path), true); assert.equal(existsSync(join(directory, '.baseline.json.tmp')), false);
   assert.throws(() => writeBaselineAtomically(path, empty(), { write: () => { throw new Error('injected write failure'); } }), /injected/);
-  assert.equal(readdirSync(dir).some(name => name.endsWith('.tmp')), false);
-  rmSync(dir, { recursive: true, force: true });
+  assert.equal(readdirSync(directory).some(name => name.endsWith('.tmp')), false);
+  rmSync(directory, { recursive: true, force: true });
 });
 
 test('normalizes setup, malformed reporter, and rejected-analysis failures to exit 2', async () => {

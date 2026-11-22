@@ -11,7 +11,7 @@ import {
   RAW_SOURCE_TEXT,
   makeRawSourceVault,
 } from '../../../tests/fixtures/raw-source-vault.mjs';
-import { loadVaultDocs } from '../vault/documents.mjs';
+import { loadVaultDocs } from '../vault/documents/document-cache.mjs';
 
 const SERVER_ENTRY = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'index.js');
 const FOLDED_SLUG = 'ſources/Planning/roadmap';

@@ -118,8 +118,10 @@ fragments in `server/tool-schemas/` (one file per subject) and the `initialize` 
 `server/instructions.mjs`. Handlers live in `mcp/src/tools/` by workflow: reads,
 git, the compiled graph, vault validation, repo analysis, project source,
 concept writes, relation writes, the destructive lifecycle, and absorb, with
-node identity in `tools/vault-nodes.mjs` and post-write maintenance in
-`tools/maintenance.mjs`. The full table is in
+node identity in `tools/vault-nodes.mjs`, post-write maintenance in
+`tools/result-attachments.mjs`, the concept and relation writes with their
+refusals in `tools/writes/` and the agent-brief scope and meaning-readiness
+facts in `tools/agent-brief/`. The full table is in
 [`mcp/README.md`](../mcp/README.md#source-layout).
 
 `scripts/records/check-decision-record.mjs` watches `server/registry.mjs` and `server/tool-definitions/`
@@ -134,12 +136,12 @@ The public entrypoints remain stable while internal modules own narrower work:
 | `src/views/home/ui/HomePage.tsx` | Composes typed domain controllers and surface components. `home/model/use-topology-*` owns graph projection, route/index navigation, authoring, source actions, selection, keyboard/tour state, and review actions; ACP hooks own startup and session orchestration. `TopologyCommandChrome`, `TopologyCanvasSurface`, `TopologyIndexSlot`, `TopologyInspectorSurfaces`, `TopologyAgentDock`, and overlay components own their respective JSX. |
 | `src/widgets/ontology-map/ui/loop/use-topology-loop.ts` | Wires camera, world, realm, interaction, and presentation state to their lifecycle hooks. Ordered frame stages own dome projection (Neural's view), world motion, physics/camera, clusters, realms, reveal, visual state, and rendering; the light stage (`light/`) prepares before the presentation stage and renders after it on its own WebGL2 canvas, which draws light only, in Flat, for an event; Neural's stage (`neural-gl/`) hands the frame's `NeuralFrame` to a three.js painter loaded on first entry to Neural, or leaves it to the canvas painter. The frame scheduler owns request/cancel, idle/yield decisions, and context recovery. Stage factories capture stable dependencies once per effect and reuse frame result objects. Viewport lifecycle and opt-in instrumentation remain separate. |
 | `src/widgets/ontology-map/dial/` | The Flat dial hosts the Flat overview, whose full map `flat-graph/` paints through `DialScene.graph`: the dial model and its `domain_matrix`-equal counts, rings by dependents, order and spatial memory, layout, links and stubs, labels, ledger, placement, fit, picking and the light source; `frame/` turns the world-space scene into pooled marks per frame and paints them. It owns Flat's paint only with no realm, lens, edge (`frame/frame.ts`); otherwise the Flat pass draws on the dial's positions. |
-| `src/widgets/ontology-map/flat-graph/` | The full Flat map as an attention-lit force graph: deterministic ForceAtlas2 layout (`layout.ts`), in-session memory settled once per read (`scene.ts`), attention and its crossfade (`attention.ts`), name admission per zoom step (`names.ts`), and the frame painter with pooled marks (`frame.ts`). The dial's world, picking and probes host it through `DialScene.graph`; scoped realms still use `dial/branches/`. |
+| `src/widgets/ontology-map/flat-graph/` | The full Flat map as an attention-lit force graph: deterministic ForceAtlas2 layout (`layout.ts`), in-session memory settled once per read (`scene.ts`), attention and its crossfade (`attention.ts`), name admission per zoom step (`names.ts`, its parts in `names/`: the sides a name may take, title blocks, lit-line and zoom-step geometry, candidate order and the admission itself), and the frame painter with pooled marks (`frame.ts`, its parts in `frame/`: shared frame state, star placement and pushes, name planning, the plan, paint and probes). The dial's world, picking and probes host it through `DialScene.graph`; scoped realms still use `dial/branches/`. |
 | `src/widgets/ontology-map/ui/OntologyTreeMap.tsx` | The 3D view, a canvas of its own beside the hex board and outside the flat engine's loop. `model/tree-view/` turns nodes and edges into a preorder tree with bounded fan-out (`tree-model.ts`), places it once per graph (`tree-layout.ts`), fits one scale to the shape the tree sweeps through a turn (`tree-camera.ts`), cuts each frame to a mark budget nearest first (`tree-detail.ts`), and places names (`tree-names.ts`); `tree-view/tree-paint.ts` paints the frame from `tokens/read-tree-tokens.ts`; `ui/tree-view/` owns the pose, input, keyboard and the frame loop, which runs only while something changes. |
 | `src/widgets/ontology-map/structure/` | A DOM browser over recorded direct containment: deterministic DAG-aware membership projection, bounded named child lists, breadcrumbs, and existing concept inspection. Galaxy rendering and placement are retired. |
 | `mcp/src/rust-feature-evidence.mjs` | Keeps the evidence entrypoint stable. `rust-feature-evidence/collect.mjs` owns bounded Cargo/workspace reads, source inventory and evidence receipts; `attributes.mjs` interprets literal Rust `cfg` and `cfg_attr` attributes without filesystem access. |
-| `mcp/src/ontology-engine.mjs` | Composes public query methods. `artifact-context.mjs` builds indexes; `context-operations.mjs` owns graph lookups; planner, traversal, selection, scope, maintenance, brief, and health modules own their query families. Dependencies between families are explicit named functions. Dispatch, vocabulary, validation, result shaping, and response formatting are separate owners. |
-| `mcp/src/vault/` | The vault's disk layer, one owner per reason: `slug-paths.mjs` confines every slug to the vault root, `documents.mjs` reads documents, `relation-refs.mjs` owns the edge keys, `graph-queries.mjs` answers reference queries, `eligibility-gate.mjs` holds the gate's session state, `atomic-writes.mjs` owns torn-write and conflict safety, `doc-writes.mjs` is the single document write point, and `backlink-rewrite.mjs` rewrites references after a rename, merge or reclassify. Importers name the owning file; there is no barrel. |
+| `mcp/src/ontology-engine.mjs` | Composes public query methods. `artifact-context.mjs` builds indexes; `context-operations.mjs` owns graph lookups; planner, traversal, selection, scope, maintenance, brief, and health modules own their query families; `selection/` and `traversal/` split those families by the question they answer, each wired from `ontology-engine.mjs`, with the pure rules (filters, cycle search, domain classification, grouping) in `*-rules.mjs` beside them. Dependencies between families are explicit named functions. Dispatch, vocabulary, validation, result shaping, and response formatting are separate owners. |
+| `mcp/src/vault/` | The vault's disk layer, grouped by what it owns: `documents/` reads documents (`slug-paths.mjs` confines every slug to the vault root, `document-cache.mjs` is the parse cache), `graph/` holds the edge keys and reference queries (`relation-refs.mjs` owns the edge keys, `graph-queries.mjs` answers reference queries), `writes/` is the single write path (`eligibility-gate.mjs` holds the gate's session state, `atomic-writes.mjs` owns torn-write and conflict safety, `doc-writes.mjs` is the single document write point, and `backlink-rewrite.mjs` rewrites references after a rename, merge or reclassify), and `sidecar/` keeps the files beside the documents (the `.ontology-atlas/` folder, the activity log, `.ontology-atlasignore`). `absorb.mjs` plans a document absorption. Importers name the owning file; there is no barrel. |
 | `mcp/scripts/verify.mjs` + `verify/` | The entry owns argument parsing at load, the parser smoke, the server session, the gates, the phase order and the summary. `verify/cli.mjs` parses flags and env; `requests/` owns which JSON-RPC requests are sent; `tools-list/` owns the tools/list inventory and schema contract, one file per tool family; `checks/` return a failure string and never log; `phases/` log and never parse JSON-RPC. |
 | `src/views/automations/ui/AutomationsPage.tsx` | Owns lane and selected-schedule navigation. `AutomationScheduleRow` displays timing/status and targets the runner's existing actions; `AutomationRunHistory` owns latest/older result presentation; the Documents lane draws the `round-ledger` widget below the list once a document pass has run. Scheduling and execution authority remain in Library rounds. |
 
@@ -153,9 +155,9 @@ Atlas has several instruction channels, each with a different runtime boundary:
 
 | Channel | Instruction owner | Delivery and scope |
 |---|---|---|
-| Vault conversation | `src/features/vault-agent/model/system-prompt.ts` (`buildSystemPrompt`) | `use-vault-agent.ts` passes the assembled text to the provider as `system`; `AgentPromptDisclosure` displays that same value. This agent reads the vault and proposes changes for review. |
+| Vault conversation | `src/features/vault-agent/model/system-prompt.ts` (`buildSystemPrompt`) | `use-vault-agent.ts` passes the assembled text to the provider as `system`; `AgentPromptText` displays that same value. This agent reads the vault and proposes changes for review. |
 | Local wiki Compile | `src/features/vault-agent/model/compile/compile-system-prompt.ts` (`buildCompileSystemPrompt`) | `use-local-compile.ts` supplies the turn-specific system text for source reading and wiki proposals. This is a separate task from ontology construction. |
-| ACP coding agent | `src/features/acp-session/model/use-acp-session.ts` (`vaultHandoffPrompt`) | `acp-client.ts` supplies `_meta.systemPrompt.append` on the Claude adapter path. This augments that agent's own instructions; it does not replace them or establish universal ACP support. |
+| ACP coding agent | `src/features/acp-session/model/runtime-wiring/vault-handoff-prompt.ts` (`vaultHandoffPrompt`) | `acp-client.ts` supplies `_meta.systemPrompt.append` on the Claude adapter path. This augments that agent's own instructions; it does not replace them or establish universal ACP support. |
 | External MCP client | `mcp/src/server/instructions.mjs` | `server/instance.mjs` attaches the registry's instructions to the MCP initialization response. The receiving host controls their inclusion and placement in model context. |
 
 The shared meta-model block in `mcp/src/construction/construction-rules.mjs` and the vault
@@ -278,12 +280,13 @@ when its stdin closes, and after five idle minutes of its own. The WebView reach
 `_prepare`, `_stop`, `_warm`, `_search`, `_delete`, `_delete_model` and
 `_reveal_model`
 (`src-tauri/src/vault/vectors/commands.rs`, bridged by
-`src/shared/lib/vault-folder/tauri-vault-vectors.ts`), and follows each folder's
+`src/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors.ts`), and follows each folder's
 job through the `vault-vectors-status` event. The web playground has none.
 One store in `src/features/vault-vectors/` keeps each folder's last status for
-the Wiki desk; the shell's adapter `src/app/providers/MeaningRunSeat.tsx` only
-listens to it and copies the open folder's job into the long-work store
-(`src/features/work-run/`) as a `meaning` run beside the checks it holds, so
+the Wiki desk; the shell's adapter `src/app/providers/MeaningRunSeat.tsx`
+listens to it, words a failure with the desk's own sentence, and copies the
+open folder's job into the long-work store (`src/features/work-run/`) as a
+`meaning` run beside the checks it holds, so
 `work-run` never imports `vault-vectors` and the card and rail ring redraw at
 most four times a second.
 
@@ -357,7 +360,7 @@ service, webview tray permission, or web equivalent.
 `src-tauri/tauri.conf.json` under `plugins.deep-link.desktop.schemes`) so that a
 vendor page's "Add to Ontology Atlas" button can reach it. It answers exactly one
 grammar — `ontology-atlas://mcp?install=<base64 server config>` — and
-`src-tauri/src/deep_link.rs` refuses everything else: any other destination, any
+`src-tauri/src/app_shell/deep_link.rs` refuses everything else: any other destination, any
 query key besides `install`, a payload with a character outside the URL-safe set,
 or one over 4 KiB. A refused URL is logged with its reason and dropped; it never
 moves the window, and the URL itself is never written to the log. On success the
@@ -373,7 +376,7 @@ addresses and any URL that writes or executes remain out, and
 
 **One page policy for both.** A static host sends no headers, so the production export
 carries its Content-Security-Policy as a meta tag in the root layout
-(`src/shared/config/web-content-security-policy.ts`): no remote image, connection,
+(`src/shared/config/site/web-content-security-policy.ts`): no remote image, connection,
 plugin, `<base>` or form target, and scripts from the page's own origin (inline ones
 included until the export's inline scripts are hashed). The app loads the same HTML
 under its own policy (`tauri.conf.json`), and both apply there, so the web policy allows
@@ -398,7 +401,7 @@ ability. The canonical roster is the bridge table in
 
 | Bridge | Module | Web behaviour |
 |---|---|---|
-| Vault absolute path | `src/shared/lib/vault-folder/tauri-vault-fs.ts` | FSA handle instead (no path) |
+| Vault absolute path | `src/shared/lib/vault-folder/native-vault/tauri-vault-handle.ts` | FSA handle instead (no path) |
 | Git | `src/shared/lib/git/tauri-git.ts` | Cannot run → degraded card |
 | Gray-area evidence | `src/shared/lib/project-source/tauri-gray-area.ts`, `src-tauri/src/gray_area.rs` | Cannot inspect the bound code root → degraded card |
 | Harness source read | `src/shared/lib/project-source/tauri-harness-source.ts`, `src-tauri/src/harness_source/` | Cannot see dot directories → Harness names what it cannot reach |
@@ -495,10 +498,19 @@ uses its file-handle iterator. Both preserve lexical ordering, strict cursors,
 and scanned-file totals before filtering parsed records.
 
 Queued permission requests preserve the JSON-RPC request ID without coercing
-numeric and string IDs together. `use-acp-session` snapshots the request, guards
-and options before waiting, with the originating turn, vault and generation;
+numeric and string IDs together. `askPermission`
+(`src/features/acp-session/model/permissions/ask-permission.ts`) snapshots the
+request, guards and options before waiting, with the originating turn, vault and
+generation;
 missing or mismatched ontology-write origins are refused. Unstructured user text
 is retained as the requested outcome; unrecorded non-goals remain unknown.
+A card still waiting is taken down by `refuseOpenAsk`
+(`permissions/refuse-open-ask.ts`) and answered with a rejection, never an
+option, when its turn ends, the conversation is closed or unmounted, or the
+agent process exits; when the person cancels or stops the turn it is answered
+`cancelled`, as the protocol requires of `session/cancel`, and so is every
+request that arrives afterwards. A queued request whose turn has ended is
+refused and never auto-approved.
 
 The internal `task-meaning-review` model binds the exact proposal and keeps
 historical comparison evidence separate from current decision reuse. Complete
@@ -521,13 +533,13 @@ decision records behind it are in `docs/DECISIONS.md`, dated 2026-08-16.
 
 | Module | Owns |
 |---|---|
-| `src-tauri/src/acp/` (root `acp.rs` declares the submodules; one file per responsibility: `registry`, `detection`, `launch`, `isolation`, `credential_mirror`, `runtime_environment`, `permission_verdict`, `agent_process`, `bounded_command`, `command_lookup`, `login_probe`, `managed_cli`, `npx_cache`, `search_path`) | Registry snapshot parsing, runtime detection (`ready` · `cli-missing` · `node-missing` · `uvx-missing` · `binary-missing`), launch resolution, isolated config + credential symlink, permission verdict, process-group termination |
-| `src-tauri/src/acp_session/mod.rs`, `acp_runtime/mod.rs` | The five Tauri commands (`acp_detect_runtimes`, `acp_start`, `acp_send`, `acp_stop`, `acp_permission_verdict`) and the four `acp://*` events; `vault/scope.rs` holds the vault-root rejection that also guards a session's working directory |
+| `src-tauri/src/acp/` (root `acp.rs` declares the submodules, grouped by job: `registry`; `detection` with `command_lookup`, `login_probe`, `search_path`; `launch` with `npx_cache`, `runtime_environment`; `isolation` with `credential_mirror`; `install` with `node`, `cli`; `session` with `agent_process`, `permission_verdict`; `runtime`; `bounded_command`; `doctor`) | Registry snapshot parsing, runtime detection (`ready` · `cli-missing` · `node-missing` · `uvx-missing` · `binary-missing`), launch resolution, isolated config + credential symlink, permission verdict, process-group termination, connection doctor, app-owned Node runtime |
+| `src-tauri/src/acp/session.rs`, `acp/runtime.rs` | The five Tauri commands (`acp_detect_runtimes`, `acp_start`, `acp_send`, `acp_stop`, `acp_permission_verdict`) and the four `acp://*` events; `vault/scope.rs` holds the vault-root rejection that also guards a session's working directory |
 | `src-tauri/src/acp-registry.json` | The committed registry snapshot, generated by `scripts/registry-snapshots/build-acp-registry.mjs` (`pnpm acp:registry`); icons are fetched at build time into `public/acp-icons/` |
 | `src/shared/lib/agent-chat/tauri-acp.ts` | The capability bridge and its web degradation. It never re-implements the permission policy |
-| `src/features/acp-session/` | `acp-client.ts` (JSON-RPC framing over the bridge) and `use-acp-session.ts` (one session's lifetime; a permission request blocks until the screen answers, and an unanswered one is refused) |
+| `src/features/acp-session/` | `acp-client.ts` (JSON-RPC framing over the bridge; `permissions/permission-answer.ts` decides which requests the app answers without a card and what is written back) and `use-acp-session.ts` (one session's lifetime; a permission request blocks until the screen answers, and an unanswered one is refused; `connection/open-session.ts` resumes or creates the conversation and raises the permission gate) |
 | `src/widgets/acp-chat-panel/` | The existing Home workbench conversation, task-bound meaning review and separate execution permission card; `AcpChatPanelKeeper` in the locale layout renders every panel through a portal, so an answer in flight outlives the screen that asked for it |
-| `src/widgets/app-settings-menu/ui/AcpRuntimeSettings.tsx` | The one ACP surface a user can reach today: the Agents destination's coding tools list |
+| `src/widgets/app-settings-menu/ui/agent-setup/AcpRuntimeSettings.tsx` | The one ACP surface a user can reach today: the Agents destination's coding tools list |
 
 Three properties are structural rather than incidental. The registry is a
 committed snapshot, so no ACP code path touches the network at runtime. A
@@ -569,9 +581,16 @@ graph. The separation is a property of the **walk**, not a filter applied later.
   view independently of first-run guidance and preserves the previous reader selection
   while the narrow index stands aside. This is separate from ACP agent permissions
   and from the MCP-mirrored ontology tool catalogue.
-- `src-tauri/src/library.rs` owns the native half: hashing, the native picker, the import
-  copy, metadata-only discovery, and Finder reveal. It writes nothing outside
-  `<vault>/sources/`, and its discovery walk contains no writer.
+- `src-tauri/src/library/` owns the native half, one file per job: hashing
+  (`file_hashing.rs`), the native picker (`source_picker.rs`), the record of offered files and
+  the check that an offered file is unchanged before it is copied (`source_offer.rs`), the
+  file and folder name rules (`discovery_rules.rs`), metadata-only discovery
+  (`source_discovery.rs`), dropped files (`dropped.rs`), the import commands
+  (`source_import.rs`), one import's placing of each file (`import_run.rs`), where a copy may
+  land and which names are taken (`import_destination.rs`), the confined writer
+  (`source_copy.rs`), the stop flags and one-copy-per-folder claim (`running_imports.rs`),
+  and Finder reveal (`reveal.rs`). It writes nothing outside `<vault>/sources/` or
+  `<vault>/planning/`, and its discovery walk contains no writer.
 - **One Library destination, four tabs (2026-09-28).**
   `src/app/library-workspace/` composes `src/views/library/` for Sources/Wiki, Check history,
   and saved Bookmarks, and `src/views/docs-vault/` for Concept documents. Ontology owns the
@@ -621,7 +640,7 @@ graph. The separation is a property of the **walk**, not a filter applied later.
   (for example `capabilities/x.md`) for display only. A saved membership is neither
   an ontology kind nor an edge, and corrupt input is unavailable rather than empty.
 - With nothing selected, Sources draws the source progress band
-  (`src/views/library/ui/parts/progress/`) over the Sources overview
+  (`src/views/library/ui/progress/`) over the Sources overview
   (`LibraryPage` mounts `src/widgets/library-sources-overview/` directly) when the
   folder has a source, and the empty folder's start stage when it has none; Wiki
   draws the question desk. Opening a document replaces either and

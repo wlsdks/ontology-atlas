@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { createSummaryStalenessScan, SUMMARY_KINDS, type SummaryStaleness } from "@/entities/docs-vault";
 import { gitNodeRevisionContent, gitNodeRevisions } from "@/shared/lib/git/tauri-git";
-import { isTauriVaultRuntime } from "@/shared/lib/vault-folder/tauri-vault-fs";
+import { isTauriVaultRuntime } from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
 
 export interface SummaryCandidate {
   slug: string;

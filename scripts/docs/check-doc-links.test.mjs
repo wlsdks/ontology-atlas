@@ -18,7 +18,7 @@ import {
 } from '../lib/docs/doc-links.mjs';
 import { checkFile, listMarkdownFiles, parseArgs, resolveLinkTarget, usage } from './check-doc-links.mjs';
 
-function withRepo(files, fn) {
+function withRepo(files, callback) {
   const root = mkdtempSync(join(tmpdir(), 'ontology-atlas-doc-links-'));
   try {
     for (const [path, content] of Object.entries(files)) {
@@ -26,7 +26,7 @@ function withRepo(files, fn) {
       mkdirSync(dirname(full), { recursive: true });
       writeFileSync(full, content);
     }
-    return fn(root);
+    return callback(root);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

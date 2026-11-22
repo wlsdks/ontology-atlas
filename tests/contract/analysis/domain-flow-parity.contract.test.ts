@@ -6,7 +6,7 @@ import { resolveNodeAgentTarget } from "@/entities/knowledge-graph";
 import { derivationToInsight } from "@/features/vault-ontology/model/use-ontology-insight";
 import { buildOntologyMapGraph } from "@/views/home/lib/map-canvas/map-adapter";
 import { buildDialModel, resolveDialAttention } from "@/widgets/ontology-map/dial/dial-model";
-import type { DialModel } from "@/widgets/ontology-map/dial/types";
+import type { DialModel } from "@/widgets/ontology-map/dial/dial-shapes";
 import {
   readContainmentTree,
   rollDirectedDomainFlows,

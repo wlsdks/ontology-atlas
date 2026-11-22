@@ -41,8 +41,10 @@ vi.mock('@/shared/lib/llm-connection/tauri-jev', async (importOriginal) => {
   };
 });
 
-vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-location', () => ({
   revealTauriVaultFile: (...args: unknown[]) => mocks.reveal(...args),
+}));
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', () => ({
   getTauriVaultRootPath: () => null,
 }));
 

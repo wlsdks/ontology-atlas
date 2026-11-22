@@ -6,12 +6,17 @@ import {
   DEFAULT_IMPORT_LIMIT,
   IMPORT_SERVICES,
   buildImportBrief,
+  connectActionLabelKey,
   importConnector,
   importService,
+  isConnectActionDisabled,
+  isUnretryableSetupFailure,
   nextStep,
   serviceAsk,
   serviceEntry,
   serviceVariant,
+  shouldRecheckSetup,
+  type ConnectStepState,
 } from './import-flow';
 
 /**
@@ -173,5 +178,48 @@ describe('where the flow goes next', () => {
         request: { what: 'x', limit: DEFAULT_IMPORT_LIMIT },
       }),
     ).toBe('bring');
+  });
+});
+
+describe('when the connect press can act', () => {
+  const idle: ConnectStepState = { inspection: null, failed: null, checking: false, pending: false, token: '' };
+  const record = importConnector(importService('notion'), { id: 'c1', secretRef })!;
+  const inspected = (hasSecret: boolean, existing = false) => ({ ...idle, inspection: { record, existing, hasSecret } });
+
+  it('treats a conflict, a stopped setup and a missing runtime as not worth retrying', () => {
+    expect(['setupConflict', 'setupStopped', 'setupRuntimeUnavailable'].map((failed) => isUnretryableSetupFailure(failed as never))).toEqual([true, true, true]);
+    expect(isUnretryableSetupFailure('connectFailed')).toBe(false);
+    expect(isUnretryableSetupFailure('setupFolderUnavailable')).toBe(false);
+    expect(isUnretryableSetupFailure(null)).toBe(false);
+  });
+
+  it('runs the check again only after a failure that a second look could clear', () => {
+    expect(shouldRecheckSetup({ ...idle, failed: 'setupFolderUnavailable' })).toBe(true);
+    expect(shouldRecheckSetup({ ...idle, failed: 'setupConflict' })).toBe(false);
+    expect(shouldRecheckSetup({ ...idle, failed: 'setupFolderUnavailable', checking: true })).toBe(false);
+    expect(shouldRecheckSetup({ ...inspected(false), failed: 'connectFailed' })).toBe(false);
+    expect(shouldRecheckSetup(idle)).toBe(false);
+  });
+
+  it('stays disabled until something was inspected, and until a new setup has a token', () => {
+    expect(isConnectActionDisabled(idle)).toBe(true);
+    expect(isConnectActionDisabled({ ...idle, failed: 'setupFolderUnavailable' })).toBe(false);
+    expect(isConnectActionDisabled(inspected(false))).toBe(true);
+    expect(isConnectActionDisabled({ ...inspected(false), token: '   ' })).toBe(true);
+    expect(isConnectActionDisabled({ ...inspected(false), token: 'ntn_x' })).toBe(false);
+    expect(isConnectActionDisabled(inspected(true))).toBe(false);
+  });
+
+  it('stays disabled while checking, saving, or after a failure no retry can clear', () => {
+    expect(isConnectActionDisabled({ ...inspected(true), checking: true })).toBe(true);
+    expect(isConnectActionDisabled({ ...inspected(true), pending: true })).toBe(true);
+    expect(isConnectActionDisabled({ ...inspected(true), failed: 'setupConflict' })).toBe(true);
+  });
+
+  it('names the press for what it will do', () => {
+    expect(connectActionLabelKey({ ...inspected(false), pending: true })).toBe('savePending');
+    expect(connectActionLabelKey({ ...inspected(false), failed: 'connectFailed' })).toBe('retrySave');
+    expect(connectActionLabelKey(inspected(true, true))).toBe('resumeSetup');
+    expect(connectActionLabelKey(inspected(false))).toBe('connectAction');
   });
 });

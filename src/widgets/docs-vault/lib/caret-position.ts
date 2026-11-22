@@ -4,7 +4,6 @@
  * copied property moves the result to another line.
  */
 
-/** Properties that must be copied for the mirror to have the same shape as the original. */
 const MIRRORED_PROPERTIES = [
   'boxSizing',
   'width',
@@ -31,7 +30,6 @@ const MIRRORED_PROPERTIES = [
 ] as const;
 
 export interface CaretPoint {
-  /** Relative to the textarea's padding box — scroll already subtracted. */
   top: number;
   left: number;
   /** Height of the line the caret sits on. Used when placing the menu **below** that line. */
@@ -94,7 +92,6 @@ export function clampMenuToBox({
   gap?: number;
 }): { top: number; left: number } {
   const belowTop = caret.top + caret.lineHeight + gap;
-  // If it cannot open downward, flip above the caret.
   const top =
     belowTop + menu.height <= box.height ? belowTop : Math.max(gap, caret.top - menu.height - gap);
   const left = Math.max(gap, Math.min(caret.left, box.width - menu.width - gap));

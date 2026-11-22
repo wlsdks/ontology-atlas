@@ -28,8 +28,8 @@ const mocks = vi.hoisted(() => ({
   openRecent: vi.fn(async (_record: { desktopRootPath?: string }) => undefined),
 }));
 
-vi.mock('@/entities/vault-session/model/LocalVaultProvider', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/entities/vault-session/model/LocalVaultProvider')>()),
+vi.mock('@/entities/vault-session/model/vault-provider/LocalVaultProvider', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/entities/vault-session/model/vault-provider/LocalVaultProvider')>()),
   useLocalVault: () => mocks.vault,
 }));
 
@@ -45,23 +45,27 @@ vi.mock('@/shared/lib/agent-chat/agent-chat-intent', () => ({
   requestAgentChat: (...args: unknown[]) => mocks.requestAgentChat(...args),
 }));
 
-vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', async () => {
-  const actual = await vi.importActual<typeof import('@/shared/lib/vault-folder/tauri-vault-fs')>(
-    '@/shared/lib/vault-folder/tauri-vault-fs',
-  );
-  return {
-    ...actual,
-    isTauriVaultRuntime: () => true,
-    getTauriVaultRootPath: (handle: { __picked?: boolean } | null) =>
-      // The project picker's handle carries the picked path; every other caller gets the vault's.
-      handle?.__picked ? mocks.pickedProject : mocks.rootPath,
-    createTauriVaultHandle: (rootPath: string) => ({ name: rootPath.split('/').pop() ?? rootPath }),
-    pickTauriVaultDirectory: async () =>
-      mocks.pickedProject === null ? null : { name: 'picked', __picked: true },
-    listTauriDirectoryNames: async () => mocks.projectEntries,
-    ensureTauriChildDirectory: (root: string, name: string) => mocks.ensureChildDir(root, name),
-  };
-});
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-files', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/shared/lib/vault-folder/native-vault/tauri-vault-files')>()),
+  listTauriDirectoryNames: async () => mocks.projectEntries,
+  ensureTauriChildDirectory: (root: string, name: string) => mocks.ensureChildDir(root, name),
+}));
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-handle', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/shared/lib/vault-folder/native-vault/tauri-vault-handle')>()),
+  createTauriVaultHandle: (rootPath: string) => ({ name: rootPath.split('/').pop() ?? rootPath }),
+}));
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-location', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/shared/lib/vault-folder/native-vault/tauri-vault-location')>()),
+  pickTauriVaultDirectory: async () =>
+    mocks.pickedProject === null ? null : { name: 'picked', __picked: true },
+}));
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime')>()),
+  isTauriVaultRuntime: () => true,
+  getTauriVaultRootPath: (handle: { __picked?: boolean } | null) =>
+    // The project picker's handle carries the picked path; every other caller gets the vault's.
+    handle?.__picked ? mocks.pickedProject : mocks.rootPath,
+}));
 
 // The hook reads `useLocale()` for the starter language, and this test has no intl provider.
 vi.mock('next-intl', () => ({

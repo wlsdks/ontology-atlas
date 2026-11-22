@@ -2,15 +2,11 @@ import nav from '../../messages/en/gatewayNav.json';
 import { SITE_URL } from '@/shared/config';
 import { GUIDE_PAGES, guideCanonicalPath } from '@/views/gateway-doc';
 
-// Static export: written once at build time, like robots.txt and the sitemap.
 export const dynamic = 'force-static';
 
 const REPO = 'https://github.com/wlsdks/ontology-atlas';
 
-/**
- * A plain-text map of the site for answer engines (llmstxt.org): what Atlas is in the site's own
- * words, then the pages that say more. Every claim here is one the visible pages already make.
- */
+/** Every claim here is one the visible pages already make. */
 export function GET(): Response {
   const titles = nav.guidePages as Record<string, string>;
   const guide = GUIDE_PAGES.map(

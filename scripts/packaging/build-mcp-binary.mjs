@@ -1,20 +1,14 @@
 #!/usr/bin/env node
 /**
- * Compiles the MCP server into a single self-contained binary and places it
- * where the app bundle picks it up.
+ * Compiles the MCP server into a single self-contained binary and places it where the app bundle
+ * picks it up, so one download installs the human and the agent surface together.
  *
  *   node scripts/packaging/build-mcp-binary.mjs                     # host architecture
  *   node scripts/packaging/build-mcp-binary.mjs --target x86_64-apple-darwin
  *   node scripts/packaging/build-mcp-binary.mjs --skip-verify       # compile only
  *
- * Why: it removes the contradiction of installing the app and still having no
- * agent surface. One download installs the human surface and the agent surface
- * together.
- *
- * fail-closed: right after compiling, the binary is actually spawned for an
- * `initialize` → `tools/list` round trip and the tool count is compared against
- * the expectation. Shipping a binary that cannot boot is this slice's worst
- * failure mode, so it is caught here.
+ * Fail-closed: right after compiling, the binary is spawned for an `initialize` -> `tools/list` round
+ * trip and the tool count is compared with the expectation, so a binary that cannot boot is caught here.
  */
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, statSync } from 'node:fs';

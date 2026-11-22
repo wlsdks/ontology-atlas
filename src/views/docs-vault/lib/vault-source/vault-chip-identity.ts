@@ -1,7 +1,3 @@
-/**
- * What the vault chip says it is: the chosen source. Local without a folder is its own state,
- * not the sample, and hides the count rather than show the sample's number.
- */
 export type VaultChipIdentity =
   | { kind: "local"; label: string; showDocCount: true }
   | { kind: "local-pending"; label: null; showDocCount: false }

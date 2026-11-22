@@ -7,10 +7,11 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Mutex, OnceLock};
 
-use super::{
-    discovery_accepts_directory, discovery_skip_reason, forget_source_offers,
-    remember_source_offer, SkipReason, SourceOffer, DISCOVERY_MAX_DEPTH, DISCOVERY_MIN_FILE_BYTES,
+use super::discovery_rules::{
+    discovery_accepts_directory, discovery_skip_reason, SkipReason, DISCOVERY_MAX_DEPTH,
+    DISCOVERY_MIN_FILE_BYTES,
 };
+use super::source_offer::{forget_source_offers, remember_source_offer, SourceOffer};
 
 /// The page listens on this name; the Library stage is the only listener.
 pub(crate) const SOURCE_DROP_EVENT: &str = "source-drop";
@@ -159,7 +160,7 @@ impl DropWalk {
             return;
         };
         let key = path.to_string_lossy().into_owned();
-        let size = source_offer.identity.length;
+        let size = source_offer.length();
         self.offer.total_bytes += size;
         self.offer.files.push(DroppedFile {
             path: key.clone(),
@@ -204,7 +205,7 @@ fn walk_dropped_folder(root: &Path, name: &str, walk: &mut DropWalk) {
         walk.skip(name.to_string(), SkipReason::NotDocument);
         return;
     };
-    if crate::vault_grants::holds_a_vault_root(&canonical) {
+    if crate::vault::grants::holds_a_vault_root(&canonical) {
         walk.offer.holds_open_folder.push(name.to_string());
         return;
     }
@@ -213,11 +214,17 @@ fn walk_dropped_folder(root: &Path, name: &str, walk: &mut DropWalk) {
 
 /// `within` is the path below the dropped folder, which the folder rules judge; the copy
 /// lands at `<dropped folder name>/<within>`. Links are never followed.
-fn walk_folder(dir: &Path, dropped_name: &str, within: &str, depth: usize, walk: &mut DropWalk) {
+fn walk_folder(
+    directory: &Path,
+    dropped_name: &str,
+    within: &str,
+    depth: usize,
+    walk: &mut DropWalk,
+) {
     if depth > DISCOVERY_MAX_DEPTH || walk.offer.truncated {
         return;
     }
-    let Ok(entries) = fs::read_dir(dir) else {
+    let Ok(entries) = fs::read_dir(directory) else {
         return;
     };
     for entry in entries.flatten() {
@@ -278,3 +285,6 @@ fn walk_folder(dir: &Path, dropped_name: &str, within: &str, depth: usize, walk:
         walk.offer_file(&path, path.clone(), landing);
     }
 }
+
+#[cfg(test)]
+mod tests;

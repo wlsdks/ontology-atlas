@@ -13,7 +13,6 @@ const GUARD_YS = [76, 160, 244];
 const GUARD_ICONS = [FileText, OctagonMinus, ListChecks];
 const TRUNK = 'M104 160H140';
 
-/** One repository and the three steps of the agent's loop the Setup page lists: read, stopped, checked. */
 function HarnessGuardArtwork({ arriving, engaged, reduced, labels }: FeatureStageMotion & { labels: string[] }) {
   const beat = MOTION.slow.duration;
   return <div className="relative aspect-square" data-harness-artwork>
@@ -44,7 +43,6 @@ function HarnessGuardArtwork({ arriving, engaged, reduced, labels }: FeatureStag
   </div>;
 }
 
-/** The Harness tab when no harness can be read: what the tab shows, why it is empty here, and the one way to fill it. */
 export function HarnessUnreadStage({ state, title, body, action, note }: {
   state: 'browser' | 'no-source';
   title: string;

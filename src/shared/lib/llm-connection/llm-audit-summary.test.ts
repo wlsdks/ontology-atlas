@@ -48,7 +48,7 @@ describe('audit count and tail reader', () => {
   it('does not load a file when cancelled while its directory resolves', async () => {
     const controller = new AbortController();
     const getFileHandle = vi.fn();
-    let resolve!: (dir: { getFileHandle: typeof getFileHandle }) => void;
+    let resolve!: (directory: { getFileHandle: typeof getFileHandle }) => void;
     const getDirectoryHandle = () => new Promise(done => { resolve = done; });
     const pending = readLlmAuditSummary({ getDirectoryHandle } as unknown as FileSystemDirectoryHandle, { signal: controller.signal });
     await vi.waitFor(() => expect(resolve).toBeTypeOf('function'));

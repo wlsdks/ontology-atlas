@@ -57,16 +57,16 @@ describe('control components carry what a className cannot', () => {
   it('takes the disabled styling from the value layer', () => {
     // Disabled styling handled per component gets missed.
     render(<Chip disabled>칩</Chip>);
-    const el = screen.getByRole('button');
-    expect(el.className).toContain('disabled:opacity-55');
-    expect(el.className).toContain('disabled:cursor-not-allowed');
+    const element = screen.getByRole('button');
+    expect(element.className).toContain('disabled:opacity-55');
+    expect(element.className).toContain('disabled:cursor-not-allowed');
   });
 
   it('appends a placement className and keeps the shape', () => {
     render(<Chip className="absolute right-2">칩</Chip>);
-    const el = screen.getByRole('button');
-    expect(el).toHaveClass('absolute');
-    expect(el).toHaveClass('rounded-chip');
+    const element = screen.getByRole('button');
+    expect(element).toHaveClass('absolute');
+    expect(element).toHaveClass('rounded-chip');
   });
 
   it.each([

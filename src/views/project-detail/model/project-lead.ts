@@ -5,7 +5,6 @@ import { splitProjectBrief } from "./project-brief";
 const NON_PROSE_BLOCK = /^(#{1,6}\s|[-*+]\s|\d+\.\s|>|```|~~~|\|)/;
 const HEADING_BLOCK = /^#{1,6}\s/;
 
-/** The first prose paragraph, else the first non-heading block, so a body that opens with a list still leads. */
 function firstParagraph(markdown: string): string {
   const blocks = markdown
     .split(/\n{2,}/)
@@ -14,7 +13,6 @@ function firstParagraph(markdown: string): string {
   return blocks.find((block) => !NON_PROSE_BLOCK.test(block)) ?? blocks.find((block) => !HEADING_BLOCK.test(block)) ?? "";
 }
 
-/** The description above it already says the first sentence, so the paragraph starts after it. */
 function withoutLeadSentence(paragraph: string, leadSentence: string | null | undefined): string {
   if (!leadSentence) return paragraph;
   const normalized = paragraph.replace(/\s+/g, " ").trim();

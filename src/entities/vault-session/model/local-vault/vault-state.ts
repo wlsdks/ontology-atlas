@@ -32,18 +32,14 @@ export interface State {
   manifest: VaultManifest | null;
   agentConfigStatus: AgentConfigStatus | null;
   agentActivityStatus: AgentActivityStatus;
-  /** Tail of the local audit log; empty array when absent. */
   agentActivityLog: AgentActivityEntry[];
-  /** App-local human decision receipts from `.ontology-atlas/acp-work.jsonl`. */
   acpWorkReceipts: AcpWorkReceipt[];
   fileHandles: Map<string, FileSystemFileHandle>;
   imageHandles: Map<string, FileSystemFileHandle>;
-  /** Raw sources under `sources/` by vault-relative path; a handle is reached only on open or hash. */
   sourceHandles: Map<string, FileSystemFileHandle>;
   errorMessage: string | null;
   /** Meaningful only in the error status — the key the picker uses to pick localized guidance. */
   errorCode: VaultErrorCode | null;
-  /** Epoch ms of the last successful scan, shown by the picker as "scanned N seconds ago". */
   lastLoadedAt: number | null;
   /** The handle `manifest` was built from: tells "re-reading" from "switching" folders. */
   manifestHandle: FileSystemDirectoryHandle | null;
@@ -87,7 +83,6 @@ export function emptyState(status: Status = 'idle'): State {
   };
 }
 
-/** Every member is a stable identity; dependency arrays list them. */
 export interface VaultSessionCore {
   setState: Dispatch<SetStateAction<State>>;
   stateRef: RefObject<State>;

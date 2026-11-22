@@ -223,9 +223,9 @@ test("smoke markers must exist in product source, not only in generated data", (
   const roots = ["src", "app", "messages"];
 
   const files = [];
-  const walk = (dir) => {
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-      const full = path.join(dir, entry.name);
+  const walk = (directory) => {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const full = path.join(directory, entry.name);
       const rel = path.relative(repoRoot, full);
       if (GENERATED.some((g) => rel.startsWith(g))) continue;
       if (entry.isDirectory()) walk(full);
@@ -236,8 +236,8 @@ test("smoke markers must exist in product source, not only in generated data", (
     }
   };
   for (const root of roots) {
-    const dir = path.join(repoRoot, root);
-    if (fs.existsSync(dir)) walk(dir);
+    const directory = path.join(repoRoot, root);
+    if (fs.existsSync(directory)) walk(directory);
   }
   assert.ok(files.length > 100, "소스를 못 읽었다 — 이 시험이 지금 아무것도 지키지 않는다");
 
@@ -411,9 +411,8 @@ test("desktop smoke detects drift in the current download handoff", () => {
   const outDir = makeCurrentOut();
   const routePath = routeIndexPath("ko", "/download");
   const html = fs.readFileSync(path.join(outDir, routePath), "utf8");
-  // The sentence being removed also comes from the catalogue — pinning a literal
-  // would make this probe itself silently meaningless at the next remake (which is
-  // exactly what happened after #730).
+  // The sentence being removed also comes from the catalogue: pinning a literal would make this
+  // probe silently meaningless at the next remake.
   const [firstFragment] = ROUTE_TEXT["ko:/download"];
   write(outDir, routePath, html.replace(firstFragment, ""));
 

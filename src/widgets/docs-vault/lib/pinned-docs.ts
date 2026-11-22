@@ -32,15 +32,14 @@ function writePinned(key: VaultRecentKey, list: string[]) {
   }
 }
 
-/** Toggle a pin. Pinning inserts at the front, unpinning removes. Returns the updated list. */
 export function togglePinnedDoc(
   key: VaultRecentKey,
   slug: string,
 ): string[] {
   const current = readPinnedDocs(key);
-  const idx = current.indexOf(slug);
+  const index = current.indexOf(slug);
   let next: string[];
-  if (idx === -1) {
+  if (index === -1) {
     next = [slug, ...current];
   } else {
     next = current.filter((s) => s !== slug);

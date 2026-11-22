@@ -5,10 +5,10 @@ import { clearDialFrame, dialOwnsFlatPaint, paintDialFrame } from "../../dial/fr
 import { readDialTokens } from "../../dial/tokens";
 import { paintDialMarks } from "../../dial/frame/paint";
 import type { DialFrameMarks } from "../../dial/frame/marks";
-import type { DialFrameInput, DialFrameResult } from "../../dial/types";
+import type { DialFrameInput, DialFrameResult } from "../../dial/dial-shapes";
 import { paintDeferredFlatGraph, paintFlatGraphFrame } from "../../flat-graph/frame";
 import { readFlatGraphTokens } from "../../flat-graph/tokens";
-import type { FlatGraphTokens } from "../../flat-graph/types";
+import type { FlatGraphTokens } from "../../flat-graph/flat-graph-shapes";
 import { tierAssemblyAppear } from "../../morph/tier-assembly";
 import { spotlightRevealsHidden } from "../../model/visibility/tier-visibility";
 import { passState, effectiveAlphaByIdReused } from "./frame-state";

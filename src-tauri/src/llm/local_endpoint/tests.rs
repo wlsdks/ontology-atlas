@@ -59,3 +59,36 @@ fn an_lm_studio_style_base_url_does_not_get_a_second_v1() {
         "http://localhost:11434/v1/models"
     );
 }
+
+/// The settings screen says "never leaves this computer" by the same rule
+/// (`src/shared/lib/llm-connection/loopback.test.ts` holds the same cases).
+#[test]
+fn loopback_is_this_computer_only_in_the_spellings_the_screen_accepts() {
+    for this_computer in [
+        "localhost",
+        "LocalHost:11434",
+        "127.0.0.1:1234",
+        "127.8.9.10",
+        "[::1]:8080",
+        "[::1]",
+        "[0:0:0:0:0:0:0:1]",
+    ] {
+        assert!(is_loopback_authority(this_computer), "{this_computer}");
+    }
+    for elsewhere in [
+        "127.0.0.1.evil.example",
+        "127.0.0.1.evil.example:443",
+        "localhost.example.com",
+        "192.168.0.4:11434",
+        "10.0.0.127",
+        "127.1",
+        "127.000.0.1",
+        "0x7f.0.0.1",
+        "127.0.0.256",
+        "[::ffff:127.0.0.1]",
+        "[::2]",
+        "example.com",
+    ] {
+        assert!(!is_loopback_authority(elsewhere), "{elsewhere}");
+    }
+}

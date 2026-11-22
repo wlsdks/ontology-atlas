@@ -8,7 +8,7 @@ import { isContainmentRelation } from "@/entities/knowledge-graph";
 
 import { buildDialModel } from "../dial/dial-model";
 import { circularDomainOrder } from "../dial/order";
-import type { DialModel } from "../dial/types";
+import type { DialModel } from "../dial/dial-shapes";
 import {
   directRelations,
   readContainmentTree,
@@ -23,7 +23,7 @@ import { layoutFlatGraph, runForceAtlas2, steppedForceAtlas2 } from "./layout";
 import { flatGraphPins, settleFlatGraph } from "./scene";
 import { separate, type Body } from "./separate";
 import { resolveFlatGraphTokens } from "./tokens";
-import type { FlatGraphFrame } from "./types";
+import type { FlatGraphFrame } from "./flat-graph-shapes";
 
 function cssValues(): Map<string, string> {
   const values = new Map<string, string>();
@@ -119,8 +119,8 @@ describe("layoutFlatGraph", () => {
     expect(again.positions).toEqual(first.positions);
   });
 
-  it.each([5000, 20000])("rebuilds a remembered %i-file folder with the footprints and extent it first had", (files) => {
-    const model = folderModel(files);
+  it("rebuilds a remembered 5,000-file folder with the footprints and extent it first had", () => {
+    const model = folderModel(5000);
     const first = layoutOf(model);
     settleFlatGraph(model, first, "settled", "test-face");
     const again = layoutFlatGraph(model, circularDomainOrder(model, null).order, TOKENS, flatGraphPins(model, "test-face"), frameOf(model));

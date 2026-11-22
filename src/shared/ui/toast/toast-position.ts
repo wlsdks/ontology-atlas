@@ -18,7 +18,6 @@ const TOAST_PANE_GUTTER_PX = 16;
  */
 export const LIBRARY_TOAST_RIGHT_OFFSET = `calc(var(--app-toast-dock-reserve, 0px) + ${TOAST_PANE_GUTTER_PX}px)`;
 
-/** The window edge from `lg` up, the bottom tab bar's top below it. */
 export const LIBRARY_TOAST_BOTTOM_OFFSET = `calc(var(--app-toast-bottom-reserve, 0px) + ${TOAST_PANE_GUTTER_PX}px)`;
 
 /**

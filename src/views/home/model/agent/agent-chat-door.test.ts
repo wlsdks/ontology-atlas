@@ -8,7 +8,7 @@ import { parseHomeRouteState } from '../route-state/url-state';
 const homePageSource = readFileSync('src/views/home/ui/HomePage.tsx', 'utf8');
 const indexSource = readFileSync('src/views/home/model/index-panel/use-topology-index-presentation.tsx', 'utf8');
 const agentSource = readFileSync('src/views/home/model/agent/use-topology-agent-orchestration.tsx', 'utf8');
-const dockSource = readFileSync('src/views/home/ui/TopologyAgentDock.tsx', 'utf8');
+const dockSource = readFileSync('src/views/home/ui/map-overlays/TopologyAgentDock.tsx', 'utf8');
 
 function frameWidthOwners(source: string): string[] {
   const file = ts.createSourceFile('HomePage.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);

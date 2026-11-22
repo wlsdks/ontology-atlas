@@ -4,7 +4,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { composite, contrastRatio, parseColor } from "../../../scripts/lib/design/contrast.mjs";
-import { stripComments } from "../../../scripts/lib/design/static-surface-census.mjs";
+import { stripComments } from "../../../scripts/lib/design/strip-comments.mjs";
 import { readGlobalCss } from '../../../scripts/lib/design/global-css.mjs';
 
 /**

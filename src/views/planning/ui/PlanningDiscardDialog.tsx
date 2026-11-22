@@ -4,7 +4,6 @@ import { useId } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button, Dialog } from '@/shared/ui';
 
-/** Asks once before unsaved editor text is thrown away. */
 export function PlanningDiscardDialog({ open, onKeep, onDiscard }: { open: boolean; onKeep: () => void; onDiscard: () => void }) {
   const t = useTranslations('planning');
   const titleId = useId();

@@ -1,95 +1,81 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useLocalVault, useVaultIdentityScope, useVaultSessionIdentityScope } from "@/entities/vault-session";
-import { isWikiPage, type LibrarySourceRow } from "@/entities/docs-vault";
+import { isWikiPage } from "@/entities/docs-vault";
 import { opensLocally } from "@/features/vault-agent";
-import { useRouter } from "@/i18n/navigation";
-import { MCP_CONNECTORS_HREF } from "@/shared/config/destinations";
-import { useVaultConnectors } from "@/features/mcp-connectors";
 import { isAcpBridgeAvailable } from "@/shared/lib/agent-chat/tauri-acp";
 import {
-  buildCompileBrief,
   FindDocumentsDialog,
   questionDeskListingVersion,
   showLibraryWorkStrip,
   useLibraryModel,
 } from "@/features/library";
-import { isRunActive, useActiveTurn, useTurnStage, useWorkRunSnapshot, workCardHoldsSeat, workRuns, type TurnWorkReport, type WorkRunActivity } from "@/features/work-run";
-import type { AcpEvent } from "@/features/acp-session";
-import { completedAcpReadEvent } from "@/features/library";
-import { SourcesOverview, sourceGroupKey, type SourcePick } from "@/widgets/library-sources-overview";
+import { isRunActive, useActiveTurn, useTurnStage, useWorkRunSnapshot, workCardHoldsSeat, workRuns } from "@/features/work-run";
+import { SourcesOverview } from "@/widgets/library-sources-overview";
 import { LibraryWorkActivityStrip } from "@/widgets/library-work-activity";
 import { LibraryImportDialog } from "@/widgets/library-import";
-import { clearLibraryImportRequest, pendingLibraryImport, type ImportDestination } from "@/shared/lib/library-import/destination";
-import { isRouteCrossfadeRunning, navigateWithViewTransition, subscribeRouteCrossfade } from "@/shared/lib/navigation/route-view-transition";
 import {
   writeLibraryIndexSegment,
   writeWikiWriteMode,
   type LibraryIndexSegment,
-} from "@/shared/lib/preferences/appearance-preferences";
+} from "@/shared/lib/preferences/library-preferences";
 import { cn } from "@/shared/lib/cn";
 import { usePrefersReducedMotion } from "@/shared/lib/render-timing/use-prefers-reduced-motion";
-import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/tauri-vault-fs";
+import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { ArrowLeft } from "lucide-react";
 import { PAGE_COLUMN_STAGE } from "@/shared/ui/tokens/page-frame";
-import {
-  LIBRARY_TOAST_BOTTOM_OFFSET,
-  LIBRARY_TOAST_DIALOG_OFFSET,
-  LIBRARY_TOAST_RIGHT_OFFSET,
-} from "@/shared/ui/toast/toast-position";
 import { useFailureSentence } from "@/shared/lib/failures/use-failure-sentence";
 import { ChromeChip, useToast, useToastAnchor } from "@/shared/ui";
-import { isWikiFurnitureSlug } from "@/shared/lib/library/wiki-page-schema";
 import { useLibraryAgent } from "../lib/agent/use-library-agent";
 import { useAnswerRefresh } from "../lib/questions/use-answer-refresh";
-import { LocalCompileCard } from "./parts/compile/LocalCompileCard";
-import { useSourceCopy } from "./parts/first-run/use-source-drop";
-import { LibraryStatusStrip } from "./parts/compile/LibraryStatusStrip";
-import { LibraryAgentDock } from "./parts/agent/LibraryAgentDock";
-import { LibraryConversationDoor } from "./parts/agent/LibraryConversationDoor";
+import { LocalCompileCard } from "./compile/LocalCompileCard";
+import { useSourceCopy } from "../model/sources/use-source-drop";
+import { LibraryStatusStrip } from "./compile/LibraryStatusStrip";
+import { LibraryAgentDock } from "./agent/LibraryAgentDock";
+import { LibraryConversationDoor } from "./agent/LibraryConversationDoor";
 import { useChatWidth } from "@/widgets/acp-chat-panel";
 import { selectOpenVaultHandle } from "@/shared/lib/vault-folder/select-open-vault-handle";
-import { LibraryQuestionDesk } from "./parts/questions/LibraryQuestionDesk";
-import { AnswerRevisionComparison } from "./parts/questions/AnswerRevisionComparison";
-import { LibraryHomeStrip } from "./parts/LibraryHomeStrip";
-import { useLibraryReader } from "./library-page/use-library-reader";
-import { WikiReaderTopRow } from "./parts/wiki/WikiReaderTopRow";
-import type { ReaderLanding } from "./parts/wiki/reader-landing";
-import { useLibrarySources } from "./library-page/use-library-sources";
-import { useLibraryWorkActivity } from "./library-page/use-library-work-activity";
-import { useLibraryHome } from "./library-page/use-library-home";
-import { useLibraryTurns } from "./library-page/use-library-turns";
-import { useLibraryFocus } from "./library-page/use-library-focus";
-import { useLibraryIndexColumn } from "./library-page/use-library-index-column";
-import { useWikiTemplateProblems } from "./library-page/use-wiki-template-problems";
-import { libraryHomeStrip } from "./library-page/library-home-strip";
+import { LibraryQuestionDesk } from "./questions/LibraryQuestionDesk";
+import { AnswerRevisionComparison } from "./questions/AnswerRevisionComparison";
+import { LibraryHomeStrip } from "./home/LibraryHomeStrip";
+import { useLibraryReader } from "../model/reader/use-library-reader";
+import { WikiReaderTopRow } from "./wiki/WikiReaderTopRow";
+import type { ReaderLanding } from "../model/reader/reader-landing";
+import { useLibrarySources } from "../model/sources/use-library-sources";
+import { useLibraryWorkActivity } from "../model/turns/use-library-work-activity";
+import { useLibraryHome } from "../model/home/use-library-home";
+import { useLibraryTurns } from "../model/turns/use-library-turns";
+import { useLibraryFocus } from "../model/reader/use-library-focus";
+import { useLibraryIndexColumn } from "../model/index-column/use-library-index-column";
+import { useWikiTemplateProblems } from "../model/reader/use-wiki-template-problems";
+import { libraryHomeStrip } from "../model/home/library-home-strip";
 import { LibraryNoFolderStage } from "./library-page/LibraryNoFolderStage";
 import { LibraryEmptyFolderStage } from "./library-page/LibraryEmptyFolderStage";
-import { SourceCopyStrip } from "./parts/first-run/SourceCopyStrip";
+import { SourceCopyStrip } from "./first-run/SourceCopyStrip";
 import { LibraryIndexColumn } from "./library-page/LibraryIndexColumn";
 import { LibraryDocumentColumn } from "./library-page/LibraryDocumentColumn";
-import { LibraryHomePopovers } from "./library-page/LibraryHomePopovers";
-import { AgentDoor } from "./parts/agent/AgentDoor";
-import { SourceProgressBand } from "./parts/progress/SourceProgressBand";
-import { useContinuePress } from "./parts/progress/use-continue-press";
-import { LibraryWorkLine } from "./parts/progress/LibraryWorkLine";
-import { useSourceFilter } from "./library-page/use-source-filter";
+import { LibraryHomePopovers } from "./home/LibraryHomePopovers";
+import { AgentDoor } from "./agent/AgentDoor";
+import { SourceProgressBand } from "./progress/SourceProgressBand";
+import { useContinuePress } from "../model/sources/use-continue-press";
+import { LibraryWorkLine } from "./progress/LibraryWorkLine";
+import { useSourceFilter } from "../model/sources/use-source-filter";
 import { AfterFirstFrame } from "./library-page/AfterFirstFrame";
-import { overviewNextBatch } from "./library-page/overview-next-batch";
-import { checkOwner, folderRelativePage } from "./library-page/wiki-check-outcome";
-
-/** A tool's file inside the folder by its folder-relative name; anything else as it came. */
-function folderRelativeFile(target: string, vaultRoot: string): string {
-  const root = vaultRoot.replace(/\/+$/, "");
-  return target.startsWith(`${root}/`) ? target.slice(root.length + 1) : target;
-}
-
-/** The work card's box (`h-36` in `WorkRunCard`); a toast above it clears this much. */
-const WORK_CARD_HEIGHT = "9rem";
+import { overviewNextBatch } from "../model/sources/overview-next-batch";
+import { useLibraryToastOffsets } from "../model/home/library-toast-offsets";
+import { useReaderTrail } from "../model/reader/reader-trail";
+import { useLibraryImportFlow } from "../model/sources/use-library-import-flow";
+import { useCompileSender } from "../model/sources/use-compile-sender";
+import { useSourcePick } from "../model/sources/use-source-pick";
+import { useConversationWorkReports } from "../model/turns/use-conversation-work-reports";
+import { useWorkRunDoors } from "../model/turns/use-work-run-doors";
+import { answerFilingKind } from "../model/turns/library-answer";
+import { agentWriterId } from "../model/turns/writer-id";
+import { wikiRevisionStamp } from "../model/turns/wiki-revision-stamp";
 
 export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   segment?: LibraryIndexSegment;
@@ -140,28 +126,9 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   const overflowDoorRef = useRef<HTMLButtonElement | null>(null);
 
   useToastAnchor("bottom-right");
-  const viewportDialogOpen = answerComparisonOpen;
   const workRunSnapshot = useWorkRunSnapshot();
   const workCardShown = workCardHoldsSeat(workRunSnapshot);
-  useEffect(() => {
-    const root = document.documentElement;
-    const right = viewportDialogOpen ? LIBRARY_TOAST_DIALOG_OFFSET : LIBRARY_TOAST_RIGHT_OFFSET;
-    const bottom = viewportDialogOpen ? LIBRARY_TOAST_DIALOG_OFFSET : LIBRARY_TOAST_BOTTOM_OFFSET;
-    // The work card keeps this corner; a toast stands on top of it rather than over it.
-    const toastBottom = workCardShown ? `calc(${bottom} + ${WORK_CARD_HEIGHT} + 12px)` : bottom;
-    root.style.setProperty("--app-toast-right-offset", right);
-    root.style.setProperty("--app-work-card-bottom-offset", bottom);
-    root.style.setProperty("--app-toast-bottom-offset", toastBottom);
-    root.style.setProperty("--app-toast-mobile-right-offset", right);
-    root.style.setProperty("--app-toast-mobile-bottom-offset", toastBottom);
-    return () => {
-      root.style.removeProperty("--app-toast-right-offset");
-      root.style.removeProperty("--app-work-card-bottom-offset");
-      root.style.removeProperty("--app-toast-bottom-offset");
-      root.style.removeProperty("--app-toast-mobile-right-offset");
-      root.style.removeProperty("--app-toast-mobile-bottom-offset");
-    };
-  }, [viewportDialogOpen, workCardShown]);
+  useLibraryToastOffsets({ dialogOpen: answerComparisonOpen, workCardShown });
   const skipReaderFocusRef = useRef(false);
   const [pageTurnRunning, setTurnRunning] = useState(false);
   const [pageCompileRunning, setCompileRunning] = useState(false);
@@ -189,15 +156,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   const busy = workBusy || sourceCopyRunning;
 
   const docs = manifest?.docs ?? EMPTY_DOCS;
-  const wikiRevisionStamp = useMemo(
-    () =>
-      new Map(
-        docs
-          .filter((doc) => isWikiPage(doc) && !isWikiFurnitureSlug(doc.slug))
-          .map((doc) => [doc.slug, doc.mtime ?? 0] as const),
-      ),
-    [docs],
-  );
+  const revisionStamps = useMemo(() => wikiRevisionStamp(docs), [docs]);
   const wikiTitleBySlug = useMemo(
     () => new Map(docs.filter((doc) => isWikiPage(doc)).map((doc) => [doc.slug, doc.title] as const)),
     [docs],
@@ -225,28 +184,11 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   const reader = useLibraryReader({
     reducedMotion, localVault, manifest, hasFolder, selected, sourceCitation, docs, model, locale,
   });
-  /*
-   * Where the next page body lands once painted: a desk row's claim, or the scroll a Back returns
-   * to. The trail is the pages a link press left, valid only while the page it leads from is open.
-   */
+  // Where the next page body lands once painted: a desk row's claim, or the scroll a Back returns to.
   const landingRef = useRef<ReaderLanding | null>(null);
-  const [trail, setTrail] = useState<{ at: string | null; stack: Array<{ slug: string; title: string; top: number }> }>({ at: null, stack: [] });
-  const activeTrail = selected?.kind === "wiki" && trail.at === selected.slug ? trail.stack : EMPTY_TRAIL;
-  const openLinkedPage = useCallback((slug: string) => {
-    const from = reader.selectedWikiDoc;
-    if (from) {
-      const top = reader.articleScrollRef.current?.scrollTop ?? 0;
-      setTrail({ at: slug, stack: [...activeTrail, { slug: from.slug, title: from.title, top }] });
-    }
-    choose({ kind: "wiki", slug });
-  }, [activeTrail, choose, reader.articleScrollRef, reader.selectedWikiDoc]);
-  const backAlongTrail = () => {
-    const last = activeTrail[activeTrail.length - 1];
-    if (!last) return;
-    setTrail({ at: last.slug, stack: activeTrail.slice(0, -1) });
-    landingRef.current = { slug: last.slug, top: last.top };
-    choose({ kind: "wiki", slug: last.slug });
-  };
+  const { activeTrail, openLinkedPage, backAlongTrail } = useReaderTrail({
+    selected, openPage: reader.selectedWikiDoc, articleScrollRef: reader.articleScrollRef, landingRef, choose,
+  });
   const { opened, pendingAnswerFocus } = reader;
   const sources = useLibrarySources({
     t, toast, localVault, handle, manifest, nativeVaultRootPath, busy, setBusy,
@@ -267,7 +209,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   const stageAgentName = agent.runtime?.label ?? null;
   const answerRefresh = useAnswerRefresh({
     handle, sources: model.sources, vaultRoot: nativeVaultRootPath,
-    writer: agent.runtime ? `agent:${agent.runtime.id}` : 'agent:unknown', start: agent.start,
+    writer: agentWriterId(agent.runtime), start: agent.start,
   });
   const { capture: captureAnswerRefresh, receive: receiveAnswerRefresh } = answerRefresh;
   const knownSlugs = useMemo(
@@ -278,7 +220,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   // `useChatWidth` keeps the in-flight drag locally, so a second copy publishes a stale width.
   const chatWidth = useChatWidth();
   const dockOpen = agent.route === "agent" && agent.runtime !== null && nativeVaultRootPath !== null && agent.open;
-  const workActivity = useLibraryWorkActivity({ workVaultScope, nativeVaultRootPath, wikiRevisionStamp, agent });
+  const workActivity = useLibraryWorkActivity({ workVaultScope, nativeVaultRootPath, wikiRevisionStamp: revisionStamps, agent });
   const {
     agentActivity, setAgentActivity, libraryWorkActivity, handleAcpToolActivityChange,
     localReviewVisible, localReviewBusy, handleTerminalToolObservation, changedWikiPages,
@@ -293,85 +235,24 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
     ) : null;
   const closeHomeSurface = useCallback(() => setHomeSurface(null), []);
 
-  const [importOpen, setImportOpen] = useState(() => pendingLibraryImport() !== null);
-  const [importDestination, setImportDestination] = useState<ImportDestination>(() => pendingLibraryImport() ?? "sources");
+  const {
+    importOpen, setImportOpen, importDestination, connectors, routeCrossfading, importHeadsToPlanningRef,
+    openConcept, openImport, openPlanning, openConnectorSettings, offerPlanningAfterImport,
+  } = useLibraryImportFlow({ handle, t, toast });
   const home = useLibraryHome({
     selected, setHomeSurface, chatWidth, dockOpen, workActivity, importOpen,
   });
   const { homeVisible } = home;
-  const connectors = useVaultConnectors(handle);
-  const importRouter = useRouter();
-  /* A concept named on a page opens where concepts are judged: the Ontology tab, at that document. */
-  const openConcept = useCallback((slug: string) => {
-    navigateWithViewTransition(() => importRouter.push(`/library/?tab=ontology&slug=${encodeURIComponent(slug)}`));
-  }, [importRouter]);
-  const openImport = useCallback(() => { setImportDestination("sources"); setImportOpen(true); }, []);
-  const openPlanning = useCallback(() => { navigateWithViewTransition(() => importRouter.push("/planning/")); }, [importRouter]);
-  // An import asked for from Planning arrives through a route crossfade; the dialog rises once the pane has settled.
-  const routeCrossfading = useSyncExternalStore(subscribeRouteCrossfade, isRouteCrossfadeRunning, () => false);
-  const importHeadsToPlanningRef = useRef(false);
-  const offerPlanningAfterImport = useCallback(() => {
-    if (!importHeadsToPlanningRef.current) return;
-    importHeadsToPlanningRef.current = false;
-    toast.show(t("sources.importedToPlanning"), "success", { label: t("sources.openPlanning"), onClick: openPlanning });
-  }, [openPlanning, t, toast]);
-  useEffect(() => { clearLibraryImportRequest(); }, []);
-  const sendCompile = useCallback((batch: readonly LibrarySourceRow[]): boolean => {
-    try {
-      const localExecution = agent.route === 'local';
-      agent.start(
-        buildCompileBrief({
-          sources: batch,
-          existingPages: model.wikiPages,
-          hashes: model.hashes,
-          locale,
-          execution: localExecution ? 'local' : 'acp',
-          writerId: localExecution
-            ? `model:${agent.localModel?.model ?? 'unknown'}`
-            : `agent:${agent.runtime?.id ?? 'unknown'}`,
-          vaultRoot: nativeVaultRootPath ?? "",
-          now: new Date(),
-        }),
-        'compile',
-        batch.map((row) => row.path),
-      );
-      return true;
-    } catch (error) {
-      toast.show(
-        t("wiki.compileFailed", {
-          reason: error instanceof Error ? error.message : String(error),
-        }),
-        "error",
-      );
-      return false;
-    }
-  }, [agent, locale, model.hashes, model.wikiPages, nativeVaultRootPath, t, toast]);
+  const sendCompile = useCompileSender({ agent, model, locale, nativeVaultRootPath, t, toast });
   const indexColumn = useLibraryIndexColumn({ segment, model });
   const { indexSegment, setReaderEl, indexCollapsed, libraryIsEmpty } = indexColumn;
   const bandShown = homeVisible && indexSegment !== 'wiki' && model.sources.length > 0;
   const sourceFilter = useSourceFilter({
     sources: model.sources, vaultScope: workVaultScope, indexColumn, listening: bandShown,
   });
-  // A row picked on the Sources home belongs to its folder and narrows the index list with it.
-  const [sourcePickAt, setSourcePickAt] = useState<{ scope: string; pick: SourcePick } | null>(null);
-  const sourcePick = sourcePickAt?.scope === workVaultScope ? sourcePickAt.pick : null;
-  const { unfold: unfoldIndex } = sourceFilter;
-  const setSourcePick = useCallback(
-    (pick: SourcePick | null) => {
-      setSourcePickAt(pick ? { scope: workVaultScope, pick } : null);
-      if (pick) unfoldIndex();
-    },
-    [unfoldIndex, workVaultScope],
-  );
-  const sourceGroupFilter = useMemo(() => {
-    if (!sourcePick) return null;
-    const keys = new Set(sourcePick.keys);
-    return {
-      label: sourcePick.grouping === "folder" ? t("sourcesHome.listFolder", { folder: sourcePick.name }) : t("sourcesHome.listType", { type: sourcePick.name }),
-      includes: (row: LibrarySourceRow) => keys.has(sourceGroupKey(row, sourcePick.grouping)),
-      onClear: () => setSourcePick(null),
-    };
-  }, [setSourcePick, sourcePick, t]);
+  const { sourcePick, setSourcePick, sourceGroupFilter } = useSourcePick({
+    workVaultScope, unfoldIndex: sourceFilter.unfold, t,
+  });
   /*
    * Every Compile door sends what it names: the band and the popover the next batch, a source's own
    * door that source. The batch is picked only while one of them draws it, and on press.
@@ -402,6 +283,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
     invalidateDeskReport, filingAnswer, fileAnswerNote, judgeWrite, handleFileAnswer,
     handleFileReport, autoDecide, handleTurnStarted,
   } = turns;
+  const answerFiling = answerFilingKind(lastAnswer, deskReport, workVaultScope);
   const agentDoor = nativeVaultRootPath !== null && (agent.route === "unavailable" || agent.route === "local");
   const { readerRef, paneBodyRef } = useLibraryFocus({
     selected, setSelected, mobileBrowseOpen, mobileBrowseBackRef, homeSurface,
@@ -410,79 +292,14 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   const templateProblems = useWikiTemplateProblems({
     t, locale, toast, nativeVaultRootPath, turnRunning, choose, busy, model, agent, reader, turns,
   });
-  // Each conversation reports only to the run it owns, so a newly seated agent cannot touch the check.
-  const conversationOwner = checkOwner(nativeVaultRootPath, agent.runtime?.id ?? "");
-  const observeCheckWork = useCallback((work: (WorkRunActivity & TurnWorkReport) | null) => {
-    const turnId = workRuns.turnOwnedBy(conversationOwner);
-    if (turnId !== null) {
-      const target = work?.target && nativeVaultRootPath ? folderRelativeFile(work.target, nativeVaultRootPath) : work?.target ?? null;
-      workRuns.observeTurnWork(turnId, work && { ...work, target }, Date.now());
-    }
-    const runId = workRuns.runOwnedBy(conversationOwner);
-    if (!work || runId === null) return;
-    const page = work.target ? folderRelativePage(work.target, nativeVaultRootPath) : null;
-    workRuns.observeActivity(runId, { ...work, target: page });
-  }, [conversationOwner, nativeVaultRootPath]);
-  const observeTerminalTool = useCallback((event: Extract<AcpEvent, { kind: "tool" }>) => {
-    handleTerminalToolObservation(event);
-    const turnId = workRuns.turnOwnedBy(conversationOwner);
-    if (turnId !== null && nativeVaultRootPath) workRuns.observeTurnTool(turnId, event, nativeVaultRootPath);
-    const runId = workRuns.runOwnedBy(conversationOwner);
-    const read = runId === null ? null : completedAcpReadEvent(event, nativeVaultRootPath, Date.now());
-    if (runId !== null && read?.target) workRuns.observeRead(runId, read.target.ref);
-  }, [conversationOwner, handleTerminalToolObservation, nativeVaultRootPath]);
-  const reportCheckStop = useCallback((stop: (() => void) | null) => {
-    const turnId = workRuns.turnOwnedBy(conversationOwner);
-    if (turnId !== null) workRuns.setTurnStop(turnId, stop);
-    const runId = workRuns.runOwnedBy(conversationOwner);
-    if (runId !== null) workRuns.setStop(runId, stop);
-  }, [conversationOwner]);
+  const { conversationOwner, observeCheckWork, observeTerminalTool, reportCheckStop } = useConversationWorkReports({
+    nativeVaultRootPath, runtimeId: agent.runtime?.id ?? "", onTerminalToolObservation: handleTerminalToolObservation,
+  });
   // The conversation on screen is its turn's stage: no card stands for it while it is shown.
   useTurnStage(conversationOwner, dockOpen && hasFolder);
-  const setAgentOpen = agent.setOpen;
-  const setAgentRuntime = agent.setRuntimeId;
-  // Opening the Library reads every finished turn of this folder, and a turn still running
-  // brings its own conversation back on screen.
-  const returningTurn = useRef(writingTurn);
-  useEffect(() => {
-    if (!hasFolder) return;
-    workRuns.seeTurns(workVaultScope);
-    const turn = returningTurn.current;
-    if (!turn || turn.folder !== workVaultScope) return;
-    setAgentRuntime(turn.runtimeId);
-    setAgentOpen(true);
-  }, [hasFolder, setAgentOpen, setAgentRuntime, workVaultScope]);
-  // A turn's card door: its conversation, with the asking agent chosen again, or the page it wrote.
-  useEffect(() => {
-    if (!hasFolder) return;
-    const takeTurnDoor = () => {
-      const { turnDoor, runs } = workRuns.read();
-      const entry = turnDoor ? runs.get(`turn:${turnDoor.turnId}`) : null;
-      if (!turnDoor || entry?.kind !== "turn" || entry.run.folder !== workVaultScope) return;
-      workRuns.takeTurnDoor(turnDoor.turnId);
-      if (turnDoor.kind === "page") {
-        choose({ kind: "wiki", slug: turnDoor.page });
-        return;
-      }
-      setAgentRuntime(entry.run.runtimeId);
-      setAgentOpen(true);
-    };
-    queueMicrotask(takeTurnDoor);
-    return workRuns.subscribe(takeTurnDoor);
-  }, [choose, hasFolder, setAgentOpen, setAgentRuntime, workVaultScope]);
-  // The card elsewhere asked for a door; it opens once this folder's Library is on screen.
-  useEffect(() => {
-    if (!hasFolder) return;
-    const takeDoor = () => {
-      const { door, run } = workRuns.read();
-      if (!door || !run || run.folder !== workVaultScope || door.runId !== run.id) return;
-      workRuns.takeDoor(door.runId);
-      if (door.kind === "results") choose({ kind: "report" });
-      else setAgentOpen(true);
-    };
-    queueMicrotask(takeDoor);
-    return workRuns.subscribe(takeDoor);
-  }, [choose, hasFolder, setAgentOpen, workVaultScope]);
+  useWorkRunDoors({
+    hasFolder, workVaultScope, writingTurn, choose, setAgentOpen: agent.setOpen, setAgentRuntime: agent.setRuntimeId,
+  });
   if (!hasFolder) return <LibraryNoFolderStage t={t} />;
 
   const importDialog = (
@@ -498,7 +315,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
       canRunAgent={agent.route === "agent"}
       agentGap={isAcpBridgeAvailable() ? "runtime" : "browser"}
       destination={importDestination}
-      onOpenAdvanced={() => { navigateWithViewTransition(() => importRouter.push(MCP_CONNECTORS_HREF)); }}
+      onOpenAdvanced={openConnectorSettings}
     />
     </>
   );
@@ -534,9 +351,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
           onTurnWorkChange={observeCheckWork}
           turnReadOnly={turns.turnReadOnly}
           turnOutlivesScreen={turns.turnOutlivesScreen}
-          onFileAnswer={lastAnswer ? lastAnswer.origin === 'question-report'
-            ? deskReport?.answer === lastAnswer && deskReport.vaultScope === workVaultScope ? handleFileReport : null
-            : () => void handleFileAnswer() : null}
+          onFileAnswer={answerFiling === "report" ? handleFileReport : answerFiling === "answer" ? () => void handleFileAnswer() : null}
           filingAnswer={lastAnswer !== null && filingAnswer === lastAnswer}
           fileAnswerNote={fileAnswerNote}
           noticeActions={{
@@ -868,5 +683,4 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
 }
 
 const EMPTY_DOCS: never[] = [];
-const EMPTY_TRAIL: never[] = [];
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { AcpPermissionRequest } from '../acp-client';
+import type { AcpPermissionRequest } from './permission-request';
 import { standingApproval, type StandingApprovalContext } from './standing-approval';
 
 const ON: StandingApprovalContext = { enabled: true, vaultRoot: '/Users/me/vault', vaultMcpServerName: 'atlas-vault' };

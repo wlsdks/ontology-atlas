@@ -14,22 +14,22 @@ import { cn } from "@/shared/lib/cn";
 import { workRuns } from "@/features/work-run";
 import { useLibraryAgent } from "../../lib/agent/use-library-agent";
 import { useAnswerRefresh } from "../../lib/questions/use-answer-refresh";
-import { LibraryCheckReport } from "../parts/wiki/LibraryCheckReport";
-import { SelectionAsk } from "../parts/questions/SelectionAsk";
-import { SourceSummary } from "../parts/sources/SourceSummary";
-import { WikiPageHeader } from "../parts/wiki/WikiPageHeader";
-import { WikiTemplateProblems } from "../parts/wiki/WikiTemplateProblems";
-import { useSteadyFix } from "../parts/wiki/use-steady-fix";
-import { WikiCitationPopover, type WikiCitationPopoverHandle, type ReaderCitation } from "../parts/wiki/WikiCitationPopover";
-import { WikiPageFoot, createPaintedBody } from "../parts/wiki/WikiPageFoot";
-import { landAtLine, type ReaderLanding } from "../parts/wiki/reader-landing";
-import { RetainedAnswerContext, RetainedAnswerFooter } from "../parts/questions/RetainedAnswerContext";
-import type { LibrarySelection, LibraryHomeSurface } from "./library-page-state";
-import type { useLibraryReader } from "./use-library-reader";
-import type { useLibrarySources } from "./use-library-sources";
-import type { useLibraryTurns } from "./use-library-turns";
-import type { useLibraryIndexColumn } from "./use-library-index-column";
-import type { useWikiTemplateProblems } from "./use-wiki-template-problems";
+import { LibraryCheckReport } from "../check-report/LibraryCheckReport";
+import { SelectionAsk } from "../questions/SelectionAsk";
+import { SourceSummary } from "../sources/SourceSummary";
+import { WikiPageHeader } from "../wiki/WikiPageHeader";
+import { WikiTemplateProblems } from "../wiki/WikiTemplateProblems";
+import { useSteadyFix } from "../wiki/use-steady-fix";
+import { WikiCitationPopover, type WikiCitationPopoverHandle, type ReaderCitation } from "../wiki/WikiCitationPopover";
+import { WikiPageFoot, createPaintedBody } from "../wiki/WikiPageFoot";
+import { landAtLine, type ReaderLanding } from "../../model/reader/reader-landing";
+import { RetainedAnswerContext, RetainedAnswerFooter } from "../questions/RetainedAnswerContext";
+import type { LibrarySelection, LibraryHomeSurface } from "../../model/library-selection";
+import type { useLibraryReader } from "../../model/reader/use-library-reader";
+import type { useLibrarySources } from "../../model/sources/use-library-sources";
+import type { useLibraryTurns } from "../../model/turns/use-library-turns";
+import type { useLibraryIndexColumn } from "../../model/index-column/use-library-index-column";
+import type { useWikiTemplateProblems } from "../../model/reader/use-wiki-template-problems";
 
 export function LibraryDocumentColumn({
   t, locale, nativeVaultRootPath, selected, setHomeSurface, setSourceCitation, skipReaderFocusRef,

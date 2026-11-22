@@ -61,7 +61,6 @@ export const AGENT_FILE_RULES = Object.freeze([
   Object.freeze({ id: 'gemini-ignore', kind: 'exclusion', tools: Object.freeze(['gemini-cli']), pattern: /^\.geminiignore$/ }),
 ]);
 
-/** Classify a repo-root-relative path. Returns null for non-agent files. */
 export function classifyAgentFilePath(path) {
   for (const rule of AGENT_FILE_RULES) {
     if (rule.pattern.test(path)) {
@@ -72,7 +71,6 @@ export function classifyAgentFilePath(path) {
 }
 
 
-/** Extensions an @reference must end with to count as a file reference. */
 const AT_REF_EXTENSIONS = Object.freeze([
   '.md', '.mdc', '.mjs', '.js', '.ts', '.tsx', '.json', '.toml', '.sh', '.yml', '.yaml',
 ]);
@@ -127,8 +125,8 @@ function normalizePath(path) {
 }
 
 function dirnamePath(path) {
-  const idx = path.lastIndexOf('/');
-  return idx === -1 ? '' : path.slice(0, idx);
+  const index = path.lastIndexOf('/');
+  return index === -1 ? '' : path.slice(0, index);
 }
 
 /**
@@ -329,9 +327,9 @@ function checkAtRefs(records, options, drift) {
     for (const { ref } of extractAtRefs(record.entry.content)) {
       if (ref.includes('*')) continue;
       refsChecked += 1;
-      const dir = dirnamePath(record.path);
+      const directory = dirnamePath(record.path);
       const candidates = [];
-      const fileRelative = normalizePath(dir ? `${dir}/${ref}` : ref);
+      const fileRelative = normalizePath(directory ? `${directory}/${ref}` : ref);
       if (fileRelative) candidates.push(fileRelative);
       const rootRelative = normalizePath(ref);
       if (rootRelative && !candidates.includes(rootRelative)) candidates.push(rootRelative);

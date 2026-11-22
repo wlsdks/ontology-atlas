@@ -1,5 +1,4 @@
 import type { IndexPanelState } from "@/widgets/topology-index-panel";
-/** Keep both panels only where their remaining map span can hold a readable branch. */
 export const FLAT_SELECTION_KEEPS_INDEX_FROM_PX = 1280;
 
 export interface ContextualIndexStateInputs {
@@ -13,10 +12,6 @@ export interface ContextualIndexStateInputs {
   agentDockOpen: boolean;
 }
 
-/**
- * The INDEX state for this moment, leaving the persisted preference alone: a contextual work
- * surface borrows the map's width and `baseState` returns when it leaves.
- */
 export function resolveContextualIndexState({
   baseState,
   meaningEditorOpen,

@@ -1,21 +1,7 @@
 /**
- * External MCP connectors — the Tauri IPC bridge over `src-tauri/src/connectors.rs`, following the
- * conventions in `tauri-secrets.ts`.
- *
- * ## What this reads, and what it never reads
- *
- * `discoverMcpConnectors()` reports the MCP servers the person already registered in
- * `~/.claude.json`, the open folder's `.mcp.json`, `~/.codex/config.toml`, and `~/.cursor/mcp.json`
- * — **names, transports, commands, URLs, and environment/header key names**. Rust never returns a
- * value from those `env`/`headers` blocks, and a source-level test there pins that. So nothing in
- * this file can hold a token either.
- *
- * ## Web degradation contract
- *
- * A browser cannot read `~/.claude.json`. Outside the Tauri runtime
- * `isConnectorDiscoveryAvailable()` is false and `discoverMcpConnectors()` returns `null` without
- * invoking, so the screen renders the paste-it-yourself path instead of an empty list that would
- * read as "you have nothing registered".
+ * Bridge over `src-tauri/src/connectors.rs`. Discovery returns names, transports, commands, URLs and
+ * env/header key names, never values (a Rust source test pins it). Outside Tauri it returns `null`,
+ * so the screen offers the paste path instead of an empty list reading as "nothing registered".
  */
 import { invoke as tauriInvoke, isTauri } from '@tauri-apps/api/core';
 
@@ -28,17 +14,12 @@ function getInvoke(): TauriInvoke | null {
 }
 
 /**
- * The transports an ACP session can actually carry.
- *
- * Measured against claude-agent-acp 0.74.0 and codex-acp 1.6.2: both accept stdio and HTTP.
- * **SSE is deprecated** and neither adapter takes it, so a discovered `sse` entry is shown and
- * explained rather than offered — presenting it as attachable would hand somebody a connector that
- * silently produces no tools.
+ * Measured against claude-agent-acp 0.74.0 and codex-acp 1.6.2. A discovered `sse` entry is
+ * explained, not offered: attached, it would silently produce no tools.
  */
 export const ATTACHABLE_TRANSPORTS = ['stdio', 'http'] as const;
 export type AttachableTransport = (typeof ATTACHABLE_TRANSPORTS)[number];
 
-/** Every transport discovery can report, attachable or not. */
 export type DiscoveredTransport = AttachableTransport | 'sse' | 'unknown';
 
 /** Rust `DiscoveredConnector` (serde camelCase). */
@@ -50,9 +31,7 @@ export interface DiscoveredConnector {
   command: string | null;
   args: string[];
   url: string | null;
-  /** Environment variable **names**. Never values. */
   envKeys: string[];
-  /** HTTP header **names**. Never values. */
   headerKeys: string[];
 }
 
@@ -79,7 +58,6 @@ export type ConnectorDiscoveryState =
   | { status: 'failed' }
   | { status: 'done'; connectors: DiscoveredConnector[] };
 
-/** Whether the discovery IPC exists here — false means the browser, where these files are unreadable. */
 export function isConnectorDiscoveryAvailable(): boolean {
   return getInvoke() !== null;
 }
@@ -91,12 +69,8 @@ export function isAttachableTransport(
 }
 
 /**
- * Read what is already registered on this machine. **Read-only** — nothing is attached to a
- * session, and nothing is written, until the person turns a specific server on.
- *
- * `vaultPath` narrows `~/.claude.json`'s per-project block to the folder that is actually open;
- * without it only the user-level files are read. Passing nothing would otherwise mean walking every
- * project the person has ever opened, putting unrelated workplaces on this screen.
+ * Read-only. `vaultPath` narrows `~/.claude.json`'s per-project block to the open folder; without
+ * it only user-level files are read, so unrelated projects never appear.
  */
 export async function discoverMcpConnectors(
   vaultPath: string | null,

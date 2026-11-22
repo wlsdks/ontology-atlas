@@ -40,10 +40,18 @@ import {
  *
  * The gate compares the **rules**, not the walks. Both walks run one table,
  * `tests/fixtures/source-discovery-cases.json`, through `source-discovery.test.ts`
- * (TypeScript) and `src-tauri/src/library/tests.rs` (Rust), planting each row as a file.
+ * (TypeScript) and the `tests.rs` files under `src-tauri/src/library/` (Rust), planting each row as
+ * a file.
  */
 const repoRoot = resolve(__dirname, '../../..');
-const rustSource = readFileSync(resolve(repoRoot, 'src-tauri/src/library.rs'), 'utf8');
+const rustSource = readFileSync(
+  resolve(repoRoot, 'src-tauri/src/library/discovery_rules.rs'),
+  'utf8',
+);
+const walkSource = readFileSync(
+  resolve(repoRoot, 'src-tauri/src/library/source_discovery.rs'),
+  'utf8',
+);
 
 function rustList(name: string): string[] {
   const match = new RegExp(`const ${name}: &\\[&str\\] = &\\[([\\s\\S]*?)\\];`).exec(rustSource);
@@ -119,7 +127,7 @@ describe('the discovery rule is the same in both walks', () => {
     expect(rustList('DISCOVERY_VAULT_OWNED_DIRS').sort()).toEqual(
       [...DISCOVERY_VAULT_OWNED_DIRS].sort(),
     );
-    expect(rustSource).toMatch(/root\.open_folder \|\| !is_markdown_name\(&name\)/);
+    expect(walkSource).toMatch(/root\.open_folder \|\| !is_markdown_name\(&name\)/);
   });
 
   it('caps a dropped folder at the same file, visit and skipped-name counts', () => {
@@ -146,7 +154,7 @@ describe('the discovery rule is the same in both walks', () => {
 
   /** Discovery proposes; only an approved copy writes. Rust must hold no writer. */
   it('the discovery walk writes nothing', () => {
-    const walk = /fn walk_candidates\([\s\S]*?\n\}/.exec(rustSource)?.[0] ?? '';
+    const walk = /fn walk_candidates\([\s\S]*?\n\}/.exec(walkSource)?.[0] ?? '';
     expect(walk).toBeTruthy();
     expect(walk).not.toMatch(/fs::(write|copy|remove_file|create_dir|rename)/);
     // It also opens nothing: `read_dir` and `metadata` are listings, `fs::read` is a read.

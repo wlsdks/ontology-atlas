@@ -6,11 +6,6 @@ import { routing } from '@/i18n/routing';
 import type { AppLocale } from '@/i18n/locales';
 import { LocaleHtmlLang } from '@/shared/ui/document/locale-html-lang';
 
-/**
- * What both `[locale]` layouts share: the workbench's (`app/[locale]/layout.tsx`) and the
- * gateway's (`app/(gateway)/[locale]/layout.tsx`). Server code; the two differ only in the
- * providers and messages they mount.
- */
 export function localeStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
 }
@@ -30,14 +25,12 @@ export async function localeLayoutMetadata(locale: string): Promise<Metadata> {
   };
 }
 
-/** Rejects an unknown locale and pins the request locale for static rendering. */
 export function enterLocaleSegment(locale: string): AppLocale {
   if (!hasLocale(routing.locales, locale)) notFound();
   setRequestLocale(locale);
   return locale;
 }
 
-/** `<html lang>` on a client-side switch, and the translated skip-to-content link. */
 export async function LocaleDocumentChrome({ locale }: { locale: AppLocale }) {
   const tNav = await getTranslations({ locale, namespace: 'nav' });
   return (

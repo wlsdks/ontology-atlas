@@ -23,7 +23,6 @@ export function useTopologySourceReadiness({ topologyVaultReadModel, topologyPre
     vaultHandle: usableVaultHandle,
     nodes: ontologyInsight?.nodes ?? [],
     docs: vault.manifest?.docs ?? [],
-    // The OS folder picker's title follows the screen's language.
     pickerTitle: t("nodeDatasheet.sourcePickerTitle"),
   });
   const projectSourceReadinessRefreshToken = useMemo(

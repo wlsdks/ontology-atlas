@@ -44,7 +44,6 @@ export function useGitWorkspace({
    * remembered read, which is one moment's facts.
    */
   const [originJustSaved, setOriginJustSaved] = useState(false);
-  /** Where this branch's steps can go — decides what the header and the dock offer. */
   const remoteState = describeRemoteState(
     originJustSaved && status ? { ...status, hasOrigin: true } : status,
   );
@@ -62,7 +61,6 @@ export function useGitWorkspace({
     vaultPath ? `atlas-git-history-limit:${vaultPath}` : null,
     HISTORY_PAGE,
   );
-  /** The depth to read at, as seen from an effect that must not re-run when it changes. */
   const currentHistoryLimit = useEffectEvent(() => historyLimit);
   const historyNowMs = workspace?.referenceMs ?? 0;
   const [loadState, setLoadState] = useState<"loading" | "ready" | "error">("loading");
@@ -76,8 +74,8 @@ export function useGitWorkspace({
     },
     [rememberWorkspace],
   );
-  const reportWorkspaceReadFailure = useCallback((err: unknown) => {
-    setLoadErrorText(gitErrorMessage(err, nativeErrors));
+  const reportWorkspaceReadFailure = useCallback((error: unknown) => {
+    setLoadErrorText(gitErrorMessage(error, nativeErrors));
     setLoadState("error");
   }, [nativeErrors]);
   /*
@@ -95,16 +93,16 @@ export function useGitWorkspace({
       const next = await readGitWorkspace(vaultPath, limit);
       if (seq !== readSeqRef.current) return;
       if (next) applyWorkspaceRead(next);
-    } catch (err) {
+    } catch (error) {
       if (seq !== readSeqRef.current) return;
-      reportWorkspaceReadFailure(err);
+      reportWorkspaceReadFailure(error);
     }
   }, [applyWorkspaceRead, historyLimit, reportWorkspaceReadFailure, vaultPath]);
   const applyInitialWorkspaceRead = useEffectEvent((next: GitWorkspaceRead) => {
     applyWorkspaceRead(next);
   });
-  const reportInitialWorkspaceReadFailure = useEffectEvent((err: unknown) => {
-    reportWorkspaceReadFailure(err);
+  const reportInitialWorkspaceReadFailure = useEffectEvent((error: unknown) => {
+    reportWorkspaceReadFailure(error);
   });
 
   useEffect(() => {
@@ -116,8 +114,8 @@ export function useGitWorkspace({
       .then((next) => {
         if (!cancelled && seq === readSeqRef.current && next) applyInitialWorkspaceRead(next);
       })
-      .catch((err) => {
-        if (!cancelled && seq === readSeqRef.current) reportInitialWorkspaceReadFailure(err);
+      .catch((error) => {
+        if (!cancelled && seq === readSeqRef.current) reportInitialWorkspaceReadFailure(error);
       });
     return () => {
       cancelled = true;
@@ -137,11 +135,9 @@ export function useGitWorkspace({
    * page is checked for it and the next page is read until it appears.
    */
   const [jumpHash, setJumpHash] = useState<string | null>(null);
-  /** Lands a page on the memory **as it is then** — a status read that overlapped is kept. */
   const landHistoryPage = useEffectEvent((page: { history: GitCommitInfo[]; historyHasMore: boolean }) => {
     if (!workspace) return;
     rememberWorkspace({ read: { ...workspace.read, ...page }, referenceMs: Date.now() });
-    // A jump still looking for its step reads the next page; found, or no more pages, it ends.
     if (jumpHash === null) return;
     if (page.history.some((commit) => commit.hash === jumpHash) || !page.historyHasMore) {
       setJumpHash(null);
@@ -149,8 +145,8 @@ export function useGitWorkspace({
     }
     setHistoryLimit(historyLimit + HISTORY_PAGE);
   });
-  const reportHistoryPageFailure = useEffectEvent((err: unknown) => {
-    reportWorkspaceReadFailure(err);
+  const reportHistoryPageFailure = useEffectEvent((error: unknown) => {
+    reportWorkspaceReadFailure(error);
   });
   /*
    * "The list is shorter than the depth asked for, and git has more" is exactly the window in
@@ -165,8 +161,8 @@ export function useGitWorkspace({
       .then((page) => {
         if (!cancelled) landHistoryPage(page);
       })
-      .catch((err) => {
-        if (!cancelled) reportHistoryPageFailure(err);
+      .catch((error) => {
+        if (!cancelled) reportHistoryPageFailure(error);
       });
     return () => {
       cancelled = true;

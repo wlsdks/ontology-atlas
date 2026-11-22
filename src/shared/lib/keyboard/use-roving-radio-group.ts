@@ -9,9 +9,7 @@ import { useRef, type KeyboardEvent } from "react";
  */
 
 export interface RovingRadioGroupOptions<T> {
-  /** The currently checked value. If no item matches, the first becomes the tab stop (APG). */
   value: T;
-  /** The item values — this order is the arrow-key cycle order. */
   values: readonly T[];
   onChange: (next: T) => void;
   /** A transition is in flight — locks re-selection only; focus stays alive. Never disables the group. */
@@ -19,7 +17,7 @@ export interface RovingRadioGroupOptions<T> {
 }
 
 interface RovingRadioItemProps {
-  ref: (el: HTMLButtonElement | null) => void;
+  ref: (element: HTMLButtonElement | null) => void;
   role: "radio";
   "aria-checked": boolean;
   "aria-disabled": true | undefined;
@@ -29,11 +27,8 @@ interface RovingRadioItemProps {
 }
 
 export interface RovingRadioGroup {
-  /** Spread onto the group container — role and aria-busy only, no values. */
   groupProps: { role: "radiogroup"; "aria-busy": true | undefined };
-  /** Spread onto item `index`. `type="button"` is the consumer's to supply. */
   itemProps: (index: number) => RovingRadioItemProps;
-  /** Index of the checked item, or -1. */
   checkedIndex: number;
 }
 
@@ -73,8 +68,8 @@ export function useRovingRadioGroup<T>({
     groupProps: { role: "radiogroup", "aria-busy": busy || undefined },
     checkedIndex,
     itemProps: (index) => ({
-      ref: (el) => {
-        itemRefs.current[index] = el;
+      ref: (element) => {
+        itemRefs.current[index] = element;
       },
       role: "radio",
       "aria-checked": index === checkedIndex,

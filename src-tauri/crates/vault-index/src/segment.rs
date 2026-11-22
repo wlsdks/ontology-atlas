@@ -56,7 +56,6 @@ pub(crate) fn for_each_token(text: &str, mut emit: impl FnMut(&str)) {
     flush_word(&mut word, &mut emit);
 }
 
-/// Tokens joined by spaces, the form stored in the full-text table.
 pub(crate) fn segment_into(text: &str, out: &mut String) {
     for_each_token(text, |token| {
         if !out.is_empty() {

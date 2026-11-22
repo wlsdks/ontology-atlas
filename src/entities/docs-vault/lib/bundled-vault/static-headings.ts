@@ -1,5 +1,5 @@
 import type { SampleSource } from '@/shared/lib/vault-folder/sample-source';
-import type { VaultHeading } from '../../model/types';
+import type { VaultHeading } from '../../model/vault-manifest';
 
 /**
  * Lazily loads the bundled vault's headings, a `/docs`-only chunk kept out of every route's shared
@@ -7,7 +7,7 @@ import type { VaultHeading } from '../../model/types';
  */
 export type StaticVaultHeadings = Record<string, VaultHeading[]>;
 
-export async function loadStaticVaultHeadings(
+export async function importStaticVaultHeadings(
   source: SampleSource,
 ): Promise<StaticVaultHeadings> {
   const mod =

@@ -1,4 +1,4 @@
-import type { Point } from "../types";
+import type { Point } from "../dial-shapes";
 
 export function localRelationControl(a: Point, b: Point, control: Point): Point {
   const dx = b.x - a.x;

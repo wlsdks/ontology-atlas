@@ -4,7 +4,7 @@ use std::path::Path;
 
 use super::classify::first_nonempty_line;
 use super::runner::run_git;
-use crate::errors::coded;
+use crate::coded_error::coded;
 
 #[cfg(test)]
 mod tests;

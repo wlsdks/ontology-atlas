@@ -24,8 +24,8 @@ export function resolveTestNamePattern({
 
   try {
     return { raw, source, pattern: new RegExp(raw, 'i') };
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     throw new Error(`invalid ${source || 'test name pattern'}: ${message}`);
   }
 }

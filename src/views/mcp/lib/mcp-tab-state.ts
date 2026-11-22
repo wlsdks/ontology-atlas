@@ -17,5 +17,4 @@ export function parseMcpTab(raw: string | null | undefined): McpTab {
   return isMcpTab(raw) ? raw : DEFAULT_MCP_TAB;
 }
 
-/** Written only by the `/mcp/` redirect, which forwards the section it was given. */
 export const MCP_SECTION_PARAM = 'mcp';

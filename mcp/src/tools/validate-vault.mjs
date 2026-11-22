@@ -32,8 +32,8 @@ import {
 } from '../meaning/meaning-findings.mjs';
 import { buildDepthFindings, measureBuildDepth, repositorySurvey } from '../construction/build-depth.mjs';
 import { sessionReads } from '../construction/session-reads.mjs';
-import { validateLoadedVaultDocument } from '../vault/doc-facts.mjs';
-import { loadVaultDocs } from '../vault/documents.mjs';
+import { validateLoadedVaultDocument } from '../vault/documents/doc-facts.mjs';
+import { loadVaultDocs } from '../vault/documents/document-cache.mjs';
 import { collectPathLastChanges } from '../git/git-tools.mjs';
 import { evidenceConceptsFromDocs, resolveEvidenceStates } from '../drift/evidence-drift.mjs';
 import { okResponseBytes } from '../server/rpc.mjs';
@@ -403,7 +403,6 @@ function validateVaultReport({ repoRoot } = {}, loadedDocs = null) {
         });
       }
       const entry = byCodeMap.get(issue.code);
-      // severity escalates if any issue of this code is error
       if (issue.severity === 'error') entry.severity = 'error';
       // count = file count (per-file), not per-issue
       if (!seenInDoc.has(issue.code)) {

@@ -1,5 +1,4 @@
 // Human-readable summary/format helpers for the dogfood MCP walk report and gate.
-// Split out of scripts/dogfood/dogfood-mcp-walk.mjs (structural decomposition, logic unchanged).
 import { initializeInstructionsFailure } from "../../../mcp/scripts/verify/checks/initialize.mjs";
 import {
   structuredContentMismatchSummary,
@@ -17,7 +16,7 @@ import {
   VERIFY_TUNED_WORKSPACE_BRIEF_NODE_LIMIT,
 } from "../../../mcp/scripts/verify/requests/first-contact.mjs";
 import { COLORS } from "./colors.mjs";
-import { nextActionLabel } from "./shape-validators-workspace.mjs";
+import { nextActionLabel } from "./shape-validators/shape-validators-workspace.mjs";
 
 export const DOGFOOD_TUNED_HEALTH_ARGS = VERIFY_TUNED_HEALTH_ARGS;
 export const DOGFOOD_TUNED_WORKSPACE_BRIEF_NODE_LIMIT = VERIFY_TUNED_WORKSPACE_BRIEF_NODE_LIMIT;

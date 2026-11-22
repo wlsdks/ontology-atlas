@@ -11,18 +11,10 @@ const STORAGE_KEY = 'ontology-atlas:locale';
 
 export interface LocaleSwitchProps {
   locales?: readonly string[];
-  /**
-   * Runs before navigation starts. Hosts that unmount across locale segments
-   * can record a focus-return intent without coupling this feature to them.
-   */
   onSwitchStart?: (nextLocale: string) => void;
 }
 
-/**
- * Replace only the locale path segment. `rawSearch` and `rawHash` come
- * directly from `window.location` so duplicate keys, ordering, and their
- * original encoding survive a language-only transition byte-for-byte.
- */
+/** `rawSearch` and `rawHash` come directly from `window.location` so duplicate keys, ordering and encoding survive a language-only transition byte-for-byte. */
 export function buildLocaleTarget(
   pathname: string,
   currentLocale: string,
@@ -40,11 +32,7 @@ export function buildLocaleTarget(
   return `${localizedPath}${rawSearch}${rawHash}`;
 }
 
-/**
- * Compact locale toggle. Persists choice in localStorage so the
- * root `/` redirect picks it up next visit. Replaces `/<old>/...` with
- * `/<new>/...` while preserving query/hash task state — no full reload needed.
- */
+/** Persists the choice in localStorage so the root `/` redirect picks it up next visit. */
 export function LocaleSwitch({ onSwitchStart, locales = routing.locales }: LocaleSwitchProps = {}) {
   const t = useTranslations('locale');
   const locale = useLocale();

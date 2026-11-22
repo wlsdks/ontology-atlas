@@ -36,7 +36,6 @@ function loadViews(): Promise<RootWorkbenchViews> {
   return pending;
 }
 
-/** Idempotent; safe to call on every render that sees a reason to. */
 export function requestRootWorkbench(locale: AppLocale): void {
   void loadWorkbenchCatalog(locale).catch(() => undefined);
   void loadViews().catch(() => undefined);
@@ -51,7 +50,6 @@ function subscribe(listener: () => void) {
   };
 }
 
-/** The map and first-run views, once both they and the catalog have arrived; null until then. */
 export function useRootWorkbenchViews(locale: AppLocale): RootWorkbenchViews | null {
   return useSyncExternalStore(
     subscribe,

@@ -15,7 +15,7 @@ import {
 import { cn } from '@/shared/lib/cn';
 import { Chip } from '@/shared/ui/controls/controls';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
-import type { SettingsSectionId } from '../../model/catalog/types';
+import type { SettingsSectionId } from '../../model/catalog/settings-catalog-entry';
 import {
   OUTBOUND_DESTINATION_PLACEHOLDERS,
   OUTBOUND_PATHS,
@@ -24,7 +24,7 @@ import {
   type OutboundPath,
 } from '../../model/outbound-paths';
 import { ArmedChip, DETAIL_TOGGLE_CHIP, SettingsGroup, SettingsRow } from '../settings-primitives';
-import { StoredHereSettings } from '../StoredHereSettings';
+import { StoredHereSettings } from '../pane-settings/StoredHereSettings';
 
 const isPlaceholder = (host: string): host is OutboundDestinationPlaceholder =>
   (OUTBOUND_DESTINATION_PLACEHOLDERS as readonly string[]).includes(host);

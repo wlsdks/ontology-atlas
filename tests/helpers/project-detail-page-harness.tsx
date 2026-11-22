@@ -52,7 +52,7 @@ vi.mock("@/features/construction-review-local", () => ({
 vi.mock("@/views/project-detail/lib/use-project-agent", () => ({
   useProjectAgent: () => hoistedMocks.agent,
 }));
-vi.mock("@/views/project-detail/ui/parts/ProjectAgentDock", () => ({
+vi.mock("@/views/project-detail/ui/ProjectAgentDock", () => ({
   ProjectAgentDock: ({ open, openingRequest }: { open: boolean; openingRequest: { text: string } | null }) => (
     <div data-testid="project-agent-dock-frame" data-dock-state={open ? "open" : "empty"}>
       {openingRequest?.text}

@@ -38,8 +38,9 @@ Object.assign(globalThis, {
   }),
 });
 
-const { buildLocalManifestWithEntries, vaultRowWritesSettled } = await import('./build-local-manifest');
-const { vaultIndexPreference } = await import('@/shared/lib/vault-folder/tauri-vault-index');
+const { buildLocalManifestWithEntries } = await import('./build-local-manifest');
+const { vaultRowWritesSettled } = await import('./vault-entry-rows');
+const { vaultIndexPreference } = await import('@/shared/lib/vault-folder/vault-index/tauri-vault-index');
 
 const BRIDGE = process.env.VAULT_ROWS_BRIDGE ?? '';
 const REPORT = process.env.VAULT_OPEN_REPORT ?? '';

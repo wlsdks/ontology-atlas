@@ -61,7 +61,6 @@ export const ICON_RASTER_PLAN = Object.freeze([
   ['mobile-192', 'compass', 192, 'squircle'],
 ]);
 
-/** Transparent standalone marks consumed inside the app and by brand lockups. */
 const MARK_RASTER_PLAN = Object.freeze([
   ['mark-full', 'full', 512],
   ['mark-compact', 'compact', 64],
@@ -146,11 +145,11 @@ export function createBrandRasterServer({
   pngOut = OUT,
 } = {}) {
   const page = pageForSaveToken(saveToken);
-  const server = createServer((req, res) => {
-    const requestUrl = new URL(req.url ?? '/', 'http://127.0.0.1');
+  const server = createServer((request, response) => {
+    const requestUrl = new URL(request.url ?? '/', 'http://127.0.0.1');
     if (requestUrl.pathname === '/data') {
-      res.writeHead(200, { 'content-type': 'application/json' });
-      res.end(
+      response.writeHead(200, { 'content-type': 'application/json' });
+      response.end(
         JSON.stringify({
           name: BRAND_NAME,
           tagline: BRAND_TAGLINE,
@@ -164,36 +163,36 @@ export function createBrandRasterServer({
       );
       return;
     }
-    if (requestUrl.pathname === '/save' && req.method === 'POST') {
+    if (requestUrl.pathname === '/save' && request.method === 'POST') {
       if (requestUrl.searchParams.get('token') !== saveToken) {
-        res.writeHead(403, { 'content-type': 'text/plain; charset=utf-8' }).end('forbidden');
+        response.writeHead(403, { 'content-type': 'text/plain; charset=utf-8' }).end('forbidden');
         return;
       }
       let body = '';
       let bodyBytes = 0;
-      req.on('data', (chunk) => {
+      request.on('data', (chunk) => {
         bodyBytes += chunk.length;
         if (bodyBytes <= MAX_SAVE_BODY_BYTES) body += chunk;
       });
-      req.on('end', () => {
+      request.on('end', () => {
         if (bodyBytes > MAX_SAVE_BODY_BYTES) {
-          res.writeHead(413, { 'content-type': 'text/plain; charset=utf-8' }).end('payload too large');
+          response.writeHead(413, { 'content-type': 'text/plain; charset=utf-8' }).end('payload too large');
           return;
         }
         try {
           const saved = saveRasterPayload(JSON.parse(body), { pngOut });
           console.log('[brand-raster] wrote ' + saved.png + ' PNG files to ' + pngOut);
-          res.writeHead(200).end('ok');
+          response.writeHead(200).end('ok');
           server.close();
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
           console.error('[brand-raster] save rejected: ' + message);
-          res.writeHead(400, { 'content-type': 'text/plain; charset=utf-8' }).end('invalid payload');
+          response.writeHead(400, { 'content-type': 'text/plain; charset=utf-8' }).end('invalid payload');
         }
       });
       return;
     }
-    res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }).end(page);
+    response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }).end(page);
   });
   return server;
 }

@@ -1,8 +1,8 @@
 "use client";
-import type { GlyphSet } from "@/shared/lib/preferences/appearance-preferences";
+import type { CanvasBackground, GlyphSet } from "@/shared/lib/preferences/canvas-appearance-preferences";
 import type { OntologyMapProps } from "../OntologyMap";
 
-import type { CanvasBackground, FootprintPreference } from "@/shared/lib/preferences/appearance-preferences";
+import type { FootprintPreference } from "@/shared/lib/preferences/footprint-preferences";
 import type { FootprintInk } from "@/shared/lib/map-canvas/footprint-glyph";
 import {
   useEffect,
@@ -91,7 +91,7 @@ export function useTopologyPresentationState({
 
   const footprintStepColorRef = useRef<string>("#e8c47a");
 
-  const footprintTrailLenRef = useRef(0);
+  const footprintTrailLengthRef = useRef(0);
 
   const footprintAppearAtRef = useRef(0);
 
@@ -137,7 +137,7 @@ export function useTopologyPresentationState({
   return {
     annotationRef, previewEdgePropRef, previewEdgeHeldRef, previewSignatureRef,
     previewAlphaRef, previewCommitRef, previewTransitionRef, glyphStyleRef, canvasBackgroundRef,
-    footprintPrefRef, footprintInkRef, footprintStepColorRef, footprintTrailLenRef, footprintAppearAtRef,
+    footprintPrefRef, footprintInkRef, footprintStepColorRef, footprintTrailLengthRef, footprintAppearAtRef,
     ambientSleepDelayRef, visitedTrailRef, visitedTrailSetRef, drawnTrailLensRef, trailLensPropRef,
     trailBrushPropRef, panelHoverPropRef, agentFocusNodeIdRef, spotlightIdsRef,
     mapLensKindRef, pathEdgeIdsRef, spotlightRampRef, spotlightDashOffsetRef, trailLensRampRef,

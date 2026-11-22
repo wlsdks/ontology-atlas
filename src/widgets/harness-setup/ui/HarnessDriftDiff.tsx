@@ -5,7 +5,7 @@ import { useMemo, type CSSProperties } from 'react';
 import { AGENT_TOOL_LABELS } from '@/entities/agent-files';
 import { AGENT_CLIENTS, type AgentClientId } from '@/entities/vault-session';
 import { cn } from '@/shared/lib/cn';
-import { VendorMark } from '@/shared/ui/marks/vendor-mark';
+import { VendorMark } from '@/shared/ui/marks/service-marks/vendor-mark';
 
 import {
   alignLinesQuadratic,
@@ -14,7 +14,7 @@ import {
   type AlignedLine,
   type AlignedRow,
 } from '../lib/align-lines';
-import type { TranslateFn } from './HarnessGuideDetail';
+import type { TranslateFn } from './harness-setup-item';
 
 const MARKED_TEXT = 'text-[color:var(--color-text-primary)]';
 const MARKED_ROW = 'bg-[color:var(--color-indigo-accent-a12)]';

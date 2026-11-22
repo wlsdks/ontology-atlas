@@ -5,11 +5,8 @@
  */
 
 /**
- * The origin padding. **Because it is `px-`, both sides** take the origin, and
- * that is the whole of the left/right symmetry.
- *
- * Below `md` this token does not govern — `max(1.5rem, safe-area)` does, because
- * a 200px gutter starves the content at narrow widths.
+ * The origin padding: `px-` puts the origin on both sides, which is the whole left/right symmetry.
+ * Below `md` `max(1.5rem, safe-area)` governs instead, since a 200px gutter starves narrow content.
  */
 export const PAGE_GUTTER =
   'px-[max(1.5rem,env(safe-area-inset-left))] pr-[max(1.5rem,env(safe-area-inset-right))] md:px-[var(--gateway-origin)]';

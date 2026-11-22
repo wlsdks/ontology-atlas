@@ -29,11 +29,9 @@ export interface ConceptEgo {
   domainLabel: string | null;
   /** This concept's evidence document (a slug inside the vault). The derivation always guarantees one. */
   docSlug: string | null;
-  /** The human-written one-line summary, the first fact read on the card. */
   summary: string | null;
   /** The reference MCP and CLI take verbatim to point an agent at this concept. */
   agentSlug: string | null;
-  /** Names of the projects it belongs to — where a multi-project vault splits. */
   projectLabels: readonly string[];
   neighbors: Readonly<Record<EgoBearing, readonly EgoNeighbor[]>>;
   /** Neighbours across all four bearings. At 0 the drawing is skipped. */

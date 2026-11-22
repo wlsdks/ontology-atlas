@@ -1,23 +1,14 @@
-import { isTauriVaultRuntime } from '../vault-folder/tauri-vault-fs';
+import { isTauriVaultRuntime } from '../vault-folder/native-vault/tauri-vault-runtime';
 
 /**
- * Decides whether this is the desktop shell (the installed macOS app, a Tauri
- * WebView).
- *
- * It exists for one product-identity branch: `/` in the installed app must be the
- * local work entry (FirstRun), not the marketing gateway. The branch happens once
- * at runtime with no build split — web and desktop share the same static export.
- *
- * The decision is isolated in the pure `resolveDesktopShell` to give tests a
- * seam. Under SSR (no window) it is always false, so the web's first HTML never
- * takes the desktop branch.
+ * Decides whether this is the desktop shell (the installed macOS app, a Tauri WebView): `/` in the app
+ * must be the local work entry (FirstRun), not the marketing gateway. The branch happens once at
+ * runtime because web and desktop share one static export; under SSR (no window) it is always false.
+ * `resolveDesktopShell` is pure to give tests a seam.
  */
 export interface DesktopShellSignals {
-  /** `typeof window !== 'undefined'` — false under SSR. */
   hasWindow: boolean;
-  /** Whether the real Tauri invoke bridge exists (`isTauriVaultRuntime`). */
   tauriRuntime: boolean;
-  /** Whether this is a dev build — the dev override only applies there. */
   isDevBuild: boolean;
   /**
    * The dev-only override (`?shell=desktop` query or the `dev:desktop-shell`
@@ -33,7 +24,6 @@ export function resolveDesktopShell(signals: DesktopShellSignals): boolean {
   return signals.isDevBuild && signals.devOverride === 'desktop';
 }
 
-/** The localStorage key holding the dev-only override. */
 const DESKTOP_SHELL_DEV_OVERRIDE_KEY = 'dev:desktop-shell';
 
 function readDevOverride(): string | null {

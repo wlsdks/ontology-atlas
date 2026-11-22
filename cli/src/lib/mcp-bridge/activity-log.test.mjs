@@ -11,11 +11,11 @@ import { recordCliWrite } from './activity-log.mjs';
 // monorepo. This keeps the published CLI's own `npm test` runnable after both
 // tarballs are installed in an otherwise empty directory.
 const monorepoActivityLogPath = fileURLToPath(
-  new URL('../../../../mcp/src/vault/activity-log.mjs', import.meta.url),
+  new URL('../../../../mcp/src/vault/sidecar/activity-log.mjs', import.meta.url),
 );
 const activityLogModulePath = existsSync(monorepoActivityLogPath)
   ? monorepoActivityLogPath
-  : createRequire(import.meta.url).resolve('ontology-atlas-mcp/src/vault/activity-log.mjs');
+  : createRequire(import.meta.url).resolve('ontology-atlas-mcp/src/vault/sidecar/activity-log.mjs');
 const { readActivityEntries } = await import(pathToFileURL(activityLogModulePath).href);
 
 function tmpVault() {

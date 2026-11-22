@@ -7,7 +7,6 @@ import {
   extractProjectMeaningEvidencePaths,
 } from './project-meaning-evidence.mjs';
 import { parseSourceRangeCitation } from '../meaning/source-range-citation.mjs';
-// One vocabulary, declared in project-source-vocabulary.mjs.
 import {
   PROJECT_SOURCE_ACTION_IDS as SOURCE_ACTION_IDS,
   PROJECT_SOURCE_GAP_IDS as SOURCE_GAP_IDS,

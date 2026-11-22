@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { bundledRelations, bundleRoute, pointAlong, treePath } from './closing-map';
-import { buildFilmScene } from './film-scene';
+import { buildFilmScene } from './film/film-scene';
 import type { StageGraph } from './stage-graph';
 
 const node = (id: string, kind: string) =>
@@ -61,6 +61,6 @@ describe('closing map bundling', () => {
     const out = { x: 0, y: 0 };
     expect(pointAlong(route, 0, out)).toEqual({ x: 0, y: 0 });
     expect(pointAlong(route, 1, out)).toEqual({ x: 200, y: 0 });
-    expect(route.len[route.len.length - 1]).toBeGreaterThan(200);
+    expect(route.cumulativeLength[route.cumulativeLength.length - 1]).toBeGreaterThan(200);
   });
 });

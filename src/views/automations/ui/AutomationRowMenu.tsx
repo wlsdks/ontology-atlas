@@ -16,10 +16,6 @@ export interface AutomationRowMenuItem {
   onSelect: () => void;
 }
 
-/**
- * A row's less frequent actions, in the app's menu layer above the trigger with right edges
- * aligned. Opening focuses the first item; Escape and a press outside close it.
- */
 export const AutomationRowMenu = forwardRef<HTMLButtonElement, {
   label: string;
   open: boolean;

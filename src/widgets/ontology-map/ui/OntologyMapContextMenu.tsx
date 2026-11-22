@@ -9,21 +9,9 @@ import { controlClass, RowButton, Surface } from "@/shared/ui";
 import { currentFloatingRightBound } from "@/shared/lib/overlays/right-dock-reserve";
 
 /**
- * W2-B — node right-click context menu (`use-topology-loop.ts`'s
- * `handleContextMenu` opens this ONLY when the right-click hit a node,
- * `topology-pointer-types.ts#onContextMenuNode` doc). Popover
- * (click) = information, this menu (right-click) = actions — the same 4
- * action-row items from `OntologyMapDetailPanel` (W2-A) plus the opt-in
- * "full detail" (full detail) link, reachable without first selecting the node.
- *
- * Hand-rolled rather than a Radix `DropdownMenu` — this repo's overlays
- * (`ShortcutSheet`, `SearchPalette`) already implement their own manual
- * Escape/focus-trap/outside-click handling even where a Radix primitive
- * (`@radix-ui/react-dialog`) is installed but unused; a cursor-anchored menu
- * with 5 static items doesn't need a new dependency to match that pattern.
- * Closing is owned by the caller (the Esc dismissal order's `close-context-menu`
- * tier plus `onClose`, see `topology-esc-ladder.ts`) — this component only
- * reports outside-clicks, it doesn't decide close priority itself.
+ * Node right-click context menu, opened only when the right-click hit a node (`onContextMenuNode`): the popover (click) is information, this menu is
+ * actions (the detail panel's 4 rows plus the opt-in "full detail" link). Hand-rolled like `ShortcutSheet` and `SearchPalette`, since a cursor-anchored
+ * menu of 5 static items needs no new dependency. The caller owns closing (`close-context-menu` tier, `topology-esc-ladder.ts`); this only reports outside-clicks.
  */
 interface OntologyMapContextMenuLabels {
   actionDocument: string;
@@ -84,12 +72,8 @@ export function clampContextMenuPosition(
 }
 
 /**
- * The **only things true in this one place** for a menu item — the map panel's
- * scoped tokens (radius, ink, hover surface). Shape, size and alignment come from
- * `controlClass({ shape: "row" })` below. `row` has no radius in the ramp (rows
- * outside a panel live square), so only the radius is added here — the value is
- * `--radius-chip`, the same as `--map-panel-row-radius`, so it is written
- * with the global ramp utility.
+ * The only values true in this one place for a menu item: the map panel's scoped tokens (radius, ink, hover surface); shape, size and alignment come from
+ * `controlClass({ shape: "row" })`. `row` has no radius in the ramp, so only the radius is added, `--radius-chip` (= `--map-panel-row-radius`).
  */
 const MENU_ITEM_LOCAL =
   "rounded-chip text-[color:var(--map-panel-text-secondary)] hover:bg-[color:var(--map-panel-row-hover)]";
@@ -173,13 +157,8 @@ export function OntologyMapContextMenu({
     return () => menu.removeEventListener("keydown", handleKeyDown);
   }, [onClose, open]);
 
-  // Outside-click closes — Esc is owned by the window-level dismissal order
-  // (`HomePage.tsx`'s keydown effect + the `close-context-menu` tier) so both
-  // dismissal paths route through the same `onClose`.
-  //
-  // ★ It does not close again during the exit window — a menu already closing
-  //   that leaks another outside click into `onClose` cancels the parent's *next*
-  //   right-click in the same frame.
+  // Outside-click closes; Esc is owned by the window-level dismissal order (`HomePage.tsx`, `close-context-menu` tier) so both paths route through the same `onClose`.
+  // It does not close again during the exit window: a leaked outside click would cancel the parent's next right-click in the same frame.
   useEffect(() => {
     if (!open) return;
     const handlePointerDown = (event: PointerEvent) => {

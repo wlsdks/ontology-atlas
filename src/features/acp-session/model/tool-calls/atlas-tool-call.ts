@@ -17,14 +17,9 @@ function record(value: unknown): Record<string, unknown> | null {
 }
 
 /**
- * Normalizes the two MCP tool-call envelopes observed from the supported ACP
- * adapters without trusting a title-shaped ordinary command.
- *
- * Claude exposes `mcp__server__tool` and places the arguments directly in
- * `rawInput`. Codex exposes `mcp.server.tool`, labels the ACP row as `execute`,
- * and wraps arguments with the same server/tool identity. The dotted form is
- * accepted only when that envelope agrees character-for-character with the
- * title, so an arbitrary execute row cannot impersonate an Atlas read.
+ * Claude exposes `mcp__server__tool` with arguments in `rawInput`; Codex `mcp.server.tool` as an `execute` row wrapping them.
+ * The dotted form is accepted only when the envelope agrees character-for-character with the title,
+ * so an arbitrary execute row cannot impersonate an Atlas read.
  */
 export function parseAtlasToolCall(
   title: string | undefined,

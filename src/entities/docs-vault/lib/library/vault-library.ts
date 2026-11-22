@@ -1,244 +1,16 @@
-import { isWikiFurnitureSlug } from '@/shared/lib/library/wiki-page-schema';
-
-import { recordedLocalDay } from './source-progress';
-
-import type { VaultDoc, VaultSourceFile } from '../../model/types';
-
-/**
- * The two vault file kinds that are not the graph: raw sources under `sources/` and wiki pages
- * under `wiki/` (no `kind:`). A page's `sources`, `source_hash` and `sources_truncated` say
- * whether its write-up still matches the file on disk.
- */
-
-/** The top-level wiki folder, anchored at the root like `VAULT_SOURCES_DIR`. */
-const VAULT_WIKI_DIR = 'wiki';
+import type { VaultDoc, VaultSourceFile } from '../../model/vault-manifest';
+import {
+  earliestCoveredDay,
+  judgeSource,
+  pushCoveringPages,
+  writeUpFreshness,
+  type SourceCompileState,
+  type WriteUpFreshness,
+} from './source-compile-state';
+import { collectWikiCitations, isWikiPage, readPathArray, selectWikiPages, type LibraryWikiPage, type WikiCitation } from './wiki-page-facts';
 
 /** Retained answers are revised through their own review workflow, not Compile. */
 const WIKI_ANSWERS_PREFIX = 'wiki/answers/';
-
-/**
- * `stale` covers a hash mismatch and a missing hash; `partial` means the matching page read only
- * part of the file; `checking` is transient until the file is hashed; `unreadable` is a cited file
- * Atlas could not open to hash, so it can never be proven compiled.
- */
-export type SourceCompileState =
-  | 'not-compiled'
-  | 'compiled'
-  | 'partial'
-  | 'stale'
-  | 'checking'
-  | 'unreadable';
-
-interface WikiCitation {
-  wikiSlug: string;
-  /** Vault-relative path of the cited source (`sources/quarter-plan.pdf`), NFC-normalised. */
-  sourcePath: string;
-  /** The sha256 that page recorded for this source, or null when it recorded none. */
-  sourceHash: string | null;
-  /** True when that page recorded this source under `sources_truncated`. */
-  truncated: boolean;
-  /** Local day index of the citing page's `compiled_at`, or -1 when it has no believable one. */
-  compiledDay: number;
-  /** The citing page's index in `LibraryModel.wikiPages`, or -1 when it is not listed there. */
-  page: number;
-}
-
-export interface LibraryWikiPage {
-  slug: string;
-  title: string;
-  sourcePaths: string[];
-  createdBy: string | null;
-  compiledAt: string | null;
-  /** The page's summary and tags, which the web's search matches beside the title. */
-  summary?: string;
-  tags?: string[];
-  /**
-   * The concept slugs the page says it is about, trimmed and in NFC, as written: `null` when the
-   * page has no `describes:` list, and empty when a writer checked and found none. Entries are not
-   * resolved here; `map-reach.ts` resolves them against the folder's concepts. Optional so
-   * hand-built pages need not carry it; absent reads as `null`.
-   */
-  describes?: readonly string[] | null;
-}
-
-export function isWikiPage(doc: VaultDoc): boolean {
-  if (!doc.slug.startsWith(`${VAULT_WIKI_DIR}/`)) return false;
-  const kind = doc.frontmatter.kind;
-  // A `kind:` under `wiki/` is a misfiled ontology node, which must stay visible as a concept.
-  return typeof kind !== 'string' || kind.trim() === '';
-}
-
-function readStringArray(value: unknown): string[] {
-  if (Array.isArray(value)) {
-    return value.filter((item): item is string => typeof item === 'string' && item.trim() !== '')
-      .map((item) => item.trim());
-  }
-  // A scalar citation is the commonest hand-edit; read it as one entry.
-  return typeof value === 'string' && value.trim() ? [value.trim()] : [];
-}
-
-/**
- * Citation paths in NFC, as the folder walk names files (`walk-vault.ts`): a page written on macOS
- * may hold decomposed Hangul, which would otherwise never match its file.
- */
-function readPathArray(value: unknown): string[] {
-  return readStringArray(value).map(toNfc);
-}
-
-const NON_ASCII = /[^\u0000-\u007f]/;
-
-/** ASCII is already NFC, and nearly every path is ASCII, so most paths skip the ICU call. */
-function toNfc(path: string): string {
-  return NON_ASCII.test(path) ? path.normalize('NFC') : path;
-}
-
-const NO_CONCEPT: readonly string[] = Object.freeze([]);
-
-/**
- * `describes:` as `LibraryWikiPage.describes` holds it. Nearly every list is already trimmed NFC
- * strings, and then the frontmatter's own array is kept rather than copied, so 50,000 pages add no
- * array. A scalar is not a list and is not read as a link, as the wiki schema reports it.
- */
-function readDescribes(value: unknown): readonly string[] | null {
-  if (!Array.isArray(value)) return null;
-  if (value.length === 0) return NO_CONCEPT;
-  for (const entry of value) {
-    if (typeof entry !== 'string' || entry !== entry.trim() || toNfc(entry) !== entry) {
-      // Non-strings are dropped and empty strings kept, as `validateWikiPage` reads the list.
-      return value.filter((item): item is string => typeof item === 'string').map((item) => toNfc(item.trim()));
-    }
-  }
-  return value as string[];
-}
-
-function readHashMap(value: unknown): Map<string, string> {
-  const out = new Map<string, string>();
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return out;
-  for (const [key, hash] of Object.entries(value as Record<string, unknown>)) {
-    if (typeof hash === 'string' && hash.trim()) {
-      out.set(toNfc(key.trim()), hash.trim().toLowerCase());
-    }
-  }
-  return out;
-}
-
-function readCompiledAt(doc: VaultDoc): string | null {
-  const value = doc.frontmatter.compiled_at;
-  return typeof value === 'string' && value.trim() ? value.trim() : null;
-}
-
-/** A listed wiki page: under `wiki/`, no `kind:`, and not the shipped `_template.md`. */
-function isListedWikiPage(doc: VaultDoc): boolean {
-  return isWikiPage(doc) && !isWikiFurnitureSlug(doc.slug);
-}
-
-/** Wiki pages counted by the Wiki list's own rule, so screens agree. */
-export function countWikiPages(docs: readonly VaultDoc[]): number {
-  let count = 0;
-  for (const doc of docs) if (isListedWikiPage(doc)) count += 1;
-  return count;
-}
-
-export function selectWikiPages(docs: readonly VaultDoc[]): LibraryWikiPage[] {
-  return docs.filter(isListedWikiPage).map((doc) => ({
-    slug: doc.slug,
-    title: doc.title,
-    sourcePaths: readPathArray(doc.frontmatter.sources),
-    createdBy:
-      typeof doc.frontmatter.created_by === 'string' && doc.frontmatter.created_by.trim()
-        ? doc.frontmatter.created_by.trim()
-        : null,
-    compiledAt: readCompiledAt(doc),
-    summary: doc.description || doc.definitionPreview || '',
-    tags: doc.tags,
-    describes: readDescribes(doc.frontmatter.describes),
-  }));
-}
-
-function collectWikiCitations(
-  docs: readonly VaultDoc[],
-  offsetMinutes: ((epochMs: number) => number) | undefined,
-): Map<string, WikiCitation[]> {
-  const out = new Map<string, WikiCitation[]>();
-  // Pages written in one run share one `compiled_at`, so each distinct string is parsed once.
-  const days = new Map<string, number>();
-  const dayOf = (value: string | null): number => {
-    if (value === null) return -1;
-    let day = days.get(value);
-    if (day === undefined) {
-      day = recordedLocalDay(value, offsetMinutes) ?? -1;
-      days.set(value, day);
-    }
-    return day;
-  };
-  // Counts listed pages in `selectWikiPages`'s order, so a citation can name its page by index.
-  let listed = 0;
-  for (const doc of docs) {
-    if (!isWikiPage(doc)) continue;
-    const page = isWikiFurnitureSlug(doc.slug) ? -1 : listed++;
-    const hashes = readHashMap(doc.frontmatter.source_hash);
-    // Same scalar tolerance as `sources:`.
-    const truncated = new Set(readPathArray(doc.frontmatter.sources_truncated));
-    const compiledDay = dayOf(readCompiledAt(doc));
-    for (const sourcePath of readPathArray(doc.frontmatter.sources)) {
-      const citation: WikiCitation = {
-        wikiSlug: doc.slug,
-        sourcePath,
-        sourceHash: hashes.get(sourcePath) ?? null,
-        truncated: truncated.has(sourcePath),
-        compiledDay,
-        page,
-      };
-      const list = out.get(sourcePath);
-      if (list) list.push(citation);
-      else out.set(sourcePath, [citation]);
-    }
-  }
-  return out;
-}
-
-/**
- * `actualHash` is undefined until hashed; only cited files are hashed. Any matching page makes it
- * `compiled`; `partial` needs every matching page truncated; `stale` outranks `partial`. A file
- * that could not be hashed is `unreadable` where it would otherwise wait in `checking`.
- */
-function judgeSource(
-  citations: readonly WikiCitation[] | undefined,
-  actualHash: string | undefined,
-  unreadable: boolean,
-): SourceCompileState {
-  if (!citations || citations.length === 0) return 'not-compiled';
-  const hashed = citations.filter((citation) => citation.sourceHash !== null);
-  // A citation without a hash cannot prove coverage, so it is stale.
-  if (hashed.length === 0) return 'stale';
-  if (actualHash === undefined) return unreadable ? 'unreadable' : 'checking';
-  const matching = hashed.filter((citation) => citation.sourceHash === actualHash);
-  if (matching.length === 0) return 'stale';
-  return matching.some((citation) => !citation.truncated) ? 'compiled' : 'partial';
-}
-
-/** The earliest believable day among the pages that make a source `compiled`, or -1. */
-function earliestCoveredDay(citations: readonly WikiCitation[], actualHash: string): number {
-  let earliest = -1;
-  for (const citation of citations) {
-    if (citation.sourceHash !== actualHash || citation.truncated || citation.compiledDay < 0) continue;
-    if (earliest < 0 || citation.compiledDay < earliest) earliest = citation.compiledDay;
-  }
-  return earliest;
-}
-
-/**
- * Appends the listed pages whose whole, hash-matching citation makes a source `compiled`; a page
- * that cites the same path twice is appended once, since its citations sit side by side.
- */
-function pushCoveringPages(out: number[], citations: readonly WikiCitation[], actualHash: string): void {
-  let last = -1;
-  for (const citation of citations) {
-    if (citation.sourceHash !== actualHash || citation.truncated || citation.page < 0 || citation.page === last) continue;
-    out.push(citation.page);
-    last = citation.page;
-  }
-}
 
 /**
  * For source row `i`, the indices into `wikiPages` of the pages that make it `compiled` are
@@ -254,11 +26,7 @@ export interface LibraryCompiledBy {
 export interface LibrarySourceRow extends VaultSourceFile {
   state: SourceCompileState;
   citedBy: string[];
-  /**
-   * For a `compiled` row, the local day index (days since 1970-01-01) of the earliest believable
-   * `compiled_at` among the pages that cover it; -1 otherwise. One number, so 50,000 rows cost one
-   * slot each. Optional so hand-built rows need not carry it.
-   */
+  /** For a `compiled` row, the local day index (days since 1970-01-01) of the earliest believable `compiled_at` among its covering pages; -1 otherwise. */
   compiledDay?: number;
   /** Compilable pages with a different source receipt; retained answers are reviewed elsewhere. */
   reviewPages?: string[];
@@ -275,53 +43,21 @@ export interface LibraryModel {
   wikiPages: LibraryWikiPage[];
   /** Sources in `not-compiled`, `partial` or `stale`: the count Compile acts on. */
   needsCompileCount: number;
-  /** Sources nobody has written up, named apart from `staleCount`. */
   notCompiledCount: number;
-  /** Sources whose page cites a hash the bytes no longer match. */
   staleCount: number;
   /** Sources every citing page read only part of, with the bytes still matching. */
   partialCount: number;
   /** Cited sources with a recorded hash that are not yet measured; `unreadable` rows are not retried. */
   pathsNeedingHash: string[];
-  /** Both crossings between a source and the pages written from it. */
   pairing: LibraryPairing;
   /** Which pages make each `compiled` row compiled; `map-reach.ts` reads it. */
   compiledBy: LibraryCompiledBy;
 }
 
-/** `1536` → `1.5 KB`; locale-independent. */
-export function formatSourceBytes(bytes: number): string {
-  if (!Number.isFinite(bytes) || bytes < 0) return '—';
-  if (bytes < 1000) return `${bytes} B`;
-  const units = ['KB', 'MB', 'GB', 'TB'];
-  let value = bytes / 1000;
-  let unit = 0;
-  while (value >= 1000 && unit < units.length - 1) {
-    value /= 1000;
-    unit += 1;
-  }
-  return `${value >= 100 ? Math.round(value) : value.toFixed(1)} ${units[unit]}`;
-}
-
 export interface LibraryOriginalLink {
   path: string;
-  /** File name, or the whole path when the citation has no `/`. */
   name: string;
-  /** The cited file's state, or `null` when no such file is in this folder. */
   state: SourceCompileState | null;
-}
-
-/**
- * `unchecked`: a hash was recorded but the file is not measured; permanent when hashing is
- * impossible, so it must not collapse into `behind`.
- */
-type WriteUpFreshness = 'current' | 'partial' | 'behind' | 'unchecked';
-
-function writeUpFreshness(citation: WikiCitation, actualHash: string | undefined): WriteUpFreshness {
-  if (citation.sourceHash === null) return 'behind';
-  if (actualHash === undefined) return 'unchecked';
-  if (citation.sourceHash !== actualHash) return 'behind';
-  return citation.truncated ? 'partial' : 'current';
 }
 
 export interface LibraryWriteUpLink {
@@ -374,7 +110,6 @@ function sameCitations(a: readonly WikiCitation[] | undefined, b: readonly WikiC
   return true;
 }
 
-/** One source row with what it was judged from, so the next build reuses it while those hold. */
 interface KeptRow {
   source: VaultSourceFile;
   cited: WikiCitation[] | undefined;
@@ -382,7 +117,6 @@ interface KeptRow {
   hash: string | undefined;
   unreadable: boolean;
   row: LibrarySourceRow;
-  /** The listed pages that make the row `compiled`, for `compiledBy`. */
   covering: readonly number[];
 }
 
@@ -428,7 +162,6 @@ type LibraryModelInput = {
   sources: readonly VaultSourceFile[] | undefined;
   docs: readonly VaultDoc[];
   hashes: ReadonlyMap<string, string>;
-  /** Paths whose file could not be opened to hash this session. */
   unreadable?: ReadonlySet<string>;
   /** Minutes east of UTC at an instant, for `compiledDay`; defaults to the runtime's zone. */
   offsetMinutes?: (epochMs: number) => number;
@@ -549,35 +282,3 @@ export function createLibraryModelBuilder(): (input: LibraryModelInput) => Libra
     };
   };
 }
-
-/** Newest `compiled_at` first, then slug, so hand-written folders still get a stable answer. */
-export function newestWikiPage(
-  pages: readonly LibraryWikiPage[],
-): LibraryWikiPage | null {
-  let best: LibraryWikiPage | null = null;
-  for (const page of pages) {
-    if (best === null) {
-      best = page;
-      continue;
-    }
-    const left = page.compiledAt ?? '';
-    const right = best.compiledAt ?? '';
-    if (left > right || (left === right && page.slug.localeCompare(best.slug) < 0)) best = page;
-  }
-  return best;
-}
-
-/** Formats by file count; extensionless files count under `''` so totals match. */
-export function countSourceFormats(
-  sources: readonly VaultSourceFile[],
-): Array<{ format: string; count: number }> {
-  const totals = new Map<string, number>();
-  for (const source of sources) {
-    const key = source.format.toLowerCase();
-    totals.set(key, (totals.get(key) ?? 0) + 1);
-  }
-  return [...totals.entries()]
-    .map(([format, count]) => ({ format, count }))
-    .sort((a, b) => (b.count - a.count) || a.format.localeCompare(b.format));
-}
-

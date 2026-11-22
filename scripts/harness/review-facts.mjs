@@ -95,15 +95,15 @@ function isTestFile(path) {
 }
 
 function siblingTests(cwd, path) {
-  const dir = dirname(path);
-  const abs = resolve(cwd, dir);
+  const directory = dirname(path);
+  const abs = resolve(cwd, directory);
   if (!existsSync(abs)) return [];
   const file = basename(path);
   const stem = file.slice(0, file.length - extname(file).length);
   const out = [];
   for (const entry of readdirSync(abs)) {
     if (!isTestFile(entry) || entry === file) continue;
-    const candidate = posix.join(dir, entry);
+    const candidate = posix.join(directory, entry);
     if (entry.startsWith(stem)) {
       out.push(candidate);
       continue;
