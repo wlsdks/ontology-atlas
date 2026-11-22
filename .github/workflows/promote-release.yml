@@ -30,8 +30,9 @@ jobs:
   admit-promotion:
     name: Admit beta promotion
     runs-on: ubuntu-latest
-    # budget: 60s (the cut's admission takes 40 s; this adds the browser gate's two API reads)
-    timeout-minutes: 2
+    # budget: 150s (no run measured yet: the cut's admission takes 40 s, and the completeness
+    # check downloads and hashes the beta's DMG and installer, about 150 MB)
+    timeout-minutes: 3
     permissions:
       actions: read
       contents: read
@@ -193,10 +194,23 @@ jobs:
           pnpm desktop:release-source -- --mode=pin --tag="${RELEASE_TAG}" --sha="${RELEASE_SHA}"
           pnpm desktop:release-source -- --mode=pin --tag="${BETA_TAG}" --sha="${RELEASE_SHA}"
 
+      # The draft's digests are compared with the beta's again: approval may come long after staging.
+      - name: Compare the draft with the beta again
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: pnpm desktop:release-promote -- --repo="$GITHUB_REPOSITORY" --from="$BETA_TAG" --mode=verify
+
       - name: Publish the promoted stable release
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: gh release edit "${RELEASE_TAG}" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease=false
+
+      - name: Recheck both tags after publication
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          pnpm desktop:release-source -- --mode=pin --tag="${RELEASE_TAG}" --sha="${RELEASE_SHA}"
+          pnpm desktop:release-source -- --mode=pin --tag="${BETA_TAG}" --sha="${RELEASE_SHA}"
 
       - name: Verify public download assets
         env:

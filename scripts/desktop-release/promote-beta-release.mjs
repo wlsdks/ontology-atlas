@@ -23,15 +23,23 @@ const MANIFEST = "latest.json";
 function printHelp() {
   console.log(`Usage: pnpm desktop:release-promote -- --from=vX.Y.Z-beta.N --mode=admit [--github-output] [--repo=${DEFAULT_REPO}]
        pnpm desktop:release-promote -- --from=vX.Y.Z-beta.N --mode=stage --dir=PATH [--repo=${DEFAULT_REPO}]
+       pnpm desktop:release-promote -- --from=vX.Y.Z-beta.N --mode=verify [--repo=${DEFAULT_REPO}]
 
 admit writes nothing. It refuses unless vX.Y.Z and the beta tag peel to one
-commit, and the beta release is published, a GitHub pre-release, and carries no
-latest.json. --github-output appends release_tag and release_sha.
+commit; the beta release is published, a GitHub pre-release, carries no
+latest.json, and has no asset uploaded after it was published; no newer beta of
+X.Y.Z is published; and no stable release is at X.Y.Z or above.
+--github-output appends release_tag and release_sha.
 
-stage downloads every asset of the beta release into PATH, checks each against
-the SHA-256 GitHub recorded and against its .sha256 sibling, builds latest.json
-pinned to vX.Y.Z, and creates the draft vX.Y.Z release from exactly those files.
-It never builds, signs or creates a tag: push vX.Y.Z at the beta's commit first.
+stage downloads every asset of the beta release into PATH, which must be absent
+or empty, checks each against the SHA-256 GitHub recorded and against its .sha256
+sibling, builds latest.json pinned to vX.Y.Z, and creates the draft vX.Y.Z
+release from exactly those files. It never builds, signs or creates a tag: push
+vX.Y.Z at the beta's commit first.
+
+verify writes nothing. It refuses unless the draft vX.Y.Z holds exactly the beta's
+assets plus latest.json, every one with a SHA-256 GitHub recorded, and each beta
+asset's digest equal on both releases.
 `);
 }
 
@@ -59,7 +67,7 @@ function parseArgs(argv) {
   if (!isReleaseTag(options.from) || parseReleaseTag(options.from).channel !== "beta") {
     fail(`--from must name a beta tag vX.Y.Z-beta.N, got ${options.from || "(empty)"}.`);
   }
-  if (options.mode !== "admit" && options.mode !== "stage") fail("--mode must be admit or stage.");
+  if (!["admit", "stage", "verify"].includes(options.mode)) fail("--mode must be admit, stage or verify.");
   if (options.mode === "stage" && !options.dir) fail("--mode=stage needs --dir for the downloaded assets.");
   return options;
 }
@@ -96,7 +104,67 @@ function requirePromotableBeta(release, betaTag) {
     fail(`${betaTag} carries ${MANIFEST}; a beta release never does. Delete the asset and find the stage that uploaded it.`);
   }
   if (assets.length === 0) fail(`${betaTag} has no assets to promote.`);
+  const publishedAt = Date.parse(release.published_at ?? "");
+  if (!Number.isFinite(publishedAt)) fail(`${betaTag} has no publication time to compare its assets with.`);
+  const late = assets.filter((asset) => !(Date.parse(asset?.created_at ?? "") <= publishedAt)).map((asset) => asset?.name);
+  if (late.length > 0) {
+    fail(
+      `${betaTag} has assets uploaded after it was published (${late.join(", ")}): they are not the bytes anyone installed as the beta. Cut a new beta instead.`,
+    );
+  }
   return assets;
+}
+
+function compareVersions(a, b) {
+  const left = a.split(".").map(Number);
+  const right = b.split(".").map(Number);
+  for (let index = 0; index < 3; index += 1) {
+    if (left[index] !== right[index]) return left[index] - right[index];
+  }
+  return 0;
+}
+
+/** A newer beta of the same version, or a stable release at or above it, makes this beta stale. */
+function requireNotSuperseded(releases, betaTag) {
+  const beta = parseReleaseTag(betaTag);
+  for (const release of Array.isArray(releases) ? releases : []) {
+    if (release?.draft !== false || !isReleaseTag(release?.tag_name)) continue;
+    const other = parseReleaseTag(release.tag_name);
+    if (other.channel === "beta" && other.version === beta.version && other.beta > beta.beta) {
+      fail(`${release.tag_name} is published after ${betaTag}; promote the newest beta of ${beta.version}.`);
+    }
+    if (other.channel === "stable" && compareVersions(other.version, beta.version) >= 0) {
+      fail(`stable release ${release.tag_name} is already published at or above ${beta.version}; ${betaTag} is superseded.`);
+    }
+  }
+}
+
+/**
+ * The stable draft must hold the beta's assets and `latest.json`, each with the digest GitHub
+ * recorded, and every beta asset's digest must be equal on both releases. A missing digest fails.
+ */
+function compareDraftWithBeta(betaAssets, draftAssets, stableTag) {
+  const draft = new Map((draftAssets ?? []).map((asset) => [asset.name, asset]));
+  const expected = [...betaAssets.map((asset) => asset.name), MANIFEST].sort();
+  if (JSON.stringify([...draft.keys()].sort()) !== JSON.stringify(expected)) {
+    fail(`the draft ${stableTag} holds ${[...draft.keys()].sort().join(", ")}, not ${expected.join(", ")}.`);
+  }
+  for (const [name, asset] of draft) {
+    if (!recordedDigest(asset)) fail(`the draft ${stableTag} asset ${name} has no SHA-256 recorded by GitHub.`);
+  }
+  for (const asset of betaAssets) {
+    const beta = recordedDigest(asset);
+    if (!beta) fail(`the beta asset ${asset.name} has no SHA-256 recorded by GitHub to compare the draft with.`);
+    const promoted = recordedDigest(draft.get(asset.name));
+    if (promoted !== beta) fail(`the draft ${stableTag} asset ${asset.name} has SHA-256 ${promoted}, not the beta's ${beta}.`);
+  }
+}
+
+function readDraft(repo, stableTag) {
+  const drafts = gh(["api", `repos/${repo}/releases?per_page=20`], { json: true });
+  const draft = (Array.isArray(drafts) ? drafts : []).find((release) => release?.tag_name === stableTag && release?.draft === true);
+  if (!draft) fail(`no draft ${stableTag} release exists.`);
+  return draft;
 }
 
 function admit(options) {
@@ -110,11 +178,12 @@ function admit(options) {
     );
   }
   requirePromotableBeta(readPublishedRelease(options.repo, options.from), options.from);
+  requireNotSuperseded(gh(["api", `repos/${options.repo}/releases?per_page=100`], { json: true }), options.from);
   if (options.githubOutput) {
     if (!process.env.GITHUB_OUTPUT) fail("--github-output needs GITHUB_OUTPUT to name a file.");
     fs.appendFileSync(process.env.GITHUB_OUTPUT, `release_tag=${stableTag}\nrelease_sha=${betaSha}\n`);
   }
-  console.log(`[release-promote] ${options.from} and ${stableTag} both resolve to ${betaSha}; the beta release is published, a pre-release, and carries no ${MANIFEST}`);
+  console.log(`[release-promote] ${options.from} and ${stableTag} both resolve to ${betaSha}; the beta release is published, a pre-release, the newest of ${stableTag.slice(1)}, and carries no ${MANIFEST}`);
 }
 
 function sha256Of(file) {
@@ -132,7 +201,7 @@ function recordedDigest(asset) {
  * sibling must match that too. A file neither covers is refused: its bytes cannot be told apart
  * from other bytes.
  */
-export function verifyDownloadedAssets(dir, assets) {
+function verifyDownloadedAssets(dir, assets) {
   const names = assets.map((asset) => asset.name).sort();
   const files = fs.readdirSync(dir).sort();
   if (JSON.stringify(files) !== JSON.stringify(names)) {
@@ -164,6 +233,13 @@ export function verifyDownloadedAssets(dir, assets) {
   return hashes;
 }
 
+function verify(options) {
+  const { stableTag } = parseReleaseTag(options.from);
+  const assets = requirePromotableBeta(readPublishedRelease(options.repo, options.from), options.from);
+  compareDraftWithBeta(assets, readDraft(options.repo, stableTag).assets, stableTag);
+  console.log(`[release-promote] draft ${stableTag} holds the ${assets.length} assets of ${options.from} with equal SHA-256 digests, plus ${MANIFEST}`);
+}
+
 function newestStableTag(releases, exclude) {
   const stable = (Array.isArray(releases) ? releases : []).find(
     (release) =>
@@ -180,7 +256,9 @@ function stage(options) {
   const { stableTag, version } = parseReleaseTag(options.from);
   const assets = requirePromotableBeta(readPublishedRelease(options.repo, options.from), options.from);
 
-  fs.rmSync(options.dir, { recursive: true, force: true });
+  if (fs.existsSync(options.dir) && fs.readdirSync(options.dir).length > 0) {
+    fail(`--dir ${options.dir} already holds files; name an absent or empty directory.`);
+  }
   fs.mkdirSync(options.dir, { recursive: true });
   gh(["release", "download", options.from, "--repo", options.repo, "--dir", options.dir]);
 
@@ -219,17 +297,11 @@ function stage(options) {
     ...files, manifestPath,
   ]);
 
-  const drafts = gh(["api", `repos/${options.repo}/releases?per_page=20`], { json: true });
-  const draft = (Array.isArray(drafts) ? drafts : []).find((release) => release?.tag_name === stableTag && release?.draft === true);
-  if (!draft) fail(`the draft ${stableTag} did not appear after creation.`);
-  const uploaded = new Map((draft.assets ?? []).map((asset) => [asset.name, asset]));
-  const expected = [...hashes.keys(), MANIFEST].sort();
-  if (JSON.stringify([...uploaded.keys()].sort()) !== JSON.stringify(expected)) {
-    fail(`the draft ${stableTag} holds ${[...uploaded.keys()].sort().join(", ")}, not ${expected.join(", ")}.`);
-  }
+  const draft = readDraft(options.repo, stableTag);
+  compareDraftWithBeta(assets, draft.assets, stableTag);
+  const uploaded = new Map(draft.assets.map((asset) => [asset.name, asset]));
   for (const [name, hash] of hashes) {
-    const recorded = recordedDigest(uploaded.get(name));
-    if (recorded && recorded !== hash) fail(`the draft ${stableTag} asset ${name} has SHA-256 ${recorded}, not the beta's ${hash}.`);
+    if (recordedDigest(uploaded.get(name)) !== hash) fail(`the draft ${stableTag} asset ${name} is not the ${hash} downloaded from the beta.`);
   }
 
   console.log(`[release-promote] draft ${stableTag} holds the ${hashes.size} assets of ${options.from} unchanged, plus ${MANIFEST} pinned to ${stableTag}`);
@@ -241,5 +313,6 @@ function stage(options) {
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
   const options = parseArgs(process.argv.slice(2));
   if (options.mode === "admit") admit(options);
-  else stage(options);
+  else if (options.mode === "stage") stage(options);
+  else verify(options);
 }

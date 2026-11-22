@@ -38,6 +38,13 @@ function scenarioDefaults(overrides = {}) {
     recorded: files,
     downloaded: files,
     extraBetaAssets: [],
+    lateAssets: [],
+    releaseList: [
+      { tag_name: BETA, draft: false, prerelease: true },
+      { tag_name: "v1.2.2", draft: false, prerelease: false },
+    ],
+    draftOverrides: {},
+    noDraftDigest: false,
     ...overrides,
   };
 }
@@ -60,14 +67,20 @@ const args = process.argv.slice(2);
 const state = JSON.parse(fs.readFileSync(statePath, "utf8"));
 const sha = (body) => crypto.createHash("sha256").update(body).digest("hex");
 const out = (value) => process.stdout.write(JSON.stringify(value));
-const assetsOf = (files) => Object.entries(files).map(([name, body]) => ({ name, digest: scenario.noDigests ? null : "sha256:" + sha(body) }));
+const assetsOf = (files, noDigests) => Object.entries(files).map(([name, body]) => ({
+  name,
+  digest: noDigests ? null : "sha256:" + sha(body),
+  created_at: scenario.lateAssets.includes(name) ? "2026-11-22T12:00:00Z" : "2026-11-22T09:00:00Z",
+}));
 const tagRef = /^repos\\/wlsdks\\/ontology-atlas\\/git\\/ref\\/tags\\/(.+)$/.exec(args[1] ?? "");
 if (args[0] === "api" && tagRef) {
   const commit = scenario.tags[tagRef[1]];
   if (!commit) { process.stderr.write("HTTP 404: Not Found"); process.exit(1); }
   out({ object: { type: "commit", sha: commit } });
 } else if (args[0] === "api" && args[1] === "repos/wlsdks/ontology-atlas/releases/tags/${BETA}") {
-  out({ tag_name: "${BETA}", draft: false, prerelease: scenario.prerelease, assets: [...assetsOf(scenario.recorded), ...scenario.extraBetaAssets] });
+  out({ tag_name: "${BETA}", draft: false, prerelease: scenario.prerelease, published_at: "2026-11-22T10:00:00Z", assets: [...assetsOf(scenario.recorded, scenario.noDigests), ...scenario.extraBetaAssets] });
+} else if (args[0] === "api" && args[1] === "repos/wlsdks/ontology-atlas/releases?per_page=100") {
+  out(scenario.releaseList);
 } else if (args[0] === "release" && args[1] === "download") {
   const dir = args[args.indexOf("--dir") + 1];
   for (const [name, body] of Object.entries(scenario.downloaded)) fs.writeFileSync(path.join(dir, name), body);
@@ -78,7 +91,7 @@ if (args[0] === "api" && tagRef) {
   state.created = { args, files: Object.fromEntries(files.map((file) => [path.basename(file), fs.readFileSync(file, "utf8")])) };
   fs.writeFileSync(statePath, JSON.stringify(state));
 } else if (args[0] === "api" && args[1] === "repos/wlsdks/ontology-atlas/releases?per_page=20") {
-  out(state.created ? [{ tag_name: "${STABLE}", draft: true, assets: assetsOf(state.created.files) }] : []);
+  out(state.created ? [{ tag_name: "${STABLE}", draft: true, assets: assetsOf({ ...state.created.files, ...scenario.draftOverrides }, scenario.noDigests || scenario.noDraftDigest) }] : []);
 } else {
   process.stderr.write("unexpected gh call: " + args.join(" "));
   process.exit(2);
@@ -222,4 +235,73 @@ test("stage refuses a download that adds or drops a file", () => {
 test("the promotion script names no build, signing or tag-creating step", () => {
   const source = fs.readFileSync("scripts/desktop-release/promote-beta-release.mjs", "utf8");
   assert.doesNotMatch(source, /TAURI_SIGNING|APPLE_|codesign|notar|tauri build|desktop:release-artifact|git", \["tag|--target/);
+});
+
+test("admit refuses a beta a newer beta of the same version superseded", () => {
+  const releaseList = [
+    { tag_name: "v1.2.3-beta.2", draft: false, prerelease: true },
+    { tag_name: BETA, draft: false, prerelease: true },
+  ];
+  withSetup({ releaseList }, ({ run }) => {
+    const result = run([`--from=${BETA}`, "--mode=admit"]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /v1\.2\.3-beta\.2 is published after v1\.2\.3-beta\.1/);
+  });
+  const draftOnly = [{ tag_name: "v1.2.3-beta.2", draft: true, prerelease: true }, { tag_name: BETA, draft: false, prerelease: true }];
+  withSetup({ releaseList: draftOnly }, ({ run }) => {
+    assert.equal(run([`--from=${BETA}`, "--mode=admit"]).status, 0, "an unpublished draft beta supersedes nothing");
+  });
+});
+
+test("admit refuses a beta when a stable release is at or above its version", () => {
+  for (const tag of ["v1.2.3", "v1.3.0", "v2.0.0"]) {
+    withSetup({ releaseList: [{ tag_name: tag, draft: false, prerelease: false }] }, ({ run }) => {
+      const result = run([`--from=${BETA}`, "--mode=admit"]);
+      assert.equal(result.status, 1, tag);
+      assert.match(result.stderr, new RegExp(`stable release ${tag.replaceAll(".", "\\.")} is already published at or above 1\\.2\\.3`));
+    });
+  }
+});
+
+test("admit refuses a beta with an asset uploaded after it was published", () => {
+  withSetup({ lateAssets: ["ontology-atlas_1.2.3_aarch64.dmg"] }, ({ run }) => {
+    const result = run([`--from=${BETA}`, "--mode=admit"]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /assets uploaded after it was published \(ontology-atlas_1\.2\.3_aarch64\.dmg\)/);
+  });
+});
+
+test("stage refuses a draft asset GitHub recorded no digest for", () => {
+  withSetup({ noDraftDigest: true }, ({ run, dir }) => {
+    const result = run([`--from=${BETA}`, "--mode=stage", `--dir=${dir}`]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /has no SHA-256 recorded by GitHub/);
+  });
+});
+
+test("stage refuses a directory that already holds files and leaves them", () => {
+  withSetup({}, ({ run, created, dir }) => {
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, "keep.txt"), "someone else's file");
+    const result = run([`--from=${BETA}`, "--mode=stage", `--dir=${dir}`]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /already holds files/);
+    assert.equal(fs.readFileSync(path.join(dir, "keep.txt"), "utf8"), "someone else's file");
+    assert.equal(created(), null);
+  });
+});
+
+test("verify compares the draft's digests with the beta's again before publication", () => {
+  withSetup({}, ({ run, dir }) => {
+    assert.equal(run([`--from=${BETA}`, "--mode=stage", `--dir=${dir}`]).status, 0);
+    const result = run([`--from=${BETA}`, "--mode=verify"]);
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /with equal SHA-256 digests/);
+  });
+  withSetup({ draftOverrides: { "ontology-atlas_1.2.3_aarch64.dmg": "replaced after staging" } }, ({ run, dir }) => {
+    run([`--from=${BETA}`, "--mode=stage", `--dir=${dir}`]);
+    const result = run([`--from=${BETA}`, "--mode=verify"]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /asset ontology-atlas_1\.2\.3_aarch64\.dmg has SHA-256 [0-9a-f]{64}, not the beta's/);
+  });
 });

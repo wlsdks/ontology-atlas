@@ -94,11 +94,13 @@ function assertPromotionWorkflow(source: string): void {
     indexOfStep(admitSteps, pattern, label);
   }
   if (/continue-on-error/.test(admit)) throw new Error("an admission step may continue on error");
+  if (/^\s+if:/m.test(admit)) throw new Error("an admission step or the admission job is conditional, so it can be skipped");
 
   const stage = jobBlock(source, "stage-promotion");
   if (!/^    needs: admit-promotion$/m.test(stage)) throw new Error("staging does not wait for admission");
   const stageSteps = steps(stage);
   const stagePin = indexOfStep(stageSteps, PIN, "staging pin");
+  if (/^        if:/m.test(stageSteps[stagePin].body)) throw new Error("the staging pin is conditional");
   const promote = indexOfStep(stageSteps, /pnpm desktop:release-promote -- .*--mode=stage/, "staging");
   const draftCheck = indexOfStep(stageSteps, /--allow-draft --require-updater/, "draft check");
   if (!(stagePin < promote && promote < draftCheck)) throw new Error("staging steps are out of order");
@@ -109,9 +111,17 @@ function assertPromotionWorkflow(source: string): void {
   const publishSteps = steps(jobBlock(source, "publish-promotion"));
   const publishPin = indexOfStep(publishSteps, PIN, "publication pin recheck");
   if (/^        if:/m.test(publishSteps[publishPin].body)) throw new Error("the publication pin recheck is conditional");
+  const compare = indexOfStep(publishSteps, /pnpm desktop:release-promote -- .*--from="\$BETA_TAG" --mode=verify/, "draft comparison");
   const publish = indexOfStep(publishSteps, /gh release edit "\$\{RELEASE_TAG\}" .*--draft=false --prerelease=false/, "publication");
   const verify = indexOfStep(publishSteps, /--tag="\$\{RELEASE_TAG\}" --require-updater/, "public check");
-  if (!(publishPin < publish && publish < verify)) throw new Error("the pin recheck must precede publication, and verification follow it");
+  const afterPin = publishSteps.findIndex((step, index) => index > publish && PIN.test(step.body));
+  if (!(publishPin < publish && compare < publish && publish < verify)) {
+    throw new Error("the pin recheck and the draft comparison must precede publication, and verification follow it");
+  }
+  if (afterPin < 0) throw new Error("no pin recheck follows publication");
+  for (const index of [publishPin, compare, afterPin]) {
+    if (/^        if:/m.test(publishSteps[index].body)) throw new Error(`publication step "${publishSteps[index].name}" is conditional`);
+  }
 }
 
 describe("promote-release.yml", () => {
@@ -128,6 +138,11 @@ describe("promote-release.yml", () => {
     ["a build step appears", "      - name: Create the stable draft from the beta's checked assets\n", "      - name: Rebuild\n        run: pnpm desktop:release-artifact -- --phase=build\n\n      - name: Create the stable draft from the beta's checked assets\n"],
     ["the admission gains a write token", "    permissions:\n      actions: read\n      contents: read\n", "    permissions:\n      actions: read\n      contents: write\n"],
     ["the browser gate leaves admission", "        run: pnpm desktop:release-browser-gate", "        run: echo skipped"],
+    ["the browser gate is switched off", "      - name: Require a whole green browser run on the release commit\n", "      - name: Require a whole green browser run on the release commit\n        if: ${{ false }}\n"],
+    ["the completeness check is switched off", "      - name: Verify the beta release is complete\n", "      - name: Verify the beta release is complete\n        if: ${{ false }}\n"],
+    ["the staging pin is switched off", "      - name: Recheck both tags before staging\n", "      - name: Recheck both tags before staging\n        if: ${{ false }}\n"],
+    ["the draft comparison leaves publication", "        run: pnpm desktop:release-promote -- --repo=\"$GITHUB_REPOSITORY\" --from=\"$BETA_TAG\" --mode=verify\n", "        run: echo skipped\n"],
+    ["the post-publication pin recheck is switched off", "      - name: Recheck both tags after publication\n", "      - name: Recheck both tags after publication\n        if: ${{ false }}\n"],
     ["a push trigger is added", "on:\n  workflow_dispatch:\n", "on:\n  push:\n    tags: ['v*']\n  workflow_dispatch:\n"],
   ];
 
@@ -140,6 +155,6 @@ describe("promote-release.yml", () => {
   it("probe: turns red when the pin recheck leaves the publish job", () => {
     const step = /      - name: Recheck both tags after publication approval\n[\s\S]*?(?=      - name: )/.exec(workflow);
     expect(step, "probe anchor for the publication pin recheck is gone").not.toBeNull();
-    expect(() => assertPromotionWorkflow(workflow.replace(step![0], ""))).toThrow(/publication pin recheck/);
+    expect(() => assertPromotionWorkflow(workflow.replace(step![0], ""))).toThrow(/pin recheck/);
   });
 });
