@@ -75,7 +75,7 @@ function entryFor(registry, file) {
   return registry.entries.find((entry) => entry.file === file);
 }
 
-export function runBrowser({ registry, spawn, cwd, env, log }) {
+function runBrowser({ registry, spawn, cwd, env, log }) {
   const specs = quarantinedBrowserSpecs(registry);
   if (specs.length === 0) {
     log('[quarantine] run-browser: nothing is quarantined');
@@ -92,7 +92,7 @@ export function runBrowser({ registry, spawn, cwd, env, log }) {
   }), { env, log });
 }
 
-export function runUnit({ registry, spawn, cwd, env, log }) {
+function runUnit({ registry, spawn, cwd, env, log }) {
   const files = quarantinedVitestFiles(registry);
   if (files.length === 0) {
     log('[quarantine] run-unit: nothing is quarantined');
@@ -107,7 +107,7 @@ export function runUnit({ registry, spawn, cwd, env, log }) {
   return printOutcomes(files.map((file) => ({ file, entry: entryFor(registry, file), outcome: outcomes.get(file) ?? 'no result' })), { env, log });
 }
 
-export function checkExpiry({ registry, today, env, log }) {
+function checkExpiry({ registry, today, env, log }) {
   const expired = expiredEntries(registry, today);
   for (const entry of expired) {
     log(`[quarantine] expired: ${entry.file} (owner ${entry.owner}) was quarantined until ${entry.expires}; fix it and paste \`node scripts/ci/quarantine.mjs prove ${entry.file}\`, or renew it with new evidence. ${entry.issue}`);
@@ -139,7 +139,7 @@ function vitestBatch(file, size, { spawn, cwd, env, log }) {
   return size;
 }
 
-export function prove({ file, spawn, cwd, env, log }) {
+function prove({ file, spawn, cwd, env, log }) {
   const kind = quarantineKind(file);
   if (!kind) throw new Error(`prove takes a Playwright spec under tests/e2e/ or a Vitest file under app/ or src/: ${file}`);
   if (!existsSync(resolve(cwd, file))) throw new Error(`no such file: ${file}`);

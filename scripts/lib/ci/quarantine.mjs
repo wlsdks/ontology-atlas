@@ -16,7 +16,7 @@ export const QUARANTINE_REGISTRY = 'tests/quarantine.json';
 export const QUARANTINE_MAX_ENTRIES = 10;
 export const QUARANTINE_MAX_DAYS = 14;
 /** Repeats a fix must pass in a row before its entry is removed: 5, then 10, then 50. */
-export const PROVE_BATCHES = Object.freeze([5, 10, 50]);
+const PROVE_BATCHES = Object.freeze([5, 10, 50]);
 export const PROVE_REQUIRED = PROVE_BATCHES.reduce((sum, size) => sum + size, 0);
 
 const ENTRY_KEYS = Object.freeze(['file', 'owner', 'reason', 'evidence', 'issue', 'added', 'expires']);
@@ -40,7 +40,7 @@ export function quarantineKind(file) {
 }
 
 /** Milliseconds since the epoch for a real `YYYY-MM-DD` calendar day, else `undefined`. */
-export function calendarDay(value) {
+function calendarDay(value) {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return undefined;
   const time = Date.parse(`${value}T00:00:00Z`);
   if (Number.isNaN(time) || new Date(time).toISOString().slice(0, 10) !== value) return undefined;
