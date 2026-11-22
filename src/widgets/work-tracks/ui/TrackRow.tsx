@@ -40,12 +40,12 @@ function useHolderLine(track: Track, nowMs: number): string {
       return t('holder.locked', {
         tool: toolName(holder.tool, t),
         id: holder.agentId ? shortAgentId(holder.agentId) : '',
-        time: holder.lockedAt ? clockTime(holder.lockedAt, locale) : '',
+        time: holder.lockedAt ? clockTime(holder.lockedAt, nowMs, locale) : '',
       });
     case 'acp':
       return t('tool.acp');
     case 'locked':
-      return holder.lockedAt ? t('holder.lockedUnnamed', { time: clockTime(holder.lockedAt, locale) }) : t('holder.noLockQuiet');
+      return holder.lockedAt ? t('holder.lockedUnnamed', { time: clockTime(holder.lockedAt, nowMs, locale) }) : t('holder.noLockQuiet');
     case 'ended':
       return t('holder.staleLock', { tool: toolName(holder.tool, t) });
     case 'none':

@@ -43,18 +43,18 @@ it.
 | 5 | F1: document filter rules | words-and-first-run | Merged (#3752) | None |
 | 6 | S-2 and S-3: mount the overview, retire the graph | sources-redesign | Merged (#3753) | None |
 | 7 | P-1: paper tokens and `Sheet` | this file | Merged (#3754) | 6 |
-| 8 | Installed-app check after 6 and 7 | this file | Not started | 7 |
+| 8 | Installed-app check after 6 and 7 | this file | Done (S-4 came from it) | 7 |
 | 9 | F3: word sweep and `sourceWord` row | words-and-first-run | Merged #3761 | 6 |
-| 10 | I-2: mount the wiki index | index-column | In integration/library-2026-11-21 (#3775 closed) | 6 |
-| 11 | F2: drop-first stage, widened by "Documents already in the folder" | words-and-first-run | In integration/library-2026-11-21 (#3782 closed) | 9 |
+| 10 | I-2: mount the wiki index | index-column | Merged (#3787) | 6 |
+| 11 | F2: drop-first stage, widened by "Documents already in the folder" | words-and-first-run | Merged (#3787) | 9 |
 | 11b | F2b: notice a changed original | words-and-first-run | Not started; F2 left origin tracking out | 11 |
 | 12 | F4: plain find dialog | words-and-first-run | Not started | 11 |
 | 13 | I-3: log view | index-column | Not started | 10 |
 | 14 | I-4: Sources half on `IndexRow` | index-column | Not started | 10 |
 | 15 | I-5: Ontology column metrics | index-column | Not started | None |
-| 16 | P-2 to P-7 | this file | Not started | 7, 9 |
+| 16 | P-2 to P-7 | this file | P-4 merged (#3788); the rest not started | 7, 9 |
 | 17 | Re-measure Library memory and frames | performance-strategy | Not started | 6, 10 |
-| 18 | S-4: Sources home clarity (below) | this file | In review (#3770) | 9 |
+| 18 | S-4: Sources home clarity (below) | this file | Merged (#3770) | 9 |
 
 Row 8 ran on 2026-11-21 (installed app, 40 sources and 24 pages); row 18 is what it found.
 
@@ -148,3 +148,5 @@ separately.
 - 2026-11-22: P-4 built on `design/library-progress-band` (no pull request; the lead merges
   it): the band says the count once, the write button heads the Next to write panel, and the
   work line names the page by its title. The sources-redesign Revisions line has the detail.
+- 2026-11-22: rows 8, 10, 11 and 18 marked done; P-4 merged in #3788 with the Library
+  first-run fixes.
