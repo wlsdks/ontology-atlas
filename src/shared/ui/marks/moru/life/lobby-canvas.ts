@@ -20,6 +20,7 @@ export const LIFE_SHEETS = {
   base: '/brand/moru-life-base.png',
   over: '/brand/moru-life-over.png',
   wardrobe: '/brand/moru-life-wardrobe.png',
+  props: '/brand/moru-life-props.png',
 };
 /** The clock's pace while somebody walks, and while nobody does (an on-the-spot clip keeps its own time). */
 const WALK_MS = 125;
@@ -126,7 +127,8 @@ export async function createLobby(canvas: HTMLCanvasElement, { width, unit = 1, 
   };
   const atlas = (await (await fetch(basePath + LIFE_SHEETS.atlas)).json()) as LifeAtlas;
   const BASE = await indexed(LIFE_SHEETS.base), OVER = await indexed(LIFE_SHEETS.over), CLOTHES = await indexed(LIFE_SHEETS.wardrobe);
-  if (!canvas.isConnected) return null;
+  const PROPS = await createImageBitmap(await (await fetch(basePath + LIFE_SHEETS.props)).blob());
+  if (!canvas.isConnected) { PROPS.close(); return null; }
   const clips = atlas.clips;
   const STONE = colourIndex.get(hex32(atlas.tones.body))!, IVORY = colourIndex.get(hex32(atlas.tones.belly))!;
   const plain = Uint32Array.from(colours);
@@ -188,7 +190,7 @@ export async function createLobby(canvas: HTMLCanvasElement, { width, unit = 1, 
     canvas.style.height = `${LOBBY_H * unit_}px`;
     ctx.imageSmoothingEnabled = false;
     fixturesCtx.setTransform(k, 0, 0, k, 0, 0);
-    drawFixtures(fixturesCtx, floorW, BACK_FEET, BACK_FEET + 2 * LANE_DY);
+    drawFixtures(fixturesCtx, floorW, BACK_FEET, BACK_FEET + 2 * LANE_DY, PROPS, atlas.props);
   };
   fit();
 
@@ -418,6 +420,7 @@ export async function createLobby(canvas: HTMLCanvasElement, { width, unit = 1, 
       running = false;
       for (const e of kept.values()) e.bmp?.close();
       kept.clear();
+      PROPS.close();
     },
   };
 }

@@ -54,6 +54,16 @@ export interface PiecePart {
   alts: Record<string, PiecePart> | null;
 }
 
+/** A lobby fixture on the props sheet: where it is, its size, and its foot, the point that stands on its place on the floor. */
+export interface LobbyProp {
+  sx: number;
+  w: number;
+  h: number;
+  fx: number;
+  fy: number;
+}
+export type LobbyPropName = 'bench' | 'crate' | 'mat' | 'plant' | 'door' | 'doorRight';
+
 export interface LifeAtlas {
   cell: number;
   floor: number;
@@ -64,6 +74,7 @@ export interface LifeAtlas {
   palettes: Record<string, [string, string]>;
   tones: { body: string; belly: string };
   atlas: { w: number; h: number };
+  props: Record<LobbyPropName, LobbyProp>;
 }
 
 /** The clip a Moru facing left plays: its own mirrored bubble where one is drawn. */
