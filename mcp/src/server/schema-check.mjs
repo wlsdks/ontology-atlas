@@ -52,7 +52,7 @@ function typeText(type) {
 }
 
 /** One-line picture of a schema: `{a, b?: string, c: "x"|"y"}`, objects two levels deep. */
-export function describeShape(schema, depth = 2) {
+function describeShape(schema, depth = 2) {
   if (!schema || typeof schema !== 'object') return 'any';
   if (schema.anyOf) return schema.anyOf.map((option) => describeShape(option, depth)).join(' | ');
   if (schema.enum) return schema.enum.map((value) => JSON.stringify(value)).join('|');
