@@ -89,11 +89,11 @@ export const RECLASSIFY_CONCEPT_TOOL = {
   inputSchema: {
     type: 'object',
     properties: {
-      slug: nonBlankStringSchema('Current canonical slug.'),
+      slug: NON_BLANK_STRING_SCHEMA,
       newKind: { type: 'string', enum: ['project', 'domain', 'capability', 'element', 'document'] },
-      newSlug: nonBlankStringSchema('Optional new canonical slug.'),
+      newSlug: NON_BLANK_STRING_SCHEMA,
       domain: { type: ['string', 'null'], description: 'New domain; required for capability/element.' },
-      body: { type: 'string', description: 'Optional explicit replacement body.' },
+      body: { type: 'string' },
       confirm: { type: 'boolean' }, expected_mtime: { type: 'number', minimum: 0 },
     },
     required: ['slug', 'newKind'],

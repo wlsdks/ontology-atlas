@@ -11,7 +11,7 @@ import type { CameraTarget } from "../../../engine/camera";
 import { buildDialModel } from "../../../dial/dial-model";
 import type { DialLabels, DialModel, DialWorld } from "../../../dial/dial-shapes";
 import { cachedGraphAttention } from "../../../flat-graph/attention";
-import { graphDiscRadiusPx, zoomGrowth } from "../../../flat-graph/marks";
+import { elementDotRadiusPx, graphDiscRadiusPx, zoomGrowth } from "../../../flat-graph/marks";
 import { admitNamesAt } from "../../../flat-graph/names";
 import { domainTitleBlocks, hubBlockReachPx } from "../../../flat-graph/names/titles";
 import { stepScale, zoomStep } from "../../../flat-graph/names/zoom-step";
@@ -126,6 +126,37 @@ function vaultMap(manifest: unknown, viewport: { width: number; height: number }
     const sy = (p.y - camera.ty) * camera.tscale + viewport.height / 2;
     return admission.names.filter((n) => n.id === id).map((n) => ({ text: n.text, minX: sx + n.box.minX, maxX: sx + n.box.maxX, minY: sy + n.box.minY, maxY: sy + n.box.maxY }));
   };
+  /**
+   * The names of a selected capability, its domain and the capabilities inside it at the far ends of its lines, admitted at
+   * `camera` as the frame admits them with the capability's elements opened round it, in canvas pixels.
+   */
+  const framedNames = (id: string, camera: CameraTarget) => {
+    const attention = cachedGraphAttention(model, id, true);
+    const domainId = model.domainOf.get(id)!;
+    const near = new Set([id, domainId, ...attention.lines.flatMap((l) => [l.from, l.to]).filter((end) => model.capabilityById.has(end) && model.domainOf.get(end) === domainId)]);
+    const step = zoomStep(camera.tscale, paint.zoomStepsPerOctave);
+    const stepAt = stepScale(step, paint.zoomStepsPerOctave);
+    const growth = zoomGrowth(stepAt / (fit * INSETS.overviewEntryRatio), paint);
+    const radius = (of: string) => {
+      if (model.domainById.has(of)) return graphDiscRadiusPx("domain", 0, paint, growth);
+      const cap = model.capabilityById.get(of);
+      if (cap || !model.domainOf.has(of)) return graphDiscRadiusPx("capability", cap?.elementIds.length ?? 0, paint, growth);
+      return elementDotRadiusPx(paint, growth, scene.medianElementPitch, stepAt);
+    };
+    const admission = admitNamesAt({
+      model, layout, tokens: paint, labels: LABELS, measureText, fontFamily: "sans-serif", scale: camera.tscale, growth,
+      elementLabel: (of) => titles.get(of) ?? null, staleByDomain: null, lit: attention.lit, focusId: id, selected: true, openStarId: id,
+      named: attention.named, reach: attention.reach, lines: attention.lines, agentFocusId: null, attentionKey: attention.key,
+      discRadius: radius, elementSpacingPx: scene.medianElementPitch * camera.tscale, hubCaption: null,
+    });
+    return admission.names.filter((n) => near.has(n.id)).map((n) => {
+      const p = admission.anchors.get(n.id) ?? at(n.id);
+      const sx = (p.x - camera.tx) * camera.tscale + viewport.width / 2;
+      const sy = (p.y - camera.ty) * camera.tscale + viewport.height / 2;
+      const pad = paint.namePadPx;
+      return { label: `${n.role}:${n.id}`, minX: sx + n.box.minX + pad, maxX: sx + n.box.maxX - pad, minY: sy + n.box.minY + pad, maxY: sy + n.box.maxY - pad };
+    });
+  };
   /** The screen distance between a domain's two closest member capabilities at `camera`. */
   const membersApartPx = (domainId: string, camera: CameraTarget) => {
     const members = model.domainById.get(domainId)!.capabilityIds.map(at);
@@ -156,7 +187,7 @@ function vaultMap(manifest: unknown, viewport: { width: number; height: number }
     const margin = paint.frameMarginPx * 2;
     return span("minX", "maxX", "x") > free.maxX - free.minX - margin || span("minY", "maxY", "y") > free.maxY - free.minY - margin;
   };
-  return { model, layout, at, rest, fit, free, frame, ownNames, membersApartPx, starFills };
+  return { model, layout, at, rest, fit, free, frame, ownNames, framedNames, membersApartPx, starFills };
 }
 
 const inside = (box: { minX: number; maxX: number; minY: number; maxY: number }, free: typeof box) =>
@@ -417,6 +448,27 @@ describe("a capability selection that zooms in", () => {
     }
     expect(zoomed, "some capability selection zooms in").toBeGreaterThan(0);
     expect(lost).toEqual([]);
+  });
+});
+
+describe("a capability selection's names", () => {
+  it.each([
+    ["docs", 1448, 949, docsManifest], ["docs", 1856, 1080, docsManifest],
+    ["storefront", 1448, 949, storefrontManifest], ["storefront", 1856, 1080, storefrontManifest],
+  ])("land inside the free map by the margin as the frame names them round the opened star across the %s vault at %ix%i", (_, width, height, manifest) => {
+    const viewport = { width, height };
+    const map = vaultMap(manifest, viewport);
+    const margin = paint.frameMarginPx;
+    const box = { minX: map.free.minX + margin, maxX: map.free.maxX - margin, minY: map.free.minY + margin, maxY: map.free.maxY - margin };
+    const entry = map.rest.tscale;
+    const outside: string[] = [];
+    for (const start of [map.rest, { ...map.rest, tscale: entry * 1.6 }]) {
+      for (const id of map.model.capabilityById.keys()) {
+        const landed = map.frame(id, start) ?? start;
+        for (const n of map.framedNames(id, landed)) if (!inside(n, box)) outside.push(`${id} from ${start.tscale.toFixed(2)}: ${n.label}`);
+      }
+    }
+    expect(outside).toEqual([]);
   });
 });
 

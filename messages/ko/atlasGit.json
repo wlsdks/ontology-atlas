@@ -95,7 +95,6 @@
   "remoteToggleClose": "닫기",
   "stepSelectHint": "누르면 이 커밋의 자세한 값을 볼 수 있어요",
   "webCopyFailed": "복사 실패: 클립보드가 막혔어요",
-  "cliPlaceholderHint": "먼저 한 번만, 터미널에서 export ATLAS=\"ontology-atlas 소스 폴더 경로\". npm 패키지는 없어요.",
   "remoteFetch": "Fetch",
   "remotePull": "Pull · 전체 저장소",
   "remotePush": "Push",

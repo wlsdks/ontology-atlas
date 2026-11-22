@@ -6,39 +6,42 @@ import {
   INTEROP_SCHEMA_VERSION as schemaVersionTs,
   type InteropGraph,
 } from '@/shared/lib/ontology-graph/interop-format';
-import {
-  buildGraphML as graphmlCli,
-  buildJsonLd as jsonldCli,
-  INTEROP_SCHEMA_VERSION as schemaVersionCli,
-} from '../../../cli/src/lib/export-format/interop-format.mjs';
 
 /**
- * Interop-format contract — the web ERD builder export (`src/shared/lib`) and
- * the CLI `export` command (`cli/src/lib`) serialize the *same* compile
- * artifact through two physical copies of the serializer. This contract keeps
- * them byte-identical: same input → identical JSON-LD + GraphML. If one copy
- * changes and the other doesn't, every case here fails. Same pattern as the
- * parser / validator drift guards (R11).
- *
- * The CLI copy is the node/mjs source; the TS copy is what the browser bundles.
- * They can't be one physical module (the CLI ships as a separate npm package,
- * the web copy is TypeScript bundled by Next), so the contract test is the
- * effective single-source enforcement.
+ * Interop-format contract for the app's serializer (`src/shared/lib/ontology-graph/interop-format.ts`):
+ * node identity is `urn:uuid:<uid>`, output does not depend on input order, edges whose ends were not
+ * both emitted are dropped, and the schema version is published.
  */
 
-describe('interop-format contract (web ↔ CLI serializer drift)', () => {
-  it('publishes UID-based interop schema version 2 on both surfaces', () => {
-    expect(schemaVersionCli).toBe(2);
+type InteropCase = { name: string; input: InteropGraph };
+
+function reversed(graph: InteropGraph): InteropGraph {
+  return { nodes: [...graph.nodes].reverse(), edges: [...graph.edges].reverse() };
+}
+
+describe('interop-format contract', () => {
+  it('publishes UID-based interop schema version 2', () => {
     expect(schemaVersionTs).toBe(2);
   });
 
-  for (const { name, input } of INTEROP_CASES as Array<{ name: string; input: InteropGraph }>) {
-    it(`JSON-LD identical — ${name}`, () => {
-      expect(jsonldCli(input)).toBe(jsonldTs(input));
+  for (const { name, input } of INTEROP_CASES as InteropCase[]) {
+    it(`JSON-LD names every node by its UID URN — ${name}`, () => {
+      const graph = JSON.parse(jsonldTs(input))['@graph'] as Array<{ '@id': string; uid: string }>;
+      expect(graph).toHaveLength(input.nodes.length);
+      for (const node of graph) expect(node['@id']).toBe(`urn:uuid:${node.uid}`);
     });
 
-    it(`GraphML identical — ${name}`, () => {
-      expect(graphmlCli(input)).toBe(graphmlTs(input));
+    it(`GraphML carries the same nodes and only edges between them — ${name}`, () => {
+      const graphml = graphmlTs(input);
+      const slugs = new Set(input.nodes.map((node) => node.slug));
+      const kept = input.edges.filter((edge) => slugs.has(edge.from) && slugs.has(edge.to));
+      expect(graphml.match(/<node id="urn:uuid:/g) ?? []).toHaveLength(input.nodes.length);
+      expect(graphml.match(/<edge /g) ?? []).toHaveLength(kept.length);
+    });
+
+    it(`output does not depend on input order — ${name}`, () => {
+      expect(jsonldTs(reversed(input))).toBe(jsonldTs(input));
+      expect(graphmlTs(reversed(input))).toBe(graphmlTs(input));
     });
   }
 
@@ -93,13 +96,7 @@ describe('interop-format contract (web ↔ CLI serializer drift)', () => {
       edges: [],
     } as unknown as InteropGraph;
 
-    expect(() => jsonldCli(graph)).toThrow(
-      'Interop graph node "login" requires a valid lowercase UUIDv4 `uid`.',
-    );
     expect(() => jsonldTs(graph)).toThrow(
-      'Interop graph node "login" requires a valid lowercase UUIDv4 `uid`.',
-    );
-    expect(() => graphmlCli(graph)).toThrow(
       'Interop graph node "login" requires a valid lowercase UUIDv4 `uid`.',
     );
     expect(() => graphmlTs(graph)).toThrow(

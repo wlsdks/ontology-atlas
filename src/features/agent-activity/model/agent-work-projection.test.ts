@@ -57,7 +57,6 @@ function heartbeat(overrides: Partial<AgentActivityStatus> = {}): AgentActivityS
       previousOntologySlug: null,
       previousFiles: [],
       previousAgeMs: null,
-      command: null,
       message: null,
     },
     errorMessage: null,

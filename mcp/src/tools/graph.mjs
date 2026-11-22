@@ -147,7 +147,7 @@ async function queryOntologyTool(args = {}) {
       ? attachMeaningReadiness(validatedResult, artifact, args, loadedDocs)
       : validatedResult;
   // Count health checks once at the end rather than at each attachment site, or the
-  // count drifts from the checks carried. Gate: `cli/src/lib/query-result-contract/agent-brief/brief-self-consistency.test.mjs`.
+  // count drifts from the checks carried. Gate: `agentBriefFailure` in `mcp/scripts/verify/checks/agent-brief.mjs`.
   let result = Array.isArray(attached.health?.checks) && attached.readiness
     ? { ...attached, readiness: { ...attached.readiness, healthChecks: attached.health.checks.length } }
     : attached;

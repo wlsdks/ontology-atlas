@@ -95,7 +95,6 @@
   "remoteToggleClose": "閉じる",
   "stepSelectHint": "押すと、このコミットの正確な値が表示されます",
   "webCopyFailed": "コピーに失敗しました：クリップボードがブロックされました",
-  "cliPlaceholderHint": "ターミナルで一度だけ設定してください：export ATLAS=\"ontology-atlasのソースフォルダのパス\"。npmパッケージはありません。",
   "remoteFetch": "フェッチ",
   "remotePull": "プル・リポジトリ全体",
   "remotePush": "プッシュ",

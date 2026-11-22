@@ -27,22 +27,17 @@
 # Vault location priority:
 #   1. OATLAS_VAULT environment variable (explicit user setting)
 #   2. <cwd>/docs/ontology  (dogfood pattern like this repo)
-#   3. <cwd>/vault          (cli init default)
+#   3. <cwd>/vault
 #   4. If cwd itself has .md files with frontmatter `kind:`, use cwd
 #   ↳ If no candidate is found, remain silent.
 
 set -e
 
-# Prefer the checkout's CLI, from the project root, to whatever `ontology-atlas` is on PATH.
+# Ask the checkout's own MCP server, from the project root. Outside a checkout there is
+# nothing to ask, and the hook stays silent.
 ROOT="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
-CLI_ARGS=()
-if [ -f "$ROOT/cli/src/index.mjs" ]; then
-  CLI_ARGS=(node "$ROOT/cli/src/index.mjs")
-elif command -v ontology-atlas >/dev/null 2>&1; then
-  CLI_ARGS=(ontology-atlas)
-fi
-
-if [ "${#CLI_ARGS[@]}" -eq 0 ]; then
+CALL_TOOL="$ROOT/mcp/scripts/call-tool.mjs"
+if [ ! -f "$CALL_TOOL" ]; then
   exit 0
 fi
 
@@ -64,8 +59,8 @@ fi
 
 # Keep the runnable argv and the displayed shell command aligned. Quoting is
 # required for vaults/checkouts whose paths contain spaces or shell syntax.
-printf -v HEALTH_COMMAND '%q ' "${CLI_ARGS[@]}" health "$VAULT"
-HEALTH_COMMAND="${HEALTH_COMMAND% }"
+printf -v HEALTH_COMMAND '%q ' node "$CALL_TOOL" "$VAULT"
+HEALTH_COMMAND+="query_ontology '{\"operation\":\"health\"}'"
 
 # Compact census only. Keep SessionStart output short because it is injected
 # into agent context on every new session.
@@ -75,13 +70,13 @@ HEALTH_COMMAND="${HEALTH_COMMAND% }"
 # it lacks a `uid:`, causing the entire graph compilation to fail, and that session **starts without receiving any ontology context**. They don't even know why it's silent.
 #
 # So we separate them: **if stderr exists, it means failure while reading the vault**, so speak in one line. If there is no stderr (the tool itself failed to run), remain silent as before — preserving the original convention of not adding noise to repos without a vault.
-CLI_STDERR="$(mktemp)"
-trap 'rm -f "$CLI_STDERR"' EXIT
+TOOL_STDERR="$(mktemp)"
+trap 'rm -f "$TOOL_STDERR"' EXIT
 
-if ! JSON=$("${CLI_ARGS[@]}" overview "$VAULT" --json 2>"$CLI_STDERR"); then
+if ! JSON=$(node "$CALL_TOOL" "$VAULT" query_ontology '{"operation":"overview"}' 2>"$TOOL_STDERR"); then
   ESC=$(printf '\033')
   REASON=$(
-    sed "s/${ESC}\[[0-9;]*m//g" "$CLI_STDERR" \
+    sed "s/${ESC}\[[0-9;]*m//g" "$TOOL_STDERR" \
       | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' \
       | grep -v '^$' \
       | head -2

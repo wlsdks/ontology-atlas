@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 
-import { CLI_COMMANDS } from '../../cli/src/lib/cli-commands.mjs';
+import { CLI_COMMANDS } from '../../cli/src/commands.mjs';
 import {
   buildSurface,
   cliCommandsMissingFromDoc,

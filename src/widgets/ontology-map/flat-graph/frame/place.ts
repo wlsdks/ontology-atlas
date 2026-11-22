@@ -1,7 +1,7 @@
 import type { Point } from "../../dial/dial-shapes";
 import { HITTABLE_MIN_TIER_ALPHA } from "../../model/visibility/tier-visibility";
 import { inkUnder } from "../attention";
-import { capabilityDiscRadiusPx, graphDiscRadiusPx, LIT_DOT_SHARE, ORPHAN_ROOM, sunk } from "../marks";
+import { capabilityDiscRadiusPx, elementDotRadiusPx, graphDiscRadiusPx, LIT_DOT_SHARE, ORPHAN_ROOM, sunk } from "../marks";
 import { DAMPED, dampedStep, FLAT_MOTION } from "../motion";
 import type { OpenedElements } from "../open";
 import { domainStarRooms, openRadiusPx, roomLimitPx, starRooms, type StarPoint, type StarRoom } from "../open-star";
@@ -13,8 +13,6 @@ const F = frameState;
 
 /** World units a fanned element may sit from its laid-out place before it counts as dragged. */
 const DRAG_SLACK = 1e-6;
-/** The most of the pitch between two elements a dot's radius takes, so a lit dot (`LIT_DOT_SHARE`) still stops short of its neighbour. */
-const ELEMENT_PITCH_FILL = 0.33;
 
 const ORIGIN: Point = { x: 0, y: 0 };
 
@@ -344,7 +342,7 @@ export function radiusOf(id: string, g: number, scale: number): number {
   const capability = model.capabilityById.get(id);
   if (capability) return capabilityDiscRadiusPx(F.layout, model.domainOf.get(id)!, capability.elementIds.length, P, scale, g);
   if (F.orphans.has(id)) return capabilityDiscRadiusPx(F.layout, ORPHAN_ROOM, 0, P, scale, g);
-  return Math.min(graphDiscRadiusPx("element", 0, P, g), F.elementPitch * scale * ELEMENT_PITCH_FILL);
+  return elementDotRadiusPx(P, g, F.elementPitch, scale);
 }
 
 export function radiusAt(id: string, g: number): number {

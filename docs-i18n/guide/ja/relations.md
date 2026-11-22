@@ -70,16 +70,7 @@ MCPサーバは同じフロントマターからグラフについての問い�
 
 書き込むには、`add_relation`に`from`、`to`、`type`（`depends_on`、`relates`、`contains`、`describes`、`domains`、`capabilities`、`elements`、`domain`のいずれか）、そして`why`を渡します。`remove_relation`と`replace_relation`は、デフォルトではプレビューだけを行い、`confirm: true`のときにだけ書き込みます。`broader`はまだ`add_relation`の型に含まれていません。エージェントは`patch_concept`に新しいリスト全体とファイルの`mtime`を渡して変更し、そのあと`validate_vault`を実行します。
 
-[CLI](/guide/cli)では、同じ読み取りをターミナルから行えます。Atlasのソースをチェックアウトした場所で実行すると、次のコマンドはAtlas自身のオントロジーを読みます。
-
-```bash
-node cli/src/index.mjs backlinks capabilities/mcp-tool-server --vault docs/ontology
-node cli/src/index.mjs path capabilities/cli-commands domains/human-workbench --vault docs/ontology
-node cli/src/index.mjs blast-radius capabilities/mcp-tool-server --direction incoming --vault docs/ontology
-node cli/src/index.mjs domain-matrix docs/ontology --types depends_on
-```
-
-`relate`と`remove-relation`は、MCPツールと同じチェックを通して関係を1つ書き込みます。マップでは、**関係を編集**で同じことを関係1つずつ行えます。[概念と関係を編集する](/guide/studio)を参照してください。
+マップでは、**関係を編集**で、MCPツールと同じチェックを通して関係を1つずつ書き込めます。[概念と関係を編集する](/guide/studio)を参照してください。
 
 ## ファイルが正本であり続ける
 

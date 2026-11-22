@@ -105,22 +105,18 @@ describe('architecture profile read model', () => {
     expect(prompt).toContain('"contract":"architectureAgentTask:v1"');
     expect(prompt).toContain('"kind":"change"');
     expect(prompt).not.toContain('source of truth for this run');
-    expect(prompt).toContain('CLI fallback unavailable from this surface');
+    expect(prompt).toContain('If the ontology-atlas MCP server is unavailable, read the vault\'s Markdown files directly, write nothing to the vault');
     expect(prompt).not.toContain('/absolute/path');
   });
 
-  it('includes exact installed paths and a runnable CLI fallback when they are verified', () => {
+  it('includes the exact source root when it is verified', () => {
     const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
     const prompt = buildArchitectureAgentPrompt(profile, {
       sourceRoot: '/Users/dana/Atlas Source',
       vaultRoot: '/Users/dana/Atlas Source/docs/ontology',
-      cliEntry: '/Users/dana/Atlas Source/cli/src/index.mjs',
     });
     expect(prompt).toContain(
       'inspect_architecture with {"rootPath":"/Users/dana/Atlas Source","profileSlug":"atlas-web"}',
-    );
-    expect(prompt).toContain(
-      "node '/Users/dana/Atlas Source/cli/src/index.mjs' architecture '/Users/dana/Atlas Source' --vault '/Users/dana/Atlas Source/docs/ontology' --profile 'atlas-web' --json",
     );
   });
 
@@ -131,7 +127,6 @@ describe('architecture profile read model', () => {
       {
         sourceRoot: '/Users/dana/product',
         vaultRoot: '/Users/dana/vault',
-        cliEntry: null,
       },
       {
         kind: 'verify',
@@ -265,7 +260,6 @@ describe('buildArchitectureDraftPrompt', () => {
     const bound = buildArchitectureDraftPrompt({
       sourceRoot: '/Users/someone/work/app',
       vaultRoot: '/Users/someone/work/app/atlas',
-      cliEntry: null,
     });
     expect(bound).toContain('/Users/someone/work/app');
     expect(bound).toContain('"vaultRoot":"/Users/someone/work/app/atlas"');

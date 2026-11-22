@@ -56,14 +56,14 @@ describe('on-screen copy is self-contained — no dead-end shell variables', () 
   it('the check does not idle — does it count what would really be caught?', () => {
     // The planted defect is caught,
     expect(
-      danglingShellVars({ card: { hint: 'run node $ATLAS/cli/src/index.mjs' } }),
+      danglingShellVars({ card: { hint: 'run node $ATLAS/mcp/src/index.js' } }),
     ).toEqual(['card ($ATLAS)']);
     // The check must hold at shallow depth too.
     expect(danglingShellVars({ hint: 'run node $ATLAS/x' })).toEqual(['(root) ($ATLAS)']);
     // A definition in the same namespace passes.
     expect(
       danglingShellVars({
-        card: { setup: 'export ATLAS="…"', hint: 'run node $ATLAS/cli/src/index.mjs' },
+        card: { setup: 'export ATLAS="…"', hint: 'run node $ATLAS/mcp/src/index.js' },
       }),
     ).toEqual([]);
   });

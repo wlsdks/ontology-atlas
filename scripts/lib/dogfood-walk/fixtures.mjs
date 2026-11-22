@@ -45,10 +45,28 @@ function makeDogfoodInitialize() {
 /** Keep the healthy fixture sourced from the public registry so schema ratchets cannot drift from
  * the actual tools/list surface. Individual gate tests clone and deliberately mutate this shape. */
 export function makeDogfoodToolsList() {
-  // JSON cloning intentionally breaks shared schema references. The gate tests mutate one
-  // tool at a time; preserving registry aliasing would make an unrelated mutation look like
-  // drift in the first tool that reuses that nested schema.
-  return { tools: JSON.parse(JSON.stringify(TOOLS_FOR_LIST)) };
+  // JSON cloning intentionally breaks shared schema references, and each `$ref` into a tool's
+  // `$defs` is written out in place. The gate tests mutate one property at a time; a shared
+  // definition would make that mutation land everywhere the definition is used, or nowhere
+  // the path leads.
+  return { tools: JSON.parse(JSON.stringify(TOOLS_FOR_LIST)).map(inlineLocalDefinitions) };
+}
+
+function inlineLocalDefinitions(tool) {
+  const inline = (schema) => {
+    const defs = schema?.$defs ?? {};
+    const walk = (value) => {
+      if (Array.isArray(value)) return value.map(walk);
+      if (!value || typeof value !== 'object') return value;
+      const ref = typeof value.$ref === 'string' && value.$ref.match(/^#\/\$defs\/(.+)$/);
+      if (ref && defs[ref[1]]) return walk(JSON.parse(JSON.stringify(defs[ref[1]])));
+      const out = {};
+      for (const [key, inner] of Object.entries(value)) if (key !== '$defs') out[key] = walk(inner);
+      return out;
+    };
+    return schema ? walk(schema) : schema;
+  };
+  return { ...tool, inputSchema: inline(tool.inputSchema), outputSchema: inline(tool.outputSchema) };
 }
 
 function batchCapError(noun) {

@@ -1,6 +1,6 @@
 import { isWikiAdvisoryCode, isWikiFolderCode } from "@/shared/lib/library/wiki-report.mjs";
 
-/** One finding; `message` stays the validator's English for the CLI and agents, `detail` is its localizable pieces. */
+/** One finding; `message` stays the validator's English for agents, `detail` is its localizable pieces. */
 export interface WikiProblemLike {
   code: string;
   message: string;
@@ -17,7 +17,7 @@ export interface WikiVerdictLike {
 }
 
 /**
- * The folder and advisory code sets live in `mcp/src/library/wiki-report.mjs` so the app and the CLI split
+ * The folder and advisory code sets live in `mcp/src/library/wiki-report.mjs` so the app and MCP split
  * findings one way.
  */
 export { isWikiFolderCode };

@@ -22,8 +22,8 @@ export {
 } from "./graph-structure";
 export { formatAgentPostChangeSyncPacket } from "./agent-readiness";
 export {
-  AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND,
-  AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT,
+  DOGFOOD_MCP_WALK_COMMAND,
+  DOGFOOD_MCP_WALK_CHECK_COUNT,
 } from "./agent-readiness";
 export type { OntologyChangeset } from "./changes/ontology-changeset";
 export { computeOntologyChangeset, prepareGraphSignatures } from "./changes/ontology-changeset";

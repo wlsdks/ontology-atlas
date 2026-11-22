@@ -343,7 +343,7 @@ function liveWitnessCheck(probe, receipt, basis) {
   };
 }
 
-// Minting and persisting a binding: the write half for the CLI and MCP agents,
+// Minting and persisting a binding: the write half for MCP agents,
 // with the app's receipt shape, sidecar file and bounded probe.
 
 function validBindingEnvelope(binding) {

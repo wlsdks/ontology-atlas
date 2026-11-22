@@ -70,7 +70,7 @@ describe("ONTOLOGY_STARTER_FILES", () => {
       expect(
         markdownBlocks.filter((value) => /^\s*kind:\s*\S+/m.test(value)),
       ).toHaveLength(0);
-      expect(readme).toContain("node $ATLAS/cli/src/index.mjs add domain auth");
+      expect(readme).toContain("add_concept");
       expect(project).not.toMatch(/rename or copy starters|바꾸거나\s+복사합니다/i);
     }
   });
@@ -82,7 +82,7 @@ describe("ONTOLOGY_STARTER_FILES", () => {
     expect(example?.content).toMatch(/^slug:\s+domains\/example-domain/m);
   });
 
-  it("gives the app starter and the CLI template the same vault README and setup guidance", () => {
+  it("gives the app starter and the init template the same vault README and setup guidance", () => {
     for (const starterFile of ONTOLOGY_STARTER_FILES) {
       const template = readFileSync(
         path.join(ROOT, "cli/templates/vault", starterFile.relPath),
@@ -92,7 +92,7 @@ describe("ONTOLOGY_STARTER_FILES", () => {
     }
   });
 
-  it("has the starter README cover only two channels (installed app, source checkout)", () => {
+  it("has the starter README cover only two channels (installed app, hand merge)", () => {
     const readme = ONTOLOGY_STARTER_FILES.find(
       (f) => f.relPath === "README.md",
     )?.content;
@@ -103,9 +103,6 @@ describe("ONTOLOGY_STARTER_FILES", () => {
     expect(readme).toContain(".codex/config.toml");
     expect(readme).toContain("installed Ontology Atlas app");
     expect(readme).toContain("press the connect button");
-    expect(readme).toContain(
-      "cli/src/index.mjs agent-setup <this vault folder> --root . --write",
-    );
     expect(readme).toContain(".mcp.json.example");
     expect(readme).toContain("OATLAS_VAULT");
   });
@@ -131,7 +128,6 @@ describe("ONTOLOGY_STARTER_FILES", () => {
       )?.content ?? "";
 
       expect(readme).toContain("tools/list");
-      expect(readme).toContain("mcp-verify");
       expect(readme).toContain("connection_info");
       expect(readme).toContain("list_kinds");
       expect(readme).toContain("validate_vault");
@@ -154,16 +150,7 @@ describe("ONTOLOGY_STARTER_FILES", () => {
     expect(readme).toContain('"operation": "cycles"');
     expect(readme).toContain('"operation": "growth_plan"');
     expect(readme).toContain('"operation": "maintenance_plan"');
-    expect(readme).toContain("From an Ontology Atlas source checkout");
-    expect(readme).toContain("export ATLAS=<path to your ontology-atlas source checkout>");
-    expect(readme).toContain("node $ATLAS/cli/src/index.mjs validate .");
-    expect(readme).toContain("node $ATLAS/cli/src/index.mjs agent-brief . --graph-db-pack");
-    expect(readme).toContain("node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks");
-    expect(readme).toContain("node $ATLAS/cli/src/index.mjs cycles . --max-hops 8");
-    expect(readme).toContain("node $ATLAS/cli/src/index.mjs growth . --limit 20");
-    expect(readme).toContain("node $ATLAS/cli/src/index.mjs maintenance . --limit 20");
-    expect(readme).toContain("node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4");
-    expect(readme).toContain("node $ATLAS/cli/src/index.mjs mcp-verify . --timeout-ms 15000");
+    expect(readme).not.toMatch(/\bnode\b[^\n]*\/cli\//);
     expect(readme).toMatch(/before it edits\s+anything/);
   });
 });

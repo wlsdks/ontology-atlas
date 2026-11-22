@@ -51,7 +51,7 @@ export function createHealthQuery({
         count: graph.nodes,
         message:
           graph.nodes === 0
-            ? 'This folder has no ontology nodes, so every other check below passed with nothing to count. Either the path is not a vault, or the vault is empty: check the folder you passed, or scaffold one with the CLI `init` command.'
+            ? 'This folder has no ontology nodes, so every other check below passed with nothing to count. Either the path is not a vault, or the vault is empty: check the folder you passed, or scaffold one with the first-run starter in the app or `node <checkout>/cli init`.'
             : 'The folder contains ontology nodes.',
       }),
       healthCheck({

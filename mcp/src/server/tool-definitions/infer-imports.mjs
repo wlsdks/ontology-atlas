@@ -22,23 +22,24 @@ import {
 export const INFER_IMPORTS_TOOL = {
   name: 'infer_imports',
   description:
-    'R17 (autonomous ingest deeper) — walk TS/JS files in a code repo and infer file-level + module-level import edges. It also walks bounded root Python packages, bounded src/source-layout Python packages, and deterministic Rust use/file-module/literal-include dependencies. A valid root Go module additionally exposes typed local package-import evidence; it stays separate from legacy file edges and never self-approves a semantic relation. ' +
-    'Structured `coverage` names the supported languages; Rust support is bounded static text evidence and does not expand macros, evaluate cfg, resolve symbols, or prove runtime impact. ' +
-    'side effect 0 (vault frontmatter NOT modified). `moduleEdges` are source-backed review candidates, never self-approving semantic `depends_on` relations. ' +
-    'When you know an implementation file, set `focusPath` (or `reviewMode:"focus"`) before considering `full`: Atlas returns bounded exact incoming/outgoing static import receipts, counts, and a cursor without requiring a vault. This focused source boundary is not runtime impact or a semantic relation. ' +
-    'Omit `reviewMode` for size-safe automatic delivery: scans whose estimated full MCP result is at most 128 KiB keep the complete response; larger reconciled scans return exactly one compact, non-writing `nextRelationReview:v1` packet plus a delivery receipt and stateless cursor. Use `reviewMode:"next"` to request that bounded packet explicitly. `reviewMode:"full"` preserves the complete shape, but a result over 128 KiB additionally requires `allowLargeResponse:true`; this second confirmation prevents coding agents from accidentally opting into a multi-megabyte response. Oversized raw scans without a loadable reconciliation vault fail with an actionable error instead of emitting an unbounded default response. Every compact candidate carries `absentEndpoints`. If an endpoint is missing, `nextCalls` is empty and `endpointModelling` separates an evidence-only analysis call from the complete `rootPath + proposal` validation contract, source-bound drafts, and queue resume. It never calls `get_concepts` or `relation_check` on a missing slug, never claims the analysis call created an endpoint, and never promotes a path-derived slug into a business kind or definition. ' +
-    'Each module edge includes whole-edge source-role/import-usage counts, `productValueCount`, `kindCounts`, and a bounded exact file-edge `evidence` receipt. Missing vault edges remain `rationale_review_required`: inspect both concepts and the observed direction, ask the user, then call `add_relation` with an explicit `why`. Test-only or type-only evidence stays visible but must not be framed as a product depends_on approval question without separate product meaning evidence. ' +
-    'Detects:\n' +
-    '  - relative imports (./, ../) → resolved to file paths\n' +
-    '  - dynamic import() / require() / export ... from\n' +
-    '  - bare side-effect imports (import "X")\n' +
-    '  - apps/* and packages/* workspace imports collapse to analyzer-compatible element slugs\n' +
-    '  - bounded static Python import / from ... import statements in root or src/source-layout packages with __init__.py; imports nested under an explicit TYPE_CHECKING guard are type_only; source is parsed as text and never executed\n' +
-    '  - external package imports listed separately\n' +
-    '  - tsconfig.json compilerOptions.paths aliases first, then fallback common @/* aliases → resolved to internal files when the target exists; otherwise unresolved as alias-not-found\n\n' +
-    'Use after analyze_repo_structure to pull *real* dependency edges from the code, not just suggestedRelations heuristics. ' +
-    'Unless reconcile:false, also returns `reconciliation` (+ `reconciliationSummary` counts): the module edges diffed against the vault\'s compiled depends_on edges into `inBoth` / review-required missing edges / `inVaultNotInCode` (possibly-stale vault edges). Missing edges carry source evidence and a `rationale_review_required` gate, never a write action. ' +
-    'Single source of truth preserved — inspect both concepts, explain why the semantic dependency holds, and ask the user before one explicit add_relation call with `why`.',
+    'Walk TS/JS files in a code repo and infer file-level + module-level import edges; also bounded root Python packages ' +
+    '(and src layouts), Rust use/module/include dependencies, and a root Go module\'s typed local package imports. ' +
+    '`coverage` names the languages; all of it is static text evidence, never runtime impact. ' +
+    'side effect 0 (vault frontmatter NOT modified). `moduleEdges` are source-backed review candidates, never ' +
+    'self-approving `depends_on` relations. Knowing an implementation file, set `focusPath` before considering full: ' +
+    'bounded exact incoming/outgoing import receipts with a cursor, no vault needed. Omit `reviewMode` for size-safe ' +
+    'delivery: up to 128 KiB the complete response; larger reconciled scans return exactly one compact, non-writing ' +
+    '`nextRelationReview:v1` packet with a delivery receipt and cursor (reviewMode:"next" asks for it). ' +
+    'reviewMode:"full" over 128 KiB also needs allowLargeResponse:true; an oversized scan without a reconciliation ' +
+    'vault fails with an actionable error. A candidate with `absentEndpoints` has empty `nextCalls`: model the ' +
+    'endpoints first, never from a path-derived slug. Each module edge carries role and usage counts, `kindCounts` ' +
+    'and a bounded exact file-edge `evidence` receipt. Missing vault edges stay rationale_review_required: inspect ' +
+    'both concepts and the direction, ask the user, then call add_relation with an explicit `why`; test-only or ' +
+    'type-only evidence alone is no product depends_on question. Aliases: tsconfig.json compilerOptions.paths ' +
+    'aliases first, then fallback common @/* aliases, resolved to internal files when the target exists, otherwise ' +
+    'unresolved as alias-not-found. Use after analyze_repo_structure to pull real dependency edges, not just ' +
+    'suggestedRelations heuristics; unless reconcile:false, `reconciliation` diffs them against the vault\'s ' +
+    'depends_on edges. Single source of truth preserved: a missing edge carries evidence, never a write action.',
   inputSchema: {
     type: 'object',
     properties: {

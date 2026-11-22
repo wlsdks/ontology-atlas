@@ -23,4 +23,4 @@ Walks the connected source tree and derives file-level and module-level static i
 - Promoting an observed edge into a declared dependency on its own; every candidate waits for a person.
 
 ## Uncertainty
-- Exercised once in focused mode against `cli/src/index.mjs`, which returned zero edges even though that file's static imports are visible in its source, so the focused view's resolution of relative specifiers is not something this scan can vouch for.
+- Exercised once in focused mode against a file whose static imports are visible in its source, which returned zero edges, so the focused view's resolution of relative specifiers is not something this scan can vouch for.
