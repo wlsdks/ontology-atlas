@@ -279,26 +279,32 @@
 }
 
 /*
- * Two tools in one folder: two Moru side by side, the second a step behind, with the lamp moved
- * past the first. The pair's anchor is clamped so both, and the lamp, stay inside the room.
+ * Two tools in one folder: two Moru at the room's scale, the second a step behind and up to 77
+ * drawn pixels to the left, closer where the room is narrow, so they overlap rather than shrink.
+ * The lamp stands behind the first, short enough that its shade stays under the name tags.
  */
 .scene[data-cast='two'] {
-  --pair-right: calc(103 * var(--s) + 12px);
-  --ax: clamp(calc(118 * var(--s) + 12px), var(--ax-room), calc(100% - var(--pair-right)));
+  --pair-step: clamp(calc(20 * var(--s)), calc(100% - 16px - var(--monitor-reach, 0px) - 114 * var(--s)), calc(77 * var(--s)));
+  --ax: clamp(
+    calc(8px + var(--pair-step) / 2 + 57 * var(--s)),
+    var(--ax-room),
+    calc(100% - 8px - var(--monitor-reach, 0px) - var(--pair-step) / 2 - 57 * var(--s))
+  );
 }
 
 .scene[data-cast='two'] .lamp {
-  left: calc(var(--ax) - 118 * var(--s));
+  left: calc(var(--ax) - var(--pair-step) / 2 - 50 * var(--s));
+  height: calc(56 * var(--s));
 }
 
 .actorBack {
-  --dx: calc(-38 * var(--s));
+  --dx: calc(var(--pair-step) / -2);
   z-index: 1;
   bottom: calc(var(--floor) * 0.4 - 28 * var(--s) + 3 * var(--p));
 }
 
 .actorFront {
-  --dx: calc(39 * var(--s));
+  --dx: calc(var(--pair-step) / 2);
 }
 
 .tag {
@@ -333,8 +339,8 @@
 }
 
 .tagBack {
-  --dx: calc(-38 * var(--s));
-  max-width: calc(var(--ax) - 38 * var(--s) + 8px);
+  --dx: calc(var(--pair-step) / -2);
+  max-width: calc(var(--ax) - var(--pair-step) / 2 + 4px);
   transform: translateX(calc(-100% + 12px));
 }
 
@@ -343,8 +349,8 @@
 }
 
 .tagFront {
-  --dx: calc(39 * var(--s));
-  max-width: calc(100% - var(--ax) - 39 * var(--s) + 8px - var(--monitor-reach, 0px));
+  --dx: calc(var(--pair-step) / 2);
+  max-width: calc(100% - var(--ax) - var(--pair-step) / 2 + 4px - var(--monitor-reach, 0px));
   transform: translateX(-12px);
 }
 
@@ -378,8 +384,8 @@
   left: 12px;
   right: 12px;
   top: 52px;
-  /* Above Moru in a narrow room, it stops short of the name tag over his head. */
-  height: clamp(64px, calc(100% - 52px - 70 * var(--s) - 28px), 112px);
+  /* Above Moru in a narrow room, its shadow stops 8px short of the name tag over his head. */
+  height: clamp(48px, calc(100% - 52px - 70 * var(--s) - 28px - var(--p)), 112px);
   z-index: 1;
 }
 
@@ -532,14 +538,6 @@
     --ax-room: 27%;
     /* The monitor's span from the right edge, which a pair and its tags keep clear of. */
     --monitor-reach: calc(min(46%, calc(124px * var(--u))) + 16px);
-  }
-
-  .scene[data-cast='two'][data-under-monitor='false'] {
-    --pair-right: calc(103 * var(--s) + 12px + var(--monitor-reach));
-  }
-
-  .scene[data-cast='two'][data-under-monitor='true'] {
-    --monitor-reach: 0px;
   }
 
   .monitor {

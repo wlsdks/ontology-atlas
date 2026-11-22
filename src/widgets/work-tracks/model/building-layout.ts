@@ -94,27 +94,22 @@ export function stageCapacity(width: number, height: number): number {
   return Math.max(1, Math.min(capacity, Math.floor((width + STAGE_GAP) / (LARGE_MIN_W + STAGE_GAP))));
 }
 
-/** Two Moru overlapping by about 40%, the lamp past the first, in drawn pixels; and the room's margins. */
-const PAIR_SPAN = 221;
-const PAIR_MARGIN_PX = 24;
-
-export interface PairFit {
-  unit: RoomUnit;
-  /** In a wide room, the name tags clear the monitor's bottom, so the pair may stand beneath it. */
-  underMonitor: boolean;
-}
+/**
+ * Two Moru at the room's scale: each is 114 drawn pixels wide, and the second stands at least 20
+ * past the first, overlapping it where the room is narrow; the lamp stands behind the first.
+ */
+const MORU_W = 114;
+const PAIR_MIN_STEP = 20;
+const PAIR_MARGIN_PX = 16;
 
 /**
- * The largest unit, up to the room's own, at which two Moru and the lamp fit across a room without
- * running into its monitor. A narrow room hangs the monitor above them; a wide one hangs it at the
- * right, which the pair passes beneath only when its name tags stay below the monitor's bottom.
+ * The room's own unit when two Moru fit across it at their closest without running into the
+ * monitor, which hangs at the right of a wide room; otherwise the largest unit that fits.
  */
-export function pairFit(width: number, sceneHeight: number, unit: RoomUnit): PairFit {
-  const wide = width >= WIDE_ROOM_W;
+export function pairUnit(width: number, unit: RoomUnit): RoomUnit {
   for (let fitting = unit; ; fitting = (fitting - 1) as RoomUnit) {
-    const underMonitor = !wide || sceneHeight >= 134 * fitting + 40;
-    const reach = underMonitor ? 0 : Math.min(0.46 * width, 124 * fitting) + 16;
-    if (fitting === 1 || PAIR_SPAN * fitting + PAIR_MARGIN_PX + reach <= width) return { unit: fitting, underMonitor };
+    const reach = width >= WIDE_ROOM_W ? Math.min(0.46 * width, 124 * fitting) + 16 : 0;
+    if (fitting === 1 || (MORU_W + PAIR_MIN_STEP) * fitting + PAIR_MARGIN_PX + reach <= width) return fitting;
   }
 }
 
