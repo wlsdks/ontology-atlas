@@ -36,6 +36,7 @@ import {
   workspaceBriefSummary,
 } from '../scripts/verify/checks/diagnosis.mjs';
 import { agentBriefFailure, agentBriefSummary } from '../scripts/verify/checks/agent-brief.mjs';
+import { QUERY_ONTOLOGY_TOOL } from './server/tool-definitions/graph.mjs';
 import {
   analyzeRepoStructureFailure,
   inferImportsFailure,
@@ -1545,8 +1546,7 @@ describe('verify.mjs first-contact gates', () => {
       },
       {
         name: 'query_ontology',
-        description:
-          'Run graph queries including `all_paths` with limit/searchBudget/exhaustive/truncatedByBudget/totalPathsExact metadata and evidence guidance, `maintenance_plan` with cursor `nextAfterActionId`/`hasMore` pagination metadata and current-page `nextExecutableAction` / `nextReviewAction` pointers, and `agent_brief` with graphDbQueryPack for facets, schema, match_nodes, match_edges, domain_matrix, centrality, all_paths, and explain_relation, traversalStrategy plan_before_enumeration/bounded_path_evidence/containment_cross_check guidance and resultContracts for all_paths completeness.',
+        description: QUERY_ONTOLOGY_TOOL.description,
         inputSchema: {
           additionalProperties: false,
           required: ['operation'],
@@ -1554,38 +1554,37 @@ describe('verify.mjs first-contact gates', () => {
             operation: { enum: QUERY_ONTOLOGY_OPERATIONS },
             targetOperation: { enum: QUERY_PLAN_TARGET_OPERATIONS },
             afterActionId: {
-              description:
-                'maintenance_plan only: cursor.nextAfterActionId matches the last returned action id, cursor.hasMore matches whether more remaining actions exist after this page, nextExecutableAction/nextReviewAction point only at the first executable/review action in the current returned page and preserve that action id, executable flag, phase, kind, and severity. Unknown cursors return cursor.nextAfterActionId=null, cursor.hasMore=false.',
+              description: QUERY_ONTOLOGY_TOOL.inputSchema.properties.afterActionId.description,
             },
             componentLimit: {
               type: 'integer',
               minimum: 1,
               maximum: 500,
-              description: 'health/workspace_brief only: positive integer max connected components to inspect.',
+              description: QUERY_ONTOLOGY_TOOL.inputSchema.properties.componentLimit.description,
             },
             cycleLimit: {
               type: 'integer',
               minimum: 1,
               maximum: 500,
-              description: 'health/workspace_brief only: positive integer max dependency cycles to inspect.',
+              description: QUERY_ONTOLOGY_TOOL.inputSchema.properties.cycleLimit.description,
             },
             recommendationLimit: {
               type: 'integer',
               minimum: 1,
               maximum: 500,
-              description: 'health/workspace_brief only: positive integer max relation recommendations to inspect.',
+              description: QUERY_ONTOLOGY_TOOL.inputSchema.properties.recommendationLimit.description,
             },
             orderLimit: {
               type: 'integer',
               minimum: 1,
               maximum: 500,
-              description: 'health/workspace_brief only: positive integer max topological-order rows to inspect.',
+              description: QUERY_ONTOLOGY_TOOL.inputSchema.properties.orderLimit.description,
             },
             nodeLimit: {
               type: 'integer',
               minimum: 1,
               maximum: 500,
-              description: 'components/communities/health/workspace_brief only: positive integer max node summaries.',
+              description: QUERY_ONTOLOGY_TOOL.inputSchema.properties.nodeLimit.description,
             },
             types: { type: 'array', maxItems: RELATION_TYPE_VALUES.length, items: { type: 'string', enum: RELATION_TYPE_VALUES } },
             pattern: { type: 'array', maxItems: RELATION_TYPE_VALUES.length, items: { type: 'string', enum: RELATION_TYPE_VALUES } },
@@ -1594,32 +1593,29 @@ describe('verify.mjs first-contact gates', () => {
             kind: {
               type: 'string',
               enum: NODE_KIND_VALUES,
-              description:
-                'match_nodes: optional node kind filter (project, domain, capability, element, document, vault-readme). recommend_relations currently supports capability or element.',
+              description: QUERY_ONTOLOGY_TOOL.inputSchema.properties.kind.description,
             },
             fromKind: {
               type: 'string',
               enum: NODE_KIND_VALUES,
-              description:
-                'match_edges only: optional source node kind filter (project, domain, capability, element, document, vault-readme). Source must be a real ontology node, not external/unresolved.',
+              description: QUERY_ONTOLOGY_TOOL.inputSchema.properties.fromKind.description,
             },
             toKind: {
               type: 'string',
               enum: EDGE_TARGET_KIND_VALUES,
-              description:
-                'match_edges only: optional target kind filter (project, domain, capability, element, document, vault-readme, external, unresolved). Use external or unresolved for non-node refs.',
+              description: QUERY_ONTOLOGY_TOOL.inputSchema.properties.toKind.description,
             },
             dependencyTypes: {
               type: 'array',
               maxItems: RELATION_TYPE_VALUES.length,
               items: { type: 'string', enum: RELATION_TYPE_VALUES },
-              description: 'health/workspace_brief only: dependency relation types.',
+              description: QUERY_ONTOLOGY_TOOL.inputSchema.properties.dependencyTypes.description,
             },
             componentTypes: {
               type: 'array',
               maxItems: RELATION_TYPE_VALUES.length,
               items: { type: 'string', enum: RELATION_TYPE_VALUES },
-              description: 'health/workspace_brief only: relation types used for connected-component checks.',
+              description: QUERY_ONTOLOGY_TOOL.inputSchema.properties.componentTypes.description,
             },
             phases: { type: 'array', maxItems: MAINTENANCE_PHASE_VALUES.length, items: { enum: MAINTENANCE_PHASE_VALUES } },
             severities: { type: 'array', maxItems: MAINTENANCE_SEVERITY_VALUES.length, items: { enum: MAINTENANCE_SEVERITY_VALUES } },
@@ -3338,16 +3334,37 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(
       toolsListSchemaFailure(withQueryTool({
         ...queryOntologyTool,
-        description: 'Run graph queries including maintenance_plan.',
+        description: queryOntologyTool.description.replace('impact and blast_radius follow declared `depends_on` only', 'impact follows edges'),
       })),
-      'query_ontology description missing current-page maintenance next pointers',
+      'query_ontology description missing the declared depends_on impact rule',
     );
     assert.equal(
       toolsListSchemaFailure(withQueryTool({
         ...queryOntologyTool,
-        description: 'Run graph queries including `maintenance_plan` with current-page `nextExecutableAction` / `nextReviewAction` pointers.',
+        description: queryOntologyTool.description.replace('the human explicitly approves', 'the agent decides'),
       })),
-      'query_ontology description missing maintenance cursor pagination metadata',
+      'query_ontology description missing the relation_check approval gate',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withQueryTool({
+        ...queryOntologyTool,
+        description: queryOntologyTool.description.replace('and `task` right after connection_info', 'whenever'),
+      })),
+      'query_ontology description missing the compact agent_brief order',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withQueryTool({
+        ...queryOntologyTool,
+        description: queryOntologyTool.description.replace('never approves meaning', 'may approve meaning'),
+      })),
+      'query_ontology description missing the task evidence limit',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withQueryTool({
+        ...queryOntologyTool,
+        description: queryOntologyTool.description.replace('Required: `slug` for neighbors', 'Arguments vary'),
+      })),
+      'query_ontology description missing the per-operation required arguments',
     );
     assert.equal(
       toolsListSchemaFailure(withQueryTool({
@@ -3360,71 +3377,7 @@ describe('verify.mjs first-contact gates', () => {
           },
         },
       })),
-      'query_ontology afterActionId description missing current-page next pointers',
-    );
-    assert.equal(
-      toolsListSchemaFailure(withQueryTool({
-        ...queryOntologyTool,
-        inputSchema: {
-          ...queryOntologyTool.inputSchema,
-          properties: {
-            ...queryOntologyTool.inputSchema.properties,
-            afterActionId: {
-              description:
-                'maintenance_plan only: nextExecutableAction/nextReviewAction point only at the first executable/review action in the current returned page.',
-            },
-          },
-        },
-      })),
-      'query_ontology afterActionId description missing current-page next pointer detail fields',
-    );
-    assert.equal(
-      toolsListSchemaFailure(withQueryTool({
-        ...queryOntologyTool,
-        inputSchema: {
-          ...queryOntologyTool.inputSchema,
-          properties: {
-            ...queryOntologyTool.inputSchema.properties,
-            afterActionId: {
-              description:
-                'maintenance_plan only: cursor.hasMore matches whether more remaining actions exist after this page, nextExecutableAction/nextReviewAction point only at the first executable/review action in the current returned page and preserve that action id, executable flag, phase, kind, and severity.',
-            },
-          },
-        },
-      })),
-      'query_ontology afterActionId description missing nextAfterActionId pagination guidance',
-    );
-    assert.equal(
-      toolsListSchemaFailure(withQueryTool({
-        ...queryOntologyTool,
-        inputSchema: {
-          ...queryOntologyTool.inputSchema,
-          properties: {
-            ...queryOntologyTool.inputSchema.properties,
-            afterActionId: {
-              description:
-                'maintenance_plan only: cursor.nextAfterActionId matches the last returned action id, nextExecutableAction/nextReviewAction point only at the first executable/review action in the current returned page and preserve that action id, executable flag, phase, kind, and severity.',
-            },
-          },
-        },
-      })),
-      'query_ontology afterActionId description missing hasMore pagination guidance',
-    );
-    assert.equal(
-      toolsListSchemaFailure(withQueryTool({
-        ...queryOntologyTool,
-        inputSchema: {
-          ...queryOntologyTool.inputSchema,
-          properties: {
-            ...queryOntologyTool.inputSchema.properties,
-            afterActionId: {
-              description:
-                'maintenance_plan only: cursor.nextAfterActionId matches the last returned action id, cursor.hasMore matches whether more remaining actions exist after this page, nextExecutableAction/nextReviewAction point only at the first executable/review action in the current returned page and preserve that action id, executable flag, phase, kind, and severity.',
-            },
-          },
-        },
-      })),
-      'query_ontology afterActionId description missing unknown-cursor pagination guidance',
+      'query_ontology afterActionId description missing cursor pagination guidance',
     );
     assert.equal(
       toolsListSchemaFailure(withQueryTool({
@@ -4115,42 +4068,6 @@ describe('verify.mjs first-contact gates', () => {
       toolsListSchemaFailure(withQueryTool(
         {
           ...queryOntologyTool,
-          description: queryOntologyTool.description.replace('resultContracts for all_paths completeness', 'result contract guidance'),
-        },
-      )),
-      'query_ontology description missing agent result contract guidance',
-    );
-    assert.equal(
-      toolsListSchemaFailure(withQueryTool(
-        {
-          ...queryOntologyTool,
-          description: queryOntologyTool.description.replace('limit/searchBudget/exhaustive/truncatedByBudget/totalPathsExact metadata and evidence guidance', 'searchBudget metadata'),
-        },
-      )),
-      'query_ontology description missing agent result contract guidance',
-    );
-    assert.equal(
-      toolsListSchemaFailure(withQueryTool(
-        {
-          ...queryOntologyTool,
-          description: queryOntologyTool.description.replace('graphDbQueryPack for facets, schema, match_nodes, match_edges, domain_matrix, centrality, all_paths, and explain_relation', 'graph pack'),
-        },
-      )),
-      'query_ontology description missing agent graph DB query pack guidance',
-    );
-    assert.equal(
-      toolsListSchemaFailure(withQueryTool(
-        {
-          ...queryOntologyTool,
-          description: queryOntologyTool.description.replace('traversalStrategy plan_before_enumeration/bounded_path_evidence/containment_cross_check guidance', 'traversal tips'),
-        },
-      )),
-      'query_ontology description missing agent traversal strategy guidance',
-    );
-    assert.equal(
-      toolsListSchemaFailure(withQueryTool(
-        {
-          ...queryOntologyTool,
           inputSchema: {
             ...queryOntologyTool.inputSchema,
             properties: {
@@ -4217,13 +4134,13 @@ describe('verify.mjs first-contact gates', () => {
               ...queryOntologyTool.inputSchema.properties,
               kind: {
                 ...queryOntologyTool.inputSchema.properties.kind,
-                description: 'match_nodes: optional node kind filter.',
+                description: 'match_nodes filter.',
               },
             },
           },
         },
       )),
-      'query_ontology kind graph kind description drift',
+      'query_ontology kind description drift',
     );
     assert.equal(
       toolsListSchemaFailure(withQueryTool(
@@ -4256,7 +4173,7 @@ describe('verify.mjs first-contact gates', () => {
           },
         },
       )),
-      'query_ontology fromKind graph kind description drift',
+      'query_ontology fromKind description drift',
     );
     assert.equal(
       toolsListSchemaFailure(withQueryTool(
@@ -4289,7 +4206,7 @@ describe('verify.mjs first-contact gates', () => {
           },
         },
       )),
-      'query_ontology toKind graph kind description drift',
+      'query_ontology toKind description drift',
     );
     assert.equal(
       toolsListSchemaFailure(tools.filter((tool) => tool.name !== 'get_concepts')),
