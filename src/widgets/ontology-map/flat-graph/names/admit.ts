@@ -19,9 +19,11 @@ const FOLDED_STAR_NAMES = 2;
 
 export function admit(input: NameInput, step: number, seed: NameAdmission | null, ceiling: ReadonlySet<string> | null): NameAdmission {
   const { model, layout, tokens } = input;
-  const scale = stepScale(step, tokens.zoomStepsPerOctave);
-  // Names are held apart at both ends of the step and its centre, so two a step admits apart stay apart inside it.
-  const lowest = stepScale(step - 0.5, tokens.zoomStepsPerOctave);
+  const floor = input.zoomFloorScale ?? 0;
+  const scale = Math.max(floor, stepScale(step, tokens.zoomStepsPerOctave));
+  // Names are held apart at both ends of the step and its centre, so two a step admits apart stay apart
+  // inside it; the step that holds the camera's floor ends there, since no zoom below it is drawn.
+  const lowest = Math.max(floor, stepScale(step - 0.5, tokens.zoomStepsPerOctave));
   const highest = stepScale(step + 0.5, tokens.zoomStepsPerOctave);
   const span = (at: Point, rel: Box) => sweptBox(at, rel, lowest, highest);
   const grid = new Occupancy(CELL_PX / scale);

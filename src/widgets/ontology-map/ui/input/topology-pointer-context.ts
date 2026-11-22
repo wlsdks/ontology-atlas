@@ -4,7 +4,7 @@ import {
 } from "@/shared/lib/preferences/map-navigation-speed-preferences";
 import { commitDomeEntrySweep } from "../../model/dome-view/frame";
 import type { DomeNodeFrame, DomeRuntime } from "../../model/dome-view/runtime";
-import { computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin } from "../camera/target/zoom-range";
+import { computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin, drawsFlatGraph } from "../camera/target/zoom-range";
 import type { PointerHandlerRefs } from "./topology-pointer-types";
 
 export type PointerContext = ReturnType<typeof createPointerContext>;
@@ -63,7 +63,7 @@ export function createPointerContext(refs: PointerHandlerRefs) {
   const scaleWithinZoomBounds = (tokens: OntologyMapTokens, scale: number): number => {
     const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
     const max = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax, worldRef.current?.dialScaleMax ?? undefined);
-    const min = effectiveScaleMinWithDome(computeEffectiveCameraScaleMin(overviewEntryScale, tokens.cameraMinZoomRatio, tokens.cameraScaleMin));
+    const min = effectiveScaleMinWithDome(computeEffectiveCameraScaleMin(overviewEntryScale, tokens.cameraMinZoomRatio, tokens.cameraScaleMin, drawsFlatGraph(worldRef.current)));
     return Math.min(max, Math.max(min, scale));
   };
 

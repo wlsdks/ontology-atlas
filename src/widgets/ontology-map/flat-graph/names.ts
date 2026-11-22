@@ -41,6 +41,7 @@ export function nameBlockDraws(names: readonly PlacedName[], from: number, to: n
 
 interface NameCache {
   font: string;
+  floor: number;
   elementNames: boolean;
   stale: ReadonlyMap<string, number> | null;
   hubCaption: string | null;
@@ -87,8 +88,9 @@ export function admittedNames(input: NameInput): NameAdmission {
   const step = zoomStep(input.scale, input.tokens.zoomStepsPerOctave);
   const elementNames = input.elementSpacingPx >= input.tokens.elementNameSpacingPx;
   let cache = caches.get(input.layout);
-  if (!cache || cache.font !== input.fontFamily || cache.elementNames !== elementNames || cache.stale !== input.staleByDomain || cache.hubCaption !== input.hubCaption) {
-    cache = { font: input.fontFamily, elementNames, stale: input.staleByDomain, hubCaption: input.hubCaption, rest: new Map(), focus: new Map() };
+  const floor = input.zoomFloorScale ?? 0;
+  if (!cache || cache.font !== input.fontFamily || cache.floor !== floor || cache.elementNames !== elementNames || cache.stale !== input.staleByDomain || cache.hubCaption !== input.hubCaption) {
+    cache = { font: input.fontFamily, floor, elementNames, stale: input.staleByDomain, hubCaption: input.hubCaption, rest: new Map(), focus: new Map() };
     caches.set(input.layout, cache);
   }
   if (input.lit !== null || input.agentFocusId !== null || (input.openStarId ?? null) !== null) {

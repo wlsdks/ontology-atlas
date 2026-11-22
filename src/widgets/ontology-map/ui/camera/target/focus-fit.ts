@@ -6,7 +6,7 @@ import { type Bounds, type TopologyWorld } from "../../world/topology-world";
 import { computeOverviewCameraTarget } from "./fit-targets";
 import { computeUnfocusedPanBounds, focusLeashPx, focusPanBounds } from "./pan-leash";
 import { centerForInsets, readSafeInsets } from "./safe-insets";
-import { computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin } from "./zoom-range";
+import { computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin, drawsFlatGraph } from "./zoom-range";
 
 export interface FocusFrame {
   bounds: Bounds;
@@ -210,7 +210,7 @@ export function computeClusterFitTarget(
    * A dive is floored at the camera's own minimum, not `overviewEntryScale`: a fan wider than
    * the visible region at that altitude must be held in frame instead of half-shown.
    */
-  const scaleMin = computeEffectiveCameraScaleMin(overviewEntryScale, tokens.cameraMinZoomRatio, tokens.cameraScaleMin);
+  const scaleMin = computeEffectiveCameraScaleMin(overviewEntryScale, tokens.cameraMinZoomRatio, tokens.cameraScaleMin, drawsFlatGraph(world));
   const scale = Math.min(effectiveMax, focusZoomInCeiling, Math.max(scaleMin, fitScale));
   const target = { ...centerForInsets(centerX, centerY, insets, scale), tscale: scale };
   /*
