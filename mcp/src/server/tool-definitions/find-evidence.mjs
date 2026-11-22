@@ -8,21 +8,21 @@ import { GROWTH_HINT_OUTPUT_SCHEMA } from '../tool-schemas/vault-node-shapes.mjs
 export const FIND_EVIDENCE_TOOL = {
   name: 'find_evidence',
   description:
-    "Find vault docs that mention a given concept by title. Useful when an AI agent asks where a capability is realized in code or docs. Each match includes a prose `excerpt` (max 200 chars, headings/tables/code skipped) so agents see *what the matching doc says* without an extra get_concept call. Matches are RANKED by a deterministic relevance `score` (title match > frontmatter ref > body, plus a title token-overlap tiebreaker), then by whether the doc is a graph node, then slug — best-first. **A vault holds ordinary markdown too** (meeting notes, memos, drafts have no `kind:` and are not graph nodes); every row says which it is via `isNode`, non-nodes rank below nodes of equal relevance, and `nodesOnly: true` filters them out. Do not cite a non-node as graph evidence without saying so. Returns the best 50 by default (`limit` up to 500), with `total` matches and `limited` when more matched. When zero docs mention the title, the response includes a `growthHint` — near-titled vault nodes to check first, or an add_concept scaffold if the concept looks genuinely new.",
+    'Find vault docs that mention a given concept by title, to see where a capability is realized. Each match includes a prose `excerpt`, readable without an extra get_concept call, and is ranked best-first by `score`. Plain markdown without `kind:` is marked `isNode: false`; do not cite it as graph evidence without saying so. Zero matches return a `growthHint`.',
   inputSchema: {
     type: 'object',
     properties: {
-      title: nonBlankStringSchema('Concept title to search for (case-insensitive substring match).'),
+      title: nonBlankStringSchema('Title to find (case-insensitive substring match).'),
       limit: {
         type: 'integer',
         minimum: 1,
         maximum: 500,
-        description: 'Return only the top-N highest-scoring matches. Defaults 50; `total` and `limited` say whether more matched.',
+        description: 'Default 50.',
       },
       nodesOnly: {
         type: 'boolean',
         description:
-          'Return only graph nodes (docs with a `kind:`). Default false — ordinary markdown in the same folder is included and marked `isNode: false`.',
+          'Return only graph nodes (docs with `kind:`). Default false.',
       },
     },
     required: ['title'],

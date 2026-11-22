@@ -7,28 +7,19 @@ import {
 export const VALIDATE_VAULT_TOOL = {
   name: 'validate_vault',
   description:
-    'Validate every doc in the vault and return a per-doc + per-code aggregate in one call, instead of list_concepts ' +
-    'then get_concept per doc. side effect 0. Use it for the whole-vault health view: first-contact before writes, ' +
-    'before / after a batch write, or surfacing issues to the user. ' +
-    '`problems` is one page, files with errors first: follow `problemsPagination.nextOffset` until `hasMore` is ' +
-    'false before calling the vault clean; `summary` always counts the whole vault. ' +
-    '`pathDrift` lists `path:` / `elements:` source paths gone from disk (fix with patch_concept). `evidenceDrift` ' +
-    'dates cited code against each concept: `stale` means a cited file changed after the document, so read it ' +
-    'before trusting the recorded meaning; `checked: false` never means nothing moved. `coverage` names unplaced ' +
-    'abilities, unread entry files, rules that cite no read lines and capabilities no ability edge touches, each ' +
-    'with its next call.',
+    'Validate every doc in the vault in one call and return a per-doc + per-code aggregate: the whole-vault health view for first-contact before writes and before / after a batch write. side effect 0. `problems` is one page, errors first: follow `problemsPagination.nextOffset` until `hasMore` is false before calling the vault clean; `summary` counts the whole vault. `pathDrift` lists source paths gone from disk (fix with patch_concept). `evidenceDrift` marks `stale` concepts whose cited file changed after them: read it before trusting the meaning. `coverage` names unplaced abilities, unread entry files, rules that cite no read lines and capabilities no ability edge touches, each with its next call.',
   inputSchema: {
     type: 'object',
     properties: {
       repoRoot: {
         ...NON_BLANK_STRING_SCHEMA,
         description:
-          'Repository root that frontmatter source paths resolve against, for the pathDrift check. Defaults to the active resolved repository root from connection_info. Pass this if the vault lives apart from the code repo.',
+          'Root that `path:` claims resolve against. Defaults to the active repository root.',
       },
       offset: {
         type: 'integer',
         minimum: 0,
-        description: 'Zero-based index of the first problem file to return, in the order errors first and then slug. Resume with `problemsPagination.nextOffset`. Defaults 0.',
+        description: 'Resume at `problemsPagination.nextOffset`.',
       },
       limit: {
         type: 'integer',
@@ -300,16 +291,7 @@ const WIKI_PROBLEM_SCHEMA = {
 export const VALIDATE_WIKI_TOOL = {
   name: 'validate_wiki',
   description:
-    'Judge the pages under `wiki/` against the wiki page contract (`docs/ONTOLOGY-ATLAS-SPEC.md` §11): no `kind:`, ' +
-    'the seven required frontmatter fields, the five sections in order, a citation on every `## Facts` bullet, and ' +
-    'every cited path declared in `sources:` and present in the folder. A wiki page is not an ontology node, so ' +
-    'validate_vault does not judge it. The optional `describes:` lists the `kind:` nodes a page is about, with one ' +
-    'sentence each under `relation_notes:`, and `describes: []` records that none fits; the optional ' +
-    '`sources_truncated:` lists the sources read only in part. orphan-page and shared-source-unlinked are advisory. ' +
-    '`pages` holds failing pages only, one reply at a time: follow `nextCall` until `pagination.hasMore` is false; ' +
-    'the folder is clean only when `failingCount` is 0. A page shows at most 20 problems; fix them and validate ' +
-    'again to see more. With `paths`, every named page is listed, passing or not, unpaged. side effect 0. Use it ' +
-    'after writing or editing a page, and before claiming a compile finished.',
+    'Judge the pages under `wiki/` against the wiki page contract (`docs/ONTOLOGY-ATLAS-SPEC.md` §11) after editing a page and before claiming a compile finished. side effect 0. `pages` holds failing pages only: follow `nextCall` until `pagination.hasMore` is false; the folder is clean only when `failingCount` is 0.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -318,26 +300,23 @@ export const VALIDATE_WIKI_TOOL = {
         maxItems: 50,
         items: { type: 'string', minLength: 1 },
         description:
-          'Vault-relative page paths to judge (`wiki/quarter-plan.md`). Omit to judge every page under `wiki/` ' +
-          'and page through the failing ones with `limit` and `nextCall`. Max 50 when naming them, the same ' +
-          'ceiling `get_concepts.uids` uses: past that, asking for the whole folder is one call instead of a ' +
-          'list somebody has to assemble. A path outside `wiki/` is reported as a problem rather than silently skipped.',
+          'Page paths to judge (`wiki/plan.md`), listed passing or not. Omit to judge all of `wiki/` and page the failing ones.',
       },
       afterPath: {
         type: 'string',
         minLength: 1,
-        description: 'Resume after this page path, copied from the last reply\'s `nextCall`. Failing pages are walked by path, so repairs between calls move no unseen page behind it. Not with `paths` or `offset`.',
+        description: 'Resume after this page, from `nextCall`.',
       },
       offset: {
         type: 'integer',
         minimum: 0,
-        description: 'Zero-based index of the first failing page to return, in path order. Shifts when a repair removes earlier pages; `nextCall` does not. Defaults 0. Not with `paths` or `afterPath`.',
+        description: 'First failing page in path order.',
       },
       limit: {
         type: 'integer',
         minimum: 1,
         maximum: 500,
-        description: 'Failing pages per reply. Defaults 100. Not with `paths`.',
+        description: 'Default 100.',
       },
     },
     additionalProperties: false,

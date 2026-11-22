@@ -45,23 +45,11 @@ export function authoringToolsSchemaFailure(tools) {
   }
 
   const addConceptsTool = tools.find((candidate) => candidate?.name === 'add_concepts');
-  if (!/non-object row shape/.test(addConceptsTool?.description || '') || !/unknown row field/.test(addConceptsTool?.description || '')) {
+  if (!/unknown field/.test(addConceptsTool?.description || '') || !/duplicate input slug/.test(addConceptsTool?.description || '')) {
     return 'add_concepts description missing row isolation guidance';
   }
-  if (!/concepts\[n\]/.test(addConceptsTool?.description || '')) {
+  if (!/concepts\[n\]/.test(addConceptsTool?.description || '') || !/repair fields/.test(addConceptsTool?.description || '')) {
     return 'add_concepts description missing row label guidance';
-  }
-  if (!/single unknown-field rows include `receivedField` plus one-row `unknownFields`/.test(addConceptsTool?.description || '')) {
-    return 'add_concepts description missing single-field repair guidance';
-  }
-  if (!/multi unknown-field rows report every unknown field/.test(addConceptsTool?.description || '') || !/Received fields/.test(addConceptsTool?.description || '')) {
-    return 'add_concepts description missing multi-field received fields guidance';
-  }
-  if (!/duplicate input slugs/.test(addConceptsTool?.description || '') || !/first-seen `concepts\[m\]`/.test(addConceptsTool?.description || '')) {
-    return 'add_concepts description missing duplicate row guidance';
-  }
-  if (!/structured `rowName` \/ `firstSeenAt`/.test(addConceptsTool?.description || '')) {
-    return 'add_concepts description missing duplicate structured row repair guidance';
   }
   if (!/Invalid-only batches return no row-level write metadata, no `findings` and no `coverage`/.test(addConceptsTool?.description || '')) {
     return 'add_concepts description missing invalid-only no-write metadata guidance';
@@ -162,29 +150,14 @@ export function authoringToolsSchemaFailure(tools) {
   if (!sameArray(addRelationInputType?.enum, WRITE_RELATION_TYPE_VALUES)) {
     return 'add_relations inputSchema type enum drift';
   }
-  if (!/non-object row shape/.test(addRelationsTool?.description || '') || !/unknown row field/.test(addRelationsTool?.description || '') || !/unknown type/.test(addRelationsTool?.description || '')) {
+  if (!/unknown field/.test(addRelationsTool?.description || '') || !/unknown type/.test(addRelationsTool?.description || '')) {
     return 'add_relations description missing row isolation guidance';
   }
-  if (!/relations\[n\]/.test(addRelationsTool?.description || '')) {
+  if (!/relations\[n\]/.test(addRelationsTool?.description || '') || !/repair fields/.test(addRelationsTool?.description || '')) {
     return 'add_relations description missing row label guidance';
-  }
-  if (!/structured `rowName`/.test(addRelationsTool?.description || '')) {
-    return 'add_relations description missing structured rowName guidance';
-  }
-  if (!/single unknown-field rows include `receivedField` plus one-row `unknownFields`/.test(addRelationsTool?.description || '')) {
-    return 'add_relations description missing single-field repair guidance';
-  }
-  if (!/multi unknown-field rows report every unknown field/.test(addRelationsTool?.description || '') || !/Received fields/.test(addRelationsTool?.description || '')) {
-    return 'add_relations description missing multi-field received fields guidance';
-  }
-  if (!/`allowedFields`, `receivedFields`/.test(addRelationsTool?.description || '')) {
-    return 'add_relations description missing structured field-list guidance';
   }
   if (!/closest-value hint/.test(addRelationsTool?.description || '')) {
     return 'add_relations description missing closest-value type guidance';
-  }
-  if (!/structured `valueName` \/ `receivedValue` \/ `suggestion` \/ `allowedValues`/.test(addRelationsTool?.description || '')) {
-    return 'add_relations description missing structured value repair guidance';
   }
   if (!/Invalid-only batches return no row-level `changed` \/ `alreadyExists` write metadata and no top-level `findings`/.test(addRelationsTool?.description || '')) {
     return 'add_relations description missing invalid-only no-write metadata guidance';
@@ -265,7 +238,7 @@ export function authoringToolsSchemaFailure(tools) {
   if (!/closest-value hint/.test(addRelationTool?.description || '')) {
     return 'add_relation description missing closest-value type guidance';
   }
-  if (!/structured `valueName` \/ `receivedValue` \/ `suggestion` \/ `allowedValues`/.test(addRelationTool?.description || '')) {
+  if (!/`allowedValues`/.test(addRelationTool?.description || '')) {
     return 'add_relation description missing structured value repair guidance';
   }
   if (!/no `changed`, `alreadyExists`, or `findings` write metadata/.test(addRelationTool?.description || '')) {

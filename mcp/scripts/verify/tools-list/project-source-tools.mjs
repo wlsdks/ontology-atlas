@@ -1,5 +1,5 @@
 import { sameArray } from '../value-checks.mjs';
-import { nonBlankStringSchemaFailure } from './schema-primitives.mjs';
+import { nonBlankStringSchemaFailure, topLevelInputStringSchemaFailure } from './schema-primitives.mjs';
 
 function meaningAssessmentOutputSchemaFailure(schema) {
   const required = ['contract', 'projectSlug', 'status', 'dimensions', 'topGap', 'nextAction', 'provenance'];
@@ -78,7 +78,7 @@ export function finalizeProjectMeaningSchemaFailure(tool) {
   if (
     tool?.inputSchema?.type !== 'object' ||
     !sameArray(tool.inputSchema.required, ['projectSlug', 'expected_mtime']) ||
-    nonBlankStringSchemaFailure(tool.inputSchema.properties?.projectSlug) ||
+    topLevelInputStringSchemaFailure(tool.inputSchema.properties?.projectSlug) ||
     tool.inputSchema.properties?.expected_mtime?.type !== 'number' ||
     tool.inputSchema.properties?.expected_mtime?.minimum !== 0
   ) {
