@@ -425,7 +425,7 @@ test.describe("work status rooms", () => {
     await setRows(page, full.map((entry) => entry.branch === "feat/library-stage" ? row("feat/library-stage", { standing: "merged", ahead: 0 }) : entry));
     await expect(room(page, "feat/library-stage").locator("[data-arrived=true]")).toHaveCount(1);
     await expect(room(page, "feat/library-stage").getByTestId("work-room-cart")).toHaveAttribute("data-crates", "7");
-    // The crate ride, the hatch turning green and Moru's cheer, before the room leaves.
+    // measurement window: the crate ride, the hatch turning green and Moru's cheer are sampled frame by frame before the room leaves.
     await page.waitForTimeout(2500);
     await expectSmoothMotion(page);
   });
@@ -481,7 +481,7 @@ test.describe("work status rooms", () => {
     });
     await openWorkStatus(page, SIX);
     await expect(room(page, "feat/library-stage")).toBeVisible();
-    await page.waitForTimeout(800);
+    await page.waitForFunction(() => (window as unknown as { __entry: unknown[] }).__entry.length >= 120);
     const frames = await page.evaluate(() => (window as unknown as { __entry: { rooms: number; shown: number; time: number }[] }).__entry);
     expect(frames.length).toBeGreaterThan(10);
     // The first frame with rooms is still mostly the page behind them, and no 40 ms raises the building by more than a third.
