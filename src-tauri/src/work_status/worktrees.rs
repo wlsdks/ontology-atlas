@@ -294,7 +294,7 @@ fn admin_ids_by_worktree(common_dir: &Path) -> HashMap<PathBuf, String> {
 
 /// A worktree outside the chosen folder counts only when its `.git` file names this repository's
 /// record for it, so a stray record cannot pull an unrelated folder onto the screen.
-fn points_back(worktree: &Path, common_dir: &Path, id: &str) -> bool {
+pub(super) fn points_back(worktree: &Path, common_dir: &Path, id: &str) -> bool {
     let Some(text) = read_admin_file(&worktree.join(".git")) else {
         return false;
     };
@@ -449,7 +449,7 @@ fn moved_since_created(common_dir: &Path, row: &WorktreeRow) -> bool {
 
 /// Git refuses `..` and empty components in a branch name; this keeps the reflog path inside
 /// `logs/refs/heads` even for a listing Atlas did not expect.
-fn is_plain_ref_name(branch: &str) -> bool {
+pub(super) fn is_plain_ref_name(branch: &str) -> bool {
     branch
         .split('/')
         .all(|part| !part.is_empty() && part != "." && part != ".." && !part.contains('\\'))

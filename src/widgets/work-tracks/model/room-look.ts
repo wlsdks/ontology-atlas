@@ -82,8 +82,6 @@ export function moruPhase(key: string): number {
 export const ROOM_PROPS = 6;
 
 export interface RoomIdentity {
-  /** The room drawn the other way round: Moru faces left, the lamp stands on his right. */
-  mirrored: boolean;
   /** Which of the `ROOM_PROPS` props stands in the room. */
   prop: number;
 }
@@ -92,7 +90,7 @@ export interface RoomIdentity {
 export function roomIdentity(branch: string): RoomIdentity {
   let hash = 0x811c9dc5;
   for (const char of branch) hash = Math.imul(hash ^ char.charCodeAt(0), 0x01000193) >>> 0;
-  return { mirrored: (hash & 8) !== 0, prop: hash % ROOM_PROPS };
+  return { prop: hash % ROOM_PROPS };
 }
 
 /**
@@ -150,7 +148,7 @@ export function roomAlertOf(state: RoomState): RoomAlert | null {
   return state.kind === 'lockLeft' || state.kind === 'missing' ? 'cleanup' : null;
 }
 
-/** Where a stage puts the crate along the belt, as a fraction of its length. */
+/** How far along a mini room's track its work has come, as a fraction of the track. */
 export const STAGE_AT: Record<RoomStage, number> = { worktree: 0.04, commits: 0.2, main: 1 };
 
 /** The most crates a cart carries before the rest are counted as `+n`. */
@@ -164,9 +162,6 @@ export function cartLoad(ahead: number | null, merged: boolean): { crates: numbe
   const count = Math.max(ahead ?? 0, merged ? 1 : 0);
   return { crates: Math.min(count, CART_CRATES), more: Math.max(0, count - CART_CRATES) };
 }
-
-/** Where the known part of the belt ends: the commits station, plus a step of rail. */
-export const KNOWN_UNTIL = 0.27;
 
 /** A room on its way out after its worktree merged: drawn once more where it stood. */
 export interface Retiree {

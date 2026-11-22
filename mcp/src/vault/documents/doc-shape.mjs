@@ -63,10 +63,17 @@ function endsWikiTarget(code) {
  * Cost: linear in the body. The `[[` ends are found with one forward pointer; the
  * backward walks and the keys copied are counted, and a body that spends more than
  * {@link LINK_WORK_PER_CHAR} per character on them returns {@link LINKS_UNINDEXED}.
+ * `meter.scanned`, when a meter is passed, is set to the characters the forward
+ * and backward walks examined.
  */
-export function bodyLinkKeys(body) {
+export function bodyLinkKeys(body, meter) {
   const keys = new Set();
   let budget = LINK_WORK_FLOOR + LINK_WORK_PER_CHAR * body.length;
+  let scanned = 0;
+  const finish = (result) => {
+    if (meter) meter.scanned = scanned;
+    return result;
+  };
   const add = (from, to) => {
     budget -= to - from;
     keys.add(body.slice(from, to));
@@ -79,13 +86,14 @@ export function bodyLinkKeys(body) {
     if (end < from) {
       end = from;
       while (end < body.length && !endsWikiTarget(body.charCodeAt(end))) end += 1;
+      scanned += end - from;
     }
     if (end >= body.length || end - from > LINK_KEY_MAX_CHARS) continue;
     const code = body.charCodeAt(end);
     // A key never holds the separator, so no key can read as two.
     if (code === 0x0a) continue;
     if (code !== 0x5d || body.charCodeAt(end + 1) === 0x5d) add(from, end);
-    if (budget < 0) return LINKS_UNINDEXED;
+    if (budget < 0) return finish(LINKS_UNINDEXED);
   }
   for (let ext = body.indexOf('.md'); ext !== -1; ext = body.indexOf('.md', ext + 1)) {
     const floor = Math.max(0, ext - LINK_KEY_MAX_CHARS - 1);
@@ -96,12 +104,13 @@ export function bodyLinkKeys(body) {
       if (code === 0x28 || endsWikiTarget(code)) break;
     }
     budget -= ext - at;
-    if (budget < 0) return LINKS_UNINDEXED;
+    scanned += ext - at;
+    if (budget < 0) return finish(LINKS_UNINDEXED);
   }
-  if (keys.size === 0) return null;
+  if (keys.size === 0) return finish(null);
   // Each key is a slice of the body, and a join or concatenation may keep the slice
   // (and so the whole text) inside the result; the round trip copies it out.
-  return JSON.parse(JSON.stringify(`${SEPARATOR}${[...keys].join(SEPARATOR)}${SEPARATOR}`));
+  return finish(JSON.parse(JSON.stringify(`${SEPARATOR}${[...keys].join(SEPARATOR)}${SEPARATOR}`)));
 }
 
 /**

@@ -188,6 +188,12 @@ const THREE_WAVE_MOVES = 4;
 const SEARCHED_MOVES = 6;
 /** A frame where a box one room hands to another shows bare background, for the largest box. */
 const BARE_COST = 6;
+/**
+ * How far round a handed-over box's centre a plan must keep it covered. A plan is checked at
+ * `SAMPLES` frames, not every frame; a room that covers the centre only just at two samples can
+ * leave it bare in a frame between them.
+ */
+const COVER_MARGIN = 12;
 /** A room arriving over one that waits to give up its box hides it rather than crossing it. */
 const COVERING_COST = 0.25;
 /** A room that could keep its content but crosses another on the way, and so moves as its wall. */
@@ -212,7 +218,7 @@ function crossings(moves: Moves, still: readonly Box[], timing: Timing, samples 
   const span = timing.moveAtMs + timing.moveMs;
   // Handed over: another room takes this very box, as when a room rising to the stage takes a stopped room's slot.
   const handed = moves.flatMap(([, move]) => moves.some(([, other]) => other !== move && sameBox(other.to, move.from))
-    ? [{ centre: { x: move.from.x + move.from.w / 2 - 1, y: move.from.y + move.from.h / 2 - 1, w: 2, h: 2 }, cost: (BARE_COST * area(move.from)) / largest }]
+    ? [{ centre: { x: move.from.x + move.from.w / 2 - COVER_MARGIN, y: move.from.y + move.from.h / 2 - COVER_MARGIN, w: 2 * COVER_MARGIN, h: 2 * COVER_MARGIN }, cost: (BARE_COST * area(move.from)) / largest }]
     : []);
   let cost = 0;
   for (let sample = 0; sample <= samples; sample += 1) {

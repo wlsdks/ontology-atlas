@@ -24,7 +24,7 @@ export function BranchName({ branch, className }: { branch: string; className?: 
   const { kind, middle, tail } = branchParts(branch);
   return (
     <span className={cn('flex min-w-0 font-mono', className)} title={branch}>
-      {kind ? <span className="shrink-0 text-[color:var(--color-text-quaternary)]">{kind}</span> : null}
+      {kind ? <span className="shrink-0 text-[color:var(--color-text-tertiary)]">{kind}</span> : null}
       <span className="min-w-0 truncate">{middle}</span>
       {tail ? <span className="shrink-0">{tail}</span> : null}
     </span>

@@ -10,8 +10,8 @@ import styles from './rooms.module.css';
 const EMPTY_UNIT = 2;
 
 /**
- * The building before any worktree: one room for the base branch with Moru at rest, its belt
- * running straight into the `main` hatch, and the words under it.
+ * The building before any worktree: one room for the base branch with Moru at rest before its dark
+ * screen, the track running into the `main` hatch, and the words under it.
  */
 export function EmptyRoom({ branch, title, body, children }: { branch: string; title: ReactNode; body: string; children?: ReactNode }) {
   const t = useTranslations('workStatus');
@@ -19,21 +19,29 @@ export function EmptyRoom({ branch, title, body, children }: { branch: string; t
     <div data-testid="work-empty-room" className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto px-10 py-8">
       <div className="flex w-full max-w-[45rem] flex-col items-center text-center">
         <div className={cn(styles.large, styles.notched, 'relative h-[21.25rem] w-full overflow-hidden bg-[color:var(--work-room-pit)]')} style={{ ['--ink' as string]: 'var(--work-session-1)', containerType: 'size' }}>
-          <div className={styles.scene} style={{ ['--u' as string]: EMPTY_UNIT, ['--ax' as string]: '50%' }} data-lit={false}>
-            <i className={styles.wainscot} />
+          <div className={styles.scene} style={{ ['--u' as string]: EMPTY_UNIT }} data-lit={false}>
+            <i className={styles.shade} />
+            <i className={styles.skirting} />
             <i className={styles.floor} />
-            <div className={cn(styles.sign, styles.notched, 'text-body leading-body font-mono font-[var(--font-weight-strong)]')}>{branch}</div>
-            <i className={styles.lamp}><i className={styles.lampShade} /></i>
-            <i className={styles.shadow} />
+            <div className={styles.sideWall}>
+              <i className={styles.mainLight} />
+              <span className={cn(styles.mainPlate, 'text-label leading-label font-mono font-[var(--font-weight-strong)]')}>{t('ruler.main')}</span>
+              <i className={styles.hatch} />
+            </div>
+            <i className={styles.track} />
+            <i className={styles.console} />
+            <i className={styles.contact} />
             <span className={styles.actor}><RoomMoru clip="waiting" still zoom={EMPTY_UNIT} tint={null} /></span>
-          </div>
-          <div className={styles.belt}>
-            <div className={styles.track}>
-              <div className={styles.rail} />
-              <span className={cn(styles.station, styles.stationMain, 'text-label leading-label font-mono font-[var(--font-weight-strong)]')} style={{ left: '100%' }}>
-                {t('ruler.main')}
-              </span>
-              <i className={styles.hatch}><i className={styles.hatchOpen} /><i className={styles.hatchLight} /></i>
+            <div className={styles.monitor} data-off>
+              <i className={styles.neck} />
+              <i className={cn(styles.screenFrame, styles.notched)} />
+              <div className={styles.screen}>
+                <div className={styles.screenText}>
+                  <div className={styles.screenHead}>
+                    <span className={cn(styles.screenBranch, 'font-mono font-[var(--font-weight-strong)]')}>{branch}</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

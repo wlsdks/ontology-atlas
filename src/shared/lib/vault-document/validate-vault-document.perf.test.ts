@@ -1,5 +1,11 @@
 import { expect, it } from "vitest";
+import { startWorkClock } from "../../../../tests/helpers/work-clock";
 import { summarizeVaultValidation } from "./validate-vault-document";
+
+/*
+ * Timed, not counted: the pairing runs over claims and issues the summary builds itself, so a
+ * quadratic pass there reads no input the test could count.
+ */
 
 it("keeps paired identity-conflict reporting proportional to vault size", () => {
   const measure = (count: number) => {
@@ -13,9 +19,9 @@ it("keeps paired identity-conflict reporting proportional to vault size", () => 
     summarizeVaultValidation(items);
     const times = [];
     for (let run = 0; run < 5; run++) {
-      const start = performance.now();
+      const spent = startWorkClock();
       const result = summarizeVaultValidation(items);
-      times.push(performance.now() - start);
+      times.push(spent());
       expect(result.errorCount).toBe(count);
       expect(result.issuesBySlug).toHaveLength(count);
     }

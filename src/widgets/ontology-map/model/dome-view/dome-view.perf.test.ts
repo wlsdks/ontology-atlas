@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { buildDomeModel } from "./model-build";
 import type { DomeInputNode } from "./dome-shapes";
+import { startWorkClock } from "../../../../../tests/helpers/work-clock";
 
 function vault(size: number): { nodes: DomeInputNode[]; edges: { sourceId: string; targetId: string }[] } {
   const domainCount = Math.max(1, Math.round(Math.sqrt(size) / 3));
@@ -22,13 +23,17 @@ function vault(size: number): { nodes: DomeInputNode[]; edges: { sourceId: strin
 }
 
 function layoutMs(graph: ReturnType<typeof vault>): number {
-  const started = performance.now();
+  const spent = startWorkClock();
   const model = buildDomeModel(graph.nodes, { arrangement: "coupling", edges: graph.edges });
-  const elapsed = performance.now() - started;
+  const elapsed = spent();
   expect(model.coords.size).toBe(graph.nodes.length);
   return elapsed;
 }
 
+/**
+ * Timed, not counted: the pairs the cloud avoids are inside its Barnes-Hut octree and collision
+ * grid, which expose no count of the visits they make.
+ */
 describe("the Neural cloud's layout cost", () => {
   it("stays well below quadratic: four times the concepts cost two to ten times as long, where every pair costs sixteen", () => {
     const small = vault(2000);

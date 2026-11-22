@@ -41,12 +41,11 @@ function Crates({ count, old, freshFrom }: { count: number; old?: boolean; fresh
  * The shelf under the building: a crate for each worktree merged into the base branch and a dusty
  * one for each nobody touched for a week. Pressing a count opens the list in a centred dialog.
  */
-export function RoomShelf({ merged, untouched, baseBranch, nowMs, inline }: {
+export function RoomShelf({ merged, untouched, baseBranch, nowMs }: {
   merged: readonly Track[];
   untouched: readonly Track[];
   baseBranch: string;
   nowMs: number;
-  inline: boolean;
 }) {
   const t = useTranslations('workStatus');
   const locale = useLocale();
@@ -60,7 +59,7 @@ export function RoomShelf({ merged, untouched, baseBranch, nowMs, inline }: {
   const countButton = 'gap-1.5 tabular-nums';
   return (
     <>
-      <div className={cn(styles.shelf, 'h-full w-full')} data-inline={inline} data-testid="work-room-shelf">
+      <div className={cn(styles.shelf, 'h-full w-full')} data-testid="work-room-shelf">
         <Crates count={merged.length} freshFrom={freshFrom} />
         <Button size="sm" variant="ghost" className={countButton} data-testid="work-shelf-merged" onClick={() => setOpen('merged')} disabled={merged.length === 0}>
           <span className="text-[color:var(--color-text-tertiary)]">{t('shelf.merged', { branch: baseBranch })}</span>
