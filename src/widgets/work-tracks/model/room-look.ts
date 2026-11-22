@@ -20,12 +20,19 @@ export interface RoomLook {
   dozing: boolean;
 }
 
+/**
+ * A moment a room plays over its state: `landed`, a commit just reached the cart. Its pose is an
+ * existing row until Moru's own clip for it exists.
+ */
+export type RoomMoment = 'landed';
+
 /** Every room's poses are chosen here, so a new Moru clip drops in at one place. */
-export function roomLook(state: RoomState): RoomLook {
+export function roomLook(state: RoomState, moment: RoomMoment | null = null): RoomLook {
   const quiet = { running: false, monitorOff: false, crate: 'plain', cast: 'one', clip: 'waiting', backClip: 'read', still: true, dozing: false } as const;
   switch (state.kind) {
     case 'working':
-      return { ...quiet, running: true, cast: state.tools.length > 1 ? 'two' : 'one', clip: 'code', still: false };
+      // A landed commit: Moru looks down at the cart for a moment, then types on.
+      return { ...quiet, running: true, cast: state.tools.length > 1 ? 'two' : 'one', clip: moment === 'landed' ? 'read' : 'code', still: false };
     case 'resting':
     case 'locked':
       return quiet;
@@ -50,6 +57,23 @@ export function moruPhase(key: string): number {
   let hash = 0;
   for (const char of key) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
   return (hash % LOOP_POSES) / LOOP_POSES;
+}
+
+/** How many wall props a room may have; which one is its worktree's own. */
+export const ROOM_PROPS = 6;
+
+export interface RoomIdentity {
+  /** The room drawn the other way round: Moru faces left, the lamp stands on his right. */
+  mirrored: boolean;
+  /** Which of the `ROOM_PROPS` props stands in the room. */
+  prop: number;
+}
+
+/** What tells rooms apart at a glance, from the branch name alone, so a room keeps it for life. */
+export function roomIdentity(branch: string): RoomIdentity {
+  let hash = 0x811c9dc5;
+  for (const char of branch) hash = Math.imul(hash ^ char.charCodeAt(0), 0x01000193) >>> 0;
+  return { mirrored: (hash & 8) !== 0, prop: hash % ROOM_PROPS };
 }
 
 /** A warning the page header counts: two tools in one folder, or a worktree to clean up. */

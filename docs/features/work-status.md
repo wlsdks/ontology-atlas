@@ -143,12 +143,21 @@ room goes to its new box at once; a room taking another's box arrives before
 that room leaves it. Then content fades back in, room by room, and new rooms
 rise into place. Fades out are linear, so nothing cuts. A merge plays first
 where the room stands: its crate rides into the `main` hatch, the hatch turns
-green, the lights go out, the room fades away and a crate lands on the shelf;
-only then do the others move. An update that lands mid-sequence starts the next
-from where each room is drawn. Moru, the
-lamp, the monitor and the belt move only in a room where something runs, on
-screen, in a visible window. Reduced motion shows the end states without
-movement.
+green, blinking twice, the lights go out, the room fades away and a crate
+lands on the shelf as its count ticks; only then do the others move. An update
+that lands mid-sequence starts the next from where each room is drawn. When a
+commit lands, the newest crate drops onto the cart in three small steps, the
+count cross-fades and Moru looks down at the cart for a moment.
+
+Rooms tell themselves apart from the branch name alone: half are drawn the other
+way round, with Moru facing left and the lamp on his right, and each has one of
+six props, on a wall shelf in a narrow room or on the floor in a wide one. A lit
+lamp throws a stepped cone down the wall and a pool on the floor and rims Moru's
+side that faces it; an idle room has none. Pointing at a room or floor steps
+that session's rooms and floor up and the rest down; rooms have no action, so
+they take no press or focus. Moru, the lamp, the monitor and the belt move only
+in a room where something runs, on screen, in a visible window. Reduced motion
+shows the end states without movement.
 
 ## States
 

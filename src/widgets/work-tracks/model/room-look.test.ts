@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { WorkStatusSnapshot, WorktreeRow } from '@/shared/lib/work-status/tauri-work-status';
 import { buildWorkTracks, planRooms, type RoomPlan } from '@/shared/lib/work-status/work-tracks';
-import { cartLoad, moruPhase, retireeOf, roomLook, withRetirees } from './room-look';
+import { ROOM_PROPS, cartLoad, moruPhase, retireeOf, roomIdentity, roomLook, withRetirees } from './room-look';
 
 const NOW_MS = 1_795_260_000_000;
 
@@ -85,5 +85,26 @@ describe('moruPhase', () => {
     for (const phase of phases) expect(Number.isInteger(phase * 24) && phase >= 0 && phase < 1).toBe(true);
     expect(new Set(phases).size).toBeGreaterThan(3);
     expect(moruPhase('feat/a')).toBe(phases[0]);
+  });
+});
+
+describe('roomIdentity', () => {
+  it('keeps a branch its own mirroring and prop, and spreads both across branches', () => {
+    const branches = Array.from({ length: 60 }, (_, index) => `feat/branch-${index}`);
+    const identities = branches.map(roomIdentity);
+    expect(roomIdentity('feat/branch-7')).toEqual(identities[7]);
+    const mirrored = identities.filter(identity => identity.mirrored).length;
+    expect(mirrored).toBeGreaterThan(18);
+    expect(mirrored).toBeLessThan(42);
+    expect(new Set(identities.map(identity => identity.prop)).size).toBe(ROOM_PROPS);
+  });
+});
+
+describe('roomLook moments', () => {
+  it('turns a working Moru to the cart while a commit lands, and plays no moment for any other state', () => {
+    const working = { kind: 'working', tools: ['claude'] } as unknown as Parameters<typeof roomLook>[0];
+    expect(roomLook(working, 'landed').clip).not.toBe(roomLook(working).clip);
+    const resting = { kind: 'resting' } as unknown as Parameters<typeof roomLook>[0];
+    expect(roomLook(resting, 'landed')).toEqual(roomLook(resting));
   });
 });

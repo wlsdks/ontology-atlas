@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { planRooms, sessionsIn, type RoomEntry, type RoomPlan, type TrackSession, type WorkTracks } from '@/shared/lib/work-status/work-tracks';
 import { cn } from '@/shared/lib/cn';
@@ -141,6 +141,7 @@ function Room({ room, box, copy, retiring, showOwner, reduced, windowKey, ghost 
       data-room-running={look.running}
       data-room-retiring={retiring || undefined}
       data-room-alert={ghost ? undefined : roomAlertOf(room.state) ?? undefined}
+      data-session={ghost ? undefined : room.session?.key}
       aria-hidden={ghost ? true : undefined}
       inert={ghost ? true : undefined}
       className={cn(styles.room, ghost && 'pointer-events-none')}
@@ -207,7 +208,7 @@ function FloorPlate({ session, total, attention, onStage, below, copy, nowMs }: 
     below > 0 ? <span key="b">{t('session.below', { count: below })}</span> : null,
   ].filter(Boolean);
   return (
-    <div className={cn(styles.floorPlate, 'h-full w-full')} style={{ ['--ink' as string]: inkOf(session) }}>
+    <div className={cn(styles.floorPlate, 'h-full w-full')} data-floor-plate data-session={session?.key} style={{ ['--ink' as string]: inkOf(session) }}>
       <div className={cn(styles.inkText, 'truncate text-body leading-body font-[var(--font-weight-emphasis)]')}>
         <span aria-hidden className={styles.floorMark} />
         {copy.sessionName(session) ?? t('session.none')}
@@ -297,6 +298,23 @@ interface Ghost {
 }
 
 /**
+ * Pointing at a room or floor of a session steps that session's rooms and floor up and the rest
+ * down, straight on the DOM so the building does not render again. A pointer that leaves, or rests
+ * on a room nobody holds, clears it.
+ */
+function emphasise(board: HTMLElement | null, event: ReactPointerEvent<HTMLElement>) {
+  if (!board || event.pointerType !== 'mouse') return;
+  const target = event.type === 'pointerleave' ? null : (event.target as HTMLElement).closest<HTMLElement>('[data-session]');
+  const session = target?.dataset.session ?? '';
+  if ((board.dataset.emphasis ?? '') === session) return;
+  board.dataset.emphasis = session;
+  for (const element of board.querySelectorAll<HTMLElement>('[data-room-key], [data-floor-plate]')) {
+    if (!session) delete element.dataset.emphasis;
+    else element.dataset.emphasis = element.dataset.session === session ? 'up' : 'down';
+  }
+}
+
+/**
  * The building of rooms: at most six large rooms on the front stage, the session floors of mini
  * rooms under them and the shelf. Rooms keep their place by transform, so a change glides from
  * where each room was drawn, and nothing reads the DOM to lay them out.
@@ -370,6 +388,8 @@ export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs }: {
   const stageTop = Math.min(...shown.stage.map(room => layout.rooms.get(room.key)?.y ?? Number.POSITIVE_INFINITY), layout.height);
   const building: CSSProperties = { transform: `translateY(${Math.max(0, stageTop - 12)}px)`, height: layout.height };
 
+  const emphasiseSession = useCallback((event: ReactPointerEvent<HTMLElement>) => emphasise(boardRef.current, event), []);
+
   return (
     <div ref={viewportRef} className="relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden" data-testid="work-building-viewport">
       <TintFilters />
@@ -378,6 +398,8 @@ export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs }: {
         data-testid="work-building"
         aria-label={t('stage.label')}
         role="region"
+        onPointerOver={emphasiseSession}
+        onPointerLeave={emphasiseSession}
         className="relative mx-10 overflow-clip"
         style={{ height: size ? layout.height : '100%' }}
       >

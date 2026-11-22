@@ -1085,3 +1085,224 @@
 .ownerText {
   color: color-mix(in srgb, var(--ink) 70%, var(--color-text-tertiary));
 }
+
+/* ---------- what tells rooms apart: mirroring, a prop, a lamp that lights */
+
+/* A mirrored room: Moru faces left and the lamp stands on his right. Text never mirrors. */
+.scene[data-mirror='true'] .actor {
+  scale: -1 1;
+}
+
+.scene[data-mirror='true'] .lamp {
+  left: calc(var(--ax) + 50 * var(--s));
+}
+
+/*
+ * The room's own prop, picked from its branch name, on a wall shelf at the side away from the lamp;
+ * in a wide room it stands on the floor past Moru, under the monitor.
+ */
+.prop {
+  --prop-accent: color-mix(in srgb, var(--ink) 45%, var(--work-room-steel));
+  position: absolute;
+  right: 8px;
+  bottom: calc(var(--floor) * 0.4 + 66 * var(--s));
+  width: calc(20 * var(--s));
+  height: calc(20 * var(--s));
+  pointer-events: none;
+}
+
+.prop::after {
+  content: "";
+  position: absolute;
+  left: calc(-4 * var(--s));
+  right: calc(-4 * var(--s));
+  bottom: calc(-2 * var(--s));
+  height: calc(2 * var(--s));
+  background: var(--work-room-steel);
+}
+
+.scene[data-mirror='true'] .prop {
+  left: 8px;
+  right: auto;
+}
+
+@container (min-width: 520px) {
+  .prop,
+  .scene[data-mirror='true'] .prop {
+    left: calc(var(--ax) + 74 * var(--s));
+    right: auto;
+    bottom: calc(var(--floor) * 0.4);
+  }
+
+  .prop::after {
+    content: none;
+  }
+}
+
+/* plant */
+.prop[data-prop='0'] {
+  background:
+    linear-gradient(var(--work-room-steel), var(--work-room-steel)) calc(5 * var(--s)) calc(13 * var(--s)) / calc(10 * var(--s)) calc(7 * var(--s)) no-repeat,
+    linear-gradient(var(--work-room-steel-light), var(--work-room-steel-light)) calc(4 * var(--s)) calc(12 * var(--s)) / calc(12 * var(--s)) calc(2 * var(--s)) no-repeat,
+    linear-gradient(var(--prop-accent), var(--prop-accent)) calc(9 * var(--s)) calc(4 * var(--s)) / calc(2 * var(--s)) calc(8 * var(--s)) no-repeat,
+    linear-gradient(var(--prop-accent), var(--prop-accent)) calc(4 * var(--s)) calc(6 * var(--s)) / calc(5 * var(--s)) calc(3 * var(--s)) no-repeat,
+    linear-gradient(var(--prop-accent), var(--prop-accent)) calc(11 * var(--s)) calc(3 * var(--s)) / calc(5 * var(--s)) calc(3 * var(--s)) no-repeat,
+    linear-gradient(var(--prop-accent), var(--prop-accent)) calc(6 * var(--s)) calc(2 * var(--s)) / calc(3 * var(--s)) calc(3 * var(--s)) no-repeat;
+}
+
+/* books */
+.prop[data-prop='1'] {
+  background:
+    linear-gradient(var(--prop-accent), var(--prop-accent)) calc(2 * var(--s)) calc(15 * var(--s)) / calc(16 * var(--s)) calc(5 * var(--s)) no-repeat,
+    linear-gradient(var(--work-room-steel), var(--work-room-steel)) calc(4 * var(--s)) calc(11 * var(--s)) / calc(13 * var(--s)) calc(4 * var(--s)) no-repeat,
+    linear-gradient(var(--work-room-lamp-off), var(--work-room-lamp-off)) calc(3 * var(--s)) calc(7 * var(--s)) / calc(11 * var(--s)) calc(4 * var(--s)) no-repeat,
+    linear-gradient(var(--work-room-steel-light), var(--work-room-steel-light)) calc(6 * var(--s)) calc(4 * var(--s)) / calc(7 * var(--s)) calc(3 * var(--s)) no-repeat;
+}
+
+/* mug */
+.prop[data-prop='2'] {
+  background:
+    linear-gradient(var(--work-room-steel-light), var(--work-room-steel-light)) calc(5 * var(--s)) calc(9 * var(--s)) / calc(9 * var(--s)) calc(11 * var(--s)) no-repeat,
+    linear-gradient(var(--prop-accent), var(--prop-accent)) calc(5 * var(--s)) calc(12 * var(--s)) / calc(9 * var(--s)) calc(2 * var(--s)) no-repeat,
+    linear-gradient(var(--work-room-steel-light), var(--work-room-steel-light)) calc(14 * var(--s)) calc(11 * var(--s)) / calc(3 * var(--s)) calc(2 * var(--s)) no-repeat,
+    linear-gradient(var(--work-room-steel-light), var(--work-room-steel-light)) calc(15 * var(--s)) calc(13 * var(--s)) / calc(2 * var(--s)) calc(3 * var(--s)) no-repeat,
+    linear-gradient(var(--work-room-steel-light), var(--work-room-steel-light)) calc(14 * var(--s)) calc(16 * var(--s)) / calc(3 * var(--s)) calc(2 * var(--s)) no-repeat;
+}
+
+/* radio */
+.prop[data-prop='3'] {
+  background:
+    linear-gradient(var(--work-room-steel), var(--work-room-steel)) calc(1 * var(--s)) calc(8 * var(--s)) / calc(18 * var(--s)) calc(12 * var(--s)) no-repeat,
+    linear-gradient(var(--work-room-lamp-off), var(--work-room-lamp-off)) calc(3 * var(--s)) calc(10 * var(--s)) / calc(8 * var(--s)) calc(8 * var(--s)) no-repeat,
+    linear-gradient(var(--prop-accent), var(--prop-accent)) calc(13 * var(--s)) calc(11 * var(--s)) / calc(4 * var(--s)) calc(3 * var(--s)) no-repeat,
+    linear-gradient(var(--work-room-steel-light), var(--work-room-steel-light)) calc(15 * var(--s)) calc(1 * var(--s)) / calc(1 * var(--s)) calc(7 * var(--s)) no-repeat;
+}
+
+/* cactus */
+.prop[data-prop='4'] {
+  background:
+    linear-gradient(var(--work-room-lamp-off), var(--work-room-lamp-off)) calc(5 * var(--s)) calc(14 * var(--s)) / calc(10 * var(--s)) calc(6 * var(--s)) no-repeat,
+    linear-gradient(var(--prop-accent), var(--prop-accent)) calc(8 * var(--s)) calc(3 * var(--s)) / calc(4 * var(--s)) calc(11 * var(--s)) no-repeat,
+    linear-gradient(var(--prop-accent), var(--prop-accent)) calc(4 * var(--s)) calc(6 * var(--s)) / calc(3 * var(--s)) calc(5 * var(--s)) no-repeat,
+    linear-gradient(var(--prop-accent), var(--prop-accent)) calc(4 * var(--s)) calc(10 * var(--s)) / calc(4 * var(--s)) calc(2 * var(--s)) no-repeat,
+    linear-gradient(var(--prop-accent), var(--prop-accent)) calc(13 * var(--s)) calc(5 * var(--s)) / calc(3 * var(--s)) calc(4 * var(--s)) no-repeat,
+    linear-gradient(var(--prop-accent), var(--prop-accent)) calc(12 * var(--s)) calc(8 * var(--s)) / calc(4 * var(--s)) calc(2 * var(--s)) no-repeat;
+}
+
+/* globe */
+.prop[data-prop='5'] {
+  background:
+    linear-gradient(var(--work-room-steel), var(--work-room-steel)) calc(7 * var(--s)) calc(18 * var(--s)) / calc(6 * var(--s)) calc(2 * var(--s)) no-repeat,
+    linear-gradient(var(--work-room-steel), var(--work-room-steel)) calc(9 * var(--s)) calc(15 * var(--s)) / calc(2 * var(--s)) calc(3 * var(--s)) no-repeat,
+    linear-gradient(var(--prop-accent), var(--prop-accent)) calc(5 * var(--s)) calc(4 * var(--s)) / calc(10 * var(--s)) calc(11 * var(--s)) no-repeat,
+    linear-gradient(var(--work-room-steel-light), var(--work-room-steel-light)) calc(5 * var(--s)) calc(8 * var(--s)) / calc(10 * var(--s)) calc(2 * var(--s)) no-repeat,
+    linear-gradient(var(--work-room-steel-light), var(--work-room-steel-light)) calc(7 * var(--s)) calc(6 * var(--s)) / calc(3 * var(--s)) calc(2 * var(--s)) no-repeat;
+}
+
+/* A lit lamp throws a stepped cone down the wall and a pool on the floor; an idle room has neither. */
+.lampCone,
+.lampPool {
+  position: absolute;
+  left: 50%;
+  translate: -50% 0;
+  pointer-events: none;
+}
+
+.lampCone {
+  top: calc(12 * var(--s));
+  width: calc(40 * var(--s));
+  height: calc(36 * var(--s));
+  background:
+    linear-gradient(var(--cone-1), var(--cone-1)) 50% 0 / calc(18 * var(--s)) calc(12 * var(--s)) no-repeat,
+    linear-gradient(var(--cone-2), var(--cone-2)) 50% calc(12 * var(--s)) / calc(28 * var(--s)) calc(12 * var(--s)) no-repeat,
+    linear-gradient(var(--cone-3), var(--cone-3)) 50% calc(24 * var(--s)) / 100% calc(12 * var(--s)) no-repeat;
+  --cone-1: color-mix(in srgb, var(--room-ink) 16%, transparent);
+  --cone-2: color-mix(in srgb, var(--room-ink) 11%, transparent);
+  --cone-3: color-mix(in srgb, var(--room-ink) 7%, transparent);
+}
+
+.lampPool {
+  bottom: calc(-2 * var(--s));
+  width: calc(64 * var(--s));
+  height: calc(4 * var(--s));
+  background:
+    linear-gradient(var(--pool-1), var(--pool-1)) 50% 0 / calc(36 * var(--s)) 100% no-repeat,
+    linear-gradient(var(--pool-2), var(--pool-2)) 50% 0 / 100% 100% no-repeat;
+  --pool-1: color-mix(in srgb, var(--room-ink) 22%, transparent);
+  --pool-2: color-mix(in srgb, var(--room-ink) 10%, transparent);
+}
+
+/*
+ * The lamp rims Moru's side that faces it, and his top under its shade, with one drawn pixel of its
+ * light: two offsets, so the rim follows his stepped outline as one line rather than broken dashes.
+ * The filter is drawn before a mirrored room flips him, so it turns toward that room's lamp too.
+ */
+.scene[data-lit='true'] .actor {
+  --rim: color-mix(in srgb, var(--room-ink) 40%, var(--color-text-primary));
+  filter: drop-shadow(calc(-1 * var(--s)) 0 0 var(--rim)) drop-shadow(0 calc(-1 * var(--s)) 0 var(--rim));
+}
+
+/* ---------- moments: a commit lands, a merge reaches main */
+
+/* The newest crate drops onto the cart in three 2px steps as a commit lands. */
+@keyframes roomCrateLand {
+  from {
+    translate: 0 -6px;
+  }
+  to {
+    translate: 0 0;
+  }
+}
+
+.crate[data-landing] {
+  animation: roomCrateLand calc(var(--motion-base) * 2) steps(3, end) both;
+}
+
+/* The hatch blinks green twice as the crate reaches main, then stays open. */
+@keyframes roomHatchBlink {
+  0%, 50%, 100% {
+    opacity: 0;
+  }
+  25%, 75% {
+    opacity: 1;
+  }
+}
+
+.hatchOpen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--color-status-success);
+  opacity: 0;
+}
+
+.track[data-arrived='true'] .hatchOpen::after {
+  animation: roomHatchBlink calc(var(--motion-base) * 6) steps(1, end) calc(var(--motion-choreography) * 0.8) both;
+}
+
+/* ---------- pointing at a session: its rooms and floor step up, the rest step down */
+
+.room,
+.floorPlate {
+  transition: opacity var(--motion-fast) var(--motion-ease);
+}
+
+.room[data-emphasis='down'],
+.floorPlate[data-emphasis='down'] {
+  opacity: 0.6;
+}
+
+.room[data-emphasis='up'] > [data-room-plate] {
+  background: color-mix(in srgb, var(--ink) 12%, var(--work-room-wall));
+}
+
+.floorPlate[data-emphasis='up'] {
+  background: color-mix(in srgb, var(--ink) 10%, var(--work-room-pit));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crate[data-landing],
+  .track[data-arrived='true'] .hatchOpen::after {
+    animation: none;
+  }
+}

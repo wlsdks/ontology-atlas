@@ -4,7 +4,9 @@ import type { CSSProperties } from 'react';
 import { useTranslations } from 'next-intl';
 import type { RoomEntry } from '@/shared/lib/work-status/work-tracks';
 import { cn } from '@/shared/lib/cn';
-import { KNOWN_UNTIL, STAGE_AT, cartLoad, moruPhase, roomLook } from '../model/room-look';
+import { MOTION } from '@/shared/motion';
+import { KNOWN_UNTIL, STAGE_AT, cartLoad, moruPhase, roomIdentity, roomLook } from '../model/room-look';
+import { useRise } from '../model/use-rise';
 import type { RoomUnit } from '../model/building-layout';
 import { BranchName } from './BranchName';
 import { RoomMoru } from './RoomMoru';
@@ -56,7 +58,7 @@ function Monitor({ room, copy }: { room: RoomEntry; copy: RoomCopy }) {
   );
 }
 
-function Belt({ room }: { room: RoomEntry }) {
+function Belt({ room, landing }: { room: RoomEntry; landing: number }) {
   const t = useTranslations('workStatus');
   const at = STAGE_AT[room.stage];
   const look = roomLook(room.state);
@@ -88,8 +90,12 @@ function Belt({ room }: { room: RoomEntry }) {
         </i>
         <div className={styles.carriage} style={{ transform: `translateX(${at * 100}%)` }}>
           <span className={styles.cart} data-testid="work-room-cart" data-crates={load.crates + load.more}>
-            {Array.from({ length: load.crates }, (_, index) => <i key={index} className={styles.crate} data-kind={look.crate} />)}
-            {load.more > 0 ? <span className={cn(styles.cartMore, LABEL, 'font-[var(--font-weight-strong)] tabular-nums')}>+{load.more}</span> : null}
+            {Array.from({ length: load.crates }, (_, index) => {
+              // The newest crate drops onto the cart each time a commit lands.
+              const newest = landing > 0 && index === load.crates - 1;
+              return <i key={newest ? `landed-${landing}` : index} className={styles.crate} data-kind={look.crate} data-landing={newest || undefined} />;
+            })}
+            {load.more > 0 ? <span className={cn(styles.cartMore, LABEL, 'font-[var(--font-weight-strong)] tabular-nums')}><SwapText value={`+${load.more}`} /></span> : null}
           </span>
         </div>
       </div>
@@ -112,16 +118,18 @@ export function LargeRoom({ room, unit, copy, tint, guestTint, retiring }: {
   /** The worktree just merged: once the crate is in, the lights go out. */
   retiring: boolean;
 }) {
-  const look = roomLook(room.state);
+  const commit = useRise(room.track.ahead, MOTION.choreography.duration * 1000);
+  const look = roomLook(room.state, commit.fresh ? 'landed' : null);
   const session = copy.sessionName(room.session);
   const tools = room.state.kind === 'working' ? room.state.tools : [];
   const second = tools[1];
   const pair = look.cast === 'two' && second !== undefined;
   const guest = room.guests[0] ?? null;
   const guestInk = guest ? `var(--work-session-${guest.ink + 1})` : 'var(--work-unheld)';
+  const identity = roomIdentity(room.track.branch ?? room.key);
   return (
     <div className={cn(styles.large, 'h-full w-full')} data-pair={pair || undefined} style={pair ? { ['--guest-ink' as string]: guestInk } : undefined}>
-      <div data-scene className={styles.scene} style={{ '--u': unit } as CSSProperties} data-lit={look.running} data-dark={retiring} data-cast={pair ? 'two' : look.cast} data-alarm={pair}>
+      <div data-scene className={styles.scene} style={{ '--u': unit } as CSSProperties} data-lit={look.running} data-dark={retiring} data-cast={pair ? 'two' : look.cast} data-alarm={pair} data-mirror={!pair && identity.mirrored}>
         <i className={styles.glow}><i className={styles.glowLight} /></i>
         <i className={styles.wainscot} />
         <i className={styles.floor} />
@@ -130,7 +138,9 @@ export function LargeRoom({ room, unit, copy, tint, guestTint, retiring }: {
           <BranchName branch={room.track.branch ?? room.track.title} />
         </div>
         <Monitor room={room} copy={copy} />
+        {pair ? null : <i className={styles.prop} data-prop={identity.prop} />}
         <i className={styles.lamp}>
+          <i className={styles.lampLight}><i className={styles.lampCone} /><i className={styles.lampPool} /></i>
           <i className={styles.lampShade} />
           <i className={styles.lampLight}><i className={styles.lampFlicker} /></i>
         </i>
@@ -158,7 +168,7 @@ export function LargeRoom({ room, unit, copy, tint, guestTint, retiring }: {
         ) : null}
         <i className={styles.dim} />
       </div>
-      <Belt room={room} />
+      <Belt room={room} landing={commit.serial} />
     </div>
   );
 }

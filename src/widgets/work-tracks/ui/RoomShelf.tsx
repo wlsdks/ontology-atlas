@@ -7,6 +7,7 @@ import { cn } from '@/shared/lib/cn';
 import { MOTION, MOTION_EASE } from '@/shared/motion';
 import { Button, Dialog } from '@/shared/ui';
 import { timeAgo } from '../model/format';
+import { SwapText } from './SwapText';
 import styles from './rooms.module.css';
 
 const CRATE_LIMIT = 8;
@@ -63,7 +64,7 @@ export function RoomShelf({ merged, untouched, baseBranch, nowMs, inline }: {
         <Crates count={merged.length} freshFrom={freshFrom} />
         <Button size="sm" variant="ghost" className={countButton} data-testid="work-shelf-merged" onClick={() => setOpen('merged')} disabled={merged.length === 0}>
           <span className="text-[color:var(--color-text-tertiary)]">{t('shelf.merged', { branch: baseBranch })}</span>
-          <strong className="font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{merged.length}</strong>
+          <strong className="font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"><SwapText value={String(merged.length)} /></strong>
         </Button>
         {untouched.length > 0 ? (
           <>
