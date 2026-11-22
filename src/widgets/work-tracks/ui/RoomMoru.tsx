@@ -13,8 +13,8 @@ import styles from './rooms.module.css';
 export function RoomMoru({ clip, still, zoom, tint, phase = 0, dozing = false }: {
   clip: RoomClip;
   still: boolean;
-  /** 1, 2 or 3 on a large room (128 × zoom px), 0.5 on a mini room. */
-  zoom: number;
+  /** 1, 2 or 3 on a large room (128 × zoom px), as the scene's `var(--u)` so it glides with it; 0.5 on a mini room. */
+  zoom: number | string;
   /** The board's tint filter id for the room's session ink, or none for an untinted Moru. */
   tint: string | null;
   /** Where in its loop this Moru starts, from 0 to 1, so neighbouring rooms move out of step. */

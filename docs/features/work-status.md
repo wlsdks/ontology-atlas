@@ -127,16 +127,21 @@ merged into the base branch, or its session ended. A change shows within about
 two seconds: one interval plus one read. A hidden screen asks nothing and reads
 once when it shows again; relative ages move once a minute.
 
-Every change plays as one sequence of about a second, with transform and
-opacity only, and every frame shows one copy of each room. First what leaves
-fades, and a room that will change tier or cross another fades its content to
-its own wall. Then each room that moves goes to its new box in one piece; a
-room taking another's box arrives before that room leaves it. Then content
-fades back in and new rooms rise into place. A merge plays first where the room
-stands: its crate rides into the `main` hatch, the hatch turns green, the
-lights go out, the room fades away and a crate lands on the shelf; only then do
-the others move. An update that lands mid-sequence starts the next from where
-each room is drawn. Moru, the
+Every change plays as one sequence of about a second, and every frame shows
+one copy of each room with at least one name tag on the stage. First what
+leaves fades, and each moving room in turn, 80 ms after the one before, fades
+what must not show while it travels: a stage room that stays a stage room
+fades only its monitor and belt, and keeps its Moru, name tag, branch sign and
+hue edge while its box and scale glide to the new size; a room that changes
+tier, or crosses another, fades its content to its wall, which keeps its hue
+edge and carries its branch plaque so it is clear which room moved. Then every
+room goes to its new box at once; a room taking another's box arrives before
+that room leaves it. Then content fades back in, room by room, and new rooms
+rise into place. Fades out are linear, so nothing cuts. A merge plays first
+where the room stands: its crate rides into the `main` hatch, the hatch turns
+green, the lights go out, the room fades away and a crate lands on the shelf;
+only then do the others move. An update that lands mid-sequence starts the next
+from where each room is drawn. Moru, the
 lamp, the monitor and the belt move only in a room where something runs, on
 screen, in a visible window. Reduced motion shows the end states without
 movement.

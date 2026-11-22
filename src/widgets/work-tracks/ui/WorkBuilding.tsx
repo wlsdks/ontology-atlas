@@ -9,8 +9,9 @@ import { MOTION } from '@/shared/motion';
 import { layoutBuilding, stageCapacity, type Box, type RoomBox, type RoomSize, type RoomUnit } from '../model/building-layout';
 import { clockTime } from '../model/format';
 import { retireeOf, roomAlertOf, roomLook, withRetirees, type Retiree } from '../model/room-look';
-import { EXIT_MS, MOVE_MS } from '../model/room-sequence';
+import { FADE_MS, MOVE_MS } from '../model/room-sequence';
 import { FACE_LEFT_EVENT, exitRoom, translate, useRoomMotion } from '../model/use-room-motion';
+import { BranchName } from './BranchName';
 import { LargeRoom } from './LargeRoom';
 import { MiniRoom } from './MiniRoom';
 import { RoomShelf } from './RoomShelf';
@@ -69,7 +70,7 @@ function RoomFace({ room, face, copy, retiring, showOwner }: { room: RoomEntry; 
 }
 
 /** A merged room fades its content to its own wall, then the wall fades, in the last moments of its stay. */
-const RETIRE_FADE_MS = EXIT_MS;
+const RETIRE_FADE_MS = FADE_MS;
 
 /**
  * One room's frame. Its element sits at its box by transform. When the building gives it a new size,
@@ -146,6 +147,10 @@ function Room({ room, box, copy, retiring, showOwner, reduced, windowKey, ghost 
       style={style}
     >
       <div data-room-plate className={cn(styles.plate, styles.notched)} />
+      {/* The branch plaque a room carries while it travels as its wall, so it is clear which room moved. */}
+      <div data-room-plaque aria-hidden className={cn(styles.sign, styles.notched, styles.plaque, 'text-body leading-body font-mono font-[var(--font-weight-strong)]')}>
+        <BranchName branch={room.track.branch ?? room.track.title} />
+      </div>
       {faces.leaving ? (
         <div
           key="leaving"
@@ -172,7 +177,7 @@ function Placed({ box, children, className, testId }: { box: Box; children: Reac
     <div
       data-testid={testId}
       className={cn('absolute left-0 top-0 transition-transform', className)}
-      style={{ transform: translate(box), width: box.w, height: box.h, transitionDuration: `${MOVE_MS}ms`, transitionDelay: `${EXIT_MS}ms` }}
+      style={{ transform: translate(box), width: box.w, height: box.h, transitionDuration: `${MOVE_MS}ms`, transitionDelay: `${FADE_MS}ms` }}
     >
       {children}
     </div>

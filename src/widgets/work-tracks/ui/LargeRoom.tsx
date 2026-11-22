@@ -20,7 +20,7 @@ function Monitor({ room, copy }: { room: RoomEntry; copy: RoomCopy }) {
   const look = roomLook(room.state);
   const screen = copy.monitor(room);
   return (
-    <div className={cn(styles.monitor, styles.notched)} data-off={look.monitorOff}>
+    <div className={cn(styles.monitor, styles.notched)} data-off={look.monitorOff} data-room-part>
       <i className={cn(styles.monitorShadow, styles.notched)} />
       <i className={cn(styles.monitorFrame, styles.notched)} />
       <i className={cn(styles.monitorBezel, styles.notched)} />
@@ -62,7 +62,7 @@ function Belt({ room }: { room: RoomEntry }) {
   const arrived = room.stage === 'main';
   const load = room.track.missing ? { crates: 1, more: 0 } : cartLoad(room.track.ahead, arrived);
   return (
-    <div className={styles.belt}>
+    <div className={styles.belt} data-room-part>
       <div className={styles.track} data-arrived={arrived}>
         <div className={styles.rail}>
           <i
@@ -120,7 +120,7 @@ export function LargeRoom({ room, unit, copy, tint, guestTint, retiring }: {
   const guestInk = guest ? `var(--work-session-${guest.ink + 1})` : 'var(--work-unheld)';
   return (
     <div className={cn(styles.large, 'h-full w-full')} data-pair={pair || undefined} style={pair ? { ['--guest-ink' as string]: guestInk } : undefined}>
-      <div className={styles.scene} style={{ ['--u' as string]: unit }} data-lit={look.running} data-dark={retiring} data-cast={pair ? 'two' : look.cast} data-alarm={pair}>
+      <div data-scene className={styles.scene} style={{ ['--u' as string]: unit }} data-lit={look.running} data-dark={retiring} data-cast={pair ? 'two' : look.cast} data-alarm={pair}>
         <i className={styles.glow}><i className={styles.glowLight} /></i>
         <i className={styles.wainscot} />
         <i className={styles.floor} />
@@ -136,13 +136,13 @@ export function LargeRoom({ room, unit, copy, tint, guestTint, retiring }: {
         {pair && second ? (
           <>
             <i className={cn(styles.shadow, styles.actorBack)} />
-            <span className={cn(styles.actor, styles.actorBack)}><RoomMoru clip={look.backClip} still={look.still} zoom={unit} tint={tint} phase={(moruPhase(room.key) + 0.5) % 1} /></span>
-            <span className={cn(styles.tag, styles.tagBack, LABEL, 'font-[var(--font-weight-emphasis)]')}>
+            <span className={cn(styles.actor, styles.actorBack)}><RoomMoru clip={look.backClip} still={look.still} zoom="var(--u)" tint={tint} phase={(moruPhase(room.key) + 0.5) % 1} /></span>
+            <span data-room-tag className={cn(styles.tag, styles.tagBack, LABEL, 'font-[var(--font-weight-emphasis)]')}>
               <span className="truncate">{session ?? copy.toolName(tools[0])}</span>
             </span>
             <i className={cn(styles.shadow, styles.actorFront)} />
-            <span className={cn(styles.actor, styles.actorFront)}><RoomMoru clip={look.clip} still={look.still} zoom={unit} tint={guestTint} phase={moruPhase(room.key)} /></span>
-            <span className={cn(styles.tag, styles.tagFront, LABEL, 'font-[var(--font-weight-emphasis)]')} style={{ ['--ink' as string]: guestInk }}>
+            <span className={cn(styles.actor, styles.actorFront)}><RoomMoru clip={look.clip} still={look.still} zoom="var(--u)" tint={guestTint} phase={moruPhase(room.key)} /></span>
+            <span data-room-tag className={cn(styles.tag, styles.tagFront, LABEL, 'font-[var(--font-weight-emphasis)]')} style={{ ['--ink' as string]: guestInk }}>
               <span className="truncate">{copy.sessionName(guest) ?? copy.toolName(second)}</span>
             </span>
           </>
@@ -150,9 +150,9 @@ export function LargeRoom({ room, unit, copy, tint, guestTint, retiring }: {
           <>
             <i className={styles.shadow} />
             <span className={styles.actor}>
-              <RoomMoru key={`${look.clip}:${look.still}`} clip={look.clip} still={look.still} zoom={unit} tint={tint} phase={moruPhase(room.key)} dozing={look.dozing} />
+              <RoomMoru key={`${look.clip}:${look.still}`} clip={look.clip} still={look.still} zoom="var(--u)" tint={tint} phase={moruPhase(room.key)} dozing={look.dozing} />
             </span>
-            {session ? <span className={cn(styles.tag, LABEL, 'font-[var(--font-weight-emphasis)]')}>{session}</span> : null}
+            {session ? <span data-room-tag className={cn(styles.tag, LABEL, 'font-[var(--font-weight-emphasis)]')}>{session}</span> : null}
           </>
         ) : null}
         <i className={styles.dim} />

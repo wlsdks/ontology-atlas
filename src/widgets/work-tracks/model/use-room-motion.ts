@@ -1,12 +1,11 @@
 import { useLayoutEffect, useRef, type RefObject } from 'react';
 import { useLatestRef } from '@/shared/lib/use-latest-ref';
-import { EXIT_TRANSITION, MOTION, MOTION_EASE } from '@/shared/motion';
-import type { Box, RoomBox } from './building-layout';
-import { EXIT_MS, SHOW_MS, boxDuring, planSequence, waypointsOf, type RoomMove, type RoomSequence } from './room-sequence';
+import { MOTION, MOTION_EASE } from '@/shared/motion';
+import { WIDE_ROOM_W, type Box, type RoomBox } from './building-layout';
+import { FADE_MS, SHOW_MS, boxAt, planSequence, waypointsOf, type RoomMove, type RoomSequence } from './room-sequence';
 
 const ms = (seconds: number) => seconds * 1000;
 const EASE_CSS = `cubic-bezier(${MOTION_EASE.join(', ')})`;
-const EXIT_EASE_CSS = `cubic-bezier(${EXIT_TRANSITION.ease.join(', ')})`;
 const ENTER_RISE_PX = 16;
 /** A face that finished fading out tells its room, which then stops drawing it. */
 export const FACE_LEFT_EVENT = 'roomfaceleft';
@@ -24,33 +23,42 @@ const now = () => Number(document.timeline.currentTime ?? 0);
 /** Where a room of a playing sequence is drawn at this moment. */
 function drawnBox(playing: Playing, key: string): Box | null {
   const move = playing.sequence.moves.get(key);
-  if (!move) return null;
-  const { exitMs, moveMs } = playing.sequence;
-  const progress = moveMs === 0 ? 1 : Math.min(1, Math.max(0, (now() - playing.startedAt - exitMs) / moveMs));
-  return boxDuring(move, playing.sequence.waves, progress, playing.sequence.path);
+  return move ? boxAt(move, playing.sequence, now() - playing.startedAt) : null;
 }
 
 const facesOf = (element: HTMLElement) => [...element.querySelectorAll<HTMLElement>(':scope > [data-room-face]')];
 const isOld = (face: HTMLElement) => face.dataset.faceLeaving === 'true';
+const currentFace = (element: HTMLElement) => facesOf(element).find(face => !isOld(face));
+/** The parts of a stage room that fade while it travels resized: its monitor and its belt. */
+const partsOf = (element: HTMLElement) => [...(currentFace(element)?.querySelectorAll<HTMLElement>('[data-room-part]') ?? [])];
 const opacityOf = (element: HTMLElement) => Number(getComputedStyle(element).opacity);
 const dropOldFaces = (element: HTMLElement) => {
   for (const face of facesOf(element)) if (isOld(face)) face.dispatchEvent(new Event(FACE_LEFT_EVENT));
 };
 
+/** What one room shows as an update lands: where it is, its content, its fading parts and its scene's unit. */
+interface Drawn {
+  box: Box;
+  face: number;
+  parts: number;
+  unit: number;
+}
+
 /**
- * Plays each building update as one sequence (`planSequence`): what leaves fades, what changes size
- * or crosses another room fades its content to its own wall, every room that moves goes to its new
- * box by transform with its plate scaling from the old size, then content fades in. Only one copy of
- * a room is ever drawn: its old face stays only until its content has faded. An update that lands
- * mid-sequence starts the next from where each room is drawn and how much of its content shows. A
- * window resize places rooms at once; reduced motion moves nothing.
+ * Plays each building update as one sequence (`planSequence`). Each moving room, a little after the
+ * one before it, fades what must not show while it travels, goes to its new box and brings it back:
+ * a stage room that stays one keeps its Moru, tag, plaque and hue edge and fades only its monitor and
+ * belt while its box and scale glide; a room that changes tier travels as its wall with its hue edge
+ * and plaque. Only one copy of a room is ever drawn. Fades out are linear, so no frame cuts. An update
+ * that lands mid-sequence starts the next from what each room shows. A window resize places rooms at
+ * once; reduced motion moves nothing.
  */
 export function useRoomMotion(
   boardRef: RefObject<HTMLElement | null>,
   boxes: ReadonlyMap<string, RoomBox>,
   { reduced, sizeKey, onRemoved }: { reduced: boolean; sizeKey: string; onRemoved: (removed: Map<string, Box>) => void },
 ): void {
-  const placed = useRef(new Map<string, Box>());
+  const placed = useRef(new Map<string, RoomBox>());
   const lastSize = useRef<string | null>(null);
   const onRemovedRef = useLatestRef(onRemoved);
   const playing = useRef<Playing | null>(null);
@@ -67,16 +75,24 @@ export function useRoomMotion(
     lastSize.current = sizeKey;
 
     const previous = playing.current;
-    const drawn = new Map<string, Box>();
-    const shown = new Map<string, number>();
+    const drawn = new Map<string, Drawn>();
     for (const [key, box] of placed.current) {
-      drawn.set(key, (previous && drawnBox(previous, key)) ?? box);
       const element = elements.get(key);
-      const current = element && facesOf(element).find(face => !isOld(face));
-      if (current) shown.set(key, opacityOf(current));
+      const face = element && currentFace(element);
+      const scene = face?.querySelector<HTMLElement>('[data-scene]');
+      drawn.set(key, {
+        box: (previous && drawnBox(previous, key)) ?? box,
+        face: face ? opacityOf(face) : 1,
+        parts: element ? Math.min(1, ...partsOf(element).map(opacityOf)) : 1,
+        // React has already drawn the new unit, so only a glide still playing tells where the scale is now.
+        unit: scene && scene.getAnimations().some(glide => glide.playState === 'running')
+          ? Number(getComputedStyle(scene).getPropertyValue('--u')) || box.unit
+          : box.unit,
+      });
     }
+    const before = placed.current;
     const removed = new Map<string, Box>();
-    for (const [key, box] of drawn) if (!boxes.has(key)) removed.set(key, box);
+    for (const [key, { box }] of drawn) if (!boxes.has(key)) removed.set(key, box);
     const fading = [...removed.keys()].filter(key => !faded.current.has(key)).length;
     faded.current = new Set([...elements].filter(([, element]) => element.dataset.roomRetiring === 'true').map(([key]) => key));
     previous?.animations.forEach(animation => animation.cancel());
@@ -95,91 +111,182 @@ export function useRoomMotion(
     }
 
     const entering = [...boxes.keys()].filter(key => !drawn.has(key) && elements.has(key));
-    const sequence = planSequence({ from: drawn, to: boxes, leaving: fading, entering: entering.length });
-    const { exitMs, moveMs, showMs } = sequence;
-    const total = exitMs + moveMs + showMs;
-    const at = (time: number) => (total === 0 ? 0 : time / total);
+    const sequence = planSequence({
+      from: new Map([...drawn].map(([key, { box }]) => [key, box])),
+      to: boxes,
+      leaving: fading,
+      entering: entering.length,
+      keepsContent: key => {
+        const next = boxes.get(key);
+        const width = drawn.get(key)?.box.w ?? 0;
+        return before.get(key)?.size === 'large' && next?.size === 'large' && (width >= WIDE_ROOM_W) === (next.w >= WIDE_ROOM_W);
+      },
+    });
+    const { totalMs, enterAtMs } = sequence;
+    const at = (time: number) => (totalMs === 0 ? 0 : Math.min(1, time / totalMs));
     const animations: Animation[] = [];
 
     for (const [key, element] of elements) {
       const move = sequence.moves.get(key);
-      if (move) {
-        animations.push(...playMove(element, move, sequence, total, at));
-        if (!move.carried) animations.push(...playWall(element, shown.get(key) ?? 1, sequence, total, at));
+      const shows = drawn.get(key);
+      if (move && shows) {
+        const timing: MoveTiming = { sequence, total: totalMs, at, shows };
+        if (move.mode === 'resized') {
+          dropOldFaces(element);
+          animations.push(...playResized(element, move, timing, boxes.get(key)!.unit));
+        } else {
+          animations.push(...playMove(element, move, timing));
+          if (move.mode === 'wall') animations.push(...playWall(element, move, timing));
+          else dropOldFaces(element);
+        }
         continue;
       }
       dropOldFaces(element);
       const to = boxes.get(key);
-      const partly = shown.get(key) ?? 1;
-      if (drawn.has(key) && partly < 0.99) {
-        // Interrupted while its content was faded: it comes back from where it was, not at once.
-        const current = facesOf(element).find(face => !isOld(face));
-        if (current) animations.push(current.animate([{ opacity: partly }, { opacity: 1 }], { duration: SHOW_MS, easing: EASE_CSS }));
+      if (shows && (shows.face < 0.99 || shows.parts < 0.99)) {
+        // Interrupted while some of it was faded: it comes back from where it was, not at once.
+        const face = currentFace(element);
+        if (face) animations.push(face.animate([{ opacity: shows.face }, { opacity: 1 }], { duration: SHOW_MS, easing: EASE_CSS }));
+        for (const part of partsOf(element)) animations.push(part.animate([{ opacity: shows.parts }, { opacity: 1 }], { duration: SHOW_MS, easing: EASE_CSS }));
       }
-      if (!to || drawn.has(key) || total === 0) continue;
+      if (!to || shows || totalMs === 0) continue;
       animations.push(element.animate(
         [
           { opacity: 0, transform: translate(to, ENTER_RISE_PX), offset: 0 },
-          { opacity: 0, transform: translate(to, ENTER_RISE_PX), offset: at(exitMs + moveMs), easing: EASE_CSS },
+          { opacity: 0, transform: translate(to, ENTER_RISE_PX), offset: at(enterAtMs), easing: EASE_CSS },
           { opacity: 1, transform: translate(to), offset: 1 },
         ],
-        { duration: total },
+        { duration: totalMs },
       ));
     }
     if (animations.length > 0) playing.current = { sequence, startedAt: now(), animations };
   }, [boardRef, boxes, reduced, sizeKey, onRemovedRef]);
 }
 
-/**
- * A room going to its new box: it holds while the exit step plays, passes its waypoints during the
- * move step and, when its size changes, its plate scales with it, anchored at its corner. An
- * arriving room is drawn over the one whose box it takes.
- */
-function playMove(element: HTMLElement, move: RoomMove, sequence: RoomSequence, total: number, at: (time: number) => number): Animation[] {
-  // Earlier waves are drawn over later ones: a room arriving in a box covers the one about to leave it.
-  const layer = 5 - move.wave;
+interface MoveTiming {
+  sequence: RoomSequence;
+  total: number;
+  at: (time: number) => number;
+  shows: Drawn;
+}
+
+/** When a room's own fade and return begin and end, as offsets of the whole sequence; the move between is shared. */
+function stepsOf(move: RoomMove, { sequence, at }: MoveTiming) {
+  const returns = sequence.moveAtMs + sequence.moveMs + move.offsetMs;
+  return {
+    start: at(move.offsetMs),
+    faded: at(move.offsetMs + sequence.exitMs),
+    returns: at(returns),
+    shown: at(returns + sequence.showMs),
+  };
+}
+
+/** Keyframes along a room's path: held until its move step, through its waypoints, held after. */
+function pathFrames(move: RoomMove, { sequence, at }: MoveTiming, frame: (box: Box) => Keyframe): Keyframe[] {
+  const begin = sequence.moveAtMs;
   const points = waypointsOf(move, sequence.waves, sequence.path);
-  const offsets = [0, ...points.map(point => at(sequence.exitMs + point.at * sequence.moveMs)), 1];
-  const boxes = [move.from, ...points.map(point => point.box), move.to];
-  const frames = (frame: (box: Box) => Keyframe): Keyframe[] => boxes.map((box, index) => ({ ...frame(box), offset: offsets[index], easing: EASE_CSS }));
-  const played = [element.animate(frames(box => ({ transform: translate(box), zIndex: layer })), { duration: total })];
-  const plate = element.querySelector<HTMLElement>(':scope > [data-room-plate]');
-  const { w, h } = move.to;
-  if (plate && w > 0 && h > 0 && (move.from.w !== w || move.from.h !== h)) {
-    played.push(plate.animate(frames(box => ({ transform: `scale(${box.w / w}, ${box.h / h})` })), { duration: total }));
+  return [
+    { ...frame(move.from), offset: 0, easing: 'linear' },
+    ...points.map(point => ({ ...frame(point.box), offset: at(begin + point.at * sequence.moveMs), easing: EASE_CSS })),
+    { ...frame(move.to), offset: 1 },
+  ];
+}
+
+/** An opacity that fades out linearly in a room's fade step, waits while it travels and returns after. */
+function fadeFrames(from: number, steps: ReturnType<typeof stepsOf>): Keyframe[] {
+  return [
+    { opacity: from, offset: 0, easing: 'linear' },
+    { opacity: from, offset: steps.start, easing: 'linear' },
+    { opacity: 0, offset: steps.faded },
+    { opacity: 0, offset: steps.returns, easing: EASE_CSS },
+    { opacity: 1, offset: steps.shown },
+    { opacity: 1, offset: 1 },
+  ];
+}
+
+/** Earlier waves are drawn over later ones: a room arriving in a box covers the one about to leave it. */
+const layerOf = (move: RoomMove) => 5 - move.wave;
+
+/**
+ * A stage room that stays one: its box itself grows or shrinks along its path, so its Moru, name tag,
+ * plaque and hue edge lay out at every frame, and its scale glides to the new unit with it. Only its
+ * monitor and belt fade while it travels.
+ */
+function playResized(element: HTMLElement, move: RoomMove, timing: MoveTiming, unit: number): Animation[] {
+  const steps = stepsOf(move, timing);
+  const played = [element.animate(pathFrames(move, timing, box => ({ transform: translate(box), width: `${box.w}px`, height: `${box.h}px`, zIndex: layerOf(move) })), { duration: timing.total })];
+  for (const part of partsOf(element)) played.push(part.animate(fadeFrames(timing.shows.parts, steps), { duration: timing.total }));
+  const scene = currentFace(element)?.querySelector<HTMLElement>('[data-scene]');
+  const from = timing.shows.unit;
+  if (scene && from !== unit) {
+    played.push(scene.animate([
+      { ['--u' as string]: from, offset: 0 },
+      { ['--u' as string]: from, offset: timing.at(timing.sequence.moveAtMs), easing: EASE_CSS },
+      { ['--u' as string]: unit, offset: timing.at(timing.sequence.moveAtMs + timing.sequence.moveMs) },
+      { ['--u' as string]: unit, offset: 1 },
+    ], { duration: timing.total }));
   }
   return played;
 }
 
-/** A room that moves as its own wall: its content fades out where it stood, and in once it has arrived. */
-function playWall(element: HTMLElement, shown: number, sequence: RoomSequence, total: number, at: (time: number) => number): Animation[] {
-  const faces = facesOf(element);
-  const hasOld = faces.some(isOld);
-  const hiddenAt = at(sequence.exitMs);
-  const showFrom = at(sequence.exitMs + sequence.moveMs);
-  return faces.map(face => {
-    if (isOld(face)) {
-      const fade = face.animate([{ opacity: shown }, { opacity: 0 }], { duration: Math.max(1, sequence.exitMs), easing: EASE_CSS, fill: 'forwards' });
-      fade.addEventListener('finish', () => face.dispatchEvent(new Event(FACE_LEFT_EVENT)));
-      return fade;
-    }
-    return face.animate(
-      [
-        { opacity: hasOld ? 0 : shown, offset: 0, easing: EASE_CSS },
-        { opacity: 0, offset: hiddenAt },
-        { opacity: 0, offset: showFrom, easing: EASE_CSS },
-        { opacity: 1, offset: 1 },
-      ],
-      { duration: total },
-    );
-  });
+/**
+ * A room going to its new box by transform: it holds while its fade step plays and passes its
+ * waypoints in its move step; when its size changes, its plate scales with it from its corner.
+ */
+function playMove(element: HTMLElement, move: RoomMove, timing: MoveTiming): Animation[] {
+  const played = [element.animate(pathFrames(move, timing, box => ({ transform: translate(box), zIndex: layerOf(move) })), { duration: timing.total })];
+  const plate = element.querySelector<HTMLElement>(':scope > [data-room-plate]');
+  const { w, h } = move.to;
+  if (plate && w > 0 && h > 0 && (move.from.w !== w || move.from.h !== h)) {
+    played.push(plate.animate(pathFrames(move, timing, box => ({ transform: `scale(${box.w / w}, ${box.h / h})` })), { duration: timing.total }));
+  }
+  return played;
 }
 
-/** A room that left the building without a merge to play: it fades where it stood during the exit step. */
+/**
+ * A room that travels as its wall: its content fades linearly where it stood, its branch plaque and
+ * the plate's hue edge stay with it, and its new content fades in once it has arrived.
+ */
+function playWall(element: HTMLElement, move: RoomMove, timing: MoveTiming): Animation[] {
+  const steps = stepsOf(move, timing);
+  const faces = facesOf(element);
+  const hasOld = faces.some(isOld);
+  const played: Animation[] = [];
+  for (const face of faces) {
+    if (isOld(face)) {
+      const fade = face.animate([
+        { opacity: timing.shows.face, offset: 0, easing: 'linear' },
+        { opacity: timing.shows.face, offset: steps.start, easing: 'linear' },
+        { opacity: 0, offset: steps.faded },
+        { opacity: 0, offset: 1 },
+      ], { duration: timing.total, fill: 'forwards' });
+      // The old face goes once it has faded, before the room moves.
+      const leave = window.setTimeout(() => face.dispatchEvent(new Event(FACE_LEFT_EVENT)), steps.faded * timing.total + 16);
+      fade.addEventListener('cancel', () => window.clearTimeout(leave));
+      played.push(fade);
+      continue;
+    }
+    played.push(face.animate(fadeFrames(hasOld ? 0 : timing.shows.face, steps), { duration: timing.total }));
+  }
+  const plaque = element.querySelector<HTMLElement>(':scope > [data-room-plaque]');
+  if (plaque) {
+    played.push(plaque.animate([
+      { opacity: 0, offset: 0, easing: 'linear' },
+      { opacity: 0, offset: steps.start, easing: 'linear' },
+      { opacity: 1, offset: steps.faded },
+      { opacity: 1, offset: steps.returns, easing: 'linear' },
+      { opacity: 0, offset: Math.min(1, steps.returns + (steps.faded - steps.start)) },
+      { opacity: 0, offset: 1 },
+    ], { duration: timing.total }));
+  }
+  return played;
+}
+
+/** A room that left the building without a merge to play: it fades linearly where it stood. */
 export function exitRoom(element: HTMLElement, from: Box, reduced: boolean, onDone: () => void) {
   const keyframes = reduced
     ? [{ opacity: 1 }, { opacity: 0 }]
     : [{ opacity: 1, transform: translate(from) }, { opacity: 0, transform: `${translate(from, ENTER_RISE_PX / 2)} scale(0.97)` }];
-  const timing = reduced ? { duration: ms(MOTION.fast.duration), easing: 'linear' } : { duration: EXIT_MS, easing: EXIT_EASE_CSS };
+  const timing = { duration: reduced ? ms(MOTION.fast.duration) : FADE_MS, easing: 'linear' };
   element.animate(keyframes, { ...timing, fill: 'forwards' }).addEventListener('finish', onDone);
 }

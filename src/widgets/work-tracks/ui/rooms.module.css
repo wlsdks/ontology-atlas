@@ -65,6 +65,16 @@
   background: color-mix(in srgb, var(--ink) 6%, var(--work-room-wall));
 }
 
+/* The wall keeps its session's hue along its top while it travels without its content. */
+.plate::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 3px;
+  background: var(--ink);
+}
+
 .face {
   position: absolute;
   left: 0;
@@ -79,6 +89,20 @@
   position: relative;
   display: flex;
   flex-direction: column;
+}
+
+/* The unit eases between scales while a stage room travels to a new size. */
+@property --u {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 1;
+}
+
+/* The plaque a travelling wall carries: the stage sign, shown only while the room's content is away. */
+.sign.plaque {
+  z-index: 3;
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* A stage room's top edge in its session's hue, the same bar its floor and mini rooms stand on. */

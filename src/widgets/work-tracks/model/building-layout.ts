@@ -62,7 +62,8 @@ const INLINE_SHELF_ROOMS = 4;
 const FLOOR_LABEL_W = 196;
 const LARGE_MIN_W = 260;
 /** From this width a room hangs its monitor beside Moru. */
-const WIDE_ROOM_W = 520;
+/** From this width a stage room hangs its monitor at the right; narrower, above Moru. */
+export const WIDE_ROOM_W = 520;
 const LARGE_MIN_H = 300;
 const ONE_ROW_CAP_H = 500;
 const TWO_ROW_CAP_H = 416;
