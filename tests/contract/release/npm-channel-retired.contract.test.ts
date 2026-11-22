@@ -63,6 +63,8 @@ const TIER_A_GLOBS = [
   "cli/templates/vault-ko/README.md",
   // The web starter, which must stay byte-identical to the CLI template (starter-templates.contract).
   "src/entities/vault-session/lib/ontology-starter.ts",
+  // The MCP launch builders the app writes into `.mcp.json` and `.codex/config.toml`.
+  "src/entities/vault-session/lib/agent-mcp-config.ts",
 ];
 
 /** Tier B — may say "that is dead" in prose, but must not put it in a code block. */
