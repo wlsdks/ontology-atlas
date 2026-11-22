@@ -2,9 +2,11 @@ const MINUTE_S = 60;
 const HOUR_S = 60 * MINUTE_S;
 const DAY_S = 24 * HOUR_S;
 
-/** A clock time in the reader's own zone, for when a session started or a worktree was locked. */
-export function clockTime(epochMs: number, locale: string): string {
-  return new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit' }).format(epochMs);
+/** A clock time in the reader's own zone, with the date when it is not today, for when a session started or a worktree was locked. */
+export function clockTime(epochMs: number, nowMs: number, locale: string): string {
+  const today = new Date(epochMs).toDateString() === new Date(nowMs).toDateString();
+  const date: Intl.DateTimeFormatOptions = today ? {} : { month: 'short', day: 'numeric' };
+  return new Intl.DateTimeFormat(locale, { ...date, hour: '2-digit', minute: '2-digit' }).format(epochMs);
 }
 
 /** `3 hours ago`: the largest whole unit, so a glance reads the age without arithmetic. */

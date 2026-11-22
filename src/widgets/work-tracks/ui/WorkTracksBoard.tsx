@@ -65,14 +65,14 @@ function GroupLabel({ id, children, tone }: { id: string; children: string; tone
   );
 }
 
-function SessionHeader({ session, order }: { session: TrackSession; order: number }) {
+function SessionHeader({ session, order, nowMs }: { session: TrackSession; order: number; nowMs: number }) {
   const t = useTranslations('workStatus');
   const locale = useLocale();
   const tool = t(session.tool === 'acp' ? 'tool.acp' : session.tool === 'claudeCode' ? 'tool.claudeCode' : 'tool.unknown');
   // The tool's name wears the session's ink wherever the locale puts it in the sentence.
   const [headerBefore = '', headerAfter = ''] = t('session.header', { tool: TOOL_SLOT, number: session.ordinal }).split(TOOL_SLOT);
   const facts = [
-    session.startedAt ? t('session.started', { time: clockTime(session.startedAt * 1000, locale) }) : null,
+    session.startedAt ? t('session.started', { time: clockTime(session.startedAt * 1000, nowMs, locale) }) : null,
     t('session.subagents', { count: session.tracks.length }),
   ].filter(Boolean).join(' · ');
   return (
@@ -213,7 +213,7 @@ export function WorkTracksBoard({ tracks, folder, host, baseBranch, nowMs, readi
 
         {tracks.sessions.map((session, index) => (
           <div key={session.key} className="relative" style={{ ['--work-held-ink' as string]: sessionInk(session) }}>
-            <SessionHeader session={session} order={order.get(session.tracks[0]?.key ?? '') ?? index} />
+            <SessionHeader session={session} order={order.get(session.tracks[0]?.key ?? '') ?? index} nowMs={nowMs} />
             <span
               aria-hidden
               data-flip={`trunk:${session.key}`}
