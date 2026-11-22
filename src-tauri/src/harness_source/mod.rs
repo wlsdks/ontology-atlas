@@ -33,7 +33,10 @@ pub(crate) struct HarnessSourceText {
 }
 
 /// The repository a vault's project binding names, after every check a harness read relies on.
-pub(crate) fn authorized_source_root(vault_path: &str, project_slug: &str) -> Result<PathBuf, String> {
+pub(crate) fn authorized_source_root(
+    vault_path: &str,
+    project_slug: &str,
+) -> Result<PathBuf, String> {
     let vault = crate::canonical_root(vault_path)?;
     if project_slug.is_empty()
         || project_slug.len() > PROJECT_SLUG_MAX_BYTES
