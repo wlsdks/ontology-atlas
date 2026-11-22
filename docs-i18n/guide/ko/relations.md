@@ -70,16 +70,7 @@ MCP 서버는 같은 frontmatter를 읽어 그래프에 관한 질문에 답해�
 
 관계를 적을 때는 `add_relation`이 `from`, `to`, `type`(`depends_on`, `relates`, `contains`, `describes`, `domains`, `capabilities`, `elements`, `domain` 중 하나), `why`를 받아요. `remove_relation`과 `replace_relation`은 기본으로 미리 보기만 하고, `confirm: true`일 때만 써요. `broader`는 아직 `add_relation`의 유형이 아니에요. `broader`를 바꿀 때 에이전트는 `patch_concept`에 새 목록 전체와 파일의 `mtime`을 넘기고, 그다음 `validate_vault`를 실행해요.
 
-[CLI](/guide/cli)로도 터미널에서 같은 질문을 할 수 있어요. 아래 명령을 Atlas 소스 체크아웃에서 실행하면 Ontology Atlas 저장소 자체의 온톨로지를 읽어요.
-
-```bash
-node cli/src/index.mjs backlinks capabilities/mcp-tool-server --vault docs/ontology
-node cli/src/index.mjs path capabilities/cli-commands domains/human-workbench --vault docs/ontology
-node cli/src/index.mjs blast-radius capabilities/mcp-tool-server --direction incoming --vault docs/ontology
-node cli/src/index.mjs domain-matrix docs/ontology --types depends_on
-```
-
-`relate`와 `remove-relation`은 MCP 도구와 같은 점검을 거쳐 관계 하나를 더하거나 지워요. 지도에서는 **관계 편집**으로 관계를 하나씩 같은 방식으로 다뤄요. [개념과 관계 편집하기](/guide/studio)를 보세요.
+지도에서는 **관계 편집**으로 MCP 도구와 같은 점검을 거쳐 관계를 하나씩 더하거나 지워요. [개념과 관계 편집하기](/guide/studio)를 보세요.
 
 ## 기준은 여전히 파일이에요
 

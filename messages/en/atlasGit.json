@@ -95,7 +95,6 @@
   "remoteToggleClose": "Close",
   "stepSelectHint": "Press to see this commit's exact values",
   "webCopyFailed": "Copy failed: the clipboard was blocked",
-  "cliPlaceholderHint": "Set this once in your terminal: export ATLAS=\"path to your ontology-atlas source folder\". There is no npm package.",
   "remoteFetch": "Fetch",
   "remotePull": "Pull · entire repository",
   "remotePush": "Push",

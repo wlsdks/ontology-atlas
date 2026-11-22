@@ -78,7 +78,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ CLI\/MCP setup gate executes fallbacks while keeping advisory readiness in JSON/,
+    /✓ MCP verify gate runs the server's own verifier over the dogfood vault/,
   );
   assert.match(result.stdout, /✓ desktop runtime doctor is available/);
   assert.match(result.stdout, /✓ desktop packaged-route smoke is available/);
@@ -302,11 +302,11 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop ontology starter copies path-aware CLI and JSON agent gates/,
+    /✓ desktop ontology starter passes the selected Tauri vault path to the agent verification prompt/,
   );
   assert.match(
     result.stdout,
-    /✓ desktop agent setup panel copies path-aware setup packets, CLI runbooks, and JSON gates/,
+    /✓ desktop agent setup panel copies path-aware setup and first-contact packets and the verification prompt/,
   );
   assert.match(
     result.stdout,

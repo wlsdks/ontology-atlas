@@ -15,8 +15,6 @@ import { AGENT_CLIENTS, type AgentClientId } from '@/entities/vault-session';
 import {
   ATLAS_CLONE_COMMAND,
   manualConnectConfig,
-  manualSetupCommand,
-  manualVerifyCommand,
   normalizeManualPath,
   type ManualPathIssue,
 } from '../lib/manual-connect';
@@ -91,50 +89,6 @@ function PathField({
 const COPY_CHIP_SKIN =
   'font-[var(--font-weight-signature)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]';
 
-function CommandRow({
-  label,
-  value,
-  ready,
-  testId,
-}: {
-  label: string;
-  value: string;
-  ready: boolean;
-  testId: string;
-}) {
-  const t = useTranslations('agentConnect');
-  const { state, copy } = useCopyFeedback();
-  return (
-    <div className="flex flex-col gap-1">
-      <p className="text-body text-[color:var(--color-text-quaternary)]">{label}</p>
-      <pre
-        data-testid={`${testId}-body`}
-        className="whitespace-pre-wrap break-all rounded-micro border border-[color:var(--color-divider)] bg-[color:var(--color-canvas)] px-2 py-1.5 font-mono text-label leading-label text-[color:var(--color-text-secondary)]"
-      >
-        {value.trimEnd()}
-      </pre>
-      <button
-        type="button"
-        disabled={!ready}
-        data-testid={testId}
-        onClick={() => void copy(value)}
-        className={controlClass({
-          shape: 'chip',
-          tone: 'secondary',
-          className: `w-fit ${COPY_CHIP_SKIN}`,
-        })}
-      >
-        {state === 'copied' ? (
-          <Check size={ICON_SIZE.sm} aria-hidden className="text-[color:var(--color-status-success)]" />
-        ) : (
-          <Copy size={ICON_SIZE.sm} aria-hidden />
-        )}
-        {state === 'copied' ? t('copied') : state === 'failed' ? t('copyFailed') : t('copy')}
-      </button>
-    </div>
-  );
-}
-
 export function WebManualConnectPanel({
   testIdPrefix = 'web-manual-connect',
 }: WebManualConnectPanelProps) {
@@ -151,7 +105,7 @@ export function WebManualConnectPanel({
   const ready = vault.ok && checkout.ok && pathConfirmed;
 
   // An unfilled field is drawn as a real config with a placeholder. Not `<…>`: next-intl parses
-  // angle brackets as rich-text tags and the text disappears (`shared/config/agent/cli-invocation.ts`).
+  // angle brackets as rich-text tags and the text disappears.
   const input = {
     vaultAbsolute: vault.ok ? vault.value : t('manualVaultPlaceholderPath'),
     checkoutAbsolute: checkout.ok ? checkout.value : t('manualCheckoutPlaceholderPath'),
@@ -299,21 +253,6 @@ export function WebManualConnectPanel({
             {ready ? t('manualRestartNote') : t('manualNotReadyNote')}
           </p>
         </div>
-      </div>
-
-      <div className="flex flex-col gap-2 border-t border-[color:var(--color-border-soft)] pt-3">
-        <CommandRow
-          label={t('manualCliLabel')}
-          value={manualSetupCommand(input)}
-          ready={ready}
-          testId={`${testIdPrefix}-copy-cli`}
-        />
-        <CommandRow
-          label={t('manualVerifyLabel')}
-          value={manualVerifyCommand(input)}
-          ready={ready}
-          testId={`${testIdPrefix}-copy-verify`}
-        />
       </div>
     </div>
   );

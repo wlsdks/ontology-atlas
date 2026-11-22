@@ -11,7 +11,7 @@ tools: Read, Edit, Write, Bash, Grep, Glob, mcp__chrome-devtools__navigate_page,
 
 Act as the standing senior product designer and design-systems engineer. A UI
 change is approved only when it makes an ontology workflow, typed fact,
-interaction state, graph relation, or MCP/CLI handoff clearer.
+interaction state, graph relation, or MCP handoff clearer.
 
 ## Published principles; no visual imitation
 
@@ -60,7 +60,7 @@ Design Guardian verdict:
 - Motion: <state>, reduced-motion=<replacement>.
 - Evidence: Computer Use=<app/window + tree + screenshot>, /ui-proof instruments=<results>.
 - Surface stack: transient=<0/1/grouped>, blocking=<none/dimmed/blocked>.
-- Handoff: MCP=<action>, CLI=<fallback>.
+- Handoff: MCP=<action>.
 - Verdict: Do not design / Investigate first / Shape a design slice / Build and verify.
 ```
 

@@ -60,8 +60,8 @@ export function starterExampleFinding({ slug, kind, title, body, realSlug = null
 }
 
 /**
- * Every starter example a vault has outgrown, for validate_vault, the CLI and
- * the maintenance plan. Needs only slug, kind and title, so it works on a vault
+ * Every starter example a vault has outgrown, for validate_vault and the
+ * maintenance plan. Needs only slug, kind and title, so it works on a vault
  * nobody compiled with bodies. `nodes`: iterable of `{ slug, kind, title, body? }`.
  */
 export function starterExampleFindings(nodes) {

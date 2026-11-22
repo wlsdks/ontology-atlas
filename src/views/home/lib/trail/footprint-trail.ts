@@ -1,4 +1,4 @@
-import { ATLAS_CLI } from "@/shared/config/agent/cli-invocation";
+import { formatQueryOntologyCall } from "@/shared/lib/ontology-graph/ontology-query-call";
 
 export const FOOTPRINT_TRAIL_MAX = 30;
 
@@ -157,7 +157,7 @@ export function formatFootprintTrailAgentPacket(
     for (const slug of dustySlugs.slice(0, 3)) {
       lines.push(`get_concept("${graphIdToConceptSlug(slug)}")`);
     }
-    lines.push(`${ATLAS_CLI} maintenance`);
+    lines.push(formatQueryOntologyCall({ operation: "maintenance_plan" }));
   }
   return lines.join("\n");
 }

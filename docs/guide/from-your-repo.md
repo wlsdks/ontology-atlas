@@ -52,27 +52,6 @@ saved, the model, its address and how many eligible files it found. **Run** send
 code excerpts only to that local address. The result is a list of proposed
 document changes. Select the ones you want and apply them.
 
-## Start from a terminal
-
-With a source checkout of Atlas (see [the CLI](/guide/cli)), run this in your
-own repository:
-
-```bash
-cd /path/to/your/repo
-node ~/tools/ontology-atlas/cli/src/index.mjs init ./atlas
-node ~/tools/ontology-atlas/cli/src/index.mjs bootstrap . --vault ./atlas
-```
-
-`init` creates the `atlas` folder with five starter files. It also writes the
-agent configs `.mcp.json` and `.codex/config.toml`, and three starter skills
-for Claude Code and Codex: `atlas-review`, `atlas-grow` and `atlas-absorb`. The
-starter files show the shape of a concept. They are not an analysis of your
-product.
-
-`bootstrap` scans the repository and prints a review plan. It writes nothing
-and exits with code 3 to say that approval is still needed. Restart your agent
-in the repository and continue there.
-
 ## What to ask the agent
 
 Keep the first map small. Pick one behavior you want to understand and ask
@@ -106,7 +85,7 @@ time. Check each concept and relation:
 - **The name says what it does.** A folder or library name alone tells a
   teammate too little.
 - **The body has all its parts.** A definition sentence, `## Includes`,
-  `## Excludes` and `## Uncertainty`. `validate` warns when one is missing.
+  `## Excludes` and `## Uncertainty`. `validate_vault` warns when one is missing.
 - **The evidence points at a file.** A capability or element has a `path` to
   the code. A path that exists does not prove the explanation, so open it.
 - **The relation holds.** Ask whether the capability would still work without
@@ -120,23 +99,13 @@ is accepted: read the diff before you commit.
 
 ## Reuse CLAUDE.md and AGENTS.md
 
-Your agent instruction files often describe the codebase already. `absorb`
-turns them into concepts:
-
-```bash
-node ~/tools/ontology-atlas/cli/src/index.mjs absorb CLAUDE.md AGENTS.md --vault ./atlas
-```
-
-By default it only prints a plan. With `--write`, it saves policy and rule
-sections as `document` concepts and backs up the original file as
-`.pre-absorb.bak`. It then rewrites the original as a short pointer file that
-keeps the sections it did not absorb. Architecture sections
-are only proposed, never written automatically. Agents can do the same through
-the MCP tool `absorb_document`.
-
-`init` also prints a short paragraph for you to paste into your own
-`CLAUDE.md` or `AGENTS.md`. It tells future agent sessions that the ontology
-exists and when to read it. Atlas does not edit those files for you.
+Your agent instruction files often describe the codebase already. Ask the
+agent to run the MCP tool `absorb_document` on one of them. By default it only
+returns a plan. With `confirm: true`, it saves policy and rule sections as
+`document` concepts and backs up the original file as `.pre-absorb.bak`. It
+then rewrites the original as a short pointer file that keeps the sections it
+did not absorb. Architecture sections are only proposed, never written
+automatically.
 
 If the folder already holds Markdown documents that are not on the map, the
 **Getting started** card adds a step, **Build the map from my documents**.

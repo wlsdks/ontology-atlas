@@ -8,9 +8,7 @@ import { uncertaintySectionLines } from './meaning-findings.mjs';
 /**
  * Kinds in working order: a named range (a bounded remainder) first, then a
  * whole unread file, an unopened area, something never run, a claim taken on
- * someone's word, and `other` so unrecognised wording counts. The CLI ships
- * without this package, so `cli/src/lib/query-result-contract/maintenance-growth.mjs`
- * keeps its own copy: a contract on the response, not an import.
+ * someone's word, and `other` so unrecognised wording counts.
  */
 const UNCERTAINTY_READ_KINDS = Object.freeze([
   'unread-range',

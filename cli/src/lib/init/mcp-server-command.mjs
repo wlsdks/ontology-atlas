@@ -1,10 +1,8 @@
 import { existsSync, statSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
-import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 
 const PKG_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
-const require_ = createRequire(import.meta.url);
 
 export function resolveMcpServerCommand() {
   const envPath = process.env.OATLAS_MCP_PATH;
@@ -18,16 +16,9 @@ export function resolveMcpServerCommand() {
     return { command: 'node', args: [envPath] };
   }
 
-  try {
-    return {
-      command: 'node',
-      args: [require_.resolve('ontology-atlas-mcp/src/index.js')],
-    };
-  } catch {
-    const monoDev = resolve(PKG_ROOT, '..', 'mcp', 'src', 'index.js');
-    if (existsSync(monoDev)) {
-      return { command: 'node', args: [monoDev] };
-    }
+  const checkoutServer = resolve(PKG_ROOT, '..', 'mcp', 'src', 'index.js');
+  if (existsSync(checkoutServer)) {
+    return { command: 'node', args: [checkoutServer] };
   }
 
   // Look for the binary bundled in the installed app; an `npx` fallback would write a command that

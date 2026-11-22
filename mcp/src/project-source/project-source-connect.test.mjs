@@ -385,7 +385,6 @@ describe('remedy', () => {
       } else {
         assert.equal(remedy.resolvable, true, id);
         assert.ok(remedy.tool?.name, id);
-        assert.ok(remedy.cli?.command, id);
       }
     }
   });

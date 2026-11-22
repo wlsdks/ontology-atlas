@@ -95,7 +95,6 @@
   "remoteToggleClose": "关闭",
   "stepSelectHint": "点击查看此提交的具体内容",
   "webCopyFailed": "复制失败：剪贴板被拦截",
-  "cliPlaceholderHint": "请在终端中先设置一次：export ATLAS=\"你的 ontology-atlas 源码文件夹路径\"。没有 npm 包。",
   "remoteFetch": "获取",
   "remotePull": "拉取 · 整个仓库",
   "remotePush": "推送",

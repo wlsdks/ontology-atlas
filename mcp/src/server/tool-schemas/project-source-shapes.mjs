@@ -142,22 +142,12 @@ const PROJECT_SOURCE_TOOL_CALL_SCHEMA = Object.freeze({
   required: ['name', 'arguments'],
   additionalProperties: false,
 });
-const PROJECT_SOURCE_CLI_CALL_SCHEMA = Object.freeze({
-  type: 'object',
-  properties: {
-    command: NON_BLANK_STRING_SCHEMA,
-    args: { type: 'array', items: NON_BLANK_STRING_SCHEMA },
-  },
-  required: ['command', 'args'],
-  additionalProperties: false,
-});
 const PROJECT_SOURCE_UNDO_SCHEMA = Object.freeze({
   type: ['object', 'null'],
   properties: {
     tool: PROJECT_SOURCE_TOOL_CALL_SCHEMA,
-    cli: PROJECT_SOURCE_CLI_CALL_SCHEMA,
   },
-  required: ['tool', 'cli'],
+  required: ['tool'],
   additionalProperties: false,
 });
 const PROJECT_SOURCE_REMEDY_SCHEMA = Object.freeze({
@@ -171,12 +161,11 @@ const PROJECT_SOURCE_REMEDY_SCHEMA = Object.freeze({
     requiresConfirm: { type: 'boolean' },
     inferRoot: { type: 'boolean' },
     tool: { anyOf: [PROJECT_SOURCE_TOOL_CALL_SCHEMA, { type: 'null' }] },
-    cli: { anyOf: [PROJECT_SOURCE_CLI_CALL_SCHEMA, { type: 'null' }] },
     undo: PROJECT_SOURCE_UNDO_SCHEMA,
   },
   required: [
     'contract', 'actionId', 'resolvable', 'automatable', 'requiresHuman',
-    'requiresConfirm', 'inferRoot', 'tool', 'cli', 'undo',
+    'requiresConfirm', 'inferRoot', 'tool', 'undo',
   ],
   additionalProperties: false,
 });

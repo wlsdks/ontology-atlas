@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync 
 import { dirname, join } from 'node:path';
 import test from 'node:test';
 
-import { analyzeDeadCode, cliRuntimeEntries, matchedEntries } from './analyze.mjs';
+import { analyzeDeadCode, matchedEntries } from './analyze.mjs';
 import { evaluateDeadCode, runDeadCodeCheck, writeBaselineAtomically } from './check.mjs';
 import { collectReport, stableIssueKey } from './knip-reporter.mjs';
 import { parseArguments } from './scope-configs.mjs';
@@ -18,9 +18,8 @@ test('parses scopes and refuses a scoped baseline update', () => {
   assert.throws(() => parseArguments(['--scope', 'cli', '--update-baseline']), /requires --scope all/);
 });
 
-test('CLI entries use registry modules plus bin and leave an orphan command detectable in project', async () => {
-  assert.deepEqual(await cliRuntimeEntries(process.cwd(), { alpha: 'a.mjs', beta: 'b.mjs' }), ['src/commands/a.mjs', 'src/commands/b.mjs', 'src/index.mjs']);
-  assert.deepEqual(matchedEntries(process.cwd(), 'cli', ['src/index.mjs'], ['cli/src/index.mjs', 'cli/src/commands/orphan.mjs']), ['src/index.mjs']);
+test('a package entry leaves an orphan module detectable in project', () => {
+  assert.deepEqual(matchedEntries(process.cwd(), 'cli', ['src/main.mjs'], ['cli/src/main.mjs', 'cli/src/lib/orphan.mjs']), ['src/main.mjs']);
 });
 
 test('reporter preserves parent identity, counters, and a stable config path', () => {

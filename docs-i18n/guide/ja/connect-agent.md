@@ -43,15 +43,7 @@ cd ~/tools/ontology-atlas && pnpm install
 pnpm --dir mcp install --frozen-lockfile
 ```
 
-次に、自分のリポジトリのルートで、既存のオントロジーフォルダ用の設定を書き込みます。
-
-```bash
-node ~/tools/ontology-atlas/cli/src/index.mjs agent-setup ./atlas --write
-```
-
-`agent-setup`は、Claude Code用の`.mcp.json`とCodex用の`.codex/config.toml`を作成または修復します。変更するのは`ontology-atlas`のエントリだけで、ほかのMCPサーバはそのまま残します。解析できないファイルには手を付けず、手でマージするためのテンプレートを出力します。
-
-stdioでMCPを扱えるほかのクライアントでも、同じ3つのフィールドでサーバを登録できます。
+次に、エージェントにサーバを登録します。Claude Codeは自分のリポジトリのルートにある`.mcp.json`から読み込み、stdioでMCPを扱えるほかのクライアントでも、同じ3つのフィールドでサーバを登録できます。
 
 ```json
 {
@@ -83,13 +75,7 @@ Codexがプロジェクトの`.codex/config.toml`を読むのは、そのフォ�
 
 `connection_info`は、サーバが解決したフォルダとリポジトリのパス、そして提供しているツールを返します。フォルダが想定と違っていたら、エージェントに書き込ませる前に設定を直してください。
 
-アプリでは、見出しの横にある**接続を確認**に、再起動の手順と各ツールのファイルの状態が表示されます。ターミナルからは、`mcp-verify`がサーバを起動してツールを一覧表示し、フォルダに対して実際のクエリを実行します。
-
-```bash
-node ~/tools/ontology-atlas/cli/src/index.mjs mcp-verify ./atlas
-```
-
-これで証明できるのは、サーバとフォルダが動くことです。エージェントが設定を読み込んだことまでは証明できません。
+アプリでは、見出しの横にある**接続を確認**に、再起動の手順と各ツールのファイルの状態が表示されます。
 
 ## エージェントが読み書きできるもの
 

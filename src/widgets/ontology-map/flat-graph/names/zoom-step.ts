@@ -11,8 +11,8 @@ export function stepScale(step: number, stepsPerOctave: number): number {
 export const CELL_PX = 96;
 
 /** Uniform grid over world-space boxes: insert and overlap queries cost O(cells touched). */
-export class Occupancy {
-  private readonly cells = new Map<string, Box[]>();
+export class Occupancy<T extends Box = Box> {
+  private readonly cells = new Map<string, T[]>();
   private readonly cell: number;
   constructor(cell: number) {
     this.cell = cell;
@@ -41,7 +41,17 @@ export class Occupancy {
     return n;
   }
 
-  add(b: Box): void {
+  /** Whether `test` holds for a box `b` overlaps; a box in several cells may be tested once per cell. */
+  some(b: Box, test: (o: T) => boolean): boolean {
+    for (const key of this.keys(b)) {
+      for (const o of this.cells.get(key) ?? []) {
+        if (b.minX < o.maxX && b.maxX > o.minX && b.minY < o.maxY && b.maxY > o.minY && test(o)) return true;
+      }
+    }
+    return false;
+  }
+
+  add(b: T): void {
     for (const key of this.keys(b)) {
       const list = this.cells.get(key);
       if (list) list.push(b);

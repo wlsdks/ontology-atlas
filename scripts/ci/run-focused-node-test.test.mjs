@@ -191,7 +191,7 @@ describe('focused node test wrapper', () => {
     const output = [];
     const errors = [];
     const exitCode = runFocusedNodeTest({
-      argv: ['--test-name-pattern', '^bootstrap', 'cli/src/integration.test.mjs'],
+      argv: ['--test-name-pattern', '^add_concepts', 'mcp/src/integration.test.mjs'],
       stdout: { write: (text) => output.push(text) },
       stderr: { write: (text) => errors.push(text) },
       spawn() {
@@ -200,9 +200,9 @@ describe('focused node test wrapper', () => {
           signal: null,
           stdout: [
             'TAP version 13',
-            '# cli integration: 3 passed, 0 failed, 20 skipped',
-            '# Subtest: cli/src/integration.test.mjs',
-            'ok 1 - cli/src/integration.test.mjs',
+            '# integration: 3 passed, 0 failed, 20 skipped',
+            '# Subtest: mcp/src/integration.test.mjs',
+            'ok 1 - mcp/src/integration.test.mjs',
             '1..1',
             '# tests 1',
             '# pass 1',

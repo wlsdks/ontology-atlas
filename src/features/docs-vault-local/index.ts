@@ -5,10 +5,8 @@ export { RowStateBadge } from './ui/RowStateBadge';
 export { useAgentClientControls } from './ui/use-agent-client-controls';
 export {
   buildOntologyStarterAgentVerifyPrompt,
-  buildOntologyStarterJsonGateCommand,
   ONTOLOGY_POST_CHANGE_SYNC_LINES,
   ONTOLOGY_STARTER_AGENT_VERIFY_PROMPT,
-  ONTOLOGY_STARTER_JSON_GATE_COMMAND,
   OntologyStarterCta,
 } from './ui/OntologyStarterCta';
 export {

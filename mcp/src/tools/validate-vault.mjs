@@ -51,8 +51,7 @@ import { relative } from 'node:path';
 
 /**
  * Judges wiki pages against their own contract, which `validate_vault` cannot: a
- * wiki page carries no `kind:` by contract. Page and problem objects are the ones
- * `ontology-atlas wiki-validate --json` prints; the whole-folder answer is paged
+ * wiki page carries no `kind:` by contract. The whole-folder answer is paged
  * like `validate_vault`'s problems, because a folder of tens of thousands of pages
  * would otherwise be one reply no agent can read.
  *

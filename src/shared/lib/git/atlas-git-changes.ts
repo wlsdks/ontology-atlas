@@ -1,13 +1,12 @@
 /**
- * Mirrors the change summary of `cli/src/lib/git/git-snapshot.mjs` and
- * `src-tauri/src/git/changes.rs`; `atlas-git-summary.contract.test.ts` runs the same fixtures
- * through both. The panel's input arrives classified by Rust; the porcelain parser serves the
+ * Mirrors the change summary of `src-tauri/src/git/changes.rs`; `atlas-git-summary.contract.test.ts`
+ * pins the fixtures the Rust unit tests also run. The panel's input arrives classified by Rust; the porcelain parser serves the
  * contract.
  */
 
 export type AtlasGitChangeStatus = "added" | "modified" | "deleted" | "renamed";
 
-/** One `git status --porcelain` row. Same shape as the CLI's parsePorcelain. */
+/** One `git status --porcelain` row. */
 export interface AtlasGitPorcelainRow {
   index: string;
   worktree: string;
@@ -16,8 +15,8 @@ export interface AtlasGitPorcelainRow {
 }
 
 /**
- * The minimal shape the summary formula needs — satisfied by both the Rust IPC's
- * `ChangeEntry` (camelCase) and the CLI's `buildChangeSummary` result.
+ * The minimal shape the summary formula needs — satisfied by the Rust IPC's
+ * `ChangeEntry` (camelCase).
  */
 export interface AtlasGitChangeLike {
   status: AtlasGitChangeStatus | string;
@@ -45,7 +44,7 @@ export interface AtlasGitKindGroup<T extends AtlasGitChangeLike = AtlasGitChange
 }
 
 /**
- * `-z` (NUL-separated, no quoting) matches the CLI: git's default quoting C-quotes non-ASCII paths.
+ * `-z` (NUL-separated, no quoting) matches Rust: git's default quoting C-quotes non-ASCII paths.
  * A rename record is `XY new\0orig\0`, new path first.
  */
 export function parsePorcelainStatus(out: string): AtlasGitPorcelainRow[] {
@@ -120,7 +119,7 @@ export function groupChangesByKind<T extends AtlasGitChangeLike>(
 }
 
 /**
- * Mirror of the CLI's formatSnapshotSummary, e.g. `ontology snapshot: +2 concepts, ~1 updated
+ * The snapshot summary line, e.g. `ontology snapshot: +2 concepts, ~1 updated
  * (capabilities/foo, elements/bar, +1)`.
  */
 export function formatSnapshotSummary(changes: readonly AtlasGitChangeLike[]): string {

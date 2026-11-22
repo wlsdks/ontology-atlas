@@ -11,8 +11,8 @@ const TYPE_OF_KEY = { dependencies: 'depends_on', depends_on: 'depends_on', rela
 
 /**
  * Whether a node's subject was left unread: with this session's reads, a node
- * whose `path:` file was never served; without them (a restarted server, the
- * CLI), a node whose `## Uncertainty` says so.
+ * whose `path:` file was never served; without them (a restarted server), a
+ * node whose `## Uncertainty` says so.
  */
 function unreadBy(reads) {
   if (reads && reads.size > 0) return (node) => Boolean(pathOf(node)) && !reads.has(pathOf(node));

@@ -58,7 +58,7 @@ AtlasのMCPサーバは、常に動き続けるサービスではありません
 
 - **macOS**: アプリはApple Developer IDで署名され、Appleの公証を受けています。リリースのビルドでは、公開前に署名済みのディスクイメージと、インストールしたアプリの両方を検証します。検証に失敗したビルドはリリースされません。アプリ内アップデートも署名されています。
 - **Windows x64ベータ**: インストーラには署名がないため、SmartScreenが発行元不明の警告を出すことがあり、組織で管理されたコンピュータではブロックされることもあります。リリース前には、ビルドをMicrosoft Defenderでスキャンし、サイレントインストールして起動します。
-- **Linux**: まだアプリはありません。ブラウザ版を使うか、ソースからCLIとMCPサーバを実行してください（[CLI](/guide/cli)）。
+- **Linux**: まだアプリはありません。ブラウザ版を使うか、ソースからMCPサーバを実行してください（[コーディングエージェントを接続](/guide/connect-agent)）。
 
 [リリースページ](https://github.com/wlsdks/ontology-atlas/releases)のインストーラ（`.dmg`、`.exe`）とMCPバンドル（`.mcpb`）には、隣に`.sha256`ファイルがあります。ダウンロードしたファイルのチェックサムと比べてください。
 
@@ -76,4 +76,4 @@ Get-FileHash <file> -Algorithm SHA256
 
 ## オープンソース
 
-アプリ、MCPサーバ、CLIは、MITライセンスで公開している1つのリポジトリ（[github.com/wlsdks/ontology-atlas](https://github.com/wlsdks/ontology-atlas)）にあります。上に挙げた外部への経路の一覧は、ソース内の1つのファイル（[outbound-paths.ts](https://github.com/wlsdks/ontology-atlas/blob/main/src/widgets/app-settings-menu/model/outbound-paths.ts)）から作られています。セキュリティの問題を報告するときは、[SECURITY.md](https://github.com/wlsdks/ontology-atlas/blob/main/SECURITY.md)に従ってください。
+アプリとMCPサーバは、MITライセンスで公開している1つのリポジトリ（[github.com/wlsdks/ontology-atlas](https://github.com/wlsdks/ontology-atlas)）にあります。上に挙げた外部への経路の一覧は、ソース内の1つのファイル（[outbound-paths.ts](https://github.com/wlsdks/ontology-atlas/blob/main/src/widgets/app-settings-menu/model/outbound-paths.ts)）から作られています。セキュリティの問題を報告するときは、[SECURITY.md](https://github.com/wlsdks/ontology-atlas/blob/main/SECURITY.md)に従ってください。

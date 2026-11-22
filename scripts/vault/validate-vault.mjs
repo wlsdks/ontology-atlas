@@ -13,7 +13,7 @@ import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseFrontmatter } from "../lib/parse-frontmatter.mjs";
-import { inspectMergedUids, nodeUidIssue } from "../../cli/src/lib/mcp-bridge/schema.mjs";
+import { inspectMergedUids, nodeUidIssue } from "../../mcp/src/schema.mjs";
 /*
  * The body half is imported from the canonical module, not reimplemented: this lane reads the
  * repository's own vault, and a second implementation could report a different number than
@@ -22,7 +22,7 @@ import { inspectMergedUids, nodeUidIssue } from "../../cli/src/lib/mcp-bridge/sc
  */
 import { bodyMeaningFindings } from "../../mcp/src/meaning/meaning-findings.mjs";
 import { parseFrontmatter as parseMcpFrontmatter } from "../../mcp/src/parser.mjs";
-import { VAULT_SOURCES_DIR, folderForKind } from "../../cli/src/lib/mcp-bridge/schema.mjs";
+import { VAULT_SOURCES_DIR, folderForKind } from "../../mcp/src/schema.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "../..");

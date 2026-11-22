@@ -11,8 +11,8 @@ import {
   renderProjectCompetencyMarkdown,
 } from './project-meaning-receipt.mjs';
 import { runJsonRpcProcess } from '../../../scripts/lib/mcp-test-rpc.mjs';
-import { parseMcpToolResponse } from '../../../cli/src/lib/mcp-bridge/mcp-call.mjs';
-import { assertAgentBriefResponseShape } from '../../../cli/src/lib/query-result-contract/agent-brief/agent-brief.mjs';
+import { parseMcpToolResponse } from '../../scripts/call-tool.mjs';
+import { agentBriefFailure } from '../../scripts/verify/checks/agent-brief.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const modulePath = join(here, 'project-meaning-receipt.mjs');
@@ -214,8 +214,8 @@ test('fresh MCP readers keep edited answers unconfirmed until explicit finalizat
       ['query_ontology', { operation: 'agent_brief', project: 'demo' }],
       ['query_ontology', { operation: 'agent_brief', project: 'demo', detail: 'compact', task: 'Review payment evidence' }],
     ]);
-    assertAgentBriefResponseShape(full);
-    assertAgentBriefResponseShape(compact);
+    assert.equal(agentBriefFailure(full), null);
+    assert.equal(compact.contract, 'agentBriefCompact:v3');
     for (const assessment of [full.meaningAssessment, compact.currentness.meaning]) {
       assert.equal(assessment.status, 'review_required');
       assert.equal(assessment.topGap.id, 'competency_body_changed');

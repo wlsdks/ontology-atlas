@@ -2,8 +2,6 @@ import { describe, expect, it } from 'vitest';
 
 import {
   manualConnectConfig,
-  manualSetupCommand,
-  manualVerifyCommand,
   normalizeManualPath,
 } from './manual-connect';
 
@@ -92,25 +90,5 @@ describe('manualConnectConfig per-client config', () => {
     for (const client of ['claude-code', 'cursor', 'antigravity', 'codex'] as const) {
       expect(manualConnectConfig(client, INPUT).body).not.toMatch(/<|자리|placeholder/i);
     }
-  });
-});
-
-describe('manualSetupCommand / manualVerifyCommand', () => {
-  it('calls the checkout CLI by absolute path', () => {
-    expect(manualSetupCommand(INPUT)).toBe(
-      'node /Users/me/ontology-atlas/cli/src/index.mjs agent-setup /Users/me/notes --root /Users/me/notes --write',
-    );
-  });
-
-  it('quotes a path containing spaces for the shell', () => {
-    expect(
-      manualSetupCommand({ ...INPUT, vaultAbsolute: '/Users/me/my notes' }),
-    ).toContain(`'/Users/me/my notes'`);
-  });
-
-  it('uses mcp-verify as the verification command', () => {
-    expect(manualVerifyCommand(INPUT)).toBe(
-      'node /Users/me/ontology-atlas/cli/src/index.mjs mcp-verify /Users/me/notes --timeout-ms 15000',
-    );
   });
 });

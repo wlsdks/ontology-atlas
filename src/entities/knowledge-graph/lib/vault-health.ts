@@ -1,23 +1,25 @@
 /**
  * Browser mirror of the MCP `health()` result, computed from raw frontmatter rather than the
- * auto-healed derived graph so app and CLI agree (`tests/contract/analysis/vault-health.contract.test.ts`).
+ * auto-healed derived graph so app and MCP agree (`tests/contract/analysis/vault-health.contract.test.ts`).
  */
 
-import { ATLAS_CLI, ATLAS_CLI_HINT_EN } from '@/shared/config/agent/cli-invocation';
+/** An agent reaches both MCP calls below once the app has connected it; no terminal is involved. */
+const MCP_CALL_HINT =
+  'An agent connected to the ontology-atlas MCP server makes this call; the Ontology Atlas app connects one under Agents > MCP.';
 
-/** CLI checks this mirror does not run (frontmatter validation, meaning assessment), named so the list never reads as complete. */
+/** Checks this mirror does not run (frontmatter validation, meaning assessment), named so the list never reads as complete. */
 export const UNAVAILABLE_CHECKS = [
   {
     id: 'vault_validation',
     reason: 'the MCP tool layer runs it, not the compiled-graph engine this mirrors',
-    where: `${ATLAS_CLI} validate`,
-    hint: ATLAS_CLI_HINT_EN,
+    where: 'validate_vault({})',
+    hint: MCP_CALL_HINT,
   },
   {
     id: 'meaning_assessment',
     reason: 'asks whether a project\'s competency answers are finalized, which is a semantic judgement rather than a graph count',
-    where: `${ATLAS_CLI} health`,
-    hint: ATLAS_CLI_HINT_EN,
+    where: 'query_ontology({"operation":"health"})',
+    hint: MCP_CALL_HINT,
   },
 ];
 
@@ -45,7 +47,7 @@ interface VaultHealthCheck {
 interface UnavailableVaultHealthCheck {
   id: string;
   reason: string;
-  /** A runnable command; there is no npm package. */
+  /** The MCP call that runs the check. */
   where: string;
   hint: string;
 }

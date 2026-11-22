@@ -14,8 +14,7 @@ function makeDoctorRoot() {
     path.join(root, "package.json"),
     JSON.stringify({
       scripts: {
-        "cli:mcp-verify": "node cli/src/index.mjs mcp-verify docs/ontology --timeout-ms 15000",
-        "dogfood:agent-setup-gate": "node cli/src/index.mjs agent-brief docs/ontology --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
+        "dogfood:verify": "node mcp/scripts/verify.mjs --vault docs/ontology --timeout-ms 90000",
       },
     }),
   );
@@ -63,7 +62,7 @@ test("desktop doctor reports ready when required desktop tools are present", () 
   });
 
   assert.equal(report.status, "ready");
-  assert.equal(report.checks.filter((check) => check.status === "ok").length, 9);
+  assert.equal(report.checks.filter((check) => check.status === "ok").length, 8);
   assert.equal(
     report.checks.find((check) => check.id === "local-app-signing")?.status,
     "ok",
@@ -77,16 +76,11 @@ test("desktop doctor reports ready when required desktop tools are present", () 
     "ok",
   );
   assert.equal(
-    report.checks.find((check) => check.id === "cli-mcp-verify")?.output,
-    "pnpm cli:mcp-verify docs/ontology --timeout-ms 15000",
-  );
-  assert.equal(
-    report.checks.find((check) => check.id === "agent-setup-gate")?.output,
-    "pnpm dogfood:agent-setup-gate",
+    report.checks.find((check) => check.id === "mcp-verify")?.output,
+    "pnpm dogfood:verify",
   );
   assert.match(report.nextAction, /pnpm desktop:build/);
-  assert.match(report.nextAction, /pnpm cli:mcp-verify docs\/ontology/);
-  assert.match(report.nextAction, /pnpm dogfood:agent-setup-gate/);
+  assert.match(report.nextAction, /pnpm dogfood:verify/);
 });
 
 test("desktop doctor warns when the local app bundle is ad-hoc signed", () => {
@@ -179,11 +173,7 @@ test("desktop doctor blocks when local ontology handoff files are missing", () =
     "missing",
   );
   assert.equal(
-    report.checks.find((check) => check.id === "cli-mcp-verify")?.status,
-    "missing",
-  );
-  assert.equal(
-    report.checks.find((check) => check.id === "agent-setup-gate")?.status,
+    report.checks.find((check) => check.id === "mcp-verify")?.status,
     "missing",
   );
   assert.match(report.nextAction, /docs\/ontology/);

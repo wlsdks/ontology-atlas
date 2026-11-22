@@ -139,7 +139,6 @@ describe('ArchitectureWorkbench — nothing recorded yet', () => {
       draftHandoffContext: {
         sourceRoot: '/Users/dana/product',
         vaultRoot: '/Users/dana/vault',
-        cliEntry: null,
       },
     });
 
@@ -439,13 +438,11 @@ describe('ArchitectureWorkbench', () => {
     renderWorkbench({
       sourceRoot: '/Users/dana/Atlas Source',
       vaultRoot: '/Users/dana/Atlas Source/docs/ontology',
-      cliEntry: '/Users/dana/Atlas Source/cli/src/index.mjs',
     });
     fireEvent.click(screen.getByRole('button', { name: 'Copy the “Inspect source” task' }));
     expect(writeText).toHaveBeenCalledWith(expect.stringContaining('This is a verification task'));
-    expect(writeText).toHaveBeenCalledWith(expect.stringContaining("--profile 'atlas-web' --json"));
     expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("--vault '/Users/dana/Atlas Source/docs/ontology'"),
+      expect.stringContaining('"vaultRoot":"/Users/dana/Atlas Source/docs/ontology"'),
     );
     await waitFor(() => {
       /* The button keeps its width; the polite status region announces the task sentence. */
@@ -584,7 +581,7 @@ describe('the source-listing note', () => {
 
 /*
  * `summary_<role>_<locale>` restates the canonical sentence for the screen; `summary_<role>` stays
- * the fact that briefs, prompts and CLI lines print.
+ * the fact that briefs and prompts print.
  */
 describe("the role sentence in the reader's language", () => {
   const KOREAN_VIEWS = '라우트가 열 수 있는 화면 하나마다 모듈 하나입니다.';

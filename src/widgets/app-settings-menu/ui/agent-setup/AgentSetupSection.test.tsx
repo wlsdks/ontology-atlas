@@ -51,15 +51,21 @@ describe('AgentSetupSection', () => {
     vaultStatus.current = 'idle';
     serverState.launch = null;
     const { unmount } = renderSection();
-    expect(screen.getByTestId('agents-terminal-setup-download')).toBeInTheDocument();
-    expect(screen.getByTestId('agents-terminal-setup-copy')).toBeInTheDocument();
+    expect(screen.getByTestId('agents-get-app')).toBeInTheDocument();
     unmount();
 
     serverState.launch = { command: '/Applications/Ontology Atlas.app/Contents/MacOS/ontology-atlas-mcp', args: [] };
     renderSection();
-    expect(screen.queryByTestId('agents-terminal-setup-download')).toBeNull();
-    expect(screen.getByTestId('agents-terminal-setup-copy')).toBeInTheDocument();
+    expect(screen.queryByTestId('agents-get-app')).toBeNull();
+    expect(screen.getByTestId('agents-open-vault')).toBeInTheDocument();
     serverState.launch = null;
+  });
+
+  // Connecting is the app's work; the no-folder card offers no checkout-only terminal lines.
+  it('shows no source-checkout command in the no-folder notice', () => {
+    vaultStatus.current = 'idle';
+    const { container } = renderSection();
+    expect(container.textContent).not.toMatch(/\$ATLAS|cli\/src\/index\.mjs/);
   });
 
   // The card asks for a folder, so opening one must be possible in place.
