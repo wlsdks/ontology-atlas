@@ -53,6 +53,17 @@ describe('withRetirees', () => {
     expect(shown.floors.flatMap(floor => floor.rooms).map(room => room.key)).toContain(after.stage[5].key);
   });
 
+  it('hands back a room that is not at work so the stage stays a whole grid while one retires', () => {
+    const stuck = row('stuck', { lock: { state: 'stale', tool: 'claudeCode', agentId: 'a1', pid: 999, sessionStartedAt: 1, lockedAt: 1 } });
+    const before = plan(['a', 'b', 'c'].map(working).concat(stuck));
+    const leaving = before.stage[1];
+    const after = plan(['a', 'c'].map(working).concat(stuck, row('idle', { lock: { state: 'live', tool: 'claudeCode', agentId: 'a2', pid: 8, sessionStartedAt: 2, lockedAt: 2 } })));
+    const shown = withRetirees(after, [retireeOf(leaving, null, 1)], 6);
+    expect(shown.stage).toHaveLength(4);
+    expect(shown.stage.map(room => room.key)).toContain(leaving.key);
+    expect(shown.stage.every(room => room.key !== 'idle' || room.tier === 'working')).toBe(true);
+  });
+
   it('returns the plan untouched when nothing retires', () => {
     const current = plan([working('a')]);
     expect(withRetirees(current, [], 6)).toBe(current);

@@ -1,4 +1,4 @@
-import { NO_SESSION_FLOOR, type RoomEntry, type RoomPlan, type RoomStage, type RoomState } from '@/shared/lib/work-status/work-tracks';
+import { FULL_STAGES, NO_SESSION_FLOOR, type RoomEntry, type RoomPlan, type RoomStage, type RoomState } from '@/shared/lib/work-status/work-tracks';
 
 /** Moru's rows a room plays, all existing catalogue rows (`docs/design/brand.md`, "Contextual motion"). */
 export type RoomClip = 'code' | 'read' | 'waiting' | 'clap';
@@ -93,8 +93,12 @@ export function withRetirees(plan: RoomPlan, retirees: readonly Retiree[], stage
     insert(floor.rooms, retiree);
   }
   const retiring = new Set(retirees.map(retiree => retiree.entry.key));
-  while (stage.length > stageLimit) {
-    const index = stage.findLastIndex(room => !retiring.has(room.key));
+  // A retiring room keeps its old slot; the stage stays a whole grid by handing back an idle room,
+  // then a stuck one, before any at work, so the rooms around it move once, after it has gone.
+  const fits = FULL_STAGES.filter(size => size <= Math.min(stage.length, stageLimit)).at(-1) ?? stageLimit;
+  while (stage.length > fits) {
+    const last = (tier: RoomEntry['tier'] | null) => stage.findLastIndex(room => !retiring.has(room.key) && (tier === null || room.tier === tier));
+    const index = [last('held'), last('attention'), last(null)].find(found => found >= 0) ?? -1;
     if (index < 0) break;
     const [room] = stage.splice(index, 1);
     const key = room.session?.key ?? NO_SESSION_FLOOR;

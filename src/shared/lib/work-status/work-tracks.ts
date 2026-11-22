@@ -354,7 +354,7 @@ export function stageOf(track: Track): RoomStage {
  * by start, a session's worktrees by lock time.
  */
 /** Stage sizes that fill whole rows: one row of up to three, two rows of two or three. */
-const FULL_STAGES = [1, 2, 3, 4, 6];
+export const FULL_STAGES = [1, 2, 3, 4, 6];
 
 const twoTools = (room: RoomEntry) => room.state.kind === 'working' && room.state.tools.length > 1;
 
