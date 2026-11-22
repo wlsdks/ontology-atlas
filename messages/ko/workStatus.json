@@ -34,11 +34,13 @@
   "tool": {
     "acp": "Atlas 안의 Claude Agent",
     "claudeCode": "Claude Code",
+    "codex": "Codex",
     "unknown": "에이전트"
   },
   "holder": {
     "locked": "{tool} 서브에이전트 {id} · {time}에 잠금",
     "lockedUnnamed": "{time}에 잠금",
+    "process": "이 폴더에서 {tool} 실행 중",
     "noLock": "잠금 없음 · 마지막 커밋 {ago}, {author}",
     "noLockQuiet": "잠금 없음",
     "subagent": "서브에이전트 {id}",

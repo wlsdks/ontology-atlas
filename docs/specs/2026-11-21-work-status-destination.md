@@ -312,18 +312,22 @@ change; no frame interval over 50 ms; all loops stop when the screen is hidden.
 the session started, often in its own worktree; several sessions of one tool may share a
 repository; two tools may touch one worktree.
 
-**Identity and eligibility come from evidence, never from names.** A session is established by a
-lock's pid (with its start time), an Atlas ACP session's pid, or the parent chain to one of these.
-The executable name only labels a session (`claude` → Claude Code, `codex` → Codex); a labelled
-process with no lock and no ACP pid is shown as "a {tool} process". A process belongs to a worktree
-by its **own** working folder, matched on whole path components to the deepest worktree; the parent
-chain only groups it under a session for display.
+**Identity comes from evidence.** A session is established by a lock's pid (with its start time),
+an Atlas ACP session's pid, or an agent program: a process whose executable path is `claude`,
+`claude/versions/<version>` or `codex`. A process belongs to a worktree by its **own** working
+folder, matched on whole path components to the deepest worktree, including a missing one; it
+counts for the outermost agent of the nearest agent's tool in its parent chain, and a chain
+through an ACP pid is that session's. An agent the system launched (parent pid 1, as the Codex
+app's server) is not credited for its own folder, only through its commands. An agent's process that also holds locks joins the lock's
+session; a session seen only by processes reads "{tool} · session {n}", its rows "{tool} is running
+in this folder" (`holder.process`), and it sorts after locking sessions. Only actions (slice 3)
+require a lock or ACP pid; a name alone never makes a process eligible for one.
 
 | Signal | Gives | Tools | Status | Slice |
 |---|---|---|---|---|
 | Lock reason pid and UTC time; `locked` file mtime | subagent id, session pid, lock time | Claude Code | verified | 1 |
-| ACP session pids and `cwd` | session, exactly | Claude Agent in Atlas | verified (`tauri-acp.ts:92`) | 1 |
-| Own working folder, parent chain, executable name | which processes run in which worktree, under which session | all | `claude`, `codex` seen | 2 |
+| ACP session pids and `cwd` | session, exactly | Claude Agent in Atlas | verified (`tauri-acp.ts:90`) | 1 |
+| Own working folder, parent chain, executable path | which agent works in which worktree, under which session | Claude Code, Codex (macOS, Linux) | built 2026-11-22 | 1 |
 | Open file paths matched to `<hooksPath>/<hook name>` | a running hook and its name | Git | reviewer verified `proc_pidfdinfo` | 2 |
 | `finished` in one exact Claude Code subagent meta file | subagent finished | Claude Code, `~/.claude` only | observed, undocumented | 2 |
 
@@ -335,7 +339,8 @@ lock's agent id; it never lists `~/.claude` or `projects/`. The open uses `O_NOF
 subagent counts as running only while its session pid and start time are alive; `finished` only
 adds "finished". Codex's and Gemini CLI's session folders are not read.
 
-**No arguments or environment are read.** Executable names come from the kernel's process name;
+**No arguments or environment are read.** Executable names come from the kernel's process name,
+confirmed by the executable path (Claude Code's kernel name is its version, `2.1.330`);
 `KERN_PROCARGS2`, which copies every argument and the environment, is never read. A hook is a
 process whose parent is `git` and which holds open a file whose path is `<hooksPath>/<Git hook
 name>` in its worktree; only that hook name is kept. A Node hook that has closed its script shows as
@@ -481,10 +486,11 @@ Windows each string that says "this Mac" uses its `.pc` variant, which says "thi
 | `session.quiet` | Fold | {count, plural, one {+ # quiet subagent} other {+ # quiet subagents}} |
 | `session.unlocked` | Session header | a {tool} process |
 | `tool.acp` | Session header | Claude Agent in Atlas |
-| `tool.claudeCode` / `.unknown` | Session header | Claude Code / An agent; slice 2 adds `.codex` and `.gemini` with process evidence |
+| `tool.claudeCode` / `.codex` / `.unknown` | Session header | Claude Code / Codex / An agent; slice 2 adds `.gemini` |
 | `tool.unknownProcess` | Row | Process {name} |
 | `holder.locked` | Row tooltip | {tool} subagent {id} · locked at {time} |
 | `holder.lockedUnnamed` | Row | Locked at {time} |
+| `holder.process` | Row | {tool} is running in this folder |
 | `holder.subagent` | Row | Subagent {id} |
 | `holder.lastCommit` | Row | {ago} by {author} |
 | `holder.noLockQuiet` | Row | No lock |
@@ -670,7 +676,7 @@ Ordered; file areas are disjoint between slices.
    load above 40 the sampler stays within its budget. Checked: `machine/tests.rs`, a measured print.
 6. **Slice 2, sessions and session files.** Given two `claude` sessions holding locks, three
    subagent worktrees, and a process named `claude` with no lock, then two sessions render with the
-   right rows and the unlocked one reads "a Claude Code process"; a meta file whose `description`
+   right rows and the unlocked one reads "Claude Code is running in this folder"; a meta file whose `description`
    holds `ATLAS_PLANTED_7f3c` leaves no trace of it; a meta file that is a symlink to a secret is not
    read; a subagent whose session pid has ended does not read running. Checked: `agents/tests.rs`.
 7. **Slice 3, stop.** Given the main checkout and a zero-commit worktree each running a server
@@ -776,7 +782,7 @@ sign-in surface is added.
 **Decision**: `/work-status/`, rail label Work status, `g w`, two bands joined by a `push` seam.
 Local reads through `runner.rs`: worktrees (outside the chosen folder only when `.git` and `gitdir`
 point at each other), lock reasons and `locked` mtimes, first-parent ancestry. For same-user
-processes, filtered by uid first: pid, parent, start time, own working folder, executable name,
+processes, filtered by uid first: pid, parent, start time, own working folder, executable path,
 CPU, memory, listening ports, controlling terminal, and open file paths only to match
 `<hooksPath>/<hook name>`. One Claude Code subagent meta file per lock, at a path built from the
 lock, read with `O_NOFOLLOW` and a 64 KiB cap into `finished` only. Never arguments
@@ -857,3 +863,10 @@ text in a PR, branch, commit, log, lane name, lease or subagent file; a paused b
   proves (`headline.*`, `group.unheld`), names the base branch, and drops the ready count until
   slice 5; every shipped key is in Copy. Criteria 1 to 3 name what checks them.
 - 2026-11-22: source line cites follow the code into the files and lines that hold it after the structure cleanup; a cite whose code changed keeps its file and drops the line; no plan changed.
+- 2026-11-22: agent programs pulled forward from slice 2, because Codex leaves no lock: a process
+  whose working folder is in a worktree counts for the agent above it in its parent chain (the
+  Codex app runs every command under one background server), held 90 s past its last command
+  while that agent runs, and joins the lock session of the same pid. Measured 1.6 ms of CPU per
+  read on this Mac; the fingerprint carries it, so a change shows within a second. Record:
+  `docs/records/decisions/2026-11-22-work-status-agent-processes-87d3ada9-4740-430a-8cee-a580ce7e638e.md`.
+  A command shorter than the one-second sample may be missed; Codex's session files stay unread.

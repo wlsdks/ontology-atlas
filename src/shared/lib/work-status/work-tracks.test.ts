@@ -16,6 +16,7 @@ function row(id: string, patch: Partial<WorktreeRow> = {}): WorktreeRow {
     lastCommitAuthor: 'stark',
     lock: null,
     acpPid: null,
+    agentProcesses: [],
     ...patch,
   };
 }
@@ -44,6 +45,45 @@ describe('branchTitle', () => {
 });
 
 describe('buildWorkTracks', () => {
+  it('shows a worktree Codex works in under a Codex session, with the main checkout it also works in', () => {
+    const codex = { pid: 300, tool: 'codex' as const, startedAt: 3_000 };
+    const tracks = buildWorkTracks(snapshot([
+      row('main', { mainCheckout: true, standing: 'base', branch: 'main', agentProcesses: [codex] }),
+      row('codex-wt', { agentProcesses: [codex] }),
+      row('idle'),
+    ]));
+    expect(tracks.sessions).toHaveLength(1);
+    expect(tracks.sessions[0]).toMatchObject({ tool: 'codex', startedAt: 3_000 });
+    expect(tracks.sessions[0].tracks.map(track => track.key).sort()).toEqual(['codex-wt', 'main']);
+    expect(tracks.sessions[0].tracks[0].holder).toEqual({ kind: 'process', tool: 'codex' });
+    expect(tracks.unheld.map(track => track.key)).toEqual(['idle']);
+  });
+
+  it('keeps a lock an ended session left stuck while an agent runs a command in it', () => {
+    const tracks = buildWorkTracks(snapshot([
+      row('left', { lock: { ...live(100, 1_000, 10), state: 'stale' }, agentProcesses: [{ pid: 300, tool: 'codex', startedAt: 3_000 }] }),
+    ]));
+    expect(tracks.stuck.map(track => track.key)).toEqual(['left']);
+    expect(tracks.sessions).toEqual([]);
+  });
+
+  it('orders a session seen only by its processes after a locking session, whoever started first', () => {
+    const tracks = buildWorkTracks(snapshot([
+      row('codex-wt', { agentProcesses: [{ pid: 300, tool: 'codex', startedAt: 1 }] }),
+      row('locked', { lock: live(100, 1_000, 10) }),
+    ]));
+    expect(tracks.sessions.map(session => session.tool)).toEqual(['claudeCode', 'codex']);
+    expect(tracks.sessions.map(session => session.ink)).toEqual([0, 1]);
+  });
+
+  it('counts a Claude Code session once when it both locks a worktree and runs commands in another', () => {
+    const tracks = buildWorkTracks(snapshot([
+      row('locked', { lock: live(100, 1_000, 10) }),
+      row('commands', { agentProcesses: [{ pid: 100, tool: 'claudeCode', startedAt: 1_001 }] }),
+    ]));
+    expect(tracks.sessions.map(session => session.tracks.map(track => track.key).sort())).toEqual([['commands', 'locked']]);
+  });
+
   it('groups locked rows under the session their pid and start name, oldest session first', () => {
     const tracks = buildWorkTracks(snapshot([
       row('main', { mainCheckout: true, standing: 'base', branch: 'main' }),

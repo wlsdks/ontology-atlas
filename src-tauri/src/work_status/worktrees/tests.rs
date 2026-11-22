@@ -11,6 +11,9 @@ use super::remote::host_and_slug;
 use super::{
     parse_porcelain, read_repository, standing_of, Standing, WorktreeRow, ZeroAheadEvidence,
 };
+use crate::work_status::agent_processes::{
+    credit_to_agents, remember, tool_for_executable, AgentProcess, AgentTool, ProcessFacts,
+};
 
 /// Git cannot take a Windows verbatim path (`\\?\C:\...`) as an argument, and the canonical
 /// fixture root is one there.
@@ -87,7 +90,7 @@ impl Repo {
     }
 
     fn rows(&self) -> Vec<WorktreeRow> {
-        read_repository(&self.main, &[])
+        read_repository(&self.main, &[], &[])
             .expect("repository reads")
             .rows
     }
@@ -409,7 +412,7 @@ fn every_worktree_the_listing_reports_appears_in_this_repository() {
         .unwrap();
     let expected = parse_porcelain(&String::from_utf8_lossy(&listing.stdout)).len();
     let started = std::time::Instant::now();
-    let read = read_repository(crate_dir, &[]).expect("this repository reads");
+    let read = read_repository(crate_dir, &[], &[]).expect("this repository reads");
     let elapsed = started.elapsed();
     println!(
         "work status read {} worktrees in {elapsed:?}",
@@ -418,4 +421,230 @@ fn every_worktree_the_listing_reports_appears_in_this_repository() {
     assert_eq!(read.rows.len(), expected);
     // Measured: 34 worktrees in 0.7 s at load 50 (2026-11-21), 11 in 0.21 s with six workers (11-22).
     assert!(elapsed < std::time::Duration::from_secs(10), "{elapsed:?}");
+}
+
+#[test]
+fn an_agent_is_known_by_its_executable_path() {
+    let tool = |path: &str| tool_for_executable(Path::new(path));
+    assert_eq!(
+        tool("/Users/a/.local/bin/claude"),
+        Some(AgentTool::ClaudeCode)
+    );
+    assert_eq!(
+        tool("/Users/a/.local/share/claude/versions/2.1.330"),
+        Some(AgentTool::ClaudeCode)
+    );
+    assert_eq!(
+        tool("/Users/a/.codex/packages/app-server-daemon/bin/codex"),
+        Some(AgentTool::Codex)
+    );
+    for other in [
+        "/usr/bin/node",
+        "/opt/x/versions/2.1.0",
+        "/bin/zsh",
+        "/x/claude-helper",
+        "/x/Codex",
+    ] {
+        assert_eq!(tool(other), None, "{other}");
+    }
+}
+
+#[test]
+fn a_command_is_credited_to_the_agent_session_above_it() {
+    let fact = |pid, parent, tool, folder: Option<&str>| ProcessFacts {
+        pid,
+        parent,
+        started_at: Some(i64::from(pid)),
+        tool,
+        folder: folder.map(PathBuf::from),
+    };
+    let credited = credit_to_agents(
+        &[
+            fact(1, 0, None, Some("/")),
+            fact(2, 1, None, None),
+            fact(10, 2, Some(AgentTool::Codex), Some("/repo")),
+            fact(11, 10, None, Some("/repo/wt/a")),
+            fact(12, 11, None, Some("/repo/wt/a/src")),
+            fact(13, 11, None, Some("/repo/wt/a")),
+            fact(20, 1, None, Some("/repo/wt/b")),
+            fact(30, 99, None, Some("/repo/wt/c")),
+            fact(40, 2, Some(AgentTool::ClaudeCode), None),
+            fact(41, 40, Some(AgentTool::ClaudeCode), Some("/repo/wt/d")),
+            fact(50, 1, None, None),
+            fact(51, 50, Some(AgentTool::ClaudeCode), Some("/repo/wt/e")),
+            // The Codex app's server: launched by the system, idle in the repository root.
+            fact(60, 1, Some(AgentTool::Codex), Some("/repo")),
+            fact(61, 60, Some(AgentTool::Codex), Some("/repo")),
+            fact(62, 61, None, Some("/repo/wt/f")),
+        ],
+        &[50],
+    );
+    let seen: Vec<(u32, &str)> = credited
+        .iter()
+        .map(|p| (p.pid, p.folder.to_str().unwrap()))
+        .collect();
+    assert_eq!(
+        seen,
+        vec![
+            (10, "/repo"),
+            (10, "/repo/wt/a"),
+            (10, "/repo/wt/a/src"),
+            (40, "/repo/wt/d"),
+            (60, "/repo/wt/f")
+        ]
+    );
+    assert!(credited[..3]
+        .iter()
+        .all(|p| p.tool == AgentTool::Codex && p.started_at == Some(10)));
+}
+
+#[test]
+fn an_agent_program_belongs_to_the_deepest_worktree_holding_its_folder() {
+    let repo = Repo::new("process-place");
+    let nested = repo.worktree("feat/nested");
+    let inner = nested.join("src");
+    fs::create_dir_all(&inner).unwrap();
+    let outside = repo.dir.join("elsewhere");
+    fs::create_dir_all(&outside).unwrap();
+    let process = |pid, folder: &Path| AgentProcess {
+        pid,
+        tool: AgentTool::Codex,
+        started_at: Some(1),
+        folder: folder.to_path_buf(),
+    };
+    let read = read_repository(
+        &repo.main,
+        &[],
+        &[
+            process(7, &inner),
+            process(8, &repo.main),
+            process(9, &outside),
+        ],
+    )
+    .expect("repository reads");
+    let pids = |row: &WorktreeRow| {
+        row.agent_processes
+            .iter()
+            .map(|p| p.pid)
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(pids(row(&read.rows, "feat/nested")), vec![7]);
+    let main = read.rows.iter().find(|row| row.main_checkout).unwrap();
+    assert_eq!(pids(main), vec![8]);
+}
+
+/// A copy of `sleep` named `codex` stands in for the real program: the kernel names a process
+/// after its executable, so this is the same evidence a Codex session gives.
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+#[test]
+fn a_running_program_named_codex_is_found_in_its_worktree() {
+    let repo = Repo::new("process-live");
+    let held = repo.worktree("feat/codex-held");
+    let bin = repo.dir.join("bin");
+    fs::create_dir_all(&bin).unwrap();
+    let codex = bin.join("codex");
+    fs::copy("/bin/sleep", &codex).unwrap();
+    let mut child = Command::new(&codex)
+        .arg("30")
+        .current_dir(&held)
+        .spawn()
+        .expect("the stand-in starts");
+    let found = crate::work_status::agent_processes::agent_processes(&[]);
+    let _ = child.kill();
+    let _ = child.wait();
+    let read = read_repository(&repo.main, &[], &found).expect("repository reads");
+    let codex_row = row(&read.rows, "feat/codex-held");
+    assert!(
+        codex_row
+            .agent_processes
+            .iter()
+            .any(|p| p.tool == AgentTool::Codex && p.started_at.is_some()),
+        "{:?}",
+        codex_row.agent_processes
+    );
+}
+
+#[test]
+fn a_remembered_folder_lasts_ninety_seconds_while_its_agent_runs() {
+    use std::collections::HashMap;
+    use std::time::{Duration, Instant};
+    let process = |pid, started_at, folder: &str| AgentProcess {
+        pid,
+        tool: AgentTool::Codex,
+        started_at: Some(started_at),
+        folder: PathBuf::from(folder),
+    };
+    let alive: HashMap<u32, Option<i64>> = [(1, Some(100)), (2, Some(999))].into();
+    let start = Instant::now();
+    let mut recent = vec![];
+    let seen = remember(
+        &mut recent,
+        vec![
+            process(1, 100, "/wt/a"),
+            process(2, 200, "/wt/b"),
+            process(1, 100, "/wt/gone"),
+        ],
+        &alive,
+        start,
+        |_| true,
+    );
+    assert_eq!(seen.len(), 3);
+    let folders = |list: Vec<AgentProcess>| {
+        list.into_iter()
+            .map(|p| p.folder.to_string_lossy().into_owned())
+            .collect::<Vec<_>>()
+    };
+    // 60 s later with nothing live: the agent whose start no longer matches and the removed folder go.
+    let later = remember(
+        &mut recent,
+        vec![],
+        &alive,
+        start + Duration::from_secs(60),
+        |folder| !folder.ends_with("gone"),
+    );
+    assert_eq!(folders(later), vec!["/wt/a"]);
+    // Seen again at 80 s, it outlives the first sighting's grace.
+    remember(
+        &mut recent,
+        vec![process(1, 100, "/wt/a")],
+        &alive,
+        start + Duration::from_secs(80),
+        |_| true,
+    );
+    let held = remember(
+        &mut recent,
+        vec![],
+        &alive,
+        start + Duration::from_secs(160),
+        |_| true,
+    );
+    assert_eq!(folders(held), vec!["/wt/a"]);
+    let expired = remember(
+        &mut recent,
+        vec![],
+        &alive,
+        start + Duration::from_secs(171),
+        |_| true,
+    );
+    assert!(expired.is_empty());
+}
+
+#[test]
+fn work_in_a_removed_nested_worktree_never_falls_to_the_main_checkout() {
+    let repo = Repo::new("process-removed");
+    let gone = repo.worktree("feat/gone");
+    let inside = gone.join("src");
+    fs::remove_dir_all(&gone).unwrap();
+    let read = read_repository(
+        &repo.main,
+        &[],
+        &[AgentProcess {
+            pid: 5,
+            tool: AgentTool::Codex,
+            started_at: Some(1),
+            folder: inside,
+        }],
+    )
+    .expect("repository reads");
+    assert!(read.rows.iter().all(|row| row.agent_processes.is_empty()));
 }

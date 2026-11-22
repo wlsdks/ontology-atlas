@@ -13,6 +13,7 @@ use std::time::UNIX_EPOCH;
 
 use serde::Serialize;
 
+use super::agent_processes::{AgentProcess, AgentTool};
 use super::git_read::{git_read, read_admin_file, read_first_line, GitFailure};
 use lock::{judge_lock, parse_lock_reason, process_start, LockState, LockTool};
 
@@ -69,6 +70,17 @@ pub(crate) struct WorktreeRow {
     lock: Option<WorktreeLock>,
     /// The pid of an Atlas agent session whose folder lies in this worktree.
     acp_pid: Option<u32>,
+    /// Agent programs whose own working folder lies in this worktree and in no deeper one.
+    agent_processes: Vec<WorktreeProcess>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct WorktreeProcess {
+    pid: u32,
+    tool: AgentTool,
+    /// Seconds since the epoch.
+    started_at: Option<i64>,
 }
 
 pub(super) struct RepositoryRead {
@@ -168,6 +180,7 @@ fn failure_status(failure: GitFailure) -> &'static str {
 pub(super) fn read_repository(
     chosen: &Path,
     acp_roots: &[(u32, PathBuf)],
+    processes: &[AgentProcess],
 ) -> Result<RepositoryRead, &'static str> {
     let toplevel = git_read(chosen, &["rev-parse", "--show-toplevel"]).map_err(failure_status)?;
     let root = crate::canonical_source_root(toplevel.trim()).map_err(|_| "ungranted")?;
@@ -221,6 +234,7 @@ pub(super) fn read_repository(
         base_head.as_deref(),
     );
     attach_acp_sessions(&mut rows, acp_roots);
+    attach_agent_processes(&mut rows, processes);
     Ok(RepositoryRead {
         root,
         repository,
@@ -236,9 +250,27 @@ fn folder_name(root: &Path) -> String {
         .unwrap_or_default()
 }
 
+/// The canonical path, or for a folder that is gone, its nearest existing ancestor's canonical
+/// path with the rest joined on, so a removed worktree compares in the same spelling as live ones
+/// (Windows canonical paths are `\\?\C:\...`, Git's listing `C:/...`).
 fn normalize(path: &str) -> PathBuf {
     let path = PathBuf::from(path);
-    std::fs::canonicalize(&path).unwrap_or(path)
+    if let Ok(canonical) = std::fs::canonicalize(&path) {
+        return canonical;
+    }
+    let mut rest = Vec::new();
+    let mut current = path.as_path();
+    while let Some(parent) = current.parent() {
+        rest.extend(current.file_name());
+        if let Ok(canonical) = std::fs::canonicalize(parent) {
+            return rest
+                .iter()
+                .rev()
+                .fold(canonical, |joined, part| joined.join(part));
+        }
+        current = parent;
+    }
+    path
 }
 
 /// `<common>/worktrees/<id>/gitdir` names `<worktree>/.git`; this maps each worktree back to its id.
@@ -313,6 +345,7 @@ fn base_row(
         last_commit_author: None,
         lock,
         acp_pid: None,
+        agent_processes: vec![],
     }
 }
 
@@ -458,15 +491,56 @@ fn measure_head(root: &Path, row: &mut WorktreeRow, base: Option<&str>, base_hea
     }
 }
 
-/// An Atlas agent session belongs to the deepest worktree containing its folder, on whole components.
+/// Index of the deepest worktree containing a folder, on whole path components. A missing worktree
+/// still claims its folder, so work in a removed nested worktree never falls to its parent.
+/// O(rows) per folder over paths normalized once.
+fn deepest_row(paths: &[PathBuf], folder: &Path) -> Option<usize> {
+    paths
+        .iter()
+        .enumerate()
+        .filter(|(_, path)| folder.starts_with(path))
+        .max_by_key(|(_, path)| path.components().count())
+        .map(|(index, _)| index)
+}
+
+fn normalized_paths(rows: &[WorktreeRow]) -> Vec<PathBuf> {
+    rows.iter().map(|row| normalize(&row.path)).collect()
+}
+
 fn attach_acp_sessions(rows: &mut [WorktreeRow], acp_roots: &[(u32, PathBuf)]) {
+    let paths = normalized_paths(rows);
     for (pid, folder) in acp_roots {
-        let deepest = rows
-            .iter_mut()
-            .filter(|row| !row.missing && folder.starts_with(normalize(&row.path)))
-            .max_by_key(|row| Path::new(&row.path).components().count());
-        if let Some(row) = deepest {
-            row.acp_pid = Some(*pid);
+        if let Some(row) = deepest_row(&paths, folder).and_then(|index| rows.get_mut(index)) {
+            if !row.missing {
+                row.acp_pid = Some(*pid);
+            }
         }
+    }
+}
+
+/// One entry per agent per worktree, however many of its folders the agent works in.
+pub(crate) fn attach_agent_processes(rows: &mut [WorktreeRow], processes: &[AgentProcess]) {
+    let paths = normalized_paths(rows);
+    for process in processes {
+        let folder = normalize(&process.folder.to_string_lossy());
+        let Some(row) = deepest_row(&paths, &folder).and_then(|index| rows.get_mut(index)) else {
+            continue;
+        };
+        if row.missing
+            || row
+                .agent_processes
+                .iter()
+                .any(|known| known.pid == process.pid)
+        {
+            continue;
+        }
+        row.agent_processes.push(WorktreeProcess {
+            pid: process.pid,
+            tool: process.tool,
+            started_at: process.started_at,
+        });
+    }
+    for row in rows.iter_mut() {
+        row.agent_processes.sort_by_key(|process| process.pid);
     }
 }

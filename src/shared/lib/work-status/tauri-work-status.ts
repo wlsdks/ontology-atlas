@@ -4,6 +4,15 @@ import { invoke, isTauri } from '@tauri-apps/api/core';
 export type WorktreeStanding = 'base' | 'merged' | 'noCommits' | 'ahead' | 'unknown';
 export type LockState = 'live' | 'stale' | 'unparsed';
 export type LockTool = 'claudeCode' | 'unknown';
+export type AgentTool = 'claudeCode' | 'codex';
+
+/** An agent program whose own working folder, or a command's it runs, lies in the worktree. */
+export interface WorktreeProcess {
+  pid: number;
+  tool: AgentTool;
+  /** Seconds since the epoch. */
+  startedAt: number | null;
+}
 
 export interface WorktreeLock {
   state: LockState;
@@ -30,6 +39,7 @@ export interface WorktreeRow {
   lastCommitAuthor: string | null;
   lock: WorktreeLock | null;
   acpPid: number | null;
+  agentProcesses: WorktreeProcess[];
 }
 
 export interface WorkStatusSnapshot {

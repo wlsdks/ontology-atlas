@@ -68,7 +68,7 @@ export function WorkStatusPage() {
   if (status === 'no-history') {
     return stagePage(<WorkStatusStage state="not-repository" title={t('notRepository', { folder })} action={chooseButton('lg')} />);
   }
-  if (tracks && snapshot && snapshot.worktrees.length <= 1) {
+  if (tracks && snapshot && snapshot.worktrees.length <= 1 && tracks.sessions.length === 0) {
     return stagePage(<WorkStatusStage state="empty" title={t('empty.title', { repo: snapshot.repository })} body={t('empty.body')} action={chooseButton('lg')} />);
   }
 

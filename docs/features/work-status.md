@@ -46,7 +46,21 @@ Every read goes through the hardened Git runner in `src-tauri/src/git/runner.rs`
   the reason within one second (two on Linux): a match is a live holder, a
   mismatch or a gone pid is a lock left by an ended session, and a reason it
   cannot read counts as held. The lock time is the `locked` file's modified
-  time. No other process is read.
+  time.
+- An agent program at work in a worktree holds it too, lock or not. Atlas
+  lists the person's own processes and keeps, for each, only its parent, start
+  time, executable path and working folder; never arguments or environment.
+  A process whose working folder is in a worktree counts for the agent
+  program above it (`claude` or Claude Code's `versions/<version>`, `codex`),
+  so the Codex app's one background server shows in each worktree a command
+  of its runs in. An agent the system launched (parent launchd or init), such
+  as that server, is not counted for its own folder, so an idle Codex app
+  shows nothing. A worktree stays credited for 90 seconds after its last
+  sighting while that agent still runs; sampling is once a second while the
+  screen is visible, so a command shorter than that may be missed. A command
+  under an Atlas agent session counts for that session. A process of the same agent that
+  locked worktrees joins that lock's session. Windows reads no processes;
+  Gemini CLI runs as `node` and is not named.
 - A worktree that an Atlas agent session (ACP) works in sits under
   **Claude Agent in Atlas**; so does the main checkout while such a session
   works there.
@@ -55,8 +69,8 @@ Every read goes through the hardened Git runner in `src-tauri/src/git/runner.rs`
 
 The headline states the situation: how many worktrees are stuck, else how many
 a live session holds, else that no live session has locked one. Under it, the
-counts held and stuck. A tool that writes no lock, such as Codex, is not seen
-in slice 1, so the words say lock, never agent.
+counts held and stuck. The main checkout is a row only while an agent works
+in it.
 
 The board is a route map across two grounds, **On this Mac** and **On the
 server**, split by the `push` seam, with one ruler of stations shared by every
