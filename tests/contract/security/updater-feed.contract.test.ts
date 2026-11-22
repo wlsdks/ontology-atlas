@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -29,5 +29,19 @@ describe('installed-app updater feed', () => {
     expect(read('scripts/download/check-hosted-download-surface.mjs')).toContain(
       '/update/latest.json',
     );
+  });
+
+  it('stages that feed from one workflow, which skips every beta release', () => {
+    const workflows = readdirSync(path.join(root, '.github/workflows')).filter((name) => name.endsWith('.yml'));
+    expect(workflows.length, 'workflow census is empty').toBeGreaterThan(3);
+    const stagers = workflows.filter((name) =>
+      read(`.github/workflows/${name}`).includes('desktop:stage-hosted-updater'),
+    );
+    expect(stagers).toEqual(['deploy-pages.yml']);
+
+    const stager = read('scripts/download/stage-hosted-updater-manifest.mjs');
+    expect(stager).toContain('entry?.prerelease !== true');
+    expect(stager).toContain("parseReleaseTag(entry.tag_name).channel === 'stable'");
+    expect(stager).toMatch(/const published = releases\.filter\(isStableRelease\)/);
   });
 });

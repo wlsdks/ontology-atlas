@@ -12,6 +12,7 @@ import {
   phaseAfterCheck,
   phaseAfterFailedCheck,
   readUpdateAutoCheck,
+  releaseVersion,
   shouldCheckForUpdate,
   type UpdatePhase,
 } from './update-state';
@@ -113,12 +114,13 @@ async function requestCheck(manual: boolean): Promise<void> {
   lastAttemptAt = Date.now();
   try {
     const update = await fetchUpdate();
+    const version = update ? releaseVersion(update.version) : null;
     const now = Date.now();
     consecutiveFailures = 0;
     writeStored(LAST_CHECK_KEY, String(now));
     const state = readSession();
     const next = phaseAfterCheck({
-      found: update ? { version: update.version, notes: update.body ?? null } : null,
+      found: update && version ? { version, notes: update.body ?? null } : null,
       manual,
       phase: state.phase,
       readyVersion: state.readyVersion,
@@ -128,7 +130,7 @@ async function requestCheck(manual: boolean): Promise<void> {
     });
     patchSession({
       lastCheckedAt: now,
-      pendingVersion: update?.version ?? state.readyVersion,
+      pendingVersion: version ?? state.readyVersion,
       ...(next ? { phase: next } : {}),
     });
   } catch (error) {
@@ -200,26 +202,27 @@ async function install(): Promise<void> {
       patchSession({ phase: { kind: 'idle' }, pendingVersion: readSession().readyVersion });
       return;
     }
-    patchSession({ pendingVersion: update.version });
-    if (update.version === readSession().readyVersion) {
-      patchSession({ phase: { kind: 'ready', version: update.version } });
+    const version = releaseVersion(update.version);
+    patchSession({ pendingVersion: version });
+    if (version === readSession().readyVersion) {
+      patchSession({ phase: { kind: 'ready', version } });
       return;
     }
 
     let received = 0;
     let total: number | null = null;
-    patchSession({ phase: { kind: 'downloading', version: update.version, received, total } });
+    patchSession({ phase: { kind: 'downloading', version, received, total } });
 
     await update.downloadAndInstall((event) => {
       if (event.event === 'Started') {
         total = event.data.contentLength ?? null;
       } else if (event.event === 'Progress') {
         received += event.data.chunkLength;
-        patchSession({ phase: { kind: 'downloading', version: update.version, received, total } });
+        patchSession({ phase: { kind: 'downloading', version, received, total } });
       }
     });
 
-    patchSession({ readyVersion: update.version, noticeHidden: false, phase: { kind: 'ready', version: update.version } });
+    patchSession({ readyVersion: version, noticeHidden: false, phase: { kind: 'ready', version } });
   } catch (error) {
     patchSession({
       noticeHidden: false,
