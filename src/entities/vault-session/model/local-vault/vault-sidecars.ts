@@ -2,7 +2,7 @@ import {
   buildCodexConfigToml,
   buildMcpConfigJson,
   buildVaultMcpConfigJson,
-} from '../../lib/ontology-starter';
+} from '../../lib/agent-mcp-config';
 import { readTauriVaultTextTail } from '@/shared/lib/vault-folder/native-vault/tauri-vault-files';
 import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { parseAgentActivityLog, type AgentActivityEntry } from '@/shared/lib/agent-activity/agent-activity-log';
