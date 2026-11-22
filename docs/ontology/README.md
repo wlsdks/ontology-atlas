@@ -25,10 +25,10 @@ the shared mental model between the humans building Atlas and you.
   seems to fit two of them is a boundary question, not a filing question.
 - `capabilities/`: user-visible features inside those domains, including the
   two agent surfaces: `capabilities/mcp-tool-server` (the JSON-RPC tool
-  registry in `mcp/`) and `capabilities/cli-commands` (the local commands in
-  `cli/`). `capabilities/saved-constellations` records the durable task scope
-  shared by Map, Library, MCP, and CLI without making saved membership a
-  graph edge.
+  registry in `mcp/`) and `capabilities/vault-initializer` (the terminal
+  `init` command in `cli/`). `capabilities/saved-constellations` records the
+  durable task scope shared by Map, Library and MCP without making saved
+  membership a graph edge.
 - `elements/`: implementation evidence. Each element names a *role* (flat
   slug); the file location lives in its `path:` frontmatter, never in the slug.
 - `architecture/`: not ontology nodes. `architecture/ontology-atlas-web.md` is
