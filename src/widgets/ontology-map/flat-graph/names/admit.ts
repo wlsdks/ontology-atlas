@@ -259,7 +259,10 @@ export function admit(input: NameInput, step: number, seed: NameAdmission | null
       const offMarks = apart.filter((group) => offAllMarks(at, group));
       const clear = tries.filter((group) => offTitles(at, group, cand.id === selectedId ? tokens.selectedTitleGapPx : 0));
       const offTitle = clear.length > 0 ? clear : tries;
-      const legible = yields ? offTitle.filter((group) => !overprints(at, group) && leaderClear(group)) : offTitle;
+      const kept = yields ? offTitle.filter((group) => !overprints(at, group) && leaderClear(group)) : offTitle;
+      // The focus's name the frame never hides takes a side off every other disc across the step where one is.
+      const offAllDiscs = yields || cand.element ? [] : kept.filter((group) => offDiscsInStep(at, group));
+      const legible = offAllDiscs.length > 0 ? offAllDiscs : kept;
       // A capability with no side off every mark takes, on its backing, the side apart from names that
       // stands furthest off the discs across the step, if clear of them at the step's own scale.
       const offDiscsNow = cand.element ? [] : apart.filter((group) => discAirPx(at, group, [scale]) >= 0);
