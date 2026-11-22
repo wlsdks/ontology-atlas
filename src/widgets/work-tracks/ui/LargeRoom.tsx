@@ -6,6 +6,7 @@ import type { RoomEntry } from '@/shared/lib/work-status/work-tracks';
 import { cn } from '@/shared/lib/cn';
 import { MOTION } from '@/shared/motion';
 import { KNOWN_UNTIL, STAGE_AT, cartLoad, moruPhase, roomIdentity, roomLook, roomOnce } from '../model/room-look';
+import { MERGE_LIGHTS_OUT_MS } from '../model/moru-clock';
 import { useRise } from '../model/use-rise';
 import type { RoomUnit } from '../model/building-layout';
 import { BranchName } from './BranchName';
@@ -136,7 +137,7 @@ export function LargeRoom({ room, unit, copy, tint, guestTint, retiring, entered
   const identity = roomIdentity(room.track.branch ?? room.key);
   return (
     <div className={cn(styles.large, 'h-full w-full')} data-pair={pair || undefined} style={pair ? { ['--guest-ink' as string]: guestInk } : undefined}>
-      <div data-scene className={styles.scene} style={{ '--u': unit } as CSSProperties} data-lit={look.running} data-dark={retiring} data-cast={pair ? 'two' : look.cast} data-alarm={pair} data-mirror={!pair && identity.mirrored}>
+      <div data-scene className={styles.scene} style={{ '--u': unit, '--lights-out': `${MERGE_LIGHTS_OUT_MS}ms` } as CSSProperties} data-lit={look.running} data-dark={retiring} data-cast={pair ? 'two' : look.cast} data-alarm={pair} data-mirror={!pair && identity.mirrored}>
         <i className={styles.glow}><i className={styles.glowLight} /></i>
         <i className={styles.wainscot} />
         <i className={styles.floor} />

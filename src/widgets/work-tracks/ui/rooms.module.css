@@ -190,14 +190,14 @@
 
 .scene[data-dark='true'] .dim {
   opacity: 1;
-  /* The lights go out once the crate is in and the hatch has turned green. */
-  transition-delay: calc(var(--motion-choreography) + var(--motion-slow));
+  /* The lights go out once the crate is in, the hatch has turned green and Moru has cheered (`--lights-out`). */
+  transition-delay: var(--lights-out);
 }
 
 .scene[data-dark='true'],
 .scene[data-dark='true'] .glow,
 .scene[data-dark='true'] .lampLight {
-  transition-delay: calc(var(--motion-choreography) + var(--motion-slow));
+  transition-delay: var(--lights-out);
 }
 
 .glow {

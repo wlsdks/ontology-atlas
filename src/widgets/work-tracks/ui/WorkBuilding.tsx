@@ -9,7 +9,7 @@ import { MOTION } from '@/shared/motion';
 import { WIDE_ROOM_W, layoutBuilding, stageCapacity, type Box, type RoomBox, type RoomSize, type RoomUnit } from '../model/building-layout';
 import { mountWhenFree } from '../model/face-mount-queue';
 import { clockTime } from '../model/format';
-import { MORU_TO_NEUTRAL_MS, createMoruClock, moruOnceMs } from '../model/moru-clock';
+import { MERGE_LIGHTS_OUT_MS, createMoruClock } from '../model/moru-clock';
 import { retireeOf, roomAlertOf, roomLook, withRetirees, type Retiree } from '../model/room-look';
 import { FADE_MS, MOVE_MS } from '../model/room-sequence';
 import { FACE_KEPT_EVENT, FACE_LEFT_EVENT, exitRoom, translate, useRoomMotion } from '../model/use-room-motion';
@@ -25,11 +25,8 @@ import styles from './rooms.module.css';
 const SIDE_PADDING_PX = 40;
 const TINT_ID = 'work-room-tint';
 const SESSION_INKS = [1, 2, 3, 4, 5] as const;
-/**
- * How long a merged room stays: its crate rides in and its lights go out, and Moru returns to his
- * neutral pose and cheers the merge once before the room fades.
- */
-export const RETIRE_MS = Math.max(MOTION.choreography.duration * 2000, MORU_TO_NEUTRAL_MS + moruOnceMs('merge-cheer') + 2 * FADE_MS);
+/** How long a merged room stays: its crate rides in, Moru cheers, its lights go out and it fades. */
+export const RETIRE_MS = MERGE_LIGHTS_OUT_MS + MOTION.slow.duration * 1000 + 2 * FADE_MS;
 
 type RoomCopy = ReturnType<typeof useRoomCopy>;
 

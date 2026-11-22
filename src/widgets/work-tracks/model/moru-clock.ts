@@ -9,6 +9,11 @@ export const MORU_STEP_MS = (MOTION.expressive.duration * 1000 * 6) / 24;
 const RETURN_CELLS = 2;
 /** The longest a Moru takes from any cell back to the neutral pose. */
 export const MORU_TO_NEUTRAL_MS = Math.ceil(Math.max(...Object.values(ROOM_ROW_FRAMES)) / 2 / RETURN_CELLS) * MORU_STEP_MS;
+/** When a merged room's lights go out: once the crate is in, and once Moru has cheered the merge. */
+export const MERGE_LIGHTS_OUT_MS = Math.max(
+  (MOTION.choreography.duration + MOTION.slow.duration) * 1000,
+  MORU_TO_NEUTRAL_MS + (ROOM_ROW_FRAMES['merge-cheer'] * MORU_STEP_MS),
+);
 /** A row asked for while its room was out of sight for this long is not played late. */
 const ONCE_STALE_MS = 2000;
 

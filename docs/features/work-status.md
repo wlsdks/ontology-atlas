@@ -143,7 +143,7 @@ room goes to its new box at once; a room taking another's box arrives before
 that room leaves it. Then content fades back in, room by room, and new rooms
 rise into place. Fades out are linear, so nothing cuts. A merge plays first
 where the room stands: its crate rides into the `main` hatch, the hatch turns
-green, blinking twice, the lights go out, Moru cheers the merge once, the room fades away and a crate
+green, blinking twice, Moru cheers the merge once, the lights go out, the room fades away and a crate
 lands on the shelf as its count ticks; only then do the others move. An update
 that lands mid-sequence starts the next from where each room is drawn. When a
 commit lands, the newest crate drops onto the cart in three small steps, the
