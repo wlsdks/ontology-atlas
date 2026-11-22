@@ -40,3 +40,22 @@ export const ASK_ROW_FRAMES = {
   stop: 24,
 } as const;
 export type AskMotion = keyof typeof ASK_ROW_FRAMES;
+
+/**
+ * What Moru does in a Work status room, one row per state the room can show. None claims
+ * progress or the content of a commit; they run at the catalogue's slower beat, as play does.
+ */
+export const ROOM_ROW_FRAMES = {
+  'desk-type': 32,
+  'monitor-read': 24,
+  'nod-off': 32,
+  'heads-up': 32,
+  sigh: 24,
+  'crate-send': 32,
+  'lever-pull': 24,
+  'merge-cheer': 32,
+  galumph: 24,
+  'galumph-left': 24,
+  'settle-in': 32,
+} as const;
+export type RoomMotion = keyof typeof ROOM_ROW_FRAMES;

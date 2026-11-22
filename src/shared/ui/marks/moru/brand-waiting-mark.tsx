@@ -4,7 +4,7 @@ import { useEffect, useRef, type Ref } from 'react';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 
-import { ASK_ROW_FRAMES, CELEBRATION_MOTIONS, PLAY_ROW_FRAMES, WORK_ROW_FRAMES, type AskMotion, type CelebrationMotion, type PlayMotion, type WorkMotion } from './moru-rows';
+import { ASK_ROW_FRAMES, CELEBRATION_MOTIONS, PLAY_ROW_FRAMES, ROOM_ROW_FRAMES, WORK_ROW_FRAMES, type AskMotion, type CelebrationMotion, type PlayMotion, type RoomMotion, type WorkMotion } from './moru-rows';
 
 /** Company for pending work, one finite welcome, or a curious look beside a dead end; parents own status and Stop. */
 export function BrandWaitingMark({
@@ -24,21 +24,22 @@ export function BrandWaitingMark({
   held?: boolean;
 } & (
   | { scale?: 1 | 2; motion?: Exclude<WaitingMotion, NativeOnlyMotion> }
-  /** The curious tilt, the acted work, play and ask clips and the finishing gestures exist only as native 128px cells. */
+  /** The curious tilt, the acted work, play, ask and room clips and the finishing gestures exist only as native 128px cells. */
   | { scale: 2; motion: NativeOnlyMotion }
 )) {
   if (!active) return null;
   return held ? <WaitingMarkCell state="still" scale={scale} motion={motion} /> : <ActiveWaitingMark initialVisibility={initialVisibility} scale={scale} motion={motion} onLoopEnd={onLoopEnd} />;
 }
 
-type NativeOnlyMotion = 'curious' | WorkMotion | PlayMotion | AskMotion | CelebrationMotion;
+type NativeOnlyMotion = 'curious' | WorkMotion | PlayMotion | AskMotion | RoomMotion | CelebrationMotion;
 type WaitingMotion = 'waiting' | 'connect' | 'compile' | 'greeting' | NativeOnlyMotion;
 const CELEBRATIONS: ReadonlySet<WaitingMotion> = new Set<WaitingMotion>(CELEBRATION_MOTIONS);
 /** A gesture that plays once and rests, unlike a loop that lasts as long as the work. */
 const finite = (motion: WaitingMotion) => motion === 'greeting' || CELEBRATIONS.has(motion);
 /** Work loops run end to end without the waiting blink's long hold; play runs at the slower catalogue pace. */
-const paceOf = (motion: WaitingMotion) => (motion in WORK_ROW_FRAMES ? 'work' : motion in PLAY_ROW_FRAMES || motion in ASK_ROW_FRAMES ? 'play' : undefined);
-const framesOf = (motion: WaitingMotion): number => (WORK_ROW_FRAMES as Record<string, number>)[motion] ?? (PLAY_ROW_FRAMES as Record<string, number>)[motion] ?? (ASK_ROW_FRAMES as Record<string, number>)[motion] ?? 24;
+const SLOW_ROW_FRAMES: Record<string, number> = { ...PLAY_ROW_FRAMES, ...ASK_ROW_FRAMES, ...ROOM_ROW_FRAMES };
+const paceOf = (motion: WaitingMotion) => (motion in WORK_ROW_FRAMES ? 'work' : motion in SLOW_ROW_FRAMES ? 'play' : undefined);
+const framesOf = (motion: WaitingMotion): number => (WORK_ROW_FRAMES as Record<string, number>)[motion] ?? SLOW_ROW_FRAMES[motion] ?? 24;
 
 function ActiveWaitingMark({ initialVisibility, scale, motion, onLoopEnd }: { initialVisibility: 'observed' | 'visible'; scale: 1 | 2; motion: WaitingMotion; onLoopEnd?: () => void }) {
   const ref = useRef<HTMLSpanElement>(null);
