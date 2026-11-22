@@ -109,11 +109,12 @@ function Belt({ room }: { room: RoomEntry }) {
  * Moru with the session's name tag beside a floor lamp lit only while something runs, and the belt
  * that carries the work's crate toward the `main` hatch.
  */
-export function LargeRoom({ room, unit, width, copy, tint, guestTint, retiring }: {
+export function LargeRoom({ room, unit, width, height, copy, tint, guestTint, retiring }: {
   room: RoomEntry;
   unit: RoomUnit;
-  /** The room's width in CSS pixels, to fit two Moru when two tools share the folder. */
+  /** The room's size in CSS pixels, to fit two Moru when two tools share the folder. */
   width: number;
+  height: number;
   copy: RoomCopy;
   tint: string | null;
   /** The tint of the second tool's session, when two tools share the folder. */
@@ -127,7 +128,7 @@ export function LargeRoom({ room, unit, width, copy, tint, guestTint, retiring }
   const second = tools[1];
   const pair = look.cast === 'two' && second !== undefined;
   const guest = room.guests[0] ?? null;
-  const sceneUnit = pair ? pairUnit(width, unit) : unit;
+  const sceneUnit = pair ? pairUnit(width, unit, height) : unit;
   const guestInk = guest ? `var(--work-session-${guest.ink + 1})` : 'var(--work-unheld)';
   return (
     <div className={cn(styles.large, 'h-full w-full')} data-pair={pair || undefined} style={pair ? { ['--guest-ink' as string]: guestInk } : undefined}>

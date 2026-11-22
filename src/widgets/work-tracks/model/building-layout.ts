@@ -97,23 +97,30 @@ export function stageCapacity(width: number, height: number): number {
 /**
  * Two Moru at the room's scale, each 114 drawn pixels wide. In a wide room the second stands at
  * least 60 past the first, enough for the first one's face to show beside the second's head, left
- * of the monitor. In a narrow room the first stands on a riser, so 20 apart is enough.
+ * of the monitor. In a narrow room the first stands on a riser 50 drawn pixels high, so 20 apart is
+ * enough, and the room needs that much height above the monitor's tallest: its belt, the monitor's
+ * top and height, the tag's clearance and a Moru with its riser.
  */
 const MORU_W = 114;
 const PAIR_STEP_WIDE = 60;
 const PAIR_STEP_NARROW = 20;
 const PAIR_MARGIN_PX = 16;
+const NARROW_PAIR_FIXED_PX = 64 + 52 + 112 + 28;
+const NARROW_PAIR_DRAWN = 70 + 2 + 50;
 
 /**
- * The room's own unit when two Moru fit across it at their closest without running into the
- * monitor, which hangs at the right of a wide room; otherwise the largest unit that fits.
+ * The room's own unit when two Moru fit in it with the first one's face showing, never into the
+ * monitor; otherwise the largest unit that does.
  */
-export function pairUnit(width: number, unit: RoomUnit): RoomUnit {
+export function pairUnit(width: number, unit: RoomUnit, height = Number.POSITIVE_INFINITY): RoomUnit {
   for (let fitting = unit; ; fitting = (fitting - 1) as RoomUnit) {
-    const wide = width >= WIDE_ROOM_W;
-    const reach = wide ? Math.min(0.46 * width, 124 * fitting) + 16 : 0;
-    const step = wide ? PAIR_STEP_WIDE : PAIR_STEP_NARROW;
-    if (fitting === 1 || (MORU_W + step) * fitting + PAIR_MARGIN_PX + reach <= width) return fitting;
+    if (fitting === 1) return fitting;
+    if (width >= WIDE_ROOM_W) {
+      const reach = Math.min(0.46 * width, 124 * fitting) + 16;
+      if ((MORU_W + PAIR_STEP_WIDE) * fitting + PAIR_MARGIN_PX + reach <= width) return fitting;
+    } else if ((MORU_W + PAIR_STEP_NARROW) * fitting + PAIR_MARGIN_PX <= width && NARROW_PAIR_FIXED_PX + NARROW_PAIR_DRAWN * fitting <= height) {
+      return fitting;
+    }
   }
 }
 

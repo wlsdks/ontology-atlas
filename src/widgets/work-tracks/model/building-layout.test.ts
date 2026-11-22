@@ -90,6 +90,7 @@ describe('mini rooms', () => {
 describe('pairUnit', () => {
   it('keeps two Moru at the room scale wherever the first one\'s face shows, and never into the monitor', () => {
     expect([pairUnit(882, 2), pairUnit(640, 2), pairUnit(584, 2), pairUnit(290, 2), pairUnit(286, 1)]).toEqual([2, 2, 1, 2, 1]);
+    expect([pairUnit(290, 2, 500), pairUnit(290, 2, 460)]).toEqual([2, 1]);
     for (const [width, unit] of [[260, 1], [290, 2], [640, 2], [882, 2], [882, 3]] as const) {
       const fitted = pairUnit(width, unit);
       if (fitted === 1) continue;
