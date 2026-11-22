@@ -260,7 +260,7 @@
 
 .shadow {
   position: absolute;
-  left: calc(var(--ax) - 46 * var(--s) + var(--dx, 0px));
+  left: clamp(calc(18 * var(--s)), calc(var(--ax) - 46 * var(--s) + var(--dx, 0px)), calc(100% - 110 * var(--s)));
   bottom: calc(var(--floor) * 0.4 - 2 * var(--s));
   width: calc(92 * var(--s));
   height: calc(4 * var(--s));
@@ -341,7 +341,8 @@
 
 .actor {
   position: absolute;
-  left: calc(var(--ax) - 64 * var(--s) + var(--dx, 0px));
+  /* Inside the room's walls whatever its box and scale do mid-glide: a tail never passes the wall. */
+  left: clamp(0px, calc(var(--ax) - 64 * var(--s) + var(--dx, 0px)), calc(100% - 128 * var(--s)));
   bottom: calc(var(--floor) * 0.4 - 28 * var(--s));
   width: calc(128 * var(--s));
   height: calc(128 * var(--s));
@@ -515,19 +516,25 @@
 .screen {
   position: absolute;
   inset: calc(3 * var(--p)) calc(3 * var(--p)) calc(5 * var(--p));
-  display: flex;
-  flex-direction: column;
   overflow: hidden;
-  padding: calc(2 * var(--p)) calc(2.5 * var(--p));
   background: var(--work-room-screen);
   transition: background-color var(--motion-expressive) var(--motion-ease);
+}
+
+/* What the screen says; when it says something else, the old text fades out over the new. */
+.screenText {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: calc(2 * var(--p)) calc(2.5 * var(--p));
 }
 
 .monitor[data-off='true'] .screen {
   background: var(--work-room-screen-off);
 }
 
-.monitor[data-off='true'] .screen > * {
+.monitor[data-off='true'] .screenText > * {
   opacity: 0.42;
 }
 

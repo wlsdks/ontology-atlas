@@ -1,6 +1,6 @@
 'use client';
 
-import type { CSSProperties } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { useTranslations } from 'next-intl';
 import type { RoomEntry } from '@/shared/lib/work-status/work-tracks';
 import { cn } from '@/shared/lib/cn';
@@ -12,7 +12,7 @@ import type { RoomUnit } from '../model/building-layout';
 import { BranchName } from './BranchName';
 import { RoomMoru } from './RoomMoru';
 import { SwapText } from './SwapText';
-import type { useRoomCopy } from './use-room-copy';
+import type { MonitorCopy, useRoomCopy } from './use-room-copy';
 import styles from './rooms.module.css';
 
 type RoomCopy = ReturnType<typeof useRoomCopy>;
@@ -20,38 +20,85 @@ type RoomCopy = ReturnType<typeof useRoomCopy>;
 const LABEL = 'text-label leading-label';
 const BODY = 'text-body leading-body';
 
+/** How long a screen that says something else takes to hand over: the old text fades as the new comes up. */
+const SCREEN_SWAP_MS = MOTION.slow.duration * 1000;
+const SCREEN_EASE = `cubic-bezier(${MOTION.slow.ease.join(', ')})`;
+const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/**
+ * The screen of the state the room is in. A change of state hands the whole screen over at once,
+ * headline, rows and note together, so no frame shows an old headline over a new footer; a change
+ * within a state cross-fades only the words that changed (`SwapText`).
+ */
+function useScreenSwap(kind: string, screen: MonitorCopy) {
+  const [swap, setSwap] = useState<{ kind: string; screen: MonitorCopy; leaving: MonitorCopy | null; serial: number }>({ kind, screen, leaving: null, serial: 0 });
+  if (swap.kind !== kind) setSwap({ kind, screen, leaving: swap.screen, serial: swap.serial + 1 });
+  else if (JSON.stringify(swap.screen) !== JSON.stringify(screen)) setSwap({ ...swap, screen });
+  useEffect(() => {
+    if (swap.leaving === null) return;
+    const timer = window.setTimeout(() => setSwap(state => (state.serial === swap.serial ? { ...state, leaving: null } : state)), SCREEN_SWAP_MS);
+    return () => window.clearTimeout(timer);
+  }, [swap.leaving, swap.serial]);
+  return swap;
+}
+
+const enterScreen = (element: HTMLElement | null) => {
+  if (element && !reducedMotion()) element.animate([{ opacity: 0 }, { opacity: 1 }], { duration: SCREEN_SWAP_MS, easing: SCREEN_EASE });
+};
+const leaveScreen = (element: HTMLElement | null) => {
+  if (!element) return;
+  if (reducedMotion()) element.style.opacity = '0';
+  else element.animate([{ opacity: 1 }, { opacity: 0 }], { duration: SCREEN_SWAP_MS, easing: 'linear', fill: 'forwards' });
+};
+
+function ScreenText({ screen, leaving = false }: { screen: MonitorCopy; leaving?: boolean }) {
+  return (
+    <>
+      <div className={cn(styles.screenRow, LABEL)}>
+        <span data-ink={screen.labelInk} className={screen.labelInk ? 'font-[var(--font-weight-emphasis)]' : undefined}>
+          <SwapText value={screen.label} />
+        </span>
+        {screen.aside ? <span className="tabular-nums"><SwapText value={screen.aside} /></span> : null}
+      </div>
+      {screen.figure ? (
+        <div className={cn(styles.screenFigure, 'text-display leading-display font-[var(--font-weight-strong)] tracking-[var(--tracking-display)]')} data-tone={screen.figureTone}>
+          <SwapText value={screen.figure} />
+        </div>
+      ) : null}
+      {screen.rows.length > 0 ? (
+        <div className={cn(styles.terminal, LABEL)}>
+          {screen.rows.map((row, index) => (
+            <div key={index} className={styles.terminalRow}>
+              <span aria-hidden className={styles.prompt}>›</span>
+              <span className="truncate"><SwapText value={row} /></span>
+              {screen.live && !leaving && index === screen.rows.length - 1 ? <i aria-hidden className={styles.cursor} /> : null}
+            </div>
+          ))}
+        </div>
+      ) : null}
+      {screen.note ? <div className={cn(styles.screenNote, LABEL)}><SwapText value={screen.note} /></div> : null}
+    </>
+  );
+}
+
 function Monitor({ room, copy }: { room: RoomEntry; copy: RoomCopy }) {
   const look = roomLook(room.state);
   const screen = copy.monitor(room);
+  const { leaving, serial } = useScreenSwap(room.state.kind, screen);
   return (
     <div className={cn(styles.monitor, styles.notched)} data-off={look.monitorOff} data-room-part>
       <i className={cn(styles.monitorShadow, styles.notched)} />
       <i className={cn(styles.monitorFrame, styles.notched)} />
       <i className={cn(styles.monitorBezel, styles.notched)} />
       <div className={styles.screen} data-testid="work-room-monitor">
-        <div className={cn(styles.screenRow, LABEL)}>
-          <span data-ink={screen.labelInk} className={screen.labelInk ? 'font-[var(--font-weight-emphasis)]' : undefined}>
-            <SwapText value={screen.label} />
-          </span>
-          {screen.aside ? <span className="tabular-nums"><SwapText value={screen.aside} /></span> : null}
+        <div key={`now:${serial}`} ref={serial > 0 ? enterScreen : undefined} className={styles.screenText}>
+          <ScreenText screen={screen} />
         </div>
-        {screen.figure ? (
-          <div className={cn(styles.screenFigure, 'text-display leading-display font-[var(--font-weight-strong)] tracking-[var(--tracking-display)]')} data-tone={screen.figureTone}>
-            <SwapText value={screen.figure} />
+        {leaving ? (
+          <div key={`was:${serial}`} ref={leaveScreen} aria-hidden className={cn(styles.screenText, 'pointer-events-none')}>
+            <ScreenText screen={leaving} leaving />
           </div>
         ) : null}
-        {screen.rows.length > 0 ? (
-          <div className={cn(styles.terminal, LABEL)}>
-            {screen.rows.map((row, index) => (
-              <div key={index} className={styles.terminalRow}>
-                <span aria-hidden className={styles.prompt}>›</span>
-                <span className="truncate"><SwapText value={row} /></span>
-                {screen.live && index === screen.rows.length - 1 ? <i aria-hidden className={styles.cursor} /> : null}
-              </div>
-            ))}
-          </div>
-        ) : null}
-        {screen.note ? <div className={cn(styles.screenNote, LABEL)}><SwapText value={screen.note} /></div> : null}
       </div>
       <i className={styles.monitorBadge} />
       <i className={styles.monitorLed} />
