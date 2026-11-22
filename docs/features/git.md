@@ -49,7 +49,7 @@ The screen layout splits into two stages. First, **is this screen even in a stat
 - The header bar names the destination; from 1024px the workbench's location line stands at the bar's right; below that it is the workbench's first row. A branch too long for the bar truncates, and hovering it shows the whole branch and upstream
 - Shows what to do in one line: Open app → select folder → start recording.
   Registering a remote repository is optional so it's not included in this line. No additional menus or decorative links here
-- In the browser, `Get App` is the primary button, and copying CLI commands for terminal use is secondary
+- In the browser, `Get App` is the primary button, and copying the `git init` command for terminal use is secondary
 
 #### State with uncommitted changes (`decide`)
 - Left: the timeline — the "now" row for uncommitted changes, then the past steps. Clicking the "now" row opens the uncommitted changes on the right

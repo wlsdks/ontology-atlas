@@ -20,9 +20,9 @@ describe("Unit CI can launch the source MCP used by contract tests", () => {
   it("the contract suite really contains source MCP launch probes", () => {
     const probes = [
       read("tests/contract/security/mcp-vault-safety.contract.test.ts"),
-      read("tests/contract/vault-format/starter-templates.contract.test.ts"),
-      read("tests/contract/mcp/vault-agent-guide.contract.test.ts"),
-    ].filter((source) => source.includes("mcp/src/index.js") || source.includes("cli\", \"src\", \"index.mjs"));
+      read("tests/contract/mcp/created-by-client-name.contract.test.ts"),
+      read("tests/contract/vault-format/review-mark-authority.contract.test.ts"),
+    ].filter((source) => source.includes("mcp/src/index.js"));
 
     expect(probes.length, "MCP dependency gate is idling without a source-server consumer").toBeGreaterThan(2);
   });

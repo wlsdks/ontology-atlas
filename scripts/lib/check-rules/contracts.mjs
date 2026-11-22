@@ -8,7 +8,6 @@ export const rules = [
     matches: [
       /^docs\/ontology\/architecture\//,
       /^mcp\/src\/architecture\/architecture-profile\.(?:mjs|test\.mjs)$/,
-      /^cli\/src\/(?:commands\/repo-analysis\/architecture|lib\/analysis-results\/architecture-results)\.mjs$/,
       /^src\/entities\/architecture-profile\//,
       /^src\/views\/architecture\//,
       /^tests\/contract\/harness\/architecture-profile\.contract\.test\.ts$/,
@@ -27,8 +26,6 @@ export const rules = [
       /^tests\/contract\/(?:vault-format|design-tokens|agent-chat|security|desktop|control-adoption|layout|routes|controls|harness|agent-instructions|mcp|analysis|architecture|brand|vault-data|map|typography|messages|ci-gates|cli|library|copy|motion|settings|release\/)?/,
       /^tests\/fixtures\/(?:frontmatter|frontmatter-writer|validate-vault|vault-schema)-cases\.mjs$/,
       /^mcp\/src\/(?:parser|schema|validate)\.mjs$/,
-      /^cli\/src\/lib\/mcp-bridge\/(?:parse-frontmatter|schema|validate)\.mjs$/,
-      /^cli\/src\/commands\/local-vault\/validate(?:\.mjs|\/[a-z-]+\.mjs)$/,
       /^scripts\/lib\/parse-frontmatter\.mjs$/,
       /^src\/shared\/lib\/vault-document\/(?:parse-frontmatter|validate-vault-document)\.ts$/,
       /^scripts\/vault\/migrate-vault\.mjs$/,

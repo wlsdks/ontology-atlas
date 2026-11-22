@@ -18,7 +18,6 @@ import {
 
 /** Which nodes and edges meet a condition or resemble a given node, and whether a proposed relation is new, present or off-pattern. */
 export function createMatchQueries({
-  cliPrefix,
   edges,
   nodes,
   nodeBySlug,
@@ -70,7 +69,7 @@ export function createMatchQueries({
     rows.sort((left, right) => compareNodeRows(left, right, sort));
 
     const page = rows.slice(0, limit);
-    const followUp = buildMatchNodesFollowUp(page[0], cliPrefix);
+    const followUp = buildMatchNodesFollowUp(page[0]);
 
     return {
       operation: 'match_nodes',
@@ -117,7 +116,7 @@ export function createMatchQueries({
     }
 
     const page = matches.slice(0, limit);
-    const followUp = buildMatchEdgesFollowUp(page[0], cliPrefix);
+    const followUp = buildMatchEdgesFollowUp(page[0]);
 
     return {
       operation: 'match_edges',

@@ -47,7 +47,7 @@ const ROUTE_PATTERN = /^app\/\[locale\]\/.*\/page\.tsx$/;
  * listed because it still decides the dispatch and the read-only guard.
  */
 const CONTRACT_FILES = [
-  "cli/src/lib/cli-commands.mjs",
+  "cli/src/commands.mjs",
   "mcp/src/index.js",
   "mcp/src/server/registry.mjs",
 ];
@@ -60,7 +60,7 @@ function isContractFile(path) {
 function printHelp() {
   console.log(`Usage: pnpm decisions:check [-- --base=<ref> | --template]
 
-Fails when a change adds or removes a user-facing route or edits the MCP/CLI
+Fails when a change adds or removes a user-facing route or edits the MCP/init
 public contract without adding a decision fragment in the same change.
 
 The record is where the next pass reads what was already decided and what the

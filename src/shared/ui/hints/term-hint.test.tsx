@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { NextIntlClientProvider } from 'next-intl';
 import { describe, expect, it } from 'vitest';
 
-import { GLOSSARY_TERMS } from '@/shared/config/term-glossary';
+import { TERM_GLOSSARY } from '@/shared/config/term-glossary';
 import { TermHint } from './term-hint';
 import en from '../../../../messages/en.json';
 import ko from '../../../../messages/ko.json';
@@ -59,7 +59,7 @@ describe('TermHint', () => {
 
   it('has an expansion and an explanation for every term in both locales', () => {
     for (const messages of [en, ko]) {
-      for (const term of GLOSSARY_TERMS) {
+      for (const term of Object.keys(TERM_GLOSSARY)) {
         const entry = (messages.termHints as Record<string, { expansion?: string; explanation?: string }>)[term];
         expect(entry?.expansion?.trim(), term).toBeTruthy();
         expect(entry?.explanation?.trim(), term).toBeTruthy();

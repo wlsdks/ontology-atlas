@@ -33,10 +33,7 @@ describe('buildSkillParityHandoff', () => {
     expect(buildSkillParityHandoff([oneSided], ROOT)).toContain('.claude/skills');
   });
 
-  /**
-   * `ontology-atlas <cmd>` is not in the registry (`.claude/rules/surfaces.md`), and the CLI
-   * checkout path is unknown.
-   */
+  /** No installed `ontology-atlas` command exists (`.claude/rules/surfaces.md`). */
   it('never emits a shell command it cannot guarantee', () => {
     const text = buildSkillParityHandoff([diverged, oneSided], ROOT);
     expect(text).not.toMatch(/npx\s+ontology-atlas/);

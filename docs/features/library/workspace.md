@@ -625,7 +625,7 @@ discover before by opening the documents themselves.
   shared source is named on the row and in the Check-the-wiki brief but not counted,
   because in a two-page wiki with no links yet every page is an orphan. The shape is
   `docs/ONTOLOGY-ATLAS-SPEC.md` §11,
-  and `wiki/_template.md` is written into every new vault by `ontology-atlas init`.
+  and `wiki/_template.md` is written into every new vault by the app's starter.
   Files under `wiki/` that start with `_` are the wiki's furniture, never pages: the
   template, and `wiki/_log.md`, which the app appends to after each Compile (the sources
   handed over, the pages the folder shows new or revised) and each Check-the-wiki run

@@ -41,7 +41,7 @@ const REPO = {
       'test:run': 'vitest run',
       'test:contracts': 'vitest run tests/contract',
       typecheck: 'tsc --noEmit',
-      'agents:check': 'node cli/src/index.mjs agent-files',
+      'agents:check': 'node .agents/check-instructions.mjs',
       build: 'next build',
     },
   }),

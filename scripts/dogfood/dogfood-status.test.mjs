@@ -90,10 +90,10 @@ describe('dogfood status shortcut', () => {
     assert.equal(exitCode, 1);
     assert.equal(calls.length, 4);
     assert.deepEqual(calls.map((call) => call.args.slice(1)), [
-      ['health', 'docs/ontology'],
-      ['workspace-brief', 'docs/ontology'],
-      ['agent-brief', 'docs/ontology'],
-      ['maintenance', 'docs/ontology'],
+      ['health'],
+      ['workspace-brief'],
+      ['agent-brief'],
+      ['maintenance'],
     ]);
     assert.equal(calls[0].options.cwd, '/repo');
     assert.equal(calls[0].options.stdio, 'inherit');
@@ -186,8 +186,8 @@ describe('dogfood status shortcut', () => {
     assert.equal(calls.length, 4);
     assert.deepEqual(output, ['[dogfood:status] health:1 · workspace-brief:1 · agent-brief:0 · maintenance:0\n']);
     assert.deepEqual(diagnostics, [
-      '[dogfood:status] node cli/src/index.mjs health docs/ontology terminated by SIGTERM\n',
-      '[dogfood:status] node cli/src/index.mjs workspace-brief docs/ontology failed to start: spawn failed\n',
+      '[dogfood:status] node scripts/dogfood/dogfood-query.mjs health terminated by SIGTERM\n',
+      '[dogfood:status] node scripts/dogfood/dogfood-query.mjs workspace-brief failed to start: spawn failed\n',
       '[dogfood:status] focused follow-up: pnpm dogfood:health · pnpm dogfood:brief\n',
       '[dogfood:status] run pnpm dogfood:verify for the full installed-style dogfood vault gate\n',
     ]);
@@ -244,18 +244,18 @@ describe('dogfood status shortcut', () => {
   });
 
   it('formats child launch and signal diagnostics without wrapping normal exits', () => {
-    assert.equal(dogfoodStatusDiagnostic(['cli/src/index.mjs', 'health'], { status: 1 }), null);
+    assert.equal(dogfoodStatusDiagnostic(['scripts/dogfood/dogfood-query.mjs', 'health'], { status: 1 }), null);
     assert.match(
-      dogfoodStatusDiagnostic(['cli/src/index.mjs', 'health'], { error: new Error('spawn failed') }),
-      /node cli\/src\/index\.mjs health failed to start: spawn failed/,
+      dogfoodStatusDiagnostic(['scripts/dogfood/dogfood-query.mjs', 'health'], { error: new Error('spawn failed') }),
+      /node scripts\/dogfood\/dogfood-query\.mjs health failed to start: spawn failed/,
     );
     assert.match(
-      dogfoodStatusDiagnostic(['cli/src/index.mjs', 'health'], { signal: 'SIGTERM' }),
-      /node cli\/src\/index\.mjs health terminated by SIGTERM/,
+      dogfoodStatusDiagnostic(['scripts/dogfood/dogfood-query.mjs', 'health'], { signal: 'SIGTERM' }),
+      /node scripts\/dogfood\/dogfood-query\.mjs health terminated by SIGTERM/,
     );
     assert.match(
-      dogfoodStatusDiagnostic(['cli/src/index.mjs', 'health'], {}),
-      /node cli\/src\/index\.mjs health ended without an exit status/,
+      dogfoodStatusDiagnostic(['scripts/dogfood/dogfood-query.mjs', 'health'], {}),
+      /node scripts\/dogfood\/dogfood-query\.mjs health ended without an exit status/,
     );
   });
 });

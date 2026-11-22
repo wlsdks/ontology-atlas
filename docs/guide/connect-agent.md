@@ -71,20 +71,9 @@ cd ~/tools/ontology-atlas && pnpm install
 pnpm --dir mcp install --frozen-lockfile
 ```
 
-Then, from the root of your own repository, write the agent configs for an
-existing ontology folder:
-
-```bash
-node ~/tools/ontology-atlas/cli/src/index.mjs agent-setup ./atlas --write
-```
-
-`agent-setup` creates or repairs `.mcp.json` for Claude Code and
-`.codex/config.toml` for Codex. It changes only the `ontology-atlas` entry and
-keeps your other MCP servers. If it cannot parse a file, it leaves the file
-alone and prints a template for you to merge by hand.
-
-Any other client that speaks MCP over stdio can register the server with these
-three fields:
+Then register the server with your agent. Claude Code reads it from `.mcp.json`
+at the root of your repository, and any other client that speaks MCP over stdio
+takes the same three fields:
 
 ```json
 {
@@ -124,15 +113,7 @@ and the tools it offers. If the folder is not the one you expected, fix the
 config before you let the agent write.
 
 In the app, **Confirm the connection** beside the heading shows the restart
-step and the state of each tool's file. In a terminal, `mcp-verify` starts the
-server, lists its tools and runs real queries against the folder:
-
-```bash
-node ~/tools/ontology-atlas/cli/src/index.mjs mcp-verify ./atlas
-```
-
-This proves that the server and the folder work. It does not prove that your
-agent has loaded the config.
+step and the state of each tool's file.
 
 ## What the agent can read and write
 

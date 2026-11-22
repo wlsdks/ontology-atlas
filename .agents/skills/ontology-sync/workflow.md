@@ -26,10 +26,10 @@ human sees the change appear in their workbench.
 
 The MCP server `ontology-atlas` (the compiled `ontology-atlas-mcp` binary
 inside the installed app, or `mcp/src/index.js` from a source checkout) is the
-primary path. Fall back to the source checkout CLI with
-`node <atlas-checkout>/cli/src/index.mjs add|import|validate ...` if MCP is
-unavailable in the current session. There is no npm-installed `ontology-atlas`
-command to assume.
+only write path. If MCP is unavailable in the current session, read the
+vault's Markdown files directly, write nothing to the vault, and tell the
+person the Atlas connection is missing; the app's Connect a coding agent dialog
+restores it. There is no npm-installed `ontology-atlas` command to assume.
 
 ### 1. Read what's already there (cheap)
 

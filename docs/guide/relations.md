@@ -77,16 +77,7 @@ The MCP server answers graph questions from the same frontmatter, so your agent 
 
 To write, `add_relation` takes `from`, `to`, a `type` (`depends_on`, `relates`, `contains`, `describes`, `domains`, `capabilities`, `elements` or `domain`) and a `why`. `remove_relation` and `replace_relation` preview by default and write only with `confirm: true`. `broader` is not one of the `add_relation` types yet. To change it, an agent calls `patch_concept` with the full new list and the file's `mtime`, then runs `validate_vault`.
 
-[The CLI](/guide/cli) offers the same reads in a terminal. Run from a checkout of the Atlas source, these commands read the Atlas repository's own ontology:
-
-```bash
-node cli/src/index.mjs backlinks capabilities/mcp-tool-server --vault docs/ontology
-node cli/src/index.mjs path capabilities/cli-commands domains/human-workbench --vault docs/ontology
-node cli/src/index.mjs blast-radius capabilities/mcp-tool-server --direction incoming --vault docs/ontology
-node cli/src/index.mjs domain-matrix docs/ontology --types depends_on
-```
-
-`relate` and `remove-relation` write one relation, with the same checks as the MCP tools. On the map, **Edit relations** does the same, one relation at a time; see [Editing concepts and relations](/guide/studio).
+On the map, **Edit relations** writes one relation at a time, with the same checks as the MCP tools; see [Editing concepts and relations](/guide/studio).
 
 ## The files stay the truth
 

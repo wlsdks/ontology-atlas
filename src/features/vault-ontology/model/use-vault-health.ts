@@ -5,7 +5,7 @@ import { useDataSourceMode, useStaticVaultSource, useLocalVault } from '@/entiti
 import type { VaultManifest } from '@/entities/docs-vault';
 import { computeVaultHealth, type VaultHealthResult } from '@/entities/knowledge-graph';
 
-/** Browser twin of the CLI `health`. */
+/** Browser twin of MCP `query_ontology` health. */
 const staticHealthCache = new WeakMap<VaultManifest, VaultHealthResult>();
 function manifestHealth(manifest: VaultManifest): VaultHealthResult {
   const cached = staticHealthCache.get(manifest);

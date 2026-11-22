@@ -36,21 +36,18 @@ export const rules = [
       /^\.agents\/.+/,
       /^\.codex\/.+/,
       /^\.mcp\.json$/,
-      /^cli\/src\/lib\/agent-setup\/agent-files\.mjs$/,
-      /^cli\/src\/commands\/agent-setup\/agent-files\.mjs$/,
     ],
   },
   {
     order: 610,
     command: 'pnpm exec vitest run tests/contract/harness/agent-files.contract.test.ts tests/contract/agent-instructions/nested-agents-pointers.contract.test.ts tests/contract/agent-instructions/skill-routing.contract.test.ts tests/contract/agent-instructions/rules-path-scope.contract.test.ts tests/contract/security/secret-read-guard.contract.test.ts tests/contract/ci-gates/node-test-reachability.contract.test.ts tests/contract/agent-instructions/agent-file-citations.contract.test.ts',
-    reason: 'one side of the agent-files pair, or a rule glob the nested pointers derive from, changed',
+    reason: 'the agent-files classifier, or a rule glob the nested pointers derive from, changed',
     /*
-     * The two agent-files implementations are one contract, and nested `AGENTS.md` pointers derive
-     * their rule set from `.claude/rules/` frontmatter; editing either side must recommend both
+     * `agents:check` classifies with the app's agent-files module, and nested `AGENTS.md` pointers
+     * derive their rule set from `.claude/rules/` frontmatter; editing either must recommend both
      * contracts.
      */
     matches: [
-      /^cli\/src\/lib\/agent-setup\/agent-files\.mjs$/,
       /^src\/entities\/agent-files\/model\/agent-files\.ts$/,
       /^tests\/fixtures\/agent-files-cases\.mjs$/,
       /^\.claude\/rules\/[^/]+\.md$/,

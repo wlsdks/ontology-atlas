@@ -24,8 +24,8 @@ contract_version: 2.1-rc
 
 ## Korean summary
 
-This document **elevates to a public specification** the vault markdown frontmatter schema that the `ontology-atlas` repository has already implemented and enforced. v2 is the first breaking revision requiring an immutable UUIDv4 `uid` for all `kind:` nodes — it documents exactly what `mcp/src/schema.mjs` (canonical) · `cli/src/lib/mcp-bridge/schema.mjs`
-(mirror) · `src/shared/lib/vault-document/validate-vault-document.ts` (validator) actually do.
+This document **elevates to a public specification** the vault markdown frontmatter schema that the `ontology-atlas` repository has already implemented and enforced. v2 is the first breaking revision requiring an immutable UUIDv4 `uid` for all `kind:` nodes — it documents exactly what `mcp/src/schema.mjs` (canonical) ·
+`src/shared/lib/vault-document/validate-vault-document.ts` (validator) actually do.
 
 Key points:
 
@@ -111,8 +111,7 @@ instead of maintaining another kind test.
 
 Every authored ontology node is a single `.md` file whose YAML frontmatter
 includes a `kind` key. A writer accepts exactly the five values defined by
-`VAULT_KINDS` in `mcp/src/schema.mjs` (mirrored in
-`cli/src/lib/mcp-bridge/schema.mjs`):
+`VAULT_KINDS` in `mcp/src/schema.mjs`:
 
 ```js
 export const VAULT_KINDS = ['project', 'domain', 'capability', 'element', 'document'];
@@ -222,8 +221,7 @@ invisible to kind-aware queries until corrected.
 ## 3. Per-kind frontmatter shape
 
 This section is a literal transcription of `VAULT_KIND_SCHEMA` in
-`mcp/src/schema.mjs` — the canonical source, mirrored byte-for-byte in
-`cli/src/lib/mcp-bridge/schema.mjs` and kept in lock-step by
+`mcp/src/schema.mjs` — the canonical source, pinned by
 `tests/contract/vault-format/vault-schema.contract.test.ts`.
 
 Every node, regardless of kind, MUST have:
@@ -427,7 +425,7 @@ whose values are one-line strings:
 
 ```yaml
 dependencies: [capabilities/mcp-server]
-relation_notes: { capabilities/mcp-server: "The CLI delegates its reads and writes to the same MCP contracts, so a schema change must be checked on both surfaces." }
+relation_notes: { capabilities/mcp-server: "The app reads the frontmatter the MCP server writes, so a schema change must be checked on both surfaces." }
 ```
 
 Semantics a conformant implementation MUST keep:
@@ -535,15 +533,15 @@ kept in lock-step by
 | `missing-expected-field` | warning | a "strongly expected" field for this kind (§3 — `domain` on capability/element) is absent or blank |
 | `non-canonical-graph-array` | warning | a relation array (§5) is present but not in canonical sorted/deduped form |
 | `dangling-graph-reference` | warning | *(whole-vault validators only — see below)* a relation array or `domain` key points at a slug that does not exist anywhere in the vault |
-| `swallowed-relation-note` | **error** | *(MCP and CLI validators only — see below)* a `relation_notes` value contains another declared target in `target: ` form: an unquoted value swallowed the entries after it, and their rationale is gone |
-| `orphaned-relation-note` | **error** | *(MCP and CLI validators only — see below)* a `relation_notes` key names no relation the document declares, so no edge carries the sentence; the key side of the same unquoted-value accident, or a note left behind by a manual relation removal |
+| `swallowed-relation-note` | **error** | *(MCP validator only — see below)* a `relation_notes` value contains another declared target in `target: ` form: an unquoted value swallowed the entries after it, and their rationale is gone |
+| `orphaned-relation-note` | **error** | *(MCP validator only — see below)* a `relation_notes` key names no relation the document declares, so no edge carries the sentence; the key side of the same unquoted-value accident, or a note left behind by a manual relation removal |
 | `definition-missing` | warning | *(body scope — see below)* a `domain`, `capability`, or `element` whose body states no definition, neither before its first `##` nor under a `## Definition` / `## Summary` / `## Overview` heading: still the starter scaffold, too short to be a sentence, or circular — adding fewer than six words the title does not already supply |
 | `boundary-missing` | warning | *(body scope)* a `domain` or `capability` with no `## Includes` or no `## Excludes` section holding anything but placeholders; one finding per missing side |
 | `epistemic-exclusion` | warning | *(body scope)* an exclusion bullet that states an evidence limit ("not mentioned in this scan") rather than a product boundary — the one claim a source-hidden reader cannot check and does repeat as fact |
-| `folder-only-evidence` | warning | *(write-path gate, plus `validate_vault` and the CLI when a repository root is known)* frontmatter `path:` resolves to a directory, so this node's evidence drift can never be judged: a folder changes on almost any commit beneath it |
-| `dependency-unwitnessed` | warning | *(write-path gate for an edge the write just added, plus `validate_vault` and the CLI for every edge, when a repository root is known)* a `dependencies:` entry no file names: neither the source node's own file nor any repository-relative file path written in that edge's `relation_notes` mentions the target's path or its basename. An import witnesses a code dependency; its absence is **not** proof of independence, so the repair asked for is the witness (which file, which line, in the relation's `why`), not the deletion |
-| `starter-example-node` | warning | *(write-path gate at the creation of a real node, plus `validate_vault`, the CLI, and `maintenance_plan` for the starter itself)* a node `init` wrote as a shape to copy — `domains/example-domain`, `capabilities/example-capability`, `elements/example-element`, or any `example-…` slug whose title opens with "Example" — still standing after a real node of the same kind arrived. Needs no repository root, no body, and no filesystem, only the other nodes' kinds |
-| `kind-under-sources` | warning | *(`validate_vault` and the CLI)* a `.md` under `sources/` carries `kind:`. Every file there is a raw source (§11), so it is not a node and none of the codes above judge it; move it into its kind folder to make it one, then repoint each relation that names its old path |
+| `folder-only-evidence` | warning | *(write-path gate, plus `validate_vault` when a repository root is known)* frontmatter `path:` resolves to a directory, so this node's evidence drift can never be judged: a folder changes on almost any commit beneath it |
+| `dependency-unwitnessed` | warning | *(write-path gate for an edge the write just added, plus `validate_vault` for every edge, when a repository root is known)* a `dependencies:` entry no file names: neither the source node's own file nor any repository-relative file path written in that edge's `relation_notes` mentions the target's path or its basename. An import witnesses a code dependency; its absence is **not** proof of independence, so the repair asked for is the witness (which file, which line, in the relation's `why`), not the deletion |
+| `starter-example-node` | warning | *(write-path gate at the creation of a real node, plus `validate_vault` and `maintenance_plan` for the starter itself)* a node `init` wrote as a shape to copy — `domains/example-domain`, `capabilities/example-capability`, `elements/example-element`, or any `example-…` slug whose title opens with "Example" — still standing after a real node of the same kind arrived. Needs no repository root, no body, and no filesystem, only the other nodes' kinds |
+| `kind-under-sources` | warning | *(`validate_vault`)* a `.md` under `sources/` carries `kind:`. Every file there is a raw source (§11), so it is not a node and none of the codes above judge it; move it into its kind folder to make it one, then repoint each relation that names its old path |
 | `uncertainty-missing` | warning | *(body scope)* a `domain`, `capability`, or `element` with no `## Uncertainty` / `## Open questions` / `## Unknowns` / `## Not checked` / `## Confidence` section holding anything but a placeholder. A node that records no unknown claims completeness, and §2.1 evidence is always partial |
 | `slug-outside-kind-folder` | warning | *(body scope, and only where the caller knows the document's position)* a `domain`, `capability`, or `element` whose slug does not start with its kind's folder (§4). Valid, never blocked, and reported once at creation: a flat node groups with nothing in any reader that shows a vault by kind |
 
@@ -565,9 +563,9 @@ and does not claim to catch it.
 The last eight are advisories about a node's body, its address, and the code it
 stands on rather than about frontmatter shape, so **body scope** above means
 they read the Markdown after the frontmatter. The judgement lives in one place,
-`mcp/src/meaning/meaning-findings.mjs`, and reaches a reader through four channels: the
+`mcp/src/meaning/meaning-findings.mjs`, and reaches a reader through three channels: the
 `add_concept` / `add_concepts` / `patch_concept` response, `query_ontology({operation:"maintenance_plan"})`,
-`validate_vault`, and the CLI's validate command. `src/shared/lib/vault-document/meaning-findings.ts`
+and `validate_vault`. `src/shared/lib/vault-document/meaning-findings.ts`
 is the browser port of the same rules, checked against the canonical module by
 `tests/contract/analysis/meaning-findings-parity.contract.test.ts`.
 
@@ -639,9 +637,7 @@ write (construction rules, step 5); a conformant implementation MAY omit them an
 MUST NOT turn them into errors.
 
 `swallowed-relation-note` and `orphaned-relation-note` live in
-`mcp/src/validate.mjs` and its byte-identical CLI copy
-(`cli/src/lib/mcp-bridge/validate.mjs`, `mcp/src/validate.test.mjs` and
-`cli/src/lib/mcp-bridge/validate.test.mjs` mirror the cases) and are not implemented by
+`mcp/src/validate.mjs` (cases in `mcp/src/validate.test.mjs`) and are not implemented by
 the per-document fast path either; that path does not read `relation_notes`.
 
 ## 7. The untrusted-content principle
@@ -727,9 +723,9 @@ repository's existing contract-test layer, because the spec is a
 transcription of already-tested behavior:
 
 - **`tests/contract/vault-format/vault-schema.contract.test.ts`** — verifies
-  `mcp/src/schema.mjs` and `cli/src/lib/mcp-bridge/schema.mjs` produce byte-identical
+  `mcp/src/schema.mjs` against one fixture matrix for its
   `buildFrontmatter` output, `missingExpectedFields` decisions, and
-  `folderForKind` mappings for the same fixture matrix
+  `folderForKind` mappings
   (`tests/fixtures/vault-schema-cases.mjs`), and additionally cross-checks
   that the UI's `KIND_EXPECTED_EXTRAS` dictionary agrees with the schema's
   `requiredExtras` for every kind. This is the direct test of §3 and §4
@@ -743,7 +739,7 @@ transcription of already-tested behavior:
   contract (`src/shared/lib`, `mcp/src/parser.mjs`, `scripts/lib`) covering
   the underlying YAML-frontmatter-in-Markdown parsing this spec assumes in
   §2–§5.
-- **`pnpm vault:validate`** — the CLI entry point a human or CI pipeline
+- **`pnpm vault:validate`** — the command a human or CI pipeline
   runs against a real vault directory; it is the whole-vault version of the
   validator described in §6 and is itself run in this repository's CI.
 

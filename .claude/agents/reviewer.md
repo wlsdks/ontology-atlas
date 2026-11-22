@@ -101,8 +101,8 @@ finding, never a reason to judge code by eye.
   surface.
 - `installed-app` — the touched state was proven in the installed app's real
   window, not only in a browser.
-- `agent-action` — the visible state gives a real next MCP or CLI action an
-  agent can run, bound to the fact on screen, with a CLI fallback.
+- `agent-action` — the visible state gives a real next MCP action an agent can
+  run, bound to the fact on screen.
 
 Source lenses, for hygiene, refactor and structural slices:
 

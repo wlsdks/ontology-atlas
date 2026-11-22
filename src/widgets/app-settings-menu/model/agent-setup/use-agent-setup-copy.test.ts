@@ -22,16 +22,16 @@ describe('useAgentSetupCopy', () => {
 
   it('marks only the clicked chip copied, with that chip text on the clipboard', async () => {
     const { result } = renderHook(() => useAgentSetupCopy('notes', '/v'));
-    await act(() => result.current.copy('verifyCli'));
-    expect(result.current.states.verifyCli).toBe('copied');
+    await act(() => result.current.copy('firstContactProof'));
+    expect(result.current.states.firstContactProof).toBe('copied');
     expect(result.current.states.setupPacket).toBe('idle');
-    expect(copyText.mock.calls[0]?.[0]).toContain("validate '/v'");
+    expect(copyText.mock.calls[0]?.[0]).toContain('Ontology vault: /v');
   });
 
   it('marks the chip failed when the clipboard refuses', async () => {
     clipboardAccepts = false;
     const { result } = renderHook(() => useAgentSetupCopy('notes', '/v'));
-    await act(() => result.current.copy('jsonGate'));
-    expect(result.current.states.jsonGate).toBe('failed');
+    await act(() => result.current.copy('postChangeSync'));
+    expect(result.current.states.postChangeSync).toBe('failed');
   });
 });

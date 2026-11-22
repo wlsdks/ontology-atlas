@@ -26,7 +26,7 @@ export function readFileRevision(filePath) {
   }
 }
 
-export function sameFileRevision(left, right) {
+function sameFileRevision(left, right) {
   return Boolean(
     left
     && right

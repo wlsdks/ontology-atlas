@@ -512,7 +512,6 @@ test.describe("web smoke 3: honest downgrade", () => {
     await expect(body).toContainText('"OATLAS_VAULT": "/Users/me/notes"');
     await expect(body).toContainText("/Users/me/ontology-atlas/mcp/src/index.js");
     await expect(page.getByTestId("web-manual-connect-copy-config")).toBeEnabled();
-    await expect(page.getByTestId("web-manual-connect-copy-cli")).toBeEnabled();
 
     /*
      * The docs link is not the main path: the task finishes without leaving this place, and building a

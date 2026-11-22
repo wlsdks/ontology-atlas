@@ -63,7 +63,7 @@
 
 ## 역량마다 근거를 달아 주세요
 
-역량을 만들 때는 열어 볼 근거도 그 자리에서 함께 적으세요. `path:`에 구현 진입점 하나, 또는 `elements:`에 요소 하나 이상이면 돼요. 둘 다 없는 역량은 아무도 확인할 수 없는 주장이에요. 그래도 저장은 되지만, 무언가를 가리키게 될 때까지 정리 대기열에 `capability_without_evidence`로 남아요. 이 대기열은 `query_ontology`의 `maintenance_plan`이나 `node cli/src/index.mjs maintenance`로 볼 수 있어요.
+역량을 만들 때는 열어 볼 근거도 그 자리에서 함께 적으세요. `path:`에 구현 진입점 하나, 또는 `elements:`에 요소 하나 이상이면 돼요. 둘 다 없는 역량은 아무도 확인할 수 없는 주장이에요. 그래도 저장은 되지만, 무언가를 가리키게 될 때까지 정리 대기열에 `capability_without_evidence`로 남아요. 이 대기열은 `query_ontology`의 `maintenance_plan`으로 볼 수 있어요.
 
 ```markdown
 ---

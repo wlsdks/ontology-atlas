@@ -1,10 +1,15 @@
-import { spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { existsSync, readFileSync, readdirSync, realpathSync, statSync } from 'node:fs';
+import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// Repository policy only. The public agent-files CLI keeps reporting literal
-// copy differences for other repositories and for human inspection.
+import {
+  analyzeAgentFiles,
+  classifyAgentFilePath,
+  extractAtRefs,
+} from '../src/entities/agent-files/model/agent-files.ts';
+
+// Repository policy only. The app's Harness tab keeps reporting literal copy
+// differences for other repositories and for human inspection.
 export function partitionFindings(findings) {
   const expected = [];
   const failures = [];
@@ -60,12 +65,86 @@ export function inspectTree(root, tree) {
   return { files: files.length, skills: skills.length, agents: agents.length, failures };
 }
 
+/** Root files an agent reads, plus the directories walked for rules, hooks, skills and briefs. */
+const ROOT_FILE_CANDIDATES = Object.freeze([
+  'CLAUDE.md', 'AGENTS.md', 'GEMINI.md', '.cursorrules', '.mcp.json',
+  '.github/copilot-instructions.md', '.claude/settings.json',
+]);
+const SCAN_DIRS = Object.freeze([
+  '.claude/rules', '.claude/hooks', '.claude/skills', '.claude/agents',
+  '.agents/skills', '.agents/agents', '.cursor/rules', '.codex',
+]);
+const MAX_CONTENT_BYTES = 512 * 1024;
+
+function walkFiles(absDir, relDir, ancestors = new Set()) {
+  const realDirectory = realpathSync.native(absDir);
+  if (ancestors.has(realDirectory)) return [];
+  ancestors.add(realDirectory);
+  const out = [];
+  for (const name of readdirSync(absDir)) {
+    const absChild = join(absDir, name);
+    let stat;
+    try {
+      stat = statSync(absChild);
+    } catch (error) {
+      if (['ENOENT', 'ELOOP', 'ENOTDIR'].includes(error.code)) continue;
+      throw error;
+    }
+    if (stat.isDirectory()) out.push(...walkFiles(absChild, `${relDir}/${name}`, ancestors));
+    else if (stat.isFile()) out.push(`${relDir}/${name}`);
+  }
+  ancestors.delete(realDirectory);
+  return out;
+}
+
+function readEntry(root, relativePath, realRoot) {
+  const absPath = join(root, relativePath);
+  const bytes = statSync(absPath).size;
+  const content = bytes <= MAX_CONTENT_BYTES ? readFileSync(absPath, 'utf-8') : null;
+  const fromRoot = relative(realRoot, realpathSync.native(absPath));
+  const outside = fromRoot === '..' || fromRoot.startsWith(`..${sep}`) || isAbsolute(fromRoot);
+  return outside ? { path: relativePath, content, bytes, outside: true } : { path: relativePath, content, bytes };
+}
+
+/** Only the known agent-file patterns, never the whole tree; nested AGENTS.md one level deep. */
+export function scanAgentFiles(root) {
+  const realRoot = realpathSync.native(root);
+  const isFile = (path) => existsSync(join(root, path)) && statSync(join(root, path)).isFile();
+  const paths = ROOT_FILE_CANDIDATES.filter(isFile);
+  for (const entry of readdirSync(root, { withFileTypes: true })) {
+    if (!entry.isDirectory() || entry.name.startsWith('.') || entry.name === 'node_modules') continue;
+    const nested = `${entry.name}/AGENTS.md`;
+    if (isFile(nested) && classifyAgentFilePath(nested)) paths.push(nested);
+  }
+  for (const directory of SCAN_DIRS) {
+    const abs = join(root, directory);
+    if (!existsSync(abs) || !statSync(abs).isDirectory()) continue;
+    paths.push(...walkFiles(abs, directory).filter((path) => classifyAgentFilePath(path)));
+  }
+  return paths.map((path) => readEntry(root, path, realRoot));
+}
+
+/** Resolves only the @references the files name, so the pure analyzer can judge existence. */
+function referencedPaths(root, files) {
+  const existing = new Set();
+  for (const entry of files) {
+    if (!/\.(md|mdc)$/.test(entry.path) || typeof entry.content !== 'string') continue;
+    const directory = entry.path.includes('/') ? entry.path.slice(0, entry.path.lastIndexOf('/')) : '';
+    for (const { ref } of extractAtRefs(entry.content)) {
+      if (ref.includes('*')) continue;
+      for (const candidate of [ref, directory ? `${directory}/${ref}` : ref]) {
+        const normalized = candidate.split('/').filter((part) => part !== '.' && part !== '').join('/');
+        if (!normalized.includes('..') && existsSync(join(root, normalized))) existing.add(normalized);
+      }
+    }
+  }
+  if (existsSync(join(root, 'AGENTS.md'))) existing.add('AGENTS.md');
+  return [...existing].sort();
+}
+
 export function run(root = process.cwd()) {
-  const result = spawnSync(process.execPath, ['cli/src/index.mjs', 'agent-files', '--json', '--english-only'], {
-    cwd: root, encoding: 'utf8', maxBuffer: 8 * 1024 * 1024,
-  });
-  if (result.error || ![0, 1].includes(result.status)) throw result.error ?? new Error(result.stderr || 'agent-files could not run');
-  const report = JSON.parse(result.stdout);
+  const files = scanAgentFiles(root);
+  const report = analyzeAgentFiles({ files, existingPaths: referencedPaths(root, files), requireEnglish: true });
   if (!Array.isArray(report.drift) || !report.summary?.files) throw new Error('agent-files returned an empty or invalid inventory');
   const { expected, failures } = partitionFindings(report.drift);
   const trees = ['.agents', '.claude'].map((tree) => ({ tree, ...inspectTree(root, tree) }));

@@ -292,6 +292,45 @@ describe.each(VAULTS)("flat graph layout: %s", (_, model) => {
     expect(overlapping(focused.names, layout, 1)).toEqual([]);
   });
 
+  it("keeps every name it admits beside a selected capability, lit or in a context lens, off every disc not its own at both ends of its zoom step", () => {
+    const t = TOKENS.paint;
+    const pad = t.namePadPx;
+    const discIds = [model.projectId, ...layout.clusters.flatMap((c) => [c.domainId, ...c.items.filter((it) => !it.direct).map((it) => it.id)]), ...layout.orphanIds]
+      .filter((id): id is string => id !== null && layout.positions.has(id));
+    const over: string[] = [];
+    for (const step of [-4, -2, 0, 2]) {
+      for (const end of [-0.499, 0.499]) {
+        const scale = 2 ** ((step + end) / t.zoomStepsPerOctave);
+        for (const cap of model.capabilityById.values()) {
+          if (!layout.positions.has(cap.id)) continue;
+          const attention = cachedGraphAttention(model, cap.id, true);
+          const radius = (id: string) => (id === cap.id ? selectedDiscRadius(4, t, 1) : 4);
+          for (const lens of [false, true]) {
+            const admitted = admittedNames({
+              model, layout, tokens: t, labels: LABELS, measureText: measure, fontFamily: "sans-serif", scale, growth: 1,
+              elementLabel: (id) => id, staleByDomain: null, lit: lens ? null : attention.lit, focusId: cap.id,
+              attentionKey: `${attention.key}|${lens}`, agentFocusId: null, openStarId: cap.id, selected: true, named: attention.named,
+              reach: attention.reach, lines: lens ? [] : attention.lines, discRadius: () => 4, elementSpacingPx: 0, hubCaption: null,
+            });
+            for (const n of admitted.names) {
+              if (n.role !== "capability" || attention.named.has(n.id)) continue;
+              const at = layout.positions.get(n.id)!;
+              for (const id of discIds) {
+                if (id === n.id) continue;
+                const p = layout.positions.get(id)!;
+                const dx = Math.max(at.x * scale + n.box.minX + pad - p.x * scale, 0, p.x * scale - (at.x * scale + n.box.maxX - pad));
+                const dy = Math.max(at.y * scale + n.box.minY + pad - p.y * scale, 0, p.y * scale - (at.y * scale + n.box.maxY - pad));
+                const air = Math.hypot(dx, dy) - radius(id);
+                if (air < 0) over.push(`${n.id} over ${id} by ${(-air).toFixed(1)} px at ${scale.toFixed(3)} beside ${cap.id}${lens ? " in a lens" : ""}`);
+              }
+            }
+          }
+        }
+      }
+    }
+    expect(over.length, over.slice(0, 8).join("; ")).toBe(0);
+  });
+
   it("always names the concept an agent is working on, even an element too dense to name", () => {
     const element = layout.clusters.flatMap((c) => c.items.flatMap((it) => it.elementIds))[0]!;
     const admitted = namesAt(model, layout, 0.5, null, element, 0);

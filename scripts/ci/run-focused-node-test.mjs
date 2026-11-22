@@ -96,7 +96,7 @@ function tapPatternMatchCount(output, pattern) {
 
 function customHarnessMatchCount(output) {
   const match = String(output).match(
-    /^# (?:cli )?integration: (\d+) passed, (\d+) failed(?:, \d+ skipped)?$/m,
+    /^# integration: (\d+) passed, (\d+) failed(?:, \d+ skipped)?$/m,
   );
   return match
     ? Number.parseInt(match[1], 10) + Number.parseInt(match[2], 10)
