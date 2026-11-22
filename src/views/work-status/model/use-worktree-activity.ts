@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { readActivityStamps, readWorktreeActivity, type WorktreeActivity } from '@/shared/lib/work-status/tauri-work-status';
 
-/** How often the visible screen stats each worktree's `HEAD`, `index` and reflog. */
+/** How often the visible screen stats each worktree's `HEAD`, `index` and reflog right after a read. */
 export const STAMP_INTERVAL_MS = 1000;
+/** While no worktree is due the interval doubles up to this. */
+const STAMP_SLOWEST_MS = 4000;
 /** A worktree is read at most this often, however often its stamp moves. */
 export const ACTIVITY_MIN_GAP_MS = 10_000;
 /**
@@ -31,7 +33,7 @@ export function activityDue(visit: Visit | undefined, stamp: string | undefined,
 
 /**
  * Each shown worktree's newest commit subjects and uncommitted files. While the screen is visible
- * it stats the worktrees once a second and reads, one worktree at a time and in the order given,
+ * it stats the worktrees every one to four seconds (slower while none is due) and reads, one worktree at a time and in the order given,
  * those whose `HEAD` or index moved or whose beat came. A worktree nobody works in costs nothing
  * after its first read; a hidden screen asks nothing.
  */
@@ -53,12 +55,18 @@ export function useWorktreeActivity(
     let cancelled = false;
     let busy = false;
     let timer: number | undefined;
+    let wait = STAMP_INTERVAL_MS;
     const visits = new Map<string, Visit>();
     const visible = () => document.visibilityState === 'visible';
 
     const tick = async () => {
-      if (busy || !visible()) return;
+      if (!visible()) return;
+      if (busy) {
+        timer = window.setTimeout(() => void tick(), wait);
+        return;
+      }
       busy = true;
+      let didRead = false;
       try {
         const stamps = await readActivityStamps(root).catch(() => null);
         for (;;) {
@@ -68,6 +76,7 @@ export function useWorktreeActivity(
           const beatMs = beatFor(live.size);
           const key = order.find(candidate => activityDue(visits.get(candidate), stamps?.[candidate], live.has(candidate) ? beatMs : null, nowMs));
           if (key === undefined) return;
+          didRead = true;
           visits.set(key, { atMs: nowMs, stamp: stamps?.[key] ?? null });
           const read = await readWorktreeActivity(root, key, base).catch(() => null);
           if (cancelled) return;
@@ -82,19 +91,23 @@ export function useWorktreeActivity(
         }
       } finally {
         busy = false;
+        wait = didRead ? STAMP_INTERVAL_MS : Math.min(STAMP_SLOWEST_MS, wait * 2);
+        if (!cancelled && timer !== undefined) timer = window.setTimeout(() => void tick(), wait);
       }
     };
 
+    /** Starts the watch with a read now while the screen is visible; a hidden screen leaves it stopped. */
     const schedule = () => {
-      window.clearInterval(timer);
-      timer = visible() ? window.setInterval(() => void tick(), STAMP_INTERVAL_MS) : undefined;
+      window.clearTimeout(timer);
+      wait = STAMP_INTERVAL_MS;
+      timer = visible() ? 0 : undefined;
       if (timer !== undefined) void tick();
     };
     schedule();
     document.addEventListener('visibilitychange', schedule);
     return () => {
       cancelled = true;
-      window.clearInterval(timer);
+      window.clearTimeout(timer);
       document.removeEventListener('visibilitychange', schedule);
     };
   }, [root]);

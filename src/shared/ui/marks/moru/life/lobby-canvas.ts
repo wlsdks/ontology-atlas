@@ -1,14 +1,16 @@
 /**
- * The lobby's host: one Canvas 2D canvas, one `setTimeout` clock at 8 Hz that slows while nothing changes, and a
- * capped store of composed poses. Ported from the life prototype's host (`scripts/brand/moru-cast/life/page.js`).
+ * The lobby's host: one Canvas 2D canvas stepped on the page's pixel beat (every beat while a Moru walks, every
+ * other one otherwise, slower while nothing changes), and a capped store of composed poses. Ported from the life prototype's host (`scripts/brand/moru-cast/life/page.js`).
  * The floor is drawn at a room's scale (`unit`, whole or half steps); its fixtures are drawn once a size into a
  * picture the changed rectangles are restored from, so the page holds one canvas.
  *
  * A pose's body is composed once from the indexed sheet with the Moru's palette and the pieces worn on its skin,
  * and kept as an `ImageBitmap`; flippers and props are kept once for everybody. The store is capped
  * (`CACHE_BYTES`), least recently shown out first, never a picture on screen. Showing a pose again is a few
- * `drawImage` calls into the rectangles that changed, at whole device pixels.
+ * `drawImage` calls into the rectangles that changed. The canvas holds the floor's own pixels and the page scales
+ * it up unsmoothed, so a changed rectangle is a quarter of the device pixels on a Retina screen.
  */
+import { PIXEL_BEAT_MS, onPixelBeat } from '@/shared/motion/pixel-beat';
 import { facingClip, type LifeAtlas, type LifeClip, type LifePose, type PiecePart } from './atlas';
 import { centre, createWorld, tick, type Moru, type World } from './behaviour';
 import { crewSize, nearestGap, openLobby, setCrew, tend, type Presence } from './presence';
@@ -22,14 +24,14 @@ export const LIFE_SHEETS = {
   wardrobe: '/brand/moru-life-wardrobe.png',
   props: '/brand/moru-life-props.png',
 };
-/** The clock's pace while somebody walks, and while nobody does (an on-the-spot clip keeps its own time). */
-const WALK_MS = 125;
-const IDLE_MS = 250;
 /** How many ticks' time it sleeps at most while nothing changes. */
 const SLOWEST = 2;
-/** The clock's next tick: 8 Hz while a Moru walks, rolls or tiptoes across the floor, 4 Hz otherwise. */
+/**
+ * The time to the lobby's next tick: every pixel beat while a Moru walks, rolls or tiptoes across the floor,
+ * every other one otherwise (an on-the-spot clip keeps its own time).
+ */
 export const lobbyTickMs = (world: Pick<World, 'morus' | 'atlas'>) =>
-  (world.morus.some(m => m.door || world.atlas.clips[m.clip]?.travel) ? WALK_MS : IDLE_MS);
+  (world.morus.some(m => m.door || world.atlas.clips[m.clip]?.travel) ? 1 : 2) * PIXEL_BEAT_MS;
 /** The composed-pose store's cap: under the spec's 24 MB, for a floor of five. */
 export const CACHE_BYTES = 8 * 1048576;
 /** Lanes are this far apart; the back lane's feet stand `BACK_FEET` px from the canvas top. */
@@ -175,17 +177,15 @@ export async function createLobby(canvas: HTMLCanvasElement, { width, unit = 1, 
   }
 
   let width_ = Math.max(320, Math.floor(width)), unit_ = unit;
-  const dpr = Math.max(1, Math.round(window.devicePixelRatio || 1));
-  /** Device pixels per floor pixel, and the floor's width in Moru's own pixels. */
-  let k = dpr * unit_, floorW = Math.floor(width_ / unit_);
+  /** Canvas pixels per floor pixel: whole, so a pose lands on whole pixels; the page scales the canvas up. */
+  let k = Math.ceil(unit_), floorW = Math.floor(width_ / unit_);
   const ctx = canvas.getContext('2d')!;
   const fixtures = new OffscreenCanvas(1, 1), fixturesCtx = fixtures.getContext('2d')!;
   const fit = () => {
-    k = dpr * unit_;
+    k = Math.ceil(unit_);
     floorW = Math.floor(width_ / unit_);
-    // The backing store is the strip itself at the device's pixel ratio.
-    canvas.width = fixtures.width = Math.round(width_ * dpr);
-    canvas.height = fixtures.height = Math.round(LOBBY_H * unit_ * dpr);
+    canvas.width = fixtures.width = Math.round(floorW * k);
+    canvas.height = fixtures.height = Math.round(LOBBY_H * k);
     canvas.style.width = `${width_}px`;
     canvas.style.height = `${LOBBY_H * unit_}px`;
     ctx.imageSmoothingEnabled = false;
@@ -371,14 +371,16 @@ export async function createLobby(canvas: HTMLCanvasElement, { width, unit = 1, 
     }
   };
 
-  let timer = 0, slow = 0, running = false, next = WALK_MS;
-  const loop = () => {
-    tick(world, next);
+  let leave: (() => void) | null = null, slow = 0, running = false, next = PIXEL_BEAT_MS, since = 0;
+  const beat = () => {
+    since += PIXEL_BEAT_MS;
+    if (since < next) return;
+    tick(world, since);
+    since = 0;
     tend(world, presence);
     paint();
     slow = moved ? 0 : Math.min(slow + 1, SLOWEST);
     next = lobbyTickMs(world) * (1 + slow);
-    timer = window.setTimeout(loop, next);
   };
   const redrawAll = () => {
     for (const s of drawn.values()) { s.rect = null; s.m.changed = true; }
@@ -404,8 +406,8 @@ export async function createLobby(canvas: HTMLCanvasElement, { width, unit = 1, 
     sync(allowed) {
       const wasStill = still;
       still = !allowed;
-      if (allowed && !running) { running = true; next = WALK_MS; timer = window.setTimeout(loop, next); }
-      if (!allowed && running) { running = false; window.clearTimeout(timer); timer = 0; }
+      if (allowed && !running) { running = true; next = PIXEL_BEAT_MS; since = 0; leave = onPixelBeat(beat); }
+      if (!allowed && running) { running = false; leave?.(); leave = null; }
       if (wasStill !== still) redrawAll();
       canvas.dataset.lobbyRunning = String(running);
     },
@@ -416,7 +418,8 @@ export async function createLobby(canvas: HTMLCanvasElement, { width, unit = 1, 
       keptBytes, peakKeptBytes: peakBytes, composed, found,
     }),
     destroy() {
-      window.clearTimeout(timer);
+      leave?.();
+      leave = null;
       running = false;
       for (const e of kept.values()) e.bmp?.close();
       kept.clear();

@@ -56,8 +56,9 @@ Every read goes through the hardened Git runner in `src-tauri/src/git/runner.rs`
   of its runs in. An agent the system launched (parent launchd or init), such
   as that server, is not counted for its own folder, so an idle Codex app
   shows nothing. A worktree stays credited for 90 seconds after its last
-  sighting while that agent still runs; sampling is once a second while the
-  screen is visible, so a command shorter than that may be missed. A command
+  sighting while that agent still runs; sampling is every one to four seconds
+  while the screen is visible, so a command shorter than that may be missed.
+  Only an agent's own command tree has its working folder read. A command
   under an Atlas agent session counts for that session. A process of the same agent that
   locked worktrees joins that lock's session. Windows reads no processes;
   Gemini CLI runs as `node` and is not named.
@@ -146,11 +147,12 @@ host is connected nothing comes from GitHub and no request leaves the machine.
 ## Live updates
 
 While the screen is visible, it stats Git's worktree records and the base
-branch's ref once a second, and asks whether each locked pid still runs
-(`work_status_fingerprint`, no process spawned); it reads again only when any
-of that changed: a worktree added or removed, locked or unlocked, committed to,
-merged into the base branch, or its session ended. A change shows within about
-two seconds: one interval plus one read. A hidden screen asks nothing and reads
+branch's ref, and asks whether each locked pid still runs
+(`work_status_fingerprint`, no process spawned): a second after a change, then
+at twice the interval each time nothing changed, up to four seconds. It reads
+again only when any of that changed: a worktree added or removed, locked or
+unlocked, committed to, merged into the base branch, or its session ended. A
+change shows within one interval plus one read, at most about five seconds. A hidden screen asks nothing and reads
 once when it shows again; relative ages move once a minute. What each room is
 doing comes from a second read of one worktree at a time (`work_status_activity`:
 `git log -3` beyond the base branch and `git status`, about 150 ms of Git CPU on

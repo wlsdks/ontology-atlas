@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { PIXEL_BEAT_MS } from '@/shared/motion/pixel-beat';
 import type { LifeAtlas } from './atlas';
 import { createWorld, seeded, tick, type Moru } from './behaviour';
 import { BACK_FEET, LANE_DY, LOBBY_SEP, lobbyTickMs } from './lobby-canvas';
@@ -25,8 +26,8 @@ describe('lobby motion, frame by frame', () => {
       const last = new Map<Moru, ReturnType<typeof drawn>>();
       let worst = 0, boundaries = 0, doors = 0, walks = 0;
       const over: string[] = [];
-      // On the lobby's own clock: 8 Hz while somebody walks, 4 Hz otherwise.
-      for (let t = 0, dt = 125; t < 600_000; t += dt, dt = lobbyTickMs(world)) {
+      // On the lobby's own clock: every pixel beat while somebody walks, every other one otherwise.
+      for (let t = 0, dt = PIXEL_BEAT_MS; t < 600_000; t += dt, dt = lobbyTickMs(world)) {
         tick(world, dt);
         tend(world, presence);
         for (const m of world.morus) {

@@ -1,11 +1,12 @@
 import { MOTION } from '@/shared/motion';
+import { PIXEL_BEAT_MS, onPixelBeat } from '@/shared/motion/pixel-beat';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { ROOM_ROW_FRAMES } from '@/shared/ui/marks/moru/moru-rows';
 import { castClip, castStripUrl } from './cast-strip';
 
 export const MORU_CELL_PX = 128;
-/** A room row's cell time: the catalogue's play pace, six expressive beats per 24 cells. */
-export const MORU_STEP_MS = (MOTION.expressive.duration * 1000 * 6) / 24;
+/** A room row's cell time: the page's pixel beat, which the lobby steps on too. */
+export const MORU_STEP_MS = PIXEL_BEAT_MS;
 /** Cells a Moru skips per step on his way back to the neutral pose before a row he plays once. */
 const RETURN_CELLS = 2;
 /** The longest a Moru takes from any cell back to the neutral pose. */
@@ -73,7 +74,7 @@ const loopFor = (sprite: HTMLElement, clip: string) => { const loops = loopsOf(s
  * so no change of row ever jumps a pose. A row his room asked for while out of sight is dropped.
  */
 export function createMoruClock(board: HTMLElement) {
-  let timer = 0, ticks = 0;
+  let leave: (() => void) | null = null, ticks = 0;
   const shown = new WeakMap<HTMLElement, Shown>();
   const talks = new Map<string, Talk>();
   const roomOf = (sprite: HTMLElement) => sprite.closest<HTMLElement>('[data-room-key]')?.dataset.roomKey ?? '';
@@ -205,19 +206,18 @@ export function createMoruClock(board: HTMLElement) {
       const stepping = new Set(allowed && !document.hidden ? board.querySelectorAll<HTMLElement>(STEPPING) : []);
       for (const sprite of board.querySelectorAll<HTMLElement>(LIVE)) if (!stepping.has(sprite)) rest(sprite, now, allowed);
       const wanted = stepping.size > 0;
-      if (wanted && !timer) timer = window.setInterval(() => {
-        const at = performance.now();
+      if (wanted && !leave) leave = onPixelBeat(at => {
         ticks += 1;
         for (const sprite of board.querySelectorAll<HTMLElement>(STEPPING)) step(sprite, at);
-      }, MORU_STEP_MS);
-      if (!wanted && timer) {
-        window.clearInterval(timer);
-        timer = 0;
+      });
+      if (!wanted && leave) {
+        leave();
+        leave = null;
       }
     },
     stop() {
-      window.clearInterval(timer);
-      timer = 0;
+      leave?.();
+      leave = null;
     },
   };
 }
