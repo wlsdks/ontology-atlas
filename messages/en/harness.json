@@ -129,7 +129,7 @@
       "instructions": "Instruction files"
     },
     "what": {
-      "hooks": "A hook is a command the agent runs by itself at a set moment, such as just before it uses a tool or when it finishes a reply. The same hook reaches different people and projects depending on the file it is written in.",
+      "hooks": "A hook is a command the agent runs by itself at a set moment, such as just before it uses a tool or when it finishes a reply. The same hook reaches different people and repositories depending on the file it is written in.",
       "permissions": "Permission rules set what the agent may do without asking (allow), must ask about first (ask), and must not do (deny). They live in the same four files as hooks.",
       "skills": "A skill is a procedure the agent reads when it needs it. Each folder holds one SKILL.md.",
       "claudeSubagents": "A subagent is a separate agent definition that work is handed to. One file is one subagent.",
@@ -155,24 +155,24 @@
       "me": "You",
       "others": "Others",
       "thisRepository": "This repository",
-      "otherProjects": "Other projects"
+      "otherProjects": "Other repositories"
     },
     "repository": "repository",
     "caption": {
       "managed": "Everyone your organisation sends it to",
       "system": "Every user of this computer",
-      "user": "Every project · only you",
+      "user": "Every repository · only you",
       "project": "This repository · shared with the team",
-      "projectCodex": "This repository · shared · trusted projects only",
+      "projectCodex": "This repository · shared · trusted folders only",
       "local": "This repository · only you"
     },
     "affects": {
       "managed": "Everyone your organisation sends this setting to.",
       "system": "Every user of this computer.",
-      "user": "You, in every project on this computer.",
+      "user": "You, in every repository on this computer.",
       "project": "Everyone who works in this repository.",
-      "projectCodex": "Everyone who works in this repository and has trusted this project in Codex.",
-      "local": "You, in this project only.",
+      "projectCodex": "Everyone who works in this repository and has trusted this folder in Codex.",
+      "local": "You, in this repository only.",
       "picked": "You, in sessions where {variable} points to this folder."
     },
     "git": {
@@ -185,11 +185,11 @@
     },
     "differs": {
       "fixed": "None of your files overrides or switches it off. Atlas shows it and cannot change it.",
-      "user": "Unlike Project, no teammate gets it. Unlike Local, it also applies in your other projects.",
-      "userCodex": "Unlike Project, no teammate gets it, and it also applies in your other projects.",
+      "user": "Unlike Project, no teammate gets it. Unlike Local, it also applies in your other repositories.",
+      "userCodex": "Unlike Project, no teammate gets it, and it also applies in your other repositories.",
       "project": "Unlike User and Local, a change here changes it for your whole team.",
       "projectCodex": "Unlike User, a change here changes it for your whole team.",
-      "local": "Unlike Project, no teammate sees it. Unlike User, it stays in this project.",
+      "local": "Unlike Project, no teammate sees it. Unlike User, it stays in this repository.",
       "managedInstructions": "It is read together with your files. Your files cannot remove or override it.",
       "picked": "Sessions that use this folder read this file as User in place of {file}. It leaves this list when the app closes."
     },
@@ -218,7 +218,7 @@
       "listed": "{count} here. They are listed under {group} on this page."
     },
     "heading": {
-      "codexTrust": "Codex reads this file only in projects you trusted.",
+      "codexTrust": "Codex reads this file only in folders you trusted.",
       "codexReview": "Codex runs a new or changed hook only after you approve it in /hooks."
     },
     "place": {
@@ -241,7 +241,7 @@
       "missing": "it does not exist"
     },
     "note": {
-      "codexProject": "Codex reads this file only in a project you have trusted in Codex. Hooks in the [hooks] table of config.toml show their events only.",
+      "codexProject": "Codex reads this file only in a folder you have trusted in Codex. Hooks in the [hooks] table of config.toml show their events only.",
       "localWorktree": "In a linked worktree, Claude Code reads this file in the main checkout."
     },
     "another": {
@@ -288,7 +288,7 @@
     "webStageNote": "What each settings file is and who it affects can be seen in the browser too.",
     "notRead": {
       "claude": "A policy your organisation sends without a file, whether you trusted this folder in Claude Code, and the skills, subagents and instruction files in your home folder. A settings folder moved with CLAUDE_CONFIG_DIR is read only after you choose its file with Show another settings file.",
-      "codex": "Codex's record of which hooks you reviewed, whether you trusted this project in Codex, and the skills, subagents and instruction files in your home folder. A settings folder moved with CODEX_HOME is read only after you choose its file with Show another settings file."
+      "codex": "Codex's record of which hooks you reviewed, whether you trusted this folder in Codex, and the skills, subagents and instruction files in your home folder. A settings folder moved with CODEX_HOME is read only after you choose its file with Show another settings file."
     },
     "count": {
       "none": "No file",

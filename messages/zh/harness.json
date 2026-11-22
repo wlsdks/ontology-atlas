@@ -129,7 +129,7 @@
       "instructions": "指令文件"
     },
     "what": {
-      "hooks": "钩子是代理在特定时刻自动运行的命令，例如使用工具之前或完成回复时。同一个钩子写在哪个文件里，决定了它作用于哪些人和项目。",
+      "hooks": "钩子是代理在特定时刻自动运行的命令，例如使用工具之前或完成回复时。同一个钩子写在哪个文件里，决定了它作用于哪些人和仓库。",
       "permissions": "权限规则规定代理无需询问即可做的事（allow）、需要先询问的事（ask）以及不能做的事（deny）。它们和钩子位于同样的四个文件中。",
       "skills": "技能是代理需要时读取的工作流程。每个文件夹里有一个 SKILL.md。",
       "claudeSubagents": "子代理是用来分担工作的独立代理定义。一个文件就是一个子代理。",
@@ -155,24 +155,24 @@
       "me": "自己",
       "others": "其他人",
       "thisRepository": "此仓库",
-      "otherProjects": "其他项目"
+      "otherProjects": "其他仓库"
     },
     "repository": "仓库",
     "caption": {
       "managed": "组织下发到的所有人",
       "system": "这台电脑的所有用户",
-      "user": "所有项目 · 仅自己",
+      "user": "所有仓库 · 仅自己",
       "project": "此仓库 · 与团队共享",
-      "projectCodex": "此仓库 · 与团队共享 · 仅限已信任的项目",
+      "projectCodex": "此仓库 · 与团队共享 · 仅限已信任的文件夹",
       "local": "此仓库 · 仅自己"
     },
     "affects": {
       "managed": "组织下发此设置的所有人。",
       "system": "使用这台电脑的所有用户。",
-      "user": "你自己，在这台电脑上的所有项目中。",
+      "user": "你自己，在这台电脑上的所有仓库中。",
       "project": "在此仓库中工作的所有人。",
-      "projectCodex": "在此仓库中工作、并已在 Codex 中信任此项目的人。",
-      "local": "你自己，仅在此项目中。",
+      "projectCodex": "在此仓库中工作、并已在 Codex 中信任此文件夹的人。",
+      "local": "你自己，仅在此仓库中。",
       "picked": "你自己，在 {variable} 指向此文件夹的会话中。"
     },
     "git": {
@@ -185,11 +185,11 @@
     },
     "differs": {
       "fixed": "你的文件无法覆盖或关闭它。Atlas 只显示，不能修改。",
-      "user": "与 Project 不同，队友不会收到它。与 Local 不同，它也适用于你的其他项目。",
-      "userCodex": "与 Project 不同，队友不会收到它，而且它也适用于你的其他项目。",
+      "user": "与 Project 不同，队友不会收到它。与 Local 不同，它也适用于你的其他仓库。",
+      "userCodex": "与 Project 不同，队友不会收到它，而且它也适用于你的其他仓库。",
       "project": "与 User、Local 不同，在这里修改会改变整个团队的设置。",
       "projectCodex": "与 User 不同，在这里修改会改变整个团队的设置。",
-      "local": "与 Project 不同，队友看不到它。与 User 不同，它只留在此项目中。",
+      "local": "与 Project 不同，队友看不到它。与 User 不同，它只留在此仓库中。",
       "managedInstructions": "它会和你的文件一起被读取。你的文件无法移除或覆盖它。",
       "picked": "使用此文件夹的会话会把此文件当作 User 读取，以代替 {file}。关闭应用后，它会从此列表中移除。"
     },
@@ -218,7 +218,7 @@
       "listed": "{count} 个。在此页面的“{group}”中列出。"
     },
     "heading": {
-      "codexTrust": "Codex 只在你信任的项目中读取此文件。",
+      "codexTrust": "Codex 只在你信任的文件夹中读取此文件。",
       "codexReview": "新增或更改的钩子，要在 Codex 的 /hooks 中批准后才会运行。"
     },
     "place": {
@@ -241,7 +241,7 @@
       "missing": "文件不存在"
     },
     "note": {
-      "codexProject": "Codex 只在你已于 Codex 中信任的项目里读取此文件。写在 config.toml 的 [hooks] 表中的钩子只显示事件名。",
+      "codexProject": "Codex 只在你已于 Codex 中信任的文件夹里读取此文件。写在 config.toml 的 [hooks] 表中的钩子只显示事件名。",
       "localWorktree": "在 linked worktree 中，Claude Code 读取 main checkout 里的这个文件。"
     },
     "another": {
@@ -288,7 +288,7 @@
     "webStageNote": "每个设置文件是什么、作用于谁，在浏览器中也能查看。",
     "notRead": {
       "claude": "组织在没有文件的情况下下发的策略、你是否在 Claude Code 中信任了此文件夹，以及主文件夹中的技能、子代理和指令文件。用 CLAUDE_CONFIG_DIR 移走的设置文件夹，只有在你通过“显示其他设置文件”选择其文件后才会读取。",
-      "codex": "Codex 记录的钩子审核情况、你是否在 Codex 中信任了此项目，以及主文件夹中的技能、子代理和指令文件。用 CODEX_HOME 移走的设置文件夹，只有在你通过“显示其他设置文件”选择其文件后才会读取。"
+      "codex": "Codex 记录的钩子审核情况、你是否在 Codex 中信任了此文件夹，以及主文件夹中的技能、子代理和指令文件。用 CODEX_HOME 移走的设置文件夹，只有在你通过“显示其他设置文件”选择其文件后才会读取。"
     },
     "count": {
       "none": "没有文件",

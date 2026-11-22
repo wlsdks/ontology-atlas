@@ -129,7 +129,7 @@
       "instructions": "지침 파일"
     },
     "what": {
-      "hooks": "훅은 에이전트가 정해진 순간에 스스로 실행하는 명령이에요. 도구를 쓰기 직전이나 답변을 마쳤을 때처럼요. 같은 훅도 어느 파일에 적느냐에 따라 적용되는 사람과 프로젝트가 달라져요.",
+      "hooks": "훅은 에이전트가 정해진 순간에 스스로 실행하는 명령이에요. 도구를 쓰기 직전이나 답변을 마쳤을 때처럼요. 같은 훅도 어느 파일에 적느냐에 따라 적용되는 사람과 저장소가 달라져요.",
       "permissions": "권한 규칙은 에이전트가 묻지 않고 해도 되는 일(allow), 물어보고 해야 하는 일(ask), 해서는 안 되는 일(deny)을 정해요. 훅과 같은 네 파일에 들어 있어요.",
       "skills": "스킬은 에이전트가 필요할 때 꺼내 읽는 작업 절차예요. 폴더 하나에 SKILL.md 하나가 들어 있어요.",
       "claudeSubagents": "서브에이전트는 일을 나눠 맡기는 별도의 에이전트 정의예요. 파일 하나가 서브에이전트 하나예요.",
@@ -155,24 +155,24 @@
       "me": "나",
       "others": "다른 사람",
       "thisRepository": "이 저장소",
-      "otherProjects": "다른 프로젝트"
+      "otherProjects": "다른 저장소"
     },
     "repository": "저장소",
     "caption": {
       "managed": "조직이 보낸 모든 사람",
       "system": "이 컴퓨터의 모든 사용자",
-      "user": "모든 프로젝트 · 나만",
+      "user": "모든 저장소 · 나만",
       "project": "이 저장소 · 팀과 공유",
-      "projectCodex": "이 저장소 · 팀과 공유 · 신뢰한 프로젝트만",
+      "projectCodex": "이 저장소 · 팀과 공유 · 신뢰한 폴더만",
       "local": "이 저장소 · 나만"
     },
     "affects": {
       "managed": "조직이 이 설정을 보낸 모든 사람에게.",
       "system": "이 컴퓨터를 쓰는 모든 사용자에게.",
-      "user": "나에게, 이 컴퓨터의 모든 프로젝트에서.",
+      "user": "나에게, 이 컴퓨터의 모든 저장소에서.",
       "project": "이 저장소에서 일하는 모든 사람에게.",
-      "projectCodex": "이 저장소에서 일하는 사람 가운데, Codex에서 이 프로젝트를 신뢰한 사람에게.",
-      "local": "나에게, 이 프로젝트에서만.",
+      "projectCodex": "이 저장소에서 일하는 사람 가운데, Codex에서 이 폴더를 신뢰한 사람에게.",
+      "local": "나에게, 이 저장소에서만.",
       "picked": "나에게, {variable}이 이 폴더를 가리키는 세션에서."
     },
     "git": {
@@ -185,11 +185,11 @@
     },
     "differs": {
       "fixed": "내 파일로는 덮어쓰거나 끌 수 없어요. Atlas는 보여 주기만 하고 바꾸지 못해요.",
-      "user": "Project와 달리 팀원에게는 가지 않아요. Local과 달리 내 다른 프로젝트에도 적용돼요.",
-      "userCodex": "Project와 달리 팀원에게는 가지 않고, 내 다른 프로젝트에도 적용돼요.",
+      "user": "Project와 달리 팀원에게는 가지 않아요. Local과 달리 내 다른 저장소에도 적용돼요.",
+      "userCodex": "Project와 달리 팀원에게는 가지 않고, 내 다른 저장소에도 적용돼요.",
       "project": "User, Local과 달리 여기를 바꾸면 팀 전체에 바뀌어요.",
       "projectCodex": "User와 달리 여기를 바꾸면 팀 전체에 바뀌어요.",
-      "local": "Project와 달리 팀원은 보지 못해요. User와 달리 이 프로젝트 안에만 머물러요.",
+      "local": "Project와 달리 팀원은 보지 못해요. User와 달리 이 저장소 안에만 머물러요.",
       "managedInstructions": "내 파일과 함께 읽혀요. 내 파일로 빼거나 덮어쓸 수 없어요.",
       "picked": "이 폴더를 쓰는 세션은 {file} 대신 이 파일을 User로 읽어요. 앱을 닫으면 이 목록에서 빠져요."
     },
@@ -218,7 +218,7 @@
       "listed": "{count}개. 이 화면의 {group} 분류에 있어요."
     },
     "heading": {
-      "codexTrust": "Codex는 신뢰한 프로젝트에서만 이 파일을 읽어요.",
+      "codexTrust": "Codex는 신뢰한 폴더에서만 이 파일을 읽어요.",
       "codexReview": "새로 생기거나 바뀐 훅은 Codex의 /hooks에서 승인해야 실행돼요."
     },
     "place": {
@@ -241,7 +241,7 @@
       "missing": "파일이 없어요"
     },
     "note": {
-      "codexProject": "Codex는 신뢰한 프로젝트에서만 이 파일을 읽어요. config.toml의 [hooks] 표에 적힌 훅은 이벤트 이름만 보여 줘요.",
+      "codexProject": "Codex는 신뢰한 폴더에서만 이 파일을 읽어요. config.toml의 [hooks] 표에 적힌 훅은 이벤트 이름만 보여 줘요.",
       "localWorktree": "linked worktree에서는 Claude Code가 main checkout에 있는 이 파일을 읽어요."
     },
     "another": {
@@ -288,7 +288,7 @@
     "webStageNote": "각 설정 파일이 무엇이고 누구에게 적용되는지는 브라우저에서도 볼 수 있어요.",
     "notRead": {
       "claude": "파일 없이 조직이 보내는 정책, Claude Code에서 이 폴더를 신뢰했는지, 홈 폴더의 스킬·서브에이전트·지침 파일. CLAUDE_CONFIG_DIR로 옮긴 설정 폴더는 다른 설정 파일 보기로 파일을 골라야 읽어요.",
-      "codex": "Codex가 기록해 둔 훅 검토 여부, Codex에서 이 프로젝트를 신뢰했는지, 홈 폴더의 스킬·서브에이전트·지침 파일. CODEX_HOME으로 옮긴 설정 폴더는 다른 설정 파일 보기로 파일을 골라야 읽어요."
+      "codex": "Codex가 기록해 둔 훅 검토 여부, Codex에서 이 폴더를 신뢰했는지, 홈 폴더의 스킬·서브에이전트·지침 파일. CODEX_HOME으로 옮긴 설정 폴더는 다른 설정 파일 보기로 파일을 골라야 읽어요."
     },
     "count": {
       "none": "파일 없음",

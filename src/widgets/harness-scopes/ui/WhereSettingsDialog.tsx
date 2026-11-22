@@ -79,7 +79,7 @@ function CountText({ count, say }: { count: WhereCount | null; say: (message: Me
 function Fact({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-4 py-2.5 [&+&]:border-t [&+&]:border-[color:var(--color-overlay-1)]">
-      <dt className="pt-px text-label text-[color:var(--color-text-quaternary)]">{label}</dt>
+      <dt className="pt-px text-label text-[color:var(--color-text-tertiary)]">{label}</dt>
       <dd className="min-w-0 text-pretty text-body text-[color:var(--color-text-primary)]">{children}</dd>
     </div>
   );
@@ -333,13 +333,13 @@ function WhereSettingsBody({
                           </span>
                         ) : null}
                         {entry.pathIsCode && !entry.picked ? (
-                          <span className={cn('min-w-0 truncate font-mono text-label', selected ? 'text-[color:var(--color-text-tertiary)]' : 'text-[color:var(--color-text-quaternary)]')}>
+                          <span className={cn('min-w-0 truncate font-mono text-label', selected ? 'text-[color:var(--color-text-secondary)]' : 'text-[color:var(--color-text-tertiary)]')}>
                             {entry.shortPath}
                           </span>
                         ) : null}
                       </span>
                       {entry.picked ? (
-                        <ScopePath path={entry.shortPath} className="text-label text-[color:var(--color-text-quaternary)]" />
+                        <ScopePath path={entry.shortPath} className="text-label text-[color:var(--color-text-tertiary)]" />
                       ) : (
                         <span className="min-w-0 truncate text-label text-[color:var(--color-text-tertiary)]">{say(entry.caption)}</span>
                       )}
@@ -366,7 +366,7 @@ function WhereSettingsBody({
         />
       </div>
       <footer className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-4 border-t border-[color:var(--color-border-soft)] px-6 pb-4 pt-3 text-label text-[color:var(--color-text-tertiary)]">
-        <span className="text-[color:var(--color-text-quaternary)]">{say({ key: inApp ? 'scopes.label.notRead' : 'scopes.label.web' })}</span>
+        <span className="text-[color:var(--color-text-tertiary)]">{say({ key: inApp ? 'scopes.label.notRead' : 'scopes.label.web' })}</span>
         <span className="text-pretty">{say({ key: inApp ? `scopes.notRead.${tool === 'codex' ? 'codex' : 'claude'}` : 'scopes.webNote' })}</span>
       </footer>
     </div>

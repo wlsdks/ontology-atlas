@@ -378,7 +378,7 @@ export function HarnessSetupView({
           />
         ))}
       </div>
-      <div data-testid="harness-read-from" className="flex shrink-0 flex-col gap-1 border-t border-[color:var(--color-border-soft)] px-2.5 pb-4 pt-3 text-label text-[color:var(--color-text-quaternary)]">
+      <div data-testid="harness-read-from" className="flex shrink-0 flex-col gap-1 border-t border-[color:var(--color-border-soft)] px-2.5 pb-4 pt-3 text-label text-[color:var(--color-text-tertiary)]">
         <p className="break-all">{t('sourceRoot', { path: sourceRoot })}</p>
         {scopes ? <p data-testid="harness-scopes-read-note" className="text-pretty">{t('scopes.readNote')}</p> : null}
       </div>
@@ -425,7 +425,7 @@ export function HarnessSetupView({
           />
           )}
           {scopesReading && isHookGroup(category.id) ? (
-            <p data-testid="harness-scopes-reading" className="flex items-center gap-2 px-2.5 pt-3 text-label text-[color:var(--color-text-quaternary)]">
+            <p data-testid="harness-scopes-reading" className="flex items-center gap-2 px-2.5 pt-3 text-label text-[color:var(--color-text-tertiary)]">
               <span aria-hidden className="size-1.5 animate-pulse rounded-full bg-[color:var(--color-text-quaternary)] motion-reduce:animate-none" />
               {say('scopes.reading', { file: '~/.claude/settings.json · ~/.codex/hooks.json' })}
             </p>

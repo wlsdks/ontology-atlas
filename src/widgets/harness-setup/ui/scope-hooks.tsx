@@ -339,8 +339,8 @@ export function ScopeHookList({
                           </span>
                           <span className="flex min-w-0 items-baseline gap-2 overflow-hidden font-mono text-label">
                             <span className="shrink-0 text-[color:var(--color-text-tertiary)]">{hook.event}</span>
-                            {hook.matcher ? <span className="min-w-0 max-w-[40%] shrink truncate text-[color:var(--color-text-quaternary)]">{hook.matcher}</span> : null}
-                            {folder ? <ScopePath path={folder} title={title} className="ml-auto min-w-0 max-w-[55%] text-[color:var(--color-text-quaternary)]" /> : null}
+                            {hook.matcher ? <span className="min-w-0 max-w-[40%] shrink truncate text-[color:var(--color-text-tertiary)]">{hook.matcher}</span> : null}
+                            {folder ? <ScopePath path={folder} title={title} className="ml-auto min-w-0 max-w-[55%] text-[color:var(--color-text-tertiary)]" /> : null}
                           </span>
                         </RowButton>
                       </li>
