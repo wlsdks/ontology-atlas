@@ -18,38 +18,34 @@ import {
 export const INDEX_PROJECT_TOOL = {
   name: 'index_project',
   description:
-    'Project ontology indexing plan — run analyze_repo_structure + infer_imports + validate_vault in one read-only call. ' +
-    'Use for large or already-existing projects where the agent needs a resumable ontology indexing checkpoint before writing. ' +
-    'Its extractionContract treats source facts as observed evidence, README/folder meanings as proposals, and only persisted ontology meanings as shared; it also returns competency questions, uncertainty, approval gates, and whether active-vault validation actually applies to the analyzed project. ' +
-    'The plan distinguishes raw candidates into existing, ambiguous-alias review, and genuinely new buckets, then returns exact reviewCalls for retrieving full rows. ' +
-    'side effect 0: this tool never writes markdown. Concepts are written with add_concepts after review, and inferred imports remain review-only and are never auto-promoted to depends_on.',
+    'Build a read-only ontology indexing plan for a large or existing project: analyze_repo_structure + infer_imports + validate_vault in one call, as a resumable checkpoint before writing. side effect 0. Candidates are split into existing, ambiguous-alias and new, with exact reviewCalls. Write reviewed concepts with add_concepts; inferred imports are never auto-promoted to depends_on.',
   inputSchema: {
     type: 'object',
     properties: {
       rootPath: {
         ...NON_BLANK_STRING_SCHEMA,
-        description: 'Repository root to index. Defaults to the active resolved repository root from connection_info.',
+        description: 'Defaults to the active repository root.',
       },
       maxDepth: {
         type: 'integer',
         minimum: 0,
         maximum: 10,
-        description: 'Forwarded to analyze_repo_structure, which ignores it, so no value changes the analysis. When given, it must be an integer from 0 to 10.',
+        description: 'Accepted and ignored.',
       },
       maxFiles: {
         type: 'integer',
         minimum: 1,
         maximum: 50000,
-        description: 'File cap forwarded to infer_imports (default 5000, max 50000).',
+        description: 'infer_imports file cap, default 5000.',
       },
       threshold: {
         type: 'integer',
         minimum: 1,
-        description: 'Optional module-edge count threshold for the returned import relation plan.',
+        description: 'Minimum module-edge count for the import plan.',
       },
       skipImports: {
         type: 'boolean',
-        description: 'When true, skip infer_imports and return an analyze + validate plan only.',
+        description: 'Skip infer_imports.',
       },
     },
   },
