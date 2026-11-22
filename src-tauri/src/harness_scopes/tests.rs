@@ -366,6 +366,49 @@ fn a_file_over_one_mebibyte_is_unreadable() {
     assert_eq!(file(&scopes, "claude-project")["failure"], "too-large");
 }
 
+#[test]
+fn a_file_returns_at_most_the_hook_cap_and_counts_the_rest() {
+    let scratch = Scratch::new();
+    let host = scratch.host();
+    let repository = scratch.folder("repo");
+    let flood = (open::SETTINGS_MAX_BYTES as usize - 64) / 3;
+    let empty = "{},".repeat(flood - 1);
+    scratch.put(
+        "repo/.claude/settings.json",
+        format!(r#"{{"hooks":{{"Stop":[{{"hooks":[{empty}{{}}]}}]}}}}"#),
+    );
+    let handlers: Vec<Value> = (0..parse::HOOKS_PER_FILE_MAX + 3)
+        .map(|n| {
+            let command = if n < parse::HOOKS_PER_FILE_MAX {
+                format!("kept-{n}.sh")
+            } else {
+                format!("{SECRET}-{n}.sh")
+            };
+            json!({ "type": "command", "command": command })
+        })
+        .collect();
+    scratch.put(
+        "repo/.codex/hooks.json",
+        json!({ "hooks": { "Stop": [ { "hooks": handlers } ] } }).to_string(),
+    );
+
+    let scopes = read(&host, &repository, &[]);
+    let flooded = file(&scopes, "claude-project");
+    assert_eq!(flooded["status"], "read");
+    assert_eq!(
+        flooded["hooks"].as_array().unwrap().len(),
+        parse::HOOKS_PER_FILE_MAX
+    );
+    assert_eq!(flooded["hooksTruncated"], flood - parse::HOOKS_PER_FILE_MAX);
+    let codex = file(&scopes, "codex-project");
+    let hooks = codex["hooks"].as_array().unwrap();
+    assert_eq!(hooks.len(), parse::HOOKS_PER_FILE_MAX);
+    assert_eq!(hooks.last().unwrap()["command"], "kept-499.sh");
+    assert_eq!(codex["hooksTruncated"], 3);
+    let serialized = scopes.to_string();
+    assert!(!serialized.contains(SECRET), "{serialized}");
+}
+
 #[cfg(unix)]
 #[test]
 fn a_link_anywhere_below_a_base_is_refused() {

@@ -52,7 +52,10 @@ export interface ScopeFile {
   failure: ScopeOpenFailure | null;
   bytes: number | null;
   modifiedMs: number | null;
+  /** At most 500 per file, in file order. */
   hooks: ScopeHook[];
+  /** Handlers past that cap: counted, never returned. */
+  hooksTruncated: number;
   disableAllHooks: boolean | null;
   allowManagedHooksOnly: boolean | null;
   permissionCounts: ScopePermissionCounts | null;

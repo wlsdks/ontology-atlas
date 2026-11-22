@@ -171,6 +171,8 @@ pub(crate) struct PermissionCounts {
 #[derive(Debug, Default, PartialEq)]
 pub(super) struct ParsedSettings {
     pub hooks: Vec<ScopeHook>,
+    /// Handlers past `HOOKS_PER_FILE_MAX`, counted and not returned.
+    pub hooks_truncated: usize,
     pub disable_all_hooks: Option<bool>,
     pub allow_managed_hooks_only: Option<bool>,
     pub permission_counts: Option<PermissionCounts>,
@@ -180,8 +182,10 @@ pub(super) struct ParsedSettings {
 /// because it can quote a value.
 pub(super) fn parse_claude_settings(bytes: &[u8]) -> Option<ParsedSettings> {
     let document: ClaudeSettingsDocument = serde_json::from_slice(json_object(bytes)?).ok()?;
+    let (hooks, hooks_truncated) = flatten_hooks(known(document.hooks));
     Some(ParsedSettings {
-        hooks: flatten_hooks(known(document.hooks)),
+        hooks,
+        hooks_truncated,
         disable_all_hooks: known(document.disable_all_hooks),
         allow_managed_hooks_only: known(document.allow_managed_hooks_only),
         permission_counts: known(document.permissions).map(|lists| PermissionCounts {
@@ -194,8 +198,10 @@ pub(super) fn parse_claude_settings(bytes: &[u8]) -> Option<ParsedSettings> {
 
 pub(super) fn parse_codex_hooks(bytes: &[u8]) -> Option<ParsedSettings> {
     let document: CodexHooksDocument = serde_json::from_slice(json_object(bytes)?).ok()?;
+    let (hooks, hooks_truncated) = flatten_hooks(known(document.hooks));
     Some(ParsedSettings {
-        hooks: flatten_hooks(known(document.hooks)),
+        hooks,
+        hooks_truncated,
         ..ParsedSettings::default()
     })
 }
@@ -207,8 +213,13 @@ fn json_object(bytes: &[u8]) -> Option<&[u8]> {
     (*first == b'{').then_some(bytes)
 }
 
-fn flatten_hooks(events: Option<HookEvents>) -> Vec<ScopeHook> {
+/// A 1 MiB file of empty handlers holds hundreds of thousands; a real one holds dozens.
+pub(crate) const HOOKS_PER_FILE_MAX: usize = 500;
+
+/// The first `HOOKS_PER_FILE_MAX` handlers in file order, and how many more there are.
+fn flatten_hooks(events: Option<HookEvents>) -> (Vec<ScopeHook>, usize) {
     let mut out = Vec::new();
+    let mut truncated = 0;
     for (event, groups) in events.map(|events| events.0).unwrap_or_default() {
         if !is_event_name(&event) {
             continue;
@@ -221,6 +232,10 @@ fn flatten_hooks(events: Option<HookEvents>) -> Vec<ScopeHook> {
                 let Some(handler) = handler.known() else {
                     continue;
                 };
+                if out.len() == HOOKS_PER_FILE_MAX {
+                    truncated += 1;
+                    continue;
+                }
                 let kind = HookKind::from_type(known(handler.kind).as_deref());
                 let is_command = kind == HookKind::Command;
                 out.push(ScopeHook {
@@ -236,7 +251,7 @@ fn flatten_hooks(events: Option<HookEvents>) -> Vec<ScopeHook> {
             }
         }
     }
-    out
+    (out, truncated)
 }
 
 const EVENT_NAME_MAX_CHARS: usize = 64;

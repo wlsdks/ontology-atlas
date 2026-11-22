@@ -210,6 +210,7 @@
       "missingProject": "このリポジトリにはこのファイルがありません。",
       "invalid": "{file}は正しいJSONではないため、Atlasは何も読みませんでした。エディタで直してから、ファイルを読み直してください。",
       "unreadable": "Atlasは{file}を開けませんでした（{reason}）。このファイルからは何も表示していません。",
+      "truncated": "{file}のフック{total}個のうち、最初の{shown}個だけを表示しています。",
       "notReadFolder": "Atlasはこのフォルダを読みません。",
       "notReadFile": "Atlasはこのファイルを読みません。",
       "homeUnread": "Atlasはホームフォルダ内の名前を読みません。",

@@ -9,7 +9,7 @@ const hook = { event: 'Stop', group: 0, handler: 0, matcher: null, kind: 'comman
 function file(id: string, tool: ScopeFile['tool'], scope: ScopeFile['scope'], path: string, extra: Partial<ScopeFile> = {}): ScopeFile {
   return {
     id, tool, scope, path, picked: false, status: 'read', failure: null, bytes: 2, modifiedMs: 0,
-    hooks: [], disableAllHooks: null, allowManagedHooksOnly: null, permissionCounts: null, ...extra,
+    hooks: [], hooksTruncated: 0, disableAllHooks: null, allowManagedHooksOnly: null, permissionCounts: null, ...extra,
   };
 }
 

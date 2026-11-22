@@ -44,6 +44,8 @@ pub(crate) struct ScopeFile {
     bytes: Option<u64>,
     modified_ms: Option<u64>,
     hooks: Vec<ScopeHook>,
+    /// Handlers past the per-file cap, counted and not returned.
+    hooks_truncated: usize,
     disable_all_hooks: Option<bool>,
     allow_managed_hooks_only: Option<bool>,
     permission_counts: Option<PermissionCounts>,
@@ -206,6 +208,7 @@ fn scope_file(
         bytes: opened.bytes,
         modified_ms: opened.modified_ms,
         hooks: parsed.hooks,
+        hooks_truncated: parsed.hooks_truncated,
         disable_all_hooks: parsed.disable_all_hooks,
         allow_managed_hooks_only: parsed.allow_managed_hooks_only,
         permission_counts: parsed.permission_counts,

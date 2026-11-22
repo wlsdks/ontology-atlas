@@ -107,6 +107,14 @@ function FileNotes({ file, scopes, t }: { file: ScopeFile; scopes: HarnessScopes
       </p>
     );
   }
+  if (file.hooksTruncated > 0) {
+    const shown = file.hooks.length;
+    return (
+      <p data-scope-file-note="truncated" className={cn('pb-1 pl-[1.875rem] pr-2.5', NOTE)}>
+        {say('scopes.now.truncated', { file: displayPath(file.path, scopes), shown, total: shown + file.hooksTruncated })}
+      </p>
+    );
+  }
   return null;
 }
 

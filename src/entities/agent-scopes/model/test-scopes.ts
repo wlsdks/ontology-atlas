@@ -43,6 +43,7 @@ export function testFile(id: string, overrides: Partial<ScopeFile> = {}): ScopeF
     bytes: 2,
     modifiedMs: 0,
     hooks: [],
+    hooksTruncated: 0,
     disableAllHooks: null,
     allowManagedHooksOnly: null,
     permissionCounts: null,

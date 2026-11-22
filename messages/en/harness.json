@@ -210,6 +210,7 @@
       "missingProject": "This repository has no such file.",
       "invalid": "{file} is not valid JSON, so Atlas read nothing from it. Fix it in an editor, then read the files again.",
       "unreadable": "Atlas could not open {file}: {reason}. Nothing from it is listed.",
+      "truncated": "Atlas lists the first {shown} of the {total} hooks in {file}.",
       "notReadFolder": "Atlas does not read this folder.",
       "notReadFile": "Atlas does not read this file.",
       "homeUnread": "Atlas does not read the names inside your home folder.",

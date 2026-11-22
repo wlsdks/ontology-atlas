@@ -210,6 +210,7 @@
       "missingProject": "此仓库中没有此文件。",
       "invalid": "{file} 不是有效的 JSON，所以 Atlas 没有从中读取任何内容。请在编辑器中修正后重新读取文件。",
       "unreadable": "Atlas 无法打开 {file}：{reason}。此文件中的内容都不会列出。",
+      "truncated": "{file} 中共有 {total} 个钩子，这里只列出前 {shown} 个。",
       "notReadFolder": "Atlas 不读取此文件夹。",
       "notReadFile": "Atlas 不读取此文件。",
       "homeUnread": "Atlas 不读取主文件夹中的名称。",
