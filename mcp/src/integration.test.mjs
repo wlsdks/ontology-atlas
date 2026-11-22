@@ -34,11 +34,11 @@ import { analysisRecordFileName, serializeAnalysisRecord } from './analysis-hist
 import { buildProjectSourceGraphHash } from "./project-source/project-source-graph-hash.mjs";
 import { renderProjectCompetencyMarkdown } from "./project-meaning/project-meaning-receipt.mjs";
 import { defaultBody } from "./schema.mjs";
-import { inlineSharedSubschemas } from "./server/shared-subschemas.mjs";
 import { proposalCoverageRefs } from "./construction/construction-lifecycle.mjs";
 import { CONSTRUCTION_QUALIFICATION_INPUT_SCHEMA } from "./construction/construction-qualification.mjs";
 import { MEANING_PROPOSAL_INPUT_SCHEMA } from "./server/tool-schemas/meaning-construction.mjs";
-import { TOOL_INPUT_CONTRACT_BY_NAME } from "./server/registry.mjs";
+import { TOOL_INPUT_CONTRACT_BY_NAME, TOOL_OUTPUT_CONTRACT_BY_NAME } from "./server/registry.mjs";
+import { advertisedOutputSchema } from "./server/advertised-output-schema.mjs";
 import {
   formatNoTestMatchMessage,
   formatTestFilterSuffix,
@@ -456,7 +456,12 @@ await test("tools/list — each single-item tool description cross-references it
     const list = responses.find((r) => r.id === 99);
     assert.ok(list);
     assert.ok(Array.isArray(list.result?.tools));
-    const tools = list.result.tools.map((tool) => (tool.outputSchema ? { ...tool, outputSchema: inlineSharedSubschemas(tool.outputSchema) } : tool));
+    for (const tool of list.result.tools) {
+      const contract = TOOL_OUTPUT_CONTRACT_BY_NAME.get(tool.name);
+      assert.deepEqual(tool.outputSchema, contract ? advertisedOutputSchema(contract) : undefined, `${tool.name} advertises the shallow form of its output contract`);
+    }
+    // The checks below read the full output contracts behind the advertised schemas.
+    const tools = list.result.tools.map((tool) => (tool.outputSchema ? { ...tool, outputSchema: TOOL_OUTPUT_CONTRACT_BY_NAME.get(tool.name) } : tool));
     assert.ok(
       tools.every((tool) => tool.inputSchema?.additionalProperties === false),
       "tools/list schemas reject unknown top-level arguments",
