@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { emptyDialFrameMarks, type DialMarksInput } from "../frame/marks";
 import { overlaps } from "../label-marks";
-import type { Box, DialRowPick, GlyphMark, TextMark } from "../types";
+import type { Box, DialRowPick, GlyphMark, TextMark } from "../dial-shapes";
 import { settleBranchNames } from "./name-occupancy";
 
 const glyph = (id: string, x: number, y: number, r = 12): GlyphMark => ({ id, kind: "capability", x, y, r, egoState: "center", fill: "#101014", stroke: "#f4f4f8", hovered: false, agentFocus: false, selectionPulse: null, count: null, stalePip: false });

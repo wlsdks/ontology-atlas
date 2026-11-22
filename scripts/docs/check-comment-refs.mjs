@@ -20,16 +20,16 @@ const SKIP_DIR = new Set(["node_modules", "dist", "build", ".next", "data"]);
  */
 const HISTORICAL = new Set(["docs/GUIDE.md"]);
 
-function walk(dir, out = []) {
+function walk(directory, out = []) {
   let entries;
   try {
-    entries = readdirSync(dir, { withFileTypes: true });
+    entries = readdirSync(directory, { withFileTypes: true });
   } catch {
     return out;
   }
   for (const e of entries) {
     if (e.name.startsWith(".")) continue;
-    const full = path.join(dir, e.name);
+    const full = path.join(directory, e.name);
     if (e.isDirectory()) {
       if (SKIP_DIR.has(e.name)) continue;
       walk(full, out);

@@ -74,12 +74,7 @@ describe("assemblyStep — one mark's arrival", () => {
   });
 });
 
-/**
- * ⚠️ **A fixed duration makes the far marks travel faster.** IBM Carbon's motion guidance
- * is explicit that duration follows distance on a non-linear scale; this object launches
- * every mark from a multiple of its own resting radius, so before this the outer shell was
- * simply moving quicker than the inner one.
- */
+/** Duration follows distance on a non-linear scale, so the outer shell does not move quicker than the inner one. */
 describe("travel time follows the distance a mark has to cover", () => {
   it("gives a mark on the outer shell longer than one close to the centre", () => {
     const t = 400;
@@ -96,8 +91,7 @@ describe("travel time follows the distance a mark has to cover", () => {
       return (3.4 - step.distance) * radius;
     };
     const ratio = speed(1) / speed(0.3);
-    // Without the scaling this ratio was the raw radius ratio (~3.3): the far mark moving
-    // more than three times as fast. Under a square-root law it lands near 2.
+    // Unscaled, this ratio is the raw radius ratio (~3.3); under a square-root law it lands near 2.
     expect(ratio).toBeGreaterThan(1.4);
     expect(ratio).toBeLessThan(2.6);
   });
@@ -137,11 +131,7 @@ describe("the three groups arrive in the order the Library describes", () => {
     expect(PAGE_ASSEMBLY.delayMs).toBeLessThan(LINK_ASSEMBLY.delayMs);
   });
 
-  /*
-   * ⚠️ The groups must **overlap**. Strictly sequential groups of 34 marks would run about
-   * two seconds each and read as a three-stage loading bar rather than as one object
-   * coming together.
-   */
+  // The groups must overlap: strictly sequential groups would read as a three-stage loading bar.
   it("overlaps the groups rather than running them one after another", () => {
     const sourcesEnd = SOURCE_ASSEMBLY.delayMs + SOURCE_ASSEMBLY.travelMs;
     expect(PAGE_ASSEMBLY.delayMs).toBeLessThan(sourcesEnd);
@@ -157,13 +147,8 @@ describe("the three groups arrive in the order the Library describes", () => {
 });
 
 /**
- * ⚠️ **The reduced-motion path reads the schedule at `Infinity`, not at 0.**
- *
- * The scene's first build passed `elapsed ≈ 0` for a zero-length assembly, and
- * `assemblyStep` correctly answered *before this mark sets off* — launch distance,
- * `presence: 0`. Every mark was placed off-frame at zero scale, so a reduced-motion viewer
- * got an empty canvas rather than the still object. These pin the two readings apart so a
- * future host cannot make the same substitution.
+ * The reduced-motion path reads the schedule at `Infinity`, not at 0: at 0 every mark is still at
+ * launch distance with `presence: 0`, an empty canvas. These pin the two readings apart.
  */
 describe("the two readings a still frame could take", () => {
   it("reads t=0 as nothing has set off yet", () => {

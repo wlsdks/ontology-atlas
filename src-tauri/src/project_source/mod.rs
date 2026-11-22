@@ -1,3 +1,6 @@
+pub(crate) mod access;
+pub(crate) mod local_construction;
+
 use crate::git;
 use crate::lower_hex::lower_hex;
 use crate::vault::scope::{canonical_root, canonical_source_root, normalize_relative_path};
@@ -43,7 +46,7 @@ struct SourceInventory {
     truncated: bool,
 }
 
-/// `std::io::copy` needs a writer; digest 0.11 hashers no longer implement `io::Write`.
+/// `std::io::copy` needs a writer; digest 0.11 hashers do not implement `io::Write`.
 struct HashingWriter<'a>(&'a mut Sha256);
 
 impl std::io::Write for HashingWriter<'_> {
@@ -62,7 +65,7 @@ impl std::io::Write for HashingWriter<'_> {
 // fails on drift.
 const SOURCE_INVENTORY_VERSION: &str = "inventory-v2";
 const SOURCE_INVENTORY_MAX_DEPTH: usize = 20;
-const SOURCE_INVENTORY_MAX_FILES: usize = 8000;
+const SOURCE_INVENTORY_MAX_FILES: usize = 16000;
 const SOURCE_INVENTORY_MAX_HASH_BYTES: u64 = 32 * 1024 * 1024;
 const SOURCE_PRUNE_DIR_NAMES: &[&str] = &[
     ".git",

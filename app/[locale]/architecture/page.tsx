@@ -23,14 +23,9 @@ export async function generateMetadata({
 }
 
 /**
- * `/architecture` — the Harness destination. The route name is unchanged on purpose: every link,
- * bookmark and `?focus=` deep link written before the tab was renamed still lands here, and
- * `?view=` defaults to the blueprint those links meant.
- *
- * ⚠️ **The `Suspense` boundary is required, not decorative.** The view reads `?view=` through
- * `useSearchParams`, and with `output: 'export'` a prerendered page that calls it without a
- * boundary fails the build outright. `/mcp` and the other compatibility redirects carry the same
- * wrapper for the same reason; this file copies them rather than inventing another answer.
+ * The route name stays so saved links and `?focus=` deep links still land here. The `Suspense`
+ * boundary is required: with `output: 'export'`, a prerendered page calling `useSearchParams`
+ * without one fails the build.
  */
 export default function Page() {
   return (

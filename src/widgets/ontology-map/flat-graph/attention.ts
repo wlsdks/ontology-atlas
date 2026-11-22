@@ -1,4 +1,4 @@
-import type { DialModel } from "../dial/types";
+import type { DialModel } from "../dial/dial-shapes";
 import { domainPartners, type CapabilityRelation } from "../model/containment-tree";
 
 /** How a lit line reads: what the focus needs, what needs it, a symmetric relation, a broader concept. */
@@ -46,9 +46,9 @@ function domainMembers(model: DialModel, domainId: string, into: Set<string>): v
   into.add(domainId);
   for (const id of d.capabilityIds) {
     into.add(id);
-    for (const el of model.capabilityById.get(id)?.elementIds ?? []) into.add(el);
+    for (const capabilityElementId of model.capabilityById.get(id)?.elementIds ?? []) into.add(capabilityElementId);
   }
-  for (const el of d.directElementIds) into.add(el);
+  for (const directElementId of d.directElementIds) into.add(directElementId);
 }
 
 /**
@@ -109,7 +109,7 @@ function capabilityReach(model: DialModel, capabilityId: string, into: Set<strin
   if (!cap) return [];
   into.add(capabilityId);
   into.add(cap.domainId);
-  for (const el of cap.elementIds) into.add(el);
+  for (const capabilityElementId of cap.elementIds) into.add(capabilityElementId);
   const lines = conceptLines(model.conceptRelations ?? [], capabilityId);
   lightFarEnds(lines, capabilityId, into, named);
   return lines;

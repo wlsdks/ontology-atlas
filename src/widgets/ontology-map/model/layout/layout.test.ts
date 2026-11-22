@@ -78,8 +78,8 @@ describe("computeConcentricLayout", () => {
   it("places every element exactly layoutRingElement world-units from its parent capability", () => {
     const points = computeConcentricLayout(FIXTURE, RINGS);
     const capA1 = byId(points, "cap-a1");
-    for (const elId of ["el-a1-1", "el-a1-2"]) {
-      const p = byId(points, elId);
+    for (const elementId of ["el-a1-1", "el-a1-2"]) {
+      const p = byId(points, elementId);
       const distanceFromParent = Math.hypot(p.x - capA1.x, p.y - capA1.y);
       expect(distanceFromParent).toBeCloseTo(RINGS.element, 4);
     }

@@ -4,10 +4,11 @@ import storefrontManifest from "@/entities/docs-vault/data/sample-storefront.man
 import { deriveOntologyFromVault } from "@/entities/docs-vault/lib/derive-ontology-from-vault";
 
 import type { CameraAxes } from "../../engine/camera";
-import { computeDomeFitCameraTarget, worldToScreen } from "../../ui/camera/topology-camera-math";
-import { findCouplingGroups } from "./coupling-groups";
+import { worldToScreen } from "../../ui/camera/topology-camera-math";
+import { computeDomeFitCameraTarget } from "../../ui/camera/target/fit-targets";
+import { findCouplingGroups } from "./coupling/coupling-groups";
 import { DOME_PLANE } from "./cone-layout";
-import { CLOUD_ITERATIONS } from "./coupling-cloud";
+import { CLOUD_ITERATIONS } from "./coupling/coupling-cloud";
 import {
   DOME_ASSEMBLE_TOTAL_MS,
   chargeTierLag,
@@ -61,7 +62,7 @@ import {
   domeNearestYawTurn,
   resistDomePitch,
   stepDomeDragSpring,
-} from "./orbit";
+} from "./camera/orbit";
 import {
   DOME_FOCAL,
   domeEgoWorldBounds,
@@ -72,15 +73,16 @@ import {
   domeWorldBounds,
   projectDomeCoord,
   solveDomePlanePoint,
-} from "./projection";
+} from "./camera/projection";
 import {
   createDomeRuntime,
   beginDomeMorph,
+  restDomeAtFit,
   settleDomeRuntimeOffscreen,
   type DomeRuntime,
 } from "./runtime";
-import { buildStrataTargets } from "./strata";
-import { KIND_DEPTH, type DomeCoord, type DomeInputNode, type DomeViewKind } from "./types";
+import { buildStrataTargets } from "./strata/strata";
+import { KIND_DEPTH, type DomeCoord, type DomeInputNode, type DomeViewKind } from "./dome-shapes";
 
 const cam = (x: number, y: number, scale: number): CameraAxes => ({
   x: { value: x, velocity: 0 },
@@ -323,15 +325,15 @@ describe("dome-view in-plane unprojection, the coordinate contract of 3D node dr
     const sp = Math.sin(pitch);
     const uyHorizon = (-DOME_FOCAL * sp) / cp;
     const wyHorizon = model.centerY + uyHorizon * model.unit;
-    let prev: { px: number; pz: number } | null = null;
+    let previousValue: { px: number; pz: number } | null = null;
     for (let dwy = 40; dwy >= -40; dwy -= 1) {
       const solved = solveDomePlanePoint(model, DOME_PLANE.domain.y, model.centerX + 50, wyHorizon + dwy * model.unit, 0.55, pitch);
       expect(solved).not.toBeNull();
-      if (prev !== null) {
-        const jump = Math.hypot(solved!.px - prev.px, solved!.pz - prev.pz);
+      if (previousValue !== null) {
+        const jump = Math.hypot(solved!.px - previousValue.px, solved!.pz - previousValue.pz);
         expect(jump, `dwy=${dwy}`).toBeLessThan(DOME_PLANE.element.r * 1.5);
       }
-      prev = solved;
+      previousValue = solved;
     }
   });
 });
@@ -504,11 +506,11 @@ describe("far-side detail ramp folds only the extra strokes of the back hemisphe
     expect(domeDetailFactor(DOME_DETAIL_FADE_END)).toBe(0);
     expect(domeDetailFactor(1)).toBe(0);
     expect(domeDetailFactor((DOME_DETAIL_FADE_START + DOME_DETAIL_FADE_END) / 2)).toBeCloseTo(0.5, 9);
-    let prev = domeDetailFactor(DOME_DETAIL_FADE_START);
+    let previousValue = domeDetailFactor(DOME_DETAIL_FADE_START);
     for (let u = DOME_DETAIL_FADE_START; u <= DOME_DETAIL_FADE_END; u += 0.005) {
       const cur = domeDetailFactor(u);
-      expect(cur).toBeLessThanOrEqual(prev + 1e-12);
-      prev = cur;
+      expect(cur).toBeLessThanOrEqual(previousValue + 1e-12);
+      previousValue = cur;
     }
   });
 });
@@ -879,11 +881,11 @@ describe("coupling cloud lets relations decide positions", () => {
   it("is deterministic: the same input gives the same bytes (no randomness)", () => {
     const a = buildDomeModel(nodes, { arrangement: "coupling", edges });
     const b = buildDomeModel(nodes, { arrangement: "coupling", edges });
-    for (const [id, ca] of a.coords) {
-      const cb = b.coords.get(id)!;
-      expect(cb.px).toBe(ca.px);
-      expect(cb.py).toBe(ca.py);
-      expect(cb.pz).toBe(ca.pz);
+    for (const [id, coordsA] of a.coords) {
+      const coordsB = b.coords.get(id)!;
+      expect(coordsB.px).toBe(coordsA.px);
+      expect(coordsB.py).toBe(coordsA.py);
+      expect(coordsB.pz).toBe(coordsA.pz);
     }
   });
 
@@ -1068,6 +1070,19 @@ describe("layout morph moves nodes instead of cutting", () => {
     beginDomeMorph(runtime, buildDomeModel(nodes, { arrangement: "coupling", edges }), 1000, 0);
     expect(runtime.morph).toBeNull();
     expect(runtime.model.arrangement).toBe("coupling");
+  });
+});
+
+describe("dome-view rest fit", () => {
+  it("records the whole-cloud fit at the current pose, as a copy that later camera writes cannot change", () => {
+    const runtime = createDomeRuntime(buildDomeModel(NODES));
+    const target = { tx: 10, ty: -20, tscale: 0.8 };
+    restDomeAtFit(runtime, target);
+    expect(runtime.fitScale).toBe(0.8);
+    expect(runtime.restFit).toEqual({ target, yaw: runtime.yaw, pitch: runtime.pitch });
+    expect(runtime.restFit!.target).not.toBe(target);
+    expect(runtime.turnFollow).toEqual({ target, yaw: runtime.yaw, followed: null });
+    expect(runtime.turnFollow!.target).toBe(runtime.restFit!.target);
   });
 });
 

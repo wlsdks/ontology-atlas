@@ -24,7 +24,7 @@ export const RAISES_DIR = "tests/contract/ratchet-raises";
 export type Raise = { file: string; gate: string; raise: number; why: string };
 
 function git(args: string[], cwd: string): string {
-  return execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
+  return execFileSync("git", args, { cwd, encoding: "utf8", maxBuffer: 1 << 26, stdio: ["ignore", "pipe", "ignore"] }).trim();
 }
 
 /**
@@ -60,13 +60,7 @@ export function materializeBase(sha: string, paths: readonly string[], cwd = pro
 
   mkdirSync(CACHE_ROOT, { recursive: true });
   pruneCache(dir);
-  const present = paths.filter((p) => {
-    try {
-      return git(["ls-tree", "--name-only", sha, "--", p], cwd) !== "";
-    } catch {
-      return false;
-    }
-  });
+  const present = presentAt(sha, paths, cwd);
   const staging = `${dir}.${process.pid}.${Date.now()}`;
   mkdirSync(staging, { recursive: true });
   if (present.length > 0) {
@@ -85,6 +79,18 @@ export function materializeBase(sha: string, paths: readonly string[], cwd = pro
     rmSync(staging, { recursive: true, force: true });
   }
   return dir;
+}
+
+/** One tree listing, not one `git ls-tree` per path: a large change passes thousands of paths. */
+function presentAt(sha: string, paths: readonly string[], cwd: string): string[] {
+  const entries = new Set<string>();
+  for (const file of git(["ls-tree", "-r", "-z", "--name-only", sha], cwd).split("\0")) {
+    for (let end = file.indexOf("/"); end !== -1; end = file.indexOf("/", end + 1)) {
+      entries.add(file.slice(0, end));
+    }
+    entries.add(file);
+  }
+  return paths.filter((path) => entries.has(path.replace(/\/+$/, "")));
 }
 
 function pruneCache(keep: string): void {

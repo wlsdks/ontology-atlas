@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { KnowledgeGraphNode } from "../model/types";
+import type { KnowledgeGraphNode } from "../model/knowledge-graph";
 import { resolveNodeDocument } from "./node-document";
 
 const stamp = new Date(0);

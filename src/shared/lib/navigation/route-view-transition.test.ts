@@ -12,10 +12,40 @@ import {
   subscribeRouteCrossfade,
 } from "./route-view-transition";
 
+/** A route that is not the one jsdom's document sits on. */
+const OTHER_ROUTE = "/architecture/";
+
 describe("route view transition — the old screen is held until the new route commits", () => {
+  it("navigates directly when the target keeps the route, which never settles a transition", () => {
+    const start = vi.fn((update: () => Promise<void> | void) => {
+      void update();
+    });
+    const navigate = vi.fn();
+    const setTimeoutFn = vi.fn(() => 0) as unknown as typeof setTimeout;
+    expect(
+      navigateWithViewTransition("/topology/?focus=main", navigate, { startViewTransition: start, currentPathname: "/en/topology/", setTimeoutFn }),
+    ).toBe("direct");
+    expect(start, "a crossfade started that only a pathname change can release").not.toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledTimes(1);
+    expect(hasPendingRouteViewTransition()).toBe(false);
+    expect(isRouteCrossfadeRunning()).toBe(false);
+  });
+
+  it("a navigation that keeps the route releases a transition still holding the old screen", () => {
+    const start = vi.fn((update: () => Promise<void> | void) => {
+      void update();
+    });
+    const setTimeoutFn = vi.fn(() => 0) as unknown as typeof setTimeout;
+    navigateWithViewTransition(OTHER_ROUTE, () => undefined, { startViewTransition: start, currentPathname: "/en/topology/", setTimeoutFn });
+    expect(hasPendingRouteViewTransition()).toBe(true);
+    navigateWithViewTransition("/topology/", () => undefined, { startViewTransition: start, currentPathname: "/en/topology/", setTimeoutFn });
+    expect(start).toHaveBeenCalledTimes(1);
+    expect(hasPendingRouteViewTransition(), "the first hold waits for a route the second navigation replaced").toBe(false);
+  });
+
   it("navigates directly when the browser has no view transitions", () => {
     const navigate = vi.fn();
-    expect(navigateWithViewTransition(navigate, { startViewTransition: null })).toBe("direct");
+    expect(navigateWithViewTransition(OTHER_ROUTE, navigate, { startViewTransition: null })).toBe("direct");
     expect(navigate).toHaveBeenCalledTimes(1);
     expect(hasPendingRouteViewTransition()).toBe(false);
   });
@@ -27,7 +57,7 @@ describe("route view transition — the old screen is held until the new route c
       updatePromise = update() as Promise<void>;
     });
     const setTimeoutFn = vi.fn(() => 0) as unknown as typeof setTimeout;
-    expect(navigateWithViewTransition(navigate, { startViewTransition: start, setTimeoutFn })).toBe("transition");
+    expect(navigateWithViewTransition(OTHER_ROUTE, navigate, { startViewTransition: start, setTimeoutFn })).toBe("transition");
     expect(start).toHaveBeenCalledTimes(1);
     expect(navigate).toHaveBeenCalledTimes(1);
     expect(hasPendingRouteViewTransition()).toBe(true);
@@ -50,14 +80,14 @@ describe("route view transition — the old screen is held until the new route c
     let scheduled: (() => void) | null = null;
     // Only the first schedule is the safety net; settling then arms the crossfade budget
     // (see "the hold is bounded from the commit" below), which schedules its own callback.
-    const setTimeoutFn = vi.fn((fn: () => void, ms: number) => {
+    const setTimeoutFn = vi.fn((callback: () => void, ms: number) => {
       if (scheduled === null) {
         expect(ms).toBe(ROUTE_VIEW_TRANSITION_SETTLE_TIMEOUT_MS);
-        scheduled = fn;
+        scheduled = callback;
       }
       return 0;
     }) as unknown as typeof setTimeout;
-    navigateWithViewTransition(() => undefined, { startViewTransition: start, setTimeoutFn });
+    navigateWithViewTransition(OTHER_ROUTE, () => undefined, { startViewTransition: start, setTimeoutFn });
     expect(hasPendingRouteViewTransition()).toBe(true);
     scheduled!();
     expect(hasPendingRouteViewTransition()).toBe(false);
@@ -68,8 +98,8 @@ describe("route view transition — the old screen is held until the new route c
       void update();
     });
     const setTimeoutFn = vi.fn(() => 0) as unknown as typeof setTimeout;
-    navigateWithViewTransition(() => undefined, { startViewTransition: start, setTimeoutFn });
-    navigateWithViewTransition(() => undefined, { startViewTransition: start, setTimeoutFn });
+    navigateWithViewTransition(OTHER_ROUTE, () => undefined, { startViewTransition: start, setTimeoutFn });
+    navigateWithViewTransition(OTHER_ROUTE, () => undefined, { startViewTransition: start, setTimeoutFn });
     expect(start).toHaveBeenCalledTimes(2);
     settleRouteViewTransition();
     expect(hasPendingRouteViewTransition()).toBe(false);
@@ -113,7 +143,7 @@ describe("route view transition — the old screen is held until the new route c
       });
       const setTimeoutFn = vi.fn(() => 0) as unknown as typeof setTimeout;
       const navigate = vi.fn();
-      expect(navigateWithViewTransition(navigate, { startViewTransition: start, setTimeoutFn })).toBe(
+      expect(navigateWithViewTransition(OTHER_ROUTE, navigate, { startViewTransition: start, setTimeoutFn })).toBe(
         "transition",
       );
       expect(navigate).toHaveBeenCalledTimes(1);
@@ -136,7 +166,7 @@ describe("route view transition — the old screen is held until the new route c
     });
     const setTimeoutFn = vi.fn(() => 0) as unknown as typeof setTimeout;
     expect(() =>
-      navigateWithViewTransition(() => undefined, { startViewTransition: start, setTimeoutFn }),
+      navigateWithViewTransition(OTHER_ROUTE, () => undefined, { startViewTransition: start, setTimeoutFn }),
     ).not.toThrow();
     settleRouteViewTransition();
   });
@@ -168,9 +198,9 @@ describe("route view transition — the hold is bounded from the commit, not fro
 
   /** Collects the callbacks scheduled at each delay, so a test can fire exactly one. */
   const recorder = () => {
-    const calls: { fn: () => void; ms: number }[] = [];
-    const setTimeoutFn = ((fn: () => void, ms: number) => {
-      calls.push({ fn, ms });
+    const calls: { callback: () => void; ms: number }[] = [];
+    const setTimeoutFn = ((callback: () => void, ms: number) => {
+      calls.push({ callback, ms });
       return 0;
     }) as unknown as typeof setTimeout;
     return { calls, setTimeoutFn };
@@ -179,7 +209,7 @@ describe("route view transition — the hold is bounded from the commit, not fro
   it("arms the budget only once the route has committed", () => {
     const { start, skipTransition } = fakeTransition();
     const { calls, setTimeoutFn } = recorder();
-    navigateWithViewTransition(() => undefined, {
+    navigateWithViewTransition(OTHER_ROUTE, () => undefined, {
       startViewTransition: start,
       setTimeoutFn,
       crossfadeMs: 180,
@@ -198,7 +228,7 @@ describe("route view transition — the hold is bounded from the commit, not fro
   it("skips a crossfade that never began", () => {
     const { start, skipTransition } = fakeTransition();
     const { calls, setTimeoutFn } = recorder();
-    navigateWithViewTransition(() => undefined, {
+    navigateWithViewTransition(OTHER_ROUTE, () => undefined, {
       startViewTransition: start,
       setTimeoutFn,
       crossfadeMs: 180,
@@ -207,7 +237,7 @@ describe("route view transition — the hold is bounded from the commit, not fro
       animations: () => [{ pseudo: "::view-transition-new(root)", startTime: null }],
     });
     settleRouteViewTransition();
-    calls.find((call) => call.ms === 180)!.fn();
+    calls.find((call) => call.ms === 180)!.callback();
     expect(skipTransition).toHaveBeenCalledTimes(1);
     expect(hasPendingRouteViewTransitionBound()).toBe(false);
   });
@@ -215,21 +245,21 @@ describe("route view transition — the hold is bounded from the commit, not fro
   it("never cuts a crossfade that is already running", () => {
     const { start, skipTransition } = fakeTransition();
     const { calls, setTimeoutFn } = recorder();
-    navigateWithViewTransition(() => undefined, {
+    navigateWithViewTransition(OTHER_ROUTE, () => undefined, {
       startViewTransition: start,
       setTimeoutFn,
       crossfadeMs: 180,
       animations: () => [{ pseudo: "::view-transition-old(root)", startTime: 12 }],
     });
     settleRouteViewTransition();
-    calls.find((call) => call.ms === 180)!.fn();
+    calls.find((call) => call.ms === 180)!.callback();
     expect(skipTransition, "돌고 있는 페이드를 잘랐다").not.toHaveBeenCalled();
   });
 
   it("ignores animations that are not the transition's own", () => {
     const { start, skipTransition } = fakeTransition();
     const { calls, setTimeoutFn } = recorder();
-    navigateWithViewTransition(() => undefined, {
+    navigateWithViewTransition(OTHER_ROUTE, () => undefined, {
       startViewTransition: start,
       setTimeoutFn,
       crossfadeMs: 180,
@@ -238,7 +268,7 @@ describe("route view transition — the hold is bounded from the commit, not fro
       animations: () => [{ pseudo: null, startTime: 4 }],
     });
     settleRouteViewTransition();
-    calls.find((call) => call.ms === 180)!.fn();
+    calls.find((call) => call.ms === 180)!.callback();
     expect(skipTransition).toHaveBeenCalledTimes(1);
   });
 
@@ -247,10 +277,10 @@ describe("route view transition — the hold is bounded from the commit, not fro
     const second = fakeTransition();
     const { calls, setTimeoutFn } = recorder();
     const options = { setTimeoutFn, crossfadeMs: 180, animations: () => [] };
-    navigateWithViewTransition(() => undefined, { ...options, startViewTransition: first.start });
+    navigateWithViewTransition(OTHER_ROUTE, () => undefined, { ...options, startViewTransition: first.start });
     settleRouteViewTransition();
-    const staleBound = calls.find((call) => call.ms === 180)!.fn;
-    navigateWithViewTransition(() => undefined, { ...options, startViewTransition: second.start });
+    const staleBound = calls.find((call) => call.ms === 180)!.callback;
+    navigateWithViewTransition(OTHER_ROUTE, () => undefined, { ...options, startViewTransition: second.start });
     staleBound();
     expect(first.skipTransition, "지난 전환의 예산이 새 전환을 끊었다").not.toHaveBeenCalled();
     expect(second.skipTransition).not.toHaveBeenCalled();
@@ -291,7 +321,7 @@ describe("a surface that would cover the pane can wait for the crossfade", () =>
     const setTimeoutFn = vi.fn(() => 0) as unknown as typeof setTimeout;
 
     expect(isRouteCrossfadeRunning()).toBe(false);
-    navigateWithViewTransition(() => undefined, { startViewTransition: start, setTimeoutFn });
+    navigateWithViewTransition(OTHER_ROUTE, () => undefined, { startViewTransition: start, setTimeoutFn });
     expect(isRouteCrossfadeRunning()).toBe(true);
     settleRouteViewTransition();
     expect(isRouteCrossfadeRunning(), "the route committed but the crossfade is still on screen").toBe(true);
@@ -302,7 +332,7 @@ describe("a surface that would cover the pane can wait for the crossfade", () =>
     expect(seen).toEqual([true, false]);
 
     unsubscribe();
-    navigateWithViewTransition(() => undefined, { startViewTransition: null });
+    navigateWithViewTransition(OTHER_ROUTE, () => undefined, { startViewTransition: null });
     expect(isRouteCrossfadeRunning(), "a direct navigation has no crossfade to wait for").toBe(false);
     expect(seen).toHaveLength(2);
   });

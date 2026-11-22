@@ -1,29 +1,12 @@
 #!/usr/bin/env node
-// R13 #62 — pnpm benchmark
+// Codex 10 task x 2 mode automated re-measurement (`pnpm benchmark`). Per cell it records the raw
+// transcript (docs/benchmark/results/), the shell exec count and the MCP tool-call count;
+// correctness and hallucination counts stay human-graded against the saved transcripts.
 //
-// Codex 10 task × 2 mode automated re-measurement. Records per-cell:
-//   - raw stdout transcript → docs/benchmark/results/<date>-codex-<id>-<mode>.txt
-//   - shell exec count + MCP tool-call count (regex extracted)
-// And produces a markdown summary table (tool calls only — correctness
-// and hallucination counts still need human review of transcripts).
+// Usage: pnpm benchmark --bypass [--with-none | --on-only | --dry-run]
 //
-// Usage:
-//   pnpm benchmark --bypass          # full 20-cell run
-//   pnpm benchmark --bypass --with-none # 30-cell no-vault control matrix
-//   pnpm benchmark --bypass --on-only # ON mode 10 cells (faster)
-//   pnpm benchmark --dry-run         # verify config without burning calls
-//
-// Why --bypass is required:
-//   `codex exec` (non-interactive) default-denies all MCP tool calls.
-//   The only way to actually exercise MCP is
-//   `--dangerously-bypass-approvals-and-sandbox`. The script makes that
-//   choice **explicit** — accidental runs that miss the bypass produce
-//   meaningless data (Codex falls back to grep, MCP path untested).
-//
-// What this script does NOT do:
-//   - Auto-grade correctness (no LLM-as-judge)
-//   - Auto-count hallucinations
-//   These remain human-grade against the saved transcripts.
+// --bypass is required: non-interactive `codex exec` denies MCP tool calls unless
+// `--dangerously-bypass-approvals-and-sandbox` is passed, and runs without it measure grep, not MCP.
 
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, renameSync, writeFileSync } from "node:fs";
@@ -78,9 +61,7 @@ const TASKS = [
     prompt:
       "MCP 서버에 코드 심볼 검색을 넣으려고 해. 이 기능이 mcp-tool-server capability 의 범위 안인지 밖인지, 이 프로젝트에 이미 기록된 경계가 뭐라고 말하는지 알려줘. 새로 판단하지 말고 기록된 것만.",
     /*
-     * The key is pinned to what `capabilities/mcp-tool-server` `## Excludes`
-     * says today. If that section changes, this key is wrong and must
-     * change with it — that is the point of keeping it beside the prompt.
+     * Pinned to `capabilities/mcp-tool-server` `## Excludes`: change this key with that section.
      */
     key: {
       /*
@@ -90,13 +71,8 @@ const TASKS = [
       boundary: [/\bAST\b/i, /제외|[Ee]xclud/, /범위 밖|밖입니다|밖에 있|out of scope|not in scope/i],
       provenance: [/capabilities\/mcp-tool-server/, /Inclusions? \/ Exclusions?|## Exclude/],
       /*
-       * Only unambiguous affirmative scope claims. A bare affirmation ("that is
-       * right") was tried first and rejected: correct answers use it too, as in
-       * "it is right that this is recorded as excluded", and a contradiction
-       * detector that fires on correct answers is worse than none.
-       *
-       * The patterns themselves stay in the answer language, the way the prompts do:
-       * they are match data, not prose.
+       * Only unambiguous affirmative scope claims: a bare affirmation ("that is right") also appears
+       * in correct answers. The patterns stay in the answer language; they are match data, not prose.
        */
       contradicts: [/범위\s*안에?\s*(포함|들어|속)/, /mcp-tool-server\s*가?\s*담당해야/, /포함하는 것이 맞/],
     },
@@ -122,7 +98,6 @@ const TASKS = [
       mustRefuse: false,
       boundary: [/Job Object|taskkill/i, /브라우저|[Bb]rowsers? cannot|프로세스를 실행할 수 없/],
       provenance: [/elements\/acp-runtime-gate/, /## Boundaries|`Boundaries`|Boundaries \uc139\uc158/],
-      // The vault says the opposite of each of these.
       contradicts: [/Windows.{0,30}(프로세스 트리|process tree).{0,30}(보장|책임|covered|guarantee)/i],
     },
   },
@@ -210,7 +185,6 @@ const withNone = args.includes("--with-none") || noneOnly;
  * Repeats: at n=1 an agent benchmark reports its own sampling noise; a median over an odd number
  * of runs survives one outlier cell.
  */
-/* `--only=B1,A3` narrows the matrix while iterating on one measured failure. */
 const only = (args.find((a) => a.startsWith("--only="))?.split("=")[1] ?? "").split(",").filter(Boolean);
 const SELECTED = only.length ? TASKS.filter((t) => only.includes(t.id)) : TASKS;
 const repeat = Math.max(1, Number(args.find((a) => a.startsWith("--repeat="))?.split("=")[1] ?? 1));
@@ -294,24 +268,13 @@ function runTask(task, mode, iter) {
   const mcpCalls = (out.match(/mcp: ontology-atlas\/\w+ \(completed\)/g) ?? []).length;
   const mcpFailed = (out.match(/mcp: ontology-atlas\/\w+ \(failed\)/g) ?? []).length;
   const shellCalls = (out.match(/^exec$/gm) ?? []).length;
-  // Cost is the axis the AGENTS.md study (arXiv:2602.11988) actually moved: context
-  // that does not raise success still raised inference cost by over 20%. A benchmark
-  // without this column cannot detect that failure.
+  // Cost is an axis too: context that does not raise success still raised inference cost by
+  // over 20% (arXiv:2602.11988).
   const tokens = Number((out.match(/tokens used:?\s*([\d,]+)/i) ?? [])[1]?.replace(/,/g, "") ?? 0);
   /*
-   * **Grading a D cell without asking the model that ran it.**
-   *
-   * The May 2026 run was scored by the same model that produced the answers, and
-   * the file still carries its own confirmation-bias warning. A second model
-   * grading a first one only moves the bias. So a D task carries a pinned answer
-   * key beside its prompt, and grading is string matching against the vault text
-   * the key quotes: it is reproducible, it is arguable (open the key and disagree
-   * with it), and it stays honest when the vault changes, because a key that no
-   * longer matches the vault is a broken key rather than a silent pass.
-   *
-   * Only the **final answer** is graded. The transcript also contains tool output,
-   * and the vault text appears there verbatim, so grading the whole transcript
-   * would score the tool for the agent.
+   * A D cell is graded by string matching against a pinned key that quotes the vault text, not by
+   * the model that ran it: reproducible, arguable, and a key that no longer matches the vault is
+   * broken rather than a silent pass. Only the final answer is graded; tool output repeats the vault text.
    */
   const answer = finalAnswerOf(out);
   const grade = task.key ? gradeAnswer(answer, task.key) : null;
@@ -370,7 +333,6 @@ if (!offOnly && !noneOnly) {
   for (let i = 1; i <= repeat; i++) for (const task of SELECTED) cells.push(runTask(task, "on", i));
 }
 
-// Markdown summary
 let md = `# Benchmark — ${TODAY} — Codex automated\n\n`;
 md += `Generated by \`scripts/benchmark/benchmark.mjs\`. Per-cell raw stdout in \`${TODAY}-codex-<task>-<mode>.txt\`.\n\n`;
 md += `**Note**: this summary captures *tool-call efficiency* automatically. **Correctness and hallucination counts require human review of the transcripts.**\n\n`;
@@ -437,9 +399,8 @@ md += `Open each transcript and score per \`docs/benchmark/rubric.md\` (correctn
 const summaryPath = resolve(OUT_DIR, `${TODAY}-codex-summary.md`);
 writeFileSync(summaryPath, md, "utf-8");
 console.log(`\n[benchmark] summary: ${summaryPath}`);
-// Teardown: leave the developer's codex config as it was found. The committed
-// project entry is restored by the exit handler; the global entry was added by
-// this script, so it goes away with it.
+// Teardown: the committed project entry is restored by the exit handler; the global entry
+// was added by this script, so it goes away with it.
 spawnSync("codex", ["mcp", "remove", "ontology-atlas"], { stdio: "ignore" });
 
 console.log(`[benchmark] ${cells.length} cells in ${(cells.reduce((s, c) => s + c.durationMs, 0) / 1000).toFixed(0)}s total`);

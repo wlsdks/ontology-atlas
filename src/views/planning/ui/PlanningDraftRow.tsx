@@ -8,11 +8,6 @@ import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-
 import { EXIT_TRANSITION, MOTION, useExitLockout } from '@/shared/motion';
 import { Input } from '@/shared/ui/fields/input';
 
-/**
- * The rules a new document's title follows wherever it is typed: Enter submits a non-empty title
- * unless an input method is composing, a busy create keeps the text, and Escape cancels where there
- * is something to cancel.
- */
 export function usePlanningTitle({ busy, failed, onSubmit, onCancel }: { busy: boolean; failed: boolean; onSubmit: (title: string) => void; onCancel?: () => void }) {
   const t = useTranslations('planning');
   const [title, setTitle] = useState('');
@@ -34,7 +29,6 @@ export function usePlanningTitle({ busy, failed, onSubmit, onCancel }: { busy: b
   return { field, submit, submittable };
 }
 
-/** The title field for a new home document, opening in place at the top of the file list. */
 export function PlanningDraftRow({ busy, failed, onSubmit, onCancel }: { busy: boolean; failed: boolean; onSubmit: (title: string) => void; onCancel: () => void }) {
   const reduced = usePrefersReducedMotion();
   const { field: fieldProps } = usePlanningTitle({ busy, failed, onSubmit, onCancel });

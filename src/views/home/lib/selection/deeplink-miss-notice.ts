@@ -17,13 +17,10 @@ export interface DeeplinkMissDecisionInput {
   hasOntologyMatch: boolean;
   hasProjectMatch: boolean;
   projectsLoaded: boolean;
-  /** False while startup, open or reload can still replace the static sample with a local graph. */
   sourceReady: boolean;
-  /** This slug resolved to a node earlier in the session. */
   resolvedBefore: boolean;
 }
 
-/** Pure gate: the caller turns "notify-after-grace" into a cancellable timeout. */
 export function resolveDeeplinkMissDecision({
   selectedSlug,
   hasOntologyMatch,

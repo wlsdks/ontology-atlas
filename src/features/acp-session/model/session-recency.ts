@@ -1,23 +1,13 @@
-import type { AcpSessionSummary } from './acp-client';
+import type { AcpSessionSummary } from './session-summaries';
 
-/**
- * Which past conversation is the latest. `session/list` order is the adapter's, so sort here
- * by readable `updatedAt`, newest first; rows without one keep adapter order below dated
- * ones, since unknown time is not old.
- */
+/** `session/list` order is the adapter's, so sort by readable `updatedAt`, newest first; rows without one keep adapter order below dated ones, since unknown time is not old. */
 function timeOf(session: AcpSessionSummary): number | null {
   if (!session.updatedAt) return null;
   const value = Date.parse(session.updatedAt);
   return Number.isFinite(value) ? value : null;
 }
 
-/**
- * Newest first, stable everywhere the answer is unknown.
- *
- * `Array.prototype.sort` is specified as stable, so two rows that compare equal — two
- * undated rows, or two rows stamped the same second — come out in the order the adapter
- * listed them.
- */
+/** Stable (`Array.prototype.sort` is): rows that compare equal come out in the order the adapter listed them. */
 export function orderSessionsByRecency(
   sessions: readonly AcpSessionSummary[],
 ): AcpSessionSummary[] {
@@ -31,14 +21,7 @@ export function orderSessionsByRecency(
   });
 }
 
-/**
- * The conversation reopening resumes, or `null` when this folder has none.
- *
- * With no date anywhere, this is the adapter's own first row rather than nothing. The
- * adapter is the only party that knows its list, and the head of the list is the same
- * conversation the person sees at the top of the history door — resuming that one keeps
- * those two answers identical, which is the whole point of ordering here.
- */
+/** Null when this folder has none. With no date anywhere it is the adapter's first row, so reopening resumes the conversation at the top of the history door. */
 export function latestSession(
   sessions: readonly AcpSessionSummary[],
 ): AcpSessionSummary | null {

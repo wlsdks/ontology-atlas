@@ -3,15 +3,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { VaultDoc } from '@/entities/docs-vault';
 import { useLocalVault } from '@/entities/vault-session';
-import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
-import type { VaultIndexStatus } from '@/shared/lib/vault-folder/tauri-vault-index';
-import { useVaultIndexHits } from '@/shared/lib/vault-folder/use-vault-index-hits';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
+import type { VaultIndexStatus } from '@/shared/lib/vault-folder/vault-index/tauri-vault-index';
+import { useVaultIndexHits } from '@/shared/lib/vault-folder/vault-index/use-vault-index-hits';
 import { buildBodyEntry, docBodyCacheKey, type DocsBodyEntry, type DocsBodyIndex } from './body-index';
 
 /** As many as the palette lists; the hit files are read to show the matching line. */
 export const TEXT_SEARCH_HITS = 15;
 const READ_CONCURRENCY = 6;
-/** Hit bodies kept while typing, so narrowing a query does not re-read the same files. */
 const RETAINED_HIT_BODIES = 200;
 
 /**
@@ -26,7 +25,6 @@ export function hitEntry(fileText: string, key: string, query: string): DocsBody
 }
 
 interface Options {
-  /** The document query; empty for command and tag modes. */
   query: string;
   docs: VaultDoc[];
   getDocContent?: (slug: string) => Promise<string>;

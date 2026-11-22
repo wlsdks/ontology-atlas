@@ -5,14 +5,12 @@ import { useTranslations } from 'next-intl';
 import { ListTree, Map as MapIcon, RefreshCcw, Search } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { CHROME_CHIP_COMPACT_BELOW_XL, ChromeChip } from '@/shared/ui/controls/chrome-chip';
-import { useMapView } from '@/shared/lib/preferences/appearance-preferences';
+import { useMapView } from '@/shared/lib/preferences/map-view-preferences';
 import { View3dMenu, viewMessageKey } from './View3dMenu';
 
 interface Props {
   onOpenSearch: () => void;
-  /** Auto-arrange trigger — reheats the topology physics. */
   onRelayout: () => void;
-  /** Expands or collapses all deep-out parents at once. */
   onToggleExpandAll?: () => void;
   allExpanded?: boolean;
   density?: 'default' | 'compact-focus';
@@ -31,13 +29,9 @@ interface Props {
    * position, insets and the INDEX and inspector reserves; this lane only shrinks.
    */
   className?: string;
-  /** Path mode status chip (`TopologyPathChip`), placed beside search by riding in this lane. */
   pathChip?: ReactNode;
-  /** The realm status chip, present only while a realm is active. */
   realmChip?: ReactNode;
-  /** The session trail chip (`TopologyTrailChip`). */
   trailChip?: ReactNode;
-  /** Saved working scopes share this toolbar without owning its positioning. */
   constellationControl?: ReactNode;
 }
 
@@ -46,7 +40,6 @@ const getIsMac = () => /Mac|iPhone|iPad|iPod/i.test(navigator.userAgent);
 const getIsMacServer = () => false;
 const ARRANGE_FEEDBACK_MS = 950;
 
-/** The map toolbar's tool lane: expand-all, auto-arrange, map view, scopes, search, then status chips. */
 export function SearchHint({
   onOpenSearch,
   onRelayout,
@@ -93,7 +86,6 @@ export function SearchHint({
          * or its search tile reads as part of that rail.
          */
         "pointer-events-none min-w-0 max-w-full md:self-stretch md:max-xl:pr-[calc(var(--chrome-tile-size)+var(--topology-chrome-gap))] xl:min-w-min xl:basis-0 xl:grow",
-        // Scope exit stays usable when focus hides utility tiles.
         phoneFocusSuppressed && !realmChip
           ? "hidden xl:block"
           : phoneSheetSuppressed
@@ -186,9 +178,8 @@ export function SearchHint({
             type="button"
             ref={view3dChipRef}
             onClick={() => setView3dMenuOpen((open) => !open)}
-            // A disclosure of a labelled radiogroup, not a menu: `aria-haspopup="menu"`
-            // promised menu items and arrow keys from the chip that the picker never had
-            // (its items are radios). The chip says it expands, and which group it shows.
+            // A disclosure of a labelled radiogroup, not a menu: `aria-haspopup="menu"` would promise menu
+            // items and arrow keys its radios do not have.
             aria-expanded={view3dMenuOpen}
             aria-controls={view3dMenuId}
             data-testid="topology-view-3d"

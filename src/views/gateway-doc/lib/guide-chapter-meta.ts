@@ -9,10 +9,8 @@ import { guideStructuredData } from './guide-structured-data';
 export interface GuideChapterMeta {
   headline: string;
   description: string;
-  /** ISO 8601 commit dates; absent when Git has no answer. */
   dateModified?: string;
   datePublished?: string;
-  /** The visible "Updated <date>" line, formatted for the locale. */
   updated?: { dateTime: string; label: string };
   structuredData: ReturnType<typeof guideStructuredData>;
 }

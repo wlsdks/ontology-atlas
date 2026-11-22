@@ -10,7 +10,6 @@ import { CONTROL_PRESS_TRAVEL, CONTROL_TRANSITION } from '@/shared/ui/control-cl
  */
 interface ChromeTileBaseProps {
   icon: ReactNode;
-  /** The tooltip text and the default accessible name. */
   title: string;
   /**
    * Opts in to the group-revealed label: the tile grows into a labelled chip while

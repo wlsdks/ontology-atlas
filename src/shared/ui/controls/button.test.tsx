@@ -5,31 +5,31 @@ import { Button, buttonVariants } from './button';
 describe('Button', () => {
   it('renders children + native button element', () => {
     render(<Button>저장</Button>);
-    const btn = screen.getByRole('button', { name: '저장' });
-    expect(btn).toBeInTheDocument();
-    expect(btn.tagName).toBe('BUTTON');
+    const button = screen.getByRole('button', { name: '저장' });
+    expect(button).toBeInTheDocument();
+    expect(button.tagName).toBe('BUTTON');
   });
 
   it('default variant=primary uses indigo-brand background', () => {
     render(<Button>x</Button>);
-    const btn = screen.getByRole('button');
+    const button = screen.getByRole('button');
     // A primary CTA uses the single indigo brand colour only.
-    expect(btn.className).toContain('color-indigo-brand');
+    expect(button.className).toContain('color-indigo-brand');
   });
 
   it('variant=ghost has transparent bg + primary text', () => {
     render(<Button variant="ghost">x</Button>);
-    const btn = screen.getByRole('button');
-    expect(btn.className).toContain('bg-transparent');
-    expect(btn.className).toContain('color-text-primary');
+    const button = screen.getByRole('button');
+    expect(button.className).toContain('bg-transparent');
+    expect(button.className).toContain('color-text-primary');
   });
 
   it('variant=outline has subtle border + alpha bg', () => {
     render(<Button variant="outline">x</Button>);
-    const btn = screen.getByRole('button');
+    const button = screen.getByRole('button');
     // Outline uses neutral alpha only.
-    expect(btn.className).toContain('var(--color-overlay-3)');
-    expect(btn.className).toContain('var(--color-overlay-1)');
+    expect(button.className).toContain('var(--color-overlay-3)');
+    expect(button.className).toContain('var(--color-overlay-1)');
   });
 
   it('size variants apply distinct height + padding', () => {
@@ -68,10 +68,10 @@ describe('Button', () => {
 
   it('disabled state has cursor-not-allowed + opacity reduction', () => {
     render(<Button disabled>비활성</Button>);
-    const btn = screen.getByRole('button');
-    expect(btn).toBeDisabled();
-    expect(btn.className).toContain('disabled:cursor-not-allowed');
-    expect(btn.className).toContain('disabled:opacity-55');
+    const button = screen.getByRole('button');
+    expect(button).toBeDisabled();
+    expect(button.className).toContain('disabled:cursor-not-allowed');
+    expect(button.className).toContain('disabled:opacity-55');
   });
 
   it('uses border/background hover states without hover shadows', () => {
@@ -91,16 +91,16 @@ describe('Button', () => {
 
   it('press travels on the translate property and stops under reduced motion', () => {
     render(<Button>m</Button>);
-    const btn = screen.getByRole('button');
-    expect(btn.className).toContain('transition-[color,background-color,border-color,box-shadow,translate]');
-    expect(btn.className).toContain('active:translate-y-px');
-    expect(btn.className).toContain('motion-reduce:active:translate-none');
-    expect(btn.className).not.toContain('transform');
+    const button = screen.getByRole('button');
+    expect(button.className).toContain('transition-[color,background-color,border-color,box-shadow,translate]');
+    expect(button.className).toContain('active:translate-y-px');
+    expect(button.className).toContain('motion-reduce:active:translate-none');
+    expect(button.className).not.toContain('transform');
   });
 
   it('forwards ref to underlying button', () => {
     const refs: HTMLButtonElement[] = [];
-    render(<Button ref={(el) => { if (el) refs.push(el); }}>r</Button>);
+    render(<Button ref={(element) => { if (element) refs.push(element); }}>r</Button>);
     expect(refs).toHaveLength(1);
     expect(refs[0]?.tagName).toBe('BUTTON');
   });

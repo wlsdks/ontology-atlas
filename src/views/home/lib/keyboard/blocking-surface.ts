@@ -12,7 +12,6 @@ export interface BlockingSurfaceState {
   agentAwaitingDecision: boolean;
 }
 
-/** While true, Esc closes the open surface first; a modal owns the keyboard. */
 export function shouldSuppressGlobalShortcuts(state: BlockingSurfaceState): boolean {
   return state.createNodeOpen || state.agentAwaitingDecision;
 }

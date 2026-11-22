@@ -36,7 +36,6 @@ function ancestorDepth(candidateRoot, vaultRoot) {
   return suffix.split(sep).filter(Boolean).length;
 }
 
-/** Directories that must never become a project source root. */
 function isForbiddenRoot(path) {
   let home = null;
   try {

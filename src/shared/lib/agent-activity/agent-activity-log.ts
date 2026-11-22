@@ -1,6 +1,6 @@
 /**
  * Parser for the agent activity log (`.ontology-atlas/activity.jsonl`).
- * Writing is owned by MCP (`mcp/src/vault/activity-log.mjs`); the web only reads.
+ * Writing is owned by MCP (`mcp/src/vault/sidecar/activity-log.mjs`); the web only reads.
  * Line schema v1: {"v":1,"at":ISO,"tool","target","summary","agent","why"}
  * Broken lines are skipped — a parser dying and showing nothing is worse.
  * Drift against the MCP reader is caught by a cross-package contract test.
@@ -38,7 +38,6 @@ export function parseAgentActivityLog(raw: string, { limit = 100 }: { limit?: nu
   return entries.slice(-limit);
 }
 
-/** Entries within the last 24h of `nowMs`, for the digest header. */
 export function countRecentEntries(entries: readonly AgentActivityEntry[], nowMs: number, windowMs = 24 * 3600 * 1000): number {
   return entries.filter((entry) => {
     const t = Date.parse(entry.at);

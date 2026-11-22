@@ -107,8 +107,8 @@ test("graceful quit commands time out so verification can fall back to process t
 });
 
 test("verify app launch lock prevents concurrent app checks and releases cleanly", () => {
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "ontology-atlas-lock-test-"));
-  const lockDir = path.join(tmp, "verify.lock");
+  const temporaryDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "ontology-atlas-lock-test-"));
+  const lockDir = path.join(temporaryDirectory, "verify.lock");
   try {
     const first = createVerifyLock(lockDir, { appPath: "/tmp/Ontology Atlas.app" });
     assert.equal(first.ok, true);
@@ -123,7 +123,7 @@ test("verify app launch lock prevents concurrent app checks and releases cleanly
     third.release();
     assert.equal(fs.existsSync(lockDir), false);
   } finally {
-    fs.rmSync(tmp, { recursive: true, force: true });
+    fs.rmSync(temporaryDirectory, { recursive: true, force: true });
   }
 });
 

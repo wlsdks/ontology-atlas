@@ -21,7 +21,6 @@ function skipBlank(lines: readonly string[], from: number): number {
   return i;
 }
 
-/** Replaces the lead paragraph with `next`, or inserts it under the title heading when there is none. */
 export function replaceLeadParagraph(raw: string, next: string, titles: readonly string[]): string {
   const { head, lines } = splitBody(raw);
   let i = skipBlank(lines, 0);
@@ -46,7 +45,6 @@ export function replaceLeadParagraph(raw: string, next: string, titles: readonly
   return head + lines.join("\n");
 }
 
-/** Renames the title heading when it still spells `previous`; any other heading is the author's. */
 export function renameTitleHeading(raw: string, previous: string, next: string): string {
   const { head, lines } = splitBody(raw);
   const i = skipBlank(lines, 0);

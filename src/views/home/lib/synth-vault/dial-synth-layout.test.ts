@@ -8,7 +8,7 @@ import { isContainmentRelation } from "@/entities/knowledge-graph";
 import { buildDialModel } from "@/widgets/ontology-map/dial/dial-model";
 import { layoutDial } from "@/widgets/ontology-map/dial/layout";
 import { circularDomainOrder } from "@/widgets/ontology-map/dial/order";
-import type { DialMemory, DialModel, DialScene } from "@/widgets/ontology-map/dial/types";
+import type { DialMemory, DialModel, DialScene } from "@/widgets/ontology-map/dial/dial-shapes";
 import {
   readContainmentTree,
   rollDirectedDomainFlows,

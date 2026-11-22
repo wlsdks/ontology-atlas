@@ -53,9 +53,8 @@ function parseArgs(argv) {
       process.exit(0);
     }
     /*
-     * ⚠️ **The refresh must be retryable without re-releasing.** If the watcher dies after the
-     * release was dispatched, the only other way back to the refresh is a second release of a tag
-     * that already published, and a recovery path that costs a duplicate build is not one.
+     * The refresh must be retryable without re-releasing: if the watcher dies after dispatch, the only
+     * other way back is a second release of a tag that already published.
      */
     if (arg === "--refresh-only") {
       options.refreshOnly = true;
@@ -117,11 +116,7 @@ function gitBin() {
   return process.env.OATLAS_GIT_BIN || "git";
 }
 
-/**
- * ⚠️ `maxBuffer` is raised because `gh run watch` **streams for the length of the build**, which
- * overflows Node's 1 MB default with `spawnSync gh ENOBUFS` after the release was dispatched, so
- * the command that should follow the build never gets there.
- */
+/* `maxBuffer` is raised because `gh run watch` streams for the whole build and overflows Node's 1 MB default (`spawnSync gh ENOBUFS`). */
 function run(bin, args, { parseJson = false, allowFailure = false } = {}) {
   const result = spawnSync(bin, args, {
     cwd: process.cwd(),
@@ -219,11 +214,7 @@ function refreshDownloadPage(options) {
 
   const generated = "src/views/download/model/macos-release.generated.ts";
   const repoFacts = "src/views/download/model/repo-facts.generated.ts";
-  /*
-   * ⚠️ `run` answers with a **string** on success and with the raw spawn result when a failure is
-   * allowed. Reading `.status` off both crashed this function on its first real outing, after the
-   * release had already published — so the shape is normalised once, here.
-   */
+  /* `run` answers with a string on success and the raw spawn result when a failure is allowed, so the shape is normalised once, here. */
   const attempted = (bin, args) => {
     const result = run(bin, args, { allowFailure: true });
     return typeof result === "string"

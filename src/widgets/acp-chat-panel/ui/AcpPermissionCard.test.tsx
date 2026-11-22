@@ -993,3 +993,36 @@ describe('a one-field patch: the decision first, the evidence after', () => {
     expect(screen.getByTestId('task-review-task-toggle')).toHaveTextContent('Show the remaining 4 lines');
   });
 });
+
+describe('permission card: one answer per ask', () => {
+  it('sends only the first answer when a second button is pressed before the card leaves', () => {
+    const resolve = vi.fn();
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <AcpPermissionCard
+          pending={{
+            request: {
+              title: '무언가',
+              toolCallId: 'tool-permission',
+              toolName: 'Write',
+              toolKind: 'edit',
+              filePath: '/etc/hosts',
+              rawInput: {},
+              reviewKind: 'permission',
+              options: [
+                { optionId: 'reject', kind: 'reject_once', name: '거절' },
+                { optionId: 'allow', kind: 'allow_once', name: '허용' },
+              ],
+            },
+            resolve,
+          }}
+          vaultPath={null}
+        />
+      </NextIntlClientProvider>,
+    );
+    fireEvent.click(screen.getByTestId('acp-permission-allow'));
+    fireEvent.click(screen.getByTestId('acp-permission-reject'));
+    expect(resolve).toHaveBeenCalledTimes(1);
+    expect(resolve).toHaveBeenCalledWith('allow');
+  });
+});

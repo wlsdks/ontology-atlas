@@ -5,7 +5,6 @@ const TAGLINE_MAX_CHARS = 320;
 
 export interface ProjectTaglineSource {
   description?: string | null;
-  /** The body's first paragraph; the fallback. */
   excerpt?: string | null;
 }
 

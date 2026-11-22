@@ -9,6 +9,12 @@ import packageJson from './package.json' with { type: 'json' };
 
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
+/*
+ * Atlas collects nothing, and neither does its build: every process that loads this config
+ * (`next build`, the dev server's worker) reads the variable before Next creates its telemetry.
+ */
+process.env.NEXT_TELEMETRY_DISABLED = '1';
+
 const allowedDevOrigins = [
   '127.0.0.1',
   'localhost',

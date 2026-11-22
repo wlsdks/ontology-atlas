@@ -48,5 +48,5 @@ async function exportSheet(name, sequence, catalogue, root) {
   const sprite = await sharp({ create: { width: columns * cell, height: rows * cell, channels: 4, background: '#00000000' } }).composite(layers).png().toBuffer();
   await writeFile(`public/brand/${name}.png`, sprite);
   const digest = createHash('sha256').update(sprite).digest('hex').slice(0, 12);
-  await writeFile(`src/shared/ui/marks/${name}.json`, JSON.stringify({ cell, columns, rows, frames: frame, digest, clips }, null, 2) + '\n');
+  await writeFile(`src/shared/ui/marks/moru/${name}.json`, JSON.stringify({ cell, columns, rows, frames: frame, digest, clips }, null, 2) + '\n');
 }

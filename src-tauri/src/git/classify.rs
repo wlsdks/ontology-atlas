@@ -1,11 +1,11 @@
 use super::runner::GitRun;
-use crate::errors::coded;
+use crate::coded_error::coded;
 
 #[cfg(test)]
 mod tests;
 
 /// A code the screen localizes through `nativeErrors`, plus git's own first line
-/// as detail, because only git knows what went wrong (see `errors.rs`).
+/// as detail, because only git knows what went wrong (see `coded_error.rs`).
 pub(super) struct GitErrorInfo {
     /// Also the prefix of the `Err(String)` payload.
     code: &'static str,

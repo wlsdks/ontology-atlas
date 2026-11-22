@@ -38,18 +38,18 @@ describe("snapshotVaultShape", () => {
 
 describe("diffVaultShape", () => {
   it("counts only domains that appeared and disappeared, not capabilities", () => {
-    const prev = snapshotVaultShape([doc("domains/order", { kind: "domain" })]);
+    const previous = snapshotVaultShape([doc("domains/order", { kind: "domain" })]);
     const next = snapshotVaultShape([
       doc("domains/catalog", { kind: "domain" }),
       doc("capabilities/checkout", { kind: "capability" }),
     ]);
-    const diff = diffVaultShape(prev, next);
+    const diff = diffVaultShape(previous, next);
     expect(diff.domainsAdded.map((n) => n.slug)).toEqual(["domains/catalog"]);
     expect(diff.domainsRemoved.map((n) => n.slug)).toEqual(["domains/order"]);
   });
 
   it("a bridge is a new node that two or more children moved under (ledger 2026-08-01)", () => {
-    const prev = snapshotVaultShape([
+    const previous = snapshotVaultShape([
       doc("capabilities/payment-authorize", { kind: "capability" }),
       doc("capabilities/kakao-pay", { kind: "capability", belongs_to: "capabilities/payment-authorize" }),
       doc("capabilities/naver-pay", { kind: "capability", belongs_to: "capabilities/payment-authorize" }),
@@ -60,14 +60,14 @@ describe("diffVaultShape", () => {
       doc("capabilities/kakao-pay", { kind: "capability", belongs_to: "capabilities/wallet-payment" }),
       doc("capabilities/naver-pay", { kind: "capability", belongs_to: "capabilities/wallet-payment" }),
     ]);
-    const diff = diffVaultShape(prev, next);
+    const diff = diffVaultShape(previous, next);
     expect(diff.bridges).toEqual([
       { slug: "capabilities/wallet-payment", name: "wallet-payment", kind: "capability", childCount: 2 },
     ]);
   });
 
   it("moving a single child is not a bridge, only a parent change", () => {
-    const prev = snapshotVaultShape([
+    const previous = snapshotVaultShape([
       doc("capabilities/a", { kind: "capability" }),
       doc("capabilities/child", { kind: "capability", belongs_to: "capabilities/a" }),
     ]);
@@ -76,26 +76,26 @@ describe("diffVaultShape", () => {
       doc("capabilities/b", { kind: "capability" }),
       doc("capabilities/child", { kind: "capability", belongs_to: "capabilities/b" }),
     ]);
-    expect(diffVaultShape(prev, next).bridges).toEqual([]);
+    expect(diffVaultShape(previous, next).bridges).toEqual([]);
   });
 
   it("children that are all newly created are not a bridge, since nothing was reparented", () => {
-    const prev = snapshotVaultShape([doc("capabilities/a", { kind: "capability" })]);
+    const previous = snapshotVaultShape([doc("capabilities/a", { kind: "capability" })]);
     const next = snapshotVaultShape([
       doc("capabilities/a", { kind: "capability" }),
       doc("capabilities/bridge", { kind: "capability", belongs_to: "capabilities/a" }),
       doc("capabilities/x", { kind: "capability", belongs_to: "capabilities/bridge" }),
       doc("capabilities/y", { kind: "capability", belongs_to: "capabilities/bridge" }),
     ]);
-    expect(diffVaultShape(prev, next).bridges).toEqual([]);
+    expect(diffVaultShape(previous, next).bridges).toEqual([]);
   });
 
   it("also catches domains created in a batch, a spot the activity log could not see", () => {
-    const prev = snapshotVaultShape([]);
+    const previous = snapshotVaultShape([]);
     const next = snapshotVaultShape([
       doc("domains/order", { kind: "domain" }),
       doc("domains/catalog", { kind: "domain" }),
     ]);
-    expect(diffVaultShape(prev, next).domainsAdded).toHaveLength(2);
+    expect(diffVaultShape(previous, next).domainsAdded).toHaveLength(2);
   });
 });

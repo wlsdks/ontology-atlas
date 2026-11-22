@@ -11,11 +11,11 @@ function fakeVault(docs: Array<{ slug: string; frontmatter: Record<string, unkno
   const calls: Call[] = [];
   const vault: BootstrapVaultWriter = {
     manifest: { docs },
-    async updateFrontmatter(slug, updates, opts) {
-      calls.push({ op: 'updateFrontmatter', slug, updates, skipRefresh: opts?.skipRefresh === true });
+    async updateFrontmatter(slug, updates, options) {
+      calls.push({ op: 'updateFrontmatter', slug, updates, skipRefresh: options?.skipRefresh === true });
     },
-    async createDoc(slug, content, opts) {
-      calls.push({ op: 'createDoc', slug, content, skipRefresh: opts?.skipRefresh === true });
+    async createDoc(slug, content, options) {
+      calls.push({ op: 'createDoc', slug, content, skipRefresh: options?.skipRefresh === true });
     },
     async refresh() {
       calls.push({ op: 'refresh' });

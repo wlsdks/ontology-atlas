@@ -11,11 +11,11 @@ import {
   clusterChipTravelPoint,
   CLUSTER_BADGE_HEIGHT,
   CLUSTER_CHIP_HEIGHT,
-} from "./cluster-chips";
+} from "./cluster-chips/control-placement";
 
 /**
  * Hit-testing (`topology-pointer-hit-tests.ts`) and drawing
- * (`ui/frame-draw/paint-chips.ts`) must use the same `clusterChipRect` /
+ * (`ui/frame-draw/labels/paint-chips.ts`) must use the same `clusterChipRect` /
  * `clusterChipLabel` or click coordinates drift. That shared geometry is this
  * slice's load-bearing contract, so it is unit-tested here; the actual canvas
  * pixels are verified on the running screen.

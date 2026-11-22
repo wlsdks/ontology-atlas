@@ -12,7 +12,7 @@ import {
   treePoseFacing,
   zoomTreePoseAbout,
 } from "../../model/tree-view/tree-camera";
-import type { TreeLayout, TreeNameSide, TreeNamePlacement, TreePose, TreeRect, TreeScreenPoint } from "../../model/tree-view/types";
+import type { TreeLayout, TreeNameSide, TreeNamePlacement, TreePose, TreeRect, TreeScreenPoint } from "../../model/tree-view/tree-shapes";
 import type { TreeFrame } from "./use-tree-frame";
 
 /** A drag across 600 px turns the tree half way round; pitch follows at half that rate. */

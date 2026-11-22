@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { deriveCodeLocations } from "./code-locations";
-import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "../model/types";
+import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "../model/knowledge-graph";
 
 const SENTINEL_DATE = new Date(0);
 function node(partial: Partial<KnowledgeGraphNode> & { id: string; title: string }): KnowledgeGraphNode {

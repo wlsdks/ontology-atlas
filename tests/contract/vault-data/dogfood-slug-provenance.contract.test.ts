@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { loadVaultDocs } from "../../../mcp/src/vault/documents.mjs";
+import { loadVaultDocs } from "../../../mcp/src/vault/documents/document-cache.mjs";
 import {
   flatSlugIssue,
   CREATED_BY_HUMAN,

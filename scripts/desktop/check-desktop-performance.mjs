@@ -2,7 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadMacosReleaseNames } from "../lib/macos-release-names.mjs";
+import { readMacosReleaseNames } from "../lib/macos-release-names.mjs";
 
 // Artifact size is not a constraint this product optimizes for. The gate catches only an
 // order-of-magnitude accident (stray dependency, duplicated vendor bundle, unintended generated
@@ -77,7 +77,7 @@ export function evaluateDesktopPerformance({
   const checks = [];
   const outDir = path.join(root, "out");
   const nextStaticDir = path.join(outDir, "_next", "static");
-  const names = loadMacosReleaseNames(root);
+  const names = readMacosReleaseNames(root);
   const appBundlePath = path.join(
     root,
     "src-tauri",

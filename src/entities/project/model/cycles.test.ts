@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { wouldCreateDependencyCycle } from "./cycles";
-import type { Project } from "./types";
+import type { Project } from "./project";
 
 function project(
   slug: string,

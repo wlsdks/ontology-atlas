@@ -5,10 +5,8 @@
 
 import { parseFrontmatter } from "@/shared/lib/vault-document/parse-frontmatter";
 
-/** Frontmatter arrays through which a parent holds what is below it. */
 const CONTAINMENT_KEYS = ["contains", "capabilities", "elements", "domains"] as const;
 
-/** Kinds whose body summarizes their membership. */
 export const SUMMARY_KINDS = ["project", "domain"] as const;
 
 /** Newest first, as `vault_node_revisions` returns it. */
@@ -20,11 +18,8 @@ export interface NodeRevision {
 
 export interface SummaryStaleness {
   slug: string;
-  /** ISO instant when the body prose last changed. */
   bodyChangedAt: string;
-  /** ISO instant when the containment list last changed. */
   membershipChangedAt: string;
-  /** Always positive. */
   behindByMs: number;
   childCount: number;
 }

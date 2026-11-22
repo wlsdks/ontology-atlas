@@ -18,7 +18,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 const KEPT_PREFIXES: [&str; 2] = ["embeddings.", "encoder."];
 
 fn convert_error(error: impl std::fmt::Display) -> EmbedError {
-    EmbedError::Convert(crate::errors::squeeze(&error.to_string()))
+    EmbedError::Convert(crate::coded_error::squeeze(&error.to_string()))
 }
 
 /// Every tensor an XLM-RoBERTa checkpoint of this configuration holds, with its
@@ -252,11 +252,11 @@ pub(crate) fn convert(
     match (written, failed) {
         (Ok(()), None) => Ok(()),
         (_, Some(error)) => {
-            super::download::remove_if_present(out)?;
+            super::disk::remove_if_present(out)?;
             Err(error)
         }
         (Err(error), None) => {
-            super::download::remove_if_present(out)?;
+            super::disk::remove_if_present(out)?;
             Err(convert_error(error))
         }
     }

@@ -13,19 +13,14 @@ import { anchorResolves, type SourceMeasurement } from './source-text';
  * draft `status:`; Decisions must cite, and anchors must resolve in the bytes read this turn.
  */
 
-/** One source this turn tried to open. */
 export interface CompileSourceRead {
   path: string;
   format: string;
-  /** True only when text really came back. */
   readable: boolean;
-  /** Why the text did not come back, or null when it did. */
   refusal: CompileSourceRefusal | null;
-  /** True when the file is longer than the per-read cap. */
   truncated: boolean;
   /** sha256 of the bytes, lowercase hex. Null when this runtime could not measure it. */
   sha256: string | null;
-  /** What the text holds, for anchor checking. Null when nothing was read. */
   measure: SourceMeasurement | null;
 }
 
@@ -37,7 +32,6 @@ export type CompileSourceRefusal =
   | 'unreadable'
   | 'hash-unavailable';
 
-/** What the writer said. Everything else on the page is Atlas's. */
 export interface WikiPageFields {
   slug: string;
   title: string;
@@ -60,9 +54,7 @@ type WikiProposalProblem =
   | { code: string; message: string };
 
 export interface WikiPageProposal {
-  /** Vault-relative path the page would take, e.g. `wiki/quarter-plan.md`. */
   path: string;
-  /** The slug `createDoc` / `saveDoc` take — the path without `.md`. */
   slug: string;
   title: string;
   /** The exact bytes that would be written. Empty when the proposal failed. */
@@ -71,25 +63,17 @@ export interface WikiPageProposal {
   existing: { text: string; mtime: number } | null;
   ok: boolean;
   problems: WikiProposalProblem[];
-  /** Section name → how many bullets (or sentences) it carries. Card material. */
   sections: Array<{ name: string; entries: number }>;
   citationCount: number;
-  /** Sources whose text this page was written from, in citation order. */
   sourcesRead: string[];
-  /** Sources this turn could not open, with the reason a person reads. */
   sourcesUnreadable: Array<{ path: string; refusal: CompileSourceRefusal; truncated: boolean }>;
-  /** Sources that were read but stop short of the whole file. */
   sourcesTruncated: string[];
 }
 
 export interface WikiProposalContext {
-  /** Everything `read_source_text` touched this turn, successful or not. */
   reads: readonly CompileSourceRead[];
-  /** The runner's model name — becomes `created_by: model:<name>`. */
   model: string;
-  /** `compiled_at`. Injected so a test is not at the mercy of the clock. */
   now: Date;
-  /** The page already at this path, when there is one. */
   existing?: { text: string; mtime: number } | null;
 }
 

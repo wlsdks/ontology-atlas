@@ -1,7 +1,6 @@
 import { isContainmentRelation } from "@/entities/knowledge-graph";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 
-/** Via `contains` forward and `belongs_to` reversed. */
 function childrenByParent(edges: readonly KnowledgeGraphEdge[]): Map<string, string[]> {
   const children = new Map<string, string[]>();
   for (const edge of edges) {

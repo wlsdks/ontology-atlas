@@ -13,7 +13,6 @@ export function stepRowMotionClass(
     : "git-fade-in";
 }
 
-/** A settled row does not stagger — a one-row event has no order. */
 export function stepRowUsesStagger(
   commitHash: string,
   settledHash: string | null | undefined,

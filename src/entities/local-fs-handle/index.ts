@@ -1,4 +1,4 @@
-export type { LocalFsHandleRecord } from './model/types';
+export type { LocalFsHandleRecord } from './model/local-fs-handle-record';
 export {
   CURRENT_LOCAL_FS_HANDLE_ID,
   deleteLocalFsHandle,

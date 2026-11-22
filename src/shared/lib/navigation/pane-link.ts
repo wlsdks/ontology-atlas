@@ -1,21 +1,13 @@
 import { createContext } from 'react';
 
-import { resolveActiveNavDestination } from './nav-destination';
+import { keepsRoute, resolveActiveNavDestination } from './nav-destination';
 
-/** The attribute `AppShell` puts on the pane the route crossfade captures. */
 const PANE_SELECTOR = '[data-app-shell-pane]';
 
-function surfacePath(href: string): string {
-  const path = href.split(/[?#]/, 1)[0] ?? '';
-  return path.length > 1 ? path.replace(/\/+$/, '') : path;
-}
-
-/** What a press on an in-app link looks like to the decision below. */
 export interface PaneLinkPress {
   defaultPrevented: boolean;
   button: number;
   modified: boolean;
-  /** The anchor's `target`, empty when it has none. */
   target: string;
   download: boolean;
   /** Whether the anchor sits inside the pane; a link in an overlay above it does not. */
@@ -32,9 +24,8 @@ export function linkPressSwapsPane(press: PaneLinkPress, href: string, currentPa
   if (press.target !== '' && press.target !== '_self') return false;
   if (!press.insidePane) return false;
   if (!href.startsWith('/')) return false;
-  const destination = surfacePath(href);
-  if (destination === surfacePath(currentPathname)) return false;
-  return resolveActiveNavDestination(destination) !== 'map';
+  if (keepsRoute(href, currentPathname)) return false;
+  return resolveActiveNavDestination(href.split(/[?#]/, 1)[0] ?? href) !== 'map';
 }
 
 export function isInsidePane(element: Element): boolean {
@@ -43,9 +34,7 @@ export function isInsidePane(element: Element): boolean {
 
 /** What the shell that owns the pane offers the links inside it; absent where no pane exists. */
 export interface PaneNavigation {
-  /** The current locale-free pathname. */
   pathname: string;
-  /** Changes route with the pane crossfade. */
   crossfadeTo(href: string, options: { replace?: boolean; scroll?: boolean; locale?: string }): void;
 }
 

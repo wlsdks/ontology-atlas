@@ -1,8 +1,3 @@
-/**
- * What the left panel needs while `?realm=` shows one node's world: its subtree, counts and
- * boundary edges, each outside node paired with its domain-level container as the jump target.
- */
-
 import type { KnowledgeGraphEdge, KnowledgeGraphNode, OntologyTreeNode } from "@/entities/knowledge-graph";
 import { buildContainmentParents, nearestDomainId } from "@/entities/knowledge-graph";
 
@@ -11,7 +6,6 @@ export interface RealmCensus {
   capabilityCount: number;
   domainCount: number;
   descendantCount: number;
-  /** Root at 0; children only gives 1. */
   depth: number;
 }
 
@@ -23,7 +17,6 @@ interface RealmBoundaryCrossing {
   toTitle: string;
   relationType: string;
   outsideId: string;
-  /** The outside node's domain-level container, or the node itself without one. */
   jumpRealmId: string;
 }
 
@@ -82,7 +75,6 @@ export function computeRealmCensus(subtree: OntologyTreeNode): RealmCensus {
   return { elementCount, capabilityCount, domainCount, descendantCount, depth };
 }
 
-/** Root included. */
 export function collectRealmMemberIds(subtree: OntologyTreeNode): Set<string> {
   const ids = new Set<string>();
   const walk = (node: OntologyTreeNode): void => {

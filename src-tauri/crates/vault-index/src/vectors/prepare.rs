@@ -152,7 +152,6 @@ impl Drop for PreparingGuard {
     }
 }
 
-/// One batch on its way to the embedding function.
 #[derive(Default)]
 struct Batch {
     passages: Vec<(Sha, String)>,
@@ -301,7 +300,6 @@ fn count_done_files(
     }
 }
 
-/// Sends one batch and stores its vectors; returns how many were stored.
 fn send<E>(
     batch: &mut Batch,
     plan: &Plan,
@@ -323,7 +321,6 @@ fn send<E>(
     Ok(count)
 }
 
-/// One batch's vectors, with their sign bits, in one transaction.
 fn store<'q>(
     plan: &Plan,
     vectors: impl Iterator<Item = (&'q Sha, &'q Quantized)>,

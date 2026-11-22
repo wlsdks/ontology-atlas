@@ -12,21 +12,16 @@ import { isImeComposing } from "@/shared/lib/keyboard/ime-composition";
 import { fieldClass } from '@/shared/ui/control-class';
 
 interface Props {
-  /** Shown in view mode and seeded into edit mode. */
   value: string;
   editable: boolean;
-  /** Called on commit (Enter or blur), not when the value is unchanged. */
   onSave: (next: string) => void | Promise<void>;
   /** Keeps view mode at the same block level as the edit field it swaps in. */
   as?: "h1" | "h2" | "h3" | "p" | "span" | "div";
   multiline?: boolean;
   className?: string;
-  /** Shown in view mode when the value is empty. */
   placeholder?: string;
-  /** When false (default), an empty submit cancels. */
   allowEmpty?: boolean;
   ariaLabel?: string;
-  /** Applied to both the view and the edit element. */
   dataTestId?: string;
 }
 
@@ -58,10 +53,10 @@ export function InlineEditable({
 
   useEffect(() => {
     if (!editing) return;
-    const el = multiline ? textareaRef.current : inputRef.current;
-    el?.focus();
-    if (el && "select" in el && typeof el.select === "function") {
-      el.select();
+    const element = multiline ? textareaRef.current : inputRef.current;
+    element?.focus();
+    if (element && "select" in element && typeof element.select === "function") {
+      element.select();
     }
   }, [editing, multiline]);
 

@@ -133,14 +133,7 @@ async function verifyOpenAppLaunch({
 }
 
 
-/**
- * After the screen says "verified", check whether **the disk says the same thing.**
- *
- * The DOM markers do not render the host (the audit table shows only vendor name,
- * purpose, and scope). So "did the request really go to that address" can only be
- * proven by the plain-text record inside the vault — without this check, screen copy
- * alone would pass, and that is exactly the fake pass this rule exists to block.
- */
+/** After the screen says "verified", check that the disk says the same: the DOM does not render the host, so only the plain-text record inside the vault proves the request went to that address. */
 function verifyAiSettingsAuditTrail({ vaultPath, since, baseUrl, markers }) {
   if (!vaultPath) {
     fail("--verify-ai-settings requires --webview-fixture-vault so the audit trail can be read.");
@@ -374,18 +367,11 @@ async function verifyExecutableLaunch({
 
 
 /**
- * Puts the parked window-state file back only once the app is actually gone.
- *
- * The window-state plugin writes geometry when the app exits, so restoring while any instance is
- * still alive hands the owner's just-restored file straight to that writer — `terminateExisting`
- * only waits about 2.5 s before falling through, and the `--open-app` instance runs without the
- * verify env, so its plugin is registered. If the wait times out with processes still alive, the
- * honest move is to **leave the file parked and say so**: the parked copy is the only surviving
- * byte-for-byte owner geometry, and restoring it under a live writer would convert a loud,
- * recoverable failure into a silent loss the moment the app quits.
- *
- * Returns `{ restored, remainingPids }`; injectable collaborators keep this testable without
- * real processes or a real filesystem.
+ * Puts the parked window-state file back only once the app is gone: the plugin writes geometry on exit,
+ * `terminateExisting` waits only about 2.5 s, and the `--open-app` instance runs with the plugin
+ * registered. If processes are still alive, leave the file parked and say so: the parked copy is the
+ * only surviving owner geometry, and restoring it under a live writer would turn a loud failure into a
+ * silent loss. Returns `{ restored, remainingPids }`; injectable collaborators keep this testable.
  */
 export async function restoreWindowStateAfterExit({
   guard,

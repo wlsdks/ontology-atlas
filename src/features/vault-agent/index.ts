@@ -22,7 +22,7 @@ export { PARSER_SOURCE_FORMATS } from './model/compile/source-text';
 export { createToolExecutor } from './model/agent-tools/tool-executor';
 export type { VaultReadDoc, VaultReadPort } from './model/agent-tools/vault-read-port';
 export { resolveProviderAdapter } from './model/providers';
-export { AGENT_ROUND_CAP } from './model/types';
+export { AGENT_ROUND_CAP } from './model/agent-turn';
 export type {
   AgentEvent,
   AgentProposal,
@@ -31,7 +31,7 @@ export type {
   ProposalChange,
   ScreenContextSnapshot,
   ToolCallRecord,
-} from './model/types';
+} from './model/agent-turn';
 export { buildBusinessFlowRequest } from "./model/business-flow-request";
 export { applyProposal, planProposalFiles, proposalLineDiff, proposalToClipboardPacket, summarizeChangeVolume } from './model/proposals/proposal-applier';
 export { buildProposal } from './model/proposals/proposal-builder';

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { DialScene, DialWorld } from "../../../dial/types";
+import type { DialScene, DialWorld } from "../../../dial/dial-shapes";
 import { applyBranchMemberAction } from "../../../dial/branches/member-disclosure";
 import type { OntologyMapTokens } from "../../../tokens/read-map-tokens";
 import type { TopologyWorld } from "../../world/topology-world";

@@ -19,13 +19,8 @@ function folderName(rootPath: string): string {
   return rootPath.split(/[\\/]+/).filter(Boolean).pop() ?? rootPath;
 }
 
-/**
- * The Harness tab with no connected repository: the repository that holds the opened folder is
- * offered for one press, and any other folder is picked here, without leaving for Projects.
- */
 export function HarnessConnectSource({ vaultHandle, projectSlug, docs, onConnected, runtime }: {
   vaultHandle: FileSystemDirectoryHandle;
-  /** Null when the folder records no project, which a binding needs. */
   projectSlug: string | null;
   docs: readonly VaultDoc[] | undefined;
   onConnected: () => void;
@@ -52,7 +47,6 @@ export function HarnessConnectSource({ vaultHandle, projectSlug, docs, onConnect
       state="no-source"
       title={t('noSource')}
       body={t('noSourceBody')}
-      // The note explains why nothing is read; it only applies when two or more folders are bound.
       note={(source.view?.bindingCardinality ?? 0) > 1 ? t('noSourceNote') : undefined}
       action={<Link href="/projects/" className={cn(buttonVariants({ variant: 'primary', size: 'lg' }), TOUCH)}>{t('connectSourceAction')}</Link>}
     />;

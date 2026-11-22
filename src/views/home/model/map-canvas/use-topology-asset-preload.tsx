@@ -1,6 +1,6 @@
 import type { useTopologyGraphProjection } from "./use-topology-graph-projection";
 
-import { getProjectRuntimeDetailHref } from "@/entities/project";
+import { buildProjectRuntimeDetailHref } from "@/entities/project";
 import { useRouter } from "@/i18n/navigation";
 import { useCallback, useEffect } from "react";
 
@@ -20,7 +20,7 @@ export function useTopologyAssetPreload({ prefetchedProjectHrefsRef, router, pre
       const project = projectBySlug.get(slug);
       if (!project) return;
 
-      const href = getProjectRuntimeDetailHref(slug);
+      const href = buildProjectRuntimeDetailHref(slug);
       if (!prefetchedProjectHrefsRef.current.has(href)) {
         prefetchedProjectHrefsRef.current.add(href);
         router.prefetch(href);
@@ -44,14 +44,12 @@ export function useTopologyAssetPreload({ prefetchedProjectHrefsRef, router, pre
     const candidateSlugs = new Set<string>();
     if (selectedSlug) candidateSlugs.add(selectedSlug);
 
-    // Preloads the top five hubs in an idle callback so an early hub click finds its screenshot
-    // ready.
     const addTopHubs = () => {
       hubs.slice(0, 5).forEach((hub) => candidateSlugs.add(hub.slug));
       candidateSlugs.forEach(preloadProjectAsset);
     };
     const win = window as Window & {
-      requestIdleCallback?: (cb: () => void) => number;
+      requestIdleCallback?: (callback: () => void) => number;
       cancelIdleCallback?: (id: number) => void;
     };
     if (typeof win.requestIdleCallback === 'function') {

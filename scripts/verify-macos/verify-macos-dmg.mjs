@@ -5,10 +5,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { parseSha256Checksum } from "../lib/macos-artifact/macos-checksum.mjs";
 import { parseHdiutilMountDir, verifyApplicationsSymlink } from "../lib/macos-artifact/macos-dmg-layout.mjs";
-import { loadMacosReleaseNames } from "../lib/macos-release-names.mjs";
+import { readMacosReleaseNames } from "../lib/macos-release-names.mjs";
 
 const root = process.cwd();
-const names = loadMacosReleaseNames(root);
+const names = readMacosReleaseNames(root);
 const { appBundleName, releaseAssetName, version, arch } = names;
 const requireNotarized = process.argv.includes("--require-notarized");
 const requireSigned = process.argv.includes("--require-signed") || requireNotarized;

@@ -27,7 +27,6 @@ export function useDocTabs({
   const { vaultSlugs, scopedDocSlugs, normalizedQuerySlug, docsBySlug } = vault;
   const { recentKey } = src;
   const locale = useLocale();
-  // `sourceKey` reuses `recentKey`; selectedSlug and the URL stay the active source of truth.
   const {
     tabs: openDocTabs,
     hydrated: openDocTabsHydrated,
@@ -69,7 +68,6 @@ export function useDocTabs({
     routePathname,
     setSelectedSlug,
   ]);
-  // Every path that changes `selectedSlug` converges here, so opening a tab needs no call-site code.
   useEffect(() => {
     if (!openDocTabsHydrated) return;
     if (

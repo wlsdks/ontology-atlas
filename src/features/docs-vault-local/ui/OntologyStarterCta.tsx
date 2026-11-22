@@ -7,7 +7,7 @@ import { useTranslations } from 'next-intl';
 import { copyText } from '@/shared/lib/clipboard/copy-text';
 import { useFailureSentence } from '@/shared/lib/failures/use-failure-sentence';
 import type { FailureCopy } from '@/shared/lib/failures/use-failure-sentence';
-import { ATLAS_CLI } from '@/shared/config/cli-invocation';
+import { ATLAS_CLI } from '@/shared/config/agent/cli-invocation';
 import { controlClass } from '@/shared/ui/control-class';
 
 /**
@@ -17,7 +17,6 @@ import { controlClass } from '@/shared/ui/control-class';
 const NEUTRAL_CHIP_SKIN =
   'bg-[color:var(--color-overlay-1)] hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]';
 
-/** The indigo-filled primary action, shared for the same reason. */
 const INDIGO_SOLID_SKIN =
   'border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a18)] hover:bg-[color:var(--color-indigo-a28)]';
 
@@ -42,11 +41,9 @@ export const ONTOLOGY_POST_CHANGE_SYNC_LINES = [
 ];
 
 interface Props {
-  /** Calls `useLocalVault.scaffoldOntology()`. */
   onScaffold: () => Promise<{ created: number; skipped: number }>;
   /** 0 means an empty vault; above 0 shows the add-to-existing-vault tone. */
   docCount: number;
-  /** The installed app's vault path; with it the copied command runs as is. */
   vaultPath?: string | null;
 }
 
@@ -127,8 +124,8 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
     setBusy(true);
     try {
       await onScaffold();
-    } catch (err) {
-      setError(failureSentence(err, t('errorFallback')));
+    } catch (error) {
+      setError(failureSentence(error, t('errorFallback')));
     } finally {
       setBusy(false);
     }
@@ -312,7 +309,6 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
     );
   }
 
-  // The vault already has `.md` files.
   return (
     <div className="grid gap-2">
       <button

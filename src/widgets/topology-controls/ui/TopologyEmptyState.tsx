@@ -7,11 +7,6 @@ import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { controlClass } from '@/shared/ui';
 import { MapStartStage } from './MapStartStage';
 
-/**
- * Topology empty-state — explains whether the current vault lacks project
- * roots or visible relations, then offers state-specific recovery: bootstrap
- * found docs, open the create card, browse the concepts, or choose a vault.
- */
 export function TopologyEmptyState({
   conceptCount,
   reason,
@@ -23,13 +18,11 @@ export function TopologyEmptyState({
 }: {
   conceptCount: number;
   reason?: 'no-projects' | 'no-relations';
-  /** With a writable local vault, "create the first node from the topology" is the primary entry. */
   canCreateNode?: boolean;
   onCreateNode?: () => void;
   /**
-   * The bootstrap gate (discovery.md F1/F2): `.md` files but zero map nodes. It acknowledges the
-   * documents and makes "build a map from my documents" primary; the macOS download guidance steps
-   * down.
+   * The bootstrap gate: `.md` files but zero map nodes. It acknowledges the documents and makes
+   * "build a map from my documents" primary; the macOS download guidance steps down.
    */
   docsFoundCount?: number;
   onStartFromDocs?: () => void;

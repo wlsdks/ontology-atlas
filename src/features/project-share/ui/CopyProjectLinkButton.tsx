@@ -3,7 +3,7 @@
 import { useLocale, useTranslations } from "next-intl";
 import { Check, Link2 } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
-import { getProjectRuntimeDetailUrl } from "@/entities/project";
+import { buildProjectRuntimeDetailUrl } from "@/entities/project";
 import { BASE_PATH } from "@/shared/lib/public-pages/base-path";
 import { useCopyFeedback } from "@/shared/lib/clipboard/use-copy-feedback";
 import { Button, type ButtonProps } from "@/shared/ui";
@@ -29,12 +29,11 @@ export function CopyProjectLinkButton({
   const handleClick = async () => {
     let url: string;
     try {
-      url = getProjectRuntimeDetailUrl(window.location.origin, slug, {
+      url = buildProjectRuntimeDetailUrl(window.location.origin, slug, {
         locale,
         basePath: BASE_PATH,
       });
     } catch {
-      // An address that cannot be built is a copy that failed: the button says so.
       fail();
       return;
     }
@@ -61,7 +60,6 @@ export function CopyProjectLinkButton({
         {...props}
       >
         {icon}
-        {/* All labels share one grid cell so the button never changes width. */}
         <span className="inline-grid">
           {[t("labelIdle"), t("labelCopied"), t("labelError")].map((option) => (
             <span

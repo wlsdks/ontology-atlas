@@ -49,9 +49,9 @@ export async function runAnalyze(args) {
       { repoRoot: target },
     );
     assertAnalyzeRepoStructureResult(result);
-  } catch (err) {
+  } catch (error) {
     process.stderr.write(
-      `${COLORS.red}error${COLORS.reset}  analyze_repo_structure: ${err instanceof Error ? err.message : String(err)}\n`,
+      `${COLORS.red}error${COLORS.reset}  analyze_repo_structure: ${error instanceof Error ? error.message : String(error)}\n`,
     );
     return 2;
   }

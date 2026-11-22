@@ -6,13 +6,10 @@
 import { PROJECT_VAULT_DIR } from '@/shared/lib/vault-folder/project-vault-dir';
 
 export interface PickedVaultResolution {
-  /** The folder to actually open. */
   rootPath: string;
-  /** True when this differs from what the person picked, so the screen must say so. */
   redirected: boolean;
 }
 
-/** Names of the entries directly inside a candidate map folder, or `null` if it is not a directory. */
 export type ReadChildNames = (rootPath: string) => Promise<readonly string[] | null>;
 
 

@@ -6,7 +6,7 @@ title: Wiki compile brief
 display_en: Wiki compile brief
 display_ko: 위키 컴파일 지시문
 domain: domains/human-workbench
-path: src/features/library/lib/wiki/compile-brief.ts
+path: src/features/library/lib/wiki/compile/compile-brief.ts
 created_by: "agent:claude-code"
 ---
 

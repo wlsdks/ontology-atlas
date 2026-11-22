@@ -6,7 +6,7 @@ use keyring::Entry;
 use serde::Serialize;
 
 use crate::blocking::run_blocking;
-use crate::errors::coded;
+use crate::coded_error::coded;
 
 /// Users find the entry under this name in Keychain Access.
 const SERVICE: &str = "Ontology Atlas";

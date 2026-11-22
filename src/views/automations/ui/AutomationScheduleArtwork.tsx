@@ -8,18 +8,15 @@ import { useTranslations } from 'next-intl';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { EXIT_TRANSITION, MOTION, STAGGER } from '@/shared/motion';
 import type { FeatureStageMotion } from '@/shared/ui';
-import { BrandWaitingMark } from '@/shared/ui/marks/brand-waiting-mark';
+import { BrandWaitingMark } from '@/shared/ui/marks/moru/brand-waiting-mark';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
 export type AutomationClip = 'waiting' | 'read' | 'curious';
-/** Proposals the tray holds before it is cleared for the next round; nothing in it is ever applied. */
 export const REVIEW_TRAY_LIMIT = 3;
 
 export interface AutomationScene {
   clip: AutomationClip;
-  /** The hand came round while Moru was mid-gesture; he reads as soon as the gesture ends. */
   readOwed: boolean;
-  /** The button was reached while Moru was mid-gesture; he looks up once it ends. */
   lookOwed: boolean;
   tray: { round: number; slips: number };
 }
@@ -65,9 +62,7 @@ export function automationScene(scene: AutomationScene, event: AutomationSceneEv
 const SCENE_CLIPS: readonly AutomationClip[] = ['waiting', 'read', 'curious'];
 /** The waiting and curious clips hold the neutral pose for the first half of each loop (`atlasWaitingStep`). */
 const NEUTRAL_HOLD_END = 0.48;
-/** How much sooner the next run comes while the button is engaged. */
 const ENGAGED_HAND_RATE = 2;
-/** The full tray stays in view this long before it eases away. */
 const FULL_TRAY_HOLD_MS = MOTION.choreography.duration * 2_000;
 const TICKS = Array.from({ length: 12 }, (_, index) => index * 30);
 
@@ -78,7 +73,6 @@ function restsOnNeutralPose(cell: HTMLElement | null): boolean {
   return typeof progress === 'number' && progress < NEUTRAL_HOLD_END;
 }
 
-/** True while the scene is on screen in a visible document, the condition the dial's sweep waits for. */
 function useOnscreen(ref: RefObject<HTMLElement | null>, enabled: boolean): boolean {
   const [onscreen, setOnscreen] = useState(false);
   useEffect(() => {
@@ -100,7 +94,6 @@ function useOnscreen(ref: RefObject<HTMLElement | null>, enabled: boolean): bool
   return enabled && onscreen;
 }
 
-/** Eases the sweep's speed toward `rate` so the hand never jumps; the angle it has drawn is kept. */
 function useHandRate(hand: RefObject<HTMLElement | null>, rate: number) {
   useEffect(() => {
     const sweep = hand.current?.getAnimations?.()[0];
@@ -119,10 +112,6 @@ function useHandRate(hand: RefObject<HTMLElement | null>, rate: number) {
   }, [hand, rate]);
 }
 
-/**
- * An example schedule at work: the dial's hand sweeps, each turn Moru reads the code the ontology
- * links and sets one proposal in the review tray, and the tray only ever waits for the person.
- */
 export function AutomationScheduleArtwork({ engaged, reduced, name, cadence }: FeatureStageMotion & { name: string; cadence: string }) {
   const t = useTranslations('automations');
   const sceneRef = useRef<HTMLDivElement>(null);
@@ -212,7 +201,6 @@ export function AutomationScheduleArtwork({ engaged, reduced, name, cadence }: F
   </div>;
 }
 
-/** One proposed change, set down on the stack; it carries no applied state because none exists. */
 function ProposalSlip({ index, reduced }: { index: number; reduced: boolean }) {
   return <motion.div data-proposal-slip
     initial={reduced ? false : { opacity: 0, x: -112, y: -28, rotate: -6, scale: 0.9 }}

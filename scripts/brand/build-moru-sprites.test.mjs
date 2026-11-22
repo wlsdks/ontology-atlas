@@ -24,7 +24,7 @@ async function frameOf(file, frame, size) {
 
 for (const name of ['moru-companion', 'moru-reactions']) test(`the shipped ${name} retains native facial pixels and a matching cache identity`, async () => {
   const source = JSON.parse(await readFile('assets/brand/moru/moru.json', 'utf8'));
-  const playback = JSON.parse(await readFile(`src/shared/ui/marks/${name}.json`, 'utf8'));
+  const playback = JSON.parse(await readFile(`src/shared/ui/marks/moru/${name}.json`, 'utf8'));
   const file = await readFile(`public/brand/${name}.png`);
   const meta = await sharp(file).metadata();
   assert.ok(meta.width <= 4096 && meta.height <= 4096, 'runtime sprite pages must fit a compact texture');

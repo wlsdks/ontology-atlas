@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import type { DirectedDomainFlow } from "../model/containment-tree";
 import { Ring, adjacencyOf, circularDomainOrder, claimDialOrderFolder, rememberDialOrder, rememberedDialOrder } from "./order";
-import type { DialDomain, DialModel } from "./types";
+import type { DialDomain, DialModel } from "./dial-shapes";
 
 const pad = (i: number) => `d${String(i).padStart(2, "0")}`;
 

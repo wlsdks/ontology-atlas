@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { NeuralFrame } from "../ui/frame-draw/neural-frame";
+import type { NeuralFrame } from "../ui/frame-draw/neural/neural-frame";
 import type { NeuralGl, NeuralGlOptions } from "./neural-gl";
 import { createNeuralGlStage, neuralPainterOf, type NeuralGlStageOptions } from "./neural-gl-stage";
 

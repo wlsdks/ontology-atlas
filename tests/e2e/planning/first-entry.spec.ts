@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { FOLDER_OPTIONAL_DESTINATIONS } from '@/shared/config/destinations';
 import planning from '../../../messages/ko/planning.json';
 import { waitFrames } from '../settle';
 import { installDesktopRailRuntime } from '../desktop-rail-arrival-harness';
@@ -23,7 +24,7 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
     });
     await page.goto('/ko/planning/?guides=off');
     await expect(page.getByText(planning.checkingSupport)).toBeVisible();
-    await expect(page.getByRole('navigation', { name: '주요 이동' }).getByRole('link')).toHaveCount(4);
+    await expect(page.getByRole('navigation', { name: '주요 이동' }).getByRole('link')).toHaveCount(FOLDER_OPTIONAL_DESTINATIONS.size);
     await startSmoothness(page);
     await page.evaluate(() => (window as unknown as { releasePlanningSupport: () => void }).releasePlanningSupport());
     const stage = page.locator('[data-planning-state="no-folder"]');

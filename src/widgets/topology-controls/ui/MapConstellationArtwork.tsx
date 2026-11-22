@@ -11,7 +11,6 @@ const PROJECT = { x: 160, y: 100, size: 34 };
 const DOMAIN_SIZE = 22;
 const CAPABILITY_SIZE = 11;
 
-/** Domains around the project, each with the capabilities it holds; coordinates are in `VIEW` units. */
 const DOMAINS = [
   { x: 72, y: 50, capabilities: [{ x: 22, y: 26 }, { x: 34, y: 90 }] },
   { x: 250, y: 44, capabilities: [{ x: 300, y: 20 }, { x: 296, y: 78 }] },
@@ -19,9 +18,7 @@ const DOMAINS = [
   { x: 64, y: 156, capabilities: [{ x: 18, y: 184 }, { x: 112, y: 190 }] },
 ] as const;
 
-/** Lines stop short of each glyph's edge, as the map's arcs stop at a node's rim. */
 const RIM_GAP = 3;
-/** How far an arc bows off its chord, as a share of the chord's length. */
 const ARC_BOW = 0.12;
 
 const BEAT = MOTION.slow.duration;
@@ -29,13 +26,11 @@ const LINE_GAP = MOTION.choreography.duration / 8;
 const DOMAIN_LINE_START = BEAT;
 const CAPABILITY_LINE_START = DOMAIN_LINE_START + BEAT * 1.5;
 const PULSE_START = CAPABILITY_LINE_START + BEAT * 2;
-/** From mount until the last light has finished its arc. */
 export const CONSTELLATION_ARRIVAL_MS =
   (PULSE_START + LINE_GAP * (DOMAINS.length - 1) + MOTION.choreography.duration) * 1000;
 
 interface Point { x: number; y: number }
 
-/** A bowed arc between two glyphs, trimmed at both rims. */
 function arc(from: Point, fromRadius: number, to: Point, toRadius: number): string {
   const dx = to.x - from.x;
   const dy = to.y - from.y;
@@ -128,7 +123,6 @@ export function MapConstellationArtwork({ arriving, engaged, reduced }: FeatureS
   );
 }
 
-/** One kind mark set down at its point: it grows in place once its arc has reached it. */
 function Mark({ point, kind, size, delay, arriving, reduced, faint = false }: {
   point: Point;
   kind: 'project' | 'domain' | 'capability';

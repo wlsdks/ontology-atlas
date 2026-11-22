@@ -1,29 +1,9 @@
 import { findHangulMatch } from './hangul-match';
 
 /**
- * Splits text into matched / unmatched segments for search highlighting. Pure data, no
- * JSX, so it unit-tests easily and the renderer only has to wrap segments in `<mark>`.
- *
- * - Case-insensitive; every occurrence matches.
- * - An empty query (after trim), or no match, yields the whole text as one unmatched
- *   segment.
- * - Regex metacharacters are escaped so tokens match literally.
- * - **Whitespace between tokens matches any run of whitespace** (spaces, newlines, tabs).
- *   Document bodies wrap at ~80 columns, so a phrase the user typed on one line may be
- *   split across a newline in the source. Literal substring matching finds zero matches
- *   there, and both the highlight and the scroll-to fail.
- * - **A scattered phrase falls back to per-token OR matching.** `searchDocs` in
- *   `widgets/docs-vault/lib/search.ts` counts a multi-token query as a hit when each token
- *   appears anywhere in the document — a non-contiguous phrase just scores at
- *   `bodyTierScore`, the lowest tier; the phrase is never required. If highlighting only
- *   accepted a contiguous phrase, search would report a hit while the viewer showed zero
- *   marks. Reproduced live by searching "relationship type" and opening the CLI Developer Entry
- *   body match.
- * - **A Hangul query no literal pass found falls back to `shared/lib/search-match/hangul-match`.**
- *   Consonant initials, and a name whose last syllable the keyboard has not finished,
- *   are matches the palette ranks, so the reader has to be able to see them; an
- *   unmarked row is a row with no visible reason for being in the list, which is the
- *   state highlighting exists to prevent.
+ * Whitespace between tokens matches any run, since bodies wrap mid-phrase. A scattered phrase falls
+ * back to per-token matching and an unmatched Hangul query to `hangul-match`, because search ranks
+ * both as hits, and a listed row without a mark shows no reason for being there.
  */
 export interface HighlightSegment {
   text: string;
@@ -35,14 +15,8 @@ function escapeRegExpToken(token: string): string {
 }
 
 /**
- * Compiles the query into a whitespace-tolerant regex: tokens are joined with `\s+` so any
- * run of whitespace in the source matches. Each token is an escaped literal, so
- * metacharacters stay safe. Returns null for an empty query.
- *
- * Ranking (`search.ts`'s bodyPhraseScore / bodyTierScore split) uses this function to
- * decide whether the phrase is actually contiguous, so changing its behaviour changes the
- * ranking contract too. That is why the scattered-token fallback lives in
- * `splitHighlightSegments` and not here.
+ * Ranking (`search.ts`) uses this to decide whether a phrase is contiguous, so the scattered-token
+ * fallback lives in `splitHighlightSegments`, not here.
  */
 export function buildPhraseMatcher(
   query: string,
@@ -55,11 +29,8 @@ export function buildPhraseMatcher(
 }
 
 /**
- * Fallback matcher for a multi-token query whose phrase is nowhere contiguous: the tokens
- * become a literal alternation matched with OR. Sorted longest-first so a short token that
- * is a substring of a longer one cannot consume it first. Returns null for fewer than two
- * tokens, where the result would equal `buildPhraseMatcher` and the fallback would be
- * pointless.
+ * Longest-first, so a short token inside a longer one cannot consume it. Null under two tokens,
+ * where it would equal `buildPhraseMatcher`.
  */
 function buildScatteredTokenMatcher(
   tokens: string[],
@@ -70,8 +41,7 @@ function buildScatteredTokenMatcher(
   return new RegExp(escaped.join('|'), flags);
 }
 
-/** Splits text with the given regex. Returns null when nothing matched — deciding whether
- *  to fall back is the caller's job. */
+/** Returns null when nothing matched; whether to fall back is the caller's job. */
 function scanSegments(text: string, re: RegExp): HighlightSegment[] | null {
   const segments: HighlightSegment[] = [];
   let cursor = 0;

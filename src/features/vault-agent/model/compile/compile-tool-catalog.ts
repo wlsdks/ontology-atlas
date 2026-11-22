@@ -148,7 +148,6 @@ const PROPOSE_WIKI_PAGE_TOOL: AgentToolDefinition = {
   },
 };
 
-/** The Compile turn's whole tool list. */
 export const COMPILE_TOOLS: readonly AgentToolDefinition[] = [
   READ_SOURCE_TEXT_TOOL,
   READ_WIKI_PAGE_TOOL,

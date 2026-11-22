@@ -7,7 +7,7 @@ import { usePanelPresence } from '@/shared/lib/render-timing/use-presence';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { MOTION } from '@/shared/motion';
 import { Button } from '@/shared/ui/controls/button';
-import { BrandWaitingMark } from '@/shared/ui/marks/brand-waiting-mark';
+import { BrandWaitingMark } from '@/shared/ui/marks/moru/brand-waiting-mark';
 import {
   formatDownloadProgress,
   formatMegabytes,
@@ -15,7 +15,7 @@ import {
   type UpdatePhase,
 } from '../model/update-state';
 
-/** Easy to ignore: no modal, no scrim, one-click dismissal. The `checking` stage is not drawn. */
+/** Easy to ignore: no modal, no scrim, one-click dismissal. */
 export interface UpdateToastProps {
   readonly phase: UpdatePhase;
   readonly onInstall: () => void;
@@ -23,9 +23,7 @@ export interface UpdateToastProps {
   readonly onDismiss: () => void;
   /** Hides the download card; the download continues and the version is not dismissed. */
   readonly onHide: () => void;
-  /** The card is put away while its phase goes on (a hidden download). */
   readonly hidden?: boolean;
-  /** Where focus goes when the person put the card away from inside it. */
   readonly onReturnFocus?: () => void;
 }
 
@@ -33,7 +31,6 @@ type DrawnPhase = Extract<UpdatePhase, { kind: 'available' | 'downloading' | 're
 
 type MoruClip = 'greeting' | 'waiting' | 'success' | 'flipper-groove' | 'pondering';
 
-/** A one-shot gesture that greets the state, then the loop Moru rests on while the card stays. */
 const MORU_CLIPS: Record<DrawnPhase['kind'], { intro: MoruClip | null; loop: MoruClip }> = {
   available: { intro: 'greeting', loop: 'waiting' },
   downloading: { intro: null, loop: 'flipper-groove' },
@@ -53,13 +50,11 @@ function isDrawn(phase: UpdatePhase): phase is DrawnPhase {
 
 interface Layers {
   readonly current: DrawnPhase;
-  /** The state handing over, drawn underneath while it fades. */
   readonly leaving: DrawnPhase | null;
   /** Whether `current` arrived by a handover, so only it crossfades in, never the first state. */
   readonly handedOver: boolean;
 }
 
-/** The last drawn state stays on screen while the card fades out, and hands over by crossfade. */
 function usePhaseLayers(phase: UpdatePhase) {
   const [layers, setLayers] = useState<Layers | null>(() =>
     isDrawn(phase) ? { current: phase, leaving: null, handedOver: false } : null,
@@ -131,7 +126,6 @@ function UpdateCard({
       inert={!open}
       className={cn(
         'app-update-card pointer-events-auto fixed z-50 h-36 w-[min(25rem,calc(100vw-2rem))] overflow-clip max-sm:h-30',
-        // Steps aside for a dock, the map's bottom-right instruments and the narrow tab bar, like notifications.
         'right-[var(--app-toast-right-offset,16px)] bottom-[var(--app-toast-bottom-offset,calc(var(--app-toast-bottom-reserve,0px)_+_16px))]',
         'rounded-card border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] shadow-[var(--shadow-elevation-2)]',
       )}
@@ -151,7 +145,6 @@ function UpdateCard({
   );
 }
 
-/** The pool of light Moru stands on and his ground shadow; it fades to nothing before the text. */
 function MoruLight() {
   return (
     <span aria-hidden className="pointer-events-none absolute bottom-3 left-3 size-32 max-sm:size-16">
@@ -274,10 +267,8 @@ function withSlots(format: (marks: Record<string, string>) => string, slots: Rec
     .map((part, index) => (index % 2 === 1 ? <span key={part}>{slots[part]}</span> : part));
 }
 
-/** The percentage leads the row; numerals are tabular and boxed so a new chunk never shifts it. */
 function DownloadFigures({ phase }: { phase: DownloadingPhase }) {
   const t = useTranslations('appUpdate');
-  // With the total unknown, no percentage is invented; it states only that fact.
   const percent = formatDownloadProgress(phase.received, phase.total);
   if (!percent || phase.total === null) return t('downloadingUnknown');
   const total = formatMegabytes(phase.total);
@@ -329,7 +320,6 @@ function DownloadBar({ phase, label }: { phase: DownloadingPhase; label: string 
   );
 }
 
-/** Moru at the row's native 128px (64px on a narrow window): the state's gesture once, then its loop. */
 function MoruStage({ phase, landed }: { phase: DrawnPhase['kind']; landed: boolean }) {
   const { intro, loop } = MORU_CLIPS[phase];
   const [clip, setClip] = useState<MoruClip>(intro ?? loop);

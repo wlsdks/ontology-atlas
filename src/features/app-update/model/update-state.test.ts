@@ -26,14 +26,14 @@ describe('shouldCheckForUpdate', () => {
     expect(shouldCheckForUpdate({ isDesktop: true, now: 1_000, lastCheckedAt: null, automatic: true })).toBe(true);
   });
 
-  it('is due four hours after the last successful check and not a moment before', () => {
+  it('is due an hour after the last successful check and not a moment before', () => {
     const hour = 60 * 60 * 1000;
     const lastCheckedAt = 1_000_000;
     expect(
-      shouldCheckForUpdate({ isDesktop: true, now: lastCheckedAt + 4 * hour - 1, lastCheckedAt, automatic: true }),
+      shouldCheckForUpdate({ isDesktop: true, now: lastCheckedAt + hour - 1, lastCheckedAt, automatic: true }),
     ).toBe(false);
     expect(
-      shouldCheckForUpdate({ isDesktop: true, now: lastCheckedAt + 4 * hour, lastCheckedAt, automatic: true }),
+      shouldCheckForUpdate({ isDesktop: true, now: lastCheckedAt + hour, lastCheckedAt, automatic: true }),
     ).toBe(true);
   });
 
@@ -185,16 +185,16 @@ describe('isAutomaticCheckDue', () => {
     expect(isAutomaticCheckDue({ now, lastSuccessAt: null, lastAttemptAt: now - 30 * MINUTE, consecutiveFailures: 1 })).toBe(true);
   });
 
-  it('falls back to the four-hour interval after two failures in a row', () => {
+  it('falls back to the hourly interval after two failures in a row', () => {
     const input = { now, lastSuccessAt: null, consecutiveFailures: 2 };
-    expect(isAutomaticCheckDue({ ...input, lastAttemptAt: now - 3 * HOUR })).toBe(false);
-    expect(isAutomaticCheckDue({ ...input, lastAttemptAt: now - 4 * HOUR })).toBe(true);
+    expect(isAutomaticCheckDue({ ...input, lastAttemptAt: now - 45 * MINUTE })).toBe(false);
+    expect(isAutomaticCheckDue({ ...input, lastAttemptAt: now - HOUR })).toBe(true);
   });
 
-  it('waits four hours after a success', () => {
-    const input = { now, lastAttemptAt: now - 3 * HOUR, consecutiveFailures: 0 };
-    expect(isAutomaticCheckDue({ ...input, lastSuccessAt: now - 3 * HOUR })).toBe(false);
-    expect(isAutomaticCheckDue({ ...input, lastSuccessAt: now - 4 * HOUR, lastAttemptAt: now - 4 * HOUR })).toBe(true);
+  it('waits an hour after a success', () => {
+    const input = { now, lastAttemptAt: now - 45 * MINUTE, consecutiveFailures: 0 };
+    expect(isAutomaticCheckDue({ ...input, lastSuccessAt: now - 45 * MINUTE })).toBe(false);
+    expect(isAutomaticCheckDue({ ...input, lastSuccessAt: now - HOUR, lastAttemptAt: now - HOUR })).toBe(true);
   });
 
   it('treats a clock that went backwards as due', () => {

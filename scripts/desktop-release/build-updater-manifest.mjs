@@ -1,26 +1,13 @@
 #!/usr/bin/env node
 /**
- * Builds `latest.json`, the single file an installed app checks for updates.
- *
- * The app knows only one stable endpoint in `tauri.conf.json`:
- *
- *   https://ontologyatlas.com/update/latest.json
- *
- * Pages deployment copies this file from the newest published plain release (drafts and
- * GitHub pre-releases are skipped) to the stable address above
- * (`stage-hosted-updater-manifest.mjs`). Pre-install minisign verification remains
- * unchanged, so the trust boundary does not change even if the publication address changes.
- *
- * **Why two layers of signature.** The Apple certificate attests who built it; the
- * minisign key attests that this update package is ours. Those are different
- * questions. The app swaps the bundle only after verifying the `.sig` against
- * `pubkey`, so a package not signed with our key installs by no route at all — even
- * if the releases page is compromised.
- *
- * **Why a script.** The `.sig` is one base64 line and the platform key
- * (`darwin-aarch64`) fails silently on a typo — the app just says "no update", so a
- * hand-built manifest gives no sign of being wrong. It is built here and checked
- * here.
+ * Builds `latest.json`, the single file an installed app checks for updates, at the stable endpoint
+ * `https://ontologyatlas.com/update/latest.json` named in `tauri.conf.json`. Pages deployment copies
+ * it from the newest published plain release (`stage-hosted-updater-manifest.mjs`); pre-install
+ * minisign verification does not change with the publication address.
+ * Two signature layers: the Apple certificate attests who built the app, the minisign key that the
+ * update package is ours; the app swaps the bundle only after verifying the `.sig` against `pubkey`.
+ * A script because the `.sig` is one base64 line and a typo in the platform key (`darwin-aarch64`)
+ * fails silently as "no update".
  */
 
 import fs from "node:fs";
@@ -63,10 +50,10 @@ export function resolveArchDir(root, arch) {
 }
 
 /** Collects every `.app.tar.gz` under a folder, at any depth. */
-function collectArchives(dir) {
+function collectArchives(directory) {
   const found = [];
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
+  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+    const full = path.join(directory, entry.name);
     if (entry.isDirectory()) {
       found.push(...collectArchives(full));
     } else if (entry.isFile() && entry.name.endsWith(".app.tar.gz")) {
@@ -81,14 +68,14 @@ function collectArchives(dir) {
  * step's common-ancestor root decides the depth. Exactly one archive per arch: with
  * several, a wrong-architecture app could ship.
  */
-export function findUpdaterArtifacts(dir) {
-  if (!dir || !fs.existsSync(dir)) return null;
-  const archives = collectArchives(dir);
+export function findUpdaterArtifacts(directory) {
+  if (!directory || !fs.existsSync(directory)) return null;
+  const archives = collectArchives(directory);
   if (archives.length === 0) return null;
   if (archives.length > 1) {
     fail(
-      `${dir} holds ${archives.length} .app.tar.gz files: ` +
-        `${archives.map((file) => path.relative(dir, file)).join(", ")} — cannot decide which one to ship.`,
+      `${directory} holds ${archives.length} .app.tar.gz files: ` +
+        `${archives.map((file) => path.relative(directory, file)).join(", ")} — cannot decide which one to ship.`,
     );
   }
   const archivePath = archives[0];
@@ -96,7 +83,7 @@ export function findUpdaterArtifacts(dir) {
   const signaturePath = `${archivePath}.sig`;
   if (!fs.existsSync(signaturePath)) {
     fail(
-      `${dir} has ${archive} but no ${archive}.sig.\n` +
+      `${directory} has ${archive} but no ${archive}.sig.\n` +
         "Building without TAURI_SIGNING_PRIVATE_KEY produces the archive without its signature — " +
         "shipping it that way makes the app refuse the update (it silently looks like 'no update').",
     );

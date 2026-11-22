@@ -8,7 +8,7 @@ import { tmpdir } from "node:os";
 import {
   readActivityEntries,
   ACTIVITY_LOG_RELATIVE_PATH,
-} from "../../../mcp/src/vault/activity-log.mjs";
+} from "../../../mcp/src/vault/sidecar/activity-log.mjs";
 import { parseAgentActivityLog } from "@/shared/lib/agent-activity/agent-activity-log";
 
 const LINES = [

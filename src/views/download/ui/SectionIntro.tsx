@@ -1,6 +1,5 @@
 import { cn } from '@/shared/lib/cn';
 
-/** Every head starts at the origin; eyebrow words are localized, never an English label first. */
 export function SectionIntro({
   eyebrow,
   title,
@@ -10,14 +9,12 @@ export function SectionIntro({
   eyebrow: string;
   title: string;
   sub?: string;
-  /** A head set a size down, for a section whose content, not its title, is the point. */
   quiet?: boolean;
 }) {
   /* Still: only the stage below it moves, one entrance per section. */
   return (
     <>
       <p className="flex items-center gap-2 font-mono text-label uppercase leading-label tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-tertiary)]">
-        {/* Static: there is no state for it to signal. */}
         <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-[color:var(--color-indigo-brand)]" />
         {eyebrow}
       </p>

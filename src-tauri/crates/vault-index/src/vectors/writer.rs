@@ -29,7 +29,6 @@ impl From<WriteError> for Error {
     }
 }
 
-/// The store a plan opened: its folder, model, generation and the deletions seen then.
 #[derive(Clone, Debug)]
 pub(super) struct StoreWriter {
     pub(super) dir: PathBuf,

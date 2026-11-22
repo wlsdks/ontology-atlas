@@ -4,11 +4,9 @@ interface FactDoc {
   slug: string;
   title?: string;
   frontmatter: Record<string, unknown>;
-  /** Measured from the body when the manifest was built; absent where it was not measured. */
   citesReadLines?: boolean;
 }
 
-/** A capability whose body cites no read lines, with the domain it belongs to (`''` for none). */
 export interface UnreadCapability {
   slug: string;
   domain: string;
@@ -33,7 +31,6 @@ function hasRefs(value: unknown): boolean {
   return Array.isArray(value) && value.some((ref) => typeof ref === 'string' && ref.trim().length > 0);
 }
 
-/** Capabilities that record neither a `depends_on` nor an `elements` relation. */
 export function capabilitiesWithoutDependency(docs: readonly FactDoc[]): string[] {
   return docs
     .filter((doc) => kindOf(doc) === 'capability')
@@ -42,10 +39,7 @@ export function capabilitiesWithoutDependency(docs: readonly FactDoc[]): string[
     .sort();
 }
 
-/**
- * Capabilities whose body cites no read lines, out of the capabilities whose body was measured;
- * an unmeasured one counts in neither.
- */
+/** Out of the capabilities whose body was measured; an unmeasured one counts in neither. */
 export function capabilitiesWithoutReadRule(docs: readonly FactDoc[]): { unread: UnreadCapability[]; measured: number } {
   const measuredDocs = docs.filter((doc) => kindOf(doc) === 'capability' && typeof doc.citesReadLines === 'boolean');
   const unread = measuredDocs
@@ -66,11 +60,7 @@ const SNAKE_CASE = /[A-Za-z0-9]_[A-Za-z0-9]/;
 const ACRONYM_PAIR = /^[A-Z0-9&]+(?:\/[A-Z0-9&]+)+$/;
 const DOTTED_PRODUCT = /^[A-Z][A-Za-z]*\.js$/;
 
-/**
- * A title a teammate would not say aloud: one word that is a path (the MCP `path-shaped-title`
- * rule), a file name, or a word in camelCase, snake_case or with a class suffix joined on. A title
- * with a space is a phrase, and a phrase is not code.
- */
+/** A title a teammate would not say aloud: a path, a file name, or a camelCase/snake_case/class-suffix word; a title with a space is a phrase, and a phrase is not code. */
 export function readsLikeCode(title: string): boolean {
   const word = title.trim();
   if (!word || /\s/.test(word)) return false;
@@ -79,7 +69,6 @@ export function readsLikeCode(title: string): boolean {
   return CLASS_SUFFIX.test(word) || CAMEL_CASE.test(word) || SNAKE_CASE.test(word);
 }
 
-/** Domains, capabilities and elements whose `title` reads like code. */
 export function codeShapedTitles(docs: readonly FactDoc[]): string[] {
   return docs
     .filter((doc) => NAMED_KINDS.has(kindOf(doc) ?? ''))

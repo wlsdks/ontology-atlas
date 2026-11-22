@@ -8,12 +8,12 @@ import {
   measureMacosAppBundleIdentity,
 } from "../lib/desktop/macos-app-bundle-identity.mjs";
 import { MCP_BINARY_NAME } from "../lib/packaging/mcp-binary.mjs";
-import { loadMacosReleaseNames, resolveMacosExecutable } from "../lib/macos-release-names.mjs";
+import { readMacosReleaseNames, resolveMacosExecutable } from "../lib/macos-release-names.mjs";
 import { listLocales } from "../i18n/build-messages.mjs";
 import { verifyMcpExactCase } from "../packaging/verify-mcp-binary.mjs";
 
 const root = process.cwd();
-const names = loadMacosReleaseNames(root);
+const names = readMacosReleaseNames(root);
 const DEFAULT_ROUTE = "/en/topology/";
 const DEFAULT_SCREENSHOT = path.join(root, ".tmp", "ontology-atlas-deployed-map.png");
 const DEFAULT_WEBVIEW_EVIDENCE = path.join(

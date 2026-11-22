@@ -4,7 +4,7 @@ import path from 'node:path';
 import ts from 'typescript';
 import koMessages from '../../../messages/ko.json';
 import enMessages from '../../../messages/en.json';
-import { KNOWLEDGE_EDGE_TYPES } from '../../../src/entities/knowledge-graph/model/types';
+import { KNOWLEDGE_EDGE_TYPES } from '../../../src/entities/knowledge-graph/model/knowledge-graph';
 
 /**
  * relation-vocabulary contract (persona measurement N5: four separate relation

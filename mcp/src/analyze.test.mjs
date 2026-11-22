@@ -13,8 +13,8 @@ import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { analyzeRepoStructure } from './analyze.mjs';
-import { detectDomainsFromReadme, detectExistingOntologyEvidence } from './analyze/project-detection.mjs';
-import { selectExactCaseEntry } from './analyze/scan-guards.mjs';
+import { detectDomainsFromReadme, detectExistingOntologyEvidence } from './analyze/candidates/project-detection.mjs';
+import { selectExactCaseEntry } from './analyze/candidates/scan-guards.mjs';
 
 // Resolved from this file, not process.cwd(), so the suite runs from the repo
 // root or from mcp/.

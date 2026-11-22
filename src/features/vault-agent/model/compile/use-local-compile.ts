@@ -17,7 +17,7 @@ import { COMPILE_ROUND_CAP, COMPILE_SOURCES_PER_TURN, COMPILE_TOOLS } from "./co
 import { applyProposal } from "../proposals/proposal-applier";
 import type { SourceReadEntry, SourceReadPort } from "./source-read-port";
 import { classifySourceFormat } from "./source-text";
-import type { AgentTurn, ToolCallRecord } from "../types";
+import type { AgentTurn, ToolCallRecord } from "../agent-turn";
 
 /**
  * Compile run by the model on this computer, apart from `use-vault-agent.ts`'s ontology
@@ -30,16 +30,11 @@ export interface LocalCompileSession {
   status: LocalCompileStatus;
   /** Transient vault identity captured when this compile turn started, never the later current vault. */
   originVaultScope: string | null;
-  /** The turn, for its tool rows. Null before the first run. */
   turn: AgentTurn | null;
-  /** What the person is being asked to approve. Null until the turn ends. */
   card: CompileConsentCard | null;
-  /** The one sentence shown when the turn or the write failed. */
   errorMessage: string | null;
   refreshErrorMessage: string | null;
-  /** Pages actually written by the last `allow()`. */
   writtenPaths: string[];
-  /** The files this turn would take on, already capped. */
   targets: string[];
   /** A structured tool snapshot for the Library's bounded activity overlay. */
   toolActivity: {
@@ -57,13 +52,9 @@ export interface LocalCompileSession {
 }
 
 export interface UseLocalCompileArgs {
-  /** Absolute folder path. Null outside the installed app, where this route never runs. */
   vaultRoot: string | null;
-  /** The runner the connect-by-address path points at. */
   endpoint: { baseUrl: string; model: string } | null;
-  /** The library's own rows, already carrying their compile state. */
   sources: readonly LibrarySourceRow[];
-  /** The retrieval terms of each wiki page the Library has read; no additional folder walk for retrieval. */
   wikiPages?: ReadonlyMap<string, WikiRetrievalPage>;
   labels: {
     createFile: (path: string) => string;
@@ -85,7 +76,6 @@ async function hashReadBytes(bytes: ArrayBuffer): Promise<string | null> {
 }
 
 /** Waiting sources this route can open; a PDF is left out, and the shelf points it at a coding agent. */
-/** A source the local runner can open: a text format. */
 export function opensLocally(row: LibrarySourceRow): boolean {
   return classifySourceFormat(row.format) === "readable";
 }
@@ -116,7 +106,6 @@ export function useLocalCompile({
   const [toolActivity, setToolActivity] = useState<LocalCompileSession["toolActivity"]>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  /* Capped waiting sources this route can open (see `selectLocalCompileTargets`). */
   const targets = useMemo(
     () =>
       // Leave the existing three-page/ten-round budget for related reads and revisions.

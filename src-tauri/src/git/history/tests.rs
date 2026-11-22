@@ -5,7 +5,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 struct Repo {
     root: PathBuf,
-    _scope: crate::vault_grants::EnforcedScope,
+    _scope: crate::vault::grants::EnforcedScope,
 }
 impl Repo {
     fn new() -> Self {
@@ -18,7 +18,7 @@ impl Repo {
         fs::create_dir_all(&root).unwrap();
         let root = fs::canonicalize(root).unwrap();
         let result = Self {
-            _scope: crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&root)),
+            _scope: crate::vault::grants::EnforcedScope::granting(std::slice::from_ref(&root)),
             root,
         };
         for args in [
@@ -130,7 +130,7 @@ fn path_grants_traversal_and_revision_syntax_are_enforced() {
     let refs = list(repo.path(), &["domain".into()], None).unwrap();
     assert!(content(repo.path(), "../domain", &refs[0].revision).is_err());
     assert!(content(repo.path(), "domain", "HEAD:domain.md").is_err());
-    let _deny = crate::vault_grants::EnforcedScope::granting(&[]);
+    let _deny = crate::vault::grants::EnforcedScope::granting(&[]);
     assert!(list(repo.path(), &["domain".into()], None)
         .unwrap_err()
         .starts_with("vault-root-not-granted"));
@@ -156,7 +156,7 @@ fn bounded_reads_keep_nested_vault_scope_and_disable_repository_execution() {
     )
     .unwrap();
     let vault = repo.root.join("vault");
-    let _scope = crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&vault));
+    let _scope = crate::vault::grants::EnforcedScope::granting(std::slice::from_ref(&vault));
     let refs = list(vault.to_str().unwrap(), &["domain".into()], None).unwrap();
     assert_eq!(
         content(vault.to_str().unwrap(), "domain", &refs[0].revision)
@@ -174,7 +174,8 @@ fn repository_discovery_rejects_an_unrelated_worktree() {
     let other = Repo::new();
     other.commit("domain.md", b"unrelated");
     selected.git(&["config", "core.worktree", other.path()]);
-    let _scope = crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&selected.root));
+    let _scope =
+        crate::vault::grants::EnforcedScope::granting(std::slice::from_ref(&selected.root));
     assert!(find_repo_root(&selected.root).unwrap().is_none());
     assert!(list(selected.path(), &["domain".into()], None).is_err());
 }

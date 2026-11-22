@@ -1,7 +1,6 @@
 import type { PlanningInventory } from './bridge';
 import { planningDocumentFileName } from './document-name';
 
-/** The home folder's name inside the opened ontology folder. */
 export const PLANNING_HOME_FOLDER = 'planning';
 
 /*
@@ -13,7 +12,6 @@ const MAX_ENTRIES = 10_000;
 const MAX_READ_BYTES = 16 * 1024 * 1024;
 const DENIED_NAME_PARTS = ['credential', 'secret', 'password', 'passwd', 'token', 'apikey', 'api-key', 'api_key', 'id_rsa', 'id_ed25519', 'id_dsa', 'id_ecdsa', '.env', '.pem', '.key', '.p12', '.pfx', '.keystore', '.jks', '.htpasswd'];
 const PRUNED_DIRECTORIES = new Set(['node_modules', 'target', 'dist', 'build', 'out', 'coverage', 'vendor', 'Pods', 'DerivedData', '__pycache__', 'venv']);
-/** The image types the home folder lists beside Markdown (`.md`). */
 export const PLANNING_IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.webp', '.avif'] as const;
 const SUPPORTED_FILE = new RegExp(`(\\.md|${PLANNING_IMAGE_EXTENSIONS.map((extension) => `\\${extension}`).join('|')})$`, 'i');
 const MARKDOWN_FILE = /\.md$/i;

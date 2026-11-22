@@ -249,7 +249,7 @@ describe("links labeled \"map\" are watched even without registration", () => {
     expect(hrefForLabelKey(viaTemplateConst, "crumbBack")).toEqual(["/topology/"]);
 
     // Call expressions whose value cannot be determined are skipped — guessing yields false positives, and a gate that does is switched off.
-    const viaCall = `<Link href={getTopologyProjectHref(slug)}>{t("crumbBack")}</Link>`;
+    const viaCall = `<Link href={buildTopologyProjectHref(slug)}>{t("crumbBack")}</Link>`;
     expect(hrefForLabelKey(viaCall, "crumbBack")).toEqual([]);
   });
 });

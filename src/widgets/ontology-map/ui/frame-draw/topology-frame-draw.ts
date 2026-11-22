@@ -1,24 +1,24 @@
-import { computeNodeAlpha } from "./node-alpha";
+import { computeNodeAlpha } from "./nodes/node-alpha";
 import { beginFrame } from "./frame-begin";
-import { beginNodeLayer, paintStrataDust } from "./node-layer";
+import { beginNodeLayer, paintStrataDust } from "./nodes/node-layer";
 import { paintBackdrop } from "./paint-backdrop";
-import { paintClusterChips } from "./paint-chips";
+import { paintClusterChips } from "./labels/paint-chips";
 import { paintBranchContext, paintDial, prepareBranchContext } from "./paint-dial";
 import { paintDomeStage } from "./paint-dome-stage";
-import { paintEdges } from "./paint-edges";
-import { paintLabels } from "./paint-labels";
-import { buildNeuralFrame } from "./neural-frame";
-import { paintNeuralNames } from "./neural-names";
-import { strokeNeural, type NeuralLabels } from "./paint-neural";
-import { paintNodes } from "./paint-nodes";
-import { paintRelationCaptions } from "./paint-captions";
+import { paintEdges } from "./edges/paint-edges";
+import { paintLabels } from "./labels/paint-labels";
+import { buildNeuralFrame } from "./neural/neural-frame";
+import { paintNeuralNames } from "./neural/neural-names";
+import { strokeNeural, type NeuralLabels } from "./neural/paint-neural";
+import { paintNodes } from "./nodes/paint-nodes";
+import { paintRelationCaptions } from "./labels/paint-captions";
 import { paintWardingRing } from "./paint-warding";
-import { prepareEdges } from "./edge-prep";
+import { prepareEdges } from "./edges/edge-prep";
 import { prepareFocus } from "./frame-focus";
 import type { FrameDrawParams } from "./frame-draw-params";
 import type { FrameInputs } from "./frame-begin";
 import type { FrameFocus } from "./frame-focus";
-import type { NodeLayer } from "./node-layer";
+import type { NodeLayer } from "./nodes/node-layer";
 
 export type { FrameDrawParams } from "./frame-draw-params";
 export {

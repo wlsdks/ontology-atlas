@@ -3,9 +3,7 @@
  * reader can judge it; an agent file's location is never read as its scope.
  */
 
-/** One file, or one `package.json` script, and the text that declares where it applies. */
 export interface ScopeDeclaration {
-  /** Repo-relative path, or `package.json#<script>`. */
   id: string;
   origin: 'rule' | 'git-hook' | 'script' | 'workflow';
   /** Quoted from the file; empty for a rule with no `paths:`, which loads every session. */
@@ -13,13 +11,9 @@ export interface ScopeDeclaration {
 }
 
 export interface ScopeDeclarationInput {
-  /** Every scanned file's text by repo-relative path. */
   contents: ReadonlyMap<string, string>;
-  /** `.githooks/<name>` → file text. */
   gitHooks: ReadonlyMap<string, string>;
-  /** `package.json` lint / typecheck / test scripts → their command. */
   checkScripts: ReadonlyMap<string, string>;
-  /** `.github/workflows/<name>` → file text. */
   workflows: ReadonlyMap<string, string>;
 }
 
@@ -96,7 +90,6 @@ export function workflowPathFilters(yaml: string): string[] {
   return out;
 }
 
-/** Text only: nothing here touches the disk. */
 export function scopeDeclarations(input: ScopeDeclarationInput): ScopeDeclaration[] {
   const out: ScopeDeclaration[] = [];
   for (const [path, text] of input.contents) {

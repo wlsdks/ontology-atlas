@@ -1,4 +1,4 @@
-import { TREE_TONE_STEPS } from "./types";
+import { TREE_TONE_STEPS } from "./tree-shapes";
 import type {
   TreeDetailInput,
   TreeDrawList,
@@ -9,7 +9,7 @@ import type {
   TreeProjector,
   TreeRect,
   TreeScreenPoint,
-} from "./types";
+} from "./tree-shapes";
 
 export const TREE_MARK_BUDGET = 1500;
 /** Work per cut is bounded by marks drawn, not vault size. */

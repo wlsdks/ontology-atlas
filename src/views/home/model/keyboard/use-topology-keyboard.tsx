@@ -11,7 +11,7 @@ import type { useHomeWorkbenchController } from "../use-home-workbench-controlle
 import { type ProjectImpactMode } from "@/entities/project";
 import { useFirstRunSampleModeSettled } from "@/features/first-run-starter";
 import { useClaimShellKey } from "@/shared/lib/keyboard/shell-key-claims";
-import { useFlatMapView } from "@/shared/lib/preferences/appearance-preferences";
+import { useFlatMapView } from "@/shared/lib/preferences/map-view-preferences";
 import { useTypingShortcuts } from "@/shared/lib/keyboard/use-typing-shortcut";
 import { useCallback, useEffect, useEffectEvent } from "react";
 import { shouldSuppressGlobalShortcuts } from "../../lib/keyboard/blocking-surface";
@@ -19,9 +19,7 @@ import { resolveTopologyEscLadderAction } from "../../lib/keyboard/topology-esc-
 import { useFocusReturnOnClose } from "./use-focus-return-on-close";
 
 const CANVAS_RETURN = ["ontology-map-canvas"] as const;
-/** The tidy row that opens it on a populated map; the canvas otherwise. */
 const BOOTSTRAP_RETURN = ["topology-index-uncataloged-docs", "ontology-map-canvas"] as const;
-/** The popover's own "full detail" button, still under the closed overlay. */
 const FULL_DETAIL_RETURN = ["map-detail-panel-open-full-detail", "ontology-map-canvas"] as const;
 
 interface Options {
@@ -128,7 +126,6 @@ export function useTopologyKeyboard({
         closeVaultAgent();
         break;
       case "close-edge-popover":
-        // The popover returns focus to its trigger itself (`OntologyMapEdgePanel`).
         setSelectedEdge(null);
         break;
       case "close-context-menu":
@@ -147,7 +144,6 @@ export function useTopologyKeyboard({
         setSelectedRelationActive(false);
         break;
       case "close-node-popover":
-        // Keeps ego focus; the next Escape sees `nodePopoverOpen: false` and deselects.
         setNodePopoverDismissed(true);
         break;
       case "deselect":
@@ -173,7 +169,6 @@ export function useTopologyKeyboard({
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
-  // Each names its opening control first, then the canvas; see `useFocusReturnOnClose`.
   useFocusReturnOnClose(bootstrapOpen, BOOTSTRAP_RETURN);
   useFocusReturnOnClose(createNodeOpen, CANVAS_RETURN);
   useFocusReturnOnClose(fullDetailOpen, FULL_DETAIL_RETURN);
@@ -200,8 +195,6 @@ export function useTopologyKeyboard({
   useClaimShellKey("search");
   useClaimShellKey("shortcuts");
 
-  // ⌘K opens the one palette of nodes and projects; Shift changes nothing, so the sheet lists ⌘K
-  // alone.
   useTypingShortcuts([
     {
       combo: { key: "k", meta: true },
@@ -229,7 +222,6 @@ export function useTopologyKeyboard({
       },
     },
     {
-      // N opens the create card beside the map; the URL intent is the one door every opener uses.
       combo: { key: "n" },
       onFire: () => {
         if (shortcutsSuppressed || !canCreateNode) return;
@@ -237,7 +229,6 @@ export function useTopologyKeyboard({
       },
     },
     {
-      // ⌘Z takes back the last change made by hand; inside a field the field's own undo answers.
       combo: { key: "z", meta: true, withoutShift: true },
       onFire: () => {
         if (shortcutsSuppressed) return;

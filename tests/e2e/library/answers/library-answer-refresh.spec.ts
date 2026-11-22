@@ -4,6 +4,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { parseFrontmatter } from '../../../../src/shared/lib/vault-document/parse-frontmatter';
 import { installLibraryWorkHarness, type LibraryWorkHarness } from '../../library-work-harness';
 import { seedFirstRunSeen } from '../../first-run-seed';
+import { waitFrames } from '../../settle';
 import enMessages from '../../../../messages/en.json';
 
 const SOURCE = 'sources/storage.md';
@@ -14,6 +15,7 @@ const REVISED = 'Keep records for 18 days, replacing the previous 24-day guidanc
 const AUDIT_TEXT = 'The audit worksheet lists 24 days.\nThe worksheet review is pending.\n';
 const hash = (text: string) => createHash('sha256').update(text).digest('hex');
 const TURN_INCOMPLETE = enMessages.failures['answer-turn-incomplete'];
+const REFRESH_LABEL = enMessages.library.answers.refresh;
 const OLD_BODY = `## Summary
 The recorded period is 24 days.
 
@@ -87,9 +89,11 @@ async function generateDraft(page: Page, harness: LibraryWorkHarness) {
   await expect(page.getByTestId('answer-comparison')).toBeVisible();
 }
 
+/* A person presses Tab slower than a frame, so each press lets the frames that react to focus run first. */
 async function tabTo(page: Page, testId: string) {
   for (let step = 0; step < 120; step += 1) {
     await page.keyboard.press('Tab');
+    await waitFrames(page);
     if (await page.evaluate((id) => document.activeElement?.getAttribute('data-testid') === id, testId)) {
       expect(await page.evaluate(() => document.activeElement?.matches(':focus-visible'))).toBe(true);
       return;
@@ -226,7 +230,7 @@ test('a Library without code nodes opens retained questions and routes an inline
 test('a running refresh remains visibly reopenable and can be stopped after closing the conversation', async ({ page }) => {
   const harness = await openLibrary(page);
   await page.getByTestId('library-questions-open').click();
-  await expect(page.getByTestId('answer-refresh-start')).toContainText('Ask agent');
+  await expect(page.getByTestId('answer-refresh-start')).toHaveText(REFRESH_LABEL);
   await page.getByTestId('answer-refresh-start').click();
   await expect.poll(async () => (await harness.snapshot(page)).calls.some((call) => call.method === 'session/prompt')).toBe(true);
   await page.getByRole('button', { name: 'Close conversation', exact: true }).click();

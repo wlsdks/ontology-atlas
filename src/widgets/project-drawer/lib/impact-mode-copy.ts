@@ -9,7 +9,7 @@ export interface ImpactModeCopyKeys {
 /**
  * Label and help keys for ProjectDrawer's four impact modes (none, upstream, downstream and network
  * closures via `resolveProjectImpactInsight`), declared once for the render and the tests.
- * Direction words match FullDetailA1: upstream is "what this item needs", downstream "what needs
+ * Direction words match FullDetail: upstream is "what this item needs", downstream "what needs
  * this item".
  */
 export const IMPACT_MODE_COPY_KEYS: ImpactModeCopyKeys[] = [

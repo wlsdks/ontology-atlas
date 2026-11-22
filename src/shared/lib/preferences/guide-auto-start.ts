@@ -4,7 +4,6 @@ import { useCallback, useSyncExternalStore } from "react";
 
 const GUIDE_AUTO_START_KEY = "ontology-atlas:guide-auto-start:v1";
 
-/** Same-tab notification; cross-tab arrives through the `storage` event. */
 const GUIDE_AUTO_START_EVENT = "ontology-atlas:guide-auto-start-change";
 
 export const DEFAULT_GUIDE_AUTO_START = false;

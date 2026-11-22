@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MemoryVault } from '../../../../../tests/helpers/memory-vault';
 import { deriveOntologyFromVault } from '../derive-ontology-from-vault';
-import type { VaultManifest } from '../../model/types';
+import type { VaultManifest } from '../../model/vault-manifest';
 import { createSourceCopyBatch } from '../library/source-copy-publication';
 import { applyVaultChanges, type LocalVaultSnapshot, type VaultChangeResult } from './apply-vault-changes';
 import { buildLocalManifestWithEntries, rebuildLocalManifestIncremental } from './build-local-manifest';

@@ -1,13 +1,6 @@
 import { parseAtlasToolCall } from '../tool-calls/atlas-tool-call';
 
-/**
- * Translates the Atlas read tool actually called by ACP into map state.
- *
- * Does not parse sentences from the agent's answer. Sentences can express the same meaning
- * in multiple ways, and plausible slugs can be mentioned even before the tool finishes. In contrast,
- * `tool_call.rawInput` is the exact argument received by the tool. By passing only names
- * that actually exist in the current vault, the map can point to the same object without guessing.
- */
+/** Translates the Atlas read tool actually called into map state. Not the agent's sentences (one meaning has many wordings, and slugs get mentioned before a tool finishes): `tool_call.rawInput` is the exact argument, and only names that exist in the vault are passed. */
 export type AcpMapIntent =
   | { kind: 'focus'; slug: string; toolCallId: string }
   | { kind: 'path'; from: string; to: string; toolCallId: string };
@@ -20,11 +13,7 @@ export interface AcpMapIntentEvent {
   [key: string]: unknown;
 }
 
-/**
- * Only look at tools after the last user utterance. If `find_path` succeeds even once in the same turn,
- * path intent takes precedence over `get_concept` for subsequent explanation — otherwise
- * the completed path reverts to a single last-read node.
- */
+/** Only tools after the last user utterance. If `find_path` succeeds once in the turn, path intent beats `get_concept`, or the completed path would revert to a single last-read node. */
 export function deriveAcpMapIntent(
   events: readonly AcpMapIntentEvent[],
   knownSlugs: ReadonlySet<string>,

@@ -1,4 +1,4 @@
-import type { DomeArrangement, DomeViewKind } from './types';
+import type { DomeArrangement, DomeViewKind } from './dome-shapes';
 
 /**
  * Near 1.0, far 0.09, falling as (1 − u)^1.8. Deeper than the 2D 3:1 ink floor by a 3D-only dispensation

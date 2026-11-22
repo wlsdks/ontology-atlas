@@ -24,13 +24,7 @@ export function diffVaultManifest(
   return { added, modified };
 }
 
-/**
- * The toast text is not finished into a string here because this file is a pure helper outside
- * React and cannot reach next-intl's `useTranslations`. It passes the kind plus the name or count
- * in structured form, and the caller (`VaultDiffToaster`, a React component) assembles the localized
- * text with `t('featuresMisc.vaultDiffToaster.*')` — so a hardcoded English literal like
- * "Added: domains/refunds" cannot leak again.
- */
+/** Not finished into a string here: this helper sits outside React and cannot reach `useTranslations`; the caller (`VaultDiffToaster`) assembles the localized text from the kind plus name or count. */
 type VaultDiffToastKind = 'added' | 'edited' | 'removed' | 'digest';
 
 /**
@@ -43,7 +37,6 @@ export type VaultDiffNode = {
   name: string;
 };
 
-/** Per-kind counts within one action (added/edited). A row with no `kind` is the unknown share. */
 type VaultDiffKindCount = { kind?: string; count: number };
 
 export type VaultDiffActionCount = {
@@ -52,14 +45,7 @@ export type VaultDiffActionCount = {
   byKind: VaultDiffKindCount[];
 };
 
-/**
- * Digest only — each of the three actions is counted separately rather than folded into one total.
- *
- * Additions and edits can read their kind from the manifest, so they are split by kind ("3
- * capabilities · 12 elements added" beats "15 added"). **Deletions are a number only** — a deleted
- * document is gone from the manifest, leaving nowhere to read its kind, and even the count comes
- * from the activity log's `delete_concept` entries (see the note below).
- */
+/** Each action is counted separately. Additions and edits split by kind; deletions are a number only: a deleted document is gone from the manifest, so the count comes from the activity log's `delete_concept` entries. */
 type VaultDiffDigestCounts = {
   added: VaultDiffActionCount;
   modified: VaultDiffActionCount;
@@ -73,15 +59,7 @@ export type VaultDiffToast = {
   variant: 'info' | 'success';
 };
 
-/**
- * A manifest row → the pieces that can go on screen. **This is the single path by which a slug can
- * reach the screen at all.**
- *
- * Name priority: `display_<locale>` → `title` → the slug's **last segment**. The third is a last
- * resort, and even then a folder name such as `capabilities/` is never prefixed. (Reaching the
- * third is rare in practice — the manifest's own `title` is already filled from frontmatter title →
- * first H1 → slug tail.)
- */
+/** The single path by which a slug can reach the screen. Name priority: `display_<locale>` → `title` → the slug's last segment; a folder name such as `capabilities/` is never prefixed. */
 export function toVaultDiffNode(
   doc: {
     slug: string;
@@ -98,10 +76,7 @@ export function toVaultDiffNode(
   return { slug: doc.slug, kind, name: name.trim() || tail };
 }
 
-/**
- * Per-kind counts. The unknown share is collected into **one final row** — mixing it in would make
- * "3 capabilities" possibly mean 4, and dropping it would break the total.
- */
+/** The unknown share is one final row: mixing it in would make "3 capabilities" possibly mean 4, and dropping it would break the total. */
 function countByKind(nodes: VaultDiffNode[]): VaultDiffActionCount {
   const byKind = new Map<string, number>();
   let untyped = 0;

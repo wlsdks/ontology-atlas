@@ -1,14 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import {
-  applyCurrentMode,
-  createAcpClient,
-  readSessionChoices,
-  toPermissionRequest,
-  type AcpPermissionRequest,
-  type AcpSessionChoices,
-  type AcpTransport,
-} from './acp-client';
+import { createAcpClient, type AcpClient, type AcpTransport } from './acp-client';
+import type { AcpPermissionRequest } from './permissions/permission-request';
 
 /** A fake channel that can carry lines. Measures the protocol with no real process. */
 function fakeTransport() {
@@ -334,6 +327,54 @@ describe('ACP client: permission policy', () => {
     expect(outcomeOf(t.sent, 7)).toEqual({ outcome: 'selected', optionId: 'allow' });
   });
 
+  it('answers cancelled, whatever the screen chose, once the turn was cancelled while it waited', async () => {
+    const t = fakeTransport();
+    let cancelled = false;
+    const askUser = vi.fn(async () => {
+      cancelled = true;
+      return 'allow';
+    });
+    createAcpClient(t.transport, { verdict: alwaysAsk, askUser, cancelRequested: () => cancelled });
+    t.emit(permissionRequest('/outside/a.md', 21));
+    await vi.waitFor(() => expect(outcomeOf(t.sent, 21)).toBeTruthy());
+    expect(outcomeOf(t.sent, 21)).toEqual({ outcome: 'cancelled' });
+  });
+
+  it('answers cancelled instead of auto-allowing a read that arrives after the turn was cancelled', async () => {
+    const t = fakeTransport();
+    let cancelled = false;
+    const askUser = vi.fn(async () => 'allow');
+    const onAutoAllowed = vi.fn();
+    createAcpClient(t.transport, { vaultMcpServerName: 'atlas-vault', verdict: insideVault, askUser, onAutoAllowed, cancelRequested: () => cancelled });
+    t.emit(permissionRequest('/vault/notes.md', 22, 'read'));
+    await vi.waitFor(() => expect(outcomeOf(t.sent, 22)).toBeTruthy());
+    expect(outcomeOf(t.sent, 22)).toEqual({ outcome: 'selected', optionId: 'allow' });
+
+    cancelled = true;
+    t.emit(permissionRequest('/vault/notes.md', 23, 'read'));
+    await vi.waitFor(() => expect(outcomeOf(t.sent, 23)).toBeTruthy());
+    expect(outcomeOf(t.sent, 23)).toEqual({ outcome: 'cancelled' });
+    expect(onAutoAllowed).toHaveBeenCalledTimes(1);
+    expect(askUser).not.toHaveBeenCalled();
+  });
+
+  it('answers cancelled when the turn is cancelled while the path verdict is still pending', async () => {
+    const t = fakeTransport();
+    let cancelled = false;
+    let resolveVerdict: (verdict: 'allow-inside-vault') => void = () => undefined;
+    const verdict = vi.fn(() => new Promise<'allow-inside-vault'>((resolve) => { resolveVerdict = resolve; }));
+    const onAutoAllowed = vi.fn();
+    createAcpClient(t.transport, { vaultMcpServerName: 'atlas-vault', verdict, askUser: async () => 'allow', onAutoAllowed, cancelRequested: () => cancelled });
+    t.emit(permissionRequest('/vault/notes.md', 24, 'read'));
+    await vi.waitFor(() => expect(verdict).toHaveBeenCalled());
+
+    cancelled = true;
+    resolveVerdict('allow-inside-vault');
+    await vi.waitFor(() => expect(outcomeOf(t.sent, 24)).toBeTruthy());
+    expect(outcomeOf(t.sent, 24)).toEqual({ outcome: 'cancelled' });
+    expect(onAutoAllowed).not.toHaveBeenCalled();
+  });
+
   it('rejects when the user does not answer; an unasked request is not counted as allowed', async () => {
     const t = fakeTransport();
     createAcpClient(t.transport, { verdict: alwaysAsk, askUser: async () => null });
@@ -639,6 +680,29 @@ describe('ACP client: Codex MCP approval correlation', () => {
     expect(outcomeOf(t.sent, 87)).toEqual({ outcome: 'cancelled' });
     expect(outcomeOf(t.sent, 88)).toEqual({ outcome: 'cancelled' });
   });
+
+  it.each([
+    ['a new session', (client: AcpClient) => client.newSession({ cwd: '/vault' })],
+    ['a loaded session', (client: AcpClient) => client.loadSession({ sessionId: 's1', cwd: '/vault' })],
+  ])('forgets the info of a call remembered before %s opened', async (_name, open) => {
+    const t = fakeTransport();
+    const askUser = vi.fn(async () => 'allow');
+    const client = createAcpClient(t.transport, {
+      vaultMcpServerName: 'atlas-vault',
+      verdict: alwaysAsk,
+      askUser,
+    });
+
+    t.emit(mcpToolUpdate());
+    const opening = open(client);
+    t.reply({ sessionId: 's1' });
+    await opening;
+    t.emit(mcpApprovalRequest({ id: 89 }));
+    await vi.waitFor(() => expect(outcomeOf(t.sent, 89)).toBeTruthy());
+
+    expect(askUser).not.toHaveBeenCalled();
+    expect(outcomeOf(t.sent, 89)).toEqual({ outcome: 'cancelled' });
+  });
 });
 
 describe('ACP client: requests, responses and noise', () => {
@@ -846,138 +910,5 @@ describe('ACP client: an unanswered request eventually ends', () => {
     } finally {
       vi.useRealTimers();
     }
-  });
-});
-
-describe('toPermissionRequest: reads the path, not the title', () => {
-  it('extracts the structured file_path and drops options that do not pair up', () => {
-    const parsed = toPermissionRequest({
-      options: [
-        { kind: 'allow_once', optionId: 'a', name: 'Allow' },
-        { kind: 'reject_once' }, // no optionId — unusable
-        { optionId: 'x' }, // no kind — unusable
-      ],
-      toolCall: {
-        toolCallId: 'tool-write-notes',
-        title: 'Write notes.md',
-        kind: 'edit',
-        rawInput: { file_path: '/vault/notes.md' },
-      },
-    });
-    expect(parsed.toolCallId).toBe('tool-write-notes');
-    expect(parsed.filePath).toBe('/vault/notes.md');
-    expect(parsed.toolKind).toBe('edit');
-    expect(parsed.rawInput).toEqual({ file_path: '/vault/notes.md' });
-    expect(parsed.reviewKind).toBe('permission');
-    expect(parsed.options).toEqual([{ optionId: 'a', kind: 'allow_once', name: 'Allow' }]);
-  });
-
-  it('treats a preserved JSON-RPC request id of 0 as valid and does not replace it with a new id', () => {
-    const parsed = toPermissionRequest({ sessionId: 's-1' }, null, 0);
-    expect(parsed.requestId).toBe(0);
-    expect(parsed.sessionId).toBe('s-1');
-  });
-
-  it('does not blow up on a different shape; the conversation must survive an adapter change', () => {
-    expect(toPermissionRequest({})).toEqual({
-      requestId: null,
-      sessionId: null,
-      title: null,
-      toolCallId: null,
-      toolName: null,
-      toolKind: null,
-      filePath: null,
-      rawInput: {},
-      reviewKind: 'permission',
-      options: [],
-    });
-  });
-
-  it('reads the sentence the tool left when there is no title, the spot where the server asks itself', () => {
-    /*
-     * The vault server pauses a write with `elicitation/create`; `codex-acp` forwards it with no
-     * `toolCall.title`, so the question is read from `toolCall.content[]`.
-     */
-    const parsed = toPermissionRequest({
-      options: [{ kind: 'allow_once', optionId: 'accept', name: 'Accept' }],
-      toolCall: {
-        toolCallId: 'elicitation-ontology-atlas',
-        kind: 'other',
-        content: [
-          {
-            type: 'content',
-            content: { type: 'text', text: 'Create concept wire-probe. Apply this change to the vault?' },
-          },
-        ],
-        rawInput: { serverName: 'ontology-atlas' },
-      },
-    });
-    expect(parsed.title).toBe('Create concept wire-probe. Apply this change to the vault?');
-  });
-
-  it('lets the title win when there is one, the spot the convention names', () => {
-    const parsed = toPermissionRequest({
-      toolCall: {
-        title: 'Write notes.md',
-        content: [{ type: 'content', content: { type: 'text', text: 'ignore me' } }],
-      },
-    });
-    expect(parsed.title).toBe('Write notes.md');
-  });
-});
-
-/**
- * `current_mode_update` carries only the mode id, so state comes from what is on hand
- * plus the standing safety decision.
- */
-describe('applyCurrentMode — the adapter moved the session, not the person', () => {
-  const base: AcpSessionChoices = readSessionChoices({
-    modes: {
-      currentModeId: 'default',
-      availableModes: [
-        { id: 'default', name: 'Manual', _meta: { kind: 'standard' } },
-        { id: 'plan', name: 'Plan', _meta: { kind: 'plan' } },
-      ],
-    },
-  });
-
-  it('follows a mode already on the list and changes nothing else', () => {
-    const next = applyCurrentMode(base, 'plan');
-    expect(next.currentModeId).toBe('plan');
-    expect(next.modes).toEqual(base.modes);
-    expect(next.unverifiedModeIds).toEqual([]);
-  });
-
-  it('states a gate-removing clamp without offering it back', () => {
-    /*
-     * `acceptEdits` is where `claude-agent-acp` 0.74.0 lands a session whose model cannot do `auto`.
-     * The screen must say where the session is; putting the row into the list would hand the person
-     * a way to return to it, which is the one thing `mode-safety.ts` exists to prevent.
-     */
-    const next = applyCurrentMode(base, 'acceptEdits');
-    expect(next.currentModeId).toBe('acceptEdits');
-    expect(next.modes.map((m) => m.id)).toEqual(['default', 'plan']);
-    expect(next.unverifiedModeIds).toEqual([]);
-  });
-
-  it('reflects a local permission profile without reoffering it', () => {
-    const next = applyCurrentMode(base, 'permission-profile:local');
-    expect(next.currentModeId).toBe('permission-profile:local');
-    expect(next.modes).toEqual(base.modes);
-    expect(next.unverifiedModeIds).toEqual([]);
-  });
-
-  it('shows a mode nobody advertised, marked unchecked — the dropdown must not go blank', () => {
-    const next = applyCurrentMode(base, 'brand-new');
-    expect(next.currentModeId).toBe('brand-new');
-    expect(next.modes.map((m) => m.id)).toEqual(['default', 'plan', 'brand-new']);
-    expect(next.unverifiedModeIds).toEqual(['brand-new']);
-  });
-
-  it('does not add the same unadvertised mode twice', () => {
-    const once = applyCurrentMode(base, 'brand-new');
-    const twice = applyCurrentMode(applyCurrentMode(once, 'plan'), 'brand-new');
-    expect(twice.modes.map((m) => m.id)).toEqual(['default', 'plan', 'brand-new']);
-    expect(twice.unverifiedModeIds).toEqual(['brand-new']);
   });
 });

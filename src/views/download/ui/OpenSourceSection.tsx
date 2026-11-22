@@ -3,7 +3,7 @@
 import { Star } from 'lucide-react';
 import { useFormatter, useTranslations } from 'next-intl';
 
-import { GITHUB_REPO_URL } from '@/shared/config/social-links';
+import { GITHUB_REPO_URL } from '@/shared/config/site/social-links';
 import { cn } from '@/shared/lib/cn';
 import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/public-pages/gateway-frame';
 import { cubicBezierAt } from '@/shared/motion/ease';
@@ -12,11 +12,10 @@ import { buttonVariants } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
-import { usePlayOnce } from '../lib/use-play-once';
+import { usePlayOnce } from '../lib/page-motion/use-play-once';
 import { REPO_FACTS } from '../model/repo-facts.generated';
 import { SectionIntro } from './SectionIntro';
 
-/** The top-level folders a reader meets first, each opening that folder on GitHub. */
 const FOLDERS = [
   { key: 'app', path: 'src/' },
   { key: 'desktop', path: 'src-tauri/' },
@@ -45,7 +44,6 @@ const FORK_FLAT = { from: 240, to: 352 } as const;
 const MAIN_COMMITS = [64, 152] as const;
 const FORK_COMMITS = [272, 320] as const;
 const MERGE = { x: 440, y: 150 } as const;
-/** Each label sits under or over the point it names, as a share of the field. */
 const STEPS = [
   { key: 'fork', x: 152, y: 150, below: true },
   { key: 'change', x: 296, y: 70, below: false },
@@ -60,7 +58,6 @@ const MERGE_AT_MS = 1500;
 const POP_MS = MOTION.slow.duration * 1000;
 const RISE_PX = 8;
 
-/** When an eased draw reaches a share of its length, as a share of its time. */
 function timeAtShare(share: number): number {
   let lo = 0;
   let hi = 1;
@@ -72,10 +69,6 @@ function timeAtShare(share: number): number {
   return (lo + hi) / 2;
 }
 
-/**
- * The drawing's one entrance: the main line, then the fork drawn out of it, each commit appearing
- * as the fork's tip passes it, the merge, and the three labels in the order they happen.
- */
 function graphEntrance(figure: HTMLElement): Animation[] {
   const main = figure.querySelector<SVGPathElement>('[data-graph-main]');
   const fork = figure.querySelector<SVGPathElement>('[data-graph-fork]');
@@ -115,7 +108,6 @@ function graphEntrance(figure: HTMLElement): Animation[] {
   return animations;
 }
 
-/** The way a change gets in: fork the repository, change it, send a pull request. */
 function ContributionGraph({ caption }: { caption: string }) {
   const t = useTranslations('download.source.graph');
   const figure = usePlayOnce<HTMLElement>(graphEntrance);
@@ -228,7 +220,6 @@ export function OpenSourceSection() {
       data-testid="gateway-source-section"
       className={cn(PAGE_GUTTER, 'mt-[var(--gateway-section-gap)]', 'w-full scroll-mt-24')}
     >
-      {/* The column, not the window, decides the row. */}
       <div className={cn(PAGE_COLUMN, '@container min-w-0')}>
         <div className="grid min-w-0 gap-x-16 gap-y-12 @min-[52rem]:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
           <div className="flex min-w-0 flex-col">

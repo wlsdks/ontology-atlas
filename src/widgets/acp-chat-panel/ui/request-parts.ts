@@ -5,9 +5,7 @@ import { ANALYSIS_FINDINGS_INSTRUCTION } from '@/features/acp-session';
  * The split is by marker, not length: only text this repository generates is folded.
  */
 export interface RequestParts {
-  /** The part a person is meant to read. Never empty — an unsplit request is all lead. */
   lead: string;
-  /** The app-composed remainder, or `null` when there is none. */
   detail: string | null;
 }
 

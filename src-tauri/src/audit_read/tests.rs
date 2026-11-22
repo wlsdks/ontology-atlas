@@ -105,7 +105,7 @@ impl Drop for Vault {
 #[test]
 fn bounded_pulls_preserve_all_bytes_and_check_cursors() {
     let vault = Vault::new();
-    let _grant = crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&vault.0));
+    let _grant = crate::vault::grants::EnforcedScope::granting(std::slice::from_ref(&vault.0));
     let bytes = vec![b'a'; MAX_CHUNK * 3 + 17];
     fs::write(vault.log(), &bytes).unwrap();
     let mut session = Session::open(vault.root()).unwrap().unwrap();
@@ -137,7 +137,7 @@ fn changes_at_middle_and_eof_never_validate() {
         "append", "finalize", "replace", "truncate", "sidecar", "root",
     ] {
         let vault = Vault::new();
-        let _grant = crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&vault.0));
+        let _grant = crate::vault::grants::EnforcedScope::granting(std::slice::from_ref(&vault.0));
         fs::write(vault.log(), b"pending\n").unwrap();
         let mut session = Session::open(vault.root()).unwrap().unwrap();
         session.pull(0).unwrap();
@@ -192,11 +192,11 @@ fn changes_at_middle_and_eof_never_validate() {
 #[test]
 fn only_confirmed_absence_is_empty_and_grant_revocation_invalidates() {
     let vault = Vault::new();
-    let _grant = crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&vault.0));
+    let _grant = crate::vault::grants::EnforcedScope::granting(std::slice::from_ref(&vault.0));
     assert!(Session::open(vault.root()).unwrap().is_none());
     fs::write(vault.log(), b"data").unwrap();
     let session = Session::open(vault.root()).unwrap().unwrap();
-    let _revoked = crate::vault_grants::EnforcedScope::granting(&[]);
+    let _revoked = crate::vault::grants::EnforcedScope::granting(&[]);
     assert!(session.validate().is_err());
 }
 #[cfg(unix)]
@@ -204,7 +204,7 @@ fn only_confirmed_absence_is_empty_and_grant_revocation_invalidates() {
 fn links_and_fifo_are_rejected_without_touching_external_data() {
     use std::os::unix::fs::symlink;
     let vault = Vault::new();
-    let _grant = crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&vault.0));
+    let _grant = crate::vault::grants::EnforcedScope::granting(std::slice::from_ref(&vault.0));
     let outside = vault.0.join("outside");
     fs::write(&outside, b"untouched").unwrap();
     symlink(&outside, vault.log()).unwrap();
@@ -227,7 +227,7 @@ fn links_and_fifo_are_rejected_without_touching_external_data() {
 fn reading_does_not_take_writer_lock_or_change_modes() {
     use std::os::{fd::AsRawFd, unix::fs::PermissionsExt};
     let vault = Vault::new();
-    let _grant = crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&vault.0));
+    let _grant = crate::vault::grants::EnforcedScope::granting(std::slice::from_ref(&vault.0));
     fs::write(vault.log(), b"data").unwrap();
     let writer = fs::OpenOptions::new()
         .read(true)
@@ -249,7 +249,7 @@ fn reading_does_not_take_writer_lock_or_change_modes() {
 fn repeated_terminal_paths_close_descriptors_and_release_slots() {
     use std::os::fd::AsRawFd;
     let vault = Vault::new();
-    let _grant = crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&vault.0));
+    let _grant = crate::vault::grants::EnforcedScope::granting(std::slice::from_ref(&vault.0));
     fs::write(vault.log(), b"row\n").unwrap();
     let registry = Arc::new(Registry::default());
     let now = Instant::now();
@@ -302,7 +302,7 @@ fn repeated_terminal_paths_close_descriptors_and_release_slots() {
 fn missing_sources_revalidate_parent_identity_and_absence() {
     for mode in ["root", "sidecar", "created"] {
         let vault = Vault::new();
-        let _grant = crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&vault.0));
+        let _grant = crate::vault::grants::EnforcedScope::granting(std::slice::from_ref(&vault.0));
         if mode == "root" {
             fs::remove_dir(vault.0.join(".ontology-atlas")).unwrap();
         }
@@ -328,7 +328,7 @@ fn missing_sources_revalidate_parent_identity_and_absence() {
 fn staged_responses_outlive_reader_slots_without_an_aggregate_transport_claim() {
     use tauri::ipc::{InvokeResponseBody, IpcResponse};
     let vault = Vault::new();
-    let _grant = crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&vault.0));
+    let _grant = crate::vault::grants::EnforcedScope::granting(std::slice::from_ref(&vault.0));
     fs::write(vault.log(), vec![b'a'; MAX_CHUNK]).unwrap();
     let registry = Arc::new(Registry::default());
     let now = Instant::now();
@@ -360,7 +360,7 @@ fn staged_responses_outlive_reader_slots_without_an_aggregate_transport_claim() 
 #[test]
 fn windows_rejects_links_and_junctions_without_touching_external_data() {
     let vault = Vault::new();
-    let _grant = crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&vault.0));
+    let _grant = crate::vault::grants::EnforcedScope::granting(std::slice::from_ref(&vault.0));
     let outside = vault.0.join("outside");
     fs::write(&outside, b"untouched").unwrap();
     std::os::windows::fs::symlink_file(&outside, vault.log())
@@ -397,7 +397,7 @@ fn windows_reads_while_the_writer_holds_the_log_with_its_sharing() {
     use std::os::windows::fs::OpenOptionsExt;
     use windows_sys::Win32::Storage::FileSystem::{FILE_SHARE_READ, FILE_SHARE_WRITE};
     let vault = Vault::new();
-    let _grant = crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&vault.0));
+    let _grant = crate::vault::grants::EnforcedScope::granting(std::slice::from_ref(&vault.0));
     fs::write(vault.log(), b"data").unwrap();
     // The audit writer's open: no delete sharing, so the log cannot move under it.
     let writer = fs::OpenOptions::new()
