@@ -7,11 +7,6 @@ type HeldDatasheet<T> = {
   model: T;
 };
 
-/**
- * Holds the last model only while its panel exits; a newly selected node gets null until its own
- * model exists. The live model returns directly, so same-node refreshes show at once without a
- * render ref.
- */
 export function useRetainedDatasheetModel<T extends { nodeId: string }>(
   liveModel: T | null,
   selectedNodeId: string | null,

@@ -1,8 +1,7 @@
 import { loadMcpModule } from './mcp-module.mjs';
 
-// The MCP package owns the vault schema. `AGENTS.md` already names
-// `mcp/src/schema.mjs` as the single source; the CLI now executes that file
-// instead of carrying a byte-identical twin.
+// The MCP package owns the vault schema (`mcp/src/schema.mjs`, the single source
+// `AGENTS.md` names); the CLI executes that file rather than a twin.
 /** @type {typeof import('../../../../mcp/src/schema.mjs')} */
 const schema = await loadMcpModule('schema.mjs');
 

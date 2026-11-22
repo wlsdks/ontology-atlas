@@ -26,10 +26,8 @@ export function runChangelogCheck(argv, io = console, { cwd = process.cwd() } = 
   const entries = parseChangelog(hasFragments ? readFileSync(`${cwd}/${FILE}`, 'utf8') : source.content);
   const { entries: broken, shape } = checkChangelogTemplate(entries);
   /*
-   * A gate that measures nothing must not pass. On a CRLF checkout every heading stopped
-   * matching, so this reported "0 frozen entries ✓" and exited 0 while judging nothing at
-   * all. The frozen ledger always holds released history, so zero entries means the parse
-   * lost the file, not that the file is clean.
+   * A gate that measures nothing must not pass: the frozen ledger always holds released history, so
+   * zero entries means the parse lost the file (a CRLF checkout once matched no heading), not that it is clean.
    */
   if (entries.length === 0) {
     io.error(`[changelog] parsed 0 entries from ${FILE}; the frozen ledger is never empty, so the parse lost the file rather than finding it clean`);

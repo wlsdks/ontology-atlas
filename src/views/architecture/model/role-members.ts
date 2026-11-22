@@ -3,7 +3,6 @@ import type { ArchitectureProfile } from '@/entities/architecture-profile';
 import type { RoleConcept } from './role-concepts';
 import type { RoleSourceModule } from './source-modules';
 
-/** One module of a role, with the recorded concepts that sit in it. */
 export interface RoleMember {
   name: string;
   /** Repo-relative path from the source listing; null for a module known only through concepts. */
@@ -85,7 +84,6 @@ export function buildRoleMembers(
   return out;
 }
 
-/** The pattern as a path, without its trailing glob: `src/views/**` reads `src/views`. */
 export function patternPathLabel(pattern: string): string {
   return normalize(pattern).replace(/(\/\*\*)+$/, '').replace(/\/\*$/, '') || pattern;
 }

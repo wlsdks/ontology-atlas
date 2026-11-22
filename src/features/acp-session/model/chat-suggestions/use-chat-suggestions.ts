@@ -8,12 +8,7 @@ import { useVaultHealth } from '@/features/vault-ontology';
 import { chatSuggestions, type ChatSuggestion } from './chat-suggestions';
 import { canonicalSlug, capabilitiesWithoutDependency, capabilitiesWithoutReadRule, codeShapedTitles } from './measured-facts';
 
-/**
- * Next steps for the vault currently viewed. The rules live in the pure `chat-suggestions.ts`; this
- * hook gathers the counts from the same sources the map reads, so a number here is the map's number.
- * `changedSource` is the map's own Git measurement (slugs whose cited file changed after their
- * document), or `null` where it was not measured.
- */
+/** The rules live in the pure `chat-suggestions.ts`; counts come from the same sources the map reads. `changedSource` is the map's own Git measurement, or null where not measured. */
 export function useChatSuggestions(
   sourceState: 'loading' | 'unbound' | 'bound' | 'unavailable' | 'no-projects' = 'bound',
   changedSource: readonly string[] | null = null,

@@ -5,7 +5,7 @@ import { dirname, join } from 'node:path';
 import { after, describe, it } from 'node:test';
 
 import { zipFile } from '../../../tests/fixtures/source-passage-cases.mjs';
-import { authoredMarkdownLines } from '../analyze/authored-markdown.mjs';
+import { authoredMarkdownLines } from '../analyze/candidates/authored-markdown.mjs';
 import { inferImports } from '../infer-imports.mjs';
 import { dependencyWitnessFinding } from '../meaning/meaning-findings.mjs';
 import { OUTLINE_LINE_CHARS, outlineSource } from './source-outline.mjs';
@@ -53,9 +53,10 @@ function linesOf(line) {
 function fastestRunMs(run, budgetMs) {
   let fastest = Infinity;
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    const started = performance.now();
+    const started = process.cpuUsage();
     run();
-    fastest = Math.min(fastest, performance.now() - started);
+    const spent = process.cpuUsage(started);
+    fastest = Math.min(fastest, (spent.user + spent.system) / 1000);
     if (fastest < budgetMs || fastest > budgetMs * 10) break;
   }
   return fastest;

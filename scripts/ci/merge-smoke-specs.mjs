@@ -1,12 +1,10 @@
 /**
  * The browser specs a train or ready pull request runs beside the specs its impact plan maps,
- * whenever its change reaches the browser: any non-test file under `src/` or `app/`, messages,
- * public assets or Playwright inputs. A change that reaches none (documents, CI tests) runs no
- * browser spec. These are the core journeys a merge must never break. Everything else runs after merge, in the full
- * suite on each push to `main`, and `pnpm pr:land` names that run's failing specs while it is red.
- *
- * Paths are relative to `tests/e2e/`. A name that discovery cannot find fails the shard, so a
- * renamed spec cannot silently shrink the set. About 190 measured test-seconds in all.
+ * whenever the change reaches the browser (a non-test file under `src/` or `app/`, messages, public
+ * assets or Playwright inputs): the core journeys a merge must never break. Everything else runs
+ * after merge in the full suite, and `pnpm pr:land` names that run's failing specs while it is red.
+ * Paths are relative to `tests/e2e/`; a name discovery cannot find fails the shard, so a renamed
+ * spec cannot silently shrink the set.
  */
 export const MERGE_SMOKE_SPECS = Object.freeze([
   // First run: the starter is written and the app says where.

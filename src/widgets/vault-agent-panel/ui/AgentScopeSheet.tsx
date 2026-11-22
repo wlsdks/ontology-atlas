@@ -4,14 +4,9 @@ import { useEffect, useRef } from 'react';
 import { controlClass } from '@/shared/ui';
 
 /**
- * The scope sheet before the first turn — it states once, before sending, **what
- * goes where**.
- *
- * In a tool loop the model decides what rides on the next round trip, so a full
- * preview beforehand is structurally impossible. The equivalent that keeps the
- * charter's aims (zero silent collection, the user knowing the scope, auditability)
- * is ① this sheet's advance notice ② the tool rows appended live each round trip
- * ③ after-the-fact comparison against the audit log inside the vault.
+ * The scope sheet before the first turn: what goes where. A tool loop decides what rides on the
+ * next round trip, so a full preview is impossible; the equivalent is this advance notice, the
+ * tool rows appended live each round trip, and the audit log inside the vault for comparison.
  */
 export function AgentScopeSheet({
   provider,
@@ -29,11 +24,8 @@ export function AgentScopeSheet({
     body: (args: { provider: string; host: string }) => string;
     liveRows: string;
     /**
-     * The write-consent promise. This sheet is where a person **consents to the
-     * whole**, yet the old copy spoke only of reading, sending and logging and never
-     * of the fact that documents can be edited, nor of the safeguards. If writing is
-     * within the scope of the consent, it has to be stated there for the consent to
-     * be consent.
+     * The write-consent promise. This sheet is where a person consents to the whole, so it must say
+     * that documents can be edited and what the safeguards are.
      */
     consent: string;
     recorded: (path: string) => string;

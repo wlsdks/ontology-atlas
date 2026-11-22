@@ -21,12 +21,14 @@ import {
   type ProjectSourceStoreReadResult,
 } from "@/shared/lib/project-source/project-source-store";
 import {
-  getTauriVaultRootPath,
   inspectTauriProjectSource,
-  isTauriVaultRuntime,
-  pickTauriVaultDirectory,
   type ProjectSourceInspection,
-} from "@/shared/lib/vault-folder/tauri-vault-fs";
+} from "@/shared/lib/vault-folder/native-vault/tauri-project-source";
+import { pickTauriVaultDirectory } from "@/shared/lib/vault-folder/native-vault/tauri-vault-location";
+import {
+  getTauriVaultRootPath,
+  isTauriVaultRuntime,
+} from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
 import { resolveProjectSourceRepair } from "./project-source-repair";
 import { deriveProjectSourceWitnesses } from "../lib/project-source-witnesses";
 
@@ -40,26 +42,18 @@ export type ProjectSourceModelError =
 
 export interface ProjectSourceRuntime {
   available(): boolean;
-  /** The OS picker's window title, so pass it in the screen's language. */
   pickRoot(title?: string): Promise<string | null>;
-  /** `vaultRoot` names the open vault so a vault inside the source is left out of the probe. */
   inspect(rootPath: string, vaultRoot?: string | null): Promise<ProjectSourceInspection | null>;
-  /** The only input to inference; the web has none, so it infers nothing there. */
   rootPathOf(handle: FileSystemDirectoryHandle): string | null;
   now(): string;
   restoreFocus(element: HTMLElement): void;
 }
 
-/**
- * Null for `low` confidence or no candidate, so the screen falls back to the plain picker and never
- * draws a greyed-out proposal.
- */
+/** Null for `low` confidence or no candidate, so the screen falls back to the plain picker. */
 export interface ProjectSourceProposedRoot {
   rootPath: string;
-  /** The only evidence the app offers today. */
   marker: "enclosing_git_repository";
   confidence: "high" | "medium";
-  /** Measured against the candidate; null with no declared paths. */
   witnessSummary: { total: number; supported: number; missing: number } | null;
 }
 
@@ -114,7 +108,7 @@ export interface ProjectSourceSnapshot {
   readStatus: ProjectSourceStoreReadResult["status"];
 }
 
-export async function loadProjectSourceSnapshot(input: {
+export async function readProjectSourceSnapshot(input: {
   store: ProjectSourceStore;
   projectSlug: string;
   graphHash: string;
@@ -258,7 +252,7 @@ export function useProjectSourceModel(input: {
       });
       return () => { cancelled = true; };
     }
-    void loadProjectSourceSnapshot({
+    void readProjectSourceSnapshot({
       store,
       projectSlug: input.projectSlug,
       graphHash,
@@ -273,11 +267,7 @@ export function useProjectSourceModel(input: {
   }, [store, input.projectSlug, graphHash, runtime, runtimeAvailable, vaultRootPath]);
 
   /**
-   * One `inspect_project_source` call already climbs to the enclosing git repository
-   * (`project_source`), so the app never scans folders itself, which local-first forbids. It
-   * runs only while the proposal is drawn (`connect_source` next), per the render-condition rule
-   * in `.claude/rules/architecture.md`, or one click pays for two measurements. "M of N declared
-   * paths" is measured from real witnesses; the receipt is built in memory, never written.
+   * One `inspect_project_source` call already climbs to the enclosing git repository, so the app never scans folders itself, which local-first forbids. It runs only while the proposal is drawn (`.claude/rules/architecture.md`), or one click pays for two measurements; the receipt is built in memory, never written.
    */
   const proposalWanted = Boolean(
     vaultRootPath
@@ -299,7 +289,6 @@ export function useProjectSourceModel(input: {
       try {
         inspection = await runtime.inspect(vaultRootPath, vaultRootPath);
       } catch {
-        // With no proposal the screen falls back to the folder picker.
         inspection = null;
       }
       if (cancelled) return;
@@ -344,10 +333,6 @@ export function useProjectSourceModel(input: {
   ]);
   const proposalSettled = !proposalWanted || proposal?.key === proposalKey;
 
-  /**
-   * `options.rootPath` skips the picker to confirm an inference; measuring and storing stay one
-   * copy shared with the picked-folder path.
-   */
   const runNextAction = useCallback(async (options?: { rootPath?: string }) => {
     if (
       !store
@@ -470,7 +455,6 @@ export function useProjectSourceModel(input: {
     view: currentView,
     repairTarget,
     repairUnavailable,
-    /** `view` stays null until this project's receipt lands. */
     loading,
     busy,
     error: snapshotMatchesProject ? error : null,

@@ -1,19 +1,9 @@
 import { parseFrontmatter, WIKI_DIR } from '../vault-document/parse-frontmatter';
 
 /**
- * The Wiki page contract, for the surfaces that render it.
- *
- * The public statement is `docs/ONTOLOGY-ATLAS-SPEC.md` §11, and the canonical machine
- * copy is `mcp/src/library/wiki-schema.mjs`, which the MCP server and the CLI both execute. This
- * is its TypeScript twin: the MCP package ships separately from the web bundle, so one
- * physical module cannot serve both, and
- * `tests/contract/library/wiki-page-schema.contract.test.ts` runs one fixture table through the
- * two of them. Message wording may differ. **Problem codes may not** — the Docs sidebar,
- * the CLI's exit code, and an agent's retry all branch on the code.
- *
- * Nothing here reads the filesystem. Validation is one frontmatter parse plus a small
- * number of linear passes, which is what lets a list validate a page as its row is drawn
- * rather than validating a whole folder up front.
+ * TypeScript twin of `mcp/src/library/wiki-schema.mjs` (`docs/ONTOLOGY-ATLAS-SPEC.md` §11);
+ * `wiki-page-schema.contract.test.ts` runs one fixture table through both. Wording may differ,
+ * problem codes may not: the sidebar, the CLI's exit code and agent retries branch on them.
  */
 
 /**
@@ -22,15 +12,7 @@ import { parseFrontmatter, WIKI_DIR } from '../vault-document/parse-frontmatter'
  */
 export { WIKI_DIR };
 
-/**
- * Whether a vault-relative slug names the wiki's own furniture rather than a page.
- *
- * One rule: a file under `wiki/` whose name starts with `_` is not a page. `_template.md`
- * is the shape `init` writes; `_log.md` is the append-only record the app keeps of what
- * happened to the wiki. Neither is judged, listed, compiled, or linked, and a person who
- * renames one loses the underscore and the file starts being a page, which is the moment
- * it should.
- */
+/** A file under `wiki/` named with a leading `_` (`_template.md`, `_log.md`) is furniture, not a page. */
 export function isWikiFurnitureSlug(slug: string): boolean {
   if (typeof slug !== 'string') return false;
   const name = slug.slice(slug.lastIndexOf('/') + 1);
@@ -142,7 +124,6 @@ interface WikiCitationRef {
   anchor: string;
 }
 
-/** Every well-formed citation in `text`, in order. */
 export function extractWikiCitations(text: string): WikiCitationRef[] {
   const out: WikiCitationRef[] = [];
   const regex = wikiCitationRegex();
@@ -154,10 +135,8 @@ export function extractWikiCitations(text: string): WikiCitationRef[] {
 }
 
 /**
- * The copy-ready page — the same string the CLI writes into a new vault and the Compile
- * brief embeds verbatim. A writer must never be shown a different shape than the
- * validator enforces, so there is exactly one of these per implementation and
- * the contract test compares them character for character.
+ * One per implementation, compared character for character by the contract: a writer must never
+ * see a shape the validator does not enforce.
  */
 export const WIKI_PAGE_TEMPLATE = `---
 title: <the page name>
@@ -258,7 +237,6 @@ const AMBIGUOUS: unique symbol = Symbol('ambiguous');
 
 type WikiNodeResolution = { slug: string; node: boolean } | 'missing' | 'ambiguous';
 
-/** Built once per folder; see `buildWikiNodeIndex`. */
 export interface WikiNodeIndex {
   readonly [WIKI_NODE_INDEX]: true;
   resolve(ref: string): WikiNodeResolution;
@@ -398,14 +376,8 @@ function sectionBullets(
 }
 
 /**
- * Judge one wiki page. Pure; nothing here touches the filesystem.
- *
- * `knownSources` are the vault-relative paths that exist on disk. Given, a citation
- * naming a path that is not there is reported; omitted, citations are checked only
- * against the page's own `sources:` list, because a validator guessing about files it
- * cannot see would report a problem a person cannot act on. `nodes` is every document in
- * the folder (`buildWikiNodeIndex`); given, each `describes:` entry must name a `kind:`
- * node, and omitted, `describes:` is not checked. Pass the built index for many pages.
+ * Pure. Without `knownSources`, citations are checked only against `sources:`, since a guess about
+ * unseen files is not actionable; without `nodes`, `describes:` is not checked.
  */
 export function validateWikiPage(
   raw: string,
@@ -531,14 +503,7 @@ export function pageOwnProblems(
 
   const declaredSources = readDeclaredSources(frontmatter);
 
-  /**
-   * `sources_truncated`: a boundary a reader can place, or no boundary at all.
-   *
-   * The Library reads this key to say `partial` where it would otherwise say `compiled`
-   * (`vault-library.ts`), and it reads it only for paths the page cites. A path outside
-   * `sources:` therefore reaches no screen, which is why it is reported here rather than
-   * left to be discovered as a row that never changed.
-   */
+  /* `vault-library.ts` reads this key only for cited paths, so a path outside `sources:` is reported here. */
   if (Object.prototype.hasOwnProperty.call(frontmatter, 'sources_truncated')) {
     const raw: unknown = frontmatter.sources_truncated;
     const listed = Array.isArray(raw)

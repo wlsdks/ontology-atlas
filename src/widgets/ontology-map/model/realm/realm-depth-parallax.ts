@@ -29,7 +29,7 @@ export function depthParallaxFactorForDepth(depth: number): number {
  * pan settles near factor·v·tau. `tau≤0` decays at once, the reduced-motion path.
  */
 export function stepDepthParallax(
-  prev: DepthParallaxOffset,
+  previous: DepthParallaxOffset,
   cameraDelta: DepthParallaxOffset,
   factor: number,
   dtSeconds: number,
@@ -37,8 +37,8 @@ export function stepDepthParallax(
 ): DepthParallaxOffset {
   const decay = tauSeconds > 0 ? Math.exp(-dtSeconds / tauSeconds) : 0;
   return {
-    x: prev.x * decay + factor * cameraDelta.x,
-    y: prev.y * decay + factor * cameraDelta.y,
+    x: previous.x * decay + factor * cameraDelta.x,
+    y: previous.y * decay + factor * cameraDelta.y,
   };
 }
 

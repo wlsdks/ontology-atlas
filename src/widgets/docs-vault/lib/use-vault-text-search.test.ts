@@ -12,10 +12,10 @@ const bridge = vi.hoisted(() => ({
 vi.mock('@/entities/vault-session', () => ({
   useLocalVault: () => ({ handle: { rootPath: '/vault' } }),
 }));
-vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', () => ({
   getTauriVaultRootPath: (handle: { rootPath: string }) => handle.rootPath,
 }));
-vi.mock('@/shared/lib/vault-folder/tauri-vault-index', () => ({
+vi.mock('@/shared/lib/vault-folder/vault-index/tauri-vault-index', () => ({
   isVaultIndexAvailable: () => bridge.available,
   onVaultIndexUpdated: async (onUpdate: () => void) => {
     bridge.updated.push(onUpdate);

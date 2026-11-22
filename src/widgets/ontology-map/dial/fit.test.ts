@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { scaledLabelFontSize } from "../render/labels";
-import { computeOverviewCameraTarget } from "../ui/camera/topology-camera-math";
+import { computeOverviewCameraTarget } from "../ui/camera/target/fit-targets";
 import { createMeasureText, dialOverviewBounds, dialOverviewPad } from "./fit";
-import type { DialCluster, DialLabels, DialModel, DialScene, DialTokens } from "./types";
+import type { DialCluster, DialLabels, DialModel, DialScene, DialTokens } from "./dial-shapes";
 
 const TOKENS = { nameMaxPx: 160, chipMaxPx: 17, labelScale: 1.1 } as DialTokens;
 const LABELS: DialLabels = {

@@ -1,20 +1,18 @@
 #!/usr/bin/env node
 /**
- * Build one fail-closed CI impact plan from a Git diff.
- *
- * PRs and verified main push ranges pay for affected evidence. Scheduled runs,
- * shared test configuration, and changes to this planner run the exhaustive
- * lanes. The browser lane is narrower before merge: the mapped specs plus the
- * merge smoke set (`merge-smoke-specs.mjs`), and the full suite only when this
- * planner, the browser executor or a root dependency changed. Every push to `main` runs it in full. The focused mapping is not duplicated here: `checks:changed` remains
- * the repository's path -> check authority, the import graph says which test
- * projects a change reaches, and this module assigns those checks to CI lanes.
+ * Builds one fail-closed CI impact plan from a Git diff. PRs and verified main push ranges pay for
+ * affected evidence; scheduled runs, shared test configuration and changes to this planner run
+ * the exhaustive lanes. Before merge the browser lane runs the mapped specs plus the merge smoke
+ * set (`merge-smoke-specs.mjs`), and the full suite only when this planner, the browser executor or
+ * a root dependency changed; every push to `main` runs it in full. `checks:changed` stays the
+ * path -> check authority; the import graph says which test projects a change reaches.
  */
 
 import { execFileSync } from 'node:child_process';
 import { appendFileSync, existsSync, readdirSync, readFileSync } from 'node:fs';
+import { comparableBranch, usablePushBefore } from './plan-base.mjs';
 import { verifyReviewedMainPush } from './reviewed-main-push.mjs';
-import { importClosure, loadTestReach } from '../lib/import-graph/test-reach.mjs';
+import { importClosure, readTestReach } from '../lib/import-graph/test-reach.mjs';
 import { packageScriptFiles } from '../lib/ci/package-script-files.mjs';
 import { RUST_LINT_COMMAND } from '../lib/check-rules/desktop.mjs';
 
@@ -241,10 +239,9 @@ function isBrowserInput(path) {
 }
 
 /**
- * Commands that need a Tauri toolchain, which no Linux lane has (no GTK/WebKitGTK headers, so
- * `glib-sys` fails). `windows-beta-check.yml` (triggered by `src-tauri/**` and `rust-toolchain.toml`)
- * lints Rust on Windows and on macOS, so a plan that leaves it out of every lane is routing, not a
- * skipped gate.
+ * Commands that need a Tauri toolchain, which no Linux lane has (no GTK/WebKitGTK headers).
+ * `windows-beta-check.yml` lints Rust on Windows and macOS, so leaving them out here is routing,
+ * not a skipped gate.
  */
 export const NATIVE_TOOLCHAIN_COMMANDS = Object.freeze([RUST_LINT_COMMAND]);
 
@@ -278,7 +275,6 @@ function playwrightSpecs(command) {
     .filter((token) => PLAYWRIGHT_SPEC_PATH.test(token));
 }
 
-/** The file arguments of a single Vitest selection, or none for any other command. */
 function vitestFileArguments(command) {
   const selection = /^pnpm exec vitest (?:run|related)\s+(.*)$/.exec(command);
   if (!selection || selection[1].includes('&&')) return [];
@@ -328,9 +324,8 @@ export function coreContractFiles(list = (directory) => (existsSync(directory) ?
 
 /**
  * Ratchets count a pattern across the tree and compare with the merge base, so no import edge
- * reaches them from the file that adds one more. A change to the kind of file they count runs
- * them all (about 6 s together). A ratchet is a contract named `*ratchet*` or one that reads
- * `tests/contract/lib/ratchet-base.ts`.
+ * reaches them; a change to a kind of file they count runs them all (about 6 s). A ratchet is a
+ * contract named `*ratchet*` or one that reads `tests/contract/lib/ratchet-base.ts`.
  */
 const RATCHET_INPUTS = [/^(?:src|app)\/.+\.(?:tsx?|css)$/, /^messages\//];
 
@@ -377,13 +372,11 @@ function unitPlan({ paths, existingPaths, deletedPaths, suggestions, full }) {
     (row) => commandLane(row.command) === 'unit' && !(row.paths.length > 0 && row.paths.every(isGenerated)),
   );
   /*
-   * `pnpm test:contracts` (every contract) is what `checks:changed` recommends locally for a UI
-   * file or a message part, because some contracts scan the tree from disk. Before merge the
-   * planner narrows it to the contracts the import graph reaches plus the core; the full sweep
-   * runs after the merge. Measured over 22 trains (2026-11-18): the full sweep ran on 15 of the
-   * 18 comparable ones and failed none.
+   * `checks:changed` recommends the full `pnpm test:contracts` locally because some contracts scan
+   * the tree from disk. Before merge the planner narrows it to the contracts the import graph
+   * reaches plus the core; the full sweep runs after the merge.
    */
-  const reach = loadTestReach();
+  const reach = readTestReach();
   const sources = (list) => list.filter((path) => !isGenerated(path));
   const reachedContracts = reach
     .testsReaching(withMessageComposites([...sources(existingPaths), ...sources(deletedPaths)]))
@@ -438,7 +431,7 @@ function unitPlan({ paths, existingPaths, deletedPaths, suggestions, full }) {
  */
 function perfPlan({ paths, existingPaths, deletedPaths, full }) {
   if (full || paths.some((path) => matchesAny(path, ROOT_UNIT_FULL_INPUTS))) return { mode: 'full' };
-  const reach = loadTestReach();
+  const reach = readTestReach();
   const sources = (list) => list.filter((path) => !isGenerated(path));
   const stale = reach.testsReaching(sources(deletedPaths)).perf.filter((test) => !deletedPaths.includes(test));
   if (stale.length > 0) return { mode: 'full' };
@@ -531,11 +524,9 @@ function gatesPlan({ suggestions, full }) {
       .filter((row) => commandLane(row.command) === 'gates')
       .map((row) => row.command),
   );
-  // These scripts spawn the source MCP server (`test:cli:commands` runs the real `growth` command,
-  // which calls it). Without them listed, a gates lane dies on missing mcp/node_modules, a false red
-  // no rerun fixes, since checks.yml gates `pnpm --dir mcp install` on this flag.
-  // A script test that imports mcp/src (a dogfood-walk test reaching markdown-it)
-  // needs the same install, so any command whose files' import closure enters mcp/ raises it too.
+  // These scripts spawn the source MCP server, so a gates lane without mcp/node_modules dies (checks.yml
+  // gates `pnpm --dir mcp install` on this flag). A script test whose imports enter mcp/ needs the same
+  // install, so any command whose files' import closure enters mcp/ raises it too.
   const commandFiles = commands.flatMap((command) => command.split(/\s+/).filter((token) => /^(?:scripts|cli|tests)\/.+\.[cm]?js$/.test(token)));
   const needsMcp =
     commands.some((command) =>
@@ -615,11 +606,8 @@ export function buildImpactPlan({ files = [], deletedFiles = [], forceFull = fal
  * }} input
  */
 export function decide({ base, head, files = [], deletedFiles = [], eventName = 'pull_request', mainPushFull = false }) {
-  // A merge group is a tree nothing has ever built: GitHub stacks one or more
-  // pull requests on today's main and asks whether the combination is green.
-  // Narrowing that to one pull request's paths would test the part and merge
-  // the whole, so it is exhaustive by name here rather than by accident of the
-  // `eventName !== 'pull_request'` fallthrough below.
+  // A merge group stacks pull requests on today's main, a tree nothing has built: it is exhaustive
+  // by name, not by the `eventName !== 'pull_request'` fallthrough below.
   const mergeGroup = eventName === 'merge_group';
   // Before merge a train runs the affected checks plus a fixed core; the rest of the full set
   // runs here, on the merged tree, so main's own run is where an unaffected suite turns red.
@@ -867,14 +855,14 @@ if (process.argv[1]?.endsWith('classify-change.mjs')) {
   let base;
   if (eventName === 'push') {
     try {
-      const before = process.env.PUSH_BEFORE;
-      if (!/^[a-f0-9]{40}$/.test(before ?? '') || /^0+$/.test(before)) throw new Error('missing push base');
+      const before = usablePushBefore(process.env.PUSH_BEFORE);
+      if (!before) throw new Error('missing push base');
       base = git(['rev-parse', '--verify', `${before}^{commit}`]);
       git(['merge-base', '--is-ancestor', base, 'HEAD']);
     } catch { base = null; }
   } else if (eventName === 'workflow_dispatch') {
     // Only an explicit, plain branch name compares; anything else stays an exhaustive run.
-    base = /^[A-Za-z0-9][A-Za-z0-9._/-]{0,199}$/.test(compareTo) && !compareTo.includes('..')
+    base = comparableBranch(compareTo)
       ? resolveBase(`origin/${compareTo}`, { fallback: false })
       : null;
   } else {

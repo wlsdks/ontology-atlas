@@ -1,7 +1,7 @@
 export type {
   OntologyTreeNode,
   OntologyTreeBuildResult,
-} from "./types";
+} from "./ontology-tree-node";
 export { buildOntologyTree, flattenTree } from "./build-tree";
 export {
   buildOntologyReachability,
@@ -19,14 +19,14 @@ export {
   computeDegreeCentrality,
   buildContainmentParents,
   nearestDomainId,
-} from "./insights";
+} from "./graph-structure";
 export { formatAgentPostChangeSyncPacket } from "./agent-readiness";
 export {
   AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND,
   AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT,
 } from "./agent-readiness";
-export type { OntologyChangeset } from "./ontology-changeset";
-export { computeOntologyChangeset, prepareGraphSignatures } from "./ontology-changeset";
+export type { OntologyChangeset } from "./changes/ontology-changeset";
+export { computeOntologyChangeset, prepareGraphSignatures } from "./changes/ontology-changeset";
 export {
   markChangeBaseline,
   restorePersistedBaseline,
@@ -34,12 +34,12 @@ export {
   setChangeBaselineScope,
   useChangeBaseline,
   shouldAutoMarkBaseline,
-} from "./change-baseline-store";
-export type { MeaningfulOntologyKind } from "./kind-stats";
+} from "./changes/change-baseline-store";
+export type { MeaningfulOntologyKind } from "./census/kind-stats";
 export {
   MEANINGFUL_ONTOLOGY_KINDS,
-} from "./kind-stats";
-export type { AdaptiveRecentChangesResult } from "./recent-changes";
+} from "./census/kind-stats";
+export type { AdaptiveRecentChangesResult } from "./changes/recent-changes";
 export {
   RECENT_CHANGES_DEFAULT_WINDOW_DAYS,
   computeAdaptiveRecentChanges,
@@ -47,6 +47,6 @@ export {
   isGraphDrawnKind,
   isWithinRecentWindow,
   selectRecentVaultDocs,
-} from "./recent-changes";
-export type { DomainCensusRow } from "./domain-census";
-export { computeDomainCensusRows, domainCensusById } from "./domain-census";
+} from "./changes/recent-changes";
+export type { DomainCensusRow } from "./census/domain-census";
+export { computeDomainCensusRows, domainCensusById } from "./census/domain-census";

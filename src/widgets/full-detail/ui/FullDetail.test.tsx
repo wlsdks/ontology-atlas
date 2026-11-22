@@ -1,0 +1,528 @@
+import { fireEvent, render, screen, within } from "@testing-library/react";
+import { NextIntlClientProvider } from "next-intl";
+import koMessages from "../../../../messages/ko.json";
+import { describe, expect, it, vi } from "vitest";
+import { buildFullDetailGroups } from "../lib/full-detail-groups";
+import { buildFullDetailReachModel } from "../lib/full-detail-reach";
+import { FullDetail } from "./FullDetail";
+import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
+import type { ProjectSourceView } from "@/shared/lib/project-source/project-source-receipt";
+
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ href, children, ...props }: React.ComponentProps<"a">) => (
+    <a href={String(href)} {...props}>
+      {children}
+    </a>
+  ),
+}));
+
+vi.mock("sonner", () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+  },
+}));
+
+const messages = {
+  kinds: {
+    project: "프로젝트",
+    domain: "도메인",
+    capability: "캡슐",
+    element: "엘리먼트",
+    document: "문서",
+    "vault-readme": "볼트 README",
+    unknown: "알 수 없음",
+  },
+  fullDetail: {
+    freshOn: "최근 갱신",
+    freshOff: "정체",
+    copyLink: "노드 링크 복사",
+    copyLinkCopied: "노드 링크를 복사했어요",
+    close: "닫기",
+    groups: {
+      containsTitle: "이 노드가 담는 것",
+      usedByTitle: "이 노드를 쓰는 곳",
+      dependsOnTitle: "이 노드가 기대는 곳",
+      belongsToTitle: "속한 곳",
+      relatedTitle: "관련 항목",
+      freshDotTitle: "최근 갱신",
+      directLinks: "직접 연결 {count}",
+      domainCount: "도메인 {count}곳",
+      domainLinks: "링크 {count}개",
+      caption: "들어오는·나가는 관계에는 의존이 아닌 관계도 있어요.",
+    },
+    reach: {
+      summary: "{depth}단계 안에 있는 개념 {count}개 · 전체 {total}개",
+      stepsAria: koMessages.fullDetail.reach.stepsAria,
+      selfDomainLabel: "도메인 내부",
+      noDomainLabel: "소속 없음",
+    },
+    handoff: {
+      label: "에이전트 핸드오프",
+      copy: "다음 액션 복사",
+      copied: "에이전트 핸드오프 호출을 복사했어요",
+      openDocument: "문서 열기 →",
+      openStudio: "공방에서 완성",
+    },
+    codeLocations: {
+      heading: "코드 위치",
+      copy: "복사",
+      copied: "복사됨",
+    },
+    body: {
+      title: "본문",
+      empty: "작성된 본문이 없습니다.",
+      edit: "본문 편집",
+      save: "저장",
+      cancel: "취소",
+      placeholder: "설명을 적어보세요…",
+      saving: "저장 중…",
+    },
+  },
+  topology: {
+    nodeDatasheet: { noConnections: "아직 기록된 관계 없음" },
+  },
+  editProvenance: {
+    prefix: "마지막 편집",
+    subjectAgent: "AI 에이전트",
+    subjectHuman: "나",
+    conflictMessage: "이 문서가 다른 곳에서 바뀌었어요 — 덮어쓰기 전에 확인하세요",
+    age: {
+      justNow: "방금",
+      minutesAgo: "{count}분 전",
+      hoursAgo: "{count}시간 전",
+      yesterday: "어제",
+      daysAgo: "{count}일 전",
+      weeksAgo: "{count}주 전",
+      monthsAgo: "{count}개월 전",
+    },
+  },
+};
+
+function node(id: string, kind: string, title = id): KnowledgeGraphNode {
+  return {
+    id,
+    title,
+    kind,
+    projectIds: [],
+    evidenceIds: [],
+    lastApprovedAt: new Date(0),
+    lastApprovedBy: "",
+  };
+}
+
+function edge(id: string, from: string, to: string, type: string): KnowledgeGraphEdge {
+  return {
+    id,
+    from,
+    to,
+    type,
+    projectIds: [],
+    evidenceIds: [],
+    lastApprovedAt: new Date(0),
+    lastApprovedBy: "",
+  };
+}
+
+const nodes = [
+  node("domain:a", "domain", "Domain A"),
+  node("capability:child", "capability", "Child Capability"),
+  node("capability:user", "capability", "User Capability"),
+];
+const edges = [
+  edge("e1", "domain:a", "capability:child", "contains"),
+  edge("e2", "capability:user", "domain:a", "depends_on"),
+];
+
+function renderFullDetail(overrides: Partial<Parameters<typeof FullDetail>[0]> = {}) {
+  const groups = buildFullDetailGroups("domain:a", nodes, edges);
+  const reach = buildFullDetailReachModel("domain:a", nodes, edges);
+  const onSelectNode = vi.fn();
+  const onClose = vi.fn();
+  render(
+    <NextIntlClientProvider locale="ko" messages={messages}>
+      <FullDetail
+        node={{ id: "domain:a", title: "Domain A", kind: "domain", slug: "domains/a", fresh: true }}
+        groups={groups}
+        reach={reach}
+        bodyMarkdown="본문 텍스트입니다."
+        onSelectNode={onSelectNode}
+        onClose={onClose}
+        {...overrides}
+      />
+    </NextIntlClientProvider>,
+  );
+  return { onSelectNode, onClose };
+}
+
+function renderFullDetailWithContainer(overrides: Partial<Parameters<typeof FullDetail>[0]> = {}) {
+  const onSelectNode = vi.fn();
+  const { container } = render(
+    <NextIntlClientProvider locale="ko" messages={messages}>
+      <FullDetail
+        node={{ id: "domain:a", title: "Domain A", kind: "domain", slug: "domains/a", fresh: true }}
+        groups={buildFullDetailGroups("domain:a", nodes, edges)}
+        reach={buildFullDetailReachModel("domain:a", nodes, edges)}
+        bodyMarkdown="본문 텍스트입니다."
+        onSelectNode={onSelectNode}
+        onClose={vi.fn()}
+        {...overrides}
+      />
+    </NextIntlClientProvider>,
+  );
+  return { container, onSelectNode };
+}
+
+function projectSourceView(overrides: Partial<ProjectSourceView> = {}): ProjectSourceView {
+  return {
+    contractVersion: 1,
+    projectSlug: "ontology-atlas",
+    status: "review_required",
+    currentness: "stale",
+    measuredAt: "2026-08-02T04:00:00.000Z",
+    topGap: { id: "ontology_changed" },
+    nextAction: { id: "remeasure_source" },
+    bindingCardinality: 1,
+    receipt: null,
+    ...overrides,
+  };
+}
+
+describe("FullDetail", () => {
+  it('renders title, kind and slug in the header', () => {
+    renderFullDetail();
+    expect(screen.getByRole("heading", { name: "Domain A" })).toBeInTheDocument();
+    expect(screen.getByTestId("full-detail-kind")).toHaveTextContent("도메인");
+    expect(screen.getByText("domains/a")).toBeInTheDocument();
+  });
+
+  it('names the owner beside the kind, as the compact panel does', () => {
+    renderFullDetail({ node: { id: "capability:child", title: "Child", kind: "capability", ownerTitle: "Domain A", slug: "capabilities/child", fresh: false } });
+    expect(screen.getByTestId("full-detail-kind")).toHaveTextContent("캡슐·Domain A");
+  });
+
+  it('renders fullTitle as secondary text when it differs from title', () => {
+    renderFullDetail({
+      node: {
+        id: "domain:a",
+        title: "CLI Developer Entry",
+        fullTitle: "CLI Developer Entry (52 commands — vault + MCP verify + ...)",
+        kind: "domain",
+        slug: "domains/a",
+        fresh: true,
+      },
+    });
+    expect(screen.getByText("CLI Developer Entry")).toBeInTheDocument();
+    expect(
+      screen.getByTestId("full-detail-full-title"),
+    ).toHaveTextContent(
+      "CLI Developer Entry (52 commands — vault + MCP verify + ...)",
+    );
+  });
+
+  it('omits the secondary text when fullTitle equals title', () => {
+    renderFullDetail();
+    expect(
+      screen.queryByTestId("full-detail-full-title"),
+    ).not.toBeInTheDocument();
+  });
+
+  it('draws only the groups that have rows and never stretches them into cards', () => {
+    const { container } = renderFullDetailWithContainer();
+    expect(container.querySelector('[data-fulldetail-group="contains"]')).not.toBeNull();
+    expect(container.querySelector('[data-fulldetail-group="used-by"]')).not.toBeNull();
+    expect(container.querySelector('[data-fulldetail-group="depends-on"]')).toBeNull();
+    expect(container.querySelector('[data-fulldetail-group="belongs-to"]')).toBeNull();
+    expect(container.querySelector('[data-fulldetail-groups-caption]')).not.toBeNull();
+  });
+
+  it('says once that no relations are recorded when every group is empty', () => {
+    const empty = { rows: [], total: 0 };
+    const groups = { contains: empty, usedBy: empty, dependsOn: empty, belongsTo: empty, related: empty, domainLevel: null };
+    const { container } = renderFullDetailWithContainer({ groups });
+    expect(container.querySelector('[data-fulldetail-group]')).toBeNull();
+    expect(container.querySelector('[data-fulldetail-groups-empty]')?.textContent).toBe("아직 기록된 관계 없음");
+    expect(container.querySelector('[data-fulldetail-groups-caption]')).toBeNull();
+  });
+
+  it('states the reach for the chosen depth in one sentence', () => {
+    const { container } = renderFullDetailWithContainer();
+    expect(container.querySelector('[data-fulldetail-reach-summary]')?.textContent).toBe("3단계 안에 있는 개념 1개 · 전체 3개");
+    fireEvent.click(screen.getByTestId("fulldetail-reach-step-1"));
+    expect(container.querySelector('[data-fulldetail-reach-summary]')?.textContent).toMatch(/^1단계/);
+  });
+
+  it('counts a domain by the domains that use it, with its direct links as a second line', () => {
+    const groups = {
+      ...buildFullDetailGroups("domain:a", nodes, edges),
+      domainLevel: { usedBy: [{ id: "domain:b", title: "Domain B", links: 9 }], needs: [] },
+    };
+    const { container, onSelectNode } = renderFullDetailWithContainer({ groups });
+    const card = container.querySelector('[data-fulldetail-group="used-by"]')!;
+    expect(card.querySelector('[data-fulldetail-group-total="used-by"]')?.textContent).toBe("도메인 1곳");
+    expect(within(card as HTMLElement).getByRole("button", { name: /Domain B/ })).toHaveAccessibleName("Domain B, 링크 9개");
+    expect(card.querySelector('[data-fulldetail-direct-links="used-by"]')?.textContent).toBe("직접 연결 1");
+    fireEvent.click(within(card as HTMLElement).getByText("Domain B"));
+    expect(onSelectNode).toHaveBeenCalledWith("domain:b");
+  });
+
+  it('draws no group for a side where a domain has no partner, not zero domains', () => {
+    const groups = {
+      ...buildFullDetailGroups("domain:a", nodes, edges),
+      dependsOn: { rows: [], total: 0 },
+      domainLevel: { usedBy: [{ id: "domain:b", title: "Domain B", links: 9 }], needs: [] },
+    };
+    const { container } = renderFullDetailWithContainer({ groups });
+    expect(container.querySelector('[data-fulldetail-group="depends-on"]')).toBeNull();
+  });
+
+  it('lists a related concept in its own card and never under a direction', () => {
+    const relatedRow = { id: "domain:c", title: "Domain C", kind: "domain", childCount: 0, fresh: false };
+    const groups = { ...buildFullDetailGroups("domain:a", nodes, edges), related: { rows: [relatedRow], total: 1 } };
+    const { container } = renderFullDetailWithContainer({ groups });
+    const card = container.querySelector('[data-fulldetail-group="related"]')!;
+    expect(within(card as HTMLElement).getByText("Domain C")).toBeInTheDocument();
+    expect(container.querySelector('[data-fulldetail-group="used-by"] [data-fulldetail-row="domain:c"]')).toBeNull();
+  });
+
+  it('calls onSelectNode when a contains row is clicked', () => {
+    const { onSelectNode } = renderFullDetail();
+    fireEvent.click(screen.getByText("Child Capability"));
+    expect(onSelectNode).toHaveBeenCalledWith("capability:child");
+  });
+
+  it('renders reach steps as a named radio group with the selection exposed', () => {
+    /*
+     * An exclusive choice, so the steps are a radiogroup; the test measures role and selected
+     * state.
+     */
+    renderFullDetail();
+    const group = screen.getByRole("radiogroup", { name: koMessages.fullDetail.reach.stepsAria });
+    const steps = within(group).getAllByRole("radio");
+    expect(steps).toHaveLength(3);
+    fireEvent.click(steps[0]);
+    expect(steps[0]).toHaveAttribute("aria-checked", "true");
+    expect(steps[1]).toHaveAttribute("aria-checked", "false");
+  });
+
+  it('calls onClose when the close button is clicked', () => {
+    const { onClose } = renderFullDetail();
+    fireEvent.click(screen.getByTestId("full-detail-close"));
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('renders the markdown body in the body section', () => {
+    renderFullDetail();
+    expect(screen.getByText("본문 텍스트입니다.")).toBeInTheDocument();
+  });
+
+  it('draws the name once when the body opens with a heading that repeats it', () => {
+    renderFullDetail({ bodyMarkdown: "# Domain A\n\n본문 텍스트입니다." });
+    expect(screen.getAllByRole("heading", { name: "Domain A" })).toHaveLength(1);
+    expect(screen.getByText("본문 텍스트입니다.")).toBeInTheDocument();
+  });
+
+  it('shows the empty copy without a body', () => {
+    renderFullDetail({ bodyMarkdown: null });
+    expect(screen.getByText("작성된 본문이 없습니다.")).toBeInTheDocument();
+  });
+
+  it('renders the body through the read/edit primitive when explanationEdit is set', () => {
+    const onSave = vi.fn();
+    renderFullDetail({ explanationEdit: { onSave } });
+    expect(screen.getByTestId("node-explanation-read")).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("node-explanation-edit-button"));
+    expect(screen.getByTestId("node-explanation-edit")).toBeInTheDocument();
+  });
+});
+
+describe("FullDetail — project source receipt parity", () => {
+  const sourceLabels = {
+    heading: "프로젝트 코드 근거",
+    sourceKind: "소스 · Git 저장소",
+    status: "코드 근거 재검토 필요",
+    measuredAt: "2026. 8. 2. 13:00 측정",
+    currentness: "변경 뒤 재측정 필요",
+    gap: "온톨로지가 마지막 측정 뒤 바뀌었습니다.",
+    action: "다시 측정",
+    busy: "측정 중…",
+  };
+
+  it('renders the project receipt in fixed order with public markers', () => {
+    renderFullDetail({
+      node: {
+        id: "project:ontology-atlas",
+        title: "Ontology Atlas",
+        kind: "project",
+        slug: "ontology-atlas",
+        fresh: true,
+      },
+      projectSource: projectSourceView(),
+      projectSourceLabels: sourceLabels,
+    });
+
+    const rail = screen.getByTestId("full-detail-project-source");
+    expect(rail).toHaveAttribute("data-source-version", "1");
+    expect(rail).toHaveAttribute("data-source-status", "review_required");
+    expect(rail).toHaveAttribute("data-source-currentness", "stale");
+    expect(rail).toHaveAttribute("data-source-top-gap", "ontology_changed");
+    expect(rail).toHaveAttribute("data-source-action", "remeasure_source");
+    expect(rail).toHaveAttribute("data-source-cardinality", "1");
+    expect(rail).toHaveTextContent(sourceLabels.sourceKind);
+    const text = rail.textContent ?? "";
+    expect(text.indexOf(sourceLabels.status)).toBeLessThan(text.indexOf(sourceLabels.measuredAt));
+    expect(text.indexOf(sourceLabels.measuredAt)).toBeLessThan(text.indexOf(sourceLabels.gap));
+    expect(text.indexOf(sourceLabels.gap)).toBeLessThan(text.indexOf(sourceLabels.action));
+  });
+
+  it('hides the receipt on non-project nodes even when the prop is passed', () => {
+    renderFullDetail({
+      projectSource: projectSourceView(),
+      projectSourceLabels: sourceLabels,
+    });
+    expect(screen.queryByTestId("full-detail-project-source")).not.toBeInTheDocument();
+  });
+
+  it('keeps the previous receipt and locks actions while busy or failed', () => {
+    const onProjectSourceAction = vi.fn();
+    renderFullDetail({
+      node: {
+        id: "project:ontology-atlas",
+        title: "Ontology Atlas",
+        kind: "project",
+        slug: "ontology-atlas",
+        fresh: true,
+      },
+      projectSource: projectSourceView(),
+      projectSourceLabels: sourceLabels,
+      projectSourceBusy: true,
+      projectSourceError: "이전 연결은 그대로예요.",
+      onProjectSourceAction,
+    });
+    expect(screen.getByText(sourceLabels.status)).toBeInTheDocument();
+    expect(screen.getByText("이전 연결은 그대로예요.")).toHaveAttribute("role", "status");
+    const action = screen.getByRole("button", { name: sourceLabels.busy });
+    expect(action).toBeDisabled();
+    expect(action).toHaveAttribute("aria-busy", "true");
+  });
+
+  it('appends a copy-safe source receipt to the full-detail handoff', () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    renderFullDetail({
+      node: {
+        id: "project:ontology-atlas",
+        title: "Ontology Atlas",
+        kind: "project",
+        slug: "ontology-atlas",
+        fresh: true,
+      },
+      projectSource: projectSourceView({
+        status: "verified_current",
+        currentness: "current",
+        topGap: null,
+        nextAction: { id: "use_current_evidence" },
+      }),
+      projectSourceLabels: { ...sourceLabels, action: "현재 근거로 인계" },
+    });
+
+    fireEvent.click(screen.getByTestId("full-detail-handoff-copy"));
+    expect(writeText).toHaveBeenCalledTimes(1);
+    const copied = String(writeText.mock.calls[0]?.[0]);
+    expect(copied).toContain("PROJECT SOURCE");
+    expect(copied).toContain("projectSlug: ontology-atlas");
+    expect(copied).toContain("sourceKind: unavailable");
+    expect(copied).toContain("nextAction: use_current_evidence");
+    expect(copied).not.toContain("rootPath");
+    expect(copied).not.toContain("remote");
+  });
+});
+
+// Code location shows real file paths, distinct from `node.slug`.
+describe('FullDetail code location section', () => {
+  it("renders a heading + row for each code path when codeLocations is non-empty", () => {
+    renderFullDetail({ codeLocations: ["mcp/src/index.js", "mcp/src/verify.mjs"] });
+    expect(screen.getByText("코드 위치")).toBeInTheDocument();
+    expect(screen.getByText("mcp/src/index.js")).toBeInTheDocument();
+    expect(screen.getByText("mcp/src/verify.mjs")).toBeInTheDocument();
+  });
+
+  it("omits the section entirely when codeLocations is empty or omitted", () => {
+    renderFullDetail();
+    expect(
+      screen.getByTestId("full-detail").querySelector("[data-fulldetail-code-locations]"),
+    ).toBeNull();
+  });
+
+  it("copies the path when the row's copy button is clicked", () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    renderFullDetail({ codeLocations: ["mcp/src/index.js"] });
+    fireEvent.click(screen.getByTestId("full-detail-code-location-copy"));
+    expect(writeText).toHaveBeenCalledWith("mcp/src/index.js");
+  });
+});
+
+// Last-edit provenance and the expected_mtime conflict badge.
+describe("FullDetail — last-edit provenance", () => {
+  it("renders no subject row when the node carries no lastEditSubject fact", () => {
+    renderFullDetail();
+    expect(screen.queryByTestId("last-edit-subject-row")).not.toBeInTheDocument();
+  });
+
+  it("renders the AI agent subject row from a real, caller-resolved fact", () => {
+    renderFullDetail({
+      node: {
+        id: "domain:a",
+        title: "Domain A",
+        kind: "domain",
+        slug: "domains/a",
+        fresh: true,
+        lastEditSubject: { kind: "agent", ageLabel: "3분 전" },
+      },
+    });
+    const row = screen.getByTestId("last-edit-subject-row");
+    expect(row).toHaveAttribute("data-edit-subject-kind", "agent");
+    expect(row).toHaveTextContent("AI 에이전트");
+    expect(row).toHaveTextContent("3분 전");
+  });
+
+  it("renders the human subject row from a real, caller-resolved fact", () => {
+    renderFullDetail({
+      node: {
+        id: "domain:a",
+        title: "Domain A",
+        kind: "domain",
+        slug: "domains/a",
+        fresh: true,
+        lastEditSubject: { kind: "human", ageLabel: "어제" },
+      },
+    });
+    const row = screen.getByTestId("last-edit-subject-row");
+    expect(row).toHaveAttribute("data-edit-subject-kind", "human");
+    expect(row).toHaveTextContent("나");
+  });
+
+  it("renders no conflict badge when mtimeConflict is false/omitted", () => {
+    renderFullDetail();
+    expect(screen.queryByTestId("mtime-conflict-badge")).not.toBeInTheDocument();
+  });
+
+  it("renders the conflict badge only when the caller resolved a real mtime mismatch", () => {
+    renderFullDetail({
+      node: {
+        id: "domain:a",
+        title: "Domain A",
+        kind: "domain",
+        slug: "domains/a",
+        fresh: true,
+        mtimeConflict: true,
+      },
+    });
+    const warning = screen.getByTestId("mtime-conflict-badge");
+    expect(warning).toHaveAttribute("role", "status");
+    expect(warning.closest("[data-fulldetail-body]")).not.toBeNull();
+    expect(warning).toHaveTextContent(messages.editProvenance.conflictMessage);
+  });
+});

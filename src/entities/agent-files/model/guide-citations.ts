@@ -68,7 +68,6 @@ const CITATIONS: Readonly<Record<string, GuideCitation>> = Object.freeze({
   'copilot-instructions:copilot': { source: COPILOT_INSTRUCTIONS },
 });
 
-/** `null` when uncited. */
 export function guideCitation(ruleId: string, tool: AgentTool): GuideCitation | null {
   return CITATIONS[`${ruleId}:${tool}`] ?? null;
 }

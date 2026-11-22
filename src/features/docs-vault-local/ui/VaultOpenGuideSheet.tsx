@@ -29,16 +29,13 @@ import { CloseButton } from "@/shared/ui/controls/close-button";
 export interface VaultOpenGuideSheetProps {
   open: boolean;
   onClose: () => void;
-  /** Closes the sheet and opens the OS folder picker (`vault.open()`). */
   onPickExisting?: () => void;
-  /** Closes the sheet and enters the scaffold flow. */
   onCreateNew?: () => void;
   /**
    * Without the File System Access API both buttons would do nothing, so an honest notice and the
    * macOS app path replace them before anything is pressed.
    */
   unsupported?: boolean;
-  /** A caller's own closing section under the actions, such as the first-run card's terminal start. */
   lastSection?: ReactNode;
 }
 
@@ -171,7 +168,6 @@ export function VaultOpenGuideSheet({
                 hidden={unsupported}
                 onClick={onPickExisting}
                 data-testid="vault-guide-pick-existing"
-                /* The two stacked buttons are one set, so both are `chip`/`lg` and share a height. */
                 className={controlClass({
                   shape: "chip",
                   size: "lg",

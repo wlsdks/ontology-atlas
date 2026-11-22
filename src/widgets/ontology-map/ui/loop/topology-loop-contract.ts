@@ -1,13 +1,20 @@
-import type { NeuralLabels } from "../frame-draw/paint-neural";
-import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet, MapArrangement, MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";
+import type { NeuralLabels } from "../frame-draw/neural/paint-neural";
+import type {
+  CanvasBackground,
+  GlyphSet,
+} from "@/shared/lib/preferences/canvas-appearance-preferences";
+import type { ExpandPreference } from "@/shared/lib/preferences/expand-preferences";
+import type { FootprintPreference } from "@/shared/lib/preferences/footprint-preferences";
+import type { MapNavigationSpeed } from "@/shared/lib/preferences/map-navigation-speed-preferences";
+import type { MapArrangement } from "@/shared/lib/preferences/map-view-preferences";
 import type { RefObject } from "react";
 import type { DialFrameSummary } from "../../dial/frame/frame";
-import type { DialEvidence, DialLabels, DialMemory } from "../../dial/types";
+import type { DialEvidence, DialLabels, DialMemory } from "../../dial/dial-shapes";
 import type { TopologyMapLensKind } from "../../model/visibility/path-lens";
 import type { SelectionSource } from "../../model/camera/flat-selection-camera";
-import { type TierNameAnchor } from "../../model/dome-view/tier-names";
+import { type TierNameAnchor } from "../../model/dome-view/strata/tier-names";
 import { type TierRevealConfig, type ZoomTier } from "../../model/visibility/tier-visibility";
-import type { ClusterBarLabels } from "../../render/cluster-chips";
+import type { ClusterBarLabels } from "../../render/cluster-chips/control-placement";
 import type { HoverAvoidRect } from "../input/topology-pointer-types";
 
 import type { OntologyMapProps } from "../OntologyMap";
@@ -50,13 +57,8 @@ export interface UseTopologyLoopArgs {
   constellationFocusId?: string | null;
   relayoutToken: number;
   /**
-   * The first-map reveal. On increment every node starts at the spine centre
-   * (the project's position) and springs home, so the moment reads as "my
-   * documents gathered" rather than "something was generated".
-   *
-   * Fires on bootstrap completion only — never on an ordinary load, where the
-   * animation would just delay the map. Under reduced-motion the homing snap
-   * path arrives immediately.
+   * The first-map reveal: on increment every node starts at the spine centre (the project's position) and springs home, so
+   * the moment reads as "my documents gathered". It fires on bootstrap completion only, never on an ordinary load, and snaps under reduced motion.
    */
   revealToken?: number;
   onSelectEdge?: (edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null; }) => void;
@@ -83,7 +85,7 @@ export interface UseTopologyLoopArgs {
   onDrawnCountChange?: (drawn: number) => void;
   /**
    * Where each Strata tier name stands this frame, beside its plane's rim, in canvas
-   * CSS px (`model/dome-view/tier-names.ts`). Emitted only when a name moved by more than half a
+   * CSS px (`model/dome-view/strata/tier-names.ts`). Emitted only when a name moved by more than half a
    * pixel, so an idle frame does not re-render the overlay, and `null` whenever the
    * arrangement is not Strata or its rings are not up yet.
    */
@@ -101,18 +103,15 @@ export interface UseTopologyLoopArgs {
   /** Right-click on empty canvas — "create a concept here". */
   onContextMenuPane?: (position: { x: number; y: number; }) => void;
   /**
-   * W6 agent visibility — the graph node id matching the agent heartbeat's
+   * The graph node id matching the agent heartbeat's
    * current focus (already resolved to `kind:slug` form upstream, or `null`
    * when there's no fresh focus). Drives the amber agent-focus ring + label
    * activity mark; `null`/omitted draws neither (fabrication 0).
    */
   agentFocusNodeId?: string | null;
   /**
-   * Recent-change spotlight. Non-null turns the lens on: nodes and edges
-   * outside this set sink to `--map-spotlight-rest-alpha`. The on/off
-   * transition reuses the focusDimTau ramp (<200 ms perceived) and arrives
-   * immediately under reduced-motion. The set itself is built by HomePage from
-   * the `?recent=` window's mtime arithmetic (`useAdaptiveRecentChanges`).
+   * Recent-change spotlight: non-null turns the lens on and nodes and edges outside the set sink to `--map-spotlight-rest-alpha`,
+   * on the focusDimTau ramp (immediate under reduced motion). HomePage builds the set from the `?recent=` window (`useAdaptiveRecentChanges`).
    */
   spotlightIds?: ReadonlySet<string> | null;
   mapLensKind?: TopologyMapLensKind;
@@ -133,7 +132,7 @@ export interface UseTopologyLoopArgs {
   onToggleCluster?: (parentId: string) => void;
   /** Cluster-chip hover tooltip. Fires only when the identified chip changes; null clears. */
   onHoverCluster?: (
-    info: {
+    cluster: {
       parentId: string;
       /** Direct children collapsed by the density gate at this tier (the chip's `+N`). */
       count: number;
@@ -165,18 +164,10 @@ export interface UseTopologyLoopArgs {
    */
   visitedTrail?: readonly string[];
   /**
-   * Whether the trail lens is on, as a **ref** — true while the trail popover
-   * is open. The map briefly stops being read for relations and yields to
-   * being read for a path: only the `visitedTrail` nodes keep their values and
-   * labels, everything else recedes to the existing dim values. This is not a
-   * new mode, toggle, or URL state — it is **equivalent** to the popover being
-   * open (transient-surface contract).
-   *
-   * A ref rather than a value for the same reason as brushing: promoting it to
-   * state re-renders the whole page tree on every lens toggle, and the
-   * transition frame jumps into the 100 ms range (measured). The loop reads it
-   * every frame, and the idle gate wakes itself by comparing against the lens
-   * state it last drew, so the same transition costs zero renders.
+   * Whether the trail lens is on, as a ref: true while the trail popover is open. Only the `visitedTrail` nodes keep their values and
+   * labels while everything else recedes to the dim values; it is no new mode or URL state but equivalent to the popover being open.
+   * A ref because state re-renders the whole page tree on every toggle (the transition frame jumps to ~100 ms, measured); the loop reads
+   * it every frame and the idle gate wakes by comparing against the lens state it last drew.
    */
   trailLensActiveRef?: RefObject<boolean>;
   /**
@@ -185,16 +176,8 @@ export interface UseTopologyLoopArgs {
    */
   clusterBarLabels?: ClusterBarLabels | null;
   /**
-   * Trail brushing — a **ref** holding the node id of the popover row under
-   * hover/focus. While the lens is on, the map borrows its own hover channel
-   * to draw the existing hover preview ring on that node, answering "which one
-   * was two steps ago" by pointing instead of numbering.
-   *
-   * A ref rather than a value because hover changes continuously as the cursor
-   * sweeps rows, and each change through React state re-renders the entire
-   * HomePage tree (measured 68–109 ms, enough to feel sticky). The frame loop
-   * already reads refs every frame, so it reaches the same result with zero
-   * renders.
+   * Trail brushing: a ref holding the node id of the popover row under hover/focus, so the map draws the existing hover preview ring
+   * on that node. A ref because state re-renders the whole HomePage tree on every row change (68-109 ms measured); the frame loop reads refs every frame.
    */
   trailHoverNodeIdRef?: RefObject<string | null>;
   /**
@@ -203,11 +186,8 @@ export interface UseTopologyLoopArgs {
    */
   panelHoverNodeIdRef?: RefObject<string | null>;
   /**
-   * Tier gate config for the display lens. Omitted means `DEFAULT_TIER_REVEAL`
-   * (developer mode — capability and element both respond to zoom normally).
-   * In plain mode HomePage passes `PLAIN_TIER_REVEAL`, which hides elements
-   * outright. Draw, hit-testing, and pan clamping all agree because they read
-   * this one value.
+   * Tier gate config for the display lens. Omitted means `DEFAULT_TIER_REVEAL` (developer mode); plain mode passes `PLAIN_TIER_REVEAL`,
+   * which hides elements outright. Draw, hit-testing and pan clamping read this one value.
    */
   tierReveal?: TierRevealConfig;
   /**

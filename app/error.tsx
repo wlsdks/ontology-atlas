@@ -9,10 +9,6 @@ interface Props {
   reset: () => void;
 }
 
-/**
- * Root error boundary. It replaces the locale layout, so the screen mounts its own locale
- * provider and reads the `routeError` messages in the visitor's language.
- */
 export default function RouteError({ error, reset }: Props) {
   useEffect(() => {
     console.error("[route-error]", error);

@@ -5,8 +5,6 @@ import { flattenTree, type OntologyTreeNode } from "@/entities/knowledge-graph";
  * same `buildOntologyTree` result the row renders so the numbers cannot drift.
  */
 export interface DomainSubcounts {
-  /** Total descendant nodes (capabilities + elements, recursively) — the
-   * engraved right-aligned total shown next to the domain title. */
   descendantCount: number;
   capabilityCount: number;
   elementCount: number;
@@ -29,7 +27,6 @@ export function computeCapacityRatio(count: number, maxCount: number): number {
   return Math.min(1, Math.max(0, count / maxCount));
 }
 
-/** The meter denominator: the largest sibling domain's descendant count. */
 export function computeMaxDomainDescendantCount(
   domains: readonly OntologyTreeNode[],
 ): number {

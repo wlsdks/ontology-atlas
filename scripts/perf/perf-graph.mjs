@@ -142,9 +142,9 @@ function generateDocs(n) {
   return docs.slice(0, n);
 }
 
-function measure(label, fn) {
+function measure(label, callback) {
   const start = performance.now();
-  const value = fn();
+  const value = callback();
   return { label, ms: performance.now() - start, value };
 }
 

@@ -2,10 +2,6 @@
 
 import { AtlasGitPanel, useAtlasGitContext } from "@/widgets/atlas-git-panel";
 
-/**
- * The history destination, work you stay in rather than a modal, shown to every audience so the
- * rail's item count never varies. `AtlasGitPanel` is the whole body.
- */
 export function GitPage() {
   const { vaultPath, changeset, graph } = useAtlasGitContext();
 

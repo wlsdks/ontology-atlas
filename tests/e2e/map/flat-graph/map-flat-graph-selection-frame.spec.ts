@@ -5,7 +5,7 @@ import { seedFirstRunSeen } from "../../first-run-seed";
 import { waitForMapStill } from "../../settle";
 import { elementsByContainer } from "./domain-star";
 import { stubDirectoryPicker } from "../../vault-picker-stub";
-import type { Box, DialProbe } from "../../../../src/widgets/ontology-map/dial/types";
+import type { Box, DialProbe } from "../../../../src/widgets/ontology-map/dial/dial-shapes";
 
 /**
  * Headless Chromium on Linux hints web fonts and rounds each glyph to whole pixels, which makes a

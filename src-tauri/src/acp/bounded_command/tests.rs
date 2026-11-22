@@ -1,7 +1,7 @@
 use super::*;
 
-/// Uses `node`, which every platform building this repo has; missing `/bin/echo`
-/// on Windows made a spawn failure look like a working timeout.
+/// Uses `node`, which every platform building this repo has; `/bin/echo` is absent on Windows, where a
+/// spawn failure would look like a working timeout.
 fn node_command(script: &str) -> std::process::Command {
     let mut cmd = std::process::Command::new("node");
     cmd.args(["-e", script]);

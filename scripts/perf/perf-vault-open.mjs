@@ -25,10 +25,7 @@ const WORK = join(tmpdir(), 'atlas-perf-vault-open');
 const REPORT = join(WORK, 'report.jsonl');
 const MB = 1024 * 1024;
 
-/**
- * Limits from the 2026-11-19 derived-index plan, slice 2. Before: the app's build from files took
- * 1.7 s CPU at 10,000 files and 9.0 s at 50,000, holding 261 to 271 MB of heap at 50,000.
- */
+/** Limits for the derived-index reopen; the app's build from files took 9.0 s CPU at 50,000 files before the index. */
 const LIMITS = {
   reopenMs: { 10000: 1000, 50000: 3000 },
   rowsRatio: 0.9,
@@ -51,7 +48,7 @@ function parseArgs(argv) {
 }
 
 /** Rows are refused for files modified within two seconds of being seen; a vault written just now is dated back. */
-function dateBack(dir) {
+function dateBack(directory) {
   const then = new Date(Date.now() - 60_000);
   const visit = (folder) => {
     for (const entry of readdirSync(folder, { withFileTypes: true })) {
@@ -60,22 +57,22 @@ function dateBack(dir) {
       else if (entry.name.endsWith('.md')) utimesSync(path, then, then);
     }
   };
-  visit(dir);
+  visit(directory);
 }
 
 function prepare(files, shape) {
-  const dir = join(WORK, `${shape}-${files}`);
+  const directory = join(WORK, `${shape}-${files}`);
   const indexDir = join(WORK, `index-${shape}-${files}`);
-  if (!existsSync(join(dir, 'atlas.md'))) {
-    rmSync(dir, { recursive: true, force: true });
-    mkdirSync(dir, { recursive: true });
-    generateScaleVault(dir, files, shape);
+  if (!existsSync(join(directory, 'atlas.md'))) {
+    rmSync(directory, { recursive: true, force: true });
+    mkdirSync(directory, { recursive: true });
+    generateScaleVault(directory, files, shape);
   }
-  dateBack(dir);
+  dateBack(directory);
   rmSync(indexDir, { recursive: true, force: true });
   // The search index beside the rows, so both files' size is measured together.
-  execFileSync(BENCH, ['build', dir], { env: { ...process.env, OATLAS_INDEX_DIR: indexDir }, stdio: 'ignore' });
-  return { dir, files, shape, indexDir };
+  execFileSync(BENCH, ['build', directory], { env: { ...process.env, OATLAS_INDEX_DIR: indexDir }, stdio: 'ignore' });
+  return { dir: directory, files, shape, indexDir };
 }
 
 const { files, shapes, check, keep } = parseArgs(process.argv.slice(2));

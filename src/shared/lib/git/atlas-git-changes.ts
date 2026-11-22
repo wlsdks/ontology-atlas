@@ -1,16 +1,8 @@
 /**
- * Atlas Git — the pure change-summary logic (no I/O, no React).
- *
- * Three surfaces (the CLI `cli/src/lib/git/git-snapshot.mjs`, Rust
- * `src-tauri/src/git/changes.rs`, and the web panel) must report "added/modified/deleted
- * per kind, plus sample slugs" using the same formula, so the CLI's
- * parsePorcelain / classifyChange / formatSnapshotSummary are mirrored here in TS.
- * `tests/contract/vault-format/atlas-git-summary.contract.test.ts` runs the same fixtures
- * through both and fails the moment either side drifts.
- *
- * The web panel's real input is `files: ChangeEntry[]` (path/status/kind/slug),
- * already classified by the Rust IPC; the porcelain parser exists for that
- * contract check and for any future raw-porcelain consumer.
+ * Mirrors the change summary of `cli/src/lib/git/git-snapshot.mjs` and
+ * `src-tauri/src/git/changes.rs`; `atlas-git-summary.contract.test.ts` runs the same fixtures
+ * through both. The panel's input arrives classified by Rust; the porcelain parser serves the
+ * contract.
  */
 
 export type AtlasGitChangeStatus = "added" | "modified" | "deleted" | "renamed";
@@ -48,13 +40,7 @@ export interface AtlasGitKindGroup<T extends AtlasGitChangeLike = AtlasGitChange
   counts: AtlasGitStatusCounts;
   /** The group's representative slugs, in order of appearance; the caller truncates. */
   slugs: string[];
-  /**
-   * The original change entries, in order of appearance. `slugs` is the short list
-   * for the summary sentence; this is what **per-entry rendering** needs, because a
-   * row also has to show the status and the path. Returning slugs alone would force
-   * consumers to walk the source array again and look entries up by slug — which is
-   * wrong whenever the same slug exists under two kinds.
-   */
+  /** For per-entry rendering: a lookup by slug is wrong when one slug exists under two kinds. */
   entries: T[];
 }
 
@@ -81,7 +67,6 @@ export function parsePorcelainStatus(out: string): AtlasGitPorcelainRow[] {
   return rows;
 }
 
-/** Mirror of the CLI's classifyChange — a porcelain row → a status. */
 export function classifyPorcelainChange(
   row: Pick<AtlasGitPorcelainRow, "index" | "worktree">,
 ): AtlasGitChangeStatus {
@@ -91,7 +76,6 @@ export function classifyPorcelainChange(
   return "modified";
 }
 
-/** Counts per status — same formula as the Rust `SnapshotCounts`. */
 export function countChangesByStatus(
   changes: readonly AtlasGitChangeLike[],
 ): AtlasGitStatusCounts {
@@ -136,10 +120,8 @@ export function groupChangesByKind<T extends AtlasGitChangeLike>(
 }
 
 /**
- * Mirror of the CLI's formatSnapshotSummary — a one-line commit summary in meaning
- * units, e.g. `ontology snapshot: +2 concepts, ~1 updated (capabilities/foo,
- * elements/bar, +1)`. The snapshot confirmation step shows it as the "this is what
- * will be committed" preview.
+ * Mirror of the CLI's formatSnapshotSummary, e.g. `ontology snapshot: +2 concepts, ~1 updated
+ * (capabilities/foo, elements/bar, +1)`.
  */
 export function formatSnapshotSummary(changes: readonly AtlasGitChangeLike[]): string {
   const { added, modified, deleted, renamed } = countChangesByStatus(changes);

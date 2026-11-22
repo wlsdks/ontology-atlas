@@ -1,0 +1,114 @@
+/** Total relations a node holds, in either direction. */
+export function nodeDegree(node) {
+  return (node.inDegree || 0) + (node.outDegree || 0);
+}
+
+/** Whether a node meets every filter given to `match_nodes`; a null filter means "any". */
+export function nodeMatchesFilters(
+  node,
+  { kind, domain, slugContains, minDegree, maxDegree, minInDegree, minOutDegree, hasIncoming, hasOutgoing },
+) {
+  const inDegree = node.inDegree || 0;
+  const outDegree = node.outDegree || 0;
+  const degree = inDegree + outDegree;
+  if (kind && node.kind !== kind) return false;
+  if (domain && node.domain !== domain) return false;
+  if (slugContains && !node.slug.toLowerCase().includes(slugContains)) return false;
+  if (minDegree !== null && degree < minDegree) return false;
+  if (maxDegree !== null && degree > maxDegree) return false;
+  if (minInDegree !== null && inDegree < minInDegree) return false;
+  if (minOutDegree !== null && outDegree < minOutDegree) return false;
+  if (hasIncoming !== null && (inDegree > 0) !== hasIncoming) return false;
+  if (hasOutgoing !== null && (outDegree > 0) !== hasOutgoing) return false;
+  return true;
+}
+
+/** Whether an edge ends at a node of `toKind`; an external or unresolved edge ends at the pseudo kinds of those names. */
+export function edgeTargetKindMatches(edge, toNode, toKind) {
+  if (edge.resolved) return toNode?.kind === toKind;
+  if (edge.external) return toKind === 'external';
+  return toKind === 'unresolved';
+}
+
+/** The kind a result row reports for where an edge ends. */
+export function edgeTargetKindLabel(edge, toNode) {
+  return edge.resolved ? toNode?.kind || 'unknown' : edge.external ? 'external' : 'unresolved';
+}
+
+function relationCheckRecommendation({ existing, inverse, matchedPattern, fromKind, relation, toKind }) {
+  if (existing.length > 0) {
+    return {
+      decision: 'skip_existing',
+      severity: 'info',
+      reason: 'Exact edge already exists; do not add another relation.',
+    };
+  }
+  if (inverse.length > 0) {
+    return {
+      decision: 'review_inverse',
+      severity: 'warn',
+      reason: 'Reverse edge with the same relation already exists; inspect direction before adding.',
+    };
+  }
+  if (matchedPattern) {
+    return {
+      decision: 'safe_to_add',
+      severity: 'info',
+      reason: `No exact or inverse edge found; ${fromKind} --${relation}--> ${toKind} is an existing schema pattern.`,
+    };
+  }
+  return {
+    decision: 'review_new_schema',
+    severity: 'warn',
+    reason: `No exact or inverse edge found; ${fromKind} --${relation}--> ${toKind} would introduce a new schema pattern.`,
+  };
+}
+
+/**
+ * What `relation_check` concludes about a proposed edge: whether it exists, what to do, and the
+ * write that would add it. A new `dependencies` edge never carries a ready write: it needs the
+ * agent to state the ability that fails without the target and a person to approve the direction.
+ */
+export function judgeRelationCheck({
+  existing, inverse, matchedPattern, from, to, fromKind, relation, toKind, writeRelationType,
+}) {
+  const verdict = existing.length > 0
+    ? 'already_exists'
+    : matchedPattern
+      ? 'matches_existing_schema'
+      : 'new_schema_pattern';
+  const recommendation = relationCheckRecommendation({
+    existing,
+    inverse,
+    matchedPattern,
+    fromKind,
+    relation,
+    toKind,
+  });
+  const semanticDependencyPending = existing.length === 0 && relation === 'dependencies';
+  const proposedAction = existing.length > 0 || semanticDependencyPending
+    ? null
+    : {
+        tool: 'add_relation',
+        args: {
+          from,
+          to,
+          type: writeRelationType(relation),
+        },
+      };
+  const approvalGate = semanticDependencyPending
+    ? {
+        status: 'semantic_approval_required',
+        writeAllowed: false,
+        required: [
+          'observable_ability',
+          'semantic_rationale',
+          'explicit_human_approval',
+          'why',
+        ],
+        next:
+          'Explain which observable ability fails without the target, ask for approval of the exact direction and rationale, then call add_relation with a nonblank why.',
+      }
+    : null;
+  return { verdict, recommendation, proposedAction, approvalGate };
+}

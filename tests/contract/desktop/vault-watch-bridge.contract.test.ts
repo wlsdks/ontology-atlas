@@ -27,7 +27,7 @@ describe("folder watch bridge", () => {
   });
 
   it("front-end side: there is a bridge that really listens for that event", () => {
-    const bridge = read("src/entities/vault-session/model/TauriVaultWatchBridge.tsx");
+    const bridge = read("src/entities/vault-session/model/vault-provider/TauriVaultWatchBridge.tsx");
     expect(bridge).toContain("start_vault_watch");
     expect(
       bridge,

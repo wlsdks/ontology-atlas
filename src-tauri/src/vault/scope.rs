@@ -1,4 +1,4 @@
-use crate::vault_grants;
+use super::grants;
 use std::fs;
 use std::path::{Component, Path, PathBuf};
 
@@ -31,7 +31,7 @@ pub(crate) fn canonical_root(root_path: &str) -> Result<PathBuf, String> {
     // The renderer chooses this argument; with an XSS it would choose the home
     // directory. Only a root the user actually granted (picker, app container,
     // restored prior choice) may be operated on.
-    if !vault_grants::is_vault_granted(&root) {
+    if !grants::is_vault_granted(&root) {
         return Err("vault-root-not-granted".into());
     }
     Ok(root)
@@ -45,7 +45,7 @@ pub(crate) fn canonical_source_root(root_path: &str) -> Result<PathBuf, String> 
     if !metadata.is_dir() {
         return Err("vault root must be a directory".into());
     }
-    if !vault_grants::is_source_granted(&root) {
+    if !grants::is_source_granted(&root) {
         return Err("source-root-not-granted".into());
     }
     Ok(root)

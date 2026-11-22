@@ -14,30 +14,18 @@ import {
 } from "./doc-tabs";
 import { scheduleStateSync } from "../persistence";
 
-/**
- * Wires `doc-tabs.ts` to `DocsVaultPage`. It never decides the active tab: the URL `?slug=`
- * does. The caller calls `openTab` on `selectedSlug` changes and the strip's `×` calls `closeTab`.
- */
-
 export interface UseOpenDocTabsArgs {
-  /** Reuses `useDocsVaultPersistence`'s `recentKey` ('server' | `local:<handle.name>`). */
   sourceKey: string;
-  /** Tabs for slugs missing here are pruned quietly. */
   validSlugs: ReadonlySet<string>;
-  /** Hidden tabs stay persisted for another reader. */
   visibleSlugs?: ReadonlySet<string>;
 }
 
 export interface UseOpenDocTabsResult {
   tabs: DocTab[];
   hydrated: boolean;
-  /** Restored once by the caller when there is no URL deeplink. */
   restoredActiveSlug: string | null;
-  /** Only an explicit user selection is remembered under the active key. */
   rememberActiveSlug: (slug: string) => void;
-  /** Activates (and retitles) an open tab, otherwise adds one with LRU eviction. */
   openTab: (slug: string, title: string) => void;
-  /** Returns the next slug to activate synchronously, or null for the last tab. */
   closeTab: (slug: string, activeSlug: string | null) => string | null;
 }
 
@@ -52,7 +40,6 @@ export function useOpenDocTabs({
     sourceKey: string;
     slug: string | null;
   } | null>(null);
-  // A ref keeps `openTab` and `closeTab` stable across sourceKey changes.
   const sourceKeyRef = useRef(sourceKey);
 
   // Replace the tab set wholesale on a vault change so tabs never leak between vaults. Read
@@ -72,14 +59,14 @@ export function useOpenDocTabs({
   // Guarded so an empty `validSlugs` while loading does not clear everything.
   useEffect(() => {
     if (validSlugs.size === 0) return;
-    setTabs((prev) => {
-      const next = pruneMissingDocTabs(prev, validSlugs);
-      if (next !== prev) storeDocTabs(sourceKeyRef.current, next);
+    setTabs((previous) => {
+      const next = pruneMissingDocTabs(previous, validSlugs);
+      if (next !== previous) storeDocTabs(sourceKeyRef.current, next);
       return next;
     });
   }, [validSlugs]);
 
-  // Merge from storage, never from state: before hydration `prev` is empty, and right after a
+  // Merge from storage, never from state: before hydration `previous` is empty, and right after a
   // vault switch it holds the previous vault's tabs.
   const openTab = useCallback((slug: string, title: string) => {
     setTabs(() => {

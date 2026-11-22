@@ -1,4 +1,4 @@
-import type { SettingsCatalogEntry } from './types';
+import type { SettingsCatalogEntry } from './settings-catalog-entry';
 
 export const EXPAND_CATALOG: readonly SettingsCatalogEntry[] = [
   { id: 'expand-affordance', section: 'expand', labelKey: 'nav.settingsMenu.expand.affordanceLabel', surface: 'both' },

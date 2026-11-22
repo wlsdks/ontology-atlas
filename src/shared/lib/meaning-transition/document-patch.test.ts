@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { previewDocumentPatch as browserPreview } from './document-patch.mjs';
-import { previewDocumentPatch as mcpPreview } from '../../../../mcp/src/vault/document-patch.mjs';
+import { previewDocumentPatch as mcpPreview } from '../../../../mcp/src/vault/writes/document-patch.mjs';
 
 describe('document patch cross-runtime bridge', () => {
   it('exposes the canonical MCP formatter without a second implementation', () => {

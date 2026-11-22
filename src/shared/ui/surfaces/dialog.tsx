@@ -24,7 +24,6 @@ import { transientSurface } from "./transient-surface";
 
 export interface DialogProps {
   open: boolean;
-  /** Escape, a scrim click and the consumer's close button all go through this. */
   onClose: () => void;
   /**
    * Two fixed prompt widths; `lg`, a reading sheet whose column owns its scroll and that becomes
@@ -47,7 +46,6 @@ export interface DialogProps {
   testId?: string;
   /** Runs once the closing motion has left the screen, for a close that leads somewhere else. */
   onExited?: () => void;
-  /** Layout only; do not override the token contract. */
   className?: string;
   children: ReactNode;
 }

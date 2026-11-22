@@ -1,33 +1,8 @@
 /**
- * Ontology interop serializers — turn a compiled ontology graph into portable
- * standard exchange formats (JSON-LD 1.1 and GraphML) that academic /
- * data-science / graph-database tooling reads directly (Neo4j, Gephi,
- * Cytoscape, rdflib, Protégé).
- *
- * Input is the deterministic *compile artifact shape*:
- *
- *     { nodes: [{ uid, slug, kind, title, domain? }],
- *       edges: [{ from, to, via }] }
- *
- * — the same node/edge records `mcp/src/ontology-compiler.mjs` emits. Node
- * identity is the node's permanent UUIDv4:
- *
- *     urn:uuid:<uid>
- *
- * Interop contract with external tools: an export is a *snapshot*; the
- * compiler's `graphHash` is its *version*. Consumers key on the UID URN;
- * renaming the readable slug does not mint a new identity.
- *
- * Mirror copy: `cli/src/lib/export-format/interop-format.mjs` (the CLI `export` command +
- * the source the MCP compiler feeds). The contract test
- * `tests/contract/vault-format/interop-format.contract.test.ts` keeps the two in lock-step —
- * the same input must yield byte-identical output. If you change anything here,
- * mirror it there (and vice versa).
- *
- * Pure + deterministic: no ambient state, no time, endpoints sorted internally
- * so output does not depend on input ordering. Edges whose `from`/`to` do not
- * both resolve to an emitted node are dropped — an interop snapshot never mints
- * phantom nodes for dangling/external refs.
+ * Node identity is `urn:uuid:<uid>`, so renaming a slug mints no new identity. Mirror of
+ * `cli/src/lib/export-format/interop-format.mjs`: `interop-format.contract.test.ts` requires
+ * byte-identical output, so change both. Edges are sorted, and an edge whose ends were not both
+ * emitted is dropped rather than inventing nodes.
  */
 
 const INTEROP_URN_BASE = 'urn:uuid';
@@ -57,11 +32,9 @@ export interface InteropGraph {
 }
 
 /**
- * Every graph edge key the compiler can emit as `via`, mapped to its oatlas
- * predicate term. Keep in sync with `mcp/src/vault/` NEIGHBOR_KEYS +
- * INLINE_NEIGHBOR_KEYS (`dependencies` is the canonical form of `depends_on`).
- * An unknown `via` falls back to an `oatlas:<via>` term so a new edge type is
- * never silently dropped.
+ * Every graph edge key the compiler can emit as `via`, mapped to its oatlas predicate term; keep in
+ * sync with `mcp/src/vault/` NEIGHBOR_KEYS + INLINE_NEIGHBOR_KEYS. An unknown `via` becomes
+ * `oatlas:<via>` so no edge type is dropped silently.
  */
 const VIA_PREDICATE: Record<string, string> = {
   domains: 'domains',
@@ -157,10 +130,7 @@ function normalizeGraph(graph: InteropGraph): {
   return { nodes, nodeBySlug, edges };
 }
 
-/**
- * JSON-LD 1.1 — `@context` + `@graph`. RDF 1.1 compatible; semantic-web tools
- * (rdflib, Protégé, any triplestore) read it directly.
- */
+/** JSON-LD 1.1 (`@context` + `@graph`); RDF 1.1 tools read it directly. */
 export function buildJsonLd(graph: InteropGraph): string {
   const { nodes, nodeBySlug, edges } = normalizeGraph(graph);
 
@@ -213,9 +183,6 @@ export function buildJsonLd(graph: InteropGraph): string {
   return JSON.stringify({ '@context': context, '@graph': graphNodes }, null, 2) + '\n';
 }
 
-/**
- * GraphML — XML graph format that Gephi / Cytoscape import natively.
- */
 export function buildGraphML(graph: InteropGraph): string {
   const { nodes, nodeBySlug, edges } = normalizeGraph(graph);
   const lines: string[] = [];

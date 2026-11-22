@@ -109,10 +109,10 @@ describe('ProjectDrawer impact mode help', () => {
     const downstream = screen.getByRole("radio", { name: /^영향 —/ });
     const network = screen.getByRole("radio", { name: /^네트워크 —/ });
 
-    const titles = [none, upstream, downstream, network].map((btn) =>
-      btn.getAttribute("title"),
+    const titles = [none, upstream, downstream, network].map((button) =>
+      button.getAttribute("title"),
     );
-    // All four have a value and none overlap — previously there was no title at all.
+    // All four have a value and none overlap.
     expect(titles.every((title) => Boolean(title))).toBe(true);
     expect(new Set(titles).size).toBe(4);
   });

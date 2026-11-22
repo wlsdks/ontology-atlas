@@ -1,11 +1,7 @@
-//! `vectors.sqlite`: search by meaning. Each Markdown file is split into passages (`passage`),
-//! each distinct passage text gets one vector from a caller-supplied embedding function, and a
-//! search ranks passages by a query vector and returns only those their file still holds.
-//!
-//! Vectors are content-addressed by the passage's SHA-256, so a rename or a move sends nothing and
-//! a stopped or killed build resumes without asking for a stored passage again. Disk holds int8
-//! vectors; a `Searcher` holds one sign bit per component in memory for the first pass and
-//! rescores its short list from the int8 rows. The crate never learns where vectors come from.
+//! `vectors.sqlite`: search by meaning. Each file is split into passages (`passage`), each distinct passage
+//! text gets one vector from a caller-supplied embedding function, and a search returns only passages their file still holds.
+//! Vectors are addressed by the passage's SHA-256, so a rename sends nothing and a killed build resumes without
+//! re-asking. Disk holds int8 vectors; a `Searcher` holds one sign bit per component in memory and rescores from int8.
 
 mod nearest;
 mod plan;
@@ -125,7 +121,6 @@ fn new_store_id() -> String {
     format!("{}-{}-{made}", now_ns(), std::process::id())
 }
 
-/// Adds `changed` to the count of changes to which vectors files hold.
 fn count_held_changes(conn: &Connection, changed: u64) -> rusqlite::Result<()> {
     if changed == 0 {
         return Ok(());
@@ -241,7 +236,6 @@ pub fn completed(root: &Path, model: &Model) -> Result<bool> {
     Ok(read_meta(&conn, META_COMPLETED)?.is_some())
 }
 
-/// One passage as search by meaning embeds it, for tools that measure search quality.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PassageText {
     /// 1-based, inclusive, in the file as written.
@@ -267,10 +261,8 @@ pub fn passages_of(raw: &str) -> (Vec<PassageText>, usize) {
     (texts, over)
 }
 
-/// What the store holds for one vault and model.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Status {
-    /// Files whose passages the store knows.
     pub files: u64,
     /// Files with every passage stored and none beyond the per-file cap.
     pub files_ready: u64,
@@ -281,7 +273,6 @@ pub struct Status {
     pub passages_stored: u64,
     /// Passages beyond the per-file cap, which are never prepared.
     pub passages_not_prepared: u64,
-    /// What `vectors_bytes` reports.
     pub bytes: u64,
 }
 

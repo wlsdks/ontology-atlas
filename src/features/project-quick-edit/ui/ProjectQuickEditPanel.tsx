@@ -23,11 +23,9 @@ interface Props {
   project: Project;
   documentNewHref?: string | null;
   settingsHref?: string | null;
-  /** `ghost` alone; `outline` when the caller's control row is a primary plus outline siblings. */
   triggerVariant?: "ghost" | "outline";
   /** The localized name the page shows, so the hint says which key holds it; the field edits the title. */
   displayName?: string | null;
-  /** The locale `displayName` belongs to, named in the hint as the key that holds it. */
   displayLocale?: string;
 }
 
@@ -38,17 +36,14 @@ interface QuickEditValues {
   tags: string;
 }
 
-// The canonical control: `--control-h-lg` (40px) height, rounded-chip, five surface steps.
 const FIELD_INPUT_CLASS = fieldClass({ size: "lg", className: "mt-1.5 w-full" });
 
-/* The way out to full edit: a quiet text control on the footer row. */
 const TERTIARY_LINK_CLASS = controlClass({
   shape: "link",
   className:
     "touch-hit-expand text-body underline-offset-2 hover:text-[color:var(--color-indigo-accent)] hover:underline",
 });
 
-/** The canonical form label — plain text label plus a muted "(optional)" hint on optional fields. */
 function FieldLabel({
   children,
   optional,
@@ -218,7 +213,6 @@ export function ProjectQuickEditPanel({
   const handleSubmit = async () => {
     const nextPatch = toProjectPatch(values);
 
-    // Only the name is required.
     if (!nextPatch.name?.trim()) {
       setError({ sentence: t("errorEmpty"), detail: null });
       return;
@@ -254,7 +248,6 @@ export function ProjectQuickEditPanel({
     <>
       <Button
         type="button"
-        /* Joins the hero row's weights when told; otherwise `ghost`. */
         variant={open ? "outline" : triggerVariant}
         size="sm"
         data-testid="public-quick-edit-toggle"
@@ -377,7 +370,6 @@ export function ProjectQuickEditPanel({
             ) : null}
           </div>
 
-          {/* Footer: full edit on the left, revert and apply on the right, all on the 40px step. */}
           <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-2 border-t border-[color:var(--color-border-soft)] px-5 py-4">
             <div className="flex flex-wrap items-center gap-x-1 gap-y-1">
               {documentNewHref ? (

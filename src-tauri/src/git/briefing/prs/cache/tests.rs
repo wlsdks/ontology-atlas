@@ -368,9 +368,9 @@ fn interrupted_replacement_preserves_last_complete_copy_and_reclaims_owned_tempo
     let f = Fixture::new();
     store(&f, &[original(1, "last complete")]);
     let directory =
-        crate::agent_setup::open_absolute_directory_no_follow(&f.root.join("public-pr-copies"))
+        crate::confined_files::open_absolute_directory_no_follow(&f.root.join("public-pr-copies"))
             .unwrap();
-    let failed = crate::agent_setup::write_entry_atomically_with(
+    let failed = crate::confined_files::write_entry_atomically_with(
         &directory,
         c"copies.json",
         0o600,
@@ -550,9 +550,9 @@ fn cancellation_during_lock_wait_and_at_atomic_publication_keeps_prior_originals
         "prior"
     );
     let directory =
-        crate::agent_setup::open_absolute_directory_no_follow(&f.root.join("public-pr-copies"))
+        crate::confined_files::open_absolute_directory_no_follow(&f.root.join("public-pr-copies"))
             .unwrap();
-    let failed = crate::agent_setup::write_entry_atomically_with_guard(
+    let failed = crate::confined_files::write_entry_atomically_with_guard(
         &directory,
         c"copies.json",
         0o600,

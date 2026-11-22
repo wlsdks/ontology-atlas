@@ -44,7 +44,6 @@ export function pushRecentDoc(
   return next;
 }
 
-/** Migrate the single key used in v1 to the v2 namespace. Runs once. */
 export function migrateLegacyRecentDocs(): void {
   if (typeof window === 'undefined') return;
   const LEGACY = 'demo:docs-vault:recent:v1';

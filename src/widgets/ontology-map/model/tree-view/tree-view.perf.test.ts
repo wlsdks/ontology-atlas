@@ -8,7 +8,7 @@ import { createTreeProjector, TREE_POSE_REST } from "./tree-camera";
 import { TREE_MARK_BUDGET } from "./tree-detail";
 import { layoutTree } from "./tree-layout";
 import { buildTreeModel } from "./tree-model";
-import type { TreeDrawList } from "./types";
+import type { TreeDrawList } from "./tree-shapes";
 
 const BORROWED_INKS: Record<string, string> = {
   "--map-graph-project": "#9aa2ff",

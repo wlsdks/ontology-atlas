@@ -1,6 +1,6 @@
 import { ringPlan } from "./rings";
 import { branchLayout } from "./branches/layout";
-import type { Box, DialCluster, DialItem, DialMemory, DialModel, DialRing, DialScene, DialTokens, Point } from "./types";
+import type { Box, DialCluster, DialItem, DialMemory, DialModel, DialRing, DialScene, DialTokens, Point } from "./dial-shapes";
 
 type LayoutTokens = Pick<
   DialTokens,
@@ -139,10 +139,10 @@ export function layoutPackedDial(model: DialModel, order: readonly string[], tok
       const m = elementIds.length;
       const elementPitch = m <= 1 ? room : room * Math.sqrt(Math.PI / (m * PACKING)) * ROOM_FILL;
       if (!direct) elementPitches.push(elementPitch);
-      elementIds.forEach((el, j) => {
+      elementIds.forEach((elementId, j) => {
         const rr = m === 1 ? (room + hole) / 2 : Math.sqrt(hole * hole + (room * room - hole * hole) * ((j + 0.5) / m));
         const pj = phi + j * GOLDEN;
-        positions.set(el, { x: x + Math.cos(pj) * rr, y: y + Math.sin(pj) * rr });
+        positions.set(elementId, { x: x + Math.cos(pj) * rr, y: y + Math.sin(pj) * rr });
       });
       if (!direct) positions.set(itemId, { x, y });
       const item: DialItem = { id: itemId, direct, x, y, elementIds, elementPitch };

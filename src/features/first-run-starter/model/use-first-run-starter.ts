@@ -12,25 +12,18 @@ import { requestAgentChat } from '@/shared/lib/agent-chat/agent-chat-intent';
 import { useFailureSentence } from '@/shared/lib/failures/use-failure-sentence';
 import type { FailureCopy } from '@/shared/lib/failures/use-failure-sentence';
 import { deniedFolderName } from '@/entities/vault-session';
-import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { buildFromCodePrompt } from './build-from-code-prompt';
 import type { ProjectVaultLocation } from './project-vault-location';
 import { useBuildFromCode } from './use-build-from-code';
 import { useFirstRunSampleModeSettled } from './use-first-run-sample-mode-settled';
 
-/**
- * Logic behind the INDEX "get started" module: dismiss policy, open-folder and create-vault
- * actions, and Escape consumption. `visible` needs `useFirstRunSampleModeSettled()` and
- * `!dismissed`, so a restored vault hides it without extra handling. Escape is registered in the
- * capture phase so `preventDefault()` stops the bubble-phase `topology-esc-ladder` in
- * `HomePage.tsx` (see `topology-esc-ladder.ts`).
- */
+/** `visible` needs `useFirstRunSampleModeSettled()` and `!dismissed`. Escape is registered in the capture phase so `preventDefault()` stops the bubble-phase `topology-esc-ladder` in `HomePage.tsx`. */
 export function useFirstRunStarter({ mapSelectionActive = false }: { mapSelectionActive?: boolean } = {}) {
   const vault = useLocalVault();
   const locale = useLocale();
   const sampleModeSettled = useFirstRunSampleModeSettled();
   const [dismissed, setDismissed] = useState(() => readFirstRunStarterDismissed());
-  // A vault created from a screen in one language reads in that language.
   const { handleCreate, scaffolding, actionError, setActionError } =
     useVaultCreateFlow(vault, locale);
 
@@ -41,7 +34,6 @@ export function useFirstRunStarter({ mapSelectionActive = false }: { mapSelectio
     setDismissed(true);
   }, []);
 
-  // Reverses a dismiss within the session, so the guide, sample switch and folder CTA come back.
   const undismiss = useCallback(() => {
     try {
       window.sessionStorage.removeItem(FIRST_RUN_STARTER_DISMISSED_KEY);
@@ -56,11 +48,7 @@ export function useFirstRunStarter({ mapSelectionActive = false }: { mapSelectio
     await vault.open();
   }, [vault, setActionError]);
 
-  /**
-   * The door for someone who already has code. The app never calls MCP, so it hands the analysis
-   * to the agent; the map goes inside the project at `<project>/atlas` (see
-   * `project-vault-location.ts`), so the flow shows the exact path and waits before writing.
-   */
+  /** The app never calls MCP, so the door hands the analysis to the agent; the map goes inside the project at `<project>/atlas`, so the flow shows the exact path and waits before writing. */
   const build = useBuildFromCode({
     openRecord: vault.openRecent,
     handoff: useCallback((location: ProjectVaultLocation) => {
@@ -73,15 +61,9 @@ export function useFirstRunStarter({ mapSelectionActive = false }: { mapSelectio
 
   const busy =
     vault.status === 'opening' || vault.status === 'loading' || scaffolding;
-  /**
-   * Says what can be said about a failure: codes that leave `errorMessage` null or carry only an
-   * errno still map to a sentence, as `FirstRunPage` does.
-   */
+  /** Codes that leave `errorMessage` null or carry only an errno still map to a sentence. */
   const t = useTranslations('firstRunStarter');
   const failureSentence = useFailureSentence();
-  /*
-   * `actionError` is a failure code, not a sentence; see `use-vault-create-flow.ts`.
-   */
   const failure: FailureCopy | null =
     actionError !== null
       ? failureSentence(actionError, t('errorFallback'))
@@ -103,10 +85,7 @@ export function useFirstRunStarter({ mapSelectionActive = false }: { mapSelectio
                   }),
                   detail: vault.errorMessage,
                 }
-              /*
-               * `access-failed` carries a cause string: the shared lookup recognises OS signatures,
-               * and anything else falls back to this card's sentence with the English on `detail`.
-               */
+              /* `access-failed` carries a cause string: the shared lookup recognises OS signatures, and anything else falls back to this card's sentence with the English on `detail`. */
               : failureSentence(vault.errorMessage, t('errorFallback'))
         : null;
   const errorText = failure?.sentence ?? null;
@@ -134,19 +113,14 @@ export function useFirstRunStarter({ mapSelectionActive = false }: { mapSelectio
     openFolder,
     /** The screen must render `build.location` before `confirm`. */
     build,
-    /** Only the installed app has an agent to hand work to. */
     canBuildFromCode: isDesktopShell(),
     createVault: handleCreate,
     busy,
     scaffolding,
     /** Always the reader's language, never a thrown message. */
     errorText,
-    /** The machine half of the failure, only for `data-failure-detail` or the console. */
     errorDetail,
-    /**
-     * Browsers without File System Access (Safari, Firefox) degrade the primary CTA before it is
-     * pressed; `use-local-vault` sets 'unsupported' after hydration.
-     */
+    /** Browsers without File System Access degrade the primary CTA before it is pressed; `use-local-vault` sets 'unsupported' after hydration. */
     fsaUnsupported: vault.status === 'unsupported',
   };
 }

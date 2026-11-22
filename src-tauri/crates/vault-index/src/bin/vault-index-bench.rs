@@ -1,11 +1,8 @@
-//! Drives the crate outside the app for `pnpm perf:vault-index` and the crate's process tests.
+//! Drives the crate outside the app for `pnpm perf:vault-index` and the crate's process tests; prints JSON.
 //! Usage: vault-index-bench <build|reopen|update|search|size|read-loop> <vault> [args...]
 //!        vault-index-bench <vectors-prepare|vectors-search> <vault> [--dims=N] [--delay-ms=N]
 //!                          [--log=FILE] [--queries=N] [--abort-after=BATCHES]
 //!        vault-index-bench passages <vault>
-//! Prints one JSON object; `passages` prints one per passage, for `pnpm perf:meaning-quality`.
-//! The folder walk here is a test stand-in; the app passes its own. The vector commands embed
-//! with a deterministic stand-in (`fake_embedding`), not a model.
 
 #[path = "../../tests/common/walk.rs"]
 mod walk;
@@ -265,8 +262,7 @@ fn footprint() -> Option<(u64, u64)> {
     None
 }
 
-/// Asks the allocator to return the pages it keeps after frees, as the app may once it drops a
-/// searcher; the footprint before and after says how much a drop alone leaves behind.
+/// Asks the allocator to return the pages it keeps after frees, as the app may once it drops a searcher.
 #[cfg(target_os = "macos")]
 fn relieve_allocator() {
     extern "C" {
@@ -363,8 +359,6 @@ fn vectors_prepare(root: &Path, files: &[String], options: &Options) {
     );
 }
 
-/// Opens a searcher, runs `options.queries` searches for 8 passages, then drops it, reporting the
-/// footprint above the process's own at each step.
 fn vectors_search(root: &Path, files: &[String], options: &Options) {
     // Timed first, so the baseline already holds SQLite's one-time state, as the app's does.
     let status_started = Instant::now();

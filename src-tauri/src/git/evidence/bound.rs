@@ -6,7 +6,7 @@ use serde::Serialize;
 
 use super::super::repo::{require_repo_root, vault_pathspec};
 use super::super::runner::{run_git_read as run_git, validate_vault_dir};
-use crate::gray_area_scope::{resolve_binding_metadata, verify_identity};
+use crate::gray_area::scope::{resolve_binding_metadata, verify_identity};
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]

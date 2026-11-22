@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { VaultDoc } from "../../model/types";
+import type { VaultDoc } from "../../model/vault-manifest";
 import { buildOntologyDeeplinkForDoc } from "./ontology-deeplink";
 
 function makeDoc(partial: Partial<VaultDoc>): VaultDoc {

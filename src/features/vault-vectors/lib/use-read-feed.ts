@@ -3,7 +3,6 @@
 import { useState } from 'react';
 
 export interface ReadFeedItem {
-  /** Increasing per item, a stable key for its entrance. */
   id: number;
   path: string;
 }
@@ -11,10 +10,6 @@ export interface ReadFeedItem {
 /** Enough to see the work move; more would make the stage a log. */
 export const READ_FEED_SIZE = 3;
 
-/**
- * The files the stage has shown being read, newest first: a file lands once the next is shown.
- * Fed the paced path, so one lands at most once a pace however fast files pass.
- */
 export function useReadFeed(path: string | null): ReadFeedItem[] {
   const [feed, setFeed] = useState<ReadFeedItem[]>([]);
   const [shown, setShown] = useState(path);

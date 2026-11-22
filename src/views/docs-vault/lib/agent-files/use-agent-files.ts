@@ -45,7 +45,6 @@ export function useAgentFilesModel(
         });
         if (!cancelled) setModel(buildAgentFilesUiModel(analysis, manifest.docs));
       } catch {
-        // Read failure (revoked permission, deleted file): hide the group.
         if (!cancelled) setModel(null);
       }
     })();

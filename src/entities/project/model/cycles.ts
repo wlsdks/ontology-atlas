@@ -1,4 +1,4 @@
-import type { Project } from "./types";
+import type { Project } from "./project";
 
 function buildDependencyMap(projects: Project[]) {
   return new Map(

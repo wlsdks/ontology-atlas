@@ -1,6 +1,6 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "../../model";
-import type { OntologyTreeBuildResult } from "./types";
-import { ATLAS_CLI } from "@/shared/config/cli-invocation";
+import type { OntologyTreeBuildResult } from "./ontology-tree-node";
+import { ATLAS_CLI } from "@/shared/config/agent/cli-invocation";
 
 type AgentReadinessStatus = "ready" | "needs-links" | "needs-shape";
 type AgentReadinessActionKey =
@@ -324,7 +324,6 @@ export function buildAgentReadinessPrompt(summary: AgentReadinessSummary): strin
 
 const MEANINGFUL_KINDS = new Set(["domain", "capability", "element", "unknown"]);
 
-/** Whether the derived graph gives an agent enough shaped nodes and relations; mirrors MCP first-contact without calling it. */
 export function buildAgentReadinessSummary(
   nodes: readonly KnowledgeGraphNode[],
   edges: readonly KnowledgeGraphEdge[],

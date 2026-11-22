@@ -1,4 +1,4 @@
-use crate::errors::coded;
+use crate::coded_error::coded;
 
 /// Keyless connect-by-address: any OpenAI-compatible runner (Ollama, LM Studio,
 /// vLLM) without naming vendors. No keychain and no auth header on this branch.

@@ -5,9 +5,7 @@
  */
 export const HARNESS_FRAME_CONTAINER = '@container/harness' as const;
 
-/** Horizontal gutter at `md` and up. Below `md` the frame's 20px inset applies unchanged. */
 export { HARNESS_GUTTER_X } from '@/shared/ui/layout/page-header-bar';
 
-/** The start-line half alone, for a box whose right edge meets a dock rather than the pane. */
 export const HARNESS_GUTTER_LEFT =
   'pl-5 md:pl-[max(2.5rem,calc((100cqw_-_var(--page-max))/2_+_2.5rem))]' as const;

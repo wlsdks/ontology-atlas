@@ -11,8 +11,8 @@ vi.mock("../../dial/frame/frame", async original => ({
   ...await original<typeof import("../../dial/frame/frame")>(),
   lastDialFrame: () => ({ alphas: frame.alphas }),
 }));
-vi.mock("../world/topology-world", async original => ({
-  ...await original<typeof import("../world/topology-world")>(),
+vi.mock("../world/geometry/world-geometry", async original => ({
+  ...await original<typeof import("../world/geometry/world-geometry")>(),
   recomputeWorldGeometry: vi.fn(),
 }));
 
@@ -25,39 +25,39 @@ const node = (id: string, x = 0): WorldNode => ({
 describe("separation of drawn map nodes", () => {
   it("leaves visible nodes alone when only an undisclosed dial node overlaps them", () => {
     const world = { nodes: [node("shown"), node("undisclosed")] };
-    const { drawnIdx, sepNodes } = collectSeparationNodes(world, tokens, new Set(), new Map([["shown", 1]]));
+    const { drawnIndex, sepNodes } = collectSeparationNodes(world, tokens, new Set(), new Map([["shown", 1]]));
     relaxNodeSeparation(sepNodes, { ratio: 1.35, iterations: 2 });
-    expect(drawnIdx).toEqual([0]);
+    expect(drawnIndex).toEqual([0]);
     expect(sepNodes).toEqual([{ id: "shown", x: 0, y: 0, r: 5 }]);
   });
 
   it("includes a newly disclosed node and keeps world indices for position writeback", () => {
     const world = { nodes: [node("folded"), node("faint", 1), node("shown", 2)] };
-    const { drawnIdx, sepNodes } = collectSeparationNodes(world, tokens, new Set(["folded"]),
+    const { drawnIndex, sepNodes } = collectSeparationNodes(world, tokens, new Set(["folded"]),
       new Map([["folded", 1], ["faint", 0.01], ["shown", 1]]));
-    expect(drawnIdx).toEqual([1, 2]);
+    expect(drawnIndex).toEqual([1, 2]);
     expect(sepNodes.map(row => row.id)).toEqual(["faint", "shown"]);
   });
 
   it("retains classic separation when the dial does not own the frame", () => {
     const world = { nodes: [node("a"), node("b"), node("folded")] };
-    const { drawnIdx, sepNodes } = collectSeparationNodes(world, tokens, new Set(["folded"]), null);
+    const { drawnIndex, sepNodes } = collectSeparationNodes(world, tokens, new Set(["folded"]), null);
     relaxNodeSeparation(sepNodes, { ratio: 1.35, iterations: 2, pinnedId: "a" });
-    expect(drawnIdx).toEqual([0, 1]);
+    expect(drawnIndex).toEqual([0, 1]);
     expect(sepNodes[0].x).toBe(0);
     expect(sepNodes[1].x).toBeGreaterThan(0);
   });
 
   it("omits zero-alpha nodes and handles an empty world", () => {
     expect(collectSeparationNodes({ nodes: [node("hidden")] }, tokens, new Set(), new Map([["hidden", 0]])).sepNodes).toEqual([]);
-    expect(collectSeparationNodes({ nodes: [] }, tokens, new Set(), null)).toEqual({ drawnIdx: [], sepNodes: [] });
+    expect(collectSeparationNodes({ nodes: [] }, tokens, new Set(), null)).toEqual({ drawnIndex: [], sepNodes: [] });
   });
 
   it("bounds collision inputs to the disclosed portion of a 3000-node world", () => {
     const nodes = Array.from({ length: 3000 }, (_, i) => node(`element:${i}`, i * 20));
     const alphas = new Map(nodes.slice(0, 19).map(row => [row.id, 1]));
-    const { drawnIdx, sepNodes } = collectSeparationNodes({ nodes }, tokens, new Set(), alphas);
-    expect(drawnIdx).toHaveLength(19);
+    const { drawnIndex, sepNodes } = collectSeparationNodes({ nodes }, tokens, new Set(), alphas);
+    expect(drawnIndex).toHaveLength(19);
     expect(sepNodes).toHaveLength(19);
   });
 
@@ -84,9 +84,9 @@ describe("separation of drawn map nodes", () => {
       simRef: ref(sim), nodeDragRef: ref({ nodeId: "held" }), heatRef: ref(1000), homingActiveRef: ref(false),
       dragAffectedSetRef: ref({ draggedId: "held", oneHop: new Set(), twoHop: new Set() }),
       dragStartPosRef: ref({ x: 500, y: 0 }), dragTugOffsetsRef: ref(new Map()), dragVelRef: ref({ x: 0, y: 0 }),
-      dragPrevPosRef: ref(null), dropSeededRef: ref(false), geomPrevXRef: ref(null), geomPrevYRef: ref(null),
+      dragPreviousPosRef: ref(null), dropSeededRef: ref(false), geomPreviousXRef: ref(null), geomPreviousYRef: ref(null),
       sepDisplacedIdsRef: ref(new Set()), homeSpringsRef: ref(new Map()), homeTargetOverrideRef: ref(null),
-      prevPinnedNodeIdRef: ref("held"), clusteredIdsRef: ref(new Set()), expandedParentsRef: ref(new Set()),
+      previousPinnedNodeIdRef: ref("held"), clusteredIdsRef: ref(new Set()), expandedParentsRef: ref(new Set()),
       view3dRef: ref(false), domeRuntimeRef: ref(null), realmDataRef: ref(null), realmTransitionRef: ref({ phase: "idle" }),
       realmActiveHandedOffRef: ref(false), wardingFitRef: ref(null), reducedMotionRef: ref(false),
       overviewScaleRef: ref(1), overviewFitRef: ref("spine"),

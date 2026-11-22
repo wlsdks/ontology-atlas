@@ -158,8 +158,8 @@
     const starter = Boolean(document.querySelector('[data-testid="first-run-starter"]'));
     const canvas = Boolean(document.querySelector('canvas[data-testid="ontology-map-canvas"]'));
     const next = { census: Number.isFinite(count) ? count : null, progress, starter, canvas };
-    const prev = state.screen.at(-1);
-    if (!prev || prev.census !== next.census || (prev.progress === null) !== (progress === null) || prev.starter !== starter || prev.canvas !== canvas) {
+    const previous = state.screen.at(-1);
+    if (!previous || previous.census !== next.census || (previous.progress === null) !== (progress === null) || previous.starter !== starter || previous.canvas !== canvas) {
       state.screen.push({ at: Math.round(now()), ...next });
       if (state.screen.length > 200) state.screen.splice(1, 1);
     }
@@ -420,8 +420,8 @@
       try {
         if (walk === 'map') await walkMap();
         else if (walk === 'library') await walkLibrary(config.library ?? {});
-      } catch (e) {
-        note(`${walk} walk failed: ${e && e.message ? e.message : e}`);
+      } catch (error) {
+        note(`${walk} walk failed: ${error && error.message ? error.message : error}`);
       }
       mark(`${walk}Done`);
       post();

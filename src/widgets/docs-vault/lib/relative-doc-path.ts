@@ -11,7 +11,6 @@
 export function relativeDocPath(fromSlug: string, toSlug: string): string {
   const fromParts = fromSlug.split('/');
   const toParts = toSlug.split('/');
-  // The last segment is the file name, so it is dropped from the directory comparison.
   fromParts.pop();
   const fileName = `${toParts.pop()}.md`;
 

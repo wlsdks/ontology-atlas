@@ -4,7 +4,7 @@ import { act, fireEvent, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TREE_POSE_REST, treePoseFacing } from "../model/tree-view/tree-camera";
 import { layoutTree } from "../model/tree-view/tree-layout";
-import type { TreeDrawMark, TreeFrameInput, TreePose } from "../model/tree-view/types";
+import type { TreeDrawMark, TreeFrameInput, TreePose } from "../model/tree-view/tree-shapes";
 import type { OntologyMapEdge, OntologyMapNode } from "./OntologyMap";
 import { OntologyTreeMap, type TreeMapLabels, type TreeTooltipLabels } from "./OntologyTreeMap";
 
@@ -143,7 +143,7 @@ function click(canvas: HTMLCanvasElement, x: number, y: number) {
 }
 
 function listedIds(container: HTMLElement): string[] {
-  return [...container.querySelectorAll<HTMLElement>('[data-testid="tree-map-list"] [data-tree-id]')].map((el) => el.dataset.treeId!).sort();
+  return [...container.querySelectorAll<HTMLElement>('[data-testid="tree-map-list"] [data-tree-id]')].map((htmlElement) => htmlElement.dataset.treeId!).sort();
 }
 
 describe("the tree's accessible list", () => {

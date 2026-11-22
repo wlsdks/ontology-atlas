@@ -1,4 +1,4 @@
-import type { DialScene } from "../types";
+import type { DialScene } from "../dial-shapes";
 import type { FlowMarksInput } from "../flow-marks";
 import { domainOfEnd } from "../links";
 

@@ -6,7 +6,7 @@ import type { VaultDoc } from '@/entities/docs-vault';
 import type { KnowledgeGraphNode } from '@/entities/knowledge-graph';
 import { buildEvidenceConcepts, resolveEvidenceStates } from '@/shared/lib/git/evidence-states';
 import { selectOpenVaultHandle } from '@/shared/lib/vault-folder/select-open-vault-handle';
-import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { gitPathsLastChange, isGitBridgeAvailable, type GitPathLastChange } from '@/shared/lib/git/tauri-git';
 
 type MapEvidenceState = 'current' | 'stale' | 'unknown';
@@ -14,7 +14,6 @@ type MapEvidenceState = 'current' | 'stale' | 'unknown';
 /** Only `measured` may draw anything but `unknown`; every other value is named in the legend. */
 export type MapEvidenceAvailability = 'measured' | 'reading' | 'app-only' | 'unreadable' | 'no-paths';
 
-/** The cited file a stale concept is judged by: gone from the code folder, or changed at `changedAt`. */
 export interface StaleEvidencePath {
   path: string;
   gone: boolean;
@@ -23,11 +22,8 @@ export interface StaleEvidencePath {
 
 export interface MapEvidence {
   availability: MapEvidenceAvailability;
-  /** Absent ids are `unknown`. */
   states: ReadonlyMap<string, MapEvidenceState>;
-  /** Stale node id to the cited path that moved or is gone. */
   movedPaths: ReadonlyMap<string, string>;
-  /** Stale node id to that path's detail; a moved path is named before a gone one, as in `movedPaths`. */
   stalePaths: ReadonlyMap<string, StaleEvidencePath>;
 }
 
@@ -39,12 +35,7 @@ const NO_PATHS: ReadonlyMap<string, string> = new Map();
 const NO_STALE_PATHS: ReadonlyMap<string, StaleEvidencePath> = new Map();
 const NO_CONCEPTS: ReturnType<typeof buildEvidenceConcepts> = [];
 
-/**
- * Stale-while-revalidate, shared by every screen that reads evidence: a screen that mounts reads the
- * folder's last answer at once and walks Git again in the background, joining a walk already in
- * flight for the same paths. Only a successful walk replaces the answer; a failed one is retried by
- * the next mount.
- */
+/** Stale-while-revalidate: a screen that mounts reads the folder's last answer at once and walks Git again in the background, joining a walk in flight for the same paths. Only a successful walk replaces the answer. */
 const answers = new Map<string, { key: string; changes: WalkChanges }>();
 const inFlight = new Map<string, Promise<WalkChanges | null>>();
 const answerListeners = new Set<() => void>();
@@ -57,7 +48,6 @@ function subscribeToAnswers(listener: () => void): () => void {
 /** The native walk answers this many paths per call and drops the rest (MAX_EVIDENCE_PATHS: src-tauri/src/git/evidence.rs). */
 const GIT_WALK_PATH_LIMIT = 512;
 
-/** Every path in calls of at most `GIT_WALK_PATH_LIMIT`, so a large folder is compared in full. */
 async function walkInBatches(rootPath: string, repoPaths: readonly string[], vaultPaths: readonly string[]) {
   const calls: Promise<GitPathLastChange[] | null>[] = [];
   let vaultFrom = 0;
@@ -96,10 +86,6 @@ export function resetSharedEvidenceWalk(): void {
   inFlight.clear();
 }
 
-/**
- * Same rule and Git walk as the insights brief and MCP (`shared/lib/git/evidence-states.ts` over
- * `shared/lib/git/evidence-verdict.mjs`). `enabled` is a view that draws evidence.
- */
 export function useMapEvidenceStates({
   nodes,
   enabled,

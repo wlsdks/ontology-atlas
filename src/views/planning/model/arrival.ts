@@ -3,7 +3,7 @@ export type PlanningArrival = 'workbench' | 'checking' | 'open-home' | 'create-h
 
 /**
  * A loaded ontology folder decides first: its `planning/` opens at once, or its absence offers to
- * make it. Without one, the native picker is the only door, as before the home folder existed.
+ * make it. Without one, the native picker is the only door.
  */
 export function planningArrival({ selection, nativeAvailable, vault, home }: {
   selection: 'home' | 'picked' | null;

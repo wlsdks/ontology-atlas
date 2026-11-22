@@ -22,7 +22,6 @@ export function ConceptEgoCard({
   kindLabel: (kind: string) => string;
   onSelect?: (nodeId: string) => void;
 }) {
-  // The neighbour pointed at or focused in either the table or the drawing; it links the two.
   const [activeId, setActiveId] = useState<string | null>(null);
   if (!ego) return null;
 
@@ -31,7 +30,6 @@ export function ConceptEgoCard({
     ego.domainLabel !== null && ego.neighbors.belongsTo.some((neighbor) => neighbor.label === ego.domainLabel);
 
   const facts: { label: string; value: string | null; mono?: boolean }[] = [
-    // A domain or project never has an owning domain, so it gets no cell.
     ...(ego.kind === "domain" || ego.kind === "project" || domainIsNeighbour
       ? []
       : [{ label: t("egoDomain"), value: ego.domainLabel }]),
@@ -111,7 +109,6 @@ export function ConceptEgoCard({
               </dd>
             </div>
           ))}
-          {/* Relations list names, not counts; each name navigates like a click on the drawing. */}
           {bearings.map((row) => (
             <div
               key={row.bearing}

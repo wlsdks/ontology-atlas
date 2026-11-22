@@ -19,10 +19,10 @@ function parse(css: string): { rgb: RGB; a: number } | null {
     const n = parseInt(h.slice(0, 6), 16);
     out = { rgb: [(n >> 16) & 255, (n >> 8) & 255, n & 255], a: h.length === 8 ? parseInt(h.slice(6), 16) / 255 : 1 };
   } else {
-    const fn = /^rgba?\(([^)]+)\)$/i.exec(s);
-    const parts = fn ? fn[1]!.split(/[\s,/]+/).filter(Boolean) : [];
-    const num = (v: string, scale: number) => (v.endsWith("%") ? (Number(v.slice(0, -1)) / 100) * scale : Number(v));
-    const p = parts.map((v, i) => num(v, i < 3 ? 255 : 1));
+    const rgbMatch = /^rgba?\(([^)]+)\)$/i.exec(s);
+    const parts = rgbMatch ? rgbMatch[1]!.split(/[\s,/]+/).filter(Boolean) : [];
+    const parseChannel = (v: string, scale: number) => (v.endsWith("%") ? (Number(v.slice(0, -1)) / 100) * scale : Number(v));
+    const p = parts.map((v, i) => parseChannel(v, i < 3 ? 255 : 1));
     if (p.length >= 3 && p.slice(0, 3).every(Number.isFinite)) {
       out = { rgb: [p[0]!, p[1]!, p[2]!], a: p.length > 3 && Number.isFinite(p[3]!) ? p[3]! : 1 };
     }

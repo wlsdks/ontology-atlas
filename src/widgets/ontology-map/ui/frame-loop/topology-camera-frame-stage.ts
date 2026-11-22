@@ -23,9 +23,9 @@ import {
 import { updatePulses, type Pulse } from "../../render/edge-fireflies";
 import { lastDialFrame } from "../../dial/frame/frame";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
-import type { FocusLeashPx } from "../camera/topology-camera-math";
+import type { FocusLeashPx } from "../camera/target/pan-leash";
 import { stepTopologyPhysics } from "./topology-physics-step";
-import type { RealmRuntimeData } from "../world/topology-realm-runtime";
+import type { RealmRuntimeData } from "../world/realm/topology-realm-runtime";
 import type { TopologyWorld } from "../world/topology-world";
 
 type SourceRef<T> = { current: T; };
@@ -92,7 +92,7 @@ export interface CameraFrameStageSources {
     depth2: DepthParallaxOffset;
     depth3: DepthParallaxOffset;
   } | null>;
-  prevCameraCenterRef: SourceRef<{ x: number; y: number; } | null>;
+  previousCameraCenterRef: SourceRef<{ x: number; y: number; } | null>;
   lastZoomTierRef: SourceRef<ZoomTier | null>;
   onZoomTierChangeRef: SourceRef<((tier: ZoomTier) => void) | undefined>;
 }
@@ -138,7 +138,7 @@ export function createCameraFrameStage(sources: CameraFrameStageSources) {
     realmParallaxDepth2Ref,
     realmParallaxDepth3Ref,
     realmParallaxRef,
-    prevCameraCenterRef,
+    previousCameraCenterRef,
     lastZoomTierRef,
     onZoomTierChangeRef,
   } = sources;
@@ -215,12 +215,8 @@ export function createCameraFrameStage(sources: CameraFrameStageSources) {
             cameraTweenRef.current = null;
           } else {
             /*
-             * Passing the viewport width selects the **van Wijk optimal
-             * path** (see the `VAN_WIJK_RHO` doc-block in
-             * `model/camera/camera-easing.ts`). Without it this degrades to
-             * per-axis linear interpolation, which is what the
-             * "looks like a lerp" sweep across the screen was whenever a
-             * move and a zoom overlapped.
+             * Passing the viewport width selects the van Wijk optimal path (`VAN_WIJK_RHO`, `camera-easing.ts`); without it the move
+             * degrades to per-axis linear interpolation, a "lerp" sweep when a move and a zoom overlap.
              */
             const eased = easeCameraKeyframe(tween.start, tween.target, elapsed, tween.durationMs, width, tween.ease, tween.startSpeed);
             cameraRef.current = {
@@ -336,23 +332,17 @@ export function createCameraFrameStage(sources: CameraFrameStageSources) {
     // done by the pointer handlers' hover path.
     pulsesRef.current = updatePulses(pulsesRef.current, now);
 
-    // --- Depth parallax step: while a realm is active, charge the per-band
-    // offsets from the frame delta of camera input (the world centre moved by
-    // pan/zoom). When the camera stops they decay exponentially to 0;
-    // reduced-motion holds them at 0. The decay tail is effectively 0 within
-    // the idle grace of 1200 ms (tau 0.18 s), so it ends before the loop
-    // sleeps. The entering phase's dolly-in is a
-    // programmatic move and is excluded — parallax responds to input only —
-    // with the centre kept in sync so entering `active` does not produce a
-    // large delta spike. ---
+    // Depth parallax step: while a realm is active the per-band offsets are charged from the camera's frame delta and decay
+    // exponentially to 0 when it stops (tau 0.18 s, ending inside the 1200 ms idle grace); reduced motion holds them at 0. The
+    // entering dolly-in is programmatic and excluded, with the centre kept in sync so entering `active` makes no delta spike.
     {
       const realmActive =
         realmDataRef.current !== null &&
         realmTransitionRef.current.phase === "active" &&
         !reducedMotionRef.current;
-      const prevC = prevCameraCenterRef.current;
-      if (realmActive && prevC) {
-        const delta = { x: camera.x.value - prevC.x, y: camera.y.value - prevC.y };
+      const previousC = previousCameraCenterRef.current;
+      if (realmActive && previousC) {
+        const delta = { x: camera.x.value - previousC.x, y: camera.y.value - previousC.y };
         const depthById = realmDataRef.current!.depthById;
         realmParallaxDepth2Ref.current = stepDepthParallax(
           realmParallaxDepth2Ref.current,
@@ -377,21 +367,12 @@ export function createCameraFrameStage(sources: CameraFrameStageSources) {
         realmParallaxDepth3Ref.current = ZERO_PARALLAX;
         realmParallaxRef.current = null;
       }
-      prevCameraCenterRef.current = { x: camera.x.value, y: camera.y.value };
+      previousCameraCenterRef.current = { x: camera.x.value, y: camera.y.value };
     }
 
-    // Emit the semantic-zoom tier only when it changes (spine → circuit →
-    // element), so the corner readout's orientation hint tracks what is
-    // actually drawn. Same reveal bands as the draw pass, so the label and
-    // the visible nodes cannot contradict each other.
-    //
-    // Emission is suppressed during a realm transition: `onZoomTierChange` is
-    // a HomePage setState, so every call re-renders the whole page. During
-    // the programmatic camera dolly of a realm enter/exit the scale crosses
-    // tier boundaries repeatedly and froze the choreography frames (measured
-    // on perf-realm: entry +331 ms, a 125 ms hitch). Once it settles into
-    // active or idle, the comparison below emits the final tier exactly
-    // once.
+    // Emit the semantic-zoom tier only when it changes, on the draw pass's reveal bands so the readout and the visible nodes cannot contradict.
+    // Suppressed during a realm transition: `onZoomTierChange` is a HomePage setState and the dolly crosses tier boundaries repeatedly
+    // (a 125 ms hitch measured on perf-realm); once settled the comparison below emits the final tier once.
     const realmTransitioning =
       realmTransitionRef.current.phase === "entering" || realmTransitionRef.current.phase === "exiting";
     const nextZoomTier = lastDialFrame()?.tier ?? classifyZoomTier(zoomRatio, tierRevealRef.current);
@@ -400,17 +381,8 @@ export function createCameraFrameStage(sources: CameraFrameStageSources) {
       onZoomTierChangeRef.current?.(nextZoomTier);
     }
 
-    // Density gate: compute this frame's collapsed/chip state from the live
-    // positions, so a chip's anchor follows its parent as the parent is
-    // dragged or the graph moves. The decision logic is the pure model in
-    // `density-gate.ts`; this only injects coordinates.
-    //
-    // Inside a realm the realm root is always treated as expanded — its
-    // direct children are that world's spine, and collapsing them by the gate
-    // leaves the realm an empty ring (same logic as the global domain
-    // exemption; reproduced at /?synth=2000). It reads the ref rather than
-    // the prop: the frame closure captured a stale realmRootId, so entering
-    // via the button did not apply the expansion (confirmed on recorded
+    // Density gate: this frame's collapsed/chip state from the live positions, so a chip follows its dragged parent; the decision logic is the pure model in `density-gate.ts`.
+    // The realm root counts as expanded (collapsing its children leaves the realm an empty ring) and is read from the ref, not the prop: a stale closure missed the expansion.
 
     result.focusedNodeId = focusedNodeId;
     result.trailLensActive = trailLensActive;

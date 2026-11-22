@@ -14,7 +14,6 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
-/** The path and every earlier path it was moved from, newest first. */
 export function formerPaths(repoPath, movedMap) {
   const reverse = Object.fromEntries(Object.entries(movedMap).map(([from, to]) => [to, from]));
   const chain = [repoPath];
@@ -22,12 +21,11 @@ export function formerPaths(repoPath, movedMap) {
   return chain;
 }
 
-/** Record fragments under docs/records/ whose text cites any of the paths. */
 export function citingRecords(paths, root = ROOT) {
   const out = [];
-  const walk = (dir) => {
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
-      const full = path.join(dir, entry.name);
+  const walk = (directory) => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      const full = path.join(directory, entry.name);
       if (entry.isDirectory()) walk(full);
       else if (entry.name.endsWith('.md') && entry.name !== 'README.md') {
         const text = readFileSync(full, 'utf8');

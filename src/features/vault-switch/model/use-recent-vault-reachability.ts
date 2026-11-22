@@ -6,7 +6,8 @@ import {
   type LocalFsHandleRecord,
 } from '@/entities/local-fs-handle';
 import { isMissingFolderError } from '@/entities/vault-session';
-import { isTauriVaultRuntime, tauriVaultPathExists } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { tauriVaultPathExists } from '@/shared/lib/vault-folder/native-vault/tauri-vault-files';
+import { isTauriVaultRuntime } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import {
   recentVaultRowKey,
   type RecentVaultReachability,
@@ -15,11 +16,7 @@ import {
 /** Past this deadline the list draws anyway, so one unresponsive network volume cannot hold it. */
 const FIRST_ANSWER_DEADLINE_MS = 400;
 
-/**
- * Probes each stored folder without asking the person for anything: `vault_path_exists` in the
- * app, `queryPermission` in a browser; never `requestPermission`, which needs a gesture. Null
- * until the first answer, so the list is drawn once in its real shape.
- */
+/** Never `requestPermission`, which needs a gesture; null until the first answer, so the list is drawn once in its real shape. */
 export function useRecentVaultReachability(
   records: ReadonlyArray<LocalFsHandleRecord>,
 ): Record<string, RecentVaultReachability> | null {
@@ -79,7 +76,6 @@ async function probe(record: LocalFsHandleRecord, desktop: boolean): Promise<Rec
   } catch (error) {
     /* On the desktop a gone folder rejects: `canonical_root` errors before `vault_path_exists` returns false. */
     if (isMissingFolderError(error)) return 'missing';
-    /* Anything else is `unknown`, never `ready`. */
     return 'unknown';
   }
 }

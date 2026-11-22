@@ -12,7 +12,6 @@ const KEY_MID_Y = KEY.y + KEY.height / 2;
 const WIRE = `M${KEY.x + KEY.width + 6} ${KEY_MID_Y}H${STORE.x}`;
 const MASK_DOTS = [0, 1, 2, 3, 4, 5];
 
-/** A key on the left travelling into this computer's locked store on the right, where it is kept masked. */
 export function ModelKeyArtwork({ arriving, engaged, reduced }: FeatureStageMotion) {
   const beat = MOTION.slow.duration;
   const after = (index: number, step: number) => reduced ? MOTION.fast : { ...MOTION.expressive, delay: beat * step + STAGGER * index };

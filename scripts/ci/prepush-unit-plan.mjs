@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
-import { loadTestReach } from '../lib/import-graph/test-reach.mjs';
+import { readTestReach } from '../lib/import-graph/test-reach.mjs';
 
 const SHA = /^[0-9a-f]{40}$/;
 const TEST = /^(?:app|src)\/.*\.(?:test|spec)\.(?:ts|tsx)$/;
@@ -17,7 +17,7 @@ export function prepushUnitCommand({ paths, base, exists = existsSync, reach }) 
     throw new Error('paths must be non-empty Git path strings');
   }
   const composites = paths.filter((path) => MESSAGE_PART.test(path)).map((path) => `messages/${path.split('/')[1]}.json`);
-  const affected = (reach ?? loadTestReach()).testsReaching([...new Set([...paths, ...composites])]).unit;
+  const affected = (reach ?? readTestReach()).testsReaching([...new Set([...paths, ...composites])]).unit;
   const tests = [...new Set([...paths.filter((path) => TEST.test(path)), ...affected])]
     .filter((path) => exists(path) && TEST.test(path) && !/\.perf\.test\.tsx?$/.test(path))
     .sort();

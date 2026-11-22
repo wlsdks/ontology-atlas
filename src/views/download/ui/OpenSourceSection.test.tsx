@@ -6,7 +6,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { describe, expect, it } from 'vitest';
 
 import enMessages from '../../../../messages/en.json';
-import { GITHUB_REPO_URL } from '@/shared/config/social-links';
+import { GITHUB_REPO_URL } from '@/shared/config/site/social-links';
 import { REPO_FACTS } from '../model/repo-facts.generated';
 import { OpenSourceSection } from './OpenSourceSection';
 

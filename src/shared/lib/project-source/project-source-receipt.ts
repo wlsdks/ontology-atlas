@@ -184,12 +184,7 @@ function view(
   };
 }
 
-/**
- * Mint a receipt. The implementation lives in
- * `mcp/src/project-source/project-source-mint.mjs` and is shared verbatim: the app, the
- * CLI, and every MCP agent can now all mint one, and a receipt that means
- * different things depending on who wrote it is worse than no receipt.
- */
+/** Mint a receipt. The implementation (`mcp/src/project-source/project-source-mint.mjs`) is shared verbatim with the CLI and every MCP agent: a receipt that means different things depending on who wrote it is worse than none. */
 export function buildProjectSourceReceipt(input: {
   projectSlug: string;
   graphHash: string;

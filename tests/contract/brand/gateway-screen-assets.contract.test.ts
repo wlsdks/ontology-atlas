@@ -9,7 +9,7 @@ import {
   GATEWAY_SCREEN_PIXELS,
   gatewayScreenSrc,
 } from '@/views/download/model/gateway-screens';
-import { STILL_LOCALES, STILL_NAMES, stillSrc } from '@/views/download/lib/harness-scene';
+import { STILL_LOCALES, STILL_NAMES, stillSrc } from '@/views/download/lib/harness-film/harness-scene';
 
 import { webpSize } from '../lib/webp-size';
 

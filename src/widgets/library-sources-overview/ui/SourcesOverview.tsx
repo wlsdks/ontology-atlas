@@ -1,21 +1,22 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useLocale, useTranslations } from "next-intl";
 
-import { sourceNeedsCompile, VAULT_SOURCES_DIR, type LibrarySourceRow, type LibraryWikiPage } from "@/entities/docs-vault";
+import { VAULT_SOURCES_DIR, type LibrarySourceRow, type LibraryWikiPage } from "@/entities/docs-vault";
 import { usePrefersReducedMotion } from "@/shared/lib/render-timing/use-prefers-reduced-motion";
 import { SegmentedControl } from "@/shared/ui/fields/segmented-control";
 
+import { FoldCursor } from "../model/fold-cursor";
 import { selectRecentPages } from "../model/recent-pages";
 import { drawnSourceShare, formatSourceShare, sourceShare } from "../model/share";
 import { SOURCE_STATE_ORDER } from "../model/source-states";
-import type { SourceGroup, SourceGrouping, SourceGroupIndex } from "../model/source-group-index";
+import { automaticGrouping, type SourceGroup, type SourceGrouping } from "../model/source-group-index";
+import { pickedRowOf, pickedWaitingSources, type SourcePick } from "../model/source-pick";
 import {
-  AlikeFolds,
   DEFAULT_SOURCE_SORT,
   nextSourceSort,
-  sortTableRows,
+  rowLatestDay,
   type SourceSort,
   type SourceSortColumn,
   type SourceTableRow,
@@ -24,7 +25,10 @@ import { NextPanel, PANEL_LIST_ROWS } from "./NextPanel";
 import { RecentlyWritten } from "./RecentlyWritten";
 import { SourceStateBar } from "./SourceStateBar";
 import { SourcesTable, type SourcesTableColumn, type SourcesTableRowView } from "./SourcesTable";
+import { useHeldRowOrder } from "./use-held-row-order";
+import { usePickClearing } from "./use-pick-clearing";
 import { useSourceGroups } from "./use-source-groups";
+import { useTableFit } from "./use-table-fit";
 
 /** What the band's write button sends next and what is in flight (`ContinueBatch` on the page). */
 export interface SourcesNextBatch {
@@ -36,16 +40,7 @@ export interface SourcesNextBatch {
   rest: number;
 }
 
-/** A picked row: one group, or every folder of an alike row. */
-export interface SourcePick {
-  grouping: SourceGrouping;
-  keys: readonly string[];
-  name: string;
-}
-
 const DAY_MS = 86_400_000;
-/** While rows are still arriving they re-order at most this often, and never while a batch runs. */
-const ARRIVAL_RESORT_MS = 500;
 /** Rows mounted this soon after the widget count up from an empty bar, as a first arrival. */
 const ARRIVAL_WINDOW_MS = 800;
 
@@ -60,12 +55,10 @@ function localToday(): number {
   return Math.floor((now.getTime() - now.getTimezoneOffset() * 60_000) / DAY_MS);
 }
 
-function rowLatestDay(row: SourceTableRow, latestDay: (group: SourceGroup) => number): number {
-  if (!row.members) return latestDay(row.group);
-  let latest = -1;
-  for (const member of row.members) latest = Math.max(latest, latestDay(member));
-  return latest;
-}
+const NO_KEYS: ReadonlySet<string> = new Set();
+
+/** Folders whose bars already filled from empty this session; a later visit draws them at once. */
+const arrived = new Set<string>();
 
 /**
  * Library, Sources home under the band: where the pile stands by folder or file type, the pages
@@ -74,44 +67,6 @@ function rowLatestDay(row: SourceTableRow, latestDay: (group: SourceGroup) => nu
  * in place; they hold their order while a batch runs and re-sort, gliding, when it ends or a header
  * is pressed.
  */
-/** The order rows are drawn in, held between re-sorts; rows that join in between go to the end. */
-interface HeldOrder {
-  keys: readonly string[];
-  grouping: SourceGrouping;
-}
-
-function heldOrder(previous: HeldOrder, keys: readonly string[]): HeldOrder {
-  if (keys.length === previous.keys.length && keys.every((key, i) => key === previous.keys[i])) return previous;
-  return { ...previous, keys };
-}
-
-const NO_KEYS: ReadonlySet<string> = new Set();
-
-/** One grouping's folded rows and how far it has read the index's change log. */
-class FoldCursor {
-  readonly folds = new AlikeFolds();
-  private cursor = -1;
-
-  rows(index: SourceGroupIndex, grouping: SourceGrouping, writing: ReadonlySet<string>): SourceTableRow[] {
-    const changes = index.changesSince(this.cursor, grouping);
-    this.cursor = changes.cursor;
-    return changes.groups ? this.folds.fold(changes.groups, writing, false) : this.folds.fold(index.list(grouping), writing);
-  }
-}
-
-/** The row that holds a pick: the one drawing the first picked folder still counted. */
-function pickedRowOf(folds: AlikeFolds, pick: SourcePick | null, grouping: SourceGrouping): SourceTableRow | null {
-  if (!pick || pick.grouping !== grouping) return null;
-  for (const key of pick.keys) {
-    const row = folds.rowOf(key);
-    if (row) return row;
-  }
-  return null;
-}
-
-/** Folders whose bars already filled from empty this session; a later visit draws them at once. */
-const arrived = new Set<string>();
-
 export function SourcesOverview({
   scope,
   sources,
@@ -151,9 +106,7 @@ export function SourcesOverview({
   }, [scope]);
 
   const shape = index.shape;
-  // A folder walk publishes one folder first, so the shape is judged only once the read is complete.
-  // Two or more first-level folders read by folder; otherwise by file type, when there are two or more.
-  const automatic: SourceGrouping = readingCount === null && shape.firstLevel < 2 && shape.types >= 2 ? "type" : "folder";
+  const automatic = automaticGrouping(shape, readingCount);
   const [chosen, setChosen] = useState<SourceGrouping | null>(null);
   const grouping = chosen ?? automatic;
   const [sort, setSort] = useState<SourceSort>(DEFAULT_SOURCE_SORT);
@@ -179,68 +132,10 @@ export function SourcesOverview({
   );
   const latestOf = useCallback((group: SourceGroup) => index.latestDay(group, today), [index, today]);
 
-  // The order is held: it changes on a header press, a group switch, a batch's end, or (throttled)
-  // while rows are still arriving; rows that appear in between join at the end.
-  const [order, setOrder] = useState<HeldOrder>({ keys: [], grouping });
-  const sortedKeys = useCallback(
-    (by: SourceSort) => sortTableRows(rows, by, (row) => rowLatestDay(row, latestOf)).map((row) => row.key),
-    [latestOf, rows],
-  );
-  const resort = useCallback(
-    (by: SourceSort = sort) => {
-      const keys = sortedKeys(by);
-      setOrder((previous) => heldOrder(previous, keys));
-    },
-    [sort, sortedKeys],
-  );
-  // A grouping switch and the first rows counted set the order before they paint.
-  if (order.grouping !== grouping || (order.keys.length === 0 && rows.length > 0)) {
-    setOrder({ keys: sortedKeys(sort), grouping });
-  }
   const running = batch.running.size > 0;
   // Rows are still arriving while the folder is read or its first count is not complete.
   const arriving = readingCount !== null || !appliedOnce;
-  const lastArrivalSort = useRef(0);
-  // A batch's end and the read's end each re-sort once, so the last rows to arrive are sorted too.
-  const wasRunning = useRef(running);
-  const wasArriving = useRef(arriving);
-  const sortWhenApplied = useRef(false);
-  useEffect(() => {
-    if (wasRunning.current && !running) sortWhenApplied.current = true;
-    if (wasArriving.current && !arriving) sortWhenApplied.current = true;
-    wasRunning.current = running;
-    wasArriving.current = arriving;
-    if (sortWhenApplied.current && applied && !running) {
-      sortWhenApplied.current = false;
-      resort();
-    }
-  }, [applied, arriving, resort, running]);
-  useEffect(() => {
-    if (!arriving || running) return undefined;
-    const wait = Math.max(0, lastArrivalSort.current + ARRIVAL_RESORT_MS - performance.now());
-    const id = setTimeout(() => {
-      lastArrivalSort.current = performance.now();
-      resort();
-    }, wait);
-    return () => clearTimeout(id);
-  }, [arriving, resort, revision, running]);
-
-  const ordered = useMemo(() => {
-    if (order.keys.length === 0) return sortTableRows(rows, sort, (row) => rowLatestDay(row, latestOf));
-    const byKey = new Map(rows.map((row) => [row.key, row]));
-    const out: SourceTableRow[] = [];
-    for (const key of order.keys) {
-      const row = byKey.get(key);
-      if (row) {
-        out.push(row);
-        byKey.delete(key);
-      }
-    }
-    for (const row of byKey.values()) out.push(row);
-    return out;
-    // The held order is read as it stands; `sort` matters only before the first one exists.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [order.keys, rows]);
+  const { ordered, resort } = useHeldRowOrder({ rows, sort, grouping, latestOf, applied, arriving, running, revision });
 
   const shareText = useCallback(
     (withPage: number, total: number) => (drawn: number, settled: boolean) => {
@@ -328,42 +223,14 @@ export function SourcesOverview({
     [grouping, nameOf, onPick, picked],
   );
 
-  // Escape clears a pick; a picked folder that left the disk clears it too, said once in the panel.
-  useEffect(() => {
-    if (pick === null) return undefined;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !event.defaultPrevented) onPick(null);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onPick, pick]);
-  const vanishedPick = pick !== null && applied && readingCount === null && !pick.keys.some((key) => index.get(key)) ? pick : null;
-  // Said once: the next pick clears it.
-  const [gone, setGone] = useState<string | null>(null);
-  if (vanishedPick && gone !== vanishedPick.name) setGone(vanishedPick.name);
-  if (gone !== null && pick !== null && !vanishedPick) setGone(null);
-  useEffect(() => {
-    if (vanishedPick) onPick(null);
-  }, [onPick, vanishedPick]);
+  const gone = usePickClearing({
+    pick,
+    onPick,
+    counted: applied && readingCount === null,
+    hasGroup: (key) => index.get(key) !== undefined,
+  });
 
-  // Table fit: the body takes whole rows of what the column leaves after the toolbar and Recently written.
-  const columnRef = useRef<HTMLDivElement | null>(null);
-  const toolbarRef = useRef<HTMLDivElement | null>(null);
-  const tailRef = useRef<HTMLDivElement | null>(null);
-  const [availablePx, setAvailablePx] = useState<number | null>(null);
-  useLayoutEffect(() => {
-    const column = columnRef.current;
-    if (!column || typeof ResizeObserver === "undefined") return undefined;
-    const measure = () => {
-      const used = (toolbarRef.current?.offsetHeight ?? 0) + (tailRef.current?.offsetHeight ?? 0);
-      setAvailablePx(Math.max(0, column.clientHeight - used));
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(column);
-    if (tailRef.current) observer.observe(tailRef.current);
-    return () => observer.disconnect();
-  }, []);
+  const { columnRef, toolbarRef, tailRef, availablePx } = useTableFit();
 
   const recent = useMemo(() => selectRecentPages(pages, today), [pages, today]);
   const action = t("progress.continue", { count: Math.max(1, batch.next.length) });
@@ -378,19 +245,11 @@ export function SourcesOverview({
         ? t("sourcesHome.alike.meta", { folders: folderCount, count: alikeRow.members.length })
         : t("sourcesHome.meta", { folders: folderCount, sources: sources.length });
 
-  const pickedFiles = useMemo(() => {
-    if (!pick) return [];
-    const keys = new Set(pick.keys);
-    const out: LibrarySourceRow[] = [];
-    for (const row of sources) {
-      if (!sourceNeedsCompile(row)) continue;
-      const key = index.keyOf(row.path, pick.grouping);
-      if (key !== undefined && keys.has(key)) out.push(row);
-      if (out.length === PANEL_LIST_ROWS) break;
-    }
-    return out;
+  const pickedFiles = useMemo(
+    () => pickedWaitingSources(sources, (path, by) => index.keyOf(path, by), pick, PANEL_LIST_ROWS),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [index, pick, sources, revision]);
+    [index, pick, sources, revision],
+  );
 
   const panel = picked ? (
     <NextPanel

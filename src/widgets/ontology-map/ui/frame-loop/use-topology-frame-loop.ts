@@ -7,7 +7,7 @@ import { createNeuralGlStage } from "../../neural-gl/neural-gl-stage";
 import { ambientSleepFactor } from "../../model/ambient/ambient-sleep";
 import { shouldSkipFrame } from "../../model/ambient/idle-gate";
 import { projectDomeEdgeControl } from '../../model/dome-view/dome-edge';
-import { neuralTractsFor } from "../frame-draw/paint-neural";
+import { neuralTractsFor } from "../frame-draw/neural/paint-neural";
 import { createStillFrame } from "../frame-cache/still-frame";
 import { createCameraFrameStage } from "./topology-camera-frame-stage";
 import { createClusterFrameStage } from "./topology-cluster-frame-stage";

@@ -27,9 +27,7 @@ export interface MeaningEditorNode {
   slug: string;
   title: string;
   kind: string;
-  /** Every name the concept answers to: its title and each `display_<locale>`. */
   names?: readonly string[];
-  /** The title of the domain it sits in, so two same-named targets can be told apart. */
   domainTitle?: string | null;
 }
 
@@ -37,7 +35,6 @@ export interface MeaningEditorSource extends MeaningEditorNode {
   frontmatter: Record<string, unknown>;
 }
 
-/** One relation the source declares (`out`) or another document declares toward it (`in`). */
 export interface MeaningEditorRelationRow {
   relation: MeaningEditRelation;
   direction: 'out' | 'in';
@@ -61,7 +58,6 @@ interface Draft {
   relation: MeaningEditRelation;
   targetId: string;
   why: string;
-  /** The relation being changed; null while adding a new one. */
   from: { relation: MeaningEditRelation; targetId: string } | null;
 }
 
@@ -89,9 +85,7 @@ export function MeaningEditorPanel({
   initialTargetId?: string | null;
   initialWhy?: string;
   onPreview: (preview: MeaningEditorPreview | null) => void;
-  /** Writes the plan at once; `what` and `targetTitle` name it in the answer. */
   onApply: (plan: OntologyRelationEditPlan, what: MeaningEditorWrite, targetTitle: string) => Promise<void>;
-  /** An incoming relation lives in the other document; editing it opens that document's relation. */
   onEditIncoming: (row: MeaningEditorRelationRow) => void;
   onRemoveIncoming: (row: MeaningEditorRelationRow) => Promise<void>;
   onClose: () => void;

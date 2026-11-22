@@ -14,14 +14,12 @@ export interface ScrollBox {
 
 export interface FollowState {
   readonly following: boolean;
-  /** Last offset seen, by a scroll event or the follower's own write. */
   readonly lastTop: number;
 }
 
 export const FOLLOWING: FollowState = { following: true, lastTop: 0 };
 
 const END_SLACK_PX = 2;
-/** A downward scroll that stops within a line of the end has come back to it. */
 const RETURN_SLACK_PX = 24;
 const MOVE_EPSILON_PX = 0.5;
 const GLIDE_TIME_CONSTANT_MS = (MOTION.base.duration * 1000) / 3;

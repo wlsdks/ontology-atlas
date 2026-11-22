@@ -699,7 +699,7 @@ describe("rpc response completion helpers", () => {
     // console report module (the return-code branches) — check each seam.
     const entrySource = readFileSync("scripts/dogfood/dogfood-mcp-walk.mjs", "utf-8");
     const rpcClientSource = readFileSync("scripts/lib/dogfood-walk/rpc-client.mjs", "utf-8");
-    const reportSource = readFileSync("scripts/lib/dogfood-walk/report.mjs", "utf-8");
+    const reportSource = readFileSync("scripts/lib/dogfood-walk/run-dogfood-walk.mjs", "utf-8");
 
     for (const source of [entrySource, rpcClientSource, reportSource]) {
       assert.doesNotMatch(source, /\bprocess\.exit\s*\(/);

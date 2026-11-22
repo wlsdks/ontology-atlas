@@ -11,10 +11,10 @@ export const DOME_PLANE: Readonly<Record<ConeKind, { y: number; r: number }>> = 
   element: { y: -150 * CONE_HEIGHT_SCALE, r: 224 },
 };
 
-export function domeHash01(str: string): number {
+export function domeHash01(text: string): number {
   let h = 2166136261;
-  for (let i = 0; i < str.length; i++) {
-    h ^= str.charCodeAt(i);
+  for (let i = 0; i < text.length; i++) {
+    h ^= text.charCodeAt(i);
     h = Math.imul(h, 16777619);
   }
   return ((h >>> 0) % 100000) / 100000;

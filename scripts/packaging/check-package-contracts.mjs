@@ -33,11 +33,11 @@ function globToRegExp(pattern) {
   return new RegExp(`^${escaped}$`);
 }
 
-function listFiles(root, dir = root) {
+function listFiles(root, directory = root) {
   const files = [];
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
     if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue;
-    const full = join(dir, entry.name);
+    const full = join(directory, entry.name);
     if (entry.isDirectory()) {
       files.push(...listFiles(root, full));
     } else if (entry.isFile()) {
@@ -57,13 +57,13 @@ export function isCoveredByFiles(relPath, files) {
   });
 }
 
-export function fileEntryMatches(entry, packageFiles, dir) {
+export function fileEntryMatches(entry, packageFiles, directory) {
   const normalized = normalizeRel(entry).replace(/\/$/, '');
   if (normalized.includes('*')) {
     const re = globToRegExp(normalized);
     return packageFiles.some((file) => re.test(file));
   }
-  if (existsSync(join(dir, normalized))) return true;
+  if (existsSync(join(directory, normalized))) return true;
   return packageFiles.some((file) => file.startsWith(`${normalized}/`));
 }
 
@@ -132,7 +132,7 @@ export function collectReachableFiles(entryFiles) {
   return [...seen].sort();
 }
 
-export function packageEntrypoints(pkg, dir) {
+export function packageEntrypoints(pkg, directory) {
   const refs = new Set();
   if (pkg.main) refs.add(pkg.main);
   for (const bin of Object.values(pkg.bin ?? {})) refs.add(bin);
@@ -140,7 +140,7 @@ export function packageEntrypoints(pkg, dir) {
     if (!isPublishRuntimeScript(name)) continue;
     for (const ref of parseScriptFileRefs(script)) refs.add(ref);
   }
-  return [...refs].map((ref) => resolve(dir, ref));
+  return [...refs].map((ref) => resolve(directory, ref));
 }
 
 export function checkPackage({ label, dir }, options = {}) {

@@ -14,7 +14,7 @@ export const rules = [
       /^\.github\/workflows\/release-macos\.yml$/,
       /^\.github\/PULL_REQUEST_TEMPLATE\.md$/,
       /^scripts\/packaging\/check-package-contracts\.(?:mjs|test\.mjs)$/,
-      /^scripts\/packaging\/smoke-packed-cli\.mjs$/,
+      /^scripts\/packaging\/smoke-(?:packed-cli|vault-fixtures)\.mjs$/,
     ],
   },
 ];
@@ -33,7 +33,7 @@ export const escalations = [
       /^\.github\/workflows\/release-macos\.yml$/,
       /^\.github\/PULL_REQUEST_TEMPLATE\.md$/,
       /^scripts\/packaging\/check-package-contracts\.(?:mjs|test\.mjs)$/,
-      /^scripts\/packaging\/smoke-packed-cli\.mjs$/,
+      /^scripts\/packaging\/smoke-(?:packed-cli|vault-fixtures)\.mjs$/,
     ],
   },
 ];
@@ -42,5 +42,7 @@ export const directTests = {
   script: [
     ['scripts/packaging/check-package-contracts.mjs', 'scripts/packaging/check-package-contracts.test.mjs'],
     ['scripts/packaging/check-package-contracts.test.mjs', 'scripts/packaging/check-package-contracts.test.mjs'],
+    ['scripts/packaging/smoke-vault-fixtures.mjs', 'scripts/packaging/check-package-contracts.test.mjs'],
+    ['scripts/packaging/smoke-vault-fixtures.test.mjs', 'scripts/packaging/check-package-contracts.test.mjs'],
   ],
 };

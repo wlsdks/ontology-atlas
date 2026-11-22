@@ -111,7 +111,7 @@ export function gracefulQuitCommandOptions() {
 
 export function installedAppBundleCandidates(appBundleName) {
   return INSTALLED_APP_CANDIDATE_DIRS
-    .map((dir) => path.join(dir, appBundleName))
+    .map((directory) => path.join(directory, appBundleName))
     .filter((appPath) => fs.existsSync(appPath));
 }
 
@@ -298,14 +298,9 @@ export async function waitForExistingProcessesToExit({
 
 
 /**
- * The app enforces a single instance, so a second launch does not start a second process — it hands
- * focus to the window that already exists and exits immediately.
- *
- * That turns a running app into a silent measurement trap: the harness would "launch" the bundle it
- * just built, attach to the **previous** build's window, and report success about code it never ran.
- * A stale instance is therefore a hard stop rather than a warning, unless the caller explicitly
- * asked for it to be replaced with `--kill-existing`.
- *
+ * The app enforces a single instance: a second launch hands focus to the existing window and exits.
+ * A running app is therefore a silent measurement trap (the harness would attach to the previous
+ * build's window), so a stale instance is a hard stop unless the caller asked for `--kill-existing`.
  * Returns the failure message, or `null` when nothing is running.
  */
 export function staleInstanceFailure({ appBundleName, pids = [] } = {}) {

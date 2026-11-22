@@ -2,7 +2,7 @@
 
 import { forwardRef, type InputHTMLAttributes, type ReactNode } from "react";
 
-import { DrawnCheck } from "@/shared/motion/drawn-check";
+import { DrawnCheck } from "@/shared/motion/status-glyphs/DrawnCheck";
 import { CONTROL_DISABLED_CLASS, fieldLabel } from "../control-class";
 
 export interface CheckboxProps

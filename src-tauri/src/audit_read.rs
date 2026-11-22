@@ -155,7 +155,7 @@ impl Session {
         #[cfg(unix)]
         {
             use std::os::fd::{AsRawFd, FromRawFd};
-            let root_fd = crate::agent_setup::open_absolute_directory_no_follow(&root)?;
+            let root_fd = crate::confined_files::open_absolute_directory_no_follow(&root)?;
             let root_id = identity(&entry_of(&root_fd).map_err(|_| FAILED)?);
             let side_fd = unsafe {
                 libc::openat(

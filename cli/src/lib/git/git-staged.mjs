@@ -14,7 +14,7 @@ function defaultRun(args, cwd) {
  *
  * @param {object} [options]
  * @param {string} [options.cwd]
- * @param {(args: string[], cwd: string) => string} [options.run]  injectable git runner
+ * @param {(args: string[], cwd: string) => string} [options.run]
  * @returns {string[] | null}
  */
 export function getStagedFiles({ cwd = process.cwd(), run = defaultRun } = {}) {

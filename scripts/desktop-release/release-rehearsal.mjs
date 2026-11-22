@@ -18,12 +18,7 @@ import { pathToFileURL } from "node:url";
 export const RELEASE_WORKFLOW_PATH = ".github/workflows/release-macos.yml";
 const FULL_SHA = /^[0-9a-f]{40}$/i;
 
-/**
- * Steps that only hold with secrets, a real tag, or GitHub state.
- *
- * The key is the workflow's `name:`. The value is **why it cannot run here** — a
- * person must be able to answer "then where do I check it" immediately.
- */
+/** Steps that only hold with secrets, a real tag, or GitHub state. The key is the workflow's `name:`; the value says why it cannot run here, so a person knows where to check it instead. */
 export const REHEARSAL_SKIPS = {
   "Require protected main dispatch context":
     "The ref, event SHA and workflow SHA of workflow_dispatch can only be compared inside the execution context GitHub builds. A --tag rehearsal also runs the tag/current-main admission checks below.",
@@ -53,14 +48,7 @@ export const REHEARSAL_SKIPS = {
   "Cleanup Apple signing keychain": "It removes a keychain that only the signing path creates.",
 };
 
-/**
- * Gives **something to run instead** for steps whose runner command cannot be used
- * verbatim.
- *
- * Skipping and checking by proxy are different things. Tag/version consistency can
- * be checked among the three files without a tag name, and the signed build path is
- * mostly proven by the unsigned one.
- */
+/** What to run instead for steps whose runner command cannot be used verbatim: tag/version consistency is checkable among the three files without a tag name, and the unsigned build mostly proves the signed one. */
 export const REHEARSAL_SUBSTITUTES = {
   "Verify release tag version": {
     argv: ["node", "scripts/desktop-release/release-rehearsal.mjs", "--check-versions"],
@@ -77,14 +65,7 @@ export const REHEARSAL_SLOW_STEPS = new Set([
   "Build release app bundle",
 ]);
 
-/**
- * Extracts the `build-macos` job's `run:` steps **in the order the file lists
- * them**.
- *
- * No YAML parser is added: this workflow's step shape is fixed (`- name:` followed
- * by `run:`), and being self-explanatory beats carrying another dependency. The
- * number of steps extracted is guarded by a contract test.
- */
+/** Extracts the `build-macos` job's `run:` steps in file order. No YAML parser: the step shape is fixed (`- name:` then `run:`), and a contract test guards the step count. */
 /**
  * Timeout for a tool probe, in ms. `--list` really invokes four tools, and slow rustup shims on CI
  * can exceed the default test timeout. A slow tool is reported `unknown`, not `missing`; the env
@@ -93,15 +74,8 @@ export const REHEARSAL_SLOW_STEPS = new Set([
 export const PROBE_TIMEOUT_MS = Number(process.env.RELEASE_REHEARSAL_PROBE_TIMEOUT_MS) || 5_000;
 
 /**
- * Probes one tool. Returns **one of three** results — `ok`, `missing`, or
- * `unknown` (hit the timeout). Not folding "unknown" into "missing" is the point of
- * this function.
- *
- * ⚠️ `spawn`'s type is narrowed to **only the four fields this function actually
- * reads**. With `typeof spawnSync` a test stub would have to fill in `pid`,
- * `output`, `stderr` and other fields **nothing here looks at**, which makes the
- * stub invent values that are not facts. A seam should be exactly as wide as its
- * consumer really requires.
+ * Probes one tool: `ok`, `missing`, or `unknown` (hit the timeout); "unknown" must not fold into "missing".
+ * `spawn` is typed as only the four fields read here, so a test stub never invents values nothing reads.
  *
  * @param {string} tool
  * @param {string[]} args
@@ -154,7 +128,6 @@ export function parseAdmitReleaseSteps(workflow) {
   return parseReleaseJobSteps(workflow, "admit-release");
 }
 
-/** The jobs a tag runs after admission that this machine can walk, in that order. */
 export const REHEARSED_JOBS = Object.freeze(["test-release-gates", "test-macos", "build-macos", "sign-macos"]);
 
 export function parseRehearsedSteps(workflow) {
@@ -163,7 +136,6 @@ export function parseRehearsedSteps(workflow) {
   );
 }
 
-/** Translates one workflow `run:` line into argv runnable on this machine. */
 export function localCommandFor(step, { arch = hostArch() } = {}) {
   const substitute = REHEARSAL_SUBSTITUTES[step.name];
   if (substitute) return substitute.argv;
@@ -184,7 +156,6 @@ export function hostArch() {
   return process.arch === "arm64" ? "aarch64" : "x64";
 }
 
-/** Returns the current checkout's commit as a full, unabbreviated SHA. */
 export function currentHeadSha(root = process.cwd()) {
   const result = spawnSync("git", ["rev-parse", "--verify", "HEAD^{commit}"], {
     cwd: root,
@@ -199,7 +170,6 @@ export function currentHeadSha(root = process.cwd()) {
   return sha;
 }
 
-/** Builds local commands for admit-release's two real checks, only when a tag is given. */
 export function admissionCheckCommands(tag, sha) {
   if (!tag) return [];
   if (!FULL_SHA.test(sha)) throw new Error("admission needs the full 40-character commit SHA.");
@@ -222,7 +192,6 @@ export function admissionCheckCommands(tag, sha) {
   ];
 }
 
-/** What can be checked without a tag name: whether the three versions agree. */
 export function checkVersionsAgree(root = process.cwd()) {
   const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")).version;
   const tauri = JSON.parse(
@@ -248,13 +217,9 @@ function run(argv, { cwd, env }) {
 }
 
 /**
- * Repacking the updater archive is fail-closed without a minisign key — correct,
- * since the app silently refuses an unsigned update package. But **that key exists
- * only in secrets**, so left alone the rehearsal stops where CI would pass.
- *
- * So the rehearsal mints a **throwaway key** to walk that step. What is proven is
- * "the archive is rebuilt from the signed app and a signature is attached", not
- * "it was signed with our key" — the latter is only true on a real tag.
+ * Repacking the updater archive fails closed without a minisign key, which exists only in secrets,
+ * so the rehearsal mints a throwaway key to walk that step. That proves the archive is rebuilt from
+ * the signed app and a signature is attached, not that it was signed with our key.
  *
  * @param {string} root
  * @param {{
@@ -424,9 +389,8 @@ function main() {
     });
   }
 
-  // Tools that may exist on the runner but not here, or the reverse. The 3rd and
-  // 4th failures were exactly this — with the order fully correct, a missing tool
-  // still stops you in the same place.
+  // Tools that may exist on the runner but not here, or the reverse: a missing tool stops the walk
+  // even when the order is correct.
   const tools = [
     ["pnpm", ["--version"]],
     ["bun", ["--version"]],
@@ -441,9 +405,8 @@ function main() {
     if (probe.state === "ok") {
       console.log(`${color(32, "  tool ok  ")} ${tool} — ${probe.version}`);
     } else if (probe.state === "unknown") {
-      // **Do not report unknown as missing.** Hitting the timeout means "no answer in
-      // time", not "absent on this machine". Calling both the same thing sends the next
-      // person off to install a tool that is already there.
+      // Do not report unknown as missing: a timeout means "no answer in time", not "absent", and would
+      // send the next person to install a tool that is already there.
       console.log(
         `${color(33, "  tool ?    ")} ${tool} — no answer within ${PROBE_TIMEOUT_MS}ms, so this is unconfirmed (it does not mean absent).`,
       );

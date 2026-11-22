@@ -519,7 +519,7 @@ describe("AtlasGitPanel desktop", () => {
     // Changed files — the "what". If history named only concepts, a step that
     // touched non-concept files would vanish from the screen entirely.
     const files = await screen.findAllByTestId("atlas-git-commit-file");
-    expect(files.map((el) => el.textContent).join(" ")).toContain(
+    expect(files.map((element) => element.textContent).join(" ")).toContain(
       "docs/capabilities/foo.md",
     );
 
@@ -897,7 +897,7 @@ describe("AtlasGitPanel remote actions Fetch, Pull and Push", () => {
     installDesktopGit({ status: { ...STATUS_WITH_CHANGES, ahead: 1, behind: 2 } });
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
     const sections = await screen.findAllByTestId("atlas-git-section");
-    const text = sections.map((el) => el.textContent).join(" ");
+    const text = sections.map((element) => element.textContent).join(" ");
     expect(text).toContain("Push 안 한 커밋 1");
     // Steps that exist only on the remote are not in local history, so they are **guidance, not a row**.
     expect(screen.getByTestId("atlas-git-behind-row")).toHaveAccessibleName(/저장소 전체 파일이 바뀔 수 있어요/);
@@ -906,10 +906,10 @@ describe("AtlasGitPanel remote actions Fetch, Pull and Push", () => {
   it("calls git_fetch only when Fetch is pressed", async () => {
     installDesktopGit();
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
-    const btn = await screen.findByTestId("atlas-git-remote-fetch");
+    const buttonElement = await screen.findByTestId("atlas-git-remote-fetch");
     const before = tauriApiMock.invoke.mock.calls.filter(([c]) => c === "git_fetch");
     expect(before).toHaveLength(0);
-    fireEvent.click(btn);
+    fireEvent.click(buttonElement);
     await waitFor(() =>
       expect(
         tauriApiMock.invoke.mock.calls.filter(([c]) => c === "git_fetch"),
@@ -1204,7 +1204,7 @@ describe("AtlasGitPanel selected concept properties and neighbours", () => {
 
     // Relations are **names, not counts** — 「1」 cannot say what the 1 is.
     const neighbors = screen.getAllByTestId("atlas-git-ego-neighbor");
-    expect(neighbors.map((el) => el.textContent).join(" ")).toContain("온보딩·배포·앱 셸");
+    expect(neighbors.map((element) => element.textContent).join(" ")).toContain("온보딩·배포·앱 셸");
 
     // No Domain cell when the domain is a Belongs-to neighbour; the drawing names nobody at rest.
     expect(ego).not.toHaveTextContent("도메인");
@@ -1213,7 +1213,7 @@ describe("AtlasGitPanel selected concept properties and neighbours", () => {
     printed.querySelectorAll("title").forEach((title) => title.remove());
     expect(printed.textContent?.match(/온보딩·배포·앱 셸/g)).toHaveLength(1);
     fireEvent.pointerEnter(neighbors[0]);
-    expect(screen.getAllByTestId("atlas-git-ego-label").map((el) => el.textContent)).toEqual(["온보딩·배포·앱 셸"]);
+    expect(screen.getAllByTestId("atlas-git-ego-label").map((element) => element.textContent)).toEqual(["온보딩·배포·앱 셸"]);
 
     // A person's sentence is the headline; the concept names are the chips, not a second title.
     expect(screen.getByTestId("atlas-git-detail-headline")).toHaveTextContent(/^무언가 고쳤다$/);

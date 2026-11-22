@@ -1,4 +1,4 @@
-import { existsSync } from './confined-source-fs.mjs';
+import { existsSync } from './confinement/confined-source-fs.mjs';
 import { join, extname } from 'node:path';
 import { RUST_SOURCE_EXTENSION, SOURCE_EXT } from './source-files.mjs';
 

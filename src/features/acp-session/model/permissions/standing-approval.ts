@@ -1,10 +1,7 @@
-import { PATH_ARGUMENT_KEYS, type AcpPermissionRequest } from '../acp-client';
+import { PATH_ARGUMENT_KEYS, type AcpPermissionRequest } from './permission-request';
 import { atlasToolMode } from './atlas-tool-policy';
 
-/**
- * The Atlas writes a person's auto-approve choice may answer: additive or rewording changes a Git
- * diff can undo. Every other write, including a tool the server adds later, still shows the card.
- */
+/** The additive or rewording Atlas writes a Git diff can undo; every other write, including a tool added later, still shows the card. */
 export const STANDING_APPROVAL_ATLAS_WRITES: ReadonlySet<string> = new Set([
   'add_concept',
   'add_concepts',
@@ -20,10 +17,7 @@ export const STANDING_APPROVAL_ATLAS_WRITES: ReadonlySet<string> = new Set([
 const VAULT_EDIT_RULE = 'edit-inside-folder@1';
 const ATLAS_WRITE_RULES = 'atlas-write-arguments@1';
 
-/**
- * Everything auto-approve answers, spelled out: the two rule versions and each Atlas write. A choice kept on this Mac holds only while it
- * equals this, so widening the scope never widens what an earlier press allowed.
- */
+/** Everything auto-approve answers; a kept choice holds only while it equals this, so widening the scope never widens what an earlier press allowed. */
 export const STANDING_APPROVAL_SCOPE = [
   VAULT_EDIT_RULE,
   ATLAS_WRITE_RULES,
@@ -32,23 +26,17 @@ export const STANDING_APPROVAL_SCOPE = [
 
 export interface StandingApprovalContext {
   enabled: boolean;
-  /** The opened folder, as the session was started with it. */
   vaultRoot: string | null;
-  /** The wired Atlas server's name, or null when none is wired. */
   vaultMcpServerName: string | null;
 }
 
 export interface StandingApprovalAnswer {
   optionId: string;
-  /** The file name or bare tool name the transcript names. */
   target: string;
 }
 
 const PATH_SEPARATOR = /[\\/]/;
-/**
- * Coding agents load these as instructions. Mirrors `mcp/src/schema.mjs` (stems and character
- * class); `agent-instruction-files.contract.test.ts` holds the two together.
- */
+/** Coding agents load these as instructions. Mirrors `mcp/src/schema.mjs`; `agent-instruction-files.contract.test.ts` holds the two together. */
 const AGENT_INSTRUCTION_FILE_STEMS: ReadonlySet<string> = new Set(['agents', 'agents.override', 'claude', 'claude.local', 'gemini']);
 const HIDDEN_OR_CONTROL_CHARACTER = /[\p{Cc}\p{Cf}\u2028\u2029]/u;
 

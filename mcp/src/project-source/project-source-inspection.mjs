@@ -18,7 +18,7 @@ import { join } from 'node:path';
 // (tests/contract/vault-format/source-inventory-bound.contract.test.ts).
 const SOURCE_INVENTORY_VERSION = 'inventory-v2';
 const SOURCE_INVENTORY_MAX_DEPTH = 20;
-const SOURCE_INVENTORY_MAX_FILES = 8000;
+const SOURCE_INVENTORY_MAX_FILES = 16000;
 const SOURCE_INVENTORY_MAX_HASH_BYTES = 32 * 1024 * 1024;
 const SOURCE_PRUNE_DIR_NAMES = new Set([
   '.git',

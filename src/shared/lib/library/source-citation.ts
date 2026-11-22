@@ -113,10 +113,8 @@ export interface SourceCitationResolution {
 }
 
 /**
- * Apply the source-navigation contract shared by the document viewer and answer comparison.
- * A source is only considered missing when the parent supplied both an allow-list and a
- * navigator; without both, the honest state is unavailable. Returns `null` for ordinary
- * wikilinks so callers can keep their existing handling for those targets.
+ * A source is missing only when the parent supplied both an allow-list and a navigator; otherwise
+ * it is unavailable. `null` for ordinary wikilinks.
  */
 export function resolveSourceCitation(
   rawWikiSlug: string,

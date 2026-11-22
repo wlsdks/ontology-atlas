@@ -1,7 +1,8 @@
 export { useVaultCreateFlow } from './model/use-vault-create-flow';
 export { useJustStartVault } from './model/use-just-start-vault';
 export { buildCursorMcpDeeplink } from './lib/mcp-deeplinks';
-export { RowStateBadge, useAgentClientControls } from './ui/AgentClientButtons';
+export { RowStateBadge } from './ui/RowStateBadge';
+export { useAgentClientControls } from './ui/use-agent-client-controls';
 export {
   buildOntologyStarterAgentVerifyPrompt,
   buildOntologyStarterJsonGateCommand,

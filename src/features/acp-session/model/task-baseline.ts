@@ -71,7 +71,6 @@ export interface TaskBaselineCaptureRequest {
   vaultId: string;
   slugs: readonly string[];
   fileHandles: ReadonlyMap<string, FileSystemFileHandle>;
-  /** Rechecks the captured vault, task, generation and requested membership after each await. */
   isCurrent: () => boolean;
   inspectSource?: () => Promise<TaskBaselineSourceInspection | null>;
   now?: () => string;
@@ -112,11 +111,7 @@ export function unavailableTaskBaseline(
   });
 }
 
-/**
- * Reads the explicitly requested ontology documents before the actor starts. Two complete reads
- * bracket hashing so equal mtimes cannot hide bytes changed during capture. Nothing here is sent
- * to the actor or persisted; the caller decides which later permission may inspect the snapshot.
- */
+/** Two complete reads bracket hashing so equal mtimes cannot hide bytes changed during capture. Nothing here is sent to the actor or persisted. */
 export async function captureTaskBaseline(request: TaskBaselineCaptureRequest): Promise<TaskBaselineCaptureResult> {
   const capturedAt = (request.now ?? (() => new Date().toISOString()))();
   const slugs = [...new Set(request.slugs.map((slug) => slug.trim()).filter(Boolean))].sort();

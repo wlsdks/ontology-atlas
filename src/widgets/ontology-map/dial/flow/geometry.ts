@@ -1,4 +1,4 @@
-import type { Box, Point } from "../types";
+import type { Box, Point } from "../dial-shapes";
 
 export function quadAt(p0: Point, c: Point, p1: Point, t: number): Point {
   const u = 1 - t;
@@ -17,14 +17,14 @@ function quadPiece(p0: Point, c: Point, p1: Point, t0: number, t1: number): [Poi
 }
 
 export function quadLength(p0: Point, c: Point, p1: Point): number {
-  let len = 0;
-  let prev = p0;
+  let curveLength = 0;
+  let previous = p0;
   for (let i = 1; i <= 16; i += 1) {
     const q = quadAt(p0, c, p1, i / 16);
-    len += Math.hypot(q.x - prev.x, q.y - prev.y);
-    prev = q;
+    curveLength += Math.hypot(q.x - previous.x, q.y - previous.y);
+    previous = q;
   }
-  return len;
+  return curveLength;
 }
 
 export function trimmedPiece(p0: Point, c: Point, p1: Point, trimStart: number, trimEnd: number): [Point, Point, Point] | null {

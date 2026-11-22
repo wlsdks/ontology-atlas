@@ -8,8 +8,8 @@ function installMatchMedia(matches: boolean) {
   const listeners = new Set<Listener>();
   const mql = {
     matches,
-    addEventListener: (_: string, fn: Listener) => listeners.add(fn),
-    removeEventListener: (_: string, fn: Listener) => listeners.delete(fn),
+    addEventListener: (_: string, listener: Listener) => listeners.add(listener),
+    removeEventListener: (_: string, listener: Listener) => listeners.delete(listener),
   };
   const queries: string[] = [];
   window.matchMedia = vi.fn((q: string) => {
@@ -20,7 +20,7 @@ function installMatchMedia(matches: boolean) {
     queries,
     emit(next: boolean) {
       mql.matches = next;
-      for (const fn of listeners) fn();
+      for (const listener of listeners) listener();
     },
     listenerCount: () => listeners.size,
   };

@@ -26,13 +26,13 @@ function Harness({ open }: { open: boolean }) {
 }
 
 function box(container: HTMLElement): HTMLElement {
-  const el = container.querySelector('[data-testid="box"]');
-  if (!el) throw new Error("disclosure box not mounted");
-  return el as HTMLElement;
+  const element = container.querySelector('[data-testid="box"]');
+  if (!element) throw new Error("disclosure box not mounted");
+  return element as HTMLElement;
 }
 
 describe("useRowDisclosure does not measure on mount", () => {
-  const withStubbedHeight = (fn: () => void) => {
+  const withStubbedHeight = (callback: () => void) => {
     const original = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "offsetHeight");
     Object.defineProperty(HTMLElement.prototype, "offsetHeight", {
       configurable: true,
@@ -41,7 +41,7 @@ describe("useRowDisclosure does not measure on mount", () => {
       },
     });
     try {
-      fn();
+      callback();
     } finally {
       if (original) Object.defineProperty(HTMLElement.prototype, "offsetHeight", original);
       else delete (HTMLElement.prototype as unknown as Record<string, unknown>).offsetHeight;

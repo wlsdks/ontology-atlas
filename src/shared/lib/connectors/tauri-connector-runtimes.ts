@@ -1,5 +1,5 @@
 /**
- * Bridge over `resolve_connector_runtimes` in `src-tauri/src/connectors.rs`. A spawned connector
+ * Bridge over `resolve_connector_runtimes` in `src-tauri/src/connectors/runtimes.rs`. A spawned connector
  * inherits an environment with no `PATH`, so a bare `npx` resolves to nothing. Outside Tauri it
  * returns `null`: "not asked", never "none installed".
  */

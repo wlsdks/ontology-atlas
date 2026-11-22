@@ -30,7 +30,6 @@ export interface VaultAgentRuntime {
  */
 export type VaultAgentRoute = "checking" | "agent" | "unavailable";
 
-/** Only verified, ready runtimes with an app-owned permission boundary may open chat. */
 export function selectVaultAgentRuntimes(
   runtimes: readonly AcpRuntimeStatus[] | null | undefined,
 ): VaultAgentRuntime[] {
@@ -64,18 +63,13 @@ export function resolveVaultAgentRoute({
 }
 
 /**
- * The guarded ACP runtime a screen can dock a conversation to, read one way for every screen. It lives
- * in the chat panel widget because a feature-level hook would need a new same-layer edge in
- * `same-layer-cross-import-ratchet`; widgets may read every feature.
+ * The guarded ACP runtime a screen can dock a conversation to, read one way for every screen. It
+ * lives in this widget because a feature-level hook would need a new edge in `same-layer-cross-import-ratchet`.
  */
 export function useVaultAgentRuntime(
   vaultRoot: string | null,
   options: {
-    /**
-     * Hand the session the folder's registered connectors as well (`features/mcp-connectors`).
-     * The Library and the project page do; Analysis never has, and a refactor is not the place
-     * to change what a screen hands its agent.
-     */
+    /** Also hands the session the folder's registered connectors (`features/mcp-connectors`); Analysis does not. */
     connectors?: boolean;
   } = {},
 ): {

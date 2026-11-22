@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import playwrightConfig, { resolvePlaywrightWorkers } from '../../../playwright.config';
-import { loadCheckRules } from '../../../scripts/lib/ci/focused-check-suggestions.mjs';
+import { importCheckRules } from '../../../scripts/lib/ci/focused-check-suggestions.mjs';
 import { MERGE_SMOKE_SPECS } from '../../../scripts/ci/merge-smoke-specs.mjs';
 import { POST_MERGE_SPECS } from '../../e2e/post-merge-specs';
 
@@ -54,11 +54,9 @@ it('CI rejects a focused test before accepting a partial run', () => {
  * Returns each `run:` block as {the folded single line, the list of continuation
  * indents} — comments cannot enter here.
  *
- * Why the indents come back too (measured on #1178's first run): inside a folded
- * scalar (>-), **a more-indented continuation line is not folded and stays a
- * literal line.** This parser joins everything, so it missed that trap and went
- * green, while on the real runner the script became two lines: line 1 ran the whole
- * suite without a shard and line 2 died with exit 127. So "shape" (uniform
+ * The indents come back too: inside a folded scalar (>-), **a more-indented continuation
+ * line is not folded and stays a literal line**, so the runner would see two lines (the whole
+ * suite without a shard, then exit 127). Joining hides that, so "shape" (uniform
  * indentation) is asserted separately from "content".
  */
 function runBlocks(source: string): { text: string; indents: number[] }[] {
@@ -146,7 +144,7 @@ const UNMAPPED_POST_MERGE_SPECS = [
 
 describe('post-merge specs reach the pull requests that change their owner', () => {
   it('maps every post-merge spec to a source owner unless it is a named sweep', async () => {
-    const registry = await loadCheckRules();
+    const registry = await importCheckRules();
     const commands = [...registry.rules, ...registry.escalations].map((rule) => rule.command).join('\n');
     const unmapped = POST_MERGE_SPECS.filter((file) => !commands.includes(`tests/e2e/${file}`));
     expect([...unmapped].sort()).toEqual(UNMAPPED_POST_MERGE_SPECS);
@@ -206,9 +204,8 @@ describe('workflow branches are alive', () => {
   });
 
   it('no shard block has a further-indented continuation line — the literal trap of folded scalars', () => {
-    // #1178's first run died in exactly this shape: a more-indented line stayed
-    // literal, the script became two lines, and line 2's `--shard=…` exited 127. With
-    // this assertion that diff goes red here, before it reaches CI.
+    // A more-indented line stays literal, the script becomes two lines, and line 2's
+    // `--shard=…` exits 127; this assertion turns that diff red before it reaches CI.
     for (const block of suiteBlocks) {
       expect(
         new Set(block.indents).size,

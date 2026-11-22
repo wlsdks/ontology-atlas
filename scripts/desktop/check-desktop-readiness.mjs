@@ -12,15 +12,10 @@ import { blankComments } from "../quality/source-language/inventory.mjs";
 
 const root = process.cwd();
 
-// A missing target file is downgraded to a readable failure rather than a raw
-// ENOENT stack trace: a crash reads as "no gate" instead of "gate failed".
-// Returning an empty string lets the following `.includes(...)` assertion fail
-// naturally, which also names which contract broke.
-//
-// Every check reads code: comments in .ts/.tsx/.mjs, .rs, .yml, .toml, .sh and
-// .gitignore are blanked, so deleting a history comment cannot turn a check red
-// and a comment naming a forbidden string cannot either. .json, .md, .plist and
-// .webmanifest files are read unchanged.
+// A missing target file becomes a readable failure (an empty string fails the following `.includes(...)`
+// and names the contract), not a raw ENOENT trace.
+// Every check reads code: comments in .ts/.tsx/.mjs, .rs, .yml, .toml, .sh and .gitignore are blanked, so
+// a comment can neither turn a check red nor satisfy it. .json, .md, .plist and .webmanifest are read unchanged.
 function readText(relativePath) {
   const absolute = path.join(root, relativePath);
   if (!fs.existsSync(absolute)) {
@@ -30,21 +25,27 @@ function readText(relativePath) {
   return blankComments(relativePath, fs.readFileSync(absolute, "utf8").replace(/\r\n?/g, "\n"));
 }
 
-// scripts/verify-macos/verify-macos-app-launch.mjs was decomposed (refactor: cohesive-seam
-// module split) into a thin orchestrator plus scripts/lib/verify-macos/*.mjs
-// helper modules. The content-based `.includes(...)` gates below still check
-// the combined "verify app launch" surface, so read the orchestrator plus
-// every extracted module and concatenate them for those checks.
-function readVerifyMacosAppLaunchScript() {
-  const entry = readText("scripts/verify-macos/verify-macos-app-launch.mjs");
-  const libDir = path.join(root, "scripts/lib/verify-macos");
-  const libFiles = fs.existsSync(libDir)
-    ? fs.readdirSync(libDir).filter((name) => name.endsWith(".mjs")).sort()
+// A script that is an entry plus a folder of modules: the `.includes(...)` gates check the combined
+// surface, so read the entry and every non-test module of the folder.
+function readEntryWithModules(entryPath, moduleDirectory) {
+  const entry = readText(entryPath);
+  const absoluteDirectory = path.join(root, moduleDirectory);
+  const moduleFiles = fs.existsSync(absoluteDirectory)
+    ? fs.readdirSync(absoluteDirectory).filter((name) => name.endsWith(".mjs") && !name.endsWith(".test.mjs")).sort()
     : [];
-  const libText = libFiles
-    .map((name) => readText(path.join("scripts/lib/verify-macos", name)))
+  const moduleText = moduleFiles
+    .map((name) => readText(path.join(moduleDirectory, name)))
     .join("\n");
-  return `${entry}\n${libText}`;
+  return `${entry}\n${moduleText}`;
+}
+
+function readTypeScriptFolder(directory) {
+  const absoluteDirectory = path.join(root, directory);
+  const names = fs.existsSync(absoluteDirectory)
+    ? fs.readdirSync(absoluteDirectory).filter((name) => name.endsWith(".ts") && !name.endsWith(".test.ts")).sort()
+    : [];
+  if (names.length === 0) fail(`tracked source folder is empty or missing — ${directory}.`);
+  return names.map((name) => readText(path.join(directory, name))).join("\n");
 }
 
 function fail(message) {
@@ -81,25 +82,22 @@ const enMessages = JSON.parse(readText("messages/en.json"));
 const koMessages = JSON.parse(readText("messages/ko.json"));
 const rootLayout = readText("app/layout.tsx");
 // The site Organization and WebSite JSON-LD the root layout renders (`siteEntityGraph`).
-const siteEntity = readText("src/shared/config/site-entity.ts");
+const siteEntity = readText("src/shared/config/site/site-entity.ts");
 const webManifest = JSON.parse(readText("public/manifest.webmanifest"));
 const cargoToml = readText("src-tauri/Cargo.toml");
 const rootReadme = readText("README.md");
-const downloadPage = readText("src/views/download/ui/DownloadPage.tsx");
-/**
- * The gateway's top chrome — where the brand name is actually drawn.
- *
- * ⚠️ Before 2026-07-30 this string lived in `DownloadPage.tsx`, so the brand gate
- * below only had to read that one file. When the global nav started sharing four
- * gateway addresses (`/` · `/download` · `/guide` · `/changelog`) it moved down
- * into `widgets/gateway-chrome`, and the gate immediately went red **unable to
- * find a brand that was plainly on screen**. Not a defect — the aim was tied to a
- * file path. The map destination gate broke the same day for the same reason
- * (`map-destination-route.contract.test.ts`).
- *
- * So **both are read together**. Whether the brand sits in the page or in the
- * chrome, being on the visitor's screen is a pass.
- */
+/** The page and the parts it is built from: the hero and the release controls own the claims this gate reads. */
+const downloadPage = [
+  "src/views/download/ui/DownloadPage.tsx",
+  "src/views/download/ui/hero/HeroSection.tsx",
+  "src/views/download/ui/ClosingSection.tsx",
+  "src/views/download/ui/release/DownloadActions.tsx",
+  "src/views/download/ui/release/FactsStrip.tsx",
+  "src/views/download/ui/release/TrustLine.tsx",
+]
+  .map(readText)
+  .join("\n");
+/** The gateway's top chrome, where the brand name is drawn. The brand gate reads page and chrome together, so it does not pin the brand to one file path. */
 const gatewayChrome = readText("src/widgets/gateway-chrome/ui/GatewayNav.tsx");
 const gatewaySurfaceSource = `${downloadPage}\n${gatewayChrome}`;
 const downloadRoute = readText("app/(gateway)/[locale]/download/page.tsx");
@@ -107,13 +105,15 @@ const bottomTabBar = readText("src/widgets/bottom-tab-bar/ui/BottomTabBar.tsx");
 const bottomTabBarPolicy = readText("src/widgets/bottom-tab-bar/lib/is-tab-active.ts");
 const tauriLib = readText("src-tauri/src/lib.rs");
 const tauriVaultScope = readText("src-tauri/src/vault/scope.rs");
-const tauriShim = readText("src/shared/lib/vault-folder/tauri-vault-fs.ts");
+const tauriShim = readTypeScriptFolder("src/shared/lib/vault-folder/native-vault");
+const tauriRuntimeShim = readText("src/shared/lib/vault-folder/native-vault/tauri-vault-runtime.ts");
+const tauriHandleShim = readText("src/shared/lib/vault-folder/native-vault/tauri-vault-handle.ts");
 const tauriInfoPlist = readText("src-tauri/Info.plist");
 const packageMacosDmgScript = readText("scripts/desktop/package-macos-dmg.mjs");
 const cleanTauriMacosAppsScript = readText("scripts/desktop/clean-tauri-macos-apps.mjs");
 const desktopPerformanceScript = readText("scripts/desktop/check-desktop-performance.mjs");
 const verifyDmgScript = readText("scripts/verify-macos/verify-macos-dmg.mjs");
-const verifyAppScript = readVerifyMacosAppLaunchScript();
+const verifyAppScript = readEntryWithModules("scripts/verify-macos/verify-macos-app-launch.mjs", "scripts/lib/verify-macos");
 const verifyInstallScript = readText("scripts/verify-macos/verify-macos-install-smoke.mjs");
 const deployMacosAppLocalScript = readText("scripts/desktop/deploy-macos-app-local.mjs");
 const codexBuildRunScript = readText("script/build_and_run.sh");
@@ -129,7 +129,7 @@ const releaseTagScript = readText("scripts/desktop-release/check-macos-release-t
 const releaseSlotScript = readText("scripts/desktop-release/check-macos-release-slot.mjs");
 const releaseGithubScript = readText("scripts/desktop-release/check-macos-release-github.mjs");
 const releaseRunScript = readText("scripts/desktop-release/watch-macos-release-run.mjs");
-const releaseStatusScript = readText("scripts/desktop-release/check-macos-release-status.mjs");
+const releaseStatusScript = readEntryWithModules("scripts/desktop-release/check-macos-release-status.mjs", "scripts/desktop-release/release-status");
 const goalAuditScript = readText("scripts/desktop-release/check-desktop-goal-audit.mjs");
 const macosReleaseNamesHelper = readText("scripts/lib/macos-release-names.mjs");
 const hostedDownloadSurfaceScript = readText("scripts/download/check-hosted-download-surface.mjs");
@@ -147,17 +147,19 @@ const docsVaultPageFiles = [
     .map((name) => `src/views/docs-vault/model/${name}`),
 ];
 const docsVaultPage = docsVaultPageFiles.map(readText).join("\n");
-// The docs surface's local-source control is carried by the vault chip menu
-// (merged 2026-08-08).
-const vaultChipSurface = readText("src/views/docs-vault/ui/parts/DocsVaultVaultChip.tsx");
+// The docs surface's local-source control lives in the vault chip menu.
+const vaultChipSurface = readText("src/views/docs-vault/ui/header/DocsVaultVaultChip.tsx");
 const topologyEmptyState = readText("src/widgets/topology-controls/ui/TopologyEmptyState.tsx");
-const vaultAgentSetupPanel = readText("src/widgets/app-settings-menu/ui/VaultAgentSetupPanel.tsx");
+const vaultAgentSetupPanel = readText("src/widgets/app-settings-menu/ui/agent-setup/VaultAgentSetupPanel.tsx");
+const vaultAgentSetupCopySources = [
+  "src/widgets/app-settings-menu/model/agent-setup/agent-setup-packets.ts",
+  "src/widgets/app-settings-menu/ui/agent-setup/AgentSetupTroubleshooting.tsx",
+]
+  .map(readText)
+  .join("\n");
 const appSettingsMenu = readText("src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx");
 const workspacePane = readText("src/widgets/app-settings-menu/ui/panes/WorkspacePane.tsx");
-// After that merge the old `LocalVaultPicker` was an orphan no surface rendered
-// (#72); its features (recent-vault recovery, copy path, open in Finder) were
-// restored into the settings sheet's workspace group. The gate looks at the live
-// one.
+// The settings sheet's workspace group carries recent-vault recovery, copy path and open in Finder.
 const ontologyStarterCta = readText("src/features/docs-vault-local/ui/OntologyStarterCta.tsx");
 const localFsHandleStore = readText("src/entities/local-fs-handle/api/store.ts");
 const vaultChoiceHook = readText("src/entities/vault-session/model/local-vault/use-vault-choice.ts");
@@ -181,7 +183,7 @@ const cargoPackageName = cargoToml.match(/\[package\][\s\S]*?\nname\s*=\s*"([^"]
 // mcp/ and cli/ are separate install roots; without the same pin they run whatever pnpm is
 // installed globally, and an older one ignores their supply-chain settings.
 const unpinnedInstallRoots = ["mcp", "cli"].filter(
-  (dir) => JSON.parse(readText(`${dir}/package.json`)).packageManager !== pinnedPnpm,
+  (directory) => JSON.parse(readText(`${directory}/package.json`)).packageManager !== pinnedPnpm,
 );
 if (unpinnedInstallRoots.length === 0) {
   pass(`mcp/ and cli/ pin the same pnpm as the root (${pinnedPnpm})`);
@@ -425,16 +427,13 @@ if (
 }
 
 /*
- * The sidecar build is part of this script, not a prerequisite someone must remember.
- * `tauri.conf.json` names `src-tauri/binaries/ontology-atlas-mcp-<triple>`, which
- * `.gitignore` excludes, so in a fresh checkout or worktree `cargo test` dies in the
- * build script with "resource path ... doesn't exist" — a missing prerequisite wearing
- * a defect's costume, and it cost a measured debug cycle on 2026-09-12. Building it
- * first takes 2.6 s when it is already current.
+ * The sidecar build is part of this script: `tauri.conf.json` names
+ * `src-tauri/binaries/ontology-atlas-mcp-<triple>`, which `.gitignore` excludes, so a fresh
+ * checkout's `cargo test` dies in the build script on a missing resource. It takes 2.6 s when current.
  */
 if (
   pkg.scripts?.["test:desktop:bridge"] ===
-  "pnpm exec vitest run src/shared/lib/vault-folder/tauri-vault-fs.test.ts src/entities/local-fs-handle/api/store.test.ts src/entities/vault-session/model/local-vault/agent-config-status.test.ts && pnpm mcp:build-binary && cargo test --manifest-path src-tauri/Cargo.toml --workspace && node scripts/perf/vault-rows-equality.mjs"
+  "pnpm exec vitest run src/shared/lib/vault-folder/native-vault src/entities/local-fs-handle/api/store.test.ts src/entities/vault-session/model/local-vault/agent-config-status.test.ts && pnpm mcp:build-binary && cargo test --manifest-path src-tauri/Cargo.toml --workspace && node scripts/perf/vault-rows-equality.mjs"
 ) {
   pass(
     "desktop native vault bridge tests build the sidecar, then cover WebView handle shim, agent config validation, Rust path guard, and a manifest from cached rows equal to one from files",
@@ -471,11 +470,8 @@ if (
   fail("package.json test:desktop:check must include scripts/desktop-release/check-macos-release-github.test.mjs, scripts/desktop-release/check-macos-release-source.test.mjs, scripts/desktop-release/watch-macos-release-run.test.mjs, scripts/desktop-release/check-macos-release-status.test.mjs, scripts/download/generate-download-release-facts.test.mjs, scripts/lib/macos-artifact/macos-checksum.test.mjs, and scripts/lib/macos-release-names.test.mjs so the macOS release operator, source, run-watch, checksum filename, completion, and app-vs-asset naming gates stay covered");
 }
 
-// This suite owns 52 loopback-server call sites. Node 24 otherwise uses all 12
-// available cores on this machine, and the resulting subprocess connection burst
-// was observed failing as EADDRNOTAVAIL across unrelated server-backed tests.
-// Four workers completed the same 387-test suite in 35.4 seconds without losing
-// coverage, so keep the resource bound in the command the release preflight runs.
+// This suite owns 52 loopback-server call sites; Node 24 on all cores fails them with EADDRNOTAVAIL
+// from the connection burst. Four workers keep the bound in the command the release preflight runs.
 if (pkg.scripts?.["test:desktop:check"]?.startsWith("node --test --test-concurrency=4 ")) {
   pass("desktop checker tests bound loopback-heavy Node test concurrency to 4");
 } else {
@@ -586,20 +582,12 @@ if (
   pkg.scripts?.["test:desktop:check"]?.includes("scripts/download/check-hosted-download-surface.test.mjs") &&
   hostedDownloadSurfaceScript.includes("/ko/download/") &&
   hostedDownloadSurfaceScript.includes("https://github.com/wlsdks/ontology-atlas/releases") &&
-  // Copying the expected wording by hand into the verifier makes the gate go
-  // quietly red on every copy change — it did: five consecutive Pages deployments
-  // succeeded while verify failed. The source of truth is the shipped message
-  // catalogue.
+  // The expected wording comes from the shipped message catalogue: copying it by hand makes the
+  // gate go red on every copy change.
   hostedDownloadSurfaceScript.includes('readFileSync(path.join(REPO_ROOT, "messages", "ko.json")') &&
-  // In either release-facts state, published or not, the visitor gets something to
-  // decide on — a file if there is one to download, otherwise the browser map that
-  // works today. The verifier treats both branches as the same deployment contract.
-  //
-  // 2026-08-19: the old needle pair (Windows unsigned warning, Windows download)
-  // left the page when the install section was deleted. The hero trust line is
-  // promoted to a required needle because it carries the Apple check (notarisation)
-  // and the Windows unsigned fact; the no-backend fact is the FAQ privacy answer's
-  // needle, `faq.items.privacy.a`.
+  // In either release-facts state the visitor gets something to decide on (a file, or the browser map),
+  // and the verifier treats both as one deployment contract. The hero trust line is required because it
+  // carries the Apple check and the Windows unsigned fact; the no-backend fact is `faq.items.privacy.a`.
   hostedDownloadSurfaceScript.includes("downloadCopy.trustLine") &&
   hostedDownloadSurfaceScript.includes("downloadCopy.faq?.items?.privacy?.a") &&
   hostedDownloadSurfaceScript.includes("downloadCopy.primaryCtaPublished") &&
@@ -686,16 +674,10 @@ if (desktopPreflightContract.ok) {
 }
 
 /**
- * This order is a contract, not a preference. **DMG signing must sit between
- * packaging and notarisation.**
- *
- * Gatekeeper evaluates the DMG container itself, so a notarised but unsigned DMG
- * around a signed `.app` is still rejected, and signing after notarisation
- * invalidates the staple: there is exactly one slot.
- *
- * **The updater archive (`desktop:repack-updater`) also has exactly one slot —
- * immediately after app signing.** Packed earlier it carries the pre-signature app,
- * which updated users meet as "damaged" (measured 2026-07-28).
+ * This order is a contract: DMG signing sits between packaging and notarisation (Gatekeeper evaluates
+ * the DMG container, and signing after notarisation invalidates the staple), and the updater archive
+ * (`desktop:repack-updater`) comes immediately after app signing, because packed earlier it carries
+ * the pre-signature app, which updated users meet as "damaged".
  */
 const RELEASE_ARTIFACT_COMMAND = "node scripts/desktop-release/build-macos-release-artifact.mjs";
 const RELEASE_ARTIFACT_STEP_MARKERS = [
@@ -732,11 +714,9 @@ if (
   pkg.scripts?.["test:desktop:check"]?.includes("scripts/desktop-release/check-desktop-goal-audit.test.mjs") &&
   goalAuditScript.includes("--pr=NUMBER is required") &&
   goalAuditScript.includes("desktop:release-preflight") &&
-  // Since #617 (Firebase Hosting removed, GitHub Pages as the single host) the
-  // hosting surface is deliberately separated from the macOS release audit — Pages
-  // is deployed by deploy-pages.yml and verified by `desktop:verify-hosted`. So
-  // goal-audit calls release-status without hosting flags, and the hosting verifier
-  // must exist separately; with neither, hosting would be behind no gate at all.
+  // Hosting is separate from the macOS release audit: Pages is deployed by deploy-pages.yml and verified
+  // by `desktop:verify-hosted`, so goal-audit calls release-status without hosting flags and the hosting
+  // verifier must exist separately.
   !goalAuditScript.includes("--include-hosted-surface") &&
   releaseStatusScript.includes("use pnpm desktop:verify-hosted to check the deployed website") &&
   pkg.scripts?.["desktop:verify-hosted"] === "node scripts/download/check-hosted-download-surface.mjs" &&
@@ -753,35 +733,16 @@ if (
   );
 }
 
-// root-first-open (2026-07) retired the marketing `src/views/landing`
-// surface — `/` now renders the topology map directly (no vault-not-selected
-// promo/download-only landing), and its hero copy moved into `/download`'s
-// intro section. Local vault work on the web root (FirstRunStarterModule,
-// inside HomePage's INDEX panel) calls `useLocalVault().open()` directly and
-// deliberately bypasses `/docs` — so this check only still asserts that
-// `/docs` itself keeps its OWN local-source tab desktop-gated, which this
-// change did not touch.
+// `/` renders the topology map directly and local vault work on the web root bypasses `/docs`, so this
+// only asserts that `/docs` keeps its own local-source tab desktop-gated.
 if (
   !downloadPage.includes('/docs/?intent=local') &&
   docsVaultPage.includes("shouldHonorLocalIntent(intent, isDesktopRuntime)") &&
   docsVaultPage.includes("isDocsVaultLocalSourceDisabled") &&
-  // The old `desktopOnlyTooltip` key was merged into
-  // `vaultStatus.unsupportedTooltip` in #435. The visual signal is `disabled`; a
-  // screen reader hears *why* it is locked via aria-describedby — both are
-  // required.
-  //
-  // ⚠️ **What is guarded is "it says why it is locked", not "it is in that spot"**
-  // (2026-08-08). This line used to pin **one id string**,
-  // `docs-vault-local-unsupported-hint`. When that control moved from the right-hand
-  // radio into the vault chip menu (two places saying the same fact folded into
-  // one), the gate went red — while the explanation had actually *improved*, into a
-  // **visible sentence + aria-describedby**. Pinning the container turns a
-  // legitimate improvement red, and the next person reverts the improvement instead
-  // of the gate (see .claude/rules/design-gates.md).
-  // So the requirement is a **pair**, not a string: the reason it is locked
-  // (`localSourceDisabled`) and the wiring that reads that reason out
-  // (`aria-describedby` + the reason string). Which piece of UI carries it is not
-  // asked.
+  // The visual signal is `disabled`; a screen reader hears why via aria-describedby: both are required.
+  // What is guarded is "it says why it is locked", not "it is in that spot": the requirement is the reason
+  // (`localSourceDisabled`) plus the wiring that reads it out, so moving the UI does not turn the gate red
+  // (.claude/rules/design-gates.md).
   docsVaultPage.includes("vaultStatus.unsupportedTooltip") &&
   docsVaultPage.includes("localSourceDisabled") &&
   vaultChipSurface.includes("aria-describedby") &&
@@ -795,24 +756,9 @@ if (
 }
 
 /*
- * This block used to be a **sentence pin** — six exact strings such as
- * `openLabel === "Open vault folder"`. It was the one block that had not learned
- * the lesson the README block above already had ("checking table markup literally
- * went wholly stale on one rewrite").
- *
- * The bill came due on 2026-08-03: when the PO council retired the word
- * "vault" from the screen (see the decision ledger) this pin went red
- * immediately. **The copy got better and the gate blocked it** — the failure
- * direction .claude/rules/documentation.md forbids:
- *
- *   "if the tool's behaviour changes and the doc does not, the sentence is
- *    unchanged so it **passes**; rewrite the doc in better words and it turns
- *    **red**."
- *
- * So it checks **facts**, not sentences. The one contract this gate really keeps:
- * **guidance for local-folder work points at the installed app, and browser File
- * System Access is not advertised as a capability.** Which words do that is the
- * copy's business.
+ * Checks facts, not sentences: a sentence pin goes red when the copy improves, the failure direction
+ * .claude/rules/documentation.md forbids. The one contract kept: guidance for local-folder work points
+ * at the installed app, and browser File System Access is not advertised as a capability.
  */
 const desktopRoutingCopy = [
   enMessages.searchWidgets.shortcuts.rows.localVault,
@@ -830,28 +776,11 @@ const advertisesBrowserFsa = desktopRoutingCopy.some(
   (text) => text.includes("File System Access") && !/desktop|설치/i.test(text),
 );
 /**
- * ⚠️ **Three different things were bound to one rule** (council, 2026-08-08).
- *
- * The six strings above are of two kinds:
- *
- * - **Two degradation notices** (`unsupportedTooltip` ·
- *   `localVaultPicker.unsupported`) — they tell a browser without FSA "not here,
- *   but it works in the app". Pointing at the installed app is correct; unchanged.
- * - **One shortcut description** (`shortcuts.rows.localVault`) — it says what the
- *   palette's shortcut opens. **That shortcut works on the web too**: the `/docs`
- *   local source it turns on runs in the browser when FSA is supported, and only
- *   when it is not does the chip go inactive (`isDocsVaultLocalSourceDisabled`).
- *
- * The gate required all three to name the installed app, and that requirement was
- * **making the shortcut description a lie** — what .claude/rules/surfaces.md calls
- * writing that something does not work when it does. The same failure direction
- * this file's own preamble warns about: *"rewrite it in better words and it turns
- * red."*
- *
- * So the requirement now **matches the nature of each place**. The shortcut
- * description loses no coverage; only its requirement changes — it must name **what
- * it opens** (a folder) rather than a runtime. Whether FSA is advertised as a
- * capability is still checked across **all six** strings.
+ * Two degradation notices (`unsupportedTooltip`, `localVaultPicker.unsupported`) tell a browser
+ * without FSA "not here, but it works in the app", so they point at the installed app. The shortcut
+ * description (`shortcuts.rows.localVault`) is true on the web too (`isDocsVaultLocalSourceDisabled`),
+ * so it must name what it opens (a folder), not a runtime. FSA advertised as a capability is checked
+ * across all six strings.
  */
 const namesTheFolder = (text, locale) => matches("folderWord", locale, text);
 
@@ -875,9 +804,9 @@ if (
 }
 
 // README prose is editable; its download and release references follow runtime config.
-const configuredSite = readText("src/shared/config/site.ts")
+const configuredSite = readText("src/shared/config/site/site.ts")
   .match(/export const SITE_URL = ["']([^"']+)["']/)?.[1];
-const configuredRepository = readText("src/shared/config/social-links.ts")
+const configuredRepository = readText("src/shared/config/site/social-links.ts")
   .match(/export const GITHUB_REPO_URL = ["']([^"']+)["']/)?.[1];
 const readmeLinks = [...rootReadme.matchAll(/(?:href=["']|\]\()(https?:\/\/[^"')\s>]+)/g)]
   .flatMap((match) => {
@@ -890,34 +819,26 @@ if (
 ) {
   pass("root README links to the configured download and release destinations");
 } else {
-  fail("README.md must link to the configured hosted download route and repository releases; check src/shared/config/site.ts and social-links.ts");
+  fail("README.md must link to the configured hosted download route and repository releases; check src/shared/config/site/site.ts and social-links.ts");
 }
 
 /*
- * Human prose is not a runtime contract. This used to pin sentences across
- * FEATURES, PRODUCT-DIRECTION, DESKTOP, and ARCHITECTURE, so correcting the
- * retired root-map story made CI red while the shipped branch was right.
- * Derive the routing fact from the component that owns it instead; docs prose
- * remains protected by generated-surface and referential-integrity checks.
+ * Human prose is not a runtime contract: derive the routing fact from the component that owns it;
+ * docs prose is protected by generated-surface and referential-integrity checks.
  */
 if (
-  // Since 2026-11-17 the map and first-run views arrive as one fetched chunk (`views`), so a
-  // first-time web visitor on `/` downloads only the gateway; the routing facts are unchanged.
+  // The map and first-run views arrive as one fetched chunk (`views`), so a first-time web visitor
+  // on `/` downloads only the gateway.
   rootEntryPage.includes("const vaultOpen = Boolean(vault.manifest || vault.partialTotal)") &&
   rootEntryPage.includes("if (views) return <views.HomePage />") &&
   rootEntryPage.includes("isDesktopShell()") &&
   rootEntryPage.includes("return vault.restoreAttempted && views ? <views.FirstRunPage /> : <DesktopVaultRedirect />") &&
-  // Since 2026-09-13 the first-run branch is also reached when the launch deliberately
-  // stopped for the person to choose between known folders, on the web as well as the
-  // desktop — `FirstRunPage` is the launch chooser, and without this arm a returning web
-  // visitor reloading their own workspace landed on the download gateway. So the guard on
-  // that branch is no longer the bare `if (isDesktopShell())` this line used to match
-  // literally; what is checked is that the runtime test is still there and that the
-  // choosing state reaches the same screen.
+  // The first-run branch is also reached when the launch stops for the person to choose between known
+  // folders (`FirstRunPage` is the launch chooser): check that the runtime test is still there and that
+  // the choosing state reaches the same screen.
   rootEntryPage.includes("vault.awaitingVaultChoice") &&
-  // Since 2026-09-01 the hosted branch may wrap the gateway with a lost-vault notice
-  // (a failed restore says so instead of landing silently), so the fact checked here is
-  // that the empty hosted session still renders the gateway, not the exact return shape.
+  // The hosted branch may wrap the gateway with a lost-vault notice, so the fact checked is that an
+  // empty hosted session still renders the gateway, not the exact return shape.
   rootEntryPage.includes("<GatewayLandingPage />")
 ) {
   pass("root entry derives the loaded-vault map, desktop first run, the launch chooser, and hosted gateway from runtime state");
@@ -928,9 +849,7 @@ if (
 }
 
 if (
-  // The hub is the map: `/ontology`'s tree hub (OntologyViewPage) was retired and
-  // both `/` and `/ontology` converged on this empty state, so the check converges
-  // too.
+  // The hub is the map: both `/` and `/ontology` converge on this empty state.
   // Measure the destination, not the formatting.
   /showPickerPath\s*\?\s*['"]\/docs\/\?intent=local['"]\s*:\s*['"]\/download\/['"]/.test(topologyEmptyState) &&
   /Install the desktop app/i.test(enMessages.topology?.empty?.bodyNoProjectsDownload ?? "")
@@ -942,13 +861,9 @@ if (
   );
 }
 
-// What the download page may claim is decided by one thing: whether a release is
-// actually published. Size, checksum, and waiting copy each used to carry their
-// own placeholder, so six places went stale independently and a visitor could not
-// tell whether installing worked today. The gate now keeps two properties:
-// ① release facts come only from the generated module ② internal pipeline state
-// (PR review, tag consistency, CI check commands) is absent from the public
-// surface — that belongs to the release runbook (docs/DESKTOP-MACOS.md).
+// What the download page may claim is decided by whether a release is published. Two properties are
+// kept: release facts come only from the generated module, and internal pipeline state (PR review,
+// tag consistency, CI commands) is absent from the public surface (docs/DESKTOP-MACOS.md).
 const downloadGeneratedRelease = readText(
   "src/views/download/model/macos-release.generated.ts",
 );
@@ -964,17 +879,11 @@ if (
   downloadPage.includes("isMacosReleasePublished") &&
   downloadPage.includes("macosAssetFor") &&
   downloadPage.includes("formatAssetSize") &&
-  // 2026-08-19: the four old markers (`download-platform-macos` ·
-  // `download-platform-windows` · `download-macos-pending` ·
-  // `buildDmgName('aarch64')`) all lived inside the install section, and the owner
-  // removed that section entirely (*"the last section is probably unnecessary, it is all at the top
-  // anyway"* — the last section is probably unnecessary, it is all at the top
-  // anyway). The remaining property is the same — **the page reads release facts
-  // from the generated module** — and today the hero carries it: it really reads the
-  // Windows asset (`windowsAsset`) and names the in-development version honestly
-  // when nothing is published (`resolveDisplayReleaseTag`).
+  // The page reads release facts from the generated module: the hero reads the Windows asset
+  // (`windowsAsset`) and names the in-development version when nothing is published
+  // (`displayReleaseTag`).
   downloadPage.includes("windowsAsset") &&
-  downloadPage.includes("resolveDisplayReleaseTag") &&
+  downloadPage.includes("displayReleaseTag") &&
   downloadPage.includes("gateway-hero-windows") &&
   internalPipelineLeaks.every(
     (marker) => !downloadPage.includes(marker) && !downloadRoute.includes(marker),
@@ -1026,11 +935,8 @@ if (
   );
 }
 
-// Since root-first-open (2026-07), `/` is the map hub itself rather than a
-// marketing gateway — with no vault it still renders the dogfood sample plus the
-// first-run starter. Hiding this bar below `lg` would leave no global nav at all
-// (the desktop nav rail is `lg:flex`), so the only thing hidden now is
-// `/download`, which has its own header.
+// `/` is the map hub itself: hiding this bar below `lg` would leave no global nav (the desktop nav
+// rail is `lg:flex`), so only `/download`, which has its own header, hides it.
 if (
   bottomTabBar.includes("shouldHideBottomTabBar(pathname") &&
   /normalized === ['"]\/download['"]/.test(bottomTabBarPolicy) &&
@@ -1416,19 +1322,15 @@ if (tauriConfig) {
   fail("src-tauri/tauri.conf.json must exist before desktop prototype work continues");
 }
 
-// The 14-inch MacBook Pro reference panel is 1512x982 logical points — that is the whole display,
-// menu bar and notch included. Tauri's width/height are the *inner* content size, so a declared
-// height of 982 asked for 982 + 28pt of title bar inside a 945pt visible frame: AppKit silently
-// constrained it on every launch and the shipped default was never once observed as a window
-// (the ledger measured 1512x949 outer and 1512x917 content). The measurement scripts, meanwhile,
-// have always swept 1512x900. This gate exists so the shipped first viewport and the swept first
-// viewport cannot drift apart again.
+// The 14-inch MacBook Pro reference is 1512x982 logical points including menu bar and notch; Tauri's
+// height is the inner content size, so 982 asks for 982 + 28pt of title bar inside a 945pt visible
+// frame and AppKit constrains it. This gate keeps the shipped first viewport and the swept 1512x900
+// viewport from drifting apart.
 const REFERENCE_14_INCH_LOGICAL = { width: 1512, height: 982 };
 const MACOS_MENU_BAR_RESERVE_PT = 37;
 const MACOS_TITLE_BAR_PT = 28;
-// Read out of app_shell/window.rs rather than copied. A second literal here would let the Rust
-// constant drift while this gate stayed green, which is the failure the comment on both sides was
-// written to prevent — and a comment is not a gate.
+// Read out of app_shell/window.rs rather than copied: a second literal would let the Rust constant
+// drift while this gate stays green.
 const mainWindowMinSource = readText("src-tauri/src/app_shell/window.rs").match(
   /const MAIN_WINDOW_MIN_LOGICAL: \(f64, f64\) = \(([\d.]+), ([\d.]+)\);/,
 );
@@ -1501,8 +1403,7 @@ if (missingBundleIcons.length === 0) {
 
 if (
   rootLayout.includes("title: 'Ontology Atlas'") &&
-  // Official Pages now serves at a custom-domain root. Keep the manifest helper so
-  // forks that still deploy beneath a base path do not regress (#617).
+  // Forks that deploy beneath a base path need the manifest helper.
   rootLayout.includes("manifest: withBasePath('/manifest.webmanifest')") &&
   rootLayout.includes("siteEntityGraph(") &&
   siteEntity.includes("alternateName: 'ontology-atlas'") &&
@@ -1609,23 +1510,12 @@ if (
 }
 
 /**
- * Window permissions are **allowed by name**, and dangerous families are blocked
- * by prefix.
- *
- * This used to allow `core:default` **only**. The intent (no broad fs, shell, http,
- * or opener) was right, but the expression was "never add anything", which makes
- * you want to delete the gate the moment you need one narrow permission such as the
- * updater — and deleting it is the end of the gate.
- *
- * So it was rewritten in two directions. **Allow only what is named in this list**
- * — keeping the list short is the contract. **Block whole families** — a new name
- * is blocked without anyone knowing it. The latter is the real shield.
+ * Window permissions are allowed by name and dangerous families blocked by prefix: keep the allow
+ * list short, and block whole families so a new name is blocked without anyone knowing it.
  */
 const ALLOWED_CAPABILITY_PERMISSIONS = [
-  // `core:default` is still allowed by name, but this window no longer uses it. It expands to nine
-  // sets, and four of them — `core:image`, `core:resources`, `core:menu`, `core:tray` — were granted
-  // to a webview that never called them: the frontend reaches Rust through app-defined commands
-  // (which capabilities do not gate) plus one `listen`. Enumerating is what makes that visible.
+  // `core:default` is allowed by name but unused here: it expands to nine sets, four of which
+  // (`core:image`, `core:resources`, `core:menu`, `core:tray`) the webview never calls.
   "core:default",
   // `listen`, the frontend's only event-plugin call.
   "core:event:default",
@@ -1644,17 +1534,10 @@ const ALLOWED_CAPABILITY_PERMISSIONS = [
 ];
 
 /**
- * The core baseline this window genuinely needs, measured rather than assumed (2026-08-24).
- *
- * `core:event` carries `listen`; `core:app` carries `getVersion` for the update control.
- * Question Desk also invokes `window.print()` through `core:webview:allow-print`. The frontend
- * still needs no `core:path`, `core:window`, or broad `core:webview:default` grant.
- *
- * Capabilities gate JS-to-Rust IPC only. This app resizes and positions its window from Rust, which
- * is why dropping `core:window` changes nothing a user can see.
- *
- * The `core:default` umbrella is still accepted so the gate judges *what is granted* rather than the
- * spelling, but a capability granting neither shape has lost the baseline and must fail.
+ * The core baseline this window needs: `core:event` carries `listen`, `core:app` carries
+ * `getVersion` for the update control, and Question Desk invokes `window.print()` through
+ * `core:webview:allow-print`. Capabilities gate JS-to-Rust IPC only; the window is resized from Rust.
+ * The `core:default` umbrella is still accepted so the gate judges what is granted, not the spelling.
  */
 const REQUIRED_CORE_PERMISSIONS = ["core:event:default", "core:app:default"];
 
@@ -1719,26 +1602,26 @@ if (missingTauriCommands.length === 0) {
 }
 
 if (
-  tauriShim.includes("from '@tauri-apps/api/core'") &&
-  tauriShim.includes("isTauri()") &&
-  tauriShim.includes("tauriInvoke(command, args)") &&
+  tauriRuntimeShim.includes("from '@tauri-apps/api/core'") &&
+  tauriRuntimeShim.includes("isTauri()") &&
+  tauriRuntimeShim.includes("tauriInvoke(command, args)") &&
   !tauriShim.includes("__TAURI_INTERNALS__")
 ) {
   pass("Tauri vault bridge uses the supported JavaScript invoke API");
 } else {
-  fail("src/shared/lib/vault-folder/tauri-vault-fs.ts must use @tauri-apps/api/core invoke/isTauri instead of private Tauri internals");
+  fail("src/shared/lib/vault-folder/native-vault/tauri-vault-runtime.ts must use @tauri-apps/api/core invoke/isTauri instead of private Tauri internals");
 }
 
 if (
-  tauriShim.includes("options.create") &&
-  tauriShim.includes("'vault_path_exists'") &&
-  tauriShim.includes("if (!exists)") &&
-  tauriShim.includes("'write_vault_text_file'")
+  tauriHandleShim.includes("options.create") &&
+  tauriHandleShim.includes("'vault_path_exists'") &&
+  tauriHandleShim.includes("if (!exists)") &&
+  tauriHandleShim.includes("'write_vault_text_file'")
 ) {
   pass("Tauri getFileHandle create semantics avoid truncating existing vault files");
 } else {
   fail(
-    "src/shared/lib/vault-folder/tauri-vault-fs.ts must match File System Access create semantics: create missing files without truncating existing ones",
+    "src/shared/lib/vault-folder/native-vault/tauri-vault-handle.ts must match File System Access create semantics: create missing files without truncating existing ones",
   );
 }
 
@@ -1797,14 +1680,15 @@ if (
 }
 
 if (
-  vaultAgentSetupPanel.includes("buildAgentVerifyCliCommand") &&
-  vaultAgentSetupPanel.includes("buildAgentSetupCliCommand") &&
-  vaultAgentSetupPanel.includes("buildAgentSetupPacket(localVault.handle?.name ?? 'vault', vaultRootPath)") &&
-  vaultAgentSetupPanel.includes("buildAgentFirstContactProofPacket(localVault.handle?.name ?? 'vault', vaultRootPath)") &&
-  vaultAgentSetupPanel.includes("buildOntologyStarterAgentVerifyPrompt(vaultRootPath)") &&
-  vaultAgentSetupPanel.includes("buildOntologyStarterJsonGateCommand(vaultRootPath)") &&
-  vaultAgentSetupPanel.includes("agentJsonGatePreview") &&
-  vaultAgentSetupPanel.includes("hubs ${target} --plan")
+  vaultAgentSetupPanel.includes("useAgentSetupCopy(vaultNameForConfig, vaultRootPath)") &&
+  vaultAgentSetupCopySources.includes("buildAgentVerifyCliCommand") &&
+  vaultAgentSetupCopySources.includes("buildAgentSetupCliCommand") &&
+  vaultAgentSetupCopySources.includes("buildAgentSetupPacket(vaultName, vaultRootPath)") &&
+  vaultAgentSetupCopySources.includes("buildAgentFirstContactProofPacket(vaultName, vaultRootPath)") &&
+  vaultAgentSetupCopySources.includes("buildOntologyStarterAgentVerifyPrompt(vaultRootPath)") &&
+  vaultAgentSetupCopySources.includes("buildOntologyStarterJsonGateCommand(vaultRootPath)") &&
+  vaultAgentSetupCopySources.includes("agentJsonGatePreview") &&
+  vaultAgentSetupCopySources.includes("hubs ${target} --plan")
 ) {
   pass("desktop agent setup panel copies path-aware setup packets, CLI runbooks, and JSON gates");
 } else {
@@ -1816,7 +1700,7 @@ if (
 // Content alone stays green for a component mounted nowhere, so this checks the
 // chain: the panel derives an absolute path, AgentSetupSection renders the panel,
 // and the Agents MCP tab (McpPage) renders AgentSetupSection.
-const agentSetupSection = readText("src/widgets/app-settings-menu/ui/AgentSetupSection.tsx");
+const agentSetupSection = readText("src/widgets/app-settings-menu/ui/agent-setup/AgentSetupSection.tsx");
 const mcpPage = readText("src/views/mcp/ui/McpPage.tsx");
 
 if (
@@ -1849,9 +1733,7 @@ if (
   workspacePane.includes("localVault.openRecent(record)") &&
   workspacePane.includes("localVault.forgetRecent(record)") &&
   workspacePane.includes("record.desktopRootPath") &&
-  // #72 — see, copy, and open in Finder the selected vault's absolute path. Without
-  // that path on the desktop the user has no way to know the value to paste into an
-  // agent.
+  // See, copy and open in Finder the selected vault's absolute path, the value a user pastes into an agent.
   workspacePane.includes("getTauriVaultRootPath(loadedHandle)") &&
   workspacePane.includes("openTauriVaultInFinder(vaultRootPath)") &&
   workspacePane.includes("app-settings-copy-vault-path") &&
@@ -1874,10 +1756,8 @@ const tauriScaffoldFiles = [
   "src-tauri/capabilities/default.json",
   "src-tauri/icons/icon.png",
   "src-tauri/icons/icon.icns",
-  "src/shared/lib/vault-folder/tauri-vault-fs.test.ts",
-  // #72 — the old LocalVaultPicker was an orphan and was deleted. The same contract
-  // (recent-vault recovery, copy path / Finder) is carried by the settings sheet and
-  // covered by its test.
+  "src/shared/lib/vault-folder/native-vault/tauri-vault-handle.test.ts",
+  // The settings sheet carries recent-vault recovery and copy path / Finder, covered by its test.
   "src/widgets/app-settings-menu/ui/AppSettingsMenu.test.tsx",
   "src/views/root-entry/ui/RootEntryPage.test.tsx",
   "scripts/desktop/package-macos-dmg.mjs",
@@ -1891,7 +1771,7 @@ const tauriScaffoldFiles = [
   "scripts/desktop-release/check-macos-release-github.mjs",
   "scripts/desktop/sign-macos-app.mjs",
   "scripts/desktop-release/notarize-macos-dmg.mjs",
-  "src/shared/lib/vault-folder/tauri-vault-fs.ts",
+  "src/shared/lib/vault-folder/native-vault/tauri-vault-runtime.ts",
 ];
 const missingTauriFiles = tauriScaffoldFiles.filter(
   (relativePath) => !fs.existsSync(path.join(root, relativePath)),

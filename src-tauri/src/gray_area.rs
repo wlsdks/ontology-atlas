@@ -1,5 +1,8 @@
-use crate::gray_area_rpc::EvidenceReader;
-use crate::gray_area_scope::{
+mod rpc;
+pub(crate) mod scope;
+
+use rpc::EvidenceReader;
+use scope::{
     digest, excerpt_source_path, observe_scoped_source, read_text, resolve_binding,
     safe_source_path, source_witness, vault_digest, verify_identity,
 };
@@ -148,8 +151,7 @@ pub fn read_gray_area_evidence(
         return Err("binding_changed".into());
     }
     let body_digest = vault_digest(&vault)?;
-    let mut reader =
-        EvidenceReader::start(&vault, &crate::gray_area_scope::SourceObservation::empty())?;
+    let mut reader = EvidenceReader::start(&vault, &scope::SourceObservation::empty())?;
     let graph = reader.call(
         "compile_ontology",
         json!({"nodesLimit":500,"edgesLimit":500}),
@@ -400,8 +402,7 @@ pub fn preview_gray_area_scope(
     expected_binding_digest: Option<String>,
 ) -> Result<Value, Value> {
     let vault = crate::canonical_root(&vault_path).map_err(Value::String)?;
-    let binding = crate::gray_area_scope::resolve_binding_metadata(&vault, &project_slug)
-        .map_err(Value::String)?;
+    let binding = scope::resolve_binding_metadata(&vault, &project_slug).map_err(Value::String)?;
     if let Some(reason) = crate::vault_root_rejection(&binding.root) {
         return Err(json!(format!("vault-root-rejected:{reason}")));
     }
@@ -431,7 +432,7 @@ pub fn preview_gray_area_scope(
 }
 
 #[cfg(all(test, unix))]
-#[path = "gray_area_tests.rs"]
+#[path = "gray_area/tests.rs"]
 #[allow(clippy::unwrap_used, clippy::indexing_slicing, clippy::panic)]
 mod unix_tests;
 

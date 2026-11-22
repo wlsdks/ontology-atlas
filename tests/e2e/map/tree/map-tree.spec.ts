@@ -4,7 +4,7 @@ import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 import { judgeEvidence } from "../../../../src/shared/lib/git/evidence-verdict.mjs";
 import { parseFrontmatter } from "../../../../src/shared/lib/vault-document/parse-frontmatter";
-import type { TreePose } from "../../../../src/widgets/ontology-map/model/tree-view/types";
+import type { TreePose } from "../../../../src/widgets/ontology-map/model/tree-view/tree-shapes";
 import mapTree from "../../../../messages/ko/mapTree.json";
 import { installDesktopRailRuntime } from "../../desktop-rail-arrival-harness";
 import { dogfoodEvidenceVault } from "../../hex-board-vaults";

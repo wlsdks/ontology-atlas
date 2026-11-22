@@ -24,7 +24,6 @@ export type TransientSurfaceKind = "anchored" | "menu" | "sheet" | "notice" | "h
  */
 export const FOCUSLESS_KINDS: readonly TransientSurfaceKind[] = ["notice", "hint"];
 
-/** Kinds that must stand beside what raised them. */
 export const ANCHORED_KINDS: readonly TransientSurfaceKind[] = [
   "anchored",
   "menu",

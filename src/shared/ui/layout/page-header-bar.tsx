@@ -35,7 +35,6 @@ export function PageHeaderBar({
 }: {
   frame: PageHeaderFrame;
   title: string;
-  /** A `TabBar variant="segmented"`. */
   tabs?: ReactNode;
   /** A fact on the title's baseline, styled by the caller. */
   meta?: ReactNode;

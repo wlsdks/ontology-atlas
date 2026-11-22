@@ -3,18 +3,9 @@
 import { useLayoutEffect } from "react";
 
 /**
- * Set `document.title` dynamically on the client.
- *
- * The App Router's metadata system rewrites `<title>` to the layout default (the
- * locale-aware site name) on the initial commit, so a plain `useEffect` is
- * overwritten right after it runs. Two defences:
- *
- *  1. `useLayoutEffect` writes it once before paint.
- *  2. A MutationObserver watches the `<title>` node's textContent and restores our
- *     value the moment anything else (Next.js metadata) rewrites it. The observer
- *     disconnects on unmount.
- *
- * A `null` or empty string is a no-op, leaving the default title in place.
+ * Sets `document.title` on the client. The App Router rewrites `<title>` to the layout default on the
+ * initial commit, so `useLayoutEffect` writes before paint and a MutationObserver restores our value
+ * when anything else rewrites it. A `null` or empty title is a no-op.
  */
 export function useDocumentTitle(title: string | null | undefined): void {
   useLayoutEffect(() => {

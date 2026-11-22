@@ -6,7 +6,6 @@
 
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { randomUUID } from 'node:crypto';
 import {
   existsSync,
   mkdirSync,
@@ -19,6 +18,13 @@ import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { checkMcpLeanTarballFiles } from './check-package-contracts.mjs';
+import {
+  writeCycleVault,
+  writeDanglingVault,
+  writeDisconnectedVault,
+  writeMaintenanceResumeVault,
+  writeProjectlessVault,
+} from './smoke-vault-fixtures.mjs';
 import { parseMcpToolMetadataFromDescription } from '../../cli/src/lib/mcp-bridge/mcp-metadata.mjs';
 import { expectedToolsListAnnotationSummary } from '../../mcp/scripts/verify/tools-list/inventory.mjs';
 import {
@@ -131,167 +137,6 @@ function packSummary(packageDir) {
     entryCount: summary.entryCount,
     files: summary.files.map((file) => file.path),
   };
-}
-
-const nodeUidLine = () => `uid: ${randomUUID()}`;
-
-function writeCycleVault(root) {
-  mkdirSync(join(root, 'capabilities'), { recursive: true });
-  mkdirSync(join(root, 'domains'), { recursive: true });
-  writeFileSync(
-    join(root, 'capabilities', 'a.md'),
-    [
-      '---',
-      nodeUidLine(),
-      'kind: capability',
-      'slug: capabilities/a',
-      'title: A',
-      'domain: domains/auth',
-      'dependencies: [capabilities/b]',
-      '---',
-      '',
-      '# A',
-      '',
-    ].join('\n'),
-  );
-  writeFileSync(
-    join(root, 'capabilities', 'b.md'),
-    [
-      '---',
-      nodeUidLine(),
-      'kind: capability',
-      'slug: capabilities/b',
-      'title: B',
-      'domain: domains/auth',
-      'dependencies: [capabilities/a]',
-      '---',
-      '',
-      '# B',
-      '',
-    ].join('\n'),
-  );
-  writeFileSync(
-    join(root, 'domains', 'auth.md'),
-    [
-      '---',
-      nodeUidLine(),
-      'kind: domain',
-      'slug: domains/auth',
-      'title: Auth',
-      'capabilities: [capabilities/a, capabilities/b]',
-      '---',
-      '',
-      '# Auth',
-      '',
-    ].join('\n'),
-  );
-}
-
-function writeDanglingVault(root) {
-  mkdirSync(join(root, 'capabilities'), { recursive: true });
-  writeFileSync(
-    join(root, 'capabilities', 'a.md'),
-    [
-      '---',
-      nodeUidLine(),
-      'kind: capability',
-      'slug: capabilities/a',
-      'title: A',
-      'dependencies: [capabilities/missing]',
-      '---',
-      '',
-      '# A',
-      '',
-    ].join('\n'),
-  );
-}
-
-function writeDisconnectedVault(root) {
-  mkdirSync(join(root, 'capabilities'), { recursive: true });
-  for (const slug of ['a', 'b']) {
-    writeFileSync(
-      join(root, 'capabilities', `${slug}.md`),
-      [
-        '---',
-        nodeUidLine(),
-        'kind: capability',
-        `slug: capabilities/${slug}`,
-        `title: ${slug.toUpperCase()}`,
-        '---',
-        '',
-        `# ${slug.toUpperCase()}`,
-        '',
-      ].join('\n'),
-    );
-  }
-}
-
-function writeProjectlessVault(root) {
-  mkdirSync(join(root, 'domains'), { recursive: true });
-  writeFileSync(
-    join(root, 'domains', 'core.md'),
-    [
-      '---',
-      nodeUidLine(),
-      'kind: domain',
-      'slug: domains/core',
-      'title: Core',
-      '---',
-      '',
-      '# Core',
-      '',
-    ].join('\n'),
-  );
-}
-
-function writeMaintenanceResumeVault(root) {
-  mkdirSync(root, { recursive: true });
-  writeFileSync(
-    join(root, 'project.md'),
-    [
-      '---',
-      nodeUidLine(),
-      'kind: project',
-      'slug: project',
-      'title: Project',
-      'domains:',
-      '  - core',
-      '---',
-      '',
-      '# Project',
-      '',
-    ].join('\n'),
-  );
-  writeFileSync(
-    join(root, 'core.md'),
-    [
-      '---',
-      nodeUidLine(),
-      'kind: domain',
-      'slug: core',
-      'title: Core',
-      '---',
-      '',
-      '# Core',
-      '',
-    ].join('\n'),
-  );
-  writeFileSync(
-    join(root, 'feature.md'),
-    [
-      '---',
-      nodeUidLine(),
-      'kind: capability',
-      'slug: feature',
-      'title: Feature',
-      'domain: core',
-      'elements: []',
-      '---',
-      '',
-      '# Feature',
-      '',
-    ].join('\n'),
-  );
 }
 
 const temp = mkdtempSync(join(tmpdir(), 'ontology-atlas-packed-cli-'));

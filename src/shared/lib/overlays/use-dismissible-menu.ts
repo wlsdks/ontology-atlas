@@ -3,21 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 /**
- * Open/close state for a dropdown or popover: a ref for its own region, close on an
- * outside pointerdown, close on Escape, and listener cleanup.
- *
- * **Why it lives in `shared/lib`.** It was written inside `views/docs-vault` as
- * `useAdvancedMenu`, whose own comment set the condition for promotion: *"Promote it to
- * `shared/lib` once a second view with a dropdown or popover can reuse it."* The rail's
- * vault switcher (`features/vault-switch`) is that second consumer, and a feature cannot
- * import a view, so the condition is met and the move is the one the note asked for.
- * `views/docs-vault/lib/use-advanced-menu.ts` now re-exports this under the old name,
- * leaving its existing call sites untouched.
- *
- * Reimplementing the same 25 lines in the second consumer is the alternative this avoids,
- * and it is the worse one: the two copies would drift on exactly the properties
- * `shared/ui/surfaces/transient-surface.ts` exists to keep uniform - whether Escape closes, and
- * whether a press inside the surface counts as outside.
+ * A dropdown or popover closes on an outside pointerdown and on Escape. One copy, so consumers
+ * cannot drift on what `shared/ui/surfaces/transient-surface.ts` keeps uniform.
  */
 export function useDismissibleMenu() {
   const [open, setOpenInternal] = useState(false);

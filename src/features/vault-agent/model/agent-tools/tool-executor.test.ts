@@ -6,7 +6,7 @@ import type { KnowledgeGraphEdge, KnowledgeGraphNode } from '@/entities/knowledg
 import { createToolExecutor } from './tool-executor';
 import type { VaultReadPort } from './vault-read-port';
 import type { NormalizedToolCall } from '../providers/provider-adapter';
-import { AGENT_TOOL_RESULT_CHAR_CAP } from '../types';
+import { AGENT_TOOL_RESULT_CHAR_CAP } from '../agent-turn';
 
 function node(
   id: string,

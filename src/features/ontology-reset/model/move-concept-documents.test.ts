@@ -61,18 +61,18 @@ function memoryVault(
     ({
       kind: 'directory',
       name: base.split('/').pop() ?? '',
-      getDirectoryHandle: async (name: string, opts?: { create?: boolean }) => {
+      getDirectoryHandle: async (name: string, options?: { create?: boolean }) => {
         const path = join(base, name);
         if (!folders.has(path)) {
-          if (!opts?.create) throw notFound(path);
+          if (!options?.create) throw notFound(path);
           folders.add(path);
         }
         return directory(path);
       },
-      getFileHandle: async (name: string, opts?: { create?: boolean }) => {
+      getFileHandle: async (name: string, options?: { create?: boolean }) => {
         const path = join(base, name);
         if (!files.has(path)) {
-          if (!opts?.create) throw notFound(path);
+          if (!options?.create) throw notFound(path);
           files.set(path, '');
         }
         return fileHandle(path);

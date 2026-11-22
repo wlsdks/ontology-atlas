@@ -1,7 +1,6 @@
 import { Fragment } from 'react';
 import { splitHighlightSegments } from '@/shared/lib/search-match/highlight-match';
 
-/** Highlights query matches in an indigo `<mark>`; shared by every search surface. */
 export function HighlightedText({
   text,
   query,

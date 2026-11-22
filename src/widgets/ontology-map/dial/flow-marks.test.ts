@@ -16,7 +16,7 @@ import { buildFlowMarks, fanAngles, flowHeadSize, focusFlowWidth, rampedFocusWid
 import { crossfadeInk, mixOver, resolveDialInks } from "./ink";
 import { countCrossings, namesCrossed, sampleStrips } from "./frame/frame";
 import { resolveDialTokens } from "./tokens";
-import type { Box, DialAttention, DialCluster, DialItem, DialMarks, DialModel, DialScene, Point } from "./types";
+import type { Box, DialAttention, DialCluster, DialItem, DialMarks, DialModel, DialScene, Point } from "./dial-shapes";
 
 const css = readFileSync("app/styles/map-dial-tokens.css", "utf8");
 const TOKENS = resolveDialTokens((v) => (v === "--map-panel-text-primary" ? "#f4f4f8" : css.match(new RegExp(`${v}:\\s*([^;]+);`))?.[1] ?? ""));

@@ -53,7 +53,6 @@ export function useInlineConfirmFocus(
     wasOpenRef.current = open;
   }, [open, returnTo]);
 
-  /** Close and hand focus back — cancel, Escape, and a finished confirm all go through here. */
   const close = useCallback(() => {
     returnFocusRef.current = true;
     setOpen(false);
@@ -91,7 +90,6 @@ export function DocumentConfirmStep({
   /** `atlas-git-discard` or `atlas-git-restore`; suffixes `-step`, `-confirm`, `-cancel` follow. */
   testIdPrefix: string;
   doorLabel: string;
-  /** Optional words before the door, naming whose document it is. */
   lead?: ReactNode;
   confirmLabel: string;
   busyLabel: string;
@@ -99,7 +97,6 @@ export function DocumentConfirmStep({
   tone: "primary" | "danger";
   busy: boolean;
   onConfirm: () => Promise<boolean>;
-  /** The consequence, in sentences. */
   children: ReactNode;
 }) {
   const [confirming, setConfirming] = useState(false);

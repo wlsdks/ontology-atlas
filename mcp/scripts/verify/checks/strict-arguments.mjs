@@ -8,7 +8,7 @@ import {
   RELATION_TYPE_VALUES,
   WRITE_RELATION_TYPE_VALUES,
 } from '../../../src/ontology-engine.mjs';
-import { GRAPH_ARRAY_KEYS } from '../../../src/vault/relation-refs.mjs';
+import { GRAPH_ARRAY_KEYS } from '../../../src/vault/graph/relation-refs.mjs';
 
 import { EXPECTED_TOOLS } from '../tools-list/inventory.mjs';
 import { sameArray } from '../value-checks.mjs';

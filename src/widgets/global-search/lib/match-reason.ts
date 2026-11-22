@@ -8,9 +8,7 @@ import type { SearchMatchEvidence } from "./match";
  */
 export interface MatchReason {
   kind: "summary" | "name" | "id";
-  /** The text to draw. */
   text: string;
-  /** The query to mark inside `text`, or undefined to draw it plain. */
   query?: string;
 }
 
@@ -22,7 +20,6 @@ export interface MatchReason {
  */
 export function describeMatchReason(input: {
   matched?: SearchMatchEvidence;
-  /** The name the row is drawing. */
   label: string;
   summary?: string;
   query: string;

@@ -13,10 +13,6 @@ import { buildPageMetadata } from '@/shared/lib/public-pages/page-metadata';
 import { routing } from '@/i18n/routing';
 import { JsonLd } from '@/shared/ui';
 
-/**
- * Static export means every path is generated ahead of time, and the single source for the list is
- * `GUIDE_PAGES`. Adding a chapter grows the routes, the sidebar, and prev/next **from one place**.
- */
 export function generateStaticParams() {
   return routing.locales.flatMap((locale) =>
     GUIDE_PAGES.map((page) => ({ locale, segment: page.segment })),
@@ -62,7 +58,6 @@ export default async function Page({
 
   return (
     <>
-      {/* A substituted chapter is not this address's article, so it claims none. */}
       {matched ? <JsonLd data={chapter.structuredData.article} /> : null}
       {matched ? <JsonLd data={chapter.structuredData.breadcrumb} /> : null}
       <GatewayDocPage

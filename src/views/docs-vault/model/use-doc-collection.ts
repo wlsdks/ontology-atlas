@@ -132,7 +132,6 @@ export function useDocCollection({
   useEffect(() => {
     if (documentScope === 'ontology') return;
     if (!selectedDoc) return;
-    // Picking a document never narrows the "all documents" view.
     if (docCollection === 'all') return;
     const nextCollection = resolveDocsVaultCollection(selectedDoc);
     if (nextCollection !== docCollection) {
@@ -228,7 +227,6 @@ export function useDocCollection({
     [documentScope, generalDocsHref, recentKey, rememberActiveSlug, replaceUrlState, router, scopedDocSlugs, setRecentSlugs, setSampleWelcomeDismissed, setSelectedSlug],
   );
 
-  // Closing the active tab moves left first, then right; closing the last falls back like default selection.
   const handleCloseDocTab = useCallback(
     (slug: string) => {
       const nextActiveSlug = closeDocTabInWorkingSet(slug, selectedSlug);
