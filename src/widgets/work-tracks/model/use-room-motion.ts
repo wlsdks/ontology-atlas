@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, type RefObject } from 'react';
 import { useLatestRef } from '@/shared/lib/use-latest-ref';
 import { EXIT_TRANSITION, MOTION, MOTION_EASE } from '@/shared/motion';
 import type { Box, RoomBox } from './building-layout';
-import { EXIT_MS, boxDuring, planSequence, waypointsOf, type RoomMove, type RoomSequence } from './room-sequence';
+import { EXIT_MS, SHOW_MS, boxDuring, planSequence, waypointsOf, type RoomMove, type RoomSequence } from './room-sequence';
 
 const ms = (seconds: number) => seconds * 1000;
 const EASE_CSS = `cubic-bezier(${MOTION_EASE.join(', ')})`;
@@ -110,6 +110,12 @@ export function useRoomMotion(
       }
       dropOldFaces(element);
       const to = boxes.get(key);
+      const partly = shown.get(key) ?? 1;
+      if (drawn.has(key) && partly < 0.99) {
+        // Interrupted while its content was faded: it comes back from where it was, not at once.
+        const current = facesOf(element).find(face => !isOld(face));
+        if (current) animations.push(current.animate([{ opacity: partly }, { opacity: 1 }], { duration: SHOW_MS, easing: EASE_CSS }));
+      }
       if (!to || drawn.has(key) || total === 0) continue;
       animations.push(element.animate(
         [
@@ -120,7 +126,7 @@ export function useRoomMotion(
         { duration: total },
       ));
     }
-    if (total > 0) playing.current = { sequence, startedAt: now(), animations };
+    if (animations.length > 0) playing.current = { sequence, startedAt: now(), animations };
   }, [boardRef, boxes, reduced, sizeKey, onRemovedRef]);
 }
 
