@@ -72,7 +72,7 @@ The page is a building of rooms, one per worktree, under the page title and
 warning amber counts only what needs a person (**1 in one folder · 3 to clean
 up**), and only the parts above zero. Clicking a count scrolls to the rooms it
 counts and outlines them in amber for a moment. Mini rooms stand five to a row at most,
-never narrower than 300px; a branch name mutes its `feat/` or `fix/` and, when
+never narrower than 300px; a few that do not fill their row share the width beside them, up to 600px, so a name cuts only when it is really longer; a branch name mutes its `feat/` or `fix/` and, when
 it does not fit, cuts in the middle so its ending survives. A window too short
 for two rows of large rooms keeps one row on the stage. A single row of rooms
 grows with their width, up to 640px and never much taller than wide, so a
@@ -143,9 +143,9 @@ tier, or crosses another, fades its content to its wall, which keeps its hue
 edge at its drawn thickness, carries its branch plaque so it is clear which room
 moved, shrinks early and grows late so a small card is what passes the others.
 Every move eases in, keeps one pace and eases out. A room that must go along
-one side and then the other bends through its corner on one curve; where rooms
-pass a row apart, each eases into the corner and out of it, so no side stops
-dead and none meets another. Then every
+one side and then the other bends on one arc with both axes moving through the
+middle; a room that would still meet another travels as its wall beneath the
+rooms that keep their content. Then every
 room goes to its new box at once; a room taking another's box arrives before
 that room leaves it. Then content fades back in, room by room, and new rooms
 rise into place. Fades out are linear, so nothing cuts. A merge plays first
