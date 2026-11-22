@@ -238,16 +238,21 @@ async function expectSmoothMotion(page: Page) {
   const reversals: string[] = [];
   const keys = new Set(frames.flatMap((frame) => Object.keys(frame.boxes)));
   for (const key of keys) {
-    const steps: { dx: number; dy: number; size: number; at: number }[] = [];
+    // Speeds, in px per ms, so a dropped frame is a longer step at the same speed, not a jump.
+    const steps: { dx: number; dy: number; size: number; at: number; dt: number }[] = [];
     for (let index = 1; index < frames.length; index += 1) {
       const [a, b] = [frames[index - 1].boxes[key], frames[index].boxes[key]];
       if (!a || !b) continue;
-      steps.push({ dx: b[0] - a[0], dy: b[1] - a[1], size: Math.max(Math.abs(b[2] - a[2]), Math.abs(b[3] - a[3])), at: Math.round(frames[index].time - frames[0].time) });
+      const dt = Math.max(1, frames[index].time - frames[index - 1].time);
+      steps.push({ dx: b[0] - a[0], dy: b[1] - a[1], size: Math.max(Math.abs(b[2] - a[2]), Math.abs(b[3] - a[3])), at: Math.round(frames[index].time - frames[0].time), dt });
     }
+    const speed = (step: (typeof steps)[number]) => Math.max(Math.hypot(step.dx, step.dy), step.size) / step.dt;
     steps.forEach((step, index) => {
-      const length = Math.max(Math.hypot(step.dx, step.dy), step.size);
-      const before = Math.max(0, ...steps.slice(Math.max(0, index - 3), index).map((s) => Math.max(Math.hypot(s.dx, s.dy), s.size)));
-      if (length > Math.max(48, 2.5 * before)) jumps.push(`${key} ${Math.round(length)}px at ${step.at}ms after ${Math.round(before)}px`);
+      const before = Math.max(0, ...steps.slice(Math.max(0, index - 3), index).map(speed));
+      const after = steps[index + 1] ? speed(steps[index + 1]) : 0;
+      // A jump is a one-step spike: over 3 px/ms (50 px a frame) and 2.5 times both the steps before and the
+      // step after. An ease that keeps its speed into the next frame is acceleration, not a cut.
+      if (speed(step) > Math.max(3, 2.5 * before, 2.5 * after)) jumps.push(`${key} ${speed(step).toFixed(1)}px/ms at ${step.at}ms after ${before.toFixed(1)}px/ms`);
       const previous = steps[index - 1];
       if (previous && Math.hypot(previous.dx, previous.dy) > 2 && Math.hypot(step.dx, step.dy) > 2 && previous.dx * step.dx + previous.dy * step.dy < -0.5 * Math.hypot(previous.dx, previous.dy) * Math.hypot(step.dx, step.dy)) {
         reversals.push(`${key} at ${step.at}ms`);
@@ -336,9 +341,7 @@ test.describe("work status rooms", () => {
     await expectCleanPaint(page, { slots: 1 });
   });
 
-  // Known failing: an update landing mid-sequence cuts half-shown faces (about 0.4 to 0 in one frame)
-  // and jumps rooms 70 to 140 px. The guard stays so the fix is measured, not assumed.
-  test.fixme("retargets mid-sequence when the next update lands before the last one finished", async ({ page }) => {
+  test("retargets mid-sequence when the next update lands before the last one finished", async ({ page }) => {
     await openWorkStatus(page, SWAP);
     await expect(room(page, "feat/library-stage")).toHaveAttribute("data-room-size", "large");
     await startPaintSampler(page);

@@ -272,15 +272,15 @@ function playWall(element: HTMLElement, move: RoomMove, timing: MoveTiming): Ani
   const played: Animation[] = [];
   for (const face of faces) {
     if (isOld(face)) {
+      // The old face fades on its own clock and goes when that fade has finished, never by wall time,
+      // so a slow frame cannot remove it while it still shows.
+      const fadeEnd = Math.max(1, steps.faded * timing.total);
       const fade = face.animate([
         { opacity: timing.shows.face, offset: 0, easing: 'linear' },
-        { opacity: timing.shows.face, offset: steps.start, easing: 'linear' },
-        { opacity: 0, offset: steps.faded },
+        { opacity: timing.shows.face, offset: Math.min(1, (steps.start * timing.total) / fadeEnd), easing: 'linear' },
         { opacity: 0, offset: 1 },
-      ], { duration: timing.total, fill: 'forwards' });
-      // The old face goes once it has faded, before the room moves.
-      const leave = window.setTimeout(() => face.dispatchEvent(new Event(FACE_LEFT_EVENT)), steps.faded * timing.total + 16);
-      fade.addEventListener('cancel', () => window.clearTimeout(leave));
+      ], { duration: fadeEnd, fill: 'forwards' });
+      fade.addEventListener('finish', () => face.dispatchEvent(new Event(FACE_LEFT_EVENT)));
       played.push(fade);
       continue;
     }
