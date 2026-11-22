@@ -137,6 +137,9 @@ test.describe("Where settings live", () => {
     const detail = page.getByTestId("scope-hook-detail");
     await expect(detail).toContainText("User");
     await expect(detail).toContainText("~/.claude/hooks/agent-status.sh");
+    const excerpt = detail.getByTestId("scope-hook-excerpt");
+    await expect(excerpt).toContainText('"matcher": "Bash"');
+    await expect(excerpt).toContainText('"command": "bash ~/.claude/hooks/agent-status.sh pre-tool"');
     await expect(page.locator('[data-scope-heading="claude-user"]')).toBeVisible();
     await expect(page.locator('[data-scope-file-note="truncated"]').first()).toContainText("이 파일의 훅 499개 중 처음 2개만");
     await expect(page.locator('[data-scope-file-note="unknown-events"]').first()).toContainText("도구 문서에 없는 이벤트 2개");

@@ -228,6 +228,9 @@
       "managed": "Your organisation placed this file on this computer. It applies whatever repository you open."
     },
     "readNote": "From files outside this repository Atlas reads only hook entries and how many permission rules there are, and sends nothing off this computer.",
+    "excerpt": {
+      "note": "Written out from the fields Atlas reads: event, matcher, type, command and timeout. Atlas does not read this entry's other values."
+    },
     "reason": {
       "link": "it is a link to another file",
       "notAFile": "it is not a file",

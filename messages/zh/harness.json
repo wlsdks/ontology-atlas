@@ -228,6 +228,9 @@
       "managed": "这是组织放在这台电脑上的文件。无论打开哪个仓库都会生效。"
     },
     "readNote": "对仓库之外的文件，只读取钩子条目和权限规则的数量，不会发送到这台电脑之外。",
+    "excerpt": {
+      "note": "仅用 Atlas 读取的事件、matcher、type、command 和 timeout 重新写出。此条目的其他值不会读取。"
+    },
     "reason": {
       "link": "这是指向其他文件的链接",
       "notAFile": "它不是文件",

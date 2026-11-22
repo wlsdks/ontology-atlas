@@ -359,24 +359,26 @@ export function HarnessSetupView({
     ) : null;
 
   const categoryPane = (
-    <div
-      data-testid="harness-categories"
-      onKeyDown={(event) => moveInPane(event, selectCategory)}
-      className={cn('flex flex-col gap-6 pb-4 pt-4 lg:pr-4', PANE_SCROLL)}
-    >
-      {areas.map((area) => (
-        <HarnessSetupSection
-          key={area.id}
-          area={area}
-          selectedKey={category?.key ?? null}
-          focusKey={category?.key ?? null}
-          onSelect={selectCategory}
-          claudeSessionBytes={setup.claudeSessionBytes}
-          codexSession={setup.codexSession}
-          t={t}
-        />
-      ))}
-      <div className="mt-auto flex flex-col gap-1 px-2.5 text-label text-[color:var(--color-text-quaternary)]">
+    <div className="flex flex-col lg:min-h-0 lg:pr-4">
+      <div
+        data-testid="harness-categories"
+        onKeyDown={(event) => moveInPane(event, selectCategory)}
+        className={cn('flex flex-col gap-6 pb-4 pt-4 lg:flex-1', PANE_SCROLL)}
+      >
+        {areas.map((area) => (
+          <HarnessSetupSection
+            key={area.id}
+            area={area}
+            selectedKey={category?.key ?? null}
+            focusKey={category?.key ?? null}
+            onSelect={selectCategory}
+            claudeSessionBytes={setup.claudeSessionBytes}
+            codexSession={setup.codexSession}
+            t={t}
+          />
+        ))}
+      </div>
+      <div data-testid="harness-read-from" className="flex shrink-0 flex-col gap-1 border-t border-[color:var(--color-border-soft)] px-2.5 pb-4 pt-3 text-label text-[color:var(--color-text-quaternary)]">
         <p className="break-all">{t('sourceRoot', { path: sourceRoot })}</p>
         {scopes ? <p data-testid="harness-scopes-read-note" className="text-pretty">{t('scopes.readNote')}</p> : null}
       </div>

@@ -30,6 +30,7 @@ import { Fact, ItemStatus, NEUTRAL_BADGE, StatusHints, type TranslateFn } from '
 export type ExplainScope = (tool: ScopeTool, row: string) => void;
 
 const NOTE = 'text-pretty text-label text-[color:var(--color-text-tertiary)]';
+const BODY = 'text-pretty text-body text-[color:var(--color-text-primary)]';
 
 function scopeName(file: ScopeFile): string {
   return SCOPE_NAMES[file.scope];
@@ -43,6 +44,19 @@ function placeKey(file: ScopeFile): string {
   if (file.picked || file.scope === 'user') return 'scopes.place.outside';
   if (file.scope === 'managed' || file.scope === 'system') return 'scopes.place.managed';
   return `scopes.place.${file.scope}`;
+}
+
+/**
+ * The hook's entry written out from the allow-listed fields Rust returns, in the file's own shape.
+ * It is never the file's text: `env`, headers, prompts and unknown keys never reach the page.
+ */
+function entryExcerpt(hook: ScopeHook): string {
+  const handler: Record<string, string | number> = {};
+  if (hook.kind !== 'other') handler.type = hook.kind;
+  if (hook.command !== null) handler.command = hook.command;
+  if (hook.timeoutSeconds !== null) handler.timeout = hook.timeoutSeconds;
+  const group = { ...(hook.matcher !== null ? { matcher: hook.matcher } : {}), hooks: [handler] };
+  return `${JSON.stringify(hook.event)}: ${JSON.stringify([group], null, 2)}`;
 }
 
 /** A script path as a person reads it: without Claude Code's `$CLAUDE_PROJECT_DIR` prefix. */
@@ -447,11 +461,11 @@ export function ScopeHookDetail({
               ) : file.tool === 'codex' ? (
                 <>
                   <span className={badgeClass({ shape: 'tag', className: cn('w-fit whitespace-nowrap', NEUTRAL_BADGE) })}>{say('hookApprovalGate')}</span>
-                  <p className={NOTE}>{say('hookApprovalGateHint')}</p>
+                  <p className={BODY}>{say('hookApprovalGateHint')}</p>
                 </>
               ) : null}
               {tags.map((tag) => (
-                <p key={tag.kind} data-scope-tag-hint={tag.kind} className={NOTE}>
+                <p key={tag.kind} data-scope-tag-hint={tag.kind} className={BODY}>
                   {tag.kind === 'work-status' ?
                     say('scopes.tag.workStatusHint')
                   : say(tag.tool === 'codex' ? 'scopes.tag.twoFilesCodexHint' : 'scopes.tag.twoFilesClaudeHint', {
@@ -468,6 +482,13 @@ export function ScopeHookDetail({
           </p>
         </Fact>
       </dl>
+      <figure data-testid="scope-hook-excerpt" className="mt-4 flex flex-col gap-2">
+        <figcaption className="break-all font-mono text-label text-[color:var(--color-text-tertiary)]">{displayPath(file.path, scopes)}</figcaption>
+        <pre className="overflow-x-auto whitespace-pre-wrap break-all rounded-card bg-[color:var(--color-overlay-1)] px-4 py-3 font-mono text-label text-[color:var(--color-text-secondary)]">
+          {entryExcerpt(hook)}
+        </pre>
+        <p className={NOTE}>{say('scopes.excerpt.note')}</p>
+      </figure>
     </div>
   );
 }
