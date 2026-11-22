@@ -17,6 +17,8 @@ use serde::Serialize;
 const RECENT_GRACE: Duration = Duration::from_secs(90);
 /// A parent chain longer than this is not an agent's command tree.
 const MAX_ANCESTORS: usize = 64;
+/// launchd on macOS, init on Linux: what starts a background server, never a person's terminal.
+const SYSTEM_LAUNCHER_PID: u32 = 1;
 
 #[cfg_attr(not(any(target_os = "macos", target_os = "linux")), allow(dead_code))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
@@ -63,7 +65,7 @@ pub(crate) fn tool_for_executable(path: &Path) -> Option<AgentTool> {
 }
 
 /// Each process with a working folder, credited to its agent among itself and its ancestors; one
-/// entry per agent and folder. A chain through an Atlas agent session (`acp_pids`) is that
+/// entry per agent and folder. A background server's own folder is not work. A chain through an Atlas agent session (`acp_pids`) is that
 /// session's, which the page shows by its own pid. O(processes × chain length).
 pub(crate) fn credit_to_agents(facts: &[ProcessFacts], acp_pids: &[u32]) -> Vec<AgentProcess> {
     let by_pid: HashMap<u32, &ProcessFacts> = facts.iter().map(|fact| (fact.pid, fact)).collect();
@@ -72,6 +74,9 @@ pub(crate) fn credit_to_agents(facts: &[ProcessFacts], acp_pids: &[u32]) -> Vec<
         .filter_map(|fact| {
             let folder = fact.folder.clone()?;
             let agent = session_agent(fact, &by_pid, acp_pids)?;
+            if fact.tool.is_some() && is_background_server(agent, &by_pid) {
+                return None;
+            }
             Some(AgentProcess {
                 pid: agent.pid,
                 tool: agent.tool?,
@@ -112,6 +117,19 @@ fn session_agent<'a>(
         current = parent;
     }
     found
+}
+
+/// An agent the system launched rather than a terminal, such as the Codex app's server, sits in
+/// one folder whether or not it works; only the commands it runs say where it works.
+fn is_background_server(agent: &ProcessFacts, by_pid: &HashMap<u32, &ProcessFacts>) -> bool {
+    let mut current = agent;
+    for _ in 0..MAX_ANCESTORS {
+        match by_pid.get(&current.parent) {
+            Some(parent) if parent.tool == agent.tool => current = parent,
+            _ => return current.parent == SYSTEM_LAUNCHER_PID || current.parent == 0,
+        }
+    }
+    false
 }
 
 static RECENT: Mutex<Vec<(AgentProcess, Instant)>> = Mutex::new(Vec::new());

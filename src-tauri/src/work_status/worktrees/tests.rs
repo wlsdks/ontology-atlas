@@ -461,16 +461,21 @@ fn a_command_is_credited_to_the_agent_session_above_it() {
     let credited = credit_to_agents(
         &[
             fact(1, 0, None, Some("/")),
-            fact(10, 1, Some(AgentTool::Codex), Some("/repo")),
+            fact(2, 1, None, None),
+            fact(10, 2, Some(AgentTool::Codex), Some("/repo")),
             fact(11, 10, None, Some("/repo/wt/a")),
             fact(12, 11, None, Some("/repo/wt/a/src")),
             fact(13, 11, None, Some("/repo/wt/a")),
             fact(20, 1, None, Some("/repo/wt/b")),
             fact(30, 99, None, Some("/repo/wt/c")),
-            fact(40, 1, Some(AgentTool::ClaudeCode), None),
+            fact(40, 2, Some(AgentTool::ClaudeCode), None),
             fact(41, 40, Some(AgentTool::ClaudeCode), Some("/repo/wt/d")),
             fact(50, 1, None, None),
             fact(51, 50, Some(AgentTool::ClaudeCode), Some("/repo/wt/e")),
+            // The Codex app's server: launched by the system, idle in the repository root.
+            fact(60, 1, Some(AgentTool::Codex), Some("/repo")),
+            fact(61, 60, Some(AgentTool::Codex), Some("/repo")),
+            fact(62, 61, None, Some("/repo/wt/f")),
         ],
         &[50],
     );
@@ -484,7 +489,8 @@ fn a_command_is_credited_to_the_agent_session_above_it() {
             (10, "/repo"),
             (10, "/repo/wt/a"),
             (10, "/repo/wt/a/src"),
-            (40, "/repo/wt/d")
+            (40, "/repo/wt/d"),
+            (60, "/repo/wt/f")
         ]
     );
     assert!(credited[..3]

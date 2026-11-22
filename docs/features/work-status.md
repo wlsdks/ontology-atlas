@@ -53,7 +53,9 @@ Every read goes through the hardened Git runner in `src-tauri/src/git/runner.rs`
   A process whose working folder is in a worktree counts for the agent
   program above it (`claude` or Claude Code's `versions/<version>`, `codex`),
   so the Codex app's one background server shows in each worktree a command
-  of its runs in. A worktree stays credited for 90 seconds after its last
+  of its runs in. An agent the system launched (parent launchd or init), such
+  as that server, is not counted for its own folder, so an idle Codex app
+  shows nothing. A worktree stays credited for 90 seconds after its last
   sighting while that agent still runs; sampling is once a second while the
   screen is visible, so a command shorter than that may be missed. A command
   under an Atlas agent session counts for that session. A process of the same agent that

@@ -317,7 +317,8 @@ an Atlas ACP session's pid, or an agent program: a process whose executable path
 `claude/versions/<version>` or `codex`. A process belongs to a worktree by its **own** working
 folder, matched on whole path components to the deepest worktree, including a missing one; it
 counts for the outermost agent of the nearest agent's tool in its parent chain, and a chain
-through an ACP pid is that session's. An agent's process that also holds locks joins the lock's
+through an ACP pid is that session's. An agent the system launched (parent pid 1, as the Codex
+app's server) is not credited for its own folder, only through its commands. An agent's process that also holds locks joins the lock's
 session; a session seen only by processes reads "{tool} · session {n}", its rows "{tool} is running
 in this folder" (`holder.process`), and it sorts after locking sessions. Only actions (slice 3)
 require a lock or ACP pid; a name alone never makes a process eligible for one.
