@@ -94,5 +94,8 @@
     "below": "Floors below",
     "working": "{count} working",
     "worktrees": "{count, plural, one {# worktree} other {# worktrees}}"
+  },
+  "lobby": {
+    "note": "The lobby: Moru resting between jobs. What they do here says nothing about any worktree."
   }
 }

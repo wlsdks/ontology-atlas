@@ -19,6 +19,7 @@ import type { MoruCharacter } from '../model/room-look';
 import { BranchName } from './BranchName';
 import { LargeRoom } from './LargeRoom';
 import { MiniRoom } from './MiniRoom';
+import { MoruLobby } from './MoruLobby';
 import { RoomShelf } from './RoomShelf';
 import { useRoomCopy } from './use-room-copy';
 import styles from './rooms.module.css';
@@ -483,6 +484,7 @@ export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs }: {
     stage: shown.stage.map(room => room.key),
     floors: shown.floors.map(floor => ({ key: floor.key, rooms: floor.rooms.map(room => room.key) })),
     hasShelf,
+    hasLobby: shown.stage.length + shown.floors.length > 0,
   }), [size, shown, hasShelf]);
 
   const lastDrawn = useRef(new Map<string, { room: RoomEntry; box: RoomBox; retiring: boolean; character: MoruCharacter }>());
@@ -502,6 +504,8 @@ export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs }: {
   useAmbientMotion(boardRef, layout.rooms, reduced);
 
   const entries = useMemo(() => allRooms(shown).map(({ room }) => room), [shown]);
+  /** The lobby's crew grows by one for each worktree no live session holds. */
+  const resting = entries.filter(room => !room.session).length;
   const characterOf = useRoomCast(entries);
   useLayoutEffect(() => {
     lastDrawn.current = new Map(entries.flatMap(room => {
@@ -574,6 +578,11 @@ export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs }: {
                 <Room key={room.key} room={room} box={box} copy={copy} retiring={retiring.has(room.key)} showOwner={!layout.banded} reduced={reduced} windowKey={windowKey} entered={firstDrawn !== null && !firstDrawn.has(room.key)} character={characterOf(room)} />
               ) : null;
             })}
+            {layout.lobby ? (
+              <Placed box={layout.lobby} testId="work-lobby-floor">
+                <MoruLobby width={layout.lobby.w} resting={resting} reduced={reduced} />
+              </Placed>
+            ) : null}
             {layout.shelf ? (
               <Placed box={layout.shelf} id={SHELF_DOM_ID}>
                 <RoomShelf merged={shelfMerged} untouched={plan.shelf.untouched} baseBranch={baseBranch} nowMs={nowMs} />

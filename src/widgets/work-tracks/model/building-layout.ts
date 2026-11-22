@@ -5,6 +5,8 @@
  * glides.
  */
 
+import { LOBBY_H } from '@/shared/ui/marks/moru/life/lobby-canvas';
+
 export interface Box {
   x: number;
   y: number;
@@ -30,6 +32,8 @@ export interface LayoutInput {
   stage: readonly string[];
   floors: readonly { key: string; rooms: readonly string[] }[];
   hasShelf: boolean;
+  /** The ground floor where Moru live (`MoruLobby`), under the floors. */
+  hasLobby?: boolean;
 }
 
 export interface BuildingLayout {
@@ -43,6 +47,8 @@ export interface BuildingLayout {
    */
   heading: (Box & { kind: 'plate' | 'line' }) | null;
   shelf: Box | null;
+  /** The ground floor: the lobby strip under the floors, above the shelf. */
+  lobby: Box | null;
   height: number;
 }
 
@@ -52,6 +58,8 @@ const EDGE_TOP = 24;
 const EDGE_BOTTOM = 20;
 const BAND_GAP = 16;
 const SHELF_H = 40;
+/** The lobby: three lanes of Moru at their drawn scale, and the line under them that says what it is. */
+export const LOBBY_BOX_H = LOBBY_H + 22;
 /** Every mini room, banded or not: Moru's corner, the branch, the status and the newest subject. */
 export const MINI_H = 96;
 const MINI_MIN_W = 300;
@@ -175,7 +183,8 @@ export function layoutBuilding(input: LayoutInput): BuildingLayout {
   };
   const backH = headingH + groups.reduce((sum, group) => sum + groupHeight(group.rooms.length), 0) + Math.max(0, groups.length - 1) * MINI_GAP;
   const shelfH = input.hasShelf ? SHELF_H : 0;
-  const shelfTop = height - EDGE_BOTTOM - shelfH;
+  const lobbyH = input.hasLobby ? LOBBY_BOX_H : 0;
+  const shelfTop = height - EDGE_BOTTOM - shelfH - (lobbyH ? lobbyH + (shelfH ? BAND_GAP : 0) : 0);
   const backTop = shelfTop - (shelfH ? BAND_GAP : 0) - backH;
   const available = backTop - (backH > 0 ? BAND_GAP : 0) - EDGE_TOP;
 
@@ -240,15 +249,18 @@ export function layoutBuilding(input: LayoutInput): BuildingLayout {
     floorTop += groupH + MINI_GAP;
   }
 
-  const shelf = input.hasShelf ? { x: 0, y: groups.length > 0 ? floorTop - MINI_GAP + BAND_GAP : shelfTop + overflow, w: width, h: SHELF_H } : null;
+  const groundTop = groups.length > 0 ? floorTop - MINI_GAP + BAND_GAP : shelfTop + overflow;
+  const lobby = lobbyH ? { x: 0, y: groundTop, w: width, h: lobbyH } : null;
+  const shelf = input.hasShelf ? { x: 0, y: lobby ? lobby.y + lobby.h + BAND_GAP : groundTop, w: width, h: SHELF_H } : null;
   // The building ends under what it holds; it does not stretch to the window with bare floor.
-  const bottom = (shelf ? shelf.y + shelf.h : floorTop - MINI_GAP) + EDGE_BOTTOM;
+  const bottom = (shelf ? shelf.y + shelf.h : lobby ? lobby.y + lobby.h : floorTop - MINI_GAP) + EDGE_BOTTOM;
   return {
     rooms,
     floors: floorPlates,
     banded,
     heading,
     shelf,
+    lobby,
     height: bottom,
   };
 }

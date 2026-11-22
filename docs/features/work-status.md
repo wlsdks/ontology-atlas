@@ -127,6 +127,14 @@ work has come. A mini room with a floor to itself spreads its newest commits and
 what is not committed into columns. A floor that wraps spreads its rooms evenly
 over its rows, so none stands alone on a row.
 
+The **lobby** is the building's ground floor, under the floors and above the
+shelf. A few Moru of a crew (four, and one more for each worktree no live session
+holds, at most twelve) come in from an edge, wander, greet, high-five, swap hats,
+nap and prank on tiptoe, and go out again: two to four at a time, never more
+than five. Nothing there stands for a worktree, and one line on the floor says
+so. It holds still under reduced motion and stops while the window is hidden or
+the lobby is off screen.
+
 The **shelf** at the bottom counts worktrees merged into the base branch and
 worktrees no one has touched for seven days or more. A count opens a centred
 list of those branches with the time of their last commit.
