@@ -70,6 +70,7 @@ test.describe("work status lobby", () => {
         const now = await stats(page);
         most = Math.max(most, now.visible);
         if (Number.isFinite(now.gap)) nearest = Math.min(nearest, now.gap);
+        // measurement window: the lobby is sampled twice a second for ten seconds as Moru come and go
         await page.waitForTimeout(500);
       }
       expect(most, "Moru visible at once").toBeGreaterThanOrEqual(1);
@@ -105,6 +106,7 @@ test.describe("work status lobby", () => {
     const shot = () => canvas.evaluate((el) => (el as HTMLCanvasElement).toDataURL());
     const first = await shot();
     expect((await stats(page)).visible).toBeGreaterThanOrEqual(1);
+    // measurement window: a still lobby must not change over a stretch of its 8 Hz clock
     await page.waitForTimeout(1500);
     expect(await shot()).toBe(first);
   });
