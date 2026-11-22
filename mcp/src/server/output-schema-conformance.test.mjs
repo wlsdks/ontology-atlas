@@ -10,6 +10,7 @@ import { AjvJsonSchemaValidator } from '@modelcontextprotocol/server/validators/
 import { runJsonRpcProcess } from '../../../scripts/lib/mcp-test-rpc.mjs';
 import { schemaErrors } from '../../../scripts/lib/output-schema-errors.mjs';
 import { CONSTRUCTION_GUIDE_TOPICS } from '../construction/construction-card.mjs';
+import { hoistSharedSubschemas, inlineSharedSubschemas } from './shared-subschemas.mjs';
 
 const HOST_VALIDATOR = new AjvJsonSchemaValidator();
 const SERVER_ENTRY = join(dirname(fileURLToPath(import.meta.url)), '..', 'index.js');
@@ -116,4 +117,39 @@ test('confirmed writes answer with a post-write maintenance summary that matches
   } finally {
     rmSync(vault, { recursive: true, force: true });
   }
+});
+
+test('a hoisted schema accepts and rejects the same values as the inline one under an SDK client validator', () => {
+  const action = {
+    type: 'object',
+    properties: { id: { type: 'string', minLength: 1 }, score: { type: 'number', minimum: 0 } },
+    required: ['id', 'score'],
+    additionalProperties: false,
+  };
+  const inline = {
+    type: 'object',
+    properties: { next: { ...action, type: ['object', 'null'] }, first: action, actions: { type: 'array', items: action } },
+    required: ['first', 'actions'],
+    additionalProperties: false,
+  };
+  const hoisted = hoistSharedSubschemas(inline);
+  assert.ok(hoisted.$defs, 'the repeated action shape is written once');
+  assert.ok(JSON.stringify(hoisted).length < JSON.stringify(inline).length);
+  assert.deepEqual(inlineSharedSubschemas(hoisted), inline);
+
+  const checkInline = HOST_VALIDATOR.getValidator(inline);
+  const checkHoisted = HOST_VALIDATOR.getValidator(hoisted);
+  const values = [
+    { first: { id: 'a', score: 1 }, actions: [{ id: 'b', score: 0 }], next: null },
+    { first: { id: 'a', score: 1 }, actions: [{ id: 'b', score: -1 }] },
+    { first: { id: '', score: 1 }, actions: [] },
+    { first: { id: 'a', score: 1, extra: true }, actions: [] },
+    { first: { id: 'a', score: 1 }, actions: [{ id: 'b' }] },
+    { first: { id: 'a', score: 1 }, actions: [], next: { id: 'c', score: 2 } },
+  ];
+  assert.deepEqual(
+    values.map((value) => checkHoisted(value).valid),
+    values.map((value) => checkInline(value).valid),
+  );
+  assert.deepEqual(values.map((value) => checkHoisted(value).valid), [true, false, false, false, false, true]);
 });

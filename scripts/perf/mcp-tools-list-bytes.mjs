@@ -8,15 +8,15 @@
  * object; wire bytes are the whole tool entry, output schema and annotations
  * included.
  *
- * Usage: node mcp/scripts/tools-list-bytes.mjs [--json]
+ * Usage: pnpm mcp:tools-list-bytes [-- --json]
  */
 
 import { spawn } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseJsonRpcResponses } from './json-rpc-lines.mjs';
+import { parseJsonRpcResponses } from '../../mcp/scripts/json-rpc-lines.mjs';
 
-const SERVER = resolve(dirname(fileURLToPath(import.meta.url)), '../src/index.js');
+const SERVER = resolve(dirname(fileURLToPath(import.meta.url)), '../../mcp/src/index.js');
 const PROFILES = ['full', 'construction'];
 
 const bytes = (value) => Buffer.byteLength(typeof value === 'string' ? value : JSON.stringify(value), 'utf8');
