@@ -74,7 +74,10 @@ up**), and only the parts above zero. Clicking a count scrolls to the rooms it
 counts and outlines them in amber for a moment. Mini rooms stand five to a row at most,
 never narrower than 300px; a branch name mutes its `feat/` or `fix/` and, when
 it does not fit, cuts in the middle so its ending survives. A window too short
-for two rows of large rooms keeps one row on the stage.
+for two rows of large rooms keeps one row on the stage. A single row of rooms
+grows with their width, up to 640px and never much taller than wide, so a
+stage of three rooms fills its band instead of standing short in it. The
+building fades up from the page the first time it is drawn.
 
 The **front stage** holds at most six large rooms. A folder two tools work in
 goes first, then rooms where an agent or a command is running, one per session
@@ -84,7 +87,8 @@ no hole; otherwise it waits on its floor. A lock left by an ended session is a
 clean-up chore and always waits as a mini room under **No session**. The stage reads in session
 order. A large room shows its branch on the wall sign (the only mono
 text), the holding session's name tag over Moru, a floor lamp lit only while
-something runs, a monitor whose headline is the commit count (or the state in words), and a
+something runs, a monitor whose headline is the commit count (or the state in words; when the
+state changes, the whole screen cross-fades to the new one), and a
 belt whose cart carries one crate per commit beyond the base branch, six at
 most and then `+n`, toward the `main` hatch. Past the commits the belt is
 dashed: Git does not tell pre-push, push, PR or CI yet, so no station or value
@@ -138,7 +142,10 @@ hue edge while its box and scale glide to the new size; a room that changes
 tier, or crosses another, fades its content to its wall, which keeps its hue
 edge at its drawn thickness, carries its branch plaque so it is clear which room
 moved, shrinks early and grows late so a small card is what passes the others.
-A move that turns a corner runs as one curve, still moving at the corner. Then every
+Every move eases in, keeps one pace and eases out. A room that must go along
+one side and then the other bends through its corner on one curve; where rooms
+pass a row apart, each eases into the corner and out of it, so no side stops
+dead and none meets another. Then every
 room goes to its new box at once; a room taking another's box arrives before
 that room leaves it. Then content fades back in, room by room, and new rooms
 rise into place. Fades out are linear, so nothing cuts. A merge plays first
