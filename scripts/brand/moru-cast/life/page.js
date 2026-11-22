@@ -85,7 +85,7 @@ function compose(m, s) {
   for (let k3 = 0; k3 < 3; k3++) { const slot = SLOTS[k3], piece = ATLAS.pieces[m.wear[slot]]; if (!piece) continue; for (let p of piece.parts) {
     // Ears and wing never jump between states: each new pose moves them one picture toward where the pose wants them (ears up, bent, down; wing down, half down, mid, half up, up; in the air it beats once every eight poses).
     if (p.alts) { const want = p.alts.droop ? (f.droop ? 2 : 0) : f.air ? ((fr >> 2) & 1 ? 2 : -2) : f.sq >= 3 ? -2 : f.sq <= -2 ? 2 : 0, key = slot + (p.alts.droop ? 'e' : 'w'), had = s[key] ?? 0, now = fresh ? had + Math.sign(want - had) : had; s[key] = now; if (now !== want) s.settling = true; if (now === 1 || now === -1) between++;
-      p = p.alts.droop ? (now === 2 ? p.alts.droop : now === 1 ? p.alts.bent : p) : now === 2 ? p.alts.up : now === 1 ? p.alts.halfUp : now === -1 ? p.alts.halfDown : now === -2 ? p.alts.down : p; }
+      p = f.angle && p.alts.turned ? p.alts.turned : p.alts.droop ? (now === 2 ? p.alts.droop : now === 1 ? p.alts.bent : p) : now === 2 ? p.alts.up : now === 1 ? p.alts.halfUp : now === -1 ? p.alts.halfDown : now === -2 ? p.alts.down : p; }
     const a = f.a[p.anchor], b = was[p.anchor], k = p.layer === 'skin' ? 0 : p.soft, head = slot === 'head', lagX = k ? within3(Math.round((b[0] - a[0]) * k / 2), -k, k) - (k > 1 ? s.trail * (k - 1) : 0) : 0, lagY = k ? within3(Math.round((b[1] - a[1]) * k / 2), -1, k) : 0;
     const X = p.x + a[0] + lagX + (head && off ? off[0] : 0), Y = p.y + a[1] + lagY + (head && off ? off[1] : 0), x0 = (f.flip ? 136 - (X + p.w - 1) : X) + f.px;
     if (p.layer === 'skin') { skin.push([p, X, Y]); sig += '|' + p.sx + ',' + p.x + ',' + p.y; continue; }

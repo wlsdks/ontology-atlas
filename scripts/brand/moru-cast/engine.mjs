@@ -118,8 +118,8 @@ const offFloor = (dx, dy) => dy < -5 || (dy < -2 && Math.abs(dx) > 6);
 
 // Raised flippers are typed by hand, a pixel to a letter, in the body's own stair rhythm (two rows to a step on a curve): `i` indigo,
 // `m` the shaded rim the resting mound has on its upper left. Each is drawn reaching to the right; a reach to the left is its mirror.
-// `head` is the middle of the paddle's broad end: it sits on the paw. The short ones are a paw lifted just off its seat; the long ones
-// carry an arm back to the body, so a high reach is joined to it and never floats beside the head.
+// `head` is the middle of the paddle's broad end: it sits on the paw. There is no arm: like the shipped catalogue's, a raised
+// flipper is the same small lobe it is at rest, lifted a little way off its seat and still lying against the body.
 const PADDLES = {
   up: { head: [6, 6], rows: [
     '    miiii   ', '  mmiiiiii  ', ' mmiiiiiiii ', ' miiiiiiiii ', 'mmiiiiiiiiii', 'miiiiiiiiiii', 'miiiiiiiiiii',
@@ -130,32 +130,18 @@ const PADDLES = {
   side: { head: [9, 4], rows: [
     '    mmmiiiii   ', '  mmiiiiiiiii  ', ' miiiiiiiiiiii ', 'miiiiiiiiiiiiii', 'miiiiiiiiiiiiii', 'iiiiiiiiiiiiiii',
     ' iiiiiiiiiiiii ', '  iiiiiiiiiii  ', '    iiiiiii    '] },
-  armUp: { head: [16, 6], rows: [
-    '             miiii    ', '           mmiiiiiii  ', '          mmiiiiiiiii ', '          miiiiiiiiii ', '         mmiiiiiiiiiii', '         miiiiiiiiiiii',
-    '         miiiiiiiiiiii', '         miiiiiiiiiiii', '         miiiiiiiiiii ', '         miiiiiiiiiii ', '          miiiiiiiii  ', '          miiiiiiiii  ',
-    '         miiiiiiiii   ', '         miiiiiiiii   ', '        mmiiiiiiii    ', '        miiiiiiiii    ', '        miiiiiiii     ', '       mmiiiiiii      ',
-    '       miiiiiiii      ', '       miiiiiii       ', '      mmiiiiiii       ', '      miiiiiii        ', '     mmiiiiiii        ', '     miiiiiii         ',
-    '    mmiiiiii          ', '    miiiiiii          ', '  mmmiiiiii           ', '  miiiiiii            ', 'mmmiiiiii             ', 'miiiiiii              '] },
-  armDiag: { head: [23, 6], rows: [
-    '                     miiii    ', '                   mmiiiiiii  ', '                  mmiiiiiiiii ', '                  miiiiiiiiiii',
-    '                 mmiiiiiiiiiii', '                 miiiiiiiiiiii', '                mmiiiiiiiiiiii', '               mmiiiiiiiiiiii ',
-    '              mmiiiiiiiiiiiii ', '             mmiiiiiiiiiiii   ', '            mmiiiiiiiiiii     ', '           mmiiiiiiiiii       ',
-    '          mmiiiiiiiii         ', '         mmiiiiiiii           ', '        mmiiiiiiii            ', '       mmiiiiiii              ',
-    '      mmiiiiiii               ', '     mmiiiiiii                ', '    mmiiiiiii                 ', '   mmiiiiiii                  ',
-    '  mmiiiiiii                   ', ' mmiiiiiii                    ', 'mmiiiiiii                     ', 'miiiiii                       '] },
-  armSide: { head: [19, 5], rows: [
-    '              mmmiiiii    ', '            mmiiiiiiiii   ', '      mmmmmmiiiiiiiiiiii  ', 'mmmmmmiiiiiiiiiiiiiiiiiii ',
-    'miiiiiiiiiiiiiiiiiiiiiiiii', 'iiiiiiiiiiiiiiiiiiiiiiiiii', 'iiiiiiiiiiiiiiiiiiiiiiiiii', 'iiiiiiiiiiiiiiiiiiiiiiiii ',
-    'iiiiiiiiiiiiiiiiiiiiiiii  ', '      iiiiiiiiiiiiiiii    ', '            iiiiiiii      '] },
 };
 /**
- * The hand-drawn paddle for a flipper lifted to (tx, ty), `dx`, `dy` from where it rests; `side` 0 the left flipper, 1 the right.
- * A reach of more than 15px by the right flipper (the one at the body's edge) takes an arm, whose root comes down on the flipper's seat: it covers what the resting mound covered, so lifting
- * a flipper hardly moves the body's measured centre.
+ * How far a flipper really goes for a pose that asks for (dx, dy): all of a short lift, and less and less of a longer one, never
+ * past `most` pixels from its seat. So a high reach is a lobe at the shoulder, not an oar, and two reaches keyed apart stay apart.
  */
+const reach = (dx, dy, most) => { const len = Math.hypot(dx, dy), knee = most / 2; if (len <= knee) return [dx, dy]; const k = (knee + (most - knee) * (1 - Math.exp(-(len - knee) / (most - knee)))) / len; return [Math.round(dx * k), Math.round(dy * k)]; };
+/** The right flipper sits at the body's edge and may leave its seat by 15px; the left lies on the belly, where more than 9px reads as a ring in mid-belly. */
+const MOST = [9, 15];
+/** The hand-drawn paddle for a flipper lifted to (tx, ty); `dx`, `dy` is the way the pose asked it to go, which picks the paddle; `side` 0 the left flipper, 1 the right. */
 function liftedFlipper(tx, ty, dx, dy, side, floor = Infinity) {
-  const way = Math.abs(dx) < 3 ? (side ? 1 : -1) : Math.sign(dx), rise = Math.atan2(-dy, Math.abs(dx)) * 180 / Math.PI, long = side === 1 && Math.hypot(dx, dy) > 15;
-  const art = PADDLES[long ? (rise >= 58 ? 'armUp' : rise >= 22 ? 'armDiag' : 'armSide') : rise >= 52 ? 'up' : rise >= 18 ? 'diag' : 'side'], PAD = 3, cols = art.rows[0].length, w = cols + 2 * PAD, h = art.rows.length + 2 * PAD;
+  const way = Math.abs(dx) < 3 ? (side ? 1 : -1) : Math.sign(dx), rise = Math.atan2(-dy, Math.abs(dx)) * 180 / Math.PI;
+  const art = PADDLES[rise >= 52 ? 'up' : rise >= 18 ? 'diag' : 'side'], PAD = 3, cols = art.rows[0].length, w = cols + 2 * PAD, h = art.rows.length + 2 * PAD;
   const mask = new Uint8Array(w * h), data = new Uint8Array(w * h);
   art.rows.forEach((row, r) => [...row].forEach((ch, c) => { if (ch === ' ') return; const p = (PAD + r) * w + PAD + (way > 0 ? c : cols - 1 - c); mask[p] = 1; data[p] = ch === 'm' ? MUTED : INDIGO; }));
   const near = grown(mask, w, 3); for (let p = 0; p < w * h; p++) if (!mask[p] && near[p]) data[p] = INK;
@@ -241,8 +227,9 @@ export function drawMoru(rig, poseIn = {}, shapesIn = {}, costume = []) {
   // 4. Flippers: the neutral pose's own pixels on the floor, the round paw off it.
   const flipper = (i, dx, dy, shape) => {
     const f = rig.flips[i], shift = mapX(Math.round(f.box.cx)) - Math.round(f.box.cx);
-    const cx = Math.round(f.box.cx) + shift + dx, cy = Math.round(f.box.cy) + dy;
-    return { i, f, shape: shape ?? (offFloor(dx, dy) ? 'paw' : 'rest'), dx: shift + dx, dy, cx, cy, ox: dx };
+    const kind = shape ?? (offFloor(dx, dy) ? 'paw' : 'rest'), [ex, ey] = kind === 'paw' ? reach(dx, dy, MOST[i]) : [dx, dy];
+    const cx = Math.round(f.box.cx) + shift + ex, cy = Math.round(f.box.cy) + ey;
+    return { i, f, shape: kind, dx: shift + ex, dy: ey, cx, cy, ox: dx, oy: dy };
   };
   const placed = [flipper(0, pose.lx, pose.ly, shapes.left), flipper(1, pose.rx, pose.ry, shapes.right)];
   // A flipper off the floor is one of the hand-drawn paddles, picked by where the paw has gone and outlined whole like the mound it left.
@@ -250,8 +237,7 @@ export function drawMoru(rig, poseIn = {}, shapesIn = {}, costume = []) {
     if (pl.shape === 'hidden' || shapes.noFlippers) return null;
     const r = pl.f.rest;
     if (pl.shape === 'rest') return { data: r.data, w: r.w, h: r.h, x: r.x0 + pl.dx + MX, y: r.y0 + pl.dy + MY, rest: true };
-    // The shoulder sits low on the belly and slides up the flank for a high reach, so a raised flipper leaves from the side, not across the face.
-    const s = liftedFlipper(pl.cx, pl.cy, pl.ox, pl.dy, pl.i, r.y0 + r.h - 1);
+    const s = liftedFlipper(pl.cx, pl.cy, pl.ox, pl.oy, pl.i, r.y0 + r.h - 1);
     return { ...s, x: s.x + MX, y: s.y + MY };
   });
   const whiskerHidden = (s, x, y) => limbs.some(l => l && !l.rest && x + s.w / 2 + 2 > l.x - MX && x - s.w / 2 - 2 < l.x - MX + l.w && y + s.h / 2 + 2 > l.y - MY && y - s.h / 2 - 2 < l.y - MY + l.h && (() => { for (let yy = Math.floor(y - s.h / 2) - 1; yy <= y + s.h / 2 + 1; yy++) for (let xx = Math.floor(x - s.w / 2) - 1; xx <= x + s.w / 2 + 1; xx++) { const lx = xx + MX - l.x, ly = yy + MY - l.y; if (lx >= 0 && ly >= 0 && lx < l.w && ly < l.h && l.data[ly * l.w + lx]) return true; } return false; })());
@@ -313,8 +299,10 @@ export function blitMoru(scene, W, drawn, ox, { flip = false, oy = 0, only, pivo
     { const worn = new Set(pts.filter(q => q[3] && flat.has(at(q[0], q[1])) && flat.get(at(q[0], q[1])) !== INK).map(q => at(q[0], q[1]))), seen = new Set(), parts = [];
       for (const k0 of worn) { if (seen.has(k0)) continue; const part = [k0]; seen.add(k0); for (let i = 0; i < part.length; i++) { const k = part[i]; for (const n of [k - 1, k + 1, k - 2048, k + 2048]) if (!seen.has(n) && worn.has(n)) { seen.add(n); part.push(n); } } parts.push(part); }
       for (const part of parts) { if (part.length > 260 || part.length < 12) continue;
-        // Its fine detail (the ribs of a wing, the tip of a plate) breaks into specks when turned: a colour holding less than 45% of the piece takes the piece's main colour.
-        { const count = new Map(); for (const k of part) count.set(flat.get(k), (count.get(flat.get(k)) ?? 0) + 1); const main = [...count].sort((a, b) => b[1] - a[1])[0][0]; for (const k of part) if (count.get(flat.get(k)) < part.length * 0.45) flat.set(k, main); }
+        // Its fine detail (the ribs of a wing, the tip of a plate) breaks into specks when turned: a colour that is nowhere more than a line or a dot
+        // (under a quarter of its pixels have their own colour on all four sides) takes the piece's main colour. A solid patch, like the pink of an ear, is kept.
+        { const count = new Map(), solid = new Map(); for (const k of part) { const c = flat.get(k); count.set(c, (count.get(c) ?? 0) + 1); if ([k - 1, k + 1, k - 2048, k + 2048].every(n => flat.get(n) === c)) solid.set(c, (solid.get(c) ?? 0) + 1); }
+          const main = [...count].sort((a, b) => b[1] - a[1])[0][0]; for (const k of part) { const c = flat.get(k); if (c !== main && (solid.get(c) ?? 0) < count.get(c) / 4) flat.set(k, main); } }
         // A very small piece (a back plate) has a base as broad as itself and would be swallowed: it stays where it is.
         if (part.length < 60) continue;
         let cx = 0, cy = 0; for (const k of part) { cx += k % 2048 - 512; cy += Math.floor(k / 2048) - 512; } cx /= part.length; cy /= part.length;
