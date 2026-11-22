@@ -99,16 +99,19 @@ const SWITCH_FLIP = tool('switch-flip', 'Harness', 32, 'Flicks the three scope s
 // ---------- Library ----------
 const BOOK = [bold(['iiiiiiiiiiiiiiii', 'i..............i', 'i..............i', 'iiiiiiiiiiiiiiii']), bold(['ssssssssssssssss', 'ssiiiissssssssss', 'ssiiiissssssssss', 'gggggggggggggggg']), bold(['iiiiiiiiiiiiiiii', 'iiiiiiii......ii', 'iiiiiiii......ii', 'iiiiiiiiiiiiiiii'])];
 const TOP = n => FLOORY - 2 - 10 * n;
+/** A book never rises through the floor as a standing tool does: it is dropped whole, this far above its place on its first two poses. */
+const DROP = [8, 2], dropped = (f, inAt) => DROP[f - inAt] ?? 0;
 const BOOK_STACK = tool('book-stack', 'Library', 24, 'Sets a third book on the stack and squares it up',
   timing(24, 110, { 4: 160, 6: 200, 9: 130, 10: 220, 13: 200, 15: 320, 17: 200 }),
   [b(1, 'antic'), b(3, LOOK), b(4, 'lookR', 'rest', { rx: 17, ry: -16 }), b(6, 'lookR+perk', 'rest', { rx: 17, ry: -40 }), b(9, LOOK, 'effort', { rx: 17, ry: -26 }), b(10, LOOK, 'blink', { rx: 17, ry: -24, fy: 2 }), b(11, LOOK, 'rest', { rx: 15, ry: -26 }),
     b(12, LOOK, 'effort', { rx: 19, ry: -24 }), b(14, LOOK, 'effort', { rx: 15, ry: -24 }), b(15, 'lookR+perk', 'happy', { rx: 4, ry: -4, tail: 3 }), b(17, 'lookR', 'proud', { fy: 2, tail: 1 }), b(19, 'lookR', 'happy'), b(21, 'antic', 'glad'), b(22, 'rest', 'blink')],
   (f, api) => {
-    const t = f < 2 ? 0 : f < 5 ? (f - 1) / 4 : f < 19 ? 1 : f < 22 ? 1 - (f - 18) / 4 : 0, sink = (1 - t) * 36;
-    if (t > 0) { api.put(BOOK[0], 124, TOP(1) + sink, { clipY: FLOORY }); api.put(BOOK[1], 124, TOP(2) + sink, { clipY: FLOORY }); }
-    if (within(f, 5, 21)) {
+    // The stack lands a book at a time and is taken away from the top down.
+    if (within(f, 2, 21)) api.put(BOOK[0], 124, TOP(1) - dropped(f, 2), { clipY: FLOORY });
+    if (within(f, 3, 20)) api.put(BOOK[1], 124, TOP(2) - dropped(f, 3), { clipY: FLOORY });
+    if (within(f, 5, 19)) {
       const [, y] = api.a.m.pawR, landed = f >= 9;
-      api.put(BOOK[2], landed ? (f < 13 ? 118 : f < 14 ? 122 : 124) : 120, landed ? TOP(3) + (f === 10 ? 2 : 0) + sink : Math.min(TOP(3), y - 6), { clipY: FLOORY }); if (f <= 14) api.paw('m', 'R');
+      api.put(BOOK[2], landed ? (f < 13 ? 118 : f < 14 ? 122 : 124) : 120, landed ? TOP(3) + (f === 10 ? 2 : 0) : Math.min(TOP(3), y - 6)); if (f <= 14) api.paw('m', 'R');
       if (within(f, 15, 16)) api.put(f === 15 ? FX.sparkBig : FX.spark, 168, 54);
     }
   });
@@ -120,7 +123,9 @@ const MAGNIFIER_READ = tool('magnifier-read', 'Library', 28, 'Reads down a page 
   [b(1, 'antic'), b(3, LOOK), b(5, LOOK, 'rest', { rx: 12, ry: -18 }), b(9, LOOK, 'rest', { rx: 20, ry: -18, gx: 1 }), b(10, LOOK, 'rest', { rx: 12, ry: -13 }), b(13, LOOK, 'rest', { rx: 20, ry: -13, gx: 1 }), b(14, LOOK, 'rest', { rx: 12, ry: -8 }), b(17, LOOK, 'rest', { rx: 17, ry: -8, gx: 1 }),
     b(18, LOOK + '+perk', 'wow', { rx: 17, ry: -8, tail: 4 }), b(21, 'lookR+perk', 'happy', { rx: 8, ry: -4, tail: 2 }), b(24, 'antic', 'glad'), b(26, 'rest', 'blink')],
   (f, api) => {
-    stand(api, OPEN_BOOK, 126, 2, 23);
+    // The book lands shut, falls open to be read, and is shut again before it goes.
+    if (within(f, 4, 22)) api.put(OPEN_BOOK, 126, FLOORY - (OPEN_BOOK.h - 4), { clipY: FLOORY });
+    else if (within(f, 2, 24)) api.put(BOOK[0], 132, FLOORY - (BOOK[0].h - 4) - dropped(f, 2), { clipY: FLOORY });
     if (within(f, 5, 21)) { const [x, y] = api.a.m.pawR; api.put(LENS, x + NEAR - 2, y - 20); api.paw('m', 'R'); }
     if (within(f, 18, 20)) api.put(f === 18 ? FX.sparkBig : FX.spark, 170, 60);
   });
