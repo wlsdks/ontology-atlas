@@ -3,7 +3,7 @@
  * and go out through one, one walk at a time, so the floor holds two to four and never more than five. Pure:
  * the host passes the time and the random source.
  */
-import { addMoru, centre, enter, leave, type Moru, type Random, type World } from './behaviour';
+import { addMoru, centre, enter, leave, mayStop, type Moru, type Random, type World } from './behaviour';
 import { pickLook, type Look } from './wardrobe';
 
 /** The most Moru the lobby shows at once, whatever its width. */
@@ -39,15 +39,25 @@ function drawTarget(world: World, presence: Presence) {
   presence.nextTarget = world.now + 20000 + world.rand() * 25000;
 }
 
-/** Starts a lobby: the first Moru already stand on the floor, far apart. */
+/** The place nearest `at` where a Moru in `lane` stands clear of the fixtures and a body from everybody, or null. */
+function clearNear(world: World, at: number, lane: number): number | null {
+  for (let far = 0; far <= world.width; far += 8) for (const x of [at - far, at + far]) {
+    if (x > 70 && x < world.width - 70 && mayStop(world, x, lane) && world.morus.every(o => Math.abs(centre(o) - x) >= world.sep)) return x;
+  }
+  return null;
+}
+
+/** Starts a lobby: the first Moru already stand on the floor, far apart, clear of the fixtures. */
 export function openLobby(world: World, crew: number, rand: Random = world.rand): Presence {
   const presence: Presence = { crew, target: 0, nextTarget: 0, quietUntil: 0, serial: 0 };
   drawTarget(world, presence);
   const first = Math.min(presence.target, 3);
   for (let i = 0; i < first; i++) {
     const look = pickLook(rand, world.morus);
-    const at = (world.width * (i + 0.5)) / first;
-    addMoru(world, { id: `m${presence.serial++}`, x: at - 74, lane: i % world.lanes, ...look });
+    const lane = i % world.lanes, at = clearNear(world, (world.width * (i + 0.5)) / first, lane);
+    if (at === null) continue;
+    const m = addMoru(world, { id: `m${presence.serial++}`, x: 0, lane, ...look });
+    m.x = at - (m.facing > 0 ? 74 : 62);
   }
   return presence;
 }

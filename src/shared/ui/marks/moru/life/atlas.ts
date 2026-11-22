@@ -62,7 +62,7 @@ export interface LobbyProp {
   fx: number;
   fy: number;
 }
-export type LobbyPropName = 'bench' | 'crate' | 'mat' | 'plant' | 'door' | 'doorRight';
+export type LobbyPropName = 'wall' | 'window' | 'board' | 'bench' | 'crate' | 'mat' | 'plant' | 'door' | 'doorRight';
 
 export interface LifeAtlas {
   cell: number;

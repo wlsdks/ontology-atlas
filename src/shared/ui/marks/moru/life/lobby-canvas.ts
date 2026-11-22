@@ -15,7 +15,7 @@ import { pixelStage, type PixelStage } from '@/shared/motion/pixel-stage';
 import { facingClip, type LifeAtlas, type LifeClip, type LifePose, type PiecePart } from './atlas';
 import { centre, createWorld, standing, tick, type Moru, type World } from './behaviour';
 import { crewSize, nearestGap, openLobby, setCrew, tend, type Presence } from './presence';
-import { drawFixtures, lobbySpots } from './lobby-props';
+import { NAPPING_REACH, STANDING_REACH, drawFixtures, lobbyClearance, lobbySpots } from './lobby-props';
 import { freshWorn, placeWear, type Placed, type Worn } from './wardrobe';
 
 export const LIFE_SHEETS = {
@@ -208,8 +208,13 @@ export async function createLobby(canvas: HTMLCanvasElement, { width, unit = 1, 
     drawFixtures(fixturesCtx, floorW, BACK_FEET, BACK_FEET + 2 * LANE_DY, PROPS, atlas.props);
   };
   fit();
+  /** Where a Moru on a floor this wide may stand or nap, clear of the fixtures. */
+  const clearanceFor = (w: number): World['standsClear'] => {
+    const clear = lobbyClearance(w, BACK_FEET, LANE_DY, BACK_FEET + 2 * LANE_DY, atlas.props);
+    return (at, depth, napping) => clear(at, depth, napping ? NAPPING_REACH : STANDING_REACH);
+  };
 
-  const world: World = createWorld({ atlas, width: floorW, lanes: 3, rand, busyMax: LOBBY_BUSY, sep: LOBBY_SEP, extra: 1, spots: lobbySpots(floorW) });
+  const world: World = createWorld({ atlas, width: floorW, lanes: 3, rand, busyMax: LOBBY_BUSY, sep: LOBBY_SEP, extra: 1, spots: lobbySpots(floorW), standsClear: clearanceFor(floorW) });
   const presence: Presence = openLobby(world, crewSize(resting));
 
   // The kept pictures, least recently shown first. A picture on screen is never given up.
@@ -478,6 +483,7 @@ export async function createLobby(canvas: HTMLCanvasElement, { width, unit = 1, 
       fit();
       world.width = floorW;
       world.spots = lobbySpots(floorW);
+      world.standsClear = clearanceFor(floorW);
       // A Moru the narrower floor left outside walks back in as a newcomer would; none is moved.
       redrawAll();
     },

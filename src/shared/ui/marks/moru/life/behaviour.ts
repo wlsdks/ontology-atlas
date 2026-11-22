@@ -98,6 +98,8 @@ export interface World {
   calm: boolean;
   /** A resting floor is asked for one blink: the first Moru standing free plays it. */
   breathe: boolean;
+  /** A Moru standing (or napping) with its centre at `at`, `depth` lanes from the back, covers no fixture. */
+  standsClear: (at: number, depth: number, napping: boolean) => boolean;
   rand: Random;
   now: number;
   sinceDecide: number;
@@ -121,11 +123,12 @@ export function seeded(seed: number): Random {
 }
 
 /** `busyMax` is how many Moru may be doing something at once; the rest stand, and the one that has stood longest goes next. */
-export function createWorld({ atlas, width, rand, lanes = 3, spots = [], busyMax = Infinity, sep = SEP, extra = 2 }: {
+export function createWorld({ atlas, width, rand, lanes = 3, spots = [], busyMax = Infinity, sep = SEP, extra = 2, standsClear = () => true }: {
   atlas: Pick<LifeAtlas, 'clips'>; width: number; rand: Random; lanes?: number; spots?: Spot[]; busyMax?: number; sep?: number; extra?: number;
+  standsClear?: World['standsClear'];
 }): World {
   return {
-    atlas, width, lanes, spots, busyMax, sep, extra, calm: false, breathe: false, rand, now: 0, sinceDecide: 0, morus: [], lastReply: null, log: [],
+    atlas, width, lanes, spots, busyMax, sep, extra, calm: false, breathe: false, standsClear, rand, now: 0, sinceDecide: 0, morus: [], lastReply: null, log: [],
     stats: { actions: {}, declines: 0, missed: 0, interactions: 0, pranks: 0, swaps: 0, eventLatency: [], entered: 0, left: 0 },
   };
 }
@@ -198,31 +201,64 @@ function play(world: World, m: Moru, clip: string, cur: Current = {}) {
 }
 function rest(m: Moru) { m.clip = 'rest'; m.i = 0; m.frame = 0; m.t = 0; m.cur = {}; m.changed = true; }
 /** On a resting floor a walk ends with the stride under way; a walk through a doorway still finishes. */
-const stopWalking = (world: World, m: Moru) => { if (world.calm && !m.door && m.plan[0]?.go) drop(m); };
+/** Turning carries the body this far: one that turned where it uses a fixture is still on it. */
+const TURN_CARRY = 12;
+/**
+ * A Moru may stop here: clear of every fixture, or on one at the spot it uses it from, where it is drawn on it.
+ * One already there may have turned on it since (`turned`).
+ */
+export const mayStop = (world: World, at: number, lane: number, napping = false, turned = false) =>
+  world.standsClear(at, lane, napping) || world.spots.some(s => Math.abs(s.x - at) <= (turned ? TURN_CARRY + 2 : 2) && Math.abs(s.lane - lane) < 0.1);
+/** Where a Moru stands now is a place it may stay. */
+const mayStay = (world: World, m: Moru) => mayStop(world, centre(m), m.lane, false, true);
+/** Resting between turns, a walk stops at the end of its stride, unless that would leave it standing on a fixture. */
+const stopWalking = (world: World, m: Moru) => { if (world.calm && !m.door && m.plan[0]?.go && mayStay(world, m)) drop(m); };
 const drop = (m: Moru) => { m.plan = []; m.steps = 0; };
+
+/** Set while a Moru left on a fixture chooses where to walk off to, so a walk blocked at once does not choose again. */
+let walkingOff = false;
+/**
+ * Nobody comes to rest on a fixture: one that stopped there steps into the nearest lane where it stands clear, or
+ * else walks on to the nearest clear place.
+ */
+function walkOff(world: World, m: Moru) {
+  if (walkingOff || m.door || mayStay(world, m)) return;
+  walkingOff = true;
+  try {
+    const here = centre(m);
+    const lane = Array.from({ length: world.lanes }, (_, L) => L).filter(L => L !== m.lane && mayStop(world, here, L) && clear(world, m, L, here))
+      .sort((a, b) => Math.abs(a - m.lane) - Math.abs(b - m.lane))[0];
+    if (lane === undefined) { decide(world, m, 'wander'); return; }
+    m.goal = here;
+    m.plan = [{ go: () => here, lane: () => lane }];
+    next(world, m);
+  } finally { walkingOff = false; }
+}
 
 /** Starts the next thing in the plan. Walking is planned one stride at a time, so a moving target is followed and neighbours are respected. */
 function next(world: World, m: Moru): void {
+  // A walk that ends short of its place on a fixture leaves out what was to be done there.
+  const stranded = () => { if (!m.door && !m.plan[0]?.go && !mayStay(world, m)) m.plan = []; };
   for (;;) {
     const item = m.plan[0];
-    if (!item) { rest(m); m.think = 300 + world.rand() * 1400; m.steps = 0; return; }
+    if (!item) { rest(m); m.think = 300 + world.rand() * 1400; m.steps = 0; walkOff(world, m); return; }
     if (item.go) {
       const lane = item.lane?.() ?? m.lane, d = item.go() - centre(m), dir = d >= 0 ? 1 : -1;
       item.left = (item.left ?? 40) - 1;
       // The one walked up to waits only once the walker is close: a far walker does not freeze it.
       if (item.toward && quiet(item.toward) && Math.abs(centre(item.toward) - centre(m)) < 130) item.toward.hail = 1500;
       // The one walked up to may have moved on: if the place beside it is now in front of somebody, the walk turns into a walk to the nearest free place.
-      if (item.toward && !clearSpot(world, m, item.go(), Math.sign(centre(item.toward) - item.go()) || m.facing, item.toward)) {
+      if (item.toward && (!clearSpot(world, m, item.go(), Math.sign(centre(item.toward) - item.go()) || m.facing, item.toward) || !mayStop(world, item.go(), lane))) {
         m.plan = []; m.steps = 0; world.stats.missed++;
-        if (clearSpot(world, m, centre(m), m.facing) || !decide(world, m, 'wander')) continue;
+        if ((clearSpot(world, m, centre(m), m.facing) && mayStay(world, m)) || !decide(world, m, 'wander')) continue;
         return;
       }
       const near = Math.abs(d) < 2, wrongWay = !near && dir !== m.facing;
-      if ((near && lane === m.lane) || item.left < 0) { m.plan.shift(); m.steps = 0; continue; }
+      if ((near && lane === m.lane) || item.left < 0) { m.plan.shift(); m.steps = 0; if (!near) stranded(); continue; }
       // Turning carries the body 12px the new way: never into a neighbour, and never past the target.
       if (wrongWay && Math.abs(d) >= 12) {
         m.steps = 0;
-        if (!roomToTurn(world, m, item.toward)) { m.plan = item.blocked ?? []; continue; }
+        if (!roomToTurn(world, m, item.toward)) { m.plan = item.blocked ?? []; stranded(); continue; }
         play(world, m, 'turn');
         return;
       }
@@ -243,7 +279,7 @@ function next(world: World, m: Moru): void {
       // A lane is changed half a lane to a stride, so the body never moves more than a walking step a pose.
       const laneNext = m.lane + Math.sign(lane - m.lane) * 0.5;
       const laneTo = lane !== m.lane && clear(world, m, laneNext, centre(m) + m.facing * stride, GAP, item.toward) ? laneNext : null;
-      if (stride < 2 && laneTo === null) { m.plan = wrongWay && lane === m.lane ? m.plan.slice(1) : item.blocked ?? []; m.steps = 0; continue; }
+      if (stride < 2 && laneTo === null) { m.plan = wrongWay && lane === m.lane ? m.plan.slice(1) : item.blocked ?? []; m.steps = 0; stranded(); continue; }
       const into = centre(m) + m.facing * stride;
       const crossing = world.morus.some(o => {
         const c = o !== m && TRAVEL.has(o.clip) ? world.atlas.clips[o.clip] : null;
@@ -293,6 +329,8 @@ function advance(world: World, m: Moru, dt: number) {
     stopWalking(world, m);
     if (m.plan.length) { next(world, m); return; }
     m.think -= dt; m.idleIn -= dt;
+    // One left standing on a fixture walks off it, turn or not.
+    if (!m.door && !mayStay(world, m)) { walkOff(world, m); return; }
     // A resting floor only blinks, once when the screen asks.
     if (world.calm) {
       if (world.breathe && !m.door) { world.breathe = false; play(world, m, 'blink'); }
@@ -318,7 +356,7 @@ function advance(world: World, m: Moru, dt: number) {
     if (m.cur.laneTo != null) { m.lane = m.cur.laneTo; m.depth = m.lane; }
     stopWalking(world, m);
     if (m.plan.length) next(world, m);
-    else { rest(m); if (!IDLE.has(m.clip)) m.think = Math.max(m.think, 400 + world.rand() * 1600); }
+    else { rest(m); if (!IDLE.has(m.clip)) m.think = Math.max(m.think, 400 + world.rand() * 1600); walkOff(world, m); }
     return;
   }
   m.i++;
@@ -433,8 +471,9 @@ function decide(world: World, m: Moru, only: string | null = null): boolean {
   // A lane to walk in: its own if nobody stands on the way, else the nearest lane that is open all the way.
   const wayIn = (at: number, L: number) => world.morus.every(o => o === m || (Math.abs(o.depth - L) >= 0.9 && o.cur.laneTo !== L)
     || (centre(o) - here) * Math.sign(at - here) < 0 || (centre(o) - here) * Math.sign(at - here) > Math.abs(at - here) + GAP);
-  const laneFor = (at: number) => [m.lane, ...(m.room ? [] : [m.lane - 1, m.lane + 1, m.lane - 2, m.lane + 2])].find(L => L >= 0 && L < world.lanes && wayIn(at, L));
-  const stuck = !apart(here) || m.rooted > 12000;
+  const laneFor = (at: number) => [m.lane, ...(m.room ? [] : [m.lane - 1, m.lane + 1, m.lane - 2, m.lane + 2])].find(L => L >= 0 && L < world.lanes && wayIn(at, L) && mayStop(world, at, L));
+  const onFixture = !mayStay(world, m);
+  const stuck = !apart(here) || m.rooted > 12000 || onFixture;
   let to = here, toLane = m.lane, strict = !crowded;
   const tryAt = (at: number, sep = world.sep) => {
     if (to !== here || at < 70 || at > world.width - 70 || !apart(at, null, sep)) return;
@@ -442,8 +481,10 @@ function decide(world: World, m: Moru, only: string | null = null): boolean {
     // Nobody walks past anybody, in any lane: a walk is taken only where nobody stands, or is headed, along the whole way.
     if ((m.room || strict) && !openWay(world, m, here, at)) return;
     // Nor does anyone set off beside one already walking the same way.
-    if (world.morus.some(o => o !== m && o.goal != null && Math.sign(o.goal - centre(o)) === Math.sign(at - here) && Math.abs(middle(o) - middle(m)) < world.sep + 40)) return;
+    if (!onFixture && world.morus.some(o => o !== m && o.goal != null && Math.sign(o.goal - centre(o)) === Math.sign(at - here) && Math.abs(middle(o) - middle(m)) < world.sep + 40)) return;
     if (L === undefined || (Math.sign(at - here) !== m.facing && !roomToTurn(world, m))) return;
+    // It stops only where it stands clear of every fixture.
+    if (!mayStop(world, at, L)) return;
     to = at; toLane = L;
   };
   for (let k = 0; k < 8 && dir; k++) tryAt(here + dir * (60 + r() * 150));
@@ -451,17 +492,19 @@ function decide(world: World, m: Moru, only: string | null = null): boolean {
   if (stuck) for (const pass of !apart(here) && strict ? [true, false] : [strict]) {
     strict = pass;
     const first = r() < 0.5 ? 1 : -1;
-    for (const sep of crowded || !apart(here, null, 76) ? [world.sep, 76] : [world.sep])
-      for (let far = !apart(here) && !crowded ? 24 : sep < world.sep ? 60 : 110; far <= 700 && to === here; far += far < 110 ? 12 : 30)
+    for (const sep of crowded || onFixture || !apart(here, null, 76) ? [world.sep, 76] : [world.sep])
+      // One on a fixture looks from right beside it, so a sidestep off it is found first.
+      for (let far = onFixture ? 12 : !apart(here) && !crowded ? 24 : sep < world.sep ? 60 : 110; far <= 700 && to === here; far += far < 110 ? 12 : 30)
         for (const d of [first, -first]) tryAt(here + d * (far + (far < 110 ? 0 : r() * 20)), sep);
   }
-  add('wander', (to === here ? 0.05 : 0.5 + curiosity + 0.5 * Math.max(0, beside(1) + beside(-1) - 3)) * (apart(here) ? 1 : 6) * (1 + Math.min(5, m.rooted / 5000)),
+  add('wander', (to === here ? 0.05 : 0.5 + curiosity + 0.5 * Math.max(0, beside(1) + beside(-1) - 3)) * (apart(here) && !onFixture ? 1 : 6) * (1 + Math.min(5, m.rooted / 5000)),
     () => { m.goal = to; return [{ go: () => to, lane: () => toLane }]; });
   // The place is spoken for from the moment it is chosen (`goal`), so nobody comes to stand in front of the ladder while it is climbed.
   if (!m.room) for (const spot of world.spots) if (clear(world, m, spot.lane, spot.x, GAP) && apart(spot.x) && (crowded || openWay(world, m, here, spot.x)))
     add(`spot:${spot.clip}`, spot.clip === 'nap' ? 1.3 * (1 - energy) : 0.3 + 0.8 * curiosity, () => {
       m.goal = spot.x;
-      return [{ go: () => spot.x, lane: () => spot.lane, left: 70 }, { face: () => spot.dir }, { clip: spot.clip === 'nap' ? 'yawn' : spot.clip },
+      // Turning carries the body 12px the new way: one arriving facing away stops 12px short, so its turn ends on the spot.
+      return [{ go: () => (m.facing === spot.dir ? spot.x : spot.x - 12 * spot.dir), lane: () => spot.lane, left: 70 }, { face: () => spot.dir }, { clip: spot.clip === 'nap' ? 'yawn' : spot.clip },
         ...(spot.clip === 'nap' ? [{ clip: 'nap' }] : []),
         // Up the ladder, a look round and a wave from the shelf, and down the way it came.
         ...(spot.clip === 'climb' ? [{ clip: 'look-back' }, { clip: 'wave' }, { pause: 900 }, { clip: 'look-ahead' }, { clip: 'climb', reverse: true }] : [])];
@@ -482,8 +525,13 @@ function decide(world: World, m: Moru, only: string | null = null): boolean {
       if (found === undefined) continue;
       const by = found;
       const behind = centre(b) - b.facing * (REACH + 24);
+      // Beside a friend only where it stands clear of the fixtures, and for a nap clear of them lying down too.
+      const place = stand(b, by) + by * REACH;
+      if (!mayStop(world, place, friendLane(b))) continue;
       const kinds: [string, number][] = m.room || b.room ? [['ask', 1.2]] : [['greet', 1], ['highfive', 1], ['ask', 1.3],
-        ...(m.wear.head !== b.wear.head ? [['swap', 1.5] as [string, number]] : []), ...(apart(behind, b) ? [['prank', 0.6 + curiosity] as [string, number]] : []), ['nap', (1 - energy) * 1.2]];
+        ...(m.wear.head !== b.wear.head ? [['swap', 1.5] as [string, number]] : []),
+        ...(apart(behind, b) && mayStop(world, behind, friendLane(b)) ? [['prank', 0.6 + curiosity] as [string, number]] : []),
+        ...(mayStop(world, place, friendLane(b), true) && mayStop(world, centre(b), b.lane, true) ? [['nap', (1 - energy) * 1.2] as [string, number]] : [])];
       for (const [kind, w] of kinds) add(kind, w * share * (0.3 + sociability), () => {
         if (idle(b) && Math.abs(centre(b) - here) < 130) b.hail = 2500;
         m.goal = kind === 'prank' ? behind : stand(b, by) + by * REACH;
@@ -494,7 +542,7 @@ function decide(world: World, m: Moru, only: string | null = null): boolean {
     }
   }
   if (!m.room) {
-    add('nap-alone', (1 - energy) * 0.5, () => [{ clip: 'yawn' }, { clip: 'nap' }]);
+    if (mayStop(world, here, m.lane, true)) add('nap-alone', (1 - energy) * 0.5, () => [{ clip: 'yawn' }, { clip: 'nap' }]);
     for (const move of TRAVEL) {
       const far = world.atlas.clips[move].travel!.at(-1)!;
       const ok = (d: number) => here + d * (far + 60) > 60 && here + d * (far + 60) < world.width - 60 && world.morus.every(o => o === m
@@ -503,7 +551,8 @@ function decide(world: World, m: Moru, only: string | null = null): boolean {
           : [centre(o), o.goal ?? centre(o)].every(x => (x - here) * d < (crowded ? 0 : -30) || (x - here) * d > far + GAP + 22)));
       // One travelling move at a time in a neighbourhood: two that set off toward each other in different lanes would cross.
       const alone = world.morus.every(o => o === m || !(TRAVEL.has(o.clip) || o.plan.some(i => i.clip && TRAVEL.has(i.clip))) || Math.abs(centre(o) - here) > 2 * far + 240);
-      const d = !alone ? 0 : ok(m.facing) ? m.facing : ok(-m.facing) ? -m.facing : 0;
+      const fine = (d: number) => ok(d) && mayStop(world, here + d * far, m.lane);
+      const d = !alone ? 0 : fine(m.facing) ? m.facing : fine(-m.facing) ? -m.facing : 0;
       if (d) add(move, energy * 0.45, () => { m.goal = here + d * far; return [{ face: () => d }, { clip: move }]; });
     }
   }
@@ -537,11 +586,20 @@ export function enter(world: World, moru: { id: string; palette?: string; wear?:
   const edgeCentre = side < 0 ? -OFFSTAGE : world.width + OFFSTAGE;
   const facing = side < 0 ? 1 : -1;
   const m = addMoru(world, { ...moru, x: edgeCentre - (facing > 0 ? 74 : 62), lane });
+  // The first place in from the edge that stands clear of the fixtures; with none, nobody comes in.
+  const from = side < 0 ? 140 + world.rand() * 120 : world.width - 140 - world.rand() * 120;
+  let goal: number | null = null;
+  for (let far = 0; far <= world.width / 2 && goal === null; far += 8) {
+    const at = from - side * far;
+    if (at > 70 && at < world.width - 70 && mayStop(world, at, lane)) goal = at;
+  }
+  if (goal === null) { world.morus.pop(); return null; }
   m.facing = facing;
   m.door = 'in';
-  const stop = side < 0 ? 140 + world.rand() * 120 : world.width - 140 - world.rand() * 120;
-  m.goal = stop;
-  m.plan = [{ go: () => stop, left: 80 }, { call: (_w, it) => { it.door = null; } }];
+  m.goal = goal;
+  const stop = goal, inside = { call: (_w: World, it: Moru) => { it.door = null; } };
+  // Stopped short by somebody, it is in all the same and finds its own place.
+  m.plan = [{ go: () => stop, left: 80, blocked: [inside] }, inside];
   world.stats.entered++;
   next(world, m);
   return m;
