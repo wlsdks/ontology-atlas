@@ -2,7 +2,7 @@
 
 import type { RoomEntry } from '@/shared/lib/work-status/work-tracks';
 import { cn } from '@/shared/lib/cn';
-import { roomLook } from '../model/room-look';
+import { roomLook, type MoruCharacter } from '../model/room-look';
 import { BranchName } from './BranchName';
 import { RoomMoru } from './RoomMoru';
 import { SwapText } from './SwapText';
@@ -22,7 +22,7 @@ const TONE: Record<StatusTone, string> = {
  * A worktree on a session's floor: a small Moru, the branch and one status line; a merged one shows its crate in main.
  * The small Moru holds his clip's still pose: a floor of forty rooms would otherwise step forty sprites every frame.
  */
-export function MiniRoom({ room, copy, tint, showOwner }: { room: RoomEntry; copy: RoomCopy; tint: string | null; showOwner: boolean }) {
+export function MiniRoom({ room, copy, tint, showOwner, character }: { room: RoomEntry; copy: RoomCopy; tint: string | null; showOwner: boolean; character: MoruCharacter }) {
   const look = roomLook(room.state);
   const status = copy.status(room);
   // A mini Moru holds his pose, so a sigh would not show: a lock left behind or a folder gone keeps its crate.
@@ -34,7 +34,7 @@ export function MiniRoom({ room, copy, tint, showOwner }: { room: RoomEntry; cop
         <i className={styles.miniCrateBig} data-kind={look.crate} />
       ) : (
         <span className={styles.miniActor}>
-          <RoomMoru key={look.clip} clip={look.clip} still zoom={0.5} tint={tint} dozing={look.dozing} />
+          <RoomMoru key={look.clip} clip={look.clip} character={character} still zoom={0.5} tint={tint} dozing={look.dozing} />
         </span>
       )}
       {look.dozing ? <span aria-hidden className={cn(styles.miniZ, 'text-label font-mono font-[var(--font-weight-strong)]')}>z<br />&nbsp;z</span> : null}

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Moru life</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0b0b0a; color: #d6d3c9; font: 13px/1.5 ui-sans-serif, system-ui, sans-serif; overflow: hidden; }
+  #stage { position: absolute; inset: 0; overflow: hidden; }
+  #world { position: absolute; left: 0; bottom: 0; --dusk: 0; --sun: 0px; }
+  #world canvas, #world div { position: absolute; left: 0; top: 0; }
+  #world canvas { image-rendering: pixelated; }
+  .moru { transform-origin: 108.5px 0; will-change: transform; }
+  .dusk { opacity: var(--dusk); pointer-events: none; animation: dusk 48s steps(64) infinite alternate; }
+  #world .sun { top: 30px; z-index: 1; transform: translateY(var(--sun)); animation: sun 48s steps(64) infinite alternate; }
+  .glow { background: #ffd98a; z-index: 101; opacity: calc(var(--dusk) * 1.7); animation: glow 48s steps(64) infinite alternate; }
+  @keyframes dusk { 0%, 30% { opacity: 0; } 85%, 100% { opacity: .55; } }
+  @keyframes sun { 0%, 30% { transform: translateY(0); } 85%, 100% { transform: translateY(150px); } }
+  @keyframes glow { 0%, 45% { opacity: 0; } 85%, 100% { opacity: .95; } }
+  [data-capture] .dusk, [data-capture] .sun, [data-capture] .glow, [data-reduced] .dusk, [data-reduced] .sun, [data-reduced] .glow { animation: none; }
+  .chip { z-index: 200; font: 11px/1 ui-monospace, Menlo, monospace; color: #9399e5; background: #17192d; border: 1px solid #50569c; padding: 3px 6px; border-radius: 3px; white-space: nowrap; }
+  .chip[data-live="1"] { color: #17192d; background: #fff1d7; border-color: #fff1d7; }
+  .tag { z-index: 200; font: 11px/1 ui-monospace, Menlo, monospace; color: #99968f; white-space: nowrap; }
+  #rooms { position: absolute; left: 24px; right: 24px; top: 132px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  #rooms div { height: 210px; border: 1px solid #262a45; border-radius: 6px; background: #11121c; padding: 14px 16px; color: #99968f; box-sizing: border-box; }
+  #rooms b { display: block; color: #d6d3c9; font-weight: 600; margin-bottom: 2px; }
+  #hud { z-index: 300; position: absolute; left: 24px; top: 20px; font: 12px/1.6 ui-monospace, Menlo, monospace; color: #99968f; white-space: pre; }
+  #note { z-index: 300; position: absolute; left: 24px; top: 48px; max-width: 760px; color: #d6d3c9; }
+  #note h1 { font-size: 18px; font-weight: 600; margin: 0 0 4px; } #note p { margin: 0; color: #99968f; }
+</style></head>
+<body><div id="stage"><div id="hud"></div><div id="note"></div><div id="rooms" hidden></div><div id="world"></div></div>
+<script type="module">
+const ATLAS = __ATLAS__;
+const SHEETS = __SHEETS__;
+document.getElementById('note').innerHTML = new URLSearchParams(location.search).get('mode') === 'farm'
+  ? '<h1>Moru farm</h1><p>Mock for the Work status idle floor: the Moru of rooms with nothing running wander down here. A real event calls its Moru back to its room.</p>'
+  : new URLSearchParams(location.search).get('mode') === 'wardrobe' ? '' : '<h1>Moru life</h1><p>Prototype. Room Moru (labelled) only play what a real event can cut short; the others play freely.</p>';
+if (new URLSearchParams(location.search).get('mode') === 'farm') { const rooms = document.getElementById('rooms'); rooms.hidden = false; rooms.innerHTML = ['<b>Room A</b>working', '<b>Room B</b>waiting for you', '<b>Room C</b>idle: its Moru is on the farm', '<b>Room D</b>idle: its Moru is on the farm'].map(t => '<div>' + t + '<br><small>placeholder card, not a design</small></div>').join(''); }
+__RUNTIME__
+__PAGE__
+
+</script></body></html>

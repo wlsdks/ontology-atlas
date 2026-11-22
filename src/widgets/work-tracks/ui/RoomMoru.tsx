@@ -2,7 +2,7 @@
 
 import { useState, type CSSProperties } from 'react';
 import { MORU_CELL_PX, moruCells, moruRow } from '../model/moru-clock';
-import type { RoomClip } from '../model/room-look';
+import type { MoruCharacter, RoomClip } from '../model/room-look';
 import styles from './rooms.module.css';
 
 /** The waiting row's closed-eye cell a dozing mini Moru holds. */
@@ -17,8 +17,10 @@ const DOZING_CELL = 9;
  * on the neutral pose, so the element keeps what it draws and React only says which row to loop and
  * which to play once. A mini room's Moru holds his row's neutral pose.
  */
-export function RoomMoru({ clip, still, zoom, tint, phase = 0, dozing = false, live = false, once = null, slot = 'front' }: {
+export function RoomMoru({ clip, character = 'grey', still, zoom, tint, phase = 0, dozing = false, live = false, once = null, slot = 'front' }: {
   clip: RoomClip;
+  /** Which Moru the room has; it changes the costume, never the row. */
+  character?: MoruCharacter;
   still: boolean;
   /** 1, 2 or 3 on a large room (128 × zoom px), as the scene's `var(--u)` so it glides with it; 0.5 on a mini room. */
   zoom: number | string;
@@ -38,7 +40,7 @@ export function RoomMoru({ clip, still, zoom, tint, phase = 0, dozing = false, l
   const row = !live && dozing ? 'waiting' : clip;
   // A live Moru's row and cell belong to the clock after the first paint; React draws only the first.
   const [first] = useState<CSSProperties>(() => ({
-    backgroundImage: moruRow(row),
+    backgroundImage: moruRow(row, character),
     backgroundSize: `${moruCells(row) * MORU_CELL_PX}px ${MORU_CELL_PX}px`,
     backgroundPositionX: `${-start * MORU_CELL_PX}px`,
   }));
@@ -55,6 +57,7 @@ export function RoomMoru({ clip, still, zoom, tint, phase = 0, dozing = false, l
           data-moru-live
           data-moru-slot={slot}
           data-moru-clip={clip}
+          data-moru-cast={character}
           data-moru-hold={still}
           data-moru-phase={start}
           data-moru-once={once ?? undefined}
@@ -64,7 +67,7 @@ export function RoomMoru({ clip, still, zoom, tint, phase = 0, dozing = false, l
         <span
           className={styles.moruCells}
           style={{
-            backgroundImage: moruRow(row),
+            backgroundImage: moruRow(row, character),
             backgroundSize: `${moruCells(row) * MORU_CELL_PX}px ${MORU_CELL_PX}px`,
             backgroundPositionX: `${-start * MORU_CELL_PX}px`,
           }}

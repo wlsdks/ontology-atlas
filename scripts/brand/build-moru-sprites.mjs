@@ -627,6 +627,26 @@ async function clipPoses(clip, neutral, size) {
   return clip.restingBody ? holdBody(frames, size) : frames;
 }
 
+/** A work-grid pose reduced to an exported size, with the cell's outer ring cleared; more than a sliver there is a clipped pose. */
+export function exportedPose(frame, exported, label) {
+  const reduced = reduceMoru(frame, WORK, exported);
+  let shaved = 0;
+  for (let p = 0; p < exported * exported; p++) {
+    const x = p % exported, y = (p - x) / exported;
+    if ((!x || !y || x === exported - 1 || y === exported - 1) && reduced[p * 4 + 3]) { reduced.fill(0, p * 4, p * 4 + 4); shaved++; }
+  }
+  if (shaved > EDGE_SLIVER) throw new Error(`${label} is clipped by the ${exported}px cell edge: ${shaved} pixels`);
+  return reduced;
+}
+
+/** One authored clip's cleaned poses on the work grid, exactly as the export reduces them. */
+export async function workGridPoses(id) {
+  const spec = JSON.parse(await readFile(join(ROOT, 'moru-source.json'), 'utf8'));
+  const clip = spec.authored.find(candidate => candidate.id === id);
+  if (!clip) throw new Error(`no authored clip ${id}`);
+  return clipPoses(clip, await neutralPose(spec.authored[0], WORK), WORK);
+}
+
 /** What a clip drawn in code starts from: the neutral pose as the exporter cuts it, and the cleaning every pose gets. */
 export async function moruWorkGrid() {
   const spec = JSON.parse(await readFile(join(ROOT, 'moru-source.json'), 'utf8'));
@@ -640,16 +660,7 @@ export async function buildMoru() {
   const neutral = await neutralPose(spec.authored[0], size);
   for (const clip of spec.authored) {
     const frames = await clipPoses(clip, neutral, size);
-    for (const exported of [64, 128]) framesBySize[exported][clip.id] = frames.map((f, i) => {
-      const reduced = reduceMoru(f, size, exported);
-      let shaved = 0;
-      for (let p = 0; p < exported * exported; p++) {
-        const x = p % exported, y = (p - x) / exported;
-        if ((!x || !y || x === exported - 1 || y === exported - 1) && reduced[p * 4 + 3]) { reduced.fill(0, p * 4, p * 4 + 4); shaved++; }
-      }
-      if (shaved > EDGE_SLIVER) throw new Error(`${clip.id} frame ${i + 1} is clipped by the ${exported}px cell edge: ${shaved} pixels`);
-      return reduced;
-    });
+    for (const exported of [64, 128]) framesBySize[exported][clip.id] = frames.map((f, i) => exportedPose(f, exported, `${clip.id} frame ${i + 1}`));
   }
   for (const exported of [64, 128]) for (const clip of spec.compositions) {
     const [a, b] = clip.sequence.map(id => framesBySize[exported][id]);

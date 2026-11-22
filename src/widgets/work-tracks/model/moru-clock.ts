@@ -19,8 +19,9 @@ const ONCE_STALE_MS = 2000;
 
 /** How many cells a row has: a room row's own count, else the 24 of the waiting row. */
 export const moruCells = (clip: string): number => (ROOM_ROW_FRAMES as Record<string, number>)[clip] ?? 24;
-export const moruOnceMs = (clip: string) => moruCells(clip) * MORU_STEP_MS;
-export const moruRow = (clip: string) => `url(${withBasePath(`/brand/mascot-${clip}-row-128.png`)})`;
+/** A row's sheet: the grey original's, or a cast character's (`pnpm brand:cast`). */
+export const moruRow = (clip: string, character = 'grey') =>
+  `url(${withBasePath(`/brand/mascot-${clip}-row-128${character === 'grey' ? '' : `-${character}`}.png`)})`;
 
 /** A looping Moru in a room on screen in a visible window. */
 const STEPPING = "[data-room-seen='true'] [data-moru-live]";
@@ -74,7 +75,7 @@ export function createMoruClock(board: HTMLElement) {
   };
   const draw = (sprite: HTMLElement, state: Shown) => {
     if (state.drawn !== state.clip) {
-      sprite.style.backgroundImage = moruRow(state.clip);
+      sprite.style.backgroundImage = moruRow(state.clip, sprite.dataset.moruCast);
       sprite.style.backgroundSize = `${state.cells * MORU_CELL_PX}px ${MORU_CELL_PX}px`;
       state.drawn = state.clip;
     }
