@@ -14,6 +14,10 @@ import {
   PROJECT_SOURCE_VIEW_SCHEMA,
 } from '../tool-schemas/project-source-shapes.mjs';
 
+const COMPETENCY_QUESTION_LIST = MEANING_COMPETENCY_QUESTIONS
+  .map(({ id, question, requiredWitnesses }) => `\`${id}\`: ${question} (answered needs ${requiredWitnesses.join(', ')})`)
+  .join(' ');
+
 export const FINALIZE_PROJECT_MEANING_TOOL = {
   name: 'finalize_project_meaning',
   description:
@@ -35,7 +39,8 @@ export const FINALIZE_PROJECT_MEANING_TOOL = {
         minItems: MEANING_COMPETENCY_QUESTIONS.length,
         maxItems: MEANING_COMPETENCY_QUESTIONS.length,
         description:
-          'One row per question id: scope, domains, abilities, evidence, impact. An `answered` row carries every witness list its question names, non-empty, or it is refused; `partial` or `visible-gap` needs `gap`. Questions, witness lists and an example: connection_info({guide:"competency"}).',
+          `One row per fixed question: ${COMPETENCY_QUESTION_LIST} ` +
+          'An `answered` row carries every witness list its question names, non-empty, or it is refused; `partial` or `visible-gap` needs `gap`. Example: connection_info({guide:"competency"}).',
         items: {
           type: 'object',
           properties: {
