@@ -10,7 +10,7 @@ import { AjvJsonSchemaValidator } from '@modelcontextprotocol/server/validators/
 import { runJsonRpcProcess } from '../../../scripts/lib/mcp-test-rpc.mjs';
 import { schemaErrors } from '../../../scripts/lib/output-schema-errors.mjs';
 import { CONSTRUCTION_GUIDE_TOPICS } from '../construction/construction-card.mjs';
-import { hoistSharedSubschemas, inlineSharedSubschemas } from './shared-subschemas.mjs';
+import { TOOL_OUTPUT_CONTRACT_BY_NAME } from './registry.mjs';
 
 const HOST_VALIDATOR = new AjvJsonSchemaValidator();
 const SERVER_ENTRY = join(dirname(fileURLToPath(import.meta.url)), '..', 'index.js');
@@ -34,15 +34,21 @@ async function answersAgainstDeclaredSchemas(vault, calls) {
       ...calls.map(([name, args], index) => ({ jsonrpc: '2.0', id: index + 2, method: 'tools/call', params: { name, arguments: args } })),
     ],
   });
-  const schemas = new Map(responses.find((response) => response.id === 1).result.tools.map((tool) => [tool.name, tool.outputSchema]));
+  const advertised = new Map(responses.find((response) => response.id === 1).result.tools.map((tool) => [tool.name, tool.outputSchema]));
   return calls.map(([name, args], index) => {
     const result = responses.find((response) => response.id === index + 2)?.result;
     assert.ok(result?.structuredContent, `${name} ${JSON.stringify(args)} answered without structuredContent`);
-    assert.ok(schemas.get(name), `${name} declares no outputSchema`);
-    const errors = schemaErrors(schemas.get(name), result.structuredContent);
-    // The validator an MCP SDK client runs on structuredContent, `$ref`s and all.
-    const host = HOST_VALIDATOR.getValidator(schemas.get(name))(result.structuredContent);
-    if (!host.valid) errors.push(`host validator: ${host.errorMessage}`);
+    assert.notEqual(result.isError, true, `${name} ${JSON.stringify(args)} refused: ${result.content?.[0]?.text}`);
+    const contract = TOOL_OUTPUT_CONTRACT_BY_NAME.get(name);
+    assert.ok(contract, `${name} defines no output contract`);
+    assert.ok(advertised.get(name), `${name} advertises no outputSchema`);
+    const errors = schemaErrors(contract, result.structuredContent);
+    // The validator an MCP SDK client runs on structuredContent, against the
+    // full contract and against the schema tools/list advertises.
+    for (const [label, schema] of [['contract', contract], ['advertised', advertised.get(name)]]) {
+      const host = HOST_VALIDATOR.getValidator(schema)(result.structuredContent);
+      if (!host.valid) errors.push(`host validator on the ${label} schema: ${host.errorMessage}`);
+    }
     return { name, args, answer: result.structuredContent, schemaError: errors.length === 0 ? null : errors.slice(0, 5).join('; ') };
   });
 }
@@ -119,37 +125,35 @@ test('confirmed writes answer with a post-write maintenance summary that matches
   }
 });
 
-test('a hoisted schema accepts and rejects the same values as the inline one under an SDK client validator', () => {
-  const action = {
-    type: 'object',
-    properties: { id: { type: 'string', minLength: 1 }, score: { type: 'number', minimum: 0 } },
-    required: ['id', 'score'],
-    additionalProperties: false,
-  };
-  const inline = {
-    type: 'object',
-    properties: { next: { ...action, type: ['object', 'null'] }, first: action, actions: { type: 'array', items: action } },
-    required: ['first', 'actions'],
-    additionalProperties: false,
-  };
-  const hoisted = hoistSharedSubschemas(inline);
-  assert.ok(hoisted.$defs, 'the repeated action shape is written once');
-  assert.ok(JSON.stringify(hoisted).length < JSON.stringify(inline).length);
-  assert.deepEqual(inlineSharedSubschemas(hoisted), inline);
+test('a construction pass of reads and writes matches the contract and the advertised schema', async () => {
+  const vault = mkdtempSync(join(tmpdir(), 'atlas-construction-schema-'));
+  try {
+    writeVaultFile(vault, 'project', '---\nuid: 00000000-0000-4000-8000-000000000001\nkind: project\ntitle: Project\n---\nThe project.\n');
+    writeVaultFile(vault, 'domains/core', '---\nuid: 00000000-0000-4000-8000-000000000002\nkind: domain\ntitle: Core\n---\nThe core.\n');
+    writeVaultFile(vault, 'capabilities/target', '---\nuid: 00000000-0000-4000-8000-000000000003\nkind: capability\ntitle: Target\ndomain: domains/core\n---\nThe target.\n');
+    writeVaultFile(vault, 'capabilities/caller', '---\nuid: 00000000-0000-4000-8000-000000000004\nkind: capability\ntitle: Caller\ndomain: domains/core\ndepends_on: [capabilities/target]\n---\nThe caller.\n');
 
-  const checkInline = HOST_VALIDATOR.getValidator(inline);
-  const checkHoisted = HOST_VALIDATOR.getValidator(hoisted);
-  const values = [
-    { first: { id: 'a', score: 1 }, actions: [{ id: 'b', score: 0 }], next: null },
-    { first: { id: 'a', score: 1 }, actions: [{ id: 'b', score: -1 }] },
-    { first: { id: '', score: 1 }, actions: [] },
-    { first: { id: 'a', score: 1, extra: true }, actions: [] },
-    { first: { id: 'a', score: 1 }, actions: [{ id: 'b' }] },
-    { first: { id: 'a', score: 1 }, actions: [], next: { id: 'c', score: 2 } },
-  ];
-  assert.deepEqual(
-    values.map((value) => checkHoisted(value).valid),
-    values.map((value) => checkInline(value).valid),
-  );
-  assert.deepEqual(values.map((value) => checkHoisted(value).valid), [true, false, false, false, false, true]);
+    const answers = await answersAgainstDeclaredSchemas(vault, [
+      ['list_kinds', {}],
+      ['list_concepts', {}],
+      ['get_concept', { slug: 'capabilities/caller' }],
+      ['get_concepts', { slugs: ['capabilities/caller', 'capabilities/missing'] }],
+      ['find_evidence', { title: 'target' }],
+      ['find_neighbors', { slug: 'capabilities/caller' }],
+      ['find_path', { from: 'capabilities/caller', to: 'domains/core' }],
+      ['find_orphans', {}],
+      ['query_concepts', { filter: 'kind=capability' }],
+      ['compile_ontology', {}],
+      ['query_ontology', { operation: 'impact', slug: 'capabilities/target' }],
+      ['validate_vault', {}],
+      ['add_concept', { slug: 'capabilities/reader', kind: 'capability', title: 'Reader', domain: 'domains/core', body: 'Reads the target.' }],
+      ['add_relation', { from: 'capabilities/reader', to: 'capabilities/target', type: 'depends_on', why: 'Reading calls the target first.' }],
+      ['patch_concept', { slug: 'capabilities/reader', body: 'Reads the target, then reports.' }],
+      ['validate_vault', {}],
+    ]);
+
+    assert.deepEqual(answers.filter((answer) => answer.schemaError).map(({ name, schemaError }) => ({ name, schemaError })), []);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+  }
 });

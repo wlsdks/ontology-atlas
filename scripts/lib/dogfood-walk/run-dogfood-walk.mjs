@@ -9,6 +9,7 @@ import {
   toolsListInventoryFailure,
 } from "../../../mcp/scripts/verify/tools-list/inventory.mjs";
 import { toolsListSchemaFailure } from "../../../mcp/scripts/verify/tools-list/schema.mjs";
+import { advertisedOutputSchemaFailure, withOutputContracts } from "../../../mcp/scripts/verify/tools-list/output-contracts.mjs";
 import { workspaceBriefSummary } from "../../../mcp/scripts/verify/checks/diagnosis.mjs";
 import { COLORS } from "./colors.mjs";
 import {
@@ -126,7 +127,11 @@ export async function runDogfoodWalk() {
   }
 
   header("tools/list — schema contract");
-  const toolsList = getRpcResult(responses, 55);
+  // The gate checks the full output contracts behind the advertised schemas,
+  // once each advertised schema is shown to be the cut of its contract.
+  const listedTools = getRpcResult(responses, 55);
+  const advertisedFailure = Array.isArray(listedTools?.tools) ? advertisedOutputSchemaFailure(listedTools.tools) : null;
+  const toolsList = Array.isArray(listedTools?.tools) ? { ...listedTools, tools: withOutputContracts(listedTools.tools) } : listedTools;
   if (toolsList) {
     const tools = Array.isArray(toolsList.tools) ? toolsList.tools : [];
     const inventoryFailure = toolsListInventoryFailure(toolsList.tools);
@@ -1101,6 +1106,7 @@ export async function runDogfoodWalk() {
     addRelationsRowRepairStructured,
     toolsList,
   });
+  if (advertisedFailure) failures.push(`tools/list: ${advertisedFailure}`);
   const missingLabels = missingResponseLabels(responses, DOGFOOD_RESPONSE_LABELS);
   if (timedOut && missingLabels.length > 0) {
     failures.unshift(rpcTimeoutFailure(timeoutMs, missingLabels));

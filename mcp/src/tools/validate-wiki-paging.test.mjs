@@ -7,10 +7,10 @@ import test from 'node:test';
 
 import { schemaErrors } from '../../../scripts/lib/output-schema-errors.mjs';
 import { okResponseBytes } from '../server/rpc.mjs';
-import { TOOLS_FOR_LIST } from '../server/registry.mjs';
+import { TOOL_OUTPUT_CONTRACT_BY_NAME } from '../server/registry.mjs';
 
 const BUDGET = 128 * 1024;
-const outputSchema = TOOLS_FOR_LIST.find((tool) => tool.name === 'validate_wiki').outputSchema;
+const outputSchema = TOOL_OUTPUT_CONTRACT_BY_NAME.get('validate_wiki');
 
 function assertConforms(answer) {
   assert.deepEqual(schemaErrors(outputSchema, answer).slice(0, 5), [], 'validate_wiki answer must match its outputSchema');

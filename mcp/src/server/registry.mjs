@@ -9,7 +9,7 @@
  */
 
 import { advertisedInputSchema } from './advertised-input-schema.mjs';
-import { hoistSharedSubschemas } from './shared-subschemas.mjs';
+import { advertisedOutputSchema } from './advertised-output-schema.mjs';
 import { parseConsentEnv } from './write-consent.mjs';
 import { ABSORB_DOCUMENT_TOOL } from './tool-definitions/absorb-document.mjs';
 import { ANALYZE_REPO_STRUCTURE_TOOL } from './tool-definitions/analyze-repo-structure.mjs';
@@ -192,7 +192,7 @@ const TOOLS_FOR_LIST_ALL = TOOLS.map((tool) => ({
     ...advertisedInputSchema(tool.inputSchema),
     additionalProperties: false,
   },
-  ...(tool.outputSchema ? { outputSchema: hoistSharedSubschemas(tool.outputSchema) } : {}),
+  ...(tool.outputSchema ? { outputSchema: advertisedOutputSchema(tool.outputSchema) } : {}),
 }));
 const TOOLS_FOR_LIST = TOOLS_FOR_LIST_ALL.filter((tool) =>
   (!READ_ONLY_MODE || READ_TOOL_NAMES.has(tool.name)) &&
@@ -201,6 +201,8 @@ const TOOLS_FOR_LIST = TOOLS_FOR_LIST_ALL.filter((tool) =>
 const TOOL_BY_NAME = new Map(TOOLS_FOR_LIST_ALL.map((tool) => [tool.name, tool]));
 // The full input contracts the server enforces behind the advertised schemas.
 const TOOL_INPUT_CONTRACT_BY_NAME = new Map(TOOLS.map((tool) => [tool.name, tool.inputSchema]));
+// The full result contracts behind the advertised output schemas; tests check real results against them.
+const TOOL_OUTPUT_CONTRACT_BY_NAME = new Map(TOOLS.filter((tool) => tool.outputSchema).map((tool) => [tool.name, tool.outputSchema]));
 
 export {
   READ_TOOL_NAMES,
@@ -209,4 +211,5 @@ export {
   TOOLS_FOR_LIST,
   TOOL_BY_NAME,
   TOOL_INPUT_CONTRACT_BY_NAME,
+  TOOL_OUTPUT_CONTRACT_BY_NAME,
 };
