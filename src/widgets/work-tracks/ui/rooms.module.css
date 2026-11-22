@@ -55,7 +55,9 @@
 }
 
 .scene {
-  --ax: 50%;
+  /* Where Moru stands: the middle of a narrow room, left of the monitor in a wide one. */
+  --ax-room: 50%;
+  --ax: var(--ax-room);
   --s: calc(1px * var(--u));
   --p: calc(2px * var(--u));
   --floor: calc(20 * var(--s));
@@ -233,14 +235,26 @@
   align-items: flex-end;
 }
 
+/*
+ * Two tools in one folder: two Moru side by side, the second a step behind, with the lamp moved
+ * past the first. The pair's anchor is clamped so both, and the lamp, stay inside the room.
+ */
+.scene[data-cast='two'] {
+  --ax: clamp(calc(120 * var(--s) + 12px), var(--ax-room), calc(100% - 110 * var(--s) - 12px));
+}
+
+.scene[data-cast='two'] .lamp {
+  left: calc(var(--ax) - 120 * var(--s));
+}
+
 .actorBack {
-  --dx: calc(-12 * var(--s));
+  --dx: calc(-40 * var(--s));
   z-index: 1;
   bottom: calc(var(--floor) * 0.4 - 28 * var(--s) + 3 * var(--p));
 }
 
 .actorFront {
-  --dx: calc(46 * var(--s));
+  --dx: calc(44 * var(--s));
 }
 
 .tag {
@@ -267,12 +281,31 @@
   background: var(--work-room-pit);
 }
 
+/* A pair's tags hang outward from each Moru, so however long the names they never meet. */
+.tagBack,
+.tagFront {
+  display: flex;
+  align-items: center;
+}
+
 .tagBack {
-  --dx: calc(-22 * var(--s));
+  --dx: calc(-40 * var(--s));
+  max-width: calc(var(--ax) - 40 * var(--s) - 4px);
+  transform: translateX(calc(-100% + 12px));
+}
+
+.tagBack::after {
+  left: calc(100% - 12px);
 }
 
 .tagFront {
-  --dx: calc(56 * var(--s));
+  --dx: calc(44 * var(--s));
+  max-width: calc(100% - var(--ax) - 44 * var(--s) - 4px);
+  transform: translateX(-12px);
+}
+
+.tagFront::after {
+  left: 12px;
 }
 
 /* The wall sign: the branch name, the only mono text in a room. */
@@ -449,7 +482,7 @@
 
 @container (min-width: 520px) {
   .scene {
-    --ax: 27%;
+    --ax-room: 27%;
   }
 
   .monitor {

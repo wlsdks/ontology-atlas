@@ -86,6 +86,17 @@ export function stageCapacity(width: number): number {
   return wideColumns === 2 ? 4 : 6;
 }
 
+/** The widest two Moru stand side by side, lamp included, in drawn pixels, and the room's margins. */
+const PAIR_SPAN = 230;
+const PAIR_MARGIN_PX = 24;
+
+/** The largest unit, up to the room's own, at which two Moru and the lamp fit across a room. */
+export function pairUnit(width: number, unit: RoomUnit): RoomUnit {
+  let fitting = unit;
+  while (fitting > 1 && PAIR_SPAN * fitting + PAIR_MARGIN_PX > width) fitting = (fitting - 1) as RoomUnit;
+  return fitting;
+}
+
 export function layoutBuilding(input: LayoutInput): BuildingLayout {
   const { width, height, stage } = input;
   const rooms = new Map<string, RoomBox>();

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { layoutBuilding, stageCapacity, type Box, type LayoutInput } from './building-layout';
+import { layoutBuilding, pairUnit, stageCapacity, type Box, type LayoutInput } from './building-layout';
 
 const keys = (prefix: string, count: number) => Array.from({ length: count }, (_, index) => `${prefix}${index}`);
 
@@ -71,5 +71,17 @@ describe('stageCapacity', () => {
     expect(stageCapacity(1296)).toBe(4);
     expect(stageCapacity(1776)).toBe(6);
     expect(stageCapacity(896)).toBe(6);
+  });
+});
+
+describe('pairUnit', () => {
+  it('draws two Moru only as large as both fit across the room, lamp included', () => {
+    expect(pairUnit(882, 3)).toBe(3);
+    expect(pairUnit(642, 3)).toBe(2);
+    expect(pairUnit(424, 2)).toBe(1);
+    expect(pairUnit(260, 1)).toBe(1);
+    for (const [width, unit] of [[260, 1], [286, 2], [424, 2], [584, 3], [642, 3], [882, 3]] as const) {
+      expect(230 * pairUnit(width, unit) + 24).toBeLessThanOrEqual(width);
+    }
   });
 });

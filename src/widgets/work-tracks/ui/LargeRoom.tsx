@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import type { RoomEntry } from '@/shared/lib/work-status/work-tracks';
 import { cn } from '@/shared/lib/cn';
 import { KNOWN_UNTIL, STAGE_AT, UNREAD_STATIONS, roomLook } from '../model/room-look';
-import type { RoomUnit } from '../model/building-layout';
+import { pairUnit, type RoomUnit } from '../model/building-layout';
 import { RoomMoru } from './RoomMoru';
 import { SwapText } from './SwapText';
 import type { useRoomCopy } from './use-room-copy';
@@ -105,9 +105,11 @@ function Belt({ room }: { room: RoomEntry }) {
  * Moru with the session's name tag beside a floor lamp lit only while something runs, and the belt
  * that carries the work's crate toward the `main` hatch.
  */
-export function LargeRoom({ room, unit, copy, tint, retiring }: {
+export function LargeRoom({ room, unit, width, copy, tint, retiring }: {
   room: RoomEntry;
   unit: RoomUnit;
+  /** The room's width in CSS pixels, to fit two Moru when two tools share the folder. */
+  width: number;
   copy: RoomCopy;
   tint: string | null;
   /** The worktree just merged: once the crate is in, the lights go out. */
@@ -117,11 +119,11 @@ export function LargeRoom({ room, unit, copy, tint, retiring }: {
   const session = copy.sessionName(room.session);
   const tools = room.state.kind === 'working' ? room.state.tools : [];
   const second = tools[1];
-  // Two Morus stand side by side, so they take one pixel unit less than one would.
-  const sceneUnit = look.cast === 'two' && second ? (Math.max(1, unit - 1) as RoomUnit) : unit;
+  const pair = look.cast === 'two' && second !== undefined;
+  const sceneUnit = pair ? pairUnit(width, unit) : unit;
   return (
     <div className={cn(styles.large, 'h-full w-full')}>
-      <div className={styles.scene} style={{ ['--u' as string]: sceneUnit }} data-lit={look.running} data-dark={retiring}>
+      <div className={styles.scene} style={{ ['--u' as string]: sceneUnit }} data-lit={look.running} data-dark={retiring} data-cast={pair ? 'two' : look.cast}>
         <i className={styles.glow}><i className={styles.glowLight} /></i>
         <i className={styles.wainscot} />
         <i className={styles.floor} />
@@ -133,14 +135,18 @@ export function LargeRoom({ room, unit, copy, tint, retiring }: {
           <i className={styles.lampShade} />
           <i className={styles.lampLight}><i className={styles.lampFlicker} /></i>
         </i>
-        {look.cast === 'two' && second ? (
+        {pair && second ? (
           <>
             <i className={cn(styles.shadow, styles.actorBack)} />
             <span className={cn(styles.actor, styles.actorBack)}><RoomMoru clip="read" still={false} zoom={sceneUnit} tint={tint} /></span>
-            <span className={cn(styles.tag, styles.tagBack, LABEL, 'font-[var(--font-weight-emphasis)]')}>{session ?? copy.toolName(tools[0])}</span>
+            <span className={cn(styles.tag, styles.tagBack, LABEL, 'font-[var(--font-weight-emphasis)]')}>
+              <span className="truncate">{session ?? copy.toolName(tools[0])}</span>
+            </span>
             <i className={cn(styles.shadow, styles.actorFront)} />
             <span className={cn(styles.actor, styles.actorFront)}><RoomMoru clip="code" still={false} zoom={sceneUnit} tint={null} /></span>
-            <span className={cn(styles.tag, styles.tagFront, LABEL, 'font-[var(--font-weight-emphasis)]')} style={{ ['--ink' as string]: 'var(--work-unheld)' }}>{copy.toolName(second)}</span>
+            <span className={cn(styles.tag, styles.tagFront, LABEL, 'font-[var(--font-weight-emphasis)]')} style={{ ['--ink' as string]: 'var(--work-unheld)' }}>
+              <span className="truncate">{copy.toolName(second)}</span>
+            </span>
           </>
         ) : look.cast === 'one' ? (
           <>
