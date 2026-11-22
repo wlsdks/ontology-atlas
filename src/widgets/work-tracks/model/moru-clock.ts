@@ -1,5 +1,6 @@
 import { MOTION } from '@/shared/motion';
 import { PIXEL_BEAT_MS, onPixelBeat } from '@/shared/motion/pixel-beat';
+import { pixelStage, type PixelStage } from '@/shared/motion/pixel-stage';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { ROOM_ROW_FRAMES } from '@/shared/ui/marks/moru/moru-rows';
 import { castClip, castStripUrl, tintedStripUrl } from './cast-strip';
@@ -16,6 +17,8 @@ export const MERGE_LIGHTS_OUT_MS = Math.max(
   (MOTION.choreography.duration + MOTION.slow.duration) * 1000,
   MORU_TO_NEUTRAL_MS + (ROOM_ROW_FRAMES['merge-cheer'] * MORU_STEP_MS),
 );
+/** Beats the clock sleeps while every room on screen rests; a change it observes wakes it at once. */
+const RESTING_BEATS = 3;
 /** A row asked for while its room was out of sight for this long is not played late. */
 const ONCE_STALE_MS = 2000;
 
@@ -49,6 +52,8 @@ interface Shown {
   offset: number;
   /** Loops played, so a working Moru walks his list and a pair talks now and then. */
   loops: number;
+  /** A row his room's state just changed to: played through once at once, turn or not. */
+  event?: boolean;
 }
 
 /** A talk a working pair is about to have: each Moru waits on his neutral pose until both are there. */
@@ -71,9 +76,21 @@ const loopFor = (sprite: HTMLElement, clip: string) => { const loops = loopsOf(s
  * while one is on screen. A Moru loops his state's row from a pose of his own; a row he plays once
  * starts from the neutral pose, which he reaches by the shorter way, and hands back to the loop on it,
  * so no change of row ever jumps a pose. A row his room asked for while out of sight is dropped.
+ *
+ * A room is one actor on the page's stage (`pixel-stage.ts`): its Moru loop freely while the cast is
+ * lively, and otherwise rest on the neutral pose until their room's turn, when each plays one loop
+ * (or the pair one talk) and rests again. A loop is never cut: a rest starts where a loop ends, on the
+ * neutral pose. A row the room asks to play once, and the new row of a changed state, play at once.
  */
-export function createMoruClock(board: HTMLElement) {
-  let leave: (() => void) | null = null, ticks = 0;
+export function createMoruClock(board: HTMLElement, stage: PixelStage = pixelStage) {
+  let leave: (() => void) | null = null, ticks = 0, changes = 0;
+  /** The rooms on the stage, and in a room holding a turn, the Moru who have played their loop. */
+  const actors = new Set<string>();
+  const played = new WeakSet<HTMLElement>();
+  const turnMoved = new Set<string>();
+  /** When each room holding a turn first stepped in it, in ticks. */
+  const turnFrom = new Map<string, number>();
+  const actorOf = (room: string) => `room:${room}`;
   const shown = new WeakMap<HTMLElement, Shown>();
   const talks = new Map<string, Talk>();
   const roomOf = (sprite: HTMLElement) => sprite.closest<HTMLElement>('[data-room-key]')?.dataset.roomKey ?? '';
@@ -119,10 +136,14 @@ export function createMoruClock(board: HTMLElement) {
       sprite.style.width = beyond > 0 ? `${MORU_CELL_PX + beyond}px` : '';
       sprite.style.flexShrink = beyond > 0 ? '0' : '';
       state.drawn = `${state.clip}@${state.offset}@${inked ?? ''}`;
+      changes += 1;
     }
     // A Moru holding a pose is not written again, so a held room costs the page nothing per step.
     const position = `${-(state.cell * width + state.offset)}px`;
-    if (sprite.style.backgroundPositionX !== position) sprite.style.backgroundPositionX = position;
+    if (sprite.style.backgroundPositionX !== position) {
+      sprite.style.backgroundPositionX = position;
+      changes += 1;
+    }
     shown.set(sprite, state);
   };
   const initial = (sprite: HTMLElement) => {
@@ -148,20 +169,25 @@ export function createMoruClock(board: HTMLElement) {
     return true;
   };
 
-  const step = (sprite: HTMLElement, now: number) => {
+  /**
+   * One step. `may` says whether he may start a loop, `mayTalk` whether his pair may start a talk (in a
+   * turn, after his loop too), `turn` whether his room holds a turn.
+   */
+  const step = (sprite: HTMLElement, now: number, may: boolean, mayTalk: boolean, turn: boolean) => {
     const state = initial(sprite);
     if (state.playingOnce) {
       state.cell += 1;
       return draw(sprite, state.cell >= state.cells ? loopOf(sprite, 0) : state);
     }
-    if (talking(sprite, state)) return;
+    if (mayTalk && talking(sprite, state)) return;
     const asked = pending(sprite, now);
     if (asked?.stale) finish(sprite, asked.request);
     const once = asked && !asked.stale ? asked.request : null;
     const loop = loopFor(sprite, state.clip);
     if (once || state.clip !== loop) {
       if (state.cell === 0) {
-        if (!once) return draw(sprite, loopOf(sprite, 0));
+        // His room's state changed: the new row plays through once now, turn or not.
+        if (!once) return draw(sprite, { ...loopOf(sprite, 0), event: sprite.dataset.moruHold !== 'true' });
         finish(sprite, once);
         const clip = once.slice(0, once.indexOf('@'));
         // A cast clip not yet dressed for this Moru is let go, as one asked for out of sight is.
@@ -173,22 +199,72 @@ export function createMoruClock(board: HTMLElement) {
       if (state.cell >= state.cells || state.cell <= 0) state.cell = 0;
       return draw(sprite, state);
     }
+    // Resting: on the neutral pose, between his room's turns.
+    if (state.cell === 0 && !may && !state.event) {
+      if (!shown.has(sprite)) draw(sprite, state);
+      return;
+    }
     state.cell = sprite.dataset.moruHold === 'true' ? 0 : (state.cell + 1) % state.cells;
     if (state.cell === 0 && sprite.dataset.moruHold !== 'true') {
       // A loop ended on the neutral pose: the next clip of his list, when it is dressed for him.
       state.loops += 1;
+      state.event = false;
+      if (turn) played.add(sprite);
       const loops = loopsOf(sprite), at = loops.indexOf(state.clip);
       const next = loops.length > 1 ? loops.slice(at + 1).concat(loops.slice(0, at + 1)).find(clip => ready(clip, sprite.dataset.moruCast)) : undefined;
       // Behind a working pair, now and then the two talk.
       const talk = sprite.dataset.moruTalks?.split(' ') ?? [];
-      if (sprite.dataset.moruSlot === 'back' && talk.length && pairAtWork(sprite) && state.loops % TALK_EVERY === 0 && !talks.has(roomOf(sprite))) {
+      if (mayTalk && sprite.dataset.moruSlot === 'back' && talk.length && pairAtWork(sprite) && state.loops % TALK_EVERY === 0 && !talks.has(roomOf(sprite))) {
         const clip = talk[(state.loops / TALK_EVERY) % talk.length];
         if (ready(clip, sprite.dataset.moruCast)) talks.set(roomOf(sprite), { clip, ready: new Set(), startAt: null });
       }
       if (next && next !== state.clip) return draw(sprite, { ...loopOf(sprite, 0, next), loops: state.loops });
-      if (talking(sprite, state)) return;
+      if (may && !turn && talking(sprite, state)) return;
     }
     return draw(sprite, state);
+  };
+
+  /** A Moru standing on his neutral pose with nothing to play. */
+  const atRest = (sprite: HTMLElement) => {
+    const state = shown.get(sprite);
+    return !state || (state.cell === 0 && !state.playingOnce && !state.event);
+  };
+  /**
+   * One beat of one room on the stage: its Moru step, the room reports whether anything moved, a room
+   * holding a turn gives it back once its Moru are on the neutral pose again, and a resting room whose
+   * Moru loop asks for the next one.
+   */
+  const act = (room: string, sprites: HTMLElement[], now: number) => {
+    const actor = actorOf(room);
+    if (!actors.has(room)) {
+      actors.add(room);
+      stage.join(actor, now);
+    }
+    const turn = stage.holds(actor) && !stage.lively(now), may = stage.may(actor, now);
+    const before = changes;
+    for (const sprite of sprites) step(sprite, now, may && !(turn && played.has(sprite)), may, turn);
+    const moved = changes > before;
+    if (moved) stage.moved(now);
+    const resting = sprites.every(atRest);
+    if (stage.holds(actor)) {
+      if (!turnFrom.has(room)) turnFrom.set(room, ticks);
+      if (moved) turnMoved.add(room);
+      // Back on the neutral pose after his loop, or nothing to play after a few beats; a pair due to talk
+      // keeps the turn for it while the turn is young.
+      if (resting && !(may && talks.has(room)) && (turnMoved.has(room) || ticks - turnFrom.get(room)! > 3)) {
+        stage.release(actor, now);
+        turnMoved.delete(room);
+        turnFrom.delete(room);
+        for (const sprite of sprites) played.delete(sprite);
+      }
+    } else if (resting && sprites.some(sprite => sprite.dataset.moruHold !== 'true')) stage.ask(actor, now);
+    return !moved && resting && !stage.holds(actor) && !stage.lively(now);
+  };
+  const leaveStage = (room: string, now: number) => {
+    actors.delete(room);
+    turnMoved.delete(room);
+    turnFrom.delete(room);
+    stage.leave(actorOf(room), now);
   };
 
   /** A Moru out of sight, or with motion not allowed, takes his state's row at its neutral pose at once. */
@@ -210,19 +286,30 @@ export function createMoruClock(board: HTMLElement) {
       const stepping = new Set(allowed && !document.hidden ? board.querySelectorAll<HTMLElement>(STEPPING) : []);
       for (const sprite of board.querySelectorAll<HTMLElement>(LIVE)) if (!stepping.has(sprite)) rest(sprite, now, allowed);
       const wanted = stepping.size > 0;
-      if (wanted && !leave) leave = onPixelBeat(at => {
+      // A change the board observed (a row to play once, a new state) is stepped on the next beat.
+      if (wanted && leave) leave();
+      if (wanted) leave = onPixelBeat(at => {
         ticks += 1;
-        for (const sprite of board.querySelectorAll<HTMLElement>(STEPPING)) step(sprite, at);
-        return 1;
+        const rooms = new Map<string, HTMLElement[]>();
+        for (const sprite of board.querySelectorAll<HTMLElement>(STEPPING)) {
+          const room = roomOf(sprite);
+          rooms.set(room, [...(rooms.get(room) ?? []), sprite]);
+        }
+        let resting = true;
+        for (const [room, sprites] of rooms) resting = act(room, sprites, at) && resting;
+        for (const room of [...actors]) if (!rooms.has(room)) leaveStage(room, at);
+        return resting ? RESTING_BEATS : 1;
       });
       if (!wanted && leave) {
         leave();
         leave = null;
+        for (const room of [...actors]) leaveStage(room, now);
       }
     },
     stop() {
       leave?.();
       leave = null;
+      for (const room of [...actors]) leaveStage(room, performance.now());
     },
   };
 }

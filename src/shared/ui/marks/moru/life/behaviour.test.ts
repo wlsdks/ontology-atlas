@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { LifeAtlas } from './atlas';
-import { addMoru, centre, createWorld, middle, raise, seeded, tick, TRAVEL, type World } from './behaviour';
+import { addMoru, CALM_BLINK_MS, centre, createWorld, middle, raise, seeded, standing, tick, TRAVEL, type World } from './behaviour';
 import { MOST_ON_FLOOR, nearestGap, openLobby, tend } from './presence';
 import { pickLook } from './wardrobe';
 
@@ -105,5 +105,36 @@ describe('the lobby crew', () => {
     for (let i = 0; i < 4; i++) present.push(pickLook(rand, present));
     expect(new Set(present.map(look => look.palette)).size).toBe(5);
     expect(new Set(present.map(look => look.wear.head)).size).toBe(5);
+  });
+
+  it('rests a calm floor: walks end at a stride, everybody stands, and only a rare blink moves it', () => {
+    const world = createWorld({ atlas, width: 1512, rand: seeded(5), busyMax: 2, extra: 1 });
+    for (let i = 0; i < 4; i++) addMoru(world, { id: `m${i}`, x: 80 + i * 340, lane: i % 3, ...pickLook(world.rand, world.morus) });
+    // Lively first, until somebody is walking.
+    for (let t = 0; t < 60_000 && !world.morus.some(m => m.clip === 'step'); t += 100) tick(world, 100);
+    expect(world.morus.some(m => m.clip === 'step')).toBe(true);
+    world.calm = true;
+    world.busyMax = 0;
+    world.extra = 0;
+    const strideEnds: boolean[] = [];
+    let settledAt: number | null = null;
+    const started: string[] = [];
+    let prev = new Map(world.morus.map(m => [m.id, m.clip]));
+    for (let t = 0; t < 120_000; t += 100) {
+      const walking = new Map(world.morus.filter(m => m.clip === 'step').map(m => [m.id, m.i]));
+      tick(world, 100);
+      // A walker who stopped did so from his stride's last pose, never mid-stride, and stands.
+      for (const m of world.morus) if (walking.has(m.id) && m.clip !== 'step') strideEnds.push(walking.get(m.id) === atlas.clips.step.n - 1 && standing(m));
+      if (settledAt === null && world.morus.every(standing)) settledAt = t;
+      if (settledAt !== null) for (const m of world.morus) if (m.clip !== prev.get(m.id) && m.clip !== 'rest') started.push(m.clip);
+      prev = new Map(world.morus.map(m => [m.id, m.clip]));
+    }
+    expect(settledAt).not.toBeNull();
+    expect(settledAt!).toBeLessThan(6000);
+    expect(strideEnds.length).toBeGreaterThan(0);
+    expect(strideEnds.every(Boolean)).toBe(true);
+    // Only blinks, at most one per CALM_BLINK_MS across the floor.
+    expect(new Set(started)).toEqual(new Set(['blink']));
+    expect(started.length).toBeLessThanOrEqual(Math.ceil((120_000 - settledAt!) / CALM_BLINK_MS));
   });
 });

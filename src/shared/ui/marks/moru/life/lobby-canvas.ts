@@ -11,8 +11,9 @@
  * it up unsmoothed, so a changed rectangle is a quarter of the device pixels on a Retina screen.
  */
 import { PIXEL_BEAT_MS, onPixelBeat } from '@/shared/motion/pixel-beat';
+import { pixelStage, type PixelStage } from '@/shared/motion/pixel-stage';
 import { facingClip, type LifeAtlas, type LifeClip, type LifePose, type PiecePart } from './atlas';
-import { centre, createWorld, tick, type Moru, type World } from './behaviour';
+import { centre, createWorld, standing, tick, type Moru, type World } from './behaviour';
 import { crewSize, nearestGap, openLobby, setCrew, tend, type Presence } from './presence';
 import { drawFixtures, lobbySpots } from './lobby-props';
 import { freshWorn, placeWear, type Placed, type Worn } from './wardrobe';
@@ -46,8 +47,10 @@ export const BACK_FEET = 102;
 export const LOBBY_H = BACK_FEET + 2 * LANE_DY + 4;
 /** Moru keep a body and a half between them in the lobby. */
 export const LOBBY_SEP = 150;
-/** One or two Moru move at once. */
+/** One or two Moru move at once while the screen is lively; one, or a pair playing together, in the lobby's turn. */
 const LOBBY_BUSY = 2;
+/** The lobby's name on the page's stage (`pixel-stage.ts`). */
+const ACTOR = 'lobby';
 
 /** The pad a layer is composed on: the 128px cell with room round it for pieces that reach outside. */
 const OX = 40, OY = 24, CW = 208, CH = 152;
@@ -89,6 +92,8 @@ export interface LobbyStats {
   /** Poses composed on the beat because none was ready; the rest were composed ahead while the page was idle. */
   composedOnBeat: number;
   found: number;
+  /** Ticks that drew something: the lobby's share of the page's updates. */
+  painted: number;
 }
 
 export interface Lobby {
@@ -102,8 +107,8 @@ export interface Lobby {
 }
 
 /** Loads the sheets and returns a lobby drawing into `canvas`, or null when the page went away meanwhile. */
-export async function createLobby(canvas: HTMLCanvasElement, { width, unit = 1, resting, rand, basePath = '' }: {
-  width: number; unit?: number; resting: number; rand: () => number; basePath?: string;
+export async function createLobby(canvas: HTMLCanvasElement, { width, unit = 1, resting, rand, basePath = '', stage = pixelStage }: {
+  width: number; unit?: number; resting: number; rand: () => number; basePath?: string; stage?: PixelStage;
 }): Promise<Lobby | null> {
   const colours = [0];
   const colourIndex = new Map<number, number>([[0, 0]]);
@@ -410,16 +415,41 @@ export async function createLobby(canvas: HTMLCanvasElement, { width, unit = 1, 
     });
   };
 
-  let leave: (() => void) | null = null, slow = 0, running = false;
-  /** One tick on the beat over the time since the last; returns the beats until the next. */
-  const beat = (_now: number, elapsedMs: number) => {
+  let leave: (() => void) | null = null, slow = 0, running = false, painted = 0, onStage = false, turnTicks = 0;
+  /** Every Moru standing on the floor, none on a doorway walk: the lobby is at rest. */
+  const settled = () => world.morus.every(m => standing(m) && !m.door);
+  /**
+   * One tick on the beat over the time since the last; returns the beats until the next. The lobby is one
+   * actor on the page's stage: lively, it plays as it always has; in its turn one Moru, or a pair, does one
+   * thing; otherwise its floor rests.
+   */
+  const beat = (now: number, elapsedMs: number) => {
+    if (!onStage) { onStage = true; stage.join(ACTOR, now); }
+    const lively = stage.lively(now), may = stage.may(ACTOR, now);
+    world.calm = !may;
+    world.busyMax = lively ? LOBBY_BUSY : may ? 1 : 0;
+    world.extra = lively ? 1 : 0;
     tick(world, elapsedMs || PIXEL_BEAT_MS);
-    tend(world, presence);
+    if (may) tend(world, presence);
     paint();
+    if (moved) painted++;
     // Composes, while the page is idle, the poses the Moru on the floor will show next.
     ahead();
+    if (moved) stage.moved(now);
+    let granted = false;
+    if (stage.holds(ACTOR) && !lively) {
+      // The turn is over once the floor stands again, or when nobody took it up within a few ticks.
+      turnTicks++;
+      if (settled() && (turnTicks > 3 || moved)) { stage.release(ACTOR, now); turnTicks = 0; }
+    } else if (!lively && settled()) granted = stage.ask(ACTOR, now);
     slow = moved ? 0 : Math.min(slow + 1, SLOWEST);
-    return Math.round(lobbyTickMs(world) / PIXEL_BEAT_MS) * (1 + slow);
+    return granted ? 1 : Math.round(lobbyTickMs(world) / PIXEL_BEAT_MS) * (1 + slow);
+  };
+  const offStage = () => {
+    if (!onStage) return;
+    onStage = false;
+    turnTicks = 0;
+    stage.leave(ACTOR, performance.now());
   };
   const redrawAll = () => {
     for (const s of drawn.values()) { s.rect = null; s.m.changed = true; }
@@ -446,7 +476,7 @@ export async function createLobby(canvas: HTMLCanvasElement, { width, unit = 1, 
       const wasStill = still;
       still = !allowed;
       if (allowed && !running) { running = true; leave = onPixelBeat(beat); }
-      if (!allowed && running) { running = false; leave?.(); leave = null; }
+      if (!allowed && running) { running = false; leave?.(); leave = null; offStage(); }
       if (wasStill !== still) redrawAll();
       canvas.dataset.lobbyRunning = String(running);
     },
@@ -454,11 +484,12 @@ export async function createLobby(canvas: HTMLCanvasElement, { width, unit = 1, 
       running,
       visible: world.morus.filter(m => centre(m) - 48 > 0 && centre(m) + 48 < world.width).length,
       gap: nearestGap(world),
-      keptBytes, peakKeptBytes: peakBytes, composed, found, composedOnBeat: onBeat,
+      keptBytes, peakKeptBytes: peakBytes, composed, found, composedOnBeat: onBeat, painted,
     }),
     destroy() {
       leave?.();
       leave = null;
+      offStage();
       running = false;
       for (const e of kept.values()) e.bmp?.close();
       kept.clear();
