@@ -34,11 +34,13 @@
   "tool": {
     "acp": "Atlas 中的 Claude Agent",
     "claudeCode": "Claude Code",
+    "codex": "Codex",
     "unknown": "代理"
   },
   "holder": {
     "locked": "{tool} 子代理 {id} · {time} 锁定",
     "lockedUnnamed": "{time} 锁定",
+    "process": "{tool} 正在此文件夹中运行",
     "noLock": "未锁定 · 最后一次提交 {ago}，{author}",
     "noLockQuiet": "未锁定",
     "subagent": "子代理 {id}",

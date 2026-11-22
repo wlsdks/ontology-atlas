@@ -34,11 +34,13 @@
   "tool": {
     "acp": "Atlas内のClaude Agent",
     "claudeCode": "Claude Code",
+    "codex": "Codex",
     "unknown": "エージェント"
   },
   "holder": {
     "locked": "{tool}のサブエージェント{id} · {time}にロック",
     "lockedUnnamed": "{time}にロック",
+    "process": "このフォルダで{tool}が実行中",
     "noLock": "ロックなし · 最後のコミットは{ago}、{author}",
     "noLockQuiet": "ロックなし",
     "subagent": "サブエージェント{id}",

@@ -1,9 +1,10 @@
-import type { LockTool, WorkStatusSnapshot, WorktreeRow, WorktreeStanding } from './tauri-work-status';
+import type { AgentTool, LockTool, WorkStatusSnapshot, WorktreeRow, WorktreeStanding } from './tauri-work-status';
 
-/** Who holds a worktree, as far as Git and the pids its lock names can say. */
+/** Who holds a worktree, as far as Git, the pids its lock names and the agent programs running in it can say. */
 export type TrackHolder =
   | { kind: 'subagent'; tool: LockTool; agentId: string | null; lockedAt: number | null }
   | { kind: 'acp' }
+  | { kind: 'process'; tool: AgentTool }
   | { kind: 'locked'; lockedAt: number | null }
   | { kind: 'ended'; tool: LockTool }
   | { kind: 'none'; lastCommitAt: number | null; author: string | null };
@@ -27,7 +28,7 @@ export interface Track {
   sessionKey: string | null;
 }
 
-export type SessionTool = LockTool | 'acp';
+export type SessionTool = LockTool | AgentTool | 'acp';
 
 export interface TrackSession {
   key: string;
@@ -52,6 +53,7 @@ export interface WorkTracks {
 export const SESSION_INK_COUNT = 5;
 
 const CONVENTIONAL_PREFIX_SEPARATOR = '/';
+const PROCESS_SESSION_PREFIX = 'process:';
 
 /** The last folder of a path, on either separator: how a worktree or repository is named in a sentence. */
 export function folderName(path: string): string {
@@ -71,15 +73,27 @@ function holderOf(row: WorktreeRow): TrackHolder {
   if (lock?.state === 'stale') return { kind: 'ended', tool: lock.tool };
   if (lock?.state === 'live') return { kind: 'subagent', tool: lock.tool, agentId: lock.agentId, lockedAt: lock.lockedAt };
   if (row.acpPid !== null) return { kind: 'acp' };
+  const process = row.agentProcesses[0];
+  if (process) return { kind: 'process', tool: process.tool };
   if (lock?.state === 'unparsed') return { kind: 'locked', lockedAt: lock.lockedAt };
   return { kind: 'none', lastCommitAt: row.lastCommitAt, author: row.lastCommitAuthor };
 }
 
-function sessionKeyOf(row: WorktreeRow): string | null {
+function lockSessionKey(row: WorktreeRow): string | null {
   const lock = row.lock;
-  if (lock?.state === 'live' && lock.pid !== null) return `lock:${lock.tool}:${lock.pid}:${lock.sessionStartedAt ?? ''}`;
+  return lock?.state === 'live' && lock.pid !== null ? `lock:${lock.tool}:${lock.pid}:${lock.sessionStartedAt ?? ''}` : null;
+}
+
+/** A process an agent locked worktrees from joins that lock's session, so one program is one session. */
+function sessionKeyOf(row: WorktreeRow, lockKeysByPid: ReadonlyMap<number, string>): string | null {
+  const lockKey = lockSessionKey(row);
+  if (lockKey) return lockKey;
+  // A lock an ended session left stays stuck whoever runs a command there.
+  if (row.lock?.state === 'stale') return null;
   if (row.acpPid !== null) return `acp:${row.acpPid}`;
-  return null;
+  const process = row.agentProcesses[0];
+  if (!process) return null;
+  return lockKeysByPid.get(process.pid) ?? `${PROCESS_SESSION_PREFIX}${process.tool}:${process.pid}:${process.startedAt ?? ''}`;
 }
 
 /** A live session keeps its rows under it even once merged: the session is still in that folder. */
@@ -99,9 +113,9 @@ function stationOf(row: WorktreeRow): TrackStation {
   return 'start';
 }
 
-function toTrack(row: WorktreeRow): Track {
+function toTrack(row: WorktreeRow, lockKeysByPid: ReadonlyMap<number, string>): Track {
   const holder = holderOf(row);
-  const sessionKey = sessionKeyOf(row);
+  const sessionKey = sessionKeyOf(row, lockKeysByPid);
   return {
     key: row.id,
     title: row.mainCheckout ? folderName(row.path) : branchTitle(row.branch, row.path),
@@ -125,12 +139,17 @@ const commitTime = (track: Track) => (track.holder.kind === 'none' ? track.holde
 /**
  * Groups rows the way the board draws them: stuck first, then each session with the worktrees it
  * holds, then worktrees nobody holds, then merged ones. The main checkout is the board's trunk, and a
- * row only while an Atlas agent session works in it. Sessions keep their order by start time, so
- * each keeps its ink while it lives.
+ * row only while an agent works in it. Sessions keep their order by start time, so each keeps its
+ * ink while it lives.
  */
 export function buildWorkTracks(snapshot: WorkStatusSnapshot): WorkTracks {
-  const rows = snapshot.worktrees.filter(row => !row.mainCheckout || row.acpPid !== null);
-  const tracks = rows.map(toTrack);
+  const rows = snapshot.worktrees.filter(row => !row.mainCheckout || row.acpPid !== null || row.agentProcesses.length > 0);
+  const lockKeysByPid = new Map<number, string>();
+  for (const row of rows) {
+    const key = lockSessionKey(row);
+    if (key && row.lock?.pid != null) lockKeysByPid.set(row.lock.pid, key);
+  }
+  const tracks = rows.map(row => toTrack(row, lockKeysByPid));
   const sessionsByKey = new Map<string, TrackSession>();
   rows.forEach((row, index) => {
     const track = tracks[index];
@@ -139,16 +158,19 @@ export function buildWorkTracks(snapshot: WorkStatusSnapshot): WorkTracks {
     if (existing) existing.tracks.push(track);
     else sessionsByKey.set(track.sessionKey, {
       key: track.sessionKey,
-      tool: row.lock?.state === 'live' ? row.lock.tool : 'acp',
-      startedAt: row.lock?.state === 'live' ? row.lock.sessionStartedAt : null,
+      ...sessionOrigin(row),
       ordinal: 0,
       ink: 0,
       tracks: [track],
     });
   });
   const sessionsPerTool = new Map<SessionTool, number>();
+  // Sessions seen only by their processes come and go with commands, so they sort after the
+  // others and never shift a held session's ink.
   const sessions = [...sessionsByKey.values()]
-    .sort((a, b) => (a.startedAt ?? Number.MAX_SAFE_INTEGER) - (b.startedAt ?? Number.MAX_SAFE_INTEGER) || a.key.localeCompare(b.key))
+    .sort((a, b) => Number(isProcessOnly(a)) - Number(isProcessOnly(b))
+      || (a.startedAt ?? Number.MAX_SAFE_INTEGER) - (b.startedAt ?? Number.MAX_SAFE_INTEGER)
+      || a.key.localeCompare(b.key))
     .map((session, index) => {
       const ordinal = (sessionsPerTool.get(session.tool) ?? 0) + 1;
       sessionsPerTool.set(session.tool, ordinal);
@@ -166,6 +188,15 @@ export function buildWorkTracks(snapshot: WorkStatusSnapshot): WorkTracks {
     },
     worktreeCount: snapshot.worktrees.length,
   };
+}
+
+const isProcessOnly = (session: TrackSession) => session.key.startsWith(PROCESS_SESSION_PREFIX);
+
+function sessionOrigin(row: WorktreeRow): { tool: SessionTool; startedAt: number | null } {
+  if (row.lock?.state === 'live') return { tool: row.lock.tool, startedAt: row.lock.sessionStartedAt };
+  if (row.acpPid !== null) return { tool: 'acp', startedAt: null };
+  const process = row.agentProcesses[0];
+  return process ? { tool: process.tool, startedAt: process.startedAt } : { tool: 'acp', startedAt: null };
 }
 
 /** The sentence the page leads with: what needs the reader first. */

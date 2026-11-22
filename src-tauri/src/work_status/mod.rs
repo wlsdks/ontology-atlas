@@ -1,6 +1,8 @@
-//! Work status: which agent session holds which worktree of a chosen repository, read from Git
-//! and from the pids that worktree locks name. Nothing here writes, signals or leaves the machine.
+//! Work status: which agent session holds which worktree of a chosen repository, read from Git,
+//! from the pids that worktree locks name, and from the working folders of agent programs. Nothing
+//! here writes, signals or leaves the machine.
 
+mod agent_processes;
 mod fingerprint;
 mod git_read;
 mod worktrees;
@@ -63,7 +65,9 @@ pub fn work_status_read(
         Err(status) => return WorkStatusSnapshot::unavailable(status),
     };
     let acp_roots = sessions.session_roots();
-    match worktrees::read_repository(&root, &acp_roots) {
+    let acp_pids: Vec<u32> = acp_roots.iter().map(|(pid, _)| *pid).collect();
+    let processes = agent_processes::agent_processes(&acp_pids);
+    match worktrees::read_repository(&root, &acp_roots, &processes) {
         Ok(read) => WorkStatusSnapshot {
             status: "ready".into(),
             root: read.root.to_string_lossy().into_owned(),
@@ -77,9 +81,18 @@ pub fn work_status_read(
 }
 
 /// A digest of the Git administrative files that change when a worktree is added, removed,
-/// locked, unlocked or committed to; the page rereads only when it differs. Spawns no process.
+/// locked, unlocked or committed to, plus which agent works in which worktree; the page rereads
+/// only when it differs. Spawns no process.
 #[tauri::command(async)]
-pub fn work_status_fingerprint(repository_path: String) -> Option<String> {
+pub fn work_status_fingerprint(
+    sessions: State<'_, AcpSessions>,
+    repository_path: String,
+) -> Option<String> {
     let root = granted_root(&repository_path).ok()?;
-    fingerprint::admin_fingerprint(&root)
+    let acp_pids: Vec<u32> = sessions
+        .session_roots()
+        .iter()
+        .map(|(pid, _)| *pid)
+        .collect();
+    fingerprint::admin_fingerprint(&root, &agent_processes::agent_processes(&acp_pids))
 }
