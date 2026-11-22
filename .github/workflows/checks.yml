@@ -263,6 +263,13 @@ jobs:
         if: env.ACTIVE != 'true' && needs.plan.result == 'success'
         run: echo "No affected unit or contract evidence"
 
+      # The Vitest files in tests/quarantine.json, which the lane above leaves out, run each night
+      # and print passed or failed per file without failing the night.
+      - name: Run the quarantined unit files
+        if: ${{ !cancelled() && env.ACTIVE == 'true' && matrix.shard == 1 && github.event_name == 'schedule' }}
+        continue-on-error: true
+        run: node scripts/ci/quarantine.mjs run-unit
+
       - name: Upload lane report
         continue-on-error: true
         if: always()
@@ -402,6 +409,34 @@ jobs:
             exit 1
           fi
           echo "all three Unit · Contract shards and Perf · Ratios passed"
+
+  # The one context `main` requires. Branch protection names this job, so a lane added, split or
+  # renamed here needs no settings edit. It needs `success` from each lane, not "not failed": a
+  # skipped or cancelled lane is not a pass.
+  required:
+    name: Required checks
+    needs: [plan, gates, unit-required, mcp]
+    if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
+    runs-on: ubuntu-latest
+    # budget: 10s
+    timeout-minutes: 2
+    steps:
+      - name: Require every lane
+        env:
+          PLAN: ${{ needs.plan.result }}
+          GATES: ${{ needs.gates.result }}
+          UNIT: ${{ needs.unit-required.result }}
+          MCP: ${{ needs.mcp.result }}
+        run: |
+          red=0
+          for lane in "Check impact plan=$PLAN" "Types · Lint · Docs=$GATES" "Unit · Contract=$UNIT" "MCP=$MCP"; do
+            if [ "${lane#*=}" != "success" ]; then
+              echo "::error::${lane%%=*} reported ${lane#*=}"
+              red=1
+            fi
+          done
+          if [ "$red" -ne 0 ]; then exit 1; fi
+          echo "the impact plan, Types · Lint · Docs, Unit · Contract and MCP passed"
 
   mcp:
     name: MCP
