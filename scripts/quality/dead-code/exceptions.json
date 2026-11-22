@@ -442,6 +442,30 @@
       "reason": "The MCP scale benchmark reads the macOS physical footprint, which RSS overstates there.",
       "consumer": "scripts/perf/perf-mcp-scale.mjs",
       "witness": "vmmap"
+    },
+    {
+      "key": "frontend:runtime:unlisted:mcp/src/server/output-schema-conformance.test.mjs:@modelcontextprotocol/server",
+      "reason": "The output-schema conformance test runs real answers through the MCP SDK's own client validator, the one an SDK host runs on structuredContent; mcp/package.json lists the SDK, but the root lanes take every *.test.mjs as an entry and judge it against the root manifest.",
+      "consumer": "mcp/src/server/output-schema-conformance.test.mjs",
+      "witness": "@modelcontextprotocol/server/validators/ajv"
+    },
+    {
+      "key": "frontend:verification:unlisted:mcp/src/server/output-schema-conformance.test.mjs:@modelcontextprotocol/server",
+      "reason": "The output-schema conformance test runs real answers through the MCP SDK's own client validator, the one an SDK host runs on structuredContent; mcp/package.json lists the SDK, but the root lanes take every *.test.mjs as an entry and judge it against the root manifest.",
+      "consumer": "mcp/src/server/output-schema-conformance.test.mjs",
+      "witness": "@modelcontextprotocol/server/validators/ajv"
+    },
+    {
+      "key": "scripts:runtime:unlisted:mcp/src/server/output-schema-conformance.test.mjs:@modelcontextprotocol/server",
+      "reason": "The output-schema conformance test runs real answers through the MCP SDK's own client validator, the one an SDK host runs on structuredContent; mcp/package.json lists the SDK, but the root lanes take every *.test.mjs as an entry and judge it against the root manifest.",
+      "consumer": "mcp/src/server/output-schema-conformance.test.mjs",
+      "witness": "@modelcontextprotocol/server/validators/ajv"
+    },
+    {
+      "key": "scripts:verification:unlisted:mcp/src/server/output-schema-conformance.test.mjs:@modelcontextprotocol/server",
+      "reason": "The output-schema conformance test runs real answers through the MCP SDK's own client validator, the one an SDK host runs on structuredContent; mcp/package.json lists the SDK, but the root lanes take every *.test.mjs as an entry and judge it against the root manifest.",
+      "consumer": "mcp/src/server/output-schema-conformance.test.mjs",
+      "witness": "@modelcontextprotocol/server/validators/ajv"
     }
   ]
 }

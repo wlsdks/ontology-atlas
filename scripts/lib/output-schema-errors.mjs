@@ -1,3 +1,5 @@
+import { inlineSharedSubschemas } from '../../mcp/src/server/shared-subschemas.mjs';
+
 const SCHEMA_KEYWORDS = new Set([
   'type', 'description', 'properties', 'required', 'additionalProperties', 'items', 'enum', 'const',
   'minimum', 'maximum', 'minLength', 'maxLength', 'pattern', 'format', 'minItems', 'maxItems',
@@ -12,6 +14,7 @@ function typeOf(value) {
 }
 
 export function schemaErrors(schema, value, path = '$') {
+  if (path === '$' && schema?.$defs) return schemaErrors(inlineSharedSubschemas(schema), value, path);
   if (schema === true || schema === undefined) return [];
   if (schema === false) return [`${path}: not allowed`];
   for (const key of Object.keys(schema)) {

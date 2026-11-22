@@ -12,10 +12,6 @@ import {
 import { NODE_UID_PATTERN } from '../../schema.mjs';
 import { GRAPH_ARRAY_KEYS } from '../../vault/graph/relation-refs.mjs';
 import {
-  EDGE_TARGET_KIND_DESCRIPTION,
-  NODE_KIND_DESCRIPTION,
-} from '../tool-schemas/enum-descriptions.mjs';
-import {
   NON_BLANK_STRING_SCHEMA,
   nonBlankStringSchema,
   paginationOutputSchema,
@@ -324,304 +320,210 @@ export const COMPILE_ONTOLOGY_TOOL = {
 export const QUERY_ONTOLOGY_TOOL = {
   name: 'query_ontology',
   description:
-    'Analysis archive: `analysis_history` reads immutable diagnostic Markdown summaries without compiling the graph; use analysisMode, project, limit (1–100 scanned files, default 30), and analysisCursor. `analysis_record` reads one exact run or review with recordId (UUID). Records retain raw answers, full-body evidence when available, request scope and uncertainty. They are not approved ontology facts; stored qualification describes captured evidence, never current source validity. Reviews are joined to their exact run/finding id. Follow pagination even if a filtered page is empty. These archive operations do not support query_plan. ' +
-    'Run graph-engine queries over the freshly compiled ontology artifact. Operations: `neighbors` (local graph neighborhood), `path` (one compiled-edge route between two nodes with aligned `nodes[]` summaries), `all_paths` (bounded simple paths between two nodes with per-path `nodes[]` summaries plus limit/searchBudget/exhaustive/truncatedByBudget/totalPathsExact metadata and evidence guidance), `query_plan` (EXPLAIN-style side-effect-free cost/index estimate plus execution advice before a target operation, filter-preserving suggestedQuery, and filter-aware estimate.totalMatches for match_nodes/match_edges), `centrality` (PageRank-style core-node ranking plus bridge/authority/hub lists), `communities` (label-propagation clusters inside the graph), `similar_nodes` (duplicate/overlap candidates before writes), `explain_relation` (direct edges, shortest path, and shared-neighbor explanation between two nodes), `reachability` (transitive graph closure from a start node), `pattern_walk` (explicit relation-sequence paths such as project → domains → capabilities), `impact` (incoming by default: what depends on this node), `blast_radius` (impact grouped by kind/domain with cross-domain edge risk), `subgraph` (bounded N-hop graph slice for UI/agent views), `builder_context` (persisted Workshop focus, layout positions, direct graph slice, and safe write handoff; unsaved UI drafts are explicitly excluded; operation name retained for compatibility), `overview` (counts, relation distribution, and hubs), `schema` (kind-relation-kind patterns), `facets` (filter/dashboard aggregates), `match_nodes` (graph DB-style node rows with degree filters plus a followUp packet for the first returned row), `match_edges` (graph DB-style edge pattern rows plus a followUp packet for the first returned real edge), `node_profile` (single node detail dashboard), `domain_profile` (domain detail dashboard), `domain_matrix` (domain-to-domain coupling), `project_scope` (project-contained graph slice), `project_map` (domain-by-domain project map), `relation_check` (schema-aware preflight before add_relation), `components` (connected graph islands), `lineage` and `containment_tree` (project/domain/capability containment), `cycles` (directed dependency-cycle checks), `topological_order` (prerequisite-first dependency ordering), `recommend_relations` (safe domain-containment suggestions), `growth_plan` (side-effect-free ontology expansion candidates, plus a `nextReads` group that turns the `## Uncertainty` section of each node into the reads it asks for: kind, the statement as written, the paths and line ranges it names, and a one-sentence proposed read plus `patch_concept`, ordered cheapest-first and reporting `reason: no_bodies` when no node bodies were loaded), `maintenance_plan` (ordered post-write graph cleanup/repair actions with stable action `id`, count-safe summary fields, `byPhase` / `bySeverity` / `byKind` remaining-queue buckets, ready cursor `cursor.found=true` / `cursor.reason=null`, cursor `nextAfterActionId`/`hasMore` pagination metadata, afterActionId resume, unknown-cursor empty page with `cursor.nextAfterActionId=null` / `cursor.hasMore=false`, kind filters, executable graph-array canonicalization, `executable` flags, and current-page `nextExecutableAction` / `nextReviewAction` pointers), `agent_brief` (Claude Code/Codex handoff prompt, structured businessOntologyLens with business-first outcome → domain → capability → element read order, graphDbQueryPack for facets, schema, match_nodes, match_edges, domain_matrix, centrality, all_paths, explain_relation, and business_questions scans for outcome / domain boundary / capability claim nodes / implementation evidence edges, recipes, graph entrypoints, graph_traversal playbook, traversalStrategy plan_before_enumeration/bounded_path_evidence/containment_cross_check guidance, playbook evidence/stopWhen checklists, write guardrails, relationDecisionGuide, resultContracts for all_paths completeness and match_nodes/match_edges followUp evidence, and read-first write policy), `meaning_repair_review` (provenance-bound, byte-bounded typed evidence pages and literal full-body read calls for the compact meaning repair manifest), `workspace_brief` (first-contact status + next actions), and `health` (one-shot graph integrity dashboard whose `relationCensus` labels compiler declaration counts and the nonnumeric canonical app-map comparison unit). ' +
-    'For `agent_brief`, select `project` explicitly when the vault has more than one project. Omitted `detail` and `detail:"full"` return the complete project-scoped diagnostic contract. For a known coding task, call `detail:"compact"` directly after `connection_info`; do not precede it with `workspace_brief` or a full inventory unless the question needs whole-vault health. Compact v3 requires a nonblank request-local `task` (max 2000 characters) and returns structuredContent and a handoff text of at most 12000 UTF-8 bytes together: final source/meaning currentness, claim-compatible broad capability selection, persisted element/path evidence, explicit unknown impact and verification, exact full-body next reads, and a `detail:"full"` follow-up. Its meaningRepair is meaningRepairCompact:v2: status, conflict guards and the first repair step verbatim, plus the omitted step ids and stop-condition count that only detail:"full" carries; read it before repair step 2. Definition and Includes support desired work; Excludes may align with explicit non-goals, while a desired/negative boundary conflict, an unsupported claim, or a tied top claim returns no capability. `content[0].text` is a self-sufficient handoff and structuredContent the typed facts without it; each carries the first repair call with its guards and the full-detail call. When the selected element Markdown contains reviewed Primary implementation / Supporting implementation / Focused test coordinates and the bound source is current, taskNavigation verifies only those named files and returns exact current lines plus the reviewed non-exhaustive IN/OUT boundary. After those reads, Atlas rechecks the same source identity, fingerprint, revision, and graph hash; any mismatch removes the exact target and downgrades the complete outer currentness contract. A ready prompt reads primary, supporting, focused tests, and a verified manifest together; requires named positive and negative regression tests with exact observable output; and runs the focused check once followed by one non-overlapping full check. Missing, ambiguous, stale, unsafe, or unrecorded coordinates emit no exact target. Task matching selects evidence only; it never searches the repository, never proves source behavior, never persists task text, never approves meaning, and never writes the vault. ' +
-    'For `impact` and `blast_radius`, only declared `depends_on` is allowed; use reachability/subgraph for structure. Blast radius reports unknown risk/completeness plus review_required or declared_with_rationale edge qualification until relation-level source receipts exist. A missing `depends_on` preflight is schema-only: `relation_check` returns `proposedAction:null` plus a non-writing `approvalGate` until the agent explains the observable ability and semantic rationale and receives explicit human approval. ' +
-    'Accepts canonical slugs or unique aliases. side effect 0. Use this when you need graph-database-like answers without pulling the full compile_ontology payload.',
+    'Read-only graph queries over the freshly compiled vault, for graph-database answers without the full compile_ontology payload. Nodes are canonical slugs or unique aliases. side effect 0.\n' +
+    'Operations: neighbors; path (one route); all_paths (bounded simple paths); explain_relation (direct edges, shortest path, shared neighbours); reachability; pattern_walk (follow a relation sequence); subgraph (N-hop slice); lineage; containment_tree; impact (what depends on a node); blast_radius (impact grouped by kind and domain); centrality; communities; components; cycles; topological_order; similar_nodes (duplicates before a write); relation_check (preflight before add_relation); recommend_relations; overview; schema (kind-relation-kind patterns); facets; match_nodes; match_edges; node_profile; domain_profile; domain_matrix; project_scope; project_map; builder_context (saved Workshop focus and layout); growth_plan (expansion candidates and the reads each `## Uncertainty` asks for); maintenance_plan (ordered repair actions); health; workspace_brief (first-contact status and next actions); agent_brief (coding-task handoff); meaning_repair_review (evidence pages for a meaningRepair); query_plan (cost estimate for targetOperation); analysis_history and analysis_record (the immutable analysis archive).\n' +
+    'Required: `slug` for neighbors, reachability, pattern_walk, impact, blast_radius, subgraph, builder_context, lineage, node_profile and domain_profile; `from` and `to` for path, all_paths and explain_relation; `pattern` for pattern_walk; `targetOperation` for query_plan; `recordId` for analysis_record; `project`, `reviewRevision` and, on the first page, `expectedGraphHash` and `expectedSourceFingerprint` for meaning_repair_review; `task` for agent_brief with detail:"compact". Every other argument names the operations it applies to.\n' +
+    'Rules: impact and blast_radius follow declared `depends_on` only; use reachability or subgraph for structure, and treat blast_radius risk as unknown until relation-level source receipts exist. A missing `depends_on` that relation_check finds is schema-only: `proposedAction` is null and its `approvalGate` writes nothing until the agent explains the observable ability and rationale and the human explicitly approves. For a known coding task call agent_brief with detail:"compact" and `task` right after connection_info, not after workspace_brief or a full inventory; pass `project` when the vault has more than one. Read its meaningRepair before repair step 2. Task matching selects persisted evidence only: it never searches the repository, never proves source behavior, never persists the task, never approves meaning and never writes. analysis_history and analysis_record return records, not approved facts; follow their pagination even past an empty filtered page.',
   inputSchema: {
     type: 'object',
     properties: {
       operation: {
         ...NON_BLANK_STRING_SCHEMA,
         enum: QUERY_ONTOLOGY_OPERATIONS,
-        description: 'Query operation to run.',
       },
       targetOperation: {
         ...NON_BLANK_STRING_SCHEMA,
         enum: QUERY_PLAN_TARGET_OPERATIONS,
-        description:
-          'query_plan only: read-only graph operation to explain before execution. Excludes query_plan, meaning_repair_review, analysis_history and analysis_record.',
+        description: 'query_plan only: the operation to estimate.',
       },
-      recordId: nonBlankStringSchema('analysis_record only: immutable analysis or diagnostic-review UUID.'),
-      analysisMode: { type: 'string', enum: ['meaning', 'architecture'], description: 'analysis_history only: optional analysis subject filter.' },
-      analysisCursor: nonBlankStringSchema('analysis_history only: nextCursor from the preceding scanned-file page.'),
+      recordId: nonBlankStringSchema('analysis_record only: the run or review UUID.'),
+      analysisMode: { type: 'string', enum: ['meaning', 'architecture'], description: 'analysis_history only.' },
+      analysisCursor: nonBlankStringSchema('analysis_history only: the previous page\'s nextCursor.'),
       iterations: {
         type: 'integer',
         minimum: 1,
         maximum: 100,
-        description:
-          'centrality/communities only: positive integer PageRank or label-propagation iteration count. Defaults to 20, max 100.',
+        description: 'centrality and communities only. Default 20.',
       },
       slug: nonBlankStringSchema(
-        'Center/root node slug or unique alias. builder_context also accepts its own canonical Workshop focusParam (for example domain:auth). Required for neighbors, reachability, pattern_walk, impact, blast_radius, subgraph, builder_context, lineage, node_profile, and domain_profile; optional root for containment_tree.',
+        'The center or root node. builder_context also takes its Workshop focusParam (domain:auth); containment_tree takes it as an optional root.',
       ),
-      seed: nonBlankStringSchema('Alias for slug when operation is subgraph or builder_context.'),
-      candidateSlug: nonBlankStringSchema(
-        'similar_nodes only: proposed slug for a not-yet-written concept candidate.',
-      ),
-      title: nonBlankStringSchema(
-        'similar_nodes only: proposed title for a not-yet-written concept candidate.',
-      ),
-      from: nonBlankStringSchema(
-        'Source node slug or unique alias. Required for path, all_paths, and explain_relation.',
-      ),
+      seed: nonBlankStringSchema('subgraph and builder_context: another name for slug.'),
+      candidateSlug: nonBlankStringSchema('similar_nodes only: the slug of a concept not yet written.'),
+      title: nonBlankStringSchema('similar_nodes only: the title of a concept not yet written.'),
+      from: NON_BLANK_STRING_SCHEMA,
       project: nonBlankStringSchema(
-        'domain_matrix/project_scope/project_map/agent_brief/meaning_repair_review: project root slug or unique alias. Required for meaning_repair_review; optional when exactly one kind: project node exists for the other operations.',
+        'Project root for domain_matrix, project_scope, project_map, agent_brief and meaning_repair_review; optional with exactly one project, except for meaning_repair_review.',
       ),
       detail: {
         type: 'string',
         enum: ['compact', 'full'],
         description:
-          'agent_brief only: compact v3 returns a task-scoped, selected-project handoff in structuredContent and a handoff text, together capped at 12000 UTF-8 bytes, including exact reviewed taskNavigation only when the bound source is current; full returns the complete diagnostic manuals and graph packs. Omit to keep the current full response while compact is being qualified.',
+          'agent_brief only: "compact" is a task-scoped handoff of at most 12000 UTF-8 bytes; "full", the default, is the complete diagnostic contract.',
       },
       task: {
         ...NON_BLANK_STRING_SCHEMA,
         maxLength: AGENT_BRIEF_TASK_MAX_CHARS,
         description:
-          'agent_brief detail:"compact" only: request-local coding task used to select persisted capability, element, and reviewed navigation evidence after Definition/Includes/Excludes compatibility. Conflicting, unsupported, or tied claims return no capability. Never persisted, never used to invent a coordinate, and never treated as behavior proof or semantic approval.',
+          'agent_brief detail:"compact" only: the coding task that selects persisted evidence. Never persisted, never behavior proof or approval.',
       },
       expectedGraphHash: nonBlankStringSchema(
-        'meaning_repair_review first page: exact graphHash from meaningRepair (v2 or compact v1) provenance. Later nextCall values are revision-bound and omit it.',
+        'meaning_repair_review first page: graphHash from the meaningRepair provenance.',
       ),
       expectedSourceFingerprint: nonBlankStringSchema(
-        'meaning_repair_review first page: exact current sourceFingerprint from meaningRepair (v2 or compact v1) provenance. Later nextCall values are revision-bound and omit it.',
+        'meaning_repair_review first page: sourceFingerprint from the meaningRepair provenance.',
       ),
-      reviewRevision: nonBlankStringSchema(
-        'meaning_repair_review only: sha256 revision from meaningRepair (v2 or compact v1), binding graph/source/typed rows/target mtimes.',
-      ),
-      cursor: nonBlankStringSchema(
-        'meaning_repair_review only: opaque stateless cursor returned as pagination.nextCursor. Omit for the first page.',
-      ),
-      to: nonBlankStringSchema(
-        'Target node slug or unique alias. Required for path, all_paths, and explain_relation.',
-      ),
+      reviewRevision: nonBlankStringSchema('meaning_repair_review only: the sha256 revision from meaningRepair.'),
+      cursor: nonBlankStringSchema('meaning_repair_review only: pagination.nextCursor; omit on the first page.'),
+      to: NON_BLANK_STRING_SCHEMA,
       direction: {
         type: 'string',
         enum: ['incoming', 'outgoing', 'both', 'undirected'],
-        description:
-          'neighbors/reachability/impact/blast_radius/subgraph/builder_context: incoming, outgoing, or both. path/all_paths/explain_relation/reachability also accepts undirected.',
+        description: 'undirected applies to path, all_paths, explain_relation and reachability.',
       },
       types: {
         type: 'array',
         maxItems: RELATION_TYPE_VALUES.length,
         items: { ...NON_BLANK_STRING_SCHEMA, enum: RELATION_TYPE_VALUES },
-        description:
-          'Optional relation types to include, e.g. ["dependencies"] or ["depends_on"].',
+        description: 'Relation types to include.',
       },
       pattern: {
         type: 'array',
         maxItems: RELATION_TYPE_VALUES.length,
         items: { ...NON_BLANK_STRING_SCHEMA, enum: RELATION_TYPE_VALUES },
-        description:
-          'pattern_walk only: required relation sequence to follow, e.g. ["domains", "capabilities", "elements"]. depends_on is normalized to dependencies.',
+        description: 'pattern_walk only: the relation sequence, e.g. ["domains", "capabilities", "elements"].',
       },
       type: {
-        ...nonBlankStringSchema(
-          'Relation type for relation_check/match_edges, e.g. depends_on, relates, contains, describes, domains, capabilities, elements, or domain.',
-        ),
+        ...nonBlankStringSchema('relation_check and match_edges.'),
         enum: RELATION_TYPE_VALUES,
       },
       kind: {
-        ...nonBlankStringSchema(
-          `match_nodes: optional node kind filter (${NODE_KIND_DESCRIPTION}). recommend_relations currently supports capability or element.`,
-        ),
+        ...nonBlankStringSchema('match_nodes filter; recommend_relations takes capability or element.'),
         enum: NODE_KIND_VALUES,
       },
-      domain: nonBlankStringSchema(
-        'match_nodes: optional exact domain filter. domain_profile: domain root slug or unique alias.',
-      ),
-      slugContains: nonBlankStringSchema(
-        'match_nodes only: optional case-insensitive substring filter on canonical slug.',
-      ),
-      minDegree: {
-        type: 'integer',
-        minimum: 0,
-        description: 'match_nodes only: non-negative integer minimum total graph degree.',
-      },
-      maxDegree: {
-        type: 'integer',
-        minimum: 0,
-        description: 'match_nodes only: non-negative integer maximum total graph degree.',
-      },
-      minInDegree: {
-        type: 'integer',
-        minimum: 0,
-        description: 'match_nodes only: non-negative integer minimum incoming graph degree.',
-      },
-      minOutDegree: {
-        type: 'integer',
-        minimum: 0,
-        description: 'match_nodes only: non-negative integer minimum outgoing graph degree.',
-      },
-      hasIncoming: {
-        type: 'boolean',
-        description: 'match_nodes only: require presence or absence of incoming graph edges.',
-      },
-      hasOutgoing: {
-        type: 'boolean',
-        description: 'match_nodes only: require presence or absence of outgoing graph edges.',
-      },
+      domain: nonBlankStringSchema('match_nodes: exact domain filter. domain_profile: the domain.'),
+      slugContains: nonBlankStringSchema('match_nodes only: case-insensitive slug substring.'),
+      minDegree: { type: 'integer', minimum: 0, description: 'match_nodes only.' },
+      maxDegree: { type: 'integer', minimum: 0, description: 'match_nodes only.' },
+      minInDegree: { type: 'integer', minimum: 0, description: 'match_nodes only.' },
+      minOutDegree: { type: 'integer', minimum: 0, description: 'match_nodes only.' },
+      hasIncoming: { type: 'boolean', description: 'match_nodes only.' },
+      hasOutgoing: { type: 'boolean', description: 'match_nodes only.' },
       sort: {
         type: 'string',
         enum: ['degree', 'inDegree', 'outDegree', 'slug'],
-        description:
-          'match_nodes only: sort rows by degree, inDegree, outDegree, or slug. Defaults to degree.',
+        description: 'match_nodes only. Default degree.',
       },
       fromKind: {
-        ...nonBlankStringSchema(
-          `match_edges only: optional source node kind filter (${NODE_KIND_DESCRIPTION}). Source must be a real ontology node, not external/unresolved.`,
-        ),
+        ...nonBlankStringSchema('match_edges only: source kind, always a real node.'),
         enum: NODE_KIND_VALUES,
       },
       toKind: {
-        ...nonBlankStringSchema(
-          `match_edges only: optional target kind filter (${EDGE_TARGET_KIND_DESCRIPTION}). Use external or unresolved for non-node refs.`,
-        ),
+        ...nonBlankStringSchema('match_edges only: target kind; external and unresolved select refs that are not nodes.'),
         enum: EDGE_TARGET_KIND_VALUES,
       },
       relation: {
-        ...nonBlankStringSchema('Alias for type when operation is relation_check.'),
+        ...nonBlankStringSchema('relation_check: another name for type.'),
         enum: RELATION_TYPE_VALUES,
       },
       depth: {
         type: 'integer',
         minimum: 0,
         maximum: 20,
-        description: 'reachability/impact/blast_radius/subgraph/lineage/containment_tree traversal depth. Defaults to 3 for reachability, 2 for impact/blast_radius/subgraph, and 20 for lineage/containment_tree; capped at 20.',
+        description: 'Traversal depth: default 3 for reachability, 2 for impact, blast_radius and subgraph, 20 for lineage and containment_tree.',
       },
       maxHops: {
         type: 'integer',
         minimum: 0,
         maximum: 20,
-        description: 'path/all_paths/explain_relation traversal hop cap or cycles max depth. Defaults to 5 for path/all_paths/explain_relation and 8 for cycles; capped at 20.',
+        description: 'Hop cap: default 5 for path, all_paths and explain_relation, 8 for cycles.',
       },
       searchBudget: {
         type: 'integer',
         minimum: 1,
         maximum: 50000,
         description:
-          'all_paths, query_plan(all_paths), and cycles: maximum DFS states to expand before returning partial results. Defaults to 5000. For cycles, `limit` trims only the listed rows and this budget is the one bound that can cut the count short — when truncatedByBudget is true, totalCycles is a lower bound and zero cycles does NOT mean acyclic (check totalCyclesExact).',
+          'all_paths, query_plan(all_paths) and cycles: search states to expand, default 5000. When truncatedByBudget is true the counts are lower bounds and zero cycles does NOT mean acyclic.',
       },
-      includeExternal: {
-        type: 'boolean',
-        description:
-          'neighbors only: include external path-like element refs. Defaults false.',
-      },
-      includeUnresolved: {
-        type: 'boolean',
-        description:
-          'neighbors only: include dangling unresolved refs. Defaults false.',
-      },
-      includeIsolated: {
-        type: 'boolean',
-        description:
-          'topological_order only: include nodes that are not connected by the selected relation types. Defaults false.',
-      },
-      includeOrphans: {
-        type: 'boolean',
-        description:
-          'containment_tree only: include ancestorless nodes not reached from project roots. Defaults false.',
-      },
-      executableOnly: {
-        type: 'boolean',
-        description:
-          'maintenance_plan only: when true, return only actions with a proposed tool call.',
-      },
+      includeExternal: { type: 'boolean', description: 'neighbors only: include external path-like element refs.' },
+      includeUnresolved: { type: 'boolean', description: 'neighbors only: include dangling refs.' },
+      includeIsolated: { type: 'boolean', description: 'topological_order only: include nodes the selected types leave unconnected.' },
+      includeOrphans: { type: 'boolean', description: 'containment_tree only: include nodes no project root reaches.' },
+      executableOnly: { type: 'boolean', description: 'maintenance_plan only: just the actions with a proposed tool call.' },
       phases: {
         type: 'array',
         maxItems: MAINTENANCE_PHASE_VALUES.length,
-        items: {
-          ...NON_BLANK_STRING_SCHEMA,
-          enum: MAINTENANCE_PHASE_VALUES,
-        },
-        description:
-          'maintenance_plan only: optional phase filter, e.g. ["repair", "link", "materialize"].',
+        items: { ...NON_BLANK_STRING_SCHEMA, enum: MAINTENANCE_PHASE_VALUES },
+        description: 'maintenance_plan only.',
       },
       severities: {
         type: 'array',
         maxItems: MAINTENANCE_SEVERITY_VALUES.length,
-        items: {
-          ...NON_BLANK_STRING_SCHEMA,
-          enum: MAINTENANCE_SEVERITY_VALUES,
-        },
-        description:
-          'maintenance_plan only: optional severity filter, e.g. ["fail", "warn"].',
+        items: { ...NON_BLANK_STRING_SCHEMA, enum: MAINTENANCE_SEVERITY_VALUES },
+        description: 'maintenance_plan only.',
       },
       kinds: {
         type: 'array',
         maxItems: MAINTENANCE_KIND_VALUES.length,
-        items: {
-          ...NON_BLANK_STRING_SCHEMA,
-          enum: MAINTENANCE_KIND_VALUES,
-        },
-        description:
-          'maintenance_plan only: optional action-kind filter, e.g. ["add_missing_relation", "canonicalize_graph_arrays"].',
+        items: { ...NON_BLANK_STRING_SCHEMA, enum: MAINTENANCE_KIND_VALUES },
+        description: 'maintenance_plan only.',
       },
       afterActionId: nonBlankStringSchema(
-        'maintenance_plan only: stable action id cursor; return actions after this id. Without afterActionId the ready page reports cursor.found=true and cursor.reason=null; cursor.nextAfterActionId matches the last returned action id (or null for an empty page), and cursor.hasMore matches whether more remaining actions exist after this page. nextExecutableAction/nextReviewAction point only at the first executable/review action in the current returned page and preserve that action id, executable flag, phase, kind, and severity. Bucket totals (byPhase, bySeverity, byKind) match remainingActions for the returned cursor. Unknown cursors return an empty page with cursor.found=false, cursor.reason, zero remaining actions, cursor.nextAfterActionId=null, cursor.hasMore=false, and no next actions.',
+        'maintenance_plan only: resume after this action id; pass cursor.nextAfterActionId while cursor.hasMore. An unknown id returns an empty page with cursor.found=false.',
       ),
       limit: {
         type: 'integer',
         minimum: 1,
         maximum: 500,
-        description: 'Positive integer max rows/components/order entries to return. Defaults to 100, capped at 500.',
+        description: 'Rows to return, default 100; analysis_history scans 1-100 files, default 30.',
       },
       nodeLimit: {
         type: 'integer',
         minimum: 1,
         maximum: 500,
-        description:
-          'components/communities/health/workspace_brief/agent_brief only: positive integer max node summaries per component/community group. Defaults to 25 for components/communities and 10 for health, capped at 500.',
+        description: 'Node summaries per group: components and communities (default 25), health/workspace_brief/agent_brief (default 10).',
       },
       itemLimit: {
         type: 'integer',
         minimum: 1,
         maximum: 500,
-        description:
-          'project_map only: positive integer max capability/element/hotspot summaries per domain. Defaults to 20, capped at 500.',
+        description: 'project_map only: summaries per domain. Default 20.',
       },
       componentLimit: {
         type: 'integer',
         minimum: 1,
         maximum: 500,
-        description:
-          'health/workspace_brief/agent_brief only: positive integer max connected components to inspect. Defaults to 5, capped at 500.',
+        description: 'health/workspace_brief/agent_brief: components to inspect. Default 5.',
       },
       cycleLimit: {
         type: 'integer',
         minimum: 1,
         maximum: 500,
-        description:
-          'health/workspace_brief/agent_brief only: positive integer max dependency cycles to inspect. Defaults to 5, capped at 500.',
+        description: 'health/workspace_brief/agent_brief: dependency cycles to inspect. Default 5.',
       },
       recommendationLimit: {
         type: 'integer',
         minimum: 1,
         maximum: 500,
-        description:
-          'health/workspace_brief/agent_brief only: positive integer max relation recommendations to inspect. Defaults to 20, capped at 500.',
+        description: 'health/workspace_brief/agent_brief: relation recommendations to inspect. Default 20.',
       },
       orderLimit: {
         type: 'integer',
         minimum: 1,
         maximum: 500,
-        description:
-          'health/workspace_brief/agent_brief only: positive integer max topological-order rows to inspect. Defaults to 20, capped at 500.',
+        description: 'health/workspace_brief/agent_brief: topological-order rows to inspect. Default 20.',
       },
       dependencyTypes: {
         type: 'array',
         maxItems: RELATION_TYPE_VALUES.length,
         items: { ...NON_BLANK_STRING_SCHEMA, enum: RELATION_TYPE_VALUES },
-        description:
-          'health/workspace_brief/agent_brief only: dependency relation types used for cycle and topological-order checks. Defaults to ["dependencies"].',
+        description: 'health/workspace_brief/agent_brief: types for the cycle and order checks. Default ["dependencies"].',
       },
       componentTypes: {
         type: 'array',
         maxItems: RELATION_TYPE_VALUES.length,
         items: { ...NON_BLANK_STRING_SCHEMA, enum: RELATION_TYPE_VALUES },
-        description:
-          'health/workspace_brief/agent_brief only: relation types used for connected-component checks. Defaults to the full graph relation set.',
+        description: 'health/workspace_brief/agent_brief: types for the component check. Default all.',
       },
     },
     required: ['operation'],

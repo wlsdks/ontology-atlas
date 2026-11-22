@@ -1,5 +1,4 @@
 import { VAULT_ISSUE_CODE_VALUES } from '../../validate.mjs';
-import { VAULT_ISSUE_CODE_DESCRIPTION } from '../tool-schemas/enum-descriptions.mjs';
 import {
   NON_BLANK_STRING_SCHEMA,
   paginationOutputSchema,
@@ -8,15 +7,16 @@ import {
 export const VALIDATE_VAULT_TOOL = {
   name: 'validate_vault',
   description:
-    'R+ (cycle 46) — validate every doc in the vault, return per-doc + per-code aggregate. ' +
-    'Replaces the K-round-trip pattern of `list_concepts` then per-doc `get_concept` (whose `warnings: [...]` is per-file). ' +
-    `Issue codes — ${VAULT_ISSUE_CODE_DESCRIPTION}. ` +
-    'Returns `{ scanned, problems: [{slug, issues: [{code, severity, message}]}], problemsPagination, summary: { problemFiles, errorFiles, warningFiles, byCode: { code: { severity, count, files } } } }`. ' +
-    '`problems` is one page, files with errors first and then by slug: `offset` (default 0) and `limit` (default 100, max 500) choose it, a page left at the default `limit` stops sooner when its text would pass 40,000 characters, repair guidance is written out for the first issue of a code on a page and later issues of that code point back to it, and `problemsPagination.nextOffset` resumes it, so follow pages until `hasMore` is false before calling the vault clean. `summary` always counts the whole vault; each `byCode` entry names at most 20 `files` and says how many more in `filesOmitted`. ' +
-    'Also returns `pathDrift`: frontmatter `path:` / `elements:` source paths that no longer exist on disk (vault→code drift), resolved against `repoRoot` (default: the active resolved repository root from connection_info). Ontology-slug references are never flagged. Fix via `patch_concept` or remove the stale entry. ' +
-    'Also returns `evidenceDrift`: one Git walk dates every cited path and every concept document, and each concept is `current` (cited code unchanged since the document), `stale` (a cited file changed after the document — read it before trusting the recorded meaning), `missing` (cited path gone) or `unknown` (nothing cited, no commit in the window, or only a folder-level path moved — listed under `folderOnly`, because a folder changes on almost any commit). `checked: false` names why nothing was dated; it never means nothing moved. ' +
-    'Also returns `coverage`, one line: which abilities the survey lists (entry points, dispatched operations, library exports) no node places, which capabilities\' entry files were never read this session, which rules cite no read lines, and which capabilities no ability-to-ability edge touches, each with its next call. Build-depth warnings: `relation-note-on-unread` (judged by the lines this session served), `rule-without-read-lines`, `dependency-both-ways`, `path-without-code`, `path-shared`. ' +
-    'side effect 0. Use when an agent needs the *whole-vault* health view: first-contact before writes, before / after a batch write, or surfacing issues to the user.',
+    'Validate every doc in the vault and return a per-doc + per-code aggregate in one call, instead of list_concepts ' +
+    'then get_concept per doc. side effect 0. Use it for the whole-vault health view: first-contact before writes, ' +
+    'before / after a batch write, or surfacing issues to the user. ' +
+    '`problems` is one page, files with errors first: follow `problemsPagination.nextOffset` until `hasMore` is ' +
+    'false before calling the vault clean; `summary` always counts the whole vault. ' +
+    '`pathDrift` lists `path:` / `elements:` source paths gone from disk (fix with patch_concept). `evidenceDrift` ' +
+    'dates cited code against each concept: `stale` means a cited file changed after the document, so read it ' +
+    'before trusting the recorded meaning; `checked: false` never means nothing moved. `coverage` names unplaced ' +
+    'abilities, unread entry files, rules that cite no read lines and capabilities no ability edge touches, each ' +
+    'with its next call.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -300,31 +300,16 @@ const WIKI_PROBLEM_SCHEMA = {
 export const VALIDATE_WIKI_TOOL = {
   name: 'validate_wiki',
   description:
-    'Judge the pages under `wiki/` against the wiki page contract (`docs/ONTOLOGY-ATLAS-SPEC.md` §11): ' +
-    'no `kind:`, the seven required frontmatter fields, the five sections in order, a citation on every ' +
-    'bullet under `## Facts`, and a cited path that is both declared in `sources:` and present in the folder. ' +
-    'A wiki page is **not** an ontology node — it carries no `kind:` by contract, which is what keeps it out ' +
-    'of the graph — so `validate_vault` says nothing about whether one fits its own shape. This is that answer. ' +
-    'Problem codes: kind-present, missing-field:<key>, section-order, uncited-fact, bad-citation, ' +
-    'bad-truncation-record, citation-target-missing, bad-describes, describes-target-missing; folder codes dangling-wikilink, ' +
-    'and the advisory orphan-page and shared-source-unlinked. ' +
-    'The optional `describes:` lists the slugs of the `kind:` nodes a page is about, at any `status`, with one ' +
-    'sentence each under `relation_notes:`; `describes-target-missing` names an entry that resolves (full slug, ' +
-    '`slug:` alias or unique tail, as `find_backlinks` resolves) to no `kind:` node: a missing or ambiguous name, ' +
-    'a wiki page or the vault README; `bad-describes` names a `describes:` that is not a list. `describes: []` records that no concept fits. ' +
-    'The optional `sources_truncated:` key lists which paths in `sources:` the run read only part of; ' +
-    'it is what lets a reader tell a document written up whole from one written up in part. ' +
-    'Without `paths`, returns `{ pageCount, failingCount, pagination, nextCall?, summary: { blockingPages, advisoryOnlyPages, byCode }, pages: [{path, ok, blocking, problems: [{code, message, line?, detail?}], problemsOmitted?}] }`: ' +
-    '`pageCount` and `failingCount` count the whole folder and `pages` holds failing pages only, one page of them, by path; ' +
-    '`blocking` says whether a page has a problem that is not advisory, and `summary.byCode` samples blocking pages first. `limit` (default 100, max 500) sets its size; ' +
-    'a page left at the default `limit` stops sooner when the reply would pass 128 KiB, and always holds at least one page. ' +
-    '`nextCall` resumes after the last page shown (`afterPath`), so every page that fails for the whole walk is listed once, repairs between calls included; ' +
-    'follow it until `pagination.hasMore` is false. A page renamed during the walk appears under its new path only if that path sorts after the cursor, ' +
-    'and a page that starts failing behind the walk is found by the next walk: the folder is clean only when `failingCount` is 0. Each page shows at most 20 problems and counts the rest in `problemsOmitted`; ' +
-    'fix those and validate again to see more. `summary` always counts the whole folder; ' +
-    'each `byCode` entry names at most 20 `files` and says how many more in `filesOmitted`. ' +
-    'With `paths`, every named page is listed with its `ok`, passing or not, unpaged. ' +
-    'side effect 0. Use it after writing or editing a page, and before claiming a compile finished.',
+    'Judge the pages under `wiki/` against the wiki page contract (`docs/ONTOLOGY-ATLAS-SPEC.md` §11): no `kind:`, ' +
+    'the seven required frontmatter fields, the five sections in order, a citation on every `## Facts` bullet, and ' +
+    'every cited path declared in `sources:` and present in the folder. A wiki page is not an ontology node, so ' +
+    'validate_vault does not judge it. The optional `describes:` lists the `kind:` nodes a page is about, with one ' +
+    'sentence each under `relation_notes:`, and `describes: []` records that none fits; the optional ' +
+    '`sources_truncated:` lists the sources read only in part. orphan-page and shared-source-unlinked are advisory. ' +
+    '`pages` holds failing pages only, one reply at a time: follow `nextCall` until `pagination.hasMore` is false; ' +
+    'the folder is clean only when `failingCount` is 0. A page shows at most 20 problems; fix them and validate ' +
+    'again to see more. With `paths`, every named page is listed, passing or not, unpaged. side effect 0. Use it ' +
+    'after writing or editing a page, and before claiming a compile finished.',
   inputSchema: {
     type: 'object',
     properties: {
