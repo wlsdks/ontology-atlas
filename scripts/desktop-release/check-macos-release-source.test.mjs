@@ -31,7 +31,7 @@ if (args[0] === "api" && args[1] === "repos/wlsdks/ontology-atlas/git/ref/heads/
   out({ object: { type: "commit", sha: scenario.headSha ?? "${headSha}" } });
   process.exit(0);
 }
-if (args[0] === "api" && args[1] === "repos/wlsdks/ontology-atlas/git/ref/tags/${tag}") {
+if (args[0] === "api" && args[1] === "repos/wlsdks/ontology-atlas/git/ref/tags/" + (scenario.tag ?? "${tag}")) {
   if (scenario.tagMissing) {
     err("HTTP 404: Not Found");
     process.exit(1);
@@ -83,11 +83,24 @@ test("admit accepts a lightweight tag pinned to the current default-branch head"
   });
 });
 
-test("admit refuses a pre-release tag before asking GitHub", () => {
+test("admit refuses a suffix other than -beta.N before asking GitHub", () => {
   withFakeGh({}, (fakeGhPath) => {
-    const result = runReleaseSource(fakeGhPath, ["--mode=admit", "--tag=v1.2.3-rc.1", `--sha=${headSha}`]);
-    assert.equal(result.status, 1);
-    assert.match(result.stderr, /plain vMAJOR\.MINOR\.PATCH/);
+    for (const suffixed of ["v1.2.3-rc.1", "v1.2.3-beta.0", "v1.2.3-beta.1.2"]) {
+      const result = runReleaseSource(fakeGhPath, ["--mode=admit", `--tag=${suffixed}`, `--sha=${headSha}`]);
+      assert.equal(result.status, 1, suffixed);
+      assert.match(result.stderr, /vMAJOR\.MINOR\.PATCH or vMAJOR\.MINOR\.PATCH-beta\.N/);
+      assert.doesNotMatch(result.stderr, /unexpected gh call/);
+    }
+  });
+});
+
+test("admit and pin accept a beta tag at the default-branch head", () => {
+  withFakeGh({ tag: "v1.2.3-beta.1" }, (fakeGhPath) => {
+    for (const mode of ["admit", "pin"]) {
+      const result = runReleaseSource(fakeGhPath, [`--mode=${mode}`, "--tag=v1.2.3-beta.1", `--sha=${headSha}`]);
+      assert.equal(result.status, 0, result.stderr);
+      assert.match(result.stdout, /v1\.2\.3-beta\.1/);
+    }
   });
 });
 

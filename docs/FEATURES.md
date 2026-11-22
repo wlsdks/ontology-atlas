@@ -238,7 +238,7 @@ work here, and where it can.
 | Sent-log count and five recent records | FSA complete read | macOS bounded native pulls; other native platforms keep existing reads | changed, failed or expired reads offer Retry without publishing zero or stale rows; original history is preserved |
 | API keys / in-app **agent** chat | ❌ **and will not be built** | ✅ native credential store | keys in browser storage leak to a single XSS, and vendors name the direct-call header `…-dangerous-direct-browser-access` |
 | Write agent config (`.mcp.json`) into the vault | ⚠️ folder writes work, but there is no absolute path to record | ✅ | MCP registration needs a real path |
-| In-app updates | ❌ | ✅ | checks after launch and every hour while the app stays open (macOS); a notice with Moru offers the install, shows the download and asks for the restart, and Later holds that version back for a day; the automatic check can be turned off in Settings → About, where Check for updates still works |
+| In-app updates | ❌ | ✅ | checks after launch and every hour while the app stays open (macOS); a notice with Moru offers the install, shows the download and asks for the restart, and Later holds that version back for a day; the automatic check can be turned off in Settings → About, where Check for updates still works; it offers stable releases only, so a beta release (a GitHub pre-release) reaches only someone who installs it by hand, and someone on a beta is offered the stable release of that version |
 
 **Windows**: an unsigned x64 beta carries the same local folder and MCP
 surface as the desktop app. `/download` states the SmartScreen unknown-publisher

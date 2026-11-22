@@ -14,6 +14,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
+import { parseReleaseTag, updaterManifestVersion } from "../lib/release-tag.mjs";
+
 /** The platform keys Tauri uses on macOS. These are Rust target names, not our arch notation. */
 export const PLATFORM_BY_ARCH = {
   aarch64: "darwin-aarch64",
@@ -133,6 +135,7 @@ function parseArgs(argv) {
     dir: flag("dir") ?? "release-assets",
     out: flag("out") ?? "release-assets/latest.json",
     tag: flag("tag") ?? process.env.GITHUB_REF_NAME,
+    commit: flag("commit"),
     repo: flag("repo") ?? process.env.GITHUB_REPOSITORY ?? "wlsdks/ontology-atlas",
     pubDate: flag("pub-date"),
     notes: flag("notes"),
@@ -142,7 +145,14 @@ function parseArgs(argv) {
 function main() {
   const options = parseArgs(process.argv.slice(2));
   if (!options.tag) fail("--tag or GITHUB_REF_NAME is required.");
-  const version = options.tag.replace(/^v/, "");
+  let version;
+  try {
+    const parsed = parseReleaseTag(options.tag);
+    if (parsed.channel !== "stable") fail(`${options.tag} is a beta release, which never carries latest.json.`);
+    version = updaterManifestVersion(parsed.version, options.commit);
+  } catch (error) {
+    fail(`${error.message} Pass --commit=<the release commit> with a stable --tag.`);
+  }
 
   const platforms = {};
   for (const arch of REQUIRED_ARCHES) {

@@ -15,6 +15,8 @@ function fakeReleaseRoot(
     dmgName = DMG_NAME,
     dmgDownloadUrl = 'https://example.invalid/dmg',
     releaseUrl = 'https://example.invalid/release',
+    prerelease = false,
+    releaseList = [{ tag_name: 'v1.2.3', draft: false, prerelease: false }],
   } = {},
 ) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'atlas-release-facts-'));
@@ -25,7 +27,7 @@ function fakeReleaseRoot(
 
   const release = {
     draft: false,
-    prerelease: false,
+    prerelease,
     published_at: '2026-08-17T00:00:00Z',
     html_url: releaseUrl,
     assets: [
@@ -37,9 +39,9 @@ function fakeReleaseRoot(
   };
   const fakeGh = `#!/usr/bin/env node
 const request = process.argv.slice(2).join(' ');
-if (request.includes('select(.draft')) {
-  // The newest published release, which is what --check compares against.
-  process.stdout.write('v1.2.3\\n');
+if (request.includes('/releases?per_page=')) {
+  // The release list, newest first, from which --check picks the newest stable release.
+  process.stdout.write(${JSON.stringify(JSON.stringify(releaseList))});
 } else if (request.includes('/releases/tags/')) {
   process.stdout.write(${JSON.stringify(JSON.stringify(release))});
 } else if (request.includes('/assets/101')) {
@@ -176,5 +178,57 @@ test('--check fails, names both tags, and writes nothing when the committed fact
     assert.equal(fs.readFileSync(generatedPath, 'utf8'), stale, '--check wrote to the file');
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('refuses a beta tag before reading any release, and writes nothing', () => {
+  const { root, bin } = fakeReleaseRoot(WINDOWS_NAME);
+  try {
+    for (const args of [['--tag=v1.2.3-beta.1'], ['--tag=v1.2.3-beta.1', '--unpublished'], ['--tag=v1.2.3-beta.1', '--check']]) {
+      const result = runGenerator(root, bin, args);
+      assert.equal(result.status, 1, `${args.join(' ')} exited ${result.status}`);
+      assert.match(result.stderr, /v1\.2\.3-beta\.1 is a beta release/);
+      assert.doesNotMatch(result.stderr, /unexpected fake gh request/);
+    }
+    assert.equal(fs.existsSync(path.join(root, GENERATED)), false);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('refuses a plain tag GitHub marks as a pre-release, and has no flag that accepts one', () => {
+  const { root, bin } = fakeReleaseRoot(WINDOWS_NAME, { prerelease: true });
+  try {
+    const refused = runGenerator(root, bin);
+    assert.equal(refused.status, 1);
+    assert.match(refused.stderr, /is a GitHub pre-release/);
+
+    const flagged = runGenerator(root, bin, ['--tag=v1.2.3', '--allow-prerelease']);
+    assert.equal(flagged.status, 1);
+    assert.match(flagged.stderr, /unknown argument: --allow-prerelease/);
+    assert.equal(fs.existsSync(path.join(root, GENERATED)), false);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('--check compares with the newest stable release and ignores a newer beta', () => {
+  for (const newer of [
+    { tag_name: 'v1.3.0-beta.1', draft: false, prerelease: true },
+    { tag_name: 'v1.3.0-beta.2', draft: false, prerelease: false },
+    { tag_name: 'v1.3.0', draft: false, prerelease: true },
+    { tag_name: 'v1.3.0', draft: true, prerelease: false },
+  ]) {
+    const { root, bin } = fakeReleaseRoot(WINDOWS_NAME, {
+      releaseList: [newer, { tag_name: 'v1.2.3', draft: false, prerelease: false }],
+    });
+    try {
+      assert.equal(runGenerator(root, bin).status, 0, 'could not write the facts to compare against');
+      const result = runGenerator(root, bin, ['--check']);
+      assert.equal(result.status, 0, `${JSON.stringify(newer)}: ${result.stderr}`);
+      assert.match(result.stdout, /matches the published v1\.2\.3/);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
   }
 });
