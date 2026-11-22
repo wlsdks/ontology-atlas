@@ -75,13 +75,20 @@ export function useRoomMotion(
     lastSize.current = sizeKey;
 
     const previous = playing.current;
+    // Only a room of a sequence still playing can be drawn part-faded, mid-path or mid-scale; reading
+    // any other room's styles would force the whole building's style before the frame does it anyway.
+    const playingNow = previous !== null && now() - previous.startedAt < previous.sequence.totalMs ? previous : null;
     const drawn = new Map<string, Drawn>();
     for (const [key, box] of placed.current) {
       const element = elements.get(key);
+      if (!playingNow?.sequence.moves.has(key)) {
+        drawn.set(key, { box, face: 1, parts: 1, unit: box.unit });
+        continue;
+      }
       const face = element && currentFace(element);
       const scene = face?.querySelector<HTMLElement>('[data-scene]');
       drawn.set(key, {
-        box: (previous && drawnBox(previous, key)) ?? box,
+        box: drawnBox(playingNow, key) ?? box,
         face: face ? opacityOf(face) : 1,
         parts: element ? Math.min(1, ...partsOf(element).map(opacityOf)) : 1,
         // React has already drawn the new unit, so only a glide still playing tells where the scale is now.

@@ -132,10 +132,11 @@ export function boxAt(move: RoomMove, timing: Timing, timeMs: number): Box {
   return boxOnPath(move, timing.waves, timing.path, progress);
 }
 
-const SAMPLES = 24;
+/** Frames of the move each candidate plan is checked at: enough to see two rooms meet, few enough to plan within a frame. */
+const SAMPLES = 16;
 /** Up to this many moving rooms every order of three waves is tried; up to `SEARCHED_MOVES`, of two. */
-const THREE_WAVE_MOVES = 5;
-const SEARCHED_MOVES = 8;
+const THREE_WAVE_MOVES = 4;
+const SEARCHED_MOVES = 6;
 /** A frame where a box one room hands to another shows bare background, for the largest box. */
 const BARE_COST = 3;
 /** A room arriving over one that waits to give up its box hides it rather than crossing it. */
