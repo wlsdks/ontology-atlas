@@ -16,7 +16,7 @@ export const GIT_STATUS_TOOL = {
 export const GIT_HISTORY_TOOL = {
   name: 'git_history',
   description:
-    'Read commit history scoped to the active vault path only. Returns bounded newest-first hashes, subjects, and authored timestamps plus limited/hasMore, shallow-repository state, and historyComplete so agents do not mistake a truncated or shallow view for complete evidence. Commits that touched only files outside the vault are excluded. Read-only; never initializes, fetches, pulls, commits, or pushes.',
+    'Read newest-first commit history for the vault path only, with limited/hasMore, shallow-repository state and historyComplete so a truncated view is not taken as complete. Read-only; never fetches or pushes.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -24,7 +24,7 @@ export const GIT_HISTORY_TOOL = {
         type: 'integer',
         minimum: 1,
         maximum: 100,
-        description: 'Maximum newest-first vault commits to return. Defaults to 20; maximum 100.',
+        description: 'Default 20.',
       },
     },
   },
@@ -34,19 +34,19 @@ export const GIT_HISTORY_TOOL = {
 export const GIT_SNAPSHOT_TOOL = {
   name: 'git_snapshot',
   description:
-    'Create a local, vault-scoped Git checkpoint. Dry-run by default and returns exact expectedHead, files, validation, risk, and the shared previewReady/canConfirm/wouldChange/blockedReasons safety contract. confirm:true requires that expectedHead, blocks validator errors and Git operations in progress, commits only the vault pathspec, leaves outside files untouched, and never pushes.',
+    'Commit a local, vault-scoped Git checkpoint. Dry-run returns expectedHead, files, validation, risk and previewReady/canConfirm/wouldChange/blockedReasons; confirm:true with that expectedHead commits only the vault pathspec and never pushes.',
   inputSchema: {
     type: 'object',
     properties: {
       confirm: {
         type: 'boolean',
-        description: 'Default false. Set true only after reviewing the dry-run preview and its risk/validation fields.',
+        description: 'True only after reviewing the dry-run.',
       },
       expectedHead: nonBlankStringSchema(
-        'Required with confirm:true. Copy the exact expectedHead returned by the immediately preceding dry-run; this prevents committing after a concurrent HEAD change.',
+        'Required with confirm:true: the expectedHead of the preceding dry-run.',
       ),
       message: nonBlankStringSchema(
-        'Optional local commit subject, one line and at most 200 characters. A deterministic ontology snapshot subject is generated when omitted.',
+        'Optional one-line commit subject; generated when omitted.',
         { maxLength: 200, pattern: '^[^\\r\\n]+$' },
       ),
     },

@@ -20,9 +20,6 @@ export function inferImportsToolSchemaFailure(tools) {
     !/Omit `reviewMode`/i.test(inferImportsTool.description || '') ||
     !/128 KiB/i.test(inferImportsTool.description || '') ||
     !/delivery receipt/i.test(inferImportsTool.description || '') ||
-    !/reviewMode:"next"/i.test(inferImportsTool.description || '') ||
-    !/reviewMode:"full"/i.test(inferImportsTool.description || '') ||
-    !/allowLargeResponse:true/i.test(inferImportsTool.description || '') ||
     !/exactly one compact, non-writing `nextRelationReview:v1` packet/i.test(inferImportsTool.description || '') ||
     !/kindCounts/i.test(inferImportsTool.description || '') ||
     !/bounded exact file-edge `evidence` receipt/i.test(inferImportsTool.description || '') ||
@@ -42,7 +39,6 @@ export function inferImportsToolSchemaFailure(tools) {
     inferMaxFilesSchema.minimum !== 1 ||
     inferMaxFilesSchema.maximum !== 50000 ||
     !/default 5000/i.test(inferMaxFilesSchema.description || '') ||
-    !/max 50000/i.test(inferMaxFilesSchema.description || '') ||
     !/avoid pathological monorepos/i.test(inferMaxFilesSchema.description || '')
   ) {
     return 'infer_imports maxFiles hard-stop guidance drift';

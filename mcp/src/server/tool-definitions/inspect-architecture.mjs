@@ -3,25 +3,25 @@ import { NON_BLANK_STRING_SCHEMA } from '../tool-schemas/field-primitives.mjs';
 export const INSPECT_ARCHITECTURE_TOOL = {
   name: 'inspect_architecture',
   description:
-    'Read one reviewed architecture-profile/v1 document from the active vault, scan the connected repository with the existing bounded static import analyzer, and return an architectureBrief:v1 for humans and coding agents. The profile declares scoped roles, intended dependency rules, and which known import usages those rules govern; source imports remain observed evidence with usage-qualified receipts. The result distinguishes conforms, violated, and unknown, and never treats unsupported languages, unclassified import usage, empty role mappings, or unmapped edges as compliance. Pattern labels are human/document declarations, not folder-name inference. side effect 0.',
+    'Check the repository\'s imports against a reviewed architecture-profile/v1 document in the vault and return an architectureBrief:v1 of conforms, violated and unknown; unsupported languages, unclassified import usage and unmapped imports never count as compliance. side effect 0.',
   inputSchema: {
     type: 'object',
     properties: {
       rootPath: {
         ...NON_BLANK_STRING_SCHEMA,
         description:
-          'Repository root to inspect. Defaults to the active resolved repository root from connection_info.',
+          'Defaults to the active repository root.',
       },
       profileSlug: {
         ...NON_BLANK_STRING_SCHEMA,
         description:
-          'Architecture profile_slug. Optional only when the vault contains exactly one architecture profile.',
+          'Optional when the vault has one architecture profile.',
       },
       maxFiles: {
         type: 'integer',
         minimum: 1,
         maximum: 50000,
-        description: 'Positive source-file scan cap (default 5000, max 50000).',
+        description: 'Default 5000.',
       },
     },
   },

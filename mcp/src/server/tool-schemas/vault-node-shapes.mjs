@@ -183,10 +183,10 @@ const ADD_RELATION_TYPE_SCHEMA = { ...NON_BLANK_STRING_SCHEMA, enum: WRITE_RELAT
 const LOCALE_LABELS_SCHEMA = Object.freeze({
   type: 'object',
   description:
-    'Per-locale display names, e.g. { "ko": "결제", "en": "Payments" }. Written as `display_ko` / `display_en` frontmatter keys; `title` stays the single source for search/matching. Fill BOTH locales the vault serves — a single-locale entry comes back as a warning.',
+    'Per-locale display names ({ "ko": "결제", "en": "Payments" }), written as `display_<locale>`; fill every locale the vault serves.',
   properties: {
-    ko: { type: 'string', description: 'Korean display name.' },
-    en: { type: 'string', description: 'English display name.' },
+    ko: { type: 'string' },
+    en: { type: 'string' },
   },
   additionalProperties: { type: 'string' },
 });
