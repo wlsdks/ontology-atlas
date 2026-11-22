@@ -230,7 +230,9 @@ export function LibraryAgentDock({
    * **Focus that entered the dock does not fall out of it by itself.** The composer can be
    * disabled a moment after it took focus (the runtime check settles after the dock opens),
    * and a disabled control drops focus to `body`. While the dock is open, a focus that left
-   * for nowhere lands on the dock itself instead.
+   * for nowhere lands on the dock itself instead. Tab past the dock's last control also leaves
+   * `body` focused, but the page no longer has focus then; pulling it back would hold the
+   * keyboard in the dock and the page's other controls out of forward reach.
    */
   useEffect(() => {
     if (!open) return;
@@ -239,7 +241,7 @@ export function LibraryAgentDock({
       if (!surface || event.relatedTarget || !surface.contains(event.target as Node)) return;
       window.requestAnimationFrame(() => {
         const active = document.activeElement;
-        if (surfaceRef.current && (active === null || active === document.body)) {
+        if (surfaceRef.current && document.hasFocus() && (active === null || active === document.body)) {
           surfaceRef.current.focus({ preventScroll: true });
         }
       });

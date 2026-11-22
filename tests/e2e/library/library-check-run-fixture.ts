@@ -172,7 +172,15 @@ export async function startCheck(
   await page.getByTestId("library-open-report").click();
   await page.getByTestId("library-check-report-lint").click();
   await expect.poll(() => harnessCalls(page), { message: "the check's brief reaches the agent" }).toContain("session/prompt");
-  // Check results draws the run in place; back at the Library home the card speaks for it.
+  /*
+   * Check results draws the run in place; back at the Library home the card speaks for it. Below
+   * 1280 the opened conversation is drawn over the page (`LibraryAgentDock`), so a person puts it
+   * away before the page's Close can be pressed.
+   */
+  if ((page.viewportSize()?.width ?? 1280) < 1280) {
+    await page.getByTestId("library-agent-dock").getByTestId("acp-dock-close").click();
+    await expect(page.getByTestId("library-agent-dock-frame")).toHaveAttribute("data-dock-state", "put-away");
+  }
   await page.getByTestId("library-reader-back").click();
   return harness;
 }
