@@ -102,7 +102,7 @@ describe('the quarantine commands', () => {
     let runs = 0;
     const spawn = () => ({ status: ++runs === 7 ? 1 : 0, stdout: '', stderr: 'planted failure' });
     const out = quiet();
-    const file = 'src/shared/lib/cn.test.ts';
+    const file = 'app/[locale]/project/fallback/ProjectFallbackClient.test.tsx';
     expect(runQuarantine(['prove', file], { spawn, log: out.log, env: {} })).toBe(1);
     expect(out.lines.at(-1)).toBe(`[quarantine] prove ${file}: 6 of 65 passed; stopped at the first failure`);
     expect(runs).toBe(7);
