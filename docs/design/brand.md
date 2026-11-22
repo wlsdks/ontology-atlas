@@ -83,8 +83,11 @@ that says which Moru it is, never a token or a status. A head piece is a typed
 pixel map on the 64px grid that follows where each pose carries the head,
 mirrored on a pose turned to the left, and stays behind a flipper or a prop over
 the head; `pnpm brand:cast` doubles it onto the work grid and reduces it with the
-catalogue's reducer. A room's Moru comes from a hash of its branch name, so a
-room always has the same one; the main checkout keeps the grey original. A
+catalogue's reducer. Rooms are cast oldest first: each takes the character a
+hash of its branch name prefers, or the next one in the cast's order no older
+room has, and a character repeats only once all are in use, the least used
+first. A room joins the cast when it first shows a Moru; a newer room never
+changes an older room's Moru, and the main checkout keeps the grey original. A
 character is costume only: every character plays the same rows, so a pose means
 what it means on the grey Moru, and it says nothing about which agent or model
 is at work. The pieces are generic pastel costume shapes; none copies an

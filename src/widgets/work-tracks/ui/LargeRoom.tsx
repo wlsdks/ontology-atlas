@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import type { RoomEntry } from '@/shared/lib/work-status/work-tracks';
 import { cn } from '@/shared/lib/cn';
 import { MOTION } from '@/shared/motion';
-import { KNOWN_UNTIL, STAGE_AT, cartLoad, moruPhase, roomCharacter, roomIdentity, roomLook, roomOnce } from '../model/room-look';
+import { KNOWN_UNTIL, STAGE_AT, cartLoad, moruPhase, roomIdentity, roomLook, roomOnce, type MoruCharacter } from '../model/room-look';
 import { MERGE_LIGHTS_OUT_MS } from '../model/moru-clock';
 import { useRise } from '../model/use-rise';
 import type { RoomUnit } from '../model/building-layout';
@@ -179,8 +179,10 @@ function Belt({ room, landing }: { room: RoomEntry; landing: number }) {
  * Moru with the session's name tag beside a floor lamp lit only while something runs, and the belt
  * that carries the work's crate toward the `main` hatch.
  */
-export function LargeRoom({ room, unit, copy, tint, guestTint, retiring, entered, faceId }: {
+export function LargeRoom({ room, unit, copy, tint, guestTint, retiring, entered, faceId, character }: {
   room: RoomEntry;
+  /** The room's Moru, cast across the building. */
+  character: MoruCharacter;
   unit: RoomUnit;
   /** The room is new to the building, or newly on the stage: Moru settles in once. */
   entered: boolean;
@@ -205,7 +207,6 @@ export function LargeRoom({ room, unit, copy, tint, guestTint, retiring, entered
   const guest = room.guests[0] ?? null;
   const guestInk = guest ? `var(--work-session-${guest.ink + 1})` : 'var(--work-unheld)';
   const identity = roomIdentity(room.track.branch ?? room.key);
-  const character = roomCharacter(room.track, room.key);
   return (
     <div className={cn(styles.large, 'h-full w-full')} data-pair={pair || undefined} style={pair ? { ['--guest-ink' as string]: guestInk } : undefined}>
       <div data-scene className={styles.scene} style={{ '--u': unit, '--lights-out': `${MERGE_LIGHTS_OUT_MS}ms` } as CSSProperties} data-lit={look.running} data-dark={retiring} data-cast={pair ? 'two' : look.cast} data-alarm={pair} data-mirror={!pair && identity.mirrored}>

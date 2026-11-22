@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { WorkStatusSnapshot, WorktreeRow } from '@/shared/lib/work-status/tauri-work-status';
 import { buildWorkTracks, planRooms, type RoomPlan } from '@/shared/lib/work-status/work-tracks';
-import { MORU_CAST, ROOM_PROPS, cartLoad, moruCharacter, moruPhase, retireeOf, roomCharacter, roomIdentity, roomLook, roomOnce, withRetirees, type RoomClip } from './room-look';
+import { MORU_CAST, ROOM_PROPS, cartLoad, castRooms, moruCharacter, moruPhase, retireeOf, roomIdentity, roomLook, roomOnce, withRetirees, type RoomClip } from './room-look';
 
 const NOW_MS = 1_795_260_000_000;
 
@@ -104,21 +104,39 @@ describe('roomIdentity', () => {
 });
 
 describe('moruCharacter', () => {
-  it('gives a branch the same Moru every time, and spreads the cast across branches', () => {
+  it('gives a branch the same preferred Moru every time, and spreads the preference across the cast', () => {
     const branches = Array.from({ length: 120 }, (_, index) => `feat/branch-${index}`);
-    const characters = branches.map(branch => moruCharacter(branch, false));
-    expect(branches.map(branch => moruCharacter(branch, false))).toEqual(characters);
-    const counts = MORU_CAST.map(character => characters.filter(found => found === character).length);
+    const characters = branches.map(moruCharacter);
+    expect(branches.map(moruCharacter)).toEqual(characters);
     // 24 each on an even spread; no character is missing or takes twice its share.
-    for (const count of counts) expect(count).toBeGreaterThan(12);
-    for (const count of counts) expect(count).toBeLessThan(48);
-    expect(characters).not.toContain('grey');
+    for (const character of MORU_CAST) expect(characters.filter(found => found === character).length).toBeGreaterThan(12);
+    for (const character of MORU_CAST) expect(characters.filter(found => found === character).length).toBeLessThan(48);
+  });
+});
+
+describe('castRooms', () => {
+  const rooms = (...branches: string[]) => branches.map(branch => ({ key: branch, branch, base: false }));
+  // Five branches the cast's preferences collide on: two prefer one character, two another.
+  const five = rooms('feat/library-stage', 'feat/work-status-rooms', 'feat/map-light', 'feat/moru-cast-rooms', 'fix/rail-tooltip');
+
+  it('gives five rooms five different characters, and the main checkout the grey original', () => {
+    const cast = castRooms([{ key: 'main', branch: 'main', base: true }, ...five]);
+    expect(cast.get('main')).toBe('grey');
+    expect(new Set(five.map(room => cast.get(room.key)))).toEqual(new Set(MORU_CAST));
+    expect(cast.get('feat/library-stage')).toBe(moruCharacter('feat/library-stage'));
   });
 
-  it('keeps the grey original for the main checkout, whatever its branch is called', () => {
-    for (const branch of ['main', 'master', 'trunk', 'feat/branch-7']) expect(moruCharacter(branch, true)).toBe('grey');
-    expect(roomCharacter({ branch: 'main', standing: 'base' }, 'repo')).toBe('grey');
-    expect(roomCharacter({ branch: null, standing: 'ahead' }, 'detached-key')).toBe(moruCharacter('detached-key', false));
+  it('leaves the older rooms their Moru when a newer room arrives, and repeats the least used only once all are in use', () => {
+    const before = castRooms(five);
+    const after = castRooms([...five, ...rooms('feat/sixth', 'feat/seventh')]);
+    for (const room of five) expect(after.get(room.key)).toBe(before.get(room.key));
+    expect(after.get('feat/sixth')).not.toBe(after.get('feat/seventh'));
+  });
+
+  it('changes no room older than one that leaves', () => {
+    const before = castRooms(five);
+    const after = castRooms(five.filter(room => room.key !== 'feat/map-light'));
+    for (const room of five.slice(0, 2)) expect(after.get(room.key)).toBe(before.get(room.key));
   });
 
   it('has every row a room can play drawn for every character', () => {
