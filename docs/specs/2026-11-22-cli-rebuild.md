@@ -1,10 +1,12 @@
 ---
 title: A rebuilt Atlas command for the terminal
 doc_type: spec
-status: draft
+status: accepted
 area: cli
 date: 2026-11-22
-decisions: []
+decisions:
+  - docs/records/decisions/2026-11-22-atlas-command-rebuilt-and-published-e64b4ebe-ea86-48bc-a629-6cc1b8a3dd30.md
+  - docs/records/decisions/2026-11-22-one-command-name-ontology-atlas-3f104892-dbc1-43c1-a8a5-5e8bfa734e8a.md
 ---
 
 # A rebuilt Atlas command for the terminal
@@ -588,3 +590,6 @@ Two drafts, which the lead lists in `decisions:` once the owner accepts the word
 - 2026-11-22: the owner's three answers, through the lead. One command name, `ontology-atlas`, with
   no `atlas` and no fallback; the plugin is listed from this repository first and directory
   submission is a later step that needs the owner's yes; the npm name was checked and is free.
+- 2026-11-22: the owner accepted the plan after a plain-language walk-through of its value (what a
+  person must re-check after an agent change, without reading the whole diff) and asked to build it
+  in this order; both decision records are listed.
