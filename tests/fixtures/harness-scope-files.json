@@ -1,0 +1,267 @@
+{
+  "files": [
+    {
+      "id": "claude-project",
+      "tool": "claude-code",
+      "scope": "project",
+      "patterns": {
+        "macos": "<repository>/.claude/settings.json",
+        "linux": "<repository>/.claude/settings.json",
+        "windows": "<repository>\\.claude\\settings.json"
+      }
+    },
+    {
+      "id": "claude-local",
+      "tool": "claude-code",
+      "scope": "local",
+      "patterns": {
+        "macos": "<repository>/.claude/settings.local.json",
+        "linux": "<repository>/.claude/settings.local.json",
+        "windows": "<repository>\\.claude\\settings.local.json"
+      }
+    },
+    {
+      "id": "claude-user",
+      "tool": "claude-code",
+      "scope": "user",
+      "patterns": {
+        "macos": "~/.claude/settings.json",
+        "linux": "~/.claude/settings.json",
+        "windows": "%USERPROFILE%\\.claude\\settings.json"
+      }
+    },
+    {
+      "id": "claude-managed",
+      "tool": "claude-code",
+      "scope": "managed",
+      "patterns": {
+        "macos": "/Library/Application Support/ClaudeCode/managed-settings.json",
+        "linux": "/etc/claude-code/managed-settings.json",
+        "windows": "C:\\Program Files\\ClaudeCode\\managed-settings.json"
+      }
+    },
+    {
+      "id": "codex-project",
+      "tool": "codex",
+      "scope": "project",
+      "patterns": {
+        "macos": "<repository>/.codex/hooks.json",
+        "linux": "<repository>/.codex/hooks.json",
+        "windows": "<repository>\\.codex\\hooks.json"
+      }
+    },
+    {
+      "id": "codex-user",
+      "tool": "codex",
+      "scope": "user",
+      "patterns": {
+        "macos": "~/.codex/hooks.json",
+        "linux": "~/.codex/hooks.json",
+        "windows": "%USERPROFILE%\\.codex\\hooks.json"
+      }
+    },
+    {
+      "id": "codex-system",
+      "tool": "codex",
+      "scope": "system",
+      "patterns": {
+        "macos": "/etc/codex/hooks.json",
+        "linux": "/etc/codex/hooks.json",
+        "windows": "%ProgramData%\\OpenAI\\Codex\\hooks.json"
+      }
+    },
+    {
+      "id": "codex-project-config",
+      "tool": "codex",
+      "scope": "project",
+      "patterns": {
+        "macos": "<repository>/.codex/config.toml",
+        "linux": "<repository>/.codex/config.toml",
+        "windows": "<repository>\\.codex\\config.toml"
+      }
+    },
+    {
+      "id": "codex-user-config",
+      "tool": "codex",
+      "scope": "user",
+      "patterns": {
+        "macos": "~/.codex/config.toml",
+        "linux": "~/.codex/config.toml",
+        "windows": "%USERPROFILE%\\.codex\\config.toml"
+      }
+    }
+  ],
+  "cases": [
+    {
+      "name": "macOS, a checkout",
+      "platform": "macos",
+      "home": "/Users/ada",
+      "repository": "/Users/ada/code/shop",
+      "mainCheckout": null,
+      "programData": null,
+      "paths": {
+        "claude-project": "/Users/ada/code/shop/.claude/settings.json",
+        "claude-local": "/Users/ada/code/shop/.claude/settings.local.json",
+        "claude-user": "/Users/ada/.claude/settings.json",
+        "claude-managed": "/Library/Application Support/ClaudeCode/managed-settings.json",
+        "codex-project": "/Users/ada/code/shop/.codex/hooks.json",
+        "codex-user": "/Users/ada/.codex/hooks.json",
+        "codex-system": "/etc/codex/hooks.json",
+        "codex-project-config": "/Users/ada/code/shop/.codex/config.toml",
+        "codex-user-config": "/Users/ada/.codex/config.toml"
+      }
+    },
+    {
+      "name": "macOS, a linked worktree reads the main checkout's Local file",
+      "platform": "macos",
+      "home": "/Users/ada",
+      "repository": "/Users/ada/code/shop-worktrees/feature",
+      "mainCheckout": "/Users/ada/code/shop",
+      "programData": null,
+      "paths": {
+        "claude-project": "/Users/ada/code/shop-worktrees/feature/.claude/settings.json",
+        "claude-local": "/Users/ada/code/shop/.claude/settings.local.json",
+        "claude-user": "/Users/ada/.claude/settings.json",
+        "claude-managed": "/Library/Application Support/ClaudeCode/managed-settings.json",
+        "codex-project": "/Users/ada/code/shop-worktrees/feature/.codex/hooks.json",
+        "codex-user": "/Users/ada/.codex/hooks.json",
+        "codex-system": "/etc/codex/hooks.json",
+        "codex-project-config": "/Users/ada/code/shop-worktrees/feature/.codex/config.toml",
+        "codex-user-config": "/Users/ada/.codex/config.toml"
+      }
+    },
+    {
+      "name": "macOS, a home folder with Hangul and a space",
+      "platform": "macos",
+      "home": "/Users/\uae40 \uc9c4",
+      "repository": "/Users/\uae40 \uc9c4/my code/shop",
+      "mainCheckout": null,
+      "programData": null,
+      "paths": {
+        "claude-project": "/Users/\uae40 \uc9c4/my code/shop/.claude/settings.json",
+        "claude-local": "/Users/\uae40 \uc9c4/my code/shop/.claude/settings.local.json",
+        "claude-user": "/Users/\uae40 \uc9c4/.claude/settings.json",
+        "claude-managed": "/Library/Application Support/ClaudeCode/managed-settings.json",
+        "codex-project": "/Users/\uae40 \uc9c4/my code/shop/.codex/hooks.json",
+        "codex-user": "/Users/\uae40 \uc9c4/.codex/hooks.json",
+        "codex-system": "/etc/codex/hooks.json",
+        "codex-project-config": "/Users/\uae40 \uc9c4/my code/shop/.codex/config.toml",
+        "codex-user-config": "/Users/\uae40 \uc9c4/.codex/config.toml"
+      }
+    },
+    {
+      "name": "Linux, a checkout",
+      "platform": "linux",
+      "home": "/home/ada",
+      "repository": "/home/ada/src/shop",
+      "mainCheckout": null,
+      "programData": null,
+      "paths": {
+        "claude-project": "/home/ada/src/shop/.claude/settings.json",
+        "claude-local": "/home/ada/src/shop/.claude/settings.local.json",
+        "claude-user": "/home/ada/.claude/settings.json",
+        "claude-managed": "/etc/claude-code/managed-settings.json",
+        "codex-project": "/home/ada/src/shop/.codex/hooks.json",
+        "codex-user": "/home/ada/.codex/hooks.json",
+        "codex-system": "/etc/codex/hooks.json",
+        "codex-project-config": "/home/ada/src/shop/.codex/config.toml",
+        "codex-user-config": "/home/ada/.codex/config.toml"
+      }
+    },
+    {
+      "name": "Linux, a linked worktree reads the main checkout's Local file",
+      "platform": "linux",
+      "home": "/home/ada",
+      "repository": "/home/ada/src/shop-feature",
+      "mainCheckout": "/home/ada/src/shop",
+      "programData": null,
+      "paths": {
+        "claude-project": "/home/ada/src/shop-feature/.claude/settings.json",
+        "claude-local": "/home/ada/src/shop/.claude/settings.local.json",
+        "claude-user": "/home/ada/.claude/settings.json",
+        "claude-managed": "/etc/claude-code/managed-settings.json",
+        "codex-project": "/home/ada/src/shop-feature/.codex/hooks.json",
+        "codex-user": "/home/ada/.codex/hooks.json",
+        "codex-system": "/etc/codex/hooks.json",
+        "codex-project-config": "/home/ada/src/shop-feature/.codex/config.toml",
+        "codex-user-config": "/home/ada/.codex/config.toml"
+      }
+    },
+    {
+      "name": "Windows, a checkout",
+      "platform": "windows",
+      "home": "C:\\Users\\ada",
+      "repository": "C:\\Users\\ada\\code\\shop",
+      "mainCheckout": null,
+      "programData": "C:\\ProgramData",
+      "paths": {
+        "claude-project": "C:\\Users\\ada\\code\\shop\\.claude\\settings.json",
+        "claude-local": "C:\\Users\\ada\\code\\shop\\.claude\\settings.local.json",
+        "claude-user": "C:\\Users\\ada\\.claude\\settings.json",
+        "claude-managed": "C:\\Program Files\\ClaudeCode\\managed-settings.json",
+        "codex-project": "C:\\Users\\ada\\code\\shop\\.codex\\hooks.json",
+        "codex-user": "C:\\Users\\ada\\.codex\\hooks.json",
+        "codex-system": "C:\\ProgramData\\OpenAI\\Codex\\hooks.json",
+        "codex-project-config": "C:\\Users\\ada\\code\\shop\\.codex\\config.toml",
+        "codex-user-config": "C:\\Users\\ada\\.codex\\config.toml"
+      }
+    },
+    {
+      "name": "Windows, a linked worktree keeps its own Local file",
+      "platform": "windows",
+      "home": "C:\\Users\\ada",
+      "repository": "C:\\Users\\ada\\code\\shop-feature",
+      "mainCheckout": "C:\\Users\\ada\\code\\shop",
+      "programData": "C:\\ProgramData",
+      "paths": {
+        "claude-project": "C:\\Users\\ada\\code\\shop-feature\\.claude\\settings.json",
+        "claude-local": "C:\\Users\\ada\\code\\shop-feature\\.claude\\settings.local.json",
+        "claude-user": "C:\\Users\\ada\\.claude\\settings.json",
+        "claude-managed": "C:\\Program Files\\ClaudeCode\\managed-settings.json",
+        "codex-project": "C:\\Users\\ada\\code\\shop-feature\\.codex\\hooks.json",
+        "codex-user": "C:\\Users\\ada\\.codex\\hooks.json",
+        "codex-system": "C:\\ProgramData\\OpenAI\\Codex\\hooks.json",
+        "codex-project-config": "C:\\Users\\ada\\code\\shop-feature\\.codex\\config.toml",
+        "codex-user-config": "C:\\Users\\ada\\.codex\\config.toml"
+      }
+    },
+    {
+      "name": "Windows, a home folder with Hangul and a space, ProgramData moved",
+      "platform": "windows",
+      "home": "C:\\Users\\\uae40 \uc9c4",
+      "repository": "D:\\work\\my shop",
+      "mainCheckout": null,
+      "programData": "D:\\ProgramData",
+      "paths": {
+        "claude-project": "D:\\work\\my shop\\.claude\\settings.json",
+        "claude-local": "D:\\work\\my shop\\.claude\\settings.local.json",
+        "claude-user": "C:\\Users\\\uae40 \uc9c4\\.claude\\settings.json",
+        "claude-managed": "C:\\Program Files\\ClaudeCode\\managed-settings.json",
+        "codex-project": "D:\\work\\my shop\\.codex\\hooks.json",
+        "codex-user": "C:\\Users\\\uae40 \uc9c4\\.codex\\hooks.json",
+        "codex-system": "D:\\ProgramData\\OpenAI\\Codex\\hooks.json",
+        "codex-project-config": "D:\\work\\my shop\\.codex\\config.toml",
+        "codex-user-config": "C:\\Users\\\uae40 \uc9c4\\.codex\\config.toml"
+      }
+    },
+    {
+      "name": "Windows, ProgramData unknown",
+      "platform": "windows",
+      "home": "C:\\Users\\ada",
+      "repository": "C:\\code\\shop",
+      "mainCheckout": null,
+      "programData": null,
+      "paths": {
+        "claude-project": "C:\\code\\shop\\.claude\\settings.json",
+        "claude-local": "C:\\code\\shop\\.claude\\settings.local.json",
+        "claude-user": "C:\\Users\\ada\\.claude\\settings.json",
+        "claude-managed": "C:\\Program Files\\ClaudeCode\\managed-settings.json",
+        "codex-project": "C:\\code\\shop\\.codex\\hooks.json",
+        "codex-user": "C:\\Users\\ada\\.codex\\hooks.json",
+        "codex-system": "C:\\ProgramData\\OpenAI\\Codex\\hooks.json",
+        "codex-project-config": "C:\\code\\shop\\.codex\\config.toml",
+        "codex-user-config": "C:\\Users\\ada\\.codex\\config.toml"
+      }
+    }
+  ]
+}
