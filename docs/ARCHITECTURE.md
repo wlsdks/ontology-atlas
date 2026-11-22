@@ -472,9 +472,9 @@ because it is literally the same bundle — the exceptions are font rendering,
 scrolling, and the window frame, which still have to be checked in the installed
 app. Second, desktop-only abilities are proved *only* in the installed app.
 Third, the web surface has its own test, `tests/e2e/web-surface-smoke.spec.ts`,
-wired into `.github/workflows/e2e.yml` on a deliberately wider condition than
-the rest of the suite — nobody watches the web by hand, so that test is its only
-guard.
+which every whole run of `.github/workflows/e2e.yml` runs on its own runner, and
+a planned dispatch runs on a deliberately wider condition than the rest of the
+suite — nobody watches the web by hand, so that test is its only guard.
 
 A deep link built on one surface is not guaranteed to rebuild the same screen on
 the other. Where such links work, treat it as a convenience, not a promise.

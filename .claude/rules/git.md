@@ -44,6 +44,8 @@
   landing. Disable main's linear-history requirement.
 - Several branches merge through one integration branch (`/integrate`), each
   by `git merge --no-ff`; never squash, rebase or cherry-pick a component.
+  The integration pull request's one CI run is Checks; a rendered slice
+  attaches its local spec runs, since no browser spec runs before merge.
 - Never run `gh pr merge`, `gh pr update-branch`, or `gh pr create` without
   `--draft`; `.claude/hooks/block-manual-landing.sh` refuses them.
 - Title: a conventional prefix. Body: `Summary` and `Test plan`, naming the

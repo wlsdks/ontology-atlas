@@ -1,7 +1,8 @@
-# PR checks are impact-planned before any dependency install. The exact required
-# status names stay stable; inactive lanes start, explain the skip, and finish in
-# seconds. A missing plan is RED. Scheduled/manual runs and planner changes run every
-# command registered in `scripts/ci/classify-change.mjs`.
+# PR checks are impact-planned before any dependency install. `main` requires one context,
+# `Required checks`, which this file defines; inactive lanes start, explain the skip, and
+# finish in seconds. A missing plan is RED. Scheduled/manual runs and planner changes run
+# every command registered in `scripts/ci/classify-change.mjs`. No browser spec runs here or
+# before merge: `e2e.yml` runs the browser suite nightly.
 #
 # Before merge a train runs what its change can affect plus a fixed core (the security
 # and vault-format contracts); after the merge every push to main runs the full set
@@ -298,10 +299,8 @@ jobs:
   # that gate guards reads 2.7-5.3. Its header says to move the lane, not the number, so the bar
   # stays at 10 and this job is the lane.
   #
-  # It stays a gate without a new required context: `Unit · Contract` below waits for it and
-  # fails when it fails. `pnpm pr:land` settles a train once the required contexts are green and
-  # does not wait for an unrequired check still running, so a standalone unrequired job could be
-  # merged past before it reported.
+  # It stays a gate without a context of its own: `Unit · Contract` below waits for it and fails
+  # when it fails, and `Required checks` waits for that.
   #
   # Measured on that run: 25 s from runner start to the first lane command (checkout, Node,
   # install at 7.6 s) and 9.7 s for `pnpm test:perf`, so about 35 s alone.
@@ -367,13 +366,12 @@ jobs:
           if-no-files-found: ignore
           retention-days: 90
 
-  # `Unit · Contract` is one of the eight required status contexts on `main`. Sharding
-  # renamed it to three, and a required context that never reports again blocks every
-  # merge forever — `pnpm pr:land`'s own falsifier names "a landing that merges while a
-  # required context reads skipped". Rather than edit branch protection, the name stays
-  # and this job carries it: it passes only if every shard did, so the required context
-  # means exactly what it meant before, and `tests/contract/ci-gates/workflow-budgets.contract.test.ts`
-  # asserts each required name still resolves to a real job.
+  # `Unit · Contract` was a required status context on `main` before `Required checks`, and
+  # stays one until branch protection names that job alone. Sharding renamed it to three, and a
+  # required context that never reports again blocks every merge forever, so the name stays
+  # and this job carries it: it passes only if every shard did, and
+  # `tests/contract/ci-gates/workflow-budgets.contract.test.ts` asserts each required name still
+  # resolves to a real job.
   #
   # The sharded job keeps the key `unit`, not the name, because
   # `dead-code-gate-wiring` and `mcp-source-ci-deps` locate the job that installs and
