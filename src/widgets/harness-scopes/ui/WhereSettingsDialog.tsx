@@ -141,8 +141,8 @@ function ScopeDetail({
           {row.fileNote ? <span className="mt-1 block text-label text-[color:var(--color-text-tertiary)]">{say(row.fileNote)}</span> : null}
         </Fact>
         <Fact label={say({ key: 'scopes.label.affects' })}>
-          <span className="flex items-start justify-between gap-6">
-            <span className="min-w-0 max-w-[19rem]">{say(row.affects)}</span>
+          <span className="flex flex-col items-start gap-2.5">
+            <span className="min-w-0">{say(row.affects)}</span>
             <ReachGrid
               reach={row.reach}
               label={say(row.affects)}

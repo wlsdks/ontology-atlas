@@ -138,8 +138,8 @@ test.describe("Where settings live", () => {
     await expect(detail).toContainText("User");
     await expect(detail).toContainText("~/.claude/hooks/agent-status.sh");
     await expect(page.locator('[data-scope-heading="claude-user"]')).toBeVisible();
-    await expect(page.locator('[data-scope-file-note="truncated"]').first()).toContainText("훅 499개 중 처음 2개만");
-    await expect(page.locator('[data-scope-file-note="unknown-events"]').first()).toContainText("도구 문서에 없는 이벤트가 2개");
+    await expect(page.locator('[data-scope-file-note="truncated"]').first()).toContainText("이 파일의 훅 499개 중 처음 2개만");
+    await expect(page.locator('[data-scope-file-note="unknown-events"]').first()).toContainText("도구 문서에 없는 이벤트 2개");
 
     await detail.locator("[data-scope-explain-detail]").click();
     const dialog = page.getByTestId("where-settings");
