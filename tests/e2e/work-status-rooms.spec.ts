@@ -119,7 +119,7 @@ test.describe("work status rooms", () => {
           for (const face of element.querySelectorAll(":scope > [data-room-face]")) through *= 1 - Number(getComputedStyle(face).opacity);
           cover = Math.min(cover, 1 - through);
         }
-        const litGhost = [...document.querySelectorAll("[data-testid=work-building] [inert] [data-dark]")].some(scene => scene.getAttribute("data-dark") !== "true");
+        const litGhost = [...document.querySelectorAll("[data-testid=work-building] > [inert] [data-dark]")].some(scene => scene.getAttribute("data-dark") !== "true");
         frames.push({ cover, litGhost });
         if (frames.length < 600) requestAnimationFrame(sample);
       };
