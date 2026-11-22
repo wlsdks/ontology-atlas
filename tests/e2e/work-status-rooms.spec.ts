@@ -68,6 +68,96 @@ async function openWorkStatus(page: Page, rows: Row[]) {
 
 const room = (page: Page, branch: string) => page.getByTestId("work-room").filter({ hasText: branch });
 
+/** Three running rooms fill one stage row; four worktrees no session holds wait as mini rooms. */
+const SWAP = [
+  main,
+  working("feat/library-stage", CLAUDE),
+  working("feat/work-status-rooms", CLAUDE_LATER),
+  row("feat/map-light", { agentProcesses: [{ pid: 301, tool: "codex", startedAt: NOW_S - 3600 }] }),
+  ...["feat/idle-one", "feat/idle-two", "fix/idle-three", "fix/idle-four"].map((branch) => row(branch)),
+];
+
+const setRows = (page: Page, next: Row[]) =>
+  page.evaluate((rows) => (window as unknown as { __workStatusRows: (rows: unknown[]) => void }).__workStatusRows(rows), next);
+
+interface PaintFrame {
+  /** The most visible copies any one room had: its faces, and a copy on its way out. */
+  copies: number;
+  /** Pairs of rooms showing content whose boxes overlap. */
+  overlaps: number;
+  /** For each stage room drawn before the change: whether its box's centre is covered by some room. */
+  covered: boolean[];
+  litGhost: boolean;
+}
+
+/**
+ * Samples every frame from now on. A room is drawn by its plate; its content is any face with
+ * opacity. Before the change it notes the stage boxes, so a slot one room hands to another can be
+ * checked for a frame of bare background.
+ */
+async function startPaintSampler(page: Page) {
+  await page.evaluate(() => {
+    const rooms = () => [...document.querySelectorAll<HTMLElement>("[data-testid=work-building] [data-room-key], [data-testid=work-building] [data-ghost-key]")];
+    const keyOf = (element: HTMLElement) => element.dataset.roomKey ?? element.dataset.ghostKey ?? "";
+    const plateOf = (element: HTMLElement) => element.querySelector(":scope > [data-room-plate]")!.getBoundingClientRect();
+    const shown = (element: HTMLElement) => Number(getComputedStyle(element).opacity);
+    const content = (element: HTMLElement) =>
+      [...element.querySelectorAll<HTMLElement>(":scope > [data-room-face]")].map((face) => Number(getComputedStyle(face).opacity) * shown(element));
+    const slots = rooms().filter((element) => element.dataset.roomSize === "large").map((element) => {
+      const box = plateOf(element);
+      return { key: keyOf(element), x: box.x + box.width / 2, y: box.y + box.height / 2, box: [box.x, box.y, box.width, box.height] };
+    });
+    const frames: PaintFrame[] = [];
+    Object.assign(window, { __paint: { frames, slots } });
+    const sample = () => {
+      const all = rooms();
+      const copies = new Map<string, number>();
+      for (const element of all) copies.set(keyOf(element), (copies.get(keyOf(element)) ?? 0) + content(element).filter((value) => value > 0.05).length);
+      const showing = all.filter((element) => content(element).some((value) => value > 0.05)).map(plateOf);
+      let overlaps = 0;
+      for (let i = 0; i < showing.length; i += 1) {
+        for (let j = i + 1; j < showing.length; j += 1) {
+          const a = showing[i], b = showing[j];
+          const w = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+          const h = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+          if (w > 2 && h > 2) overlaps += 1;
+        }
+      }
+      const covered = slots.map((slot) => all.some((element) => {
+        if (shown(element) < 0.5) return false;
+        const box = plateOf(element);
+        return slot.x >= box.left && slot.x <= box.right && slot.y >= box.top && slot.y <= box.bottom;
+      }));
+      const litGhost = all.some((element) => element.dataset.ghostKey !== undefined && element.querySelector("[data-dark]")?.getAttribute("data-dark") === "false");
+      frames.push({ copies: Math.max(0, ...copies.values()), overlaps, covered, litGhost });
+      if (frames.length < 900) requestAnimationFrame(sample);
+    };
+    requestAnimationFrame(sample);
+  });
+}
+
+/** Every frame since the sampler started: one copy per room, no overlapping content, no bare handed-over slot. */
+async function expectCleanPaint(page: Page, { slots: handed = 0 } = {}) {
+  const { frames, handedOver } = await page.evaluate(() => {
+    const paint = (window as unknown as { __paint: { frames: PaintFrame[]; slots: { key: string; box: number[] }[] } }).__paint;
+    const now = [...document.querySelectorAll<HTMLElement>("[data-testid=work-building] [data-room-key][data-room-size=large]")].map((element) => {
+      const box = element.querySelector(":scope > [data-room-plate]")!.getBoundingClientRect();
+      return { key: element.dataset.roomKey!, box: [box.x, box.y, box.width, box.height] };
+    });
+    const present = new Set([...document.querySelectorAll<HTMLElement>("[data-room-key]")].map((element) => element.dataset.roomKey));
+    // A slot is handed over when another room stands in the same box now and its old room is still here.
+    const handedOver = paint.slots.flatMap((slot, index) =>
+      present.has(slot.key) && now.some((other) => other.key !== slot.key && other.box.every((value, axis) => Math.abs(value - slot.box[axis]) < 2)) ? [index] : []);
+    return { frames: paint.frames, handedOver };
+  });
+  expect(frames.length).toBeGreaterThan(60);
+  expect(handedOver).toHaveLength(handed);
+  expect.soft(frames.filter((frame) => frame.copies > 1), "frames with two copies of one room").toHaveLength(0);
+  expect.soft(frames.filter((frame) => frame.overlaps > 0), "frames where rooms overlap").toHaveLength(0);
+  expect.soft(frames.filter((frame) => handedOver.some((index) => !frame.covered[index])), "frames with a bare slot").toHaveLength(0);
+  expect.soft(frames.filter((frame) => frame.litGhost), "frames where a leaving room is lit").toHaveLength(0);
+}
+
 test.describe("work status rooms", () => {
   test("puts work on the stage, keeps a left lock as a mini and counts the rest on the shelf", async ({ page }) => {
     await openWorkStatus(page, SIX);
@@ -106,27 +196,11 @@ test.describe("work status rooms", () => {
     await expect(room(page, "feat/work-status-rooms")).toContainText("Claude Code 2");
   });
 
-  test("paints every room in every frame while a merge and a mini rising to the stage move the rooms", async ({ page }) => {
+  test("keeps one painted copy of each room, apart from the others, while a merge and a rise move them", async ({ page }) => {
     await openWorkStatus(page, SIX);
     await expect(room(page, "feat/library-stage")).toHaveAttribute("data-room-size", "large");
-    // Each frame: how much of each room its faces cover, and whether a room on its way out is still dark.
-    await page.evaluate(() => {
-      const frames: { cover: number; litGhost: boolean }[] = [];
-      (window as unknown as { __paint: typeof frames }).__paint = frames;
-      const sample = () => {
-        let cover = 1;
-        for (const element of document.querySelectorAll("[data-room-key]")) {
-          let through = 1;
-          for (const face of element.querySelectorAll(":scope > [data-room-face]")) through *= 1 - Number(getComputedStyle(face).opacity);
-          cover = Math.min(cover, 1 - through);
-        }
-        const litGhost = [...document.querySelectorAll("[data-testid=work-building] > [inert] [data-dark]")].some(scene => scene.getAttribute("data-dark") !== "true");
-        frames.push({ cover, litGhost });
-        if (frames.length < 600) requestAnimationFrame(sample);
-      };
-      requestAnimationFrame(sample);
-    });
-    await page.evaluate((next) => (window as unknown as { __workStatusRows: (rows: unknown[]) => void }).__workStatusRows(next), [
+    await startPaintSampler(page);
+    await setRows(page, [
       ...SIX.filter((entry) => entry.branch !== "feat/library-stage" && entry.branch !== "feat/harness-tab"),
       row("feat/library-stage", { standing: "merged", ahead: 0 }),
       working("feat/harness-tab", CLAUDE),
@@ -134,11 +208,21 @@ test.describe("work status rooms", () => {
     await expect(room(page, "feat/library-stage")).toHaveCount(0, { timeout: 10_000 });
     await expect(room(page, "feat/harness-tab")).toHaveAttribute("data-room-size", "large");
     await waitForAnimationsDone(page.getByTestId("work-building"));
+    await expectCleanPaint(page);
+  });
 
-    const frames = await page.evaluate(() => (window as unknown as { __paint: { cover: number; litGhost: boolean }[] }).__paint);
-    expect(frames.length).toBeGreaterThan(60);
-    expect(Math.min(...frames.map(frame => frame.cover))).toBeGreaterThanOrEqual(0.95);
-    expect(frames.filter(frame => frame.litGhost)).toHaveLength(0);
+  test("hands a stage slot from a room that stops to one that starts without a bare frame", async ({ page }) => {
+    await openWorkStatus(page, SWAP);
+    await expect(room(page, "feat/library-stage")).toHaveAttribute("data-room-size", "large");
+    await expect(room(page, "feat/idle-one")).toHaveAttribute("data-room-size", "mini");
+    await startPaintSampler(page);
+    await setRows(page, SWAP.map((entry) =>
+      entry.branch === "feat/library-stage" ? row("feat/library-stage")
+        : entry.branch === "feat/idle-one" ? working("feat/idle-one", CLAUDE) : entry));
+    await expect(room(page, "feat/idle-one")).toHaveAttribute("data-room-size", "large", { timeout: 10_000 });
+    await expect(room(page, "feat/library-stage")).toHaveAttribute("data-room-size", "mini");
+    await waitForAnimationsDone(page.getByTestId("work-building"));
+    await expectCleanPaint(page, { slots: 1 });
   });
 
   test("shows one room for the base branch when no worktree exists", async ({ page }) => {
