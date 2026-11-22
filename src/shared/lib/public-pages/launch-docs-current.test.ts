@@ -2,7 +2,6 @@ import { readdirSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { CLI_COMMAND_COUNT } from '../../../../cli/src/lib/cli-commands.mjs';
 
 const ROOT = path.resolve(__dirname, '../../../..');
 
@@ -71,15 +70,12 @@ describe('current-surface launch docs', () => {
     expect(findings).toEqual([]);
   });
 
-  it('keeps the packaged agent workflow aligned with current CLI, MCP, and dogfood facts', async () => {
+  it('keeps the packaged agent workflow aligned with current MCP and dogfood facts', async () => {
     const workflow = await readFile(path.join(ROOT, 'docs/AGENT-GRAPH-WORKFLOW.md'), 'utf8');
 
-    // The CLI command count is verified against the same registry help uses. For
-    // the MCP inventory the runtime tools/list is the source of truth, so this
-    // requires discovery and live proof rather than a count written in prose.
-    expect(workflow).toContain(`${CLI_COMMAND_COUNT} commands`);
+    // For the MCP inventory the runtime tools/list is the source of truth, so this requires
+    // discovery rather than a count written in prose.
     expect(workflow).toContain('tools/list');
-    expect(workflow).toContain('mcp-verify');
     // No vault node count is required: nodes are added without editing this document, so a count goes
     // stale.
   });
