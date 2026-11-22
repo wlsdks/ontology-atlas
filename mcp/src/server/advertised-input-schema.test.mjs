@@ -34,6 +34,10 @@ test('every stripped top-level pattern is still enforced before the handler', ()
       ['', `${field} must be a non-empty string.`],
       ['   ', `${field} must be a non-empty string.`],
       ['a\0b', `${field} must not contain a null byte.`],
+      ...['\n', '\r', '\u2028', '\u2029'].map((terminator) => [
+        `first${terminator}second`,
+        `${field} must be a single line: no line feed, carriage return, U+2028 or U+2029.`,
+      ]),
     ]) {
       assert.throws(() => normalizeToolArguments({ [field]: value }, tool), { message }, `${tool}.${field}`);
     }

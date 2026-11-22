@@ -11,6 +11,7 @@
 import { NON_BLANK_STRING_SCHEMA } from './tool-schemas/field-primitives.mjs';
 
 const NON_BLANK_PATTERN = NON_BLANK_STRING_SCHEMA.pattern;
+const NON_BLANK_REGEXP = new RegExp(NON_BLANK_PATTERN, 'u');
 const CHILD_MAPS = new Set(['properties', 'patternProperties']);
 const CHILD_LISTS = new Set(['anyOf', 'oneOf', 'allOf']);
 const CHILD_VALUES = new Set(['items', 'additionalProperties']);
@@ -61,8 +62,9 @@ function isTopLevelNonBlank(schema) {
 
 /**
  * Refuses a top-level string argument whose contract is non-blank and whose
- * advertised schema no longer carries the pattern, in the words
- * `requireNonBlankString` uses.
+ * advertised schema no longer carries the pattern: the specific messages
+ * `requireNonBlankString` uses first, then the pattern itself, so a value it
+ * refused (an interior line break among them) is still refused.
  */
 export function requireTopLevelNonBlankStrings(args, inputSchema) {
   for (const [name, schema] of Object.entries(inputSchema?.properties ?? {})) {
@@ -77,4 +79,7 @@ function requireNonBlank(value, name) {
     throw new Error(`${name} must not have leading or trailing whitespace. Example ${name}: ${JSON.stringify(value.trim())}.`);
   }
   if (value.includes('\0')) throw new Error(`${name} must not contain a null byte.`);
+  if (!NON_BLANK_REGEXP.test(value)) {
+    throw new Error(`${name} must be a single line: no line feed, carriage return, U+2028 or U+2029.`);
+  }
 }
