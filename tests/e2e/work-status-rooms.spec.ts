@@ -283,6 +283,7 @@ async function expectSmoothMotion(page: Page) {
   expect.soft(reversals.slice(0, 6), "rooms that turned back").toEqual([]);
   expect.soft(movesOf(frames).flatMap(spikesIn).slice(0, 6), "steps far faster than the rest of their move").toEqual([]);
   expect.soft(stopsBetween(movesOf(frames)).slice(0, 6), "moves that stopped and set off again").toEqual([]);
+  expect.soft(movesOf(frames).flatMap(dipsIn).slice(0, 6), "moves that all but stopped midway").toEqual([]);
 }
 
 interface Step { speed: number; at: number; px: number }
@@ -322,19 +323,40 @@ function movesOf(frames: PaintFrame[]): Move[] {
 }
 
 /**
- * A step more than three times the median step of its own move: a jump inside a glide. Each step's
- * pace is read over it and its neighbours, so an uneven frame is not a jump; a real one-frame jump of
- * a few hundred pixels still stands far above the steps around it.
+ * A step more than three times the median step of its own move and twice the mean of the steps either
+ * side of it: a jump inside a glide. A smooth peak, like the middle of a long ease, stands level with
+ * its neighbours and is no jump; a late frame is timed by its own interval, so it is none either.
  */
 function spikesIn({ key, steps }: Move): string[] {
   if (steps.length < 5) return [];
+  const median = [...steps].map((step) => step.speed).sort((a, b) => a - b)[Math.floor(steps.length / 2)];
+  return steps.flatMap((step, index) => {
+    const near = [steps[index - 1], steps[index + 1]].filter((other): other is Step => other !== undefined);
+    const around = near.reduce((sum, other) => sum + other.speed, 0) / near.length;
+    return step.speed > 3 * median && step.speed > 2 * around && step.speed > 0.5 ? [`${key} ${step.speed.toFixed(2)}px/ms at ${step.at}ms, median ${median.toFixed(2)}`] : [];
+  });
+}
+
+/**
+ * A step slower than 15% of its move's peak between the first and the last step that reach half of
+ * it: a move that all but stops midway, which reads as two moves. Paces are read over neighbours,
+ * as for spikes, so one uneven frame is no dip.
+ */
+function dipsIn(move: Move): string[] {
+  if (move.steps.length < 5) return [];
+  const paces = pacesOf(move.steps);
+  const peak = Math.max(...paces);
+  const [first, last] = [paces.findIndex((pace) => pace >= peak / 2), paces.findLastIndex((pace) => pace >= peak / 2)];
+  return move.steps.flatMap((step, index) => index > first && index < last && paces[index] < 0.15 * peak ? [`${move.key} ${paces[index].toFixed(2)}px/ms at ${step.at}ms, peak ${peak.toFixed(2)}`] : []);
+}
+
+/** Each step's pace over it and its neighbours. */
+function pacesOf(steps: Step[]): number[] {
   const dt = (step: Step) => step.px / step.speed;
-  const paces = steps.map((_, index) => {
+  return steps.map((_, index) => {
     const near = steps.slice(Math.max(0, index - 1), index + 2);
     return near.reduce((sum, step) => sum + step.px, 0) / near.reduce((sum, step) => sum + dt(step), 0);
   });
-  const median = [...paces].sort((a, b) => a - b)[Math.floor(paces.length / 2)];
-  return steps.flatMap((step, index) => paces[index] > 3 * median && paces[index] > 0.5 ? [`${key} ${paces[index].toFixed(2)}px/ms at ${step.at}ms, median ${median.toFixed(2)}`] : []);
 }
 
 /** A move that comes to rest and sets off again within 400 ms: two motions where one curve was meant. */
