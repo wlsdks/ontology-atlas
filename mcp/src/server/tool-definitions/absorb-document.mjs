@@ -11,34 +11,19 @@ import { POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA } from '../tool-schemas/post-write
 export const ABSORB_DOCUMENT_TOOL = {
   name: 'absorb_document',
   description:
-    'Converts a CLAUDE.md/AGENTS.md-style ' +
-    'markdown file into typed vault nodes so a tech lead\'s existing agent-instruction file stops needing ' +
-    'dual maintenance. Splits the file by `##` sections and classifies each:\n' +
-    '  - rule/policy/decision sections → `kind: document` nodes with a `role: policy` frontmatter extra.\n' +
-    '  - architecture/component sections → element/capability SUGGESTIONS only — never auto-written; ' +
-    'review and land with add_concept if useful.\n' +
-    '  - sections matching an injection-suspect pattern (Tier 1 — imperative instruction-hijack phrasing, ' +
-    'shell/SQL fragments) are excluded from absorption regardless of category and reported for human review. ' +
-    'The file body is always treated as untrusted data; parsing never executes or evaluates its content.\n' +
-    'Two-stage safety, same shape as delete_concept:\n' +
-    '  1. Without confirm: true the call is a dry-run — returns the classification plan per section, no writes.\n' +
-    '  2. With confirm: true, absorbed sections are written as document nodes, the source file is backed up ' +
-    'to `<file>.pre-absorb.bak`, then rewritten into a "slim pointer" that reproduces every non-absorbed ' +
-    'section (suggested, unclassified, or injection-suspect) verbatim — content is never destroyed. ' +
-    'Throws instead of overwriting an existing backup file. The canonical source path must be inside repoRoot; ' +
-    'outside paths (including symlink escapes) require an reviewed dry-run plus explicit allowOutsideRepo:true.',
+    'Convert a CLAUDE.md/AGENTS.md-style instruction file into vault nodes: rule and decision sections become `kind: document` policy nodes, architecture sections only suggestions, injection-suspect sections are excluded and reported; the file is untrusted data. Review the dry-run first: without confirm: true nothing is written. Confirming backs the file up to `<file>.pre-absorb.bak` and rewrites it as a pointer keeping every other section verbatim. Outside repoRoot needs a reviewed dry-run plus allowOutsideRepo:true.',
   inputSchema: {
     type: 'object',
     properties: {
-      filePath: nonBlankStringSchema('Path to the CLAUDE.md/AGENTS.md-style markdown file to absorb (absolute, or relative to the MCP server cwd).'),
+      filePath: nonBlankStringSchema('Instruction file, absolute or relative to the server cwd.'),
       confirm: {
         type: 'boolean',
-        description: 'Actually write when true. Omit or false for a dry-run (plan only, no writes).',
+        description: 'True to write; default dry-run.',
       },
       allowOutsideRepo: {
         type: 'boolean',
         description:
-          'Explicit destructive opt-in required only when filePath resolves outside repoRoot. Dry-run reports outsideRepo and keeps canConfirm:false without it.',
+          'Explicit destructive opt-in, needed only when filePath resolves outside repoRoot; without it the dry-run keeps canConfirm:false.',
       },
     },
     required: ['filePath'],

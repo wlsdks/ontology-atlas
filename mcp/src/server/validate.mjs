@@ -13,7 +13,8 @@ import {
   closestAllowedValue,
   formatAllowedValueError,
 } from '../suggestions.mjs';
-import { TOOL_BY_NAME } from './registry.mjs';
+import { requireTopLevelNonBlankStrings } from './advertised-input-schema.mjs';
+import { TOOL_BY_NAME, TOOL_INPUT_CONTRACT_BY_NAME } from './registry.mjs';
 import { BODY_DELIVERY_MODES } from './tool-schemas/vault-node-shapes.mjs';
 
 function normalizeToolArguments(args, toolName) {
@@ -48,6 +49,7 @@ function normalizeToolArguments(args, toolName) {
         `Unknown arguments for ${toolName}: ${unknownText}. Allowed arguments: ${allowedText}. Received arguments: ${receivedText}.`,
       );
     }
+    requireTopLevelNonBlankStrings(args, TOOL_INPUT_CONTRACT_BY_NAME.get(toolName));
   }
   return args;
 }
@@ -212,6 +214,7 @@ function closestAllowedObjectField(key, allowedKeys) {
 }
 
 export {
+  closestAllowedObjectField,
   normalizeToolArguments,
   requireOptionalNonNegativeNumber,
   requireOptionalNonNegativeInteger,

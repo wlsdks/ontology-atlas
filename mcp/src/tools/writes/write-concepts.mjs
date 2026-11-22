@@ -53,11 +53,12 @@ function vaultLocaleCodes(docs) {
  */
 configureNodeEligibilityRepoRoot(REPO_ROOT_IS_GROUNDED ? REPO_ROOT : null);
 
-function addConcept({ slug, kind, title, domain, capabilities, elements, path, body, labels }, options = {}) {
+function addConcept({ slug, kind, title, domain, domains, capabilities, elements, path, body, labels }, options = {}) {
   requireNonBlankString(slug, 'slug');
   requireNonBlankString(kind, 'kind');
   requireNonBlankString(title, 'title');
   if (domain !== undefined) requireNonBlankString(domain, 'domain');
+  requireOptionalStringArray(domains, 'domains', { max: GRAPH_REF_ARRAY_MAX_ITEMS });
   requireOptionalStringArray(capabilities, 'capabilities', { max: GRAPH_REF_ARRAY_MAX_ITEMS });
   requireOptionalStringArray(elements, 'elements', { max: GRAPH_REF_ARRAY_MAX_ITEMS });
   if (path !== undefined) requireNonBlankString(path, 'path');
@@ -72,6 +73,10 @@ function addConcept({ slug, kind, title, domain, capabilities, elements, path, b
   if (!ADD_CONCEPT_KINDS.has(kind)) {
     throw new Error(formatAllowedValueError('kind', kind, [...ADD_CONCEPT_KINDS]));
   }
+  // Only a project lists domains; every other kind names its one parent.
+  if (domains !== undefined && kind !== 'project') {
+    throw new Error(`domains lists a project's domains; a ${kind} names its one parent domain in \`domain\`.`);
+  }
   // The schema fills the per-kind shape so partial input still leaves consistent
   // frontmatter. `labels` become
   // `display_<locale>`; `title` stays the single source for search and identity.
@@ -81,6 +86,7 @@ function addConcept({ slug, kind, title, domain, capabilities, elements, path, b
     kind,
     title,
     domain,
+    domains,
     capabilities,
     elements,
     path,
@@ -162,6 +168,7 @@ function addConceptsBatch({ concepts }) {
         'kind',
         'title',
         'domain',
+        'domains',
         'capabilities',
         'elements',
         'path',
