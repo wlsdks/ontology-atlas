@@ -99,7 +99,7 @@ export function useRoomCopy(baseBranch: string, nowMs: number) {
           }
           : { ...quiet, label: t('monitor.running'), labelInk: true, aside: lastCommit(track), figure: commits(track), note: null, terminal: true };
       case 'resting':
-        return { ...quiet, label: t('monitor.idle'), aside: lockedAt(track), figure: commits(track) ?? t('room.resting'), note: sinceBase(track) };
+        return { ...quiet, label: t('monitor.idle'), aside: lockedAt(track), figure: commits(track) ?? t('room.resting'), note: sinceBase(track) ?? lastCommit(track) };
       case 'dozing':
         return { ...quiet, label: t('monitor.idle'), aside: lockedAt(track), figure: quietFor(state.quietSinceMs), note: sinceBase(track) };
       case 'merged':
