@@ -85,6 +85,11 @@ const CONCEPT_SPEC_SCHEMA: AgentJsonSchema = {
     kind: { type: 'string', enum: CONCEPT_KIND_VALUES },
     title: { type: 'string' },
     domain: { type: 'string' },
+    domains: {
+      type: 'array',
+      maxItems: GRAPH_REF_ARRAY_MAX_ITEMS,
+      items: { type: 'string' },
+    },
     capabilities: {
       type: 'array',
       maxItems: GRAPH_REF_ARRAY_MAX_ITEMS,
@@ -376,6 +381,12 @@ export const AGENT_WRITE_TOOLS: readonly AgentToolDefinition[] = [
           type: 'string',
           description:
             'Parent domain slug. Strongly expected for capability and element — without it the node floats orphaned.',
+        },
+        domains: {
+          type: 'array',
+          maxItems: GRAPH_REF_ARRAY_MAX_ITEMS,
+          items: { type: 'string' },
+          description: 'Domain slugs a project links.',
         },
         capabilities: {
           type: 'array',

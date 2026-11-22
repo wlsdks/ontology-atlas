@@ -24,48 +24,46 @@ import {
 export const COMPILE_ONTOLOGY_TOOL = {
   name: 'compile_ontology',
   description:
-    'Compile the whole markdown vault into a deterministic graph artifact: canonical nodes, edges, aliases, graph issues, graph-array canonicalization actions, and optional adjacency indexes. ' +
-    'This is the compiler-style read path for graph-database-like use: call it before advanced reasoning, indexing, export, or non-developer-friendly graph views. Includes a stable semantic graphHash and maxMtime for cache invalidation. side effect 0. ' +
-    'Large vaults (100+ nodes) can exceed the MCP token cap with the full payload. `summary: true` returns counts + graphHash + byKind/byDomain aggregates with no arrays, for cheap polling, and a call with no argument that asks for arrays returns the same bounded summary plus `delivery`, which names the two ways to the rest: `full: true` for every array, or `nodesLimit/nodesOffset` / `edgesLimit/edgesOffset` to slice them. The response includes `nodesPagination` / `edgesPagination` meta with `{offset, limit, total, returned, hasMore, nextOffset}` when sliced.',
+    'Compile the whole vault into a deterministic graph artifact (nodes, edges, aliases, issues, optional indexes) with a stable semantic graphHash and maxMtime, before export, indexing or whole-graph reasoning. side effect 0. Large vaults (100+ nodes) can exceed the MCP token cap: no argument returns a bounded summary plus `delivery`; `summary: true` counts only; `full: true` every array; `nodesLimit/nodesOffset`, `edgesLimit/edgesOffset` slice.',
   inputSchema: {
     type: 'object',
     properties: {
       includeIndexes: {
         type: 'boolean',
         description:
-          'When true, include indexes `{out, in, byKind, byDomain, edgeById, aliasToSlug, uidToSlug, slugToUid, mergedUidToSlug}`. Graph traversal remains slug-based; UID indexes provide exact identity resolution. Defaults false to keep payload smaller.',
+          'Include adjacency, kind, domain and alias/UID `indexes`.',
       },
       summary: {
         type: 'boolean',
         description:
-          'When true, omit `nodes` / `edges` / `aliases` / `ambiguousAliases` / `canonicalizationActions` / `indexes` arrays — return only `graphHash`, `maxMtime`, counts (`nodeCount`/`edgeCount`/`aliasCount`/...), and aggregate `byKind`/`byDomain` as counts. Cheap polling for cache invalidation and graph-size assessment. Wins over every other argument.',
+          'Counts, graphHash and maxMtime only: cheap polling for cache invalidation. Wins over every other argument.',
       },
       full: {
         type: 'boolean',
         description:
-          'When true, return every array however large the vault is (the answer without arguments is the bounded summary). Page arguments still slice nodes and edges.',
+          'Every array, however large; page arguments still slice.',
       },
       nodesLimit: {
         type: 'integer',
         minimum: 1,
         maximum: 500,
-        description: 'Positive integer max nodes to return. Pair with `nodesOffset` to paginate. Max 500; `full: true` without it returns every node.',
+        description: 'Nodes per page with `nodesOffset`.',
       },
       nodesOffset: {
         type: 'integer',
         minimum: 0,
-        description: 'Non-negative integer starting index in the sorted nodes array. Defaults 0.',
+        description: 'Start index in sorted nodes.',
       },
       edgesLimit: {
         type: 'integer',
         minimum: 1,
         maximum: 500,
-        description: 'Positive integer max edges to return. Pair with `edgesOffset` to paginate. Max 500.',
+        description: 'Edges per page with `edgesOffset`.',
       },
       edgesOffset: {
         type: 'integer',
         minimum: 0,
-        description: 'Non-negative integer starting index in the sorted edges array. Defaults 0.',
+        description: 'Start index in sorted edges.',
       },
     },
   },
@@ -320,9 +318,9 @@ export const COMPILE_ONTOLOGY_TOOL = {
 export const QUERY_ONTOLOGY_TOOL = {
   name: 'query_ontology',
   description:
-    'Read-only graph queries over the freshly compiled vault, for graph-database answers without the full compile_ontology payload. Nodes are canonical slugs or unique aliases. side effect 0.\n' +
-    'Operations: neighbors; path (one route); all_paths (bounded simple paths); explain_relation (direct edges, shortest path, shared neighbours); reachability; pattern_walk (follow a relation sequence); subgraph (N-hop slice); lineage; containment_tree; impact (what depends on a node); blast_radius (impact grouped by kind and domain); centrality; communities; components; cycles; topological_order; similar_nodes (duplicates before a write); relation_check (preflight before add_relation); recommend_relations; overview; schema (kind-relation-kind patterns); facets; match_nodes; match_edges; node_profile; domain_profile; domain_matrix; project_scope; project_map; builder_context (saved Workshop focus and layout); growth_plan (expansion candidates and the reads each `## Uncertainty` asks for); maintenance_plan (ordered repair actions); health; workspace_brief (first-contact status and next actions); agent_brief (coding-task handoff); meaning_repair_review (evidence pages for a meaningRepair); query_plan (cost estimate for targetOperation); analysis_history and analysis_record (the immutable analysis archive).\n' +
-    'Required: `slug` for neighbors, reachability, pattern_walk, impact, blast_radius, subgraph, builder_context, lineage, node_profile and domain_profile; `from` and `to` for path, all_paths and explain_relation; `pattern` for pattern_walk; `targetOperation` for query_plan; `recordId` for analysis_record; `project`, `reviewRevision` and, on the first page, `expectedGraphHash` and `expectedSourceFingerprint` for meaning_repair_review; `task` for agent_brief with detail:"compact". Every other argument names the operations it applies to.\n' +
+    'Answer one graph question over the freshly compiled vault (impact, paths, neighbourhoods, health, repair queue, first-contact and coding-task briefs) without the full compile_ontology payload. Read-only; side effect 0. Nodes are canonical slugs or unique aliases.\n' +
+    'Operations, besides the self-describing ones: impact (what depends on a node); blast_radius (impact by kind and domain); similar_nodes (duplicates before a write); relation_check (preflight before add_relation); growth_plan (the reads each `## Uncertainty` asks for); maintenance_plan (ordered repair actions); workspace_brief (first-contact status and next actions); agent_brief (coding-task handoff); query_plan (cost estimate).\n' +
+    'Required: `slug` for neighbors, reachability, pattern_walk, impact, blast_radius, subgraph, builder_context, lineage, node_profile and domain_profile; `from` and `to` for path, all_paths and explain_relation; `pattern` for pattern_walk; `targetOperation` for query_plan; `recordId` for analysis_record; `project`, `reviewRevision` and, on the first page, `expectedGraphHash` and `expectedSourceFingerprint` for meaning_repair_review; `task` for agent_brief with detail:"compact".\n' +
     'Rules: impact and blast_radius follow declared `depends_on` only; use reachability or subgraph for structure, and treat blast_radius risk as unknown until relation-level source receipts exist. A missing `depends_on` that relation_check finds is schema-only: `proposedAction` is null and its `approvalGate` writes nothing until the agent explains the observable ability and rationale and the human explicitly approves. For a known coding task call agent_brief with detail:"compact" and `task` right after connection_info, not after workspace_brief or a full inventory; pass `project` when the vault has more than one. Read its meaningRepair before repair step 2. Task matching selects persisted evidence only: it never searches the repository, never proves source behavior, never persists the task, never approves meaning and never writes. analysis_history and analysis_record return records, not approved facts; follow their pagination even past an empty filtered page.',
   inputSchema: {
     type: 'object',
@@ -334,52 +332,52 @@ export const QUERY_ONTOLOGY_TOOL = {
       targetOperation: {
         ...NON_BLANK_STRING_SCHEMA,
         enum: QUERY_PLAN_TARGET_OPERATIONS,
-        description: 'query_plan only: the operation to estimate.',
+        description: 'query_plan: operation to estimate.',
       },
-      recordId: nonBlankStringSchema('analysis_record only: the run or review UUID.'),
+      recordId: nonBlankStringSchema('analysis_record: run or review UUID.'),
       analysisMode: { type: 'string', enum: ['meaning', 'architecture'], description: 'analysis_history only.' },
-      analysisCursor: nonBlankStringSchema('analysis_history only: the previous page\'s nextCursor.'),
+      analysisCursor: nonBlankStringSchema('analysis_history: nextCursor.'),
       iterations: {
         type: 'integer',
         minimum: 1,
         maximum: 100,
-        description: 'centrality and communities only. Default 20.',
+        description: 'centrality, communities; default 20.',
       },
       slug: nonBlankStringSchema(
-        'The center or root node. builder_context also takes its Workshop focusParam (domain:auth); containment_tree takes it as an optional root.',
+        'Center or root node; builder_context also takes a focusParam (domain:auth).',
       ),
-      seed: nonBlankStringSchema('subgraph and builder_context: another name for slug.'),
-      candidateSlug: nonBlankStringSchema('similar_nodes only: the slug of a concept not yet written.'),
-      title: nonBlankStringSchema('similar_nodes only: the title of a concept not yet written.'),
+      seed: nonBlankStringSchema('subgraph, builder_context: alias of slug.'),
+      candidateSlug: nonBlankStringSchema('similar_nodes: slug not yet written.'),
+      title: nonBlankStringSchema('similar_nodes: title not yet written.'),
       from: NON_BLANK_STRING_SCHEMA,
       project: nonBlankStringSchema(
-        'Project root for domain_matrix, project_scope, project_map, agent_brief and meaning_repair_review; optional with exactly one project, except for meaning_repair_review.',
+        'Project for domain_matrix, project_scope, project_map, agent_brief, meaning_repair_review; optional with one project.',
       ),
       detail: {
         type: 'string',
         enum: ['compact', 'full'],
         description:
-          'agent_brief only: "compact" is a task-scoped handoff of at most 12000 UTF-8 bytes; "full", the default, is the complete diagnostic contract.',
+          'agent_brief: "compact" task handoff (≤12000 UTF-8 bytes) or "full" (default).',
       },
       task: {
         ...NON_BLANK_STRING_SCHEMA,
         maxLength: AGENT_BRIEF_TASK_MAX_CHARS,
         description:
-          'agent_brief detail:"compact" only: the coding task that selects persisted evidence. Never persisted, never behavior proof or approval.',
+          'agent_brief compact: the coding task; selects persisted evidence, never persisted.',
       },
       expectedGraphHash: nonBlankStringSchema(
-        'meaning_repair_review first page: graphHash from the meaningRepair provenance.',
+        'meaning_repair_review first page: meaningRepair graphHash.',
       ),
       expectedSourceFingerprint: nonBlankStringSchema(
-        'meaning_repair_review first page: sourceFingerprint from the meaningRepair provenance.',
+        'meaning_repair_review first page: meaningRepair sourceFingerprint.',
       ),
-      reviewRevision: nonBlankStringSchema('meaning_repair_review only: the sha256 revision from meaningRepair.'),
-      cursor: nonBlankStringSchema('meaning_repair_review only: pagination.nextCursor; omit on the first page.'),
+      reviewRevision: nonBlankStringSchema('meaning_repair_review: meaningRepair revision.'),
+      cursor: nonBlankStringSchema('meaning_repair_review: pagination.nextCursor after the first page.'),
       to: NON_BLANK_STRING_SCHEMA,
       direction: {
         type: 'string',
         enum: ['incoming', 'outgoing', 'both', 'undirected'],
-        description: 'undirected applies to path, all_paths, explain_relation and reachability.',
+        description: 'undirected: path, all_paths, explain_relation, reachability.',
       },
       types: {
         type: 'array',
@@ -391,7 +389,7 @@ export const QUERY_ONTOLOGY_TOOL = {
         type: 'array',
         maxItems: RELATION_TYPE_VALUES.length,
         items: { ...NON_BLANK_STRING_SCHEMA, enum: RELATION_TYPE_VALUES },
-        description: 'pattern_walk only: the relation sequence, e.g. ["domains", "capabilities", "elements"].',
+        description: 'pattern_walk: relation sequence, e.g. ["domains", "capabilities"].',
       },
       type: {
         ...nonBlankStringSchema('relation_check and match_edges.'),
@@ -401,14 +399,14 @@ export const QUERY_ONTOLOGY_TOOL = {
         ...nonBlankStringSchema('match_nodes filter; recommend_relations takes capability or element.'),
         enum: NODE_KIND_VALUES,
       },
-      domain: nonBlankStringSchema('match_nodes: exact domain filter. domain_profile: the domain.'),
-      slugContains: nonBlankStringSchema('match_nodes only: case-insensitive slug substring.'),
-      minDegree: { type: 'integer', minimum: 0, description: 'match_nodes only.' },
-      maxDegree: { type: 'integer', minimum: 0, description: 'match_nodes only.' },
-      minInDegree: { type: 'integer', minimum: 0, description: 'match_nodes only.' },
-      minOutDegree: { type: 'integer', minimum: 0, description: 'match_nodes only.' },
-      hasIncoming: { type: 'boolean', description: 'match_nodes only.' },
-      hasOutgoing: { type: 'boolean', description: 'match_nodes only.' },
+      domain: nonBlankStringSchema('match_nodes filter; domain_profile target.'),
+      slugContains: nonBlankStringSchema('match_nodes: slug substring.'),
+      minDegree: { type: 'integer', minimum: 0, description: 'match_nodes.' },
+      maxDegree: { type: 'integer', minimum: 0, description: 'match_nodes.' },
+      minInDegree: { type: 'integer', minimum: 0, description: 'match_nodes.' },
+      minOutDegree: { type: 'integer', minimum: 0, description: 'match_nodes.' },
+      hasIncoming: { type: 'boolean', description: 'match_nodes.' },
+      hasOutgoing: { type: 'boolean', description: 'match_nodes.' },
       sort: {
         type: 'string',
         enum: ['degree', 'inDegree', 'outDegree', 'slug'],
@@ -423,33 +421,32 @@ export const QUERY_ONTOLOGY_TOOL = {
         enum: EDGE_TARGET_KIND_VALUES,
       },
       relation: {
-        ...nonBlankStringSchema('relation_check: another name for type.'),
+        ...nonBlankStringSchema('relation_check: alias of type.'),
         enum: RELATION_TYPE_VALUES,
       },
       depth: {
         type: 'integer',
         minimum: 0,
         maximum: 20,
-        description: 'Traversal depth: default 3 for reachability, 2 for impact, blast_radius and subgraph, 20 for lineage and containment_tree.',
+        description: 'Default 3 reachability, 2 impact/blast_radius/subgraph, 20 lineage.',
       },
       maxHops: {
         type: 'integer',
         minimum: 0,
         maximum: 20,
-        description: 'Hop cap: default 5 for path, all_paths and explain_relation, 8 for cycles.',
+        description: 'Default 5 path/all_paths/explain_relation, 8 cycles.',
       },
       searchBudget: {
         type: 'integer',
         minimum: 1,
         maximum: 50000,
-        description:
-          'all_paths, query_plan(all_paths) and cycles: search states to expand, default 5000. When truncatedByBudget is true the counts are lower bounds and zero cycles does NOT mean acyclic.',
+        description: 'all_paths, cycles: default 5000. With truncatedByBudget counts are lower bounds; zero cycles does NOT mean acyclic.',
       },
-      includeExternal: { type: 'boolean', description: 'neighbors only: include external path-like element refs.' },
-      includeUnresolved: { type: 'boolean', description: 'neighbors only: include dangling refs.' },
-      includeIsolated: { type: 'boolean', description: 'topological_order only: include nodes the selected types leave unconnected.' },
-      includeOrphans: { type: 'boolean', description: 'containment_tree only: include nodes no project root reaches.' },
-      executableOnly: { type: 'boolean', description: 'maintenance_plan only: just the actions with a proposed tool call.' },
+      includeExternal: { type: 'boolean', description: 'neighbors: include external element refs.' },
+      includeUnresolved: { type: 'boolean', description: 'neighbors: include dangling refs.' },
+      includeIsolated: { type: 'boolean', description: 'topological_order: include unconnected nodes.' },
+      includeOrphans: { type: 'boolean', description: 'containment_tree: include nodes no project reaches.' },
+      executableOnly: { type: 'boolean', description: 'maintenance_plan: only actions with a proposed call.' },
       phases: {
         type: 'array',
         maxItems: MAINTENANCE_PHASE_VALUES.length,
@@ -469,61 +466,61 @@ export const QUERY_ONTOLOGY_TOOL = {
         description: 'maintenance_plan only.',
       },
       afterActionId: nonBlankStringSchema(
-        'maintenance_plan only: resume after this action id; pass cursor.nextAfterActionId while cursor.hasMore. An unknown id returns an empty page with cursor.found=false.',
+        'maintenance_plan: resume after this id; pass cursor.nextAfterActionId while cursor.hasMore. An unknown id returns an empty page with cursor.found=false.',
       ),
       limit: {
         type: 'integer',
         minimum: 1,
         maximum: 500,
-        description: 'Rows to return, default 100; analysis_history scans 1-100 files, default 30.',
+        description: 'Rows, default 100; analysis_history files 1-100, default 30.',
       },
       nodeLimit: {
         type: 'integer',
         minimum: 1,
         maximum: 500,
-        description: 'Node summaries per group: components and communities (default 25), health/workspace_brief/agent_brief (default 10).',
+        description: 'Node summaries per group; default 25 for components/communities, 10 for health/workspace_brief/agent_brief.',
       },
       itemLimit: {
         type: 'integer',
         minimum: 1,
         maximum: 500,
-        description: 'project_map only: summaries per domain. Default 20.',
+        description: 'project_map: per domain, default 20.',
       },
       componentLimit: {
         type: 'integer',
         minimum: 1,
         maximum: 500,
-        description: 'health/workspace_brief/agent_brief: components to inspect. Default 5.',
+        description: 'health/workspace_brief/agent_brief: components, default 5.',
       },
       cycleLimit: {
         type: 'integer',
         minimum: 1,
         maximum: 500,
-        description: 'health/workspace_brief/agent_brief: dependency cycles to inspect. Default 5.',
+        description: 'health/workspace_brief/agent_brief: cycles, default 5.',
       },
       recommendationLimit: {
         type: 'integer',
         minimum: 1,
         maximum: 500,
-        description: 'health/workspace_brief/agent_brief: relation recommendations to inspect. Default 20.',
+        description: 'health/workspace_brief/agent_brief: recommendations, default 20.',
       },
       orderLimit: {
         type: 'integer',
         minimum: 1,
         maximum: 500,
-        description: 'health/workspace_brief/agent_brief: topological-order rows to inspect. Default 20.',
+        description: 'health/workspace_brief/agent_brief: order rows, default 20.',
       },
       dependencyTypes: {
         type: 'array',
         maxItems: RELATION_TYPE_VALUES.length,
         items: { ...NON_BLANK_STRING_SCHEMA, enum: RELATION_TYPE_VALUES },
-        description: 'health/workspace_brief/agent_brief: types for the cycle and order checks. Default ["dependencies"].',
+        description: 'health/workspace_brief/agent_brief: cycle and order types, default ["dependencies"].',
       },
       componentTypes: {
         type: 'array',
         maxItems: RELATION_TYPE_VALUES.length,
         items: { ...NON_BLANK_STRING_SCHEMA, enum: RELATION_TYPE_VALUES },
-        description: 'health/workspace_brief/agent_brief: types for the component check. Default all.',
+        description: 'health/workspace_brief/agent_brief: component types, default all.',
       },
     },
     required: ['operation'],

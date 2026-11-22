@@ -10,15 +10,12 @@ import { WRITE_FINDINGS_GUIDANCE, WRITE_FINDINGS_SCHEMA } from './write-concepts
 export const ADD_RELATION_TOOL = {
   name: 'add_relation',
   description:
-    'Add a semantic relation between two nodes. Appends to the matching ' +
-    'frontmatter graph key (domains / capabilities / elements / dependencies / relates / contains / describes); ' +
-    '`domain` sets the source node\'s inline parent domain. The relation type picks which key receives the entry. ' +
-    'A new `depends_on` relation requires a nonblank `why`; an already-existing edge remains an idempotent read even if legacy data has no rationale. **R11**: optional ' +
-    '`expected_mtime` — pass the source-side `mtime` from a prior get_concept or from this tool\'s last result ' +
-    'so concurrent external edits throw VaultConflictError. The result carries `mtime` only when the call passed a matching `expected_mtime`: an unguarded relation write never read the body, so its mtime cannot guard a later body write. `contains` between kinds a typed key fits (project→domain, project/domain→capability, project/domain/capability→element) is written as that typed key and the result says so in `notice`. ' +
-    'Invalid relation `type` is rejected before endpoint slug resolution with a closest-value hint and structured `valueName` / `receivedValue` / `suggestion` / `allowedValues` repair fields in `structuredContent`, with no `changed`, `alreadyExists`, or `findings` write metadata. ' +
+    'Add one typed relation between two existing nodes, written to the source node\'s matching frontmatter key; `domain` sets its inline parent domain. ' +
+    'A new `depends_on` requires a nonblank `why`; an existing edge is an idempotent read. `contains` between kinds a typed key fits is written as that key, said in `notice`. ' +
+    'Pass `expected_mtime` (the source mtime from get_concept or the last write) to throw VaultConflictError on concurrent edits; `mtime` is returned only for a guarded call. ' +
+    'An invalid `type` is rejected before endpoint slug resolution with a closest-value hint and `allowedValues`, with no `changed`, `alreadyExists`, or `findings` write metadata. ' +
     'Changed writes return ' + WRITE_FINDINGS_GUIDANCE + '. ' +
-    '**For multiple already-approved semantic edges use `add_relations({relations: [...]})` (batch, idempotent, max 50). `infer_imports.moduleEdges` require exact-evidence review, a semantic rationale, and human approval first.**',
+    'For several approved edges use `add_relations` (max 50). `infer_imports.moduleEdges` need exact-evidence review, a `why`, and human approval first.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -30,13 +27,13 @@ export const ADD_RELATION_TOOL = {
         type: 'string',
         maxLength: 300,
         description:
-          'One-line rationale for this relation ("A leans on B because ..."). Stored in the SAME frontmatter write as the ref (relation_notes map) — write it whenever you know the reason; a graph edge without a why is a mind-map line, not an ontology claim.',
+          'One-line rationale ("A leans on B because ..."), stored in relation_notes in the same write. Required for a new depends_on.',
       },
       expected_mtime: {
         type: 'number',
         minimum: 0,
         description:
-          'Optional conflict guard for the source slug. If the source mtimeMs differs at write time, the call throws.',
+          'Conflict guard: the source slug\'s mtime.',
       },
     },
     required: ['from', 'to', 'type'],
@@ -62,14 +59,11 @@ export const ADD_RELATION_TOOL = {
 export const ADD_RELATIONS_TOOL = {
   name: 'add_relations',
   description:
-    'Batch-add multiple relations in one call — same per-row shape as `add_relation`. ' +
-    'Use after `analyze_repo_structure` or another review flow when the agent has K semantic edges accepted by the user — replaces K×`add_relation` round-trips. Inferred module edges are not accepted merely because imports exist; review exact evidence and include the required nonblank `why` for every new `depends_on`. ' +
-    'Each row is processed independently and idempotently: existing edges return `{ok: true, alreadyExists: true}`; ' +
-    'missing source/target slugs / unknown type / non-object row shape / unknown row fields surface as `{ok: false, error}` with a `relations[n]` row label and structured `rowName`; unknown type rows include a closest-value hint with structured `valueName` / `receivedValue` / `suggestion` / `allowedValues`; single unknown-field rows include `receivedField` plus one-row `unknownFields`; multi unknown-field rows report every unknown field with nearest hints, `allowedFields`, `receivedFields`, and `Received fields: ...`. ' +
-    '`relations[]` order in the response matches the input; `mtimes` maps each changed source slug whose first changed row passed `expected_mtime` to its mtime after the last row, ready as the next `expected_mtime`; a source no row guarded has no entry. Cap = 50 per call. ' +
-    'NO atomic rollback — for all-or-nothing semantics use single `add_relation` calls. ' +
-    'Tip: when several rows share one `from`, pass `expected_mtime` on its first row only — ' +
-    'the first row mutates that file so a later row would see a stale mtime. Invalid-only batches return no row-level `changed` / `alreadyExists` write metadata and no top-level `findings`. When at least one row changes the vault, the response includes ' + WRITE_FINDINGS_GUIDANCE + '.',
+    'Add several typed relations in one call (max 50), each row shaped like `add_relation`; use it for the edges of a construction batch. ' +
+    'Give every new `depends_on` a nonblank `why`; an edge from imports alone, such as `infer_imports.moduleEdges`, needs exact-evidence review and the user\'s acceptance first. ' +
+    'Rows are independent, idempotent and not rolled back: an existing edge returns `alreadyExists: true`; a bad row (missing slug, unknown type, unknown field) returns `{ok: false, error}` labelled `relations[n]` with a closest-value hint and repair fields, in input order. ' +
+    '`mtimes` maps each source whose first changed row passed `expected_mtime` to its new mtime; when rows share one `from`, guard only its first row. ' +
+    'Invalid-only batches return no row-level `changed` / `alreadyExists` write metadata and no top-level `findings`; otherwise the response includes ' + WRITE_FINDINGS_GUIDANCE + '.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -85,14 +79,14 @@ export const ADD_RELATIONS_TOOL = {
             why: {
               type: 'string',
               maxLength: 300,
-              description: 'One-line rationale stored with the relation in relation_notes. Required at runtime for every new depends_on row.',
+              description: 'One-line rationale stored in relation_notes; required for a new depends_on.',
             },
             expected_mtime: { type: 'number', minimum: 0 },
           },
           required: ['from', 'to', 'type'],
           additionalProperties: false,
         },
-        description: 'Array of relation specs (max 50). Each row uses the same shape as `add_relation` input.',
+        description: 'Rows shaped like `add_relation` input.',
       },
     },
     required: ['relations'],
@@ -163,7 +157,7 @@ export const REMOVE_RELATION_TOOL = {
       from: NON_BLANK_STRING_SCHEMA,
       to: NON_BLANK_STRING_SCHEMA,
       type: ADD_RELATION_TYPE_SCHEMA,
-      confirm: { type: 'boolean', description: 'Actually remove when true; default is dry-run.' },
+      confirm: { type: 'boolean', description: 'True to write; default dry-run.' },
       expected_mtime: { type: 'number', minimum: 0 },
     },
     required: ['from', 'to', 'type'],

@@ -18,7 +18,7 @@ export function conceptSearchToolsSchemaFailure(tools) {
   const findEvidenceTitleSchema = propertyAt(findEvidenceTool, ['properties', 'title']);
   if (
     findEvidenceTitleSchema?.type !== 'string' ||
-    findEvidenceTitleSchema.minLength !== 1 ||
+    (findEvidenceTitleSchema.minLength ?? 1) !== 1 ||
     !/case-insensitive substring match/i.test(findEvidenceTitleSchema.description || '')
   ) {
     return 'find_evidence inputSchema title guidance drift';
@@ -93,7 +93,7 @@ export function conceptSearchToolsSchemaFailure(tools) {
   const findBacklinksSlugSchema = propertyAt(findBacklinksTool, ['properties', 'slug']);
   if (
     findBacklinksSlugSchema?.type !== 'string' ||
-    findBacklinksSlugSchema.minLength !== 1 ||
+    (findBacklinksSlugSchema.minLength ?? 1) !== 1 ||
     !/Target vault-relative slug/i.test(findBacklinksSlugSchema.description || '') ||
     !/omit the \.md extension/i.test(findBacklinksSlugSchema.description || '')
   ) {
@@ -148,8 +148,7 @@ export function conceptSearchToolsSchemaFailure(tools) {
     neighborsLimitInputSchema?.type !== 'integer' ||
     neighborsLimitInputSchema.minimum !== 1 ||
     neighborsLimitInputSchema.maximum !== 500 ||
-    !/Defaults to 100/i.test(neighborsLimitInputSchema?.description ?? '') ||
-    !/max 500/i.test(neighborsLimitInputSchema?.description ?? '')
+    !/defaults? (to )?100/i.test(neighborsLimitInputSchema?.description ?? '')
   ) {
     return 'find_neighbors inputSchema limit default description drift';
   }
@@ -232,8 +231,7 @@ export function conceptSearchToolsSchemaFailure(tools) {
     findPathMaxHopsSchema?.type !== 'integer' ||
     findPathMaxHopsSchema.minimum !== 0 ||
     findPathMaxHopsSchema.maximum !== 20 ||
-    !/default 5/i.test(findPathMaxHopsSchema?.description ?? '') ||
-    !/max 20/i.test(findPathMaxHopsSchema?.description ?? '')
+    !/default 5/i.test(findPathMaxHopsSchema?.description ?? '')
   ) {
     return 'find_path inputSchema maxHops default description drift';
   }
@@ -323,8 +321,7 @@ export function conceptSearchToolsSchemaFailure(tools) {
     queryLimitSchema?.type !== 'integer' ||
     queryLimitSchema.minimum !== 1 ||
     queryLimitSchema.maximum !== 500 ||
-    !/Defaults to 100/i.test(queryLimitSchema.description || '') ||
-    !/max 500/i.test(queryLimitSchema.description || '')
+    !/defaults? (to )?100/i.test(queryLimitSchema.description || '')
   ) {
     return 'query_concepts inputSchema limit default description drift';
   }

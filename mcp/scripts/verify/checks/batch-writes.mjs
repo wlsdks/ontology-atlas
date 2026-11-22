@@ -77,7 +77,7 @@ export function batchRowIsolationFailure(response, key, label) {
         ['titel', 'title'],
         ['domian', 'domain'],
       ]) ||
-      !sameArray(unknownFieldRow.allowedFields, ['slug', 'kind', 'title', 'domain', 'capabilities', 'elements', 'path', 'body', 'labels']) ||
+      !sameArray(unknownFieldRow.allowedFields, ['slug', 'kind', 'title', 'domain', 'domains', 'capabilities', 'elements', 'path', 'body', 'labels']) ||
       !sameArray(unknownFieldRow.receivedFields, ['domian', 'kind', 'slug', 'titel', 'title'])
     )
   ) {
@@ -93,7 +93,7 @@ export function batchRowIsolationFailure(response, key, label) {
       singleUnknownFieldRow.rowName !== 'concepts[4]' ||
       singleUnknownFieldRow.receivedField !== 'titel' ||
       !sameUnknownFields(singleUnknownFieldRow.unknownFields, [['titel', 'title']]) ||
-      !sameArray(singleUnknownFieldRow.allowedFields, ['slug', 'kind', 'title', 'domain', 'capabilities', 'elements', 'path', 'body', 'labels']) ||
+      !sameArray(singleUnknownFieldRow.allowedFields, ['slug', 'kind', 'title', 'domain', 'domains', 'capabilities', 'elements', 'path', 'body', 'labels']) ||
       !sameArray(singleUnknownFieldRow.receivedFields, ['kind', 'slug', 'titel', 'title'])
     )
   ) {
