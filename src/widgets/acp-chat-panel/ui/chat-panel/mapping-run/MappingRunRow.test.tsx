@@ -70,7 +70,7 @@ describe('before a press the row offers Start', () => {
   it('states the count, the estimate and, with Auto-approve off, that each change waits', () => {
     const on = renderRow(null);
     expect(text('mapping-run-title')).toBe('Map the rest of the code');
-    expect(text('mapping-run-body')).toBe('24 of the 120 abilities found in the code are on the map (20%). About 8 requests to your agent, about 24 minutes.');
+    expect(text('mapping-run-body')).toBe('24 of the 120 abilities found in the code are on the map (20%). About 6 requests to your agent, about 24 minutes.');
     expect(text('mapping-run-approval')).toBe('Each change waits for your answer. With Auto-approve on, it runs by itself.');
     expect(screen.getByRole('button', { name: 'Start' })).toBe(action());
     fireEvent.click(screen.getByTestId('mapping-run-title'));
@@ -151,7 +151,7 @@ describe('before a press the row offers Start', () => {
   it('speaks Korean', () => {
     renderRow(null, { locale: 'ko' });
     expect(text('mapping-run-title')).toBe('코드의 나머지를 지도에 올리기');
-    expect(text('mapping-run-body')).toBe('코드에서 찾은 기능 120개 중 24개(20%)가 지도에 있어요. 에이전트 요청 약\u00a08번, 24분 정도 걸려요.');
+    expect(text('mapping-run-body')).toBe('코드에서 찾은 기능 120개 중 24개(20%)가 지도에 있어요. 에이전트 요청 약\u00a06번, 24분 정도 걸려요.');
     expect(text('mapping-run-approval')).toBe('바꿀 때마다 답을 기다려요. 자동 승인을 켜면 혼자 진행해요.');
     expect(text('mapping-run-action')).toBe('시작');
     expect(screen.getByRole('button', { name: '간단히 보기' })).toBeInTheDocument();

@@ -10,7 +10,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 /** Abilities one request was measured to put on the map; the app's estimate is ceil(R / this). */
-const ABILITIES_PER_REQUEST = 13;
+const ABILITIES_PER_REQUEST = 18;
 /** The most abilities one request put on the map: a line gone after a larger count was lost, not finished. */
 const ABILITIES_ONE_REQUEST_REACHES = 31;
 /** The app sends at most this many requests per press, whatever the note says. */
@@ -30,7 +30,7 @@ function readLedger(out) {
   return readFileSync(ledgerPath(out), 'utf8').split('\n').filter((line) => line.trim()).map((line) => JSON.parse(line));
 }
 
-/** The request number allowed by `min(2 × ceil(R / 13) + 2, 100)`, the app's stop for a run past its estimate. */
+/** The request number allowed by `min(2 × ceil(R / 18) + 2, 100)`, the app's stop for a run past its estimate. */
 export function requestCeiling(uncoveredAtStart) {
   return Math.min(2 * Math.ceil(uncoveredAtStart / ABILITIES_PER_REQUEST) + 2, REQUESTS_AT_MOST);
 }

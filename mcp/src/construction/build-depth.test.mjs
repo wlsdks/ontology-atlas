@@ -305,23 +305,28 @@ test('with every area mapped, a project that still keeps the lines is told to re
 });
 
 /*
- * One press is one request for at most twelve files with no node, across at
- * most six areas, largest area first and the first area always.
+ * One press is one request for at most eighteen files with no node, across at
+ * most seven areas, largest area first and the first area always.
  */
-test('one request names the files with no node: the first area\'s twelve with most abilities, else up to twelve files across six areas', () => {
+test('one request names the files with no node: the first area\'s eighteen with most abilities, else up to eighteen files across seven areas', () => {
   const filesIn = (path, counts) => Object.fromEntries(counts.map((count, index) => [`${path}/f${String(index).padStart(2, '0')}.go`, count]));
   const batchOf = (areas) => measureBuildDepth([doc('project', {})], { ...abilityRepo, survey: { abilities: [], areas } }, null);
-  const large = batchOf([areaOf('core', 100, filesIn('core', [1, 1, 1, 9, 8, 7, 6, 5, 4, 3, 2, 2, 2, 2, 2])), areaOf('auth', 50, filesIn('auth', [3]))]);
-  assert.deepEqual(large.areaBatch.map((area) => [area.path, area.batchFiles.length]), [['core', 12]]);
+  const large = batchOf([areaOf('core', 100, filesIn('core', [1, 1, 1, 9, 8, 7, 6, 5, 4, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2])), areaOf('auth', 50, filesIn('auth', [3]))]);
+  assert.deepEqual(large.areaBatch.map((area) => [area.path, area.batchFiles.length]), [['core', 18]]);
   assert.deepEqual(large.areaBatch[0].batchFiles.slice(0, 3).map((file) => file.abilities), [9, 8, 7], 'most abilities first');
   assert.ok(!large.areaBatch[0].batchFiles.some((file) => file.abilities === 1), 'the files holding fewest wait for the next request');
-  assert.match(large.line, /Map next, in one request, the 12 files with no node, in core\/: f03\.go \(9 abilities\), f04\.go \(8 abilities\), [^;]*\. Open their areas: analyze_repo_structure\([^)]*\)\. Then/);
-  const filled = batchOf([areaOf('a', 30, filesIn('a', [5, 5, 5, 5, 5])), areaOf('b', 20, filesIn('b', [4, 4, 4, 4, 4])), areaOf('c', 10, filesIn('c', [3, 3, 3, 3, 3]))]);
-  assert.deepEqual(filled.areaBatch.map((area) => [area.path, area.batchFiles.length]), [['a', 5], ['b', 5], ['c', 2]], 'twelve files across areas');
-  assert.equal(filled.line.match(/Open their areas: ([^\n]*?)\. Then/)[1].split('; ').length, 3, 'one open call per area in the batch');
-  assert.match(filled.line, /the 12 files with no node, in a\/: f00\.go \(5 abilities\), .*; in b\/: .*; in c\/: f00\.go \(3 abilities\), f01\.go \(3 abilities\)\. Open/, 'each area writes its files from its folder');
+  assert.match(large.line, /Map next, in one request, the 18 files with no node, in core\/: f03\.go \(9 abilities\), f04\.go \(8 abilities\), [^;]*\. Open their areas: analyze_repo_structure\([^)]*\)\. Then/);
+  const filled = batchOf([
+    areaOf('a', 30, filesIn('a', [5, 5, 5, 5, 5])),
+    areaOf('b', 20, filesIn('b', [4, 4, 4, 4, 4])),
+    areaOf('c', 15, filesIn('c', [3, 3, 3, 3, 3])),
+    areaOf('d', 10, filesIn('d', [2, 2, 2, 2, 2])),
+  ]);
+  assert.deepEqual(filled.areaBatch.map((area) => [area.path, area.batchFiles.length]), [['a', 5], ['b', 5], ['c', 5], ['d', 3]], 'eighteen files across areas');
+  assert.equal(filled.line.match(/Open their areas: ([^\n]*?)\. Then/)[1].split('; ').length, 4, 'one open call per area in the batch');
+  assert.match(filled.line, /the 18 files with no node, in a\/: f00\.go \(5 abilities\), .*; in c\/: .*; in d\/: f00\.go \(2 abilities\), f01\.go \(2 abilities\), f02\.go \(2 abilities\)\. Open/, 'each area writes its files from its folder');
   const many = batchOf(Array.from({ length: 9 }, (_, index) => areaOf(`tool${index}`, 100 - index, { [`tool${index}/main.go`]: 1 })));
-  assert.deepEqual(many.areaBatch.map((area) => area.path), ['tool0', 'tool1', 'tool2', 'tool3', 'tool4', 'tool5'], 'six areas at most');
+  assert.deepEqual(many.areaBatch.map((area) => area.path), ['tool0', 'tool1', 'tool2', 'tool3', 'tool4', 'tool5', 'tool6'], 'seven areas at most');
 });
 
 test('finalize refuses until the project keeps the measured summary line, and only while areas are not mapped yet', () => {

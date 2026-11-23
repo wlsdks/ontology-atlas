@@ -55,9 +55,9 @@ far it has come.
    continues. The one-request suggestion row is removed. Leaving the map or closing the dock
    keeps the run; the work card and the map tile's ring carry it on every other screen.
 8. **Any Stop ends the whole run**: the row, the composer's Stop, the card, the Runs list.
-9. **The estimate is requests and minutes, never money**: `ceil(R / 13)` requests at three
-   minutes each before the first request (measured on two chains: 12.5 and 13.2 abilities
-   gained per request, 142 to 242 seconds each), then the run's own rate. One press sends at
+9. **The estimate is requests and minutes, never money**: `ceil(R / 18)` requests at four
+   minutes each before the first request (measured on two eighteen-file chains: 17.8 and 18.3
+   abilities gained per request, 181 to 242 seconds each), then the run's own rate. One press sends at
    most `min(2 × estimate + 2, 100)` requests.
 10. **Motion.** The count moves once per request, the activity line at most once a second, and
     nothing ticks per second while a request reads: the installed app pays about 0.7 percent
@@ -148,3 +148,12 @@ folder".
 - 2026-11-24: after a second review, the row reads the folder's kept Auto-approve and states
   what it passes (adding and changing); an unreadable note stops as `lineLost`; Continue after
   it adopts the line it reads; a cancel nobody pressed has its own reason.
+- 2026-11-24: one request now names at most eighteen files across seven areas and asks for at
+  most eighteen capabilities, and the estimate moved from 13 to 18 abilities and from three to
+  four minutes per request. Two arms on the same Java map (Apache Fineract, Claude Opus, four
+  requests each, from 203 of 376 abilities off the map): twelve files mapped 48 abilities, 12
+  per request, in 691 s for $6.62 ($0.138 per ability), all 27 new capabilities citing read
+  lines; eighteen files mapped 71 ($8.11, 35 of 38 new capabilities cited) and 73 (18 per
+  request, 861 s, $7.89, $0.108 per ability, all 42 cited), 181 to 242 s per request. An
+  earlier 24-file arm cited 62 percent, below the 80 percent bar. No eighteen-file request
+  mapped more than 20, so 31 stays the most one request was measured to finish.
