@@ -40,6 +40,13 @@ async function requestEnds(page: Page, uncovered: number | null) {
 
 const row = (page: Page) => page.getByTestId('mapping-run-row');
 
+/** The requests the open conversation shows: one line each, never the instruction the agent receives. */
+const requestLines = (page: Page) => page.getByTestId('acp-chat-panel').locator('[data-acp-entry="user"]');
+async function expectOneRequestLine(page: Page, part: number) {
+  await expect(requestLines(page)).toHaveText([`Map the rest of the code · request ${part}`]);
+  await expect(page.getByTestId('acp-chat-panel')).not.toContainText('Map the next part now');
+}
+
 async function openMapConversation(page: Page) {
   await page.setViewportSize({ width: 1512, height: 982 });
   await seedFirstRunSeen(page);
@@ -57,24 +64,34 @@ async function press(page: Page) {
   await expect(row(page)).toHaveAttribute('data-mapping-state', 'running');
 }
 
-async function longestFrameDuring(page: Page, act: () => Promise<void>) {
+/**
+ * The longest frame interval while the row's own count or bar was moving, and how many frames it
+ * moved for: the turn's closing work and the folder's reload are timed to pass before it moves.
+ */
+async function longestRowMotionFrame(page: Page, act: () => Promise<void>) {
   await page.evaluate(() => {
-    const log = window as unknown as { __frames: number[]; __framesOn: boolean };
+    const log = window as unknown as { __frames: Array<[number, boolean]>; __framesOn: boolean };
     log.__frames = [];
     log.__framesOn = true;
     const tick = (time: number) => {
-      log.__frames.push(time);
+      const moving = document.querySelector('[data-testid="mapping-run-row"]')?.getAnimations({ subtree: true })
+        .some((animation) => animation.playState === 'running' && animation.effect?.getTiming().iterations !== Infinity) ?? false;
+      log.__frames.push([time, moving]);
       if (log.__framesOn) window.requestAnimationFrame(tick);
     };
     window.requestAnimationFrame(tick);
   });
   await act();
   const frames = await page.evaluate(() => {
-    const log = window as unknown as { __frames: number[]; __framesOn: boolean };
+    const log = window as unknown as { __frames: Array<[number, boolean]>; __framesOn: boolean };
     log.__framesOn = false;
     return log.__frames;
   });
-  return Math.max(...frames.slice(1).map((time, index) => time - frames[index]!));
+  const intervals = frames.slice(1).flatMap(([time, moving], index) => {
+    const [before, movingBefore] = frames[index]!;
+    return moving || movingBefore ? [time - before] : [];
+  });
+  return { longestMs: Math.max(0, ...intervals), movingFrames: intervals.length };
 }
 
 test.describe('one press maps the rest of the code', () => {
@@ -82,21 +99,26 @@ test.describe('one press maps the rest of the code', () => {
     await openMapConversation(page);
     await press(page);
     await expect(row(page)).toContainText('Request 1');
+    await expectOneRequestLine(page, 1);
 
     await requestEnds(page, 72);
     await expect.poll(() => prompts(page), { message: 'the second request goes out by itself' }).toBe(2);
     await expect(row(page)).toContainText('Request 2');
+    await expectOneRequestLine(page, 2);
     await expect(row(page)).toContainText('48 of 120 abilities on the map (40%)');
 
-    const longest = await longestFrameDuring(page, async () => {
+    const motion = await longestRowMotionFrame(page, async () => {
       await requestEnds(page, 40);
       await expect.poll(() => prompts(page)).toBe(3);
       await expect(row(page).getByRole('progressbar')).toHaveAttribute('aria-valuenow', '67');
       await page.waitForFunction(() => document.querySelector('[data-testid="mapping-run-row"]')?.getAnimations({ subtree: true }).every((animation) => animation.playState !== 'running') ?? false);
     });
-    console.log(`longest frame while the row's count and bar moved: ${longest.toFixed(1)} ms`);
-    expect(longest, 'a frame over 50 ms while the bar moved').toBeLessThanOrEqual(50);
+    console.log(`longest frame while the row's count and bar moved: ${motion.longestMs.toFixed(1)} ms over ${motion.movingFrames} frames`);
+    expect(motion.movingFrames, 'the row never moved, so no frame was timed').toBeGreaterThan(0);
+    expect(motion.longestMs, 'a frame over 50 ms while the bar moved').toBeLessThanOrEqual(50);
     await expect(row(page)).toContainText('80 of 120 abilities on the map (66%)');
+    // Three requests, three lines: a request the folder's reload refused would have left a second one.
+    await expectOneRequestLine(page, 3);
 
     await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Library', exact: true }).click();
     await expect(page).toHaveURL(/\/library\//);
@@ -121,6 +143,16 @@ test.describe('one press maps the rest of the code', () => {
     console.log(`Stop to stopped: ${endedMs} ms`);
     expect(endedMs).toBeLessThan(5_000);
     await expect(row(page)).toContainText('Stopped at 20%');
+    expect(await prompts(page)).toBe(1);
+  });
+
+  test('the composer\'s Stop ends the whole run, as the row\'s does', async ({ page }) => {
+    await openMapConversation(page);
+    await press(page);
+    await page.getByTestId('acp-chat-stop').click();
+    await expect(row(page)).toHaveAttribute('data-mapping-state', 'stopped');
+    await expect(row(page)).toContainText('Stopped at 20%');
+    await expect(page.getByTestId('mapping-run-action')).toHaveText('Continue');
     expect(await prompts(page)).toBe(1);
   });
 

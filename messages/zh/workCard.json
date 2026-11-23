@@ -100,6 +100,7 @@
     "finishedBody": "{total, number} 项能力，{sent, number} 个请求，用时 {duration}。",
     "switchedBody": "{agent} 当时正在把 {folder} 放到地图上。该文件夹 {total, number} 项中有 {mapped, number} 项在地图上。",
     "continue": "继续",
+    "start": "开始",
     "tabCount": "地图上的能力",
     "startTitle": "把代码的其余部分放到地图上",
     "startBody": "代码中找到的 {total, number} 项能力中有 {mapped, number} 项（{percent, number}%）在地图上。约需向智能体发送 {requests, number} 个请求，用时约 {duration}。",

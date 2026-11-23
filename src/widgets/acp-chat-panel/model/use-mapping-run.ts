@@ -16,6 +16,7 @@ import {
   type TurnWorkReport,
 } from '@/features/work-run';
 import { useLatestRef } from '@/shared/lib/use-latest-ref';
+import { MOTION } from '@/shared/motion';
 import { notMappedAreas, type NotMappedAreas } from '@/shared/lib/vault-document/not-mapped-areas';
 import { getTauriVaultRootPath, isTauriVaultRuntime } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { createVaultTextReader } from '@/shared/lib/vault-folder/vault-text-reader';
@@ -38,8 +39,11 @@ export interface MappingSessionPort {
   work: TurnWorkReport | null;
   /** A request the person sent while the agent started, or a door's request, waits to go out first. */
   otherRequestWaiting: boolean;
-  send: (text: string) => Promise<void>;
+  /** Sends `text` to the agent; the transcript shows only `shown`. */
+  send: (text: string, shown: string) => Promise<void>;
   newConversation: () => Promise<void>;
+  /** The folder's file map the turn's baseline compares; a new value is a reload of the folder. */
+  folderFiles: object | null;
   /** The enforced Stop of the running turn: it ends within the session's grace, as cancelled. */
   stopRequest: () => void;
   /** The composer holds text the person typed. */
@@ -58,7 +62,11 @@ export interface MappingRunDriver {
   observeTurnStart: (turn: AcpTurnStart) => ((completion: AcpTurnCompletion) => Promise<void>) | null;
 }
 
-type DriverPhase = 'idle' | 'switching' | 'awaitingSend' | 'inTurn' | 'ending';
+/**
+ * After a turn: `ending` decides its outcome, `settling` waits for the folder to be still, the
+ * figures move, `switchPending` lets their motion finish, then `switching` opens the next conversation.
+ */
+type DriverPhase = 'idle' | 'ending' | 'settling' | 'switchPending' | 'switching' | 'awaitingSend' | 'inTurn';
 
 type RequestOutcome = MappingRequestEnd['outcome'];
 
@@ -69,14 +77,22 @@ export const MAPPING_SILENCE_CHECK_MS = 30_000;
 export const MAPPING_REPORT_STEP_MS = 1_000;
 
 /**
- * The agent's last writes reload the folder just as the next request is sent, and the turn's
- * baseline refuses a folder that changed under it; the request waits this long and is sent again.
+ * The agent's last writes reload the folder after its turn ends, and a turn's baseline refuses a
+ * folder that reloads under it. A request's end is read once the folder has been still this long:
+ * the app's watcher lands a write in 0.45-0.61 s (`.claude/rules/surfaces.md`, measured 2026-11-19).
+ * The turn's own closing work and the reload then pass before the row's figures move.
  */
-export const MAPPING_RESEND_DELAY_MS = 1_000;
-/** Resends per request before the run ends as the agent's error. */
-export const MAPPING_RESENDS = 3;
+export const MAPPING_FOLDER_STILL_MS = 1_000;
+/** A folder that keeps changing holds the request's end no longer than this after its turn ended. */
+export const MAPPING_FOLDER_WAIT_MS = 5_000;
+/** The row's count rolls for `MOTION.settle`; the next conversation replaces the transcript after it. */
+export const MAPPING_SWITCH_AFTER_MS = MOTION.slow.duration * 1_000;
 
-const BASELINE_MOVED = 'capture_context_changed';
+/** A request with the figures it went out with: `text` for the agent, `shown` for the transcript. */
+export interface MappingRequest {
+  text: string;
+  shown: string;
+}
 
 /** The project lines a folder holds, summed for progress and its widest for what is shown; null with none. O(n). */
 export function mappingFiguresOf(lines: ReadonlyArray<Pick<NotMappedAreas, 'abilitiesUncovered' | 'abilitiesTotal'> | null>): MappingFigures | null {
@@ -141,19 +157,20 @@ export function useMappingRun({
   agent: string;
   session: MappingSessionPort;
   readFigures: () => Promise<MappingFigures | null>;
-  /** The request for the figures the run has now. */
-  request: (figures: MappingFigures | null) => string;
+  /** The request for the figures the run has now, as its `part`th request. */
+  request: (figures: MappingFigures | null, part: number) => MappingRequest;
 }): MappingRunDriver {
   const run = useFolderMappingRun(folder ?? '');
   const [drivenRunId, setDrivenRunId] = useState<number | null>(null);
   const driving = run !== null && run.id === drivenRunId && isMappingActive(run);
-  const [sendWanted, setSendWanted] = useState(0);
+  const [wakes, setWakes] = useState(0);
   const phase = useRef<DriverPhase>('idle');
   const ownRequest = useRef<string | null>(null);
   const foreignTurn = useRef(false);
   const silenced = useRef(false);
-  const resends = useRef(0);
-  const live =useLatestRef({ session, readFigures, request, folder });
+  const requestEndedAt = useRef(Number.NEGATIVE_INFINITY);
+  const endedAs = useRef<RequestOutcome | null>(null);
+  const live = useLatestRef({ session, readFigures, request, folder });
 
   const currentRun = useCallback(() => (folder ? folderMappingRun(workRuns.read(), folder) : null), [folder]);
 
@@ -162,7 +179,8 @@ export function useMappingRun({
     ownRequest.current = null;
     foreignTurn.current = false;
     silenced.current = false;
-    resends.current = 0;
+    requestEndedAt.current = Number.NEGATIVE_INFINITY;
+    endedAs.current = null;
     if (folder) workRuns.setMappingStop(folder, null);
   }, [folder]);
 
@@ -171,7 +189,7 @@ export function useMappingRun({
     await live.current.session.newConversation();
     if (phase.current !== 'switching') return;
     phase.current = 'awaitingSend';
-    setSendWanted((wanted) => wanted + 1);
+    setWakes((count) => count + 1);
   }, [live]);
 
   /** Ends a request that never reached the agent; the run's figures stay as they were. */
@@ -182,24 +200,13 @@ export function useMappingRun({
     finish();
   }, [currentRun, finish, folder]);
 
-  const completeRequest = useCallback(async (completion: AcpTurnCompletion) => {
-    if (phase.current !== 'inTurn' || !folder) return;
-    const neverSent = completion.outcome === 'cancelled' && completion.stopReason === BASELINE_MOVED;
-    if (neverSent && !silenced.current && !foreignTurn.current && currentRun()?.phase === 'running' && resends.current < MAPPING_RESENDS) {
-      resends.current += 1;
-      phase.current = 'awaitingSend';
-      window.setTimeout(() => {
-        if (phase.current === 'awaitingSend') setSendWanted((wanted) => wanted + 1);
-      }, MAPPING_RESEND_DELAY_MS);
-      return;
-    }
+  /** Reads the request's figures, ends it in the run, and opens the next conversation once the row has moved. */
+  const concludeRequest = useCallback(async () => {
+    if (phase.current !== 'settling' || !folder) return;
     phase.current = 'ending';
-    // The session records a failed turn's error just after its observer runs.
-    await nextTask();
+    const outcome = endedAs.current ?? { kind: 'completed' };
+    endedAs.current = null;
     const { session: port, readFigures: readNow } = live.current;
-    const outcome: RequestOutcome = silenced.current || completion.outcome === 'failed' || (neverSent && currentRun()?.phase === 'running')
-      ? { kind: 'failed', usageLimit: !silenced.current && !neverSent && port.usageLimited() }
-      : { kind: completion.outcome };
     let figures: MappingFigures | null;
     try {
       figures = await readNow();
@@ -210,27 +217,54 @@ export function useMappingRun({
       outcome,
       figures,
       draft: port.hasDraft() || foreignTurn.current,
-      at: Date.now(),
+      at: requestEndedAt.current,
     });
-    silenced.current = false;
     foreignTurn.current = false;
-    resends.current = 0;
-    if (next?.phase === 'running') await beginRequest();
-    else finish();
+    if (next?.phase !== 'running') {
+      finish();
+      return;
+    }
+    phase.current = 'switchPending';
+    window.setTimeout(() => {
+      if (phase.current === 'switchPending') void beginRequest();
+    }, MAPPING_SWITCH_AFTER_MS);
   }, [beginRequest, currentRun, finish, folder, live]);
+
+  /** The turn ended: its outcome is decided now, its figures once the folder is still. */
+  const completeRequest = useCallback(async (completion: AcpTurnCompletion) => {
+    if (phase.current !== 'inTurn' || !folder) return;
+    phase.current = 'ending';
+    requestEndedAt.current = Date.now();
+    // The session records a failed turn's error just after its observer runs.
+    await nextTask();
+    const port = live.current.session;
+    endedAs.current = silenced.current || completion.outcome === 'failed'
+      ? { kind: 'failed', usageLimit: !silenced.current && port.usageLimited() }
+      : { kind: completion.outcome };
+    silenced.current = false;
+    phase.current = 'settling';
+    // A stopping run sends nothing next, so nothing waits for the folder: it ends at once.
+    if (currentRun()?.phase === 'stopping') void concludeRequest();
+    else setWakes((count) => count + 1);
+  }, [concludeRequest, currentRun, folder, live]);
 
   const stopFromStore = useCallback(() => {
     switch (phase.current) {
       case 'inTurn':
         live.current.session.stopRequest();
         return;
+      case 'settling':
+        // The request already ended: its end is read now instead of after the folder settles.
+        void concludeRequest();
+        return;
+      case 'switchPending':
       case 'switching':
       case 'awaitingSend':
         endWithoutTurn({ kind: 'cancelled' });
         return;
       default:
     }
-  }, [endWithoutTurn, live]);
+  }, [concludeRequest, endWithoutTurn, live]);
 
   const start = useCallback(() => {
     if (phase.current !== 'idle' || !folder) return;
@@ -260,11 +294,31 @@ export function useMappingRun({
     }
     // Someone else's turn is the person's own message: it stops the run at this boundary.
     if (phase.current === 'ending') foreignTurn.current = true;
-    else if (phase.current === 'switching' || phase.current === 'awaitingSend') stop();
+    else if (phase.current !== 'inTurn' && folder) workRuns.stopMappingForMessage(folder);
     return null;
-  }, [completeRequest, stop]);
+  }, [completeRequest, folder]);
 
-  const { status, waitingForAnswer, otherRequestWaiting } = session;
+  const { status, waitingForAnswer, otherRequestWaiting, folderFiles } = session;
+  const folderChangedAt = useRef(Number.NEGATIVE_INFINITY);
+  const seenFolderFiles = useRef(folderFiles);
+  // Declared before the settle effect, so a reload in the same commit holds the request's end.
+  useEffect(() => {
+    if (seenFolderFiles.current === folderFiles) return;
+    seenFolderFiles.current = folderFiles;
+    folderChangedAt.current = Date.now();
+  }, [folderFiles]);
+  useEffect(() => {
+    if (phase.current !== 'settling' || !folder) return undefined;
+    const stillFrom = Math.max(folderChangedAt.current, requestEndedAt.current);
+    const goAt = Math.min(stillFrom + MAPPING_FOLDER_STILL_MS, requestEndedAt.current + MAPPING_FOLDER_WAIT_MS);
+    const waitMs = goAt - Date.now();
+    if (waitMs > 0) {
+      const timer = window.setTimeout(() => setWakes((count) => count + 1), waitMs);
+      return () => window.clearTimeout(timer);
+    }
+    void concludeRequest();
+    return undefined;
+  }, [concludeRequest, folder, folderFiles, wakes]);
   useEffect(() => {
     if (phase.current !== 'awaitingSend') return;
     const port = live.current.session;
@@ -274,16 +328,16 @@ export function useMappingRun({
     }
     if (status !== 'ready' || waitingForAnswer || otherRequestWaiting) return;
     const current = currentRun();
-    const text = live.current.request(current?.now ?? current?.start ?? null);
+    const { text, shown } = live.current.request(current?.now ?? current?.start ?? null, current?.requestsSent ?? 1);
     phase.current = 'inTurn';
     ownRequest.current = text;
-    void port.send(text);
+    void port.send(text, shown);
     // The session starts a turn synchronously or not at all.
     if (ownRequest.current !== null) {
       ownRequest.current = null;
       endWithoutTurn({ kind: 'failed', usageLimit: false });
     }
-  }, [currentRun, endWithoutTurn, live, otherRequestWaiting, sendWanted, status, waitingForAnswer]);
+  }, [currentRun, endWithoutTurn, live, otherRequestWaiting, status, waitingForAnswer, wakes]);
 
   const reportedAt = useRef(Number.NEGATIVE_INFINITY);
   const reportedAsking = useRef(false);
@@ -314,7 +368,7 @@ export function useMappingRun({
 
   // A panel that goes while no request runs still owes the run its end.
   useEffect(() => () => {
-    if (phase.current === 'switching' || phase.current === 'awaitingSend') endWithoutTurn({ kind: 'cancelled' });
+    if (phase.current !== 'idle' && phase.current !== 'inTurn' && phase.current !== 'ending') endWithoutTurn({ kind: 'cancelled' });
   }, [endWithoutTurn]);
 
   return { run, driving, start, stop, observeTurnStart };

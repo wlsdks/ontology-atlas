@@ -61,6 +61,17 @@ export const TranscriptEntry = memo(function TranscriptEntry({
     streaming,
   );
 
+  if (event.kind === 'user' && event.shown) {
+    return (
+      <p
+        data-acp-entry="user"
+        data-user-request="app-written"
+        className="mt-1 max-w-[85%] self-end break-keep rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-1.5 text-body leading-body text-[color:var(--color-text-secondary)]"
+      >
+        {event.shown}
+      </p>
+    );
+  }
   if (event.kind === 'user') {
 
     const parts = splitAppRequest(event.text);

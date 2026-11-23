@@ -24,7 +24,6 @@ export {
   type MappingFigures,
   type MappingRequestEnd,
   type MappingRun,
-  type MappingStopReason,
 } from './model/mapping-run';
 export {
   folderMappingRun,

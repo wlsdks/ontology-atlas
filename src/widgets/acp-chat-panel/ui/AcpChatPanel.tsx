@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { isAgentDoctorAvailable, useAgentDoctor } from '@/features/acp-doctor';
 import { isSendableSuggestion, readAcpTrouble, useAcpSession, VAULT_MCP_SERVER_NAME, type ChatSuggestion } from '@/features/acp-session';
 import { useMappingStage, workRuns, type MappingFigures, type TurnWorkReport } from '@/features/work-run';
+import { useGrantedVaultFiles } from '@/entities/vault-session';
 import { useLatestRef } from '@/shared/lib/use-latest-ref';
 import { MOTION } from '@/shared/motion';
 import { KeptPanelSeat, useFolderBusy } from './KeptPanelSeat';
@@ -465,6 +466,7 @@ export function AcpChatPanelBody({
     vaultRoot,
   );
   const figuresRef = useRef<() => Promise<MappingFigures | null>>(async () => null);
+  const grantedFiles = useGrantedVaultFiles();
   const mapping = useMappingRun({
     folder: mapsTheRest ? vaultRoot : null,
     folderName: vaultRoot ? folderNameOf(vaultRoot) : '',
@@ -482,6 +484,7 @@ export function AcpChatPanelBody({
         markConnectStopped(false);
         await switchSession(null);
       },
+      folderFiles: grantedFiles?.fileHandles ?? null,
       stopRequest: () => liveSession.current.stopRequestTurn(),
       hasDraft: () => liveSession.current.draft.trim().length > 0,
       usageLimited: () => {
@@ -490,7 +493,10 @@ export function AcpChatPanelBody({
       },
     },
     readFigures: () => figuresRef.current(),
-    request: (figures) => t('suggest.mapArea.prompt', mappingShare(figures) ?? { mapped: 0, total: 0, percent: 0 }),
+    request: (figures, part) => ({
+      text: t('suggest.mapArea.prompt', mappingShare(figures) ?? { mapped: 0, total: 0, percent: 0 }),
+      shown: t('suggest.mapArea.line', { part }),
+    }),
   });
   useLayoutEffect(() => {
     runTurnStartRef.current = mapping.observeTurnStart;

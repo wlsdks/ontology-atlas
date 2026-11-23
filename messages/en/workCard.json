@@ -100,6 +100,7 @@
     "finishedBody": "{total, plural, one {# ability} other {# abilities}}, {sent, plural, one {# request} other {# requests}}, {duration}.",
     "switchedBody": "{agent} was mapping {folder}. {mapped, number} of {total, number} are on the map there.",
     "continue": "Continue",
+    "start": "Start",
     "tabCount": "Abilities on the map",
     "startTitle": "Map the rest of the code",
     "startBody": "{mapped, number} of the {total, number} abilities found in the code are on the map ({percent, number}%). About {requests, plural, one {# request} other {# requests}} to your agent, about {duration}.",

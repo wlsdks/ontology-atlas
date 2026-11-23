@@ -57,6 +57,23 @@ describe('a mapping run held by the app session', () => {
     expect(mapping()).toMatchObject({ phase: 'stopped', stopReason: 'press', card: 'open' });
   });
 
+  it('stops for the person\'s own message between requests, which a folder switch still outranks', () => {
+    begin();
+    const stop = vi.fn();
+    workRuns.setMappingStop(FOLDER, stop);
+    workRuns.stopMappingForMessage(FOLDER);
+    expect(stop).toHaveBeenCalledTimes(1);
+    expect(mapping()).toMatchObject({ phase: 'stopping', stopReason: 'message' });
+    workRuns.endMappingBatch(FOLDER, { outcome: { kind: 'cancelled' }, figures: one(96), draft: false, at: 1_000 });
+    expect(mapping()).toMatchObject({ phase: 'stopped', stopReason: 'message' });
+
+    begin(OTHER);
+    workRuns.leaveFolder(FOLDER, 2_000);
+    workRuns.stopMappingForMessage(OTHER);
+    workRuns.leaveFolder(OTHER, 3_000);
+    expect(mapping(OTHER)).toMatchObject({ stopReason: 'switched' });
+  });
+
   it('stops a run of a folder that is no longer open as switched', () => {
     const stop = vi.fn();
     begin();

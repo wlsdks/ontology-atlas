@@ -55,16 +55,20 @@ afterEach(() => {
   act(() => workRuns.reset());
 });
 
-describe('before a press the row is the start control', () => {
+describe('before a press the row offers Start', () => {
   it('states the count, the estimate and, with Auto-approve off, that each change waits', () => {
     const on = renderRow(null);
     expect(text('mapping-run-title')).toBe('Map the rest of the code');
     expect(text('mapping-run-body')).toBe('24 of the 120 abilities found in the code are on the map (20%). About 4 requests to your agent, about 8 minutes.');
     expect(text('mapping-run-approval')).toBe('Each change waits for your answer. With Auto-approve on, it runs by itself.');
+    expect(screen.getByRole('button', { name: 'Start' })).toBe(action());
+    fireEvent.click(screen.getByTestId('mapping-run-title'));
+    expect(on.onStart).not.toHaveBeenCalled();
     fireEvent.click(action());
     expect(on.onStart).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByRole('button', { name: 'Hide for now' }));
     expect(on.onHide).toHaveBeenCalledTimes(1);
+    expect(on.onStart).toHaveBeenCalledTimes(1);
   });
 
   it('drops the approval line while the folder\'s Auto-approve is on', () => {
@@ -84,6 +88,7 @@ describe('before a press the row is the start control', () => {
     expect(text('mapping-run-title')).toBe('코드의 나머지를 지도에 올리기');
     expect(text('mapping-run-body')).toBe('코드에서 찾은 기능 120개 중 24개(20%)가 지도에 있어요. 에이전트 요청 약\u00a04번, 8분 정도 걸려요.');
     expect(text('mapping-run-approval')).toBe('바꿀 때마다 답을 기다려요. 자동 승인을 켜면 혼자 진행해요.');
+    expect(text('mapping-run-action')).toBe('시작');
     expect(screen.getByRole('button', { name: '이번에는 숨기기' })).toBeInTheDocument();
   });
 });
@@ -96,7 +101,7 @@ describe('a run shows how far it has come, and the same control stops it', () =>
     expect(text('mapping-run-body')).toBe('Request 2' + '48 of 120 abilities on the map (40%)' + 'about 6 minutes left');
     expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '40');
     expect(screen.queryByTestId('mapping-run-hide')).toBeNull();
-    expect(text('mapping-run-word')).toBe('Stop');
+    expect(text('mapping-run-action')).toBe('Stop');
     fireEvent.click(action());
     expect(on.onStop).toHaveBeenCalledTimes(1);
   });
@@ -123,7 +128,7 @@ describe('a run shows how far it has come, and the same control stops it', () =>
     renderRow(secondRequest(), { locale: 'ko' });
     expect(text('mapping-run-title')).toBe('코드의 나머지를 지도에 올리는 중');
     expect(text('mapping-run-body')).toBe('요청 2번째' + '기능 120개 중 48개(40%)' + '약 6분 남음');
-    expect(text('mapping-run-word')).toBe('중지');
+    expect(text('mapping-run-action')).toBe('중지');
   });
 });
 
@@ -144,7 +149,7 @@ describe('each end says why and what comes next', () => {
       const on = renderRow(run());
       expect(text('mapping-run-title')).toBe(title);
       expect(text('mapping-run-body')).toBe(body);
-      expect(text('mapping-run-word')).toBe(word);
+      expect(text('mapping-run-action')).toBe(word);
       expect(screen.queryByRole('progressbar')).toBeNull();
       fireEvent.click(action());
       expect(word === 'Continue' ? on.onStart : on.onClose).toHaveBeenCalledTimes(1);
@@ -157,7 +162,7 @@ describe('each end says why and what comes next', () => {
     renderRow(run());
     expect(text('mapping-run-title')).toBe('Stopped: this is taking more requests than estimated');
     expect(text('mapping-run-body')).toBe('4 requests sent, 119 of 120 on the map.');
-    expect(text('mapping-run-word')).toBe('Continue');
+    expect(text('mapping-run-action')).toBe('Continue');
   });
 
   it('speaks Korean when stopped for a message', () => {
@@ -166,6 +171,6 @@ describe('each end says why and what comes next', () => {
     renderRow(run(), { locale: 'ko' });
     expect(text('mapping-run-title')).toBe('40%에서 멈췄어요');
     expect(text('mapping-run-body')).toBe('물어볼 수 있게 멈췄어요. 이어서 하면 여기서부터 진행해요.');
-    expect(text('mapping-run-word')).toBe('이어서 하기');
+    expect(text('mapping-run-action')).toBe('이어서 하기');
   });
 });

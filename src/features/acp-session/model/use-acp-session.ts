@@ -567,7 +567,7 @@ export function useAcpSession({
   }, [setChoices]);
 
   const sendInternal = useCallback(
-    (text: string, guard?: InvestigationSendGuard): Promise<boolean> => sendTurn(text, guard, {
+    (text: string, guard?: InvestigationSendGuard, shown?: string): Promise<boolean> => sendTurn(text, guard, {
       runtimeId,
       vaultRoot,
       onTurnStarted,
@@ -597,10 +597,11 @@ export function useAcpSession({
       finishTurn,
       setStatusTracked,
       setApprovedOntologyWriteTracked,
-    }),
+    }, shown),
     [captureTaskBaseline, finishTurn, gateOffRef, keepDiagnostic, onTurnStarted, push, runtimeId, setApprovedOntologyWriteTracked, setStatusTracked, vaultRoot],
   );
-  const send = useCallback(async (text: string) => { await sendInternal(text); }, [sendInternal]);
+  /** `shown`: the one line the transcript shows for a request the app wrote in full. */
+  const send = useCallback(async (text: string, shown?: string) => { await sendInternal(text, undefined, shown); }, [sendInternal]);
   const sendInvestigation = useCallback((text: string, guard: InvestigationSendGuard) => sendInternal(text, guard), [sendInternal]);
 
   /** Asks the agent to cancel and answers every request still waiting with `cancelled`, as the protocol requires. */

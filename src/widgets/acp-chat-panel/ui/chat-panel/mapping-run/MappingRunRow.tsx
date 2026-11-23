@@ -9,8 +9,7 @@ import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-
 import { estimateRequests, remainingMinutes } from '@/shared/lib/vault-document/mapping-estimate';
 import { MOTION, MOTION_EASE } from '@/shared/motion';
 import { WorkProgress } from '@/shared/motion/status-glyphs/WorkProgress';
-import { controlClass } from '@/shared/ui';
-import { CONTROL_DISABLED_CLASS } from '@/shared/ui/control-class';
+import { Button, controlClass } from '@/shared/ui';
 
 import { mappingShare } from '../../../model/use-mapping-run';
 
@@ -161,8 +160,9 @@ function useEasedHeight(state: RowState) {
 }
 
 /**
- * The map conversation's one control for mapping the rest of the code: it starts a run, shows how
- * far it has come, stops it and continues it. Its count and bar move once per request.
+ * The map conversation's row for mapping the rest of the code. One worded button keeps one seat
+ * through every state (Start, Stop, Continue, Close), so the control that starts a run stops it.
+ * Its count and bar move once per request.
  */
 export function MappingRunRow({ run, resting, autoApprove, canStart, onStart, onStop, onClose, onHide }: MappingRunRowProps) {
   const t = useTranslations('workCard.mapping');
@@ -173,9 +173,23 @@ export function MappingRunRow({ run, resting, autoApprove, canStart, onStart, on
   const hostRef = useEasedHeight(state);
   const active = run !== null && isMappingActive(run);
   const fraction = run ? mappingFraction(run) : null;
-  const actionWord = action === 'stop' ? tCard('stop') : action === 'continue' ? t('continue') : action === 'close' ? tCard('close') : null;
+  const actionWord = { start: t('start'), stop: tCard('stop'), none: tCard('stop'), continue: t('continue'), close: tCard('close') }[action];
   const press = { start: onStart, continue: onStart, stop: onStop, close: onClose, none: undefined }[action];
   const disabled = action === 'none' || ((action === 'start' || action === 'continue') && !canStart);
+  const approvalShown = !run && !autoApprove;
+  const hide = run ? null : (
+    <button
+      type="button"
+      data-testid="mapping-run-hide"
+      onClick={onHide}
+      className={cn(
+        controlClass({ shape: 'link', size: 'sm', tone: 'default', hoverInk: 'strong' }),
+        'ml-2 inline min-h-0 whitespace-nowrap align-baseline text-label leading-label',
+      )}
+    >
+      {t('hideForNow')}
+    </button>
+  );
 
   return (
     <div
@@ -183,57 +197,39 @@ export function MappingRunRow({ run, resting, autoApprove, canStart, onStart, on
       data-testid="mapping-run-row"
       data-mapping-state={state}
       className={cn(
-        'motion-stagger-in relative flex shrink-0 items-start overflow-hidden rounded-card border transition-[background-color,border-color]',
+        'motion-stagger-in relative flex shrink-0 items-start gap-3 overflow-hidden rounded-card border p-[var(--card-pad)] transition-[background-color,border-color]',
         active
           ? 'border-[color:var(--color-border-strong)] bg-[color:var(--color-overlay-2)]'
-          : 'border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] has-[[data-mapping-action]:enabled:hover]:bg-[color:var(--color-overlay-2)]',
+          : 'border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]',
       )}
     >
-      <button
+      <div key={state} className="motion-stagger-fade grid min-w-0 flex-1 gap-0.5">
+        <p data-testid="mapping-run-title" className="text-body leading-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+          {copy.title}
+        </p>
+        <p className="text-label leading-label tabular-nums text-[color:var(--color-text-tertiary)]">
+          <span data-testid="mapping-run-body">{copy.body}</span>
+          {approvalShown ? null : hide}
+        </p>
+        {approvalShown ? (
+          <p className="text-label leading-label text-[color:var(--color-text-quaternary)]">
+            <span data-testid="mapping-run-approval">{t('approvalLine')}</span>
+            {hide}
+          </p>
+        ) : null}
+      </div>
+      <Button
         type="button"
-        data-mapping-action={action}
+        size="sm"
+        variant="outline"
         data-testid="mapping-run-action"
+        data-mapping-action={action}
         disabled={disabled}
         onClick={press}
-        className={cn(
-          CONTROL_DISABLED_CLASS,
-          'grid min-w-0 flex-1 gap-0.5 rounded-card p-[var(--card-pad)] text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]',
-        )}
+        className="shrink-0"
       >
-        <span key={state} className="motion-stagger-fade grid min-w-0 gap-0.5">
-          <span className="flex min-w-0 items-baseline gap-3">
-            <span data-testid="mapping-run-title" className="min-w-0 flex-1 text-body leading-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-              {copy.title}
-            </span>
-            {actionWord ? (
-              <span data-testid="mapping-run-word" className="shrink-0 text-body leading-body text-[color:var(--color-text-secondary)]">
-                {actionWord}
-              </span>
-            ) : null}
-          </span>
-          <span data-testid="mapping-run-body" className="text-label leading-label tabular-nums text-[color:var(--color-text-tertiary)]">
-            {copy.body}
-          </span>
-          {!run && !autoApprove ? (
-            <span data-testid="mapping-run-approval" className="text-label leading-label text-[color:var(--color-text-quaternary)]">
-              {t('approvalLine')}
-            </span>
-          ) : null}
-        </span>
-      </button>
-      {!run ? (
-        <button
-          type="button"
-          data-testid="mapping-run-hide"
-          onClick={onHide}
-          className={cn(
-            controlClass({ shape: 'link', size: 'md', tone: 'default', hoverInk: 'strong' }),
-            'shrink-0 whitespace-nowrap py-[var(--card-pad)] pr-[var(--card-pad)]',
-          )}
-        >
-          {t('hideForNow')}
-        </button>
-      ) : null}
+        {actionWord}
+      </Button>
       {active ? (
         <div
           className={cn(

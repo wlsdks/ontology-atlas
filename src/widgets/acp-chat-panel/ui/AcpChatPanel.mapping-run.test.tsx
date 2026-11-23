@@ -103,6 +103,9 @@ describe('the map conversation maps the rest of the code from one press', () => 
     await agentStarts(2);
     await waitFor(() => expect(sentOf('session/prompt')).toHaveLength(1));
     expect(JSON.stringify(sentOf('session/prompt')[0])).toContain('suggest.mapArea.prompt');
+    // The agent receives the whole request; the conversation shows one line of it.
+    const requests = () => [...document.querySelectorAll('[data-acp-entry="user"]')].map((entry) => entry.textContent);
+    await waitFor(() => expect(requests()).toEqual(['suggest.mapArea.line:{"part":1}']));
 
     vault.uncovered = 72;
     replyTo('session/prompt', { stopReason: 'end_turn' });

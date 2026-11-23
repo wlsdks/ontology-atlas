@@ -4,7 +4,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AcpTurnCompletion } from '@/features/acp-session';
 import { folderMappingRun, workRuns, type MappingFigures, type TurnWorkReport } from '@/features/work-run';
 
-import { mappingFiguresOf, MAPPING_RESEND_DELAY_MS, MAPPING_RESENDS, MAPPING_SILENCE_CHECK_MS, useMappingRun, type MappingRunDriver, type MappingSessionPort } from './use-mapping-run';
+import {
+  mappingFiguresOf,
+  MAPPING_FOLDER_STILL_MS,
+  MAPPING_FOLDER_WAIT_MS,
+  MAPPING_SILENCE_CHECK_MS,
+  MAPPING_SWITCH_AFTER_MS,
+  useMappingRun,
+  type MappingRunDriver,
+  type MappingSessionPort,
+} from './use-mapping-run';
 
 const FOLDER = '/Users/probe/launch';
 const KEY = `mapping:${FOLDER}`;
@@ -16,15 +25,29 @@ const one = (uncovered: number, total = 120): MappingFigures => ({
 
 const mapping = () => folderMappingRun(workRuns.read(), FOLDER);
 
+/** Lets the clock run, so the driver's waits and the session's promises settle inside `act`. */
+const advance = (ms: number) => act(async () => {
+  await vi.advanceTimersByTimeAsync(ms);
+});
+
 /**
  * The agent session as the driver sees it: a send starts a turn at once, and the spec ends it by
- * calling the observer the driver handed back, as the session does.
+ * calling the observer the driver handed back, as the session does. The clock is fake throughout.
  */
 function harness(readQueue: Array<MappingFigures | null | Promise<MappingFigures | null>>) {
   const sent: string[] = [];
+  const shown: string[] = [];
   const stopRequest = vi.fn();
   const newConversation = vi.fn(async () => {});
-  const state = { status: 'ready', waitingForAnswer: false, work: null as TurnWorkReport | null, otherRequestWaiting: false, draft: '', limited: false };
+  const state = {
+    status: 'ready',
+    waitingForAnswer: false,
+    work: null as TurnWorkReport | null,
+    otherRequestWaiting: false,
+    draft: '',
+    limited: false,
+    folderFiles: {} as object | null,
+  };
   let completion: ((result: AcpTurnCompletion) => Promise<void>) | null = null;
   let driver: MappingRunDriver | null = null;
   const reads = [...readQueue];
@@ -32,8 +55,9 @@ function harness(readQueue: Array<MappingFigures | null | Promise<MappingFigures
   const session = (): MappingSessionPort => ({
     ...state,
     lastTurnUpdateAt: null,
-    send: async (text: string) => {
+    send: async (text: string, line: string) => {
       sent.push(text);
+      shown.push(line);
       completion = driver?.observeTurnStart(turnOf(text)) ?? null;
     },
     newConversation,
@@ -48,44 +72,47 @@ function harness(readQueue: Array<MappingFigures | null | Promise<MappingFigures
       agent: 'Claude Agent',
       session: session(),
       readFigures,
-      request: (figures) => `map the rest: ${figures ? figures.sum.abilitiesUncovered : 'none'} left`,
+      request: (figures, part) => ({
+        text: `map the rest: ${figures ? figures.sum.abilitiesUncovered : 'none'} left`,
+        shown: `request ${part}`,
+      }),
     });
     driver = result;
     return result;
   });
-  const settle = () => act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  });
+  /** Long enough for a folder that stays still to let the next request out. */
+  const settle = () => advance(MAPPING_FOLDER_STILL_MS);
+  /** Ends the running request as the session would; resolves once the driver has decided. */
+  const finishTurn = (outcome: AcpTurnCompletion['outcome'] = 'completed') => {
+    const observer = completion;
+    completion = null;
+    if (!observer) throw new Error('no request of the run is running');
+    return observer({ ...turnOf(sent.at(-1) ?? ''), endedAt: '', outcome, stopReason: null, events: [] });
+  };
   return {
     sent,
+    shown,
     stopRequest,
     newConversation,
     state,
     readFigures,
     hook,
     settle,
+    finishTurn,
     rerender: () => hook.rerender(),
     press: async () => {
       act(() => hook.result.current.start());
-      await settle();
-      await settle();
+      await advance(0);
+      await advance(0);
     },
-    /** Ends the running request as the session would, then lets the driver read the disk and decide. */
-    /** The session refused the turn before the agent saw it: the folder moved under its baseline. */
-    refusedByBaseline: () => {
-      const observer = completion;
-      completion = null;
-      if (!observer) throw new Error('no request of the run is running');
-      return observer({ ...turnOf(sent.at(-1) ?? ''), endedAt: '', outcome: 'cancelled', stopReason: 'capture_context_changed', events: [] });
-    },
+    /** Ends the running request, then lets the driver read the disk, wait for a still folder and decide. */
     end: async (outcome: AcpTurnCompletion['outcome'] = 'completed') => {
-      const observer = completion;
-      completion = null;
-      if (!observer) throw new Error('no request of the run is running');
-      await act(async () => {
-        await observer({ ...turnOf(sent.at(-1) ?? ''), endedAt: '', outcome, stopReason: null, events: [] });
-      });
+      const ended = finishTurn(outcome);
       await settle();
+      await settle();
+      await act(async () => {
+        await ended;
+      });
     },
     turnStart: (text: string) => driver?.observeTurnStart(turnOf(text)) ?? null,
   };
@@ -93,14 +120,17 @@ function harness(readQueue: Array<MappingFigures | null | Promise<MappingFigures
 
 const turnOf = (text: string) => ({ runtimeId: 'claude-acp', sessionId: 's', vaultRoot: FOLDER, userEventId: `u-${text.length}`, text, startedAt: '' });
 
-beforeEach(() => workRuns.leaveFolder(FOLDER, 0));
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date'] });
+  workRuns.leaveFolder(FOLDER, 0);
+});
 afterEach(() => {
   vi.useRealTimers();
   workRuns.reset();
 });
 
 describe('one press sends request after request', () => {
-  it('sends each request in a new conversation until the line on disk is gone', async () => {
+  it('sends each request in a new conversation until the line on disk is gone, each shown as one line', async () => {
     const run = harness([one(96), one(72), one(40), null]);
     await run.press();
     expect(run.newConversation).toHaveBeenCalledTimes(1);
@@ -117,30 +147,84 @@ describe('one press sends request after request', () => {
     await run.end();
     expect(mapping()).toMatchObject({ phase: 'finished' });
     expect(run.sent).toHaveLength(3);
+    expect(run.shown).toEqual(['request 1', 'request 2', 'request 3']);
     expect(run.newConversation).toHaveBeenCalledTimes(3);
     expect(run.hook.result.current.driving).toBe(false);
   });
 
-  it('sends a request again when the folder reloaded under its baseline, and gives up after the resends', async () => {
-    vi.useFakeTimers({ toFake: ['setTimeout', 'Date'] });
-    const run = harness([one(96), one(72)]);
-    const flush = (ms = 0) => act(async () => { await vi.advanceTimersByTimeAsync(ms); });
-    act(() => run.hook.result.current.start());
-    await flush();
-    expect(run.sent).toHaveLength(1);
-    for (let resend = 1; resend <= MAPPING_RESENDS; resend += 1) {
-      const refused = run.refusedByBaseline();
-      await flush(MAPPING_RESEND_DELAY_MS);
-      await act(async () => { await refused; });
-      expect(run.sent).toHaveLength(1 + resend);
-      expect(run.newConversation).toHaveBeenCalledTimes(1);
-      expect(mapping()).toMatchObject({ phase: 'running', requestsSent: 1 });
+  it('reads a request\'s end once the folder\'s reload has landed and stayed still, then lets the row move before the next conversation', async () => {
+    const run = harness([one(96), one(72), one(40), one(20)]);
+    await run.press();
+    const first = run.finishTurn();
+    await advance(MAPPING_FOLDER_STILL_MS - 100);
+    expect(run.readFigures).toHaveBeenCalledTimes(1);
+    run.state.folderFiles = {};
+    run.rerender();
+    await advance(MAPPING_FOLDER_STILL_MS - 100);
+    // Until the folder is still the request's end is not read: the figures stay and the conversation too.
+    expect(run.readFigures).toHaveBeenCalledTimes(1);
+    expect(mapping()).toMatchObject({ requestsSent: 1 });
+    expect(run.newConversation).toHaveBeenCalledTimes(1);
+    await advance(100);
+    expect(mapping()).toMatchObject({ phase: 'running', requestsSent: 2 });
+    await advance(MAPPING_SWITCH_AFTER_MS - 10);
+    expect(run.newConversation).toHaveBeenCalledTimes(1);
+    await advance(10);
+    expect(run.newConversation).toHaveBeenCalledTimes(2);
+    expect(run.sent).toHaveLength(2);
+    await act(async () => {
+      await first;
+    });
+
+    const second = run.finishTurn();
+    const stepMs = 500;
+    for (let elapsed = 0; elapsed < MAPPING_FOLDER_WAIT_MS - stepMs; elapsed += stepMs) {
+      run.state.folderFiles = {};
+      run.rerender();
+      await advance(stepMs);
+      expect(run.sent).toHaveLength(2);
     }
-    const last = run.refusedByBaseline();
-    await flush();
-    await act(async () => { await last; });
-    expect(mapping()).toMatchObject({ phase: 'stopped', stopReason: 'agentError' });
-    expect(run.sent).toHaveLength(1 + MAPPING_RESENDS);
+    run.state.folderFiles = {};
+    run.rerender();
+    // The bound ends the wait at its limit, though the folder changed half a second ago.
+    await advance(stepMs);
+    await advance(MAPPING_SWITCH_AFTER_MS);
+    expect(run.sent).toHaveLength(3);
+    await act(async () => {
+      await second;
+    });
+  });
+
+  it('ends at once with the request\'s own figures when Stop comes while the folder settles', async () => {
+    const run = harness([one(96), one(72)]);
+    await run.press();
+    const ended = run.finishTurn();
+    await advance(100);
+    act(() => run.hook.result.current.stop());
+    await advance(0);
+    await act(async () => {
+      await ended;
+    });
+    expect(mapping()).toMatchObject({ phase: 'stopped', stopReason: 'press', now: one(72) });
+    expect(run.stopRequest).not.toHaveBeenCalled();
+    await run.settle();
+    expect(run.newConversation).toHaveBeenCalledTimes(1);
+  });
+
+  it('stops for a message typed while the folder settles, before any new conversation', async () => {
+    const run = harness([one(96), one(72)]);
+    await run.press();
+    const ended = run.finishTurn();
+    await advance(MAPPING_FOLDER_STILL_MS / 2);
+    run.state.draft = 'Why is billing split in two?';
+    run.rerender();
+    await run.settle();
+    await act(async () => {
+      await ended;
+    });
+    expect(mapping()).toMatchObject({ phase: 'stopped', stopReason: 'message' });
+    expect(run.newConversation).toHaveBeenCalledTimes(1);
+    expect(run.sent).toHaveLength(1);
   });
 
   it('stays busy and holds the folder between requests, while the next conversation starts', async () => {
@@ -167,7 +251,7 @@ describe('one press sends request after request', () => {
     act(() => {
       run.turnStart('What does billing do?');
     });
-    expect(mapping()).toMatchObject({ phase: 'stopped', stopReason: 'press' });
+    expect(mapping()).toMatchObject({ phase: 'stopped', stopReason: 'message' });
     run.state.otherRequestWaiting = false;
     run.rerender();
     await run.settle();
@@ -209,7 +293,12 @@ describe('every stop rule ends the run without another request', () => {
     });
     expect(run.stopRequest).toHaveBeenCalledTimes(1);
     expect(mapping()?.phase).toBe('stopping');
-    await run.end('cancelled');
+    // A stopping run waits for no folder: its end is read as soon as the turn has ended.
+    const ended = run.finishTurn('cancelled');
+    await advance(0);
+    await act(async () => {
+      await ended;
+    });
     expect(ends).toHaveBeenCalledTimes(1);
     expect(mapping()).toMatchObject({ phase: 'stopped', stopReason: 'press' });
     expect(run.sent).toHaveLength(1);
@@ -221,7 +310,8 @@ describe('every stop rule ends the run without another request', () => {
     run.state.status = 'starting';
     run.rerender();
     await run.end();
-    act(() => workRuns.stopRun(KEY));
+    // The row's Stop and the composer's Stop both reach the driver's `stop`.
+    act(() => run.hook.result.current.stop());
     expect(mapping()).toMatchObject({ phase: 'stopped', stopReason: 'press' });
     expect(run.stopRequest).not.toHaveBeenCalled();
     run.state.status = 'ready';
@@ -248,18 +338,19 @@ describe('every stop rule ends the run without another request', () => {
     });
     const run = harness([one(96), slowRead]);
     await run.press();
-    const ending = run.end();
-    await run.settle();
+    const ending = run.finishTurn();
+    await advance(0);
     expect(run.turnStart('Explain billing')).toBeNull();
     release(one(72));
-    await ending;
     await run.settle();
+    await act(async () => {
+      await ending;
+    });
     expect(mapping()).toMatchObject({ phase: 'stopped', stopReason: 'message' });
     expect(run.newConversation).toHaveBeenCalledTimes(1);
   });
 
   it('cancels a request the agent went silent in and ends it as an agent error', async () => {
-    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] });
     const run = harness([one(96), one(72)]);
     await run.press();
     act(() => {
@@ -275,15 +366,12 @@ describe('every stop rule ends the run without another request', () => {
   });
 
   it('waits on a permission card with no clock and never answers it', async () => {
-    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] });
     const run = harness([one(96), one(72)]);
     await run.press();
     run.state.waitingForAnswer = true;
     run.state.work = { kind: 'writing', label: null, target: 'capabilities/billing.md', asking: true };
     run.rerender();
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    });
+    await advance(0);
     expect(mapping()?.phase).toBe('asking');
     act(() => {
       vi.advanceTimersByTime(30 * 60_000);

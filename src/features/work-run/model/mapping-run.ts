@@ -124,8 +124,11 @@ export function observeMappingWork(run: MappingRun, work: TurnWorkReport | null,
   return { ...run, phase, line: sameLine(line, run.line) ? run.line : line, heardAt: at, card };
 }
 
-/** Holds the run at stopping until its request ends; a folder switch outranks a press. */
-export function stopMappingRun(run: MappingRun, reason: 'press' | 'switched'): MappingRun {
+/** What can stop a run from outside its request's end: a press, the person's own message, a folder switch. */
+export type MappingStopCause = Extract<MappingStopReason, 'press' | 'message' | 'switched'>;
+
+/** Holds the run at stopping until its request ends; a folder switch outranks a press or a message. */
+export function stopMappingRun(run: MappingRun, reason: MappingStopCause): MappingRun {
   if (!isMappingActive(run)) return run;
   const stopReason = run.stopReason === 'switched' ? 'switched' : reason;
   if (run.phase === 'stopping' && run.stopReason === stopReason) return run;

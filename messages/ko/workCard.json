@@ -100,6 +100,7 @@
     "finishedBody": "기능 {total, number}개, 요청 {sent, number}번, {duration} 걸렸어요.",
     "switchedBody": "{agent}가 {folder} 폴더를 지도에 올리고 있었어요. 그 폴더는 {total, number}개 중 {mapped, number}개가 지도에 있어요.",
     "continue": "이어서 하기",
+    "start": "시작",
     "tabCount": "지도에 있는 기능",
     "startTitle": "코드의 나머지를 지도에 올리기",
     "startBody": "코드에서 찾은 기능 {total, number}개 중 {mapped, number}개({percent, number}%)가 지도에 있어요. 에이전트 요청 약\u00a0{requests, number}번, {duration} 정도 걸려요.",

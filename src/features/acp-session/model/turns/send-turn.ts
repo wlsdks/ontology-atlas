@@ -50,6 +50,7 @@ export async function sendTurn(
   text: string,
   guard: InvestigationSendGuard | undefined,
   session: TurnSendSession,
+  shown?: string,
 ): Promise<boolean> {
   const {
     runtimeId,
@@ -106,7 +107,7 @@ export async function sendTurn(
   setActiveTurnOutlivesScreen(outlivesScreen);
   setReportedPlan(null);
   latestUserRequestRef.current = text.trim();
-  push({ kind: 'user', id: userEventId, text });
+  push(shown ? { kind: 'user', id: userEventId, text, shown } : { kind: 'user', id: userEventId, text });
   setLastTurnUpdateAt(Date.now());
   setStatusTracked('thinking');
   if (captureTaskBaseline) {

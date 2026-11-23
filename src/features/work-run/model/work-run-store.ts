@@ -66,6 +66,7 @@ import {
   type MappingFigures,
   type MappingRequestEnd,
   type MappingRun,
+  type MappingStopCause,
 } from './mapping-run';
 
 export type WorkRunDoor = 'results' | 'conversation';
@@ -262,7 +263,7 @@ function changeEveryMapping(update: (run: MappingRun) => MappingRun) {
   if (runs) publish({ runs });
 }
 
-function stopMapping(folder: string, reason: 'press' | 'switched') {
+function stopMapping(folder: string, reason: MappingStopCause) {
   const run = mappingOf(folder);
   if (!run || changeMapping(folder, (current) => stopMappingRun(current, reason)) === run) return;
   mappingStops.get(folder)?.();
@@ -561,6 +562,10 @@ export const workRuns = {
     const next = changeMapping(folder, (run) => afterRequest(run, end));
     if (next && !isMappingActive(next)) mappingStops.delete(folder);
     return next;
+  },
+  /** The person's own message while no request runs: the run ends at once, so they can ask. */
+  stopMappingForMessage(folder: string) {
+    stopMapping(folder, 'message');
   },
   /** The driver's Stop: it must end the running request, which then reaches `endMappingBatch`. */
   setMappingStop(folder: string, stop: (() => void) | null) {
