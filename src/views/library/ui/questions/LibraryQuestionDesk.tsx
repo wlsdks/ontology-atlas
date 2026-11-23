@@ -222,6 +222,24 @@ export function LibraryQuestionDesk({
     void search(true);
   });
 
+  /*
+   * A list found by words alone is asked once more when the folder's vectors become searchable and
+   * their preparation ends: the line above would otherwise say "words and meaning" over rows that
+   * meaning never searched. A report keeps its rows, and an edited field is left for the person.
+   */
+  const askAgainWithMeaning = useLatestRef((id: number) => {
+    if (id !== searchId.current || result?.searchId !== id || result.meaning !== null) return;
+    if (question.trim() !== result.question) return;
+    if (reading || turnRunning || jev.sending || report?.searchId === id) return;
+    void search(true);
+  });
+  const wordsOnlySearchId = result !== null && result.meaning === null ? result.searchId : null;
+  const { searchable: meaningSearchable, afterJob: afterMeaningJob } = meaningSearch;
+  useEffect(() => {
+    if (!meaningSearchable || wordsOnlySearchId === null) return;
+    void afterMeaningJob().then(() => askAgainWithMeaning.current(wordsOnlySearchId));
+  }, [afterMeaningJob, askAgainWithMeaning, meaningSearchable, wordsOnlySearchId]);
+
   const citationState = (claim: DeskClaim, citation: DeskCitation): CitationState => {
     if (!sourceHandles.has(citation.path)) return 'missing';
     const recorded = claim.recordedHashes[citation.path];
