@@ -19,7 +19,15 @@ export function citedSymbol(doc, path) {
 }
 
 /** Wording that states a rule: a condition, an order or a default. */
-export const RULE_WORDS = /\b(?:if|unless|only|when|whenever|before|after|until|otherwise|default|defaults|first|must|requires?|refuses?|rejects?|never|skips?|falls? back|instead)\b/i;
+const RULE_WORDS = /\b(?:if|unless|only|when|whenever|before|after|until|otherwise|default|defaults|first|must|requires?|refuses?|rejects?|never|skips?|falls? back|instead)\b/i;
+
+/**
+ * Whether a paragraph's prose states a rule. Code spans are left out: an identifier
+ * such as `default` or an error code holding `must` names code, not a condition.
+ */
+export function statesRule(paragraph) {
+  return RULE_WORDS.test(paragraph.replace(/`[^`\n]*`/g, ' '));
+}
 
 /**
  * A cite of lines: `path:L12-L30`, `path#L12-30`, `path L12–30`, `path:12`. The
