@@ -9,6 +9,7 @@ import {
   buildDepthFindings,
   competencyDepthRefusals,
   measureBuildDepth,
+  notMappedLinesRefusal,
   repositorySurvey,
   saysOutlinedOnly,
 } from './build-depth.mjs';
@@ -94,10 +95,11 @@ test('an area holding no abilities is not mapped until a node path falls in it o
   const placed = (path) => doc('capabilities/x', { path });
   const first = measureBuildDepth([doc('project', {}), placed('shop/api/product/types.py')], repo, null);
   assert.deepEqual(first.unmappedAreas.map((area) => area.path), ['shop', 'shop/order', 'shop']);
-  assert.ok(first.line.includes(`Map the next: analyze_repo_structure(${JSON.stringify({ sourceOnly: true, sourceReads: [{ path: 'shop/settings.py', mode: 'outline' }] })})`), 'a folder\'s own files open as an outline of its main files');
+  assert.ok(first.line.includes(`Open each: analyze_repo_structure(${JSON.stringify({ sourceOnly: true, sourceReads: [{ path: 'shop/settings.py', mode: 'outline' }] })}); `), 'a folder\'s own files open as an outline of its main files');
+  assert.doesNotMatch(first.line, /about \d+ percent/, 'no share is claimed for areas that hold no abilities');
   const next = measureBuildDepth([placed('shop/api/x.py'), placed('shop/settings.py'), placed('shop/seo/meta.py')], repo, null);
   assert.deepEqual(next.unmappedAreas.map((area) => area.path), ['shop/order'], 'a path in a folder the rest row names maps that row');
-  assert.ok(next.line.includes(`Map the next: analyze_repo_structure(${JSON.stringify({ rootPath: join('/repo', 'shop/order') })})`));
+  assert.ok(next.line.includes(`Map next, in one request: shop/order (0 abilities, 0 capabilities). Open each: analyze_repo_structure(${JSON.stringify({ rootPath: join('/repo', 'shop/order') })}).`));
   const named = measureBuildDepth([
     placed('shop/api/x.py'),
     doc('domains/orders', {}, 'Orders.\n\n## Includes\nAreas shop/order and shop/menu.\n'),
@@ -124,25 +126,27 @@ const ABILITY_AREAS = [
 ];
 const abilityRepo = { repoRoot: '/repo', collection: { units: [] }, survey: { abilities: [], areas: ABILITY_AREAS } };
 const capabilitiesIn = (folder, count) => Array.from({ length: count }, (_, index) => doc(`capabilities/${folder}-${index}`, { path: `${folder}/x${index}.go` }));
-const NOT_MAPPED_SUMMARY = /Not mapped yet:\s*(\d+)\s+of\s+(\d+)\s+areas?\b/i;
+/** The pattern the app reads the project's summary line with (`not-mapped-areas.ts`). */
+const NOT_MAPPED_SUMMARY = /Not mapped yet:\s*(\d+)\s+of\s+(\d+)\s+areas?,\s*(\d+)\s+of\s+(\d+)\s+abilities\b/i;
 
-test('an area with fewer than one capability per three abilities it holds is not mapped yet', () => {
+test('an area with fewer than one capability per three abilities it holds is not mapped yet, and the sentence leads with the share on the map', () => {
   const depth = measureBuildDepth([doc('project', {}), ...capabilitiesIn('billing', 3), ...capabilitiesIn('ledger', 4)], abilityRepo, null);
   assert.deepEqual(depth.unmappedAreas.map((area) => [area.path, area.abilities, area.capabilities]), [['client', 6, 0], ['billing', 12, 3]], 'largest gap first; 4 capabilities for 12 abilities maps the area');
-  assert.match(depth.line, /Areas: 2 of 3 areas are not mapped yet \(fewer than one capability per three abilities the area holds\), largest gap first: client \(6 abilities, 0 capabilities\), billing \(12 abilities, 3 capabilities\)\./);
-  assert.ok(depth.line.includes(`Map the next: analyze_repo_structure(${JSON.stringify({ rootPath: join('/repo', 'client') })})`));
+  assert.deepEqual([depth.areaCoverage.abilities, depth.areaCoverage.uncovered], [30, 9], 'client leaves 6 uncovered and billing 3; ledger covers its 12');
+  assert.match(depth.line, /Areas: about 70 percent of the 30 abilities the survey found are on the map \(an area counts as mapped at one capability per three abilities\); 2 of 3 areas are not mapped yet, largest gap first: client \(6 abilities, 0 capabilities\), billing \(12 abilities, 3 capabilities\)\./);
+  assert.ok(depth.line.includes(`Open each: analyze_repo_structure(${JSON.stringify({ rootPath: join('/repo', 'client') })}); analyze_repo_structure(`));
 });
 
-test('the lines to keep under the project\'s Uncertainty carry the count the app reads and one bullet per listed area', () => {
+test('the lines to keep under the project\'s Uncertainty carry the count and the share the app reads and one bullet per listed area', () => {
   const depth = measureBuildDepth([doc('project', {}), ...capabilitiesIn('billing', 3)], abilityRepo, null);
-  const kept = depth.line.split('\n').filter((line) => /Not mapped yet:/.test(line));
+  const kept = depth.line.split('\n').filter((line) => /^-? ?Not mapped yet:/.test(line));
   assert.deepEqual(kept, [
-    'Not mapped yet: 3 of 3 areas.',
+    'Not mapped yet: 3 of 3 areas, 21 of 30 abilities.',
     '- Not mapped yet: ledger (12 abilities, 0 capabilities)',
     '- Not mapped yet: client (6 abilities, 0 capabilities)',
     '- Not mapped yet: billing (12 abilities, 3 capabilities)',
   ]);
-  assert.deepEqual(NOT_MAPPED_SUMMARY.exec(kept[0]).slice(1), ['3', '3']);
+  assert.deepEqual(NOT_MAPPED_SUMMARY.exec(kept[0]).slice(1), ['3', '3', '21', '30']);
   const many = Array.from({ length: 14 }, (_, index) => ({ path: `area${index}`, files: 1, lines: 100 - index, mainFiles: [], abilities: 3 }));
   const capped = measureBuildDepth([doc('project', {})], { ...abilityRepo, survey: { abilities: [], areas: many } }, null);
   assert.match(capped.line, /and 2 more\./);
@@ -156,7 +160,7 @@ test('naming an area in the project\'s Uncertainty prose keeps it listed, and le
   assert.deepEqual(prose.unmappedAreas.map((area) => area.path), ['billing', 'ledger', 'client']);
   const uncertaintyExcluded = listed([project('- client is a generated API client for other services, left out of the product.')]);
   assert.deepEqual(uncertaintyExcluded.unmappedAreas.map((area) => area.path), ['billing', 'ledger']);
-  assert.match(uncertaintyExcluded.line, /Not mapped yet: 2 of 2 areas\./);
+  assert.match(uncertaintyExcluded.line, /\nNot mapped yet: 2 of 2 areas, 24 of 24 abilities\.\n/, 'an area left out counts toward neither areas nor abilities');
   const excludesSection = listed([project('- None.', '- client: the SDK other services call, not the product.')]);
   assert.equal(excludesSection.areaCoverage.counted, 2);
 });
@@ -166,6 +170,57 @@ test('with every area mapped, a project that still keeps the lines is told to re
   assert.doesNotMatch(measureBuildDepth([doc('project', {}), ...docs], abilityRepo, null).line, /Areas:/);
   const stale = measureBuildDepth([doc('project', {}, 'A product.\n\n## Uncertainty\n- Not mapped yet: 1 of 3 areas.\n'), ...docs], abilityRepo, null);
   assert.match(stale.line, /Areas: all 3 areas are mapped\. Remove the Not mapped yet lines/);
+});
+
+/*
+ * One press is one request of at most twelve capabilities: an area needs one
+ * capability per three abilities it holds, less what it has.
+ */
+test('one request maps a large area alone, or several small ones up to twelve capabilities and six areas', () => {
+  const area = (path, abilities, lines = 100) => ({ path, files: 1, lines, mainFiles: [], abilities });
+  const batchOf = (areas, docs = []) => measureBuildDepth([doc('project', {}), ...docs], { ...abilityRepo, survey: { abilities: [], areas } }, null);
+  const large = batchOf([area('core', 45), area('auth', 6)]);
+  assert.deepEqual(large.areaBatch.map((row) => [row.path, row.needed]), [['core', 15]], 'the first area is taken even beyond twelve');
+  assert.match(large.line, /Map next, in one request: core \(45 abilities, 0 capabilities\)\. Open each: analyze_repo_structure\([^)]*\)\. /);
+  const small = batchOf([area('billing', 15), area('ledger', 12), area('client', 6), area('hooks', 6), area('cli', 3)], capabilitiesIn('billing', 1));
+  assert.deepEqual(small.areaBatch.map((row) => [row.path, row.needed]), [['billing', 4], ['ledger', 4], ['client', 2], ['hooks', 2]], 'the next area would take the request past twelve');
+  assert.equal(small.line.match(/Open each: ([^\n]*?)\. Then/)[1].split('; ').length, 4, 'one open call per area in the batch');
+  const many = batchOf(Array.from({ length: 9 }, (_, index) => area(`tool${index}`, 1, 100 - index)));
+  assert.deepEqual(many.areaBatch.map((row) => row.path), ['tool0', 'tool1', 'tool2', 'tool3', 'tool4', 'tool5'], 'six areas at most');
+});
+
+test('finalize refuses until the project keeps the measured summary line, and only while areas are not mapped yet', () => {
+  const withUncertainty = (lines) => `A product.\n\n## Uncertainty\n${lines}\n`;
+  const depthFor = (body, docs = capabilitiesIn('billing', 3), repo = abilityRepo) => measureBuildDepth([doc('project', {}, body), ...docs], repo, null);
+  const missing = withUncertainty('- None.');
+  const refusal = notMappedLinesRefusal('project', missing, depthFor(missing));
+  assert.match(refusal, /^finalize_project_meaning blocked: project keeps no Not mapped yet summary line .*"Not mapped yet: 3 of 3 areas, 21 of 30 abilities\."/);
+  assert.match(refusal, /\nNext call: patch_concept\(.*then finalize_project_meaning again:\nNot mapped yet: 3 of 3 areas, 21 of 30 abilities\.\n- Not mapped yet: ledger/);
+  const old = withUncertainty('Not mapped yet: 3 of 3 areas.\n- Not mapped yet: ledger (12 abilities, 0 capabilities)');
+  assert.match(notMappedLinesRefusal('project', old, depthFor(old)), /keeps "Not mapped yet: 3 of 3 areas\." under ## Uncertainty, where the measure gives/, 'a line in the earlier form is stale');
+  const exact = withUncertainty('- Not mapped yet: 3 of 3 areas, 21 of 30 abilities.\n- Not mapped yet: ledger (12 abilities, 0 capabilities)');
+  assert.equal(notMappedLinesRefusal('project', exact, depthFor(exact)), null, 'a list marker before the exact line is kept as written');
+  const mapped = [...capabilitiesIn('billing', 4), ...capabilitiesIn('ledger', 4), ...capabilitiesIn('client', 2)];
+  assert.equal(notMappedLinesRefusal('project', missing, depthFor(missing, mapped)), null, 'every area mapped');
+  const notByArea = { ...abilityRepo, survey: { abilities: [] } };
+  assert.equal(notMappedLinesRefusal('project', missing, depthFor(missing, [], notByArea)), null, 'not surveyed by area');
+  assert.equal(notMappedLinesRefusal('project', missing, measureBuildDepth([doc('project', {}, missing)], null, null)), null, 'no repository');
+});
+
+test('validate_vault flags the project whose summary line is missing or stale, and clears once it matches', () => {
+  const findingsFor = (lines) => {
+    const docs = [doc('project', {}, `A product.\n\n## Uncertainty\n${lines}\n`), ...capabilitiesIn('billing', 3)];
+    const depth = measureBuildDepth(docs, abilityRepo, null);
+    return { depth, findings: buildDepthFindings(docs, { coverage: depth.areaCoverage }).filter((row) => row.code === 'not-mapped-line-mismatch') };
+  };
+  const missing = findingsFor('- None.');
+  assert.deepEqual(missing.findings.map((row) => row.slug), ['project']);
+  assert.match(missing.findings[0].message, /Repair: patch_concept the project body .*\nNot mapped yet: 3 of 3 areas, 21 of 30 abilities\.\n/);
+  assert.match(missing.depth.line, /\(not-mapped-line-mismatch\); finalize_project_meaning refuses until that line matches\./, 'a write result carries the finding too');
+  assert.equal(findingsFor('Not mapped yet: 3 of 3 areas.').findings.length, 1, 'the earlier form is stale');
+  const matched = findingsFor('Not mapped yet: 3 of 3 areas, 21 of 30 abilities.');
+  assert.deepEqual(matched.findings, []);
+  assert.doesNotMatch(matched.depth.line, /not-mapped-line-mismatch/);
 });
 
 test('a plugin is named by its package folder as well as its class', (t) => {

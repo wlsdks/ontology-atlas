@@ -146,31 +146,38 @@ describe('a picked concept', () => {
 describe('mapping the next area of the code', () => {
   const readOne = { unread: [{ slug: 'capabilities/a', domain: 'domains/x' }], measured: 5 };
 
-  it('comes ahead of reading rules, with the project counts', () => {
-    const out = chatSuggestions({ ...built, notMappedAreas: { remaining: 12, total: 45 }, withoutReadRule: readOne, withoutDependency: ['capabilities/a'] });
+  const left = (abilitiesUncovered: number, abilitiesTotal: number, remaining = 12, total = 45) =>
+    ({ remaining, total, abilitiesUncovered, abilitiesTotal });
+
+  it('comes ahead of reading rules, with the share of abilities on the map', () => {
+    const out = chatSuggestions({ ...built, notMappedAreas: left(322, 383), withoutReadRule: readOne, withoutDependency: ['capabilities/a'] });
     expect(out.map(({ kind }) => kind)).toEqual(['mapArea', 'readRules', 'dependencies', 'check']);
-    expect(out[0]).toEqual({ kind: 'mapArea', params: { count: 12, total: 45 } });
+    expect(out[0]).toEqual({ kind: 'mapArea', params: { percent: 16, total: 383 } });
   });
 
-  it('is not offered without the project line or once every area is mapped', () => {
+  it('never shows 100 percent while an ability is still off the map', () => {
+    expect(chatSuggestions({ ...built, notMappedAreas: left(1, 400, 1, 46) })[0]).toEqual({ kind: 'mapArea', params: { percent: 99, total: 400 } });
+  });
+
+  it('is not offered without the project line or once every ability is covered', () => {
     expect(kinds({ ...built, withoutReadRule: readOne })).toEqual(['readRules', 'check']);
-    expect(kinds({ ...built, notMappedAreas: { remaining: 0, total: 45 }, withoutReadRule: readOne })).toEqual(['readRules', 'check']);
-    expect(kinds({ ...built, nodeCount: 5, notMappedAreas: { remaining: 3, total: 4 } })).toEqual(['build']);
+    expect(kinds({ ...built, notMappedAreas: left(0, 152, 3, 46), withoutReadRule: readOne })).toEqual(['readRules', 'check']);
+    expect(kinds({ ...built, nodeCount: 5, notMappedAreas: left(30, 40) })).toEqual(['build']);
   });
 
-  it('keeps the quiet line away while areas remain', () => {
-    expect(kinds({ ...built, changedSource: [], notMappedAreas: { remaining: 1, total: 45 } })).toEqual(['mapArea', 'check']);
+  it('keeps the quiet line away while abilities remain', () => {
+    expect(kinds({ ...built, changedSource: [], notMappedAreas: left(1, 45, 1) })).toEqual(['mapArea', 'check']);
   });
 
-  it('takes the project with the most areas left instead of summing projects', () => {
-    const project = (slug: string, remaining: number, total: number) =>
-      ({ slug, frontmatter: { kind: 'project' }, notMappedAreas: { remaining, total } });
+  it('takes the project with the most abilities left instead of summing projects', () => {
+    const project = (slug: string, abilitiesUncovered: number, remaining: number) =>
+      ({ slug, frontmatter: { kind: 'project' }, notMappedAreas: left(abilitiesUncovered, 200, remaining, 40) });
     expect(widestUnmappedProject([
-      project('core', 3, 10),
-      { slug: 'capabilities/x', frontmatter: { kind: 'capability' }, notMappedAreas: { remaining: 40, total: 40 } },
-      project('billing', 7, 9),
+      project('core', 30, 20),
+      { slug: 'capabilities/x', frontmatter: { kind: 'capability' }, notMappedAreas: left(190, 200) },
+      project('billing', 90, 5),
       project('docs', 0, 2),
-    ])).toEqual({ remaining: 7, total: 9 });
+    ])).toEqual(left(90, 200, 5, 40));
     expect(widestUnmappedProject([project('docs', 0, 2)])).toBeNull();
   });
 });

@@ -37,7 +37,7 @@ export interface VaultDoc {
    */
   citesReadLines?: boolean;
   /**
-   * A project's `Not mapped yet: N of M areas.` line under `## Uncertainty` (`not-mapped-areas.ts`).
+   * A project's `Not mapped yet: N of M areas, R of T abilities.` line under `## Uncertainty` (`not-mapped-areas.ts`).
    * Absent: not a project, no such line, or a manifest built without it (the bundled one).
    */
   notMappedAreas?: NotMappedAreas;

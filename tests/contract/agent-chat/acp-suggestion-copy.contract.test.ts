@@ -40,21 +40,22 @@ describe('ACP next-step catalog', () => {
       }
     });
 
-    it(`${locale} counts the areas not mapped yet and asks for the project lines the server parses`, () => {
-      const areas = { count: 12, total: 45 };
-      const because = t('suggest.mapArea.because', areas);
-      const prompt = t('suggest.mapArea.prompt', areas);
-      for (const text of [t('suggest.mapArea.label', areas), because, prompt]) {
+    it(`${locale} says the share of abilities on the map and asks for the batch and the project lines the server gives`, () => {
+      const share = { percent: 16, total: 383 };
+      const because = t('suggest.mapArea.because', share);
+      const prompt = t('suggest.mapArea.prompt', share);
+      for (const text of [t('suggest.mapArea.label', share), because, prompt]) {
         expect(text).not.toContain('acpChat.suggest');
         expect(text).not.toMatch(/[{}#]/);
       }
       for (const text of [because, prompt]) {
-        expect(text).toContain('12');
-        expect(text).toContain('45');
+        expect(text).toContain('16%');
+        expect(text).toContain('383');
       }
       expect(prompt).toContain('validate_vault');
+      expect(prompt).toContain('Map next, in one request');
       expect(prompt).toContain('Not mapped yet');
-      if (locale === 'en') expect(mapAreaPrompt(process.cwd(), 12, 45)).toBe(prompt);
+      if (locale === 'en') expect(mapAreaPrompt(process.cwd(), 16, 383)).toBe(prompt);
     });
 
     it(`${locale} asks for the work and a report, never for review before writing`, () => {

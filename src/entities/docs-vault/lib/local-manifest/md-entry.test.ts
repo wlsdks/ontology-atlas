@@ -44,10 +44,10 @@ describe('the stored row of a Markdown file', () => {
   });
 
   it('carries the areas not mapped yet for a project, never for a capability with the same line', () => {
-    const body = '# Core\n\nThe banking core.\n\n## Uncertainty\n\nNot mapped yet: 12 of 45 areas.\n- `src/loans`\n';
+    const body = '# Core\n\nThe banking core.\n\n## Uncertainty\n\nNot mapped yet: 12 of 45 areas, 300 of 383 abilities.\n- `src/loans`\n';
     const doc = (kind: string) =>
       buildMdEntry(entry, `---\ntitle: Core\nkind: ${kind}\n---\n${body}`, 1, createMetadataStringPool()).doc;
-    expect(doc('project')?.notMappedAreas).toEqual({ remaining: 12, total: 45 });
+    expect(doc('project')?.notMappedAreas).toEqual({ remaining: 12, total: 45, abilitiesUncovered: 300, abilitiesTotal: 383 });
     expect(doc('capability')).not.toHaveProperty('notMappedAreas');
   });
 

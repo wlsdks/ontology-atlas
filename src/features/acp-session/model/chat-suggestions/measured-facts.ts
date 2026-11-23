@@ -55,13 +55,13 @@ export function capabilitiesWithoutReadRule(docs: readonly FactDoc[]): { unread:
   return { unread, measured: measuredDocs.length };
 }
 
-/** The project with the most areas not mapped yet; counts from several projects are never summed, since each names its own areas. */
+/** The project with the most abilities not on the map yet; counts from several projects are never summed, since each names its own areas. */
 export function widestUnmappedProject(docs: readonly FactDoc[]): NotMappedAreas | null {
   let widest: NotMappedAreas | null = null;
   for (const doc of docs) {
     const areas = doc.notMappedAreas;
-    if (kindOf(doc) !== 'project' || !areas || areas.remaining === 0) continue;
-    if (!widest || areas.remaining > widest.remaining) widest = areas;
+    if (kindOf(doc) !== 'project' || !areas || areas.abilitiesUncovered === 0) continue;
+    if (!widest || areas.abilitiesUncovered > widest.abilitiesUncovered) widest = areas;
   }
   return widest;
 }

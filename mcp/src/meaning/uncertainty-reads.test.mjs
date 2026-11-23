@@ -246,7 +246,7 @@ describe('orderUncertaintyReads — the queue, and the sentence that clears a ro
       slug: 'shop',
       kind: 'project',
       path: 'README.md',
-      body: body('Not mapped yet: 2 of 9 areas.\n- Not mapped yet: billing (12 abilities, 3 capabilities)\n- Not mapped yet: 4 smaller folders in shop (5 abilities, 0 capabilities)'),
+      body: body('Not mapped yet: 2 of 9 areas, 14 of 40 abilities.\n- Not mapped yet: billing (12 abilities, 3 capabilities)\n- Not mapped yet: 4 smaller folders in shop (5 abilities, 0 capabilities)'),
     });
     assert.deepEqual(rows.map((row) => [row.kind, row.paths]), [['unopened-area', ['billing']], ['unopened-area', ['shop']]]);
     const [billing] = orderUncertaintyReads(rows, { sourceRoot: '/repo' });
