@@ -18,7 +18,7 @@ fn io_failure(relative: &Path, error: &std::io::Error) -> String {
 // The file already passed the allowlist on its canonical path, so a link swapped in afterwards
 // fails here rather than being followed.
 #[cfg(unix)]
-fn open_no_follow(root: &Path, relative: &Path) -> Result<fs::File, String> {
+pub(crate) fn open_no_follow(root: &Path, relative: &Path) -> Result<fs::File, String> {
     use std::os::fd::{AsRawFd, FromRawFd};
 
     let changed = || "harness-path-changed".to_string();
@@ -55,7 +55,7 @@ fn open_no_follow(root: &Path, relative: &Path) -> Result<fs::File, String> {
 }
 
 #[cfg(not(unix))]
-fn open_no_follow(root: &Path, relative: &Path) -> Result<fs::File, String> {
+pub(crate) fn open_no_follow(root: &Path, relative: &Path) -> Result<fs::File, String> {
     fs::File::open(root.join(relative)).map_err(|error| io_failure(relative, &error))
 }
 

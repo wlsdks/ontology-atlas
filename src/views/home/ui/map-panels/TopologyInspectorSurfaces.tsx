@@ -30,7 +30,10 @@ import { returnFocusIfDropped } from "../../lib/keyboard/topology-focus-return";
 import { resolveNodeVaultRef } from "../../lib/authoring/topology-node-edit";
 import { type ConceptReviewTarget, type ReadConceptBody, useConceptReview } from "../../model/inspector/use-node-datasheet-model";
 import { parseFrontmatter } from "@/shared/lib/vault-document/parse-frontmatter";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
+import { CodeReader } from "@/widgets/code-reader";
+import { useConceptCodeReader } from "../../model/inspector/use-concept-code-reader";
+import { READER_GAP_PX, useCodeReaderPlacement } from "../../model/inspector/use-code-reader-placement";
 
 const FULL_DETAIL_TITLE_ID = "topology-full-detail-title";
 
@@ -68,6 +71,7 @@ interface TopologyInspectorSurfacesProps {
     | "setNeedsVaultReason"
     | "selectedOntologyNode"
     | "vault"
+    | "gitVaultPath"
   >;
   topologyCanvasFocus: Pick<
     ReturnType<typeof useTopologyCanvasFocus>,
@@ -163,7 +167,7 @@ export function TopologyInspectorSurfaces({
     handleDatasheetHoverEvidence, setFullDetailSlug, contextMenuNode, closeContextMenu, FullDetailCard,
     fullDetailOpen
   } = topologyCanvasFocus;
-  const { summaryFreshness, summaryHistoryUnavailable, llmBridgeAvailable, setNeedsVaultReason, selectedOntologyNode, vault } = topologyVaultReadModel;
+  const { summaryFreshness, summaryHistoryUnavailable, llmBridgeAvailable, setNeedsVaultReason, selectedOntologyNode, vault, gitVaultPath } = topologyVaultReadModel;
   const { projectSource } = topologySourceReadiness;
   const {
     projectSourceLabels, copyV2NodeHandoff, projectSourceErrorLabel, projectSourceDegraded,
@@ -193,6 +197,38 @@ export function TopologyInspectorSurfaces({
     [panelShown, nodeEditTarget],
   );
   const conceptReview = useConceptReview(reviewTarget, readConceptBody);
+  const codeConcept = useMemo(
+    () => panelShown && nodeEditTarget
+      ? { slug: nodeEditTarget.vaultSlug, frontmatter: nodeEditTarget.frontmatter, mtime: nodeEditTarget.mtime }
+      : null,
+    [panelShown, nodeEditTarget],
+  );
+  const conceptCode = useConceptCodeReader({ concept: codeConcept, readBody: readConceptBody, vaultPath: gitVaultPath });
+  const measurePanelWidth = useCallback(
+    () => nodePopoverPositionerRef.current?.querySelector<HTMLElement>('[data-testid="map-detail-panel"]')?.offsetWidth ?? 0,
+    [nodePopoverPositionerRef],
+  );
+  const readerPlacement = useCodeReaderPlacement(conceptCode.readerOpen, nodePopoverPositionerRef, measurePanelWidth);
+  const readerShown = conceptCode.readerOpen && readerPlacement !== null && conceptCode.target !== null;
+  const readerReplacesList = readerShown && readerPlacement.mode === "replace";
+  const onlyProjectSlug = renderProjects.length === 1 ? renderProjects[0]!.slug : null;
+  const codeReaderSurface = conceptCode.target && readerPlacement && panelDatasheetModel ? (
+    <CodeReader
+      key={`${panelDatasheetModel.slug}\0${conceptCode.target.path}`}
+      open={readerShown}
+      widthPx={readerPlacement.widthPx}
+      replacesList={readerPlacement.mode === "replace"}
+      conceptTitle={panelDatasheetModel.title}
+      target={conceptCode.target}
+      reader={conceptCode.reader}
+      documentModifiedMs={conceptCode.documentModifiedMs}
+      nextSteps={{
+        askToFind: llmBridgeAvailable ? askAgentAboutSelectedNode : undefined,
+        openCodeFolder: onlyProjectSlug ? () => handleSelect(onlyProjectSlug) : undefined,
+      }}
+      onClose={conceptCode.close}
+    />
+  ) : null;
 
   return (<>
     <Surface
@@ -282,7 +318,22 @@ export function TopologyInspectorSurfaces({
         // measured width of the obstacle marker.
         className="topology-ui-scale pointer-events-none fixed inset-x-3 bottom-[var(--map-panel-bottom-reserve)] z-30 flex justify-center lg:inset-x-auto lg:bottom-auto lg:right-[var(--topology-node-popover-right-inset)] lg:top-[var(--topology-node-popover-top)] lg:block"
       >
+        <div className="pointer-events-none flex items-start justify-end">
+        {/* The reader beside the list takes its width on the reflow clock; in the list's place it
+            stands in the list's cell and the list waits, hidden, until it closes. */}
+        <div
+          data-testid="code-reader-slot"
+          aria-hidden={readerShown && !readerReplacesList ? undefined : true}
+          style={{
+            width: readerShown && !readerReplacesList ? readerPlacement.widthPx + READER_GAP_PX : 0,
+            transitionDelay: readerShown ? undefined : "var(--motion-fast)",
+          }}
+          className="shrink-0 overflow-hidden transition-[width] duration-[var(--agent-panel-reflow-duration)] ease-[var(--topology-motion-ease-out)] max-lg:hidden"
+        >
+          {readerPlacement?.mode === "beside" ? <div style={{ paddingRight: READER_GAP_PX }}>{codeReaderSurface}</div> : null}
+        </div>
         <div className="pointer-events-none grid">
+          {readerPlacement?.mode === "replace" ? <div className="col-start-1 row-start-1">{codeReaderSurface}</div> : null}
           {panelDatasheetModel ? (
             <OntologyMapDetailPanel
               discoveryAction={grayAreaAction}
@@ -424,7 +475,13 @@ export function TopologyInspectorSurfaces({
                   : undefined
               }
               showHandoff={!audiencePlain}
-              className="col-start-1 row-start-1 max-lg:w-[min(520px,calc(100vw-1.5rem))]"
+              codeRow={conceptCode.target ? {
+                path: conceptCode.target.path,
+                citeCount: conceptCode.target.ranges.length,
+                readerOpen: conceptCode.readerOpen,
+                onToggle: conceptCode.toggle,
+              } : undefined}
+              className={`col-start-1 row-start-1 max-lg:w-[min(520px,calc(100vw-1.5rem))] ${readerReplacesList ? "invisible" : ""}`}
             />
           ) : null}
           {meaningEditorSource && heldMeaningEditorState ? (
@@ -450,6 +507,7 @@ export function TopologyInspectorSurfaces({
               className="col-start-1 row-start-1 max-lg:w-[min(520px,calc(100vw-1.5rem))]"
             />
           ) : null}
+        </div>
         </div>
       </div>
     ) : null}
@@ -590,6 +648,7 @@ export function TopologyInspectorSurfaces({
           documentHref={heldFullDetailModel.documentHref}
           mentionDocumentHref={heldFullDetailModel.mentionDocumentHref}
           codeLocations={heldFullDetailModel.codeLocations}
+          codePath={heldFullDetailModel.codePath}
           projectSource={projectSource.view}
           projectSourceLabels={projectSourceLabels}
           projectSourceBusy={projectSource.busy}

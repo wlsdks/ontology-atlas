@@ -6,7 +6,7 @@ use std::path::Path;
 const MAX_COMPONENTS: usize = 12;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(super) enum ReadClass {
+pub(crate) enum ReadClass {
     Text,
     McpServers,
     ClaudeSettings,
@@ -99,7 +99,7 @@ const DENIED_EXTENSIONS: &[&str] = &[
     "pem", "key", "p8", "p12", "pfx", "jks", "keystore", "gpg", "kdbx", "ppk", "asc",
 ];
 
-pub(super) fn is_denied_name(name: &str) -> bool {
+pub(crate) fn is_denied_name(name: &str) -> bool {
     let lower = name.to_lowercase();
     if DENIED_NAMES.contains(&lower.as_str()) || lower.starts_with(".env.") {
         return true;
@@ -167,7 +167,7 @@ fn within(parts: &[String], tree: &[&str], strictly: bool) -> bool {
     long_enough && parts.iter().zip(tree).all(|(a, b)| a == b)
 }
 
-pub(super) fn read_class(path: &str) -> ReadClass {
+pub(crate) fn read_class(path: &str) -> ReadClass {
     let Some(parts) = components_of(path) else {
         return ReadClass::Invalid;
     };

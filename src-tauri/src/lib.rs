@@ -8,6 +8,7 @@ mod app_shell;
 mod audit_read;
 mod blocking;
 mod child_process;
+mod code_reader;
 mod coded_error;
 #[cfg(unix)]
 mod confined_files;
@@ -280,6 +281,8 @@ pub fn run() {
             harness_source::list_harness_source_directory,
             harness_source::read_harness_source_text,
             harness_source::harness_source_path_exists,
+            code_reader::read_code_window,
+            code_reader::code_file_stamp,
             harness_scopes::read_harness_scopes,
             harness_scopes::pick_harness_scope_file,
             project_source::inspect_project_source,

@@ -28,6 +28,7 @@ import { isImeComposing } from "@/shared/lib/keyboard/ime-composition";
 import { Button, Surface, SummaryFreshnessRow, Textarea } from "@/shared/ui";
 import { Input } from "@/shared/ui/fields/input";
 import { transientSurface } from "@/shared/ui/surfaces/transient-surface";
+import { CodeRow } from "./detail-panel/CodeRow";
 import { type DetailActionItem, DetailActionMenu } from "./detail-panel/DetailActionMenu";
 import { IdentityZone } from "./detail-panel/IdentityZone";
 import {
@@ -80,6 +81,7 @@ export function OntologyMapDetailPanel({
   onAskAgent,
   meaningReview,
   discoveryAction,
+  codeRow,
   suppressPrimaryAction = false,
   onClose,
   closeButtonRef,
@@ -485,6 +487,8 @@ export function OntologyMapDetailPanel({
               <MeaningZone definition={definition} />
             )}
           </div>
+
+          {codeRow ? <CodeRow row={codeRow} /> : null}
 
           <hr className="h-px border-0 bg-[color:var(--map-panel-zone-divider)]" />
 

@@ -2,8 +2,8 @@
 //! path; every call re-derives the root and checks the request and its link target.
 
 mod projection;
-mod read;
-mod scope;
+pub(crate) mod read;
+pub(crate) mod scope;
 #[cfg(test)]
 mod tests;
 
