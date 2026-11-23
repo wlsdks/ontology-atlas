@@ -6,19 +6,24 @@ import { useTranslations } from 'next-intl';
 import { FolderGit2 } from 'lucide-react';
 import { useLocalVault } from '@/entities/vault-session';
 import { useArrivalMemory } from '@/shared/lib/navigation/route-arrival-memory';
+import { useSessionListReadEnabled } from '@/shared/lib/preferences/work-status-preferences';
 import { pickTauriSourceDirectory } from '@/shared/lib/vault-folder/native-vault/tauri-project-source';
 import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { isWorkStatusAvailable } from '@/shared/lib/work-status/tauri-work-status';
 import { buildWorkTracks, folderName, planRooms, withActivity } from '@/shared/lib/work-status/work-tracks';
-import { Button, PageHeaderBar } from '@/shared/ui';
+import { withAgentSessions } from '@/shared/lib/work-status/signals/sessions';
+import { Button, InfoHint, PageHeaderBar } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { PAGE_FRAME_FORM, PAGE_STAGE_FILL } from '@/shared/ui/tokens/page-frame';
 import { EmptyRoom, RoomShelf, WorkBuilding, pointToRooms, type RoomAlert } from '@/widgets/work-tracks';
 import { useMinuteClock } from '../model/use-minute-clock';
 import { useRunningMemory } from '../model/use-running-memory';
 import { useSessionIdentity } from '../model/use-session-identity';
+import { sessionListLine } from '../model/session-list-line';
+import { useAgentSessions } from '../model/use-agent-sessions';
 import { useWorkStatus } from '../model/use-work-status';
 import { useWorktreeActivity } from '../model/use-worktree-activity';
+import { SessionListControl } from './SessionListControl';
 import { WorkStatusStage } from './WorkStatusStage';
 
 const subscribe = () => () => {};
@@ -36,7 +41,9 @@ export function WorkStatusPage() {
   const root = native ? chosen ?? vaultRoot : null;
   const { snapshot, failed, readAtMs } = useWorkStatus(root);
   const nowMs = useMinuteClock(readAtMs);
-  const read = useMemo(() => (snapshot?.status === 'ready' ? buildWorkTracks(snapshot) : null), [snapshot]);
+  const sessionListOn = useSessionListReadEnabled();
+  const sessionList = useAgentSessions(snapshot?.status === 'ready' ? snapshot.root : null, sessionListOn);
+  const read = useMemo(() => (snapshot?.status === 'ready' ? withAgentSessions(buildWorkTracks(snapshot), sessionList.rows) : null), [snapshot, sessionList.rows]);
   const tracks = useSessionIdentity(read);
   const seenRunningAt = useRunningMemory(tracks, readAtMs);
   const plan = useMemo(() => (tracks ? planRooms(tracks, nowMs, seenRunningAt) : null), [tracks, nowMs, seenRunningAt]);
@@ -49,8 +56,10 @@ export function WorkStatusPage() {
   const shownTracks = useMemo(() => (tracks ? withActivity(tracks, activity) : null), [tracks, activity]);
   const sameFolder = tracks ? [...tracks.sessions.flatMap(session => session.tracks), ...tracks.unheld].filter(track => track.running && track.tools.length > 1).length : 0;
   const cleanup = tracks?.stuck.length ?? 0;
+  const waiting = plan ? [...plan.stage, ...plan.floors.flatMap(floor => floor.rooms)].filter(room => room.state.kind === 'waiting').length : 0;
   const reduced = usePrefersReducedMotion();
   const alerts = [
+    waiting > 0 ? { kind: 'waiting' as RoomAlert, label: t('header.waiting', { count: waiting }) } : null,
     sameFolder > 0 ? { kind: 'sameFolder' as RoomAlert, label: t('header.sameFolder', { count: sameFolder }) } : null,
     cleanup > 0 ? { kind: 'cleanup' as RoomAlert, label: t('header.cleanup', { count: cleanup }) } : null,
   ].filter(alert => alert !== null);
@@ -96,6 +105,7 @@ export function WorkStatusPage() {
         title={t('title')}
         className="md:[&>[data-page-header-row]]:px-10"
         meta={snapshot ? (
+          <span className="flex min-w-0 items-center gap-2">
           <span className="truncate text-body leading-body text-[color:var(--color-text-tertiary)]">
             {t('repoLine', { repo: snapshot.repository, count: snapshot.worktrees.length })}
             {alerts.map(alert => (
@@ -112,6 +122,9 @@ export function WorkStatusPage() {
                 </button>
               </span>
             ))}
+          </span>
+          <SessionListControl line={sessionListLine(sessionList.status)} />
+          <InfoHint label={t('about.label')} align="left">{t('about.body')}</InfoHint>
           </span>
         ) : null}
         actions={chooseButton('sm')}

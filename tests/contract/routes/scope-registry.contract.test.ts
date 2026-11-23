@@ -113,6 +113,7 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "atlas.agentActivity.notifications", kind: "storage", scope: "global", note: "notification inbox on/off preference" },
   { key: "atlas.agentActivity.kinds", kind: "storage", scope: "global", note: "muted notification kinds" },
   { key: "atlas.agentActivity.tab", kind: "storage", scope: "global", note: "The bell panel's last tab — a reading preference of this machine, not a fact about any folder" },
+  { key: "atlas.workStatus.sessionListRead", kind: "storage", scope: "global", note: "Whether Work status runs the person's Claude Code for its session list: a choice about this machine's program, not about any folder" },
   { key: "ontology-atlas:canvas-background:v1", kind: "storage", scope: "global", note: "canvas background preference" },
   { key: "ontology-atlas:glyph-set:v1", kind: "storage", scope: "global", note: "glyph set preference" },
   { key: "ontology-atlas:vault-index:v1", kind: "storage", scope: "global", note: "search index on/off preference" },

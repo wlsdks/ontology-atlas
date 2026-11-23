@@ -128,6 +128,12 @@ const tinting = new Map<string, Promise<string | null>>();
 /** The tinted strip's address, if it is ready. */
 export const tintedStripUrl = (source: string, ink: string) => tinted.get(`${source}|${ink}`) ?? null;
 
+/**
+ * How much of the ink a pixel takes per unit of its own lightness. Moru's mid indigo takes about
+ * three quarters of it and his lightest indigo nearly all, so his shading stays inside the ink.
+ */
+export const TINT_GAIN = 1.5;
+
 /** Lays `ink` (`r,g,b`, 0 to 255) on one strip's pixels, as the filter does in sRGB. */
 export function tintPixels(data: Uint8ClampedArray, ink: readonly number[]) {
   const [ir, ig, ib] = ink.map(value => value / 255);
@@ -138,8 +144,8 @@ export function tintPixels(data: Uint8ClampedArray, ink: readonly number[]) {
     // The indigo mask, the inked lightness (premultiplied), the mask applied, then laid over the source.
     const mask = Math.min(1, Math.max(0, -7 * R + 7 * B - 1.1));
     if (!mask) continue;
-    const L = 0.3 * R + 0.5 * G + 0.2 * B, alpha = Math.min(1, 2.1 * A);
-    const inked = [ir, ig, ib].map(channel => Math.min(alpha, 2.1 * L * A * channel));
+    const L = 0.3 * R + 0.5 * G + 0.2 * B, alpha = Math.min(1, TINT_GAIN * A);
+    const inked = [ir, ig, ib].map(channel => Math.min(alpha, TINT_GAIN * L * A * channel));
     const accentA = alpha * mask;
     const outA = accentA + A * (1 - accentA);
     for (let k = 0; k < 3; k++) {

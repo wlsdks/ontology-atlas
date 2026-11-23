@@ -44,14 +44,19 @@ export interface RoomLook {
 /**
  * Every room's poses are chosen here, so a new Moru clip drops in at one place. Only what Git and
  * the locks show picks a row: working types at the desk, a pair reads the monitor behind, a room
- * quiet for long nods off, and a lock left behind or a folder gone sighs. Nothing here reads whether
- * a session waits on its person, so `heads-up` has no state to play yet.
+ * quiet for long nods off, and a lock left behind or a folder gone sighs. A session that waits for
+ * its person looks up (`heads-up`); one that has replied stands still, its turn done.
  */
 export function roomLook(state: RoomState): RoomLook {
   const quiet = { running: false, monitorOff: false, crate: 'plain', cast: 'one', clip: 'waiting', backClip: 'monitor-read', still: true, dozing: false } as const;
   switch (state.kind) {
+    case 'waiting':
+      return { ...quiet, clip: 'heads-up', still: false };
+    case 'sessionFailed':
+      return { ...quiet, clip: 'feel-worried', still: false };
     case 'working':
       return { ...quiet, running: true, cast: state.tools.length > 1 ? 'two' : 'one', clip: 'desk-type', still: false };
+    case 'replied':
     case 'resting':
     case 'locked':
     case 'merged':
@@ -92,21 +97,6 @@ export function moruPhase(key: string): number {
   let hash = 0;
   for (const char of key) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
   return (hash % LOOP_POSES) / LOOP_POSES;
-}
-
-/** How many wall props a room may have; which one is its worktree's own. */
-export const ROOM_PROPS = 6;
-
-export interface RoomIdentity {
-  /** Which of the `ROOM_PROPS` props stands in the room. */
-  prop: number;
-}
-
-/** What tells rooms apart at a glance, from the branch name alone, so a room keeps it for life. */
-export function roomIdentity(branch: string): RoomIdentity {
-  let hash = 0x811c9dc5;
-  for (const char of branch) hash = Math.imul(hash ^ char.charCodeAt(0), 0x01000193) >>> 0;
-  return { prop: hash % ROOM_PROPS };
 }
 
 /**
@@ -156,10 +146,11 @@ export function castRooms(rooms: readonly CastRoom[]): Map<string, MoruCharacter
   return cast;
 }
 
-/** A warning the page header counts: two tools in one folder, or a worktree to clean up. */
-export type RoomAlert = 'sameFolder' | 'cleanup';
+/** What the page header counts: a session waiting for its person, two tools in one folder, or a worktree to clean up. */
+export type RoomAlert = 'waiting' | 'sameFolder' | 'cleanup';
 
 export function roomAlertOf(state: RoomState): RoomAlert | null {
+  if (state.kind === 'waiting') return 'waiting';
   if (state.kind === 'working' && state.tools.length > 1) return 'sameFolder';
   return state.kind === 'lockLeft' || state.kind === 'missing' ? 'cleanup' : null;
 }
@@ -209,7 +200,7 @@ export function withRetirees(plan: RoomPlan, retirees: readonly Retiree[], stage
     }
     let floor = floors.find(candidate => candidate.key === retiree.floor);
     if (!floor) {
-      floor = { key: retiree.floor, session: retiree.entry.session, rooms: [], total: 0, working: 0, attention: 0 };
+      floor = { key: retiree.floor, session: retiree.entry.session, rooms: [], total: 0, working: 0, attention: 0, waiting: 0 };
       floors.push(floor);
     }
     insert(floor.rooms, retiree);
@@ -226,7 +217,7 @@ export function withRetirees(plan: RoomPlan, retirees: readonly Retiree[], stage
     const key = room.session?.key ?? NO_SESSION_FLOOR;
     let floor = floors.find(candidate => candidate.key === key);
     if (!floor) {
-      floor = { key, session: room.session, rooms: [], total: 0, working: 0, attention: 0 };
+      floor = { key, session: room.session, rooms: [], total: 0, working: 0, attention: 0, waiting: 0 };
       floors.push(floor);
     }
     floor.rooms.unshift(room);

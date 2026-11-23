@@ -1,12 +1,14 @@
 'use client';
 
-import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
+import { memo, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { planRooms, sessionsIn, type RoomEntry, type RoomPlan, type TrackSession, type WorkTracks } from '@/shared/lib/work-status/work-tracks';
 import { cn } from '@/shared/lib/cn';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { MOTION } from '@/shared/motion';
-import { WIDE_ROOM_W, layoutBuilding, pairUnit, screenRows, stageCapacity, type Box, type RoomBox, type RoomSize, type RoomUnit } from '../model/building-layout';
+import { changedAreas } from '../model/changed-areas';
+import { fileColumns, layoutBuilding, listsAreas, pairUnit, screenRows, showsWallFacts, stageCapacity, type Box, type RoomBox, type RoomSize, type RoomUnit, type ScreenLists } from '../model/building-layout';
+import { TINT_GAIN } from '../model/cast-strip';
 import { mountWhenFree } from '../model/face-mount-queue';
 import { clockTime } from '../model/format';
 import { MERGE_LIGHTS_OUT_MS, createMoruClock } from '../model/moru-clock';
@@ -19,9 +21,9 @@ import type { MoruCharacter } from '../model/room-look';
 import { BranchName } from './BranchName';
 import { LargeRoom } from './LargeRoom';
 import { MiniRoom } from './MiniRoom';
-import { MoruLobby } from './MoruLobby';
+import { RoomPanel } from './RoomPanel';
 import { RoomShelf } from './RoomShelf';
-import { useRoomCopy } from './use-room-copy';
+import { BASE_SCREEN_COMMITS, useRoomCopy } from './use-room-copy';
 import styles from './rooms.module.css';
 
 /** From this width a mini room spreads its newest commits and what is not committed into columns. */
@@ -51,7 +53,7 @@ function TintFilters() {
             <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  -7 0 7 0 -1.1" result="indigo" />
             <feColorMatrix in="SourceGraphic" type="matrix" values="0.3 0.5 0.2 0 0  0.3 0.5 0.2 0 0  0.3 0.5 0.2 0 0  0 0 0 1 0" result="lightness" />
             <feFlood style={{ floodColor: `var(--work-session-${ink})` }} result="ink" />
-            <feComposite in="lightness" in2="ink" operator="arithmetic" k1="2.1" k2="0" k3="0" k4="0" result="inked" />
+            <feComposite in="lightness" in2="ink" operator="arithmetic" k1={TINT_GAIN} k2="0" k3="0" k4="0" result="inked" />
             <feComposite in="inked" in2="indigo" operator="in" result="accent" />
             <feMerge>
               <feMergeNode in="SourceGraphic" />
@@ -90,10 +92,18 @@ interface FaceSize {
 /** A leaving face fades out the room it showed, not the room's new state: its Moru, tag and monitor stay as they were. */
 type LeavingFace = FaceSize & { room: RoomEntry };
 
-function RoomFace({ room, face, copy, retiring, showOwner, character }: { room: RoomEntry; face: FaceSize; copy: RoomCopy; retiring: boolean; showOwner: boolean; character: MoruCharacter }) {
-  return face.size === 'large'
-    ? <LargeRoom room={room} unit={face.unit} rows={screenRows(face)} pairScale={pairUnit(face.w, face.unit) / face.unit} besideConsole={face.w >= WIDE_ROOM_W} copy={copy} tint={tintOf(room.session)} guestTint={tintOf(room.guests[0] ?? null)} retiring={retiring} entered={face.entered} faceId={face.id} character={character} />
-    : <MiniRoom room={room} copy={copy} tint={tintOf(room.session)} showOwner={showOwner} character={character} />;
+/** What a stage room's screen has to list: its commits (a room on the base branch lists few of that branch's own), its files and the folders they are in. */
+function screenLists(room: RoomEntry): ScreenLists {
+  const activity = room.track.activity;
+  const commits = activity?.commits?.length ?? 0;
+  return { commits: activity?.onBase ? Math.min(commits, BASE_SCREEN_COMMITS) : commits, files: activity?.files.length ?? 0, areas: changedAreas(activity?.files ?? []).length };
+}
+
+function RoomFace({ room, face, copy, retiring, showOwner, alone, character }: { room: RoomEntry; face: FaceSize; copy: RoomCopy; retiring: boolean; showOwner: boolean; alone: boolean; character: MoruCharacter }) {
+  if (face.size !== 'large') return <MiniRoom room={room} copy={copy} tint={tintOf(room.session)} showOwner={showOwner} character={character} />;
+  const lists = screenLists(room);
+  const areas = listsAreas(face.w, lists, alone);
+  return <LargeRoom room={room} unit={face.unit} rows={screenRows(face)} pairScale={pairUnit(face.w, face.unit) / face.unit} fileColumns={fileColumns(face.w, lists.commits > 0, areas)} areas={areas} wallFacts={showsWallFacts(face.w)} copy={copy} tint={tintOf(room.session)} guestTint={tintOf(room.guests[0] ?? null)} retiring={retiring} entered={face.entered} faceId={face.id} character={character} />;
 }
 
 /** A merged room fades its content to its own wall, then the wall fades, in the last moments of its stay. */
@@ -105,6 +115,8 @@ interface RoomProps {
   copy: RoomCopy;
   retiring: boolean;
   showOwner: boolean;
+  /** The only room on the stage: its screen also lists the folders its files are in. */
+  alone: boolean;
   reduced: boolean;
   /** The building's measured size: a change of it is a window resize, not a move. */
   windowKey: string;
@@ -114,6 +126,11 @@ interface RoomProps {
   ghost?: { from: Box; onDone: (key: string) => void };
   /** The room's Moru, cast across the whole building. */
   character: MoruCharacter;
+  /** The room panel shows this room. */
+  pressed?: boolean;
+  /** Opens the room panel on this room, or closes it when it already shows it. */
+  onPress?: (key: string) => void;
+  panelId?: string;
 }
 
 const sameBox = (a: RoomBox, b: RoomBox) => a.x === b.x && a.y === b.y && a.w === b.w && a.h === b.h && a.size === b.size && a.unit === b.unit;
@@ -123,8 +140,8 @@ const sameBox = (a: RoomBox, b: RoomBox) => a.x === b.x && a.y === b.y && a.w ==
  * and an update that leaves it and its box alone does not draw the room again.
  */
 function sameRoomProps(a: RoomProps, b: RoomProps) {
-  return a.copy === b.copy && a.retiring === b.retiring && a.showOwner === b.showOwner && a.reduced === b.reduced && a.entered === b.entered
-    && a.windowKey === b.windowKey && a.ghost === b.ghost && a.character === b.character && sameBox(a.box, b.box)
+  return a.copy === b.copy && a.retiring === b.retiring && a.showOwner === b.showOwner && a.alone === b.alone && a.reduced === b.reduced && a.entered === b.entered
+    && a.windowKey === b.windowKey && a.ghost === b.ghost && a.character === b.character && a.pressed === b.pressed && a.onPress === b.onPress && sameBox(a.box, b.box)
     && (a.room === b.room || JSON.stringify(a.room) === JSON.stringify(b.room));
 }
 
@@ -136,7 +153,8 @@ const Room = memo(DrawnRoom, sameRoomProps);
  * (`useRoomMotion` plays that); the new face is drawn hidden and fades in once the room has arrived,
  * so a room never shows two faces. When the window itself resizes, the face takes the new size at once.
  */
-function DrawnRoom({ room, box, copy, retiring, showOwner, reduced, windowKey, entered, ghost, character }: RoomProps) {
+function DrawnRoom({ room, box, copy, retiring, showOwner, alone, reduced, windowKey, entered, ghost, character, pressed = false, onPress, panelId }: RoomProps) {
+  const t = useTranslations('workStatus');
   const ghostFrom = ghost?.from;
   const onGhostDone = ghost?.onDone;
   const [faces, setFaces] = useState<FaceState>({
@@ -213,6 +231,7 @@ function DrawnRoom({ room, box, copy, retiring, showOwner, reduced, windowKey, e
       data-room-running={look.running}
       data-room-retiring={retiring || undefined}
       data-room-alert={ghost ? undefined : roomAlertOf(room.state) ?? undefined}
+      data-room-pressed={pressed || undefined}
       data-session={ghost ? undefined : room.session?.key}
       aria-hidden={ghost ? true : undefined}
       inert={ghost ? true : undefined}
@@ -231,21 +250,31 @@ function DrawnRoom({ room, box, copy, retiring, showOwner, reduced, windowKey, e
           ref={oldFace}
           data-room-face
           data-face-leaving="true"
-          data-wide={faces.leaving.w >= WIDE_ROOM_W}
           data-spread={faces.leaving.size === 'mini' && faces.leaving.w >= SPREAD_MINI_W}
           data-unit={faces.leaving.unit}
-          // Hidden from assistive technology only: rooms hold nothing to press or focus, and `inert`
+          // Hidden from assistive technology only: a face holds nothing to press or focus, and `inert`
           // would restyle the whole face the moment it starts to leave.
           aria-hidden
           className={cn(styles.face, styles.notched)}
           style={{ width: faces.leaving.w, height: faces.leaving.h }}
         >
-          <RoomFace room={faces.leaving.room} face={faces.leaving} copy={copy} retiring={retiring} showOwner={showOwner} character={character} />
+          <RoomFace room={faces.leaving.room} face={faces.leaving} copy={copy} retiring={retiring} showOwner={showOwner} alone={alone} character={character} />
         </div>
       ) : null}
-      <div key={`face-${current.id}`} data-room-face data-wide={current.w >= WIDE_ROOM_W} data-spread={current.size === 'mini' && current.w >= SPREAD_MINI_W} data-unit={current.unit} className={cn(styles.face, styles.notched, 'h-full w-full')}>
-        {faces.ready ? <RoomFace room={room} face={current} copy={copy} retiring={retiring} showOwner={showOwner} character={character} /> : null}
+      <div key={`face-${current.id}`} data-room-face data-spread={current.size === 'mini' && current.w >= SPREAD_MINI_W} data-unit={current.unit} className={cn(styles.face, styles.notched, 'h-full w-full')}>
+        {faces.ready ? <RoomFace room={room} face={current} copy={copy} retiring={retiring} showOwner={showOwner} alone={alone} character={character} /> : null}
       </div>
+      {onPress && !ghost ? (
+        <button
+          type="button"
+          data-room-press
+          aria-label={t('panel.open', { branch: room.track.branch ?? room.track.title })}
+          aria-expanded={pressed}
+          aria-controls={pressed ? panelId : undefined}
+          className={styles.press}
+          onClick={() => onPress(room.key)}
+        />
+      ) : null}
     </div>
   );
 }
@@ -263,9 +292,10 @@ function Placed({ box, children, className, testId, id }: { box: Box; children: 
   );
 }
 
-function FloorPlate({ session, total, attention, onStage, below, copy, nowMs }: {
+function FloorPlate({ session, total, waiting, attention, onStage, below, copy, nowMs }: {
   session: TrackSession | null;
   total: number;
+  waiting: number;
   attention: number;
   /** This session's rooms on the front stage, and on this floor. */
   onStage: number;
@@ -280,6 +310,7 @@ function FloorPlate({ session, total, attention, onStage, below, copy, nowMs }: 
     t('session.worktrees', { count: total }),
   ].filter(Boolean).join(' · ');
   const summary = [
+    waiting > 0 ? <span key="w" className="text-[color:var(--color-status-warning)]">{t('session.waiting', { count: waiting })}</span> : null,
     attention > 0 ? <span key="a" className="text-[color:var(--color-status-warning)]">{t('session.cleanup', { count: attention })}</span> : null,
     onStage > 0 ? <span key="s" className="text-[color:var(--color-text-primary)]">{t('session.onStage', { count: onStage })}</span> : null,
     below > 0 ? <span key="b">{t('session.below', { count: below })}</span> : null,
@@ -313,7 +344,6 @@ function FloorHeading({ kind, working, total }: { kind: 'plate' | 'line'; workin
   return (
     <div className={cn(styles.floorHeading, 'h-full w-full')} data-kind={kind} data-testid="work-floor-heading">
       <div className={cn(styles.floorHeadingName, 'text-body leading-body font-[var(--font-weight-emphasis)]')}>
-        <i aria-hidden className={styles.stairs} />
         {t('floor.below')}
       </div>
       {kind === 'plate' ? <div className="mt-0.5 text-label leading-label">{sum}</div> : <span className="text-body leading-body">{sum}</span>}
@@ -412,6 +442,7 @@ const floorKeyOf = (floor: { key: string }) => floor.key;
 /** A worktree key has no whitespace, so it can name an element the region reads in order. */
 const roomDomId = (key: string) => `work-room-${key}`;
 const SHELF_DOM_ID = 'work-room-shelf';
+const focusRoom = (key: string) => document.getElementById(roomDomId(key))?.querySelector<HTMLElement>('[data-room-press]')?.focus();
 
 interface Ghost {
   room: RoomEntry;
@@ -443,7 +474,8 @@ function emphasise(board: HTMLElement | null, event: ReactPointerEvent<HTMLEleme
 /**
  * The building of rooms: at most six large rooms on the front stage, the session floors of mini
  * rooms under them and the shelf. Rooms keep their place by transform, so a change glides from
- * where each room was drawn, and nothing reads the DOM to lay them out.
+ * where each room was drawn, and nothing reads the DOM to lay them out. Pressing a room opens the
+ * room panel beside the building.
  */
 export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs }: {
   tracks: WorkTracks;
@@ -478,14 +510,19 @@ export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs }: {
   const shown = useMemo(() => withRetirees(plan, retirees, stageLimit), [plan, retirees, stageLimit]);
   const shelfMerged = useMemo(() => plan.shelf.merged.filter(track => !retiring.has(track.key)), [plan, retiring]);
   const hasShelf = shelfMerged.length > 0 || plan.shelf.untouched.length > 0;
+  // A one-row stage is as tall as the longest list its rooms have to show.
+  const stageLists = useMemo(() => shown.stage.map(screenLists), [shown]);
+  const alone = shown.stage.length === 1;
   const layout = useMemo(() => layoutBuilding({
     width: size?.width ?? 0,
     height: size?.height ?? 0,
     stage: shown.stage.map(room => room.key),
     floors: shown.floors.map(floor => ({ key: floor.key, rooms: floor.rooms.map(room => room.key) })),
     hasShelf,
-    hasLobby: shown.stage.length + shown.floors.length > 0,
-  }), [size, shown, hasShelf]);
+    stageLists,
+  }), [size, shown, hasShelf, stageLists]);
+  const firstStageBox = shown.stage.length > 0 ? layout.rooms.get(shown.stage[0].key) : undefined;
+  const stageRows = firstStageBox ? screenRows(firstStageBox) : 0;
 
   const lastDrawn = useRef(new Map<string, { room: RoomEntry; box: RoomBox; retiring: boolean; character: MoruCharacter }>());
   const [ghosts, setGhosts] = useState<Ghost[]>([]);
@@ -499,13 +536,12 @@ export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs }: {
     if (left.length > 0) setGhosts(current => [...current.filter(ghost => !removed.has(ghost.room.key)), ...left]);
   }, []);
   const forgetGhost = useCallback((key: string) => setGhosts(current => current.filter(ghost => ghost.room.key !== key)), []);
-  const windowKey = size ? `${size.width}x${size.height}` : '';
+  // A stage that grows by a row takes its new size at once, as a window resize does.
+  const windowKey = size ? `${size.width}x${size.height}:${stageRows}` : '';
   useRoomMotion(boardRef, layout.rooms, { reduced, sizeKey: windowKey, onRemoved });
   useAmbientMotion(boardRef, layout.rooms, reduced);
 
   const entries = useMemo(() => allRooms(shown).map(({ room }) => room), [shown]);
-  /** The lobby's crew grows by one for each worktree no live session holds. */
-  const resting = entries.filter(room => !room.session).length;
   const characterOf = useRoomCast(entries);
   useLayoutEffect(() => {
     lastDrawn.current = new Map(entries.flatMap(room => {
@@ -522,13 +558,29 @@ export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs }: {
   if (firstDrawn === null && size && drawnRooms.length > 0) setFirstDrawn(new Set(drawnRooms.map(roomKeyOf)));
   const readingOrder = [...entries.filter(room => layout.rooms.has(room.key)).map(room => roomDomId(room.key)), ...(layout.shelf ? [SHELF_DOM_ID] : [])].join(' ');
 
-  const stageTop = Math.min(...shown.stage.map(room => layout.rooms.get(room.key)?.y ?? Number.POSITIVE_INFINITY), layout.height);
-  const building: CSSProperties = { transform: `translateY(${Math.max(0, stageTop - 12)}px)`, height: layout.height };
 
   const emphasiseSession = useCallback((event: ReactPointerEvent<HTMLElement>) => emphasise(boardRef.current, event), []);
 
+  const panelId = useId();
+  const [pressedKey, setPressedKey] = useState<string | null>(null);
+  const pressRoom = useCallback((key: string) => setPressedKey(current => (current === key ? null : key)), []);
+  // A room that leaves the building takes its panel with it.
+  const pressedRoom = entries.find(room => room.key === pressedKey && layout.rooms.has(room.key)) ?? null;
+  const closePanel = useCallback(() => {
+    setPressedKey(current => {
+      if (current) focusRoom(current);
+      return null;
+    });
+  }, []);
+  const closeOnEscape = (event: ReactKeyboardEvent<HTMLElement>) => {
+    if (event.key !== 'Escape' || event.defaultPrevented || pressedRoom === null) return;
+    event.preventDefault();
+    closePanel();
+  };
+
   return (
-    <div ref={viewportRef} className="relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden" data-testid="work-building-viewport">
+    <div className="flex min-h-0 flex-1" onKeyDown={closeOnEscape}>
+    <div ref={viewportRef} className="relative min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden" data-testid="work-building-viewport">
       <TintFilters />
       <div
         ref={boardRef}
@@ -538,12 +590,11 @@ export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs }: {
         role="region"
         onPointerOver={emphasiseSession}
         onPointerLeave={emphasiseSession}
-        className="relative mx-10 overflow-clip"
+        className={cn(styles.board, 'relative mx-10 overflow-clip')}
         style={{ height: size ? layout.height : '100%' }}
       >
         {size ? (
           <>
-            {shown.stage.length + shown.floors.length > 0 ? <i aria-hidden className={cn(styles.building, styles.notched)} style={building} /> : null}
             {drawnFloors.map(floor => {
               const plate = layout.floors.get(floor.key);
               return plate ? (
@@ -551,6 +602,7 @@ export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs }: {
                   <FloorPlate
                     session={floor.session}
                     total={floor.total}
+                    waiting={floor.waiting}
                     attention={floor.attention}
                     onStage={shown.stage.filter(room => sessionsIn(room).includes(floor.key)).length}
                     below={floor.rooms.length}
@@ -570,19 +622,14 @@ export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs }: {
               </Placed>
             ) : null}
             {ghosts.map(ghost => (
-              <Room key={`ghost:${ghost.room.key}`} room={ghost.room} box={ghost.box} copy={copy} retiring={ghost.retiring} showOwner={!layout.banded} reduced={reduced} windowKey={windowKey} entered={false} ghost={{ from: ghost.from, onDone: forgetGhost }} character={ghost.character} />
+              <Room key={`ghost:${ghost.room.key}`} room={ghost.room} box={ghost.box} copy={copy} retiring={ghost.retiring} showOwner={!layout.banded} alone={false} reduced={reduced} windowKey={windowKey} entered={false} ghost={{ from: ghost.from, onDone: forgetGhost }} character={ghost.character} />
             ))}
             {drawnRooms.map(room => {
               const box = layout.rooms.get(room.key);
               return box ? (
-                <Room key={room.key} room={room} box={box} copy={copy} retiring={retiring.has(room.key)} showOwner={!layout.banded} reduced={reduced} windowKey={windowKey} entered={firstDrawn !== null && !firstDrawn.has(room.key)} character={characterOf(room)} />
+                <Room key={room.key} room={room} box={box} copy={copy} retiring={retiring.has(room.key)} showOwner={!layout.banded} alone={alone} reduced={reduced} windowKey={windowKey} entered={firstDrawn !== null && !firstDrawn.has(room.key)} character={characterOf(room)} pressed={pressedRoom?.key === room.key} onPress={pressRoom} panelId={panelId} />
               ) : null;
             })}
-            {layout.lobby ? (
-              <Placed box={layout.lobby} testId="work-lobby-floor">
-                <MoruLobby width={layout.lobby.w} unit={layout.lobby.unit} resting={resting} reduced={reduced} />
-              </Placed>
-            ) : null}
             {layout.shelf ? (
               <Placed box={layout.shelf} id={SHELF_DOM_ID}>
                 <RoomShelf merged={shelfMerged} untouched={plan.shelf.untouched} baseBranch={baseBranch} nowMs={nowMs} />
@@ -591,6 +638,8 @@ export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs }: {
           </>
         ) : null}
       </div>
+    </div>
+    <RoomPanel room={pressedRoom} copy={copy} id={panelId} onClose={closePanel} />
     </div>
   );
 }

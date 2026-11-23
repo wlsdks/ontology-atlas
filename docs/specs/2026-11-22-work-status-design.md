@@ -59,7 +59,7 @@ None — in the Work status spec.
 | Open in editor or terminal: first press; opened; refused; none installed | as above | `workStatus.open.choose` with the installed applications; the application comes forward; toast `.refused`, nothing opened; `.none` with Copy folder path |
 | Find: no match | as above | `workStatus.find.none`; Escape clears the field and keeps focus in it |
 | A check running: time known, under 90 s, unknown, late | as above | `workStatus.eta.range`, `.eta.about`, `.eta.unknown`, `.eta.slow` |
-| The session list: read; some sessions not in it; unreadable; switched off | as above | `workStatus.sessions.status` in the agent state popover; `.missing` with Add another settings folder; `.unreadable` with its reason, rooms keeping their words from beats; `.off` with the switch |
+| The session list: read; no session running; unreadable; switched off | as above | `workStatus.sessions.chip.{on,unreadable,off}` in the header, opening a panel with `.switch`; `.now.read` or `.now.noSession`; `.unreadable` with its reason and `.fallback`; `.off`; `.status` or `.statusOff`. Not built: `.missing` with Add another settings folder |
 | Hook entries: not added; confirm | as above | `workStatus.agentState.offer` with Add to Claude Code and Not now; `.confirmTitle`, `.confirmBody` and each listed file with its entries and Add another settings folder, where Cancel changes nothing |
 | Hook entries: added; Codex not yet trusted | as above | `workStatus.agentState.status` with Remove; when sessions stay silent, `.silent` with Add another settings folder; `.codexTrust` |
 | Hook entries: blocked, or the file refused | as above | `workStatus.agentState.managed` with no button; `.invalid`, `.changed`, `.linked`, `.unwritable`, `.pickRefused`, nothing written |
@@ -95,10 +95,9 @@ the branch and, from slice 5, the capability it changes; under it the newest com
 base branch, three at most, each one ellipsised line with its age, newest on top; at its foot what
 is not committed with the file changed last, and the commit count. A bezel under the screen names
 the tool and session number and the state with how long it has worked, beside a light that is
-green while something runs. The screen lights the wall and floor in the session's ink while a
-session is live there and is dim when none is; it pulses once in a second that had a beat and is
-never on a timer. A room narrower than `WIDE_ROOM_W` hangs its screen on the wall above Moru with
-the newest commit only. A large room also draws a track in its floor that leaves through a hatch
+green while something runs. The screen throws a faint pool of the session's ink on the floor while a
+session is live there and is dim when none is; no wall or screen is filled with an ink; it pulses once in a second that had a beat and is
+never on a timer. Every stage room sets its screen across the room above Moru (2026-11-23). A large room also draws a track in its floor that leaves through a hatch
 in the side wall marked `main`: stations pre-push, push, PR, CI along it, a cart standing where the
 branch is, and a pill over the cart with the time left. The cart rides between two stations only
 while a timed check runs, stops short of the next when the check runs late, and enters the hatch
@@ -374,11 +373,14 @@ slice 3 moves them to the keys below.
 | `room.asking.label` / `.big` / `.detail` | Monitor | {session} asks / Waiting for your approval / {elapsed} so far. Answer in that session. |
 | `room.asking.answer` / `.answerDetail` | Monitor | Waiting for your answer / {elapsed} so far. Answer in that session. |
 | `room.failed.big` / `.detail` | Monitor | The session failed / It ended with an error. Its own terminal shows why. |
-| `sessions.status` | Agent state popover | Atlas reads {tool}'s own session list to show which sessions wait for you. It runs {command} at most every 10 seconds while Work status is open and changes nothing. |
-| `sessions.switch` / `.off` | Agent state popover | Read {tool}'s session list / Atlas is not reading {tool}'s session list, so rooms show only when each folder last changed. |
-| `sessions.missing` | Agent state popover | {count, plural, one {# running {tool} session is} other {# running {tool} sessions are}} not in the list Atlas read. If they use another settings folder, add it. |
-| `sessions.unreadable` | Agent state popover | Atlas could not read {tool}'s session list: {reason} Rooms show when each folder last changed. Atlas reads again at the next change. |
-| `sessions.reason.notFound` / `.timeout` / `.format` | Inside `sessions.unreadable` | {tool} was not found in the folders Atlas looks in. / {tool} did not answer within 5 seconds. / The list was in a form Atlas does not know; a newer {tool} may have changed it. |
+| `sessions.status` / `.statusOff` | Session list panel | Atlas reads {tool}'s own session list to show which sessions wait for you. While Work status is open it runs {command} every 10 seconds, and a second after a {tool} session starts or ends, with no network access. Atlas writes nothing. / Switched on, Atlas reads {tool}'s own session list: (the same) |
+| `sessions.chip.on` / `.unreadable` / `.off` | Header | Session list on / Session list not read / Session list off |
+| `sessions.title` / `.switch` / `.choice.on` / `.choice.off` | Session list panel | {tool}'s session list / Read {tool}'s session list / On / Off |
+| `sessions.now.read` / `.now.noSession` | Session list panel | Read. A room says so when its session waits for you. / No {tool} session is running, so nothing is being read. |
+| `sessions.off` | Session list panel | Atlas does not run {tool}, so no room can say whether its session waits for you or has finished replying. |
+| `sessions.missing` | Agent state popover (not built) | {count, plural, one {# running {tool} session is} other {# running {tool} sessions are}} not in the list Atlas read. If they use another settings folder, add it. |
+| `sessions.unreadable` / `.fallback` | Session list panel | Atlas could not read {tool}'s session list: {reason} / Until it can, no room can say whether its session waits for you. Atlas tries again within 10 seconds. |
+| `sessions.reason.notFound` / `.timedOut` / `.failed` / `.unknownForm` | Inside `sessions.unreadable` | {tool} was not found in the folders Atlas looks in. / {tool} did not answer within 5 seconds. / {tool} ended with an error. / The list was in a form Atlas does not know; a newer {tool} may have changed it. |
 | `room.thinking.label` / `.big` / `room.replied` | Monitor / mini room | Between commands / Thinking / Finished replying {ago} |
 | `agentState.offer` / `.offerCodex` | Notice under the header, until added or dismissed | Rooms already show when a {tool} session waits for you. With Atlas's hook entries, {tool} also reports each step within a second: thinking, running a command, finished replying. / Atlas has no session list to read for {tool}, so its rooms show only when each folder last changed. With Atlas's hook entries, {tool} reports when it is thinking, waiting for your approval, or has finished replying. |
 | `agentState.add` / `.addCodex` / `.another` / `.notNow` | Buttons | Add to Claude Code / Add to Codex / Add another settings folder / Not now |
@@ -446,3 +448,66 @@ None — the owner's answers are in the Work status spec.
   room that needs a person is framed in amber; the building ends under its content.
 - 2026-11-23: The screen keeps its text and 400 px; Moru's scale gives way and a room is as tall
   as what it holds. Two tools stand apart at their own scale, and held mini rooms show their Moru.
+- 2026-11-23: The owner asked for work facts over scenery. The lobby leaves the screen and the
+  building has no slab behind its rooms; Moru is drawn at his own size in every stage room (this
+  replaces the half step of the entry above) and the screen takes the room. A screen of 540 px or
+  more sets the commits beside the uncommitted files, which the activity read now lists (eight at
+  most, last changed first); the room on the base branch lists that branch's own newest commits.
+  Slice 6's room panel is built as far as it needs no new native command: the press, the facts in
+  sentences, Copy folder path and Copy command. Open in editor or terminal still waits for its
+  record.
+- 2026-11-23: The owner restated the problem: the person must be able to tell that work is running,
+  moving and talking to them, and to coordinate it. Judged against that, a working room said how
+  long its session had been open and not whether anything changed. Its bezel now says when the
+  worktree last changed, from the commit and file times the activity read already holds (twenty
+  commits and twenty files, each file with its change time); the session's age moves to the wall
+  facts and the panel. No state is named from that time: Moving, Quiet and Stalled still wait for
+  slice 3's watcher and criterion 33's thresholds. A room alone on the stage takes the whole width,
+  a one-row stage grows to its longest list, and the motion gate counts a travelling wall's branch
+  plaque as a room's name, since three hung rooms and four console rooms change form together.
+- 2026-11-23: The owner looked at the built screen and found the page still generic, and the grey
+  that set the area behind the rooms apart from the header odd. The page under the header is now
+  the header's own canvas with no slab and no glow around a room; a wall is one step above it and a
+  screen its black again, and an ink no longer tints a wall or a screen. Uncommitted files flow
+  into up to three columns so a time stays beside its name, the activity read lists sixty of them,
+  a room with no commits gives them the whole screen, the base branch lists five of its commits,
+  rooms sharing a stage keep to eight rows, and the wall facts drop the counts the screen already
+  says. The line under a lone room that explained worktrees is removed: it filled space and
+  reported nothing.
+- 2026-11-23: The owner asked for the scenery to go and for a screen that reads as live. A room
+  is now a screen over one rail: no drawn floor, side wall, console, prop, halo or contact shadow;
+  Moru stands on the rail, the cart rides it and it ends at a stop named `main`. The bezel draws
+  the last hour's changes as marks, a change that arrives rises once on that line and lights its
+  file's row, and a change under a minute old reads "just now". A screen moves beside Moru only
+  from 749 px, where it still keeps both columns, the stage takes four rooms only where three
+  across could not list files, and the commits keep at most 440 px beside the files.
+- 2026-11-23: The owner asked for the lower floor and the shelf to match the stripped rooms. A mini
+  room is a hairline in its session's ink, its facts, and one rail along its bottom edge to a stop:
+  the crate or Moru stands on that rail, a crate takes a narrower corner than Moru, and the rail
+  takes the session's ink only when the work is in the base branch, because a part-filled line read
+  as a progress measure Git cannot give. A mini room with a floor to itself keeps its commits within
+  620 px so a subject and its age stay together. The floor heading, floor plate and shelf are hairline
+  rules; the stairs mark is gone and the shelf counts with flat squares.
+- 2026-11-23: The owner asked for the page under a lone room not to stay empty. The emptiness was
+  the room having nothing more to say, so the room says more: a room alone on the stage lists the
+  folders its uncommitted files are in (three names deep, the one written last first, a bar for
+  its share, its count and age), which answers "what part is it working on" and covers files past
+  the list's rows. The form with the screen beside Moru is removed: it left a bare wall above him
+  and repeated the bezel, so every stage room is now a screen across the room over the rail, and a
+  room at least 600 px wide says its state large on the wall left of Moru. A page with little to
+  list still ends early; nothing is drawn to fill it.
+- 2026-11-23: the waiting rooms as built (slice 7). A room whose Claude Code session waits for
+  approval or an answer takes the amber frame a room that needs a person already had, says so at
+  the top of its screen and on its bezel, and its Moru plays `heads-up` (`docs/design/brand.md`
+  keeps `await-permission` for the in-app permission card); nothing breathes, since a wait is not
+  running work. A session that finished replying is a quiet room, unlit, its Moru held on the
+  waiting row. The header counts waiting rooms first (`header.waiting`), and a session's floor
+  heading counts its own (`session.waiting`). Keys: `room.waitingApproval`, `room.waitingAnswer`,
+  `room.replied`, `room.sessionFailed`, `panel.now.{waiting,replied,sessionFailed}`. The cast
+  gained the `heads-up` row for each character (`pnpm brand:cast`).
+- 2026-11-23: the session list's status line and switch as built. They sit in the header beside
+  the alert counts, as words with a dot (grey on, hollow off, amber when a read failed) that open
+  an anchored panel holding the switch, what is true now and what the read is; the agent state
+  popover planned for them is slice 9's. The copy table carries the keys as shipped. Off and
+  unreadable say what is lost instead of "rooms show only when each folder last changed", which
+  was not true of a room with a program in it.
