@@ -79,6 +79,10 @@
     "filesPrepared": "준비된 파일"
   },
   "mapping": {
+    "limitAhead": {
+      "fiveHour": "5시간 한도를 {percent, number}% 썼어요. 이 작업 중에 한도에 닿을 수 있어요.",
+      "weekly": "주간 한도를 {percent, number}% 썼어요. 이 작업 중에 한도에 닿을 수 있어요."
+    },
     "title": "코드의 나머지를 지도에 올리는 중",
     "request": "요청 {part, number}번째",
     "onMap": "기능 {total, number}개 중 <count>{mapped}</count>개({percent, number}%)",

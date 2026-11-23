@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { isAgentDoctorAvailable, useAgentDoctor } from '@/features/acp-doctor';
 import { isSendableSuggestion, readAcpTrouble, useAcpSession, VAULT_MCP_SERVER_NAME, type ChatSuggestion } from '@/features/acp-session';
 import { useMappingSessions, useMappingStage, workRuns, type TurnWorkReport } from '@/features/work-run';
+import { usePressingLimit } from '@/entities/agent-usage';
 import { useGrantedVaultFiles } from '@/entities/vault-session';
 import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { useLatestRef } from '@/shared/lib/use-latest-ref';
@@ -761,6 +762,7 @@ export function AcpChatPanelBody({
       {mapsTheRest && vaultRoot ? (
         <MapConversationMapping
           folder={vaultRoot}
+          runtimeId={runtimeId}
           mapping={mapping}
           figuresRef={figuresRef}
           // A run sends in new conversations, which open in the tool's opening mode: the kept choice answers there.
@@ -830,6 +832,7 @@ export function AcpChatPanelBody({
         {reportedPlan ? <ReportedPlanNote tGray={tGray} plan={reportedPlan} /> : null}
         <ComposerFooter
           t={t}
+          runtimeId={runtimeId}
           runtimeLabel={runtimeLabel}
           contextLabel={contextLabel}
           toolPicker={toolPicker}
@@ -943,8 +946,9 @@ function useMappingWork(
 }
 
 /** The row and the folder's figures; only the map conversation renders it, inside the folder's provider. */
-function MapConversationMapping({ folder, mapping, figuresRef, autoApprove, canStart, seated }: {
+function MapConversationMapping({ folder, runtimeId, mapping, figuresRef, autoApprove, canStart, seated }: {
   folder: string;
+  runtimeId: string;
   mapping: MappingRunDriver;
   figuresRef: RefObject<MappingFiguresReader>;
   autoApprove: boolean;
@@ -952,6 +956,7 @@ function MapConversationMapping({ folder, mapping, figuresRef, autoApprove, canS
   seated: boolean;
 }) {
   const figures = useFolderMappingFigures();
+  const limitAhead = usePressingLimit(runtimeId);
   useLayoutEffect(() => {
     figuresRef.current = figures.reader;
   });
@@ -966,6 +971,7 @@ function MapConversationMapping({ folder, mapping, figuresRef, autoApprove, canS
       resting={figures.resting?.figures ?? null}
       autoApprove={autoApprove}
       canStart={canStart}
+      limitAhead={limitAhead}
       collapsed={collapsed}
       onStart={mapping.start}
       onStop={mapping.stop}

@@ -1,5 +1,6 @@
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { agentUsage } from '@/entities/agent-usage';
 import type { AcpWorkReceipt } from '@/shared/lib/meaning-transition/acp-work-receipt';
 
 /**
@@ -2233,5 +2234,26 @@ describe('a screen decision read at the request', () => {
     await waitFor(() => expect(result.current.pending?.request.requestId).toBe(601));
     await act(async () => { result.current.pending?.resolve('reject'); });
     await act(async () => { await result.current.stop(); });
+  });
+});
+
+describe('the agent reports its usage', () => {
+  afterEach(() => agentUsage.reset());
+
+  it('keeps what this session reports for its agent and nothing from another session', async () => {
+    const hook = renderHook(() => useAcpSession({ runtimeId: 'claude-acp', vaultRoot: '/vault' }));
+    const starting = hook.result.current.start();
+    await waitFor(() => expect(bridge.release).not.toBeNull());
+    await act(async () => { bridge.release?.(); await starting; });
+    const usage = (sessionId: string, used: number) => act(() => bridge.listener?.(JSON.stringify({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: { sessionId, update: { sessionUpdate: 'usage_update', used, size: 200_000 } },
+    })));
+    usage('another-session', 9_999);
+    expect(agentUsage.read().byRuntime.size).toBe(0);
+    usage('s-1', 42_180);
+    expect(agentUsage.read().byRuntime.get('claude-acp')?.context).toMatchObject({ usedTokens: 42_180, windowTokens: 200_000 });
+    await act(async () => { await hook.result.current.stop(); });
   });
 });

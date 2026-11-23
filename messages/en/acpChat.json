@@ -501,5 +501,9 @@
     "listTitle": "Requests to map the rest of the code",
     "listItem": "Request {part, number}",
     "close": "Close"
+  },
+  "limitNear": {
+    "fiveHour": "{percent, number}% of 5-hour limit",
+    "weekly": "{percent, number}% of weekly limit"
   }
 }

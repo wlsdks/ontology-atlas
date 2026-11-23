@@ -501,5 +501,9 @@
     "listTitle": "コードの残りをマップに載せた依頼",
     "listItem": "{part, number}回目の依頼",
     "close": "閉じる"
+  },
+  "limitNear": {
+    "fiveHour": "5時間の上限の {percent, number}%",
+    "weekly": "週間の上限の {percent, number}%"
   }
 }

@@ -501,5 +501,9 @@
     "listTitle": "코드의 나머지를 지도에 올린 요청",
     "listItem": "요청 {part, number}번째",
     "close": "닫기"
+  },
+  "limitNear": {
+    "fiveHour": "5시간 한도 {percent, number}%",
+    "weekly": "주간 한도 {percent, number}%"
   }
 }

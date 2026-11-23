@@ -28,6 +28,7 @@ import { createAcpClient, type AcpClient, type AcpTransport } from './acp-client
 import type { AcpPermissionRequest } from './permissions/permission-request';
 import type { AcpSessionChoices } from './session-choices/acp-session-choices';
 import type { AcpSessionSummary } from './session-summaries';
+import { agentUsage } from '@/entities/agent-usage';
 import type { AcpWorkReceipt } from '@/shared/lib/meaning-transition/acp-work-receipt';
 import type { TaskBaselineCaptureResult } from './task-baseline';
 import { appendEvent, nextEventId, type AcpEvent, type AcpSessionStatus } from './conversation/acp-events';
@@ -298,8 +299,9 @@ export function useAcpSession({
       updateEvents,
       emitWorkReceipt,
       setApprovedOntologyWriteTracked,
+      reportUsage: (usage) => agentUsage.record(runtimeId, usage),
     }),
-    [emitWorkReceipt, noteModeMoved, push, setApprovedOntologyWriteTracked, setChoices, updateEvents],
+    [emitWorkReceipt, noteModeMoved, push, runtimeId, setApprovedOntologyWriteTracked, setChoices, updateEvents],
   );
 
   const askUser = useCallback((request: AcpPermissionRequest) => askPermission(request, {

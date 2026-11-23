@@ -175,6 +175,8 @@ interface HarnessWindow extends Window {
   __atlasLibraryWorkHarness?: {
     emitRead(): void;
     moveMode(modeId: string): void;
+    /** One `usage_update` with the fields an adapter sends: `used`, `size`, `cost`, `_meta`. */
+    usage(fields: Record<string, unknown>): void;
     emitWait(): void;
     emitWrite(): void;
     finish(): void;
@@ -646,7 +648,7 @@ export async function installLibraryWorkHarness(
       fixtureWindow.isTauri = true;
       fixtureWindow.__TAURI_INTERNALS__ = { transformCallback: (callback: EventCallback) => { const id = callbackId++; callbacks.set(id, callback); return id; }, invoke };
       fixtureWindow.__TAURI_EVENT_PLUGIN_INTERNALS__ = { unregisterListener: (event: string, id: number) => { listeners.get(event)?.delete(id); callbacks.delete(id); } };
-      fixtureWindow.__atlasLibraryWorkHarness = { moveMode: (modeId: string) => update({ sessionUpdate: "current_mode_update", currentModeId: modeId }), emitRead, emitWait, emitWrite, finish, answer, stream, streamed: () => ({ ...streamProgress }), think, mutateSource: write, emitVectorStatus: (status: VectorStatus) => { currentVectorStatus = status; if (status.failure === "modelGone") modelReady = false; else if (status.phase === "ready" || status.phase === "preparing") modelReady = true; emit("vault-vectors-status", { rootPath: vaultRoot, status }); }, streamVectorStatus: (base: VectorStatus, count: number, perSecond: number) => {
+      fixtureWindow.__atlasLibraryWorkHarness = { moveMode: (modeId: string) => update({ sessionUpdate: "current_mode_update", currentModeId: modeId }), usage: (fields: Record<string, unknown>) => update({ ...fields, sessionUpdate: "usage_update" }), emitRead, emitWait, emitWrite, finish, answer, stream, streamed: () => ({ ...streamProgress }), think, mutateSource: write, emitVectorStatus: (status: VectorStatus) => { currentVectorStatus = status; if (status.failure === "modelGone") modelReady = false; else if (status.phase === "ready" || status.phase === "preparing") modelReady = true; emit("vault-vectors-status", { rootPath: vaultRoot, status }); }, streamVectorStatus: (base: VectorStatus, count: number, perSecond: number) => {
         const progress = { emitted: 0, total: count };
         vectorStreamProgress = progress;
         const startedAt = performance.now();
