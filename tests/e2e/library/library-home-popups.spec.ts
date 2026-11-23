@@ -32,7 +32,7 @@ test("a home popup returns its door on every close", async ({ page }) => {
   // The selected row is told by its fill, not a coloured edge.
   await expect.poll(() => selectedRow.evaluate((el) => getComputedStyle(el).backgroundColor)).not.toBe("rgba(0, 0, 0, 0)");
   await expect(page.getByTestId("library-reading-pane")).toBeVisible();
-  await page.getByTestId("library-reader-back").click();
+  await page.getByTestId("library-index-home").click();
   await expect(page.getByTestId("library-question-desk")).toBeVisible();
   await page.getByTestId("library-workspace-sources").click();
   const overview = page.getByTestId("sources-overview");

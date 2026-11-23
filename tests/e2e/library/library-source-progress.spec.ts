@@ -177,16 +177,6 @@ test.describe("source progress on the Sources home", () => {
     await expect(rows(page)).toHaveCount(HANGUL_WAITING + HANGUL_COMPILED);
   });
 
-  test("a press while the column is folded unfolds it to show the filtered list", async ({ page }) => {
-    await openSources(page);
-    await page.getByTestId("library-index-collapse").click();
-    await expect(page.getByTestId("library-index")).toBeHidden();
-    await expect(page.getByTestId("library-index-tab")).toBeVisible();
-    await page.getByTestId("library-source-states-not-compiled").click();
-    await expect(page.getByTestId("library-index")).toBeVisible();
-    await expect(rows(page)).toHaveCount(TOTAL - COMPILED);
-  });
-
   test("the band counts what has a page and, on the web, offers the app instead of Continue", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await openSources(page);

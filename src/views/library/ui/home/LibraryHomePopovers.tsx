@@ -2,6 +2,7 @@ import type { RefObject, Dispatch, SetStateAction } from "react";
 import { useTranslations } from "next-intl";
 import { selectCompileBatch, type LibraryUiModel, type RetainedAnswerHead } from "@/features/library";
 import { controlClass } from "@/shared/ui/control-class";
+import { libraryProviderDisclosure } from "../../lib/compile/compile-availability";
 import { libraryWaitingLine } from "../../lib/compile/stage-steps";
 import type { CompileBatchState } from "../../lib/compile/use-compile-batch";
 import { useLibraryAgent } from "../../lib/agent/use-library-agent";
@@ -56,6 +57,7 @@ export function LibraryHomePopovers({
   const { handleLint, compileBlocked, compileTransfer, agentOnlyReason } = turns;
   const { compileTarget, overflowDoors } = homeStrip;
   const batch = compileBatchView(compileBatch, model);
+  const providerDisclosure = libraryProviderDisclosure({ route: agent.route }, t);
   return (
     <>
       <LibraryHomePopover
@@ -67,6 +69,12 @@ export function LibraryHomePopovers({
         testId="library-guide-popover"
         t={t}
       >
+        <div data-testid="library-guide-lede" className="px-4 pt-3 text-body [word-break:keep-all]">
+          <p className="text-[color:var(--color-text-secondary)]">{t("lede")}</p>
+          {providerDisclosure ? (
+            <p className="mt-1.5 text-[color:var(--color-text-tertiary)]">{providerDisclosure}</p>
+          ) : null}
+        </div>
         <LibraryStage
           model={model}
           route={agent.route}

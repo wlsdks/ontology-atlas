@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useLocalVault, useVaultIdentityScope, useVaultSessionIdentityScope } from "@/entities/vault-session";
 import { isWikiPage } from "@/entities/docs-vault";
@@ -77,10 +77,12 @@ import { answerFilingKind } from "../model/turns/library-answer";
 import { agentWriterId } from "../model/turns/writer-id";
 import { wikiRevisionStamp } from "../model/turns/wiki-revision-stamp";
 
-export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
+export function LibraryPage({ segment, onSegmentChange, toolsHost = null, showHomeRef }: {
   segment?: LibraryIndexSegment;
   onSegmentChange?: (segment: LibraryIndexSegment) => void;
   toolsHost?: HTMLElement | null;
+  /** Receives the press that leaves an open page for the tab's home, for a press on the tab already shown. */
+  showHomeRef?: Ref<(() => void) | null>;
 } = {}) {
   const reducedMotion = usePrefersReducedMotion();
   const t = useTranslations("library");
@@ -149,6 +151,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
       onSegmentChange?.(nextSegment);
     }
   }, [onSegmentChange, workVaultScope]);
+  useImperativeHandle(showHomeRef, () => () => choose(null), [choose]);
   const [workBusy, setBusy] = useState(false);
   const sourceCopyScope = useVaultIdentityScope();
   // A copy outlives this page, so its store answers; while it runs no other import may start.
@@ -226,11 +229,12 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
     localReviewVisible, localReviewBusy, handleTerminalToolObservation, changedWikiPages,
   } = workActivity;
   const conversationDoor =
-    agent.route === "agent" && agent.runtime !== null && nativeVaultRootPath !== null && !agent.open ? (
+    agent.route === "agent" && agent.runtime !== null && nativeVaultRootPath !== null ? (
       <LibraryConversationDoor
         activity={agentActivity}
         agentLabel={agent.runtime.label}
-        onOpen={() => agent.setOpen(true)}
+        open={agent.open}
+        onToggle={() => agent.setOpen(!agent.open)}
       />
     ) : null;
   const closeHomeSurface = useCallback(() => setHomeSurface(null), []);
@@ -245,14 +249,12 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   const { homeVisible } = home;
   const sendCompile = useCompileSender({ agent, model, locale, nativeVaultRootPath, t, toast });
   const indexColumn = useLibraryIndexColumn({ segment, model });
-  const { indexSegment, setReaderEl, indexCollapsed, libraryIsEmpty } = indexColumn;
+  const { indexSegment, setReaderEl, indexFolded, libraryIsEmpty } = indexColumn;
   const bandShown = homeVisible && indexSegment !== 'wiki' && model.sources.length > 0;
   const sourceFilter = useSourceFilter({
-    sources: model.sources, vaultScope: workVaultScope, indexColumn, listening: bandShown,
+    sources: model.sources, vaultScope: workVaultScope, listening: bandShown,
   });
-  const { sourcePick, setSourcePick, sourceGroupFilter } = useSourcePick({
-    workVaultScope, unfoldIndex: sourceFilter.unfold, t,
-  });
+  const { sourcePick, setSourcePick, sourceGroupFilter } = useSourcePick({ workVaultScope, t });
   /*
    * Every Compile door sends what it names: the band and the popover the next batch, a source's own
    * door that source. The batch is picked only while one of them draws it, and on press.
@@ -379,7 +381,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
               : null
           }
           knownSlugs={knownSlugs}
-          indexBeside={!libraryIsEmpty && !indexCollapsed}
+          indexBeside={!libraryIsEmpty && !indexFolded}
           onClose={() => agent.setOpen(false)}
         />
       ) : null;
@@ -396,7 +398,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
         <LibraryEmptyFolderStage
           key="empty-stage"
           t={t} handle={handle} nativeVaultRootPath={nativeVaultRootPath} busy={busy} openImport={openImport}
-          conversationDoor={agent.openingRequest ? conversationDoor : null} sources={sources}
+          conversationDoor={agent.openingRequest && !agent.open ? conversationDoor : null} sources={sources}
           agentName={stageAgentName} agentConnected={agent.route === "agent"}
         />
         {agentDock}
@@ -409,7 +411,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
 
   const narrowShowsReader = selected !== null || localReviewVisible;
 
-  const openConversation = conversationDoor ? () => agent.setOpen(true) : null;
+  const openConversation = conversationDoor && !agent.open ? () => agent.setOpen(true) : null;
   const reviewAnswer = answerRefresh.proposal ? () => setAnswerComparisonOpen(true) : null;
   const homeStrip = libraryHomeStrip({
     t, homeSurface, setHomeSurface, choose, model, retainedAnswers,
@@ -460,7 +462,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
         searchHost={searchHost} setSearchHost={setSearchHost} setSourceCitation={setSourceCitation}
         sourceCitation={sourceCitation} runningSources={continueBatch.running}
         lintRunning={lintRunning}
-        reportUnseen={reportUnseen} choose={choose} busy={busy} docs={docs} model={model} agent={agent}
+        reportUnseen={reportUnseen} choose={choose} busy={busy} docs={docs} model={model}
         openImport={openImport} narrowShowsReader={narrowShowsReader}
         indexTitle={indexTitle} reader={reader} sources={sources} home={home} turns={turns}
         indexColumn={indexColumn} stateFilter={sourceFilter.state} groupFilter={sourceGroupFilter}
@@ -478,16 +480,19 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
       >
         <div ref={paneBodyRef} data-testid="library-pane-body" className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           {narrowShowsReader ? (
-            <div className="flex flex-none items-center gap-2 border-b border-[color:var(--color-border-soft)] px-3 py-2">
-              <button
-                type="button"
-                onClick={() => localReviewVisible ? agent.localCompile.dismiss() : setSelected(null)}
-                disabled={localReviewVisible && localReviewBusy}
-                data-testid="library-reader-back"
-                className={controlClass({ shape: "chip", tone: "muted" })}
-              >
-                {t(localReviewVisible ? "localCompile.back" : "wikiReader.close")}
-              </button>
+            // One height for every open page, so a page, a source and Check results never move the reader under it.
+            <div className="flex h-[var(--control-h-lg)] flex-none items-center gap-2 border-b border-[color:var(--color-border-soft)] px-3">
+              {localReviewVisible ? (
+                <button
+                  type="button"
+                  onClick={() => agent.localCompile.dismiss()}
+                  disabled={localReviewBusy}
+                  data-testid="library-local-review-back"
+                  className={controlClass({ shape: "chip", tone: "muted" })}
+                >
+                  {t("localCompile.back")}
+                </button>
+              ) : null}
               {activeTrail.length > 0 && !localReviewVisible ? (
                 <button
                   type="button"

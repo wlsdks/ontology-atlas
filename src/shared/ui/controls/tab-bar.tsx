@@ -19,6 +19,7 @@ export function TabBar({
   items,
   activeKey,
   onSelect,
+  onReselect,
   ariaLabel,
   idPrefix = 'insights',
   testId,
@@ -30,6 +31,8 @@ export function TabBar({
   items: readonly TabBarItem[];
   activeKey: string;
   onSelect: (key: string) => void;
+  /** A press on the tab already shown, by pointer or Enter/Space; arrow keys never call it. */
+  onReselect?: (key: string) => void;
   ariaLabel: string;
   /**
    * Prefix for `id` and `aria-controls`. The consumer must render its panel
@@ -262,7 +265,10 @@ export function TabBar({
              */
             aria-label={item.count === undefined ? undefined : `${item.label}, ${item.count}`}
             title={item.count !== undefined ? item.countTitle : undefined}
-            onClick={() => activateTab(item.key)}
+            onClick={() => {
+              if (item.key === activeKey) onReselect?.(item.key);
+              activateTab(item.key);
+            }}
             onKeyDown={(event) => handleKeyDown(event, index)}
             /*
              * The `shrink-0 whitespace-nowrap` classes stop a flex child in an `overflow-x-auto` row

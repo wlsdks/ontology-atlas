@@ -20,11 +20,14 @@ test.describe("Library live work activity", () => {
     await expect(page.getByTestId("acp-chat-tool-target")).toContainText("sources/architecture.docx");
     await expect(page.getByTestId("library-work-current")).toHaveAttribute("data-work-kind", "read");
 
-    // A file the panel names opens in the reader in the overview's place, and the reader's close brings it back.
+    /*
+     * A file the panel names opens in the reader in the overview's place. With the dock open at this
+     * width the index has folded itself, so the tab already shown is the way back.
+     */
     await overview.getByTestId("sources-panel-file").first().click();
     await expect(overview).toHaveCount(0);
-    await expect(page.getByTestId("library-reader-back")).toBeVisible();
-    await page.getByTestId("library-reader-back").click();
+    await expect(page.getByTestId("library-page")).toHaveAttribute("data-library-state", "source");
+    await expect(page.getByTestId("library-index")).toHaveAttribute("data-index-folded", "true");
     await page.getByTestId("library-workspace-sources").click();
     await expect(overview).toBeVisible();
 
@@ -56,7 +59,7 @@ test.describe("Library live work activity", () => {
     await page.getByRole("button", { name: "Wiki page changed · Architecture evidence", exact: true }).focus();
     await expect(page.getByRole("button", { name: "Wiki page changed · Architecture evidence", exact: true })).toBeFocused();
     await page.keyboard.press("Enter");
-    await expect(page.getByTestId("library-reader-back")).toBeVisible();
+    await expect(page.getByTestId("library-page")).toHaveAttribute("data-library-state", "wiki");
     // A wiki page open: still one Conversation control and one Questions control, both in the header.
     await expect(page.getByTestId("library-open-conversation")).toHaveCount(1);
     await expect(page.getByTestId("library-questions-open")).toHaveCount(1);
@@ -120,11 +123,11 @@ test.describe("Library live work activity", () => {
     };
     await oneEach("Sources home");
     await band.getByTestId("library-work-target").click();
-    await expect(page.getByTestId("library-reader-back")).toBeVisible();
+    await expect(page.getByTestId("library-page")).toHaveAttribute("data-library-state", /^(wiki|source)$/);
     await oneEach("a source open");
     // The reader's top row carries the work line at its right.
     await expect(page.getByTestId("library-work-current")).toHaveCount(1);
-    await page.getByTestId("library-reader-back").click();
+    await page.getByTestId("library-index-home").click();
     await page.getByTestId("library-workspace-wiki").click();
     await expect(page.getByTestId("library-question-desk")).toBeVisible();
     await oneEach("the question desk");

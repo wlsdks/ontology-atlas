@@ -276,9 +276,7 @@
     "aria": "索引显示的列表",
     "sources": "来源 {count, number}",
     "wiki": "Wiki {count, number}",
-    "about": "此文件夹的内容",
-    "collapse": "收起索引",
-    "expand": "显示索引"
+    "about": "此文件夹的内容"
   },
   "start": {
     "title": "添加你已有的文档",
@@ -412,7 +410,8 @@
     "openPlanning": "在规划中打开",
     "pagesNeedReview": "{count} 个现有页面需要重新检查",
     "filterShow": "只显示\"{label}\"的来源",
-    "filterAll": "显示全部 {count, number} 份"
+    "filterAll": "显示全部 {count, number} 份",
+    "overview": "概览"
   },
   "wiki": {
     "listAria": "此文件夹中的 Wiki 页面",
@@ -1216,13 +1215,13 @@
     "sourceTooLarge": "这个文件太大，无法在这里显示。",
     "linkMissing": "此文件夹中没有这个名称的内容。",
     "back": "返回",
-    "close": "关闭页面",
     "changedBadge": "撰写后已变更"
   },
   "wikiIndex": {
     "views": {
       "log": "记录",
       "logNone": "暂无",
+      "findEvidence": "查找依据",
       "checkNever": "尚未运行"
     },
     "group": {

@@ -276,9 +276,7 @@
     "aria": "索引に表示する一覧",
     "sources": "資料{count, number}",
     "wiki": "Wiki{count, number}",
-    "about": "このフォルダの内容",
-    "collapse": "索引を隠す",
-    "expand": "索引を表示"
+    "about": "このフォルダの内容"
   },
   "start": {
     "title": "手元にある資料を追加してください",
@@ -412,7 +410,8 @@
     "openPlanning": "企画で開く",
     "pagesNeedReview": "再確認が必要な既存ページ{count, number}件",
     "filterShow": "「{label}」の資料だけ表示",
-    "filterAll": "全{count, number}件を表示"
+    "filterAll": "全{count, number}件を表示",
+    "overview": "概要"
   },
   "wiki": {
     "listAria": "このフォルダのWikiページ",
@@ -1216,13 +1215,13 @@
     "sourceTooLarge": "このファイルは大きすぎてここには表示できません。",
     "linkMissing": "このフォルダにはこの名前のものがありません。",
     "back": "戻る",
-    "close": "ページを閉じる",
     "changedBadge": "書いた後に変更"
   },
   "wikiIndex": {
     "views": {
       "log": "記録",
       "logNone": "まだありません",
+      "findEvidence": "根拠を探す",
       "checkNever": "未実行"
     },
     "group": {

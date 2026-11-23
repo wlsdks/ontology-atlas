@@ -1,20 +1,15 @@
 import { useEffect, useRef, type Dispatch, type ReactNode, type RefObject, type SetStateAction } from "react";
 import { useTranslations } from "next-intl";
 import { createPortal } from "react-dom";
-import { PanelLeftOpen } from "lucide-react";
 import { useLocalVault, useVaultSessionIdentityScope } from "@/entities/vault-session";
 import {
   writeLibraryIndexSegment,
   type LibraryIndexSegment,
 } from "@/shared/lib/preferences/library-preferences";
 import { cn } from "@/shared/lib/cn";
-import { controlClass } from "@/shared/ui/control-class";
-import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { SegmentedControl } from "@/shared/ui/fields/segmented-control";
 import { Chip } from "@/shared/ui";
 import { useToast } from "@/shared/ui/toast/toast";
-import { libraryProviderDisclosure } from "../../lib/compile/compile-availability";
-import { useLibraryAgent } from "../../lib/agent/use-library-agent";
 import { LibrarySection, type SourceGroupFilter } from "../index-column/LibrarySection";
 import type { LibraryUiModel } from "@/features/library";
 import type { LibrarySourceRow, VaultDoc } from "@/entities/docs-vault";
@@ -24,7 +19,15 @@ import type { useLibrarySources } from "../../model/sources/use-library-sources"
 import type { useLibraryHome } from "../../model/home/use-library-home";
 import type { useLibraryTurns } from "../../model/turns/use-library-turns";
 import type { useLibraryIndexColumn } from "../../model/index-column/use-library-index-column";
+import type { IndexHomeRow } from "../../model/index-column/index-home-row";
 import { LibraryHeader } from "./LibraryHeader";
+
+/** A one-shot reflow per fold: the rows slide out of view rather than the column vanishing in a frame. */
+const INDEX_FOLD_TRANSITION = {
+  transitionProperty: "width",
+  transitionDuration: "var(--motion-settle)",
+  transitionTimingFunction: "var(--motion-ease)",
+} as const;
 
 /**
  * When the open page's file leaves the folder, the selection clears and the person is told once.
@@ -63,7 +66,7 @@ export function LibraryIndexColumn({
   segment, toolsHost, t, localVault, workVaultScope, handle, nativeVaultRootPath,
   mobileBrowseOpen, setMobileBrowseOpen, mobileBrowseBackRef, browseFocusPendingRef, searchHost,
   setSearchHost, setSourceCitation, sourceCitation, runningSources, lintRunning, reportUnseen,
-  choose, busy, docs, model, agent, openImport, narrowShowsReader, indexTitle,
+  choose, busy, docs, model, openImport, narrowShowsReader, indexTitle,
   reader, sources, home, turns, indexColumn, stateFilter, groupFilter, headerDoors,
 }: {
   segment: LibraryIndexSegment | undefined;
@@ -89,7 +92,6 @@ export function LibraryIndexColumn({
   busy: boolean;
   docs: VaultDoc[];
   model: LibraryUiModel;
-  agent: ReturnType<typeof useLibraryAgent>;
   openImport: () => void;
   narrowShowsReader: boolean;
   indexTitle: string;
@@ -101,7 +103,7 @@ export function LibraryIndexColumn({
   /** The state the band's press narrows the Sources list to. */
   stateFilter: LibrarySourceRow["state"] | null;
   groupFilter: SourceGroupFilter | null;
-  /** The Library-wide doors, drawn once in the page header before the info glyph. */
+  /** The Library-wide doors, drawn once at the page header's end. */
   headerDoors: ReactNode;
 }) {
   const { opened } = reader;
@@ -110,10 +112,12 @@ export function LibraryIndexColumn({
   const { handleNewPage, reportDoorCount, findings } = turns;
   const openWikiSlug = opened?.kind === "wiki" ? opened.slug : null;
   usePageGone({ openWikiSlug, docs, reading: localVault.partialTotal > 0, onGone: () => choose(null), t });
-  const {
-    indexSegment, autoFolded, setAutoFolded, autoFoldDeclinedRef, indexCollapsed, indexTabRef,
-    indexCollapseRef, setIndexCollapsed, indexScrollRef, indexEdge, handleIndexScroll,
-  } = indexColumn;
+  const { indexSegment, indexFolded, foldMoves, indexScrollRef, indexEdge, handleIndexScroll } = indexColumn;
+  const homeRow: IndexHomeRow = {
+    label: indexSegment === "wiki" ? t("wikiIndex.views.findEvidence") : t("sources.overview"),
+    active: homeVisible,
+    onPress: () => choose(null),
+  };
   const indexFade = "var(--tabbar-edge-fade)";
   const indexMask =
     indexEdge.top && indexEdge.bottom
@@ -124,64 +128,33 @@ export function LibraryIndexColumn({
           ? `linear-gradient(to bottom, transparent 0, black ${indexFade})`
           : undefined;
   return (
-    <>
-      {indexCollapsed ? (
-        <div className="hidden flex-none self-start pl-3 pt-2 lg:block">
-          <button
-            type="button"
-            ref={indexTabRef}
-            onClick={() => {
-              if (autoFolded) autoFoldDeclinedRef.current = true;
-              setAutoFolded(false);
-              setIndexCollapsed(false);
-            }}
-            aria-label={t("index.expand")}
-            aria-expanded={false}
-            data-testid="library-index-tab"
-            className={controlClass({ shape: "icon", size: "sm", tone: "muted", hoverInk: "strong" })}
-          >
-            <PanelLeftOpen size={ICON_SIZE.lg} aria-hidden />
-          </button>
-        </div>
-      ) : null}
-
-      <aside
-        data-testid="library-index"
-        aria-label={t("title")}
-        className={cn(
-          "flex w-full min-w-0 min-h-0 flex-1 flex-col overflow-hidden bg-[color:var(--color-panel)] max-lg:min-h-[var(--library-index-min)] max-lg:border-t max-lg:border-[color:var(--color-border-soft)] lg:w-[var(--docs-list-width)] lg:flex-none lg:border-r lg:border-[color:var(--color-border-soft)]",
-          narrowShowsReader && "max-lg:hidden",
-          indexSegment === 'wiki' && homeVisible && !mobileBrowseOpen && 'max-lg:hidden',
-          indexCollapsed && "lg:hidden",
-        )}
-      >
+    <aside
+      data-testid="library-index"
+      data-index-folded={indexFolded || undefined}
+      aria-label={t("title")}
+      // Folded, the column is out of reach as well as out of sight: its rows leave the tab order.
+      inert={indexFolded}
+      style={foldMoves ? INDEX_FOLD_TRANSITION : undefined}
+      className={cn(
+        "flex w-full min-w-0 min-h-0 flex-1 flex-col overflow-hidden bg-[color:var(--color-panel)] max-lg:min-h-[var(--library-index-min)] max-lg:border-t max-lg:border-[color:var(--color-border-soft)] lg:flex-none lg:border-[color:var(--color-border-soft)]",
+        indexFolded ? "lg:w-0" : "lg:w-[var(--docs-list-width)] lg:border-r",
+        narrowShowsReader && "max-lg:hidden",
+        indexSegment === 'wiki' && homeVisible && !mobileBrowseOpen && 'max-lg:hidden',
+      )}
+    >
+      {/* Held at the open column's width, so a fold slides the rows out of view instead of rewrapping them. */}
+      <div className="flex min-h-0 w-full flex-1 flex-col lg:min-w-[calc(var(--docs-list-width)-1px)]">
         {indexSegment === 'wiki' && mobileBrowseOpen ? <div className="flex-none border-b border-[color:var(--color-border-soft)] px-3 py-2 lg:hidden">
           <Chip ref={mobileBrowseBackRef} tone="muted" onClick={() => { browseFocusPendingRef.current = true; setMobileBrowseOpen(false); }} data-testid="question-desk-back">{t('questionDesk.backToQuestion')}</Chip>
         </div> : null}
         <div className={segment && toolsHost ? "flex-none px-3 pt-3" : "flex-none border-b border-[color:var(--color-overlay-2)] px-3 pb-2.5 pt-4"}>
           {segment && toolsHost ? (
             createPortal(
-              <LibraryHeader
-                t={t}
-                title={indexTitle}
-                titleHidden
-                doors={headerDoors}
-                disclosure={libraryProviderDisclosure({ route: agent.route }, t)}
-                onCollapse={() => setIndexCollapsed(true)}
-                collapseRef={indexCollapseRef}
-              />,
+              <LibraryHeader t={t} title={indexTitle} titleHidden doors={headerDoors} />,
               toolsHost,
             )
           ) : (
-          <LibraryHeader
-            t={t}
-            title={indexTitle}
-            titleHidden={Boolean(segment)}
-            doors={headerDoors}
-            disclosure={libraryProviderDisclosure({ route: agent.route }, t)}
-            onCollapse={() => setIndexCollapsed(true)}
-            collapseRef={indexCollapseRef}
-          />
+            <LibraryHeader t={t} title={indexTitle} titleHidden={Boolean(segment)} doors={headerDoors} />
           )}
           {segment ? <div ref={setSearchHost} data-testid="library-search-host" className="mt-2 min-w-0" /> : null}
           {!segment ? <SegmentedControl
@@ -233,7 +206,7 @@ export function LibraryIndexColumn({
               if (anchor) setSourceCitation({ path: row.path, anchor });
             }}
             onAddFiles={handleAddFiles}
-          addFilesFeedback={sourceImportFeedback}
+            addFilesFeedback={sourceImportFeedback}
             onFindDocuments={handleFindDocuments}
             onImportFromService={openImport}
             onNewPage={handle ? handleNewPage : null}
@@ -246,6 +219,7 @@ export function LibraryIndexColumn({
               running: lintRunning,
               unseen: reportUnseen && opened?.kind !== "report",
             }}
+            home={homeRow}
             busy={busy}
             runningSources={runningSources}
             stateFilter={stateFilter}
@@ -253,7 +227,7 @@ export function LibraryIndexColumn({
             t={t}
           />
         </div>
-      </aside>
-    </>
+      </div>
+    </aside>
   );
 }

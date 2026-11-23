@@ -1,12 +1,14 @@
 "use client";
 
-import { ScrollText, Stethoscope } from "lucide-react";
+import { ScrollText, Stethoscope, TextSearch } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { cn } from "@/shared/lib/cn";
 import { RowButton } from "@/shared/ui";
 import { BrandMark } from "@/shared/ui/marks/brand-mark";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
+
+import { INDEX_HOME_ROW_TEST_ID, type IndexHomeRow } from "../../model/index-column/index-home-row";
 
 /** One view above the groups: a glyph, its name, and a quiet value on the right. 32 px, like a group's line. */
 function ViewRow({
@@ -62,6 +64,8 @@ function ViewRow({
 }
 
 export interface WikiViewRowsProps {
+  /** The tab's home, the question desk; absent where no home is drawn. */
+  home?: IndexHomeRow | null;
   logLabel: string;
   /** The latest log line's day, or the words for no line yet. */
   logValue: string;
@@ -79,10 +83,11 @@ export interface WikiViewRowsProps {
 }
 
 /**
- * The column's two views, Log and Check results, above the groups and a hairline. The Log states when
- * the wiki last changed; it becomes a press when the Log view exists to open.
+ * The column's views above the groups and a hairline: the home, the Log and Check results. The Log
+ * states when the wiki last changed; it becomes a press when the Log view exists to open.
  */
 export function WikiViewRows({
+  home = null,
   logLabel,
   logValue,
   checkLabel,
@@ -96,6 +101,16 @@ export function WikiViewRows({
 }: WikiViewRowsProps) {
   return (
     <div data-testid="library-index-views" className="flex flex-none flex-col px-2 pb-1.5">
+      {home ? (
+        <ViewRow
+          testId={INDEX_HOME_ROW_TEST_ID}
+          icon={<TextSearch size={ICON_SIZE.sm} />}
+          label={home.label}
+          value={null}
+          active={home.active}
+          onPress={home.onPress}
+        />
+      ) : null}
       <ViewRow
         testId="library-index-log"
         icon={<ScrollText size={ICON_SIZE.sm} />}

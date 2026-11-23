@@ -292,14 +292,18 @@ row tints it, gives the panel that folder's waiting files, and narrows the index
 `Folder: name` chip; the chip's ×, the row again or Escape clears it. The index list marks each
 waiting file with one dot in its state's ink (the word in its title and for a screen reader),
 a file with a page with nothing; the band's legend names the dots. **The Library's doors are in the page
-header**, left of the info glyph, as 36px chrome pills: `How to use`, the saved questions,
+header**, its only controls at the end, as 36px chrome pills: `How to use`, the saved questions,
 `Conversation`, and `Review updated answer` while a proposal waits; below `lg` they fold into
-More. Every Sources and Wiki state carries exactly one Conversation control and one Questions
+More. A door stays in its place while its surface is open, selected, and a second press closes
+it: `Conversation` too, beside the open dock, whose own close and Escape still work. Every Sources and Wiki state carries exactly one Conversation control and one Questions
 control; the reader's top row carries the work line at its right, and the question desk keeps its
 compact one. `How to use` holds the three source-to-wiki steps in an anchored popup and raises
 itself once per machine; at exactly one saved answer the questions door is that question, so
-reopening it is one press. Selecting a document replaces the overview or question desk and
-gives it back on close. Below `lg`, Sources keeps the overview above the index;
+reopening it is one press. Selecting a document replaces the overview or question desk. The
+index's first row gives it back — `Find evidence` on Wiki, `Overview` on Sources, selected
+while that home shows — as do a press on the tab already shown and Escape; focus then lands on
+that row. The row above an open document starts with the document's own facts and is one
+height for every kind. Below `lg`, Sources keeps the overview above the index;
 Wiki gives the question desk the available height and opens its page index with
 an explicit Browse action and return focus. A folder that holds wiki
 pages and no `kind:` node opens here rather than on the map: it is a wiki on its own, and
@@ -437,30 +441,23 @@ same fact twice. The choice is remembered per machine
 reader's own crossing moves the switch to that file's list, so the index can never name one
 thing while the reader shows another.
 
-**The description is a glyph** (owner, same reading: *"put one icon beside the title and
-show the explanation in a tooltip on hover"*). The three-line lede was 60px of a sentence
-read once and re-read on every visit after; it is now one lucide `Info` beside the `h1`,
-carrying that sentence as its accessible name and its panel, so a keyboard and a screen
-reader reach it as a pointer does. Since 2026-09-12 the panel carries a second paragraph on
-the agent route — what a coding agent's provider traffic is, and that Atlas is not in its
-path and does not log it — which is the one place that sentence appears; it used to print
-as a paragraph on up to three cards of one journey. The panel opens `bottom`/`start`, under
-the row it explains, and is `pointer-events-none`, so it never holds a press underneath it.
+**The description opens How to use** (owner, 2026-11-23: the info and panel glyphs were
+*"completely inconvenient and strange"*). The Library's one-sentence description is the
+guide's first paragraph, and on the agent route the sentence on a coding agent's provider
+traffic — that Atlas is not in its path and does not log it — stands under it in tertiary
+ink, the one place that sentence appears.
 
 **The head is one row, and it has no eyebrow** (owner, 2026-09-12: *"a label like 'in this
-folder' is not even needed"*, and of the fold glyph: *"centred the same as the text beside
-it, and bigger"*). `IN THIS FOLDER` named the scope of a column that was already showing
-it, so it is gone from the head — `LibraryStartStage` keeps it, where naming the scope is
-the card's only job. The fold moved onto the title's own line at the column's box edge (331
-at 1512), and both head glyphs take the ramp's `lg` step, whose 12.0px of ink is its closest
-value to the title's own 13.1px; the fold's glyph had been 9.0px of ink with its centre
-29.5px above the title's.
+folder' is not even needed"*). `IN THIS FOLDER` named the scope of a column that was already
+showing it, so it is gone from the head — `LibraryStartStage` keeps it, where naming the scope
+is the card's only job.
 
-**And the column folds** (*"the left panel must be closable, I may want only the graph"*).
-A `‹` at the right end of the title row folds it to the map's own 26px rail tab — vertical
-label, `›`, `--topology-index-tab-width` — at `lg` and above, remembered in
-`atlas.library.index-collapsed`, with focus following the control that vanished. Below `lg`
-the index is the bottom half of one column and has nowhere to fold to.
+**The column is never folded by hand.** At `lg` and above it folds itself only when the reader
+would get narrower than 420px (the dock open beside a page in a small window) and returns once
+the reader keeps 460px after giving the width back; the fold slides on `--motion-settle`, its
+rows held at the column's width so they leave view rather than rewrap, and a folded column is
+inert. Below `lg` the index is the bottom half of one column and has nowhere to fold to. A fold
+stored by an older version (`atlas.library.index-collapsed`) is no longer read.
 
 Rows stay 36px with the name truncated at its end, format and size in mono `text-caption`,
 and none crosses the column's side edge at 1512, 1040, 768 or 390. **`compiled` lost its
@@ -472,8 +469,8 @@ clears it, and a pick that leaves no row says so and offers Show all sources. A 
 spent only where a person can act. The one local-first disclosure follows the
 Compile press it describes — the connect-by-address runner's sentence, under the press, in
 the Compile popover or an open source's pane. The agent route's sentence is not that: it
-says Atlas is **not** in the path, so since 2026-09-12 it is the index head's glyph panel
-and nothing inline, in the guide's step two least of all.
+says Atlas is **not** in the path, so it stands once, at the opening of How to use, and nothing
+inline, in the guide's step two least of all.
 
 **A toast stands in the corner of the pane it is about** (owner, 2026-09-12: *"the toast at
 the top — its position is odd too, right?"*). This surface claims `bottom-right` where the

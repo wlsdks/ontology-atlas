@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useLocale, type useTranslations } from "next-intl";
 
-import { CloudDownload, FilePlus2, Search, X } from "lucide-react";
+import { CloudDownload, FilePlus2, LayoutDashboard, Search, X } from "lucide-react";
 
 import type { LibrarySourceRow } from "@/entities/docs-vault";
 import type { LibraryUiModel, LintFinding } from "@/features/library";
@@ -26,9 +26,10 @@ import { useSourceSearch } from "../../lib/sources/use-source-search";
 import { narrowSources, pagesMatching, sourcesMatching } from "../../model/index-column/index-search";
 import { wikiDayText } from "../../model/index-column/wiki-day-text";
 import { wikiViewValues } from "../../model/index-column/wiki-view-values";
+import { INDEX_HOME_ROW_TEST_ID, type IndexHomeRow } from "../../model/index-column/index-home-row";
 import { IndexGlyph } from "./IndexGlyph";
 import { IndexSearchField } from "./IndexSearchField";
-import { INDEX_CHIP_TIP, INDEX_LIST_INSET, INDEX_QUIET_INSET } from "./index-column-layout";
+import { INDEX_CHIP_TIP, INDEX_LIST_INSET, INDEX_QUIET_INSET, INDEX_ROW_INSET } from "./index-column-layout";
 import { ListNote, OtherSegmentLink } from "./index-list-notes";
 import { NewPageControl } from "./NewPageControl";
 import { SourceRow } from "./SourceRow";
@@ -91,6 +92,8 @@ export interface LibrarySectionProps {
     /** A check finished and this person has not opened the report since. */
     unseen?: boolean;
   } | null;
+  /** The first row of either list: the tab's home, and the way out of an open page. */
+  home?: IndexHomeRow | null;
   /** The switch above is exclusive: the inactive list renders nothing, so its rows leave the tab order. */
   segment: LibraryIndexSegment;
   busy: boolean;
@@ -122,6 +125,7 @@ export function LibrarySection({
   findings = NO_FINDINGS,
   readingCount = null,
   report = null,
+  home = null,
   segment,
   busy,
   runningSources = NO_SOURCES,
@@ -206,6 +210,23 @@ export function LibrarySection({
       // No `min-h-0` and no overflow: the column above owns the one scroller, and a section that could shrink can cut a row in half.
       <section data-testid="library-sources" className={cn("flex flex-col pb-1", searchHost ? "pt-1.5" : "pt-3")}>
         {searchHost && searchField ? createPortal(searchField, searchHost) : searchField}
+        {home ? (
+          // The Sources list's own row, so the home stands on the same text line as the doors and files under it.
+          <div className={`flex flex-col pb-1 ${INDEX_LIST_INSET}`}>
+            <RowButton
+              data-testid={INDEX_HOME_ROW_TEST_ID}
+              active={home.active}
+              aria-current={home.active ? "page" : undefined}
+              onClick={home.onPress}
+              hoverSurface="lift"
+              hoverInk="strong"
+              className={cn("w-full justify-start", INDEX_ROW_INSET, home.active && "bg-[color:var(--color-indigo-a16)]")}
+            >
+              <IndexGlyph><LayoutDashboard size={ICON_SIZE.sm} className="opacity-60" aria-hidden /></IndexGlyph>
+              <span className="min-w-0 truncate">{home.label}</span>
+            </RowButton>
+          </div>
+        ) : null}
         {/* One clear primary, then two quiet doors on the same text line, each at full width so no label is cut. */}
         <div data-testid="library-source-actions" className="flex flex-col gap-0.5 px-3 pb-2">
           <Tooltip content={t("sources.addTooltip")} {...INDEX_CHIP_TIP}>
@@ -362,6 +383,7 @@ export function LibrarySection({
     <section data-testid="library-wiki" className={cn("flex min-h-0 flex-1 flex-col", searchHost ? "pt-1.5" : "pt-3")}>
       {searchHost && searchField ? createPortal(searchField, searchHost) : searchField}
       <WikiViewRows
+        home={home}
         logLabel={t("wikiIndex.views.log")}
         logValue={logValue}
         checkLabel={t("report.title")}
