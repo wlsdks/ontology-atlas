@@ -32,7 +32,7 @@ test("a home popup returns its door on every close", async ({ page }) => {
   // The selected row is told by its fill, not a coloured edge.
   await expect.poll(() => selectedRow.evaluate((el) => getComputedStyle(el).backgroundColor)).not.toBe("rgba(0, 0, 0, 0)");
   await expect(page.getByTestId("library-reading-pane")).toBeVisible();
-  await page.getByTestId("library-reader-back").click();
+  await page.getByTestId("library-index-home").click();
   await expect(page.getByTestId("library-question-desk")).toBeVisible();
   await page.getByTestId("library-workspace-sources").click();
   const overview = page.getByTestId("sources-overview");
@@ -42,10 +42,21 @@ test("a home popup returns its door on every close", async ({ page }) => {
   const guide = page.getByTestId("library-guide-popover");
   await door.click();
   await expect(guide).toBeVisible();
+  // The open door wears the fill the tab strip gives its current tab, and loses it on close.
+  const fills = () =>
+    page.evaluate(() => {
+      const fill = (selector: string) => getComputedStyle(document.querySelector(selector)!).backgroundColor;
+      return {
+        door: fill('[data-testid="library-guide-open"]'),
+        tab: fill('[data-testid="library-workspace-tabs"] [data-selection-indicator]'),
+      };
+    });
+  await expect.poll(async () => { const { door: open, tab } = await fills(); return open === tab; }).toBe(true);
   await expect.poll(() => guide.evaluate((el) => el.contains(document.activeElement))).toBe(true);
   await page.keyboard.press("Escape");
   await expect(guide).toHaveCount(0);
   await expect(door).toBeFocused();
+  await expect.poll(async () => { const { door: shut, tab } = await fills(); return shut === tab; }).toBe(false);
   // Immediately again, from the keyboard the door just took back.
   await page.keyboard.press("Enter");
   await expect(guide).toBeVisible();

@@ -13,6 +13,12 @@ export interface AcpPermissionRequest {
   toolName: string | null;
   toolKind: string | null;
   filePath: string | null;
+  /**
+   * The paths the tool call names in ACP's `locations`, in order and without repeats. A Codex file
+   * edit states its files only here. The card shows them and words itself by them; policy keeps
+   * reading `filePath`, because an edit that moves a file can write a path this list does not hold.
+   */
+  statedPaths?: readonly string[];
   rawInput: Record<string, unknown>;
   reviewKind: 'permission' | 'ontology-write';
   /** Rust's inside-the-folder verdict on `filePath`, computed once before asking; absent means unjudged. */
@@ -55,6 +61,25 @@ function readPathArg(rawInput: Record<string, unknown>): string | null {
   return null;
 }
 
+const HIDDEN_OR_CONTROL_CHARACTER = /[\p{Cc}\p{Cf}\u2028\u2029]/u;
+
+/**
+ * Only an edit's `locations` are the files it changes. A command's are what it reads and a sandbox
+ * request's what it asks to reach, so wording the card by them would call a shell command or a
+ * wider sandbox "a change to a file in this folder". A path carrying a hidden or control character
+ * drops the whole list, and the card falls back to its outside wording and the request's own title.
+ */
+function readStatedPaths(toolCall: Record<string, unknown>): string[] {
+  if (toolCall.kind !== 'edit') return [];
+  const locations = Array.isArray(toolCall.locations) ? toolCall.locations : [];
+  const paths = locations.flatMap((entry) => {
+    const path = asRecord(entry).path;
+    return typeof path === 'string' && path.trim() ? [path] : [];
+  });
+  if (paths.some((path) => HIDDEN_OR_CONTROL_CHARACTER.test(path))) return [];
+  return [...new Set(paths)];
+}
+
 /** A server-side elicitation reaches ACP with no `toolCall.title`; `codex-acp` puts the message in `toolCall.content[]`. */
 function readPermissionTitle(toolCall: Record<string, unknown>): string | null {
   if (typeof toolCall.title === 'string' && toolCall.title.trim()) return toolCall.title;
@@ -88,6 +113,7 @@ export function toPermissionRequest(
     // The policy reads this value, not the title: the title is relative inside the vault and
     // absolute outside, so the policy would flip when the wording changes.
     filePath: readPathArg(rawInput),
+    statedPaths: readStatedPaths(toolCall),
     rawInput,
     reviewKind: 'permission',
     ...(correlatedMcpTool ? { writerCorrelation: { status: 'verified' as const, server: correlatedMcpTool.server,

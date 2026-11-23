@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import type { useTranslations } from "next-intl";
 
 import type { WikiProblemContext } from "@/features/library";
@@ -9,8 +10,11 @@ import { Chip } from "@/shared/ui";
 import type { WikiProblemDoors } from "../wiki/WikiTemplateProblems";
 import { StructuralGroup } from "./StructuralGroup";
 
-/** The report's first half: what the app itself checked, needing no press, agent or memory. */
-export function StructuralLedger({
+/**
+ * The report's first half: what the app itself checked, needing no press, agent or memory. Memoised:
+ * it holds a row per finding, and a press elsewhere on the Library must not redraw them.
+ */
+export const StructuralLedger = memo(function StructuralLedger({
   structural,
   doors,
   context,
@@ -141,4 +145,4 @@ export function StructuralLedger({
       ) : null}
     </section>
   );
-}
+});

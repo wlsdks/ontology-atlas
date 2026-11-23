@@ -115,6 +115,20 @@ export function RouteFocusManager() {
       return;
     }
 
+    /*
+     * Focus that moves after the person pressed a key or the pointer since arrival was placed by
+     * them, wherever it sits: a page-header control lies outside `#main` and must not be taken
+     * back later. A move with no input before it is the page's own and still yields to arrival.
+     */
+    let personActedSinceArrival = false;
+    let focusMovedSinceArrival = false;
+    const notePersonInput = () => {
+      personActedSinceArrival = true;
+    };
+    const noteFocusMove = () => {
+      if (personActedSinceArrival) focusMovedSinceArrival = true;
+    };
+
     const focusDestination = (): boolean => {
       const main = document.querySelector<HTMLElement>('#main');
       // The loading placeholder's `#main` is not the destination: focus would drop to body when
@@ -126,7 +140,8 @@ export function RouteFocusManager() {
         active instanceof HTMLElement &&
         active !== document.body &&
         active !== document.documentElement &&
-        (main.contains(active) ||
+        (focusMovedSinceArrival ||
+          main.contains(active) ||
           active.closest('[role="dialog"][aria-modal="true"]'))
       ) {
         clearRouteFocusQueryMarker();
@@ -158,6 +173,9 @@ export function RouteFocusManager() {
     const observer = new MutationObserver(() => scheduleFocus());
     const stop = () => {
       observer.disconnect();
+      document.removeEventListener('focusin', noteFocusMove, true);
+      document.removeEventListener('keydown', notePersonInput, true);
+      document.removeEventListener('pointerdown', notePersonInput, true);
       if (settleTimer !== null) window.clearTimeout(settleTimer);
       if (deadlineTimer !== null) window.clearTimeout(deadlineTimer);
     };
@@ -172,6 +190,9 @@ export function RouteFocusManager() {
     };
 
     observer.observe(document.body, { childList: true, subtree: true });
+    document.addEventListener('keydown', notePersonInput, true);
+    document.addEventListener('pointerdown', notePersonInput, true);
+    document.addEventListener('focusin', noteFocusMove, true);
     scheduleFocus();
     deadlineTimer = window.setTimeout(() => {
       focusDestination();

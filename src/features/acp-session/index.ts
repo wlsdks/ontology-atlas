@@ -42,5 +42,5 @@ export type {
 } from "./model/map-presentation/presentation-trace";
 export { permissionIntent } from "./model/permissions/permission-intent";
 export { permissionScope } from "./model/permissions/permission-scope";
-export { permissionLocality } from "./model/permissions/permission-locality";
+export { permissionLocality, widestPermissionLocality } from "./model/permissions/permission-locality";
 export { atlasToolMode } from "./model/permissions/atlas-tool-policy";

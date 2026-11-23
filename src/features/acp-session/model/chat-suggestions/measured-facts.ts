@@ -1,10 +1,13 @@
 /** Counts the next steps read from frontmatter alone; each returns canonical slugs, sorted. */
 
+import type { NotMappedAreas } from '@/shared/lib/vault-document/not-mapped-areas';
+
 interface FactDoc {
   slug: string;
   title?: string;
   frontmatter: Record<string, unknown>;
   citesReadLines?: boolean;
+  notMappedAreas?: NotMappedAreas;
 }
 
 export interface UnreadCapability {
@@ -50,6 +53,17 @@ export function capabilitiesWithoutReadRule(docs: readonly FactDoc[]): { unread:
     }))
     .sort((a, b) => (a.slug < b.slug ? -1 : a.slug > b.slug ? 1 : 0));
   return { unread, measured: measuredDocs.length };
+}
+
+/** The project with the most abilities not on the map yet; counts from several projects are never summed, since each names its own areas. */
+export function widestUnmappedProject(docs: readonly FactDoc[]): NotMappedAreas | null {
+  let widest: NotMappedAreas | null = null;
+  for (const doc of docs) {
+    const areas = doc.notMappedAreas;
+    if (kindOf(doc) !== 'project' || !areas || areas.abilitiesUncovered === 0) continue;
+    if (!widest || areas.abilitiesUncovered > widest.abilitiesUncovered) widest = areas;
+  }
+  return widest;
 }
 
 const CODE_EXTENSION = /\.(m?[jt]sx?|py|rb|go|rs|java|kt|swift|c|cc|cpp|h|hpp|css|scss|json|ya?ml|toml|sh)$/i;

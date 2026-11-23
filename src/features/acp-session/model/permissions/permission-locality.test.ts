@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { permissionLocality } from './permission-locality';
+import { permissionLocality, widestPermissionLocality } from './permission-locality';
 
 describe('permission request location: inside my project or somewhere else entirely', () => {
   const VAULT = '/Users/dana/my-product/atlas';
@@ -39,5 +39,19 @@ describe('permission request location: inside my project or somewhere else entir
 
   it('keeps the warning for a path that cannot be resolved, wrong but safe', () => {
     expect(permissionLocality(VAULT, `${VAULT}/../../.ssh/id_rsa`)).toBe('elsewhere');
+  });
+});
+
+describe('permission request location over several files', () => {
+  const VAULT = '/Users/dana/my-product/atlas';
+
+  it('is inside the folder only when every file is', () => {
+    expect(widestPermissionLocality(VAULT, [`${VAULT}/wiki/a.md`, `${VAULT}/wiki/b.md`])).toBe('inside-folder');
+    expect(widestPermissionLocality(VAULT, [`${VAULT}/wiki/a.md`, '/Users/dana/my-product/src/a.ts'])).toBe('inside-project');
+    expect(widestPermissionLocality(VAULT, [`${VAULT}/wiki/a.md`, '/etc/hosts', '/Users/dana/my-product/src/a.ts'])).toBe('elsewhere');
+  });
+
+  it('keeps the warning when no file is named', () => {
+    expect(widestPermissionLocality(VAULT, [])).toBe('elsewhere');
   });
 });

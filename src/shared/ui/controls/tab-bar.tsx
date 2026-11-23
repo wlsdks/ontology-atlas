@@ -6,6 +6,10 @@ import { useSlidingIndicator } from '@/shared/motion/use-sliding-indicator';
  * Section tabs with a 2px bottom indicator. Presentational: `onSelect` is the only integration
  * point, so the caller owns how the active tab is stored.
  */
+/** The raised surface of a segmented strip's current tab; a door whose surface is open wears it too. */
+export const SEGMENTED_SELECTED_SURFACE =
+  "bg-[color:var(--color-elevated)] shadow-[inset_0_0_0_1px_var(--color-border-soft),inset_0_1px_0_var(--color-overlay-3)]";
+
 export interface TabBarItem {
   key: string;
   label: string;
@@ -19,6 +23,7 @@ export function TabBar({
   items,
   activeKey,
   onSelect,
+  onReselect,
   ariaLabel,
   idPrefix = 'insights',
   testId,
@@ -30,6 +35,8 @@ export function TabBar({
   items: readonly TabBarItem[];
   activeKey: string;
   onSelect: (key: string) => void;
+  /** A press on the tab already shown, by pointer or Enter/Space; arrow keys never call it. */
+  onReselect?: (key: string) => void;
   ariaLabel: string;
   /**
    * Prefix for `id` and `aria-controls`. The consumer must render its panel
@@ -231,7 +238,7 @@ export function TabBar({
             vertical
               ? "motion-indicator rounded-card bg-[color:var(--color-indigo-a14)] shadow-[inset_0_0_0_1px_var(--color-indigo-line-a22)]"
               : segmented
-                ? "motion-indicator rounded-chip bg-[color:var(--color-elevated)] shadow-[inset_0_0_0_1px_var(--color-border-soft),inset_0_1px_0_var(--color-overlay-3)]"
+                ? `motion-indicator rounded-chip ${SEGMENTED_SELECTED_SURFACE}`
                 : "motion-indicator h-[length:var(--tabbar-underline)] bg-[color:var(--color-indigo-accent)]"
           }
           style={indicatorStyle}
@@ -262,7 +269,10 @@ export function TabBar({
              */
             aria-label={item.count === undefined ? undefined : `${item.label}, ${item.count}`}
             title={item.count !== undefined ? item.countTitle : undefined}
-            onClick={() => activateTab(item.key)}
+            onClick={() => {
+              if (item.key === activeKey) onReselect?.(item.key);
+              activateTab(item.key);
+            }}
             onKeyDown={(event) => handleKeyDown(event, index)}
             /*
              * The `shrink-0 whitespace-nowrap` classes stop a flex child in an `overflow-x-auto` row

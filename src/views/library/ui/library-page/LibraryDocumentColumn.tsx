@@ -82,7 +82,7 @@ export function LibraryDocumentColumn({
     hasOntology, handlePropose, handleLint, compileBlocked, compileTransfer, agentOnlyReason,
     checkRun, checkFolder,
   } = turns;
-  const { indexSegment, indexCollapsed } = indexColumn;
+  const { indexSegment, indexFolded } = indexColumn;
   const { wikiProblems, wikiPageTitle, wikiProblemDoors, wikiProblemFix } = templateProblems;
   const pageSlug = selectedWikiDoc?.slug ?? null;
   /* One object per title lookup, so the memoised problem list is not drawn again on a scroll. */
@@ -329,7 +329,7 @@ export function LibraryDocumentColumn({
           compileNote={compileBlocked ?? compileTransfer}
           compileBlocked={compileBlocked !== null}
           agentDoor={agentDoor}
-          indexShowsState={indexSegment === "sources" && !indexCollapsed}
+          indexShowsState={indexSegment === "sources" && !indexFolded}
           busy={busy}
           t={t}
         />

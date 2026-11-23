@@ -133,7 +133,7 @@ test.describe("the Wiki column is the wiki's index", () => {
     await page.getByTestId("library-open-report").click();
     const head = page.getByTestId("library-check-report").locator("header");
     await expect(head.getByTestId("library-check-report-lint").or(head.getByTestId("library-check-report-agent-missing"))).toHaveCount(1);
-    await page.getByTestId("library-reader-back").click();
+    await page.getByTestId("library-index-home").click();
     await page.getByTestId("library-workspace-sources").click();
     await expect(page.getByTestId("library-progress").or(page.getByTestId("sources-overview")).first()).toBeVisible();
     await expect(column.getByText(/Write wiki pages for/)).toHaveCount(0);

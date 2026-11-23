@@ -5,6 +5,7 @@ import en from '../../../messages/en.json';
 import ja from '../../../messages/ja.json';
 import ko from '../../../messages/ko.json';
 import zh from '../../../messages/zh.json';
+import { mapAreaPrompt } from '../../../scripts/lib/benchmark/construction-prompts.mjs';
 
 const WRITE_KINDS = ['build', 'dependencies', 'standAlone', 'rename', 'update'] as const;
 const MEASURED_KINDS = [...WRITE_KINDS, 'check'] as const;
@@ -37,6 +38,26 @@ describe('ACP next-step catalog', () => {
         }
         expect(because, kind).toContain(kind === 'build' ? '' : '14');
       }
+    });
+
+    it(`${locale} says how many abilities are on the map and asks for the files and the project lines the server gives`, () => {
+      const share = { mapped: 61, total: 383, percent: 16 };
+      const because = t('suggest.mapArea.because', share);
+      const prompt = t('suggest.mapArea.prompt', share);
+      for (const text of [t('suggest.mapArea.label', share), because, prompt]) {
+        expect(text).not.toContain('acpChat.suggest');
+        expect(text).not.toMatch(/[{}#]/);
+      }
+      for (const text of [because, prompt]) {
+        expect(text).toContain('61');
+        expect(text).toContain('383');
+        expect(text).toContain('16%');
+      }
+      expect(prompt).toContain('validate_vault');
+      expect(prompt).toContain('Map next, in one request');
+      expect(prompt).toContain('Excludes');
+      expect(prompt).toContain('Not mapped yet');
+      if (locale === 'en') expect(mapAreaPrompt(process.cwd(), share)).toBe(prompt);
     });
 
     it(`${locale} asks for the work and a report, never for review before writing`, () => {

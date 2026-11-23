@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { useLayoutEffect, useRef } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import {
@@ -383,6 +383,83 @@ describe('RouteFocusManager', () => {
         await vi.advanceTimersByTimeAsync(200);
       });
       expect(screen.getByRole('heading', { name: '공방' })).toHaveFocus();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('leaves focus a person moved to a header control after arrival, before the DOM settled', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      route.pathname = '/';
+      const view = render(
+        <>
+          <RouteFocusManager />
+          <Surface title="시작" />
+        </>,
+      );
+
+      route.pathname = '/ko/library/';
+      const destination = (
+        <>
+          <RouteFocusManager />
+          <header>
+            <button type="button">사용 방법</button>
+          </header>
+          <main id="main">
+            <h1 className="sr-only">자료실</h1>
+          </main>
+        </>
+      );
+      view.rerender(destination);
+      act(() => {
+        const door = screen.getByRole('button', { name: '사용 방법' });
+        fireEvent.pointerDown(door);
+        door.focus();
+      });
+
+      // Past the settle window and the 2 s deadline.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2_500);
+      });
+      expect(screen.getByRole('button', { name: '사용 방법' })).toHaveFocus();
+      expect(screen.getByRole('heading', { name: '자료실' })).not.toHaveFocus();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('still lands on the heading when the page itself moved focus outside main with no input from the person', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      route.pathname = '/';
+      const view = render(
+        <>
+          <RouteFocusManager />
+          <Surface title="시작" />
+        </>,
+      );
+
+      route.pathname = '/ko/library/';
+      const destination = (
+        <>
+          <RouteFocusManager />
+          <header>
+            <button type="button">사용 방법</button>
+          </header>
+          <main id="main">
+            <h1 className="sr-only">자료실</h1>
+          </main>
+        </>
+      );
+      view.rerender(destination);
+      act(() => screen.getByRole('button', { name: '사용 방법' }).focus());
+
+      // Past the settle window and the 2 s deadline.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2_500);
+      });
+      expect(screen.getByRole('heading', { name: '자료실' })).toHaveFocus();
     } finally {
       vi.useRealTimers();
     }

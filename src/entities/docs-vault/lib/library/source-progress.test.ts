@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import type { VaultDoc, VaultSourceFile } from '../../model/vault-manifest';
-import { deriveSourceProgress, recordedInstantMs, recordedLocalDay, SOURCE_PROGRESS_MAX_POINTS } from './source-progress';
+import { recordedInstantMs, recordedLocalDay } from '@/shared/lib/library/recorded-date';
+
+import { deriveSourceProgress, SOURCE_PROGRESS_MAX_POINTS } from './source-progress';
 import { type SourceCompileState } from './source-compile-state';
 import { buildLibraryModel, type LibrarySourceRow } from './vault-library';
 

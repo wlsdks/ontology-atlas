@@ -508,21 +508,23 @@ function areaMap(map, collection, found) {
   const locate = areaLocator(areas);
   const filesOf = new Map(areas.map((area) => [area, []]));
   for (const file of product) filesOf.get(locate(file.path))?.push(file);
-  const held = new Map();
-  for (const row of found) {
-    const area = locate(row.path);
-    held.set(area, (held.get(area) ?? 0) + 1);
-  }
-  const rows = areas.map((area) => ({
-    path: area.path,
-    files: area.files,
-    lines: area.lines,
-    ...(area.own ? { own: true } : {}),
-    ...(area.rest ? { rest: true, members: area.members } : {}),
-    mainFiles: area.rest ? [] : mainFilesOf({ path: area.path, scope: area.own ? 'files' : 'tree', files: filesOf.get(area) })
-      .map((file) => ({ path: file.path, lines: file.lines })),
-    abilities: held.get(area) ?? 0,
-  }));
+  const held = abilityFilesByArea(found, locate);
+  const rows = areas.map((area) => {
+    const abilityFiles = held.get(area) ?? [];
+    const row = {
+      path: area.path,
+      files: area.files,
+      lines: area.lines,
+      ...(area.own ? { own: true } : {}),
+      ...(area.rest ? { rest: true, members: area.members } : {}),
+      mainFiles: area.rest ? [] : mainFilesOf({ path: area.path, scope: area.own ? 'files' : 'tree', files: filesOf.get(area) })
+        .map((file) => ({ path: file.path, lines: file.lines })),
+      abilities: abilityFiles.reduce((sum, file) => sum + file.abilities, 0),
+    };
+    // Writes and validate_vault measure an area by these files; the survey's text and rows never carry them.
+    Object.defineProperty(row, 'abilityFiles', { value: abilityFiles, enumerable: false });
+    return row;
+  });
   const listed = abilitiesByArea(found, areas, locate, ABILITY_LIMIT);
   const byArea = {
     ...map,
@@ -532,6 +534,23 @@ function areaMap(map, collection, found) {
     next: areaNext(map, rows),
   };
   delete byArea.units;
+  return byArea;
+}
+
+/** Each area's files that hold abilities, with how many each holds; O(rows x path depth). */
+function abilityFilesByArea(found, locate) {
+  const counts = new Map();
+  for (const row of found) {
+    const area = locate(row.path);
+    if (!area) continue;
+    if (!counts.has(area)) counts.set(area, new Map());
+    const files = counts.get(area);
+    files.set(row.path, (files.get(row.path) ?? 0) + 1);
+  }
+  const byArea = new Map();
+  for (const [area, files] of counts) {
+    byArea.set(area, [...files].map(([path, abilities]) => ({ path, abilities })));
+  }
   return byArea;
 }
 
@@ -556,7 +575,7 @@ function areaNext(map, areas) {
     '3. Write every domain\'s capabilities: one per thing a user, an operator or another system gets, a family as one capability naming its members and how many of them were read. ' +
     'A capability whose code was not read states no rule and says so under ## Uncertainty. ' +
     'Every ability row below ends up as a capability, named in the node that covers it, or on one line of the project\'s ## Uncertainty that says why it is left out; the rows are a floor shared between areas, not all of them. ' +
-    'Every write and validate_vault names the areas that no node\'s path: falls in and no domain names by its path: list those in the project\'s ## Uncertainty as unopened, and end by telling the person how many capabilities are still unread, which they can ask for next.';
+    'Every write and validate_vault gives the Not mapped yet lines for the project\'s ## Uncertainty, led by "Not mapped yet: N of M areas, R of T abilities.": write them into the project exactly as given before finalize_project_meaning, which refuses without them, and end by telling the person about what share of the abilities is on the map and how many capabilities are still unread, which they can ask for next.';
 }
 
 /** The first `count` rows, in the order the areas shared them. */

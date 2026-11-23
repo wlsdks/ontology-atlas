@@ -22,11 +22,9 @@ import { useSessionListReadEnabled, writeSessionListRead } from "./work-status-p
 import { DEFAULT_FOOTPRINT, useFootprint, writeFootprint } from "./footprint-preferences";
 import {
   useLibraryGuideSeen,
-  useLibraryIndexCollapsed,
   useLibraryIndexSegment,
   useWikiWriteMode,
   writeLibraryGuideSeen,
-  writeLibraryIndexCollapsed,
   writeLibraryIndexSegment,
   writeWikiWriteMode,
 } from "./library-preferences";
@@ -246,16 +244,6 @@ const storedPreferences: StoredPreference[] = [
     read: readHook(useLibraryIndexSegment),
     write: () => writeLibraryIndexSegment("wiki"),
     writtenRaw: "wiki",
-  },
-  {
-    name: "library index collapsed",
-    key: "atlas.library.index-collapsed",
-    defaultValue: false,
-    savedRaw: "on",
-    savedValue: true,
-    read: readHook(useLibraryIndexCollapsed),
-    write: () => writeLibraryIndexCollapsed(true),
-    writtenRaw: "on",
   },
   {
     name: "wiki write mode",

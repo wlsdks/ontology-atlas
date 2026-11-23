@@ -1,5 +1,7 @@
 /** Next steps measured from this folder's map: a row exists only when its number is counted from the graph and is above zero. */
 
+import type { NotMappedAreas } from '@/shared/lib/vault-document/not-mapped-areas';
+
 import type { UnreadCapability } from './measured-facts';
 
 /** How many measured fixes are shown at once, before the whole-map check. Given too many choices, people choose none (Hick). */
@@ -15,6 +17,8 @@ type SuggestionKind =
   | 'connectSource'
   /** Nothing beyond the starter nodes has been built. */
   | 'build'
+  /** Abilities the project records as not on the map yet: map the next areas that hold them. */
+  | 'mapArea'
   /** Capabilities whose body cites no lines read from the code. */
   | 'readRules'
   /** Capabilities that record neither `depends_on` nor an element. */
@@ -46,6 +50,8 @@ export interface SuggestionInput {
   nodeCount: number;
   sourceState?: 'loading' | 'unbound' | 'bound' | 'unavailable' | 'no-projects';
   islands: readonly (readonly string[])[];
+  /** The project with the most abilities not on the map yet, from its `## Uncertainty` line. */
+  notMappedAreas?: NotMappedAreas | null;
   withoutReadRule?: { unread: readonly UnreadCapability[]; measured: number };
   withoutDependency: readonly string[];
   codeShaped: readonly string[];
@@ -120,6 +126,11 @@ function readRulesParams({ unread, measured }: { unread: readonly UnreadCapabili
   return { count, total: measured, named: named.length, slugs: named.join(', ') };
 }
 
+/** Whole percent of the surveyed abilities on the map; 100 would say "done" while some are still off it. */
+function mappedPercent(abilitiesUncovered: number, abilitiesTotal: number): number {
+  return Math.min(99, Math.round((100 * (abilitiesTotal - abilitiesUncovered)) / abilitiesTotal));
+}
+
 export function chatSuggestions(input: SuggestionInput): ChatSuggestion[] {
   if (input.nodeCount <= STARTER_NODE_CEILING) {
     if (input.sourceState === 'unbound') {
@@ -137,7 +148,15 @@ export function chatSuggestions(input: SuggestionInput): ChatSuggestion[] {
   }
 
   const repairs: ChatSuggestion[] = [];
-  // A rule read from code is what the other repairs build on, so it comes first.
+  // Breadth before depth: an area not on the map has no capability to read or repair yet.
+  if (input.notMappedAreas && input.notMappedAreas.abilitiesUncovered > 0) {
+    const { abilitiesUncovered, abilitiesTotal } = input.notMappedAreas;
+    repairs.push({
+      kind: 'mapArea',
+      params: { mapped: abilitiesTotal - abilitiesUncovered, total: abilitiesTotal, percent: mappedPercent(abilitiesUncovered, abilitiesTotal) },
+    });
+  }
+  // A rule read from code is what the other repairs build on, so it comes next.
   if (input.withoutReadRule && input.withoutReadRule.unread.length > 0) {
     repairs.push({ kind: 'readRules', params: readRulesParams(input.withoutReadRule) });
   }

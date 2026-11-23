@@ -175,6 +175,7 @@
     "pageFails": "{count, plural, one {# problem} other {# problems}} with this page's shape. Allow saves it as is; the Wiki list will show them.",
     "pageFailsRest": "{count, plural, one {# more} other {# more}} beyond these. The Wiki list shows them all.",
     "insideFolderTitle": "It wants to change a file in this folder",
+    "statedInsideFolderTitle": "It says it will change these files in this folder",
     "insideFolderBody": "The path is below. Nothing happens until you allow it.",
     "insideProjectTitle": "It wants to look at code in your project",
     "insideProjectBody": "That is outside the ontology folder but inside the project you picked. Nothing happens until you allow it.",
@@ -365,6 +366,11 @@
       "label": "Build the first map",
       "because": "{count, plural, =0 {Nothing is on the map yet} one {Only # starter concept is on the map} other {Only the # starter concepts are on the map}}",
       "prompt": "Build the first map of this folder from the connected code. Start with connection_info and list_kinds, then read the source and add the domains, capabilities and elements it shows, each with a definition sentence, its code location and its relations, each relation with a why. Look for an existing concept before adding a near-twin. Then run validate_vault and tell me what you added, what you connected and what you could not read."
+    },
+    "mapArea": {
+      "label": "Map the next part of the code",
+      "because": "{mapped} of the {total} abilities found in the code are on the map ({percent}%)",
+      "prompt": "{mapped} of the {total} abilities found in this code are on the map ({percent}%). Map the next part now. Run validate_vault and take the files its Areas sentence names after \"Map next, in one request\"; open their areas with the analyze_repo_structure calls that sentence gives. Write one capability per thing a user, an operator or another system gets from those files, at most twelve in this request, each named the way a teammate says it aloud, with its entry file in path:, in the domain it belongs to; one capability may stand for several files when it cites lines in each. Look for an existing concept before adding a near-twin. Read each new capability by symbol, three or four per call, and state its deciding rule in one to three sentences with the cite of the read lines. Narrow with patch_concept any group capability that only named these files, so nothing is on the map twice. What is not product (generated code, test tooling, samples) gets no node: put it on one line of the project's Excludes section with its path and the reason. Add the depends_on relations the reads show, each with a why that cites lines. Then run validate_vault again and replace the Not mapped yet lines under the project's Uncertainty with exactly the lines it gives. Tell me in a few plain sentences what these files turned out to hold, what you added, and how many of the abilities are on the map now."
     },
     "readRules": {
       "label": "{count, plural, one {Read # capability from the code} other {Read # capabilities from the code}}",

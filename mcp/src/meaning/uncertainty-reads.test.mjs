@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { join } from 'node:path';
 import { describe, it } from 'node:test';
 
 import { extractUncertaintyReads, orderUncertaintyReads } from './uncertainty-reads.mjs';
@@ -238,6 +239,44 @@ describe('orderUncertaintyReads — the queue, and the sentence that clears a ro
       'Read src/parse.ts (lines 111–2790), then patch_concept capabilities/thing to state what it' +
         ' settled or to move the statement out of Uncertainty.',
     );
+  });
+
+  it('queues a kept Not mapped yet bullet as an area to open, and its summary line as nothing', () => {
+    const rows = extractUncertaintyReads({
+      slug: 'shop',
+      kind: 'project',
+      path: 'README.md',
+      body: body('Not mapped yet: 2 of 9 areas, 14 of 40 abilities.\n- Not mapped yet: billing (12 abilities, 3 capabilities)\n- Not mapped yet: 4 smaller folders in shop (5 abilities, 0 capabilities)'),
+    });
+    assert.deepEqual(rows.map((row) => [row.kind, row.paths]), [['unopened-area', ['billing']], ['unopened-area', ['shop']]]);
+    const [billing] = orderUncertaintyReads(rows, { sourceRoot: '/repo' });
+    assert.equal(billing.proposedAction, `analyze_repo_structure(${JSON.stringify({ rootPath: join('/repo', 'billing') })}), then write its capabilities.`);
+  });
+
+  it('reads a bullet\'s area from the server\'s label, brackets in the path included, and opens nothing outside the repository', () => {
+    const rows = extractUncertaintyReads({
+      slug: 'shop',
+      kind: 'project',
+      path: 'README.md',
+      body: body([
+        '- Not mapped yet: app/(shop) (2 of 2 abilities not on the map)',
+        '- Not mapped yet: core (its own files) (1 of 1 ability not on the map)',
+        '- Not mapped yet: ../../../etc (1 of 1 ability not on the map)',
+        '- Not mapped yet: docs/../../secrets (no abilities found, no node)',
+        '- Not mapped yet: the billing folder, later',
+      ].join('\n')),
+    });
+    const ordered = orderUncertaintyReads(rows, { sourceRoot: '/repo' });
+    assert.deepEqual(ordered.map((row) => row.paths), [['app/(shop)'], ['core']]);
+    assert.equal(ordered[0].proposedAction, `analyze_repo_structure(${JSON.stringify({ rootPath: join('/repo', 'app/(shop)') })}), then write its capabilities.`);
+  });
+
+  it('does not send a statement listing other nodes as unread to the node\'s own file', () => {
+    const [row] = orderUncertaintyReads(extract('- Unread capabilities: loans, savings, general ledger.', { kind: 'project', path: 'README.md' }));
+    assert.equal(row.kind, 'other');
+    assert.deepEqual(row.paths, []);
+    assert.match(row.proposedAction, /validate_vault/);
+    assert.doesNotMatch(row.proposedAction, /README\.md/);
   });
 
   it('says "beyond" a read span whose end it does not know', () => {

@@ -175,6 +175,7 @@
     "pageFails": "此页面的结构有 {count} 个问题。允许后将按原样保存，Wiki 列表会显示这些问题。",
     "pageFailsRest": "另有 {count} 个。Wiki 列表会全部显示。",
     "insideFolderTitle": "它想修改此文件夹中的一个文件",
+    "statedInsideFolderTitle": "它表示将修改此文件夹中的这些文件",
     "insideFolderBody": "路径见下方。在你允许之前不会有任何动作。",
     "insideProjectTitle": "它想查看你项目中的代码",
     "insideProjectBody": "这些代码在本体文件夹之外，但在你选择的项目之内。在你允许之前不会有任何动作。",
@@ -365,6 +366,11 @@
       "label": "构建第一张地图",
       "because": "{count, plural, =0 {地图上还什么都没有} other {地图上只有 # 个起始概念}}",
       "prompt": "请根据已连接的代码构建此文件夹的第一张地图。先运行 connection_info 和 list_kinds，然后读取源码，把代码中体现的领域、能力和实现元素加进来，每个都带上定义句、代码位置和关系，每条关系都写明理由。添加相似概念之前，先查找是否已有现成的概念。最后运行 validate_vault，告诉我你添加了什么、连接了什么、哪些没能读取。"
+    },
+    "mapArea": {
+      "label": "把代码的下一个区域放到地图上",
+      "because": "代码中找到的 {total} 项功能里有 {mapped} 项（{percent}%）在地图上",
+      "prompt": "这份代码中找到的 {total} 项功能里有 {mapped} 项（{percent}%）在地图上。现在请把下一部分放到地图上。运行 validate_vault，选取它的 Areas 句子在 “Map next, in one request” 之后列出的文件，用那句话给出的 analyze_repo_structure 调用打开它们所在的区域。用户、运维人员或其他系统从这些文件得到的每一样东西，各写成一项能力：本次最多十二项，每项用队友口头会说的名字命名，在 path: 中写它的入口文件，并放进它所属的领域；一项能力若分别引用了几个文件中的行，可以代表这几个文件。添加相似概念之前，先查找是否已有现成的概念。按符号读取每项新能力，每次三四个，用一到三句话写出决定它的规则并引用所读的行。只列出这些文件名称的汇总能力，用 patch_concept 缩小其范围，让地图上不重复出现同一样东西。不属于产品的东西（生成的代码、测试工具、示例）不建节点，而是在项目的 Excludes 一节用一行写明路径和原因。添加所读代码体现的 depends_on 关系，每条都附上引用行号的理由。然后再次运行 validate_vault，把项目 Uncertainty 下的 Not mapped yet 各行替换为它给出的那些行，原样保留，不要翻译。最后用几句简单的话告诉我这些文件实际包含什么、你添加了什么，以及现在有多少项功能在地图上。"
     },
     "readRules": {
       "label": "从代码中读取 {count} 项能力",

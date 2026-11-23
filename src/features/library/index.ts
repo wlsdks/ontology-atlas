@@ -50,8 +50,9 @@ export type {
 export { FindDocumentsDialog } from "./ui/FindDocumentsDialog";
 export { buildAskBrief } from "./lib/questions/ask-brief";
 export { buildQuestionDeskReportBrief, planQuestionDeskReportFile, questionDeskReportFilename, serializeQuestionDeskReport, splitQuestionDeskReportSections } from './lib/questions/question-desk-brief';
-export { countDeskReadablePages, countDeskWikiPages, deskBriefEvidence, deskLeadTermRuns, deskMeaningLeads, deskSearchPrefixes, deskSentenceWindow, findDeskClaims, findDeskSourceHits, fuseDeskLeads, jevClaimEligibility, jevPayloadEligibility, newestDeskQuestions, planDeskSourceReads, questionDeskListingVersion, questionDeskReportFileCurrent, questionTerms, recentDeskPages } from './lib/questions/question-desk';
-export type { DeskCitation, DeskClaim, DeskLead, DeskSourceHit } from './lib/questions/question-desk';
+export { countDeskReadablePages, countDeskWikiPages, deskBriefEvidence, deskLeadTermRuns, deskSearchPrefixes, deskSentenceWindow, jevClaimEligibility, jevPayloadEligibility, newestDeskQuestions, questionDeskListingVersion, questionDeskReportFileCurrent, recentDeskPages } from './lib/questions/question-desk';
+export { planDeskSourceReads, searchDesk } from './lib/questions/desk-search';
+export type { DeskCitation, DeskClaim, DeskLead } from './lib/questions/desk-search';
 export type { AskQuestionId } from "./lib/questions/ask-brief";
 export { buildAnswerPage } from "./lib/questions/answer-page";
 export { answerHistoryUnreadable, answerObservation, answerRefreshBrief, automaticWikiWriteAllowed, buildAnswerRevision, isRetainedAnswerPath, retainedAnswerHeads } from './lib/questions/answer-revision';

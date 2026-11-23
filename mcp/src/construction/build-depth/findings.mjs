@@ -2,6 +2,7 @@ import { citedSymbol } from './line-cites.mjs';
 import { citeRepair, measureRules, readCall } from './read-depth.mjs';
 import { hasCode, nearbyFiles, readSmallSource } from './source-files.mjs';
 import { dependencyEdges, kindOf, pathOf, refsOf, saysOutlinedOnly, slugResolver } from './node-fields.mjs';
+import { notMappedLineFindings } from './unmapped-areas.mjs';
 
 const SHARED_PATH_LIMIT = 5;
 const PATH_KINDS = new Set(['capability', 'element']);
@@ -97,23 +98,26 @@ function entryPathFindings(docs, repoRoot, collection) {
 }
 
 function ruleCiteFindings(docs, reads, repoRoot) {
-  return measureRules(docs, reads, repoRoot).uncited.map((row) => ({
+  const { uncited, judgedAgainstReads } = measureRules(docs, reads, repoRoot);
+  return uncited.map((row) => ({
     slug: row.slug,
     code: 'rule-without-read-lines',
-    message: `${row.slug} states a rule but cites no ${reads ? 'read ' : ''}lines that hold its condition${row.cited ? ' (its cites name lines that were not served or hold no condition)' : ''}. A reader cannot check it, and a rule taken from a body without its guard or default can be backwards. Repair: ${citeRepair([row])}.`,
+    message: `${row.slug} states a rule but cites no ${judgedAgainstReads ? 'read ' : ''}lines that hold its condition${row.cited ? ` (its cites name lines that ${judgedAgainstReads ? 'were not served or ' : ''}hold no condition)` : ''}. A reader cannot check it, and a rule taken from a body without its guard or default can be backwards. Repair: ${citeRepair([row])}.`,
   }));
 }
 
 /**
  * The validate_vault warnings this module owns; `repoRoot` null skips the file
  * checks, and `reads` (this session's served lines) makes the relation-note and
- * rule checks judge reads instead of wording.
+ * rule checks judge reads instead of wording. `coverage` (`areaCoverage` of a
+ * repository surveyed by area) checks the project's Not mapped yet summary line.
  */
-export function buildDepthFindings(docs, { repoRoot, collection, reads } = {}) {
+export function buildDepthFindings(docs, { repoRoot, collection, reads, coverage } = {}) {
   return [
     ...relationNoteFindings(docs, reads),
     ...ruleCiteFindings(docs, reads, repoRoot ?? null),
     ...twoWayDependencyFindings(docs),
     ...(repoRoot ? entryPathFindings(docs, repoRoot, collection) : []),
+    ...notMappedLineFindings(docs, coverage ?? null),
   ];
 }

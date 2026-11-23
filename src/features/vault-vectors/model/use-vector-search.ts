@@ -37,6 +37,8 @@ export async function askAndFollowFailure(rootPath: string, source: VectorSource
 
 export interface VectorSearch {
   ask: (question: string, prefixes?: readonly string[]) => Promise<VectorFound> | null;
+  /** Whether `ask` reaches the folder's vectors now; false means words alone. */
+  searchable: boolean;
   warm: () => void;
   offerSetup: boolean;
   afterJob: () => Promise<void>;
@@ -69,5 +71,5 @@ export function useVectorSearch(rootPath: string | null, markdownFiles: number, 
 
   const waitForJob = useCallback(() => (rootPath === null ? Promise.resolve() : afterJob(rootPath)), [rootPath]);
 
-  return { ask, warm, offerSetup, afterJob: waitForJob };
+  return { ask, searchable: source !== null, warm, offerSetup, afterJob: waitForJob };
 }

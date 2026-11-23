@@ -1,5 +1,7 @@
 // The manifest shape `scripts/docs-vault/build-docs-vault.mjs` emits.
 
+import type { NotMappedAreas } from '@/shared/lib/vault-document/not-mapped-areas';
+
 export interface VaultHeading {
   depth: number;
   text: string;
@@ -34,6 +36,11 @@ export interface VaultDoc {
    * not a capability, or a manifest built without it (the bundled one), so nothing was measured.
    */
   citesReadLines?: boolean;
+  /**
+   * A project's `Not mapped yet: N of M areas, R of T abilities.` line under `## Uncertainty` (`not-mapped-areas.ts`).
+   * Absent: not a project, no such line, or a manifest built without it (the bundled one).
+   */
+  notMappedAreas?: NotMappedAreas;
   updatedAt: string;
   revision?: number;
   linksOut: string[];

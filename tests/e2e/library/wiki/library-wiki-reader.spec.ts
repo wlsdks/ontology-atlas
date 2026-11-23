@@ -94,12 +94,12 @@ const scroller = (page: Page) => page.getByTestId('library-wiki-header').locator
 test('the row above a page names that page, not the folder', async ({ page }) => {
   await openWikiTab(page, folder());
   await openPage(page, 'wiki/returns');
-  const row = page.getByTestId('library-reader-back').locator('..');
+  const row = page.getByTestId('wiki-reader-top-row').locator('xpath=../..');
   await expect(row.getByTestId('library-status-strip')).toHaveCount(0);
   await expect(row.getByTestId('wiki-reader-status')).toHaveText('draft');
   await expect(row.getByTestId('wiki-reader-byline')).toContainText('Claude (agent)');
-  // The folder's counts are one press away: Close returns to the Wiki home.
-  await page.getByTestId('library-reader-back').click();
+  // The folder's counts are one press away: the index's home row returns to the Wiki home.
+  await page.getByTestId('library-index-home').click();
   await expect(page.getByTestId('question-desk-input')).toBeVisible();
 });
 
@@ -227,7 +227,7 @@ test('the page ends with what it cites, what links here and the concepts it touc
   expect(new Set(heights).size).toBe(1);
 
   // A page no other page links to and that names no concept shows only its sources.
-  await page.getByTestId('library-reader-back').click();
+  await page.getByTestId('library-index-home').click();
   await openPage(page, 'wiki/settlement-reconciliation-check');
   await expect(foot.getByTestId('wiki-foot-sources')).toContainText('carrier.md2 citations');
   await expect(foot.getByTestId('wiki-foot-sources')).toContainText('gone.md1 citation');
@@ -264,7 +264,7 @@ test('a link opens its page in place, and Back returns to the scroll it left, wi
   expect(Math.max(...gaps), 'the longest frame interval').toBeLessThanOrEqual(50);
 });
 
-test('a desk row opens the page at its claim, marked, and Close returns to the results as they were', async ({ page }) => {
+test('a desk row opens the page at its claim, marked, and the home row returns to the results as they were', async ({ page }) => {
   await page.setViewportSize({ width: 1512, height: 901 });
   await openWikiTab(page, folder());
   await page.getByTestId('question-desk-input').fill('return label free members');
@@ -294,7 +294,7 @@ test('a desk row opens the page at its claim, marked, and Close returns to the r
   // The mark fades and leaves the DOM.
   await expect(mark).toHaveCount(0, { timeout: 5_000 });
 
-  await page.getByTestId('library-reader-back').click();
+  await page.getByTestId('library-index-home').click();
   await expect(lead).toBeVisible();
   await expect(page.getByTestId('question-desk-lead')).toHaveCount(shownLeads);
   expect(await desk.evaluate((element) => element.scrollTop)).toBe(deskTop);

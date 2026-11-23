@@ -6,22 +6,17 @@ import { sourceGroupKey, type SourcePick } from "@/widgets/library-sources-overv
 
 /**
  * The folder or file type a row picked on the Sources home narrows the index list to. A pick belongs
- * to its folder, so switching folders drops it, and every pick unfolds the index so the narrowing
- * can be seen.
+ * to its folder, so switching folders drops it.
  */
-export function useSourcePick({ workVaultScope, unfoldIndex, t }: {
+export function useSourcePick({ workVaultScope, t }: {
   workVaultScope: string;
-  unfoldIndex: () => void;
   t: ReturnType<typeof useTranslations<"library">>;
 }) {
   const [pickAt, setPickAt] = useState<{ scope: string; pick: SourcePick } | null>(null);
   const sourcePick = pickAt?.scope === workVaultScope ? pickAt.pick : null;
   const setSourcePick = useCallback(
-    (pick: SourcePick | null) => {
-      setPickAt(pick ? { scope: workVaultScope, pick } : null);
-      if (pick) unfoldIndex();
-    },
-    [unfoldIndex, workVaultScope],
+    (pick: SourcePick | null) => setPickAt(pick ? { scope: workVaultScope, pick } : null),
+    [workVaultScope],
   );
   const sourceGroupFilter = useMemo(() => {
     if (!sourcePick) return null;
