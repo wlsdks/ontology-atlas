@@ -129,12 +129,18 @@ export function GlobalSearch({
       }),
     [query, drawnNodes, selectedKinds, selectedProjectIds],
   );
-  const ontologyResults = ontologyPage.results;
   const projectPage = useMemo(
     () => (projects ? matchProjects(query, projects, RESULT_LIMIT) : EMPTY_PROJECT_PAGE),
     [query, projects],
   );
   const projectResults = projectPage.results;
+  // A project node and its card are one entity; when the card is listed, the node row would repeat it.
+  const ontologyResults = useMemo(() => {
+    if (!onSelectProject || projectResults.length === 0) return ontologyPage.results;
+    const listed = new Set(projectResults.map(({ project }) => `project:${project.slug}`));
+    return ontologyPage.results.filter(({ node }) => node.kind !== "project" || !listed.has(node.id));
+  }, [ontologyPage.results, projectResults, onSelectProject]);
+  const hiddenProjectRows = ontologyPage.results.length - ontologyResults.length;
 
   const isEmptyQuery = query.trim() === "";
   const ontologySize = drawnNodes.length;
@@ -444,7 +450,7 @@ export function GlobalSearch({
               heading={
                 <span className="px-2 pb-1 pt-2 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
                   {isEmptyQuery ? t('groupConceptRecent') : t('groupConceptMatch')} · {ontologyResults.length}
-                  {ontologyPage.total > ontologyResults.length ? ` / ${ontologyPage.total}` : ""}
+                  {ontologyPage.total - hiddenProjectRows > ontologyResults.length ? ` / ${ontologyPage.total - hiddenProjectRows}` : ""}
                 </span>
               }
             >
@@ -524,7 +530,6 @@ export function GlobalSearch({
                   <span className="inline-flex shrink-0 items-center rounded-full border border-[color:var(--color-indigo-a20)] bg-[color:var(--color-indigo-a06)] px-1.5 py-[1px] font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-indigo-text-strong)]">
                     {project.isHub ? t('hub') : t('project')}
                   </span>
-                  {/* Highlighted like the concept rows: the same project is also listed as a concept, so each row shows why it is there. */}
                   {/* The reason: the slug until another field earned the row. */}
                   <div className="flex min-w-0 flex-1 flex-col md:flex-row md:items-center md:gap-2">
                     <span className="min-w-0 truncate text-[color:var(--color-text-primary)] md:flex-1">
@@ -545,9 +550,11 @@ export function GlobalSearch({
                       </span>
                     ) : null}
                   </div>
-                  <span className="shrink-0 font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-tertiary)]">
-                    {project.status}
-                  </span>
+                  {project.status?.trim() ? (
+                    <span className="shrink-0 font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-tertiary)]">
+                      {project.status}
+                    </span>
+                  ) : null}
                 </Command.Item>
                 );
               })}

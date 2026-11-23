@@ -104,6 +104,26 @@ describe("GlobalSearch", () => {
     expect(findOntologyOption("capability:mcp-server")).not.toBeNull();
   });
 
+  it("lists a matching project once, as its project row, not again as a concept row", () => {
+    render(
+      <GlobalSearch
+        open
+        onOpenChange={() => {}}
+        nodes={[...nodes, node({ id: "project:storefront", title: "Online Store", kind: "project" })]}
+        onSelectNode={() => {}}
+        projects={[project({ slug: "storefront", name: "Online Store" })]}
+        onSelectProject={() => {}}
+      />,
+    );
+
+    fireEvent.change(screen.getByRole("combobox", { name: COMMAND_LABEL }), {
+      target: { value: "online" },
+    });
+
+    expect(findOntologyOption("project:storefront")).toBeNull();
+    expect(document.querySelector('[cmdk-item][data-value="project:storefront"]')).not.toBeNull();
+  });
+
   it('calls onSelectNode with the exact node when a node result is chosen', () => {
     const onSelectNode = vi.fn();
     render(

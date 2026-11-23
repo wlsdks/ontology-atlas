@@ -35,6 +35,7 @@ import { CommitInventory } from './CommitInventory';
 import { BriefingRepositoryStage } from './BriefingRepositoryStage';
 import { ChangeDigest, EmptyDigest, type DigestSelection } from './digest/ChangeDigest';
 import { PublicPullInventory } from './PublicPullInventory';
+import { briefingStatus, needsSourceChoice } from '../model/briefing-status';
 
 const subscribe = () => () => {};
 const webSnapshot = () => false;
@@ -306,7 +307,7 @@ export function ChangeBriefingPage() {
     requestAnimationFrame(() => container?.querySelectorAll<HTMLElement>('[data-control="row"]')[before]?.focus({ preventScroll: true }));
   }
   const validData = data && (data.status === 'measured' || data.status === 'partial');
-  const status = !root ? null : !range ? 'invalidRange' : error ? 'readError' : loading ? 'loading' : data?.status === 'stale' ? 'stale' : data?.status === 'no-history' ? 'noHistory' : !validData ? 'sourceUnavailable' : !data.commits.length && data.status !== 'partial' ? 'empty' : null;
+  const status = briefingStatus({ root, hasRange: Boolean(range), error, loading, data });
   const readHistory = (start: number, end: number) => !root ? Promise.resolve(null) : project ? gitChangeBriefing(root, project, start, end) : gitSourceBriefing(root, start, end);
   const seekingLatest = chosenAnchor === null && period === 'day' && latestDay === undefined && status === 'empty';
   useEffect(() => {
@@ -418,7 +419,7 @@ export function ChangeBriefingPage() {
       </div>}
       {view === 'digest' && digestStatus && digestStatus !== 'loading' && <section role="status" data-testid="briefing-status" className="space-y-3 py-6">
         <h2 className="text-title font-[var(--font-weight-strong)]">{t(digestStatus)}</h2>
-        {digestStatus === 'sourceUnavailable' && <div className="flex flex-wrap gap-3"><Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" onClick={() => void chooseRepository()}>{t('retry')}</Button><Link className={controlClass({ shape: 'chip', hoverSurface: 'lift', hoverInk: 'strong' })} href="/projects/">{t('openProjects')}</Link></div>}
+        {needsSourceChoice(digestStatus) && <div className="flex flex-wrap gap-3"><Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" onClick={() => void chooseRepository()}>{digestStatus === 'sourceUnavailable' ? t('retry') : git('chooseRepository')}</Button><Link className={controlClass({ shape: 'chip', hoverSurface: 'lift', hoverInk: 'strong' })} href="/projects/">{t('openProjects')}</Link></div>}
         {(digestStatus === 'readError' || digestStatus === 'stale' || digestStatus === 'noHistory') && <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" onClick={readAgain}>{t('retry')}</Button>}
       </section>}
       {view === 'digest' && !digestStatus && status === 'empty' && range && <EmptyDigest range={range} unit={timelineUnit(period, range)} title={digestCopy('empty')}
@@ -448,7 +449,7 @@ export function ChangeBriefingPage() {
       {status && !(status === 'empty' && (section === 'prs' || activeFileOrigin)) && <section role="status" data-testid="briefing-status" className="space-y-3 py-6">
         <h2 className="text-title font-[var(--font-weight-strong)]">{t(status)}</h2>
         {status === 'empty' && <p>{t('emptyHint')}</p>}
-        {status === 'sourceUnavailable' && <div className="flex flex-wrap gap-3"><Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" onClick={() => { void pickTauriSourceDirectory(t('repository')).then(path => { if (path) { setSourceChoice(path); refresh(); } }); }}>{t('retry')}</Button><Link className={controlClass({ shape: 'chip', hoverSurface: 'lift', hoverInk: 'strong' })} href="/projects/">{t('openProjects')}</Link></div>}
+        {needsSourceChoice(status) && <div className="flex flex-wrap gap-3"><Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" onClick={() => { void pickTauriSourceDirectory(t('repository')).then(path => { if (path) { setSourceChoice(path); refresh(); } }); }}>{status === 'sourceUnavailable' ? t('retry') : git('chooseRepository')}</Button><Link className={controlClass({ shape: 'chip', hoverSurface: 'lift', hoverInk: 'strong' })} href="/projects/">{t('openProjects')}</Link></div>}
         {(status === 'readError' || status === 'stale' || status === 'noHistory') && <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" onClick={refresh}>{t('retry')}</Button>}
       </section>}
       {validData && <>

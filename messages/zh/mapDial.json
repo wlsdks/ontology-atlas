@@ -1,7 +1,8 @@
 {
   "keyCapability": "能力",
+  "keyElement": "元素",
   "keyDependency": "依赖对象",
-  "keyStale": "! 黄色 · 需要重新核查依据",
+  "keyStale": "需要重新核查依据",
   "keySelection": "明亮的概念 · 选中及直接相关",
   "units": "{capabilities, plural, other {# 项能力}} · {elements, plural, other {# 个元素}}",
   "stale": "{count, number} 项过时",

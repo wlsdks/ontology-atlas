@@ -13,8 +13,6 @@ const TAPER_TIP_PX = 0.35;
 const ARROW_WIDTH_PX = 1.3;
 
 const AGENT_RING_WIDTH_PX = 1;
-const PIP_SHARE = 0.3;
-const PIP_MIN_PX = 2;
 const UNKNOWN_DASH = [2, 2];
 
 function strokeArcs(ctx: CanvasRenderingContext2D, arcs: readonly Arc[], ink: string, headPx: number): void {
@@ -258,13 +256,15 @@ function paintDiscs(ctx: CanvasRenderingContext2D, marks: readonly Disc[], token
     ctx.fillStyle = sunk(first.hue, ground, first.ink * (first.focus ? 1 : P.coreAlpha));
     ctx.fill();
   }
+  // Stale evidence recolours the rim at its own width, the amber the legend names; a heavier ring outshouts the map when most evidence is stale.
+  ctx.lineWidth = rimPx;
   for (let dIndex = 0; dIndex < marks.length; dIndex += 1) {
     const d = marks[dIndex]!;
     if (d.state !== "stale") continue;
     ctx.beginPath();
-    ctx.arc(d.x + d.r * 0.75, d.y - d.r * 0.75, Math.max(PIP_MIN_PX, d.r * PIP_SHARE), 0, Math.PI * 2);
-    ctx.fillStyle = sunk(warning, ground, d.ink);
-    ctx.fill();
+    ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+    ctx.strokeStyle = sunk(warning, ground, d.ink);
+    ctx.stroke();
   }
 }
 

@@ -24,7 +24,7 @@ describe("the put-away conversation", () => {
     expect(screen.queryByTestId("library-conversation-running-dot")).toBeNull();
   });
 
-  it("keeps one face while a turn runs: the dot marks it and the phase is in the tooltip", () => {
+  it("keeps one face while a turn runs: the dot marks it and the phase is in the tooltip", async () => {
     const { chip } = draw({
       state: "editing",
       summary: "Write up the four sources",
@@ -32,29 +32,32 @@ describe("the put-away conversation", () => {
       toolName: "Write wiki/contractor-quotes.md",
     });
     expect(chip).toHaveTextContent(/^Conversation$/);
-    expect(chip).toHaveAttribute("title", "Conversation · Editing");
+    fireEvent.focus(chip);
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("Conversation · Editing");
     expect(screen.getByTestId("library-conversation-running-dot")).toBeInTheDocument();
   });
 
-  it("does not replace the destination with the internal request", () => {
+  it("does not replace the destination with the internal request", async () => {
     const { chip } = draw({
       state: "planning",
       summary: "Check the wiki against its sources",
       ontologySlug: null,
       toolName: null,
     });
-    expect(chip).toHaveAttribute("title", "Conversation · Planning");
+    fireEvent.focus(chip);
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("Conversation · Planning");
     expect(chip.getAttribute("aria-label")).not.toContain("Check the wiki against its sources");
   });
 
-  it("says a shut dock is holding a permission card — the one turn that waits forever", () => {
+  it("says a shut dock is holding a permission card — the one turn that waits forever", async () => {
     const { chip } = draw({
       state: "blocked",
       summary: "Write up the four sources",
       ontologySlug: null,
       toolName: "Write /outside/notes.md",
     });
-    expect(chip).toHaveAttribute("title", "Conversation · Waiting for approval");
+    fireEvent.focus(chip);
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("Conversation · Waiting for approval");
     expect(chip.getAttribute("aria-label")).toBe(
       "Open the conversation. Claude Agent is still working: Waiting for approval.",
     );

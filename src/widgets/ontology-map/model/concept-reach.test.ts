@@ -120,6 +120,13 @@ describe("readConceptReach", () => {
     expect(readConceptReach(nodes, edges, "element:price-table")!.neededBy.map((r) => r.id)).toEqual(["element:checkout-form"]);
   });
 
+  it("counts a domain's elements under its capabilities, as the domain's map label does", () => {
+    const reach = readConceptReach(nodes, edges, "domain:orders");
+    const label = modelOf(nodes, edges).domainById.get("domain:orders")!;
+    expect(reach?.domainUnits).toEqual({ capabilities: 2, elements: 1 });
+    expect(reach?.domainUnits).toEqual({ capabilities: label.capabilityIds.length, elements: label.elementCount });
+  });
+
   it("has no reach for a project or a concept the map does not draw", () => {
     expect(readConceptReach(nodes, edges, "project:shop")).toBeNull();
     expect(readConceptReach(nodes, edges, "document:adr-1")).toBeNull();

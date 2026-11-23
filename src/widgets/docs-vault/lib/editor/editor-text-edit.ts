@@ -12,6 +12,12 @@ export function stripFrontmatterBlock(content: string): string {
   return content.replace(FRONTMATTER_BLOCK, '');
 }
 
+/** Where the prose begins: just past the frontmatter block and the blank lines after it. */
+export function bodyStartOffset(content: string): number {
+  const block = FRONTMATTER_BLOCK.exec(content)?.[0].length ?? 0;
+  return block + (/^\n*/.exec(content.slice(block))?.[0].length ?? 0);
+}
+
 /** Wraps the selection (or the placeholder when nothing is selected) and selects the wrapped text. */
 export function wrapSelectionEdit(
   content: string,

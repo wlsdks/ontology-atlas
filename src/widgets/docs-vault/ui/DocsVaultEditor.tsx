@@ -18,6 +18,7 @@ import {
   type EditorDraft,
 } from '../lib/editor/editor-draft';
 import {
+  bodyStartOffset,
   insertLinkEdit,
   prefixLineEdit,
   stripFrontmatterBlock,
@@ -430,6 +431,16 @@ export function DocsVaultEditor({
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [discardOpen, doSave, insertLink, requestClose, wrapSelection]);
+
+  const caretPlacedForRef = useRef<string | null>(null);
+  useEffect(() => {
+    const ta = taRef.current;
+    if (loadedSlug !== doc.slug || content === null || !ta || caretPlacedForRef.current === doc.slug) return;
+    caretPlacedForRef.current = doc.slug;
+    const start = bodyStartOffset(content);
+    ta.focus({ preventScroll: true });
+    ta.setSelectionRange(start, start);
+  }, [content, doc.slug, loadedSlug]);
 
   const loading = loadedSlug !== doc.slug;
   /* Deferred like the viewer's skeleton so switching documents does not flash it for a frame. */

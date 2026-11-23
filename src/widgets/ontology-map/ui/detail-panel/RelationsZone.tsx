@@ -197,8 +197,10 @@ export function RelationsZone({
     </RelationGroupShell>
   );
   const reachShown = needs.length > 0 || neededBy.length > 0;
+  const domainUnits = kind === "domain" ? reach?.domainUnits ?? null : null;
   const containsText =
-    containedKinds.length === 0 ? null
+    domainUnits && domainUnits.capabilities + domainUnits.elements > 0 ? tDial("units", domainUnits)
+    : containedKinds.length === 0 ? null
     : kind === "domain"
       ? tDial("units", {
           capabilities: containedKinds.filter((k) => k === "capability").length,

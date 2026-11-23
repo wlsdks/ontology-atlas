@@ -9,7 +9,7 @@ import {
 import { useDocumentDetail } from "@/features/document-detail";
 import { LOCALE_META, type LocaleMeta } from "@/i18n/locales";
 import { Link } from "@/i18n/navigation";
-import { estimateReadingMinutes } from "./reading-minutes";
+import { READING_TIME_MIN_WORDS, estimateReadingMinutes } from "./reading-minutes";
 import { controlClass } from '@/shared/ui/control-class';
 
 const actionLinkClass = controlClass({
@@ -143,7 +143,7 @@ export function DocMetaBar({
           {wordCount !== undefined ? (
             <span data-testid="doc-word-count" className="motion-swap-in flex gap-x-2">
               <span>{t("wordsUnit", { count: wordCount.toLocaleString(numberLocale) })}</span>
-              <span>{t("readingMinutes", { minutes: estimateReadingMinutes(wordCount) })}</span>
+              {wordCount >= READING_TIME_MIN_WORDS ? <span>{t("readingMinutes", { minutes: estimateReadingMinutes(wordCount) })}</span> : null}
             </span>
           ) : null}
           {doc.tags.length > 0 ? (
