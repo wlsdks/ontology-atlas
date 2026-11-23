@@ -1,8 +1,8 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { WorkStatusSnapshot, WorktreeRow } from '@/shared/lib/work-status/tauri-work-status';
 import { buildWorkTracks, planRooms, type RoomPlan } from '@/shared/lib/work-status/work-tracks';
-import { MORU_CAST, ROOM_PROPS, cartLoad, castRooms, moruCharacter, moruPhase, retireeOf, roomIdentity, roomLook, roomOnce, withRetirees, type RoomClip } from './room-look';
+import { AFTER_CRATE, MORU_CAST, ROOM_TALKS, workLoops, ROOM_PROPS, cartLoad, castRooms, moruCharacter, moruPhase, retireeOf, roomIdentity, roomLook, roomOnce, withRetirees, type RoomClip } from './room-look';
 
 const NOW_MS = 1_795_260_000_000;
 
@@ -38,7 +38,7 @@ describe('roomLook', () => {
     expect(roomLook({ kind: 'working', tools: ['claudeCode', 'codex'] })).toMatchObject({ cast: 'two', backClip: 'monitor-read' });
     expect(roomLook({ kind: 'resting', quietSinceMs: 0 })).toMatchObject({ running: false, still: true });
     expect(roomLook({ kind: 'dozing', quietSinceMs: 0 })).toMatchObject({ running: false, dozing: true, clip: 'nod-off', still: false });
-    expect(roomLook({ kind: 'lockLeft', tool: 'claudeCode' })).toMatchObject({ clip: 'sigh', monitorOff: true, crate: 'taped' });
+    expect(roomLook({ kind: 'lockLeft', tool: 'claudeCode' })).toMatchObject({ clip: 'feel-worried', monitorOff: true, crate: 'taped' });
     expect(roomLook({ kind: 'missing' })).toMatchObject({ clip: 'sigh', crate: 'ghost' });
     expect(roomLook({ kind: 'merged' })).toMatchObject({ running: false, still: true });
     expect(roomLook({ kind: 'unheld', lastCommitAt: null }).cast).toBe('none');
@@ -146,8 +146,14 @@ describe('castRooms', () => {
       const look = roomLook(state);
       rows.add(look.clip).add(look.backClip);
     }
-    const missing = [...rows].flatMap(row => MORU_CAST.map(character => `public/brand/mascot-${row}-row-128-${character}.png`)).filter(file => !existsSync(file));
+    for (const clip of [...workLoops('a'), ...ROOM_TALKS, AFTER_CRATE.front, AFTER_CRATE.back]) rows.add(clip);
+    // A room row ships per character; a cast clip ships once, grey, and is dressed for each character in the room.
+    const cast = JSON.parse(readFileSync('public/brand/moru-room-clips.json', 'utf8')) as { clips: Record<string, { file: string }>; cast: Record<string, unknown> };
+    const missing = [...rows].flatMap(row => cast.clips[row]
+      ? [`public/brand/${cast.clips[row].file}`]
+      : MORU_CAST.map(character => `public/brand/mascot-${row}-row-128-${character}.png`)).filter(file => !existsSync(file));
     expect(missing).toEqual([]);
+    expect(Object.keys(cast.cast).sort()).toEqual([...MORU_CAST].sort());
   });
 });
 

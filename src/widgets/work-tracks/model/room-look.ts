@@ -1,11 +1,27 @@
 import { FULL_STAGES, NO_SESSION_FLOOR, type RoomEntry, type RoomPlan, type RoomStage, type RoomState } from '@/shared/lib/work-status/work-tracks';
 import type { RoomMotion } from '@/shared/ui/marks/moru/moru-rows';
 
-/** Moru's rows a room plays (`docs/design/brand.md`, "Contextual motion"): the room rows and the waiting row's neutral pose. */
-export type RoomClip = RoomMotion | 'waiting';
+/** The cast clips a room plays beyond its rows (`pnpm brand:room-clips`), dressed for its Moru at run time. */
+export const ROOM_TOOLS = ['hook-wrench', 'gear-start', 'magnifier-read', 'switch-flip', 'book-stack', 'timer-set', 'lock-check', 'sapling-tend'] as const;
+export const ROOM_TALKS = ['ask-idea', 'teach', 'ask-fish', 'idea-shrug-sulk'] as const;
+export type CastClip = (typeof ROOM_TOOLS)[number] | (typeof ROOM_TALKS)[number] | 'feel-worried' | 'feel-proud' | 'feel-happy';
+
+/** Moru's rows a room plays (`docs/design/brand.md`, "Contextual motion"): the room rows, the waiting row's neutral pose and the cast clips. */
+export type RoomClip = RoomMotion | 'waiting' | CastClip;
+
+/**
+ * What a working Moru walks through, one clip a loop: typing, then a tool, typing, the next tool. Each room
+ * starts the tools at a place of its own, from its key.
+ */
+export function workLoops(key: string): RoomClip[] {
+  const start = Math.round(moruPhase(key) * 24) % ROOM_TOOLS.length;
+  return ROOM_TOOLS.map((_, index) => ROOM_TOOLS[(start + index) % ROOM_TOOLS.length]).flatMap(tool => ['desk-type' as const, tool]);
+}
 
 /** A row a room plays once over its state, from the neutral pose back to it. */
 export type RoomOnce = 'crate-send' | 'merge-cheer' | 'settle-in' | 'galumph' | 'galumph-left';
+/** What a landed commit is followed by, once the crate is sent: pride for one tool, joy for the one beside him. */
+export const AFTER_CRATE = { front: 'feel-proud', back: 'feel-happy' } as const;
 
 export type CrateKind = 'plain' | 'taped' | 'ghost' | 'dusty';
 
@@ -43,7 +59,7 @@ export function roomLook(state: RoomState): RoomLook {
     case 'dozing':
       return { ...quiet, clip: 'nod-off', still: false, dozing: true };
     case 'lockLeft':
-      return { ...quiet, monitorOff: true, crate: 'taped', clip: 'sigh', still: false };
+      return { ...quiet, monitorOff: true, crate: 'taped', clip: 'feel-worried', still: false };
     case 'missing':
       return { ...quiet, monitorOff: true, crate: 'ghost', clip: 'sigh', still: false };
     case 'unheld':
@@ -61,7 +77,7 @@ export interface RoomMoments {
   entered: boolean;
 }
 
-/** The one row to play now: a merge cheers, a landed commit is sent down, a new room is settled into. */
+/** The one row to play now: a merge cheers, a landed commit is sent down and then is proud of, a new room is settled into. */
 export function roomOnce(state: RoomState, { merged, landed, entered }: RoomMoments): RoomOnce | null {
   if (merged) return 'merge-cheer';
   if (landed && state.kind === 'working') return 'crate-send';

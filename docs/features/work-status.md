@@ -56,8 +56,9 @@ Every read goes through the hardened Git runner in `src-tauri/src/git/runner.rs`
   of its runs in. An agent the system launched (parent launchd or init), such
   as that server, is not counted for its own folder, so an idle Codex app
   shows nothing. A worktree stays credited for 90 seconds after its last
-  sighting while that agent still runs; sampling is once a second while the
-  screen is visible, so a command shorter than that may be missed. A command
+  sighting while that agent still runs; sampling is every one to four seconds
+  while the screen is visible, so a command shorter than that may be missed.
+  Only an agent's own command tree has its working folder read. A command
   under an Atlas agent session counts for that session. A process of the same agent that
   locked worktrees joins that lock's session. Windows reads no processes;
   Gemini CLI runs as `node` and is not named.
@@ -127,6 +128,14 @@ work has come. A mini room with a floor to itself spreads its newest commits and
 what is not committed into columns. A floor that wraps spreads its rooms evenly
 over its rows, so none stands alone on a row.
 
+The **lobby** is the building's ground floor, under the floors and above the
+shelf. A few Moru of a crew (four, and one more for each worktree no live session
+holds, at most twelve) come in through a doorway at an edge, wander, greet,
+high-five, swap hats, nap on the bench, play on the mat and prank on tiptoe, and
+go out again: two to four at a time, never more than five. Nothing there stands
+for a worktree; the floor is named "Lobby" like the floors above it. It holds still under reduced motion and stops while the window is hidden or
+the lobby is off screen.
+
 The **shelf** at the bottom counts worktrees merged into the base branch and
 worktrees no one has touched for seven days or more. A count opens a centred
 list of those branches with the time of their last commit.
@@ -138,11 +147,12 @@ host is connected nothing comes from GitHub and no request leaves the machine.
 ## Live updates
 
 While the screen is visible, it stats Git's worktree records and the base
-branch's ref once a second, and asks whether each locked pid still runs
-(`work_status_fingerprint`, no process spawned); it reads again only when any
-of that changed: a worktree added or removed, locked or unlocked, committed to,
-merged into the base branch, or its session ended. A change shows within about
-two seconds: one interval plus one read. A hidden screen asks nothing and reads
+branch's ref, and asks whether each locked pid still runs
+(`work_status_fingerprint`, no process spawned): a second after a change, then
+at twice the interval each time nothing changed, up to four seconds. It reads
+again only when any of that changed: a worktree added or removed, locked or
+unlocked, committed to, merged into the base branch, or its session ended. A
+change shows within one interval plus one read, at most about five seconds. A hidden screen asks nothing and reads
 once when it shows again; relative ages move once a minute. What each room is
 doing comes from a second read of one worktree at a time (`work_status_activity`:
 `git log -3` beyond the base branch and `git status`, about 150 ms of Git CPU on
@@ -187,8 +197,10 @@ that session's rooms and floor up and the rest down; rooms have no action, so
 they take no press or focus.
 
 Moru acts what Git and the locks show: he types at a laptop while work runs
-(the second tool's Moru reads the screen behind him), nods off in a room quiet
-for long, and sighs in a room whose lock was left behind or whose folder is
+and picks up a tool between typing loops (the second tool's Moru reads the
+screen behind him, and now and then the two turn to each other and talk),
+looks proud after he sends a commit down, nods off in a room quiet for long,
+worries in a room whose lock was left behind, and sighs in one whose folder is
 gone. He settles into a room new to the building or to the stage, and
 galumphs when his room moves sideways with him in it. Each change of what he
 does waits for his neutral pose, so he never jumps from one pose to another.

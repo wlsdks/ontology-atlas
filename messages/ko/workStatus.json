@@ -94,5 +94,8 @@
     "below": "아래 층",
     "working": "{count}개 작업 중",
     "worktrees": "워크트리 {count}"
+  },
+  "lobby": {
+    "name": "로비"
   }
 }

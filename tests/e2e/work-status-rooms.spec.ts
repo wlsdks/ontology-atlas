@@ -664,6 +664,69 @@ test.describe("work status rooms", () => {
     expect(trace.at(-1)!.rows).not.toHaveProperty("f6a7b8c");
   });
 
+  test("rests the cast between turns after the lively stretch, and cuts a new commit in at once", async ({ page }) => {
+    // The lively stretch runs fifteen seconds from the first step before the building rests.
+    test.setTimeout(90_000);
+    await openWorkStatus(page, SIX);
+    const working = room(page, "feat/library-stage");
+    await expect(working.locator("[data-moru-live]").first()).toBeVisible();
+    await page.evaluate(() => {
+      // When any Moru last changed what he shows (a room sprite's style or a lobby paint), and in the
+      // working room, when it was asked to play a row once and when its Moru first changed after that.
+      const seen = { last: performance.now(), changes: 0, longest: 0, askedAt: 0, answeredAt: 0, rowBefore: "", answeredRow: "", roomLast: performance.now() };
+      let asked: HTMLElement | null = null;
+      const note = (at: number) => {
+        seen.longest = Math.max(seen.longest, at - seen.last);
+        seen.last = at;
+        seen.changes += 1;
+      };
+      const inWorking = (node: Element) => node.closest("[data-testid='work-room']")?.textContent?.includes("feat/library-stage");
+      new MutationObserver((records) => {
+        const at = performance.now();
+        for (const record of records) {
+          const target = record.target as HTMLElement;
+          if (!target.matches("[data-moru-live]")) continue;
+          if (record.attributeName === "data-moru-once" && target.dataset.moruOnce && inWorking(target) && !asked) {
+            asked = target;
+            seen.askedAt = at;
+            seen.rowBefore = target.style.backgroundImage;
+          }
+          if (record.attributeName !== "style") continue;
+          note(at);
+          if (!inWorking(target)) continue;
+          seen.roomLast = at;
+          if (target === asked && !seen.answeredAt) { seen.answeredAt = at; seen.answeredRow = target.style.backgroundImage; }
+        }
+      }).observe(document.body, { subtree: true, attributes: true, attributeFilter: ["style", "data-moru-once"] });
+      let painted = -1;
+      window.setInterval(() => {
+        const lobby = document.querySelector<HTMLCanvasElement & { lobby?: { stats(): { painted: number } } }>("[data-testid='work-lobby-canvas']");
+        const now = lobby?.lobby?.stats().painted ?? -1;
+        if (now !== painted) { if (painted >= 0) note(performance.now()); painted = now; }
+      }, 50);
+      (window as unknown as { __moruSeen: typeof seen }).__moruSeen = seen;
+    });
+    type Seen = { last: number; changes: number; longest: number; askedAt: number; answeredAt: number; rowBefore: string; answeredRow: string; roomLast: number };
+    const seen = () => page.evaluate(() => {
+      const value = (window as unknown as { __moruSeen: Seen }).__moruSeen;
+      return { ...value, still: performance.now() - value.last, roomStill: performance.now() - value.roomLast };
+    });
+
+    // Lively first: the rooms step without a pause longer than a few beats.
+    await expect.poll(async () => (await seen()).changes, { timeout: 10_000 }).toBeGreaterThan(20);
+    // Then a rest: three seconds and more with no Moru anywhere changing his pose.
+    await expect.poll(async () => { const now = await seen(); return Math.max(now.longest, now.still); }, { timeout: 40_000 }).toBeGreaterThanOrEqual(3000);
+
+    // A new commit in the resting working room plays its row at once, without waiting for a turn.
+    await expect.poll(async () => (await seen()).roomStill, { timeout: 20_000 }).toBeGreaterThanOrEqual(1000);
+    await setRows(page, SIX.map((each) => (each.branch === "feat/library-stage" ? { ...each, ahead: 3 } : each)));
+    await expect.poll(async () => (await seen()).answeredAt, { timeout: 10_000 }).toBeGreaterThan(0);
+    const cut = await seen();
+    // His first new pose is the commit's row, not the next cell of the one he rested on.
+    expect(cut.answeredRow, "the row he shows after the commit").not.toBe(cut.rowBefore);
+    expect(cut.answeredAt - cut.askedAt, "ms from the commit's request to his first new pose").toBeLessThanOrEqual(400);
+  });
+
   test("shows one room for the base branch when no worktree exists", async ({ page }) => {
     await openWorkStatus(page, [main]);
     await expect(page.getByTestId("work-empty-room")).toContainText("Only main for now");

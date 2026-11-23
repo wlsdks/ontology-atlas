@@ -1,6 +1,7 @@
 // Exports what the life runtime plays: every solo clip as two layers (the body, and what goes over the wardrobe:
 // flippers, props, marks, bubbles), with per-pose anchor tracks for the wardrobe, plus the wardrobe sprites.
 import { mkdir, writeFile, readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { b, hop, timing, renderClip } from '../scene.mjs';
 import { makeRig, drawMoru, blitMoru, N } from '../engine.mjs';
 import { toRGBA, HEX, STONE, IVORY } from '../rig.mjs';
@@ -10,13 +11,14 @@ import { CLIPS } from '../clips.mjs';
 import { bodyCentre } from '../catalogue-pace.mjs';
 import { previewPath, sharp } from '../lib.mjs';
 import { WARDROBE } from './wardrobe.mjs';
+import { writeLobbyProps } from './lobby-props.mjs';
 
 const within = (f, a, z) => f >= a && f <= z, solo = beats => [{ name: 'm', ox: 0, beats }];
 const C = (id, frames, beats, extra = {}) => ({ id, frames, actors: solo(beats), ...extra });
 const say = (icon, style, from, to) => [{ who: 'm', from, to, style, icon }];
 const cum = steps => steps.reduce((out, s) => [...out, (out.at(-1) ?? 0) + s], []);
 const FUME = { brow: 'angry', eyes: 'half', mouth: 'frown' }, SHRUG = { lx: -8, ly: -14, rx: 8, ry: -14, fy: -1 };
-const TURN = [{ pose: { sq: 1, wd: 1, tx: 4, tail: 1 }, shapes: { eyes: 'line' } }, { pose: { lift: 2, fx: -6, sq: -1, x: -2, tx: 10, tail: 3 }, shapes: {} }, { pose: { lift: 3, fx: -12, x: -6 }, shapes: { front: true, eyes: 'line' } }, { pose: { lift: 3, fx: -6, x: -6, tx: 10, tail: 3 }, shapes: { flip: true } }, { pose: { lift: 1, fx: -2, x: -8, tx: 4, tail: 1 }, shapes: { flip: true } }];
+export const TURN = [{ pose: { sq: 1, wd: 1, tx: 4, tail: 1 }, shapes: { eyes: 'line' } }, { pose: { lift: 2, fx: -6, sq: -1, x: -2, tx: 10, tail: 3 }, shapes: {} }, { pose: { lift: 3, fx: -12, x: -6 }, shapes: { front: true, eyes: 'line' } }, { pose: { lift: 3, fx: -6, x: -6, tx: 10, tail: 3 }, shapes: { flip: true } }, { pose: { lift: 1, fx: -2, x: -8, tx: 4, tail: 1 }, shapes: { flip: true } }];
 const old = id => { const c = CLIPS.find(c => c.id === id); return { ...c, group: undefined }; };
 // How the head piece travels in a swap: off the head, out in front to the midpoint between the two, where it changes owner.
 const SWAP_OFF = [[0, 0], [0, 0], [0, -2], [2, -6], [8, -12], [18, -16], [28, -18], [38, -16], [28, -18], [18, -16], [8, -12], [2, -6], [0, -2], [0, 0], [0, 0], [0, 0]];
@@ -56,50 +58,67 @@ export const LIFE = [
 // A Moru facing left is the same drawing mirrored, so its bubble's symbol is drawn mirrored here and reads the right way round there.
 for (const clip of LIFE.filter(c => c.bubbles)) LIFE.push({ ...clip, id: clip.id + '~left', bubbles: clip.bubbles.map(bub => ({ ...bub, mirrorIcon: true })) });
 
-await mkdir(previewPath('life'), { recursive: true });
-const LIMITS = JSON.parse(await readFile(previewPath('catalogue-pace.json'), 'utf8')), lim = { ground: LIMITS.grounded.p90 - 0.01, air: LIMITS.airborne.p90 - 0.01 };
-const rig = await makeRig(), even = v => v - (v % 2), meta = { cell: N, floor: 99, limits: { ground: LIMITS.grounded.p90, air: LIMITS.airborne.p90 }, clips: {}, pieces: {}, palettes: {}, tones: { body: HEX[STONE], belly: HEX[IVORY] } };
-const rows = [];
-const neutralCentre = bodyCentre(toRGBA((() => { const c = new Uint8Array(N * N); blitMoru(c, N, drawMoru(rig), 0); return c; })()), N, N);
-for (const clip of LIFE) {
-  const r = await renderClip({ ...clip, limits: lim }), track = r.tracks.m, frames = [];
-  // A sheet clip rests on its first and last pose before it loops; in a chain the next action follows at once.
-  r.ms[0] = Math.min(r.ms[0], 70); r.ms[r.ms.length - 1] = Math.min(r.ms.at(-1), 70);
-  let x0 = N, y0 = N, x1 = 0, y1 = 0;
-  for (let f = 0; f < clip.frames; f++) {
-    // A turned pose (the roll) is stored turned, with its angle and the point it turned about: the runtime turns the outfit the same way.
-    const { pose, shapes } = track[f], base = new Uint8Array(N * N), full = r.frames[f]; let anchors, pivot = null, sink = 0;
-    if (shapes.angle) { const up = new Uint8Array(N * N); blitMoru(up, N, drawMoru(rig, pose, { ...shapes, angle: 0 }), 0, { flip: !!shapes.flip }); let n = 0, ax = 0, ay = 0; for (let q = 0; q < N * N; q++) if (up[q] === STONE || up[q] === IVORY) { n++; ax += q % N; ay += Math.floor(q / N); } pivot = [ax / n, ay / n]; sink = blitMoru(new Uint8Array(N * N), N, drawMoru(rig, pose, shapes), 0, { flip: !!shapes.flip }).sink; }
-    blitMoru(base, N, drawMoru(rig, pose, { ...shapes, noFlippers: true }, [{ layer: 'front', draw: ctx => { anchors = { crown: ctx.shift(80, 45), face: ctx.faceShift(), chest: ctx.shift(84, 84), back: ctx.shift(46, 58) }; } }]), 0, { flip: !!shapes.flip, pivot });
-    if (pivot) for (let q = 0; q < N * N; q++) if (!full[q]) base[q] = 0;
-    const over = new Uint8Array(N * N); for (let p = 0; p < N * N; p++) { if (full[p] && full[p] !== base[p]) over[p] = full[p]; if (full[p] || base[p]) { const x = p % N, y = (p - x) / N; x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); } }
-    const c = bodyCentre(toRGBA(r.solo.m[f]), N, N), p = { ...{ lift: 0, x: 0 }, ...pose };
-    frames.push({ angle: (shapes.angle ?? 0) * (shapes.flip ? -1 : 1), pivot, sink, sq: p.sq ?? 0, droop: shapes.brow === 'worry' || shapes.mouth === 'frown' || (shapes.eyes === 'closed' && (p.sq ?? 0) >= 4), base, over, a: Object.fromEntries(Object.entries(anchors).map(([k, [dx, dy]]) => [k, [Math.round(dx), Math.round(dy - p.lift)]])), px: p.x, flip: !!shapes.flip, cx: +c.x.toFixed(2), cy: +c.y.toFixed(2), air: p.lift > 0,
-      exit: p.lift === 0 && !shapes.flip && Math.hypot(c.x - neutralCentre.x, c.y - neutralCentre.y) <= LIMITS.grounded.p90 && Math.max(...['lx', 'ly', 'rx', 'ry'].map(k => Math.abs(pose[k] ?? 0))) <= 12 });
+/** The preview's file names; the app's generator (`scripts/brand/build-moru-life.mjs`) passes its own. */
+const PREVIEW_NAMES = { base: 'atlas-base.png', over: 'atlas-over.png', wardrobe: 'wardrobe.png', props: 'props.png', json: 'atlas.json' };
+
+/**
+ * Writes the two sheet layers, the wardrobe sheet and the atlas JSON into `dir`. `only` keeps the named clips (each
+ * with its `~left` twin); `wrap` runs a clip's poses on in lines that many pixels wide.
+ */
+export async function exportLifeAtlas({ dir = previewPath('life'), only = null, wrap = null, names = PREVIEW_NAMES } = {}) {
+  await mkdir(dir, { recursive: true });
+  const LIMITS = JSON.parse(await readFile(previewPath('catalogue-pace.json'), 'utf8')), lim = { ground: LIMITS.grounded.p90 - 0.01, air: LIMITS.airborne.p90 - 0.01 };
+  const rig = await makeRig(), even = v => v - (v % 2), meta = { cell: N, floor: 99, limits: { ground: LIMITS.grounded.p90, air: LIMITS.airborne.p90 }, clips: {}, pieces: {}, palettes: {}, tones: { body: HEX[STONE], belly: HEX[IVORY] } };
+  const rows = [];
+  const neutralCentre = bodyCentre(toRGBA((() => { const c = new Uint8Array(N * N); blitMoru(c, N, drawMoru(rig), 0); return c; })()), N, N);
+  for (const clip of LIFE.filter(c => !only || only.has(c.id.replace('~left', '')))) {
+    const r = await renderClip({ ...clip, limits: lim }), track = r.tracks.m, frames = [];
+    // A sheet clip rests on its first and last pose before it loops; in a chain the next action follows at once.
+    r.ms[0] = Math.min(r.ms[0], 70); r.ms[r.ms.length - 1] = Math.min(r.ms.at(-1), 70);
+    let x0 = N, y0 = N, x1 = 0, y1 = 0;
+    for (let f = 0; f < clip.frames; f++) {
+      // A turned pose (the roll) is stored turned, with its angle and the point it turned about: the runtime turns the outfit the same way.
+      const { pose, shapes } = track[f], base = new Uint8Array(N * N), full = r.frames[f]; let anchors, pivot = null, sink = 0;
+      if (shapes.angle) { const up = new Uint8Array(N * N); blitMoru(up, N, drawMoru(rig, pose, { ...shapes, angle: 0 }), 0, { flip: !!shapes.flip }); let n = 0, ax = 0, ay = 0; for (let q = 0; q < N * N; q++) if (up[q] === STONE || up[q] === IVORY) { n++; ax += q % N; ay += Math.floor(q / N); } pivot = [ax / n, ay / n]; sink = blitMoru(new Uint8Array(N * N), N, drawMoru(rig, pose, shapes), 0, { flip: !!shapes.flip }).sink; }
+      blitMoru(base, N, drawMoru(rig, pose, { ...shapes, noFlippers: true }, [{ layer: 'front', draw: ctx => { anchors = { crown: ctx.shift(80, 45), face: ctx.faceShift(), chest: ctx.shift(84, 84), back: ctx.shift(46, 58) }; } }]), 0, { flip: !!shapes.flip, pivot });
+      if (pivot) for (let q = 0; q < N * N; q++) if (!full[q]) base[q] = 0;
+      const over = new Uint8Array(N * N); for (let p = 0; p < N * N; p++) { if (full[p] && full[p] !== base[p]) over[p] = full[p]; if (full[p] || base[p]) { const x = p % N, y = (p - x) / N; x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); } }
+      const c = bodyCentre(toRGBA(r.solo.m[f]), N, N), p = { ...{ lift: 0, x: 0 }, ...pose };
+      frames.push({ angle: (shapes.angle ?? 0) * (shapes.flip ? -1 : 1), pivot, sink, sq: p.sq ?? 0, droop: shapes.brow === 'worry' || shapes.mouth === 'frown' || (shapes.eyes === 'closed' && (p.sq ?? 0) >= 4), base, over, a: Object.fromEntries(Object.entries(anchors).map(([k, [dx, dy]]) => [k, [Math.round(dx), Math.round(dy - p.lift)]])), px: p.x, flip: !!shapes.flip, cx: +c.x.toFixed(2), cy: +c.y.toFixed(2), air: p.lift > 0,
+        exit: p.lift === 0 && !shapes.flip && Math.hypot(c.x - neutralCentre.x, c.y - neutralCentre.y) <= LIMITS.grounded.p90 && Math.max(...['lx', 'ly', 'rx', 'ry'].map(k => Math.abs(pose[k] ?? 0))) <= 12 });
+    }
+    // The turn's last pose is the neutral facing the other way: an event may cut in there too (the runtime flips the facing).
+    if (clip.id === 'turn') frames.at(-1).exit = true;
+    x0 = even(x0); y0 = even(y0); const w = x1 - x0 + 1 + ((x1 - x0 + 1) % 2), h = y1 - y0 + 1 + ((y1 - y0 + 1) % 2);
+    // The longest wait for a pose a real event may cut in on (a pose within one catalogue step of the neutral).
+    let wait = 0, since = 0; frames.forEach((fr, f) => { if (fr.exit) since = 0; else { since += r.ms[f]; wait = Math.max(wait, since); } });
+    rows.push({ clip, frames, x0, y0, w, h });
+    meta.clips[clip.id] = { still: clip.bubbles ? clip.bubbles[0].from + 3 : Math.floor(clip.frames / 2), n: clip.frames, ms: r.ms, box: [x0, y0, w, h], travel: clip.travel ?? null, travelY: clip.travelY ?? null, wear: clip.wear ?? null, maxWaitMs: wait, total: r.ms.reduce((a, v) => a + v, 0),
+      f: frames.map(fr => ({ ...(fr.angle ? { angle: fr.angle, pv: fr.pivot.map(v => +v.toFixed(2)), sk: fr.sink } : {}), sq: fr.sq, droop: fr.droop ? 1 : 0, a: fr.a, px: fr.px, flip: fr.flip ? 1 : 0, cx: fr.cx, cy: fr.cy, air: fr.air ? 1 : 0, exit: fr.exit ? 1 : 0 })) };
   }
-  // The turn's last pose is the neutral facing the other way: an event may cut in there too (the runtime flips the facing).
-  if (clip.id === 'turn') frames.at(-1).exit = true;
-  x0 = even(x0); y0 = even(y0); const w = x1 - x0 + 1 + ((x1 - x0 + 1) % 2), h = y1 - y0 + 1 + ((y1 - y0 + 1) % 2);
-  // The longest wait for a pose a real event may cut in on (a pose within one catalogue step of the neutral).
-  let wait = 0, since = 0; frames.forEach((fr, f) => { if (fr.exit) since = 0; else { since += r.ms[f]; wait = Math.max(wait, since); } });
-  rows.push({ clip, frames, x0, y0, w, h });
-  meta.clips[clip.id] = { still: clip.bubbles ? clip.bubbles[0].from + 3 : Math.floor(clip.frames / 2), n: clip.frames, ms: r.ms, box: [x0, y0, w, h], travel: clip.travel ?? null, travelY: clip.travelY ?? null, wear: clip.wear ?? null, maxWaitMs: wait, total: r.ms.reduce((a, v) => a + v, 0),
-    f: frames.map(fr => ({ ...(fr.angle ? { angle: fr.angle, pv: fr.pivot.map(v => +v.toFixed(2)), sk: fr.sink } : {}), sq: fr.sq, droop: fr.droop ? 1 : 0, a: fr.a, px: fr.px, flip: fr.flip ? 1 : 0, cx: fr.cx, cy: fr.cy, air: fr.air ? 1 : 0, exit: fr.exit ? 1 : 0 })) };
+  // Unwrapped, each clip is one row of the sheet; wrapped, a clip's poses run on in lines `wrap` pixels wide, so a long clip
+  // does not make the whole sheet as wide as it (`per` poses a line).
+  const perOf = r => wrap ? Math.max(1, Math.floor(wrap / r.w)) : r.clip.frames, linesOf = r => Math.ceil(r.clip.frames / perOf(r));
+  const AW = wrap ?? Math.max(...rows.map(r => r.w * r.clip.frames)), AH = rows.reduce((a, r) => a + r.h * linesOf(r), 0);
+  for (const layer of ['base', 'over']) {
+    const buf = Buffer.alloc(AW * AH * 4); let top = 0;
+    for (const r of rows) { const per = perOf(r); meta.clips[r.clip.id].at = top; meta.clips[r.clip.id].per = per; r.frames.forEach((fr, f) => { const rgba = toRGBA(fr[layer]), line = Math.floor(f / per), col = f % per; for (let y = 0; y < r.h; y++) rgba.copy(buf, ((top + line * r.h + y) * AW + col * r.w) * 4, ((r.y0 + y) * N + r.x0) * 4, ((r.y0 + y) * N + r.x0 + r.w) * 4); }); top += r.h * linesOf(r); }
+    await sharp(buf, { raw: { width: AW, height: AH, channels: 4 } }).png({ compressionLevel: 9 }).toFile(join(dir, names[layer]));
+  }
+  // Wardrobe sprites on one sheet.
+  const every = WARDROBE.flatMap(p => p.parts.flatMap(q => [q, ...Object.values(q.alts ?? {})])), SW = every.reduce((a, p) => a + p.s.w + 2, 0), SH = Math.max(...every.map(p => p.s.h)), sheet = Buffer.alloc(SW * SH * 4); let sx = 0;
+  const placed = p => { const rgba = toRGBA(p.s.data); for (let y = 0; y < p.s.h; y++) rgba.copy(sheet, (y * SW + sx) * 4, y * p.s.w * 4, (y + 1) * p.s.w * 4); const out = { sx, w: p.s.w, h: p.s.h, x: p.x, y: p.y, anchor: p.anchor, layer: p.layer, tint: p.tint ? 1 : 0, soft: p.soft ?? 0 }; sx += p.s.w + 2; return out; };
+  for (const piece of WARDROBE) meta.pieces[piece.id] = { slot: piece.slot, title: piece.title, parts: piece.parts.map(p => ({ ...placed(p), alts: p.alts ? Object.fromEntries(Object.entries(p.alts).map(([k, q]) => [k, placed({ ...p, ...q })])) : null })) };
+  await sharp(sheet, { raw: { width: SW, height: SH, channels: 4 } }).png().toFile(join(dir, names.wardrobe));
+  // The lobby's fixtures on a sheet of their own.
+  meta.props = await writeLobbyProps(dir, names.props);
+  meta.palettes = { original: [HEX[STONE], HEX[IVORY]], ...Object.fromEntries(Object.entries(PALETTES).map(([k, v]) => [k, v.hex])) };
+  meta.atlas = { w: AW, h: AH, decodedMB: +(AW * AH * 4 * 2 / 1048576).toFixed(1) };
+  await writeFile(join(dir, names.json), JSON.stringify(meta));
+  const frames = rows.reduce((a, r) => a + r.clip.frames, 0);
+  console.log(`${rows.length} clips, ${frames} poses, atlas ${AW}x${AH} (two layers, ${meta.atlas.decodedMB} MB decoded), wardrobe ${SW}x${SH}`);
+  console.log('longest wait for a cut-in pose, ms:', Object.entries(meta.clips).map(([k, c]) => `${k} ${c.maxWaitMs}`).join(', '));
+
+  return meta;
 }
-const AW = Math.max(...rows.map(r => r.w * r.clip.frames)), AH = rows.reduce((a, r) => a + r.h, 0);
-for (const layer of ['base', 'over']) {
-  const buf = Buffer.alloc(AW * AH * 4); let top = 0;
-  for (const r of rows) { meta.clips[r.clip.id].at = top; r.frames.forEach((fr, f) => { const rgba = toRGBA(fr[layer]); for (let y = 0; y < r.h; y++) rgba.copy(buf, ((top + y) * AW + f * r.w) * 4, ((r.y0 + y) * N + r.x0) * 4, ((r.y0 + y) * N + r.x0 + r.w) * 4); }); top += r.h; }
-  await sharp(buf, { raw: { width: AW, height: AH, channels: 4 } }).png({ compressionLevel: 9 }).toFile(previewPath(`life/atlas-${layer}.png`));
-}
-// Wardrobe sprites on one sheet.
-const every = WARDROBE.flatMap(p => p.parts.flatMap(q => [q, ...Object.values(q.alts ?? {})])), SW = every.reduce((a, p) => a + p.s.w + 2, 0), SH = Math.max(...every.map(p => p.s.h)), sheet = Buffer.alloc(SW * SH * 4); let sx = 0;
-const placed = p => { const rgba = toRGBA(p.s.data); for (let y = 0; y < p.s.h; y++) rgba.copy(sheet, (y * SW + sx) * 4, y * p.s.w * 4, (y + 1) * p.s.w * 4); const out = { sx, w: p.s.w, h: p.s.h, x: p.x, y: p.y, anchor: p.anchor, layer: p.layer, tint: p.tint ? 1 : 0, soft: p.soft ?? 0 }; sx += p.s.w + 2; return out; };
-for (const piece of WARDROBE) meta.pieces[piece.id] = { slot: piece.slot, title: piece.title, parts: piece.parts.map(p => ({ ...placed(p), alts: p.alts ? Object.fromEntries(Object.entries(p.alts).map(([k, q]) => [k, placed({ ...p, ...q })])) : null })) };
-await sharp(sheet, { raw: { width: SW, height: SH, channels: 4 } }).png().toFile(previewPath('life/wardrobe.png'));
-meta.palettes = { original: [HEX[STONE], HEX[IVORY]], ...Object.fromEntries(Object.entries(PALETTES).map(([k, v]) => [k, v.hex])) };
-meta.atlas = { w: AW, h: AH, decodedMB: +(AW * AH * 4 * 2 / 1048576).toFixed(1) };
-await writeFile(previewPath('life/atlas.json'), JSON.stringify(meta));
-const frames = rows.reduce((a, r) => a + r.clip.frames, 0);
-console.log(`${rows.length} clips, ${frames} poses, atlas ${AW}x${AH} (two layers, ${meta.atlas.decodedMB} MB decoded), wardrobe ${SW}x${SH}`);
-console.log('longest wait for a cut-in pose, ms:', Object.entries(meta.clips).map(([k, c]) => `${k} ${c.maxWaitMs}`).join(', '));
+

@@ -1,6 +1,6 @@
 {
   "name": "ontology-atlas",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "private": true,
   "packageManager": "pnpm@10.34.9",
   "license": "MIT",
@@ -16,6 +16,7 @@
     "brand:sprites": "node scripts/brand/build-moru-sprites.mjs",
     "brand:work-clips": "node scripts/brand/author-moru-work-clips.mjs",
     "brand:cast": "node scripts/brand/build-moru-cast.mjs",
+    "brand:life": "node scripts/brand/build-moru-life.mjs",
     "og:build": "node scripts/brand/build-og-cards.mjs",
     "prepare": "node scripts/prepare-worktree.mjs",
     "predev": "pnpm docs-vault:build && pnpm messages:build",
@@ -244,7 +245,8 @@
     "mcp:catalogue:check-online": "node scripts/registry-snapshots/build-mcp-catalogue.mjs --check-online",
     "test:mcp:rpc": "node --test scripts/lib/mcp-test-rpc.test.mjs",
     "record:new": "node scripts/records/new-record.mjs",
-    "test:records": "node --test scripts/lib/records/record-ledgers.test.mjs scripts/records/new-record.test.mjs scripts/lib/records/po-pilot-records.test.mjs"
+    "test:records": "node --test scripts/lib/records/record-ledgers.test.mjs scripts/records/new-record.test.mjs scripts/lib/records/po-pilot-records.test.mjs",
+    "brand:room-clips": "node scripts/brand/build-moru-room-clips.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.5.7",
