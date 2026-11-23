@@ -1,7 +1,8 @@
 /**
  * How much width something docked on the right has taken; floating surfaces describing the map must
- * stop that far short of the viewport edge. Read from a CSS variable written once onto the document
- * (by `HomePage`), since threading the React state through the map renderer is broad wiring.
+ * stop that far short of the viewport edge. Read from a CSS variable each dock writes on the document
+ * root (`use-topology-agent-orchestration.tsx`, `use-library-home.ts`), since threading the React state
+ * through the map renderer is broad wiring. Any custom property written there restyles every element.
  */
 
 export const RIGHT_DOCK_WIDTH_VAR = '--app-right-dock-width';
