@@ -1,4 +1,4 @@
-import { citedLinesDecide, citedLinesExist, citedSymbol, lineCites, preSectionParagraphs, RULE_WORDS, servedLines } from './line-cites.mjs';
+import { citedLinesDecide, citedLinesExist, citedSymbol, lineCites, preSectionParagraphs, servedLines, statesRule } from './line-cites.mjs';
 import { kindOf, pathOf } from './node-fields.mjs';
 
 const READ_CALL_SELECTORS = 16;
@@ -54,7 +54,7 @@ export function measureRules(docs, reads, repoRoot) {
   const judgedAgainstReads = Boolean(reads && reads.size > 0);
   const uncited = [];
   for (const doc of capabilities) {
-    const rules = preSectionParagraphs(doc.body).slice(1).filter((paragraph) => RULE_WORDS.test(paragraph));
+    const rules = preSectionParagraphs(doc.body).slice(1).filter(statesRule);
     if (rules.length === 0) continue;
     const cites = lineCites(doc.body, reads, repoRoot);
     const exact = cites.some((cite) => (!judgedAgainstReads || servedLines(reads, cite)) && citedLinesDecide(repoRoot, cite));
