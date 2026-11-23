@@ -60,12 +60,14 @@ service (3,577 Go files).
 ### What the server measures
 
 1. For a repository surveyed as areas, an ability the survey found is **on the map** when a
-   capability or element node points at its code: the node's `path:` is the ability's file, or
-   the node's body cites lines of that file. Nothing else counts; a name inside another node, or
-   a number of nodes in the same folder, does not. An ability the project leaves out is not
-   counted: its `## Excludes` names the ability's file or a folder above it, or an Uncertainty
-   line names it and says it is left out (tooling, generated, samples) without saying it is
-   still to open or read. An area is **not mapped yet** while it holds a counted ability that is
+   capability or element node points at its code: the node's `path:` is the ability's file or a
+   folder strictly below the area's own folder that holds it, or the node's body cites lines that
+   exist in that file. Nothing else counts; a name inside another node, a `path:` at a whole area,
+   or a number of nodes in the same folder, does not. An ability the project leaves out is not
+   counted: its `## Excludes` names the ability's file or a folder above it as a path, or an
+   Uncertainty line does and says it is left out (tooling, generated, samples) without saying it
+   is still to open or read. A one-word folder name counts only in code form or leading its line,
+   and a cite of one row (`path:L12`) leaves no file out. An area is **not mapped yet** while it holds a counted ability that is
    not on the map; an area holding none is not mapped until a node's path falls in it or a
    domain names it. Areas are ordered by abilities not on the map, ties by lines. A folder's own
    files and a row of smaller folders are areas too and are written as the survey labels them.
@@ -101,7 +103,9 @@ service (3,577 Go files).
    answer is in the folder, and a stale count corrects itself on the next press because the
    request rewrites the lines from the server's measure.
 8. With several projects, the step speaks for the one with the most abilities left; counts are never
-   summed. The line is read in English in every locale, and the localized requests say to keep
+   summed. The server's measure and the line it checks belong to the vault's first project only,
+   because one server process is bound to one repository root (`OATLAS_REPO_ROOT`), so it has no
+   survey to measure a second project's code against. The line is read in English in every locale, and the localized requests say to keep
    it as written. A folder with five concepts or fewer is still offered Build first.
 
 ## Out of scope
@@ -147,3 +151,10 @@ service (3,577 Go files).
   while calling a thin area mapped. The owner asked that the number mean what it says. Risk 1
   is retired with the ratio. The owner also rejected one press per request the same day;
   chaining left Out of scope for its own spec.
+- 2026-11-23: after an independent review, only a written path leaves code out (one folder name
+  only in code form or leading its line, never the root's own files or a one-row cite), a cite
+  counts only when its lines exist and resolves as the Depth measure does, and a folder `path:`
+  strictly below its area points at the files under it. The first summary line alone must carry
+  the measure, a line kept after every area is mapped is stale, areas without abilities ask for
+  none, and one shared case table holds the server and the app to the same reading; decision 8
+  names the first project.
