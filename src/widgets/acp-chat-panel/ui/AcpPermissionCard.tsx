@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 
-import { permissionIntent, permissionScope, permissionLocality } from '@/features/acp-session';
+import { permissionIntent, permissionScope, widestPermissionLocality } from '@/features/acp-session';
 import {
   fieldNameKey,
   ontologyChangeHeadline,
@@ -81,7 +81,10 @@ export function AcpPermissionCard({
     typeof request.rawInput.serverName === 'string';
   const askedSentence = serverConsent ? request.title : null;
   const scope = permissionScope(request.options);
-  const locality = permissionLocality(vaultPath ?? null, request.filePath ?? null);
+  const targetPaths = request.filePath ? [request.filePath] : request.statedPaths ?? [];
+  /* The agent's own list of files: shown beside what it calls the request, since a move can write a path the list leaves out. */
+  const statedOnly = !request.filePath && targetPaths.length > 0;
+  const locality = widestPermissionLocality(vaultPath ?? null, targetPaths);
   const askMotion: AskMotion = answerInReach === 'allow'
     ? 'tail-wag'
     : answerInReach === 'reject'
@@ -128,7 +131,7 @@ export function AcpPermissionCard({
           ? { field: headlineFieldKey ? tChange(headlineFieldKey) : headline.fieldKey }
           : {}),
       })
-    : t(permissionTitleKey({ ontologyWrite, serverConsent, locality }));
+    : t(permissionTitleKey({ ontologyWrite, serverConsent, locality, statedOnly }));
   const bodyText = t(
     permissionBodyKey({
       ontologyWrite,
@@ -223,13 +226,21 @@ export function AcpPermissionCard({
               >
                 {t(`intent.${intent}`)}
               </p>
-              {ontologyWrite ? null : request.filePath ? (
-                <p
-                  data-testid="acp-permission-path"
-                  className="break-all font-mono text-label leading-label text-[color:var(--color-text-primary)]"
-                >
-                  {request.filePath}
+              {!ontologyWrite && statedOnly && request.title ? (
+                <p data-testid="acp-permission-stated-title" className="break-words text-body leading-body text-[color:var(--color-text-secondary)]">
+                  {request.title}
                 </p>
+              ) : null}
+              {ontologyWrite ? null : targetPaths.length > 0 ? (
+                targetPaths.map((path) => (
+                  <p
+                    key={path}
+                    data-testid="acp-permission-path"
+                    className="break-all font-mono text-label leading-label text-[color:var(--color-text-primary)]"
+                  >
+                    {path}
+                  </p>
+                ))
               ) : (
                 <p className="text-body leading-body text-[color:var(--color-text-secondary)]">
                   {request.title ?? t('unknownTarget')}

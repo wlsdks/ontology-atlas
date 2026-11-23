@@ -49,6 +49,28 @@ node .claude/skills/ontology-field-trial/scripts/scan-findings.mjs \
 Run the base commit and the change in the same session, on the same clones and
 model: a number from another day is not a comparison. Do not coach a run.
 
+To measure the app's "map the rest of the code" run, chain its requests:
+
+```bash
+.claude/skills/ontology-field-trial/scripts/map-rest-replay.sh "$TRIAL"/clone \
+  [--agent claude|codex] [--model <name>] [--max-requests 12] \
+  [--out "$TRIAL"/chain] [--vault <built vault to start from>]
+```
+
+It copies the repository into `--out` without any name starting with a dot
+(no `.env*`, `.claude/` or other credential folder), builds a first map (or
+copies `--vault`), then sends the request
+`.claude/skills/ontology-field-trial/scripts/map-area-request.mjs` reads from
+the app (`.claude/skills/ontology-field-trial/scripts/map-area-request.test.mjs`
+runs that entry once against a scratch vault), each in a fresh session, until the project's `Not mapped yet` line is
+gone or a stop rule fires; a vault built before that line gets its first request from the server's count (`.claude/skills/ontology-field-trial/scripts/map-rest-ledger.test.mjs`). `.claude/skills/ontology-field-trial/scripts/map-rest-ledger.mjs`
+writes one line per request to `<out>/ledger.jsonl`: seconds, cost, the note's
+and the server's figures, deleted concepts, lost cited rules and duplicate
+titles; `<out>/vault-history` commits the vault after each request. It exits
+non-zero on an agent error or a damaged vault. Codex runs only with
+`CODEX_API_KEY` and its own `CODEX_HOME` under `--out`; Claude signs in with
+the owner's login and writes its session store under `~/.claude`.
+
 ## Read the run
 
 `<out>/replay.json` holds turns, cost, wall clock, nodes per kind folder, the

@@ -610,7 +610,7 @@ test.describe("the Library pane", () => {
     await expect(page.getByTestId("wiki-reader-status")).toBeVisible();
     await expect(page.getByTestId("library-status-strip")).toHaveCount(0);
     await expect(page.getByTestId("sources-overview")).toHaveCount(0);
-    await page.getByTestId("library-reader-back").click();
+    await page.getByTestId("library-index-home").click();
     await expect(page.getByTestId("library-question-desk")).toBeVisible();
     await expect(page.getByTestId("sources-overview")).toHaveCount(0);
     await page.getByTestId("library-workspace-sources").click();
@@ -750,104 +750,77 @@ test.describe("the Library pane", () => {
     ).toBe(false);
   });
 
-  /** The description behind a glyph, the fold to a rail, and the remembered switch. */
-  test("the description is a tooltip, the column folds to a rail, and the switch is remembered", async ({
+  /** The header ends with its labelled doors, an open page is left from the list or its tab, and the switch is remembered. */
+  test("the header holds only its doors, a page is left by its home row or its tab, and the switch is remembered", async ({
     page,
   }) => {
+    // A fold remembered by an older version has no say: the column is never folded by a person.
+    await page.addInitScript(() => window.localStorage.setItem("atlas.library.index-collapsed", "on"));
     await openLibrary(page, NARROW_VAULT);
+    await expect(page.getByTestId("library-index")).toBeVisible();
+    await expect(page.getByTestId("library-index")).not.toHaveAttribute("data-index-folded", /.*/);
 
     /*
-     * 1 — *"put one icon beside the title and show the explanation in a tooltip on
-     * hover."* The sentence is not deleted, it is behind a real focusable control: the
-     * paragraph is gone from the column and the sentence is still the glyph's accessible
-     * name, so a keyboard and a screen reader reach it as a pointer does.
-     */
-    const head = page.getByTestId("library-header");
-    await expect(head).not.toContainText("A source is kept byte for byte");
-    const info = page.getByTestId("library-lede-info");
-    await expect(info).toHaveAttribute("aria-label", /kept byte for byte/);
-    await info.hover();
-    const tip = page.getByRole("tooltip");
-    await expect(tip).toContainText("kept byte for byte");
-
-    /*
-     * The fold and the glyph stand in the strip on the tabs' line: centred on the selected tab's row,
-     * the fold stops at the strip's inner edge, and the two are one size step.
+     * 1 — The header's end is the doors and nothing else: the last door stops at the strip's inner
+     * edge, centred on the tabs' row, and the description lives in How to use.
      */
     const headGeometry = await page.evaluate(() => {
-      const box = (el: Element | null) => {
-        if (el === null) return null;
-        const r = el.getBoundingClientRect();
-        return { y: r.y, bottom: r.bottom, right: r.right, cy: r.y + r.height / 2, h: r.height, w: r.width };
-      };
       const header = document.querySelector('[data-testid="library-header"]')!;
       const tools = document.querySelector('[data-testid="library-strip-tools"]')!;
       const strip = tools.closest("[data-page-header-row]")!;
-      const tab = document.querySelector('[data-testid="library-workspace-sources"]')!;
-      const info = document.querySelector('[data-testid="library-lede-info"]')!;
-      const fold = document.querySelector('[data-testid="library-index-collapse"]')!;
+      const tab = document.querySelector('[data-testid="library-workspace-sources"]')!.getBoundingClientRect();
+      const controls = [...header.querySelectorAll("button")].filter((button) => button.getBoundingClientRect().width > 0);
+      const last = controls[controls.length - 1]!.getBoundingClientRect();
       return {
         inStrip: tools.contains(header),
-        visibleTitles: [...header.querySelectorAll("p")].filter((p) => p.getBoundingClientRect().width > 1).length,
-        strip: box(strip),
-        stripPaddingRight: parseFloat(getComputedStyle(strip).paddingRight),
-        tab: box(tab),
-        info: box(info),
-        fold: box(fold),
-        infoGlyph: box(info.querySelector("svg")),
-        foldGlyph: box(fold.querySelector("svg")),
+        unlabelled: controls.filter((button) => !(button.textContent ?? "").trim()).length,
+        lastRight: last.right,
+        lastCentre: last.y + last.height / 2,
+        tabCentre: tab.y + tab.height / 2,
+        stripInnerRight: strip.getBoundingClientRect().right - parseFloat(getComputedStyle(strip).paddingRight),
       };
     });
     expect(headGeometry.inStrip, "the column's head is seated in the strip").toBe(true);
-    // No name in the strip: the head's title is for assistive tech only.
-    expect(headGeometry.visibleTitles, "no visible title beside the tabs").toBe(0);
-    expect(
-      Math.abs(headGeometry.fold!.cy - headGeometry.tab!.cy),
-      "the fold is centred on the tabs' row",
-    ).toBeLessThanOrEqual(1);
-    expect(
-      Math.abs(headGeometry.info!.cy - headGeometry.tab!.cy),
-      "the glyph is centred on the tabs' row",
-    ).toBeLessThanOrEqual(1);
-    expect(
-      Math.abs(headGeometry.fold!.right + headGeometry.stripPaddingRight - headGeometry.strip!.right),
-      "the fold stops at the strip's inner edge",
-    ).toBeLessThanOrEqual(0.5);
-    expect(headGeometry.foldGlyph!.w, "the fold and the glyph are one size step").toBe(headGeometry.infoGlyph!.w);
-    /*
-     * ⚠️ **And it yields the moment the pointer moves, including onto the panel itself.**
-     * Radix's default keeps a tooltip open while the pointer is over its content, and that
-     * content takes pointer events — so a panel lying over the next control makes that
-     * control unpressable for as long as a hand rests anywhere on the panel. This asserts
-     * the `disableHoverableContent` that removes it: the pointer is moved **into** the
-     * description, which is the one motion the default would treat as "still reading".
-     */
-    const tipBox = (await tip.boundingBox())!;
-    await page.mouse.move(tipBox.x + tipBox.width / 2, tipBox.y + tipBox.height / 2);
-    await expect(tip).toHaveCount(0);
+    expect(headGeometry.unlabelled, "every control at the header's end names itself").toBe(0);
+    expect(Math.abs(headGeometry.lastCentre - headGeometry.tabCentre), "the doors are centred on the tabs' row").toBeLessThanOrEqual(1);
+    expect(Math.abs(headGeometry.lastRight - headGeometry.stripInnerRight), "the last door stops at the strip's inner edge").toBeLessThanOrEqual(0.5);
+    await page.getByTestId("library-guide-open").click();
+    await expect(page.getByTestId("library-guide-lede")).toContainText("kept byte for byte");
+
+    /* 2 — A page is left by the list's own home row, which then holds focus and the selection. */
+    await page.keyboard.press("Escape");
+    await page.getByTestId("library-workspace-wiki").click();
+    const home = page.getByTestId("library-index-home");
+    await expect(home).toHaveText("Find evidence");
+    await expect(home).toHaveAttribute("aria-current", "page");
+    await page.getByTestId("library-wiki-wiki/note-01").click();
+    await expect(page.getByTestId("library-page")).toHaveAttribute("data-library-state", "wiki");
+    await expect(home).not.toHaveAttribute("aria-current", /.*/);
+    await home.click();
+    await expect(page.getByTestId("library-question-desk")).toBeVisible();
+    await expect(home).toBeFocused();
+    await expect(home).toHaveAttribute("aria-current", "page");
+
+    /* 3 — Pressing the tab already shown, or Escape, does the same. */
+    await page.getByTestId("library-wiki-wiki/note-02").click();
+    await page.getByTestId("library-workspace-wiki").click();
+    await expect(page.getByTestId("library-page")).toHaveAttribute("data-library-state", "nothing-open");
+    await expect(home).toBeFocused();
+    await page.getByTestId("library-wiki-wiki/note-03").click();
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("library-page")).toHaveAttribute("data-library-state", "nothing-open");
+    await expect(home).toBeFocused();
+
+    /* 4 — The Sources tab's home row is its overview. */
+    await page.getByTestId("library-workspace-sources").click();
+    await expect(home).toHaveText("Overview");
+    await page.getByTestId("library-source-sources/report-01.pdf").click();
+    await expect(page.getByTestId("library-page")).toHaveAttribute("data-library-state", "source");
+    await home.click();
+    await expect(page.getByTestId("library-reader-landing")).toBeVisible();
 
     /*
-     * The index fold gives width to the reader, and its control returns keyboard focus.
-     * Measure the pane rather than a graph that now opens only in a dialog.
-     */
-    const pane = page.getByTestId("library-reader");
-    const wide = (await pane.boundingBox())!.width;
-    await page.getByTestId("library-index-collapse").click();
-    await expect(page.getByTestId("library-index")).toBeHidden();
-    const tab = page.getByTestId("library-index-tab");
-    await expect(tab).toBeVisible();
-    // Focus followed the control that vanished, so the keyboard is not back at the top.
-    await expect(tab).toBeFocused();
-    await expect
-      .poll(async () => Math.round((await pane.boundingBox())!.width))
-      .toBeGreaterThan(Math.round(wide) + 200);
-
-    await tab.click();
-    await expect(page.getByTestId("library-index")).toBeVisible();
-    await expect(page.getByTestId("library-index-collapse")).toBeFocused();
-
-    /*
-     * 3 — the tab is remembered per machine, and opening a file from the home moves
+     * 5 — the tab is remembered per machine, and opening a file from the home moves
      * it to that file's own list. Both are what stop the index naming one thing while the
      * reader shows another.
      */
@@ -861,13 +834,12 @@ test.describe("the Library pane", () => {
       await page.evaluate(() => window.localStorage.getItem("atlas.library.index-segment")),
     ).toBe("wiki");
     await page.getByTestId("library-wiki-wiki/note-01").click();
-    await page.getByTestId("library-reader-back").click();
+    await page.getByTestId("library-index-home").click();
     await expect(page.getByTestId("library-workspace-wiki")).toHaveAttribute(
       "aria-selected",
       "true",
     );
   });
-
   test("keyboard selection gives the reader focus and discovery keeps its own focus", async ({ page }) => {
     await openLibrary(page);
     await page.getByTestId("library-workspace-wiki").click();
@@ -876,7 +848,7 @@ test.describe("the Library pane", () => {
     await expect(page.getByTestId("library-wiki-header")).toBeVisible();
     await expect(page.getByTestId("library-reader-landing")).toHaveCount(0);
     await expect(page.getByTestId("library-reader")).toBeFocused();
-    await page.getByTestId("library-reader-back").click();
+    await page.getByTestId("library-index-home").click();
     await page.getByTestId("library-workspace-sources").click();
     await page.getByTestId("library-find-documents").click();
     const dialog = page.getByRole("dialog");

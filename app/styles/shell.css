@@ -197,7 +197,7 @@ body *::-webkit-scrollbar {
 /*
  * A pane-anchored toast has two walls that exist only at some widths: the conversation dock (from
  * `xl`) and the bottom tab bar (`lg:hidden`). Each reserve collapses to 0 where its wall is absent;
- * `--app-right-dock-width` comes from `right-dock-reserve.ts`, fallback 0.
+ * each dock writes `--app-right-dock-width` on the root (`right-dock-reserve.ts` names it), fallback 0.
  */
 :root {
   --app-toast-dock-reserve: 0px;

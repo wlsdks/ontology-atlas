@@ -112,6 +112,8 @@ export function LibraryWorkspace() {
     query.set('tab', next);
     router.push(`/library/?${query}${window.location.hash}`, { scroll: false });
   }, [params, router, tab]);
+  // The tab already shown takes its own press back to its home, so an open page needs no close control.
+  const showLibraryHomeRef = useRef<(() => void) | null>(null);
   const selectOntologyView = (next: OntologyView) => {
     const query = carriedQuery(params);
     query.set('tab', 'ontology');
@@ -177,6 +179,7 @@ export function LibraryWorkspace() {
                 ariaLabel={t('workspace.aria')}
                 activeKey={tab}
                 onSelect={(next) => selectTab(next as LibraryTab)}
+                onReselect={() => showLibraryHomeRef.current?.()}
                 idPrefix="library-workspace"
                 testId="library-workspace-tabs"
                 items={[
@@ -237,7 +240,7 @@ export function LibraryWorkspace() {
             </div>
           </div>
         ) : (
-          <LibraryPage segment={tab} onSegmentChange={selectTab} toolsHost={toolsHost} />
+          <LibraryPage segment={tab} onSegmentChange={selectTab} toolsHost={toolsHost} showHomeRef={showLibraryHomeRef} />
         )}
       </div>
     </div>

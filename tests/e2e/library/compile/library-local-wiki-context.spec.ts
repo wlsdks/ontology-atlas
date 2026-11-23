@@ -111,7 +111,7 @@ async function openLocalCompile(page: Page, selectPage = false, options: Paramet
   if (selectPage) {
     await page.getByTestId('library-wiki-wiki/records').click();
     await expect(page.getByTestId('library-page')).toHaveAttribute('data-library-state', 'wiki');
-    await page.getByTestId('library-reader-back').click();
+    await page.getByTestId('library-index-home').click();
   }
   /*
    * On the home the brain picker stands in the guide's Compile step; Escape leaves the walk on the

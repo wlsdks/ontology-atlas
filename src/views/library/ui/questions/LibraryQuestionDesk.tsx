@@ -12,17 +12,12 @@ import {
   countDeskReadablePages,
   countDeskWikiPages,
   deskBriefEvidence,
-  deskMeaningLeads,
   deskSearchPrefixes,
-  findDeskClaims,
-  findDeskSourceHits,
-  fuseDeskLeads,
   planDeskSourceReads,
   questionDeskListingVersion,
-  questionTerms,
+  searchDesk,
   type DeskCitation,
   type DeskClaim,
-  type DeskSourceHit,
   type LibraryPageFacts,
 } from '@/features/library';
 import { sourceUnits, type SourceUnit } from '@/shared/lib/library/source-units';
@@ -150,19 +145,15 @@ export function LibraryQuestionDesk({
     jev.reset();
     setReading(true);
     setReadCount(0);
-    const wiki = findDeskClaims(asked, docs, claimsBySlug);
     const searchedVersion = listingVersion;
-    const terms = questionTerms(asked);
     const plan = planDeskSourceReads(sources);
     const stamp = (source: LibrarySourceRow) => JSON.stringify([vaultScope, source.path, source.mtime, source.bytes]);
     const currentStamps = new Set(plan.map(stamp));
     for (const key of sourceUnitsByStamp.current.keys()) if (!currentStamps.has(key)) sourceUnitsByStamp.current.delete(key);
-    const hits: DeskSourceHit[] = [];
     /* The units this search read, which also give the sentences of passages found by meaning. */
     const unitsByPath = new Map<string, readonly SourceUnit[]>();
     let unreadableSources = 0;
     let changedSources = 0;
-    let omittedPerFile = 0;
     /* Asked beside the word search; the list waits for both, and the app ends a question at 10 s. */
     const askedByMeaning = meaningSearch.ask(asked, deskSearchPrefixes([
       ...docs.filter((doc) => doc.slug.startsWith('wiki/')).map((doc) => `${doc.slug}.md`),
@@ -174,12 +165,7 @@ export function LibraryQuestionDesk({
         const cached = sourceUnitsByStamp.current.get(stamp(source));
         if (cached) {
           if (cached.length === 0) unreadableSources += 1;
-          else {
-            unitsByPath.set(source.path, cached);
-            const found = findDeskSourceHits(source.path, cached, terms);
-            hits.push(...found.hits);
-            omittedPerFile += found.matches - found.hits.length;
-          }
+          else unitsByPath.set(source.path, cached);
           setReadCount((count) => count + 1);
           continue;
         }
@@ -195,37 +181,30 @@ export function LibraryQuestionDesk({
             if (id !== searchId.current) return;
             sourceUnitsByStamp.current.set(stamp(source), units);
             if (units.length === 0) unreadableSources += 1;
-            else {
-              unitsByPath.set(source.path, units);
-              const found = findDeskSourceHits(source.path, units, terms);
-              hits.push(...found.hits);
-              omittedPerFile += found.matches - found.hits.length;
-            }
+            else unitsByPath.set(source.path, units);
           }
         } catch { unreadableSources += 1; }
         if (id !== searchId.current) return;
         setReadCount((count) => count + 1);
       }
-      hits.sort((a, b) => b.score - a.score || a.path.localeCompare(b.path));
-      const sourceHits = hits.slice(0, 8);
       const found = askedByMeaning ? await askedByMeaning : null;
       if (id !== searchId.current) return;
-      const byMeaning = found?.state === 'ok' ? deskMeaningLeads({
-        hits: found.hits, docs, claimsBySlug, searchedSources: new Set(plan.map((source) => source.path)),
-        sourceUnitsByPath: unitsByPath, claims: wiki.claims, sourceHits,
-      }) : null;
-      const leads = fuseDeskLeads(wiki.claims, sourceHits, byMeaning?.leads ?? []);
+      const searched = searchDesk({
+        question: asked, docs, claimsBySlug, searchedSources: new Set(plan.map((source) => source.path)),
+        sourceUnitsByPath: unitsByPath, meaningHits: found?.state === 'ok' ? found.hits : null,
+      });
+      const { leads, terms } = searched;
       /* A report cost an agent turn: it leaves with the rows it answered, when the new rows arrive. */
       onInvalidateReport();
       setResult({
         question: asked, searchId: id, listingVersion: searchedVersion,
-        leads, terms, reasons: byMeaning !== null,
-        readPages: wiki.readPages, totalPages: wiki.totalPages, omittedClaims: wiki.omitted,
+        leads, terms, reasons: searched.meaningDropped !== null,
+        readPages: searched.readPages, totalPages: searched.totalPages, omittedClaims: searched.omittedClaims,
         plannedSources: plan.length, totalSources: sources.length, unreadableSources,
-        changedSources, omittedSources: omittedPerFile + Math.max(0, hits.length - 8),
+        changedSources, omittedSources: searched.omittedSources,
         meaning: found ? {
           state: found.state, failure: found.failure, filesReady: found.filesReady, filesTotal: found.filesTotal,
-          staleDropped: found.staleDropped + (byMeaning?.dropped ?? 0),
+          staleDropped: found.staleDropped + (searched.meaningDropped ?? 0),
         } : null,
       });
       if (!again && leads.length === 0 && found?.state === 'ok' && found.staleDropped > 0 && found.busy) {
@@ -242,6 +221,24 @@ export function LibraryQuestionDesk({
     if (reading || turnRunning || jev.sending || report?.searchId === id) return;
     void search(true);
   });
+
+  /*
+   * A list found by words alone is asked once more when the folder's vectors become searchable and
+   * their preparation ends: the line above would otherwise say "words and meaning" over rows that
+   * meaning never searched. A report keeps its rows, and an edited field is left for the person.
+   */
+  const askAgainWithMeaning = useLatestRef((id: number) => {
+    if (id !== searchId.current || result?.searchId !== id || result.meaning !== null) return;
+    if (question.trim() !== result.question) return;
+    if (reading || turnRunning || jev.sending || report?.searchId === id) return;
+    void search(true);
+  });
+  const wordsOnlySearchId = result !== null && result.meaning === null ? result.searchId : null;
+  const { searchable: meaningSearchable, afterJob: afterMeaningJob } = meaningSearch;
+  useEffect(() => {
+    if (!meaningSearchable || wordsOnlySearchId === null) return;
+    void afterMeaningJob().then(() => askAgainWithMeaning.current(wordsOnlySearchId));
+  }, [afterMeaningJob, askAgainWithMeaning, meaningSearchable, wordsOnlySearchId]);
 
   const citationState = (claim: DeskClaim, citation: DeskCitation): CitationState => {
     if (!sourceHandles.has(citation.path)) return 'missing';

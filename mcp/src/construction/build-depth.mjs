@@ -11,8 +11,9 @@
  * newcomer would trip over (a relation note about a node nobody read, a rule with
  * no read lines, a dependency both ways, an entry file with no code, one file for
  * many nodes). Writes and validate_vault report the line,
- * finalize_project_meaning refuses an `answered` it does not support, and every
- * message names the next call.
+ * finalize_project_meaning refuses an `answered` it does not support and a
+ * project that does not keep the measured Not mapped yet line, and every message
+ * names the next call.
  */
 
 import { cachedSurvey } from '../analyze/survey/breadth-map.mjs';
@@ -20,7 +21,17 @@ import { measureAbilities, abilityLabel } from './build-depth/ability-placement.
 import { citeRepair, measureReads, measureRules, readCall } from './build-depth/read-depth.mjs';
 import { dependencyEdges, kindOf } from './build-depth/node-fields.mjs';
 import { measureRoles, roleLabel, ROLE_REPAIR } from './build-depth/role-placement.mjs';
-import { areaLabel, openAreaCall, unmappedAreas } from './build-depth/unmapped-areas.mjs';
+import {
+  areaCoverage,
+  areaLabel,
+  batchFilesLabel,
+  keepsNotMappedLines,
+  mappedPercent,
+  mappingBatch,
+  notMappedLineGap,
+  notMappedLines,
+  openAreaCall,
+} from './build-depth/unmapped-areas.mjs';
 
 export { buildDepthFindings } from './build-depth/findings.mjs';
 export { saysOutlinedOnly } from './build-depth/node-fields.mjs';
@@ -61,6 +72,54 @@ function listed(rows, render) {
 }
 
 /**
+ * The abilities on the map by evidence, the areas not mapped yet largest gap
+ * first, the files with no node one request maps with the calls that open their
+ * areas, and the exact lines the project keeps under `## Uncertainty`, so the
+ * share the project holds is the server's.
+ */
+function areasSentence(docs, repoRoot, coverage, batch) {
+  const { notMapped, counted, abilities, uncovered } = coverage;
+  if (notMapped.length === 0) {
+    return keepsNotMappedLines(docs)
+      ? `Areas: all ${counted} areas are mapped. Remove the Not mapped yet lines from the project's ## Uncertainty; finalize_project_meaning refuses while they stay (not-mapped-line-mismatch).`
+      : null;
+  }
+  const lead = abilities === 0
+    ? `Areas: ${notMapped.length} of ${counted} areas are not mapped yet and hold no abilities, so the project keeps no Not mapped yet line. `
+    : `Areas: ${abilities - uncovered} of ${abilities} abilities the survey found, ${mappedPercent(coverage)} percent, are on the map (a node's path: or cited lines point at their file); ${notMapped.length} of ${counted} areas are not mapped yet, largest gap first in the lines to keep below. `;
+  const keep = abilities === 0
+    ? ''
+    : `Keep exactly these lines under the project's ## Uncertainty, replacing any earlier Not mapped yet lines:\n${notMappedLines(coverage).join('\n')}\n`;
+  const files = batch.reduce((sum, area) => sum + area.batchFiles.length, 0);
+  const next = files > 0
+    ? `Map next, in one request, the ${files} ${files === 1 ? 'file' : 'files'} with no node, ${batch.map(batchFilesLabel).join('; ')}. Open their areas: `
+    : `Map next, in one request: ${batch.map(areaLabel).join(', ')}. Open it: `;
+  const project = docs.find((doc) => kindOf(doc) === 'project');
+  const gap = project ? notMappedLineGap(project.body, coverage) : null;
+  return `${lead}${next}${batch.map((area) => openAreaCall(repoRoot, area)).join('; ')}. `
+    + 'Then write one capability per thing a user, an operator or another system gets there, with its entry file in path: and its rule\'s cited lines; one capability may stand for several files when it cites lines in each. '
+    + 'What is not product (generated code, test tooling, samples) goes on one line of the project\'s ## Excludes with its path and why.'
+    + (gap ? ` The project ${gap} (not-mapped-line-mismatch); finalize_project_meaning refuses until that line matches.` : '')
+    + (keep ? ` ${keep}` : '');
+}
+
+/**
+ * Which capabilities still need a read. A process that served nothing cannot tell
+ * an earlier session's cite from none, so it lists only bodies citing no lines
+ * that exist and counts the rest as recorded earlier.
+ */
+function depthSentence(depth) {
+  const fresh = depth.served === 0;
+  const pending = fresh ? depth.uncited : depth.unread;
+  if (pending.length === 0 && !(fresh && depth.citedEarlier > 0)) return null;
+  const lead = fresh
+    ? `Depth: this server process has served no reads (a restarted server keeps none); ${depth.citedEarlier} of ${depth.capabilities} capabilities cite lines an earlier session recorded that this process has not re-read.`
+    : `Depth: ${depth.read} of ${depth.capabilities} capabilities cite lines this session read that hold a condition.`;
+  if (pending.length === 0) return lead;
+  return `${lead} Not yet${fresh ? ', citing no lines' : ''}: ${listed(pending, (row) => `${row.slug} (${row.path})`)}. Read next, then cite the lines that decide each; a symbol read returns the guards, defaults and callees that decide it: ${readCall(pending)}.`;
+}
+
+/**
  * Placement against the survey's abilities, reads and cites against this
  * session, and ability-to-ability edges, with the line a write and validate_vault
  * report. Each list names what to do next.
@@ -73,7 +132,9 @@ export function measureBuildDepth(docs, repo, reads) {
   const rules = measureRules(docs, reads, repo?.repoRoot ?? null);
   const abilityEdges = measureAbilityEdges(docs);
   const roles = measureRoles(docs, reads, repo?.repoRoot ?? null);
-  const unmapped = repo ? unmappedAreas(docs, repo.survey) : [];
+  const coverage = repo ? areaCoverage(docs, repo.survey, { collection: repo.collection, repoRoot: repo.repoRoot, reads }) : null;
+  const unmapped = coverage?.notMapped ?? [];
+  const batch = mappingBatch(unmapped);
   const parts = [];
   if (breadth && breadth.abilities > 0) {
     parts.push(`Breadth, of ${breadth.abilities} abilities the survey lists: ${breadth.node} with their own node, ${breadth.named} named inside a capability or element, ${breadth.excluded} excluded with a reason, ${breadth.unplaced.length} not placed.`);
@@ -81,11 +142,13 @@ export function measureBuildDepth(docs, repo, reads) {
       parts.push(`Not placed: ${listed(breadth.unplaced, abilityLabel)}. Place each: add_concepts a capability for it, name it in the title or in code form (\`name\`) of the node that covers it (a family or group names its members), or exclude it in the project's ## Uncertainty with one line for it alone that cites its path:Lline or exact name and says why.`);
     }
   }
-  if (unmapped.length > 0) {
-    parts.push(`Areas: ${unmapped.length} of the ${repo.survey.areas.length} areas the survey lists are in no node's path: and named by no domain or the project's ## Uncertainty, largest first: ${listed(unmapped, areaLabel)}. Open the next: ${openAreaCall(repo.repoRoot, unmapped[0])}, then write its nodes, or write its path in the domain that holds it or as unopened in the project's ## Uncertainty.`);
+  if (coverage) {
+    const areas = areasSentence(docs, repo.repoRoot, coverage, batch);
+    if (areas) parts.push(areas);
   }
-  if (depth && depth.unread.length > 0) {
-    parts.push(`Depth: ${depth.read} of ${depth.capabilities} capabilities cite lines this session read that hold a condition.${depth.served === 0 ? ' This server process has served no reads; a restarted server keeps none.' : ''} Not yet: ${listed(depth.unread, (row) => `${row.slug} (${row.path})`)}. Read next, then cite the lines that decide each; a symbol read returns the guards, defaults and callees that decide it: ${readCall(depth.unread)}.`);
+  if (depth) {
+    const sentence = depthSentence(depth);
+    if (sentence) parts.push(sentence);
   }
   // The rule and edge lists name slugs across the vault; they speak only for a grounded build.
   if (repo && rules.uncited.length > 0) {
@@ -104,10 +167,34 @@ export function measureBuildDepth(docs, repo, reads) {
     abilityEdges,
     roles,
     unmappedAreas: unmapped,
+    areaCoverage: coverage,
+    areaBatch: batch,
     capabilities: capabilities.length,
     dependsOn,
     line: parts.length > 0 ? parts.join(' ') : null,
   };
+}
+
+/**
+ * Why finalize refuses a project whose `## Uncertainty` does not keep the summary
+ * line the measure gives, or keeps one after every area is mapped, or null: the
+ * app shows the share on the map from that line. Only a repository surveyed by
+ * area whose unmapped areas hold abilities needs it.
+ */
+export function notMappedLinesRefusal(projectSlug, projectBody, depth) {
+  const gap = notMappedLineGap(projectBody, depth.areaCoverage);
+  if (!gap) return null;
+  if (depth.areaCoverage.notMapped.length === 0) {
+    return [
+      `finalize_project_meaning blocked: ${projectSlug} ${gap}, and the app would keep offering to map the rest from them. Nothing was written.`,
+      `Next call: patch_concept({"slug":"${projectSlug}", "body": ...}) without the Not mapped yet lines under ## Uncertainty, then finalize_project_meaning again.`,
+    ].join('\n');
+  }
+  return [
+    `finalize_project_meaning blocked: ${projectSlug} ${gap}, and the app shows how much of the code is on the map from that line. Nothing was written.`,
+    `Next call: patch_concept({"slug":"${projectSlug}", "body": ...}) so the body's ## Uncertainty holds exactly these lines, replacing any earlier Not mapped yet lines, then finalize_project_meaning again:`,
+    ...notMappedLines(depth.areaCoverage),
+  ].join('\n');
 }
 
 /**

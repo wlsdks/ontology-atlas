@@ -268,7 +268,7 @@ function assembleCompileBrief({
       "읽을 파일 (이 폴더 기준 경로):",
       paths,
       "",
-      "PDF 는 네 도구로 그대로 읽어. DOCX·XLSX·CSV·텍스트는 `read_source` 도구로 읽어: 인용에 쓸 앵커(`h:`, `s2r14`, `r89`, `l204`)가 단위마다 붙어서 와. 셸 명령은 쓰지 마.",
+      "PDF 는 네 도구로 그대로 읽어. DOCX·XLSX·CSV·텍스트는 `read_source` 도구로 읽어: 인용에 쓸 앵커(`h:`, `s2r14`, `r89`, `l204`)가 단위마다 붙어서 와. 이 파일들을 셸 명령으로 읽지는 마.",
       `결과는 \`${WIKI_DIR}/<주제>.md\` 로 쓰거나 이미 있으면 고쳐 줘.`,
       `본문 순서는 고정이야: ${sections}. 빈 절도 지우지 말고 남겨.`,
       "",
@@ -283,7 +283,7 @@ function assembleCompileBrief({
       WIKI_PAGE_TEMPLATE.trimEnd(),
       "```",
       "",
-      "`validate_wiki` 를 통과하지 못하는 문서는 위키 목록에 첫 문제 코드와 함께 떠. 자료실의 쓰기 모드와 선택한 ACP 런타임의 권한에 따라 형식에 맞는 문서도 검토가 필요할 수 있어. 실행 중 권한 요청을 따라. 이 요청은 자동 쓰기를 무조건 약속하지 않아.",
+      "`validate_wiki` 를 통과하지 못하는 문서는 위키 목록에 첫 문제 코드와 함께 떠. 문서는 네 파일 편집 도구로 쓰고, 기존 위키 문서는 네가 파일을 읽는 방법으로 읽어. 읽기 전용 세션은 쓸 수 없다는 뜻이 아니라 쓰기가 사람의 답을 기다린다는 뜻이야: 편집을 보내면 Atlas 가 그 요청을 사람에게 보여 줘. 자료실의 쓰기 모드와 선택한 ACP 런타임의 권한에 따라 형식에 맞는 문서도 검토가 필요할 수 있어. 이 요청은 자동 쓰기를 무조건 약속하지 않아.",
     ].join("\n");
   }
 
@@ -310,7 +310,7 @@ function assembleCompileBrief({
     WIKI_PAGE_TEMPLATE.trimEnd(),
     "```",
     "",
-    "The Library write mode and the selected ACP runtime's permissions govern approval. Follow permission requests; this brief does not promise an automatic write for a fitting page.",
+    "Write each page with your own file-edit tool, and read an existing page the way you read any file. A read-only session means a write waits for the person's answer, not that it cannot be made: send the edit and Atlas shows them the request. The Library write mode and the selected ACP runtime's permissions govern approval; this brief does not promise an automatic write for a fitting page.",
   ].join("\n");
 }
 

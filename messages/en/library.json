@@ -276,9 +276,7 @@
     "aria": "Which list the index shows",
     "sources": "Sources {count, number}",
     "wiki": "Wiki {count, number}",
-    "about": "What this folder holds",
-    "collapse": "Hide index",
-    "expand": "Show the index"
+    "about": "What this folder holds"
   },
   "start": {
     "title": "Add the documents you already have",
@@ -412,7 +410,8 @@
     "openPlanning": "Open in Planning",
     "pagesNeedReview": "{count, plural, one {# existing page needs rechecking} other {# existing pages need rechecking}}",
     "filterShow": "Show only sources marked \"{label}\"",
-    "filterAll": "Show all {count, number}"
+    "filterAll": "Show all {count, number}",
+    "overview": "Overview"
   },
   "wiki": {
     "listAria": "Wiki pages in this folder",
@@ -1216,13 +1215,13 @@
     "sourceTooLarge": "This file is too large to show here.",
     "linkMissing": "Nothing in this folder has this name.",
     "back": "Back",
-    "close": "Close the page",
     "changedBadge": "Changed since written"
   },
   "wikiIndex": {
     "views": {
       "log": "Log",
       "logNone": "Nothing yet",
+      "findEvidence": "Find evidence",
       "checkNever": "Not run yet"
     },
     "group": {

@@ -6,7 +6,12 @@ import { useDataSourceMode, useLocalVault, useStaticVaultSource } from '@/entiti
 import { useVaultHealth } from '@/features/vault-ontology';
 
 import { chatSuggestions, type ChatSuggestion } from './chat-suggestions';
-import { canonicalSlug, capabilitiesWithoutDependency, capabilitiesWithoutReadRule, codeShapedTitles } from './measured-facts';
+import {
+  canonicalSlug,
+  capabilitiesWithoutDependency,
+  capabilitiesWithoutReadRule,
+  codeShapedTitles,
+} from './measured-facts';
 
 /** The rules live in the pure `chat-suggestions.ts`; counts come from the same sources the map reads. `changedSource` is the map's own Git measurement, or null where not measured. */
 export function useChatSuggestions(

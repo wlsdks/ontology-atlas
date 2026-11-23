@@ -63,9 +63,6 @@ test("filing a retained answer preserves unmeasured evidence and the outstanding
   expect(filed.files["wiki/room.md"]).toBe(ORIGINAL_PAGE);
   expect(filed.files[SOURCE]).toBe(REVISED);
 
-  if (!(await page.getByTestId("library-workspace-sources").isVisible())) {
-    await page.getByTestId("library-index-tab").click();
-  }
   await page.getByTestId("library-workspace-sources").click();
   await expect(sourceRow.getByTestId("library-source-state-compiled")).toHaveCount(0);
   await expect(sourceRow).toHaveAttribute("title", /different version|recorded no hash/);

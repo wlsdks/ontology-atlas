@@ -69,6 +69,13 @@ export function linesDecide(text, cite) {
   return text.split(/\r?\n/).slice(cite.startLine - 1, cite.endLine).some(decidesLine);
 }
 
+/** Whether a cited range lies inside a file the repository holds. */
+export function citedLinesExist(repoRoot, cite) {
+  if (!repoRoot) return true;
+  const text = readSmallSource(repoRoot, cite.path);
+  return text !== null && text.split(/\r?\n/).length >= cite.endLine;
+}
+
 export function citedLinesDecide(repoRoot, cite) {
   if (!repoRoot) return true;
   const text = readSmallSource(repoRoot, cite.path);

@@ -129,7 +129,7 @@ test.describe("the structural check is the app's own", () => {
     await expect(page.getByTestId("library-report-open")).toHaveCount(0);
 
     // Back to the home, then in again through the row itself: the same state, both ways.
-    await page.getByTestId("library-reader-back").click();
+    await page.getByTestId("library-index-home").click();
     await expect(page.getByTestId("library-question-desk")).toBeVisible();
     const door = page.getByTestId("library-open-report");
     await expect(door).toBeVisible();

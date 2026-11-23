@@ -126,6 +126,16 @@ export function LibraryAgentDock({
    * the panel would mount after the width had begun moving. The condition keeps it from looping.
    */
   if (open && !standing) setStanding(true);
+  /*
+   * The conversation's first mount is the opening's heaviest work, so a dock that opens draws its frame
+   * and surface on time and mounts the panel a frame later; a dock born open has no entrance to protect.
+   */
+  const [panelMounted, setPanelMounted] = useState(open);
+  useEffect(() => {
+    if (!standing || panelMounted) return;
+    const frame = window.requestAnimationFrame(() => setPanelMounted(true));
+    return () => window.cancelAnimationFrame(frame);
+  }, [panelMounted, standing]);
   /* The session starts once the dock has its width, however it opened, not only for a door's request. */
   const [settled, setSettled] = useState(false);
   /*
@@ -180,9 +190,13 @@ export function LibraryAgentDock({
         if (surface) {
           /* The composer when it takes text; the dock itself otherwise — a composer that
              cannot take focus yet (disabled, or not laid out) leaves focus where it was. */
-          surface.querySelector<HTMLTextAreaElement>("textarea:not([disabled])")?.focus({ preventScroll: true });
+          const composer = surface.querySelector<HTMLTextAreaElement>("textarea:not([disabled])");
+          composer?.focus({ preventScroll: true });
           if (!surface.contains(document.activeElement)) surface.focus({ preventScroll: true });
-          if (surface.contains(document.activeElement)) return;
+          /* The conversation mounts a frame after the dock, so the dock holds focus until its
+             composer exists; a focus the person has since moved inside the dock is left alone. */
+          const waitsForComposer = composer === null && document.activeElement === surface;
+          if (surface.contains(document.activeElement) && !waitsForComposer) return;
         }
         if (++tries < 30) window.requestAnimationFrame(land);
       };
@@ -319,7 +333,7 @@ export function LibraryAgentDock({
             </span>
           </div>
           <AcpDockHeader title={tChat("dockTitle")} onClose={onClose} />
-          <AcpChatPanel
+          {panelMounted ? <AcpChatPanel
             key={runtime.id}
             keepKey={`library:${vaultRoot}:${runtime.id}`}
             parksTurns="chosen"
@@ -377,7 +391,7 @@ export function LibraryAgentDock({
                 </div>
               ) : null
             }
-          />
+          /> : null}
         </Surface>
       ) : null}
     </div>

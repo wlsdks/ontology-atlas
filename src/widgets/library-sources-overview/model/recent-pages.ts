@@ -1,4 +1,5 @@
-import { recordedLocalDay, type LibraryWikiPage } from "@/entities/docs-vault";
+import type { LibraryWikiPage } from "@/entities/docs-vault";
+import { recordedLocalDay } from "@/shared/lib/library/recorded-date";
 
 export const RECENT_PAGE_COUNT = 5;
 

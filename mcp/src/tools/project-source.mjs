@@ -7,6 +7,7 @@
 import {
   competencyDepthRefusals,
   measureBuildDepth,
+  notMappedLinesRefusal,
   repositorySurvey,
 } from '../construction/build-depth.mjs';
 import { sessionReads } from '../construction/session-reads.mjs';
@@ -510,8 +511,13 @@ function finalizeProjectMeaningTool({ projectSlug, expected_mtime, answers } = {
   const grounded = REPO_ROOT_IS_GROUNDED ? REPO_ROOT : null;
   const depth = measureBuildDepth(docs, repositorySurvey(grounded, VAULT_ROOT), grounded ? sessionReads(grounded) : null);
   const depthRefusals = competencyDepthRefusals(competency.questions, depth);
-  if (depthRefusals.length > 0) {
-    throw new Error(depthRefusal(depthRefusals, answersGiven));
+  // Both refusals in one message, so a builder repairs them in one round.
+  const linesRefusal = notMappedLinesRefusal(canonicalSlug, projectBody, depth);
+  if (depthRefusals.length > 0 || linesRefusal) {
+    throw new Error([
+      ...(depthRefusals.length > 0 ? [depthRefusal(depthRefusals, answersGiven)] : []),
+      ...(linesRefusal ? [linesRefusal] : []),
+    ].join('\n'));
   }
 
   let storedBody = projectBody;

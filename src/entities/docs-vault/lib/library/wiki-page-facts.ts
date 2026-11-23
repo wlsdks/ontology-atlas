@@ -1,7 +1,7 @@
 import { isWikiFurnitureSlug } from '@/shared/lib/library/wiki-page-schema';
 
 import type { VaultDoc } from '../../model/vault-manifest';
-import { recordedLocalDay } from './source-progress';
+import { recordedLocalDay } from '@/shared/lib/library/recorded-date';
 
 const VAULT_WIKI_DIR = 'wiki';
 

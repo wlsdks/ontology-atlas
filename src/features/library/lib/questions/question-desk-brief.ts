@@ -1,5 +1,5 @@
 import { withAnswerLanguage } from '@/i18n/answer-language';
-import type { DeskClaim, DeskSourceHit } from './question-desk';
+import type { DeskClaim, DeskSourceHit } from './desk-search';
 import { WIKI_CITATION_ANCHOR_PATTERN, WIKI_CITATION_PATTERN } from '@/shared/lib/library/wiki-page-schema';
 import { normalizeOriginalPaths, resolveSourceCitation } from '@/shared/lib/library/source-citation';
 import remarkParse from 'remark-parse';

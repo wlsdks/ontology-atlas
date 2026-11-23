@@ -31,6 +31,21 @@ function InteractiveTabBar({
 }
 
 describe('TabBar', () => {
+  it('reports a press on the tab already shown as a reselect, never as a selection or an arrow move', () => {
+    const onSelect = vi.fn();
+    const onReselect = vi.fn();
+    render(<TabBar items={ITEMS} activeKey="overview" onSelect={onSelect} onReselect={onReselect} ariaLabel="탭" />);
+    const active = screen.getByRole('tab', { name: /개요/ });
+    fireEvent.click(active);
+    expect(onReselect).toHaveBeenCalledWith('overview');
+    expect(onSelect).not.toHaveBeenCalled();
+    fireEvent.keyDown(active, { key: 'Home' });
+    expect(onReselect).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole('tab', { name: /관계/ }));
+    expect(onSelect).toHaveBeenCalledWith('relations');
+    expect(onReselect).toHaveBeenCalledTimes(1);
+  });
+
   it('renders every tab with its label and engraved count', () => {
     render(<TabBar items={ITEMS} activeKey="overview" onSelect={() => {}} ariaLabel="탭" />);
     expect(screen.getByRole('tab', { name: /개요/ })).toBeInTheDocument();

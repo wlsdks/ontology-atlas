@@ -3,7 +3,8 @@ import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter'
 import type { VaultDoc } from '@/entities/docs-vault';
 import { sourceUnits } from '@/shared/lib/library/source-units';
 import { MAX_VECTOR_PREFIX_BYTES, MAX_VECTOR_PREFIXES } from '@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors';
-import { countDeskReadablePages, deskBriefEvidence, deskPageClaims, deskLeadTermRuns, deskMeaningLeads, deskSearchPrefixes, deskSentenceWindow, DESK_SENTENCE_LIMIT, findDeskClaims, findDeskSourceHits, fuseDeskLeads, jevClaimEligibility, jevPayloadEligibility, newestDeskQuestions, planDeskSourceReads, questionDeskReportFileCurrent, questionTermRuns, questionTerms, recentDeskPages, type DeskClaim } from './question-desk';
+import { countDeskReadablePages, deskBriefEvidence, deskLeadTermRuns, deskSearchPrefixes, deskSentenceWindow, DESK_SENTENCE_LIMIT, jevClaimEligibility, jevPayloadEligibility, newestDeskQuestions, questionDeskReportFileCurrent, questionTermRuns, recentDeskPages } from './question-desk';
+import { deskMeaningLeads, deskPageClaims, deskWordLeads, findDeskClaims, fuseDeskLeads, planDeskSourceReads, questionTerms, searchDesk, type DeskClaim, type DeskMeaningLead, type DeskSourceHit } from './desk-search';
 import { buildQuestionDeskBrief, buildQuestionDeskReportBrief, questionDeskReportFilename, serializeQuestionDeskReport, splitQuestionDeskReportSections, QUESTION_DESK_BRIEF_MAX_CHARS } from './question-desk-brief';
 import { planQuestionDeskReportFile } from './question-desk-brief';
 import { buildAnswerPage } from './answer-page';
@@ -28,6 +29,11 @@ const doc = (slug: string, text = raw): VaultDoc => ({
 });
 const claimsOf = (texts: Iterable<readonly [string, string]>) =>
   new Map([...texts].map(([slug, text]) => [slug, deskPageClaims(text)] as const));
+/** The word list of source passages alone, over the units of one file per entry. */
+const sourceWords = (question: string, files: Record<string, ReadonlyArray<{ anchor: string; text: string }>>) => deskWordLeads({
+  terms: questionTerms(question), docs: [], claimsBySlug: new Map(),
+  sourceUnitsByPath: new Map(Object.entries(files).map(([path, units]) => [path, units.map((unit) => ({ ...unit, kind: 'line' as const }))])),
+});
 
 describe('question desk evidence', () => {
   it('retrieves a schema-valid but false claim as a lead and preserves its exact citation', () => {
@@ -71,12 +77,35 @@ describe('question desk evidence', () => {
   });
 
   it('finds a Korean noun when the question and source use different particles', () => {
-    const terms = questionTerms('재고가 언제 복구되나요?');
-    const hits = findDeskSourceHits('sources/stock.md', [
-      { anchor: 'l4', kind: 'line', text: '승인 뒤에는 재고를 별도 작업으로 복구합니다.' },
-    ], terms);
-    expect(hits.hits[0]?.anchor).toBe('l4');
-    expect(hits.hits[0]?.score).toBeGreaterThan(0);
+    const words = sourceWords('재고가 언제 복구되나요?', { 'sources/stock.md': [{ anchor: 'l4', text: '승인 뒤에는 재고를 별도 작업으로 복구합니다.' }] });
+    expect(words.sourceHits[0]?.anchor).toBe('l4');
+    expect(words.sourceHits[0]?.score).toBeGreaterThan(0);
+  });
+
+  it('never counts a piece from inside or the end of a Hangul term, which unrelated words share', () => {
+    // The two terms share only their last two syllables, a particle ending.
+    const words = sourceWords('성에 제거는?', { 'sources/waste.md': [{ anchor: 'l1', text: '쓰레기 수거는 매주 월요일이다.' }] });
+    expect(words.sourceHits).toEqual([]);
+    expect(questionTermRuns('쓰레기 수거는 매주 월요일이다.', questionTerms('성에 제거는?')).some((run) => run.strong)).toBe(false);
+  });
+
+  it('ranks a passage holding a rare term above one holding a term most passages share', () => {
+    const common = Array.from({ length: 6 }, (_, index) => ({ anchor: `l${index + 1}`, text: `Van ${index} leaves the depot.` }));
+    const words = sourceWords('when does the van defrost', {
+      'sources/a-fleet.md': common,
+      'sources/z-cooling.md': [{ anchor: 'l1', text: 'Coolers defrost twice a day.' }],
+    });
+    expect(words.sourceHits[0]?.path).toBe('sources/z-cooling.md');
+    expect(words.sourceHits[0]!.score).toBeGreaterThan(words.sourceHits[1]!.score);
+  });
+
+  it('weighs a Hangul term held whole above its bare stem, which more passages share', () => {
+    const words = sourceWords('물건이 도착하면?', {
+      'sources/a.md': [{ anchor: 'l1', text: '도착 시각을 기록한다.' }, { anchor: 'l2', text: '도착 순서를 바꾼다.' }, { anchor: 'l3', text: '도착 예정을 알린다.' }],
+      'sources/b.md': [{ anchor: 'l1', text: '물건을 옮긴다.' }, { anchor: 'l2', text: '물건 목록을 본다.' }],
+      'sources/c.md': [{ anchor: 'l1', text: '도착하면 사진을 남긴다.' }],
+    });
+    expect(words.sourceHits[0]).toMatchObject({ path: 'sources/c.md', anchor: 'l1' });
   });
 
   it('skips an oversized source and still searches later files within the read budget', () => {
@@ -94,18 +123,18 @@ describe('question desk evidence', () => {
   });
 
   it('counts matching source units hidden by the per-file display limit', () => {
-    const units = Array.from({ length: 5 }, (_, index) => ({ anchor: `l${index + 1}`, kind: 'line' as const, text: 'Refund approval queues restoration.' }));
-    const found = findDeskSourceHits('sources/refund.md', units, questionTerms('refund restoration'));
-    expect(found.matches).toBe(5);
-    expect(found.hits).toHaveLength(3);
+    const units = Array.from({ length: 5 }, (_, index) => ({ anchor: `l${index + 1}`, text: 'Refund approval queues restoration.' }));
+    const words = sourceWords('refund restoration', { 'sources/refund.md': units });
+    expect(words.sourceHits.map((hit) => hit.anchor)).toEqual(['l1', 'l2', 'l3']);
+    expect(words.omittedSources).toBe(2);
   });
 
   it('reads exact original units and withholds Jev for missing, stale, and unmeasured evidence', () => {
     const claim = findDeskClaims('refund stock', [doc('wiki/refund')], claimsOf([['wiki/refund', raw]])).claims[0]!;
     const citation = claim.citations[0]!;
     const unit = { anchor: 'l2', kind: 'line' as const, text: 'Refund approval queues a stock restoration job.' };
-    expect(findDeskSourceHits('sources/refund.md', [unit], questionTerms('refund approval job'))).toEqual({
-      hits: [expect.objectContaining({ anchor: 'l2', text: unit.text })], matches: 1,
+    expect(sourceWords('refund approval job', { 'sources/refund.md': [unit] })).toMatchObject({
+      sourceHits: [expect.objectContaining({ anchor: 'l2', text: unit.text })], omittedSources: 0,
     });
     expect(jevClaimEligibility(claim, citation, { state: 'unresolved', cited: [] }, 'f'.repeat(64), false)).toBe('missing');
     expect(jevClaimEligibility(claim, citation, { state: 'resolved', cited: [unit] }, '1'.repeat(64), false)).toBe('stale');
@@ -398,9 +427,10 @@ describe('question desk home and lead order', () => {
   const page = (slug: string, updatedAt: string, extra = ''): VaultDoc => ({
     ...doc(slug, `---\ntitle: ${slug}\nsources: [sources/a.md, sources/b.md]\n${extra}---\n`), updatedAt,
   });
-  const claimAt = (pageSlug: string, line: number): DeskClaim => ({
-    pageSlug, pageTitle: pageSlug, text: `claim ${line}`, citations: [], line, score: 1, recordedHashes: {},
+  const claimAt = (pageSlug: string, line: number, score = 1): DeskClaim => ({
+    pageSlug, pageTitle: pageSlug, text: `claim ${line}`, citations: [], line, score, recordedHashes: {},
   });
+  const near = (hit: DeskSourceHit, similarity: number): DeskMeaningLead => ({ kind: 'source', hit, similarity });
 
   it('lists the five newest wiki pages, newest first, without saved questions or concept documents', () => {
     const docs = [
@@ -444,10 +474,10 @@ describe('question desk home and lead order', () => {
     expect(newestDeskQuestions(docs, 1)).toHaveLength(1);
   });
 
-  it('interleaves wiki claims and source passages by rank, claim first on a tie', () => {
-    const leads = fuseDeskLeads([claimAt('wiki/z', 4), claimAt('wiki/z', 9)], [
-      { path: 'sources/a.md', anchor: 'l3', text: 'passage', score: 2 },
-      { path: 'sources/b.md', anchor: 'l1', text: 'passage', score: 1 },
+  it('orders wiki claims and source passages by how much of the question each covers, claim first on a tie', () => {
+    const leads = fuseDeskLeads([claimAt('wiki/z', 4, 0.8), claimAt('wiki/z', 9, 0.3)], [
+      { path: 'sources/a.md', anchor: 'l3', text: 'passage', score: 0.5 },
+      { path: 'sources/b.md', anchor: 'l1', text: 'passage', score: 0.3 },
     ]);
     expect(leads.map((lead) => lead.key)).toEqual(['claim:wiki/z:4', 'source:sources/a.md#l3', 'claim:wiki/z:9', 'source:sources/b.md#l1']);
   });
@@ -490,24 +520,43 @@ describe('question desk home and lead order', () => {
     expect(leads.map((lead) => lead.reason)).toEqual(['words', 'words']);
   });
 
-  it('keeps one order whichever list a passage reaches first', () => {
-    const a = { path: 'sources/a.md', anchor: 'l3', text: 'a', score: 2 };
-    const b = { path: 'sources/b.md', anchor: 'l1', text: 'b', score: 1 };
-    const c = { path: 'sources/c.md', anchor: 'l9', text: 'c', score: 1 };
-    // a ranks first by words and second by meaning, c first by meaning; then the lists trade places.
-    const one = fuseDeskLeads([], [a, b], [{ kind: 'source', hit: c }, { kind: 'source', hit: a }]);
-    const other = fuseDeskLeads([], [c, a], [{ kind: 'source', hit: a }, { kind: 'source', hit: b }]);
+  it('keeps one order whichever order the lists hold their leads in', () => {
+    const a = { path: 'sources/a.md', anchor: 'l3', text: 'a', score: 0.6 };
+    const b = { path: 'sources/b.md', anchor: 'l1', text: 'b', score: 0.4 };
+    const c = { path: 'sources/c.md', anchor: 'l9', text: 'c', score: 0 };
+    const one = fuseDeskLeads([], [a, b], [near(c, 0.7), near(a, 0.5)]);
+    const other = fuseDeskLeads([], [b, a], [near(a, 0.5), near(c, 0.7)]);
     expect(one.map((lead) => [lead.key, lead.reason])).toEqual([
-      ['source:sources/a.md#l3', 'both'], ['source:sources/c.md#l9', 'meaning'], ['source:sources/b.md#l1', 'words'],
+      ['source:sources/c.md#l9', 'meaning'], ['source:sources/a.md#l3', 'both'], ['source:sources/b.md#l1', 'words'],
     ]);
-    expect(other.map((lead) => [lead.key, lead.reason])).toEqual([
-      ['source:sources/a.md#l3', 'both'], ['source:sources/c.md#l9', 'words'], ['source:sources/b.md#l1', 'meaning'],
+    expect(other).toEqual(one);
+  });
+
+  it('keeps a passage that shares one common word with the question below the nearest passage found by meaning', () => {
+    // The word list's best row holds only a word most passages share; meaning returns it fifth.
+    const common = { path: 'sources/fleet.md', anchor: 'l2', text: 'The fleet runs nine vans.', score: 0.2 };
+    const answer = { path: 'sources/cooling.md', anchor: 'l4', text: 'Coolers thaw every six hours.', score: 0 };
+    const others = ['b', 'c', 'd'].map((name) => ({ path: `sources/${name}.md`, anchor: 'l1', text: name, score: 0 }));
+    const leads = fuseDeskLeads([], [common], [
+      near(answer, 0.62), ...others.map((hit, index) => near(hit, 0.6 - index * 0.01)), near(common, 0.55),
+    ]);
+    expect(leads[0]).toMatchObject({ key: 'source:sources/cooling.md#l4', reason: 'meaning' });
+    expect(leads.findIndex((lead) => lead.key === 'source:sources/fleet.md#l2')).toBeGreaterThan(0);
+  });
+
+  it('keeps a passage holding the whole question above the nearest passage found by meaning', () => {
+    const exact = { path: 'sources/config.md', anchor: 'l3', text: 'reefer_hold_window defaults to 30 minutes.', score: 1 };
+    const close = { path: 'sources/notes.md', anchor: 'l1', text: 'The hold time keeps the cooler running.', score: 0 };
+    const far = { path: 'sources/a-far.md', anchor: 'l1', text: 'Vans park at night.', score: 0 };
+    const leads = fuseDeskLeads([], [exact], [near(close, 0.7), near(exact, 0.65), near(far, 0.6)]);
+    expect(leads.map((lead) => [lead.key, lead.reason])).toEqual([
+      ['source:sources/config.md#l3', 'both'], ['source:sources/notes.md#l1', 'meaning'], ['source:sources/a-far.md#l1', 'meaning'],
     ]);
   });
 
   it('counts the lists of a passage folded into its claim for the claim', () => {
     const citing = { ...claimAt('wiki/z', 9), text: 'Returns are accepted for 15 days.', citations: [{ path: 'sources/a.md', anchor: 'l17' }] };
-    const leads = fuseDeskLeads([citing], [], [{ kind: 'source', hit: { path: 'sources/a.md', anchor: 'l17', text: 'Returns are accepted for 15 days', score: 0 } }]);
+    const leads = fuseDeskLeads([citing], [], [near({ path: 'sources/a.md', anchor: 'l17', text: 'Returns are accepted for 15 days', score: 0 }, 0.5)]);
     expect(leads.map((lead) => [lead.key, lead.reason])).toEqual([['claim:wiki/z:9', 'both']]);
   });
 
@@ -557,17 +606,17 @@ describe('question desk rows found by meaning', () => {
 
   it('is the word lead the passage holds, so the list shows it once for both reasons', () => {
     const terms = questionTerms('refund window');
-    const words = findDeskSourceHits('sources/returns.md', units, terms).hits;
-    const meaning = deskMeaningLeads({ ...base, hits: [{ path: 'sources/returns.md', lineStart: 1, lineEnd: 3 }], claims: [], sourceHits: words });
-    expect(meaning).toEqual({ leads: [{ kind: 'source', hit: words[0] }], dropped: 0 });
+    const words = deskWordLeads({ terms, docs: [], claimsBySlug: new Map(), sourceUnitsByPath: base.sourceUnitsByPath }).sourceHits;
+    const meaning = deskMeaningLeads({ ...base, hits: [{ path: 'sources/returns.md', lineStart: 1, lineEnd: 3, score: 0.5 }], claims: [], sourceHits: words });
+    expect(meaning).toEqual({ leads: [{ kind: 'source', hit: words[0], similarity: 0.5 }], dropped: 0 });
     const leads = fuseDeskLeads([], words, meaning.leads);
     expect(leads.map((lead) => [lead.key, lead.reason])).toEqual([['source:sources/returns.md#l2', 'both']]);
   });
 
   it('is the first sentence of a source passage, past its heading, with no word strong', () => {
     const terms = questionTerms('can I send back a box I opened');
-    const meaning = deskMeaningLeads({ ...base, hits: [{ path: 'sources/returns.md', lineStart: 4, lineEnd: 6 }], claims: [], sourceHits: [] });
-    expect(meaning.leads).toEqual([{ kind: 'source', hit: { path: 'sources/returns.md', anchor: 'l5', text: 'Opened items cannot go back.', score: 0 } }]);
+    const meaning = deskMeaningLeads({ ...base, hits: [{ path: 'sources/returns.md', lineStart: 4, lineEnd: 6, score: 0.5 }], claims: [], sourceHits: [] });
+    expect(meaning.leads).toEqual([{ kind: 'source', hit: { path: 'sources/returns.md', anchor: 'l5', text: 'Opened items cannot go back.', score: 0 }, similarity: 0.5 }]);
     const [lead] = fuseDeskLeads([], [], meaning.leads);
     expect(lead!.reason).toBe('meaning');
     expect(deskLeadTermRuns(lead!, 'Opened items cannot go back.', terms).filter((run) => run.strong)).toEqual([]);
@@ -576,19 +625,19 @@ describe('question desk rows found by meaning', () => {
 
   it('is the first claim a wiki passage holds, counted by file line and keeping its citation', () => {
     // File lines: frontmatter 1-5, Summary 6-7, Facts 8, the claims 9 and 10.
-    const meaning = deskMeaningLeads({ ...base, hits: [{ path: 'wiki/returns.md', lineStart: 7, lineEnd: 10 }], claims: [], sourceHits: [] });
+    const meaning = deskMeaningLeads({ ...base, hits: [{ path: 'wiki/returns.md', lineStart: 7, lineEnd: 10, score: 0.5 }], claims: [], sourceHits: [] });
     expect(meaning.leads).toEqual([{ kind: 'claim', claim: expect.objectContaining({
       pageSlug: 'wiki/returns', text: 'Opened items are excluded. [[src:sources/returns.md#l5]]',
       citations: [{ path: 'sources/returns.md', anchor: 'l5' }], recordedHashes: { 'sources/returns.md': 'a'.repeat(64) },
-    }) }]);
-    const lateHit = deskMeaningLeads({ ...base, hits: [{ path: 'wiki/returns.md', lineStart: 10, lineEnd: 10 }], claims: [], sourceHits: [] });
-    expect(lateHit.leads).toEqual([{ kind: 'claim', claim: expect.objectContaining({ text: 'Defects waive the fee. [[src:sources/returns.md#l6]]' }) }]);
+    }), similarity: 0.5 }]);
+    const lateHit = deskMeaningLeads({ ...base, hits: [{ path: 'wiki/returns.md', lineStart: 10, lineEnd: 10, score: 0.5 }], claims: [], sourceHits: [] });
+    expect(lateHit.leads).toEqual([{ kind: 'claim', claim: expect.objectContaining({ text: 'Defects waive the fee. [[src:sources/returns.md#l6]]' }), similarity: 0.5 }]);
   });
 
   it('takes a word claim in range over the first claim there', () => {
     const words = findDeskClaims('fee defects', [page], base.claimsBySlug).claims;
-    const meaning = deskMeaningLeads({ ...base, hits: [{ path: 'wiki/returns.md', lineStart: 9, lineEnd: 10 }], claims: words, sourceHits: [] });
-    expect(meaning.leads).toEqual([{ kind: 'claim', claim: words[0] }]);
+    const meaning = deskMeaningLeads({ ...base, hits: [{ path: 'wiki/returns.md', lineStart: 9, lineEnd: 10, score: 0.5 }], claims: words, sourceHits: [] });
+    expect(meaning.leads).toEqual([{ kind: 'claim', claim: words[0], similarity: 0.5 }]);
     expect(fuseDeskLeads(words, [], meaning.leads).map((lead) => lead.reason)).toEqual(['both']);
   });
 
@@ -597,21 +646,36 @@ describe('question desk rows found by meaning', () => {
       ...base,
       searchedSources: new Set(['sources/returns.md', 'sources/changed.md']),
       hits: [
-        { path: 'project.md', lineStart: 1, lineEnd: 4 },
-        { path: 'sources/unplanned.md', lineStart: 1, lineEnd: 4 },
-        { path: 'sources/changed.md', lineStart: 1, lineEnd: 4 },
-        { path: 'sources/returns.md', lineStart: 3, lineEnd: 4 },
-        { path: 'wiki/returns.md', lineStart: 6, lineEnd: 7 },
+        { path: 'project.md', lineStart: 1, lineEnd: 4, score: 0.5 },
+        { path: 'sources/unplanned.md', lineStart: 1, lineEnd: 4, score: 0.5 },
+        { path: 'sources/changed.md', lineStart: 1, lineEnd: 4, score: 0.5 },
+        { path: 'sources/returns.md', lineStart: 3, lineEnd: 4, score: 0.5 },
+        { path: 'wiki/returns.md', lineStart: 6, lineEnd: 7, score: 0.5 },
       ],
       claims: [], sourceHits: [],
     });
     expect(meaning).toEqual({ leads: [], dropped: 3 });
   });
 
+  it('searches words alone when meaning did not answer, and counts returned passages that stand for no row', () => {
+    const question = 'refund window';
+    const wordsOnly = searchDesk({ ...base, question, meaningHits: null });
+    expect(wordsOnly.leads.map((lead) => [lead.key, lead.reason])).toEqual([['source:sources/returns.md#l2', 'words']]);
+    expect(wordsOnly.meaningDropped).toBeNull();
+    const withMeaning = searchDesk({ ...base, question, meaningHits: [
+      { path: 'sources/returns.md', lineStart: 4, lineEnd: 6, score: 0.6 },
+      { path: 'wiki/returns.md', lineStart: 6, lineEnd: 7, score: 0.5 },
+    ] });
+    expect(withMeaning.leads.map((lead) => [lead.key, lead.reason])).toEqual([
+      ['source:sources/returns.md#l2', 'words'], ['source:sources/returns.md#l5', 'meaning'],
+    ]);
+    expect(withMeaning.meaningDropped).toBe(1);
+  });
+
   it('reaches the report brief as a row of the list, in the order the list shows', () => {
     const terms = questionTerms('refund window');
-    const words = findDeskSourceHits('sources/returns.md', units, terms).hits;
-    const meaning = deskMeaningLeads({ ...base, hits: [{ path: 'sources/returns.md', lineStart: 4, lineEnd: 6 }], claims: [], sourceHits: words });
+    const words = deskWordLeads({ terms, docs: [], claimsBySlug: new Map(), sourceUnitsByPath: base.sourceUnitsByPath }).sourceHits;
+    const meaning = deskMeaningLeads({ ...base, hits: [{ path: 'sources/returns.md', lineStart: 4, lineEnd: 6, score: 0.5 }], claims: [], sourceHits: words });
     const leads = fuseDeskLeads([], words, meaning.leads);
     expect(leads.map((lead) => lead.reason)).toEqual(['words', 'meaning']);
     const evidence = deskBriefEvidence(leads);
@@ -636,8 +700,8 @@ describe('question desk search by meaning in names Finder wrote', () => {
     const units = sourceUnits(new TextEncoder().encode(sourceText), listed).units;
     const meaning = deskMeaningLeads({
       hits: [
-        { path: nfd(`wiki/${hangul}.md`), lineStart: 1, lineEnd: 5 },
-        { path: nfd(listed), lineStart: 1, lineEnd: 2 },
+        { path: nfd(`wiki/${hangul}.md`), lineStart: 1, lineEnd: 5, score: 0.5 },
+        { path: nfd(listed), lineStart: 1, lineEnd: 2, score: 0.5 },
       ],
       docs: [page], claimsBySlug: claimsOf([[page.slug, pageRaw]]),
       searchedSources: new Set([listed]), sourceUnitsByPath: new Map([[listed, units]]),
@@ -654,11 +718,11 @@ describe('question desk search by meaning in names Finder wrote', () => {
     const listed = nfd(`sources/${accent}.md`);
     const units = sourceUnits(new TextEncoder().encode(sourceText), listed).units;
     const meaning = deskMeaningLeads({
-      hits: [{ path: listed.normalize('NFC'), lineStart: 2, lineEnd: 2 }],
+      hits: [{ path: listed.normalize('NFC'), lineStart: 2, lineEnd: 2, score: 0.5 }],
       docs: [], claimsBySlug: new Map(), searchedSources: new Set([listed]), sourceUnitsByPath: new Map([[listed, units]]),
       claims: [], sourceHits: [],
     });
-    expect(meaning.leads).toEqual([{ kind: 'source', hit: expect.objectContaining({ path: listed, anchor: 'l2' }) }]);
+    expect(meaning.leads).toEqual([{ kind: 'source', hit: expect.objectContaining({ path: listed, anchor: 'l2' }), similarity: 0.5 }]);
   });
 });
 

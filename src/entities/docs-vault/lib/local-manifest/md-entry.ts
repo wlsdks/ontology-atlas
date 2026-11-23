@@ -6,6 +6,7 @@ import {
 } from '@/shared/lib/vault-document/parse-frontmatter';
 import { citesReadLines } from '@/shared/lib/vault-document/line-cite';
 import { meaningFindings } from '@/shared/lib/vault-document/meaning-findings';
+import { notMappedAreas } from '@/shared/lib/vault-document/not-mapped-areas';
 import { extractProjectMeaningEvidencePaths } from '@/shared/lib/project-source/project-meaning-evidence';
 import type { WalkEntry } from './walk-vault';
 import type { VaultDoc } from '../../model/vault-manifest';
@@ -145,6 +146,7 @@ export function buildMdEntry(
   const linksOut = extractOutLinkTargets(body, slug);
   const kind =
     typeof frontmatter.kind === 'string' ? frontmatter.kind.trim() : '';
+  const areasNotMapped = kind === 'project' ? notMappedAreas(body) : null;
 
   const doc: VaultDoc = {
     slug,
@@ -166,6 +168,7 @@ export function buildMdEntry(
         }
       : {}),
     ...(kind === 'capability' ? { citesReadLines: citesReadLines(body) } : {}),
+    ...(areasNotMapped ? { notMappedAreas: areasNotMapped } : {}),
     updatedAt: new Date(lastModified).toISOString(),
     linksOut,
     mtime: lastModified,

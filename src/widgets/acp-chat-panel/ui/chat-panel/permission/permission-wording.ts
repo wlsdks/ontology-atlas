@@ -9,17 +9,20 @@ export function permissionTitleKey({
   ontologyWrite,
   serverConsent,
   locality,
+  statedOnly = false,
 }: {
   ontologyWrite: boolean;
   serverConsent: boolean;
   locality: Locality;
+  /** The paths are the agent's own list, not the one the policy judged: the title reports, it does not assert. */
+  statedOnly?: boolean;
 }) {
   return ontologyWrite
     ? 'ontologyWriteTitle'
     : serverConsent
       ? 'consentTitle'
       : locality === 'inside-folder'
-        ? 'insideFolderTitle'
+        ? statedOnly ? 'statedInsideFolderTitle' : 'insideFolderTitle'
         : locality === 'inside-project'
           ? 'insideProjectTitle'
           : 'title';

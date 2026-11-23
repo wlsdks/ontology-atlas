@@ -124,11 +124,9 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   // change my preference for how things expand.
   { key: "ontology-atlas:expand:v1", kind: "storage", scope: "global", note: "expand affordance, structure and count preference" },
   { key: "atlas.acp-chat.width", kind: "storage", scope: "global", note: "chat column width; a display taste of this computer, so it stays when the vault changes" },
-  // The Library index: which of its two lists is drawn, and whether the column is folded
-  // to its rail. Both are this screen's shape on this machine, like the chat width above —
-  // changing folder must not change how the column stands.
+  // The Library index: which of its two lists is drawn. This screen's shape on this machine,
+  // like the chat width above — changing folder must not change how the column stands.
   { key: "atlas.library.index-segment", kind: "storage", scope: "global", note: "Library index: Sources or Wiki" },
-  { key: "atlas.library.index-collapsed", kind: "storage", scope: "global", note: "Library index folded to its rail tab" },
   { key: "atlas.library.guide-seen", kind: "storage", scope: "global", note: "The Library home raised its three-step guide once on this machine" },
   { key: "atlas.meaning.guide-seen", kind: "storage", scope: "global", note: "The question desk's search-by-meaning guide was set aside or used once on this machine" },
   {

@@ -60,27 +60,6 @@ export function writeLibraryIndexQuery(vaultScope: string, query: string): void 
 }
 
 /**
- * Folded to its edge tab, `lg` and above only: below `lg` there is no second pane to give width
- * to. Off by default so the index doors stay reachable.
- */
-const LIBRARY_INDEX_COLLAPSED_KEY = "atlas.library.index-collapsed";
-
-const DEFAULT_LIBRARY_INDEX_COLLAPSED = false;
-
-export function writeLibraryIndexCollapsed(value: boolean): void {
-  writeOnOff(LIBRARY_INDEX_COLLAPSED_KEY, value);
-}
-
-export function useLibraryIndexCollapsed(): boolean {
-  const getSnapshot = useCallback(
-    () => readOnOff(LIBRARY_INDEX_COLLAPSED_KEY, DEFAULT_LIBRARY_INDEX_COLLAPSED),
-    [],
-  );
-  const getServerSnapshot = useCallback(() => DEFAULT_LIBRARY_INDEX_COLLAPSED, []);
-  return useSyncExternalStore(subscribeToPreferenceChange, getSnapshot, getServerSnapshot);
-}
-
-/**
  * `auto` writes a page that fits the wiki contract without a permission card; `ask` stops every
  * page at the card. The key is kept so earlier choices carry over.
  */

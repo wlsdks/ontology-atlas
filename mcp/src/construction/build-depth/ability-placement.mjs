@@ -16,6 +16,7 @@ import {
   spokenForms,
 } from './name-matching.mjs';
 import { kindOf, pathOf, sectionOf } from './node-fields.mjs';
+import { NOT_MAPPED_LINE } from './unmapped-areas.mjs';
 
 /**
  * Where every ability the survey lists sits on the map:
@@ -62,7 +63,8 @@ export function measureAbilities(docs, survey) {
   const memberNamed = (member) => nodes.some((node) => node.tokens.has(member) || namesWord(node.title, member));
   const excludedRows = new Set();
   if (project) {
-    const lines = `${sectionOf(project.body, 'Uncertainty')}\n${sectionOf(project.body, 'Excludes')}`.split('\n').filter((line) => line.trim());
+    const lines = `${sectionOf(project.body, 'Uncertainty')}\n${sectionOf(project.body, 'Excludes')}`.split('\n')
+      .filter((line) => line.trim() && !NOT_MAPPED_LINE.test(line));
     for (const line of lines) {
       const tokens = codeTokens(line);
       const cited = abilities.filter((row) => row.evidence && new RegExp(`${escapeRegExp(row.evidence)}(?!\\d)`).test(line));

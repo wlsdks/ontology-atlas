@@ -43,12 +43,11 @@ const fieldTop = (page: Page) => page.getByTestId('question-desk-input').evaluat
 
 /**
  * The page header owns the doors: one Questions and one Conversation control, none in the desk.
- * The Conversation door gives way to the open dock, which is then the one conversation control.
+ * The Conversation door stays while the dock is open, so there is one either way.
  */
 async function expectOneDoorEach(page: Page) {
   await expect(page.getByTestId('library-questions-open')).toHaveCount(1);
-  await expect.poll(async () => await page.getByTestId('library-open-conversation').count()
-    + (await page.getByTestId('library-agent-dock').isVisible() ? 1 : 0)).toBe(1);
+  await expect(page.getByTestId('library-open-conversation')).toHaveCount(1);
   await expect(page.getByTestId('library-question-desk').locator('[data-testid="library-questions-open"], [data-testid="library-open-conversation"]')).toHaveCount(0);
 }
 
@@ -280,7 +279,7 @@ test('Wiki question desk finds contradictory leads and keeps the no-key source p
   await page.setViewportSize({ width: 1512, height: 901 });
   await stale.getByRole('button', { name: 'refund-handling.md · line 2' }).click();
   await expect(page.getByTestId('library-source-passage')).toHaveAttribute('data-state', 'resolved');
-  await page.getByTestId('library-reader-back').click();
+  await page.getByTestId('library-index-home').click();
   await page.getByTestId('library-workspace-wiki').click();
   await expect(page.getByTestId('library-question-desk')).toBeVisible();
   await expect(page.getByTestId('question-desk-input')).toHaveValue('Does refund approval immediately restore stock?');
