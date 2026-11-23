@@ -10,7 +10,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 /** Abilities one request was measured to put on the map; the app's estimate is ceil(R / this). */
-const ABILITIES_PER_REQUEST = 24;
+const ABILITIES_PER_REQUEST = 13;
 /** A survey of a large repository takes longer than call-tool's default 15 seconds. */
 const VALIDATE_TIMEOUT_MS = 300_000;
 // Line-anchored: the measure's line starts a line, a quoted copy of the note's line does not.
@@ -204,6 +204,7 @@ export function stopReason(lines, maxRequests) {
   // Before any request a vault built before the summary line has none: the server's count stands in.
   if (last.note === null && last.request === 0 && (last.server?.uncovered ?? 0) > 0) return null;
   if (last.note === null) return hadLine ? 'finished' : 'noProgress';
+  if (last.note.uncovered === 0) return 'finished';
   const before = lines.at(-2);
   if (before && before.note !== null && last.note.uncovered >= before.note.uncovered) return 'noProgress';
   const ceiling = lines.find((line) => line.request === 0)?.requestCeiling ?? requestCeiling(last.note.uncovered);

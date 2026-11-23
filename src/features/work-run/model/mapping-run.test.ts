@@ -68,11 +68,11 @@ describe('the rule at a request\'s end', () => {
   });
 
   it('stops past the estimate before sending more than twice it plus two, ahead of a draft', () => {
-    let run: MappingRun = begin(one(20));
+    let run: MappingRun = begin(one(13));
     expect(run.estimate).toBe(1);
-    for (let uncovered = 19; uncovered >= 17; uncovered -= 1) run = afterRequest(run, end({ figures: one(uncovered) }));
+    for (let uncovered = 12; uncovered >= 10; uncovered -= 1) run = afterRequest(run, end({ figures: one(uncovered) }));
     expect(run).toMatchObject({ phase: 'running', requestsSent: 4 });
-    expect(afterRequest(run, end({ figures: one(16), draft: true }))).toMatchObject({ phase: 'stopped', stopReason: 'pastEstimate', requestsSent: 4 });
+    expect(afterRequest(run, end({ figures: one(9), draft: true }))).toMatchObject({ phase: 'stopped', stopReason: 'pastEstimate', requestsSent: 4 });
   });
 
   it('stops for a message when the composer holds a draft at the boundary', () => {

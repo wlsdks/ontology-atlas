@@ -1,11 +1,11 @@
-/** Abilities one request to an agent put on the map in the measured runs (31, 18 and 24); the spec's planning rate. */
-const ABILITIES_PER_REQUEST = 24;
+/** Abilities one request to an agent put on the map in the measured chains (12.5 on a Go service, 13.2 on a Java platform). */
+const ABILITIES_PER_REQUEST = 13;
 
 /** The most abilities one request put on the map in those runs: what one request can be trusted to finish. */
 export const ABILITIES_ONE_REQUEST_REACHES = 31;
 
-/** Minutes one request took in the measured runs (97 to 129 seconds each). */
-export const MINUTES_PER_REQUEST = 2;
+/** Minutes one request took in the same chains (142 to 242 seconds each, 165 on average). */
+export const MINUTES_PER_REQUEST = 3;
 
 /** One finished request of a mapping run: what it put on the map and how long it took. */
 export interface MappingRequestResult {

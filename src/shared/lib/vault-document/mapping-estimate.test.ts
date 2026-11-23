@@ -6,9 +6,9 @@ describe('estimateRequests', () => {
   it.each([
     [0, 1],
     [1, 1],
-    [24, 1],
-    [25, 2],
-    [600, 25],
+    [13, 1],
+    [14, 2],
+    [361, 28],
   ])('estimates %i abilities off the map at %i requests', (uncovered, requests) => {
     expect(estimateRequests(uncovered)).toBe(requests);
   });
@@ -20,7 +20,7 @@ describe('estimateRequests', () => {
 
 describe('remainingMinutes', () => {
   it('uses the measured rate before the first request has finished', () => {
-    expect(remainingMinutes(100, [])).toBe(5 * MINUTES_PER_REQUEST);
+    expect(remainingMinutes(100, [])).toBe(8 * MINUTES_PER_REQUEST);
   });
 
   it('uses the run\'s own abilities and time per request once one has finished', () => {
