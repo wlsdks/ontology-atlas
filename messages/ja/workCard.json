@@ -100,7 +100,11 @@
     "finishedBody": "機能{total, number}個、依頼{sent, number}回、{duration}かかりました。",
     "switchedBody": "{agent}は{folder}をマップに載せていました。そのフォルダーでは{total, number}個中{mapped, number}個がマップにあります。",
     "continue": "続ける",
-    "tabCount": "マップにある機能"
+    "tabCount": "マップにある機能",
+    "startTitle": "コードの残りをマップに載せる",
+    "startBody": "コードで見つかった機能{total, number}個中{mapped, number}個（{percent, number}%）がマップにあります。エージェントへの依頼は約{requests, number}回、{duration}ほどかかります。",
+    "approvalLine": "変更のたびに回答を待ちます。自動承認をオンにすると、自動で進みます。",
+    "hideForNow": "今回は隠す"
   },
   "railRunningPercent": "{destination}: {percent, number}%完了"
 }

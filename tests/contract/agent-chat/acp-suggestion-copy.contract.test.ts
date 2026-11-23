@@ -42,17 +42,12 @@ describe('ACP next-step catalog', () => {
 
     it(`${locale} says how many abilities are on the map and asks for the files and the project lines the server gives`, () => {
       const share = { mapped: 61, total: 383, percent: 16 };
-      const because = t('suggest.mapArea.because', share);
       const prompt = t('suggest.mapArea.prompt', share);
-      for (const text of [t('suggest.mapArea.label', share), because, prompt]) {
-        expect(text).not.toContain('acpChat.suggest');
-        expect(text).not.toMatch(/[{}#]/);
-      }
-      for (const text of [because, prompt]) {
-        expect(text).toContain('61');
-        expect(text).toContain('383');
-        expect(text).toContain('16%');
-      }
+      expect(prompt).not.toContain('acpChat.suggest');
+      expect(prompt).not.toMatch(/[{}#]/);
+      expect(prompt).toContain('61');
+      expect(prompt).toContain('383');
+      expect(prompt).toContain('16%');
       expect(prompt).toContain('validate_vault');
       expect(prompt).toContain('Map next, in one request');
       expect(prompt).toContain('Excludes');

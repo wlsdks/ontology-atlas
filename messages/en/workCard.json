@@ -100,7 +100,11 @@
     "finishedBody": "{total, plural, one {# ability} other {# abilities}}, {sent, plural, one {# request} other {# requests}}, {duration}.",
     "switchedBody": "{agent} was mapping {folder}. {mapped, number} of {total, number} are on the map there.",
     "continue": "Continue",
-    "tabCount": "Abilities on the map"
+    "tabCount": "Abilities on the map",
+    "startTitle": "Map the rest of the code",
+    "startBody": "{mapped, number} of the {total, number} abilities found in the code are on the map ({percent, number}%). About {requests, plural, one {# request} other {# requests}} to your agent, about {duration}.",
+    "approvalLine": "Each change waits for your answer. With Auto-approve on, it runs by itself.",
+    "hideForNow": "Hide for now"
   },
   "railRunningPercent": "{destination}: {percent, number}% done"
 }
