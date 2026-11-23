@@ -32,7 +32,7 @@
     --map-graph-domain-rim-px: 2;
     --map-graph-cap-disc-min-px: 5;
     --map-graph-cap-disc-gain-px: 2.8;
-    --map-graph-cap-disc-max-px: 12;
+    --map-graph-cap-disc-max-px: 14;
     --map-graph-cap-core-inset-px: 3.5;
     --map-graph-cap-core-min-px: 2.4;
     --map-graph-cap-rim-px: 1.4;
@@ -110,7 +110,7 @@
     --map-graph-line-dot-gap-px: 4;
     --map-graph-line-double-gap-px: 2.6;
     /* The download page's film draws these marks larger than the overview, and sinks unrelated clusters less while lit. */
-    --map-graph-film-growth: 1.37;
+    --map-graph-film-growth: 1.3;
     --map-graph-film-sink: 0.3;
 
     --map-graph-project: #9aa2ff;
