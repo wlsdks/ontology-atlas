@@ -72,7 +72,7 @@ same keys in the app's voice. Keys live under `workCard.mapping`; reused keys ar
 | Running | **Mapping the rest of the code** · Request {part} · {mapped} of {total} abilities on the map ({percent}%) · about {duration} left | `workCard.stop` |
 | Waiting for an answer | **Waiting for your answer** · {agent} asked before changing something. Mapping goes on when you answer. | `library.check.review`, `workCard.hide` |
 | Stopping | `workCard.turn.stoppingTitle`, `workCard.turn.stoppingBody` | — |
-| Stopped by the person | **Stopped at {percent}%** · What is already on the map stays. Continue picks up from here. | **Continue** / **이어서 하기** |
+| Stopped by the person | **Stopped at {percent}%** · What is already on the map stays. Continue picks up from here. | **Continue** |
 | Stopped for a message | Stopped so you can ask. Continue picks up from here. | Continue |
 | Stopped: no progress | **Stopped: the last request put nothing new on the map** · It stays at {mapped} of {total}. The conversation shows what the agent did. | Continue, `library.check.openConversation` |
 | Stopped: past the estimate | **Stopped: this is taking more requests than estimated** · {sent} requests sent, {mapped} of {total} on the map. | Continue |
