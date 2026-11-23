@@ -508,21 +508,23 @@ function areaMap(map, collection, found) {
   const locate = areaLocator(areas);
   const filesOf = new Map(areas.map((area) => [area, []]));
   for (const file of product) filesOf.get(locate(file.path))?.push(file);
-  const held = new Map();
-  for (const row of found) {
-    const area = locate(row.path);
-    held.set(area, (held.get(area) ?? 0) + 1);
-  }
-  const rows = areas.map((area) => ({
-    path: area.path,
-    files: area.files,
-    lines: area.lines,
-    ...(area.own ? { own: true } : {}),
-    ...(area.rest ? { rest: true, members: area.members } : {}),
-    mainFiles: area.rest ? [] : mainFilesOf({ path: area.path, scope: area.own ? 'files' : 'tree', files: filesOf.get(area) })
-      .map((file) => ({ path: file.path, lines: file.lines })),
-    abilities: held.get(area) ?? 0,
-  }));
+  const held = abilityFilesByArea(found, locate);
+  const rows = areas.map((area) => {
+    const abilityFiles = held.get(area) ?? [];
+    const row = {
+      path: area.path,
+      files: area.files,
+      lines: area.lines,
+      ...(area.own ? { own: true } : {}),
+      ...(area.rest ? { rest: true, members: area.members } : {}),
+      mainFiles: area.rest ? [] : mainFilesOf({ path: area.path, scope: area.own ? 'files' : 'tree', files: filesOf.get(area) })
+        .map((file) => ({ path: file.path, lines: file.lines })),
+      abilities: abilityFiles.reduce((sum, file) => sum + file.abilities, 0),
+    };
+    // Writes and validate_vault measure an area by these files; the survey's text and rows never carry them.
+    Object.defineProperty(row, 'abilityFiles', { value: abilityFiles, enumerable: false });
+    return row;
+  });
   const listed = abilitiesByArea(found, areas, locate, ABILITY_LIMIT);
   const byArea = {
     ...map,
@@ -532,6 +534,23 @@ function areaMap(map, collection, found) {
     next: areaNext(map, rows),
   };
   delete byArea.units;
+  return byArea;
+}
+
+/** Each area's files that hold abilities, with how many each holds; O(rows x path depth). */
+function abilityFilesByArea(found, locate) {
+  const counts = new Map();
+  for (const row of found) {
+    const area = locate(row.path);
+    if (!area) continue;
+    if (!counts.has(area)) counts.set(area, new Map());
+    const files = counts.get(area);
+    files.set(row.path, (files.get(row.path) ?? 0) + 1);
+  }
+  const byArea = new Map();
+  for (const [area, files] of counts) {
+    byArea.set(area, [...files].map(([path, abilities]) => ({ path, abilities })));
+  }
   return byArea;
 }
 

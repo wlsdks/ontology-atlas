@@ -136,6 +136,10 @@ test('a repository too large for one map is listed by area within the response b
   assert.ok(map.areas.some((area) => area.path.startsWith(`src/${domains[0]}/module-`)), 'the largest area is shown as its subfolders');
   for (const domain of domains.slice(1)) assert.ok(map.areas.some((area) => area.path === `src/${domain}`), domain);
   assert.equal(map.abilities.length + map.abilitiesOmitted, map.areas.reduce((sum, area) => sum + area.abilities, 0), 'every row is listed or counted');
+  for (const area of map.areas) {
+    assert.equal(area.abilityFiles.reduce((sum, file) => sum + file.abilities, 0), area.abilities, `${area.path} keeps the files its abilities sit in`);
+  }
+  assert.ok(!JSON.stringify(map).includes('abilityFiles') && !map.text.includes('abilityFiles'), 'the files the measure reads add nothing to the response');
   const largestFolder = map.areas.find((area) => !area.own && !area.rest);
   const opened = JSON.stringify({ rootPath: join(root, largestFolder.path) });
   assert.ok(lines.at(-1).startsWith('Next: ') && lines.at(-1).includes(`analyze_repo_structure(${opened})`), 'Next opens the largest folder area');

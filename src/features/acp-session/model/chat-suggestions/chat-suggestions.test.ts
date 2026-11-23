@@ -149,14 +149,14 @@ describe('mapping the next area of the code', () => {
   const left = (abilitiesUncovered: number, abilitiesTotal: number, remaining = 12, total = 45) =>
     ({ remaining, total, abilitiesUncovered, abilitiesTotal });
 
-  it('comes ahead of reading rules, with the share of abilities on the map', () => {
+  it('comes ahead of reading rules, with the count and share of abilities on the map', () => {
     const out = chatSuggestions({ ...built, notMappedAreas: left(322, 383), withoutReadRule: readOne, withoutDependency: ['capabilities/a'] });
     expect(out.map(({ kind }) => kind)).toEqual(['mapArea', 'readRules', 'dependencies', 'check']);
-    expect(out[0]).toEqual({ kind: 'mapArea', params: { percent: 16, total: 383 } });
+    expect(out[0]).toEqual({ kind: 'mapArea', params: { mapped: 61, total: 383, percent: 16 } });
   });
 
   it('never shows 100 percent while an ability is still off the map', () => {
-    expect(chatSuggestions({ ...built, notMappedAreas: left(1, 400, 1, 46) })[0]).toEqual({ kind: 'mapArea', params: { percent: 99, total: 400 } });
+    expect(chatSuggestions({ ...built, notMappedAreas: left(1, 400, 1, 46) })[0]).toEqual({ kind: 'mapArea', params: { mapped: 399, total: 400, percent: 99 } });
   });
 
   it('is not offered without the project line or once every ability is covered', () => {
