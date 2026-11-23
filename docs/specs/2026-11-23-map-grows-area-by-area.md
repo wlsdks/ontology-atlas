@@ -59,20 +59,25 @@ service (3,577 Go files).
 
 ### What the server measures
 
-1. For a repository surveyed as areas, each area carries the number of abilities the survey
-   found in it and the number of capability nodes whose `path:` falls in it (longest area path
-   wins). An area is **not mapped yet** when it holds abilities and has fewer than one capability
-   per three of them; an area holding none is not mapped until a node's path falls in it or a
-   domain names it. An area the project leaves out is not counted: its `## Excludes` names the
-   path, or an Uncertainty line names it and says it is left out (tooling, generated, samples)
-   without saying it is still to open or read. The largest gap is abilities minus three times
-   capabilities, ties by lines. A folder's own files and a row of smaller folders are areas too
-   and are written as the survey labels them.
+1. For a repository surveyed as areas, an ability the survey found is **on the map** when a
+   capability or element node points at its code: the node's `path:` is the ability's file, or
+   the node's body cites lines of that file. Nothing else counts; a name inside another node, or
+   a number of nodes in the same folder, does not. An ability the project leaves out is not
+   counted: its `## Excludes` names the ability's file or a folder above it, or an Uncertainty
+   line names it and says it is left out (tooling, generated, samples) without saying it is
+   still to open or read. An area is **not mapped yet** while it holds a counted ability that is
+   not on the map; an area holding none is not mapped until a node's path falls in it or a
+   domain names it. Areas are ordered by abilities not on the map, ties by lines. A folder's own
+   files and a row of smaller folders are areas too and are written as the survey labels them.
 2. The Areas sentence of every write result and of `validate_vault` reports "N of M areas are
    not mapped yet", the largest gaps first with both counts, the call that opens the next one,
    and the exact lines to keep under the project's `## Uncertainty`:
-   `Not mapped yet: N of M areas.` followed by one bullet per area it lists. Naming an area in
-   prose no longer removes it from the sentence.
+   `Not mapped yet: N of M areas, R of T abilities.` followed by one bullet per area it lists.
+   R is the abilities not on the map and T the abilities counted. Naming an area in prose no
+   longer removes it from the sentence. One request maps the files that hold abilities with no
+   node, at most twelve files across at most six areas, largest area first; the sentence names
+   those files. `finalize_project_meaning` refuses, and `validate_vault` warns
+   (`not-mapped-line-mismatch`), while the project's summary line differs from the measure.
 3. The first-build `Next` text of an area survey asks for those lines instead of "unopened".
 4. In a server process that has served no reads, the Depth sentence lists only capabilities
    whose body cites no existing lines, and says how many cite lines recorded earlier that this
@@ -83,25 +88,24 @@ service (3,577 Go files).
 
 ### What the panel offers
 
-6. A project whose body holds `Not mapped yet: N of M areas.` with N above zero gets one next
-   step, ahead of reading rules: "Map the next part of the code". Its request tells the agent to
-   take the first area `validate_vault` names, open it, write one capability per thing a user,
-   an operator or another system gets (at most twelve per press), read each by symbol and state
-   its rule with cited lines, narrow a group capability that only named them, add the
-   `depends_on` edges the reads show, then replace the project's `Not mapped yet` lines with the
-   ones `validate_vault` gives.
+6. A project whose summary line says R above zero can have the rest mapped. The request tells
+   the agent to take the files `validate_vault` names, write one capability per thing a user,
+   an operator or another system gets from them (at most twelve per request; one capability may
+   stand for several files it cites), read each by symbol and state its rule with cited lines,
+   narrow a group capability that only named them, put what is not product on one line of the
+   project's `## Excludes` with its path and the reason, add the `depends_on` edges the reads
+   show, then replace the project's `Not mapped yet` lines with the ones `validate_vault`
+   gives. The person does not send it once per request:
+   `2026-11-23-one-press-maps-the-rest.md` owns the control that sends it.
 7. The count on the button is read from the project node, like every other next step: the
    answer is in the folder, and a stale count corrects itself on the next press because the
    request rewrites the lines from the server's measure.
-8. With several projects, the step speaks for the one with the most areas left; counts are never
+8. With several projects, the step speaks for the one with the most abilities left; counts are never
    summed. The line is read in English in every locale, and the localized requests say to keep
    it as written. A folder with five concepts or fewer is still offered Build first.
 
 ## Out of scope
 
-- Pressing the step for the person until nothing is left. The seat for long work exists
-  (`2026-11-20-long-work-in-background.md`); chaining presses is its own slice once one press is
-  proven on the installed app.
 - Changing the breadth floor of a first build or the 120-row sample.
 - Meaning search for agents through MCP (`2026-11-19-search-by-meaning.md`, Later 4).
 
@@ -134,3 +138,12 @@ service (3,577 Go files).
   out, how the gap is ordered, the areas that are not one folder, and the choice among several
   projects. Right after a first build the measure lists nearly every area (36 of 40 on the Java
   build), since an area with one ability and no capability counts; risk 1 covers it.
+- 2026-11-23: after three requests on the Go build (22 to 52 capabilities) the line read 29 of 46
+  areas, so the count of areas could not show progress, and the Java builder kept no line at
+  all. The line gained the abilities, and finalize refuses without it.
+- 2026-11-23: the measure counts evidence, not a ratio. "One capability per three abilities"
+  read 74 percent on the Go map where nodes point at the code of 101 of 152 abilities
+  (66 percent), and it could never reach 100 for an area whose abilities share a few files
+  while calling a thin area mapped. The owner asked that the number mean what it says. Risk 1
+  is retired with the ratio. The owner also rejected one press per request the same day;
+  chaining left Out of scope for its own spec.
