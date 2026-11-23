@@ -151,7 +151,10 @@ export function chatSuggestions(input: SuggestionInput): ChatSuggestion[] {
   // Breadth before depth: an area not on the map has no capability to read or repair yet.
   if (input.notMappedAreas && input.notMappedAreas.abilitiesUncovered > 0) {
     const { abilitiesUncovered, abilitiesTotal } = input.notMappedAreas;
-    repairs.push({ kind: 'mapArea', params: { percent: mappedPercent(abilitiesUncovered, abilitiesTotal), total: abilitiesTotal } });
+    repairs.push({
+      kind: 'mapArea',
+      params: { mapped: abilitiesTotal - abilitiesUncovered, total: abilitiesTotal, percent: mappedPercent(abilitiesUncovered, abilitiesTotal) },
+    });
   }
   // A rule read from code is what the other repairs build on, so it comes next.
   if (input.withoutReadRule && input.withoutReadRule.unread.length > 0) {

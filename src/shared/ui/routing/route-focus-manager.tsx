@@ -115,6 +115,15 @@ export function RouteFocusManager() {
       return;
     }
 
+    /*
+     * Focus that moves after arrival was placed by the person or the destination, wherever it
+     * sits: a page-header control lies outside `#main` and must not be taken back later.
+     */
+    let focusMovedSinceArrival = false;
+    const noteFocusMove = () => {
+      focusMovedSinceArrival = true;
+    };
+
     const focusDestination = (): boolean => {
       const main = document.querySelector<HTMLElement>('#main');
       // The loading placeholder's `#main` is not the destination: focus would drop to body when
@@ -126,7 +135,8 @@ export function RouteFocusManager() {
         active instanceof HTMLElement &&
         active !== document.body &&
         active !== document.documentElement &&
-        (main.contains(active) ||
+        (focusMovedSinceArrival ||
+          main.contains(active) ||
           active.closest('[role="dialog"][aria-modal="true"]'))
       ) {
         clearRouteFocusQueryMarker();
@@ -158,6 +168,7 @@ export function RouteFocusManager() {
     const observer = new MutationObserver(() => scheduleFocus());
     const stop = () => {
       observer.disconnect();
+      document.removeEventListener('focusin', noteFocusMove, true);
       if (settleTimer !== null) window.clearTimeout(settleTimer);
       if (deadlineTimer !== null) window.clearTimeout(deadlineTimer);
     };
@@ -172,6 +183,7 @@ export function RouteFocusManager() {
     };
 
     observer.observe(document.body, { childList: true, subtree: true });
+    document.addEventListener('focusin', noteFocusMove, true);
     scheduleFocus();
     deadlineTimer = window.setTimeout(() => {
       focusDestination();

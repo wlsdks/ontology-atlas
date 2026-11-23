@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { NextIntlClientProvider, useTranslations } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
 
@@ -451,6 +451,84 @@ describe("the computed half is the app's own, and it is the half that leads", ()
       </NextIntlClientProvider>,
     );
     expect(document.getElementById("report-code-orphan-page")!.tagName).toBe("H4");
+  });
+});
+
+describe("a long kind shows its first rows and the rest one press at a time", () => {
+  const LONG_KIND_ROWS = 130;
+  const LONG = aggregateWikiFindings({
+    pages: [
+      ...Array.from({ length: LONG_KIND_ROWS }, (_, index) => ({
+        path: `wiki/page-${String(index).padStart(3, "0")}.md`,
+        problems: [
+          { code: "uncited-fact", message: "Every bullet under `## Facts` ends in a citation.", line: 9, detail: { key: "uncited-fact" } },
+        ],
+      })),
+      { path: "wiki/refund-timing.md", problems: [
+        {
+          code: "citation-target-missing",
+          message: "`sources/refund-policy-2025.md` is cited but is not in this folder.",
+          detail: { key: "citation-target-missing-folder", values: { path: "sources/refund-policy-2025.md" } },
+        },
+      ] },
+      { path: "wiki/settlement-ko.md", problems: [{ code: "orphan-page", message: "No other page links here.", detail: { key: "orphan-page" } }] },
+    ],
+  });
+  const rowsOf = (code: string) => within(group(code)).getAllByTestId("library-structural-finding");
+
+  it("draws twenty rows under a heading that still counts all of them, and adds a hundred per press", () => {
+    mount(<Harness structural={LONG} />);
+    const heading = document.getElementById("report-code-uncited-fact")!;
+    expect(heading.textContent).toContain(String(LONG_KIND_ROWS));
+    expect(rowsOf("uncited-fact")).toHaveLength(20);
+
+    const more = within(group("uncited-fact")).getByTestId("library-structural-show-more");
+    expect(more.textContent).toBe("Show 100 more");
+    fireEvent.click(more);
+    expect(rowsOf("uncited-fact")).toHaveLength(120);
+    expect(more.textContent).toBe("Show 10 more");
+    fireEvent.click(more);
+    expect(rowsOf("uncited-fact")).toHaveLength(LONG_KIND_ROWS);
+    expect(within(group("uncited-fact")).queryByTestId("library-structural-show-more")).toBeNull();
+    expect(heading.textContent).toContain(String(LONG_KIND_ROWS));
+  });
+
+  it("appends after the rows already shown, keeps them, and moves focus to the first new row", () => {
+    mount(<Harness structural={LONG} />);
+    const before = rowsOf("uncited-fact");
+    fireEvent.click(within(group("uncited-fact")).getByTestId("library-structural-show-more"));
+    const after = rowsOf("uncited-fact");
+    expect(after.slice(0, before.length)).toEqual(before);
+    expect(document.activeElement).toBe(within(after[before.length]!).getByTestId("library-finding-page"));
+    expect(document.activeElement!.textContent).toBe("page-020");
+  });
+
+  it("draws only the rows a press adds, not the rows already shown", () => {
+    mount(<Harness structural={LONG} />);
+    const more = within(group("uncited-fact")).getByTestId("library-structural-show-more");
+    fireEvent.click(more);
+    const drawn = pageDoorRenders.count;
+    fireEvent.click(more);
+    expect(pageDoorRenders.count - drawn).toBe(LONG_KIND_ROWS - 120);
+  });
+
+  it("leaves a short kind whole, with no press under it", () => {
+    mount(<Harness structural={LONG} />);
+    expect(rowsOf("citation-target-missing")).toHaveLength(1);
+    expect(within(group("citation-target-missing")).queryByTestId("library-structural-show-more")).toBeNull();
+  });
+
+  /** No door into the report targets a single row: the rail and the jump chips land on a kind's heading. */
+  it("keeps every place the rail jumps to drawn while a kind is cut short", () => {
+    const Rail = () => {
+      const t = useTranslations("library");
+      return <pre data-testid="outline">{JSON.stringify(reportOutline(LONG, [], 0, t).map((h) => h.slug))}</pre>;
+    };
+    mount(<><Rail /><Harness structural={LONG} advisoryOpen /></>);
+    const slugs = JSON.parse(screen.getByTestId("outline").textContent!) as string[];
+    const kinds = slugs.filter((slug) => slug.startsWith("report-code-"));
+    expect(kinds).toEqual(expect.arrayContaining(["report-code-uncited-fact", "report-code-citation-target-missing", "report-code-orphan-page"]));
+    for (const slug of kinds) expect(document.getElementById(slug)?.tagName).toBe("H4");
   });
 });
 

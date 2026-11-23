@@ -24,6 +24,7 @@ import { measureRoles, roleLabel, ROLE_REPAIR } from './build-depth/role-placeme
 import {
   areaCoverage,
   areaLabel,
+  batchFilesLabel,
   keepsNotMappedLines,
   mappedPercent,
   mappingBatch,
@@ -71,27 +72,31 @@ function listed(rows, render) {
 }
 
 /**
- * The share of surveyed abilities on the map, the areas not mapped yet largest gap
- * first, the batch one request maps with the calls that open it, and the exact
- * lines the project keeps under `## Uncertainty`, so the share the project holds
- * is the server's.
+ * The abilities on the map by evidence, the areas not mapped yet largest gap
+ * first, the files with no node one request maps with the calls that open their
+ * areas, and the exact lines the project keeps under `## Uncertainty`, so the
+ * share the project holds is the server's.
  */
 function areasSentence(docs, repoRoot, coverage, batch) {
-  const { notMapped, counted, abilities } = coverage;
+  const { notMapped, counted, abilities, uncovered } = coverage;
   if (notMapped.length === 0) {
     return keepsNotMappedLines(docs)
       ? `Areas: all ${counted} areas are mapped. Remove the Not mapped yet lines from the project's ## Uncertainty.`
       : null;
   }
-  const percent = mappedPercent(coverage);
-  const share = percent === null
+  const share = abilities === 0
     ? 'Areas: '
-    : `Areas: about ${percent} percent of the ${abilities} abilities the survey found are on the map (an area counts as mapped at one capability per three abilities); `;
+    : `Areas: ${abilities - uncovered} of ${abilities} abilities the survey found, ${mappedPercent(coverage)} percent, are on the map (a node's path: or cited lines point at their file); `;
+  const files = batch.reduce((sum, area) => sum + area.batchFiles.length, 0);
+  const next = files > 0
+    ? `Map next, in one request, the ${files} ${files === 1 ? 'file' : 'files'} with no node, ${batch.map(batchFilesLabel).join('; ')}. Open their areas: `
+    : `Map next, in one request: ${batch.map(areaLabel).join(', ')}. Open it: `;
   const project = docs.find((doc) => kindOf(doc) === 'project');
   const gap = project ? notMappedLineGap(project.body, coverage) : null;
-  return `${share}${notMapped.length} of ${counted} areas are not mapped yet, largest gap first: ${listed(notMapped, areaLabel)}. `
-    + `Map next, in one request: ${batch.map(areaLabel).join(', ')}. Open each: ${batch.map((area) => openAreaCall(repoRoot, area)).join('; ')}. `
-    + 'Then write one capability per thing a user, an operator or another system gets there, each with its own entry file in path:. '
+  return `${share}${notMapped.length} of ${counted} areas are not mapped yet, largest gap first in the lines to keep below. `
+    + `${next}${batch.map((area) => openAreaCall(repoRoot, area)).join('; ')}. `
+    + 'Then write one capability per thing a user, an operator or another system gets there, with its entry file in path: and its rule\'s cited lines; one capability may stand for several files when it cites lines in each. '
+    + 'What is not product (generated code, test tooling, samples) goes on one line of the project\'s ## Excludes with its path and why. '
     + (gap ? `The project ${gap} (not-mapped-line-mismatch); finalize_project_meaning refuses until that line matches. ` : '')
     + `Keep exactly these lines under the project's ## Uncertainty, replacing any earlier Not mapped yet lines:\n${notMappedLines(coverage).join('\n')}\n`;
 }

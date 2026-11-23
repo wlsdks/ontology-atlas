@@ -62,27 +62,27 @@ far it has come.
 
 ## States and copy
 
-`{mapped}` is T minus R. Korean uses the app's polite voice. Japanese and Chinese carry the same
-keys. Keys live under `workCard.mapping`; reused keys are named.
+`{mapped}` is T minus R. The English below is the source; the other three catalogues carry the
+same keys in the app's voice. Keys live under `workCard.mapping`; reused keys are named.
 
-| State | English | Korean | Control |
-|---|---|---|---|
-| Not started | **Map the rest of the code** · {mapped} of the {total} abilities found in the code are on the map ({percent}%). About {requests} requests to your agent, about {duration}. | **코드의 나머지를 지도에 올리기** · 코드에서 찾은 기능 {total}개 중 {mapped}개({percent}%)가 지도에 있어요. 에이전트 요청 약 {requests}번, {duration} 정도 걸려요. | the row |
-| Not started, Auto-approve off | Each change waits for your answer. With Auto-approve on, it runs by itself. | 바꿀 때마다 답을 기다려요. 자동 승인을 켜면 혼자 진행해요. | — |
-| Running | **Mapping the rest of the code** · Request {part} · {mapped} of {total} abilities on the map ({percent}%) · about {duration} left | **코드의 나머지를 지도에 올리는 중** · 요청 {part}번째 · 기능 {total}개 중 {mapped}개({percent}%) · 약 {duration} 남음 | `workCard.stop` |
-| Waiting for an answer | **Waiting for your answer** · {agent} asked before changing something. Mapping goes on when you answer. | **답을 기다리는 중** · {agent}가 바꾸기 전에 물었어요. 답하면 이어서 진행해요. | `library.check.review`, `workCard.hide` |
-| Stopping | `workCard.turn.stoppingTitle`, `workCard.turn.stoppingBody` | same keys | — |
-| Stopped by the person | **Stopped at {percent}%** · What is already on the map stays. Continue picks up from here. | **{percent}%에서 멈췄어요** · 지도에 올라간 것은 그대로 남아요. 이어서 하면 여기서부터 진행해요. | **Continue** / **이어서 하기** |
-| Stopped for a message | Stopped so you can ask. Continue picks up from here. | 물어볼 수 있게 멈췄어요. 이어서 하면 여기서부터 진행해요. | Continue |
-| Stopped: no progress | **Stopped: the last request put nothing new on the map** · It stays at {mapped} of {total}. The conversation shows what the agent did. | **멈췄어요: 마지막 요청에서 새로 올라간 것이 없어요** · {total}개 중 {mapped}개 그대로예요. 에이전트가 한 일은 대화에 있어요. | Continue, `library.check.openConversation` |
-| Stopped: past the estimate | **Stopped: this is taking more requests than estimated** · {sent} requests sent, {mapped} of {total} on the map. | **멈췄어요: 예상보다 요청이 많이 들고 있어요** · 요청 {sent}번을 보냈고 {total}개 중 {mapped}개가 지도에 있어요. | Continue |
-| Stopped: agent error | `workCard.turn.endedTitle` · {mapped} of {total} are on the map. What was already written stays. | same title key · {total}개 중 {mapped}개가 지도에 있어요. 이미 쓴 것은 그대로 남아요. | Continue, open the conversation |
-| Stopped: usage limit | `acpChat.trouble.limit.title` · {mapped} of {total} are on the map. Continue when the limit resets, or pick another agent and continue. | same title key · {total}개 중 {mapped}개가 지도에 있어요. 한도가 풀리면 이어서 하거나, 다른 에이전트를 골라 이어서 하세요. | Continue |
-| Finished | **Every ability found in the code is on the map** · {total} abilities, {sent} requests, {duration}. | **코드에서 찾은 기능이 모두 지도에 올라갔어요** · 기능 {total}개, 요청 {sent}번, {duration} 걸렸어요. | `workCard.close` |
-| Folder switched | `workCard.turn.switchedTitle` · {agent} was mapping {folder}. {mapped} of {total} are on the map there. | same title key · {agent}가 {folder} 폴더를 지도에 올리고 있었어요. 그 폴더는 {total}개 중 {mapped}개가 지도에 있어요. | `workCard.close` |
+| State | English | Control |
+|---|---|---|
+| Not started | **Map the rest of the code** · {mapped} of the {total} abilities found in the code are on the map ({percent}%). About {requests} requests to your agent, about {duration}. | the row |
+| Not started, Auto-approve off | Each change waits for your answer. With Auto-approve on, it runs by itself. | — |
+| Running | **Mapping the rest of the code** · Request {part} · {mapped} of {total} abilities on the map ({percent}%) · about {duration} left | `workCard.stop` |
+| Waiting for an answer | **Waiting for your answer** · {agent} asked before changing something. Mapping goes on when you answer. | `library.check.review`, `workCard.hide` |
+| Stopping | `workCard.turn.stoppingTitle`, `workCard.turn.stoppingBody` | — |
+| Stopped by the person | **Stopped at {percent}%** · What is already on the map stays. Continue picks up from here. | **Continue** |
+| Stopped for a message | Stopped so you can ask. Continue picks up from here. | Continue |
+| Stopped: no progress | **Stopped: the last request put nothing new on the map** · It stays at {mapped} of {total}. The conversation shows what the agent did. | Continue, `library.check.openConversation` |
+| Stopped: past the estimate | **Stopped: this is taking more requests than estimated** · {sent} requests sent, {mapped} of {total} on the map. | Continue |
+| Stopped: agent error | `workCard.turn.endedTitle` · {mapped} of {total} are on the map. What was already written stays. | Continue, open the conversation |
+| Stopped: usage limit | `acpChat.trouble.limit.title` · {mapped} of {total} are on the map. Continue when the limit resets, or pick another agent and continue. | Continue |
+| Finished | **Every ability found in the code is on the map** · {total} abilities, {sent} requests, {duration}. | `workCard.close` |
+| Folder switched | `workCard.turn.switchedTitle` · {agent} was mapping {folder}. {mapped} of {total} are on the map there. | `workCard.close` |
 
 `acpChat.folderBusy` no longer names the Library: "Another conversation is working in this
-folder" / "다른 대화가 이 폴더에서 작업 중이에요".
+folder".
 
 ## Out of scope
 

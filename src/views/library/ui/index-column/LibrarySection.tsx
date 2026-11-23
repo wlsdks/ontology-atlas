@@ -227,20 +227,23 @@ export function LibrarySection({
             </RowButton>
           </div>
         ) : null}
-        {/* One clear primary, then two quiet doors on the same text line, each at full width so no label is cut. */}
+        {/* Three plain rows on the same text line, Add files first; only the current row above wears a container. */}
         <div data-testid="library-source-actions" className="flex flex-col gap-0.5 px-3 pb-2">
           <Tooltip content={t("sources.addTooltip")} {...INDEX_CHIP_TIP}>
-            <Chip
+            <RowButton
               data-testid="library-add-files"
               aria-busy={addFilesFeedback === 'working' || undefined}
               onClick={onAddFiles}
               disabled={busy}
-              tone="secondary"
-              className="w-full justify-start hover:text-[color:var(--color-text-primary)]"
+              size="sm"
+              tone="default"
+              hoverSurface="lift"
+              hoverInk="strong"
+              className={cn("w-full justify-start", INDEX_QUIET_INSET)}
             >
               <IndexGlyph><ActionFeedbackGlyph state={addFilesFeedback} icon={<FilePlus2 size={ICON_SIZE.sm} aria-hidden />} size={ICON_SIZE.sm} /></IndexGlyph>
               <span className="min-w-0 truncate">{t("sources.add")}</span>
-            </Chip>
+            </RowButton>
           </Tooltip>
           <Tooltip content={t("sources.findTooltip")} {...INDEX_CHIP_TIP}>
             <RowButton

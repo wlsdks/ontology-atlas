@@ -4,12 +4,15 @@ import { useTranslations } from "next-intl";
 import { MessageSquare } from "lucide-react";
 
 import type { AcpTurnActivity } from "@/features/acp-session";
+import { cn } from "@/shared/lib/cn";
 import { ChromeChip } from "@/shared/ui";
+import { OPEN_DOOR_CLASS } from "../home/open-door-class";
 
 /**
  * The Conversation door in the Library header. It stays where it is while the dock is open, selected,
- * and a second press puts the dock away. Behind a shut dock it carries a running turn's phase, since
- * a phase beside the internal prompt read as status text, with no way back to Stop.
+ * and a second press puts the dock away. Behind a shut dock a running turn shows as a dot in the
+ * icon's place, with the phase in the tooltip and the accessible name: the face keeps one width, so
+ * the doors beside it never move.
  */
 export function LibraryConversationDoor({
   activity,
@@ -39,24 +42,22 @@ export function LibraryConversationDoor({
       aria-expanded={open}
       active={open}
       aria-label={phase ? t("conversation.runningLabel", { agent: agentLabel, phase }) : undefined}
+      title={phase ? `${t("conversation.open")} · ${phase}` : undefined}
       icon={
         phase ? (
-          <span
-            aria-hidden
-            data-testid="library-conversation-running-dot"
-            className="size-1.5 flex-none rounded-full bg-[color:var(--color-indigo-accent)] motion-safe:animate-pulse"
-          />
+          <span aria-hidden className="flex size-3.5 flex-none items-center justify-center">
+            <span
+              data-testid="library-conversation-running-dot"
+              className="size-1.5 rounded-full bg-[color:var(--color-indigo-accent)] motion-safe:animate-pulse"
+            />
+          </span>
         ) : (
           <MessageSquare aria-hidden />
         )
       }
-      /*
-        One line, bounded. The phase can run long; a chip that grows with it would push the header's
-        other doors off their row.
-      */
-      className="min-w-0 max-w-[16rem] flex-none shadow-none"
+      className={cn("min-w-0 flex-none shadow-none", open && OPEN_DOOR_CLASS)}
     >
-      {phase ? `${t("conversation.open")} · ${phase}` : t("conversation.open")}
+      {t("conversation.open")}
     </ChromeChip>
   );
 }
