@@ -225,6 +225,8 @@ test.describe("source progress on the Sources home", () => {
       for (const width of [1040, 1280, 1512, 1920]) {
         await page.setViewportSize({ width, height: 901 });
         await expect(page.getByTestId("sources-overview")).toBeVisible();
+        // Reduced motion leaves every property a near-zero transition, so a new height lands one frame after the resize.
+        await expect.poll(async () => (await band.boundingBox())!.height, { message: `band at ${width}` }).toBe(width >= 1512 ? 124 : 136);
         const geometry = await page.evaluate(() => {
           const box = (id: string) => document.querySelector(`[data-testid="${id}"]`)?.getBoundingClientRect() ?? null;
           const overflow = [...document.querySelectorAll('[data-testid="library-progress"] *, [data-testid="sources-overview"] *, [data-testid="library-doors"] *')]
