@@ -30,9 +30,20 @@ vi.mock('next-intl', () => {
   return { useLocale: () => 'en', useTranslations: () => Object.assign(t, { rich: t }) };
 });
 
+/** The project note as the agent leaves it on disk, read at each request's end. */
+const projectNote = () => (vault.uncovered === null
+  ? 'A launch.\n'
+  : `A launch.\n\n## Uncertainty\n\n- Not mapped yet: 3 of 9 areas, ${vault.uncovered} of 120 abilities.\n`);
+
+vi.mock('@/shared/lib/vault-folder/vault-text-reader', () => ({
+  createVaultTextReader: () => async (docs: readonly unknown[]) => docs.map(() => projectNote()),
+}));
+
+const GRANTED = { root: { rootPath: '/vault' }, fileHandles: new Map() };
+
 vi.mock('@/entities/vault-session', async (original) => ({
   ...(await original<typeof import('@/entities/vault-session')>()),
-  useGrantedVaultFiles: () => null,
+  useGrantedVaultFiles: () => GRANTED,
   useLocalVault: () => ({
     manifest: {
       docs: [{
@@ -106,6 +117,12 @@ describe('the map conversation maps the rest of the code from one press', () => 
     // The agent receives the whole request; the conversation shows one line of it.
     const requests = () => [...document.querySelectorAll('[data-acp-entry="user"]')].map((entry) => entry.textContent);
     await waitFor(() => expect(requests()).toEqual(['suggest.mapArea.line:{"part":1}']));
+    // What was sent stays inspectable, as every request the app writes is: closed until asked for.
+    const full = screen.getByTestId('acp-chat-request-full');
+    expect(full).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByText(/suggest\.mapArea\.prompt/)).toBeNull();
+    fireEvent.click(full);
+    expect(screen.getByText(/suggest\.mapArea\.prompt/)).toBeInTheDocument();
 
     vault.uncovered = 72;
     replyTo('session/prompt', { stopReason: 'end_turn' });
@@ -126,6 +143,19 @@ describe('the map conversation maps the rest of the code from one press', () => 
     await waitFor(() => expect(screen.getByTestId('mapping-run-row')).toHaveAttribute('data-mapping-state', 'stopped'));
     expect(keptPanels.read()[0]?.busy).toBe(false);
     expect(folderHolder(`library:${FOLDER}:claude-acp`, FOLDER)).toBeNull();
+  });
+
+  it('ends the run when the person stops the connection its next request waits on', async () => {
+    vault.uncovered = 96;
+    renderMapConversation();
+    await agentStarts(1);
+    fireEvent.click(await screen.findByTestId('mapping-run-action'));
+    await waitFor(() => expect(sentOf('initialize')).toHaveLength(2));
+    fireEvent.click(await screen.findByTestId('acp-chat-stop-connecting'));
+    await waitFor(() => expect(screen.getByTestId('mapping-run-row')).toHaveAttribute('data-mapping-state', 'stopped'));
+    expect(workRuns.read().runs.get(`mapping:${FOLDER}`)).toMatchObject({ run: { stopReason: 'press' } });
+    expect(keptPanels.read()[0]?.busy).toBe(false);
+    expect(sentOf('session/prompt')).toHaveLength(0);
   });
 
   it('shows the row once a first build sent from a door writes the line, though that turn gets no next steps', async () => {

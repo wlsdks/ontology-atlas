@@ -116,13 +116,14 @@ async function plantMappingRun(page: Page, locale = "en") {
   await page.getByTestId("first-run-open").click();
   const mapHeading = (JSON.parse(readFileSync(`messages/${locale}.json`, "utf8")) as { navRail: { map: string } }).navRail.map;
   await expect(page.getByRole("heading", { name: mapHeading, level: 1 })).toBeVisible({ timeout: 30_000 });
-  await expect.poll(() => page.evaluate(() => Boolean((window as unknown as ProbeWindow).__atlasWorkRuns?.read().folder))).toBe(true);
+  // A mapping run carries the open folder's root path, as the map's conversation keys it.
+  await expect.poll(() => page.evaluate(() => Boolean((window as unknown as ProbeWindow).__atlasWorkRuns?.read().folderRoot))).toBe(true);
   return page.evaluate(() => {
     const runs = (window as unknown as ProbeWindow).__atlasWorkRuns!;
-    const folder = runs.read().folder!;
-    const figures = (uncovered: number) => ({ widest: { abilitiesUncovered: uncovered, abilitiesTotal: 1240 }, sum: { abilitiesUncovered: uncovered, abilitiesTotal: 1240 } });
+    const folder = runs.read().folderRoot!;
+    const figures = (uncovered: number) => ({ abilitiesUncovered: uncovered, abilitiesTotal: 1240 });
     const now = Date.now();
-    runs.beginMapping({ folder, folderName: "launch", agent: "Claude Agent", figures: figures(1012), startedAt: now - 130_000 });
+    runs.beginMapping({ folder, folderName: "launch", project: "project", agent: "Claude Agent", figures: figures(1012), startedAt: now - 130_000 });
     runs.endMappingBatch(folder, { outcome: { kind: "completed" }, figures: figures(828), draft: false, at: now - 10_000 });
     runs.observeMappingWork(folder, { kind: "reading", label: null, target: "src/routes/checkout/payment-intent.ts", asking: false }, now);
     return folder;
@@ -161,7 +162,7 @@ test.describe("a mapping run in the notice seat", () => {
 
       await page.evaluate((key) => {
         const runs = (window as unknown as ProbeWindow).__atlasWorkRuns!;
-        const figures = { widest: { abilitiesUncovered: 828, abilitiesTotal: 1240 }, sum: { abilitiesUncovered: 828, abilitiesTotal: 1240 } };
+        const figures = { abilitiesUncovered: 828, abilitiesTotal: 1240 };
         runs.endMappingBatch(key, { outcome: { kind: "completed" }, figures, draft: false, at: Date.now() });
       }, folder);
       await expect(card).toHaveAttribute("data-phase", "stopped");

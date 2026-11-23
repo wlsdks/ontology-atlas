@@ -85,12 +85,20 @@ export type SeatRun =
 
 export type TurnDoor = { turnId: number; kind: 'conversation' } | { turnId: number; kind: 'page'; page: string };
 
+/** The conversations one mapping run sent its requests in, oldest first. */
+export interface MappingRunSessions {
+  runId: number;
+  sessionIds: readonly string[];
+}
+
 export interface WorkRunSnapshot {
   /** Every run the session holds, keyed by `check:<id>` or `scheduled:<ledger id>`, in start order. */
   runs: ReadonlyMap<string, SeatRun>;
   run: WorkRun | null;
   /** The open folder; a scheduled run of another folder is never shown. */
   folder: string | null;
+  /** The open folder's root path on disk, the identity a mapping run carries; null without one. */
+  folderRoot: string | null;
   /** The folder whose Check results stage is on screen; the check's card stands down for it. */
   stageFolder: string | null;
   /** Automations is on screen, the stage of every scheduled run. */
@@ -100,14 +108,16 @@ export interface WorkRunSnapshot {
   turnStage: string | null;
   /** The folder whose map conversation shows the mapping row; that folder's mapping card stands down. */
   mappingStage: string | null;
+  /** The agent conversations each mapping run of this launch sent its requests in, oldest first; kept after its card closes. */
+  mappingSessions: ReadonlyArray<MappingRunSessions>;
   door: { runId: number; kind: WorkRunDoor } | null;
   turnDoor: TurnDoor | null;
 }
 
 const NO_RUNS: ReadonlyMap<string, SeatRun> = new Map();
 const EMPTY: WorkRunSnapshot = {
-  runs: NO_RUNS, run: null, folder: null, stageFolder: null, automationsShown: false, meaningStage: false,
-  turnStage: null, mappingStage: null, door: null, turnDoor: null,
+  runs: NO_RUNS, run: null, folder: null, folderRoot: null, stageFolder: null, automationsShown: false, meaningStage: false,
+  turnStage: null, mappingStage: null, mappingSessions: [], door: null, turnDoor: null,
 };
 
 let snapshot: WorkRunSnapshot = EMPTY;
@@ -144,10 +154,10 @@ function checkOf(runs: ReadonlyMap<string, SeatRun>): WorkRun | null {
 function publish(next: Partial<WorkRunSnapshot>) {
   const merged = { ...snapshot, ...next };
   if (next.runs) merged.run = checkOf(next.runs);
-  const same = merged.runs === snapshot.runs && merged.folder === snapshot.folder && merged.stageFolder === snapshot.stageFolder
+  const same = merged.runs === snapshot.runs && merged.folder === snapshot.folder && merged.folderRoot === snapshot.folderRoot && merged.stageFolder === snapshot.stageFolder
     && merged.automationsShown === snapshot.automationsShown && merged.meaningStage === snapshot.meaningStage
     && merged.door === snapshot.door && merged.turnStage === snapshot.turnStage && merged.turnDoor === snapshot.turnDoor
-    && merged.mappingStage === snapshot.mappingStage;
+    && merged.mappingStage === snapshot.mappingStage && merged.mappingSessions === snapshot.mappingSessions;
   if (same) return;
   snapshot = merged;
   listeners.forEach((listener) => listener());
@@ -355,13 +365,17 @@ export const workRuns = {
       publish({ turnDoor: null });
       turnStops.get(entry.run.id)?.();
     }
-    for (const entry of [...snapshot.runs.values()]) {
-      if (entry.kind === 'mapping' && entry.run.folder !== folder) stopMapping(entry.run.folder, 'switched');
-    }
     const run = snapshot.run;
     if (!run || run.folder === folder || !isRunActive(run)) return;
     publish({ runs: withEntry({ kind: 'check', key: checkKey(run.id), run: abandonRun(run, at) }), door: null });
     if (stopTurn?.runId === run.id) stopTurn.stop();
+  },
+  /** The open folder's root path: a mapping run of any other folder ends as switched. */
+  enterFolderRoot(root: string | null) {
+    publish({ folderRoot: root });
+    for (const entry of [...snapshot.runs.values()]) {
+      if (entry.kind === 'mapping' && entry.run.folder !== root) stopMapping(entry.run.folder, 'switched');
+    }
   },
   enterStage(folder: string) {
     publish({ stageFolder: folder });
@@ -545,7 +559,7 @@ export const workRuns = {
   },
 
   /** Starts the folder's mapping run at a press; null while one is already active there. */
-  beginMapping(input: { folder: string; folderName: string; agent: string; figures: MappingFigures | null; startedAt: number }): MappingRun | null {
+  beginMapping(input: { folder: string; folderName: string; project: string | null; agent: string; figures: MappingFigures | null; startedAt: number }): MappingRun | null {
     const previous = mappingOf(input.folder);
     if (previous && isMappingActive(previous)) return null;
     nextId += 1;
@@ -566,6 +580,15 @@ export const workRuns = {
   /** The person's own message while no request runs: the run ends at once, so they can ask. */
   stopMappingForMessage(folder: string) {
     stopMapping(folder, 'message');
+  },
+  /** A request of the folder's active run went out in this conversation. */
+  noteMappingSession(folder: string, sessionId: string) {
+    const run = mappingOf(folder);
+    if (!run || !isMappingActive(run)) return;
+    const known = snapshot.mappingSessions.find((entry) => entry.runId === run.id);
+    if (known?.sessionIds.includes(sessionId)) return;
+    const entry = { runId: run.id, sessionIds: [...(known?.sessionIds ?? []), sessionId] };
+    publish({ mappingSessions: known ? snapshot.mappingSessions.map((other) => (other === known ? entry : other)) : [...snapshot.mappingSessions, entry] });
   },
   /** The driver's Stop: it must end the running request, which then reaches `endMappingBatch`. */
   setMappingStop(folder: string, stop: (() => void) | null) {

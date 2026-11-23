@@ -93,6 +93,11 @@ export function useFolderMappingRun(folder: string): MappingRun | null {
   return folderMappingRun(useWorkRunSnapshot(), folder);
 }
 
+/** The conversations every mapping run of this launch sent its requests in. */
+export function useMappingSessions() {
+  return useWorkRunSnapshot().mappingSessions;
+}
+
 /** Registers the map conversation's mapping row as the stage of the folder's run while it is on screen. */
 export function useMappingStage(folder: string, shown: boolean) {
   useEffect(() => {

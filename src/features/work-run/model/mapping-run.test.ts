@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   afterRequest,
   beginMappingRun,
+  MAPPING_REQUESTS_AT_MOST,
   MAPPING_SILENCE_LIMIT_MS,
   mappingFraction,
   observeMappingWork,
@@ -13,13 +14,10 @@ import {
   type MappingRun,
 } from './mapping-run';
 
-const one = (uncovered: number, total = 120): MappingFigures => ({
-  widest: { abilitiesUncovered: uncovered, abilitiesTotal: total },
-  sum: { abilitiesUncovered: uncovered, abilitiesTotal: total },
-});
+const one = (uncovered: number, total = 120): MappingFigures => ({ abilitiesUncovered: uncovered, abilitiesTotal: total });
 
 const begin = (figures: MappingFigures | null = one(96)) => beginMappingRun({
-  id: 1, folder: 'local:launch', folderName: 'launch', agent: 'Claude Agent', figures, startedAt: 0,
+  id: 1, folder: '/vaults/launch', folderName: 'launch', project: 'launch', agent: 'Claude Agent', figures, startedAt: 0,
 });
 
 const end = (fields: Partial<MappingRequestEnd> = {}): MappingRequestEnd => ({
@@ -31,10 +29,10 @@ const waiting = { kind: 'writing', label: null, target: 'wiki/a.md', asking: tru
 
 describe('the rule at a request\'s end', () => {
   it('sends the next request when the line went down and nothing stops it', () => {
-    const next = afterRequest(begin(), end());
+    const next = afterRequest(begin(), end({ sessionId: 's-1' }));
     expect(next).toMatchObject({ phase: 'running', stopReason: null, requestsSent: 2, requestStartedAt: 120_000, endedAt: null });
     expect(next.now).toEqual(one(72));
-    expect(next.finished).toEqual([{ gained: 24, durationMs: 120_000 }]);
+    expect(next.finished).toEqual([{ gained: 24, durationMs: 120_000, sessionId: 's-1' }]);
   });
 
   it('stops as pressed when the person pressed Stop, before any other rule', () => {
@@ -52,15 +50,16 @@ describe('the rule at a request\'s end', () => {
     expect(afterRequest(begin(), end({ outcome: { kind: 'failed', usageLimit: false }, draft: true }))).toMatchObject({ phase: 'stopped', stopReason: 'agentError' });
   });
 
-  it('finishes when the line is gone after having been there, or reads zero', () => {
-    const gone = afterRequest(begin(), end({ figures: null }));
-    expect(gone).toMatchObject({ phase: 'finished', stopReason: null, now: one(96) });
-    expect(mappingFraction(gone)).toBe(1);
+  it('finishes when the line reads zero, or is gone after last saying one request could map the rest', () => {
     expect(afterRequest(begin(), end({ figures: one(0), draft: true }))).toMatchObject({ phase: 'finished' });
+    const gone = afterRequest(begin(one(31)), end({ figures: null }));
+    expect(gone).toMatchObject({ phase: 'finished', stopReason: null, now: one(31) });
+    expect(mappingFraction(gone)).toBe(1);
   });
 
-  it('stops for no progress when no line was ever read and none appeared', () => {
-    expect(afterRequest(begin(null), end({ figures: null }))).toMatchObject({ phase: 'stopped', stopReason: 'noProgress' });
+  it('stops with the line lost, keeping what it last said, when it is gone with more left than one request maps', () => {
+    expect(afterRequest(begin(one(32)), end({ figures: null }))).toMatchObject({ phase: 'stopped', stopReason: 'lineLost', now: one(32) });
+    expect(afterRequest(begin(null), end({ figures: null }))).toMatchObject({ phase: 'stopped', stopReason: 'lineLost' });
   });
 
   it('stops for no progress when abilities off the map did not go down, ahead of a draft', () => {
@@ -80,17 +79,18 @@ describe('the rule at a request\'s end', () => {
     expect(afterRequest(begin(), end({ draft: true }))).toMatchObject({ phase: 'stopped', stopReason: 'message' });
   });
 
-  it('judges progress on the sum of projects while the card keeps the widest project', () => {
-    const two = (widest: number, sum: number): MappingFigures => ({
-      widest: { abilitiesUncovered: widest, abilitiesTotal: 100 },
-      sum: { abilitiesUncovered: sum, abilitiesTotal: 160 },
-    });
-    const run = begin(two(80, 120));
-    expect(run.estimate).toBe(5);
-    const next = afterRequest(run, end({ figures: two(80, 110) }));
-    expect(next).toMatchObject({ phase: 'running', finished: [{ gained: 10 }] });
-    expect(mappingFraction(next)).toBe(0.2);
-    expect(afterRequest(next, end({ figures: two(60, 110) }))).toMatchObject({ stopReason: 'noProgress' });
+  it('sends no more than the ceiling of requests in one press, whatever the note says is left', () => {
+    let run: MappingRun = begin(one(100_000, 200_000));
+    expect(run.estimate).toBeGreaterThan(MAPPING_REQUESTS_AT_MOST);
+    for (let left = 99_999; run.phase === 'running'; left -= 1) run = afterRequest(run, end({ figures: one(left, 200_000) }));
+    expect(run).toMatchObject({ phase: 'stopped', stopReason: 'pastEstimate', requestsSent: MAPPING_REQUESTS_AT_MOST });
+  });
+
+  it('keeps the fraction within the whole for figures that cannot be true', () => {
+    expect(mappingFraction(begin(one(-5, 100)))).toBe(1);
+    expect(mappingFraction(begin(one(300, 100)))).toBe(0);
+    expect(mappingFraction(begin(one(Number.NaN, 100)))).toBeNull();
+    expect(mappingFraction(begin(one(1, Number.POSITIVE_INFINITY)))).toBeNull();
   });
 
   it('leaves an ended run as it is', () => {

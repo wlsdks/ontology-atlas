@@ -92,24 +92,23 @@ beforeEach(() => {
 });
 
 describe("a mapping run on the rail", () => {
-  const FOLDER = "local:launch";
-  const figures = (uncovered: number) => ({
-    widest: { abilitiesUncovered: uncovered, abilitiesTotal: 120 },
-    sum: { abilitiesUncovered: uncovered, abilitiesTotal: 120 },
-  });
+  /** The driver keys a run by the open folder's root path; the rail must find it by the same. */
+  const ROOT = "/Users/probe/Ontology Atlas/launch";
+  const figures = (uncovered: number) => ({ abilitiesUncovered: uncovered, abilitiesTotal: 120 });
 
   afterEach(() => act(() => workRuns.reset()));
 
   it("rings the map tile with the share on the map, never the Library tile, and marks a wait there", () => {
-    shellMocks.folder = FOLDER;
-    workRuns.leaveFolder(FOLDER, 0);
-    workRuns.beginMapping({ folder: FOLDER, folderName: "launch", agent: "Claude Agent", figures: figures(96), startedAt: 0 });
-    workRuns.endMappingBatch(FOLDER, { outcome: { kind: "completed" }, figures: figures(72), draft: false, at: 120_000 });
+    shellMocks.folder = "local:launch#1";
+    shellMocks.vault.handle = { name: "launch", rootPath: ROOT };
+    workRuns.enterFolderRoot(ROOT);
+    workRuns.beginMapping({ folder: ROOT, folderName: "launch", project: "launch", agent: "Claude Agent", figures: figures(96), startedAt: 0 });
+    workRuns.endMappingBatch(ROOT, { outcome: { kind: "completed" }, figures: figures(72), draft: false, at: 120_000 });
     render(<AppShell><div>page</div></AppShell>);
     expect(screen.getByTestId("app-nav-rail-ring-map")).toHaveAttribute("data-ring-fraction", "0.4000");
     expect(screen.queryByTestId("app-nav-rail-ring-library")).not.toBeInTheDocument();
 
-    act(() => workRuns.observeMappingWork(FOLDER, { kind: "writing", label: null, target: "wiki/a.md", asking: true }, 130_000));
+    act(() => workRuns.observeMappingWork(ROOT, { kind: "writing", label: null, target: "wiki/a.md", asking: true }, 130_000));
     expect(screen.getByTestId("app-nav-rail-waiting-map")).toBeInTheDocument();
     expect(screen.queryByTestId("app-nav-rail-waiting-library")).not.toBeInTheDocument();
   });

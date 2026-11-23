@@ -94,6 +94,8 @@
     "noProgressBody": "仍为 {total, number} 项中的 {mapped, number} 项。智能体做了什么可在对话中查看。",
     "pastEstimateTitle": "已停止：所需请求比预计的多",
     "pastEstimateBody": "已发送 {sent, number} 个请求，{total, number} 项中有 {mapped, number} 项在地图上。",
+    "lineLostTitle": "已停止：项目笔记里不再写着还剩多少",
+    "lineLostBody": "上次是 {total, number} 项中的 {mapped, number} 项。继续时会重新读取代码。",
     "agentErrorBody": "{total, number} 项中有 {mapped, number} 项在地图上。已经写入的内容会保留。",
     "usageLimitBody": "{total, number} 项中有 {mapped, number} 项在地图上。等使用上限重置后继续，或选择另一个智能体继续。",
     "finishedTitle": "代码中找到的能力已全部放到地图上",
@@ -105,7 +107,8 @@
     "startTitle": "把代码的其余部分放到地图上",
     "startBody": "代码中找到的 {total, number} 项能力中有 {mapped, number} 项（{percent, number}%）在地图上。约需向智能体发送 {requests, number} 个请求，用时约 {duration}。",
     "approvalLine": "每次修改都会等待你的回答。开启自动批准后会自行进行。",
-    "hideForNow": "这次先隐藏"
+    "approvalAuto": "只做新增的修改会自行进行。其他修改会等待你的回答。",
+    "showLess": "简要显示"
   },
   "railRunningPercent": "{destination}：已完成 {percent, number}%"
 }

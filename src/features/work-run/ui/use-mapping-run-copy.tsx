@@ -7,6 +7,7 @@ import { remainingMinutes } from '@/shared/lib/vault-document/mapping-estimate';
 
 import { mappingFraction, type MappingRun } from '../model/mapping-run';
 import type { TurnRunLine } from '../model/turn-run';
+import { useWorkRunSnapshot } from '../model/use-work-run';
 import type { MoruState } from './WorkRunMoru';
 import type { MeaningFigure } from './use-meaning-run-copy';
 import type { SeatTint } from './use-scheduled-run-copy';
@@ -28,22 +29,24 @@ export interface MappingRunCopy {
   /** Abilities on the map over those found, for the bar; null before any line was read. */
   fraction: number | null;
   /**
-   * A stop the person can continue from. Continue opens the map's conversation, whose row starts the
-   * next run and which also shows what the agent did, so one door serves both.
+   * A stop the person can continue from, in the folder open now. Continue opens the map's
+   * conversation, whose row starts the next run and which also shows what the agent did, so one
+   * door serves both.
    */
   continues: boolean;
   tint: SeatTint;
   moru: MoruState;
 }
 
-/** On the map out of found, by the widest project's line, as the card states it. */
+/** On the map out of found, by the run's project line, as the card states it; null without a line that can be true. */
 export function mappingCounts(run: MappingRun): { mapped: number; total: number; percent: number } | null {
+  const fraction = mappingFraction({ ...run, phase: 'running' });
   const figures = run.now ?? run.start;
-  if (figures === null) return null;
-  const { abilitiesTotal: total, abilitiesUncovered: uncovered } = figures.widest;
-  const mapped = Math.max(0, total - uncovered);
+  if (fraction === null || figures === null) return null;
+  const total = figures.abilitiesTotal;
+  const mapped = Math.round(fraction * total);
   // Floored, so one ability off the map never reads as 100%.
-  return { mapped, total, percent: total > 0 ? Math.floor((mapped / total) * 100) : 0 };
+  return { mapped, total, percent: Math.floor(fraction * 100) };
 }
 
 export function mappingTint(run: MappingRun): SeatTint {
@@ -101,12 +104,15 @@ export function useMappingRunCopy(run: MappingRun, line: TurnRunLine, marks: Wor
   const { mapped, total, percent } = counts;
   const agent = run.agent;
   const sent = run.requestsSent;
-  const continues = run.phase === 'stopped' && run.stopReason !== 'switched';
+  // A run ended in another folder reads there: its conversation and its Continue belong to that folder.
+  const elsewhere = useWorkRunSnapshot().folderRoot !== run.folder;
+  const continues = run.phase === 'stopped' && run.stopReason !== 'switched' && !elsewhere;
   const base = { fraction: mappingFraction(run), continues, tint: mappingTint(run), moru: mappingMoru(run) };
+  const elsewhereDetail = t('switchedBody', { agent, folder: run.folderName, mapped, total });
 
   switch (run.phase) {
     case 'running': {
-      const left = remainingMinutes(run.now?.sum.abilitiesUncovered ?? Number.NaN, run.finished);
+      const left = remainingMinutes(run.now?.abilitiesUncovered ?? Number.NaN, run.finished);
       const parts: ReactNode[] = [t('request', { part: sent })];
       if (mappingCounts(run)) parts.push(t.rich('onMap', { total, percent, mapped, count: () => figure(mapped, whole) }));
       if (left !== null && left > 0) parts.push(t('left', { duration: duration(left) }));
@@ -123,9 +129,13 @@ export function useMappingRunCopy(run: MappingRun, line: TurnRunLine, marks: Wor
       return { ...base, title: tTurn('stoppingTitle', { agent }), detail: tTurn('stoppingBody', { agent }), figures: null };
     case 'finished': {
       const minutes = Math.max(0, (run.endedAt ?? run.startedAt) - run.startedAt) / MS_PER_MINUTE;
-      return { ...base, title: t('finishedTitle'), detail: t('finishedBody', { total, sent, duration: duration(minutes) }), figures: null };
+      const detail = elsewhere ? elsewhereDetail : t('finishedBody', { total, sent, duration: duration(minutes) });
+      return { ...base, title: t('finishedTitle'), detail, figures: null };
     }
     case 'stopped':
+      if (elsewhere && run.stopReason !== 'switched') {
+        return { ...base, title: t('stoppedTitle', { percent }), detail: elsewhereDetail, figures: null };
+      }
       switch (run.stopReason) {
         case 'message':
           return { ...base, title: t('stoppedTitle', { percent }), detail: t('messageBody'), figures: null };
@@ -133,6 +143,8 @@ export function useMappingRunCopy(run: MappingRun, line: TurnRunLine, marks: Wor
           return { ...base, title: t('noProgressTitle'), detail: t('noProgressBody', { mapped, total }), figures: null };
         case 'pastEstimate':
           return { ...base, title: t('pastEstimateTitle'), detail: t('pastEstimateBody', { sent, mapped, total }), figures: null };
+        case 'lineLost':
+          return { ...base, title: t('lineLostTitle'), detail: mappingCounts(run) ? t('lineLostBody', { mapped, total }) : t('stoppedBody'), figures: null };
         case 'agentError':
           return { ...base, title: tTurn('endedTitle', { agent }), detail: t('agentErrorBody', { mapped, total }), figures: null };
         case 'usageLimit':

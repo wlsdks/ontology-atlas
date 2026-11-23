@@ -493,5 +493,13 @@
   "checkAnswerLine": "점검 결과는 앱이 직접 확인한 것과 나란히 「점검 결과」 페이지에 있어요.",
   "checkAnswerDoor": "점검 결과 열기",
   "checkAnswerFull": "에이전트의 보고 원문",
-  "folderBusy": "다른 대화가 이 폴더에서 작업 중이에요. 끝나면 여기서 물어볼 수 있어요. 지금 끝내려면 「중지」를 누르세요."
+  "folderBusy": "다른 대화가 이 폴더에서 작업 중이에요. 끝나면 여기서 물어볼 수 있어요. 지금 끝내려면 「중지」를 누르세요.",
+  "mapRun": {
+    "requestLine": "요청 {part, number}번째 · {gained, plural, =0 {지도에 새로 올린 기능 없음} other {기능 {gained, number}개를 지도에 올림}} · {duration}",
+    "earlier": "이전 요청 · {count, number}개",
+    "historyRow": "코드의 나머지를 지도에 올리기 · 요청 {count, number}개",
+    "listTitle": "코드의 나머지를 지도에 올린 요청",
+    "listItem": "요청 {part, number}번째",
+    "close": "닫기"
+  }
 }

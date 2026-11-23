@@ -16,6 +16,7 @@ import { useTypewriterReveal } from '@/shared/lib/agent-chat/use-typewriter-reve
 import { Chip, Disclosure } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
 
+import { isRunRequestText, useRequestOpenings } from '../../model/mapping-run-history';
 import { splitAppRequest } from '../request-parts';
 import { canonicalToolTitle, commandRowWords, isVaultTool, labelWithoutRepeatedPath, toolLabel, withKindFallback } from '../tool-label';
 import { toolRowPhase, workingShimmer } from '../working-ink';
@@ -55,37 +56,42 @@ export const TranscriptEntry = memo(function TranscriptEntry({
   fold?: { line: string; doorLabel: string; onOpen: () => void } | null;
 }) {
   const t = useTranslations('acpChat');
+  const tMapping = useTranslations('workCard.mapping');
+  // A run's request reopened from History carries no line of its own: it is known by how it opens.
+  const unnamedRequest = event.kind === 'user' && !event.shown;
+  const requestOpenings = useRequestOpenings(unnamedRequest);
 
   const revealedText = useTypewriterReveal(
     event.kind === 'agent' ? event.text : '',
     streaming,
   );
 
-  if (event.kind === 'user' && event.shown) {
-    return (
-      <p
-        data-acp-entry="user"
-        data-user-request="app-written"
-        className="mt-1 max-w-[85%] self-end break-keep rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-1.5 text-body leading-body text-[color:var(--color-text-secondary)]"
-      >
-        {event.shown}
-      </p>
-    );
-  }
   if (event.kind === 'user') {
-
     const parts = splitAppRequest(event.text);
+    const shown = event.shown ?? (isRunRequestText(event.text, requestOpenings) ? tMapping('startTitle') : null);
+    // A request the app wrote for a run shows its one line; the instruction it sent is there on demand.
+    const detailed = Boolean(shown) || parts.detail;
     return (
       <>
-        <p
-          data-acp-entry="user"
-          data-user-request={parts.detail ? 'app-composed' : 'typed'}
-          className="mt-1 max-w-[85%] self-end whitespace-pre-wrap break-keep rounded-card border border-[color:var(--color-indigo-a22)] bg-[color:var(--color-indigo-a12)] px-3 py-2 text-body-lg leading-body-lg text-[color:var(--color-text-primary)]"
-        >
-          {parts.lead}
-        </p>
+        {shown ? (
+          <p
+            data-acp-entry="user"
+            data-user-request="app-written"
+            className="mt-1 max-w-[85%] self-end break-keep rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-1.5 text-body leading-body text-[color:var(--color-text-secondary)]"
+          >
+            {shown}
+          </p>
+        ) : (
+          <p
+            data-acp-entry="user"
+            data-user-request={parts.detail ? 'app-composed' : 'typed'}
+            className="mt-1 max-w-[85%] self-end whitespace-pre-wrap break-keep rounded-card border border-[color:var(--color-indigo-a22)] bg-[color:var(--color-indigo-a12)] px-3 py-2 text-body-lg leading-body-lg text-[color:var(--color-text-primary)]"
+          >
+            {parts.lead}
+          </p>
+        )}
 
-        {parts.detail ? (
+        {detailed ? (
           <Disclosure
             className="mt-1 max-w-[85%] self-end"
             summaryTestId="acp-chat-request-full"

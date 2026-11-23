@@ -12,16 +12,19 @@ const FOLDER = '/Users/probe/launch';
 const KEY = `mapping:${FOLDER}`;
 const CATALOGUES = { en, ko } as const;
 
-const figures = (uncovered: number, total = 120): MappingFigures => ({
-  widest: { abilitiesUncovered: uncovered, abilitiesTotal: total },
-  sum: { abilitiesUncovered: uncovered, abilitiesTotal: total },
-});
+const figures = (uncovered: number, total = 120): MappingFigures => ({ abilitiesUncovered: uncovered, abilitiesTotal: total });
 const end = (uncovered: number | null, at: number, outcome: MappingRequestEnd['outcome'] = { kind: 'completed' }, draft = false): MappingRequestEnd =>
   ({ outcome, figures: uncovered === null ? null : figures(uncovered), draft, at });
 
-const handlers = () => ({ onStart: vi.fn(), onStop: vi.fn(), onClose: vi.fn(), onHide: vi.fn() });
+const handlers = () => ({ onStart: vi.fn(), onStop: vi.fn(), onClose: vi.fn(), onCollapse: vi.fn() });
 
-function renderRow(run: MappingRun | null, options: { locale?: keyof typeof CATALOGUES; autoApprove?: boolean; canStart?: boolean; resting?: MappingFigures | null } = {}) {
+function renderRow(run: MappingRun | null, options: {
+  locale?: keyof typeof CATALOGUES;
+  autoApprove?: boolean;
+  canStart?: boolean;
+  resting?: MappingFigures | null;
+  collapsed?: boolean;
+} = {}) {
   const on = handlers();
   render(
     <NextIntlClientProvider locale={options.locale ?? 'en'} messages={CATALOGUES[options.locale ?? 'en']}>
@@ -30,6 +33,7 @@ function renderRow(run: MappingRun | null, options: { locale?: keyof typeof CATA
         resting={options.resting === undefined ? figures(96) : options.resting}
         autoApprove={options.autoApprove ?? false}
         canStart={options.canStart ?? true}
+        collapsed={options.collapsed ?? false}
         {...on}
       />
     </NextIntlClientProvider>,
@@ -38,7 +42,7 @@ function renderRow(run: MappingRun | null, options: { locale?: keyof typeof CATA
 }
 
 const run = () => folderMappingRun(workRuns.read(), FOLDER);
-const begin = () => workRuns.beginMapping({ folder: FOLDER, folderName: 'launch', agent: 'Claude Agent', figures: figures(96), startedAt: 0 });
+const begin = () => workRuns.beginMapping({ folder: FOLDER, folderName: 'launch', project: 'launch', agent: 'Claude Agent', figures: figures(96), startedAt: 0 });
 /** A run on its second request: 48 of 120 on the map after one request of two minutes. */
 function secondRequest() {
   begin();
@@ -49,7 +53,10 @@ function secondRequest() {
 const action = () => screen.getByTestId('mapping-run-action');
 const text = (testId: string) => screen.getByTestId(testId).textContent ?? '';
 
-beforeEach(() => workRuns.leaveFolder(FOLDER, 0));
+beforeEach(() => {
+  workRuns.leaveFolder('local:launch#1', 0);
+  workRuns.enterFolderRoot(FOLDER);
+});
 afterEach(() => {
   cleanup();
   act(() => workRuns.reset());
@@ -66,14 +73,31 @@ describe('before a press the row offers Start', () => {
     expect(on.onStart).not.toHaveBeenCalled();
     fireEvent.click(action());
     expect(on.onStart).toHaveBeenCalledTimes(1);
-    fireEvent.click(screen.getByRole('button', { name: 'Hide for now' }));
-    expect(on.onHide).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Show less' }));
+    expect(on.onCollapse).toHaveBeenCalledTimes(1);
     expect(on.onStart).toHaveBeenCalledTimes(1);
   });
 
-  it('drops the approval line while the folder\'s Auto-approve is on', () => {
+  it('says what goes through by itself while Auto-approve answers', () => {
     renderRow(null, { autoApprove: true });
+    expect(text('mapping-run-approval')).toBe('Changes that only add go through by themselves. Anything else waits for your answer.');
+  });
+
+  it('shortened, keeps its title, its count and Start on one line', () => {
+    const on = renderRow(null, { collapsed: true });
+    expect(screen.getByTestId('mapping-run-row')).toHaveAttribute('data-collapsed', 'true');
+    expect(text('mapping-run-title')).toBe('Map the rest of the code');
+    expect(text('mapping-run-body')).toBe('24 of 120 abilities on the map (20%)');
     expect(screen.queryByTestId('mapping-run-approval')).toBeNull();
+    expect(screen.queryByTestId('mapping-run-collapse')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Start' }));
+    expect(on.onStart).toHaveBeenCalledTimes(1);
+  });
+
+  it('shortened, still shows a run in full once one starts', () => {
+    renderRow(secondRequest(), { collapsed: true });
+    expect(screen.getByTestId('mapping-run-row')).not.toHaveAttribute('data-collapsed');
+    expect(text('mapping-run-title')).toBe('Mapping the rest of the code');
   });
 
   it('cannot be pressed while a turn of this conversation runs', () => {
@@ -89,7 +113,12 @@ describe('before a press the row offers Start', () => {
     expect(text('mapping-run-body')).toBe('코드에서 찾은 기능 120개 중 24개(20%)가 지도에 있어요. 에이전트 요청 약\u00a04번, 8분 정도 걸려요.');
     expect(text('mapping-run-approval')).toBe('바꿀 때마다 답을 기다려요. 자동 승인을 켜면 혼자 진행해요.');
     expect(text('mapping-run-action')).toBe('시작');
-    expect(screen.getByRole('button', { name: '이번에는 숨기기' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '간단히 보기' })).toBeInTheDocument();
+  });
+
+  it('speaks Korean about what goes through by itself', () => {
+    renderRow(null, { locale: 'ko', autoApprove: true });
+    expect(text('mapping-run-approval')).toBe('추가만 하는 변경은 혼자 진행해요. 그 밖의 변경은 답을 기다려요.');
   });
 });
 
@@ -100,7 +129,7 @@ describe('a run shows how far it has come, and the same control stops it', () =>
     expect(text('mapping-run-title')).toBe('Mapping the rest of the code');
     expect(text('mapping-run-body')).toBe('Request 2' + '48 of 120 abilities on the map (40%)' + 'about 6 minutes left');
     expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '40');
-    expect(screen.queryByTestId('mapping-run-hide')).toBeNull();
+    expect(screen.queryByTestId('mapping-run-collapse')).toBeNull();
     expect(text('mapping-run-action')).toBe('Stop');
     fireEvent.click(action());
     expect(on.onStop).toHaveBeenCalledTimes(1);
@@ -139,8 +168,9 @@ describe('each end says why and what comes next', () => {
     { name: 'no progress', reach: () => { workRuns.endMappingBatch(FOLDER, end(96, 60_000)); }, title: 'Stopped: the last request put nothing new on the map', body: 'It stays at 24 of 120. The conversation shows what the agent did.', word: 'Continue' },
     { name: 'an agent error', reach: () => { workRuns.endMappingBatch(FOLDER, end(96, 60_000, { kind: 'failed', usageLimit: false })); }, title: 'Claude Agent ended early', body: '24 of 120 are on the map. What was already written stays.', word: 'Continue' },
     { name: 'a usage limit', reach: () => { workRuns.endMappingBatch(FOLDER, end(96, 60_000, { kind: 'failed', usageLimit: true })); }, title: en.acpChat.trouble.limit.title, body: '24 of 120 are on the map. Continue when the limit resets, or pick another agent and continue.', word: 'Continue' },
-    { name: 'the end of the code', reach: () => { workRuns.endMappingBatch(FOLDER, end(null, 60_000)); }, title: 'Every ability found in the code is on the map', body: '120 abilities, 1 request, 1 minute.', word: 'Close' },
-    { name: 'a folder switch', reach: () => { workRuns.leaveFolder('/Users/probe/other', 1_000); workRuns.endMappingBatch(FOLDER, end(96, 60_000, { kind: 'cancelled' })); }, title: 'Ended when you switched folders', body: 'Claude Agent was mapping launch. 24 of 120 are on the map there.', word: 'Close' },
+    { name: 'the end of the code', reach: () => { workRuns.endMappingBatch(FOLDER, end(0, 60_000)); }, title: 'Every ability found in the code is on the map', body: '120 abilities, 1 request, 1 minute.', word: 'Close' },
+    { name: 'a lost line', reach: () => { workRuns.endMappingBatch(FOLDER, end(null, 60_000)); }, title: 'Stopped: the project note no longer says what is left', body: 'It last said 24 of 120. Continue reads the code again.', word: 'Continue' },
+    { name: 'a folder switch', reach: () => { workRuns.enterFolderRoot('/Users/probe/other'); workRuns.endMappingBatch(FOLDER, end(96, 60_000, { kind: 'cancelled' })); }, title: 'Ended when you switched folders', body: 'Claude Agent was mapping launch. 24 of 120 are on the map there.', word: 'Close' },
   ];
   for (const { name, reach, title, body, word } of cases) {
     it(`after ${name}`, () => {
@@ -157,7 +187,7 @@ describe('each end says why and what comes next', () => {
   }
 
   it('after more requests than estimated', () => {
-    workRuns.beginMapping({ folder: FOLDER, folderName: 'launch', agent: 'Claude Agent', figures: figures(5), startedAt: 0 });
+    workRuns.beginMapping({ folder: FOLDER, folderName: 'launch', project: 'launch', agent: 'Claude Agent', figures: figures(5), startedAt: 0 });
     for (const [index, left] of [4, 3, 2, 1].entries()) workRuns.endMappingBatch(FOLDER, end(left, (index + 1) * 60_000));
     renderRow(run());
     expect(text('mapping-run-title')).toBe('Stopped: this is taking more requests than estimated');
@@ -172,5 +202,13 @@ describe('each end says why and what comes next', () => {
     expect(text('mapping-run-title')).toBe('40%에서 멈췄어요');
     expect(text('mapping-run-body')).toBe('물어볼 수 있게 멈췄어요. 이어서 하면 여기서부터 진행해요.');
     expect(text('mapping-run-action')).toBe('이어서 하기');
+  });
+
+  it('speaks Korean when the line is lost', () => {
+    begin();
+    workRuns.endMappingBatch(FOLDER, end(null, 60_000));
+    renderRow(run(), { locale: 'ko' });
+    expect(text('mapping-run-title')).toBe('멈춤: 프로젝트 노트에 남은 양이 적혀 있지 않아요');
+    expect(text('mapping-run-body')).toBe('마지막으로 120개 중 24개였어요. 이어서 하면 코드를 다시 읽어요.');
   });
 });

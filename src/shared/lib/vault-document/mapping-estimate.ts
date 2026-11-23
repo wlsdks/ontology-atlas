@@ -1,6 +1,9 @@
 /** Abilities one request to an agent put on the map in the measured runs (31, 18 and 24); the spec's planning rate. */
 const ABILITIES_PER_REQUEST = 24;
 
+/** The most abilities one request put on the map in those runs: what one request can be trusted to finish. */
+export const ABILITIES_ONE_REQUEST_REACHES = 31;
+
 /** Minutes one request took in the measured runs (97 to 129 seconds each). */
 export const MINUTES_PER_REQUEST = 2;
 
@@ -10,8 +13,9 @@ export interface MappingRequestResult {
   durationMs: number;
 }
 
-/** The requests to an agent that `uncovered` abilities off the map are expected to take; at least one. */
+/** The requests to an agent that `uncovered` abilities off the map are expected to take; at least one, and one for a count that is not one. */
 export function estimateRequests(uncovered: number): number {
+  if (!Number.isSafeInteger(uncovered)) return 1;
   return Math.max(1, Math.ceil(uncovered / ABILITIES_PER_REQUEST));
 }
 

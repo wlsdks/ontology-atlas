@@ -94,6 +94,8 @@
     "noProgressBody": "{total, number}개 중 {mapped, number}개 그대로예요. 에이전트가 한 일은 대화에 있어요.",
     "pastEstimateTitle": "멈췄어요: 예상보다 요청이 많이 들고 있어요",
     "pastEstimateBody": "요청 {sent, number}번을 보냈고 {total, number}개 중 {mapped, number}개가 지도에 있어요.",
+    "lineLostTitle": "멈춤: 프로젝트 노트에 남은 양이 적혀 있지 않아요",
+    "lineLostBody": "마지막으로 {total, number}개 중 {mapped, number}개였어요. 이어서 하면 코드를 다시 읽어요.",
     "agentErrorBody": "{total, number}개 중 {mapped, number}개가 지도에 있어요. 이미 쓴 것은 그대로 남아요.",
     "usageLimitBody": "{total, number}개 중 {mapped, number}개가 지도에 있어요. 한도가 풀리면 이어서 하거나, 다른 에이전트를 골라 이어서 하세요.",
     "finishedTitle": "코드에서 찾은 기능이 모두 지도에 올라갔어요",
@@ -105,7 +107,8 @@
     "startTitle": "코드의 나머지를 지도에 올리기",
     "startBody": "코드에서 찾은 기능 {total, number}개 중 {mapped, number}개({percent, number}%)가 지도에 있어요. 에이전트 요청 약\u00a0{requests, number}번, {duration} 정도 걸려요.",
     "approvalLine": "바꿀 때마다 답을 기다려요. 자동 승인을 켜면 혼자 진행해요.",
-    "hideForNow": "이번에는 숨기기"
+    "approvalAuto": "추가만 하는 변경은 혼자 진행해요. 그 밖의 변경은 답을 기다려요.",
+    "showLess": "간단히 보기"
   },
   "railRunningPercent": "{destination}: {percent, number}% 완료"
 }

@@ -493,5 +493,13 @@
   "checkAnswerLine": "検査結果は「検査結果」ページに、アプリ自身の検査と並べて表示されます。",
   "checkAnswerDoor": "検査結果を開く",
   "checkAnswerFull": "エージェントの報告（原文）",
-  "folderBusy": "別の会話がこのフォルダーで作業中です。終わったらここで質問できます。今すぐ終わらせるには「停止」を押してください。"
+  "folderBusy": "別の会話がこのフォルダーで作業中です。終わったらここで質問できます。今すぐ終わらせるには「停止」を押してください。",
+  "mapRun": {
+    "requestLine": "{part, number}回目の依頼 · {gained, plural, =0 {マップに新しく載せた機能なし} other {機能{gained, number}個をマップに載せた}} · {duration}",
+    "earlier": "以前の依頼 · {count, number}件",
+    "historyRow": "コードの残りをマップに載せる · 依頼{count, number}件",
+    "listTitle": "コードの残りをマップに載せた依頼",
+    "listItem": "{part, number}回目の依頼",
+    "close": "閉じる"
+  }
 }

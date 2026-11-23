@@ -493,5 +493,13 @@
   "checkAnswerLine": "检查结果显示在“检查结果”页面，与应用自己的检查并排放置。",
   "checkAnswerDoor": "打开检查结果",
   "checkAnswerFull": "智能体的报告（原文）",
-  "folderBusy": "另一个对话正在这个文件夹中工作。它结束后你可以在这里提问。要立即结束，请按“停止”。"
+  "folderBusy": "另一个对话正在这个文件夹中工作。它结束后你可以在这里提问。要立即结束，请按“停止”。",
+  "mapRun": {
+    "requestLine": "第 {part, number} 个请求 · {gained, plural, =0 {没有新放到地图上的能力} other {把 {gained, number} 项能力放到地图上}} · {duration}",
+    "earlier": "更早的请求 · {count, number} 个",
+    "historyRow": "把代码的其余部分放到地图上 · {count, number} 个请求",
+    "listTitle": "把代码的其余部分放到地图上的请求",
+    "listItem": "第 {part, number} 个请求",
+    "close": "关闭"
+  }
 }

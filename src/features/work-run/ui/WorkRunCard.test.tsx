@@ -27,22 +27,30 @@ function renderCard(locale: keyof typeof CATALOGUES = 'en') {
   );
 }
 
-const figures = (uncovered: number, total = 120): MappingFigures => ({
-  widest: { abilitiesUncovered: uncovered, abilitiesTotal: total },
-  sum: { abilitiesUncovered: uncovered, abilitiesTotal: total },
-});
+/** A mapping run carries the open folder's root path, as the map's conversation keys it. */
+const ROOT = '/Users/probe/Ontology Atlas/launch';
+const OTHER_ROOT = '/Users/probe/Ontology Atlas/atlas';
+
+const figures = (uncovered: number, total = 120): MappingFigures => ({ abilitiesUncovered: uncovered, abilitiesTotal: total });
 const requestEnd = (uncovered: number | null, at: number, outcome: MappingRequestEnd['outcome'] = { kind: 'completed' }): MappingRequestEnd =>
   ({ outcome, figures: uncovered === null ? null : figures(uncovered), draft: false, at });
 
 /** A run on its second request: 48 of 120 on the map after one request that took two minutes. */
-function runningMapping() {
-  act(() => workRuns.leaveFolder(FOLDER, 0));
-  workRuns.beginMapping({ folder: FOLDER, folderName: 'launch', agent: 'Claude Agent', figures: figures(96), startedAt: 10_000 });
-  workRuns.endMappingBatch(FOLDER, requestEnd(72, 130_000));
-  workRuns.observeMappingWork(FOLDER, { kind: 'reading', label: null, target: 'src/routes/checkout.ts', asking: false }, 131_000);
+function openMappingFolder() {
+  act(() => {
+    workRuns.leaveFolder(FOLDER, 0);
+    workRuns.enterFolderRoot(ROOT);
+  });
 }
 
-const MAPPING_KEY = `mapping:${FOLDER}`;
+function runningMapping() {
+  openMappingFolder();
+  workRuns.beginMapping({ folder: ROOT, folderName: 'launch', project: 'launch', agent: 'Claude Agent', figures: figures(96), startedAt: 10_000 });
+  workRuns.endMappingBatch(ROOT, requestEnd(72, 130_000));
+  workRuns.observeMappingWork(ROOT, { kind: 'reading', label: null, target: 'src/routes/checkout.ts', asking: false }, 131_000);
+}
+
+const MAPPING_KEY = `mapping:${ROOT}`;
 const mappingRun = () => {
   const entry = workRuns.read().runs.get(MAPPING_KEY);
   return entry?.kind === 'mapping' ? entry.run : null;
@@ -172,8 +180,8 @@ describe('a mapping run on the work card', () => {
   });
 
   it('never reads 100% while one ability is off the map', () => {
-    act(() => workRuns.leaveFolder(FOLDER, 0));
-    workRuns.beginMapping({ folder: FOLDER, folderName: 'launch', agent: 'Claude Agent', figures: figures(1, 400), startedAt: 10_000 });
+    openMappingFolder();
+    workRuns.beginMapping({ folder: ROOT, folderName: 'launch', project: 'launch', agent: 'Claude Agent', figures: figures(1, 400), startedAt: 10_000 });
     renderCard();
     expect(screen.getByTestId('work-run-figures').textContent).toBe('Request 1·399 of 400 abilities on the map (99%)·about 2 minutes left');
   });
@@ -181,7 +189,7 @@ describe('a mapping run on the work card', () => {
   it('stops the whole run from the card through the run key', () => {
     runningMapping();
     const stop = vi.fn();
-    workRuns.setMappingStop(FOLDER, stop);
+    workRuns.setMappingStop(ROOT, stop);
     renderCard();
     fireEvent.click(screen.getByTestId('work-run-stop'));
     expect(stop).toHaveBeenCalledTimes(1);
@@ -191,10 +199,10 @@ describe('a mapping run on the work card', () => {
 
   it('stands down while the map conversation shows the run', () => {
     runningMapping();
-    act(() => workRuns.enterMappingStage(FOLDER));
+    act(() => workRuns.enterMappingStage(ROOT));
     renderCard();
     expect(screen.queryByTestId('work-run-card')).not.toBeInTheDocument();
-    act(() => workRuns.leaveMappingStage(FOLDER));
+    act(() => workRuns.leaveMappingStage(ROOT));
     expect(screen.getByTestId('work-run-card')).toHaveAttribute('data-run-kind', 'mapping');
   });
 
@@ -205,7 +213,7 @@ describe('a mapping run on the work card', () => {
     const shown: string[] = [];
     for (let step = 0; step < 20; step += 1) {
       act(() => {
-        workRuns.observeMappingWork(FOLDER, { kind: 'reading', label: null, target: `src/file-${step}.ts`, asking: false }, 132_000 + step * 100);
+        workRuns.observeMappingWork(ROOT, { kind: 'reading', label: null, target: `src/file-${step}.ts`, asking: false }, 132_000 + step * 100);
         vi.advanceTimersByTime(100);
       });
       shown.push(screen.getByTestId('work-run-line').textContent ?? '');
@@ -221,7 +229,7 @@ describe('a mapping run on the work card', () => {
     ['ko', '답을 기다리는 중', 'Claude Agent가 바꾸기 전에 물었어요. 답하면 이어서 진행해요.'],
   ] as const)('waits for an answer with Review and Hide in %s', (locale, title, body) => {
     runningMapping();
-    workRuns.observeMappingWork(FOLDER, ASKING, 140_000);
+    workRuns.observeMappingWork(ROOT, ASKING, 140_000);
     renderCard(locale);
     expect(screen.getByTestId('work-run-title')).toHaveTextContent(title);
     expect(screen.getByTestId('work-run-detail')).toHaveTextContent(body);
@@ -233,7 +241,7 @@ describe('a mapping run on the work card', () => {
   it('opens the map conversation from Review with nothing sent, at once on the map', () => {
     route.pathname = '/topology/';
     runningMapping();
-    workRuns.observeMappingWork(FOLDER, ASKING, 140_000);
+    workRuns.observeMappingWork(ROOT, ASKING, 140_000);
     const opened = vi.fn(() => true);
     const unsubscribe = subscribeAgentChatIntent(opened);
     renderCard();
@@ -245,7 +253,7 @@ describe('a mapping run on the work card', () => {
 
   it('goes to the map from another screen and asks until its conversation opens, still with nothing sent', () => {
     runningMapping();
-    workRuns.observeMappingWork(FOLDER, ASKING, 140_000);
+    workRuns.observeMappingWork(ROOT, ASKING, 140_000);
     renderCard();
     const notYet = vi.fn((_runtimeId: string | null, _prompt: string | null) => false);
     const offMap = subscribeAgentChatIntent(notYet);
@@ -265,7 +273,7 @@ describe('a mapping run on the work card', () => {
     ['ko', '멈췄어요: 마지막 요청에서 새로 올라간 것이 없어요', '120개 중 48개 그대로예요. 에이전트가 한 일은 대화에 있어요.'],
   ] as const)('says a request that put nothing new on the map stopped it, with Continue into the conversation, in %s', (locale, title, body) => {
     runningMapping();
-    workRuns.endMappingBatch(FOLDER, requestEnd(72, 250_000));
+    workRuns.endMappingBatch(ROOT, requestEnd(72, 250_000));
     renderCard(locale);
     expect(screen.getByTestId('work-run-title')).toHaveTextContent(title);
     expect(screen.getByTestId('work-run-detail')).toHaveTextContent(body);
@@ -278,8 +286,8 @@ describe('a mapping run on the work card', () => {
     ['ko', '코드에서 찾은 기능이 모두 지도에 올라갔어요', '기능 120개, 요청 3번, 6분 걸렸어요.'],
   ] as const)('says every ability is on the map once it finished, with Close, in %s', (locale, title, body) => {
     runningMapping();
-    workRuns.endMappingBatch(FOLDER, requestEnd(40, 250_000));
-    workRuns.endMappingBatch(FOLDER, requestEnd(0, 370_000));
+    workRuns.endMappingBatch(ROOT, requestEnd(40, 250_000));
+    workRuns.endMappingBatch(ROOT, requestEnd(0, 370_000));
     renderCard(locale);
     expect(screen.getByTestId('work-run-light')).toHaveAttribute('data-tint', 'finished');
     expect(screen.getByTestId('work-run-title')).toHaveTextContent(title);
@@ -294,7 +302,7 @@ describe('a mapping run on the work card', () => {
       reason: 'a press',
       end: () => {
         workRuns.stopRun(MAPPING_KEY);
-        workRuns.endMappingBatch(FOLDER, requestEnd(54, 250_000, { kind: 'cancelled' }));
+        workRuns.endMappingBatch(ROOT, requestEnd(54, 250_000, { kind: 'cancelled' }));
       },
       title: 'Stopped at 55%',
       body: 'What is already on the map stays. Continue picks up from here.',
@@ -302,7 +310,7 @@ describe('a mapping run on the work card', () => {
     },
     {
       reason: 'a message in the composer',
-      end: () => workRuns.endMappingBatch(FOLDER, { ...requestEnd(60, 250_000), draft: true }),
+      end: () => workRuns.endMappingBatch(ROOT, { ...requestEnd(60, 250_000), draft: true }),
       title: 'Stopped at 50%',
       body: 'Stopped so you can ask. Continue picks up from here.',
       doors: ['work-run-continue', 'work-run-close'],
@@ -310,7 +318,7 @@ describe('a mapping run on the work card', () => {
     {
       reason: 'more requests than estimated',
       end: () => {
-        for (const [index, uncovered] of [70, 68, 66, 64, 62, 60, 58, 56, 54].entries()) workRuns.endMappingBatch(FOLDER, requestEnd(uncovered, 250_000 + index));
+        for (const [index, uncovered] of [70, 68, 66, 64, 62, 60, 58, 56, 54].entries()) workRuns.endMappingBatch(ROOT, requestEnd(uncovered, 250_000 + index));
       },
       title: 'Stopped: this is taking more requests than estimated',
       body: '10 requests sent, 66 of 120 on the map.',
@@ -318,23 +326,40 @@ describe('a mapping run on the work card', () => {
     },
     {
       reason: 'an agent error',
-      end: () => workRuns.endMappingBatch(FOLDER, requestEnd(null, 250_000, { kind: 'failed', usageLimit: false })),
+      end: () => workRuns.endMappingBatch(ROOT, requestEnd(null, 250_000, { kind: 'failed', usageLimit: false })),
       title: 'Claude Agent ended early',
       body: '48 of 120 are on the map. What was already written stays.',
       doors: ['work-run-continue', 'work-run-close'],
     },
     {
       reason: 'a usage limit',
-      end: () => workRuns.endMappingBatch(FOLDER, requestEnd(null, 250_000, { kind: 'failed', usageLimit: true })),
+      end: () => workRuns.endMappingBatch(ROOT, requestEnd(null, 250_000, { kind: 'failed', usageLimit: true })),
       title: 'This agent has hit its usage limit',
       body: '48 of 120 are on the map. Continue when the limit resets, or pick another agent and continue.',
       doors: ['work-run-continue', 'work-run-close'],
     },
     {
+      reason: 'the project note losing its line with more left than one request maps',
+      end: () => workRuns.endMappingBatch(ROOT, requestEnd(null, 250_000)),
+      title: 'Stopped: the project note no longer says what is left',
+      body: 'It last said 48 of 120. Continue reads the code again.',
+      doors: ['work-run-continue', 'work-run-close'],
+    },
+    {
+      reason: 'a draft, read once another folder is open',
+      end: () => {
+        workRuns.endMappingBatch(ROOT, { ...requestEnd(60, 250_000), draft: true });
+        workRuns.enterFolderRoot(OTHER_ROOT);
+      },
+      title: 'Stopped at 50%',
+      body: 'Claude Agent was mapping launch. 60 of 120 are on the map there.',
+      doors: ['work-run-close'],
+    },
+    {
       reason: 'a folder switch',
       end: () => {
-        workRuns.leaveFolder('local:atlas', 250_000);
-        workRuns.endMappingBatch(FOLDER, requestEnd(72, 251_000, { kind: 'cancelled' }));
+        workRuns.enterFolderRoot(OTHER_ROOT);
+        workRuns.endMappingBatch(ROOT, requestEnd(72, 251_000, { kind: 'cancelled' }));
       },
       title: 'Ended when you switched folders',
       body: 'Claude Agent was mapping launch. 48 of 120 are on the map there.',
@@ -352,7 +377,7 @@ describe('a mapping run on the work card', () => {
 
   it('opens the map conversation from Continue and leaves the restart to its row', () => {
     runningMapping();
-    workRuns.endMappingBatch(FOLDER, { ...requestEnd(60, 250_000), draft: true });
+    workRuns.endMappingBatch(ROOT, { ...requestEnd(60, 250_000), draft: true });
     const opened = vi.fn(() => true);
     const unsubscribe = subscribeAgentChatIntent(opened);
     renderCard();

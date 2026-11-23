@@ -364,7 +364,8 @@ function useRailWorkRuns(): { rail: RailWorkRun[]; meaningRunId: number | null }
     if (libraryWaiting) rail.push({ destination: "library", state: "waiting", finished: libraryUnseen });
     else if (ring) rail.push({ destination: "library", state: "running" });
     else if (libraryUnseen > 0) rail.push({ destination: "library", state: "finished", count: libraryUnseen });
-    const mapping = mappingRailRun(folderMappingRun(snapshot, folder));
+    // A mapping run carries the open folder's root path, as the map's conversation keys it.
+    const mapping = snapshot.folderRoot === null ? null : mappingRailRun(folderMappingRun(snapshot, snapshot.folderRoot));
     if (mapping) rail.push(mapping);
     if (scheduledRunning) rail.push({ destination: "automations", state: "running" });
     else if (scheduledUnseen > 0) rail.push({ destination: "automations", state: "finished", count: scheduledUnseen });

@@ -12,8 +12,8 @@ import { WorkProgress } from '@/shared/motion/status-glyphs/WorkProgress';
 import { Button, controlClass } from '@/shared/ui';
 
 import { mappingShare } from '../../../model/use-mapping-run';
+import { useMappingDuration } from './use-mapping-duration';
 
-const MINUTES_PER_HOUR = 60;
 const MS_PER_MINUTE = 60_000;
 
 type RowState = 'notStarted' | MappingRun['phase'];
@@ -24,16 +24,18 @@ type RowAction = 'start' | 'stop' | 'none' | 'continue' | 'close';
 interface MappingRunRowProps {
   /** This folder's run; null before a press and once an ended one is closed. */
   run: MappingRun | null;
-  /** The folder's lines at rest, for the row before a press. */
+  /** The widest project line at rest, for the row before a press. */
   resting: MappingFigures | null;
-  /** The folder's Auto-approve, read as it is now. */
+  /** Auto-approve answers this conversation's write requests now, by the composer's rule. */
   autoApprove: boolean;
+  /** The not-started row stands on one line: its title, its count and Start. */
+  collapsed: boolean;
   /** A press can start a run now: no turn of this conversation runs and the folder is free. */
   canStart: boolean;
   onStart: () => void;
   onStop: () => void;
   onClose: () => void;
-  onHide: () => void;
+  onCollapse: () => void;
 }
 
 function actionOf(run: MappingRun | null): RowAction {
@@ -51,23 +53,16 @@ function actionOf(run: MappingRun | null): RowAction {
   }
 }
 
-function useDuration() {
-  const t = useTranslations('workCard.mapping');
-  return (minutes: number) => (minutes < MINUTES_PER_HOUR
-    ? t('minutes', { minutes: Math.max(1, Math.round(minutes)) })
-    : t('hours', { hours: Math.round(minutes / MINUTES_PER_HOUR) }));
-}
-
 const COUNT_CLASS = 'font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]';
 
 /** The running request, its count on the map and the time left; each part stays whole, and a wrap never leaves a dot at a line's end. */
 function RunningFigures({ run }: { run: MappingRun }) {
   const t = useTranslations('workCard.mapping');
   const locale = useLocale();
-  const duration = useDuration();
+  const duration = useMappingDuration();
   const whole = (value: number) => new Intl.NumberFormat(locale).format(value);
   const share = mappingShare(run.now ?? run.start);
-  const left = remainingMinutes(run.now?.sum.abilitiesUncovered ?? Number.NaN, run.finished);
+  const left = remainingMinutes(run.now?.abilitiesUncovered ?? Number.NaN, run.finished);
   const parts: ReactNode[] = [t('request', { part: run.requestsSent })];
   if (share) {
     parts.push(t.rich('onMap', {
@@ -96,10 +91,10 @@ function useRowCopy(run: MappingRun | null, resting: MappingFigures | null): { t
   const t = useTranslations('workCard.mapping');
   const tTurn = useTranslations('workCard.turn');
   const tChat = useTranslations('acpChat');
-  const duration = useDuration();
+  const duration = useMappingDuration();
   if (!run) {
     const share = mappingShare(resting) ?? { mapped: 0, total: 0, percent: 0 };
-    const uncovered = resting?.sum.abilitiesUncovered ?? 0;
+    const uncovered = resting?.abilitiesUncovered ?? 0;
     const requests = estimateRequests(uncovered);
     return { title: t('startTitle'), body: t('startBody', { ...share, requests, duration: duration(remainingMinutes(uncovered, []) ?? 0) }) };
   }
@@ -124,6 +119,8 @@ function useRowCopy(run: MappingRun | null, resting: MappingFigures | null): { t
           return { title: t('noProgressTitle'), body: t('noProgressBody', { mapped, total }) };
         case 'pastEstimate':
           return { title: t('pastEstimateTitle'), body: t('pastEstimateBody', { sent, mapped, total }) };
+        case 'lineLost':
+          return { title: t('lineLostTitle'), body: mappingShare(run.now ?? run.start) ? t('lineLostBody', { mapped, total }) : t('stoppedBody') };
         case 'agentError':
           return { title: tTurn('endedTitle', { agent }), body: t('agentErrorBody', { mapped, total }) };
         case 'usageLimit':
@@ -140,9 +137,9 @@ function useRowCopy(run: MappingRun | null, resting: MappingFigures | null): { t
  * A change of state eases the row's height from the height last drawn instead of jumping; under
  * reduced motion it changes in place.
  */
-function useEasedHeight(state: RowState) {
+function useEasedHeight(state: RowState | 'collapsed') {
   const hostRef = useRef<HTMLDivElement | null>(null);
-  const drawn = useRef<{ state: RowState; heightPx: number } | null>(null);
+  const drawn = useRef<{ state: RowState | 'collapsed'; heightPx: number } | null>(null);
   const reducedMotion = usePrefersReducedMotion();
   useLayoutEffect(() => {
     const host = hostRef.current;
@@ -164,32 +161,71 @@ function useEasedHeight(state: RowState) {
  * through every state (Start, Stop, Continue, Close), so the control that starts a run stops it.
  * Its count and bar move once per request.
  */
-export function MappingRunRow({ run, resting, autoApprove, canStart, onStart, onStop, onClose, onHide }: MappingRunRowProps) {
+export function MappingRunRow({ run, resting, autoApprove, canStart, collapsed, onStart, onStop, onClose, onCollapse }: MappingRunRowProps) {
   const t = useTranslations('workCard.mapping');
   const tCard = useTranslations('workCard');
   const copy = useRowCopy(run, resting);
   const state: RowState = run ? run.phase : 'notStarted';
+  const oneLine = collapsed && !run;
   const action = actionOf(run);
-  const hostRef = useEasedHeight(state);
+  const hostRef = useEasedHeight(oneLine ? 'collapsed' : state);
   const active = run !== null && isMappingActive(run);
   const fraction = run ? mappingFraction(run) : null;
   const actionWord = { start: t('start'), stop: tCard('stop'), none: tCard('stop'), continue: t('continue'), close: tCard('close') }[action];
   const press = { start: onStart, continue: onStart, stop: onStop, close: onClose, none: undefined }[action];
   const disabled = action === 'none' || ((action === 'start' || action === 'continue') && !canStart);
-  const approvalShown = !run && !autoApprove;
-  const hide = run ? null : (
+  const collapse = (
     <button
       type="button"
-      data-testid="mapping-run-hide"
-      onClick={onHide}
+      data-testid="mapping-run-collapse"
+      onClick={onCollapse}
       className={cn(
         controlClass({ shape: 'link', size: 'sm', tone: 'default', hoverInk: 'strong' }),
         'ml-2 inline min-h-0 whitespace-nowrap align-baseline text-label leading-label',
       )}
     >
-      {t('hideForNow')}
+      {t('showLess')}
     </button>
   );
+  const button = (
+    <Button
+      type="button"
+      size="sm"
+      variant="outline"
+      data-testid="mapping-run-action"
+      data-mapping-action={action}
+      disabled={disabled}
+      onClick={press}
+      className="shrink-0"
+    >
+      {actionWord}
+    </Button>
+  );
+
+  if (oneLine) {
+    const share = mappingShare(resting);
+    return (
+      <div
+        ref={hostRef}
+        data-testid="mapping-run-row"
+        data-mapping-state={state}
+        data-collapsed="true"
+        className="motion-stagger-in relative flex shrink-0 items-center gap-3 overflow-hidden rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-[var(--card-pad)] py-1.5"
+      >
+        <p key="collapsed" className="motion-stagger-fade flex min-w-0 flex-1 items-baseline gap-2">
+          <span data-testid="mapping-run-title" className="shrink-0 text-body leading-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+            {copy.title}
+          </span>
+          {share ? (
+            <span data-testid="mapping-run-body" className="truncate text-label leading-label tabular-nums text-[color:var(--color-text-tertiary)]">
+              {t.rich('onMap', { ...share, count: (chunks) => chunks })}
+            </span>
+          ) : null}
+        </p>
+        {button}
+      </div>
+    );
+  }
 
   return (
     <div
@@ -209,27 +245,15 @@ export function MappingRunRow({ run, resting, autoApprove, canStart, onStart, on
         </p>
         <p className="text-label leading-label tabular-nums text-[color:var(--color-text-tertiary)]">
           <span data-testid="mapping-run-body">{copy.body}</span>
-          {approvalShown ? null : hide}
         </p>
-        {approvalShown ? (
+        {run ? null : (
           <p className="text-label leading-label text-[color:var(--color-text-quaternary)]">
-            <span data-testid="mapping-run-approval">{t('approvalLine')}</span>
-            {hide}
+            <span data-testid="mapping-run-approval">{t(autoApprove ? 'approvalAuto' : 'approvalLine')}</span>
+            {collapse}
           </p>
-        ) : null}
+        )}
       </div>
-      <Button
-        type="button"
-        size="sm"
-        variant="outline"
-        data-testid="mapping-run-action"
-        data-mapping-action={action}
-        disabled={disabled}
-        onClick={press}
-        className="shrink-0"
-      >
-        {actionWord}
-      </Button>
+      {button}
       {active ? (
         <div
           className={cn(

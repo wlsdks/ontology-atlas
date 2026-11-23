@@ -40,7 +40,7 @@ async function requestEnds(page: Page, uncovered: number | null) {
 
 const row = (page: Page) => page.getByTestId('mapping-run-row');
 
-/** The requests the open conversation shows: one line each, never the instruction the agent receives. */
+/** The requests the open conversation shows: one line each; the instruction the agent receives only once asked for. */
 const requestLines = (page: Page) => page.getByTestId('acp-chat-panel').locator('[data-acp-entry="user"]');
 async function expectOneRequestLine(page: Page, part: number) {
   await expect(requestLines(page)).toHaveText([`Map the rest of the code · request ${part}`]);
@@ -50,7 +50,8 @@ async function expectOneRequestLine(page: Page, part: number) {
 async function openMapConversation(page: Page) {
   await page.setViewportSize({ width: 1512, height: 982 });
   await seedFirstRunSeen(page);
-  await installLibraryWorkHarness(page, { files: { 'project.md': projectNote(96), 'sources/architecture.docx': 'Architecture evidence\n' } });
+  // Each request opens a conversation of its own, as a real agent's does, so History has them to group.
+  await installLibraryWorkHarness(page, { files: { 'project.md': projectNote(96), 'sources/architecture.docx': 'Architecture evidence\n' }, listsConversations: true });
   await openFolderFromFirstRun(page, 'en');
   await page.goto('/en/topology/?guides=off');
   await page.getByTestId('topology-vault-agent-toggle').click();
@@ -100,6 +101,10 @@ test.describe('one press maps the rest of the code', () => {
     await press(page);
     await expect(row(page)).toContainText('Request 1');
     await expectOneRequestLine(page, 1);
+    const full = page.getByTestId('acp-chat-panel').getByTestId('acp-chat-request-full');
+    await full.click();
+    await expect(page.getByTestId('acp-chat-panel')).toContainText('Map the next part now');
+    await full.click();
 
     await requestEnds(page, 72);
     await expect.poll(() => prompts(page), { message: 'the second request goes out by itself' }).toBe(2);
@@ -119,6 +124,18 @@ test.describe('one press maps the rest of the code', () => {
     await expect(row(page)).toContainText('80 of 120 abilities on the map (66%)');
     // Three requests, three lines: a request the folder's reload refused would have left a second one.
     await expectOneRequestLine(page, 3);
+    // One run reads as one conversation: the finished requests stand above the live one, and History holds one row.
+    await expect(page.getByTestId('mapping-run-request')).toHaveText([
+      /^Request 1 · 24 abilities put on the map · /,
+      /^Request 2 · 32 abilities put on the map · /,
+    ]);
+    await page.getByTestId('acp-chat-history').click();
+    await expect(page.getByTestId('acp-chat-history-run')).toHaveCount(1);
+    await expect(page.getByTestId('acp-chat-history-run')).toContainText(/^Map the rest of the code · [23] requests/);
+    // The only other row is the conversation the dock opened before the press.
+    await expect(page.getByTestId('acp-chat-history-item')).toHaveCount(1);
+    await expect(page.getByTestId('acp-chat-history-item')).toHaveAttribute('data-session-id', 'library-acp-session-1');
+    await page.getByTestId('acp-chat-history-scrim').click();
 
     await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Library', exact: true }).click();
     await expect(page).toHaveURL(/\/library\//);
@@ -191,6 +208,8 @@ test.describe('one press maps the rest of the code', () => {
     await page.getByTestId('topology-vault-agent-toggle').click();
     await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Library', exact: true }).click();
     await expect(page).toHaveURL(/\/library\//);
+    // The map tile carries the run while it is away from the map, by the folder its driver keys it with.
+    await expect(page.getByTestId('app-nav-rail-ring-map')).toBeVisible();
     await page.getByTestId('library-open-conversation').click();
     await expect(page.getByTestId('acp-folder-busy')).toBeVisible();
     await expect(page.getByTestId('acp-folder-busy')).toContainText('Another conversation is working in this folder.');
@@ -202,7 +221,8 @@ test.describe('one press maps the rest of the code', () => {
     // The run's own new conversation is the one start; the Library's dock started none.
     expect(await starts(page)).toBe(agentsBefore + 1);
 
-    await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Map', exact: true }).click();
+    // While the run goes on, the map tile names its share: "Map: 40% done".
+    await page.getByTestId('app-nav-rail').getByRole('link', { name: /^Map\b/ }).click();
     await expect(page).toHaveURL(/\/topology\//);
     await page.getByTestId('topology-vault-agent-toggle').click();
     await expect(row(page)).toHaveAttribute('data-mapping-state', 'running');

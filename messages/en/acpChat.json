@@ -493,5 +493,13 @@
   "checkAnswerLine": "The check is reported on the Check results page, beside what the app checked itself.",
   "checkAnswerDoor": "Open check results",
   "checkAnswerFull": "The agent's report, verbatim",
-  "folderBusy": "Another conversation is working in this folder. You can ask here when it finishes. Press Stop to end it now."
+  "folderBusy": "Another conversation is working in this folder. You can ask here when it finishes. Press Stop to end it now.",
+  "mapRun": {
+    "requestLine": "Request {part, number} · {gained, plural, =0 {nothing new put on the map} one {# ability put on the map} other {# abilities put on the map}} · {duration}",
+    "earlier": "Earlier requests · {count, number}",
+    "historyRow": "Map the rest of the code · {count, plural, one {# request} other {# requests}}",
+    "listTitle": "Requests to map the rest of the code",
+    "listItem": "Request {part, number}",
+    "close": "Close"
+  }
 }

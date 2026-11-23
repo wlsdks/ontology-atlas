@@ -94,6 +94,8 @@
     "noProgressBody": "It stays at {mapped, number} of {total, number}. The conversation shows what the agent did.",
     "pastEstimateTitle": "Stopped: this is taking more requests than estimated",
     "pastEstimateBody": "{sent, plural, one {# request} other {# requests}} sent, {mapped, number} of {total, number} on the map.",
+    "lineLostTitle": "Stopped: the project note no longer says what is left",
+    "lineLostBody": "It last said {mapped, number} of {total, number}. Continue reads the code again.",
     "agentErrorBody": "{mapped, number} of {total, number} are on the map. What was already written stays.",
     "usageLimitBody": "{mapped, number} of {total, number} are on the map. Continue when the limit resets, or pick another agent and continue.",
     "finishedTitle": "Every ability found in the code is on the map",
@@ -105,7 +107,8 @@
     "startTitle": "Map the rest of the code",
     "startBody": "{mapped, number} of the {total, number} abilities found in the code are on the map ({percent, number}%). About {requests, plural, one {# request} other {# requests}} to your agent, about {duration}.",
     "approvalLine": "Each change waits for your answer. With Auto-approve on, it runs by itself.",
-    "hideForNow": "Hide for now"
+    "approvalAuto": "Changes that only add go through by themselves. Anything else waits for your answer.",
+    "showLess": "Show less"
   },
   "railRunningPercent": "{destination}: {percent, number}% done"
 }

@@ -1,4 +1,4 @@
-import { estimateRequests, type MappingRequestResult } from '@/shared/lib/vault-document/mapping-estimate';
+import { ABILITIES_ONE_REQUEST_REACHES, estimateRequests, type MappingRequestResult } from '@/shared/lib/vault-document/mapping-estimate';
 import type { NotMappedAreas } from '@/shared/lib/vault-document/not-mapped-areas';
 
 import type { TurnRunLine, TurnWorkReport } from './turn-run';
@@ -12,35 +12,39 @@ import type { WorkRunCardState } from './work-run';
 
 export type MappingRunPhase = 'running' | 'asking' | 'stopping' | 'finished' | 'stopped';
 
-export type MappingStopReason = 'press' | 'message' | 'noProgress' | 'pastEstimate' | 'agentError' | 'usageLimit' | 'switched';
-
-export type AbilitiesNotMapped = Pick<NotMappedAreas, 'abilitiesUncovered' | 'abilitiesTotal'>;
+export type MappingStopReason = 'press' | 'message' | 'noProgress' | 'pastEstimate' | 'lineLost' | 'agentError' | 'usageLimit' | 'switched';
 
 /**
- * The summary lines of the folder's project notes. With one project both are its line; with
- * several the card shows the widest project's and progress is judged on the sum.
+ * The summary line of the run's project note. A folder with several projects runs on one, the one
+ * with the most abilities off the map at the press; display, progress and estimate all read it.
  */
-export interface MappingFigures {
-  widest: AbilitiesNotMapped;
-  sum: AbilitiesNotMapped;
-}
+export type MappingFigures = Pick<NotMappedAreas, 'abilitiesUncovered' | 'abilitiesTotal'>;
 
 /** `usageLimit` is `readAcpTrouble(error).kind === 'limit'`, the classifier behind `acpChat.trouble.limit`. */
 export type MappingTurnOutcome = { kind: 'completed' } | { kind: 'cancelled' } | { kind: 'failed'; usageLimit: boolean };
 
 export interface MappingRequestEnd {
   outcome: MappingTurnOutcome;
-  /** The lines read from disk after the turn ended; null when no project note holds one. */
+  /** The project's line read from disk after the turn ended; null when the note holds none or cannot be read. */
   figures: MappingFigures | null;
   /** The composer holds text the person typed. */
   draft: boolean;
   at: number;
+  /** The agent's conversation the request ran in; absent for a request that never reached the agent. */
+  sessionId?: string;
+}
+
+/** One finished request: what it put on the map, how long it took, and the conversation to read it in. */
+export interface MappingFinishedRequest extends MappingRequestResult {
+  sessionId: string | null;
 }
 
 export interface MappingRun {
   id: number;
   folder: string;
   folderName: string;
+  /** The project note the run reads, fixed at the press; null when the folder had no line then. */
+  project: string | null;
   agent: string;
   phase: MappingRunPhase;
   /** Pending while stopping, final once stopped; null otherwise. */
@@ -54,7 +58,7 @@ export interface MappingRun {
   startedAt: number;
   requestStartedAt: number;
   endedAt: number | null;
-  finished: readonly MappingRequestResult[];
+  finished: readonly MappingFinishedRequest[];
   line: TurnRunLine;
   /** When the agent last reported; an unchanged line refreshes it at most once a step. */
   heardAt: number;
@@ -69,8 +73,11 @@ export const MAPPING_SILENCE_LIMIT_MS = 10 * 60_000;
 /** An unchanged line republishes the run no more often than this, so a quiet read never ticks the card. */
 const HEARD_STEP_MS = 60_000;
 
-/** The run stops before a request beyond twice the estimate plus two would be sent. */
-const requestCap = (estimate: number) => 2 * estimate + 2;
+/** No press sends more requests than this, whatever the note says is left. */
+export const MAPPING_REQUESTS_AT_MOST = 100;
+
+/** The run stops before a request beyond twice the estimate plus two, or beyond the ceiling, would be sent. */
+const requestCap = (estimate: number) => Math.min(2 * estimate + 2, MAPPING_REQUESTS_AT_MOST);
 
 export function isMappingActive(run: MappingRun): boolean {
   return run.phase === 'running' || run.phase === 'asking' || run.phase === 'stopping';
@@ -80,6 +87,7 @@ export function beginMappingRun(input: {
   id: number;
   folder: string;
   folderName: string;
+  project: string | null;
   agent: string;
   figures: MappingFigures | null;
   startedAt: number;
@@ -90,7 +98,7 @@ export function beginMappingRun(input: {
     phase: 'running',
     stopReason: null,
     requestsSent: 1,
-    estimate: estimateRequests(figures?.sum.abilitiesUncovered ?? 0),
+    estimate: estimateRequests(figures?.abilitiesUncovered ?? 0),
     start: figures,
     now: figures,
     startedAt,
@@ -136,6 +144,15 @@ export function stopMappingRun(run: MappingRun, reason: MappingStopCause): Mappi
 }
 
 /**
+ * The line is gone: the agent drops it once nothing is left, so that reads as finished only when
+ * one request could have mapped what the line last said was left.
+ */
+function lineGoneStep(run: MappingRun): MappingNextStep {
+  const lastLeft = run.now?.abilitiesUncovered;
+  return lastLeft !== undefined && lastLeft <= ABILITIES_ONE_REQUEST_REACHES ? { kind: 'finished' } : { kind: 'stopped', reason: 'lineLost' };
+}
+
+/**
  * What follows a request's end, the first rule that holds deciding: a Stop, a failed turn, the
  * line gone or at zero, no fewer abilities off the map, the request cap, a draft in the composer.
  */
@@ -143,9 +160,9 @@ export function nextMappingStep(run: MappingRun, end: MappingRequestEnd): Mappin
   if (run.phase === 'stopping') return { kind: 'stopped', reason: run.stopReason ?? 'press' };
   if (end.outcome.kind === 'cancelled') return { kind: 'stopped', reason: 'press' };
   if (end.outcome.kind === 'failed') return { kind: 'stopped', reason: end.outcome.usageLimit ? 'usageLimit' : 'agentError' };
-  if (end.figures === null) return run.now === null ? { kind: 'stopped', reason: 'noProgress' } : { kind: 'finished' };
-  if (end.figures.sum.abilitiesUncovered === 0) return { kind: 'finished' };
-  if (run.now !== null && end.figures.sum.abilitiesUncovered >= run.now.sum.abilitiesUncovered) return { kind: 'stopped', reason: 'noProgress' };
+  if (end.figures === null) return lineGoneStep(run);
+  if (end.figures.abilitiesUncovered === 0) return { kind: 'finished' };
+  if (run.now !== null && end.figures.abilitiesUncovered >= run.now.abilitiesUncovered) return { kind: 'stopped', reason: 'noProgress' };
   if (run.requestsSent >= requestCap(run.estimate)) return { kind: 'stopped', reason: 'pastEstimate' };
   if (end.draft) return { kind: 'stopped', reason: 'message' };
   return { kind: 'continue' };
@@ -155,13 +172,13 @@ export function nextMappingStep(run: MappingRun, end: MappingRequestEnd): Mappin
 export function afterRequest(run: MappingRun, end: MappingRequestEnd): MappingRun {
   if (!isMappingActive(run)) return run;
   const step = nextMappingStep(run, end);
-  const before = run.now?.sum.abilitiesUncovered;
-  const after = end.figures?.sum.abilitiesUncovered;
+  const before = run.now?.abilitiesUncovered;
+  const after = end.figures?.abilitiesUncovered;
   const gained = before === undefined || after === undefined ? 0 : before - after;
   const ended: MappingRun = {
     ...run,
     now: end.figures ?? run.now,
-    finished: [...run.finished, { gained, durationMs: Math.max(0, end.at - run.requestStartedAt) }],
+    finished: [...run.finished, { gained, durationMs: Math.max(0, end.at - run.requestStartedAt), sessionId: end.sessionId ?? null }],
   };
   if (step.kind === 'continue') {
     return {
@@ -187,13 +204,14 @@ export function silentTooLong(run: MappingRun, now: number): boolean {
   return run.phase === 'running' && now - run.heardAt >= MAPPING_SILENCE_LIMIT_MS;
 }
 
-/** Abilities on the map over those found, by the figures the card shows; null before any line was read. */
+/** Abilities on the map over those found, within 0..1; null before any line was read or for one that cannot be true. */
 export function mappingFraction(run: MappingRun): number | null {
   if (run.phase === 'finished') return 1;
   const figures = run.now ?? run.start;
   if (figures === null) return null;
-  const { abilitiesTotal, abilitiesUncovered } = figures.widest;
-  return abilitiesTotal > 0 ? (abilitiesTotal - abilitiesUncovered) / abilitiesTotal : null;
+  const { abilitiesTotal, abilitiesUncovered } = figures;
+  if (!(abilitiesTotal > 0) || !Number.isFinite(abilitiesTotal) || !Number.isFinite(abilitiesUncovered)) return null;
+  return Math.min(1, Math.max(0, (abilitiesTotal - abilitiesUncovered) / abilitiesTotal));
 }
 
 export function hideMappingCard(run: MappingRun): MappingRun {

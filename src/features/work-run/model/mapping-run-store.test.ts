@@ -4,22 +4,24 @@ import { mappingFraction, type MappingFigures } from './mapping-run';
 import { folderMappingRun, libraryRingRun, seatRuns, workCardHoldsSeat } from './use-work-run';
 import { workRuns } from './work-run-store';
 
-const FOLDER = 'local:launch';
-const OTHER = 'local:atlas';
+/** A mapping run's folder is the open folder's root path, as its driver keys it; other runs key the session scope. */
+const FOLDER = '/Users/probe/Ontology Atlas/launch';
+const OTHER = '/Users/probe/Ontology Atlas/atlas';
+const SCOPE = 'local:launch#1';
 const KEY = `mapping:${FOLDER}`;
 
-const one = (uncovered: number, total = 120): MappingFigures => ({
-  widest: { abilitiesUncovered: uncovered, abilitiesTotal: total },
-  sum: { abilitiesUncovered: uncovered, abilitiesTotal: total },
-});
+const one = (uncovered: number, total = 120): MappingFigures => ({ abilitiesUncovered: uncovered, abilitiesTotal: total });
 const begin = (folder = FOLDER, figures: MappingFigures | null = one(96)) =>
-  workRuns.beginMapping({ folder, folderName: folder.slice(6), agent: 'Claude Agent', figures, startedAt: 0 });
+  workRuns.beginMapping({ folder, folderName: folder.split('/').at(-1) ?? folder, project: 'launch', agent: 'Claude Agent', figures, startedAt: 0 });
 const completed = (uncovered: number, at = 120_000) =>
   ({ outcome: { kind: 'completed' } as const, figures: one(uncovered), draft: false, at });
 const mapping = (folder = FOLDER) => folderMappingRun(workRuns.read(), folder);
 const waiting = { kind: 'writing', label: null, target: 'wiki/a.md', asking: true };
 
-beforeEach(() => workRuns.leaveFolder(FOLDER, 0));
+beforeEach(() => {
+  workRuns.leaveFolder(SCOPE, 0);
+  workRuns.enterFolderRoot(FOLDER);
+});
 afterEach(() => workRuns.reset());
 
 describe('a mapping run held by the app session', () => {
@@ -67,18 +69,29 @@ describe('a mapping run held by the app session', () => {
     workRuns.endMappingBatch(FOLDER, { outcome: { kind: 'cancelled' }, figures: one(96), draft: false, at: 1_000 });
     expect(mapping()).toMatchObject({ phase: 'stopped', stopReason: 'message' });
 
+    workRuns.enterFolderRoot(OTHER);
     begin(OTHER);
-    workRuns.leaveFolder(FOLDER, 2_000);
+    workRuns.enterFolderRoot(FOLDER);
     workRuns.stopMappingForMessage(OTHER);
-    workRuns.leaveFolder(OTHER, 3_000);
     expect(mapping(OTHER)).toMatchObject({ stopReason: 'switched' });
+  });
+
+  it('keeps running while the same folder stays open, whatever its session scope says', () => {
+    const stop = vi.fn();
+    begin();
+    workRuns.setMappingStop(FOLDER, stop);
+    workRuns.leaveFolder(SCOPE, 10_000);
+    workRuns.leaveFolder('local:launch#2', 20_000);
+    workRuns.enterFolderRoot(FOLDER);
+    expect(stop).not.toHaveBeenCalled();
+    expect(mapping()?.phase).toBe('running');
   });
 
   it('stops a run of a folder that is no longer open as switched', () => {
     const stop = vi.fn();
     begin();
     workRuns.setMappingStop(FOLDER, stop);
-    workRuns.leaveFolder(OTHER, 50_000);
+    workRuns.enterFolderRoot(OTHER);
     expect(stop).toHaveBeenCalledTimes(1);
     expect(mapping()).toMatchObject({ phase: 'stopping', stopReason: 'switched' });
     workRuns.endMappingBatch(FOLDER, { ...completed(72), outcome: { kind: 'cancelled' } });
@@ -89,10 +102,29 @@ describe('a mapping run held by the app session', () => {
     begin();
     workRuns.closeRun(KEY);
     expect(mapping()).toMatchObject({ phase: 'running', card: 'closed' });
-    workRuns.endMappingBatch(FOLDER, { ...completed(72), figures: null });
+    workRuns.endMappingBatch(FOLDER, completed(0));
     expect(mapping()?.phase).toBe('finished');
     workRuns.closeRun(KEY);
     expect(mapping()).toBeNull();
+  });
+});
+
+describe('the conversations a mapping run sent its requests in', () => {
+  it('keeps each run\'s own, oldest first, once each, after the run ends', () => {
+    const first = begin();
+    workRuns.noteMappingSession(FOLDER, 's-1');
+    workRuns.noteMappingSession(FOLDER, 's-1');
+    workRuns.noteMappingSession(FOLDER, 's-2');
+    workRuns.stopRun(KEY);
+    workRuns.endMappingBatch(FOLDER, { ...completed(72), outcome: { kind: 'cancelled' } });
+    workRuns.noteMappingSession(FOLDER, 's-late');
+    workRuns.closeRun(KEY);
+    const second = begin();
+    workRuns.noteMappingSession(FOLDER, 's-3');
+    expect(workRuns.read().mappingSessions).toEqual([
+      { runId: first?.id, sessionIds: ['s-1', 's-2'] },
+      { runId: second?.id, sessionIds: ['s-3'] },
+    ]);
   });
 });
 

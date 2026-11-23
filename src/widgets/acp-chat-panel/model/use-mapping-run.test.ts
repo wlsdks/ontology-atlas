@@ -5,23 +5,21 @@ import type { AcpTurnCompletion } from '@/features/acp-session';
 import { folderMappingRun, workRuns, type MappingFigures, type TurnWorkReport } from '@/features/work-run';
 
 import {
-  mappingFiguresOf,
   MAPPING_FOLDER_STILL_MS,
   MAPPING_FOLDER_WAIT_MS,
   MAPPING_SILENCE_CHECK_MS,
   MAPPING_SWITCH_AFTER_MS,
   useMappingRun,
+  widestProjectLine,
   type MappingRunDriver,
   type MappingSessionPort,
 } from './use-mapping-run';
 
 const FOLDER = '/Users/probe/launch';
+const OTHER = '/Users/probe/atlas';
 const KEY = `mapping:${FOLDER}`;
 
-const one = (uncovered: number, total = 120): MappingFigures => ({
-  widest: { abilitiesUncovered: uncovered, abilitiesTotal: total },
-  sum: { abilitiesUncovered: uncovered, abilitiesTotal: total },
-});
+const one = (uncovered: number, total = 120): MappingFigures => ({ abilitiesUncovered: uncovered, abilitiesTotal: total });
 
 const mapping = () => folderMappingRun(workRuns.read(), FOLDER);
 
@@ -33,6 +31,7 @@ const advance = (ms: number) => act(async () => {
 /**
  * The agent session as the driver sees it: a send starts a turn at once, and the spec ends it by
  * calling the observer the driver handed back, as the session does. The clock is fake throughout.
+ * The first figures are the press's read of the widest project, the rest that project's reads.
  */
 function harness(readQueue: Array<MappingFigures | null | Promise<MappingFigures | null>>) {
   const sent: string[] = [];
@@ -47,17 +46,31 @@ function harness(readQueue: Array<MappingFigures | null | Promise<MappingFigures
     draft: '',
     limited: false,
     folderFiles: {} as object | null,
+    folderRoot: FOLDER as string | null,
   };
   let completion: ((result: AcpTurnCompletion) => Promise<void>) | null = null;
   let driver: MappingRunDriver | null = null;
   const reads = [...readQueue];
   const readFigures = vi.fn(async () => (reads.length > 1 ? reads.shift() ?? null : reads[0] ?? null));
+  const readProject = vi.fn(async (_project: string) => readFigures());
+  const figures = {
+    widest: async () => {
+      const line = await readFigures();
+      return line ? { project: 'launch', figures: line } : null;
+    },
+    project: readProject,
+  };
   const session = (): MappingSessionPort => ({
     ...state,
+    // Read when the driver acts, as the panel's live session is.
+    get status() {
+      return state.status;
+    },
     lastTurnUpdateAt: null,
     send: async (text: string, line: string) => {
       sent.push(text);
       shown.push(line);
+      state.status = 'thinking';
       completion = driver?.observeTurnStart(turnOf(text)) ?? null;
     },
     newConversation,
@@ -71,9 +84,9 @@ function harness(readQueue: Array<MappingFigures | null | Promise<MappingFigures
       folderName: 'launch',
       agent: 'Claude Agent',
       session: session(),
-      readFigures,
-      request: (figures, part) => ({
-        text: `map the rest: ${figures ? figures.sum.abilitiesUncovered : 'none'} left`,
+      figures,
+      request: (now, part) => ({
+        text: `map the rest: ${now ? now.abilitiesUncovered : 'none'} left`,
         shown: `request ${part}`,
       }),
     });
@@ -87,6 +100,7 @@ function harness(readQueue: Array<MappingFigures | null | Promise<MappingFigures
     const observer = completion;
     completion = null;
     if (!observer) throw new Error('no request of the run is running');
+    if (state.status === 'thinking') state.status = 'ready';
     return observer({ ...turnOf(sent.at(-1) ?? ''), endedAt: '', outcome, stopReason: null, events: [] });
   };
   return {
@@ -96,6 +110,7 @@ function harness(readQueue: Array<MappingFigures | null | Promise<MappingFigures
     newConversation,
     state,
     readFigures,
+    readProject,
     hook,
     settle,
     finishTurn,
@@ -122,7 +137,8 @@ const turnOf = (text: string) => ({ runtimeId: 'claude-acp', sessionId: 's', vau
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date'] });
-  workRuns.leaveFolder(FOLDER, 0);
+  workRuns.leaveFolder('local:launch#1', 0);
+  workRuns.enterFolderRoot(FOLDER);
 });
 afterEach(() => {
   vi.useRealTimers();
@@ -131,7 +147,7 @@ afterEach(() => {
 
 describe('one press sends request after request', () => {
   it('sends each request in a new conversation until the line on disk is gone, each shown as one line', async () => {
-    const run = harness([one(96), one(72), one(40), null]);
+    const run = harness([one(96), one(72), one(30), null]);
     await run.press();
     expect(run.newConversation).toHaveBeenCalledTimes(1);
     expect(run.sent).toEqual(['map the rest: 96 left']);
@@ -141,8 +157,9 @@ describe('one press sends request after request', () => {
     expect(run.newConversation).toHaveBeenCalledTimes(2);
     expect(run.sent.at(-1)).toBe('map the rest: 72 left');
     await run.end();
-    expect(run.sent.at(-1)).toBe('map the rest: 40 left');
+    expect(run.sent.at(-1)).toBe('map the rest: 30 left');
     expect(mapping()).toMatchObject({ phase: 'running', requestsSent: 3 });
+    expect(run.readProject.mock.calls.map(([project]) => project)).toEqual(['launch', 'launch']);
 
     await run.end();
     expect(mapping()).toMatchObject({ phase: 'finished' });
@@ -382,13 +399,143 @@ describe('every stop rule ends the run without another request', () => {
   });
 });
 
-describe('the figures a folder\'s project lines give', () => {
-  it('sums the lines for progress and shows the project with the most left', () => {
-    expect(mappingFiguresOf([
-      { abilitiesUncovered: 30, abilitiesTotal: 200 },
-      null,
-      { abilitiesUncovered: 90, abilitiesTotal: 150 },
-    ])).toEqual({ widest: { abilitiesUncovered: 90, abilitiesTotal: 150 }, sum: { abilitiesUncovered: 120, abilitiesTotal: 350 } });
-    expect(mappingFiguresOf([null])).toBeNull();
+describe('no phase of the driver waits without an end', () => {
+  it('ends the run when the session sits stopped while the next request waits to go out', async () => {
+    const run = harness([one(96), one(72)]);
+    await run.press();
+    run.state.status = 'starting';
+    run.rerender();
+    await run.end();
+    expect(mapping()?.phase).toBe('running');
+    run.state.status = 'idle';
+    run.rerender();
+    await advance(0);
+    expect(mapping()).toMatchObject({ phase: 'stopped', stopReason: 'press' });
+    expect(run.sent).toHaveLength(1);
+  });
+
+  it('ends a request whose session went away without ending its turn', async () => {
+    const run = harness([one(96), one(72)]);
+    await run.press();
+    run.state.status = 'exited';
+    run.rerender();
+    await run.settle();
+    expect(mapping()).toMatchObject({ phase: 'stopped', stopReason: 'agentError' });
+    expect(run.sent).toHaveLength(1);
+  });
+
+  it('ends the request itself when Stop finds a turn the session no longer runs', async () => {
+    const run = harness([one(96), one(72)]);
+    await run.press();
+    run.state.status = 'ready';
+    act(() => run.hook.result.current.stop());
+    await advance(0);
+    expect(run.stopRequest).not.toHaveBeenCalled();
+    expect(mapping()).toMatchObject({ phase: 'stopped', stopReason: 'press' });
+  });
+
+  it('ends the request itself when the silence rule finds a turn the session no longer runs', async () => {
+    const run = harness([one(96), one(72)]);
+    await run.press();
+    run.state.status = 'ready';
+    await advance(10 * 60_000 + MAPPING_SILENCE_CHECK_MS);
+    await run.settle();
+    expect(run.stopRequest).not.toHaveBeenCalled();
+    expect(mapping()).toMatchObject({ phase: 'stopped', stopReason: 'agentError' });
+  });
+
+  it('ends a request that cannot open its conversation once the agent has been silent too long', async () => {
+    const run = harness([one(96), one(72)]);
+    run.newConversation.mockImplementation(() => new Promise<void>(() => {}));
+    await run.press();
+    expect(run.sent).toHaveLength(0);
+    await advance(10 * 60_000 + MAPPING_SILENCE_CHECK_MS);
+    expect(mapping()).toMatchObject({ phase: 'stopped', stopReason: 'agentError' });
+  });
+
+  it.each([
+    ['while a request runs', async (run: ReturnType<typeof harness>) => run.press()],
+    ['while the folder settles', async (run: ReturnType<typeof harness>) => {
+      await run.press();
+      void run.finishTurn();
+      await advance(100);
+    }],
+    ['while the row moves before the next conversation', async (run: ReturnType<typeof harness>) => {
+      await run.press();
+      void run.finishTurn();
+      await run.settle();
+      expect(mapping()?.requestsSent).toBe(2);
+      expect(run.newConversation).toHaveBeenCalledTimes(1);
+    }],
+    ['while the next conversation opens', async (run: ReturnType<typeof harness>) => {
+      await run.press();
+      run.newConversation.mockImplementation(() => new Promise<void>(() => {}));
+      void run.finishTurn();
+      await run.settle();
+      await run.settle();
+      await advance(MAPPING_SWITCH_AFTER_MS);
+    }],
+  ])('ends the run as stopped when its panel goes %s, and sends nothing after', async (_moment, reach) => {
+    const run = harness([one(96), one(72)]);
+    await reach(run);
+    const conversations = run.newConversation.mock.calls.length;
+    run.hook.unmount();
+    expect(mapping()).toMatchObject({ phase: 'stopped', stopReason: 'press' });
+    await advance(MAPPING_FOLDER_WAIT_MS + MAPPING_SWITCH_AFTER_MS);
+    expect(run.newConversation).toHaveBeenCalledTimes(conversations);
+    expect(run.sent).toHaveLength(1);
+  });
+});
+
+describe('the figures a request ends with', () => {
+  it('names a usage limit the session records after the turn has ended', async () => {
+    const run = harness([one(96), one(80)]);
+    await run.press();
+    const ended = run.finishTurn('failed');
+    await advance(0);
+    run.state.limited = true;
+    await run.settle();
+    await act(async () => {
+      await ended;
+    });
+    expect(mapping()).toMatchObject({ phase: 'stopped', stopReason: 'usageLimit' });
+  });
+
+  it('stops with the line lost when the project note no longer holds it and more was left than one request maps', async () => {
+    const run = harness([one(96), null]);
+    await run.press();
+    await run.end();
+    expect(mapping()).toMatchObject({ phase: 'stopped', stopReason: 'lineLost', now: one(96) });
+  });
+
+  it('keeps the run\'s figures when the files granted now belong to another folder', async () => {
+    const run = harness([one(96), one(10)]);
+    await run.press();
+    run.state.folderRoot = OTHER;
+    run.rerender();
+    await run.end();
+    expect(run.readProject).not.toHaveBeenCalled();
+    expect(mapping()?.now).toEqual(one(96));
+  });
+
+  it('keeps the run\'s figures when it ended because the folder was switched', async () => {
+    const run = harness([one(96), one(10)]);
+    await run.press();
+    act(() => workRuns.enterFolderRoot(OTHER));
+    expect(run.stopRequest).toHaveBeenCalledTimes(1);
+    await run.end('cancelled');
+    expect(run.readProject).not.toHaveBeenCalled();
+    expect(folderMappingRun(workRuns.read(), FOLDER)).toMatchObject({ phase: 'stopped', stopReason: 'switched', now: one(96) });
+  });
+});
+
+describe('the project a run reads', () => {
+  it('is the one with the most abilities off the map, never a sum of several', () => {
+    expect(widestProjectLine([
+      { project: 'billing', figures: one(30, 200) },
+      { project: 'empty', figures: null },
+      { project: 'loans', figures: one(90, 150) },
+    ])).toEqual({ project: 'loans', figures: one(90, 150) });
+    expect(widestProjectLine([{ project: 'empty', figures: null }])).toBeNull();
   });
 });

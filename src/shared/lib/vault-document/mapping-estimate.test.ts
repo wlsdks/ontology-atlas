@@ -12,6 +12,10 @@ describe('estimateRequests', () => {
   ])('estimates %i abilities off the map at %i requests', (uncovered, requests) => {
     expect(estimateRequests(uncovered)).toBe(requests);
   });
+
+  it('estimates one request for a count that is not a whole number', () => {
+    for (const broken of [Number.NaN, Number.POSITIVE_INFINITY, 1e20, 2.5]) expect(estimateRequests(broken)).toBe(1);
+  });
 });
 
 describe('remainingMinutes', () => {

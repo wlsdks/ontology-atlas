@@ -12,18 +12,17 @@ import { WorkRunsDialog } from './WorkRunsDialog';
 
 vi.mock('@/i18n/navigation', () => ({ useRouter: () => ({ push: vi.fn() }), usePathname: () => '/topology/' }));
 
-const FOLDER = 'local:launch';
+/** A mapping run carries the open folder's root path, as the map's conversation keys it. */
+const FOLDER = '/Users/probe/Ontology Atlas/launch';
 const KEY = `mapping:${FOLDER}`;
 const CATALOGUES = { en, ko } as const;
 
-const figures = (uncovered: number, total = 120): MappingFigures => ({
-  widest: { abilitiesUncovered: uncovered, abilitiesTotal: total },
-  sum: { abilitiesUncovered: uncovered, abilitiesTotal: total },
-});
+const figures = (uncovered: number, total = 120): MappingFigures => ({ abilitiesUncovered: uncovered, abilitiesTotal: total });
 
 function plantRunning() {
-  workRuns.leaveFolder(FOLDER, 0);
-  workRuns.beginMapping({ folder: FOLDER, folderName: 'launch', agent: 'Claude Agent', figures: figures(96), startedAt: 10_000 });
+  workRuns.leaveFolder('local:launch#1', 0);
+  workRuns.enterFolderRoot(FOLDER);
+  workRuns.beginMapping({ folder: FOLDER, folderName: 'launch', project: 'launch', agent: 'Claude Agent', figures: figures(96), startedAt: 10_000 });
   workRuns.endMappingBatch(FOLDER, { outcome: { kind: 'completed' }, figures: figures(72), draft: false, at: 130_000 });
   workRuns.observeMappingWork(FOLDER, { kind: 'reading', label: null, target: 'src/routes/checkout.ts', asking: false }, 131_000);
 }

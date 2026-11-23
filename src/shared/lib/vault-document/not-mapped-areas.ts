@@ -25,16 +25,16 @@ function uncertaintyLines(body: string): string[] {
 /**
  * The first summary line under `## Uncertainty` (`Not mapped yet: N of M areas, R of T abilities.`, leading
  * its line after an optional `-`, `*` or `+`); null when absent, when the first is in an earlier form without
- * abilities, or when it counts no area or no ability. O(body length).
+ * abilities, or when its counts cannot be true: not whole numbers a double holds exactly, more remaining than
+ * there are, or no area or ability. O(body length).
  */
 export function notMappedAreas(body: string): NotMappedAreas | null {
   const line = uncertaintyLines(body).find((text) => SUMMARY_LINE.test(text));
   const match = line === undefined ? null : SUMMARY_COUNTS.exec(line);
   if (!match) return null;
-  const remaining = Number(match[1]);
-  const total = Number(match[2]);
-  const abilitiesUncovered = Number(match[3]);
-  const abilitiesTotal = Number(match[4]);
+  const counts = match.slice(1, 5).map(Number);
+  if (!counts.every(Number.isSafeInteger)) return null;
+  const [remaining = 0, total = 0, abilitiesUncovered = 0, abilitiesTotal = 0] = counts;
   if (total === 0 || remaining > total || abilitiesTotal === 0 || abilitiesUncovered > abilitiesTotal) return null;
   return { remaining, total, abilitiesUncovered, abilitiesTotal };
 }
