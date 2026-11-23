@@ -19,7 +19,7 @@ import { readFlatGraphTokens } from "../../../flat-graph/tokens";
 import type { FlatGraphPaintTokens } from "../../../flat-graph/flat-graph-shapes";
 import { labelFontFamily } from "../../../render/labels";
 import type { OntologyMapTokens } from "../../../tokens/read-map-tokens";
-import { computeEffectiveCameraScaleMax } from "../target/zoom-range";
+import { computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin, drawsFlatGraph } from "../target/zoom-range";
 import { domainSelectionZoom, elementSelectionZoom, graphSelectionZoom } from "./graph-selection-zoom";
 
 const staleBounds = new WeakMap<DialModel, ReadonlyMap<string, number>>();
@@ -183,11 +183,13 @@ function domainStarMarks(
 /**
  * Where a click selection slides the camera so the detail panel leaves it readable: on the Flat
  * graph the framing above, its zoom-in capped from `zoomBase` (`selectionZoomBase`), elsewhere a
- * sideways nudge until its name clears the panel.
+ * sideways nudge until its name clears the panel. The Flat framing starts no lower than the
+ * camera's zoom-out floor: a map that widened under the selection raises that floor past the zoom
+ * the selection was made at, and a target below it is one the camera stops short of.
  */
 export function selectionSlideTarget(
   world: TopologyWorld, dial: DialWorld | null | undefined, id: string, camera: CameraTarget, viewport: { width: number; height: number },
-  insets: Pick<OntologyMapTokens, "safeInsetLeft" | "safeInsetRight" | "safeInsetTop" | "safeInsetBottom" | "overviewEntryRatio" | "cameraMaxZoomRatio" | "cameraScaleMax">,
+  insets: Pick<OntologyMapTokens, "safeInsetLeft" | "safeInsetRight" | "safeInsetTop" | "safeInsetBottom" | "overviewEntryRatio" | "cameraMaxZoomRatio" | "cameraScaleMax" | "cameraMinZoomRatio" | "cameraScaleMin">,
   overviewScale: number,
   zoomBase: number,
 ): CameraTarget | null {
@@ -197,7 +199,9 @@ export function selectionSlideTarget(
     const free = { minX: insets.safeInsetLeft, maxX: viewport.width - insets.safeInsetRight, minY: insets.safeInsetTop, maxY: viewport.height - insets.safeInsetBottom };
     const entryScale = overviewScale * insets.overviewEntryRatio;
     const maxScale = computeEffectiveCameraScaleMax(entryScale, insets.cameraMaxZoomRatio, insets.cameraScaleMax, world.dialScaleMax ?? undefined);
-    return graphSelectionFrame(world, dial, id, camera, viewport, free, { entryScale, maxScale, zoomBase });
+    const floor = computeEffectiveCameraScaleMin(entryScale, insets.cameraMinZoomRatio, insets.cameraScaleMin, drawsFlatGraph(world));
+    const from = camera.tscale < floor ? { ...camera, tscale: floor } : camera;
+    return graphSelectionFrame(world, dial, id, from, viewport, free, { entryScale, maxScale, zoomBase }) ?? (from === camera ? null : from);
   }
   const span = viewport.width - insets.safeInsetLeft - insets.safeInsetRight;
   return selectionNudgeTarget(camera, node, viewport.width, { left: insets.safeInsetLeft, right: insets.safeInsetRight }, branchSelectionMargin(world, dial, id, camera.tscale, span));
