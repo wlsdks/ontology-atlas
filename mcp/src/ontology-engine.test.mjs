@@ -4970,3 +4970,31 @@ describe('query_ontology growth_plan — the reads a vault asks for', () => {
     }
   });
 });
+
+describe('project_map answer size', () => {
+  it('cuts per-domain lists until a large map answers under 40,000 characters, and says how to get the rest', () => {
+    const domains = Array.from({ length: 12 }, (_, d) => `domains/area-${d}`);
+    const docs = [doc('project', { kind: 'project', title: 'Project', domains })];
+    for (const [d, domain] of domains.entries()) {
+      const capabilities = Array.from({ length: 60 }, (_, c) => `capabilities/area-${d}-ability-${c}`);
+      docs.push(doc(domain, { kind: 'domain', title: `Area ${d}`, capabilities }));
+      for (const slug of capabilities) docs.push(doc(slug, { kind: 'capability', title: `${slug} with a long spoken name`, domain }));
+    }
+    const result = queryCompiledOntology(compileOntology(docs), { operation: 'project_map', slug: 'project', itemLimit: 60 });
+    assert.ok(JSON.stringify(result, null, 2).length <= 40_000, `answered ${JSON.stringify(result, null, 2).length} characters`);
+    assert.equal(result.narrowedToFit.requestedItemLimit, 60);
+    assert.ok(result.narrowedToFit.itemLimit < 60);
+    assert.match(result.narrowedToFit.next, /domain_profile/);
+  });
+
+  it('leaves a map that fits as it was asked for', () => {
+    const docs = [
+      doc('project', { kind: 'project', title: 'Project', domains: ['domains/auth'] }),
+      doc('domains/auth', { kind: 'domain', title: 'Auth', capabilities: ['capabilities/login'] }),
+      doc('capabilities/login', { kind: 'capability', title: 'Login', domain: 'domains/auth' }),
+    ];
+    const result = queryCompiledOntology(compileOntology(docs), { operation: 'project_map', slug: 'project', itemLimit: 60 });
+    assert.equal(result.domains.length, 1);
+    assert.equal(result.narrowedToFit, undefined);
+  });
+});
