@@ -11,8 +11,9 @@
  * newcomer would trip over (a relation note about a node nobody read, a rule with
  * no read lines, a dependency both ways, an entry file with no code, one file for
  * many nodes). Writes and validate_vault report the line,
- * finalize_project_meaning refuses an `answered` it does not support, and every
- * message names the next call.
+ * finalize_project_meaning refuses an `answered` it does not support and a
+ * project that does not keep the measured Not mapped yet line, and every message
+ * names the next call.
  */
 
 import { cachedSurvey } from '../analyze/survey/breadth-map.mjs';
@@ -20,7 +21,16 @@ import { measureAbilities, abilityLabel } from './build-depth/ability-placement.
 import { citeRepair, measureReads, measureRules, readCall } from './build-depth/read-depth.mjs';
 import { dependencyEdges, kindOf } from './build-depth/node-fields.mjs';
 import { measureRoles, roleLabel, ROLE_REPAIR } from './build-depth/role-placement.mjs';
-import { areaCoverage, areaLabel, keepsNotMappedLines, notMappedSummary, openAreaCall } from './build-depth/unmapped-areas.mjs';
+import {
+  areaCoverage,
+  areaLabel,
+  keepsNotMappedLines,
+  mappedPercent,
+  mappingBatch,
+  notMappedLineGap,
+  notMappedLines,
+  openAreaCall,
+} from './build-depth/unmapped-areas.mjs';
 
 export { buildDepthFindings } from './build-depth/findings.mjs';
 export { saysOutlinedOnly } from './build-depth/node-fields.mjs';
@@ -61,21 +71,29 @@ function listed(rows, render) {
 }
 
 /**
- * How many areas are not mapped yet, the largest gaps with the call that opens the
- * first, and the exact lines the project keeps under `## Uncertainty`, one per
- * area listed, so the count the project holds is the server's.
+ * The share of surveyed abilities on the map, the areas not mapped yet largest gap
+ * first, the batch one request maps with the calls that open it, and the exact
+ * lines the project keeps under `## Uncertainty`, so the share the project holds
+ * is the server's.
  */
-function areasSentence(docs, repoRoot, coverage) {
-  const { notMapped, counted } = coverage;
+function areasSentence(docs, repoRoot, coverage, batch) {
+  const { notMapped, counted, abilities } = coverage;
   if (notMapped.length === 0) {
     return keepsNotMappedLines(docs)
       ? `Areas: all ${counted} areas are mapped. Remove the Not mapped yet lines from the project's ## Uncertainty.`
       : null;
   }
-  const keep = [notMappedSummary(notMapped.length, counted), ...notMapped.slice(0, LISTED).map((area) => `- Not mapped yet: ${areaLabel(area)}`)];
-  return `Areas: ${notMapped.length} of ${counted} areas are not mapped yet (fewer than one capability per three abilities the area holds), largest gap first: ${listed(notMapped, areaLabel)}. `
-    + `Map the next: ${openAreaCall(repoRoot, notMapped[0])}, then write one capability per thing a user, an operator or another system gets there, each with its own entry file in path:. `
-    + `Keep exactly these lines under the project's ## Uncertainty, replacing any earlier Not mapped yet lines:\n${keep.join('\n')}\n`;
+  const percent = mappedPercent(coverage);
+  const share = percent === null
+    ? 'Areas: '
+    : `Areas: about ${percent} percent of the ${abilities} abilities the survey found are on the map (an area counts as mapped at one capability per three abilities); `;
+  const project = docs.find((doc) => kindOf(doc) === 'project');
+  const gap = project ? notMappedLineGap(project.body, coverage) : null;
+  return `${share}${notMapped.length} of ${counted} areas are not mapped yet, largest gap first: ${listed(notMapped, areaLabel)}. `
+    + `Map next, in one request: ${batch.map(areaLabel).join(', ')}. Open each: ${batch.map((area) => openAreaCall(repoRoot, area)).join('; ')}. `
+    + 'Then write one capability per thing a user, an operator or another system gets there, each with its own entry file in path:. '
+    + (gap ? `The project ${gap} (not-mapped-line-mismatch); finalize_project_meaning refuses until that line matches. ` : '')
+    + `Keep exactly these lines under the project's ## Uncertainty, replacing any earlier Not mapped yet lines:\n${notMappedLines(coverage).join('\n')}\n`;
 }
 
 /**
@@ -109,6 +127,7 @@ export function measureBuildDepth(docs, repo, reads) {
   const roles = measureRoles(docs, reads, repo?.repoRoot ?? null);
   const coverage = repo ? areaCoverage(docs, repo.survey) : null;
   const unmapped = coverage?.notMapped ?? [];
+  const batch = mappingBatch(unmapped);
   const parts = [];
   if (breadth && breadth.abilities > 0) {
     parts.push(`Breadth, of ${breadth.abilities} abilities the survey lists: ${breadth.node} with their own node, ${breadth.named} named inside a capability or element, ${breadth.excluded} excluded with a reason, ${breadth.unplaced.length} not placed.`);
@@ -117,7 +136,7 @@ export function measureBuildDepth(docs, repo, reads) {
     }
   }
   if (coverage) {
-    const areas = areasSentence(docs, repo.repoRoot, coverage);
+    const areas = areasSentence(docs, repo.repoRoot, coverage, batch);
     if (areas) parts.push(areas);
   }
   if (depth) {
@@ -142,10 +161,26 @@ export function measureBuildDepth(docs, repo, reads) {
     roles,
     unmappedAreas: unmapped,
     areaCoverage: coverage,
+    areaBatch: batch,
     capabilities: capabilities.length,
     dependsOn,
     line: parts.length > 0 ? parts.join(' ') : null,
   };
+}
+
+/**
+ * Why finalize refuses a project whose `## Uncertainty` does not keep the summary
+ * line the measure gives, or null: the app shows the share on the map from that
+ * line. Only a repository surveyed by area with areas not mapped yet needs it.
+ */
+export function notMappedLinesRefusal(projectSlug, projectBody, depth) {
+  const gap = notMappedLineGap(projectBody, depth.areaCoverage);
+  if (!gap) return null;
+  return [
+    `finalize_project_meaning blocked: ${projectSlug} ${gap}, and the app shows how much of the code is on the map from that line. Nothing was written.`,
+    `Next call: patch_concept({"slug":"${projectSlug}", "body": ...}) so the body's ## Uncertainty holds exactly these lines, replacing any earlier Not mapped yet lines, then finalize_project_meaning again:`,
+    ...notMappedLines(depth.areaCoverage),
+  ].join('\n');
 }
 
 /**

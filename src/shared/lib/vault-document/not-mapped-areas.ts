@@ -1,13 +1,15 @@
-/** How many of a repository's surveyed areas have no capabilities of their own yet, as the project records it. */
+/** How much of a repository's surveyed code the project records as not on the map yet: areas, and the abilities in them. */
 export interface NotMappedAreas {
   remaining: number;
   total: number;
+  abilitiesUncovered: number;
+  abilitiesTotal: number;
 }
 
 const UNCERTAINTY_HEADING = /^##\s+Uncertainty\s*$/i;
 const SECTION_END = /^#{1,2}\s/;
 // The exact line the MCP server tells the builder to keep; changing it breaks that contract.
-const NOT_MAPPED_LINE = /Not mapped yet:\s*(\d+)\s+of\s+(\d+)\s+areas?\b/i;
+const NOT_MAPPED_LINE = /Not mapped yet:\s*(\d+)\s+of\s+(\d+)\s+areas?,\s*(\d+)\s+of\s+(\d+)\s+abilities\b/i;
 
 function uncertaintySection(body: string): string | null {
   const lines = body.split('\n');
@@ -18,13 +20,18 @@ function uncertaintySection(body: string): string | null {
   return (end === -1 ? rest : rest.slice(0, end)).join('\n');
 }
 
-/** The first `Not mapped yet: N of M areas.` under `## Uncertainty`; null when absent or not a count of M. O(body length). */
+/**
+ * The first `Not mapped yet: N of M areas, R of T abilities.` under `## Uncertainty`; null when absent,
+ * in an earlier form without abilities, or not a count of M areas and T abilities. O(body length).
+ */
 export function notMappedAreas(body: string): NotMappedAreas | null {
   const section = uncertaintySection(body);
   const match = section === null ? null : NOT_MAPPED_LINE.exec(section);
   if (!match) return null;
   const remaining = Number(match[1]);
   const total = Number(match[2]);
-  if (total === 0 || remaining > total) return null;
-  return { remaining, total };
+  const abilitiesUncovered = Number(match[3]);
+  const abilitiesTotal = Number(match[4]);
+  if (total === 0 || remaining > total || abilitiesTotal === 0 || abilitiesUncovered > abilitiesTotal) return null;
+  return { remaining, total, abilitiesUncovered, abilitiesTotal };
 }

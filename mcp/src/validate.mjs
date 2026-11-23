@@ -70,13 +70,15 @@ export const VAULT_ISSUE_CODE_VALUES = Object.freeze([
   /*
    * Whole-vault build depth (`construction/build-depth.mjs`): a note about code
    * nobody read, a rule with no read lines, an arrow both ways, an entry file with
-   * no code, one file for many nodes. The file checks need a repository root.
+   * no code, one file for many nodes, a project whose Not mapped yet summary line
+   * is not the measured one. The file and area checks need a repository root.
    */
   'relation-note-on-unread',
   'rule-without-read-lines',
   'dependency-both-ways',
   'path-without-code',
   'path-shared',
+  'not-mapped-line-mismatch',
 ]);
 
 export function rawSourceKindIssues(rootPath) {
