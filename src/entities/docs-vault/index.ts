@@ -47,7 +47,7 @@ export type { LibraryModel, LibraryOriginalLink, LibrarySourceRow, LibraryWriteU
 export { countWikiPages, isWikiPage, newestWikiPage, selectWikiPages } from './lib/library/wiki-page-facts';
 export type { LibraryWikiPage } from './lib/library/wiki-page-facts';
 export { countSourceFormats, formatSourceBytes } from './lib/library/source-list-summary';
-export { deriveSourceProgress, recordedInstantMs, recordedLocalDay } from './lib/library/source-progress';
+export { deriveSourceProgress } from './lib/library/source-progress';
 export type { SourceProgress, SourceProgressPoint } from './lib/library/source-progress';
 export {
   candidateKey,
