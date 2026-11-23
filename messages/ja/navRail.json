@@ -16,22 +16,22 @@
   "workStatus": "作業状況",
   "usage": {
     "agentFallback": "エージェント",
-    "tileName": "{agent} の使用量",
+    "tileName": "{agent}の使用量",
     "limitName": {
       "fiveHour": "5時間の上限",
       "weekly": "週間の上限"
     },
-    "limitUsed": "{percent, number}% 使用",
-    "limitFigure": "{limit}: {percent, number}% 使用",
-    "resets": "{time} にリセット",
-    "asOf": "{time} 時点",
-    "noLimits": "{agent} はアカウントの上限を Atlas に送っていません。",
+    "limitUsed": "{percent, number}%使用",
+    "limitFigure": "{limit}: {percent, number}%使用",
+    "resets": "{time}にリセット",
+    "asOf": "{time}時点",
+    "noLimits": "{agent}はアカウントの上限をAtlasに送っていません。",
     "conversation": "この会話",
     "context": "コンテキスト",
-    "contextFull": "{percent, number}% 使用",
-    "contextFigure": "コンテキスト {percent, number}% 使用",
-    "contextTokens": "{size, number} トークン中 {used, number}",
+    "contextFull": "{percent, number}%使用",
+    "contextFigure": "コンテキスト{percent, number}%使用",
+    "contextTokens": "{size, number}トークン中{used, number}",
     "cost": "コスト",
-    "costReported": "{agent} が報告した推定値"
+    "costReported": "{agent}が報告した推定値"
   }
 }

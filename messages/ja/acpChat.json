@@ -503,7 +503,7 @@
     "close": "閉じる"
   },
   "limitNear": {
-    "fiveHour": "5時間の上限の {percent, number}%",
-    "weekly": "週間の上限の {percent, number}%"
+    "fiveHour": "5時間の上限の{percent, number}%",
+    "weekly": "週間の上限の{percent, number}%"
   }
 }

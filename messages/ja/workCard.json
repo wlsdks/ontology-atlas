@@ -80,8 +80,8 @@
   },
   "mapping": {
     "limitAhead": {
-      "fiveHour": "5時間の上限の {percent, number}% を使っています。この実行中に上限に達するかもしれません。",
-      "weekly": "週間の上限の {percent, number}% を使っています。この実行中に上限に達するかもしれません。"
+      "fiveHour": "5時間の上限の{percent, number}%を使っています。この実行中に上限に達するかもしれません。",
+      "weekly": "週間の上限の{percent, number}%を使っています。この実行中に上限に達するかもしれません。"
     },
     "title": "コードの残りをマップに載せています",
     "request": "{part, number}回目の依頼",
