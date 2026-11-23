@@ -62,7 +62,12 @@ service (3,577 Go files).
 1. For a repository surveyed as areas, each area carries the number of abilities the survey
    found in it and the number of capability nodes whose `path:` falls in it (longest area path
    wins). An area is **not mapped yet** when it holds abilities and has fewer than one capability
-   per three of them. Tooling an exclusion line in the project's Uncertainty names is not counted.
+   per three of them; an area holding none is not mapped until a node's path falls in it or a
+   domain names it. An area the project leaves out is not counted: its `## Excludes` names the
+   path, or an Uncertainty line names it and says it is left out (tooling, generated, samples)
+   without saying it is still to open or read. The largest gap is abilities minus three times
+   capabilities, ties by lines. A folder's own files and a row of smaller folders are areas too
+   and are written as the survey labels them.
 2. The Areas sentence of every write result and of `validate_vault` reports "N of M areas are
    not mapped yet", the largest gaps first with both counts, the call that opens the next one,
    and the exact lines to keep under the project's `## Uncertainty`:
@@ -88,6 +93,9 @@ service (3,577 Go files).
 7. The count on the button is read from the project node, like every other next step: the
    answer is in the folder, and a stale count corrects itself on the next press because the
    request rewrites the lines from the server's measure.
+8. With several projects, the step speaks for the one with the most areas left; counts are never
+   summed. The line is read in English in every locale, and the localized requests say to keep
+   it as written. A folder with five concepts or fewer is still offered Build first.
 
 ## Out of scope
 
@@ -122,3 +130,7 @@ service (3,577 Go files).
 ## Revisions
 
 - 2026-11-23: first version.
+- 2026-11-23: decisions 1 and 8 gained what the two slices had to settle: what leaves an area
+  out, how the gap is ordered, the areas that are not one folder, and the choice among several
+  projects. Right after a first build the measure lists nearly every area (36 of 40 on the Java
+  build), since an area with one ability and no capability counts; risk 1 covers it.
