@@ -317,6 +317,8 @@ export async function installLibraryWorkHarness(
       let callbackId = 1;
       const bridgeSessionId = "library-acp-session";
       let sessionId = bridgeSessionId;
+      // The native bridge names each adapter it starts afresh (`acp-{seq}-{pid}`): a stale start's stop must reach only its own.
+      let bridgeStarts = 0;
       const conversations: Array<{ sessionId: string; title?: string; updatedAt: string }> = [];
       let nextMtime = 1_727_000_000_000;
       let promptId: number | string | null = null;
@@ -557,7 +559,7 @@ export async function installLibraryWorkHarness(
           return Promise.resolve({ status: 200, body, host: "127.0.0.1:11434", durationMs: 1, loggedAt: new Date().toISOString() });
         }
         if (command === "secret_status") return Promise.resolve({ provider: args.provider, stored: false, last4: null });
-        if (command === "acp_start") { if (startError) return Promise.reject(new Error(startError)); acpChannel = args.onEvent as { id: number }; acpChannelIndex = 0; return Promise.resolve(bridgeSessionId); }
+        if (command === "acp_start") { if (startError) return Promise.reject(new Error(startError)); acpChannel = args.onEvent as { id: number }; acpChannelIndex = 0; bridgeStarts += 1; return Promise.resolve(`library-acp-bridge-${bridgeStarts}`); }
         if (command === "acp_stop" || command === "start_vault_watch" || command === "ensure_vault_directory") return Promise.resolve(null);
         if (command === "acp_send") { try { const message: unknown = JSON.parse(String(args.line ?? "")); const parsed = record(message); if (parsed) handleClientMessage(parsed); } catch {} return Promise.resolve(null); }
         if (command === "acp_permission_verdict") return Promise.resolve("ask");

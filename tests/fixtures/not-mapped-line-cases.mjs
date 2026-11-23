@@ -27,6 +27,9 @@ export const NOT_MAPPED_LINE_CASES = Object.freeze([
   { name: 'zero abilities, which the server never asks to keep', line: 'Not mapped yet: 2 of 2 areas, 0 of 0 abilities.', expected: null },
   { name: 'zero areas', line: 'Not mapped yet: 0 of 0 areas, 0 of 5 abilities.', expected: null },
   { name: 'more remaining than there are', line: 'Not mapped yet: 9 of 8 areas, 1 of 5 abilities.', expected: null },
+  { name: 'more abilities uncovered than there are', line: 'Not mapped yet: 2 of 3 areas, 31 of 30 abilities.', expected: null },
+  { name: 'a count too large to hold exactly', line: 'Not mapped yet: 2 of 3 areas, 18 of 9007199254740993 abilities.', expected: null },
+  { name: 'a count past what a number holds', line: `Not mapped yet: 2 of 3 areas, 18 of 1${'0'.repeat(400)} abilities.`, expected: null },
   { name: 'the earlier form, one number of areas', line: 'Not mapped yet: 12 of 45 areas.', expected: null },
   { name: 'an area bullet is no summary', line: '- Not mapped yet: billing (12 of 12 abilities not on the map)', expected: null },
   {
