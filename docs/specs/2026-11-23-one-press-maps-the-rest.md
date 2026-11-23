@@ -4,7 +4,7 @@ doc_type: spec
 status: draft
 area: desktop
 date: 2026-11-23
-decisions: [d3ad7753]
+decisions: [a24bde01]
 ---
 
 # One press maps the rest of the code
@@ -36,16 +36,20 @@ far it has come.
    calls stopped themselves at a quarter (`2026-11-20-first-map-at-scale-and-by-hand.md`).
 4. **Progress is the project's summary line**, read from the file at each turn's end:
    T abilities counted, R not on the map. The manifest follows by the watcher and is not read
-   for the decision, since it lands after the turn ends. The line gone after having been there
-   is "finished".
+   for the decision, since it lands after the turn ends. The line gone, or reading R = 0, is
+   "finished" only when the last R read was at most 31 (the most one measured request mapped);
+   a line gone with more left, or a note that cannot be read, stops as `lineLost`.
 5. **Stop rules.** A request that does not lower R; more requests than twice the estimate plus
    two; no update from the agent for ten minutes outside a permission wait; an agent error; a
    usage limit; the folder switched; the person's Stop; the person's own message (text in the
-   composer at a request boundary, or a turn they send). Every stop says why and offers
-   Continue, which is a new run from the folder's state.
+   composer at a request boundary, or a turn they send); the line lost; a request cancelled
+   that nobody stopped. Every stop says why and offers Continue, which is a new run from the
+   folder's state; a run with no line sends its request without the count sentence.
 6. **A waiting permission card is never answered by the app.** The run waits on it with no
-   clock. With the folder's Auto-approve on, the request's additive writes pass as they do for
-   any turn; the control says which holds before the press.
+   clock. With the folder's kept Auto-approve on, adding and changing pass as they do for any
+   turn (`15443720`); a delete, merge, overwrite, commit or finalize still waits. The row reads
+   the kept choice itself, not the on-screen conversation's mode, since every request opens a
+   new conversation, and says which holds before the press.
 7. **One control.** A row above the composer of the map conversation shows whenever the folder
    has abilities off the map or a run exists: it starts, shows the running state, stops and
    continues. The one-request suggestion row is removed. Leaving the map or closing the dock
@@ -81,6 +85,12 @@ same keys in the app's voice. Keys live under `workCard.mapping`; reused keys ar
 | Stopped: usage limit | `acpChat.trouble.limit.title` · {mapped} of {total} are on the map. Continue when the limit resets, or pick another agent and continue. | Continue |
 | Finished | **Every ability found in the code is on the map** · {total} abilities, {sent} requests, {duration}. | `workCard.close` |
 | Folder switched | `workCard.turn.switchedTitle` · {agent} was mapping {folder}. {mapped} of {total} are on the map there. | `workCard.close` |
+| Stopped: line lost | **Stopped: the project note no longer says what is left** · It last said {mapped} of {total}. Continue reads the code again. | Continue |
+| Stopped: cancelled | **Stopped: the request was cancelled before it finished** · Continue picks up from here. | Continue |
+| Not started, Auto-approve on | Adding and changing go through by themselves. Deleting, merging and overwriting wait for your answer. | — |
+| Collapsed | the title, "{percent}% mapped", "Asks first" or "Adds and edits alone", Start; pressing the title restores the row | Start |
+| Each finished request in the transcript | Request {part} · {gained} abilities put on the map · {duration} | opens that conversation |
+| A run in History | Map the rest of the code · {count} requests | opens the list of its requests |
 
 `acpChat.folderBusy` no longer names the Library: "Another conversation is working in this
 folder".
@@ -89,8 +99,9 @@ folder".
 
 - A new conversation on the same agent process instead of a restart.
 - Answering a permission request from the Runs list.
-- A Git checkpoint before a run, grouping a run's conversations in History, a system
-  notification.
+- A Git checkpoint before a run, a system notification.
+- Showing a run's request in a conversation reopened from History: reopening replays no
+  rows the person sent.
 
 ## Acceptance
 
@@ -134,3 +145,6 @@ folder".
   abilities and from two to three minutes per request: the Go chain mapped all 50 left in four
   requests, the Java chain 158 of 361 in twelve, no concept deleted; one split lost a cited
   rule, so the request now tells the agent to carry rules to the concept that holds the code.
+- 2026-11-24: after a second review, the row reads the folder's kept Auto-approve and states
+  what it passes (adding and changing); an unreadable note stops as `lineLost`; Continue after
+  it adopts the line it reads; a cancel nobody pressed has its own reason.
