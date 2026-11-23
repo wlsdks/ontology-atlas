@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { WorkStatusSnapshot, WorktreeRow } from '@/shared/lib/work-status/tauri-work-status';
 import { buildWorkTracks, planRooms, type RoomPlan } from '@/shared/lib/work-status/work-tracks';
-import { AFTER_CRATE, MORU_CAST, ROOM_TALKS, workLoops, ROOM_PROPS, cartLoad, castRooms, moruCharacter, moruPhase, retireeOf, roomIdentity, roomLook, roomOnce, withRetirees, type RoomClip } from './room-look';
+import { AFTER_CRATE, MORU_CAST, ROOM_TALKS, workLoops, cartLoad, castRooms, moruCharacter, moruPhase, retireeOf, roomAlertOf, roomLook, roomOnce, withRetirees, type RoomClip } from './room-look';
 
 const NOW_MS = 1_795_260_000_000;
 
@@ -42,6 +42,15 @@ describe('roomLook', () => {
     expect(roomLook({ kind: 'missing' })).toMatchObject({ clip: 'sigh', crate: 'ghost' });
     expect(roomLook({ kind: 'merged' })).toMatchObject({ running: false, still: true });
     expect(roomLook({ kind: 'unheld', lastCommitAt: null }).cast).toBe('none');
+  });
+
+  it('has a waiting Moru look up, a replied one stand still and neither light the room', () => {
+    expect(roomLook({ kind: 'waiting', on: 'approval' })).toMatchObject({ running: false, clip: 'heads-up', still: false, cast: 'one' });
+    expect(roomLook({ kind: 'waiting', on: 'answer' }).clip).toBe('heads-up');
+    expect(roomLook({ kind: 'replied' })).toMatchObject({ running: false, clip: 'waiting', still: true });
+    expect(roomLook({ kind: 'sessionFailed' })).toMatchObject({ running: false, clip: 'feel-worried', monitorOff: false });
+    expect(roomAlertOf({ kind: 'waiting', on: 'answer' })).toBe('waiting');
+    expect(roomAlertOf({ kind: 'replied' })).toBeNull();
   });
 });
 
@@ -88,15 +97,6 @@ describe('moruPhase', () => {
     for (const phase of phases) expect(Number.isInteger(phase * 24) && phase >= 0 && phase < 1).toBe(true);
     expect(new Set(phases).size).toBeGreaterThan(3);
     expect(moruPhase('feat/a')).toBe(phases[0]);
-  });
-});
-
-describe('roomIdentity', () => {
-  it('keeps a branch its own prop, and spreads the props across branches', () => {
-    const branches = Array.from({ length: 60 }, (_, index) => `feat/branch-${index}`);
-    const identities = branches.map(roomIdentity);
-    expect(roomIdentity('feat/branch-7')).toEqual(identities[7]);
-    expect(new Set(identities.map(identity => identity.prop)).size).toBe(ROOM_PROPS);
   });
 });
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SCREEN_H, SCREEN_ROW_H, WIDE_ROOM_W, layoutBuilding, pairUnit, screenRows, stageCapacity, type Box, type LayoutInput } from './building-layout';
+import { SCREEN_H, MAX_SCREEN_ROWS, SCREEN_ROW_H, SHARED_SCREEN_ROWS, fileColumns, layoutBuilding, listsAreas, pairUnit, screenRows, showsWallFacts, stageCapacity, type Box, type LayoutInput, type ScreenLists } from './building-layout';
 
 const keys = (prefix: string, count: number) => Array.from({ length: count }, (_, index) => `${prefix}${index}`);
 
@@ -23,31 +23,29 @@ describe('layoutBuilding', () => {
     const stage = keys('s', 6).map(key => result.rooms.get(key)!);
     expect(new Set(stage.map(room => room.y)).size).toBe(2);
     expect(new Set(stage.map(room => room.h)).size).toBe(1);
-    // Moru gives way so each screen keeps 400px beside him.
-    expect(stage.every(room => room.size === 'large' && room.w - 20 - 152 * room.unit >= 400)).toBe(true);
+    expect(stage.every(room => room.size === 'large')).toBe(true);
     expect(result.banded).toBe(false);
     expect(result.heading?.kind).toBe('plate');
     expectNoOverlap([...result.rooms.values(), result.shelf!, result.heading!]);
   });
 
   it('fits a one-row stage to what its rooms hold, with the floors right under it', () => {
-    const result = layout({ height: 1020, stage: keys('s', 3), floors: [{ key: 'a', rooms: ['m0'] }], hasShelf: false });
+    const result = layout({ width: 2300, height: 1020, stage: keys('s', 3), stageLists: [{ commits: 5, files: 0, areas: 0 }, { commits: 2, files: 0, areas: 0 }, { commits: 0, files: 0, areas: 0 }], floors: [{ key: 'a', rooms: ['m0'] }], hasShelf: false });
     const stage = keys('s', 3).map(key => result.rooms.get(key)!);
     const mini = result.rooms.get('m0')!;
     expect(stage[0].y).toBe(24);
-    // The screen over its console and the floor, and the height to spare as two more commit rows.
-    expect(stage[0].h).toBe(24 + SCREEN_H + 45 * stage[0].unit + 2 * SCREEN_ROW_H);
+    // The screen, Moru under it on the rail, and two more rows for the five its rooms have to list.
+    expect(stage[0].h).toBe(12 + SCREEN_H + 116 + 2 * SCREEN_ROW_H);
     expect(screenRows(stage[0])).toBe(5);
     expect(mini.y - (stage[0].y + stage[0].h)).toBe(16);
     expectNoOverlap([...result.rooms.values()]);
   });
 
-  it('hangs a narrow room\'s screen above Moru, with room for a head piece under it', () => {
-    const result = layout({ width: 1296, height: 1020, stage: keys('s', 3), hasShelf: false });
-    const room = result.rooms.get('s0')!;
-    expect(room.w).toBeLessThan(WIDE_ROOM_W);
-    expect(room.unit).toBe(2);
-    expect(room.h).toBe(12 + SCREEN_H + 8 + 116 * 2);
+  it('sets a room\'s screen above Moru at any width, who keeps his height under it', () => {
+    for (const width of [1296, 2300]) {
+      const result = layout({ width, height: 1020, stage: keys('s', 3), hasShelf: false });
+      expect(result.rooms.get('s0')!.h).toBe(12 + SCREEN_H + 116);
+    }
   });
 
   it('bands forty worktrees by session under one row of six, all inside the window', () => {
@@ -79,23 +77,17 @@ describe('layoutBuilding', () => {
     const result = layout({ width: 896, height: 620, stage: keys('s', 6), floors: [{ key: 'a', rooms: keys('a', 8) }] });
     const stage = keys('s', 6).map(key => result.rooms.get(key)!);
     expect(Math.min(...stage.map(room => room.w))).toBeGreaterThanOrEqual(260);
-    expect(Math.min(...stage.map(room => room.h))).toBeGreaterThanOrEqual(12 + SCREEN_H + 8 + 116);
+    expect(Math.min(...stage.map(room => room.h))).toBeGreaterThanOrEqual(12 + SCREEN_H + 116);
     expect(result.height).toBeGreaterThan(620);
     expectNoOverlap([...result.rooms.values(), ...result.floors.values(), result.shelf!]);
   });
 
-  it('centres a single room at half the width', () => {
-    const result = layout({ stage: ['only'] });
-    const room = result.rooms.get('only')!;
-    expect(room.w).toBe(882);
-    expect(room.x + room.w / 2).toBeCloseTo(888, 0);
-  });
 });
 
 describe('stageCapacity', () => {
-  it('keeps four wide rooms where two fit side by side, six elsewhere, and one row in a short window', () => {
+  it('keeps four rooms where only two across can list their files, six elsewhere, and one row in a short window', () => {
     expect(stageCapacity(1296, 840)).toBe(4);
-    expect(stageCapacity(1776, 1020)).toBe(6);
+    expect(stageCapacity(1900, 1020)).toBe(6);
     expect(stageCapacity(896, 900)).toBe(6);
     expect(stageCapacity(896, 660)).toBe(3);
   });
@@ -146,22 +138,73 @@ describe('floor rows', () => {
     expect(rows('c', 3)).toEqual([3]);
   });
 
-  it('gives two Moru a scale in half steps that leaves a console screen 400px, and under a hanging screen the largest that fits both apart', () => {
-    expect(pairUnit(882, 3)).toBe(1.5);
-    expect(882 - 20 - 272 * pairUnit(882, 3)).toBeGreaterThanOrEqual(400);
-    expect(pairUnit(1200, 3)).toBe(2.5);
+  it('gives two Moru a scale in half steps, the largest that fits both apart on the rail, up to the room\'s own', () => {
+    expect(pairUnit(882, 3)).toBe(3);
     // The 1440 and 1512 boards: three quarters of the single Moru beside them, both on the floor.
     for (const width of [424, 448]) {
       expect(pairUnit(width, 2)).toBe(1.5);
       expect(218 * pairUnit(width, 2)).toBeLessThanOrEqual(width - 32 - 16);
     }
     expect(pairUnit(320, 1)).toBe(1);
+    expect(pairUnit(200, 1)).toBe(0.5);
   });
 
-  it('draws Moru at a half step in the owner\'s 1368px board, so he is not a speck beside his screen', () => {
-    const result = layout({ width: 1368, height: 820, stage: keys('s', 4), hasShelf: false });
-    const room = result.rooms.get('s0')!;
-    expect(room.unit).toBe(1.5);
-    expect(room.w - 20 - 152 * room.unit).toBeGreaterThanOrEqual(400);
+  it('keeps Moru at his drawn size in a room of any size, so the width goes to the screen', () => {
+    for (const width of [1368, 2400]) {
+      const room = layout({ width, height: 1200, stage: keys('s', 2), hasShelf: false }).rooms.get('s0')!;
+      expect(room.unit).toBe(1);
+    }
+  });
+
+  it('gives a room alone on the stage the whole width, as tall as what it lists and no taller than the window', () => {
+    const lone = (patch: Partial<LayoutInput>) => layout({ width: 1840, height: 1100, stage: ['s0'], hasShelf: false, ...patch });
+    const rowsFor = (lists: Partial<ScreenLists>, patch: Partial<LayoutInput> = {}) => screenRows(lone({ stageLists: [{ commits: 0, files: 0, areas: 0, ...lists }], ...patch }).rooms.get('s0')!);
+    expect(lone({}).rooms.get('s0')).toMatchObject({ x: 0, w: 1840 });
+    expect(rowsFor({ commits: 2, files: 0 })).toBe(3);
+    expect(rowsFor({ commits: 12, files: 0 })).toBe(12);
+    expect(rowsFor({ commits: 99, files: 0 })).toBe(MAX_SCREEN_ROWS);
+    // Its files flow over the screen's columns: forty-eight in three is sixteen rows, with or without commits beside them.
+    expect(rowsFor({ commits: 0, files: 48 })).toBe(16);
+    expect(rowsFor({ commits: 4, files: 48 })).toBe(16);
+    expect(rowsFor({ commits: 4, files: 99 })).toBe(MAX_SCREEN_ROWS);
+    // Beside its commits and the folders its files are in, the files keep two columns: thirty-six is eighteen rows.
+    expect(rowsFor({ commits: 4, files: 36, areas: 1 })).toBe(12);
+    expect(rowsFor({ commits: 4, files: 36, areas: 5 })).toBe(18);
+    const low = lone({ stageLists: [{ commits: 20, files: 0, areas: 0 }], height: 500 }).rooms.get('s0')!;
+    expect(low.y + low.h).toBeLessThanOrEqual(500);
+  });
+
+  it('keeps rooms that share a stage to eight rows, however long one list is', () => {
+    const result = layout({ width: 1900, height: 1100, stage: keys('s', 3), stageLists: [{ commits: 14, files: 0, areas: 0 }, { commits: 1, files: 0, areas: 0 }, { commits: 0, files: 0, areas: 0 }], hasShelf: false });
+    expect(screenRows(result.rooms.get('s0')!)).toBe(SHARED_SCREEN_ROWS);
+  });
+
+  it('flows uncommitted files into as many columns as keep their width, and lists none on a screen too narrow', () => {
+    expect(fileColumns(560, true, false)).toBe(0);
+    expect(fileColumns(604, true, false)).toBe(1);
+    expect(fileColumns(760, true, false)).toBe(1);
+    // A wide screen keeps its three columns beside its commits; a narrower one gives one up to them.
+    expect(fileColumns(1840, true, false)).toBe(3);
+    expect(fileColumns(1840, false, false)).toBe(3);
+    expect(fileColumns(1456, true, false)).toBe(2);
+    // The folders take a column's worth from the files.
+    expect(fileColumns(1840, true, true)).toBe(2);
+    expect(fileColumns(1840, false, true)).toBe(3);
+  });
+
+  it('says a room\'s state on its wall once three rooms across leave the wall beside Moru', () => {
+    const across = (width: number, count: number) => layout({ width, stage: keys('s', count), hasShelf: false }).rooms.get('s0')!.w;
+    expect(showsWallFacts(across(1840, 3))).toBe(true);
+    expect(showsWallFacts(across(1296, 3))).toBe(false);
+    expect(showsWallFacts(across(1296, 2))).toBe(true);
+  });
+
+  it('lists the folders only for a room alone on the stage, with files in two or more, where a column of files still fits', () => {
+    const lists = { commits: 4, files: 36, areas: 5 };
+    expect(listsAreas(1840, lists, true)).toBe(true);
+    expect(listsAreas(1840, lists, false)).toBe(false);
+    expect(listsAreas(1840, { ...lists, areas: 1 }, true)).toBe(false);
+    expect(listsAreas(1100, lists, true)).toBe(false);
+    expect(listsAreas(1100, { ...lists, commits: 0 }, true)).toBe(true);
   });
 });

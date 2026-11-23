@@ -40,7 +40,7 @@ export function MiniRoom({ room, copy, tint, showOwner, character }: { room: Roo
   return (
     <div className={styles.mini} data-lit={look.running}>
       <i aria-hidden className={styles.miniBar} />
-      <div className={styles.niche}>
+      <div className={styles.niche} data-crate={crateOnly}>
         {crateOnly ? (
           <i className={styles.crate} data-kind={look.crate} />
         ) : (
@@ -64,7 +64,7 @@ export function MiniRoom({ room, copy, tint, showOwner, character }: { room: Roo
         ) : null}
       </div>
       <div className={styles.miniCols}>
-        {commits.length > 0 ? <CommitLog commits={commits.slice(0, MINI_LOG_ROWS)} rows={MINI_LOG_ROWS} /> : <span className="flex-1" />}
+        {commits.length > 0 ? <CommitLog commits={commits.slice(0, MINI_LOG_ROWS)} rows={MINI_LOG_ROWS} /> : null}
         {files ? (
           <span className={cn(styles.miniFacts, 'text-label leading-label')}>
             <SwapText value={files.text} />

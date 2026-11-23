@@ -122,6 +122,24 @@ The Local settings file stays in `DENIED_NAMES` for the second exception's
 text reads; only this reader opens it. A new path, or any value, needs a new
 decision record.
 
+### Running the person's Claude Code for its session list
+
+The fifth written exception, for Work status only:
+
+| | |
+|---|---|
+| Run | `claude agents --json`, the first file among `~/.local/bin/claude`, `/opt/homebrew/bin/claude`, `/usr/local/bin/claude`; never a `PATH` lookup, an argument or a path from the page |
+| How | under `/usr/bin/sandbox-exec` with every network operation denied; environment `HOME` and `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1`; working folder Atlas's app data; no input, error output discarded; its process group is killed when it ends, or after 5 s or 1 MiB |
+| When | while Work status is visible, its session-list switch is on (the default) and a Claude Code process is seen: once in 10 s, or 1 s after one appears or ends; one at a time. Switched off, the page asks nothing, Rust holds the choice and refuses an ask, and the last list leaves memory |
+| Returned to the page | how the read went (one word of a closed list), and for a session whose folder lies in a listed worktree: the worktree's id, its pid and one of five states |
+| Never read | a session's `name`, `sessionId` or `id`; any field outside the documented ones makes its entry unknown |
+| Platforms | macOS; no other platform runs it |
+| Gate | `src-tauri/src/work_status/agent_sessions/tests.rs` (`the_program_cannot_open_a_connection`, `a_name_and_a_session_id_reach_no_value`) |
+| Record | `docs/records/decisions/2026-11-23-work-status-session-list-no-network-929c2179-7882-4c40-a4bc-83cfbb2612cf.md` |
+
+Another program, argument or variable, or a run without the sandbox, needs a
+new decision record.
+
 ### Folder watch is latency, not degradation
 
 The app applies the changed paths the OS watcher's `vault-changed` event

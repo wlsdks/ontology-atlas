@@ -18,10 +18,18 @@ fn a_subject_holding_the_separators_stays_one_whole_plain_line() {
          notahash{SEP}1{SEP}dropped\0\
          abcdef0{SEP}1{SEP}fourth\0\
          1111111{SEP}1{SEP}fifth\0\
-         2222222{SEP}1{SEP}sixth is past the five read\0"
+         2222222{SEP}1{SEP}sixth\0"
     );
     let lines = parse_log(&text);
-    assert_eq!(lines.len(), 5);
+    assert_eq!(lines.len(), 6);
+    let more: String = (0..30)
+        .map(|index| format!("{:07x}{SEP}1{SEP}more {index}\0", 0x0abc_0000 + index))
+        .collect();
+    assert_eq!(
+        parse_log(&format!("{text}{more}")).len(),
+        20,
+        "no more than a screen lists"
+    );
     assert_eq!(lines[0].hash, "a1b2c3d");
     assert_eq!(lines[0].at, Some(1_700_000_000));
     assert_eq!(lines[0].subject, "fix: keep a b and tab here");
@@ -155,6 +163,10 @@ fn a_worktree_reads_its_subjects_beyond_the_base_and_its_newest_uncommitted_file
     assert_eq!(subjects, vec!["fix: 두 번째 줄", "feat: first"]);
     assert_eq!(read.uncommitted, Some(2));
     assert_eq!(read.latest_file.as_deref(), Some("src/newest.ts"));
+    let listed: Vec<_> = read.files.iter().map(|file| file.path.as_str()).collect();
+    assert_eq!(listed, vec!["src/newest.ts", "older.md"]);
+    assert!(read.files.iter().all(|file| file.changed_at.is_some()));
+    assert!(!read.on_base);
     assert_ne!(
         read.stamp, fresh.stamp,
         "staging and committing move the stamp"
@@ -165,7 +177,14 @@ fn a_worktree_reads_its_subjects_beyond_the_base_and_its_newest_uncommitted_file
     assert!(stamps.contains_key("main"));
 
     let main_read = read_activity(&main, "main", Some("main")).expect("the main checkout reads");
-    assert_eq!(main_read.commits, Some(vec![]));
+    assert!(main_read.on_base);
+    let base_subjects: Vec<_> = main_read
+        .commits
+        .expect("the base branch reads its own commits")
+        .into_iter()
+        .map(|line| line.subject)
+        .collect();
+    assert_eq!(base_subjects, vec!["base"]);
     assert_eq!(read_activity(&main, "../main", Some("main")), None);
     assert_eq!(read_activity(&main, "absent", Some("main")), None);
     let refused = read_activity(&main, "feat-lines", Some("--output=/tmp/x")).expect("reads");
