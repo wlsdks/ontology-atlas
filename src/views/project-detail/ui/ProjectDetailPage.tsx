@@ -73,6 +73,7 @@ import { ChangedSection } from "./now/ChangedSection";
 import { SECTION_HEADING_CLASS } from "./now/now-parts";
 import { ProjectActions } from "./ProjectActions";
 import { ConstructionReviewPanel } from "./construction-review/ConstructionReviewPanel";
+import { PageHeaderBar } from "@/shared/ui/layout/page-header-bar";
 
 const NO_IDS: ReadonlySet<string> = new Set();
 const NO_STALE_PATHS: ReadonlyMap<string, StaleEvidencePath> = new Map();
@@ -94,27 +95,33 @@ interface Props {
 
 function ProjectDetailShell({
   children,
+  projectCount,
   dock = null,
   dockOpen = false,
   fillsHeight = false,
 }: {
   children: ReactNode;
+  /** Unknown while loading or on a state screen, where the top bar offers the list. */
+  projectCount?: number;
   dock?: ReactNode;
   dockOpen?: boolean;
   fillsHeight?: boolean;
 }) {
+  const t = useTranslations("projectPages.detail");
   const dockCoversPage = useViewportBelow(1280) && dockOpen;
   return (
     <div className="relative flex min-h-full w-full">
       {/* Below `lg` the main reserves the tab bar; from `lg` the frame carries the breath, as `PAGE_FRAME` does. */}
-      <main id="main" tabIndex={-1} inert={dockCoversPage} className={cn("topology-ui-scale min-w-0 flex-1 bg-[color:var(--color-canvas)] px-[max(1.5rem,env(safe-area-inset-left))] pt-[max(1.5rem,env(safe-area-inset-top))] pr-[max(1.5rem,env(safe-area-inset-right))] pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)] md:px-0 md:pt-12 lg:pb-0", fillsHeight && "flex flex-col")}>
+      <main id="main" tabIndex={-1} inert={dockCoversPage} className={cn("topology-ui-scale flex min-w-0 flex-1 flex-col bg-[color:var(--color-canvas)] pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)] lg:pb-0")}>
+        {/* The page's one h1 is the project's name below, so the bar's title is a label. */}
+        <PageHeaderBar frame="page" title={t("topBarProjectsLabel")} titleAs="p" actions={<ProjectDetailTopBar projectCount={projectCount} />} />
         <motion.div
           // A stage brings its own entrance; rising here too would move it twice.
           initial={fillsHeight ? false : { opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={MOTION.base}
           // A named container: with the dock open the column is narrower than the viewport.
-          className={cn("@container/project-page mx-auto w-full max-w-[var(--page-max)] md:pr-[max(2.5rem,env(safe-area-inset-right))] md:pl-[max(2.5rem,env(safe-area-inset-left))] lg:pb-[max(3.5rem,env(safe-area-inset-bottom))]", fillsHeight && "flex flex-1 flex-col")}
+          className={cn("@container/project-page mx-auto w-full max-w-[var(--page-max)] px-[max(1.5rem,env(safe-area-inset-left))] pr-[max(1.5rem,env(safe-area-inset-right))] pt-6 md:pt-10 md:pr-[max(2.5rem,env(safe-area-inset-right))] md:pl-[max(2.5rem,env(safe-area-inset-left))] lg:pb-[max(3.5rem,env(safe-area-inset-bottom))]", fillsHeight && "flex flex-1 flex-col")}
         >
           {children}
         </motion.div>
@@ -154,7 +161,6 @@ function ProjectDetailState({
   const t = useTranslations("projectPages.detail");
   return (
     <ProjectDetailShell fillsHeight>
-      <ProjectDetailTopBar />
       <div className={PAGE_STAGE_FILL}>
         <FeatureStage
           data-testid={testId}
@@ -186,7 +192,6 @@ function ProjectDetailLoading() {
   const t = useTranslations("projectPages.detail");
   return (
     <ProjectDetailShell fillsHeight>
-      <ProjectDetailTopBar />
       <div className={cn(PAGE_STAGE_FILL, "relative")}>
         <WaitStage mark="mascot" delayed data-testid="project-detail-loading" className={PAGE_WAIT_LIFT} title={t("stateLoadingTitle")} />
       </div>
@@ -432,6 +437,7 @@ export function ProjectDetailPage({
 
     return (
       <ProjectDetailShell
+        projectCount={projectsQuery.projects.length}
         dockOpen={agent.route === "agent" && Boolean(agent.runtime && nativeVaultRootPath) && agent.open}
         dock={
           agent.route === "agent" && agent.runtime && nativeVaultRootPath ? (
@@ -451,11 +457,9 @@ export function ProjectDetailPage({
           ) : null
         }
       >
-        <ProjectDetailTopBar projectCount={projectsQuery.projects.length} />
-
         <div
           data-testid="project-detail-identity"
-          className="mt-8 grid min-w-0 grid-cols-1 gap-x-12 gap-y-6 [grid-template-areas:'name'_'text'_'actions'_'check'_'changed'] @5xl/project-page:grid-cols-[minmax(0,var(--measure-prose))_minmax(22rem,1fr)] @5xl/project-page:[grid-template-areas:'name_actions'_'text_check'_'changed_changed'] @[90rem]/project-page:grid-cols-[calc((100%-3rem)*5/12)_minmax(0,1fr)_minmax(0,1fr)] @[90rem]/project-page:[grid-template-areas:'name_actions_actions'_'text_check_changed']"
+          className="grid min-w-0 grid-cols-1 gap-x-12 gap-y-6 [grid-template-areas:'name'_'text'_'actions'_'check'_'changed'] @5xl/project-page:grid-cols-[minmax(0,var(--measure-prose))_minmax(22rem,1fr)] @5xl/project-page:[grid-template-areas:'name_actions'_'text_check'_'changed_changed'] @[90rem]/project-page:grid-cols-[calc((100%-3rem)*5/12)_minmax(0,1fr)_minmax(0,1fr)] @[90rem]/project-page:[grid-template-areas:'name_actions_actions'_'text_check_changed']"
         >
           <div className="min-w-0 [grid-area:name]">
             <div className="flex min-w-0 items-center gap-3">

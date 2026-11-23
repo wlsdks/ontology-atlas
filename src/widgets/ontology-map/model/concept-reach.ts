@@ -28,6 +28,8 @@ export interface ConceptReach {
   neededBy: ReachRow[];
   /** `relates` either way and `is_a` toward the broader end: lines that name no dependency. */
   other: ReachRow[];
+  /** A domain's capabilities and every element under it, the numbers its map label shows; absent otherwise. */
+  domainUnits?: { capabilities: number; elements: number };
 }
 
 const byLabel = (a: ReachRow, b: ReachRow) => a.label.localeCompare(b.label);
@@ -78,6 +80,10 @@ export function readConceptReach(
       needs: partners.needs.map((p) => row(p.domainId, "needs", p.links)).sort(byLinks),
       neededBy: partners.usedBy.map((p) => row(p.domainId, "neededBy", p.links)).sort(byLinks),
       other,
+      domainUnits: {
+        capabilities: tree.capabilities.filter((c) => tree.capabilityDomain.get(c.id) === conceptId).length,
+        elements: tree.domainElementCount.get(conceptId) ?? 0,
+      },
     };
   }
   return {

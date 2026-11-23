@@ -1,7 +1,8 @@
 {
   "keyCapability": "역량",
+  "keyElement": "요소",
   "keyDependency": "의존",
-  "keyStale": "! 노란색 · 근거 재확인 필요",
+  "keyStale": "근거 재확인 필요",
   "keySelection": "밝은 개념 · 선택한 개념과 직접 관계",
   "units": "역량 {capabilities, number} · 요소 {elements, number}",
   "stale": "오래됨 {count, number}",

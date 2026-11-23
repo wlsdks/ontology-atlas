@@ -17,17 +17,15 @@ beforeEach(() => {
 });
 
 describe("SearchHint", () => {
-  it("names the map-view picker and describes the current map view in Help", () => {
+  it("names the map-view picker and describes the current map view in its tooltip", async () => {
     window.localStorage.setItem("atlas.appearance.view3d", "on");
 
     render(<SearchHint onOpenSearch={vi.fn()} onRelayout={vi.fn()} />);
 
     const picker = screen.getByTestId("topology-view-3d");
     expect(picker).toHaveAccessibleName("Map view: 3D");
-    expect(picker).toHaveAttribute(
-      "title",
-      "Choose a map view. Current: 3D.",
-    );
+    fireEvent.focus(picker);
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("Choose a map view. Current: 3D.");
     // With 3D on, the chip names the view: the indigo tint alone cannot
     // say which view this is once the labels fade and the choice survives a reload.
     expect(picker).toHaveTextContent("3D");

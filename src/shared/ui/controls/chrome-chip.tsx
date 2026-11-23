@@ -1,6 +1,7 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { cn } from '@/shared/lib/cn';
 import { CONTROL_PRESS_TRAVEL, CONTROL_TRANSITION } from '@/shared/ui/control-class';
+import { Tooltip } from '@/shared/ui/hints/tooltip';
 
 /**
  * The labelled chip tier of the chrome system, sharing `ChromeTile`'s surface.
@@ -45,7 +46,8 @@ export const CHROME_CHIP_COMPACT_BELOW_XL =
   'max-xl:w-[var(--chrome-tile-size)] max-xl:px-0';
 
 export const ChromeChip = forwardRef<HTMLButtonElement, ChromeChipProps>(
-  ({ icon, badge, kbd, active, compact, children, className, ...rest }, ref) => (
+  ({ icon, badge, kbd, active, compact, children, className, title, ...rest }, ref) => {
+    const chip = (
     <button
       ref={ref}
       type="button"
@@ -80,6 +82,9 @@ export const ChromeChip = forwardRef<HTMLButtonElement, ChromeChipProps>(
         </span>
       ) : null}
     </button>
-  ),
+    );
+    // The styled tooltip shows at once and on keyboard focus, where a native `title` waits and is unstyled.
+    return title ? <Tooltip content={title} side="bottom">{chip}</Tooltip> : chip;
+  },
 );
 ChromeChip.displayName = 'ChromeChip';

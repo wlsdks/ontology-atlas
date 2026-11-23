@@ -2,6 +2,7 @@ import { forwardRef, type AnchorHTMLAttributes, type ButtonHTMLAttributes, type 
 import { Link } from '@/i18n/navigation';
 import { cn } from '@/shared/lib/cn';
 import { CONTROL_PRESS_TRAVEL, CONTROL_TRANSITION } from '@/shared/ui/control-class';
+import { Tooltip } from '@/shared/ui/hints/tooltip';
 
 /**
  * The square icon button of the chrome system. Presentational; it enforces the `--chrome-*`
@@ -76,6 +77,9 @@ export const ChromeTile = forwardRef<HTMLButtonElement | HTMLAnchorElement, Chro
       active && ACTIVE_CLASS,
       className,
     );
+    // A labelled tile already names itself; an empty title means the caller wraps its own tooltip.
+    const withTooltip = (tile: React.ReactElement) =>
+      label || !title ? tile : <Tooltip content={title} side="bottom">{tile}</Tooltip>;
     const content = label ? (
       <>
         {icon}
@@ -86,31 +90,29 @@ export const ChromeTile = forwardRef<HTMLButtonElement | HTMLAnchorElement, Chro
     );
 
     if (href) {
-      return (
+      return withTooltip(
         <Link
           ref={ref as React.Ref<HTMLAnchorElement>}
           href={href}
-          title={label ? undefined : title}
           aria-label={label ? undefined : ariaLabel}
           className={resolvedClassName}
           {...(rest as AnchorHTMLAttributes<HTMLAnchorElement>)}
         >
           {content}
-        </Link>
+        </Link>,
       );
     }
 
-    return (
+    return withTooltip(
       <button
         ref={ref as React.Ref<HTMLButtonElement>}
         type="button"
-        title={label ? undefined : title}
         aria-label={label ? undefined : ariaLabel}
         className={resolvedClassName}
         {...(rest as ButtonHTMLAttributes<HTMLButtonElement>)}
       >
         {content}
-      </button>
+      </button>,
     );
   },
 );

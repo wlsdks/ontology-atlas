@@ -1,7 +1,8 @@
 {
   "keyCapability": "Capability",
+  "keyElement": "Element",
   "keyDependency": "Depends on",
-  "keyStale": "! Amber · evidence needs rechecking",
+  "keyStale": "Evidence needs rechecking",
   "keySelection": "Bright · selected and directly related",
   "units": "{capabilities, plural, one {# capability} other {# capabilities}} · {elements, plural, one {# element} other {# elements}}",
   "stale": "{count, number} stale",

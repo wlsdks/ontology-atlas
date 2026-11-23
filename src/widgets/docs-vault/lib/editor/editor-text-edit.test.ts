@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { insertLinkEdit, prefixLineEdit, stripFrontmatterBlock, wrapSelectionEdit } from './editor-text-edit';
+import { bodyStartOffset, insertLinkEdit, prefixLineEdit, stripFrontmatterBlock, wrapSelectionEdit } from './editor-text-edit';
+
+describe('bodyStartOffset', () => {
+  it('lands on the first prose line after the frontmatter and its blank lines', () => {
+    const content = '---\nkind: capability\n---\n\n# Title\n';
+    expect(content.slice(bodyStartOffset(content))).toBe('# Title\n');
+  });
+
+  it('starts at the top of a document without frontmatter', () => {
+    expect(bodyStartOffset('# Title')).toBe(0);
+  });
+});
 
 describe('wrapSelectionEdit', () => {
   it('wraps the selection and selects the wrapped words', () => {

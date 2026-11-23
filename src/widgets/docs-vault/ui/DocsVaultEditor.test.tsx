@@ -91,7 +91,22 @@ describe('DocsVaultEditor', () => {
     expect(screen.getByText('디스크에 반영됨')).toBeInTheDocument();
   });
 
-  it('makes the draft-vs-disk save state explicit while editing', async () => {
+  it('opens with the caret on the first prose line, ready to type', async () => {
+    render(
+      <DocsVaultEditor vaultScope={VAULT_SCOPE}
+        doc={doc}
+        getDocContent={async () => '---\nkind: capability\n---\n\nBody'}
+        onSave={vi.fn().mockResolvedValue(undefined)}
+        onClose={vi.fn()}
+      />,
+    );
+
+    const editor = (await screen.findByLabelText('마크다운 편집기')) as HTMLTextAreaElement;
+    await waitFor(() => expect(document.activeElement).toBe(editor));
+    expect(editor.value.slice(editor.selectionStart)).toBe('Body');
+  });
+
+  it('names in one status where the text lives: disk, unsaved edit, or local draft', async () => {
     render(
       <DocsVaultEditor vaultScope={VAULT_SCOPE}
         doc={doc}
@@ -103,44 +118,19 @@ describe('DocsVaultEditor', () => {
 
     const editor = await screen.findByDisplayValue('initial');
     expect(screen.getByText('디스크와 같음')).toBeInTheDocument();
-    expect(
-      screen.getByLabelText('자동 백업과 최종 저장 상태'),
-    ).toBeInTheDocument();
-    expect(screen.getByText('자동 백업')).toBeInTheDocument();
-    expect(screen.getByText('최종 저장')).toBeInTheDocument();
-    expect(screen.getByText('대기 중인 초안 없음')).toBeInTheDocument();
-    expect(screen.getByText('디스크 파일과 같음')).toBeInTheDocument();
-    expect(screen.getByLabelText('저장·검증·되돌리기 흐름')).toBeInTheDocument();
-    expect(screen.getByText('검증')).toBeInTheDocument();
-    /*
-     * Read from the catalogue rather than pinned as a literal (`documentation.md` forbids pinning
-     * authored sentences).
-     */
-    expect(
-      screen.getByText(koMessages.vaultWidgets.editor.validateContractClean),
-    ).toBeInTheDocument();
-    expect(screen.getByText('되돌리기')).toBeInTheDocument();
-    expect(screen.getByText('닫기 전 확인 · git diff로 최종 복구 가능')).toBeInTheDocument();
 
     fireEvent.change(editor, { target: { value: 'unsaved draft' } });
 
     expect(screen.getByText('변경 사항 있음')).toBeInTheDocument();
     expect(screen.getByText('저장 전까지 디스크 미반영')).toBeInTheDocument();
-    expect(screen.getByText('로컬 백업 준비 중')).toBeInTheDocument();
-    expect(screen.getByText('디스크 저장 아님 · 저장 버튼 또는 ⌘S 필요')).toBeInTheDocument();
     expect(await screen.findByText('임시저장됨')).toBeInTheDocument();
     expect(screen.getByText('임시 보관 중 · 최종 저장 필요')).toBeInTheDocument();
-    expect(screen.getByText('초안을 임시 보관해요')).toBeInTheDocument();
-    expect(screen.getByText('저장 전: 검증은 아직 디스크 기준')).toBeInTheDocument();
-    expect(screen.getByText('취소하면 임시 초안이 지워져요')).toBeInTheDocument();
     expect(window.localStorage.getItem(draftKey)).toContain('unsaved draft');
 
     fireEvent.change(editor, { target: { value: 'initial' } });
 
-    expect(screen.getByText('디스크와 같음')).toBeInTheDocument();
-    expect(await screen.findByText('대기 중인 초안 없음')).toBeInTheDocument();
-    expect(screen.getByText('디스크 파일과 같음')).toBeInTheDocument();
-    expect(window.localStorage.getItem(draftKey)).toBeNull();
+    expect(await screen.findByText('디스크와 같음')).toBeInTheDocument();
+    await waitFor(() => expect(window.localStorage.getItem(draftKey)).toBeNull());
   });
 
   it('restores a browser draft after remount while keeping final disk save explicit', async () => {

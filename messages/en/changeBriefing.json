@@ -26,6 +26,8 @@
   "noVault": "Open a folder to see the commit history of its code folder.",
   "noProject": "This folder has no project to show commit history for.",
   "sourceUnavailable": "Cannot read the connected code folder. Check its connection and folder permission, then try again.",
+  "noSource": "No code folder is connected to this ontology folder. Choose a Git repository and its commits appear grouped by capability.",
+  "sourceUngranted": "Atlas has no permission to read the connected code folder. Choose the same folder again to grant it.",
   "openProjects": "Open Projects",
   "retry": "Try again",
   "noHistory": "This repository has no commits to read.",
