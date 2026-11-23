@@ -95,7 +95,7 @@ describe('StoredHereSettings', () => {
     confirm('app-settings-vault-index-delete');
 
     await waitFor(() => expect(bridge.clear).toHaveBeenCalledWith('/vaults/atlas'));
-    expect(row).toHaveTextContent("Deleted this folder's index and its search by meaning.");
+    await waitFor(() => expect(row).toHaveTextContent("Deleted this folder's index and its search by meaning."));
     await waitFor(() => expect(vectors.forget).toHaveBeenCalledWith('/vaults/atlas'));
   });
 
