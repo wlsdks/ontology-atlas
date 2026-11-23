@@ -101,6 +101,8 @@ interface LastFrame {
   concepts: number;
   domains: number;
   lineKinds: number;
+  /** The frame time the marks were stepped to. */
+  drawnAt: number;
 }
 
 let last: LastFrame | null = null;
@@ -196,7 +198,7 @@ export function paintDialFrame(input: DialFrameInput): DialFrameResult {
     disclosure: { capAlpha: disclosure.capAlpha, elementsAlpha: disclosure.elementsAlpha, entered: disclosure.entered, resolved: disclosure.resolved },
     zoomRatio: input.zoomRatio, domainAppear: input.domainAppear, freeRect: { ...input.freeRect }, origin: input.toScreen(0, 0), scale: input.scale,
     rings: scene.rings, clusters: clusterProbesOf(scene), placement: { state: placement.state, held: placement.held },
-    concepts: dialConceptTotal(model), domains: model.domains.length, lineKinds: FLAT_LINE_BITS.rest,
+    concepts: dialConceptTotal(model), domains: model.domains.length, lineKinds: FLAT_LINE_BITS.rest, drawnAt: input.now,
   };
   return result;
 }
@@ -211,7 +213,7 @@ export function recordDialFrame(input: DialFrameInput, result: DialFrameResult, 
     disclosure: { capAlpha: 1, elementsAlpha: result.tier === "element" ? 1 : 0, entered: null, resolved: true },
     zoomRatio: input.zoomRatio, domainAppear: input.domainAppear, freeRect: { ...input.freeRect }, origin: input.toScreen(0, 0), scale: input.scale,
     rings: scene.rings, clusters: clusterProbesOf(scene), placement: { state: placement.state, held: placement.held },
-    concepts: dialConceptTotal(model), domains: model.domains.length, lineKinds,
+    concepts: dialConceptTotal(model), domains: model.domains.length, lineKinds, drawnAt: input.now,
   };
 }
 
@@ -453,6 +455,7 @@ export function describeLastDialFrame(viewportWidth: number, viewportHeight: num
         : null;
     return {
         owns: true,
+        drawnAt: last.drawnAt,
         zoomRatio: last.zoomRatio,
         tier: result.tier,
         inkMix: result.inkMix,

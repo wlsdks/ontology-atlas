@@ -211,6 +211,8 @@ export interface DialFrameResult {
   light: DialLightFrame; inkMix: number; chordPresence: number; marks: DialMarks;
 }
 export interface DialProbe {
+  /** The frame time the last drawn frame stepped its marks to: a sampler pairs what it reads with this, not its own frame's time. */
+  drawnAt: number;
   owns: boolean; zoomRatio: number; tier: "circuit" | "element"; inkMix: number; domainAppear: number; freeRect: Box;
   flows: { key: string; a: string; b: string; ab: number; ba: number; total: number; relatesOnly: boolean; drawn: boolean; widthPx: number; numeral: string | null;
     }[];
