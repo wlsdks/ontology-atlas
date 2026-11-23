@@ -262,7 +262,7 @@ describe("a selection framed between both panels", () => {
   });
 
   it.each([
-    ["docs", 1100, 700, docsManifest], ["docs", 1280, 800, docsManifest], ["docs", 1512, 949, docsManifest], ["docs", 1920, 1080, docsManifest],
+    ["docs", 1024, 680, docsManifest], ["docs", 1280, 800, docsManifest], ["docs", 1512, 949, docsManifest], ["docs", 1920, 1080, docsManifest],
     ["storefront", 1100, 700, storefrontManifest], ["storefront", 1280, 800, storefrontManifest], ["storefront", 1410, 840, storefrontManifest],
   ])("pans a domain's star off the free map's edge so each member's one-line name it leaves off, on the side facing away from the domain, is one the star had no width left for, in the %s vault at %ix%i", (_, width, height, manifest) => {
     const map = vaultMap(manifest, { width, height });
