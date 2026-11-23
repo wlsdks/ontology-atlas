@@ -41,6 +41,7 @@ const subscribeToRuntime = () => () => {};
 /** Prerender has no window, so the answer is **unknown** — never assume `false` (web). */
 const getServerRuntimeSnapshot = (): boolean | null => null;
 import type { NavRailContextHrefs } from "../model/shell-slot-context";
+import { AgentUsageTile } from "./AgentUsageTile";
 import { controlClass } from '@/shared/ui/control-class';
 
 export interface AppNavRailProps {
@@ -336,6 +337,8 @@ export function AppNavRail({
             />
           </Link>
         ) : null}
+        {/* Only the app runs an agent inside Atlas, so only the app has usage to show. */}
+        {desktopRuntime === true ? <AgentUsageTile /> : null}
         {settingsSlot}
       </div>
     </aside>

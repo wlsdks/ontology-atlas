@@ -1,8 +1,9 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
 import type { MouseEventHandler, ReactNode } from "react";
 import koMessages from "../../../../messages/ko.json";
+import { agentUsage } from "@/entities/agent-usage";
 import { beginMapNavigation, cancelMapNavigation } from "@/shared/lib/navigation/map-navigation-pending";
 import { AppNavRail } from "./AppNavRail";
 
@@ -268,5 +269,20 @@ describe("Git destination preservation", () => {
   it("caps three-digit counts at 9+ to protect tile geometry", () => {
     renderRail(<AppNavRail gitDirtyCount={40} />);
     expect(screen.getByTestId("app-nav-rail-badge-git")).toHaveTextContent("9+");
+  });
+
+  it("shows the agent usage tile in the app once the agent reports, and never on the web", () => {
+    act(() => agentUsage.record({ runtimeId: "claude-acp", name: null }, { sessionId: "s-1", context: { usedTokens: 1, windowTokens: 10 }, cost: null, limits: {} }));
+    try {
+      const web = renderRail();
+      expect(screen.queryByTestId("agent-usage-tile")).not.toBeInTheDocument();
+      web.unmount();
+      (globalThis as { isTauri?: boolean }).isTauri = true;
+      renderRail();
+      expect(within(screen.getByTestId("app-nav-rail-utility-tier")).getByTestId("agent-usage-tile")).toBeInTheDocument();
+    } finally {
+      delete (globalThis as { isTauri?: boolean }).isTauri;
+      act(() => agentUsage.reset());
+    }
   });
 });

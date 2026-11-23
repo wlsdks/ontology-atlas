@@ -41,6 +41,18 @@ While a turn runs, the work stage's count line says what the turn has written
 and removals are not counted) in place of the call count, beside the reported
 plan; the turn's elapsed time stays in the composer's status words.
 
+The agent's own usage reports, ACP `usage_update`, are the only source of the
+usage figures (`src/features/acp-session/model/session-updates/usage-update.ts`).
+Claude Agent sends its context window, a session cost estimate at a turn's end,
+and, under `_meta["_claude/rateLimit"]`, the Agent SDK's `SDKRateLimitInfo`:
+`utilization` as a fraction of a window and `resetsAt` in Unix seconds, for the
+limiting window and in `unifiedWindows` for every window. Atlas draws the
+5-hour and weekly windows; Codex keeps its account limits inside its adapter,
+so it shows tokens only. A malformed part is dropped and the rest still count.
+The latest figures per agent live in memory (`src/entities/agent-usage/`) and
+change only when an update arrives: no timer, no file, no request of Atlas's
+own. The rail tile, the composer's limit note and the mapping row read them.
+
 - **List** — Tools actually verified on this device are shown first, others are collapsed.
 - **Connection check** — Re-evaluate eight steps (does tool exist · can it launch · does it ask outside folder · is downloaded item intact · app-side settings · credential link · old login records · login). **Fixable things are fixed right there.** For unfixable ones, write what the human needs to do.
   CLI and Keychain probes drain stdout while the command runs, accept at most

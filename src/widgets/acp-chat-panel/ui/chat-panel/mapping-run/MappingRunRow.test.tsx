@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import en from '../../../../../../messages/en.json';
 import ko from '../../../../../../messages/ko.json';
+import type { LimitInForce } from '@/entities/agent-usage';
 import { folderMappingRun, workRuns, type MappingFigures, type MappingRequestEnd, type MappingRun } from '@/features/work-run';
 
 import { MappingRunRow } from './MappingRunRow';
@@ -25,6 +26,7 @@ function renderRow(run: MappingRun | null, options: {
   canStart?: boolean;
   resting?: MappingFigures | null;
   collapsed?: boolean;
+  limitAhead?: LimitInForce | null;
 } = {}) {
   const on = handlers();
   render(
@@ -34,6 +36,7 @@ function renderRow(run: MappingRun | null, options: {
         resting={options.resting === undefined ? figures(96) : options.resting}
         autoApprove={options.autoApprove ?? false}
         canStart={options.canStart ?? true}
+        limitAhead={options.limitAhead ?? null}
         collapsed={options.collapsed ?? false}
         {...on}
       />
@@ -67,7 +70,7 @@ describe('before a press the row offers Start', () => {
   it('states the count, the estimate and, with Auto-approve off, that each change waits', () => {
     const on = renderRow(null);
     expect(text('mapping-run-title')).toBe('Map the rest of the code');
-    expect(text('mapping-run-body')).toBe('24 of the 120 abilities found in the code are on the map (20%). About 8 requests to your agent, about 24 minutes.');
+    expect(text('mapping-run-body')).toBe('24 of the 120 abilities found in the code are on the map (20%). About 6 requests to your agent, about 24 minutes.');
     expect(text('mapping-run-approval')).toBe('Each change waits for your answer. With Auto-approve on, it runs by itself.');
     expect(screen.getByRole('button', { name: 'Start' })).toBe(action());
     fireEvent.click(screen.getByTestId('mapping-run-title'));
@@ -111,6 +114,7 @@ describe('before a press the row offers Start', () => {
             resting={figures(96)}
             autoApprove={false}
             canStart
+            limitAhead={null}
             collapsed={collapsed}
             {...handlers()}
             onCollapse={() => setCollapsed(true)}
@@ -147,7 +151,7 @@ describe('before a press the row offers Start', () => {
   it('speaks Korean', () => {
     renderRow(null, { locale: 'ko' });
     expect(text('mapping-run-title')).toBe('코드의 나머지를 지도에 올리기');
-    expect(text('mapping-run-body')).toBe('코드에서 찾은 기능 120개 중 24개(20%)가 지도에 있어요. 에이전트 요청 약\u00a08번, 24분 정도 걸려요.');
+    expect(text('mapping-run-body')).toBe('코드에서 찾은 기능 120개 중 24개(20%)가 지도에 있어요. 에이전트 요청 약\u00a06번, 24분 정도 걸려요.');
     expect(text('mapping-run-approval')).toBe('바꿀 때마다 답을 기다려요. 자동 승인을 켜면 혼자 진행해요.');
     expect(text('mapping-run-action')).toBe('시작');
     expect(screen.getByRole('button', { name: '간단히 보기' })).toBeInTheDocument();
@@ -156,6 +160,36 @@ describe('before a press the row offers Start', () => {
   it('speaks Korean about what goes through by itself', () => {
     renderRow(null, { locale: 'ko', autoApprove: true });
     expect(text('mapping-run-approval')).toBe('추가와 수정은 혼자 진행해요. 삭제, 합치기, 덮어쓰기는 답을 기다려요.');
+  });
+});
+
+describe('a pressing account limit is named before Start and never blocks it', () => {
+  const limit = (percent: number, level: LimitInForce['level'], window: LimitInForce['window'] = 'fiveHour'): LimitInForce =>
+    ({ window, percent, level, usedFraction: percent / 100, resetsAtMs: 0, readAtMs: 0 });
+
+  it('says the run may reach a five-hour limit at 72 percent and still starts', () => {
+    const on = renderRow(null, { limitAhead: limit(72, 'notice') });
+    expect(text('mapping-run-limit')).toBe('Your 5-hour limit is at 72%; this run may reach it.');
+    expect(screen.getByTestId('mapping-run-limit')).toHaveAttribute('data-level', 'notice');
+    fireEvent.click(action());
+    expect(on.onStart).toHaveBeenCalledTimes(1);
+  });
+
+  it('turns the warning tone at 85 percent and keeps the figure on the one-line row', () => {
+    renderRow(null, { collapsed: true, limitAhead: limit(91, 'warning', 'weekly') });
+    expect(text('mapping-run-limit')).toBe('91% of weekly limit');
+    expect(screen.getByTestId('mapping-run-limit')).toHaveAttribute('data-level', 'warning');
+    expect(action()).toBeEnabled();
+  });
+
+  it('says nothing once a run started', () => {
+    renderRow(secondRequest(), { limitAhead: limit(91, 'warning') });
+    expect(screen.queryByTestId('mapping-run-limit')).toBeNull();
+  });
+
+  it('speaks Korean', () => {
+    renderRow(null, { locale: 'ko', limitAhead: limit(72, 'notice') });
+    expect(text('mapping-run-limit')).toBe('5시간 한도를 72% 썼어요. 이 작업 중에 한도에 닿을 수 있어요.');
   });
 });
 

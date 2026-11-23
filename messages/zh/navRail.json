@@ -13,5 +13,25 @@
   "getAppTitle": "桌面应用会记住你的文件夹，可离线打开，并负责 Git 历史和智能体连接",
   "changes": "变更",
   "planning": "规划",
-  "workStatus": "工作状态"
+  "workStatus": "工作状态",
+  "usage": {
+    "agentFallback": "智能体",
+    "tileName": "{agent} 用量",
+    "limitName": {
+      "fiveHour": "5 小时限额",
+      "weekly": "每周限额"
+    },
+    "limitUsed": "已用 {percent, number}%",
+    "limitFigure": "{limit}：已用 {percent, number}%",
+    "resets": "{time} 重置",
+    "asOf": "截至 {time}",
+    "noLimits": "{agent} 不会把账户限额发送给 Atlas。",
+    "conversation": "本次对话",
+    "context": "上下文",
+    "contextFull": "已用 {percent, number}%",
+    "contextFigure": "上下文已用 {percent, number}%",
+    "contextTokens": "{used, number} / {size, number} 个 token",
+    "cost": "费用",
+    "costReported": "{agent} 报告的估算值"
+  }
 }

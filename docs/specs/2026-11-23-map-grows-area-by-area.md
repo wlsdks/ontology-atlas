@@ -77,7 +77,7 @@ service (3,577 Go files).
    `Not mapped yet: N of M areas, R of T abilities.` followed by one bullet per area it lists.
    R is the abilities not on the map and T the abilities counted. Naming an area in prose no
    longer removes it from the sentence. One request maps the files that hold abilities with no
-   node, at most twelve files across at most six areas, largest area first; the sentence names
+   node, at most eighteen files across at most seven areas, largest area first; the sentence names
    those files. `finalize_project_meaning` refuses, and `validate_vault` warns
    (`not-mapped-line-mismatch`), while the project's summary line differs from the measure.
 3. The first-build `Next` text of an area survey asks for those lines instead of "unopened".
@@ -92,7 +92,7 @@ service (3,577 Go files).
 
 6. A project whose summary line says R above zero can have the rest mapped. The request tells
    the agent to take the files `validate_vault` names, write one capability per thing a user,
-   an operator or another system gets from them (at most twelve per request; one capability may
+   an operator or another system gets from them (at most eighteen per request; one capability may
    stand for several files it cites), read each by symbol and state its rule with cited lines,
    narrow a group capability that only named them, put what is not product on one line of the
    project's `## Excludes` with its path and the reason, add the `depends_on` edges the reads
@@ -158,3 +158,6 @@ service (3,577 Go files).
   the measure, a line kept after every area is mapped is stale, areas without abilities ask for
   none, and one shared case table holds the server and the app to the same reading; decision 8
   names the first project.
+- 2026-11-24: one request maps at most eighteen files across seven areas and asks for at most
+  eighteen capabilities; the measured arms are in the 2026-11-24 revision of
+  `2026-11-23-one-press-maps-the-rest.md`.

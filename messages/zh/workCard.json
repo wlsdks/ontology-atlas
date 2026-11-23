@@ -79,6 +79,10 @@
     "filesPrepared": "已准备的文件"
   },
   "mapping": {
+    "limitAhead": {
+      "fiveHour": "5 小时限额已用 {percent, number}%，这次运行可能会用完。",
+      "weekly": "每周限额已用 {percent, number}%，这次运行可能会用完。"
+    },
     "title": "正在把代码的其余部分放到地图上",
     "request": "第 {part, number} 个请求",
     "onMap": "{total, number} 项能力中 <count>{mapped}</count> 项（{percent, number}%）",

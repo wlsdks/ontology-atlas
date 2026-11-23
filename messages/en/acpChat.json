@@ -369,7 +369,7 @@
     },
     "mapArea": {
       "line": "Map the rest of the code · request {part, number}",
-      "prompt": "{mapped} of the {total} abilities found in this code are on the map ({percent}%). Map the next part now. Run validate_vault and take the files its Areas sentence names after \"Map next, in one request\"; open their areas with the analyze_repo_structure calls that sentence gives. Write one capability per thing a user, an operator or another system gets from those files, at most twelve in this request, each named the way a teammate says it aloud, with its entry file in path:, in the domain it belongs to; one capability may stand for several files when it cites lines in each. Look for an existing concept before adding a near-twin. Read each new capability by symbol, three or four per call, and state its deciding rule in one to three sentences with the cite of the read lines. Narrow with patch_concept any group capability that only named these files, so nothing is on the map twice; when you narrow or split a concept, its deciding rules and their cited lines move word for word to the concept that now holds that code. What is not product (generated code, test tooling, samples) gets no node: put it on one line of the project's Excludes section with its path and the reason. Add the depends_on relations the reads show, each with a why that cites lines. Then run validate_vault again and replace the Not mapped yet lines under the project's Uncertainty with exactly the lines it gives. Tell me in a few plain sentences what these files turned out to hold, what you added, and how many of the abilities are on the map now."
+      "prompt": "{mapped} of the {total} abilities found in this code are on the map ({percent}%). Map the next part now. Run validate_vault and take the files its Areas sentence names after \"Map next, in one request\"; open their areas with the analyze_repo_structure calls that sentence gives. Write one capability per thing a user, an operator or another system gets from those files, at most eighteen in this request, each named the way a teammate says it aloud, with its entry file in path:, in the domain it belongs to; one capability may stand for several files when it cites lines in each. Look for an existing concept before adding a near-twin. Read each new capability by symbol, three or four per call, and state its deciding rule in one to three sentences with the cite of the read lines. Narrow with patch_concept any group capability that only named these files, so nothing is on the map twice; when you narrow or split a concept, its deciding rules and their cited lines move word for word to the concept that now holds that code. What is not product (generated code, test tooling, samples) gets no node: put it on one line of the project's Excludes section with its path and the reason. Add the depends_on relations the reads show, each with a why that cites lines. Then run validate_vault again and replace the Not mapped yet lines under the project's Uncertainty with exactly the lines it gives. Tell me in a few plain sentences what these files turned out to hold, what you added, and how many of the abilities are on the map now."
     },
     "readRules": {
       "label": "{count, plural, one {Read # capability from the code} other {Read # capabilities from the code}}",
@@ -501,5 +501,9 @@
     "listTitle": "Requests to map the rest of the code",
     "listItem": "Request {part, number}",
     "close": "Close"
+  },
+  "limitNear": {
+    "fiveHour": "{percent, number}% of 5-hour limit",
+    "weekly": "{percent, number}% of weekly limit"
   }
 }
