@@ -6,8 +6,8 @@ import { lineCites } from './line-cites.mjs';
 import { kindOf, pathOf, sectionOf } from './node-fields.mjs';
 
 /** One press of the panel's step is one request of at most this many files, across at most this many areas. */
-const BATCH_FILES = 12;
-const BATCH_AREAS = 6;
+const BATCH_FILES = 18;
+const BATCH_AREAS = 7;
 
 /** How many areas the kept lines name, one bullet each. */
 const LISTED_AREAS = 12;
@@ -107,7 +107,7 @@ export function mappedPercent({ abilities, uncovered }) {
 /**
  * The files one request maps, largest gap first: files holding abilities no node
  * points at, most abilities first within an area, the first area always, at most
- * twelve files across at most six areas. When only areas holding no abilities are
+ * eighteen files across at most seven areas. When only areas holding no abilities are
  * left, the first of them is opened instead. O(files in the batch).
  */
 export function mappingBatch(notMapped) {

@@ -1,11 +1,11 @@
-/** Abilities one request to an agent put on the map in the measured chains (12.5 on a Go service, 13.2 on a Java platform). */
-const ABILITIES_PER_REQUEST = 13;
+/** Abilities one request of eighteen files put on the map on a Java platform (17.8 and 18.3 in two chains). */
+const ABILITIES_PER_REQUEST = 18;
 
-/** The most abilities one request put on the map in those runs: what one request can be trusted to finish. */
+/** The most abilities one measured request put on the map, at twelve or eighteen files: what one request can be trusted to finish. */
 export const ABILITIES_ONE_REQUEST_REACHES = 31;
 
-/** Minutes one request took in the same chains (142 to 242 seconds each, 165 on average). */
-export const MINUTES_PER_REQUEST = 3;
+/** Minutes one request took in the same chains (181 to 242 seconds each, 209 on average). */
+export const MINUTES_PER_REQUEST = 4;
 
 /** One finished request of a mapping run: what it put on the map and how long it took. */
 export interface MappingRequestResult {

@@ -70,9 +70,9 @@ describe('the rule at a request\'s end', () => {
 
   it('takes the first line a run begun without one reads, and estimates the rest from it', () => {
     const next = afterRequest(begin(null, null), end({ figures: one(40), project: 'launch' }));
-    expect(next).toMatchObject({ phase: 'running', project: 'launch', now: one(40), requestsSent: 2, estimate: 1 + 4 });
+    expect(next).toMatchObject({ phase: 'running', project: 'launch', now: one(40), requestsSent: 2, estimate: 1 + 3 });
     // A run that has its project keeps it, whatever line a request's end names.
-    expect(afterRequest(begin(), end({ project: 'other' }))).toMatchObject({ project: 'launch', estimate: 8 });
+    expect(afterRequest(begin(), end({ project: 'other' }))).toMatchObject({ project: 'launch', estimate: 6 });
   });
 
   it('neither lists nor counts a request that never reached the agent', () => {

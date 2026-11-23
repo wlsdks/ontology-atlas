@@ -183,7 +183,7 @@ describe('a mapping run on the work card', () => {
     openMappingFolder();
     workRuns.beginMapping({ folder: ROOT, folderName: 'launch', project: 'launch', agent: 'Claude Agent', figures: figures(1, 400), startedAt: 10_000 });
     renderCard();
-    expect(screen.getByTestId('work-run-figures').textContent).toBe('Request 1·399 of 400 abilities on the map (99%)·about 3 minutes left');
+    expect(screen.getByTestId('work-run-figures').textContent).toBe('Request 1·399 of 400 abilities on the map (99%)·about 4 minutes left');
   });
 
   it('stops the whole run from the card through the run key', () => {
@@ -318,10 +318,10 @@ describe('a mapping run on the work card', () => {
     {
       reason: 'more requests than estimated',
       end: () => {
-        for (const [index, uncovered] of Array.from({ length: 17 }, (_, step) => 70 - 2 * step).entries()) workRuns.endMappingBatch(ROOT, requestEnd(uncovered, 250_000 + index));
+        for (const [index, uncovered] of Array.from({ length: 13 }, (_, step) => 70 - 2 * step).entries()) workRuns.endMappingBatch(ROOT, requestEnd(uncovered, 250_000 + index));
       },
       title: 'Stopped: this is taking more requests than estimated',
-      body: '18 requests sent, 82 of 120 on the map.',
+      body: '14 requests sent, 74 of 120 on the map.',
       doors: ['work-run-continue', 'work-run-close'],
     },
     {
