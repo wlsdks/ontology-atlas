@@ -400,7 +400,7 @@ test('validate names the capabilities that cite no lines this server process rea
     ],
   });
   const result = (id) => responses.find((response) => response.id === id)?.result;
-  assert.match(result(2).structuredContent.coverage, /Depth: 0 of 2 capabilities cite lines this session read that hold a condition\. This server process has served no reads/);
+  assert.match(result(2).structuredContent.coverage, /Depth: this server process has served no reads \(a restarted server keeps none\); 1 of 2 capabilities cite lines an earlier session recorded that this process has not re-read\. Not yet, citing no lines: capabilities\/refund \(src\/refund\.mjs\)\./);
   assert.equal(result(3).structuredContent, undefined);
   assert.match(result(3).content[0].text, /^== read src\/charge\.mjs charge L1-L4 of 4 lines$/m);
   const coverage = result(4).structuredContent.coverage;

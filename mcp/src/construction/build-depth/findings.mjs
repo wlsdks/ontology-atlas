@@ -97,10 +97,11 @@ function entryPathFindings(docs, repoRoot, collection) {
 }
 
 function ruleCiteFindings(docs, reads, repoRoot) {
-  return measureRules(docs, reads, repoRoot).uncited.map((row) => ({
+  const { uncited, judgedAgainstReads } = measureRules(docs, reads, repoRoot);
+  return uncited.map((row) => ({
     slug: row.slug,
     code: 'rule-without-read-lines',
-    message: `${row.slug} states a rule but cites no ${reads ? 'read ' : ''}lines that hold its condition${row.cited ? ' (its cites name lines that were not served or hold no condition)' : ''}. A reader cannot check it, and a rule taken from a body without its guard or default can be backwards. Repair: ${citeRepair([row])}.`,
+    message: `${row.slug} states a rule but cites no ${judgedAgainstReads ? 'read ' : ''}lines that hold its condition${row.cited ? ` (its cites name lines that ${judgedAgainstReads ? 'were not served or ' : ''}hold no condition)` : ''}. A reader cannot check it, and a rule taken from a body without its guard or default can be backwards. Repair: ${citeRepair([row])}.`,
   }));
 }
 

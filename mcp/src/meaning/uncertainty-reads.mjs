@@ -3,6 +3,8 @@
 // deterministic over a body someone else loaded; each row quotes its statement,
 // so a wrong classification sits beside its evidence.
 
+import { join } from 'node:path';
+
 import { uncertaintySectionLines } from './meaning-findings.mjs';
 
 /**
@@ -78,6 +80,21 @@ const UNREAD_POLARITY = new RegExp(
   ].join('|'),
   'gi',
 );
+
+/**
+ * The lines `validate_vault` gives a project to keep: a summary the app counts,
+ * which asks for no read, and one bullet per area, written as `billing (12
+ * abilities, 3 capabilities)` or `4 smaller folders in shop (…)`.
+ */
+const NOT_MAPPED_SUMMARY = /^Not mapped yet:\s*\d+\s+of\s+\d+\s+areas?\b/i;
+const NOT_MAPPED_AREA = /^Not mapped yet:\s*(?:\d+\s+smaller\s+folders\s+in\s+)?([^\s(]+)/i;
+
+/**
+ * "Unread capabilities: loans, savings": other nodes named as unread, whose
+ * reads validate_vault's Depth sentence lists, not this node's own file.
+ */
+const LISTS_UNREAD_NODES =
+  /\b(?:unread|not\s+(?:yet\s+)?read)\s+(?:capabilities|domains|elements|concepts|nodes|abilities)\b|\b(?:capabilities|domains|elements|concepts|nodes|abilities)\b[^.;:]{0,40}\b(?:unread|not\s+(?:yet\s+)?read)\b/i;
 
 /** A backtick span, which is how this vault's authors usually write a path. */
 const BACKTICK_PATTERN = /`([^`\n]+)`/g;
@@ -278,8 +295,21 @@ function classify(statement, { hasRange, hasReadRange }) {
   return 'other';
 }
 
+/**
+ * The call that opens an area by its repository path; without a known root the
+ * root is named for the agent to fill in.
+ */
+function openAreaCall(path, sourceRoot) {
+  const rootPath = sourceRoot ? join(sourceRoot, path) : `<repository root>/${path}`;
+  return `analyze_repo_structure(${JSON.stringify({ rootPath })})`;
+}
+
 /** One sentence, so the row can be pasted into a plan without editing. */
-function proposeAction({ slug, path, range, readRange }) {
+function proposeAction({ slug, path, range, readRange, openArea, listsUnreadNodes, sourceRoot }) {
+  if (openArea) return `${openAreaCall(openArea, sourceRoot)}, then write its capabilities.`;
+  if (listsUnreadNodes) {
+    return `Call validate_vault and read what its Depth sentence lists, then patch_concept ${slug} to drop the nodes read from this statement.`;
+  }
   const tail =
     `then patch_concept ${slug} to state what it settled` +
     ' or to move the statement out of Uncertainty.';
@@ -295,7 +325,7 @@ function proposeAction({ slug, path, range, readRange }) {
  * The reads one node's uncertainty asks for. The node's own `path` is inherited
  * only by a statement that something was not read without naming a file; an
  * unopened area, an unrun command or an unchecked claim stay pathless rather
- * than point at the wrong file.
+ * than point at the wrong file. A kept `Not mapped yet` bullet carries its area.
  * Per Uncertainty line, a fixed set of regex scans plus a whole-line polarity
  * scan per span: O(line length × spans).
  */
@@ -305,8 +335,17 @@ export function extractUncertaintyReads({ slug, kind, path, body, title } = {}) 
   const rows = [];
   for (const line of lines) {
     const statement = String(line).replace(LEADING_MARKER, '').trim();
-    if (!statement) continue;
+    if (!statement || NOT_MAPPED_SUMMARY.test(statement)) continue;
+    const area = NOT_MAPPED_AREA.exec(statement);
+    if (area) {
+      rows.push({ slug, statement, paths: [area[1]], ranges: [], readRanges: [], kind: 'unopened-area', openArea: area[1] });
+      continue;
+    }
     const located = locatePaths(statement);
+    if (located.length === 0 && LISTS_UNREAD_NODES.test(statement)) {
+      rows.push({ slug, statement, paths: [], ranges: [], readRanges: [], kind: 'other', listsUnreadNodes: true });
+      continue;
+    }
     const preliminary = locateRanges(statement, located, path);
     const rowKind = classify(statement, {
       hasRange: preliminary.ranges.length > 0,
@@ -341,8 +380,9 @@ export function extractUncertaintyReads({ slug, kind, path, body, title } = {}) 
 /**
  * Rows ordered and carrying their action sentence, here so every surface reads
  * one queue in one order. Stable within a kind and slug, keeping the author's order.
+ * `sourceRoot`, the connected repository, makes an area's open call absolute.
  */
-export function orderUncertaintyReads(rows) {
+export function orderUncertaintyReads(rows, { sourceRoot = null } = {}) {
   return [...rows]
     .map((row, index) => ({ row, index }))
     .sort((a, b) => {
@@ -367,6 +407,9 @@ export function orderUncertaintyReads(rows) {
         path: row.ranges[0]?.path ?? row.readRanges?.[0]?.path ?? row.paths[0] ?? null,
         range: row.ranges[0] ?? null,
         readRange: row.readRanges?.[0] ?? null,
+        openArea: row.openArea ?? null,
+        listsUnreadNodes: row.listsUnreadNodes === true,
+        sourceRoot,
       }),
     }));
 }

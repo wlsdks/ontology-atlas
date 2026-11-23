@@ -384,6 +384,7 @@ export function createOntologyEngine(artifact, options = {}) {
     unearnedNodeCandidates,
   } = createGrowthQueries({
     nodes, edges, nodeBySlug, sourceDocFor, ontologyAtlasIgnorePatterns,
+    sourceRoot: typeof options.sourceRoot === 'string' ? options.sourceRoot : null,
     relationTypeForKey: RELATION_TYPE_FOR_KEY, bodyIsStarterTemplate, compareEdges,
     containmentChildren, containmentParentsFor, findNearMatchSlug, hasResolvedContainmentParent,
     hasResolvedEdge, inferKindFromRelation, normalizeRecommendRelationKind, resolveOptional,
