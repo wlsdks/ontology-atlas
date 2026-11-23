@@ -556,7 +556,7 @@ function areaNext(map, areas) {
     '3. Write every domain\'s capabilities: one per thing a user, an operator or another system gets, a family as one capability naming its members and how many of them were read. ' +
     'A capability whose code was not read states no rule and says so under ## Uncertainty. ' +
     'Every ability row below ends up as a capability, named in the node that covers it, or on one line of the project\'s ## Uncertainty that says why it is left out; the rows are a floor shared between areas, not all of them. ' +
-    'Every write and validate_vault names the areas that no node\'s path: falls in and no domain names by its path: list those in the project\'s ## Uncertainty as unopened, and end by telling the person how many capabilities are still unread, which they can ask for next.';
+    'Every write and validate_vault names the areas not mapped yet with the Not mapped yet lines to keep under the project\'s ## Uncertainty: keep them as given, and end by telling the person how many capabilities are still unread, which they can ask for next.';
 }
 
 /** The first `count` rows, in the order the areas shared them. */

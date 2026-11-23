@@ -20,7 +20,7 @@ import { measureAbilities, abilityLabel } from './build-depth/ability-placement.
 import { citeRepair, measureReads, measureRules, readCall } from './build-depth/read-depth.mjs';
 import { dependencyEdges, kindOf } from './build-depth/node-fields.mjs';
 import { measureRoles, roleLabel, ROLE_REPAIR } from './build-depth/role-placement.mjs';
-import { areaLabel, openAreaCall, unmappedAreas } from './build-depth/unmapped-areas.mjs';
+import { areaCoverage, areaLabel, keepsNotMappedLines, notMappedSummary, openAreaCall } from './build-depth/unmapped-areas.mjs';
 
 export { buildDepthFindings } from './build-depth/findings.mjs';
 export { saysOutlinedOnly } from './build-depth/node-fields.mjs';
@@ -61,6 +61,40 @@ function listed(rows, render) {
 }
 
 /**
+ * How many areas are not mapped yet, the largest gaps with the call that opens the
+ * first, and the exact lines the project keeps under `## Uncertainty`, one per
+ * area listed, so the count the project holds is the server's.
+ */
+function areasSentence(docs, repoRoot, coverage) {
+  const { notMapped, counted } = coverage;
+  if (notMapped.length === 0) {
+    return keepsNotMappedLines(docs)
+      ? `Areas: all ${counted} areas are mapped. Remove the Not mapped yet lines from the project's ## Uncertainty.`
+      : null;
+  }
+  const keep = [notMappedSummary(notMapped.length, counted), ...notMapped.slice(0, LISTED).map((area) => `- Not mapped yet: ${areaLabel(area)}`)];
+  return `Areas: ${notMapped.length} of ${counted} areas are not mapped yet (fewer than one capability per three abilities the area holds), largest gap first: ${listed(notMapped, areaLabel)}. `
+    + `Map the next: ${openAreaCall(repoRoot, notMapped[0])}, then write one capability per thing a user, an operator or another system gets there, each with its own entry file in path:. `
+    + `Keep exactly these lines under the project's ## Uncertainty, replacing any earlier Not mapped yet lines:\n${keep.join('\n')}\n`;
+}
+
+/**
+ * Which capabilities still need a read. A process that served nothing cannot tell
+ * an earlier session's cite from none, so it lists only bodies citing no lines
+ * that exist and counts the rest as recorded earlier.
+ */
+function depthSentence(depth) {
+  const fresh = depth.served === 0;
+  const pending = fresh ? depth.uncited : depth.unread;
+  if (pending.length === 0 && !(fresh && depth.citedEarlier > 0)) return null;
+  const lead = fresh
+    ? `Depth: this server process has served no reads (a restarted server keeps none); ${depth.citedEarlier} of ${depth.capabilities} capabilities cite lines an earlier session recorded that this process has not re-read.`
+    : `Depth: ${depth.read} of ${depth.capabilities} capabilities cite lines this session read that hold a condition.`;
+  if (pending.length === 0) return lead;
+  return `${lead} Not yet${fresh ? ', citing no lines' : ''}: ${listed(pending, (row) => `${row.slug} (${row.path})`)}. Read next, then cite the lines that decide each; a symbol read returns the guards, defaults and callees that decide it: ${readCall(pending)}.`;
+}
+
+/**
  * Placement against the survey's abilities, reads and cites against this
  * session, and ability-to-ability edges, with the line a write and validate_vault
  * report. Each list names what to do next.
@@ -73,7 +107,8 @@ export function measureBuildDepth(docs, repo, reads) {
   const rules = measureRules(docs, reads, repo?.repoRoot ?? null);
   const abilityEdges = measureAbilityEdges(docs);
   const roles = measureRoles(docs, reads, repo?.repoRoot ?? null);
-  const unmapped = repo ? unmappedAreas(docs, repo.survey) : [];
+  const coverage = repo ? areaCoverage(docs, repo.survey) : null;
+  const unmapped = coverage?.notMapped ?? [];
   const parts = [];
   if (breadth && breadth.abilities > 0) {
     parts.push(`Breadth, of ${breadth.abilities} abilities the survey lists: ${breadth.node} with their own node, ${breadth.named} named inside a capability or element, ${breadth.excluded} excluded with a reason, ${breadth.unplaced.length} not placed.`);
@@ -81,11 +116,13 @@ export function measureBuildDepth(docs, repo, reads) {
       parts.push(`Not placed: ${listed(breadth.unplaced, abilityLabel)}. Place each: add_concepts a capability for it, name it in the title or in code form (\`name\`) of the node that covers it (a family or group names its members), or exclude it in the project's ## Uncertainty with one line for it alone that cites its path:Lline or exact name and says why.`);
     }
   }
-  if (unmapped.length > 0) {
-    parts.push(`Areas: ${unmapped.length} of the ${repo.survey.areas.length} areas the survey lists are in no node's path: and named by no domain or the project's ## Uncertainty, largest first: ${listed(unmapped, areaLabel)}. Open the next: ${openAreaCall(repo.repoRoot, unmapped[0])}, then write its nodes, or write its path in the domain that holds it or as unopened in the project's ## Uncertainty.`);
+  if (coverage) {
+    const areas = areasSentence(docs, repo.repoRoot, coverage);
+    if (areas) parts.push(areas);
   }
-  if (depth && depth.unread.length > 0) {
-    parts.push(`Depth: ${depth.read} of ${depth.capabilities} capabilities cite lines this session read that hold a condition.${depth.served === 0 ? ' This server process has served no reads; a restarted server keeps none.' : ''} Not yet: ${listed(depth.unread, (row) => `${row.slug} (${row.path})`)}. Read next, then cite the lines that decide each; a symbol read returns the guards, defaults and callees that decide it: ${readCall(depth.unread)}.`);
+  if (depth) {
+    const sentence = depthSentence(depth);
+    if (sentence) parts.push(sentence);
   }
   // The rule and edge lists name slugs across the vault; they speak only for a grounded build.
   if (repo && rules.uncited.length > 0) {
@@ -104,6 +141,7 @@ export function measureBuildDepth(docs, repo, reads) {
     abilityEdges,
     roles,
     unmappedAreas: unmapped,
+    areaCoverage: coverage,
     capabilities: capabilities.length,
     dependsOn,
     line: parts.length > 0 ? parts.join(' ') : null,
