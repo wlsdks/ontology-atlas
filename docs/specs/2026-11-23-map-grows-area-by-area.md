@@ -4,7 +4,7 @@ doc_type: spec
 status: draft
 area: mcp
 date: 2026-11-23
-decisions: []
+decisions: [f7ea68cd]
 ---
 
 # A map of a large repository grows one area per press
