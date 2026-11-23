@@ -21,10 +21,15 @@ import { transientSurface } from '@/shared/ui/surfaces/transient-surface';
 
 import { AgentUsagePanel } from './AgentUsagePanel';
 
-/** The registry's name and bundled mark for a runtime; one outside it keeps a known name and no mark. */
-function agentOf(runtimeId: string): { name: string; icon: string | null } {
-  const entry = registry.agents.find((agent) => agent.id === runtimeId);
-  return { name: entry?.name ?? agentDisplayName(runtimeId) ?? runtimeId, icon: entry?.icon ?? null };
+/**
+ * The name the conversation shows, else the registry's, else a known product name; never the
+ * runtime id, which is an identifier and not a name. The mark is the registry's bundled one.
+ */
+function agentOf(usage: AgentUsage): { name: string | null; icon: string | null } {
+  const entry = registry.agents.find((agent) => agent.id === usage.runtimeId);
+  const known = agentDisplayName(usage.runtimeId);
+  const name = usage.agentName ?? entry?.name ?? (known !== usage.runtimeId.trim() ? known : null);
+  return { name, icon: entry?.icon ?? null };
 }
 
 const RING_INK: Record<LimitLevel, string> = {
@@ -121,7 +126,8 @@ function ReportedUsageTile({ usage }: { usage: AgentUsage }) {
   const { open, setOpen, ref, surfaceRef } = useDismissibleMenu();
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const [placement, setPlacement] = useState<{ left: number; bottom: number; openedAtMs: number } | null>(null);
-  const agent = agentOf(usage.runtimeId);
+  const found = agentOf(usage);
+  const agent = { ...found, name: found.name ?? t('agentFallback') };
   const rings = ringsOf(usage);
   const limits = limitsInForce(usage, usage.readAtMs);
   const figures = limits.length > 0

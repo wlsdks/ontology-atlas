@@ -42,7 +42,7 @@ describe('the agent usage tile', () => {
   });
 
   it('shows the context window alone for an agent that reports tokens only', () => {
-    act(() => agentUsage.record('codex-acp', report({ context: { usedTokens: 68_000, windowTokens: 272_000 } }), READ_AT));
+    act(() => agentUsage.record({ runtimeId: 'codex-acp', name: null }, report({ context: { usedTokens: 68_000, windowTokens: 272_000 } }), READ_AT));
     renderTile();
     expect(tile()).toHaveAccessibleName('Codex usage, context 25% full');
     expect(screen.getByTestId('agent-usage-ring-context')).toHaveAttribute('data-ring-fraction', '0.250');
@@ -53,7 +53,7 @@ describe('the agent usage tile', () => {
   });
 
   it('rings each reported limit and lists it with its reset, then this conversation and its cost', () => {
-    act(() => agentUsage.record('claude-acp', report({
+    act(() => agentUsage.record({ runtimeId: 'claude-acp', name: null }, report({
       context: { usedTokens: 42_180, windowTokens: 200_000 },
       cost: { amount: 0.4213, currency: 'USD' },
       limits: {
@@ -76,7 +76,7 @@ describe('the agent usage tile', () => {
   });
 
   it('stays in its selected look while open, and a second press or Escape closes it', () => {
-    act(() => agentUsage.record('codex-acp', report({ context: { usedTokens: 1, windowTokens: 10 } }), READ_AT));
+    act(() => agentUsage.record({ runtimeId: 'codex-acp', name: null }, report({ context: { usedTokens: 1, windowTokens: 10 } }), READ_AT));
     renderTile();
     fireEvent.click(tile());
     expect(tile()).toHaveAttribute('data-open', 'true');
@@ -91,7 +91,7 @@ describe('the agent usage tile', () => {
   });
 
   it('leaves out a limit whose window reset before the popover opened', () => {
-    act(() => agentUsage.record('claude-acp', report({
+    act(() => agentUsage.record({ runtimeId: 'claude-acp', name: null }, report({
       limits: {
         fiveHour: { usedFraction: 0.9, resetsAtMs: READ_AT + 5 * 60_000 },
         weekly: { usedFraction: 0.3, resetsAtMs: READ_AT + 50 * HOUR_MS },
@@ -102,8 +102,29 @@ describe('the agent usage tile', () => {
     expect(within(popover()).getAllByTestId('agent-usage-limit').map((row) => row.getAttribute('data-limit-window'))).toEqual(['weekly']);
   });
 
+  it.each([
+    ['the name the conversation shows', { runtimeId: 'claude-code', name: 'Claude Agent' }, 'Claude Agent'],
+    ['a plain word for an agent nobody named', { runtimeId: 'custom-runner-acp', name: null }, 'Your agent'],
+  ])('calls the agent by %s everywhere and never by its runtime id', async (_case, agent, shown) => {
+    act(() => agentUsage.record(agent, report({
+      context: { usedTokens: 10, windowTokens: 100 },
+      cost: { amount: 0.1, currency: 'USD' },
+    }), READ_AT));
+    renderTile();
+    expect(tile()).toHaveAccessibleName(`${shown} usage, context 10% full`);
+    act(() => tile().focus());
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(`${shown} usage`);
+    fireEvent.click(tile());
+    expect(popover()).toHaveAccessibleName(`${shown} usage`);
+    expect(popover()).toHaveTextContent(`${shown} usage`);
+    expect(within(popover()).getByTestId('agent-usage-no-limits')).toHaveTextContent(`${shown} does not send its account limits to Atlas.`);
+    expect(within(popover()).getByTestId('agent-usage-cost')).toHaveTextContent(`Estimate reported by ${shown}`);
+    expect(document.body.textContent).not.toContain(agent.runtimeId);
+    expect(tile().getAttribute('aria-label')).not.toContain(agent.runtimeId);
+  });
+
   it('names the limits in plain Korean', () => {
-    act(() => agentUsage.record('claude-acp', report({ limits: { fiveHour: { usedFraction: 0.42, resetsAtMs: READ_AT + HOUR_MS } } }), READ_AT));
+    act(() => agentUsage.record({ runtimeId: 'claude-acp', name: null }, report({ limits: { fiveHour: { usedFraction: 0.42, resetsAtMs: READ_AT + HOUR_MS } } }), READ_AT));
     renderTile('ko');
     fireEvent.click(tile());
     expect(within(popover()).getByTestId('agent-usage-limit')).toHaveTextContent(/5시간 한도42% 사용.*6:51에 초기화 · .*5:51 기준/);

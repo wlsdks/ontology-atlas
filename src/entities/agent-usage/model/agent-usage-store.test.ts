@@ -13,9 +13,9 @@ afterEach(() => agentUsage.reset());
 
 describe('the agent usage store', () => {
   it('keeps the latest reading per agent and points the rail at the one that reported last', () => {
-    agentUsage.record('claude-acp', tokens(1_000), 1);
-    agentUsage.record('codex-acp', tokens(5_000), 2);
-    agentUsage.record('claude-acp', tokens(3_000), 3);
+    agentUsage.record({ runtimeId: 'claude-acp', name: null }, tokens(1_000), 1);
+    agentUsage.record({ runtimeId: 'codex-acp', name: null }, tokens(5_000), 2);
+    agentUsage.record({ runtimeId: 'claude-acp', name: null }, tokens(3_000), 3);
     const { byRuntime, latestRuntimeId } = agentUsage.read();
     expect(byRuntime.get('claude-acp')?.context?.usedTokens).toBe(3_000);
     expect(byRuntime.get('codex-acp')?.context?.usedTokens).toBe(5_000);
@@ -23,11 +23,11 @@ describe('the agent usage store', () => {
   });
 
   it('tells no listener about an update that states nothing', () => {
-    agentUsage.record('claude-acp', tokens(1_000), 1);
+    agentUsage.record({ runtimeId: 'claude-acp', name: null }, tokens(1_000), 1);
     const listener = vi.fn();
     const stop = agentUsage.subscribe(listener);
     const before = agentUsage.read();
-    agentUsage.record('codex-acp', { sessionId: 's-1', context: null, cost: null, limits: {} }, 2);
+    agentUsage.record({ runtimeId: 'codex-acp', name: null }, { sessionId: 's-1', context: null, cost: null, limits: {} }, 2);
     expect(listener).not.toHaveBeenCalled();
     expect(agentUsage.read()).toBe(before);
     stop();

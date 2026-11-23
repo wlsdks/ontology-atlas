@@ -204,6 +204,7 @@ export function AcpChatPanelBody({
     switchSession,
   } = useAcpSession({
     runtimeId,
+    runtimeLabel,
     vaultRoot,
     mcpServers,
     approvalSettleMs: reducedMotion ? 0 : MOTION.settle.duration * 1000,

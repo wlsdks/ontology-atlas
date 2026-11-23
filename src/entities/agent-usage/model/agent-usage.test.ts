@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { limitsInForce, mergeUsageReport, pressingLimit, type AgentUsage, type UsageReport } from './agent-usage';
 
 const HOUR_MS = 3_600_000;
+const CLAUDE = { runtimeId: 'claude-acp', name: null };
 const NOW = Date.UTC(2026, 10, 24, 6, 0);
 
 const report = (parts: Partial<UsageReport> = {}): UsageReport => ({
@@ -14,7 +15,7 @@ const report = (parts: Partial<UsageReport> = {}): UsageReport => ({
 });
 
 const withLimits = (fiveHour: number | null, weekly: number | null): AgentUsage =>
-  mergeUsageReport(null, 'claude-acp', report({
+  mergeUsageReport(null, CLAUDE, report({
     limits: {
       ...(fiveHour === null ? {} : { fiveHour: { usedFraction: fiveHour, resetsAtMs: NOW + HOUR_MS } }),
       ...(weekly === null ? {} : { weekly: { usedFraction: weekly, resetsAtMs: NOW + 50 * HOUR_MS } }),
@@ -23,18 +24,18 @@ const withLimits = (fiveHour: number | null, weekly: number | null): AgentUsage 
 
 describe('merging what an agent reports', () => {
   it('keeps the conversation cost when a later update carries tokens only', () => {
-    const first = mergeUsageReport(null, 'claude-acp', report({
+    const first = mergeUsageReport(null, CLAUDE, report({
       context: { usedTokens: 1_000, windowTokens: 200_000 },
       cost: { amount: 0.4, currency: 'USD' },
     }), NOW);
-    const second = mergeUsageReport(first, 'claude-acp', report({ context: { usedTokens: 2_000, windowTokens: 200_000 } }), NOW + 1);
+    const second = mergeUsageReport(first, CLAUDE, report({ context: { usedTokens: 2_000, windowTokens: 200_000 } }), NOW + 1);
     expect(second?.context).toEqual({ usedTokens: 2_000, windowTokens: 200_000, readAtMs: NOW + 1 });
     expect(second?.cost).toEqual({ amount: 0.4, currency: 'USD', readAtMs: NOW });
   });
 
   it('drops the previous conversation context and cost but keeps the account limits', () => {
-    const first = mergeUsageReport(withLimits(0.4, null), 'claude-acp', report({ cost: { amount: 1, currency: 'USD' } }), NOW);
-    const next = mergeUsageReport(first, 'claude-acp', report({ sessionId: 's-2', context: { usedTokens: 10, windowTokens: 100 } }), NOW + 1);
+    const first = mergeUsageReport(withLimits(0.4, null), CLAUDE,report({ cost: { amount: 1, currency: 'USD' } }), NOW);
+    const next = mergeUsageReport(first, CLAUDE, report({ sessionId: 's-2', context: { usedTokens: 10, windowTokens: 100 } }), NOW + 1);
     expect(next?.cost).toBeNull();
     expect(next?.context?.usedTokens).toBe(10);
     expect(next?.limits.fiveHour?.usedFraction).toBe(0.4);
@@ -42,8 +43,8 @@ describe('merging what an agent reports', () => {
 
   it('leaves everything as it was when an update states nothing', () => {
     const first = withLimits(0.4, 0.2);
-    expect(mergeUsageReport(first, 'claude-acp', report({ sessionId: 's-2' }), NOW + 1)).toBe(first);
-    expect(mergeUsageReport(null, 'claude-acp', report(), NOW)).toBeNull();
+    expect(mergeUsageReport(first, CLAUDE, report({ sessionId: 's-2' }), NOW + 1)).toBe(first);
+    expect(mergeUsageReport(null, CLAUDE, report(), NOW)).toBeNull();
   });
 });
 

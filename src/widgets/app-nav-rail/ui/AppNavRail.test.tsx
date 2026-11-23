@@ -272,7 +272,7 @@ describe("Git destination preservation", () => {
   });
 
   it("shows the agent usage tile in the app once the agent reports, and never on the web", () => {
-    act(() => agentUsage.record("claude-acp", { sessionId: "s-1", context: { usedTokens: 1, windowTokens: 10 }, cost: null, limits: {} }));
+    act(() => agentUsage.record({ runtimeId: "claude-acp", name: null }, { sessionId: "s-1", context: { usedTokens: 1, windowTokens: 10 }, cost: null, limits: {} }));
     try {
       const web = renderRail();
       expect(screen.queryByTestId("agent-usage-tile")).not.toBeInTheDocument();

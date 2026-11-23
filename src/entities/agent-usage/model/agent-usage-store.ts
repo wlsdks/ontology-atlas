@@ -26,13 +26,13 @@ export const agentUsage = {
   },
   read: (): AgentUsageSnapshot => snapshot,
   readServer: (): AgentUsageSnapshot => EMPTY,
-  record(runtimeId: string, report: UsageReport, readAtMs: number = Date.now()): void {
-    const previous = snapshot.byRuntime.get(runtimeId) ?? null;
-    const next = mergeUsageReport(previous, runtimeId, report, readAtMs);
+  record(agent: { runtimeId: string; name: string | null }, report: UsageReport, readAtMs: number = Date.now()): void {
+    const previous = snapshot.byRuntime.get(agent.runtimeId) ?? null;
+    const next = mergeUsageReport(previous, agent, report, readAtMs);
     if (!next || next === previous) return;
     const byRuntime = new Map(snapshot.byRuntime);
-    byRuntime.set(runtimeId, next);
-    snapshot = { byRuntime, latestRuntimeId: runtimeId };
+    byRuntime.set(agent.runtimeId, next);
+    snapshot = { byRuntime, latestRuntimeId: agent.runtimeId };
     for (const listener of listeners) listener();
   },
   reset(): void {

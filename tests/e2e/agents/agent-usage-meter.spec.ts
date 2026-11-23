@@ -71,6 +71,8 @@ for (const locale of ['en', 'ko'] as const) {
       await expect(popover(page)).toBeVisible();
       await expect(popover(page).getByTestId('agent-usage-limit').first()).toContainText(COPY[locale].limit);
       await expect(popover(page).getByTestId('agent-usage-cost')).toContainText('$0.42');
+      await expect(popover(page), 'the agent is named as the composer names it').toContainText('Claude Agent');
+      await expect(popover(page)).not.toContainText('claude-code');
       await page.waitForFunction(() => document.querySelector('[data-testid="agent-usage-popover"]')?.getAnimations({ subtree: true }).every((animation) => animation.playState !== 'running') ?? false);
       await page.screenshot({ path: test.info().outputPath(`agent-usage-${locale}-${width}.png`) });
       await page.keyboard.press('Escape');

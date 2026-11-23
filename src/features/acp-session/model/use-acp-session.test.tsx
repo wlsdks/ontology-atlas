@@ -2240,8 +2240,8 @@ describe('a screen decision read at the request', () => {
 describe('the agent reports its usage', () => {
   afterEach(() => agentUsage.reset());
 
-  it('keeps what this session reports for its agent and nothing from another session', async () => {
-    const hook = renderHook(() => useAcpSession({ runtimeId: 'claude-acp', vaultRoot: '/vault' }));
+  it('keeps what this session reports for its agent, under the name it shows, and nothing from another session', async () => {
+    const hook = renderHook(() => useAcpSession({ runtimeId: 'claude-acp', runtimeLabel: 'Claude Agent', vaultRoot: '/vault' }));
     const starting = hook.result.current.start();
     await waitFor(() => expect(bridge.release).not.toBeNull());
     await act(async () => { bridge.release?.(); await starting; });
@@ -2254,6 +2254,7 @@ describe('the agent reports its usage', () => {
     expect(agentUsage.read().byRuntime.size).toBe(0);
     usage('s-1', 42_180);
     expect(agentUsage.read().byRuntime.get('claude-acp')?.context).toMatchObject({ usedTokens: 42_180, windowTokens: 200_000 });
+    expect(agentUsage.read().byRuntime.get('claude-acp')?.agentName).toBe('Claude Agent');
     await act(async () => { await hook.result.current.stop(); });
   });
 });

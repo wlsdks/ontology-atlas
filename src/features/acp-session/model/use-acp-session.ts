@@ -49,6 +49,8 @@ export type { AcpTurnCompletion, AcpTurnStart } from './turns/acp-turn';
 
 export interface UseAcpSessionOptions {
   runtimeId: string;
+  /** The agent's name as the conversation shows it; usage figures carry it to the rail. */
+  runtimeLabel?: string;
   vaultRoot: string | null;
   mcpServers?: unknown[];
   approvalSettleMs?: number;
@@ -88,6 +90,7 @@ const EMPTY_CHOICES: AcpSessionChoices = {
  */
 export function useAcpSession({
   runtimeId,
+  runtimeLabel,
   vaultRoot,
   mcpServers,
   approvalSettleMs = 0,
@@ -299,9 +302,9 @@ export function useAcpSession({
       updateEvents,
       emitWorkReceipt,
       setApprovedOntologyWriteTracked,
-      reportUsage: (usage) => agentUsage.record(runtimeId, usage),
+      reportUsage: (usage) => agentUsage.record({ runtimeId, name: runtimeLabel ?? null }, usage),
     }),
-    [emitWorkReceipt, noteModeMoved, push, runtimeId, setApprovedOntologyWriteTracked, setChoices, updateEvents],
+    [emitWorkReceipt, noteModeMoved, push, runtimeId, runtimeLabel, setApprovedOntologyWriteTracked, setChoices, updateEvents],
   );
 
   const askUser = useCallback((request: AcpPermissionRequest) => askPermission(request, {

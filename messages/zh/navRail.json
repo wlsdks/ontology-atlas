@@ -15,6 +15,7 @@
   "planning": "规划",
   "workStatus": "工作状态",
   "usage": {
+    "agentFallback": "智能体",
     "tileName": "{agent} 用量",
     "limitName": {
       "fiveHour": "5 小时限额",

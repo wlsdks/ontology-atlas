@@ -24,7 +24,7 @@ function renderNote(locale: keyof typeof CATALOGUES = 'en') {
   );
 }
 
-const fiveHour = (usedFraction: number, runtimeId = 'claude-acp') => act(() => agentUsage.record(runtimeId, {
+const fiveHour = (usedFraction: number, runtimeId = 'claude-acp') => act(() => agentUsage.record({ runtimeId, name: null }, {
   sessionId: 's-1',
   context: null,
   cost: null,

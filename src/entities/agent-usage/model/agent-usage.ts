@@ -31,6 +31,8 @@ type Read<T> = T & { readAtMs: number };
 /** The latest of each figure one agent reported, each with the moment it arrived. */
 export interface AgentUsage {
   runtimeId: string;
+  /** The name the conversation shows for this agent, when the reporting screen knows it. */
+  agentName: string | null;
   /** The conversation the context and cost belong to; limits belong to the account. */
   sessionId: string;
   context: Read<ContextFigures> | null;
@@ -51,7 +53,7 @@ function reportsNothing(report: UsageReport): boolean {
  */
 export function mergeUsageReport(
   previous: AgentUsage | null,
-  runtimeId: string,
+  agent: { runtimeId: string; name: string | null },
   report: UsageReport,
   readAtMs: number,
 ): AgentUsage | null {
@@ -63,7 +65,8 @@ export function mergeUsageReport(
     if (figures) limits[window] = { ...figures, readAtMs };
   }
   return {
-    runtimeId,
+    runtimeId: agent.runtimeId,
+    agentName: agent.name ?? previous?.agentName ?? null,
     sessionId: report.sessionId,
     context: report.context ? { ...report.context, readAtMs } : sameConversation ? previous.context : null,
     cost: report.cost ? { ...report.cost, readAtMs } : sameConversation ? previous.cost : null,

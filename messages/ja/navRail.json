@@ -15,6 +15,7 @@
   "planning": "企画",
   "workStatus": "作業状況",
   "usage": {
+    "agentFallback": "エージェント",
     "tileName": "{agent} の使用量",
     "limitName": {
       "fiveHour": "5時間の上限",
