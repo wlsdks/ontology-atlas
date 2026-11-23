@@ -8,6 +8,7 @@ import {
   mkdirSync,
   openSync,
   readFileSync,
+  readSync,
   realpathSync,
   renameSync,
   unlinkSync,
@@ -244,6 +245,44 @@ export function readVaultSidecarText(vaultRoot, filename, { subdirectory = undef
     const after = fstatSync(descriptor);
     if (!sameRevision(revisionOf(metadata), revisionOf(after))) throw conflict(filename);
     return { text, revision: revisionOf(after) };
+  } finally {
+    if (descriptor !== null) closeSync(descriptor);
+  }
+}
+
+/**
+ * At most the last `maxBytes` of a sidecar file, starting at a whole line, with the
+ * revision a later replace must match; `truncated` when the file holds more.
+ * Null when the file is absent. Reads O(maxBytes) whatever the file's size.
+ */
+export function readVaultSidecarTail(vaultRoot, filename, maxBytes) {
+  assertFilename(filename);
+  const context = sidecarContext(vaultRoot);
+  if (!context) return null;
+  const metadata = safeFileMetadata(context, filename);
+  if (!metadata) return null;
+  const filePath = sidecarFile(context, filename);
+  let descriptor = null;
+  try {
+    descriptor = openWithoutFollowing(filePath, constants.O_RDONLY);
+    const opened = assertOpenedFileMatches(metadata, descriptor, filename);
+    assertContext(context);
+    const start = Math.max(0, opened.size - maxBytes);
+    const buffer = Buffer.alloc(opened.size - start);
+    let filled = 0;
+    while (filled < buffer.length) {
+      const read = readSync(descriptor, buffer, filled, buffer.length - filled, start + filled);
+      if (read === 0) break;
+      filled += read;
+    }
+    const after = fstatSync(descriptor);
+    if (!sameRevision(revisionOf(metadata), revisionOf(after))) throw conflict(filename);
+    let text = buffer.subarray(0, filled).toString('utf8');
+    if (start > 0) {
+      const lineStart = text.indexOf('\n');
+      text = lineStart === -1 ? '' : text.slice(lineStart + 1);
+    }
+    return { text, revision: revisionOf(after), truncated: start > 0 };
   } finally {
     if (descriptor !== null) closeSync(descriptor);
   }

@@ -4,7 +4,7 @@ doc_type: spec
 status: draft
 area: map
 date: 2026-11-24
-decisions: []
+decisions: [4f94c421]
 ---
 
 # The map shows its analysis record and what changed since
@@ -433,3 +433,8 @@ same complaint), and still waits for Record C and its reviewer before any of it 
 ## Revisions
 
 - 2026-11-24: first draft.
+- 2026-11-24: slice 1 built. Record A is `4f94c421`. Readers keep the last line per session and
+  analysis, so one server process that idles past an hour spans two analyses. The server folds
+  earlier sessions to their last line when an analysis begins and keeps the newest 2,000; the app
+  reads the last 1 MiB. Relation writes count as a change to their `from` concept; connecting or
+  disconnecting code is not an analysis.
