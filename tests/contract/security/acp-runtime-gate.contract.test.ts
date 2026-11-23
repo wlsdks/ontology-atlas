@@ -110,7 +110,7 @@ describe('the gate: what is said and what is applied must match', () => {
     const registry = JSON.parse(
       readFileSync(join(ROOT, 'src-tauri/src/acp-registry.json'), 'utf8'),
     ) as { agents: Array<{ id: string; launch?: { package?: string } }> };
-    // v2.10.0 AgentMode (as 2.8.0): readOnly, on-request, no network; INITIAL_AGENT_MODE applies.
+    // v2.10.0 AgentMode (as 2.9.0): readOnly, on-request, no network; INITIAL_AGENT_MODE applies.
     // The separate workspace-write mode is excluded by mode-safety.ts; MCP keeps its own gate.
     expect(registry.agents.find((agent) => agent.id === 'codex-acp')?.launch?.package).toBe(
       '@agentclientprotocol/codex-acp@2.10.0',

@@ -1,7 +1,7 @@
 {
   "source": "https://cdn.agentclientprotocol.com/registry/v1/latest/registry.json",
   "registryVersion": "1.0.0",
-  "npmDependencyCutoff": "2026-11-23T10:30:46.228Z",
+  "npmDependencyCutoff": "2026-11-23T11:15:03.788Z",
   "agents": [
     {
       "id": "claude-acp",

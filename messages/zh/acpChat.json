@@ -175,6 +175,7 @@
     "pageFails": "此页面的结构有 {count} 个问题。允许后将按原样保存，Wiki 列表会显示这些问题。",
     "pageFailsRest": "另有 {count} 个。Wiki 列表会全部显示。",
     "insideFolderTitle": "它想修改此文件夹中的一个文件",
+    "statedInsideFolderTitle": "它表示将修改此文件夹中的这些文件",
     "insideFolderBody": "路径见下方。在你允许之前不会有任何动作。",
     "insideProjectTitle": "它想查看你项目中的代码",
     "insideProjectBody": "这些代码在本体文件夹之外，但在你选择的项目之内。在你允许之前不会有任何动作。",

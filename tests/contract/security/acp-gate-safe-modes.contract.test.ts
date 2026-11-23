@@ -21,7 +21,7 @@ function choice(id: string, name = id, metaKind: string | null = null): AcpChoic
 
 describe('current adapter mode transcription', () => {
   it.each([false, true])('keeps only approval-required Codex modes with AIR metadata %s', (air) => {
-    // v2.10.0 src/AgentMode.ts (as 2.8.0): all() and toSessionMode(); kinds go only to AIR.
+    // v2.10.0 src/AgentMode.ts (as 2.9.0): all() and toSessionMode(); kinds go only to AIR.
     const modes = [
       choice('read-only', 'Read-only', air ? 'standard' : null),
       choice('workspace-write', 'Workspace access', air ? 'standard' : null),
@@ -33,7 +33,7 @@ describe('current adapter mode transcription', () => {
   });
 
   it('keeps the manual and plan modes in the current non-AIR Claude list', () => {
-    // v0.110.0 session-mode.ts (same bytes as 0.109.0): all options enabled, no AIR kinds.
+    // v0.110.0 session-mode.ts (same bytes as 0.109.1): all options enabled, no AIR kinds.
     const modes = [
       choice('default', 'Manual'),
       choice('acceptEdits', 'Accept edits'),

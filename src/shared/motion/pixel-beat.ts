@@ -60,7 +60,7 @@ function replan() {
 }
 
 /**
- * One timer for every pixel clip on the page: the rooms' Moru and the lobby step on the same beat,
+ * One timer for every pixel clip on the page: the rooms' Moru step on the same beat,
  * so each step is one frame of the page instead of one per clock. It sleeps as long as every
  * listener allows, up to a second, and runs while anything listens.
  */

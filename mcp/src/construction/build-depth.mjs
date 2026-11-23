@@ -81,24 +81,26 @@ function areasSentence(docs, repoRoot, coverage, batch) {
   const { notMapped, counted, abilities, uncovered } = coverage;
   if (notMapped.length === 0) {
     return keepsNotMappedLines(docs)
-      ? `Areas: all ${counted} areas are mapped. Remove the Not mapped yet lines from the project's ## Uncertainty.`
+      ? `Areas: all ${counted} areas are mapped. Remove the Not mapped yet lines from the project's ## Uncertainty; finalize_project_meaning refuses while they stay (not-mapped-line-mismatch).`
       : null;
   }
-  const share = abilities === 0
-    ? 'Areas: '
-    : `Areas: ${abilities - uncovered} of ${abilities} abilities the survey found, ${mappedPercent(coverage)} percent, are on the map (a node's path: or cited lines point at their file); `;
+  const lead = abilities === 0
+    ? `Areas: ${notMapped.length} of ${counted} areas are not mapped yet and hold no abilities, so the project keeps no Not mapped yet line. `
+    : `Areas: ${abilities - uncovered} of ${abilities} abilities the survey found, ${mappedPercent(coverage)} percent, are on the map (a node's path: or cited lines point at their file); ${notMapped.length} of ${counted} areas are not mapped yet, largest gap first in the lines to keep below. `;
+  const keep = abilities === 0
+    ? ''
+    : `Keep exactly these lines under the project's ## Uncertainty, replacing any earlier Not mapped yet lines:\n${notMappedLines(coverage).join('\n')}\n`;
   const files = batch.reduce((sum, area) => sum + area.batchFiles.length, 0);
   const next = files > 0
     ? `Map next, in one request, the ${files} ${files === 1 ? 'file' : 'files'} with no node, ${batch.map(batchFilesLabel).join('; ')}. Open their areas: `
     : `Map next, in one request: ${batch.map(areaLabel).join(', ')}. Open it: `;
   const project = docs.find((doc) => kindOf(doc) === 'project');
   const gap = project ? notMappedLineGap(project.body, coverage) : null;
-  return `${share}${notMapped.length} of ${counted} areas are not mapped yet, largest gap first in the lines to keep below. `
-    + `${next}${batch.map((area) => openAreaCall(repoRoot, area)).join('; ')}. `
+  return `${lead}${next}${batch.map((area) => openAreaCall(repoRoot, area)).join('; ')}. `
     + 'Then write one capability per thing a user, an operator or another system gets there, with its entry file in path: and its rule\'s cited lines; one capability may stand for several files when it cites lines in each. '
-    + 'What is not product (generated code, test tooling, samples) goes on one line of the project\'s ## Excludes with its path and why. '
-    + (gap ? `The project ${gap} (not-mapped-line-mismatch); finalize_project_meaning refuses until that line matches. ` : '')
-    + `Keep exactly these lines under the project's ## Uncertainty, replacing any earlier Not mapped yet lines:\n${notMappedLines(coverage).join('\n')}\n`;
+    + 'What is not product (generated code, test tooling, samples) goes on one line of the project\'s ## Excludes with its path and why.'
+    + (gap ? ` The project ${gap} (not-mapped-line-mismatch); finalize_project_meaning refuses until that line matches.` : '')
+    + (keep ? ` ${keep}` : '');
 }
 
 /**
@@ -130,7 +132,7 @@ export function measureBuildDepth(docs, repo, reads) {
   const rules = measureRules(docs, reads, repo?.repoRoot ?? null);
   const abilityEdges = measureAbilityEdges(docs);
   const roles = measureRoles(docs, reads, repo?.repoRoot ?? null);
-  const coverage = repo ? areaCoverage(docs, repo.survey) : null;
+  const coverage = repo ? areaCoverage(docs, repo.survey, { collection: repo.collection, repoRoot: repo.repoRoot, reads }) : null;
   const unmapped = coverage?.notMapped ?? [];
   const batch = mappingBatch(unmapped);
   const parts = [];
@@ -175,12 +177,19 @@ export function measureBuildDepth(docs, repo, reads) {
 
 /**
  * Why finalize refuses a project whose `## Uncertainty` does not keep the summary
- * line the measure gives, or null: the app shows the share on the map from that
- * line. Only a repository surveyed by area with areas not mapped yet needs it.
+ * line the measure gives, or keeps one after every area is mapped, or null: the
+ * app shows the share on the map from that line. Only a repository surveyed by
+ * area whose unmapped areas hold abilities needs it.
  */
 export function notMappedLinesRefusal(projectSlug, projectBody, depth) {
   const gap = notMappedLineGap(projectBody, depth.areaCoverage);
   if (!gap) return null;
+  if (depth.areaCoverage.notMapped.length === 0) {
+    return [
+      `finalize_project_meaning blocked: ${projectSlug} ${gap}, and the app would keep offering to map the rest from them. Nothing was written.`,
+      `Next call: patch_concept({"slug":"${projectSlug}", "body": ...}) without the Not mapped yet lines under ## Uncertainty, then finalize_project_meaning again.`,
+    ].join('\n');
+  }
   return [
     `finalize_project_meaning blocked: ${projectSlug} ${gap}, and the app shows how much of the code is on the map from that line. Nothing was written.`,
     `Next call: patch_concept({"slug":"${projectSlug}", "body": ...}) so the body's ## Uncertainty holds exactly these lines, replacing any earlier Not mapped yet lines, then finalize_project_meaning again:`,

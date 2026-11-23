@@ -1,9 +1,11 @@
 //! Work status: which agent session holds which worktree of a chosen repository, read from Git,
-//! from the pids that worktree locks name, and from the working folders of agent programs. Nothing
-//! here writes, signals or leaves the machine.
+//! from the pids that worktree locks name, from the working folders of agent programs, and from
+//! Claude Code's own session list. Nothing here writes or leaves the machine, and the only process
+//! it signals is one it started.
 
 mod activity;
 mod agent_processes;
+mod agent_sessions;
 mod fingerprint;
 mod git_read;
 mod worktrees;
@@ -12,7 +14,7 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 
 use serde::Serialize;
-use tauri::State;
+use tauri::{AppHandle, Manager, State};
 
 use crate::acp::session::AcpSessions;
 use worktrees::WorktreeRow;
@@ -97,6 +99,37 @@ pub fn work_status_fingerprint(
         .map(|(pid, _)| *pid)
         .collect();
     fingerprint::admin_fingerprint(&root, &agent_processes::agent_processes(&acp_pids))
+}
+
+/// What each Claude Code session in the repository's worktrees says of itself (waiting for its
+/// person, working, or done replying) and how the last read of the list went. One
+/// `claude agents --json` every ten seconds, or a second after a Claude Code process appears or
+/// ends, with no network; `None` while one runs or while the person has the read switched off.
+#[tauri::command(async)]
+pub fn work_status_agent_sessions(
+    app: AppHandle,
+    sessions: State<'_, AcpSessions>,
+    repository_path: String,
+) -> Option<agent_sessions::SessionsRead> {
+    let root = granted_root(&repository_path).ok()?;
+    let working_folder = app.path().app_data_dir().ok()?;
+    let acp_pids: Vec<u32> = sessions
+        .session_roots()
+        .iter()
+        .map(|(pid, _)| *pid)
+        .collect();
+    agent_sessions::sessions_read(
+        &root,
+        &agent_processes::agent_processes(&acp_pids),
+        &working_folder,
+    )
+}
+
+/// The person switched the session-list read on or off. Off holds in Rust, so no ask starts the
+/// program, and the last list leaves memory.
+#[tauri::command(async)]
+pub fn work_status_set_agent_sessions_read(on: bool) {
+    agent_sessions::set_reading(on);
 }
 
 /// One stamp per worktree from stats of its `HEAD`, `index` and reflog; the page reads a

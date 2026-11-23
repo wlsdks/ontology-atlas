@@ -525,13 +525,23 @@ describe('permission card: speaks differently inside my project and somewhere en
 
   it('names every file an edit states in its locations and says the folder when all are in it', () => {
     render(statedCard([`${VAULT}/wiki/a.md`, `${VAULT}/wiki/b.md`]));
-    expect(screen.getByText(koMessages.acpChat.permission.insideFolderTitle)).toBeInTheDocument();
+    // The list is the agent's own, so the title reports it and the agent's name for the request stays in view.
+    expect(screen.getByText(koMessages.acpChat.permission.statedInsideFolderTitle)).toBeInTheDocument();
+    expect(screen.queryByText(koMessages.acpChat.permission.insideFolderTitle)).toBeNull();
+    expect(screen.getByTestId('acp-permission-stated-title')).toHaveTextContent('Edit files');
     expect(screen.getAllByTestId('acp-permission-path').map((node) => node.textContent)).toEqual([`${VAULT}/wiki/a.md`, `${VAULT}/wiki/b.md`]);
   });
 
   it('keeps the warning when one stated file is outside the folder and the project', () => {
     render(statedCard([`${VAULT}/wiki/a.md`, '/etc/hosts']));
     expect(screen.getByText(koMessages.acpChat.permission.title)).toBeInTheDocument();
+  });
+
+  it('a request that states no files keeps the warning and its own title, whatever it is', () => {
+    render(statedCard([]));
+    expect(screen.getByText(koMessages.acpChat.permission.title)).toBeInTheDocument();
+    expect(screen.getByText('Edit files')).toBeInTheDocument();
+    expect(screen.getByTestId('acp-permission-card').className).toContain('amber');
   });
 
   it('somewhere truly different keeps the old warning, the side that needs attention', () => {

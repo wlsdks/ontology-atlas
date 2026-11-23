@@ -7,26 +7,29 @@ export interface NotMappedAreas {
 }
 
 const UNCERTAINTY_HEADING = /^##\s+Uncertainty\s*$/i;
-const SECTION_END = /^#{1,2}\s/;
-// The exact line the MCP server tells the builder to keep; changing it breaks that contract.
-const NOT_MAPPED_LINE = /Not mapped yet:\s*(\d+)\s+of\s+(\d+)\s+areas?,\s*(\d+)\s+of\s+(\d+)\s+abilities\b/i;
+const SECTION_END = /^##\s/;
+// The MCP server writes and checks this line (`mcp/src/construction/build-depth/unmapped-areas.mjs`);
+// `tests/fixtures/not-mapped-line-cases.mjs` holds both readers to the same answers.
+const SUMMARY_LINE = /^\s*(?:[-*+]\s+)?Not mapped yet:\s*\d+\s+of\s+\d+\s+areas?\b/i;
+const SUMMARY_COUNTS = /^\s*(?:[-*+]\s+)?Not mapped yet:\s*(\d+)\s+of\s+(\d+)\s+areas?,\s*(\d+)\s+of\s+(\d+)\s+abilities\b/i;
 
-function uncertaintySection(body: string): string | null {
+function uncertaintyLines(body: string): string[] {
   const lines = body.split('\n');
-  const start = lines.findIndex((line) => UNCERTAINTY_HEADING.test(line.trim()));
-  if (start === -1) return null;
+  const start = lines.findIndex((line) => UNCERTAINTY_HEADING.test(line));
+  if (start === -1) return [];
   const rest = lines.slice(start + 1);
   const end = rest.findIndex((line) => SECTION_END.test(line));
-  return (end === -1 ? rest : rest.slice(0, end)).join('\n');
+  return end === -1 ? rest : rest.slice(0, end);
 }
 
 /**
- * The first `Not mapped yet: N of M areas, R of T abilities.` under `## Uncertainty`; null when absent,
- * in an earlier form without abilities, or not a count of M areas and T abilities. O(body length).
+ * The first summary line under `## Uncertainty` (`Not mapped yet: N of M areas, R of T abilities.`, leading
+ * its line after an optional `-`, `*` or `+`); null when absent, when the first is in an earlier form without
+ * abilities, or when it counts no area or no ability. O(body length).
  */
 export function notMappedAreas(body: string): NotMappedAreas | null {
-  const section = uncertaintySection(body);
-  const match = section === null ? null : NOT_MAPPED_LINE.exec(section);
+  const line = uncertaintyLines(body).find((text) => SUMMARY_LINE.test(text));
+  const match = line === undefined ? null : SUMMARY_COUNTS.exec(line);
   if (!match) return null;
   const remaining = Number(match[1]);
   const total = Number(match[2]);

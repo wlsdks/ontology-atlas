@@ -6,7 +6,7 @@ import { ROOM_ROW_FRAMES } from '@/shared/ui/marks/moru/moru-rows';
 import { castClip, castStripUrl, tintedStripUrl } from './cast-strip';
 
 export const MORU_CELL_PX = 128;
-/** A room row's cell time: the page's pixel beat, which the lobby steps on too. */
+/** A room row's cell time: the page's pixel beat. */
 export const MORU_STEP_MS = PIXEL_BEAT_MS;
 /** Cells a Moru skips per step on his way back to the neutral pose before a row he plays once. */
 const RETURN_CELLS = 2;

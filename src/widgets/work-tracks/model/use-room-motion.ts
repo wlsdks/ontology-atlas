@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, type RefObject } from 'react';
 import { useLatestRef } from '@/shared/lib/use-latest-ref';
 import { MOTION, MOTION_EASE } from '@/shared/motion';
-import { WIDE_ROOM_W, type Box, type RoomBox } from './building-layout';
+import type { Box, RoomBox } from './building-layout';
 import { FADE_MS, MOVE_MS, SHOW_MS, boxAt, boxOnPath, glide, planSequence, type RoomMove, type RoomSequence } from './room-sequence';
 
 const ms = (seconds: number) => seconds * 1000;
@@ -149,11 +149,7 @@ export function useRoomMotion(
       to: boxes,
       leaving: fading,
       entering: entering.length,
-      keepsContent: key => {
-        const next = boxes.get(key);
-        const width = drawn.get(key)?.box.w ?? 0;
-        return before.get(key)?.size === 'large' && next?.size === 'large' && (width >= WIDE_ROOM_W) === (next.w >= WIDE_ROOM_W);
-      },
+      keepsContent: key => before.get(key)?.size === 'large' && boxes.get(key)?.size === 'large',
     });
     const { totalMs, enterAtMs } = sequence;
     const at = (time: number) => (totalMs === 0 ? 0 : Math.min(1, time / totalMs));

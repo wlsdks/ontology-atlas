@@ -61,12 +61,22 @@ function readPathArg(rawInput: Record<string, unknown>): string | null {
   return null;
 }
 
+const HIDDEN_OR_CONTROL_CHARACTER = /[\p{Cc}\p{Cf}\u2028\u2029]/u;
+
+/**
+ * Only an edit's `locations` are the files it changes. A command's are what it reads and a sandbox
+ * request's what it asks to reach, so wording the card by them would call a shell command or a
+ * wider sandbox "a change to a file in this folder". A path carrying a hidden or control character
+ * drops the whole list, and the card falls back to its outside wording and the request's own title.
+ */
 function readStatedPaths(toolCall: Record<string, unknown>): string[] {
+  if (toolCall.kind !== 'edit') return [];
   const locations = Array.isArray(toolCall.locations) ? toolCall.locations : [];
   const paths = locations.flatMap((entry) => {
     const path = asRecord(entry).path;
     return typeof path === 'string' && path.trim() ? [path] : [];
   });
+  if (paths.some((path) => HIDDEN_OR_CONTROL_CHARACTER.test(path))) return [];
   return [...new Set(paths)];
 }
 
