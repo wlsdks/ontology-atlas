@@ -1,4 +1,5 @@
-import { recordedInstantMs, type LibraryWikiPage, type LibraryWriteUpLink } from "@/entities/docs-vault";
+import type { LibraryWikiPage, LibraryWriteUpLink } from "@/entities/docs-vault";
+import { recordedInstantMs } from "@/shared/lib/library/recorded-date";
 import type { LintFinding } from "@/features/library";
 import { wikiFindingCode } from "@/shared/lib/library/wiki-report.mjs";
 

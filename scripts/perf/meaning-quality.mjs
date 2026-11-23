@@ -140,7 +140,7 @@ const dot = (a, b) => {
 };
 
 /** Lets Node import the app's TypeScript: `@/` aliases and extensionless relative imports. */
-async function importDesk() {
+export async function importDesk() {
   const src = `${join(ROOT, 'src')}/`;
   const hooks = `
     import { existsSync, statSync } from 'node:fs';
@@ -168,8 +168,8 @@ async function importDesk() {
 }
 
 /** The same calls, in the same order, as `LibraryQuestionDesk.tsx` `search()`. */
-function wordSearch(app, vault, question) {
-  const wiki = app.findDeskClaims(question, vault.docs, vault.rawBySlug);
+export function wordSearch(app, vault, question) {
+  const wiki = app.findDeskClaims(question, vault.docs, vault.claimsBySlug);
   const terms = app.questionTerms(question);
   const hits = [];
   for (const source of app.planDeskSourceReads(vault.sources)) {
@@ -184,10 +184,11 @@ function wordSearch(app, vault, question) {
   return { claims, sources: hits.slice(0, TOP).map((hit) => ({ id: hit.path, line: Number(hit.anchor.slice(1)) })) };
 }
 
-async function readVaultFixture(app) {
+/** What the desk's word search reads from the fixture; needs no built index. */
+export function readDeskFixture(app) {
   const { files } = JSON.parse(readFileSync(join(FIXTURE, 'vault.json'), 'utf8'));
   const docs = [];
-  const rawBySlug = new Map();
+  const claimsBySlug = new Map();
   const sources = [];
   const unitsByPath = new Map();
   for (const [path, raw] of Object.entries(files)) {
@@ -195,13 +196,19 @@ async function readVaultFixture(app) {
       const slug = path.replace(/\.md$/, '');
       const { frontmatter } = app.parseFrontmatter(raw);
       docs.push({ slug, title: String(frontmatter.title ?? slug), frontmatter });
-      rawBySlug.set(slug, raw);
+      claimsBySlug.set(slug, app.deskPageClaims(raw));
     } else if (path.startsWith('sources/')) {
       const bytes = new TextEncoder().encode(raw);
       sources.push({ path, bytes: bytes.length, mtime: 0 });
       unitsByPath.set(path, app.sourceUnits(bytes, path).units);
     }
   }
+  return { files, docs, claimsBySlug, sources, unitsByPath };
+}
+
+async function readVaultFixture(app) {
+  const desk = readDeskFixture(app);
+  const { files } = desk;
   const directory = mkdtempSync(join(tmpdir(), 'atlas-meaning-quality-vault-'));
   const passages = [];
   try {
@@ -213,7 +220,7 @@ async function readVaultFixture(app) {
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }
-  return { files, docs, rawBySlug, sources, unitsByPath, passages };
+  return { ...desk, passages };
 }
 
 /**
@@ -324,7 +331,7 @@ async function main() {
     const sourcePassages = [];
     vault.passages.forEach((passage, at) => {
       const entry = { id: passage.path, start: passage.start, end: passage.end, vector: passageRun.vectors[at] };
-      if (passage.path.startsWith('wiki/') && vault.rawBySlug.has(passage.path.replace(/\.md$/, ''))) wikiPassages.push(entry);
+      if (passage.path.startsWith('wiki/') && vault.claimsBySlug.has(passage.path.replace(/\.md$/, ''))) wikiPassages.push(entry);
       else if (passage.path.startsWith('sources/')) sourcePassages.push(entry);
     });
     const rank = (list, vector) => list.map((entry) => ({ ...entry, similarity: dot(entry.vector, vector) }))
