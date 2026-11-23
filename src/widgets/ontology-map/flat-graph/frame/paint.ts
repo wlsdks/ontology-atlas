@@ -13,7 +13,6 @@ const TAPER_TIP_PX = 0.35;
 const ARROW_WIDTH_PX = 1.3;
 
 const AGENT_RING_WIDTH_PX = 1;
-const STALE_RIM_PX = 2;
 const UNKNOWN_DASH = [2, 2];
 
 function strokeArcs(ctx: CanvasRenderingContext2D, arcs: readonly Arc[], ink: string, headPx: number): void {
@@ -257,8 +256,8 @@ function paintDiscs(ctx: CanvasRenderingContext2D, marks: readonly Disc[], token
     ctx.fillStyle = sunk(first.hue, ground, first.ink * (first.focus ? 1 : P.coreAlpha));
     ctx.fill();
   }
-  // Stale evidence turns the whole rim warning amber, the colour the legend names, not a pip a few pixels wide.
-  ctx.lineWidth = STALE_RIM_PX;
+  // Stale evidence recolours the rim at its own width, the amber the legend names; a heavier ring outshouts the map when most evidence is stale.
+  ctx.lineWidth = rimPx;
   for (let dIndex = 0; dIndex < marks.length; dIndex += 1) {
     const d = marks[dIndex]!;
     if (d.state !== "stale") continue;
