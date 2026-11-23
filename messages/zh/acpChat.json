@@ -501,5 +501,9 @@
     "listTitle": "把代码的其余部分放到地图上的请求",
     "listItem": "第 {part, number} 个请求",
     "close": "关闭"
+  },
+  "limitNear": {
+    "fiveHour": "5 小时限额已用 {percent, number}%",
+    "weekly": "每周限额已用 {percent, number}%"
   }
 }

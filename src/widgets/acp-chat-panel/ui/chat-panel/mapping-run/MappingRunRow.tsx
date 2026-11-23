@@ -3,6 +3,7 @@
 import { useLayoutEffect, useRef, type ReactNode, type RefObject } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 
+import type { LimitInForce } from '@/entities/agent-usage';
 import { isMappingActive, mappingFraction, RollingCount, type MappingFigures, type MappingRun } from '@/features/work-run';
 import { cn } from '@/shared/lib/cn';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
@@ -32,6 +33,8 @@ interface MappingRunRowProps {
   collapsed: boolean;
   /** A press can start a run now: no turn of this conversation runs and the folder is free. */
   canStart: boolean;
+  /** The agent's fullest account limit at the notice share or more; named before Start, never blocking it. */
+  limitAhead: LimitInForce | null;
   onStart: () => void;
   onStop: () => void;
   onClose: () => void;
@@ -180,9 +183,11 @@ function useFocusAcrossSwap(host: RefObject<HTMLDivElement | null>, oneLine: boo
  * through every state (Start, Stop, Continue, Close), so the control that starts a run stops it.
  * Its count and bar move once per request.
  */
-export function MappingRunRow({ run, resting, autoApprove, canStart, collapsed, onStart, onStop, onClose, onCollapse, onExpand }: MappingRunRowProps) {
+export function MappingRunRow({ run, resting, autoApprove, canStart, limitAhead, collapsed, onStart, onStop, onClose, onCollapse, onExpand }: MappingRunRowProps) {
   const t = useTranslations('workCard.mapping');
   const tCard = useTranslations('workCard');
+  const tChat = useTranslations('acpChat');
+  const limitInk = limitAhead?.level === 'warning' ? 'text-[color:var(--color-status-warning)]' : 'text-[color:var(--color-text-secondary)]';
   const copy = useRowCopy(run, resting);
   const state: RowState = run ? run.phase : 'notStarted';
   const oneLine = collapsed && !run;
@@ -267,6 +272,16 @@ export function MappingRunRow({ run, resting, autoApprove, canStart, collapsed, 
           >
             {t(autoApprove ? 'approvalAutoShort' : 'approvalLineShort')}
           </span>
+          {limitAhead ? (
+            <span
+              data-testid="mapping-run-limit"
+              data-level={limitAhead.level}
+              title={t(`limitAhead.${limitAhead.window}`, { percent: limitAhead.percent })}
+              className={cn('shrink-0 whitespace-nowrap text-label leading-label tabular-nums', limitInk)}
+            >
+              {tChat(`limitNear.${limitAhead.window}`, { percent: limitAhead.percent })}
+            </span>
+          ) : null}
         </p>
         {button}
       </div>
@@ -292,6 +307,11 @@ export function MappingRunRow({ run, resting, autoApprove, canStart, collapsed, 
         <p className="text-label leading-label tabular-nums text-[color:var(--color-text-tertiary)]">
           <span data-testid="mapping-run-body">{copy.body}</span>
         </p>
+        {!run && limitAhead ? (
+          <p data-testid="mapping-run-limit" data-level={limitAhead.level} className={cn('text-label leading-label tabular-nums', limitInk)}>
+            {t(`limitAhead.${limitAhead.window}`, { percent: limitAhead.percent })}
+          </p>
+        ) : null}
         {run ? null : (
           <p className="text-label leading-label text-[color:var(--color-text-quaternary)]">
             <span data-testid="mapping-run-approval">{t(autoApprove ? 'approvalAuto' : 'approvalLine')}</span>

@@ -79,6 +79,10 @@
     "filesPrepared": "Files prepared"
   },
   "mapping": {
+    "limitAhead": {
+      "fiveHour": "Your 5-hour limit is at {percent, number}%; this run may reach it.",
+      "weekly": "Your weekly limit is at {percent, number}%; this run may reach it."
+    },
     "title": "Mapping the rest of the code",
     "request": "Request {part, number}",
     "onMap": "<count>{mapped}</count> of {total, number} abilities on the map ({percent, number}%)",

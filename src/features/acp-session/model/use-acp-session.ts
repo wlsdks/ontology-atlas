@@ -28,6 +28,7 @@ import { createAcpClient, type AcpClient, type AcpTransport } from './acp-client
 import type { AcpPermissionRequest } from './permissions/permission-request';
 import type { AcpSessionChoices } from './session-choices/acp-session-choices';
 import type { AcpSessionSummary } from './session-summaries';
+import { agentUsage } from '@/entities/agent-usage';
 import type { AcpWorkReceipt } from '@/shared/lib/meaning-transition/acp-work-receipt';
 import type { TaskBaselineCaptureResult } from './task-baseline';
 import { appendEvent, nextEventId, type AcpEvent, type AcpSessionStatus } from './conversation/acp-events';
@@ -48,6 +49,8 @@ export type { AcpTurnCompletion, AcpTurnStart } from './turns/acp-turn';
 
 export interface UseAcpSessionOptions {
   runtimeId: string;
+  /** The agent's name as the conversation shows it; usage figures carry it to the rail. */
+  runtimeLabel?: string;
   vaultRoot: string | null;
   mcpServers?: unknown[];
   approvalSettleMs?: number;
@@ -87,6 +90,7 @@ const EMPTY_CHOICES: AcpSessionChoices = {
  */
 export function useAcpSession({
   runtimeId,
+  runtimeLabel,
   vaultRoot,
   mcpServers,
   approvalSettleMs = 0,
@@ -298,8 +302,9 @@ export function useAcpSession({
       updateEvents,
       emitWorkReceipt,
       setApprovedOntologyWriteTracked,
+      reportUsage: (usage) => agentUsage.record({ runtimeId, name: runtimeLabel ?? null }, usage),
     }),
-    [emitWorkReceipt, noteModeMoved, push, setApprovedOntologyWriteTracked, setChoices, updateEvents],
+    [emitWorkReceipt, noteModeMoved, push, runtimeId, runtimeLabel, setApprovedOntologyWriteTracked, setChoices, updateEvents],
   );
 
   const askUser = useCallback((request: AcpPermissionRequest) => askPermission(request, {
