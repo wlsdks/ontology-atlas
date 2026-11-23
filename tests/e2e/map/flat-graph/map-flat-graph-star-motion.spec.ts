@@ -21,7 +21,8 @@ const RETARGET_AFTER_MS = 150;
 type SampledMark = [string, number, number, number, boolean, boolean];
 /** A name: id, role, glyph box, ink, whether it draws on a backing, and the side of its mark it stands on. */
 type SampledName = [string, string, number, number, number, number, number, boolean, number];
-type Sample = { t: number; zoom: number; w: number; h: number; marks: SampledMark[]; names: SampledName[] };
+/** `t` is the sampler's frame, `drawn` the frame time of the map frame it read; steps are timed by `drawn`. */
+type Sample = { t: number; drawn: number; zoom: number; w: number; h: number; marks: SampledMark[]; names: SampledName[] };
 
 /**
  * The resting overview a fresh load draws with the dock closed: these title and caption rows, and a
@@ -105,10 +106,10 @@ async function startSampling(page: Page, ids: readonly string[]): Promise<void> 
     const tick = (t: number) => {
       type Box = { minX: number; maxX: number; minY: number; maxY: number };
       type Text = { id: string; role: string; box: Box; alpha: number; backed: boolean; side: number };
-      const d = window.__atlasMap!.dial!() as { zoomRatio: number; discs: { id: string | null; x: number; y: number; r: number }[]; glyphs: { id: string | null; x: number; y: number; r: number; grown: boolean }[]; texts: Text[]; fadingTexts: Text[] };
+      const d = window.__atlasMap!.dial!() as { drawnAt: number; zoomRatio: number; discs: { id: string | null; x: number; y: number; r: number }[]; glyphs: { id: string | null; x: number; y: number; r: number; grown: boolean }[]; texts: Text[]; fadingTexts: Text[] };
       const canvas = document.querySelector<HTMLCanvasElement>("[data-testid='ontology-map-canvas']")!;
       w.__starSamples.push({
-        t, zoom: d.zoomRatio, w: canvas.clientWidth, h: canvas.clientHeight,
+        t, drawn: d.drawnAt, zoom: d.zoomRatio, w: canvas.clientWidth, h: canvas.clientHeight,
         marks: [
           ...d.discs.filter((m) => m.id !== null && keep.has(m.id)).map((m): SampledMark => [m.id!, m.x, m.y, m.r, false, true]),
           ...d.glyphs.filter((m) => m.id !== null && keep.has(m.id)).map((m): SampledMark => [m.id!, m.x, m.y, m.r, m.grown, false]),
@@ -241,7 +242,9 @@ function motionOf({ samples, pressAt }: { samples: Sample[]; pressAt: number }, 
     }
     if (i === 0) continue;
     const before = samples[i - 1]!;
-    const dt = now.t - before.t;
+    // Timed by the map frames the two samples read: a sampler woken before the map in its frame reads the
+    // map's previous frame, so its own frame interval can be half or double the time that frame stepped.
+    const dt = now.drawn - before.drawn;
     if (!(dt > 0)) continue;
     let changed = Math.abs(now.zoom - before.zoom) > 1e-6;
     const step = Math.exp(Math.abs(Math.log(now.zoom / before.zoom)) * (FRAME_MS / dt)) - 1;

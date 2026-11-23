@@ -7,7 +7,7 @@ import { canvasBox, openDogfoodFlat, pressAt, readDial, settleSelection } from "
 const VIEWPORT = { width: 1410, height: 840 };
 /** Canvas px the domains' span and centre may differ by from the fit they are compared with. */
 const SAME_FIT_PX = 2;
-/** The largest share of a return's whole zoom change one painted frame may take at the run's frame pace. */
+/** The largest share of a return's whole zoom change (or pan, when it keeps its zoom) one painted frame may take at the run's frame pace. */
 const FRAME_ZOOM_SHARE_MAX = 0.25;
 
 interface Overview { spanX: number; spanY: number; centreX: number; centreY: number; zoom: number; canvasWidth: number }
@@ -88,16 +88,17 @@ const escapeAsTheDockCloses = (page: Page, dockedWidth: number, freeWidth: numbe
   requestAnimationFrame(tick);
 }, { docked: dockedWidth, free: freeWidth, share: NEARLY_CLOSED_SHARE });
 
-interface FrameSample { t: number; zoom: number; canvasWidth: number; selected: string | null }
+interface FrameSample { t: number; zoom: number; x: number; y: number; canvasWidth: number; selected: string | null }
 
-/** Records the drawn zoom, the canvas width and the selection on every frame until `stopSamples`. */
+/** Records the drawn zoom and centre, the canvas width and the selection on every frame until `stopSamples`. */
 const startSamples = (page: Page) => page.evaluate(() => {
   const w = window as unknown as { __frameSamples: FrameSample[]; __sampling: boolean };
   const canvas = document.querySelector("[data-testid=\"ontology-map-canvas\"]")!;
   w.__frameSamples = [];
   w.__sampling = true;
   const tick = (t: number) => {
-    w.__frameSamples.push({ t, zoom: window.__atlasMap!.camera()!.scale, canvasWidth: canvas.getBoundingClientRect().width, selected: window.__atlasMap!.selection().nodeId });
+    const camera = window.__atlasMap!.camera()!;
+    w.__frameSamples.push({ t, zoom: camera.scale, x: camera.x, y: camera.y, canvasWidth: canvas.getBoundingClientRect().width, selected: window.__atlasMap!.selection().nodeId });
     if (w.__sampling) requestAnimationFrame(tick);
   };
   requestAnimationFrame(tick);
@@ -109,20 +110,30 @@ const stopSamples = (page: Page) => page.evaluate(() => {
   return w.__frameSamples;
 });
 
+/** A zoom change, in log units, below which a return is judged on its pan. */
+const ZOOM_UNCHANGED_LOG = 1e-3;
+
 /**
  * No painted frame takes more than its share of the whole zoom change: the return glides, never
  * jumps. A frame longer than the run's median counts at the median pace, so a stalled frame is not a jump.
+ * The Flat camera floors at the overview's zoom, so a selection the dock's close lifted to that floor
+ * returns at the zoom it holds; that return is judged the same way on its pan, in canvas px.
  */
 function expectGlide(samples: FrameSample[], what: string): void {
-  const zooms = samples.map((s) => s.zoom);
   const intervals = samples.slice(1).map((s, i) => s.t - samples[i]!.t);
   const pace = [...intervals].sort((a, b) => a - b)[Math.floor(intervals.length / 2)]!;
-  const steps = zooms.slice(1).map((z, i) => Math.abs(Math.log(z / zooms[i]!)) * Math.min(1, pace / intervals[i]!));
-  const whole = Math.abs(Math.log(zooms.at(-1)! / zooms[0]!));
+  const atPace = (step: number, i: number) => step * Math.min(1, pace / intervals[i]!);
+  const first = samples[0]!;
+  const last = samples.at(-1)!;
+  const zoomWhole = Math.abs(Math.log(last.zoom / first.zoom));
+  const zoomed = zoomWhole > ZOOM_UNCHANGED_LOG;
+  const steps = samples.slice(1).map((s, i) => atPace(zoomed ? Math.abs(Math.log(s.zoom / samples[i]!.zoom)) : Math.hypot(s.x - samples[i]!.x, s.y - samples[i]!.y) * s.zoom, i));
+  const whole = zoomed ? zoomWhole : Math.hypot(last.x - first.x, last.y - first.y) * last.zoom;
+  const moved = zoomed ? "zoom" : "pan";
   const largest = Math.max(0, ...steps);
-  console.log(`[deselect-refit] ${what}: largest frame step ${(largest / whole).toFixed(3)} of the whole zoom change over ${zooms.length} frames`);
-  expect(whole, `${what}: the deselect changed the zoom`).toBeGreaterThan(0);
-  expect(largest / whole, `${what}: the largest frame step ${largest.toFixed(4)} of a whole ${whole.toFixed(4)} over ${zooms.length} frames`).toBeLessThanOrEqual(FRAME_ZOOM_SHARE_MAX);
+  console.log(`[deselect-refit] ${what}: largest frame step ${(largest / whole).toFixed(3)} of the whole ${moved} change over ${samples.length} frames`);
+  expect(whole, `${what}: the deselect moved the camera`).toBeGreaterThan(zoomed ? 0 : SAME_FIT_PX);
+  expect(largest / whole, `${what}: the largest frame step ${largest.toFixed(4)} of a whole ${moved} ${whole.toFixed(4)} over ${samples.length} frames`).toBeLessThanOrEqual(FRAME_ZOOM_SHARE_MAX);
 }
 
 async function pressConcept(page: Page, id: string): Promise<void> {
