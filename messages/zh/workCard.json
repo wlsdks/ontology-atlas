@@ -78,5 +78,29 @@
     "openLibrary": "打开资料库",
     "filesPrepared": "已准备的文件"
   },
+  "mapping": {
+    "title": "正在把代码的其余部分放到地图上",
+    "request": "第 {part, number} 个请求",
+    "onMap": "{total, number} 项能力中 <count>{mapped}</count> 项（{percent, number}%）",
+    "left": "约剩 {duration}",
+    "minutes": "{minutes, number} 分钟",
+    "hours": "{hours, number} 小时",
+    "waitingTitle": "正在等待你的回答",
+    "waitingBody": "{agent} 在修改之前先问了你。回答后会继续。",
+    "stoppedTitle": "已在 {percent, number}% 处停止",
+    "stoppedBody": "已经放到地图上的内容会保留。继续时会从这里接着进行。",
+    "messageBody": "已停止，方便你提问。继续时会从这里接着进行。",
+    "noProgressTitle": "已停止：上一个请求没有在地图上新增任何内容",
+    "noProgressBody": "仍为 {total, number} 项中的 {mapped, number} 项。智能体做了什么可在对话中查看。",
+    "pastEstimateTitle": "已停止：所需请求比预计的多",
+    "pastEstimateBody": "已发送 {sent, number} 个请求，{total, number} 项中有 {mapped, number} 项在地图上。",
+    "agentErrorBody": "{total, number} 项中有 {mapped, number} 项在地图上。已经写入的内容会保留。",
+    "usageLimitBody": "{total, number} 项中有 {mapped, number} 项在地图上。等使用上限重置后继续，或选择另一个智能体继续。",
+    "finishedTitle": "代码中找到的能力已全部放到地图上",
+    "finishedBody": "{total, number} 项能力，{sent, number} 个请求，用时 {duration}。",
+    "switchedBody": "{agent} 当时正在把 {folder} 放到地图上。该文件夹 {total, number} 项中有 {mapped, number} 项在地图上。",
+    "continue": "继续",
+    "tabCount": "地图上的能力"
+  },
   "railRunningPercent": "{destination}：已完成 {percent, number}%"
 }

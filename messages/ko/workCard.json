@@ -78,5 +78,29 @@
     "openLibrary": "자료실 열기",
     "filesPrepared": "준비된 파일"
   },
+  "mapping": {
+    "title": "코드의 나머지를 지도에 올리는 중",
+    "request": "요청 {part, number}번째",
+    "onMap": "기능 {total, number}개 중 <count>{mapped}</count>개({percent, number}%)",
+    "left": "약 {duration} 남음",
+    "minutes": "{minutes, number}분",
+    "hours": "{hours, number}시간",
+    "waitingTitle": "답을 기다리는 중",
+    "waitingBody": "{agent}가 바꾸기 전에 물었어요. 답하면 이어서 진행해요.",
+    "stoppedTitle": "{percent, number}%에서 멈췄어요",
+    "stoppedBody": "지도에 올라간 것은 그대로 남아요. 이어서 하면 여기서부터 진행해요.",
+    "messageBody": "물어볼 수 있게 멈췄어요. 이어서 하면 여기서부터 진행해요.",
+    "noProgressTitle": "멈췄어요: 마지막 요청에서 새로 올라간 것이 없어요",
+    "noProgressBody": "{total, number}개 중 {mapped, number}개 그대로예요. 에이전트가 한 일은 대화에 있어요.",
+    "pastEstimateTitle": "멈췄어요: 예상보다 요청이 많이 들고 있어요",
+    "pastEstimateBody": "요청 {sent, number}번을 보냈고 {total, number}개 중 {mapped, number}개가 지도에 있어요.",
+    "agentErrorBody": "{total, number}개 중 {mapped, number}개가 지도에 있어요. 이미 쓴 것은 그대로 남아요.",
+    "usageLimitBody": "{total, number}개 중 {mapped, number}개가 지도에 있어요. 한도가 풀리면 이어서 하거나, 다른 에이전트를 골라 이어서 하세요.",
+    "finishedTitle": "코드에서 찾은 기능이 모두 지도에 올라갔어요",
+    "finishedBody": "기능 {total, number}개, 요청 {sent, number}번, {duration} 걸렸어요.",
+    "switchedBody": "{agent}가 {folder} 폴더를 지도에 올리고 있었어요. 그 폴더는 {total, number}개 중 {mapped, number}개가 지도에 있어요.",
+    "continue": "이어서 하기",
+    "tabCount": "지도에 있는 기능"
+  },
   "railRunningPercent": "{destination}: {percent, number}% 완료"
 }

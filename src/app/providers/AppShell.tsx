@@ -24,10 +24,14 @@ import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { useAtlasGitContext } from "@/widgets/atlas-git-panel";
 import { useArrivingManifest, useDataSourceMode, useLocalVault, useVaultSessionIdentityScope } from "@/entities/vault-session";
 import {
+  folderMappingRun,
+  isMappingActive,
   isRunActive,
   isScheduledActive,
   isTurnActive,
   libraryRingRun,
+  mappingFraction,
+  type MappingRun,
   useMeaningProgress,
   useWorkRunSnapshot,
   workCardHoldsSeat,
@@ -360,6 +364,8 @@ function useRailWorkRuns(): { rail: RailWorkRun[]; meaningRunId: number | null }
     if (libraryWaiting) rail.push({ destination: "library", state: "waiting", finished: libraryUnseen });
     else if (ring) rail.push({ destination: "library", state: "running" });
     else if (libraryUnseen > 0) rail.push({ destination: "library", state: "finished", count: libraryUnseen });
+    const mapping = mappingRailRun(folderMappingRun(snapshot, folder));
+    if (mapping) rail.push(mapping);
     if (scheduledRunning) rail.push({ destination: "automations", state: "running" });
     else if (scheduledUnseen > 0) rail.push({ destination: "automations", state: "finished", count: scheduledUnseen });
     return { rail, meaningRunId: ring?.kind === "meaning" && !libraryWaiting ? ring.run.id : null };
@@ -367,6 +373,22 @@ function useRailWorkRuns(): { rail: RailWorkRun[]; meaningRunId: number | null }
 }
 
 const RailView = memo(AppNavRail);
+
+/**
+ * A mapping run rings the map tile, never the Library's: its fraction while a request runs, the
+ * waiting mark while it asks, and one result to read once it ended until its card is closed.
+ */
+function mappingRailRun(run: MappingRun | null): RailWorkRun | null {
+  if (!run) return null;
+  if (run.phase === "asking") return { destination: "map", state: "waiting", finished: 0 };
+  if (isMappingActive(run)) {
+    const fraction = mappingFraction(run);
+    return fraction === null
+      ? { destination: "map", state: "running" }
+      : { destination: "map", state: "running", fraction: Math.round(fraction * RING_STEPS) / RING_STEPS };
+  }
+  return run.card === "closed" ? null : { destination: "map", state: "finished", count: 1 };
+}
 
 /** The ring's fraction in thousandths: finer than a pixel of its arc, coarse enough to skip a redraw. */
 const RING_STEPS = 1_000;

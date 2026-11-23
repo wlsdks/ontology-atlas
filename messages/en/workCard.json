@@ -78,5 +78,29 @@
     "openLibrary": "Open Library",
     "filesPrepared": "Files prepared"
   },
+  "mapping": {
+    "title": "Mapping the rest of the code",
+    "request": "Request {part, number}",
+    "onMap": "<count>{mapped}</count> of {total, number} abilities on the map ({percent, number}%)",
+    "left": "about {duration} left",
+    "minutes": "{minutes, plural, one {# minute} other {# minutes}}",
+    "hours": "{hours, plural, one {# hour} other {# hours}}",
+    "waitingTitle": "Waiting for your answer",
+    "waitingBody": "{agent} asked before changing something. Mapping goes on when you answer.",
+    "stoppedTitle": "Stopped at {percent, number}%",
+    "stoppedBody": "What is already on the map stays. Continue picks up from here.",
+    "messageBody": "Stopped so you can ask. Continue picks up from here.",
+    "noProgressTitle": "Stopped: the last request put nothing new on the map",
+    "noProgressBody": "It stays at {mapped, number} of {total, number}. The conversation shows what the agent did.",
+    "pastEstimateTitle": "Stopped: this is taking more requests than estimated",
+    "pastEstimateBody": "{sent, plural, one {# request} other {# requests}} sent, {mapped, number} of {total, number} on the map.",
+    "agentErrorBody": "{mapped, number} of {total, number} are on the map. What was already written stays.",
+    "usageLimitBody": "{mapped, number} of {total, number} are on the map. Continue when the limit resets, or pick another agent and continue.",
+    "finishedTitle": "Every ability found in the code is on the map",
+    "finishedBody": "{total, plural, one {# ability} other {# abilities}}, {sent, plural, one {# request} other {# requests}}, {duration}.",
+    "switchedBody": "{agent} was mapping {folder}. {mapped, number} of {total, number} are on the map there.",
+    "continue": "Continue",
+    "tabCount": "Abilities on the map"
+  },
   "railRunningPercent": "{destination}: {percent, number}% done"
 }
