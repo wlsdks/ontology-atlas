@@ -34,6 +34,8 @@ interface PlanItem extends Current {
   left?: number;
   toward?: Moru;
   blocked?: PlanItem[];
+  /** A calm floor's walk to the nearest place to stand (`stopWalking`): it is not retargeted again. */
+  nearest?: boolean;
   face?: () => number;
   call?: (world: World, m: Moru) => void;
   pause?: number;
@@ -210,8 +212,34 @@ export const mayStop = (world: World, at: number, lane: number, napping = false)
 const mayStay = (world: World, m: Moru) => world.standsClear(centre(m), m.lane, false) || atSpot(world, centre(m), m.lane, m.facing);
 /** One at a spot is busy with its fixture: nobody walks up to it, so it never turns there to greet them. */
 const onASpot = (world: World, m: Moru) => atSpot(world, centre(m), m.lane, null);
-/** Resting between turns, a walk stops at the end of its stride, unless that would leave it standing on a fixture. */
-const stopWalking = (world: World, m: Moru) => { if (world.calm && !m.door && m.plan[0]?.go && mayStay(world, m)) drop(m); };
+/**
+ * Resting between turns, a walk stops at the end of its stride. One that may not stand there walks on to the
+ * nearest place it may, not to the far end of its walk: a lobby lane can be blocked for 1,000px, which at a
+ * pose a beat is over a minute of walking through the rest.
+ */
+const stopWalking = (world: World, m: Moru) => {
+  if (!world.calm || m.door || !m.plan[0]?.go) return;
+  if (mayStay(world, m)) return drop(m);
+  if (m.plan[0].nearest) return;
+  const stop = nearestStand(world, m);
+  if (!stop) return;
+  m.goal = stop.x;
+  m.plan = [{ go: () => stop.x, lane: () => stop.lane, nearest: true }];
+};
+/** The place nearest to walk to where a Moru stands clear of every fixture and of everybody: a way back costs a turn, a lane its strides. */
+function nearestStand(world: World, m: Moru): { x: number; lane: number } | null {
+  const here = centre(m);
+  let best: { x: number; lane: number; cost: number } | null = null;
+  for (let lane = 0; lane < world.lanes; lane++) {
+    for (let x = 60; x <= world.width - 60; x += 2) {
+      const dir = Math.sign(x - here) || m.facing;
+      const cost = Math.max(Math.abs(x - here), Math.abs(lane - m.lane) * 2 * STRIDE) + (dir !== m.facing ? GAP : 0);
+      if (best && cost >= best.cost) continue;
+      if (world.standsClear(x, lane, false) && clearSpot(world, m, x, dir)) best = { x, lane, cost };
+    }
+  }
+  return best;
+}
 const drop = (m: Moru) => { m.plan = []; m.steps = 0; };
 
 /** One small thing on the spot for a Moru standing free: a blink, a glance or a sway. Returns whether it started. */

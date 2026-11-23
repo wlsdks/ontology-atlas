@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { LifeAtlas } from './atlas';
 import { addMoru, centre, createWorld, middle, raise, seeded, standing, tick, TRAVEL, type World } from './behaviour';
+import { lobbyClearance } from './lobby-props';
 import { MOST_ON_FLOOR, nearestGap, openLobby, tend } from './presence';
 import { pickLook } from './wardrobe';
 
@@ -137,5 +138,24 @@ describe('the lobby crew', () => {
     expect(strideEnds.every(Boolean)).toBe(true);
     // Nothing starts on its own; each breath is one blink.
     expect(started).toEqual(['blink', 'blink']);
+  });
+
+  it('ends a calm walk over a fixture at the nearest place to stand, not at the far end of the walk', () => {
+    // The lobby at 1,776px: its middle lane is blocked by the bench, the window's headroom and the mat from 322 to 1,400.
+    const clear = lobbyClearance(1776, 102, 26, 154, atlas.props);
+    const world = createWorld({ atlas, width: 1776, rand: seeded(5), busyMax: 0, extra: 0, standsClear: (at, depth) => clear(at, depth) });
+    const m = addMoru(world, { id: 'm0', x: 430 - 74, lane: 1, ...pickLook(world.rand, []) });
+    m.goal = 1300;
+    m.plan = [{ go: () => 1300, lane: () => 1 }];
+    world.calm = true;
+    // One pose a beat, as the page's pixel beat steps the lobby.
+    let settledAt: number | null = null;
+    for (let t = 0; t < 60_000 && settledAt === null; t += 150) {
+      tick(world, 150);
+      if (standing(m) && m.clip === 'rest') settledAt = t;
+    }
+    expect(settledAt).not.toBeNull();
+    expect(settledAt!).toBeLessThan(16_000);
+    expect(clear(centre(m), m.lane)).toBe(true);
   });
 });
