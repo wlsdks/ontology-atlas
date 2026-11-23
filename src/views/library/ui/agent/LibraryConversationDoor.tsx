@@ -7,30 +7,37 @@ import type { AcpTurnActivity } from "@/features/acp-session";
 import { ChromeChip } from "@/shared/ui";
 
 /**
- * Keeps the destination visible while a conversation runs behind the closed dock: a phase beside the
- * internal prompt read as status text, with no way back to Stop. This control always names Conversation.
+ * The Conversation door in the Library header. It stays where it is while the dock is open, selected,
+ * and a second press puts the dock away. Behind a shut dock it carries a running turn's phase, since
+ * a phase beside the internal prompt read as status text, with no way back to Stop.
  */
 export function LibraryConversationDoor({
   activity,
   agentLabel,
-  onOpen,
+  open,
+  onToggle,
 }: {
-  /** The running turn behind the shut dock, or `null` between turns. */
+  /** The running turn, or `null` between turns. */
   activity: AcpTurnActivity | null;
   /** The runtime that is answering — named in the accessible name, not on the chip face. */
   agentLabel: string;
-  onOpen: () => void;
+  /** The dock is showing the conversation. */
+  open: boolean;
+  onToggle: () => void;
 }) {
   const t = useTranslations("library");
   const tActivity = useTranslations("agentActivity");
-  const phase = activity ? tActivity(`phase.${activity.state}`) : null;
+  // An open dock shows the turn itself, so the door names only the destination.
+  const phase = activity && !open ? tActivity(`phase.${activity.state}`) : null;
 
   return (
     <ChromeChip
-      onClick={onOpen}
+      onClick={onToggle}
       data-testid="library-open-conversation"
       data-library-door="conversation"
       data-agent-running={phase ? "true" : undefined}
+      aria-expanded={open}
+      active={open}
       aria-label={phase ? t("conversation.runningLabel", { agent: agentLabel, phase }) : undefined}
       icon={
         phase ? (

@@ -117,7 +117,7 @@ test.describe("the Sources home", () => {
     await openSources(page);
     await page.getByTestId("sources-overview").getByTestId("sources-panel-file").first().click();
     await expect(page.getByTestId("sources-overview")).toHaveCount(0);
-    await expect(page.getByTestId("library-reader-back")).toBeVisible();
+    await expect(page.getByTestId("library-page")).toHaveAttribute("data-library-state", "source");
     await expect(page.getByTestId("library-source-list").locator('[aria-current="true"]')).toHaveCount(1);
   });
 

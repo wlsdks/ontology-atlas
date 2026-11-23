@@ -44,7 +44,7 @@ test("a current source write-up revises an outdated related page; approval updat
   await browser.getByTestId("library-workspace-wiki").click();
   await browser.getByRole("button", { name: /Release research/ }).first().click();
   await captureEvidence(browser, "01-before-compile");
-  await browser.getByTestId("library-reader-back").click();
+  await browser.getByTestId("library-index-home").click();
   await browser.getByTestId("library-workspace-sources").click();
   /* Every source has a page, so the band says done; the recheck is the guide's Compile step. */
   await browser.getByTestId("library-guide-open").click();
@@ -82,7 +82,7 @@ test("a current source write-up revises an outdated related page; approval updat
   expect(saved.files["wiki/release.md"]).toBe(currentPage);
   expect(saved.writes.filter((entry) => entry.relativePath === existingPath)).toHaveLength(1);
   expect(Object.keys(saved.files).filter((path) => path.startsWith("wiki/") && !path.includes("/_")).sort()).toEqual([existingPath, "wiki/release.md"].sort());
-  await browser.getByTestId("library-reader-back").click();
+  await browser.getByTestId("library-local-review-back").click();
   await browser.getByRole("button", { name: /Release research/ }).first().click();
   await expect(browser.getByText("Release is September 22.", { exact: false }).last()).toBeVisible();
 });

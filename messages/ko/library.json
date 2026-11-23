@@ -276,9 +276,7 @@
     "aria": "색인이 보여 줄 목록",
     "sources": "자료 {count, number}",
     "wiki": "위키 {count, number}",
-    "about": "이 폴더에 무엇이 있는지",
-    "collapse": "색인 접기",
-    "expand": "색인 펼치기"
+    "about": "이 폴더에 무엇이 있는지"
   },
   "start": {
     "title": "가지고 있는 자료를 넣으세요",
@@ -412,7 +410,8 @@
     "openPlanning": "기획에서 열기",
     "pagesNeedReview": "기존 페이지 {count, number}개를 다시 확인해야 해요",
     "filterShow": "\"{label}\" 자료만 보기",
-    "filterAll": "전체 {count, number}개 보기"
+    "filterAll": "전체 {count, number}개 보기",
+    "overview": "한눈에 보기"
   },
   "wiki": {
     "listAria": "이 폴더의 위키 문서",
@@ -1216,13 +1215,13 @@
     "sourceTooLarge": "여기서 보여 주기엔 파일이 너무 커요.",
     "linkMissing": "이 폴더에 이 이름을 가진 것이 없어요.",
     "back": "뒤로",
-    "close": "페이지 닫기",
     "changedBadge": "쓴 뒤 달라짐"
   },
   "wikiIndex": {
     "views": {
       "log": "기록",
       "logNone": "아직 없음",
+      "findEvidence": "근거 찾기",
       "checkNever": "아직 안 함"
     },
     "group": {

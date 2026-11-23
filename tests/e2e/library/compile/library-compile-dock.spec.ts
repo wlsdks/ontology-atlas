@@ -200,13 +200,12 @@ test.describe("Compile opens the agent dock", () => {
     await expect(page.getByTestId("library-progress-blocked")).toHaveCount(0);
   });
 
-  test("the provider disclosure has one home, and it is the index head's glyph", async ({
+  test("the provider disclosure has one home, and it is the opening of How to use", async ({
     page,
   }) => {
     await openFolder(page);
-    /* The provider-traffic sentence is printed once per screen, on demand: zero inline, one in the panel. */
-    // The home: the picture and its strip print nothing about transfers, and neither does
-    // the popup behind either door.
+    /* The provider-traffic sentence is printed once per screen, on demand: zero inline, one in the guide. */
+    // The home: the picture and its strip print nothing about transfers.
     const inlineDisclosure = page.getByText(/Atlas does not record that traffic/);
     await expect(page.getByTestId("library-stage")).toHaveCount(0);
     await expect(page.getByTestId("library-stage-transfer")).toHaveCount(0);
@@ -214,17 +213,10 @@ test.describe("Compile opens the agent dock", () => {
     await expect(inlineDisclosure).toHaveCount(0);
     await page.getByTestId("library-workspace-sources").click();
 
-    /* Neither the progress band nor the popup the home's strip opens carries the transfer sentence. */
+    /* The progress band does not carry the transfer sentence. */
     await expect(page.getByTestId("library-progress-continue")).toBeVisible();
     await expect(page.getByTestId("library-progress").getByTestId("library-transfer")).toHaveCount(0);
     await expect(inlineDisclosure).toHaveCount(0);
-
-    await page.getByTestId("library-guide-open").click();
-    const guide = page.getByTestId("library-guide-popover");
-    await expect(guide).toBeVisible();
-    await expect(guide.getByTestId("library-stage-transfer")).toHaveCount(0);
-    await expect(inlineDisclosure).toHaveCount(0);
-    await page.keyboard.press("Escape");
 
     await page.getByTestId("library-workspace-wiki").click();
     await page.getByTestId("library-wiki-wiki/notes").click();
@@ -239,31 +231,14 @@ test.describe("Compile opens the agent dock", () => {
     await expect(page.getByTestId("library-transfer")).toHaveCount(0);
     await expect(inlineDisclosure).toHaveCount(0);
 
-    /* Focus opens the one home for the sentence, and Escape closes it. */
-    const info = page.getByTestId("library-lede-info");
-    await info.focus();
-    const panel = page.getByRole("tooltip");
-    await expect(panel).toContainText("Atlas does not record that traffic");
-    await expect(panel).toContainText("kept byte for byte");
-    /*
-     * ⚠️ **And the panel cannot take the press beside it.** The fold now stands on the
-     * same row as this glyph, and the panel opens across that row's width; measured
-     * before `pointer-events-none`, `elementFromPoint` over the fold answered the panel
-     * for as long as it stood, including its exit animation.
-     */
-    const foldHit = await page.evaluate(() => {
-      const fold = document.querySelector('[data-testid="library-index-collapse"]');
-      if (fold === null) return null;
-      const box = fold.getBoundingClientRect();
-      const hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
-      return hit?.closest("[data-testid]")?.getAttribute("data-testid") ?? null;
-    });
-    expect(foldHit, "the fold is what a press at the fold reaches").toBe(
-      "library-index-collapse",
-    );
-
+    /* How to use opens on the description and, under it, the one home for the transfer sentence. */
+    await page.getByTestId("library-guide-open").click();
+    const lede = page.getByTestId("library-guide-lede");
+    await expect(lede).toContainText("kept byte for byte");
+    await expect(lede).toContainText("Atlas does not record that traffic");
+    await expect(inlineDisclosure).toHaveCount(1);
     await page.keyboard.press("Escape");
-    await expect(page.getByRole("tooltip")).toHaveCount(0);
+    await expect(page.getByTestId("library-guide-popover")).toHaveCount(0);
   });
 
   test("pressing it opens a dock with a real rect, inside the row that holds the reader", async ({

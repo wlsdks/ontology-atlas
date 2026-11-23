@@ -6,6 +6,7 @@ import {
   type LibraryHomeSurface,
   librarySelectionFocusTarget,
 } from "../library-selection";
+import { INDEX_HOME_ROW_TEST_ID } from "../index-column/index-home-row";
 import type { useLibrarySources } from "../sources/use-library-sources";
 import type { useLibraryWorkActivity } from "../turns/use-library-work-activity";
 
@@ -61,6 +62,7 @@ export function useLibraryFocus({
       narrow: window.matchMedia('(max-width: 1023px)').matches,
       browseBack: mobileBrowseBackRef.current,
       reader: readerRef.current,
+      homeRow: document.querySelector<HTMLElement>(`[data-testid="${INDEX_HOME_ROW_TEST_ID}"]`),
     })?.focus({ preventScroll: true });
   }, [mobileBrowseBackRef, mobileBrowseOpen, selected, skipReaderFocusRef]);
 

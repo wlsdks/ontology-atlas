@@ -16,8 +16,8 @@ const DOOR_ICON = {
 
 /**
  * How to use, Questions and Conversation (and the updated answer's review while one waits) as 36px
- * chrome chips in the page header, before the info glyph. Below `lg` they fold into one More door,
- * whose list holds the same entries.
+ * chrome chips at the page header's end. Each stays in place while its surface is open, selected, and
+ * a second press closes it. Below `lg` they fold into one More door, whose list holds the same entries.
  */
 export function LibraryHomeStrip({
   doors,
@@ -48,7 +48,7 @@ export function LibraryHomeStrip({
   t: Translator;
 }) {
   return (
-    <span data-testid="library-doors" className="mr-1.5 flex min-w-0 items-center gap-2">
+    <span data-testid="library-doors" className="flex min-w-0 items-center gap-2">
       <span className="flex min-w-0 items-center gap-2 max-lg:hidden">
         {/* First, so the doors that are always there keep their place when it comes and goes. */}
         {review}

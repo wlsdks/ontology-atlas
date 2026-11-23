@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { LibrarySourceRow } from "@/entities/docs-vault";
-import { writeLibraryIndexCollapsed } from "@/shared/lib/preferences/library-preferences";
-
-import type { useLibraryIndexColumn } from "../index-column/use-library-index-column";
 
 export type SourceState = LibrarySourceRow["state"];
 
@@ -15,17 +12,14 @@ export type SourceState = LibrarySourceRow["state"];
 export function useSourceFilter({
   sources,
   vaultScope,
-  indexColumn,
   listening,
 }: {
   sources: readonly LibrarySourceRow[];
   vaultScope: string;
-  indexColumn: ReturnType<typeof useLibraryIndexColumn>;
   /** True while the band is on screen, the only place its Escape is meant for. */
   listening: boolean;
 }) {
   const [pick, setPick] = useState<{ scope: string; state: SourceState } | null>(null);
-  const { autoFolded, setAutoFolded, autoFoldDeclinedRef, indexCollapsed } = indexColumn;
 
   const state = useMemo(() => {
     if (!pick || pick.scope !== vaultScope) return null;
@@ -33,23 +27,11 @@ export function useSourceFilter({
   }, [pick, sources, vaultScope]);
 
   const clear = useCallback(() => setPick(null), []);
-  /** A filter on a folded list changes nothing anyone can see, so every narrowing opens the list. */
-  const unfold = useCallback(() => {
-    if (!indexCollapsed) return;
-    if (autoFolded) autoFoldDeclinedRef.current = true;
-    setAutoFolded(false);
-    writeLibraryIndexCollapsed(false);
-  }, [autoFoldDeclinedRef, autoFolded, indexCollapsed, setAutoFolded]);
   const press = useCallback(
     (next: SourceState) => {
-      if (state === next) {
-        setPick(null);
-        return;
-      }
-      setPick({ scope: vaultScope, state: next });
-      unfold();
+      setPick(state === next ? null : { scope: vaultScope, state: next });
     },
-    [state, unfold, vaultScope],
+    [state, vaultScope],
   );
 
   useEffect(() => {
@@ -64,7 +46,7 @@ export function useSourceFilter({
     return () => window.removeEventListener("keydown", onKey, true);
   }, [listening, state]);
 
-  return { state, press, clear, unfold };
+  return { state, press, clear };
 }
 
 /** The state the list is narrowed to, and the presses that change it (`useSourceFilter`). */

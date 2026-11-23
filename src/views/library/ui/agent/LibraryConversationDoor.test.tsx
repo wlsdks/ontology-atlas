@@ -5,20 +5,21 @@ import { describe, expect, it, vi } from "vitest";
 import enMessages from "../../../../../messages/en.json";
 import { LibraryConversationDoor } from "./LibraryConversationDoor";
 
-function draw(activity: Parameters<typeof LibraryConversationDoor>[0]["activity"]) {
-  const onOpen = vi.fn();
+function draw(activity: Parameters<typeof LibraryConversationDoor>[0]["activity"], open = false) {
+  const onToggle = vi.fn();
   render(
     <NextIntlClientProvider locale="en" messages={enMessages}>
-      <LibraryConversationDoor activity={activity} agentLabel="Claude Agent" onOpen={onOpen} />
+      <LibraryConversationDoor activity={activity} agentLabel="Claude Agent" open={open} onToggle={onToggle} />
     </NextIntlClientProvider>,
   );
-  return { onOpen, chip: screen.getByTestId("library-open-conversation") };
+  return { onToggle, chip: screen.getByTestId("library-open-conversation") };
 }
 
 describe("the put-away conversation", () => {
   it("names the destination while nothing is running", () => {
     const { chip } = draw(null);
     expect(chip).toHaveTextContent("Conversation");
+    expect(chip).toHaveAttribute("aria-expanded", "false");
     expect(chip.getAttribute("data-agent-running")).toBeNull();
     expect(screen.queryByTestId("library-conversation-running-dot")).toBeNull();
   });
@@ -59,13 +60,27 @@ describe("the put-away conversation", () => {
   });
 
   it("is still the door back into the conversation while it runs", () => {
-    const { onOpen, chip } = draw({
+    const { onToggle, chip } = draw({
       state: "verifying",
       summary: null,
       ontologySlug: "contractor-quotes",
       toolName: null,
     });
     fireEvent.click(chip);
-    expect(onOpen).toHaveBeenCalledTimes(1);
+    expect(onToggle).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("the open conversation", () => {
+  it("stays in the header, selected, and one press puts the dock away", () => {
+    const { onToggle, chip } = draw(
+      { state: "editing", summary: null, ontologySlug: null, toolName: null },
+      true,
+    );
+    expect(chip).toHaveAttribute("aria-expanded", "true");
+    expect(chip).toHaveTextContent(/^Conversation$/);
+    expect(screen.queryByTestId("library-conversation-running-dot")).toBeNull();
+    fireEvent.click(chip);
+    expect(onToggle).toHaveBeenCalledTimes(1);
   });
 });
