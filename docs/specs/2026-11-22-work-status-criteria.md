@@ -484,3 +484,8 @@ instead of its words from beats.
   walks the header's three states and a reload with the read off. The native tests no longer
   sleep: a child the program left is awaited by its pid, in three cases (the limit, a child
   holding the output, a call that went well).
+- 2026-11-24: Record 6 above is drafted text only. Opening an editor or a terminal moved to
+  `docs/specs/2026-11-24-open-outside-tools.md`, whose record replaces it and widens its
+  falsifier from "an argument beyond the folder" to "an argument beyond the folder, or the one
+  file and line". The criteria here for slice 6's Changes by capability are checked by
+  `docs/specs/2026-11-23-review-agent-work-by-meaning.md`, which owns that tab as What changed.

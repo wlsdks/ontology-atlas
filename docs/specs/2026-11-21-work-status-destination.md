@@ -1209,3 +1209,12 @@ in the coordination spec.
   session left; the status words say "every 10 seconds, and a second after a session starts or
   ends", since "at most every 10 seconds" was false, and "Atlas writes nothing", since what
   Claude Code itself writes under its own folder was not measured.
+- 2026-11-24: three later specs now own parts of slices 5 and 6, which are not built; nothing above
+  is rewritten. `docs/specs/2026-11-23-review-agent-work-by-meaning.md` owns the rule of "From
+  files to capabilities" (a file now reaches a concept by `path:`, by cited lines, or by one
+  import, since `path:` alone matched 3 percent of this repository's changed files) and slice 6's
+  Changes by capability, as the room panel's What changed tab with a Git tab beside it; the wall
+  sign's capability line and the shared mark stay slice 5's and read that spec's model.
+  `docs/specs/2026-11-24-open-outside-tools.md` owns slice 6's Open in editor and Open in
+  terminal and replaces Record 6. `docs/specs/2026-11-24-read-code-in-place.md` owns the reader
+  those two open. Activity, Commits and Copy folder path stay here.

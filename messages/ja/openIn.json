@@ -1,0 +1,31 @@
+{
+  "editor": "エディタで開く",
+  "terminal": "ターミナルで開く",
+  "named": "{app}で開く",
+  "change": "アプリを変更",
+  "choose": {
+    "editor": "Atlasが開くエディタを選んでください。あとでここから変更できます。",
+    "terminal": "Atlasが開くターミナルを選んでください。あとでここから変更できます。"
+  },
+  "help": {
+    "folder": "{folder}を{app}で開きます。",
+    "file": "{path}の{line}行目を{app}で開きます。",
+    "terminal": "{folder}で{app}の新しいウィンドウを開きます。Atlasはそこに何も入力せず、セッションは実行中のウィンドウに残ります。"
+  },
+  "opened": "{app}で開きました",
+  "refused": "{target}は開きませんでした：{reason}何も起動していません。",
+  "reason": {
+    "gone": "もうそこにありません。",
+    "notFolder": "フォルダではありません。",
+    "notFile": "ファイルではありません。",
+    "outside": "Atlasに渡されたフォルダの外にあります。",
+    "appMissing": "{app}はもうインストールされていません。「アプリを変更」を押してください。"
+  },
+  "none": {
+    "editor": "Atlasが開けるエディタがこのMacに見つかりませんでした。パスをコピーして自分で開いてください。",
+    "terminal": "Atlasが開けるターミナルがこのMacに見つかりませんでした。フォルダのパスをコピーして自分で開いてください。"
+  },
+  "otherSystem": "Atlasがエディタやターミナルを開けるのはmacOSだけです。パスをコピーして自分で開いてください。",
+  "pullRequest": "GitHubでこのブランチのプルリクエストを探す",
+  "pullRequestHelp": "ブラウザでgithub.comを開き、{repo}で{branch}からのプルリクエストを検索します。そのリクエストを送るのはブラウザで、Atlasは何も送りません。"
+}

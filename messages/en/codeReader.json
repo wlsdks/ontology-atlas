@@ -1,0 +1,53 @@
+{
+  "row": {
+    "label": "Code",
+    "open": "Read {path}",
+    "cites": "{count, plural, one {# cited range} other {# cited ranges}}"
+  },
+  "title": "Code for {concept}",
+  "lines": {
+    "range": "L{start}–{end}",
+    "single": "L{line}",
+    "top": "From the top"
+  },
+  "cite": {
+    "current": "The document cites these lines.",
+    "stale": "This file changed after the document was written, so these may not be the lines it meant.",
+    "unknown": "Atlas could not check whether this file changed after the document was written.",
+    "beyond": "The document cites {lines}, and this file now ends at line {last}.",
+    "none": "The document names this file and cites no lines."
+  },
+  "reading": "Reading {path}…",
+  "more": {
+    "above": "Show {count} lines above",
+    "below": "Show {count} lines below"
+  },
+  "state": {
+    "gone": "{path} is not in the connected code folder. It was moved, renamed or deleted after the document was written.",
+    "askToFind": "Ask the agent to find it",
+    "notConnected": "No code folder is connected to this project, so Atlas cannot read {path}.",
+    "connect": "Connect code folder",
+    "accessLost": "The connected code folder is not where it was, so Atlas cannot read {path}.",
+    "chooseAgain": "Choose the folder again",
+    "secret": "Atlas does not read {path}, because files with that name hold keys or passwords.",
+    "outside": "{path} points outside the connected code folder, so Atlas did not read it.",
+    "tooLarge": "{path} is larger than {limit}, so Atlas does not read it here.",
+    "notText": "{path} is not text, so there is nothing to read here.",
+    "changed": "This file changed after Atlas read it.",
+    "readAgain": "Read again",
+    "otherSystem": "Atlas reads code in place on macOS and Linux only. Copy the path to open the file yourself."
+  },
+  "branch": {
+    "basis": "Showing {path} as it is in {branch}.",
+    "changedLines": "Changed in {branch}",
+    "removed": "{count, plural, one {# line removed here} other {# lines removed here}}"
+  },
+  "copyPath": "Copy path",
+  "copied": "Copied",
+  "close": "Close",
+  "back": "Back to {concept}",
+  "web": {
+    "title": "Reading code needs the desktop app",
+    "body": "A browser can open only the folder you chose, and the code is outside it. The desktop app reads the code folder connected on this computer."
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "editor": "에디터에서 열기",
+  "terminal": "터미널에서 열기",
+  "named": "{app}에서 열기",
+  "change": "앱 바꾸기",
+  "choose": {
+    "editor": "Atlas가 열 에디터를 고르세요. 나중에 여기서 바꿀 수 있어요.",
+    "terminal": "Atlas가 열 터미널을 고르세요. 나중에 여기서 바꿀 수 있어요."
+  },
+  "help": {
+    "folder": "{folder} 폴더를 {app}에서 열어요.",
+    "file": "{path} 파일의 {line}번째 줄을 {app}에서 열어요.",
+    "terminal": "{folder} 폴더에서 {app} 새 창을 열어요. Atlas는 그 창에 아무것도 입력하지 않고, 세션은 원래 실행 중인 창에 그대로 있어요."
+  },
+  "opened": "{app}에서 열었어요",
+  "refused": "{target} 대상을 열지 않았어요: {reason} 아무것도 실행하지 않았어요.",
+  "reason": {
+    "gone": "이제 그 자리에 없어요.",
+    "notFolder": "폴더가 아니에요.",
+    "notFile": "파일이 아니에요.",
+    "outside": "Atlas가 받은 폴더 밖에 있어요.",
+    "appMissing": "{app} 앱이 이제 설치되어 있지 않아요. 앱 바꾸기를 누르세요."
+  },
+  "none": {
+    "editor": "이 Mac에서 Atlas가 열 수 있는 에디터를 찾지 못했어요. 경로를 복사해서 직접 여세요.",
+    "terminal": "이 Mac에서 Atlas가 열 수 있는 터미널을 찾지 못했어요. 폴더 경로를 복사해서 직접 여세요."
+  },
+  "otherSystem": "Atlas는 macOS에서만 에디터와 터미널을 열어요. 경로를 복사해서 직접 여세요.",
+  "pullRequest": "GitHub에서 이 브랜치의 풀 리퀘스트 찾기",
+  "pullRequestHelp": "브라우저에서 github.com을 열고 {repo} 저장소에서 {branch} 브랜치의 풀 리퀘스트를 검색해요. 그 요청은 브라우저가 보내고, Atlas는 아무것도 보내지 않아요."
+}

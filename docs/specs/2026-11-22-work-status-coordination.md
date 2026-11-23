@@ -418,3 +418,8 @@ text in a PR, branch, commit, log, lane name, ticket or subagent file; a paused 
 - 2026-11-22: the Work status spec moved its states, design and copy, and its criteria and record
   texts, into two sibling files; references here name them. Its agent state became two slices, so
   slices here are 12 to 17.
+- 2026-11-24: "Reaching an agent" stands and three later specs rest on it: none types into a
+  terminal. `docs/specs/2026-11-23-review-agent-work-by-meaning.md` now owns how a worktree's
+  changed files reach a capability (slice 5 of the Work status spec, which Findings in slice 14
+  reads to name the capability two branches change), and
+  `docs/specs/2026-11-24-open-outside-tools.md` owns Open in editor and Open in terminal.

@@ -1,0 +1,31 @@
+{
+  "editor": "在编辑器中打开",
+  "terminal": "在终端中打开",
+  "named": "在 {app} 中打开",
+  "change": "更换应用",
+  "choose": {
+    "editor": "选择 Atlas 要打开的编辑器。之后可以在这里更换。",
+    "terminal": "选择 Atlas 要打开的终端。之后可以在这里更换。"
+  },
+  "help": {
+    "folder": "在 {app} 中打开 {folder}。",
+    "file": "在 {app} 中打开 {path} 的第 {line} 行。",
+    "terminal": "在 {folder} 中打开一个新的 {app} 窗口。Atlas 不会在里面输入任何内容，会话仍留在它运行的窗口里。"
+  },
+  "opened": "已在 {app} 中打开",
+  "refused": "没有打开 {target}：{reason} 没有启动任何程序。",
+  "reason": {
+    "gone": "它已经不在那里了。",
+    "notFolder": "它不是文件夹。",
+    "notFile": "它不是文件。",
+    "outside": "它在 Atlas 获准访问的文件夹之外。",
+    "appMissing": "{app} 已不再安装。请点击“更换应用”。"
+  },
+  "none": {
+    "editor": "在这台 Mac 上没有找到 Atlas 能打开的编辑器。请复制路径，自己打开。",
+    "terminal": "在这台 Mac 上没有找到 Atlas 能打开的终端。请复制文件夹路径，自己打开。"
+  },
+  "otherSystem": "Atlas 只在 macOS 上打开编辑器和终端。请复制路径，自己打开。",
+  "pullRequest": "在 GitHub 上查找它的拉取请求",
+  "pullRequestHelp": "在浏览器中打开 github.com，并在 {repo} 中搜索来自 {branch} 的拉取请求。该请求由浏览器发送，Atlas 不发送任何内容。"
+}

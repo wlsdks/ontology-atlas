@@ -1,0 +1,53 @@
+{
+  "row": {
+    "label": "코드",
+    "open": "{path} 읽기",
+    "cites": "문서가 가리키는 구간 {count}개"
+  },
+  "title": "{concept} 개념의 코드",
+  "lines": {
+    "range": "L{start}–{end}",
+    "single": "L{line}",
+    "top": "처음부터"
+  },
+  "cite": {
+    "current": "문서가 가리키는 줄이에요.",
+    "stale": "문서를 쓴 뒤에 이 파일이 바뀌어서, 문서가 뜻한 줄이 아닐 수 있어요.",
+    "unknown": "문서를 쓴 뒤에 이 파일이 바뀌었는지 Atlas가 확인하지 못했어요.",
+    "beyond": "문서는 {lines} 줄을 가리키는데, 이 파일은 이제 {last}번째 줄에서 끝나요.",
+    "none": "문서가 이 파일을 가리키지만, 가리키는 줄은 없어요."
+  },
+  "reading": "{path} 읽는 중…",
+  "more": {
+    "above": "위로 {count}줄 더 보기",
+    "below": "아래로 {count}줄 더 보기"
+  },
+  "state": {
+    "gone": "연결한 코드 폴더에 {path} 파일이 없어요. 문서를 쓴 뒤에 옮겨졌거나 이름이 바뀌었거나 지워졌어요.",
+    "askToFind": "에이전트에게 찾아 달라고 요청",
+    "notConnected": "이 프로젝트에 연결한 코드 폴더가 없어서 Atlas가 {path} 파일을 읽을 수 없어요.",
+    "connect": "코드 폴더 연결",
+    "accessLost": "연결한 코드 폴더가 원래 자리에 없어서 Atlas가 {path} 파일을 읽을 수 없어요.",
+    "chooseAgain": "폴더 다시 고르기",
+    "secret": "Atlas는 {path} 파일을 읽지 않아요. 이런 이름의 파일에는 키나 비밀번호가 들어 있어요.",
+    "outside": "{path} 경로가 연결한 코드 폴더 밖을 가리켜서 Atlas가 읽지 않았어요.",
+    "tooLarge": "{path} 파일이 {limit}보다 커서 여기서는 읽지 않아요.",
+    "notText": "{path} 파일은 텍스트가 아니어서 여기서 읽을 것이 없어요.",
+    "changed": "Atlas가 읽은 뒤에 이 파일이 바뀌었어요.",
+    "readAgain": "다시 읽기",
+    "otherSystem": "Atlas는 macOS와 Linux에서만 코드를 이 자리에서 읽어요. 경로를 복사해서 파일을 직접 여세요."
+  },
+  "branch": {
+    "basis": "{branch} 브랜치에 있는 {path} 파일을 보여 줘요.",
+    "changedLines": "{branch} 브랜치에서 바뀜",
+    "removed": "여기서 {count}줄이 지워졌어요"
+  },
+  "copyPath": "경로 복사",
+  "copied": "복사했어요",
+  "close": "닫기",
+  "back": "{concept} 개념으로 돌아가기",
+  "web": {
+    "title": "코드 읽기는 데스크톱 앱에서 돼요",
+    "body": "브라우저는 내가 고른 폴더만 열 수 있는데, 코드는 그 폴더 밖에 있어요. 데스크톱 앱은 이 컴퓨터에 연결한 코드 폴더를 읽어요."
+  }
+}
