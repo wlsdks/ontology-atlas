@@ -7,7 +7,7 @@ import { buildMeaningRepairReviewPage } from '../meaning/meaning-repair.mjs';
 import { readOntologyAtlasIgnore } from '../vault/sidecar/ontology-atlas-ignore.mjs';
 import { queryCompiledOntology, refreshAgentBriefHandoffPrompt } from '../ontology-engine.mjs';
 import { deriveProjectSourceWitnessesFromDocs } from '../project-source/project-source-witnesses.mjs';
-import { COMPILED_ONTOLOGY_CACHE, VAULT_ROOT } from '../server/runtime.mjs';
+import { COMPILED_ONTOLOGY_CACHE, REPO_ROOT, REPO_ROOT_IS_GROUNDED, VAULT_ROOT } from '../server/runtime.mjs';
 import {
   requireOptionalBoolean,
   requireOptionalNonNegativeInteger,
@@ -127,7 +127,7 @@ async function queryOntologyTool(args = {}) {
     ontologyAtlasIgnorePatterns,
     ...(args.operation === 'builder_context' ? { sourceDocs: loadedDocs } : {}),
     ...(maintenanceDocs ? { sourceDocs: maintenanceDocs } : {}),
-    ...(growthDocs ? { sourceDocs: growthDocs } : {}),
+    ...(growthDocs ? { sourceDocs: growthDocs, sourceRoot: REPO_ROOT_IS_GROUNDED ? REPO_ROOT : null } : {}),
     ...(maintenanceFreshness?.checked ? { staleSummaries: maintenanceFreshness.stale } : {}),
   });
   const validatedResult = ['health', 'workspace_brief', 'agent_brief'].includes(args.operation)

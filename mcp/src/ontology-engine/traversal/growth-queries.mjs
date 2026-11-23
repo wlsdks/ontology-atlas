@@ -10,6 +10,7 @@ export function createGrowthQueries({
   edges,
   nodeBySlug,
   sourceDocFor,
+  sourceRoot,
   ontologyAtlasIgnorePatterns,
   relationTypeForKey,
   bodyIsStarterTemplate,
@@ -303,7 +304,7 @@ export function createGrowthQueries({
         }),
       );
     }
-    const ordered = orderUncertaintyReads(rows);
+    const ordered = orderUncertaintyReads(rows, { sourceRoot });
     return {
       total: ordered.length,
       limited: ordered.length > limit,
