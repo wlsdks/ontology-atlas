@@ -299,6 +299,17 @@ describe("execution selects the write boundary", () => {
     expect(brief).toContain("자동 쓰기를 무조건 약속하지 않아");
     expect(brief).not.toContain("서식에 맞는 문서는 바로 쓰이고");
   });
+
+  it("forbids the shell only for the files read_source reads, so an agent that reads files by shell can still open a wiki page", () => {
+    const input = { sources: [row("sources/plan.md", "not-compiled")], writerId: "agent:codex", vaultRoot: VAULT_ROOT, execution: "acp" as const };
+    for (const locale of ["ko", "en"]) {
+      const lines = buildCompileBrief({ ...input, locale }).split("\n");
+      const shellLines = lines.filter((line) => /셸|shell/i.test(line));
+      expect(shellLines).toHaveLength(1);
+      expect(shellLines[0]).toContain("read_source");
+      expect(lines.some((line) => /읽기 전용|read-only/i.test(line))).toBe(true);
+    }
+  });
 });
 
 describe("local and ACP keep one meaning rule set", () => {

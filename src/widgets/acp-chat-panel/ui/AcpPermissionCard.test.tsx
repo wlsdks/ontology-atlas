@@ -507,6 +507,33 @@ describe('permission card: speaks differently inside my project and somewhere en
     expect(screen.getByTestId('acp-permission-card').className).not.toContain('amber');
   });
 
+  const statedCard = (statedPaths: string[]) => (
+    <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <AcpPermissionCard
+        pending={{
+          request: {
+            title: 'Edit files', toolCallId: 'patch-1', toolName: 'Edit files', toolKind: 'edit', filePath: null,
+            statedPaths, rawInput: {}, reviewKind: 'permission',
+            options: [{ optionId: 'reject', kind: 'reject_once', name: null }, { optionId: 'allow', kind: 'allow_once', name: null }],
+          },
+          resolve: vi.fn(),
+        }}
+        vaultPath={VAULT}
+      />
+    </NextIntlClientProvider>
+  );
+
+  it('names every file an edit states in its locations and says the folder when all are in it', () => {
+    render(statedCard([`${VAULT}/wiki/a.md`, `${VAULT}/wiki/b.md`]));
+    expect(screen.getByText(koMessages.acpChat.permission.insideFolderTitle)).toBeInTheDocument();
+    expect(screen.getAllByTestId('acp-permission-path').map((node) => node.textContent)).toEqual([`${VAULT}/wiki/a.md`, `${VAULT}/wiki/b.md`]);
+  });
+
+  it('keeps the warning when one stated file is outside the folder and the project', () => {
+    render(statedCard([`${VAULT}/wiki/a.md`, '/etc/hosts']));
+    expect(screen.getByText(koMessages.acpChat.permission.title)).toBeInTheDocument();
+  });
+
   it('somewhere truly different keeps the old warning, the side that needs attention', () => {
     render(card('read', '/Users/dana/.ssh/id_rsa', [], VAULT));
     expect(screen.getByText(koMessages.acpChat.permission.title)).toBeInTheDocument();

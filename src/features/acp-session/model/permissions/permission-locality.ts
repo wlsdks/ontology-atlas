@@ -30,3 +30,16 @@ export function permissionLocality(
   const projectRoot = projectRootForVault(vaultPath);
   return projectRoot && within(projectRoot, target) ? 'inside-project' : 'elsewhere';
 }
+
+const WIDTH: Readonly<Record<PermissionLocality, number>> = { 'inside-folder': 0, 'inside-project': 1, elsewhere: 2 };
+
+/** The widest locality among several paths, so one file outside the folder keeps the warning; none is `elsewhere`. */
+export function widestPermissionLocality(
+  vaultPath: string | null | undefined,
+  filePaths: readonly string[],
+): PermissionLocality {
+  if (filePaths.length === 0) return 'elsewhere';
+  return filePaths
+    .map((filePath) => permissionLocality(vaultPath, filePath))
+    .reduce((widest, locality) => (WIDTH[locality] > WIDTH[widest] ? locality : widest));
+}
