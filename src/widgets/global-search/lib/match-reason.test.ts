@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { describeMatchReason, reasonLineClass } from "./match-reason";
+import { describeMatchReason, reasonLineClass, withoutInlineMarks } from "./match-reason";
 
 const label = "배송비 정책";
 const summary = "Decides who pays to move the parcel and how much, before the shopper sees a total.";
@@ -75,6 +75,17 @@ describe("describeMatchReason", () => {
         query: "policy",
       }),
     ).toEqual({ kind: "summary", text: summary });
+  });
+});
+
+describe("withoutInlineMarks", () => {
+  it.each([
+    ["`src/entities/order/repository.ts` 구현", "src/entities/order/repository.ts 구현"],
+    ["**핵심** 규칙과 __강조__", "핵심 규칙과 강조"],
+    ["[가격 표](docs/price.md)를 읽는다", "가격 표를 읽는다"],
+    ["a * b and snake_case_name", "a * b and snake_case_name"],
+  ])("shows %j as plain prose", (input, expected) => {
+    expect(withoutInlineMarks(input)).toBe(expected);
   });
 });
 
