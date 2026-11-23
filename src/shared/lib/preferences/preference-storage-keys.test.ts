@@ -18,6 +18,7 @@ import {
   writeGlyphSet,
 } from "./canvas-appearance-preferences";
 import { DEFAULT_EXPAND, useExpand, writeExpand } from "./expand-preferences";
+import { useSessionListReadEnabled, writeSessionListRead } from "./work-status-preferences";
 import { DEFAULT_FOOTPRINT, useFootprint, writeFootprint } from "./footprint-preferences";
 import {
   useLibraryGuideSeen,
@@ -177,6 +178,16 @@ const storedPreferences: StoredPreference[] = [
     savedValue: false,
     read: readHook(useAgentActivityStatusEnabled),
     write: () => writeAgentActivityStatus(false),
+    writtenRaw: "off",
+  },
+  {
+    name: "session list read",
+    key: "atlas.workStatus.sessionListRead",
+    defaultValue: true,
+    savedRaw: "off",
+    savedValue: false,
+    read: readHook(useSessionListReadEnabled),
+    write: () => writeSessionListRead(false),
     writtenRaw: "off",
   },
   {

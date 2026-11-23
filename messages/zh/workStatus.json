@@ -20,14 +20,47 @@
     "ended": "会话已结束",
     "started": "{time} 开始",
     "worktrees": "{count} 个工作树",
+    "waiting": "等你回复 {count}",
     "cleanup": "{count} 个待清理",
     "onStage": "台上 {count}",
     "below": "下方 {count}"
+  },
+  "sessions": {
+    "chip": {
+      "on": "正在读取会话列表",
+      "off": "会话列表已关闭",
+      "unreadable": "无法读取会话列表"
+    },
+    "title": "{tool} 会话列表",
+    "switch": "读取 {tool} 会话列表",
+    "choice": {
+      "on": "开",
+      "off": "关"
+    },
+    "now": {
+      "read": "已读取。会话等你回复时，会在对应房间显示。",
+      "noSession": "没有正在运行的 {tool} 会话，所以现在不读取。"
+    },
+    "status": "为了显示哪些会话在等你回复，Atlas 会读取 {tool} 自己的会话列表。工作状态打开期间，它每 10 秒运行一次 <code>{command}</code>，并在 {tool} 会话开始或结束 1 秒后再运行一次，不联网。Atlas 不写入任何内容。",
+    "statusOff": "打开后，Atlas 会读取 {tool} 自己的会话列表：工作状态打开期间，它每 10 秒运行一次 <code>{command}</code>，并在 {tool} 会话开始或结束 1 秒后再运行一次，不联网。Atlas 不写入任何内容。",
+    "off": "Atlas 不运行 {tool}，所以任何房间都无法显示会话是在等你回复还是已经回复完。",
+    "unreadable": "无法读取 {tool} 会话列表。{reason}",
+    "fallback": "在能读取之前，任何房间都无法显示会话是否在等你回复。Atlas 会在 10 秒内重试。",
+    "reason": {
+      "notFound": "在 Atlas 查找的文件夹里没有找到 {tool}。",
+      "timedOut": "{tool} 在 5 秒内没有应答。",
+      "failed": "{tool} 出错结束。",
+      "unknownForm": "列表的格式 Atlas 不认识，可能是新版 {tool} 改了它。"
+    }
   },
   "stage": {
     "label": "工作中的工作树"
   },
   "room": {
+    "waitingApproval": "等待批准",
+    "waitingAnswer": "等待回答",
+    "replied": "已回复",
+    "sessionFailed": "会话失败",
     "working": "工作中",
     "twoTools": "两个工具在工作",
     "resting": "空闲",
@@ -53,7 +86,18 @@
     "unreadableLock": "锁中没有 Atlas 能读取的会话名",
     "workedMinutes": "已 {count} 分钟",
     "workedWholeHours": "已 {count} 小时",
-    "workedHours": "已 {hours} 小时 {minutes} 分钟"
+    "workedHours": "已 {hours} 小时 {minutes} 分钟",
+    "recentCommits": "最近的提交",
+    "lastChange": "{ago} 有改动",
+    "justNow": "刚刚",
+    "lastChangeNow": "刚刚有改动",
+    "lastHour": "最近 1 小时",
+    "lastHourChanges": "最近 1 小时有 {count} 处改动",
+    "areasTitle": "改动所在",
+    "areasOfNewest": "改动所在 · 按最近 {count} 个文件",
+    "rootFolder": "仓库根目录",
+    "areaFiles": "{count} 个",
+    "areasMore": "另有 {count} 处"
   },
   "shelf": {
     "merged": "已合并到 {branch}",
@@ -82,6 +126,7 @@
   },
   "notRepository": "文件夹 {folder} 不是 Git 仓库。请选择包含项目 .git 的文件夹。",
   "header": {
+    "waiting": "等你回复 {count}",
     "sameFolder": "同一文件夹 {count}",
     "cleanup": "待清理 {count}",
     "pointTo": "显示是哪些工作树"
@@ -95,7 +140,36 @@
     "working": "{count} 个工作中",
     "worktrees": "{count} 个工作树"
   },
-  "lobby": {
-    "name": "大厅"
+  "panel": {
+    "open": "查看 {branch} 正在做什么",
+    "close": "关闭",
+    "now": {
+      "waiting": "{who} 已停下，正在等你回答。请在运行该会话的终端或应用中回复。",
+      "sessionFailed": "{who} 因错误结束。此前的工作仍在这个文件夹里。",
+      "replied": "{who} 已回复完毕，正在等你的下一条指示。",
+      "working": "{who} 正在这个文件夹里工作。",
+      "twoTools": "{who} 正在同一个文件夹里同时工作，改动可能互相冲突。",
+      "resting": "{who} 占用着这个文件夹，但已有几分钟没有改动。",
+      "dozing": "{who} 占用着这个文件夹，但已超过 {minutes} 分钟没有改动。",
+      "merged": "这里的内容已全部进入 {branch}，可以删除这个文件夹。",
+      "locked": "文件夹已被锁定，但 Atlas 读不出是哪个会话锁定的。",
+      "lockLeft": "锁定这个文件夹的会话已结束，只剩下锁。",
+      "missing": "Git 里还保留着这个工作树，但文件夹已不存在。",
+      "unheld": "没有会话在这个文件夹里工作。"
+    },
+    "commitsTitle": "提交",
+    "commitsMore": "另有 {count} 个",
+    "uncommittedTitle": "尚未提交的内容",
+    "filesMore": "另有 {count} 个文件",
+    "folderTitle": "文件夹",
+    "copyPath": "复制文件夹路径",
+    "copied": "已复制",
+    "reading": "读取中…",
+    "cleanupTitle": "要清理，请在终端中运行",
+    "copyCommand": "复制命令"
+  },
+  "about": {
+    "label": "这个页面显示什么",
+    "body": "一个房间就是一个工作树。工作树是这个仓库里用来处理一个分支的独立文件夹。房间的屏幕上显示分支、最近的提交，以及已修改但尚未提交的文件。有代理会话正在工作的房间会亮灯。按下房间可以查看其余内容。"
   }
 }

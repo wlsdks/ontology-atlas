@@ -1,5 +1,6 @@
-//! What one worktree is doing: the subjects of its newest commits beyond the base branch, how many
-//! files it has not committed, and which of them changed last. Read for one worktree at a time,
+//! What one worktree is doing: the subjects of its newest commits beyond the base branch (or the
+//! base branch's own newest, for the worktree standing on it), how many files it has not
+//! committed, and which of them changed last. Read for one worktree at a time,
 //! only when the page asks after that worktree's `HEAD`, `index` or reflog moved or on its beat.
 
 #[cfg(test)]
@@ -19,11 +20,14 @@ use super::worktrees::{is_plain_ref_name, points_back};
 
 /// A commit subject is text anyone with push access wrote; the page shows at most this much of it.
 pub(crate) const SUBJECT_MAX_CHARS: usize = 200;
-/// The most commits a screen lists: three, and up to two more where the room has height for them.
-const COMMITS_READ: usize = 5;
+/// The most commits a screen lists: three in a row of rooms, up to this many in a room alone on the stage.
+const COMMITS_READ: usize = 20;
 /// A worktree with more uncommitted entries than this is counted in full, but only these are
 /// stat'd for the one that changed last.
 const STAT_LIMIT: usize = 500;
+/// The most uncommitted paths the page lists by name: three columns of twenty rows on a room that
+/// is alone on the page. The count still covers them all.
+const FILES_LISTED: usize = 60;
 const MAIN_ID: &str = "main";
 /// The files that move when a worktree commits, switches branch or stages a change.
 const STAMP_FILES: &[&str] = &["HEAD", "index", "logs/HEAD"];
@@ -44,15 +48,29 @@ pub(crate) struct CommitLine {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub(crate) struct ChangedFile {
+    /// Relative to the worktree, in Git's `/` spelling.
+    pub(crate) path: String,
+    /// When the file was last written, in seconds since the epoch.
+    pub(crate) changed_at: Option<i64>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct WorktreeActivity {
     /// The stamp of `HEAD`, `index` and the reflog this read followed.
     pub(crate) stamp: String,
     /// Newest first; `None` when the base branch is unknown or the log could not be read.
     pub(crate) commits: Option<Vec<CommitLine>>,
+    /// Whether the worktree stands on the base branch, so `commits` are that branch's own newest
+    /// rather than the commits beyond it.
+    pub(crate) on_base: bool,
     /// Tracked files changed and untracked entries (an untracked folder counts once).
     pub(crate) uncommitted: Option<u32>,
     /// The uncommitted path, relative to the worktree in Git's `/` spelling, that changed last.
     pub(crate) latest_file: Option<String>,
+    /// The uncommitted files, last changed first, at most `FILES_LISTED`.
+    pub(crate) files: Vec<ChangedFile>,
 }
 
 /// Stats only: one stamp per worktree, keyed by its administrative id (`main` for the main
@@ -83,15 +101,32 @@ pub(super) fn read_activity(
     if READING.swap(true, Ordering::Acquire) {
         return None;
     }
-    let read = resolve(root, id).map(|(admin, folder)| WorktreeActivity {
-        stamp: stamp_of(&admin),
-        commits: base_branch
-            .filter(|branch| is_plain_ref_name(branch) && !branch.starts_with('-'))
-            .and_then(|branch| newest_commits(&folder, branch)),
-        ..uncommitted(&folder)
+    let base_branch =
+        base_branch.filter(|branch| is_plain_ref_name(branch) && !branch.starts_with('-'));
+    let read = resolve(root, id).map(|(admin, folder)| {
+        let on_base = base_branch.is_some_and(|branch| stands_on(&admin, branch));
+        WorktreeActivity {
+            stamp: stamp_of(&admin),
+            commits: base_branch.and_then(|branch| {
+                let range = if on_base {
+                    "HEAD".to_string()
+                } else {
+                    format!("refs/heads/{branch}..HEAD")
+                };
+                newest_commits(&folder, &range)
+            }),
+            on_base,
+            ..uncommitted(&folder)
+        }
     });
     READING.store(false, Ordering::Release);
     read
+}
+
+/// Whether the worktree's `HEAD` is attached to this branch.
+fn stands_on(admin: &Path, branch: &str) -> bool {
+    read_admin_file(&admin.join("HEAD"))
+        .is_some_and(|head| head.trim().strip_prefix("ref: refs/heads/") == Some(branch))
 }
 
 /// The worktree's administrative folder and its working folder. A linked worktree counts only
@@ -141,9 +176,8 @@ fn stamp_of(admin: &Path) -> String {
     format!("{:016x}", hasher.finish())
 }
 
-fn newest_commits(folder: &Path, base_branch: &str) -> Option<Vec<CommitLine>> {
+fn newest_commits(folder: &Path, range: &str) -> Option<Vec<CommitLine>> {
     let count = format!("-{COMMITS_READ}");
-    let range = format!("refs/heads/{base_branch}..HEAD");
     let text = git_read(
         folder,
         &[
@@ -153,7 +187,7 @@ fn newest_commits(folder: &Path, base_branch: &str) -> Option<Vec<CommitLine>> {
             "--no-color",
             "-z",
             "--format=%h%x1f%ct%x1f%s",
-            &range,
+            range,
             "--",
         ],
     )
@@ -214,11 +248,14 @@ fn uncommitted(folder: &Path) -> WorktreeActivity {
     )
     .ok();
     let paths = status.as_deref().map(parse_status).unwrap_or_default();
+    let files = last_changed_first(folder, &paths);
     WorktreeActivity {
         stamp: String::new(),
         commits: None,
+        on_base: false,
         uncommitted: status.map(|_| u32::try_from(paths.len()).unwrap_or(u32::MAX)),
-        latest_file: latest_changed(folder, &paths),
+        latest_file: files.first().map(|file| file.path.clone()),
+        files,
     }
 }
 
@@ -249,8 +286,10 @@ pub(crate) fn parse_status(text: &str) -> Vec<String> {
     paths
 }
 
-fn latest_changed(folder: &Path, paths: &[String]) -> Option<String> {
-    paths
+/// The `FILES_LISTED` paths that changed last, newest first. A path that no longer stats (a
+/// deletion) has no time and is left out. One stat per path, then a sort of at most `STAT_LIMIT`.
+fn last_changed_first(folder: &Path, paths: &[String]) -> Vec<ChangedFile> {
+    let mut timed: Vec<_> = paths
         .iter()
         .take(STAT_LIMIT)
         .filter_map(|path| {
@@ -259,8 +298,19 @@ fn latest_changed(folder: &Path, paths: &[String]) -> Option<String> {
                 .ok()?;
             Some((modified, path))
         })
-        .max_by_key(|(modified, _)| *modified)
-        .map(|(_, path)| path.clone())
+        .collect();
+    timed.sort_by_key(|a| std::cmp::Reverse(a.0));
+    timed
+        .into_iter()
+        .take(FILES_LISTED)
+        .map(|(modified, path)| ChangedFile {
+            path: path.clone(),
+            changed_at: modified
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .ok()
+                .and_then(|since| i64::try_from(since.as_secs()).ok()),
+        })
+        .collect()
 }
 
 /// Joins Git's `/`-separated relative path one component at a time, so it reads the same on

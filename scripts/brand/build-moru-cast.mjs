@@ -19,6 +19,7 @@ const sharp = createRequire(require.resolve('next/package.json'))('sharp');
 export const CAST_ROWS = {
   waiting: 'blink', 'desk-type': 'desk-type', 'monitor-read': 'monitor-read', 'nod-off': 'nod-off', sigh: 'sigh',
   'crate-send': 'crate-send', 'merge-cheer': 'merge-cheer', 'settle-in': 'settle-in', galumph: 'galumph', 'galumph-left': 'galumph-left',
+  'heads-up': 'heads-up',
 };
 
 const STONE = 'd6d3c9', IVORY = 'fff1d7', INK = '17192d';

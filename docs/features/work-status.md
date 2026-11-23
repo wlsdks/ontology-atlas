@@ -12,7 +12,8 @@ Work status answers "which agent is holding which worktree, and is that work
 merged yet?" for one Git repository, in the installed app. It is the tenth rail
 destination (`g w`). The plan, its later slices and their acceptance criteria
 live in [the spec](../specs/2026-11-21-work-status-destination.md); this page
-describes what ships today, which is the spec's first slice.
+describes what ships today: the spec's first slice, and from its seventh the
+room that waits for its person.
 
 ## Which repository
 
@@ -66,6 +67,73 @@ Every read goes through the hardened Git runner in `src-tauri/src/git/runner.rs`
   **Claude Agent in Atlas**; so does the main checkout while such a session
   works there.
 
+## Waiting for you
+
+A program in a folder says an agent is there, not whether it works, has
+finished its reply or has stopped to ask. Claude Code keeps that in its own
+session list, and on macOS Work status reads it:
+
+- **The call.** `claude agents --json`, the program found at
+  `~/.local/bin/claude`, `/opt/homebrew/bin/claude` or `/usr/local/bin/claude`
+  and nowhere else, with no input and an environment of `HOME` and Claude
+  Code's switch against nonessential traffic. It runs under macOS's sandbox
+  with every network operation denied, so nothing leaves the Mac; it and
+  anything it started are killed when it ends, or after five seconds or one
+  mebibyte of output. Why:
+  [the decision](../records/decisions/2026-11-23-work-status-session-list-no-network-929c2179-7882-4c40-a4bc-83cfbb2612cf.md).
+- **When.** Only while Work status is visible and a Claude Code process is
+  seen: once in ten seconds, or a second after such a process appears or ends,
+  never two at once. A state can therefore show up to ten seconds late.
+- **What is kept.** For each session: its process id, its folder, its start
+  and what it says of itself. Its name and ids are dropped as the list is
+  parsed and reach nothing that is kept. A session
+  counts only when its process is one Work status already shows and its folder
+  lies in one of the repository's worktrees (the main checkout, a worktree
+  under it, or one whose own `.git` file names this repository); the page
+  receives the worktree, the process id and one of five states, and nothing is
+  written.
+
+| The session says | The room |
+|---|---|
+| it waits on a permission prompt or a sandbox request | **Waiting for your approval**: an amber frame, the words at the top of its screen, Moru looking up |
+| it waits for input, a dialog or a worker's request | **Waiting for your answer**, drawn the same way |
+| it is busy | **Working**, as before |
+| it is idle | **Finished replying**: a quiet, unlit room, unless another tool works in the folder |
+| a background session failed | **Session failed**, in amber |
+| anything else, an unknown field, no list | the words the room had |
+
+A waiting room is the first admitted to the stage and keeps its place in
+session order. The header counts waiting rooms before its other warnings, and
+pressing the count outlines them; a session's floor heading counts its own. A
+waiting session is said even where an ended session left its lock in the
+folder. The
+room panel says where to answer: in the terminal or app that session runs in.
+Work status sends no answer of its own.
+
+### The status line and its switch
+
+The header says how the read goes, and pressing the words opens a panel with
+its switch:
+
+| Header | The panel says |
+|---|---|
+| **Session list on** | that the list was read, or that no Claude Code session runs so nothing is read; then what the read is: the command, every ten seconds and a second after a session starts or ends while Work status is open, no network access, nothing written by Atlas |
+| **Session list not read**, in amber | why: Claude Code was not found in the three folders, did not answer within five seconds, ended with an error, or printed a form Atlas does not know. Until a read succeeds no room can say that its session waits |
+| **Session list off** | that Atlas does not run Claude Code, so no room can say whether its session waits or has finished replying |
+
+Switched off, the page stops asking and tells the app, which holds the choice
+too: an ask already on its way starts no `claude`, and the list held in memory
+is dropped. Switched on again, the next read comes a second after the last one
+at the soonest. Rooms go back to the words they had: a
+program in a folder still reads **Working**. The choice is kept in this
+browser profile's storage (`atlas.workStatus.sessionListRead`) and is on until
+the person turns it off. Where the read never runs (Windows, Linux) the header
+says nothing about it.
+
+Limits: Claude Code only, the default settings folder only, macOS only. A
+background session and a subagent's own wait have not been seen through this
+read. A running session that is missing from the list is not counted or named.
+
 ## The building
 
 The page is a building of rooms, one per worktree, under the page title and
@@ -86,28 +154,59 @@ before any session gets a second. A room a session holds while nothing runs,
 then a missing folder, takes a slot only to fill the last row, so the stage has
 no hole; otherwise it waits on its floor. A lock left by an ended session is a
 clean-up chore and always waits as a mini room under **No session**. The stage reads in session
-order. A large room is one scene with one floor line and one light: Moru on
-the floor faces a screen on a console, and the screen is the only place in the
-room with words. Its head is the branch (the only mono text); under it the
-newest commits beyond the base branch, three, or up to five where a one-row stage
-leaves the room height for them, each one ellipsised line
-with how long ago it landed; at its foot what is not committed, with the name of
-the file changed last, and the commit count. When a commit lands it slides in at
-the top and the oldest fades out. The bezel under the screen names the holding
-session and the state with how long it has worked, beside a light that is green
-while something runs. The screen keeps its text size and at least 400 px of
-width, so a subject of about 55 characters reads whole; Moru's scale gives way
-instead, in half steps so his drawn pixels stay whole, and each room is as tall
+order. A large room is a screen over one rail: the screen says what the worktree is
+doing and is the only place in the room with words, and Moru stands on the rail
+facing it. There is no drawn floor, wall, console or prop. Its head is the branch (the only mono text); under it the
+newest commits beyond the base branch, three, or on a one-row stage as many as
+its longest list has while the window has the height (twenty rows at most for a
+room alone on the stage, eight for rooms sharing it, so one long list does not
+leave its neighbours' screens bare; the room panel has the rest), each one
+ellipsised line with how long ago it landed; at its foot what is not committed, with the name of
+the file changed last, and the commit count. The room standing on the base
+branch lists that branch's five newest commits under **Recent commits**. A screen
+at least 540 px wide sets two columns instead of the foot: the commits under a
+line saying what they are, in at most 440 px, and beside them the files changed
+but not committed, last changed first (sixty at most), each with its folder and
+how long ago it was written, under their count. The files flow down one column
+and into the next, as many columns as keep 340 px each and three at most, so a
+time stays beside its name on a wide screen; a name written within ten minutes
+is in the brightest ink, within the hour a step down. A room with no commits
+gives the files the whole screen and says so at the end of their line instead
+of keeping an empty column. When a commit lands
+it slides in at the top and the oldest fades out; a file that was just changed
+slides to the top of its column. The bezel under the screen names the holding
+session and the state, and for a working room when its worktree last changed:
+the newer of its newest commit and the uncommitted file written last, as the
+last read saw them. It names no state from that time: a room whose session holds
+the folder and has changed nothing for ten minutes says exactly that. A light
+beside it is green while something runs. The bezel of a screen wide enough for two columns also draws the **last
+hour** as one line, now at its right end: a thin mark in the session's ink for
+each uncommitted file where it was last written, a wider mark for each commit
+where it landed, each fading as it ages. A change that arrives while the page is
+open rises once in its place on that line, and the row of a file written again
+lights once behind its name; with reduced motion neither moves. A change less
+than a minute old reads **just now**. The screen keeps its text size. Moru is drawn at his own
+size (128 px) in every stage room: the room's width and height go to the screen,
+and he only shows that work is running. Each room is as tall
 as its screen or its Moru needs. A quiet room's screen is not dimmed: its words
 keep their contrast and the bezel says it is quiet. The building ends under what
-it holds. A room
-narrower than 572 px hangs its screen on the wall above Moru. A track in the floor carries a cart with
-one crate per commit, six at most and then `+n`, through a hatch in the side wall
+it holds, on the page itself: there is no slab behind the rooms. A room alone
+on the stage takes the building's whole width instead of half of it, grows to
+the length of its lists, and also lists **where the changes are**: the folders
+its uncommitted files are in, at most three names deep, the one written last
+first, each with a bar for its share of the listed files, how many files and
+when one was last written. Folders past the screen's rows are counted on its
+last row, and when the read listed only the newest files the line above says
+so. The folders appear only when the files are in two or more and a column of
+files still fits beside them. Every stage room has one form: the screen across
+the room and Moru under it on the rail. A room at least 600 px wide says its
+state on the wall left of Moru, at a size read across the stage, with the fact
+beside it and how long the session has worked. The rail carries a cart with
+one crate per commit, six at most and then `+n`, to a stop at its end
 marked `main`; Git does not tell pre-push, push, PR or CI yet, so nothing is drawn
 for them. Two tools in one folder are the alarm: the room is framed in amber, its screen
 says so in amber beside the branch, its light and screen turn warning amber, the bezel says **Two tools in one folder**, and two Moru stand side by side
-and apart, one at the console and one beside him, both facing the screen, at a
-scale that leaves the screen its width. The room's top edge splits between the two sessions' inks.
+and apart in the middle of the rail, at a scale that fits both. The room's top edge splits between the two sessions' inks.
 The second tool is a session of its own, numbered and inked (**Codex 1**), with a
 floor row even when the shared folder is its only one. A held room with nothing
 seen running for five minutes dozes; a lock left behind shows a taped crate and
@@ -122,25 +221,18 @@ started, plus **No session**; each band's plate has its start time and worktree
 count, how many need clean-up, and how many of its rooms stand on the stage and
 on the floor (**2 on stage · 3 below**), and a session whose rooms are all on the
 stage has no band. Every mini room is the same size: a corner where a half-size
-Moru holds still, or a crate stands; the branch, one status line and the newest
-commit subject with its age; and a track along its floor, filled as far as its
-work has come. A mini room with a floor to itself spreads its newest commits and
-what is not committed into columns. A floor that wraps spreads its rooms evenly
+Moru holds still, or a crate stands, on the room's rail; the branch, one status
+line and the newest commit subject with its age; and that rail along its bottom
+edge, a plain line to a stop that turns green, with the line in the session's
+ink, when its work is in the base branch. A mini room with a floor to itself
+spreads its newest commits and what is not committed into columns. A floor that wraps spreads its rooms evenly
 over its rows, so none stands alone on a row.
-
-The **lobby** is the building's ground floor, under the floors and above the
-shelf. A few Moru of a crew (four, and one more for each worktree no live session
-holds, at most twelve) come in through a doorway at an edge, wander, greet,
-high-five, swap hats, nap on the bench, play on the mat and prank on tiptoe, and
-go out again: two to four at a time, never more than five. Nothing there stands
-for a worktree; the floor is named "Lobby" like the floors above it. It holds still under reduced motion and stops while the window is hidden or
-the lobby is off screen.
 
 The **shelf** at the bottom counts worktrees merged into the base branch and
 worktrees no one has touched for seven days or more. A count opens a centred
 list of those branches with the time of their last commit.
 
-Each session takes one ink for the top edge of its stage rooms, floor plate and
+Each session takes one ink for the hairline along the top of its floor plate and
 mini rooms, the mark on its screens' bezels and the accents of its Moru. Until a
 host is connected nothing comes from GitHub and no request leaves the machine.
 
@@ -163,7 +255,8 @@ is capped at 200 characters with control and direction-override characters
 removed.
 
 Every change plays as one sequence of about a second, and every frame shows
-one copy of each room with at least one bezel on the stage. First what
+one copy of each room with at least one room's name on the stage: a bezel, or
+the branch plaque of a room travelling as its wall. First what
 leaves fades, and each moving room in turn, 80 ms after the one before, fades
 what must not show while it travels: a stage room that stays a stage room
 fades only what its screen says and its cart, and keeps its Moru, its screen's
@@ -178,23 +271,36 @@ rooms that keep their content. Then every
 room goes to its new box at once; a room taking another's box arrives before
 that room leaves it. Then content fades back in, room by room, and new rooms
 rise into place. Fades out are linear, so nothing cuts. A merge plays first
-where the room stands: its crate rides into the `main` hatch, the hatch turns
+where the room stands: its crate rides past the stop named `main`, the stop turns
 green, blinking twice, Moru cheers the merge once, the lights go out, the room fades away and a crate
 lands on the shelf as its count ticks; only then do the others move. An update
 that lands mid-sequence starts the next from where each room is drawn. When a
 commit lands, the newest crate drops onto the cart in three small steps, the
 count cross-fades and Moru heaves a crate and pats it down through the floor.
 
-Rooms tell themselves apart from the branch name alone: each has one of six
-props on its console. Each
-worktree's room also has its own Moru from the cast, a body colour and at most
+Each
+worktree's room has its own Moru from the cast, a body colour and at most
 one head piece, no two alike until every character is in use and never changed
 by a newer room, while the main checkout keeps the grey original; the costume
-never changes what a pose means. A lit
-screen lights the wall around it and a pool on the floor in the session's ink and
-rims Moru's side that faces it; an idle room's screen is dim. Pointing at a room or floor steps
-that session's rooms and floor up and the rest down; rooms have no action, so
-they take no press or focus.
+never changes what a pose means. The page under the header is one
+surface, the canvas the header stands on: a room's wall is one step lighter and
+its screen is the canvas's black again, so the page keeps two greys and no band
+behind the rooms. A session's ink marks names, states and the floor's edge,
+never a surface; while a room's work runs its rail takes a little of it, and an
+idle room's screen is dim. Pointing at a room or floor steps
+that session's rooms and floor up and the rest down.
+
+Every room is one button. Pressing it opens the **room panel** beside the
+building, which the building makes room for: the branch, who holds the folder
+and a sentence saying what that state means, the listed commits, every listed
+uncommitted file with its folder and when it was written, how many more there
+are, how long the session has worked, and the folder's
+path with **Copy folder path**. A room left with only a lock or only a Git
+record also shows the Git command that clears it, with **Copy command**; Atlas
+copies text and runs nothing. Pressing the room again, the panel's close button
+or Escape closes it and returns focus to the room; a room that leaves the
+building takes its panel with it. The header's hint says in one paragraph what a
+room, a screen and a lit room mean.
 
 Moru acts what Git and the locks show: he types at a laptop while work runs
 and picks up a tool between typing loops (the second tool's Moru reads the
@@ -226,5 +332,6 @@ states without movement.
 ## Not yet
 
 Processes, hooks, load and disk (slice 2), fixes (slice 3), findings (slice 4)
-and anything from GitHub (slices 5 and 6) are not built. Waiting for an
-approval, thinking, pre-push, CI and a slow command have no room state yet.
+and anything from GitHub (slices 5 and 6) are not built. Thinking apart from
+running a command, pre-push, CI and a slow command have no room state yet; nor
+does a waiting Codex session, which has no list to read.
