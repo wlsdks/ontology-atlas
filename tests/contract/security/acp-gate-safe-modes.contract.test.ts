@@ -21,7 +21,7 @@ function choice(id: string, name = id, metaKind: string | null = null): AcpChoic
 
 describe('current adapter mode transcription', () => {
   it.each([false, true])('keeps only approval-required Codex modes with AIR metadata %s', (air) => {
-    // v2.9.0 src/AgentMode.ts (as 2.8.0): all() and toSessionMode(); kinds go only to AIR.
+    // v2.10.0 src/AgentMode.ts (as 2.9.0): all() and toSessionMode(); kinds go only to AIR.
     const modes = [
       choice('read-only', 'Read-only', air ? 'standard' : null),
       choice('workspace-write', 'Workspace access', air ? 'standard' : null),
@@ -33,7 +33,7 @@ describe('current adapter mode transcription', () => {
   });
 
   it('keeps the manual and plan modes in the current non-AIR Claude list', () => {
-    // v0.109.1 session-mode.ts (same bytes as 0.109.0): all options enabled, no AIR kinds.
+    // v0.110.0 session-mode.ts (same bytes as 0.109.1): all options enabled, no AIR kinds.
     const modes = [
       choice('default', 'Manual'),
       choice('acceptEdits', 'Accept edits'),
@@ -161,18 +161,18 @@ describe('work mode list: nothing that removes the gate is offered', () => {
  */
 const TRANSCRIBED_FROM = {
   /**
-   * 0.109.1 (session-mode.js identical to 0.108.0): `buildAvailableModes` builds the same five
+   * 0.110.0 (session-mode.js identical to 0.108.0): `buildAvailableModes` builds the same five
    * ids; `_meta.kind` goes only to the AIR client, so `mode-safety.ts` judges by id. Ultracode is
-   * a config option Atlas never reads. 0.109.0→0.109.1: session-mode.js byte-identical, checked
-   * 2026-11-22.
+   * a config option Atlas never reads. 0.109.1→0.110.0: session-mode.js byte-identical, checked
+   * 2026-11-23.
    */
-  claude: '@agentclientprotocol/claude-agent-acp@0.109.1',
+  claude: '@agentclientprotocol/claude-agent-acp@0.110.0',
   /**
-   * 2.9.0 src/AgentMode.ts (identical to 2.7.0) keeps readOnly and workspace-write; Atlas
+   * 2.10.0 src/AgentMode.ts (identical to 2.7.0) keeps readOnly and workspace-write; Atlas
    * excludes the latter because its workspaceWrite sandbox permits edits before an approval.
-   * 2.8.0→2.9.0: bundled src/AgentMode.ts block byte-identical, checked 2026-11-22.
+   * 2.9.0→2.10.0: bundled src/AgentMode.ts block byte-identical, checked 2026-11-23.
    */
-  codexLaunch: '@agentclientprotocol/codex-acp@2.9.0',
+  codexLaunch: '@agentclientprotocol/codex-acp@2.10.0',
 };
 
 const REPO_ROOT = join(import.meta.dirname, '..', '..', '..');

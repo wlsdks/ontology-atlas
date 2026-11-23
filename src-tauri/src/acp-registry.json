@@ -1,7 +1,7 @@
 {
   "source": "https://cdn.agentclientprotocol.com/registry/v1/latest/registry.json",
   "registryVersion": "1.0.0",
-  "npmDependencyCutoff": "2026-11-22T04:53:59.659Z",
+  "npmDependencyCutoff": "2026-11-23T11:15:03.788Z",
   "agents": [
     {
       "id": "claude-acp",
@@ -15,7 +15,7 @@
       "cli": "claude",
       "launch": {
         "kind": "npx",
-        "package": "@agentclientprotocol/claude-agent-acp@0.109.1",
+        "package": "@agentclientprotocol/claude-agent-acp@0.110.0",
         "args": []
       }
     },
@@ -31,7 +31,7 @@
       "cli": "codex",
       "launch": {
         "kind": "npx",
-        "package": "@agentclientprotocol/codex-acp@2.9.0",
+        "package": "@agentclientprotocol/codex-acp@2.10.0",
         "args": []
       }
     },
@@ -276,7 +276,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "dimcode@0.5.30",
+        "package": "dimcode@0.5.32",
         "args": [
           "acp"
         ]
@@ -312,7 +312,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "droid@1.17.1",
+        "package": "droid@1.17.2",
         "args": [
           "exec",
           "--output-format",
@@ -332,7 +332,7 @@
       "cli": null,
       "launch": {
         "kind": "uvx",
-        "package": "fast-agent-acp==0.10.63",
+        "package": "fast-agent-acp==0.10.65",
         "args": [
           "-x"
         ]
@@ -760,7 +760,7 @@
       "cli": "qwen",
       "launch": {
         "kind": "npx",
-        "package": "@qwen-code/qwen-code@0.28.3",
+        "package": "@qwen-code/qwen-code@0.28.4",
         "args": [
           "--acp",
           "--experimental-skills"
