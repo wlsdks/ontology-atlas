@@ -1,12 +1,13 @@
 #!/usr/bin/env node
-// Measures the Wiki question desk's recall on the labelled meaning-search fixture, word only and
-// word plus meaning (search-by-meaning spec, acceptance criterion 1).
+// Measures where the Wiki question desk puts a question's answer in the one list it draws, on the
+// labelled meaning-search fixture, words only and words plus meaning (search-by-meaning spec,
+// acceptance criterion 1).
 // Usage: pnpm perf:meaning-quality [-- --models=bge-m3,qwen3-embedding:0.6b] [--ollama=http://localhost:11434]
 //        [--json=<file>] [--verbose] [--write-vault=<dir>] [--no-cache] [--no-query-prefix]
-// The word side runs the desk's own ranking (`question-desk.ts`, `source-units.ts`) under Node's type
-// stripping, as `LibraryQuestionDesk.tsx` calls it. The meaning side embeds passages and questions
-// through Ollama's `/api/embed` on this computer and fuses both rankings by reciprocal rank (k = 60)
-// into the desk's 8 claims and 8 source passages. Without Ollama only the word side runs.
+// The list comes from the desk's own `searchDesk` (`desk-search.ts`) under Node's type stripping,
+// called as `LibraryQuestionDesk.tsx` calls it. The meaning side embeds passages and questions
+// through Ollama's `/api/embed` on this computer and hands the nearest passages to it, as the app
+// hands its own search's. Without Ollama only the words-only side runs.
 // Passages come from the app's index itself (`vault-index-bench passages`), the only splitter.
 
 import { execFileSync, spawn } from 'node:child_process';
@@ -26,8 +27,14 @@ export const DEFAULT_OLLAMA = 'http://localhost:11434';
 export const DEFAULT_MODELS = ['bge-m3', 'qwen3-embedding:0.6b'];
 export const BATCH_PASSAGES = 32;
 export const BATCH_BYTES = 64 * 1024;
-const RRF_K = 60;
-const TOP = 8;
+/** Passages the desk asks search by meaning for: `VECTOR_SEARCH_LIMIT` in `use-vector-search.ts`. */
+export const MEANING_LIMIT = 24;
+/** Rows the desk shows before Show more: `FIRST_LEADS` in `DeskLeads.tsx`. */
+export const FIRST_ROWS = 3;
+/** A second cut, a screen's worth of rows once Show more is pressed. */
+export const SCREEN_ROWS = 8;
+/** Cited files a claim row offers a press for: `CITED_PRESSES` in `DeskLeadRow.tsx`. */
+const CITED_PRESSES = 2;
 
 /** Query wording each model's card asks for; documents are embedded as they are. */
 const QUERY_PREFIX = {
@@ -158,34 +165,60 @@ export async function importDesk() {
     }
     export async function load(url, context, next) {
       if (url.startsWith(${JSON.stringify(pathToFileURL(src).href)}) && url.endsWith('.ts')) return next(url, { ...context, format: 'module-typescript' });
+      if (url.startsWith(${JSON.stringify(pathToFileURL(src).href)}) && url.endsWith('.json')) return next(url, { ...context, importAttributes: { type: 'json' } });
       return next(url, context);
     }`;
   register(`data:text/javascript,${encodeURIComponent(hooks)}`);
-  const desk = await import(pathToFileURL(join(ROOT, 'src/features/library/lib/questions/question-desk.ts')).href);
+  const desk = await import(pathToFileURL(join(ROOT, 'src/features/library/lib/questions/desk-search.ts')).href);
   const passage = await import(pathToFileURL(join(ROOT, 'src/shared/lib/library/source-units.ts')).href);
   const frontmatter = await import(pathToFileURL(join(ROOT, 'src/shared/lib/vault-document/parse-frontmatter.ts')).href);
   return { ...desk, ...passage, ...frontmatter };
 }
 
-/** The same calls, in the same order, as `LibraryQuestionDesk.tsx` `search()`. */
-export function wordSearch(app, vault, question) {
-  const wiki = app.findDeskClaims(question, vault.docs, vault.claimsBySlug);
-  const terms = app.questionTerms(question);
-  const hits = [];
-  for (const source of app.planDeskSourceReads(vault.sources)) {
-    hits.push(...app.findDeskSourceHits(source.path, vault.unitsByPath.get(source.path), terms).hits);
-  }
-  hits.sort((a, b) => b.score - a.score || a.path.localeCompare(b.path));
-  const claims = wiki.claims.map((claim) => {
-    const path = `${claim.pageSlug}.md`;
-    const line = vault.files[path].split(/\r?\n/).findIndex((text) => /^[-*] /.test(text.trim()) && text.trim().slice(2).trim() === claim.text) + 1;
-    return { id: path, line };
+/**
+ * The desk's list for one question, from the same calls with the same arguments as
+ * `LibraryQuestionDesk.tsx` `search()`: every planned source with units counts as read.
+ * `meaningHits` is `null` when meaning takes no part. A row reaches the file it opens and, for a
+ * claim, the cited files its presses open.
+ */
+export function deskRows(app, vault, question, meaningHits) {
+  const plan = app.planDeskSourceReads(vault.sources);
+  const sourceUnitsByPath = new Map(plan.flatMap((source) => {
+    const units = vault.unitsByPath.get(source.path);
+    return units?.length ? [[source.path, units]] : [];
+  }));
+  const { leads } = app.searchDesk({
+    question, docs: vault.docs, claimsBySlug: vault.claimsBySlug,
+    searchedSources: new Set(plan.map((source) => source.path)), sourceUnitsByPath, meaningHits,
   });
-  return { claims, sources: hits.slice(0, TOP).map((hit) => ({ id: hit.path, line: Number(hit.anchor.slice(1)) })) };
+  return leads.map((lead) => ({
+    files: lead.kind === 'claim'
+      ? [`${lead.claim.pageSlug}.md`, ...lead.claim.citations.slice(0, CITED_PRESSES).map((citation) => citation.path)]
+      : [lead.hit.path],
+    reason: lead.reason,
+    text: lead.kind === 'claim' ? lead.claim.text : lead.hit.text,
+  }));
 }
 
-/** What the desk's word search reads from the fixture; needs no built index. */
-export function readDeskFixture(app) {
+/**
+ * The passages the app's search by meaning would return: the `limit` nearest by cosine, as
+ * `{ path, lineStart, lineEnd, score }`, ties by path and line. The fixture holds only `wiki/` and
+ * `sources/`, the folders the desk's prefixes name, so every passage is a candidate.
+ */
+export function nearestPassages(passages, vector, limit = MEANING_LIMIT) {
+  return passages.map((passage) => ({ path: passage.path, lineStart: passage.start, lineEnd: passage.end, score: dot(passage.vector, vector) }))
+    .sort((a, b) => b.score - a.score || a.path.localeCompare(b.path) || a.lineStart - b.lineStart)
+    .slice(0, limit);
+}
+
+/** Where the gold files stand in the rows: all within the first 3, all within the first 8, and 1 / the first one's rank. */
+export function placement(gold, rows) {
+  const within = (count) => gold.every((file) => rows.slice(0, count).some((row) => row.files.includes(file)));
+  const first = rows.findIndex((row) => row.files.some((file) => gold.includes(file)));
+  return { first3: within(FIRST_ROWS) ? 1 : 0, first8: within(SCREEN_ROWS) ? 1 : 0, reciprocalRank: first < 0 ? 0 : 1 / (first + 1) };
+}
+
+async function readVaultFixture(app) {
   const { files } = JSON.parse(readFileSync(join(FIXTURE, 'vault.json'), 'utf8'));
   const docs = [];
   const claimsBySlug = new Map();
@@ -203,12 +236,6 @@ export function readDeskFixture(app) {
       unitsByPath.set(path, app.sourceUnits(bytes, path).units);
     }
   }
-  return { files, docs, claimsBySlug, sources, unitsByPath };
-}
-
-async function readVaultFixture(app) {
-  const desk = readDeskFixture(app);
-  const { files } = desk;
   const directory = mkdtempSync(join(tmpdir(), 'atlas-meaning-quality-vault-'));
   const passages = [];
   try {
@@ -220,42 +247,16 @@ async function readVaultFixture(app) {
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }
-  return { ...desk, passages };
+  return { files, docs, claimsBySlug, sources, unitsByPath, passages };
 }
 
-/**
- * Reciprocal-rank fusion of the desk's word list with the meaning list into 8 leads. A meaning
- * passage that holds a word lead's line counts as the same lead ("both"); ties keep the better
- * single rank, then the word lead.
- */
-export function fuse(wordItems, meaningItems) {
-  const fused = wordItems.map((item, at) => ({ ...item, score: 1 / (RRF_K + at + 1), best: at + 1, word: true, meaning: false }));
-  meaningItems.forEach((item, at) => {
-    const score = 1 / (RRF_K + at + 1);
-    const same = fused.find((lead) => lead.word && !lead.meaning && lead.id === item.id && lead.line >= item.start && lead.line <= item.end);
-    if (same) {
-      same.score += score;
-      same.meaning = true;
-      same.best = Math.min(same.best, at + 1);
-    } else {
-      fused.push({ id: item.id, line: item.start, score, best: at + 1, word: false, meaning: true });
-    }
-  });
-  return fused.sort((a, b) => b.score - a.score || a.best - b.best || Number(b.word) - Number(a.word)).slice(0, TOP);
-}
-
-const recallOf = (gold, leads) => {
-  const found = new Set(leads.map((lead) => lead.id));
-  return gold.filter((id) => found.has(id)).length / gold.length;
-};
-
-/** 1 / the rank of the first gold file in the meaning lists merged by similarity; 0 past 16. */
-const reciprocalRank = (gold, leads) => {
-  const at = [...leads].sort((a, b) => b.similarity - a.similarity).findIndex((lead) => gold.includes(lead.id));
+/** 1 / the rank of the first gold file in the passages search by meaning returned; 0 when none is. */
+const meaningReciprocalRank = (gold, hits) => {
+  const at = hits.findIndex((hit) => gold.includes(hit.path));
   return at < 0 ? 0 : 1 / (at + 1);
 };
 
-const SUBSETS = [
+export const SUBSETS = [
   ['overall', () => true],
   ['ko', (q) => q.set === 'ko'],
   ['en', (q) => q.set === 'en'],
@@ -265,15 +266,28 @@ const SUBSETS = [
   ['exact-term', (q) => q.exactTerm],
 ];
 
-function summarise(rows, field) {
+const MEASURES = ['first3', 'first8', 'reciprocalRank'];
+
+/** Per subset, the mean of each measure in percent. */
+export function summarise(rows) {
   return Object.fromEntries(SUBSETS.map(([name, keep]) => {
     const picked = rows.filter((row) => keep(row.q));
-    return [name, { n: picked.length, percent: (100 * picked.reduce((sum, row) => sum + row[field], 0)) / picked.length }];
+    const mean = (measure) => (100 * picked.reduce((sum, row) => sum + row[measure], 0)) / (picked.length || 1);
+    return [name, { n: picked.length, ...Object.fromEntries(MEASURES.map((measure) => [measure, mean(measure)])) }];
   }));
 }
 
 const fmt = (value) => value.toFixed(1).padStart(6);
-const signed = (value) => `${value >= 0 ? '+' : ''}${value.toFixed(1)}`.padStart(6);
+
+function printTable(title, sides) {
+  console.log(title);
+  console.log(`${''.padEnd(35)}${sides.map(([label]) => `   ${label.padEnd(22)}`).join('')}`);
+  console.log(`${'subset'.padEnd(31)}   n${sides.map(() => '   first 3 first 8    MRR').join('')}`);
+  for (const [name] of SUBSETS) {
+    const cells = sides.map(([, summary]) => `   ${fmt(summary[name].first3)}  ${fmt(summary[name].first8)} ${fmt(summary[name].reciprocalRank)}`);
+    console.log(`${name.padEnd(31)} ${String(sides[0][1][name].n).padStart(3)}${cells.join('')}`);
+  }
+}
 
 function parseArgs(argv) {
   const options = { models: DEFAULT_MODELS, ollama: DEFAULT_OLLAMA, json: null, verbose: false, writeVault: null, cache: true, queryPrefix: true };
@@ -307,15 +321,15 @@ async function main() {
   console.log(`fixture: ${Object.keys(vault.files).length} files (${wikiCount} wiki pages, ${vault.sources.length} sources), ${vault.passages.length} passages, ${questions.length} questions`);
   console.log(`load average at start: ${loadavg().map((value) => value.toFixed(1)).join(' ')}`);
 
-  const word = questions.map((q) => {
-    const found = wordSearch(app, vault, q.question);
-    return { q, found, word: recallOf(q.gold, [...found.claims, ...found.sources]) };
+  const words = questions.map((q) => {
+    const rows = deskRows(app, vault, q.question, null);
+    return { q, rows, ...placement(q.gold, rows) };
   });
-  const report = { load: loadavg(), fixture: { files: Object.keys(vault.files).length, passages: vault.passages.length }, word: summarise(word, 'word'), models: {} };
+  const report = { load: loadavg(), fixture: { files: Object.keys(vault.files).length, passages: vault.passages.length }, words: summarise(words), models: {} };
 
   const version = await ollamaVersion(options.ollama);
   const available = version ? await ollamaModels(options.ollama) : new Set();
-  if (!version) console.log(`Ollama is not reachable at ${options.ollama}; only the word-only side ran. Start Ollama to measure word plus meaning.`);
+  if (!version) console.log(`Ollama is not reachable at ${options.ollama}; only the words-only side ran. Start Ollama to measure words plus meaning.`);
   else console.log(`Ollama ${version} at ${options.ollama}`);
 
   for (const model of version ? options.models : []) {
@@ -327,69 +341,47 @@ async function main() {
     const queryPrefix = options.queryPrefix ? QUERY_PREFIX[family(model)] ?? '' : '';
     const passageRun = await embedAll(options.ollama, model, vault.passages.map((p) => documentPrefix + p.text), options.cache);
     const questionRun = await embedAll(options.ollama, model, questions.map((q) => queryPrefix + q.question.normalize('NFC')), options.cache);
-    const wikiPassages = [];
-    const sourcePassages = [];
-    vault.passages.forEach((passage, at) => {
-      const entry = { id: passage.path, start: passage.start, end: passage.end, vector: passageRun.vectors[at] };
-      if (passage.path.startsWith('wiki/') && vault.claimsBySlug.has(passage.path.replace(/\.md$/, ''))) wikiPassages.push(entry);
-      else if (passage.path.startsWith('sources/')) sourcePassages.push(entry);
-    });
-    const rank = (list, vector) => list.map((entry) => ({ ...entry, similarity: dot(entry.vector, vector) }))
-      .sort((a, b) => b.similarity - a.similarity).slice(0, TOP);
-    const rows = word.map((row, at) => {
-      const vector = questionRun.vectors[at];
-      const meaningWiki = rank(wikiPassages, vector);
-      const meaningSources = rank(sourcePassages, vector);
-      const leads = [...fuse(row.found.claims, meaningWiki), ...fuse(row.found.sources, meaningSources)];
-      return {
-        ...row,
-        hybrid: recallOf(row.q.gold, leads),
-        meaningOnly: recallOf(row.q.gold, [...meaningWiki, ...meaningSources]),
-        reciprocalRank: reciprocalRank(row.q.gold, [...meaningWiki, ...meaningSources]),
-      };
+    const passages = vault.passages.map((passage, at) => ({ ...passage, vector: passageRun.vectors[at] }));
+    const both = questions.map((q, at) => {
+      const hits = nearestPassages(passages, questionRun.vectors[at]);
+      const rows = deskRows(app, vault, q.question, hits);
+      return { q, rows, ...placement(q.gold, rows), meaningReciprocalRank: meaningReciprocalRank(q.gold, hits) };
     });
     const embedded = passageRun.embedded + questionRun.embedded;
     const seconds = passageRun.seconds + questionRun.seconds;
+    const summary = summarise(both);
+    const meaningMrr = summarise(both.map((row) => ({ q: row.q, first3: 0, first8: 0, reciprocalRank: row.meaningReciprocalRank })));
     report.models[model] = {
-      hybrid: summarise(rows, 'hybrid'),
-      meaningOnly: summarise(rows, 'meaningOnly'),
-      meaningMrr: summarise(rows, 'reciprocalRank'),
+      wordsAndMeaning: summary,
+      meaningMrr: Object.fromEntries(Object.entries(meaningMrr).map(([name, value]) => [name, value.reciprocalRank])),
       embedded,
       seconds,
-      perQuestion: rows.map((row) => ({ id: row.q.id, word: row.word, hybrid: row.hybrid, meaningOnly: row.meaningOnly, reciprocalRank: row.reciprocalRank })),
+      perQuestion: both.map((row, at) => ({
+        id: row.q.id,
+        words: { first3: words[at].first3, first8: words[at].first8, reciprocalRank: words[at].reciprocalRank },
+        wordsAndMeaning: { first3: row.first3, first8: row.first8, reciprocalRank: row.reciprocalRank },
+        rows: row.rows.slice(0, SCREEN_ROWS),
+      })),
     };
 
-    console.log(`\n${model} (${embedded ? `${embedded} texts embedded in ${seconds.toFixed(1)} s` : 'all vectors from cache'}; load ${loadavg()[0].toFixed(1)})`);
-    console.log('subset                            n   word  hybrid      Δ  meaning');
-    const hybrid = report.models[model].hybrid;
-    const meaning = report.models[model].meaningOnly;
-    for (const [name] of SUBSETS) {
-      const w = report.word[name].percent;
-      const h = hybrid[name].percent;
-      console.log(`${name.padEnd(31)} ${String(report.word[name].n).padStart(3)} ${fmt(w)}  ${fmt(h)} ${signed(h - w)}   ${fmt(meaning[name].percent)}`);
-    }
-    const mrr = report.models[model].meaningMrr;
-    console.log(`meaning-only MRR (×100): overall ${mrr.overall.percent.toFixed(1)} · cross ${mrr['cross (paraphrase or language)'].percent.toFixed(1)} · ko ${mrr.ko.percent.toFixed(1)} · en ${mrr.en.percent.toFixed(1)}`);
-    const gain = (name) => hybrid[name].percent - report.word[name].percent;
-    const verdict = {
-      overall: gain('overall') >= 15,
-      cross: gain('cross (paraphrase or language)') >= 30,
-      exactTerm: gain('exact-term') >= -2,
-    };
-    report.models[model].ac1 = verdict;
-    console.log(`AC1 bar (fixture part): overall +15 ${verdict.overall ? 'met' : 'missed'} · cross +30 ${verdict.cross ? 'met' : 'missed'} · exact-term at most -2 ${verdict.exactTerm ? 'met' : 'missed'}`);
+    console.log('');
+    printTable(`${model} (${embedded ? `${embedded} texts embedded in ${seconds.toFixed(1)} s` : 'all vectors from cache'}; load ${loadavg()[0].toFixed(1)})`,
+      [['words', report.words], ['words + meaning', summary]]);
+    console.log(`meaning list alone, MRR of the first gold passage among the ${MEANING_LIMIT} returned (×100): overall ${meaningMrr.overall.reciprocalRank.toFixed(1)} · cross ${meaningMrr['cross (paraphrase or language)'].reciprocalRank.toFixed(1)} · ko ${meaningMrr.ko.reciprocalRank.toFixed(1)} · en ${meaningMrr.en.reciprocalRank.toFixed(1)}`);
     if (options.verbose) {
-      for (const row of rows) if (row.word !== row.hybrid) console.log(`  ${row.q.id} word ${row.word.toFixed(2)} → hybrid ${row.hybrid.toFixed(2)}  ${row.q.question}`);
+      for (const row of both) {
+        if (row.first3) continue;
+        const rank = row.rows.findIndex((lead) => lead.files.some((file) => row.q.gold.includes(file))) + 1;
+        console.log(`  ${row.q.id} first gold at ${rank || 'none'} of ${row.rows.length}  ${row.q.question}`);
+        for (const lead of row.rows.slice(0, FIRST_ROWS)) console.log(`    ${lead.reason.padEnd(7)} ${lead.files[0]}  ${lead.text.slice(0, 90)}`);
+      }
     }
   }
 
-  if (!Object.keys(report.models).length) {
-    console.log('\nword only (recall@8, %)');
-    for (const [name] of SUBSETS) console.log(`${name.padEnd(31)} ${String(report.word[name].n).padStart(3)} ${fmt(report.word[name].percent)}`);
-  }
-  report.wordPerQuestion = word.map((row) => ({ id: row.q.id, word: row.word, claims: row.found.claims, sources: row.found.sources }));
+  if (!Object.keys(report.models).length) printTable('\nwords only', [['words', report.words]]);
+  report.wordsPerQuestion = words.map((row) => ({ id: row.q.id, first3: row.first3, first8: row.first8, reciprocalRank: row.reciprocalRank, rows: row.rows.slice(0, SCREEN_ROWS) }));
   if (options.json) writeFileSync(options.json, `${JSON.stringify(report, null, 2)}\n`);
-  console.log(`\nrecall@8 = share of a question's gold files among the desk's 8 claims and 8 source passages. Load at end: ${loadavg().map((value) => value.toFixed(1)).join(' ')}`);
+  console.log(`\nfirst 3 / first 8 = share of questions (%) with every gold file reached by the desk's first ${FIRST_ROWS} / ${SCREEN_ROWS} rows; MRR = mean of 1 / the rank of the first gold row (×100). Load at end: ${loadavg().map((value) => value.toFixed(1)).join(' ')}`);
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {

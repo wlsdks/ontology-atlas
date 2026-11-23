@@ -2,7 +2,7 @@ import { createWikiTermIntern, wikiRetrievalPage, type WikiRetrievalPage, type W
 import { compactOntologyDescription } from "@/shared/lib/concept-display/ontology-description";
 import { WIKI_CITATION_PATTERN } from "@/shared/lib/library/wiki-page-schema";
 import { wikiPageFacts, type WikiPageFacts } from "@/shared/lib/library/wiki-folder";
-import { deskPageClaims, type DeskPageClaims } from "../lib/questions/question-desk";
+import { deskPageClaims, type DeskPageClaims } from "../lib/questions/desk-search";
 import { isRetainedAnswerPath } from "../lib/questions/answer-revision";
 import { answerTextHash } from "../lib/questions/answer-revision-store";
 import { sectionSlices } from "../lib/wiki/section-slices";
