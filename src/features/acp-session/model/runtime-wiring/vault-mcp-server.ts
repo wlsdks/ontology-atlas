@@ -69,7 +69,9 @@ export function vaultMcpServers(
   launch: McpServerLaunch | null,
   vaultPath: string | null,
   registration?: ExistingVaultMcpRegistration | null,
-  options?: { ownsWriteGate?: boolean;sourceRoot?:string },
+  options?: { ownsWriteGate?: boolean;sourceRoot?:string;
+    /** The press's id while a mapping run sends its requests; the server records them as one analysis. */
+    mapAnalysisId?: string | null },
 ): AcpMcpServer[] {
   if (!launch || !vaultPath) return [];
   // A matching vault/command does not prove that the registration reads this bound code folder.
@@ -92,6 +94,7 @@ export function vaultMcpServers(
         // returns a path only for the shape Atlas creates.
         ...(projectRoot ? [{ name: 'OATLAS_REPO_ROOT', value: projectRoot }] : []),
         ...(serverGate ? [{ name: 'OATLAS_WRITE_CONSENT', value: serverGate }] : []),
+        ...(options?.mapAnalysisId ? [{ name: 'OATLAS_MAP_ANALYSIS_ID', value: options.mapAnalysisId }] : []),
       ],
     },
   ];

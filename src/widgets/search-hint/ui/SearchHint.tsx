@@ -30,6 +30,8 @@ interface Props {
    */
   className?: string;
   pathChip?: ReactNode;
+  /** The map's code analysis chip; from `md` only, like the map's corner readout. */
+  analysisChip?: ReactNode;
   realmChip?: ReactNode;
   trailChip?: ReactNode;
   constellationControl?: ReactNode;
@@ -50,6 +52,7 @@ export function SearchHint({
   phoneSheetSuppressed = false,
   className,
   pathChip,
+  analysisChip,
   realmChip,
   trailChip,
   constellationControl,
@@ -239,7 +242,7 @@ export function SearchHint({
           {t('searchLabel')}
         </ChromeChip>
         </div>
-        {realmChip || pathChip || trailChip ? (
+        {realmChip || pathChip || trailChip || analysisChip ? (
           // The status chips are what yields. From `xl` the group takes its natural
           // width up to `max-w-md`, or the path chip shrinks to one letter; past that
           // each chip truncates its label (full text in hover and accessible name).
@@ -247,6 +250,7 @@ export function SearchHint({
             className="pointer-events-auto flex min-w-0 items-center gap-[var(--topology-chrome-gap)] xl:max-w-md"
             data-testid="topology-status-chip-group"
           >
+            {analysisChip ? <div className="hidden min-w-0 md:contents">{analysisChip}</div> : null}
             {realmChip}
             {phoneFocusSuppressed && realmChip ? <div className="hidden xl:contents">{pathChip}{trailChip}</div> : <>{pathChip}{trailChip}</>}
           </div>

@@ -12,15 +12,17 @@ const noopSubscribe = () => () => {};
 const MIN_COUNTABLE_TARGET = 3;
 
 /**
- * Counts 0 → target once on mount on the settle clock. A later `target` change snaps unless
- * `animateChanges` is set, which only a change answering the reader's action should use.
+ * Counts 0 → target once on mount on the settle clock, unless `intro` is false, which starts at
+ * the target. A later `target` change snaps unless `animateChanges` is set, which moves from the
+ * value last drawn and suits a change the reader is watching for.
  * Render with `tabular-nums`; reduced motion shows the final value immediately.
  */
 export function useCountUp(
   target: number,
   durationMs = MOTION.settle.duration * 1000,
-  options: { animateChanges?: boolean } = {},
+  options: { animateChanges?: boolean; intro?: boolean } = {},
 ): number {
+  const intro = options.intro !== false;
   const reduce = usePrefersReducedMotion();
   const hydrated = useSyncExternalStore(noopSubscribe, () => true, () => false);
   const [introTarget] = useState(target);
@@ -28,9 +30,9 @@ export function useCountUp(
     hydrated &&
     !reduce &&
     typeof requestAnimationFrame === "function" &&
-    Math.abs(introTarget) >= MIN_COUNTABLE_TARGET;
-  const [value, setValue] = useState(0);
-  const introDone = useRef(false);
+    (!intro || Math.abs(introTarget) >= MIN_COUNTABLE_TARGET);
+  const [value, setValue] = useState(intro ? 0 : target);
+  const introDone = useRef(!intro);
   const synced = useRef(false);
   /** The intro reads the live target, so a vault arriving mid-intro is where it lands. */
   const targetRef = useRef(target);
@@ -53,7 +55,7 @@ export function useCountUp(
     return () => cancelAnimationFrame(raf);
   }, [canAnimate, durationMs]);
 
-  const valueRef = useRef(0);
+  const valueRef = useRef(intro ? 0 : target);
   useEffect(() => {
     valueRef.current = value;
   }, [value]);

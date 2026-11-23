@@ -1,0 +1,56 @@
+import { fireEvent, render, screen } from "@testing-library/react";
+import { NextIntlClientProvider } from "next-intl";
+import { describe, expect, it, vi } from "vitest";
+import en from "../../../../../messages/en.json";
+import type { MapAnalysisChipModel } from "../../lib/map-analysis/map-analysis-chip";
+import { MapAnalysisChip } from "./MapAnalysisChip";
+
+const model = (offMap: number): MapAnalysisChipModel => ({
+  pill: { kind: "full", percent: 100 - offMap, number: 3, when: { kind: "days", days: 4 } },
+  share: { mapped: 100 - offMap, total: 100, percent: 100 - offMap },
+  counted: { number: 3, when: { kind: "days", days: 4 } },
+  offMap,
+  rows: [],
+  earlier: 0,
+  record: "read",
+  runningUntilMs: null,
+});
+
+const view = (offMap: number, onMapTheRest = () => {}) => (
+  <NextIntlClientProvider locale="en" messages={en} timeZone="UTC">
+    <MapAnalysisChip model={model(offMap)} canMapTheRest onMapTheRest={onMapTheRest} />
+  </NextIntlClientProvider>
+);
+
+describe("the map analysis chip in the app", () => {
+  it("offers to map the rest, which opens the map conversation and closes the panel", () => {
+    const onMapTheRest = vi.fn();
+    render(view(38, onMapTheRest));
+    fireEvent.click(screen.getByTestId("map-analysis-chip-trigger"));
+    expect(screen.queryByTestId("map-analysis-web-analyze")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("map-analysis-map-rest"));
+    expect(onMapTheRest).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("map-analysis-chip-trigger")).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("offers nothing to map when nothing is off the map", () => {
+    render(view(0));
+    fireEvent.click(screen.getByTestId("map-analysis-chip-trigger"));
+    expect(screen.queryByTestId("map-analysis-map-rest")).not.toBeInTheDocument();
+  });
+
+  it("closes on a press outside and keeps the map's Escape out", () => {
+    const outerEscape = vi.fn();
+    document.addEventListener("keydown", outerEscape);
+    render(view(38));
+    const trigger = screen.getByTestId("map-analysis-chip-trigger");
+    fireEvent.click(trigger);
+    fireEvent.keyDown(document.body, { key: "Escape" });
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    expect(outerEscape).not.toHaveBeenCalled();
+    fireEvent.click(trigger);
+    fireEvent.mouseDown(document.body);
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    document.removeEventListener("keydown", outerEscape);
+  });
+});

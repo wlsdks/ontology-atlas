@@ -18,6 +18,7 @@ import {
 import { useLatestRef } from '@/shared/lib/use-latest-ref';
 import { MOTION } from '@/shared/motion';
 import { notMappedAreas } from '@/shared/lib/vault-document/not-mapped-areas';
+import { widestProjectLine, type MappingProjectLine } from '@/shared/lib/vault-document/mapping-share';
 import { getTauriVaultRootPath, isTauriVaultRuntime } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { createVaultTextReader } from '@/shared/lib/vault-folder/vault-text-reader';
 
@@ -64,11 +65,7 @@ export interface MappingRunDriver {
   observeTurnStart: (turn: AcpTurnStart) => ((completion: AcpTurnCompletion) => Promise<void>) | null;
 }
 
-/** A project note's summary line: the note's slug, which a run fixes at its press, and its figures. */
-export interface MappingProjectLine {
-  project: string;
-  figures: MappingFigures;
-}
+export { mappingShare, widestProjectLine, type MappingProjectLine } from '@/shared/lib/vault-document/mapping-share';
 
 /** How the folder's project notes read for a run: the widest at a press, the run's own at a request's end. */
 export interface MappingFiguresReader {
@@ -134,30 +131,12 @@ export interface MappingRequest {
   shown: string;
 }
 
-/** The line with the most abilities off the map; the first on a tie. O(n). */
-export function widestProjectLine(lines: ReadonlyArray<{ project: string; figures: MappingFigures | null }>): MappingProjectLine | null {
-  let widest: MappingProjectLine | null = null;
-  for (const { project, figures } of lines) {
-    if (figures && (!widest || figures.abilitiesUncovered > widest.figures.abilitiesUncovered)) widest = { project, figures };
-  }
-  return widest;
-}
-
 /**
  * Whether a finished request's conversation may open: opening one starts an agent, so not while this
  * conversation works, another holds the folder, or the run still sends requests from anywhere.
  */
 export function mayOpenRunRequest(state: { driving: boolean; busy: boolean; folderBusy: boolean; run: MappingRun | null }): boolean {
   return !state.driving && !state.busy && !state.folderBusy && !(state.run !== null && isMappingActive(state.run));
-}
-
-/** On the map out of found, floored, so one ability off the map never reads as 100%. */
-export function mappingShare(figures: MappingFigures | null): { mapped: number; total: number; percent: number } | null {
-  if (!figures) return null;
-  const { abilitiesTotal: total, abilitiesUncovered: uncovered } = figures;
-  if (!Number.isSafeInteger(total) || !Number.isSafeInteger(uncovered) || total <= 0) return null;
-  const mapped = Math.min(total, Math.max(0, total - uncovered));
-  return { mapped, total, percent: Math.floor((mapped / total) * 100) };
 }
 
 /**

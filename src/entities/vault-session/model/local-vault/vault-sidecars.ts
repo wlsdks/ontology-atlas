@@ -5,6 +5,18 @@ import {
 } from '../../lib/agent-mcp-config';
 import { readTauriVaultTextTail } from '@/shared/lib/vault-folder/native-vault/tauri-vault-files';
 import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
+import {
+  ABSENT_MAP_ANALYSIS_RECORD,
+  MAP_ANALYSIS_READ_MAX_BYTES,
+  MAP_ANALYSIS_READ_MAX_LINES,
+  MAP_ANALYSIS_RECORD_FILE,
+  MAP_ANALYSIS_RECORD_FOLDER,
+  MAP_ANALYSIS_RECORD_PATH,
+  mapAnalysisRecordFromText,
+  UNREADABLE_MAP_ANALYSIS_RECORD,
+  wholeLinesOfTail,
+  type MapAnalysisRecordState,
+} from '@/shared/lib/vault-document/map-analysis-record';
 import { parseAgentActivityLog, type AgentActivityEntry } from '@/shared/lib/agent-activity/agent-activity-log';
 import {
   ACP_WORK_RECEIPT_FILE,
@@ -211,14 +223,16 @@ export async function readVaultSidecarStatuses(handle: FileSystemDirectoryHandle
   agentActivityStatus: AgentActivityStatus;
   agentActivityLog: AgentActivityEntry[];
   acpWorkReceipts: AcpWorkReceipt[];
+  mapAnalysisRecord: MapAnalysisRecordState;
 }> {
-  const [agentConfigStatus, agentActivityStatus, agentActivityLog, acpWorkReceipts] = await Promise.all([
+  const [agentConfigStatus, agentActivityStatus, agentActivityLog, acpWorkReceipts, mapAnalysisRecord] = await Promise.all([
     readAgentConfigStatus(handle),
     readAgentActivityStatus(handle),
     readAgentActivityLog(handle),
     readAcpWorkReceipts(handle),
+    readMapAnalysisRecord(handle),
   ]);
-  return { agentConfigStatus, agentActivityStatus, agentActivityLog, acpWorkReceipts };
+  return { agentConfigStatus, agentActivityStatus, agentActivityLog, acpWorkReceipts, mapAnalysisRecord };
 }
 
 const ACTIVITY_LOG_SHOWN_ENTRIES = 50;
@@ -232,6 +246,38 @@ async function readAgentActivityLog(handle: FileSystemDirectoryHandle): Promise<
     return raw ? parseAgentActivityLog(raw, { limit: ACTIVITY_LOG_SHOWN_ENTRIES }) : [];
   } catch {
     return [];
+  }
+}
+
+function isNotFound(error: unknown): boolean {
+  return error instanceof DOMException ? error.name === 'NotFoundError' : (error as { name?: unknown } | null)?.name === 'NotFoundError';
+}
+
+/** The web's read of the record: at most its last `MAP_ANALYSIS_READ_MAX_BYTES`, from a whole line. */
+async function readMapAnalysisRecordFile(handle: FileSystemDirectoryHandle): Promise<MapAnalysisRecordState> {
+  try {
+    const directory = await handle.getDirectoryHandle(MAP_ANALYSIS_RECORD_FOLDER);
+    const file = await (await directory.getFileHandle(MAP_ANALYSIS_RECORD_FILE)).getFile();
+    const start = Math.max(0, file.size - MAP_ANALYSIS_READ_MAX_BYTES);
+    return mapAnalysisRecordFromText(wholeLinesOfTail(await file.slice(start).text(), start > 0));
+  } catch (error) {
+    return isNotFound(error) ? ABSENT_MAP_ANALYSIS_RECORD : UNREADABLE_MAP_ANALYSIS_RECORD;
+  }
+}
+
+/**
+ * The map analysis record, read only by the app (the MCP server writes it). The desktop reads its
+ * bounded tail natively, as the activity log; a failed native read is told apart from an absent file
+ * through the folder handle.
+ */
+async function readMapAnalysisRecord(handle: FileSystemDirectoryHandle): Promise<MapAnalysisRecordState> {
+  const rootPath = getTauriVaultRootPath(handle);
+  if (!rootPath) return readMapAnalysisRecordFile(handle);
+  try {
+    return mapAnalysisRecordFromText(await readTauriVaultTextTail(rootPath, MAP_ANALYSIS_RECORD_PATH, MAP_ANALYSIS_READ_MAX_LINES));
+  } catch {
+    const read = await readMapAnalysisRecordFile(handle);
+    return read.kind === 'absent' ? read : UNREADABLE_MAP_ANALYSIS_RECORD;
   }
 }
 

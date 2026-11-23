@@ -116,6 +116,17 @@ describe('repository root: when the map is inside the project, the code is one l
   });
 });
 
+describe('a press names its requests as one map analysis', () => {
+  const analysisOf = (servers: ReturnType<typeof vaultMcpServers>) =>
+    servers[0]?.env.find((entry) => entry.name === 'OATLAS_MAP_ANALYSIS_ID')?.value ?? null;
+
+  it('hands the server the press id while a mapping run sends its requests, and nothing otherwise', () => {
+    expect(analysisOf(vaultMcpServers(launch, VAULT, null, { mapAnalysisId: 'press-1764000000000-3' }))).toBe('press-1764000000000-3');
+    expect(analysisOf(vaultMcpServers(launch, VAULT, null, { mapAnalysisId: null }))).toBeNull();
+    expect(analysisOf(vaultMcpServers(launch, VAULT))).toBeNull();
+  });
+});
+
 describe('vault entries are found by name, since the list is no longer only ours', () => {
   const vaultEntry = {
     name: VAULT_MCP_SERVER_NAME,

@@ -6,6 +6,7 @@ import type { AcpTurnActivity } from "@/features/acp-session";
 import { connectorAcpServers, runtimeOwnsWriteGate, vaultMcpServers, vaultSelfReadSlot } from "@/features/acp-session";
 import { type AgentLiveWorkInput } from "@/features/agent-activity";
 import { useVaultConnectors } from "@/features/mcp-connectors";
+import { isMappingActive, mappingAnalysisId, useFolderMappingRun } from "@/features/work-run";
 import { createVaultAcpWorkReceiptStore, type AcpWorkReceipt, type AcpWorkReceiptStore } from "@/shared/lib/meaning-transition/acp-work-receipt";
 import { useCallback, useMemo, useRef } from "react";
 import { acpHeartbeatAgentName, buildAcpTurnHeartbeat, createVaultAcpHeartbeatStore, type AcpHeartbeatStore } from "../../lib/agent/acp-agent-heartbeat";
@@ -28,6 +29,9 @@ export function useTopologyAgentActivity({ topologyVaultReadModel, acpRuntimeCon
   // A server the runtime already reads from the vault is not injected again
   // (`vault-mcp-server.ts`).
   const vaultConnectors = useVaultConnectors(vault.handle);
+  // Each request of a press starts its own server; the press's id makes them one analysis.
+  const mappingRun = useFolderMappingRun(gitVaultPath ?? "");
+  const mapAnalysisId = mappingRun && isMappingActive(mappingRun) ? mappingAnalysisId(mappingRun) : null;
   const acpMcpServers = useMemo(() => {
     const registration =
       vaultSelfReadSlot(acpRuntimeId) === 'codex-config'
@@ -42,6 +46,7 @@ export function useTopologyAgentActivity({ topologyVaultReadModel, acpRuntimeCon
       ...vaultMcpServers(agentServer.launch, gitVaultPath, registration, {
         ownsWriteGate: runtimeOwnsWriteGate(acpRuntimeId),
         sourceRoot,
+        mapAnalysisId,
       }),
       // The vault first: claude-agent-acp lets a later same-named entry win, and the instructions
       // name the vault server.
@@ -53,6 +58,7 @@ export function useTopologyAgentActivity({ topologyVaultReadModel, acpRuntimeCon
     gitVaultPath,
     acpRuntimeId,
     sourceRoot,
+    mapAnalysisId,
     vault.agentConfigStatus?.codexConfigValid,
     vault.agentConfigStatus?.codexRegisteredCommand,
     vaultConnectors.allowedHere,

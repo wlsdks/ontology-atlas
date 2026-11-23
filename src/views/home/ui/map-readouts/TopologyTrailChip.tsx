@@ -12,6 +12,7 @@ import {
   controlClass,
 } from "@/shared/ui";
 import type { FootprintTrailEntry, TrailStepCaption } from "../../lib/trail/footprint-trail";
+import { resolveLanePopoverAlign, type LanePopoverAlign } from "./lane-popover-align";
 
 export interface TopologyTrailChipLabels {
   heading: string;
@@ -48,24 +49,6 @@ export interface TopologyPastWalkRow {
 const CLEAR_ALL_CONFIRM_RESET_MS = 4000;
 
 const TRAIL_POPOVER_WIDTH = 248;
-
-type TrailPopoverAlign = "start" | "end";
-
-/**
- * Grows from the chip's right corner while the popover starts inside the free map, else from its
- * left. The free map is the closest `[data-popover-boundary]` (the toolbar), or the window.
- */
-function resolveTrailPopoverAlign(root: HTMLElement | null): TrailPopoverAlign {
-  if (!root) return "end";
-  const chip = root.getBoundingClientRect();
-  const boundary = root.closest<HTMLElement>("[data-popover-boundary]")?.getBoundingClientRect();
-  const left = boundary ? boundary.left : 0;
-  const right = boundary ? boundary.right : window.innerWidth;
-  if (chip.right - TRAIL_POPOVER_WIDTH >= left) return "end";
-  // Rightward when it fits, and otherwise when it overlaps less (the boundary's right edge is the
-  // window's).
-  return chip.left + TRAIL_POPOVER_WIDTH <= right || chip.left - left < right - chip.right ? "start" : "end";
-}
 
 export interface TopologyTrailChipProps {
   label: string;
@@ -133,7 +116,7 @@ export function TopologyTrailChip({
   // the second press discards, matching clear-all.
   const [clearArmed, setClearArmed] = useState(false);
   // Chosen on open against the toolbar box, or a right-hung popover lands under INDEX.
-  const [align, setAlign] = useState<TrailPopoverAlign>("end");
+  const [align, setAlign] = useState<LanePopoverAlign>("end");
   const rootRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const pastLinkRef = useRef<HTMLButtonElement | null>(null);
@@ -236,7 +219,7 @@ export function TopologyTrailChip({
               close(false);
               return;
             }
-            setAlign(resolveTrailPopoverAlign(rootRef.current));
+            setAlign(resolveLanePopoverAlign(rootRef.current, TRAIL_POPOVER_WIDTH));
             setOpen(true);
           }}
           aria-haspopup="true"
