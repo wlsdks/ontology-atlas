@@ -5,8 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import en from "../../../../../messages/en.json";
 import type { VaultDoc } from "@/entities/docs-vault";
-import { findDeskClaims } from "@/features/library";
-import { deskPageClaims } from "@/features/library/lib/questions/question-desk";
+import { deskPageClaims, findDeskClaims } from "@/features/library/lib/questions/desk-search";
 import { DocsVaultViewer } from "@/widgets/docs-vault";
 import { claimSentence } from "../../ui/questions/desk/DeskLeadRow";
 import { findClaimBlock } from "./reader-landing";

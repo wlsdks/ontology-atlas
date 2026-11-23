@@ -3,7 +3,8 @@ import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter'
 import type { VaultDoc } from '@/entities/docs-vault';
 import { sourceUnits } from '@/shared/lib/library/source-units';
 import { MAX_VECTOR_PREFIX_BYTES, MAX_VECTOR_PREFIXES } from '@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors';
-import { countDeskReadablePages, deskBriefEvidence, deskPageClaims, deskLeadTermRuns, deskMeaningLeads, deskSearchPrefixes, deskSentenceWindow, DESK_SENTENCE_LIMIT, findDeskClaims, findDeskSourceHits, fuseDeskLeads, jevClaimEligibility, jevPayloadEligibility, newestDeskQuestions, planDeskSourceReads, questionDeskReportFileCurrent, questionTermRuns, questionTerms, recentDeskPages, type DeskClaim } from './question-desk';
+import { countDeskReadablePages, deskBriefEvidence, deskLeadTermRuns, deskSearchPrefixes, deskSentenceWindow, DESK_SENTENCE_LIMIT, jevClaimEligibility, jevPayloadEligibility, newestDeskQuestions, questionDeskReportFileCurrent, questionTermRuns, recentDeskPages } from './question-desk';
+import { deskMeaningLeads, deskPageClaims, findDeskClaims, findDeskSourceHits, fuseDeskLeads, planDeskSourceReads, questionTerms, type DeskClaim } from './desk-search';
 import { buildQuestionDeskBrief, buildQuestionDeskReportBrief, questionDeskReportFilename, serializeQuestionDeskReport, splitQuestionDeskReportSections, QUESTION_DESK_BRIEF_MAX_CHARS } from './question-desk-brief';
 import { planQuestionDeskReportFile } from './question-desk-brief';
 import { buildAnswerPage } from './answer-page';

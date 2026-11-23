@@ -1,33 +1,8 @@
-import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
-import type { SourceUnit } from '@/shared/lib/library/source-units';
-import { MAX_VECTOR_PREFIX_BYTES, MAX_VECTOR_PREFIXES } from '@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors';
 import { recordedInstantMs, type VaultDoc } from '@/entities/docs-vault';
+import { MAX_VECTOR_PREFIX_BYTES, MAX_VECTOR_PREFIXES } from '@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors';
+import type { SourceUnit } from '@/shared/lib/library/source-units';
 import { isRetainedAnswerPath, retainedAnswerHeads, type RetainedAnswerHead } from './answer-revision';
-import { fuseRankedLists } from './lead-fusion';
-
-export interface DeskCitation { path: string; anchor: string }
-export interface DeskClaim {
-  pageSlug: string;
-  pageTitle: string;
-  text: string;
-  citations: DeskCitation[];
-  /** 1-based line of the claim in the page body; orders equal leads, never shown. */
-  line: number;
-  score: number;
-  recordedHashes: Record<string, string>;
-}
-export interface DeskSourceHit { path: string; anchor: string; text: string; score: number }
-
-const STOP = new Set('a an and are as at be by can did do does for from how in is it of on or the this to was were what when where which who why with about'.split(' '));
-const CITATION = /\[\[src:(sources\/[^\]#]+)#([^\]]+)\]\]/g;
-const MAX_FILES = 200;
-const MAX_BYTES = 20 * 1024 * 1024;
-/** Where the meaning list stands among the lists `fuseDeskLeads` fuses. */
-const MEANING_LIST = 2;
-
-function deskPages(docs: readonly VaultDoc[]): VaultDoc[] {
-  return docs.filter((doc) => doc.slug.startsWith('wiki/') && !doc.slug.split('/').some((part) => part.startsWith('_')) && !doc.frontmatter.kind);
-}
+import { deskPages, isHangulStemTerm, type DeskCitation, type DeskClaim, type DeskLead, type DeskSourceHit } from './desk-search';
 
 export function countDeskWikiPages(docs: readonly VaultDoc[]): number {
   return deskPages(docs).length;
@@ -49,112 +24,6 @@ export function countDeskReadablePages(docs: readonly VaultDoc[], read: Readonly
   return deskPages(docs).filter((doc) => read.has(doc.slug)).length;
 }
 
-export function planDeskSourceReads<T extends { path: string; bytes: number }>(sources: readonly T[]): T[] {
-  const planned: T[] = [];
-  let bytes = 0;
-  for (const source of [...sources].sort((a, b) => a.path.localeCompare(b.path))) {
-    if (planned.length >= MAX_FILES) break;
-    if (bytes + source.bytes > MAX_BYTES) continue;
-    planned.push(source);
-    bytes += source.bytes;
-  }
-  return planned;
-}
-
-export function questionTerms(question: string): string[] {
-  return [...new Set((question.normalize('NFKC').toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [])
-    .filter((term) => term.length > 1 && !STOP.has(term)))];
-}
-
-function questionScore(text: string, terms: readonly string[]): number {
-  const lower = text.replace(CITATION, ' ').replace(/\]\([^)]*\)/g, ']')
-    .normalize('NFKC').toLowerCase();
-  return terms.reduce((score, term) => {
-    if (lower.includes(term)) return score + 2;
-    if (/^[가-힣]{3,}$/u.test(term) && [...term].some((_, index) => index < term.length - 1 && lower.includes(term.slice(index, index + 2)))) return score + 0.5;
-    return score;
-  }, 0);
-}
-
-function recordedHashes(frontmatter: Record<string, unknown>): Record<string, string> {
-  const value = frontmatter.source_hash;
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
-  return Object.fromEntries(Object.entries(value).filter((entry): entry is [string, string] => typeof entry[1] === 'string'));
-}
-
-/**
- * What the desk keeps of one page read: each claim's sentence and body line, in page order, and the
- * hashes the page records. `bodyOffset` counts the lines above the body, so a claim's line in the
- * file is `line + bodyOffset`.
- */
-export interface DeskPageClaims {
-  readonly bodyOffset: number;
-  readonly recordedHashes: Readonly<Record<string, string>>;
-  readonly claims: ReadonlyArray<{ readonly text: string; readonly line: number }>;
-}
-
-/**
- * The claims of a page before any question scores them: list items under Facts or Decisions that
- * are not questions. Copied out by `JSON`, so what is kept holds none of the page text. O(page bytes).
- */
-export function deskPageClaims(raw: string): DeskPageClaims {
-  const parsed = parseFrontmatter(raw);
-  const whole = raw.replace(/^﻿/u, '').replace(/\r\n/gu, '\n');
-  const bodyOffset = whole.endsWith(parsed.body) ? whole.slice(0, whole.length - parsed.body.length).split('\n').length - 1 : 0;
-  const claims: Array<{ text: string; line: number }> = [];
-  let section = '';
-  for (const [index, line] of parsed.body.split(/\r?\n/).entries()) {
-    const trimmed = line.trim();
-    if (trimmed.startsWith('## ')) section = trimmed.slice(3).toLowerCase();
-    if (section !== 'facts' && section !== 'decisions') continue;
-    if (!/^[-*] /.test(trimmed)) continue;
-    const text = trimmed.slice(2).trim();
-    if (text.endsWith('?')) continue;
-    claims.push({ text, line: index + 1 });
-  }
-  const hashes = recordedHashes(parsed.frontmatter);
-  return JSON.parse(JSON.stringify({ bodyOffset, recordedHashes: hashes, claims })) as DeskPageClaims;
-}
-
-function deskClaim(doc: VaultDoc, page: DeskPageClaims, claim: DeskPageClaims['claims'][number], score: number): DeskClaim {
-  const citations = [...claim.text.matchAll(CITATION)].map((match) => ({ path: match[1]!, anchor: match[2]! }));
-  return { pageSlug: doc.slug, pageTitle: doc.title, text: claim.text, citations, line: claim.line, score, recordedHashes: page.recordedHashes as Record<string, string> };
-}
-
-export function findDeskClaims(question: string, docs: readonly VaultDoc[], claimsBySlug: ReadonlyMap<string, DeskPageClaims>): {
-  claims: DeskClaim[]; readPages: number; totalPages: number; omitted: number;
-} {
-  const terms = questionTerms(question);
-  const pages = deskPages(docs);
-  const claims: DeskClaim[] = [];
-  let readPages = 0;
-  for (const doc of pages) {
-    const page = claimsBySlug.get(doc.slug);
-    if (page === undefined) continue;
-    readPages += 1;
-    for (const claim of page.claims) {
-      const score = questionScore(claim.text, terms);
-      if (score) claims.push(deskClaim(doc, page, claim, score));
-    }
-  }
-  claims.sort((a, b) => b.score - a.score || a.pageSlug.localeCompare(b.pageSlug));
-  return { claims: claims.slice(0, 8), readPages, totalPages: pages.length, omitted: Math.max(0, claims.length - 8) };
-}
-
-export function findDeskSourceHits(path: string, units: readonly SourceUnit[], terms: readonly string[]): { hits: DeskSourceHit[]; matches: number } {
-  const hits: DeskSourceHit[] = [];
-  let matches = 0;
-  for (const unit of units) {
-    const score = questionScore(unit.text, terms);
-    if (!score) continue;
-    matches += 1;
-    hits.push({ path, anchor: unit.anchor, text: unit.text, score });
-    hits.sort((a, b) => b.score - a.score || a.anchor.localeCompare(b.anchor));
-    if (hits.length > 3) hits.pop();
-  }
-  return { hits, matches };
-}
-
 /** The longest sentence a lead row shows; a longer one shows a window of it. */
 export const DESK_SENTENCE_LIMIT = 320;
 /** Code units read past each cut so the grapheme boundaries near it come out right. */
@@ -167,7 +36,7 @@ function firstTermAt(lower: string, terms: readonly string[]): number {
     if (!term) continue;
     const at = lower.indexOf(term);
     consider(at);
-    if (at >= 0 || !/^[가-힣]{3,}$/u.test(term)) continue;
+    if (at >= 0 || !isHangulStemTerm(term)) continue;
     for (let index = 0; index < term.length - 1; index += 1) consider(lower.indexOf(term.slice(index, index + 2)));
   }
   return first;
@@ -212,7 +81,7 @@ export function questionTermRuns(text: string, terms: readonly string[]): Array<
     return found;
   };
   for (const term of terms) {
-    if (mark(term) || !/^[가-힣]{3,}$/u.test(term)) continue;
+    if (mark(term) || !isHangulStemTerm(term)) continue;
     for (let index = 0; index < term.length - 1; index += 1) mark(term.slice(index, index + 2));
   }
   const runs: Array<{ text: string; strong: boolean }> = [];
@@ -222,83 +91,6 @@ export function questionTermRuns(text: string, terms: readonly string[]): Array<
     else runs.push({ text: text[index]!, strong: marked[index]! });
   }
   return runs;
-}
-
-/** Which searches held a lead: the word lists, the meaning list, or both. */
-export type DeskLeadReason = 'words' | 'meaning' | 'both';
-
-export type DeskLead =
-  | { kind: 'claim'; key: string; claim: DeskClaim; reason: DeskLeadReason }
-  | { kind: 'source'; key: string; hit: DeskSourceHit; reason: DeskLeadReason };
-
-/** A row search by meaning found, before fusion: a claim or a source passage. */
-export type DeskMeaningLead = { kind: 'claim'; claim: DeskClaim } | { kind: 'source'; hit: DeskSourceHit };
-
-/** A passage search by meaning returned: a file and a 1-based, inclusive line range in it. */
-export interface DeskPassageHit { path: string; lineStart: number; lineEnd: number }
-
-function anchorLine(anchor: string): number {
-  const digits = /\d+/.exec(anchor);
-  return digits ? Number(digits[0]) : 0;
-}
-
-const LINE_ANCHOR = /^l\d+$/u;
-const MARKDOWN_HEADING = /^#{1,6}(?:\s|$)/u;
-
-/**
- * The rows the passages found by meaning stand for, in the order returned. A passage in a file the
- * desk does not search (a listed wiki page, or a source in this search's plan) is dropped
- * uncounted. A passage holding a lead found by words is that lead, the best-ranked one in range,
- * so fusion merges the two. Otherwise its row is the passage's first sentence: for a source the
- * first unit in range that is not a heading, from the units this search read; for a wiki page the
- * first claim in range. A passage whose file was not read, or whose range holds no such sentence,
- * is dropped and counted in `dropped`.
- */
-export function deskMeaningLeads({ hits, docs, claimsBySlug, searchedSources, sourceUnitsByPath, claims, sourceHits }: {
-  hits: readonly DeskPassageHit[];
-  docs: readonly VaultDoc[];
-  claimsBySlug: ReadonlyMap<string, DeskPageClaims>;
-  /** The source paths this search planned to read. */
-  searchedSources: ReadonlySet<string>;
-  /** The units of each planned source this search read; a path absent here could not be read. */
-  sourceUnitsByPath: ReadonlyMap<string, readonly SourceUnit[]>;
-  /** The word leads, each list best first. */
-  claims: readonly DeskClaim[];
-  sourceHits: readonly DeskSourceHit[];
-}): { leads: DeskMeaningLead[]; dropped: number } {
-  // Finder writes decomposed names and slugs are composed: both sides are joined in NFC, and a row
-  // keeps the path as the desk lists it, so it opens the file it names.
-  const nfc = (path: string) => path.normalize('NFC');
-  const pageByPath = new Map(deskPages(docs).map((doc) => [nfc(`${doc.slug}.md`), doc]));
-  const listedSource = new Map([...searchedSources].map((path) => [nfc(path), path]));
-  const leads: DeskMeaningLead[] = [];
-  let dropped = 0;
-  const within = (line: number, hit: DeskPassageHit) => line >= hit.lineStart && line <= hit.lineEnd;
-  for (const hit of hits) {
-    const doc = pageByPath.get(nfc(hit.path));
-    if (doc) {
-      const page = claimsBySlug.get(doc.slug);
-      if (page === undefined) { dropped += 1; continue; }
-      const { bodyOffset } = page;
-      const inRange = page.claims.find((candidate) => within(candidate.line + bodyOffset, hit));
-      const claim = claims.find((worded) => worded.pageSlug === doc.slug && within(worded.line + bodyOffset, hit))
-        ?? (inRange ? deskClaim(doc, page, inRange, 0) : undefined);
-      if (claim) leads.push({ kind: 'claim', claim });
-      else dropped += 1;
-      continue;
-    }
-    const path = listedSource.get(nfc(hit.path));
-    if (path === undefined) continue;
-    const units = sourceUnitsByPath.get(path);
-    if (!units) { dropped += 1; continue; }
-    const worded = sourceHits.find((source) => source.path === path && within(anchorLine(source.anchor), hit));
-    if (worded) { leads.push({ kind: 'source', hit: worded }); continue; }
-    const unit = units.find((candidate) => LINE_ANCHOR.test(candidate.anchor) && within(anchorLine(candidate.anchor), hit)
-      && candidate.kind !== 'heading' && !MARKDOWN_HEADING.test(candidate.text));
-    if (unit) leads.push({ kind: 'source', hit: { path, anchor: unit.anchor, text: unit.text, score: 0 } });
-    else dropped += 1;
-  }
-  return { leads, dropped };
 }
 
 /**
@@ -323,56 +115,6 @@ export function deskSearchPrefixes(paths: Iterable<string>): string[] {
 /** The sentence's runs for its row: a lead only meaning found matched no word, so none is strong. */
 export function deskLeadTermRuns(lead: Pick<DeskLead, 'reason'>, sentence: string, terms: readonly string[]): Array<{ text: string; strong: boolean }> {
   return lead.reason === 'meaning' ? [{ text: sentence, strong: false }] : questionTermRuns(sentence, terms);
-}
-
-function leadPlace(lead: DeskLead): [string, number] {
-  return lead.kind === 'claim' ? [lead.claim.pageSlug, lead.claim.line] : [lead.hit.path, anchorLine(lead.hit.anchor)];
-}
-
-/**
- * A sentence as compared, not as shown: citations and leading list, quote or heading markers
- * dropped, then NFC, lower case, single spaces and no trailing punctuation.
- */
-function comparableSentence(text: string): string {
-  return text.replace(/\[\[src:[^\]]+\]\]/gu, ' ')
-    .replace(/^\s*(?:[-*+]\s+|\d+[.)]\s+|#{1,6}\s+|>\s*)+/u, '')
-    .normalize('NFC').toLocaleLowerCase('und')
-    .replace(/\s+/gu, ' ').trim()
-    .replace(/[\s.,!?;:。．、！？…]+$/u, '');
-}
-
-/**
- * Wiki claims and source passages in one list, best first: rank fusion, then claim, path and line.
- * A passage at the place a listed claim cites that says the same sentence is that claim's
- * evidence, which the claim's cited-file press already opens: it folds into the claim and adds its
- * rank to the claim's. A cited passage that says something else keeps its own row, so a claim and
- * the line that contradicts it stand in the list together.
- *
- * `meaning` is the third list, the rows search by meaning found in the order returned. Each lead's
- * reason names the lists that held it; a folded passage's lists count for its claim.
- */
-export function fuseDeskLeads(claims: readonly DeskClaim[], hits: readonly DeskSourceHit[], meaning: readonly DeskMeaningLead[] = []): DeskLead[] {
-  const claimLead = (claim: DeskClaim): DeskLead => ({ kind: 'claim', key: `claim:${claim.pageSlug}:${claim.line}`, claim, reason: 'words' });
-  const sourceLead = (hit: DeskSourceHit): DeskLead => ({ kind: 'source', key: `source:${hit.path}#${hit.anchor}`, hit, reason: 'words' });
-  const meaningLeads = meaning.map((lead) => lead.kind === 'claim' ? claimLead(lead.claim) : sourceLead(lead.hit));
-  const citedBy = new Map<string, Set<string>>();
-  for (const claim of [...claims, ...meaning.flatMap((lead) => lead.kind === 'claim' ? [lead.claim] : [])]) {
-    const sentence = comparableSentence(claim.text);
-    for (const citation of claim.citations) {
-      const place = `source:${citation.path}#${citation.anchor}\n${sentence}`;
-      citedBy.set(place, (citedBy.get(place) ?? new Set()).add(`claim:${claim.pageSlug}:${claim.line}`));
-    }
-  }
-  return fuseRankedLists([claims.map(claimLead), hits.map(sourceLead), meaningLeads], (lead) => lead.key, (a, b) => {
-    if (a.kind !== b.kind) return a.kind === 'claim' ? -1 : 1;
-    const [pathA, lineA] = leadPlace(a);
-    const [pathB, lineB] = leadPlace(b);
-    return pathA.localeCompare(pathB) || lineA - lineB;
-  }, (lead) => lead.kind === 'source' ? [...citedBy.get(`${lead.key}\n${comparableSentence(lead.hit.text)}`) ?? []] : [])
-    .map(({ item, lists }): DeskLead => {
-      const byMeaning = lists.includes(MEANING_LIST);
-      return { ...item, reason: !byMeaning ? 'words' : lists.length === 1 ? 'meaning' : 'both' };
-    });
 }
 
 /**
