@@ -680,53 +680,75 @@ commits, its check in the line), so the person can choose which agent to answer 
 
 ### The session list (slice 7)
 
-**The read.** Vendor documentation and one measurement, both by the lead on 2026-11-22: each entry
-carries `pid`, `cwd`, `kind`, `startedAt`, `sessionId`, `name`, and while its process lives a
-`status` of `busy`, `waiting` or `idle`; `waitingFor` when it waits (`permission prompt`, `input
-needed`, `sandbox request`, `worker request`, `dialog open`); for a background session also `id`
-and a `state` of `working`, `blocked`, `done`, `failed` or `stopped`. The documentation calls it
-"the supported way to read session state from outside Claude Code" and promises no stable schema.
-One call took 0.24 s, 0.19 s of CPU and 160 MB at its peak.
+**The read.** Vendor documentation, and criterion 27's probe on 2026-11-23 (Claude Code 2.1.330):
+each entry carries `pid`, `cwd`, `kind`, `startedAt`, `sessionId`, `name`, and while its process
+lives a `status` of `busy`, `waiting` or `idle`; `waitingFor` when it waits (`permission prompt`,
+`input needed`, `sandbox request`, `worker request`, `dialog open`); for a background session also
+`id` and a `state` of `working`, `blocked`, `done`, `failed` or `stopped`. The documentation calls
+it "the supported way to read session state from outside Claude Code" and promises no stable
+schema. The probe saw six interactive sessions, each with exactly the first seven fields; a
+session shown a question read `waiting`, `input needed` within 0.5 s and `busy` again once
+answered; `startedAt` is the session's start, 1.2 to 36.9 s after its process's. One call took
+0.08 s, 0.09 s of CPU and 142 MB at its peak.
 
 **The call is fixed,** as `gh`'s is: the executable is an absolute path from a fixed list
 (`~/.local/bin/claude`, `/opt/homebrew/bin/claude`, `/usr/local/bin/claude`), never a `PATH`
 lookup; the arguments are exactly `agents --json`; the working folder is in Atlas app data;
-standard input is closed; the environment is cleared except `HOME`, plus `CLAUDE_CONFIG_DIR` set
-to exactly one folder the person added. It is killed after 5 s and its output is read to 1 MiB.
+standard input is closed; the environment is cleared except `HOME` and
+`CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1`. It is killed, with everything it started, after 5 s
+or 1 MiB of output.
 
-**When.** After the per-second process read shows an agent process appear, end or change folder;
-otherwise at most one call every 10 s in all while Work status is visible, taking the added
-folders in turn; never while it is hidden; one run at a time. With no Claude Code process seen, it
-does not run. At that pace the calls spend about 2 % of one core, and each is a short-lived
-process of about 160 MB (the measurement above); criterion 43 holds the budget.
+**No network.** The probe saw the call as first written (environment `HOME` alone) try one DNS
+lookup and one HTTPS connection on every run; with the switch above it tried none in three runs,
+and with all network denied it printed the same list. The owner chose to block the connection
+(`docs/records/decisions/2026-11-23-work-status-session-list-no-network-929c2179-7882-4c40-a4bc-83cfbb2612cf.md`): macOS runs the program under `/usr/bin/sandbox-exec` with
+`(version 1)(allow default)(deny network*)`, so the guarantee is the system's and the switch only
+keeps the program from trying. No other platform can make that guarantee, so no other platform
+runs the call.
+
+**When.** One second after the process read shows a Claude Code process appear or end; otherwise
+at most one call every 10 s while Work status is visible; never while it is hidden; one run at a
+time. With no Claude Code process seen, it does not run. A command an agent runs in another folder
+is not a change: it would start a call a second while an agent works. At that pace the calls
+spend about 1 % of one core, and each is a short-lived process of about 142 MB (the measurement
+above); criterion 43 holds the budget.
 
 **What is kept.** The output is parsed into a struct that names only `pid`, `cwd`, `startedAt`,
 `kind`, `status`, `waitingFor` and `state`, each value from the closed lists above; an unknown
 value, a missing field or output that does not parse means unknown, and the room keeps its words
-from beats. `name`, `sessionId` and `id` are dropped at the parse: a name can hold the person's own
-title text, and a room needs none of them. An entry counts only when its `pid` and `startedAt`
-match a session Atlas already shows and its `cwd` lies in a listed worktree.
+from beats; so does an entry with a field outside the documented ten. `name`, `sessionId` and `id`
+are dropped at the parse: a name can hold the person's own title text, and a room needs none of
+them. An entry counts only when its `pid` is a Claude Code process Atlas already shows, started no
+later than the entry's `startedAt` (a later start is another program that took the pid), and its
+`cwd` lies in a listed worktree: the room is that worktree's. Only the worktree's id, the pid and
+the state reach the page; the last list stays in memory until the next, and nothing is written.
 
 | From the list | Room state |
 |---|---|
-| `waiting` with `permission prompt` or `sandbox request` | waiting for approval, first on the stage |
-| `waiting` with `input needed`, `dialog open` or `worker request`; `state` `blocked` | waiting for an answer, first on the stage |
-| `busy`, or `state` `working`, with no command seen | thinking; it counts as a beat, so the room is Moving |
-| `idle`, or `state` `done` | finished replying |
-| `state` `failed` | the session failed, in the stage's second class |
+| `waiting` with `permission prompt` or `sandbox request` | waiting for approval, first onto the stage |
+| `waiting` with `input needed`, `dialog open` or `worker request`; `state` `blocked` | waiting for an answer, first onto the stage |
+| `busy`, or `state` `working` | working, as a room with a program in it already reads |
+| `idle`, or `state` `done` | finished replying: quiet, unless another tool works in the folder |
+| `state` `failed` | the session failed; it fills a stage row after idle rooms |
 | anything else | unknown: the room's words from beats |
 
-**Settings folders.** Each Claude Code settings folder is its own instance, and the owner runs
-several (Today). Atlas runs the call once for the default and once for each folder the person
-added with **Add another settings folder**, the same picker slice 9 uses; it searches for none.
-Whether a call sees another folder's sessions without that is unknown until criterion 27.
+A waiting room is admitted to the stage before any other and keeps its place in session order, so
+a room that asks and is answered does not change places each time. Two sessions in one folder:
+the room says the stronger (approval, answer, failed, working, replied).
+
+**Settings folders.** Each Claude Code settings folder is its own instance. The first build reads
+the default folder only: the picker for another (**Add another settings folder**, slice 9's) is
+not built, and the probe found one settings folder on this Mac, so a second folder's sessions are
+unprobed.
 
 **Limits.** A subagent waiting inside a session shows in that session's own room. Codex has no such
-list, so a Codex room reads from beats until slice 9. Nothing is written anywhere. Whether a call
-opens a network connection is unknown until criterion 27: if it does, the read is not built until
-this spec gains a confirm that names what is sent and an `outbound-paths.ts` row; if not, it is on,
-with `sessions.status` in the agent state popover and a switch that stops it. **Windows:** the same call; the join by pid and
-start time is the one slice 1 makes there.
+list, so a Codex room reads from beats until slice 9. Nothing is written anywhere, and nothing
+leaves (No network, above), so there is no `outbound-paths.ts` row. Up to 10 s late. The header
+carries the status line and the switch that stops the read (`docs/features/work-status.md`, "The
+status line and its switch"); switched off, the page asks nothing and the app drops its last
+list. Not built yet: another settings folder, and the count of running sessions missing from the
+list (`sessions.missing`). Not probed: a background session, whose list may need the supervisor's socket
+the sandbox denies, and a subagent's own wait. **Windows and Linux:** the call does not run.
 
 ### The hook entries (slice 9, optional)
 
@@ -1164,3 +1186,26 @@ in the coordination spec.
   newest uncommitted file (`work_status_activity`), after a stat of its `HEAD`, `index` or reflog or
   on a beat of four reads a minute shared by the running worktrees; measured about 150 ms of Git CPU
   per read on this repository, so the 15 s unstaged-edit bound waits for slice 3's file notices.
+- 2026-11-23: slice 7's first build, corrected to criterion 27's probe before code: the call tried
+  one HTTPS connection per run, so it runs with Claude Code's nonessential-traffic switch and, on
+  macOS only, under a no-network sandbox (the owner's choice; `docs/records/decisions/2026-11-23-work-status-session-list-no-network-929c2179-7882-4c40-a4bc-83cfbb2612cf.md`);
+  a listed start is the session's, not the process's, so the join is "started no later"; the
+  pace follows Claude Code processes appearing and ending, not commands changing folder; a waiting
+  room is admitted first and keeps its place. Not built: the status line, its switch, a second
+  settings folder.
+- 2026-11-23: slice 7's status line and switch, built in the header because the agent state
+  popover it was planned for belongs to slice 9: the read's own command reports how it went (read,
+  no session, not found, timed out, failed, unknown form, unsupported), the page keeps the on or
+  off choice (`atlas.workStatus.sessionListRead`, on by default) and asks nothing while it is off,
+  and switching off is held in Rust as well (`work_status_set_agent_sessions_read`), which refuses
+  an ask and drops its last list. The words for
+  off and unreadable name what is lost (no room can say a session waits), not "when each folder
+  last changed": a program in a folder still reads Working. `sessions.missing` waits for the
+  settings-folder picker.
+- 2026-11-23: after the independent review of slice 7: the program's process group is killed on
+  every way out and a child left holding the output ends the call at its limit; a worktree
+  record counts for the join only under the main checkout or when its `.git` file names this
+  repository, as the worktree read admits it; a waiting session is said before a lock an ended
+  session left; the status words say "every 10 seconds, and a second after a session starts or
+  ends", since "at most every 10 seconds" was false, and "Atlas writes nothing", since what
+  Claude Code itself writes under its own folder was not measured.

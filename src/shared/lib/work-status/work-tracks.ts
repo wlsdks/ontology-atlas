@@ -1,4 +1,4 @@
-import type { AgentTool, LockTool, WorkStatusSnapshot, WorktreeActivity, WorktreeRow, WorktreeStanding } from './tauri-work-status';
+import type { AgentSessionState, AgentTool, LockTool, WorkStatusSnapshot, WorktreeActivity, WorktreeRow, WorktreeStanding } from './tauri-work-status';
 
 /** Who holds a worktree, as far as Git, the pids its lock names and the agent programs running in it can say. */
 export type TrackHolder =
@@ -34,6 +34,8 @@ export interface Track {
   lockedAt: number | null;
   /** Its newest commit subjects and uncommitted files, once read (`withActivity`). */
   activity: WorktreeActivity | null;
+  /** What the Claude Code session standing in the folder says of itself, once read (`withAgentSessions`). */
+  agentState: AgentSessionState | null;
 }
 
 export type SessionTool = LockTool | AgentTool | 'acp';
@@ -151,6 +153,7 @@ function toTrack(row: WorktreeRow, lockKeysByPid: ReadonlyMap<number, string>): 
     lastCommitAt: row.lastCommitAt,
     lockedAt: row.lock && row.lock.state !== 'stale' ? row.lock.lockedAt : null,
     activity: null,
+    agentState: null,
   };
 }
 
@@ -292,6 +295,9 @@ function sessionOrigin(row: WorktreeRow): { tool: SessionTool; startedAt: number
  * compile until it is drawn.
  */
 export type RoomState =
+  | { kind: 'waiting'; on: 'approval' | 'answer' }
+  | { kind: 'sessionFailed' }
+  | { kind: 'replied' }
   | { kind: 'working'; tools: readonly SessionTool[] }
   | { kind: 'resting'; quietSinceMs: number | null }
   | { kind: 'dozing'; quietSinceMs: number }
@@ -326,7 +332,10 @@ export interface RoomFloor {
   /** Every worktree of the floor's session, its rooms on the front stage and the folders it visits included. */
   total: number;
   working: number;
+  /** Rooms to clean up: a folder gone, or a lock a finished session left. */
   attention: number;
+  /** Rooms whose session waits for its person. */
+  waiting: number;
 }
 
 export interface RoomPlan {
@@ -359,7 +368,15 @@ function quietSince(track: Track, seenRunningAt: ReadonlyMap<string, number>): n
 
 export function roomStateOf(track: Track, nowMs: number, seenRunningAt: ReadonlyMap<string, number> = new Map()): RoomState {
   if (track.missing) return { kind: 'missing' };
+  // A session speaks only for a folder its program is seen in, so a stale answer changes no empty room.
+  const said = track.running ? track.agentState : null;
+  // A session that waits is said first: a lock an ended session left in the folder can be cleared after the answer.
+  if (said === 'waitingApproval') return { kind: 'waiting', on: 'approval' };
+  if (said === 'waitingAnswer') return { kind: 'waiting', on: 'answer' };
   if (track.holder.kind === 'ended') return { kind: 'lockLeft', tool: track.holder.tool };
+  if (said === 'failed') return { kind: 'sessionFailed' };
+  // A session that has replied is quiet however long its program stays open; another tool at work in the folder is not.
+  if (said === 'replied' && !track.tools.some(tool => tool === 'codex' || tool === 'acp')) return { kind: 'replied' };
   if (track.running) return { kind: 'working', tools: track.tools };
   if (track.place !== 'session' && track.holder.kind !== 'locked') return { kind: 'unheld', lastCommitAt: track.lastCommitAt };
   if (track.standing === 'merged') return { kind: 'merged' };
@@ -370,11 +387,14 @@ export function roomStateOf(track: Track, nowMs: number, seenRunningAt: Readonly
 
 export function tierOf(state: RoomState): RoomTier {
   switch (state.kind) {
+    case 'waiting':
+    case 'sessionFailed':
     case 'missing':
     case 'lockLeft':
       return 'attention';
     case 'working':
       return 'working';
+    case 'replied':
     case 'resting':
     case 'dozing':
     case 'merged':
@@ -404,17 +424,19 @@ export const FULL_STAGES = [1, 2, 3, 4, 6];
 const twoTools = (room: RoomEntry) => room.state.kind === 'working' && room.state.tools.length > 1;
 
 /**
- * Who stands on the front stage. Two tools in one folder first, then running work, one room per
- * session before any session gets a second; a session's idle room, then a missing folder, takes a
- * slot only to fill the last row, so the stage never shows a hole. The stage reads in session
- * order, like the rail.
+ * Who stands on the front stage. A room whose session waits for its person first, then two tools
+ * in one folder, then running work, one room per session before any session gets a second; a
+ * session's idle room, then a failed session or a missing folder, takes a slot only to fill the
+ * last row, so the stage never shows a hole. The stage reads in session order, like the rail, so
+ * a room that starts or stops waiting does not change places.
  */
 function admitToStage(candidates: RoomEntry[], limit: number, sourceOrder: (room: RoomEntry) => number): RoomEntry[] {
   const bySource = (a: RoomEntry, b: RoomEntry) => sourceOrder(a) - sourceOrder(b);
+  const waiting = candidates.filter(room => room.state.kind === 'waiting').sort(bySource);
   const running = candidates.filter(room => room.tier === 'working').sort(bySource);
   const turn = new Map<string, number>();
-  // A folder two tools share already gives its session a room on the stage.
-  for (const room of running.filter(twoTools)) {
+  // A waiting room, or a folder two tools share, already gives its session a room on the stage.
+  for (const room of [...waiting, ...running.filter(twoTools)]) {
     const session = room.session?.key ?? NO_SESSION_FLOOR;
     turn.set(session, (turn.get(session) ?? 0) + 1);
   }
@@ -425,6 +447,7 @@ function admitToStage(candidates: RoomEntry[], limit: number, sourceOrder: (room
     return { room, nth };
   });
   const order = [
+    ...waiting,
     ...running.filter(twoTools),
     ...ranked.sort((a, b) => a.nth - b.nth || bySource(a.room, b.room)).map(entry => entry.room),
   ];
@@ -433,7 +456,7 @@ function admitToStage(candidates: RoomEntry[], limit: number, sourceOrder: (room
   // behind is a cleanup chore, never a stage room, so it stays a mini on its floor.
   const spare = [
     ...candidates.filter(room => room.tier === 'held' && room.session !== null).sort(bySource),
-    ...candidates.filter(room => room.tier === 'attention' && room.state.kind !== 'lockLeft').sort(bySource),
+    ...candidates.filter(room => room.state.kind === 'sessionFailed' || room.state.kind === 'missing').sort(bySource),
   ];
   const reachable = Math.min(limit, chosen.length + spare.length);
   const full = FULL_STAGES.filter(size => size >= chosen.length && size <= reachable).at(-1) ?? chosen.length;
@@ -478,7 +501,8 @@ export function planRooms(
     rooms: members.filter(room => !onStage.has(room.key)).sort(byTier),
     total: members.length + visited(key),
     working: members.filter(room => room.tier === 'working').length,
-    attention: members.filter(room => room.tier === 'attention').length,
+    attention: members.filter(room => room.state.kind === 'missing' || room.state.kind === 'lockLeft').length,
+    waiting: members.filter(room => room.state.kind === 'waiting').length,
   });
   const floors = [
     ...tracks.sessions.map(session => floorOf(session.key, session, held.filter(room => room.session === session))),

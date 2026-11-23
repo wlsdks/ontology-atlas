@@ -6,7 +6,7 @@ import { MORU_CELL_PX, MORU_STEP_MS, createMoruClock, moruCells } from './moru-c
 function quietStage() {
   const stage = {
     open: false, granted: false, asked: 0, released: 0,
-    join() {}, leave() {}, moved() {}, wake() {}, share: () => 0, breathe: () => false,
+    join() {}, leave() {}, moved() {}, wake() {}, share: () => 0,
     lively: () => false,
     may: () => stage.granted,
     holds: () => stage.granted,

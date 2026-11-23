@@ -20,14 +20,47 @@
     "ended": "Session ended",
     "started": "started {time}",
     "worktrees": "{count, plural, one {# worktree} other {# worktrees}}",
+    "waiting": "{count} waiting for you",
     "cleanup": "{count} to clean up",
     "onStage": "{count} on stage",
     "below": "{count} below"
+  },
+  "sessions": {
+    "chip": {
+      "on": "Session list on",
+      "off": "Session list off",
+      "unreadable": "Session list not read"
+    },
+    "title": "{tool}'s session list",
+    "switch": "Read {tool}'s session list",
+    "choice": {
+      "on": "On",
+      "off": "Off"
+    },
+    "now": {
+      "read": "Read. A room says so when its session waits for you.",
+      "noSession": "No {tool} session is running, so nothing is being read."
+    },
+    "status": "Atlas reads {tool}'s own session list to show which sessions wait for you. While Work status is open it runs <code>{command}</code> every 10 seconds, and a second after a {tool} session starts or ends, with no network access. Atlas writes nothing.",
+    "statusOff": "Switched on, Atlas reads {tool}'s own session list: while Work status is open it runs <code>{command}</code> every 10 seconds, and a second after a {tool} session starts or ends, with no network access. Atlas writes nothing.",
+    "off": "Atlas does not run {tool}, so no room can say whether its session waits for you or has finished replying.",
+    "unreadable": "Atlas could not read {tool}'s session list: {reason}",
+    "fallback": "Until it can, no room can say whether its session waits for you. Atlas tries again within 10 seconds.",
+    "reason": {
+      "notFound": "{tool} was not found in the folders Atlas looks in.",
+      "timedOut": "{tool} did not answer within 5 seconds.",
+      "failed": "{tool} ended with an error.",
+      "unknownForm": "The list was in a form Atlas does not know; a newer {tool} may have changed it."
+    }
   },
   "stage": {
     "label": "Worktrees at work"
   },
   "room": {
+    "waitingApproval": "Waiting for your approval",
+    "waitingAnswer": "Waiting for your answer",
+    "replied": "Finished replying",
+    "sessionFailed": "Session failed",
     "working": "Working",
     "twoTools": "Two tools at work",
     "resting": "Resting",
@@ -53,7 +86,18 @@
     "unreadableLock": "The lock names no session Atlas can read",
     "workedMinutes": "working {count} min",
     "workedWholeHours": "working {count} h",
-    "workedHours": "working {hours} h {minutes} min"
+    "workedHours": "working {hours} h {minutes} min",
+    "recentCommits": "Recent commits",
+    "lastChange": "changed {ago}",
+    "justNow": "just now",
+    "lastChangeNow": "changed just now",
+    "lastHour": "Last hour",
+    "lastHourChanges": "{count, plural, one {# change} other {# changes}} in the last hour",
+    "areasTitle": "Where the changes are",
+    "areasOfNewest": "Where the newest {count} changes are",
+    "rootFolder": "repository root",
+    "areaFiles": "{count, plural, one {# file} other {# files}}",
+    "areasMore": "{count, plural, one {and # more folder} other {and # more folders}}"
   },
   "shelf": {
     "merged": "Merged into {branch}",
@@ -82,6 +126,7 @@
   },
   "notRepository": "{folder} is not a Git repository. Choose the folder that holds your project's .git.",
   "header": {
+    "waiting": "{count} waiting for you",
     "sameFolder": "{count} in one folder",
     "cleanup": "{count} to clean up",
     "pointTo": "Show which worktrees"
@@ -95,7 +140,36 @@
     "working": "{count} working",
     "worktrees": "{count, plural, one {# worktree} other {# worktrees}}"
   },
-  "lobby": {
-    "name": "Lobby"
+  "panel": {
+    "open": "Show what {branch} is doing",
+    "close": "Close",
+    "now": {
+      "waiting": "{who} has stopped and is waiting for you. Answer it in the terminal or app where that session runs.",
+      "sessionFailed": "{who} ended with an error. Its work so far is still in this folder.",
+      "replied": "{who} has finished its reply and is waiting for your next message.",
+      "working": "{who} is working in this folder now.",
+      "twoTools": "{who} are working in this one folder at the same time, so their changes can collide.",
+      "resting": "{who} holds this folder but has not changed anything for a few minutes.",
+      "dozing": "{who} holds this folder, but nothing has changed for more than {minutes} minutes.",
+      "merged": "Everything here is already in {branch}. The folder can be removed.",
+      "locked": "The folder is locked, but Atlas cannot tell which session locked it.",
+      "lockLeft": "The session that locked this folder has ended, and its lock is still here.",
+      "missing": "Git still lists this worktree, but its folder is gone.",
+      "unheld": "No session is working in this folder."
+    },
+    "commitsTitle": "Commits",
+    "commitsMore": "{count, plural, one {and # more} other {and # more}}",
+    "uncommittedTitle": "Not committed yet",
+    "filesMore": "{count, plural, one {and # more file} other {and # more files}}",
+    "folderTitle": "Folder",
+    "copyPath": "Copy folder path",
+    "copied": "Copied",
+    "reading": "Reading…",
+    "cleanupTitle": "To clear it, run this in a terminal",
+    "copyCommand": "Copy command"
+  },
+  "about": {
+    "label": "What this screen shows",
+    "body": "One room is one worktree: a separate folder of this repository where a branch is being worked on. Each screen shows the branch, its newest commits and the files changed but not committed yet. A room is lit while an agent session is working in it. Press a room to see the rest."
   }
 }

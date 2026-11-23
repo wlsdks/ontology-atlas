@@ -20,14 +20,47 @@
     "ended": "セッション終了",
     "started": "{time}開始",
     "worktrees": "ワークツリー{count}個",
+    "waiting": "返答待ち{count}",
     "cleanup": "要整理{count}",
     "onStage": "ステージ{count}",
     "below": "下に{count}"
+  },
+  "sessions": {
+    "chip": {
+      "on": "セッション一覧を読み取り中",
+      "off": "セッション一覧オフ",
+      "unreadable": "セッション一覧を読めません"
+    },
+    "title": "{tool}のセッション一覧",
+    "switch": "{tool}のセッション一覧を読む",
+    "choice": {
+      "on": "オン",
+      "off": "オフ"
+    },
+    "now": {
+      "read": "読み取りました。セッションが返答を待つと、その部屋に表示されます。",
+      "noSession": "実行中の{tool}セッションがないため、いまは読み取っていません。"
+    },
+    "status": "どのセッションが返答を待っているかを示すため、Atlasは{tool}自身のセッション一覧を読み取ります。作業状況を開いている間、<code>{command}</code>を10秒に1回と、{tool}セッションの開始または終了の1秒後に、ネットワークなしで実行します。Atlasは何も書き込みません。",
+    "statusOff": "オンにすると、Atlasは{tool}自身のセッション一覧を読み取ります。作業状況を開いている間、<code>{command}</code>を10秒に1回と、{tool}セッションの開始または終了の1秒後に、ネットワークなしで実行します。Atlasは何も書き込みません。",
+    "off": "Atlasは{tool}を実行しません。そのため、セッションが返答を待っているか、返答を終えたかをどの部屋も示せません。",
+    "unreadable": "{tool}のセッション一覧を読めませんでした。{reason}",
+    "fallback": "読めるようになるまで、セッションが返答を待っているかをどの部屋も示せません。10秒以内にもう一度試します。",
+    "reason": {
+      "notFound": "Atlasが探すフォルダに{tool}がありません。",
+      "timedOut": "{tool}が5秒以内に応答しませんでした。",
+      "failed": "{tool}がエラーで終了しました。",
+      "unknownForm": "一覧がAtlasの知らない形式です。新しい{tool}で変わった可能性があります。"
+    }
   },
   "stage": {
     "label": "作業中のワークツリー"
   },
   "room": {
+    "waitingApproval": "承認待ち",
+    "waitingAnswer": "返答待ち",
+    "replied": "返答済み",
+    "sessionFailed": "セッション失敗",
     "working": "作業中",
     "twoTools": "2つのツールが作業中",
     "resting": "休止中",
@@ -53,7 +86,18 @@
     "unreadableLock": "Atlasが読めるセッション名がロックにありません",
     "workedMinutes": "{count}分経過",
     "workedWholeHours": "{count}時間経過",
-    "workedHours": "{hours}時間{minutes}分経過"
+    "workedHours": "{hours}時間{minutes}分経過",
+    "recentCommits": "最近のコミット",
+    "lastChange": "{ago}に変更",
+    "justNow": "たった今",
+    "lastChangeNow": "たった今変更",
+    "lastHour": "直近1時間",
+    "lastHourChanges": "直近1時間の変更{count}件",
+    "areasTitle": "変更のある場所",
+    "areasOfNewest": "変更のある場所 · 新しい{count}件から",
+    "rootFolder": "リポジトリ直下",
+    "areaFiles": "{count}件",
+    "areasMore": "ほか{count}か所"
   },
   "shelf": {
     "merged": "{branch}にマージ済み",
@@ -82,6 +126,7 @@
   },
   "notRepository": "{folder}フォルダはGitリポジトリではありません。リポジトリの最上位フォルダを選んでください。",
   "header": {
+    "waiting": "返答待ち{count}",
     "sameFolder": "同じフォルダ{count}",
     "cleanup": "整理{count}",
     "pointTo": "どのワークツリーか表示"
@@ -95,7 +140,36 @@
     "working": "{count}個が作業中",
     "worktrees": "ワークツリー{count}"
   },
-  "lobby": {
-    "name": "ロビー"
+  "panel": {
+    "open": "{branch}の作業内容を見る",
+    "close": "閉じる",
+    "now": {
+      "waiting": "{who}が止まって、あなたの返答を待っています。そのセッションを開いているターミナルかアプリで答えてください。",
+      "sessionFailed": "{who}はエラーで終わりました。それまでの作業はこのフォルダに残っています。",
+      "replied": "{who}は返答を終え、次の指示を待っています。",
+      "working": "{who}が今このフォルダで作業しています。",
+      "twoTools": "{who}が同じフォルダで同時に作業しているため、変更がぶつかることがあります。",
+      "resting": "{who}がこのフォルダを使っていますが、数分間変更がありません。",
+      "dozing": "{who}がこのフォルダを使っていますが、{minutes}分以上変更がありません。",
+      "merged": "ここの内容はすべて{branch}に入っています。フォルダは削除できます。",
+      "locked": "フォルダはロックされていますが、どのセッションがロックしたのかAtlasには読み取れません。",
+      "lockLeft": "このフォルダをロックしたセッションは終了し、ロックだけが残っています。",
+      "missing": "Gitにはこのワークツリーが残っていますが、フォルダがありません。",
+      "unheld": "このフォルダで作業中のセッションはありません。"
+    },
+    "commitsTitle": "コミット",
+    "commitsMore": "ほか{count}件",
+    "uncommittedTitle": "まだコミットしていないもの",
+    "filesMore": "ほか{count}ファイル",
+    "folderTitle": "フォルダ",
+    "copyPath": "フォルダのパスをコピー",
+    "copied": "コピーしました",
+    "reading": "読み込み中…",
+    "cleanupTitle": "片付けるにはターミナルで実行してください",
+    "copyCommand": "コマンドをコピー"
+  },
+  "about": {
+    "label": "この画面が示すもの",
+    "body": "部屋ひとつがワークツリーひとつです。ワークツリーは、このリポジトリでブランチをひとつ作業するための別フォルダです。部屋の画面には、ブランチ、最近のコミット、変更したがまだコミットしていないファイルが表示されます。エージェントのセッションが作業中の部屋は明かりがついています。部屋を押すと残りを確認できます。"
   }
 }

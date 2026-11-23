@@ -16,7 +16,6 @@
     "brand:sprites": "node scripts/brand/build-moru-sprites.mjs",
     "brand:work-clips": "node scripts/brand/author-moru-work-clips.mjs",
     "brand:cast": "node scripts/brand/build-moru-cast.mjs",
-    "brand:life": "node scripts/brand/build-moru-life.mjs",
     "og:build": "node scripts/brand/build-og-cards.mjs",
     "prepare": "node scripts/prepare-worktree.mjs",
     "predev": "pnpm docs-vault:build && pnpm messages:build",
