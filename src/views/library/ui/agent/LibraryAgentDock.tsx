@@ -190,9 +190,13 @@ export function LibraryAgentDock({
         if (surface) {
           /* The composer when it takes text; the dock itself otherwise — a composer that
              cannot take focus yet (disabled, or not laid out) leaves focus where it was. */
-          surface.querySelector<HTMLTextAreaElement>("textarea:not([disabled])")?.focus({ preventScroll: true });
+          const composer = surface.querySelector<HTMLTextAreaElement>("textarea:not([disabled])");
+          composer?.focus({ preventScroll: true });
           if (!surface.contains(document.activeElement)) surface.focus({ preventScroll: true });
-          if (surface.contains(document.activeElement)) return;
+          /* The conversation mounts a frame after the dock, so the dock holds focus until its
+             composer exists; a focus the person has since moved inside the dock is left alone. */
+          const waitsForComposer = composer === null && document.activeElement === surface;
+          if (surface.contains(document.activeElement) && !waitsForComposer) return;
         }
         if (++tries < 30) window.requestAnimationFrame(land);
       };
