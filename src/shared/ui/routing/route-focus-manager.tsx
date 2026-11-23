@@ -116,12 +116,17 @@ export function RouteFocusManager() {
     }
 
     /*
-     * Focus that moves after arrival was placed by the person or the destination, wherever it
-     * sits: a page-header control lies outside `#main` and must not be taken back later.
+     * Focus that moves after the person pressed a key or the pointer since arrival was placed by
+     * them, wherever it sits: a page-header control lies outside `#main` and must not be taken
+     * back later. A move with no input before it is the page's own and still yields to arrival.
      */
+    let personActedSinceArrival = false;
     let focusMovedSinceArrival = false;
+    const notePersonInput = () => {
+      personActedSinceArrival = true;
+    };
     const noteFocusMove = () => {
-      focusMovedSinceArrival = true;
+      if (personActedSinceArrival) focusMovedSinceArrival = true;
     };
 
     const focusDestination = (): boolean => {
@@ -169,6 +174,8 @@ export function RouteFocusManager() {
     const stop = () => {
       observer.disconnect();
       document.removeEventListener('focusin', noteFocusMove, true);
+      document.removeEventListener('keydown', notePersonInput, true);
+      document.removeEventListener('pointerdown', notePersonInput, true);
       if (settleTimer !== null) window.clearTimeout(settleTimer);
       if (deadlineTimer !== null) window.clearTimeout(deadlineTimer);
     };
@@ -183,6 +190,8 @@ export function RouteFocusManager() {
     };
 
     observer.observe(document.body, { childList: true, subtree: true });
+    document.addEventListener('keydown', notePersonInput, true);
+    document.addEventListener('pointerdown', notePersonInput, true);
     document.addEventListener('focusin', noteFocusMove, true);
     scheduleFocus();
     deadlineTimer = window.setTimeout(() => {
