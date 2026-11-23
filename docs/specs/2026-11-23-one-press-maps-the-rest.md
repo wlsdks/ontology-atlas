@@ -4,7 +4,7 @@ doc_type: spec
 status: draft
 area: desktop
 date: 2026-11-23
-decisions: []
+decisions: [d3ad7753]
 ---
 
 # One press maps the rest of the code
@@ -51,9 +51,10 @@ far it has come.
    continues. The one-request suggestion row is removed. Leaving the map or closing the dock
    keeps the run; the work card and the map tile's ring carry it on every other screen.
 8. **Any Stop ends the whole run**: the row, the composer's Stop, the card, the Runs list.
-9. **The estimate is requests and minutes, never money**: `ceil(R / 24)` requests at two
-   minutes each before the first request (measured: 31, 18 and 24 abilities gained per
-   request, 97 to 129 seconds each), then the run's own rate.
+9. **The estimate is requests and minutes, never money**: `ceil(R / 13)` requests at three
+   minutes each before the first request (measured on two chains: 12.5 and 13.2 abilities
+   gained per request, 142 to 242 seconds each), then the run's own rate. One press sends at
+   most `min(2 × estimate + 2, 100)` requests.
 10. **Motion.** The count moves once per request, the activity line at most once a second, and
     nothing ticks per second while a request reads: the installed app pays about 0.7 percent
     CPU per update per second.
@@ -123,3 +124,13 @@ folder".
 ## Revisions
 
 - 2026-11-23: first version.
+- 2026-11-24: after an independent review and two chains with a real agent. A missing line
+  ends a run as finished only when the last count was within one request's reach; otherwise
+  it stops as `lineLost`. A ceiling of 100 requests per press; counts that are not safe
+  integers read as no line on both the app and the server. Every driver phase has an exit on
+  Stop, on the session going idle and on unmount. The rail ring and folder switches use the
+  folder's root path. The transcript keeps one line per finished request with the full
+  request on demand, and History shows a run as one row. The estimate moved from 24 to 13
+  abilities and from two to three minutes per request: the Go chain mapped all 50 left in four
+  requests, the Java chain 158 of 361 in twelve, no concept deleted; one split lost a cited
+  rule, so the request now tells the agent to carry rules to the concept that holds the code.
