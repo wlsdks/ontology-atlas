@@ -101,7 +101,7 @@ const GLIDE_TABLE = (() => {
 })();
 
 /** A move's progress along one curve: it eases in, cruises and eases out, never far faster in one step than the rest. */
-function glide(t: number): number {
+export function glide(t: number): number {
   const at = clamp01(t) * GLIDE_SAMPLES;
   const index = Math.min(GLIDE_SAMPLES - 1, Math.floor(at));
   return GLIDE_TABLE[index] + (GLIDE_TABLE[index + 1] - GLIDE_TABLE[index]) * (at - index);
