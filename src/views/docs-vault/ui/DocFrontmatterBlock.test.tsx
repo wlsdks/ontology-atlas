@@ -36,11 +36,10 @@ function renderBlock(locale: "en" | "ko" = "ko", override: Partial<VaultDoc> = {
 }
 
 describe("DocFrontmatterBlock", () => {
-  it("starts collapsed with a plain summary of the kind and the field count", () => {
+  it("starts as one summary row of the kind and the field count, with the fields closed", () => {
     renderBlock();
-    const details = screen.getByTestId("doc-frontmatter-block").querySelector("details");
-    expect(details).not.toBeNull();
-    expect(details).not.toHaveAttribute("open");
+    expect(screen.getByTestId("doc-frontmatter-summary")).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByTestId("doc-frontmatter-dialog")).not.toBeInTheDocument();
 
     // Kind in the tree's word; the slug stays with the header path.
     const summary = screen.getByTestId("doc-frontmatter-summary");
@@ -49,37 +48,35 @@ describe("DocFrontmatterBlock", () => {
     expect(within(summary).getByText("속성 6개")).toBeInTheDocument();
   });
 
-  /** A teaching line that never varies per document lives inside the collapsed block, not on the reading screen. */
-  it("keeps the spec example toggle inside the collapsed properties block", () => {
+  /** A teaching line that never varies per document lives with the fields, not on the reading screen. */
+  it("keeps the spec example toggle off the reading screen until the fields open", () => {
     renderBlock();
-    const details = screen.getByTestId("doc-frontmatter-block").querySelector("details");
-    expect(details).not.toHaveAttribute("open");
+    expect(screen.queryByTestId("doc-frontmatter-example-toggle")).not.toBeInTheDocument();
 
+    fireEvent.click(screen.getByTestId("doc-frontmatter-summary"));
     const toggle = screen.queryByTestId("doc-frontmatter-example-toggle");
-    // Guard against a fixture without an example.
     expect(toggle, "this fixture has no spec example, so the test would pass idly").not.toBeNull();
-    expect(
-      toggle?.closest("details:not([open])"),
-      "the spec example toggle sits outside the collapsed block and pushes the body down",
-    ).toBe(details);
+    expect(screen.getByTestId("doc-frontmatter-dialog")).toContainElement(toggle);
   });
 
-  it("reveals the full mono frontmatter block when expanded", () => {
+  it("opens the fields in a centred sheet and closes it from its close button", () => {
     renderBlock();
     const summary = screen.getByTestId("doc-frontmatter-summary");
     fireEvent.click(summary);
 
-    const details = screen.getByTestId("doc-frontmatter-block").querySelector("details");
-    expect(details).toHaveAttribute("open");
+    const sheet = screen.getByTestId("doc-frontmatter-dialog");
+    expect(summary).toHaveAttribute("aria-expanded", "true");
     // Located by position, not wording (`.claude/rules/documentation.md`, `docs/GLOSSARY.md`).
-    const note = screen.getByTestId("doc-frontmatter-note");
-    expect(note).toBeVisible();
+    const note = within(sheet).getByTestId("doc-frontmatter-note");
     expect((note.textContent ?? "").trim().length).toBeGreaterThan(0);
+
+    fireEvent.click(within(sheet).getByRole("button", { name: koMessages.docsVault.frontmatterBlock.close }));
+    expect(summary).toHaveAttribute("aria-expanded", "false");
   });
 
-  it("never deletes the graph-source fields — only collapses them", () => {
+  it("lists every graph-source field once the fields open", () => {
     renderBlock();
-    // Collapsed `<details>` still keeps the graph fields in the DOM.
+    fireEvent.click(screen.getByTestId("doc-frontmatter-summary"));
     expect(screen.getByText("developer-experience")).toBeInTheDocument();
     expect(screen.getByText("active")).toBeInTheDocument();
   });
@@ -93,9 +90,11 @@ describe("DocFrontmatterBlock", () => {
   it("says under relation fields what reads them, and nothing without one", () => {
     const help = enMessages.docsVault.frontmatterBlock.relationsConsumerHelp;
     renderBlock("en");
+    fireEvent.click(screen.getByTestId("doc-frontmatter-summary"));
     expect(screen.getByTestId("doc-frontmatter-relations-help")).toHaveTextContent(help);
     cleanup();
     renderBlock("en", { frontmatter: { kind: "capability", title: "CLI Developer Entry" } });
+    fireEvent.click(screen.getByTestId("doc-frontmatter-summary"));
     expect(screen.queryByText(help)).not.toBeInTheDocument();
   });
 
@@ -462,6 +461,7 @@ describe("DocFrontmatterBlock", () => {
 
   it("offers a collapsed spec-example disclosure for a known kind, derived from the shared new-doc starter", () => {
     renderBlock();
+    fireEvent.click(screen.getByTestId("doc-frontmatter-summary"));
     expect(screen.queryByTestId("doc-frontmatter-example")).not.toBeInTheDocument();
 
     const toggle = screen.getByTestId("doc-frontmatter-example-toggle");
@@ -488,8 +488,7 @@ describe("DocFrontmatterBlock", () => {
     expect(lede).toBeInTheDocument();
     expect(within(lede).getByText("문의를 접수하고 답변하는 역량.")).toBeInTheDocument();
     expect(within(lede).getByText("정의")).toBeInTheDocument();
-    const details = screen.getByTestId("doc-frontmatter-block").querySelector("details");
-    expect(details).not.toHaveAttribute("open");
+    expect(screen.queryByTestId("doc-frontmatter-dialog")).not.toBeInTheDocument();
   });
 
   it("omits the definition lede when no definition frontmatter exists", () => {
@@ -765,7 +764,7 @@ describe('recorded canonical graph declarations', () => {
     const field = screen.getByTestId('doc-frontmatter-field-elements');
     expect(field).toHaveTextContent('src/reservation.ts');
     expect(within(field).queryByRole('button', { name: 'src/reservation.ts' })).toBeNull();
-    expect(within(field).getByTestId('doc-frontmatter-ref-elements/reservation')).toBeVisible();
+    expect(within(field).getByTestId('doc-frontmatter-ref-elements/reservation')).toBeInTheDocument();
     const notes = screen.getByTestId('doc-frontmatter-field-relation_notes');
     expect(notes).toHaveTextContent('elements/reservation');
     expect(notes).toHaveTextContent('Preserves held stock until the order commits.');

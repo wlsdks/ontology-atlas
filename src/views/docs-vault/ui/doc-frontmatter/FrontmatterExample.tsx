@@ -1,6 +1,4 @@
-import { ChevronRight } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { CompactCopyButton, controlClass } from "@/shared/ui";
 
 interface Props {
@@ -28,13 +26,6 @@ export function FrontmatterExample({ exampleDoc, open, onToggle, copied, onCopy 
           className: "touch-hit-expand hover:text-[color:var(--color-text-secondary)]",
         })}
       >
-        <ChevronRight
-          size={ICON_SIZE.sm}
-          aria-hidden
-          className={`transition-transform motion-reduce:transition-none ${
-            open ? "rotate-90" : ""
-          }`}
-        />
         {t("exampleToggle")}
       </button>
       {open ? (

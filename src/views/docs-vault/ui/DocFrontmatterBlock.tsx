@@ -1,6 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChevronRight } from "lucide-react";
-import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { OntologyMapKindGlyph } from "@/shared/ui/ontology-node/map-kind-glyph";
 import { useLocale, useTranslations } from "next-intl";
 import {
@@ -13,7 +11,7 @@ import { VaultConflictError, type AgentActivityStatus } from "@/entities/vault-s
 import { computeEditAge } from "@/shared/lib/edit-provenance/edit-age";
 import { useCopyFeedback } from "@/shared/lib/clipboard/use-copy-feedback";
 import { useFailureSentence, type FailureCopy } from "@/shared/lib/failures/use-failure-sentence";
-import { LastEditSubjectRow, MtimeConflictBadge } from "@/shared/ui";
+import { CloseButton, Dialog, LastEditSubjectRow, MtimeConflictBadge } from "@/shared/ui";
 import { kindFolderAddress, reclassifyMoveTarget } from "../lib/doc-actions/kind-folder-move";
 import { hasDocMtimeConflict, resolveDocLastEditSubject } from "../lib/doc-actions/resolve-doc-edit-subject";
 import { graphFieldKeys, REFERENCE_KEYS, toRefTokens, formatValue } from "../lib/doc-frontmatter/fields";
@@ -311,32 +309,45 @@ export function DocFrontmatterBlock({
           </p>
         </div>
       ) : null}
-      <details
-        open={open}
-        onToggle={(event) => setOpen(event.currentTarget.open)}
-        className="group rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-4 py-2.5 font-mono text-body leading-prose text-[color:var(--color-text-tertiary)] shadow-[inset_0_1px_2px_var(--color-shadow-a35)]"
+      <button
+        type="button"
+        data-testid="doc-frontmatter-summary"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        onClick={() => setOpen(true)}
+        className="flex min-h-10 w-full items-center gap-2 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-4 py-2.5 text-left font-sans text-body leading-body text-[color:var(--color-text-tertiary)] shadow-[inset_0_1px_2px_var(--color-shadow-a35)] transition-colors hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-1)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]"
       >
-        <summary
-          data-testid="doc-frontmatter-summary"
-          aria-label={open ? t("collapseAria") : t("expandAria")}
-          className="flex min-h-6 list-none items-center gap-2 font-sans text-body leading-body focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]"
-        >
-          <ChevronRight
-            size={ICON_SIZE.sm}
-            aria-hidden
-            className="flex-none text-[color:var(--color-text-quaternary)] transition-transform group-open:rotate-90"
-          />
           {kindValue ? (
             <span data-testid="doc-frontmatter-summary-kind" data-kind={kindValue} className="inline-flex min-w-0 items-center gap-1.5 text-[color:var(--color-text-secondary)]">
               <OntologyMapKindGlyph kind={kindValue} size={12} className="flex-none" />
               <span className="truncate font-[var(--font-weight-emphasis)]">{kindLabel(kindValue)}</span>
             </span>
           ) : null}
-          <span className="ml-auto flex-none text-label leading-label text-[color:var(--color-text-tertiary)]">
+        <span className="ml-auto flex-none text-label leading-label">
+          {t("collapsedSummary", { count: fields.length })}
+        </span>
+      </button>
+      {/* The fields open in a centred sheet, not a disclosure that pushes the body down. */}
+      <Dialog
+        open={open}
+        onClose={() => setOpen(false)}
+        size="md"
+        labelledBy="doc-frontmatter-dialog-title"
+        testId="doc-frontmatter-dialog"
+        className="flex max-h-[calc(100dvh-var(--chrome-inset)*2)] flex-col"
+      >
+        <div className="flex items-start gap-3">
+        <h2 id="doc-frontmatter-dialog-title" className="flex min-w-0 flex-1 items-center gap-2 text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
+          {kindValue ? <OntologyMapKindGlyph kind={kindValue} size={14} className="flex-none" /> : null}
+          <span className="truncate">{kindValue ? kindLabel(kindValue) : t("ariaLabel")}</span>
+          <span className="ml-auto flex-none text-label font-normal leading-label text-[color:var(--color-text-tertiary)]">
             {t("collapsedSummary", { count: fields.length })}
           </span>
-        </summary>
-        <div className="mt-2 border-t border-[color:var(--color-divider)] pt-2">
+        </h2>
+          <CloseButton label={t("close")} onClick={() => setOpen(false)} className="-mt-1 -mr-1 flex-none" />
+        </div>
+        <div className="-mx-4 mt-3 min-h-0 overflow-y-auto px-4 font-mono text-body leading-prose text-[color:var(--color-text-tertiary)]">
+        <div className="border-t border-[color:var(--color-divider)] pt-2">
           <div className="text-[color:var(--color-text-quaternary)]" aria-hidden>
             ---
           </div>
@@ -388,7 +399,8 @@ export function DocFrontmatterBlock({
             onCopy={() => void copyExample(exampleDoc)}
           />
         ) : null}
-      </details>
+        </div>
+      </Dialog>
       {lastEditSubjectRow ? (
         <div className="mt-2 font-sans">
           <LastEditSubjectRow
