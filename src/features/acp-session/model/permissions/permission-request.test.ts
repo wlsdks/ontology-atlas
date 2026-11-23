@@ -40,10 +40,24 @@ describe('toPermissionRequest: reads the path, not the title', () => {
       toolName: null,
       toolKind: null,
       filePath: null,
+      statedPaths: [],
       rawInput: {},
       reviewKind: 'permission',
       options: [],
     });
+  });
+
+  it('keeps the files a Codex edit names in locations, and leaves the policy path empty', () => {
+    const request = toPermissionRequest({
+      toolCall: {
+        toolCallId: 'patch-1',
+        title: 'Edit files',
+        locations: [{ path: '/vault/wiki/a.md' }, { path: '/vault/wiki/b.md' }, { path: '/vault/wiki/a.md' }, { line: 3 }, { path: ' ' }],
+      },
+      options: [],
+    });
+    expect(request.statedPaths).toEqual(['/vault/wiki/a.md', '/vault/wiki/b.md']);
+    expect(request.filePath).toBeNull();
   });
 
   it('reads the sentence the tool left when there is no title, the spot where the server asks itself', () => {
