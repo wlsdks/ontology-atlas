@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
-import { constructionPrompts } from './construction-prompts.mjs';
+import { constructionPrompts, mapAreaPrompt } from './construction-prompts.mjs';
 
 const checkout = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 const files = ['src/i18n/locales.ts', 'src/i18n/answer-language.ts',
@@ -26,6 +26,26 @@ test('reads the current shared language helper without loading the app', () => {
     assert.equal(before.firstTurn, after.firstTurn);
     assert.ok(after.handoff.includes('changed-helper'));
     assert.ok(after.firstTurn.includes(target));
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('sends the map-area request the panel sends, read from the catalog at call time', () => {
+  const root = mkdtempSync(join(tmpdir(), 'construction-prompts-'));
+  try {
+    const catalog = 'messages/en/acpChat.json';
+    cpSync(join(checkout, catalog), join(root, catalog), { recursive: true });
+    const prompt = mapAreaPrompt(root, 12, 45);
+    assert.ok(prompt.startsWith('12 of the 45 areas'));
+    assert.ok(prompt.includes('validate_vault') && prompt.includes('Not mapped yet'));
+
+    const messages = JSON.parse(readFileSync(join(root, catalog), 'utf8'));
+    messages.suggest.mapArea.prompt = '{count} left of {total}; {named} named.';
+    writeFileSync(join(root, catalog), JSON.stringify(messages));
+    assert.throws(() => mapAreaPrompt(root, 1, 2), /beyond count and total/);
+
+    delete messages.suggest.mapArea;
+    writeFileSync(join(root, catalog), JSON.stringify(messages));
+    assert.throws(() => mapAreaPrompt(root, 1, 2), /Map-area prompt missing/);
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
 

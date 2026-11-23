@@ -1,5 +1,7 @@
 /** Next steps measured from this folder's map: a row exists only when its number is counted from the graph and is above zero. */
 
+import type { NotMappedAreas } from '@/shared/lib/vault-document/not-mapped-areas';
+
 import type { UnreadCapability } from './measured-facts';
 
 /** How many measured fixes are shown at once, before the whole-map check. Given too many choices, people choose none (Hick). */
@@ -15,6 +17,8 @@ type SuggestionKind =
   | 'connectSource'
   /** Nothing beyond the starter nodes has been built. */
   | 'build'
+  /** Areas of the code the project records as not on the map yet: open the next one. */
+  | 'mapArea'
   /** Capabilities whose body cites no lines read from the code. */
   | 'readRules'
   /** Capabilities that record neither `depends_on` nor an element. */
@@ -46,6 +50,8 @@ export interface SuggestionInput {
   nodeCount: number;
   sourceState?: 'loading' | 'unbound' | 'bound' | 'unavailable' | 'no-projects';
   islands: readonly (readonly string[])[];
+  /** The project with the most areas not mapped yet, from its `## Uncertainty` line. */
+  notMappedAreas?: NotMappedAreas | null;
   withoutReadRule?: { unread: readonly UnreadCapability[]; measured: number };
   withoutDependency: readonly string[];
   codeShaped: readonly string[];
@@ -137,7 +143,12 @@ export function chatSuggestions(input: SuggestionInput): ChatSuggestion[] {
   }
 
   const repairs: ChatSuggestion[] = [];
-  // A rule read from code is what the other repairs build on, so it comes first.
+  // Breadth before depth: an area not on the map has no capability to read or repair yet.
+  if (input.notMappedAreas && input.notMappedAreas.remaining > 0) {
+    const { remaining, total } = input.notMappedAreas;
+    repairs.push({ kind: 'mapArea', params: { count: remaining, total } });
+  }
+  // A rule read from code is what the other repairs build on, so it comes next.
   if (input.withoutReadRule && input.withoutReadRule.unread.length > 0) {
     repairs.push({ kind: 'readRules', params: readRulesParams(input.withoutReadRule) });
   }

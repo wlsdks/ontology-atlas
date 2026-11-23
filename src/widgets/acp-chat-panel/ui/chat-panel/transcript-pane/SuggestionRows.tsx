@@ -6,6 +6,7 @@ import {
   Link2,
   ListChecks,
   Map as MapGlyph,
+  MapPlus,
   PenLine,
   RefreshCw,
   Waypoints,
@@ -24,6 +25,7 @@ import type { ChatT } from '../chat-panel-props';
 const KIND_GLYPH: Record<ChatSuggestion['kind'], LucideIcon> = {
   connectSource: FolderGit2,
   build: MapGlyph,
+  mapArea: MapPlus,
   readRules: FileCode,
   dependencies: Workflow,
   standAlone: Link2,

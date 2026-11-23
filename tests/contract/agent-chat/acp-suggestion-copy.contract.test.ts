@@ -5,6 +5,7 @@ import en from '../../../messages/en.json';
 import ja from '../../../messages/ja.json';
 import ko from '../../../messages/ko.json';
 import zh from '../../../messages/zh.json';
+import { mapAreaPrompt } from '../../../scripts/lib/benchmark/construction-prompts.mjs';
 
 const WRITE_KINDS = ['build', 'dependencies', 'standAlone', 'rename', 'update'] as const;
 const MEASURED_KINDS = [...WRITE_KINDS, 'check'] as const;
@@ -37,6 +38,23 @@ describe('ACP next-step catalog', () => {
         }
         expect(because, kind).toContain(kind === 'build' ? '' : '14');
       }
+    });
+
+    it(`${locale} counts the areas not mapped yet and asks for the project lines the server parses`, () => {
+      const areas = { count: 12, total: 45 };
+      const because = t('suggest.mapArea.because', areas);
+      const prompt = t('suggest.mapArea.prompt', areas);
+      for (const text of [t('suggest.mapArea.label', areas), because, prompt]) {
+        expect(text).not.toContain('acpChat.suggest');
+        expect(text).not.toMatch(/[{}#]/);
+      }
+      for (const text of [because, prompt]) {
+        expect(text).toContain('12');
+        expect(text).toContain('45');
+      }
+      expect(prompt).toContain('validate_vault');
+      expect(prompt).toContain('Not mapped yet');
+      if (locale === 'en') expect(mapAreaPrompt(process.cwd(), 12, 45)).toBe(prompt);
     });
 
     it(`${locale} asks for the work and a report, never for review before writing`, () => {
