@@ -362,7 +362,7 @@ function validateVaultReport({ repoRoot } = {}, loadedDocs = null) {
   const depthRoot = repoRoot ? assertScanRootAllowed(repoRoot, 'repoRoot') : (REPO_ROOT_IS_GROUNDED ? REPO_ROOT : null);
   const repo = repositorySurvey(depthRoot, VAULT_ROOT);
   const reads = depthRoot ? sessionReads(depthRoot) : null;
-  const depth = measureBuildDepth(docs, repo, reads);
+  const depth = measureBuildDepth(docs, repo, reads, { abilityRows: true });
   for (const finding of buildDepthFindings(docs, { repoRoot: depthRoot, collection: repo?.collection ?? null, reads, coverage: depth.areaCoverage })) {
     const issues = docIssues.get(finding.slug) || [];
     issues.push({ code: finding.code, severity: 'warning', message: finding.message });
