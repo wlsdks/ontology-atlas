@@ -1,0 +1,47 @@
+{
+  "pill": {
+    "full": "{percent, number}% on the map · Analysis {number, number} · {when}",
+    "shareOnly": "{percent, number}% on the map · no analysis recorded",
+    "noShare": "Analysis {number, number} · {when}",
+    "running": "{percent, number}% on the map · analyzing now",
+    "changed": "{percent, number}% on the map · {files, plural, one {# file} other {# files}} changed since analysis {number, number}",
+    "label": "Code analysis. {summary}. Press to see each analysis."
+  },
+  "when": {
+    "today": "today",
+    "yesterday": "yesterday",
+    "days": "{days, plural, one {# day ago} other {# days ago}}"
+  },
+  "panel": {
+    "title": "Code analysis",
+    "share": "{mapped, number} of the {total, number} abilities found in the code are on the map ({percent, number}%).",
+    "shareAll": "All {total, number} abilities found in the code are on the map.",
+    "counted": "Counted in analysis {number, number}, {when}. Code changed after that is not counted yet.",
+    "listTitle": "Analyses in this folder",
+    "row": "Analysis {number, number} · {date} · {agent}",
+    "rowNoAgent": "Analysis {number, number} · {date}",
+    "rowChange": "{before, number}% → {after, number}% on the map · {added, plural, one {# concept} other {# concepts}} added, {changed, number} changed",
+    "rowFirst": "{after, number}% on the map · {added, plural, one {# concept} other {# concepts}} added, {changed, number} changed",
+    "rowNoShare": "{added, plural, one {# concept} other {# concepts}} added, {changed, number} changed",
+    "earlier": "{count, plural, one {# earlier analysis is} other {# earlier analyses are}} in .ontology-atlas/map-analysis.jsonl in this folder.",
+    "noRecord": "No analysis is recorded in this folder yet. The next time an agent adds to the map, Atlas starts the record.",
+    "where": "Atlas keeps this record in .ontology-atlas/map-analysis.jsonl in this folder. Git leaves that file out by default, so another copy of the folder starts its own record.",
+    "unreadable": "Atlas could not read .ontology-atlas/map-analysis.jsonl, so no analysis is listed. The share above comes from the project note. The next analysis adds to the file as it is."
+  },
+  "action": {
+    "mapRestHelp": "Opens the map conversation, where the estimate and Start are.",
+    "catchUp": "Analyze new and changed code",
+    "catchUpBody": "{files, plural, one {# file} other {# files}} to read. About {requests, plural, one {# request} other {# requests}} to your agent, about {duration}."
+  },
+  "web": {
+    "analyze": "Starting an analysis from Atlas needs the desktop app, which runs your coding agent. An agent you connect yourself over MCP adds to this record too."
+  },
+  "changed": {
+    "none": "No file in the code changed since analysis {number, number}.",
+    "some": "Since analysis {number, number}, {added, plural, one {# new file} other {# new files}} and {changed, plural, one {# changed file} other {# changed files}} in the code. The share above does not count them yet.",
+    "behind": "{count, plural, one {# concept was} other {# concepts were}} written before the code they point at changed.",
+    "unknownCommit": "Atlas cannot count changed files: commit {commit}, which analysis {number, number} read, is not in this repository's history.",
+    "noGit": "Atlas cannot count changed files: the connected code folder is not a Git repository.",
+    "web": "Counting files changed since an analysis needs the desktop app, which reads the code's Git history."
+  }
+}
