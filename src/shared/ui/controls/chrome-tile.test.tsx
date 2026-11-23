@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { ChromeTile } from './chrome-tile';
 
 vi.mock('@/i18n/navigation', () => ({
@@ -11,12 +11,14 @@ vi.mock('@/i18n/navigation', () => ({
 }));
 
 describe('ChromeTile', () => {
-  it('renders as a native button with icon + title-derived accessible name', () => {
+  it('renders as a native button named by its title, which a styled tooltip shows on focus', async () => {
     render(<ChromeTile icon={<svg data-testid="icon" />} title="문서함" />);
     const tile = screen.getByRole('button', { name: '문서함' });
     expect(tile.tagName).toBe('BUTTON');
     expect(screen.getByTestId('icon')).toBeInTheDocument();
-    expect(tile).toHaveAttribute('title', '문서함');
+    expect(tile).not.toHaveAttribute('title');
+    fireEvent.focus(tile);
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('문서함');
   });
 
   it('uses the chrome-tile-size(36px) + 10px chrome-radius token contract', () => {
