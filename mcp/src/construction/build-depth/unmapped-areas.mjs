@@ -89,7 +89,8 @@ export function areaLabel(area) {
   const where = area.rest
     ? `${area.members.length} smaller folders in ${repoText(area.path)}`
     : `${repoText(area.path)}${area.own ? ' (its own files)' : ''}`;
-  return `${where} (${area.abilities} abilities, ${area.capabilities} capabilities)`;
+  const count = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+  return `${where} (${count(area.abilities, 'ability', 'abilities')}, ${count(area.capabilities, 'capability', 'capabilities')})`;
 }
 
 /** The call that opens an area: its own map, or for a folder's own files an outline of its main files. */
