@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, type RefObject } from 'react';
 import { useLatestRef } from '@/shared/lib/use-latest-ref';
 import { MOTION, MOTION_EASE } from '@/shared/motion';
 import { WIDE_ROOM_W, type Box, type RoomBox } from './building-layout';
-import { FADE_MS, SHOW_MS, boxAt, boxOnPath, planSequence, type RoomMove, type RoomSequence } from './room-sequence';
+import { FADE_MS, MOVE_MS, SHOW_MS, boxAt, boxOnPath, glide, planSequence, type RoomMove, type RoomSequence } from './room-sequence';
 
 const ms = (seconds: number) => seconds * 1000;
 const EASE_CSS = `cubic-bezier(${MOTION_EASE.join(', ')})`;
@@ -271,13 +271,39 @@ function playResized(element: HTMLElement, move: RoomMove, timing: MoveTiming, u
   for (const part of partsOf(element)) played.push(part.animate(fadeFrames(timing.shows.parts, steps), { duration: timing.total }));
   const scene = shownFace(element)?.querySelector<HTMLElement>('[data-scene]');
   const from = timing.shows.unit;
-  if (scene && from !== unit) {
-    // The scale keeps pace with the box along its own path, so Moru never outgrows the room he stands in.
-    const [start, end] = move.from.w !== move.to.w ? [move.from.w, move.to.w] : [move.from.h, move.to.h];
-    const share = (box: Box) => (end === start ? 1 : ((move.from.w !== move.to.w ? box.w : box.h) - start) / (end - start));
-    played.push(gliding(scene, scene.animate(pathFrames(move, timing, box => ({ ['--u' as string]: from + (unit - from) * share(box) })), { duration: timing.total })));
-  }
+  if (scene && from !== unit) played.push(gliding(scene, scene.animate(scaleFrames(move, timing, from, unit), { duration: timing.total })));
   return played;
+}
+
+/**
+ * Moru's scale through a resize: one glide in log space as long as a move, on the move's curve, so he grows or
+ * shrinks by the same share each moment (1 to 3 at most about 12 % in 40 ms), however briefly his box changes
+ * size. Each frame he is held to what the box fits then, so he never outgrows his room: growing, the glide
+ * starts with the box and lags it; shrinking, it ends with the box and leads it. It lands on the new unit.
+ */
+function scaleFrames(move: RoomMove, { sequence, total, at }: MoveTiming, from: number, unit: number): Keyframe[] {
+  const sideways = move.from.w !== move.to.w;
+  const [start, end] = sideways ? [move.from.w, move.to.w] : [move.from.h, move.to.h];
+  const boxWhen = (time: number) => boxOnPath(move, sequence.waves, sequence.path, sequence.moveMs === 0 ? 1 : Math.min(1, Math.max(0, (time - sequence.moveAtMs) / sequence.moveMs)), sequence.overlap);
+  const share = (box: Box) => (end === start ? 1 : ((sideways ? box.w : box.h) - start) / (end - start));
+  // What the box fits when its size is this far along: the unit eases with its width or height.
+  const fits = (time: number) => from + (unit - from) * share(boxWhen(time));
+  // When the box's size changes, sampled along the move step.
+  const times = Array.from({ length: PATH_SAMPLES + 1 }, (_, index) => sequence.moveAtMs + (index / PATH_SAMPLES) * sequence.moveMs);
+  const changing = times.filter(time => share(boxWhen(time)) > 0.001 && share(boxWhen(time)) < 0.999);
+  const [sizeFrom, sizeTo] = changing.length > 0 ? [changing[0], changing.at(-1)!] : [sequence.moveAtMs, sequence.moveAtMs + sequence.moveMs];
+  const growing = unit > from;
+  const glideFrom = growing ? sizeFrom : Math.max(0, sizeTo - MOVE_MS);
+  const glideTo = Math.min(total, glideFrom + MOVE_MS);
+  const glided = (time: number) => from * (unit / from) ** glide((time - glideFrom) / Math.max(1, glideTo - glideFrom));
+  const frames: Keyframe[] = [];
+  const count = Math.max(PATH_SAMPLES, Math.ceil(total / 16));
+  for (let index = 0; index < count; index += 1) {
+    const time = (index / count) * total;
+    frames.push({ ['--u' as string]: Math.min(glided(time), fits(time)), offset: at(time), easing: 'linear' });
+  }
+  frames.push({ ['--u' as string]: unit, offset: 1 });
+  return frames;
 }
 
 /**
