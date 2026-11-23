@@ -41,17 +41,18 @@ export function constructionPrompts(checkout, target, locale = 'en') {
 const MAP_AREA_CATALOG = 'messages/en/acpChat.json';
 
 /**
- * The request the agent panel sends for "Map the next part of the code", with the
- * share of the project's surveyed abilities on the map and how many there are.
+ * The request the agent panel sends for "Map the next part of the code", with how
+ * many of the project's surveyed abilities are on the map, of how many, and the share.
  */
-export function mapAreaPrompt(checkout, percent, total) {
+export function mapAreaPrompt(checkout, { mapped, total, percent }) {
   const template = JSON.parse(readFileSync(join(checkout, MAP_AREA_CATALOG), 'utf8'))
     .suggest?.mapArea?.prompt;
   if (typeof template !== 'string') {
     throw new Error(`Map-area prompt missing: ${MAP_AREA_CATALOG} suggest.mapArea.prompt`);
   }
-  const prompt = template.replaceAll('{percent}', String(percent)).replaceAll('{total}', String(total));
+  const prompt = template.replaceAll('{mapped}', String(mapped)).replaceAll('{total}', String(total))
+    .replaceAll('{percent}', String(percent));
   // The panel formats the message with ICU; any other argument means this copy no longer matches it.
-  if (/[{}]/.test(prompt)) throw new Error('Map-area prompt takes arguments beyond percent and total');
+  if (/[{}]/.test(prompt)) throw new Error('Map-area prompt takes arguments beyond mapped, total and percent');
   return prompt;
 }

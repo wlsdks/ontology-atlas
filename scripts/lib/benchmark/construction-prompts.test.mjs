@@ -34,18 +34,18 @@ test('sends the map-area request the panel sends, read from the catalog at call 
   try {
     const catalog = 'messages/en/acpChat.json';
     cpSync(join(checkout, catalog), join(root, catalog), { recursive: true });
-    const prompt = mapAreaPrompt(root, 16, 383);
-    assert.ok(prompt.startsWith('About 16% of the 383 abilities'));
+    const prompt = mapAreaPrompt(root, { mapped: 61, total: 383, percent: 16 });
+    assert.ok(prompt.startsWith('61 of the 383 abilities found in this code are on the map (16%).'));
     assert.ok(prompt.includes('validate_vault') && prompt.includes('Not mapped yet'));
 
     const messages = JSON.parse(readFileSync(join(root, catalog), 'utf8'));
-    messages.suggest.mapArea.prompt = '{percent}% of {total}; {count} areas left.';
+    messages.suggest.mapArea.prompt = '{mapped} of {total} ({percent}%); {count} areas left.';
     writeFileSync(join(root, catalog), JSON.stringify(messages));
-    assert.throws(() => mapAreaPrompt(root, 1, 2), /beyond percent and total/);
+    assert.throws(() => mapAreaPrompt(root, { mapped: 1, total: 2, percent: 50 }), /beyond mapped, total and percent/);
 
     delete messages.suggest.mapArea;
     writeFileSync(join(root, catalog), JSON.stringify(messages));
-    assert.throws(() => mapAreaPrompt(root, 1, 2), /Map-area prompt missing/);
+    assert.throws(() => mapAreaPrompt(root, { mapped: 1, total: 2, percent: 50 }), /Map-area prompt missing/);
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
 
