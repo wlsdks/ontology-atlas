@@ -8,6 +8,18 @@ import { aggregateWikiFindings } from "@/shared/lib/library/wiki-report.mjs";
 import { advisoryReportSlugs, findingKey, reportOutline } from "../../model/check-report/check-report-outline";
 import { LibraryCheckReport } from "./LibraryCheckReport";
 
+/** One `PageDoors` per structural row, so its renders count the rows drawn. */
+const pageDoorRenders = vi.hoisted(() => ({ count: 0 }));
+vi.mock("./PageDoors", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./PageDoors")>();
+  return {
+    PageDoors: (props: Parameters<typeof actual.PageDoors>[0]) => {
+      pageDoorRenders.count += 1;
+      return <actual.PageDoors {...props} />;
+    },
+  };
+});
+
 const STRUCTURAL = aggregateWikiFindings({
   pages: [
     {
@@ -439,5 +451,25 @@ describe("the computed half is the app's own, and it is the half that leads", ()
       </NextIntlClientProvider>,
     );
     expect(document.getElementById("report-code-orphan-page")!.tagName).toBe("H4");
+  });
+});
+
+describe("a press elsewhere on the Library leaves the computed ledger alone", () => {
+  it("draws no structural row again when the page re-renders it with new handlers", () => {
+    const report = (props: Props) => (
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <Harness structural={STRUCTURAL} advisoryOpen onOpenSource={() => {}} onJumpToSection={() => {}} {...props} />
+      </NextIntlClientProvider>
+    );
+    const { rerender } = render(report({ conversationOpen: false }));
+    const drawn = pageDoorRenders.count;
+    expect(drawn).toBeGreaterThan(0);
+
+    const onOpenPage = vi.fn();
+    rerender(report({ conversationOpen: true, onOpenPage }));
+    expect(pageDoorRenders.count).toBe(drawn);
+    // The rows kept from the first render open pages through the handler the latest render passed.
+    fireEvent.click(screen.getAllByTestId("library-finding-page")[0]!);
+    expect(onOpenPage).toHaveBeenCalledTimes(1);
   });
 });

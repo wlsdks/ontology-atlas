@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Stethoscope } from "lucide-react";
 import type { useTranslations } from "next-intl";
 
 import type { LintFinding, LintNodeCandidate, WikiProblemContext } from "@/features/library";
 import { isRunActive, useWorkRunStage, type WorkRun } from "@/features/work-run";
 import type { WikiReport } from "@/shared/lib/library/wiki-report.mjs";
+import { useLatestRef } from "@/shared/lib/use-latest-ref";
 import { Chip } from "@/shared/ui";
 import { BrandMark } from "@/shared/ui/marks/brand-mark";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
@@ -92,16 +93,33 @@ export function LibraryCheckReport({
   // Advisory kinds start closed in every state: they are true of any wiki nobody has cross-linked, and open they push the agent half below the fold.
   const [advisoryOpenLocal, setAdvisoryOpenLocal] = useState(false);
   const advisoryOpen = advisoryOpenProp ?? advisoryOpenLocal;
-  const setAdvisoryOpen = (next: boolean) => {
-    if (onAdvisoryOpenChange) onAdvisoryOpenChange(next);
-    else setAdvisoryOpenLocal(next);
-  };
+  /*
+   * The ledger holds one row per finding, about a thousand on a large wiki, and the page above
+   * re-renders on every header press. Its doors keep one identity so the memoised ledger skips
+   * those renders; they call whatever handler the latest render passed.
+   */
+  const latest = useLatestRef({ onOpenPage, onOpenSource, onJumpToSection, onAdvisoryOpenChange });
+  const [handlers] = useState(() => ({
+    openPage: (slug: string) => latest.current.onOpenPage(slug),
+    openSource: (path: string) => latest.current.onOpenSource?.(path),
+    jumpToSection: (slug: string) => latest.current.onJumpToSection?.(slug),
+    setAdvisoryOpen: (next: boolean) => {
+      const change = latest.current.onAdvisoryOpenChange;
+      if (change) change(next);
+      else setAdvisoryOpenLocal(next);
+    },
+  }));
+  const opensSources = onOpenSource !== undefined;
+  const toggleAdvisory = useCallback(() => handlers.setAdvisoryOpen(!advisoryOpen), [advisoryOpen, handlers]);
   // No `onOpenPlace`: this page is not the page a finding is about, so each row's own door opens it. `place: "section"` keeps the line out of the sentence, where the collapsed row's door carries every line.
-  const structuralDoors: WikiProblemDoors = { onOpenPage, ...(onOpenSource ? { onOpenSource } : {}) };
-  const structuralContext: WikiProblemContext = {
+  const structuralDoors = useMemo<WikiProblemDoors>(
+    () => ({ onOpenPage: handlers.openPage, ...(opensSources ? { onOpenSource: handlers.openSource } : {}) }),
+    [handlers, opensSources],
+  );
+  const structuralContext = useMemo<WikiProblemContext>(() => ({
     place: "section",
     ...(pageTitle ? { pageTitle } : {}),
-  };
+  }), [pageTitle]);
   // Zero prints no number: a bare 0 beside a head reads as "nothing here" for a half that still holds the one ability this screen can be blocked on.
   const semanticCount = findings.length + candidates.length;
 
@@ -170,11 +188,11 @@ export function LibraryCheckReport({
           structural={structural}
           doors={structuralDoors}
           context={structuralContext}
-          onOpenPage={onOpenPage}
-          onJumpToSection={onJumpToSection}
+          onOpenPage={handlers.openPage}
+          onJumpToSection={onJumpToSection ? handlers.jumpToSection : undefined}
           semanticCount={semanticCount}
           advisoryOpen={advisoryOpen}
-          onToggleAdvisory={() => setAdvisoryOpen(!advisoryOpen)}
+          onToggleAdvisory={toggleAdvisory}
           t={t}
         />
       ) : null}
