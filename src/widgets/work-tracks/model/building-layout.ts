@@ -5,6 +5,8 @@
  * glides.
  */
 
+import { LOBBY_H } from '@/shared/ui/marks/moru/life/lobby-canvas';
+
 export interface Box {
   x: number;
   y: number;
@@ -30,6 +32,8 @@ export interface LayoutInput {
   stage: readonly string[];
   floors: readonly { key: string; rooms: readonly string[] }[];
   hasShelf: boolean;
+  /** The ground floor where Moru live (`MoruLobby`), under the floors. */
+  hasLobby?: boolean;
 }
 
 export interface BuildingLayout {
@@ -43,6 +47,8 @@ export interface BuildingLayout {
    */
   heading: (Box & { kind: 'plate' | 'line' }) | null;
   shelf: Box | null;
+  /** The ground floor: the lobby strip under the floors, above the shelf. */
+  lobby: (Box & { unit: RoomUnit }) | null;
   height: number;
 }
 
@@ -52,6 +58,21 @@ const EDGE_TOP = 24;
 const EDGE_BOTTOM = 20;
 const BAND_GAP = 16;
 const SHELF_H = 40;
+/** The lobby's name plate over its lanes. */
+export const LOBBY_PLAQUE_H = 24;
+/**
+ * The lobby draws Moru at most this large. A room's scale (1.5 at 1,512px) leaves a floor of about 950 of Moru's
+ * pixels, where the crew's spacing and comings and goings, tuned on 1,400, do not hold yet; until they are, 1.
+ */
+const LOBBY_MOST_UNIT = 1;
+
+/** The lobby's scale: a single stage room's Moru at this width, at most `LOBBY_MOST_UNIT`. */
+export function lobbyUnit(width: number): RoomUnit {
+  const cols = Math.min(2, Math.max(1, Math.floor((width + STAGE_GAP) / (LARGE_MIN_W + STAGE_GAP))));
+  return Math.min(LOBBY_MOST_UNIT, unitOf(Math.floor((width - (cols - 1) * STAGE_GAP) / cols / 2) * 2));
+}
+/** The lobby's height at a scale: its name plate over three lanes of Moru. */
+export const lobbyHeight = (unit: RoomUnit) => Math.ceil(LOBBY_H * unit) + LOBBY_PLAQUE_H;
 /** Every mini room, banded or not: Moru's corner, the branch, the status and the newest subject. */
 export const MINI_H = 96;
 const MINI_MIN_W = 300;
@@ -79,8 +100,6 @@ const MORU_LEFT = 20;
 const CONSOLE_PER_UNIT = 152;
 /** From this width a stage room stands its screen on a console beside Moru; narrower, it hangs it above him. */
 export const WIDE_ROOM_W = MORU_LEFT + CONSOLE_PER_UNIT + SCREEN_MIN_W;
-/** A large room's belt is a track in its floor: the scene is the whole room. */
-export const BELT_H = 0;
 
 /** Moru as large as the screen beside him leaves room for, in half steps: the screen keeps its width, Moru gives way. */
 function unitOf(width: number): RoomUnit {
@@ -103,13 +122,19 @@ export function screenRows(box: Pick<RoomBox, 'w' | 'h' | 'unit'>): number {
 /** What a pair of Moru spends beside a console screen per unit: two cells side by side, 254, and the side wall, 18. */
 const PAIR_PER_UNIT = 272;
 
+/** Two Moru side by side, from the tail of the one behind to the face of the one in front, per unit. */
+const PAIR_BODIES = 218;
+/** What a narrow room keeps beside the pair: its side wall, per unit, and a margin at each end. */
+const SIDE_WALL = 16;
+const PAIR_MARGIN = 8;
+
 /**
  * The scale two Moru share in one room, in half steps so each drawn pixel stays whole: beside a
- * console as large as leaves the screen its width, at least 1; under a hanging screen half the
- * room's unit, so both stand apart.
+ * console as large as leaves the screen its width, at least 1; under a hanging screen as large as
+ * both fit apart on the floor, up to the room's own.
  */
 export function pairUnit(width: number, unit: RoomUnit): number {
-  if (width < WIDE_ROOM_W) return Math.max(0.5, Math.floor(unit) / 2);
+  if (width < WIDE_ROOM_W) return Math.max(0.5, Math.min(unit, Math.floor((2 * (width - SIDE_WALL * unit - 2 * PAIR_MARGIN)) / PAIR_BODIES) / 2));
   return Math.max(1, Math.min(unit, Math.floor((2 * (width - MORU_LEFT - SCREEN_MIN_W)) / PAIR_PER_UNIT) / 2));
 }
 
@@ -175,7 +200,9 @@ export function layoutBuilding(input: LayoutInput): BuildingLayout {
   };
   const backH = headingH + groups.reduce((sum, group) => sum + groupHeight(group.rooms.length), 0) + Math.max(0, groups.length - 1) * MINI_GAP;
   const shelfH = input.hasShelf ? SHELF_H : 0;
-  const shelfTop = height - EDGE_BOTTOM - shelfH;
+  const lobbyScale = lobbyUnit(width);
+  const lobbyH = input.hasLobby ? lobbyHeight(lobbyScale) : 0;
+  const shelfTop = height - EDGE_BOTTOM - shelfH - (lobbyH ? lobbyH + (shelfH ? BAND_GAP : 0) : 0);
   const backTop = shelfTop - (shelfH ? BAND_GAP : 0) - backH;
   const available = backTop - (backH > 0 ? BAND_GAP : 0) - EDGE_TOP;
 
@@ -240,15 +267,18 @@ export function layoutBuilding(input: LayoutInput): BuildingLayout {
     floorTop += groupH + MINI_GAP;
   }
 
-  const shelf = input.hasShelf ? { x: 0, y: groups.length > 0 ? floorTop - MINI_GAP + BAND_GAP : shelfTop + overflow, w: width, h: SHELF_H } : null;
+  const groundTop = groups.length > 0 ? floorTop - MINI_GAP + BAND_GAP : shelfTop + overflow;
+  const lobby = lobbyH ? { x: 0, y: groundTop, w: width, h: lobbyH, unit: lobbyScale } : null;
+  const shelf = input.hasShelf ? { x: 0, y: lobby ? lobby.y + lobby.h + BAND_GAP : groundTop, w: width, h: SHELF_H } : null;
   // The building ends under what it holds; it does not stretch to the window with bare floor.
-  const bottom = (shelf ? shelf.y + shelf.h : floorTop - MINI_GAP) + EDGE_BOTTOM;
+  const bottom = (shelf ? shelf.y + shelf.h : lobby ? lobby.y + lobby.h : floorTop - MINI_GAP) + EDGE_BOTTOM;
   return {
     rooms,
     floors: floorPlates,
     banded,
     heading,
     shelf,
+    lobby,
     height: bottom,
   };
 }

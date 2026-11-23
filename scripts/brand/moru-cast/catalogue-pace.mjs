@@ -1,5 +1,5 @@
 // The catalogue's own pace: how far the centre of the body fill moves between two poses, in 128px pixels.
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { loadStrip, previewPath, REPO } from './lib.mjs';
 export function bodyCentre(rgba, w, h) {
@@ -27,5 +27,6 @@ export async function writeCataloguePace() {
   }
   const pace = { grounded: { n: grounded.length, p50: p(grounded, .5), p90: p(grounded, .9), max: Math.max(...grounded) }, airborne: { n: air.length, p50: p(air, .5), p90: p(air, .9), max: Math.max(...air) } };
   console.log(JSON.stringify(pace, null, 1)); console.log(Object.entries(perClip).filter(([, v]) => v.airborne).map(([k, v]) => k + ':' + v.max).join(' '));
+  await mkdir(previewPath(), { recursive: true });
   await writeFile(previewPath('catalogue-pace.json'), JSON.stringify(pace, null, 2));
 }

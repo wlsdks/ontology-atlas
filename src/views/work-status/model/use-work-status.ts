@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { readWorkStatus, readWorkStatusFingerprint, type WorkStatusSnapshot } from '@/shared/lib/work-status/tauri-work-status';
 
-/** How often the visible screen stats Git's worktree records; a change shows within one interval plus one read. */
+/** How often the visible screen stats Git's worktree records right after a change; a change shows within one interval plus one read. */
 export const WATCH_INTERVAL_MS = 1000;
+/** While nothing changes the interval doubles up to this. */
+export const WATCH_SLOWEST_MS = 4000;
 
 export interface WorkStatusRead {
   snapshot: WorkStatusSnapshot | null;
@@ -13,7 +15,9 @@ export interface WorkStatusRead {
 
 /**
  * Reads the repository once, then watches `.git/worktrees` while the screen is visible: a cheap
- * stat digest each interval, and a full read only when it changed. A hidden screen asks nothing.
+ * stat digest each interval, and a full read only when it changed. The interval doubles while
+ * nothing changes, up to `WATCH_SLOWEST_MS`, and is back to a second after a change. A hidden
+ * screen asks nothing.
  */
 export function useWorkStatus(repositoryPath: string | null): WorkStatusRead {
   const [read, setRead] = useState<WorkStatusRead & { path: string | null }>({ path: null, snapshot: null, failed: false, readAtMs: 0 });
@@ -25,6 +29,7 @@ export function useWorkStatus(repositoryPath: string | null): WorkStatusRead {
     let watchRoot = repositoryPath;
     let busy = false;
     let timer: number | undefined;
+    let wait = WATCH_INTERVAL_MS;
 
     const fingerprintOf = (root: string) => readWorkStatusFingerprint(root).catch(() => null);
 
@@ -46,19 +51,28 @@ export function useWorkStatus(repositoryPath: string | null): WorkStatusRead {
     };
 
     const tick = async () => {
-      if (busy || document.visibilityState !== 'visible') return;
+      // A hidden screen asks nothing; showing it again starts the watch anew.
+      if (document.visibilityState !== 'visible') return;
+      if (busy) {
+        timer = window.setTimeout(() => void tick(), wait);
+        return;
+      }
       busy = true;
       try {
         const next = await fingerprintOf(watchRoot);
-        if (!cancelled && next !== fingerprint) await load();
+        const changed = !cancelled && next !== fingerprint;
+        if (changed) await load();
+        wait = changed ? WATCH_INTERVAL_MS : Math.min(WATCH_SLOWEST_MS, wait * 2);
       } finally {
         busy = false;
+        if (!cancelled && timer !== undefined) timer = window.setTimeout(() => void tick(), wait);
       }
     };
 
     const schedule = () => {
-      window.clearInterval(timer);
-      timer = document.visibilityState === 'visible' ? window.setInterval(() => void tick(), WATCH_INTERVAL_MS) : undefined;
+      window.clearTimeout(timer);
+      wait = WATCH_INTERVAL_MS;
+      timer = document.visibilityState === 'visible' ? window.setTimeout(() => void tick(), wait) : undefined;
     };
 
     /** A session can end while the screen is hidden; coming back reads everything once. */
@@ -82,7 +96,7 @@ export function useWorkStatus(repositoryPath: string | null): WorkStatusRead {
     document.addEventListener('visibilitychange', onVisibility);
     return () => {
       cancelled = true;
-      window.clearInterval(timer);
+      window.clearTimeout(timer);
       document.removeEventListener('visibilitychange', onVisibility);
     };
   }, [repositoryPath]);

@@ -12,7 +12,8 @@ use super::{
     parse_porcelain, read_repository, standing_of, Standing, WorktreeRow, ZeroAheadEvidence,
 };
 use crate::work_status::agent_processes::{
-    credit_to_agents, remember, tool_for_executable, AgentProcess, AgentTool, ProcessFacts,
+    credit_to_agents, remember, tool_for_executable, under_agents, AgentProcess, AgentTool,
+    ProcessFacts,
 };
 
 /// Git cannot take a Windows verbatim path (`\\?\C:\...`) as an argument, and the canonical
@@ -496,6 +497,44 @@ fn a_command_is_credited_to_the_agent_session_above_it() {
     assert!(credited[..3]
         .iter()
         .all(|p| p.tool == AgentTool::Codex && p.started_at == Some(10)));
+}
+
+#[test]
+fn only_an_agents_command_tree_needs_its_working_folder_read() {
+    let fact = |pid, parent, tool, folder: Option<&str>| ProcessFacts {
+        pid,
+        parent,
+        started_at: Some(i64::from(pid)),
+        tool,
+        folder: folder.map(PathBuf::from),
+    };
+    let facts = vec![
+        fact(1, 0, None, Some("/")),
+        fact(10, 1, Some(AgentTool::Codex), Some("/repo")),
+        fact(11, 10, None, Some("/repo/wt/a")),
+        fact(12, 11, None, Some("/repo/wt/a/src")),
+        fact(20, 1, None, Some("/repo/wt/b")),
+        fact(30, 99, None, Some("/repo/wt/c")),
+        fact(40, 1, Some(AgentTool::ClaudeCode), Some("/repo/wt/d")),
+    ];
+    let mut wanted: Vec<u32> = under_agents(&facts).into_iter().collect();
+    wanted.sort();
+    assert_eq!(wanted, vec![10, 11, 12, 40]);
+    // Reading folders only there credits exactly what reading every folder does.
+    let trimmed: Vec<ProcessFacts> = facts
+        .iter()
+        .cloned()
+        .map(|mut fact| {
+            if !wanted.contains(&fact.pid) {
+                fact.folder = None;
+            }
+            fact
+        })
+        .collect();
+    assert_eq!(
+        credit_to_agents(&trimmed, &[]),
+        credit_to_agents(&facts, &[])
+    );
 }
 
 #[test]

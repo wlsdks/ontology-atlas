@@ -146,11 +146,16 @@ describe('floor rows', () => {
     expect(rows('c', 3)).toEqual([3]);
   });
 
-  it('gives two Moru a scale in half steps that leaves a console screen 400px, and halves it under a hanging screen', () => {
+  it('gives two Moru a scale in half steps that leaves a console screen 400px, and under a hanging screen the largest that fits both apart', () => {
     expect(pairUnit(882, 3)).toBe(1.5);
     expect(882 - 20 - 272 * pairUnit(882, 3)).toBeGreaterThanOrEqual(400);
     expect(pairUnit(1200, 3)).toBe(2.5);
-    expect(pairUnit(428, 2)).toBe(1);
+    // The 1440 and 1512 boards: three quarters of the single Moru beside them, both on the floor.
+    for (const width of [424, 448]) {
+      expect(pairUnit(width, 2)).toBe(1.5);
+      expect(218 * pairUnit(width, 2)).toBeLessThanOrEqual(width - 32 - 16);
+    }
+    expect(pairUnit(320, 1)).toBe(1);
   });
 
   it('draws Moru at a half step in the owner\'s 1368px board, so he is not a speck beside his screen', () => {

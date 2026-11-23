@@ -132,6 +132,33 @@ fn is_background_server(agent: &ProcessFacts, by_pid: &HashMap<u32, &ProcessFact
     false
 }
 
+/// The processes with an agent among themselves and their ancestors: the only ones whose working
+/// folder can be credited. O(processes × chain length).
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+pub(crate) fn under_agents(facts: &[ProcessFacts]) -> std::collections::HashSet<u32> {
+    let by_pid: HashMap<u32, &ProcessFacts> = facts.iter().map(|fact| (fact.pid, fact)).collect();
+    facts
+        .iter()
+        .filter(|start| {
+            let mut current = *start;
+            for _ in 0..MAX_ANCESTORS {
+                if current.tool.is_some() {
+                    return true;
+                }
+                if current.parent == 0 || current.parent == current.pid {
+                    return false;
+                }
+                match by_pid.get(&current.parent) {
+                    Some(parent) => current = parent,
+                    None => return false,
+                }
+            }
+            false
+        })
+        .map(|fact| fact.pid)
+        .collect()
+}
+
 static RECENT: Mutex<Vec<(AgentProcess, Instant)>> = Mutex::new(Vec::new());
 
 /// Agents at work now, plus folders an agent that still runs worked in within `RECENT_GRACE`.
@@ -196,10 +223,19 @@ fn own_processes() -> Vec<ProcessFacts> {
     pids.truncate((listed as usize).min(pids.len()));
     // SAFETY: getuid has no failure mode.
     let own_uid = unsafe { libc::getuid() };
-    pids.into_iter()
+    let mut facts: Vec<ProcessFacts> = pids
+        .into_iter()
         .filter(|pid| *pid > 0)
         .filter_map(|pid| mac_process(pid, own_uid))
-        .collect()
+        .collect();
+    // A working folder is a path lookup in the kernel; only an agent's own command tree needs one.
+    let wanted = under_agents(&facts);
+    for fact in &mut facts {
+        if wanted.contains(&fact.pid) {
+            fact.folder = mac_working_folder(fact.pid as libc::pid_t);
+        }
+    }
+    facts
 }
 
 #[cfg(target_os = "macos")]
@@ -236,7 +272,7 @@ fn mac_process(pid: libc::pid_t, own_uid: libc::uid_t) -> Option<ProcessFacts> {
             .then(|| mac_executable(pid))
             .flatten()
             .and_then(|path| tool_for_executable(&path)),
-        folder: mac_working_folder(pid),
+        folder: None,
     })
 }
 

@@ -94,5 +94,8 @@
     "below": "下の階",
     "working": "{count}個が作業中",
     "worktrees": "ワークツリー{count}"
+  },
+  "lobby": {
+    "name": "ロビー"
   }
 }

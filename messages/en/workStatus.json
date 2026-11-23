@@ -94,5 +94,8 @@
     "below": "Floors below",
     "working": "{count} working",
     "worktrees": "{count, plural, one {# worktree} other {# worktrees}}"
+  },
+  "lobby": {
+    "name": "Lobby"
   }
 }

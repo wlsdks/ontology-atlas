@@ -94,5 +94,8 @@
     "below": "下面几层",
     "working": "{count} 个工作中",
     "worktrees": "{count} 个工作树"
+  },
+  "lobby": {
+    "name": "大厅"
   }
 }

@@ -418,12 +418,23 @@
   left: calc(var(--ax) - 174 * var(--ps));
 }
 
+/* Under a hanging screen the pair stand in the middle of the floor. */
+:where(.face:not([data-wide='true'])) .scene[data-cast='two'] {
+  --ax: calc((100% - 16 * var(--s)) / 2 + 61 * var(--ps));
+}
+
+/* The cart waits at the feet of the one behind, clear of the tablet the one in front types on. */
+.scene[data-cast='two'] .way {
+  left: calc(var(--ax) - 146 * var(--ps));
+}
+
+/* A pair works without tools, so the screen comes in to the face of the one in front. */
 :where(.face[data-wide='true']) .scene[data-cast='two'] .monitor {
-  left: calc(var(--ax) + 70 * var(--ps));
+  left: calc(var(--ax) + 56 * var(--ps));
 }
 
 :where(.face[data-wide='true']) .scene[data-cast='two'] .console {
-  left: calc(var(--ax) + 46 * var(--ps));
+  left: calc(var(--ax) + 32 * var(--ps));
 }
 
 /* The second Moru takes the prop's place. */
@@ -473,7 +484,8 @@
 
 .prop {
   --prop-accent: color-mix(in srgb, var(--ink) 45%, var(--work-room-steel));
-  left: calc(var(--ax) + 48 * var(--s));
+  /* Clear of every working pose, whose tablet reaches 53 drawn pixels past Moru's axis, tucked against the screen. */
+  left: calc(var(--ax) + 54 * var(--s));
   bottom: calc(var(--floor) + 11 * var(--s));
   width: calc(20 * var(--s));
   height: calc(20 * var(--s));
@@ -552,6 +564,10 @@
 .screenHead {
   display: flex;
   flex: none;
+  /* The branch reads in full first: an alert that does not fit beside it wraps onto a line that is not shown, and the bezel still says it. */
+  flex-wrap: wrap;
+  height: calc(var(--text-body--line-height) + 2 * var(--s) + 1px);
+  overflow: hidden;
   min-width: 0;
   padding-bottom: calc(2 * var(--s));
   margin-bottom: calc(2 * var(--s));
@@ -574,6 +590,10 @@
   text-overflow: ellipsis;
   font-size: var(--text-body);
   line-height: var(--text-body--line-height);
+}
+
+.face[data-unit='3'] .screenHead {
+  height: calc(var(--text-body-lg--line-height) + 2 * var(--s) + 1px);
 }
 
 .face[data-unit='3'] .screenBranch {
@@ -607,6 +627,24 @@
 
 .screenFile {
   color: var(--color-text-secondary);
+}
+
+/* The file under what is not committed, on a stacked screen. */
+.screenFootFile {
+  flex: none;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.screenHead[data-stacked] {
+  flex-direction: column;
+  align-items: flex-start;
+  height: auto;
+}
+
+.screenHead[data-stacked] .screenAlert {
+  margin-left: 0;
+  padding-left: 0;
 }
 
 /* The commit rows: each keeps its element and moves one row down when a newer commit lands. */
@@ -678,17 +716,16 @@
   background: var(--ink);
 }
 
-/* The state keeps its words; the session names give way first. */
+/* The session names read in full; the state's lead and then how long give way first. */
 .bezelWho {
-  min-width: 2.5em;
-  flex: 0 1 auto;
+  flex: none;
 }
 
 .bezelState {
   display: flex;
   min-width: 0;
-  max-width: 72%;
-  flex: 0 0 auto;
+  flex: 0 1 auto;
+  overflow: hidden;
   margin-left: auto;
   color: var(--color-text-tertiary);
 }
@@ -800,6 +837,17 @@
   background-repeat: no-repeat;
   background-position-y: 0;
   image-rendering: pixelated;
+}
+
+/* A Moru stepping through his cells is a layer of his own, so each step repaints his box and not his room's
+   (WebKit at 1512px: the rooms' GPU time fell from about 13 % to 3 %). A held Moru gives his up, and so does one
+   whose scale glides (`use-room-motion.ts`), since the layer would be sized anew every frame. */
+.moruCells[data-moru-live]:not([data-moru-hold='true']) {
+  will-change: transform;
+}
+
+[data-scene][data-gliding] .moruCells[data-moru-live] {
+  will-change: auto;
 }
 
 /* The newest crate drops onto the cart in three steps as a commit lands. */
@@ -1203,4 +1251,37 @@
 
 .floorPlate[data-emphasis='up'] {
   background: color-mix(in srgb, var(--ink) 10%, var(--work-room-pit));
+}
+
+/* ---------- the ground floor: the lobby where Moru live, under the floors and open to the building */
+
+.lobby {
+  position: relative;
+  height: 100%;
+}
+
+/* Named like the floors above it. */
+.lobbyPlaque {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: var(--plaque);
+}
+
+/* No frame of its own: the building's wall runs down into a floor that meets it at the back lane. */
+.lobbyFloor {
+  position: absolute;
+  inset-inline: -12px;
+  top: calc(var(--plaque) + var(--lane-back) - 6px);
+  bottom: 0;
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--work-room-floor-edge) 40%, var(--work-room-floor)), var(--work-room-floor) 70%);
+  border-top: 2px solid var(--work-room-floor-edge);
+}
+
+.lobbyCanvas {
+  position: absolute;
+  left: 0;
+  top: var(--plaque);
+  image-rendering: pixelated;
+  pointer-events: none;
 }

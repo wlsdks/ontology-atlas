@@ -37,7 +37,7 @@ await import('./palette-check.mjs');
 await import('./check-64-neutral.mjs');
 await import('./cast-sheet.mjs');
 await import('./contact-sheets.mjs');
-await import('./life/export-atlas.mjs');
+await (await import('./life/export-atlas.mjs')).exportLifeAtlas();
 await import('./life/wardrobe-check.mjs');
 await import('./life/build-page.mjs');
 await import('./farm/build-farm-page.mjs');
