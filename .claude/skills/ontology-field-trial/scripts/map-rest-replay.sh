@@ -5,11 +5,15 @@
 # `Not mapped yet` line is gone or a stop rule fires, with a ledger line per
 # request that says what it gained, cost and damaged.
 #
-# Everything is written under --out: a copy of the target (vault at
-# <out>/repo/atlas), the vault's history after each request (a throwaway Git
-# directory, <out>/vault-history), every transcript, and <out>/ledger.jsonl.
-# The target and a --vault folder are only read. The request text and the note
-# parser are read from the app source at run time (map-area-request.mjs).
+# The chain's own output is under --out: a copy of the target without its dot
+# entries (.env*, .claude/, .git and every other name starting with a dot, so
+# no credential travels; vault at <out>/repo/atlas), the vault's history after
+# each request (a throwaway Git directory, <out>/vault-history), every
+# transcript, and <out>/ledger.jsonl. The target and a --vault folder are only
+# read. The Claude path is not sealed: `claude -p` signs in with the owner's
+# Claude Code login and writes its session store under ~/.claude (a project
+# folder named for the copy, one transcript per request). The request text and
+# the note parser are read from the app source at run time (map-area-request.mjs).
 #
 # Writes are pre-approved by an allow-list, as in acp-replay.sh: a chain is not
 # evidence that the permission card holds.
@@ -37,7 +41,7 @@ while [ "$#" -gt 0 ]; do
     --max-requests) [ "$#" -ge 2 ] || die "--max-requests needs a value"; max_requests="$2"; shift 2 ;;
     --out) [ "$#" -ge 2 ] || die "--out needs a value"; out="$2"; shift 2 ;;
     --vault) [ "$#" -ge 2 ] || die "--vault needs a value"; vault_source="$2"; shift 2 ;;
-    -h|--help) sed -n '3,21p' "$0"; exit 0 ;;
+    -h|--help) sed -n '3,25p' "$0"; exit 0 ;;
     --*) die "unknown option $1" ;;
     *) [ -z "$target" ] || die "only one target repository"; target="$1"; shift ;;
   esac
@@ -81,7 +85,9 @@ history="$out/vault-history"
 requests="$out/requests"
 mkdir -p "$work" "$session" "$requests"
 # The chain works on its own copy, so neither the target nor a --vault folder is written.
-rsync -a --exclude .git --exclude atlas "$target"/ "$work"/
+# No name starting with a dot is copied (.env*, .claude/, .aws/, .npmrc, .git): the survey
+# skips hidden names anyway, and a credential must not land in an output folder.
+rsync -a --exclude '.*' --exclude atlas "$target"/ "$work"/
 if [ -n "$vault_source" ]; then
   mkdir -p "$vault"
   rsync -a --exclude .git "$vault_source"/ "$vault"/

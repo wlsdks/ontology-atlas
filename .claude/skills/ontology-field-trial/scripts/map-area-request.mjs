@@ -59,24 +59,10 @@ function mappedPercent({ uncovered, total }) {
   return Math.min(99, Math.round((100 * (total - uncovered)) / total));
 }
 
-/**
- * Calls `mapAreaPrompt` by its parameter names, whatever order and set it has today, so a
- * signature change is followed, and an argument this file cannot supply is a hard stop.
- */
-function callByParameterNames(mapAreaPrompt, checkout, figures) {
-  const named = {
-    checkout,
-    percent: mappedPercent(figures),
-    total: figures.total,
-    mapped: figures.total - figures.uncovered,
-    uncovered: figures.uncovered,
-    remaining: figures.uncovered,
-  };
-  const head = /^[^(]*\(([^)]*)\)/.exec(mapAreaPrompt.toString())?.[1] ?? '';
-  const names = head.split(',').map((name) => name.replace(/=.*$/s, '').trim()).filter(Boolean);
-  const unknown = names.filter((name) => !(name in named));
-  if (unknown.length > 0) throw new Error(`mapAreaPrompt takes ${unknown.join(', ')}, which this chain cannot supply`);
-  return mapAreaPrompt(...names.map((name) => named[name]));
+/** The request for the note's figures; `mapAreaPrompt` refuses a template that wants anything else. */
+export async function mapAreaRequest(checkout, figures) {
+  const { mapAreaPrompt } = await importFrom(checkout, 'scripts/lib/benchmark/construction-prompts.mjs');
+  return mapAreaPrompt(checkout, { mapped: figures.total - figures.uncovered, total: figures.total, percent: mappedPercent(figures) });
 }
 
 /** Codex `-c` overrides for the same server and handoff; TOML reads a JSON string as its own. */
@@ -117,8 +103,7 @@ async function main([command, ...args]) {
     const [checkout, vault] = args;
     const figures = await noteFigures(checkout, vault);
     if (!figures) process.exit(NO_FIGURES);
-    const { mapAreaPrompt } = await importFrom(checkout, 'scripts/lib/benchmark/construction-prompts.mjs');
-    return process.stdout.write(callByParameterNames(mapAreaPrompt, checkout, figures));
+    return process.stdout.write(await mapAreaRequest(checkout, figures));
   }
   process.stderr.write('usage: map-area-request.mjs session|prompt|figures ...\n');
   process.exit(2);

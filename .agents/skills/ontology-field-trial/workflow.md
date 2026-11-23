@@ -57,16 +57,19 @@ To measure the app's "map the rest of the code" run, chain its requests:
   [--out "$TRIAL"/chain] [--vault <built vault to start from>]
 ```
 
-It copies the repository into `--out`, builds a first map (or copies
-`--vault`), then sends the request
+It copies the repository into `--out` without any name starting with a dot
+(no `.env*`, `.claude/` or other credential folder), builds a first map (or
+copies `--vault`), then sends the request
 `.claude/skills/ontology-field-trial/scripts/map-area-request.mjs` reads from
-the app, each in a fresh session, until the project's `Not mapped yet` line is
+the app (`.claude/skills/ontology-field-trial/scripts/map-area-request.test.mjs`
+runs that entry once against a scratch vault), each in a fresh session, until the project's `Not mapped yet` line is
 gone or a stop rule fires. `.claude/skills/ontology-field-trial/scripts/map-rest-ledger.mjs`
 writes one line per request to `<out>/ledger.jsonl`: seconds, cost, the note's
 and the server's figures, deleted concepts, lost cited rules and duplicate
 titles; `<out>/vault-history` commits the vault after each request. It exits
 non-zero on an agent error or a damaged vault. Codex runs only with
-`CODEX_API_KEY` and its own `CODEX_HOME` under `--out`.
+`CODEX_API_KEY` and its own `CODEX_HOME` under `--out`; Claude signs in with
+the owner's login and writes its session store under `~/.claude`.
 
 ## Read the run
 

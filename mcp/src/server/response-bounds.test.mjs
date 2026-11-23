@@ -50,22 +50,72 @@ function vaultWithProblems() {
   return root;
 }
 
-function inServer(root, body) {
-  const modules = Object.fromEntries(['tools/graph.mjs', 'tools/validate-vault.mjs', 'tools/read.mjs', 'server/rpc.mjs']
+function inServer(root, body, { vault = root } = {}) {
+  const modules = Object.fromEntries(['tools/graph.mjs', 'tools/validate-vault.mjs', 'tools/read.mjs', 'tools/writes/write-concepts.mjs', 'server/rpc.mjs']
     .map((file) => [file, new URL(`../${file}`, import.meta.url).href]));
   const script = `
     const { queryOntologyTool, compileOntologyTool } = await import(${JSON.stringify(modules['tools/graph.mjs'])});
     const { validateVaultTool } = await import(${JSON.stringify(modules['tools/validate-vault.mjs'])});
     const { findEvidence, readSourceTool } = await import(${JSON.stringify(modules['tools/read.mjs'])});
+    const { addConceptsBatch } = await import(${JSON.stringify(modules['tools/writes/write-concepts.mjs'])});
     const { ok } = await import(${JSON.stringify(modules['server/rpc.mjs'])});
     ${body}
   `;
   return JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', script], {
     encoding: 'utf8',
-    env: { ...process.env, OATLAS_VAULT: root, OATLAS_REPO_ROOT: root },
+    env: { ...process.env, OATLAS_VAULT: vault, OATLAS_REPO_ROOT: root },
     maxBuffer: 64 * 1024 * 1024,
   }));
 }
+
+/**
+ * A repository surveyed by area (twelve folders of thirty handler modules under
+ * long names, so the flat map outgrows one answer) and a vault whose project keeps
+ * no Not mapped yet line.
+ */
+function areaRepositoryWithVault() {
+  const root = realpathSync(mkdtempSync(join(tmpdir(), 'atlas-response-bounds-areas-')));
+  const exported = [];
+  for (let rank = 0; rank < 12; rank += 1) {
+    const domain = `domain-${String(rank).padStart(2, '0')}-${'commerce-'.repeat(9)}area`;
+    for (let part = 0; part < 30 - rank; part += 1) {
+      const name = `handle${'Request'.repeat(12)}${rank}x${part}`;
+      const folder = `${domain}/module-${part}-${'handler-'.repeat(8)}folder`;
+      mkdirSync(join(root, 'src', folder), { recursive: true });
+      writeFileSync(join(root, 'src', folder, 'handler.js'), `export function ${name}() {\n${'  return 1;\n'.repeat(8)}}\n`);
+      exported.push(`export { ${name} } from './${folder}/handler.js';`);
+    }
+  }
+  writeFileSync(join(root, 'src/index.js'), `${exported.join('\n')}\n`);
+  writeFileSync(join(root, 'package.json'), JSON.stringify({ name: 'shop', main: 'src/index.js' }));
+  const vault = join(root, 'atlas');
+  mkdirSync(vault);
+  writeNode(vault, 'project', { uid: randomUUID(), slug: 'project', kind: 'project', title: 'Shop' }, 'A shop.\n\n## Uncertainty\n\n- Whether the handlers share a router.\n');
+  return { root, vault };
+}
+
+test('validate_vault and a write keep an area survey\'s coverage within their bounds and write the lines to keep once', () => {
+  const { root, vault } = areaRepositoryWithVault();
+  try {
+    const result = inServer(root, `
+      const written = addConceptsBatch({ concepts: [{ slug: 'capabilities/handle', kind: 'capability', title: 'Handle requests', labels: { en: 'Handle requests' }, body: 'Handles requests.\\n' }] });
+      const validation = validateVaultTool({});
+      console.log(JSON.stringify({ written, validation, writtenText: ok(written).content[0].text.length, validationText: ok(validation).content[0].text.length }));
+    `, { vault });
+    const { coverage } = result.validation;
+    assert.match(coverage, /Areas: 0 of \d+ abilities the survey found/);
+    assert.equal(result.written.coverage, coverage, 'a write reports the line validate_vault does');
+    assert.ok(result.validationText <= 40_000, `validate_vault answered ${result.validationText} characters`);
+    assert.ok(result.writtenText <= 40_000, `the write answered ${result.writtenText} characters`);
+    assert.ok(coverage.split('\n').filter((line) => line.startsWith('- Not mapped yet:')).length <= 12, 'at most twelve area bullets');
+    const mismatch = result.validation.problems.flatMap((row) => row.issues).find((issue) => issue.code === 'not-mapped-line-mismatch');
+    assert.ok(mismatch, 'the project without its line is flagged');
+    assert.doesNotMatch(mismatch.message, /\n/, 'the lines to keep are written once, in the coverage');
+    assert.match(mismatch.message, /the lines the Areas sentence of this answer's coverage gives/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
 
 test('a brief carries at most 20 problem files and the validate_vault call for the rest', () => {
   const root = vaultWithProblems();

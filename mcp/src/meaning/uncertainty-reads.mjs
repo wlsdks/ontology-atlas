@@ -3,8 +3,9 @@
 // deterministic over a body someone else loaded; each row quotes its statement,
 // so a wrong classification sits beside its evidence.
 
-import { join } from 'node:path';
+import { join, posix } from 'node:path';
 
+import { areaOfLabel } from '../construction/build-depth/unmapped-areas.mjs';
 import { uncertaintySectionLines } from './meaning-findings.mjs';
 
 /**
@@ -83,11 +84,11 @@ const UNREAD_POLARITY = new RegExp(
 
 /**
  * The lines `validate_vault` gives a project to keep: a summary the app counts,
- * which asks for no read, and one bullet per area, written as `billing (12
- * abilities, 3 capabilities)` or `4 smaller folders in shop (…)`.
+ * which asks for no read, and one bullet per area in the server's own label
+ * (`areaLabel`), read back by `areaOfLabel`, never by picking a path out of prose.
  */
 const NOT_MAPPED_SUMMARY = /^Not mapped yet:\s*\d+\s+of\s+\d+\s+areas?\b/i;
-const NOT_MAPPED_AREA = /^Not mapped yet:\s*(?:\d+\s+smaller\s+folders\s+in\s+)?([^\s(]+)/i;
+const NOT_MAPPED_AREA = /^Not mapped yet:\s*(.+)$/i;
 
 /**
  * "Unread capabilities: loans, savings": other nodes named as unread, whose
@@ -304,6 +305,17 @@ function openAreaCall(path, sourceRoot) {
   return `analyze_repo_structure(${JSON.stringify({ rootPath })})`;
 }
 
+/**
+ * An area path as the repository-relative folder it names, or null when it
+ * normalises to the root's parent or anywhere outside it: a bullet the server did
+ * not write opens nothing.
+ */
+function areaInsideRoot(path) {
+  if (!path || path.startsWith('/') || /^[A-Za-z]:|\\/.test(path)) return null;
+  const normal = posix.normalize(path).replace(/\/+$/, '');
+  return normal === '..' || normal.startsWith('../') ? null : normal;
+}
+
 /** One sentence, so the row can be pasted into a plan without editing. */
 function proposeAction({ slug, path, range, readRange, openArea, listsUnreadNodes, sourceRoot }) {
   if (openArea) return `${openAreaCall(openArea, sourceRoot)}, then write its capabilities.`;
@@ -325,7 +337,9 @@ function proposeAction({ slug, path, range, readRange, openArea, listsUnreadNode
  * The reads one node's uncertainty asks for. The node's own `path` is inherited
  * only by a statement that something was not read without naming a file; an
  * unopened area, an unrun command or an unchecked claim stay pathless rather
- * than point at the wrong file. A kept `Not mapped yet` bullet carries its area.
+ * than point at the wrong file. A kept `Not mapped yet` bullet in the server's
+ * label carries its area; one in any other form, or naming a path outside the
+ * repository, yields no row.
  * Per Uncertainty line, a fixed set of regex scans plus a whole-line polarity
  * scan per span: O(line length × spans).
  */
@@ -336,9 +350,10 @@ export function extractUncertaintyReads({ slug, kind, path, body, title } = {}) 
   for (const line of lines) {
     const statement = String(line).replace(LEADING_MARKER, '').trim();
     if (!statement || NOT_MAPPED_SUMMARY.test(statement)) continue;
-    const area = NOT_MAPPED_AREA.exec(statement);
-    if (area) {
-      rows.push({ slug, statement, paths: [area[1]], ranges: [], readRanges: [], kind: 'unopened-area', openArea: area[1] });
+    const bullet = NOT_MAPPED_AREA.exec(statement);
+    if (bullet) {
+      const area = areaInsideRoot(areaOfLabel(bullet[1]));
+      if (area) rows.push({ slug, statement, paths: [area], ranges: [], readRanges: [], kind: 'unopened-area', openArea: area });
       continue;
     }
     const located = locatePaths(statement);

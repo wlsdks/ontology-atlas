@@ -15,6 +15,7 @@ import {
 } from './build-depth.mjs';
 import { readSourceEvidence } from '../evidence-search/source-evidence.mjs';
 import { recordSourceEvidence, resetSessionReads, sessionReads } from './session-reads.mjs';
+import { readNotMappedSummary } from './build-depth/unmapped-areas.mjs';
 
 function repository(files) {
   const root = mkdtempSync(join(tmpdir(), 'atlas-build-depth-'));
@@ -132,14 +133,14 @@ const ABILITY_AREAS = [
   areaOf('ledger', 3000, { 'ledger/post.go': 8, 'ledger/balance.go': 4 }),
   areaOf('client', 2000, { 'client/api.go': 6 }),
 ];
-const abilityRepo = { repoRoot: '/repo', collection: { units: [] }, survey: { abilities: [], areas: ABILITY_AREAS } };
+/** The collection's file rows, each 100 lines long: the measure reads a cite's lines from them. */
+const fileRows = (areas) => areas.flatMap((area) => area.abilityFiles).map((file) => ({ path: file.path, lines: 100, class: 'product' }));
+const abilityRepo = { repoRoot: '/repo', collection: { units: [], files: fileRows(ABILITY_AREAS) }, survey: { abilities: [], areas: ABILITY_AREAS } };
 const EVERY_FILE = [
   doc('capabilities/billing', { path: 'billing/service.go' }, 'Bills.\n\nIt prices from `billing/invoice.go:L4-L9` and `billing/gen/types.go:L1-L3`.\n'),
   doc('capabilities/post', { path: 'ledger/post.go' }, 'Posts, as `ledger/balance.go:L2-L8` reads.\n'),
   doc('capabilities/client', { path: 'client/api.go' }),
 ];
-/** The pattern the app reads the project's summary line with (`not-mapped-areas.ts`). */
-const NOT_MAPPED_SUMMARY = /Not mapped yet:\s*(\d+)\s+of\s+(\d+)\s+areas?,\s*(\d+)\s+of\s+(\d+)\s+abilities\b/i;
 
 test('an ability is on the map when a capability or element points at its file by path or cited lines, and by nothing else', () => {
   const depth = measureBuildDepth([
@@ -171,7 +172,7 @@ test('the lines to keep under the project\'s Uncertainty carry the count the app
     '- Not mapped yet: ledger (12 of 12 abilities not on the map)',
     '- Not mapped yet: client (6 of 6 abilities not on the map)',
   ]);
-  assert.deepEqual(NOT_MAPPED_SUMMARY.exec(kept[0]).slice(1), ['2', '3', '18', '30']);
+  assert.deepEqual(readNotMappedSummary(`## Uncertainty\n${kept.join('\n')}\n`).counts, { remaining: 2, total: 3, abilitiesUncovered: 18, abilitiesTotal: 30 }, 'the server reads its own line as the app does');
   const many = Array.from({ length: 14 }, (_, index) => areaOf(`area${index}`, 100 - index, { [`area${index}/main.go`]: 3 }));
   const capped = measureBuildDepth([doc('project', {})], { ...abilityRepo, survey: { abilities: [], areas: many } }, null);
   assert.match(capped.line, /14 of 14 areas are not mapped yet/);
@@ -192,6 +193,109 @@ test('naming an area in the project\'s Uncertainty prose keeps it listed, and le
   const everyFile = listed([project('- None.', '- client/api.go: the SDK other services call, not the product.')]);
   assert.equal(everyFile.areaCoverage.counted, 2, 'an area whose every ability file is left out is not counted');
   assert.equal(listed([project('- None.', '- billing/gen/types.go.bak is unrelated.')]).areaCoverage.abilities, 30, 'a longer path does not name the file');
+});
+
+/*
+ * Only what is written as a path leaves code out. A one-word folder name counts
+ * in code form or leading its line; a word in a sentence, the root's own files
+ * and a cite of one row leave nothing out.
+ */
+test('an exclusion follows what is written as a path, never an ordinary word or a cite of one row', () => {
+  const areas = [
+    { ...areaOf('.', 500, { 'main.go': 2 }), own: true },
+    areaOf('examples', 400, { 'examples/demo.go': 3 }),
+    areaOf('server', 300, { 'server/http.go': 5 }),
+    areaOf('api', 200, { 'api/routes.go': 6 }),
+  ];
+  const repo = { repoRoot: '/repo', collection: { units: [], files: fileRows(areas) }, survey: { abilities: [], areas } };
+  const counted = (excludes, uncertainty = '- None.') => {
+    const body = `A product.\n\n## Excludes\n${excludes}\n\n## Uncertainty\n${uncertainty}\n`;
+    const coverage = measureBuildDepth([doc('project', {}, body)], repo, null).areaCoverage;
+    return [coverage.counted, coverage.abilities];
+  };
+  assert.deepEqual(counted('- No public api stability promise.\n- Hosting the server is the operator\'s job.'), [4, 16], 'a folder name in a sentence');
+  assert.deepEqual(counted('- None.', '- No tests cover how the server retries.\n- Whether the api limits apply to demo accounts is unknown.'), [4, 16], 'an Uncertainty line with a left-out word');
+  assert.deepEqual(counted('- Generated clients (`gen`).'), [4, 16], 'the root\'s own files are never named');
+  assert.deepEqual(counted('- Tutorials and usage examples are not covered.'), [4, 16]);
+  for (const written of ['- `examples/` holds samples, not product.', '- examples/ (samples)', '- examples/** are samples', '- examples: samples', '- `examples` holds samples']) {
+    assert.deepEqual(counted(written), [3, 13], written);
+  }
+  assert.deepEqual(counted('- None.', '- `api/routes.go:L12` healthz is a test probe, not an ability.'), [4, 16], 'a cite of one row');
+  assert.deepEqual(counted('- `api/routes.go`: generated routes.'), [3, 10], 'a file path names the file');
+});
+
+/*
+ * A cite puts a file on the map only when its lines exist, read from the
+ * collection's line counts, and resolves as the Depth measure resolves it: a cite
+ * written under a sub-root the session opened names the repository file.
+ */
+test('a cite counts only when its lines exist, and a cite under an opened sub-root names the repository file', () => {
+  const cites = (lines) => doc('capabilities/everything', {}, `Everything.\n\nIt is decided at ${lines}.\n`);
+  const every = ABILITY_AREAS.flatMap((area) => area.abilityFiles).map((file) => `\`${file.path}:L99999\``).join(', ');
+  assert.equal(measureBuildDepth([doc('project', {}), cites(every)], abilityRepo, null).areaCoverage.uncovered, 30, 'lines past the end of each file');
+  const inside = ABILITY_AREAS.flatMap((area) => area.abilityFiles).map((file) => `\`${file.path}:L90-L100\``).join(', ');
+  assert.equal(measureBuildDepth([doc('project', {}), cites(inside)], abilityRepo, null).areaCoverage.uncovered, 0, 'lines inside each file');
+
+  resetSessionReads();
+  const root = repository({
+    'internal/billing/charge.go': 'package billing\n\nfunc Charge(amount int) int {\n\tif amount <= 0 {\n\t\treturn 0\n\t}\n\treturn amount\n}\n',
+    'internal/billing/refund.go': 'package billing\n\nfunc Refund(amount int) int {\n\tif amount <= 0 {\n\t\treturn 0\n\t}\n\treturn -amount\n}\n',
+  });
+  try {
+    const repo = repositorySurvey(root, null);
+    const areas = [areaOf('internal/billing', 18, { 'internal/billing/charge.go': 1, 'internal/billing/refund.go': 1 })];
+    const byArea = { ...repo, survey: { abilities: [], areas } };
+    const docs = [doc('project', {}), doc('capabilities/charge', { path: 'internal/billing/charge.go' }, 'Charges.\n\nA refund undoes it only when the amount is positive (`refund.go:L3-L5`).\n')];
+    const uncovered = () => measureBuildDepth(docs, byArea, sessionReads(root)).unmappedAreas.flatMap((area) => area.uncoveredFiles.map((file) => file.path));
+    assert.deepEqual(uncovered(), ['internal/billing/refund.go'], 'unresolved before the sub-root is read');
+    const subRoot = join(root, 'internal/billing');
+    recordSourceEvidence(subRoot, readSourceEvidence(subRoot, [{ path: 'refund.go', symbol: 'Refund' }]));
+    assert.deepEqual(uncovered(), [], 'the cite resolves through the sub-root read');
+  } finally {
+    resetSessionReads();
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+/*
+ * A node whose path is a folder below its area's own folder points at the files
+ * under it; one pointing at a whole area, or above it, is a domain-sized claim.
+ */
+test('a folder path strictly below its area points at the files under it, and an area-sized folder at none', () => {
+  const areas = [areaOf('billing', 300, { 'billing/charges/charge.go': 3, 'billing/charges/fees.go': 2, 'billing/refunds/refund.go': 4 })];
+  const repo = { repoRoot: '/repo', collection: { units: [], files: fileRows(areas) }, survey: { abilities: [], areas } };
+  const uncovered = (path) => measureBuildDepth([doc('project', {}), doc('capabilities/x', { path })], repo, null).areaCoverage.uncovered;
+  assert.equal(uncovered('billing/charges'), 4, 'the folder holds charge.go and fees.go');
+  assert.equal(uncovered('billing/charges/'), 4, 'with a trailing slash');
+  assert.equal(uncovered('billing'), 9, 'the area itself');
+  assert.equal(uncovered('.'), 9, 'above the area');
+  const rest = [{ path: 'shop', rest: true, members: ['shop/menu', 'shop/seo'], files: 2, lines: 50, mainFiles: [], abilities: 2, abilityFiles: [{ path: 'shop/menu/items/list.go', abilities: 1 }, { path: 'shop/seo/meta.go', abilities: 1 }] }];
+  const restRepo = { repoRoot: '/repo', collection: { units: [], files: fileRows(rest) }, survey: { abilities: [], areas: rest } };
+  const restUncovered = (path) => measureBuildDepth([doc('project', {}), doc('capabilities/x', { path })], restRepo, null).areaCoverage.uncovered;
+  assert.deepEqual([restUncovered('shop/menu/items'), restUncovered('shop/menu')], [1, 2], 'in a row of smaller folders, each folder is the area');
+});
+
+/*
+ * The first summary line under Uncertainty is the one the app reads, so it alone
+ * must carry the measure; once every area is mapped, a kept line is stale.
+ */
+test('only the first summary line counts, a kept line after every area is mapped is stale, and no line is asked for without abilities', () => {
+  const projectWith = (lines) => doc('project', {}, `A product.\n\n## Uncertainty\n${lines}\n`);
+  const gapFor = (lines, docs = [EVERY_FILE[0]], repo = abilityRepo) => {
+    const project = projectWith(lines);
+    return notMappedLinesRefusal('project', project.body, measureBuildDepth([project, ...docs], repo, null));
+  };
+  const measured = 'Not mapped yet: 2 of 3 areas, 18 of 30 abilities.';
+  assert.equal(gapFor(measured), null);
+  assert.match(gapFor(`Not mapped yet: 0 of 3 areas, 0 of 9 abilities.\n${measured}`), /keeps "Not mapped yet: 0 of 3 areas, 0 of 9 abilities\." as its first summary line/, 'a leading stale line hides the measured one from the app');
+  assert.match(gapFor('Not mapped yet: 3 of 3 areas, 30 of 30 abilities.', EVERY_FILE), /although every area is mapped.*\nNext call: patch_concept\(.*without the Not mapped yet lines/s);
+  assert.equal(gapFor('- None.', EVERY_FILE), null);
+  const empty = [areaOf('a', 10, {}), areaOf('b', 10, {})];
+  const emptyRepo = { ...abilityRepo, survey: { abilities: [], areas: empty } };
+  const depth = measureBuildDepth([projectWith('- None.')], emptyRepo, null);
+  assert.equal(depth.unmappedAreas.length, 2);
+  assert.equal(gapFor('- None.', [], emptyRepo), null, 'areas holding no abilities ask for no line');
+  assert.doesNotMatch(depth.line, /Keep exactly these lines|0 of 0 abilities/);
 });
 
 test('with every area mapped, a project that still keeps the lines is told to remove them', () => {
@@ -228,7 +332,7 @@ test('finalize refuses until the project keeps the measured summary line, and on
   assert.match(refusal, /^finalize_project_meaning blocked: project keeps no Not mapped yet summary line .*"Not mapped yet: 2 of 3 areas, 18 of 30 abilities\."/);
   assert.match(refusal, /\nNext call: patch_concept\(.*then finalize_project_meaning again:\nNot mapped yet: 2 of 3 areas, 18 of 30 abilities\.\n- Not mapped yet: ledger/);
   const stale = withUncertainty('Not mapped yet: 3 of 3 areas, 21 of 30 abilities.\n- Not mapped yet: ledger (12 abilities, 0 capabilities)');
-  assert.match(notMappedLinesRefusal('project', stale, depthFor(stale)), /keeps "Not mapped yet: 3 of 3 areas, 21 of 30 abilities\." under ## Uncertainty, where the measure gives/, 'a line counted another way is stale');
+  assert.match(notMappedLinesRefusal('project', stale, depthFor(stale)), /keeps "Not mapped yet: 3 of 3 areas, 21 of 30 abilities\." as its first summary line under ## Uncertainty, where the measure gives/, 'a line counted another way is stale');
   const exact = withUncertainty('- Not mapped yet: 2 of 3 areas, 18 of 30 abilities.\n- Not mapped yet: ledger (12 of 12 abilities not on the map)');
   assert.equal(notMappedLinesRefusal('project', exact, depthFor(exact)), null, 'a list marker before the exact line is kept as written');
   assert.equal(notMappedLinesRefusal('project', missing, depthFor(missing, EVERY_FILE)), null, 'every area mapped');
@@ -245,7 +349,8 @@ test('validate_vault flags the project whose summary line is missing or stale, a
   };
   const missing = findingsFor('- None.');
   assert.deepEqual(missing.findings.map((row) => row.slug), ['project']);
-  assert.match(missing.findings[0].message, /Repair: patch_concept the project body .*\nNot mapped yet: 2 of 3 areas, 18 of 30 abilities\.\n/);
+  assert.match(missing.findings[0].message, /Repair: patch_concept the project body so its ## Uncertainty holds exactly the lines the Areas sentence of this answer's coverage gives/);
+  assert.doesNotMatch(missing.findings[0].message, /\n- Not mapped yet:/, 'the lines are written once, in the coverage sentence');
   assert.match(missing.depth.line, /\(not-mapped-line-mismatch\); finalize_project_meaning refuses until that line matches\./, 'a write result carries the finding too');
   assert.equal(findingsFor('Not mapped yet: 3 of 3 areas, 21 of 30 abilities.').findings.length, 1, 'a line counted another way is stale');
   const matched = findingsFor('Not mapped yet: 2 of 3 areas, 18 of 30 abilities.');
