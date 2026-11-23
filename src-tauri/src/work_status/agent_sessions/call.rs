@@ -35,6 +35,7 @@ pub(crate) fn installed_program(home: &Path) -> Option<PathBuf> {
 /// `HOME` and the quiet switch, Atlas's own folder to stand in, and no input.
 pub(crate) fn list_command(program: &Path, home: &Path, working_folder: &Path) -> Command {
     let mut command = Command::new(SANDBOX_PROGRAM);
+    crate::child_process::no_console::hide_console(&mut command);
     command
         .args(["-p", NO_NETWORK_PROFILE])
         .arg(program)

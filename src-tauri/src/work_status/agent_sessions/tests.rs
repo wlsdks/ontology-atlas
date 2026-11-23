@@ -1,9 +1,9 @@
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
+use super::claude_sessions;
 use super::pace::{Pace, CHANGE_GAP, STEADY_GAP};
-use super::parse::{parse_sessions, session_state, ListedSession, SessionState};
-use super::{claude_sessions, join};
+use super::parse::{parse_sessions, session_state, SessionState};
 use crate::work_status::agent_processes::{AgentProcess, AgentTool};
 
 const PLANTED: &str = "ATLAS_PLANTED_7f3c";
@@ -94,66 +94,6 @@ fn output_that_is_not_a_list_is_unreadable() {
     assert_eq!(parse_sessions(&whole[..whole.len() - 9]), None);
     assert_eq!(parse_sessions(r#"{"error":"not signed in"}"#), None);
     assert_eq!(parse_sessions(""), None);
-}
-
-#[test]
-fn a_name_and_a_session_id_reach_no_value() {
-    let text = format!(
-        "[{}]",
-        entry(r#""status":"busy","id":"ATLAS_PLANTED_7f3c""#)
-    );
-    let listed = parse_sessions(&text).expect("a list");
-    assert_eq!(listed.len(), 1);
-    assert!(!format!("{listed:?}").contains(PLANTED));
-    let rows = join(
-        &listed,
-        &[(41, Some(1_700_000_000))],
-        &[(PathBuf::from("/repo"), "main".into())],
-    );
-    let sent = serde_json::to_string(&rows).expect("rows serialize");
-    assert_eq!(
-        sent,
-        r#"[{"worktreeId":"main","pid":41,"state":"working"}]"#
-    );
-}
-
-fn listed(pid: u32, started_at_ms: i64, folder: &str) -> ListedSession {
-    ListedSession {
-        pid,
-        started_at_ms,
-        folder: PathBuf::from(folder),
-        state: SessionState::WaitingApproval,
-    }
-}
-
-#[test]
-fn an_entry_counts_only_for_a_shown_session_in_a_listed_worktree() {
-    let worktrees = [
-        (PathBuf::from("/repo"), "main".to_string()),
-        (PathBuf::from("/repo/.worktrees/fix"), "fix".to_string()),
-    ];
-    let sessions = [
-        (41, Some(1_700_000_000)),
-        (42, Some(1_700_000_100)),
-        (43, None),
-    ];
-    let list = [
-        // The session began 37 s after its process: still that process.
-        listed(41, 1_700_000_037_000, "/repo/.worktrees/fix/src"),
-        // The process with this pid started after the session did: another program took the pid.
-        listed(42, 1_700_000_090_000, "/repo"),
-        // A process whose start is unknown proves nothing.
-        listed(43, 1_700_000_000_000, "/repo"),
-        // No process Atlas shows.
-        listed(44, 1_700_000_000_000, "/repo"),
-        // A folder outside every worktree.
-        listed(41, 1_700_000_037_000, "/elsewhere"),
-    ];
-    let rows = join(&list, &sessions, &worktrees);
-    assert_eq!(
-        serde_json::to_string(&rows).expect("rows serialize"),
-        r#"[{"worktreeId":"fix","pid":41,"state":"waitingApproval"}]"#
-    );
 }
 
 #[test]
@@ -260,45 +200,115 @@ fn a_read_switched_back_on_waits_out_the_change_gap() {
     assert!(pace.take_turn(start + CHANGE_GAP, &sessions));
 }
 
-/// A repository whose Git folder records three linked worktrees: one under it, one elsewhere that
-/// names the record in its own `.git` file, and one elsewhere that does not.
+/// The join compares folders as paths of this system, and the read runs on macOS alone, so these
+/// speak in POSIX paths.
 #[cfg(unix)]
-#[test]
-fn a_stray_worktree_record_brings_no_folder_in() {
-    use super::worktree_folders;
-    let base = std::env::temp_dir().join(format!("atlas-session-worktrees-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&base);
-    let write = |path: PathBuf, text: String| {
-        std::fs::create_dir_all(path.parent().expect("a parent")).expect("folder");
-        std::fs::write(path, text).expect("file");
-    };
-    let repo = base.join("repo");
-    let records = repo.join(".git/worktrees");
-    for (id, folder, points_back) in [
-        ("inside", repo.join("trees/inside"), false),
-        ("away", base.join("away"), true),
-        ("stray", base.join("stray"), false),
-    ] {
-        std::fs::create_dir_all(&folder).expect("worktree folder");
-        write(
-            records.join(id).join("gitdir"),
-            format!("{}\n", folder.join(".git").display()),
+mod with_posix_paths {
+    use std::path::PathBuf;
+
+    use super::super::parse::{parse_sessions, ListedSession, SessionState};
+    use super::super::{join, worktree_folders};
+    use super::{entry, PLANTED};
+
+    #[test]
+    fn a_name_and_a_session_id_reach_no_value() {
+        let text = format!(
+            "[{}]",
+            entry(r#""status":"busy","id":"ATLAS_PLANTED_7f3c""#)
         );
-        if points_back {
-            write(
-                folder.join(".git"),
-                format!("gitdir: {}\n", records.join(id).display()),
-            );
+        let listed = parse_sessions(&text).expect("a list");
+        assert_eq!(listed.len(), 1);
+        assert!(!format!("{listed:?}").contains(PLANTED));
+        let rows = join(
+            &listed,
+            &[(41, Some(1_700_000_000))],
+            &[(PathBuf::from("/repo"), "main".into())],
+        );
+        let sent = serde_json::to_string(&rows).expect("rows serialize");
+        assert_eq!(
+            sent,
+            r#"[{"worktreeId":"main","pid":41,"state":"working"}]"#
+        );
+    }
+
+    fn listed(pid: u32, started_at_ms: i64, folder: &str) -> ListedSession {
+        ListedSession {
+            pid,
+            started_at_ms,
+            folder: PathBuf::from(folder),
+            state: SessionState::WaitingApproval,
         }
     }
 
-    let mut ids: Vec<String> = worktree_folders(&repo)
-        .into_iter()
-        .map(|(_, id)| id)
-        .collect();
-    ids.sort();
-    assert_eq!(ids, ["away", "inside", "main"]);
-    let _ = std::fs::remove_dir_all(&base);
+    #[test]
+    fn an_entry_counts_only_for_a_shown_session_in_a_listed_worktree() {
+        let worktrees = [
+            (PathBuf::from("/repo"), "main".to_string()),
+            (PathBuf::from("/repo/.worktrees/fix"), "fix".to_string()),
+        ];
+        let sessions = [
+            (41, Some(1_700_000_000)),
+            (42, Some(1_700_000_100)),
+            (43, None),
+        ];
+        let list = [
+            // The session began 37 s after its process: still that process.
+            listed(41, 1_700_000_037_000, "/repo/.worktrees/fix/src"),
+            // The process with this pid started after the session did: another program took the pid.
+            listed(42, 1_700_000_090_000, "/repo"),
+            // A process whose start is unknown proves nothing.
+            listed(43, 1_700_000_000_000, "/repo"),
+            // No process Atlas shows.
+            listed(44, 1_700_000_000_000, "/repo"),
+            // A folder outside every worktree.
+            listed(41, 1_700_000_037_000, "/elsewhere"),
+        ];
+        let rows = join(&list, &sessions, &worktrees);
+        assert_eq!(
+            serde_json::to_string(&rows).expect("rows serialize"),
+            r#"[{"worktreeId":"fix","pid":41,"state":"waitingApproval"}]"#
+        );
+    }
+
+    /// A repository whose Git folder records three linked worktrees: one under it, one elsewhere that
+    /// names the record in its own `.git` file, and one elsewhere that does not.
+    #[test]
+    fn a_stray_worktree_record_brings_no_folder_in() {
+        let base =
+            std::env::temp_dir().join(format!("atlas-session-worktrees-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        let write = |path: PathBuf, text: String| {
+            std::fs::create_dir_all(path.parent().expect("a parent")).expect("folder");
+            std::fs::write(path, text).expect("file");
+        };
+        let repo = base.join("repo");
+        let records = repo.join(".git/worktrees");
+        for (id, folder, points_back) in [
+            ("inside", repo.join("trees/inside"), false),
+            ("away", base.join("away"), true),
+            ("stray", base.join("stray"), false),
+        ] {
+            std::fs::create_dir_all(&folder).expect("worktree folder");
+            write(
+                records.join(id).join("gitdir"),
+                format!("{}\n", folder.join(".git").display()),
+            );
+            if points_back {
+                write(
+                    folder.join(".git"),
+                    format!("gitdir: {}\n", records.join(id).display()),
+                );
+            }
+        }
+
+        let mut ids: Vec<String> = worktree_folders(&repo)
+            .into_iter()
+            .map(|(_, id)| id)
+            .collect();
+        ids.sort();
+        assert_eq!(ids, ["away", "inside", "main"]);
+        let _ = std::fs::remove_dir_all(&base);
+    }
 }
 
 #[cfg(target_os = "macos")]
@@ -505,8 +515,9 @@ mod the_call {
         assert_eq!(output, Err(CallFailure::Failed));
     }
 
-    /// Long enough for the sandbox to start the stub, short enough to end a test soon.
-    const SHORT_LIMIT: Duration = Duration::from_secs(2);
+    /// A limit the stub outlasts, yet many times what the sandbox needs to start it on a busy
+    /// machine (2 s was once too short under the whole suite), so its child is always written.
+    const SHORT_LIMIT: Duration = Duration::from_secs(10);
 
     /// The pid the stub wrote for the child it left running.
     fn left_child(scratch: &Scratch) -> libc::pid_t {
