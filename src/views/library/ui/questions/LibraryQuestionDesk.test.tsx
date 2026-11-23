@@ -15,12 +15,14 @@ const mocks = vi.hoisted(() => ({
   ask: vi.fn<() => Promise<import('@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors').VectorFound> | null>(),
   /** Resolves when the update a question started has ended. */
   updated: Promise.resolve(),
+  /** Whether the folder's vectors can be asked; false is a folder with nothing set up. */
+  searchable: false,
 }));
 vi.mock('@/features/vault-vectors', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/features/vault-vectors')>();
   return {
     ...actual,
-    useVectorSearch: () => ({ ask: mocks.ask, warm: () => {}, offerSetup: false, afterJob: () => mocks.updated }),
+    useVectorSearch: () => ({ ask: mocks.ask, searchable: mocks.searchable, warm: () => {}, offerSetup: false, afterJob: () => mocks.updated }),
   };
 });
 vi.mock('@/shared/lib/llm-connection/tauri-jev', async (importOriginal) => {
@@ -103,6 +105,7 @@ beforeEach(() => {
   mocks.ask.mockReset();
   mocks.ask.mockImplementation(() => (mocks.meaning ? Promise.resolve(mocks.meaning) : null));
   mocks.updated = Promise.resolve();
+  mocks.searchable = false;
   mocks.status.mockReset();
   mocks.judge.mockReset();
   mocks.status.mockResolvedValue({ stored: false, last4: null });
@@ -595,6 +598,42 @@ describe('Library question desk transfer boundary', () => {
     expect(screen.getByTestId('question-desk-summarize')).toBeEnabled();
     expect(screen.queryByText('No matching wiki fact or decision in the pages read.')).not.toBeInTheDocument();
     expect(screen.queryByText(/No matching text in the sources Atlas could read/)).not.toBeInTheDocument();
+  });
+
+  describe('a list found by words alone when meaning search is then set up', () => {
+    const byMeaning = { state: 'ok' as const, failure: null, staleDropped: 0, filesReady: 2, filesTotal: 2, busy: false,
+      hits: [{ path, lineStart: 2, lineEnd: 2, heading: 'Refund handling', score: 0.8 }] };
+    let endPreparation = () => {};
+    const askByWords = async () => {
+      const view = render(<Desk />);
+      fireEvent.change(screen.getByTestId('question-desk-input'), { target: { value: 'Who owns the lunar migration?' } });
+      fireEvent.click(screen.getByTestId('question-desk-search'));
+      await screen.findByTestId('question-desk-unknown');
+      expect(mocks.ask).toHaveBeenCalledTimes(1);
+      mocks.searchable = true;
+      mocks.meaning = byMeaning;
+      mocks.updated = new Promise((resolve) => { endPreparation = resolve; });
+      return view;
+    };
+
+    it('asks the same question again once preparation has ended, so the rows match the line above them', async () => {
+      const { rerender } = await askByWords();
+      rerender(<Desk />);
+      expect(mocks.ask).toHaveBeenCalledTimes(1);
+
+      await act(async () => { endPreparation(); });
+      expect(await screen.findByText('Refund approval queues a stock restoration job.')).toBeInTheDocument();
+      expect(mocks.ask).toHaveBeenCalledTimes(2);
+    });
+
+    it('leaves a field the person has since edited alone', async () => {
+      const { rerender } = await askByWords();
+      fireEvent.change(screen.getByTestId('question-desk-input'), { target: { value: 'Who owns the solar migration?' } });
+      rerender(<Desk />);
+
+      await act(async () => { endPreparation(); });
+      expect(mocks.ask).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('a question asked while changed files wait for their update', () => {
