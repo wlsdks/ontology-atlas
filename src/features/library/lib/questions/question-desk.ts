@@ -2,7 +2,7 @@ import { recordedInstantMs, type VaultDoc } from '@/entities/docs-vault';
 import { MAX_VECTOR_PREFIX_BYTES, MAX_VECTOR_PREFIXES } from '@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors';
 import type { SourceUnit } from '@/shared/lib/library/source-units';
 import { isRetainedAnswerPath, retainedAnswerHeads, type RetainedAnswerHead } from './answer-revision';
-import { deskPages, isHangulStemTerm, type DeskCitation, type DeskClaim, type DeskLead, type DeskSourceHit } from './desk-search';
+import { deskPages, matchedTermPiece, type DeskCitation, type DeskClaim, type DeskLead, type DeskSourceHit } from './desk-search';
 
 export function countDeskWikiPages(docs: readonly VaultDoc[]): number {
   return deskPages(docs).length;
@@ -33,11 +33,8 @@ function firstTermAt(lower: string, terms: readonly string[]): number {
   let first = -1;
   const consider = (at: number) => { if (at >= 0 && (first < 0 || at < first)) first = at; };
   for (const term of terms) {
-    if (!term) continue;
-    const at = lower.indexOf(term);
-    consider(at);
-    if (at >= 0 || !isHangulStemTerm(term)) continue;
-    for (let index = 0; index < term.length - 1; index += 1) consider(lower.indexOf(term.slice(index, index + 2)));
+    const piece = term ? matchedTermPiece(lower, term) : null;
+    if (piece) consider(lower.indexOf(piece));
   }
   return first;
 }
@@ -64,9 +61,8 @@ export function deskSentenceWindow(text: string, terms: readonly string[], limit
 }
 
 /**
- * The sentence cut into runs, `strong` where a question term matched the way `questionScore`
- * counted it: the whole term, or for a Hangul term of three or more syllables any two-syllable
- * piece of it (a particle changes the ending, not the stem).
+ * The sentence cut into runs, `strong` where a question term matched the way the word list
+ * counted it (`matchedTermPiece`): the whole term, or the longest leading piece of a Hangul stem term.
  */
 export function questionTermRuns(text: string, terms: readonly string[]): Array<{ text: string; strong: boolean }> {
   const lower = text.toLowerCase();
@@ -81,8 +77,8 @@ export function questionTermRuns(text: string, terms: readonly string[]): Array<
     return found;
   };
   for (const term of terms) {
-    if (mark(term) || !isHangulStemTerm(term)) continue;
-    for (let index = 0; index < term.length - 1; index += 1) mark(term.slice(index, index + 2));
+    const piece = term ? matchedTermPiece(lower, term) : null;
+    if (piece) mark(piece);
   }
   const runs: Array<{ text: string; strong: boolean }> = [];
   for (let index = 0; index < text.length; index += 1) {

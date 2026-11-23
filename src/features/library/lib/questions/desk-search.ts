@@ -1,7 +1,7 @@
 import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
 import type { SourceUnit } from '@/shared/lib/library/source-units';
 import type { VaultDoc } from '@/entities/docs-vault';
-import { fuseRankedLists } from './lead-fusion';
+import { fuseScoredLists } from './lead-fusion';
 
 export interface DeskCitation { path: string; anchor: string }
 export interface DeskClaim {
@@ -16,7 +16,11 @@ export interface DeskClaim {
 }
 export interface DeskSourceHit { path: string; anchor: string; text: string; score: number }
 
-const STOP = new Set('a an and are as at be by can did do does for from how in is it of on or the this to was were what when where which who why with about'.split(' '));
+/** Function words and question words, English and Korean: they ask, they do not say what about. */
+const STOP = new Set([
+  ...'a an and are as at be by can did do does for from how in is it of on or the this to was were what when where which who why with about'.split(' '),
+  ...'어떻게 얼마 얼마나 언제 언제까지 어디 어디서 어느 무엇 무슨 뭐 왜 누가 누구'.split(' '),
+]);
 const CITATION = /\[\[src:(sources\/[^\]#]+)#([^\]]+)\]\]/g;
 const MAX_FILES = 200;
 const MAX_BYTES = 20 * 1024 * 1024;
@@ -24,8 +28,15 @@ const MAX_BYTES = 20 * 1024 * 1024;
 const WORD_LEADS = 8;
 /** Source passages one file may hand to the word list. */
 const HITS_PER_FILE = 3;
-/** Where the meaning list stands among the lists `fuseDeskLeads` fuses. */
-const MEANING_LIST = 2;
+/** Where the meaning list stands among the lists `fuseDeskLeads` fuses, after the word list. */
+const MEANING_LIST = 1;
+/**
+ * How much each list's evidence weighs in the fused order: a word lead scores the share of the
+ * question it covers, a meaning lead its nearness among the passages returned. On the labelled
+ * fixture any word weight from 0.5 to 1.5 gives the same first rows (`pnpm perf:meaning-quality`).
+ */
+const WORD_WEIGHT = 1;
+const MEANING_WEIGHT = 1;
 
 export function deskPages(docs: readonly VaultDoc[]): VaultDoc[] {
   return docs.filter((doc) => doc.slug.startsWith('wiki/') && !doc.slug.split('/').some((part) => part.startsWith('_')) && !doc.frontmatter.kind);
@@ -48,19 +59,59 @@ export function questionTerms(question: string): string[] {
     .filter((term) => term.length > 1 && !STOP.has(term)))];
 }
 
-/** A Hangul term long enough that a particle may change its ending: its two-syllable pieces stand for it. */
-export function isHangulStemTerm(term: string): boolean {
+/** A Hangul term long enough that a particle may change its ending: its leading syllables stand for it. */
+function isHangulStemTerm(term: string): boolean {
   return /^[가-힣]{3,}$/u.test(term);
 }
 
-function questionScore(text: string, terms: readonly string[]): number {
+/**
+ * What of `term` the lowered text holds: the whole term, or for a Hangul stem term its longest
+ * leading piece of two syllables or more, since a particle or ending changes only the end. A piece
+ * from inside or the end of the term is often an ending unrelated words share, and never counts.
+ * `null` when nothing matched. O(term × text).
+ */
+export function matchedTermPiece(lower: string, term: string): string | null {
+  if (lower.includes(term)) return term;
+  if (!isHangulStemTerm(term)) return null;
+  for (let length = term.length - 1; length >= 2; length -= 1) {
+    const stem = term.slice(0, length);
+    if (lower.includes(stem)) return stem;
+  }
+  return null;
+}
+
+/**
+ * For each question term, how much of it the passage holds (`matchedTermPiece`), in characters
+ * from its start, 0 for none. Citations and link targets are not the passage's words.
+ */
+function termMatches(text: string, terms: readonly string[]): number[] {
   const lower = text.replace(CITATION, ' ').replace(/\]\([^)]*\)/g, ']')
     .normalize('NFKC').toLowerCase();
-  return terms.reduce((score, term) => {
-    if (lower.includes(term)) return score + 2;
-    if (isHangulStemTerm(term) && [...term].some((_, index) => index < term.length - 1 && lower.includes(term.slice(index, index + 2)))) return score + 0.5;
-    return score;
-  }, 0);
+  return terms.map((term) => matchedTermPiece(lower, term)?.length ?? 0);
+}
+
+/**
+ * How much each piece of each term says among the `scanned` passages this search read, from the
+ * `matches` of those that hold any term: BM25's inverse document frequency of the term's first
+ * `length` characters, at `[term][length]`. A passage holding a longer piece holds every shorter
+ * one, so a bare stem weighs no more than the whole term, a piece in a quarter of the passages
+ * weighs little, and a term found nowhere weighs most. O(M × T + T × K) for M matching passages,
+ * T terms and K characters a term has.
+ */
+function termWeights(matches: readonly (readonly number[])[], terms: readonly string[], scanned: number): number[][] {
+  return terms.map((term, index) => {
+    const holding = new Array<number>(term.length + 1).fill(0);
+    for (const passage of matches) holding[passage[index]!]! += 1;
+    for (let length = term.length - 1; length >= 0; length -= 1) holding[length]! += holding[length + 1]!;
+    return holding.map((count) => Math.log(1 + (scanned - count + 0.5) / (count + 0.5)));
+  });
+}
+
+/** The share of the question's weight the matched pieces carry, against every term matched whole: 0 to 1. O(T). */
+function questionCoverage(matched: readonly number[], weights: readonly (readonly number[])[], terms: readonly string[]): number {
+  const whole = terms.reduce((sum, term, index) => sum + weights[index]![term.length]!, 0);
+  if (!whole) return 0;
+  return matched.reduce((sum, length, index) => sum + (length ? weights[index]![length]! : 0), 0) / whole;
 }
 
 function recordedHashes(frontmatter: Record<string, unknown>): Record<string, string> {
@@ -108,38 +159,92 @@ function deskClaim(doc: VaultDoc, page: DeskPageClaims, claim: DeskPageClaims['c
   return { pageSlug: doc.slug, pageTitle: doc.title, text: claim.text, citations, line: claim.line, score, recordedHashes: page.recordedHashes as Record<string, string> };
 }
 
-export function findDeskClaims(question: string, docs: readonly VaultDoc[], claimsBySlug: ReadonlyMap<string, DeskPageClaims>): {
-  claims: DeskClaim[]; readPages: number; totalPages: number; omitted: number;
-} {
-  const terms = questionTerms(question);
+/** The word lists before fusion, each best first, and what each left out. */
+export interface DeskWordLeads {
+  claims: DeskClaim[];
+  sourceHits: DeskSourceHit[];
+  /** Claims and source passages that matched a term but stayed out of the lists. */
+  omittedClaims: number;
+  omittedSources: number;
+  readPages: number;
+  totalPages: number;
+}
+
+const byScore = (a: { score: number }, b: { score: number }) => b.score - a.score;
+
+/**
+ * The claims of the pages read and the units of the sources read that hold a question term, each
+ * scored by the share of the question it covers (`questionCoverage`), with every term weighed by
+ * how rare it is among all of those passages (`termWeights`). The best `WORD_LEADS` claims; the
+ * best `HITS_PER_FILE` passages of each source, then the best `WORD_LEADS` of those. Ties go to
+ * path and line, so the order does not depend on the order of the inputs.
+ *
+ * One pass matches every passage against the terms and counts them, a second scores the matches:
+ * O(P × T × L) for P passages of length L and T terms, then O(M log M) for the M that matched.
+ */
+export function deskWordLeads({ terms, docs, claimsBySlug, sourceUnitsByPath }: {
+  terms: readonly string[];
+  docs: readonly VaultDoc[];
+  claimsBySlug: ReadonlyMap<string, DeskPageClaims>;
+  sourceUnitsByPath: ReadonlyMap<string, readonly SourceUnit[]>;
+}): DeskWordLeads {
   const pages = deskPages(docs);
-  const claims: DeskClaim[] = [];
+  let scanned = 0;
+  const matching: number[][] = [];
+  const count = (matches: number[]) => {
+    scanned += 1;
+    if (!matches.some(Boolean)) return false;
+    matching.push(matches);
+    return true;
+  };
+  const matchedClaims: Array<{ doc: VaultDoc; page: DeskPageClaims; claim: DeskPageClaims['claims'][number]; matches: number[] }> = [];
   let readPages = 0;
   for (const doc of pages) {
     const page = claimsBySlug.get(doc.slug);
     if (page === undefined) continue;
     readPages += 1;
     for (const claim of page.claims) {
-      const score = questionScore(claim.text, terms);
-      if (score) claims.push(deskClaim(doc, page, claim, score));
+      const matches = termMatches(claim.text, terms);
+      if (count(matches)) matchedClaims.push({ doc, page, claim, matches });
     }
   }
-  claims.sort((a, b) => b.score - a.score || a.pageSlug.localeCompare(b.pageSlug));
-  return { claims: claims.slice(0, WORD_LEADS), readPages, totalPages: pages.length, omitted: Math.max(0, claims.length - WORD_LEADS) };
+  const matchedUnits = new Map<string, Array<{ unit: SourceUnit; matches: number[] }>>();
+  for (const [path, units] of sourceUnitsByPath) {
+    const found: Array<{ unit: SourceUnit; matches: number[] }> = [];
+    for (const unit of units) {
+      const matches = termMatches(unit.text, terms);
+      if (count(matches)) found.push({ unit, matches });
+    }
+    if (found.length) matchedUnits.set(path, found);
+  }
+  const weights = termWeights(matching, terms, scanned);
+  const claims = matchedClaims.map(({ doc, page, claim, matches }) => deskClaim(doc, page, claim, questionCoverage(matches, weights, terms)))
+    .sort((a, b) => byScore(a, b) || a.pageSlug.localeCompare(b.pageSlug) || a.line - b.line);
+  const hits: DeskSourceHit[] = [];
+  let omittedPerFile = 0;
+  for (const [path, found] of matchedUnits) {
+    const scored = found.map(({ unit, matches }) => ({ path, anchor: unit.anchor, text: unit.text, score: questionCoverage(matches, weights, terms) }))
+      .sort((a, b) => byScore(a, b) || anchorLine(a.anchor) - anchorLine(b.anchor) || a.anchor.localeCompare(b.anchor));
+    hits.push(...scored.slice(0, HITS_PER_FILE));
+    omittedPerFile += Math.max(0, scored.length - HITS_PER_FILE);
+  }
+  hits.sort((a, b) => byScore(a, b) || a.path.localeCompare(b.path) || anchorLine(a.anchor) - anchorLine(b.anchor) || a.anchor.localeCompare(b.anchor));
+  return {
+    claims: claims.slice(0, WORD_LEADS),
+    sourceHits: hits.slice(0, WORD_LEADS),
+    omittedClaims: Math.max(0, claims.length - WORD_LEADS),
+    omittedSources: omittedPerFile + Math.max(0, hits.length - WORD_LEADS),
+    readPages,
+    totalPages: pages.length,
+  };
 }
 
-export function findDeskSourceHits(path: string, units: readonly SourceUnit[], terms: readonly string[]): { hits: DeskSourceHit[]; matches: number } {
-  const hits: DeskSourceHit[] = [];
-  let matches = 0;
-  for (const unit of units) {
-    const score = questionScore(unit.text, terms);
-    if (!score) continue;
-    matches += 1;
-    hits.push({ path, anchor: unit.anchor, text: unit.text, score });
-    hits.sort((a, b) => b.score - a.score || a.anchor.localeCompare(b.anchor));
-    if (hits.length > HITS_PER_FILE) hits.pop();
-  }
-  return { hits, matches };
+/** The word list of claims alone, weighing terms among the claims of the pages read. */
+export function findDeskClaims(question: string, docs: readonly VaultDoc[], claimsBySlug: ReadonlyMap<string, DeskPageClaims>): {
+  claims: DeskClaim[]; readPages: number; totalPages: number; omitted: number;
+} {
+  const words = deskWordLeads({ terms: questionTerms(question), docs, claimsBySlug, sourceUnitsByPath: new Map() });
+  return { claims: words.claims, readPages: words.readPages, totalPages: words.totalPages, omitted: words.omittedClaims };
 }
 
 /** Which searches held a lead: the word lists, the meaning list, or both. */
@@ -149,11 +254,14 @@ export type DeskLead =
   | { kind: 'claim'; key: string; claim: DeskClaim; reason: DeskLeadReason }
   | { kind: 'source'; key: string; hit: DeskSourceHit; reason: DeskLeadReason };
 
-/** A row search by meaning found, before fusion: a claim or a source passage. */
-export type DeskMeaningLead = { kind: 'claim'; claim: DeskClaim } | { kind: 'source'; hit: DeskSourceHit };
+/** A row search by meaning found, before fusion: a claim or a source passage, and how near its passage was. */
+export type DeskMeaningLead = ({ kind: 'claim'; claim: DeskClaim } | { kind: 'source'; hit: DeskSourceHit }) & { similarity: number };
 
-/** A passage search by meaning returned: a file and a 1-based, inclusive line range in it. */
-export interface DeskPassageHit { path: string; lineStart: number; lineEnd: number }
+/**
+ * A passage search by meaning returned: a file, a 1-based, inclusive line range in it, and its
+ * cosine similarity to the question, higher nearer.
+ */
+export interface DeskPassageHit { path: string; lineStart: number; lineEnd: number; score: number }
 
 function anchorLine(anchor: string): number {
   const digits = /\d+/.exec(anchor);
@@ -201,7 +309,7 @@ export function deskMeaningLeads({ hits, docs, claimsBySlug, searchedSources, so
       const inRange = page.claims.find((candidate) => within(candidate.line + bodyOffset, hit));
       const claim = claims.find((worded) => worded.pageSlug === doc.slug && within(worded.line + bodyOffset, hit))
         ?? (inRange ? deskClaim(doc, page, inRange, 0) : undefined);
-      if (claim) leads.push({ kind: 'claim', claim });
+      if (claim) leads.push({ kind: 'claim', claim, similarity: hit.score });
       else dropped += 1;
       continue;
     }
@@ -210,10 +318,10 @@ export function deskMeaningLeads({ hits, docs, claimsBySlug, searchedSources, so
     const units = sourceUnitsByPath.get(path);
     if (!units) { dropped += 1; continue; }
     const worded = sourceHits.find((source) => source.path === path && within(anchorLine(source.anchor), hit));
-    if (worded) { leads.push({ kind: 'source', hit: worded }); continue; }
+    if (worded) { leads.push({ kind: 'source', hit: worded, similarity: hit.score }); continue; }
     const unit = units.find((candidate) => LINE_ANCHOR.test(candidate.anchor) && within(anchorLine(candidate.anchor), hit)
       && candidate.kind !== 'heading' && !MARKDOWN_HEADING.test(candidate.text));
-    if (unit) leads.push({ kind: 'source', hit: { path, anchor: unit.anchor, text: unit.text, score: 0 } });
+    if (unit) leads.push({ kind: 'source', hit: { path, anchor: unit.anchor, text: unit.text, score: 0 }, similarity: hit.score });
     else dropped += 1;
   }
   return { leads, dropped };
@@ -236,19 +344,41 @@ function comparableSentence(text: string): string {
 }
 
 /**
- * Wiki claims and source passages in one list, best first: rank fusion, then claim, path and line.
+ * Where each meaning lead stands among those returned, 0 for the farthest and 1 for the nearest,
+ * so the fused order reads similarity relative to this question, not a model's absolute scale.
+ * All 1 when they are equally near. O(N).
+ */
+function meaningNearness(meaning: readonly DeskMeaningLead[]): number[] {
+  const similarities = meaning.map((lead) => lead.similarity);
+  const nearest = Math.max(...similarities);
+  const farthest = Math.min(...similarities);
+  return similarities.map((similarity) => nearest > farthest ? (similarity - farthest) / (nearest - farthest) : 1);
+}
+
+/**
+ * Wiki claims and source passages in one list, best first, by score fusion
+ * (`fuseScoredLists`): a word lead brings the share of the question it covers, weighed by rarity,
+ * and a meaning lead its nearness among those returned (`meaningNearness`), so one common word
+ * cannot lift a passage above the nearest passage found by meaning. Ties go to claim, path and line.
  * A passage at the place a listed claim cites that says the same sentence is that claim's
- * evidence, which the claim's cited-file press already opens: it folds into the claim and adds its
- * rank to the claim's. A cited passage that says something else keeps its own row, so a claim and
- * the line that contradicts it stand in the list together.
+ * evidence, which the claim's cited-file press already opens: it folds into the claim, which keeps
+ * the better of each score. A cited passage that says something else keeps its own row, so a claim
+ * and the line that contradicts it stand in the list together.
  *
- * `meaning` is the third list, the rows search by meaning found in the order returned. Each lead's
- * reason names the lists that held it; a folded passage's lists count for its claim.
+ * `meaning` is the second list, the rows search by meaning found. Each lead's reason names the
+ * lists that held it; a folded passage's lists count for its claim. O(N log N) for N leads.
  */
 export function fuseDeskLeads(claims: readonly DeskClaim[], hits: readonly DeskSourceHit[], meaning: readonly DeskMeaningLead[] = []): DeskLead[] {
   const claimLead = (claim: DeskClaim): DeskLead => ({ kind: 'claim', key: `claim:${claim.pageSlug}:${claim.line}`, claim, reason: 'words' });
   const sourceLead = (hit: DeskSourceHit): DeskLead => ({ kind: 'source', key: `source:${hit.path}#${hit.anchor}`, hit, reason: 'words' });
-  const meaningLeads = meaning.map((lead) => lead.kind === 'claim' ? claimLead(lead.claim) : sourceLead(lead.hit));
+  const words = [
+    ...claims.map((claim) => ({ item: claimLead(claim), score: claim.score })),
+    ...hits.map((hit) => ({ item: sourceLead(hit), score: hit.score })),
+  ];
+  const nearness = meaningNearness(meaning);
+  const meaningLeads = meaning.map((lead, index) => ({
+    item: lead.kind === 'claim' ? claimLead(lead.claim) : sourceLead(lead.hit), score: nearness[index]!,
+  }));
   const citedBy = new Map<string, Set<string>>();
   for (const claim of [...claims, ...meaning.flatMap((lead) => lead.kind === 'claim' ? [lead.claim] : [])]) {
     const sentence = comparableSentence(claim.text);
@@ -257,7 +387,7 @@ export function fuseDeskLeads(claims: readonly DeskClaim[], hits: readonly DeskS
       citedBy.set(place, (citedBy.get(place) ?? new Set()).add(`claim:${claim.pageSlug}:${claim.line}`));
     }
   }
-  return fuseRankedLists([claims.map(claimLead), hits.map(sourceLead), meaningLeads], (lead) => lead.key, (a, b) => {
+  return fuseScoredLists([words, meaningLeads], [WORD_WEIGHT, MEANING_WEIGHT], (lead) => lead.key, (a, b) => {
     if (a.kind !== b.kind) return a.kind === 'claim' ? -1 : 1;
     const [pathA, lineA] = leadPlace(a);
     const [pathB, lineB] = leadPlace(b);
@@ -297,27 +427,18 @@ export function searchDesk({ question, docs, claimsBySlug, searchedSources, sour
   sourceUnitsByPath: ReadonlyMap<string, readonly SourceUnit[]>;
   meaningHits: readonly DeskPassageHit[] | null;
 }): DeskSearchResult {
-  const wiki = findDeskClaims(question, docs, claimsBySlug);
   const terms = questionTerms(question);
-  const hits: DeskSourceHit[] = [];
-  let omittedPerFile = 0;
-  for (const path of [...sourceUnitsByPath.keys()].sort((a, b) => a.localeCompare(b))) {
-    const found = findDeskSourceHits(path, sourceUnitsByPath.get(path)!, terms);
-    hits.push(...found.hits);
-    omittedPerFile += found.matches - found.hits.length;
-  }
-  hits.sort((a, b) => b.score - a.score || a.path.localeCompare(b.path));
-  const sourceHits = hits.slice(0, WORD_LEADS);
+  const words = deskWordLeads({ terms, docs, claimsBySlug, sourceUnitsByPath });
   const byMeaning = meaningHits === null ? null : deskMeaningLeads({
-    hits: meaningHits, docs, claimsBySlug, searchedSources, sourceUnitsByPath, claims: wiki.claims, sourceHits,
+    hits: meaningHits, docs, claimsBySlug, searchedSources, sourceUnitsByPath, claims: words.claims, sourceHits: words.sourceHits,
   });
   return {
-    leads: fuseDeskLeads(wiki.claims, sourceHits, byMeaning?.leads ?? []),
+    leads: fuseDeskLeads(words.claims, words.sourceHits, byMeaning?.leads ?? []),
     terms,
-    readPages: wiki.readPages,
-    totalPages: wiki.totalPages,
-    omittedClaims: wiki.omitted,
-    omittedSources: omittedPerFile + Math.max(0, hits.length - WORD_LEADS),
+    readPages: words.readPages,
+    totalPages: words.totalPages,
+    omittedClaims: words.omittedClaims,
+    omittedSources: words.omittedSources,
     meaningDropped: byMeaning?.dropped ?? null,
   };
 }
