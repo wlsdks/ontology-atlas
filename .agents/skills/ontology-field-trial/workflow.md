@@ -63,7 +63,7 @@ copies `--vault`), then sends the request
 `.claude/skills/ontology-field-trial/scripts/map-area-request.mjs` reads from
 the app (`.claude/skills/ontology-field-trial/scripts/map-area-request.test.mjs`
 runs that entry once against a scratch vault), each in a fresh session, until the project's `Not mapped yet` line is
-gone or a stop rule fires. `.claude/skills/ontology-field-trial/scripts/map-rest-ledger.mjs`
+gone or a stop rule fires; a vault built before that line gets its first request from the server's count (`.claude/skills/ontology-field-trial/scripts/map-rest-ledger.test.mjs`). `.claude/skills/ontology-field-trial/scripts/map-rest-ledger.mjs`
 writes one line per request to `<out>/ledger.jsonl`: seconds, cost, the note's
 and the server's figures, deleted concepts, lost cited rules and duplicate
 titles; `<out>/vault-history` commits the vault after each request. It exits

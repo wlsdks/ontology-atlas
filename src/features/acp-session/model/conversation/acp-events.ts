@@ -2,7 +2,8 @@ import type { ToolOutputEvidence } from '../tool-calls/tool-output';
 
 /** One row of the conversation, recorded only after it actually happened. */
 export type AcpEvent =
-  | { kind: 'user'; id: string; text: string }
+  /** `shown` is the one line the transcript shows for a request the app wrote; the agent receives `text`. */
+  | { kind: 'user'; id: string; text: string; shown?: string }
   | { kind: 'agent'; id: string; text: string }
   | { kind: 'thought'; id: string; text: string }
   | {

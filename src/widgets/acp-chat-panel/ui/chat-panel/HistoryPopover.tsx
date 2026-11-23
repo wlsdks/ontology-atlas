@@ -4,33 +4,37 @@ import { formatDate } from '@/shared/lib/locale-text/format-date';
 import { RowButton, Surface } from '@/shared/ui';
 import { badgeClass } from '@/shared/ui/badge-class';
 
-import type { ChatT, SessionState } from './chat-panel-props';
+import type { HistoryRow } from '../../model/mapping-run-history';
+import type { ChatT } from './chat-panel-props';
 
 interface HistoryPopoverProps {
   t: ChatT;
   open: boolean;
-  sessions: SessionState['sessions'];
+  /** Past conversations, a run's requests as one row. */
+  rows: readonly HistoryRow[];
   listRef: RefObject<HTMLUListElement | null>;
   edge: { top: boolean; bottom: boolean };
   mask: string | undefined;
   onMeasure: () => void;
   onPick: (sessionId: string) => void;
+  onPickRun: (row: Extract<HistoryRow, { kind: 'run' }>) => void;
 }
 
 export function HistoryPopover({
   t,
   open,
-  sessions,
+  rows,
   listRef,
   edge,
   mask,
   onMeasure,
   onPick,
+  onPickRun,
 }: HistoryPopoverProps) {
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-full z-10 mb-2 flex justify-end px-[var(--card-pad)]">
       <Surface
-        open={open && sessions.length > 0}
+        open={open && rows.length > 0}
         origin="bottom right"
         motion="overlay"
         className="pointer-events-auto w-[min(320px,100%)]"
@@ -47,7 +51,7 @@ export function HistoryPopover({
                   'bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-quaternary)]',
               })}
             >
-              {sessions.length}
+              {rows.length}
             </span>
           </div>
           <ul
@@ -66,29 +70,32 @@ export function HistoryPopover({
             style={mask ? { maskImage: mask, WebkitMaskImage: mask } : undefined}
             className="atlas-scroll-quiet grid max-h-64 gap-0.5 overflow-y-auto p-1"
           >
-            {sessions.map((session) => (
-              <li key={session.sessionId}>
-                <RowButton
-                  data-testid="acp-chat-history-item"
-                  data-session-id={session.sessionId}
-                  onClick={() => onPick(session.sessionId)}
+            {rows.map((row) => {
+              const run = row.kind === 'run';
+              const updatedAt = run ? row.updatedAt : row.session.updatedAt;
+              return (
+                <li key={run ? row.key : row.session.sessionId}>
+                  <RowButton
+                    data-testid={run ? 'acp-chat-history-run' : 'acp-chat-history-item'}
+                    data-session-id={run ? undefined : row.session.sessionId}
+                    onClick={() => (run ? onPickRun(row) : onPick(row.session.sessionId))}
+                    hoverSurface="lift"
+                    hoverInk="strong"
+                    className="w-full"
+                  >
+                    <span className="grid min-w-0 flex-1 gap-0.5 text-left">
+                      <span className="truncate text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
+                        {run ? t('mapRun.historyRow', { count: row.sessions.length }) : row.session.title ?? t('untitled')}
+                      </span>
 
-                  hoverSurface="lift"
-                  hoverInk="strong"
-                  className="w-full"
-                >
-                  <span className="grid min-w-0 flex-1 gap-0.5 text-left">
-                    <span className="truncate text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
-                      {session.title ?? t('untitled')}
+                      <span className="truncate text-label leading-label text-[color:var(--color-text-quaternary)]">
+                        {updatedAt ? formatDate(updatedAt) : '\u00A0'}
+                      </span>
                     </span>
-
-                    <span className="truncate text-label leading-label text-[color:var(--color-text-quaternary)]">
-                      {session.updatedAt ? formatDate(session.updatedAt) : '\u00A0'}
-                    </span>
-                  </span>
-                </RowButton>
-              </li>
-            ))}
+                  </RowButton>
+                </li>
+              );
+            })}
           </ul>
         </div>
       </Surface>

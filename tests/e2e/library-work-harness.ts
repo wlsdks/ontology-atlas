@@ -278,6 +278,11 @@ export async function installLibraryWorkHarness(
     permissionKind?: 'wiki' | 'ontology-patch';
     /** Past conversations `session/list` answers with; their folder is filled in by the harness. */
     pastSessions?: ReadonlyArray<{ sessionId: string; title?: string; updatedAt?: string }>;
+    /**
+     * Each `session/new` opens a conversation of its own id, titled by its first request as the
+     * planted agent's choice of title, and `session/list` names them newest first.
+     */
+    listsConversations?: boolean;
     /** Commands the adapter announces mid-session, which is what the `/` menu reads. */
     slashCommands?: ReadonlyArray<{ name: string; description?: string }>;
     /** Search by meaning's answers; without it the folder is not set up and the model is not here. */
@@ -290,7 +295,7 @@ export async function installLibraryWorkHarness(
   const modes = options.modes ?? [{ id: "default", name: "Default" }];
   const currentModeId = options.currentModeId ?? modes[0]?.id ?? "default";
   await page.addInitScript(
-    ({ initialFiles, initialScenario, vaultRoot, runtimes, modes, currentModeId, architecturePage, permissionFile, permissionText, permissionInput, permissionKind, writeMode, filePermission, mcpBinary, localResponses, pastSessions, slashCommands, startError, vectors }) => {
+    ({ initialFiles, initialScenario, vaultRoot, runtimes, modes, currentModeId, architecturePage, permissionFile, permissionText, permissionInput, permissionKind, writeMode, filePermission, mcpBinary, localResponses, pastSessions, listsConversations, slashCommands, startError, vectors }) => {
       const fixtureWindow = window as unknown as HarnessWindow;
       const record = (value: unknown): JsonRecord | null => typeof value === "object" && value !== null && !Array.isArray(value)
         ? value as JsonRecord
@@ -310,7 +315,11 @@ export async function installLibraryWorkHarness(
       const events: Array<{ event: string; payload: unknown }> = [];
       const writes: Array<{ relativePath: string; content: string; mtime: number }> = [];
       let callbackId = 1;
-      const sessionId = "library-acp-session";
+      const bridgeSessionId = "library-acp-session";
+      let sessionId = bridgeSessionId;
+      // The native bridge names each adapter it starts afresh (`acp-{seq}-{pid}`): a stale start's stop must reach only its own.
+      let bridgeStarts = 0;
+      const conversations: Array<{ sessionId: string; title?: string; updatedAt: string }> = [];
       let nextMtime = 1_727_000_000_000;
       let promptId: number | string | null = null;
       let permissionId: number | string | null = null;
@@ -441,13 +450,17 @@ export async function installLibraryWorkHarness(
         const id = jsonRpcId(message.id);
         calls.push({ method: method ?? "response", params: message });
         // History, slash commands and thinking use the shapes the client already parses.
-        if (method === "initialize" && id !== null) return result(id, { protocolVersion: 1, agentCapabilities: { loadSession: pastSessions.length > 0, promptCapabilities: {} } });
+        if (method === "initialize" && id !== null) return result(id, { protocolVersion: 1, agentCapabilities: { loadSession: pastSessions.length > 0 || listsConversations, promptCapabilities: {} } });
         if (method === "session/list" && id !== null) {
           // A row whose folder is unknown is discarded by the client, so the harness fills it in.
-          return result(id, { sessions: pastSessions.map((row) => ({ ...row, cwd: vaultRoot })) });
+          return result(id, { sessions: [...[...conversations].reverse(), ...pastSessions].map((row) => ({ ...row, cwd: vaultRoot })) });
         }
         if (method === "session/load" && id !== null) return result(id, {});
         if (method === "session/new" && id !== null) {
+          if (listsConversations) {
+            sessionId = `${bridgeSessionId}-${conversations.length + 1}`;
+            conversations.push({ sessionId, updatedAt: new Date(Date.UTC(2026, 10, 23, 10, conversations.length)).toISOString() });
+          }
           const answer = result(id, { sessionId, modes: { availableModes: modes, currentModeId }, models: { availableModels: [], currentModelId: null } });
           /*
            * ⚠️ **After the client has the session, not in the same tick as the answer.** Every
@@ -468,7 +481,14 @@ export async function installLibraryWorkHarness(
           return;
         }
         if ((method === "session/set_mode" || method === "session/set_model") && id !== null) return result(id, {});
-        if (method === "session/prompt" && id !== null) { promptId = id; phase = "idle"; return; }
+        if (method === "session/prompt" && id !== null) {
+          const conversation = conversations.find((row) => row.sessionId === sessionId);
+          const firstBlock = record(Array.isArray(record(message.params)?.prompt) ? (record(message.params)?.prompt as unknown[])[0] : null);
+          if (conversation && conversation.title === undefined && typeof firstBlock?.text === "string") conversation.title = firstBlock.text;
+          promptId = id;
+          phase = "idle";
+          return;
+        }
         if (id === permissionId && phase === "waiting") {
           const response = record(message.result);
           const outcome = record(response?.outcome);
@@ -539,7 +559,7 @@ export async function installLibraryWorkHarness(
           return Promise.resolve({ status: 200, body, host: "127.0.0.1:11434", durationMs: 1, loggedAt: new Date().toISOString() });
         }
         if (command === "secret_status") return Promise.resolve({ provider: args.provider, stored: false, last4: null });
-        if (command === "acp_start") { if (startError) return Promise.reject(new Error(startError)); acpChannel = args.onEvent as { id: number }; acpChannelIndex = 0; return Promise.resolve(sessionId); }
+        if (command === "acp_start") { if (startError) return Promise.reject(new Error(startError)); acpChannel = args.onEvent as { id: number }; acpChannelIndex = 0; bridgeStarts += 1; return Promise.resolve(`library-acp-bridge-${bridgeStarts}`); }
         if (command === "acp_stop" || command === "start_vault_watch" || command === "ensure_vault_directory") return Promise.resolve(null);
         if (command === "acp_send") { try { const message: unknown = JSON.parse(String(args.line ?? "")); const parsed = record(message); if (parsed) handleClientMessage(parsed); } catch {} return Promise.resolve(null); }
         if (command === "acp_permission_verdict") return Promise.resolve("ask");
@@ -643,7 +663,7 @@ export async function installLibraryWorkHarness(
         window.setTimeout(tick, 0);
       }, vectorStream: () => ({ ...vectorStreamProgress }), setVectorFound: (found: VectorFound) => { currentFound = found; }, snapshot: () => ({ files: { ...files }, writes: [...writes], calls: [...calls], events: [...events], scenario: initialScenario }) };
     },
-    { initialFiles: options.files ?? VAULT_FILES, initialScenario: scenario, vaultRoot: VAULT_ROOT, runtimes, modes, currentModeId, architecturePage: ARCHITECTURE_PAGE, permissionFile: options.permissionFile, permissionText: options.permissionText, permissionInput: options.permissionInput, permissionKind: options.permissionKind ?? 'wiki', writeMode: options.writeMode ?? 'ask', filePermission: options.filePermission ?? false, mcpBinary: LIBRARY_WORK_MCP_BINARY, localResponses: options.localResponses, pastSessions: options.pastSessions ?? [], slashCommands: options.slashCommands ?? [], startError: options.startError, vectors: { probe: options.vectors?.probe ?? { ...LIBRARY_VECTOR_PROBE, runner: null }, status: options.vectors?.status ?? LIBRARY_VECTOR_SCRIPT.notSetUp, found: options.vectors?.found ?? { ...LIBRARY_VECTOR_FOUND, state: "notReady", hits: [], staleDropped: 0, filesReady: 0, filesTotal: 0 }, refuse: [...(options.vectors?.refuse ?? [])], probeDelayMs: options.vectors?.probeDelayMs ?? 0, foundByQuestion: options.vectors?.foundByQuestion ?? {}, searchDelayMs: options.vectors?.searchDelayMs ?? 0, modelReady: options.vectors?.modelReady ?? ((options.vectors?.probe?.builtin.onDisk ?? false) || ((options.vectors?.status?.filesDone ?? 0) > 0 && options.vectors?.status?.failure !== "modelGone")) } },
+    { initialFiles: options.files ?? VAULT_FILES, initialScenario: scenario, vaultRoot: VAULT_ROOT, runtimes, modes, currentModeId, architecturePage: ARCHITECTURE_PAGE, permissionFile: options.permissionFile, permissionText: options.permissionText, permissionInput: options.permissionInput, permissionKind: options.permissionKind ?? 'wiki', writeMode: options.writeMode ?? 'ask', filePermission: options.filePermission ?? false, mcpBinary: LIBRARY_WORK_MCP_BINARY, localResponses: options.localResponses, pastSessions: options.pastSessions ?? [], listsConversations: options.listsConversations ?? false, slashCommands: options.slashCommands ?? [], startError: options.startError, vectors: { probe: options.vectors?.probe ?? { ...LIBRARY_VECTOR_PROBE, runner: null }, status: options.vectors?.status ?? LIBRARY_VECTOR_SCRIPT.notSetUp, found: options.vectors?.found ?? { ...LIBRARY_VECTOR_FOUND, state: "notReady", hits: [], staleDropped: 0, filesReady: 0, filesTotal: 0 }, refuse: [...(options.vectors?.refuse ?? [])], probeDelayMs: options.vectors?.probeDelayMs ?? 0, foundByQuestion: options.vectors?.foundByQuestion ?? {}, searchDelayMs: options.vectors?.searchDelayMs ?? 0, modelReady: options.vectors?.modelReady ?? ((options.vectors?.probe?.builtin.onDisk ?? false) || ((options.vectors?.status?.filesDone ?? 0) > 0 && options.vectors?.status?.failure !== "modelGone")) } },
   );
   const call = (currentPage: Page, method: "emitRead" | "emitWait" | "emitWrite" | "finish") => currentPage.evaluate((name) => (window as unknown as HarnessWindow).__atlasLibraryWorkHarness?.[name](), method);
   return { snapshot: (currentPage) => currentPage.evaluate(() => {

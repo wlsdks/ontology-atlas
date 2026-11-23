@@ -11,7 +11,6 @@ import {
   capabilitiesWithoutDependency,
   capabilitiesWithoutReadRule,
   codeShapedTitles,
-  widestUnmappedProject,
 } from './measured-facts';
 
 /** The rules live in the pure `chat-suggestions.ts`; counts come from the same sources the map reads. `changedSource` is the map's own Git measurement, or null where not measured. */
@@ -35,7 +34,6 @@ export function useChatSuggestions(
       nodeCount: health.summary.nodes,
       sourceState,
       islands: health.islands.map((group) => group.map((slug) => slugByAddress.get(slug) ?? slug)),
-      notMappedAreas: widestUnmappedProject(docs),
       withoutReadRule: capabilitiesWithoutReadRule(docs),
       withoutDependency: capabilitiesWithoutDependency(docs),
       codeShaped: codeShapedTitles(docs),

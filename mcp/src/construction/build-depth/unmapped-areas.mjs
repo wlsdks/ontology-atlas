@@ -38,15 +38,18 @@ export function notMappedLines(coverage) {
 /**
  * The first summary line under `## Uncertainty` as written (`line`, null when
  * none) and the counts the app reads from it (`counts`, null when it is in an
- * earlier form or counts no area or no ability). The app's parser answers the
- * same (`tests/fixtures/not-mapped-line-cases.mjs`). O(body length).
+ * earlier form or its counts cannot be true: not whole numbers a double holds
+ * exactly, more remaining than there are, or no area or ability). The app's
+ * parser answers the same (`tests/fixtures/not-mapped-line-cases.mjs`).
+ * O(body length).
  */
 export function readNotMappedSummary(body) {
   const line = sectionOf(body, 'Uncertainty').split('\n').find((text) => SUMMARY_LINE.test(text)) ?? null;
   const match = line === null ? null : SUMMARY_COUNTS.exec(line);
   if (!match) return { line: line?.trim() ?? null, counts: null };
-  const [remaining, total, abilitiesUncovered, abilitiesTotal] = match.slice(1).map(Number);
-  const valid = total > 0 && remaining <= total && abilitiesTotal > 0 && abilitiesUncovered <= abilitiesTotal;
+  const numbers = match.slice(1).map(Number);
+  const [remaining, total, abilitiesUncovered, abilitiesTotal] = numbers;
+  const valid = numbers.every(Number.isSafeInteger) && total > 0 && remaining <= total && abilitiesTotal > 0 && abilitiesUncovered <= abilitiesTotal;
   return { line: line.trim(), counts: valid ? { remaining, total, abilitiesUncovered, abilitiesTotal } : null };
 }
 

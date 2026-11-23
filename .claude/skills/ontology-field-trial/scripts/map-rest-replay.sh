@@ -167,7 +167,8 @@ while :; do
   [ "$verdict" = "continue" ] || break
   request=$((request + 1))
   prefix="$requests/$request"
-  node "$scripts/map-area-request.mjs" prompt "$repo_root" "$vault" > "$prefix.prompt.txt"
+  node "$scripts/map-area-request.mjs" prompt "$repo_root" "$vault" \
+    "$(node "$scripts/map-rest-ledger.mjs" measured "$out")" > "$prefix.prompt.txt"
   say "request $request"
   started=$(date +%s)
   status=0

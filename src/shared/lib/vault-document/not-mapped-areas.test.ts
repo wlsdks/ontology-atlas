@@ -31,4 +31,9 @@ describe('notMappedAreas', () => {
     expect(notMappedAreas(project('Not mapped yet: 1 of 8 areas, 0 of 0 abilities.'))).toBeNull();
     expect(notMappedAreas(project('Not mapped yet: 1 of 8 areas, 6 of 5 abilities.'))).toBeNull();
   });
+
+  it('rejects a count too large to hold exactly', () => {
+    expect(notMappedAreas(project('Not mapped yet: 1 of 8 areas, 5 of 99999999999999999999 abilities.'))).toBeNull();
+    expect(notMappedAreas(project('Not mapped yet: 1 of 8 areas, 99999999999999999998 of 99999999999999999999 abilities.'))).toBeNull();
+  });
 });

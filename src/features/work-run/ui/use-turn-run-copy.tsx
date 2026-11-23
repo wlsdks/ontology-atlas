@@ -54,7 +54,7 @@ function turnMoru(run: TurnRun): MoruState {
   }
 }
 
-function lineKind(line: TurnRunLine): MoruState['line']['kind'] {
+export function lineKind(line: TurnRunLine): MoruState['line']['kind'] {
   switch (line.kind) {
     case 'connecting':
       return 'connecting';
@@ -65,6 +65,32 @@ function lineKind(line: TurnRunLine): MoruState['line']['kind'] {
     default:
       return 'writing';
   }
+}
+
+/** What an agent's turn is doing now, in the words its conversation uses. */
+export function useTurnLineText(marks: WorkRunMarks): (line: TurnRunLine) => ReactNode {
+  const t = useTranslations('workCard.turn');
+  const tChat = useTranslations('acpChat');
+  return (line) => {
+    switch (line.kind) {
+      case 'connecting':
+        return tChat('status.starting');
+      case 'reading':
+        return marks.page(fileName(line.page));
+      case 'writingFile':
+        return t.rich('writingFile', { file: fileName(line.file), name: (chunks) => marks.page(chunks) });
+      case 'answering':
+        return t('answering');
+      case 'tool': {
+        const { kind, text } = line.label;
+        return kind === 'known'
+          ? tChat(`tool.${text}` as Parameters<typeof tChat>[0])
+          : kind === 'kind'
+            ? tChat(`toolKind.${text}` as Parameters<typeof tChat>[0])
+            : text;
+      }
+    }
+  };
 }
 
 /** What a Library turn says on the card and in the runs list. */
@@ -86,26 +112,7 @@ export function useTurnRunCopy(run: TurnRun, elapsed: string | null, waited: str
           ? tLibrary('sources.import')
           : tLibrary('wiki.propose');
   const figures = t.rich('figures', { written, elapsed: elapsed ?? '', count: () => marks.count(written) });
-  const lineText = (line: TurnRunLine): ReactNode => {
-    switch (line.kind) {
-      case 'connecting':
-        return tChat('status.starting');
-      case 'reading':
-        return marks.page(fileName(line.page));
-      case 'writingFile':
-        return t.rich('writingFile', { file: fileName(line.file), name: (chunks) => marks.page(chunks) });
-      case 'answering':
-        return t('answering');
-      case 'tool': {
-        const { kind, text } = line.label;
-        return kind === 'known'
-          ? tChat(`tool.${text}` as Parameters<typeof tChat>[0])
-          : kind === 'kind'
-            ? tChat(`toolKind.${text}` as Parameters<typeof tChat>[0])
-            : text;
-      }
-    }
-  };
+  const lineText = useTurnLineText(marks);
   const firstName = run.written[0] ? fileName(run.written[0]) : '';
   const endNote = run.partial.length > 0
     ? t('partial', { file: fileName(run.partial[0]!) })

@@ -54,6 +54,14 @@ export async function noteFigures(checkout, vault) {
   return null;
 }
 
+/** `R/T` as the ledger prints the server's count, or null. */
+function parseMeasured(text) {
+  const match = /^(\d+)\/(\d+)$/.exec(text ?? '');
+  if (!match) return null;
+  const [uncovered, total] = [Number(match[1]), Number(match[2])];
+  return total > 0 && uncovered > 0 && uncovered <= total ? { uncovered, total } : null;
+}
+
 /** The panel's share: never 100 while an ability is off the map. */
 function mappedPercent({ uncovered, total }) {
   return Math.min(99, Math.round((100 * (total - uncovered)) / total));
@@ -100,8 +108,10 @@ async function main([command, ...args]) {
   if (command === 'session') return writeSession(...args);
   if (command === 'figures') return process.stdout.write(`${JSON.stringify(await noteFigures(args[0], args[1]))}\n`);
   if (command === 'prompt') {
-    const [checkout, vault] = args;
-    const figures = await noteFigures(checkout, vault);
+    const [checkout, vault, measured] = args;
+    // A vault built before the summary line keeps none; the first request then goes out with the
+    // server's own count, and its answer writes the line every later request reads.
+    const figures = (await noteFigures(checkout, vault)) ?? parseMeasured(measured);
     if (!figures) process.exit(NO_FIGURES);
     return process.stdout.write(await mapAreaRequest(checkout, figures));
   }
