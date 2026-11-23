@@ -1,6 +1,6 @@
 'use client';
 
-import { useLayoutEffect, useRef, type ReactNode } from 'react';
+import { useLayoutEffect, useRef, type ReactNode, type RefObject } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 
 import { isMappingActive, mappingFraction, RollingCount, type MappingFigures, type MappingRun } from '@/features/work-run';
@@ -26,9 +26,9 @@ interface MappingRunRowProps {
   run: MappingRun | null;
   /** The widest project line at rest, for the row before a press. */
   resting: MappingFigures | null;
-  /** Auto-approve answers this conversation's write requests now, by the composer's rule. */
+  /** The folder keeps Auto-approve on, which answers the run's requests in their new conversations. */
   autoApprove: boolean;
-  /** The not-started row stands on one line: its title, its count and Start. */
+  /** The not-started row stands on one line: its title, its count, what waits for an answer, and Start. */
   collapsed: boolean;
   /** A press can start a run now: no turn of this conversation runs and the folder is free. */
   canStart: boolean;
@@ -36,6 +36,7 @@ interface MappingRunRowProps {
   onStop: () => void;
   onClose: () => void;
   onCollapse: () => void;
+  onExpand: () => void;
 }
 
 function actionOf(run: MappingRun | null): RowAction {
@@ -115,6 +116,8 @@ function useRowCopy(run: MappingRun | null, resting: MappingFigures | null): { t
       switch (run.stopReason) {
         case 'message':
           return { title: t('stoppedTitle', { percent }), body: t('messageBody') };
+        case 'cancelled':
+          return { title: t('cancelledTitle'), body: t('stoppedBody') };
         case 'noProgress':
           return { title: t('noProgressTitle'), body: t('noProgressBody', { mapped, total }) };
         case 'pastEstimate':
@@ -157,11 +160,27 @@ function useEasedHeight(state: RowState | 'collapsed') {
 }
 
 /**
+ * The press that swaps the one-line row and the full row leaves its own control: focus lands on
+ * the control that swaps back, so the keyboard never drops to the page.
+ */
+function useFocusAcrossSwap(host: RefObject<HTMLDivElement | null>, oneLine: boolean) {
+  const pressed = useRef(false);
+  useLayoutEffect(() => {
+    if (!pressed.current) return;
+    pressed.current = false;
+    host.current?.querySelector<HTMLElement>(`[data-swap-focus="${oneLine ? 'expand' : 'collapse'}"]`)?.focus();
+  }, [host, oneLine]);
+  return () => {
+    pressed.current = true;
+  };
+}
+
+/**
  * The map conversation's row for mapping the rest of the code. One worded button keeps one seat
  * through every state (Start, Stop, Continue, Close), so the control that starts a run stops it.
  * Its count and bar move once per request.
  */
-export function MappingRunRow({ run, resting, autoApprove, canStart, collapsed, onStart, onStop, onClose, onCollapse }: MappingRunRowProps) {
+export function MappingRunRow({ run, resting, autoApprove, canStart, collapsed, onStart, onStop, onClose, onCollapse, onExpand }: MappingRunRowProps) {
   const t = useTranslations('workCard.mapping');
   const tCard = useTranslations('workCard');
   const copy = useRowCopy(run, resting);
@@ -169,6 +188,7 @@ export function MappingRunRow({ run, resting, autoApprove, canStart, collapsed, 
   const oneLine = collapsed && !run;
   const action = actionOf(run);
   const hostRef = useEasedHeight(oneLine ? 'collapsed' : state);
+  const swapFocus = useFocusAcrossSwap(hostRef, oneLine);
   const active = run !== null && isMappingActive(run);
   const fraction = run ? mappingFraction(run) : null;
   const actionWord = { start: t('start'), stop: tCard('stop'), none: tCard('stop'), continue: t('continue'), close: tCard('close') }[action];
@@ -178,7 +198,11 @@ export function MappingRunRow({ run, resting, autoApprove, canStart, collapsed, 
     <button
       type="button"
       data-testid="mapping-run-collapse"
-      onClick={onCollapse}
+      data-swap-focus="collapse"
+      onClick={() => {
+        swapFocus();
+        onCollapse();
+      }}
       className={cn(
         controlClass({ shape: 'link', size: 'sm', tone: 'default', hoverInk: 'strong' }),
         'ml-2 inline min-h-0 whitespace-nowrap align-baseline text-label leading-label',
@@ -212,15 +236,37 @@ export function MappingRunRow({ run, resting, autoApprove, canStart, collapsed, 
         data-collapsed="true"
         className="motion-stagger-in relative flex shrink-0 items-center gap-3 overflow-hidden rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-[var(--card-pad)] py-1.5"
       >
+        {/* What waits for an answer never gives way; in a narrow dock the title does, its full text still its name. */}
         <p key="collapsed" className="motion-stagger-fade flex min-w-0 flex-1 items-baseline gap-2">
-          <span data-testid="mapping-run-title" className="shrink-0 text-body leading-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-            {copy.title}
-          </span>
+          <button
+            type="button"
+            data-testid="mapping-run-title"
+            data-swap-focus="expand"
+            aria-expanded={false}
+            title={t('showMore')}
+            onClick={() => {
+              swapFocus();
+              onExpand();
+            }}
+            className={cn(
+              controlClass({ shape: 'link', size: 'sm', tone: 'default', hoverInk: 'strong' }),
+              'min-h-0 min-w-0 text-body leading-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]',
+            )}
+          >
+            <span className="truncate">{copy.title}</span>
+          </button>
           {share ? (
-            <span data-testid="mapping-run-body" className="truncate text-label leading-label tabular-nums text-[color:var(--color-text-tertiary)]">
-              {t.rich('onMap', { ...share, count: (chunks) => chunks })}
+            <span data-testid="mapping-run-body" className="shrink-0 whitespace-nowrap text-label leading-label tabular-nums text-[color:var(--color-text-tertiary)]">
+              {t('mappedShort', { percent: share.percent })}
             </span>
           ) : null}
+          <span
+            data-testid="mapping-run-approval"
+            title={t(autoApprove ? 'approvalAuto' : 'approvalLine')}
+            className="shrink-0 whitespace-nowrap text-label leading-label text-[color:var(--color-text-quaternary)]"
+          >
+            {t(autoApprove ? 'approvalAutoShort' : 'approvalLineShort')}
+          </span>
         </p>
         {button}
       </div>

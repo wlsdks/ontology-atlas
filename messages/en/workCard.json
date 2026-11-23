@@ -107,8 +107,13 @@
     "startTitle": "Map the rest of the code",
     "startBody": "{mapped, number} of the {total, number} abilities found in the code are on the map ({percent, number}%). About {requests, plural, one {# request} other {# requests}} to your agent, about {duration}.",
     "approvalLine": "Each change waits for your answer. With Auto-approve on, it runs by itself.",
-    "approvalAuto": "Changes that only add go through by themselves. Anything else waits for your answer.",
-    "showLess": "Show less"
+    "approvalAuto": "Adding and changing go through by themselves. Deleting, merging and overwriting wait for your answer.",
+    "showLess": "Show less",
+    "cancelledTitle": "Stopped: the request was cancelled before it finished",
+    "approvalLineShort": "Asks first",
+    "approvalAutoShort": "Adds and edits alone",
+    "showMore": "Show more",
+    "mappedShort": "{percent, number}% mapped"
   },
   "railRunningPercent": "{destination}: {percent, number}% done"
 }

@@ -16,12 +16,13 @@ import {
 
 const one = (uncovered: number, total = 120): MappingFigures => ({ abilitiesUncovered: uncovered, abilitiesTotal: total });
 
-const begin = (figures: MappingFigures | null = one(96)) => beginMappingRun({
-  id: 1, folder: '/vaults/launch', folderName: 'launch', project: 'launch', agent: 'Claude Agent', figures, startedAt: 0,
+const begin = (figures: MappingFigures | null = one(96), project: string | null = 'launch') => beginMappingRun({
+  id: 1, folder: '/vaults/launch', folderName: 'launch', project, agent: 'Claude Agent', figures, startedAt: 0,
 });
 
+/** A request that reached the agent; `sessionId: undefined` is one that never did. */
 const end = (fields: Partial<MappingRequestEnd> = {}): MappingRequestEnd => ({
-  outcome: { kind: 'completed' }, figures: one(72), draft: false, at: 120_000, ...fields,
+  outcome: { kind: 'completed' }, figures: one(72), draft: false, at: 120_000, sessionId: 's-1', ...fields,
 });
 
 const working = { kind: 'reading', label: null, target: 'src/a.ts', asking: false };
@@ -41,8 +42,9 @@ describe('the rule at a request\'s end', () => {
     expect(next).toMatchObject({ phase: 'stopped', stopReason: 'press', endedAt: 120_000 });
   });
 
-  it('stops as pressed for a turn cancelled from the composer', () => {
-    expect(afterRequest(begin(), end({ outcome: { kind: 'cancelled' } }))).toMatchObject({ phase: 'stopped', stopReason: 'press' });
+  it('stops as cancelled, not pressed, for a turn cancelled with no Stop pressed', () => {
+    // Every Stop a person presses holds the run at stopping first; a bare cancel came from elsewhere.
+    expect(afterRequest(begin(), end({ outcome: { kind: 'cancelled' } }))).toMatchObject({ phase: 'stopped', stopReason: 'cancelled' });
   });
 
   it('names a usage limit apart from any other agent error, ahead of a draft', () => {
@@ -60,6 +62,25 @@ describe('the rule at a request\'s end', () => {
   it('stops with the line lost, keeping what it last said, when it is gone with more left than one request maps', () => {
     expect(afterRequest(begin(one(32)), end({ figures: null }))).toMatchObject({ phase: 'stopped', stopReason: 'lineLost', now: one(32) });
     expect(afterRequest(begin(null), end({ figures: null }))).toMatchObject({ phase: 'stopped', stopReason: 'lineLost' });
+  });
+
+  it('stops with the line lost when the note cannot be read, though its last line one request could close', () => {
+    expect(afterRequest(begin(one(31)), end({ figures: null, unreadable: true }))).toMatchObject({ phase: 'stopped', stopReason: 'lineLost', now: one(31) });
+  });
+
+  it('takes the first line a run begun without one reads, and estimates the rest from it', () => {
+    const next = afterRequest(begin(null, null), end({ figures: one(40), project: 'launch' }));
+    expect(next).toMatchObject({ phase: 'running', project: 'launch', now: one(40), requestsSent: 2, estimate: 1 + 4 });
+    // A run that has its project keeps it, whatever line a request's end names.
+    expect(afterRequest(begin(), end({ project: 'other' }))).toMatchObject({ project: 'launch', estimate: 8 });
+  });
+
+  it('neither lists nor counts a request that never reached the agent', () => {
+    const between = stopMappingRun(afterRequest(begin(), end()), 'press');
+    expect(between.requestsSent).toBe(2);
+    const stopped = afterRequest(between, end({ sessionId: undefined, at: 125_000 }));
+    expect(stopped).toMatchObject({ phase: 'stopped', stopReason: 'press', requestsSent: 1 });
+    expect(stopped.finished).toEqual([{ gained: 24, durationMs: 120_000, sessionId: 's-1' }]);
   });
 
   it('stops for no progress when abilities off the map did not go down, ahead of a draft', () => {

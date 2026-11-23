@@ -12,7 +12,8 @@ import type { WorkRunCardState } from './work-run';
 
 export type MappingRunPhase = 'running' | 'asking' | 'stopping' | 'finished' | 'stopped';
 
-export type MappingStopReason = 'press' | 'message' | 'noProgress' | 'pastEstimate' | 'lineLost' | 'agentError' | 'usageLimit' | 'switched';
+/** `cancelled` is a cancel nobody pressed Stop for: a turn's baseline refused it, another conversation was opened, or its panel went. */
+export type MappingStopReason = 'press' | 'cancelled' | 'message' | 'noProgress' | 'pastEstimate' | 'lineLost' | 'agentError' | 'usageLimit' | 'switched';
 
 /**
  * The summary line of the run's project note. A folder with several projects runs on one, the one
@@ -25,18 +26,22 @@ export type MappingTurnOutcome = { kind: 'completed' } | { kind: 'cancelled' } |
 
 export interface MappingRequestEnd {
   outcome: MappingTurnOutcome;
-  /** The project's line read from disk after the turn ended; null when the note holds none or cannot be read. */
+  /** The project's line read from disk after the turn ended; null when the note holds none. */
   figures: MappingFigures | null;
+  /** The note could not be read at all, which says nothing about what is left. */
+  unreadable?: boolean;
+  /** The project whose line `figures` is, for a run begun before any project had one. */
+  project?: string;
   /** The composer holds text the person typed. */
   draft: boolean;
   at: number;
-  /** The agent's conversation the request ran in; absent for a request that never reached the agent. */
+  /** The agent's conversation the request ran in; absent for a request that never reached the agent, which is not counted. */
   sessionId?: string;
 }
 
 /** One finished request: what it put on the map, how long it took, and the conversation to read it in. */
 export interface MappingFinishedRequest extends MappingRequestResult {
-  sessionId: string | null;
+  sessionId: string;
 }
 
 export interface MappingRun {
@@ -158,8 +163,9 @@ function lineGoneStep(run: MappingRun): MappingNextStep {
  */
 export function nextMappingStep(run: MappingRun, end: MappingRequestEnd): MappingNextStep {
   if (run.phase === 'stopping') return { kind: 'stopped', reason: run.stopReason ?? 'press' };
-  if (end.outcome.kind === 'cancelled') return { kind: 'stopped', reason: 'press' };
+  if (end.outcome.kind === 'cancelled') return { kind: 'stopped', reason: 'cancelled' };
   if (end.outcome.kind === 'failed') return { kind: 'stopped', reason: end.outcome.usageLimit ? 'usageLimit' : 'agentError' };
+  if (end.unreadable) return { kind: 'stopped', reason: 'lineLost' };
   if (end.figures === null) return lineGoneStep(run);
   if (end.figures.abilitiesUncovered === 0) return { kind: 'finished' };
   if (run.now !== null && end.figures.abilitiesUncovered >= run.now.abilitiesUncovered) return { kind: 'stopped', reason: 'noProgress' };
@@ -175,16 +181,27 @@ export function afterRequest(run: MappingRun, end: MappingRequestEnd): MappingRu
   const before = run.now?.abilitiesUncovered;
   const after = end.figures?.abilitiesUncovered;
   const gained = before === undefined || after === undefined ? 0 : before - after;
+  // A request that never reached the agent did nothing: it is neither listed nor counted as sent.
+  const { sessionId } = end;
+  // A run begun before any project had a line takes the first one read, and estimates from it.
+  const adopted = run.project === null && end.project !== undefined && end.figures !== null
+    ? { project: end.project, figures: end.figures }
+    : null;
   const ended: MappingRun = {
     ...run,
+    project: adopted?.project ?? run.project,
+    estimate: adopted ? run.requestsSent + estimateRequests(adopted.figures.abilitiesUncovered) : run.estimate,
     now: end.figures ?? run.now,
-    finished: [...run.finished, { gained, durationMs: Math.max(0, end.at - run.requestStartedAt), sessionId: end.sessionId ?? null }],
+    requestsSent: sessionId !== undefined ? run.requestsSent : Math.max(0, run.requestsSent - 1),
+    finished: sessionId !== undefined
+      ? [...run.finished, { gained, durationMs: Math.max(0, end.at - run.requestStartedAt), sessionId }]
+      : run.finished,
   };
   if (step.kind === 'continue') {
     return {
       ...ended,
       phase: 'running',
-      requestsSent: run.requestsSent + 1,
+      requestsSent: ended.requestsSent + 1,
       requestStartedAt: end.at,
       line: { kind: 'connecting' },
       heardAt: end.at,

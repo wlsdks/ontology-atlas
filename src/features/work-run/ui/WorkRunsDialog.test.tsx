@@ -23,7 +23,7 @@ function plantRunning() {
   workRuns.leaveFolder('local:launch#1', 0);
   workRuns.enterFolderRoot(FOLDER);
   workRuns.beginMapping({ folder: FOLDER, folderName: 'launch', project: 'launch', agent: 'Claude Agent', figures: figures(96), startedAt: 10_000 });
-  workRuns.endMappingBatch(FOLDER, { outcome: { kind: 'completed' }, figures: figures(72), draft: false, at: 130_000 });
+  workRuns.endMappingBatch(FOLDER, { outcome: { kind: 'completed' }, figures: figures(72), draft: false, at: 130_000, sessionId: 's-1' });
   workRuns.observeMappingWork(FOLDER, { kind: 'reading', label: null, target: 'src/routes/checkout.ts', asking: false }, 131_000);
 }
 
@@ -71,7 +71,7 @@ describe('a mapping run in the Runs list', () => {
 
   it('says why a stopped run ended and continues in the map conversation with nothing sent', () => {
     plantRunning();
-    workRuns.endMappingBatch(FOLDER, { outcome: { kind: 'completed' }, figures: figures(72), draft: false, at: 250_000 });
+    workRuns.endMappingBatch(FOLDER, { outcome: { kind: 'completed' }, figures: figures(72), draft: false, at: 250_000, sessionId: 's-1' });
     renderList();
     const dialog = screen.getByRole('dialog');
     expect(within(dialog).getByTestId('work-runs-pane-title')).toHaveTextContent('Stopped: the last request put nothing new on the map');

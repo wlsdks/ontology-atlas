@@ -4,7 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, typ
 import { useTranslations } from 'next-intl';
 
 import { isAgentDoctorAvailable, useAgentDoctor } from '@/features/acp-doctor';
-import { isSendableSuggestion, modeCopyKey, readAcpTrouble, useAcpSession, VAULT_MCP_SERVER_NAME, type ChatSuggestion } from '@/features/acp-session';
+import { isSendableSuggestion, readAcpTrouble, useAcpSession, VAULT_MCP_SERVER_NAME, type ChatSuggestion } from '@/features/acp-session';
 import { useMappingSessions, useMappingStage, workRuns, type TurnWorkReport } from '@/features/work-run';
 import { useGrantedVaultFiles } from '@/entities/vault-session';
 import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
@@ -18,6 +18,7 @@ import { Surface } from '@/shared/ui';
 import { useTaskMeaningReview } from '../model/use-task-meaning-review';
 import {
   mappingShare,
+  mayOpenRunRequest,
   useFolderMappingFigures,
   useMappingRun,
   type MappingFiguresReader,
@@ -43,7 +44,7 @@ import { ConnectStoppedState, EmptyState, FolderBusyState, StartingState } from 
 import { MappingRunRow } from './chat-panel/mapping-run/MappingRunRow';
 import { MappingRunRequests, numberedRequests, useRequestLine } from './chat-panel/mapping-run/MappingRunRequests';
 import { MappingRunRequestsDialog, type RunRequestItem } from './chat-panel/mapping-run/MappingRunRequestsDialog';
-import { groupRunConversations, isRunRequestText, useRequestOpenings, type HistoryRow } from '../model/mapping-run-history';
+import { groupRunConversations, isRunRequestText, requestWithoutCount, useRequestOpenings, type HistoryRow } from '../model/mapping-run-history';
 import { formatDate } from '@/shared/lib/locale-text/format-date';
 import type { AcpChatPanelProps, AcpTurnRequest } from './chat-panel/chat-panel-props';
 import { useHistoryEscape, useHistoryMenu, useSlashMenu } from './chat-panel/composer/use-composer-menus';
@@ -512,10 +513,13 @@ export function AcpChatPanelBody({
       },
     },
     figures: figuresReader,
-    request: (figures, part) => ({
-      text: t('suggest.mapArea.prompt', mappingShare(figures) ?? { mapped: 0, total: 0, percent: 0 }),
-      shown: t('suggest.mapArea.line', { part }),
-    }),
+    request: (figures, part) => {
+      const share = mappingShare(figures);
+      const text = share
+        ? t('suggest.mapArea.prompt', share)
+        : requestWithoutCount(t('suggest.mapArea.prompt', { mapped: 0, total: 0, percent: 0 }));
+      return { text, shown: t('suggest.mapArea.line', { part }) };
+    },
   });
   useLayoutEffect(() => {
     runTurnStartRef.current = mapping.observeTurnStart;
@@ -533,7 +537,7 @@ export function AcpChatPanelBody({
   const shownRequestSession = openedRequest && openedRequest.whileLive === liveRequestSession ? openedRequest.sessionId : liveRequestSession;
   const [requestList, setRequestList] = useState<RunRequestItem[] | null>(null);
   const requestLine = useRequestLine();
-  const canOpenRequest = !mapping.driving && !busy;
+  const canOpenRequest = mayOpenRunRequest({ driving: mapping.driving, busy, folderBusy: folderBusy !== null, run: mapping.run });
   const openRequest = (sessionId: string) => {
     setRequestList(null);
     setHistoryOpen(false);
@@ -759,8 +763,8 @@ export function AcpChatPanelBody({
           folder={vaultRoot}
           mapping={mapping}
           figuresRef={figuresRef}
-          // The composer's rule: in plan mode nothing runs, so Auto-approve answers nothing.
-          autoApprove={autoApprove && modeCopyKey(choices.currentModeId) !== 'plan'}
+          // A run sends in new conversations, which open in the tool's opening mode: the kept choice answers there.
+          autoApprove={autoApprove}
           canStart={!busy && pending === null && !folderBusy && heldRequest === null && !openingWaiting}
           seated={!putAway}
         />
@@ -969,6 +973,10 @@ function MapConversationMapping({ folder, mapping, figuresRef, autoApprove, canS
       onCollapse={() => {
         collapsedMappingFolders.add(folder);
         setCollapsed(true);
+      }}
+      onExpand={() => {
+        collapsedMappingFolders.delete(folder);
+        setCollapsed(false);
       }}
     />
   );

@@ -107,8 +107,13 @@
     "startTitle": "코드의 나머지를 지도에 올리기",
     "startBody": "코드에서 찾은 기능 {total, number}개 중 {mapped, number}개({percent, number}%)가 지도에 있어요. 에이전트 요청 약\u00a0{requests, number}번, {duration} 정도 걸려요.",
     "approvalLine": "바꿀 때마다 답을 기다려요. 자동 승인을 켜면 혼자 진행해요.",
-    "approvalAuto": "추가만 하는 변경은 혼자 진행해요. 그 밖의 변경은 답을 기다려요.",
-    "showLess": "간단히 보기"
+    "approvalAuto": "추가와 수정은 혼자 진행해요. 삭제, 합치기, 덮어쓰기는 답을 기다려요.",
+    "showLess": "간단히 보기",
+    "cancelledTitle": "멈춤: 요청이 끝나기 전에 취소됐어요",
+    "approvalLineShort": "먼저 물어봐요",
+    "approvalAutoShort": "추가·수정은 혼자 해요",
+    "showMore": "자세히 보기",
+    "mappedShort": "지도에 {percent, number}%"
   },
   "railRunningPercent": "{destination}: {percent, number}% 완료"
 }

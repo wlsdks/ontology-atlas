@@ -14,7 +14,7 @@ const one = (uncovered: number, total = 120): MappingFigures => ({ abilitiesUnco
 const begin = (folder = FOLDER, figures: MappingFigures | null = one(96)) =>
   workRuns.beginMapping({ folder, folderName: folder.split('/').at(-1) ?? folder, project: 'launch', agent: 'Claude Agent', figures, startedAt: 0 });
 const completed = (uncovered: number, at = 120_000) =>
-  ({ outcome: { kind: 'completed' } as const, figures: one(uncovered), draft: false, at });
+  ({ outcome: { kind: 'completed' } as const, figures: one(uncovered), draft: false, at, sessionId: `s-${at}` });
 const mapping = (folder = FOLDER) => folderMappingRun(workRuns.read(), folder);
 const waiting = { kind: 'writing', label: null, target: 'wiki/a.md', asking: true };
 

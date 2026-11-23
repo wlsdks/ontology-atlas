@@ -16,7 +16,6 @@ import { useTypewriterReveal } from '@/shared/lib/agent-chat/use-typewriter-reve
 import { Chip, Disclosure } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
 
-import { isRunRequestText, useRequestOpenings } from '../../model/mapping-run-history';
 import { splitAppRequest } from '../request-parts';
 import { canonicalToolTitle, commandRowWords, isVaultTool, labelWithoutRepeatedPath, toolLabel, withKindFallback } from '../tool-label';
 import { toolRowPhase, workingShimmer } from '../working-ink';
@@ -56,10 +55,6 @@ export const TranscriptEntry = memo(function TranscriptEntry({
   fold?: { line: string; doorLabel: string; onOpen: () => void } | null;
 }) {
   const t = useTranslations('acpChat');
-  const tMapping = useTranslations('workCard.mapping');
-  // A run's request reopened from History carries no line of its own: it is known by how it opens.
-  const unnamedRequest = event.kind === 'user' && !event.shown;
-  const requestOpenings = useRequestOpenings(unnamedRequest);
 
   const revealedText = useTypewriterReveal(
     event.kind === 'agent' ? event.text : '',
@@ -68,7 +63,7 @@ export const TranscriptEntry = memo(function TranscriptEntry({
 
   if (event.kind === 'user') {
     const parts = splitAppRequest(event.text);
-    const shown = event.shown ?? (isRunRequestText(event.text, requestOpenings) ? tMapping('startTitle') : null);
+    const { shown } = event;
     // A request the app wrote for a run shows its one line; the instruction it sent is there on demand.
     const detailed = Boolean(shown) || parts.detail;
     return (

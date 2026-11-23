@@ -1,3 +1,4 @@
+import { createTranslator } from 'next-intl';
 import { describe, expect, it } from 'vitest';
 
 import en from '../../../../messages/en/acpChat.json';
@@ -5,7 +6,7 @@ import ja from '../../../../messages/ja/acpChat.json';
 import ko from '../../../../messages/ko/acpChat.json';
 import zh from '../../../../messages/zh/acpChat.json';
 
-import { beginsWithOpening, groupRunConversations, isRunRequestText, requestOpening, type HistoryRow } from './mapping-run-history';
+import { beginsWithOpening, groupRunConversations, isRunRequestText, requestOpening, requestWithoutCount, type HistoryRow } from './mapping-run-history';
 
 const OPENINGS = [en, ko, ja, zh].map((catalogue) => requestOpening(catalogue.suggest.mapArea.prompt));
 const isRunRequest = (title: string) => isRunRequestText(title, OPENINGS);
@@ -16,6 +17,18 @@ const runTitle = (mapped: number) => `${mapped} of the 120 abilities found in th
 
 /** Each row as a short label: a conversation's id, or a run's ids oldest first. */
 const labels = (rows: HistoryRow[]) => rows.map((row) => (row.kind === 'run' ? `run ${row.sessions.map((session) => session.sessionId).join(',')}` : row.session.sessionId));
+
+describe('the map-rest request for a run that read no figures', () => {
+  it.each([['en', en], ['ko', ko], ['ja', ja], ['zh', zh]] as const)('%s states no count and keeps the rest of the request', (locale, catalogue) => {
+    const t = createTranslator({ locale, messages: { acpChat: catalogue }, namespace: 'acpChat' });
+    const counted = t('suggest.mapArea.prompt', { mapped: 828, total: 1_240, percent: 66 });
+    const rest = requestWithoutCount(t('suggest.mapArea.prompt', { mapped: 0, total: 0, percent: 0 }));
+    expect(counted.endsWith(rest)).toBe(true);
+    expect(rest.length).toBeLessThan(counted.length);
+    expect(rest).not.toMatch(/\b0\b|828|1,240|66%/);
+    expect(rest).toContain('validate_vault');
+  });
+});
 
 describe('the opening of the map-rest request', () => {
   it('recognises a title the request began, with its numbers, in every locale', () => {

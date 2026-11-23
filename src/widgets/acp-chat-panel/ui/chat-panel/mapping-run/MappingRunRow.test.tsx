@@ -1,5 +1,6 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
+import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import en from '../../../../../../messages/en.json';
@@ -14,9 +15,9 @@ const CATALOGUES = { en, ko } as const;
 
 const figures = (uncovered: number, total = 120): MappingFigures => ({ abilitiesUncovered: uncovered, abilitiesTotal: total });
 const end = (uncovered: number | null, at: number, outcome: MappingRequestEnd['outcome'] = { kind: 'completed' }, draft = false): MappingRequestEnd =>
-  ({ outcome, figures: uncovered === null ? null : figures(uncovered), draft, at });
+  ({ outcome, figures: uncovered === null ? null : figures(uncovered), draft, at, sessionId: `s-${at}` });
 
-const handlers = () => ({ onStart: vi.fn(), onStop: vi.fn(), onClose: vi.fn(), onCollapse: vi.fn() });
+const handlers = () => ({ onStart: vi.fn(), onStop: vi.fn(), onClose: vi.fn(), onCollapse: vi.fn(), onExpand: vi.fn() });
 
 function renderRow(run: MappingRun | null, options: {
   locale?: keyof typeof CATALOGUES;
@@ -80,18 +81,54 @@ describe('before a press the row offers Start', () => {
 
   it('says what goes through by itself while Auto-approve answers', () => {
     renderRow(null, { autoApprove: true });
-    expect(text('mapping-run-approval')).toBe('Changes that only add go through by themselves. Anything else waits for your answer.');
+    expect(text('mapping-run-approval')).toBe('Adding and changing go through by themselves. Deleting, merging and overwriting wait for your answer.');
   });
 
-  it('shortened, keeps its title, its count and Start on one line', () => {
+  it('shortened, keeps its title, its share on the map, what waits for an answer and Start on one line', () => {
     const on = renderRow(null, { collapsed: true });
     expect(screen.getByTestId('mapping-run-row')).toHaveAttribute('data-collapsed', 'true');
     expect(text('mapping-run-title')).toBe('Map the rest of the code');
-    expect(text('mapping-run-body')).toBe('24 of 120 abilities on the map (20%)');
-    expect(screen.queryByTestId('mapping-run-approval')).toBeNull();
+    expect(text('mapping-run-body')).toBe('20% mapped');
+    expect(text('mapping-run-approval')).toBe('Asks first');
+    expect(screen.getByTestId('mapping-run-approval')).toHaveAttribute('title', 'Each change waits for your answer. With Auto-approve on, it runs by itself.');
     expect(screen.queryByTestId('mapping-run-collapse')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Start' }));
     expect(on.onStart).toHaveBeenCalledTimes(1);
+  });
+
+  it('shortened, still says what goes through by itself while Auto-approve is kept on', () => {
+    renderRow(null, { collapsed: true, autoApprove: true });
+    expect(text('mapping-run-approval')).toBe('Adds and edits alone');
+  });
+
+  it('shortened, opens the full row again from its title, and focus crosses to the control that swaps back', () => {
+    function SwappingRow() {
+      const [collapsed, setCollapsed] = useState(true);
+      return (
+        <NextIntlClientProvider locale="en" messages={en}>
+          <MappingRunRow
+            run={null}
+            resting={figures(96)}
+            autoApprove={false}
+            canStart
+            collapsed={collapsed}
+            {...handlers()}
+            onCollapse={() => setCollapsed(true)}
+            onExpand={() => setCollapsed(false)}
+          />
+        </NextIntlClientProvider>
+      );
+    }
+    render(<SwappingRow />);
+    const title = screen.getByTestId('mapping-run-title');
+    expect(title).toHaveAttribute('aria-expanded', 'false');
+    title.focus();
+    fireEvent.click(title);
+    expect(screen.getByTestId('mapping-run-row')).not.toHaveAttribute('data-collapsed');
+    expect(text('mapping-run-approval')).toBe('Each change waits for your answer. With Auto-approve on, it runs by itself.');
+    expect(document.activeElement).toBe(screen.getByTestId('mapping-run-collapse'));
+    fireEvent.click(screen.getByTestId('mapping-run-collapse'));
+    expect(document.activeElement).toBe(screen.getByTestId('mapping-run-title'));
   });
 
   it('shortened, still shows a run in full once one starts', () => {
@@ -118,7 +155,7 @@ describe('before a press the row offers Start', () => {
 
   it('speaks Korean about what goes through by itself', () => {
     renderRow(null, { locale: 'ko', autoApprove: true });
-    expect(text('mapping-run-approval')).toBe('추가만 하는 변경은 혼자 진행해요. 그 밖의 변경은 답을 기다려요.');
+    expect(text('mapping-run-approval')).toBe('추가와 수정은 혼자 진행해요. 삭제, 합치기, 덮어쓰기는 답을 기다려요.');
   });
 });
 
@@ -164,6 +201,7 @@ describe('a run shows how far it has come, and the same control stops it', () =>
 describe('each end says why and what comes next', () => {
   const cases: Array<{ name: string; reach: () => void; title: string; body: string; word: 'Continue' | 'Close' }> = [
     { name: 'the person\'s Stop', reach: () => { workRuns.stopRun(KEY); workRuns.endMappingBatch(FOLDER, end(72, 60_000, { kind: 'cancelled' })); }, title: 'Stopped at 40%', body: 'What is already on the map stays. Continue picks up from here.', word: 'Continue' },
+    { name: 'a cancel nobody pressed', reach: () => { workRuns.endMappingBatch(FOLDER, end(72, 60_000, { kind: 'cancelled' })); }, title: 'Stopped: the request was cancelled before it finished', body: 'What is already on the map stays. Continue picks up from here.', word: 'Continue' },
     { name: 'a message', reach: () => { workRuns.endMappingBatch(FOLDER, end(72, 60_000, { kind: 'completed' }, true)); }, title: 'Stopped at 40%', body: 'Stopped so you can ask. Continue picks up from here.', word: 'Continue' },
     { name: 'no progress', reach: () => { workRuns.endMappingBatch(FOLDER, end(96, 60_000)); }, title: 'Stopped: the last request put nothing new on the map', body: 'It stays at 24 of 120. The conversation shows what the agent did.', word: 'Continue' },
     { name: 'an agent error', reach: () => { workRuns.endMappingBatch(FOLDER, end(96, 60_000, { kind: 'failed', usageLimit: false })); }, title: 'Claude Agent ended early', body: '24 of 120 are on the map. What was already written stays.', word: 'Continue' },

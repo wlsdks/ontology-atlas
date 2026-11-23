@@ -107,8 +107,13 @@
     "startTitle": "把代码的其余部分放到地图上",
     "startBody": "代码中找到的 {total, number} 项能力中有 {mapped, number} 项（{percent, number}%）在地图上。约需向智能体发送 {requests, number} 个请求，用时约 {duration}。",
     "approvalLine": "每次修改都会等待你的回答。开启自动批准后会自行进行。",
-    "approvalAuto": "只做新增的修改会自行进行。其他修改会等待你的回答。",
-    "showLess": "简要显示"
+    "approvalAuto": "新增和修改会自行进行。删除、合并和覆盖会等待你的回答。",
+    "showLess": "简要显示",
+    "cancelledTitle": "已停止：请求在完成前被取消了",
+    "approvalLineShort": "先询问你",
+    "approvalAutoShort": "新增和修改自动进行",
+    "showMore": "详细显示",
+    "mappedShort": "已上地图 {percent, number}%"
   },
   "railRunningPercent": "{destination}：已完成 {percent, number}%"
 }

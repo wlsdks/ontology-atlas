@@ -33,7 +33,7 @@ const OTHER_ROOT = '/Users/probe/Ontology Atlas/atlas';
 
 const figures = (uncovered: number, total = 120): MappingFigures => ({ abilitiesUncovered: uncovered, abilitiesTotal: total });
 const requestEnd = (uncovered: number | null, at: number, outcome: MappingRequestEnd['outcome'] = { kind: 'completed' }): MappingRequestEnd =>
-  ({ outcome, figures: uncovered === null ? null : figures(uncovered), draft: false, at });
+  ({ outcome, figures: uncovered === null ? null : figures(uncovered), draft: false, at, sessionId: `s-${at}` });
 
 /** A run on its second request: 48 of 120 on the map after one request that took two minutes. */
 function openMappingFolder() {

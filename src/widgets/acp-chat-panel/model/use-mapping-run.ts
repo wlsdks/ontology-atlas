@@ -74,8 +74,26 @@ export interface MappingProjectLine {
 export interface MappingFiguresReader {
   /** The line with the most abilities off the map of every project note; null with none. */
   widest: () => Promise<MappingProjectLine | null>;
-  /** The project's line now; null when the note holds none or cannot be read. */
+  /** The project's line now; null when the note holds none, rejected when the note cannot be read. */
   project: (project: string) => Promise<MappingFigures | null>;
+}
+
+/** What a request's end read: the run's line, or for a run without one the widest; `unreadable` when no answer came. */
+type RequestEndRead = Pick<MappingRequestEnd, 'figures' | 'unreadable' | 'project'>;
+
+/** A note unread within the wait says nothing about what is left, so it reads as unreadable, never as gone. */
+async function readRequestEnd(reader: MappingFiguresReader, project: string | null): Promise<RequestEndRead> {
+  try {
+    if (project) {
+      const figures = await within(reader.project(project), MAPPING_FOLDER_WAIT_MS);
+      return figures === undefined ? { figures: null, unreadable: true } : { figures };
+    }
+    const line = await within(reader.widest(), MAPPING_FOLDER_WAIT_MS);
+    if (line === undefined) return { figures: null, unreadable: true };
+    return line ? { figures: line.figures, project: line.project } : { figures: null };
+  } catch {
+    return { figures: null, unreadable: true };
+  }
 }
 
 /**
@@ -125,6 +143,14 @@ export function widestProjectLine(lines: ReadonlyArray<{ project: string; figure
   return widest;
 }
 
+/**
+ * Whether a finished request's conversation may open: opening one starts an agent, so not while this
+ * conversation works, another holds the folder, or the run still sends requests from anywhere.
+ */
+export function mayOpenRunRequest(state: { driving: boolean; busy: boolean; folderBusy: boolean; run: MappingRun | null }): boolean {
+  return !state.driving && !state.busy && !state.folderBusy && !(state.run !== null && isMappingActive(state.run));
+}
+
 /** On the map out of found, floored, so one ability off the map never reads as 100%. */
 export function mappingShare(figures: MappingFigures | null): { mapped: number; total: number; percent: number } | null {
   if (!figures) return null;
@@ -167,7 +193,8 @@ export function useFolderMappingFigures(): { resting: MappingProjectLine | null;
       },
       project: async (project) => {
         const [text] = await readNotes([project]);
-        return text == null ? null : notMappedAreas(text);
+        if (text == null) throw new Error(`The project note ${project} could not be read.`);
+        return notMappedAreas(text);
       },
     };
   }, [granted, projects, resting]);
@@ -267,21 +294,13 @@ export function useMappingRun({
     const current = currentRun();
     // A switched run, or files granted for another folder, must not lend the run another folder's line.
     const sameFolder = current?.stopReason !== 'switched' && port.folderRoot === folder;
-    let figures: MappingFigures | null = current?.now ?? null;
-    if (sameFolder && current?.project) {
-      try {
-        const read = await within(liveRef.current.figures.project(current.project), MAPPING_FOLDER_WAIT_MS);
-        if (read !== undefined) figures = read;
-      } catch {
-        // An unreadable note keeps the last figures, which read as no progress, never as finished.
-      }
-    } else if (sameFolder) {
-      figures = null;
-    }
+    const read: RequestEndRead = sameFolder
+      ? await readRequestEnd(liveRef.current.figures, current?.project ?? null)
+      : { figures: current?.now ?? null };
     if (life.current !== lifeAtStart || phase.current !== 'ending') return;
     const next = workRuns.endMappingBatch(folder, {
       outcome,
-      figures,
+      ...read,
       draft: port.hasDraft() || foreignTurn.current,
       at: requestEndedAt.current,
       ...(requestSession.current ? { sessionId: requestSession.current } : {}),

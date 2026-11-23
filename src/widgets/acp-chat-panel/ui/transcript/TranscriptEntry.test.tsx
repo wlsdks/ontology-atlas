@@ -1,10 +1,11 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { describe, expect, it } from 'vitest';
 
 import en from '../../../../../messages/en.json';
 import ko from '../../../../../messages/ko.json';
 
+import { useRequestOpenings } from '../../model/mapping-run-history';
 import { TranscriptEntry } from './TranscriptEntry';
 
 const CATALOGUES = { en, ko } as const;
@@ -29,18 +30,15 @@ describe('a request of a run in the conversation', () => {
   });
 
   it.each([
-    ['en', '48 of the 120 abilities found in this code are on the map (40%). Map the next part now. Run validate_vault.'],
-    ['ko', '이 코드에서 찾은 기능 120개 중 48개(40%)가 지도에 있어. 다음 부분을 지금 지도에 올려 줘.'],
-  ] as const)('reopened from History without its line, is known by how it opens, in %s', async (locale, text) => {
-    renderRequest(text, locale);
-    const title = CATALOGUES[locale].workCard.mapping.startTitle;
-    expect(await screen.findByText(title)).toHaveAttribute('data-user-request', 'app-written');
-    expect(screen.getByTestId('acp-chat-request-full')).toHaveAttribute('aria-expanded', 'false');
-  });
-
-  it('leaves a message the person typed as they wrote it', async () => {
-    renderRequest('What does billing do?');
+    ['a question', 'What does billing do?'],
+    ['text that opens as a run request does', '48 of the 120 abilities found in this code are on the map (40%). Map the next part now.'],
+  ])('leaves %s the person typed as they wrote it', async (_kind, text) => {
+    // With the run request's openings read, as History reads them, it still is not relabelled.
+    const openings = renderHook(() => useRequestOpenings(true));
+    await waitFor(() => expect(openings.result.current).toHaveLength(4));
+    renderRequest(text);
     expect(userLine()).toHaveAttribute('data-user-request', 'typed');
+    expect(userLine()).toHaveTextContent(text);
     expect(screen.queryByTestId('acp-chat-request-full')).toBeNull();
   });
 });

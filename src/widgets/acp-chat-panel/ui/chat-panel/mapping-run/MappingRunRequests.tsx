@@ -48,7 +48,7 @@ export function MappingRunRequests({ finished, shownSession, canOpen, onOpen, on
 }) {
   const t = useTranslations('acpChat.mapRun');
   const line = useRequestLine();
-  const above = numberedRequests(finished).filter((request) => request.sessionId === null || request.sessionId !== shownSession);
+  const above = numberedRequests(finished).filter((request) => request.sessionId !== shownSession);
   if (above.length === 0) return null;
   const earlier = above.length - MAPPING_REQUESTS_SHOWN;
   const lineClass = 'w-full justify-start text-left text-label leading-label text-[color:var(--color-text-tertiary)]';
@@ -66,8 +66,8 @@ export function MappingRunRequests({ finished, shownSession, canOpen, onOpen, on
           <RowButton
             data-testid="mapping-run-request"
             data-request-part={request.part}
-            disabled={!canOpen || request.sessionId === null}
-            onClick={() => request.sessionId && onOpen(request.sessionId)}
+            disabled={!canOpen}
+            onClick={() => onOpen(request.sessionId)}
             hoverSurface="lift"
             hoverInk="strong"
             className={cn(lineClass, 'tabular-nums')}

@@ -11,6 +11,10 @@ import { pathToFileURL } from 'node:url';
 
 /** Abilities one request was measured to put on the map; the app's estimate is ceil(R / this). */
 const ABILITIES_PER_REQUEST = 13;
+/** The most abilities one request put on the map: a line gone after a larger count was lost, not finished. */
+const ABILITIES_ONE_REQUEST_REACHES = 31;
+/** The app sends at most this many requests per press, whatever the note says. */
+const REQUESTS_AT_MOST = 100;
 /** A survey of a large repository takes longer than call-tool's default 15 seconds. */
 const VALIDATE_TIMEOUT_MS = 300_000;
 // Line-anchored: the measure's line starts a line, a quoted copy of the note's line does not.
@@ -26,9 +30,9 @@ function readLedger(out) {
   return readFileSync(ledgerPath(out), 'utf8').split('\n').filter((line) => line.trim()).map((line) => JSON.parse(line));
 }
 
-/** The request number allowed by `2 × ceil(R / 24) + 2`, the app's stop for a run past its estimate. */
+/** The request number allowed by `min(2 × ceil(R / 13) + 2, 100)`, the app's stop for a run past its estimate. */
 export function requestCeiling(uncoveredAtStart) {
-  return 2 * Math.ceil(uncoveredAtStart / ABILITIES_PER_REQUEST) + 2;
+  return Math.min(2 * Math.ceil(uncoveredAtStart / ABILITIES_PER_REQUEST) + 2, REQUESTS_AT_MOST);
 }
 
 /** Cost, turns, refusals and answer sizes from a Claude stream-json transcript. */
@@ -203,7 +207,12 @@ export function stopReason(lines, maxRequests) {
   const hadLine = lines.slice(0, -1).some((line) => line.note !== null);
   // Before any request a vault built before the summary line has none: the server's count stands in.
   if (last.note === null && last.request === 0 && (last.server?.uncovered ?? 0) > 0) return null;
-  if (last.note === null) return hadLine ? 'finished' : 'noProgress';
+  if (last.note === null) {
+    if (!hadLine) return 'noProgress';
+    // As the app reads it: a gone line is finished only when the last count read was one request's reach.
+    const lastRead = lines.slice(0, -1).findLast((line) => line.note !== null).note;
+    return lastRead.uncovered <= ABILITIES_ONE_REQUEST_REACHES ? 'finished' : 'lineLost';
+  }
   if (last.note.uncovered === 0) return 'finished';
   const before = lines.at(-2);
   if (before && before.note !== null && last.note.uncovered >= before.note.uncovered) return 'noProgress';

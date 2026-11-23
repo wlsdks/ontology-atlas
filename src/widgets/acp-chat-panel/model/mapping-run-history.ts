@@ -46,6 +46,11 @@ export function requestOpening(prompt: string): RequestOpening {
   return opening;
 }
 
+/** The request after its opening sentence, the one that states the count, for a run that read no figures. */
+export function requestWithoutCount(request: string): string {
+  return request.slice(request.search(SENTENCE_END) + 1).trimStart();
+}
+
 /**
  * The text begins as the opening does, numbers in its places; a text cut short (as an agent's
  * title may be) matches while it agrees as far as it goes. O(text length + opening length).

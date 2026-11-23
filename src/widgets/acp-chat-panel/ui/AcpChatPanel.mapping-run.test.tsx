@@ -7,7 +7,7 @@ const bridge = vi.hoisted(() => ({
 }));
 
 /** The folder's project lines as the manifest reports them; a spec moves them as an agent would. */
-const vault = vi.hoisted(() => ({ uncovered: null as number | null }));
+const vault = vi.hoisted(() => ({ uncovered: null as number | null, unreadable: false }));
 
 vi.mock('@/shared/lib/agent-chat/tauri-acp', () => ({
   isAcpBridgeAvailable: () => true,
@@ -36,7 +36,7 @@ const projectNote = () => (vault.uncovered === null
   : `A launch.\n\n## Uncertainty\n\n- Not mapped yet: 3 of 9 areas, ${vault.uncovered} of 120 abilities.\n`);
 
 vi.mock('@/shared/lib/vault-folder/vault-text-reader', () => ({
-  createVaultTextReader: () => async (docs: readonly unknown[]) => docs.map(() => projectNote()),
+  createVaultTextReader: () => async (docs: readonly unknown[]) => docs.map(() => (vault.unreadable ? null : projectNote())),
 }));
 
 const GRANTED = { root: { rootPath: '/vault' }, fileHandles: new Map() };
@@ -56,6 +56,7 @@ vi.mock('@/entities/vault-session', async (original) => ({
   }),
 }));
 
+import { keepStandingChoice } from '@/features/acp-session/model/permissions/standing-choice';
 import { workRuns } from '@/features/work-run';
 
 import { folderHolder, keptPanels } from '../model/kept-panels';
@@ -103,6 +104,7 @@ afterEach(() => {
   bridge.sent = [];
   bridge.listener = null;
   vault.uncovered = null;
+  vault.unreadable = false;
 });
 
 describe('the map conversation maps the rest of the code from one press', () => {
@@ -145,6 +147,20 @@ describe('the map conversation maps the rest of the code from one press', () => 
     expect(folderHolder(`library:${FOLDER}:claude-acp`, FOLDER)).toBeNull();
   });
 
+  it('stops with the line lost, not finished, when the project note cannot be read at a request\'s end', async () => {
+    // What the line last said one request could close: a note read as empty would call the run finished.
+    vault.uncovered = 31;
+    renderMapConversation();
+    await agentStarts(1);
+    fireEvent.click(await screen.findByTestId('mapping-run-action'));
+    await agentStarts(2);
+    await waitFor(() => expect(sentOf('session/prompt')).toHaveLength(1));
+    vault.unreadable = true;
+    replyTo('session/prompt', { stopReason: 'end_turn' });
+    await waitFor(() => expect(screen.getByTestId('mapping-run-row')).toHaveAttribute('data-mapping-state', 'stopped'));
+    expect(workRuns.read().runs.get(`mapping:${FOLDER}`)).toMatchObject({ run: { stopReason: 'lineLost' } });
+  });
+
   it('ends the run when the person stops the connection its next request waits on', async () => {
     vault.uncovered = 96;
     renderMapConversation();
@@ -174,6 +190,23 @@ describe('the map conversation maps the rest of the code from one press', () => 
       </>,
     );
     expect(await screen.findByTestId('mapping-run-row')).toHaveAttribute('data-mapping-state', 'notStarted');
+  });
+
+  it('says what the kept Auto-approve passes, though the conversation on screen is in plan mode', async () => {
+    // A run's requests open new conversations in the tool's opening mode, where the folder's kept choice answers.
+    keepStandingChoice(FOLDER, true);
+    try {
+      vault.uncovered = 96;
+      renderMapConversation();
+      await waitFor(() => expect(sentOf('initialize')).toHaveLength(1));
+      replyTo('initialize', { protocolVersion: 1 });
+      await waitFor(() => expect(sentOf('session/new')).toHaveLength(1));
+      replyTo('session/new', { sessionId: 's-1', modes: { currentModeId: 'plan', availableModes: [{ id: 'default', name: 'Default' }, { id: 'plan', name: 'Plan' }] } });
+      await waitFor(() => expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'ready'));
+      expect(await screen.findByTestId('mapping-run-approval')).toHaveTextContent('approvalAuto');
+    } finally {
+      keepStandingChoice(FOLDER, false);
+    }
   });
 
   it('offers no row outside the map conversation', async () => {

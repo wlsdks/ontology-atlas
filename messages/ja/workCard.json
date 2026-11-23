@@ -107,8 +107,13 @@
     "startTitle": "コードの残りをマップに載せる",
     "startBody": "コードで見つかった機能{total, number}個中{mapped, number}個（{percent, number}%）がマップにあります。エージェントへの依頼は約{requests, number}回、{duration}ほどかかります。",
     "approvalLine": "変更のたびに回答を待ちます。自動承認をオンにすると、自動で進みます。",
-    "approvalAuto": "追加だけの変更は自動で進みます。それ以外の変更は回答を待ちます。",
-    "showLess": "簡単に表示"
+    "approvalAuto": "追加と変更は自動で進みます。削除・統合・上書きは回答を待ちます。",
+    "showLess": "簡単に表示",
+    "cancelledTitle": "停止しました：リクエストが終わる前に取り消されました",
+    "approvalLineShort": "先に確認します",
+    "approvalAutoShort": "追加・変更は自動",
+    "showMore": "詳しく表示",
+    "mappedShort": "マップに{percent, number}%"
   },
   "railRunningPercent": "{destination}: {percent, number}%完了"
 }

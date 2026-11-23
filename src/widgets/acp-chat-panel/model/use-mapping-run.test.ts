@@ -9,6 +9,7 @@ import {
   MAPPING_FOLDER_WAIT_MS,
   MAPPING_SILENCE_CHECK_MS,
   MAPPING_SWITCH_AFTER_MS,
+  mayOpenRunRequest,
   useMappingRun,
   widestProjectLine,
   type MappingRunDriver,
@@ -400,7 +401,7 @@ describe('every stop rule ends the run without another request', () => {
 });
 
 describe('no phase of the driver waits without an end', () => {
-  it('ends the run when the session sits stopped while the next request waits to go out', async () => {
+  it('ends the run as cancelled when the session sits stopped while the next request waits to go out', async () => {
     const run = harness([one(96), one(72)]);
     await run.press();
     run.state.status = 'starting';
@@ -410,7 +411,7 @@ describe('no phase of the driver waits without an end', () => {
     run.state.status = 'idle';
     run.rerender();
     await advance(0);
-    expect(mapping()).toMatchObject({ phase: 'stopped', stopReason: 'press' });
+    expect(mapping()).toMatchObject({ phase: 'stopped', stopReason: 'cancelled' });
     expect(run.sent).toHaveLength(1);
   });
 
@@ -475,12 +476,12 @@ describe('no phase of the driver waits without an end', () => {
       await run.settle();
       await advance(MAPPING_SWITCH_AFTER_MS);
     }],
-  ])('ends the run as stopped when its panel goes %s, and sends nothing after', async (_moment, reach) => {
+  ])('ends the run as cancelled when its panel goes %s, and sends nothing after', async (_moment, reach) => {
     const run = harness([one(96), one(72)]);
     await reach(run);
     const conversations = run.newConversation.mock.calls.length;
     run.hook.unmount();
-    expect(mapping()).toMatchObject({ phase: 'stopped', stopReason: 'press' });
+    expect(mapping()).toMatchObject({ phase: 'stopped', stopReason: 'cancelled' });
     await advance(MAPPING_FOLDER_WAIT_MS + MAPPING_SWITCH_AFTER_MS);
     expect(run.newConversation).toHaveBeenCalledTimes(conversations);
     expect(run.sent).toHaveLength(1);
@@ -506,6 +507,41 @@ describe('the figures a request ends with', () => {
     await run.press();
     await run.end();
     expect(mapping()).toMatchObject({ phase: 'stopped', stopReason: 'lineLost', now: one(96) });
+  });
+
+  it('stops with the line lost when the note cannot be read or gives no answer, though its last line one request could close', async () => {
+    const failing = harness([one(31), one(31)]);
+    await failing.press();
+    failing.readProject.mockRejectedValueOnce(new Error('The project note launch could not be read.'));
+    await failing.end();
+    expect(mapping()).toMatchObject({ phase: 'stopped', stopReason: 'lineLost', now: one(31) });
+    failing.hook.unmount();
+    workRuns.reset();
+    workRuns.enterFolderRoot(FOLDER);
+
+    const silent = harness([one(31), one(31)]);
+    await silent.press();
+    silent.readProject.mockImplementationOnce(() => new Promise<MappingFigures | null>(() => {}));
+    silent.finishTurn();
+    await silent.settle();
+    await silent.settle();
+    await advance(MAPPING_FOLDER_WAIT_MS);
+    expect(mapping()).toMatchObject({ phase: 'stopped', stopReason: 'lineLost', now: one(31) });
+  });
+
+  it('takes the widest line at a request\'s end for a run begun before any project had one', async () => {
+    const run = harness([null, one(40), null]);
+    await run.press();
+    expect(mapping()).toMatchObject({ project: null, start: null });
+    await run.end();
+    expect(mapping()).toMatchObject({ phase: 'running', project: 'launch', now: one(40), requestsSent: 2 });
+    await run.settle();
+    await advance(MAPPING_SWITCH_AFTER_MS);
+    // The first request went out with no figures, for none were read; the next carries the line it found.
+    expect(run.sent).toEqual(['map the rest: none left', 'map the rest: 40 left']);
+    expect(run.readProject).not.toHaveBeenCalled();
+    await run.end();
+    expect(run.readProject).toHaveBeenCalledWith('launch');
   });
 
   it('keeps the run\'s figures when the files granted now belong to another folder', async () => {
@@ -537,5 +573,21 @@ describe('the project a run reads', () => {
       { project: 'loans', figures: one(90, 150) },
     ])).toEqual({ project: 'loans', figures: one(90, 150) });
     expect(widestProjectLine([{ project: 'empty', figures: null }])).toBeNull();
+  });
+});
+
+describe('opening a finished request of a run', () => {
+  it('waits while another conversation holds the folder or the run still sends requests from any panel', () => {
+    const running = workRuns.beginMapping({ folder: FOLDER, folderName: 'launch', agent: 'Claude Agent', project: 'launch', figures: one(96), startedAt: 0 });
+    if (!running) throw new Error('the run did not begin');
+    const clear = { driving: false, busy: false, folderBusy: false, run: null };
+    expect(mayOpenRunRequest(clear)).toBe(true);
+    expect(mayOpenRunRequest({ ...clear, folderBusy: true })).toBe(false);
+    // Another panel drives the run: this one is not driving, yet the run still sends.
+    expect(mayOpenRunRequest({ ...clear, run: running })).toBe(false);
+    act(() => workRuns.stopRun(KEY));
+    expect(mayOpenRunRequest({ ...clear, run: mapping() })).toBe(false);
+    expect(mayOpenRunRequest({ ...clear, driving: true })).toBe(false);
+    expect(mayOpenRunRequest({ ...clear, busy: true })).toBe(false);
   });
 });

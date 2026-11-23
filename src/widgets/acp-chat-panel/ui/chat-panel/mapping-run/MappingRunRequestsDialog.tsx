@@ -11,7 +11,7 @@ export interface RunRequestItem {
   label: string;
   /** When it ran, or what it did; null when nothing more is known. */
   detail: string | null;
-  sessionId: string | null;
+  sessionId: string;
 }
 
 /** Every request of one run, centred over the screen; each opens its own conversation. */
@@ -38,8 +38,8 @@ export function MappingRunRequestsDialog({ items, canOpen, onOpen, onClose }: {
             <li key={item.key}>
               <RowButton
                 data-testid="mapping-run-requests-item"
-                disabled={!canOpen || item.sessionId === null}
-                onClick={() => item.sessionId && onOpen(item.sessionId)}
+                disabled={!canOpen}
+                onClick={() => onOpen(item.sessionId)}
                 hoverSurface="lift"
                 hoverInk="strong"
                 className="w-full"

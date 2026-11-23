@@ -139,6 +139,8 @@ export function useMappingRunCopy(run: MappingRun, line: TurnRunLine, marks: Wor
       switch (run.stopReason) {
         case 'message':
           return { ...base, title: t('stoppedTitle', { percent }), detail: t('messageBody'), figures: null };
+        case 'cancelled':
+          return { ...base, title: t('cancelledTitle'), detail: t('stoppedBody'), figures: null };
         case 'noProgress':
           return { ...base, title: t('noProgressTitle'), detail: t('noProgressBody', { mapped, total }), figures: null };
         case 'pastEstimate':
