@@ -191,7 +191,7 @@ async function record([checkout, target, vault, out, requestText, agent, exitTex
     refusedCalls: transcript ? transcript.answers.filter((answer) => answer.refused).length : null,
     largestAnswerChars: transcript ? Math.max(0, ...transcript.answers.map((answer) => answer.chars)) : null,
     foreignCalls: transcript ? transcript.foreign : null,
-    ...(request === 0 ? { requestCeiling: note ? requestCeiling(note.uncovered) : null } : {}),
+    ...(request === 0 ? { requestCeiling: requestCeiling((note ?? server.figures)?.uncovered ?? 0) } : {}),
   };
   appendFileSync(ledgerPath(out), `${JSON.stringify(line)}\n`);
 }
@@ -201,6 +201,8 @@ export function stopReason(lines, maxRequests) {
   const last = lines.at(-1);
   if (last.agentError && last.request > 0) return 'agentError';
   const hadLine = lines.slice(0, -1).some((line) => line.note !== null);
+  // Before any request a vault built before the summary line has none: the server's count stands in.
+  if (last.note === null && last.request === 0 && (last.server?.uncovered ?? 0) > 0) return null;
   if (last.note === null) return hadLine ? 'finished' : 'noProgress';
   const before = lines.at(-2);
   if (before && before.note !== null && last.note.uncovered >= before.note.uncovered) return 'noProgress';
@@ -208,6 +210,13 @@ export function stopReason(lines, maxRequests) {
   if (last.request + 1 > ceiling) return 'pastEstimate';
   if (last.request + 1 > maxRequests) return 'maxRequests';
   return null;
+}
+
+/** The server's count before the first request as `R/T`, for a vault that keeps no line yet. */
+function measured([out]) {
+  const first = readLedger(out).find((line) => line.request === 0);
+  const figures = first?.server;
+  process.stdout.write(figures ? `${figures.uncovered}/${figures.total}\n` : '\n');
 }
 
 function next([out, maxText]) {
@@ -256,6 +265,7 @@ async function main([command, ...args]) {
   if (command === 'record') return record(args);
   if (command === 'next') return next(args);
   if (command === 'table') return table(args);
+  if (command === 'measured') return measured(args);
   process.stderr.write('usage: map-rest-ledger.mjs record|next|table ...\n');
   process.exit(2);
 }
