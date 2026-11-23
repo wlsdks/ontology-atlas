@@ -84,6 +84,10 @@ export function screenOf(id: string): StampedPoint {
     x += (centre.x * F.scale + F.originX + offset.x - x) * fan.share;
     y += (centre.y * F.scale + F.originY + offset.y - y) * fan.share;
   }
+  if (id === F.stepId) {
+    x += F.stepUx * F.stepPx;
+    y += F.stepUy * F.stepPx;
+  }
   if (at.x !== x) at.x = x;
   if (at.y !== y) at.y = y;
   at.stamp = F.stamp;

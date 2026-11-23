@@ -15,7 +15,7 @@ import { type PlacedName } from "../names/placed-name";
 import { stepScale, zoomStep } from "../names/zoom-step";
 import { openedElements } from "../open";
 import { openRadiusPx } from "../open-star";
-import type { FlatGraphLayout, FlatGraphTokens } from "../flat-graph-shapes";
+import type { FlatGraphLayout, FlatGraphPaintTokens, FlatGraphTokens } from "../flat-graph-shapes";
 import { planFanPushes } from "./fan-push";
 import { planName, placeName, NAME_RANKS, nameRanks, plannedNames, nameRank, blockShows, memberBlockShows, planMemberFallbacks } from "./name-plan";
 import { grownMarks, collectGrownMarks } from "./name-room";
@@ -196,11 +196,14 @@ export function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion
   F.starCount = 0;
   const left = motion.previous.focusId;
   F.leavingId = !motion.settled && motion.previous.selected && left !== null && left !== F.selectedId && left !== model.projectId && !model.domainById.has(left) ? left : null;
+  F.stepId = null;
   // The selection never stands in its own star, so its radius asks for the selected radius alone; its fan rings what it draws.
   if (F.selectedId !== null) {
-    const r = selectedDiscRadius(radiusNow(F.selectedId), P, growth);
+    const owner = model.capabilityOf.get(F.selectedId);
+    const r = selectedRadiusClearOfOwner(F.selectedId, selectedDiscRadius(radiusNow(F.selectedId), P, growth), owner, P);
     if (F.selectedR !== r) F.selectedR = r;
     const share = attention.selected && attention.focusId === F.selectedId ? mix : 1;
+    stepClearOfOwner(F.selectedId, discRadius(F.selectedId), owner, P, share);
     const elements = openedElements(model, layout, F.selectedId, P, discRadius(F.selectedId), input.scale, growth);
     if (elements !== null && share > 0) F.opened.push({ elements, share });
   }
@@ -208,6 +211,7 @@ export function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion
   if (F.leavingId !== null) {
     const r = openedRadius(F.leavingId, radiusNow(F.leavingId));
     if (F.leavingR !== r) F.leavingR = r;
+    if (F.stepId === null) stepClearOfOwner(F.leavingId, discRadius(F.leavingId), model.capabilityOf.get(F.leavingId), P, 1 - mix);
     const elements = openedElements(model, layout, F.leavingId, P, discRadius(F.leavingId), input.scale, growth);
     if (elements !== null && mix < 1) F.opened.push({ elements, share: 1 - mix });
   }
@@ -495,4 +499,36 @@ function stepRadius(id: string): number {
   const nearestOwn = room.nearestId === null ? 0 : radiusOf(room.nearestId, stepGrowthNow[0]!, stepGrowthNow[1]!);
   const fixedPx = star.domain ? graphDiscRadiusPx("domain", 0, F.P, stepGrowthNow[0]!) : star.fixedPx;
   return openRadiusPx(own, room, star.world ? stepGrowthNow[1]! : 1, fixedPx, F.P, nearestOwn);
+}
+
+/**
+ * A selected element grows only as far as its ring still clears the capability disc it hangs from,
+ * and never below its own resting size: an element sits closer to its capability than a selection's size allows.
+ */
+function selectedRadiusClearOfOwner(id: string, wanted: number, ownerId: string | undefined, P: FlatGraphPaintTokens): number {
+  if (ownerId === undefined) return wanted;
+  const at = screenOf(id);
+  const owner = screenOf(ownerId);
+  const room = Math.hypot(at.x - owner.x, at.y - owner.y) - radiusNow(ownerId) - P.selectedRingGapPx - P.selectedRingPx - P.selectedDiscGapPx;
+  return Math.max(radiusNow(id), Math.min(wanted, room));
+}
+
+/**
+ * Where a ringed element hangs too close for its ring to clear its capability's disc even at its
+ * resting size, it steps off along the line from that capability by the shortfall, eased in by `share`.
+ */
+function stepClearOfOwner(id: string, drawnR: number, ownerId: string | undefined, P: FlatGraphPaintTokens, share: number): void {
+  if (ownerId === undefined || share <= 0) return;
+  const at = screenOf(id);
+  const owner = screenOf(ownerId);
+  const dx = at.x - owner.x;
+  const dy = at.y - owner.y;
+  const apart = Math.hypot(dx, dy);
+  const short = radiusNow(ownerId) + P.selectedRingGapPx + P.selectedRingPx + P.selectedDiscGapPx + drawnR - apart;
+  if (short <= 0 || apart < 1e-6) return;
+  F.stepId = id;
+  F.stepPx = short * share;
+  F.stepUx = dx / apart;
+  F.stepUy = dy / apart;
+  screenOf(id);
 }
