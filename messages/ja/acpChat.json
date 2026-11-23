@@ -175,6 +175,7 @@
     "pageFails": "このページの形式に{count}件の問題があります。「許可」するとそのまま保存され、Wikiの一覧に問題が表示されます。",
     "pageFailsRest": "これ以外にあと{count}件あります。すべてWikiの一覧に表示されます。",
     "insideFolderTitle": "このフォルダ内のファイルを変更しようとしています",
+    "statedInsideFolderTitle": "このフォルダ内の次のファイルを変更すると伝えています",
     "insideFolderBody": "パスは下のとおりです。許可するまで何も実行されません。",
     "insideProjectTitle": "プロジェクト内のコードを確認しようとしています",
     "insideProjectBody": "オントロジーフォルダの外ですが、選択したプロジェクトの内側です。許可するまで何も実行されません。",

@@ -82,6 +82,8 @@ export function AcpPermissionCard({
   const askedSentence = serverConsent ? request.title : null;
   const scope = permissionScope(request.options);
   const targetPaths = request.filePath ? [request.filePath] : request.statedPaths ?? [];
+  /* The agent's own list of files: shown beside what it calls the request, since a move can write a path the list leaves out. */
+  const statedOnly = !request.filePath && targetPaths.length > 0;
   const locality = widestPermissionLocality(vaultPath ?? null, targetPaths);
   const askMotion: AskMotion = answerInReach === 'allow'
     ? 'tail-wag'
@@ -129,7 +131,7 @@ export function AcpPermissionCard({
           ? { field: headlineFieldKey ? tChange(headlineFieldKey) : headline.fieldKey }
           : {}),
       })
-    : t(permissionTitleKey({ ontologyWrite, serverConsent, locality }));
+    : t(permissionTitleKey({ ontologyWrite, serverConsent, locality, statedOnly }));
   const bodyText = t(
     permissionBodyKey({
       ontologyWrite,
@@ -224,6 +226,11 @@ export function AcpPermissionCard({
               >
                 {t(`intent.${intent}`)}
               </p>
+              {!ontologyWrite && statedOnly && request.title ? (
+                <p data-testid="acp-permission-stated-title" className="break-words text-body leading-body text-[color:var(--color-text-secondary)]">
+                  {request.title}
+                </p>
+              ) : null}
               {ontologyWrite ? null : targetPaths.length > 0 ? (
                 targetPaths.map((path) => (
                   <p
