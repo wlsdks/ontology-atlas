@@ -128,6 +128,27 @@ describe("a dock mounted while already open", () => {
   });
 });
 
+describe("an opening starts its entrance before the conversation mounts", () => {
+  it("opens the frame in the press's own render and mounts the panel on a later frame", () => {
+    const frames: FrameRequestCallback[] = [];
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => {});
+    const view = render(dock(false));
+    view.rerender(dock(true));
+    expect(view.getByTestId("library-agent-dock-frame").getAttribute("data-dock-state")).toBe("open");
+    expect(view.getByTestId("library-agent-dock")).toBeInTheDocument();
+    expect(view.queryByTestId("chat-panel")).toBeNull();
+
+    act(() => {
+      for (const frame of frames.splice(0)) frame(0);
+    });
+    expect(view.getByTestId("chat-panel")).toBeInTheDocument();
+  });
+});
+
 describe("terminal tool observations", () => {
   it("forwards the Library receipt bridge to its chat panel", () => {
     const callback = () => {};

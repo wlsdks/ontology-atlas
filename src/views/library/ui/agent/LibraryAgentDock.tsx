@@ -126,6 +126,16 @@ export function LibraryAgentDock({
    * the panel would mount after the width had begun moving. The condition keeps it from looping.
    */
   if (open && !standing) setStanding(true);
+  /*
+   * The conversation's first mount is the opening's heaviest work, so a dock that opens draws its frame
+   * and surface on time and mounts the panel a frame later; a dock born open has no entrance to protect.
+   */
+  const [panelMounted, setPanelMounted] = useState(open);
+  useEffect(() => {
+    if (!standing || panelMounted) return;
+    const frame = window.requestAnimationFrame(() => setPanelMounted(true));
+    return () => window.cancelAnimationFrame(frame);
+  }, [panelMounted, standing]);
   /* The session starts once the dock has its width, however it opened, not only for a door's request. */
   const [settled, setSettled] = useState(false);
   /*
@@ -319,7 +329,7 @@ export function LibraryAgentDock({
             </span>
           </div>
           <AcpDockHeader title={tChat("dockTitle")} onClose={onClose} />
-          <AcpChatPanel
+          {panelMounted ? <AcpChatPanel
             key={runtime.id}
             keepKey={`library:${vaultRoot}:${runtime.id}`}
             parksTurns="chosen"
@@ -377,7 +387,7 @@ export function LibraryAgentDock({
                 </div>
               ) : null
             }
-          />
+          /> : null}
         </Surface>
       ) : null}
     </div>
