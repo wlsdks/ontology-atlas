@@ -1,0 +1,31 @@
+{
+  "editor": "Open in editor",
+  "terminal": "Open in terminal",
+  "named": "Open in {app}",
+  "change": "Change application",
+  "choose": {
+    "editor": "Choose the editor Atlas opens. You can change it here later.",
+    "terminal": "Choose the terminal Atlas opens. You can change it here later."
+  },
+  "help": {
+    "folder": "Opens {folder} in {app}.",
+    "file": "Opens {path} at line {line} in {app}.",
+    "terminal": "Opens a new {app} window in {folder}. Atlas types nothing into it, and the session stays in the window it runs in."
+  },
+  "opened": "Opened in {app}",
+  "refused": "{target} was not opened: {reason} Nothing was started.",
+  "reason": {
+    "gone": "It is no longer there.",
+    "notFolder": "It is not a folder.",
+    "notFile": "It is not a file.",
+    "outside": "It is outside the folder Atlas was given.",
+    "appMissing": "{app} is no longer installed. Press Change application."
+  },
+  "none": {
+    "editor": "No editor Atlas can open was found on this Mac. Copy the path to open it yourself.",
+    "terminal": "No terminal Atlas can open was found on this Mac. Copy the folder path to open it yourself."
+  },
+  "otherSystem": "Atlas opens editors and terminals on macOS only. Copy the path to open it yourself.",
+  "pullRequest": "Find its pull request on GitHub",
+  "pullRequestHelp": "Opens github.com in your browser and searches {repo} for pull requests from {branch}. Your browser sends that request. Atlas sends nothing."
+}

@@ -1,0 +1,53 @@
+{
+  "row": {
+    "label": "代码",
+    "open": "阅读 {path}",
+    "cites": "文档引用了 {count} 处"
+  },
+  "title": "{concept} 的代码",
+  "lines": {
+    "range": "L{start}–{end}",
+    "single": "L{line}",
+    "top": "从头开始"
+  },
+  "cite": {
+    "current": "文档引用的是这些行。",
+    "stale": "文档写成后这个文件发生了变化，所以这些可能不是文档所指的行。",
+    "unknown": "Atlas 无法确认文档写成后这个文件是否发生了变化。",
+    "beyond": "文档引用了 {lines}，而这个文件现在到第 {last} 行就结束了。",
+    "none": "文档指向这个文件，但没有引用任何行。"
+  },
+  "reading": "正在读取 {path}…",
+  "more": {
+    "above": "显示上方 {count} 行",
+    "below": "显示下方 {count} 行"
+  },
+  "state": {
+    "gone": "已连接的代码文件夹里没有 {path}。文档写成后它被移动、重命名或删除了。",
+    "askToFind": "请智能体找到它",
+    "notConnected": "这个项目没有连接代码文件夹，所以 Atlas 无法读取 {path}。",
+    "connect": "连接代码文件夹",
+    "accessLost": "已连接的代码文件夹不在原来的位置，所以 Atlas 无法读取 {path}。",
+    "chooseAgain": "重新选择文件夹",
+    "secret": "Atlas 不读取 {path}，因为这类名称的文件里存放着密钥或密码。",
+    "outside": "{path} 指向已连接代码文件夹之外，所以 Atlas 没有读取它。",
+    "tooLarge": "{path} 大于 {limit}，所以 Atlas 不在这里读取它。",
+    "notText": "{path} 不是文本，所以这里没有可读的内容。",
+    "changed": "Atlas 读取之后这个文件发生了变化。",
+    "readAgain": "重新读取",
+    "otherSystem": "Atlas 只在 macOS 和 Linux 上就地读取代码。请复制路径，自己打开文件。"
+  },
+  "branch": {
+    "basis": "显示的是 {branch} 中的 {path}。",
+    "changedLines": "在 {branch} 中改动",
+    "removed": "这里删除了 {count} 行"
+  },
+  "copyPath": "复制路径",
+  "copied": "已复制",
+  "close": "关闭",
+  "back": "返回 {concept}",
+  "web": {
+    "title": "阅读代码需要桌面应用",
+    "body": "浏览器只能打开你选择的文件夹，而代码在它之外。桌面应用会读取这台电脑上已连接的代码文件夹。"
+  }
+}
