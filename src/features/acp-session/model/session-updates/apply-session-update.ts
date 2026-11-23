@@ -1,5 +1,6 @@
 import type { Dispatch, RefObject, SetStateAction } from 'react';
 
+import type { UsageReport } from '@/entities/agent-usage';
 import type { AcpWorkReceipt, AcpWorkResult } from '@/shared/lib/meaning-transition/acp-work-receipt';
 
 import type { AcpPermissionRequest } from '../permissions/permission-request';
@@ -11,6 +12,7 @@ import { readSlashCommands, type AcpSlashCommand } from '../session-choices/slas
 import { keepToolOutput } from '../tool-calls/tool-output';
 import type { ActiveTurn } from '../turns/acp-turn';
 import { terminalMatchesWriter } from '../work-receipts/work-receipt';
+import { readUsageUpdate } from './usage-update';
 
 const TERMINAL_TOOL_STATES = new Set(['completed', 'failed', 'cancelled']);
 
@@ -29,6 +31,7 @@ export interface SessionUpdateTargets {
   updateEvents: (update: (previous: AcpEvent[]) => AcpEvent[]) => void;
   emitWorkReceipt: (receipt: AcpWorkReceipt) => void;
   setApprovedOntologyWriteTracked: (request: AcpPermissionRequest | null) => void;
+  reportUsage: (report: UsageReport) => void;
 }
 
 /** Changes only what the update reports; a tool row appears only after the agent really called that tool, and an allowed ontology write's receipt closes on its terminal update. */
@@ -52,6 +55,7 @@ export function applySessionUpdate(
     updateEvents,
     emitWorkReceipt,
     setApprovedOntologyWriteTracked,
+    reportUsage,
   } = targets;
   if (!updateContext.sessionId || updateContext.sessionId !== sessionIdRef.current) return;
   setLastTurnUpdateAt(Date.now());
@@ -63,6 +67,11 @@ export function applySessionUpdate(
     return;
   }
 
+  if (kind === 'usage_update') {
+    const usage = readUsageUpdate(update, updateContext.sessionId);
+    if (usage) reportUsage(usage);
+    return;
+  }
   if (kind === 'available_commands_update') {
     setSlashCommands(readSlashCommands(update));
     return;

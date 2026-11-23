@@ -14,8 +14,9 @@ import { isRunActive, type WorkRun, type WorkRunPhase } from '../model/work-run'
 import type { ScheduledRun } from '../model/scheduled-run';
 import { isMeaningActive, type MeaningRun } from '../model/meaning-run';
 import { turnPageDoor, type TurnRun } from '../model/turn-run';
+import { isMappingActive, type MappingRun } from '../model/mapping-run';
 import { workRuns, type SeatRun } from '../model/work-run-store';
-import { useCheckDoor, useOpenScheduledRun, useTurnDoor } from './use-run-doors';
+import { useCheckDoor, useMapConversationDoor, useOpenScheduledRun, useTurnDoor } from './use-run-doors';
 import {
   isSeatRunActive,
   seatRuns,
@@ -33,6 +34,8 @@ import { useMeaningRunCopy, type MeaningFigure } from './use-meaning-run-copy';
 import { WorkRunsDialog } from './WorkRunsDialog';
 import { useSeatStepAside } from './use-seat-step-aside';
 import { WORK_CARD_ATTRIBUTE } from './use-clear-of-work-card';
+import { mappingTint, useMappingRunCopy, usePacedLine } from './use-mapping-run-copy';
+import { installWorkRunProbe } from './work-run-probe';
 
 /** `.app-update-card[data-state='closed']` and `.app-update-layer-out` fade over `--motion-base`. */
 const FADE_OUT_MS = Math.round(MOTION.base.duration * 1_000);
@@ -59,6 +62,7 @@ export function WorkRunCard() {
   const [listOpen, setListOpen] = useState(false);
   if (listOpen && !open) setListOpen(false);
   const others = open ? seated.slice(0, -1) : [];
+  useEffect(installWorkRunProbe, []);
   return (
     <div aria-live="polite" data-testid="work-run-live">
       {mounted && drawn ? <CardBox entry={drawn} open={open} others={others} onOpenList={() => setListOpen(true)} /> : null}
@@ -93,6 +97,21 @@ function tintOfCheck(phase: WorkRunPhase): SeatTint {
   return 'running';
 }
 
+function seatTintOf(entry: SeatRun): SeatTint {
+  switch (entry.kind) {
+    case 'check':
+      return tintOfCheck(entry.run.phase);
+    case 'meaning':
+      return meaningTint(entry.run);
+    case 'turn':
+      return turnTint(entry.run);
+    case 'mapping':
+      return mappingTint(entry.run);
+    case 'scheduled':
+      return scheduledTint(entry.run);
+  }
+}
+
 function CardBox({ entry, open, others, onOpenList }: {
   entry: SeatRun;
   open: boolean;
@@ -103,11 +122,7 @@ function CardBox({ entry, open, others, onOpenList }: {
   const layers = useLeavingLayer(entry);
   const cardRef = useRef<HTMLDivElement>(null);
   const { probe, shiftPx } = useSeatStepAside(open, cardRef);
-  const tint = entry.kind === 'check'
-    ? tintOfCheck(entry.run.phase)
-    : entry.kind === 'meaning'
-      ? meaningTint(entry.run)
-      : entry.kind === 'turn' ? turnTint(entry.run) : scheduledTint(entry.run);
+  const tint = seatTintOf(entry);
   return (
     <div
       ref={cardRef}
@@ -195,6 +210,7 @@ function EntryLayer(props: LayerProps) {
   const { entry } = props;
   if (entry.kind === 'meaning') return <MeaningLayer {...props} run={entry.run} />;
   if (entry.kind === 'turn') return <TurnLayer {...props} run={entry.run} />;
+  if (entry.kind === 'mapping') return <MappingLayer {...props} run={entry.run} />;
   return entry.kind === 'check'
     ? <PhaseLayer {...props} run={entry.run} />
     : <ScheduledLayer {...props} run={entry.run} />;
@@ -402,6 +418,97 @@ function ScheduledLayer({ run, motion, others, onOpenList }: LayerProps & { run:
       {running ? (
         <div className="absolute inset-x-0 bottom-0 h-0.5 [&>[role=progressbar]]:h-full [&>[role=progressbar]]:rounded-none">
           <WorkProgress phase="running" done={run.checkedCount} total={null} label={tCard('progressLabel', { title: copy.title })} />
+        </div>
+      ) : null}
+    </LayerFrame>
+  );
+}
+
+const MAPPING_FIGURE: MeaningFigure = (value, format) => (
+  <RollingCount value={value} format={format} className="font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]" />
+);
+
+/** Two lines for a sentence that names a state, so no stop reason is cut off at the card's width. */
+const MAPPING_ENDED_TITLE = 'line-clamp-2 text-body-lg leading-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]';
+
+function MappingLayer({ entry, run, motion, others, onOpenList }: LayerProps & { run: MappingRun }) {
+  const tCheck = useTranslations('library.check');
+  const t = useTranslations('workCard.mapping');
+  const tCard = useTranslations('workCard');
+  const leaving = motion === 'out';
+  const line = usePacedLine(run.line);
+  const copy = useMappingRunCopy(run, line, CARD_MARKS, MAPPING_FIGURE);
+  const openConversation = useMapConversationDoor();
+  const testId = (id: string) => (leaving ? undefined : id);
+  const active = isMappingActive(run);
+  const counting = run.phase === 'running';
+
+  return (
+    <LayerFrame motion={motion}>
+      <WorkRunMoru run={copy.moru} />
+      <div className="ml-[8.25rem] grid h-full min-w-0 flex-1 content-between max-sm:ml-[4.5rem]">
+        <p
+          data-testid={testId('work-run-title')}
+          className={counting ? 'truncate text-label leading-label text-[color:var(--color-text-tertiary)]' : MAPPING_ENDED_TITLE}
+        >
+          {copy.title}
+        </p>
+        {counting ? (
+          <div aria-live="off" className="grid min-w-0">
+            <p data-testid={testId('work-run-figures')} className="line-clamp-2 text-label leading-label tabular-nums text-[color:var(--color-text-tertiary)]">
+              {copy.figures}
+            </p>
+            <p data-testid={testId('work-run-line')} className="truncate text-body leading-body text-[color:var(--color-text-secondary)]">
+              {copy.detail}
+            </p>
+          </div>
+        ) : (
+          <p data-testid={testId('work-run-detail')} className="line-clamp-3 text-label leading-label text-[color:var(--color-text-secondary)]">
+            {copy.detail}
+          </p>
+        )}
+        <div className="flex h-8 min-w-0 items-center gap-2">
+          {counting ? (
+            <Button size="sm" variant="outline" onClick={() => workRuns.stopRun(entry.key)} data-testid={testId('work-run-stop')}>
+              {tCard('stop')}
+            </Button>
+          ) : null}
+          {run.phase === 'asking' ? (
+            <Button size="sm" onClick={openConversation} data-testid={testId('work-run-review')}>
+              {tCheck('review')}
+            </Button>
+          ) : null}
+          {copy.continues ? (
+            <Button size="sm" onClick={openConversation} data-testid={testId('work-run-continue')}>
+              {t('continue')}
+            </Button>
+          ) : null}
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => (active ? workRuns.hideActive() : workRuns.closeRun(entry.key))}
+            data-testid={testId(active ? 'work-run-hide' : 'work-run-close')}
+            className="touch-hit-expand text-[color:var(--color-text-secondary)]"
+          >
+            {active ? tCard('hide') : tCard('close')}
+          </Button>
+          <MoreRuns others={others} onOpenList={onOpenList} testId={testId} />
+        </div>
+      </div>
+      {active ? (
+        // The fill moves once per request, easing over the progress motion; under reduced motion it jumps.
+        <div
+          className={cn(
+            'absolute inset-x-0 bottom-0 h-0.5 [&>[role=progressbar]]:h-full [&>[role=progressbar]]:rounded-none',
+            run.phase !== 'running' && '[&_[data-work-sweep]]:[animation-play-state:paused]',
+          )}
+        >
+          <WorkProgress
+            phase="running"
+            done={copy.fraction ?? 0}
+            total={copy.fraction === null ? null : 1}
+            label={tCard('progressLabel', { title: copy.title })}
+          />
         </div>
       ) : null}
     </LayerFrame>

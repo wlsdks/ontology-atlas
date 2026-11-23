@@ -13,5 +13,25 @@
   "getAppTitle": "The desktop app remembers your folder, opens offline, and handles Git history and agent connections",
   "changes": "Changes",
   "planning": "Planning",
-  "workStatus": "Work status"
+  "workStatus": "Work status",
+  "usage": {
+    "agentFallback": "Your agent",
+    "tileName": "{agent} usage",
+    "limitName": {
+      "fiveHour": "5-hour limit",
+      "weekly": "Weekly limit"
+    },
+    "limitUsed": "{percent, number}% used",
+    "limitFigure": "{limit}: {percent, number}% used",
+    "resets": "Resets {time}",
+    "asOf": "as of {time}",
+    "noLimits": "{agent} does not send its account limits to Atlas.",
+    "conversation": "This conversation",
+    "context": "Context",
+    "contextFull": "{percent, number}% full",
+    "contextFigure": "context {percent, number}% full",
+    "contextTokens": "{used, number} of {size, number} tokens",
+    "cost": "Cost",
+    "costReported": "Estimate reported by {agent}"
+  }
 }

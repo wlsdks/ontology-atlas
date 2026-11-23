@@ -7,6 +7,9 @@ import {
   summarizeNode,
 } from '../query-operation/query-primitives.mjs';
 
+/** The character bound every answer keeps (the field-trial response bound). */
+const PROJECT_MAP_TEXT_CHARS = 36_000;
+
 /** What surrounds one node, one domain or one project: its edges, lineage, members and hotspots. */
 export function createProfileQueries({
   nodeBySlug,
@@ -175,9 +178,32 @@ export function createProfileQueries({
     };
   }
 
+  /**
+   * The project map whose pretty JSON fits `PROJECT_MAP_TEXT_CHARS`: per-domain lists are cut
+   * from the asked `itemLimit` until it fits, so a large map never answers past the bound.
+   * At most log2(itemLimit) builds.
+   */
   function projectMap(slugOrAlias, options = {}) {
+    const requestedItemLimit = normalizeLimit(options.itemLimit, 20, 'itemLimit');
+    let itemLimit = requestedItemLimit;
+    let map = buildProjectMap(slugOrAlias, options, itemLimit);
+    while (itemLimit > 1 && JSON.stringify(map, null, 2).length > PROJECT_MAP_TEXT_CHARS) {
+      itemLimit = Math.max(1, Math.floor(itemLimit / 2));
+      map = buildProjectMap(slugOrAlias, options, itemLimit);
+    }
+    if (itemLimit === requestedItemLimit) return map;
+    return {
+      ...map,
+      narrowedToFit: {
+        requestedItemLimit,
+        itemLimit,
+        next: `Lists were cut to ${itemLimit} per domain to keep this answer under ${PROJECT_MAP_TEXT_CHARS} characters; query_ontology({operation:"domain_profile", slug}) lists one domain in full.`,
+      },
+    };
+  }
+
+  function buildProjectMap(slugOrAlias, options, itemLimit) {
     const limit = normalizeLimit(options.limit, 50);
-    const itemLimit = normalizeLimit(options.itemLimit, 20, 'itemLimit');
     const project = resolveProjectRoot(slugOrAlias);
     const included = collectContainmentScope(project);
     const scopedNodes = sortedNodesInScope(included);

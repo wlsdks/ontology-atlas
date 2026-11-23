@@ -368,9 +368,8 @@
       "prompt": "Build the first map of this folder from the connected code. Start with connection_info and list_kinds, then read the source and add the domains, capabilities and elements it shows, each with a definition sentence, its code location and its relations, each relation with a why. Look for an existing concept before adding a near-twin. Then run validate_vault and tell me what you added, what you connected and what you could not read."
     },
     "mapArea": {
-      "label": "Map the next part of the code",
-      "because": "{mapped} of the {total} abilities found in the code are on the map ({percent}%)",
-      "prompt": "{mapped} of the {total} abilities found in this code are on the map ({percent}%). Map the next part now. Run validate_vault and take the files its Areas sentence names after \"Map next, in one request\"; open their areas with the analyze_repo_structure calls that sentence gives. Write one capability per thing a user, an operator or another system gets from those files, at most twelve in this request, each named the way a teammate says it aloud, with its entry file in path:, in the domain it belongs to; one capability may stand for several files when it cites lines in each. Look for an existing concept before adding a near-twin. Read each new capability by symbol, three or four per call, and state its deciding rule in one to three sentences with the cite of the read lines. Narrow with patch_concept any group capability that only named these files, so nothing is on the map twice. What is not product (generated code, test tooling, samples) gets no node: put it on one line of the project's Excludes section with its path and the reason. Add the depends_on relations the reads show, each with a why that cites lines. Then run validate_vault again and replace the Not mapped yet lines under the project's Uncertainty with exactly the lines it gives. Tell me in a few plain sentences what these files turned out to hold, what you added, and how many of the abilities are on the map now."
+      "line": "Map the rest of the code · request {part, number}",
+      "prompt": "{mapped} of the {total} abilities found in this code are on the map ({percent}%). Map the next part now. Run validate_vault and take the files its Areas sentence names after \"Map next, in one request\"; open their areas with the analyze_repo_structure calls that sentence gives. Write one capability per thing a user, an operator or another system gets from those files, at most eighteen in this request, each named the way a teammate says it aloud, with its entry file in path:, in the domain it belongs to; one capability may stand for several files when it cites lines in each. Look for an existing concept before adding a near-twin. Read each new capability by symbol, three or four per call, and state its deciding rule in one to three sentences with the cite of the read lines. Narrow with patch_concept any group capability that only named these files, so nothing is on the map twice; when you narrow or split a concept, its deciding rules and their cited lines move word for word to the concept that now holds that code. What is not product (generated code, test tooling, samples) gets no node: put it on one line of the project's Excludes section with its path and the reason. Add the depends_on relations the reads show, each with a why that cites lines. Then run validate_vault again and replace the Not mapped yet lines under the project's Uncertainty with exactly the lines it gives. Tell me in a few plain sentences what these files turned out to hold, what you added, and how many of the abilities are on the map now."
     },
     "readRules": {
       "label": "{count, plural, one {Read # capability from the code} other {Read # capabilities from the code}}",
@@ -494,5 +493,17 @@
   "checkAnswerLine": "The check is reported on the Check results page, beside what the app checked itself.",
   "checkAnswerDoor": "Open check results",
   "checkAnswerFull": "The agent's report, verbatim",
-  "folderBusy": "The Library conversation is working in this folder. You can ask here when it finishes. Press Stop to end it now."
+  "folderBusy": "Another conversation is working in this folder. You can ask here when it finishes. Press Stop to end it now.",
+  "mapRun": {
+    "requestLine": "Request {part, number} · {gained, plural, =0 {nothing new put on the map} one {# ability put on the map} other {# abilities put on the map}} · {duration}",
+    "earlier": "Earlier requests · {count, number}",
+    "historyRow": "Map the rest of the code · {count, plural, one {# request} other {# requests}}",
+    "listTitle": "Requests to map the rest of the code",
+    "listItem": "Request {part, number}",
+    "close": "Close"
+  },
+  "limitNear": {
+    "fiveHour": "{percent, number}% of 5-hour limit",
+    "weekly": "{percent, number}% of weekly limit"
+  }
 }

@@ -62,19 +62,31 @@ export const TranscriptEntry = memo(function TranscriptEntry({
   );
 
   if (event.kind === 'user') {
-
     const parts = splitAppRequest(event.text);
+    const { shown } = event;
+    // A request the app wrote for a run shows its one line; the instruction it sent is there on demand.
+    const detailed = Boolean(shown) || parts.detail;
     return (
       <>
-        <p
-          data-acp-entry="user"
-          data-user-request={parts.detail ? 'app-composed' : 'typed'}
-          className="mt-1 max-w-[85%] self-end whitespace-pre-wrap break-keep rounded-card border border-[color:var(--color-indigo-a22)] bg-[color:var(--color-indigo-a12)] px-3 py-2 text-body-lg leading-body-lg text-[color:var(--color-text-primary)]"
-        >
-          {parts.lead}
-        </p>
+        {shown ? (
+          <p
+            data-acp-entry="user"
+            data-user-request="app-written"
+            className="mt-1 max-w-[85%] self-end break-keep rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-1.5 text-body leading-body text-[color:var(--color-text-secondary)]"
+          >
+            {shown}
+          </p>
+        ) : (
+          <p
+            data-acp-entry="user"
+            data-user-request={parts.detail ? 'app-composed' : 'typed'}
+            className="mt-1 max-w-[85%] self-end whitespace-pre-wrap break-keep rounded-card border border-[color:var(--color-indigo-a22)] bg-[color:var(--color-indigo-a12)] px-3 py-2 text-body-lg leading-body-lg text-[color:var(--color-text-primary)]"
+          >
+            {parts.lead}
+          </p>
+        )}
 
-        {parts.detail ? (
+        {detailed ? (
           <Disclosure
             className="mt-1 max-w-[85%] self-end"
             summaryTestId="acp-chat-request-full"

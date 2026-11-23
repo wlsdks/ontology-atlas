@@ -21,7 +21,9 @@ import { useScheduledRunCopy } from './use-scheduled-run-copy';
 import { RollingCount } from './RollingCount';
 import { MeaningRunMoru, WorkRunMoru } from './WorkRunMoru';
 import { useMeaningRunCopy, type MeaningFigure } from './use-meaning-run-copy';
-import { useCheckDoor, useOpenScheduledRun, useTurnDoor } from './use-run-doors';
+import { useCheckDoor, useMapConversationDoor, useOpenScheduledRun, useTurnDoor } from './use-run-doors';
+import { mappingCounts, useMappingRunCopy, usePacedLine } from './use-mapping-run-copy';
+import type { MappingRun } from '../model/mapping-run';
 
 const PANE_MARKS: WorkRunMarks = {
   page: (name) => <span className="font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{name}</span>,
@@ -47,6 +49,9 @@ export function WorkRunsDialog({ open, runs, onClose }: { open: boolean; runs: r
   const meaningFiles = useMeaningFilesDone(runs);
   const items: TabBarItem[] = [...runs].reverse().map((entry) => {
     if (entry.kind === 'turn') return { key: entry.key, label: entry.run.agent, testId: 'work-runs-tab' };
+    if (entry.kind === 'mapping') {
+      return { key: entry.key, label: t('mapping.title'), testId: 'work-runs-tab', count: mappingCounts(entry.run)?.mapped, countTitle: t('mapping.tabCount') };
+    }
     if (entry.kind === 'meaning') {
       return { key: entry.key, label: t('meaning.title'), testId: 'work-runs-tab', count: meaningFiles, countTitle: t('meaning.filesPrepared') };
     }
@@ -111,6 +116,7 @@ function RunPane({ entry, onLeave }: { entry: SeatRun; onLeave: () => void }) {
   };
   if (entry.kind === 'meaning') return <MeaningPane entry={entry} run={entry.run} leaveThen={leaveThen} />;
   if (entry.kind === 'turn') return <TurnPane entry={entry} run={entry.run} leaveThen={leaveThen} />;
+  if (entry.kind === 'mapping') return <MappingPane entry={entry} run={entry.run} leaveThen={leaveThen} />;
   return entry.kind === 'check'
     ? <CheckPane entry={entry} run={entry.run} leaveThen={leaveThen} />
     : <ScheduledPane entry={entry} run={entry.run} leaveThen={leaveThen} />;
@@ -145,6 +151,28 @@ function TurnPane({ entry, run, leaveThen }: { entry: SeatRun; run: TurnRun; lea
 }
 
 type LeaveThen = (go: () => void) => () => void;
+
+function MappingPane({ entry, run, leaveThen }: { entry: SeatRun; run: MappingRun; leaveThen: LeaveThen }) {
+  const tCheck = useTranslations('library.check');
+  const t = useTranslations('workCard.mapping');
+  const copy = useMappingRunCopy(run, usePacedLine(run.line), PANE_MARKS, PANE_FIGURE);
+  const openConversation = useMapConversationDoor();
+  const label = run.phase === 'asking' ? tCheck('review') : copy.continues ? t('continue') : null;
+  return (
+    <PaneFrame
+      entry={entry}
+      facts={{
+        title: copy.title,
+        line: copy.detail,
+        figures: copy.figures,
+        moru: <WorkRunMoru run={copy.moru} />,
+        count: copy.fraction ?? 0,
+        total: copy.fraction === null ? undefined : 1,
+        door: label ? <Button size="sm" onClick={leaveThen(openConversation)} data-testid="work-runs-open">{label}</Button> : null,
+      }}
+    />
+  );
+}
 
 function CheckPane({ entry, run, leaveThen }: { entry: SeatRun; run: WorkRun; leaveThen: LeaveThen }) {
   const tCheck = useTranslations('library.check');

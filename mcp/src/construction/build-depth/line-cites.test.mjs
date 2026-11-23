@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { citedSymbol, linesDecide, lineCites, preSectionParagraphs, servedLines } from './line-cites.mjs';
+import { citedSymbol, linesDecide, lineCites, preSectionParagraphs, servedLines, statesRule } from './line-cites.mjs';
 
 test('every written form of a line cite parses to the same range', () => {
   const forms = ['src/a.ts:L12-L30', 'src/a.ts#L12-30', 'src/a.ts L12–30', 'src/a.ts:12-30'];
@@ -46,4 +46,11 @@ test('the symbol a body cites after its path is found in each form builders writ
 test('the paragraphs before the first heading are the definition and the rules after it', () => {
   const body = 'Defines it.\n\nIt is skipped unless set.\n\n## Includes\n- thing\n';
   assert.deepEqual(preSectionParagraphs(body), ['Defines it.', 'It is skipped unless set.']);
+});
+
+test('a rule word inside a code span does not make a paragraph state a rule', () => {
+  assert.equal(statesRule('It recalculates the `default` namespace as of now.'), false);
+  assert.equal(statesRule('It answers with `error.msg.amount.must.be.greater`.'), false);
+  assert.equal(statesRule('A locked loan is refused with 409 when `closeOfBusiness` holds it.'), true);
+  assert.equal(statesRule('It falls back to `en` before any other locale.'), true);
 });

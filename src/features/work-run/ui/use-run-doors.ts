@@ -1,7 +1,10 @@
 'use client';
 
-import { useRouter } from '@/i18n/navigation';
+import { usePathname, useRouter } from '@/i18n/navigation';
 import { DESTINATION_HREF, withQuery } from '@/shared/config/destinations';
+import { requestAgentChat } from '@/shared/lib/agent-chat/agent-chat-intent';
+import { beginMapNavigation } from '@/shared/lib/navigation/map-navigation-pending';
+import { resolveActiveNavDestination } from '@/shared/lib/navigation/nav-destination';
 import { navigateWithViewTransition } from '@/shared/lib/navigation/route-view-transition';
 
 import type { ScheduledRun } from '../model/scheduled-run';
@@ -21,6 +24,31 @@ export function useTurnDoor() {
   return (door: TurnDoor) => {
     workRuns.openTurnDoor(door);
     navigateWithViewTransition(DESTINATION_HREF.library, () => router.push(DESTINATION_HREF.library));
+  };
+}
+
+/** How long a door off the map keeps asking the map's conversation to open while the map loads. */
+export const MAP_CONVERSATION_WAIT_MS = 15_000;
+const ASK_AGAIN_MS = 200;
+
+/**
+ * Opens the map's conversation, where a mapping run's row lives, with nothing sent: a request
+ * without a prompt only opens the dock. Off the map it goes there first and asks again until the
+ * map's dock accepts, since a queued request without a runtime is dropped.
+ */
+export function useMapConversationDoor() {
+  const router = useRouter();
+  const pathname = usePathname() ?? '/';
+  return () => {
+    if (requestAgentChat(null, null)) return;
+    if (resolveActiveNavDestination(pathname) !== 'map') {
+      const href = DESTINATION_HREF.map;
+      beginMapNavigation(() => router.push(href), pathname + window.location.search);
+    }
+    const until = Date.now() + MAP_CONVERSATION_WAIT_MS;
+    const timer = window.setInterval(() => {
+      if (requestAgentChat(null, null) || Date.now() >= until) window.clearInterval(timer);
+    }, ASK_AGAIN_MS);
   };
 }
 

@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, type RefObject } from 'react';
 
 import type { AcpEvent, AcpTurnCompletion, AcpTurnStart } from '@/features/acp-session';
 import type { AcpWorkReceipt } from '@/shared/lib/meaning-transition/acp-work-receipt';
@@ -18,6 +18,8 @@ interface TurnCaptureOptions {
   onTurnStarted?: (start: AcpTurnStart) => ((completion: AcpTurnCompletion) => void | Promise<void>) | null;
   onOpeningRequestSent?: (nonce: number) => void;
   onTerminalToolObservation?: (event: Extract<AcpEvent, { kind: 'tool' }>) => void;
+  /** The mapping run's own observer, set once its driver exists; it answers only for its requests. */
+  runTurnStartRef?: RefObject<((start: AcpTurnStart) => ((completion: AcpTurnCompletion) => Promise<void>) | null) | null>;
 }
 
 export function useTurnCapture({
@@ -31,6 +33,7 @@ export function useTurnCapture({
   onTurnStarted,
   onOpeningRequestSent,
   onTerminalToolObservation,
+  runTurnStartRef,
 }: TurnCaptureOptions) {
   const meaningTransitions = useMeaningTransitionCapture({ context: meaningTransitionContext, vaultRoot, runtimeId });
   const recordMeaningReceipt = meaningTransitions.recordReceipt;
@@ -48,14 +51,15 @@ export function useTurnCapture({
     onTerminalToolObservation?.(event);
   }, [onTerminalToolObservation]);
   const captureTurnStart = useCallback((turn: AcpTurnStart) => {
+    const runCompletion = runTurnStartRef?.current?.(turn) ?? null;
     const completion = onTurnStarted?.(turn) ?? null;
     if (!openingScopeMismatch && openingRequest && !openingRequest.investigation && turn.text === openingRequest.text) onOpeningRequestSent?.(openingRequest.nonce);
     return async (result: AcpTurnCompletion) => {
       // The last tool and turn end can land in one React batch; drain before history is baselined.
       result.events.forEach(emitTerminalTool);
-      await completion?.(result);
+      await Promise.all([completion?.(result), runCompletion?.(result)]);
     };
-  }, [onTurnStarted, openingRequest, openingScopeMismatch, onOpeningRequestSent, emitTerminalTool]);
+  }, [onTurnStarted, openingRequest, openingScopeMismatch, onOpeningRequestSent, emitTerminalTool, runTurnStartRef]);
   return {
     meaningTransitions,
     captureWorkReceipt,

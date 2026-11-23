@@ -169,7 +169,7 @@ export function askPermission(request: AcpPermissionRequest, session: Permission
       resolve(allow.optionId);
       return;
     }
-    // Only a person's live turn can carry their standing choice; a request outside one asks.
+    // A turn the person sent, or a request of a run they started in this launch, carries their standing choice; any other asks.
     const standing = decided === null && origin.turn && !readOnlyTurn
       ? standingApproval(request, {
           // The picker reads the plan mode there, so the app does not answer behind it.

@@ -1,5 +1,7 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { workRuns } from "@/features/work-run";
 
 import { AppShell } from "./AppShell";
 
@@ -17,6 +19,7 @@ const shellMocks = vi.hoisted(() => ({
     isReloadingSameVault: false,
   },
   arriving: null as { docs: { slug: string; frontmatter?: Record<string, unknown> }[] } | null,
+  folder: null as string | null,
 }));
 
 /** The shell owns the rail's utility tier, so it stands even when no page injects a slot. */
@@ -47,6 +50,11 @@ vi.mock("@/entities/vault-session/model/vault-source/use-data-source-mode", asyn
   ...(await importOriginal<typeof import("@/entities/vault-session/model/vault-source/use-data-source-mode")>()),
   useDataSourceMode: () => "static",
 }));
+
+vi.mock("@/entities/vault-session/model/vault-source/use-vault-identity-scope", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/entities/vault-session/model/vault-source/use-vault-identity-scope")>();
+  return { ...actual, useVaultSessionIdentityScope: () => shellMocks.folder ?? actual.useVaultSessionIdentityScope() };
+});
 
 vi.mock("@/shared/lib/vault-folder/native-vault/tauri-vault-runtime", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/shared/lib/vault-folder/native-vault/tauri-vault-runtime")>()),
@@ -80,6 +88,30 @@ beforeEach(() => {
   shellMocks.vault.restoreAttempted = true;
   shellMocks.vault.isReloadingSameVault = false;
   shellMocks.arriving = null;
+  shellMocks.folder = null;
+});
+
+describe("a mapping run on the rail", () => {
+  /** The driver keys a run by the open folder's root path; the rail must find it by the same. */
+  const ROOT = "/Users/probe/Ontology Atlas/launch";
+  const figures = (uncovered: number) => ({ abilitiesUncovered: uncovered, abilitiesTotal: 120 });
+
+  afterEach(() => act(() => workRuns.reset()));
+
+  it("rings the map tile with the share on the map, never the Library tile, and marks a wait there", () => {
+    shellMocks.folder = "local:launch#1";
+    shellMocks.vault.handle = { name: "launch", rootPath: ROOT };
+    workRuns.enterFolderRoot(ROOT);
+    workRuns.beginMapping({ folder: ROOT, folderName: "launch", project: "launch", agent: "Claude Agent", figures: figures(96), startedAt: 0 });
+    workRuns.endMappingBatch(ROOT, { outcome: { kind: "completed" }, figures: figures(72), draft: false, at: 120_000 });
+    render(<AppShell><div>page</div></AppShell>);
+    expect(screen.getByTestId("app-nav-rail-ring-map")).toHaveAttribute("data-ring-fraction", "0.4000");
+    expect(screen.queryByTestId("app-nav-rail-ring-library")).not.toBeInTheDocument();
+
+    act(() => workRuns.observeMappingWork(ROOT, { kind: "writing", label: null, target: "wiki/a.md", asking: true }, 130_000));
+    expect(screen.getByTestId("app-nav-rail-waiting-map")).toBeInTheDocument();
+    expect(screen.queryByTestId("app-nav-rail-waiting-library")).not.toBeInTheDocument();
+  });
 });
 
 describe("AppShell rail utility tier", () => {

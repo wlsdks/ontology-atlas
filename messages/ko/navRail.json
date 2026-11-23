@@ -13,5 +13,25 @@
   "getAppTitle": "데스크톱 앱을 받으면 폴더를 기억하고, 인터넷 없이 열고, Git 기록과 에이전트 연결까지 다뤄요.",
   "changes": "변경",
   "planning": "기획",
-  "workStatus": "작업 현황"
+  "workStatus": "작업 현황",
+  "usage": {
+    "agentFallback": "에이전트",
+    "tileName": "{agent} 사용량",
+    "limitName": {
+      "fiveHour": "5시간 한도",
+      "weekly": "주간 한도"
+    },
+    "limitUsed": "{percent, number}% 사용",
+    "limitFigure": "{limit} {percent, number}% 사용",
+    "resets": "{time}에 초기화",
+    "asOf": "{time} 기준",
+    "noLimits": "{agent}에서 계정 한도를 Atlas에 보내지 않아요.",
+    "conversation": "이 대화",
+    "context": "컨텍스트",
+    "contextFull": "{percent, number}% 사용",
+    "contextFigure": "컨텍스트 {percent, number}% 사용",
+    "contextTokens": "토큰 {size, number}개 중 {used, number}개",
+    "cost": "비용",
+    "costReported": "{agent}에서 알려준 추정치"
+  }
 }

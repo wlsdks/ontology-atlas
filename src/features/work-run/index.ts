@@ -18,7 +18,20 @@ export {
   type TurnWorkReport,
 } from './model/turn-run';
 export {
+  isMappingActive,
+  mappingFraction,
+  silentTooLong,
+  type MappingFigures,
+  type MappingFinishedRequest,
+  type MappingRequestEnd,
+  type MappingRun,
+} from './model/mapping-run';
+export {
+  folderMappingRun,
   libraryRingRun,
+  useFolderMappingRun,
+  useMappingSessions,
+  useMappingStage,
   useAutomationsStage,
   useMeaningProgress,
   useFolderWorkRun,

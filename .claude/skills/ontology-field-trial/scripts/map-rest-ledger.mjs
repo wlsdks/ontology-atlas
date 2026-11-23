@@ -10,7 +10,11 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 /** Abilities one request was measured to put on the map; the app's estimate is ceil(R / this). */
-const ABILITIES_PER_REQUEST = 24;
+const ABILITIES_PER_REQUEST = 18;
+/** The most abilities one request put on the map: a line gone after a larger count was lost, not finished. */
+const ABILITIES_ONE_REQUEST_REACHES = 31;
+/** The app sends at most this many requests per press, whatever the note says. */
+const REQUESTS_AT_MOST = 100;
 /** A survey of a large repository takes longer than call-tool's default 15 seconds. */
 const VALIDATE_TIMEOUT_MS = 300_000;
 // Line-anchored: the measure's line starts a line, a quoted copy of the note's line does not.
@@ -26,9 +30,9 @@ function readLedger(out) {
   return readFileSync(ledgerPath(out), 'utf8').split('\n').filter((line) => line.trim()).map((line) => JSON.parse(line));
 }
 
-/** The request number allowed by `2 × ceil(R / 24) + 2`, the app's stop for a run past its estimate. */
+/** The request number allowed by `min(2 × ceil(R / 18) + 2, 100)`, the app's stop for a run past its estimate. */
 export function requestCeiling(uncoveredAtStart) {
-  return 2 * Math.ceil(uncoveredAtStart / ABILITIES_PER_REQUEST) + 2;
+  return Math.min(2 * Math.ceil(uncoveredAtStart / ABILITIES_PER_REQUEST) + 2, REQUESTS_AT_MOST);
 }
 
 /** Cost, turns, refusals and answer sizes from a Claude stream-json transcript. */
@@ -191,7 +195,7 @@ async function record([checkout, target, vault, out, requestText, agent, exitTex
     refusedCalls: transcript ? transcript.answers.filter((answer) => answer.refused).length : null,
     largestAnswerChars: transcript ? Math.max(0, ...transcript.answers.map((answer) => answer.chars)) : null,
     foreignCalls: transcript ? transcript.foreign : null,
-    ...(request === 0 ? { requestCeiling: note ? requestCeiling(note.uncovered) : null } : {}),
+    ...(request === 0 ? { requestCeiling: requestCeiling((note ?? server.figures)?.uncovered ?? 0) } : {}),
   };
   appendFileSync(ledgerPath(out), `${JSON.stringify(line)}\n`);
 }
@@ -201,13 +205,28 @@ export function stopReason(lines, maxRequests) {
   const last = lines.at(-1);
   if (last.agentError && last.request > 0) return 'agentError';
   const hadLine = lines.slice(0, -1).some((line) => line.note !== null);
-  if (last.note === null) return hadLine ? 'finished' : 'noProgress';
+  // Before any request a vault built before the summary line has none: the server's count stands in.
+  if (last.note === null && last.request === 0 && (last.server?.uncovered ?? 0) > 0) return null;
+  if (last.note === null) {
+    if (!hadLine) return 'noProgress';
+    // As the app reads it: a gone line is finished only when the last count read was one request's reach.
+    const lastRead = lines.slice(0, -1).findLast((line) => line.note !== null).note;
+    return lastRead.uncovered <= ABILITIES_ONE_REQUEST_REACHES ? 'finished' : 'lineLost';
+  }
+  if (last.note.uncovered === 0) return 'finished';
   const before = lines.at(-2);
   if (before && before.note !== null && last.note.uncovered >= before.note.uncovered) return 'noProgress';
   const ceiling = lines.find((line) => line.request === 0)?.requestCeiling ?? requestCeiling(last.note.uncovered);
   if (last.request + 1 > ceiling) return 'pastEstimate';
   if (last.request + 1 > maxRequests) return 'maxRequests';
   return null;
+}
+
+/** The server's count before the first request as `R/T`, for a vault that keeps no line yet. */
+function measured([out]) {
+  const first = readLedger(out).find((line) => line.request === 0);
+  const figures = first?.server;
+  process.stdout.write(figures ? `${figures.uncovered}/${figures.total}\n` : '\n');
 }
 
 function next([out, maxText]) {
@@ -256,6 +275,7 @@ async function main([command, ...args]) {
   if (command === 'record') return record(args);
   if (command === 'next') return next(args);
   if (command === 'table') return table(args);
+  if (command === 'measured') return measured(args);
   process.stderr.write('usage: map-rest-ledger.mjs record|next|table ...\n');
   process.exit(2);
 }

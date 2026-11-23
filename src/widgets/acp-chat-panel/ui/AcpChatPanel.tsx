@@ -1,10 +1,15 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { useTranslations } from 'next-intl';
 
 import { isAgentDoctorAvailable, useAgentDoctor } from '@/features/acp-doctor';
 import { isSendableSuggestion, readAcpTrouble, useAcpSession, VAULT_MCP_SERVER_NAME, type ChatSuggestion } from '@/features/acp-session';
+import { useMappingSessions, useMappingStage, workRuns, type TurnWorkReport } from '@/features/work-run';
+import { usePressingLimit } from '@/entities/agent-usage';
+import { useGrantedVaultFiles } from '@/entities/vault-session';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
+import { useLatestRef } from '@/shared/lib/use-latest-ref';
 import { MOTION } from '@/shared/motion';
 import { KeptPanelSeat, useFolderBusy } from './KeptPanelSeat';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
@@ -12,10 +17,18 @@ import { badgeClass } from '@/shared/ui/badge-class';
 import { Surface } from '@/shared/ui';
 
 import { useTaskMeaningReview } from '../model/use-task-meaning-review';
+import {
+  mappingShare,
+  mayOpenRunRequest,
+  useFolderMappingFigures,
+  useMappingRun,
+  type MappingFiguresReader,
+  type MappingRunDriver,
+} from '../model/use-mapping-run';
 import { useTranscriptFollow } from '../model/use-transcript-follow';
 import { turnRequestOf } from '../model/turn-request';
 import { splitAppRequest } from './request-parts';
-import { turnActivity } from './turn-activity';
+import { turnActivity, type TurnActivity } from './turn-activity';
 import { ComposerInput } from './chat-panel/composer/ComposerInput';
 import { ChoicesRow, ComposerFooter } from './chat-panel/composer/ComposerFooter';
 import { ReportedPlanNote, SeatedDetailDisclosure, TurnSilentNotice } from './chat-panel/composer/composer-notices';
@@ -29,7 +42,12 @@ import { TranscriptPane } from './chat-panel/transcript-pane/TranscriptPane';
 import { TranscriptRows } from './chat-panel/transcript-pane/TranscriptRows';
 import { TurnWorkStage, type TurnWork } from './chat-panel/turn/TurnWorkStage';
 import { ConnectStoppedState, EmptyState, FolderBusyState, StartingState } from './chat-panel/transcript-pane/transcript-states';
-import type { AcpChatPanelProps } from './chat-panel/chat-panel-props';
+import { MappingRunRow } from './chat-panel/mapping-run/MappingRunRow';
+import { MappingRunRequests, numberedRequests, useRequestLine } from './chat-panel/mapping-run/MappingRunRequests';
+import { MappingRunRequestsDialog, type RunRequestItem } from './chat-panel/mapping-run/MappingRunRequestsDialog';
+import { groupRunConversations, isRunRequestText, requestWithoutCount, useRequestOpenings, type HistoryRow } from '../model/mapping-run-history';
+import { formatDate } from '@/shared/lib/locale-text/format-date';
+import type { AcpChatPanelProps, AcpTurnRequest } from './chat-panel/chat-panel-props';
 import { useHistoryEscape, useHistoryMenu, useSlashMenu } from './chat-panel/composer/use-composer-menus';
 import { useComposerSizing } from './chat-panel/composer/use-composer-sizing';
 import { planSubmit } from './chat-panel/composer/outgoing-request';
@@ -60,6 +78,27 @@ import { useTurnClock, useTurnSilence } from './chat-panel/turn/use-turn-timing'
 
 export type { AcpMapIntent } from '@/features/acp-session';
 export type { AcpOntologyRelationPreview } from './chat-panel/chat-panel-props';
+
+/** The map dock keeps its conversation under `map:<folder>:<runtime>`; only that one maps the rest of the code. */
+const MAP_CONVERSATION_KEY_PREFIX = 'map:';
+
+/**
+ * The body's own props: `mapsTheRest` rides in the kept props, so the keeper's parked copy still
+ * drives a run its seat started.
+ */
+interface AcpChatPanelBodyProps extends AcpChatPanelProps {
+  mapsTheRest?: boolean;
+}
+
+const NO_SUGGESTIONS: readonly ChatSuggestion[] = [];
+
+/** Folders whose row the person shortened to one line; until the app quits, as nothing of a run is persisted. */
+const collapsedMappingFolders = new Set<string>();
+
+/** The reader before the map conversation's row mounts: no project line can be read yet. */
+const NO_FIGURES: MappingFiguresReader = { widest: async () => null, project: async () => null };
+
+const folderNameOf = (folder: string) => folder.split(/[\\/]/).filter(Boolean).at(-1) ?? folder;
 
 export function AcpChatPanelBody({
   runtimeId,
@@ -110,10 +149,12 @@ export function AcpChatPanelBody({
   captureTaskBaseline,
   meaningTransitionContext,
   onBusyChange,
-}: AcpChatPanelProps) {
+  mapsTheRest = false,
+}: AcpChatPanelBodyProps) {
   const t = useTranslations('acpChat');
   const tGray = useTranslations('grayArea');
   const reducedMotion = usePrefersReducedMotion();
+  const runTurnStartRef = useRef<MappingRunDriver['observeTurnStart'] | null>(null);
   const {
     meaningTransitions,
     captureWorkReceipt,
@@ -133,6 +174,7 @@ export function AcpChatPanelBody({
     onTurnStarted,
     onOpeningRequestSent,
     onTerminalToolObservation,
+    runTurnStartRef,
   });
   const {
     status,
@@ -162,6 +204,7 @@ export function AcpChatPanelBody({
     switchSession,
   } = useAcpSession({
     runtimeId,
+    runtimeLabel,
     vaultRoot,
     mcpServers,
     approvalSettleMs: reducedMotion ? 0 : MOTION.settle.duration * 1000,
@@ -424,21 +467,107 @@ export function AcpChatPanelBody({
         plan: reportedPlan,
       }
     : null;
+  const stopRequestTurn = () => {
+    setCancelledWaitTurnId(events[lastUserEventIndex]?.id ?? null);
+    dropPending();
+    stopSessionTurn();
+  };
+  const liveSession = useLatestRef({ draft, error, diagnostics, stopRequestTurn });
+  const mappingRequest = pending ? turnRequestOf(pending.request, vaultRoot) : null;
+  const mappingWork = useMappingWork(
+    busy && lastUserEventIndex >= 0
+      ? turnWork?.activity ?? turnActivity(events, lastUserEventIndex, VAULT_MCP_SERVER_NAME, textArriving)
+      : null,
+    awaitingAnswer,
+    mappingRequest,
+    vaultRoot,
+  );
+  const figuresRef = useRef<MappingFiguresReader>(NO_FIGURES);
+  const figuresReader = useMemo<MappingFiguresReader>(() => ({
+    widest: () => figuresRef.current.widest(),
+    project: (project) => figuresRef.current.project(project),
+  }), []);
+  const grantedFiles = useGrantedVaultFiles();
+  const mapping = useMappingRun({
+    folder: mapsTheRest ? vaultRoot : null,
+    folderName: vaultRoot ? folderNameOf(vaultRoot) : '',
+    agent: runtimeLabel,
+    session: {
+      status,
+      waitingForAnswer: pending !== null,
+      lastTurnUpdateAt,
+      work: mappingWork,
+      otherRequestWaiting: heldRequest !== null || openingWaiting,
+      send,
+      newConversation: async () => {
+        setHistoryOpen(false);
+        setPresentationOpen(false);
+        markConnectStopped(false);
+        await switchSession(null);
+      },
+      folderFiles: grantedFiles?.fileHandles ?? null,
+      folderRoot: grantedFiles ? getTauriVaultRootPath(grantedFiles.root) ?? null : null,
+      stopRequest: () => liveSession.current.stopRequestTurn(),
+      hasDraft: () => liveSession.current.draft.trim().length > 0,
+      usageLimited: () => {
+        const { error: lastError, diagnostics: lastDiagnostics } = liveSession.current;
+        return lastError !== null && readAcpTrouble(lastError, lastDiagnostics).kind === 'limit';
+      },
+    },
+    figures: figuresReader,
+    request: (figures, part) => {
+      const share = mappingShare(figures);
+      const text = share
+        ? t('suggest.mapArea.prompt', share)
+        : requestWithoutCount(t('suggest.mapArea.prompt', { mapped: 0, total: 0, percent: 0 }));
+      return { text, shown: t('suggest.mapArea.line', { part }) };
+    },
+  });
+  useLayoutEffect(() => {
+    runTurnStartRef.current = mapping.observeTurnStart;
+  });
+  // One run reads as one conversation: its finished requests stand above the one on screen, and History groups them.
+  const mappingSessions = useMappingSessions();
+  const requestOpenings = useRequestOpenings(historyOpen);
+  const historyRows = useMemo(
+    () => groupRunConversations(sessions, mappingSessions.map((entry) => entry.sessionIds), (title) => isRunRequestText(title, requestOpenings)),
+    [mappingSessions, requestOpenings, sessions],
+  );
+  const liveRequestSession = mapping.run ? mappingSessions.find((entry) => entry.runId === mapping.run?.id)?.sessionIds.at(-1) ?? null : null;
+  // A request opened from its line stays on screen until the run sends its next one.
+  const [openedRequest, setOpenedRequest] = useState<{ sessionId: string; whileLive: string | null } | null>(null);
+  const shownRequestSession = openedRequest && openedRequest.whileLive === liveRequestSession ? openedRequest.sessionId : liveRequestSession;
+  const [requestList, setRequestList] = useState<RunRequestItem[] | null>(null);
+  const requestLine = useRequestLine();
+  const canOpenRequest = mayOpenRunRequest({ driving: mapping.driving, busy, folderBusy: folderBusy !== null, run: mapping.run });
+  const openRequest = (sessionId: string) => {
+    setRequestList(null);
+    setHistoryOpen(false);
+    setOpenedRequest({ sessionId, whileLive: liveRequestSession });
+    void switchSession(sessionId);
+  };
+  const listRunRequests = (row: Extract<HistoryRow, { kind: 'run' }>) => {
+    setHistoryOpen(false);
+    setRequestList(row.sessions.map((session, index) => ({
+      key: session.sessionId,
+      label: t('mapRun.listItem', { part: index + 1 }),
+      detail: session.updatedAt ? formatDate(session.updatedAt) : null,
+      sessionId: session.sessionId,
+    })));
+  };
   const stopTurn = useTurnHandover({
     busy,
-    held: status === 'thinking' || pending !== null,
+    // A run holds its panel and folder between requests too, so a parked panel is kept and another dock waits.
+    held: status === 'thinking' || pending !== null || mapping.driving,
     readOnly: activeTurnReadOnly,
-    outlives: activeTurnOutlivesScreen,
+    outlives: activeTurnOutlivesScreen || mapping.driving,
     stopping: turnStopping,
-    request: pending ? turnRequestOf(pending.request, vaultRoot) : null,
+    request: mappingRequest,
     activity: () => lastUserEventIndex < 0 ? null
       : turnWork?.activity ?? turnActivity(events, lastUserEventIndex, VAULT_MCP_SERVER_NAME, textArriving),
     asking: awaitingAnswer,
-    stop: () => {
-      setCancelledWaitTurnId(events[lastUserEventIndex]?.id ?? null);
-      dropPending();
-      stopSessionTurn();
-    },
+    // Any Stop ends the whole run, the composer's included.
+    stop: () => (mapping.driving ? mapping.stop() : stopRequestTurn()),
     onTurnWorkChange, onTurnStopChange, onBusyChange,
   });
 
@@ -510,12 +639,26 @@ export function AcpChatPanelBody({
           requestComposerFocus();
         }}
       >
+        {mapsTheRest && mapping.run ? (
+          <MappingRunRequests
+            finished={mapping.run.finished}
+            shownSession={shownRequestSession}
+            canOpen={canOpenRequest}
+            onOpen={openRequest}
+            onOpenAll={() => setRequestList(numberedRequests(mapping.run?.finished ?? []).map((request) => ({
+              key: String(request.part),
+              label: requestLine(request),
+              detail: null,
+              sessionId: request.sessionId,
+            })))}
+          />
+        ) : null}
         {folderBusy ? <FolderBusyState t={t} onStop={folderBusy.stop} /> : null}
         {connecting && !folderBusy ? (
           <StartingState
             t={t}
             download={download}
-            suggestions={suggestions}
+            suggestions={mapping.driving ? NO_SUGGESTIONS : suggestions}
             seatedRequestWaiting={seatedRequestWaiting}
             openingLead={openingWaiting && openingRequest ? splitAppRequest(openingRequest.text).lead : null}
             heldLead={heldRequest?.lead ?? null}
@@ -538,7 +681,7 @@ export function AcpChatPanelBody({
           <EmptyState
             t={t}
             seatedRequestWaiting={seatedRequestWaiting}
-            suggestions={nextSteps}
+            suggestions={mapping.driving ? NO_SUGGESTIONS : nextSteps}
             canSend={canSend}
             providerNote={t('suggest.providerNote', { runtime: runtimeLabel })}
             onChoose={(suggestion) => chooseSuggestion(suggestion, true)}
@@ -617,6 +760,18 @@ export function AcpChatPanelBody({
 
       {meaningTransitions.terminalSaveFailed ? <p role="status" className="px-3 text-caption text-[color:var(--color-text-secondary)]">{t('permission.taskReview.terminalSaveFailed')}</p> : null}
 
+      {mapsTheRest && vaultRoot ? (
+        <MapConversationMapping
+          folder={vaultRoot}
+          runtimeId={runtimeId}
+          mapping={mapping}
+          figuresRef={figuresRef}
+          // A run sends in new conversations, which open in the tool's opening mode: the kept choice answers there.
+          autoApprove={autoApprove}
+          canStart={!busy && pending === null && !folderBusy && heldRequest === null && !openingWaiting}
+          seated={!putAway}
+        />
+      ) : null}
       {beforeComposer ? (
         <div data-testid="acp-chat-before-composer" className="flex shrink-0 flex-wrap items-center gap-1 pb-1.5">
           {beforeComposer}
@@ -678,6 +833,7 @@ export function AcpChatPanelBody({
         {reportedPlan ? <ReportedPlanNote tGray={tGray} plan={reportedPlan} /> : null}
         <ComposerFooter
           t={t}
+          runtimeId={runtimeId}
           runtimeLabel={runtimeLabel}
           contextLabel={contextLabel}
           toolPicker={toolPicker}
@@ -711,6 +867,8 @@ export function AcpChatPanelBody({
             requestComposerFocus();
           }}
           onStopConnecting={() => {
+            // A run waits on this connection for its next request: the Stop ends the run, not only the connection.
+            if (mapping.driving) mapping.stop();
             restartedOpeningNonceRef.current = openingNonce;
             markConnectStopped(true);
             void stop();
@@ -723,7 +881,7 @@ export function AcpChatPanelBody({
         <HistoryPopover
           t={t}
           open={historyOpen}
-          sessions={sessions}
+          rows={historyRows}
           listRef={historyListRef}
           edge={historyEdge}
           mask={historyMask}
@@ -732,7 +890,9 @@ export function AcpChatPanelBody({
             setHistoryOpen(false);
             void switchSession(sessionId);
           }}
+          onPickRun={listRunRequests}
         />
+        <MappingRunRequestsDialog items={requestList} canOpen={canOpenRequest} onOpen={openRequest} onClose={() => setRequestList(null)} />
       </div>
 
       {historyOpen && sessions.length > 0 ? (
@@ -763,11 +923,79 @@ export function AcpChatPanelBody({
   );
 }
 
+/** The agent's report in the words the run's card reads, one object while nothing in it changes. */
+function useMappingWork(
+  activity: Pick<TurnActivity, 'kind' | 'label' | 'target'> | null,
+  asking: boolean,
+  request: AcpTurnRequest | null,
+  vaultRoot: string | null,
+): TurnWorkReport | null {
+  const kind = activity?.kind ?? null;
+  const labelKind = activity?.label?.kind ?? null;
+  const labelText = activity?.label?.text ?? null;
+  const rawTarget = activity?.target ?? null;
+  const target = rawTarget && vaultRoot && rawTarget.startsWith(`${vaultRoot}/`) ? rawTarget.slice(vaultRoot.length + 1) : rawTarget;
+  const requestAction = asking ? request?.action ?? null : null;
+  const requestTarget = asking ? request?.target ?? null : null;
+  return useMemo(() => (kind === null ? null : {
+    kind,
+    label: labelKind === null ? null : { kind: labelKind, text: labelText ?? '' },
+    target,
+    asking,
+    request: requestAction === null ? null : { action: requestAction, target: requestTarget },
+  }), [asking, kind, labelKind, labelText, requestAction, requestTarget, target]);
+}
+
+/** The row and the folder's figures; only the map conversation renders it, inside the folder's provider. */
+function MapConversationMapping({ folder, runtimeId, mapping, figuresRef, autoApprove, canStart, seated }: {
+  folder: string;
+  runtimeId: string;
+  mapping: MappingRunDriver;
+  figuresRef: RefObject<MappingFiguresReader>;
+  autoApprove: boolean;
+  canStart: boolean;
+  seated: boolean;
+}) {
+  const figures = useFolderMappingFigures();
+  const limitAhead = usePressingLimit(runtimeId);
+  useLayoutEffect(() => {
+    figuresRef.current = figures.reader;
+  });
+  const [collapsed, setCollapsed] = useState(() => collapsedMappingFolders.has(folder));
+  const { run } = mapping;
+  const shown = run !== null || (figures.resting?.figures.abilitiesUncovered ?? 0) > 0;
+  useMappingStage(folder, shown && seated);
+  if (!shown) return null;
+  return (
+    <MappingRunRow
+      run={run}
+      resting={figures.resting?.figures ?? null}
+      autoApprove={autoApprove}
+      canStart={canStart}
+      limitAhead={limitAhead}
+      collapsed={collapsed}
+      onStart={mapping.start}
+      onStop={mapping.stop}
+      onClose={() => workRuns.closeRun(`mapping:${folder}`)}
+      onCollapse={() => {
+        collapsedMappingFolders.add(folder);
+        setCollapsed(true);
+      }}
+      onExpand={() => {
+        collapsedMappingFolders.delete(folder);
+        setCollapsed(false);
+      }}
+    />
+  );
+}
+
 function UnkeptPanel(props: AcpChatPanelProps) {
   const folderBusy = useFolderBusy('', props.vaultRoot);
   return <AcpChatPanelBody {...(folderBusy ? { ...props, sessionEnabled: false, folderBusy } : props)} />;
 }
 
 export function AcpChatPanel({ keepKey, ...props }: AcpChatPanelProps & { keepKey?: string }) {
-  return keepKey ? <KeptPanelSeat keepKey={keepKey} props={props} /> : <UnkeptPanel {...props} />;
+  if (!keepKey) return <UnkeptPanel {...props} />;
+  const kept: AcpChatPanelBodyProps = keepKey.startsWith(MAP_CONVERSATION_KEY_PREFIX) ? { ...props, mapsTheRest: true } : props;
+  return <KeptPanelSeat keepKey={keepKey} props={kept} />;
 }

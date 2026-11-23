@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { ArrowUp, History, Square, SquarePen } from 'lucide-react';
 
+import { usePressingLimit } from '@/entities/agent-usage';
 import { modeCopyKey } from '@/features/acp-session';
 import { badgeClass } from '@/shared/ui/badge-class';
 import { cn } from '@/shared/lib/cn';
@@ -116,8 +117,35 @@ export function ChoicesRow({ t, choices, busy, toolIsPicker, autoApprove, onChoo
   );
 }
 
+/**
+ * The agent's fullest account limit once it reaches the notice share, beside the agent's name;
+ * it changes only when the agent reports.
+ */
+export function LimitNearNote({ t, runtimeId }: { t: ChatT; runtimeId: string }) {
+  const limit = usePressingLimit(runtimeId);
+  if (!limit) return null;
+  return (
+    <span
+      data-testid="acp-chat-limit-near"
+      data-level={limit.level}
+      className={badgeClass({
+        shape: 'micro',
+        className: cn(
+          'shrink-0 whitespace-nowrap tabular-nums',
+          limit.level === 'warning'
+            ? 'border border-[color:var(--color-amber-source-a25)] bg-[color:var(--color-amber-source-a08)] text-[color:var(--color-status-warning)]'
+            : 'bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-secondary)]',
+        ),
+      })}
+    >
+      {t(`limitNear.${limit.window}`, { percent: limit.percent })}
+    </span>
+  );
+}
+
 interface ComposerFooterProps {
   t: ChatT;
+  runtimeId: string;
   runtimeLabel: string;
   contextLabel: string | null;
   toolPicker: Array<{ value: string; label: string }>;
@@ -145,6 +173,7 @@ interface ComposerFooterProps {
 
 export function ComposerFooter({
   t,
+  runtimeId,
   runtimeLabel,
   contextLabel,
   toolPicker,
@@ -206,6 +235,7 @@ export function ComposerFooter({
             {toolPicker[0]?.label ?? runtimeLabel}
           </span>
         )}
+        <LimitNearNote t={t} runtimeId={runtimeId} />
         {contextLabel ? (
           <span
             data-testid="acp-chat-context"
