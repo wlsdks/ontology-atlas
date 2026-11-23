@@ -257,7 +257,7 @@ describe('keepSessionIdentity', () => {
 describe('withActivity', () => {
   it('joins a read onto its worktree without moving any room', () => {
     const tracks = buildWorkTracks(snapshot([row('a', { lock: live(7, 1, 1) }), row('b')]));
-    const read = { stamp: 's', commits: [{ hash: 'abc1234', subject: 'fix: 한국어 🚀', at: 1 }], uncommitted: 0, latestFile: null };
+    const read = { stamp: 's', commits: [{ hash: 'abc1234', subject: 'fix: 한국어 🚀', at: 1 }], uncommitted: 0, latestFile: null, onBase: false, files: [] };
     const joined = withActivity(tracks, new Map([['b', read]]));
     expect(joined.unheld[0].activity).toBe(read);
     expect(joined.sessions[0].tracks[0]).toBe(tracks.sessions[0].tracks[0]);

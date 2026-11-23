@@ -4,7 +4,7 @@ import { seedFirstRunSeen } from "./first-run-seed";
 import { waitForAnimationsDone } from "./settle";
 
 /**
- * Work status in the app, with the two native reads stubbed: the rooms a person sees for a
+ * Work status in the app, with the native reads stubbed: the rooms a person sees for a
  * repository's worktrees, the shelf's list, a merge reaching the shelf, and the empty building.
  */
 
@@ -40,15 +40,25 @@ const SIX = [
   row("fix/rail-tooltip", { standing: "merged", ahead: 0 }),
 ];
 
-type Activity = Record<string, { commits: { hash: string; subject: string; at: number }[] | null; uncommitted: number; latestFile: string | null }>;
+type Activity = Record<string, { commits: { hash: string; subject: string; at: number }[] | null; uncommitted: number; latestFile: string | null; onBase: boolean; files: { path: string; changedAt: number | null }[] }>;
 
 async function openWorkStatus(page: Page, rows: Row[], activity: Activity = {}) {
   await seedFirstRunSeen(page);
   await page.addInitScript(({ initial, reads }: { initial: Row[]; reads: Activity }) => {
-    const state = { rows: initial, version: 1, activity: reads, activityVersion: 1 };
+    const state = { rows: initial, version: 1, activity: reads, activityVersion: 1, sessionStatus: "read", sessionAsks: 0, sessionForgets: 0 };
     const target = window as unknown as Record<string, unknown>;
+    // How the session-list read went, and how often the page asked for it or told Rust to forget it.
+    target.__workStatusSessionRead = (status: string) => { state.sessionStatus = status; };
+    target.__workStatusSessionCalls = () => ({ asks: state.sessionAsks, forgets: state.sessionForgets });
     target.__workStatusRows = (next: Row[]) => { state.rows = next; state.version += 1; };
+    // Rows held back until `when` says so. While they wait every tick reads anew, so the page keeps its one-second watch.
+    let held: { rows: Row[]; when: () => boolean } | null = null;
+    let waits = 0;
+    target.__workStatusRowsWhen = (rows: Row[], when: () => boolean) => { held = { rows, when }; };
     target.__workStatusActivity = (next: Activity) => { state.activity = next; state.activityVersion += 1; };
+    // What each Claude Code session says of itself, as the session-list read returns it.
+    let sessions: unknown[] = [];
+    target.__workStatusSessions = (next: unknown[]) => { sessions = next; };
     target.isTauri = true;
     target.__TAURI_EVENT_PLUGIN_INTERNALS__ = { unregisterListener: () => undefined };
     target.__TAURI_INTERNALS__ = {
@@ -56,7 +66,22 @@ async function openWorkStatus(page: Page, rows: Row[], activity: Activity = {}) 
       invoke(command: string, args: { worktreeId?: string } = {}) {
         const answer = (value: unknown) => new Promise(resolve => setTimeout(() => resolve(value), 60));
         if (command === "pick_source_directory") return answer("/Users/probe/repo");
-        if (command === "work_status_fingerprint") return answer(`v${state.version}`);
+        if (command === "work_status_fingerprint") {
+          if (held?.when()) {
+            state.rows = held.rows;
+            state.version += 1;
+            held = null;
+          } else if (held) waits += 1;
+          return answer(`v${state.version}.${waits}`);
+        }
+        if (command === "work_status_agent_sessions") {
+          state.sessionAsks += 1;
+          return answer({ status: state.sessionStatus, rows: structuredClone(sessions) });
+        }
+        if (command === "work_status_set_agent_sessions_read") {
+          if (!(args as { on?: boolean }).on) state.sessionForgets += 1;
+          return answer(null);
+        }
         if (command === "work_status_activity_stamps") {
           return answer(Object.fromEntries(Object.keys(state.activity).map((id) => [id, `s${state.activityVersion}`])));
         }
@@ -87,10 +112,16 @@ const ACTIVITY: Activity = {
     ],
     uncommitted: 3,
     latestFile: "src/views/library/LibraryPage.tsx",
+    onBase: false,
+    files: [
+      { path: "src/views/library/LibraryPage.tsx", changedAt: NOW_S - 30 },
+      { path: "src/features/library/model/use-library-model.ts", changedAt: NOW_S - 600 },
+      { path: "messages/ko/library.json", changedAt: NOW_S - 7200 },
+    ],
   },
-  "feat-work-status-rooms": { commits: [], uncommitted: 12, latestFile: "src\\widgets\\work-tracks\\ui\\LargeRoom.tsx" },
-  "feat-map-light": { commits: [{ hash: "c3d4e5f", subject: "design(map): 빛 레이어를 부드럽게 ✨", at: NOW_S - 300 }], uncommitted: 0, latestFile: null },
-  "fix-rail-copy": { commits: [{ hash: "d4e5f60", subject: "fix: 레일 툴팁 문구 🧭", at: NOW_S - 600 }], uncommitted: 0, latestFile: null },
+  "feat-work-status-rooms": { commits: [], uncommitted: 12, latestFile: "src\\widgets\\work-tracks\\ui\\LargeRoom.tsx", onBase: false, files: [{ path: "src/widgets/work-tracks/ui/LargeRoom.tsx", changedAt: NOW_S - 30 }] },
+  "feat-map-light": { commits: [{ hash: "c3d4e5f", subject: "design(map): 빛 레이어를 부드럽게 ✨", at: NOW_S - 300 }], uncommitted: 0, latestFile: null, onBase: false, files: [] },
+  "fix-rail-copy": { commits: [{ hash: "d4e5f60", subject: "fix: 레일 툴팁 문구 🧭", at: NOW_S - 600 }], uncommitted: 0, latestFile: null, onBase: false, files: [] },
 };
 
 const room = (page: Page, branch: string) => page.getByTestId("work-room").filter({ hasText: branch });
@@ -117,7 +148,7 @@ interface PaintFrame {
   litGhost: boolean;
   /** The frame's own time, the clock its animations run on, in milliseconds. */
   time: number;
-  /** Name tags showing on the stage, so the stage never reads as empty. */
+  /** Room names showing on the stage, so it never reads as empty: a name tag, or the branch plaque a room carries while it travels as its wall. */
   tags: number;
   /** How much of each room's content shows: its faces and each of their fading parts, by room. */
   content: Record<string, number>;
@@ -187,7 +218,7 @@ async function startPaintSampler(page: Page) {
         for (let node: Element | null = element; node && node !== building; node = node.parentElement) value *= Number(getComputedStyle(node).opacity);
         return value;
       };
-      const tags = [...document.querySelectorAll("[data-testid=work-building] [data-room-tag]")].filter((tag) => seen(tag) > 0.5).length;
+      const tags = [...document.querySelectorAll("[data-testid=work-building] :is([data-room-tag], [data-room-plaque])")].filter((tag) => seen(tag) > 0.5).length;
       const visible: Record<string, number> = {};
       for (const element of all) {
         const faces = [...element.querySelectorAll(":scope > [data-room-face]")];
@@ -264,7 +295,7 @@ async function expectCleanPaint(page: Page, { slots: handed = 0 } = {}) {
   expect.soft(frames.filter((frame) => frame.overlaps > 0).length, "frames where rooms overlap").toBe(0);
   expect.soft(frames.filter((frame) => handedOver.some((index) => !frame.covered[index])).length, "frames with a bare slot").toBe(0);
   expect.soft(frames.filter((frame) => frame.litGhost).length, "frames where a leaving room is lit").toBe(0);
-  expect.soft(frames.filter((frame) => frame.tags === 0).length, "frames with no name tag on the stage").toBe(0);
+  expect.soft(frames.filter((frame) => frame.tags === 0).length, "frames with no room name on the stage").toBe(0);
   // A room's Moru and name tag leave by fading, never from one frame to the next.
   const pops = frames.slice(1).flatMap((frame, index) => Object.entries(frames[index].held)
     .filter(([key, before]) => frame.time - frames[index].time <= 40 && before > 0.5 && key in frame.held && frame.held[key] < 0.1)
@@ -585,15 +616,14 @@ test.describe("work status rooms", () => {
     await openWorkStatus(page, [...SIX, row("fix/rail-copy")], ACTIVITY);
     const stage = room(page, "feat/library-stage").getByTestId("work-room-monitor");
     await expect(stage).toContainText(LONG_SUBJECT.slice(0, 40));
-    // Under the commits: what is not committed, with the file changed last; the bezel says how long the session has worked.
+    // Under the commits: what is not committed, with the file changed last; the bezel says when the worktree last changed.
     await expect(stage).toContainText("3 files changed, not committed");
     await expect(stage).toContainText("LibraryPage.tsx");
-    await expect(room(page, "feat/library-stage")).toContainText(/working \d+ h/);
+    await expect(room(page, "feat/library-stage").locator("[data-room-tag]")).toContainText(/Working\s·\schanged \d+ minutes? ago/);
     await expect(room(page, "feat/map-light").getByTestId("work-room-monitor")).toContainText("빛 레이어를 부드럽게 ✨");
     const editing = room(page, "feat/work-status-rooms").getByTestId("work-room-monitor");
     await expect(editing).toContainText("12 files changed, not committed");
     await expect(editing).toContainText("LargeRoom.tsx");
-    await expect(editing).not.toContainText("widgets");
     await expect(room(page, "fix/rail-copy")).toHaveAttribute("data-room-size", "mini");
     await expect(room(page, "fix/rail-copy")).toContainText("레일 툴팁 문구 🧭");
     await waitForAnimationsDone(page.getByTestId("work-building"));
@@ -671,7 +701,7 @@ test.describe("work status rooms", () => {
     const working = room(page, "feat/library-stage");
     await expect(working.locator("[data-moru-live]").first()).toBeVisible();
     await page.evaluate(() => {
-      // When any Moru last changed what he shows (a room sprite's style or a lobby paint), and in the
+      // When any Moru last changed what he shows (a room sprite's style), and in the
       // working room, when it was asked to play a row once and when its Moru first changed after that.
       const seen = { last: performance.now(), changes: 0, longest: 0, askedAt: 0, answeredAt: 0, rowBefore: "", answeredRow: "", roomLast: performance.now() };
       let asked: HTMLElement | null = null;
@@ -698,12 +728,6 @@ test.describe("work status rooms", () => {
           if (target === asked && !seen.answeredAt) { seen.answeredAt = at; seen.answeredRow = target.style.backgroundImage; }
         }
       }).observe(document.body, { subtree: true, attributes: true, attributeFilter: ["style", "data-moru-once"] });
-      let painted = -1;
-      window.setInterval(() => {
-        const lobby = document.querySelector<HTMLCanvasElement & { lobby?: { stats(): { painted: number } } }>("[data-testid='work-lobby-canvas']");
-        const now = lobby?.lobby?.stats().painted ?? -1;
-        if (now !== painted) { if (painted >= 0) note(performance.now()); painted = now; }
-      }, 50);
       (window as unknown as { __moruSeen: typeof seen }).__moruSeen = seen;
     });
     type Seen = { last: number; changes: number; longest: number; askedAt: number; answeredAt: number; rowBefore: string; answeredRow: string; roomLast: number };
@@ -717,14 +741,140 @@ test.describe("work status rooms", () => {
     // Then a rest: three seconds and more with no Moru anywhere changing his pose.
     await expect.poll(async () => { const now = await seen(); return Math.max(now.longest, now.still); }, { timeout: 40_000 }).toBeGreaterThanOrEqual(3000);
 
-    // A new commit in the resting working room plays its row at once, without waiting for a turn.
-    await expect.poll(async () => (await seen()).roomStill, { timeout: 20_000 }).toBeGreaterThanOrEqual(1000);
-    await setRows(page, SIX.map((each) => (each.branch === "feat/library-stage" ? { ...each, ahead: 3 } : each)));
-    await expect.poll(async () => (await seen()).answeredAt, { timeout: 10_000 }).toBeGreaterThan(0);
+    // A new commit in the resting working room plays its row at once, without waiting for a turn. It
+    // lands just after the cast last moved: a rest of three seconds follows a turn, so no loop is under way.
+    await page.evaluate((rows) => {
+      const target = window as unknown as { __moruSeen: { last: number }; __workStatusRowsWhen: (rows: unknown[], when: () => boolean) => void };
+      target.__workStatusRowsWhen(rows, () => {
+        const still = performance.now() - target.__moruSeen.last;
+        return still >= 450 && still <= 2000;
+      });
+    }, SIX.map((each) => (each.branch === "feat/library-stage" ? { ...each, ahead: 3 } : each)));
+    await expect.poll(async () => (await seen()).answeredAt, { timeout: 30_000 }).toBeGreaterThan(0);
     const cut = await seen();
     // His first new pose is the commit's row, not the next cell of the one he rested on.
     expect(cut.answeredRow, "the row he shows after the commit").not.toBe(cut.rowBefore);
     expect(cut.answeredAt - cut.askedAt, "ms from the commit's request to his first new pose").toBeLessThanOrEqual(400);
+  });
+
+  test("lists the files a worktree is changing beside its commits, and opens the room panel on a press", async ({ page }) => {
+    await page.setViewportSize({ width: 2000, height: 1245 });
+    const base = { ...main, agentProcesses: [{ pid: 77, tool: "claudeCode", startedAt: NOW_S - 3600 }] };
+    const onBase = { commits: [{ hash: "0a1b2c3", subject: "chore: the base branch's own newest commit", at: NOW_S - 60 }], uncommitted: 0, latestFile: null, onBase: true, files: [] };
+    await openWorkStatus(page, [base, ...SIX.slice(1)], { ...ACTIVITY, main: onBase });
+
+    // A screen wide enough names each uncommitted file with its folder, newest first.
+    const files = room(page, "feat/library-stage").getByTestId("work-room-files").locator("li");
+    await expect(files).toHaveCount(3);
+    const newest = files.and(page.locator("[data-place='0']"));
+    await expect(newest).toContainText("LibraryPage.tsx");
+    await expect(newest).toContainText("src/views/library");
+    await expect(newest).toContainText(/\d+ minutes? ago/);
+    // The room standing on the base branch lists that branch's own commits, and says so.
+    const baseRoom = page.locator("[data-room-key='main']");
+    await expect(baseRoom.getByTestId("work-room-monitor")).toContainText("Recent commits");
+    await expect(baseRoom.getByTestId("work-room-monitor")).toContainText("the base branch's own newest commit");
+
+    const press = room(page, "feat/library-stage").locator("[data-room-press]");
+    await press.click();
+    const panel = page.getByTestId("work-room-panel");
+    await expect(panel).toBeVisible();
+    await expect(press).toHaveAttribute("aria-expanded", "true");
+    await expect(panel.getByTestId("work-room-panel-now")).toContainText("Claude Code 1");
+    await expect(panel.getByTestId("work-room-panel-files")).toContainText("use-library-model.ts");
+    await expect(panel.getByTestId("work-room-panel-path")).toContainText("feat-library-stage");
+    // Another room's press hands the panel over; Escape, pressed at once, closes it and returns focus to that room.
+    const other = room(page, "feat/map-light").locator("[data-room-press]");
+    await other.click();
+    await page.keyboard.press("Escape");
+    await expect(panel).toBeHidden();
+    await expect(other).toBeFocused();
+    await expect(other).toHaveAttribute("aria-expanded", "false");
+  });
+
+  test("says how the session-list read goes and stops it at its switch, with the waiting room falling back", async ({ page }) => {
+    await openWorkStatus(page, SIX);
+    await page.evaluate(
+      (rows) => (window as unknown as { __workStatusSessions: (rows: unknown[]) => void }).__workStatusSessions(rows),
+      [{ worktreeId: "feat-library-stage", pid: CLAUDE.pid, state: "waitingApproval" }],
+    );
+    const asking = room(page, "feat/library-stage");
+    const line = page.getByTestId("work-status-session-list");
+    await expect(asking).toHaveAttribute("data-room-state", "waiting");
+    await expect(line).toHaveText("Session list on");
+
+    await line.click();
+    const panel = page.getByTestId("work-status-session-list-panel");
+    await expect(panel).toContainText("claude agents --json");
+    await expect(panel.getByTestId("work-status-session-list-now")).toContainText("Read.");
+
+    // A list that cannot be read says why, in the header and in the panel.
+    const readGoes = (status: string) => page.evaluate(
+      (next) => (window as unknown as { __workStatusSessionRead: (status: string) => void }).__workStatusSessionRead(next),
+      status,
+    );
+    await readGoes("notFound");
+    await expect(line).toHaveText("Session list not read");
+    await expect(panel.getByTestId("work-status-session-list-now")).toContainText("was not found");
+    await readGoes("read");
+    await expect(line).toHaveText("Session list on");
+
+    await panel.getByRole("radio", { name: "Off" }).click();
+    await expect(line).toHaveText("Session list off");
+    await expect(asking).toHaveAttribute("data-room-state", "working");
+    await expect(page.getByTestId("work-status-alert-waiting")).toHaveCount(0);
+    const calls = () => page.evaluate(() => (window as unknown as { __workStatusSessionCalls: () => { asks: number; forgets: number } }).__workStatusSessionCalls());
+    await expect.poll(async () => (await calls()).forgets).toBe(1);
+
+    // Escape closes the panel; the choice outlives a reload, which asks for no list at all.
+    await page.keyboard.press("Escape");
+    await expect(panel).toBeHidden();
+    await page.reload();
+    await page.getByTestId("work-status-choose").click();
+    await expect(room(page, "feat/library-stage")).toHaveAttribute("data-room-state", "working");
+    await expect(page.getByTestId("work-status-session-list")).toHaveText("Session list off");
+    expect((await calls()).asks).toBe(0);
+
+    await page.getByTestId("work-status-session-list").click();
+    await page.getByTestId("work-status-session-list-panel").getByRole("radio", { name: "On" }).click();
+    await expect(page.getByTestId("work-status-session-list")).toHaveText("Session list on");
+    await expect.poll(async () => (await calls()).asks).toBeGreaterThan(0);
+  });
+
+  test("frames a room whose session waits for its person, counts it in the header and lets go when it is answered", async ({ page }) => {
+    await openWorkStatus(page, SIX);
+    const asking = room(page, "feat/library-stage");
+    await expect(asking).toHaveAttribute("data-room-state", "working");
+    await expect(page.getByTestId("work-status-alert-waiting")).toHaveCount(0);
+
+    const say = (state: string) => page.evaluate(
+      (next) => (window as unknown as { __workStatusSessions: (rows: unknown[]) => void }).__workStatusSessions(next),
+      [{ worktreeId: "feat-library-stage", pid: CLAUDE.pid, state }, { worktreeId: "feat-work-status-rooms", pid: CLAUDE_LATER.pid, state: "replied" }],
+    );
+    await say("waitingApproval");
+    await expect(asking).toHaveAttribute("data-room-state", "waiting");
+    await expect(asking).toHaveAttribute("data-room-size", "large");
+    await expect(asking.getByTestId("work-room-monitor")).toContainText("Waiting for your approval");
+    await expect(asking.locator("[data-scene]")).toHaveAttribute("data-tone", "warning");
+    await expect(asking.locator("[data-room-moru='heads-up']")).toHaveCount(1);
+    // A session that has replied is quiet, not at work, and keeps its place on the stage.
+    const replied = room(page, "feat/work-status-rooms");
+    await expect(replied).toHaveAttribute("data-room-state", "replied");
+    await expect(replied).toContainText("Finished replying");
+    await expect(replied).toHaveAttribute("data-room-size", "large");
+
+    const alert = page.getByTestId("work-status-alert-waiting");
+    await expect(alert).toContainText("1 waiting for you");
+    await alert.click();
+    await expect(asking).toHaveAttribute("data-flash", "true");
+    await expect(replied).not.toHaveAttribute("data-flash", "true");
+    await asking.locator("[data-room-press]").click();
+    await expect(page.getByTestId("work-room-panel-now")).toContainText("waiting for you");
+    await page.keyboard.press("Escape");
+
+    await say("working");
+    await expect(asking).toHaveAttribute("data-room-state", "working");
+    await expect(page.getByTestId("work-status-alert-waiting")).toHaveCount(0);
   });
 
   test("shows one room for the base branch when no worktree exists", async ({ page }) => {

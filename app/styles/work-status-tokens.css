@@ -17,28 +17,21 @@
     --work-unheld: #8d8b84;
 
     /*
-     * The building of rooms is drawn on Moru's pixel grid with flat fills: the building and its
-     * pits are near-black graphite, steel is the rails, the console and the side wall a room's
-     * track leaves through, and a room's walls take a little of its session's ink only while its
-     * screen is lit. None of these is Moru's own raster ink; the crate is a warm neutral paper,
-     * outlined in the pit's black.
+     * The rooms are drawn on Moru's pixel grid with flat neutral fills, on the page's own canvas:
+     * a room's wall is one step above the page and its screen is the page's black again, so the
+     * screen reads as a window and the page keeps two greys. Steel is the cart and the stop at the
+     * end of a room's rail. A session's ink marks names, states, the last hour's changes and the
+     * rail of a room at work, never a surface. None of these is Moru's own raster ink; the crate is a warm
+     * neutral paper, outlined in the pit's black.
      */
-    --work-room-building: #131312;
     --work-room-pit: #0c0c0b;
-    --work-room-wall: #161514;
-    --work-room-wall-lit: #1a1918;
-    --work-room-floor: #0f0f0e;
-    --work-room-floor-edge: #24231f;
-    --work-room-steel: #2b2a27;
+    --work-room-wall: #111110;
+    --work-room-wall-lit: #151514;
     --work-room-steel-light: #3a3935;
-    --work-room-lamp-off: #383733;
-    --work-room-console: #232220;
-    --work-room-side-wall: #141312;
-    --work-room-screen-frame: #1d1e25;
     --work-room-sign: #2d2c27;
     --work-room-sign-edge: #201f1b;
-    --work-room-screen: #0b0e16;
-    --work-room-screen-off: #0a0a0b;
+    --work-room-screen: #0b0b0a;
+    --work-room-screen-off: #0d0d0c;
     --work-room-led-off: #5a2a2c;
     --work-room-crate: #c9c5ba;
     --work-room-crate-shade: #a9a59a;
@@ -48,11 +41,8 @@
     --work-room-crate-dusty-shade: #4a4843;
     --work-room-crate-ghost: #6b3a3c;
     --work-room-outline: #0a0a0c;
-    --work-room-hatch-open: #0f3b29;
     --work-room-dark: rgba(12, 12, 11, 0.58);
     --work-shelf-crate: #8c897f;
-    --work-shelf-crate-shade: #6f6c63;
     --work-shelf-crate-old: #4d4b46;
-    --work-shelf-crate-old-shade: #3c3a36;
   }
 }
