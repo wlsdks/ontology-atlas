@@ -294,8 +294,11 @@ waiting file with one dot in its state's ink (the word in its title and for a sc
 a file with a page with nothing; the band's legend names the dots. **The Library's doors are in the page
 header**, its only controls at the end, as 36px chrome pills: `How to use`, the saved questions,
 `Conversation`, and `Review updated answer` while a proposal waits; below `lg` they fold into
-More. A door stays in its place while its surface is open, selected, and a second press closes
-it: `Conversation` too, beside the open dock, whose own close and Escape still work. Every Sources and Wiki state carries exactly one Conversation control and one Questions
+More. A door stays in its place while its surface is open, wearing the raised surface the tab
+strip gives its current tab, and a second press closes it: `Conversation` too, beside the open
+dock, whose own close and Escape still work. A running turn behind a shut dock shows as a dot in
+the Conversation door's icon seat, with the phase in its tooltip and accessible name, so no door
+changes width. Every Sources and Wiki state carries exactly one Conversation control and one Questions
 control; the reader's top row carries the work line at its right, and the question desk keeps its
 compact one. `How to use` holds the three source-to-wiki steps in an anchored popup and raises
 itself once per machine; at exactly one saved answer the questions door is that question, so
@@ -433,8 +436,8 @@ One `SegmentedControl` at the top of the column now names both lists with their 
 *Sources 7 | Wiki 7*, 32px, equal 125px halves at 280px in both locales — and the column
 draws **one** of them. The inactive list is not in the document: `hidden` would keep its
 rows in the tab order and its doors reachable from a keyboard while nothing on screen named
-them. The doors travel with the list — on Sources, Add files as one full-width chip over Find
-documents and Bring from a service as two quiet rows on the same text line; New page (the "+" beside the search field) on Wiki — and the section eyebrow
+them. The doors travel with the list — on Sources, Add files, Find documents and Bring from a
+service as three plain rows on the same text line, under the selected Overview row; New page (the "+" beside the search field) on Wiki — and the section eyebrow
 is gone, because a head repeating *SOURCES · 7* under a segment reading *Sources 7* is the
 same fact twice. The choice is remembered per machine
 (`atlas.library.index-segment`), and opening a file from the home, from the guide or from a

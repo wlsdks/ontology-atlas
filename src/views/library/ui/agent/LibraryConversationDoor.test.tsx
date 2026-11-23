@@ -24,14 +24,15 @@ describe("the put-away conversation", () => {
     expect(screen.queryByTestId("library-conversation-running-dot")).toBeNull();
   });
 
-  it("keeps the conversation destination visible beside the running phase", () => {
+  it("keeps one face while a turn runs: the dot marks it and the phase is in the tooltip", () => {
     const { chip } = draw({
       state: "editing",
       summary: "Write up the four sources",
       ontologySlug: null,
       toolName: "Write wiki/contractor-quotes.md",
     });
-    expect(chip).toHaveTextContent("Conversation · Editing");
+    expect(chip).toHaveTextContent(/^Conversation$/);
+    expect(chip).toHaveAttribute("title", "Conversation · Editing");
     expect(screen.getByTestId("library-conversation-running-dot")).toBeInTheDocument();
   });
 
@@ -42,8 +43,8 @@ describe("the put-away conversation", () => {
       ontologySlug: null,
       toolName: null,
     });
-    expect(chip).toHaveTextContent("Conversation · Planning");
-    expect(chip).not.toHaveTextContent('Check the wiki against its sources');
+    expect(chip).toHaveAttribute("title", "Conversation · Planning");
+    expect(chip.getAttribute("aria-label")).not.toContain("Check the wiki against its sources");
   });
 
   it("says a shut dock is holding a permission card — the one turn that waits forever", () => {
@@ -53,7 +54,7 @@ describe("the put-away conversation", () => {
       ontologySlug: null,
       toolName: "Write /outside/notes.md",
     });
-    expect(chip).toHaveTextContent("Waiting for approval");
+    expect(chip).toHaveAttribute("title", "Conversation · Waiting for approval");
     expect(chip.getAttribute("aria-label")).toBe(
       "Open the conversation. Claude Agent is still working: Waiting for approval.",
     );

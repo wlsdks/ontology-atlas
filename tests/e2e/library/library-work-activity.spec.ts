@@ -79,10 +79,12 @@ test.describe("Library live work activity", () => {
     const band = page.getByTestId("library-progress");
     await expect(band.getByTestId("library-work-line")).toBeVisible();
     await expect(band.getByTestId("library-work-current")).toHaveCount(0);
+    // The header doors are measured too: a running turn marks the shut Conversation door without widening it.
     const geometry = () =>
       page.evaluate(() => ({
         band: document.querySelector('[data-testid="library-progress"]')!.getBoundingClientRect().height,
         overview: document.querySelector('[data-testid="sources-overview"]')!.getBoundingClientRect().top,
+        doors: [...document.querySelectorAll("[data-library-door]")].map((door) => door.getBoundingClientRect().x),
       }));
     // The closing dock widens the pane over its exit; measure once two frames apart agree.
     let before = await geometry();
@@ -90,13 +92,14 @@ test.describe("Library live work activity", () => {
       .poll(async () => {
         await waitFrames(page, 2);
         const now = await geometry();
-        const same = now.band === before.band && now.overview === before.overview;
+        const same = now.band === before.band && now.overview === before.overview && now.doors.join() === before.doors.join();
         before = now;
         return same;
       })
       .toBe(true);
     await harness.read(page);
     await expect(band.getByTestId("library-work-current")).toHaveAttribute("data-work-kind", "read");
+    await expect(page.getByTestId("library-open-conversation")).toHaveAttribute("data-agent-running", "true");
     expect(await geometry()).toEqual(before);
     // The line is the kind of work and the file as a press; the list's press waits until there is a receipt.
     // While work runs Continue carries no ring of its own, and its label sits centred.

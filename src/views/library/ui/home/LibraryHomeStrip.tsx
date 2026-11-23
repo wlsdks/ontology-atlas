@@ -4,8 +4,10 @@ import { type ReactNode, type RefObject } from "react";
 import type { useTranslations } from "next-intl";
 import { BookOpen, HelpCircle, MoreHorizontal } from "lucide-react";
 
+import { cn } from "@/shared/lib/cn";
 import { ChromeChip } from "@/shared/ui";
 import type { LibraryHomeStripDoor } from "../../model/home/library-home-strip";
+import { OPEN_DOOR_CLASS } from "./open-door-class";
 
 type Translator = ReturnType<typeof useTranslations<"library">>;
 
@@ -65,7 +67,7 @@ export function LibraryHomeStrip({
               title={door.tooltip ?? door.label}
               active={door.open === true}
               icon={Icon ? <Icon aria-hidden /> : undefined}
-              className="min-w-0 max-w-[14rem] flex-none shadow-none"
+              className={cn("min-w-0 max-w-[14rem] flex-none shadow-none", door.open === true && OPEN_DOOR_CLASS)}
             >
               {door.label}
             </ChromeChip>
@@ -84,7 +86,7 @@ export function LibraryHomeStrip({
         active={overflowOpen}
         compact
         icon={<MoreHorizontal aria-hidden />}
-        className="flex-none shadow-none lg:hidden"
+        className={cn("flex-none shadow-none lg:hidden", overflowOpen && OPEN_DOOR_CLASS)}
       />
     </span>
   );
