@@ -253,7 +253,7 @@ fn folder_name(root: &Path) -> String {
 /// The canonical path, or for a folder that is gone, its nearest existing ancestor's canonical
 /// path with the rest joined on, so a removed worktree compares in the same spelling as live ones
 /// (Windows canonical paths are `\\?\C:\...`, Git's listing `C:/...`).
-fn normalize(path: &str) -> PathBuf {
+pub(super) fn normalize(path: &str) -> PathBuf {
     let path = PathBuf::from(path);
     if let Ok(canonical) = std::fs::canonicalize(&path) {
         return canonical;
@@ -274,7 +274,7 @@ fn normalize(path: &str) -> PathBuf {
 }
 
 /// `<common>/worktrees/<id>/gitdir` names `<worktree>/.git`; this maps each worktree back to its id.
-fn admin_ids_by_worktree(common_dir: &Path) -> HashMap<PathBuf, String> {
+pub(super) fn admin_ids_by_worktree(common_dir: &Path) -> HashMap<PathBuf, String> {
     let Ok(entries) = std::fs::read_dir(common_dir.join("worktrees")) else {
         return HashMap::new();
     };

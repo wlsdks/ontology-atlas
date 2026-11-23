@@ -20,14 +20,47 @@
     "ended": "세션 끝남",
     "started": "{time} 시작",
     "worktrees": "워크트리 {count}",
+    "waiting": "내 답 대기 {count}",
     "cleanup": "정리 필요 {count}",
     "onStage": "무대 {count}",
     "below": "아래 {count}"
+  },
+  "sessions": {
+    "chip": {
+      "on": "세션 목록 읽는 중",
+      "off": "세션 목록 꺼짐",
+      "unreadable": "세션 목록 읽지 못함"
+    },
+    "title": "{tool} 세션 목록",
+    "switch": "{tool} 세션 목록 읽기",
+    "choice": {
+      "on": "켜기",
+      "off": "끄기"
+    },
+    "now": {
+      "read": "읽었어요. 세션이 내 답을 기다리면 그 방에 표시돼요.",
+      "noSession": "실행 중인 {tool} 세션이 없어서 지금은 읽지 않아요."
+    },
+    "status": "어느 세션이 내 답을 기다리는지 보여 주려고 Atlas가 {tool}의 세션 목록을 읽어요. 작업 현황이 열려 있는 동안 <code>{command}</code>를 10초에 한 번, 그리고 {tool} 세션이 시작되거나 끝난 1초 뒤에 인터넷 연결 없이 실행해요. Atlas는 아무것도 쓰지 않아요.",
+    "statusOff": "켜면 Atlas가 {tool}의 세션 목록을 읽어요. 작업 현황이 열려 있는 동안 <code>{command}</code>를 10초에 한 번, 그리고 {tool} 세션이 시작되거나 끝난 1초 뒤에 인터넷 연결 없이 실행해요. Atlas는 아무것도 쓰지 않아요.",
+    "off": "Atlas가 {tool}를 실행하지 않아요. 그래서 어느 방도 세션이 내 답을 기다리는지, 답변을 마쳤는지 알려 주지 못해요.",
+    "unreadable": "{tool} 세션 목록을 읽지 못했어요. {reason}",
+    "fallback": "읽을 수 있을 때까지는 어느 방도 세션이 내 답을 기다리는지 알려 주지 못해요. 10초 안에 다시 읽어 봐요.",
+    "reason": {
+      "notFound": "Atlas가 찾아보는 폴더에 {tool}가 없어요.",
+      "timedOut": "{tool}가 5초 안에 답하지 않았어요.",
+      "failed": "{tool}가 오류로 끝났어요.",
+      "unknownForm": "목록이 Atlas가 모르는 형식이에요. 새 {tool}에서 바뀌었을 수 있어요."
+    }
   },
   "stage": {
     "label": "작업 중인 워크트리"
   },
   "room": {
+    "waitingApproval": "승인을 기다리는 중",
+    "waitingAnswer": "답을 기다리는 중",
+    "replied": "답변을 마침",
+    "sessionFailed": "세션이 실패함",
     "working": "작업 중",
     "twoTools": "두 도구가 작업 중",
     "resting": "쉬는 중",
@@ -53,7 +86,18 @@
     "unreadableLock": "Atlas가 읽을 수 있는 세션 이름이 잠금에 없어요",
     "workedMinutes": "{count}분째",
     "workedWholeHours": "{count}시간째",
-    "workedHours": "{hours}시간 {minutes}분째"
+    "workedHours": "{hours}시간 {minutes}분째",
+    "recentCommits": "최근 커밋",
+    "lastChange": "{ago} 변경",
+    "justNow": "방금",
+    "lastChangeNow": "방금 변경",
+    "lastHour": "지난 1시간",
+    "lastHourChanges": "지난 1시간 변경 {count}건",
+    "areasTitle": "바뀐 곳",
+    "areasOfNewest": "바뀐 곳 · 최근 파일 {count}개 기준",
+    "rootFolder": "저장소 최상위",
+    "areaFiles": "{count}개",
+    "areasMore": "그 외 {count}곳"
   },
   "shelf": {
     "merged": "{branch}에 머지됨",
@@ -82,6 +126,7 @@
   },
   "notRepository": "{folder} 폴더는 Git 저장소가 아니에요. 프로젝트의 .git이 있는 폴더를 고르세요.",
   "header": {
+    "waiting": "내 답 대기 {count}",
     "sameFolder": "같은 폴더 {count}",
     "cleanup": "정리 {count}",
     "pointTo": "어느 워크트리인지 보기"
@@ -95,7 +140,36 @@
     "working": "{count}개 작업 중",
     "worktrees": "워크트리 {count}"
   },
-  "lobby": {
-    "name": "로비"
+  "panel": {
+    "open": "{branch}에서 하는 일 보기",
+    "close": "닫기",
+    "now": {
+      "waiting": "{who} 세션이 멈춰서 내 답을 기다리고 있어요. 그 세션이 열려 있는 터미널이나 앱에서 답해 주세요.",
+      "sessionFailed": "{who} 세션이 오류로 끝났어요. 그때까지 한 작업은 이 폴더에 그대로 있어요.",
+      "replied": "{who} 세션이 답변을 마치고 다음 지시를 기다리고 있어요.",
+      "working": "지금 {who} 세션이 이 폴더에서 작업하고 있어요.",
+      "twoTools": "{who} 세션이 한 폴더에서 동시에 작업하고 있어서 서로의 변경이 부딪칠 수 있어요.",
+      "resting": "{who} 세션이 이 폴더를 잡고 있지만 몇 분째 바뀐 것이 없어요.",
+      "dozing": "{who} 세션이 이 폴더를 잡고 있지만 {minutes}분 넘게 바뀐 것이 없어요.",
+      "merged": "여기 있던 내용은 모두 {branch}에 들어갔어요. 폴더를 지워도 돼요.",
+      "locked": "폴더가 잠겨 있는데, 어느 세션이 잠갔는지 Atlas가 읽을 수 없어요.",
+      "lockLeft": "이 폴더를 잠근 세션은 끝났고 잠금만 남아 있어요.",
+      "missing": "Git에는 이 워크트리가 남아 있지만 폴더가 없어요.",
+      "unheld": "이 폴더에서 작업 중인 세션이 없어요."
+    },
+    "commitsTitle": "커밋",
+    "commitsMore": "외 {count}개",
+    "uncommittedTitle": "아직 커밋 안 한 것",
+    "filesMore": "외 파일 {count}개",
+    "folderTitle": "폴더",
+    "copyPath": "폴더 경로 복사",
+    "copied": "복사했어요",
+    "reading": "읽는 중…",
+    "cleanupTitle": "정리하려면 터미널에서 실행하세요",
+    "copyCommand": "명령 복사"
+  },
+  "about": {
+    "label": "이 화면이 보여 주는 것",
+    "body": "방 하나가 워크트리 하나예요. 워크트리는 이 저장소에서 브랜치 하나를 작업하는 별도 폴더예요. 방의 화면에는 브랜치, 최근 커밋, 바꿨지만 아직 커밋하지 않은 파일이 나와요. 에이전트 세션이 작업 중인 방은 불이 켜져 있어요. 방을 누르면 나머지를 볼 수 있어요."
   }
 }

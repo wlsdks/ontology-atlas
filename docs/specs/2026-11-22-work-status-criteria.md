@@ -457,6 +457,10 @@ visible, never hidden, one at a time, killed after 5 s. The output is parsed int
 unknown; `name`, `sessionId` and `id` are dropped at the parse and nothing is stored. An entry
 counts only for a session and worktree Atlas already shows. If the probe sees the call open a
 network connection, it is not built without a confirm and an outbound-paths row.
+**Amended 2026-11-23** by `docs/records/decisions/2026-11-23-work-status-session-list-no-network-929c2179-7882-4c40-a4bc-83cfbb2612cf.md`:
+the probe saw a connection attempt, the owner chose to block it, and the call runs on macOS only,
+under a no-network sandbox with Claude Code's nonessential-traffic switch; the start joins as
+"no later than", not equal.
 **Dissent**: The schema is promised to no one and can change with any release. A 160 MB process
 every 10 s is heavy for one line of state. It covers one vendor; hook entries would cover that
 vendor the same way they cover others.
@@ -469,3 +473,14 @@ instead of its words from beats.
 
 - 2026-11-22: split from `docs/specs/2026-11-21-work-status-destination.md` for length, content
   unchanged: the acceptance criteria and the decision record texts.
+- 2026-11-23: criterion 27's slice 7 probe was run and Record 7 amended to what it saw (the
+  destination spec's "The session list" carries the numbers). Criterion 43 is checked by
+  `src-tauri/src/work_status/agent_sessions/tests.rs` on macOS, with these differences: the
+  environment is `HOME` and the switch; the call tests, the sleeper and the no-connection test
+  run on macOS only, the parse, join and pace tests everywhere; one folder, so a steady hour makes
+  exactly 360 calls. Criterion 44's recorded walk in the installed app is not done.
+- 2026-11-23: the status line and switch of slice 7 are built; `use-agent-sessions.test.ts` holds
+  the off choice and a hidden screen to zero asks by call count, and `work-status-rooms.spec.ts`
+  walks the header's three states and a reload with the read off. The native tests no longer
+  sleep: a child the program left is awaited by its pid, in three cases (the limit, a child
+  holding the output, a call that went well).
