@@ -55,6 +55,18 @@ import {
   type TurnToolEvent,
   type TurnWorkReport,
 } from './turn-run';
+import {
+  afterRequest,
+  beginMappingRun,
+  closeMappingCard,
+  hideMappingCard,
+  isMappingActive,
+  observeMappingWork,
+  stopMappingRun,
+  type MappingFigures,
+  type MappingRequestEnd,
+  type MappingRun,
+} from './mapping-run';
 
 export type WorkRunDoor = 'results' | 'conversation';
 
@@ -67,7 +79,8 @@ export type SeatRun =
   | { kind: 'check'; key: string; run: WorkRun }
   | { kind: 'scheduled'; key: string; run: ScheduledRun }
   | { kind: 'turn'; key: string; run: TurnRun }
-  | { kind: 'meaning'; key: string; run: MeaningRun };
+  | { kind: 'meaning'; key: string; run: MeaningRun }
+  | { kind: 'mapping'; key: string; run: MappingRun };
 
 export type TurnDoor = { turnId: number; kind: 'conversation' } | { turnId: number; kind: 'page'; page: string };
 
@@ -84,6 +97,8 @@ export interface WorkRunSnapshot {
   /** The open folder's meaning stage (the Wiki desk's meaning line) is on screen. */
   meaningStage: boolean;
   turnStage: string | null;
+  /** The folder whose map conversation shows the mapping row; that folder's mapping card stands down. */
+  mappingStage: string | null;
   door: { runId: number; kind: WorkRunDoor } | null;
   turnDoor: TurnDoor | null;
 }
@@ -91,13 +106,14 @@ export interface WorkRunSnapshot {
 const NO_RUNS: ReadonlyMap<string, SeatRun> = new Map();
 const EMPTY: WorkRunSnapshot = {
   runs: NO_RUNS, run: null, folder: null, stageFolder: null, automationsShown: false, meaningStage: false,
-  turnStage: null, door: null, turnDoor: null,
+  turnStage: null, mappingStage: null, door: null, turnDoor: null,
 };
 
 let snapshot: WorkRunSnapshot = EMPTY;
 let stopTurn: { runId: number; stop: () => void } | null = null;
 const scheduledStops = new Map<string, () => void>();
 const turnStops = new Map<number, () => void>();
+const mappingStops = new Map<string, () => void>();
 let nextId = 0;
 const listeners = new Set<() => void>();
 
@@ -116,6 +132,8 @@ const scheduledKey = (id: string) => `scheduled:${id}`;
 /** One meaning run per folder: another folder's stays as it was left until that folder opens again. */
 const meaningKey = (folder: string) => `meaning:${folder}`;
 const turnKey = (id: number) => `turn:${id}`;
+/** One mapping run per folder; nothing of it is persisted. */
+const mappingKey = (folder: string) => `mapping:${folder}`;
 
 function checkOf(runs: ReadonlyMap<string, SeatRun>): WorkRun | null {
   for (const entry of runs.values()) if (entry.kind === 'check') return entry.run;
@@ -127,7 +145,8 @@ function publish(next: Partial<WorkRunSnapshot>) {
   if (next.runs) merged.run = checkOf(next.runs);
   const same = merged.runs === snapshot.runs && merged.folder === snapshot.folder && merged.stageFolder === snapshot.stageFolder
     && merged.automationsShown === snapshot.automationsShown && merged.meaningStage === snapshot.meaningStage
-    && merged.door === snapshot.door && merged.turnStage === snapshot.turnStage && merged.turnDoor === snapshot.turnDoor;
+    && merged.door === snapshot.door && merged.turnStage === snapshot.turnStage && merged.turnDoor === snapshot.turnDoor
+    && merged.mappingStage === snapshot.mappingStage;
   if (same) return;
   snapshot = merged;
   listeners.forEach((listener) => listener());
@@ -218,12 +237,54 @@ function changeEveryTurn(update: (run: TurnRun) => TurnRun) {
   if (runs) publish({ runs });
 }
 
+function mappingOf(folder: string): MappingRun | null {
+  const entry = snapshot.runs.get(mappingKey(folder));
+  return entry?.kind === 'mapping' ? entry.run : null;
+}
+
+function changeMapping(folder: string, update: (run: MappingRun) => MappingRun): MappingRun | null {
+  const run = mappingOf(folder);
+  if (!run) return null;
+  const next = update(run);
+  if (next !== run) publish({ runs: withEntry({ kind: 'mapping', key: mappingKey(folder), run: next }) });
+  return next;
+}
+
+function changeEveryMapping(update: (run: MappingRun) => MappingRun) {
+  let runs: Map<string, SeatRun> | null = null;
+  for (const entry of snapshot.runs.values()) {
+    if (entry.kind !== 'mapping') continue;
+    const next = update(entry.run);
+    if (next === entry.run) continue;
+    runs ??= new Map(snapshot.runs);
+    runs.set(entry.key, { ...entry, run: next });
+  }
+  if (runs) publish({ runs });
+}
+
+function stopMapping(folder: string, reason: 'press' | 'switched') {
+  const run = mappingOf(folder);
+  if (!run || changeMapping(folder, (current) => stopMappingRun(current, reason)) === run) return;
+  mappingStops.get(folder)?.();
+}
+
 function settledScheduled(entry: SeatRun): boolean {
   if (entry.kind === 'turn') return !isTurnActive(entry.run) && entry.run.card === 'closed' && !entry.run.unseen;
   return entry.kind === 'scheduled' && !isScheduledActive(entry.run) && entry.run.card === 'closed' && !entry.run.unseen;
 }
 
 const stageShows = (run: WorkRun) => snapshot.stageFolder === run.folder;
+
+/** Closing an active run only lowers its card; closing an ended one removes it, so the row reads the disk again. */
+function closeMapping(run: MappingRun) {
+  if (isMappingActive(run)) {
+    changeMapping(run.folder, closeMappingCard);
+    return;
+  }
+  const runs = new Map(snapshot.runs);
+  runs.delete(mappingKey(run.folder));
+  publish({ runs });
+}
 
 /**
  * The app session's long runs, above every route: a screen that starts one may unmount while it
@@ -293,6 +354,9 @@ export const workRuns = {
       publish({ turnDoor: null });
       turnStops.get(entry.run.id)?.();
     }
+    for (const entry of [...snapshot.runs.values()]) {
+      if (entry.kind === 'mapping' && entry.run.folder !== folder) stopMapping(entry.run.folder, 'switched');
+    }
     const run = snapshot.run;
     if (!run || run.folder === folder || !isRunActive(run)) return;
     publish({ runs: withEntry({ kind: 'check', key: checkKey(run.id), run: abandonRun(run, at) }), door: null });
@@ -350,6 +414,10 @@ export const workRuns = {
       if (entry.run.folder === snapshot.folder) meaningStop?.();
       return;
     }
+    if (entry?.kind === 'mapping') {
+      stopMapping(entry.run.folder, 'press');
+      return;
+    }
     if (entry?.kind === 'turn') {
       if (!isTurnActive(entry.run) || entry.run.phase === 'stopping') return;
       changeTurn(entry.run.id, (run) => stopTurnRun(run, false));
@@ -365,12 +433,14 @@ export const workRuns = {
     changeEveryScheduled(hideScheduledCard);
     if (snapshot.folder !== null) changeMeaning(meaningKey(snapshot.folder), hideMeaningCard);
     changeEveryTurn(hideTurnCard);
+    changeEveryMapping(hideMappingCard);
   },
   closeRun(key: string) {
     const entry = snapshot.runs.get(key);
     if (entry?.kind === 'check') changeCheck(entry.run.id, closeCard);
     else if (entry?.kind === 'meaning') changeMeaning(key, closeMeaningCard);
     else if (entry?.kind === 'turn') changeTurn(entry.run.id, closeTurnCard);
+    else if (entry?.kind === 'mapping') closeMapping(entry.run);
     else if (entry) changeScheduled(key, closeScheduledCard);
   },
   enterAutomations() {
@@ -473,6 +543,37 @@ export const workRuns = {
     if (snapshot.turnDoor?.turnId === turnId) publish({ turnDoor: null });
   },
 
+  /** Starts the folder's mapping run at a press; null while one is already active there. */
+  beginMapping(input: { folder: string; folderName: string; agent: string; figures: MappingFigures | null; startedAt: number }): MappingRun | null {
+    const previous = mappingOf(input.folder);
+    if (previous && isMappingActive(previous)) return null;
+    nextId += 1;
+    const run = beginMappingRun({ id: nextId, ...input });
+    publish({ runs: withEntry({ kind: 'mapping', key: mappingKey(input.folder), run }) });
+    return run;
+  },
+  /** The agent's latest report, paced by the caller; an unchanged line publishes at most once a minute. */
+  observeMappingWork(folder: string, work: TurnWorkReport | null, at: number) {
+    changeMapping(folder, (run) => observeMappingWork(run, work, at));
+  },
+  /** Ends the running request; the run returned is `running` when the next request should be sent. */
+  endMappingBatch(folder: string, end: MappingRequestEnd): MappingRun | null {
+    const next = changeMapping(folder, (run) => afterRequest(run, end));
+    if (next && !isMappingActive(next)) mappingStops.delete(folder);
+    return next;
+  },
+  /** The driver's Stop: it must end the running request, which then reaches `endMappingBatch`. */
+  setMappingStop(folder: string, stop: (() => void) | null) {
+    if (stop) mappingStops.set(folder, stop);
+    else mappingStops.delete(folder);
+  },
+  enterMappingStage(folder: string) {
+    publish({ mappingStage: folder });
+  },
+  leaveMappingStage(folder: string) {
+    if (snapshot.mappingStage === folder) publish({ mappingStage: null });
+  },
+
   reset() {
     stopTurn = null;
     scheduledStops.clear();
@@ -484,6 +585,7 @@ export const workRuns = {
     progress = null;
     progressAt = Number.NEGATIVE_INFINITY;
     turnStops.clear();
+    mappingStops.clear();
     snapshot = EMPTY;
     listeners.forEach((listener) => listener());
     progressListeners.forEach((listener) => listener());
