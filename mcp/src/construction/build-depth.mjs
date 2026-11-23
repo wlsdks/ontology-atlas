@@ -24,6 +24,7 @@ import { measureRoles, roleLabel, ROLE_REPAIR } from './build-depth/role-placeme
 import {
   areaCoverage,
   areaLabel,
+  batchAbilityRows,
   batchFilesLabel,
   keepsNotMappedLines,
   mappedPercent,
@@ -77,7 +78,7 @@ function listed(rows, render) {
  * areas, and the exact lines the project keeps under `## Uncertainty`, so the
  * share the project holds is the server's.
  */
-function areasSentence(docs, repoRoot, coverage, batch) {
+function areasSentence(docs, repoRoot, coverage, batch, { abilityRows = false } = {}) {
   const { notMapped, counted, abilities, uncovered } = coverage;
   if (notMapped.length === 0) {
     return keepsNotMappedLines(docs)
@@ -91,12 +92,17 @@ function areasSentence(docs, repoRoot, coverage, batch) {
     ? ''
     : `Keep exactly these lines under the project's ## Uncertainty, replacing any earlier Not mapped yet lines:\n${notMappedLines(coverage).join('\n')}\n`;
   const files = batch.reduce((sum, area) => sum + area.batchFiles.length, 0);
+  const rows = abilityRows ? batchAbilityRows(batch) : [];
+  const openCalls = batch.map((area) => openAreaCall(repoRoot, area)).join('; ');
   const next = files > 0
-    ? `Map next, in one request, the ${files} ${files === 1 ? 'file' : 'files'} with no node, ${batch.map(batchFilesLabel).join('; ')}. Open their areas: `
-    : `Map next, in one request: ${batch.map(areaLabel).join(', ')}. Open it: `;
+    ? `Map next, in one request, the ${files} ${files === 1 ? 'file' : 'files'} with no node, ${batch.map(batchFilesLabel).join('; ')}. `
+      + (rows.length > 0
+        ? `What the survey lists in them, kind name evidence symbol: ${rows.join('; ')}. Outline a file before reading it by symbol; open an area only when these rows do not show what its file holds: ${openCalls}. `
+        : `Open their areas: ${openCalls}. `)
+    : `Map next, in one request: ${batch.map(areaLabel).join(', ')}. Open it: ${openCalls}. `;
   const project = docs.find((doc) => kindOf(doc) === 'project');
   const gap = project ? notMappedLineGap(project.body, coverage) : null;
-  return `${lead}${next}${batch.map((area) => openAreaCall(repoRoot, area)).join('; ')}. `
+  return `${lead}${next}`
     + 'Then write one capability per thing a user, an operator or another system gets there, with its entry file in path: and its rule\'s cited lines; one capability may stand for several files when it cites lines in each. '
     + 'What is not product (generated code, test tooling, samples) goes on one line of the project\'s ## Excludes with its path and why.'
     + (gap ? ` The project ${gap} (not-mapped-line-mismatch); finalize_project_meaning refuses until that line matches.` : '')
@@ -122,9 +128,11 @@ function depthSentence(depth) {
 /**
  * Placement against the survey's abilities, reads and cites against this
  * session, and ability-to-ability edges, with the line a write and validate_vault
- * report. Each list names what to do next.
+ * report. Each list names what to do next. `abilityRows` writes the survey's rows
+ * for the files the next request maps, so it needs no area survey; validate_vault
+ * asks for them, a write's answer does not repeat them.
  */
-export function measureBuildDepth(docs, repo, reads) {
+export function measureBuildDepth(docs, repo, reads, { abilityRows = false } = {}) {
   const capabilities = docs.filter((doc) => kindOf(doc) === 'capability');
   const dependsOn = dependencyEdges(docs).length;
   const breadth = repo ? measureAbilities(docs, repo.survey) : null;
@@ -143,7 +151,7 @@ export function measureBuildDepth(docs, repo, reads) {
     }
   }
   if (coverage) {
-    const areas = areasSentence(docs, repo.repoRoot, coverage, batch);
+    const areas = areasSentence(docs, repo.repoRoot, coverage, batch, { abilityRows });
     if (areas) parts.push(areas);
   }
   if (depth) {
