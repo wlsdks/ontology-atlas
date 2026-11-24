@@ -46,6 +46,11 @@ async function openWorkStatus(page: Page, rows: Row[], activity: Activity = {}) 
   await seedFirstRunSeen(page);
   await page.addInitScript(({ initial, reads }: { initial: Row[]; reads: Activity }) => {
     const state = { rows: initial, version: 1, activity: reads, activityVersion: 1, sessionStatus: "read", sessionAsks: 0, sessionForgets: 0 };
+    const nowS = Math.floor(Date.now() / 1000);
+    const LANDED_STUB = [
+      { hash: "a".repeat(40), subject: "fix(map): keep a selected element's ring off its capability's disc (#12)", at: nowS - 3600, merge: true, files: 1, insertions: 30, deletions: 4 },
+      { hash: "b".repeat(40), subject: "docs: say what landed", at: nowS - 2 * 86400, merge: false, files: 2, insertions: 5, deletions: 1 },
+    ];
     const target = window as unknown as Record<string, unknown>;
     // How the session-list read went, and how often the page asked for it or told Rust to forget it.
     target.__workStatusSessionRead = (status: string) => { state.sessionStatus = status; };
@@ -88,6 +93,10 @@ async function openWorkStatus(page: Page, rows: Row[], activity: Activity = {}) 
         if (command === "work_status_activity") {
           const read = state.activity[args.worktreeId ?? ""];
           return answer(read ? { stamp: `s${state.activityVersion}`, ...structuredClone(read) } : null);
+        }
+        if (command === "work_status_landed") return answer(structuredClone(LANDED_STUB));
+        if (command === "work_status_landed_detail") {
+          return answer({ hash: (args as { hash?: string }).hash, commits: [{ hash: "e1e1e1e", subject: "fix(map): keep the ring off the disc", at: Math.floor(Date.now() / 1000) - 7200 }], commitCount: 1, files: [{ path: "src/map/plan.ts", insertions: 30, deletions: 4 }], fileCount: 1 });
         }
         if (command === "work_status_read") {
           return answer({ status: "ready", root: "/Users/probe/repo", repository: "repo", host: "github.com", baseBranch: "main", worktrees: structuredClone(state.rows) });
@@ -882,4 +891,25 @@ test.describe("work status rooms", () => {
     await expect(page.getByTestId("work-empty-room")).toContainText("Only main for now");
     await expect(page.getByTestId("work-room")).toHaveCount(0);
   });
+});
+
+test("lists the work that landed on the base branch under the building and opens one beside it", async ({ page }) => {
+  await openWorkStatus(page, SIX, ACTIVITY);
+  const rows = page.getByTestId("work-landed-row");
+  await expect(rows).toHaveCount(2);
+  await expect(rows.first()).toContainText("keep a selected element's ring off its capability's disc");
+  await rows.first().click();
+  const panel = page.getByTestId("work-landed-panel");
+  await expect(panel.getByTestId("work-landed-panel-commits")).toContainText("keep the ring off the disc");
+  await expect(panel.getByTestId("work-landed-panel-files")).toContainText("plan.ts");
+  await expect(rows.first()).toHaveAttribute("aria-expanded", "true");
+  await room(page, "feat/library-stage").first().click();
+  await expect(page.getByTestId("work-room-panel")).toBeVisible();
+  await expect(rows.first()).toHaveAttribute("aria-expanded", "false");
+});
+
+test("shows the landed work under the empty building too", async ({ page }) => {
+  await openWorkStatus(page, [main]);
+  await expect(page.getByTestId("work-empty-room")).toBeVisible();
+  await expect(page.getByTestId("work-landed-row")).toHaveCount(2);
 });

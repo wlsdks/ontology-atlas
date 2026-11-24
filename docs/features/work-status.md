@@ -302,6 +302,25 @@ or Escape closes it and returns focus to the room; a room that leaves the
 building takes its panel with it. The header's hint says in one paragraph what a
 room, a screen and a lit room mean.
 
+The panel opens with its numbers in one row (commits beyond the base branch,
+uncommitted files); when both are zero one sentence replaces the empty lists.
+The folder's path sits at the panel's foot.
+
+## Landed work
+
+Under the building, and under the empty or quiet building, **Landed on `main`**
+lists the base branch's newest thirty changes on its first-parent line, merges
+and squashed commits alike, grouped by day: each with its kind read from a
+conventional prefix, its title, its pull request number, how many files it
+changed, a bar as long as the logarithm of its changed lines, and when it
+landed. Worktrees are removed once their work lands, but the work stays on
+this line, so the list is read from Git (`work_status_landed`, one `git log`)
+and Atlas stores nothing of its own. It is read again after each worktree
+reread and once a minute. Pressing a change opens it beside the building in
+place of the room panel: its numbers, the branch's own commits a merge brought
+(`work_status_landed_detail`, merges left out) and its files, most changed
+first, with **Copy commit hash**.
+
 Moru acts what Git and the locks show: he types at a laptop while work runs
 and picks up a tool between typing loops (the second tool's Moru reads the
 screen behind him, and now and then the two turn to each other and talk),
@@ -325,8 +344,8 @@ states without movement.
 | Not a repository | the same choice |
 | Git missing | `atlasGit.install.*` |
 | Unreadable or not granted | `workStatus.unreadable` with the choice |
-| Only the main checkout | one room for the base branch, `workStatus.empty.*` |
-| Every worktree merged or untouched | `workStatus.quiet.*` with the shelf |
+| Only the main checkout | one room for the base branch, `workStatus.empty.*`, then the landed work |
+| Every worktree merged or untouched | `workStatus.quiet.*` with the shelf, then the landed work |
 | Reading | the page title; the building follows |
 
 ## Not yet

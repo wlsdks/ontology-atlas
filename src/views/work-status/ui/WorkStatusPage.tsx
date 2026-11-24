@@ -15,7 +15,7 @@ import { withAgentSessions } from '@/shared/lib/work-status/signals/sessions';
 import { Button, InfoHint, PageHeaderBar } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { PAGE_FRAME_FORM, PAGE_STAGE_FILL } from '@/shared/ui/tokens/page-frame';
-import { EmptyRoom, RoomShelf, WorkBuilding, pointToRooms, type RoomAlert } from '@/widgets/work-tracks';
+import { EmptyRoom, QuietBuilding, RoomShelf, WorkBuilding, pointToRooms, type RoomAlert } from '@/widgets/work-tracks';
 import { useMinuteClock } from '../model/use-minute-clock';
 import { useRunningMemory } from '../model/use-running-memory';
 import { useSessionIdentity } from '../model/use-session-identity';
@@ -23,6 +23,7 @@ import { sessionListLine } from '../model/session-list-line';
 import { useAgentSessions } from '../model/use-agent-sessions';
 import { useWorkStatus } from '../model/use-work-status';
 import { useWorktreeActivity } from '../model/use-worktree-activity';
+import { useLandedChanges } from '../model/use-landed-changes';
 import { SessionListControl } from './SessionListControl';
 import { WorkStatusStage } from './WorkStatusStage';
 
@@ -53,6 +54,7 @@ export function WorkStatusPage() {
     [plan],
   );
   const activity = useWorktreeActivity(snapshot?.status === 'ready' ? snapshot.root : null, snapshot?.baseBranch ?? null, roomKeys, runningKeys);
+  const landed = useLandedChanges(snapshot?.status === 'ready' ? snapshot.root : null, snapshot?.baseBranch ?? null, readAtMs, nowMs);
   const shownTracks = useMemo(() => (tracks ? withActivity(tracks, activity) : null), [tracks, activity]);
   const sameFolder = tracks ? [...tracks.sessions.flatMap(session => session.tracks), ...tracks.unheld].filter(track => track.running && track.tools.length > 1).length : 0;
   const cleanup = tracks?.stuck.length ?? 0;
@@ -132,15 +134,19 @@ export function WorkStatusPage() {
       {plan === null || tracks === null ? (
         <div className="min-h-0 flex-1" />
       ) : onlyMain ? (
-        <EmptyRoom branch={baseBranch} title={t.rich('empty.title', { branch: baseBranch, code: branch })} body={t('empty.body')} />
+        <QuietBuilding landed={landed} root={snapshot?.root ?? root} baseBranch={baseBranch} nowMs={nowMs}>
+          <EmptyRoom className="flex-none py-10" branch={baseBranch} title={t.rich('empty.title', { branch: baseBranch, code: branch })} body={t('empty.body')} />
+        </QuietBuilding>
       ) : empty ? (
-        <EmptyRoom branch={baseBranch} title={t('quiet.title', { repo: snapshot?.repository ?? folder })} body={t('quiet.body')}>
-          <div className="relative h-10">
-            <RoomShelf merged={plan.shelf.merged} untouched={plan.shelf.untouched} baseBranch={baseBranch} nowMs={nowMs} />
-          </div>
-        </EmptyRoom>
+        <QuietBuilding landed={landed} root={snapshot?.root ?? root} baseBranch={baseBranch} nowMs={nowMs}>
+          <EmptyRoom className="flex-none py-10" branch={baseBranch} title={t('quiet.title', { repo: snapshot?.repository ?? folder })} body={t('quiet.body')}>
+            <div className="relative h-10">
+              <RoomShelf merged={plan.shelf.merged} untouched={plan.shelf.untouched} baseBranch={baseBranch} nowMs={nowMs} />
+            </div>
+          </EmptyRoom>
+        </QuietBuilding>
       ) : (
-        <WorkBuilding tracks={shownTracks ?? tracks} seenRunningAt={seenRunningAt} baseBranch={baseBranch} nowMs={nowMs} />
+        <WorkBuilding tracks={shownTracks ?? tracks} seenRunningAt={seenRunningAt} baseBranch={baseBranch} nowMs={nowMs} root={snapshot?.root ?? root} landed={landed} />
       )}
     </main>
   );
