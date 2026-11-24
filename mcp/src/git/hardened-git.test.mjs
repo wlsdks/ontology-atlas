@@ -208,8 +208,13 @@ test('git reads every path as a name, spawns without a setting that conflicts wi
     GIT_GLOB_PATHSPECS: '1',
     GIT_NOGLOB_PATHSPECS: '1',
     GIT_ICASE_PATHSPECS: '1',
+    GIT_DIR: '/elsewhere/.git',
+    GIT_WORK_TREE: '/elsewhere',
+    GIT_COMMON_DIR: '/elsewhere/.git',
+    GIT_INDEX_FILE: '/elsewhere/.git/index',
   };
   assert.deepEqual(gitEnv(inherited), { PATH: '/usr/bin', GIT_TRACE: '0', GIT_NO_LAZY_FETCH: '1', GIT_ALLOW_PROTOCOL: '' });
+  assert.deepEqual(gitEnv(inherited, { runsUserHooks: true }), { PATH: '/usr/bin', GIT_TRACE: '0' });
   assert.equal(inherited.GIT_ICASE_PATHSPECS, '1', 'the caller\'s environment is not changed');
 });
 

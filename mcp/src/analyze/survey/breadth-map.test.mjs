@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
@@ -173,4 +174,29 @@ test('the survey a call builds is the one later calls get until a source file ch
   assert.equal(cachedSurvey(root, {}).survey, first, 'an unchanged repository is not surveyed again');
   write(root, { 'src/cli.js': '#!/usr/bin/env node\nexport function run() {\n  return 1;\n}\n' });
   assert.notEqual(cachedSurvey(root, {}).survey, first, 'a changed file is surveyed again');
+});
+
+// A `git` first on PATH that logs each run, then runs the real one.
+test('one survey walks the repository once, so it asks Git for ignored paths once', { skip: process.platform === 'win32' }, (t) => {
+  const base = mkdtempSync(join(tmpdir(), 'atlas-breadth-walks-'));
+  const path = process.env.PATH;
+  t.after(() => {
+    process.env.PATH = path;
+    rmSync(base, { recursive: true, force: true });
+  });
+  const root = join(base, 'repo');
+  write(root, {
+    '.gitignore': 'dist/\n',
+    'src/cli.ts': 'export function run(argv: string[]) { return argv.length; }\n',
+    'src/core/engine.ts': 'export class Engine {}\n',
+  });
+  execFileSync('git', ['init', '-q'], { cwd: root });
+  const log = join(base, 'git-runs.log');
+  const realGit = execFileSync('sh', ['-c', 'command -v git'], { encoding: 'utf8' }).trim();
+  write(base, { 'bin/git': `#!/bin/sh\necho "$*" >> '${log}'\nexec '${realGit}' "$@"\n` });
+  chmodSync(join(base, 'bin', 'git'), 0o755);
+  process.env.PATH = `${join(base, 'bin')}:${path}`;
+  buildBreadthMap(root, {});
+  const listings = readFileSync(log, 'utf8').split('\n').filter((line) => / ls-files /.test(line));
+  assert.equal(listings.length, 1);
 });

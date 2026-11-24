@@ -364,9 +364,9 @@ export function fairShares(counts, limit) {
  * @param {string} rootPath
  * @param {{ files: object[] }} collection
  * @param {{ kind: string, path: string, symbol: string, name?: string }[]} entryPoints
- * @param {{ ignore?: string[], documents?: { readme: string|null, pages: string[] } }} [options]
+ * @param {{ documents?: { readme: string|null, pages: string[] } }} [options]
  */
-export function abilitiesOf(rootPath, collection, entryPoints, { ignore = [], documents = { readme: null, pages: [] } } = {}) {
+export function abilitiesOf(rootPath, collection, entryPoints, { documents = { readme: null, pages: [] } } = {}) {
   const rows = [];
   const seen = new Set();
   const names = new Set();
@@ -383,8 +383,9 @@ export function abilitiesOf(rootPath, collection, entryPoints, { ignore = [], do
   };
   const product = collection.files.filter((file) => file.class === 'product' && !isTooling(file.path));
   let index = null;
+  // The collection's own files: a second walk would ask Git again and could see a different tree.
   const declarations = () => {
-    index ??= declarationIndex(rootPath, { ignore });
+    index ??= declarationIndex(rootPath, { files: collection.files.filter((file) => file.class === 'product') });
     return index;
   };
   for (const entry of entryPoints) {

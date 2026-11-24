@@ -5,7 +5,7 @@
  * further when it is large. The survey lists these units, and the coverage line
  * every write reports is measured against them, so both speak of the same thing.
  * Reads file bytes only to count lines and spot a generated header, and asks Git
- * once which paths it ignores (`git-ignored.mjs`); no repository code runs.
+ * which paths it ignores (`git-ignored.mjs`); no repository code runs.
  */
 
 import { lstatSync, readdirSync, readFileSync } from 'node:fs';
