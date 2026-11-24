@@ -400,6 +400,7 @@ it.each(["domain:human-workbench", "domain:code-evidence", "domain:meaning-layer
     const star = new Set([domainId, ...domainStarIds(model, domainId).capabilities, ...elements]);
     const ringPx = TOKENS.paint.selectedRingGapPx + TOKENS.paint.selectedRingPx;
     const breaches: string[] = [];
+    let measured = 0;
     for (const zoom of [1, 1.5, 2, 3.6]) {
       for (const element of elements) {
         const owner = model.capabilityOf.get(element);
@@ -412,13 +413,43 @@ it.each(["domain:human-workbench", "domain:code-evidence", "domain:meaning-layer
         const self = [...discs, ...glyphs].find((m) => m.id === element);
         const cap = discs.find((m) => m.id === owner);
         if (!self || !cap) continue;
+        measured += 1;
         const gap = Math.hypot(self.x - cap.x, self.y - cap.y) - self.r - ringPx - cap.r;
         if (gap < 0) breaches.push(`${element} on ${owner} at zoom ${zoom}: ${gap.toFixed(1)}px`);
       }
     }
     expect(breaches).toEqual([]);
+    expect(measured, "most selections were measured, not skipped").toBeGreaterThanOrEqual(elements.length * 3);
   },
 );
+
+it("moves a selection between two elements of one capability with no frame jump", () => {
+  const domainId = "domain:human-workbench";
+  const { capabilities, elements } = domainStarIds(model, domainId);
+  const star = new Set([domainId, ...capabilities, ...elements]);
+  const [first, second] = elements.filter((id) => model.capabilityOf.get(id) === "capability:library-workspace");
+  expect(first && second).toBeTruthy();
+  const jumps: string[] = [];
+  for (const zoom of [1, 2]) {
+    const camera = cameraOn(domainId, {});
+    const rest = framesUntilSettled(camera, {}, star, 0, 1, 1, FRAME_MS);
+    const opened = framesUntilSettled(camera, { focusedNodeId: domainId }, star, rest.end + FRAME_MS, 1, zoom, 600);
+    const chosen = framesUntilSettled(camera, { focusedNodeId: first! }, star, opened.end + FRAME_MS, zoom, zoom, 600);
+    const last = new Map<string, { x: number; y: number }>();
+    for (let i = 0, now = chosen.end + FRAME_MS; i < 45; i += 1, now += FRAME_MS) {
+      paintFlatGraphFrame(camera(zoom, { focusedNodeId: second!, now }), TOKENS);
+      const { discs, glyphs } = describeLastDialFrame(W, H)!;
+      for (const id of [first!, second!]) {
+        const mark = [...discs, ...glyphs].find((m) => m.id === id);
+        if (!mark) continue;
+        const was = last.get(id);
+        if (was && Math.hypot(mark.x - was.x, mark.y - was.y) > 3) jumps.push(`${id} at zoom ${zoom}, frame ${i}: ${Math.hypot(mark.x - was.x, mark.y - was.y).toFixed(1)}px`);
+        last.set(id, { x: mark.x, y: mark.y });
+      }
+    }
+  }
+  expect(jumps).toEqual([]);
+});
 
 it.each(["domain:human-workbench", "domain:code-evidence", "domain:meaning-layer", "domain:agent-access"])(
   "draws the name of each member pressed in the opened %s star clear of grown dots or on its plate, from the press to rest",

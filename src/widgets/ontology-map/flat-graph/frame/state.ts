@@ -178,11 +178,12 @@ interface FrameState {
   /** The concept a change just deselected, shrinking back from the selected radius; null otherwise. */
   leavingId: string | null;
   leavingR: number;
-  /** The selected or leaving element that steps `stepPx` along (`stepUx`, `stepUy`) off its capability, so its ring clears that disc; null when none needs to. */
-  stepId: string | null;
-  stepPx: number;
-  stepUx: number;
-  stepUy: number;
+  /** How far each ringed element steps off its capability this frame so its ring clears that disc, along a unit direction; eased per element. */
+  steps: Map<string, { px: number; ux: number; uy: number }>;
+  /** Elements whose step has not yet eased back to nothing. */
+  stepped: Set<string>;
+  /** Set while the plan reads an element where it stands before its step. */
+  stepsOff: boolean;
   /** What each mark drew last, so this frame's radius moves from it at no more than `markPxPerMs`. */
   drawn: Map<string, DrawnRadius>;
   /** This world's frame count, so a mark knows whether it drew in the frame before. */
@@ -227,7 +228,7 @@ const openStarSlot = (): OpenStarSlot => ({ rooms: NO_ROOMS, world: false, domai
  * The frame being built. Each part binds it to a local `const F` once: wherever modules are not
  * hoisted into one scope (tests, dev), every use of an imported binding is a lookup through its module.
  */
-export const F = { stamp: 0, opened: [] as FrameState["opened"], stars: [openStarSlot(), openStarSlot()], starCount: 0, starNow: false, closingRooms: null, stepId: null, stepPx: 0, stepUx: 0, stepUy: 0 } as FrameState;
+export const F = { stamp: 0, opened: [] as FrameState["opened"], stars: [openStarSlot(), openStarSlot()], starCount: 0, starNow: false, closingRooms: null, steps: new Map(), stepped: new Set(), stepsOff: false } as FrameState;
 
 /**
  * Hot helpers hand doubles back through this slot and take objects, not numbers: a double argument

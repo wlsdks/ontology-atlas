@@ -84,9 +84,10 @@ export function screenOf(id: string): StampedPoint {
     x += (centre.x * F.scale + F.originX + offset.x - x) * fan.share;
     y += (centre.y * F.scale + F.originY + offset.y - y) * fan.share;
   }
-  if (id === F.stepId) {
-    x += F.stepUx * F.stepPx;
-    y += F.stepUy * F.stepPx;
+  const step = F.stepsOff ? undefined : F.steps.get(id);
+  if (step !== undefined) {
+    x += step.ux * step.px;
+    y += step.uy * step.px;
   }
   if (at.x !== x) at.x = x;
   if (at.y !== y) at.y = y;
@@ -143,6 +144,25 @@ export function radiusNow(id: string): number {
  * was off screen, or the map slept) and reduced motion take the target at once. Settled once per
  * mark and frame.
  */
+/** Where `id` stands before any ring step, read without marking it placed this frame. */
+export function unsteppedScreen(id: string): { x: number; y: number } {
+  const before = F.screen.get(id)?.stamp ?? 0;
+  F.stepsOff = true;
+  const at = screenOf(id);
+  F.stepsOff = false;
+  const read = { x: at.x, y: at.y };
+  at.stamp = before;
+  return read;
+}
+
+/** A distance eased across frames the way a mark's radius is, under its own key; O(1). */
+export function easedPx(key: string, target: number): number {
+  // A step starts from nothing, or from where it last drew, rather than at its target.
+  const last = F.drawn.get(key);
+  if (!last || last.frame < F.frame - 1) F.drawn.set(key, { r: last?.r ?? 0, perMs: 0, at: F.now, frame: F.frame - 1 });
+  return drawnRadius(key, target);
+}
+
 function drawnRadius(id: string, wanted: number, limit = Infinity): number {
   // A mark heads for the room it has when that is smaller than its radius, so it settles there.
   const target = Math.min(wanted, limit);
