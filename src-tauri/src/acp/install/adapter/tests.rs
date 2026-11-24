@@ -415,11 +415,23 @@ fn a_closing_app_starts_no_new_fetch() {
 
 #[test]
 fn a_vault_or_repo_package_bin_never_reaches_the_fetch_path() {
+    // Joined with the platform's separator: `;` on Windows, `:` elsewhere.
+    let joined = |dirs: &[&str]| {
+        std::env::join_paths(dirs)
+            .unwrap()
+            .to_string_lossy()
+            .into_owned()
+    };
     assert_eq!(
-        path_without_package_bins(
-            "/vault/node_modules/.bin:/usr/local/bin::/repo/sub/node_modules/.bin:/opt/.bin:/usr/bin"
-        ),
-        "/usr/local/bin:/opt/.bin:/usr/bin"
+        path_without_package_bins(&joined(&[
+            "/vault/node_modules/.bin",
+            "/usr/local/bin",
+            "",
+            "/repo/sub/node_modules/.bin",
+            "/opt/.bin",
+            "/usr/bin",
+        ])),
+        joined(&["/usr/local/bin", "/opt/.bin", "/usr/bin"])
     );
 }
 

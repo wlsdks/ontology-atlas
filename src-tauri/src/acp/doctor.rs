@@ -659,7 +659,9 @@ mod tests {
     }
 
     /// A download in flight leaves `node_modules` with an empty `.bin`, the shape of a broken
-    /// entry; offering "Fix" then would delete what the fetch is writing.
+    /// entry; offering "Fix" then would delete what the fetch is writing. Unix only: Windows keeps
+    /// the npx cache under `%LOCALAPPDATA%`, not under the home this test plants.
+    #[cfg(unix)]
     #[test]
     fn an_entry_being_downloaded_is_not_offered_as_broken() {
         let base = std::env::temp_dir().join(format!("atlas-doctor-npx-{}", std::process::id()));
