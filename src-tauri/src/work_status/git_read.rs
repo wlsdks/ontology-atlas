@@ -18,14 +18,15 @@ pub(super) enum GitFailure {
 }
 
 /// A local read through the runner's hardened base (no hooks, no fsmonitor, no bare repository
-/// planted in the tree) that also refuses lazy fetches and every transport.
+/// planted in the tree) that also refuses lazy fetches and every transport, and never runs a diff,
+/// textconv or signature program the repository names.
 pub(super) fn git_read(cwd: &Path, args: &[&str]) -> Result<String, GitFailure> {
     let output = crate::git::hardened_base_command()
         .env("GIT_NO_LAZY_FETCH", "1")
         .env("GIT_ALLOW_PROTOCOL", "")
         .env("GIT_OPTIONAL_LOCKS", "0")
         .env("LC_ALL", "C")
-        .args(args)
+        .args(crate::git::with_diff_family_guard(args))
         .current_dir(cwd)
         .stdin(Stdio::null())
         .output()

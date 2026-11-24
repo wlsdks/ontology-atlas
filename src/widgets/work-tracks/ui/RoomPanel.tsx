@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState, type ReactNode } from 'react';
+import { useId, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { X } from 'lucide-react';
 import { useCopyFeedback } from '@/shared/lib/clipboard/use-copy-feedback';
@@ -9,6 +9,7 @@ import { DOZE_AFTER_MS, type RoomEntry } from '@/shared/lib/work-status/work-tra
 import { Button, IconButton, Surface } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { BranchName } from './BranchName';
+import { PanelSection as Section, PanelStats } from './panel-parts';
 import type { StatusTone, useRoomCopy } from './use-room-copy';
 import styles from './rooms.module.css';
 
@@ -33,32 +34,23 @@ export function cleanupCommand(room: RoomEntry): string | null {
   return null;
 }
 
-function Section({ title, aside, children }: { title: string; aside?: string | null; children: ReactNode }) {
-  return (
-    <section className="border-t border-[color:var(--color-border-soft)] px-5 py-4">
-      <div className="flex items-baseline justify-between gap-3">
-        <h3 className="text-label leading-label font-[var(--font-weight-emphasis)] text-[color:var(--color-text-tertiary)]">{title}</h3>
-        {aside ? <span className="shrink-0 text-label leading-label tabular-nums text-[color:var(--color-text-quaternary)]">{aside}</span> : null}
-      </div>
-      <div className="mt-2">{children}</div>
-    </section>
-  );
-}
-
 /**
  * What one room is doing, in sentences, beside the building: who holds the worktree and what that
  * means, the commits the base branch does not have yet, what is not committed, and the folder. It
  * reads nothing of its own: every line comes from the room's entry, so it moves with the room.
  */
-export function RoomPanel({ room, copy, id, onClose }: {
+export function RoomPanel({ room, copy, id, onClose, replaced = false }: {
   /** The pressed room, or none: the panel leaves with its last room still drawn. */
   room: RoomEntry | null;
+  /** Another panel takes this one's place: it goes at once, so the building never makes room for two. */
+  replaced?: boolean;
   copy: RoomCopy;
   id: string;
   onClose: () => void;
 }) {
   const [drawn, setDrawn] = useState(room);
   if (room !== null && room !== drawn) setDrawn(room);
+  if (replaced && room === null) return null;
   return (
     <Surface
       open={room !== null}
@@ -93,6 +85,9 @@ function PanelBody({ room, copy, onClose }: { room: RoomEntry; copy: RoomCopy; o
           : t(`panel.now.${state.kind}`);
   const moreCommits = track.activity?.onBase ? 0 : (track.ahead ?? 0) - screen.commits.length;
   const moreFiles = (track.activity?.uncommitted ?? 0) - screen.files.length;
+  // Read and empty: the stats already say zero, so the lists give way to one sentence.
+  const quietCommits = track.activity != null && screen.commits.length === 0 && (track.activity.onBase ? false : track.ahead === 0);
+  const quietFiles = track.activity != null && track.activity.uncommitted === 0;
   return (
     <div aria-labelledby={titleId} role="group" className="flex min-h-full flex-col">
       <header className="flex items-start gap-3 px-5 pb-4 pt-5">
@@ -112,48 +107,62 @@ function PanelBody({ room, copy, onClose }: { room: RoomEntry; copy: RoomCopy; o
           <X size={ICON_SIZE.md} aria-hidden />
         </IconButton>
       </header>
-      <p className="px-5 pb-5 text-body leading-prose text-[color:var(--color-text-secondary)]" data-testid="work-room-panel-now">{now}</p>
+      <p className="px-5 pb-4 text-body leading-prose text-[color:var(--color-text-secondary)]" data-testid="work-room-panel-now">{now}</p>
       {state.kind === 'missing' ? null : (
-        <Section title={screen.commitsTitle?.text ?? t('panel.commitsTitle')}>
-          {screen.commits.length > 0 ? (
-            <ul className="flex flex-col gap-1.5">
-              {screen.commits.map(commit => (
-                <li key={commit.key} className="flex items-baseline gap-3 text-body leading-body">
-                  <span className="min-w-0 flex-1 text-[color:var(--color-text-primary)]">{commit.subject}</span>
-                  {commit.ago ? <span className="shrink-0 text-label leading-label tabular-nums text-[color:var(--color-text-quaternary)]">{commit.ago}</span> : null}
-                </li>
-              ))}
-              {moreCommits > 0 ? <li className="text-label leading-label text-[color:var(--color-text-quaternary)]">{t('panel.commitsMore', { count: moreCommits })}</li> : null}
-            </ul>
-          ) : (
-            <p className="text-body leading-body text-[color:var(--color-text-tertiary)]">{screen.note ?? t('panel.reading')}</p>
-          )}
-        </Section>
+        <PanelStats
+          stats={[
+            { label: t('panel.stat.commits', { branch: copy.baseBranch }), value: track.activity?.onBase ? null : track.ahead ?? null },
+            { label: t('panel.stat.uncommitted'), value: track.activity?.uncommitted ?? null },
+          ]}
+        />
       )}
-      {state.kind === 'missing' ? null : (
-        <Section title={t('panel.uncommittedTitle')}>
-          {screen.filesTitle ? (
-            <>
-              <p className="text-body leading-body text-[color:var(--color-text-primary)]">{screen.filesTitle}</p>
-              {screen.files.length > 0 ? (
-                <ul className="mt-2 flex flex-col gap-1.5" data-testid="work-room-panel-files">
-                  {screen.files.map(file => (
-                    <li key={file.path} className="flex items-baseline gap-3 text-label leading-label">
-                      <span className="min-w-0 flex-1">
-                        <span className="break-all font-mono text-[color:var(--color-text-primary)]">{file.name}</span>
-                        {file.folder ? <span className="block break-all text-[color:var(--color-text-quaternary)]">{file.folder}</span> : null}
-                      </span>
-                      {file.ago ? <span className="shrink-0 tabular-nums text-[color:var(--color-text-quaternary)]">{file.ago}</span> : null}
+      {state.kind === 'missing' || (quietCommits && quietFiles) ? (
+        state.kind === 'missing' ? null : <p className="border-t border-[color:var(--color-border-soft)] px-5 py-4 text-body leading-body text-[color:var(--color-text-tertiary)]" data-testid="work-room-panel-quiet">{t('panel.quiet', { branch: copy.baseBranch })}</p>
+      ) : (
+        <>
+          {quietCommits ? null : (
+            <Section title={screen.commitsTitle?.text ?? t('panel.commitsTitle')}>
+              {screen.commits.length > 0 ? (
+                <ul className="flex flex-col gap-1.5">
+                  {screen.commits.map(commit => (
+                    <li key={commit.key} className="flex items-baseline gap-3 text-body leading-body">
+                      <span className="min-w-0 flex-1 text-[color:var(--color-text-primary)]">{commit.subject}</span>
+                      {commit.ago ? <span className="shrink-0 text-label leading-label tabular-nums text-[color:var(--color-text-quaternary)]">{commit.ago}</span> : null}
                     </li>
                   ))}
-                  {moreFiles > 0 ? <li className="text-label leading-label text-[color:var(--color-text-quaternary)]">{t('panel.filesMore', { count: moreFiles })}</li> : null}
+                  {moreCommits > 0 ? <li className="text-label leading-label text-[color:var(--color-text-quaternary)]">{t('panel.commitsMore', { count: moreCommits })}</li> : null}
                 </ul>
-              ) : null}
-            </>
-          ) : (
-            <p className="text-body leading-body text-[color:var(--color-text-tertiary)]">{t('panel.reading')}</p>
+              ) : (
+                <p className="text-body leading-body text-[color:var(--color-text-tertiary)]">{screen.note ?? t('panel.reading')}</p>
+              )}
+            </Section>
           )}
-        </Section>
+          {quietFiles ? null : (
+            <Section title={t('panel.uncommittedTitle')}>
+              {screen.filesTitle ? (
+                <>
+                  <p className="text-body leading-body text-[color:var(--color-text-primary)]">{screen.filesTitle}</p>
+                  {screen.files.length > 0 ? (
+                    <ul className="mt-2 flex flex-col gap-1.5" data-testid="work-room-panel-files">
+                      {screen.files.map(file => (
+                        <li key={file.path} className="flex items-baseline gap-3 text-label leading-label">
+                          <span className="min-w-0 flex-1">
+                            <span className="break-all font-mono text-[color:var(--color-text-primary)]">{file.name}</span>
+                            {file.folder ? <span className="block break-all text-[color:var(--color-text-quaternary)]">{file.folder}</span> : null}
+                          </span>
+                          {file.ago ? <span className="shrink-0 tabular-nums text-[color:var(--color-text-quaternary)]">{file.ago}</span> : null}
+                        </li>
+                      ))}
+                      {moreFiles > 0 ? <li className="text-label leading-label text-[color:var(--color-text-quaternary)]">{t('panel.filesMore', { count: moreFiles })}</li> : null}
+                    </ul>
+                  ) : null}
+                </>
+              ) : (
+                <p className="text-body leading-body text-[color:var(--color-text-tertiary)]">{t('panel.reading')}</p>
+              )}
+            </Section>
+          )}
+        </>
       )}
       {cleanup ? (
         <Section title={t('panel.cleanupTitle')}>
@@ -163,12 +172,13 @@ function PanelBody({ room, copy, onClose }: { room: RoomEntry; copy: RoomCopy; o
           </Button>
         </Section>
       ) : null}
-      <Section title={t('panel.folderTitle')}>
-        <p className="break-all font-mono text-label leading-label text-[color:var(--color-text-secondary)]" data-testid="work-room-panel-path">{track.path}</p>
+      <footer className="mt-auto border-t border-[color:var(--color-border-soft)] px-5 py-4">
+        <h3 className="text-label leading-label font-[var(--font-weight-emphasis)] text-[color:var(--color-text-tertiary)]">{t('panel.folderTitle')}</h3>
+        <p className="mt-1.5 break-all font-mono text-label leading-label text-[color:var(--color-text-secondary)]" data-testid="work-room-panel-path">{track.path}</p>
         <Button size="sm" variant="outline" className="mt-3" data-testid="work-room-panel-copy" onClick={() => void path.copy(track.path)}>
           {path.state === 'copied' ? t('panel.copied') : t('panel.copyPath')}
         </Button>
-      </Section>
+      </footer>
     </div>
   );
 }

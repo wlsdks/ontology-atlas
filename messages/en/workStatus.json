@@ -166,10 +166,49 @@
     "copied": "Copied",
     "reading": "Reading…",
     "cleanupTitle": "To clear it, run this in a terminal",
-    "copyCommand": "Copy command"
+    "copyCommand": "Copy command",
+    "stat": {
+      "commits": "Commits since {branch}",
+      "uncommitted": "Uncommitted files"
+    },
+    "quiet": "No commits since {branch} and no uncommitted files."
   },
   "about": {
     "label": "What this screen shows",
     "body": "One room is one worktree: a separate folder of this repository where a branch is being worked on. Each screen shows the branch, its newest commits and the files changed but not committed yet. A room is lit while an agent session is working in it. Press a room to see the rest."
+  },
+  "landed": {
+    "title": "Landed on <code>{branch}</code>",
+    "note": "It stays here after the worktree is removed, read straight from Git.",
+    "summary": "{today} today · {week} in the last 7 days",
+    "none": "Nothing has landed on {branch} yet.",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "dayCount": "{count}",
+    "files": "{count, plural, one {# file} other {# files}}",
+    "linesSr": "{insertions} lines added, {deletions} removed",
+    "kind": {
+      "feat": "Feature",
+      "fix": "Fix",
+      "perf": "Speed",
+      "design": "Design",
+      "refactor": "Cleanup",
+      "docs": "Docs",
+      "test": "Tests",
+      "chore": "Upkeep"
+    },
+    "landedAt": "Landed {ago} · {time}",
+    "stat": {
+      "commits": "Commits",
+      "files": "Files",
+      "added": "Lines added",
+      "removed": "Lines removed"
+    },
+    "commitsTitle": "Commits in this work",
+    "filesTitle": "Changed files",
+    "squashed": "It landed as one commit, so there are no separate commits to show.",
+    "binary": "binary",
+    "unreadable": "Git couldn't read this work's commits and files.",
+    "copyHash": "Copy commit hash"
   }
 }

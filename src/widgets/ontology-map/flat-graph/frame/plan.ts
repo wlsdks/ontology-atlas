@@ -15,11 +15,11 @@ import { type PlacedName } from "../names/placed-name";
 import { stepScale, zoomStep } from "../names/zoom-step";
 import { openedElements } from "../open";
 import { openRadiusPx } from "../open-star";
-import type { FlatGraphLayout, FlatGraphTokens } from "../flat-graph-shapes";
+import type { FlatGraphLayout, FlatGraphPaintTokens, FlatGraphTokens } from "../flat-graph-shapes";
 import { planFanPushes } from "./fan-push";
 import { planName, placeName, NAME_RANKS, nameRanks, plannedNames, nameRank, blockShows, memberBlockShows, planMemberFallbacks } from "./name-plan";
 import { grownMarks, collectGrownMarks } from "./name-room";
-import { hueOf, loadMarkInk, inkOf, screenOf, screenAt, onScreen, pickable, radiusNow, discRadius, grownIds, openedRadius, dotRadius, planOpenStars, lensHidden, radiusOf, radiusAt } from "./place";
+import { hueOf, loadMarkInk, inkOf, screenOf, screenAt, onScreen, pickable, radiusNow, discRadius, grownIds, openedRadius, dotRadius, planOpenStars, lensHidden, radiusOf, radiusAt, unsteppedScreen, easedPx } from "./place";
 import { disc, light, arcMark, addGlow, discAt, planCluster, markExpandedItems, focusLinks } from "./plan-marks";
 import { DRAWN_INK, ELEMENT_PICK_PX, type Disc, REST_ARC, type Name, type Ring, type LabelBox, FrameList, names, hubNames, dotRows, nameRows, labelBoxPool, pickPool, POOLS, setBox, type StampedPoint, alphaCache, frameChords, shownElements, cacheFor, L, framePlan, PLAN_LISTS, type DrawnMarks, F as frameState, scratch } from "./state";
 
@@ -198,7 +198,8 @@ export function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion
   F.leavingId = !motion.settled && motion.previous.selected && left !== null && left !== F.selectedId && left !== model.projectId && !model.domainById.has(left) ? left : null;
   // The selection never stands in its own star, so its radius asks for the selected radius alone; its fan rings what it draws.
   if (F.selectedId !== null) {
-    const r = selectedDiscRadius(radiusNow(F.selectedId), P, growth);
+    const owner = model.capabilityOf.get(F.selectedId);
+    const r = selectedRadiusClearOfOwner(F.selectedId, selectedDiscRadius(radiusNow(F.selectedId), P, growth), owner, P);
     if (F.selectedR !== r) F.selectedR = r;
     const share = attention.selected && attention.focusId === F.selectedId ? mix : 1;
     const elements = openedElements(model, layout, F.selectedId, P, discRadius(F.selectedId), input.scale, growth);
@@ -211,6 +212,7 @@ export function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion
     const elements = openedElements(model, layout, F.leavingId, P, discRadius(F.leavingId), input.scale, growth);
     if (elements !== null && mix < 1) F.opened.push({ elements, share: 1 - mix });
   }
+  planRingSteps(model, P);
   planFanPushes(input.focusedNodeId !== null && model.domainById.has(input.focusedNodeId) ? input.focusedNodeId : null);
   const projectShare = motion.share(MOTION_SHARE.project, attention.focusId !== null && attention.focusId === model.projectId ? 1 : 0);
   if (F.projectShare !== projectShare) F.projectShare = projectShare;
@@ -496,3 +498,64 @@ function stepRadius(id: string): number {
   const fixedPx = star.domain ? graphDiscRadiusPx("domain", 0, F.P, stepGrowthNow[0]!) : star.fixedPx;
   return openRadiusPx(own, room, star.world ? stepGrowthNow[1]! : 1, fixedPx, F.P, nearestOwn);
 }
+
+/** Air between a selected element's ring and its capability's disc, so the two never touch. */
+const RING_AIR_PX = 1;
+
+/** How far a ringed element at `at` with radius `r` must stand further from its capability for the ring to clear that disc. */
+function ringShortfall(at: { x: number; y: number }, owner: { x: number; y: number }, ownerId: string, r: number, P: FlatGraphPaintTokens): number {
+  return radiusNow(ownerId) + P.selectedRingGapPx + P.selectedRingPx + RING_AIR_PX + r - Math.hypot(at.x - owner.x, at.y - owner.y);
+}
+
+/**
+ * A selected element grows only as far as its ring still clears the capability disc it hangs from,
+ * and never below its own resting size.
+ */
+function selectedRadiusClearOfOwner(id: string, wanted: number, ownerId: string | undefined, P: FlatGraphPaintTokens): number {
+  if (ownerId === undefined) return wanted;
+  const room = wanted - ringShortfall(unsteppedScreen(id), unsteppedScreen(ownerId), ownerId, wanted, P);
+  return Math.max(radiusNow(id), Math.min(wanted, room));
+}
+
+const stepKeys = new Map<string, string>();
+const stepKey = (id: string) => {
+  let key = stepKeys.get(id);
+  if (key === undefined) stepKeys.set(id, (key = `${id}\u0000ring-step`));
+  return key;
+};
+
+/**
+ * Where a ringed element (the selection, or one just deselected) hangs too close for its ring to
+ * clear its capability's disc even at its resting size, it steps off along the line from that
+ * capability by the shortfall. Each element's step eases across frames from where it last drew,
+ * toward the shortfall while it is ringed and back to nothing after, so a selection moving between
+ * two elements never snaps. O(ringed elements).
+ */
+function planRingSteps(model: DialModel, P: FlatGraphPaintTokens): void {
+  F.steps.clear();
+  if (F.selectedId !== null) F.stepped.add(F.selectedId);
+  if (F.leavingId !== null) F.stepped.add(F.leavingId);
+  for (const id of F.stepped) {
+    const ownerId = model.capabilityOf.get(id);
+    if (ownerId === undefined) {
+      F.stepped.delete(id);
+      continue;
+    }
+    const at = unsteppedScreen(id);
+    const owner = unsteppedScreen(ownerId);
+    const dx = at.x - owner.x;
+    const dy = at.y - owner.y;
+    const apart = Math.hypot(dx, dy);
+    const ringed = id === F.selectedId || id === F.leavingId;
+    const target = ringed && apart > 1e-6 ? Math.max(0, ringShortfall(at, owner, ownerId, discRadius(id), P)) : 0;
+    const px = easedPx(stepKey(id), target);
+    if (px <= STEP_REST_PX && !ringed) {
+      F.stepped.delete(id);
+      continue;
+    }
+    if (px > STEP_REST_PX && apart > 1e-6) F.steps.set(id, { px, ux: dx / apart, uy: dy / apart });
+  }
+}
+
+/** A step shorter than this draws as none. */
+const STEP_REST_PX = 0.05;
