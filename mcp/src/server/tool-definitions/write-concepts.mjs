@@ -123,7 +123,7 @@ export const ADD_CONCEPTS_TOOL = {
           required: ['slug', 'kind', 'title'],
           additionalProperties: false,
         },
-        description: 'Rows shaped like `add_concept` input.',
+        description: 'One row per node: `slug`, `kind` and `title`, with the kind\'s relation fields.',
       },
     },
     required: ['concepts'],
@@ -209,7 +209,7 @@ export const PATCH_CONCEPT_TOOL = {
         type: 'number',
         minimum: 0,
         description:
-          'Conflict guard: mtime from the last read or write of this node (add_relation(s) only when guarded).',
+          'Conflict guard: mtime from the last read or write of this node (add_relations returns it only when guarded).',
       },
     },
     required: ['slug'],

@@ -34,7 +34,7 @@ export const LIST_CONCEPTS_TOOL = {
       summary: {
         type: 'boolean',
         description:
-          'Add a prose `summary` (max 200 chars, first paragraph) to each row, without N follow-up `get_concept` calls. Default false.',
+          'Add a prose `summary` (max 200 chars, first paragraph) to each row, without a follow-up `get_concepts` call. Default false.',
       },
       limit: {
         type: 'integer',

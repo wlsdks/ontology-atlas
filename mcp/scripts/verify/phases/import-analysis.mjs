@@ -1,7 +1,6 @@
 import {
   analyzeRepoStructureFailure,
   importModuleEdgeKindOutputSummary,
-  indexProjectFailure,
   inferImportsFailure,
 } from '../checks/import-analysis.mjs';
 import { structuredContentFailure } from '../checks/structured-content.mjs';
@@ -11,7 +10,6 @@ export function verifyImportAnalysis(responses) {
   const analyzeRepoStructureRes = responses.find((r) => r.id === 38);
   const inferImportsRes = responses.find((r) => r.id === 39);
   const inferImportsFocusRes = responses.find((r) => r.id === 70);
-  const indexProjectRes = responses.find((r) => r.id === 68);
   if (!analyzeRepoStructureRes || !analyzeRepoStructureRes.result) {
     log('fail', 'no analyze_repo_structure response');
     return false;
@@ -96,29 +94,6 @@ export function verifyImportAnalysis(responses) {
     );
   } catch (err) {
     log('fail', `failed to parse infer_imports focus response: ${err.message}`);
-    return false;
-  }
-
-  if (!indexProjectRes || !indexProjectRes.result) {
-    log('fail', 'no index_project response');
-    return false;
-  }
-  try {
-    const text = indexProjectRes.result.content?.[0]?.text || '';
-    const parsed = JSON.parse(text);
-    const failure = indexProjectFailure(parsed);
-    if (failure) {
-      log('fail', failure);
-      return false;
-    }
-    const structuredFailure = structuredContentFailure(indexProjectRes, parsed, 'index_project');
-    if (structuredFailure) {
-      log('fail', structuredFailure);
-      return false;
-    }
-    log('ok', `index_project: ${formatCount(parsed.plan.concepts, 'concept candidate')}, ${formatCount(parsed.plan.importRelations, 'import relation')}, validation ${formatCount(parsed.validation.problemFiles, 'problem file')}`);
-  } catch (err) {
-    log('fail', `failed to parse index_project response: ${err.message}`);
     return false;
   }
   return true;

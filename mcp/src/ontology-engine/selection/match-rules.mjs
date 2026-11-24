@@ -89,11 +89,13 @@ export function judgeRelationCheck({
   const proposedAction = existing.length > 0 || semanticDependencyPending
     ? null
     : {
-        tool: 'add_relation',
+        tool: 'add_relations',
         args: {
-          from,
-          to,
-          type: writeRelationType(relation),
+          relations: [{
+            from,
+            to,
+            type: writeRelationType(relation),
+          }],
         },
       };
   const approvalGate = semanticDependencyPending
@@ -107,7 +109,7 @@ export function judgeRelationCheck({
           'why',
         ],
         next:
-          'Explain which observable ability fails without the target, ask for approval of the exact direction and rationale, then call add_relation with a nonblank why.',
+          'Explain which observable ability fails without the target, ask for approval of the exact direction and rationale, then call add_relations with a nonblank why on the row.',
       }
     : null;
   return { verdict, recommendation, proposedAction, approvalGate };

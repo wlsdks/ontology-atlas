@@ -53,7 +53,7 @@ node. Ask the vault itself: `query_ontology({ "operation": "overview" })`.
   construction path and nothing here was hand-written to read better than what
   the product produces. `human` stays reserved for what a person judged rather
   than derived, which in this folder is the architecture profile.
-- Agents write through the MCP server (`add_concept`, `patch_concept`,
+- Agents write through the MCP server (`add_concepts`, `patch_concept`,
   `rename_concept`, …), which stamps provenance and runs the construction
   gates.
 

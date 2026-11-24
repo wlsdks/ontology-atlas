@@ -41,7 +41,7 @@ description: 다음 한 걸음. 이 볼트에 무엇을 더하면 값이 가장 
 - `validate_vault({})` → `query_ontology({ operation: 'health' })`
 
 **새 도메인은 저절로 프로젝트에 안 붙는다.**
-`add_relation('<project>', 'domains/<새 도메인>', 'domains')` 를 빠뜨리면
+`add_relations({ relations: [{ from: '<project>', to: 'domains/<새 도메인>', type: 'domains' }] })` 를 빠뜨리면
 만들어 놓고 지도에 안 보인다. 4번의 health 가 그것을 잡는다.
 
 ## 이 스킬이 실패하는 방식

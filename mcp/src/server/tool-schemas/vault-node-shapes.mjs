@@ -129,7 +129,7 @@ const CONCEPT_NEIGHBORS_OUTPUT_SCHEMA = Object.freeze({
 const EDGE_RATIONALE_OUTPUT_SCHEMA = Object.freeze({
   ...NON_BLANK_STRING_SCHEMA,
   description:
-    'One-line rationale stored with this relation in the source document\'s `relation_notes` map (written by `add_relation(why)`). Omitted when no note is stored for the target.',
+    'One-line rationale stored with this relation in the source document\'s `relation_notes` map (written by the `why` of an `add_relations` row). Omitted when no note is stored for the target.',
 });
 const OUTGOING_EDGE_OUTPUT_SCHEMA = Object.freeze({
   type: 'object',

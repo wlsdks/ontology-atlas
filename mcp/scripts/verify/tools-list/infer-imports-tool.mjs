@@ -25,7 +25,7 @@ export function inferImportsToolSchemaFailure(tools) {
     !/bounded exact file-edge `evidence` receipt/i.test(inferImportsTool.description || '') ||
     !/rationale_review_required/i.test(inferImportsTool.description || '') ||
     !/ask the user/i.test(inferImportsTool.description || '') ||
-    !/add_relation/i.test(inferImportsTool.description || '') ||
+    !/add_relations/i.test(inferImportsTool.description || '') ||
     !/`why`/i.test(inferImportsTool.description || '') ||
     !/Use after analyze_repo_structure/i.test(inferImportsTool.description || '') ||
     !/not just suggestedRelations heuristics/i.test(inferImportsTool.description || '') ||

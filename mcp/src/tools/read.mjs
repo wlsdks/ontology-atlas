@@ -269,7 +269,7 @@ function getConcept({ slug, uid, body }, context = {}) {
     hint:
       bodyMode === 'full'
         ? `Body exceeds the ${FULL_BODY_MAX_CHARS}-char single-call cap — read the file directly for the remainder.`
-        : `Only the first prose paragraph was returned. Call get_concept({ slug: "${doc.slug}", body: "full" }) for the whole body (definition / evidence / confidence / in-scope-out-of-scope sections live there).`,
+        : `Only the first prose paragraph was returned. Call get_concepts({ slugs: ["${doc.slug}"], body: "full" }) for the whole body (definition / evidence / confidence / in-scope-out-of-scope sections live there).`,
   });
   return {
     uid: doc.frontmatter.uid,

@@ -154,7 +154,7 @@ function workflow(projectSlug, provenance, reviewRevision) {
     },
     {
       step: 'refresh_conflict_guard',
-      calls: [{ tool: 'get_concept', arguments: { slug: projectSlug, body: 'full' } }],
+      calls: [{ tool: 'get_concepts', arguments: { slugs: [projectSlug], body: 'full' } }],
     },
     {
       step: 'finalize',

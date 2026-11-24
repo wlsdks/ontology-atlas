@@ -37,7 +37,7 @@ import { defaultBody } from "./schema.mjs";
 import { proposalCoverageRefs } from "./construction/construction-lifecycle.mjs";
 import { CONSTRUCTION_QUALIFICATION_INPUT_SCHEMA } from "./construction/construction-qualification.mjs";
 import { MEANING_PROPOSAL_INPUT_SCHEMA } from "./server/tool-schemas/meaning-construction.mjs";
-import { TOOL_INPUT_CONTRACT_BY_NAME, TOOL_OUTPUT_CONTRACT_BY_NAME } from "./server/registry.mjs";
+import { RETIRED_TOOL_REPLACEMENTS, TOOL_BY_NAME, TOOL_INPUT_CONTRACT_BY_NAME, TOOL_OUTPUT_CONTRACT_BY_NAME } from "./server/registry.mjs";
 import { advertisedOutputSchema } from "./server/advertised-output-schema.mjs";
 import {
   formatNoTestMatchMessage,
@@ -374,12 +374,13 @@ function assertCompactMaintenanceActionShape(action, label) {
     assert.ok(action.proposedAction.args && typeof action.proposedAction.args === "object", `${label} proposedAction exposes args`);
   }
   if (action.kind === "add_missing_relation" && action.proposedAction) {
-    assert.equal(action.proposedAction.tool, "add_relation", `${label} add_missing_relation uses add_relation`);
+    assert.equal(action.proposedAction.tool, "add_relations", `${label} add_missing_relation uses add_relations`);
     assert.ok(action.nodes?.from?.slug, `${label} add_missing_relation exposes from node`);
     assert.ok(action.nodes?.to?.slug, `${label} add_missing_relation exposes to node`);
-    assert.equal(action.proposedAction.args.from, action.nodes.from.slug, `${label} add_missing_relation from matches args`);
-    assert.equal(action.proposedAction.args.to, action.nodes.to.slug, `${label} add_missing_relation to matches args`);
-    assert.equal(typeof action.proposedAction.args.type, "string", `${label} add_missing_relation exposes relation type`);
+    const [relation] = action.proposedAction.args.relations;
+    assert.equal(relation.from, action.nodes.from.slug, `${label} add_missing_relation from matches args`);
+    assert.equal(relation.to, action.nodes.to.slug, `${label} add_missing_relation to matches args`);
+    assert.equal(typeof relation.type, "string", `${label} add_missing_relation exposes relation type`);
   }
 }
 
@@ -446,6 +447,34 @@ function assertInstructionToolInventoryMatches(initializeResponse, tools) {
 
 // Single tools name their batch twins so an agent reading only the list knows
 // the one-call alternative exists.
+await test("tools/list — a retired tool stays out of the list and answers with its replacement", async () => {
+  const root = makeVault([
+    { slug: "project", content: "---\nslug: project\nkind: project\ntitle: Project\n---\nBody.\n" },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      { jsonrpc: "2.0", id: 2, method: "tools/list", params: {} },
+      callTool(3, "list_kinds"),
+      callTool(4, "list_concepts", { limit: 1 }),
+    ]);
+    const listed = new Set(responses.find((r) => r.id === 2).result.tools.map((tool) => tool.name));
+    for (const name of RETIRED_TOOL_REPLACEMENTS.keys()) {
+      assert.equal(listed.has(name), false, `${name} is retired and must stay out of tools/list`);
+    }
+    const retired = responses.find((r) => r.id === 3).result;
+    assert.notEqual(retired.isError, true, "a retired tool still answers");
+    assert.equal(
+      retired.content.at(-1).text,
+      `list_kinds is retired from tools/list and will be removed; call ${RETIRED_TOOL_REPLACEMENTS.get("list_kinds")} instead.`,
+    );
+    assert.deepEqual(retired.structuredContent.byKind, getCallStructured(responses, 4).census.byKind);
+    assert.equal(responses.find((r) => r.id === 4).result.content.length, 1, "an advertised tool carries no retirement note");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test("tools/list — each single-item tool description cross-references its batch twin", async () => {
   const root = makeVault([]);
   try {
@@ -498,7 +527,12 @@ await test("tools/list — each single-item tool description cross-references it
         `${tool.name} exposes correct idempotentHint annotation`,
       );
     }
-    const findTool = (name) => tools.find((t) => t.name === name);
+    // A retired tool is still answered, so its definition keeps the contract it is held to.
+    const retiredTool = (name) => {
+      const tool = TOOL_BY_NAME.get(name);
+      return tool?.outputSchema ? { ...tool, outputSchema: TOOL_OUTPUT_CONTRACT_BY_NAME.get(name) } : tool;
+    };
+    const findTool = (name) => tools.find((t) => t.name === name) ?? (RETIRED_TOOL_REPLACEMENTS.has(name) ? retiredTool(name) : undefined);
     const assertCleanStringSchema = (schema, label) => {
       assert.equal(schema?.type, "string", `${label} type`);
       assert.equal(schema?.minLength, 1, `${label} minLength`);
@@ -568,7 +602,7 @@ await test("tools/list — each single-item tool description cross-references it
     const findEvidence = findTool("find_evidence");
     assert.match(
       findEvidence?.description ?? "",
-      /Find vault docs that mention a given concept by title[\s\S]*Each match includes a prose `?excerpt`?[\s\S]*without an extra get_concept call/i,
+      /Find vault docs that mention a given concept by title[\s\S]*Each match includes a prose `?excerpt`?[\s\S]*without an extra get_concepts call/i,
       "find_evidence description documents excerpt-first usage",
     );
     assert.match(
@@ -1296,22 +1330,22 @@ await test("tools/list — each single-item tool description cross-references it
       );
       assert.deepEqual(
         postWriteSchema?.properties?.actions?.items?.properties?.proposedAction?.properties?.tool?.enum,
-        ["add_concept", "add_relation", "patch_concept"],
+        ["add_concepts", "add_relations", "patch_concept"],
         `${toolName} exposes proposedAction tool enum`,
       );
       assert.deepEqual(
         postWriteSchema?.properties?.actions?.items?.properties?.proposedAction?.properties?.args?.oneOf?.map((schema) => schema.required),
         [
-          ["slug", "kind", "title"],
-          ["from", "to", "type"],
+          ["concepts"],
+          ["relations"],
           ["slug", "frontmatter", "expected_mtime"],
         ],
         `${toolName} exposes proposedAction args variants`,
       );
       assert.deepEqual(
-        postWriteSchema?.properties?.actions?.items?.properties?.proposedAction?.properties?.args?.oneOf?.[1]?.properties?.type?.enum,
+        postWriteSchema?.properties?.actions?.items?.properties?.proposedAction?.properties?.args?.oneOf?.[1]?.properties?.relations?.items?.properties?.type?.enum,
         ["depends_on", "relates", "contains", "describes", "domains", "capabilities", "elements", "domain"],
-        `${toolName} exposes add_relation proposedAction relation enum`,
+        `${toolName} exposes add_relations proposedAction relation enum`,
       );
       assert.equal(postWriteSchema?.properties?.actions?.items?.type, "object", `${toolName} exposes non-null action rows`);
       assert.deepEqual(
@@ -1366,7 +1400,7 @@ await test("tools/list — each single-item tool description cross-references it
       );
       assert.deepEqual(
         postWriteSchema?.properties?.nextExecutableAction?.properties?.proposedAction?.properties?.tool?.enum,
-        ["add_concept", "add_relation", "patch_concept"],
+        ["add_concepts", "add_relations", "patch_concept"],
         `${toolName} exposes next executable proposedAction tool enum`,
       );
       assert.equal(
@@ -1391,7 +1425,7 @@ await test("tools/list — each single-item tool description cross-references it
       );
       assert.deepEqual(
         postWriteSchema?.properties?.nextReviewAction?.properties?.proposedAction?.properties?.tool?.enum,
-        ["add_concept", "add_relation", "patch_concept"],
+        ["add_concepts", "add_relations", "patch_concept"],
         `${toolName} exposes next review proposedAction tool enum`,
       );
       assert.equal(
@@ -1497,7 +1531,7 @@ await test("tools/list — each single-item tool description cross-references it
     );
     assert.match(
       findTool("list_concepts")?.inputSchema?.properties?.summary?.description ?? "",
-      /summary[\s\S]*max 200 chars[\s\S]*without N follow-up `get_concept` calls[\s\S]*Default false/i,
+      /summary[\s\S]*max 200 chars[\s\S]*without a follow-up `get_concepts` call[\s\S]*Default false/i,
       "list_concepts summary schema documents preview and payload tradeoff",
     );
     assert.match(
@@ -2093,10 +2127,10 @@ await test("README first exploration — documented read-only MCP calls stay val
   try {
     const { responses } = await rpc(root, [
       ...INIT_REQUESTS,
-      callTool(2, "list_kinds", {}),
+      callTool(2, "list_concepts", { limit: 1 }),
       callTool(3, "list_concepts", {}),
-      callTool(4, "get_concept", { slug: "project" }),
-      callTool(5, "find_neighbors", { slug: "capabilities/mcp-server" }),
+      callTool(4, "get_concepts", { slugs: ["project"] }),
+      callTool(5, "query_ontology", { operation: "neighbors", slug: "capabilities/mcp-server" }),
       callTool(6, "validate_vault", {}),
       callTool(7, "query_ontology", { operation: "workspace_brief" }),
       callTool(8, "query_ontology", { operation: "overview", limit: 5 }),
@@ -2104,28 +2138,28 @@ await test("README first exploration — documented read-only MCP calls stay val
       callTool(10, "query_ontology", { operation: "query_plan", targetOperation: "project_map" }),
     ]);
 
-    const kinds = getCallParsed(responses, 2);
-    assert.equal(kinds.total, 3);
-    assert.equal(kinds.byKind.project, 1);
-    assert.equal(kinds.byKind.domain, 1);
-    assert.equal(kinds.byKind.capability, 1);
-    assert.deepEqual(getCallStructured(responses, 2), kinds);
+    const { census } = getCallParsed(responses, 2);
+    assert.equal(census.total, 3);
+    assert.equal(census.byKind.project, 1);
+    assert.equal(census.byKind.domain, 1);
+    assert.equal(census.byKind.capability, 1);
+    assert.deepEqual(getCallStructured(responses, 2).census, census);
 
     const list = getCallParsed(responses, 3);
     assert.equal(list.total, 3);
     assert.equal(list.nodes.length, 3);
     assert.deepEqual(getCallStructured(responses, 3), list);
 
-    const project = getCallParsed(responses, 4);
+    const [project] = getCallParsed(responses, 4).concepts;
     assert.equal(project.slug, "project");
     assert.equal(project.frontmatter.kind, "project");
-    assert.deepEqual(getCallStructured(responses, 4), project);
+    assert.deepEqual(getCallStructured(responses, 4).concepts[0], project);
 
     const neighbors = getCallParsed(responses, 5);
+    assert.equal(neighbors.operation, "neighbors");
     assert.equal(neighbors.center, "capabilities/mcp-server");
-    assert.equal(neighbors.requested, "capabilities/mcp-server");
-    assert.ok(neighbors.totalEdges > 0);
-    assert.ok(Array.isArray(neighbors.edges));
+    assert.ok(neighbors.total > 0);
+    assert.ok(neighbors.edges.length > 0);
 
     const validation = getCallParsed(responses, 6);
     assert.equal(validation.scanned, 3);
@@ -3794,7 +3828,7 @@ await test("index_project — repo analysis, import indexing, and vault validati
     assert.equal(result.extractionContract.assertionPolicy.humanApprovalRequired, true);
     assert.match(result.meaningGate.reviewQuestions[0], /business\/product/);
     assert.equal(result.validation.problemFiles, 0);
-    assert.equal(result.next.applyTool, "add_concepts; add_relation only after semantic rationale + human approval");
+    assert.equal(result.next.applyTool, "add_concepts; add_relations only after semantic rationale + human approval");
     assert.match(result.next.review, /Nothing promotes inferred imports to depends_on/);
     assert.deepEqual(result.next.reviewCalls, [
       {
@@ -4418,7 +4452,7 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
       status: "semantic_approval_required",
       writeAllowed: false,
       required: ["observable_ability", "semantic_rationale", "explicit_human_approval", "why"],
-      next: "Explain which observable ability fails without the target, ask for approval of the exact direction and rationale, then call add_relation with a nonblank why.",
+      next: "Explain which observable ability fails without the target, ask for approval of the exact direction and rationale, then call add_relations with a nonblank why on the row.",
     });
     assert.ok(Array.isArray(relationCheck.nearbyPatterns));
 
@@ -4462,7 +4496,7 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
 
     const recommendations = getCallParsed(responses, 27);
     assert.equal(recommendations.totalRecommendations, 1);
-    assert.deepEqual(recommendations.recommendations.map((row) => row.proposedAction.args), [
+    assert.deepEqual(recommendations.recommendations.map((row) => row.proposedAction.args.relations[0]), [
       {
         from: "domains/auth",
         to: "capabilities/login",
@@ -5413,18 +5447,15 @@ await test("find_evidence — zero hits return a growthHint (near-title candidat
     assert.equal(near.matches.length, 0);
     assert.ok(near.growthHint, "expected growthHint on 0-hit response");
     assert.match(near.growthHint.reason, /No vault doc mentions "Token Issuance"/);
-    assert.equal(near.growthHint.exampleCall.tool, "get_concept");
-    assert.equal(near.growthHint.exampleCall.args.slug, "capabilities/token-issue");
+    assert.deepEqual(near.growthHint.exampleCall, { tool: "get_concepts", args: { slugs: ["capabilities/token-issue"] } });
 
     const noNear = getCallParsed(responses, 3);
     assert.equal(noNear.matches.length, 0);
     assert.ok(noNear.growthHint, "expected growthHint on 0-hit response");
     assert.deepEqual(noNear.growthHint.exampleCall, {
-      tool: "add_concept",
+      tool: "add_concepts",
       args: {
-        slug: "completely-unrelated-concept",
-        kind: "element",
-        title: "Completely Unrelated Concept",
+        concepts: [{ slug: "completely-unrelated-concept", kind: "element", title: "Completely Unrelated Concept" }],
       },
     });
   } finally {
@@ -5748,8 +5779,8 @@ await test("find_path — exposes the shortest-path contract in structuredConten
         suggestion:
           "A path cannot exist to an endpoint that is not in the vault yet. Add it first if it describes a real capability/element/domain.",
         exampleCall: {
-          tool: "add_concept",
-          args: { slug: "missing-node", kind: "element", title: "Missing Node" },
+          tool: "add_concepts",
+          args: { concepts: [{ slug: "missing-node", kind: "element", title: "Missing Node" }] },
         },
       },
     });
@@ -6317,7 +6348,7 @@ await test("query_concepts — zero rows return a growthHint (a missing kind/dom
     assert.equal(missingKind.total, 0);
     assert.ok(missingKind.growthHint, "expected growthHint on 0-row response");
     assert.match(missingKind.growthHint.reason, /kind="project" has 0 nodes in this vault/);
-    assert.deepEqual(missingKind.growthHint.exampleCall, { tool: "list_kinds", args: {} });
+    assert.deepEqual(missingKind.growthHint.exampleCall, { tool: "list_concepts", args: { limit: 1 } });
 
     const missingDomain = getCallParsed(responses, 3);
     assert.equal(missingDomain.total, 0);
@@ -6558,20 +6589,20 @@ await test("get_concept — an unknown slug returns an error carrying a growthHi
     assert.equal(withCandidate.missingSlug, "capabilities/log");
     assert.deepEqual(withCandidate.similarSlugs, ["capabilities/login"]);
     assert.deepEqual(withCandidate.recoveryTools, ["list_concepts", "find_evidence"]);
-    assert.equal(withCandidate.createTool, "add_concept");
+    assert.equal(withCandidate.createTool, "add_concepts");
     assert.ok(withCandidate.growthHint, "expected growthHint on not-found error");
     assert.match(withCandidate.growthHint.reason, /"capabilities\/log" does not resolve/);
     assert.deepEqual(withCandidate.growthHint.exampleCall, {
-      tool: "get_concept",
-      args: { slug: "capabilities/login" },
+      tool: "get_concepts",
+      args: { slugs: ["capabilities/login"] },
     });
 
     assert.equal(isErrorResponse(responses, 3), true);
     const withoutCandidate = getCallStructured(responses, 3);
     assert.equal(withoutCandidate.error, "Doc not found: totally-unrelated-thing");
     assert.deepEqual(withoutCandidate.growthHint.exampleCall, {
-      tool: "add_concept",
-      args: { slug: "totally-unrelated-thing", kind: "element", title: "Totally Unrelated Thing" },
+      tool: "add_concepts",
+      args: { concepts: [{ slug: "totally-unrelated-thing", kind: "element", title: "Totally Unrelated Thing" }] },
     });
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -6762,8 +6793,8 @@ await test("get_concepts — batch read keeps input order and returns partial re
     assert.equal(result.concepts[1].missingSlug, "missing-slug");
     assert.deepEqual(result.concepts[1].similarSlugs, []);
     assert.deepEqual(result.concepts[1].recoveryTools, ["list_concepts", "find_evidence"]);
-    assert.equal(result.concepts[1].createTool, "add_concept");
-    assert.equal(result.concepts[1].growthHint.exampleCall.tool, "add_concept");
+    assert.equal(result.concepts[1].createTool, "add_concepts");
+    assert.equal(result.concepts[1].growthHint.exampleCall.tool, "add_concepts");
     assert.equal(result.concepts[2].slug, "alpha");
     assert.equal(result.concepts[2].ok, true);
     assert.equal(result.concepts[2].frontmatter.title, "Alpha");
@@ -7956,7 +7987,7 @@ await test("add_relations — batch write keeps row order, sorts canonically and
     assert.match(result.relations[3].error, /does not exist|missing/i);
     assert.equal(result.relations[3].errorCode, "not_found");
     assert.equal(result.relations[3].missingSlug, "missing");
-    assert.equal(result.relations[3].createTool, "add_concept");
+    assert.equal(result.relations[3].createTool, "add_concepts");
     assert.deepEqual(result.relations[3].recoveryTools, ["list_concepts", "find_evidence"]);
     assert.equal(result.relations[4].ok, false);
     assert.match(result.relations[4].error, /type must be one of/i);
@@ -9076,7 +9107,7 @@ await test("add_relation — missing endpoints include recovery and create hints
       const text = responses.find((r) => r.id === id).result.content[0].text;
       assert.match(text, /Use list_concepts\(\) to see all slugs/);
       assert.match(text, /find_evidence\(\{title:"[^"]+"\}\)/);
-      assert.match(text, /add_concept\(slug, kind, title\)/);
+      assert.match(text, /add_concepts\(\{concepts:\[\{slug, kind, title\}\]\}\)/);
     }
     assert.match(responses.find((r) => r.id === 2).result.content[0].text, /Source slug does not exist in vault/);
     assert.match(responses.find((r) => r.id === 2).result.content[0].text, /Similar slugs in this vault: "capabilities\/mcp-server"/);
@@ -9089,7 +9120,7 @@ await test("add_relation — missing endpoints include recovery and create hints
     assert.equal(missingSource.missingSubject, "Source slug does not exist in vault");
     assert.equal(missingSource.missingSlug, "mcp");
     assert.deepEqual(missingSource.recoveryTools, ["list_concepts", "find_evidence"]);
-    assert.equal(missingSource.createTool, "add_concept");
+    assert.equal(missingSource.createTool, "add_concepts");
     assert.deepEqual(missingSource.similarSlugs, ["capabilities/mcp-server"]);
 
     const missingTarget = getCallStructured(responses, 4);
@@ -9097,7 +9128,7 @@ await test("add_relation — missing endpoints include recovery and create hints
     assert.equal(missingTarget.missingSubject, "Target slug does not exist in vault");
     assert.equal(missingTarget.missingSlug, "missing-new-node");
     assert.deepEqual(missingTarget.recoveryTools, ["list_concepts", "find_evidence"]);
-    assert.equal(missingTarget.createTool, "add_concept");
+    assert.equal(missingTarget.createTool, "add_concepts");
     assert.deepEqual(missingTarget.similarSlugs, []);
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -9356,14 +9387,14 @@ await test("initialize — read-only inventory matches the actually advertised t
 await test("construction profile — advertised inventories agree and retain cold-start tools", async () => {
   const root = makeVault();
   try {
-    const expected = ['connection_info', 'list_kinds', 'list_concepts', 'get_concept', 'get_concepts',
-      'find_evidence', 'find_path', 'find_backlinks', 'query_ontology', 'read_source',
-      'analyze_repo_structure', 'index_project', 'infer_imports', 'add_concepts', 'add_relations',
+    const expected = ['connection_info', 'list_concepts', 'get_concepts',
+      'find_evidence', 'find_backlinks', 'query_ontology', 'read_source',
+      'analyze_repo_structure', 'infer_imports', 'add_concepts', 'add_relations',
       'patch_concept', 'validate_vault', 'compile_ontology', 'connect_project_source', 'finalize_project_meaning'];
     for (const readOnly of ['0', '1']) {
       const { responses } = await rpc(root, [...INIT_REQUESTS,
         { jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} }, callTool(3, 'connection_info'),
-        callTool(4, 'add_concept', { slug: 'domains/example', kind: 'domain', title: 'Example' }),
+        callTool(4, 'add_concepts', { concepts: [{ slug: 'domains/example', kind: 'domain', title: 'Example' }] }),
       ], { OATLAS_TOOL_PROFILE: 'construction', OATLAS_READ_ONLY: readOnly });
       const listed = responses.find((row) => row.id === 2).result.tools;
       const names = expected.filter((name) => readOnly === '0' || EXPECTED_READ_TOOLS.includes(name));
@@ -9371,7 +9402,7 @@ await test("construction profile — advertised inventories agree and retain col
       assertInstructionToolInventoryMatches(responses.find((row) => row.id === 1), listed);
       const connectionInfo = getCallParsed(responses, 3);
       assert.deepEqual(connectionInfo.server.toolNames, listed.map((tool) => tool.name));
-      assert.equal(connectionInfo.server.toolCount, readOnly === '0' ? 20 : 15);
+      assert.equal(connectionInfo.server.toolCount, readOnly === '0' ? 16 : 11);
       assert.match(connectionInfo.server.toolsetHash, /^[a-f0-9]{64}$/);
       for (const tool of listed) {
         assert.equal(tool.inputSchema.additionalProperties, false);
@@ -9480,7 +9511,7 @@ await test("query_ontology — unresolved compiled slug exposes structured recov
     assert.equal(structured.missingSlug, "capabilities/logn");
     assert.deepEqual(structured.similarSlugs, ["capabilities/login"]);
     assert.deepEqual(structured.recoveryTools, ["list_concepts", "find_evidence"]);
-    assert.equal(structured.createTool, "add_concept");
+    assert.equal(structured.createTool, "add_concepts");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

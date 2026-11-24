@@ -5,7 +5,7 @@ import { compileSummaryFailure } from "../../../../mcp/scripts/verify/checks/com
 import { formatCount } from "../../../../mcp/scripts/verify/output.mjs";
 import { listConceptsFailure } from "../../../../mcp/scripts/verify/checks/concept-reads.mjs";
 import {
-  listKindsFailure,
+  censusFailure,
   validateVaultFailure,
 } from "../../../../mcp/scripts/verify/checks/vault-census.mjs";
 import { overviewFailure } from "../../../../mcp/scripts/verify/checks/query-plans.mjs";
@@ -48,36 +48,36 @@ export function orphansShapeFailure(result) {
 
 export function pathShapeFailure(result) {
   if (typeof result.found !== "boolean") {
-    return "find_path response missing found flag";
+    return "path operation response missing found flag";
   }
   if (!result.found) return null;
   if (!Number.isInteger(result.hopCount) || result.hopCount < 0) {
-    return "find_path response missing hopCount";
+    return "path operation response missing hopCount";
   }
   if (!Array.isArray(result.hops)) {
-    return "find_path response missing hops array";
+    return "path operation response missing hops array";
   }
   if (result.hops.length !== result.hopCount + 1) {
-    return `find_path response hop mismatch — hopCount ${result.hopCount}, hops ${result.hops.length}`;
+    return `path operation response hop mismatch — hopCount ${result.hopCount}, hops ${result.hops.length}`;
   }
   if (result.hops.some((hop) => !isNonBlankString(hop))) {
-    return "find_path response contains empty hop";
+    return "path operation response contains empty hop";
   }
   if (!Array.isArray(result.edges)) {
-    return "find_path response missing edges array";
+    return "path operation response missing edges array";
   }
   if (result.edges.length !== result.hopCount) {
-    return `find_path response edge mismatch — hopCount ${result.hopCount}, edges ${result.edges.length}`;
+    return `path operation response edge mismatch — hopCount ${result.hopCount}, edges ${result.edges.length}`;
   }
   for (const [index, edge] of result.edges.entries()) {
     if (!edge || typeof edge !== "object" || Array.isArray(edge)) {
-      return `find_path response malformed edge at index ${index}`;
+      return `path operation response malformed edge at index ${index}`;
     }
     if (edge.from !== result.hops[index] || edge.to !== result.hops[index + 1]) {
-      return `find_path response edge/hop mismatch at index ${index}`;
+      return `path operation response edge/hop mismatch at index ${index}`;
     }
     if (!isNonBlankString(edge.via)) {
-      return `find_path response missing edge via at index ${index}`;
+      return `path operation response missing edge via at index ${index}`;
     }
   }
   return null;
@@ -163,16 +163,18 @@ function workspaceNextActionSampleFailure(label, action, index) {
       return `${label} response malformed nextAction sample row at index ${index}.${sampleIndex}`;
     }
     if (action.kind === "add_missing_relations") {
-      const actionFailure = workspaceProposedActionSampleFailure(label, action, sample, index, sampleIndex, "add_relation");
+      const actionFailure = workspaceProposedActionSampleFailure(label, action, sample, index, sampleIndex, "add_relations");
       if (actionFailure) return actionFailure;
-      if (typeof sample.args.from !== "string" || typeof sample.args.to !== "string" || typeof sample.args.type !== "string") {
+      const relation = sample.args.relations?.[0];
+      if (sample.args.relations?.length !== 1 || typeof relation?.from !== "string" || typeof relation.to !== "string" || typeof relation.type !== "string") {
         return `${label} response malformed add_missing_relations sample args at index ${index}.${sampleIndex}`;
       }
     }
     if (action.kind === "materialize_external_elements") {
-      const actionFailure = workspaceProposedActionSampleFailure(label, action, sample, index, sampleIndex, "add_concept");
+      const actionFailure = workspaceProposedActionSampleFailure(label, action, sample, index, sampleIndex, "add_concepts");
       if (actionFailure) return actionFailure;
-      if (typeof sample.args.slug !== "string" || sample.args.kind !== "element") {
+      const concept = sample.args.concepts?.[0];
+      if (sample.args.concepts?.length !== 1 || typeof concept?.slug !== "string" || concept.kind !== "element") {
         return `${label} response malformed materialize_external_elements sample args at index ${index}.${sampleIndex}`;
       }
     }
@@ -209,9 +211,9 @@ export function healthShapeFailureForDogfood(result, label = "health") {
   return checksShapeFailure(label, result.checks, { requireNonEmpty: true });
 }
 
-export function crossToolConsistencyFailures({ kinds, list, validation, compiled, overview }) {
+export function crossToolConsistencyFailures({ census, list, validation, compiled, overview }) {
   if (
-    (kinds && listKindsFailure(kinds)) ||
+    (census && censusFailure(census)) ||
     (list && listConceptsFailure(list)) ||
     (validation && validateVaultFailure(validation)) ||
     (compiled && compileSummaryFailure(compiled)) ||
@@ -222,7 +224,7 @@ export function crossToolConsistencyFailures({ kinds, list, validation, compiled
 
   const failures = [];
   const totals = [
-    ["list_kinds.total", kinds?.total],
+    ["census.total", census?.total],
     ["list_concepts.total", list?.total],
     ["compile_ontology.nodeCount", compiled?.nodeCount],
     ["overview.graph.nodes", overview?.graph?.nodes],
@@ -237,23 +239,23 @@ export function crossToolConsistencyFailures({ kinds, list, validation, compiled
     }
   }
 
-  if (kinds?.byKind && compiled?.byKind) {
-    const allKinds = new Set([...Object.keys(kinds.byKind), ...Object.keys(compiled.byKind)]);
+  if (census?.byKind && compiled?.byKind) {
+    const allKinds = new Set([...Object.keys(census.byKind), ...Object.keys(compiled.byKind)]);
     for (const kind of [...allKinds].sort()) {
-      const kindsCount = kinds.byKind[kind] ?? 0;
+      const censusCount = census.byKind[kind] ?? 0;
       const compiledCount = compiled.byKind[kind] ?? 0;
-      if (kindsCount !== compiledCount) {
-        failures.push(`dogfood byKind mismatch — ${kind}: list_kinds ${kindsCount}, compile_ontology ${compiledCount}`);
+      if (censusCount !== compiledCount) {
+        failures.push(`dogfood byKind mismatch — ${kind}: census ${censusCount}, compile_ontology ${compiledCount}`);
       }
     }
   }
-  if (kinds?.byKind && overview?.byKind) {
-    const allKinds = new Set([...Object.keys(kinds.byKind), ...Object.keys(overview.byKind)]);
+  if (census?.byKind && overview?.byKind) {
+    const allKinds = new Set([...Object.keys(census.byKind), ...Object.keys(overview.byKind)]);
     for (const kind of [...allKinds].sort()) {
-      const kindsCount = kinds.byKind[kind] ?? 0;
+      const censusCount = census.byKind[kind] ?? 0;
       const overviewCount = overview.byKind[kind] ?? 0;
-      if (kindsCount !== overviewCount) {
-        failures.push(`dogfood byKind mismatch — ${kind}: list_kinds ${kindsCount}, overview ${overviewCount}`);
+      if (censusCount !== overviewCount) {
+        failures.push(`dogfood byKind mismatch — ${kind}: census ${censusCount}, overview ${overviewCount}`);
       }
     }
   }

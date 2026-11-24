@@ -69,7 +69,7 @@ import {
 import { defaultBody } from './schema.mjs';
 
 /**
- * Is this body still the template add_concept writes? Whitespace-folded, and
+ * Is this body still the template add_concepts writes? Whitespace-folded, and
  * true when the body merely contains the template's prose tail: boilerplate
  * plus one appended line still says nothing.
  */

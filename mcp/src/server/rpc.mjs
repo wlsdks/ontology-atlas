@@ -6,10 +6,10 @@
 
 import { closestAllowedValue } from '../suggestions.mjs';
 import { VaultConflictError } from '../vault/writes/atomic-writes.mjs';
-import { TOOL_BY_NAME } from './registry.mjs';
+import { RETIRED_TOOL_REPLACEMENTS, TOOL_BY_NAME } from './registry.mjs';
 
 function formatUnknownToolError(name) {
-  const allowedNames = [...TOOL_BY_NAME.keys()].sort();
+  const allowedNames = [...TOOL_BY_NAME.keys()].filter((tool) => !RETIRED_TOOL_REPLACEMENTS.has(tool)).sort();
   const suggestion = closestAllowedValue(name, allowedNames);
   const suggestionText = suggestion ? ` Did you mean "${suggestion}"?` : '';
   return `Unknown tool: ${name}.${suggestionText} Allowed tools: ${allowedNames.join(', ')}.`;
@@ -65,7 +65,7 @@ function error(err) {
   // prose for the reader, never parsed back into fields.
   const explicitCode = err && typeof err === 'object' && typeof err.errorCode === 'string' ? err.errorCode : null;
   const details = explicitCode ? {} : structuredErrorDetails(message);
-  // Slug-unresolved paths (`get_concept`, `node_profile`) attach a growthHint to
+  // Slug-unresolved paths (`get_concepts`, `node_profile`) attach a growthHint to
   // the Error instance; this is the one place that collects them and lifts them
   // into `structuredContent`. Never present on a success response.
   const growthHint = err && typeof err === 'object' ? err.growthHint : undefined;
@@ -165,16 +165,16 @@ function structuredErrorDetails(message) {
   }
 
   const missingSlug = message.match(
-    /^(.+?): "([^"]+)"\. Use list_concepts\(\) to see all slugs, or find_evidence\(\{title:"[^"]*"\}\) to search by title\.(?: If the endpoint is real but absent, create it first with add_concept\(slug, kind, title\)\.)?(?: Similar slugs in this vault: (.+)\.)?$/i,
+    /^(.+?): "([^"]+)"\. Use list_concepts\(\) to see all slugs, or find_evidence\(\{title:"[^"]*"\}\) to search by title\.(?: If the endpoint is real but absent, create it first with add_concepts\(\{concepts:\[\{slug, kind, title\}\]\}\)\.)?(?: Similar slugs in this vault: (.+)\.)?$/i,
   );
   if (missingSlug) {
     const [, subject, slug, similarText] = missingSlug;
-    const hasCreateHint = /add_concept\(slug, kind, title\)/.test(message);
+    const hasCreateHint = /create it first with add_concepts\(/.test(message);
     return omitUndefined({
       missingSubject: subject,
       missingSlug: slug,
       recoveryTools: ['list_concepts', 'find_evidence'],
-      createTool: hasCreateHint ? 'add_concept' : undefined,
+      createTool: hasCreateHint ? 'add_concepts' : undefined,
       similarSlugs: similarText ? extractQuotedList(similarText) : [],
     });
   }
@@ -188,7 +188,7 @@ function structuredErrorDetails(message) {
       missingSubject: subject,
       missingSlug: slug,
       recoveryTools: ['list_concepts', 'find_evidence'],
-      createTool: 'add_concept',
+      createTool: 'add_concepts',
       similarSlugs: similarText ? splitCommaList(similarText) : [],
     };
   }

@@ -8,7 +8,7 @@ import { GROWTH_HINT_OUTPUT_SCHEMA } from '../tool-schemas/vault-node-shapes.mjs
 export const FIND_EVIDENCE_TOOL = {
   name: 'find_evidence',
   description:
-    'Find vault docs that mention a given concept by title, to see where a capability is realized. Each match includes a prose `excerpt`, readable without an extra get_concept call, and is ranked best-first by `score`. Plain markdown without `kind:` is marked `isNode: false`; do not cite it as graph evidence without saying so. Zero matches return a `growthHint`.',
+    'Find vault docs that mention a given concept by title, to see where a capability is realized. Each match includes a prose `excerpt`, readable without an extra get_concepts call, and is ranked best-first by `score`. Plain markdown without `kind:` is marked `isNode: false`; do not cite it as graph evidence without saying so. Zero matches return a `growthHint`.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -104,7 +104,7 @@ export const FIND_EVIDENCE_TOOL = {
       },
       growthHint: {
         ...GROWTH_HINT_OUTPUT_SCHEMA,
-        description: 'Only present when matches is empty — near-titled vault node(s) to check, or an add_concept scaffold, derived from the real vault title set.',
+        description: 'Only present when matches is empty — near-titled vault node(s) to check, or an add_concepts scaffold, derived from the real vault title set.',
       },
     },
     required: ['query', 'matches'],

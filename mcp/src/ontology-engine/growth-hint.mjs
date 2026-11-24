@@ -2,7 +2,7 @@
 // These pure helpers turn an empty result into a `growthHint` the caller attaches
 // only to empty or unresolved results, never on success. Hints come from data
 // the caller already has; with no real candidate they fall back to a generic
-// add_concept scaffold rather than a guessed node.
+// add_concepts scaffold rather than a guessed node.
 
 import { isVaultSourcePath, rawSourceFileForSlug } from '../schema.mjs';
 
@@ -35,8 +35,8 @@ function slugify(text) {
 }
 
 /**
- * find_path found nothing within maxHops: a missing endpoint suggests
- * add_concept, two unconnected endpoints suggest add_relation.
+ * A path search found nothing within maxHops: a missing endpoint suggests
+ * add_concepts, two unconnected endpoints suggest add_relations.
  */
 export function buildFindPathGrowthHint({ from, to, fromExists, toExists }) {
   const missing = [];
@@ -53,8 +53,8 @@ export function buildFindPathGrowthHint({ from, to, fromExists, toExists }) {
       suggestion:
         'A path cannot exist to an endpoint that is not in the vault yet. Add it first if it describes a real capability/element/domain.',
       exampleCall: {
-        tool: 'add_concept',
-        args: { slug: target, kind: 'element', title: titleCaseFromSlug(target) },
+        tool: 'add_concepts',
+        args: { concepts: [{ slug: target, kind: 'element', title: titleCaseFromSlug(target) }] },
       },
     };
   }
@@ -64,13 +64,13 @@ export function buildFindPathGrowthHint({ from, to, fromExists, toExists }) {
     suggestion:
       'If these two concepts are actually related, add the missing edge directly instead of widening maxHops.',
     exampleCall: {
-      tool: 'add_relation',
-      args: { from, to, type: 'relates' },
+      tool: 'add_relations',
+      args: { relations: [{ from, to, type: 'relates' }] },
     },
   };
 }
 
-/** get_concept / node_profile miss; `candidateSlugs` come from the caller's real slug set. */
+/** get_concepts / node_profile miss; `candidateSlugs` come from the caller's real slug set. */
 export function buildSlugNotFoundGrowthHint({
   slug,
   candidateSlugs = [],
@@ -97,8 +97,8 @@ export function buildSlugNotFoundGrowthHint({
       suggestion:
         'This is a referenced-only concept: the map counts it, the compiled graph does not, because nothing defines it yet. Create its document at exactly this slug so the existing references resolve to it.',
       exampleCall: {
-        tool: 'add_concept',
-        args: { slug, kind: 'element', title: titleCaseFromSlug(slug) },
+        tool: 'add_concepts',
+        args: { concepts: [{ slug, kind: 'element', title: titleCaseFromSlug(slug) }] },
       },
     };
   }
@@ -107,8 +107,8 @@ export function buildSlugNotFoundGrowthHint({
       reason: `"${slug}" does not resolve to a vault node.`,
       suggestion: `Closest existing slug(s): ${candidateSlugs.join(', ')}: likely a typo or a missing folder segment rather than a missing node.`,
       exampleCall: {
-        tool: 'get_concept',
-        args: { slug: candidateSlugs[0] },
+        tool: 'get_concepts',
+        args: { slugs: [candidateSlugs[0]] },
       },
     };
   }
@@ -117,8 +117,8 @@ export function buildSlugNotFoundGrowthHint({
     suggestion:
       'This may be a real gap in the vault: add it if it describes an actual capability/element/domain.',
     exampleCall: {
-      tool: 'add_concept',
-      args: { slug, kind: 'element', title: titleCaseFromSlug(slug) },
+      tool: 'add_concepts',
+      args: { concepts: [{ slug, kind: 'element', title: titleCaseFromSlug(slug) }] },
     },
   };
 }
@@ -148,15 +148,15 @@ export function buildQueryConceptsZeroRowsGrowthHint({ filter, byKind = {}, byDo
     return {
       reason: `query_concepts matched 0 rows: ${facts.join('; ')}.`,
       suggestion:
-        'Check list_kinds / list_concepts for the real kind/domain census before retrying, or add the missing nodes.',
-      exampleCall: { tool: 'list_kinds', args: {} },
+        'Check the census list_concepts returns for the real kind counts, and its domain filter for a domain, before retrying, or add the missing nodes.',
+      exampleCall: { tool: 'list_concepts', args: { limit: 1 } },
     };
   }
 
   return {
     reason: `query_concepts matched 0 rows for filter: ${filterText}`,
     suggestion: 'Loosen the filter: drop an AND clause or widen an equality: and retry.',
-    exampleCall: { tool: 'list_kinds', args: {} },
+    exampleCall: { tool: 'list_concepts', args: { limit: 1 } },
   };
 }
 
@@ -167,15 +167,15 @@ export function buildFindEvidenceZeroHitsGrowthHint({ title, nearMatches = [] })
     return {
       reason: `No vault doc mentions "${title}".`,
       suggestion: `Closest existing node(s) by title: ${names.join(', ')}: confirm this isn't the same concept under a different name before adding a new one.`,
-      exampleCall: { tool: 'get_concept', args: { slug: nearMatches[0].slug } },
+      exampleCall: { tool: 'get_concepts', args: { slugs: [nearMatches[0].slug] } },
     };
   }
   return {
     reason: `No vault doc mentions "${title}", and no similarly-titled node exists.`,
     suggestion: 'This concept may not be captured in the vault yet: add it if it describes a real capability/element/domain.',
     exampleCall: {
-      tool: 'add_concept',
-      args: { slug: slugify(title), kind: 'element', title: String(title ?? '') },
+      tool: 'add_concepts',
+      args: { concepts: [{ slug: slugify(title), kind: 'element', title: String(title ?? '') }] },
     },
   };
 }
