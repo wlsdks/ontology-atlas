@@ -94,6 +94,8 @@ pub(crate) struct DoctorContext<'a> {
     pub terminal_logged_in: Option<bool>,
     /// `None` if the OS cannot verify it.
     pub shadow_present: Option<bool>,
+    /// A half-written entry is a download in progress, not a broken one.
+    pub adapter_fetching: bool,
 }
 
 /// Does not fix anything.
@@ -135,7 +137,9 @@ pub(crate) fn diagnose(ctx: &DoctorContext<'_>) -> Vec<AcpCheck> {
 
     // No cache outside npx is not applicable, so it is left off rather than shown green.
     if let Some(entry) = npx_entry_path(ctx) {
-        out.push(
+        out.push(if ctx.adapter_fetching {
+            AcpCheck::ok("npx-cache", Some("downloading".into()))
+        } else {
             match acp::launch::npx_cache::npx_entry_health(
                 &entry,
                 npx_package(ctx).as_deref().unwrap_or(""),
@@ -148,8 +152,8 @@ pub(crate) fn diagnose(ctx: &DoctorContext<'_>) -> Vec<AcpCheck> {
                 acp::launch::npx_cache::NpxEntryHealth::Broken(reason) => {
                     AcpCheck::problem("npx-cache", true, Some(reason.into()))
                 }
-            },
-        );
+            }
+        });
     }
 
     // The four isolation checks are emitted only for isolating executors; `unknown`
@@ -340,6 +344,7 @@ mod tests {
             isolated_logged_out: None,
             terminal_logged_in: None,
             shadow_present: None,
+            adapter_fetching: false,
         }
     }
 
@@ -650,6 +655,42 @@ mod tests {
                 .state,
             "ok"
         );
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    /// A download in flight leaves `node_modules` with an empty `.bin`, the shape of a broken
+    /// entry; offering "Fix" then would delete what the fetch is writing. Unix only: Windows keeps
+    /// the npx cache under `%LOCALAPPDATA%`, not under the home this test plants.
+    #[cfg(unix)]
+    #[test]
+    fn an_entry_being_downloaded_is_not_offered_as_broken() {
+        let base = std::env::temp_dir().join(format!("atlas-doctor-npx-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        let home = base.join("home");
+        let package =
+            npx_package(&ctx(&base, Some(&home))).expect("claude-acp launches through npx");
+        let entry =
+            acp::launch::npx_cache::npx_cache_entry_dir(&home.join(".npm").join("_npx"), &package);
+        std::fs::create_dir_all(entry.join("node_modules").join(".bin")).unwrap();
+        std::fs::write(entry.join("package.json"), "{}").unwrap();
+
+        let app_data = base.join("appdata");
+        let npx_check = |fetching: bool| {
+            let c = DoctorContext {
+                adapter_fetching: fetching,
+                ..ctx(&app_data, Some(&home))
+            };
+            diagnose(&c)
+                .into_iter()
+                .find(|check| check.id == "npx-cache")
+                .unwrap()
+        };
+        let idle = npx_check(false);
+        // Not fixable here only because this context has no CLI (a blocked prerequisite).
+        assert_eq!(idle.state, "problem");
+        let fetching = npx_check(true);
+        assert_eq!((fetching.state, fetching.fixable), ("ok", false));
+        assert_eq!(fetching.detail.as_deref(), Some("downloading"));
         let _ = std::fs::remove_dir_all(&base);
     }
 
