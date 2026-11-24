@@ -114,7 +114,8 @@ const ACTIVITY: Activity = {
     latestFile: "src/views/library/LibraryPage.tsx",
     onBase: false,
     files: [
-      { path: "src/views/library/LibraryPage.tsx", changedAt: NOW_S - 30 },
+      // A minute and a half back, so the bezel reads in minutes however long ago this file was loaded.
+      { path: "src/views/library/LibraryPage.tsx", changedAt: NOW_S - 90 },
       { path: "src/features/library/model/use-library-model.ts", changedAt: NOW_S - 600 },
       { path: "messages/ko/library.json", changedAt: NOW_S - 7200 },
     ],
@@ -181,9 +182,11 @@ async function startPaintSampler(page: Page) {
       const box = plateOf(element);
       return { key: keyOf(element), x: box.x + box.width / 2, y: box.y + box.height / 2, box: [box.x, box.y, box.width, box.height] };
     });
+    const SAMPLED_MS = 15_000;
     const frames: PaintFrame[] = [];
     Object.assign(window, { __paint: { frames, slots } });
     let lastTime = Number.NaN;
+    let firstTime = Number.NaN;
     const sample = () => {
       // The clock the rooms' animations read, so a frame is timed by what it shows. A callback that
       // comes before that clock moves on shows the last frame again, and is not a frame.
@@ -193,6 +196,7 @@ async function startPaintSampler(page: Page) {
         return;
       }
       lastTime = frameTime;
+      if (Number.isNaN(firstTime)) firstTime = frameTime;
       const all = rooms();
       const copies = new Map<string, number>();
       for (const element of all) copies.set(keyOf(element), (copies.get(keyOf(element)) ?? 0) + content(element).filter((value) => value > 0.05).length);
@@ -218,6 +222,11 @@ async function startPaintSampler(page: Page) {
         for (let node: Element | null = element; node && node !== building; node = node.parentElement) value *= Number(getComputedStyle(node).opacity);
         return value;
       };
+      // A part may hold content that fades on its own inside it (`data-room-fade`): the wall facts.
+      const shows = (part: Element) => {
+        const inner = part.querySelector("[data-room-fade]");
+        return seen(part) * (inner ? Number(getComputedStyle(inner).opacity) : 1);
+      };
       const tags = [...document.querySelectorAll("[data-testid=work-building] :is([data-room-tag], [data-room-plaque])")].filter((tag) => seen(tag) > 0.5).length;
       const visible: Record<string, number> = {};
       for (const element of all) {
@@ -226,7 +235,7 @@ async function startPaintSampler(page: Page) {
         for (const face of faces) {
           face.querySelectorAll("[data-room-part]").forEach((part, index) => {
             const name = `${keyOf(element)}:part${index}`;
-            visible[name] = Math.max(visible[name] ?? 0, seen(part));
+            visible[name] = Math.max(visible[name] ?? 0, shows(part));
           });
         }
       }
@@ -242,7 +251,7 @@ async function startPaintSampler(page: Page) {
         held[keyOf(element)] = Math.max(0, ...[...element.querySelectorAll<HTMLElement>(":scope > [data-room-face] :is([data-room-moru], [data-room-tag])")].map((figure) => seen(figure) * inside(figure.getBoundingClientRect())));
         element.querySelectorAll<HTMLElement>(":scope > [data-room-face] [data-room-part]").forEach((part) => {
           const rect = part.getBoundingClientRect();
-          if (seen(part) > 0.05 && rect.width > 0 && (rect.right > plate.right + 2 || rect.bottom > plate.bottom + 2 || rect.left < plate.left - 2 || rect.top < plate.top - 2)) spills.push(keyOf(element));
+          if (shows(part) > 0.05 && rect.width > 0 && (rect.right > plate.right + 2 || rect.bottom > plate.bottom + 2 || rect.left < plate.left - 2 || rect.top < plate.top - 2)) spills.push(keyOf(element));
         });
       }
       const moru: Record<string, number> = {};
@@ -269,7 +278,8 @@ async function startPaintSampler(page: Page) {
         }
       }
       frames.push({ copies: Math.max(0, ...copies.values()), overlaps, covered, litGhost, time: frameTime, tags, content: visible, held, spills, moru, edges, boxes });
-      if (frames.length < 900) requestAnimationFrame(sample);
+      // By time, not by frames: a fixed frame count ends a 120 Hz display's sampling in half the time of a 60 Hz one.
+      if (frameTime - firstTime < SAMPLED_MS) requestAnimationFrame(sample);
     };
     requestAnimationFrame(sample);
   });
