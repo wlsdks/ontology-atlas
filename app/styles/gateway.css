@@ -1130,13 +1130,6 @@ html[data-gateway-cursor] body :not(input, textarea, select, [contenteditable='t
   opacity: 0;
 }
 
-/* Files: in the folder, loose once read, stacked by their concept, then absorbed by its name. */
-.build-file {
-  color: var(--color-text-secondary);
-  border: 1px solid var(--color-border-strong);
-  background: var(--color-panel);
-}
-
 /* Drawn pieces that answer nothing: the pointer, the carried file and the labels never take a press
    meant for the concept under them. */
 .build-agent-at,

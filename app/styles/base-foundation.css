@@ -443,10 +443,6 @@
     stroke-width var(--motion-base) var(--motion-ease);
 }
 
-.architecture-violation-halo[data-edge-raised='true'] {
-  opacity: var(--architecture-plane-climb-halo-raised);
-}
-
 @media (prefers-reduced-motion: reduce) {
   /* The halo stays; only its raise stops being a journey: the raise lands whole and instantly,
      and the fact travels with it. */
