@@ -89,11 +89,12 @@ export const ADD_CONCEPT_TOOL = {
 export const ADD_CONCEPTS_TOOL = {
   name: 'add_concepts',
   description:
-    'Create several nodes in one call (max 50), each row shaped like `add_concept`; use it for the construction batch after analyze_repo_structure. ' +
+    'Create one or more new ontology nodes (.md files) for a project, domain, capability, element or document found in the code: one row for one node, up to 50 per call; use it for the construction batch after analyze_repo_structure. ' +
+    'A row whose slug exists fails: use patch_concept then. Frontmatter is normalized per kind; a capability or element without `domain:` comes back as a `warning`, not an error. ' +
     'Rows are independent and there is no rollback: a bad row (existing slug, invalid kind, missing or unknown field, duplicate input slug) returns `{slug, ok: false, error}` labelled `concepts[n]` with repair fields, and the rest still land, in input order. ' +
     'A title matching an earlier row lands with a near-duplicate `warning`: patch_concept the earlier node instead. ' +
     'A written row is `{ok, slug, changed, mtime, warnings?}`. Invalid-only batches return no row-level write metadata, no `findings` and no `coverage`; otherwise the response adds ' + WRITE_FINDINGS_GUIDANCE + ', and `coverage`. ' +
-    FAMILY_SCOPE_RULE_EN + ' ' + ELEMENT_NAMING_RULE_BATCH_EN,
+    FAMILY_SCOPE_RULE_EN + ' ' + ELEMENT_NAMING_RULE_EN,
   inputSchema: {
     type: 'object',
     properties: {

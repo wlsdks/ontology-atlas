@@ -169,10 +169,22 @@ if (!['full', 'construction'].includes(TOOL_PROFILE)) {
   throw new Error(`Invalid OATLAS_TOOL_PROFILE ${JSON.stringify(TOOL_PROFILE)}; use full or construction, or unset it, then restart the server.`);
 }
 const CONSTRUCTION_TOOL_NAMES = new Set([
-  'connection_info', 'list_kinds', 'list_concepts', 'get_concept', 'get_concepts',
-  'find_evidence', 'find_path', 'find_backlinks', 'query_ontology', 'read_source',
-  'analyze_repo_structure', 'index_project', 'infer_imports', 'add_concepts', 'add_relations',
+  'connection_info', 'list_concepts', 'get_concepts',
+  'find_evidence', 'find_backlinks', 'query_ontology', 'read_source',
+  'analyze_repo_structure', 'infer_imports', 'add_concepts', 'add_relations',
   'patch_concept', 'validate_vault', 'compile_ontology', 'connect_project_source', 'finalize_project_meaning',
+]);
+
+// Still answered when called, so an agent following older instructions keeps working,
+// but left out of tools/list: each one's whole job is done by the tool named here.
+const RETIRED_TOOL_REPLACEMENTS = new Map([
+  ['get_concept', 'get_concepts({ slugs: [slug] })'],
+  ['add_concept', 'add_concepts({ concepts: [row] })'],
+  ['add_relation', 'add_relations({ relations: [row] })'],
+  ['find_path', "query_ontology({ operation: 'path', from, to })"],
+  ['find_neighbors', "query_ontology({ operation: 'neighbors', slug })"],
+  ['list_kinds', 'list_concepts({ limit: 1 }) and read its census'],
+  ['index_project', 'analyze_repo_structure, then infer_imports and validate_vault'],
 ]);
 
 // Off unless the launcher asks, so a client that owns the gate is unchanged.
@@ -195,6 +207,7 @@ const TOOLS_FOR_LIST_ALL = TOOLS.map((tool) => ({
   ...(tool.outputSchema ? { outputSchema: advertisedOutputSchema(tool.outputSchema) } : {}),
 }));
 const TOOLS_FOR_LIST = TOOLS_FOR_LIST_ALL.filter((tool) =>
+  !RETIRED_TOOL_REPLACEMENTS.has(tool.name) &&
   (!READ_ONLY_MODE || READ_TOOL_NAMES.has(tool.name)) &&
   (TOOL_PROFILE === 'full' || CONSTRUCTION_TOOL_NAMES.has(tool.name)));
 // Stays complete so the unknown-tool hint and the read-only guard see every name.
@@ -206,6 +219,7 @@ const TOOL_OUTPUT_CONTRACT_BY_NAME = new Map(TOOLS.filter((tool) => tool.outputS
 
 export {
   READ_TOOL_NAMES,
+  RETIRED_TOOL_REPLACEMENTS,
   READ_ONLY_MODE,
   WRITE_CONSENT_MODE,
   TOOLS_FOR_LIST,

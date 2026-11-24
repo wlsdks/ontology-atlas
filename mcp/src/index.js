@@ -20,6 +20,7 @@ import { server } from './server/instance.mjs';
 import {
   READ_ONLY_MODE,
   READ_TOOL_NAMES,
+  RETIRED_TOOL_REPLACEMENTS,
   TOOLS_FOR_LIST,
   TOOL_BY_NAME,
   WRITE_CONSENT_MODE,
@@ -103,11 +104,19 @@ server.setRequestHandler('tools/list', async () => ({ tools: TOOLS_FOR_LIST }));
 
 // A read tool sees one snapshot of the vault: its helpers share one stamp pass. Any
 // other call reads every file fresh once, on its first load, and stamp-checks after.
-server.setRequestHandler('tools/call', (request) => (
-  READ_TOOL_NAMES.has(request.params.name)
+server.setRequestHandler('tools/call', async (request) => withRetiredToolNote(
+  request.params.name,
+  await (READ_TOOL_NAMES.has(request.params.name)
     ? withVaultReadSnapshot(() => callTool(request))
-    : withVaultWriteSnapshot(() => callTool(request))
+    : withVaultWriteSnapshot(() => callTool(request))),
 ));
+
+function withRetiredToolNote(name, response) {
+  const replacement = RETIRED_TOOL_REPLACEMENTS.get(name);
+  if (!replacement) return response;
+  const note = { type: 'text', text: `${name} is retired from tools/list and will be removed; call ${replacement} instead.` };
+  return { ...response, content: [...(response.content ?? []), note] };
+}
 
 async function callTool(request) {
   const { name } = request.params;

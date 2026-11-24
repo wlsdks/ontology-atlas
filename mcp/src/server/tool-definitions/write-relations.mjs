@@ -59,7 +59,7 @@ export const ADD_RELATION_TOOL = {
 export const ADD_RELATIONS_TOOL = {
   name: 'add_relations',
   description:
-    'Add several typed relations in one call (max 50), each row shaped like `add_relation`; use it for the edges of a construction batch. ' +
+    'Add one or more typed relations between existing nodes, up to 50 per call, each written to its source node\'s matching frontmatter key. `contains` between kinds a typed key fits is written as that key, said in the row\'s `notice`. ' +
     'Give every new `depends_on` a nonblank `why`; an edge from imports alone, such as `infer_imports.moduleEdges`, needs exact-evidence review and the user\'s acceptance first. ' +
     'Rows are independent, idempotent and not rolled back: an existing edge returns `alreadyExists: true`; a bad row (missing slug, unknown type, unknown field) returns `{ok: false, error}` labelled `relations[n]` with a closest-value hint and repair fields, in input order. ' +
     '`mtimes` maps each source whose first changed row passed `expected_mtime` to its new mtime; when rows share one `from`, guard only its first row. ' +

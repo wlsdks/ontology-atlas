@@ -173,6 +173,7 @@ function listConcepts({ kind, domain, since, summary, offset = 0, limit = 100 })
   });
   return {
     total: filtered.length,
+    census: vaultCensus(),
     vaultRoot: VAULT_ROOT,
     nodes,
     returned: nodes.length,
@@ -673,6 +674,11 @@ function summarizePathNode(doc, slug) {
 function listKindsTool() {
   const result = listKinds(VAULT_ROOT);
   return { ...result, byKind: Object.fromEntries(Object.entries(result.byKind).sort(([left], [right]) => (left < right ? -1 : 1))) };
+}
+
+function vaultCensus() {
+  const { total, byKind, referencedOnlyTotal } = listKindsTool();
+  return { total, byKind, referencedOnlyTotal };
 }
 
 function findOrphansTool({ kind, excludeKinds } = {}) {
