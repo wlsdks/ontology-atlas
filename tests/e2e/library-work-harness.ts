@@ -551,6 +551,7 @@ export async function installLibraryWorkHarness(
         calls.push({ method: command, params: args });
         if (command === "plugin:event|listen") { const id = Number(args.handler); const event = String(args.event); if (!callbacks.has(id)) return Promise.reject(new Error("missing event callback")); const set = listeners.get(event) ?? new Set<number>(); set.add(id); listeners.set(event, set); return Promise.resolve(id); }
         if (command === "plugin:event|unlisten") { const event = String(args.event); listeners.get(event)?.delete(Number(args.eventId)); callbacks.delete(Number(args.eventId)); return Promise.resolve(); }
+        if (command === "acp_prepare_adapter") return Promise.resolve("ready");
         if (command === "acp_detect_runtimes") return Promise.resolve(localResponses ? [] : runtimes);
         if (command === "llm_chat_prepare") return Promise.resolve("fixture-request");
           if (command === "llm_chat_cancel") return Promise.resolve(false);
