@@ -13,7 +13,7 @@ const projectNote = (uncovered: number | null) => `---\nuid: 00000000-0000-4000-
 
 type HarnessWindow = {
   __atlasLibraryWorkHarness?: {
-    snapshot(): { calls: Array<{ method: string; params?: unknown }> };
+    snapshot(): { calls: Array<{ method: string; params?: unknown }>; writes: Array<{ relativePath: string; content: string }> };
     mutateSource(path: string, text: string): void;
     answer(text: string): void;
     emitRead(): void;
@@ -36,6 +36,15 @@ async function requestEnds(page: Page, uncovered: number | null) {
     harness?.mutateSource('project.md', note);
     harness?.answer('Mapped the next areas and rewrote the project lines.');
   }, { note: projectNote(uncovered) });
+}
+
+/** The analysis each heartbeat the app wrote names (`acp-agent-heartbeat.ts`), in order; null outside a press. */
+async function heartbeatAnalyses(page: Page): Promise<Array<string | null>> {
+  const writes = await page.evaluate(() => (window as unknown as HarnessWindow).__atlasLibraryWorkHarness?.snapshot().writes ?? []);
+  // A file handle's writable lands as an empty write first, then the text.
+  return writes
+    .filter((write) => write.relativePath === '.ontology-atlas/agent-activity.json' && write.content.trim() !== '')
+    .map((write) => (JSON.parse(write.content) as { mapAnalysis?: { id: string } }).mapAnalysis?.id ?? null);
 }
 
 const row = (page: Page) => page.getByTestId('mapping-run-row');
@@ -147,6 +156,39 @@ test.describe('one press maps the rest of the code', () => {
     await requestEnds(page, null);
     await expect(page.getByTestId('work-run-title')).toHaveText('Every ability found in the code is on the map');
     expect(await prompts(page)).toBe(4);
+  });
+
+  test('every request of one press names one analysis, and the run\'s end starts no session', async ({ page }) => {
+    await openMapConversation(page);
+
+    const chat = page.getByTestId('acp-chat-panel');
+    await chat.getByRole('textbox').fill('What does billing own?');
+    await page.getByTestId('acp-chat-send').click();
+    await expect.poll(() => prompts(page)).toBe(1);
+    await page.evaluate(() => (window as unknown as HarnessWindow).__atlasLibraryWorkHarness?.answer('Billing owns invoices.'));
+    await expect(chat).toHaveAttribute('data-acp-status', 'ready');
+    const before = await heartbeatAnalyses(page);
+    expect(before.length, 'the conversation before the press wrote no heartbeat').toBeGreaterThan(0);
+    expect(before.every((id) => id === null), 'the conversation before the press is named as a press').toBe(true);
+
+    await page.getByTestId('mapping-run-action').click();
+    await expect.poll(() => prompts(page), { message: 'the first request reaches the agent' }).toBe(2);
+    await expect(row(page)).toHaveAttribute('data-mapping-state', 'running');
+    await requestEnds(page, 72);
+    await expect.poll(() => prompts(page), { message: 'the second request goes out by itself' }).toBe(3);
+    await expect.poll(async () => (await heartbeatAnalyses(page)).length).toBeGreaterThan(before.length + 1);
+    const pressed = (await heartbeatAnalyses(page)).slice(before.length).filter((id) => id !== null);
+    expect(new Set(pressed).size, `the press's requests named ${new Set(pressed).size} analyses`).toBe(1);
+    expect(pressed[0]).toMatch(/^press-\d+-\d+$/);
+
+    const startsBeforeStop = await starts(page);
+    await page.getByTestId('mapping-run-action').click();
+    await expect(row(page)).toHaveAttribute('data-mapping-state', 'stopped');
+    await expect(chat).toHaveAttribute('data-acp-status', 'ready');
+    // measurement window: a restart would arrive as one more acp_start after the run's end settles.
+    await page.waitForTimeout(1_000);
+    expect(await starts(page), 'the run\'s end started the session again').toBe(startsBeforeStop);
+    expect(await chat.getAttribute('data-acp-status')).toBe('ready');
   });
 
   test('Stop ends the run within five seconds', async ({ page }) => {

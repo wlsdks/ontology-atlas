@@ -149,6 +149,36 @@ describe("useCountUp — insights count-up (#3)", () => {
       vi.unstubAllGlobals();
     }
   });
+
+  it("without an intro starts at its target and moves a change from the value last drawn", () => {
+    mockReducedMotion(false);
+    const frames: FrameRequestCallback[] = [];
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    vi.stubGlobal("cancelAnimationFrame", () => {});
+    let clock = 0;
+    const nowSpy = vi.spyOn(performance, "now").mockImplementation(() => clock);
+    try {
+      const share = renderHook(({ target }) => useCountUp(target, undefined, { animateChanges: true, intro: false }), {
+        initialProps: { target: 62 },
+      });
+      expect(share.result.current, "the first draw is the value itself, not a count from zero").toBe(62);
+      expect(frames).toHaveLength(0);
+      share.rerender({ target: 70 });
+      clock += MOTION.settle.duration * 500;
+      act(() => frames.shift()!(clock));
+      expect(share.result.current).toBeGreaterThan(62);
+      expect(share.result.current).toBeLessThan(70);
+      clock += MOTION.settle.duration * 1000;
+      while (frames.length > 0) act(() => frames.shift()!(clock));
+      expect(share.result.current).toBe(70);
+    } finally {
+      nowSpy.mockRestore();
+      vi.unstubAllGlobals();
+    }
+  });
 });
 
 describe("useCountUp on the settle clock", () => {

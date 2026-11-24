@@ -20,11 +20,13 @@ import { classifyVaultAccessError } from '../vault-opening/classify-vault-access
 import { toErrorMessage } from '@/shared/lib/failures/error-message';
 import { codedFailure } from '@/shared/lib/failures/failure-code';
 import { AGENT_ACTIVITY_STALE_AFTER_MS, emptyAgentActivityStatus } from '../agent-activity-status';
+import { ABSENT_MAP_ANALYSIS_RECORD } from '@/shared/lib/vault-document/map-analysis-record';
 import { createAdaptivePoller, type PollCadenceConfig } from './poll-cadence';
 import { createVaultLoadProgressStore } from '../vault-opening/vault-load-progress';
 import { createVaultArrivalStore } from '../vault-opening/vault-arrival';
 import {
   comparableAgentActivityStatus,
+  comparableMapAnalysisRecord,
   structurallyEqualStatus,
   readVaultSidecarStatuses,
 } from './vault-sidecars';
@@ -176,7 +178,7 @@ export function useLocalVaultInternal() {
       }
       const { build, entries } = result;
       const { manifest, fileHandles, imageHandles, sourceHandles, fingerprint } = build;
-      const { agentConfigStatus, agentActivityStatus, agentActivityLog, acpWorkReceipts } =
+      const { agentConfigStatus, agentActivityStatus, agentActivityLog, acpWorkReceipts, mapAnalysisRecord } =
         await readVaultSidecarStatuses(handle);
       if (!isCurrent()) return null;
       lastFingerprintRef.current = fingerprint;
@@ -191,6 +193,7 @@ export function useLocalVaultInternal() {
         agentActivityStatus,
         agentActivityLog,
         acpWorkReceipts,
+        mapAnalysisRecord,
         fileHandles,
         imageHandles,
         sourceHandles,
@@ -233,6 +236,7 @@ export function useLocalVaultInternal() {
         agentActivityStatus: emptyAgentActivityStatus(),
         agentActivityLog: [],
         acpWorkReceipts: [],
+        mapAnalysisRecord: ABSENT_MAP_ANALYSIS_RECORD,
         fileHandles: new Map(),
         imageHandles: new Map(),
     sourceHandles: new Map(),
@@ -318,7 +322,8 @@ export function useLocalVaultInternal() {
             s.agentActivityLog.length === sidecars.agentActivityLog.length &&
             structurallyEqualStatus(s.agentActivityLog.at(-1), sidecars.agentActivityLog.at(-1)) &&
             s.acpWorkReceipts.length === sidecars.acpWorkReceipts.length &&
-            s.acpWorkReceipts.at(-1)?.updatedAt === sidecars.acpWorkReceipts.at(-1)?.updatedAt;
+            s.acpWorkReceipts.at(-1)?.updatedAt === sidecars.acpWorkReceipts.at(-1)?.updatedAt &&
+            structurallyEqualStatus(comparableMapAnalysisRecord(s.mapAnalysisRecord), comparableMapAnalysisRecord(sidecars.mapAnalysisRecord));
           return same ? s : { ...s, ...sidecars, lastLoadedAt: Date.now() };
         });
         return false;
@@ -538,6 +543,7 @@ export function useLocalVaultInternal() {
     agentActivityStatus: state.agentActivityStatus,
     agentActivityLog: state.agentActivityLog,
     acpWorkReceipts: state.acpWorkReceipts,
+    mapAnalysisRecord: state.mapAnalysisRecord,
     recentVaults,
     awaitingVaultChoice,
     storedVaultRecord,

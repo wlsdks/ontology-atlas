@@ -18,6 +18,7 @@ import Image from "next/image";
 import { useState } from "react";
 import { canCopyTopologyPathPacket } from "../../lib/map-canvas/topology-path-chip-state";
 import { useMapToolbarTopReserve } from "../../model/map-canvas/use-map-toolbar-top-reserve";
+import { useMapAnalysisChip } from "../../model/map-readouts/use-map-analysis-chip";
 import type { useHomeWorkbenchController } from "../../model/use-home-workbench-controller";
 import type { useTopologyAgentActivity } from "../../model/agent/use-topology-agent-activity";
 import type { useTopologyAgentOrchestration } from "../../model/agent/use-topology-agent-orchestration";
@@ -33,6 +34,7 @@ import type { useTopologyPreferences } from "../../model/use-topology-preference
 import type { useTopologyRouteControls } from "../../model/route-state/use-topology-route-controls";
 import type { useTopologySceneControls } from "../../model/map-canvas/use-topology-scene-controls";
 import type { useTopologyVaultReadModel } from "../../model/use-topology-vault-read-model";
+import { MapAnalysisChip } from "./MapAnalysisChip";
 import { TopologyPathChip } from "./TopologyPathChip";
 import { TopologyRealmChip } from "./TopologyRealmChip";
 import { TopologyTrailChip } from "./TopologyTrailChip";
@@ -89,6 +91,7 @@ interface TopologyCommandChromeProps {
     | "handleToggleSpotlight"
     | "spotlightNeedsVault"
     | "ontologyChangeset"
+    | "gitVaultPath"
   >;
   topologyCanvasFocus: Pick<ReturnType<typeof useTopologyCanvasFocus>, "selectedRelationActive" | "setSelectedRelationActive">;
   topologyAuthoring: Pick<ReturnType<typeof useTopologyAuthoring>, "createNodeOpen" | "setSelectedEdge">;
@@ -141,7 +144,7 @@ export function TopologyCommandChrome({
   const { selectedRelationActive, setSelectedRelationActive } = topologyCanvasFocus;
   const {
     vault, llmBridgeAvailable, tAgent, spotlightOn, recentChanges, handleToggleSpotlight,
-    spotlightNeedsVault, ontologyChangeset
+    spotlightNeedsVault, ontologyChangeset, gitVaultPath
   } = topologyVaultReadModel;
   const { canvasSelectedSlug, resolvedRealmSlug, realmTitle } = topologyGraphProjection;
   const { openVaultAgent, agentDockOpen, closeVaultAgent } = topologyAgentOrchestration;
@@ -150,6 +153,7 @@ export function TopologyCommandChrome({
   const { handleSelect, handleReplayPastWalk } = topologyNavigationActions;
   const { meaningWorkbenchOpen, toggleMeaningWorkbench } = homeWorkbenchController;
   const { acpLiveWork } = topologyAgentActivity;
+  const mapAnalysis = useMapAnalysisChip(vault, gitVaultPath);
   const [toolbarElement, setToolbarElement] = useState<HTMLDivElement | null>(null);
   useMapToolbarTopReserve(toolbarElement);
   const [rightChromeReceded, setRightChromeReceded] = useState(false);
@@ -337,6 +341,11 @@ export function TopologyCommandChrome({
             }}
             onToggleExpandAll={!structure && resolvedRealmSlug !== null ? handleToggleExpandAll : undefined}
             allExpanded={expandAllActive}
+            analysisChip={
+              mapAnalysis ? (
+                <MapAnalysisChip model={mapAnalysis} canMapTheRest={llmBridgeAvailable} onMapTheRest={openVaultAgent} />
+              ) : undefined
+            }
             realmChip={
               resolvedRealmSlug && realmTitle ? (
                 // "view only this" on screen, `realm` internally; `chipViewing` splits on a

@@ -1,8 +1,9 @@
 /**
- * One local audit line per successful write. Schema and rationale live in
- * `activity-log.mjs`; this file decides what each write tool contributes.
+ * One local audit line per successful write, and one map analysis line per write
+ * that changed a concept. Schemas live in `activity-log.mjs` and
+ * `map-analysis-log.mjs`; this file decides what each write tool contributes.
  *
- * Dry runs and invalid-only batches are not recorded — the log carries what
+ * Dry runs and invalid-only batches are not recorded — the logs carry what
  * happened, nothing else — and a failed append never affects the write result.
  */
 
@@ -11,8 +12,14 @@ import {
   buildActivityEntry,
   resolveAgentName,
 } from '../vault/sidecar/activity-log.mjs';
+import { createMapAnalysisRecorder } from '../vault/sidecar/map-analysis-log.mjs';
 import { server } from './instance.mjs';
+import { recordWriteInMapAnalysis } from './map-analysis-effect.mjs';
+import { createMapAnalysisMeasure, MEASURED_COVERAGE } from './map-analysis-measure.mjs';
 import { VAULT_ROOT } from './runtime.mjs';
+
+const mapAnalysis = createMapAnalysisRecorder({ vaultRoot: VAULT_ROOT });
+const measureMapShare = createMapAnalysisMeasure();
 
 function summarizeWrite(name, args, result) {
   switch (name) {
@@ -82,22 +89,25 @@ function summarizeWrite(name, args, result) {
 function logWrite(name, args, result) {
   try {
     const summarized = summarizeWrite(name, args, result);
-    if (summarized) {
-      appendActivityEntry(
-        VAULT_ROOT,
-        buildActivityEntry({
-          tool: name,
-          target: summarized.target,
-          summary: summarized.summary,
-          why: summarized.why ?? null,
-          // Heartbeat (deliberate registration) > the connect greeting's clientInfo.name
-          // (automatic) > null, so sessions that never register still leave a name.
-          agent: resolveAgentName(VAULT_ROOT, server.getClientVersion?.()),
-        }),
-      );
-    }
+    if (!summarized) return result;
+    // Heartbeat (deliberate registration) > the connect greeting's clientInfo.name
+    // (automatic) > null, so sessions that never register still leave a name.
+    const agent = resolveAgentName(VAULT_ROOT, server.getClientVersion?.());
+    appendActivityEntry(
+      VAULT_ROOT,
+      buildActivityEntry({ tool: name, target: summarized.target, summary: summarized.summary, why: summarized.why ?? null, agent }),
+    );
+    recordWriteInMapAnalysis({
+      recorder: mapAnalysis,
+      measureShare: measureMapShare,
+      name,
+      args,
+      result,
+      agent,
+      measured: result[MEASURED_COVERAGE],
+    });
   } catch {
-    /* The audit log is a side effect — it must never damage the write result */
+    /* Both logs are side effects — they must never damage the write result */
   }
   return result;
 }

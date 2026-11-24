@@ -1014,6 +1014,18 @@ describe('structurallyEqualStatus: the polling guard actually works', () => {
     ).toBe(true);
   });
 
+  it('judges two reads of the same map analysis lines as equal, and a new line as a change', async () => {
+    const { comparableMapAnalysisRecord, structurallyEqualStatus } = await import('./vault-sidecars');
+    const { mapAnalysisRecordFromText } = await import('@/shared/lib/vault-document/map-analysis-record');
+    const line = (added: number) => JSON.stringify({ v: 1, analysis: 'a1', number: 1, session: 's1', origin: 'session', at: '2026-11-24T08:00:00.000Z', concepts: { added, changed: 0, removed: 0 } });
+    const now = Date.parse('2026-11-24T09:00:00.000Z');
+    const first = mapAnalysisRecordFromText(`${line(1)}\n`, now);
+    const again = mapAnalysisRecordFromText(`${line(1)}\n`, now + 5_000);
+    const moved = mapAnalysisRecordFromText(`${line(1)}\n${line(2)}\n`, now + 5_000);
+    expect(structurallyEqualStatus(comparableMapAnalysisRecord(first), comparableMapAnalysisRecord(again))).toBe(true);
+    expect(structurallyEqualStatus(comparableMapAnalysisRecord(first), comparableMapAnalysisRecord(moved))).toBe(false);
+  });
+
   it('treats a stale transition as a change still', async () => {
     const { comparableAgentActivityStatus, structurallyEqualStatus } = await import('./vault-sidecars');
     const { emptyAgentActivityStatus } = await import('../agent-activity-status');

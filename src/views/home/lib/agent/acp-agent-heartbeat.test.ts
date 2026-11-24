@@ -25,6 +25,12 @@ describe("registers an in-app agent in the vault", () => {
     expect(beat.updatedAt).toBe("2026-08-17T01:23:45.000Z");
   });
 
+  it("names a press's analysis with an expiry, and nothing outside a press", () => {
+    const pressed = buildAcpTurnHeartbeat({ agent: "codex-acp", at, activity, mapAnalysisId: "press-1764000000000-3" });
+    expect(pressed.mapAnalysis).toEqual({ id: "press-1764000000000-3", until: "2026-08-17T01:38:45.000Z" });
+    expect(buildAcpTurnHeartbeat({ agent: "codex-acp", at, activity })).not.toHaveProperty("mapAnalysis");
+  });
+
   it("carries the goal and target the ACP tool actually stated", () => {
     const beat = buildAcpTurnHeartbeat({ agent: "codex-acp", at, activity });
     expect(beat.focus.ontologySlug).toBe("capabilities/reviewed-ontology-writing");

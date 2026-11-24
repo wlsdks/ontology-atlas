@@ -8,6 +8,7 @@ import {
   normalizeLocaleLabels,
 } from '../../schema.mjs';
 import { structuredRowErrorDetails } from '../../server/rpc.mjs';
+import { MEASURED_COVERAGE } from '../../server/map-analysis-measure.mjs';
 import { REPO_ROOT, REPO_ROOT_IS_GROUNDED, VAULT_ROOT } from '../../server/runtime.mjs';
 import { GRAPH_REF_ARRAY_MAX_ITEMS } from '../../server/tool-schemas/array-limits.mjs';
 import {
@@ -214,23 +215,30 @@ function addConceptsBatch({ concepts }) {
   });
   const written = results.filter((row) => row.ok && row.changed !== false).map((row) => row.slug);
   const findings = written.length > 0 ? findingsOnWrittenNodes(written) : [];
-  const coverage = written.length > 0 ? buildCoverageLine() : null;
-  return {
+  const depth = written.length > 0 ? measureBatchDepth() : null;
+  const coverage = depth?.line ?? null;
+  const answer = {
     concepts: results,
     ...(findings.length > 0 ? { findings } : {}),
     ...(coverage ? { coverage } : {}),
   };
+  // Not enumerable: the map analysis record reuses this measure instead of walking the code again.
+  if (depth) Object.defineProperty(answer, MEASURED_COVERAGE, { value: depth.measured });
+  return answer;
 }
 
 /**
  * The coverage line after a batch: which abilities nothing places yet, which entry
  * files were never read, which rules cite no read lines, and which capabilities no
- * ability-to-ability edge touches. A measurement failure never fails the write.
+ * ability-to-ability edge touches, with the share it measured. A measurement
+ * failure never fails the write.
  */
-function buildCoverageLine() {
+function measureBatchDepth() {
   if (!REPO_ROOT_IS_GROUNDED) return null;
   try {
-    return measureBuildDepth(loadVaultDocs(VAULT_ROOT), repositorySurvey(REPO_ROOT, VAULT_ROOT), sessionReads(REPO_ROOT)).line;
+    const repo = repositorySurvey(REPO_ROOT, VAULT_ROOT);
+    const depth = measureBuildDepth(loadVaultDocs(VAULT_ROOT), repo, sessionReads(REPO_ROOT));
+    return { line: depth.line, measured: { coverage: depth.areaCoverage, collection: repo?.collection ?? null } };
   } catch {
     return null;
   }

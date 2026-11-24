@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { useTranslations } from 'next-intl';
 
 import {
+  agentProductName,
   contextFraction,
   limitsInForce,
   useLatestAgentUsage,
@@ -12,7 +13,6 @@ import {
   type LimitLevel,
 } from '@/entities/agent-usage';
 import registry from '@/src-tauri/src/acp-registry.json';
-import { agentDisplayName } from '@/shared/lib/agent-activity/agent-display-name';
 import { cn } from '@/shared/lib/cn';
 import { useDismissibleMenu } from '@/shared/lib/overlays/use-dismissible-menu';
 import { Tooltip } from '@/shared/ui/hints/tooltip';
@@ -27,9 +27,7 @@ import { AgentUsagePanel } from './AgentUsagePanel';
  */
 function agentOf(usage: AgentUsage): { name: string | null; icon: string | null } {
   const entry = registry.agents.find((agent) => agent.id === usage.runtimeId);
-  const known = agentDisplayName(usage.runtimeId);
-  const name = usage.agentName ?? entry?.name ?? (known !== usage.runtimeId.trim() ? known : null);
-  return { name, icon: entry?.icon ?? null };
+  return { name: agentProductName(usage.runtimeId, usage.agentName), icon: entry?.icon ?? null };
 }
 
 const RING_INK: Record<LimitLevel, string> = {

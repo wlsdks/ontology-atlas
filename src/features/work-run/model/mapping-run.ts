@@ -88,6 +88,15 @@ export function isMappingActive(run: MappingRun): boolean {
   return run.phase === 'running' || run.phase === 'asking' || run.phase === 'stopping';
 }
 
+/**
+ * The id every request of one press hands the MCP server, so the map analysis record
+ * (`.ontology-atlas/map-analysis.jsonl`) reads the press as one analysis. Unique across
+ * launches because it carries the press's time.
+ */
+export function mappingAnalysisId(run: Pick<MappingRun, 'id' | 'startedAt'>): string {
+  return `press-${run.startedAt}-${run.id}`;
+}
+
 export function beginMappingRun(input: {
   id: number;
   folder: string;
