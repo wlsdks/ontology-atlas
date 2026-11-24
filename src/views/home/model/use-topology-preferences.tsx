@@ -12,7 +12,6 @@ import {
   type MapNavigationSpeed,
 } from "@/shared/lib/preferences/map-navigation-speed-preferences";
 import {
-  useDomainStructure,
   useHexBoard,
   useMapView,
   useView3d,
@@ -52,7 +51,6 @@ export function useTopologyPreferences() {
   const canvasBackground = useCanvasBackground();
   const view3d = useView3d();
   const neural = useMapView() === "neural";
-  const structure = useDomainStructure();
   const hexBoard = useHexBoard();
   const footprint = useFootprint();
   const glyphSet = useGlyphSet();
@@ -67,7 +65,7 @@ export function useTopologyPreferences() {
   );
   return {
     expand, t, audiencePlain, setAudiencePlain, reducedMotion, tMeaningEditor, relationVocabulary,
-    relationRegister, siteT, relationLabelInRegister, activeLocale, view3d, neural, structure, hexBoard, businessFlowRequestText,
+    relationRegister, siteT, relationLabelInRegister, activeLocale, view3d, neural, hexBoard, businessFlowRequestText,
     tKinds, tWorkbench, tAtlasGit, kindCountsTitle, tTopologyKeyboardWalk, glyphSet, canvasBackground,
     footprint, navigationSpeed
   };

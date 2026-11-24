@@ -672,10 +672,6 @@
       "seconds": 14.323,
       "tests": 2
     },
-    "map/selection/map-structure.spec.ts": {
-      "seconds": 9.971,
-      "tests": 5
-    },
     "map/transient-surface-contract.spec.ts": {
       "seconds": 54.564,
       "tests": 3

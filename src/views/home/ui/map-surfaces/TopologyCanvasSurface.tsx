@@ -68,7 +68,7 @@ type TopologyCanvasSurfaceProps = TopologyMapRendererProps & {
   >;
   topologyNavigationActions: Pick<ReturnType<typeof useTopologyNavigationActions>, "handleClose" | "handleSelect">;
   topologyGraphProjection: Pick<ReturnType<typeof useTopologyGraphProjection>, "canvasSelectedSlug" | "localGraphProjects" | "resolvedSelectionSlug" | "isSynthetic">;
-  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "t" | "audiencePlain" | "neural" | "structure" | "hexBoard">;
+  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "t" | "audiencePlain" | "neural" | "hexBoard">;
   topologyAgentOrchestration: Pick<ReturnType<typeof useTopologyAgentOrchestration>, "analyzePrompt" | "agentChatUsesRuntime" | "sendAnalyzeToAgent">;
   topologyVaultReadModel: Pick<
     ReturnType<typeof useTopologyVaultReadModel>,
@@ -132,7 +132,7 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
     vault, changedSlugs, recentNeedsVaultOpen, setRecentNeedsVaultOpen, needsVaultReason, setNeedsVaultReason
   } = topologyVaultReadModel;
   const { analyzePrompt, agentChatUsesRuntime, sendAnalyzeToAgent } = topologyAgentOrchestration;
-  const { t, neural, structure, hexBoard } = topologyPreferences;
+  const { t, neural, hexBoard } = topologyPreferences;
   const { canvasSelectedSlug, localGraphProjects, isSynthetic, ontologyMapGraph, resolvedRealmSlug } = topologyGraphProjection;
   const { handleClose, handleSelect } = topologyNavigationActions;
   const { selectedEdgeOwnsRightRail, selectedNodeFocusActive, topologyUtilityChromeCompact } = topologyInspectorState;
@@ -264,7 +264,7 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
            on `selectedEdgeOwnsRightRail`, like the other right-rail tiles, or they stay
            visible under the relation card and cannot be pressed. */}
         <div className="contents" data-testid="topology-utility-rail">
-          {structure || createNodeOpen ||
+          {createNodeOpen ||
             topologyBlockingOverlayActive ||
             selectedEdgeOwnsRightRail ||
             (neural && selectedNodeFocusActive && !nodePopoverDismissed) ? null : (
@@ -281,7 +281,7 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
           )}
           {/* One slot below the fit tile; on phones only in overview and focus, clear of the
              path/health rail. */}
-          {structure || createNodeOpen ||
+          {createNodeOpen ||
             selectedEdgeOwnsRightRail ||
             topologyBlockingOverlayActive ||
             (neural && selectedNodeFocusActive) ? null : (
@@ -336,7 +336,7 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
           {/* Replays the ontology appearing in containment order
              (`ontology-map/model/ambient/growth-replay.ts`); desktop only, and only on the
              Flat map and the 3D tree, the two views that draw a concept's appear ramp. */}
-          {structure || neural || hexBoard || createNodeOpen ||
+          {neural || hexBoard || createNodeOpen ||
             selectedEdgeOwnsRightRail ||
             topologyBlockingOverlayActive ? null : (
             <div
@@ -437,7 +437,7 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
            the utility rail. */}
         {/* Ambient, so it steps aside while the datasheet or a right dock is open instead of
            sharing a baseline. */}
-        {!structure && <div
+        <div
           ref={readoutStackRef}
           data-testid="topology-readout-stack"
           // A toast stands above this reading (`src/shared/ui/toast/toast-walls.ts`).
@@ -454,7 +454,7 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
             synthetic={isSynthetic}
           />
           <FrameMeter />
-        </div>}
+        </div>
 
         {/* Only on an unsupported browser, so the direct tile-to-picker path is unchanged
            elsewhere. */}

@@ -18,7 +18,7 @@ import type { MapLayoutView } from '@/shared/lib/map-canvas/map-layout-morph-sto
  * current view reads from one place. Rows name the visible shape, never the internal key.
  */
 
-const CHOICES: readonly MapLayoutView[] = ['flat', 'hex', 'structure', '3d', 'neural'];
+const CHOICES: readonly MapLayoutView[] = ['flat', 'hex', '3d', 'neural'];
 
 /** Neural keeps the message key its row had as the `coupling` arrangement. */
 export function viewMessageKey(view: MapLayoutView): string {

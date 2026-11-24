@@ -114,8 +114,8 @@ test("the view picker takes focus on open and gives it back after a choice", asy
   await page.keyboard.press("Escape");
   await expect(chip).toBeFocused();
   await chip.click();
-  await page.getByTestId("topology-view-3d-choice-structure").click();
-  await expect(chip).toHaveAttribute("data-map-view", "structure");
+  await page.getByTestId("topology-view-3d-choice-hex").click();
+  await expect(chip).toHaveAttribute("data-map-view", "hex");
   await expect(chip).toBeFocused();
 });
 test("the agent dock closes on Escape and returns focus to its toggle", async ({ page }) => {
