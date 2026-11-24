@@ -273,10 +273,11 @@ export function admit(input: NameInput, step: number, seed: NameAdmission | null
     // A fanned name crossed by a lit line keeps its row and draws on its backing; other names look for a side the line leaves.
     const litCrossed = (group: readonly PlacedName[]) => !fanned && lit && crossed(at, group);
     // A selected capability whose fan has opened keeps its name centred above its disc, the same place in
-    // every scene, unless a title, a disc, the ring or a lit line is there; then it takes the first side clear.
+    // every scene, unless a title, a disc or the ring is there; then it takes the first side clear. A lit
+    // line under it is cut out round its words, so it no longer moves the name.
     const above = cand.id === selectedId && fan !== null ? all[0] : undefined;
     const steady = above !== undefined && within(above) && offTitles(at, above, 0) && !onRing(at, above) && leaderClear(above)
-      && !above.some((n) => discs.hits(worldBox(at, n.box, scale))) && offDiscsInStep(at, above, SELECTED_NAME_AIR_PX) && !crossed(at, above)
+      && !above.some((n) => discs.hits(worldBox(at, n.box, scale))) && offDiscsInStep(at, above, SELECTED_NAME_AIR_PX)
       ? { side: above, backed: false }
       : null;
     // Only a forced name may stand on an element dot of an open star; a forced name across a lit line draws on its backing.

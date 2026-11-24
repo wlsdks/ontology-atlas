@@ -9,7 +9,7 @@ import { grownMarks, nameClear, onGrownDot, CAPTION_ROWS } from "./name-room";
 import { loadInk, ownerStepBack, screenAt, discRadius, dotRadius } from "./place";
 
 /** The share of its ink a domain's title keeps while a concept of its own is selected. */
-const OWNER_TITLE_INK = 0.5;
+const OWNER_TITLE_INK = 0.38;
 import { DRAWN_INK, names, L, type DrawnName, MARK_STEP_MAX_MS, NAME_REST_PX, F as frameState, scratch } from "./state";
 
 // A module-local name: see `F` in ./state.

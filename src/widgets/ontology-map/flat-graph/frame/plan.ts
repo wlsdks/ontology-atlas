@@ -19,7 +19,7 @@ import type { FlatGraphLayout, FlatGraphPaintTokens, FlatGraphTokens } from "../
 import { planFanPushes } from "./fan-push";
 import { planName, placeName, NAME_RANKS, nameRanks, plannedNames, nameRank, blockShows, memberBlockShows, planMemberFallbacks } from "./name-plan";
 import { grownMarks, collectGrownMarks } from "./name-room";
-import { exitedShare, restartExitTags } from "./exit-tags";
+import { arrangeExitTags, exitedShare, restartExitTags } from "./exit-tags";
 import { hueOf, loadMarkInk, inkOf, screenOf, screenAt, onScreen, pickable, radiusNow, discRadius, grownIds, openedRadius, dotRadius, planOpenStars, lensHidden, ownerStepBack, radiusOf, radiusAt, unsteppedScreen, easedPx } from "./place";
 import { disc, light, arcMark, addGlow, discAt, planCluster, markExpandedItems, focusLinks } from "./plan-marks";
 import { DRAWN_INK, ELEMENT_PICK_PX, type Disc, REST_ARC, type Name, type Ring, type LabelBox, FrameList, names, hubNames, dotRows, nameRows, labelBoxPool, pickPool, POOLS, setBox, type StampedPoint, alphaCache, frameChords, shownElements, cacheFor, L, framePlan, PLAN_LISTS, type DrawnMarks, F as frameState, scratch } from "./state";
@@ -306,7 +306,10 @@ export function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion
     }
   }
   frameChords.restart();
-  if (!contextMode) focusLinks(motion);
+  if (!contextMode) {
+    focusLinks(motion);
+    arrangeExitTags();
+  }
   L.arcs.seal(); L.focusArcs.seal(); drawnFlowKeys.seal(); frameChords.seal();
   // A far end named by its tag at the edge gives its disc way as the tag comes in, so it is never named twice.
   for (const list of [plan.discs, plan.domains]) for (let i = 0; i < list.length; i += 1) {

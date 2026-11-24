@@ -4,7 +4,7 @@ import { directItemId } from "../layout";
 import { arcPathInto, graphDiscRadiusPx, litLineTrimsInto, smoothstep } from "../marks";
 import type { GraphMotion } from "../motion";
 import type { FlatGraphCluster, FlatGraphItem } from "../flat-graph-shapes";
-import { addExitTag, exitShare, exitWholeShare } from "./exit-tags";
+import { addExitTag, cutArc, exitShare, exitWholeShare } from "./exit-tags";
 import { hueOf, loadMarkInk, ownerInkShare, ownerStepBack, loadGlowShare, screenOf, fanShare, alongSpoke, screenAt, onScreen, discRadius, dotRadius, segmentOnScreen, lensHidden } from "./place";
 import { crowdClear } from "./push-crowd";
 import { DRAWN_INK, ROOM_GONE_PX, ROOM_WHOLE_PX, type Disc, type Segment, type Arc, LINE_KINDS, type Light, segments, dots, discs, glows, lights, arcMarks, chordPool, alphaCache, frameChords, shownElements, cacheFor, L, F as frameState, movedRoom, scratch } from "./state";
@@ -293,38 +293,12 @@ export function focusLinks(motion: GraphMotion): void {
     const focusId = F.attention.focusId;
     const fromFocus = line.from === focusId;
     const inside = focusId !== null && (fromFocus || line.to === focusId) ? exitShare(mark.path, fromFocus, fromFocus ? b : a, discRadius(fromFocus ? line.to : line.from)) : -1;
-    if (current && focusId !== null) addExitTag(mark.path, line.from, line.to, focusId, line.kind === "neededBy" ? F.tokens.inks.reach : F.tokens.inks.arc, reach, inside);
-    if (inside > 0) endAtEdge(mark, fromFocus ? 0 : 1 - inside, fromFocus ? inside : 1, fromFocus);
+    if (current && focusId !== null) addExitTag(mark, line.from, line.to, focusId, line.kind === "neededBy" ? F.tokens.inks.reach : F.tokens.inks.arc, reach, inside);
+    if (inside > 0) cutArc(mark, fromFocus ? 0 : 1 - inside, fromFocus ? inside : 1, fromFocus, exitWholeShare());
     L.focusArcs.add(mark);
     if (current) F.lineKinds |= FLAT_LINE_BITS[line.kind] | (betweenDomains ? FLAT_LINE_BITS.domains : 0);
     if (chorded && current) frameChords.add(chordOf(mark, line.kind === "relates"));
   }
-}
-
-/**
- * Cuts `arc` to the part of its curve between `t0` and `t1` and fades it out toward the cut, the end
- * away from the selection when `cutAtEnd`. O(1).
- */
-function endAtEdge(arc: Arc, t0: number, t1: number, cutAtEnd: boolean): void {
-  const { a, c, b } = arc.path;
-  const u0 = 1 - t0;
-  const u1 = 1 - t1;
-  const mid = t0 * u1 + u0 * t1;
-  const cx = u0 * u1 * a.x + mid * c.x + t0 * t1 * b.x;
-  const cy = u0 * u1 * a.y + mid * c.y + t0 * t1 * b.y;
-  const ax = u0 * u0 * a.x + 2 * u0 * t0 * c.x + t0 * t0 * b.x;
-  const ay = u0 * u0 * a.y + 2 * u0 * t0 * c.y + t0 * t0 * b.y;
-  const bx = u1 * u1 * a.x + 2 * u1 * t1 * c.x + t1 * t1 * b.x;
-  const by = u1 * u1 * a.y + 2 * u1 * t1 * c.y + t1 * t1 * b.y;
-  a.x = ax;
-  a.y = ay;
-  c.x = cx;
-  c.y = cy;
-  b.x = bx;
-  b.y = by;
-  const fade = Math.min(0.5, F.P.lineFadePx / (Math.hypot(bx - ax, by - ay) || 1)) * exitWholeShare();
-  if (cutAtEnd) arc.fadeEnd = Math.max(arc.fadeEnd, fade);
-  else arc.fadeStart = Math.max(arc.fadeStart, fade);
 }
 
 /** A chord runs the way impact travels: from what is needed, or the broader concept, toward what rests on it. */
