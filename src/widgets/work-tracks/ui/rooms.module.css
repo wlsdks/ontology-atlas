@@ -363,9 +363,34 @@
   left: 20px;
   bottom: calc(var(--rail) + 12px);
   width: calc(var(--ax) - 64 * var(--s) - 28px);
+}
+
+/*
+ * The facts fade on their own when the room's width starts or stops fitting them. They wait first:
+ * a room that moves fades its parts out before it travels, so the change happens while they are dark.
+ */
+.wallFactsText {
   display: flex;
   flex-direction: column;
   gap: 1px;
+  transition:
+    opacity var(--motion-base) linear var(--motion-settle),
+    visibility 0s linear var(--motion-settle);
+}
+
+.wallFactsText[data-shown='false'] {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--motion-base) linear var(--motion-settle),
+    visibility 0s linear calc(var(--motion-settle) + var(--motion-base));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wallFactsText,
+  .wallFactsText[data-shown='false'] {
+    transition: none;
+  }
 }
 
 /* The screen spans the room above Moru, who stands under it on the rail. */
