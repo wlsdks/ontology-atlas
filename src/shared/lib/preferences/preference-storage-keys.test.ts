@@ -35,7 +35,6 @@ import {
   writeMapZoomSpeed,
 } from "./map-navigation-speed-preferences";
 import {
-  useDomainStructure,
   useHexBoard,
   useHexRelief,
   useMapView,
@@ -129,24 +128,6 @@ const storedPreferences: StoredPreference[] = [
     read: readHook(useView3d),
     write: () => writeMapView("3d"),
     writtenRaw: "on",
-  },
-  {
-    name: "domain structure view",
-    key: "atlas.appearance.structure",
-    defaultValue: false,
-    savedRaw: "on",
-    savedValue: true,
-    read: readHook(useDomainStructure),
-    write: () => writeMapView("structure"),
-    writtenRaw: "on",
-  },
-  {
-    name: "retired galaxy view, still read as the domain structure view",
-    key: "atlas.appearance.galaxy",
-    defaultValue: false,
-    savedRaw: "on",
-    savedValue: true,
-    read: readHook(useDomainStructure),
   },
   {
     name: "hex board view",

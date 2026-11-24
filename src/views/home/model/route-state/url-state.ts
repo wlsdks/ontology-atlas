@@ -57,11 +57,10 @@ export interface HomeRouteState {
   mapView: HomeMapView | null;
 }
 
-const HOME_MAP_VIEWS = ["hex", "structure", "3d", "neural"] as const;
+const HOME_MAP_VIEWS = ["hex", "3d", "neural"] as const;
 export type HomeMapView = (typeof HOME_MAP_VIEWS)[number];
 
 const RETIRED_HOME_MAP_VIEWS: Readonly<Record<string, HomeMapView>> = {
-  galaxy: "structure",
   strata: "3d",
   coupling: "neural",
 };

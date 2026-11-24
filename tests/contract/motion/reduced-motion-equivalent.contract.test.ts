@@ -29,8 +29,6 @@ const INTENTIONALLY_STILL: Readonly<Record<string, string>> = {
   "acp-working-shimmer":
     "Infinite band sweep shown only while an agent tool call, work group or turn is in flight, or while the analysis brief's sums are still being counted. Reduced motion stops the travel and removes the painted gradient, leaving the words in a still, brighter ink; the running ring, the present-tense outcome word and the ticking clock beside them carry the same fact, and on the brief the counting line says it in words while the list names the core still reading.",
   "agent-pending-dot":"an endless pulse, and stopping exactly that is what reduced motion means; the state is told by the adjacent text.",
-  "architecture-observation-scan":
-    "Infinite progress travel shown only during a real ACP turn. Reduced motion stops the line while the adjacent planning/editing/verifying/review-wait text preserves the current state.",
   "motion-work-spin":
     "Infinite arc rotation shown only while a WorkStatus step of unknown length runs. Reduced motion stops the arc in place; the step's label and the consumer's live region carry the same fact.",
   "motion-sheet-scan":

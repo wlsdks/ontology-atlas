@@ -47,7 +47,7 @@ macOS（Apple Silicon）版已签名并通过公证，应用内置 MCP 服务器
 
 ![本仓库自身本体的 Atlas 地图，选中了 MCP tool server 能力：发光的连线跨越各领域，连到它依赖的 9 个概念和使用它的 2 个概念，右侧面板列出它们](docs/assets/readme/topology-overview.png)
 
-**地图** — 选中一个概念，通向它所依赖的和使用它的概念的连线就会亮起，面板逐一列出名字。平面、六边形、领域结构、3D 和神经是同一组概念的不同视图。[地图](docs/features/map/README.md)
+**地图** — 选中一个概念，通向它所依赖的和使用它的概念的连线就会亮起，面板逐一列出名字。平面、六边形、3D 和神经是同一组概念的不同视图。[地图](docs/features/map/README.md)
 
 <table>
 <tr>
