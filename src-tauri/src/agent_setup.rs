@@ -41,7 +41,7 @@ pub struct McpVerifyResult {
     pub ok: bool,
     pub server_version: Option<String>,
     pub tool_count: Option<usize>,
-    /// Green only after a real `get_concept` proves this folder is readable.
+    /// Green only after a real `get_concepts` read proves this folder is readable.
     pub sample_slug: Option<String>,
     pub sample_title: Option<String>,
     /// Shown instead of a fake progress bar.
@@ -102,7 +102,14 @@ fn rpc_line(id: u64, method: &str, params: serde_json::Value) -> String {
     )
 }
 
-/// Runs `initialize`, `tools/list` and one `get_concept`, because a live process
+/// The one row a single-slug `get_concepts` answer holds, only when that row resolved:
+/// a missing concept comes back as `{ ok: false }` inside a successful call.
+fn sample_concept_row(payload: &serde_json::Value) -> Option<&serde_json::Value> {
+    let row = payload.pointer("/concepts/0")?;
+    (row.get("ok").and_then(serde_json::Value::as_bool) == Some(true)).then_some(row)
+}
+
+/// Runs `initialize`, `tools/list` and one `get_concepts` read, because a live process
 /// that cannot read the vault must not show green.
 #[tauri::command(async)]
 pub fn verify_mcp_server(vault_path: String, sample_slug: Option<String>) -> McpVerifyResult {
@@ -169,7 +176,7 @@ fn verify_inner(vault_path: &str, sample_slug: Option<&str>) -> Result<McpVerify
         rpc_line(
             3,
             "tools/call",
-            serde_json::json!({ "name": "get_concept", "arguments": { "slug": slug } }),
+            serde_json::json!({ "name": "get_concepts", "arguments": { "slugs": [slug] } }),
         ),
     ];
 
@@ -235,25 +242,26 @@ fn verify_inner(vault_path: &str, sample_slug: Option<&str>) -> Result<McpVerify
                     .pointer("/result/isError")
                     .and_then(serde_json::Value::as_bool)
                     .unwrap_or(false);
-                if is_error {
-                    failure = Some(
-                        "the server started but could not read a concept from this folder — is the vault path right?"
-                            .to_string(),
-                    );
-                } else {
-                    let payload = message
-                        .pointer("/result/content/0/text")
-                        .and_then(serde_json::Value::as_str)
-                        .and_then(|text| serde_json::from_str::<serde_json::Value>(text).ok());
-                    if let Some(payload) = payload {
-                        resolved_slug = payload
+                let payload = message
+                    .pointer("/result/content/0/text")
+                    .and_then(serde_json::Value::as_str)
+                    .and_then(|text| serde_json::from_str::<serde_json::Value>(text).ok());
+                match payload.as_ref().and_then(sample_concept_row) {
+                    Some(row) if !is_error => {
+                        resolved_slug = row
                             .get("slug")
                             .and_then(serde_json::Value::as_str)
                             .map(str::to_string);
-                        sample_title = payload
+                        sample_title = row
                             .pointer("/frontmatter/title")
                             .and_then(serde_json::Value::as_str)
                             .map(str::to_string);
+                    }
+                    _ => {
+                        failure = Some(
+                            "the server started but could not read a concept from this folder — is the vault path right?"
+                                .to_string(),
+                        );
                     }
                 }
                 break;
@@ -290,4 +298,27 @@ fn verify_inner(vault_path: &str, sample_slug: Option<&str>) -> Result<McpVerify
             })
         },
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::sample_concept_row;
+
+    #[test]
+    fn a_resolved_row_is_the_sample() {
+        let payload = serde_json::json!({
+            "concepts": [{ "ok": true, "slug": "project", "frontmatter": { "title": "Shop" } }]
+        });
+        let row = sample_concept_row(&payload).expect("resolved row");
+        assert_eq!(row["slug"], "project");
+    }
+
+    #[test]
+    fn an_unresolved_row_proves_nothing() {
+        let payload = serde_json::json!({
+            "concepts": [{ "ok": false, "error": "not found: project" }]
+        });
+        assert!(sample_concept_row(&payload).is_none());
+        assert!(sample_concept_row(&serde_json::json!({ "concepts": [] })).is_none());
+    }
 }
