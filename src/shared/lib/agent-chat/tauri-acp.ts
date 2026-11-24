@@ -122,12 +122,21 @@ export async function stopAcpSession(sessionId: string): Promise<void> {
   await invoke<void>('acp_stop', { sessionId });
 }
 
-/** `allow-inside-vault-hidden`: inside, but a component below the root starts with `.` once links resolve. */
-export type AcpPermissionVerdict = 'allow-inside-vault' | 'allow-inside-vault-hidden' | 'ask';
+/**
+ * `allow-inside-vault-hidden`: inside, but a component below the root starts with `.` once links resolve.
+ * `allow-inside-code-folder`: outside the vault, inside the one code folder it is bound to, never a dot
+ * or secret-named path; Rust answers it only when the vault answer is `ask`.
+ */
+export type AcpPermissionVerdict =
+  | 'allow-inside-vault'
+  | 'allow-inside-vault-hidden'
+  | 'allow-inside-code-folder'
+  | 'ask';
 
 const KNOWN_VERDICTS: ReadonlySet<string> = new Set<AcpPermissionVerdict>([
   'allow-inside-vault',
   'allow-inside-vault-hidden',
+  'allow-inside-code-folder',
   'ask',
 ]);
 

@@ -86,7 +86,7 @@ Who approves a write depends on where the agent runs:
 - **In the app's agent chat**, each file edit and each Atlas write waits for you
   to press **Allow once** or **Deny**, unless you turn on **Auto-approve** for
   that folder. Shell commands, deletions and paths outside the folder always
-  ask first.
+  ask first, except reading a file of the folder's connected code folder.
 - **An agent connected over MCP** in its own terminal or editor writes under
   that tool's permission rules, not Atlas's.
 

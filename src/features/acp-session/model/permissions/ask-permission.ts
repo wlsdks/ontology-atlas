@@ -10,6 +10,7 @@ import { modeCopyKey } from '../session-choices/mode-copy';
 import type { TaskBaselineCaptureResult } from '../task-baseline';
 import type { AcpTurnStart, ActiveTurn } from '../turns/acp-turn';
 import { workReceipt } from '../work-receipts/work-receipt';
+import { isCodeFolderFileRead } from './code-folder-read';
 import { standingApproval } from './standing-approval';
 
 export interface PendingPermission {
@@ -167,6 +168,14 @@ export function askPermission(request: AcpPermissionRequest, session: Permission
     if (note !== null && allow) {
       push({ kind: 'notice', id: nextEventId(), text: 'auto-allowed', detail: note });
       resolve(allow.optionId);
+      return;
+    }
+    // After the surface's own rule, so a round that refuses outside paths still refuses this one.
+    const codeFolderAllow = decided === null && origin.turn && isCodeFolderFileRead(request)
+      ? request.options.find((option) => option.kind === 'allow_once')
+      : undefined;
+    if (codeFolderAllow) {
+      resolve(codeFolderAllow.optionId);
       return;
     }
     // A turn the person sent, or a request of a run they started in this launch, carries their standing choice; any other asks.
