@@ -4,6 +4,7 @@ import { FLAT_MOTION } from "../motion";
 import { nameBlockDraws } from "../names";
 import { type PlacedName } from "../names/placed-name";
 import { FLAT_TIER_TIMING, tierNameAlpha } from "../../morph/tier-assembly";
+import { exitedShare } from "./exit-tags";
 import { grownMarks, nameClear, onGrownDot, CAPTION_ROWS } from "./name-room";
 import { loadInk, ownerStepBack, screenAt, discRadius, dotRadius } from "./place";
 
@@ -22,6 +23,19 @@ function nameLanded(id: string): number {
   return tierNameAlpha(F.input.appearOf(id), FLAT_TIER_TIMING.riseMs);
 }
 
+/** How lit the most lit capability of domain `id` is, 0 to 1. O(capabilities of the domain). */
+function holdsLit(id: string): number {
+  const domain = F.model.domainById.get(id);
+  if (!domain || F.attention.focusId === null) return 0;
+  let most = 0;
+  for (const capabilityId of domain.capabilityIds) {
+    const lit = F.settled ? inkUnder(F.attention, capabilityId, 0, 0) : F.motion.litShare(capabilityId);
+    if (lit > most) most = lit;
+    if (most >= 1) break;
+  }
+  return most;
+}
+
 function loadNameInk(n: PlacedName): void {
   if (n.role === "project" || n.role === "domain" || n.role === "units" || n.role === "orphans" || n.role === "reach") {
     loadInk(n.id);
@@ -31,6 +45,8 @@ function loadNameInk(n: PlacedName): void {
     const back = n.role === "project" || n.role === "orphans" ? 0 : ownerStepBack(n.id);
     const owner = n.role === "units" ? 1 - back : 1 - (1 - OWNER_TITLE_INK) * back;
     scratch[0] = scratch[0]! * owner * (n.role === "units" || n.role === "orphans" ? F.P.restHue * landed : landed);
+    // A domain that holds a lit concept keeps its title at the owner's ink, so the person can read where each end lives.
+    if (n.role === "domain") scratch[0] = Math.max(scratch[0]!, OWNER_TITLE_INK * holdsLit(n.id) * landed);
     return;
   }
   const input = F.input;
@@ -124,6 +140,19 @@ export function planName(n: PlacedName, alphas: ReadonlyMap<string, number>, sha
   placeName(row, alphas, share, false);
 }
 
+/** Widens the selection's name block on screen by one of its rows, anchored at `x`, `y`. */
+function noteSelectedName(x: number, y: number, box: { minX: number; minY: number; maxX: number; maxY: number }): void {
+  const b = F.selectedNameBox;
+  if (b === null) {
+    F.selectedNameBox = { minX: x + box.minX, minY: y + box.minY, maxX: x + box.maxX, maxY: y + box.maxY };
+    return;
+  }
+  b.minX = Math.min(b.minX, x + box.minX);
+  b.minY = Math.min(b.minY, y + box.minY);
+  b.maxX = Math.max(b.maxX, x + box.maxX);
+  b.maxY = Math.max(b.maxY, y + box.maxY);
+}
+
 /** Plans a name's mark at the ink it draws this frame; `fading` names one no longer admitted, its ink running out. */
 export function placeName(row: DrawnName, alphas: ReadonlyMap<string, number>, share: number, fading: boolean): void {
   const n = row.name;
@@ -139,9 +168,10 @@ export function placeName(row: DrawnName, alphas: ReadonlyMap<string, number>, s
   let backed = n.backed === true;
   if (!fading) {
     loadNameInk(n);
-    target = scratch[0]! * share;
+    target = scratch[0]! * share * (1 - exitedShare(n.id));
   }
   glideName(row);
+  if (!fading && F.attention.selected && n.id === F.attention.focusId && n.id === F.selectedId) noteSelectedName(at.x + row.dx - n.dx, at.y + row.dy - n.dy, n.box);
   // A name arrives only where it is clear and leaves at full pace where it is not. The selection's name
   // gives way only to a disc drawn past its resting radius: names below it give way to it, and its plate covers dots.
   if (target > DRAWN_INK && grownMarks.size > 0) {

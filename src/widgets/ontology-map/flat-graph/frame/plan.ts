@@ -19,7 +19,7 @@ import type { FlatGraphLayout, FlatGraphPaintTokens, FlatGraphTokens } from "../
 import { planFanPushes } from "./fan-push";
 import { planName, placeName, NAME_RANKS, nameRanks, plannedNames, nameRank, blockShows, memberBlockShows, planMemberFallbacks } from "./name-plan";
 import { grownMarks, collectGrownMarks } from "./name-room";
-import { restartExitTags } from "./exit-tags";
+import { exitedShare, restartExitTags } from "./exit-tags";
 import { hueOf, loadMarkInk, inkOf, screenOf, screenAt, onScreen, pickable, radiusNow, discRadius, grownIds, openedRadius, dotRadius, planOpenStars, lensHidden, ownerStepBack, radiusOf, radiusAt, unsteppedScreen, easedPx } from "./place";
 import { disc, light, arcMark, addGlow, discAt, planCluster, markExpandedItems, focusLinks } from "./plan-marks";
 import { DRAWN_INK, ELEMENT_PICK_PX, type Disc, REST_ARC, type Name, type Ring, type LabelBox, FrameList, names, hubNames, dotRows, nameRows, labelBoxPool, pickPool, POOLS, setBox, type StampedPoint, alphaCache, frameChords, shownElements, cacheFor, L, framePlan, PLAN_LISTS, type DrawnMarks, F as frameState, scratch } from "./state";
@@ -308,6 +308,17 @@ export function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion
   frameChords.restart();
   if (!contextMode) focusLinks(motion);
   L.arcs.seal(); L.focusArcs.seal(); drawnFlowKeys.seal(); frameChords.seal();
+  // A far end named by its tag at the edge gives its disc way as the tag comes in, so it is never named twice.
+  for (const list of [plan.discs, plan.domains]) for (let i = 0; i < list.length; i += 1) {
+    const d = list[i]!;
+    const gone = exitedShare(d.id);
+    if (gone > 0) d.ink *= 1 - gone;
+  }
+  for (let i = 0; i < plan.dots.length; i += 1) {
+    const d = plan.dots[i]!;
+    const gone = exitedShare(d.id);
+    if (gone > 0) d.alpha *= 1 - gone;
+  }
 
   for (let dIndex = 0; dIndex < plan.domains.length; dIndex += 1) {
     const d = plan.domains[dIndex]!;
@@ -552,6 +563,7 @@ function ringedSibling(id: string, ownerId: string, model: DialModel): string | 
  */
 function planRingSteps(model: DialModel, P: FlatGraphPaintTokens): void {
   F.steps.clear();
+  planNameSteps(model);
   for (const ringed of [F.selectedId, F.leavingId]) {
     if (ringed === null) continue;
     F.stepped.add(ringed);
@@ -589,6 +601,78 @@ function planRingSteps(model: DialModel, P: FlatGraphPaintTokens): void {
     if (px <= STEP_REST_PX && !ringed) {
       F.stepped.delete(id);
       stepWays.delete(id);
+      continue;
+    }
+    if (px > STEP_REST_PX && way !== undefined) F.steps.set(id, { px, ux: way.ux, uy: way.uy });
+  }
+}
+
+/** Air, px, a disc keeps from the selection's name block. */
+const NAME_AIR_PX = 8;
+/**
+ * Air, px, a disc keeps when it stands on a row of the name block beside the edge the name reads from:
+ * there a disc a word away reads as the name's own mark.
+ */
+const NAME_LEAD_AIR_PX = 48;
+/** How far past its own box a disc's resting place is looked at for the name block, px. */
+const NAME_REACH_PX = 48;
+
+const nameStepKeys = new Map<string, string>();
+const nameStepKey = (id: string) => {
+  let key = nameStepKeys.get(id);
+  if (key === undefined) nameStepKeys.set(id, (key = `${id}\u0000name-step`));
+  return key;
+};
+
+/**
+ * Where a capability's disc stands within `NAME_AIR_PX` of the selection's name block as the last
+ * frame drew it, the disc steps aside by the shortfall, away from the block's nearest point, so the
+ * name never reads as that disc's. Each step eases on the marks' clock and back after. The block is
+ * read from the frame before, so the name and the disc never chase each other in one frame.
+ * O(capabilities) cheap tests, exact ones near the block.
+ */
+function planNameSteps(model: DialModel): void {
+  const box = F.selectedNameBox;
+  F.selectedNameBox = null;
+  const selected = F.selectedId;
+  if (box !== null && selected !== null) {
+    const owner = model.capabilityOf.get(selected);
+    for (const id of model.capabilityById.keys()) {
+      if (id === selected || id === owner || F.nameStepped.has(id)) continue;
+      const home = F.layout.positions.get(id);
+      if (!home) continue;
+      const x = home.x * F.scale + F.originX;
+      const y = home.y * F.scale + F.originY;
+      if (x < box.minX - NAME_REACH_PX || x > box.maxX + NAME_REACH_PX || y < box.minY - NAME_REACH_PX || y > box.maxY + NAME_REACH_PX) continue;
+      F.nameStepped.add(id);
+    }
+  }
+  for (const id of F.nameStepped) {
+    const at = unsteppedScreen(id);
+    let target = 0;
+    if (box !== null && selected !== null) {
+      const nx = Math.min(Math.max(at.x, box.minX), box.maxX);
+      const ny = Math.min(Math.max(at.y, box.minY), box.maxY);
+      const apart = Math.hypot(at.x - nx, at.y - ny);
+      if (apart > 1e-6) {
+        stepWays.set(nameStepKey(id), { ux: (at.x - nx) / apart, uy: (at.y - ny) / apart });
+        // A name reads from its left edge, so a disc on one of its rows just before it reads as its mark.
+        const onRow = at.y >= box.minY && at.y <= box.maxY;
+        const leads = onRow && at.x < box.minX;
+        target = Math.max(0, radiusNow(id) + (leads ? NAME_LEAD_AIR_PX : NAME_AIR_PX) - apart);
+      } else {
+        // A centre inside the block leaves by its nearest edge.
+        const edges = [at.x - box.minX, box.maxX - at.x, at.y - box.minY, box.maxY - at.y];
+        const nearest = edges.indexOf(Math.min(...edges));
+        stepWays.set(nameStepKey(id), { ux: nearest === 0 ? -1 : nearest === 1 ? 1 : 0, uy: nearest === 2 ? -1 : nearest === 3 ? 1 : 0 });
+        target = radiusNow(id) + NAME_AIR_PX + edges[nearest]!;
+      }
+    }
+    const px = easedPx(nameStepKey(id), target);
+    const way = stepWays.get(nameStepKey(id));
+    if (px <= STEP_REST_PX && target === 0) {
+      F.nameStepped.delete(id);
+      stepWays.delete(nameStepKey(id));
       continue;
     }
     if (px > STEP_REST_PX && way !== undefined) F.steps.set(id, { px, ux: way.ux, uy: way.uy });

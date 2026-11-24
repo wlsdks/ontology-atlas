@@ -192,6 +192,8 @@ function group<T>(into: Buckets<T>, items: readonly T[], key: (item: T) => numbe
 }
 
 const level = (share: number): number => Math.round(Math.min(1, Math.max(0, share)) * (GROUP_LEVELS - 1)) | 0;
+/** The share of its rim's ink a hollow owner gives up. */
+const HOLLOW_RIM_STEP = 0.5;
 const discKey = (d: Disc): number => ((((inkCode(d.hue) * GROUP_LEVELS + level(d.ink)) * GROUP_LEVELS + level(d.hollow)) * 2 + (d.focus ? 1 : 0)) * 2 + (d.state === "unknown" ? 1 : 0)) | 0;
 const segmentKey = (s: Segment): number => ((inkCode(s.ink) * 3 + (s.spoke ? 2 : s.toElement ? 1 : 0)) * GROUP_LEVELS + level(s.alpha * 8)) | 0;
 const segmentDrawn = (s: Segment): boolean => s.alpha > 0.004;
@@ -249,7 +251,8 @@ function paintDiscs(ctx: CanvasRenderingContext2D, marks: readonly Disc[], token
     ctx.fill();
     ctx.globalAlpha = 1;
     ctx.lineWidth = first.focus ? FOCUS_RIM_PX : rimPx;
-    ctx.strokeStyle = sunk(first.hue, ground, first.ink);
+    // A hollow owner's rim takes half its ink as it gives up its fill, so the selection it holds reads first.
+    ctx.strokeStyle = sunk(first.hue, ground, first.ink * (1 - HOLLOW_RIM_STEP * first.hollow));
     ctx.setLineDash(first.state === "unknown" ? UNKNOWN_DASH : NO_DASH);
     ctx.stroke();
     ctx.setLineDash(NO_DASH);
@@ -352,6 +355,34 @@ function paintBackings(ctx: CanvasRenderingContext2D, marks: readonly Name[], gr
   if (feathered) ctx.restore();
 }
 
+/** The ink past which a name's box is cut out of the lines under it: its halo already hides them under its strokes. */
+const KNOCKOUT_INK = 0.9;
+/** Air the cut leaves round a name's words, px; a name's box already holds `namePadPx` round them. */
+const KNOCKOUT_AIR_PX = 2;
+
+/**
+ * Clips the lines that follow to the canvas less every name standing at nearly full ink, so a line
+ * passes under a name as a gap, never through its words. O(names).
+ */
+function clipOutNames(ctx: CanvasRenderingContext2D, names: readonly Name[], namePadPx: number): void {
+  const inset = namePadPx - KNOCKOUT_AIR_PX;
+  let any = false;
+  for (let nIndex = 0; nIndex < names.length; nIndex += 1) {
+    const n = names[nIndex]!;
+    if (n.fading || n.ink < KNOCKOUT_INK) continue;
+    if (!any) {
+      ctx.beginPath();
+      ctx.rect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      any = true;
+    }
+    const ox = n.x - n.name.dx;
+    const oy = n.y - n.name.dy;
+    const box = n.name.box;
+    ctx.rect(ox + box.minX + inset, oy + box.minY + inset, box.maxX - box.minX - inset * 2, box.maxY - box.minY - inset * 2);
+  }
+  if (any) ctx.clip("evenodd");
+}
+
 export function paintPlan(ctx: CanvasRenderingContext2D, plan: FramePlan, tokens: FlatGraphTokens, ground: string, warning: string, growth: number): void {
   const P = tokens.paint;
   ctx.save();
@@ -364,12 +395,15 @@ export function paintPlan(ctx: CanvasRenderingContext2D, plan: FramePlan, tokens
   }
   ctx.globalAlpha = 1;
   ctx.lineCap = "round";
+  ctx.save();
+  clipOutNames(ctx, plan.names, P.namePadPx);
   const segmentLists = group(segmentBuckets, plan.segments, segmentKey, segmentDrawn);
   for (let listIndex = 0; listIndex < segmentLists.size; listIndex += 1) strokeSegments(ctx, segmentLists.items[listIndex]!, P);
   ctx.strokeStyle = tokens.inks.arc;
   ctx.lineJoin = "round";
   strokeArcs(ctx, plan.arcs, tokens.inks.arc, P.arcHeadPx);
   paintLines(ctx, plan.focusArcs, tokens);
+  ctx.restore();
   paintBackings(ctx, plan.names, ground, P);
   paintDots(ctx, plan.dots, ground, dotUnlit);
   for (let glowIndex = 0; glowIndex < plan.glows.length; glowIndex += 1) {

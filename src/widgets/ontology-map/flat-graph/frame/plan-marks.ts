@@ -292,7 +292,7 @@ export function focusLinks(motion: GraphMotion): void {
     // A line that runs under a panel or off the canvas names where it goes at the edge it leaves by, and ends there.
     const focusId = F.attention.focusId;
     const fromFocus = line.from === focusId;
-    const inside = focusId !== null && (fromFocus || line.to === focusId) ? exitShare(mark.path, fromFocus) : -1;
+    const inside = focusId !== null && (fromFocus || line.to === focusId) ? exitShare(mark.path, fromFocus, fromFocus ? b : a, discRadius(fromFocus ? line.to : line.from)) : -1;
     if (current && focusId !== null) addExitTag(mark.path, line.from, line.to, focusId, line.kind === "neededBy" ? F.tokens.inks.reach : F.tokens.inks.arc, reach, inside);
     if (inside > 0) endAtEdge(mark, fromFocus ? 0 : 1 - inside, fromFocus ? inside : 1, fromFocus);
     L.focusArcs.add(mark);

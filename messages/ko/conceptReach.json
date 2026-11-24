@@ -1,6 +1,6 @@
 {
-  "needs": "의존하는 개념",
-  "neededBy": "이 개념에 의존하는 개념",
+  "needs": "의존 대상",
+  "neededBy": "사용처",
   "otherLinks": "그 밖의 관계 {count, number}",
   "elements": "구현 요소 {count, number}",
   "domains": "도메인 {count, number}",

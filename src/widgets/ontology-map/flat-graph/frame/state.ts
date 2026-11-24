@@ -183,6 +183,10 @@ interface FrameState {
   steps: Map<string, { px: number; ux: number; uy: number }>;
   /** Elements whose step has not yet eased back to nothing. */
   stepped: Set<string>;
+  /** The selection's name block on screen as the last frame drew it, title and count line; null with none drawn. */
+  selectedNameBox: { minX: number; minY: number; maxX: number; maxY: number } | null;
+  /** Discs stepping aside from the selection's name block, or easing back after. */
+  nameStepped: Set<string>;
   /** Set while the plan reads an element where it stands before its step. */
   stepsOff: boolean;
   /** What each mark drew last, so this frame's radius moves from it at no more than `markPxPerMs`. */
@@ -229,7 +233,7 @@ const openStarSlot = (): OpenStarSlot => ({ rooms: NO_ROOMS, world: false, domai
  * The frame being built. Each part binds it to a local `const F` once: wherever modules are not
  * hoisted into one scope (tests, dev), every use of an imported binding is a lookup through its module.
  */
-export const F = { stamp: 0, opened: [] as FrameState["opened"], stars: [openStarSlot(), openStarSlot()], starCount: 0, starNow: false, closingRooms: null, steps: new Map(), stepped: new Set(), stepsOff: false } as FrameState;
+export const F = { stamp: 0, opened: [] as FrameState["opened"], stars: [openStarSlot(), openStarSlot()], starCount: 0, starNow: false, closingRooms: null, steps: new Map(), stepped: new Set(), selectedNameBox: null, nameStepped: new Set(), stepsOff: false } as FrameState;
 
 /**
  * Hot helpers hand doubles back through this slot and take objects, not numbers: a double argument
