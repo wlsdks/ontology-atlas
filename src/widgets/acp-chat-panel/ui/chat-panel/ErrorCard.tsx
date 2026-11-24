@@ -2,7 +2,7 @@ import { RotateCcw, TriangleAlert } from 'lucide-react';
 
 import { Link } from '@/i18n/navigation';
 import { DESTINATION_HREF } from '@/shared/config/destinations';
-import { claudeLoginRepairCommand, type readAcpTrouble } from '@/features/acp-session';
+import type { readAcpTrouble } from '@/features/acp-session';
 import type { useAgentDoctor } from '@/features/acp-doctor';
 import { Chip } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
@@ -17,6 +17,8 @@ interface ErrorCardProps {
   diagnostics: readonly string[];
   trouble: ReturnType<typeof readAcpTrouble> | null;
   troubleHintKey: string;
+  /** The repair for the session's own tool; `null` when the tool is unknown and no command would help. */
+  authRepairCommand: string | null;
   retryDisabled: boolean;
   onRetry: () => void;
   showDoctor: boolean;
@@ -29,6 +31,7 @@ export function ErrorCard({
   diagnostics,
   trouble,
   troubleHintKey,
+  authRepairCommand,
   retryDisabled,
   onRetry,
   showDoctor,
@@ -98,12 +101,12 @@ export function ErrorCard({
           {t('trouble.details')}
         </summary>
 
-        {trouble?.kind === 'auth' ? (
+        {trouble?.kind === 'auth' && authRepairCommand ? (
           <p
             data-testid="acp-chat-auth-repair"
             className="mt-1.5 whitespace-pre-wrap break-all rounded-chip bg-[color:var(--color-overlay-1)] px-2 py-1.5 font-mono text-caption leading-caption text-[color:var(--color-text-tertiary)]"
           >
-            {claudeLoginRepairCommand()}
+            {authRepairCommand}
           </p>
         ) : null}
         <p className="mt-1.5 whitespace-pre-wrap break-all font-mono text-caption leading-caption text-[color:var(--color-text-quaternary)]">

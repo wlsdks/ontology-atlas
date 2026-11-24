@@ -4,7 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, typ
 import { useTranslations } from 'next-intl';
 
 import { isAgentDoctorAvailable, useAgentDoctor } from '@/features/acp-doctor';
-import { isSendableSuggestion, readAcpTrouble, useAcpSession, VAULT_MCP_SERVER_NAME, type ChatSuggestion } from '@/features/acp-session';
+import { authRepairOf, isSendableSuggestion, readAcpTrouble, useAcpSession, VAULT_MCP_SERVER_NAME, type ChatSuggestion } from '@/features/acp-session';
 import { useMappingSessions, useMappingStage, workRuns, type TurnWorkReport } from '@/features/work-run';
 import { usePressingLimit } from '@/entities/agent-usage';
 import { useGrantedVaultFiles } from '@/entities/vault-session';
@@ -254,7 +254,8 @@ export function AcpChatPanelBody({
 
   const trouble = error ? readAcpTrouble(error, diagnostics) : null;
   const canChooseAnotherTool = runtimes.length > 1 && Boolean(onRuntimeChange);
-  const troubleHintKey = troubleHintKeyOf(trouble, canChooseAnotherTool);
+  const authRepair = authRepairOf(runtimeId);
+  const troubleHintKey = troubleHintKeyOf(trouble, canChooseAnotherTool, authRepair.tool);
   const doctor = useAgentDoctor(runtimeId);
   const showDoctor = Boolean(runtimeId) && isAgentDoctorAvailable();
 
@@ -726,6 +727,7 @@ export function AcpChatPanelBody({
           diagnostics={diagnostics}
           trouble={trouble}
           troubleHintKey={troubleHintKey}
+          authRepairCommand={authRepair.command}
           retryDisabled={displayStatus === 'starting'}
           onRetry={() => {
             setHistoryOpen(false);
