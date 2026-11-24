@@ -41,10 +41,11 @@ and folder nesting are not \`is_a\` evidence; neither are instance/member,
 part/containment, dependency, sequence, or synonym claims.
 
 \`broader\` is validated as frontmatter and rendered by the UI, but it is not an
-accepted public \`add_relation\` or relation-query enum in the current MCP
-contract. To change it safely, call \`get_concept\`, capture \`mtime\`, build the
+accepted public \`add_relations\` type or relation-query enum in the current MCP
+contract. To change it safely, call \`get_concepts\`, capture \`mtime\`, build the
 full post-change \`broader\` array, call \`patch_concept\` with \`expected_mtime\`,
-then call \`validate_vault\`. Do not invent an \`add_relation(type:"is_a")\` call.
+then call \`validate_vault\`. Do not invent an \`add_relations\` row with
+\`type:"is_a"\`.
 
 Atlas performs no automatic inverse or transitive inference. Missing relations
 are unknown/visible gaps, not falsehoods or proof of completeness. Atlas Markdown
@@ -56,12 +57,13 @@ the product makes no RDF, OWL, SKOS, or SHACL conformance claim.`;
  * steps rather than judgement so weaker models can follow it. Step 5 never
  * blocks a write: the gate reports, and the person and the maintenance queue decide.
  */
-export const CONSTRUCTION_RULES_EN = `## Construction rules — read before add_concept / add_concepts / patch_concept
+export const CONSTRUCTION_RULES_EN = `## Construction rules — read before add_concepts / patch_concept
 
-1. BEFORE adding a child to a parent, call get_concept(parentSlug) and read \`neighbors\`.
+1. BEFORE adding a child to a parent, call get_concepts({slugs:[parentSlug]}) and read
+   \`neighbors\`.
 2. Count the parent's children that RESOLVE to real vault nodes — an entry that
    resolves to nothing is evidence, not a child, and does not count. Compare that
-   against this vault's own distribution (list_kinds /
+   against this vault's own distribution (the \`census\` of list_concepts /
    query_ontology({operation:'facets'})). Until the vault has enough parents of
    that kind to have a distribution, use this starting range: about ${NODE_ELIGIBILITY_GATE.BOOTSTRAP_FANOUT_TRIGGER.domain_to_capability} capabilities
    under a domain, about ${NODE_ELIGIBILITY_GATE.BOOTSTRAP_FANOUT_TRIGGER.capability_to_element} elements under a capability. Crossing that is a
@@ -79,7 +81,7 @@ export const CONSTRUCTION_RULES_EN = `## Construction rules — read before add_
       broken ones often share no prefix. It only tells you where to look first.
 4. IF (a) fails for 3+ existing children, the fix is a BRIDGE NODE: one node inserted
    between the parent and those children, named after the behavior they share. Call
-   add_concept ONCE for it, then patch_concept each matching child to point at it.
+   add_concepts ONCE for it, then patch_concept each matching child to point at it.
    Create a bridge only when all four hold:
    i.   It names a shared BEHAVIOR. "Group A" / "Part 2" / "Other" divide the pile
         without adding meaning — those are not bridges, they are empty buckets with
@@ -105,10 +107,10 @@ export const CONSTRUCTION_RULES_EN = `## Construction rules — read before add_
    \`maintenance_plan\` until it points at something.`;
 
 /**
- * Appended to the add_concept and add_concepts descriptions, the text a model
+ * Appended to the add_concepts description, the text a model
  * reads right before calling: an element is named after a role, not a file.
  */
-export const ELEMENT_NAMING_RULE_EN = `When \`kind\` is \`element\`: an element names a CONCEPT a capability uses (e.g. "jwt-token"), not a file. If your \`title\` is a bare path or ends in a source extension, you are describing evidence, not the concept — rename \`title\` to the role and put the path in \`path:\`, or if 3+ siblings under the same parent already look like this, call \`get_concept\` on the parent and consider \`patch_concept\` on an existing sibling instead of adding another file-mirror node. The same rule binds the \`slug\`: flat under the kind folder (\`elements/<role-name>\`), never a code path (\`elements/src/views/home\` is rejected) — path-style slugs collide the moment two files share a basename and the graph silently merges distinct nodes.`;
+export const ELEMENT_NAMING_RULE_EN = `When \`kind\` is \`element\`: an element names a CONCEPT a capability uses (e.g. "jwt-token"), not a file. If your \`title\` is a bare path or ends in a source extension, you are describing evidence, not the concept — rename \`title\` to the role and put the path in \`path:\`, or if 3+ siblings under the same parent already look like this, call \`get_concepts\` on the parent and consider \`patch_concept\` on an existing sibling instead of adding another file-mirror node. The same rule binds the \`slug\`: flat under the kind folder (\`elements/<role-name>\`), never a code path (\`elements/src/views/home\` is rejected) — path-style slugs collide the moment two files share a basename and the graph silently merges distinct nodes.`;
 
 /**
  * The scope rule, said where a claim is written: a sentence speaks only for the
@@ -116,8 +118,6 @@ export const ELEMENT_NAMING_RULE_EN = `When \`kind\` is \`element\`: an element 
  * member count and how many this session read.
  */
 export const FAMILY_SCOPE_RULE_EN = 'A sentence about a family (plugins, transforms, brokers, handlers) says how many members were read against the count found ("2 of at least 16 read") or speaks only for the member read: never "every", "each", "all" or "they" unless every member was read. A symbol read of a member carries `family` with that count, a floor: a member written in a way the server cannot follow is not in it. What the unread members do is an `## Uncertainty` line, not part of the definition.';
-
-export const ELEMENT_NAMING_RULE_BATCH_EN = `Rows whose \`title\` is a bare file path follow the same rule as \`add_concept\` above. Prefer one capability node covering a directory plus a short \`elements:\` list over one row per file, unless each file's role differs in a stated sentence.`;
 
 /**
  * Chat-only delta for the in-app agent: the chat talks to a person, so a warning
@@ -192,7 +192,7 @@ export function denseParentActionMessage({ parentSlug, count, childKind, trigger
   const source = basis === 'vault-p90'
     ? `this vault's own p90 for ${childKind} parents is ${trigger}`
     : `the starting range for ${childKind} children is ${trigger} (this vault has too few ${childKind} parents yet for its own percentile to mean anything)`;
-  return `"${parentSlug}" has ${count} ${childKind} children that resolve to real nodes, and ${source}. That number is a trigger, not a limit — nothing here caps how many children a node may have, and a wide parent whose children each earn their place is correct. What made this worth mentioning is ${evidence}. Call get_concept("${parentSlug}") and answer one question per child: can you write a non-circular sentence saying why it is NOT interchangeable with its siblings? For every child where you can, leave it alone. Where you cannot for three or more, those children want a BRIDGE NODE — one node named after the behavior they share, with them reparented onto it; the construction rules list the four conditions a bridge has to meet, and a bridge you leave empty is reported back to you for retirement. Shared name prefixes are a hint worth glancing at, not the test — in this vault, prefixed siblings have been legitimate and the broken ones shared no prefix at all.`;
+  return `"${parentSlug}" has ${count} ${childKind} children that resolve to real nodes, and ${source}. That number is a trigger, not a limit — nothing here caps how many children a node may have, and a wide parent whose children each earn their place is correct. What made this worth mentioning is ${evidence}. Call get_concepts({slugs:["${parentSlug}"]}) and answer one question per child: can you write a non-circular sentence saying why it is NOT interchangeable with its siblings? For every child where you can, leave it alone. Where you cannot for three or more, those children want a BRIDGE NODE — one node named after the behavior they share, with them reparented onto it; the construction rules list the four conditions a bridge has to meet, and a bridge you leave empty is reported back to you for retirement. Shared name prefixes are a hint worth glancing at, not the test — in this vault, prefixed siblings have been legitimate and the broken ones shared no prefix at all.`;
 }
 
 /** The count plus a few examples: pasting every ref is unread by a person and costs an agent context. */
@@ -209,7 +209,7 @@ function sampleRefs(refs, limit) {
  */
 export function containmentEntryKeptMessage({ slug, key, ref, holderKind, newKind }) {
   const holder = holderKind ? `a ${holderKind}` : 'a document with no kind';
-  return `"${slug}" still lists "${ref}" under ${key}:, but "${ref}" is now a ${newKind} and ${holder} keeps no list for a ${newKind}, so the entry was left where it was rather than guessed into another relation. Readers still count it as one of "${slug}"'s ${key}. Decide what "${slug}" means by it: remove_relation({from:"${slug}", to:"${ref}", type:"${key}"}) drops it, and add_relation with the type that fits restates it.`;
+  return `"${slug}" still lists "${ref}" under ${key}:, but "${ref}" is now a ${newKind} and ${holder} keeps no list for a ${newKind}, so the entry was left where it was rather than guessed into another relation. Readers still count it as one of "${slug}"'s ${key}. Decide what "${slug}" means by it: remove_relation({from:"${slug}", to:"${ref}", type:"${key}"}) drops it, and an add_relations row with the type that fits restates it.`;
 }
 
 /**
@@ -218,7 +218,7 @@ export function containmentEntryKeptMessage({ slug, key, ref, holderKind, newKin
  * agent manufacture one node per unresolved string.
  */
 export function danglingGraphReferenceMessage({ slug, key, refs, count, sampleLimit }) {
-  return `${count} entry/entries in "${slug}".${key} resolve to no vault node: ${sampleRefs(refs, sampleLimit)}. A relation array is a claim that a node exists; an unresolved string is not a child, it is a name with nothing behind it. Either promote it — add_concept({slug, kind, title}) for the concept it names, then keep the reference — or drop it from ${key}: and record what it points at as evidence on this node instead. Do not leave it in a meaning slot.`;
+  return `${count} entry/entries in "${slug}".${key} resolve to no vault node: ${sampleRefs(refs, sampleLimit)}. A relation array is a claim that a node exists; an unresolved string is not a child, it is a name with nothing behind it. Either promote it — add_concepts({concepts:[{slug, kind, title}]}) for the concept it names, then keep the reference — or drop it from ${key}: and record what it points at as evidence on this node instead. Do not leave it in a meaning slot.`;
 }
 
 /**
@@ -228,7 +228,7 @@ export function danglingGraphReferenceMessage({ slug, key, refs, count, sampleLi
  * say "this does not belong here".
  */
 export function pathShapedReferenceMessage({ slug, key, refs, count, sampleLimit }) {
-  return `${count} entry/entries in "${slug}".${key} are file paths, not concept names: ${sampleRefs(refs, sampleLimit)}. A path is EVIDENCE for a concept, not the concept — it names where something lives, so it cannot be a child in the graph. For each one, either write the sentence that says what distinct role that file plays and promote it with add_concept({kind:"element", title:"<the role>", path:"<the path>"}), or remove it from ${key}: and keep the path as evidence on "${slug}" (frontmatter path: / the node body). One node per file, mirroring a directory listing, is the failure this check exists to stop.`;
+  return `${count} entry/entries in "${slug}".${key} are file paths, not concept names: ${sampleRefs(refs, sampleLimit)}. A path is EVIDENCE for a concept, not the concept — it names where something lives, so it cannot be a child in the graph. For each one, either write the sentence that says what distinct role that file plays and promote it with add_concepts({concepts:[{kind:"element", title:"<the role>", path:"<the path>"}]}), or remove it from ${key}: and keep the path as evidence on "${slug}" (frontmatter path: / the node body). One node per file, mirroring a directory listing, is the failure this check exists to stop.`;
 }
 
 /**
@@ -247,11 +247,11 @@ export function capabilityWithoutEvidenceMessage({ slug }) {
  * keeps the trigger from becoming a target.
  */
 export function bulkProvenanceMessage({ parent, count, slugs, sampleLimit }) {
-  return `${count} nodes were created under "${parent}" in this session: ${sampleRefs(slugs, sampleLimit)}. That is a provenance signal, not a size limit — there is no maximum number of children here. Call get_concept("${parent}") and answer one question: can you write a non-circular sentence saying why each of these is NOT interchangeable with its siblings? If yes, this is a legitimately wide parent — leave it exactly as it is. If no, name the shared behavior once with add_concept and patch_concept the siblings that share it to point at that node instead.`;
+  return `${count} nodes were created under "${parent}" in this session: ${sampleRefs(slugs, sampleLimit)}. That is a provenance signal, not a size limit — there is no maximum number of children here. Call get_concepts({slugs:["${parent}"]}) and answer one question: can you write a non-circular sentence saying why each of these is NOT interchangeable with its siblings? If yes, this is a legitimately wide parent — leave it exactly as it is. If no, name the shared behavior once with add_concepts and patch_concept the siblings that share it to point at that node instead.`;
 }
 
 /*
- * Meaning gaps in the body. Every real build lands through add_concept and
+ * Meaning gaps in the body. Every real build lands through add_concepts and
  * patch_concept, so this door must say what is thin (starter body, evidence
  * limits under Excludes, folder evidence) while the author has the file open.
  * Advisory (construction rule 5); logic in `meaning-findings.mjs`, text here.

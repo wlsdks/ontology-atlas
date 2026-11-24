@@ -32,33 +32,35 @@ export function growthCandidateRowFailure(label, row, index, { requireProposedAc
 
 function growthProposedActionFailure(label, row) {
   const { tool, args } = row.proposedAction;
+  const relation = args.relations?.[0] ?? {};
+  const concept = args.concepts?.[0] ?? {};
   if (row.kind === "missing_domain_containment") {
-    if (tool !== "add_relation") {
+    if (tool !== "add_relations") {
       return `${label} proposedAction tool mismatch: ${row.kind}`;
     }
-    if (args.from !== row.from || args.to !== row.to || args.type !== row.relation) {
+    if (relation.from !== row.from || relation.to !== row.to || relation.type !== row.relation) {
       return `${label} proposedAction relation args mismatch: ${row.kind}`;
     }
   }
   if (row.kind === "materialize_external_element") {
-    if (tool !== "add_concept") {
+    if (tool !== "add_concepts") {
       return `${label} proposedAction tool mismatch: ${row.kind}`;
     }
-    if (args.slug !== row.suggestedSlug) {
+    if (concept.slug !== row.suggestedSlug) {
       return `${label} proposedAction slug mismatch: ${row.kind}`;
     }
-    if (args.kind !== "element") {
+    if (concept.kind !== "element") {
       return `${label} proposedAction kind mismatch: ${row.kind}`;
     }
   }
   if (row.kind === "resolve_dangling_reference") {
-    if (tool !== "add_concept") {
+    if (tool !== "add_concepts") {
       return `${label} proposedAction tool mismatch: ${row.kind}`;
     }
-    if (args.slug !== row.suggestedSlug) {
+    if (concept.slug !== row.suggestedSlug) {
       return `${label} proposedAction slug mismatch: ${row.kind}`;
     }
-    if (args.kind !== row.inferredKind) {
+    if (concept.kind !== row.inferredKind) {
       return `${label} proposedAction kind mismatch: ${row.kind}`;
     }
   }

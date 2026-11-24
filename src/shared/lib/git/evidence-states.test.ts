@@ -41,7 +41,7 @@ describe('resolveEvidenceStates', () => {
       id: 'pay',
       verdict: 'stale',
       reason: null,
-      // The slug the walk already knew, so a handoff can call `get_concept` instead of searching.
+      // The slug the walk already knew, so a handoff can call `get_concepts` instead of searching.
       slug: 'capabilities/pay',
       docChangedAt: '2026-09-10T00:00:00Z',
       moved: [{ path: 'src/pay.ts', changedAt: '2026-09-12T00:00:00Z' }],

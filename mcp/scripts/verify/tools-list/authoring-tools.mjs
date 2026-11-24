@@ -117,34 +117,6 @@ export function authoringToolsSchemaFailure(tools) {
     return 'add_concepts outputSchema coverage drift';
   }
 
-  const addConceptTool = tools.find((candidate) => candidate?.name === 'add_concept');
-  if (!addConceptTool) return 'tools/list response missing add_concept tool';
-  if (addConceptTool.outputSchema?.type !== 'object') {
-    return 'add_concept outputSchema root drift';
-  }
-  if (!sameArray(addConceptTool.outputSchema?.required, ['ok', 'slug', 'changed', 'mtime'])) {
-    return 'add_concept outputSchema required drift';
-  }
-  if (addConceptTool.outputSchema?.additionalProperties !== false) {
-    return 'add_concept outputSchema root openness drift';
-  }
-  if (outputPropertyAt(addConceptTool, ['properties', 'slug'])?.type !== 'string') {
-    return 'add_concept outputSchema slug drift';
-  }
-  if (mtimeSchemaFailure(outputPropertyAt(addConceptTool, ['properties', 'mtime']))) {
-    return 'add_concept outputSchema mtime drift';
-  }
-  if (outputPropertyAt(addConceptTool, ['properties', 'ok'])?.type !== 'boolean') {
-    return 'add_concept outputSchema ok drift';
-  }
-  if (outputPropertyAt(addConceptTool, ['properties', 'changed'])?.type !== 'boolean') {
-    return 'add_concept outputSchema changed drift';
-  }
-  const addConceptWarningsSchema = outputPropertyAt(addConceptTool, ['properties', 'warnings']);
-  if (addConceptWarningsSchema?.type !== 'array' || addConceptWarningsSchema.items?.type !== 'string') {
-    return 'add_concept outputSchema warnings drift';
-  }
-
   const addRelationsTool = tools.find((candidate) => candidate?.name === 'add_relations');
   const addRelationInputType = propertyAt(addRelationsTool, ['properties', 'relations', 'items', 'properties', 'type']);
   if (!sameArray(addRelationInputType?.enum, WRITE_RELATION_TYPE_VALUES)) {
@@ -218,49 +190,6 @@ export function authoringToolsSchemaFailure(tools) {
   for (const propertyName of ['allowedValues', 'allowedFields', 'receivedFields', 'similarSlugs', 'recoveryTools']) {
     if (stringArraySchemaFailure(addRelationRowsSchema.items?.properties?.[propertyName])) {
       return `add_relations outputSchema row ${propertyName} drift`;
-    }
-  }
-
-  const addRelationTool = tools.find((candidate) => candidate?.name === 'add_relation');
-  if (!addRelationTool) return 'tools/list response missing add_relation tool';
-  const singleAddRelationInputType = propertyAt(addRelationTool, ['properties', 'type']);
-  if (!sameArray(singleAddRelationInputType?.enum, WRITE_RELATION_TYPE_VALUES)) {
-    return 'add_relation inputSchema type enum drift';
-  }
-  // strict-args derives its allowlist from the schema, so a missing `why` block rejects `why`.
-  const addRelationWhy = propertyAt(addRelationTool, ['properties', 'why']);
-  if (addRelationWhy?.type !== 'string' || addRelationWhy?.maxLength !== 300) {
-    return 'add_relation inputSchema why (relation_notes rationale) drift';
-  }
-  if (!/rejected before endpoint slug resolution/.test(addRelationTool?.description || '')) {
-    return 'add_relation description missing type-preflight guidance';
-  }
-  if (!/closest-value hint/.test(addRelationTool?.description || '')) {
-    return 'add_relation description missing closest-value type guidance';
-  }
-  if (!/`allowedValues`/.test(addRelationTool?.description || '')) {
-    return 'add_relation description missing structured value repair guidance';
-  }
-  if (!/no `changed`, `alreadyExists`, or `findings` write metadata/.test(addRelationTool?.description || '')) {
-    return 'add_relation description missing non-write preflight metadata guidance';
-  }
-  if (addRelationTool.outputSchema?.type !== 'object') {
-    return 'add_relation outputSchema root drift';
-  }
-  if (!sameArray(addRelationTool.outputSchema?.required, ['ok', 'from', 'to', 'type'])) {
-    return 'add_relation outputSchema required drift';
-  }
-  if (addRelationTool.outputSchema?.additionalProperties !== false) {
-    return 'add_relation outputSchema root openness drift';
-  }
-  for (const propertyName of ['from', 'to', 'type']) {
-    if (outputPropertyAt(addRelationTool, ['properties', propertyName])?.type !== 'string') {
-      return `add_relation outputSchema ${propertyName} drift`;
-    }
-  }
-  for (const propertyName of ['ok', 'changed', 'alreadyExists']) {
-    if (outputPropertyAt(addRelationTool, ['properties', propertyName])?.type !== 'boolean') {
-      return `add_relation outputSchema ${propertyName} drift`;
     }
   }
 

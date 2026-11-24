@@ -88,7 +88,7 @@ they cannot undo or prevent an agent's independent edit.
 
 ## Agent and terminal access
 
-An agent can read a retained page with `get_concept` or `get_concepts` using its
+An agent can read a retained page with `get_concepts` using its
 vault-relative slug and `body: "full"`. Non-kind wiki pages expose their full
 Markdown and metadata without joining the ontology graph. A terminal reader
 reads the wiki's Markdown files directly. MCP `validate_wiki` checks the

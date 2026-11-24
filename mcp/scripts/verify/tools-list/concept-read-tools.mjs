@@ -96,7 +96,7 @@ export function conceptReadToolsSchemaFailure(tools) {
   if (
     listSummarySchema?.type !== 'boolean' ||
     !/summary.*max 200 chars/i.test(listSummarySchema?.description ?? '') ||
-    !/without N follow-up `get_concept` calls/i.test(listSummarySchema?.description ?? '') ||
+    !/without a follow-up `get_concepts` call/i.test(listSummarySchema?.description ?? '') ||
     !/Default false/i.test(listSummarySchema?.description ?? '')
   ) {
     return 'list_concepts inputSchema summary preview guidance drift';
@@ -184,68 +184,6 @@ export function conceptReadToolsSchemaFailure(tools) {
       return `list_concepts outputSchema vaultWarnings ${propertyName} drift`;
     }
   }
-
-  const getConceptTool = tools.find((tool) => tool?.name === 'get_concept');
-  if (!getConceptTool) return 'tools/list response missing get_concept tool';
-  if (getConceptTool.outputSchema?.type !== 'object') {
-    return 'get_concept outputSchema root drift';
-  }
-  if (!sameArray(getConceptTool.outputSchema?.required, ['uid', 'slug', 'isNode', 'frontmatter', 'bodyInfo', 'neighbors', 'outgoingEdges', 'review', 'mtime'])) {
-    return 'get_concept outputSchema required drift';
-  }
-  if (getConceptTool.inputSchema?.required !== undefined || !/exactly one selector/i.test(getConceptTool.description || '')) {
-    return 'get_concept inputSchema identity selector drift';
-  }
-  const getConceptUidInput = propertyAt(getConceptTool, ['properties', 'uid']);
-  if (
-    getConceptUidInput?.type !== 'string' ||
-    getConceptUidInput.pattern !== NODE_UID_PATTERN ||
-    !/permanent node UID/i.test(getConceptUidInput.description || '') ||
-    !/never together/i.test(getConceptUidInput.description || '')
-  ) {
-    return 'get_concept inputSchema uid drift';
-  }
-  // `bodyInfo` is required because a response must say what it left out; `excerpt`
-  // is optional because `body: 'full'` sends `body` instead.
-  if (!sameArray(getConceptTool.inputSchema?.properties?.body?.enum, ['excerpt', 'full'])) {
-    return 'get_concept inputSchema body mode drift';
-  }
-  const bodyInfoSchema = outputPropertyAt(getConceptTool, ['properties', 'bodyInfo']);
-  if (!sameArray(bodyInfoSchema?.required, ['mode', 'totalChars', 'returnedChars', 'truncated'])) {
-    return 'get_concept outputSchema bodyInfo drift';
-  }
-  if (getConceptTool.outputSchema?.additionalProperties !== false) {
-    return 'get_concept outputSchema root openness drift';
-  }
-  for (const propertyName of ['uid', 'slug', 'excerpt', 'body']) {
-    if (outputPropertyAt(getConceptTool, ['properties', propertyName])?.type !== 'string') {
-      return `get_concept outputSchema ${propertyName} drift`;
-    }
-  }
-  if (outputPropertyAt(getConceptTool, ['properties', 'uid'])?.pattern !== NODE_UID_PATTERN) {
-    return 'get_concept outputSchema uid drift';
-  }
-  if (outputPropertyAt(getConceptTool, ['properties', 'frontmatter'])?.type !== 'object') {
-    return 'get_concept outputSchema frontmatter drift';
-  }
-  if (outputPropertyAt(getConceptTool, ['properties', 'isNode'])?.type !== 'boolean') return 'get_concept outputSchema isNode drift';
-  const conceptReviewSchema = outputPropertyAt(getConceptTool, ['properties', 'review']);
-  if (conceptReviewSchema?.type !== 'object' || !sameArray(conceptReviewSchema.required, ['state', 'currentness']) || conceptReviewSchema.additionalProperties !== false) return 'get_concept outputSchema review drift';
-  const getConceptNeighborsSchema = outputPropertyAt(getConceptTool, ['properties', 'neighbors']);
-  const getConceptNeighborsFailure = conceptNeighborsSchemaFailure(getConceptNeighborsSchema, 'get_concept');
-  if (getConceptNeighborsFailure) return getConceptNeighborsFailure;
-  const getConceptEdgesSchema = outputPropertyAt(getConceptTool, ['properties', 'outgoingEdges']);
-  const getConceptEdgesFailure = outgoingEdgesSchemaFailure(getConceptEdgesSchema, 'get_concept');
-  if (getConceptEdgesFailure) return getConceptEdgesFailure;
-  const getConceptMtimeSchema = outputPropertyAt(getConceptTool, ['properties', 'mtime']);
-  if (getConceptMtimeSchema?.type !== 'number' || getConceptMtimeSchema.minimum !== 0) {
-    return 'get_concept outputSchema mtime drift';
-  }
-  const getConceptWarningsFailure = vaultWarningsSchemaFailure(
-    outputPropertyAt(getConceptTool, ['properties', 'warnings']),
-    'get_concept',
-  );
-  if (getConceptWarningsFailure) return getConceptWarningsFailure;
 
   const getConceptsTool = tools.find((tool) => tool?.name === 'get_concepts');
   if (!getConceptsTool) return 'tools/list response missing get_concepts tool';

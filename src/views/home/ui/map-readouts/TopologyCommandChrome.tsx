@@ -57,17 +57,13 @@ interface TopologyCommandChromeProps {
   clearFootprintTrail: () => void;
   handleFootprintLens: (active: boolean) => void;
   handleFootprintBrush: (id: string | null) => void;
-  pastWalkRows: import("@/views/home/ui/map-readouts/TopologyTrailChip").TopologyPastWalkRow[];
-  pastTrailNotice: string | null;
-  handleDeletePastWalk: (walkId: string) => void;
-  handleClearPastWalks: () => void;
   agentDockTouchedRef: React.RefObject<boolean>;
   sampleModeSettled: boolean;
   sampleModeKnown: boolean;
   requestVaultOpen: () => void;
   topologyAgentActivity: Pick<ReturnType<typeof useTopologyAgentActivity>, "acpLiveWork">;
   homeWorkbenchController: Pick<ReturnType<typeof useHomeWorkbenchController>, "meaningWorkbenchOpen" | "toggleMeaningWorkbench">;
-  topologyNavigationActions: Pick<ReturnType<typeof useTopologyNavigationActions>, "handleSelect" | "handleReplayPastWalk">;
+  topologyNavigationActions: Pick<ReturnType<typeof useTopologyNavigationActions>, "handleSelect">;
   topologyRouteControls: Pick<ReturnType<typeof useTopologyRouteControls>, "handleExitRealm" | "indexPanelCollapsedStored" | "handleChangeIndexDefaultCollapsed">;
   topologySceneControls: Pick<
     ReturnType<typeof useTopologySceneControls>,
@@ -106,7 +102,7 @@ interface TopologyCommandChromeProps {
     | "activityInboxOpen"
     | "setActivityInboxOpen"
   >;
-  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "t" | "structure" | "tWorkbench" | "tAtlasGit">;
+  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "t" | "tWorkbench" | "tAtlasGit">;
   topologyExplorationLenses: Pick<
     ReturnType<typeof useTopologyExplorationLenses>,
     | "constellationCandidates"
@@ -123,8 +119,7 @@ export function TopologyCommandChrome({
   routeState, setRouteState, setVaultAgentPrefill, setOntologySearchOpen, setTopologyRelayoutToken, toast,
   expandAllActive, analysisMode, footprintTrailEntries,
   footprintTrailStepCaptions, footprintPacketCopied, copyFootprintPacket, clearFootprintTrail,
-  handleFootprintLens, handleFootprintBrush, pastWalkRows, pastTrailNotice, handleDeletePastWalk,
-  handleClearPastWalks, agentDockTouchedRef, sampleModeSettled, sampleModeKnown, requestVaultOpen,
+  handleFootprintLens, handleFootprintBrush, agentDockTouchedRef, sampleModeSettled, sampleModeKnown, requestVaultOpen,
   topologyPreferences, topologyInspectorState, topologyAuthoring, topologyCanvasFocus,
   topologyVaultReadModel, topologyGraphProjection, topologyAgentOrchestration, topologySceneControls,
   topologyRouteControls, topologyNavigationActions, homeWorkbenchController, topologyAgentActivity,
@@ -134,7 +129,7 @@ export function TopologyCommandChrome({
   const { renderedIndexState } = topologyIndexPresentation;
   const { constellationCandidates, routedConstellation, setActiveConstellation, setConstellationFitToken } = topologyExplorationLenses;
 
-  const { t, structure, tWorkbench, tAtlasGit } = topologyPreferences;
+  const { t, tWorkbench, tAtlasGit } = topologyPreferences;
   const {
     topologyUtilityChromeState, topologyUtilityChromeCompact, topologyUtilityLaneSuppressionContract,
     searchLaneCrowded, selectedNodeFocusActive, inspectorOwnsRightRail, activityInboxOpen,
@@ -150,7 +145,7 @@ export function TopologyCommandChrome({
   const { openVaultAgent, agentDockOpen, closeVaultAgent } = topologyAgentOrchestration;
   const { handleToggleExpandAll, pathChipLabel, pathChipOutcome, pathChipState, pathPacketCopied, copyPathPacket, handleClearPath } = topologySceneControls;
   const { handleExitRealm, indexPanelCollapsedStored, handleChangeIndexDefaultCollapsed } = topologyRouteControls;
-  const { handleSelect, handleReplayPastWalk } = topologyNavigationActions;
+  const { handleSelect } = topologyNavigationActions;
   const { meaningWorkbenchOpen, toggleMeaningWorkbench } = homeWorkbenchController;
   const { acpLiveWork } = topologyAgentActivity;
   const mapAnalysis = useMapAnalysisChip(vault, gitVaultPath);
@@ -251,7 +246,6 @@ export function TopologyCommandChrome({
           <div
             className={cn(
               "@container/map-toolbar topology-ui-scale pointer-events-none absolute right-4 top-4 flex flex-col-reverse items-end gap-4 md:right-[var(--chrome-inset)] md:top-[var(--chrome-inset)] xl:flex-row xl:flex-wrap",
-              structure && "md:right-[calc(var(--topology-index-tab-width)+var(--topology-index-inset))]",
               // The free map starts one inset past INDEX, open or folded, or the first search tile
               // slides under the tab.
               renderedIndexState === "expanded"
@@ -339,7 +333,7 @@ export function TopologyCommandChrome({
               setTopologyRelayoutToken((current) => current + 1);
               toast.show(t('controls.relayoutToast'), "info");
             }}
-            onToggleExpandAll={!structure && resolvedRealmSlug !== null ? handleToggleExpandAll : undefined}
+            onToggleExpandAll={resolvedRealmSlug !== null ? handleToggleExpandAll : undefined}
             allExpanded={expandAllActive}
             analysisChip={
               mapAnalysis ? (
@@ -393,11 +387,6 @@ export function TopologyCommandChrome({
                   onClear={clearFootprintTrail}
                   onLensChange={handleFootprintLens}
                   onHoverEntry={handleFootprintBrush}
-                  pastWalks={pastWalkRows}
-                  pastNotice={pastTrailNotice}
-                  onReplayPastWalk={handleReplayPastWalk}
-                  onDeletePastWalk={handleDeletePastWalk}
-                  onClearPastWalks={handleClearPastWalks}
                   labels={{
                     heading: t("footprint.heading"),
                     triggerAriaLabel: t("footprint.triggerAriaLabel"),
@@ -412,16 +401,6 @@ export function TopologyCommandChrome({
                     clearLabel: t("footprint.clearLabel"),
                     clearConfirmLabel: t("footprint.clearConfirmLabel"),
                     clearAriaLabel: t("footprint.clearAriaLabel"),
-                    pastLinkLabel: t("footprint.pastLinkLabel", {
-                      count: pastWalkRows.length,
-                    }),
-                    pastHeading: t("footprint.pastHeading"),
-                    pastBackAriaLabel: t("footprint.pastBackAriaLabel"),
-                    pastDeleteAriaLabel: t("footprint.pastDeleteAriaLabel"),
-                    pastClearAllLabel: t("footprint.pastClearAllLabel"),
-                    pastClearAllConfirmLabel: t("footprint.pastClearAllConfirmLabel"),
-                    pastCapCaption: t("footprint.pastCapCaption"),
-                    pastEmptyBody: t("footprint.pastEmptyBody"),
                   }}
                 />
               ) : undefined

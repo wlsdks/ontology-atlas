@@ -21,7 +21,7 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
 - **Double-click node** (or **Enter** on the focused map) → on the Flat overview, selects and zooms in to the node, never toggling a selected one off; one Escape clears the selection and returns the camera it moved from unless the reader moved the view since; inside a realm, opens or folds its children, the same act as its `+N` chip, and keeps it selected (the "local graph" mode this line once described does not exist; 2026-09-19)
 - **Right-click node** → context menu (Focus / Local graph / Copy detail URL)
 - **Shift-click 2 nodes** → highlight shortest path
-- **The trail you walked** → every node that takes focus is appended to a session trail. The map leaves footprints beside the relation lines actually crossed (offset along the line's own curve, never on it) and a step number beside each visited node; the top-centre **History** chip opens a newest-first mini timeline. Each row carries, under the title, how that step connects to the step before it: the relation word plus the reason recorded on that edge (`relation_notes`), the relation word alone when no reason is written, or "Not directly related" when the two share no edge. **Copy prompt** copies the same per-step lines into a prompt for the agent, so the argument the walk made travels with the names. Earlier history is archived in the vault folder.
+- **The trail you walked** → every concept that takes focus is appended to a trail that lasts for the app session: leaving the map for the Library, the reader or any other destination and coming back keeps the same walk, a reload starts fresh, and opening another folder starts an empty one. The trail is never written to disk. The map leaves footprints beside the relation lines actually crossed (offset along the line's own curve, never on it) and a step number beside each visited node; the top-centre **History** chip opens a newest-first mini timeline. Each concept appears once, at its latest visit. A row whose latest visit came straight from the row below it carries, under the title, how that move went: the relation word plus the reason recorded on that edge (`relation_notes`), the relation word alone when no reason is written, or "Not directly related" when the two share no edge; a row reached from anywhere else, such as after a revisit, carries no caption. **Copy prompt** copies the same per-step lines into a prompt for the agent, naming each concept by its vault slug (a concept with no document by its title), with one `get_concepts` call for the whole walk and a path query between its ends.
 - **Dense-group cluster chips** → the Flat overview folds nothing; inside a realm, a parent with more than 12 direct children (e.g. a domain with 108 capabilities) folds its whole subtree into a single `+N` chip instead of spilling hundreds of overlapping nodes/labels. Click the chip to expand just that parent (nodes fan out as a bounded phyllotaxis disk); click the `−` chip to collapse again. Expanded parents live in the URL (`?open=slug1,slug2`) so a shared link or an AI agent reproduces the same expansion. Nested dense children get their own chips once their parent is expanded. Double-clicking the parent node itself does the same as its chip — opens or folds the children — and keeps the node selected; before 2026-09-19 the second click of a double-click undid the first, so the gesture selected and deselected and opened nothing. A second quick click on a node without children keeps the selection too: a repeated click is never an undo (`DOUBLE_TAP_WINDOW_MS`, 350 ms). Selecting a node holds its neighbours in *other* folded parents open — drawn, named, and joined by their lines — so the ego graph shows every relation the panel lists (before 2026-09-19 a capability whose dependencies lived in two folded domains drew 1 of its 3 relations), and each folded parent's chip claims only what still folds. The focus camera target is clamped to the same leash the physics keeps around the focused node; a target outside it made the spring and the clamp fight at full frame rate for the whole selection. Selecting a node holds its neighbours in *other* folded parents open — drawn, named, and joined by their lines — so the ego graph shows every relation the panel lists (before 2026-09-19 a capability whose dependencies lived in two folded domains drew 1 of its 3 relations), and each folded parent's chip claims only what still folds. The focus camera target is clamped to the same leash the physics keeps around the focused node; a target outside it made the spring and the clamp fight at full frame rate for the whole selection. That leash is sized to the screen (2026-09-20): half of the free extent beside the open panels less a 120px edge pad, on each axis, with `--map-camera-focus-pan-margin` as its floor, and the fit scale respects it, so a wide ego graph is centred in the free area instead of its far side landing under the detail panel (measured at 1512: two dependencies at x 1349 and 1369 behind a panel from 1128; after, both left of it).
 
 - **A large folder is drawn while it is still being read** (2026-10-02) → opening a
@@ -100,10 +100,9 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
 - **Discarding a walk takes two presses** (2026-09-20) → the session trail is
   discarded rather than archived and cannot be rebuilt, since it is not in the
   URL, yet one press on the trail popover's 45px clear button erased a
-  three-step walk with no confirm, no undo and no notice — while the more
-  destructive control beside it, clearing every past walk, already asked twice.
-  Both clear controls (the chip's ✕ and the footer) now arm the popover and the
-  second press discards; the arming releases itself after four seconds.
+  three-step walk with no confirm, no undo and no notice. Both clear controls
+  (the chip's ✕ and the footer) now arm the popover and the second press
+  discards; the arming releases itself after four seconds.
 
 - **The relation panel's source link is the document's name** (2026-09-20) → it
   read `storefront.md → Open doc`, an arrow between a name and an action inside a
@@ -173,9 +172,9 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   bootstrap from found docs, create a node, open Topology INDEX, open the new-concept editor (`/topology/?workbench=create`),
   or choose a vault.
 - **Filter active** → bottom-left "filter · N / TOTAL" badge
-- **Five map views, chosen in one picker** — the current-view chip in the top tool
-  lane opens **Flat** (the ordinary 2D map, default), **Hex board**,
-  **Domain structure**, **3D**, and **Neural**. The **Hex board** gives every capability one hexagonal tile: a domain is a
+- **Four map views, chosen in one picker** — the current-view chip in the top tool
+  lane opens **Flat** (the ordinary 2D map, default), **Hex board**, **3D**, and
+  **Neural**. The **Hex board** gives every capability one hexagonal tile: a domain is a
   contiguous region of tiles around its title tile, the project sits at the centre
   with the folder's concept count (the map INDEX's rule),
   and empty cells between regions keep them apart. A tile's brightness and its row
@@ -208,21 +207,18 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   change or a hidden tab lands the travel at once. A pick into or out of 3D
   travels the same way: each concept lands on the tree mark that draws it, and a
   concept folded into a closed branch lands on that branch's mark. Into or out of
-  Neural, into Flat past 6,500 concepts, and into or out of Domain structure, the
-  old picture crossfades instead, as every pick does under reduced motion; between
-  Flat and Neural the map's own morph moves each concept in place. A view reached
+  Neural and into Flat past 6,500 concepts, the old picture crossfades instead,
+  as every pick does under reduced motion; between Flat and Neural the map's own
+  morph moves each concept in place. A view reached
   by address or from another tab switches without motion. Gate:
   `tests/e2e/map/frame-loop/map-layout-morph.spec.ts`.
   A stored Cone or Strata choice and the address `?view=strata` open 3D; a stored
   Neural choice and the address `?view=coupling` open Neural (`?view=neural`).
 
-  **Domain structure** opens named project/domain/capability/element membership
-  without spatial zoom. Press a container to browse its direct children and use
-  the breadcrumb to return. Read opens the existing concept/document workbench.
-  Membership follows recorded contains and belongs_to directions, retaining
-  multiple parents, direct levels, and disconnected concepts. Child lists are
-  paged, and reduced motion settles immediately. Old Galaxy choices resolve to
-  structure; its renderer, placement, sky, and dedicated probes are removed.
+  A stored Domain structure or Galaxy choice and the addresses
+  `?view=structure` and `?view=galaxy` count as no view, like any unknown
+  value: the map opens as it would without them. Their stored keys are never
+  read and go on the next pick.
 
   In Map, **My constellations** saves a named set of current ontology concepts
   with its purpose. Opening a saved constellation focuses that whole set through
@@ -271,8 +267,8 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
 - **Growth replay** — the play tile on the right rail shows the ontology
   appearing in containment order: the project, then each domain followed by its
   capabilities and their elements. It is offered on the Flat map and the 3D
-  tree, the two views that draw a concept's appear ramp; Layers, Neural and the
-  structure view do not show it. On the Flat map the replay covers every mark
+  tree, the two views that draw a concept's appear ramp; Hex and Neural do not
+  show it. On the Flat map the replay covers every mark
   the map is drawing, so an opened star's elements take part. The map first
   leaves over 320 ms, then grows; a second press, Escape or a press on the
   canvas stops it, the tile rests at once and every mark not yet shown rises

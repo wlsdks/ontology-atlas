@@ -132,7 +132,7 @@ export function DigestTimeline({ unit, range, changes, notable, onSelect }: Dige
       </span>
       <span id={readoutId} data-testid="change-digest-timeline-readout" className={cn('min-w-0 truncate text-body', pointed ? 'text-[color:var(--color-text-primary)]' : 'font-mono tabular-nums text-[color:var(--color-text-tertiary)]')}>{pointed?.readout ?? span}</span>
     </figcaption>
-    <div ref={plotRef} role="group" aria-label={label} onKeyDown={move} className="structure-item-in relative mt-4 border-b border-[color:var(--color-border-strong)]" style={{ height: PLOT_HEIGHT_PX }}>
+    <div ref={plotRef} role="group" aria-label={label} onKeyDown={move} className="motion-stagger-in relative mt-4 border-b border-[color:var(--color-border-strong)]" style={{ height: PLOT_HEIGHT_PX }}>
       {unit === 'minute' && HOUR_MARKS.slice(1).map(hour => <span key={hour} aria-hidden className="absolute inset-y-0 w-px bg-[color:var(--color-border-soft)]" style={{ left: `${(hour / 24) * 100}%` }} />)}
       {unit === 'minute' && ticks.map((tick, index) => {
         const accent = notable.has(tick.change.commit.hash);

@@ -36,13 +36,13 @@ describe("View3dMenu view picker", () => {
   });
 
   // A Strata arrangement from an older build must still leave one row checked: 3D.
-  it("offers flat, hex, structure, 3d and neural, in that order, and checks the stored one", () => {
+  it("offers flat, hex, 3d and neural, in that order, and checks the stored one", () => {
     window.localStorage.setItem("atlas.appearance.view3d", "on");
     window.localStorage.setItem("atlas.appearance.map-arrangement", "strata");
     mount();
     const rows = screen.getAllByRole("radio");
     expect(rows.map((row) => row.getAttribute("data-testid"))).toEqual(
-      ["flat", "hex", "structure", "3d", "neural"].map((view) => `topology-view-3d-choice-${view}`),
+      ["flat", "hex", "3d", "neural"].map((view) => `topology-view-3d-choice-${view}`),
     );
     expect(rows.filter((row) => row.getAttribute("aria-checked") === "true").map((row) => row.getAttribute("data-testid")))
       .toEqual(["topology-view-3d-choice-3d"]);
@@ -75,44 +75,14 @@ describe("View3dMenu view picker", () => {
   it("publishes one coherent map choice instead of exposing intermediate flag combinations", () => {
     mount();
     const observed: Array<Array<string | null>> = [];
-    const read = () => observed.push([
-      "hex-board", "structure", "view3d",
-    ].map((key) => window.localStorage.getItem(`atlas.appearance.${key}`)));
+    const read = () => observed.push(["hex-board", "view3d"].map((key) => window.localStorage.getItem(`atlas.appearance.${key}`)));
     window.addEventListener("ontology-atlas:appearance-preference-change", read);
     try {
       fireEvent.click(screen.getByTestId("topology-view-3d-choice-3d"));
-      expect(observed).toEqual([["off", "off", "on"]]);
+      expect(observed).toEqual([["off", "on"]]);
     } finally {
       window.removeEventListener("ontology-atlas:appearance-preference-change", read);
     }
-  });
-
-  /**
-   * The map's 3D contrast floors assume the flat sky is not also painted,
-   * so the picker never leaves both on.
-   */
-  it("turns the sky on and 3D off when structure is picked, so both are never on", () => {
-    window.localStorage.setItem("atlas.appearance.view3d", "on");
-    mount();
-    fireEvent.click(screen.getByTestId("topology-view-3d-choice-structure"));
-    expect(window.localStorage.getItem("atlas.appearance.structure")).toBe("on");
-    expect(window.localStorage.getItem("atlas.appearance.view3d")).toBe("off");
-  });
-
-  it("turns the sky off when 3D is picked", () => {
-    window.localStorage.setItem("atlas.appearance.structure", "on");
-    mount();
-    fireEvent.click(screen.getByTestId("topology-view-3d-choice-3d"));
-    expect(window.localStorage.getItem("atlas.appearance.structure")).toBe("off");
-    expect(window.localStorage.getItem("atlas.appearance.view3d")).toBe("on");
-  });
-
-  it("turns both the sky and 3D off when flat is picked", () => {
-    window.localStorage.setItem("atlas.appearance.structure", "on");
-    mount();
-    fireEvent.click(screen.getByTestId("topology-view-3d-choice-flat"));
-    expect(window.localStorage.getItem("atlas.appearance.structure")).toBe("off");
-    expect(window.localStorage.getItem("atlas.appearance.view3d")).toBe("off");
   });
 
   it("turns 3D off from the same list when flat is picked", () => {

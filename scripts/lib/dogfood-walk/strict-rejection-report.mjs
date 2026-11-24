@@ -4,7 +4,6 @@
 import { strictRepairSummary, writeMetadataAbsenceSummary } from "./summaries.mjs";
 
 const REPAIR = "repair";
-const WRITE_METADATA = "write metadata";
 
 /** `key` names the response in the gate input; `id` is its JSON-RPC request id. */
 export const STRICT_REJECTION_SECTIONS = [
@@ -36,7 +35,6 @@ export const STRICT_REJECTION_SECTIONS = [
     header: "strict relation filters — invalid dependencyTypes rejection",
     rows: [
       { key: "strictRelationFilter", id: 61, label: "dependencyTypes rejected" },
-      { key: "strictFindNeighborsTypeFilter", id: 75, label: "find_neighbors.types rejected" },
       { key: "strictFindOrphansKindFilter", id: 76, label: "find_orphans.kind rejected" },
       { key: "strictFindOrphansExcludeKindFilter", id: 77, label: "find_orphans.excludeKinds rejected" },
       { key: "strictQueryConceptsKindFilter", id: 78, label: "query_concepts.kind rejected" },
@@ -47,17 +45,6 @@ export const STRICT_REJECTION_SECTIONS = [
   {
     header: "strict relation_check — invalid type rejection",
     rows: [{ key: "strictRelationCheck", id: 66, label: "relation_check type rejected", extras: [REPAIR] }],
-  },
-  {
-    header: "strict add_relation — invalid type rejection + no-write metadata",
-    rows: [
-      {
-        key: "strictAddRelation",
-        id: 70,
-        label: "add_relation type rejected",
-        extras: [REPAIR, WRITE_METADATA],
-      },
-    ],
   },
   {
     header:

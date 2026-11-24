@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 
 import { ESLint } from "eslint";
@@ -18,14 +18,8 @@ async function closureScopeErrors(code: string, filePath: string): Promise<strin
   const [result] = await eslint.lintText(code, { filePath });
   return result.messages
     .filter((message) => message.ruleId === "no-restricted-syntax")
-    .filter((message) => /stateRef|derived hook|HomePageImpl/.test(message.message))
+    .filter((message) => /stateRef|HomePageImpl/.test(message.message))
     .map((message) => `${message.line}: ${message.message}`);
-}
-
-function sourceFiles(dir: string): string[] {
-  return readdirSync(path.join(REPO_ROOT, dir), { withFileTypes: true, recursive: true })
-    .filter((entry) => entry.isFile() && /\.tsx?$/.test(entry.name) && !/\.(test|spec)\.tsx?$/.test(entry.name))
-    .map((entry) => path.join(entry.parentPath, entry.name));
 }
 
 describe("closure scope lint", () => {
@@ -34,11 +28,6 @@ describe("closure scope lint", () => {
       expect(readFileSync(path.join(REPO_ROOT, file), "utf8")).toMatch(new RegExp(`export function ${name}\\(`));
     }
     expect(readFileSync(path.join(REPO_ROOT, MAP_PAGE), "utf8")).toMatch(/function HomePageImpl\(/);
-  });
-
-  it("derived hooks exist for the module-level rule to guard", () => {
-    const calls = sourceFiles("src").filter((file) => /\bderivedHook\(/.test(readFileSync(file, "utf8")));
-    expect(calls.length).toBeGreaterThan(0);
   });
 
   it.each(VAULT_HOOKS)("refuses a callback in %s that reads state", async (name, file) => {
@@ -64,15 +53,5 @@ describe("closure scope lint", () => {
       "}",
     ].join("\n");
     expect(await closureScopeErrors(planted, MAP_PAGE)).toHaveLength(1);
-  }, LINT_TIMEOUT_MS);
-
-  it("refuses a derived hook made inside a function and allows one at module level", async () => {
-    const planted = [
-      "const useAtModuleLevel = derivedHook((a: number) => a);",
-      "export function useInside(a: number) {",
-      "  return derivedHook((b: number) => b)(a) + useAtModuleLevel(a);",
-      "}",
-    ].join("\n");
-    expect(await closureScopeErrors(planted, "src/views/home/model/probe.ts")).toHaveLength(1);
   }, LINT_TIMEOUT_MS);
 });

@@ -861,7 +861,7 @@ describe('session instructions: the four measured lines are actually carried', (
     expect(prompt, 'the instruction to look for duplicates first is missing').toMatch(/similar_nodes|find_evidence/);
     // Map navigation must lead to an exact read tool call, not inferred answer sentences.
     expect(prompt, 'map search and path requests do not lead to the exact read tool').toMatch(
-      /get_concept.*find_path.*move and highlight the map/i,
+      /get_concepts.*query_ontology.*path.*move and highlight the map/i,
     );
     // ④ If ambiguous, ask with a default, so the build carries on
     expect(prompt, 'it would create both instead of asking when ambiguous').toMatch(

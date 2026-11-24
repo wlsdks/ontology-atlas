@@ -143,7 +143,7 @@ export function SearchHint({
           </div>
         ) : null}
         {/* Desktop only; the wrapper hides it so ChromeChip's own display utility does not clash. */}
-        {currentView !== 'structure' && <div className="hidden md:block">
+        <div className="hidden md:block">
           <ChromeChip
             type="button"
             onClick={() => {
@@ -168,7 +168,7 @@ export function SearchHint({
           >
             {arranging ? t('relayoutActiveLabel') : t('relayoutLabel')}
           </ChromeChip>
-        </div>}
+        </div>
         {/* The map-view chip opens a picker, not a toggle: an on/off switch cannot name
             which of several views is showing (`View3dMenu` doc-block). */}
         {/* `view3dAnchorRef` hands the shared wrapper to the picker so a chip press is not
@@ -198,7 +198,7 @@ export function SearchHint({
             data-utility-action-shadow-token="--chrome-shadow"
             data-utility-action-focus-ring-token="--color-indigo-accent"
             icon={<MapIcon />}
-            active={view3d || currentView === 'structure'}
+            active={view3d}
             // Icon-first with the rest of the lane in the crowded density (dock or
             // review panel open); the current view stays in the name and tooltip.
             compact={compact}

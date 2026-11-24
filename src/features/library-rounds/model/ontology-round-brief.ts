@@ -21,7 +21,7 @@ export function buildOntologyRoundBrief({ vaultRoot, locale, focus }: OntologyRo
     '',
     'Read-only sequence:',
     '1. Call connection_info and query_ontology health or workspace_brief to establish the current graph and source-binding state.',
-    '2. If connection_info.sameRoot is true, or the project source is unbound or not current, do not call index_project or analyze_repo_structure; report source-dependent claims as Unknown. If it is bound, use only the exact repository root returned by connection_info.',
+    '2. If connection_info.sameRoot is true, or the project source is unbound or not current, do not call analyze_repo_structure or infer_imports; report source-dependent claims as Unknown. If it is bound, use only the exact repository root returned by connection_info.',
     '3. Inspect a bounded set of relevant concepts, evidence paths, relations, and currentness gaps. Treat Unknown as a valid result.',
     `4. ${focusLine}`,
     '5. Return a review packet with: observed evidence, proposed ontology changes (if any), exact slugs or source paths, uncertainty, and the smallest human review action.',

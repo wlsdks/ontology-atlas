@@ -145,57 +145,57 @@ export function getConceptsFailure(parsed) {
   return null;
 }
 
-export function getConceptFailure(parsed, expectedSlug) {
+export function conceptRowFailure(parsed, expectedSlug) {
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    return 'get_concept response malformed';
+    return 'single get_concepts row malformed';
   }
   if (parsed.slug !== expectedSlug) {
-    return `get_concept response slug mismatch: expected ${expectedSlug}, got ${parsed.slug}`;
+    return `single get_concepts row slug mismatch: expected ${expectedSlug}, got ${parsed.slug}`;
   }
   if (!hasNonEmptyString(parsed.uid) || !NODE_UID_RE.test(parsed.uid)) {
-    return `get_concept response missing uid: ${expectedSlug}`;
+    return `single get_concepts row missing uid: ${expectedSlug}`;
   }
   if (!parsed.frontmatter || typeof parsed.frontmatter !== 'object' || Array.isArray(parsed.frontmatter)) {
-    return `get_concept response missing frontmatter: ${expectedSlug}`;
+    return `single get_concepts row missing frontmatter: ${expectedSlug}`;
   }
   if (typeof parsed.excerpt !== 'string') {
-    return `get_concept response missing excerpt: ${expectedSlug}`;
+    return `single get_concepts row missing excerpt: ${expectedSlug}`;
   }
   if (!parsed.neighbors || typeof parsed.neighbors !== 'object' || Array.isArray(parsed.neighbors)) {
-    return `get_concept response missing neighbors: ${expectedSlug}`;
+    return `single get_concepts row missing neighbors: ${expectedSlug}`;
   }
   for (const key of ['domains', 'capabilities', 'elements', 'dependencies', 'relates', 'contains', 'describes']) {
     if (!Array.isArray(parsed.neighbors[key])) {
-      return `get_concept response missing neighbors.${key}: ${expectedSlug}`;
+      return `single get_concepts row missing neighbors.${key}: ${expectedSlug}`;
     }
   }
   if (!(parsed.neighbors.domain == null || typeof parsed.neighbors.domain === 'string')) {
-    return `get_concept response malformed neighbors.domain: ${expectedSlug}`;
+    return `single get_concepts row malformed neighbors.domain: ${expectedSlug}`;
   }
   if (!Array.isArray(parsed.outgoingEdges)) {
-    return `get_concept response missing outgoingEdges: ${expectedSlug}`;
+    return `single get_concepts row missing outgoingEdges: ${expectedSlug}`;
   }
   for (const [index, edge] of parsed.outgoingEdges.entries()) {
     if (!edge || typeof edge !== 'object' || Array.isArray(edge)) {
-      return `get_concept response malformed outgoing edge at index ${index}`;
+      return `single get_concepts row malformed outgoing edge at index ${index}`;
     }
     if (typeof edge.to !== 'string' || edge.to.length === 0) {
-      return `get_concept response missing outgoing edge target at index ${index}`;
+      return `single get_concepts row missing outgoing edge target at index ${index}`;
     }
     if (typeof edge.via !== 'string' || edge.via.length === 0) {
-      return `get_concept response missing outgoing edge relation at index ${index}`;
+      return `single get_concepts row missing outgoing edge relation at index ${index}`;
     }
   }
   if (!Number.isFinite(parsed.mtime) || parsed.mtime < 0) {
-    return `get_concept response missing mtime: ${expectedSlug}`;
+    return `single get_concepts row missing mtime: ${expectedSlug}`;
   }
   if (parsed.warnings != null && !Array.isArray(parsed.warnings)) {
-    return `get_concept response malformed warnings: ${expectedSlug}`;
+    return `single get_concepts row malformed warnings: ${expectedSlug}`;
   }
   return null;
 }
 
-export function readMatchRowFailure(label, row, index, { evidence = false, backlinks = false } = {}) {
+function readMatchRowFailure(label, row, index, { evidence = false, backlinks = false } = {}) {
   if (!row || typeof row !== 'object' || Array.isArray(row)) {
     return `${label} response malformed match at index ${index}`;
   }

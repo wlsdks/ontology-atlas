@@ -250,7 +250,7 @@ export async function verifyMcpBinary({ binaryPath, vaultPath, expectedMinTools 
       const tools = messages.find((message) => message.id === 2)?.result?.tools;
       const concept = messages.find((message) => message.id === 3)?.result;
       if (!initialize || !tools || !concept) return;
-      if (concept.isError) {
+      if (concept.isError || concept.structuredContent?.concepts?.[0]?.ok !== true) {
         finish(new Error('compiled MCP binary started but could not read the verification vault'));
         return;
       }
@@ -280,7 +280,7 @@ export async function verifyMcpBinary({ binaryPath, vaultPath, expectedMinTools 
       }),
     );
     child.stdin.write(request(2, 'tools/list'));
-    child.stdin.write(request(3, 'tools/call', { name: 'get_concept', arguments: { slug: 'ontology-atlas' } } ));
+    child.stdin.write(request(3, 'tools/call', { name: 'get_concepts', arguments: { slugs: ['ontology-atlas'] } }));
 
     deadline = setTimeout(() => {
       finish(
@@ -383,7 +383,7 @@ async function probeMcpEndpoint({ command, args, vaultPath, cwd, timeoutMs }) {
     );
     child.stdin.write(jsonRpcRequest(2, 'tools/list'));
     child.stdin.write(jsonRpcRequest(3, 'tools/call', { name: 'connection_info', arguments: {} }));
-    child.stdin.write(jsonRpcRequest(4, 'tools/call', { name: 'list_kinds', arguments: {} }));
+    child.stdin.write(jsonRpcRequest(4, 'tools/call', { name: 'list_concepts', arguments: { limit: 1 } }));
     child.stdin.write(jsonRpcRequest(5, 'tools/call', { name: 'validate_vault', arguments: {} }));
 
     deadline = setTimeout(() => {
@@ -407,7 +407,7 @@ export function compareMcpContracts(source, bundled) {
   });
   for (const [id, label] of [
     [3, 'connection_info'],
-    [4, 'list_kinds'],
+    [4, 'list_concepts'],
     [5, 'validate_vault'],
   ]) {
     if (

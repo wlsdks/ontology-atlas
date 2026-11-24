@@ -8,7 +8,7 @@ import {
 export const LIST_CONCEPTS_TOOL = {
   name: 'list_concepts',
   description:
-    'List every ontology node in the vault (each .md file with a frontmatter `kind:`); AI agents call this first to grasp the codebase\'s mental model. Filter by `kind`, `domain` and `since`; page with `offset` + `limit`, following `pagination.nextOffset` while `hasMore` is true.',
+    'List every ontology node in the vault (each .md file with a frontmatter `kind:`); AI agents call this first to grasp the codebase\'s mental model. Every page also carries `census`, the whole vault\'s kind counts, so `limit: 1` sizes up a vault; it replaces list_kinds. Filter by `kind`, `domain` and `since`; page with `offset` + `limit`, following `pagination.nextOffset` while `hasMore` is true. For a predicate such as "capabilities with no elements" use `query_concepts`.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -34,7 +34,7 @@ export const LIST_CONCEPTS_TOOL = {
       summary: {
         type: 'boolean',
         description:
-          'Add a prose `summary` (max 200 chars, first paragraph) to each row, without N follow-up `get_concept` calls. Default false.',
+          'Add a prose `summary` (max 200 chars, first paragraph) to each row, without a follow-up `get_concepts` call. Default false.',
       },
       limit: {
         type: 'integer',
@@ -51,6 +51,17 @@ export const LIST_CONCEPTS_TOOL = {
         type: 'integer',
         minimum: 0,
         description: 'Total number of matching ontology nodes before the limit is applied.',
+      },
+      census: {
+        type: 'object',
+        description: 'Whole-vault kind counts, unaffected by the filters and the page.',
+        properties: {
+          total: { type: 'integer', minimum: 0 },
+          byKind: { type: 'object', additionalProperties: { type: 'integer', minimum: 0 } },
+          referencedOnlyTotal: { type: 'integer', minimum: 0, description: 'Names used only in a relation, with no file of their own.' },
+        },
+        required: ['total', 'byKind', 'referencedOnlyTotal'],
+        additionalProperties: false,
       },
       returned: {
         type: 'integer',

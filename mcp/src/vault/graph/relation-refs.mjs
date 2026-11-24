@@ -94,7 +94,7 @@ export function relationNoteFor(doc, ref, resolvedSlug) {
 
 /**
  * Documents naming `ref` in a relation key: a concept named only in relations
- * has no file yet shows on the map, so get_concept answers "who wrote this name,
+ * has no file yet shows on the map, so get_concepts answers "who wrote this name,
  * under which key" instead of "Doc not found". It creates no nodes.
  */
 export function findGraphReferences(docs, ref) {

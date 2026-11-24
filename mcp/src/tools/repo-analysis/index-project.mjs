@@ -191,7 +191,7 @@ export function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skip
     semanticEvidence: analyze.semanticEvidence,
     configurationEvidence: analyze.configurationEvidence,
     next: {
-      applyTool: 'add_concepts; add_relation only after semantic rationale + human approval',
+      applyTool: 'add_concepts; add_relations only after semantic rationale + human approval',
       review: 'plan.concepts counts raw candidates, not accepted ontology claims; inspect extractionContract and proposedBusinessOntology, manually resolve ambiguous aliases, answer the competency questions, then run reviewCalls. Nothing promotes inferred imports to depends_on.',
       reviewCalls,
     },

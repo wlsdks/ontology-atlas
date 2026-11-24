@@ -11,20 +11,15 @@ export const EXIT = Object.freeze({ OK: 0, USAGE: 64, DATA: 65, SOFTWARE: 70, IO
 export const READ_ONLY_TOOLS = Object.freeze([
   'git_status',
   'git_history',
-  'list_kinds',
   'list_concepts',
-  'get_concept',
   'get_concepts',
   'find_evidence',
   'find_backlinks',
-  'find_neighbors',
-  'find_path',
   'find_orphans',
   'query_concepts',
   'query_ontology',
   'validate_vault',
   'infer_imports',
-  'index_project',
   'analyze_repo_structure',
 ]);
 
@@ -105,12 +100,7 @@ export const ROOTED_READ_SCHEMA = Object.freeze({
     },
   },
   requestExamples: {
-    list_kinds: { id: 'kinds', name: 'list_kinds', args: {} },
-    index_project: {
-      id: 'index',
-      name: 'index_project',
-      args: { rootPath: '/absolute/repository', maxFiles: 2000 },
-    },
+    list_concepts: { id: 'census', name: 'list_concepts', args: { limit: 1 } },
     infer_imports: {
       id: 'imports',
       name: 'infer_imports',
@@ -128,8 +118,8 @@ export const ROOTED_READ_SCHEMA = Object.freeze({
     vaultRoot: '/absolute/vault',
     repoRoot: '/absolute/repository',
     requests: [
-      { id: 'kinds', name: 'list_kinds', args: {} },
-      { id: 'index', name: 'index_project', args: { rootPath: '/absolute/repository', maxFiles: 2000 } },
+      { id: 'census', name: 'list_concepts', args: { limit: 1 } },
+      { id: 'imports', name: 'infer_imports', args: { rootPath: '/absolute/repository', maxFiles: 2000 } },
     ],
   },
 });

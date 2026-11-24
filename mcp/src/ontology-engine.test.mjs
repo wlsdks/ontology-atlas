@@ -1110,11 +1110,13 @@ describe('queryCompiledOntology', () => {
     assert.equal(result.actions[0].executable, true);
     assert.equal(result.actions[4].executable, false);
     assert.deepEqual(result.actions[0].proposedAction, {
-      tool: 'add_relation',
+      tool: 'add_relations',
       args: {
-        from: 'domains/auth',
-        to: 'capabilities/login',
-        type: 'capabilities',
+        relations: [{
+          from: 'domains/auth',
+          to: 'capabilities/login',
+          type: 'capabilities',
+        }],
       },
     });
   });
@@ -2225,7 +2227,7 @@ describe('queryCompiledOntology', () => {
       status: 'semantic_approval_required',
       writeAllowed: false,
       required: ['observable_ability', 'semantic_rationale', 'explicit_human_approval', 'why'],
-      next: 'Explain which observable ability fails without the target, ask for approval of the exact direction and rationale, then call add_relation with a nonblank why.',
+      next: 'Explain which observable ability fails without the target, ask for approval of the exact direction and rationale, then call add_relations with a nonblank why on the row.',
     });
     assert.ok(
       schemaMatch.nearbyPatterns.some(
@@ -2245,11 +2247,13 @@ describe('queryCompiledOntology', () => {
     assert.equal(newPattern.recommendation.severity, 'warn');
     assert.equal(newPattern.schemaPattern, null);
     assert.deepEqual(newPattern.proposedAction, {
-      tool: 'add_relation',
+      tool: 'add_relations',
       args: {
-        from: 'domains/auth',
-        to: 'capabilities/session',
-        type: 'relates',
+        relations: [{
+          from: 'domains/auth',
+          to: 'capabilities/session',
+          type: 'relates',
+        }],
       },
     });
     assert.equal(newPattern.approvalGate, null);
@@ -2373,7 +2377,7 @@ describe('queryCompiledOntology', () => {
     assert.match(result.handoffPrompt, /Result contracts/);
     assert.match(result.handoffPrompt, /totalPathsExact/);
     assert.match(result.handoffPrompt, /relation_check/);
-    assert.match(result.handoffPrompt, /add_relation/);
+    assert.match(result.handoffPrompt, /add_relations/);
     assert.ok(relationCall);
     assert.equal(relationCall.tool, 'query_ontology');
     assert.deepEqual(relationCall.arguments, {
@@ -2489,7 +2493,7 @@ describe('queryCompiledOntology', () => {
     assert.ok(result.resultContracts[2].mustReport.includes('followUp.focusEdge'));
     assert.match(result.resultContracts[2].policy, /explain_relation/);
     assert.match(result.resultContracts[2].policy, /relation_check/);
-    assert.ok(result.writePolicy.some((line) => line.includes('relation_check before add_relation')));
+    assert.ok(result.writePolicy.some((line) => line.includes('relation_check before add_relations')));
     assert.ok(result.writePolicy.some((line) => line.includes('all_paths') && line.includes('totalPathsExact')));
     assert.ok(result.writePolicy.some((line) => line.includes('match_nodes') && line.includes('followUp')));
     assert.ok(result.writePolicy.some((line) => line.includes('relationDecisionGuide')));
@@ -2880,22 +2884,22 @@ describe('queryCompiledOntology', () => {
         assert.match(error.growthHint.reason, /"capabilities\/logn" does not resolve/);
         assert.ok(error.growthHint.suggestion.includes('capabilities/login'));
         assert.deepEqual(error.growthHint.exampleCall, {
-          tool: 'get_concept',
-          args: { slug: 'capabilities/login' },
+          tool: 'get_concepts',
+          args: { slugs: ['capabilities/login'] },
         });
         return true;
       },
     );
   });
 
-  it('node_profile — unresolved slug with no near-match throws an add_concept growthHint', () => {
+  it('node_profile — unresolved slug with no near-match throws an add_concepts growthHint', () => {
     assert.throws(
       () => queryCompiledOntology(artifact(), { operation: 'node_profile', slug: 'completely-unrelated-slug' }),
       (error) => {
         assert.ok(error.growthHint, 'expected err.growthHint to be set');
         assert.deepEqual(error.growthHint.exampleCall, {
-          tool: 'add_concept',
-          args: { slug: 'completely-unrelated-slug', kind: 'element', title: 'Completely Unrelated Slug' },
+          tool: 'add_concepts',
+          args: { concepts: [{ slug: 'completely-unrelated-slug', kind: 'element', title: 'Completely Unrelated Slug' }] },
         });
         return true;
       },
@@ -3796,7 +3800,7 @@ describe('queryCompiledOntology', () => {
         from: row.from,
         to: row.to,
         relation: row.relation,
-        action: row.proposedAction.args,
+        action: row.proposedAction.args.relations[0],
       })),
       [
         {
@@ -3900,7 +3904,7 @@ describe('queryCompiledOntology', () => {
       totalActions: 3,
     });
     assert.deepEqual(
-      result.relationRecommendations.recommendations.map((row) => row.proposedAction.args),
+      result.relationRecommendations.recommendations.map((row) => row.proposedAction.args.relations[0]),
       [
         {
           from: 'domains/auth',
@@ -3909,7 +3913,7 @@ describe('queryCompiledOntology', () => {
         },
       ],
     );
-    assert.deepEqual(result.externalElementRefs.rows.map((row) => row.proposedAction.args), [
+    assert.deepEqual(result.externalElementRefs.rows.map((row) => row.proposedAction.args.concepts[0]), [
       {
         slug: 'elements/src/auth/login',
         kind: 'element',
@@ -3918,7 +3922,7 @@ describe('queryCompiledOntology', () => {
         path: 'src/auth/login.ts',
       },
     ]);
-    assert.deepEqual(result.danglingReferences.rows.map((row) => row.proposedAction.args), [
+    assert.deepEqual(result.danglingReferences.rows.map((row) => row.proposedAction.args.concepts[0]), [
       {
         slug: 'capabilities/missing',
         kind: 'capability',
@@ -3930,8 +3934,8 @@ describe('queryCompiledOntology', () => {
   });
 
   // A dangling reference that is a likely typo of an existing node surfaces
-  // a `didYouMean` and suppresses the duplicate-creating add_concept proposal.
-  it('growth_plan dangling reference surfaces didYouMean and suppresses add_concept when an unambiguous near-match node exists', () => {
+  // a `didYouMean` and suppresses the duplicate-creating add_concepts proposal.
+  it('growth_plan dangling reference surfaces didYouMean and suppresses add_concepts when an unambiguous near-match node exists', () => {
     const graph = compileOntology(
       [
         doc('domains/checkout', { kind: 'domain', title: 'Checkout' }),
@@ -3979,7 +3983,7 @@ describe('queryCompiledOntology', () => {
 
     const row = result.danglingReferences.rows.find((candidate) => candidate.ref === 'check');
     assert.equal(row.didYouMean, null);
-    assert.equal(row.proposedAction?.tool, 'add_concept');
+    assert.equal(row.proposedAction?.tool, 'add_concepts');
   });
 
   it('excludes external element refs matched by ontologyAtlasIgnorePatterns from materialize recommendations and reports the ignored count', () => {
@@ -4083,11 +4087,13 @@ describe('queryCompiledOntology', () => {
       result.nextActions.find((action) => action.kind === 'add_missing_relations')?.sample,
       [
         {
-          tool: 'add_relation',
+          tool: 'add_relations',
           args: {
-            from: 'domains/auth',
-            to: 'capabilities/login',
-            type: 'capabilities',
+            relations: [{
+              from: 'domains/auth',
+              to: 'capabilities/login',
+              type: 'capabilities',
+            }],
           },
         },
       ],
@@ -4106,11 +4112,13 @@ describe('queryCompiledOntology', () => {
           didYouMean: null,
           reason: 'Graph reference "capabilities/missing" from "capabilities/login" via "dependencies" does not resolve to a vault node.',
           proposedAction: {
-            tool: 'add_concept',
+            tool: 'add_concepts',
             args: {
-              slug: 'capabilities/missing',
-              kind: 'capability',
-              title: 'Missing',
+              concepts: [{
+                slug: 'capabilities/missing',
+                kind: 'capability',
+                title: 'Missing',
+              }],
             },
           },
           node: {
@@ -4129,13 +4137,15 @@ describe('queryCompiledOntology', () => {
       result.nextActions.find((action) => action.kind === 'materialize_external_elements')?.sample,
       [
         {
-          tool: 'add_concept',
+          tool: 'add_concepts',
           args: {
-            slug: 'elements/src/auth/login',
-            kind: 'element',
-            title: 'Login',
-            domain: 'domains/auth',
-            path: 'src/auth/login.ts',
+            concepts: [{
+              slug: 'elements/src/auth/login',
+              kind: 'element',
+              title: 'Login',
+              domain: 'domains/auth',
+              path: 'src/auth/login.ts',
+            }],
           },
         },
       ],

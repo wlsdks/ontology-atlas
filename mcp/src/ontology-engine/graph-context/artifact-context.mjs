@@ -130,7 +130,7 @@ function buildArtifactIndexes(artifact, shared) {
     if (referencedBy.length > 0) {
       const cited = referencedBy.map((hit) => `${hit.slug} (via ${hit.via})`).join(', ');
       const error = new Error(
-        `${fieldName} "${candidate}" is referenced by the vault but has no document of its own, so it is not a compiled node. Referenced by: ${cited}. Create it with add_concept({slug:"${candidate}"}) to make it queryable.`,
+        `${fieldName} "${candidate}" is referenced by the vault but has no document of its own, so it is not a compiled node. Referenced by: ${cited}. Create it with add_concepts({concepts:[{slug:"${candidate}", kind, title}]}) to make it queryable.`,
       );
       error.referencedBy = referencedBy;
       throw error;

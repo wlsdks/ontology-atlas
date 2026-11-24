@@ -230,6 +230,7 @@ const GO_FUNCTION = /^func\s+([A-Za-z_]\w*)\s*[(\[]/u;
 const GO_TYPE = /^type\s+([A-Za-z_]\w*)(?:\[[^\]]*\])?\s+(.*)$/u;
 const GO_BINDING = /^(?:const|var)\s+([A-Za-z_]\w*)[\s=]/u;
 
+/** gofmt indents every local declaration, so a type or binding counts only at column 0. */
 function outlineGo(lines, out) {
   for (const [index, line] of lines.entries()) {
     const trimmed = line.trim();
@@ -244,6 +245,7 @@ function outlineGo(lines, out) {
       out.add(index, 'function', match[1], line);
       continue;
     }
+    if (indentOf(line) !== 0) continue;
     match = GO_TYPE.exec(trimmed);
     if (match) {
       const rest = match[2];

@@ -1130,31 +1130,6 @@ html[data-gateway-cursor] body :not(input, textarea, select, [contenteditable='t
   opacity: 0;
 }
 
-/* Files: in the folder, loose once read, stacked by their concept, then absorbed by its name. */
-.build-file {
-  color: var(--color-text-secondary);
-  border: 1px solid var(--color-border-strong);
-  background: var(--color-panel);
-}
-
-.build-file-dot {
-  background: var(--map-indigo-bright);
-}
-
-.build-file-at[data-file='gone'] {
-  opacity: 0;
-  scale: 0.5;
-}
-
-.build-file-at[data-file='waiting'] {
-  opacity: 0.38;
-}
-
-.build-file-at[data-file='live'] .build-file {
-  color: var(--color-text-primary);
-  border-color: var(--gateway-window-edge);
-}
-
 /* Drawn pieces that answer nothing: the pointer, the carried file and the labels never take a press
    meant for the concept under them. */
 .build-agent-at,

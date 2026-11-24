@@ -83,7 +83,7 @@ export function findOrphans(rootPath, options = {}) {
       kind,
       title: doc.frontmatter.title || doc.frontmatter.name || doc.slug,
       // Same row shape as list_concepts and find_backlinks, so an agent can filter
-      // orphans without a follow-up get_concept.
+      // orphans without a follow-up get_concepts.
       domain: doc.frontmatter.domain,
       mtime: doc.mtime,
     });

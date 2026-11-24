@@ -221,7 +221,7 @@ describe("formatV2HandoffText", () => {
         "depends_names: relation-graph",
         "belongs_to_names: ontology-atlas",
         "related_names: mcp-tool-server, agent-handoff",
-        'next: get_concept("ai-agent-partner") → review context, then patch_concept / add_relation as needed',
+        'next: get_concepts({slugs:["ai-agent-partner"]}) → review context, then patch_concept / add_relations as needed',
       ].join("\n"),
     );
   });
@@ -273,12 +273,12 @@ describe("formatV2HandoffText", () => {
 
     expect(text).toContain("source: read-only-sample");
     expect(text).toContain(
-      "write_guard: do not run get_concept / patch_concept / add_relation for this sample node",
+      "write_guard: do not run get_concepts / patch_concept / add_relations for this sample node",
     );
     expect(text).toContain(
       "next: open a markdown vault, then copy a node handoff from that loaded vault",
     );
-    expect(text).not.toContain('get_concept("capabilities/product-register")');
+    expect(text).not.toContain('get_concepts({slugs:["capabilities/product-register"]})');
   });
 });
 

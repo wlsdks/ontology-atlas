@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, Sparkles, Trash2, X } from "lucide-react";
+import { Sparkles, Trash2, X } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 
 import {
@@ -11,7 +11,11 @@ import {
   OntologyMapKindGlyph,
   controlClass,
 } from "@/shared/ui";
-import type { FootprintTrailEntry, TrailStepCaption } from "../../lib/trail/footprint-trail";
+import {
+  trailStepCaptionText,
+  type FootprintTrailEntry,
+  type TrailStepCaption,
+} from "../../lib/trail/footprint-trail";
 import { resolveLanePopoverAlign, type LanePopoverAlign } from "./lane-popover-align";
 
 export interface TopologyTrailChipLabels {
@@ -28,25 +32,9 @@ export interface TopologyTrailChipLabels {
   clearLabel: string;
   clearConfirmLabel: string;
   clearAriaLabel: string;
-  pastLinkLabel: string;
-  pastHeading: string;
-  pastBackAriaLabel: string;
-  pastDeleteAriaLabel: string;
-  pastClearAllLabel: string;
-  pastClearAllConfirmLabel: string;
-  pastCapCaption: string;
-  pastEmptyBody: string;
 }
 
-export interface TopologyPastWalkRow {
-  id: string;
-  routeLabel: string;
-  metaLabel: string;
-  replayable: boolean;
-  ariaLabel: string | null;
-}
-
-const CLEAR_ALL_CONFIRM_RESET_MS = 4000;
+const CLEAR_CONFIRM_RESET_MS = 4000;
 
 const TRAIL_POPOVER_WIDTH = 248;
 
@@ -72,23 +60,12 @@ export interface TopologyTrailChipProps {
    */
   onLensChange?: (active: boolean) => void;
   onHoverEntry?: (id: string | null) => void;
-  pastWalks: readonly TopologyPastWalkRow[];
-  /** Null while archiving normally; with no archive and no notice the level-1 link does not appear. */
-  pastNotice: string | null;
-  /**
-   * The caller archives the trail in progress, refines and loads this one, and focuses its last
-   * step; the chip only returns to level 1.
-   */
-  onReplayPastWalk: (id: string) => void;
-  onDeletePastWalk: (id: string) => void;
-  onClearPastWalks: () => void;
 }
 
 /**
  * The walked-trail chip: a mini timeline popover, newest on top with relative-step captions, like
  * every time-ordered list in the app. A self-closing anchored popover owning its own Escape, so the
- * global Esc ladder does not fire twice. Level 2 in the same shell holds archived trails without
- * indigo, since no row there is "you are here"; replaying archives the current trail first.
+ * global Esc ladder does not fire twice.
  */
 export function TopologyTrailChip({
   label,
@@ -103,23 +80,15 @@ export function TopologyTrailChip({
   onClear,
   onLensChange,
   onHoverEntry,
-  pastWalks,
-  pastNotice,
-  onReplayPastWalk,
-  onDeletePastWalk,
-  onClearPastWalks,
 }: TopologyTrailChipProps) {
   const [open, setOpen] = useState(false);
-  const [showPast, setShowPast] = useState(false);
-  const [clearAllArmed, setClearAllArmed] = useState(false);
   // A session trail is not in the URL and cannot be rebuilt, so both clear controls arm first and
-  // the second press discards, matching clear-all.
+  // the second press discards.
   const [clearArmed, setClearArmed] = useState(false);
   // Chosen on open against the toolbar box, or a right-hung popover lands under INDEX.
   const [align, setAlign] = useState<LanePopoverAlign>("end");
   const rootRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
-  const pastLinkRef = useRef<HTMLButtonElement | null>(null);
 
   // Only the render is reversed; model and packet stay chronological for machine replay.
   const recentFirstEntries = useMemo(
@@ -132,13 +101,11 @@ export function TopologyTrailChip({
 
   const close = useCallback((returnFocus: boolean) => {
     setOpen(false);
-    setShowPast(false);
-    setClearAllArmed(false);
     setClearArmed(false);
     if (returnFocus) triggerRef.current?.focus();
   }, []);
 
-  // Off on unmount too, or the map freezes dimmed; stays on at level 2.
+  // Off on unmount too, or the map freezes dimmed.
   useEffect(() => {
     onLensChange?.(open);
     if (!open) {
@@ -151,22 +118,9 @@ export function TopologyTrailChip({
     };
   }, [open, onLensChange, onHoverEntry]);
 
-  // Switching levels unmounts rows without a pointer leave, so brushing is released here in both
-  // directions.
-  useEffect(() => {
-    onHoverEntry?.(null);
-  }, [showPast, onHoverEntry]);
-
-  // Disarms itself, or a careless click later deletes.
-  useEffect(() => {
-    if (!clearAllArmed) return;
-    const timer = window.setTimeout(() => setClearAllArmed(false), CLEAR_ALL_CONFIRM_RESET_MS);
-    return () => window.clearTimeout(timer);
-  }, [clearAllArmed]);
-
   useEffect(() => {
     if (!clearArmed) return;
-    const timer = window.setTimeout(() => setClearArmed(false), CLEAR_ALL_CONFIRM_RESET_MS);
+    const timer = window.setTimeout(() => setClearArmed(false), CLEAR_CONFIRM_RESET_MS);
     return () => window.clearTimeout(timer);
   }, [clearArmed]);
 
@@ -278,155 +232,8 @@ export function TopologyTrailChip({
         className={`absolute ${align === "end" ? "right-0" : "left-0"} top-[calc(100%+8px)] z-30 w-[248px] rounded-card border border-[color:var(--topology-floating-panel-border)] bg-[color:var(--topology-floating-panel-surface)] shadow-[var(--topology-floating-panel-shadow)]`}
       >
           <div className="flex items-center justify-between gap-2 border-b border-[color:var(--topology-floating-panel-divider)] px-3 py-2 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
-            {showPast ? (
-              <>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowPast(false);
-                    setClearAllArmed(false);
-                    pastLinkRef.current?.focus();
-                  }}
-                  aria-label={labels.pastBackAriaLabel}
-                  data-testid="topology-trail-past-back"
-                  className={controlClass({ shape: "icon", size: "xs", tone: "muted", className: "-ml-1 h-5 w-5 rounded-full hover:text-[color:var(--color-text-primary)]" })}
-                >
-                  <ChevronLeft size={ICON_SIZE.md} aria-hidden />
-                </button>
-                <span className="min-w-0 flex-1 truncate">{labels.pastHeading}</span>
-              </>
-            ) : (
-              <>
-                <span className="min-w-0 flex-1 truncate">{labels.heading}</span>
-                {/* Only with something to show: a link to an empty past is only ink. */}
-                {pastWalks.length > 0 || pastNotice !== null ? (
-                  <button
-                    ref={pastLinkRef}
-                    type="button"
-                    onClick={() => setShowPast(true)}
-                    data-testid="topology-trail-past-link"
-                    className={controlClass({ shape: "link", tone: "muted", className: "shrink-0 rounded-chip px-1 py-0.5 hover:text-[color:var(--color-text-primary)]" })}
-                  >
-                    {labels.pastLinkLabel}
-                  </button>
-                ) : null}
-              </>
-            )}
+            <span className="min-w-0 flex-1 truncate">{labels.heading}</span>
           </div>
-          {showPast ? (
-            <>
-              {pastNotice !== null ? (
-                <p
-                  data-testid="topology-trail-past-notice"
-                  className="border-b border-[color:var(--topology-floating-panel-divider)] px-3 py-2 text-caption leading-label text-[color:var(--color-text-tertiary)]"
-                >
-                  {pastNotice}
-                </p>
-              ) : null}
-              {pastWalks.length > 0 ? (
-                <ul
-                  data-testid="topology-trail-past-list"
-                  className="flex max-h-[280px] flex-col overflow-y-auto px-2 py-1.5"
-                >
-                  {pastWalks.map((walk) => (
-                    <li
-                      key={walk.id}
-                      data-testid="topology-trail-past-row"
-                      data-replayable={walk.replayable ? "true" : "false"}
-                      className="flex h-[47px] shrink-0 items-center gap-1"
-                    >
-                      {walk.replayable ? (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            onReplayPastWalk(walk.id);
-                            // The replayed trail is on level 1.
-                            setShowPast(false);
-                            setClearAllArmed(false);
-                          }}
-                          aria-label={walk.ariaLabel ?? undefined}
-                          data-testid="topology-trail-past-replay"
-                          // A text lift, not a background (overlay-1 hover is 1.03:1 here);
-                          // through `group` since the text is a child.
-                          className={controlClass({ shape: "row", size: "sm", className: "group min-w-0 flex-1 flex-col justify-center gap-0.5 self-stretch px-1.5 hover:bg-[color:var(--color-overlay-1)]" })}
-                        >
-                          <span className="w-full truncate text-body text-[color:var(--color-text-secondary)] transition-colors group-hover:text-[color:var(--color-text-primary)]">
-                            {walk.routeLabel}
-                          </span>
-                          <span className="w-full truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
-                            {walk.metaLabel}
-                          </span>
-                        </button>
-                      ) : (
-                        <span className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 px-1.5">
-                          {/* Tertiary, between a live row and the caption, so line 2 reads as
-                             explaining line 1. */}
-                          <span className="truncate text-body text-[color:var(--color-text-tertiary)]">
-                            {walk.routeLabel}
-                          </span>
-                          <span className="truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
-                            {walk.metaLabel}
-                          </span>
-                        </span>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => onDeletePastWalk(walk.id)}
-                        aria-label={labels.pastDeleteAriaLabel}
-                        data-testid="topology-trail-past-delete"
-                        className={controlClass({
-                          shape: "icon",
-                          size: "lg",
-                          tone: "muted",
-                          className: "hover:text-[color:var(--color-text-primary)]",
-                        })}
-                      >
-                        <X size={ICON_SIZE.md} aria-hidden />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p
-                  data-testid="topology-trail-past-empty"
-                  className="px-3 py-4 text-caption leading-label text-[color:var(--color-text-quaternary)]"
-                >
-                  {labels.pastEmptyBody}
-                </p>
-              )}
-              <div className="flex items-center justify-between gap-2 border-t border-[color:var(--topology-floating-panel-divider)] px-2 py-1.5">
-                {pastWalks.length > 0 ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!clearAllArmed) {
-                        setClearAllArmed(true);
-                        return;
-                      }
-                      setClearAllArmed(false);
-                      onClearPastWalks();
-                    }}
-                    data-testid="topology-trail-past-clear-all"
-                    className={controlClass({
-                      shape: "segment",
-                      tone: clearAllArmed ? "strong" : "muted",
-                      className: clearAllArmed
-                        ? undefined
-                        : "hover:text-[color:var(--color-text-primary)]",
-                    })}
-                  >
-                    {clearAllArmed ? labels.pastClearAllConfirmLabel : labels.pastClearAllLabel}
-                  </button>
-                ) : (
-                  <span />
-                )}
-                <span className="shrink-0 font-mono text-caption text-[color:var(--color-text-quaternary)]">
-                  {labels.pastCapCaption}
-                </span>
-              </div>
-            </>
-          ) : (
-          <>
           <ol className="flex max-h-[280px] flex-col overflow-y-auto px-3 py-2.5">
             {recentFirstEntries.map(({ entry, caption, oldest }, stepsBack) => {
               const isCurrent = entry.id === currentId;
@@ -499,13 +306,7 @@ export function TopologyTrailChip({
                        Outside the button so the aria-label stays the destination; the oldest
                        row keeps the empty slot for equal height. */}
                     {(() => {
-                      const text = oldest
-                        ? ""
-                        : caption
-                          ? caption.reason
-                            ? `${caption.relationLabel} · ${caption.reason}`
-                            : caption.relationLabel
-                          : labels.stepUnrelatedLabel;
+                      const text = oldest ? "" : trailStepCaptionText(caption, labels.stepUnrelatedLabel);
                       return (
                         <span
                           data-testid="topology-trail-step-link"
@@ -544,8 +345,6 @@ export function TopologyTrailChip({
               {clearArmed ? labels.clearConfirmLabel : labels.clearLabel}
             </button>
           </div>
-          </>
-          )}
       </Surface>
     </div>
   );

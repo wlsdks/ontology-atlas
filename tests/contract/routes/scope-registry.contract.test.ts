@@ -68,7 +68,7 @@ const URL_KEY_REGISTRY: Record<string, { scope: Scope; note: string;
   index: { scope: "global", note: "expanded|collapsed" },
   recent: { scope: "global", note: "auto|1|7|30" },
   ask: { scope: "global", note: "enumeration of intent kinds" },
-  view: { scope: "global", note: "map view enumeration: hex, structure, 3d, neural; strata reads as 3d and coupling as neural" },
+  view: { scope: "global", note: "map view enumeration: hex, 3d, neural; strata reads as 3d and coupling as neural" },
 };
 
 interface StorageEntry {
@@ -101,8 +101,8 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "library.wikiWriteMode", kind: "storage", scope: "global", file: "src/shared/lib/preferences/library-preferences.ts", note: "How an agent's wiki page lands on this computer: auto or ask" },
   { key: "atlas.appearance.frameMeter", kind: "storage", scope: "global", note: "frame meter display preference" },
   { key: "atlas.appearance.view3d", kind: "storage", scope: "global", note: "3D view (the tree) preference, off (2D) by default" },
-  { key: "atlas.appearance.structure", kind: "storage", scope: "global", note: "Domain structure preference" },
-    { key: "atlas.appearance.galaxy", kind: "storage", scope: "global", note: "Retired view preference, read only for migration" },
+  { key: "atlas.appearance.structure", kind: "storage", scope: "global", note: "Retired view preference, never read; removed on the next pick" },
+  { key: "atlas.appearance.galaxy", kind: "storage", scope: "global", note: "Retired view preference, never read; removed on the next pick" },
   { key: "atlas.appearance.territories", kind: "storage", scope: "global", note: "Retired view preference, never read; removed on the next pick" },
   { key: "atlas.appearance.hex-board", kind: "storage", scope: "global", note: "Hex board view preference (one tile per capability) — off by default" },
   { key: "atlas.appearance.hex-relief", kind: "storage", scope: "global", note: "Hex board relief pose preference — off by default" },

@@ -448,7 +448,7 @@ function pushNonCanonicalGraphArrayIssues(frontmatter, issues) {
       issues.push({
         code: 'non-canonical-graph-array',
         severity: 'warning',
-        message: `\`${key}:\` is not a canonical set -- sorted and deduplicated. Writing it again through add_relation or patch_concept normalises it.`,
+        message: `\`${key}:\` is not a canonical set -- sorted and deduplicated. Writing it again through add_relations or patch_concept normalises it.`,
       });
     }
   }

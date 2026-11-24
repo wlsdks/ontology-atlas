@@ -37,28 +37,38 @@ export interface TrailEdge {
   label?: string;
 }
 
-export interface TrailStepLink {
-  type: string;
-  reason: string | null;
-}
+/** A real move between two steps that share no edge, which is a valid walk. */
+export const TRAIL_STEP_UNRELATED = "unrelated";
+
+export type TrailStepLink = { type: string; reason: string | null } | typeof TRAIL_STEP_UNRELATED;
 
 function pairKey(a: string, b: string): string {
   return a < b ? `${a}\u0000${b}` : `${b}\u0000${a}`;
 }
 
 /**
- * Entry `i` links `trail[i]` to `trail[i - 1]`; index 0 is always null (no predecessor, not
- * "unrelated"). O(E + T) with a pair-key map. When several edges join a pair, the one carrying a
- * reason wins.
+ * Entry `i` describes the move that arrived at the last visit of `rowIds[i]`, only when that move
+ * came from `rowIds[i - 1]`; any other arrival (a revisit, a deleted step between) has no link,
+ * so a de-duplicated list never claims a move the walk did not make. O(E + T) with pair-key and
+ * last-index maps; when several edges join a pair, the one carrying a reason wins.
  */
 export function buildTrailStepLinks(
-  trail: readonly string[],
+  steps: readonly string[],
+  rowIds: readonly string[],
   edges: readonly TrailEdge[],
 ): (TrailStepLink | null)[] {
-  if (trail.length === 0) return [];
+  const lastIndexOf = new Map<string, number>();
+  steps.forEach((id, i) => lastIndexOf.set(id, i));
+  const arrivedFromRowAbove = rowIds.map((id, i) => {
+    if (i === 0) return false;
+    const index = lastIndexOf.get(id);
+    return index !== undefined && index > 0 && steps[index - 1] === rowIds[i - 1];
+  });
   const wanted = new Set<string>();
-  for (let i = 1; i < trail.length; i += 1) wanted.add(pairKey(trail[i - 1], trail[i]));
-  const byPair = new Map<string, TrailStepLink>();
+  rowIds.forEach((id, i) => {
+    if (arrivedFromRowAbove[i]) wanted.add(pairKey(rowIds[i - 1], id));
+  });
+  const byPair = new Map<string, { type: string; reason: string | null }>();
   if (wanted.size > 0) {
     for (const edge of edges) {
       const key = pairKey(edge.from, edge.to);
@@ -69,36 +79,31 @@ export function buildTrailStepLinks(
       byPair.set(key, { type: edge.type, reason });
     }
   }
-  return trail.map((id, i) => (i === 0 ? null : byPair.get(pairKey(trail[i - 1], id)) ?? null));
+  return rowIds.map((id, i) =>
+    arrivedFromRowAbove[i] ? byPair.get(pairKey(rowIds[i - 1], id)) ?? TRAIL_STEP_UNRELATED : null,
+  );
 }
 
-export interface TrailStepCaption {
-  relationLabel: string;
-  reason: string | null;
-}
+export type TrailStepCaption =
+  | { relationLabel: string; reason: string | null }
+  | typeof TRAIL_STEP_UNRELATED;
 
-export function graphIdToConceptSlug(nodeId: string): string {
-  const index = nodeId.indexOf(":");
-  if (index < 0) return nodeId;
-  const tail = nodeId.slice(index + 1).trim();
-  return tail || nodeId;
+/** Null and an unknown caption read as no caption: the row claims nothing about its arrival. */
+export function trailStepCaptionText(
+  caption: TrailStepCaption | null | undefined,
+  unrelatedLabel: string,
+): string {
+  if (!caption) return "";
+  if (caption === TRAIL_STEP_UNRELATED) return unrelatedLabel;
+  return caption.reason ? `${caption.relationLabel} · ${caption.reason}` : caption.relationLabel;
 }
 
 export interface FootprintTrailEntry {
   id: string;
   title: string;
   kind: string;
-  /**
-   * The vault-known name (`resolveNodeAgentTarget`); deriving it from the id tail invents names for
-   * flattened derived slugs.
-   */
-  agentRef?: string | null;
-  /** Without a document the packet suggests creating one instead of `get_concept`. */
-  documented?: boolean;
-}
-
-function agentRefOf(entry: FootprintTrailEntry): string {
-  return entry.agentRef?.trim() || graphIdToConceptSlug(entry.id);
+  /** The vault slug (`capabilities/vault-graph-query`); null for a concept with no document. */
+  slug: string | null;
 }
 
 export interface FootprintTrailPacketLabels {
@@ -107,57 +112,37 @@ export interface FootprintTrailPacketLabels {
   reviewHint: string;
   undocumented: string;
   pathHint: string;
-  dustyHint?: string;
-  unrelated?: string;
+  unrelated: string;
 }
 
 /**
  * MCP calls stay English regardless of UI locale so the packet pastes straight into a coding agent.
+ * One `get_concepts` call reads the whole walk; a concept without a document is named by title.
  */
 export function formatFootprintTrailAgentPacket(
   entries: readonly FootprintTrailEntry[],
   labels: FootprintTrailPacketLabels,
-  dustySlugs: readonly string[] = [],
   captions: readonly (TrailStepCaption | null)[] = [],
 ): string {
   const lines: string[] = [`# ${labels.title}`, labels.order];
   entries.forEach((entry, i) => {
-    lines.push(`${i + 1}. ${entry.title} (${entry.kind}): ${entry.id}`);
-    // The reason for each step is what the vault holds that source cannot state; silent without
-    // captions.
-    if (i === 0 || i >= captions.length) return;
-    const caption = captions[i];
-    if (caption) {
-      lines.push(`   — ${caption.reason ? `${caption.relationLabel} · ${caption.reason}` : caption.relationLabel}`);
-    } else if (labels.unrelated) {
-      lines.push(`   — ${labels.unrelated}`);
-    }
+    lines.push(`${i + 1}. ${entry.title} (${entry.kind})${entry.slug ? `: ${entry.slug}` : ""}`);
+    const caption = trailStepCaptionText(captions[i], labels.unrelated);
+    if (caption) lines.push(`   — ${caption}`);
   });
+  const slugs = entries.flatMap((entry) => (entry.slug ? [entry.slug] : []));
   lines.push("");
   lines.push(labels.reviewHint);
+  if (slugs.length > 0) lines.push(`get_concepts(${JSON.stringify({ slugs })})`);
   for (const entry of entries) {
-    // `get_concept` on an undocumented concept answers "not found", so name the reference another
-    // document wrote down.
-    lines.push(
-      entry.documented === false
-        ? `# ${agentRefOf(entry)} — ${labels.undocumented}`
-        : `get_concept("${agentRefOf(entry)}")`,
-    );
+    if (!entry.slug) lines.push(`${entry.title}: ${labels.undocumented}`);
   }
-  if (entries.length >= 2) {
-    const first = agentRefOf(entries[0]);
-    const last = agentRefOf(entries[entries.length - 1]);
+  const first = entries[0]?.slug;
+  const last = entries[entries.length - 1]?.slug;
+  if (entries.length >= 2 && first && last) {
     lines.push("");
     lines.push(labels.pathHint);
-    lines.push(`find_path("${first}", "${last}")`);
-  }
-  if (labels.dustyHint && dustySlugs.length > 0) {
-    lines.push("");
-    lines.push(labels.dustyHint);
-    for (const slug of dustySlugs.slice(0, 3)) {
-      lines.push(`get_concept("${graphIdToConceptSlug(slug)}")`);
-    }
-    lines.push(formatQueryOntologyCall({ operation: "maintenance_plan" }));
+    lines.push(formatQueryOntologyCall({ operation: "path", from: first, to: last }));
   }
   return lines.join("\n");
 }

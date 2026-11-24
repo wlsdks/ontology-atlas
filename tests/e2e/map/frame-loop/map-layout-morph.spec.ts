@@ -216,7 +216,6 @@ async function openAt(page: Page, view: View, reduced = false, synth: number | n
         const flag = (key: string, on: boolean) => window.localStorage.setItem(`atlas.appearance.${key}`, on ? "on" : "off");
         flag("hex-relief", tilted);
         flag("hex-board", initial === "hex");
-        flag("structure", false);
         flag("view3d", initial === "3d");
     }, { initial: view, tilted: relief });
     await installSampler(page);

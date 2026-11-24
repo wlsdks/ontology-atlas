@@ -1,4 +1,4 @@
-import { ELEMENT_NAMING_RULE_BATCH_EN, ELEMENT_NAMING_RULE_EN, FAMILY_SCOPE_RULE_EN } from '../../construction/construction-rules.mjs';
+import { ELEMENT_NAMING_RULE_EN, FAMILY_SCOPE_RULE_EN } from '../../construction/construction-rules.mjs';
 import { GRAPH_REF_ARRAY_MAX_ITEMS } from '../tool-schemas/array-limits.mjs';
 import {
   NON_BLANK_STRING_SCHEMA,
@@ -89,11 +89,12 @@ export const ADD_CONCEPT_TOOL = {
 export const ADD_CONCEPTS_TOOL = {
   name: 'add_concepts',
   description:
-    'Create several nodes in one call (max 50), each row shaped like `add_concept`; use it for the construction batch after analyze_repo_structure. ' +
+    'Create one or more new ontology nodes (.md files) for a project, domain, capability, element or document found in the code: one row for one node, up to 50 per call; use it for the construction batch after analyze_repo_structure. Replaces add_concept. ' +
+    'A row whose slug exists fails: use patch_concept then. Frontmatter is normalized per kind; a capability or element without `domain:` comes back as a `warning`, not an error. ' +
     'Rows are independent and there is no rollback: a bad row (existing slug, invalid kind, missing or unknown field, duplicate input slug) returns `{slug, ok: false, error}` labelled `concepts[n]` with repair fields, and the rest still land, in input order. ' +
-    'A title matching an earlier row lands with a near-duplicate `warning`: patch_concept the earlier node instead. ' +
+    'A title matching an existing node or an earlier row lands with a near-duplicate `warning`: patch_concept that node instead. ' +
     'A written row is `{ok, slug, changed, mtime, warnings?}`. Invalid-only batches return no row-level write metadata, no `findings` and no `coverage`; otherwise the response adds ' + WRITE_FINDINGS_GUIDANCE + ', and `coverage`. ' +
-    FAMILY_SCOPE_RULE_EN + ' ' + ELEMENT_NAMING_RULE_BATCH_EN,
+    FAMILY_SCOPE_RULE_EN + ' ' + ELEMENT_NAMING_RULE_EN,
   inputSchema: {
     type: 'object',
     properties: {
@@ -103,18 +104,21 @@ export const ADD_CONCEPTS_TOOL = {
         items: {
           type: 'object',
           properties: {
-            slug: NON_BLANK_STRING_SCHEMA,
+            slug: nonBlankStringSchema(
+              'Flat under the kind folder ("elements/jwt-token"), no .md. Never a code path: "elements/src/views/home" is rejected.',
+            ),
             kind: {
               ...NON_BLANK_STRING_SCHEMA,
               enum: ['project', 'domain', 'capability', 'element', 'document'],
+              description: 'vault-readme is reserved for the generated README.',
             },
             title: NON_BLANK_STRING_SCHEMA,
-            domain: NON_BLANK_STRING_SCHEMA,
-            domains: { type: 'array', maxItems: GRAPH_REF_ARRAY_MAX_ITEMS, items: NON_BLANK_STRING_SCHEMA },
-            capabilities: { type: 'array', maxItems: GRAPH_REF_ARRAY_MAX_ITEMS, items: NON_BLANK_STRING_SCHEMA },
-            elements: { type: 'array', maxItems: GRAPH_REF_ARRAY_MAX_ITEMS, items: NON_BLANK_STRING_SCHEMA },
+            domain: nonBlankStringSchema('Parent domain slug; expected for a capability or element.'),
+            domains: { type: 'array', maxItems: GRAPH_REF_ARRAY_MAX_ITEMS, items: NON_BLANK_STRING_SCHEMA, description: 'Domain slugs this project owns.' },
+            capabilities: { type: 'array', maxItems: GRAPH_REF_ARRAY_MAX_ITEMS, items: NON_BLANK_STRING_SCHEMA, description: 'Capability slugs this project or domain owns.' },
+            elements: { type: 'array', maxItems: GRAPH_REF_ARRAY_MAX_ITEMS, items: NON_BLANK_STRING_SCHEMA, description: 'Element slugs this project or capability uses.' },
             path: nonBlankStringSchema(
-              'Entry file or folder, repo-relative.',
+              'The entry file or folder, repo-relative; checked by validate_vault path drift.',
             ),
             body: { type: 'string', description: CONCEPT_BODY_DESCRIPTION },
             labels: LOCALE_LABELS_SCHEMA,
@@ -122,7 +126,7 @@ export const ADD_CONCEPTS_TOOL = {
           required: ['slug', 'kind', 'title'],
           additionalProperties: false,
         },
-        description: 'Rows shaped like `add_concept` input.',
+        description: 'One row per node: `slug`, `kind` and `title`, with the kind\'s relation fields.',
       },
     },
     required: ['concepts'],
@@ -208,7 +212,7 @@ export const PATCH_CONCEPT_TOOL = {
         type: 'number',
         minimum: 0,
         description:
-          'Conflict guard: mtime from the last read or write of this node (add_relation(s) only when guarded).',
+          'Conflict guard: mtime from the last read or write of this node (add_relations returns it only when guarded).',
       },
     },
     required: ['slug'],

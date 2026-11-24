@@ -2,11 +2,11 @@ import { formatCount } from '../output.mjs';
 import { compileSummaryFailure } from './compile.mjs';
 import { listConceptsFailure } from './concept-reads.mjs';
 import { overviewFailure } from './query-plans.mjs';
-import { listKindsFailure, validateVaultFailure } from './vault-census.mjs';
+import { censusFailure, validateVaultFailure } from './vault-census.mjs';
 
 export function verifyCountConsistencyFailure({ kinds, list, validation, compiled, overview }) {
   if (
-    (kinds && listKindsFailure(kinds)) ||
+    (kinds && censusFailure(kinds)) ||
     (list && listConceptsFailure(list)) ||
     (validation && validateVaultFailure(validation)) ||
     (compiled && compileSummaryFailure(compiled)) ||
@@ -16,7 +16,7 @@ export function verifyCountConsistencyFailure({ kinds, list, validation, compile
   }
 
   const counts = [
-    ['list_kinds.total', kinds?.total],
+    ['census.total', kinds?.total],
     ['list_concepts.total', list?.total],
     ['compile_ontology.nodeCount', compiled?.nodeCount],
     ['overview.graph.nodes', overview?.graph?.nodes],
@@ -36,7 +36,7 @@ export function verifyCountConsistencyFailure({ kinds, list, validation, compile
       const kindsCount = kinds.byKind[kind] ?? 0;
       const compiledCount = compiled.byKind[kind] ?? 0;
       if (kindsCount !== compiledCount) {
-        return `verify byKind mismatch: ${kind}: list_kinds ${kindsCount}, compile_ontology ${compiledCount}`;
+        return `verify byKind mismatch: ${kind}: census ${kindsCount}, compile_ontology ${compiledCount}`;
       }
     }
   }
@@ -46,7 +46,7 @@ export function verifyCountConsistencyFailure({ kinds, list, validation, compile
       const kindsCount = kinds.byKind[kind] ?? 0;
       const overviewCount = overview.byKind[kind] ?? 0;
       if (kindsCount !== overviewCount) {
-        return `verify byKind mismatch: ${kind}: list_kinds ${kindsCount}, overview ${overviewCount}`;
+        return `verify byKind mismatch: ${kind}: census ${kindsCount}, overview ${overviewCount}`;
       }
     }
   }
@@ -55,7 +55,7 @@ export function verifyCountConsistencyFailure({ kinds, list, validation, compile
 
 export function verifyCountConsistencySummary({ kinds, list, compiled, overview }) {
   const sources = [
-    ['list_kinds', kinds?.total],
+    ['census', kinds?.total],
     ['list_concepts', list?.total],
     ['compile_ontology', compiled?.nodeCount],
     ['overview', overview?.graph?.nodes],

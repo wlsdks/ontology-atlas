@@ -2,9 +2,9 @@
   "_generatedBy": "pnpm docs:surface:build",
   "_contract": "Derived from the MCP tool registry and the CLI command registry. Never hand-edit — run `pnpm docs:surface:build` and commit the diff.",
   "mcp": {
-    "toolCount": 40,
-    "readToolCount": 24,
-    "writeToolCount": 16,
+    "toolCount": 33,
+    "readToolCount": 19,
+    "writeToolCount": 14,
     "tools": [
       {
         "name": "absorb_document",
@@ -19,27 +19,6 @@
         ]
       },
       {
-        "name": "add_concept",
-        "mode": "write",
-        "arguments": [
-          "body",
-          "capabilities",
-          "domain",
-          "domains",
-          "elements",
-          "kind",
-          "labels",
-          "path",
-          "slug",
-          "title"
-        ],
-        "required": [
-          "kind",
-          "slug",
-          "title"
-        ]
-      },
-      {
         "name": "add_concepts",
         "mode": "write",
         "arguments": [
@@ -47,22 +26,6 @@
         ],
         "required": [
           "concepts"
-        ]
-      },
-      {
-        "name": "add_relation",
-        "mode": "write",
-        "arguments": [
-          "expected_mtime",
-          "from",
-          "to",
-          "type",
-          "why"
-        ],
-        "required": [
-          "from",
-          "to",
-          "type"
         ]
       },
       {
@@ -185,48 +148,11 @@
         ]
       },
       {
-        "name": "find_neighbors",
-        "mode": "read",
-        "arguments": [
-          "direction",
-          "includeNodes",
-          "limit",
-          "slug",
-          "types"
-        ],
-        "required": [
-          "slug"
-        ]
-      },
-      {
         "name": "find_orphans",
         "mode": "read",
         "arguments": [
           "excludeKinds",
           "kind"
-        ],
-        "required": []
-      },
-      {
-        "name": "find_path",
-        "mode": "read",
-        "arguments": [
-          "from",
-          "maxHops",
-          "to"
-        ],
-        "required": [
-          "from",
-          "to"
-        ]
-      },
-      {
-        "name": "get_concept",
-        "mode": "read",
-        "arguments": [
-          "body",
-          "slug",
-          "uid"
         ],
         "required": []
       },
@@ -279,18 +205,6 @@
         "required": []
       },
       {
-        "name": "index_project",
-        "mode": "read",
-        "arguments": [
-          "maxDepth",
-          "maxFiles",
-          "rootPath",
-          "skipImports",
-          "threshold"
-        ],
-        "required": []
-      },
-      {
         "name": "infer_imports",
         "mode": "read",
         "arguments": [
@@ -339,12 +253,6 @@
           "limit",
           "offset"
         ],
-        "required": []
-      },
-      {
-        "name": "list_kinds",
-        "mode": "read",
-        "arguments": [],
         "required": []
       },
       {

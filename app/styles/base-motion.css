@@ -244,52 +244,6 @@
     animation: panelCrossfadeIn var(--motion-fast) var(--motion-ease) both;
   }
 
-  @keyframes structureLinkIn {
-    from { stroke-dashoffset: 1; }
-    to { stroke-dashoffset: 0; }
-  }
-  .structure-link-in {
-    stroke-dasharray: 1;
-    animation: structureLinkIn var(--motion-base) var(--motion-ease) both;
-  }
-  /* What a drawn link reaches (its arrowhead, the target's frame) lands as the stroke arrives. */
-  .structure-link-land {
-    animation: panelCrossfadeIn var(--motion-fast) var(--motion-ease) calc(var(--motion-base) - var(--motion-fast)) both;
-  }
-  .structure-link-arrival {
-    transition-delay: calc(var(--motion-base) - var(--motion-fast));
-  }
-  .structure-link-out {
-    animation: overlayFadeOut calc(var(--motion-base) * 0.67) var(--motion-ease-exit) both;
-    pointer-events: none;
-  }
-  @keyframes structureItemIn {
-    from { opacity: 0; transform: translateY(var(--overlay-enter-translate)); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  .structure-item-in {
-    animation: structureItemIn var(--motion-base) var(--motion-ease) var(--structure-item-delay, 0s) both;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .structure-item-in,
-    .structure-link-in,
-    .structure-link-land {
-      animation-name: panelCrossfadeIn !important;
-      animation-duration: var(--motion-fast) !important;
-      animation-delay: 0ms !important;
-      transform: none !important;
-      stroke-dasharray: none;
-      stroke-dashoffset: 0;
-    }
-    .structure-link-arrival {
-      transition-delay: 0ms !important;
-    }
-    .structure-link-out {
-      animation-duration: var(--motion-fast) !important;
-    }
-  }
-
   @keyframes panelCrossfadeIn {
     from {
       opacity: 0;

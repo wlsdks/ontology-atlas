@@ -63,7 +63,6 @@ import { refreshIndexDependentTokens } from "@/widgets/ontology-map";
 import { type IndexPanelState } from "@/widgets/topology-index-panel";
 import { buildNavRailContextHrefs } from "../lib/selection/nav-rail-context-hrefs";
 import { useFootprintTrail } from "../model/trail/use-footprint-trail";
-import { usePastTrails } from "../model/trail/use-past-trails";
 import { TopologyBlockingOverlays } from "./map-overlays/TopologyBlockingOverlays";
 
 
@@ -117,7 +116,7 @@ export function HomePage() {
 
 function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   const topologyPreferences = useTopologyPreferences();
-  const { t, siteT, relationLabelInRegister, activeLocale, view3d, neural, structure } = topologyPreferences;
+  const { t, siteT, relationLabelInRegister, activeLocale, view3d, neural } = topologyPreferences;
   const [localGraphStack, setLocalGraphStack] = useState<string[]>([]);
   // Held through the exit window, or the pill empties as it leaves. Keyed by the flattened stack,
   // since the array identity changes every render.
@@ -289,7 +288,6 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
       ),
     ).join(" · ") || null,
   );
-  const [mountNowMs] = useState<number>(() => Date.now());
   const topologyGraphProjection = useTopologyGraphProjection({
     projects: renderProjects,
     localGraphRoot,
@@ -312,41 +310,23 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   });
 
   const {
-    setFootprintTrail,
-    lastVisitedNodeRef,
-    footprintNodeLookup,
     footprintTrailEntries,
     footprintTrailStepCaptions,
     footprintVisitedIds,
     footprintPacketCopied,
     copyFootprintPacket,
+    clearFootprintTrail,
     footprintLensActiveRef,
     footprintBrushNodeIdRef,
     handleFootprintLens,
     handleFootprintBrush,
   } = useFootprintTrail({
+    trailScope: deeplinkSourceReady ? vaultIdentity : null,
     canvasSelectedSlug,
     graphNodes: ontologyMapGraph.nodes,
     insightNodes: ontologyInsight?.nodes,
-    dustySlugs,
     insightEdges: ontologyInsight?.edges,
     relationLabelOf: relationLabelInRegister,
-  });
-  const {
-    pastWalkRows,
-    pastTrailNotice,
-    clearFootprintTrail,
-    handleDeletePastWalk,
-    handleClearPastWalks,
-    replayPastWalk,
-  } = usePastTrails({
-    vaultHandle: vault.status === "loaded" ? vault.handle : null,
-    vaultLoaded: vault.status === "loaded",
-    footprintTrailEntries,
-    footprintNodeLookup,
-    mountNowMs,
-    setFootprintTrail,
-    lastVisitedNodeRef,
   });
   const topologyCanvasFocus = useTopologyCanvasFocus({ topologyVaultReadModel });
   const topologyCreateIntent = useTopologyCreateIntent({
@@ -431,7 +411,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     let cancelled = false;
     // A selection keeps its camera: this overview fit, measured before the dock or INDEX has
     // resized the free map, would pull the camera off the selection.
-    if (!view3d && !structure && !acpDockFrameOpen && selectedSlugRef.current === null) {
+    if (!view3d && !acpDockFrameOpen && selectedSlugRef.current === null) {
       window.queueMicrotask(() => {
         if (!cancelled) setFitViewToken((count) => count + 1);
       });
@@ -440,7 +420,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
       cancelled = true;
       delete root.dataset.topologyIndex;
     };
-  }, [renderedIndexState, view3d, structure, acpDockFrameOpen, selectedSlugRef]);
+  }, [renderedIndexState, view3d, acpDockFrameOpen, selectedSlugRef]);
   const topologyInspectorState = useTopologyInspectorState({
     setExpandAllActive, setRouteState, nodeFocus, v2DatasheetModel, mapGraph: ontologyMapGraph, analysisMode, selectedSlug,
     topologyCanvasFocus, topologyVaultReadModel, topologyAuthoring, homeWorkbenchController,
@@ -488,7 +468,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     },
   });
   const topologyNavigationActions = useTopologyNavigationActions({
-    setExpandAllActive, setRouteState, replayPastWalk, topologyCanvasFocus, topologyPreferences,
+    setExpandAllActive, setRouteState, topologyCanvasFocus, topologyPreferences,
     topologyAuthoring, topologyGraphProjection, topologyIndexPresentation, topologySourceReadiness,
     topologyAgentOrchestration, topologyInspectorState
   });
@@ -537,7 +517,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
             {t('srHeading')}
           </h1>
           {topologySceneControls.topologyRenderState.renderCanvas && <GestureHint
-            disabled={drawerOpen || structure}
+            disabled={drawerOpen}
           />}
           <LiveAnnouncer
             message={(() => {
@@ -569,10 +549,6 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
               clearFootprintTrail={clearFootprintTrail}
               handleFootprintLens={handleFootprintLens}
               handleFootprintBrush={handleFootprintBrush}
-              pastWalkRows={pastWalkRows}
-              pastTrailNotice={pastTrailNotice}
-              handleDeletePastWalk={handleDeletePastWalk}
-              handleClearPastWalks={handleClearPastWalks}
               agentDockTouchedRef={agentDockTouchedRef}
               sampleModeSettled={sampleModeSettled}
               sampleModeKnown={sampleModeKnown}
