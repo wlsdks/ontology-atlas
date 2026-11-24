@@ -1,3 +1,4 @@
+import type { Box } from "../../dial/dial-shapes";
 import type { ArcPath } from "../marks";
 import { font } from "../names/titles";
 import { labelFontFamily } from "../../render/labels";
@@ -29,6 +30,8 @@ let count = 0;
 
 /** Air between a tag and the free map's edge, px. */
 const EDGE_AIR_PX = 10;
+/** How far a tag has come in before the names under it give way. */
+const TAG_OBSTACLE_FROM = 0.5;
 /**
  * The least run, px, over which a far end's tag comes in and its disc and name go: from the moment the
  * disc's rim meets the edge to the moment the edge reaches its centre, so a half-cut disc is never named.
@@ -45,6 +48,7 @@ const exited = new Map<string, number>();
 
 export function restartExitTags(): void {
   count = 0;
+  tagBoxCount = 0;
   exited.clear();
 }
 
@@ -151,7 +155,7 @@ export function addExitTag(arc: Arc, fromId: string, toId: string, focusId: stri
   tag.w = measureTag(tag.label);
   // The tag stands where its line meets the edge, its arrow at the edge and its words toward the selection.
   tag.x = edge === "left" ? r.minX + EDGE_AIR_PX : edge === "right" ? r.maxX - EDGE_AIR_PX : probe.x;
-  tag.y = edge === "top" ? r.minY + EDGE_AIR_PX : edge === "bottom" ? r.maxY - EDGE_AIR_PX : probe.y;
+  tag.y = edge === "top" ? chromeBottom(probe.x - tag.w / 2, probe.x + tag.w / 2, r.minY) + EDGE_AIR_PX + tagRowPx() / 2 : edge === "bottom" ? r.maxY - EDGE_AIR_PX : probe.y;
   tag.ink = ink;
   tag.whole = exitWhole;
   tag.alpha = smooth(SHOW_FROM, 1, reach) * exitWhole;
@@ -184,6 +188,19 @@ const TAG_AIR_PX = 3;
 
 const order = (a: ExitTag, b: ExitTag) => (a.edge === b.edge ? (a.edge === "left" || a.edge === "right" ? a.y - b.y : a.x - b.x) : a.edge < b.edge ? -1 : 1);
 const arranged: ExitTag[] = [];
+/** This frame's shown tags' boxes, after the chrome's, so names give way to a tag as to a toolbar. */
+const withTags: Box[] = [];
+let tagBoxCount = 0;
+
+/** The chrome boxes names keep clear of, with every tag past half shown this frame. O(obstacles + tags). */
+export function obstaclesWithTags(chrome: readonly Box[]): readonly Box[] {
+  if (tagBoxCount === 0) return chrome;
+  withTags.length = 0;
+  for (const box of chrome) withTags.push(box);
+  for (let i = 0; i < tagBoxCount; i += 1) withTags.push(tagBoxPool[i]!);
+  return withTags;
+}
+const tagBoxPool: Box[] = [];
 
 /** The left of a tag's words. */
 const tagLeft = (tag: ExitTag) => (tag.edge === "left" ? tag.x : tag.edge === "right" ? tag.x - tag.w : tag.x - tag.w / 2);
@@ -192,6 +209,16 @@ const tagLeft = (tag: ExitTag) => (tag.edge === "left" ? tag.x : tag.edge === "r
  * Pushes the frame's tags on one edge apart to a row each, kept inside that edge, then ends each tag's
  * line where it meets the tag's plate, so every line arrives at its own name. O(tags log tags + tags × samples).
  */
+/**
+ * The lowest bottom of the chrome above the free map between `x0` and `x1`, so a top tag sits the
+ * same air under the toolbar as a side tag sits inside its panel; 0 with no chrome there. O(obstacles).
+ */
+function chromeBottom(x0: number, x1: number, freeTop: number): number {
+  let bottom = 0;
+  for (const box of F.input.nameObstacles ?? []) if (box.maxX > x0 && box.minX < x1 && box.maxY <= freeTop) bottom = Math.max(bottom, box.maxY);
+  return bottom;
+}
+
 export function arrangeExitTags(): void {
   if (count === 0) return;
   const P = F.P;
@@ -230,6 +257,16 @@ export function arrangeExitTags(): void {
     const half = P.capNamePx / 2 + P.backingPadYPx + TAG_AIR_PX;
     const box = { minX: left - P.backingPadXPx - TAG_AIR_PX, maxX: left + tag.w + P.backingPadXPx + TAG_AIR_PX, minY: tag.y - half, maxY: tag.y + half };
     endAtTag(tag.arc, tag.fromFocus, box, tag.edge, tag.whole);
+    // A line that has its tag reads as running into it: the fade at its cut end gives way as the tag comes in.
+    if (tag.fromFocus) tag.arc.fadeEnd *= 1 - tag.alpha;
+    else tag.arc.fadeStart *= 1 - tag.alpha;
+    if (tag.alpha < TAG_OBSTACLE_FROM) continue;
+    const kept = tagBoxPool[tagBoxCount] ?? (tagBoxPool[tagBoxCount] = { minX: 0, maxX: 0, minY: 0, maxY: 0 });
+    tagBoxCount += 1;
+    kept.minX = box.minX;
+    kept.maxX = box.maxX;
+    kept.minY = box.minY;
+    kept.maxY = box.maxY;
   }
 }
 
@@ -254,15 +291,18 @@ function endAtTag(arc: Arc, fromFocus: boolean, box: { minX: number; minY: numbe
     }
     clear = s;
   }
-  if (met < 0) return;
-  for (let i = 0; i < EXIT_REFINE; i += 1) {
-    const mid = (clear + met) / 2;
-    pointAt(path, fromFocus ? mid : 1 - mid, probe);
-    if (reached(probe.x, probe.y)) met = mid;
-    else clear = mid;
+  // A tag raised to the chrome above the free map can stand past its line's far end: the whole line
+  // stays and its end still lands on the tag.
+  if (met >= 0) {
+    for (let i = 0; i < EXIT_REFINE; i += 1) {
+      const mid = (clear + met) / 2;
+      pointAt(path, fromFocus ? mid : 1 - mid, probe);
+      if (reached(probe.x, probe.y)) met = mid;
+      else clear = mid;
+    }
+    if (clear <= 0) return;
+    cutArc(arc, fromFocus ? 0 : 1 - clear, fromFocus ? clear : 1, fromFocus, whole);
   }
-  if (clear <= 0) return;
-  cutArc(arc, fromFocus ? 0 : 1 - clear, fromFocus ? clear : 1, fromFocus, whole);
   // The cut end lands on the middle of the tag's inner side, so a tag pushed off its row still
   // takes its own line; the control point takes half the move, so the curve bends, never kinks.
   const end = fromFocus ? path.b : path.a;

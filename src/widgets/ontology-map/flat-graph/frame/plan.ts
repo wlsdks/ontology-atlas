@@ -19,7 +19,7 @@ import type { FlatGraphLayout, FlatGraphPaintTokens, FlatGraphTokens } from "../
 import { planFanPushes } from "./fan-push";
 import { planName, placeName, NAME_RANKS, nameRanks, plannedNames, nameRank, blockShows, memberBlockShows, planMemberFallbacks } from "./name-plan";
 import { grownMarks, collectGrownMarks } from "./name-room";
-import { arrangeExitTags, exitedShare, restartExitTags } from "./exit-tags";
+import { arrangeExitTags, exitedShare, obstaclesWithTags, restartExitTags } from "./exit-tags";
 import { hueOf, loadMarkInk, inkOf, screenOf, screenAt, onScreen, pickable, radiusNow, discRadius, grownIds, openedRadius, dotRadius, planOpenStars, lensHidden, ownerStepBack, radiusOf, radiusAt, unsteppedScreen, easedPx } from "./place";
 import { disc, light, arcMark, addGlow, discAt, planCluster, markExpandedItems, focusLinks } from "./plan-marks";
 import { DRAWN_INK, ELEMENT_PICK_PX, type Disc, REST_ARC, type Name, type Ring, type LabelBox, FrameList, names, hubNames, dotRows, nameRows, labelBoxPool, pickPool, POOLS, setBox, type StampedPoint, alphaCache, frameChords, shownElements, cacheFor, L, framePlan, PLAN_LISTS, type DrawnMarks, F as frameState, scratch } from "./state";
@@ -372,6 +372,8 @@ export function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion
   const admission = admitUnder(attention);
   const leaving = F.leavingId;
   const chrome = input.nameObstacles ?? NO_BOXES;
+  // A dimmed name gives way to an edge tag as to the toolbar; a name the selection lights keeps its place.
+  const tagged = obstaclesWithTags(chrome);
   // A name gives way to the names drawn before it, so while names give way they are drawn in the
   // order they rank; with nothing grown no name gives way, and admission's order stands. O(names).
   const ranked = grownMarks.size > 0;
@@ -384,7 +386,8 @@ export function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion
     const end = nameBlockEnd(admission.names, nIndex);
     const id = admission.names[nIndex]!.id;
     const member = starId !== null && model.capabilityById.has(id) && model.domainOf.get(id) === starId;
-    let show = member ? memberBlockShows(admission.names, nIndex, end, chrome) : blockShows(admission.names, nIndex, end, chrome, contextMode ? null : selectedId);
+    const under = attention.named.has(id) ? chrome : tagged;
+    let show = member ? memberBlockShows(admission.names, nIndex, end, under) : blockShows(admission.names, nIndex, end, under, contextMode ? null : selectedId);
     planned[nIndex] = admission.names[nIndex]!;
     // An open star's member whose side runs under chrome or out of the free map takes the best of its other sides that clears it.
     const alternates = show ? undefined : admission.alternates.get(id);
