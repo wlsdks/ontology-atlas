@@ -17,14 +17,13 @@ import { resolveTopologyNodeClickRouteState, selectTopologyPathRouteState } from
 interface Options {
   setExpandAllActive: React.Dispatch<React.SetStateAction<boolean>>;
   setRouteState: (updater: Partial<import("@/views/home/model/route-state/url-state").HomeRouteState> | ((current: import("@/views/home/model/route-state/url-state").HomeRouteState) => import("@/views/home/model/route-state/url-state").HomeRouteState), options?: import("@/views/home/model/route-state/use-home-route-state").HomeRouteStateUpdateOptions | undefined) => void;
-  replayPastWalk: (walkId: string) => string | null;
   topologyInspectorState: Pick<ReturnType<typeof useTopologyInspectorState>, "panelDatasheetModel">;
   topologyAgentOrchestration: Pick<ReturnType<typeof useTopologyAgentOrchestration>, "closeVaultAgent">;
   topologySourceReadiness: Pick<ReturnType<typeof useTopologySourceReadiness>, "unboundProjectSource">;
   topologyIndexPresentation: Pick<ReturnType<typeof useTopologyIndexPresentation>, "beginExpandedIndexSelection">;
   topologyGraphProjection: Pick<ReturnType<typeof useTopologyGraphProjection>, "projectBySlug">;
   topologyAuthoring: Pick<ReturnType<typeof useTopologyAuthoring>, "setHoverEdge" | "setMeaningEditorState" | "setSelectedEdge">;
-  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "structure" | "neural">;
+  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "neural">;
   topologyCanvasFocus: Pick<
     ReturnType<typeof useTopologyCanvasFocus>,
     | "interactionSelectedSlugRef"
@@ -38,7 +37,6 @@ interface Options {
 type SelectOptions = { preserveImpact?:boolean;keepIndexOpen?:boolean;exitPath?:boolean | 'when-complete' };
 type SelectionContext = {
   interactionSelectedSlugRef: Options['topologyCanvasFocus']['interactionSelectedSlugRef'];
-  structure:boolean;
   setExpandAllActive:Options['setExpandAllActive'];
   setHoverEdge:Options['topologyAuthoring']['setHoverEdge'];
   setSelectedEdge:Options['topologyAuthoring']['setSelectedEdge'];
@@ -52,7 +50,7 @@ type SelectionContext = {
 function selectFromCurrentContext(context:React.RefObject<SelectionContext>,slug:string,options?:SelectOptions) {
   const current=context.current;
   current.interactionSelectedSlugRef.current=slug;
-  if(!current.structure)current.setExpandAllActive(false);
+  current.setExpandAllActive(false);
   current.setHoverEdge(null);
   current.setSelectedEdge(null);
   current.setFullDetailSlug(null);
@@ -68,12 +66,12 @@ function selectFromCurrentContext(context:React.RefObject<SelectionContext>,slug
   if(options?.keepIndexOpen)current.beginExpandedIndexSelection();
 }
 export function useTopologyNavigationActions({
-  setExpandAllActive, setRouteState, replayPastWalk, topologyCanvasFocus, topologyPreferences,
+  setExpandAllActive, setRouteState, topologyCanvasFocus, topologyPreferences,
   topologyAuthoring, topologyGraphProjection, topologyIndexPresentation, topologySourceReadiness,
   topologyAgentOrchestration, topologyInspectorState
 }: Options) {
   const { interactionSelectedSlugRef, setFullDetailSlug, setSelectedRelationActive, setNodePopoverDismissed } = topologyCanvasFocus;
-  const { structure, neural } = topologyPreferences;
+  const { neural } = topologyPreferences;
   const { setHoverEdge, setMeaningEditorState, setSelectedEdge } = topologyAuthoring;
   const { projectBySlug } = topologyGraphProjection;
   const { beginExpandedIndexSelection } = topologyIndexPresentation;
@@ -82,7 +80,7 @@ export function useTopologyNavigationActions({
   const { panelDatasheetModel } = topologyInspectorState;
 
 
-  const selectionContext=useLatestRef({interactionSelectedSlugRef,structure,setExpandAllActive,setHoverEdge,setSelectedEdge,
+  const selectionContext=useLatestRef({interactionSelectedSlugRef,setExpandAllActive,setHoverEdge,setSelectedEdge,
     setFullDetailSlug,setSelectedRelationActive,setNodePopoverDismissed,projectBySlug,setRouteState,beginExpandedIndexSelection});
   // Renderers may cache this callback across equally shaped folders. It resolves
   // only the current committed selection context, without pinning an old index.
@@ -101,14 +99,6 @@ export function useTopologyNavigationActions({
     handleSelect(unboundProjectSource.nodeId, { keepIndexOpen: true });
     return true;
   }, [closeVaultAgent, handleSelect, unboundProjectSource]);
-
-  const handleReplayPastWalk = useCallback(
-    (walkId: string) => {
-      const last = replayPastWalk(walkId);
-      if (last) handleSelect(last);
-    },
-    [replayPastWalk, handleSelect],
-  );
 
   const handleClose = useCallback(() => {
     interactionSelectedSlugRef.current = null;
@@ -142,7 +132,7 @@ export function useTopologyNavigationActions({
       restoreTopologyFocusAfterDatasheetClose(focusReturnNodeId);
     });
   }, [handleClose, panelDatasheetModel?.nodeId, neural, setNodePopoverDismissed]);
-  return { handleClose, handleSelect, handleReplayPastWalk, handleDatasheetClose, handleChatSuggestionAction, handleAcpMapIntent } as const;
+  return { handleClose, handleSelect, handleDatasheetClose, handleChatSuggestionAction, handleAcpMapIntent } as const;
 }
 
 function useAcpMapIntent({

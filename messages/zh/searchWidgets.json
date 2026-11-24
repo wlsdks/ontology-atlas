@@ -209,14 +209,12 @@
       "flat": "平面",
       "hex": "六边形",
       "3d": "3D",
-      "structure": "领域结构",
       "coupling": "神经"
     },
     "view3dChoiceHint": {
       "flat": "普通的 2D 地图",
       "hex": "一个能力一格，一个领域一片区域",
       "3d": "用一棵树显示项目由什么构成",
-      "structure": "按名称逐级查看已记录的包含关系",
       "coupling": "按关系远近把概念聚在一起"
     },
     "mapViewAriaLabel": "地图视图",

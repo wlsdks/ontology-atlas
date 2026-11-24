@@ -9,14 +9,20 @@ import { copyText } from "@/shared/lib/clipboard/copy-text";
 import { COPY_FEEDBACK_RESET_MS } from "@/shared/lib/clipboard/use-copy-feedback";
 
 import {
-  appendFootprintVisit,
   buildTrailStepLinks,
   collapseFootprintTrail,
   formatFootprintTrailAgentPacket,
+  TRAIL_STEP_UNRELATED,
   type FootprintTrailEntry,
   type TrailEdge,
   type TrailStepCaption,
 } from "../../lib/trail/footprint-trail";
+import {
+  adoptSessionTrailScope,
+  clearSessionTrail,
+  useSessionTrailSteps,
+  visitSessionTrail,
+} from "./session-trail-store";
 
 type InsightNode = { id: string } & NonNullable<Parameters<typeof resolveNodeAgentTarget>[0]>;
 
@@ -27,23 +33,22 @@ interface FootprintGraphNode {
 }
 
 export interface UseFootprintTrailArgs {
+  /** The open folder's session identity, null until the folder is known. */
+  trailScope: string | null;
   canvasSelectedSlug: string | null;
   graphNodes: readonly FootprintGraphNode[];
   insightNodes: readonly InsightNode[] | undefined;
-  dustySlugs: ReadonlySet<string>;
   insightEdges: readonly TrailEdge[] | undefined;
   relationLabelOf: (type: string) => string;
 }
 
 export interface UseFootprintTrailResult {
-  setFootprintTrail: (trail: string[]) => void;
-  lastVisitedNodeRef: RefObject<string | null>;
-  footprintNodeLookup: ReadonlyMap<string, FootprintGraphNode>;
   footprintTrailEntries: FootprintTrailEntry[];
   footprintTrailStepCaptions: (TrailStepCaption | null)[];
   footprintVisitedIds: string[];
   footprintPacketCopied: boolean;
   copyFootprintPacket: () => Promise<void>;
+  clearFootprintTrail: () => void;
   footprintLensActiveRef: RefObject<boolean>;
   footprintBrushNodeIdRef: RefObject<string | null>;
   handleFootprintLens: (active: boolean) => void;
@@ -51,66 +56,76 @@ export interface UseFootprintTrailResult {
 }
 
 export function useFootprintTrail({
+  trailScope,
   canvasSelectedSlug,
   graphNodes,
   insightNodes,
-  dustySlugs,
   insightEdges,
   relationLabelOf,
 }: UseFootprintTrailArgs): UseFootprintTrailResult {
   const t = useTranslations("topology");
-  const [footprintTrail, setFootprintTrail] = useState<string[]>([]);
-  // Skips an immediate repeat of the same node; revisits between different nodes still append.
-  const lastVisitedNodeRef = useRef<string | null>(null);
+  const footprintTrail = useSessionTrailSteps(trailScope);
+  // The selection that arrives with a folder switch still names the old folder's concept.
   useEffect(() => {
-    if (!canvasSelectedSlug) return;
-    if (lastVisitedNodeRef.current === canvasSelectedSlug) return;
-    lastVisitedNodeRef.current = canvasSelectedSlug;
-    setFootprintTrail((trail) => appendFootprintVisit(trail, canvasSelectedSlug));
-  }, [canvasSelectedSlug]);
-  // Refined against the live graph so a deleted node cannot linger: the trail is display, never a
-  // source.
+    if (!trailScope) return;
+    if (adoptSessionTrailScope(trailScope) === "switched") return;
+    if (canvasSelectedSlug) visitSessionTrail(trailScope, canvasSelectedSlug);
+  }, [trailScope, canvasSelectedSlug]);
+  const clearFootprintTrail = useCallback(() => {
+    if (trailScope) clearSessionTrail(trailScope);
+  }, [trailScope]);
+  // Refined against the live graph, so a deleted concept leaves the trail in memory only.
   const footprintNodeLookup = useMemo(
     () => new Map(graphNodes.map((n) => [n.id, n])),
     [graphNodes],
   );
+  const insightNodeById = useMemo(
+    () => new Map((insightNodes ?? []).map((n) => [n.id, n])),
+    [insightNodes],
+  );
   /**
-   * Only the last visit per node, since repeating `get_concept` is noise; the map keeps the raw
-   * steps.
+   * Only the last visit per concept, since repeating a concept in the packet is noise; the map
+   * keeps the raw steps.
    */
   const footprintTrailEntries = useMemo<FootprintTrailEntry[]>(() => {
     const entries: FootprintTrailEntry[] = [];
     for (const id of collapseFootprintTrail(footprintTrail)) {
       const node = footprintNodeLookup.get(id);
       if (!node) continue;
-      const target = resolveNodeAgentTarget(insightNodes?.find((n) => n.id === id));
+      const target = resolveNodeAgentTarget(insightNodeById.get(id));
       entries.push({
         id,
         title: node.label,
         kind: node.kind,
-        agentRef: target.ref,
-        documented: target.documented,
+        slug: target.documented ? target.ref : null,
       });
     }
     return entries;
-  }, [footprintTrail, footprintNodeLookup, insightNodes]);
+  }, [footprintTrail, footprintNodeLookup, insightNodeById]);
   const footprintVisitedIds = useMemo(
     () => footprintTrail.filter((id) => footprintNodeLookup.has(id)),
     [footprintTrail, footprintNodeLookup],
   );
   /**
-   * The reason each step follows the last (`relation_notes`), shared by the timeline and the
+   * How each row's last visit was reached (`relation_notes`), shared by the timeline and the
    * packet. The edge scan and the naming stay in two memos because `relationLabelOf` is a new
    * closure every render.
    */
   const footprintTrailStepLinks = useMemo(
-    () => buildTrailStepLinks(footprintTrailEntries.map((entry) => entry.id), insightEdges ?? []),
-    [footprintTrailEntries, insightEdges],
+    () =>
+      buildTrailStepLinks(
+        footprintTrail,
+        footprintTrailEntries.map((entry) => entry.id),
+        insightEdges ?? [],
+      ),
+    [footprintTrail, footprintTrailEntries, insightEdges],
   );
   const footprintTrailStepCaptions = useMemo<(TrailStepCaption | null)[]>(
     () =>
       footprintTrailStepLinks.map((link) =>
-        link ? { relationLabel: relationLabelOf(link.type), reason: link.reason } : null,
+        link === null || link === TRAIL_STEP_UNRELATED
+          ? link
+          : { relationLabel: relationLabelOf(link.type), reason: link.reason },
       ),
     [footprintTrailStepLinks, relationLabelOf],
   );
@@ -131,16 +146,14 @@ export function useFootprintTrail({
           reviewHint: t("footprint.packetReviewHint"),
           undocumented: t("footprint.packetUndocumented"),
           pathHint: t("footprint.packetPathHint"),
-          dustyHint: t("footprint.packetDustyHint", { count: dustySlugs.size }),
           unrelated: t("footprint.stepUnrelated"),
         },
-        [...dustySlugs],
         footprintTrailStepCaptions,
       ),
     );
     if (!ok) return;
     setFootprintPacketCopied(true);
-  }, [footprintTrailEntries, footprintTrailStepCaptions, dustySlugs, t]);
+  }, [footprintTrailEntries, footprintTrailStepCaptions, t]);
   // Footprint lens: true while the popover is open, with no new mode or URL state. The map dims
   // ego edges and keeps only visited nodes lit; no trail line is drawn, since a line means a
   // relation. Refs, not state, because state re-rendered the page tree on every toggle and hover.
@@ -162,14 +175,12 @@ export function useFootprintTrail({
     requestOntologyMapFrame();
   }, []);
   return {
-    setFootprintTrail,
-    lastVisitedNodeRef,
-    footprintNodeLookup,
     footprintTrailEntries,
     footprintTrailStepCaptions,
     footprintVisitedIds,
     footprintPacketCopied,
     copyFootprintPacket,
+    clearFootprintTrail,
     footprintLensActiveRef,
     footprintBrushNodeIdRef,
     handleFootprintLens,

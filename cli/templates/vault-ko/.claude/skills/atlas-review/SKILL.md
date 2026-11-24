@@ -34,10 +34,10 @@ description: 볼트 점검. 지금 어긋난 곳과 끊긴 곳을 찾아 사람 
 
 - **닿지 않는 노드**(`components`) — 프로젝트 뿌리에서 못 닿는 노드는 어느
   프로젝트에도 안 속해서 지도에 안 나온다. 만들어 놓고 안 보이는 상태다.
-  → `add_relation('<project>', 'domains/<새 도메인>', 'domains')`
+  → `add_relations({ relations: [{ from: '<project>', to: 'domains/<새 도메인>', type: 'domains' }] })`
 - **한쪽만 아는 관계**(`relation_recommendations`) — 역량이 `domain: X` 를
   갖고 있는데 `X` 쪽에서 되받아 걸지 않았다.
-  → `add_relation('domains/X', 'capabilities/<역량>', 'capabilities')`
+  → `add_relations({ relations: [{ from: 'domains/X', to: 'capabilities/<역량>', type: 'capabilities' }] })`
 
 4. **프로젝트 의미가 노랗다면 — 여기서 멈춘다**
 

@@ -37,12 +37,16 @@ export function describeWrite(toolName, args) {
       return slug ? `Create concept ${slug}` : 'Create one concept';
     case 'add_concepts': {
       const n = count('concepts');
+      const only = n === 1 ? a.concepts[0]?.slug : null;
+      if (typeof only === 'string' && only) return `Create concept ${only}`;
       return n === null ? 'Create concepts' : `Create ${n} concept(s)`;
     }
     case 'add_relation':
       return from && to ? `Link ${from} → ${to}` : 'Add one relation';
     case 'add_relations': {
       const n = count('relations');
+      const only = n === 1 ? a.relations[0] : null;
+      if (typeof only?.from === 'string' && typeof only?.to === 'string') return `Link ${only.from} → ${only.to}`;
       return n === null ? 'Add relations' : `Add ${n} relation(s)`;
     }
     case 'remove_relation':

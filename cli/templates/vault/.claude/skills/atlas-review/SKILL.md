@@ -34,10 +34,10 @@ The two you will see most:
 
 - **Unreachable nodes** (`components`) — a node the project root cannot reach
   belongs to no project, so it never appears on the map. It exists and is invisible.
-  → `add_relation('<project>', 'domains/<new domain>', 'domains')`
+  → `add_relations({ relations: [{ from: '<project>', to: 'domains/<new domain>', type: 'domains' }] })`
 - **One-sided relations** (`relation_recommendations`) — a capability declares
   `domain: X` but `X` does not claim it back.
-  → `add_relation('domains/X', 'capabilities/<capability>', 'capabilities')`
+  → `add_relations({ relations: [{ from: 'domains/X', to: 'capabilities/<capability>', type: 'capabilities' }] })`
 
 4. **If project meaning is yellow — stop here**
 

@@ -8,7 +8,7 @@ import {
 import { sameArray } from '../value-checks.mjs';
 import { nonBlankStringSchemaFailure, outputPropertyAt, propertyAt } from './schema-primitives.mjs';
 
-const LEAN_BUILD_WRITE_TOOLS = ['add_concept', 'add_concepts', 'add_relation', 'add_relations', 'patch_concept'];
+const LEAN_BUILD_WRITE_TOOLS = ['add_concepts', 'add_relations', 'patch_concept'];
 const LEAN_WRITE_ABSENT_FIELDS = ['filePath', 'postWriteMaintenance', 'key'];
 const BATCH_ROWS_PROPERTY = { add_concepts: 'concepts', add_relations: 'relations' };
 
@@ -17,7 +17,7 @@ function postWriteMaintenanceSchemaFailure(schema, toolName) {
     return `${toolName} outputSchema postWriteMaintenance drift`;
   }
   const compactActionRequired = ['id', 'phase', 'kind', 'severity', 'score', 'executable', 'reason'];
-  const compactProposedActionTools = ['add_concept', 'add_relation', 'patch_concept'];
+  const compactProposedActionTools = ['add_concepts', 'add_relations', 'patch_concept'];
   const proposedArgsSchemas = schema.properties?.actions?.items?.properties?.proposedAction?.properties?.args?.oneOf;
   const postWriteRequired = [
     'operation',
@@ -111,9 +111,11 @@ function postWriteMaintenanceSchemaFailure(schema, toolName) {
     !sameArray(schema.properties.actions.items?.properties?.proposedAction?.properties?.tool?.enum, compactProposedActionTools) ||
     !Array.isArray(proposedArgsSchemas) ||
     proposedArgsSchemas.length !== 3 ||
-    !sameArray(proposedArgsSchemas[0]?.required, ['slug', 'kind', 'title']) ||
-    !sameArray(proposedArgsSchemas[1]?.required, ['from', 'to', 'type']) ||
-    !sameArray(proposedArgsSchemas[1]?.properties?.type?.enum, WRITE_RELATION_TYPE_VALUES) ||
+    !sameArray(proposedArgsSchemas[0]?.required, ['concepts']) ||
+    !sameArray(proposedArgsSchemas[0]?.properties?.concepts?.items?.required, ['slug', 'kind', 'title']) ||
+    !sameArray(proposedArgsSchemas[1]?.required, ['relations']) ||
+    !sameArray(proposedArgsSchemas[1]?.properties?.relations?.items?.required, ['from', 'to', 'type']) ||
+    !sameArray(proposedArgsSchemas[1]?.properties?.relations?.items?.properties?.type?.enum, WRITE_RELATION_TYPE_VALUES) ||
     !sameArray(proposedArgsSchemas[2]?.required, ['slug', 'frontmatter', 'expected_mtime']) ||
     proposedArgsSchemas[2]?.properties?.frontmatter?.additionalProperties !== false ||
     schema.properties.actions.items?.additionalProperties !== false ||
@@ -188,7 +190,6 @@ export function writeGuardsSchemaFailure(tools) {
   }
 
   for (const toolName of [
-    'add_relation',
     'patch_concept',
     'rename_concept',
     'merge_concepts',

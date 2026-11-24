@@ -79,7 +79,7 @@ describe('docs surface derivation', () => {
 
 describe('docs surface coverage', () => {
   it('names every registered tool the docs never mention', () => {
-    assert.deepEqual(namesMissingFromDoc(['add_concept', 'ghost_tool'], '| `add_concept` | writes |'), ['ghost_tool']);
+    assert.deepEqual(namesMissingFromDoc(['add_concepts', 'ghost_tool'], '| `add_concepts` | writes |'), ['ghost_tool']);
   });
 
   it('matches CLI commands by their documented invocation, not by bare word', () => {
@@ -128,18 +128,15 @@ describe('committed surface artifact', () => {
   });
 
   /**
-   * `get_concept` has no top-level `oneOf` because Claude Code discards a tool whose schema has one;
-   * "exactly one" is enforced at runtime. This check guards the schema: both tools exist, both
+   * `get_concepts` has no top-level `oneOf` because Claude Code discards a tool whose schema has one;
+   * "exactly one" is enforced at runtime. This check guards the schema: the tool exists, both
    * selectors are exposed, neither is required. Runtime enforcement: `mcp/src/integration.test.mjs`.
    */
-  it('both selector tools are alive and the selector is still published', () => {
-    const exactReaders = surface.mcp.tools.filter((tool) =>
-      ['get_concept', 'get_concepts'].includes(tool.name),
-    );
-    assert.equal(exactReaders.length, 2, 'exact selector tools disappeared from the generated surface');
+  it('the selector tool is alive and its selectors are still published', () => {
+    const exactReaders = surface.mcp.tools.filter((tool) => tool.name === 'get_concepts');
+    assert.equal(exactReaders.length, 1, 'the exact selector tool disappeared from the generated surface');
     const byName = new Map(exactReaders.map((tool) => [tool.name, tool]));
     for (const [name, selectors] of [
-      ['get_concept', ['slug', 'uid']],
       ['get_concepts', ['slugs', 'uids']],
     ]) {
       const tool = byName.get(name);

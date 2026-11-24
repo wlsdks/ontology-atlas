@@ -157,3 +157,11 @@ folder".
   request, 861 s, $7.89, $0.108 per ability, all 42 cited), 181 to 242 s per request. An
   earlier 24-file arm cited 62 percent, below the 80 percent bar. No eighteen-file request
   mapped more than 20, so 31 stays the most one request was measured to finish.
+- 2026-11-25: decision 3 (a new conversation per request) held against the host's prompt cache.
+  Two arms from the same Java map (203 of 376 abilities off the map, Claude Opus, four requests
+  each): a new conversation per request mapped 67 for $6.03 ($0.090 per ability); every request
+  resumed in one conversation mapped 72 for $6.54 ($0.091). The resumed arm read up to 325,000
+  earlier tokens from cache at each request's start, but each request reads code no earlier one
+  read, so new writes fell only from 125,000 to 90,000 tokens while cached re-reads grew. Nothing
+  was deleted and no cited rule was lost in either arm. Falsifier: a request whose areas share
+  most of their files with the previous request's.

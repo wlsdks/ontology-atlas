@@ -3,25 +3,25 @@ import { VAULT_ISSUE_CODE_VALUES } from '../../../src/validate.mjs';
 import { formatCount } from '../output.mjs';
 import { listConceptsFailure } from './concept-reads.mjs';
 
-export function listKindsFailure(parsed) {
+export function censusFailure(parsed) {
   if (!Number.isInteger(parsed?.total) || parsed.total < 0) {
-    return 'list_kinds response missing total count';
+    return 'list_concepts census missing total count';
   }
   if (!parsed.byKind || typeof parsed.byKind !== 'object' || Array.isArray(parsed.byKind)) {
-    return 'list_kinds response missing byKind aggregate';
+    return 'list_concepts census missing byKind aggregate';
   }
   let sum = 0;
   for (const [kind, count] of Object.entries(parsed.byKind)) {
     if (typeof kind !== 'string' || kind.length === 0) {
-      return 'list_kinds response has empty kind key';
+      return 'list_concepts census has empty kind key';
     }
     if (!Number.isInteger(count) || count < 0) {
-      return `list_kinds response missing count for kind: ${kind || 'unknown'}`;
+      return `list_concepts census missing count for kind: ${kind || 'unknown'}`;
     }
     sum += count;
   }
   if (sum !== parsed.total) {
-    return `list_kinds response total mismatch: total ${parsed.total}, byKind ${sum}`;
+    return `list_concepts census total mismatch: total ${parsed.total}, byKind ${sum}`;
   }
   return null;
 }
@@ -41,7 +41,7 @@ export function projectProbeFailure(parsed, kinds) {
     return `project probe returned non-project node: ${nonProject.slug || '(unknown)'}`;
   }
   if (Number.isInteger(kindProjectCount) && parsed.total >= 1 && parsed.total !== kindProjectCount) {
-    return `project probe count mismatch: list_kinds project ${kindProjectCount}, probe ${parsed.total}`;
+    return `project probe count mismatch: census project ${kindProjectCount}, probe ${parsed.total}`;
   }
   return null;
 }

@@ -15,7 +15,6 @@ export const ARRIVAL_GLIDE_CONCEPT_CEILING = 2000;
 const GHOST_TARGET_CONCEPT_CEILING: Readonly<Record<MapLayoutView, number>> = {
   hex: Number.POSITIVE_INFINITY,
   flat: 6500,
-  structure: 0,
   "3d": Number.POSITIVE_INFINITY,
   neural: 0,
 };
@@ -37,7 +36,7 @@ export function chooseLayoutSwitch({
 }): LayoutSwitch {
   if (from === to && !fromOverlay) return "none";
   if (!armed) return "cut";
-  if (reducedMotion || from === "structure" || to === "structure") return "fade";
+  if (reducedMotion) return "fade";
   if (!fromOverlay && MAP_ENGINE_VIEWS.has(from) && MAP_ENGINE_VIEWS.has(to)) return "native";
   if ((!fromOverlay && from === "neural") || conceptCount > GHOST_TARGET_CONCEPT_CEILING[to]) return "fade";
   return "ghost";

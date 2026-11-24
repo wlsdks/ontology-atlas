@@ -42,8 +42,8 @@ Enter the name in your screen's language (a second language is optional), choose
 
 **Ask** in the concept panel opens the agent chat beside the map, with a question about that concept ready to send. The agent works through the Atlas MCP server.
 
-- Reading the ontology (`list_concepts`, `get_concept`, `find_path` and the other read tools) does not interrupt the chat.
-- Every write (`add_concept`, `add_relation`, `patch_concept` and the other write tools) pauses the chat on a card titled **Review the proposed change**. The card shows what will be created or changed and, for a relation, the reason.
+- Reading the ontology (`list_concepts`, `get_concepts`, `query_ontology` and the other read tools) does not interrupt the chat.
+- Every write (`add_concepts`, `add_relations`, `patch_concept` and the other write tools) pauses the chat on a card titled **Review the proposed change**. The card shows what will be created or changed and, for a relation, the reason.
 - **Allow once** runs that one write. **Deny** writes nothing. **Deny and edit** denies the write and drafts a correction request for you to send.
 - A batch of writes is shown item by item, and your answer applies to the whole batch.
 - A write tool never offers **Allow this tool for the rest of this chat**.

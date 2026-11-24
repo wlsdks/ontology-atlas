@@ -87,7 +87,7 @@ describe("deriveAgentWorkSessions", () => {
 
   it("a batch line counts as many as the rows in its summary", () => {
     const [session] = deriveAgentWorkSessions(
-      [entry({ at: at(1_000), tool: "add_concepts", target: "(batch)", summary: "add_concepts 46행 성공" })],
+      [entry({ at: at(1_000), tool: "add_concepts", target: "(batch)", summary: "add_concepts 46 rows written" })],
       NOW,
     );
     expect(session.counts.added).toBe(46);
@@ -112,7 +112,7 @@ describe("deriveAgentWorkSessions", () => {
     const [session] = deriveAgentWorkSessions(
       [
         entry({ at: at(3_000), target: "domains/community" }),
-        entry({ at: at(2_000), tool: "add_relations", target: "(batch)", summary: "add_relations 50행 성공" }),
+        entry({ at: at(2_000), tool: "add_relations", target: "(batch)", summary: "add_relations 50 rows written" }),
       ],
       NOW,
     );

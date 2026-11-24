@@ -340,7 +340,7 @@ object itself.
 "Always emitted" fields are kept as empty arrays rather than omitted, so a
 human editing the file by hand sees the slot even before it is filled.
 "Strongly expected" fields never block a write; a Level 2 writer SHOULD
-surface their absence back to the caller (this repo's `add_concept` returns
+surface their absence back to the caller (this repo's `add_concepts` returns
 it as a `warnings` array entry) and a validator SHOULD flag it (§6,
 `missing-expected-field`).
 
@@ -410,10 +410,10 @@ not hide that support boundary or invent an API that does not exist.
 | semantic dependency | canonical writer key `dependencies: []`; readers also accept `depends_on: []` | any authorable concept → required authorable concept | source depends on target; reverse is `depended_on_by`/backlink, not another `depends_on` | write type `depends_on`; compiled/query inputs may expose stored `dependencies` and normalized `depends_on` | not transitive; absence is unknown, not “no impact”; rationale and approval are required for a new semantic claim, and the rationale is stored as `relation_notes: { <target ref>: "one sentence" }` on the source document (below) |
 | loose association | `relates: []` | any authorable concept ↔ any authorable concept | symmetric meaning; one stored assertion is sufficient, but no reciprocal frontmatter is auto-written | query/write type `relates` | not transitive and implies no causality, ownership, similarity score, or interchangeability |
 | description | `describes: []` | normally `document` → authorable concept | document→described target; reverse is a backlink only | query/write type `describes` | does not make the document the source evidence for every claim in the target |
-| direct subsumption | `broader: []` | same-kind `domain`→`domain`, `capability`→`capability`, or `element`→`element` | narrower→direct broader; UI displays `is_a`; narrower-side read is a backlink only | **not accepted** by current relation query/write enums; read frontmatter with `get_concept`, then guarded full-array `patch_concept` | §2.2 test required; no inverse, transitive closure, inheritance, or reasoner |
+| direct subsumption | `broader: []` | same-kind `domain`→`domain`, `capability`→`capability`, or `element`→`element` | narrower→direct broader; UI displays `is_a`; narrower-side read is a backlink only | **not accepted** by current relation query/write enums; read frontmatter with `get_concepts`, then guarded full-array `patch_concept` | §2.2 test required; no inverse, transitive closure, inheritance, or reasoner |
 
 `dependencies` is the canonical frontmatter key written by
-`add_relation(type: "depends_on")`. Some legacy/imported documents use
+`add_relations` with `type: "depends_on"`. Some legacy/imported documents use
 `depends_on`; readers and validators keep accepting it, but a Level 2 writer
 SHOULD emit `dependencies` so the on-disk shape converges.
 
@@ -437,14 +437,14 @@ Semantics a conformant implementation MUST keep:
   drops the sentence. A note whose key is the full slug while the array holds
   the tail alias, or the reverse, addresses the same node.
 - A Level 2 writer writes the note in the **same** frontmatter write as the
-  edge (`add_relation(why)`, `add_relations`), refuses a new `depends_on`
+  edge (`add_relations` with each row's `why`), refuses a new `depends_on`
   without one, and quotes a value containing a comma, a colon, or an
   apostrophe; an unquoted value that runs past a comma turns the next entry
   into a pseudo-key (`swallowed-relation-note`, §6). Rename, remove, and replace
   MUST carry the note with the edge.
 - A Level 1 reader exposes the note as the optional `rationale` string of the
-  compiled edge and of every path or edge answer (`find_path().edges[]`,
-  `get_concept().outgoingEdges[]`, `query_ontology` path and impact rows). The
+  compiled edge and of every path or edge answer (`get_concepts` rows' `outgoingEdges[]`,
+  `query_ontology` path and impact rows). The
   key is omitted when no note is stored; it is never `null` and never
   generated. `query_ontology` grades a dependency with a note
   `declared_with_rationale` and one without `review_required`; neither grade
@@ -452,14 +452,14 @@ Semantics a conformant implementation MUST keep:
 
 To change `broader` on an existing node with the current MCP surface:
 
-1. `get_concept({slug})` and capture the returned `mtime` and complete current
-   `frontmatter.broader` array;
+1. `get_concepts({slugs:[slug]})` and capture the row's `mtime` and complete
+   current `frontmatter.broader` array;
 2. apply the intended add/remove to that complete array locally;
 3. call `patch_concept({slug, frontmatter:{broader:[...complete post-change
    set...]}, expected_mtime:<captured>})`;
 4. call `validate_vault({})` and inspect the compiled/UI edge.
 
-Do not call `add_relation(type:"is_a")` or
+Do not call `add_relations` with `type:"is_a"` or
 `query_ontology({operation:"relation_check", type:"broader"})`: neither value
 exists in those public enums today. This fallback is explicit debt, not an
 argument that the surfaces are already unified.
@@ -482,7 +482,7 @@ Atlas uses an **explicit-claim, visible-gap** application contract:
   validation behavior is neither an OWL open-world implementation nor a claim
   that Atlas uses a general closed-world logic;
 - backlinks, normalized containment views, project-scope BFS, and graph
-  traversal (`find_path`, `reachability`) are application read operations. They
+  traversal (`query_ontology` `path` and `reachability`) are application read operations. They
   do not write inverse, transitive, inherited, or newly entailed relations.
 
 ### 5.2 Standards boundary
@@ -564,7 +564,7 @@ The last eight are advisories about a node's body, its address, and the code it
 stands on rather than about frontmatter shape, so **body scope** above means
 they read the Markdown after the frontmatter. The judgement lives in one place,
 `mcp/src/meaning/meaning-findings.mjs`, and reaches a reader through three channels: the
-`add_concept` / `add_concepts` / `patch_concept` response, `query_ontology({operation:"maintenance_plan"})`,
+`add_concepts` / `patch_concept` response, `query_ontology({operation:"maintenance_plan"})`,
 and `validate_vault`. `src/shared/lib/vault-document/meaning-findings.ts`
 is the browser port of the same rules, checked against the canonical module by
 `tests/contract/analysis/meaning-findings-parity.contract.test.ts`.

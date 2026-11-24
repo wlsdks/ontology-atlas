@@ -1,10 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import {
-  TopologyTrailChip,
-  type TopologyPastWalkRow,
-  type TopologyTrailChipLabels,
-} from "./TopologyTrailChip";
+import { TopologyTrailChip, type TopologyTrailChipLabels } from "./TopologyTrailChip";
 import type { FootprintTrailEntry, TrailStepCaption } from "../../lib/trail/footprint-trail";
 
 const LABELS: TopologyTrailChipLabels = {
@@ -20,38 +16,13 @@ const LABELS: TopologyTrailChipLabels = {
   clearLabel: "지우기",
   clearConfirmLabel: "한 번 더 누르면 지워요",
   clearAriaLabel: "걸어온 길 지우기",
-  pastLinkLabel: "지난 길 2",
-  pastHeading: "지난 길",
-  pastBackAriaLabel: "걸어온 길로 돌아가기",
-  pastDeleteAriaLabel: "이 길 지우기",
-  pastClearAllLabel: "모두 지우기",
-  pastClearAllConfirmLabel: "한 번 더 누르면 지워요",
-  pastCapCaption: "최근 10개까지",
-  pastEmptyBody: "아직 남은 길이 없어요. 지도를 걷고 나면 여기 모여요.",
   stepUnrelatedLabel: "직접 연결 없음",
 };
 
-const PAST_WALKS: TopologyPastWalkRow[] = [
-  {
-    id: "w1",
-    routeLabel: "AI 에이전트 파트너 → 화면(뷰)",
-    metaLabel: "오늘 · 12곳",
-    replayable: true,
-    ariaLabel: "이 길 다시 펴기 — 오늘, 12곳",
-  },
-  {
-    id: "w2",
-    routeLabel: "Core → El Y",
-    metaLabel: "어제 · 4곳",
-    replayable: true,
-    ariaLabel: "이 길 다시 펴기 — 어제, 4곳",
-  },
-];
-
 const ENTRIES: FootprintTrailEntry[] = [
-  { id: "domain:core", title: "Core", kind: "domain" },
-  { id: "capability:x", title: "Cap X", kind: "capability" },
-  { id: "element:y", title: "El Y", kind: "element" },
+  { id: "domain:core", title: "Core", kind: "domain", slug: "domains/core" },
+  { id: "capability:x", title: "Cap X", kind: "capability", slug: "capabilities/x" },
+  { id: "element:y", title: "El Y", kind: "element", slug: "elements/y" },
 ];
 
 /** The oldest has no predecessor, then a reason, then a bare type. */
@@ -72,11 +43,6 @@ function renderChip(overrides: Partial<React.ComponentProps<typeof TopologyTrail
     onCopyPacket: vi.fn(),
     copied: false,
     onClear: vi.fn(),
-    pastWalks: PAST_WALKS,
-    pastNotice: null,
-    onReplayPastWalk: vi.fn(),
-    onDeletePastWalk: vi.fn(),
-    onClearPastWalks: vi.fn(),
     ...overrides,
   };
   const view = render(<TopologyTrailChip {...props} />);
@@ -133,11 +99,19 @@ describe("TopologyTrailChip walked-trail chip", () => {
     ]);
   });
 
-  it("says 'not directly related' rather than hiding the gap", () => {
-    renderChip({ stepCaptions: [null, null, null] });
+  it("says 'not directly related' for a real move across no edge rather than hiding the gap", () => {
+    renderChip({ stepCaptions: [null, "unrelated", "unrelated"] });
     fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
     const links = screen.getAllByTestId("topology-trail-step-link");
     expect(links.map((l) => l.textContent)).toEqual(["직접 연결 없음", "직접 연결 없음", ""]);
+  });
+
+  /** A row reached from somewhere other than the row below it claims nothing about that move. */
+  it("leaves the caption empty when the step did not come from the row below", () => {
+    renderChip({ stepCaptions: [null, null, { relationLabel: "의존", reason: null }] });
+    fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
+    const links = screen.getAllByTestId("topology-trail-step-link");
+    expect(links.map((l) => l.textContent)).toEqual(["의존", "", ""]);
   });
 
   /** A row without a caption keeps the slot, or the list goes ragged. */
@@ -282,169 +256,5 @@ describe("TopologyTrailChip walked-trail chip", () => {
       fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
       expect(onHoverEntry).toHaveBeenLastCalledWith(null);
     });
-  });
-});
-
-describe("TopologyTrailChip past trails second layer", () => {
-  function openPast() {
-    fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
-    fireEvent.click(screen.getByTestId("topology-trail-past-link"));
-  }
-
-  it("no entry link in the first-layer header without saved trails or notices", () => {
-    renderChip({ pastWalks: [] });
-    fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
-    expect(screen.queryByTestId("topology-trail-past-link")).toBeNull();
-  });
-
-  it("a read-only vault shows the entry link with a reason even with zero saved trails", () => {
-    renderChip({ pastWalks: [], pastNotice: "읽기 전용으로 열어서 길이 남지 않아요." });
-    openPast();
-    expect(screen.getByTestId("topology-trail-past-notice")).toHaveTextContent(
-      "읽기 전용으로 열어서",
-    );
-    expect(screen.getByTestId("topology-trail-past-empty")).toBeTruthy();
-  });
-
-  it("normal saving shows no notice line, silence is the default", () => {
-    renderChip();
-    openPast();
-    expect(screen.queryByTestId("topology-trail-past-notice")).toBeNull();
-  });
-
-  it("the header link opens the second-layer list newest first and hides the first-layer timeline", () => {
-    renderChip();
-    openPast();
-    const rows = screen.getAllByTestId("topology-trail-past-row");
-    expect(rows).toHaveLength(2);
-    expect(rows[0].textContent).toContain("AI 에이전트 파트너 → 화면(뷰)");
-    expect(rows[0].textContent).toContain("오늘 · 12곳");
-    expect(screen.queryByTestId("topology-trail-row")).toBeNull();
-    expect(screen.getByTestId("topology-trail-past-clear-all")).toHaveTextContent("모두 지우기");
-    expect(screen.getByTestId("topology-trail-chip-popover")).toHaveTextContent("최근 10개까지");
-  });
-
-  it("back returns to the first-layer timeline", () => {
-    renderChip();
-    openPast();
-    fireEvent.click(screen.getByTestId("topology-trail-past-back"));
-    expect(screen.getAllByTestId("topology-trail-row")).toHaveLength(3);
-    expect(screen.queryByTestId("topology-trail-past-row")).toBeNull();
-  });
-
-  it("reopening the popover always starts at the first layer", () => {
-    renderChip();
-    openPast();
-    fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
-    fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
-    expect(screen.queryByTestId("topology-trail-past-row")).toBeNull();
-    expect(screen.getAllByTestId("topology-trail-row")).toHaveLength(3);
-  });
-
-  it("a row close deletes only that trail", () => {
-    const props = renderChip();
-    openPast();
-    fireEvent.click(screen.getAllByTestId("topology-trail-past-delete")[1]);
-    expect(props.onDeletePastWalk).toHaveBeenCalledWith("w2");
-  });
-
-  it("clear all goes through a two-step confirm", () => {
-    const props = renderChip();
-    openPast();
-    const button = screen.getByTestId("topology-trail-past-clear-all");
-    fireEvent.click(button);
-    expect(props.onClearPastWalks).not.toHaveBeenCalled();
-    expect(button).toHaveTextContent("한 번 더 누르면 지워요");
-    fireEvent.click(button);
-    expect(props.onClearPastWalks).toHaveBeenCalledTimes(1);
-  });
-
-  it("the two-step confirm resets itself after 4 seconds", () => {
-    vi.useFakeTimers();
-    try {
-      const props = renderChip();
-      openPast();
-      const button = screen.getByTestId("topology-trail-past-clear-all");
-      fireEvent.click(button);
-      act(() => {
-        vi.advanceTimersByTime(4000);
-      });
-      expect(button).toHaveTextContent("모두 지우기");
-      fireEvent.click(button);
-      expect(props.onClearPastWalks).not.toHaveBeenCalled();
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  it("clearing everything in the second layer leaves the empty-state copy and removes clear all", () => {
-    const props = renderChip();
-    openPast();
-    props.rerenderWith({ pastWalks: [] });
-    expect(screen.getByTestId("topology-trail-past-empty")).toHaveTextContent(
-      "아직 남은 길이 없어요",
-    );
-    expect(screen.queryByTestId("topology-trail-past-row")).toBeNull();
-    expect(screen.queryByTestId("topology-trail-past-clear-all")).toBeNull();
-    // The cap notice holds its contract even in the empty state.
-    expect(screen.getByTestId("topology-trail-chip-popover")).toHaveTextContent("최근 10개까지");
-  });
-
-  it("pressing a row reopens that trail and returns to the first layer", () => {
-    const props = renderChip();
-    openPast();
-    fireEvent.click(screen.getAllByTestId("topology-trail-past-replay")[1]);
-    expect(props.onReplayPastWalk).toHaveBeenCalledWith("w2");
-    // Staying on level 2 after replaying would hide the result.
-    expect(screen.queryByTestId("topology-trail-past-row")).toBeNull();
-    expect(screen.getAllByTestId("topology-trail-row")).toHaveLength(3);
-  });
-
-  it("row aria states the date and place count of what opens", () => {
-    renderChip();
-    openPast();
-    expect(screen.getAllByTestId("topology-trail-past-replay")[0]).toHaveAttribute(
-      "aria-label",
-      "이 길 다시 펴기 — 오늘, 12곳",
-    );
-  });
-
-  it("a trail gone from the map is not a button, only delete remains", () => {
-    const props = renderChip({
-      pastWalks: [
-        {
-          id: "dead",
-          routeLabel: "지워진 곳 → 지워진 곳",
-          metaLabel: "지금 지도에 없어요",
-          replayable: false,
-          ariaLabel: null,
-        },
-      ],
-    });
-    openPast();
-    const row = screen.getByTestId("topology-trail-past-row");
-    expect(row).toHaveAttribute("data-replayable", "false");
-    expect(screen.queryByTestId("topology-trail-past-replay")).toBeNull();
-    // Only the ✕ is left.
-    expect(row.querySelectorAll("button")).toHaveLength(1);
-    expect(props.onReplayPastWalk).not.toHaveBeenCalled();
-  });
-
-  it("moving between layers leaves no brushing and keeps the lens on", () => {
-    const onHoverEntry = vi.fn();
-    const onLensChange = vi.fn();
-    renderChip({ onHoverEntry, onLensChange });
-    fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
-    fireEvent.mouseEnter(
-      screen.getAllByTestId("topology-trail-row")[0].parentElement as HTMLElement,
-    );
-    expect(onHoverEntry).toHaveBeenLastCalledWith("element:y");
-    fireEvent.click(screen.getByTestId("topology-trail-past-link"));
-    expect(onHoverEntry).toHaveBeenLastCalledWith(null);
-    // Switching levels keeps the popover open.
-    expect(onLensChange).toHaveBeenLastCalledWith(true);
-    fireEvent.click(screen.getByTestId("topology-trail-past-back"));
-    expect(onHoverEntry).toHaveBeenLastCalledWith(null);
-    expect(onLensChange).toHaveBeenLastCalledWith(true);
   });
 });

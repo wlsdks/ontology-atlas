@@ -90,7 +90,7 @@
 > Explain how ontology-atlas MCP's write tools detect external editor changes by users, and what arguments each tool accepts.
 
 **Correct answer:**
-- mtime-based — `get_concept` returns `mtime` (ms), all write tools (`patch_concept` / `delete_concept` / `add_relation` / `rename_concept` / `merge_concepts`) accept optional `expected_mtime`.
+- mtime-based — each `get_concepts` row returns `mtime` (ms), all write tools (`patch_concept` / `delete_concept` / `add_relations` rows / `rename_concept` / `merge_concepts`) accept optional `expected_mtime`.
 - Mismatch throws `VaultConflictError`.
 - Documented in `mcp/CHANGELOG.md` (R11) and `capabilities/mcp-conflict-guard`.
 

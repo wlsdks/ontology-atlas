@@ -59,7 +59,7 @@ export const ADD_RELATION_TOOL = {
 export const ADD_RELATIONS_TOOL = {
   name: 'add_relations',
   description:
-    'Add several typed relations in one call (max 50), each row shaped like `add_relation`; use it for the edges of a construction batch. ' +
+    'Add one or more typed relations between existing nodes, up to 50 per call, each written to its source node\'s matching frontmatter key. `contains` between kinds a typed key fits is written as that key, said in the row\'s `notice`. Replaces add_relation. ' +
     'Give every new `depends_on` a nonblank `why`; an edge from imports alone, such as `infer_imports.moduleEdges`, needs exact-evidence review and the user\'s acceptance first. ' +
     'Rows are independent, idempotent and not rolled back: an existing edge returns `alreadyExists: true`; a bad row (missing slug, unknown type, unknown field) returns `{ok: false, error}` labelled `relations[n]` with a closest-value hint and repair fields, in input order. ' +
     '`mtimes` maps each source whose first changed row passed `expected_mtime` to its new mtime; when rows share one `from`, guard only its first row. ' +
@@ -81,12 +81,16 @@ export const ADD_RELATIONS_TOOL = {
               maxLength: 300,
               description: 'One-line rationale stored in relation_notes; required for a new depends_on.',
             },
-            expected_mtime: { type: 'number', minimum: 0 },
+            expected_mtime: {
+              type: 'number',
+              minimum: 0,
+              description: 'Conflict guard: the source node\'s mtime from get_concepts or the last write; a changed file throws VaultConflictError.',
+            },
           },
           required: ['from', 'to', 'type'],
           additionalProperties: false,
         },
-        description: 'Rows shaped like `add_relation` input.',
+        description: 'One row per relation: `from`, `to`, `type`, and `why` for a new depends_on. `type: "domain"` sets the source\'s inline parent domain.',
       },
     },
     required: ['relations'],
@@ -150,7 +154,7 @@ export const ADD_RELATIONS_TOOL = {
 export const REMOVE_RELATION_TOOL = {
   name: 'remove_relation',
   description:
-    'Safely remove one exact typed relation and its `relation_notes` rationale from a source node. Defaults to dry-run; pass confirm:true to write. Supports expected_mtime conflict protection. Use this instead of replacing a whole frontmatter array with patch_concept. `type:"contains"` also finds the typed key add_relation stored it under.',
+    'Safely remove one exact typed relation and its `relation_notes` rationale from a source node. Defaults to dry-run; pass confirm:true to write. Supports expected_mtime conflict protection. Use this instead of replacing a whole frontmatter array with patch_concept. `type:"contains"` also finds the typed key add_relations stored it under.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -179,7 +183,7 @@ export const REMOVE_RELATION_TOOL = {
 export const REPLACE_RELATION_TOOL = {
   name: 'replace_relation',
   description:
-    'Atomically replace one exact relation with a new target and/or type, moving or replacing its rationale in the same frontmatter write. `contains` as oldType or newType maps to the typed key exactly as add_relation does. Defaults to dry-run; pass confirm:true to write. Supports expected_mtime.',
+    'Atomically replace one exact relation with a new target and/or type, moving or replacing its rationale in the same frontmatter write. `contains` as oldType or newType maps to the typed key exactly as add_relations does. Defaults to dry-run; pass confirm:true to write. Supports expected_mtime.',
   inputSchema: {
     type: 'object',
     properties: {

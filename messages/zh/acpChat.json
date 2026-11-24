@@ -367,7 +367,7 @@
     "build": {
       "label": "构建第一张地图",
       "because": "{count, plural, =0 {地图上还什么都没有} other {地图上只有 # 个起始概念}}",
-      "prompt": "请根据已连接的代码构建此文件夹的第一张地图。先运行 connection_info 和 list_kinds，然后读取源码，把代码中体现的领域、能力和实现元素加进来，每个都带上定义句、代码位置和关系，每条关系都写明理由。添加相似概念之前，先查找是否已有现成的概念。最后运行 validate_vault，告诉我你添加了什么、连接了什么、哪些没能读取。"
+      "prompt": "请根据已连接的代码构建此文件夹的第一张地图。先运行 connection_info，再用 limit 1 调用 list_concepts 读取其统计，然后读取源码，把代码中体现的领域、能力和实现元素加进来，每个都带上定义句、代码位置和关系，每条关系都写明理由。添加相似概念之前，先查找是否已有现成的概念。最后运行 validate_vault，告诉我你添加了什么、连接了什么、哪些没能读取。"
     },
     "mapArea": {
       "line": "把代码的其余部分放到地图上 · 第 {part, number} 个请求",
@@ -406,12 +406,12 @@
     "explainSubject": {
       "label": "根据“{subject}”的记录和关联，解释它的作用",
       "because": "只读取记录和关系，不做任何修改",
-      "prompt": "请用 get_concept 和 find_neighbors 读取概念 {slug}，然后解释它做什么、属于什么、依赖什么。只使用文件夹中记录的内容；记录没有写的地方，请直说，不要猜测。"
+      "prompt": "请用 get_concepts 和 query_ontology 的 neighbors 操作读取概念 {slug}，然后解释它做什么、属于什么、依赖什么。只使用文件夹中记录的内容；记录没有写的地方，请直说，不要猜测。"
     },
     "subjectImpact": {
       "label": "找出更改“{subject}”会波及什么",
       "because": "只沿着关联查看，不做任何修改",
-      "prompt": "请从概念 {slug} 出发，用 find_backlinks 和 find_neighbors 列出更改它会波及的概念，并附上传递影响的关系。不要写入任何内容；最后说明你会最先检查的一处及原因。"
+      "prompt": "请从概念 {slug} 出发，用 find_backlinks 和 query_ontology 的 neighbors 操作列出更改它会波及的概念，并附上传递影响的关系。不要写入任何内容；最后说明你会最先检查的一处及原因。"
     }
   },
   "modeName": {

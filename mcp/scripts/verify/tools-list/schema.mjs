@@ -58,11 +58,9 @@ function topLevelInputCombinatorFailure(tools) {
 // `{type:'object'}` could be a dynamic map or a contract that lost its fields.
 // Dynamic maps are named here; everything else is closed or a typed map.
 const TOOLS_LIST_OPEN_OBJECT_PATHS = new Set([
-  'get_concept.outputSchema.properties.frontmatter',
   'get_concepts.outputSchema.properties.concepts.items.properties.frontmatter',
   'get_concepts.outputSchema.properties.concepts.items.properties.growthHint.properties.exampleCall.properties.args',
   'find_evidence.outputSchema.properties.growthHint.properties.exampleCall.properties.args',
-  'find_path.outputSchema.properties.growthHint.properties.exampleCall.properties.args',
   'query_concepts.outputSchema.properties.growthHint.properties.exampleCall.properties.args',
   'query_ontology.outputSchema.properties.compiledSummary',
   'query_ontology.outputSchema',
@@ -92,8 +90,6 @@ const TOOLS_LIST_TYPED_OBJECT_PATHS = new Set([
   'infer_imports.outputSchema.properties.reconciliation.properties.inCodeMissingFromVault.items',
   'infer_imports.outputSchema.properties.reconciliation.properties.inCodeMissingEndpointAbsent.items',
   'infer_imports.outputSchema.properties.reconciliation.properties.inVaultNotInCode.items',
-  'index_project.outputSchema.properties.imports.properties.thresholdApplied',
-  'index_project.outputSchema.properties.imports.properties.reconciliationSummary',
 ]);
 
 function nestedObjectSchemaFailure(tools) {

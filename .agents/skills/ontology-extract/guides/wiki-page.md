@@ -73,7 +73,7 @@ absorb_document({ filePath: "...", confirm: true })
 ```
 
 `suggest` rows are never written by `absorb_document`, even with confirmation.
-Create only explicitly approved ones through `add_concept`.
+Create only explicitly approved ones through `add_concepts`.
 
 ## 4. Cite the original URL
 

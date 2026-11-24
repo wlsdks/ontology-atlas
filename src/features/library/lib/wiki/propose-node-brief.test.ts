@@ -17,8 +17,8 @@ describe("the propose-node brief writes one node through the card and nothing el
       expect(brief).toContain(VAULT_ROOT);
     });
 
-    it(`${locale}: asks for exactly one add_concept, evidence as wiki links, and no wiki edits`, () => {
-      expect(brief).toContain("add_concept");
+    it(`${locale}: asks for exactly one add_concepts call, evidence as wiki links, and no wiki edits`, () => {
+      expect(brief).toContain("add_concepts");
       expect(brief).toContain("[[wiki/");
       expect(brief).toContain("describes:");
       expect(brief).toContain("list_concepts");

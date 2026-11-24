@@ -7,14 +7,14 @@ describe('agent map navigation during relation review', () => {
     const setSelectedEdge = vi.fn();
     const setRouteState = vi.fn();
     const options = {
-      setExpandAllActive: vi.fn(), setRouteState, replayPastWalk: vi.fn(),
+      setExpandAllActive: vi.fn(), setRouteState,
       topologyInspectorState: { panelDatasheetModel: null },
       topologyAgentOrchestration: { closeVaultAgent: vi.fn() },
       topologySourceReadiness: { unboundProjectSource: null },
       topologyIndexPresentation: { beginExpandedIndexSelection: vi.fn() },
       topologyGraphProjection: { projectBySlug: new Map() },
       topologyAuthoring: { setHoverEdge: vi.fn(), setMeaningEditorState: vi.fn(), setSelectedEdge },
-      topologyPreferences: { structure: false, neural: false },
+      topologyPreferences: { neural: false },
       topologyCanvasFocus: { interactionSelectedSlugRef: { current: null }, setFullDetailSlug: vi.fn(), setSelectedRelationActive: vi.fn(), setNodePopoverDismissed: vi.fn(), chatNodeIndex: new Map() },
     } as Parameters<typeof useTopologyNavigationActions>[0];
     const { result } = renderHook(() => useTopologyNavigationActions(options));
@@ -31,14 +31,14 @@ describe('agent map navigation during relation review', () => {
     const setNodePopoverDismissed = vi.fn();
     const interactionSelectedSlugRef = { current: 'capability:a' as string | null };
     const options = {
-      setExpandAllActive: vi.fn(), setRouteState, replayPastWalk: vi.fn(),
+      setExpandAllActive: vi.fn(), setRouteState,
       topologyInspectorState: { panelDatasheetModel: null },
       topologyAgentOrchestration: { closeVaultAgent: vi.fn() },
       topologySourceReadiness: { unboundProjectSource: null },
       topologyIndexPresentation: { beginExpandedIndexSelection: vi.fn() },
       topologyGraphProjection: { projectBySlug: new Map() },
       topologyAuthoring: { setHoverEdge: vi.fn(), setMeaningEditorState: vi.fn(), setSelectedEdge: vi.fn() },
-      topologyPreferences: { structure: false, neural: false },
+      topologyPreferences: { neural: false },
       topologyCanvasFocus: { interactionSelectedSlugRef, setFullDetailSlug: vi.fn(), setSelectedRelationActive: vi.fn(), setNodePopoverDismissed, chatNodeIndex: new Map() },
     } as Parameters<typeof useTopologyNavigationActions>[0];
     const { result } = renderHook(() => useTopologyNavigationActions(options));
@@ -57,14 +57,14 @@ describe('agent map navigation during relation review', () => {
       let selected: typeof relation | null = relation;
       const setRouteState = vi.fn();
       const options = {
-        setExpandAllActive: vi.fn(), setRouteState, replayPastWalk: vi.fn(),
+        setExpandAllActive: vi.fn(), setRouteState,
         topologyInspectorState: { panelDatasheetModel: null },
         topologyAgentOrchestration: { closeVaultAgent: vi.fn() },
         topologySourceReadiness: { unboundProjectSource: null },
         topologyIndexPresentation: { beginExpandedIndexSelection: vi.fn() },
         topologyGraphProjection: { projectBySlug: new Map() },
         topologyAuthoring: { setHoverEdge: vi.fn(), setMeaningEditorState: vi.fn(), setSelectedEdge: (next: typeof selected | ((current: typeof selected) => typeof selected)) => { selected = typeof next === 'function' ? next(selected) : next; } },
-        topologyPreferences: { structure: false, neural: false },
+        topologyPreferences: { neural: false },
         topologyCanvasFocus: { interactionSelectedSlugRef: { current: null }, setFullDetailSlug: vi.fn(), setSelectedRelationActive: vi.fn(), setNodePopoverDismissed: vi.fn(), chatNodeIndex: new Map([['source', 'a'], ['target', 'b'], ['other', 'c']]) },
       } as Parameters<typeof useTopologyNavigationActions>[0];
       const { result } = renderHook(() => useTopologyNavigationActions(options));

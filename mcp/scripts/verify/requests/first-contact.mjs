@@ -53,7 +53,7 @@ export function buildFirstContactRequests() {
       jsonrpc: '2.0',
       id: 4,
       method: 'tools/call',
-      params: { name: 'list_kinds', arguments: {} },
+      params: { name: 'list_concepts', arguments: { limit: 1 } },
     },
     {
       jsonrpc: '2.0',
@@ -119,12 +119,6 @@ export function buildFirstContactRequests() {
           focusLimit: 25,
         },
       },
-    },
-    {
-      jsonrpc: '2.0',
-      id: 68,
-      method: 'tools/call',
-      params: { name: 'index_project', arguments: { rootPath: REPO_ROOT, maxFiles: 5000 } },
     },
     {
       jsonrpc: '2.0',
@@ -368,19 +362,6 @@ export function buildFirstContactRequests() {
     },
     {
       jsonrpc: '2.0',
-      id: 50,
-      method: 'tools/call',
-      params: {
-        name: 'add_relation',
-        arguments: {
-          from: 'missing-add-relation-source',
-          to: 'missing-add-relation-target',
-          type: 'depend_on',
-        },
-      },
-    },
-    {
-      jsonrpc: '2.0',
       id: 47,
       method: 'tools/call',
       params: {
@@ -436,18 +417,6 @@ export function buildFirstContactRequests() {
         arguments: {
           operation: 'match_edges',
           type: 'depend_on',
-        },
-      },
-    },
-    {
-      jsonrpc: '2.0',
-      id: 55,
-      method: 'tools/call',
-      params: {
-        name: 'find_neighbors',
-        arguments: {
-          slug: 'missing-find-neighbors-type-source',
-          types: ['depend_on'],
         },
       },
     },

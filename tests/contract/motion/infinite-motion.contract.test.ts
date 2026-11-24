@@ -17,7 +17,6 @@ const PAINT_LICENSED: Record<string, string> = {
 const RUNS_ONLY_DURING_WORK: Record<string, string> = {
   "agent-pending-dot": "agent transcript pending dot, mounted only while the turn is running or sending",
   "acp-working-shimmer": "working ink on the brief and chat counters, applied only while work is still arriving",
-  "architecture-observation-scan": "architecture evidence plane and rail scan line, mounted only while observation is active",
   "motion-work-spin": "work glyph arc, mounted only while indeterminate work runs",
   "motion-work-sweep": "work progress sweep, shown only while indeterminate work runs",
   "motion-work-hop": "work trail signal, applied only while work of unknown length runs or to the plan step in progress",

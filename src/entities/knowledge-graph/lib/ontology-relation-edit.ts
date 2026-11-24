@@ -22,7 +22,7 @@ const KEY_ALIASES: Readonly<Record<string, readonly string[]>> = {
   dependencies: ['depends_on'],
 };
 
-/** The lists `add_concept` always writes per kind (`arrayDefaults` in `mcp/src/schema.mjs`). */
+/** The lists `add_concepts` always writes per kind (`arrayDefaults` in `mcp/src/schema.mjs`). */
 const SCAFFOLD_LISTS: Readonly<Record<string, readonly string[]>> = {
   project: ['domains', 'capabilities', 'elements'],
   domain: ['capabilities'],
@@ -146,7 +146,7 @@ function relationChangeSet(
 
 /**
  * One relation added, retyped or retargeted on the source document, in the keys and value shape
- * `add_relation` writes: alias spellings fold into the written key, the list is sorted, and the
+ * `add_relations` writes: alias spellings fold into the written key, the list is sorted, and the
  * reason sits in `relation_notes` under the target's slug.
  */
 export function buildOntologyRelationEditPlan({

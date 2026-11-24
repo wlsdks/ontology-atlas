@@ -31,7 +31,6 @@ test("a layout morph stops its own frames once the new view has landed", async (
     await countFrames(page);
     await page.addInitScript(() => {
         window.localStorage.setItem("atlas.appearance.hex-board", "off");
-        window.localStorage.setItem("atlas.appearance.structure", "off");
         window.localStorage.setItem("atlas.appearance.view3d", "off");
     });
     await page.goto("/ko/topology?synth=300&guides=off&e2e=1");

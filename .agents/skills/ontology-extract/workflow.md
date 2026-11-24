@@ -20,7 +20,7 @@ requests, and prose already living inside the target vault node.
 ## 1. Read prose and the existing vault together
 
 ```text
-list_kinds
+list_concepts({ limit: 1 })
 find_evidence(title)
 query_ontology({ operation: "similar_nodes", candidateSlug, title })
 ```
@@ -73,11 +73,11 @@ without consent fills the vault with hallucinated meaning.
 
 | Candidate | Tool |
 |---|---|
-| New node | `add_concept(slug, kind, title, domain?, body?)` |
+| New node | `add_concepts({ concepts: [{ slug, kind, title, domain?, body? }] })` |
 | Existing node | `patch_concept(slug, body?, frontmatter?, expected_mtime)` |
-| Relation only | `add_relation(from, to, type)` |
+| Relation only | `add_relations({ relations: [{ from, to, type, why }] })` |
 
-Use `add_concepts` and `add_relations` for approved batches. Cite the source in
+Put every approved candidate of one batch in a single call. Cite the source in
 the body so a person can verify it later.
 Shape each body and test each `depends_on` by the construction card that
 `connection_info` returns.

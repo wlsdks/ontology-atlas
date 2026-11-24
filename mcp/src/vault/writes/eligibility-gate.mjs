@@ -91,7 +91,7 @@ export function drainNodeEligibilityFindings() {
 /**
  * Every name the vault answers to (slugs, tails, frontmatter `slug:` aliases),
  * the same three the MCP resolver accepts, so the gate never calls "unresolved"
- * what get_concept would return.
+ * what get_concepts would return.
  */
 function buildGateIndex(rootPath) {
   const names = new Set();

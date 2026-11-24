@@ -1,6 +1,6 @@
 # 개념 사이의 관계
 
-관계는 온톨로지라는 지식 그래프에서 유형이 정해진 간선(edge)이에요. "이 역량은 저 역량에 의존한다", "이 요소는 저 역량에 속한다" 같은 것들이죠. Atlas에서는 관계 하나가 개념 frontmatter의 항목 하나예요. 이 장에서는 관계 유형을 정리하고 관계를 적는 법을 보여 준 다음, 지도와, 코딩 에이전트가 호출하는 MCP 도구(`find_path`, `find_backlinks` 등)가 관계를 어떻게 읽는지 설명해요.
+관계는 온톨로지라는 지식 그래프에서 유형이 정해진 간선(edge)이에요. "이 역량은 저 역량에 의존한다", "이 요소는 저 역량에 속한다" 같은 것들이죠. Atlas에서는 관계 하나가 개념 frontmatter의 항목 하나예요. 이 장에서는 관계 유형을 정리하고 관계를 적는 법을 보여 준 다음, 지도와, 코딩 에이전트가 호출하는 MCP 도구(`query_ontology`, `find_backlinks` 등)가 관계를 어떻게 읽는지 설명해요.
 
 ## 구조와 의미
 
@@ -63,12 +63,12 @@ Atlas는 관계 목록을 쓸 때 공백을 다듬고, 중복을 없애고, 정�
 MCP 서버는 같은 frontmatter를 읽어 그래프에 관한 질문에 답해요. 그래서 에이전트가 파일을 전부 읽지 않아도 돼요.
 
 - `find_backlinks`는 관계 키로든 본문 속 링크로든 어떤 slug를 가리키는 개념을 모두 나열해요. 이름을 바꾸거나 지우기 전에 호출하세요.
-- `find_path`는 두 개념 사이의 최단 경로를 돌려줘요. 단계마다 그 단계를 잇는 키(`via`)와, 기록돼 있다면 이유(`rationale`)를 알려 줘요.
-- `find_neighbors`는 개념 둘레 한 단계를 방향과 유형으로 걸러서 돌려줘요.
+- `query_ontology`에 `path`를 주면 두 개념 사이의 최단 경로를 돌려줘요. 단계마다 그 단계를 잇는 키(`via`)와, 기록돼 있다면 이유(`rationale`)를 알려 줘요.
+- `query_ontology`에 `neighbors`를 주면 개념 둘레 한 단계를 방향과 유형으로 걸러서 돌려줘요.
 - `query_ontology`에 `impact`나 `blast_radius`를 주면 "이게 바뀌면 무엇이 영향을 받나요?"에 답해요. 선언된 `depends_on` 관계만 따라가요. 구조는 영향이 아니에요.
 - `query_ontology`에 `domain_matrix`를 주면 도메인 사이의 관계 수를 세요. `depends_on`으로 한정하면 지도의 호가 나타내는 숫자와 같아요.
 
-관계를 적을 때는 `add_relation`이 `from`, `to`, `type`(`depends_on`, `relates`, `contains`, `describes`, `domains`, `capabilities`, `elements`, `domain` 중 하나), `why`를 받아요. `remove_relation`과 `replace_relation`은 기본으로 미리 보기만 하고, `confirm: true`일 때만 써요. `broader`는 아직 `add_relation`의 유형이 아니에요. `broader`를 바꿀 때 에이전트는 `patch_concept`에 새 목록 전체와 파일의 `mtime`을 넘기고, 그다음 `validate_vault`를 실행해요.
+관계를 적을 때는 `add_relations`에 관계 목록을 넘기고, 관계마다 `from`, `to`, `type`(`depends_on`, `relates`, `contains`, `describes`, `domains`, `capabilities`, `elements`, `domain` 중 하나), `why`를 적어요. `remove_relation`과 `replace_relation`은 기본으로 미리 보기만 하고, `confirm: true`일 때만 써요. `broader`는 아직 `add_relations`의 유형이 아니에요. `broader`를 바꿀 때 에이전트는 `patch_concept`에 새 목록 전체와 파일의 `mtime`을 넘기고, 그다음 `validate_vault`를 실행해요.
 
 지도에서는 **관계 편집**으로 MCP 도구와 같은 점검을 거쳐 관계를 하나씩 더하거나 지워요. [개념과 관계 편집하기](/guide/studio)를 보세요.
 

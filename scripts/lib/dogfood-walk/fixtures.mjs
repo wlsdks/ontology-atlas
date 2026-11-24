@@ -99,8 +99,8 @@ export const okShape = {
   targets: dogfoodTargets,
   initialize: makeDogfoodInitialize(),
   toolsList: makeDogfoodToolsList(),
-  kinds: { total: 1, byKind: { project: 1 } },
-  kindsStructured: { total: 1, byKind: { project: 1 } },
+  census: { total: 1, byKind: { project: 1 } },
+  censusStructured: { total: 1, byKind: { project: 1 } },
   list: {
     total: 1,
     returned: 1,
@@ -377,8 +377,6 @@ export const okShape = {
   },
   ev: { matches: [] },
   evStructured: { matches: [] },
-  path: { found: true, hopCount: 1, hops: ["a", "b"], edges: [{ from: "a", to: "b", via: "relates" }] },
-  pathStructured: { found: true, hopCount: 1, hops: ["a", "b"], edges: [{ from: "a", to: "b", via: "relates" }] },
   bl: {
     target: "capabilities/mcp-server",
     total: 1,
@@ -1099,8 +1097,8 @@ export const okShape = {
       reason: "Missing containment relation.",
       executable: true,
       proposedAction: {
-        tool: "add_relation",
-        args: { from: "domains/ai-agent-partner", to: "capabilities/mcp-server", type: "capabilities" },
+        tool: "add_relations",
+        args: { relations: [{ from: "domains/ai-agent-partner", to: "capabilities/mcp-server", type: "capabilities" }] },
       },
       nodes: {
         from: { slug: "domains/ai-agent-partner", kind: "domain", title: "AI Agent Partner" },
@@ -1126,8 +1124,8 @@ export const okShape = {
         reason: "Missing containment relation.",
         executable: true,
         proposedAction: {
-          tool: "add_relation",
-          args: { from: "domains/ai-agent-partner", to: "capabilities/mcp-server", type: "capabilities" },
+          tool: "add_relations",
+          args: { relations: [{ from: "domains/ai-agent-partner", to: "capabilities/mcp-server", type: "capabilities" }] },
         },
         nodes: {
           from: { slug: "domains/ai-agent-partner", kind: "domain", title: "AI Agent Partner" },
@@ -1212,8 +1210,8 @@ export const okShape = {
           relation: "capabilities",
           reason: "Missing containment relation.",
           proposedAction: {
-            tool: "add_relation",
-            args: { from: "domains/ai-agent-partner", to: "capabilities/mcp-server", type: "capabilities" },
+            tool: "add_relations",
+            args: { relations: [{ from: "domains/ai-agent-partner", to: "capabilities/mcp-server", type: "capabilities" }] },
           },
         },
       ],
@@ -1230,8 +1228,8 @@ export const okShape = {
           suggestedSlug: "elements/mcp-src-index",
           reason: "Materialize external element.",
           proposedAction: {
-            tool: "add_concept",
-            args: { slug: "elements/mcp-src-index", kind: "element", title: "Index" },
+            tool: "add_concepts",
+            args: { concepts: [{ slug: "elements/mcp-src-index", kind: "element", title: "Index" }] },
           },
         },
       ],
@@ -1250,8 +1248,8 @@ export const okShape = {
           suggestedSlug: "capabilities/missing",
           reason: "Resolve dangling reference.",
           proposedAction: {
-            tool: "add_concept",
-            args: { slug: "capabilities/missing", kind: "capability", title: "Missing" },
+            tool: "add_concepts",
+            args: { concepts: [{ slug: "capabilities/missing", kind: "capability", title: "Missing" }] },
           },
         },
       ],
@@ -1295,8 +1293,8 @@ export const okShape = {
         relation: "capabilities",
         reason: "Missing containment relation.",
         proposedAction: {
-          tool: "add_relation",
-          args: { from: "domains/ai-agent-partner", to: "capabilities/mcp-server", type: "capabilities" },
+          tool: "add_relations",
+          args: { relations: [{ from: "domains/ai-agent-partner", to: "capabilities/mcp-server", type: "capabilities" }] },
         },
       },
     ],
@@ -2052,14 +2050,12 @@ export const okShape = {
   // change.
   strictMaintenanceKindFilter: strictValueErrorResponse("kinds items", [...MAINTENANCE_KIND_VALUES], "add_mising_relation", "add_missing_relation"),
   strictRelationFilter: strictValueErrorResponse("dependencyTypes items", ["domains", "domain", "capabilities", "elements", "dependencies", "depends_on", "relates", "contains", "describes"], "depend_on", "depends_on"),
-  strictFindNeighborsTypeFilter: strictValueErrorResponse("types items", ["domains", "domain", "capabilities", "elements", "dependencies", "depends_on", "relates", "contains", "describes"], "depend_on", "depends_on"),
   strictFindOrphansKindFilter: strictValueErrorResponse("kind", ["project", "domain", "capability", "element", "document", "vault-readme"], "capabilty", "capability"),
   strictFindOrphansExcludeKindFilter: strictValueErrorResponse("excludeKinds items", ["project", "domain", "capability", "element", "document", "vault-readme"], "capabilty", "capability"),
   strictQueryConceptsKindFilter: strictValueErrorResponse("kind", ["project", "domain", "capability", "element", "document", "vault-readme"], "capabilty", "capability"),
   strictQueryConceptsHasKeyFilter: strictValueErrorResponse("has key", [...GRAPH_ARRAY_KEYS], "capabilties", "capabilities"),
   strictListConceptsKindFilter: strictValueErrorResponse("kind", ["project", "domain", "capability", "element", "document", "vault-readme"], "capabilty", "capability"),
   strictRelationCheck: strictValueErrorResponse("type", ["domains", "domain", "capabilities", "elements", "dependencies", "depends_on", "relates", "contains", "describes"], "depend_on", "depends_on"),
-  strictAddRelation: strictValueErrorResponse("type", ["depends_on", "relates", "contains", "describes", "domains", "capabilities", "elements", "domain"], "depend_on", "depends_on"),
   strictGraphKindFilter: strictValueErrorResponse("kind", ["project", "domain", "capability", "element", "document", "vault-readme"], "capabilty", "capability"),
   strictRecommendRelationsKindFilter: strictValueErrorResponse("kind", ["capability", "element"], "capabilty", "capability"),
   strictRecommendRelationsUnsupportedKindFilter: strictValueErrorResponse("kind", ["capability", "element"], "domain"),

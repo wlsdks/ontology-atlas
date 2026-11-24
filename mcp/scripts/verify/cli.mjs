@@ -271,10 +271,10 @@ export function verifyUsage() {
     'Explicit [vault] or --vault arguments take precedence over OATLAS_VAULT.\n' +
     'Timeout cleanup sends SIGTERM and then SIGKILL; set OATLAS_VERIFY_KILL_GRACE_MS=N only when the post-timeout cleanup window needs explicit tuning.\n' +
     'Checks parser smoke, server boot, tool inventory (missing/extra/duplicate/invalid names), and direct read smokes,\n' +
-    'including list/project probe/get_concept/get_concepts/find_evidence/find_backlinks/query_concepts/limited query_concepts/analyze_repo_structure/infer_imports/index_project/find_neighbors/find_path/find_orphans.\n' +
+    'including list/project probe/get_concepts/find_evidence/find_backlinks/query_concepts/limited query_concepts/analyze_repo_structure/infer_imports/find_orphans.\n' +
     'It also checks node census, vault validation, workspace health, compile_ontology summary + paginated full-artifact + indexed full-artifact smoke, overview, query plans, and graph-query smoke.\n' +
-    'Successful output prints read census consistency after cross-checking list_kinds/list_concepts/compile_ontology/overview.\n' +
-    'Also checks strict unknown-tool / unknown-argument / invalid-enum rejection, list_concepts.kind, query_concepts.kind/has-key, find_neighbors.types, find_orphans.kind/excludeKinds, match_nodes.kind/sort, recommend_relations.kind, and match_edges.type/fromKind/toKind typo and unsupported-kind rejection, maintenance_plan filter enums,\n' +
+    'Successful output prints read census consistency after cross-checking the list_concepts census/list_concepts/compile_ontology/overview.\n' +
+    'Also checks strict unknown-tool / unknown-argument / invalid-enum rejection, list_concepts.kind, query_concepts.kind/has-key, find_orphans.kind/excludeKinds, match_nodes.kind/sort, recommend_relations.kind, and match_edges.type/fromKind/toKind typo and unsupported-kind rejection, maintenance_plan filter enums,\n' +
     'tools/list inventory names, initialize-instruction tool inventory, schema strictness, and annotation coverage (title/read/write/destructive/idempotent/local-only),\n' +
     'batch reader/writer row isolation for non-object rows and unknown row fields with concepts[n]/relations[n] error labels, invalid add_relations type closest-value hints, and 50-row batch cap rejection,\n' +
     'destructive writer dry-runs for rename_concept/merge_concepts/delete_concept with every planned response present and no changed/postWriteMaintenance,\n' +

@@ -120,12 +120,12 @@ step and the state of each tool's file.
 For the exact list, see the tools the server itself reports. They fall into a
 few groups:
 
-- **Read before work:** `get_concept` returns a concept with its neighbors,
-  `find_backlinks` shows what points at a concept, `find_path` shows how two
-  concepts connect, and `query_ontology` answers questions such as a workspace
+- **Read before work:** `get_concepts` returns concepts with their neighbors,
+  `find_backlinks` shows what points at a concept, and `query_ontology` shows
+  how two concepts connect (`path`) and answers questions such as a workspace
   overview or the impact of a change.
-- **Read the code:** `analyze_repo_structure`, `index_project` and
-  `infer_imports` survey a repository without writing anything.
+- **Read the code:** `analyze_repo_structure` and `infer_imports` survey a
+  repository without writing anything.
 - **Write:** `add_concepts`, `add_relations`, `patch_concept`, `rename_concept`,
   `merge_concepts`, `delete_concept` and a few more. Rename, merge, delete and
   relation removal first preview their changes. They write only when the agent

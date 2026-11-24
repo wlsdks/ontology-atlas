@@ -1,7 +1,7 @@
 import {
   findBacklinksFailure,
   findEvidenceFailure,
-  getConceptFailure,
+  conceptRowFailure,
   getConceptsFailure,
   limitedQueryConceptsFailure,
   listConceptsFailure,
@@ -76,26 +76,27 @@ export function verifyConceptReads(responses, {
   if (getConceptRes) {
     const expectedSlug = buildGetConceptSmokeSlug(listPayload);
     if (!expectedSlug) {
-      log('fail', 'unexpected get_concept response without a list_concepts slug');
+      log('fail', 'unexpected single get_concepts response without a list_concepts slug');
       return false;
     }
     try {
       const text = getConceptRes.result?.content?.[0]?.text || '';
       const parsed = JSON.parse(text);
-      const failure = getConceptFailure(parsed, expectedSlug);
+      const row = parsed?.concepts?.[0];
+      const failure = conceptRowFailure(row, expectedSlug);
       if (failure) {
         log('fail', failure);
         return false;
       }
-      const structuredFailure = structuredContentFailure(getConceptRes, parsed, 'get_concept');
+      const structuredFailure = structuredContentFailure(getConceptRes, parsed, 'get_concepts');
       if (structuredFailure) {
         log('fail', structuredFailure);
         return false;
       }
       getConceptVerified = true;
-      log('ok', `get_concept: ${parsed.slug} (${parsed.outgoingEdges.length} outgoing edges)`);
+      log('ok', `single get_concepts: ${row.slug} (${row.outgoingEdges.length} outgoing edges)`);
     } catch (err) {
-      log('fail', `failed to parse get_concept response: ${err.message}`);
+      log('fail', `failed to parse single get_concepts response: ${err.message}`);
       return false;
     }
   }

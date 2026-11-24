@@ -52,7 +52,7 @@ macOS(Apple Silicon)용 앱은 서명과 공증을 거쳤고, 앱 안에 MCP 서
 
 ![이 저장소 자체의 온톨로지를 그린 Atlas 지도에서 MCP tool server 역량을 고른 모습: 그 역량이 기대는 개념 9개와 그것을 쓰는 개념 2개로 밝은 선이 도메인을 가로질러 이어지고, 오른쪽 패널에 그 목록이 나와요](docs/assets/readme/topology-overview.png)
 
-**지도** — 개념을 고르면 그 개념이 기대는 것과 그것을 쓰는 것으로 가는 선이 밝아지고, 패널이 하나씩 이름을 보여 줘요. 평면, 육각, 도메인 구조도, 3D, 뉴런은 같은 개념을 다르게 보는 보기예요. [지도](docs/features/map/README.md)
+**지도** — 개념을 고르면 그 개념이 기대는 것과 그것을 쓰는 것으로 가는 선이 밝아지고, 패널이 하나씩 이름을 보여 줘요. 평면, 육각, 3D, 뉴런은 같은 개념을 다르게 보는 보기예요. [지도](docs/features/map/README.md)
 
 <table>
 <tr>
@@ -119,9 +119,9 @@ without opening every file.
 
 | 작업 전후에 에이전트가 묻는 것 | 도구 |
 |---|---|
-| 이 부분은 무엇을 위한 것이고, 무엇을 맡지 않나? | `get_concept` |
+| 이 부분은 무엇을 위한 것이고, 무엇을 맡지 않나? | `get_concepts` |
 | 이름을 바꾸거나 지우기 전에, 무엇이 이걸 가리키나? | `find_backlinks` |
-| 이 두 개념은 어떻게 이어져 있나? | `find_path` |
+| 이 두 개념은 어떻게 이어져 있나? | `query_ontology`의 `path` |
 | 이 변경이 무엇에 영향을 줄 수 있나? | `query_ontology`의 `impact` |
 | 이 내용은 어디에 적혀 있나? | `find_evidence` |
 | 방금 만들거나 바꾼 것을 기록하기 | `add_concepts`, `add_relations`, `patch_concept` |

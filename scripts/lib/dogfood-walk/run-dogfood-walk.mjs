@@ -53,7 +53,6 @@ import {
   tunedWorkspaceBriefScopeSummary,
   workspaceNextActionAnalysisLabel,
   workspaceNextActionSummary,
-  writeMetadataAbsenceSummary,
   writeRowLabelGuidanceSummary,
 } from "./summaries.mjs";
 import {
@@ -142,14 +141,15 @@ export async function runDogfoodWalk() {
     console.log(`  write row labels: ${writeRowLabelGuidanceSummary(tools)}`);
   }
 
-  header("list_kinds — vault census");
-  const kinds = getResult(responses, 2);
-  const kindsStructured = getRpcResult(responses, 2)?.structuredContent ?? null;
-  if (kinds) {
-    console.log(`  total: ${kinds.total}`);
-    console.log(`  structuredContent: ${structuredContentStatus(kinds, kindsStructured)}`);
+  header("list_concepts census — vault size by kind");
+  const censusPage = getResult(responses, 2);
+  const census = censusPage?.error || censusPage?.rawText ? censusPage : censusPage?.census ?? null;
+  const censusStructured = getRpcResult(responses, 2)?.structuredContent?.census ?? null;
+  if (census) {
+    console.log(`  total: ${census.total}`);
+    console.log(`  structuredContent: ${structuredContentStatus(census, censusStructured)}`);
     console.log(`  byKind:`);
-    for (const [k, n] of Object.entries(kinds.byKind || {})) {
+    for (const [k, n] of Object.entries(census.byKind || {})) {
       console.log(`    ${k.padEnd(15)} ${n}`);
     }
   }
@@ -243,18 +243,6 @@ export async function runDogfoodWalk() {
     }
   }
 
-  header(`find_path(${targets.capabilitySlug} → ${targets.pathTargetSlug})`);
-  const path = getResult(responses, 5);
-  const pathStructured = getRpcResult(responses, 5)?.structuredContent ?? null;
-  if (path) {
-    console.log(`  structuredContent: ${structuredContentStatus(path, pathStructured)}`);
-    if (path.found) {
-      console.log(`  hops: ${path.hopCount}`);
-      console.log(`  ${path.hops.join(" → ")}`);
-    } else {
-      console.log(`  ${COLORS.yellow}no path${COLORS.reset} — ${path.reason || ""}`);
-    }
-  }
 
   header(`find_backlinks(${targets.capabilitySlug})`);
   const bl = getResult(responses, 6);
@@ -885,14 +873,12 @@ export async function runDogfoodWalk() {
     strictMaintenanceSeverityFilter,
     strictMaintenanceKindFilter,
     strictRelationFilter,
-    strictFindNeighborsTypeFilter,
     strictFindOrphansKindFilter,
     strictFindOrphansExcludeKindFilter,
     strictQueryConceptsKindFilter,
     strictQueryConceptsHasKeyFilter,
     strictListConceptsKindFilter,
     strictRelationCheck,
-    strictAddRelation,
     strictGraphKindFilter,
     strictRecommendRelationsKindFilter,
     strictRecommendRelationsUnsupportedKindFilter,
@@ -943,12 +929,11 @@ export async function runDogfoodWalk() {
     ["project_scope", projectScope, projectScopeStructured],
   ];
   const directStructuredContentRows = [
-    ["list_kinds", kinds, kindsStructured],
+    ["list_concepts_census", census, censusStructured],
     ["list_concepts", list, listStructured],
     ["project_probe", projectProbe, projectProbeStructured],
     ["get_concepts", batch, batchStructured],
     ["find_evidence", ev, evStructured],
-    ["find_path", path, pathStructured],
     ["find_backlinks", bl, blStructured],
     ["find_orphans", orph, orphStructured],
     ["query_concepts", queryConcepts, queryConceptsStructured],
@@ -964,15 +949,13 @@ export async function runDogfoodWalk() {
   const failures = evaluateDogfoodGate({
     targets,
     initialize,
-    kinds,
+    census,
     list,
     listStructured,
     batch,
     batchStructured,
     ev,
     evStructured,
-    path,
-    pathStructured,
     bl,
     blStructured,
     orph,
@@ -1072,7 +1055,7 @@ export async function runDogfoodWalk() {
     projectScopeStructured,
     projectProbe,
     projectProbeStructured,
-    kindsStructured,
+    censusStructured,
     validationStructured,
     strictArgs,
     strictMultiArgs,
@@ -1082,14 +1065,12 @@ export async function runDogfoodWalk() {
     strictMaintenanceSeverityFilter,
     strictMaintenanceKindFilter,
     strictRelationFilter,
-    strictFindNeighborsTypeFilter,
     strictFindOrphansKindFilter,
     strictFindOrphansExcludeKindFilter,
     strictQueryConceptsKindFilter,
     strictQueryConceptsHasKeyFilter,
     strictListConceptsKindFilter,
     strictRelationCheck,
-    strictAddRelation,
     strictGraphKindFilter,
     strictRecommendRelationsKindFilter,
     strictRecommendRelationsUnsupportedKindFilter,
@@ -1114,7 +1095,7 @@ export async function runDogfoodWalk() {
   failures.push(...stderrWarningFailures(stderr));
 
   header("Analysis — AI agent quality assessment");
-  const total = kinds?.total || 0;
+  const total = census?.total || 0;
   const orphCount = orph?.total || 0;
   const orphRatio = total > 0 ? ((orphCount / total) * 100).toFixed(0) : 0;
   console.log(`  vault size: ${total} nodes`);
@@ -1138,7 +1119,6 @@ export async function runDogfoodWalk() {
   console.log(
     `  validate_vault: ${validation ? formatCount(validation.summary?.problemFiles ?? 0, "problem file") : "n/a"}`,
   );
-  console.log(`  find_path: hops ${path?.hopCount ?? "n/a"} · edges ${path?.edges?.length ?? "n/a"}`);
   console.log(`  find_backlinks: ${bl?.total ?? "n/a"} (${targets.capabilitySlug} incoming references)`);
   console.log(
     `  workspace_brief: ${brief?.status ?? "n/a"} (${(brief?.nextActions || []).length} next actions · ${(brief?.health?.checks || []).length} health checks)`,
@@ -1207,15 +1187,12 @@ export async function runDogfoodWalk() {
   console.log(`  strict_maintenance_severity_filter: ${strictRepairSummary(strictMaintenanceSeverityFilter)}`);
   console.log(`  strict_maintenance_kind_filter: ${strictRepairSummary(strictMaintenanceKindFilter)}`);
   console.log(`  strict_relation_filter: ${strictRepairSummary(strictRelationFilter)}`);
-  console.log(`  strict_find_neighbors_type_filter: ${strictRepairSummary(strictFindNeighborsTypeFilter)}`);
   console.log(`  strict_find_orphans_kind_filter: ${strictRepairSummary(strictFindOrphansKindFilter)}`);
   console.log(`  strict_find_orphans_exclude_kind_filter: ${strictRepairSummary(strictFindOrphansExcludeKindFilter)}`);
   console.log(`  strict_query_concepts_kind_filter: ${strictRepairSummary(strictQueryConceptsKindFilter)}`);
   console.log(`  strict_query_concepts_has_key_filter: ${strictRepairSummary(strictQueryConceptsHasKeyFilter)}`);
   console.log(`  strict_list_concepts_kind_filter: ${strictRepairSummary(strictListConceptsKindFilter)}`);
   console.log(`  strict_relation_check: ${strictRepairSummary(strictRelationCheck)}`);
-  console.log(`  strict_add_relation: ${strictRepairSummary(strictAddRelation)}`);
-  console.log(`  strict_add_relation_write_metadata: ${writeMetadataAbsenceSummary(strictAddRelation)}`);
   console.log(`  strict_graph_kind_filter: ${strictRepairSummary(strictGraphKindFilter)}`);
   console.log(`  strict_recommend_relations_kind_filter: ${strictRepairSummary(strictRecommendRelationsKindFilter)}`);
   console.log(`  strict_recommend_relations_unsupported_kind_filter: ${strictRepairSummary(strictRecommendRelationsUnsupportedKindFilter)}`);

@@ -106,9 +106,9 @@ fragment. `/ontology`, `/ontology/edit`, `/ontology/studio`, `/ontology/insights
 
 ## Source authority and ontology loop
 
-Before unfamiliar meaningful work, read `list_kinds`, narrow `list_concepts`,
-and `get_concept`; use `find_backlinks` before renames and `find_path` for an
-existing relation. Avoid full-vault dumps.
+Before unfamiliar meaningful work, read the `list_concepts` census, narrow it,
+then `get_concepts`; use `find_backlinks` before renames and `query_ontology`
+`path` for an existing relation. Avoid full-vault dumps.
 
 `mcp/src/schema.mjs` owns schema. UID is immutable and writer-minted; slug may
 change. Canonical names use `title`; localization uses `display_<locale>`.
