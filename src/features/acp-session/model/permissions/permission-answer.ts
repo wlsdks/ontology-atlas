@@ -30,6 +30,19 @@ function isVaultRelativePath(filePath: string): boolean {
 }
 
 /**
+ * A search can take its folder from another argument than the judged path: a Claude Glob uses an
+ * absolute `pattern` as its root. Any other string that names a root (`/`, `\\`, `~`, a drive) or
+ * climbs with `..` must be the judged path itself.
+ */
+function argumentsStayOnJudgedPath(request: AcpPermissionRequest): boolean {
+  return Object.values(request.rawInput).every((value) => {
+    if (typeof value !== 'string' || value === request.filePath) return true;
+    const leavesThePath = /^[\\/~]/.test(value) || /^[A-Za-z]:/.test(value) || value.split(/[\\/]/).includes('..');
+    return !leavesThePath;
+  });
+}
+
+/**
  * The option to select without asking the person, or null when the card must be shown. Never
  * `allow_always`: that grants the directory. Atlas reads do not block the conversation; a write
  * continues only after the person has seen the typed change. Path safety and meaning approval are
@@ -52,7 +65,7 @@ export function autoAllowOption(
    * vault Markdown can rewrite frontmatter. An unknown or missing kind fails closed to asking.
    */
   const readOnlyKind = request.toolKind === 'read' || request.toolKind === 'search';
-  if (atlasMode === null && readOnlyKind && insideVault) return allowOnce;
+  if (atlasMode === null && readOnlyKind && insideVault && argumentsStayOnJudgedPath(request)) return allowOnce;
   return null;
 }
 

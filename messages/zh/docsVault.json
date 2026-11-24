@@ -234,7 +234,7 @@
     "connectionNeedsReview": "待检查",
     "connectionHint": ".mcp.json.example 是供其他文件夹使用的模板，因此不算连接文件。此页面只检查启动方式和文件夹路径；请重启智能体，并在各工具里确认实际连接。",
     "boundaryTitle": "在这里连接外部智能体",
-    "boundaryDesc": "此面板把 Claude Code、Codex 和 Cursor 接入各自的应用或终端使用，不会在这里打开对话。应用内的 Claude 智能体对话在访问文件夹之外的内容前会先询问，它是单独的页面。",
+    "boundaryDesc": "此面板把 Claude Code、Codex 和 Cursor 接入各自的应用或终端使用，不会在这里打开对话。应用内的 Claude 智能体对话在访问文件夹之外的内容前会先询问（读取所连接代码文件夹中的文件除外），它是单独的页面。",
     "validationGateAriaLabel": "文件夹状况",
     "validationGateTitle": "文件夹状况",
     "validationGateReady": "良好",

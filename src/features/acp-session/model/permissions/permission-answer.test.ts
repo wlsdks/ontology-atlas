@@ -35,6 +35,25 @@ describe('a request the app may answer without showing a card', () => {
     expect(autoAllowOption(request(), null, 'ask')).toBeNull();
   });
 
+  it.each([
+    ['an absolute pattern', { pattern: '/Users/me/.ssh/*', path: '/vault' }],
+    ['a home pattern', { pattern: '~/.aws/*', path: '/vault' }],
+    ['a climbing pattern', { pattern: '../../*', path: '/vault' }],
+    ['a second absolute path', { path: '/vault', glob: '/etc/*' }],
+  ])('asks about a vault search with %s, since the tool may search there', (_name, rawInput) => {
+    const search = request({ toolKind: 'search', filePath: '/vault', rawInput });
+    expect(autoAllowOption(search, null, 'allow-inside-vault')).toBeNull();
+  });
+
+  it('allows a vault search whose pattern stays below the judged folder', () => {
+    const search = request({ toolKind: 'search', filePath: '/vault', rawInput: { pattern: '**/*.md', path: '/vault' } });
+    expect(autoAllowOption(search, null, 'allow-inside-vault')).toEqual(OPTIONS[1]);
+  });
+
+  it('leaves a code-folder read to the turn that asks, since a round may refuse it', () => {
+    expect(autoAllowOption(request({ filePath: '/code/src/app.ts' }), null, 'allow-inside-code-folder')).toBeNull();
+  });
+
   it('allows an Atlas read with no path, a vault-relative path or an inside verdict', () => {
     expect(autoAllowOption(request({ filePath: null }), 'read', 'ask')).toEqual(OPTIONS[1]);
     expect(autoAllowOption(request({ filePath: 'sources/a.md' }), 'read', 'ask')).toEqual(OPTIONS[1]);

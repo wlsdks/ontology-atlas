@@ -26,7 +26,7 @@ const bridge = vi.hoisted(() => ({
   sessionModes: null as unknown,
   /** The `models` block `session/new` answers with. Null means the adapter offers none. */
   sessionModels: null as unknown,
-  permissionVerdict: 'ask' as 'ask' | 'allow-inside-vault' | 'allow-inside-vault-hidden',
+  permissionVerdict: 'ask' as 'ask' | 'allow-inside-vault' | 'allow-inside-vault-hidden' | 'allow-inside-code-folder',
   stopped: [] as string[],
   /** The requests we sent — the only window onto "what did we put on the wire". */
   sent: [] as Array<{ id?: number; method?: string; params?: unknown }>,
@@ -1542,6 +1542,10 @@ describe('auto-approve — the person answers once for the folder', () => {
     jsonrpc: '2.0', id, method: 'session/request_permission',
     params: { sessionId: 's-1', options: OPTIONS, toolCall: { toolCallId: `edit-${id}`, title: `Edit ${path}`, kind: 'edit', rawInput: { file_path: path } } },
   });
+  const codeRead = (id: number, path: string) => JSON.stringify({
+    jsonrpc: '2.0', id, method: 'session/request_permission',
+    params: { sessionId: 's-1', options: OPTIONS, toolCall: { toolCallId: `read-${id}`, title: `Read ${path}`, kind: 'read', rawInput: { file_path: path } } },
+  });
   const atlasWrite = (id: number, tool: string) => JSON.stringify({
     jsonrpc: '2.0', id, method: 'session/request_permission',
     params: { sessionId: 's-1', options: OPTIONS, toolCall: { toolCallId: `write-${id}`, title: `mcp__atlas-vault__${tool}`, kind: 'other', rawInput: { slug: `capabilities/${id}` } } },
@@ -1783,6 +1787,38 @@ describe('auto-approve — the person answers once for the folder', () => {
     await act(async () => { bridge.listener?.(fileEdit(701, '/vault/capabilities/refund.md')); });
     await waitFor(() => expect(answerOf(701)).toBe('reject'));
     expect(result.current.events.some((event) => event.kind === 'notice' && event.text === 'auto-approved')).toBe(false);
+    await act(async () => { await result.current.stop(); });
+  });
+
+  it('reads a file of the connected code folder in a running turn without a card', async () => {
+    bridge.permissionVerdict = 'allow-inside-code-folder';
+    const { result } = await startSession();
+    await startTurn(result);
+
+    await act(async () => { bridge.listener?.(codeRead(703, '/code/src/app.ts')); });
+    await waitFor(() => expect(answerOf(703)).toBe('allow'));
+    expect(result.current.pending).toBeNull();
+    await act(async () => { await result.current.stop(); });
+  });
+
+  it("lets a round's refusal of outside paths win over the code-folder read", async () => {
+    bridge.permissionVerdict = 'allow-inside-code-folder';
+    const { result } = await startSession({ autoDecide: () => ({ reject: 'outside-round-scope' }) });
+    await startTurn(result);
+
+    await act(async () => { bridge.listener?.(codeRead(704, '/code/src/app.ts')); });
+    await waitFor(() => expect(answerOf(704)).toBe('reject'));
+    await act(async () => { await result.current.stop(); });
+  });
+
+  it('shows the card for a code-folder read that arrives outside any turn', async () => {
+    bridge.permissionVerdict = 'allow-inside-code-folder';
+    const { result } = await startSession();
+
+    await act(async () => { bridge.listener?.(codeRead(705, '/code/src/app.ts')); });
+    await waitFor(() => expect(result.current.pending?.request.filePath).toBe('/code/src/app.ts'));
+    expect(answerOf(705)).toBeUndefined();
+    await act(async () => { result.current.pending?.resolve('reject'); });
     await act(async () => { await result.current.stop(); });
   });
 
