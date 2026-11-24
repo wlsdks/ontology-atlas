@@ -195,7 +195,7 @@ export function conceptRowFailure(parsed, expectedSlug) {
   return null;
 }
 
-export function readMatchRowFailure(label, row, index, { evidence = false, backlinks = false } = {}) {
+function readMatchRowFailure(label, row, index, { evidence = false, backlinks = false } = {}) {
   if (!row || typeof row !== 'object' || Array.isArray(row)) {
     return `${label} response malformed match at index ${index}`;
   }
