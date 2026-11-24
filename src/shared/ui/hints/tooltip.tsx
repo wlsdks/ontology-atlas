@@ -17,6 +17,23 @@ import { cn } from "@/shared/lib/cn";
  */
 export const TooltipProvider = TooltipPrimitive.Provider;
 
+const focusHandedBack = new WeakSet<Element>();
+
+/**
+ * Hands focus back to a control without opening its tooltip. A surface closing onto its opener
+ * is not the person arriving there, and an open tooltip is the top dismissable layer, which takes
+ * the next Escape from the map's dismissal order.
+ */
+export function focusWithoutTooltip(element: HTMLElement | null | undefined, options?: FocusOptions) {
+  if (!element) return;
+  focusHandedBack.add(element);
+  try {
+    element.focus(options);
+  } finally {
+    focusHandedBack.delete(element);
+  }
+}
+
 const TooltipContent = forwardRef<
   HTMLDivElement,
   ComponentPropsWithoutRef<typeof TooltipPrimitive.Content> & { panelClassName?: string }
@@ -71,6 +88,10 @@ export function Tooltip({
       <TooltipPrimitive.Trigger
         asChild
         ref={triggerRef}
+        // A prevented focus skips Radix's open on focus.
+        onFocus={(event) => {
+          if (focusHandedBack.has(event.currentTarget)) event.preventDefault();
+        }}
         onPointerDown={toggleOnPress ? (event) => event.preventDefault() : undefined}
         onClick={
           toggleOnPress
