@@ -422,7 +422,6 @@ export function buildBreadthMap(rootPath, { ignore = [], vaultRoot, collection: 
   const vault = vaultRoot ? relative(rootPath, vaultRoot).split(sep).join('/') : '';
   const inVault = vault && !vault.startsWith('..') && !isAbsolute(vault) ? (path) => path === vault || path.startsWith(`${vault}/`) : () => false;
   const abilities = abilitiesOf(rootPath, collection, entryPoints.rows, {
-    ignore,
     documents: { readme: readme?.path ?? null, pages: pages.all.filter((path) => !inVault(path)) },
   });
   const next = units.length === 0
