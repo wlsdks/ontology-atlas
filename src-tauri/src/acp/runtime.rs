@@ -332,6 +332,7 @@ struct OwnedDoctorContext {
     launcher: Option<PathBuf>,
     path_env: String,
     isolated_logged_out: Option<bool>,
+    terminal_logged_in: Option<bool>,
     shadow_present: Option<bool>,
 }
 
@@ -345,6 +346,7 @@ impl OwnedDoctorContext {
             launcher: self.launcher.as_deref(),
             path_env: &self.path_env,
             isolated_logged_out: self.isolated_logged_out,
+            terminal_logged_in: self.terminal_logged_in,
             shadow_present: self.shadow_present,
         }
     }
@@ -401,12 +403,25 @@ fn doctor_context(app: &tauri::AppHandle, runtime_id: &str) -> Result<OwnedDocto
         .app_data_dir()
         .map_err(|err| format!("app-data-dir-unavailable:{err}"))?;
 
-    // Ask against the app-owned folder the session actually uses.
+    let terminal_logged_in = cli.as_deref().and_then(|path| {
+        let args = acp::detection::login_probe::LOGIN_PROBE
+            .iter()
+            .find(|(id, _)| *id == runtime_id)?
+            .1;
+        login_ok(runtime_id, path, args, &path_env)
+    });
+    // Ask against the app-owned folder the session actually uses. Only Claude Code answers
+    // for a folder; Codex's folder links the terminal's login file, so it signs in as the terminal does.
     let isolated = app_data_dir.join("agent-config").join(runtime_id);
-    let isolated_logged_out = cli
-        .as_deref()
-        .filter(|_| acp::isolation::config_env_for(runtime_id).is_some())
-        .and_then(|path| acp::isolation::probe_isolated_logged_out(path, &isolated, &path_env));
+    let isolated_logged_out = match runtime_id {
+        "claude-acp" => cli
+            .as_deref()
+            .and_then(|path| acp::isolation::probe_isolated_logged_out(path, &isolated, &path_env)),
+        _ if acp::isolation::config_env_for(runtime_id).is_some() => {
+            terminal_logged_in.map(|signed_in| !signed_in)
+        }
+        _ => None,
+    };
     let shadow_present = acp::isolation::shadow_credentials_present(&isolated);
 
     Ok(OwnedDoctorContext {
@@ -417,6 +432,7 @@ fn doctor_context(app: &tauri::AppHandle, runtime_id: &str) -> Result<OwnedDocto
         launcher,
         path_env,
         isolated_logged_out,
+        terminal_logged_in,
         shadow_present,
     })
 }

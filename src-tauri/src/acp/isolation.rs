@@ -12,12 +12,14 @@ use credential_mirror::mirror_terminal_login;
 
 /// Only measured executors: guessed env vars or credential files silently break login.
 #[derive(Debug, Clone, Copy)]
-pub(super) struct IsolationSpec {
+pub(crate) struct IsolationSpec {
     pub id: &'static str,
     pub config_env: &'static str,
     /// Linked, not copied, so isolation keeps the login working.
     pub credentials_file: &'static str,
     pub user_config_dir: &'static str,
+    /// The settings file `prepare_isolated_config` writes, whose presence says the folder is prepared.
+    pub settings_file: &'static str,
 }
 
 const ISOLATION: &[IsolationSpec] = &[
@@ -26,16 +28,18 @@ const ISOLATION: &[IsolationSpec] = &[
         config_env: "CLAUDE_CONFIG_DIR",
         credentials_file: ".credentials.json",
         user_config_dir: ".claude",
+        settings_file: "settings.json",
     },
     IsolationSpec {
         id: "codex-acp",
         config_env: "CODEX_HOME",
         credentials_file: "auth.json",
         user_config_dir: ".codex",
+        settings_file: "config.toml",
     },
 ];
 
-pub(super) fn isolation_for(id: &str) -> Option<&'static IsolationSpec> {
+pub(crate) fn isolation_for(id: &str) -> Option<&'static IsolationSpec> {
     ISOLATION.iter().find(|s| s.id == id)
 }
 
@@ -81,14 +85,13 @@ pub(crate) fn prepare_isolated_config(
     let dir = app_data_dir.join("agent-config").join(spec.id);
     std::fs::create_dir_all(&dir).map_err(|err| format!("config-dir-failed:{err}"))?;
 
-    if spec.id == "claude-acp" {
-        std::fs::write(dir.join("settings.json"), ISOLATED_CLAUDE_SETTINGS)
-            .map_err(|err| format!("settings-write-failed:{err}"))?;
-    }
-    if spec.id == "codex-acp" {
-        std::fs::write(dir.join("config.toml"), ISOLATED_CODEX_CONFIG)
-            .map_err(|err| format!("settings-write-failed:{err}"))?;
-    }
+    let settings = if spec.id == "codex-acp" {
+        ISOLATED_CODEX_CONFIG
+    } else {
+        ISOLATED_CLAUDE_SETTINGS
+    };
+    std::fs::write(dir.join(spec.settings_file), settings)
+        .map_err(|err| format!("settings-write-failed:{err}"))?;
 
     if let Some(home) = home {
         let mirrored = spec.id == "claude-acp" && mirror_terminal_login(&dir, home);
