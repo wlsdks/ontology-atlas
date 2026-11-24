@@ -3,8 +3,8 @@
  * every product unit with its main files, exported names and import edges, the
  * entry points, the abilities to place (`abilities.mjs`), and the documents, so the agent can outline the whole product
  * before reading any part of it. It proposes no node: a folder is evidence, and the
- * agent names what the product does. Static text scans, plus one hardened `git ls-files`
- * for ignored paths; no repository code runs.
+ * agent names what the product does. Static text scans, plus two hardened git reads
+ * for ignored paths (`git-ignored.mjs`); no repository code runs.
  */
 
 import { createHash } from 'node:crypto';
