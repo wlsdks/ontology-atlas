@@ -42,7 +42,7 @@ https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2
 ## Get started in 5 minutes
 
 1. Open \`project.md\` and write your project's name and description.
-2. Create new nodes through the map's editor or MCP \`add_concept\`. These
+2. Create new nodes through the map's editor or MCP \`add_concepts\`. These
    writers mint the immutable UID; do not copy a starter file and its identity.
 3. Use the same writer path for capabilities and elements.
 4. Register an AI agent (Claude Code, Cursor, …) and it reads/writes the
@@ -96,7 +96,7 @@ Once you register the \`ontology-atlas-mcp\` server, the running server gives th
 agent its current read/write inventory. Use \`tools/list\` for the exact names and
 \`validate_vault\` to prove that the server can read this vault.
 
-Start with \`connection_info\`, \`list_kinds\`, \`validate_vault\`, and
+Start with \`connection_info\`, \`list_concepts\`, \`validate_vault\`, and
 \`query_ontology({ operation: "agent_brief" })\`. Write only after the read-first
 checks are clean and the person accepts the proposed meaning.
 
@@ -144,7 +144,7 @@ The problem this project solves, or the value it creates, in a single sentence.
 1. Edit this file's \`title\` (and any other frontmatter besides \`kind: project\`)
    to match your project.
 2. Rename one starter in place, or create each additional domain through Studio
-   or MCP \`add_concept\`. Never copy a starter UID into a new node.
+   or MCP \`add_concepts\`. Never copy a starter UID into a new node.
 3. Register an AI agent (Claude Code, Cursor, …) and ask it to "tidy up
    the ontology in this vault."
 `;
@@ -309,7 +309,7 @@ https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2
 ## 5분 만에 시작하기
 
 1. \`project.md\` 를 열어 프로젝트 이름과 설명을 씁니다.
-2. 새 노드는 공방이나 MCP \`add_concept\`로 만듭니다. 이 작성 경로가 불변 UID를
+2. 새 노드는 공방이나 MCP \`add_concepts\`로 만듭니다. 이 작성 경로가 불변 UID를
    발급하므로 스타터 파일과 정체성을 복사하지 마세요.
 3. 역량과 요소도 같은 작성 경로로 만듭니다.
 4. AI 에이전트(Claude Code, Cursor, …)를 연결하면 같은 문서함을 읽고 쓰면서
@@ -360,7 +360,7 @@ server instructions가 충돌을 막는 정확한 \`patch_concept\` fallback을 
 목록을 에이전트에게 알려 줍니다. 정확한 이름은 \`tools/list\`로 보고,
 \`validate_vault\`로 서버가 이 문서함을 실제로 읽는지 확인하세요.
 
-처음에는 \`connection_info\`, \`list_kinds\`, \`validate_vault\`,
+처음에는 \`connection_info\`, \`list_concepts\`, \`validate_vault\`,
 \`query_ontology({ operation: "agent_brief" })\`를 사용합니다. 읽기 점검이 깨끗하고
 사람이 제안된 의미를 승인한 뒤에만 씁니다.
 
@@ -407,7 +407,7 @@ https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2
 1. 이 파일의 \`title\`(그리고 \`kind: project\` 외 다른 frontmatter)을 내 프로젝트에
    맞게 고칩니다.
 2. 스타터 하나는 제자리에서 이름을 바꾸고, 도메인을 더 만들 때는 공방이나
-   MCP \`add_concept\`를 씁니다. 스타터 UID를 새 노드에 복사하지 않습니다.
+   MCP \`add_concepts\`를 씁니다. 스타터 UID를 새 노드에 복사하지 않습니다.
 3. AI 에이전트(Claude Code, Cursor, …)를 연결하고 "이 문서함의 온톨로지를
    정리해 줘" 라고 부탁합니다.
 `;
@@ -592,11 +592,11 @@ answers with parsing, validation, and relation resolution already done.
 
 | What you want | First call |
 |---|---|
-| How many of what | \`list_kinds\` |
+| How many of what | \`list_concepts({ limit: 1 })\`, its \`census\` |
 | The whole node table | \`list_concepts\` |
-| One concept and its neighbours | \`get_concept({ slug })\` |
+| One concept and its neighbours | \`get_concepts({ slugs: [slug] })\` |
 | Who depends on this | \`find_backlinks(slug)\` |
-| Are these two connected | \`find_path(from, to)\` |
+| Are these two connected | \`query_ontology({ operation: 'path', from, to })\` |
 | Is this vault healthy | \`validate_vault({})\` |
 
 Do not read frontmatter with \`grep\` or \`sed\`. You get the same answer more
@@ -608,7 +608,7 @@ node here keeps an English \`title\`, so a node whose \`title\` repeats its
 \`display_ko\` leaves the vault with two languages of canonical name and splits
 search.
 
-**Write through the same server** — \`add_concept\` · \`add_relation\` ·
+**Write through the same server** — \`add_concepts\` · \`add_relations\` ·
 \`patch_concept\` (pass \`expected_mtime\`) · \`rename_concept\` · \`merge_concepts\`.
 A file written by hand has no \`uid:\`, and one missing \`uid:\` fails the whole
 graph compile.
@@ -618,9 +618,10 @@ graph compile.
 
 - \`components\` — a node that is not reachable from the project root belongs to
   no project. New domains do not attach themselves: add
-  \`add_relation(<project>, domains/<new>, 'domains')\`.
+  \`add_relations({ relations: [{ from: '<project>', to: 'domains/<new>', type: 'domains' }] })\`.
 - \`relation_recommendations\` — a capability with \`domain: X\` still needs \`X\` to
-  list it back, via \`add_relation(domains/X, capabilities/<new>, 'capabilities')\`.
+  list it back, via
+  \`add_relations({ relations: [{ from: 'domains/X', to: 'capabilities/<new>', type: 'capabilities' }] })\`.
 
 Both were clean on the starter vault, so anything they report is something you
 added. Nodes that compile but hang off the project are invisible where it
@@ -635,11 +636,11 @@ const AGENT_GUIDE_KO = `# 이 폴더는 Ontology Atlas 볼트입니다
 
 | 알고 싶은 것 | 첫 호출 |
 |---|---|
-| 뭐가 몇 개 있나 | \`list_kinds\` |
+| 뭐가 몇 개 있나 | \`list_concepts({ limit: 1 })\` 의 \`census\` |
 | 개념 목록 전체 | \`list_concepts\` |
-| 한 개념과 그 이웃 | \`get_concept({ slug })\` |
+| 한 개념과 그 이웃 | \`get_concepts({ slugs: [slug] })\` |
 | 이걸 쓰는 곳 | \`find_backlinks(slug)\` |
-| 두 개념이 이어져 있나 | \`find_path(from, to)\` |
+| 두 개념이 이어져 있나 | \`query_ontology({ operation: 'path', from, to })\` |
 | 이 볼트가 성한가 | \`validate_vault({})\` |
 
 \`grep\` 이나 \`sed\` 로 frontmatter 를 직접 읽지 마세요. 같은 답을 더 느리게 얻고,
@@ -650,7 +651,7 @@ const AGENT_GUIDE_KO = `# 이 폴더는 Ontology Atlas 볼트입니다
 이 폴더의 노드는 전부 \`title\` 을 영어로 두므로, \`title\` 에 \`display_ko\` 와 같은
 값을 쓰면 한 볼트 안에 정본 이름의 언어가 섞여 검색이 갈립니다.
 
-**쓸 때도 같은 서버로** — \`add_concept\` · \`add_relation\` · \`patch_concept\`
+**쓸 때도 같은 서버로** — \`add_concepts\` · \`add_relations\` · \`patch_concept\`
 (\`expected_mtime\` 을 함께) · \`rename_concept\` · \`merge_concepts\`.
 손으로 만든 파일은 \`uid:\` 가 없고, \`uid:\` 하나가 없으면 그래프 전체가
 컴파일에 실패합니다.
@@ -660,9 +661,10 @@ const AGENT_GUIDE_KO = `# 이 폴더는 Ontology Atlas 볼트입니다
 
 - \`components\` — 프로젝트 뿌리에서 못 닿는 노드는 어느 프로젝트에도 속하지
   않습니다. 새 도메인은 저절로 안 붙으니
-  \`add_relation(<project>, domains/<새>, 'domains')\` 를 부르세요.
+  \`add_relations({ relations: [{ from: '<project>', to: 'domains/<새>', type: 'domains' }] })\` 를 부르세요.
 - \`relation_recommendations\` — \`domain: X\` 를 가진 역량은 \`X\` 쪽에서도 되받아
-  걸어야 합니다. \`add_relation(domains/X, capabilities/<새>, 'capabilities')\`.
+  걸어야 합니다.
+  \`add_relations({ relations: [{ from: 'domains/X', to: 'capabilities/<새>', type: 'capabilities' }] })\`.
 
 둘 다 스타터 볼트에서는 깨끗하므로, 여기 뜨는 것은 전부 방금 당신이 더한
 것입니다. 컴파일은 되는데 프로젝트에 안 붙은 노드는 정작 보여야 할 곳에서
@@ -755,10 +757,10 @@ The two you will see most:
 
 - **Unreachable nodes** (\`components\`) — a node the project root cannot reach
   belongs to no project, so it never appears on the map. It exists and is invisible.
-  → \`add_relation('<project>', 'domains/<new domain>', 'domains')\`
+  → \`add_relations({ relations: [{ from: '<project>', to: 'domains/<new domain>', type: 'domains' }] })\`
 - **One-sided relations** (\`relation_recommendations\`) — a capability declares
   \`domain: X\` but \`X\` does not claim it back.
-  → \`add_relation('domains/X', 'capabilities/<capability>', 'capabilities')\`
+  → \`add_relations({ relations: [{ from: 'domains/X', to: 'capabilities/<capability>', type: 'capabilities' }] })\`
 
 4. **If project meaning is yellow — stop here**
 
@@ -818,7 +820,7 @@ all?" Number them so the answer can be a selection.
 - \`validate_vault({})\` → \`query_ontology({ operation: 'health' })\`
 
 **A new domain does not attach itself to the project.** Skip
-\`add_relation('<project>', 'domains/<new domain>', 'domains')\` and you have
+\`add_relations({ relations: [{ from: '<project>', to: 'domains/<new domain>', type: 'domains' }] })\` and you have
 built something the map will never show. Step 4's health check catches it.
 
 ## How this skill fails
@@ -923,10 +925,10 @@ description: 볼트 점검. 지금 어긋난 곳과 끊긴 곳을 찾아 사람 
 
 - **닿지 않는 노드**(\`components\`) — 프로젝트 뿌리에서 못 닿는 노드는 어느
   프로젝트에도 안 속해서 지도에 안 나온다. 만들어 놓고 안 보이는 상태다.
-  → \`add_relation('<project>', 'domains/<새 도메인>', 'domains')\`
+  → \`add_relations({ relations: [{ from: '<project>', to: 'domains/<새 도메인>', type: 'domains' }] })\`
 - **한쪽만 아는 관계**(\`relation_recommendations\`) — 역량이 \`domain: X\` 를
   갖고 있는데 \`X\` 쪽에서 되받아 걸지 않았다.
-  → \`add_relation('domains/X', 'capabilities/<역량>', 'capabilities')\`
+  → \`add_relations({ relations: [{ from: 'domains/X', to: 'capabilities/<역량>', type: 'capabilities' }] })\`
 
 4. **프로젝트 의미가 노랗다면 — 여기서 멈춘다**
 
@@ -985,7 +987,7 @@ description: 다음 한 걸음. 이 볼트에 무엇을 더하면 값이 가장 
 - \`validate_vault({})\` → \`query_ontology({ operation: 'health' })\`
 
 **새 도메인은 저절로 프로젝트에 안 붙는다.**
-\`add_relation('<project>', 'domains/<새 도메인>', 'domains')\` 를 빠뜨리면
+\`add_relations({ relations: [{ from: '<project>', to: 'domains/<새 도메인>', type: 'domains' }] })\` 를 빠뜨리면
 만들어 놓고 지도에 안 보인다. 4번의 health 가 그것을 잡는다.
 
 ## 이 스킬이 실패하는 방식

@@ -49,7 +49,6 @@ import { verifyBriefs } from './verify/phases/briefs.mjs';
 import { verifyCompile } from './verify/phases/compile.mjs';
 import { verifyConceptReads } from './verify/phases/concept-reads.mjs';
 import { verifyDiagnosis } from './verify/phases/diagnosis.mjs';
-import { verifyGraphNavigation } from './verify/phases/graph-navigation.mjs';
 import { verifyGraphQueries } from './verify/phases/graph-queries.mjs';
 import { verifyHandshake } from './verify/phases/handshake.mjs';
 import { verifyImportAnalysis } from './verify/phases/import-analysis.mjs';
@@ -69,7 +68,6 @@ import { buildFirstContactRequests } from './verify/requests/first-contact.mjs';
 import {
   allGraphQuerySmokeResponseIds,
   buildDestructiveDryRunSmokeRequests,
-  buildDirectGraphReadSmokeRequests,
   buildGetConceptSmokeSlug,
   buildGetConceptsSmokeSlugs,
   buildGraphQuerySmokeArgs,
@@ -130,7 +128,7 @@ async function step2BootAndCall() {
     log('fail', verifyKillGraceValueErrorMessage());
     return false;
   }
-  log('info', `step 2: server boot + tools/list + list_concepts/project probe/get_concept/get_concepts/find_evidence/find_backlinks/query_concepts/limited query_concepts/analyze_repo_structure/infer_imports/index_project/find_neighbors/find_path/find_orphans/list_kinds/destructive dry-runs (vault=${VAULT}, timeout=${timeoutMs}ms)`);
+  log('info', `step 2: server boot + tools/list + list_concepts/census/project probe/get_concepts/find_evidence/find_backlinks/query_concepts/limited query_concepts/analyze_repo_structure/infer_imports/find_orphans/destructive dry-runs (vault=${VAULT}, timeout=${timeoutMs}ms)`);
 
   // The absorb_document dry-run request (id 69) reads this fixture, so it must exist
   // before the batch is sent; the finally below removes it.
@@ -158,7 +156,6 @@ async function step2BootAndCall() {
     let sentGetConceptSmoke = false;
     let sentGetConceptsSmoke = false;
     let sentFindBacklinksSmoke = false;
-    let sentDirectGraphReadSmoke = false;
     let sentLimitedQueryConceptsSmoke = false;
     let sentGraphQuerySmoke = false;
     let sentDestructiveDryRunSmoke = false;
@@ -187,7 +184,7 @@ async function step2BootAndCall() {
     };
     proc.stdout.on('data', (b) => {
       stdout += stdoutDecoder.write(b);
-      if (!sentGetConceptsSmoke || !sentFindBacklinksSmoke || !sentDirectGraphReadSmoke || !sentLimitedQueryConceptsSmoke || !sentGraphQuerySmoke || !sentDestructiveDryRunSmoke) {
+      if (!sentGetConceptsSmoke || !sentFindBacklinksSmoke || !sentLimitedQueryConceptsSmoke || !sentGraphQuerySmoke || !sentDestructiveDryRunSmoke) {
         const listResponse = parseJsonRpcResponses(stdout).find((response) => response?.id === 3 && response?.result);
         const projectResponse = parseJsonRpcResponses(stdout).find((response) => response?.id === 18 && response?.result);
         if (listResponse) {
@@ -238,8 +235,8 @@ async function step2BootAndCall() {
                 id: 31,
                 method: 'tools/call',
                 params: {
-                  name: 'get_concept',
-                  arguments: { slug },
+                  name: 'get_concepts',
+                  arguments: { slugs: [slug] },
                 },
               }) + '\n');
             }
@@ -288,14 +285,6 @@ async function step2BootAndCall() {
           if (!sentGraphQuerySmoke && projectResponse) {
             sentGraphQuerySmoke = true;
             const graphSmoke = buildGraphQuerySmokeArgs(listPayload, projectPayload);
-            if (!sentDirectGraphReadSmoke) {
-              sentDirectGraphReadSmoke = true;
-              const directGraphReadPlan = buildDirectGraphReadSmokeRequests(graphSmoke);
-              for (const id of directGraphReadPlan.expectedResponseIds) expectedFirstContactIds.add(id);
-              if (directGraphReadPlan.requests.length > 0) {
-                proc.stdin.write(directGraphReadPlan.requests.map((request) => JSON.stringify(request)).join('\n') + '\n');
-              }
-            }
             const graphSmokePlan = buildGraphQuerySmokeRequests(graphSmoke);
             for (const id of allGraphQuerySmokeResponseIds()) {
               if (!graphSmokePlan.expectedResponseIds.includes(id)) expectedFirstContactIds.delete(id);
@@ -536,9 +525,6 @@ async function step2BootAndCall() {
         limitedQueryConceptsVerified,
       } = conceptReads;
       if (!verifyImportAnalysis(responses)) return res(false);
-      const graphNavigation = verifyGraphNavigation(responses, { graphSmokeArgs });
-      if (!graphNavigation) return res(false);
-      const { directGraphReadsVerified } = graphNavigation;
       const vaultCensus = verifyVaultCensus(responses, { projectProbeRes });
       if (!vaultCensus) return res(false);
       const { kindsPayload, validationPayload } = vaultCensus;
@@ -584,7 +570,6 @@ async function step2BootAndCall() {
           hasProject: Boolean(graphSmokeArgs?.hasProject),
           hasGetConcept: getConceptVerified,
           hasFindBacklinks: findBacklinksVerified,
-          hasDirectGraphReads: directGraphReadsVerified,
           hasLimitedQueryConcepts: limitedQueryConceptsVerified,
           hasCompileIndexes: true,
           hasAllPaths: allPathsVerified,

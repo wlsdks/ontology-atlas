@@ -20,7 +20,7 @@ https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2
 ## 5분 만에 시작하기
 
 1. `project.md` 를 열어 프로젝트 이름과 설명을 씁니다.
-2. 새 노드는 공방이나 MCP `add_concept`로 만듭니다. 이 작성 경로가 불변 UID를
+2. 새 노드는 공방이나 MCP `add_concepts`로 만듭니다. 이 작성 경로가 불변 UID를
    발급하므로 스타터 파일과 정체성을 복사하지 마세요.
 3. 역량과 요소도 같은 작성 경로로 만듭니다.
 4. AI 에이전트(Claude Code, Cursor, …)를 연결하면 같은 문서함을 읽고 쓰면서
@@ -71,7 +71,7 @@ server instructions가 충돌을 막는 정확한 `patch_concept` fallback을 �
 목록을 에이전트에게 알려 줍니다. 정확한 이름은 `tools/list`로 보고,
 `validate_vault`로 서버가 이 문서함을 실제로 읽는지 확인하세요.
 
-처음에는 `connection_info`, `list_kinds`, `validate_vault`,
+처음에는 `connection_info`, `list_concepts`, `validate_vault`,
 `query_ontology({ operation: "agent_brief" })`를 사용합니다. 읽기 점검이 깨끗하고
 사람이 제안된 의미를 승인한 뒤에만 씁니다.
 

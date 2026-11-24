@@ -1,6 +1,6 @@
 # 概念どうしの関係
 
-関係とは、オントロジーのナレッジグラフで概念どうしを結ぶ、型付きのエッジです。「このケイパビリティはあのケイパビリティに依存する」「この要素はあのケイパビリティに属する」といったものです。Atlasでは、関係の1つ1つが、概念のフロントマターの1項目になります。この章では、関係の型を一覧にし、その書き方を示し、マップと、コーディングエージェントが呼び出すMCPツール（`find_path`や`find_backlinks`など）がそれをどう読むかを説明します。
+関係とは、オントロジーのナレッジグラフで概念どうしを結ぶ、型付きのエッジです。「このケイパビリティはあのケイパビリティに依存する」「この要素はあのケイパビリティに属する」といったものです。Atlasでは、関係の1つ1つが、概念のフロントマターの1項目になります。この章では、関係の型を一覧にし、その書き方を示し、マップと、コーディングエージェントが呼び出すMCPツール（`query_ontology`や`find_backlinks`など）がそれをどう読むかを説明します。
 
 ## 構造と意味
 
@@ -63,12 +63,12 @@ Atlasは関係のリストを書き込むときに、前後の空白を除き、
 MCPサーバは同じフロントマターからグラフについての問いに答えるので、エージェントはすべてのファイルを読む必要がありません。
 
 - `find_backlinks`は、関係のキーや本文中のリンクを通じて、あるスラッグを指しているすべての概念を一覧にします。名前の変更や削除の前に呼び出してください。
-- `find_path`は、2つの概念の間の最短経路を返します。各ステップには、それをつないでいるキー（`via`）と、記録されていれば理由（`rationale`）が付きます。
-- `find_neighbors`は、ある概念のまわり1ステップ分を、向きと型で絞り込んで返します。
+- `path`を指定した`query_ontology`は、2つの概念の間の最短経路を返します。各ステップには、それをつないでいるキー（`via`）と、記録されていれば理由（`rationale`）が付きます。
+- `neighbors`を指定した`query_ontology`は、ある概念のまわり1ステップ分を、向きと型で絞り込んで返します。
 - `impact`または`blast_radius`を指定した`query_ontology`は、「これを変えると何に影響するか」に答えます。たどるのは宣言された`depends_on`関係だけです。構造は影響ではありません。
 - `domain_matrix`を指定した`query_ontology`は、ドメイン間の関係を数えます。`depends_on`に絞ると、マップの弧が描くのと同じ数になります。
 
-書き込むには、`add_relation`に`from`、`to`、`type`（`depends_on`、`relates`、`contains`、`describes`、`domains`、`capabilities`、`elements`、`domain`のいずれか）、そして`why`を渡します。`remove_relation`と`replace_relation`は、デフォルトではプレビューだけを行い、`confirm: true`のときにだけ書き込みます。`broader`はまだ`add_relation`の型に含まれていません。エージェントは`patch_concept`に新しいリスト全体とファイルの`mtime`を渡して変更し、そのあと`validate_vault`を実行します。
+書き込むには、`add_relations`に関係のリストを渡し、関係ごとに`from`、`to`、`type`（`depends_on`、`relates`、`contains`、`describes`、`domains`、`capabilities`、`elements`、`domain`のいずれか）、そして`why`を指定します。`remove_relation`と`replace_relation`は、デフォルトではプレビューだけを行い、`confirm: true`のときにだけ書き込みます。`broader`はまだ`add_relations`の型に含まれていません。エージェントは`patch_concept`に新しいリスト全体とファイルの`mtime`を渡して変更し、そのあと`validate_vault`を実行します。
 
 マップでは、**関係を編集**で、MCPツールと同じチェックを通して関係を1つずつ書き込めます。[概念と関係を編集する](/guide/studio)を参照してください。
 

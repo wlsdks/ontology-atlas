@@ -5,13 +5,9 @@ export const EXPECTED_READ_TOOLS = [
   'list_concepts',
   'list_constellations',
   'get_constellation',
-  'get_concept',
   'get_concepts',
   'find_evidence',
   'find_backlinks',
-  'find_neighbors',
-  'find_path',
-  'list_kinds',
   'find_orphans',
   'query_concepts',
   'compile_ontology',
@@ -22,13 +18,10 @@ export const EXPECTED_READ_TOOLS = [
   'inspect_architecture',
   'analyze_repo_structure',
   'infer_imports',
-  'index_project',
 ];
 
 export const EXPECTED_WRITE_TOOLS = [
-  'add_concept',
   'add_concepts',
-  'add_relation',
   'add_relations',
   'remove_relation',
   'replace_relation',
@@ -57,7 +50,6 @@ export const EXPECTED_DESTRUCTIVE_TOOLS = [
   'absorb_document',
 ];
 export const EXPECTED_IDEMPOTENT_TOOLS = [
-  'add_relation',
   'add_relations',
   'remove_relation',
 ];

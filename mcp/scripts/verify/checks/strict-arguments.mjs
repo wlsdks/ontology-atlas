@@ -6,7 +6,6 @@ import {
   NODE_KIND_VALUES,
   QUERY_ONTOLOGY_OPERATIONS,
   RELATION_TYPE_VALUES,
-  WRITE_RELATION_TYPE_VALUES,
 } from '../../../src/ontology-engine.mjs';
 import { GRAPH_ARRAY_KEYS } from '../../../src/vault/graph/relation-refs.mjs';
 
@@ -219,28 +218,6 @@ export function strictRelationFilterFailure(response) {
   });
 }
 
-export function strictFindNeighborsTypeFailure(response) {
-  if (response?.result?.isError !== true) {
-    return 'strict find_neighbors types response was not rejected';
-  }
-  const text = response.result.content?.[0]?.text || '';
-  if (!/types items must be one of/i.test(text)) {
-    return 'strict find_neighbors types response did not report the invalid types filter';
-  }
-  if (!/Received: "depend_on"/i.test(text)) {
-    return 'strict find_neighbors types response did not report the invalid types value';
-  }
-  if (!/Did you mean "depends_on"\?/i.test(text)) {
-    return 'strict find_neighbors types response did not suggest the closest types value';
-  }
-  return structuredValueRepairFailure(response, 'strict find_neighbors types', {
-    valueName: 'types items',
-    received: 'depend_on',
-    suggestion: 'depends_on',
-    allowedValues: RELATION_TYPE_VALUES,
-  });
-}
-
 export function strictFindOrphansKindFailure(
   response,
   { field = 'kind', received = 'capabilty', suggestion = 'capability' } = {},
@@ -440,41 +417,5 @@ export function strictMatchEdgesTypeFailure(response) {
     received: 'depend_on',
     suggestion: 'depends_on',
     allowedValues: RELATION_TYPE_VALUES,
-  });
-}
-
-export function strictAddRelationFailure(response) {
-  if (response?.result?.isError !== true) {
-    return 'strict add_relation response was not rejected';
-  }
-  if (
-    'changed' in (response.result || {}) ||
-    'alreadyExists' in (response.result || {}) ||
-    'findings' in (response.result || {})
-  ) {
-    return 'strict add_relation response included write metadata';
-  }
-  if (
-    'changed' in (response.result?.structuredContent || {}) ||
-    'alreadyExists' in (response.result?.structuredContent || {}) ||
-    'findings' in (response.result?.structuredContent || {})
-  ) {
-    return 'strict add_relation structuredContent included write metadata';
-  }
-  const text = response.result.content?.[0]?.text || '';
-  if (!/type must be one of/i.test(text)) {
-    return 'strict add_relation response did not report the invalid type filter';
-  }
-  if (!/Received: "depend_on"/i.test(text)) {
-    return 'strict add_relation response did not report the invalid type value';
-  }
-  if (!/Did you mean "depends_on"\?/i.test(text)) {
-    return 'strict add_relation response did not suggest the closest type value';
-  }
-  return structuredValueRepairFailure(response, 'strict add_relation', {
-    valueName: 'type',
-    received: 'depend_on',
-    suggestion: 'depends_on',
-    allowedValues: WRITE_RELATION_TYPE_VALUES,
   });
 }

@@ -57,7 +57,6 @@ import {
   buildGetConceptsSmokeSlugs,
   buildDestructiveDryRunSmokeRequests,
   buildPatchConflictGuardSmokeRequest,
-  buildDirectGraphReadSmokeRequests,
   buildLimitedQueryConceptsSmokeRequest,
   buildGraphQuerySmokeArgs,
   buildGraphQuerySmokeRequests,
@@ -93,7 +92,7 @@ import { firstContactLocalProbeFailure } from '../scripts/verify/checks/connecti
 import {
   findBacklinksFailure,
   findEvidenceFailure,
-  getConceptFailure,
+  conceptRowFailure,
   getConceptsFailure,
   listConceptsFailure,
   limitedQueryConceptsFailure,
@@ -102,12 +101,8 @@ import {
   vaultWarningsNotice,
 } from '../scripts/verify/checks/concept-reads.mjs';
 import {
-  findNeighborsFailure,
-  findPathFailure,
-} from '../scripts/verify/checks/graph-navigation.mjs';
-import {
   findOrphansFailure,
-  listKindsFailure,
+  censusFailure,
   projectProbeFailure,
   validationCodeSummary,
   validateVaultFailure,
@@ -176,12 +171,10 @@ import {
   strictMatchEdgesTypeFailure,
   strictMaintenanceFilterFailure,
   strictRelationFilterFailure,
-  strictFindNeighborsTypeFailure,
   strictFindOrphansKindFailure,
   strictQueryConceptsFilterFailure,
   strictListConceptsKindFailure,
   strictRelationCheckFailure,
-  strictAddRelationFailure,
 } from '../scripts/verify/checks/strict-arguments.mjs';
 import {
   structuredContentFailure,
@@ -479,9 +472,9 @@ function structuredValueRepairDetails(text) {
 
 describe('verify.mjs first-contact gates', () => {
   it('publishes finalize_project_meaning as a non-destructive non-idempotent write tool', () => {
-    assert.equal(EXPECTED_TOOLS.length, 40);
-    assert.equal(EXPECTED_READ_TOOLS.length, 24);
-    assert.equal(EXPECTED_WRITE_TOOLS.length, 16);
+    assert.equal(EXPECTED_TOOLS.length, 33);
+    assert.equal(EXPECTED_READ_TOOLS.length, 19);
+    assert.equal(EXPECTED_WRITE_TOOLS.length, 14);
     assert.ok(EXPECTED_WRITE_TOOLS.includes('finalize_project_meaning'));
     assert.equal(EXPECTED_READ_TOOLS.includes('finalize_project_meaning'), false);
     assert.equal(EXPECTED_DESTRUCTIVE_TOOLS.includes('finalize_project_meaning'), false);
@@ -550,8 +543,8 @@ describe('verify.mjs first-contact gates', () => {
       'tools mismatch: missing: (none), extra: (none), duplicates: list_concepts, invalidNames: 0',
     );
     assert.equal(
-      toolsListInventoryFailure(tools.filter((tool) => tool.name !== 'get_concept')),
-      'tools mismatch: missing: get_concept, extra: (none), duplicates: (none), invalidNames: 0',
+      toolsListInventoryFailure(tools.filter((tool) => tool.name !== 'get_concepts')),
+      'tools mismatch: missing: get_concepts, extra: (none), duplicates: (none), invalidNames: 0',
     );
     assert.equal(
       toolsListInventoryFailure([
@@ -610,7 +603,7 @@ describe('verify.mjs first-contact gates', () => {
       'postWriteMaintenance with byPhase bySeverity byKind score proposedAction and current-page nextExecutableAction / nextReviewAction pointers';
     const buildWriteDescription = '`findings`: one line per finding on the nodes this call wrote';
     const findingsSchema = { type: 'array', items: { type: 'string' } };
-    const compactProposedActionTools = ['add_concept', 'add_relation', 'patch_concept'];
+    const compactProposedActionTools = ['add_concepts', 'add_relations', 'patch_concept'];
     const maintenanceSummaryRequired = [
       'totalActions',
       'filteredActions',
@@ -796,21 +789,41 @@ describe('verify.mjs first-contact gates', () => {
           oneOf: [
             {
               type: 'object',
-              required: ['slug', 'kind', 'title'],
+              required: ['concepts'],
               properties: {
-                slug: { type: 'string' },
-                kind: { type: 'string', enum: NODE_KIND_VALUES },
-                title: { type: 'string' },
+                concepts: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    required: ['slug', 'kind', 'title'],
+                    properties: {
+                      slug: { type: 'string' },
+                      kind: { type: 'string', enum: NODE_KIND_VALUES },
+                      title: { type: 'string' },
+                    },
+                    additionalProperties: false,
+                  },
+                },
               },
               additionalProperties: false,
             },
             {
               type: 'object',
-              required: ['from', 'to', 'type'],
+              required: ['relations'],
               properties: {
-                from: { type: 'string' },
-                to: { type: 'string' },
-                type: { type: 'string', enum: WRITE_RELATION_TYPE_VALUES },
+                relations: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    required: ['from', 'to', 'type'],
+                    properties: {
+                      from: { type: 'string' },
+                      to: { type: 'string' },
+                      type: { type: 'string', enum: WRITE_RELATION_TYPE_VALUES },
+                    },
+                    additionalProperties: false,
+                  },
+                },
               },
               additionalProperties: false,
             },
@@ -1040,6 +1053,7 @@ describe('verify.mjs first-contact gates', () => {
     const tools = [
       {
         name: 'list_concepts',
+        description: 'List every ontology node. Every page also carries `census`, the whole vault\'s kind counts, so `limit: 1` sizes up a vault.',
         inputSchema: {
           additionalProperties: false,
           properties: {
@@ -1055,12 +1069,12 @@ describe('verify.mjs first-contact gates', () => {
               type: 'number',
               minimum: 0,
               description:
-                'Non-negative mtime threshold. Filter to nodes with `mtime > since` (ms). Pair with the `mtime` returned in earlier `list_concepts` / `get_concept` responses for incremental sync: "what changed since I last looked". Strict greater-than (mtime === since 는 제외) so re-passing the max from a previous response does not double-fetch.',
+                'Non-negative mtime threshold. Filter to nodes with `mtime > since` (ms). Pair with the `mtime` returned in earlier `list_concepts` / `get_concepts` responses for incremental sync: "what changed since I last looked". Strict greater-than (mtime === since 는 제외) so re-passing the max from a previous response does not double-fetch.',
             },
             summary: {
               type: 'boolean',
               description:
-                'When true, each node row includes a `summary` (max 200 chars, prose-only: heading / 표 / 코드블록 / 리스트 / 인용 skip 후 첫 단락만, same `extractSummaryExcerpt` helper as `get_concept` / `find_evidence`). Useful for "scan + overview" without N follow-up `get_concept` calls. Default false to keep payload small.',
+                'When true, each node row includes a `summary` (max 200 chars, prose-only: heading / 표 / 코드블록 / 리스트 / 인용 skip 후 첫 단락만, same `extractSummaryExcerpt` helper as `get_concepts` / `find_evidence`). Useful for "scan + overview" without a follow-up `get_concepts` call. Default false to keep payload small.',
             },
             offset: {
               type: 'integer',
@@ -1080,6 +1094,16 @@ describe('verify.mjs first-contact gates', () => {
           required: ['total', 'vaultRoot', 'nodes', 'returned', 'limited', 'pagination'],
           properties: {
             total: { type: 'integer', minimum: 0 },
+            census: {
+              type: 'object',
+              required: ['total', 'byKind', 'referencedOnlyTotal'],
+              properties: {
+                total: { type: 'integer', minimum: 0 },
+                byKind: { type: 'object', additionalProperties: { type: 'integer', minimum: 0 } },
+                referencedOnlyTotal: { type: 'integer', minimum: 0 },
+              },
+              additionalProperties: false,
+            },
             vaultRoot: { type: 'string', minLength: 1 },
             returned: { type: 'integer', minimum: 0 },
             limited: { type: 'boolean' },
@@ -1222,29 +1246,6 @@ describe('verify.mjs first-contact gates', () => {
         },
       },
       {
-        name: 'add_concept',
-        description:
-          `Changed writes return ${buildWriteDescription}.`,
-        inputSchema: {
-          additionalProperties: false,
-          required: ['slug', 'kind', 'title'],
-          properties: {},
-        },
-        outputSchema: {
-          type: 'object',
-          required: ['ok', 'slug', 'changed', 'mtime'],
-          properties: {
-            ok: { type: 'boolean' },
-            slug: { type: 'string' },
-            changed: { type: 'boolean' },
-            mtime: { type: 'number', minimum: 0 },
-            warnings: { type: 'array', items: { type: 'string' } },
-            findings: findingsSchema,
-          },
-          additionalProperties: false,
-        },
-      },
-      {
         name: 'add_concepts',
         description:
           `A row with an unknown field or a duplicate input slug is labelled with repair fields. Batch writes isolate non-object row shape and unknown row fields as ok:false rows with concepts[n] labels, single unknown-field rows include \`receivedField\` plus one-row \`unknownFields\`, multi unknown-field rows report every unknown field with nearest hints and Received fields, duplicate input slugs report the later \`concepts[n]\` row plus first-seen \`concepts[m]\` with structured \`rowName\` / \`firstSeenAt\`. Invalid-only batches return no row-level write metadata, no \`findings\` and no \`coverage\`, and changed batches return ${buildWriteDescription}.`,
@@ -1376,38 +1377,6 @@ describe('verify.mjs first-contact gates', () => {
               },
             },
             mtimes: { type: 'object', additionalProperties: { type: 'number', minimum: 0 } },
-            findings: findingsSchema,
-          },
-          additionalProperties: false,
-        },
-      },
-      {
-        name: 'add_relation',
-        description:
-          `Invalid relation \`type\` is rejected before endpoint slug resolution with a closest-value hint and structured \`valueName\` / \`receivedValue\` / \`suggestion\` / \`allowedValues\` repair fields, with no \`changed\`, \`alreadyExists\`, or \`findings\` write metadata. Changed writes return ${buildWriteDescription}.`,
-        inputSchema: {
-          additionalProperties: false,
-          properties: {
-            type: {
-              type: 'string',
-              enum: WRITE_RELATION_TYPE_VALUES,
-            },
-            // The real server's `why` field: without it the base fixture itself reads as
-            // drift and the negative test stops holding.
-            why: { type: 'string', maxLength: 300 },
-            expected_mtime: { type: 'number', minimum: 0 },
-          },
-        },
-        outputSchema: {
-          type: 'object',
-          required: ['ok', 'from', 'to', 'type'],
-          properties: {
-            ok: { type: 'boolean' },
-            from: { type: 'string' },
-            to: { type: 'string' },
-            type: { type: 'string' },
-            changed: { type: 'boolean' },
-            alreadyExists: { type: 'boolean' },
             findings: findingsSchema,
           },
           additionalProperties: false,
@@ -1636,26 +1605,6 @@ describe('verify.mjs first-contact gates', () => {
           },
           required: ['operation'],
           additionalProperties: true,
-        },
-      },
-      {
-        name: 'list_kinds',
-        description:
-          'Vault kind distribution: { total, byKind: { capability: N, ... } }. A quick census so AI agents can size up the vault without paging through list_concepts.',
-        inputSchema: { additionalProperties: false, properties: {} },
-        outputSchema: {
-          type: 'object',
-          required: ['total', 'byKind', 'referencedOnlyTotal', 'conceptsIncludingReferenced'],
-          properties: {
-            total: { type: 'integer', minimum: 0 },
-            byKind: {
-              type: 'object',
-              additionalProperties: { type: 'integer', minimum: 0 },
-            },
-            referencedOnlyTotal: { type: 'integer', minimum: 0 },
-            conceptsIncludingReferenced: { type: 'integer', minimum: 0 },
-          },
-          additionalProperties: false,
         },
       },
       {
@@ -1992,7 +1941,7 @@ describe('verify.mjs first-contact gates', () => {
       {
         name: 'infer_imports',
         description:
-          'R17 (autonomous ingest deeper): walk TS/JS files in a code repo and infer file-level + module-level import edges. side effect 0 (vault frontmatter NOT modified). moduleEdges are source-backed review candidates with kindCounts and a bounded exact file-edge `evidence` receipt. Use focusPath for an incoming/outgoing bounded exact file neighborhood. Omit `reviewMode` for automatic delivery under 128 KiB; larger results include a delivery receipt. For approval use reviewMode:"next": exactly one compact, non-writing `nextRelationReview:v1` packet. reviewMode:"full" over the limit requires allowLargeResponse:true. Missing edges are rationale_review_required. Ask the user before add_relation and include `why`. Use after analyze_repo_structure to pull real dependency edges from the code, not just suggestedRelations heuristics. Single source of truth preserved: only the user writes to the vault.',
+          'R17 (autonomous ingest deeper): walk TS/JS files in a code repo and infer file-level + module-level import edges. side effect 0 (vault frontmatter NOT modified). moduleEdges are source-backed review candidates with kindCounts and a bounded exact file-edge `evidence` receipt. Use focusPath for an incoming/outgoing bounded exact file neighborhood. Omit `reviewMode` for automatic delivery under 128 KiB; larger results include a delivery receipt. For approval use reviewMode:"next": exactly one compact, non-writing `nextRelationReview:v1` packet. reviewMode:"full" over the limit requires allowLargeResponse:true. Missing edges are rationale_review_required. Ask the user before add_relations and include `why`. Use after analyze_repo_structure to pull real dependency edges from the code, not just suggestedRelations heuristics. Single source of truth preserved: only the user writes to the vault.',
         inputSchema: {
           additionalProperties: false,
           properties: {
@@ -2390,12 +2339,6 @@ describe('verify.mjs first-contact gates', () => {
         },
       },
       {
-        name: 'add_concept',
-        description:
-          'Successful writes return postWriteMaintenance with score, proposedAction, and current-page nextExecutableAction / nextReviewAction pointers.',
-        inputSchema: { additionalProperties: false, properties: {} },
-      },
-      {
         name: 'validate_vault',
         description:
           'R+ (cycle 46): validate every doc in the vault, return per-doc + per-code aggregate. side effect 0. Use when an agent needs the whole-vault health view: first-contact before writes, before / after a batch write, or surfacing issues to the user.',
@@ -2477,54 +2420,9 @@ describe('verify.mjs first-contact gates', () => {
         },
       },
       {
-        name: 'get_concept',
-        description: 'Fetch one node by exactly one selector: slug or uid.',
-        inputSchema: {
-          additionalProperties: false,
-          properties: {
-            slug: { type: 'string' },
-            uid: {
-              type: 'string',
-              pattern: NODE_UID_PATTERN,
-              description: 'Exact permanent node UID. Use instead of slug, never together with it.',
-            },
-            body: { type: 'string', enum: ['excerpt', 'full'] },
-          },
-        },
-        outputSchema: {
-          type: 'object',
-          required: ['uid', 'slug', 'isNode', 'frontmatter', 'bodyInfo', 'neighbors', 'outgoingEdges', 'review', 'mtime'],
-          properties: {
-            uid: { type: 'string', pattern: NODE_UID_PATTERN },
-            slug: { type: 'string' },
-            isNode: { type: 'boolean' },
-            frontmatter: { type: 'object' },
-            excerpt: { type: 'string' },
-            body: { type: 'string' },
-            bodyInfo: {
-              type: 'object',
-              required: ['mode', 'totalChars', 'returnedChars', 'truncated'],
-              properties: {
-                mode: { type: 'string', enum: ['excerpt', 'full'] },
-                totalChars: { type: 'integer', minimum: 0 },
-                returnedChars: { type: 'integer', minimum: 0 },
-                truncated: { type: 'boolean' },
-              },
-              additionalProperties: false,
-            },
-            neighbors: conceptNeighborsSchema,
-            outgoingEdges: outgoingEdgesSchema,
-            review: conceptReviewSchema,
-            mtime: { type: 'number', minimum: 0 },
-            warnings: vaultWarningsSchema,
-          },
-          additionalProperties: false,
-        },
-      },
-      {
         name: 'find_evidence',
         description:
-          'Find vault docs that mention a given concept by title. Useful when an AI agent asks where a capability is realized in code or docs. Each match includes a prose `excerpt` (max 200 chars, heading/표/코드 skip) so agents see *what the matching doc says* without an extra get_concept call.',
+          'Find vault docs that mention a given concept by title. Useful when an AI agent asks where a capability is realized in code or docs. Each match includes a prose `excerpt` (max 200 chars, heading/표/코드 skip) so agents see *what the matching doc says* without an extra get_concepts call.',
         inputSchema: {
           additionalProperties: false,
           required: ['title'],
@@ -2601,142 +2499,6 @@ describe('verify.mjs first-contact gates', () => {
         },
       },
       {
-        name: 'find_neighbors',
-        inputSchema: {
-          additionalProperties: false,
-          required: ['slug'],
-          properties: {
-            slug: { type: 'string' },
-            direction: {
-              type: 'string',
-              enum: ['outgoing', 'incoming', 'both'],
-              description: 'Edge direction to include. Defaults to both.',
-            },
-            types: {
-              type: 'array',
-              maxItems: RELATION_TYPE_VALUES.length,
-              items: { type: 'string', enum: RELATION_TYPE_VALUES },
-              description:
-                'Optional relation types/frontmatter keys to include, e.g. ["domain", "depends_on", "contains"]. Public add_relation types are normalized to stored graph keys.',
-            },
-            includeNodes: {
-              type: 'boolean',
-              description:
-                'When true (default), include neighbor node summaries for resolved edges.',
-            },
-            limit: {
-              type: 'integer',
-              minimum: 1,
-              maximum: 500,
-              description: 'Positive integer max edges to return. Defaults to 100, max 500.',
-            },
-          },
-        },
-        outputSchema: {
-          type: 'object',
-          required: ['center', 'requested', 'direction', 'totalEdges', 'limited', 'edges'],
-          properties: {
-            center: { type: 'string' },
-            requested: { type: 'string' },
-            direction: { enum: ['outgoing', 'incoming', 'both'] },
-            types: { type: 'array', items: { type: 'string' } },
-            totalEdges: { type: 'integer', minimum: 0 },
-            limited: { type: 'boolean' },
-            edges: {
-              type: 'array',
-              items: {
-                type: 'object',
-                required: ['direction', 'from', 'to', 'via', 'ref', 'resolved'],
-                properties: {
-                  direction: { enum: ['outgoing', 'incoming'] },
-                  from: { type: 'string' },
-                  to: { type: 'string' },
-                  via: { type: 'string' },
-                  ref: { type: 'string' },
-                  resolved: { type: 'boolean' },
-                },
-                additionalProperties: false,
-              },
-            },
-            nodes: {
-              type: 'array',
-              items: {
-                type: 'object',
-                required: ['uid', 'slug', 'kind', 'title', 'mtime'],
-                properties: {
-                  uid: { type: 'string', pattern: NODE_UID_PATTERN },
-                  slug: { type: 'string' },
-                  kind: { type: 'string' },
-                  title: { type: 'string' },
-                  mtime: { type: 'number', minimum: 0 },
-                },
-                additionalProperties: false,
-              },
-            },
-          },
-          additionalProperties: false,
-        },
-      },
-      {
-        name: 'find_path',
-        inputSchema: {
-          additionalProperties: false,
-          required: ['from', 'to'],
-          properties: {
-            from: { type: 'string' },
-            to: { type: 'string' },
-            maxHops: {
-              type: 'integer',
-              minimum: 0,
-              maximum: 20,
-              description: 'Non-negative integer maximum hop count (default 5, max 20).',
-            },
-          },
-        },
-        outputSchema: {
-          type: 'object',
-          required: ['from', 'to', 'found'],
-          properties: {
-            from: { type: 'string' },
-            to: { type: 'string' },
-            found: { type: 'boolean' },
-            reason: { type: 'string' },
-            hopCount: { type: 'integer', minimum: 0 },
-            hops: { type: 'array', items: { type: 'string' } },
-            edges: {
-              type: 'array',
-              items: {
-                type: 'object',
-                required: ['from', 'to', 'via'],
-                properties: {
-                  from: { type: 'string' },
-                  to: { type: 'string' },
-                  via: { type: 'string' },
-                  rationale: { type: 'string' },
-                },
-                additionalProperties: false,
-              },
-            },
-            nodes: {
-              type: 'array',
-              items: {
-                type: 'object',
-                required: ['uid', 'slug', 'kind', 'title'],
-                properties: {
-                  uid: { type: 'string', pattern: NODE_UID_PATTERN },
-                  slug: { type: 'string' },
-                  kind: { type: 'string' },
-                  title: { type: 'string' },
-                  domain: { type: 'string' },
-                },
-                additionalProperties: false,
-              },
-            },
-          },
-          additionalProperties: false,
-        },
-      },
-      {
         name: 'finalize_project_meaning',
         inputSchema: {
           type: 'object',
@@ -2789,11 +2551,6 @@ describe('verify.mjs first-contact gates', () => {
       queryTool,
     ];
     const queryOntologyTool = tools.find((tool) => tool.name === 'query_ontology');
-    const listKindsTool = tools.find((tool) => tool.name === 'list_kinds');
-    const withListKindsTool = (tool) => [
-      ...tools.filter((candidate) => candidate.name !== 'list_kinds'),
-      tool,
-    ];
     const validateVaultTool = tools.find((tool) => tool.name === 'validate_vault');
     const withValidateVaultTool = (tool) => [
       ...tools.filter((candidate) => candidate.name !== 'validate_vault'),
@@ -2839,11 +2596,6 @@ describe('verify.mjs first-contact gates', () => {
       ...tools.filter((candidate) => candidate.name !== 'list_concepts'),
       tool,
     ];
-    const findNeighborsTool = tools.find((tool) => tool.name === 'find_neighbors');
-    const withFindNeighborsTool = (tool) => [
-      ...tools.filter((candidate) => candidate.name !== 'find_neighbors'),
-      tool,
-    ];
     const finalizeProjectMeaningTool = tools.find((tool) => tool.name === 'finalize_project_meaning');
     const withFinalizeProjectMeaningTool = (tool) => [
       ...tools.filter((candidate) => candidate.name !== 'finalize_project_meaning'),
@@ -2852,6 +2604,19 @@ describe('verify.mjs first-contact gates', () => {
 
     assert.equal(toolsListSchemaFailure(tools), null);
     assert.equal(toolsListSchemaFailure(null), 'tools/list response missing tools array');
+    assert.equal(
+      toolsListSchemaFailure(withListConceptsTool({
+        ...listConceptsTool,
+        outputSchema: {
+          ...listConceptsTool.outputSchema,
+          properties: {
+            ...listConceptsTool.outputSchema.properties,
+            census: { ...listConceptsTool.outputSchema.properties.census, required: ['total', 'byKind'] },
+          },
+        },
+      })),
+      'list_concepts outputSchema census required drift',
+    );
     for (const mutate of [
       (schema) => {
         delete schema.properties.fieldsAfterKindDecision;
@@ -2957,20 +2722,8 @@ describe('verify.mjs first-contact gates', () => {
       outputSchema: { ...tool.outputSchema, properties: { ...tool.outputSchema.properties, [propertyName]: schema } },
     });
     assert.equal(
-      toolsListSchemaFailure(withTool('add_concept', (tool) => ({ ...tool, description: 'Changed writes return the slug and mtime.' }))),
-      'add_concept description missing findings guidance',
-    );
-    assert.equal(
       toolsListSchemaFailure(withTool('patch_concept', (tool) => withOutputProperty(tool, 'findings', { type: 'object' }))),
       'patch_concept outputSchema findings drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure(withTool('add_concept', (tool) => withOutputProperty(tool, 'postWriteMaintenance', { type: 'object' }))),
-      'add_concept outputSchema still carries postWriteMaintenance',
-    );
-    assert.equal(
-      toolsListSchemaFailure(withTool('add_relation', (tool) => withOutputProperty(tool, 'key', { type: 'string' }))),
-      'add_relation outputSchema still carries key',
     );
     assert.equal(
       toolsListSchemaFailure(withTool('add_concepts', (tool) => {
@@ -3131,55 +2884,6 @@ describe('verify.mjs first-contact gates', () => {
     );
     assert.equal(
       toolsListSchemaFailure(tools.map((tool) => (
-        tool.name === 'list_kinds'
-          ? { ...tool, outputSchema: { ...tool.outputSchema, required: ['byKind', 'total'] } }
-          : tool
-      ))),
-      'list_kinds outputSchema required drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure(withListKindsTool({
-        ...listKindsTool,
-        description: 'Kind counts.',
-      })),
-      'list_kinds description missing census guidance',
-    );
-    assert.equal(
-      toolsListSchemaFailure(tools.map((tool) => (
-        tool.name === 'list_kinds'
-          ? {
-            ...tool,
-            outputSchema: {
-              ...tool.outputSchema,
-              properties: {
-                ...tool.outputSchema.properties,
-                byKind: { type: 'object', additionalProperties: { type: 'number', minimum: 0 } },
-              },
-            },
-          }
-          : tool
-      ))),
-      'list_kinds outputSchema byKind drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure(tools.map((tool) => (
-        tool.name === 'list_kinds'
-          ? {
-            ...tool,
-            outputSchema: {
-              ...tool.outputSchema,
-              properties: {
-                ...tool.outputSchema.properties,
-                referencedOnlyTotal: { type: 'number', minimum: 0 },
-              },
-            },
-          }
-          : tool
-      ))),
-      'list_kinds outputSchema referencedOnlyTotal drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure(tools.map((tool) => (
         tool.name === 'validate_vault'
           ? { ...tool, outputSchema: { ...tool.outputSchema, required: ['summary', 'problems', 'scanned'] } }
           : tool
@@ -3294,14 +2998,6 @@ describe('verify.mjs first-contact gates', () => {
           : tool
       ))),
       'tools/list readOnlyHint annotation drift: list_concepts (expected true, got false)',
-    );
-    assert.equal(
-      toolsListSchemaFailure(tools.map((tool) => (
-        tool.name === 'add_concept'
-          ? { ...tool, annotations: { ...tool.annotations, readOnlyHint: true } }
-          : tool
-      ))),
-      'tools/list readOnlyHint annotation drift: add_concept (expected false, got true)',
     );
     assert.equal(
       toolsListSchemaFailure(tools.map((tool) => (
@@ -3767,14 +3463,6 @@ describe('verify.mjs first-contact gates', () => {
       toolsListSchemaFailure(withAnalyzeRepoTool({
         ...analyzeRepoTool,
         description: 'Analyze repository.',
-      })),
-      'analyze_repo_structure description missing bootstrap safety guidance',
-    );
-    assert.equal(
-      toolsListSchemaFailure(withAnalyzeRepoTool({
-        ...analyzeRepoTool,
-        description:
-          'R16 — analyze a code repository and propose ontology node candidates. side effect 0 (vault frontmatter NOT modified). Returns deterministic candidates the agent should review and selectively pass to add_concept. Use this once when a user asks "bootstrap the ontology". Single source of truth preserved — only the user writes to the vault.',
       })),
       'analyze_repo_structure description missing bootstrap safety guidance',
     );
@@ -4300,45 +3988,6 @@ describe('verify.mjs first-contact gates', () => {
     );
     assert.equal(
       toolsListSchemaFailure([
-        tools[0],
-        tools[1],
-        {
-          ...tools.find((tool) => tool.name === 'get_concept'),
-          outputSchema: {
-            ...tools.find((tool) => tool.name === 'get_concept').outputSchema,
-            required: ['slug', 'frontmatter'],
-          },
-        },
-        ...tools.filter((tool) => !['list_concepts', 'get_concepts', 'get_concept'].includes(tool.name)),
-      ]),
-      'get_concept outputSchema required drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure([
-        tools[0],
-        tools[1],
-        {
-          ...tools.find((tool) => tool.name === 'get_concept'),
-          outputSchema: {
-            ...tools.find((tool) => tool.name === 'get_concept').outputSchema,
-            properties: {
-              ...tools.find((tool) => tool.name === 'get_concept').outputSchema.properties,
-              neighbors: {
-                ...tools.find((tool) => tool.name === 'get_concept').outputSchema.properties.neighbors,
-                properties: {
-                  ...tools.find((tool) => tool.name === 'get_concept').outputSchema.properties.neighbors.properties,
-                  dependencies: { type: 'object' },
-                },
-              },
-            },
-          },
-        },
-        ...tools.filter((tool) => !['list_concepts', 'get_concepts', 'get_concept'].includes(tool.name)),
-      ]),
-      'get_concept outputSchema neighbors dependencies drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure([
         ...tools.filter((tool) => tool.name !== 'find_evidence'),
         {
           ...tools.find((tool) => tool.name === 'find_evidence'),
@@ -4505,236 +4154,6 @@ describe('verify.mjs first-contact gates', () => {
         },
       ]),
       'find_backlinks outputSchema matches drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure([
-        ...tools.filter((tool) => tool.name !== 'find_neighbors'),
-        {
-          ...tools.find((tool) => tool.name === 'find_neighbors'),
-          outputSchema: {
-            ...tools.find((tool) => tool.name === 'find_neighbors').outputSchema,
-            properties: {
-              ...tools.find((tool) => tool.name === 'find_neighbors').outputSchema.properties,
-              edges: {
-                ...tools.find((tool) => tool.name === 'find_neighbors').outputSchema.properties.edges,
-                items: {
-                  ...tools.find((tool) => tool.name === 'find_neighbors').outputSchema.properties.edges.items,
-                  required: ['direction', 'from', 'to', 'via', 'resolved'],
-                },
-              },
-            },
-          },
-        },
-      ]),
-      'find_neighbors outputSchema edges drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure([
-        ...tools.filter((tool) => tool.name !== 'find_neighbors'),
-        {
-          ...tools.find((tool) => tool.name === 'find_neighbors'),
-          outputSchema: {
-            ...tools.find((tool) => tool.name === 'find_neighbors').outputSchema,
-            properties: {
-              ...tools.find((tool) => tool.name === 'find_neighbors').outputSchema.properties,
-              nodes: {
-                ...tools.find((tool) => tool.name === 'find_neighbors').outputSchema.properties.nodes,
-                items: {
-                  ...tools.find((tool) => tool.name === 'find_neighbors').outputSchema.properties.nodes.items,
-                  properties: {
-                    ...tools.find((tool) => tool.name === 'find_neighbors').outputSchema.properties.nodes.items.properties,
-                    mtime: { type: 'string' },
-                  },
-                },
-              },
-            },
-          },
-        },
-      ]),
-      'find_neighbors outputSchema node mtime drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure(withFindNeighborsTool(
-        {
-          ...findNeighborsTool,
-          inputSchema: {
-            ...findNeighborsTool.inputSchema,
-            properties: {
-              ...findNeighborsTool.inputSchema.properties,
-              direction: {
-                type: 'string',
-                enum: ['outgoing', 'incoming', 'both'],
-                description: 'Edge direction to include.',
-              },
-            },
-          },
-        },
-      )),
-      'find_neighbors inputSchema direction default description drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure(withFindNeighborsTool(
-        {
-          ...findNeighborsTool,
-          inputSchema: {
-            ...findNeighborsTool.inputSchema,
-            properties: {
-              ...findNeighborsTool.inputSchema.properties,
-              types: {
-                type: 'array',
-                maxItems: RELATION_TYPE_VALUES.length,
-                items: { type: 'string' },
-                description: 'Optional relation types/frontmatter keys to include.',
-              },
-            },
-          },
-        },
-      )),
-      'find_neighbors inputSchema types alias guidance drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure(withFindNeighborsTool(
-        {
-          ...findNeighborsTool,
-          inputSchema: {
-            ...findNeighborsTool.inputSchema,
-            properties: {
-              ...findNeighborsTool.inputSchema.properties,
-              includeNodes: {
-                type: 'boolean',
-                description: 'Include neighbor node summaries for resolved edges.',
-              },
-            },
-          },
-        },
-      )),
-      'find_neighbors inputSchema includeNodes default description drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure(withFindNeighborsTool(
-        {
-          ...findNeighborsTool,
-          inputSchema: {
-            ...findNeighborsTool.inputSchema,
-            properties: {
-              ...findNeighborsTool.inputSchema.properties,
-              limit: {
-                type: 'integer',
-                minimum: 1,
-                maximum: 500,
-                description: 'Positive integer max edges to return.',
-              },
-            },
-          },
-        },
-      )),
-      'find_neighbors inputSchema limit default description drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure([
-        ...tools.filter((tool) => tool.name !== 'find_path'),
-        {
-          ...tools.find((tool) => tool.name === 'find_path'),
-          inputSchema: {
-            ...tools.find((tool) => tool.name === 'find_path').inputSchema,
-            properties: {
-              ...tools.find((tool) => tool.name === 'find_path').inputSchema.properties,
-              maxHops: {
-                type: 'integer',
-                minimum: 0,
-                maximum: 20,
-                description: 'Non-negative integer maximum hop count.',
-              },
-            },
-          },
-        },
-      ]),
-      'find_path inputSchema maxHops default description drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure([
-        ...tools.filter((tool) => tool.name !== 'find_path'),
-        {
-          ...tools.find((tool) => tool.name === 'find_path'),
-          outputSchema: { ...tools.find((tool) => tool.name === 'find_path').outputSchema, required: ['from', 'found', 'to'] },
-        },
-      ]),
-      'find_path outputSchema required drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure([
-        ...tools.filter((tool) => tool.name !== 'find_path'),
-        {
-          ...tools.find((tool) => tool.name === 'find_path'),
-          outputSchema: {
-            ...tools.find((tool) => tool.name === 'find_path').outputSchema,
-            properties: {
-              ...tools.find((tool) => tool.name === 'find_path').outputSchema.properties,
-              edges: {
-                ...tools.find((tool) => tool.name === 'find_path').outputSchema.properties.edges,
-                items: {
-                  ...tools.find((tool) => tool.name === 'find_path').outputSchema.properties.edges.items,
-                  properties: {
-                    ...tools.find((tool) => tool.name === 'find_path').outputSchema.properties.edges.items.properties,
-                    via: { type: 'number' },
-                  },
-                },
-              },
-            },
-          },
-        },
-      ]),
-      'find_path outputSchema edge via drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure([
-        ...tools.filter((tool) => tool.name !== 'find_path'),
-        {
-          ...tools.find((tool) => tool.name === 'find_path'),
-          outputSchema: {
-            ...tools.find((tool) => tool.name === 'find_path').outputSchema,
-            properties: {
-              ...tools.find((tool) => tool.name === 'find_path').outputSchema.properties,
-              edges: {
-                ...tools.find((tool) => tool.name === 'find_path').outputSchema.properties.edges,
-                items: {
-                  ...tools.find((tool) => tool.name === 'find_path').outputSchema.properties.edges.items,
-                  properties: {
-                    ...tools.find((tool) => tool.name === 'find_path').outputSchema.properties.edges.items.properties,
-                    rationale: { type: 'number' },
-                  },
-                },
-              },
-            },
-          },
-        },
-      ]),
-      'find_path outputSchema edge rationale drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure([
-        ...tools.filter((tool) => tool.name !== 'find_path'),
-        {
-          ...tools.find((tool) => tool.name === 'find_path'),
-          outputSchema: {
-            ...tools.find((tool) => tool.name === 'find_path').outputSchema,
-            properties: {
-              ...tools.find((tool) => tool.name === 'find_path').outputSchema.properties,
-              nodes: {
-                ...tools.find((tool) => tool.name === 'find_path').outputSchema.properties.nodes,
-                items: {
-                  ...tools.find((tool) => tool.name === 'find_path').outputSchema.properties.nodes.items,
-                  properties: {
-                    ...tools.find((tool) => tool.name === 'find_path').outputSchema.properties.nodes.items.properties,
-                    title: { type: 'number' },
-                  },
-                },
-              },
-            },
-          },
-        },
-      ]),
-      'find_path outputSchema node title drift',
     );
     assert.equal(
       toolsListSchemaFailure([
@@ -5072,78 +4491,6 @@ describe('verify.mjs first-contact gates', () => {
     );
     assert.equal(
       toolsListSchemaFailure([
-        ...tools.filter((tool) => tool.name !== 'add_concept'),
-        {
-          ...tools.find((tool) => tool.name === 'add_concept'),
-          outputSchema: {
-            ...tools.find((tool) => tool.name === 'add_concept').outputSchema,
-            properties: {
-              ...tools.find((tool) => tool.name === 'add_concept').outputSchema.properties,
-              warnings: { type: 'array', items: { type: 'number' } },
-            },
-          },
-        },
-      ]),
-      'add_concept outputSchema warnings drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure([
-        ...tools.filter((tool) => tool.name !== 'add_relation'),
-        {
-          ...tools.find((tool) => tool.name === 'add_relation'),
-          description: `Invalid relation \`type\` has a closest-value hint and structured \`valueName\` / \`receivedValue\` / \`suggestion\` / \`allowedValues\` repair fields, with no \`changed\`, \`alreadyExists\`, or \`postWriteMaintenance\` write metadata. Changed writes return ${postWriteDescription}.`,
-        },
-      ]),
-      'add_relation description missing type-preflight guidance',
-    );
-    assert.equal(
-      toolsListSchemaFailure([
-        ...tools.filter((tool) => tool.name !== 'add_relation'),
-        {
-          ...tools.find((tool) => tool.name === 'add_relation'),
-          description: `Invalid relation \`type\` is rejected before endpoint slug resolution with structured \`valueName\` / \`receivedValue\` / \`suggestion\` / \`allowedValues\` repair fields, with no \`changed\`, \`alreadyExists\`, or \`postWriteMaintenance\` write metadata. Changed writes return ${postWriteDescription}.`,
-        },
-      ]),
-      'add_relation description missing closest-value type guidance',
-    );
-    assert.equal(
-      toolsListSchemaFailure([
-        ...tools.filter((tool) => tool.name !== 'add_relation'),
-        {
-          ...tools.find((tool) => tool.name === 'add_relation'),
-          description: `Invalid relation \`type\` is rejected before endpoint slug resolution with a closest-value hint, with no \`changed\`, \`alreadyExists\`, or \`postWriteMaintenance\` write metadata. Changed writes return ${postWriteDescription}.`,
-        },
-      ]),
-      'add_relation description missing structured value repair guidance',
-    );
-    assert.equal(
-      toolsListSchemaFailure([
-        ...tools.filter((tool) => tool.name !== 'add_relation'),
-        {
-          ...tools.find((tool) => tool.name === 'add_relation'),
-          description: `Invalid relation \`type\` is rejected before endpoint slug resolution with a closest-value hint and structured \`valueName\` / \`receivedValue\` / \`suggestion\` / \`allowedValues\` repair fields. Changed writes return ${postWriteDescription}.`,
-        },
-      ]),
-      'add_relation description missing non-write preflight metadata guidance',
-    );
-    assert.equal(
-      toolsListSchemaFailure([
-        ...tools.filter((tool) => tool.name !== 'add_relation'),
-        {
-          ...tools.find((tool) => tool.name === 'add_relation'),
-          outputSchema: {
-            ...tools.find((tool) => tool.name === 'add_relation').outputSchema,
-            properties: {
-              ...tools.find((tool) => tool.name === 'add_relation').outputSchema.properties,
-              alreadyExists: { type: 'string' },
-            },
-          },
-        },
-      ]),
-      'add_relation outputSchema alreadyExists drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure([
         ...tools.filter((tool) => tool.name !== 'patch_concept'),
         {
           ...tools.find((tool) => tool.name === 'patch_concept'),
@@ -5314,22 +4661,6 @@ describe('verify.mjs first-contact gates', () => {
         },
       ]),
       'delete_concept outputSchema backlinksAtDelete drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure([
-        ...tools.filter((tool) => tool.name !== 'add_relation'),
-        {
-          ...tools.find((tool) => tool.name === 'add_relation'),
-          inputSchema: {
-            ...tools.find((tool) => tool.name === 'add_relation').inputSchema,
-            properties: {
-              ...tools.find((tool) => tool.name === 'add_relation').inputSchema.properties,
-              expected_mtime: { type: 'number' },
-            },
-          },
-        },
-      ]),
-      'add_relation.expected_mtime conflict guard schema drift',
     );
     assert.equal(
       toolsListSchemaFailure([
@@ -5689,11 +5020,11 @@ describe('verify.mjs first-contact gates', () => {
     assert.match(verifyUsage(), /OATLAS_VERIFY_KILL_GRACE_MS=N/);
     assert.match(verifyUsage(), /tool inventory \(missing\/extra\/duplicate\/invalid names\)/);
     assert.match(verifyUsage(), /project probe/);
-    assert.match(verifyUsage(), /list\/project probe\/get_concept\/get_concepts\/find_evidence\/find_backlinks\/query_concepts\/limited query_concepts\/analyze_repo_structure\/infer_imports\/index_project\/find_neighbors\/find_path\/find_orphans/);
+    assert.match(verifyUsage(), /list\/project probe\/get_concepts\/find_evidence\/find_backlinks\/query_concepts\/limited query_concepts\/analyze_repo_structure\/infer_imports\/find_orphans/);
     assert.match(verifyUsage(), /compile_ontology summary \+ paginated full-artifact \+ indexed full-artifact smoke/);
-    assert.match(verifyUsage(), /Successful output prints read census consistency after cross-checking list_kinds\/list_concepts\/compile_ontology\/overview/);
+    assert.match(verifyUsage(), /Successful output prints read census consistency after cross-checking the list_concepts census\/list_concepts\/compile_ontology\/overview/);
     assert.match(verifyUsage(), /strict unknown-tool \/ unknown-argument \/ invalid-enum rejection/);
-    assert.match(verifyUsage(), /query_concepts\.kind\/has-key, find_neighbors\.types, find_orphans\.kind\/excludeKinds, match_nodes\.kind\/sort, recommend_relations\.kind, and match_edges\.type\/fromKind\/toKind typo and unsupported-kind rejection/);
+    assert.match(verifyUsage(), /query_concepts\.kind\/has-key, find_orphans\.kind\/excludeKinds, match_nodes\.kind\/sort, recommend_relations\.kind, and match_edges\.type\/fromKind\/toKind typo and unsupported-kind rejection/);
     assert.match(verifyUsage(), /tools\/list inventory names, initialize-instruction tool inventory, schema strictness, and annotation coverage \(title\/read\/write\/destructive\/idempotent\/local-only\)/);
     assert.match(verifyUsage(), /batch reader\/writer row isolation for non-object rows and unknown row fields with concepts\[n\]\/relations\[n\] error labels, invalid add_relations type closest-value hints, and 50-row batch cap rejection/);
     assert.match(verifyUsage(), /structuredContent coverage summary splits direct reads, batch row-isolation writes with no write metadata, destructive dry-runs, maintenance cursor checks, and graph queries/);
@@ -5946,8 +5277,8 @@ describe('verify.mjs first-contact gates', () => {
       strictUnknownToolFailure({
         result: {
           isError: true,
-          content: [{ text: 'Error: Unknown tool: missing_tool. Allowed tools: add_concept, list_concepts.' }],
-          structuredContent: { ok: false, errorCode: 'unknown_tool', error: 'Unknown tool: missing_tool. Allowed tools: add_concept, list_concepts.' },
+          content: [{ text: 'Error: Unknown tool: missing_tool. Allowed tools: add_concepts, list_concepts.' }],
+          structuredContent: { ok: false, errorCode: 'unknown_tool', error: 'Unknown tool: missing_tool. Allowed tools: add_concepts, list_concepts.' },
         },
       }),
       'strict unknown-tool response did not report the unknown tool name',
@@ -5956,8 +5287,8 @@ describe('verify.mjs first-contact gates', () => {
       strictUnknownToolFailure({
         result: {
           isError: true,
-          content: [{ text: 'Error: Unknown tool: list_concept. Allowed tools: add_concept, list_concepts.' }],
-          structuredContent: { ok: false, errorCode: 'unknown_tool', error: 'Unknown tool: list_concept. Allowed tools: add_concept, list_concepts.' },
+          content: [{ text: 'Error: Unknown tool: list_concept. Allowed tools: add_concepts, list_concepts.' }],
+          structuredContent: { ok: false, errorCode: 'unknown_tool', error: 'Unknown tool: list_concept. Allowed tools: add_concepts, list_concepts.' },
         },
       }),
       'strict unknown-tool response did not suggest the closest tool name',
@@ -5987,7 +5318,7 @@ describe('verify.mjs first-contact gates', () => {
         result: {
           isError: true,
           content: [{ text: `Error: ${error}` }],
-          structuredContent: { ok: false, errorCode: 'unknown_tool', error, receivedTool: 'list_concept', suggestion: 'list_concepts', allowedTools: ['add_concept', 'list_concepts'] },
+          structuredContent: { ok: false, errorCode: 'unknown_tool', error, receivedTool: 'list_concept', suggestion: 'list_concepts', allowedTools: ['add_concepts', 'list_concepts'] },
         },
       }),
       'strict unknown-tool structured error missing allowed tools',
@@ -7060,29 +6391,6 @@ describe('verify.mjs first-contact gates', () => {
     );
   });
 
-  it('fails malformed strict find_neighbors types smoke responses', () => {
-    assert.equal(
-      strictFindNeighborsTypeFailure(strictErrorResponse('types items must be one of: domains, domain, capabilities, elements, dependencies, depends_on, relates, contains, describes. Received: "depend_on". Did you mean "depends_on"?')),
-      null,
-    );
-    assert.equal(
-      strictFindNeighborsTypeFailure({ result: { isError: false, content: [{ text: 'ok' }] } }),
-      'strict find_neighbors types response was not rejected',
-    );
-    assert.equal(
-      strictFindNeighborsTypeFailure({ result: { isError: true, content: [{ text: 'different error' }] } }),
-      'strict find_neighbors types response did not report the invalid types filter',
-    );
-    assert.equal(
-      strictFindNeighborsTypeFailure({ result: { isError: true, content: [{ text: 'types items must be one of: dependencies, depends_on. Did you mean "depends_on"?' }] } }),
-      'strict find_neighbors types response did not report the invalid types value',
-    );
-    assert.equal(
-      strictFindNeighborsTypeFailure({ result: { isError: true, content: [{ text: 'types items must be one of: dependencies, depends_on. Received: "depend_on".' }] } }),
-      'strict find_neighbors types response did not suggest the closest types value',
-    );
-  });
-
   it('fails malformed strict find_orphans kind smoke responses', () => {
     assert.equal(
       strictFindOrphansKindFailure(strictErrorResponse('kind must be one of: project, domain, capability, element, document, vault-readme. Received: "capabilty". Did you mean "capability"?')),
@@ -7318,69 +6626,6 @@ describe('verify.mjs first-contact gates', () => {
     );
   });
 
-  it('fails malformed strict add_relation smoke responses', () => {
-    assert.equal(
-      strictAddRelationFailure(strictErrorResponse(`type must be one of: ${WRITE_RELATION_TYPE_VALUES.join(', ')}. Received: "depend_on". Did you mean "depends_on"?`)),
-      null,
-    );
-    assert.equal(
-      strictAddRelationFailure({ result: { isError: false, content: [{ text: 'ok' }] } }),
-      'strict add_relation response was not rejected',
-    );
-    assert.equal(
-      strictAddRelationFailure({ result: { isError: true, content: [{ text: 'different error' }] } }),
-      'strict add_relation response did not report the invalid type filter',
-    );
-    assert.equal(
-      strictAddRelationFailure({ result: { isError: true, content: [{ text: 'type must be one of: depends_on, relates. Did you mean "depends_on"?' }] } }),
-      'strict add_relation response did not report the invalid type value',
-    );
-    assert.equal(
-      strictAddRelationFailure({ result: { isError: true, content: [{ text: 'type must be one of: depends_on, relates. Received: "depend_on".' }] } }),
-      'strict add_relation response did not suggest the closest type value',
-    );
-    assert.equal(
-      strictAddRelationFailure({
-        result: {
-          isError: true,
-          changed: false,
-          content: [{ text: 'type must be one of: depends_on, relates. Received: "depend_on". Did you mean "depends_on"?' }],
-        },
-      }),
-      'strict add_relation response included write metadata',
-    );
-    assert.equal(
-      strictAddRelationFailure({
-        result: {
-          isError: true,
-          alreadyExists: false,
-          content: [{ text: 'type must be one of: depends_on, relates. Received: "depend_on". Did you mean "depends_on"?' }],
-        },
-      }),
-      'strict add_relation response included write metadata',
-    );
-    assert.equal(
-      strictAddRelationFailure({
-        result: {
-          isError: true,
-          structuredContent: { findings: [] },
-          content: [{ text: 'type must be one of: depends_on, relates. Received: "depend_on". Did you mean "depends_on"?' }],
-        },
-      }),
-      'strict add_relation structuredContent included write metadata',
-    );
-    assert.equal(
-      strictAddRelationFailure({
-        result: {
-          isError: true,
-          structuredContent: { alreadyExists: false },
-          content: [{ text: 'type must be one of: depends_on, relates. Received: "depend_on". Did you mean "depends_on"?' }],
-        },
-      }),
-      'strict add_relation structuredContent included write metadata',
-    );
-  });
-
   it('summarizes strict maintenance filter enum values in verify output', () => {
     assert.equal(
       maintenanceFilterEnumSummary(),
@@ -7404,7 +6649,7 @@ describe('verify.mjs first-contact gates', () => {
           phase: 'link',
           kind: 'add_missing_relation',
           severity: 'warn',
-          proposedAction: { tool: 'add_relation', args: {} },
+          proposedAction: { tool: 'add_relations', args: {} },
         },
         nextReviewAction: {
           id: 'maint_review',
@@ -7413,7 +6658,7 @@ describe('verify.mjs first-contact gates', () => {
           severity: 'info',
         },
       }),
-      'executable maint_link:link/add_missing_relation:warn->add_relation; review maint_review:review/unassigned_node:info',
+      'executable maint_link:link/add_missing_relation:warn->add_relations; review maint_review:review/unassigned_node:info',
     );
     assert.equal(
       maintenanceNextActionOutputSummary({ nextExecutableAction: null, nextReviewAction: null }),
@@ -7970,7 +7215,7 @@ Continue.`;
 
   it('keeps node-dependent first-contact smokes optional until their live target exists', () => {
     const ids = initialExpectedFirstContactIds();
-    assert.deepEqual(OPTIONAL_FIRST_CONTACT_RESPONSE_IDS, [30, 31, 33, 35, 36, 37, 43, 44, 45, 61]);
+    assert.deepEqual(OPTIONAL_FIRST_CONTACT_RESPONSE_IDS, [30, 31, 33, 37, 43, 44, 45, 61]);
     assert.deepEqual(DYNAMIC_FIRST_CONTACT_RESPONSE_IDS, [11, 13, 14, 15, 67, ...OPTIONAL_FIRST_CONTACT_RESPONSE_IDS]);
     for (const optionalId of OPTIONAL_FIRST_CONTACT_RESPONSE_IDS) {
       assert.equal(ids.has(optionalId), false, `${FIRST_CONTACT_RESPONSE_LABELS.get(optionalId)} starts optional`);
@@ -7998,12 +7243,10 @@ Continue.`;
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(26), 'maintenance_ready_cursor');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(27), 'strict_multi_args');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(30), 'maintenance_resume_cursor');
-    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(31), 'get_concept');
+    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(31), 'get_concepts_single');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(32), 'find_evidence');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(33), 'find_backlinks');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(34), 'query_concepts');
-    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(35), 'find_neighbors');
-    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(36), 'find_path');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(37), 'query_concepts_limited');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(38), 'analyze_repo_structure');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(39), 'infer_imports');
@@ -8017,12 +7260,10 @@ Continue.`;
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(47), 'strict_graph_kind_filter');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(48), 'strict_graph_from_kind_filter');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(49), 'strict_graph_to_kind_filter');
-    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(50), 'strict_add_relation');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(51), 'strict_recommend_relations_kind_filter');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(52), 'strict_recommend_relations_unsupported_kind_filter');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(53), 'strict_match_nodes_sort_filter');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(54), 'strict_match_edges_type_filter');
-    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(55), 'strict_find_neighbors_type_filter');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(56), 'strict_find_orphans_kind_filter');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(57), 'strict_find_orphans_exclude_kind_filter');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(58), 'strict_query_concepts_kind_filter');
@@ -8034,7 +7275,6 @@ Continue.`;
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(64), 'get_concepts_batch_cap');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(65), 'strict_unknown_tool');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(67), 'all_paths');
-    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(68), 'index_project');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(69), 'absorb_document_dry_run');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(70), 'infer_imports_focus');
     assert.deepEqual(
@@ -8060,7 +7300,6 @@ Continue.`;
     const compilePage = buildFirstContactRequests().find((request) => request.id === 41);
     const compileIndexes = buildFirstContactRequests().find((request) => request.id === 42);
     const strictRelationCheck = buildFirstContactRequests().find((request) => request.id === 46);
-    const strictAddRelation = buildFirstContactRequests().find((request) => request.id === 50);
     const strictUnknownTool = buildFirstContactRequests().find((request) => request.id === 65);
     assert.equal(analyze?.params?.name, 'analyze_repo_structure');
     assert.equal(analyze?.params?.arguments?.maxDepth, 2);
@@ -8091,49 +7330,10 @@ Continue.`;
         type: 'depend_on',
       },
     });
-    assert.deepEqual(strictAddRelation?.params, {
-      name: 'add_relation',
-      arguments: {
-        from: 'missing-add-relation-source',
-        to: 'missing-add-relation-target',
-        type: 'depend_on',
-      },
-    });
     assert.deepEqual(strictUnknownTool?.params, {
       name: 'list_concept',
       arguments: {},
     });
-  });
-
-  it('builds direct graph-read smoke requests only when a node exists', () => {
-    assert.deepEqual(buildDirectGraphReadSmokeRequests({ hasNode: false }), {
-      requests: [],
-      expectedResponseIds: [],
-    });
-    assert.deepEqual(
-      buildDirectGraphReadSmokeRequests({
-        slug: 'capabilities/mcp-server',
-        pathTarget: 'project',
-        hasNode: true,
-      }),
-      {
-        requests: [
-          {
-            jsonrpc: '2.0',
-            id: 35,
-            method: 'tools/call',
-            params: { name: 'find_neighbors', arguments: { slug: 'capabilities/mcp-server', limit: 5 } },
-          },
-          {
-            jsonrpc: '2.0',
-            id: 36,
-            method: 'tools/call',
-            params: { name: 'find_path', arguments: { from: 'capabilities/mcp-server', to: 'project' } },
-          },
-        ],
-        expectedResponseIds: [35, 36],
-      },
-    );
   });
 
   it('builds limited query_concepts smoke request for non-trivial vaults', () => {
@@ -8388,39 +7588,6 @@ Continue.`;
     );
   });
 
-  it('accepts clean find_neighbors and find_path payloads', () => {
-    const node = {
-      slug: 'project',
-      kind: 'project',
-      title: 'Project',
-      mtime: 1,
-    };
-    assert.equal(
-      findNeighborsFailure({
-        requested: 'project',
-        center: 'project',
-        direction: 'both',
-        types: [],
-        totalEdges: 1,
-        limited: false,
-        edges: [{ direction: 'outgoing', from: 'project', to: 'domains/core', via: 'domains', ref: 'domains/core', resolved: true }],
-        nodes: [{ ...node, slug: 'domains/core', kind: 'domain' }],
-      }, 'project'),
-      null,
-    );
-    assert.equal(
-      findPathFailure({
-        from: 'project',
-        to: 'domains/core',
-        found: true,
-        hopCount: 1,
-        hops: ['project', 'domains/core'],
-        edges: [{ from: 'project', to: 'domains/core', via: 'domains' }],
-      }, 'project', 'domains/core'),
-      null,
-    );
-  });
-
   it('accepts clean bootstrap and import-analysis read smoke payloads', () => {
     assert.equal(
       analyzeRepoStructureFailure(breadthMapFixture()),
@@ -8525,9 +7692,9 @@ Continue.`;
     );
   });
 
-  it('accepts clean get_concept single-node payloads', () => {
+  it('accepts clean single get_concepts row payloads', () => {
     assert.equal(
-      getConceptFailure(
+      conceptRowFailure(
         {
           uid: TEST_UID,
           slug: 'capabilities/mcp-server',
@@ -8835,7 +8002,7 @@ Continue.`;
     );
   });
 
-  it('fails malformed get_concept single-node payloads', () => {
+  it('fails malformed single get_concepts row payloads', () => {
     const okConcept = {
       uid: TEST_UID,
       slug: 'capabilities/mcp-server',
@@ -8854,26 +8021,26 @@ Continue.`;
       outgoingEdges: [{ to: 'elements/mcp-sdk', via: 'elements' }],
       mtime: 1,
     };
-    assert.equal(getConceptFailure(null, 'capabilities/mcp-server'), 'get_concept response malformed');
+    assert.equal(conceptRowFailure(null, 'capabilities/mcp-server'), 'single get_concepts row malformed');
     assert.equal(
-      getConceptFailure({ ...okConcept, slug: 'capabilities/other' }, 'capabilities/mcp-server'),
-      'get_concept response slug mismatch: expected capabilities/mcp-server, got capabilities/other',
+      conceptRowFailure({ ...okConcept, slug: 'capabilities/other' }, 'capabilities/mcp-server'),
+      'single get_concepts row slug mismatch: expected capabilities/mcp-server, got capabilities/other',
     );
     assert.equal(
-      getConceptFailure({ ...okConcept, excerpt: null }, 'capabilities/mcp-server'),
-      'get_concept response missing excerpt: capabilities/mcp-server',
+      conceptRowFailure({ ...okConcept, excerpt: null }, 'capabilities/mcp-server'),
+      'single get_concepts row missing excerpt: capabilities/mcp-server',
     );
     assert.equal(
-      getConceptFailure({ ...okConcept, neighbors: { ...okConcept.neighbors, elements: null } }, 'capabilities/mcp-server'),
-      'get_concept response missing neighbors.elements: capabilities/mcp-server',
+      conceptRowFailure({ ...okConcept, neighbors: { ...okConcept.neighbors, elements: null } }, 'capabilities/mcp-server'),
+      'single get_concepts row missing neighbors.elements: capabilities/mcp-server',
     );
     assert.equal(
-      getConceptFailure({ ...okConcept, outgoingEdges: [{ to: '', via: 'elements' }] }, 'capabilities/mcp-server'),
-      'get_concept response missing outgoing edge target at index 0',
+      conceptRowFailure({ ...okConcept, outgoingEdges: [{ to: '', via: 'elements' }] }, 'capabilities/mcp-server'),
+      'single get_concepts row missing outgoing edge target at index 0',
     );
     assert.equal(
-      getConceptFailure({ ...okConcept, mtime: -1 }, 'capabilities/mcp-server'),
-      'get_concept response missing mtime: capabilities/mcp-server',
+      conceptRowFailure({ ...okConcept, mtime: -1 }, 'capabilities/mcp-server'),
+      'single get_concepts row missing mtime: capabilities/mcp-server',
     );
   });
 
@@ -8970,73 +8137,6 @@ Continue.`;
     assert.equal(
       limitedQueryConceptsFailure({ filter: 'slug!=project', parsedAs: 'slug != project', total: 1, matches: [{ ...match, slug: 'domains/core', kind: 'domain' }], limited: false }, 'project', 1),
       'query_concepts limited response did not set limited=true',
-    );
-  });
-
-  it('fails malformed find_neighbors and find_path payloads', () => {
-    assert.equal(
-      findNeighborsFailure({
-        requested: 'project',
-        center: 'other',
-        direction: 'both',
-        types: [],
-        totalEdges: 0,
-        limited: false,
-        edges: [],
-        nodes: [],
-      }, 'project'),
-      'find_neighbors center mismatch: expected project, got other',
-    );
-    assert.equal(
-      findNeighborsFailure({
-        requested: 'project',
-        center: 'project',
-        direction: 'both',
-        types: [],
-        totalEdges: 1,
-        limited: false,
-        edges: [{ direction: 'sideways', from: 'project', to: 'domains/core', via: 'domains' }],
-        nodes: [],
-      }, 'project'),
-      'find_neighbors edge missing direction at index 0',
-    );
-    assert.equal(
-      findPathFailure({
-        from: 'project',
-        to: 'domains/core',
-        found: true,
-        hopCount: 1,
-        hops: ['project', 'domains/core'],
-        edges: [],
-      }, 'project', 'domains/core'),
-      'find_path response edge count mismatch',
-    );
-    assert.equal(
-      findPathFailure({
-        from: 'project',
-        to: 'domains/core',
-        found: true,
-        hopCount: 1,
-        hops: ['project', 'domains/core'],
-        edges: [{ from: 'project', to: 'domains/core', via: 'domains' }],
-        nodes: [{ slug: 'project', kind: 'project', title: 'Project' }],
-      }, 'project', 'domains/core'),
-      'find_path response node count mismatch',
-    );
-    assert.equal(
-      findPathFailure({
-        from: 'project',
-        to: 'domains/core',
-        found: true,
-        hopCount: 1,
-        hops: ['project', 'domains/core'],
-        edges: [{ from: 'project', to: 'domains/core', via: 'domains' }],
-        nodes: [
-          { slug: 'project', kind: 'project', title: 'Project' },
-          { slug: 'domains/wrong', kind: 'domain', title: 'Core' },
-        ],
-      }, 'project', 'domains/core'),
-      'find_path node/hop mismatch at index 1',
     );
   });
 
@@ -9149,12 +8249,12 @@ Continue.`;
     );
   });
 
-  it('fails malformed list_kinds payloads', () => {
-    assert.equal(listKindsFailure({ byKind: {} }), 'list_kinds response missing total count');
-    assert.equal(listKindsFailure({ total: 0 }), 'list_kinds response missing byKind aggregate');
-    assert.equal(listKindsFailure({ total: 1, byKind: { project: -1 } }), 'list_kinds response missing count for kind: project');
-    assert.equal(listKindsFailure({ total: 2, byKind: { project: 1 } }), 'list_kinds response total mismatch: total 2, byKind 1');
-    assert.equal(listKindsFailure({ total: 1, byKind: { project: 1 } }), null);
+  it('fails malformed list_concepts census payloads', () => {
+    assert.equal(censusFailure({ byKind: {} }), 'list_concepts census missing total count');
+    assert.equal(censusFailure({ total: 0 }), 'list_concepts census missing byKind aggregate');
+    assert.equal(censusFailure({ total: 1, byKind: { project: -1 } }), 'list_concepts census missing count for kind: project');
+    assert.equal(censusFailure({ total: 2, byKind: { project: 1 } }), 'list_concepts census total mismatch: total 2, byKind 1');
+    assert.equal(censusFailure({ total: 1, byKind: { project: 1 } }), null);
   });
 
   it('fails malformed list_concepts payloads', () => {
@@ -9242,7 +8342,7 @@ Continue.`;
         nodes: [{ uid: TEST_UID, slug: 'project', kind: 'project', title: 'Project', mtime: 1 }],
         ...listPage(2, 1),
       }, { byKind: { project: 1 } }),
-      'project probe count mismatch: list_kinds project 1, probe 2',
+      'project probe count mismatch: census project 1, probe 2',
     );
     assert.equal(
       projectProbeFailure({
@@ -10154,12 +9254,12 @@ Continue.`;
     assert.equal(verifyCountConsistencyFailure({ kinds, list, validation, compiled, overview }), null);
     assert.equal(
       verifyCountConsistencyFailure({ kinds: { total: 2, byKind: { project: 2 } }, list, validation, compiled }),
-      'verify count mismatch: list_kinds.total 2, list_concepts.total 1',
+      'verify count mismatch: census.total 2, list_concepts.total 1',
     );
     assert.equal(verifyCountConsistencyFailure({ kinds, list, validation: { ...validation, scanned: 2 }, compiled }), null);
     assert.equal(
       verifyCountConsistencyFailure({ kinds, list, validation, compiled: { ...compiled, nodeCount: 2, byKind: { project: 2 } } }),
-      'verify count mismatch: list_kinds.total 1, compile_ontology.nodeCount 2',
+      'verify count mismatch: census.total 1, compile_ontology.nodeCount 2',
     );
     assert.equal(
       verifyCountConsistencyFailure({
@@ -10169,7 +9269,7 @@ Continue.`;
         compiled,
         overview: { ...overview, graph: { ...overview.graph, nodes: 2 }, byKind: { project: 2 } },
       }),
-      'verify count mismatch: list_kinds.total 1, overview.graph.nodes 2',
+      'verify count mismatch: census.total 1, overview.graph.nodes 2',
     );
     assert.equal(
       verifyCountConsistencyFailure({
@@ -10178,7 +9278,7 @@ Continue.`;
         validation,
         compiled,
       }),
-      'verify byKind mismatch: capability: list_kinds 1, compile_ontology 0',
+      'verify byKind mismatch: capability: census 1, compile_ontology 0',
     );
     assert.equal(
       verifyCountConsistencyFailure({
@@ -10188,7 +9288,7 @@ Continue.`;
         compiled: { ...compiled, byKind: { capability: 1 } },
         overview,
       }),
-      'verify byKind mismatch: capability: list_kinds 1, overview 0',
+      'verify byKind mismatch: capability: census 1, overview 0',
     );
   });
 
@@ -10200,13 +9300,13 @@ Continue.`;
         compiled: { nodeCount: 2, byKind: { project: 1, capability: 1 } },
         overview: { graph: { nodes: 2 }, byKind: { project: 1, capability: 1 } },
       }),
-      '2 nodes across list_kinds/list_concepts/compile_ontology/overview, 2 kinds',
+      '2 nodes across census/list_concepts/compile_ontology/overview, 2 kinds',
     );
     assert.equal(
       verifyCountConsistencySummary({
         kinds: { total: 1, byKind: { project: 1 } },
       }),
-      '1 node across list_kinds, 1 kind',
+      '1 node across census, 1 kind',
     );
     assert.equal(verifyCountConsistencySummary({}), null);
   });
@@ -10399,19 +9499,19 @@ Continue.`;
   it('summarizes structuredContent coverage for verify output', () => {
     assert.equal(
       structuredContentVerifySummary(),
-      'direct 11/11, write 2/2 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 0/0), maintenance 2/2, graph 8/8',
+      'direct 10/10, write 2/2 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 0/0), maintenance 2/2, graph 8/8',
     );
     assert.equal(
       structuredContentVerifySummary({ hasNode: true }),
-      'direct 11/11, write 2/2 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 0/0), maintenance 2/2, graph 10/10',
+      'direct 10/10, write 2/2 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 0/0), maintenance 2/2, graph 10/10',
     );
     assert.equal(
       structuredContentVerifySummary({ hasCompileIndexes: true }),
-      'direct 11/11, write 2/2 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 0/0), maintenance 2/2, graph 9/9',
+      'direct 10/10, write 2/2 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 0/0), maintenance 2/2, graph 9/9',
     );
     assert.equal(
       structuredContentVerifySummary({ hasMaintenanceResumeSkipped: true }),
-      'direct 11/11, write 2/2 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 0/0), maintenance 2/2 (resume skipped: no actions), graph 8/8',
+      'direct 10/10, write 2/2 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 0/0), maintenance 2/2 (resume skipped: no actions), graph 8/8',
     );
     assert.equal(
       structuredContentVerifySummary({
@@ -10419,13 +9519,12 @@ Continue.`;
         hasProject: true,
         hasGetConcept: true,
         hasFindBacklinks: true,
-        hasDirectGraphReads: true,
         hasLimitedQueryConcepts: true,
         hasCompileIndexes: true,
         hasAllPaths: true,
         destructiveDryRunCount: 3,
       }),
-      'direct 16/16, write 5/5 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 3/3), maintenance 2/2, graph 13/13',
+      'direct 13/13, write 5/5 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 3/3), maintenance 2/2, graph 13/13',
     );
     assert.equal(
       structuredContentVerifySummary({
@@ -10433,14 +9532,13 @@ Continue.`;
         hasProject: true,
         hasGetConcept: true,
         hasFindBacklinks: true,
-        hasDirectGraphReads: true,
         hasLimitedQueryConcepts: true,
         hasCompileIndexes: true,
         hasAllPaths: true,
         hasMaintenanceResume: true,
         destructiveDryRunCount: 3,
       }),
-      'direct 16/16, write 5/5 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 3/3), maintenance 3/3, graph 13/13',
+      'direct 13/13, write 5/5 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 3/3), maintenance 3/3, graph 13/13',
     );
   });
 
@@ -10616,7 +9714,7 @@ Continue.`;
         'Write guardrails:',
         'Result contracts:',
         'For all_paths, report totalPathsExact.',
-        'Run relation_check before add_relation.',
+        'Run relation_check before add_relations.',
       ].join('\n'),
       health: {
         checks: [{ id: 'compile_issues', status: 'pass', count: 0, message: 'ok' }],
@@ -10770,7 +9868,7 @@ Continue.`;
       writeGuardrails: [
         {
           id: 'preflight_relation',
-          goal: 'Before add_relation.',
+          goal: 'Before add_relations.',
           calls: [
             { tool: 'query_ontology', arguments: { operation: 'relation_check', from: 'capability:mcp-server', to: 'domain:ai-agent-partner', type: 'depends_on' } },
             { tool: 'query_ontology', arguments: { operation: 'path', from: 'capability:mcp-server', to: 'domain:ai-agent-partner' } },
@@ -10798,7 +9896,7 @@ Continue.`;
       ],
       writePolicy: [
         'Run read tools first.',
-        'Run relation_check before add_relation.',
+        'Run relation_check before add_relations.',
         'For all_paths, report limit/searchBudget/expandedStates/exhaustive/truncatedByBudget/totalPathsExact plus evidence.status/evidence.reason/evidence.pathsComplete and treat non-exhaustive totals as partial evidence.',
       ],
       resultContracts: [
@@ -11106,7 +10204,7 @@ Continue.`;
     );
     assert.equal(
       agentBriefFailure({ ...payload, writePolicy: ['Run read tools first.'] }),
-      'agent_brief writePolicy missing relation_check add_relation guidance',
+      'agent_brief writePolicy missing relation_check add_relations guidance',
     );
     assert.equal(
       agentBriefFailure({ ...payload, resultContracts: [] }),
@@ -11628,7 +10726,7 @@ Continue.`;
               severity: 'warn',
               count: 2,
               sample: [
-                { tool: 'add_relation', args: { from: 'capabilities/auth', to: 'domains/auth', type: 'domain' } },
+                { tool: 'add_relations', args: { relations: [{ from: 'capabilities/auth', to: 'domains/auth', type: 'domain' }] } },
               ],
             },
           ],
@@ -11731,7 +10829,7 @@ Continue.`;
               kind: 'materialize_external_elements',
               severity: 'info',
               count: 1,
-              sample: [{ tool: 'add_concept', args: { slug: 'src/auth.ts', kind: 'capability' } }],
+              sample: [{ tool: 'add_concepts', args: { concepts: [{ slug: 'src/auth.ts', kind: 'capability' }] } }],
             },
           ],
         },

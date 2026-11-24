@@ -132,10 +132,10 @@ describe("evaluateDogfoodGate", () => {
       ['tools/list: tools/list title annotation drift: list_concepts (expected "List Concepts", got "List concept rows")'],
     );
     const outputSchemaDrifted = makeDogfoodToolsList();
-    outputSchemaDrifted.tools.find((tool) => tool.name === "list_kinds").outputSchema.properties.total.type = "number";
+    outputSchemaDrifted.tools.find((tool) => tool.name === "list_concepts").outputSchema.properties.census.properties.total.type = "number";
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, toolsList: outputSchemaDrifted }),
-      ["tools/list: list_kinds outputSchema total drift"],
+      ["tools/list: list_concepts outputSchema census total drift"],
     );
     const listOutputSchemaDrifted = makeDogfoodToolsList();
     listOutputSchemaDrifted.tools.find((tool) => tool.name === "list_concepts").outputSchema.properties.nodes.items.properties.mtime.type = "integer";
@@ -149,12 +149,6 @@ describe("evaluateDogfoodGate", () => {
       evaluateDogfoodGate({ ...okShape, toolsList: batchOutputSchemaDrifted }),
       ["tools/list: get_concepts outputSchema row mtime drift"],
     );
-    const getConceptOutputSchemaDrifted = makeDogfoodToolsList();
-    getConceptOutputSchemaDrifted.tools.find((tool) => tool.name === "get_concept").outputSchema.properties.neighbors.properties.relates.type = "object";
-    assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, toolsList: getConceptOutputSchemaDrifted }),
-      ["tools/list: get_concept outputSchema neighbors relates drift"],
-    );
     const evidenceOutputSchemaDrifted = makeDogfoodToolsList();
     evidenceOutputSchemaDrifted.tools.find((tool) => tool.name === "find_evidence").outputSchema.properties.matches.items.properties.matchedIn.enum = ["frontmatter"];
     assert.deepEqual(
@@ -166,18 +160,6 @@ describe("evaluateDogfoodGate", () => {
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, toolsList: backlinksOutputSchemaDrifted }),
       ["tools/list: find_backlinks outputSchema matches drift"],
-    );
-    const neighborsOutputSchemaDrifted = makeDogfoodToolsList();
-    neighborsOutputSchemaDrifted.tools.find((tool) => tool.name === "find_neighbors").outputSchema.properties.edges.items.required = ["direction", "from", "to", "via", "resolved"];
-    assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, toolsList: neighborsOutputSchemaDrifted }),
-      ["tools/list: find_neighbors outputSchema edges drift"],
-    );
-    const pathOutputSchemaDrifted = makeDogfoodToolsList();
-    pathOutputSchemaDrifted.tools.find((tool) => tool.name === "find_path").outputSchema.properties.edges.items.properties.via.type = "number";
-    assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, toolsList: pathOutputSchemaDrifted }),
-      ["tools/list: find_path outputSchema edge via drift"],
     );
     const orphansOutputSchemaDrifted = makeDogfoodToolsList();
     orphansOutputSchemaDrifted.tools.find((tool) => tool.name === "find_orphans").outputSchema.properties.orphans.items.properties.mtime.type = "string";
@@ -315,11 +297,11 @@ describe("evaluateDogfoodGate", () => {
       ["tools/list: rename_concept description missing maintenance next action pointer guidance"],
     );
     const buildWriteFindingsGuidanceDrifted = makeDogfoodToolsList();
-    buildWriteFindingsGuidanceDrifted.tools.find((tool) => tool.name === "add_concept").description =
-      "Create a node and return its slug and mtime.";
+    const patchConceptTool = buildWriteFindingsGuidanceDrifted.tools.find((tool) => tool.name === "patch_concept");
+    patchConceptTool.description = patchConceptTool.description.replaceAll("`findings`", "findings");
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, toolsList: buildWriteFindingsGuidanceDrifted }),
-      ["tools/list: add_concept description missing findings guidance"],
+      ["tools/list: patch_concept description missing findings guidance"],
     );
     const buildWriteMaintenanceLeaked = makeDogfoodToolsList();
     buildWriteMaintenanceLeaked.tools.find((tool) => tool.name === "patch_concept").outputSchema.properties.postWriteMaintenance = { type: "object" };
@@ -328,22 +310,16 @@ describe("evaluateDogfoodGate", () => {
       ["tools/list: patch_concept outputSchema still carries postWriteMaintenance"],
     );
     const addConceptOutputSchemaDrifted = makeDogfoodToolsList();
-    addConceptOutputSchemaDrifted.tools.find((tool) => tool.name === "add_concept").outputSchema.properties.warnings.items.type = "number";
+    addConceptOutputSchemaDrifted.tools.find((tool) => tool.name === "add_concepts").outputSchema.properties.concepts.items.properties.warnings.items.type = "number";
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, toolsList: addConceptOutputSchemaDrifted }),
-      ["tools/list: add_concept outputSchema warnings drift"],
-    );
-    const addConceptOpenSchemaDrifted = makeDogfoodToolsList();
-    delete addConceptOpenSchemaDrifted.tools.find((tool) => tool.name === "add_concept").outputSchema.additionalProperties;
-    assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, toolsList: addConceptOpenSchemaDrifted }),
-      ["tools/list: add_concept outputSchema root openness drift"],
+      ["tools/list: add_concepts outputSchema row warnings drift"],
     );
     const addRelationOutputSchemaDrifted = makeDogfoodToolsList();
-    addRelationOutputSchemaDrifted.tools.find((tool) => tool.name === "add_relation").outputSchema.properties.alreadyExists.type = "string";
+    addRelationOutputSchemaDrifted.tools.find((tool) => tool.name === "add_relations").outputSchema.properties.relations.items.properties.alreadyExists.type = "string";
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, toolsList: addRelationOutputSchemaDrifted }),
-      ["tools/list: add_relation outputSchema alreadyExists drift"],
+      ["tools/list: add_relations outputSchema row alreadyExists drift"],
     );
     const patchConceptOutputSchemaDrifted = makeDogfoodToolsList();
     patchConceptOutputSchemaDrifted.tools.find((tool) => tool.name === "patch_concept").outputSchema.required = ["ok", "slug", "filePath", "changed"];
@@ -385,7 +361,7 @@ describe("evaluateDogfoodGate", () => {
     );
     const postWriteProposedActionToolEnumDrifted = makeDogfoodToolsList();
     postWriteProposedActionToolEnumDrifted.tools.find((tool) => tool.name === "delete_concept").outputSchema.properties.postWriteMaintenance.properties.actions.items.properties.proposedAction.properties.tool.enum =
-      ["add_concept", "add_relation"];
+      ["add_concepts", "add_relations"];
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, toolsList: postWriteProposedActionToolEnumDrifted }),
       ["tools/list: delete_concept outputSchema postWriteMaintenance actions drift"],
@@ -452,8 +428,8 @@ describe("evaluateDogfoodGate", () => {
       ["tools/list: validate_vault outputSchema byCode key drift"],
     );
     assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, kindsStructured: { total: 1, byKind: { project: 2 } } }),
-      ["list_kinds structuredContent mismatch — $.byKind.project: parsed 1, structuredContent 2"],
+      evaluateDogfoodGate({ ...okShape, censusStructured: { total: 1, byKind: { project: 2 } } }),
+      ["list_concepts_census structuredContent mismatch — $.byKind.project: parsed 1, structuredContent 2"],
     );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, projectProbeStructured: undefined }),
@@ -480,10 +456,10 @@ describe("evaluateDogfoodGate", () => {
       ["tools/list: tools/list destructiveHint annotation drift: delete_concept (expected true, got false)"],
     );
     const idempotentDrifted = makeDogfoodToolsList();
-    idempotentDrifted.tools.find((tool) => tool.name === "add_relation").annotations.idempotentHint = false;
+    idempotentDrifted.tools.find((tool) => tool.name === "add_relations").annotations.idempotentHint = false;
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, toolsList: idempotentDrifted }),
-      ["tools/list: tools/list idempotentHint annotation drift: add_relation (expected true, got false)"],
+      ["tools/list: tools/list idempotentHint annotation drift: add_relations (expected true, got false)"],
     );
     const drifted = makeDogfoodToolsList();
     drifted.tools.find((tool) => tool.name === "query_ontology").inputSchema.properties.afterActionId.description =
@@ -618,11 +594,11 @@ describe("evaluateDogfoodGate", () => {
         strictUnknownTool: {
           result: {
             isError: true,
-            content: [{ text: 'Error: Unknown tool: list_concept. Did you mean "list_concepts"? Allowed tools: add_concept, list_concepts.' }],
+            content: [{ text: 'Error: Unknown tool: list_concept. Did you mean "list_concepts"? Allowed tools: add_concepts, list_concepts.' }],
             structuredContent: {
               ok: false,
               errorCode: "unknown_argument",
-              error: 'Unknown tool: list_concept. Did you mean "list_concepts"? Allowed tools: add_concept, list_concepts.',
+              error: 'Unknown tool: list_concept. Did you mean "list_concepts"? Allowed tools: add_concepts, list_concepts.',
             },
           },
         },
@@ -635,11 +611,11 @@ describe("evaluateDogfoodGate", () => {
         strictUnknownTool: {
           result: {
             isError: true,
-            content: [{ text: 'Error: Unknown tool: list_concept. Did you mean "list_concepts"? Allowed tools: add_concept, list_concepts.' }],
+            content: [{ text: 'Error: Unknown tool: list_concept. Did you mean "list_concepts"? Allowed tools: add_concepts, list_concepts.' }],
             structuredContent: {
               ok: false,
               errorCode: "unknown_tool",
-              error: 'Unknown tool: list_concept. Did you mean "list_concepts"? Allowed tools: add_concept, list_concepts.',
+              error: 'Unknown tool: list_concept. Did you mean "list_concepts"? Allowed tools: add_concepts, list_concepts.',
             },
           },
         },
@@ -727,41 +703,6 @@ describe("evaluateDogfoodGate", () => {
         },
       }),
       ["strict_relation_filter: strict relation filter response did not suggest the closest dependencyTypes value"],
-    );
-  });
-
-  it("fails malformed strict find_neighbors types dogfood responses", () => {
-    assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, strictFindNeighborsTypeFilter: { result: { isError: false, content: [{ text: "ok" }] } } }),
-      ["strict_find_neighbors_type_filter: strict find_neighbors types response was not rejected"],
-    );
-    assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, strictFindNeighborsTypeFilter: { result: { isError: true, content: [{ text: "different error" }] } } }),
-      ["strict_find_neighbors_type_filter: strict find_neighbors types response did not report the invalid types filter"],
-    );
-    assert.deepEqual(
-      evaluateDogfoodGate({
-        ...okShape,
-        strictFindNeighborsTypeFilter: {
-          result: {
-            isError: true,
-            content: [{ text: 'types items must be one of: domains, domain, capabilities, elements, dependencies.' }],
-          },
-        },
-      }),
-      ["strict_find_neighbors_type_filter: strict find_neighbors types response did not report the invalid types value"],
-    );
-    assert.deepEqual(
-      evaluateDogfoodGate({
-        ...okShape,
-        strictFindNeighborsTypeFilter: {
-          result: {
-            isError: true,
-            content: [{ text: 'types items must be one of: domains, domain, capabilities, elements, dependencies. Received: "depend_on".' }],
-          },
-        },
-      }),
-      ["strict_find_neighbors_type_filter: strict find_neighbors types response did not suggest the closest types value"],
     );
   });
 
@@ -931,95 +872,6 @@ describe("evaluateDogfoodGate", () => {
         },
       }),
       ["strict_relation_check: strict relation_check structured error missing allowed values"],
-    );
-  });
-
-  it("fails malformed strict add_relation dogfood responses", () => {
-    assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, strictAddRelation: { result: { isError: false, content: [{ text: "ok" }] } } }),
-      ["strict_add_relation: strict add_relation response was not rejected"],
-    );
-    assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, strictAddRelation: { result: { isError: true, content: [{ text: "different error" }] } } }),
-      ["strict_add_relation: strict add_relation response did not report the invalid type filter"],
-    );
-    assert.deepEqual(
-      evaluateDogfoodGate({
-        ...okShape,
-        strictAddRelation: {
-          result: {
-            isError: true,
-            content: [{ text: 'type must be one of: depends_on, relates, contains, describes.' }],
-          },
-        },
-      }),
-      ["strict_add_relation: strict add_relation response did not report the invalid type value"],
-    );
-    assert.deepEqual(
-      evaluateDogfoodGate({
-        ...okShape,
-        strictAddRelation: {
-          result: {
-            isError: true,
-            content: [{ text: 'type must be one of: depends_on, relates, contains, describes. Received: "depend_on".' }],
-          },
-        },
-      }),
-      ["strict_add_relation: strict add_relation response did not suggest the closest type value"],
-    );
-    assert.deepEqual(
-      evaluateDogfoodGate({
-        ...okShape,
-        strictAddRelation: {
-          result: {
-            ...okShape.strictAddRelation.result,
-            changed: false,
-          },
-        },
-      }),
-      ["strict_add_relation: strict add_relation response included write metadata"],
-    );
-    assert.deepEqual(
-      evaluateDogfoodGate({
-        ...okShape,
-        strictAddRelation: {
-          result: {
-            ...okShape.strictAddRelation.result,
-            alreadyExists: false,
-          },
-        },
-      }),
-      ["strict_add_relation: strict add_relation response included write metadata"],
-    );
-    assert.deepEqual(
-      evaluateDogfoodGate({
-        ...okShape,
-        strictAddRelation: {
-          result: {
-            ...okShape.strictAddRelation.result,
-            structuredContent: {
-              ...okShape.strictAddRelation.result.structuredContent,
-              findings: [],
-            },
-          },
-        },
-      }),
-      ["strict_add_relation: strict add_relation structuredContent included write metadata"],
-    );
-    assert.deepEqual(
-      evaluateDogfoodGate({
-        ...okShape,
-        strictAddRelation: {
-          result: {
-            ...okShape.strictAddRelation.result,
-            structuredContent: {
-              ...okShape.strictAddRelation.result.structuredContent,
-              alreadyExists: false,
-            },
-          },
-        },
-      }),
-      ["strict_add_relation: strict add_relation structuredContent included write metadata"],
     );
   });
 
@@ -1239,12 +1091,12 @@ describe("evaluateDogfoodGate", () => {
     );
   });
 
-  it("fails on malformed list_kinds payloads", () => {
+  it("fails on a malformed list_concepts census", () => {
     const failures = evaluateDogfoodGate({
       ...okShape,
-      kinds: { total: 2, byKind: { project: 1 } },
+      census: { total: 2, byKind: { project: 1 } },
     });
-    assert.deepEqual(failures, ["list_kinds response total mismatch: total 2, byKind 1"]);
+    assert.deepEqual(failures, ["list_concepts census total mismatch: total 2, byKind 1"]);
   });
 
   it("fails on malformed list_concepts payloads", () => {
@@ -1309,7 +1161,7 @@ describe("evaluateDogfoodGate", () => {
           nodes: [{ uid: "11111111-1111-4111-8111-111111111111", slug: "project", kind: "project", title: "Project", mtime: 1 }],
         },
       }),
-      ["project_probe count mismatch — list_kinds project 1, probe 2"],
+      ["project_probe count mismatch — census project 1, probe 2"],
     );
   });
 
@@ -1370,62 +1222,6 @@ describe("evaluateDogfoodGate", () => {
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, evStructured: { matches: [{ slug: "other" }] } }),
       ['find_evidence structuredContent mismatch — $.matches[0]: parsed undefined, structuredContent {"slug":"other"}'],
-    );
-  });
-
-  it("fails on malformed find_path payloads", () => {
-    assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, path: { hopCount: 1, hops: ["a", "b"] } }),
-      ["find_path response missing found flag"],
-    );
-    assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, path: { found: true, hops: ["a", "b"] } }),
-      ["find_path response missing hopCount"],
-    );
-    assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, path: { found: true, hopCount: 1 } }),
-      ["find_path response missing hops array"],
-    );
-    assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, path: { found: true, hopCount: 2, hops: ["a", "b"] } }),
-      ["find_path response hop mismatch — hopCount 2, hops 2"],
-    );
-    assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, path: { found: true, hopCount: 1, hops: ["a", "  "], edges: [{ from: "a", to: "  ", via: "relates" }] } }),
-      ["find_path response contains empty hop"],
-    );
-    assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, path: { found: true, hopCount: 1, hops: ["a", "b"] } }),
-      ["find_path response missing edges array"],
-    );
-    assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, path: { found: true, hopCount: 1, hops: ["a", "b"], edges: [] } }),
-      ["find_path response edge mismatch — hopCount 1, edges 0"],
-    );
-    assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, path: { found: true, hopCount: 1, hops: ["a", "b"], edges: [{}] } }),
-      ["find_path response edge/hop mismatch at index 0"],
-    );
-    assert.deepEqual(
-      evaluateDogfoodGate({
-        ...okShape,
-        path: { found: true, hopCount: 1, hops: ["a", "b"], edges: [{ from: "a", to: "b" }] },
-      }),
-      ["find_path response missing edge via at index 0"],
-    );
-    assert.deepEqual(
-      evaluateDogfoodGate({
-        ...okShape,
-        path: { found: true, hopCount: 1, hops: ["a", "b"], edges: [{ from: "a", to: "b", via: "  " }] },
-      }),
-      ["find_path response missing edge via at index 0"],
-    );
-    assert.deepEqual(
-      evaluateDogfoodGate({
-        ...okShape,
-        pathStructured: { found: true, hopCount: 1, hops: ["a", "c"], edges: [{ from: "a", to: "c", via: "relates" }] },
-      }),
-      ['find_path structuredContent mismatch — $.hops[1]: parsed "b", structuredContent "c"'],
     );
   });
 
@@ -1708,7 +1504,7 @@ describe("evaluateDogfoodGate", () => {
               kind: "add_missing_relations",
               severity: "info",
               count: 1,
-              sample: [{ tool: "add_concept", args: { from: "domains/a", to: "capabilities/b", type: "capabilities" } }],
+              sample: [{ tool: "add_concepts", args: { relations: [{ from: "domains/a", to: "capabilities/b", type: "capabilities" }] } }],
             },
           ],
           growth: { ...okShape.brief.growth, relationRecommendations: 1, totalActions: 1 },
@@ -1728,7 +1524,7 @@ describe("evaluateDogfoodGate", () => {
               kind: "materialize_external_elements",
               severity: "info",
               count: 1,
-              sample: [{ tool: "add_concept", args: { slug: "elements/file", kind: "capability" } }],
+              sample: [{ tool: "add_concepts", args: { concepts: [{ slug: "elements/file", kind: "capability" }] } }],
             },
           ],
           growth: { ...okShape.brief.growth, externalElementRefs: 1, totalActions: 1 },
@@ -2757,7 +2553,7 @@ describe("evaluateDogfoodGate", () => {
               ...okShape.maintenancePlan.actions[0],
               proposedAction: {
                 ...okShape.maintenancePlan.actions[0].proposedAction,
-                args: { ...okShape.maintenancePlan.actions[0].proposedAction.args, to: "capabilities/other" },
+                args: { relations: [{ ...okShape.maintenancePlan.actions[0].proposedAction.args.relations[0], to: "capabilities/other" }] },
               },
             },
             okShape.maintenancePlan.actions[1],
@@ -2882,7 +2678,7 @@ describe("evaluateDogfoodGate", () => {
                 ...okShape.growthPlan.externalElementRefs.rows[0],
                 proposedAction: {
                   ...okShape.growthPlan.externalElementRefs.rows[0].proposedAction,
-                  args: { ...okShape.growthPlan.externalElementRefs.rows[0].proposedAction.args, slug: "elements/other" },
+                  args: { concepts: [{ ...okShape.growthPlan.externalElementRefs.rows[0].proposedAction.args.concepts[0], slug: "elements/other" }] },
                 },
               },
             ],
@@ -2891,7 +2687,7 @@ describe("evaluateDogfoodGate", () => {
       }),
       [
         "growth_plan.externalElementRefs proposedAction slug mismatch: materialize_external_element",
-        'growth_plan structuredContent mismatch — $.externalElementRefs.rows[0].proposedAction.args.slug: parsed "elements/other", structuredContent "elements/mcp-src-index"',
+        'growth_plan structuredContent mismatch — $.externalElementRefs.rows[0].proposedAction.args.concepts[0].slug: parsed "elements/other", structuredContent "elements/mcp-src-index"',
       ],
     );
     assert.deepEqual(
@@ -2907,7 +2703,7 @@ describe("evaluateDogfoodGate", () => {
       }),
       [
         "growth_plan.danglingReferences proposedAction missing tool: resolve_dangling_reference",
-        'growth_plan structuredContent mismatch — $.danglingReferences.rows[0].proposedAction.tool: parsed "", structuredContent "add_concept"',
+        'growth_plan structuredContent mismatch — $.danglingReferences.rows[0].proposedAction.tool: parsed "", structuredContent "add_concepts"',
       ],
     );
     assert.deepEqual(
@@ -2922,7 +2718,7 @@ describe("evaluateDogfoodGate", () => {
                 ...okShape.growthPlan.danglingReferences.rows[0],
                 proposedAction: {
                   ...okShape.growthPlan.danglingReferences.rows[0].proposedAction,
-                  args: { ...okShape.growthPlan.danglingReferences.rows[0].proposedAction.args, kind: "element" },
+                  args: { concepts: [{ ...okShape.growthPlan.danglingReferences.rows[0].proposedAction.args.concepts[0], kind: "element" }] },
                 },
               },
             ],
@@ -2931,7 +2727,7 @@ describe("evaluateDogfoodGate", () => {
       }),
       [
         "growth_plan.danglingReferences proposedAction kind mismatch: resolve_dangling_reference",
-        'growth_plan structuredContent mismatch — $.danglingReferences.rows[0].proposedAction.args.kind: parsed "element", structuredContent "capability"',
+        'growth_plan structuredContent mismatch — $.danglingReferences.rows[0].proposedAction.args.concepts[0].kind: parsed "element", structuredContent "capability"',
       ],
     );
     assert.deepEqual(
@@ -2994,7 +2790,7 @@ describe("evaluateDogfoodGate", () => {
               ...okShape.relationRecommendations.recommendations[0],
               proposedAction: {
                 ...okShape.relationRecommendations.recommendations[0].proposedAction,
-                args: { ...okShape.relationRecommendations.recommendations[0].proposedAction.args, to: "capabilities/other" },
+                args: { relations: [{ ...okShape.relationRecommendations.recommendations[0].proposedAction.args.relations[0], to: "capabilities/other" }] },
               },
             },
           ],
@@ -3837,8 +3633,8 @@ describe("evaluateDogfoodGate", () => {
 
   it("fails on malformed path operation payloads", () => {
     assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, queryPath: { ...okShape.queryPath, operation: "find_path" } }),
-      ["path operation response mismatch — find_path"],
+      evaluateDogfoodGate({ ...okShape, queryPath: { ...okShape.queryPath, operation: "neighbors" } }),
+      ["path operation response mismatch — neighbors"],
     );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, queryPath: { ...okShape.queryPath, from: "capabilities/other" } }),
@@ -3910,7 +3706,7 @@ describe("evaluateDogfoodGate", () => {
       }),
       [
         "list_concepts structuredContent mismatch — $.total: parsed 2, structuredContent 1",
-        "dogfood count mismatch — list_kinds.total 1, list_concepts.total 2",
+        "dogfood count mismatch — census.total 1, list_concepts.total 2",
       ],
     );
     assert.deepEqual(evaluateDogfoodGate({ ...okShape, validation: { ...okShape.validation, scanned: 2 } }), [
@@ -3920,8 +3716,8 @@ describe("evaluateDogfoodGate", () => {
       evaluateDogfoodGate({ ...okShape, compiled: { ...okShape.compiled, nodeCount: 2, byKind: { project: 2 } } }),
       [
         "compile_ontology structuredContent mismatch — $.nodeCount: parsed 2, structuredContent 1",
-        "dogfood count mismatch — list_kinds.total 1, compile_ontology.nodeCount 2",
-        "dogfood byKind mismatch — project: list_kinds 1, compile_ontology 2",
+        "dogfood count mismatch — census.total 1, compile_ontology.nodeCount 2",
+        "dogfood byKind mismatch — project: census 1, compile_ontology 2",
       ],
     );
     assert.deepEqual(
@@ -3930,39 +3726,39 @@ describe("evaluateDogfoodGate", () => {
         overview: { ...okShape.overview, graph: { ...okShape.overview.graph, nodes: 2 }, byKind: { project: 2 } },
       }),
       [
-        "dogfood count mismatch — list_kinds.total 1, overview.graph.nodes 2",
-        "dogfood byKind mismatch — project: list_kinds 1, overview 2",
+        "dogfood count mismatch — census.total 1, overview.graph.nodes 2",
+        "dogfood byKind mismatch — project: census 1, overview 2",
         "overview structuredContent mismatch — $.graph.nodes: parsed 2, structuredContent 1",
       ],
     );
   });
 
-  it("fails when list_kinds and graph summaries disagree by kind", () => {
+  it("fails when the census and graph summaries disagree by kind", () => {
     assert.deepEqual(
       evaluateDogfoodGate({
         ...okShape,
-        kinds: { total: 1, byKind: { capability: 1 } },
+        census: { total: 1, byKind: { capability: 1 } },
         compiled: { ...okShape.compiled, byKind: { project: 1 } },
       }),
       [
-        "list_kinds structuredContent mismatch — $.byKind.capability: parsed 1, structuredContent undefined",
-        "dogfood byKind mismatch — capability: list_kinds 1, compile_ontology 0",
-        "dogfood byKind mismatch — project: list_kinds 0, compile_ontology 1",
-        "dogfood byKind mismatch — capability: list_kinds 1, overview 0",
-        "dogfood byKind mismatch — project: list_kinds 0, overview 1",
+        "list_concepts_census structuredContent mismatch — $.byKind.capability: parsed 1, structuredContent undefined",
+        "dogfood byKind mismatch — capability: census 1, compile_ontology 0",
+        "dogfood byKind mismatch — project: census 0, compile_ontology 1",
+        "dogfood byKind mismatch — capability: census 1, overview 0",
+        "dogfood byKind mismatch — project: census 0, overview 1",
       ],
     );
     assert.deepEqual(
       evaluateDogfoodGate({
         ...okShape,
-        kinds: { total: 1, byKind: { capability: 1 } },
+        census: { total: 1, byKind: { capability: 1 } },
         compiled: { ...okShape.compiled, byKind: { capability: 1 } },
       }),
       [
-        "list_kinds structuredContent mismatch — $.byKind.capability: parsed 1, structuredContent undefined",
+        "list_concepts_census structuredContent mismatch — $.byKind.capability: parsed 1, structuredContent undefined",
         "compile_ontology structuredContent mismatch — $.byKind.capability: parsed 1, structuredContent undefined",
-        "dogfood byKind mismatch — capability: list_kinds 1, overview 0",
-        "dogfood byKind mismatch — project: list_kinds 0, overview 1",
+        "dogfood byKind mismatch — capability: census 1, overview 0",
+        "dogfood byKind mismatch — project: census 0, overview 1",
       ],
     );
   });
@@ -4138,17 +3934,6 @@ describe("evaluateDogfoodGate", () => {
       }),
       ["validate_vault response unknown byCode key: new-code"],
     );
-  });
-
-  it("fails on missing graph path", () => {
-    const failures = evaluateDogfoodGate({
-      ...okShape,
-      path: { found: false, reason: "not connected" },
-    });
-    assert.deepEqual(failures, [
-      "find_path structuredContent mismatch — $.found: parsed false, structuredContent true",
-      "find_path: expected capabilities/mcp-server → domains/vault-local-first path",
-    ]);
   });
 
   it("fails on unhealthy first-contact diagnosis", () => {

@@ -81,8 +81,8 @@ Codex 只有在你信任某个项目文件夹之后，才会读取该项目的 `
 
 服务器自己的工具列表才是准确的清单。这些工具大致分为几组：
 
-- **工作前读取：** `get_concept` 返回一个概念及其相邻概念，`find_backlinks` 显示哪些概念指向某个概念，`find_path` 显示两个概念如何相连，`query_ontology` 回答诸如工作区概览或一次改动的影响范围之类的问题。
-- **读取代码：** `analyze_repo_structure`、`index_project` 和 `infer_imports` 会扫描仓库，但不写入任何内容。
+- **工作前读取：** `get_concepts` 返回概念及其相邻概念，`find_backlinks` 显示哪些概念指向某个概念，`query_ontology` 显示两个概念如何相连（`path`），并回答诸如工作区概览或一次改动的影响范围之类的问题。
+- **读取代码：** `analyze_repo_structure` 和 `infer_imports` 会扫描仓库，但不写入任何内容。
 - **写入：** `add_concepts`、`add_relations`、`patch_concept`、`rename_concept`、`merge_concepts`、`delete_concept` 等。重命名、合并、删除以及移除关系时，会先预览改动，只有在带确认参数再次调用时才真正写入。
 - **检查：** `validate_vault` 和 `compile_ontology` 报告失效的引用和缺失的部分。
 

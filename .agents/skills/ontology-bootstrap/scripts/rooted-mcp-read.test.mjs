@@ -32,7 +32,7 @@ function inputFor({ serverPath = SCRIPT, vaultRoot, repoRoot, requests } = {}) {
     serverPath,
     vaultRoot,
     repoRoot,
-    requests: requests ?? [{ id: 'read-1', name: 'list_kinds', args: {} }],
+    requests: requests ?? [{ id: 'read-1', name: 'list_concepts', args: { limit: 1 } }],
   };
 }
 
@@ -53,7 +53,7 @@ for await (const line of lines) {
   const name = message.params?.name;
   const structuredContent = name === 'connection_info'
     ? { vaultRoot: process.env.OATLAS_VAULT, repoRoot: process.env.OATLAS_REPO_ROOT }
-    : { total: 0, byKind: {}, referencedOnlyTotal: 0, conceptsIncludingReferenced: 0 };
+    : { total: 0, census: { total: 0, byKind: {}, referencedOnlyTotal: 0 }, nodes: [] };
   process.stdout.write(JSON.stringify({ jsonrpc: '2.0', id: message.id, result: {
     content: [{ type: 'text', text: JSON.stringify(structuredContent) }], structuredContent,
   } }) + '\\n');
@@ -117,8 +117,7 @@ describe('rooted MCP read runner', () => {
     ]);
     assert.deepEqual(ROOTED_READ_SCHEMA.inputJsonSchema.properties.requests.items.properties.name.enum, READ_ONLY_TOOLS);
     assert.deepEqual(Object.keys(ROOTED_READ_SCHEMA.requestExamples), [
-      'list_kinds',
-      'index_project',
+      'list_concepts',
       'infer_imports',
       'analyze_repo_structure',
     ]);
@@ -140,7 +139,7 @@ describe('rooted MCP read runner', () => {
       repoRoot,
       requests: ROOTED_READ_SCHEMA.example.requests.map((request) => ({
         ...request,
-        args: request.name === 'index_project' ? { ...request.args, rootPath: repoRoot } : request.args,
+        args: request.name === 'infer_imports' ? { ...request.args, rootPath: repoRoot } : request.args,
       })),
     };
     assert.deepEqual(schemaErrors(ROOTED_READ_SCHEMA.inputJsonSchema, validInput), []);
@@ -215,11 +214,11 @@ describe('rooted MCP read runner', () => {
     assert.throws(() => validateRootedReadInput({ ...inputFor({ vaultRoot, repoRoot }), repoRoot: '.' }), /absolute/);
     assert.throws(() => validateRootedReadInput(inputFor({ vaultRoot, repoRoot, requests: [] })), /at least one/);
     assert.throws(() => validateRootedReadInput(inputFor({ vaultRoot, repoRoot, requests: [
-      { id: 'same', name: 'list_kinds', args: {} },
+      { id: 'same', name: 'list_concepts', args: { limit: 1 } },
       { id: 'same', name: 'list_concepts', args: {} },
     ] })), /unique/);
     assert.throws(() => validateRootedReadInput(inputFor({ vaultRoot, repoRoot, requests: [
-      { id: 'read-1', name: 'list_kinds', args: {}, extra: true },
+      { id: 'read-1', name: 'list_concepts', args: {}, extra: true },
     ] })), /unknown fields/);
     assert.throws(() => validateRootedReadInput(inputFor({ vaultRoot, repoRoot, requests: [
       { id: 'write-1', name: 'patch_concept', args: { slug: 'x' } },
@@ -234,8 +233,8 @@ describe('rooted MCP read runner', () => {
         vaultRoot,
         repoRoot,
         requests: [
-          { id: 'read-1', name: 'list_kinds', args: {} },
-          { id: 'read-2', name: 'index_project', args: { rootPath: repoRoot, maxFiles: 5 } },
+          { id: 'read-1', name: 'list_concepts', args: { limit: 1 } },
+          { id: 'read-2', name: 'infer_imports', args: { rootPath: repoRoot, maxFiles: 5 } },
         ],
       }),
       callTool: async ({ name, args }) => {
@@ -244,12 +243,12 @@ describe('rooted MCP read runner', () => {
         return { ok: true, name };
       },
     });
-    assert.deepEqual(calls.map(({ name }) => name), ['connection_info', 'list_kinds', 'index_project']);
+    assert.deepEqual(calls.map(({ name }) => name), ['connection_info', 'list_concepts', 'infer_imports']);
     assert.equal(result.rootCheck.ok, true);
     assert.deepEqual(result.calls.map(({ id, name }) => [id, name]), [
       ['connection', 'connection_info'],
-      ['read-1', 'list_kinds'],
-      ['read-2', 'index_project'],
+      ['read-1', 'list_concepts'],
+      ['read-2', 'infer_imports'],
     ]);
   });
 
@@ -282,8 +281,8 @@ describe('rooted MCP read runner', () => {
     const output = JSON.parse(await readFile(outputPath, 'utf8'));
     assert.equal((await stat(outputPath)).isFile(), true);
     assert.equal(output.rootCheck.ok, true);
-    assert.deepEqual(output.calls.map(({ name }) => name), ['connection_info', 'list_kinds']);
-    assert.equal(output.calls[1].response.total, 0);
+    assert.deepEqual(output.calls.map(({ name }) => name), ['connection_info', 'list_concepts']);
+    assert.equal(output.calls[1].response.census.total, 0);
   });
 
   test('CLI write-tool rejection is RED before MCP and leaves no output', async () => {

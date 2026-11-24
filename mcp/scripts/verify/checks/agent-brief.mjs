@@ -144,7 +144,7 @@ export function agentBriefFailure(parsed) {
     !/Result contracts/.test(parsed.handoffPrompt) ||
     !/totalPathsExact/.test(parsed.handoffPrompt) ||
     !/relation_check/.test(parsed.handoffPrompt) ||
-    !/add_relation/.test(parsed.handoffPrompt)
+    !/add_relations/.test(parsed.handoffPrompt)
   ) {
     return 'agent_brief response missing copyable handoffPrompt';
   }
@@ -265,8 +265,8 @@ export function agentBriefFailure(parsed) {
   if (!Array.isArray(parsed.writePolicy) || parsed.writePolicy.some((row) => typeof row !== 'string' || row.trim() === '')) {
     return 'agent_brief response missing writePolicy guidance';
   }
-  if (!parsed.writePolicy.some((row) => /relation_check/.test(row) && /add_relation/.test(row))) {
-    return 'agent_brief writePolicy missing relation_check add_relation guidance';
+  if (!parsed.writePolicy.some((row) => /relation_check/.test(row) && /add_relations/.test(row))) {
+    return 'agent_brief writePolicy missing relation_check add_relations guidance';
   }
   const resultContractsFailure = agentResultContractsFailure(parsed.resultContracts);
   if (resultContractsFailure) return resultContractsFailure;

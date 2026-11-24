@@ -32,8 +32,10 @@ function summarizeWrite(name, args, result) {
     case 'replace_relation':
       return result?.dryRun ? null : { target: args.from, summary: `replace ${args.from} --${args.oldType}--> ${args.oldTo} with --${args.newType}--> ${args.newTo}`, why: args.why ?? null };
     case 'add_concepts': {
-      const okRows = (result?.concepts ?? []).filter((row) => row?.ok).length;
-      return okRows > 0 ? { target: '(batch)', summary: `add_concepts ${okRows} rows written` } : null;
+      const okRows = (result?.concepts ?? []).filter((row) => row?.ok);
+      if (okRows.length === 0) return null;
+      const only = okRows.length === 1 ? okRows[0].slug : null;
+      return { target: only ?? '(batch)', summary: `add_concepts ${okRows.length} rows written` };
     }
     case 'add_relations': {
       const rows = result?.relations ?? [];

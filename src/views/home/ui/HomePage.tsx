@@ -63,7 +63,6 @@ import { refreshIndexDependentTokens } from "@/widgets/ontology-map";
 import { type IndexPanelState } from "@/widgets/topology-index-panel";
 import { buildNavRailContextHrefs } from "../lib/selection/nav-rail-context-hrefs";
 import { useFootprintTrail } from "../model/trail/use-footprint-trail";
-import { usePastTrails } from "../model/trail/use-past-trails";
 import { TopologyBlockingOverlays } from "./map-overlays/TopologyBlockingOverlays";
 
 
@@ -289,7 +288,6 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
       ),
     ).join(" · ") || null,
   );
-  const [mountNowMs] = useState<number>(() => Date.now());
   const topologyGraphProjection = useTopologyGraphProjection({
     projects: renderProjects,
     localGraphRoot,
@@ -312,41 +310,23 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   });
 
   const {
-    setFootprintTrail,
-    lastVisitedNodeRef,
-    footprintNodeLookup,
     footprintTrailEntries,
     footprintTrailStepCaptions,
     footprintVisitedIds,
     footprintPacketCopied,
     copyFootprintPacket,
+    clearFootprintTrail,
     footprintLensActiveRef,
     footprintBrushNodeIdRef,
     handleFootprintLens,
     handleFootprintBrush,
   } = useFootprintTrail({
+    trailScope: deeplinkSourceReady ? vaultIdentity : null,
     canvasSelectedSlug,
     graphNodes: ontologyMapGraph.nodes,
     insightNodes: ontologyInsight?.nodes,
-    dustySlugs,
     insightEdges: ontologyInsight?.edges,
     relationLabelOf: relationLabelInRegister,
-  });
-  const {
-    pastWalkRows,
-    pastTrailNotice,
-    clearFootprintTrail,
-    handleDeletePastWalk,
-    handleClearPastWalks,
-    replayPastWalk,
-  } = usePastTrails({
-    vaultHandle: vault.status === "loaded" ? vault.handle : null,
-    vaultLoaded: vault.status === "loaded",
-    footprintTrailEntries,
-    footprintNodeLookup,
-    mountNowMs,
-    setFootprintTrail,
-    lastVisitedNodeRef,
   });
   const topologyCanvasFocus = useTopologyCanvasFocus({ topologyVaultReadModel });
   const topologyCreateIntent = useTopologyCreateIntent({
@@ -488,7 +468,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     },
   });
   const topologyNavigationActions = useTopologyNavigationActions({
-    setExpandAllActive, setRouteState, replayPastWalk, topologyCanvasFocus, topologyPreferences,
+    setExpandAllActive, setRouteState, topologyCanvasFocus, topologyPreferences,
     topologyAuthoring, topologyGraphProjection, topologyIndexPresentation, topologySourceReadiness,
     topologyAgentOrchestration, topologyInspectorState
   });
@@ -569,10 +549,6 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
               clearFootprintTrail={clearFootprintTrail}
               handleFootprintLens={handleFootprintLens}
               handleFootprintBrush={handleFootprintBrush}
-              pastWalkRows={pastWalkRows}
-              pastTrailNotice={pastTrailNotice}
-              handleDeletePastWalk={handleDeletePastWalk}
-              handleClearPastWalks={handleClearPastWalks}
               agentDockTouchedRef={agentDockTouchedRef}
               sampleModeSettled={sampleModeSettled}
               sampleModeKnown={sampleModeKnown}

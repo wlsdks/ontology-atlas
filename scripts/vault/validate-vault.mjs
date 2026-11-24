@@ -324,7 +324,7 @@ function pushNonCanonicalGraphArrayIssues(frontmatter, issues) {
       issues.push({
         code: "non-canonical-graph-array",
         severity: "warning",
-        message: `\`${key}:\` is not a sorted, duplicate-free canonical set; re-saving through add_relation or patch_concept normalises it.`,
+        message: `\`${key}:\` is not a sorted, duplicate-free canonical set; re-saving through add_relations or patch_concept normalises it.`,
       });
     }
   }

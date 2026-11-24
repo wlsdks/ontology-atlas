@@ -84,16 +84,18 @@ function diagnosisNextActionSampleFailure(label, action, index) {
       return `${label} response malformed nextAction sample row at index ${index}.${sampleIndex}`;
     }
     if (action.kind === 'add_missing_relations') {
-      const actionFailure = diagnosisProposedActionSampleFailure(label, action, sample, index, sampleIndex, 'add_relation');
+      const actionFailure = diagnosisProposedActionSampleFailure(label, action, sample, index, sampleIndex, 'add_relations');
       if (actionFailure) return actionFailure;
-      if (typeof sample.args.from !== 'string' || typeof sample.args.to !== 'string' || typeof sample.args.type !== 'string') {
+      const row = Array.isArray(sample.args.relations) ? sample.args.relations[0] : null;
+      if (typeof row?.from !== 'string' || typeof row?.to !== 'string' || typeof row?.type !== 'string') {
         return `${label} response malformed add_missing_relations sample args at index ${index}.${sampleIndex}`;
       }
     }
     if (action.kind === 'materialize_external_elements') {
-      const actionFailure = diagnosisProposedActionSampleFailure(label, action, sample, index, sampleIndex, 'add_concept');
+      const actionFailure = diagnosisProposedActionSampleFailure(label, action, sample, index, sampleIndex, 'add_concepts');
       if (actionFailure) return actionFailure;
-      if (typeof sample.args.slug !== 'string' || sample.args.kind !== 'element') {
+      const row = Array.isArray(sample.args.concepts) ? sample.args.concepts[0] : null;
+      if (typeof row?.slug !== 'string' || row?.kind !== 'element') {
         return `${label} response malformed materialize_external_elements sample args at index ${index}.${sampleIndex}`;
       }
     }

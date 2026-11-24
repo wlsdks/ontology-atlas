@@ -210,7 +210,7 @@ test('mandatory proposal warnings block the first review before qualification wo
 /**
  * A refusal is all a blocked caller reads, so it names an action: the bulk
  * writePlan waits for an independent evaluation, but add_concepts and
- * add_relation do not. Naming the open path must not soften the closed one, so
+ * add_relations do not. Naming the open path must not soften the closed one, so
  * the gate is asserted still closed (no writePlan, fabricated evaluator refused).
  */
 test('a stalled lifecycle names the path that stays open without opening the gated one', () => {

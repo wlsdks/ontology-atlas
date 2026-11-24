@@ -119,9 +119,9 @@ without opening every file.
 
 | 작업 전후에 에이전트가 묻는 것 | 도구 |
 |---|---|
-| 이 부분은 무엇을 위한 것이고, 무엇을 맡지 않나? | `get_concept` |
+| 이 부분은 무엇을 위한 것이고, 무엇을 맡지 않나? | `get_concepts` |
 | 이름을 바꾸거나 지우기 전에, 무엇이 이걸 가리키나? | `find_backlinks` |
-| 이 두 개념은 어떻게 이어져 있나? | `find_path` |
+| 이 두 개념은 어떻게 이어져 있나? | `query_ontology`의 `path` |
 | 이 변경이 무엇에 영향을 줄 수 있나? | `query_ontology`의 `impact` |
 | 이 내용은 어디에 적혀 있나? | `find_evidence` |
 | 방금 만들거나 바꾼 것을 기록하기 | `add_concepts`, `add_relations`, `patch_concept` |

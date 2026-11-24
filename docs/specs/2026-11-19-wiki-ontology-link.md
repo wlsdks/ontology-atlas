@@ -300,7 +300,7 @@ Keys go in `messages/<locale>/library.json`. `wiki.undo` is reused. `wiki.proble
    - Without vectors, the brief carries no candidates and names `find_evidence`.
 8. **Linking is not acceptance.**
    - Given a 20-page link turn.
-   - `list_kinds` totals are unchanged, and no page's `status` changes.
+   - The `list_concepts` census totals are unchanged, and no page's `status` changes.
    - No file other than those 20 pages changes.
 
 ## Risks

@@ -378,7 +378,7 @@ While analyzing code, the AI agent commits newly discovered facts to the ontolog
 
 Options:
 
-1. **MCP server** — Claude Code/Codex calls `add_concept` / `add_relation`
+1. **MCP server** — Claude Code/Codex calls `add_concepts` / `add_relations`
    after read-first and duplicate checks
 2. **Contextual topology writing** — a person fills one typed relation socket
    beside the map and reviews the resulting frontmatter write

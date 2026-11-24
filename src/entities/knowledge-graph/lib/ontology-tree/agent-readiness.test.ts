@@ -96,7 +96,7 @@ describe("buildAgentReadinessSummary", () => {
     const prompt = buildAgentReadinessPrompt(summary);
 
     expect(prompt).toContain("Current agent graph readiness: needs-shape (0/100).");
-    expect(prompt).toContain("workspace_brief, health, get_concept");
+    expect(prompt).toContain("workspace_brief, health, get_concepts,");
     expect(prompt).toContain("Resolve unknown/stub nodes");
     expect(prompt).toContain('"tool": "query_ontology"');
     expect(prompt).toContain('"operation": "workspace_brief"');

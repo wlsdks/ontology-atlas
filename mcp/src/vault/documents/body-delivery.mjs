@@ -1,5 +1,5 @@
 /**
- * The first prose paragraph, so get_concept previews a sentence a person wrote
+ * The first prose paragraph, so get_concepts previews a sentence a person wrote
  * rather than table or code syntax; falls back to the raw body when no prose exists.
  */
 export function extractSummaryExcerpt(body, maxLen = 800) {

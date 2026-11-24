@@ -56,11 +56,11 @@ the same shape. The dialog never says "ontology".
   endpoints (click = focus), the declaring `.md` (with its change-date label),
   an optional **why** line (`relation_notes`), and an edit-relation deep link.
 - **Relation rationale (why)** — `relation_notes: {ref: one-line-why}` in
-  frontmatter; MCP `add_relation` takes `why` and writes relation + note in
+  frontmatter; MCP `add_relations` takes a `why` per row and writes relation + note in
   one frontmatter write; `rename_concept` rewrites note keys (collision:
   existing new-key note wins). The read side returns the same sentence as an
-  optional `rationale` on `find_path().edges[]`, `get_concept().outgoingEdges[]`,
-  and `query_ontology` path/impact rows (omitted when none is stored). The
+  optional `rationale` on `get_concepts` rows' `outgoingEdges[]` and on
+  `query_ontology` path/impact rows (omitted when none is stored). The
   validator flags a value that swallowed the next entry
   (`swallowed-relation-note`) and a key naming no declared relation
   (`orphaned-relation-note`).

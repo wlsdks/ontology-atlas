@@ -58,7 +58,7 @@ permission card (below).
 - A map edge whose line lives in the other end's document opens that
   document's relations; **needs a folder** answers only when no folder is open.
 - A relation written by hand uses the key and value shape the MCP writer
-  (`add_relation`, `mcp/src/tools/relation-keys.mjs`) uses for the same
+  (`add_relations`, `mcp/src/tools/relation-keys.mjs`) uses for the same
   relation between the same kinds: `dependencies:` (a `depends_on:` list is
   folded into it), `relates:`, the typed `domains:`/`capabilities:`/
   `elements:` list where the kinds fit and `contains:` otherwise, references

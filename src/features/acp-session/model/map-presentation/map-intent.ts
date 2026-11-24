@@ -13,7 +13,19 @@ export interface AcpMapIntentEvent {
   [key: string]: unknown;
 }
 
-/** Only tools after the last user utterance. If `find_path` succeeds once in the turn, path intent beats `get_concept`, or the completed path would revert to a single last-read node. */
+/** The one slug a single-concept read names: `get_concepts` with one slug, or the retired `get_concept`. A batch read names no single focus. */
+function singleReadSlug(name: string, input: Record<string, unknown>): unknown {
+  if (name === 'get_concept') return input.slug;
+  if (name !== 'get_concepts' || !Array.isArray(input.slugs) || input.slugs.length !== 1) return undefined;
+  return input.slugs[0];
+}
+
+/** A path read: `query_ontology` with `operation: 'path'`, or the retired `find_path`. */
+function isPathRead(name: string, input: Record<string, unknown>): boolean {
+  return name === 'find_path' || (name === 'query_ontology' && input.operation === 'path');
+}
+
+/** Only tools after the last user utterance. If a path read succeeds once in the turn, path intent beats a single-concept read, or the completed path would revert to a single last-read node. */
 export function deriveAcpMapIntent(
   events: readonly AcpMapIntentEvent[],
   knownSlugs: ReadonlySet<string>,
@@ -32,18 +44,16 @@ export function deriveAcpMapIntent(
     const event = events[index];
     if (!event || event.kind !== 'tool') continue;
     const call = parseAtlasToolCall(event.title, event.rawInput);
-    const tool = call?.name === 'get_concept' || call?.name === 'find_path'
-      ? call.name
-      : null;
     const input = call?.input ?? null;
-    if (!tool || !input) continue;
-    if (tool === 'get_concept') {
-      const slug = input.slug;
+    if (!call || !input) continue;
+    const slug = singleReadSlug(call.name, input);
+    if (slug !== undefined) {
       if (typeof slug === 'string' && knownSlugs.has(slug)) {
         focus = { kind: 'focus', slug, toolCallId: event.id };
       }
       continue;
     }
+    if (!isPathRead(call.name, input)) continue;
     const from = input.from;
     const to = input.to;
     if (

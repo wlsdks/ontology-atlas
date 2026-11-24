@@ -99,7 +99,7 @@ test('a reverse edge of the same relation sends the agent back to check directio
   assert.equal(result.verdict, 'matches_existing_schema');
   assert.equal(result.recommendation.decision, 'review_inverse');
   assert.equal(result.recommendation.severity, 'warn');
-  assert.deepEqual(result.proposedAction, { tool: 'add_relation', args: { from: 'a', to: 'b', type: 'write:elements' } });
+  assert.deepEqual(result.proposedAction, { tool: 'add_relations', args: { relations: [{ from: 'a', to: 'b', type: 'write:elements' }] } });
 });
 
 test('a new edge that fits a known schema pattern is safe to add, and one that does not is flagged as a new pattern', () => {
@@ -111,7 +111,7 @@ test('a new edge that fits a known schema pattern is safe to add, and one that d
   assert.equal(unknown.recommendation.decision, 'review_new_schema');
   assert.equal(unknown.recommendation.severity, 'warn');
   assert.match(unknown.recommendation.reason, /would introduce a new schema pattern\.$/);
-  assert.deepEqual(unknown.proposedAction, { tool: 'add_relation', args: { from: 'a', to: 'b', type: 'write:elements' } });
+  assert.deepEqual(unknown.proposedAction, { tool: 'add_relations', args: { relations: [{ from: 'a', to: 'b', type: 'write:elements' }] } });
 });
 
 test('a new dependency is never offered as a ready write: it waits for a stated ability and a person', () => {
@@ -120,7 +120,7 @@ test('a new dependency is never offered as a ready write: it waits for a stated 
   assert.equal(result.approvalGate.status, 'semantic_approval_required');
   assert.equal(result.approvalGate.writeAllowed, false);
   assert.deepEqual(result.approvalGate.required, ['observable_ability', 'semantic_rationale', 'explicit_human_approval', 'why']);
-  assert.match(result.approvalGate.next, /call add_relation with a nonblank why\.$/);
+  assert.match(result.approvalGate.next, /call add_relations with a nonblank why on the row\.$/);
 });
 
 test('an existing dependency needs no approval gate', () => {
