@@ -36,6 +36,8 @@ function atlasWrite(tool: string, overrides: Partial<AcpPermissionRequest> = {})
   });
 }
 
+const CODEX_CORRELATION = { status: 'verified', server: 'atlas-vault', tool: 'add_concept', toolCall: 'structured-mcp', approval: 'structured-mcp' } as const;
+
 /** A vault Atlas made inside the project it maps, so both folders count as opened. */
 const IN_PROJECT: StandingApprovalContext = { ...ON, vaultRoot: '/Users/me/shop/atlas' };
 
@@ -59,17 +61,16 @@ describe('auto-approve answers allow_once only inside its bounded scope', () => 
       'rename_concept', 'reclassify_concept', 'finalize_project_meaning', 'git_snapshot', 'disconnect_project_source']
       .map((tool) => ({ name: `Atlas ${tool}`, request: atlasWrite(tool), target: tool, context: ON })),
     { name: 'a patch that clears a frontmatter field', request: atlasWrite('patch_concept', { rawInput: { slug: 'a', frontmatter: { dependencies: null } } }), target: 'patch_concept', context: ON },
-    { name: 'a patch that empties the body', request: atlasWrite('patch_concept', { rawInput: { slug: 'a', body: '' } }), target: 'patch_concept', context: ON },
+    { name: 'a snapshot dry run', request: atlasWrite('git_snapshot', { rawInput: {} }), target: 'git_snapshot', context: ON },
     { name: 'a binding proposal, which writes nothing', request: atlasWrite('connect_project_source', { rawInput: { projectSlug: 'projects/shop' } }), target: 'connect_project_source', context: IN_PROJECT },
     { name: 'binding the project the vault sits in', request: atlasWrite('connect_project_source', { rawInput: { projectSlug: 'projects/shop', rootPath: '/Users/me/shop', confirm: true } }), target: 'connect_project_source', context: IN_PROJECT },
     { name: 'binding the vault itself as its code', request: atlasWrite('connect_project_source', { rawInput: { projectSlug: 'projects/notes', rootPath: '/Users/me/vault/', confirm: true } }), target: 'connect_project_source', context: ON },
-    { name: 'absorbing an instruction file named relative to the folder', request: atlasWrite('absorb_document', { rawInput: { filePath: 'AGENTS.md', confirm: true } }), target: 'absorb_document', context: IN_PROJECT },
-    { name: 'absorbing an instruction file of the project', request: atlasWrite('absorb_document', { rawInput: { filePath: '/Users/me/shop/CLAUDE.md', confirm: true, allowOutsideRepo: false } }), target: 'absorb_document', context: IN_PROJECT },
+    { name: 'a binding proposal naming the project', request: atlasWrite('connect_project_source', { rawInput: { projectSlug: 'projects/shop', rootPath: '/Users/me/shop' } }), target: 'connect_project_source', context: IN_PROJECT },
     { name: 'an Atlas scan of the project the vault sits in', request: atlasRead('analyze_repo_structure', { rootPath: '/Users/me/shop' }), target: 'analyze_repo_structure', context: IN_PROJECT },
     { name: 'an Atlas scan of a folder in that project', request: atlasRead('infer_imports', { rootPath: '/Users/me/shop/src/' }), target: 'infer_imports', context: IN_PROJECT },
     { name: 'an Atlas scan of the vault', request: atlasRead('inspect_architecture', { rootPath: '/Users/me/shop/atlas' }), target: 'inspect_architecture', context: IN_PROJECT },
     { name: 'an Atlas read named relative to the folder', request: atlasRead('read_source', { path: 'sources/plan.docx' }), target: 'read_source', context: ON },
-    { name: 'a Codex Atlas write reported as execute', request: atlasWrite('add_concept', { toolKind: 'execute' }), target: 'add_concept', context: ON },
+    { name: 'a Codex Atlas write reported as execute', request: atlasWrite('add_concept', { toolKind: 'execute', writerCorrelation: CODEX_CORRELATION }), target: 'add_concept', context: ON },
     { name: 'a rename that leaves overwrite unset', request: atlasWrite('rename_concept', { rawInput: { from: 'a', to: 'b' } }), target: 'rename_concept', context: ON },
     { name: 'a rename with overwrite false', request: atlasWrite('rename_concept', { rawInput: { from: 'a', to: 'b', overwrite: false } }), target: 'rename_concept', context: ON },
     { name: 'a patch that sets fields and a body', request: atlasWrite('patch_concept', { rawInput: { slug: 'a', frontmatter: { title: 'A', dependencies: ['b'] }, body: 'Defines A.' } }), target: 'patch_concept', context: ON },
@@ -110,6 +111,13 @@ describe('auto-approve answers allow_once only inside its bounded scope', () => 
     ['binding the parent of a vault Atlas did not make', atlasWrite('connect_project_source', { rawInput: { projectSlug: 'projects/notes', rootPath: '/Users/me', confirm: true } }), ON],
     ['binding a root that is not a string', atlasWrite('connect_project_source', { rawInput: { projectSlug: 'projects/shop', rootPath: ['/Users/me/shop'], confirm: true } }), IN_PROJECT],
     ['absorbing with no file named', atlasWrite('absorb_document'), IN_PROJECT],
+    ['absorbing an instruction file of the project', atlasWrite('absorb_document', { rawInput: { filePath: '/Users/me/shop/CLAUDE.md', confirm: true } }), IN_PROJECT],
+    ['absorbing a concept file, which drops it from the map', atlasWrite('absorb_document', { rawInput: { filePath: '/Users/me/shop/atlas/capabilities/refund.md', confirm: true } }), IN_PROJECT],
+    ['a snapshot commit, which runs the repository hooks', atlasWrite('git_snapshot', { rawInput: { confirm: true, expectedHead: 'abc' } }), ON],
+    ['a patch that empties the body', atlasWrite('patch_concept', { rawInput: { slug: 'a', body: '  ' } }), ON],
+    ['a binding proposal naming a folder outside', atlasWrite('connect_project_source', { rawInput: { projectSlug: 'projects/shop', rootPath: '/Users/me/.ssh' } }), IN_PROJECT],
+    ['a shell command titled like an Atlas tool', atlasWrite('git_snapshot', { reviewKind: 'permission', toolKind: 'execute', rawInput: { command: 'mcp__atlas-vault__git_snapshot' } }), ON],
+    ['a shell command titled like an Atlas read', { ...atlasRead('analyze_repo_structure', {}), toolKind: 'execute' }, ON],
     ['absorbing with the outside-the-repository opt-in', atlasWrite('absorb_document', { rawInput: { filePath: 'AGENTS.md', allowOutsideRepo: true } }), IN_PROJECT],
     ['absorbing a file outside the opened folders', atlasWrite('absorb_document', { rawInput: { filePath: '/Users/me/notes/AGENTS.md' } }), IN_PROJECT],
     ['absorbing a file that climbs out', atlasWrite('absorb_document', { rawInput: { filePath: '../notes/AGENTS.md' } }), IN_PROJECT],

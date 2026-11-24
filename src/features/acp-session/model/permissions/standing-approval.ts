@@ -3,11 +3,10 @@ import { atlasToolMode } from './atlas-tool-policy';
 import { projectRootForVault } from '../runtime-wiring/vault-mcp-server';
 
 /**
- * The Atlas writes auto-approve answers, so a map build runs to its end; Git history undoes them.
- * Deleting and merging concepts, and any tool added later, still show the card.
+ * The Atlas writes auto-approve answers, so a map build runs to its end. Deleting and merging
+ * concepts, rewriting a document in place, a commit, and any tool added later still show the card.
  */
 export const STANDING_APPROVAL_ATLAS_WRITES: ReadonlySet<string> = new Set([
-  'absorb_document',
   'add_concept',
   'add_concepts',
   'add_relation',
@@ -26,7 +25,7 @@ export const STANDING_APPROVAL_ATLAS_WRITES: ReadonlySet<string> = new Set([
 /** Bumped when a check below lets more through, so a kept choice is asked for again. */
 const VAULT_EDIT_RULE = 'edit-inside-folder@1';
 const ATLAS_READ_RULE = 'atlas-read-inside-folder@1';
-const ATLAS_WRITE_RULES = 'atlas-write-arguments@2';
+const ATLAS_WRITE_RULES = 'atlas-write-arguments@3';
 
 /** Everything auto-approve answers; a kept choice holds only while it equals this, so widening the scope never widens what an earlier press allowed. */
 export const STANDING_APPROVAL_SCOPE = [
@@ -70,6 +69,8 @@ export function standingApproval(
 function approvableTarget(request: AcpPermissionRequest, context: StandingApprovalContext): string | null {
   const serverName = context.vaultMcpServerName;
   const atlasMode = serverName ? atlasToolMode(request.toolName, serverName) : null;
+  // Without a structured correlation the name is the title, and a shell call's title is its command.
+  if (atlasMode !== null && request.toolKind === 'execute' && request.writerCorrelation?.status !== 'verified') return null;
   if (request.reviewKind === 'ontology-write') {
     return atlasMode === 'write' ? approvableAtlasWrite(request, context) : null;
   }
@@ -83,7 +84,7 @@ function bareAtlasToolName(request: AcpPermissionRequest, context: StandingAppro
 
 /**
  * The folders a person opened: the vault, and the project it sits in when Atlas made it
- * (`<project>/atlas`). The Atlas server confines its scans to these same two roots.
+ * (`<project>/atlas`); the project is inferred from the folder name alone.
  */
 function openedFolderRoots(vaultRoot: string | null): string[] {
   const vault = vaultRoot?.replace(/[\\/]+$/, '');
@@ -129,24 +130,20 @@ function approvableAtlasWrite(request: AcpPermissionRequest, context: StandingAp
   // `overwrite` deletes the concept already at the new slug, so it asks as a deletion does.
   if (bareName === 'rename_concept' && !(rawInput.overwrite === undefined || rawInput.overwrite === false)) return null;
   if (bareName === 'connect_project_source' && !bindsOpenedFolder(rawInput, context.vaultRoot)) return null;
-  if (bareName === 'absorb_document' && !absorbsInsideOpenedFolder(rawInput, context.vaultRoot)) return null;
+  // The snapshot commit runs the repository's hooks, which may load files the agent just wrote.
+  if (bareName === 'git_snapshot' && rawInput.confirm === true) return null;
+  if (bareName === 'patch_concept' && typeof rawInput.body === 'string' && rawInput.body.trim() === '') return null;
   return bareName;
-}
-
-/** `allowOutsideRepo` is the server's own opt-in to rewrite a file outside the repository. */
-function absorbsInsideOpenedFolder(rawInput: Record<string, unknown>, vaultRoot: string | null): boolean {
-  const staysInRepository = rawInput.allowOutsideRepo === undefined || rawInput.allowOutsideRepo === false;
-  return staysInRepository && pathInsideOpenedFolder(rawInput.filePath, vaultRoot);
 }
 
 /**
  * A bound code folder lets its files be read without a card, so binding passes only when it names
- * an opened folder exactly: an unnamed root is inferred and may be any folder above the vault.
- * Without `confirm: true` the tool only proposes and writes nothing.
+ * an opened folder exactly: an unnamed root is inferred and may be any folder above the vault. A
+ * proposal writes nothing but inspects the folder it names, so a named one must be opened too.
  */
 function bindsOpenedFolder(rawInput: Record<string, unknown>, vaultRoot: string | null): boolean {
-  if (rawInput.confirm !== true) return true;
   const rootPath = rawInput.rootPath;
+  if (rawInput.confirm !== true && rootPath === undefined) return true;
   if (typeof rootPath !== 'string' || HIDDEN_OR_CONTROL_CHARACTER.test(rootPath)) return false;
   return openedFolderRoots(vaultRoot).includes(rootPath.replace(/[\\/]+$/, ''));
 }

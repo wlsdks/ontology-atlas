@@ -1880,7 +1880,7 @@ describe.each(['claude-acp', 'codex-acp'] as const)('auto-approve — a map buil
   const answerOf = (id: number) =>
     (bridge.sent.find((message) => message.id === id && 'result' in message) as { result: { outcome: { optionId?: string } } } | undefined)?.result.outcome.optionId;
 
-  /** The calls a first map build makes in `/code/atlas`, in the order the build-from-code prompt asks for them. */
+  /** The Atlas calls a first map build may make in `/code/atlas`, written from the build-from-code prompt and the tools' write contracts. */
   const MAP_BUILD: Array<[string, Record<string, unknown>]> = [
     ['analyze_repo_structure', { rootPath: '/code' }],
     ['analyze_repo_structure', { rootPath: '/code', sourceReads: [{ path: 'src/refund.ts', symbol: 'refund' }] }],
@@ -1898,7 +1898,6 @@ describe.each(['claude-acp', 'codex-acp'] as const)('auto-approve — a map buil
     ['connect_project_source', { projectSlug: 'projects/shop', rootPath: '/code', confirm: true }],
     ['finalize_project_meaning', { projectSlug: 'projects/shop', answers: [{ question: 'q1', answer: 'a1' }] }],
     ['git_snapshot', {}],
-    ['git_snapshot', { confirm: true, expectedHead: 'abc123' }],
   ];
 
   async function startBuild(onWorkReceipt?: (receipt: AcpWorkReceipt) => void) {
@@ -1937,8 +1936,8 @@ describe.each(['claude-acp', 'codex-acp'] as const)('auto-approve — a map buil
     ['a rename that overwrites the node at its new slug', 'rename_concept', { oldSlug: 'a', newSlug: 'b', confirm: true, overwrite: true }],
     ['binding a code folder outside the opened folder', 'connect_project_source', { projectSlug: 'projects/shop', rootPath: '/Users/me', confirm: true }],
     ['binding the folder the server would infer, unnamed', 'connect_project_source', { projectSlug: 'projects/shop', confirm: true }],
-    ['absorbing a file outside the opened folder', 'absorb_document', { filePath: '/Users/me/notes/AGENTS.md', confirm: true }],
-    ['absorbing with the outside-the-repository opt-in', 'absorb_document', { filePath: 'AGENTS.md', confirm: true, allowOutsideRepo: true }],
+    ['rewriting a project instruction file in place', 'absorb_document', { filePath: '/code/CLAUDE.md', confirm: true }],
+    ['a snapshot commit, which runs the repository hooks', 'git_snapshot', { confirm: true, expectedHead: 'abc123' }],
     ['a read whose folder lies outside the opened folder', 'analyze_repo_structure', { rootPath: '/Users/me' }],
     ['a read whose folder climbs out of it', 'analyze_repo_structure', { rootPath: '/code/../Users/me' }],
     ['a read of a dot folder inside it', 'analyze_repo_structure', { rootPath: '/code/.git' }],
