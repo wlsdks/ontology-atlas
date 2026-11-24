@@ -36,14 +36,39 @@ function atlasWrite(tool: string, overrides: Partial<AcpPermissionRequest> = {})
   });
 }
 
+/** A vault Atlas made inside the project it maps, so both folders count as opened. */
+const IN_PROJECT: StandingApprovalContext = { ...ON, vaultRoot: '/Users/me/shop/atlas' };
+
+function atlasRead(tool: string, rawInput: Record<string, unknown>): AcpPermissionRequest {
+  return edit({
+    toolName: `mcp__atlas-vault__${tool}`,
+    toolKind: 'other',
+    filePath: null,
+    rawInput,
+    pathVerdict: 'ask',
+  });
+}
+
 describe('auto-approve answers allow_once only inside its bounded scope', () => {
   it.each([
     { name: 'an edit of a vault file', request: edit(), target: 'refund.md', context: ON },
     { name: 'an edit at the vault root', request: edit({ filePath: '/Users/me/vault/README.md' }), target: 'README.md', context: ON },
     { name: 'an edit when the root carries a trailing slash', request: edit(), target: 'refund.md', context: { ...ON, vaultRoot: '/Users/me/vault/' } },
     { name: 'an edit below a vault root that itself sits in a dot folder', request: edit({ filePath: '/Users/me/.vaults/v/a.md' }), target: 'a.md', context: { ...ON, vaultRoot: '/Users/me/.vaults/v' } },
-    ...['add_concept', 'add_concepts', 'add_relation', 'add_relations', 'patch_concept', 'replace_relation', 'rename_concept', 'reclassify_concept']
+    ...['add_concept', 'add_concepts', 'add_relation', 'add_relations', 'patch_concept', 'replace_relation', 'remove_relation',
+      'rename_concept', 'reclassify_concept', 'finalize_project_meaning', 'git_snapshot', 'disconnect_project_source']
       .map((tool) => ({ name: `Atlas ${tool}`, request: atlasWrite(tool), target: tool, context: ON })),
+    { name: 'a patch that clears a frontmatter field', request: atlasWrite('patch_concept', { rawInput: { slug: 'a', frontmatter: { dependencies: null } } }), target: 'patch_concept', context: ON },
+    { name: 'a patch that empties the body', request: atlasWrite('patch_concept', { rawInput: { slug: 'a', body: '' } }), target: 'patch_concept', context: ON },
+    { name: 'a binding proposal, which writes nothing', request: atlasWrite('connect_project_source', { rawInput: { projectSlug: 'projects/shop' } }), target: 'connect_project_source', context: IN_PROJECT },
+    { name: 'binding the project the vault sits in', request: atlasWrite('connect_project_source', { rawInput: { projectSlug: 'projects/shop', rootPath: '/Users/me/shop', confirm: true } }), target: 'connect_project_source', context: IN_PROJECT },
+    { name: 'binding the vault itself as its code', request: atlasWrite('connect_project_source', { rawInput: { projectSlug: 'projects/notes', rootPath: '/Users/me/vault/', confirm: true } }), target: 'connect_project_source', context: ON },
+    { name: 'absorbing an instruction file named relative to the folder', request: atlasWrite('absorb_document', { rawInput: { filePath: 'AGENTS.md', confirm: true } }), target: 'absorb_document', context: IN_PROJECT },
+    { name: 'absorbing an instruction file of the project', request: atlasWrite('absorb_document', { rawInput: { filePath: '/Users/me/shop/CLAUDE.md', confirm: true, allowOutsideRepo: false } }), target: 'absorb_document', context: IN_PROJECT },
+    { name: 'an Atlas scan of the project the vault sits in', request: atlasRead('analyze_repo_structure', { rootPath: '/Users/me/shop' }), target: 'analyze_repo_structure', context: IN_PROJECT },
+    { name: 'an Atlas scan of a folder in that project', request: atlasRead('infer_imports', { rootPath: '/Users/me/shop/src/' }), target: 'infer_imports', context: IN_PROJECT },
+    { name: 'an Atlas scan of the vault', request: atlasRead('inspect_architecture', { rootPath: '/Users/me/shop/atlas' }), target: 'inspect_architecture', context: IN_PROJECT },
+    { name: 'an Atlas read named relative to the folder', request: atlasRead('read_source', { path: 'sources/plan.docx' }), target: 'read_source', context: ON },
     { name: 'a Codex Atlas write reported as execute', request: atlasWrite('add_concept', { toolKind: 'execute' }), target: 'add_concept', context: ON },
     { name: 'a rename that leaves overwrite unset', request: atlasWrite('rename_concept', { rawInput: { from: 'a', to: 'b' } }), target: 'rename_concept', context: ON },
     { name: 'a rename with overwrite false', request: atlasWrite('rename_concept', { rawInput: { from: 'a', to: 'b', overwrite: false } }), target: 'rename_concept', context: ON },
@@ -77,8 +102,29 @@ describe('auto-approve answers allow_once only inside its bounded scope', () => 
     ['the kind is missing', edit({ toolKind: null }), ON],
     ['an Atlas write arrives as a plain permission', atlasWrite('add_concept', { reviewKind: 'permission', toolKind: 'edit', filePath: '/Users/me/vault/a.md', pathVerdict: 'allow-inside-vault' }), ON],
     ['another MCP server edits a vault file', edit({ toolName: 'mcp__notion__update_page' }), ON],
-    ...['delete_concept', 'remove_relation', 'merge_concepts', 'absorb_document', 'finalize_project_meaning', 'git_snapshot', 'connect_project_source', 'disconnect_project_source']
+    ...['delete_concept', 'merge_concepts']
       .map((tool) => [`Atlas ${tool} asks`, atlasWrite(tool), ON] as const),
+    ['binding a folder the server infers', atlasWrite('connect_project_source', { rawInput: { projectSlug: 'projects/shop', confirm: true } }), IN_PROJECT],
+    ['binding a folder above the project', atlasWrite('connect_project_source', { rawInput: { projectSlug: 'projects/shop', rootPath: '/Users/me', confirm: true } }), IN_PROJECT],
+    ['binding a folder inside the project, which a link could redirect', atlasWrite('connect_project_source', { rawInput: { projectSlug: 'projects/shop', rootPath: '/Users/me/shop/src', confirm: true } }), IN_PROJECT],
+    ['binding the parent of a vault Atlas did not make', atlasWrite('connect_project_source', { rawInput: { projectSlug: 'projects/notes', rootPath: '/Users/me', confirm: true } }), ON],
+    ['binding a root that is not a string', atlasWrite('connect_project_source', { rawInput: { projectSlug: 'projects/shop', rootPath: ['/Users/me/shop'], confirm: true } }), IN_PROJECT],
+    ['absorbing with no file named', atlasWrite('absorb_document'), IN_PROJECT],
+    ['absorbing with the outside-the-repository opt-in', atlasWrite('absorb_document', { rawInput: { filePath: 'AGENTS.md', allowOutsideRepo: true } }), IN_PROJECT],
+    ['absorbing a file outside the opened folders', atlasWrite('absorb_document', { rawInput: { filePath: '/Users/me/notes/AGENTS.md' } }), IN_PROJECT],
+    ['absorbing a file that climbs out', atlasWrite('absorb_document', { rawInput: { filePath: '../notes/AGENTS.md' } }), IN_PROJECT],
+    ['absorbing a file in a dot folder', atlasWrite('absorb_document', { rawInput: { filePath: '/Users/me/shop/.github/AGENTS.md' } }), IN_PROJECT],
+    ['an Atlas scan of a folder outside the opened folders', atlasRead('analyze_repo_structure', { rootPath: '/Users/me' }), IN_PROJECT],
+    ['an Atlas scan of a sibling sharing the project prefix', atlasRead('analyze_repo_structure', { rootPath: '/Users/me/shop-old' }), IN_PROJECT],
+    ['an Atlas scan that climbs out of the project', atlasRead('analyze_repo_structure', { rootPath: '/Users/me/shop/../bank' }), IN_PROJECT],
+    ['an Atlas scan of a dot folder in the project', atlasRead('analyze_repo_structure', { rootPath: '/Users/me/shop/.git' }), IN_PROJECT],
+    ['an Atlas scan from the home folder', atlasRead('analyze_repo_structure', { rootPath: '~/shop' }), IN_PROJECT],
+    ['an Atlas scan of the parent of a vault Atlas did not make', atlasRead('analyze_repo_structure', { rootPath: '/Users/me' }), ON],
+    ['an Atlas scan whose folder hides a character', atlasRead('analyze_repo_structure', { rootPath: '/Users/me/shop/\u202Esrc' }), IN_PROJECT],
+    ['an Atlas scan whose folder is not a string', atlasRead('analyze_repo_structure', { rootPath: ['/Users/me/shop'] }), IN_PROJECT],
+    ['an Atlas read whose second path lies outside', atlasRead('read_source', { path: 'sources/plan.docx', filePath: '/etc/hosts' }), IN_PROJECT],
+    ['an Atlas read when no Atlas server is wired', atlasRead('analyze_repo_structure', { rootPath: '/Users/me/shop' }), { ...IN_PROJECT, vaultMcpServerName: null }],
+    ['another server reads the project', { ...atlasRead('analyze_repo_structure', { rootPath: '/Users/me/shop' }), toolName: 'mcp__other__analyze_repo_structure' }, IN_PROJECT],
     ['an Atlas tool nobody listed', atlasWrite('future_write'), ON],
     ['an Atlas read reaches the write review', atlasWrite('get_concept'), ON],
     ['another server writes under the ontology review', atlasWrite('x', { toolName: 'mcp__other__add_concept' }), ON],
@@ -93,11 +139,6 @@ describe('auto-approve answers allow_once only inside its bounded scope', () => 
     ['the kind is an unknown string', edit({ toolKind: 'write_file' }), ON],
     ['a same-length other server writes under the ontology review', atlasWrite('x', { toolName: 'mcp__other-vault__add_concept' }), ON],
     ...[true, 'true', 1, null].map((overwrite) => [`a rename sets overwrite to ${JSON.stringify(overwrite)}`, atlasWrite('rename_concept', { rawInput: { from: 'a', to: 'b', overwrite } }), ON] as const),
-    ['a patch clears a frontmatter field', atlasWrite('patch_concept', { rawInput: { slug: 'a', frontmatter: { title: 'A', dependencies: null } } }), ON],
-    ['a patch empties a relation list', atlasWrite('patch_concept', { rawInput: { slug: 'a', frontmatter: { dependencies: [] } } }), ON],
-    ['a patch empties the body', atlasWrite('patch_concept', { rawInput: { slug: 'a', body: '' } }), ON],
-    ['a patch leaves only whitespace in the body', atlasWrite('patch_concept', { rawInput: { slug: 'a', body: ' \n\t' } }), ON],
-    ['a patch sends frontmatter that is not an object', atlasWrite('patch_concept', { rawInput: { slug: 'a', frontmatter: null } }), ON],
     ['two path arguments name different files', edit({ rawInput: { filePath: '/Users/me/vault/a.md', path: '/Users/me/vault/.git/config' } }), ON],
     ['a path argument is not a string', edit({ rawInput: { file_path: '/Users/me/vault/a.md', path: ['/Users/me/vault/b.md'] } }), ON],
     ...['AGENTS.md', 'docs/CLAUDE.md', 'deep/er/claude.local.md', 'GeMiNi.md', 'AGENTS.override.md', 'agents']
