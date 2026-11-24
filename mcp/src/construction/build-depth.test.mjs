@@ -329,6 +329,26 @@ test('one request names the files with no node: the first area\'s eighteen with 
   assert.deepEqual(many.areaBatch.map((area) => area.path), ['tool0', 'tool1', 'tool2', 'tool3', 'tool4', 'tool5', 'tool6'], 'seven areas at most');
 });
 
+test('validate_vault lists the next files\' ability rows so no area survey is needed, and a write answer does not repeat them', () => {
+  const route = { kind: 'route', name: 'OrdersApi', path: 'shop/api.go', evidence: 'shop/api.go:L12', members: ['GET /orders', 'POST /orders'] };
+  const family = { kind: 'family', name: 'Handler', path: 'shop/handlers', evidence: 'shop/handlers/a.go:L3', members: Array.from({ length: 10 }, (_, index) => `H${index}`) };
+  const shop = { ...areaOf('shop', 100, {}), abilities: 2, abilityFiles: [{ path: 'shop/api.go', abilities: 1, rows: [route] }, { path: 'shop/handlers', abilities: 1, rows: [family] }] };
+  const repo = { ...abilityRepo, survey: { abilities: [], areas: [shop] } };
+  const validated = measureBuildDepth([doc('project', {})], repo, null, { abilityRows: true }).line;
+  assert.ok(validated.includes('route OrdersApi shop/api.go:L12: GET /orders, POST /orders'), 'a route row with its evidence');
+  assert.ok(validated.includes('family Handler shop/handlers/a.go:L3: H0, H1, H2, H3, H4, H5, H6, H7 +2'), 'a family row, its members cut and counted');
+  assert.match(validated, /open an area only when these rows do not show what its file holds: analyze_repo_structure/);
+  const written = measureBuildDepth([doc('project', {})], repo, null).line;
+  assert.doesNotMatch(written, /OrdersApi/);
+  assert.match(written, /Open their areas: analyze_repo_structure/);
+  const exports = Array.from({ length: 200 }, (_, index) => ({ kind: 'export', name: `export${index}${'x'.repeat(60)}`, path: 'shop/big.go', evidence: `shop/big.go:L${index + 1}` }));
+  const big = { ...shop, abilities: 200, abilityFiles: [{ path: 'shop/big.go', abilities: 200, rows: exports }] };
+  const crowded = measureBuildDepth([doc('project', {})], { ...abilityRepo, survey: { abilities: [], areas: [big] } }, null, { abilityRows: true }).line;
+  const listed = crowded.match(/What the survey lists in them, kind name evidence symbol: (.*?)\. Outline/)[1];
+  assert.ok(listed.length <= 8100, `the rows take ${listed.length} characters`);
+  assert.match(listed, /; \d+ more rows in their areas' maps$/, 'the rows past the bound are counted');
+});
+
 test('finalize refuses until the project keeps the measured summary line, and only while areas are not mapped yet', () => {
   const withUncertainty = (lines) => `A product.\n\n## Uncertainty\n${lines}\n`;
   const depthFor = (body, docs = [EVERY_FILE[0]], repo = abilityRepo) => measureBuildDepth([doc('project', {}, body), ...docs], repo, null);

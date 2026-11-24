@@ -1,0 +1,47 @@
+{
+  "pill": {
+    "full": "マップに{percent, number}% · {number, number}回目の分析 · {when}",
+    "shareOnly": "マップに{percent, number}% · 分析の記録なし",
+    "noShare": "{number, number}回目の分析 · {when}",
+    "running": "マップに{percent, number}% · 分析中",
+    "changed": "マップに{percent, number}% · {number, number}回目の分析以降に{files, number}ファイル変更",
+    "label": "コード分析。{summary}。押すと各回の分析を表示します。"
+  },
+  "when": {
+    "today": "今日",
+    "yesterday": "昨日",
+    "days": "{days, number}日前"
+  },
+  "panel": {
+    "title": "コード分析",
+    "share": "コードで見つかった機能{total, number}個中{mapped, number}個（{percent, number}%）がマップにあります。",
+    "shareAll": "コードで見つかった機能{total, number}個がすべてマップにあります。",
+    "counted": "{number, number}回目の分析（{when}）で数えた値です。その後に変更されたコードはまだ数えていません。",
+    "listTitle": "このフォルダで行った分析",
+    "row": "{number, number}回目の分析 · {date} · {agent}",
+    "rowNoAgent": "{number, number}回目の分析 · {date}",
+    "rowChange": "マップに{before, number}% → {after, number}% · 概念を{added, number}件追加、{changed, number}件変更",
+    "rowFirst": "マップに{after, number}% · 概念を{added, number}件追加、{changed, number}件変更",
+    "rowNoShare": "概念を{added, number}件追加、{changed, number}件変更",
+    "earlier": "それ以前の分析{count, number}件は、このフォルダの「.ontology-atlas/map-analysis.jsonl」にあります。",
+    "noRecord": "このフォルダにはまだ分析の記録がありません。次にエージェントがマップに概念を追加したときから記録します。",
+    "where": "この記録はこのフォルダの「.ontology-atlas/map-analysis.jsonl」に保存されます。Gitは既定でこのファイルを除外するため、フォルダを別の場所に複製すると、そこでは記録が新しく始まります。",
+    "unreadable": "Atlasが「.ontology-atlas/map-analysis.jsonl」を読めなかったため、分析の一覧を表示できません。上の割合はプロジェクトノートから読んだ値です。次の分析はこのファイルにそのまま追記されます。"
+  },
+  "action": {
+    "mapRestHelp": "マップの会話を開きます。見積もりと開始ボタンはそこにあります。",
+    "catchUp": "新規・変更されたコードを分析",
+    "catchUpBody": "読むファイルは{files, number}件です。エージェントへの依頼は約{requests, number}回、{duration}ほどかかります。"
+  },
+  "web": {
+    "analyze": "Atlasから分析を始めるには、コーディングエージェントを実行するデスクトップアプリが必要です。MCPで自分で接続したエージェントの分析もこの記録に残ります。"
+  },
+  "changed": {
+    "none": "{number, number}回目の分析以降、変更されたコードファイルはありません。",
+    "some": "{number, number}回目の分析以降、コードに新しいファイルが{added, number}件、変更されたファイルが{changed, number}件あります。上の割合にはまだ含まれていません。",
+    "behind": "概念{count, number}件は、指しているコードが変更される前に書かれました。",
+    "unknownCommit": "変更されたファイルを数えられません。{number, number}回目の分析で読んだコミット（{commit}）がこのリポジトリの履歴にありません。",
+    "noGit": "変更されたファイルを数えられません。接続されたコードフォルダはGitリポジトリではありません。",
+    "web": "分析後に変更されたファイルを数えるには、コードのGit履歴を読むデスクトップアプリが必要です。"
+  }
+}

@@ -478,6 +478,8 @@ export const SURVEY_RESPONSE_CHARS = 40_000;
 const MEMBERS_SHOWN = 16;
 /** An area's path is the rootPath that opens it, so it is cut only where a root path would be. */
 const AREA_PATH_CHARS = 400;
+/** An evidence `path:Lline` is cut only past a root path, so its line number survives. */
+const EVIDENCE_CHARS = 400;
 
 /** The bytes a map takes against the budget: everything but its abilities section. */
 function budgetBytes(map) {
@@ -537,19 +539,20 @@ function areaMap(map, collection, found) {
   return byArea;
 }
 
-/** Each area's files that hold abilities, with how many each holds; O(rows x path depth). */
+/** Each area's files that hold abilities, with how many each holds and their rows; O(rows x path depth). */
 function abilityFilesByArea(found, locate) {
-  const counts = new Map();
+  const rowsByFile = new Map();
   for (const row of found) {
     const area = locate(row.path);
     if (!area) continue;
-    if (!counts.has(area)) counts.set(area, new Map());
-    const files = counts.get(area);
-    files.set(row.path, (files.get(row.path) ?? 0) + 1);
+    if (!rowsByFile.has(area)) rowsByFile.set(area, new Map());
+    const files = rowsByFile.get(area);
+    if (!files.has(row.path)) files.set(row.path, []);
+    files.get(row.path).push(row);
   }
   const byArea = new Map();
-  for (const [area, files] of counts) {
-    byArea.set(area, [...files].map(([path, abilities]) => ({ path, abilities })));
+  for (const [area, files] of rowsByFile) {
+    byArea.set(area, [...files].map(([path, rows]) => ({ path, abilities: rows.length, rows })));
   }
   return byArea;
 }
@@ -667,6 +670,24 @@ function areaLines(map) {
 }
 
 /**
+ * One ability row as the survey writes it: kind, name, evidence and symbol, a
+ * family or group with its first `membersShown` members and the rest counted.
+ * `withFolder: false` leaves out a family's folder, which its evidence names.
+ */
+export function abilityRowText(row, { membersShown = MEMBERS_SHOWN, withFolder = true } = {}) {
+  const hidden = (row.membersOmitted ?? 0) + Math.max(0, (row.members?.length ?? 0) - membersShown);
+  const listed = (row.members ?? []).slice(0, membersShown).map((name) => t(name, 80)).join(', ');
+  const members = row.members ? `: ${[listed, hidden > 0 ? `+${hidden}` : ''].filter(Boolean).join(' ')}` : '';
+  const symbol = row.symbol && row.symbol !== row.name ? ` ${t(row.symbol, 120)}` : '';
+  const doc = row.doc ? ` (${t(row.doc)})` : '';
+  const evidence = t(row.evidence, EVIDENCE_CHARS);
+  if (row.kind !== 'family') return `${row.kind} ${t(row.name, 120)} ${evidence}${symbol}${doc}${members}`;
+  const name = row.name && row.name !== row.path ? t(row.name, 120) : '';
+  if (!withFolder) return `family ${name ? `${name} ` : ''}${evidence}${members}`;
+  return `family ${name ? `${name} in ` : ''}${t(row.path)} ${evidence}${members}`;
+}
+
+/**
  * The same map as plain rows, which is what the agent reads: one line per unit
  * (or per area) instead of an indented object per field keeps a 400-file
  * repository near 12 KB. Main files are written relative to their unit or area;
@@ -698,16 +719,7 @@ function renderBreadthMap(map) {
   }
   if (map.abilities?.length > 0) {
     lines.push('', 'Abilities to place, the floor: kind name evidence symbol (a family or group lists its members; a documented one names its heading)');
-    for (const row of map.abilities) {
-      const hidden = (row.membersOmitted ?? 0) + Math.max(0, (row.members?.length ?? 0) - MEMBERS_SHOWN);
-      const listed = (row.members ?? []).slice(0, MEMBERS_SHOWN).map((name) => t(name, 80)).join(', ');
-      const members = row.members ? `: ${[listed, hidden > 0 ? `+${hidden}` : ''].filter(Boolean).join(' ')}` : '';
-      const symbol = row.symbol && row.symbol !== row.name ? ` ${t(row.symbol, 120)}` : '';
-      const doc = row.doc ? ` (${t(row.doc)})` : '';
-      lines.push(row.kind === 'family'
-        ? `family ${row.name && row.name !== row.path ? `${t(row.name, 120)} in ` : ''}${t(row.path)} ${t(row.evidence)}${members}`
-        : `${row.kind} ${t(row.name, 120)} ${t(row.evidence)}${symbol}${doc}${members}`);
-    }
+    for (const row of map.abilities) lines.push(abilityRowText(row));
     if (map.abilitiesOmitted) {
       const byKind = Object.entries(map.abilitiesOmittedByKind ?? {}).map(([kind, count]) => `${kind} ${count}`).join(', ');
       lines.push(map.areas

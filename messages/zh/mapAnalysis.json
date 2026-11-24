@@ -1,0 +1,47 @@
+{
+  "pill": {
+    "full": "已上地图 {percent, number}% · 第 {number, number} 次分析 · {when}",
+    "shareOnly": "已上地图 {percent, number}% · 没有分析记录",
+    "noShare": "第 {number, number} 次分析 · {when}",
+    "running": "已上地图 {percent, number}% · 正在分析",
+    "changed": "已上地图 {percent, number}% · 第 {number, number} 次分析后有 {files, number} 个文件变更",
+    "label": "代码分析。{summary}。按下可查看每次分析。"
+  },
+  "when": {
+    "today": "今天",
+    "yesterday": "昨天",
+    "days": "{days, number} 天前"
+  },
+  "panel": {
+    "title": "代码分析",
+    "share": "代码中找到的 {total, number} 项能力中有 {mapped, number} 项（{percent, number}%）在地图上。",
+    "shareAll": "代码中找到的 {total, number} 项能力已全部在地图上。",
+    "counted": "这是第 {number, number} 次分析（{when}）时统计的数字。之后变更的代码还没有计入。",
+    "listTitle": "在这个文件夹里做过的分析",
+    "row": "第 {number, number} 次分析 · {date} · {agent}",
+    "rowNoAgent": "第 {number, number} 次分析 · {date}",
+    "rowChange": "已上地图 {before, number}% → {after, number}% · 新增 {added, number} 个概念，修改 {changed, number} 个",
+    "rowFirst": "已上地图 {after, number}% · 新增 {added, number} 个概念，修改 {changed, number} 个",
+    "rowNoShare": "新增 {added, number} 个概念，修改 {changed, number} 个",
+    "earlier": "更早的 {count, number} 次分析在这个文件夹的 .ontology-atlas/map-analysis.jsonl 文件里。",
+    "noRecord": "这个文件夹里还没有分析记录。下次智能体往地图上添加概念时，就会从那时开始记录。",
+    "where": "这份记录保存在这个文件夹的 .ontology-atlas/map-analysis.jsonl 文件里。Git 默认不包含这个文件，所以把文件夹复制到别处后，那里的记录会重新开始。",
+    "unreadable": "Atlas 无法读取 .ontology-atlas/map-analysis.jsonl，所以无法列出各次分析。上面的比例来自项目笔记。下次分析会按原样接着写入这个文件。"
+  },
+  "action": {
+    "mapRestHelp": "打开地图对话，预计用时和开始按钮都在那里。",
+    "catchUp": "分析新增和变更的代码",
+    "catchUpBody": "要读取 {files, number} 个文件。约需向智能体发送 {requests, number} 个请求，用时约 {duration}。"
+  },
+  "web": {
+    "analyze": "要从 Atlas 开始分析，需要能运行编码智能体的桌面应用。你自己通过 MCP 连接的智能体所做的分析也会记入这份记录。"
+  },
+  "changed": {
+    "none": "第 {number, number} 次分析之后，代码里没有文件变更。",
+    "some": "第 {number, number} 次分析之后，代码里新增了 {added, number} 个文件，变更了 {changed, number} 个文件。上面的比例还没有计入它们。",
+    "behind": "有 {count, number} 个概念是在它们指向的代码变更之前写的。",
+    "unknownCommit": "无法统计变更的文件：第 {number, number} 次分析读取的提交（{commit}）不在这个仓库的历史里。",
+    "noGit": "无法统计变更的文件：连接的代码文件夹不是 Git 仓库。",
+    "web": "要统计分析之后变更的文件，需要能读取代码 Git 历史的桌面应用。"
+  }
+}
