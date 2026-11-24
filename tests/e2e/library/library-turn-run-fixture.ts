@@ -28,7 +28,8 @@ type TapWindow = { __turnTap?: TurnTap };
 /**
  * Taps the stub bridge before the harness installs it, as an agent that writes several pages:
  * each request is a real `session/request_permission`, and an allowed one writes its file and
- * reports the tool completed. `ignoreCancel` makes the agent drop `session/cancel`.
+ * reports the tool completed. `ignoreCancel` makes the agent drop `session/cancel`. Its lines
+ * carry the session `session/new` answered: `acp_start` names the bridge process, not the session.
  */
 async function tapBridge(page: Page) {
   await page.addInitScript((vaultRoot) => {
@@ -39,7 +40,17 @@ async function tapBridge(page: Page) {
     };
     type Harness = { mutateSource(path: string, text: string): void };
     const callbacks = new Map<number, (raw: Raw) => void>();
-    let harness: { channel: number; session: string; shift: number; last: number } | null = null;
+    let harness: { channel: number; session: string | null; shift: number; last: number } | null = null;
+    const answeredSession = (message: unknown): string | null => {
+      const line = (message as { line?: unknown } | null)?.line;
+      if (typeof line !== "string") return null;
+      try {
+        const sessionId = (JSON.parse(line) as { result?: { sessionId?: unknown } }).result?.sessionId;
+        return typeof sessionId === "string" ? sessionId : null;
+      } catch {
+        return null;
+      }
+    };
     const asked = new Map<number, { path: string; content: string; call: string }>();
     const answers: Record<number, string> = {};
     let nextRequest = 9_000;
@@ -82,6 +93,7 @@ async function tapBridge(page: Page) {
             if (harness && id === harness.channel && typeof raw?.index === "number") {
               raw = { ...raw, index: raw.index + harness.shift };
               harness.last = raw.index;
+              harness.session = answeredSession(raw.message) ?? harness.session;
             }
             callback(raw);
           };
@@ -108,7 +120,7 @@ async function tapBridge(page: Page) {
             }
           }
           const answer = await invoke(command, args);
-          if (command === "acp_start" && channel !== undefined && !harness) harness = { channel, session: String(answer), shift: 0, last: -1 };
+          if (command === "acp_start" && channel !== undefined && !harness) harness = { channel, session: null, shift: 0, last: -1 };
           return answer;
         };
         internals = value;

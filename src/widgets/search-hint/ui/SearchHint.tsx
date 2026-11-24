@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { ListTree, Map as MapIcon, RefreshCcw, Search } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { CHROME_CHIP_COMPACT_BELOW_XL, ChromeChip } from '@/shared/ui/controls/chrome-chip';
+import { focusWithoutTooltip } from '@/shared/ui/hints/tooltip';
 import { useMapView } from '@/shared/lib/preferences/map-view-preferences';
 import { View3dMenu, viewMessageKey } from './View3dMenu';
 
@@ -213,7 +214,7 @@ export function SearchHint({
             open={view3dMenuOpen}
             onClose={(returnFocus) => {
               setView3dMenuOpen(false);
-              if (returnFocus) view3dChipRef.current?.focus();
+              if (returnFocus) focusWithoutTooltip(view3dChipRef.current);
             }}
             anchorRef={view3dAnchorRef}
             groupId={view3dMenuId}

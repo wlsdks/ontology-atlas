@@ -32,6 +32,21 @@ describe("SearchHint", () => {
     expect(picker).toHaveAttribute("data-map-view", "3d");
   });
 
+  it("hands focus back to the map-view chip without its tooltip, which would take the map's next Escape", async () => {
+    render(<SearchHint onOpenSearch={vi.fn()} onRelayout={vi.fn()} />);
+    const chip = screen.getByTestId("topology-view-3d");
+
+    fireEvent.click(chip);
+    fireEvent.keyDown(await screen.findByTestId("topology-view-3d-choice-flat"), { key: "Escape" });
+    expect(chip).toHaveFocus();
+    expect(screen.queryByRole("tooltip")).toBeNull();
+
+    fireEvent.click(chip);
+    fireEvent.click(await screen.findByTestId("topology-view-3d-choice-hex"));
+    expect(chip).toHaveFocus();
+    expect(screen.queryByRole("tooltip")).toBeNull();
+  });
+
   it("shows the current flat view rather than a 3D-only label", () => {
     render(<SearchHint onOpenSearch={vi.fn()} onRelayout={vi.fn()} />);
     const picker = screen.getByTestId("topology-view-3d");

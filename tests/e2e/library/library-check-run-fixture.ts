@@ -36,7 +36,8 @@ type TapWindow = { __checkTap?: { read(path: string): void; fail(): void; sessio
 /**
  * Taps the stub bridge before the harness installs it. The harness serves one ACP channel, so the
  * tap adds completed reads to that channel (renumbering its messages to keep their order) and
- * answers any later session itself, as a second dock's own adapter would.
+ * answers any later session itself, as a second dock's own adapter would. The added lines carry
+ * the session `session/new` answered: `acp_start` names the bridge process, not the session.
  */
 async function tapBridge(page: Page, options: { offerUpdate: boolean }) {
   await page.addInitScript(({ offerUpdate }) => {
@@ -49,7 +50,17 @@ async function tapBridge(page: Page, options: { offerUpdate: boolean }) {
       transformCallback: (callback: (raw: Raw) => void, once?: boolean) => number;
     };
     const callbacks = new Map<number, (raw: Raw) => void>();
-    let harness: { channel: number; session: string; shift: number; last: number } | null = null;
+    let harness: { channel: number; session: string | null; shift: number; last: number } | null = null;
+    const answeredSession = (message: unknown): string | null => {
+      const line = (message as { line?: unknown } | null)?.line;
+      if (typeof line !== "string") return null;
+      try {
+        const sessionId = (JSON.parse(line) as { result?: { sessionId?: unknown } }).result?.sessionId;
+        return typeof sessionId === "string" ? sessionId : null;
+      } catch {
+        return null;
+      }
+    };
     const ownSessions = new Map<string, { channel: number; index: number }>();
     const stops: string[] = [];
     let reads = 0;
@@ -85,6 +96,7 @@ async function tapBridge(page: Page, options: { offerUpdate: boolean }) {
             if (harness && id === harness.channel && typeof raw?.index === "number") {
               raw = { ...raw, index: raw.index + harness.shift };
               harness.last = raw.index;
+              harness.session = answeredSession(raw.message) ?? harness.session;
             }
             callback(raw);
           };
@@ -116,7 +128,7 @@ async function tapBridge(page: Page, options: { offerUpdate: boolean }) {
             if (sent.method === "session/prompt" && harness && typeof sent.params?.sessionId === "string") harness.session = sent.params.sessionId;
           }
           const answer = await invoke(command, args);
-          if (command === "acp_start" && channel !== undefined) harness = { channel, session: String(answer), shift: 0, last: -1 };
+          if (command === "acp_start" && channel !== undefined) harness = { channel, session: null, shift: 0, last: -1 };
           return answer;
         };
         internals = value;
