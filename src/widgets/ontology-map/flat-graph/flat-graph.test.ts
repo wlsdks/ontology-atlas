@@ -27,7 +27,7 @@ import type { DialLabels, DialModel } from "../dial/dial-shapes";
 import { cachedGraphAttention, inkUnder, resolveGraphAttention } from "./attention";
 import { layoutFlatGraph } from "./layout";
 import { arcPathInto, capabilityDiscRadiusPx, crowdShare, emptyArcPath, graphDiscRadiusPx, litLineTrimsInto, ORPHAN_ROOM, zoomGrowth } from "./marks";
-import { capabilityLineTurns, openedElements } from "./open";
+import { capabilityLinePaths, lineClearancePx, openedElements } from "./open";
 import { admittedNames, nameBlockClear, nameBlockDraws, nameBlockEnd, selectedDiscRadius } from "./names";
 import { leaderSegment, linePolylines, segmentCrossesBox } from "./names/lit-lines";
 import { type PlacedName } from "./names/placed-name";
@@ -87,6 +87,9 @@ const VAULTS = [
   ["storefront", vaultModel(storefrontManifest)],
 ] as const;
 
+/** Each vault's concept titles, as the map names them. */
+const TITLES = new Map([dogfoodManifest, storefrontManifest].flatMap((manifest) => (deriveOntologyFromVault(manifest as unknown as VaultManifest).nodes as Node[]).flatMap((n) => (n.title ? [[n.id, n.title] as const] : []))));
+
 function layoutOf(model: DialModel): FlatGraphLayout {
   return layoutFlatGraph(model, circularDomainOrder(model, null).order, TOKENS.layout, null);
 }
@@ -103,11 +106,11 @@ const LABELS: DialLabels = {
 };
 const measure = (text: string, font: string) => text.length * (Number(/(\d+(?:\.\d+)?)px/.exec(font)?.[1]) || 12) * 0.6;
 
-function namesAt(model: DialModel, layout: FlatGraphLayout, scale: number, focusId: string | null, agentFocusId: string | null = null, elementSpacingPx = TOKENS.paint.elementNameSpacingPx * 2) {
+function namesAt(model: DialModel, layout: FlatGraphLayout, scale: number, focusId: string | null, agentFocusId: string | null = null, elementSpacingPx = TOKENS.paint.elementNameSpacingPx * 2, elementLabel: (id: string) => string | null = (id) => id) {
   const attention = cachedGraphAttention(model, focusId, focusId !== null);
   return admittedNames({
     model, layout, tokens: TOKENS.paint, labels: LABELS, measureText: measure, fontFamily: "sans-serif", scale, growth: 1,
-    elementLabel: (id) => id, staleByDomain: null, lit: attention.lit, focusId: attention.focusId, attentionKey: attention.key, agentFocusId,
+    elementLabel, staleByDomain: null, lit: attention.lit, focusId: attention.focusId, attentionKey: attention.key, agentFocusId,
     selected: attention.selected, named: attention.named, reach: attention.reach, lines: attention.lines,
     discRadius: () => 4, elementSpacingPx, hubCaption: null,
   });
@@ -622,22 +625,17 @@ describe("a selected capability's fan", () => {
 
   it.each(VAULTS)("slides a %s fan so its dots stand off the lines leaving the capability", (_name, model) => {
     const layout = layoutOf(model);
-    const turnOf = (p: { x: number; y: number }) => (Math.atan2(p.y, p.x) + Math.PI / 2 + 2 * Math.PI) % (2 * Math.PI);
+    const dotPx = Math.max(t.elementDotPx, t.elementOpenMaxPx);
     let fans = 0;
     let onLine = 0;
     for (const cap of model.capabilityById.values()) {
       const fan = openedElements(model, layout, cap.id, t, selectedPx, 0.35, 1);
-      const lines = fan ? capabilityLineTurns(model, layout, cap.id, cap.elementIds, t.lineBow) : [];
+      const lines = fan ? capabilityLinePaths(model, layout, cap.id, cap.elementIds, t.lineBow) : [];
       if (!fan || lines.length === 0) continue;
       fans += 1;
-      const stands = [...fan.offsets.values()].some((p) => lines.some((turn) => {
-        const apart = Math.abs(turnOf(p) - turn);
-        return Math.min(apart, 2 * Math.PI - apart) < (t.elementDotPx + t.lineTaperMaxPx) / Math.hypot(p.x, p.y) - 1e-9;
-      }));
-      if (stands) onLine += 1;
+      if (lineClearancePx(fan.offsets.values(), lines, 0.35) < dotPx + t.lineTaperMaxPx) onLine += 1;
     }
     expect(fans).toBeGreaterThan(10);
-    // A fan that fills its arc beside many lines has no clear place: 3 of 17 and 1 of 39 with the slide, 5 and 9 without.
     expect(onLine, "fans with a dot on a line").toBeLessThanOrEqual(3);
   });
 
@@ -670,14 +668,22 @@ describe("a selected capability's fan", () => {
 
   });
 
-  it("names a selected capability's fanned elements with no name over another", () => {
-    const model = VAULTS[0][1];
+  it.each(VAULTS)("names a selected %s capability's fanned elements, each on a row of its own with no name over another", (_name, model) => {
     const layout = layoutOf(model);
-    const cap = model.capabilityById.get("capability:project-source-binding")!;
-    const fanned = namesAt(model, layout, 0.4, cap.id);
-    expect(cap.elementIds.filter((id) => fanned.ids.has(id)).length).toBeGreaterThanOrEqual(2);
-    const anchors = fanAnchors(model, layout, 0.4, cap.id);
-    expect(overlapping(fanned.names.filter((n) => n.role === "element" || n.role === "capability"), layout, 0.4, anchors)).toEqual([]);
+    let fanned = 0;
+    let unnamed = 0;
+    for (const cap of model.capabilityById.values()) {
+      const anchors = fanAnchors(model, layout, 0.4, cap.id);
+      if (anchors.size === 0) continue;
+      fanned += anchors.size;
+      const admitted = namesAt(model, layout, 0.4, cap.id, null, undefined, (id) => TITLES.get(id) ?? id);
+      for (const id of anchors.keys()) if (!admitted.ids.has(id)) unnamed += 1;
+      expect(overlapping(admitted.names.filter((n) => n.role === "element" || n.role === "capability"), layout, 0.4, anchors), cap.id).toEqual([]);
+    }
+    expect(fanned).toBeGreaterThan(40);
+    // A row a domain's title or another name already holds stays empty. Measured 5 of 56 and 9 of
+    // 54 unnamed; a fan in an arc, its names placed after the lit capabilities', left 24 and 25.
+    expect(unnamed / fanned).toBeLessThan(0.2);
   });
 });
 
