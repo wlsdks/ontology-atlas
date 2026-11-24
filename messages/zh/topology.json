@@ -375,24 +375,8 @@
     "packetTitle": "访问记录",
     "packetOrder": "访问顺序（最早 → 最近）：",
     "packetReviewHint": "请查看每个概念的上下文：",
-    "packetUndocumented": "尚无文档（仅作为引用存在）。可用 add_concept 创建。",
-    "packetPathHint": "检查第一个和最后一个概念之间的路径：",
-    "packetDustyHint": "{count} 个概念许久未改动：可维护的候选：",
-    "pastLinkLabel": "更早记录 {count}",
-    "pastHeading": "更早记录",
-    "pastBackAriaLabel": "返回访问记录",
-    "pastRouteLabel": "{first} → {last}",
-    "pastRowMeta": "{date} · {count} 个概念",
-    "pastDateToday": "今天",
-    "pastDateYesterday": "昨天",
-    "pastDeleteAriaLabel": "删除此记录",
-    "pastClearAllLabel": "全部清除",
-    "pastClearAllConfirmLabel": "再按一次删除",
-    "pastCapCaption": "保留最近 10 条",
-    "pastEmptyBody": "还没有更早的记录。每次浏览结束后会保存在这里。",
-    "pastReplayAriaLabel": "重新打开此记录：{date}，{count} 个概念",
-    "pastDeadRowMeta": "已不在此地图上",
-    "pastReadOnlyNotice": "此文件夹以只读方式打开，因此不会保存本次访问记录。保存任意文档时会请求写入权限。"
+    "packetUndocumented": "尚无文档（仅作为引用存在）。可用 add_concepts 创建。",
+    "packetPathHint": "检查第一个和最后一个概念之间的路径："
   },
   "startChecklist": {
     "scaffoldToast": "已创建 {concepts} 篇概念文档和 {configs} 个智能体连接文件"

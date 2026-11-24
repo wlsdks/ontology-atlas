@@ -375,24 +375,8 @@
     "packetTitle": "Visit history",
     "packetOrder": "Visited order (oldest → most recent):",
     "packetReviewHint": "Review each concept's context:",
-    "packetUndocumented": "No document yet (it exists only as a reference). add_concept can create it.",
-    "packetPathHint": "Check the path between the first and last concepts:",
-    "packetDustyHint": "{count} concepts untouched for a while: maintenance candidates:",
-    "pastLinkLabel": "Earlier {count}",
-    "pastHeading": "Earlier",
-    "pastBackAriaLabel": "Back to history",
-    "pastRouteLabel": "{first} → {last}",
-    "pastRowMeta": "{date} · {count} concepts",
-    "pastDateToday": "Today",
-    "pastDateYesterday": "Yesterday",
-    "pastDeleteAriaLabel": "Delete this entry",
-    "pastClearAllLabel": "Clear all",
-    "pastClearAllConfirmLabel": "Press again to delete",
-    "pastCapCaption": "Keeps the last 10",
-    "pastEmptyBody": "No earlier history yet. Each visit is kept here when you finish.",
-    "pastReplayAriaLabel": "Reopen this history: {date}, {count} concepts",
-    "pastDeadRowMeta": "No longer on this map",
-    "pastReadOnlyNotice": "This folder is open read-only, so this history isn't being kept. Saving any document will ask for write access."
+    "packetUndocumented": "No document yet (it exists only as a reference). add_concepts can create it.",
+    "packetPathHint": "Check the path between the first and last concepts:"
   },
   "startChecklist": {
     "scaffoldToast": "Created {concepts} concept documents and {configs} agent connection files"

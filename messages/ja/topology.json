@@ -375,24 +375,8 @@
     "packetTitle": "訪問履歴",
     "packetOrder": "訪れた順（古い順 → 新しい順）：",
     "packetReviewHint": "各概念の文脈を確認してください：",
-    "packetUndocumented": "文書はまだありません（参照として存在するだけです）。add_conceptで作成できます。",
-    "packetPathHint": "最初と最後の概念の間のパスを確認：",
-    "packetDustyHint": "しばらく更新されていない概念{count}件：メンテナンス候補：",
-    "pastLinkLabel": "以前の履歴{count}",
-    "pastHeading": "以前の履歴",
-    "pastBackAriaLabel": "訪問履歴に戻る",
-    "pastRouteLabel": "{first} → {last}",
-    "pastRowMeta": "{date} · 概念{count}件",
-    "pastDateToday": "今日",
-    "pastDateYesterday": "昨日",
-    "pastDeleteAriaLabel": "この履歴を削除",
-    "pastClearAllLabel": "すべて消去",
-    "pastClearAllConfirmLabel": "もう一度押すと削除",
-    "pastCapCaption": "直近10件を保持",
-    "pastEmptyBody": "以前の履歴はまだありません。閲覧を終えるとここに残ります。",
-    "pastReplayAriaLabel": "この履歴を開き直す：{date}、概念{count}件",
-    "pastDeadRowMeta": "このマップにはもうありません",
-    "pastReadOnlyNotice": "このフォルダは読み取り専用で開いているため、この訪問履歴は残りません。文書を保存すると書き込み権限を確認します。"
+    "packetUndocumented": "文書はまだありません（参照として存在するだけです）。add_conceptsで作成できます。",
+    "packetPathHint": "最初と最後の概念の間のパスを確認："
   },
   "startChecklist": {
     "scaffoldToast": "概念文書{concepts}件とエージェント接続ファイル{configs}件を作成しました"
