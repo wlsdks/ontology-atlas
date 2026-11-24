@@ -8,11 +8,12 @@ mod refusal;
 mod tests;
 mod window;
 
+use crate::harness_source::{is_missing, relative_text};
 use refusal::path_refusal;
 use serde::Serialize;
 use std::fs;
 use std::io::Read;
-use std::path::{Component, Path, PathBuf};
+use std::path::{Path, PathBuf};
 use std::time::UNIX_EPOCH;
 
 pub(crate) const NOT_CONNECTED: &str = "code-reader-not-connected";
@@ -21,6 +22,7 @@ pub(crate) const OTHER_SYSTEM: &str = "code-reader-other-system";
 pub(crate) const GONE: &str = "code-reader-gone";
 pub(crate) const SECRET: &str = "code-reader-secret";
 pub(crate) const OUTSIDE: &str = "code-reader-outside";
+pub(crate) const HIDDEN: &str = "code-reader-hidden";
 pub(crate) const TOO_LARGE: &str = "code-reader-too-large";
 pub(crate) const NOT_TEXT: &str = "code-reader-not-text";
 
@@ -34,8 +36,8 @@ pub(crate) struct CodeWindow {
     lines: Vec<String>,
     first_line: u32,
     total_lines: u32,
-    /// The window stopped at its byte bound before the requested line count.
-    cut: bool,
+    /// The one line shown only up to the byte bound, when the window cut a line short.
+    cut_line: Option<u32>,
     last_modified: u64,
     bytes: u64,
 }
@@ -69,26 +71,26 @@ fn connected_code_root(vault_path: &str) -> Result<PathBuf, String> {
         match code.as_str() {
             "harness-unsupported-platform" => OTHER_SYSTEM,
             "harness-binding-invalid" | "harness-binding-ambiguous" => NOT_CONNECTED,
+            "harness-source-root-hidden" => HIDDEN,
             _ => ACCESS_LOST,
         }
         .to_string()
     })
 }
 
-fn relative_text(relative: &Path) -> Option<String> {
-    let mut parts = Vec::new();
-    for component in relative.components() {
-        let Component::Normal(part) = component else {
-            return None;
-        };
-        parts.push(part.to_str()?);
+/// A missing path is gone unless a link on it points nowhere: an answer that differed by whether
+/// a link's target exists would tell the page what lies outside the folder.
+fn missing_answer(root: &Path, requested: &Path) -> &'static str {
+    let mut at = root.to_path_buf();
+    for part in requested.components() {
+        at.push(part);
+        match fs::symlink_metadata(&at) {
+            Ok(metadata) if metadata.file_type().is_symlink() => return OUTSIDE,
+            Ok(_) => {}
+            Err(_) => return GONE,
+        }
     }
-    Some(parts.join("/"))
-}
-
-fn is_missing(error: &std::io::Error) -> bool {
-    error.kind() == std::io::ErrorKind::NotFound
-        || error.raw_os_error() == Some(if cfg!(windows) { 267 } else { 20 })
+    GONE
 }
 
 /// The canonical target's path inside `root`, refused by the same rule as the request so a link
@@ -99,8 +101,14 @@ fn resolve_inside(root: &Path, relative_path: &str) -> Result<PathBuf, String> {
     }
     let requested = crate::vault::scope::normalize_relative_path(relative_path)
         .map_err(|_| OUTSIDE.to_string())?;
-    let canonical = fs::canonicalize(root.join(&requested))
-        .map_err(|error| if is_missing(&error) { GONE } else { OUTSIDE }.to_string())?;
+    let canonical = fs::canonicalize(root.join(&requested)).map_err(|error| {
+        if is_missing(&error) {
+            missing_answer(root, &requested)
+        } else {
+            OUTSIDE
+        }
+        .to_string()
+    })?;
     let relative = canonical
         .strip_prefix(root)
         .map_err(|_| OUTSIDE.to_string())?
@@ -169,7 +177,7 @@ fn read_window(
         lines: window.lines,
         first_line: window.first_line,
         total_lines: window.total_lines,
-        cut: window.cut,
+        cut_line: window.cut_line,
         last_modified: modified_ms(&metadata),
         bytes: text.len() as u64,
     })

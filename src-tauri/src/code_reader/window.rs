@@ -7,7 +7,8 @@ pub(super) struct Window {
     pub lines: Vec<String>,
     pub first_line: u32,
     pub total_lines: u32,
-    pub cut: bool,
+    /// The first line, when even it passed the byte bound and is shown only up to it.
+    pub cut_line: Option<u32>,
 }
 
 fn line_without_return(line: &str) -> &str {
@@ -31,6 +32,7 @@ pub(super) fn window_of(text: &str, first_line: u32, line_count: u32) -> Window 
     let mut lines = Vec::new();
     let mut used = 0usize;
     let mut cut = false;
+    let mut cut_line = None;
     let mut total = 0u32;
     if !text.is_empty() {
         for (index, line) in body.split('\n').enumerate() {
@@ -43,6 +45,7 @@ pub(super) fn window_of(text: &str, first_line: u32, line_count: u32) -> Window 
             if used + line.len() > WINDOW_MAX_BYTES {
                 if lines.is_empty() {
                     lines.push(prefix_within(line, WINDOW_MAX_BYTES).to_string());
+                    cut_line = Some(number);
                 }
                 cut = true;
                 continue;
@@ -55,6 +58,6 @@ pub(super) fn window_of(text: &str, first_line: u32, line_count: u32) -> Window 
         lines,
         first_line,
         total_lines: total,
-        cut,
+        cut_line,
     }
 }

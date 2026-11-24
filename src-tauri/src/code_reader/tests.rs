@@ -115,7 +115,7 @@ fn reads_a_window_of_a_file_in_the_connected_folder() {
     );
     assert_eq!(window.first_line, 10);
     assert_eq!(window.total_lines, 30);
-    assert!(!window.cut);
+    assert_eq!(window.cut_line, None);
     assert!(window.last_modified > 0);
     let stamp = f.stamp("src/billing/invoice.ts").unwrap();
     assert_eq!(stamp.bytes, window.bytes);
@@ -182,11 +182,12 @@ fn refuses_secret_names_git_internals_and_unlisted_dot_folders() {
         ("config/.env.local", SECRET),
         ("deploy/server.pem", SECRET),
         ("ops/credentials.json", SECRET),
-        (".git/config", OUTSIDE),
-        (".GIT/HEAD", OUTSIDE),
-        (".vscode/settings.json", OUTSIDE),
-        (".mcp.json", OUTSIDE),
-        (".claude/settings.json", OUTSIDE),
+        (".git/config", HIDDEN),
+        (".GIT/HEAD", HIDDEN),
+        ("vendor.git/config", HIDDEN),
+        (".vscode/settings.json", HIDDEN),
+        (".mcp.json", HIDDEN),
+        (".claude/settings.json", HIDDEN),
     ] {
         f.put(path, PLANTED);
         assert_eq!(f.read(path).unwrap_err(), refusal, "{path:?}");
@@ -198,6 +199,131 @@ fn refuses_secret_names_git_internals_and_unlisted_dot_folders() {
         ["# rules"]
     );
     assert_eq!(f.read(".gitignore").unwrap().lines, ["out/"]);
+}
+
+#[cfg(unix)]
+#[test]
+fn refuses_key_files_the_harness_table_does_not_name() {
+    let f = Fixture::new();
+    let _scope = f.grant();
+    for path in [
+        "deploy/prod.env",
+        "env",
+        "infra/terraform.tfvars",
+        "infra/terraform.tfstate",
+        "infra/terraform.tfstate.backup",
+        "client_secret_1234.apps.json",
+        "app-firebase-adminsdk-ab12c.json",
+        "credentials-prod.json",
+        "my-secrets.yaml",
+        "token.json",
+        "passwords.txt",
+        "htpasswd",
+        "local.settings.json",
+        "config/database.yml",
+    ] {
+        f.put(path, PLANTED);
+        assert_eq!(f.read(path).unwrap_err(), SECRET, "{path:?}");
+        assert_eq!(f.stamp(path).unwrap_err(), SECRET, "{path:?}");
+    }
+    for path in [
+        "docker-compose.override.yml",
+        "src/auth/token.ts",
+        "package.json",
+    ] {
+        f.put(path, "plain\n");
+        assert_eq!(f.read(path).unwrap().lines, ["plain"], "{path:?}");
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn refuses_a_bound_root_inside_a_hidden_folder_of_the_grant() {
+    let f = Fixture::new();
+    let _scope = f.grant();
+    f.put(".git/config", PLANTED);
+    f.put(".claude/settings.json", PLANTED);
+    f.put(".codex/config.toml", PLANTED);
+    f.put(".vscode/settings.json", PLANTED);
+    f.put("vendor.git/config", PLANTED);
+    for (folder, file) in [
+        (".git", "config"),
+        (".claude", "settings.json"),
+        (".codex", "config.toml"),
+        (".vscode", "settings.json"),
+        ("vendor.git", "config"),
+    ] {
+        f.bind(&[("project", f.repo.join(folder))]);
+        let error = f.read(file).unwrap_err();
+        assert_eq!(error, HIDDEN, "{folder}/{file}");
+        assert!(!error.contains(PLANTED));
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn reads_a_folder_the_person_picked_inside_a_dot_folder() {
+    let f = Fixture::new();
+    let _scope = f.grant();
+    let picked = f.repo.join(".projects/app");
+    fs::create_dir_all(&picked).unwrap();
+    fs::write(picked.join("main.ts"), "main\n").unwrap();
+    grant_source_root(&picked);
+    f.bind(&[("project", picked)]);
+    assert_eq!(f.read("main.ts").unwrap().lines, ["main"]);
+}
+
+#[cfg(unix)]
+#[test]
+fn a_binding_in_any_folder_of_the_vault_cannot_name_a_hidden_root() {
+    let f = Fixture::new();
+    let _scope = f.grant();
+    f.put(".git/config", PLANTED);
+    let decoy = f.vault.join("notes/decoy");
+    fs::create_dir_all(decoy.join(".ontology-atlas")).unwrap();
+    let root = f.repo.join(".git");
+    let root_text = root.to_string_lossy();
+    let id = crate::source_digest(&[b"folder", root_text.as_bytes()]);
+    fs::write(
+        decoy.join(BINDINGS_FILE),
+        json!({"contractVersion":1,"bindings":[{"projectSlug":"x","sourceId":id,"rootPath":root_text,"kind":"folder","boundAt":"2026-11-24","receipt":{"projectSlug":"x","sourceId":id,"sourceKind":"folder"}}]}).to_string(),
+    )
+    .unwrap();
+    let error = read_code_window(
+        decoy.to_string_lossy().into_owned(),
+        "config".into(),
+        1,
+        400,
+    )
+    .unwrap_err();
+    assert_eq!(error, HIDDEN);
+}
+
+#[cfg(unix)]
+#[test]
+fn a_link_out_answers_the_same_whether_or_not_its_target_exists() {
+    let f = Fixture::new();
+    let _scope = f.grant();
+    fs::write(f.base.join("outside/exists.txt"), PLANTED).unwrap();
+    link(f.base.join("outside/exists.txt"), &f.repo.join("src/a.ts"));
+    link(f.base.join("outside/absent.txt"), &f.repo.join("src/b.ts"));
+    link(f.base.join("outside/absent-folder"), &f.repo.join("vendor"));
+    for path in ["src/a.ts", "src/b.ts", "vendor/c.ts"] {
+        assert_eq!(f.read(path).unwrap_err(), OUTSIDE, "{path:?}");
+        assert_eq!(f.stamp(path).unwrap_err(), OUTSIDE, "{path:?}");
+    }
+}
+
+#[cfg(not(unix))]
+#[test]
+fn another_system_reads_nothing_and_says_so() {
+    let f = Fixture::new();
+    let _scope = f.grant();
+    f.put("src/a.ts", PLANTED);
+    let error = f.read("src/a.ts").unwrap_err();
+    assert_eq!(error, OTHER_SYSTEM);
+    assert!(!error.contains(PLANTED));
+    assert_eq!(f.stamp("src/a.ts").unwrap_err(), OTHER_SYSTEM);
 }
 
 #[cfg(unix)]
@@ -279,12 +405,13 @@ fn a_window_stays_within_its_line_and_byte_bounds() {
 
     let wide = format!("{}\n", "x".repeat(1000)).repeat(200);
     let window = window_of(&wide, 1, WINDOW_MAX_LINES);
-    assert!(window.cut);
+    assert!(window.lines.len() < WINDOW_MAX_LINES as usize);
+    assert_eq!(window.cut_line, None);
     assert!(window.lines.iter().map(String::len).sum::<usize>() <= WINDOW_MAX_BYTES);
 
     let one_long_line = "가".repeat(WINDOW_MAX_BYTES);
     let window = window_of(&one_long_line, 1, 1);
-    assert!(window.cut);
+    assert_eq!(window.cut_line, Some(1));
     assert!(window.lines[0].len() <= WINDOW_MAX_BYTES);
 }
 

@@ -54,9 +54,10 @@ pub(crate) fn open_no_follow(root: &Path, relative: &Path) -> Result<fs::File, S
     Ok(unsafe { fs::File::from_raw_fd(fd) })
 }
 
+/// Without `openat` and `O_NOFOLLOW` a link swapped in after the check would be followed.
 #[cfg(not(unix))]
-pub(crate) fn open_no_follow(root: &Path, relative: &Path) -> Result<fs::File, String> {
-    fs::File::open(root.join(relative)).map_err(|error| io_failure(relative, &error))
+pub(crate) fn open_no_follow(_root: &Path, _relative: &Path) -> Result<fs::File, String> {
+    Err("harness-unsupported-platform".into())
 }
 
 /// The error never carries file content.
