@@ -234,7 +234,7 @@
     "connectionNeedsReview": "점검",
     "connectionHint": ".mcp.json.example은 다른 폴더에서 쓸 템플릿이라 연결 파일 수에 넣지 않아요. 여기는 실행 방식과 이 폴더 경로까지만 확인하므로, 에이전트를 다시 시작한 뒤 각 도구에서 실제 연결을 확인하세요.",
     "boundaryTitle": "외부 에이전트 연결",
-    "boundaryDesc": "이 패널은 Claude Code·Codex·Cursor를 각자의 앱이나 터미널에서 쓰도록 연결하며 여기서 대화를 열지는 않아요. 폴더 밖을 건드리기 전에 먼저 묻는 앱 안 Claude Agent 대화는 별도 화면이에요.",
+    "boundaryDesc": "이 패널은 Claude Code·Codex·Cursor를 각자의 앱이나 터미널에서 쓰도록 연결하며 여기서 대화를 열지는 않아요. 연결한 코드 폴더의 파일 읽기 말고는 폴더 밖을 건드리기 전에 먼저 묻는 앱 안 Claude Agent 대화는 별도 화면이에요.",
     "validationGateAriaLabel": "폴더 상태",
     "validationGateTitle": "폴더 상태",
     "validationGateReady": "문제 없음",

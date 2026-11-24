@@ -199,7 +199,7 @@
     "auto": "Auto-approve"
   },
   "approvalHint": {
-    "auto": "File edits in this folder and adding or changing concepts and relations go ahead without asking. Shell commands, anything outside the folder, deletions and commits still ask. It stays on for this folder until you turn it off."
+    "auto": "File edits in this folder and adding or changing concepts and relations go ahead without asking. Shell commands, changes outside the folder, deletions and commits still ask. It stays on for this folder until you turn it off."
   },
   "modeUnverifiedHint": "Not checked yet.",
   "runtimePicker": "Agent to chat with",
@@ -458,7 +458,7 @@
       "credentials-link": "Does it reuse your terminal sign-in",
       "shadow-keychain": "Is an old sign-in record in the way",
       "login": "Is this folder signed in",
-      "gate": "Does it ask before accessing anything outside the folder"
+      "gate": "Can the app hold work outside the folder for you to answer"
     },
     "next": {
       "cli": "Open that agent’s install guide from this list, install it, then press \"Check again\" above.",
