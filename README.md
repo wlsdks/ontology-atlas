@@ -146,7 +146,7 @@ Your agent reaches the folder two ways:
 
 ## Limits
 
-- **Atlas asks before an agent writes only in the app's chat.** There each file edit and Atlas write waits for you, unless you turn on Auto-approve for that folder; shell commands, deletions and paths outside the folder always ask, except reading a file of its connected code folder. An agent connected over MCP writes under its own tool's permission rules. [Agents](docs/features/agents.md)
+- **Atlas asks before an agent writes only in the app's chat.** There each file edit and Atlas write waits for you, unless you turn on Auto-approve for that folder; shell commands, deleting or merging concepts, commits, and paths outside the folder always ask, except Atlas reading the code folder the map was made in and reading a file of its connected code folder. An agent connected over MCP writes under its own tool's permission rules. [Agents](docs/features/agents.md)
 - **Library setup and checks need the app.** In a browser, Library offers the app or adding files. [Library](docs/features/library/workspace.md)
 - **Changes reads public GitHub pull requests only,** after you ask, and the list may be incomplete; private pull requests are not read. [Change briefing](docs/features/change-briefing.md)
 - **Git's Pull can change files anywhere in the repository,** not only in the open folder. [Git](docs/features/git.md)

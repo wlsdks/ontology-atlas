@@ -8,19 +8,11 @@ import { STANDING_APPROVAL_ATLAS_WRITES, standingApproval } from '@/features/acp
 import { READ_TOOL_NAMES, RETIRED_TOOL_REPLACEMENTS } from '../../../mcp/src/server/registry.mjs';
 
 /**
- * Auto-approve may answer only additive or rewording Atlas writes. The server's generated tool
- * surface is the authority for what is a write; the ask list is the auto-approve decision's.
+ * Auto-approve answers the Atlas writes a map build makes; deleting and merging concepts keep the
+ * card. The server's generated tool surface is the authority for what is a write; the ask list is
+ * the auto-approve decision's.
  */
-const ALWAYS_ASK = [
-  'delete_concept',
-  'remove_relation',
-  'merge_concepts',
-  'absorb_document',
-  'finalize_project_meaning',
-  'git_snapshot',
-  'connect_project_source',
-  'disconnect_project_source',
-];
+const ALWAYS_ASK = ['delete_concept', 'merge_concepts'];
 
 const ROOT = join(import.meta.dirname, '..', '..', '..');
 const surface = JSON.parse(readFileSync(join(ROOT, 'docs/.generated/mcp-surface.json'), 'utf8')) as {
