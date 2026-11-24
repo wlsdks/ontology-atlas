@@ -104,7 +104,9 @@ test('validate_vault and a write keep an area survey\'s coverage within their bo
     `, { vault });
     const { coverage } = result.validation;
     assert.match(coverage, /Areas: 0 of \d+ abilities the survey found/);
-    assert.equal(result.written.coverage, coverage, 'a write reports the line validate_vault does');
+    const linesToKeep = (line) => line.slice(line.indexOf('Keep exactly these lines'));
+    assert.equal(linesToKeep(result.written.coverage), linesToKeep(coverage), 'a write gives the lines to keep that validate_vault does');
+    assert.match(coverage, /What the survey lists in them/, 'validate_vault lists the next files\' ability rows');
     assert.ok(result.validationText <= 40_000, `validate_vault answered ${result.validationText} characters`);
     assert.ok(result.writtenText <= 40_000, `the write answered ${result.writtenText} characters`);
     assert.ok(coverage.split('\n').filter((line) => line.startsWith('- Not mapped yet:')).length <= 12, 'at most twelve area bullets');
