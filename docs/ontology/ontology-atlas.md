@@ -27,14 +27,22 @@ Ontology Atlas is a local-first workbench that keeps one reviewable Markdown rec
 - Any backend, login, account, or hosted store holding the person's meaning.
 
 ## Uncertainty
-- Built from `README.md`, `AGENTS.md`, `docs/PRODUCT-DIRECTION.md`, `docs/ARCHITECTURE.md` and section 0 of `docs/FEATURES.md`, plus a file-level reading of all four domains. `docs/ontology` was deliberately not read; the rest of `docs/FEATURES.md` was scanned by heading only.
-- At initial construction, nothing in this map was run, rendered, or tested. Nodes then described source readings, often headers and import receipts rather than full bodies; several large modules were identified only from those limited observations.
-- The initial construction did not open `src-tauri/`; native dependencies then came from web-side bridge readings. The bounded PR #2059 sync read the Jev native transfer boundary and exercised Library/Concept sets in the installed macOS app, plus one synthetic Jev request. Those observations are recorded in the affected nodes and do not qualify the rest of the map.
-- The 2026-09-28 census has 32 capabilities and 61 elements. The competency inventories below retain the initial 29-capability/56-element reading as historical evidence; this sync does not requalify all later additions or their runtime impact.
+Not mapped yet: 43 of 44 areas, 67 of 71 abilities.
+- Not mapped yet: src/views (22 of 22 abilities not on the map)
+- Not mapped yet: src-tauri (11 of 11 abilities not on the map)
+- Not mapped yet: app (8 of 8 abilities not on the map)
+- Not mapped yet: src/features (7 of 9 abilities not on the map)
+- Not mapped yet: src/widgets/ontology-map (4 of 5 abilities not on the map)
+- Not mapped yet: mcp (2 of 2 abilities not on the map)
+- Not mapped yet: src/shared (2 of 2 abilities not on the map)
+- Not mapped yet: src/entities (2 of 2 abilities not on the map)
+- Not mapped yet: src/widgets/acp-chat-panel (2 of 2 abilities not on the map)
+- Not mapped yet: src/widgets/atlas-git-panel (1 of 1 ability not on the map)
+- Not mapped yet: src/widgets/vault-agent-panel (1 of 1 ability not on the map)
+- Not mapped yet: src/widgets/library-sources-overview (1 of 1 ability not on the map)
 
-- The bounded 2026-10-10 Analysis sync updates the inspection capability, its retired helper claims, and canonical document-property visibility. It does not repeat the full capability inventory, prove runtime change impact, or accept the model's remaining meanings.
-
-- The bounded 2026-10-14 self-use pass opened this vault in the installed macOS app, inspected the project and its four domain explanations, remeasured declared source paths, and consumed actual MCP task briefs. It preserves the existing domain boundaries and the partial ability, evidence and impact answers; the remaining codebase has not received a complete semantic re-review.
+- Built from `README.md`, `AGENTS.md`, `docs/PRODUCT-DIRECTION.md`, `docs/ARCHITECTURE.md`, section 0 of `docs/FEATURES.md` and a file-level reading of the four domains; little was run or rendered, and `src-tauri/` was read only at the Jev boundary.
+- Later bounded syncs (Analysis, self-use in the app) updated the nodes they name; the rest of the codebase has had no complete semantic re-review.
 
 ## Competency answers
 
