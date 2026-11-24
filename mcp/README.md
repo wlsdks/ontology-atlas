@@ -1464,7 +1464,7 @@ evidence.
 
 ### Bounded defaults
 
-Every answer is sent twice, as pretty JSON text and as the same object in
+Every answer is sent twice, as compact JSON text and as the same object in
 `structuredContent`. Both stay: the MCP specification asks a tool with
 structured output to send the serialized JSON as text too, and a client that
 read the tool's `outputSchema` (the SDK client Claude Code uses) rejects a
@@ -1529,8 +1529,8 @@ suggestion logic could not be found, while that function sat past line 900 of a
 then read the exact lines. `mode: "outline"` takes no `startLine` or `maxLines`
 and rejects them; it reads the whole file under the same 256 KiB file cap and
 the same root, symlink, sensitive-path, binary and `expectedSha256` checks, and
-refuses with the same reasons. The row carries `status: "outlined"`, the
-file's `sha256` to replay with, `language`, `declarationCount`, and `truncated`
+refuses with the same reasons. The row carries `status: "outlined"`,
+`language`, `declarationCount`, and `truncated` (a line read's pinned citation carries the hash)
 when the 400-declaration ceiling or the 16 KiB outline budget cut the list
 short. Declarations are found by a deterministic line scanner
 (`mcp/src/evidence-search/source-outline.mjs`) for JavaScript/TypeScript, Python, Go, Rust,

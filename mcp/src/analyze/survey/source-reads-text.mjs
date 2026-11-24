@@ -33,7 +33,7 @@ function readCall(selectors) {
 }
 
 function outlineLines(row) {
-  const lines = [`== outline ${t(row.path)} (${t(row.language, 40)}, ${row.fileLines} lines, ${row.declarationCount} declarations, sha256 ${row.sha256})`];
+  const lines = [`== outline ${t(row.path)} (${t(row.language, 40)}, ${row.fileLines} lines, ${row.declarationCount} declarations)`];
   for (const declaration of row.declarations) lines.push(outlineLine(declaration));
   if (row.truncated) lines.push('Cut: the outline stopped at its size limit; read the rest by symbol or by lines.');
   return lines;

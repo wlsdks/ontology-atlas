@@ -15,29 +15,8 @@ function formatUnknownToolError(name) {
   return `Unknown tool: ${name}.${suggestionText} Allowed tools: ${allowedNames.join(', ')}.`;
 }
 
-const OK_ENVELOPE_BYTES = Buffer.byteLength('{"content":[{"type":"text","text":""}],"structuredContent":}');
-
-function okResponseBytes(result, prettyText = JSON.stringify(result, null, 2)) {
-  let charsEscapedAsText = 0;
-  let layoutOutsideStrings = 0;
-  let inString = false;
-  let escaping = false;
-  for (const char of prettyText) {
-    if (char === '"' || char === '\\' || char === '\n') charsEscapedAsText += 1;
-    if (inString) {
-      if (escaping) escaping = false;
-      else if (char === '\\') escaping = true;
-      else if (char === '"') inString = false;
-    } else if (char === '"') {
-      inString = true;
-    } else if (char === ' ' || char === '\n') {
-      layoutOutsideStrings += 1;
-    }
-  }
-  const prettyBytes = Buffer.byteLength(prettyText, 'utf8');
-  const textFieldBytes = prettyBytes + charsEscapedAsText;
-  const structuredContentBytes = prettyBytes - layoutOutsideStrings;
-  return OK_ENVELOPE_BYTES + textFieldBytes + structuredContentBytes;
+function okResponseBytes(result) {
+  return Buffer.byteLength(JSON.stringify(ok(result)), 'utf8');
 }
 
 function ok(result) {
@@ -51,7 +30,7 @@ function ok(result) {
     return { content: [{ type: 'text', text: result.text }] };
   }
   const response = {
-    content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+    content: [{ type: 'text', text: JSON.stringify(result) }],
   };
   if (result && typeof result === 'object' && !Array.isArray(result)) {
     response.structuredContent = result;

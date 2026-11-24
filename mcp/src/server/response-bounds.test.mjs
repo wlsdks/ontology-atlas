@@ -274,7 +274,7 @@ test('find_evidence returns the best 50 by default and says how many matched', (
 test('ok() sends the JSON text the MCP spec asks for and the structuredContent an outputSchema client requires', () => {
   const result = { rows: [{ slug: 'a' }] };
   const response = ok(result);
-  assert.equal(response.content[0].text, JSON.stringify(result, null, 2));
+  assert.equal(response.content[0].text, JSON.stringify(result));
   assert.equal(response.structuredContent, result);
 });
 
