@@ -198,6 +198,13 @@ fn newest_commits(folder: &Path, range: &str) -> Option<Vec<CommitLine>> {
 /// Parses `git log -z --format=%h%x1f%ct%x1f%s`: NUL-ended records whose subject comes last, so a
 /// subject holding the field separator stays whole.
 pub(crate) fn parse_log(text: &str) -> Vec<CommitLine> {
+    let mut commits = parse_all_log(text);
+    commits.truncate(COMMITS_READ);
+    commits
+}
+
+/// As `parse_log`, keeping every record.
+pub(crate) fn parse_all_log(text: &str) -> Vec<CommitLine> {
     text.split('\0')
         .filter_map(|record| {
             let mut fields = record.trim_start_matches('\n').splitn(3, FIELD);
@@ -212,7 +219,6 @@ pub(crate) fn parse_log(text: &str) -> Vec<CommitLine> {
                 at: at.parse().ok(),
             })
         })
-        .take(COMMITS_READ)
         .collect()
 }
 

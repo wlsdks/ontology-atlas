@@ -8,6 +8,7 @@ mod agent_processes;
 mod agent_sessions;
 mod fingerprint;
 mod git_read;
+mod landed;
 mod worktrees;
 
 use std::collections::BTreeMap;
@@ -149,4 +150,23 @@ pub fn work_status_activity(
 ) -> Option<activity::WorktreeActivity> {
     let root = granted_root(&repository_path).ok()?;
     activity::read_activity(&root, &worktree_id, base_branch.as_deref())
+}
+
+/// The newest changes the base branch took in, merges and squashed commits alike, with how much
+/// each changed: the record of finished work, which outlives the worktrees it was done in. One `git log`.
+#[tauri::command(async)]
+pub fn work_status_landed(
+    repository_path: String,
+    base_branch: String,
+) -> Option<landed::LandedRead> {
+    landed::read_landed(&granted_root(&repository_path).ok()?, &base_branch)
+}
+
+/// One finished change opened: the branch commits a merge brought and the files it changed.
+#[tauri::command(async)]
+pub fn work_status_landed_detail(
+    repository_path: String,
+    hash: String,
+) -> Option<landed::LandedDetail> {
+    landed::read_detail(&granted_root(&repository_path).ok()?, &hash)
 }
