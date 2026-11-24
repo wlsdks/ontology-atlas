@@ -511,3 +511,8 @@ None — the owner's answers are in the Work status spec.
   popover planned for them is slice 9's. The copy table carries the keys as shipped. Off and
   unreadable say what is lost instead of "rooms show only when each folder last changed", which
   was not true of a room with a program in it.
+- 2026-11-24: the wall facts stay drawn and fade when a room's width crosses what fits them
+  (or a second tool joins), instead of mounting: a room that moves keeps its face, so mounting
+  them there cut them in or out in one frame. The whole browser run on v2.6.0's tag caught it
+  where frames are slow; the paint sampler now samples 15 seconds by time, since 900 frames
+  ended a 120 Hz display's sampling before the change, and reads a part's own inner fade.

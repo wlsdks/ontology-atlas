@@ -200,13 +200,19 @@ function ScreenText({ screen, rows, fileColumns, areas }: { screen: MonitorCopy;
   );
 }
 
-/** The room's state on the wall left of Moru, at a size read across the stage: the state, the fact beside it and how long the session has worked. */
-function WallFacts({ screen }: { screen: MonitorCopy }) {
+/**
+ * The room's state on the wall left of Moru, at a size read across the stage: the state, the fact beside it and how long the session has worked.
+ * It stays drawn while the room is too narrow for it or holds a pair, and fades when that changes: a room that moves keeps its face,
+ * so mounting it there would cut it in or out in one frame.
+ */
+function WallFacts({ screen, shown }: { screen: MonitorCopy; shown: boolean }) {
   return (
     <div className={styles.wallFacts} data-testid="work-room-facts" data-room-part>
-      <span className={cn(STATE_TONE[screen.state.tone], 'text-title leading-title font-[var(--font-weight-strong)]')}><SwapText value={screen.state.lead} wrap /></span>
-      {screen.state.rest ? <span className="text-body leading-body text-[color:var(--color-text-secondary)]"><SwapText value={screen.state.rest} wrap /></span> : null}
-      {screen.worked ? <span className="text-body leading-body text-[color:var(--color-text-tertiary)]"><SwapText value={screen.worked} wrap /></span> : null}
+      <div className={styles.wallFactsText} data-shown={shown} data-room-fade>
+        <span className={cn(STATE_TONE[screen.state.tone], 'text-title leading-title font-[var(--font-weight-strong)]')}><SwapText value={screen.state.lead} wrap /></span>
+        {screen.state.rest ? <span className="text-body leading-body text-[color:var(--color-text-secondary)]"><SwapText value={screen.state.rest} wrap /></span> : null}
+        {screen.worked ? <span className="text-body leading-body text-[color:var(--color-text-tertiary)]"><SwapText value={screen.worked} wrap /></span> : null}
+      </div>
     </div>
   );
 }
@@ -362,7 +368,7 @@ export function LargeRoom({ room, unit, rows, pairScale, fileColumns, areas, wal
             </span>
           </>
         ) : null}
-        {wallFacts && !pair ? <WallFacts screen={copy.monitor(room)} /> : null}
+        <WallFacts screen={copy.monitor(room)} shown={wallFacts && !pair} />
         <Monitor room={room} copy={copy} rows={rows} fileColumns={pair ? 0 : fileColumns} areas={!pair && areas} />
         <i className={styles.dim} />
       </div>

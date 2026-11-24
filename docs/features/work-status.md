@@ -201,7 +201,9 @@ so. The folders appear only when the files are in two or more and a column of
 files still fits beside them. Every stage room has one form: the screen across
 the room and Moru under it on the rail. A room at least 600 px wide says its
 state on the wall left of Moru, at a size read across the stage, with the fact
-beside it and how long the session has worked. The rail carries a cart with
+beside it and how long the session has worked; when a room's width starts or
+stops fitting those words they fade, after the room's other parts have gone
+dark for its move, never in one frame. The rail carries a cart with
 one crate per commit, six at most and then `+n`, to a stop at its end
 marked `main`; Git does not tell pre-push, push, PR or CI yet, so nothing is drawn
 for them. Two tools in one folder are the alarm: the room is framed in amber, its screen
