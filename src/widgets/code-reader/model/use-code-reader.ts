@@ -15,6 +15,7 @@ import {
   WINDOW_STEP_LINES,
   type WindowRequest,
   windowAround,
+  windowJoining,
 } from "./code-reader-model";
 
 /** The sentence that a read is under way waits this long, so a quick read never flashes it. */
@@ -24,6 +25,8 @@ export interface CodeReaderText {
   firstLine: number;
   lines: string[];
   totalLines: number;
+  /** A line too long to read whole, shown up to the read's byte bound. */
+  cutLine: number | null;
   lastModified: number;
   bytes: number;
 }
@@ -67,6 +70,7 @@ function textOf(window: CodeWindow): CodeReaderText {
     firstLine: window.firstLine,
     lines: window.lines,
     totalLines: window.totalLines,
+    cutLine: window.cutLine,
     lastModified: window.lastModified,
     bytes: window.bytes,
   };
@@ -187,11 +191,14 @@ export function useCodeReader(input: {
         return;
       }
       setSnapshot({ ...current, activeRange: index });
-      readWindow(key, windowAround(range), (window, previous) => ({
+      // A range near the lines shown is read together with them, so the box glides there.
+      const shown = current.text;
+      const joined = shown && range ? windowJoining({ firstLine: shown.firstLine, lineCount: shown.lines.length }, range) : null;
+      readWindow(key, joined ?? windowAround(range), (window, previous) => ({
         ...previous,
         text: textOf(window),
         changed: previous.changed || (previous.text !== null && previous.text.lastModified !== window.lastModified),
-        scroll: { line: first, smooth: false, nonce: ++nonce.current },
+        scroll: { line: first, smooth: joined !== null, nonce: ++nonce.current },
       }));
     },
     [current, key, readWindow],
@@ -207,7 +214,12 @@ export function useCodeReader(input: {
       return {
         ...previous,
         more: null,
-        text: { ...previous.text, firstLine: window.firstLine, lines: [...window.lines, ...previous.text.lines] },
+        text: {
+          ...previous.text,
+          firstLine: window.firstLine,
+          lines: [...window.lines, ...previous.text.lines],
+          cutLine: window.cutLine ?? previous.text.cutLine,
+        },
       };
     });
   }, [current, key, readWindow]);
@@ -220,7 +232,11 @@ export function useCodeReader(input: {
     setSnapshot({ ...current, more: "below" });
     readWindow(key, { firstLine: nextLine, lineCount: WINDOW_STEP_LINES }, (window, previous) => {
       if (!previous.text || window.lastModified !== previous.text.lastModified) return { ...previous, changed: true, more: null };
-      return { ...previous, more: null, text: { ...previous.text, lines: [...previous.text.lines, ...window.lines] } };
+      return {
+        ...previous,
+        more: null,
+        text: { ...previous.text, lines: [...previous.text.lines, ...window.lines], cutLine: previous.text.cutLine ?? window.cutLine },
+      };
     });
   }, [current, key, readWindow]);
 

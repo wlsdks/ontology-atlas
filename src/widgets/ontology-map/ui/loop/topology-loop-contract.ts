@@ -55,6 +55,8 @@ export interface UseTopologyLoopArgs {
   /** Bumped to aim the camera at the spotlit nodes when the lens or its window changes (0 = unused). */
   spotlightFitToken?: number;
   constellationFocusId?: string | null;
+  /** Bumped when side chrome settles at a new width, so a selection it now covers slides clear. */
+  selectionReframeToken?: number;
   relayoutToken: number;
   /**
    * The first-map reveal: on increment every node starts at the spine centre (the project's position) and springs home, so

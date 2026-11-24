@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { citeTrust, codeReaderTarget, readerPlacement, refusalState, SAME_WRITE_SLACK_MS, windowAround } from "./code-reader-model";
+import { citeTrust, codeReaderTarget, readerPlacement, type ReaderRoom, refusalState, SAME_WRITE_SLACK_MS, windowAround, windowJoining } from "./code-reader-model";
 
 describe("codeReaderTarget", () => {
   it("opens the declared file with the ranges cited in it only", () => {
@@ -74,17 +74,53 @@ describe("refusalState", () => {
 });
 
 describe("readerPlacement", () => {
+  const room = (slotWidthPx: number, more: Partial<ReaderRoom> = {}): ReaderRoom => ({
+    slotWidthPx,
+    listReachPx: 0,
+    conversationWidthPx: 0,
+    rightInsetPx: 0,
+    panelReachPx: 352,
+    ...more,
+  });
+
   it.each([
-    ["1040", 976, 352, { mode: "replace", widthPx: 496 }],
-    ["1512", 1448, 352, { mode: "beside", widthPx: 616 }],
-    ["1920", 1856, 352, { mode: "beside", widthPx: 640 }],
-  ] as const)("matches the spec's layout at a %s window", (_, slot, list, placement) => {
-    expect(readerPlacement(slot, list, 0)).toEqual(placement);
+    ["1040", room(976), { mode: "replace", widthPx: 496, makesRoom: false }],
+    ["1512", room(1448), { mode: "beside", widthPx: 616, makesRoom: false }],
+    ["1920", room(1856), { mode: "beside", widthPx: 640, makesRoom: false }],
+    ["1040 with the conversation", room(976 - 393, { conversationWidthPx: 393 }), { mode: "replace", widthPx: 496, makesRoom: true }],
+    ["1512 with the conversation", room(1448 - 393, { conversationWidthPx: 393 }), { mode: "replace", widthPx: 575, makesRoom: false }],
+    ["1920 with the conversation", room(1856 - 420, { conversationWidthPx: 420 }), { mode: "beside", widthPx: 604, makesRoom: false }],
+  ] as const)("matches the spec's layout at a %s window", (_, measured, placement) => {
+    expect(readerPlacement(measured)).toEqual(placement);
   });
 
   it("keeps the map's 480 px beside a reader that stands at the panel's inset", () => {
-    const placement = readerPlacement(976, 24 + 352 + 12, 24);
-    expect(placement).toEqual({ mode: "replace", widthPx: 472 });
+    const placement = readerPlacement(room(976, { rightInsetPx: 24, panelReachPx: 364 }));
+    expect(placement).toMatchObject({ mode: "replace", widthPx: 472 });
     expect(976 - 24 - placement.widthPx).toBeGreaterThanOrEqual(480);
+  });
+
+  it("counts the expanded concept list out of the map, so the reader takes the panel's place", () => {
+    const placement = readerPlacement(room(1384, { listReachPx: 324, rightInsetPx: 24, panelReachPx: 364 }));
+    expect(placement).toEqual({ mode: "replace", widthPx: 556, makesRoom: false });
+    expect(1384 - 324 - 24 - placement.widthPx).toBeGreaterThanOrEqual(480);
+  });
+
+  it("asks the concept list to give way when the reader would not fit even in the panel's place", () => {
+    expect(readerPlacement(room(976, { listReachPx: 324, rightInsetPx: 24, panelReachPx: 364 }))).toEqual({
+      mode: "replace",
+      widthPx: 472,
+      makesRoom: true,
+    });
+  });
+});
+
+describe("windowJoining", () => {
+  it("reads one window spanning the shown lines and a nearby range with its lead-in", () => {
+    expect(windowJoining({ firstLine: 28, lineCount: 120 }, { path: "a.ts", startLine: 7, endLine: 7 })).toEqual({ firstLine: 1, lineCount: 147 });
+  });
+
+  it("gives up when the two together pass the window's line bound", () => {
+    expect(windowJoining({ firstLine: 28, lineCount: 120 }, { path: "a.ts", startLine: 900, endLine: 910 })).toBeNull();
   });
 });

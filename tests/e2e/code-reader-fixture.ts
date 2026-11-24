@@ -26,6 +26,8 @@ interface CodeFile {
   text?: string;
   lastModified?: number;
   refusal?: string;
+  /** The line Rust would cut at its byte bound. */
+  cutLine?: number;
 }
 
 export const CODE_FILES: Record<string, CodeFile> = {
@@ -33,8 +35,13 @@ export const CODE_FILES: Record<string, CodeFile> = {
   "src/billing/tax.ts": { text: numbered(80, "applyTax"), lastModified: DOCUMENT_WRITTEN_MS + DAY_MS },
   "src/billing/short.ts": { text: numbered(20, "shortRule"), lastModified: DOCUMENT_WRITTEN_MS - DAY_MS },
   "src/billing/plain.ts": { text: numbered(30, "plainRule"), lastModified: DOCUMENT_WRITTEN_MS - DAY_MS },
+  "src/auth/admin.ts": {
+    text: ["export function canDelete(user: User) {", "  /* \u202E } \u2066 if (user.isAdmin) \u2069 \u2066 begin admins only */", "  return true;", `  const blob = "${"x".repeat(80)}`, "}"].join("\n") + "\n",
+    lastModified: DOCUMENT_WRITTEN_MS - DAY_MS,
+    cutLine: 4,
+  },
   "config/.env": { refusal: "code-reader-secret" },
-  ".git/config": { refusal: "code-reader-outside" },
+  ".git/config": { refusal: "code-reader-hidden" },
   "assets/huge.json": { refusal: "code-reader-too-large" },
   "assets/logo.png": { refusal: "code-reader-not-text" },
   "src/billing/renamed.ts": { refusal: "code-reader-gone" },
@@ -55,11 +62,12 @@ export const CODE_CONCEPTS = {
   stale: "capabilities/tax",
   beyond: "capabilities/short-rule",
   none: "capabilities/plain-rule",
+  hiddenOrder: "capabilities/admin-check",
 } as const;
 
 export const REFUSED_CONCEPTS: Record<string, { slug: string; state: string }> = {
   "config/.env": { slug: "capabilities/env-config", state: "secret" },
-  ".git/config": { slug: "capabilities/git-config", state: "outside" },
+  ".git/config": { slug: "capabilities/git-config", state: "hidden" },
   "assets/huge.json": { slug: "capabilities/huge-data", state: "tooLarge" },
   "assets/logo.png": { slug: "capabilities/logo", state: "notText" },
   "src/billing/renamed.ts": { slug: "capabilities/renamed", state: "gone" },
@@ -88,6 +96,7 @@ const VAULT_OVERRIDES: Record<string, string> = {
   "capabilities/tax.md": capability(CODE_CONCEPTS.stale, "Tax", "src/billing/tax.ts", "Applies tax per line (`src/billing/tax.ts:L40-L52`)."),
   "capabilities/short-rule.md": capability(CODE_CONCEPTS.beyond, "Short rule", "src/billing/short.ts", "Decides at `src/billing/short.ts:L50-L60`."),
   "capabilities/plain-rule.md": capability(CODE_CONCEPTS.none, "Plain rule", "src/billing/plain.ts", "Names its file and cites no lines."),
+  "capabilities/admin-check.md": capability(CODE_CONCEPTS.hiddenOrder, "Admin check", "src/auth/admin.ts", "Decides who may delete (`src/auth/admin.ts:L1-L5`)."),
   ...Object.fromEntries(
     Object.entries(REFUSED_CONCEPTS).map(([path, { slug }]) => [
       `${slug}.md`,
@@ -118,7 +127,7 @@ export async function installCodeReaderRuntime(page: Page, options: { refuseAll?
         if (!file) throw "code-reader-gone";
         if (file.refusal) throw file.refusal;
         const text = file.text ?? "";
-        return { text, lastModified: touched.get(path) ?? file.lastModified ?? 0, bytes: new TextEncoder().encode(text).length };
+        return { text, cutLine: file.cutLine, lastModified: touched.get(path) ?? file.lastModified ?? 0, bytes: new TextEncoder().encode(text).length };
       };
       internals.invoke = (command, args = {}) => {
         if (command === "read_code_window") {
@@ -132,7 +141,7 @@ export async function installCodeReaderRuntime(page: Page, options: { refuseAll?
               lines: all.slice(firstLine - 1, firstLine - 1 + count),
               firstLine,
               totalLines: all.length,
-              cut: false,
+              cutLine: file.cutLine ?? null,
               lastModified: file.lastModified,
               bytes: file.bytes,
             });
@@ -156,9 +165,12 @@ export async function installCodeReaderRuntime(page: Page, options: { refuseAll?
   );
 }
 
-/** Opens the fixture vault through the app's chooser, then the map on one concept. */
-export async function openConceptOnMap(page: Page, slug: string, locale: "en" | "ko" = "ko"): Promise<void> {
+/**
+ * Opens the fixture vault through the app's chooser, then the map on one concept; `probe` attaches
+ * the map's `?e2e=1` probe, which reads where each concept is drawn.
+ */
+export async function openConceptOnMap(page: Page, slug: string, locale: "en" | "ko" = "ko", options: { probe?: boolean } = {}): Promise<void> {
   await mountHarnessVault(page);
-  await page.goto(`/${locale}/topology/?p=${slug}&guides=off`);
+  await page.goto(`/${locale}/topology/?p=${slug}&guides=off${options.probe ? "&e2e=1" : ""}`);
   await expect(page.getByTestId("map-detail-panel")).toBeVisible({ timeout: 60_000 });
 }

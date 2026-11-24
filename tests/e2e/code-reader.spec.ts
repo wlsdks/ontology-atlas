@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { CODE_CONCEPTS, REFUSED_CONCEPTS, installCodeReaderRuntime, openConceptOnMap } from "./code-reader-fixture";
+import { waitForAnimationsDone, waitForBoxStill, waitForMapStill } from "./settle";
 
 /*
  * The code reader: a concept's cited lines read in place beside the concept panel, in the app.
@@ -19,18 +20,49 @@ async function openReader(page: Page) {
   return reader;
 }
 
-/** The map's uncovered width left of the reader, inside the map's own slot. */
+/** The map's uncovered width: from the expanded concept list, or the slot's edge, to the reader. */
 async function mapWidthBesideReader(page: Page): Promise<number> {
   return page.evaluate(() => {
     const slot = document.querySelector('[data-testid="topology-map-surface"]')!.getBoundingClientRect();
+    const list = document.querySelector('[data-testid="topology-index-panel"]:not([aria-hidden="true"] *)');
     const reader = document.querySelector('[data-testid="code-reader"]')!.getBoundingClientRect();
-    return reader.left - slot.left;
+    return reader.left - Math.max(slot.left, list?.getBoundingClientRect().right ?? slot.left);
   });
+}
+
+/** Once the reader has taken its seat and the camera has settled. */
+async function readerSettled(page: Page) {
+  const reader = page.getByTestId("code-reader");
+  await waitForAnimationsDone(reader);
+  await waitForBoxStill(reader);
+  await waitForMapStill(page, { what: "camera" });
+}
+
+/** Where the selected concept is drawn, and the boxes it must stay clear of. */
+async function selectedConceptClearance(page: Page, title: string) {
+  return page.evaluate((label) => {
+    type ProbeNode = { label: string; x: number; y: number };
+    const canvas = document.querySelector('[data-testid="ontology-map-canvas"]')!.getBoundingClientRect();
+    const probe = (window as unknown as { __atlasMap: { nodes(): ProbeNode[] } }).__atlasMap;
+    const node = probe.nodes().find((candidate) => candidate.label === label)!;
+    const point = { x: canvas.left + node.x, y: canvas.top + node.y };
+    const covers = (selector: string) => {
+      const element = document.querySelector(selector);
+      if (!element) return false;
+      const box = element.getBoundingClientRect();
+      return point.x >= box.left && point.x <= box.right && point.y >= box.top && point.y <= box.bottom;
+    };
+    return {
+      inCanvas: point.x >= canvas.left && point.x <= canvas.right && point.y >= canvas.top && point.y <= canvas.bottom,
+      underReader: covers('[data-testid="code-reader"]'),
+      underList: covers('[data-testid="topology-index-panel"]:not([aria-hidden="true"] *)'),
+    };
+  }, title);
 }
 
 test.describe("Code reader", () => {
   test("opens on the cited lines beside the panel, moves between ranges and closes on a second press", async ({ page }) => {
-    await page.setViewportSize({ width: 1512, height: 900 });
+    await page.setViewportSize({ width: 1920, height: 1080 });
     await installCodeReaderRuntime(page);
     await openConceptOnMap(page, CODE_CONCEPTS.current);
 
@@ -98,6 +130,16 @@ test.describe("Code reader", () => {
     }
   });
 
+  test("draws each bidi control as its code point and says which line was cut short", async ({ page }) => {
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await installCodeReaderRuntime(page);
+    await openConceptOnMap(page, CODE_CONCEPTS.hiddenOrder, "en");
+    const reader = await openReader(page);
+    await expect(reader.getByTestId("code-reader-bidi-control")).toHaveText(["U+202E", "U+2066", "U+2069", "U+2066"]);
+    expect(await reader.locator('[data-line="2"]').textContent()).not.toMatch(/[‪-‮⁦-⁩]/);
+    await expect(reader.getByTestId("code-reader-cut")).toHaveText("Line 4 is longer than 64 KiB, so only its start is shown.");
+  });
+
   test("with no code folder connected the reader says so and offers the way to connect one", async ({ page }) => {
     await page.setViewportSize({ width: 1512, height: 900 });
     await installCodeReaderRuntime(page, { refuseAll: "code-reader-not-connected" });
@@ -135,11 +177,69 @@ test.describe("Code reader", () => {
     await openConceptOnMap(page, CODE_CONCEPTS.current);
     const reader = await openReader(page);
     await expect(reader).toHaveAttribute("data-code-reader-placement", "replace");
-    await expect(page.getByTestId("map-detail-panel")).toBeHidden();
+    await expect(page.locator("[data-code-reader-replaced]")).toHaveCSS("opacity", "0");
     expect(await mapWidthBesideReader(page)).toBeGreaterThanOrEqual(MAP_MIN_WIDTH_PX);
 
     await reader.getByTestId("code-reader-back").click();
     await expect(page.getByTestId("code-reader")).toHaveCount(0);
     await expect(page.getByTestId("map-detail-panel")).toBeVisible();
+    await expect(page.getByTestId("map-detail-panel-code")).toBeFocused();
+  });
+
+  for (const { name, width, height, foldList, placement } of [
+    { name: "1512 with the concept list open", width: 1512, height: 900, foldList: false, placement: "replace" },
+    { name: "1512 with the concept list folded", width: 1512, height: 900, foldList: true, placement: "beside" },
+    { name: "1040", width: 1040, height: 800, foldList: false, placement: "replace" },
+    { name: "1920", width: 1920, height: 1080, foldList: false, placement: "beside" },
+  ] as const) {
+    test(`at ${name} the map keeps 480 px and the selected concept stays in view`, async ({ page }) => {
+      await page.setViewportSize({ width, height });
+      await installCodeReaderRuntime(page);
+      await openConceptOnMap(page, CODE_CONCEPTS.current, "ko", { probe: true });
+      if (foldList) {
+        await page.getByTestId("topology-index-fold").click();
+        await expect(page.getByTestId("topology-index-panel")).toHaveCount(0);
+      }
+      const reader = await openReader(page);
+      await expect(reader).toHaveAttribute("data-code-reader-placement", placement);
+      await readerSettled(page);
+      expect(await mapWidthBesideReader(page)).toBeGreaterThanOrEqual(MAP_MIN_WIDTH_PX);
+      expect(await selectedConceptClearance(page, "Invoice rounding")).toEqual({ inCanvas: true, underReader: false, underList: false });
+    });
+  }
+
+  test("at 1040 the open conversation is put away for the reader and comes back as it was when it closes", async ({ page }) => {
+    await page.setViewportSize({ width: 1040, height: 800 });
+    await installCodeReaderRuntime(page);
+    await openConceptOnMap(page, CODE_CONCEPTS.current, "ko", { probe: true });
+    const main = page.locator("main#main");
+    await page.getByTestId("map-detail-panel-action-ask-agent").click();
+    await expect(main).toHaveAttribute("data-agent-panel-open", "true");
+
+    const reader = await openReader(page);
+    await expect(main).toHaveAttribute("data-agent-panel-open", "false");
+    await readerSettled(page);
+    expect(await mapWidthBesideReader(page)).toBeGreaterThanOrEqual(MAP_MIN_WIDTH_PX);
+
+    await reader.getByTestId("code-reader-back").click();
+    await expect(page.getByTestId("code-reader")).toHaveCount(0);
+    await expect(main).toHaveAttribute("data-agent-panel-open", "true");
+    await expect(page.getByTestId("map-detail-panel-code")).toBeFocused();
+  });
+
+  test("asking the agent from the reader while it holds the conversation's room brings the conversation back and closes the reader", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await installCodeReaderRuntime(page);
+    await openConceptOnMap(page, REFUSED_CONCEPTS["src/billing/renamed.ts"]!.slug);
+    const main = page.locator("main#main");
+    await page.getByTestId("map-detail-panel-action-ask-agent").click();
+    await expect(main).toHaveAttribute("data-agent-panel-open", "true");
+    const reader = await openReader(page);
+    await expect(main).toHaveAttribute("data-agent-panel-open", "false");
+    await expect(reader.getByTestId("code-reader-refusal")).toHaveAttribute("data-code-reader-refusal", "gone");
+
+    await reader.getByTestId("code-reader-next-step").click();
+    await expect(main).toHaveAttribute("data-agent-panel-open", "true");
+    await expect(page.getByTestId("code-reader")).toHaveCount(0);
   });
 });

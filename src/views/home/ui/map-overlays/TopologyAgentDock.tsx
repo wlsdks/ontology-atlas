@@ -89,6 +89,7 @@ interface TopologyAgentDockProps {
     | "agentChatUsesRuntime"
     | "openVaultAgent"
     | "businessFlowRequest"
+    | "conversationReturnedOnItsOwn"
   >;
   topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "t" | "activeLocale" | "tWorkbench">;
   topologyVaultReadModel: Pick<
@@ -113,7 +114,8 @@ export function TopologyAgentDock({
   const { t, activeLocale, tWorkbench } = topologyPreferences;
   const {
     keyChatOpen, closeVaultAgent, vaultAgentScreenContext, askPrefill, runtimeChatOpen,
-    handleWorkbenchSectionChange, agentChatUsesRuntime, openVaultAgent, businessFlowRequest
+    handleWorkbenchSectionChange, agentChatUsesRuntime, openVaultAgent, businessFlowRequest,
+    conversationReturnedOnItsOwn
   } = topologyAgentOrchestration;
   const { handleSelect, handleChatSuggestionAction, handleAcpMapIntent } = topologyNavigationActions;
   const {
@@ -180,6 +182,7 @@ export function TopologyAgentDock({
           onOpenFolder={() => void vault.open()}
           downloadHref={`/${activeLocale}/download/`}
           prefillRequest={vaultAgentPrefill ?? askPrefill}
+          takesFocusOnOpen={!conversationReturnedOnItsOwn}
         />
       </ErrorBoundary>
     ) : null}
@@ -238,6 +241,7 @@ export function TopologyAgentDock({
               )}
             >
               <AnalysisWorkbench
+                takesFocusOnOpen={!conversationReturnedOnItsOwn}
                 returnFocusSelector={meaningWorkbenchOpen ? '[data-testid="topology-meaning-workbench-toggle"]' : '[data-testid="topology-vault-agent-toggle"]'}
                 context={meaningAnalysisContext}
                 capture={analysisCapture}

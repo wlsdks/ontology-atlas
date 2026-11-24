@@ -60,6 +60,17 @@ export function windowAround(range: LineCite | null): WindowRequest {
   return { firstLine, lineCount: Math.min(CODE_WINDOW_MAX_LINES, Math.max(WINDOW_STEP_LINES, needed + LINES_ABOVE_CITE)) };
 }
 
+/**
+ * One window holding both the lines shown now and `range` with its lead-in, so the reader can
+ * glide from one to the other; null when together they pass the window's line bound.
+ */
+export function windowJoining(shown: { firstLine: number; lineCount: number }, range: LineCite): WindowRequest | null {
+  const firstLine = Math.min(shown.firstLine, Math.max(1, range.startLine - LINES_ABOVE_CITE));
+  const lastLine = Math.max(shown.firstLine + shown.lineCount - 1, range.endLine + LINES_ABOVE_CITE);
+  const lineCount = lastLine - firstLine + 1;
+  return lineCount <= CODE_WINDOW_MAX_LINES ? { firstLine, lineCount } : null;
+}
+
 /** What the reader can say about whether the cited lines are the ones the document meant. */
 export type CiteTrust = "current" | "stale" | "unknown" | "beyond" | "none";
 
@@ -91,6 +102,7 @@ export type CodeReaderRefusalState =
   | "gone"
   | "secret"
   | "outside"
+  | "hidden"
   | "tooLarge"
   | "notText";
 
@@ -101,6 +113,7 @@ const REFUSAL_STATES: Record<CodeReaderRefusal, CodeReaderRefusalState> = {
   "code-reader-gone": "gone",
   "code-reader-secret": "secret",
   "code-reader-outside": "outside",
+  "code-reader-hidden": "hidden",
   "code-reader-too-large": "tooLarge",
   "code-reader-not-text": "notText",
 };
@@ -119,20 +132,43 @@ export const MAP_MIN_WIDTH_PX = 480;
 export const READER_MIN_WIDTH_PX = 480;
 export const READER_MAX_WIDTH_PX = 640;
 
-export type ReaderPlacement =
-  | { mode: "beside"; widthPx: number }
-  | { mode: "replace"; widthPx: number };
+export interface ReaderPlacement {
+  mode: "beside" | "replace";
+  widthPx: number;
+  /** The concept list and the conversation give way while the reader is open. */
+  makesRoom: boolean;
+}
+
+/** The map's slot and what stands in it, measured once running width changes finish. */
+export interface ReaderRoom {
+  slotWidthPx: number;
+  /** How far the expanded concept list reaches in from the slot's left edge; 0 when folded. */
+  listReachPx: number;
+  /** The open conversation beside the slot; 0 when closed. */
+  conversationWidthPx: number;
+  /** The concept panel's distance from the slot's right edge. */
+  rightInsetPx: number;
+  /** The concept panel's width plus the gap the reader keeps from it. */
+  panelReachPx: number;
+}
+
+function fitReader(mapWidthPx: number, room: ReaderRoom): Omit<ReaderPlacement, "makesRoom"> {
+  const besidePanel = mapWidthPx - room.rightInsetPx - room.panelReachPx - MAP_MIN_WIDTH_PX;
+  if (besidePanel >= READER_MIN_WIDTH_PX) {
+    return { mode: "beside", widthPx: Math.min(READER_MAX_WIDTH_PX, Math.floor(besidePanel)) };
+  }
+  const inPanelPlace = mapWidthPx - room.rightInsetPx - MAP_MIN_WIDTH_PX;
+  return { mode: "replace", widthPx: Math.max(0, Math.min(READER_MAX_WIDTH_PX, Math.floor(inPanelPlace))) };
+}
 
 /**
- * Where the reader stands in a map slot `slotWidthPx` wide: left of the concept panel while both
- * fit beside the map's floor, otherwise in the panel's place. `rightInsetPx` is the panel's
- * distance from the slot's right edge; `listReachPx` adds the panel and the gap before the reader.
+ * Where the reader stands: left of the concept panel while the map keeps its floor beside both,
+ * otherwise in the panel's place. When even that leaves the reader under its own floor, the
+ * concept list and the conversation give way and the reader fits the cleared slot.
  */
-export function readerPlacement(slotWidthPx: number, listReachPx: number, rightInsetPx: number): ReaderPlacement {
-  const besideList = slotWidthPx - listReachPx - MAP_MIN_WIDTH_PX;
-  if (besideList >= READER_MIN_WIDTH_PX) {
-    return { mode: "beside", widthPx: Math.min(READER_MAX_WIDTH_PX, Math.floor(besideList)) };
-  }
-  const alone = slotWidthPx - rightInsetPx - MAP_MIN_WIDTH_PX;
-  return { mode: "replace", widthPx: Math.max(0, Math.min(READER_MAX_WIDTH_PX, Math.floor(alone))) };
+export function readerPlacement(room: ReaderRoom): ReaderPlacement {
+  const shared = fitReader(room.slotWidthPx - room.listReachPx, room);
+  const neighbours = room.listReachPx > 0 || room.conversationWidthPx > 0;
+  if (shared.widthPx >= READER_MIN_WIDTH_PX || !neighbours) return { ...shared, makesRoom: false };
+  return { ...fitReader(room.slotWidthPx + room.conversationWidthPx, room), makesRoom: true };
 }

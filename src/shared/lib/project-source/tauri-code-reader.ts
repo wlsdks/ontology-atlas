@@ -7,8 +7,8 @@ export interface CodeWindow {
   lines: string[];
   firstLine: number;
   totalLines: number;
-  /** The read stopped at its byte bound before the asked line count. */
-  cut: boolean;
+  /** The one line shown only up to the read's byte bound, when a line was that long. */
+  cutLine: number | null;
   lastModified: number;
   bytes: number;
 }
@@ -26,6 +26,7 @@ export const CODE_READER_REFUSALS = [
   'code-reader-gone',
   'code-reader-secret',
   'code-reader-outside',
+  'code-reader-hidden',
   'code-reader-too-large',
   'code-reader-not-text',
 ] as const;
@@ -33,6 +34,8 @@ export type CodeReaderRefusal = (typeof CODE_READER_REFUSALS)[number];
 
 /** The size above which Rust refuses a file (`CODE_FILE_MAX_BYTES`). */
 export const CODE_FILE_MAX_BYTES = 2 * 1024 * 1024;
+/** The most text one read returns (`WINDOW_MAX_BYTES`); a longer line shows its start. */
+export const CODE_WINDOW_MAX_BYTES = 64 * 1024;
 /** The most lines one read returns (`WINDOW_MAX_LINES`). */
 export const CODE_WINDOW_MAX_LINES = 400;
 

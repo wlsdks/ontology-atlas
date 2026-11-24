@@ -17,6 +17,8 @@ import { useLatestRef } from "@/shared/lib/use-latest-ref";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { agentChatDoor, type VaultAgentPrefill } from "./agent-chat-door";
 import { planRouteAskDockSync, type RouteAskDockRequest } from "./route-ask-dock-sync";
+import { useConversationStow } from "./use-conversation-stow";
+import type { CodeReaderRoom } from "../inspector/use-code-reader-room";
 function hashAskRequest(kind: string, ref: string): number {
   const source = `${kind}:${ref}`;
   let hash = 0;
@@ -32,6 +34,7 @@ interface Options {
   agentDockTouchedRef: React.RefObject<boolean>;
   setRouteState: (updater: Partial<import("@/views/home/model/route-state/url-state").HomeRouteState> | ((current: import("@/views/home/model/route-state/url-state").HomeRouteState) => import("@/views/home/model/route-state/url-state").HomeRouteState), options?: import("@/views/home/model/route-state/use-home-route-state").HomeRouteStateUpdateOptions | undefined) => void;
   agentDockDefaultOpen: ReturnType<typeof useAgentDockDefaultOpen>;
+  codeReaderRoom: Pick<CodeReaderRoom, "state" | "withdraw">;
   topologyIndexPresentation: Pick<ReturnType<typeof useTopologyIndexPresentation>, "handleIndexTabExpand">;
   topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "businessFlowRequestText">;
   topologyAuthoring: Pick<ReturnType<typeof useTopologyAuthoring>, "setCreateNodeOpen">;
@@ -79,7 +82,7 @@ interface Options {
 export function useTopologyAgentOrchestration({
   setOntologySearchOpen, setVaultAgentPrefill, routeState, agentDockTouchedRef, setRouteState,
   agentDockDefaultOpen, topologyVaultReadModel, topologyGraphProjection, acpRuntimeController,
-  homeWorkbenchController, topologyAuthoring, topologyPreferences, topologyIndexPresentation
+  homeWorkbenchController, topologyAuthoring, topologyPreferences, topologyIndexPresentation, codeReaderRoom
 }: Options) {
   const { selectedOntologyNode, spotlightOn, gitVaultPath, tAgent, vaultConceptFacts, llmBridgeAvailable, vault } = topologyVaultReadModel;
   const { realmTitle, ontologyMapGraph } = topologyGraphProjection;
@@ -259,6 +262,20 @@ export function useTopologyAgentOrchestration({
     hasAskIntent: Boolean(askPrefill),
   });
   const agentDockOpen = agentChatOpen || acpDockFrameOpen || meaningWorkbenchOpen;
+  const conversationDoors = useMemo(
+    () => ({ acpDockFrameOpen, meaningWorkbenchOpen, vaultAgentOpen, acpChatOpen }),
+    [acpDockFrameOpen, meaningWorkbenchOpen, vaultAgentOpen, acpChatOpen],
+  );
+  const { returnedOnItsOwn: conversationReturnedOnItsOwn } = useConversationStow({
+    room: codeReaderRoom,
+    agentDockOpen,
+    doors: conversationDoors,
+    setAcpDockFrameOpen,
+    setMeaningWorkbenchOpen,
+    setVaultAgentOpen,
+    setAcpChatOpen,
+    setChatMounted,
+  });
 
   /** Expanding INDEX retires the agent, or the map squeezes between two panels. */
   const handleIndexTabExpandFromAgent = useCallback(() => {
@@ -350,6 +367,7 @@ export function useTopologyAgentOrchestration({
   return {
     closeVaultAgent, agentDockOpen, runtimeChatOpen, openVaultAgent, handleIndexTabExpandFromAgent,
     analyzePrompt, agentChatUsesRuntime, sendAnalyzeToAgent, askAgentAboutSelectedNode, keyChatOpen,
-    vaultAgentScreenContext, askPrefill, handleWorkbenchSectionChange, businessFlowRequest
+    vaultAgentScreenContext, askPrefill, handleWorkbenchSectionChange, businessFlowRequest,
+    conversationReturnedOnItsOwn
   };
 }

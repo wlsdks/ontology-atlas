@@ -5,10 +5,12 @@ import { useTranslations } from "next-intl";
 
 import { useCopyFeedback } from "@/shared/lib/clipboard/use-copy-feedback";
 import { truncateMiddlePath } from "@/shared/lib/concept-display/truncate-middle-path";
-import { CODE_FILE_MAX_BYTES } from "@/shared/lib/project-source/tauri-code-reader";
+import { CODE_FILE_MAX_BYTES, CODE_WINDOW_MAX_BYTES } from "@/shared/lib/project-source/tauri-code-reader";
 import type { LineCite } from "@/shared/lib/vault-document/line-cite";
 import { Button, Chip, Surface, controlClass } from "@/shared/ui";
 
+import { codeLinePieces } from "../lib/code-line-pieces";
+import { glideScroll } from "../lib/glide-scroll";
 import { type CiteTrust, type CodeReaderRefusalState, type CodeReaderTarget, citeTrust, WINDOW_STEP_LINES } from "../model/code-reader-model";
 import type { CodeReader as CodeReaderModel } from "../model/use-code-reader";
 
@@ -39,6 +41,7 @@ export interface CodeReaderProps {
 }
 
 const LIMIT_LABEL = `${CODE_FILE_MAX_BYTES / (1024 * 1024)} MiB`;
+const LINE_LIMIT_LABEL = `${CODE_WINDOW_MAX_BYTES / 1024} KiB`;
 
 /**
  * A read-only window of the concept's entry file beside the concept panel: one chip per cited
@@ -86,9 +89,10 @@ export function CodeReader({
       data-code-reader-placement={replacesList ? "replace" : "beside"}
       data-code-reader-status={reader.status}
       // A refusal is one sentence, so the reader stays short; text keeps the full column.
+      // Moving between its seats, the width follows the seat on the same clock.
       className={[
         refused ? "max-h-[var(--map-inspector-max-height)]" : "h-[var(--map-inspector-max-height)]",
-        "max-w-full",
+        "transition-[width] duration-[var(--agent-panel-reflow-duration)] ease-[var(--topology-motion-ease-out)]",
         open ? "pointer-events-auto" : "pointer-events-none",
       ].join(" ")}
     >
@@ -195,10 +199,16 @@ export function CodeReader({
           )}
         </div>
 
+        {reader.status !== "refused" && reader.text?.cutLine ? (
+          <p data-testid="code-reader-cut" className="mx-[var(--map-panel-pad)] mt-2 text-label text-[color:var(--map-panel-text-tertiary)]">
+            {t("lines.cut", { line: reader.text.cutLine, limit: LINE_LIMIT_LABEL })}
+          </p>
+        ) : null}
+
         <footer className="flex shrink-0 items-center gap-2 px-[var(--map-panel-pad)] py-2.5">
           <span className="min-w-0 flex-1 truncate text-label tabular-nums text-[color:var(--map-panel-text-quaternary)]" data-testid="code-reader-extent">
             {reader.text && reader.text.lines.length > 0
-              ? t("lines.range", { start: reader.text.firstLine, end: reader.text.firstLine + reader.text.lines.length - 1 })
+              ? t("lines.shown", { start: reader.text.firstLine, end: reader.text.firstLine + reader.text.lines.length - 1 })
               : null}
           </span>
           <Button
@@ -291,7 +301,7 @@ function CodeLines({ reader, activeRange }: { reader: CodeReaderModel; activeRan
     if (row && firstRow) box.scrollTop += row.offsetTop - firstRow.offsetTop;
   }, [text.firstLine]);
 
-  // The cited range is in view in the first painted frame; a later choice scrolls to it.
+  // The cited range is in view in the first painted frame; a later choice glides to it.
   const scroll = reader.scroll;
   useLayoutEffect(() => {
     const box = boxRef.current;
@@ -300,7 +310,11 @@ function CodeLines({ reader, activeRange }: { reader: CodeReaderModel; activeRan
     if (!row) return;
     const top = Math.max(0, row.offsetTop - row.offsetHeight * LINES_ABOVE_IN_VIEW);
     const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    box.scrollTo({ top, behavior: scroll.smooth && !reduce ? "smooth" : "auto" });
+    if (!scroll.smooth || reduce) {
+      box.scrollTop = top;
+      return;
+    }
+    return glideScroll(box, top);
   }, [scroll]);
 
   return (
@@ -337,7 +351,7 @@ function CodeLines({ reader, activeRange }: { reader: CodeReaderModel; activeRan
                 >
                   {number}
                 </span>
-                <span className="whitespace-pre pr-4 text-[color:var(--map-panel-text-primary)]">{line || " "}</span>
+                <span className="whitespace-pre pr-4 text-[color:var(--map-panel-text-primary)]">{line ? <CodeLineText line={line} /> : " "}</span>
               </div>
             );
           })}
@@ -347,6 +361,23 @@ function CodeLines({ reader, activeRange }: { reader: CodeReaderModel; activeRan
         ) : null}
       </div>
     </div>
+  );
+}
+
+/** A line's text with each bidi control drawn as its code point, so the order shown is the order stored. */
+function CodeLineText({ line }: { line: string }) {
+  return codeLinePieces(line).map((piece, index) =>
+    piece.kind === "text" ? (
+      piece.text
+    ) : (
+      <span
+        key={index}
+        data-testid="code-reader-bidi-control"
+        className="mx-px rounded-chip border border-[color:var(--color-status-warning)] px-0.5 text-label text-[color:var(--color-status-warning)]"
+      >
+        {piece.codePoint}
+      </span>
+    ),
   );
 }
 

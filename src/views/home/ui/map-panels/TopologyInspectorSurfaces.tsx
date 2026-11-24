@@ -30,10 +30,13 @@ import { returnFocusIfDropped } from "../../lib/keyboard/topology-focus-return";
 import { resolveNodeVaultRef } from "../../lib/authoring/topology-node-edit";
 import { type ConceptReviewTarget, type ReadConceptBody, useConceptReview } from "../../model/inspector/use-node-datasheet-model";
 import { parseFrontmatter } from "@/shared/lib/vault-document/parse-frontmatter";
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { CodeReader } from "@/widgets/code-reader";
 import { useConceptCodeReader } from "../../model/inspector/use-concept-code-reader";
 import { READER_GAP_PX, useCodeReaderPlacement } from "../../model/inspector/use-code-reader-placement";
+import type { CodeReaderRoom } from "../../model/inspector/use-code-reader-room";
+
+const CODE_ROW_SELECTOR = '[data-testid="map-detail-panel-code"]';
 
 const FULL_DETAIL_TITLE_ID = "topology-full-detail-title";
 
@@ -134,6 +137,7 @@ interface TopologyInspectorSurfacesProps {
   topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "t" | "tKinds" | "tWorkbench" | "audiencePlain" | "activeLocale">;
   topologyCreateIntent: Pick<ReturnType<typeof useTopologyCreateIntent>, "createNodeDefaults" | "openCreateNode">;
   topologyExplorationLenses: Pick<ReturnType<typeof useTopologyExplorationLenses>, "drawerProject">;
+  codeReaderRoom: CodeReaderRoom;
 }
 
 export function TopologyInspectorSurfaces({
@@ -142,7 +146,8 @@ export function TopologyInspectorSurfaces({
   topologyPreferences, topologyAuthoring, topologyKeyboard, topologyNavigationActions,
   topologyInspectorState, topologyCanvasFocus, topologyVaultReadModel, topologySourceReadiness,
   topologySourceActions, topologyGraphProjection, topologyAgentOrchestration, homeWorkbenchController,
-  acpRuntimeController, topologyRouteControls, topologyExplorationLenses, topologyCreateIntent
+  acpRuntimeController, topologyRouteControls, topologyExplorationLenses, topologyCreateIntent,
+  codeReaderRoom
 }: TopologyInspectorSurfacesProps) {
   const { drawerProject } = topologyExplorationLenses;
   const { createNodeDefaults, openCreateNode } = topologyCreateIntent;
@@ -208,9 +213,23 @@ export function TopologyInspectorSurfaces({
     () => nodePopoverPositionerRef.current?.querySelector<HTMLElement>('[data-testid="map-detail-panel"]')?.offsetWidth ?? 0,
     [nodePopoverPositionerRef],
   );
-  const readerPlacement = useCodeReaderPlacement(conceptCode.readerOpen, nodePopoverPositionerRef, measurePanelWidth);
+  const { state: readerRoomState, hold: holdReaderRoom, release: releaseReaderRoom, seatSettled: readerSeatSettled } = codeReaderRoom;
+  const readerPlacement = useCodeReaderPlacement(conceptCode.readerOpen, nodePopoverPositionerRef, measurePanelWidth, holdReaderRoom);
   const readerShown = conceptCode.readerOpen && readerPlacement !== null && conceptCode.target !== null;
   const readerReplacesList = readerShown && readerPlacement.mode === "replace";
+  const { readerOpen, close: closeConceptCode } = conceptCode;
+  // The room goes back when the reader closes; the person taking it back closes the reader.
+  useEffect(() => {
+    if (readerOpen && readerRoomState === "withdrawn") closeConceptCode();
+    else if (!readerOpen && readerRoomState !== "none") releaseReaderRoom();
+  }, [readerOpen, readerRoomState, closeConceptCode, releaseReaderRoom]);
+  // Closing from inside the reader hands focus back to the Code row that opened it.
+  const closeReaderToCodeRow = useCallback(() => {
+    closeConceptCode();
+    requestAnimationFrame(() => {
+      nodePopoverPositionerRef.current?.querySelector<HTMLElement>(CODE_ROW_SELECTOR)?.focus({ preventScroll: true });
+    });
+  }, [closeConceptCode, nodePopoverPositionerRef]);
   const onlyProjectSlug = renderProjects.length === 1 ? renderProjects[0]!.slug : null;
   const codeReaderSurface = conceptCode.target && readerPlacement && panelDatasheetModel ? (
     <CodeReader
@@ -226,9 +245,33 @@ export function TopologyInspectorSurfaces({
         askToFind: llmBridgeAvailable ? askAgentAboutSelectedNode : undefined,
         openCodeFolder: onlyProjectSlug ? () => handleSelect(onlyProjectSlug) : undefined,
       }}
-      onClose={conceptCode.close}
+      onClose={closeReaderToCodeRow}
     />
   ) : null;
+  // One reader slides between its two seats: left of the panel, or over the panel's own place.
+  const readerSpacerPx = !readerShown
+    ? 0
+    : readerReplacesList
+      ? Math.max(0, readerPlacement.widthPx - readerPlacement.panelWidthPx)
+      : readerPlacement.widthPx + READER_GAP_PX;
+  const readerOffsetPx = readerPlacement?.mode === "beside" ? readerPlacement.panelWidthPx + READER_GAP_PX : 0;
+  const readerSpacerRef = useRef<HTMLDivElement | null>(null);
+  const readerSeatKey = readerShown ? `${readerPlacement.mode}:${readerPlacement.widthPx}` : null;
+  // The map is told once the seat's width has landed, so the camera reads the box the reader keeps.
+  useEffect(() => {
+    const spacer = readerSpacerRef.current;
+    if (readerSeatKey === null || !spacer) return;
+    let cancelled = false;
+    const frame = requestAnimationFrame(() => {
+      const moving = typeof spacer.getAnimations === "function" ? spacer.getAnimations() : [];
+      if (moving.length === 0) readerSeatSettled();
+      else void Promise.all(moving.map((animation) => animation.finished)).then(() => { if (!cancelled) readerSeatSettled(); }, () => undefined);
+    });
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(frame);
+    };
+  }, [readerSeatKey, readerSeatSettled]);
 
   return (<>
     <Surface
@@ -318,23 +361,25 @@ export function TopologyInspectorSurfaces({
         // measured width of the obstacle marker.
         className="topology-ui-scale pointer-events-none fixed inset-x-3 bottom-[var(--map-panel-bottom-reserve)] z-30 flex justify-center lg:inset-x-auto lg:bottom-auto lg:right-[var(--topology-node-popover-right-inset)] lg:top-[var(--topology-node-popover-top)] lg:block"
       >
-        <div className="pointer-events-none flex items-start justify-end">
-        {/* The reader beside the list takes its width on the reflow clock; in the list's place it
-            stands in the list's cell and the list waits, hidden, until it closes. */}
+        <div className="pointer-events-none relative flex items-start justify-end">
+        {/* Holds the reader's width in the panel's box, so the camera and the map's names keep
+            clear of it; the width moves on the reflow clock and waits for the text to clear. */}
         <div
+          ref={readerSpacerRef}
+          aria-hidden
           data-testid="code-reader-slot"
-          aria-hidden={readerShown && !readerReplacesList ? undefined : true}
-          style={{
-            width: readerShown && !readerReplacesList ? readerPlacement.widthPx + READER_GAP_PX : 0,
-            transitionDelay: readerShown ? undefined : "var(--motion-fast)",
-          }}
-          className="shrink-0 overflow-hidden transition-[width] duration-[var(--agent-panel-reflow-duration)] ease-[var(--topology-motion-ease-out)] max-lg:hidden"
-        >
-          {readerPlacement?.mode === "beside" ? <div style={{ paddingRight: READER_GAP_PX }}>{codeReaderSurface}</div> : null}
-        </div>
+          style={{ width: readerSpacerPx, transitionDelay: readerShown ? undefined : "var(--motion-fast)" }}
+          className={`shrink-0 transition-[width] duration-[var(--agent-panel-reflow-duration)] ease-[var(--topology-motion-ease-out)] max-lg:hidden ${readerShown ? "h-[var(--map-inspector-max-height)]" : ""}`}
+        />
         <div className="pointer-events-none grid">
-          {readerPlacement?.mode === "replace" ? <div className="col-start-1 row-start-1">{codeReaderSurface}</div> : null}
           {panelDatasheetModel ? (
+            <div
+              inert={readerReplacesList || undefined}
+              data-testid="concept-panel-place"
+              data-code-reader-replaced={readerReplacesList || undefined}
+              style={{ opacity: readerReplacesList ? 0 : 1 }}
+              className="col-start-1 row-start-1 flex justify-end transition-opacity duration-[var(--motion-fast)] ease-[var(--motion-ease)]"
+            >
             <OntologyMapDetailPanel
               discoveryAction={grayAreaAction}
               closeButtonRef={detailCloseButtonRef}
@@ -481,8 +526,9 @@ export function TopologyInspectorSurfaces({
                 readerOpen: conceptCode.readerOpen,
                 onToggle: conceptCode.toggle,
               } : undefined}
-              className={`col-start-1 row-start-1 max-lg:w-[min(520px,calc(100vw-1.5rem))] ${readerReplacesList ? "invisible" : ""}`}
+              className="max-lg:w-[min(520px,calc(100vw-1.5rem))]"
             />
+            </div>
           ) : null}
           {meaningEditorSource && heldMeaningEditorState ? (
             <MeaningEditorPanel
@@ -508,6 +554,15 @@ export function TopologyInspectorSurfaces({
             />
           ) : null}
         </div>
+        {codeReaderSurface ? (
+          <div
+            data-testid="code-reader-seat"
+            style={{ translate: `${-readerOffsetPx}px 0` }}
+            className="pointer-events-none absolute right-0 max-lg:bottom-0 lg:top-0 transition-[translate] duration-[var(--agent-panel-reflow-duration)] ease-[var(--topology-motion-ease-out)]"
+          >
+            {codeReaderSurface}
+          </div>
+        ) : null}
         </div>
       </div>
     ) : null}

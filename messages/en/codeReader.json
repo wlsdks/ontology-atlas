@@ -8,7 +8,9 @@
   "lines": {
     "range": "L{start}–{end}",
     "single": "L{line}",
-    "top": "From the top"
+    "shown": "Showing lines {start}–{end}",
+    "top": "From the top",
+    "cut": "Line {line} is longer than {limit}, so only its start is shown."
   },
   "cite": {
     "current": "The document cites these lines.",
@@ -31,6 +33,7 @@
     "chooseAgain": "Choose the folder again",
     "secret": "Atlas does not read {path}, because files with that name hold keys or passwords.",
     "outside": "{path} points outside the connected code folder, so Atlas did not read it.",
+    "hidden": "Atlas does not read {path}, because hidden files and folders hold settings that can carry keys.",
     "tooLarge": "{path} is larger than {limit}, so Atlas does not read it here.",
     "notText": "{path} is not text, so there is nothing to read here.",
     "changed": "This file changed after Atlas read it.",

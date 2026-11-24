@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useLatestRef } from '@/shared/lib/use-latest-ref';
 import { useLocale, useTranslations } from 'next-intl';
 
 import type { VaultManifest } from '@/entities/docs-vault';
@@ -46,6 +47,7 @@ export function VaultAgentPanel({
   onOpenFolder,
   downloadHref,
   prefillRequest,
+  takesFocusOnOpen = true,
 }: {
   open: boolean;
   onClose: () => void;
@@ -63,6 +65,8 @@ export function VaultAgentPanel({
    * a send. `nonce` lets the same sentence be seated again.
    */
   prefillRequest?: { text: string; nonce: number } | null;
+  /** False when the panel comes back on its own, so focus stays where the person is. */
+  takesFocusOnOpen?: boolean;
 }) {
   const t = useTranslations('vaultAgentPanel');
   const locale = useLocale();
@@ -149,9 +153,10 @@ export function VaultAgentPanel({
     if (!open) stop();
   }, [open, stop]);
 
+  const takesFocusOnOpenRef = useLatestRef(takesFocusOnOpen);
   useEffect(() => {
-    if (open) inputRef.current?.focus();
-  }, [open]);
+    if (open && takesFocusOnOpenRef.current) inputRef.current?.focus();
+  }, [open, takesFocusOnOpenRef]);
 
   const appliedTally = agent.sessionSummary.concepts + agent.sessionSummary.relations;
   useRecentChanges({ open, vaultPath: readableVaultPath, appliedTally, setRecentChanges });
