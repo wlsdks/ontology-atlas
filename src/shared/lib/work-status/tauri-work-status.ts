@@ -102,6 +102,36 @@ export interface WorkStatusSnapshot {
   worktrees: WorktreeRow[];
 }
 
+/** A change the base branch took in: a merged branch or a squashed commit. The subject is untrusted text. */
+export interface LandedChange {
+  hash: string;
+  subject: string;
+  /** Seconds since the epoch. */
+  at: number | null;
+  /** A merge commit, which brought a branch's own commits. */
+  merge: boolean;
+  /** Against the first parent; `null` when Git printed no stat. */
+  files: number | null;
+  insertions: number | null;
+  deletions: number | null;
+}
+
+export interface LandedFile {
+  path: string;
+  /** `null` for a binary file. */
+  insertions: number | null;
+  deletions: number | null;
+}
+
+/** One landed change opened: the branch commits a merge brought, and the files it changed, most changed first. */
+export interface LandedDetail {
+  hash: string;
+  commits: CommitLine[];
+  commitCount: number;
+  files: LandedFile[];
+  fileCount: number;
+}
+
 export function isWorkStatusAvailable(): boolean {
   return typeof window !== 'undefined' && isTauri();
 }
@@ -140,4 +170,20 @@ export async function readAgentSessions(repositoryPath: string): Promise<AgentSe
  */
 export async function setAgentSessionsRead(on: boolean): Promise<void> {
   if (isWorkStatusAvailable()) await invoke('work_status_set_agent_sessions_read', { on });
+}
+
+/** The newest thirty changes on the base branch's first-parent line, with their stats: one `git log`. */
+/** The newest landed changes, and how many landed in the last seven days (often more than were read). */
+export interface LandedRead {
+  changes: LandedChange[];
+  weekCount: number | null;
+}
+
+export async function readLandedChanges(repositoryPath: string, baseBranch: string): Promise<LandedRead | null> {
+  return isWorkStatusAvailable() ? invoke<LandedRead | null>('work_status_landed', { repositoryPath, baseBranch }) : null;
+}
+
+/** One landed change's branch commits and files: two `git` reads. */
+export async function readLandedDetail(repositoryPath: string, hash: string): Promise<LandedDetail | null> {
+  return isWorkStatusAvailable() ? invoke<LandedDetail | null>('work_status_landed_detail', { repositoryPath, hash }) : null;
 }

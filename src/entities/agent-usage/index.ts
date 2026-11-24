@@ -10,3 +10,4 @@ export type {
   UsageReport,
 } from './model/agent-usage';
 export { agentUsage, useLatestAgentUsage, usePressingLimit } from './model/agent-usage-store';
+export { agentProductName } from './model/agent-product-name';

@@ -12,16 +12,29 @@ import type { AcpTurnActivity } from "@/features/acp-session";
 const AGENT_HEARTBEAT_VAULT_DIR = ".ontology-atlas";
 const AGENT_HEARTBEAT_VAULT_FILE = "agent-activity.json";
 
+/**
+ * How long a press's id holds after the heartbeat that names it: past the run's ten silent
+ * minutes, so a quiet request still counts, and short enough that a crash leaves no lasting claim.
+ */
+export const PRESS_ANALYSIS_HOLD_MS = 15 * 60_000;
+
+/**
+ * `mapAnalysisId` names the press a request belongs to; the MCP server reads it from this file
+ * and records the request's writes as that one analysis.
+ */
 export function buildAcpTurnHeartbeat({
   agent,
   at,
   activity,
+  mapAnalysisId = null,
 }: {
   agent: string;
   at: Date;
   activity: AcpTurnActivity;
+  mapAnalysisId?: string | null;
 }): AgentActivityHeartbeat {
   return {
+    ...(mapAnalysisId ? { mapAnalysis: { id: mapAnalysisId, until: new Date(at.getTime() + PRESS_ANALYSIS_HOLD_MS).toISOString() } } : {}),
     agent,
     state: activity.state,
     focus: {

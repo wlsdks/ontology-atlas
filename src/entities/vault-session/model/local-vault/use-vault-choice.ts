@@ -25,6 +25,7 @@ import { isPickerAbort } from '@/shared/lib/failures/picker-abort';
 import { forgetVaultIndex } from '@/shared/lib/vault-folder/vault-index/tauri-vault-index';
 import { vaultVectorSource } from '@/shared/lib/vault-folder/vault-vectors/vault-vector-source';
 import { emptyAgentActivityStatus } from '../agent-activity-status';
+import { ABSENT_MAP_ANALYSIS_RECORD } from '@/shared/lib/vault-document/map-analysis-record';
 import {
   isSupported,
   resolveVaultHandle,
@@ -321,6 +322,7 @@ export function useVaultChoice({
               agentActivityStatus: emptyAgentActivityStatus(),
               agentActivityLog: [],
               acpWorkReceipts: [],
+              mapAnalysisRecord: ABSENT_MAP_ANALYSIS_RECORD,
               fileHandles: new Map(),
               imageHandles: new Map(),
     sourceHandles: new Map(),
@@ -362,6 +364,7 @@ export function useVaultChoice({
           agentActivityStatus: emptyAgentActivityStatus(),
           agentActivityLog: [],
           acpWorkReceipts: [],
+          mapAnalysisRecord: ABSENT_MAP_ANALYSIS_RECORD,
           fileHandles: new Map(),
           imageHandles: new Map(),
     sourceHandles: new Map(),
@@ -388,6 +391,7 @@ export function useVaultChoice({
           agentActivityStatus: emptyAgentActivityStatus(),
           agentActivityLog: [],
           acpWorkReceipts: [],
+          mapAnalysisRecord: ABSENT_MAP_ANALYSIS_RECORD,
           fileHandles: new Map(),
           imageHandles: new Map(),
     sourceHandles: new Map(),

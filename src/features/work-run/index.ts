@@ -19,6 +19,7 @@ export {
 } from './model/turn-run';
 export {
   isMappingActive,
+  mappingAnalysisId,
   mappingFraction,
   silentTooLong,
   type MappingFigures,

@@ -1,6 +1,7 @@
 import type { Dispatch, RefObject, SetStateAction } from 'react';
 import type { AcpWorkReceipt } from '@/shared/lib/meaning-transition/acp-work-receipt';
 import type { AgentActivityEntry } from '@/shared/lib/agent-activity/agent-activity-log';
+import { ABSENT_MAP_ANALYSIS_RECORD, type MapAnalysisRecordState } from '@/shared/lib/vault-document/map-analysis-record';
 import type { VaultManifest, VaultStampIndex } from '@/entities/docs-vault';
 import { emptyAgentActivityStatus, type AgentActivityStatus } from '../agent-activity-status';
 import type { AgentConfigStatus } from './vault-sidecars';
@@ -34,6 +35,8 @@ export interface State {
   agentActivityStatus: AgentActivityStatus;
   agentActivityLog: AgentActivityEntry[];
   acpWorkReceipts: AcpWorkReceipt[];
+  /** `.ontology-atlas/map-analysis.jsonl`, which only the MCP server writes. */
+  mapAnalysisRecord: MapAnalysisRecordState;
   fileHandles: Map<string, FileSystemFileHandle>;
   imageHandles: Map<string, FileSystemFileHandle>;
   sourceHandles: Map<string, FileSystemFileHandle>;
@@ -57,6 +60,7 @@ export function withArrivedPart(s: State, partialTotal: number): State {
     agentActivityStatus: emptyAgentActivityStatus(),
     agentActivityLog: [],
     acpWorkReceipts: [],
+    mapAnalysisRecord: ABSENT_MAP_ANALYSIS_RECORD,
     fileHandles: new Map(),
     imageHandles: new Map(),
     sourceHandles: new Map(),
@@ -72,6 +76,7 @@ export function emptyState(status: Status = 'idle'): State {
     agentActivityStatus: emptyAgentActivityStatus(),
     agentActivityLog: [],
     acpWorkReceipts: [],
+    mapAnalysisRecord: ABSENT_MAP_ANALYSIS_RECORD,
     fileHandles: new Map(),
     imageHandles: new Map(),
     sourceHandles: new Map(),

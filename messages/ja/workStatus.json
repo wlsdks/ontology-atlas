@@ -166,10 +166,49 @@
     "copied": "コピーしました",
     "reading": "読み込み中…",
     "cleanupTitle": "片付けるにはターミナルで実行してください",
-    "copyCommand": "コマンドをコピー"
+    "copyCommand": "コマンドをコピー",
+    "stat": {
+      "commits": "{branch}以降のコミット",
+      "uncommitted": "未コミットのファイル"
+    },
+    "quiet": "{branch}以降のコミットも、未コミットのファイルもありません。"
   },
   "about": {
     "label": "この画面が示すもの",
     "body": "部屋ひとつがワークツリーひとつです。ワークツリーは、このリポジトリでブランチをひとつ作業するための別フォルダです。部屋の画面には、ブランチ、最近のコミット、変更したがまだコミットしていないファイルが表示されます。エージェントのセッションが作業中の部屋は明かりがついています。部屋を押すと残りを確認できます。"
+  },
+  "landed": {
+    "title": "<code>{branch}</code>に入った作業",
+    "note": "ワークツリーを削除してもここに残ります。Gitの記録から直接読みます。",
+    "summary": "今日{today}件 · 直近7日{week}件",
+    "none": "まだ{branch}に入った作業はありません。",
+    "today": "今日",
+    "yesterday": "昨日",
+    "dayCount": "{count}件",
+    "files": "ファイル{count}件",
+    "linesSr": "{insertions}行追加、{deletions}行削除",
+    "kind": {
+      "feat": "機能",
+      "fix": "修正",
+      "perf": "性能",
+      "design": "デザイン",
+      "refactor": "整理",
+      "docs": "ドキュメント",
+      "test": "テスト",
+      "chore": "管理"
+    },
+    "landedAt": "{ago} · {time}に入りました",
+    "stat": {
+      "commits": "コミット",
+      "files": "ファイル",
+      "added": "追加した行",
+      "removed": "削除した行"
+    },
+    "commitsTitle": "この作業のコミット",
+    "filesTitle": "変更されたファイル",
+    "squashed": "1つのコミットにまとめて入ったので、個別のコミットはありません。",
+    "binary": "バイナリ",
+    "unreadable": "この作業のコミットとファイルをGitから読めませんでした。",
+    "copyHash": "コミットハッシュをコピー"
   }
 }
