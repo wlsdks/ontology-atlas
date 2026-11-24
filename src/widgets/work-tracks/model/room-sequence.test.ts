@@ -4,8 +4,8 @@ import { FADE_MS, MOVE_MS, SHOW_MS, boxAt, boxOnPath, planSequence, type RoomMov
 
 const box = (x: number, y: number, w = 100, h = 80): Box => ({ x, y, w, h });
 type Rooms = [string, Box][];
-const plan = (from: Rooms, to: Rooms, { leaving = 0, entering = 0, keeps = [] as string[] } = {}) =>
-  planSequence({ from: new Map(from), to: new Map(to), leaving, entering, keepsContent: key => keeps.includes(key) });
+const plan = (from: Rooms, to: Rooms, { leaving = 0, entering = 0, keeps = [], stage = keeps }: { leaving?: number; entering?: number; keeps?: string[]; stage?: string[] } = {}) =>
+  planSequence({ from: new Map(from), to: new Map(to), leaving, entering, keepsContent: key => keeps.includes(key), startsOnStage: key => stage.includes(key) });
 
 const meet = (a: Box, b: Box) => Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x) > 2 && Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y) > 2;
 
@@ -61,10 +61,33 @@ describe('planSequence', () => {
 
   it('keeps the slot a stopped room hands to a rising one covered in every frame', () => {
     const stage = box(0, 0);
-    const sequence = plan([['stage', stage], ['mini', box(0, 100, 50, 30)]], [['stage', box(0, 100, 50, 30)], ['mini', stage]]);
+    const sequence = plan([['stage', stage], ['mini', box(0, 100, 50, 30)]], [['stage', box(0, 100, 50, 30)], ['mini', stage]], { stage: ['stage'] });
     for (const frame of frames(sequence)) {
       expect([...frame.values()].some(drawn => drawn.x <= 49 && drawn.y <= 39 && drawn.x + drawn.w >= 51 && drawn.y + drawn.h >= 41)).toBe(true);
     }
+  });
+
+  it('keeps each stage slot covered between the planner\'s samples when a stage room slides into the next slot', () => {
+    // At 1776 px: a stage room stops and drops to the floor, the stage room left of it slides into its
+    // slot, and a floor room rises into the slot that one leaves; a second floor room shifts left.
+    const stage = (x: number) => box(x, 84, 584, 288);
+    const floor = (x: number) => box(x, 388, 389, 96);
+    const sequence = plan(
+      [['slides', stage(104)], ['stops', stage(700)], ['stays', stage(1296)], ['rises', floor(300)], ['shifts', floor(697)], ['far', floor(1094)]],
+      [['slides', stage(700)], ['stops', floor(697)], ['stays', stage(1296)], ['rises', stage(104)], ['shifts', floor(300)], ['far', floor(1094)]],
+      { keeps: ['slides'], stage: ['slides', 'stops', 'stays'] },
+    );
+    const centres = [{ x: 104 + 292, y: 84 + 144 }, { x: 700 + 292, y: 84 + 144 }];
+    const covers = (drawn: Box, point: { x: number; y: number }) => drawn.x <= point.x && drawn.x + drawn.w >= point.x && drawn.y <= point.y && drawn.y + drawn.h >= point.y;
+    const bare: string[] = [];
+    // Half a millisecond: finer than any step the planner checks at.
+    for (let time = 0; time <= sequence.totalMs; time += 0.5) {
+      const drawn = [...sequence.moves.values()].map(move => boxAt(move, sequence, time));
+      centres.forEach((centre, slot) => {
+        if (!drawn.some(each => covers(each, centre))) bare.push(`slot ${slot} at ${time} ms`);
+      });
+    }
+    expect(bare).toEqual([]);
   });
 
   it('moves the rooms of a merge relayout on one curve each, crossing rooms as walls, without two drawn rooms meeting', () => {
@@ -115,9 +138,19 @@ describe('planSequence', () => {
     const sequence = plan(
       [['rising', box(196, 532, 309, 76)], ['second', box(513, 532, 309, 76)], ['third', box(830, 532, 309, 76)], ['stopped', box(298, 24, 286, 464)]],
       [['rising', box(298, 24, 286, 464)], ['second', box(196, 532, 309, 76)], ['third', box(513, 532, 309, 76)], ['stopped', box(830, 532, 309, 76)]],
+      { stage: ['stopped'] },
     );
     expect(sequence.moves.get('second')?.mode).toBe('carried');
     expect(sequence.moves.get('third')?.mode).toBe('carried');
     expect(sequence.moves.get('rising')?.mode).toBe('wall');
+  });
+
+  it('shifts a floor row one slot together with its content when no stage room moves', () => {
+    // A gutter passes a floor slot's centre for a few milliseconds; only a stage slot may not show that.
+    const floor = (index: number) => box(104 + index * 397, 388, 389, 96);
+    const stage: Rooms = [['left', box(104, 84, 584, 288)], ['right', box(700, 84, 584, 288)]];
+    const sequence = plan([...stage, ['b', floor(1)], ['c', floor(2)], ['d', floor(3)]], [...stage, ['b', floor(0)], ['c', floor(1)], ['d', floor(2)]]);
+    expect(sequence.waves).toBe(1);
+    expect([...sequence.moves.values()].map(move => move.mode)).toEqual(['carried', 'carried', 'carried']);
   });
 });

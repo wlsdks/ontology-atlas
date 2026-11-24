@@ -123,7 +123,8 @@ const ACTIVITY: Activity = {
     latestFile: "src/views/library/LibraryPage.tsx",
     onBase: false,
     files: [
-      { path: "src/views/library/LibraryPage.tsx", changedAt: NOW_S - 30 },
+      // A minute and a half back, so the bezel reads in minutes however long ago this file was loaded.
+      { path: "src/views/library/LibraryPage.tsx", changedAt: NOW_S - 90 },
       { path: "src/features/library/model/use-library-model.ts", changedAt: NOW_S - 600 },
       { path: "messages/ko/library.json", changedAt: NOW_S - 7200 },
     ],
@@ -190,9 +191,11 @@ async function startPaintSampler(page: Page) {
       const box = plateOf(element);
       return { key: keyOf(element), x: box.x + box.width / 2, y: box.y + box.height / 2, box: [box.x, box.y, box.width, box.height] };
     });
+    const SAMPLED_MS = 15_000;
     const frames: PaintFrame[] = [];
     Object.assign(window, { __paint: { frames, slots } });
     let lastTime = Number.NaN;
+    let firstTime = Number.NaN;
     const sample = () => {
       // The clock the rooms' animations read, so a frame is timed by what it shows. A callback that
       // comes before that clock moves on shows the last frame again, and is not a frame.
@@ -202,6 +205,7 @@ async function startPaintSampler(page: Page) {
         return;
       }
       lastTime = frameTime;
+      if (Number.isNaN(firstTime)) firstTime = frameTime;
       const all = rooms();
       const copies = new Map<string, number>();
       for (const element of all) copies.set(keyOf(element), (copies.get(keyOf(element)) ?? 0) + content(element).filter((value) => value > 0.05).length);
@@ -227,6 +231,11 @@ async function startPaintSampler(page: Page) {
         for (let node: Element | null = element; node && node !== building; node = node.parentElement) value *= Number(getComputedStyle(node).opacity);
         return value;
       };
+      // A part may hold content that fades on its own inside it (`data-room-fade`): the wall facts.
+      const shows = (part: Element) => {
+        const inner = part.querySelector("[data-room-fade]");
+        return seen(part) * (inner ? Number(getComputedStyle(inner).opacity) : 1);
+      };
       const tags = [...document.querySelectorAll("[data-testid=work-building] :is([data-room-tag], [data-room-plaque])")].filter((tag) => seen(tag) > 0.5).length;
       const visible: Record<string, number> = {};
       for (const element of all) {
@@ -235,7 +244,7 @@ async function startPaintSampler(page: Page) {
         for (const face of faces) {
           face.querySelectorAll("[data-room-part]").forEach((part, index) => {
             const name = `${keyOf(element)}:part${index}`;
-            visible[name] = Math.max(visible[name] ?? 0, seen(part));
+            visible[name] = Math.max(visible[name] ?? 0, shows(part));
           });
         }
       }
@@ -251,7 +260,7 @@ async function startPaintSampler(page: Page) {
         held[keyOf(element)] = Math.max(0, ...[...element.querySelectorAll<HTMLElement>(":scope > [data-room-face] :is([data-room-moru], [data-room-tag])")].map((figure) => seen(figure) * inside(figure.getBoundingClientRect())));
         element.querySelectorAll<HTMLElement>(":scope > [data-room-face] [data-room-part]").forEach((part) => {
           const rect = part.getBoundingClientRect();
-          if (seen(part) > 0.05 && rect.width > 0 && (rect.right > plate.right + 2 || rect.bottom > plate.bottom + 2 || rect.left < plate.left - 2 || rect.top < plate.top - 2)) spills.push(keyOf(element));
+          if (shows(part) > 0.05 && rect.width > 0 && (rect.right > plate.right + 2 || rect.bottom > plate.bottom + 2 || rect.left < plate.left - 2 || rect.top < plate.top - 2)) spills.push(keyOf(element));
         });
       }
       const moru: Record<string, number> = {};
@@ -278,7 +287,8 @@ async function startPaintSampler(page: Page) {
         }
       }
       frames.push({ copies: Math.max(0, ...copies.values()), overlaps, covered, litGhost, time: frameTime, tags, content: visible, held, spills, moru, edges, boxes });
-      if (frames.length < 900) requestAnimationFrame(sample);
+      // By time, not by frames: a fixed frame count ends a 120 Hz display's sampling in half the time of a 60 Hz one.
+      if (frameTime - firstTime < SAMPLED_MS) requestAnimationFrame(sample);
     };
     requestAnimationFrame(sample);
   });
@@ -567,28 +577,38 @@ test.describe("work status rooms", () => {
       entry.branch === "feat/library-stage" ? row("feat/library-stage")
         : entry.branch === "feat/idle-one" ? working("feat/idle-one", CLAUDE) : entry);
     await setRows(page, first);
+    // The first update is read and drawn: its sequence starts. Moru's loops run all along, so a running animation does not say so.
+    await expect(room(page, "feat/idle-one")).toHaveAttribute("data-room-size", "large", { timeout: 10_000 });
     // Git says something new 150 ms into the sequence; the page reads it on its next tick, mid-sequence.
-    await page.waitForFunction(() => document.querySelector("[data-testid=work-building]")!.getAnimations({ subtree: true }).some((a) => a.playState === "running"));
     // measurement window: the next update must land 150 ms into the running sequence, the gap the owner set.
     await page.waitForTimeout(150);
-    await setRows(page, first.map((entry) => entry.branch === "feat/idle-two" ? working("feat/idle-two", CLAUDE_LATER) : entry));
+    const second = first.map((entry) => entry.branch === "feat/idle-two" ? working("feat/idle-two", CLAUDE_LATER) : entry);
+    await page.evaluate((rows) => {
+      const target = window as unknown as { __workStatusRowsWhen: (rows: unknown, when: () => boolean) => void; __readMidSequence?: boolean };
+      // Whether a room's own sequence still plays when the page reads it: a finite animation on a room.
+      target.__workStatusRowsWhen(rows, () => {
+        target.__readMidSequence = document.querySelector("[data-testid=work-building]")!.getAnimations({ subtree: true }).some((animation) =>
+          animation.playState === "running" && Number.isFinite(Number(animation.effect?.getComputedTiming().endTime))
+          && (animation.effect as KeyframeEffect | null)?.target?.closest("[data-room-key]") !== null);
+        return true;
+      });
+    }, second);
     await expect(room(page, "feat/idle-two")).toHaveAttribute("data-room-size", "large", { timeout: 10_000 });
+    expect(await page.evaluate(() => (window as unknown as { __readMidSequence?: boolean }).__readMidSequence), "the next update was read while the first sequence played").toBe(true);
     await waitForAnimationsDone(page.getByTestId("work-building"));
     // A second rise reflows the stage, so no stage box ends up handed over whole.
     await expectCleanPaint(page);
     await expectSmoothMotion(page);
   });
 
-  test("lets a room that stops mid-move leave from where it is drawn, its content fading", async ({ page }) => {
+  test("hands two stage slots over when one room stops and another starts in one read, the leaving content fading", async ({ page }) => {
     await openWorkStatus(page, SWAP);
     await expect(room(page, "feat/work-status-rooms")).toHaveAttribute("data-room-size", "large");
     await startPaintSampler(page);
-    const first = SWAP.map((entry) => entry.branch === "feat/idle-one" ? working("feat/idle-one", CLAUDE) : entry);
-    await setRows(page, first);
-    // The next update goes out once the first move has played a quarter second, so it lands mid-move.
-    await page.waitForFunction(() => document.querySelector("[data-testid=work-building]")!.getAnimations({ subtree: true })
-      .some((a) => a.playState === "running" && Number(a.currentTime) >= 250));
-    await setRows(page, first.map((entry) => entry.branch === "feat/work-status-rooms" ? row("feat/work-status-rooms") : entry));
+    // One read: the room left of the stopped one slides into its slot, and the starting one rises into the slot that frees.
+    await setRows(page, SWAP.map((entry) =>
+      entry.branch === "feat/idle-one" ? working("feat/idle-one", CLAUDE)
+        : entry.branch === "feat/work-status-rooms" ? row("feat/work-status-rooms") : entry));
     await expect(room(page, "feat/work-status-rooms")).toHaveAttribute("data-room-size", "mini", { timeout: 10_000 });
     await waitForAnimationsDone(page.getByTestId("work-building"));
     await expectCleanPaint(page, { slots: 2 });
