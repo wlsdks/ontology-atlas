@@ -32,6 +32,8 @@ function KeySample({ shape }: { shape: KeyShape }) {
   return (
     <svg aria-hidden width="20" height="10" viewBox="0 0 20 10" className="shrink-0 overflow-visible">
       {shape === "capability" || shape === "stale" ? <circle cx="10" cy="5" r="3.6" fill="none" stroke={ink} strokeWidth="1.4" /> : null}
+      {/* A capability draws as a ring round a core, as its disc does on the map. */}
+      {shape === "capability" ? <circle cx="10" cy="5" r="1.8" fill={ink} /> : null}
       {shape === "element" ? <circle cx="10" cy="5" r="1.8" fill={ink} /> : null}
       {shape === "rest" ? <path d="M1 5 H18 M15 2.5 L18 5 L15 7.5" fill="none" stroke={ink} strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" /> : null}
       {shape === "needs" || shape === "neededBy" ? <path d="M1 3.3 L19 4.8 L19 5.2 L1 6.7 Z" fill={ink} /> : null}

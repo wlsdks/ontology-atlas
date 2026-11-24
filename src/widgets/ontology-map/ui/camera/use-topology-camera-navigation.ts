@@ -338,7 +338,7 @@ export function useTopologyCameraNavigation({
       // A click only selected, so a new viewport only re-checks that the panel does not cover the node.
       const node = world.nodeById.get(focused);
       const current = cameraTargetRef.current;
-      const nudge = motion === "tracking" || !node ? null : selectionSlideTarget(world, realmDataRef.current?.dial ?? world.dial, focused, current, { width, height }, tokens, overviewScaleRef.current, selectionZoomBase(memory, current, cameraGestureRevisionRef.current));
+      const nudge = motion === "tracking" || !node ? null : selectionSlideTarget(world, realmDataRef.current?.dial ?? world.dial, focused, current, { width, height }, tokens, overviewScaleRef.current, selectionZoomBase(memory, current, cameraGestureRevisionRef.current), memory.centred === true);
       if (nudge === null) return false;
       selectionCameraRef.current = recordSelectionCamera(memory, { slug: focused, framed: false, current, landed: nudge, gesture: cameraGestureRevisionRef.current });
       cameraTargetRef.current = nudge;

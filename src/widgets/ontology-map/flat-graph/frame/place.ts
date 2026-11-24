@@ -37,6 +37,25 @@ function loadInkAt(id: string, rest: number): void {
   scratch[0] = brightened * lens * input.appearOf(id);
 }
 
+/**
+ * How much of its ink a domain's disc and title keep while a concept of its own is selected or leaving: it
+ * steps back to its resting ink on the selection's clock, so the selection outshines the domain
+ * around it rather than the larger disc beside it. O(1).
+ */
+export function ownerInkShare(domainId: string): number {
+  return 1 - (1 - F.P.restHue) * ownerStepBack(domainId);
+}
+
+/** How far a domain has stepped back for a selected concept of its own, 0 to 1 on the selection's clock. O(1). */
+export function ownerStepBack(domainId: string): number {
+  const { model } = F;
+  const mix = F.motion.baseMix;
+  let share = 0;
+  if (F.selectedId !== null && model.domainOf.get(F.selectedId) === domainId) share = F.attention.selected && F.attention.focusId === F.selectedId ? mix : 1;
+  if (F.leavingId !== null && model.domainOf.get(F.leavingId) === domainId) share = Math.max(share, 1 - mix);
+  return share;
+}
+
 /** A concept's ink for its name and light: full at rest. */
 export function loadInk(id: string): void {
   loadInkAt(id, 1);
@@ -66,6 +85,15 @@ export function screenOf(id: string): StampedPoint {
   }
   let x = home.x * F.scale + F.originX;
   let y = home.y * F.scale + F.originY;
+  const shift = rimShortfall(id);
+  if (shift > 0) {
+    const ownerAt = F.layout.positions.get(F.model.capabilityOf.get(id)!)!;
+    const dx = home.x - ownerAt.x;
+    const dy = home.y - ownerAt.y;
+    const apart = Math.hypot(dx, dy);
+    x += (dx / apart) * shift;
+    y += (dy / apart) * shift;
+  }
   const pushed = pushedDots.get(id);
   if (pushed !== undefined && pushed.frame === F.frame) {
     const d = fanPushes.get(pushed.capabilityId)?.d ?? 0;
@@ -93,6 +121,43 @@ export function screenOf(id: string): StampedPoint {
   if (at.y !== y) at.y = y;
   at.stamp = F.stamp;
   return at;
+}
+
+/** Screen air an element's dot keeps from its capability's disc, past what either grows on hover. */
+const ELEMENT_RIM_AIR_PX = 6;
+
+/**
+ * How far every dot of `id`'s capability steps outward on screen so the innermost clears the disc
+ * by `ELEMENT_RIM_AIR_PX`: the dots stand a fixed world distance out, the disc a screen radius, so
+ * zooming out would otherwise sink them into it. All of a capability's dots step by the same amount,
+ * keeping their spacing. 0 for a mark that is not a capability's element. O(1).
+ */
+function rimShortfall(id: string): number {
+  const ownerId = F.model.capabilityOf.get(id);
+  if (ownerId === undefined || F.input.nodeAt?.(id)) return 0;
+  const home = F.layout.positions.get(id);
+  const ownerAt = F.layout.positions.get(ownerId);
+  if (home === undefined || ownerAt === undefined) return 0;
+  const apart = Math.hypot(home.x - ownerAt.x, home.y - ownerAt.y);
+  if (apart < 1e-6) return 0;
+  const clear = radiusNow(ownerId) + radiusNow(id) + 2 * F.P.hoverGrowPx + ELEMENT_RIM_AIR_PX;
+  const shortfall = clear - F.tokens.layout.elementHole * F.scale;
+  if (shortfall <= 0) return 0;
+  // An opened star's own rooms and pushes clear its dots instead; the step hands over to them on the marks' clock.
+  return shortfall * drawnRadius(rimKey(ownerId), inOpenStar(id) ? 0 : 1);
+}
+
+const rimKeys = new Map<string, string>();
+const rimKey = (capabilityId: string) => {
+  let key = rimKeys.get(capabilityId);
+  if (key === undefined) rimKeys.set(capabilityId, (key = `${capabilityId}\u0000rim-step`));
+  return key;
+};
+
+/** Whether `id` stands in an opened or closing star, whose own rooms and pushes already clear its dots of their discs. O(stars). */
+function inOpenStar(id: string): boolean {
+  for (let i = 0; i < F.starCount; i += 1) if (F.stars[i]!.rooms.has(id)) return true;
+  return F.closingRooms?.has(id) ?? false;
 }
 
 /** How far the fan round the member the reader let go, `capabilityId`, still stands open; 0 once it has closed. */

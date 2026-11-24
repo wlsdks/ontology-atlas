@@ -1,3 +1,4 @@
+import { paintExitTags } from "./exit-tags";
 import { glowSprite, lightSprite, sunk, type ArcPath } from "../marks";
 import { leaderSegment } from "../names/lit-lines";
 import type { FlatGraphPaintTokens, FlatGraphTokens } from "../flat-graph-shapes";
@@ -120,12 +121,29 @@ function strokeQuad(ctx: CanvasRenderingContext2D, path: ArcPath, offset: number
 
 const lineDash = [0, 0];
 
-/** The focus's lines: a taper per dependency, a dotted hairline per relation, a double hairline toward a broader concept. */
-function paintLines(ctx: CanvasRenderingContext2D, arcs: readonly Arc[], tokens: FlatGraphTokens): void {
+/** The kind whose lines paint last: the few concepts that rest on the focus, over the many it needs. */
+const NEEDED_BY = LINE_KINDS.indexOf("neededBy") + 1;
+
+/**
+ * The focus's lines: a taper per dependency, a dotted hairline per relation, a double hairline
+ * toward a broader concept. What rests on the focus paints over what it needs.
+ */
+/** The ground-coloured casing, px each side, a used-by line draws over the lines beneath it. */
+const CASING_PX = 1.5;
+
+function paintLines(ctx: CanvasRenderingContext2D, arcs: readonly Arc[], tokens: FlatGraphTokens, ground: string): void {
   const P = tokens.paint;
-  for (let arcIndex = 0; arcIndex < arcs.length; arcIndex += 1) {
+  for (let pass = 0; pass < 2; pass += 1) for (let arcIndex = 0; arcIndex < arcs.length; arcIndex += 1) {
     const arc = arcs[arcIndex]!;
+    if ((arc.kind === NEEDED_BY) !== (pass === 1)) continue;
     const kind = LINE_KINDS[arc.kind - 1];
+    // A used-by line draws on a casing of the ground, so it reads apart where it runs through the needs lines.
+    if (kind === "neededBy") {
+      ctx.globalAlpha = arc.alpha;
+      ctx.strokeStyle = ground;
+      ctx.lineWidth = arc.width + CASING_PX * 2;
+      strokeQuad(ctx, arc.path, 0, arc.reach);
+    }
     ctx.globalAlpha = arc.alpha;
     if (kind === "needs" || kind === "neededBy") {
       ctx.fillStyle = kind === "needs" ? tokens.inks.arc : tokens.inks.reach;
@@ -184,7 +202,9 @@ function group<T>(into: Buckets<T>, items: readonly T[], key: (item: T) => numbe
 }
 
 const level = (share: number): number => Math.round(Math.min(1, Math.max(0, share)) * (GROUP_LEVELS - 1)) | 0;
-const discKey = (d: Disc): number => (((inkCode(d.hue) * GROUP_LEVELS + level(d.ink)) * 2 + (d.focus ? 1 : 0)) * 2 + (d.state === "unknown" ? 1 : 0)) | 0;
+/** The share of its rim's ink a hollow owner gives up. */
+const HOLLOW_RIM_STEP = 0.5;
+const discKey = (d: Disc): number => ((((inkCode(d.hue) * GROUP_LEVELS + level(d.ink)) * GROUP_LEVELS + level(d.hollow)) * 2 + (d.focus ? 1 : 0)) * 2 + (d.state === "unknown" ? 1 : 0)) | 0;
 const segmentKey = (s: Segment): number => ((inkCode(s.ink) * 3 + (s.spoke ? 2 : s.toElement ? 1 : 0)) * GROUP_LEVELS + level(s.alpha * 8)) | 0;
 const segmentDrawn = (s: Segment): boolean => s.alpha > 0.004;
 const dotLit = (d: Dot): boolean => d.lit;
@@ -235,12 +255,14 @@ function paintDiscs(ctx: CanvasRenderingContext2D, marks: readonly Disc[], token
       ctx.moveTo(d.x + d.r, d.y);
       ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
     }
+    const kept = 1 - first.hollow;
     ctx.fillStyle = tokens.inks.discFill;
-    ctx.globalAlpha = Math.min(1, first.ink * 4);
+    ctx.globalAlpha = Math.min(1, first.ink * 4) * kept;
     ctx.fill();
     ctx.globalAlpha = 1;
     ctx.lineWidth = first.focus ? FOCUS_RIM_PX : rimPx;
-    ctx.strokeStyle = sunk(first.hue, ground, first.ink);
+    // A hollow owner's rim takes half its ink as it gives up its fill, so the selection it holds reads first.
+    ctx.strokeStyle = sunk(first.hue, ground, first.ink * (1 - HOLLOW_RIM_STEP * first.hollow));
     ctx.setLineDash(first.state === "unknown" ? UNKNOWN_DASH : NO_DASH);
     ctx.stroke();
     ctx.setLineDash(NO_DASH);
@@ -254,7 +276,9 @@ function paintDiscs(ctx: CanvasRenderingContext2D, marks: readonly Disc[], token
       ctx.arc(d.x, d.y, core, 0, Math.PI * 2);
     }
     ctx.fillStyle = sunk(first.hue, ground, first.ink * (first.focus ? 1 : P.coreAlpha));
+    ctx.globalAlpha = kept;
     ctx.fill();
+    ctx.globalAlpha = 1;
   }
   // Stale evidence recolours the rim at its own width, the amber the legend names; a heavier ring outshouts the map when most evidence is stale.
   ctx.lineWidth = rimPx;
@@ -341,6 +365,37 @@ function paintBackings(ctx: CanvasRenderingContext2D, marks: readonly Name[], gr
   if (feathered) ctx.restore();
 }
 
+/**
+ * The ink past which a name's box is cut out of the lines under it, a dimmed name's too: a line run
+ * behind a name reads as striking it out, however faint the name.
+ */
+const KNOCKOUT_INK = 0.3;
+/** Air the cut leaves round a name's words, px; a name's box already holds `namePadPx` round them. */
+const KNOCKOUT_AIR_PX = 2;
+
+/**
+ * Clips the lines that follow to the canvas less every name standing at nearly full ink, so a line
+ * passes under a name as a gap, never through its words. O(names).
+ */
+function clipOutNames(ctx: CanvasRenderingContext2D, names: readonly Name[], namePadPx: number): void {
+  const inset = namePadPx - KNOCKOUT_AIR_PX;
+  let any = false;
+  for (let nIndex = 0; nIndex < names.length; nIndex += 1) {
+    const n = names[nIndex]!;
+    if (n.fading || n.ink < KNOCKOUT_INK) continue;
+    if (!any) {
+      ctx.beginPath();
+      ctx.rect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      any = true;
+    }
+    const ox = n.x - n.name.dx;
+    const oy = n.y - n.name.dy;
+    const box = n.name.box;
+    ctx.rect(ox + box.minX + inset, oy + box.minY + inset, box.maxX - box.minX - inset * 2, box.maxY - box.minY - inset * 2);
+  }
+  if (any) ctx.clip("evenodd");
+}
+
 export function paintPlan(ctx: CanvasRenderingContext2D, plan: FramePlan, tokens: FlatGraphTokens, ground: string, warning: string, growth: number): void {
   const P = tokens.paint;
   ctx.save();
@@ -353,12 +408,15 @@ export function paintPlan(ctx: CanvasRenderingContext2D, plan: FramePlan, tokens
   }
   ctx.globalAlpha = 1;
   ctx.lineCap = "round";
+  ctx.save();
+  clipOutNames(ctx, plan.names, P.namePadPx);
   const segmentLists = group(segmentBuckets, plan.segments, segmentKey, segmentDrawn);
   for (let listIndex = 0; listIndex < segmentLists.size; listIndex += 1) strokeSegments(ctx, segmentLists.items[listIndex]!, P);
   ctx.strokeStyle = tokens.inks.arc;
   ctx.lineJoin = "round";
   strokeArcs(ctx, plan.arcs, tokens.inks.arc, P.arcHeadPx);
-  paintLines(ctx, plan.focusArcs, tokens);
+  paintLines(ctx, plan.focusArcs, tokens, ground);
+  ctx.restore();
   paintBackings(ctx, plan.names, ground, P);
   paintDots(ctx, plan.dots, ground, dotUnlit);
   for (let glowIndex = 0; glowIndex < plan.glows.length; glowIndex += 1) {
@@ -421,5 +479,6 @@ export function paintPlan(ctx: CanvasRenderingContext2D, plan: FramePlan, tokens
     if (pieces) for (let pIndex = 0; pIndex < pieces.length; pIndex += 1) ctx.fillText(pieces[pIndex]!.text, n.x + pieces[pIndex]!.dx, n.y);
     else ctx.fillText(n.name.text, n.x, n.y);
   }
+  paintExitTags(ctx, ground, tokens.inks.halo);
   ctx.restore();
 }

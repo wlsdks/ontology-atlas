@@ -19,7 +19,8 @@ export const ROOM_WHOLE_PX = 1.5;
 
 export const ELEMENT_PICK_PX = 4;
 
-export interface Disc { id: string; x: number; y: number; r: number; hue: string; ink: number; focus: boolean; state: "current" | "stale" | "unknown" }
+/** `hollow` 0 to 1: how far a disc has given up its fill and core, leaving its rim (a domain while a concept of its own is selected). */
+export interface Disc { id: string; x: number; y: number; r: number; hue: string; ink: number; focus: boolean; state: "current" | "stale" | "unknown"; hollow: number }
 export interface Dot { id: string; x: number; y: number; r: number; hue: string; ink: number; alpha: number; lit: boolean }
 export interface Segment { x0: number; y0: number; x1: number; y1: number; ink: string; toElement: boolean; spoke: boolean; alpha: number }
 /** 0 is a resting domain arc; the rest index `LINE_KINDS`. */
@@ -80,7 +81,7 @@ export class FrameList<T> {
 
 export const segments = markPool<Segment>(() => ({ x0: 0, y0: 0, x1: 0, y1: 0, ink: "", toElement: false, spoke: false, alpha: 0 }));
 export const dots = markPool<Dot>(() => ({ id: "", x: 0, y: 0, r: 0, hue: "", ink: 0, alpha: 0, lit: false }));
-export const discs = markPool<Disc>(() => ({ id: "", x: 0, y: 0, r: 0, hue: "", ink: 0, focus: false, state: "current" }));
+export const discs = markPool<Disc>(() => ({ id: "", x: 0, y: 0, r: 0, hue: "", ink: 0, focus: false, state: "current", hollow: 0 }));
 export const glows = markPool<Glow>(() => ({ x: 0, y: 0, r: 0, ink: "", alpha: 0 }));
 export const lights = markPool<Light>(() => ({ x: 0, y: 0, r: 0, ink: "", alpha: 0 }));
 export const arcMarks = markPool<Arc>(() => ({ path: emptyArcPath(), width: 0, alpha: 0, head: false, glow: 0, kind: REST_ARC, key: "", reach: 1, fadeStart: 0, fadeEnd: 0 }));
@@ -182,6 +183,10 @@ interface FrameState {
   steps: Map<string, { px: number; ux: number; uy: number }>;
   /** Elements whose step has not yet eased back to nothing. */
   stepped: Set<string>;
+  /** The selection's name block on screen as the last frame drew it, title and count line; null with none drawn. */
+  selectedNameBox: { minX: number; minY: number; maxX: number; maxY: number } | null;
+  /** Discs stepping aside from the selection's name block, or easing back after. */
+  nameStepped: Set<string>;
   /** Set while the plan reads an element where it stands before its step. */
   stepsOff: boolean;
   /** What each mark drew last, so this frame's radius moves from it at no more than `markPxPerMs`. */
@@ -228,7 +233,7 @@ const openStarSlot = (): OpenStarSlot => ({ rooms: NO_ROOMS, world: false, domai
  * The frame being built. Each part binds it to a local `const F` once: wherever modules are not
  * hoisted into one scope (tests, dev), every use of an imported binding is a lookup through its module.
  */
-export const F = { stamp: 0, opened: [] as FrameState["opened"], stars: [openStarSlot(), openStarSlot()], starCount: 0, starNow: false, closingRooms: null, steps: new Map(), stepped: new Set(), stepsOff: false } as FrameState;
+export const F = { stamp: 0, opened: [] as FrameState["opened"], stars: [openStarSlot(), openStarSlot()], starCount: 0, starNow: false, closingRooms: null, steps: new Map(), stepped: new Set(), selectedNameBox: null, nameStepped: new Set(), stepsOff: false } as FrameState;
 
 /**
  * Hot helpers hand doubles back through this slot and take objects, not numbers: a double argument

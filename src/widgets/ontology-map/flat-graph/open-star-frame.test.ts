@@ -18,6 +18,8 @@ import {
 import type { OntologyMapTokens } from "../tokens/read-map-tokens";
 import { cachedGraphAttention } from "./attention";
 import { paintFlatGraphFrame } from "./frame";
+import { exitedShare } from "./frame/exit-tags";
+import { F as frameState, framePlan } from "./frame/state";
 import { segmentCrossesBox } from "./names/lit-lines";
 import { domainStarIds } from "./open-star";
 import { buildFlatGraphScene } from "./scene";
@@ -1081,5 +1083,86 @@ describe("an open star in a rebuilt world", () => {
       }
     }
     expect(over).toEqual([]);
+  });
+});
+
+describe("room round a growing mark", () => {
+  /** Edge-to-edge screen air every mark keeps from the one a selection or hover grows; a hair under the rule's 6 px for float error. */
+  const LEAST_AIR_PX = 5.9;
+  const ring = TOKENS.paint.selectedRingGapPx + TOKENS.paint.selectedRingPx;
+  const settledMarks = (zoom: number, over: Partial<DialFrameInput>) => {
+    const camera = cameraOn(null, {});
+    for (let i = 0, now = 0; i < 90; i += 1, now += FRAME_MS) paintFlatGraphFrame(camera(zoom, { ...over, now }), TOKENS);
+    const probe = describeLastDialFrame(W, H)!;
+    return [...probe.discs, ...probe.glyphs].filter((m) => m.id !== null && m.r > 0.5 && m.x > 0 && m.y > 0 && m.x < W && m.y < H);
+  };
+  /** The least edge-to-edge air between `grower` (its ring counted when selected) and any other drawn mark. */
+  const leastAir = (marks: ReturnType<typeof settledMarks>, grower: string | null, selected: string | null) => {
+    let least = Infinity;
+    for (const [i, a] of marks.entries()) for (const b of marks.slice(i + 1)) {
+      if (grower !== null && a.id !== grower && b.id !== grower) continue;
+      const reach = (m: typeof a) => m.r + (m.id === selected ? ring : 0);
+      least = Math.min(least, Math.hypot(a.x - b.x, a.y - b.y) - reach(a) - reach(b));
+    }
+    return least;
+  };
+  const growers = [...model.capabilityById.keys(), ...[...model.capabilityById.values()].flatMap((c) => c.elementIds)];
+
+  it.each([[1], [1.6]])("keeps every drawn mark 6 px clear of another at rest, and of the mark a selection or hover grows, at %fx the overview", (zoom) => {
+    expect(leastAir(settledMarks(zoom, {}), null, null)).toBeGreaterThanOrEqual(LEAST_AIR_PX);
+    const crowded: string[] = [];
+    for (const id of growers) {
+      if (leastAir(settledMarks(zoom, { focusedNodeId: id }), id, id) < LEAST_AIR_PX) crowded.push(`selected ${id}`);
+      if (leastAir(settledMarks(zoom, { hoveredNodeId: id }), id, null) < LEAST_AIR_PX) crowded.push(`hovered ${id}`);
+    }
+    expect(crowded).toEqual([]);
+  });
+});
+
+describe("a selection's ends and name", () => {
+  /** Settles a selection of `id` with the camera framed on the whole canvas, the frame told `free` is the map left clear. */
+  const settle = (id: string, zoom: number, free = { minX: 0, minY: 0, maxX: W, maxY: H }) => {
+    const camera = cameraOn(id, {});
+    for (let i = 0, now = 0; i < 90; i += 1, now += FRAME_MS) paintFlatGraphFrame(camera(zoom, { focusedNodeId: id, freeRect: free, now }), TOKENS);
+  };
+  const capabilities = [...model.capabilityById.keys()];
+
+  it("names an end the panel cuts once: by its edge tag, its disc and name gone", () => {
+    const twice: string[] = [];
+    let cut = 0;
+    for (const id of capabilities) {
+      settle(id, 1.6);
+      const lit = frameState.attention.lit;
+      const self = framePlan.discs.find((d) => d.id === id);
+      const end = framePlan.discs.find((d) => d.id !== id && lit?.has(d.id) === true && d.ink > 0.5 && self !== undefined && d.x > self.x + 40 && d.x < W);
+      if (!end) continue;
+      // A right panel whose edge runs half a pixel short of that end's centre.
+      const free = { minX: 0, minY: 0, maxX: end.x - 0.5, maxY: H };
+      settle(id, 1.6, free);
+      const d = framePlan.discs.find((m) => m.id === end.id);
+      if (!d || d.x < free.maxX) continue;
+      cut += 1;
+      if (d.ink > 0.01) twice.push(`${id} -> ${d.id} disc ${d.ink.toFixed(2)}`);
+      if (framePlan.names.some((n) => n.name.id === d.id && n.ink > 0.01)) twice.push(`${id} -> ${d.id} name`);
+      if (exitedShare(d.id) < 1) twice.push(`${id} -> ${d.id} no tag`);
+    }
+    expect(cut).toBeGreaterThan(2);
+    expect(twice).toEqual([]);
+  });
+
+  it("keeps every other capability clear of the edge the selection's name reads from", () => {
+    const lead = 47.5;
+    const crowded: string[] = [];
+    for (const zoom of [1, 1.6]) for (const id of capabilities) {
+      settle(id, zoom);
+      const box = frameState.selectedNameBox;
+      if (box === null) continue;
+      const owner = model.capabilityOf.get(id);
+      for (const d of framePlan.discs) {
+        if (d.id === id || d.id === owner || d.y < box.minY || d.y > box.maxY || d.x >= box.minX) continue;
+        if (box.minX - (d.x + d.r) < lead) crowded.push(`${zoom}x ${id}: ${d.id} ${(box.minX - d.x - d.r).toFixed(1)} px`);
+      }
+    }
+    expect(crowded).toEqual([]);
   });
 });

@@ -8,13 +8,16 @@ import { CELL_PX, grown, Occupancy, StepOccupancy, stepScale, sweptBox, worldBox
 import { blockAbove, domainBlock, domainReachLine, hubCaptionBox, orphanCaption, projectName, titleMayRise } from "./titles";
 import type { NameAdmission, NameInput, PlacedName } from "./placed-name";
 
+
+/** Air, px, the selection's name keeps from every disc not its own. */
+const SELECTED_NAME_AIR_PX = 8;
 /** The axes a free map may cut an open star's rim along. */
 const AXES = ["x", "y"] as const;
 
 /** The highest side cost with no dot of the open star under the name. */
 const CLEAR_SIDE = 3;
 
-/** How many capabilities a folded star names at rest: its most connected ones stand for the mass. */
+/** How many capabilities a folded star names at rest: its largest ones stand for the mass. */
 const FOLDED_STAR_NAMES = 2;
 
 export function admit(input: NameInput, step: number, seed: NameAdmission | null, ceiling: ReadonlySet<string> | null): NameAdmission {
@@ -143,11 +146,11 @@ export function admit(input: NameInput, step: number, seed: NameAdmission | null
    * and the centre of the step: `discAirPx` at the step's scales never below zero, read only from the
    * discs filed under the glyphs' swept box. O(discs near the group × scales).
    */
-  const offDiscsInStep = (at: Point, group: readonly PlacedName[]) => !group.some((n) => {
+  const offDiscsInStep = (at: Point, group: readonly PlacedName[], air = 0) => !group.some((n) => {
     const glyphs = grown(n.box, -tokens.namePadPx);
     return stepDiscs.some(span(at, glyphs), (d) => d.id !== n.id && stepScales.some((s) => {
       const b = worldBox(at, glyphs, s);
-      return Math.hypot(Math.max(b.minX - d.at.x, 0, d.at.x - b.maxX), Math.max(b.minY - d.at.y, 0, d.at.y - b.maxY)) * s < d.r;
+      return Math.hypot(Math.max(b.minX - d.at.x, 0, d.at.x - b.maxX), Math.max(b.minY - d.at.y, 0, d.at.y - b.maxY)) * s < d.r + air;
     }));
   });
   // A caption ranks lowest and gives way to every disc anywhere in the step, at rest and in the overview.
@@ -194,7 +197,8 @@ export function admit(input: NameInput, step: number, seed: NameAdmission | null
         words.add(layout.positions.get(n.id)!, n.box);
         continue;
       }
-      place(n);
+      // A title a lit line runs through draws on its backing, so the line passes under it rather than through it.
+      place(polylines.length > 0 && crossed(layout.positions.get(n.id)!, [n]) ? { ...n, backed: true } : n);
     }
   }
   const caption = orphanCaption(input, scale);
@@ -251,7 +255,9 @@ export function admit(input: NameInput, step: number, seed: NameAdmission | null
     // Names are tested against names at the step's ends and centre; a disc's box at the step's own scale.
     const discs = fan?.offsets.has(cand.id) ? litMarks : marks;
     // With no mark grown the frame draws a name as admitted, at whatever zoom of the step it rests, so a capability's name keeps off every disc not its own across the step.
-    const offDiscs = (group: readonly PlacedName[]) => cand.element || offDiscsInStep(at, group);
+    // The selection's name keeps clear air from every other disc, so it never reads as a neighbour's name.
+    const nameAir = cand.id === selectedId ? SELECTED_NAME_AIR_PX : 0;
+    const offDiscs = (group: readonly PlacedName[]) => (cand.element && nameAir === 0) || offDiscsInStep(at, group, nameAir);
     // A fanned name stands on a row the fan laid out for it, so it keeps off a title's glyphs, not the air round them.
     const titleGap = fan?.offsets.has(cand.id) === true ? 0 : tokens.selectedTitleGapPx;
     // The camera frames a selection with every side its name may take and its fan's names, so those may stand past the overview's pad.
@@ -264,14 +270,18 @@ export function admit(input: NameInput, step: number, seed: NameAdmission | null
     const free = (group: readonly PlacedName[]) => within(group) && !group.some((n) => discs.hits(worldBox(at, n.box, scale))) && !onWords(group) && (!keepsOffTitles || offTitles(at, group, titleGap)) && offRing(group) && leaderClear(group) && offDiscs(group);
     // A fanned name keeps its own row over a resting dot of another capability's; its row is the fan's, laid out for it alone.
     const offStarDots = (group: readonly PlacedName[]) => free(group) && (fanned || !group.some((n) => starDots.hits(worldBox(at, n.box, scale))));
-
     // A fanned name crossed by a lit line keeps its row and draws on its backing; other names look for a side the line leaves.
     const litCrossed = (group: readonly PlacedName[]) => !fanned && lit && crossed(at, group);
+    // A selected capability whose fan has opened keeps its name centred above its disc, the same place in
+    // every scene, unless a title, a disc or the ring is there; then it takes the first side clear. A lit
+    // line under it is cut out round its words, so it no longer moves the name.
+    const above = cand.id === selectedId && fan !== null ? all[0] : undefined;
+    const steady = above !== undefined && within(above) && offTitles(at, above, 0) && !onRing(at, above) && leaderClear(above)
+      && !above.some((n) => discs.hits(worldBox(at, n.box, scale))) && offDiscsInStep(at, above, SELECTED_NAME_AIR_PX)
+      ? { side: above, backed: false }
+      : null;
     // Only a forced name may stand on an element dot of an open star; a forced name across a lit line draws on its backing.
-
-
-
-    let chosen = chooseSide(tries, offStarDots, litCrossed) ?? (force ? chooseSide(tries, free, litCrossed) : null);
+    let chosen = steady ?? chooseSide(tries, offStarDots, litCrossed) ?? (force ? chooseSide(tries, free, litCrossed) : null);
     // A forced name with no side clear across the whole step takes one clear at the step's own scale.
     if (!chosen && force) {
       const clearNow = (group: readonly PlacedName[]) => within(group) && !group.some((n) => grid.hits(worldBox(at, n.box, scale)))
@@ -283,6 +293,16 @@ export function admit(input: NameInput, step: number, seed: NameAdmission | null
     // A name carried up from the step below may stand beside a disc that drifted onto its side, never on another name.
     const apartFromNames = (group: readonly PlacedName[]) => inside(at, group) && !hits(words, at, group) && leaderClear(group);
     if (!fit && force && !mayOverprint) fit = (chooseSide(tries, (group) => apartFromNames(group) && offAllMarks(at, group), () => false) ?? chooseSide(tries, apartFromNames, () => false))?.side;
+    // The selection's name with no side clear keeps off the lit lines first: on its backing over a resting
+    // disc it still reads, while a lit line through it reads as one struck out.
+    if (!fit && cand.id === selectedId) {
+      const uncrossed = tries.filter((group) => within(group) && !hits(words, at, group) && leaderClear(group)
+        && offTitles(at, group, tokens.selectedTitleGapPx) && !onRing(at, group) && !crossed(at, group));
+      if (uncrossed.length > 0) {
+        fit = uncrossed.reduce((best, group) => (discAirPx(at, group, stepScales) > discAirPx(at, best, stepScales) ? group : best));
+        backed = !offAllMarks(at, fit);
+      }
+    }
     if (!fit && mayOverprint && tries.length > 0) {
       const apart = yields ? tries.filter((group) => !hits(words, at, group) && leaderClear(group) && (!cand.element || (offTitles(at, group) && offRing(group)))) : [];
       const offMarks = apart.filter((group) => offAllMarks(at, group));

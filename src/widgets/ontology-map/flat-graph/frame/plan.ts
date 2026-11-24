@@ -19,7 +19,8 @@ import type { FlatGraphLayout, FlatGraphPaintTokens, FlatGraphTokens } from "../
 import { planFanPushes } from "./fan-push";
 import { planName, placeName, NAME_RANKS, nameRanks, plannedNames, nameRank, blockShows, memberBlockShows, planMemberFallbacks } from "./name-plan";
 import { grownMarks, collectGrownMarks } from "./name-room";
-import { hueOf, loadMarkInk, inkOf, screenOf, screenAt, onScreen, pickable, radiusNow, discRadius, grownIds, openedRadius, dotRadius, planOpenStars, lensHidden, radiusOf, radiusAt, unsteppedScreen, easedPx } from "./place";
+import { arrangeExitTags, exitedShare, obstaclesWithTags, restartExitTags } from "./exit-tags";
+import { hueOf, loadMarkInk, inkOf, screenOf, screenAt, onScreen, pickable, radiusNow, discRadius, grownIds, openedRadius, dotRadius, planOpenStars, lensHidden, ownerStepBack, radiusOf, radiusAt, unsteppedScreen, easedPx } from "./place";
 import { disc, light, arcMark, addGlow, discAt, planCluster, markExpandedItems, focusLinks } from "./plan-marks";
 import { DRAWN_INK, ELEMENT_PICK_PX, type Disc, REST_ARC, type Name, type Ring, type LabelBox, FrameList, names, hubNames, dotRows, nameRows, labelBoxPool, pickPool, POOLS, setBox, type StampedPoint, alphaCache, frameChords, shownElements, cacheFor, L, framePlan, PLAN_LISTS, type DrawnMarks, F as frameState, scratch } from "./state";
 
@@ -27,6 +28,8 @@ import { DRAWN_INK, ELEMENT_PICK_PX, type Disc, REST_ARC, type Name, type Ring, 
 const F = frameState;
 
 const LIGHT_SINK_GAIN = 1.4;
+/** How much of its reach a cluster's light gives up as it gathers on a selected concept of its own. */
+const SELECTION_LIGHT_SHRINK = 0.45;
 const FLOOR_STEPS_PER_OCTAVE = 4096;
 
 /** One width memo per model, so a closed folder's names leave with its model. */
@@ -224,6 +227,7 @@ export function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion
   }
   const plan = framePlan;
   for (let listIndex = 0; listIndex < PLAN_LISTS.length; listIndex += 1) PLAN_LISTS[listIndex]!.restart();
+  restartExitTags();
   plan.selection = null;
   plan.agentRing = null;
   const alphas = cacheFor(alphaCache, layout);
@@ -241,9 +245,13 @@ export function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion
     const ink = inkOf(c.domainId);
     const home = layout.positions.get(c.domainId) ?? c.centre;
     const domainAt = screenOf(c.domainId);
-    const x = domainAt.x + (c.centre.x - home.x) * input.scale;
-    const y = domainAt.y + (c.centre.y - home.y) * input.scale;
-    const r = c.footprint * input.scale * P.lightReach;
+    // While a concept of its own is selected, the cluster's light gathers on the selection, on the selection's clock.
+    const back = F.selectedId !== null || F.leavingId !== null ? ownerStepBack(c.domainId) : 0;
+    const own = F.selectedId !== null && model.domainOf.get(F.selectedId) === c.domainId ? F.selectedId : F.leavingId;
+    const toward = back > 0 && own !== null ? screenOf(own) : null;
+    const x = domainAt.x + (c.centre.x - home.x) * input.scale + (toward ? (toward.x - domainAt.x - (c.centre.x - home.x) * input.scale) * back : 0);
+    const y = domainAt.y + (c.centre.y - home.y) * input.scale + (toward ? (toward.y - domainAt.y - (c.centre.y - home.y) * input.scale) * back : 0);
+    const r = c.footprint * input.scale * P.lightReach * (1 - SELECTION_LIGHT_SHRINK * back);
     const alpha = P.lightAlpha * Math.min(1, ink * LIGHT_SINK_GAIN) * (contextMode ? P.sinkInk : 1);
     if (!lensHidden(c.domainId) && alpha > 0.002 && x + r > 0 && y + r > 0 && x - r < F.W && y - r < F.H) L.lights.add(light(x, y, r, hueOf(c.domainId), alpha));
   }
@@ -253,7 +261,8 @@ export function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion
   if (project && projectAt) {
     alphas.set(project, 1);
     loadMarkInk(project);
-    L.project.add(disc(project, projectAt, radiusAt(project, growth), inks.project, scratch[0]!, project === attention.focusId, "current"));
+    // The project rests in the neutral ink like every mark, so the selection's ink is never read at rest.
+    L.project.add(disc(project, projectAt, radiusAt(project, growth), hueOf(project), scratch[0]!, project === attention.focusId, "current"));
   }
 
   if (project) loadMarkInk(project);
@@ -297,8 +306,22 @@ export function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion
     }
   }
   frameChords.restart();
-  if (!contextMode) focusLinks(motion);
+  if (!contextMode) {
+    focusLinks(motion);
+    arrangeExitTags();
+  }
   L.arcs.seal(); L.focusArcs.seal(); drawnFlowKeys.seal(); frameChords.seal();
+  // A far end named by its tag at the edge gives its disc way as the tag comes in, so it is never named twice.
+  for (const list of [plan.discs, plan.domains]) for (let i = 0; i < list.length; i += 1) {
+    const d = list[i]!;
+    const gone = exitedShare(d.id);
+    if (gone > 0) d.ink *= 1 - gone;
+  }
+  for (let i = 0; i < plan.dots.length; i += 1) {
+    const d = plan.dots[i]!;
+    const gone = exitedShare(d.id);
+    if (gone > 0) d.alpha *= 1 - gone;
+  }
 
   for (let dIndex = 0; dIndex < plan.domains.length; dIndex += 1) {
     const d = plan.domains[dIndex]!;
@@ -349,6 +372,8 @@ export function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion
   const admission = admitUnder(attention);
   const leaving = F.leavingId;
   const chrome = input.nameObstacles ?? NO_BOXES;
+  // A dimmed name gives way to an edge tag as to the toolbar; a name the selection lights keeps its place.
+  const tagged = obstaclesWithTags(chrome);
   // A name gives way to the names drawn before it, so while names give way they are drawn in the
   // order they rank; with nothing grown no name gives way, and admission's order stands. O(names).
   const ranked = grownMarks.size > 0;
@@ -361,7 +386,8 @@ export function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion
     const end = nameBlockEnd(admission.names, nIndex);
     const id = admission.names[nIndex]!.id;
     const member = starId !== null && model.capabilityById.has(id) && model.domainOf.get(id) === starId;
-    let show = member ? memberBlockShows(admission.names, nIndex, end, chrome) : blockShows(admission.names, nIndex, end, chrome, contextMode ? null : selectedId);
+    const under = attention.named.has(id) ? chrome : tagged;
+    let show = member ? memberBlockShows(admission.names, nIndex, end, under) : blockShows(admission.names, nIndex, end, under, contextMode ? null : selectedId);
     planned[nIndex] = admission.names[nIndex]!;
     // An open star's member whose side runs under chrome or out of the free map takes the best of its other sides that clears it.
     const alternates = show ? undefined : admission.alternates.get(id);
@@ -499,8 +525,8 @@ function stepRadius(id: string): number {
   return openRadiusPx(own, room, star.world ? stepGrowthNow[1]! : 1, fixedPx, F.P, nearestOwn);
 }
 
-/** Air between a selected element's ring and its capability's disc, so the two never touch. */
-const RING_AIR_PX = 1;
+/** Air between a selected element's ring and its capability's disc, so the two read as two marks. */
+const RING_AIR_PX = 6;
 
 /** How far a ringed element at `at` with radius `r` must stand further from its capability for the ring to clear that disc. */
 function ringShortfall(at: { x: number; y: number }, owner: { x: number; y: number }, ownerId: string, r: number, P: FlatGraphPaintTokens): number {
@@ -524,36 +550,138 @@ const stepKey = (id: string) => {
   return key;
 };
 
+/** The way each stepped mark last stepped, kept so a step eases home along the line it went out on. */
+const stepWays = new Map<string, { ux: number; uy: number }>();
+
+/** The ringed element of `ownerId` that `id` shares a capability with, if any. */
+function ringedSibling(id: string, ownerId: string, model: DialModel): string | null {
+  for (const ringed of [F.selectedId, F.leavingId]) if (ringed !== null && ringed !== id && model.capabilityOf.get(ringed) === ownerId) return ringed;
+  return null;
+}
+
 /**
  * Where a ringed element (the selection, or one just deselected) hangs too close for its ring to
  * clear its capability's disc even at its resting size, it steps off along the line from that
- * capability by the shortfall. Each element's step eases across frames from where it last drew,
- * toward the shortfall while it is ringed and back to nothing after, so a selection moving between
- * two elements never snaps. O(ringed elements).
+ * capability by the shortfall; its sibling dots that its grown ring would reach step off along the
+ * line from it by theirs. Each step eases across frames from where it last drew, toward its
+ * shortfall while the element is ringed and back to nothing after, so a selection moving between
+ * two elements never snaps. O(ringed elements' siblings).
  */
 function planRingSteps(model: DialModel, P: FlatGraphPaintTokens): void {
   F.steps.clear();
-  if (F.selectedId !== null) F.stepped.add(F.selectedId);
-  if (F.leavingId !== null) F.stepped.add(F.leavingId);
-  for (const id of F.stepped) {
+  planNameSteps(model);
+  for (const ringed of [F.selectedId, F.leavingId]) {
+    if (ringed === null) continue;
+    F.stepped.add(ringed);
+    const ownerId = model.capabilityOf.get(ringed);
+    if (ownerId !== undefined) for (const sibling of model.capabilityById.get(ownerId)?.elementIds ?? []) F.stepped.add(sibling);
+  }
+  const ringReach = P.selectedRingGapPx + P.selectedRingPx + RING_AIR_PX;
+  // Ringed elements first, so their siblings step from where the ring now stands.
+  for (const pass of [true, false]) for (const id of F.stepped) {
+    const ringed = id === F.selectedId || id === F.leavingId;
+    if (ringed !== pass) continue;
     const ownerId = model.capabilityOf.get(id);
     if (ownerId === undefined) {
       F.stepped.delete(id);
+      stepWays.delete(id);
       continue;
     }
     const at = unsteppedScreen(id);
-    const owner = unsteppedScreen(ownerId);
-    const dx = at.x - owner.x;
-    const dy = at.y - owner.y;
-    const apart = Math.hypot(dx, dy);
-    const ringed = id === F.selectedId || id === F.leavingId;
-    const target = ringed && apart > 1e-6 ? Math.max(0, ringShortfall(at, owner, ownerId, discRadius(id), P)) : 0;
+    const sibling = ringed ? null : ringedSibling(id, ownerId, model);
+    const from = ringed ? unsteppedScreen(ownerId) : sibling !== null ? screenOf(sibling) : null;
+    let target = 0;
+    if (from !== null) {
+      const dx = at.x - from.x;
+      const dy = at.y - from.y;
+      const apart = Math.hypot(dx, dy);
+      if (apart > 1e-6) {
+        stepWays.set(id, { ux: dx / apart, uy: dy / apart });
+        target = ringed
+          ? Math.max(0, ringShortfall(at, from, ownerId, discRadius(id), P))
+          : Math.max(0, discRadius(sibling!) + ringReach + radiusNow(id) - apart);
+      }
+    }
     const px = easedPx(stepKey(id), target);
+    const way = stepWays.get(id);
     if (px <= STEP_REST_PX && !ringed) {
       F.stepped.delete(id);
+      stepWays.delete(id);
       continue;
     }
-    if (px > STEP_REST_PX && apart > 1e-6) F.steps.set(id, { px, ux: dx / apart, uy: dy / apart });
+    if (px > STEP_REST_PX && way !== undefined) F.steps.set(id, { px, ux: way.ux, uy: way.uy });
+  }
+}
+
+/** Air, px, a disc keeps from the selection's name block. */
+const NAME_AIR_PX = 8;
+/**
+ * Air, px, a disc keeps when it stands on a row of the name block beside the edge the name reads from:
+ * there a disc a word away reads as the name's own mark.
+ */
+const NAME_LEAD_AIR_PX = 48;
+/** How far past its own box a disc's resting place is looked at for the name block, px. */
+const NAME_REACH_PX = 48;
+
+const nameStepKeys = new Map<string, string>();
+const nameStepKey = (id: string) => {
+  let key = nameStepKeys.get(id);
+  if (key === undefined) nameStepKeys.set(id, (key = `${id}\u0000name-step`));
+  return key;
+};
+
+/**
+ * Where a capability's disc stands within `NAME_AIR_PX` of the selection's name block as the last
+ * frame drew it, the disc steps aside by the shortfall, away from the block's nearest point, so the
+ * name never reads as that disc's. Each step eases on the marks' clock and back after. The block is
+ * read from the frame before, so the name and the disc never chase each other in one frame.
+ * O(capabilities) cheap tests, exact ones near the block.
+ */
+function planNameSteps(model: DialModel): void {
+  const box = F.selectedNameBox;
+  F.selectedNameBox = null;
+  const selected = F.selectedId;
+  if (box !== null && selected !== null) {
+    const owner = model.capabilityOf.get(selected);
+    for (const id of model.capabilityById.keys()) {
+      if (id === selected || id === owner || F.nameStepped.has(id)) continue;
+      const home = F.layout.positions.get(id);
+      if (!home) continue;
+      const x = home.x * F.scale + F.originX;
+      const y = home.y * F.scale + F.originY;
+      if (x < box.minX - NAME_REACH_PX || x > box.maxX + NAME_REACH_PX || y < box.minY - NAME_REACH_PX || y > box.maxY + NAME_REACH_PX) continue;
+      F.nameStepped.add(id);
+    }
+  }
+  for (const id of F.nameStepped) {
+    const at = unsteppedScreen(id);
+    let target = 0;
+    if (box !== null && selected !== null) {
+      const nx = Math.min(Math.max(at.x, box.minX), box.maxX);
+      const ny = Math.min(Math.max(at.y, box.minY), box.maxY);
+      const apart = Math.hypot(at.x - nx, at.y - ny);
+      if (apart > 1e-6) {
+        stepWays.set(nameStepKey(id), { ux: (at.x - nx) / apart, uy: (at.y - ny) / apart });
+        // A name reads from its left edge, so a disc on one of its rows just before it reads as its mark.
+        const onRow = at.y >= box.minY && at.y <= box.maxY;
+        const leads = onRow && at.x < box.minX;
+        target = Math.max(0, radiusNow(id) + (leads ? NAME_LEAD_AIR_PX : NAME_AIR_PX) - apart);
+      } else {
+        // A centre inside the block leaves by its nearest edge.
+        const edges = [at.x - box.minX, box.maxX - at.x, at.y - box.minY, box.maxY - at.y];
+        const nearest = edges.indexOf(Math.min(...edges));
+        stepWays.set(nameStepKey(id), { ux: nearest === 0 ? -1 : nearest === 1 ? 1 : 0, uy: nearest === 2 ? -1 : nearest === 3 ? 1 : 0 });
+        target = radiusNow(id) + NAME_AIR_PX + edges[nearest]!;
+      }
+    }
+    const px = easedPx(nameStepKey(id), target);
+    const way = stepWays.get(nameStepKey(id));
+    if (px <= STEP_REST_PX && target === 0) {
+      F.nameStepped.delete(id);
+      stepWays.delete(nameStepKey(id));
+      continue;
+    }
+    if (px > STEP_REST_PX && way !== undefined) F.steps.set(id, { px, ux: way.ux, uy: way.uy });
   }
 }
 

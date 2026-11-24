@@ -1,10 +1,11 @@
 import type { DialChordLight, Point } from "../../dial/dial-shapes";
 import { FLAT_LINE_BITS } from "../attention";
 import { directItemId } from "../layout";
-import { arcPathInto, graphDiscRadiusPx, litLineTrimsInto, smoothstep } from "../marks";
+import { arcPathInto, graphDiscRadiusPx, litLineTrimsInto, smoothstep, sunk } from "../marks";
 import type { GraphMotion } from "../motion";
 import type { FlatGraphCluster, FlatGraphItem } from "../flat-graph-shapes";
-import { hueOf, loadMarkInk, loadGlowShare, screenOf, fanShare, alongSpoke, screenAt, onScreen, discRadius, dotRadius, segmentOnScreen, lensHidden } from "./place";
+import { addExitTag, cutArc, exitShare, exitWholeShare } from "./exit-tags";
+import { hueOf, loadMarkInk, ownerInkShare, ownerStepBack, loadGlowShare, screenOf, fanShare, alongSpoke, screenAt, onScreen, discRadius, dotRadius, segmentOnScreen, lensHidden } from "./place";
 import { crowdClear } from "./push-crowd";
 import { DRAWN_INK, ROOM_GONE_PX, ROOM_WHOLE_PX, type Disc, type Segment, type Arc, LINE_KINDS, type Light, segments, dots, discs, glows, lights, arcMarks, chordPool, alphaCache, frameChords, shownElements, cacheFor, L, F as frameState, movedRoom, scratch } from "./state";
 
@@ -25,6 +26,7 @@ export function disc(id: string, at: Point, r: number, hue: string, ink: number,
   if (d.ink !== ink) d.ink = ink;
   d.focus = focus;
   d.state = state;
+  if (d.hollow !== 0) d.hollow = 0;
   return d;
 }
 
@@ -66,7 +68,8 @@ export function addGlow(d: Disc, isProject: boolean): void {
   const { P, growth } = F;
   if (isProject) scratch[0] = F.projectShare;
   else loadGlowShare(d.id);
-  const share = scratch[0]!;
+  // A domain's glow goes out while a concept of its own is selected, so the light gathers on the selection.
+  const share = scratch[0]! * (!isProject && F.model.domainById.has(d.id) ? 1 - ownerStepBack(d.id) : 1);
   if (share <= DRAWN_INK) return;
   const halo = isProject ? P.projectGlowPx * growth : F.model.domainById.has(d.id) ? P.domainGlowPx * growth : d.r + P.capGlowPx * growth * crowdKept(d);
   const focusGain = d.focus ? FOCUS_GLOW_ALPHA / P.glowAlpha : 1;
@@ -100,21 +103,19 @@ export function discAt(id: string, at: Point, hue: string, focus: boolean, state
   d.hue = hue;
   d.focus = focus;
   d.state = state;
+  if (d.hollow !== 0) d.hollow = 0;
   return d;
 }
 
 /**
- * How much of its ink a domain's disc keeps while a concept of its own is selected or leaving: it
- * steps back to its resting ink on the selection's clock, so the selection outshines the domain
- * around it rather than the larger disc beside it. O(1).
+ * A capability's hue: its domain's, tinted toward the selection's ink as far as it is lit, so every
+ * concept the selection lights takes one colour whichever domain holds it. O(1).
  */
-function ownerInkShare(domainId: string): number {
-  const { model, P } = F;
-  const mix = F.motion.baseMix;
-  let share = 0;
-  if (F.selectedId !== null && model.domainOf.get(F.selectedId) === domainId) share = F.attention.selected && F.attention.focusId === F.selectedId ? mix : 1;
-  if (F.leavingId !== null && model.domainOf.get(F.leavingId) === domainId) share = Math.max(share, 1 - mix);
-  return 1 - (1 - P.restHue) * share;
+function litHue(id: string, domainId: string, domainHue: string): string {
+  loadGlowShare(id);
+  const lit = scratch[0]!;
+  const tint = F.motion.tintShare(domainId);
+  return lit <= tint ? domainHue : sunk(F.tokens.inks.project, F.tokens.inks.name, lit);
 }
 
 /** One domain's disc, its capability discs and links, and any element fan that draws. O(members). */
@@ -138,10 +139,16 @@ export function planCluster(c: FlatGraphCluster, projectAt: Point | null, projec
     const r = discRadius(c.domainId);
     if (d.r !== r) d.r = r;
     const discInk = ink * ownerInkShare(c.domainId);
+    // While a concept of its own is selected the domain gives up its fill, keeping its size, so its weight steps back.
+    const hollow = ownerStepBack(c.domainId);
+    if (d.hollow !== hollow) d.hollow = hollow;
     if (d.ink !== discInk) d.ink = discInk;
     L.domains.add(d);
   }
   const evidence = F.evidence;
+  // A hollow domain's member links start at its rim, so they never meet in the empty disc.
+  const rimShare = ownerStepBack(c.domainId);
+  const rimPx = rimShare > 0 ? discRadius(c.domainId) * rimShare : 0;
   for (let i = 0; i < c.items.length; i += 1) {
     const it = c.items[i]!;
     if (it.direct) {
@@ -155,12 +162,17 @@ export function planCluster(c: FlatGraphCluster, projectAt: Point | null, projec
     alphas.set(it.id, itemHidden ? 0 : 1);
     if (!contextMode && segmentOnScreen(at, itemAt)) {
       const s = segmentBetween(at, itemAt, hue, false);
+      const apart = Math.hypot(itemAt.x - at.x, itemAt.y - at.y);
+      if (rimPx > 0 && apart > rimPx) {
+        s.x0 = at.x + ((itemAt.x - at.x) / apart) * rimPx;
+        s.y0 = at.y + ((itemAt.y - at.y) / apart) * rimPx;
+      }
       const alpha = P.linkCapAlpha * Math.min(ink, itemInk);
       if (s.alpha !== alpha) s.alpha = alpha;
       L.segments.add(s);
     }
     if (!itemHidden && onScreen(itemAt)) {
-      const d = discAt(it.id, itemAt, hue, it.id === attention.focusId, evidence !== null ? evidence.stateOf(it.id) : "current");
+      const d = discAt(it.id, itemAt, litHue(it.id, c.domainId, hue), it.id === attention.focusId, evidence !== null ? evidence.stateOf(it.id) : "current");
       const r = discRadius(it.id);
       if (d.r !== r) d.r = r;
       if (d.ink !== itemInk) d.ink = itemInk;
@@ -222,6 +234,10 @@ function planElements(it: FlatGraphItem, itemAt: Point, hue: string): void {
         const start = Math.min(1, ((itemR + P.selectedRingGapPx + P.selectedRingPx) * fanned) / length);
         s.x0 = itemAt.x + (elementAt.x - itemAt.x) * start;
         s.y0 = itemAt.y + (elementAt.y - itemAt.y) * start;
+        // And it stops at the dot's rim, so the dot reads whole.
+        const end = Math.max(start, 1 - (r * fanned) / length);
+        s.x1 = itemAt.x + (elementAt.x - itemAt.x) * end;
+        s.y1 = itemAt.y + (elementAt.y - itemAt.y) * end;
       }
       const alpha = (P.linkElementAlpha + (P.fanSpokeAlpha - P.linkElementAlpha) * fanned) * Math.min(itemInk, elementInk) * shown;
       if (s.alpha !== alpha) s.alpha = alpha;
@@ -250,8 +266,82 @@ const LINE_TRIMS = new Float64Array(2);
  * taper's point stops short of the disc it reaches. A selection's fully drawn lines also become the
  * light layer's chords.
  */
+/** The least angle, radians, between two lit lines where they leave the selection's rim. */
+const SPREAD_MIN_RAD = 0.13;
+/** The most a line's leaving angle is turned from its own straight way, radians. */
+const SPREAD_MAX_RAD = 0.3;
+const SPREAD_PASSES = 12;
+type Leaving = { key: string; way: number; at: number };
+const leavingPool: Leaving[] = [];
+const leaving: Leaving[] = [];
+/** Each lit line's leaving angle at the selection this frame, by line key. */
+const leavingAt = new Map<string, number>();
+
+/**
+ * Turns the angles at which the selection's lit lines leave its rim apart to at least
+ * `SPREAD_MIN_RAD`, each no more than `SPREAD_MAX_RAD` from its own way, so lines bound the same way
+ * stay countable where they meet the selection. O(lines × SPREAD_PASSES + lines log lines).
+ */
+function spreadLeaving(motion: GraphMotion, focusId: string): void {
+  leavingAt.clear();
+  const at = screenAt(focusId);
+  if (!at) return;
+  leaving.length = 0;
+  for (let i = 0; i < motion.drawnCount; i += 1) {
+    const { line, reach } = motion.drawn[i]!;
+    if (reach <= DRAWN_INK || (line.from !== focusId && line.to !== focusId) || alongSpoke(line.from, line.to)) continue;
+    const other = screenAt(line.from === focusId ? line.to : line.from);
+    if (!other) continue;
+    const item = leavingPool[leaving.length] ?? (leavingPool[leaving.length] = { key: "", way: 0, at: 0 });
+    item.key = line.key;
+    item.way = Math.atan2(other.y - at.y, other.x - at.x);
+    item.at = item.way;
+    leaving.push(item);
+  }
+  const n = leaving.length;
+  if (n < 2) return;
+  leaving.sort((a, b) => a.way - b.way);
+  for (let pass = 0; pass < SPREAD_PASSES; pass += 1) {
+    let moved = false;
+    for (let i = 0; i < n; i += 1) {
+      const a = leaving[i]!;
+      const b = leaving[(i + 1) % n]!;
+      const gap = i + 1 < n ? b.at - a.at : b.at + Math.PI * 2 - a.at;
+      if (gap >= SPREAD_MIN_RAD) continue;
+      const push = (SPREAD_MIN_RAD - gap) / 2;
+      a.at = Math.max(a.way - SPREAD_MAX_RAD, a.at - push);
+      b.at = Math.min(b.way + SPREAD_MAX_RAD, b.at + push);
+      moved = true;
+    }
+    if (!moved) break;
+  }
+  for (const item of leaving) if (Math.abs(item.at - item.way) > 1e-4) leavingAt.set(item.key, item.at);
+}
+
+/** Moves the selection's end of `arc` round its rim to `angle`, its curve leaving along that angle. O(1). */
+function leaveAt(arc: Arc, focus: Point, angle: number, fromFocus: boolean): void {
+  const { a, c, b } = arc.path;
+  const end = fromFocus ? a : b;
+  const r = Math.hypot(end.x - focus.x, end.y - focus.y);
+  const reach = Math.hypot(c.x - end.x, c.y - end.y);
+  const ux = Math.cos(angle);
+  const uy = Math.sin(angle);
+  const keptX = c.x - end.x;
+  const keptY = c.y - end.y;
+  end.x = focus.x + ux * r;
+  end.y = focus.y + uy * r;
+  // The control point goes only part of the way to the new heading, so the line turns near the rim
+  // and keeps its own bow beyond it.
+  c.x = end.x + LEAVE_TURN * ux * reach + (1 - LEAVE_TURN) * keptX;
+  c.y = end.y + LEAVE_TURN * uy * reach + (1 - LEAVE_TURN) * keptY;
+}
+
+/** The share of the turn the control point takes toward a line's new leaving angle. */
+const LEAVE_TURN = 0.5;
+
 export function focusLinks(motion: GraphMotion): void {
   const P = F.P;
+  if (F.attention.focusId !== null) spreadLeaving(motion, F.attention.focusId);
   // A selection the map opened with (a deep link, a rebuilt world) changed nothing here, so it does not light.
   const chorded = motion.current.selected && motion.settled && Number.isFinite(motion.changedAt) && !F.input.reducedMotion;
   const devicePxPerCss = F.W > 0 ? F.input.ctx.canvas.width / F.W : 1;
@@ -265,9 +355,11 @@ export function focusLinks(motion: GraphMotion): void {
     const tapered = line.kind === "needs" || line.kind === "neededBy";
     const betweenDomains = F.model.domainById.has(line.from) && F.model.domainById.has(line.to);
     litLineTrimsInto(LINE_TRIMS, F.layout, line, Math.hypot(b.x - a.x, b.y - a.y), F.scale, F.growth, discRadius(line.from), discRadius(line.to), P);
-    // A line to a fanned element is a fan's length long: a taper that short reads as a blot, so it draws as a hair.
+    // A line to a fanned element is a fan's length long: a taper that short reads as a blot, so it draws
+    // at the taper's base width along that spoke, wider than the fan's member spokes, so a fanned
+    // element the selection needs or is needed by reads apart from one it only holds.
     const withinFan = fanShare(line.from) > 0 || fanShare(line.to) > 0;
-    const width = tapered && !withinFan ? Math.min(P.lineTaperMaxPx, P.lineTaperPx + P.lineTaperGainPx * (line.weight - 1)) : line.kind === "relates" ? P.lineDotPx : P.lineHairPx;
+    const width = tapered ? (withinFan ? P.lineTaperPx : Math.min(P.lineTaperMaxPx, P.lineTaperPx + P.lineTaperGainPx * (line.weight - 1))) : line.kind === "relates" ? P.lineDotPx : P.lineHairPx;
     // A relation between a capability and its own fanned element runs straight along that element's spoke, from outside the ring.
     const spoke = alongSpoke(line.from, line.to);
     const ring = spoke ? P.selectedRingGapPx + P.selectedRingPx : 0;
@@ -278,12 +370,20 @@ export function focusLinks(motion: GraphMotion): void {
     if (reach * Math.hypot(end.x - start.x, end.y - start.y) * devicePxPerCss < 1) continue;
     mark.key = line.key;
     if (mark.reach !== reach) mark.reach = reach;
+    const turned = leavingAt.get(line.key);
+    if (turned !== undefined) leaveAt(mark, line.from === F.attention.focusId ? a : b, turned, line.from === F.attention.focusId);
     if (betweenDomains) {
       // The end outside the member star fades in, so the line emerges from the cluster's light.
       const fade = Math.min(0.5, P.lineFadePx / (Math.hypot(end.x - start.x, end.y - start.y) || 1));
       if (line.kind === "needs") mark.fadeStart = fade;
       else mark.fadeEnd = fade;
     }
+    // A line that runs under a panel or off the canvas names where it goes at the edge it leaves by, and ends there.
+    const focusId = F.attention.focusId;
+    const fromFocus = line.from === focusId;
+    const inside = focusId !== null && (fromFocus || line.to === focusId) ? exitShare(mark.path, fromFocus, fromFocus ? b : a, discRadius(fromFocus ? line.to : line.from)) : -1;
+    if (current && focusId !== null) addExitTag(mark, line.from, line.to, focusId, line.kind === "neededBy" ? F.tokens.inks.reach : F.tokens.inks.arc, reach, inside);
+    if (inside > 0) cutArc(mark, fromFocus ? 0 : 1 - inside, fromFocus ? inside : 1, fromFocus, exitWholeShare());
     L.focusArcs.add(mark);
     if (current) F.lineKinds |= FLAT_LINE_BITS[line.kind] | (betweenDomains ? FLAT_LINE_BITS.domains : 0);
     if (chorded && current) frameChords.add(chordOf(mark, line.kind === "relates"));
