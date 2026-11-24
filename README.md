@@ -52,7 +52,7 @@ macOS (Apple Silicon) is signed and notarized and carries the MCP server inside 
 
 ![The Atlas map of this repository's own ontology with the MCP tool server capability selected: lit lines run to the nine concepts it depends on and the two that use it, across the domains, and a panel on the right lists them](docs/assets/readme/topology-overview.png)
 
-**Map** — select a concept and the lines to what it depends on and what uses it light up; the panel names each one. Flat, Hex, Domain structure, a 3D tree and Neural are views of the same concepts. [Map](docs/features/map/README.md)
+**Map** — select a concept and the lines to what it depends on and what uses it light up; the panel names each one. Flat, Hex, a 3D tree and Neural are views of the same concepts. [Map](docs/features/map/README.md)
 
 <table>
 <tr>

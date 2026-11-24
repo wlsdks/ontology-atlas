@@ -172,9 +172,9 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   bootstrap from found docs, create a node, open Topology INDEX, open the new-concept editor (`/topology/?workbench=create`),
   or choose a vault.
 - **Filter active** → bottom-left "filter · N / TOTAL" badge
-- **Five map views, chosen in one picker** — the current-view chip in the top tool
-  lane opens **Flat** (the ordinary 2D map, default), **Hex board**,
-  **Domain structure**, **3D**, and **Neural**. The **Hex board** gives every capability one hexagonal tile: a domain is a
+- **Four map views, chosen in one picker** — the current-view chip in the top tool
+  lane opens **Flat** (the ordinary 2D map, default), **Hex board**, **3D**, and
+  **Neural**. The **Hex board** gives every capability one hexagonal tile: a domain is a
   contiguous region of tiles around its title tile, the project sits at the centre
   with the folder's concept count (the map INDEX's rule),
   and empty cells between regions keep them apart. A tile's brightness and its row
@@ -207,21 +207,18 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   change or a hidden tab lands the travel at once. A pick into or out of 3D
   travels the same way: each concept lands on the tree mark that draws it, and a
   concept folded into a closed branch lands on that branch's mark. Into or out of
-  Neural, into Flat past 6,500 concepts, and into or out of Domain structure, the
-  old picture crossfades instead, as every pick does under reduced motion; between
-  Flat and Neural the map's own morph moves each concept in place. A view reached
+  Neural and into Flat past 6,500 concepts, the old picture crossfades instead,
+  as every pick does under reduced motion; between Flat and Neural the map's own
+  morph moves each concept in place. A view reached
   by address or from another tab switches without motion. Gate:
   `tests/e2e/map/frame-loop/map-layout-morph.spec.ts`.
   A stored Cone or Strata choice and the address `?view=strata` open 3D; a stored
   Neural choice and the address `?view=coupling` open Neural (`?view=neural`).
 
-  **Domain structure** opens named project/domain/capability/element membership
-  without spatial zoom. Press a container to browse its direct children and use
-  the breadcrumb to return. Read opens the existing concept/document workbench.
-  Membership follows recorded contains and belongs_to directions, retaining
-  multiple parents, direct levels, and disconnected concepts. Child lists are
-  paged, and reduced motion settles immediately. Old Galaxy choices resolve to
-  structure; its renderer, placement, sky, and dedicated probes are removed.
+  A stored Domain structure or Galaxy choice and the addresses
+  `?view=structure` and `?view=galaxy` count as no view, like any unknown
+  value: the map opens as it would without them. Their stored keys are never
+  read and go on the next pick.
 
   In Map, **My constellations** saves a named set of current ontology concepts
   with its purpose. Opening a saved constellation focuses that whole set through
@@ -270,8 +267,8 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
 - **Growth replay** — the play tile on the right rail shows the ontology
   appearing in containment order: the project, then each domain followed by its
   capabilities and their elements. It is offered on the Flat map and the 3D
-  tree, the two views that draw a concept's appear ramp; Layers, Neural and the
-  structure view do not show it. On the Flat map the replay covers every mark
+  tree, the two views that draw a concept's appear ramp; Hex and Neural do not
+  show it. On the Flat map the replay covers every mark
   the map is drawing, so an opened star's elements take part. The map first
   leaves over 320 ms, then grows; a second press, Escape or a press on the
   canvas stops it, the tile rests at once and every mark not yet shown rises

@@ -13,7 +13,6 @@ area: map
 
 The Flat overview uses readable domain branches for small maps and a packed dial for dense maps: [`flat-dial.md`](flat-dial.md).
 Relation light on focus and path: [`light.md`](light.md).
-Domain structure uses recorded direct membership and named breadcrumbs.
 
 ### How much of the code is on the map, and since when
 

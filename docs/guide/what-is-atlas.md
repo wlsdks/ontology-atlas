@@ -41,9 +41,8 @@ block, called frontmatter: a few lines of YAML with the concept's `kind`,
 become lines. Select a concept and the map lights up what it depends on and what
 uses it, and a panel names each one.
 
-The map shows the same concepts in several views: **Flat**, **Hex**, **Domain
-structure**, **3D** and **Neural**. Other screens in the app read the same
-folder, among them **Library** (source documents and wiki pages),
+The map shows the same concepts in several views: **Flat**, **Hex**, **3D**
+and **Neural**. Other screens in the app read the same folder, among them **Library** (source documents and wiki pages),
 **Planning**, **Projects**, **Harness** (what an agent reads in your repository
 and what checks its work), **Changes** and **Git**.
 
