@@ -47,7 +47,7 @@
     --map-graph-link-element-alpha: 0.16;
     --map-graph-link-cap-width-px: 1.1;
     --map-graph-link-element-width-px: 0.7;
-    --map-graph-fan-spoke-alpha: 0.5;
+    --map-graph-fan-spoke-alpha: 0.3;
     --map-graph-fan-spoke-max-px: 1.8;
     --map-graph-light-alpha: 0.2;
     --map-graph-light-reach: 1.8;
@@ -82,9 +82,9 @@
     --map-graph-selected-disc-px: 11;
     --map-graph-selected-ring-gap-px: 5;
     --map-graph-selected-ring-px: 1.5;
-    --map-graph-selected-name-px: 15;
+    --map-graph-selected-name-px: 17;
     --map-graph-selected-title-gap-px: 8;
-    --map-graph-frame-margin-px: 24;
+    --map-graph-frame-margin-px: 32;
     --map-graph-selected-disc-gap-px: 28;
     --map-graph-select-zoom-max-ratio: 2;
     --map-graph-pick-min-px: 10;
@@ -92,7 +92,7 @@
     --map-graph-domain-apart-max-px: 160;
     --map-graph-open-fill: 0.82;
     --map-graph-cap-open-max-px: 24;
-    --map-graph-element-open-max-px: 10;
+    --map-graph-element-open-max-px: 8;
     --map-graph-mark-px-per-ms: 0.1;
     --map-graph-backing-radius-px: 6;
     --map-graph-backing-pad-x-px: 1;

@@ -5,7 +5,10 @@ import { nameBlockDraws } from "../names";
 import { type PlacedName } from "../names/placed-name";
 import { FLAT_TIER_TIMING, tierNameAlpha } from "../../morph/tier-assembly";
 import { grownMarks, nameClear, onGrownDot, CAPTION_ROWS } from "./name-room";
-import { loadInk, screenAt, discRadius, dotRadius } from "./place";
+import { loadInk, ownerStepBack, screenAt, discRadius, dotRadius } from "./place";
+
+/** The share of its ink a domain's title keeps while a concept of its own is selected. */
+const OWNER_TITLE_INK = 0;
 import { DRAWN_INK, names, L, type DrawnName, MARK_STEP_MAX_MS, NAME_REST_PX, F as frameState, scratch } from "./state";
 
 // A module-local name: see `F` in ./state.
@@ -23,7 +26,11 @@ function loadNameInk(n: PlacedName): void {
   if (n.role === "project" || n.role === "domain" || n.role === "units" || n.role === "orphans" || n.role === "reach") {
     loadInk(n.id);
     const landed = nameLanded(n.id);
-    scratch[0] = scratch[0]! * (n.role === "units" || n.role === "orphans" ? F.P.restHue * landed : landed);
+    // A domain's title and census go while a concept of its own is selected: its name is read on the
+    // selection's count line instead.
+    const back = n.role === "project" || n.role === "orphans" ? 0 : ownerStepBack(n.id);
+    const owner = n.role === "units" ? 1 - back : 1 - (1 - OWNER_TITLE_INK) * back;
+    scratch[0] = scratch[0]! * owner * (n.role === "units" || n.role === "orphans" ? F.P.restHue * landed : landed);
     return;
   }
   const input = F.input;
@@ -138,7 +145,8 @@ export function placeName(row: DrawnName, alphas: ReadonlyMap<string, number>, s
   // A name arrives only where it is clear and leaves at full pace where it is not. The selection's name
   // gives way only to a disc drawn past its resting radius: names below it give way to it, and its plate covers dots.
   if (target > DRAWN_INK && grownMarks.size > 0) {
-    const held = n.id === F.attention.focusId && !CAPTION_ROWS.has(n.role);
+    // A domain's census and reach rows share one slot and give way; a capability's reach row is part of its name.
+    const held = n.id === F.attention.focusId && (!CAPTION_ROWS.has(n.role) || !F.model.domainById.has(n.id));
     room = nameClear(n, at, at.x + row.dx - n.dx, at.y + row.dy - n.dy, held) ? 1 : 0;
     // The selection's name stays put while its star's dots move out past it, so it draws on its plate while one crosses it.
     if (held && !backed) backed = onGrownDot(n, at.x + row.dx - n.dx, at.y + row.dy - n.dy);

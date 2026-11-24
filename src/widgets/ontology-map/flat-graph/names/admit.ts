@@ -194,7 +194,8 @@ export function admit(input: NameInput, step: number, seed: NameAdmission | null
         words.add(layout.positions.get(n.id)!, n.box);
         continue;
       }
-      place(n);
+      // A title a lit line runs through draws on its backing, so the line passes under it rather than through it.
+      place(polylines.length > 0 && crossed(layout.positions.get(n.id)!, [n]) ? { ...n, backed: true } : n);
     }
   }
   const caption = orphanCaption(input, scale);
@@ -264,14 +265,17 @@ export function admit(input: NameInput, step: number, seed: NameAdmission | null
     const free = (group: readonly PlacedName[]) => within(group) && !group.some((n) => discs.hits(worldBox(at, n.box, scale))) && !onWords(group) && (!keepsOffTitles || offTitles(at, group, titleGap)) && offRing(group) && leaderClear(group) && offDiscs(group);
     // A fanned name keeps its own row over a resting dot of another capability's; its row is the fan's, laid out for it alone.
     const offStarDots = (group: readonly PlacedName[]) => free(group) && (fanned || !group.some((n) => starDots.hits(worldBox(at, n.box, scale))));
-
     // A fanned name crossed by a lit line keeps its row and draws on its backing; other names look for a side the line leaves.
     const litCrossed = (group: readonly PlacedName[]) => !fanned && lit && crossed(at, group);
+    // A selected capability whose fan has opened keeps its name centred above its disc, the same place in
+    // every scene, unless a title, a disc, the ring or a lit line is there; then it takes the first side clear.
+    const above = cand.id === selectedId && fan !== null ? all[0] : undefined;
+    const steady = above !== undefined && within(above) && offTitles(at, above, 0) && !onRing(at, above) && leaderClear(above)
+      && !above.some((n) => discs.hits(worldBox(at, n.box, scale))) && offDiscsInStep(at, above) && !crossed(at, above)
+      ? { side: above, backed: false }
+      : null;
     // Only a forced name may stand on an element dot of an open star; a forced name across a lit line draws on its backing.
-
-
-
-    let chosen = chooseSide(tries, offStarDots, litCrossed) ?? (force ? chooseSide(tries, free, litCrossed) : null);
+    let chosen = steady ?? chooseSide(tries, offStarDots, litCrossed) ?? (force ? chooseSide(tries, free, litCrossed) : null);
     // A forced name with no side clear across the whole step takes one clear at the step's own scale.
     if (!chosen && force) {
       const clearNow = (group: readonly PlacedName[]) => within(group) && !group.some((n) => grid.hits(worldBox(at, n.box, scale)))
@@ -283,6 +287,16 @@ export function admit(input: NameInput, step: number, seed: NameAdmission | null
     // A name carried up from the step below may stand beside a disc that drifted onto its side, never on another name.
     const apartFromNames = (group: readonly PlacedName[]) => inside(at, group) && !hits(words, at, group) && leaderClear(group);
     if (!fit && force && !mayOverprint) fit = (chooseSide(tries, (group) => apartFromNames(group) && offAllMarks(at, group), () => false) ?? chooseSide(tries, apartFromNames, () => false))?.side;
+    // The selection's name with no side clear keeps off the lit lines first: on its backing over a resting
+    // disc it still reads, while a lit line through it reads as one struck out.
+    if (!fit && cand.id === selectedId) {
+      const uncrossed = tries.filter((group) => within(group) && !hits(words, at, group) && leaderClear(group)
+        && offTitles(at, group, tokens.selectedTitleGapPx) && !onRing(at, group) && !crossed(at, group));
+      if (uncrossed.length > 0) {
+        fit = uncrossed.reduce((best, group) => (discAirPx(at, group, stepScales) > discAirPx(at, best, stepScales) ? group : best));
+        backed = !offAllMarks(at, fit);
+      }
+    }
     if (!fit && mayOverprint && tries.length > 0) {
       const apart = yields ? tries.filter((group) => !hits(words, at, group) && leaderClear(group) && (!cand.element || (offTitles(at, group) && offRing(group)))) : [];
       const offMarks = apart.filter((group) => offAllMarks(at, group));

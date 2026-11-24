@@ -1,3 +1,4 @@
+import { paintExitTags } from "./exit-tags";
 import { glowSprite, lightSprite, sunk, type ArcPath } from "../marks";
 import { leaderSegment } from "../names/lit-lines";
 import type { FlatGraphPaintTokens, FlatGraphTokens } from "../flat-graph-shapes";
@@ -184,7 +185,7 @@ function group<T>(into: Buckets<T>, items: readonly T[], key: (item: T) => numbe
 }
 
 const level = (share: number): number => Math.round(Math.min(1, Math.max(0, share)) * (GROUP_LEVELS - 1)) | 0;
-const discKey = (d: Disc): number => (((inkCode(d.hue) * GROUP_LEVELS + level(d.ink)) * 2 + (d.focus ? 1 : 0)) * 2 + (d.state === "unknown" ? 1 : 0)) | 0;
+const discKey = (d: Disc): number => ((((inkCode(d.hue) * GROUP_LEVELS + level(d.ink)) * GROUP_LEVELS + level(d.hollow)) * 2 + (d.focus ? 1 : 0)) * 2 + (d.state === "unknown" ? 1 : 0)) | 0;
 const segmentKey = (s: Segment): number => ((inkCode(s.ink) * 3 + (s.spoke ? 2 : s.toElement ? 1 : 0)) * GROUP_LEVELS + level(s.alpha * 8)) | 0;
 const segmentDrawn = (s: Segment): boolean => s.alpha > 0.004;
 const dotLit = (d: Dot): boolean => d.lit;
@@ -235,8 +236,9 @@ function paintDiscs(ctx: CanvasRenderingContext2D, marks: readonly Disc[], token
       ctx.moveTo(d.x + d.r, d.y);
       ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
     }
+    const kept = 1 - first.hollow;
     ctx.fillStyle = tokens.inks.discFill;
-    ctx.globalAlpha = Math.min(1, first.ink * 4);
+    ctx.globalAlpha = Math.min(1, first.ink * 4) * kept;
     ctx.fill();
     ctx.globalAlpha = 1;
     ctx.lineWidth = first.focus ? FOCUS_RIM_PX : rimPx;
@@ -254,7 +256,9 @@ function paintDiscs(ctx: CanvasRenderingContext2D, marks: readonly Disc[], token
       ctx.arc(d.x, d.y, core, 0, Math.PI * 2);
     }
     ctx.fillStyle = sunk(first.hue, ground, first.ink * (first.focus ? 1 : P.coreAlpha));
+    ctx.globalAlpha = kept;
     ctx.fill();
+    ctx.globalAlpha = 1;
   }
   // Stale evidence recolours the rim at its own width, the amber the legend names; a heavier ring outshouts the map when most evidence is stale.
   ctx.lineWidth = rimPx;
@@ -421,5 +425,6 @@ export function paintPlan(ctx: CanvasRenderingContext2D, plan: FramePlan, tokens
     if (pieces) for (let pIndex = 0; pIndex < pieces.length; pIndex += 1) ctx.fillText(pieces[pIndex]!.text, n.x + pieces[pIndex]!.dx, n.y);
     else ctx.fillText(n.name.text, n.x, n.y);
   }
+  paintExitTags(ctx, ground, tokens.inks.halo);
   ctx.restore();
 }

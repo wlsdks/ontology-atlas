@@ -4,7 +4,8 @@ import { directItemId } from "../layout";
 import { arcPathInto, graphDiscRadiusPx, litLineTrimsInto, smoothstep } from "../marks";
 import type { GraphMotion } from "../motion";
 import type { FlatGraphCluster, FlatGraphItem } from "../flat-graph-shapes";
-import { hueOf, loadMarkInk, loadGlowShare, screenOf, fanShare, alongSpoke, screenAt, onScreen, discRadius, dotRadius, segmentOnScreen, lensHidden } from "./place";
+import { addExitTag } from "./exit-tags";
+import { hueOf, loadMarkInk, ownerInkShare, ownerStepBack, loadGlowShare, screenOf, fanShare, alongSpoke, screenAt, onScreen, discRadius, dotRadius, segmentOnScreen, lensHidden } from "./place";
 import { crowdClear } from "./push-crowd";
 import { DRAWN_INK, ROOM_GONE_PX, ROOM_WHOLE_PX, type Disc, type Segment, type Arc, LINE_KINDS, type Light, segments, dots, discs, glows, lights, arcMarks, chordPool, alphaCache, frameChords, shownElements, cacheFor, L, F as frameState, movedRoom, scratch } from "./state";
 
@@ -25,6 +26,7 @@ export function disc(id: string, at: Point, r: number, hue: string, ink: number,
   if (d.ink !== ink) d.ink = ink;
   d.focus = focus;
   d.state = state;
+  if (d.hollow !== 0) d.hollow = 0;
   return d;
 }
 
@@ -66,7 +68,8 @@ export function addGlow(d: Disc, isProject: boolean): void {
   const { P, growth } = F;
   if (isProject) scratch[0] = F.projectShare;
   else loadGlowShare(d.id);
-  const share = scratch[0]!;
+  // A domain's glow goes out while a concept of its own is selected, so the light gathers on the selection.
+  const share = scratch[0]! * (!isProject && F.model.domainById.has(d.id) ? 1 - ownerStepBack(d.id) : 1);
   if (share <= DRAWN_INK) return;
   const halo = isProject ? P.projectGlowPx * growth : F.model.domainById.has(d.id) ? P.domainGlowPx * growth : d.r + P.capGlowPx * growth * crowdKept(d);
   const focusGain = d.focus ? FOCUS_GLOW_ALPHA / P.glowAlpha : 1;
@@ -100,21 +103,8 @@ export function discAt(id: string, at: Point, hue: string, focus: boolean, state
   d.hue = hue;
   d.focus = focus;
   d.state = state;
+  if (d.hollow !== 0) d.hollow = 0;
   return d;
-}
-
-/**
- * How much of its ink a domain's disc keeps while a concept of its own is selected or leaving: it
- * steps back to its resting ink on the selection's clock, so the selection outshines the domain
- * around it rather than the larger disc beside it. O(1).
- */
-function ownerInkShare(domainId: string): number {
-  const { model, P } = F;
-  const mix = F.motion.baseMix;
-  let share = 0;
-  if (F.selectedId !== null && model.domainOf.get(F.selectedId) === domainId) share = F.attention.selected && F.attention.focusId === F.selectedId ? mix : 1;
-  if (F.leavingId !== null && model.domainOf.get(F.leavingId) === domainId) share = Math.max(share, 1 - mix);
-  return 1 - (1 - P.restHue) * share;
 }
 
 /** One domain's disc, its capability discs and links, and any element fan that draws. O(members). */
@@ -138,6 +128,9 @@ export function planCluster(c: FlatGraphCluster, projectAt: Point | null, projec
     const r = discRadius(c.domainId);
     if (d.r !== r) d.r = r;
     const discInk = ink * ownerInkShare(c.domainId);
+    // While a concept of its own is selected the domain gives up its fill, keeping its size, so its weight steps back.
+    const hollow = ownerStepBack(c.domainId);
+    if (d.hollow !== hollow) d.hollow = hollow;
     if (d.ink !== discInk) d.ink = discInk;
     L.domains.add(d);
   }
@@ -222,6 +215,10 @@ function planElements(it: FlatGraphItem, itemAt: Point, hue: string): void {
         const start = Math.min(1, ((itemR + P.selectedRingGapPx + P.selectedRingPx) * fanned) / length);
         s.x0 = itemAt.x + (elementAt.x - itemAt.x) * start;
         s.y0 = itemAt.y + (elementAt.y - itemAt.y) * start;
+        // And it stops at the dot's rim, so the dot reads whole.
+        const end = Math.max(start, 1 - (r * fanned) / length);
+        s.x1 = itemAt.x + (elementAt.x - itemAt.x) * end;
+        s.y1 = itemAt.y + (elementAt.y - itemAt.y) * end;
       }
       const alpha = (P.linkElementAlpha + (P.fanSpokeAlpha - P.linkElementAlpha) * fanned) * Math.min(itemInk, elementInk) * shown;
       if (s.alpha !== alpha) s.alpha = alpha;
@@ -285,6 +282,9 @@ export function focusLinks(motion: GraphMotion): void {
       else mark.fadeEnd = fade;
     }
     L.focusArcs.add(mark);
+    // A line that runs under a panel or off the canvas names where it goes at the edge it leaves by.
+    const focusId = F.attention.focusId;
+    if (current && focusId !== null) addExitTag(mark.path, line.from, line.to, focusId, line.kind === "neededBy" ? F.tokens.inks.reach : F.tokens.inks.arc, reach);
     if (current) F.lineKinds |= FLAT_LINE_BITS[line.kind] | (betweenDomains ? FLAT_LINE_BITS.domains : 0);
     if (chorded && current) frameChords.add(chordOf(mark, line.kind === "relates"));
   }

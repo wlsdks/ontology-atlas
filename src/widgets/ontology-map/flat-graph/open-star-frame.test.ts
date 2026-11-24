@@ -1083,3 +1083,36 @@ describe("an open star in a rebuilt world", () => {
     expect(over).toEqual([]);
   });
 });
+
+describe("room round a growing mark", () => {
+  /** Edge-to-edge screen air every mark keeps from the one a selection or hover grows; a hair under the rule's 6 px for float error. */
+  const LEAST_AIR_PX = 5.9;
+  const ring = TOKENS.paint.selectedRingGapPx + TOKENS.paint.selectedRingPx;
+  const settledMarks = (zoom: number, over: Partial<DialFrameInput>) => {
+    const camera = cameraOn(null, {});
+    for (let i = 0, now = 0; i < 90; i += 1, now += FRAME_MS) paintFlatGraphFrame(camera(zoom, { ...over, now }), TOKENS);
+    const probe = describeLastDialFrame(W, H)!;
+    return [...probe.discs, ...probe.glyphs].filter((m) => m.id !== null && m.r > 0.5 && m.x > 0 && m.y > 0 && m.x < W && m.y < H);
+  };
+  /** The least edge-to-edge air between `grower` (its ring counted when selected) and any other drawn mark. */
+  const leastAir = (marks: ReturnType<typeof settledMarks>, grower: string | null, selected: string | null) => {
+    let least = Infinity;
+    for (const [i, a] of marks.entries()) for (const b of marks.slice(i + 1)) {
+      if (grower !== null && a.id !== grower && b.id !== grower) continue;
+      const reach = (m: typeof a) => m.r + (m.id === selected ? ring : 0);
+      least = Math.min(least, Math.hypot(a.x - b.x, a.y - b.y) - reach(a) - reach(b));
+    }
+    return least;
+  };
+  const growers = [...model.capabilityById.keys(), ...[...model.capabilityById.values()].flatMap((c) => c.elementIds)];
+
+  it.each([[1], [1.6]])("keeps every drawn mark 6 px clear of another at rest, and of the mark a selection or hover grows, at %fx the overview", (zoom) => {
+    expect(leastAir(settledMarks(zoom, {}), null, null)).toBeGreaterThanOrEqual(LEAST_AIR_PX);
+    const crowded: string[] = [];
+    for (const id of growers) {
+      if (leastAir(settledMarks(zoom, { focusedNodeId: id }), id, id) < LEAST_AIR_PX) crowded.push(`selected ${id}`);
+      if (leastAir(settledMarks(zoom, { hoveredNodeId: id }), id, null) < LEAST_AIR_PX) crowded.push(`hovered ${id}`);
+    }
+    expect(crowded).toEqual([]);
+  });
+});

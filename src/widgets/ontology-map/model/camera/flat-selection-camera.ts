@@ -80,11 +80,13 @@ function fitsAt(marks: readonly FramedMark[], scale: number, width: number, heig
 /**
  * The shift along one axis that brings `span` inside `[lo, hi]` and moves least; when it cannot fit,
  * `anchor` is kept inside and the span centred around it as far as that allows; when the anchor cannot
- * fit either, it is centred with its own `centre` (the selection's disc) still inside.
+ * fit either, it is centred with its own `centre` (the selection's disc) still inside. `toMiddle`
+ * trades the least move for the anchor nearest the middle wherever the span fits.
  */
-function leastShift(span: { lo: number; hi: number }, anchor: { lo: number; hi: number }, centre: number, lo: number, hi: number): number {
+function leastShift(span: { lo: number; hi: number }, anchor: { lo: number; hi: number }, centre: number, lo: number, hi: number, toMiddle = false): number {
   const clamp = (v: number, a: number, b: number) => Math.min(Math.max(v, a), b);
-  if (lo - span.lo <= hi - span.hi) return clamp(0, lo - span.lo, hi - span.hi);
+  // A centred frame brings the anchor to the middle of the free map as far as the span still fits.
+  if (lo - span.lo <= hi - span.hi) return clamp(toMiddle ? (lo + hi) / 2 - (anchor.lo + anchor.hi) / 2 : 0, lo - span.lo, hi - span.hi);
   const centred = (lo + hi) / 2 - (span.lo + span.hi) / 2;
   if (lo - anchor.lo <= hi - anchor.hi) return clamp(centred, lo - anchor.lo, hi - anchor.hi);
   return clamp((lo + hi) / 2 - (anchor.lo + anchor.hi) / 2, lo - centre, hi - centre);
@@ -155,14 +157,15 @@ function compareScores(a: readonly number[], b: readonly number[]): number {
 function framedAt(
   camera: CameraTarget, marks: readonly FramedMark[], scale: number, viewport: { width: number; height: number }, free: FreeMapRect, margin: number,
   anchor: FramedMark = marks[0]!,
+  centred = false,
 ): CameraTarget {
   const tx0 = anchor.x - ((anchor.x - camera.tx) * camera.tscale) / scale;
   const ty0 = anchor.y - ((anchor.y - camera.ty) * camera.tscale) / scale;
   const toScreenX = viewport.width / 2 - tx0 * scale;
   const toScreenY = viewport.height / 2 - ty0 * scale;
   const shifted = (span: { lo: number; hi: number }, by: number) => ({ lo: span.lo + by, hi: span.hi + by });
-  const dx = leastShift(shifted(spanAt(marks, scale, "x"), toScreenX), shifted(spanAt([anchor], scale, "x"), toScreenX), anchor.x * scale + toScreenX, free.minX + margin, free.maxX - margin);
-  const dy = leastShift(shifted(spanAt(marks, scale, "y"), toScreenY), shifted(spanAt([anchor], scale, "y"), toScreenY), anchor.y * scale + toScreenY, free.minY + margin, free.maxY - margin);
+  const dx = leastShift(shifted(spanAt(marks, scale, "x"), toScreenX), shifted(spanAt([anchor], scale, "x"), toScreenX), anchor.x * scale + toScreenX, free.minX + margin, free.maxX - margin, centred);
+  const dy = leastShift(shifted(spanAt(marks, scale, "y"), toScreenY), shifted(spanAt([anchor], scale, "y"), toScreenY), anchor.y * scale + toScreenY, free.minY + margin, free.maxY - margin, centred);
   return { tx: tx0 - dx / scale, ty: ty0 - dy / scale, tscale: scale };
 }
 
@@ -217,7 +220,8 @@ function shownAt(camera: CameraTarget, end: { x: number; y: number }, viewport: 
  * the panned view does not read clear, it then zooms in about the selection, in the same move, to
  * the smallest scale with the best score `zoom` gives, at most `zoom.maxScale`, as far as its
  * marks still fit and every one of `farEnds` the panned view shows stays on the free map. With
- * `zoom.maxScale` fixed, a frame applied to its own landing is null. Null when the view already
+ * `zoom.maxScale` fixed, a frame applied to its own landing is null. `centred` brings the selection
+ * to the middle of the free map as far as the framed set allows. Null when the view already
  * frames it.
  * O(marks + farEnds) per scale tried; the zoom-in adds one fit probe per sample up to the cap, ZOOM_FIT_STEPS more, and
  * one per score sample that improves.
@@ -231,6 +235,7 @@ export function selectionFrameTarget(
   floorScale: number,
   zoom: SelectionZoomIn | null = null,
   farEnds: readonly { x: number; y: number }[] = [],
+  centred = false,
 ): CameraTarget | null {
   const usable = sets.filter((set) => set.length > 0);
   const last = usable.at(-1);
@@ -262,7 +267,7 @@ export function selectionFrameTarget(
     }
     marks = framesAt(scale) ?? lastAt(scale);
   }
-  let target = framedAt(camera, marks, scale, viewport, free, margin, taken(scale));
+  let target = framedAt(camera, marks, scale, viewport, free, margin, taken(scale), centred);
   const panned = target;
   const held = farEnds.filter((end) => shownAt(panned, end, viewport, free)).map((end) => heldEnd(end, margin));
   // Settled as a frame made at `s` settles it, so framing the landing again moves nothing.
@@ -285,7 +290,7 @@ export function selectionFrameTarget(
       cap = fits;
     }
     const best = cap > scale ? bestScale(scale, cap, zoom, holds) : scale;
-    if (zoomEarns(zoom, scale, best)) target = framedAt(target, [...settledAt(best), ...held], best, viewport, free, margin, taken(best));
+    if (zoomEarns(zoom, scale, best)) target = framedAt(target, [...settledAt(best), ...held], best, viewport, free, margin, taken(best), centred);
   }
   const moved = Math.abs((target.tx - camera.tx) * target.tscale) > 0.5 || Math.abs((target.ty - camera.ty) * target.tscale) > 0.5;
   return Math.abs(target.tscale - now) <= now * SAME_SCALE && !moved ? null : target;

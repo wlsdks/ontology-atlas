@@ -101,7 +101,11 @@ function selectedNames(input: NameShape, id: string, role: "capability" | "eleme
   const px = t.selectedNamePx;
   const nameFont = font(FONT_WEIGHT.strong, px, fontFamily);
   const nameW = measureText(text, nameFont);
-  const line = reachText(input.labels, input.reach);
+  // The domain is read as the selection's address, first on its count line, so its own title can step back.
+  const domainId = input.model.domainOf.get(id);
+  const address = domainId == null ? null : input.model.domainById.get(domainId)?.label ?? null;
+  const counts = reachText(input.labels, input.reach);
+  const line = address && counts ? `${address} · ${counts}` : address ?? counts;
   const lineFont = font(400, t.captionPx, fontFamily);
   const figures = line ? tabularPieces(line, lineFont, measureText) : null;
   const lineW = figures?.width ?? 0;
@@ -133,11 +137,13 @@ function selectedNames(input: NameShape, id: string, role: "capability" | "eleme
   if (role === "capability" && (input.model.capabilityById.get(id)?.elementIds.length ?? 0) > 0) {
     // Without a layout the side the fan takes is unknown, so a camera's reach keeps both of the name's beside tries.
     const fan = input.layout ? fanSidesOf(input.model, input.layout, id) : { right: false, left: false };
+    // The selection ring stands outside the disc, so the name keeps its gap from the ring.
+    const clear = side + (input.selected && input.focusId === id ? t.selectedRingGapPx + t.selectedRingPx : 0);
     return [
-      block("center", 0, -side - height), block("right", r, -side - height), block("left", -r, -side - height),
-      ...(fan && !fan.right ? [block("left", side, -px / 2)] : []),
-      ...(fan && !fan.left ? [block("right", -side, -px / 2)] : []),
-      block("center", 0, side), block("right", r, side), block("left", -r, side),
+      block("center", 0, -clear - height), block("right", r, -clear - height), block("left", -r, -clear - height),
+      ...(fan && !fan.right ? [block("left", clear, -px / 2)] : []),
+      ...(fan && !fan.left ? [block("right", -clear, -px / 2)] : []),
+      block("center", 0, clear), block("right", r, clear), block("left", -r, clear),
     ];
   }
   return [

@@ -38,7 +38,7 @@ function staleBound(model: DialModel): ReadonlyMap<string, number> {
  */
 function graphSelectionFrame(
   world: TopologyWorld, dial: DialWorld, id: string, camera: CameraTarget, viewport: { width: number; height: number }, free: FreeMapRect,
-  band: { entryScale: number; maxScale: number; zoomBase: number },
+  band: { entryScale: number; maxScale: number; zoomBase: number; centred: boolean },
 ): CameraTarget | null {
   const { model } = dial;
   const paint = readFlatGraphTokens().paint;
@@ -118,7 +118,7 @@ function graphSelectionFrame(
   const own = world.nodeById.get(id)!;
   const disc = radius(id);
   const sets = inOpenStar ? [marks(whole), marks(near), [{ x: own.x, y: own.y, box: { minX: -disc, maxX: disc, minY: -disc, maxY: disc } }]] : [marks(whole), marks(near)];
-  return selectionFrameTarget(camera, sets, viewport, free, paint.frameMarginPx, band.entryScale, zoom, farEnds);
+  return selectionFrameTarget(camera, sets, viewport, free, paint.frameMarginPx, band.entryScale, zoom, farEnds, band.centred);
 }
 
 /** An open star's member as the domain frame weighs it: its node, its room in the star and its one-line name's reach. */
@@ -192,6 +192,7 @@ export function selectionSlideTarget(
   insets: Pick<OntologyMapTokens, "safeInsetLeft" | "safeInsetRight" | "safeInsetTop" | "safeInsetBottom" | "overviewEntryRatio" | "cameraMaxZoomRatio" | "cameraScaleMax" | "cameraMinZoomRatio" | "cameraScaleMin">,
   overviewScale: number,
   zoomBase: number,
+  centred = false,
 ): CameraTarget | null {
   const node = world.nodeById.get(id);
   if (!node) return null;
@@ -201,7 +202,7 @@ export function selectionSlideTarget(
     const maxScale = computeEffectiveCameraScaleMax(entryScale, insets.cameraMaxZoomRatio, insets.cameraScaleMax, world.dialScaleMax ?? undefined);
     const floor = computeEffectiveCameraScaleMin(entryScale, insets.cameraMinZoomRatio, insets.cameraScaleMin, drawsFlatGraph(world));
     const from = camera.tscale < floor ? { ...camera, tscale: floor } : camera;
-    return graphSelectionFrame(world, dial, id, from, viewport, free, { entryScale, maxScale, zoomBase }) ?? (from === camera ? null : from);
+    return graphSelectionFrame(world, dial, id, from, viewport, free, { entryScale, maxScale, zoomBase, centred }) ?? (from === camera ? null : from);
   }
   const span = viewport.width - insets.safeInsetLeft - insets.safeInsetRight;
   return selectionNudgeTarget(camera, node, viewport.width, { left: insets.safeInsetLeft, right: insets.safeInsetRight }, branchSelectionMargin(world, dial, id, camera.tscale, span));
