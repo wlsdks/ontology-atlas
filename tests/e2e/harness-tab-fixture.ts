@@ -322,7 +322,11 @@ const scopedPages = new WeakSet<Page>();
  */
 export async function installHarnessRuntime(
   page: Page,
-  options: { includeOverflowDomains?: boolean; sourceOverrides?: Record<string, string> } = {},
+  options: {
+    includeOverflowDomains?: boolean;
+    sourceOverrides?: Record<string, string>;
+    vaultOverrides?: Record<string, string>;
+  } = {},
 ): Promise<void> {
   await seedFirstRunSeen(page);
   if (!scopedPages.has(page)) {
@@ -510,7 +514,11 @@ export async function installHarnessRuntime(
     {
       vaultRoot: HARNESS_VAULT_ROOT,
       sourceRoot: HARNESS_SOURCE_ROOT,
-      vaultFiles: options.includeOverflowDomains ? { ...VAULT_FILES, ...OVERFLOW_VAULT_FILES } : VAULT_FILES,
+      vaultFiles: {
+        ...VAULT_FILES,
+        ...(options.includeOverflowDomains ? OVERFLOW_VAULT_FILES : {}),
+        ...options.vaultOverrides,
+      },
       sourceFiles: { ...SOURCE_FILES, ...options.sourceOverrides },
       projectSlug: HARNESS_PROJECT_SLUG,
     },

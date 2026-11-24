@@ -10,6 +10,7 @@ const resting = {
   graphEmpty: false,
   emptyManualExpand: false,
   agentDockOpen: false,
+  codeReaderHoldsRoom: false,
   startStepsOpen: false,
 };
 
@@ -18,6 +19,10 @@ describe("resolveContextualIndexState", () => {
     expect(
       resolveContextualIndexState({ ...resting, agentDockOpen: true }),
     ).toBe("collapsed");
+  });
+
+  it("folds INDEX while the code reader holds its room", () => {
+    expect(resolveContextualIndexState({ ...resting, codeReaderHoldsRoom: true })).toBe("collapsed");
   });
 
   it("restores the persisted expanded preference when the agent dock closes", () => {

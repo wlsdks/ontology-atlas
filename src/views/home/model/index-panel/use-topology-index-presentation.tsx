@@ -13,6 +13,7 @@ import { useFlatMapView } from "@/shared/lib/preferences/map-view-preferences";
 import { useViewportBelow } from "@/shared/lib/use-viewport-below";
 import { useIndexSelectionOverride } from "./use-index-selection-override";
 import type { NodeDatasheetDerivation } from "../inspector/use-node-datasheet-model";
+import type { CodeReaderRoom } from "../inspector/use-code-reader-room";
 
 interface Options {
   v2DatasheetModel: NodeDatasheetDerivation["v2DatasheetModel"];
@@ -32,11 +33,12 @@ interface Options {
     | "indexManualExpandWhileEmpty"
   >;
   topologyCanvasFocus: Pick<ReturnType<typeof useTopologyCanvasFocus>, "nodePopoverDismissed" | "nodePopoverPositionerRef" | "lastCanvasPointerRef">;
+  codeReaderRoom: Pick<CodeReaderRoom, "state" | "withdraw">;
 }
 export function useTopologyIndexPresentation({
   v2DatasheetModel, analysisMode, setRouteState, routeState, meaningEditorIntent, indexState,
   topologyCanvasFocus, topologyRouteControls, topologyVaultReadModel, homeWorkbenchController,
-  topologyAuthoring
+  topologyAuthoring, codeReaderRoom
 }: Options) {
   const { nodePopoverDismissed, nodePopoverPositionerRef, lastCanvasPointerRef } = topologyCanvasFocus;
   const { setIndexPreference, setIndexManualExpandWhileEmpty, baseRenderedIndexState, indexManualExpandWhileEmpty } = topologyRouteControls;
@@ -56,7 +58,10 @@ export function useTopologyIndexPresentation({
   } = useIndexSelectionOverride(topologySelectionActive, !flatMap || !belowFlatKeepWidth);
   // The analysis rail owns the slot only in a non-overview mode, so returning to overview gives it
   // back.
+  const { state: codeReaderRoomState, withdraw: withdrawCodeReaderRoom } = codeReaderRoom;
   const handleIndexTabExpand = useCallback(() => {
+    // The person asked for the list back, so the code reader that took its room closes.
+    withdrawCodeReaderRoom();
     setIndexPreference("expanded");
     // A manual expand wins for the rest of the selection; the selection-session hook resets it.
     markIndexManualExpandDuringSelection();
@@ -64,7 +69,7 @@ export function useTopologyIndexPresentation({
     if (analysisMode !== "overview") {
       setRouteState((current) => ({ ...current, analysisMode: "overview" }));
     }
-  }, [analysisMode, markIndexManualExpandDuringSelection, setIndexManualExpandWhileEmpty, setIndexPreference, setRouteState]);
+  }, [analysisMode, markIndexManualExpandDuringSelection, setIndexManualExpandWhileEmpty, setIndexPreference, setRouteState, withdrawCodeReaderRoom]);
   // Toasts stand between the walls INDEX and the dock declare (`data-toast-wall`), so the map
   // plants no offset.
   const readoutStackRef = useRef<HTMLDivElement | null>(null);
@@ -127,6 +132,7 @@ export function useTopologyIndexPresentation({
     graphEmpty: topologyGraphEmpty,
     emptyManualExpand: indexManualExpandWhileEmpty,
     agentDockOpen: agentDockRequestedOpen,
+    codeReaderHoldsRoom: codeReaderRoomState === "held",
   });
   const indexSlotSwap = useSurfaceSwap(renderedIndexState);
   return {

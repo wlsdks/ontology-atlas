@@ -16,6 +16,7 @@ import {
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { useCopyFeedback } from "@/shared/lib/clipboard/use-copy-feedback";
 import { truncateMiddlePath } from "@/shared/lib/concept-display/truncate-middle-path";
+import { codeReaderBridgeAvailable } from "@/shared/lib/project-source/tauri-code-reader";
 import { stripDuplicateHeading } from "@/shared/lib/vault-document/strip-duplicate-heading";
 import {
   formatProjectSourceHandoff,
@@ -105,6 +106,11 @@ export interface FullDetailProps {
    * fabricated.
    */
   codeLocations?: readonly string[];
+  /**
+   * The file the concept's document names. Listed with the code locations; where no code reader
+   * exists (web) a card says why the code is not read here.
+   */
+  codePath?: string | null;
   /** Same public, versioned receipt the compact project inspector and agent
    * brief consume. The private binding envelope is intentionally not part of
    * this prop. */
@@ -141,6 +147,7 @@ export function FullDetail({
   documentHref,
   mentionDocumentHref = null,
   codeLocations = [],
+  codePath = null,
   projectSource = null,
   projectSourceLabels = null,
   projectSourceBusy = false,
@@ -149,6 +156,7 @@ export function FullDetail({
   className,
 }: FullDetailProps) {
   const t = useTranslations("fullDetail");
+  const codePaths = codePath && !codeLocations.includes(codePath) ? [codePath, ...codeLocations] : codeLocations;
   // Same editProvenance namespace as DocFrontmatterBlock and OntologyMapDetailPanel, so the
   // three cannot drift.
   const tProvenance = useTranslations("editProvenance");
@@ -416,11 +424,11 @@ export function FullDetail({
           </code>
         </section>
 
-        {codeLocations.length > 0 ? (
+        {codePaths.length > 0 ? (
           <section data-fulldetail-code-locations className={SECTION_CLASS}>
             <h3 className={SECTION_HEADING_CLASS}>{t("codeLocations.heading")}</h3>
             <ul className="-mx-1.5 mt-1.5 flex flex-col gap-1">
-              {codeLocations.map((path) => (
+              {codePaths.map((path) => (
                 <FullDetailCodeLocationRow
                   key={path}
                   path={path}
@@ -429,6 +437,7 @@ export function FullDetail({
                 />
               ))}
             </ul>
+            {codePath && !codeReaderBridgeAvailable() ? <CodeReaderWebCard /> : null}
           </section>
         ) : null}
 
@@ -492,6 +501,28 @@ export function FullDetail({
           </section>
         ) : null}
       </div>
+    </div>
+  );
+}
+
+/** Why the code is not read in place here, and where it is. */
+function CodeReaderWebCard() {
+  const t = useTranslations("codeReader.web");
+  const tRail = useTranslations("navRail");
+  return (
+    <div
+      data-testid="code-reader-web-limit"
+      className="mt-3 flex flex-col gap-2 rounded-chip border border-[color:var(--map-panel-action-border)] bg-[color:var(--map-panel-action-surface)] px-3.5 py-3"
+    >
+      <p className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--map-panel-text-primary)]">{t("title")}</p>
+      <p className="text-body text-[color:var(--map-panel-text-secondary)]">{t("body")}</p>
+      <Link
+        href="/download"
+        data-testid="code-reader-get-app"
+        className={controlClass({ shape: "link", size: "lg", tone: "accent", className: "self-start" })}
+      >
+        {tRail("getApp")}
+      </Link>
     </div>
   );
 }

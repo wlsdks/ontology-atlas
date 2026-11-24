@@ -73,7 +73,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const {
     nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, assembleOnOpen = true, arrivingDocuments = 0, overviewFit = "spine",
     fitViewToken, growthReplayToken = 0, onGrowthReplayingChange, spotlightFitToken = 0,
-    constellationFocusId = null, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect,
+    constellationFocusId = null, selectionReframeToken = 0, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect,
     onPaneClick, onVisibleCountChange, onGraphStatsChange, onDrawnCountChange, onDomeTierAnchorsChange,
     onZoomTierChange, onContextMenuNode, onContextMenuPane,
     agentFocusNodeId = null, spotlightIds = null, mapLensKind = "recent", pathEdgeIds = null,
@@ -548,6 +548,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     spotlightIdsRef,
     selectionCameraRef,
     selectionSourceRef,
+    selectionReframeToken,
   });
   useTopologyRealmTransition({
     view3d, cameraTokens, dialLabels, realmRootId,

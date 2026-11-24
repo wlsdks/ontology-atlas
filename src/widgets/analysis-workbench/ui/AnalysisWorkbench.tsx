@@ -10,6 +10,7 @@ import { ANALYSIS_FINDINGS_INSTRUCTION, currentAnalysisBasis, requestsAnalysisFi
 import { cn } from '@/shared/lib/cn';
 import { isImeComposing } from '@/shared/lib/keyboard/ime-composition';
 import { useSurfaceSwap } from '@/shared/lib/render-timing/use-presence';
+import { useLatestRef } from '@/shared/lib/use-latest-ref';
 import { Chip, CloseButton, Disclosure, EmptyState, IconButton, OntologyMapKindGlyph, Select, TabBar, useToast } from '@/shared/ui';
 import { History as HistoryIcon, RotateCcw } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
@@ -38,7 +39,7 @@ function InlineAlert({ children }: { children: ReactNode }) {
   return <p role="alert" className="rounded-card border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-3 py-2 text-label leading-label text-[color:var(--color-danger-text)]">{children}</p>;
 }
 
-export function AnalysisWorkbench({ context, contextLabel, conversationLabel = null, contextKind = null, open, requestNonce, sectionRequest, onSectionChange, onFitContentChange, initialTab = 'history', facts, conversation, onRequest, relationNoteGaps = 0, onClose, onEvidence, onFinding, onFindingsChange, capture, returnFocusSelector }: {
+export function AnalysisWorkbench({ context, contextLabel, conversationLabel = null, contextKind = null, open, requestNonce, sectionRequest, onSectionChange, onFitContentChange, initialTab = 'history', facts, conversation, onRequest, relationNoteGaps = 0, onClose, onEvidence, onFinding, onFindingsChange, capture, returnFocusSelector, takesFocusOnOpen = true }: {
   context: AnalysisCaptureContext;
   contextLabel: string;
   conversationLabel?: string | null;
@@ -64,6 +65,8 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
   relationNoteGaps?: number;
   onClose: () => void;
   returnFocusSelector?: string;
+  /** False when the panel comes back on its own, so focus stays where the person is. */
+  takesFocusOnOpen?: boolean;
   onEvidence?: (slug: string) => void;
   onFinding?: (finding: AnalysisFinding, run: AnalysisRun) => boolean;
   onFindingsChange?: (findings: readonly AnalysisFinding[]) => void;
@@ -73,8 +76,9 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
   const locale = useLocale();
   const panelRef = useRef<HTMLElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const takesFocusOnOpenRef = useLatestRef(takesFocusOnOpen);
   useEffect(() => {
-    if (!open) return;
+    if (!open || !takesFocusOnOpenRef.current) return;
     const panel = panelRef.current;
     const isPageContainer = (element: Element | null) => element === document.body || Boolean(element?.matches('main, [role="main"]'));
     const active = document.activeElement;
@@ -101,7 +105,7 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
       };
       window.requestAnimationFrame(restore);
     };
-  }, [open, returnFocusSelector]);
+  }, [open, returnFocusSelector, takesFocusOnOpenRef]);
   const [section, setSection] = useState({ nonce: requestNonce, viewNonce: sectionRequest?.nonce, tab: sectionRequest?.tab ?? initialTab });
   if (section.nonce !== requestNonce || section.viewNonce !== sectionRequest?.nonce) {
     const requestedTab = section.viewNonce !== sectionRequest?.nonce && sectionRequest

@@ -83,6 +83,8 @@ interface Dependencies {
   spotlightIdsRef: RefObject<ReadonlySet<string> | null>;
   selectionCameraRef: RefObject<SelectionCamera | null>;
   selectionSourceRef: RefObject<{ slug: string; source: SelectionSource; } | null>;
+  /** Bumped when side chrome settles at a new width, so a selection it now covers slides clear. */
+  selectionReframeToken: number;
 }
 
 function leashFor(width: number, height: number, tokens: OntologyMapTokens): FocusLeashPx {
@@ -122,8 +124,10 @@ export function useTopologyFocusNavigation({
   spotlightIdsRef,
   selectionCameraRef,
   selectionSourceRef,
+  selectionReframeToken,
 }: Dependencies) {
   const handledInitialFocus = useRef(false);
+  const handledReframeTokenRef = useRef(selectionReframeToken);
 
   /** The overview fit a deselect lands on: the free map as it is now, with no concept's panel open. */
   const overviewFitTarget = useCallback((world: TopologyWorld, tokens: OntologyMapTokens, measured: OntologyMapTokens, width: number, height: number) => {
@@ -321,6 +325,27 @@ export function useTopologyFocusNavigation({
     raf = requestAnimationFrame(resolveFocus);
     return () => cancelAnimationFrame(raf);
   }, [focusedSlug, panelInsetsRef, flyToNode, holdsOverviewFit, overviewFitTarget, beginCameraTween, cameraTokens, constellationFocusId, lastFocusedSlugRef, egoRevealBatchesRef, selectionPulseRef, view3dRef, realmTransitionRef, domeRuntimeRef, worldRef, viewportRef, overviewScaleRef, realmDataRef, cameraTargetRef, cameraGestureRevisionRef, userDrivenCameraRef, dampingRef, cameraAngularFreqRef, lastActiveMsRef, focusedSlugRef, canvasRef, expandedParentsRef, focusLeashPxRef, overviewFitRef, clusteredIdsRef, mapLensKindRef, spotlightIdsRef, selectionCameraRef, selectionSourceRef, cameraRef, moveCamera]);
+
+  // Chrome that widened over the selection (the code reader taking its seat) slides it clear, as a
+  // click would frame it; a selection already in the free map stays where it is.
+  useEffect(() => {
+    if (handledReframeTokenRef.current === selectionReframeToken) return;
+    handledReframeTokenRef.current = selectionReframeToken;
+    const slug = focusedSlugRef.current;
+    const world = worldRef.current;
+    const tokens = readOntologyMapTokensOrNull();
+    const { width, height } = viewportRef.current;
+    if (!slug || !world || !tokens || width <= 0 || height <= 0 || view3dRef.current) return;
+    if (realmTransitionRef.current.phase !== "idle") return;
+    const node = world.nodeById.get(slug);
+    if (!node) return;
+    const measured = cameraTokens(tokens);
+    const current = cameraTargetRef.current;
+    const screenX = (node.x - current.tx) * current.tscale + width / 2;
+    if (screenX >= measured.safeInsetLeft && screenX <= width - measured.safeInsetRight) return;
+    const target = selectionSlideTarget(world, world.dial, slug, current, { width, height }, measured, overviewScaleRef.current, current.tscale);
+    if (target && !sameCameraTarget(target, current)) moveCamera(target, tokens, "spring");
+  }, [selectionReframeToken, cameraTargetRef, cameraTokens, focusedSlugRef, moveCamera, overviewScaleRef, realmTransitionRef, view3dRef, viewportRef, worldRef]);
 
   return { flyToNode };
 }
