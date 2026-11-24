@@ -110,11 +110,13 @@ test.describe("map canvas focus on the dogfood vault", () => {
         await expect.poll(() => new URL(page.url()).searchParams.get("view")).toBeNull();
     });
     for (const setup of [
-        { name: "a stored Territories pick", stored: "territories", query: "", opens: "map" },
-        { name: "?view=territories with nothing stored", stored: null, query: "&view=territories", opens: "map" },
-        { name: "?view=territories with Hex stored", stored: "hex-board", query: "&view=territories", opens: "hex" }
+        { name: "a stored Territories pick", retired: "territories", stored: "territories", query: "", opens: "map" },
+        { name: "?view=territories with nothing stored", retired: "territories", stored: null, query: "&view=territories", opens: "map" },
+        { name: "?view=territories with Hex stored", retired: "territories", stored: "hex-board", query: "&view=territories", opens: "hex" },
+        { name: "a stored Domain structure pick", retired: "structure", stored: "structure", query: "", opens: "map" },
+        { name: "?view=structure with nothing stored", retired: "structure", stored: null, query: "&view=structure", opens: "map" }
     ] as const) {
-        test(`MC-18: a retired Territories pick or address opens a working map (${setup.name})`, async ({ page }) => {
+        test(`MC-18: a retired view pick or address opens a working map (${setup.name})`, async ({ page }) => {
             await page.addInitScript((stored) => {
                 for (const key of ["hex-board", "structure", "view3d", "territories"])
                     window.localStorage.setItem(`atlas.appearance.${key}`, key === stored ? "on" : "off");
@@ -127,7 +129,7 @@ test.describe("map canvas focus on the dogfood vault", () => {
             await expect(page.getByTestId("topology-map-view")).toHaveAttribute("data-map-view", setup.opens);
             await expect(page.getByTestId("widget-error-fallback")).toHaveCount(0);
             await expect(page.getByTestId("topology-view-3d")).toContainText(setup.opens === "hex" ? "육각" : "평면");
-            if (setup.query && setup.opens === "map") expect(new URL(page.url()).searchParams.get("view"), "arrival rewrote the address").toBe("territories");
+            if (setup.query && setup.opens === "map") expect(new URL(page.url()).searchParams.get("view"), "arrival rewrote the address").toBe(setup.retired);
             if (setup.opens === "hex") {
                 await expect.poll(() => new URL(page.url()).searchParams.get("view")).toBe("hex");
                 expect(await page.evaluate(() => window.localStorage.getItem("atlas.appearance.hex-board"))).toBe("on");
@@ -142,7 +144,7 @@ test.describe("map canvas focus on the dogfood vault", () => {
             await expect.poll(() => new URL(page.url()).searchParams.get("view")).toBeNull();
             await page.getByTestId("topology-view-3d").click();
             await page.getByTestId("topology-view-3d-choice-3d").click();
-            await expect.poll(() => page.evaluate(() => window.localStorage.getItem("atlas.appearance.territories"))).toBeNull();
+            await expect.poll(() => page.evaluate((key) => window.localStorage.getItem(`atlas.appearance.${key}`), setup.retired)).toBeNull();
         });
     }
 });

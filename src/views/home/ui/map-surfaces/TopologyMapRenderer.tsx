@@ -40,7 +40,7 @@ import { useMapLayoutMorph } from "../../model/map-canvas/use-map-layout-morph";
 import { TopologyHexBoardSurface } from "./TopologyHexBoardSurface";
 import { TopologyTreeSurface } from "./TopologyTreeSurface";
 import { TopologyNeuralLegend, useNeuralLabels } from "../map-readouts/TopologyNeuralLegend";
-import { DomainStructureMap, neuralImpactOfMapEdges } from "@/widgets/ontology-map";
+import { neuralImpactOfMapEdges } from "@/widgets/ontology-map";
 import { TopologyFlatKey } from "../map-readouts/TopologyScopeReadout";
 
 export interface TopologyMapRendererProps {
@@ -66,7 +66,6 @@ export interface TopologyMapRendererProps {
     ReturnType<typeof useTopologyPreferences>,
     | "t"
     | "tTopologyKeyboardWalk"
-    | "structure"
     | "hexBoard"
     | "reducedMotion"
     | "audiencePlain"
@@ -128,7 +127,7 @@ export function TopologyMapRenderer({
   topologyVaultReadModel, topologyAuthoring, topologySceneControls, topologyCanvasFocus, topologyExplorationLenses,
   topologyIndexPresentation, topologyCreateIntent, impactLensActive, selectionReframeToken,
 }: TopologyMapRendererProps) {
-  const { t, tTopologyKeyboardWalk, structure, hexBoard, reducedMotion, audiencePlain, glyphSet, canvasBackground, view3d, neural, footprint, expand, navigationSpeed } = topologyPreferences;
+  const { t, tTopologyKeyboardWalk, hexBoard, reducedMotion, audiencePlain, glyphSet, canvasBackground, view3d, neural, footprint, expand, navigationSpeed } = topologyPreferences;
   const { ontologyMapGraph, canvasSelectedSlug, resolvedRealmSlug } = topologyGraphProjection;
   const { deeplinkSourceReady, vaultIdentity, spotlightFitToken, selectedOntologyNode, ontologyInsight, vault } = topologyVaultReadModel;
   const arrivingDocuments = vault.partialTotal;
@@ -154,9 +153,8 @@ export function TopologyMapRenderer({
   const { handleClose, handleSelect } = topologyNavigationActions;
   const { expandedParentSet, handleToggleCluster, handleEnterRealm } = topologyRouteControls;
   const { nodePanelMounted } = topologyInspectorState;
-  const measuredMapEvidence = useMapEvidenceStates({ nodes: ontologyInsight?.nodes, enabled: !structure && !hexBoard && (!view3d || neural) });
+  const measuredMapEvidence = useMapEvidenceStates({ nodes: ontologyInsight?.nodes, enabled: !hexBoard && (!view3d || neural) });
   const mapEvidence = topologyGraphProjection.synthEvidence ?? measuredMapEvidence;
-  const missingStructureDocuments = useMemo(() => new Set(ontologyInsight?.nodes.filter(node => node.hasOwnDocument === false).map(node => node.id)), [ontologyInsight]);
   const evidenceStates = mapEvidence.availability === "measured" ? mapEvidence.states : null;
   const dialEvidence = mapEvidence.availability === "reading" ? null : mapEvidence.states;
   const neuralLabels = useNeuralLabels(mapEvidence.availability === "measured");
@@ -167,7 +165,7 @@ export function TopologyMapRenderer({
   const [flatLineKinds, setFlatLineKinds] = useState<number | null>(null);
   const handleFlatDialChange = useCallback((state: FlatDialState) => setFlatLineKinds(state.summary?.lineKinds ?? null), []);
   const [hexFailed, setHexFailed] = useState(false);
-  const layoutView: MapLayoutView = hexBoard && !hexFailed ? "hex" : view3d ? (neural ? "neural" : "3d") : structure ? "structure" : "flat";
+  const layoutView: MapLayoutView = hexBoard && !hexFailed ? "hex" : view3d ? (neural ? "neural" : "3d") : "flat";
   const expandedParents =
     pathExpandedParents ?? (expandAllActive ? allExpandedParentIds : null) ?? spotlightExpandedParents ?? expandedParentSet;
   const overviewFit = expandAllActive ? "full" : "spine";
@@ -263,21 +261,6 @@ export function TopologyMapRenderer({
               fitToken={combinedFitToken}
               growthReplayToken={growthReplayToken}
               onGrowthReplayingChange={setGrowthReplaying}
-            />
-          ) : morph.surface === "structure" ? (
-            <DomainStructureMap
-              key={vaultIdentity}
-              nodes={nodes}
-              edges={edges}
-              selectedId={canvasSelectedSlug}
-              onRead={select}
-              missingIds={missingStructureDocuments}
-              onReady={onIncomingDrawn}
-              onDrawnCountChange={onDrawnCountChange}
-              reducedMotion={reducedMotion}
-              inspectorOpen={nodePanelMounted}
-              indexExpanded={renderedIndexState === "expanded"}
-              loading={arriving}
             />
           ) : !labelFont.ready ? null : (
           <OntologyMap

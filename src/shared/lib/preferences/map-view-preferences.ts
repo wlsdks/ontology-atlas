@@ -17,21 +17,7 @@ export function useView3d(): boolean {
   return useSyncExternalStore(subscribeToPreferenceChange, getSnapshot, getServerSnapshot);
 }
 
-const STRUCTURE_KEY = "atlas.appearance.structure";
-const RETIRED_VIEW_KEY = "atlas.appearance.galaxy";
-const RETIRED_TERRITORIES_KEY = "atlas.appearance.territories";
-
-function readDomainStructure(): boolean {
-  if (typeof window === "undefined") return false;
-  try {
-    const current = window.localStorage.getItem(STRUCTURE_KEY);
-    return current === null ? window.localStorage.getItem(RETIRED_VIEW_KEY) === "on" : current === "on";
-  } catch { return false; }
-}
-
-export function useDomainStructure(): boolean {
-  return useSyncExternalStore(subscribeToPreferenceChange, readDomainStructure, () => false);
-}
+const RETIRED_MAP_VIEW_KEYS = ["atlas.appearance.structure", "atlas.appearance.galaxy", "atlas.appearance.territories"];
 
 const HEX_BOARD_KEY = "atlas.appearance.hex-board";
 
@@ -55,9 +41,8 @@ export function useFlatMapView(): boolean {
 export function useMapView(): MapLayoutView {
   const view3d = useView3d();
   const neural = useSyncExternalStore(subscribeToPreferenceChange, readNeuralArrangement, () => false);
-  const structure = useDomainStructure();
   const hexBoard = useHexBoard();
-  return view3d ? (neural ? "neural" : "3d") : hexBoard ? "hex" : structure ? "structure" : "flat";
+  return view3d ? (neural ? "neural" : "3d") : hexBoard ? "hex" : "flat";
 }
 
 const HEX_RELIEF_KEY = "atlas.appearance.hex-relief";
@@ -103,7 +88,6 @@ export function writeMapView(view: MapLayoutView): void {
   const neural = view === "neural";
   const writes: Array<[string, string]> = [
     [HEX_BOARD_KEY, view === "hex" ? "on" : "off"],
-    [STRUCTURE_KEY, view === "structure" ? "on" : "off"],
     ...(neural ? [[MAP_ARRANGEMENT_KEY, NEURAL_ARRANGEMENT] as [string, string]] : []),
     [VIEW_3D_KEY, view === "3d" || neural ? "on" : "off"],
   ];
@@ -118,7 +102,7 @@ export function writeMapView(view: MapLayoutView): void {
       } catch {}
     }
   }
-  const removed = neural ? [RETIRED_VIEW_KEY, RETIRED_TERRITORIES_KEY] : [RETIRED_VIEW_KEY, RETIRED_TERRITORIES_KEY, MAP_ARRANGEMENT_KEY];
+  const removed = neural ? RETIRED_MAP_VIEW_KEYS : [...RETIRED_MAP_VIEW_KEYS, MAP_ARRANGEMENT_KEY];
   for (const key of removed) {
     try { window.localStorage.removeItem(key); } catch {}
   }

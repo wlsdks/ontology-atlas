@@ -116,7 +116,7 @@ export function HomePage() {
 
 function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   const topologyPreferences = useTopologyPreferences();
-  const { t, siteT, relationLabelInRegister, activeLocale, view3d, neural, structure } = topologyPreferences;
+  const { t, siteT, relationLabelInRegister, activeLocale, view3d, neural } = topologyPreferences;
   const [localGraphStack, setLocalGraphStack] = useState<string[]>([]);
   // Held through the exit window, or the pill empties as it leaves. Keyed by the flattened stack,
   // since the array identity changes every render.
@@ -411,7 +411,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     let cancelled = false;
     // A selection keeps its camera: this overview fit, measured before the dock or INDEX has
     // resized the free map, would pull the camera off the selection.
-    if (!view3d && !structure && !acpDockFrameOpen && selectedSlugRef.current === null) {
+    if (!view3d && !acpDockFrameOpen && selectedSlugRef.current === null) {
       window.queueMicrotask(() => {
         if (!cancelled) setFitViewToken((count) => count + 1);
       });
@@ -420,7 +420,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
       cancelled = true;
       delete root.dataset.topologyIndex;
     };
-  }, [renderedIndexState, view3d, structure, acpDockFrameOpen, selectedSlugRef]);
+  }, [renderedIndexState, view3d, acpDockFrameOpen, selectedSlugRef]);
   const topologyInspectorState = useTopologyInspectorState({
     setExpandAllActive, setRouteState, nodeFocus, v2DatasheetModel, mapGraph: ontologyMapGraph, analysisMode, selectedSlug,
     topologyCanvasFocus, topologyVaultReadModel, topologyAuthoring, homeWorkbenchController,
@@ -517,7 +517,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
             {t('srHeading')}
           </h1>
           {topologySceneControls.topologyRenderState.renderCanvas && <GestureHint
-            disabled={drawerOpen || structure}
+            disabled={drawerOpen}
           />}
           <LiveAnnouncer
             message={(() => {

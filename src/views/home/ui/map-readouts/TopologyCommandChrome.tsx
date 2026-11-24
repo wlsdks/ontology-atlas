@@ -102,7 +102,7 @@ interface TopologyCommandChromeProps {
     | "activityInboxOpen"
     | "setActivityInboxOpen"
   >;
-  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "t" | "structure" | "tWorkbench" | "tAtlasGit">;
+  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "t" | "tWorkbench" | "tAtlasGit">;
   topologyExplorationLenses: Pick<
     ReturnType<typeof useTopologyExplorationLenses>,
     | "constellationCandidates"
@@ -129,7 +129,7 @@ export function TopologyCommandChrome({
   const { renderedIndexState } = topologyIndexPresentation;
   const { constellationCandidates, routedConstellation, setActiveConstellation, setConstellationFitToken } = topologyExplorationLenses;
 
-  const { t, structure, tWorkbench, tAtlasGit } = topologyPreferences;
+  const { t, tWorkbench, tAtlasGit } = topologyPreferences;
   const {
     topologyUtilityChromeState, topologyUtilityChromeCompact, topologyUtilityLaneSuppressionContract,
     searchLaneCrowded, selectedNodeFocusActive, inspectorOwnsRightRail, activityInboxOpen,
@@ -246,7 +246,6 @@ export function TopologyCommandChrome({
           <div
             className={cn(
               "@container/map-toolbar topology-ui-scale pointer-events-none absolute right-4 top-4 flex flex-col-reverse items-end gap-4 md:right-[var(--chrome-inset)] md:top-[var(--chrome-inset)] xl:flex-row xl:flex-wrap",
-              structure && "md:right-[calc(var(--topology-index-tab-width)+var(--topology-index-inset))]",
               // The free map starts one inset past INDEX, open or folded, or the first search tile
               // slides under the tab.
               renderedIndexState === "expanded"
@@ -334,7 +333,7 @@ export function TopologyCommandChrome({
               setTopologyRelayoutToken((current) => current + 1);
               toast.show(t('controls.relayoutToast'), "info");
             }}
-            onToggleExpandAll={!structure && resolvedRealmSlug !== null ? handleToggleExpandAll : undefined}
+            onToggleExpandAll={resolvedRealmSlug !== null ? handleToggleExpandAll : undefined}
             allExpanded={expandAllActive}
             analysisChip={
               mapAnalysis ? (
