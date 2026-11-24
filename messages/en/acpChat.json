@@ -310,7 +310,9 @@
     },
     "auth": {
       "title": "Saved sign-in has expired",
-      "hint": "You do not need a separate sign-in. This app uses the same one you use in your terminal. What is in the way is a keychain entry from an earlier app-only sign-in: it hides the shared one and has already expired. Press \"Try again\" below and the app clears that entry and falls back to your real sign-in. If that still fails, paste the one-line command under \"Details\" into a terminal."
+      "hint": "You do not need a separate sign-in. This app uses the same one you use in your terminal. What is in the way is a keychain entry from an earlier app-only sign-in: it hides the shared one and has already expired. Press \"Try again\" below and the app clears that entry and falls back to your real sign-in. If that still fails, paste the one-line command under \"Details\" into a terminal.",
+      "hintCodex": "Codex uses the sign-in from your terminal, and that sign-in is no longer valid. Codex keeps no keychain entry here, so the app cannot repair it for you. Sign in again once in a terminal with the command under \"Details\" (codex login), then press \"Try again\" below. The app picks up the new sign-in by itself.",
+      "hintOther": "This agent's sign-in is no longer valid. Sign in to it again where you set it up, usually a terminal, then press \"Try again\" below."
     },
     "install": {
       "title": "An interrupted download left broken files",
