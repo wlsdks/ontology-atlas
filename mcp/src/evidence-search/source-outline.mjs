@@ -230,18 +230,27 @@ const GO_FUNCTION = /^func\s+([A-Za-z_]\w*)\s*[(\[]/u;
 const GO_TYPE = /^type\s+([A-Za-z_]\w*)(?:\[[^\]]*\])?\s+(.*)$/u;
 const GO_BINDING = /^(?:const|var)\s+([A-Za-z_]\w*)[\s=]/u;
 
+/** gofmt closes a top-level function body with `}` alone at column 0; what lies between is local. */
 function outlineGo(lines, out) {
+  let inFunctionBody = false;
   for (const [index, line] of lines.entries()) {
+    if (inFunctionBody) {
+      if (line.startsWith('}')) inFunctionBody = false;
+      continue;
+    }
     const trimmed = line.trim();
     if (trimmed === '' || isCommentLine(trimmed)) continue;
+    const opensBody = line.startsWith('func') && !trimmed.endsWith('}');
     let match = GO_METHOD.exec(trimmed);
     if (match) {
       out.add(index, 'method', `${match[1]}.${match[2]}`, line);
+      inFunctionBody = opensBody;
       continue;
     }
     match = GO_FUNCTION.exec(trimmed);
     if (match) {
       out.add(index, 'function', match[1], line);
+      inFunctionBody = opensBody;
       continue;
     }
     match = GO_TYPE.exec(trimmed);

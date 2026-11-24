@@ -237,7 +237,7 @@ function measureBatchDepth() {
   try {
     const repo = repositorySurvey(REPO_ROOT, VAULT_ROOT);
     const depth = measureBuildDepth(loadVaultDocs(VAULT_ROOT), repo, sessionReads(REPO_ROOT));
-    return { line: depth.line, measured: { coverage: depth.areaCoverage, collection: repo?.collection ?? null } };
+    return { line: depth.nextLine, measured: { coverage: depth.areaCoverage, collection: repo?.collection ?? null } };
   } catch {
     return null;
   }

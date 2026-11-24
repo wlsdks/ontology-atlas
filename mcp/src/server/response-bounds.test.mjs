@@ -104,8 +104,9 @@ test('validate_vault and a write keep an area survey\'s coverage within their bo
     `, { vault });
     const { coverage } = result.validation;
     assert.match(coverage, /Areas: 0 of \d+ abilities the survey found/);
-    const linesToKeep = (line) => line.slice(line.indexOf('Keep exactly these lines'));
-    assert.equal(linesToKeep(result.written.coverage), linesToKeep(coverage), 'a write gives the lines to keep that validate_vault does');
+    assert.match(result.written.coverage, /^Build so far: /, 'a write leads with the counts');
+    assert.ok(result.written.coverage.length < coverage.length, 'a write sends less than validate_vault');
+    assert.match(result.written.coverage, /\d+ more open lists?: validate_vault names them/, 'and points at validate_vault for the rest');
     assert.match(coverage, /What the survey lists in them/, 'validate_vault lists the next files\' ability rows');
     assert.ok(result.validationText <= 40_000, `validate_vault answered ${result.validationText} characters`);
     assert.ok(result.writtenText <= 40_000, `the write answered ${result.writtenText} characters`);
@@ -274,7 +275,7 @@ test('find_evidence returns the best 50 by default and says how many matched', (
 test('ok() sends the JSON text the MCP spec asks for and the structuredContent an outputSchema client requires', () => {
   const result = { rows: [{ slug: 'a' }] };
   const response = ok(result);
-  assert.equal(response.content[0].text, JSON.stringify(result, null, 2));
+  assert.equal(response.content[0].text, JSON.stringify(result));
   assert.equal(response.structuredContent, result);
 });
 

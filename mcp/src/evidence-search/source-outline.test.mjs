@@ -461,3 +461,23 @@ test('a wrapped call is no method head: its parentheses must close, exactly, on 
     [[1, 'class', 'Store'], [2, 'method', 'save']],
   );
 });
+
+test('a Go outline leaves out what is declared inside a function body', () => {
+  const text = [
+    'package billing',                                          // 1
+    'var registry = map[string]int{}',                          // 2
+    'func (w *Worker) Run(ctx context.Context) error {',        // 3
+    '\tvar err error',                                          // 4
+    '\treturn err',                                             // 5
+    '}',                                                        // 6
+    'func New(',                                                // 7
+    '\topts Options,',                                          // 8
+    ') (*Worker, error) {',                                     // 9
+    '\tvar wg sync.WaitGroup',                                  // 10
+    '\treturn nil, nil',                                        // 11
+    '}',                                                        // 12
+    'const Name = "billing"',                                   // 13
+  ].join('\n');
+  const names = outlineSource(text, 'worker.go').declarations.map((row) => `${row.line} ${row.name}`);
+  assert.deepEqual(names, ['2 registry', '3 Worker.Run', '7 New', '13 Name']);
+});

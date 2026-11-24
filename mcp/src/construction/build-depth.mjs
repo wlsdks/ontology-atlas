@@ -125,6 +125,17 @@ function depthSentence(depth) {
   return `${lead} Not yet${fresh ? ', citing no lines' : ''}: ${listed(pending, (row) => `${row.slug} (${row.path})`)}. Read next, then cite the lines that decide each; a symbol read returns the guards, defaults and callees that decide it: ${readCall(pending)}.`;
 }
 
+/** One sentence of counts, so a write's answer stays short while the build is still legible. */
+function buildTally({ breadth, coverage, depth, rules, abilityEdges, repo, capabilities }) {
+  const counts = [];
+  if (breadth && breadth.abilities > 0) counts.push(`${breadth.abilities - breadth.unplaced.length} of ${breadth.abilities} abilities placed`);
+  if (coverage && coverage.counted > 0) counts.push(`${coverage.counted - coverage.notMapped.length} of ${coverage.counted} areas mapped`);
+  if (depth && depth.served > 0) counts.push(`${depth.read} of ${depth.capabilities} capabilities cite read lines`);
+  if (repo && rules.uncited.length > 0) counts.push(`${rules.uncited.length} rules uncited`);
+  if (repo && capabilities > 1) counts.push(`${abilityEdges.alone.length} capabilities with no ability edge`);
+  return counts.length > 0 ? `Build so far: ${counts.join('; ')}.` : '';
+}
+
 /**
  * Placement against the survey's abilities, reads and cites against this
  * session, and ability-to-ability edges, with the line a write and validate_vault
@@ -144,29 +155,31 @@ export function measureBuildDepth(docs, repo, reads, { abilityRows = false } = {
   const unmapped = coverage?.notMapped ?? [];
   const batch = mappingBatch(unmapped);
   const parts = [];
+  const actions = [];
+  const act = (text) => { parts.push(text); actions.push(text); };
   if (breadth && breadth.abilities > 0) {
     parts.push(`Breadth, of ${breadth.abilities} abilities the survey lists: ${breadth.node} with their own node, ${breadth.named} named inside a capability or element, ${breadth.excluded} excluded with a reason, ${breadth.unplaced.length} not placed.`);
     if (breadth.unplaced.length > 0) {
-      parts.push(`Not placed: ${listed(breadth.unplaced, abilityLabel)}. Place each: add_concepts a capability for it, name it in the title or in code form (\`name\`) of the node that covers it (a family or group names its members), or exclude it in the project's ## Uncertainty with one line for it alone that cites its path:Lline or exact name and says why.`);
+      act(`Not placed: ${listed(breadth.unplaced, abilityLabel)}. Place each: add_concepts a capability for it, name it in the title or in code form (\`name\`) of the node that covers it (a family or group names its members), or exclude it in the project's ## Uncertainty with one line for it alone that cites its path:Lline or exact name and says why.`);
     }
   }
   if (coverage) {
     const areas = areasSentence(docs, repo.repoRoot, coverage, batch, { abilityRows });
-    if (areas) parts.push(areas);
+    if (areas) act(areas);
   }
   if (depth) {
     const sentence = depthSentence(depth);
-    if (sentence) parts.push(sentence);
+    if (sentence) act(sentence);
   }
   // The rule and edge lists name slugs across the vault; they speak only for a grounded build.
   if (repo && rules.uncited.length > 0) {
-    parts.push(`Rules: ${rules.uncited.length} of ${rules.capabilities} capabilities state a rule without citing ${rules.judgedAgainstReads ? 'read ' : ''}lines that hold its condition: ${listed(rules.uncited, (row) => row.slug)}. Next: ${citeRepair(rules.uncited)}.`);
+    act(`Rules: ${rules.uncited.length} of ${rules.capabilities} capabilities state a rule without citing ${rules.judgedAgainstReads ? 'read ' : ''}lines that hold its condition: ${listed(rules.uncited, (row) => row.slug)}. Next: ${citeRepair(rules.uncited)}.`);
   }
   if (repo && roles && roles.unplaced.length > 0) {
-    parts.push(`Roles: ${roles.unplaced.length} of the ${roles.candidates} implementation roles that two or more capabilities' reads pass through have no element: ${listedAll(roles.unplaced, roleLabel)}. Next: ${ROLE_REPAIR}.`);
+    act(`Roles: ${roles.unplaced.length} of the ${roles.candidates} implementation roles that two or more capabilities' reads pass through have no element: ${listedAll(roles.unplaced, roleLabel)}. Next: ${ROLE_REPAIR}.`);
   }
   if (repo && capabilities.length > 1 && abilityEdges.alone.length > 0) {
-    parts.push(`Abilities: ${abilityEdges.edges} depends_on edges run from one capability to another; none touch ${listed(abilityEdges.alone, (slug) => slug)}. For each, ask which other ability must have run, be configured or be present first, and add_relations that edge with a why citing the read lines that show it.`);
+    act(`Abilities: ${abilityEdges.edges} depends_on edges run from one capability to another; none touch ${listed(abilityEdges.alone, (slug) => slug)}. For each, ask which other ability must have run, be configured or be present first, and add_relations that edge with a why citing the read lines that show it.`);
   }
   return {
     breadth,
@@ -180,6 +193,9 @@ export function measureBuildDepth(docs, repo, reads, { abilityRows = false } = {
     capabilities: capabilities.length,
     dependsOn,
     line: parts.length > 0 ? parts.join(' ') : null,
+    nextLine: actions.length > 0
+      ? [buildTally({ breadth, coverage, depth, rules, abilityEdges, repo, capabilities: capabilities.length }), actions[0], actions.length > 1 ? `${actions.length - 1} more open ${actions.length === 2 ? 'list' : 'lists'}: validate_vault names them.` : ''].filter(Boolean).join(' ')
+      : null,
   };
 }
 
