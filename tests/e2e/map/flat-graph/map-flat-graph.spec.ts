@@ -5,7 +5,6 @@ import { seedFirstRunSeen } from "../../first-run-seed";
 import { useDogfoodSample } from "../../sample-source";
 import { waitForMapSettled, waitForMapStill } from "../../settle";
 import type { DialProbe } from "../../../../src/widgets/ontology-map/dial/dial-shapes";
-import { HIT_TOUCH_SLACK_PX } from "../../../../src/widgets/ontology-map/ui/camera/topology-camera-math";
 
 const VIEWPORT = { width: 1920, height: 1080 };
 const IDLE_WINDOW_MS = 3_000;
@@ -158,7 +157,7 @@ test("a domain selected at the overview zooms in far enough that two opened capa
   expect(Math.hypot(returned.x - home.x, returned.y - home.y), "the deselect returns the domain to where it stood").toBeLessThan(1);
 });
 
-test("a capability drawn smaller than the least pick radius answers a pointer that far from its centre, past the slack every map shares", async ({ page }) => {
+test("a capability drawn smaller than the least pick radius answers a pointer that far from its centre", async ({ page }) => {
   test.setTimeout(180_000);
   await useDogfoodSample(page);
   const dial = await openGraph(page);
@@ -170,9 +169,9 @@ test("a capability drawn smaller than the least pick radius answers a pointer th
   const onMark = (p: { x: number; y: number }) =>
     dial.discs.some((d) => Math.hypot(d.x - p.x, d.y - p.y) <= d.r) ||
     dial.texts.some((t) => p.x >= t.box.minX - 1 && p.x <= t.box.maxX + 1 && p.y >= t.box.minY - 1 && p.y <= t.box.maxY + 1);
-  // Only discs whose slack ring, shared with Neural and edge hits, stops short of the point: the reach alone must answer it.
+  // Every disc drawn inside the reach: the press answers there whether the disc's slack or the least radius carries it.
   const points = dial.discs
-    .filter((d) => capabilities.has(d.id) && d.r + HIT_TOUCH_SLACK_PX < reach)
+    .filter((d) => capabilities.has(d.id) && d.r < reach)
     .flatMap((d) => Array.from({ length: 8 }, (_, k) => ({ id: d.id, x: d.x + reach * Math.cos((k * Math.PI) / 4), y: d.y + reach * Math.sin((k * Math.PI) / 4) })))
     .filter((p) => nearestId(p) === p.id && !onMark(p));
   expect(points.length, "small capabilities with a clear point at the edge of their reach").toBeGreaterThan(0);
