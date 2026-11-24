@@ -8,7 +8,9 @@
   "lines": {
     "range": "L{start}–{end}",
     "single": "L{line}",
-    "top": "从头开始"
+    "shown": "正在显示第 {start}–{end} 行",
+    "top": "从头开始",
+    "cut": "第 {line} 行超过 {limit}，只显示开头部分。"
   },
   "cite": {
     "current": "文档引用的是这些行。",
@@ -31,6 +33,7 @@
     "chooseAgain": "重新选择文件夹",
     "secret": "Atlas 不读取 {path}，因为这类名称的文件里存放着密钥或密码。",
     "outside": "{path} 指向已连接代码文件夹之外，所以 Atlas 没有读取它。",
+    "hidden": "Atlas 不读取 {path}，因为隐藏文件和文件夹里的设置可能含有密钥。",
     "tooLarge": "{path} 大于 {limit}，所以 Atlas 不在这里读取它。",
     "notText": "{path} 不是文本，所以这里没有可读的内容。",
     "changed": "Atlas 读取之后这个文件发生了变化。",

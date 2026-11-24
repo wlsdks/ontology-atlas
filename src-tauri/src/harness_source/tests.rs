@@ -297,6 +297,21 @@ fn refuses_a_bound_root_that_is_not_granted() {
 
 #[cfg(unix)]
 #[test]
+fn refuses_a_bound_root_inside_a_dot_folder_of_the_grant() {
+    let f = Fixture::new();
+    let _scope = f.grant();
+    f.put(".claude/AGENTS.md", SECRET);
+    f.put("AGENTS.md", "# guide\n");
+    f.bind(&[("project", f.repo.join(".claude"))]);
+    assert_eq!(
+        f.read("AGENTS.md").unwrap_err(),
+        "harness-source-root-hidden"
+    );
+    assert_eq!(f.list("").unwrap_err(), "harness-source-root-hidden");
+}
+
+#[cfg(unix)]
+#[test]
 fn refuses_a_source_root_the_vault_rules_reject() {
     let f = Fixture::new();
     f.bind(&[("project", PathBuf::from("/"))]);

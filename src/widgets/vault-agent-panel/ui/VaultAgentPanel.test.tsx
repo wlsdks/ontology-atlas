@@ -1,5 +1,5 @@
 // What the panel holds: honest web degradation · closing = stopping · the scope sheet comes first · the reflow contract.
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -88,7 +88,11 @@ beforeEach(() => {
 });
 
 function renderPanel(overrides: Partial<Parameters<typeof VaultAgentPanel>[0]> = {}) {
-  return render(
+  return render(panelElement(overrides));
+}
+
+function panelElement(overrides: Partial<Parameters<typeof VaultAgentPanel>[0]> = {}) {
+  return (
     <NextIntlClientProvider locale="ko" messages={messages}>
       <VaultAgentPanel
         open
@@ -110,7 +114,7 @@ function renderPanel(overrides: Partial<Parameters<typeof VaultAgentPanel>[0]> =
         downloadHref="/ko/download/"
         {...overrides}
       />
-    </NextIntlClientProvider>,
+    </NextIntlClientProvider>
   );
 }
 
@@ -428,6 +432,45 @@ describe('VaultAgentPanel', () => {
       'placeholder',
       messages.vaultAgentPanel.placeholderFirst,
     );
+  });
+
+  describe('an answer being written when the panel closes', () => {
+    const receipt = { status: 200, host: 'api.anthropic.com', durationMs: 1, loggedAt: '2026-11-24T00:00:00Z' };
+    const ANSWER = '결제 처리는 두 규칙을 모두 지켜요.';
+
+    async function startAnswer() {
+      bridge.available = true;
+      let finish!: () => void;
+      let signal: AbortSignal | undefined;
+      vi.mocked(llmChat).mockReset().mockImplementation((args) => {
+        signal = args.signal;
+        return new Promise((resolve) => {
+          finish = () => resolve({ ...receipt, body: JSON.stringify({ content: [{ type: 'text', text: ANSWER }], stop_reason: 'end_turn' }) });
+        });
+      });
+      const view = renderPanel();
+      fireEvent.click(await screen.findByTestId('agent-scope-accept'));
+      const input = screen.getByTestId('vault-agent-input');
+      fireEvent.change(input, { target: { value: '결제 처리의 규칙을 확인해 줘' } });
+      fireEvent.keyDown(input, { key: 'Enter', keyCode: 13 });
+      await waitFor(() => expect(llmChat).toHaveBeenCalledTimes(1));
+      return { view, finish: () => finish(), aborted: () => signal?.aborted ?? false };
+    }
+
+    it('keeps writing it while the panel is put away for another surface, and shows it on return', async () => {
+      const { view, finish, aborted } = await startAnswer();
+      view.rerender(panelElement({ open: false, putAway: true }));
+      await act(async () => finish());
+      view.rerender(panelElement({ open: true }));
+      expect(await screen.findByText(ANSWER)).toBeInTheDocument();
+      expect(aborted()).toBe(false);
+    });
+
+    it('stops it when the person closes the panel', async () => {
+      const { view, aborted } = await startAnswer();
+      view.rerender(panelElement({ open: false }));
+      await waitFor(() => expect(aborted()).toBe(true));
+    });
   });
 
   it('holds every Enter that belongs to an IME composition and sends on the next plain Enter', async () => {

@@ -8,7 +8,9 @@
   "lines": {
     "range": "L{start}–{end}",
     "single": "L{line}",
-    "top": "처음부터"
+    "shown": "{start}–{end}줄 표시 중",
+    "top": "처음부터",
+    "cut": "{line}줄은 {limit}보다 길어서 앞부분만 보여요."
   },
   "cite": {
     "current": "문서가 가리키는 줄이에요.",
@@ -31,6 +33,7 @@
     "chooseAgain": "폴더 다시 고르기",
     "secret": "Atlas는 {path} 파일을 읽지 않아요. 이런 이름의 파일에는 키나 비밀번호가 들어 있어요.",
     "outside": "{path} 경로가 연결한 코드 폴더 밖을 가리켜서 Atlas가 읽지 않았어요.",
+    "hidden": "Atlas는 {path} 파일을 읽지 않아요. 숨김 파일과 폴더에는 키가 담길 수 있는 설정이 들어 있어요.",
     "tooLarge": "{path} 파일이 {limit}보다 커서 여기서는 읽지 않아요.",
     "notText": "{path} 파일은 텍스트가 아니어서 여기서 읽을 것이 없어요.",
     "changed": "Atlas가 읽은 뒤에 이 파일이 바뀌었어요.",

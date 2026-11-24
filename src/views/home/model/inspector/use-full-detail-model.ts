@@ -10,6 +10,8 @@ import {
 import { buildDocsVaultHref } from "@/entities/docs-vault";
 import { buildFullDetailGroups, buildFullDetailReachModel, type FullDetailGroups } from "@/widgets/full-detail";
 import type { DomainUsage } from "@/widgets/ontology-map";
+import { codeReaderTarget } from "@/widgets/code-reader";
+import { parseFrontmatter } from "@/shared/lib/vault-document/parse-frontmatter";
 import type { TopologyNodeFocusModel } from "../../lib/inspector/topology-node-focus";
 import type { NodeDatasheetDerivation } from "./use-node-datasheet-model";
 
@@ -63,6 +65,9 @@ export function useFullDetailModel({
     const slug = nodeFocus.sourceSlug ?? selectedOntologyNode.id;
     const loadedBody = nodeBody && nodeBody.slug === slug ? nodeBody.body : null;
     const bodyMarkdown = loadedBody ?? selectedOntologyNode.summary ?? null;
+    const codePath = loadedBody !== null && nodeBody
+      ? codeReaderTarget(parseFrontmatter(nodeBody.raw).frontmatter.path, loadedBody)?.path ?? null
+      : null;
     // Without its own document the link is relabelled "the document that mentions it", not
     // dropped.
     const documentHref = nodeFocus.ownDocumentSlug
@@ -107,6 +112,7 @@ export function useFullDetailModel({
       groups,
       reach: graphFacts.reach,
       codeLocations: graphFacts.codeLocations,
+      codePath,
       bodyMarkdown,
       explanationEdit,
       documentHref,
