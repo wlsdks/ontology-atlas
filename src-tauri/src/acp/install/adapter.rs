@@ -1,23 +1,26 @@
 //! Puts a pinned npx adapter into npx's cache without starting an agent. The download runs on a
 //! thread the app owns, so closing the chat panel does not cancel it, and one runtime has at
 //! most one fetch: a later request waits on the one in flight instead of starting a second npx.
+//! It is the session launch's own npx download moved ahead of the session, so only runtimes a
+//! session may start can fetch, and the npx process dies with the app as a session does.
 
 use std::collections::HashMap;
-use std::io::BufRead;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Condvar, Mutex, PoisonError};
 use std::time::{Duration, Instant};
 
 use crate::acp::launch::npx_cache::{self, NpxCachePreflight};
 use crate::acp::launch::AcpLaunch;
+use crate::acp::session::agent_process::{read_bounded_line, terminate_tree};
 
 /// What a request found; the screen needs only whether to go on to the session start.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub(crate) enum AdapterReadiness {
-    /// Nothing for the app to fetch (not an npx launch, or a cache it cannot see): the session
-    /// start behaves as it did before this fetch existed.
+    /// Nothing for the app to fetch (a runtime the session start refuses, not an npx launch, or
+    /// a cache it cannot see): the session start behaves as it did before this fetch existed.
     NotApplicable,
     Ready,
     Fetched,
@@ -47,10 +50,14 @@ impl CacheCheck {
 
 type FetchOutcome = Result<(), String>;
 
+pub(crate) const APP_CLOSING: &str = "adapter-fetch-failed:app closing";
+
 #[derive(Default)]
 struct FetchJob {
     outcome: Mutex<Option<FetchOutcome>>,
     finished: Condvar,
+    /// The npx process group, so the app's exit can end it.
+    pid: Mutex<Option<u32>>,
 }
 
 impl FetchJob {
@@ -77,6 +84,7 @@ impl FetchJob {
 #[derive(Default, Clone)]
 pub(crate) struct AdapterFetches {
     in_flight: Arc<Mutex<HashMap<String, Arc<FetchJob>>>>,
+    closing: Arc<AtomicBool>,
 }
 
 impl AdapterFetches {
@@ -87,9 +95,39 @@ impl AdapterFetches {
             .contains_key(runtime_id)
     }
 
+    /// Called by the running fetch once npx is spawned.
+    pub(crate) fn record_pid(&self, runtime_id: &str, pid: u32) {
+        if let Some(job) = self
+            .in_flight
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .get(runtime_id)
+        {
+            *job.pid.lock().unwrap_or_else(PoisonError::into_inner) = Some(pid);
+        }
+    }
+
+    /// The app is exiting: no new fetch starts, and each running npx tree ends. Left running it
+    /// would download with the app closed, and the next launch's heal would delete under it.
+    pub(crate) fn terminate_all(&self) {
+        self.closing.store(true, Ordering::SeqCst);
+        let pids: Vec<u32> = self
+            .in_flight
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .values()
+            .filter_map(|job| *job.pid.lock().unwrap_or_else(PoisonError::into_inner))
+            .collect();
+        for pid in pids {
+            let _ = terminate_tree(pid);
+        }
+    }
+
     /// Joins the fetch in flight, or runs `check` and, if the cache needs it, starts `run` on its
     /// own thread; either way it blocks until that fetch ends. `check` runs under the lock, so
-    /// its heal never deletes an entry a running fetch is writing.
+    /// its heal never deletes an entry a fetch is writing. A runtime the session start refuses
+    /// (`chat_eligible`) reaches neither `check` nor `run`: this is the native guard, since the
+    /// page's own filter cannot be trusted.
     pub(crate) fn ensure<C, R>(
         &self,
         runtime_id: &str,
@@ -100,6 +138,9 @@ impl AdapterFetches {
         C: FnOnce() -> CacheCheck,
         R: FnOnce() -> FetchOutcome + Send + 'static,
     {
+        if !crate::acp::registry::chat_eligible(runtime_id) {
+            return Ok(AdapterReadiness::NotApplicable);
+        }
         let job = {
             let mut in_flight = self
                 .in_flight
@@ -113,9 +154,12 @@ impl AdapterFetches {
                         CacheCheck::Ready => return Ok(AdapterReadiness::Ready),
                         CacheCheck::Fetch => {}
                     }
+                    if self.closing.load(Ordering::SeqCst) {
+                        return Err(APP_CLOSING.to_string());
+                    }
                     let job = Arc::new(FetchJob::default());
+                    self.spawn_owner(runtime_id.to_string(), Arc::clone(&job), run)?;
                     in_flight.insert(runtime_id.to_string(), Arc::clone(&job));
-                    self.spawn_owner(runtime_id.to_string(), Arc::clone(&job), run);
                     job
                 }
             }
@@ -123,22 +167,29 @@ impl AdapterFetches {
         job.wait().map(|()| AdapterReadiness::Fetched)
     }
 
-    fn spawn_owner<R>(&self, runtime_id: String, job: Arc<FetchJob>, run: R)
+    /// The job is registered only once its thread exists, so a refused thread leaves no ownerless
+    /// job for later requests to wait on forever. The caller holds the map lock until it has
+    /// registered the job, and the thread needs that lock to remove it, so the order holds.
+    fn spawn_owner<R>(&self, runtime_id: String, job: Arc<FetchJob>, run: R) -> FetchOutcome
     where
         R: FnOnce() -> FetchOutcome + Send + 'static,
     {
         let in_flight = Arc::clone(&self.in_flight);
-        std::thread::spawn(move || {
-            // A panic must still wake the waiters, or every later start for this runtime hangs.
-            let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(run))
-                .unwrap_or_else(|_| Err("adapter-fetch-failed:panicked".to_string()));
-            // Removed before publishing, so a request after the wake reads the cache, not this job.
-            in_flight
-                .lock()
-                .unwrap_or_else(PoisonError::into_inner)
-                .remove(&runtime_id);
-            job.publish(outcome);
-        });
+        std::thread::Builder::new()
+            .name("acp-adapter-fetch".into())
+            .spawn(move || {
+                // A panic must still wake the waiters, or every later start for this runtime hangs.
+                let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(run))
+                    .unwrap_or_else(|_| Err("adapter-fetch-failed:panicked".to_string()));
+                // Removed before publishing, so a request after the wake reads the cache, not this job.
+                in_flight
+                    .lock()
+                    .unwrap_or_else(PoisonError::into_inner)
+                    .remove(&runtime_id);
+                job.publish(outcome);
+            })
+            .map(|_| ())
+            .map_err(|err| format!("adapter-fetch-failed:thread {err}"))
     }
 }
 
@@ -151,6 +202,22 @@ pub(crate) fn fetch_args(launch: &AcpLaunch) -> Option<Vec<String>> {
     args.push(format!("--package={package}"));
     args.extend(["--", "node", "--version"].map(String::from));
     Some(args)
+}
+
+/// The fetch needs no package's own bins, and a vault's or repository's `node_modules/.bin` on
+/// an inherited PATH could shadow `node` (the session strips such entries too).
+pub(crate) fn path_without_package_bins(path_env: &str) -> String {
+    let kept = std::env::split_paths(path_env).filter(|dir| {
+        let package_bin = dir.file_name().is_some_and(|name| name == ".bin")
+            && dir
+                .parent()
+                .and_then(Path::file_name)
+                .is_some_and(|name| name == "node_modules");
+        !dir.as_os_str().is_empty() && !package_bin
+    });
+    std::env::join_paths(kept)
+        .map(|joined| joined.to_string_lossy().to_string())
+        .unwrap_or_default()
 }
 
 /// npm prints its error code first and a log path last; the first two error lines are the guidance.
@@ -177,6 +244,8 @@ pub(crate) fn failure_line(lines: &[String]) -> String {
 const FETCH_DEADLINE: Duration = Duration::from_secs(20 * 60);
 const PROGRESS_INTERVAL: Duration = Duration::from_secs(1);
 const KEPT_STDERR_LINES: usize = 50;
+/// npm's lines are short; a longer one is dropped rather than held.
+const MAX_STDERR_LINE_BYTES: usize = 4096;
 
 pub(crate) struct FetchPlan {
     pub runtime_id: String,
@@ -187,8 +256,13 @@ pub(crate) struct FetchPlan {
     pub working_dir: PathBuf,
 }
 
-/// Runs the fetch and reports the bytes in the cache entry about once a second.
-pub(crate) fn run_fetch(plan: &FetchPlan, report: &dyn Fn(u64)) -> FetchOutcome {
+/// Runs the fetch in its own process group, hands its pid to `on_spawn`, and reports the bytes
+/// in the cache entry about once a second.
+pub(crate) fn run_fetch(
+    plan: &FetchPlan,
+    on_spawn: &dyn Fn(u32),
+    report: &dyn Fn(u64),
+) -> FetchOutcome {
     let args = fetch_args(&plan.launch).ok_or("adapter-fetch-failed:not-npx")?;
     let mut command = Command::new(&plan.launch.program);
     crate::child_process::no_console::hide_console(&mut command);
@@ -201,17 +275,31 @@ pub(crate) fn run_fetch(plan: &FetchPlan, report: &dyn Fn(u64)) -> FetchOutcome 
     crate::acp::launch::runtime_environment::apply_runtime_environment(
         &mut command,
         &plan.runtime_id,
-        &plan.launch.path_env,
+        &path_without_package_bins(&plan.launch.path_env),
     );
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        command.process_group(0);
+    }
     let mut child = command
         .spawn()
         .map_err(|err| format!("adapter-fetch-failed:spawn {err}"))?;
+    let pid = child.id();
+    on_spawn(pid);
 
     let lines = Arc::new(Mutex::new(Vec::<String>::new()));
     let pump = child.stderr.take().map(|pipe| {
         let lines = Arc::clone(&lines);
         std::thread::spawn(move || {
-            for line in std::io::BufReader::new(pipe).lines().map_while(Result::ok) {
+            let mut reader = std::io::BufReader::new(pipe);
+            loop {
+                let line = match read_bounded_line(&mut reader, MAX_STDERR_LINE_BYTES) {
+                    Ok(Some(bytes)) => String::from_utf8_lossy(&bytes).into_owned(),
+                    Ok(None) => break,
+                    Err(err) if err.kind() == std::io::ErrorKind::InvalidData => continue,
+                    Err(_) => break,
+                };
                 let mut kept = lines.lock().unwrap_or_else(PoisonError::into_inner);
                 if kept.len() == KEPT_STDERR_LINES {
                     kept.remove(0);
@@ -229,7 +317,8 @@ pub(crate) fn run_fetch(plan: &FetchPlan, report: &dyn Fn(u64)) -> FetchOutcome 
             Err(err) => return Err(format!("adapter-fetch-failed:wait {err}")),
         }
         if started.elapsed() > FETCH_DEADLINE {
-            let _ = child.kill();
+            // The whole group: a Volta or asdf shim would leave npm running after its own exit.
+            let _ = terminate_tree(pid);
             let _ = child.wait();
             return Err("adapter-fetch-failed:timed out".to_string());
         }

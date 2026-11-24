@@ -412,6 +412,11 @@ pub fn run() {
                 audit_read::cancel_owner(None);
                 vault::vectors::stop_all_on_exit();
                 terminate_all_acp_sessions(app_handle);
+                if let Some(fetches) =
+                    app_handle.try_state::<acp::install::adapter::AdapterFetches>()
+                {
+                    fetches.terminate_all();
+                }
             });
             if unfinished > 0 {
                 log::warn!("exit cut {unfinished} file or keychain operation(s) short");

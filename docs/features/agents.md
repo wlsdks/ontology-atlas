@@ -31,8 +31,8 @@ it, and one sentence says the panel may close while the app stays open. The
 app, not the panel, owns that download: Rust fetches the pinned adapter into
 npx's cache before the session starts, a closed panel leaves it running, a
 reopened panel or the agent doctor shows where it stands, and a second start
-waits on it instead of downloading again. Only starting a conversation or the
-doctor's fix for a broken download starts it, never app launch
+waits on it instead of downloading again. Only starting a conversation starts
+it, never app launch, and only for the agents a conversation may use
 (`docs/records/decisions/2026-11-24-acp-adapter-download-app-owned-d4b27660-5946-4463-a9d1-71f4f65a17da.md`).
 Three steps follow with the
 current one marked: download (only while one runs), connect, send. A request

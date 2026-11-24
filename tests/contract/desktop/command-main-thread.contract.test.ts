@@ -14,6 +14,7 @@ const repoRoot = join(import.meta.dirname, '..', '..', '..');
 const MUST_NOT_BLOCK_THE_MAIN_THREAD: { file: string; fn: string; because: string }[] = [
   { file: 'acp/runtime.rs', fn: 'acp_install_node', because: 'downloads a 52 MB runtime, bounded at 600s' },
   { file: 'acp/runtime.rs', fn: 'acp_install_cli', because: 'waits on npm install, measured at 30-90s' },
+  { file: 'acp/runtime.rs', fn: 'acp_prepare_adapter', because: 'waits on the npx adapter download, measured at 2.5 min for 425 MB' },
   { file: 'acp/runtime.rs', fn: 'acp_detect_runtimes', because: 'launches each installed CLI behind a 5s probe' },
   { file: 'acp/runtime.rs', fn: 'acp_diagnose', because: 'runs the login and keychain probes' },
   { file: 'acp/runtime.rs', fn: 'acp_repair', because: 'runs the doctor context, then repairs' },

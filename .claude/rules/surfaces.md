@@ -201,3 +201,7 @@ The one installation `forbidden.md` allows. All four conditions must hold: the
 user initiates it, sees the exact command first, it installs into an app-owned
 location, and the version is pinned. Downloading a Node runtime was approved in
 decision (89); any other runtime family needs a new record.
+The pinned npx adapter a conversation start fetches into npx's own cache is not
+such an install: it is the session launch's own download moved ahead of the
+session, for chat-eligible runtimes only
+(`docs/records/decisions/2026-11-24-acp-adapter-download-app-owned-d4b27660-5946-4463-a9d1-71f4f65a17da.md`).

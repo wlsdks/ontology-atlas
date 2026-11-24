@@ -117,6 +117,21 @@ fn the_fetch_finishes_when_the_request_that_started_it_is_gone() {
 }
 
 #[test]
+fn a_runtime_the_session_start_refuses_never_fetches() {
+    // A page bug or injected script could ask for any registry id; npm would then install an
+    // unverified package with no cutoff and the app's whole environment.
+    let fetches = AdapterFetches::default();
+    for refused in ["agoragentic-acp", "amp-acp", "no-such-runtime"] {
+        let answer = fetches.ensure(
+            refused,
+            move || panic!("the cache check heals on disk and must not run for {refused}"),
+            move || panic!("must not fetch {refused}"),
+        );
+        assert_eq!(answer, Ok(AdapterReadiness::NotApplicable));
+    }
+}
+
+#[test]
 fn a_ready_cache_is_reused_without_a_fetch() {
     let fetches = AdapterFetches::default();
     let answer = fetches.ensure(
@@ -328,7 +343,7 @@ fn the_runner_passes_the_fetch_arguments_and_reports_npm_s_failure() {
             seen.display()
         ),
     );
-    let outcome = run_fetch(&plan_for(program, &dir), &|_| {});
+    let outcome = run_fetch(&plan_for(program, &dir), &|_| {}, &|_| {});
     assert_eq!(
         outcome,
         Err("adapter-fetch-failed:npm error code E404 · npm error A complete log".to_string())
@@ -353,7 +368,7 @@ fn the_runner_reports_the_bytes_received_while_npm_runs() {
         ),
     );
     let reported = Mutex::new(Vec::new());
-    let outcome = run_fetch(&plan_for(program, &dir), &|bytes| {
+    let outcome = run_fetch(&plan_for(program, &dir), &|_| {}, &|bytes| {
         reported.lock().unwrap().push(bytes);
     });
     assert_eq!(outcome, Ok(()));
@@ -362,5 +377,123 @@ fn the_runner_reports_the_bytes_received_while_npm_runs() {
         "progress never measured the entry: {:?}",
         reported.lock().unwrap()
     );
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn a_closing_app_starts_no_new_fetch() {
+    let fetches = AdapterFetches::default();
+    fetches.terminate_all();
+    assert_eq!(
+        fetches.ensure(
+            "claude-acp",
+            || CacheCheck::Fetch,
+            || panic!("must not fetch")
+        ),
+        Err(APP_CLOSING.to_string())
+    );
+    assert_eq!(
+        fetches.ensure(
+            "claude-acp",
+            || CacheCheck::Ready,
+            || panic!("must not fetch")
+        ),
+        Ok(AdapterReadiness::Ready),
+        "a ready cache still answers while closing"
+    );
+}
+
+#[test]
+fn a_vault_or_repo_package_bin_never_reaches_the_fetch_path() {
+    assert_eq!(
+        path_without_package_bins(
+            "/vault/node_modules/.bin:/usr/local/bin::/repo/sub/node_modules/.bin:/opt/.bin:/usr/bin"
+        ),
+        "/usr/local/bin:/opt/.bin:/usr/bin"
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn the_fetch_child_gets_the_session_s_environment_not_the_app_s() {
+    let dir = crate::acp::test_support::scratch("adapter-fetch-env");
+    let seen = dir.join("seen-env");
+    // A key that would change the session's auth or registry if it leaked.
+    std::env::set_var("ATLAS_ADAPTER_FETCH_PLANTED_KEY", "leaked");
+    let program = fake_npx(&dir, &format!("/usr/bin/env > '{}'", seen.display()));
+    let mut plan = plan_for(program, &dir);
+    plan.launch.path_env = "/vault/node_modules/.bin:/usr/bin:/bin".to_string();
+    assert_eq!(run_fetch(&plan, &|_| {}, &|_| {}), Ok(()));
+    let env = std::fs::read_to_string(&seen).unwrap();
+    assert!(
+        !env.contains("ATLAS_ADAPTER_FETCH_PLANTED_KEY"),
+        "the app environment leaked:\n{env}"
+    );
+    assert!(
+        env.lines().any(|line| line == "PATH=/usr/bin:/bin"),
+        "PATH kept a package bin:\n{env}"
+    );
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[cfg(unix)]
+#[test]
+fn the_app_s_exit_ends_a_running_fetch_and_its_children() {
+    let dir = crate::acp::test_support::scratch("adapter-fetch-exit");
+    // npx stands in for npm: it forks a long-lived child, as an install does.
+    let forked = dir.join("forked-pid");
+    let program = fake_npx(
+        &dir,
+        &format!(
+            "exec >/dev/null 2>&1\nsleep 30 &\necho $! > '{}'\nsleep 30",
+            forked.display()
+        ),
+    );
+    let plan = plan_for(program, &dir);
+    let fetches = AdapterFetches::default();
+    let recorder = fetches.clone();
+    let waiter = {
+        let fetches = fetches.clone();
+        std::thread::spawn(move || {
+            fetches.ensure(
+                "claude-acp",
+                || CacheCheck::Fetch,
+                move || {
+                    run_fetch(
+                        &plan,
+                        &|pid| recorder.record_pid("claude-acp", pid),
+                        &|_| {},
+                    )
+                },
+            )
+        })
+    };
+    let recorded_pid = || {
+        fetches
+            .in_flight
+            .lock()
+            .unwrap()
+            .get("claude-acp")
+            .and_then(|job| *job.pid.lock().unwrap())
+    };
+    wait_until(|| recorded_pid().is_some());
+    wait_until(|| {
+        std::fs::read_to_string(&forked).is_ok_and(|text| text.trim().parse::<i32>().is_ok())
+    });
+    let forked_pid: libc::pid_t = std::fs::read_to_string(&forked)
+        .unwrap()
+        .trim()
+        .parse()
+        .unwrap();
+
+    fetches.terminate_all();
+    let outcome = waiter.join().unwrap();
+    assert!(
+        outcome.is_err(),
+        "a killed fetch must not report success: {outcome:?}"
+    );
+    assert!(!fetches.is_fetching("claude-acp"));
+    // Signal 0 probes whether npm's own child outlived the kill (only the group reaches it).
+    wait_until(|| unsafe { libc::kill(forked_pid, 0) } != 0);
     let _ = std::fs::remove_dir_all(&dir);
 }

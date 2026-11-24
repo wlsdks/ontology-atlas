@@ -287,16 +287,21 @@ pub(crate) fn acp_install_cli(
 }
 
 /// Fetches the pinned npx adapter into npx's cache before a session starts, so the session
-/// launches from the cache. Asked only by the chat panel's session start (the moment that
-/// downloaded before) and the doctor's `npx-cache` fix, never at app launch. The download runs
-/// on a thread the app owns: a panel closed mid-download does not cancel it, and the next
-/// request joins it. Progress goes out as `job: "adapter"` on the install progress event.
-#[tauri::command(async)]
-pub(crate) fn acp_prepare_adapter(
+/// launches from the cache. Asked only by the chat panel's session start, the moment that
+/// downloaded before; never at app launch. The download runs on a thread the app owns: a panel
+/// closed mid-download does not cancel it, and the next request joins it. Progress goes out
+/// as `job: "adapter"` on the install progress event.
+#[tauri::command]
+pub(crate) async fn acp_prepare_adapter(
     app: tauri::AppHandle,
     runtime_id: String,
 ) -> Result<AdapterReadiness, String> {
-    prepare_adapter(&app, &runtime_id)
+    // A waiter blocks until the download ends; on the blocking pool it cannot occupy the async
+    // workers every other command runs on. Not `blocking::run_blocking`: the exit drain would
+    // wait on a download that `terminate_all` is about to end anyway.
+    tauri::async_runtime::spawn_blocking(move || prepare_adapter(&app, &runtime_id))
+        .await
+        .map_err(|err| format!("adapter-fetch-failed:{err}"))?
 }
 
 fn prepare_adapter(app: &tauri::AppHandle, runtime_id: &str) -> Result<AdapterReadiness, String> {
@@ -339,6 +344,7 @@ fn prepare_adapter(app: &tauri::AppHandle, runtime_id: &str) -> Result<AdapterRe
         working_dir: app_data,
     };
     let reporter = app.clone();
+    let recorder = fetches.inner().clone();
     fetches.ensure(
         runtime_id,
         || {
@@ -350,7 +356,8 @@ fn prepare_adapter(app: &tauri::AppHandle, runtime_id: &str) -> Result<AdapterRe
         move || {
             let id = plan.runtime_id.as_str();
             emit_install_progress(&reporter, id, "adapter", "downloading", None, None, None);
-            let outcome = adapter::run_fetch(&plan, &|bytes| {
+            let on_spawn = |pid| recorder.record_pid(id, pid);
+            let outcome = adapter::run_fetch(&plan, &on_spawn, &|bytes| {
                 emit_install_progress(
                     &reporter,
                     id,
@@ -388,13 +395,11 @@ pub(crate) fn acp_repair(
     check_id: String,
 ) -> Result<Vec<doctor::AcpCheck>, String> {
     let ctx = doctor_context(&app, &runtime_id)?;
-    if check_id == "npx-cache" {
-        // The same fetch the chat panel waits on: it heals the broken entry and downloads it
-        // again, or joins a download already running instead of deleting what it writes.
-        prepare_adapter(&app, &runtime_id)?;
-    } else {
-        doctor::repair(&ctx.borrow(), &check_id)?;
+    // A download in flight looks broken on disk; deleting it would pull the files from under npm.
+    if check_id == "npx-cache" && ctx.adapter_fetching {
+        return Err("repair-failed:downloading".to_string());
     }
+    doctor::repair(&ctx.borrow(), &check_id)?;
     // Return the re-verified state, never a bare claim of success.
     let after = doctor_context(&app, &runtime_id)?;
     Ok(doctor::diagnose(&after.borrow()))
