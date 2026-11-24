@@ -146,6 +146,7 @@ describe("what the desktop bundle leaves out has no way in from the app", () => 
       "src/widgets/atlas-git-panel/ui/setup-panels.tsx",
       "src/widgets/bottom-tab-bar/lib/is-tab-active.ts",
       "src/widgets/bottom-tab-bar/ui/BottomTabBar.tsx",
+      "src/widgets/full-detail/ui/FullDetail.tsx",
       "src/widgets/gateway-chrome/ui/GatewayNav.tsx",
       "src/widgets/library-import/ui/ImportChooseStep.tsx",
       "src/widgets/library-import/ui/ImportConnectStep.tsx",
