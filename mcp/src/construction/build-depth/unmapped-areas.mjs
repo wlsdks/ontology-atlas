@@ -1,6 +1,7 @@
 import { join, posix } from 'node:path';
 
 import { repoText } from '../../analyze/repo-text.mjs';
+import { abilityRowText } from '../../analyze/survey/breadth-map.mjs';
 import { areaLocator } from '../../analyze/survey/survey-areas.mjs';
 import { lineCites } from './line-cites.mjs';
 import { kindOf, pathOf, sectionOf } from './node-fields.mjs';
@@ -327,6 +328,31 @@ export function batchFilesLabel(area) {
     return `${repoText(within)} (${file.abilities} ${file.abilities === 1 ? 'ability' : 'abilities'})`;
   });
   return `in ${prefix ? repoText(prefix) : 'the root'}: ${files.join(', ')}`;
+}
+
+/** Members a batch row shows before the rest are counted; a read finds the others. */
+const BATCH_ROW_MEMBERS = 8;
+
+/** The rows' share of a validate_vault answer, whose whole text stays within 40,000 characters. */
+const BATCH_ROWS_CHARS = 8000;
+
+/**
+ * The survey's ability rows for the batch's files, so one request reads them
+ * without opening a whole area, in at most 8,000 characters with the rows past
+ * that counted; empty when the files carry no rows. O(rows).
+ */
+export function batchAbilityRows(batch) {
+  const rows = batch.flatMap((area) => area.batchFiles.flatMap((file) => file.rows ?? []))
+    .map((row) => abilityRowText(row, { membersShown: BATCH_ROW_MEMBERS, withFolder: false }));
+  const shown = [];
+  let chars = 0;
+  for (const row of rows) {
+    if (shown.length > 0 && chars + row.length > BATCH_ROWS_CHARS) break;
+    shown.push(row);
+    chars += row.length + 2;
+  }
+  const more = rows.length - shown.length;
+  return more > 0 ? [...shown, `${more} more ${more === 1 ? 'row' : 'rows'} in their areas' maps`] : shown;
 }
 
 /** The call that opens an area: its own map, or for a folder's own files an outline of its main files. */
