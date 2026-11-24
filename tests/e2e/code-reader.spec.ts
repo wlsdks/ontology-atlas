@@ -178,7 +178,7 @@ test.describe("Code reader", () => {
     await openConceptOnMap(page, CODE_CONCEPTS.hiddenOrder, "en");
     const reader = await openReader(page);
     await expect(reader.getByTestId("code-reader-bidi-control")).toHaveText(["U+202E", "U+2066", "U+2069", "U+2066"]);
-    expect(await reader.locator('[data-line="2"]').textContent()).not.toMatch(/[‪-‮⁦-⁩]/);
+    expect(await reader.locator('[data-line="2"]').textContent()).not.toMatch(/[\u202A-\u202E\u2066-\u2069]/);
     await expect(reader.getByTestId("code-reader-cut")).toHaveText("Line 4 is longer than 64 KiB, so only its start is shown.");
   });
 

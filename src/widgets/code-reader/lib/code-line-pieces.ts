@@ -2,7 +2,7 @@
  * Unicode's embedding, override and isolate controls. Invisible, they reorder how a line reads, so
  * code can show one thing and run another; the reader draws each as its code point instead.
  */
-const BIDI_CONTROL = /[‪-‮⁦-⁩]/g;
+const BIDI_CONTROL = /[\u202A-\u202E\u2066-\u2069]/g;
 
 export type CodeLinePiece = { kind: "text"; text: string } | { kind: "control"; codePoint: string };
 

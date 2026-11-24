@@ -10,9 +10,30 @@ const SECRET_EXTENSIONS: &[&str] = &["env", "tfvars", "tfstate"];
 const SECRET_FILE_NAMES: &[&str] = &[
     "env",
     "htpasswd",
+    "password",
+    "passwords",
     "local.settings.json",
     "database.yml",
     "database.yaml",
+];
+/// Folders named for what every file in them holds.
+const SECRET_FOLDER_NAMES: &[&str] = &[
+    "password",
+    "passwords",
+    "credential",
+    "credentials",
+    "token",
+    "tokens",
+];
+/// `env.<name>` files of one deployment, as `env.production`; `env.ts` and `env.d.ts` are code.
+const ENVIRONMENT_NAMES: &[&str] = &[
+    "production",
+    "prod",
+    "staging",
+    "development",
+    "dev",
+    "local",
+    "test",
 ];
 /// Data files whose name can say what they hold.
 const DATA_EXTENSIONS: &[&str] = &[
@@ -21,23 +42,22 @@ const DATA_EXTENSIONS: &[&str] = &[
     "yml",
     "toml",
     "ini",
+    "cfg",
+    "conf",
     "txt",
+    "csv",
     "xml",
     "properties",
-    "conf",
 ];
-/// A word of a data file's name that says it holds a key or password.
-const SECRET_WORDS: &[&str] = &[
-    "secret",
-    "secrets",
-    "credential",
-    "credentials",
-    "password",
-    "passwords",
-    "passwd",
-];
-/// A word that says the file is about the secret rather than holding one: `password-reset.json`
-/// is a page's copy, `secret_scanning.yml` a scanner's settings.
+/// Data formats a key file is written in, for names such as `sa-key.json`.
+const KEY_FILE_EXTENSIONS: &[&str] = &["json", "yaml", "yml"];
+/// Parts of a word that say it names a secret: `appsecrets`, `secretkey`, `db_password`.
+const SECRET_WORD_PARTS: &[&str] = &["secret", "credential", "password", "passwd"];
+/// A word before `tokens` that makes them design tokens: `design-tokens.json`.
+const DESIGN_WORDS: &[&str] = &["design", "theme"];
+/// A word after a secret word that says the file is about it: `password-reset.json` is a page's
+/// copy, `secret_scanning.yml` a scanner's settings. Before it the word does not count:
+/// `reset-credentials.json` holds credentials.
 const ABOUT_WORDS: &[&str] = &[
     "policy",
     "policies",
@@ -75,17 +95,34 @@ fn stem_words(stem: &str) -> Vec<String> {
     words
 }
 
+/// Whether `word` names a key: a word ending in `token` or `tokens` unless a design word comes
+/// before it or it is the whole name (`tokens.json` is design tokens), or a word holding a secret
+/// word unless an about-word follows it.
+fn names_a_key(before: Option<&str>, word: &str, after: Option<&str>) -> bool {
+    if word.ends_with("token") || word.ends_with("tokens") {
+        let design = before.is_some_and(|previous| DESIGN_WORDS.contains(&previous));
+        let alone = before.is_none() && after.is_none();
+        return !(design || (alone && word == "tokens"));
+    }
+    SECRET_WORD_PARTS.iter().any(|part| word.contains(part))
+        && !after.is_some_and(|next| ABOUT_WORDS.contains(&next))
+}
+
 /// Names the shared Harness table does not list but the reader, which shows any file's text,
-/// also refuses. A data file refuses when its name ends in `token` (`api_token.json`), or a word
-/// names a secret and none says the file is only about one. The Harness table stays as its
-/// fixture pins it.
+/// also refuses: key and deployment files by name, and data files whose words name a key. The
+/// Harness table stays as its fixture pins it.
 fn holds_keys_by_name(name: &str) -> bool {
     let lower = name.to_ascii_lowercase();
     if SECRET_FILE_NAMES.contains(&lower.as_str()) {
         return true;
     }
     let (stem, extension) = lower.rsplit_once('.').unwrap_or((lower.as_str(), ""));
-    if SECRET_EXTENSIONS.contains(&extension) || lower.contains(".tfstate.") {
+    if SECRET_EXTENSIONS.contains(&extension)
+        || lower.contains(".tfstate.")
+        || lower.contains(".tfvars.")
+        || (stem == "env"
+            && (DATA_EXTENSIONS.contains(&extension) || ENVIRONMENT_NAMES.contains(&extension)))
+    {
         return true;
     }
     if stem.starts_with("client_secret") || stem.contains("adminsdk") {
@@ -95,14 +132,26 @@ fn holds_keys_by_name(name: &str) -> bool {
         return false;
     }
     let words = stem_words(name.rsplit_once('.').map_or(name, |(stem, _)| stem));
-    let ends_in_token = words.last().is_some_and(|word| word.ends_with("token"));
-    let names_a_secret = words
-        .iter()
-        .any(|word| SECRET_WORDS.contains(&word.as_str()));
-    let only_about_one = words
-        .iter()
-        .any(|word| ABOUT_WORDS.contains(&word.as_str()));
-    ends_in_token || (names_a_secret && !only_about_one)
+    let key_file = KEY_FILE_EXTENSIONS.contains(&extension)
+        && words
+            .last()
+            .is_some_and(|word| word == "key" || word == "keys");
+    key_file
+        || words.iter().enumerate().any(|(index, word)| {
+            let before = index
+                .checked_sub(1)
+                .and_then(|previous| words.get(previous));
+            names_a_key(
+                before.map(String::as_str),
+                word,
+                words.get(index + 1).map(String::as_str),
+            )
+        })
+}
+
+/// A folder whose name says every file in it holds a key.
+fn is_secret_folder(part: &str) -> bool {
+    SECRET_FOLDER_NAMES.contains(&part.to_ascii_lowercase().as_str())
 }
 
 /// A Git folder by any name: `.git` and a bare clone such as `vendor.git`.
@@ -135,7 +184,10 @@ pub(super) fn path_refusal(path: &str) -> Option<&'static str> {
     if folders.iter().any(|part| is_git_folder(part)) || name.eq_ignore_ascii_case(".git") {
         return Some(HIDDEN);
     }
-    if parts.iter().any(|part| is_denied_name(part)) || holds_keys_by_name(name) {
+    if parts.iter().any(|part| is_denied_name(part))
+        || folders.iter().any(|part| is_secret_folder(part))
+        || holds_keys_by_name(name)
+    {
         return Some(SECRET);
     }
     if parts.iter().any(|part| part.starts_with('.'))

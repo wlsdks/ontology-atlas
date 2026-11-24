@@ -225,6 +225,29 @@ fn refuses_key_files_the_harness_table_does_not_name() {
         "htpasswd",
         "local.settings.json",
         "config/database.yml",
+        "oauth_tokens.json",
+        "api_token_prod.json",
+        "token.prod.json",
+        "token_cache.json",
+        "github_token.backup.txt",
+        "appsecrets.json",
+        "secretkey.json",
+        "password_reset_tokens.yml",
+        "reset-credentials.json",
+        "key.json",
+        "keys.json",
+        "sa-key.json",
+        "serviceAccountKey.json",
+        "env.yml",
+        "env.production",
+        "passwords.csv",
+        "password",
+        "db_password.cfg",
+        "terraform.tfvars.json",
+        "passwords/list.txt",
+        "tokens/github.txt",
+        "ops/Passwords.TXT",
+        "ops/CLIENT_SECRET_9.JSON",
     ] {
         f.put(path, PLANTED);
         assert_eq!(f.read(path).unwrap_err(), SECRET, "{path:?}");
@@ -242,6 +265,13 @@ fn refuses_key_files_the_harness_table_does_not_name() {
         "secret_scanning.yml",
         "schemas/credential-schema.json",
         "docs/password-policy.md",
+        "tokens.json",
+        "theme-tokens.json",
+        "keyboard.json",
+        "src/env.ts",
+        "src/env.d.ts",
+        "src/auth/password.ts",
+        "src/SecretsManager.java",
     ] {
         f.put(path, "plain\n");
         assert_eq!(f.read(path).unwrap().lines, ["plain"], "{path:?}");

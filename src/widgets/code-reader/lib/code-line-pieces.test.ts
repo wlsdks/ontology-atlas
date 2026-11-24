@@ -4,14 +4,14 @@ import { codeLinePieces } from "./code-line-pieces";
 
 describe("codeLinePieces", () => {
   it("names each bidi override and isolate control so none reaches the screen unseen", () => {
-    const line = "if (isAdmin) { /* ‮ } ⁦ begin admins only */";
+    const line = "if (isAdmin) { /* \u202E } \u2066 begin admins only */";
     const pieces = codeLinePieces(line);
     expect(pieces.filter((piece) => piece.kind === "control")).toEqual([
       { kind: "control", codePoint: "U+202E" },
       { kind: "control", codePoint: "U+2066" },
     ]);
     const text = pieces.map((piece) => (piece.kind === "text" ? piece.text : "")).join("");
-    expect(text).not.toMatch(/[‪-‮⁦-⁩]/);
+    expect(text).not.toMatch(/[\u202A-\u202E\u2066-\u2069]/);
     expect(text).toBe("if (isAdmin) { /*  }  begin admins only */");
   });
 
