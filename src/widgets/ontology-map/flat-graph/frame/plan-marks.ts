@@ -103,6 +103,20 @@ export function discAt(id: string, at: Point, hue: string, focus: boolean, state
   return d;
 }
 
+/**
+ * How much of its ink a domain's disc keeps while a concept of its own is selected or leaving: it
+ * steps back to its resting ink on the selection's clock, so the selection outshines the domain
+ * around it rather than the larger disc beside it. O(1).
+ */
+function ownerInkShare(domainId: string): number {
+  const { model, P } = F;
+  const mix = F.motion.baseMix;
+  let share = 0;
+  if (F.selectedId !== null && model.domainOf.get(F.selectedId) === domainId) share = F.attention.selected && F.attention.focusId === F.selectedId ? mix : 1;
+  if (F.leavingId !== null && model.domainOf.get(F.leavingId) === domainId) share = Math.max(share, 1 - mix);
+  return 1 - (1 - P.restHue) * share;
+}
+
 /** One domain's disc, its capability discs and links, and any element fan that draws. O(members). */
 export function planCluster(c: FlatGraphCluster, projectAt: Point | null, projectInk: number): void {
   const { P, attention, contextMode } = F;
@@ -123,7 +137,8 @@ export function planCluster(c: FlatGraphCluster, projectAt: Point | null, projec
     const d = discAt(c.domainId, at, hue, c.domainId === attention.focusId, "current");
     const r = discRadius(c.domainId);
     if (d.r !== r) d.r = r;
-    if (d.ink !== ink) d.ink = ink;
+    const discInk = ink * ownerInkShare(c.domainId);
+    if (d.ink !== discInk) d.ink = discInk;
     L.domains.add(d);
   }
   const evidence = F.evidence;

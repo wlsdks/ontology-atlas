@@ -108,6 +108,14 @@ function zoomReading(input: GraphSelectionZoomInput): ZoomReading {
       const r = discAt(id, scale) + (id === focus ? paint.selectedRingGapPx + paint.selectedRingPx : 0);
       marks.set(id, { x: p.x, y: p.y, box: { minX: -r, maxX: r, minY: -r, maxY: r } });
     }
+    // The selection's own elements stand in its fan with their names, which the frame keeps as it keeps the selection's.
+    const own = model.capabilityById.get(focus)?.elementIds ?? [];
+    for (const id of own) {
+      const p = admission.anchors.get(id);
+      if (!p || marks.has(id)) continue;
+      const r = discAt(id, scale);
+      marks.set(id, { x: p.x, y: p.y, box: { minX: -r, maxX: r, minY: -r, maxY: r } });
+    }
     for (const n of admission.names) {
       const box = marks.get(n.id)?.box;
       if (!box) continue;
