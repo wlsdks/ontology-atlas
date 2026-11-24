@@ -157,7 +157,8 @@ test('a changed original becomes a compared, retained answer revision without lo
   await expect(page.getByTestId('retained-answer-context')).toContainText('earlier saved answer');
   await page.getByRole('button', { name: 'Back to questions', exact: true }).click();
   /* Back on the home, the door still opens the one saved answer in one press; its tooltip names it. */
-  await expect(page.getByTestId('library-questions-open')).toHaveAttribute('title', 'What is the retention policy?');
+  await page.getByTestId('library-questions-open').hover();
+  await expect(page.getByRole('tooltip')).toHaveText('What is the retention policy?');
   expect(errors).toEqual([]);
   if (evidence) {
     writeFileSync(`${evidence}/saved-files.json`, JSON.stringify(saved.files, null, 2));
