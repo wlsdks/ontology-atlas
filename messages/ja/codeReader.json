@@ -8,7 +8,9 @@
   "lines": {
     "range": "L{start}–{end}",
     "single": "L{line}",
-    "top": "先頭から"
+    "shown": "{start}–{end}行目を表示中",
+    "top": "先頭から",
+    "cut": "{line}行目は{limit}を超えるため、先頭だけを表示しています。"
   },
   "cite": {
     "current": "文書が指している行です。",
@@ -31,6 +33,7 @@
     "chooseAgain": "フォルダを選び直す",
     "secret": "Atlasは{path}を読みません。この名前のファイルには鍵やパスワードが入っているためです。",
     "outside": "{path}は接続したコードフォルダの外を指しているため、Atlasは読みませんでした。",
+    "hidden": "Atlasは{path}を読みません。隠しファイルや隠しフォルダには、鍵を含みうる設定が入っているためです。",
     "tooLarge": "{path}は{limit}より大きいため、ここでは読みません。",
     "notText": "{path}はテキストではないため、ここで読めるものはありません。",
     "changed": "Atlasが読んだ後にこのファイルが変わりました。",

@@ -41,6 +41,7 @@ never a parallel router or surface fork.
 | Gray-area evidence | `src/shared/lib/project-source/tauri-gray-area.ts`, `src-tauri/src/gray_area.rs` | degradation card; local folder confirmation and secure bounded reads are macOS-only |
 | Source-folder read grant | `pickTauriSourceDirectory` in `src/shared/lib/vault-folder/native-vault/tauri-project-source.ts`, `src-tauri/src/project_source/access.rs` | unavailable; native picker grants read-only source access, not vault write access |
 | Harness source read | `src/shared/lib/project-source/tauri-harness-source.ts`, `src-tauri/src/harness_source/` | unavailable; a browser cannot see dot directories, so Harness names what it cannot reach |
+| Code reader | `src/shared/lib/project-source/tauri-code-reader.ts`, `src-tauri/src/code_reader/` | degradation card `code-reader-get-app`; the code folder is outside the folder a browser was given, so full detail keeps the path with Copy |
 | Agent settings scopes | `src/shared/lib/harness-scopes/tauri-harness-scopes.ts`, `src-tauri/src/harness_scopes/` | unavailable; a browser cannot open a home or dot folder, so the popup explains each scope without reading it |
 | Jev evidence check (experimental) | `src/shared/lib/llm-connection/tauri-jev.ts`, `src-tauri/src/jev.rs` | covered by the models tab's degradation card |
 | LLM call | `src/shared/lib/llm-connection/tauri-llm.ts` | action not rendered |

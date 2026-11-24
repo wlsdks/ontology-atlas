@@ -138,6 +138,11 @@ export interface OntologyMapDetailPanelProps {
    */
   meaningReview?: { label: string; onOpen: () => void };
   discoveryAction?: { label: string; onOpen: () => void };
+  /**
+   * The concept's code in the app: the file its document names and how many line ranges it cites.
+   * Absent where no code reader exists (web) or the document names no code.
+   */
+  codeRow?: { path: string; citeCount: number; readerOpen: boolean; onToggle: () => void };
   /** Quiet this panel's filled control while another surface owns the primary next step. */
   suppressPrimaryAction?: boolean;
   onClose: () => void;

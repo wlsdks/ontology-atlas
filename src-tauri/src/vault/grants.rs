@@ -22,7 +22,8 @@ pub(crate) struct Registry {
     vaults: HashSet<PathBuf>,
     /// Repository roots discovered from a granted vault, for project-source
     /// inspection only (it may climb to the repo the vault lives in). Never widens
-    /// what the content commands can read; `harness_source` reads its allowlist under one.
+    /// what the content commands can read. A binding may name any folder inside one,
+    /// so `harness_source::authorized_source_root` refuses a dot or secret folder below it.
     sources: HashSet<PathBuf>,
     selected_sources: HashSet<PathBuf>,
     /// The subset of `vaults` granted for this launch only. `persist` leaves them out,
@@ -39,6 +40,16 @@ fn within(roots: &HashSet<PathBuf>, path: &Path) -> bool {
 }
 
 impl Registry {
+    /// The most specific granted root holding `path`, vault or source.
+    fn nearest_root(&self, path: &Path) -> Option<PathBuf> {
+        self.vaults
+            .iter()
+            .chain(self.sources.iter())
+            .filter(|root| path.starts_with(root))
+            .max_by_key(|root| root.components().count())
+            .cloned()
+    }
+
     fn is_vault_granted(&self, path: &Path) -> bool {
         within(&self.vaults, path)
     }
@@ -222,6 +233,18 @@ pub(crate) fn is_source_granted(path: &Path) -> bool {
         return true;
     }
     lock().is_source_granted(path)
+}
+
+/// The most specific granted root holding `path` (canonical); none before `initialize`
+/// grants anything, when every path passes.
+pub(crate) fn nearest_granted_root(path: &Path) -> Option<PathBuf> {
+    #[cfg(test)]
+    if let Some(found) =
+        THREAD_REGISTRY.with(|slot| slot.borrow().as_ref().map(|reg| reg.nearest_root(path)))
+    {
+        return found;
+    }
+    lock().nearest_root(path)
 }
 
 #[cfg(not(test))]
