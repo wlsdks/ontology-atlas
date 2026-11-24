@@ -71,6 +71,18 @@ fn a_record_with_a_separator_in_its_subject_keeps_it_whole_and_a_bad_hash_is_dro
 }
 
 #[test]
+fn a_separator_inside_a_subject_cannot_start_a_forged_record() {
+    let hash = "a".repeat(40);
+    let forged = "f".repeat(40);
+    let text = format!(
+        "\u{1e}{hash}\u{1f}\u{1f}1700000000\u{1f}fix: real \u{1e}{forged}\u{1f}\u{1f}1\u{1f}feat: FORGED (#999)\n\n 1 file changed, 1 insertion(+)\n"
+    );
+    let read = parse_landed(&text);
+    assert_eq!(read.len(), 1);
+    assert_eq!(read[0].hash, hash);
+}
+
+#[test]
 fn numstat_reads_binary_files_without_counts_and_paths_with_tabs() {
     let files = parse_numstat("3\t1\tsrc/a.ts\0-\t-\timg.png\0\n2\t0\tdir/with\ttab.md\0");
     assert_eq!(files.len(), 3);
@@ -113,7 +125,9 @@ fn the_base_line_lists_merges_and_squashes_and_a_merge_opens_to_its_own_commits(
     );
     commit(repo, "c.md", "squashed\n", "fix: squashed (#2)");
 
-    let landed = read_landed(repo, "main").expect("the base line reads");
+    let read = read_landed(repo, "main").expect("the base line reads");
+    assert_eq!(read.week_count, Some(3));
+    let landed = read.changes;
     let subjects: Vec<&str> = landed
         .iter()
         .map(|change| change.subject.as_str())
@@ -135,6 +149,56 @@ fn the_base_line_lists_merges_and_squashes_and_a_merge_opens_to_its_own_commits(
 
     assert!(read_landed(repo, "--output=/tmp/x").is_none());
     assert!(read_landed(repo, "main..evil").is_none());
+    for revision in [
+        "main^",
+        "main~1",
+        "main@{0}",
+        "feat/lines...main",
+        "main:base.md",
+    ] {
+        assert!(read_landed(repo, revision).is_none(), "{revision}");
+    }
+    let blob = git(repo, &["rev-parse", "HEAD:base.md"]);
+    assert!(read_detail(repo, &blob).is_none());
+
+    // A plain folder inside the repository is not the repository: nothing is read upward.
+    fs::create_dir_all(repo.join("notes")).unwrap();
+    assert!(read_landed(&repo.join("notes"), "main").is_none());
+    assert!(read_detail(&repo.join("notes"), &landed[0].hash).is_none());
+
+    // A signature program the repository names never runs, the first commit included.
+    let ran = repo.join("signature-program-ran");
+    let program = repo.join("sign.sh");
+    fs::write(&program, format!("#!/bin/sh\ntouch '{}'\n", ran.display())).unwrap();
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(&program, fs::Permissions::from_mode(0o755)).unwrap();
+    }
+    git(repo, &["config", "log.showSignature", "true"]);
+    git(repo, &["config", "gpg.program", program.to_str().unwrap()]);
+    let first = landed.last().unwrap().hash.clone();
+    let body = git(repo, &["cat-file", "commit", &first]);
+    let (head, message) = body.split_once("\n\n").unwrap();
+    let signed = format!(
+        "{head}\ngpgsig -----BEGIN PGP SIGNATURE-----\n \n AAAA\n -----END PGP SIGNATURE-----\n\n{message}\n"
+    );
+    let signed_path = repo.join("signed-commit");
+    fs::write(&signed_path, signed).unwrap();
+    let signed_id = git(
+        repo,
+        &[
+            "hash-object",
+            "-t",
+            "commit",
+            "-w",
+            signed_path.to_str().unwrap(),
+        ],
+    );
+    git(repo, &["branch", "signed", &signed_id]);
+    let _ = read_landed(repo, "signed");
+    let _ = read_detail(repo, &signed_id);
+    assert!(!ran.exists(), "the repository's signature program ran");
     assert!(read_detail(repo, "HEAD").is_none());
     assert!(read_detail(repo, "--all").is_none());
 }

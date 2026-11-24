@@ -158,7 +158,7 @@ pub fn work_status_activity(
 pub fn work_status_landed(
     repository_path: String,
     base_branch: String,
-) -> Option<Vec<landed::LandedChange>> {
+) -> Option<landed::LandedRead> {
     landed::read_landed(&granted_root(&repository_path).ok()?, &base_branch)
 }
 

@@ -39,15 +39,18 @@ export function cleanupCommand(room: RoomEntry): string | null {
  * means, the commits the base branch does not have yet, what is not committed, and the folder. It
  * reads nothing of its own: every line comes from the room's entry, so it moves with the room.
  */
-export function RoomPanel({ room, copy, id, onClose }: {
+export function RoomPanel({ room, copy, id, onClose, replaced = false }: {
   /** The pressed room, or none: the panel leaves with its last room still drawn. */
   room: RoomEntry | null;
+  /** Another panel takes this one's place: it goes at once, so the building never makes room for two. */
+  replaced?: boolean;
   copy: RoomCopy;
   id: string;
   onClose: () => void;
 }) {
   const [drawn, setDrawn] = useState(room);
   if (room !== null && room !== drawn) setDrawn(room);
+  if (replaced && room === null) return null;
   return (
     <Surface
       open={room !== null}
@@ -83,7 +86,7 @@ function PanelBody({ room, copy, onClose }: { room: RoomEntry; copy: RoomCopy; o
   const moreCommits = track.activity?.onBase ? 0 : (track.ahead ?? 0) - screen.commits.length;
   const moreFiles = (track.activity?.uncommitted ?? 0) - screen.files.length;
   // Read and empty: the stats already say zero, so the lists give way to one sentence.
-  const quietCommits = track.activity != null && screen.commits.length === 0 && (track.activity.onBase ? false : (track.ahead ?? 0) === 0);
+  const quietCommits = track.activity != null && screen.commits.length === 0 && (track.activity.onBase ? false : track.ahead === 0);
   const quietFiles = track.activity != null && track.activity.uncommitted === 0;
   return (
     <div aria-labelledby={titleId} role="group" className="flex min-h-full flex-col">

@@ -173,8 +173,14 @@ export async function setAgentSessionsRead(on: boolean): Promise<void> {
 }
 
 /** The newest thirty changes on the base branch's first-parent line, with their stats: one `git log`. */
-export async function readLandedChanges(repositoryPath: string, baseBranch: string): Promise<LandedChange[] | null> {
-  return isWorkStatusAvailable() ? invoke<LandedChange[] | null>('work_status_landed', { repositoryPath, baseBranch }) : null;
+/** The newest landed changes, and how many landed in the last seven days (often more than were read). */
+export interface LandedRead {
+  changes: LandedChange[];
+  weekCount: number | null;
+}
+
+export async function readLandedChanges(repositoryPath: string, baseBranch: string): Promise<LandedRead | null> {
+  return isWorkStatusAvailable() ? invoke<LandedRead | null>('work_status_landed', { repositoryPath, baseBranch }) : null;
 }
 
 /** One landed change's branch commits and files: two `git` reads. */

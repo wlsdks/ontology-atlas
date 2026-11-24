@@ -94,7 +94,7 @@ async function openWorkStatus(page: Page, rows: Row[], activity: Activity = {}) 
           const read = state.activity[args.worktreeId ?? ""];
           return answer(read ? { stamp: `s${state.activityVersion}`, ...structuredClone(read) } : null);
         }
-        if (command === "work_status_landed") return answer(structuredClone(LANDED_STUB));
+        if (command === "work_status_landed") return answer({ changes: structuredClone(LANDED_STUB), weekCount: 2 });
         if (command === "work_status_landed_detail") {
           return answer({ hash: (args as { hash?: string }).hash, commits: [{ hash: "e1e1e1e", subject: "fix(map): keep the ring off the disc", at: Math.floor(Date.now() / 1000) - 7200 }], commitCount: 1, files: [{ path: "src/map/plan.ts", insertions: 30, deletions: 4 }], fileCount: 1 });
         }
@@ -906,6 +906,8 @@ test("lists the work that landed on the base branch under the building and opens
   await room(page, "feat/library-stage").first().click();
   await expect(page.getByTestId("work-room-panel")).toBeVisible();
   await expect(rows.first()).toHaveAttribute("aria-expanded", "false");
+  // One panel beside the building at a time: the landed change leaves as the room's panel opens.
+  await expect(page.getByTestId("work-landed-panel")).toHaveCount(0);
 });
 
 test("shows the landed work under the empty building too", async ({ page }) => {

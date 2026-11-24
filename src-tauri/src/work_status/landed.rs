@@ -11,13 +11,15 @@ use std::path::Path;
 use serde::Serialize;
 
 use super::activity::{clean_subject, CommitLine};
+use super::fingerprint::common_dir;
 use super::git_read::git_read;
-use super::worktrees::is_plain_ref_name;
 
 /// The most changes the page lists; a window rarely has room for more.
 const LANDED_READ: usize = 30;
 /// The most commits and files one change's detail lists; the counts still cover them all.
 const DETAIL_LISTED: usize = 40;
+/// The most branch commits one detail reads to count; a back-merge of a long line stops here.
+const DETAIL_COMMITS_READ: &str = "-1000";
 const RECORD: char = '\u{1e}';
 const FIELD: char = '\u{1f}';
 
@@ -31,6 +33,9 @@ pub(crate) struct LandedChange {
     pub(crate) at: Option<i64>,
     /// A merge commit: the change brought a branch's own commits.
     pub(crate) merge: bool,
+    /// No parent: the first commit, or a shallow clone's boundary.
+    #[serde(skip)]
+    pub(crate) root: bool,
     /// Against the first parent; `None` when Git printed no stat (an empty change).
     pub(crate) files: Option<u32>,
     pub(crate) insertions: Option<u32>,
@@ -60,30 +65,83 @@ pub(crate) struct LandedDetail {
     pub(crate) file_count: u32,
 }
 
-/// The newest changes on the base branch's first-parent line. One `git log`.
-pub(super) fn read_landed(root: &Path, base_branch: &str) -> Option<Vec<LandedChange>> {
-    if !is_plain_ref_name(base_branch) || base_branch.starts_with('-') {
+/// What the list shows: the newest changes, and how many landed in the last seven days, which may
+/// be more than were read.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct LandedRead {
+    pub(crate) changes: Vec<LandedChange>,
+    pub(crate) week_count: Option<u32>,
+}
+
+/// A branch name spelled only as a name: no revision syntax (`^`, `~`, `@{`, `..`, `:`) can ride in.
+fn is_branch_name(name: &str) -> bool {
+    !name.is_empty()
+        && !name.starts_with(['-', '/', '.'])
+        && !name.ends_with(['/', '.'])
+        && !name.contains("..")
+        && !name.contains("//")
+        && name
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.' | '/'))
+}
+
+/// The newest changes on the base branch's first-parent line, read only from the repository whose
+/// own `.git` sits in `root`. One `git log` and one `git rev-list --count`.
+pub(super) fn read_landed(root: &Path, base_branch: &str) -> Option<LandedRead> {
+    if !is_branch_name(base_branch) {
         return None;
     }
-    let count = format!("-{LANDED_READ}");
+    let shallow = common_dir(root)?.join("shallow").exists();
     let reference = format!("refs/heads/{base_branch}");
-    let text = git_read(
+    let with_stat = log_landed(root, &reference, true);
+    // A partial clone cannot diff without fetching; the list still stands without its stat.
+    let text = match with_stat {
+        Some(text) => text,
+        None => log_landed(root, &reference, false)?,
+    };
+    let mut changes = parse_landed(&text);
+    if shallow {
+        // A shallow clone's boundary commit diffs against nothing, so its stat is the whole tree.
+        for change in changes.iter_mut().filter(|change| change.root) {
+            change.files = None;
+            change.insertions = None;
+            change.deletions = None;
+        }
+    }
+    let week_count = git_read(
         root,
         &[
-            "log",
-            &count,
+            "rev-list",
+            "--count",
             "--first-parent",
-            "--diff-merges=first-parent",
-            "--shortstat",
-            "--no-show-signature",
-            "--no-color",
-            "--format=%x1e%H%x1f%P%x1f%ct%x1f%s",
+            "--since=7.days.ago",
             &reference,
             "--",
         ],
     )
-    .ok()?;
-    Some(parse_landed(&text))
+    .ok()
+    .and_then(|text| text.trim().parse().ok());
+    Some(LandedRead {
+        changes,
+        week_count,
+    })
+}
+
+fn log_landed(root: &Path, reference: &str, stat: bool) -> Option<String> {
+    let count = format!("-{LANDED_READ}");
+    let mut args = vec![
+        "log",
+        &count,
+        "--first-parent",
+        "--no-color",
+        "--format=%x1e%H%x1f%P%x1f%ct%x1f%s",
+    ];
+    if stat {
+        args.extend(["--diff-merges=first-parent", "--shortstat", "--no-renames"]);
+    }
+    args.extend([reference, "--"]);
+    git_read(root, &args).ok()
 }
 
 /// One change's branch commits and files. Two `git` reads: the commits beyond the first parent,
@@ -92,33 +150,37 @@ pub(super) fn read_detail(root: &Path, hash: &str) -> Option<LandedDetail> {
     if !is_object_id(hash) {
         return None;
     }
-    let parents = git_read(root, &["rev-list", "--no-walk", "--parents", hash, "--"]).ok()?;
-    let parents: Vec<&str> = parents.split_whitespace().skip(1).collect();
-    let first = parents.first().copied();
-    let commits_text = if let [first_parent, branch_head, ..] = parents.as_slice() {
-        let range = format!("{first_parent}..{branch_head}");
-        git_read(
-            root,
-            &[
-                "log",
-                "--no-merges",
-                "--no-show-signature",
-                "--no-color",
-                "-z",
-                "--format=%h%x1f%ct%x1f%s",
-                &range,
-                "--",
-            ],
-        )
-        .ok()
-    } else {
-        None
+    let shallow = common_dir(root)?.join("shallow").exists();
+    let listed = git_read(root, &["rev-list", "--no-walk", "--parents", hash, "--"]).ok()?;
+    let mut ids = listed.split_whitespace();
+    // The answer names the commit itself first; anything else (a blob, a tree) is no change.
+    if !ids.next()?.starts_with(&hash.to_ascii_lowercase()) {
+        return None;
+    }
+    let parents: Vec<&str> = ids.collect();
+    let all_commits = match parents.as_slice() {
+        [first_parent, _, ..] => {
+            // Every parent's commits the first parent lacks, octopus merges included.
+            let range = format!("{first_parent}..{hash}");
+            let text = git_read(
+                root,
+                &[
+                    "log",
+                    "--no-merges",
+                    DETAIL_COMMITS_READ,
+                    "--no-color",
+                    "-z",
+                    "--format=%h%x1f%ct%x1f%s",
+                    &range,
+                    "--",
+                ],
+            )
+            .ok()?;
+            super::activity::parse_all_log(&text)
+        }
+        _ => Vec::new(),
     };
-    let all_commits = commits_text
-        .as_deref()
-        .map(super::activity::parse_all_log)
-        .unwrap_or_default();
-    let numstat = match first {
+    let numstat = match parents.first() {
         Some(parent) => git_read(
             root,
             &[
@@ -131,7 +193,9 @@ pub(super) fn read_detail(root: &Path, hash: &str) -> Option<LandedDetail> {
                 "--",
             ],
         )
-        .ok(),
+        .ok()?,
+        // A shallow boundary has parents Git cannot see; its stat would be the whole tree.
+        None if shallow => String::new(),
         None => git_read(
             root,
             &[
@@ -144,9 +208,9 @@ pub(super) fn read_detail(root: &Path, hash: &str) -> Option<LandedDetail> {
                 "--",
             ],
         )
-        .ok(),
+        .ok()?,
     };
-    let mut files = numstat.as_deref().map(parse_numstat).unwrap_or_default();
+    let mut files = parse_numstat(&numstat);
     files.sort_by(|a, b| churn(b).cmp(&churn(a)).then_with(|| a.path.cmp(&b.path)));
     Some(LandedDetail {
         hash: hash.to_string(),
@@ -167,10 +231,14 @@ fn is_object_id(text: &str) -> bool {
     (7..=64).contains(&text.len()) && text.chars().all(|c| c.is_ascii_hexdigit())
 }
 
-/// Parses `git log --format=%x1e%H%x1f%P%x1f%ct%x1f%s --shortstat`: each record starts with the
-/// record separator, its fields on the first line and an optional stat line after it.
+/// Parses `git log --format=%x1e%H%x1f%P%x1f%ct%x1f%s --shortstat`: each record starts a line with
+/// the record separator, its fields on that line and an optional stat line after it. A subject never
+/// holds a newline, so a separator inside one cannot start a record.
 pub(crate) fn parse_landed(text: &str) -> Vec<LandedChange> {
-    text.split(RECORD)
+    let record_start = format!("\n{RECORD}");
+    text.strip_prefix(RECORD)
+        .unwrap_or(text)
+        .split(record_start.as_str())
         .filter_map(|record| {
             let (head, rest) = record.split_once('\n').unwrap_or((record, ""));
             let mut fields = head.splitn(4, FIELD);
@@ -191,6 +259,7 @@ pub(crate) fn parse_landed(text: &str) -> Vec<LandedChange> {
                 subject: clean_subject(subject),
                 at: at.parse().ok(),
                 merge: parents.split_whitespace().count() > 1,
+                root: parents.trim().is_empty(),
                 files,
                 insertions,
                 deletions,

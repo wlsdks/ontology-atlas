@@ -23,7 +23,7 @@ import { sessionListLine } from '../model/session-list-line';
 import { useAgentSessions } from '../model/use-agent-sessions';
 import { useWorkStatus } from '../model/use-work-status';
 import { useWorktreeActivity } from '../model/use-worktree-activity';
-import { useLandedChanges } from '../model/use-landed-changes';
+import { landedReadKey, useLandedChanges } from '../model/use-landed-changes';
 import { SessionListControl } from './SessionListControl';
 import { WorkStatusStage } from './WorkStatusStage';
 
@@ -54,7 +54,8 @@ export function WorkStatusPage() {
     [plan],
   );
   const activity = useWorktreeActivity(snapshot?.status === 'ready' ? snapshot.root : null, snapshot?.baseBranch ?? null, roomKeys, runningKeys);
-  const landed = useLandedChanges(snapshot?.status === 'ready' ? snapshot.root : null, snapshot?.baseBranch ?? null, readAtMs, nowMs);
+  const headsKey = useMemo(() => (snapshot?.status === 'ready' ? landedReadKey(snapshot.worktrees) : null), [snapshot]);
+  const landed = useLandedChanges(snapshot?.status === 'ready' ? snapshot.root : null, snapshot?.baseBranch ?? null, headsKey);
   const shownTracks = useMemo(() => (tracks ? withActivity(tracks, activity) : null), [tracks, activity]);
   const sameFolder = tracks ? [...tracks.sessions.flatMap(session => session.tracks), ...tracks.unheld].filter(track => track.running && track.tools.length > 1).length : 0;
   const cleanup = tracks?.stuck.length ?? 0;

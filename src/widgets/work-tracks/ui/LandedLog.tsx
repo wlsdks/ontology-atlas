@@ -4,13 +4,15 @@ import { useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useLocale, useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
-import type { LandedChange } from '@/shared/lib/work-status/tauri-work-status';
+import type { LandedRead } from '@/shared/lib/work-status/tauri-work-status';
 import { MOTION, STAGGER } from '@/shared/motion';
 import { landedDays, landedWithin, readSubject, type LandedDay } from '../model/landed-change';
 import { timeAgo } from '../model/format';
 
 /** Rows that settle in one after another on the first reading; later rows arrive alone. */
 const STAGGERED_ROWS = 12;
+/** As many changes as Rust reads (`LANDED_READ` in `landed.rs`): a list this long may stop mid-day. */
+const LANDED_READ = 30;
 /** A change of this many changed lines fills its bar; the bar grows with the logarithm below it. */
 const FULL_BAR_LINES = 4000;
 
@@ -32,7 +34,7 @@ function ChurnBar({ insertions, deletions }: { insertions: number; deletions: nu
   const total = insertions + deletions;
   const share = barShare(total);
   return (
-    <span aria-hidden className="relative hidden h-1.5 w-16 shrink-0 overflow-hidden rounded-full bg-[color:var(--color-overlay-2)] sm:block">
+    <span aria-hidden className="relative hidden h-1.5 w-16 shrink-0 overflow-hidden rounded-full bg-[color:var(--color-overlay-2)] @sm:block">
       <span className="absolute inset-y-0 left-0 flex overflow-hidden rounded-full" style={{ width: `${share * 100}%` }}>
         <span className="h-full bg-[color:var(--color-text-secondary)]" style={{ width: `${total ? (insertions / total) * 100 : 0}%` }} />
         <span className="h-full flex-1 bg-[color:var(--color-text-quaternary)]" />
@@ -41,7 +43,7 @@ function ChurnBar({ insertions, deletions }: { insertions: number; deletions: nu
   );
 }
 
-function DayHeading({ day, locale }: { day: LandedDay; locale: string }) {
+function DayHeading({ day, locale, partial }: { day: LandedDay; locale: string; partial: boolean }) {
   const t = useTranslations('workStatus.landed');
   const label = day.daysAgo === 0
     ? t('today')
@@ -51,7 +53,7 @@ function DayHeading({ day, locale }: { day: LandedDay; locale: string }) {
   return (
     <div className="flex items-baseline gap-2 pb-2 pl-7">
       <h3 className="text-label leading-label font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)]">{label}</h3>
-      <span className="text-label leading-label tabular-nums text-[color:var(--color-text-quaternary)]">{t('dayCount', { count: day.changes.length })}</span>
+      {partial ? null : <span className="text-label leading-label tabular-nums text-[color:var(--color-text-quaternary)]">{t('dayCount', { count: day.changes.length })}</span>}
     </div>
   );
 }
@@ -61,8 +63,8 @@ function DayHeading({ day, locale }: { day: LandedDay; locale: string }) {
  * ends at: the record of finished work, read from Git, so it stays after its worktree is removed.
  * A row opens the change beside the building; pressing it again closes it.
  */
-export function LandedLog({ changes, baseBranch, nowMs, selectedHash, onSelect, panelId }: {
-  changes: readonly LandedChange[] | null;
+export function LandedLog({ read, baseBranch, nowMs, selectedHash, onSelect, panelId }: {
+  read: LandedRead | null;
   baseBranch: string;
   nowMs: number;
   selectedHash: string | null;
@@ -71,10 +73,14 @@ export function LandedLog({ changes, baseBranch, nowMs, selectedHash, onSelect, 
 }) {
   const t = useTranslations('workStatus.landed');
   const locale = useLocale();
+  const changes = read?.changes ?? null;
   const days = useMemo(() => (changes ? landedDays(changes, nowMs) : []), [changes, nowMs]);
-  if (changes === null) return null;
+  if (read === null || changes === null) return null;
+  // The read stops at `LANDED_READ` changes, so its oldest day may hold more than it shows.
+  const cut = changes.length >= LANDED_READ;
   const today = landedWithin(changes, nowMs, 1);
-  const week = landedWithin(changes, nowMs, 7);
+  const todayWhole = !cut || today < changes.length;
+  const week = read.weekCount;
   let row = 0;
   return (
     <section data-testid="work-landed" aria-labelledby="work-landed-title" className="px-10 pb-12 pt-8">
@@ -85,7 +91,7 @@ export function LandedLog({ changes, baseBranch, nowMs, selectedHash, onSelect, 
           </h2>
           <p className="mt-1 text-body leading-body text-[color:var(--color-text-tertiary)]">{t('note')}</p>
         </div>
-        {changes.length > 0 ? (
+        {changes.length > 0 && todayWhole && week !== null ? (
           <p className="shrink-0 text-body leading-body tabular-nums text-[color:var(--color-text-tertiary)]" data-testid="work-landed-summary">
             {t('summary', { today, week })}
           </p>
@@ -95,13 +101,13 @@ export function LandedLog({ changes, baseBranch, nowMs, selectedHash, onSelect, 
         <p className="mt-6 text-body leading-body text-[color:var(--color-text-tertiary)]">{t('none', { branch: baseBranch })}</p>
       ) : (
         <div className="mt-6 grid gap-x-10 gap-y-6 2xl:grid-cols-2">
-          {days.map(day => (
-            <div key={day.key} className="min-w-0">
-              <DayHeading day={day} locale={locale} />
+          {days.map((day, dayIndex) => (
+            <div key={day.key} className="@container min-w-0">
+              <DayHeading day={day} locale={locale} partial={cut && dayIndex === days.length - 1} />
               <ol className="relative">
                 {/* The base branch's rail runs through the day; each change is a stop on it. */}
                 <i aria-hidden className="absolute bottom-3 left-[0.6875rem] top-3 w-px bg-[color:var(--color-border-strong)]" />
-                <AnimatePresence initial={false}>
+                <AnimatePresence>
                   {day.changes.map(change => {
                     const index = row++;
                     const read = readSubject(change.subject);
@@ -146,13 +152,13 @@ export function LandedLog({ changes, baseBranch, nowMs, selectedHash, onSelect, 
                             {read.title}
                           </span>
                           {read.pullRequest !== null ? (
-                            <span className="hidden shrink-0 font-mono text-label leading-label tabular-nums text-[color:var(--color-text-quaternary)] md:inline">#{read.pullRequest}</span>
+                            <span className="hidden shrink-0 font-mono text-label leading-label tabular-nums text-[color:var(--color-text-quaternary)] @md:inline">#{read.pullRequest}</span>
                           ) : null}
                           {change.files !== null ? (
-                            <span className="hidden shrink-0 text-label leading-label tabular-nums text-[color:var(--color-text-quaternary)] lg:inline">{t('files', { count: change.files })}</span>
+                            <span className="hidden shrink-0 text-label leading-label tabular-nums text-[color:var(--color-text-quaternary)] @lg:inline">{t('files', { count: change.files })}</span>
                           ) : null}
                           <ChurnBar insertions={change.insertions ?? 0} deletions={change.deletions ?? 0} />
-                          <span className="w-16 shrink-0 text-right text-label leading-label tabular-nums text-[color:var(--color-text-quaternary)]">
+                          <span className="min-w-16 shrink-0 whitespace-nowrap text-right text-label leading-label tabular-nums text-[color:var(--color-text-quaternary)]">
                             {change.at === null ? '' : day.daysAgo === 0 ? timeAgo(change.at, nowMs, locale) : hourOf(change.at * 1000, locale)}
                           </span>
                           <span className="sr-only">{lines > 0 ? t('linesSr', { insertions: change.insertions ?? 0, deletions: change.deletions ?? 0 }) : ''}</span>

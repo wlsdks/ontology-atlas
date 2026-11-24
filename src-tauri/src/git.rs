@@ -18,4 +18,4 @@ pub(crate) mod status;
 mod test_support;
 
 pub(crate) use repo::find_repo_root;
-pub(crate) use runner::{hardened_base_command, validate_vault_dir};
+pub(crate) use runner::{hardened_base_command, validate_vault_dir, with_diff_family_guard};

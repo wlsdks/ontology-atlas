@@ -315,8 +315,11 @@ conventional prefix, its title, its pull request number, how many files it
 changed, a bar as long as the logarithm of its changed lines, and when it
 landed. Worktrees are removed once their work lands, but the work stays on
 this line, so the list is read from Git (`work_status_landed`, one `git log`)
-and Atlas stores nothing of its own. It is read again after each worktree
-reread and once a minute. Pressing a change opens it beside the building in
+and Atlas stores nothing of its own. It is read again only when a worktree's
+head or standing changes, since the base branch moves only with them. The
+heading counts today's changes and the last seven days' (one `git rev-list
+--count`, so the week may hold more than the thirty listed); a day the list
+stops in shows no count. Pressing a change opens it beside the building in
 place of the room panel: its numbers, the branch's own commits a merge brought
 (`work_status_landed_detail`, merges left out) and its files, most changed
 first, with **Copy commit hash**.

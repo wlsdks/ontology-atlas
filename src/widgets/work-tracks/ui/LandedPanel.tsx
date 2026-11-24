@@ -15,9 +15,11 @@ import { PanelSection, PanelStats } from './panel-parts';
  * One finished change beside the building: what it was, how much it moved, the branch commits it
  * brought and the files it changed. Its detail is read once per change, when it opens.
  */
-export function LandedPanel({ change, root, nowMs, id, onClose }: {
+export function LandedPanel({ change, root, nowMs, id, onClose, replaced = false }: {
   /** The pressed change, or none: the panel leaves with its last change still drawn. */
   change: LandedChange | null;
+  /** Another panel takes this one's place: it goes at once, so the building never makes room for two. */
+  replaced?: boolean;
   root: string;
   nowMs: number;
   id: string;
@@ -25,6 +27,7 @@ export function LandedPanel({ change, root, nowMs, id, onClose }: {
 }) {
   const [drawn, setDrawn] = useState(change);
   if (change !== null && change !== drawn) setDrawn(change);
+  if (replaced && change === null) return null;
   return (
     <Surface
       open={change !== null}
