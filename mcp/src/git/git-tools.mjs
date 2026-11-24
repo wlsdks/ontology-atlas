@@ -243,7 +243,14 @@ function snapshotBlockedReasons(status) {
 }
 
 function git(cwd, args, { allowFailure = false } = {}) {
-  const result = spawnSync('git', hardenedGitArgv(cwd, args), {
+  let argv;
+  try {
+    argv = hardenedGitArgv(cwd, args);
+  } catch (error) {
+    if (allowFailure) return { ok: false, stdout: '', stderr: error.message };
+    throw error;
+  }
+  const result = spawnSync('git', argv, {
     encoding: 'utf8',
     env: gitEnv(),
     maxBuffer: MAX_GIT_OUTPUT,
@@ -274,7 +281,13 @@ function gitBatchBlobs(cwd, objectSpecs, reduce) {
 function gitBatchBlobChunk(cwd, objectSpecs) {
   if (objectSpecs.length === 0) return [];
   if (objectSpecs.some((spec) => /[\r\n]/.test(spec))) return null;
-  const result = spawnSync('git', hardenedGitArgv(cwd, ['cat-file', '--batch']), {
+  let argv;
+  try {
+    argv = hardenedGitArgv(cwd, ['cat-file', '--batch']);
+  } catch {
+    return null;
+  }
+  const result = spawnSync('git', argv, {
     encoding: null,
     env: gitEnv(),
     input: Buffer.from(`${objectSpecs.join('\n')}\n`, 'utf8'),
