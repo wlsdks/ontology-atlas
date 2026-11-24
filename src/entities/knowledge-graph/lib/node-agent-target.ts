@@ -6,7 +6,7 @@ import type { KnowledgeGraphNode } from "../model/knowledge-graph";
  */
 export interface NodeAgentTarget {
   ref: string | null;
-  /** When false, `add_concept` must create the document first. */
+  /** When false, `add_concepts` must create the document first. */
   documented: boolean;
 }
 

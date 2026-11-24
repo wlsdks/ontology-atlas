@@ -107,12 +107,12 @@ Codex는 그 폴더를 신뢰한다고 표시해야 프로젝트의 `.codex/conf
 
 정확한 목록은 서버가 내놓는 도구 목록을 보세요. 도구는 크게 몇 묶음으로 나뉘어요.
 
-- **작업 전에 읽기:** `get_concept`은 개념과 그 이웃을 돌려주고,
-  `find_backlinks`는 그 개념을 가리키는 개념을, `find_path`는 두 개념이 어떻게
-  이어지는지 보여 줘요. `query_ontology`는 워크스페이스 개요나 변경의 영향 같은
-  질문에 답해요.
-- **코드 읽기:** `analyze_repo_structure`, `index_project`, `infer_imports`는
-  아무것도 쓰지 않고 저장소를 훑어봐요.
+- **작업 전에 읽기:** `get_concepts`는 개념과 그 이웃을 돌려주고,
+  `find_backlinks`는 그 개념을 가리키는 개념을 보여 줘요. `query_ontology`는
+  두 개념이 어떻게 이어지는지(`path`) 보여 주고, 워크스페이스 개요나 변경의
+  영향 같은 질문에 답해요.
+- **코드 읽기:** `analyze_repo_structure`, `infer_imports`는 아무것도 쓰지
+  않고 저장소를 훑어봐요.
 - **쓰기:** `add_concepts`, `add_relations`, `patch_concept`, `rename_concept`,
   `merge_concepts`, `delete_concept` 등이 있어요. 이름 바꾸기, 합치기, 삭제,
   관계 제거는 먼저 변경 내용을 미리 보여 주고, 확인 값을 넣어 다시 호출해야

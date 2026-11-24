@@ -137,7 +137,7 @@ export function buildDogfoodRequests(targets) {
   return [
     ...init,
     { jsonrpc: "2.0", id: 55, method: "tools/list", params: {} },
-    call(2, "list_kinds"),
+    call(2, "list_concepts", { limit: 1 }),
     call(3, "list_concepts", { limit: 30 }),
     call(48, "list_concepts", { kind: "project", limit: 1 }),
     call(16, "get_concepts", {
@@ -147,10 +147,6 @@ export function buildDogfoodRequests(targets) {
       slugs: Array.from({ length: 51 }, (_, index) => `dogfood-slug-${index}`),
     }),
     call(4, "find_evidence", { title: "vault" }),
-    call(5, "find_path", {
-      from: capabilitySlug,
-      to: pathTargetSlug,
-    }),
     call(6, "find_backlinks", { slug: capabilitySlug }),
     call(7, "find_orphans", {}),
     call(56, "query_concepts", { filter: `kind=capability AND domain=${domainSlug}`, limit: 5 }),
@@ -338,11 +334,6 @@ export function buildDogfoodRequests(targets) {
       to: "missing-relation-check-target",
       type: "depend_on",
     }),
-    call(70, "add_relation", {
-      from: "missing-add-relation-source",
-      to: "missing-add-relation-target",
-      type: "depend_on",
-    }),
     call(67, "query_ontology", {
       operation: "match_nodes",
       kind: "capabilty",
@@ -362,10 +353,6 @@ export function buildDogfoodRequests(targets) {
     call(74, "query_ontology", {
       operation: "match_edges",
       type: "depend_on",
-    }),
-    call(75, "find_neighbors", {
-      slug: "missing-find-neighbors-type-source",
-      types: ["depend_on"],
     }),
     call(76, "find_orphans", {
       kind: "capabilty",

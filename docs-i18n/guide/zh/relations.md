@@ -1,6 +1,6 @@
 # 概念之间的关系
 
-关系是本体知识图谱中带类型的边：“这项能力依赖那项能力”“这个元素属于那项能力”。在 Atlas 中，每条关系都是某个概念 frontmatter 里的一个条目。本章列出各种关系类型，演示如何编写它们，并说明地图和编码智能体调用的 MCP 工具（例如 `find_path` 和 `find_backlinks`）怎样读取它们。
+关系是本体知识图谱中带类型的边：“这项能力依赖那项能力”“这个元素属于那项能力”。在 Atlas 中，每条关系都是某个概念 frontmatter 里的一个条目。本章列出各种关系类型，演示如何编写它们，并说明地图和编码智能体调用的 MCP 工具（例如 `query_ontology` 和 `find_backlinks`）怎样读取它们。
 
 ## 结构与含义
 
@@ -63,12 +63,12 @@ Atlas 写入关系列表时，会去掉多余空白、去重并排序，所以�
 MCP 服务器根据同一批 frontmatter 回答关于图的问题，所以你的智能体不必逐个读取文件：
 
 - `find_backlinks` 列出通过任意关系键或正文中的链接指向某个 slug 的所有概念。在重命名或删除之前调用它。
-- `find_path` 返回两个概念之间的最短路径。每一跳都会注明连接它的键（`via`），如果记录了理由，还会给出理由（`rationale`）。
-- `find_neighbors` 返回一个概念周围一跳范围内的概念，可按方向和类型过滤。
+- `query_ontology` 配合 `path`，返回两个概念之间的最短路径。每一跳都会注明连接它的键（`via`），如果记录了理由，还会给出理由（`rationale`）。
+- `query_ontology` 配合 `neighbors`，返回一个概念周围一跳范围内的概念，可按方向和类型过滤。
 - `query_ontology` 配合 `impact` 或 `blast_radius`，回答“如果这里变了，会影响什么？”。它只沿着声明过的 `depends_on` 关系查找；结构关系不算影响。
 - `query_ontology` 配合 `domain_matrix`，统计领域之间的关系数量。限定为 `depends_on` 时，得出的数字与地图上弧线所画的相同。
 
-写入时，`add_relation` 接收 `from`、`to`、一个 `type`（`depends_on`、`relates`、`contains`、`describes`、`domains`、`capabilities`、`elements` 或 `domain`）以及一个 `why`。`remove_relation` 和 `replace_relation` 默认只做预览，只有带上 `confirm: true` 时才会写入。`broader` 目前还不是 `add_relation` 支持的类型：智能体需要用 `patch_concept` 修改它，传入完整的新列表和文件的 `mtime`，然后运行 `validate_vault`。
+写入时，`add_relations` 接收一组关系，每条关系包含 `from`、`to`、一个 `type`（`depends_on`、`relates`、`contains`、`describes`、`domains`、`capabilities`、`elements` 或 `domain`）以及一个 `why`。`remove_relation` 和 `replace_relation` 默认只做预览，只有带上 `confirm: true` 时才会写入。`broader` 目前还不是 `add_relations` 支持的类型：智能体需要用 `patch_concept` 修改它，传入完整的新列表和文件的 `mtime`，然后运行 `validate_vault`。
 
 在地图上，**编辑关系** 每次写入一条关系，执行的检查与 MCP 工具相同；见 [编辑概念和关系](/guide/studio)。
 

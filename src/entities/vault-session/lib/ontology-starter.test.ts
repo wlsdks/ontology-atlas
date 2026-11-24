@@ -70,7 +70,7 @@ describe("ONTOLOGY_STARTER_FILES", () => {
       expect(
         markdownBlocks.filter((value) => /^\s*kind:\s*\S+/m.test(value)),
       ).toHaveLength(0);
-      expect(readme).toContain("add_concept");
+      expect(readme).toContain("add_concepts");
       expect(project).not.toMatch(/rename or copy starters|바꾸거나\s+복사합니다/i);
     }
   });
@@ -129,7 +129,7 @@ describe("ONTOLOGY_STARTER_FILES", () => {
 
       expect(readme).toContain("tools/list");
       expect(readme).toContain("connection_info");
-      expect(readme).toContain("list_kinds");
+      expect(readme).toContain("list_concepts");
       expect(readme).toContain("validate_vault");
       expect(readme).toContain('operation: "agent_brief"');
       expect(readme).not.toMatch(/\b\d+\s+(?:read|write|tools?)\b/i);

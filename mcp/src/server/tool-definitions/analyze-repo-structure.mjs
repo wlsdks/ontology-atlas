@@ -11,7 +11,7 @@ export const ANALYZE_REPO_STRUCTURE_TOOL = {
   name: 'analyze_repo_structure',
   description:
     'Survey a code repository before mapping it; call it first when someone asks "이 codebase 분석해줘" or to ' +
-    'map or bootstrap the ontology. Read-only; nothing is written.\n' +
+    'map or bootstrap the ontology. Read-only; nothing is written. With infer_imports and validate_vault it replaces index_project.\n' +
     'With no proposal it returns the breadth map as text rows: product size apart from tests, generated, vendored, ' +
     'docs and tooling files; every product unit (package, workspace member or module folder) with its files, lines, ' +
     'main files, exported names and import links (a repository too large for one map lists areas, to map one at a ' +

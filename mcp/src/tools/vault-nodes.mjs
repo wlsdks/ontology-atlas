@@ -70,7 +70,7 @@ function docNotFoundError(slug, docs) {
     missingSubject: 'Doc not found',
     missingSlug: slug,
     recoveryTools: ['list_concepts', 'find_evidence'],
-    createTool: 'add_concept',
+    createTool: 'add_concepts',
     similarSlugs: candidateSlugs,
     ...(referencedBy.length > 0 ? { referencedBy } : {}),
   };
@@ -216,7 +216,7 @@ function missingSlugMessage(prefix, slug, { createHint = false } = {}) {
     `${prefix}: "${slug}". Use list_concepts() to see all slugs, or find_evidence({title:"${slug}"}) to search by title.`,
   ];
   if (createHint) {
-    lines.push('If the endpoint is real but absent, create it first with add_concept(slug, kind, title).');
+    lines.push('If the endpoint is real but absent, create it first with add_concepts({concepts:[{slug, kind, title}]}).');
   }
   if (suggestions.length > 0) {
     lines.push(`Similar slugs in this vault: ${suggestions.map((s) => `"${s}"`).join(', ')}.`);

@@ -134,6 +134,18 @@ function frontmatterRefs(doc: VaultReadDoc): Array<{ key: string; ref: string }>
   return refs;
 }
 
+/** Whole-vault kind counts, the same shape MCP's `list_concepts` returns as `census`. */
+function vaultCensus(nodes: readonly KnowledgeGraphNode[]) {
+  const byKind: Record<string, number> = {};
+  let referencedOnlyTotal = 0;
+  for (const node of nodes) {
+    if (resolveNodeAgentTarget(node).documented) byKind[node.kind] = (byKind[node.kind] ?? 0) + 1;
+    else referencedOnlyTotal += 1;
+  }
+  const total = Object.values(byKind).reduce((sum, count) => sum + count, 0);
+  return { total, byKind, referencedOnlyTotal };
+}
+
 function nodeRow(node: KnowledgeGraphNode) {
   const target = resolveNodeAgentTarget(node);
   return {
@@ -373,23 +385,13 @@ export function createToolExecutor(port: VaultReadPort) {
       }
 
       case 'list_kinds': {
-        const byKind: Record<string, number> = {};
-        let referencedOnly = 0;
-        for (const node of port.nodes) {
-          if (resolveNodeAgentTarget(node).documented) {
-            byKind[node.kind] = (byKind[node.kind] ?? 0) + 1;
-          } else {
-            referencedOnly += 1;
-          }
-        }
-        const documentTotal = Object.values(byKind).reduce((sum, n) => sum + n, 0);
-    // Field names match MCP's `list_kinds` (a contract test compares them); both counts are stated
-    // so the screen and the agent believe one number.
+        const census = vaultCensus(port.nodes);
+        const documentTotal = census.total;
+        // Field names match MCP's `list_kinds` (a contract test compares them); both counts are stated
+        // so the screen and the agent believe one number.
         const packed = pack({
-          total: documentTotal,
-          byKind,
-          referencedOnlyTotal: referencedOnly,
-          conceptsIncludingReferenced: documentTotal + referencedOnly,
+          ...census,
+          conceptsIncludingReferenced: documentTotal + census.referencedOnlyTotal,
         });
         return {
           content: packed.content,
@@ -445,6 +447,7 @@ export function createToolExecutor(port: VaultReadPort) {
             nextOffset: hasMore ? offset + rows.length : null,
           },
           vaultDocumentTotal: port.docs.length,
+          census: vaultCensus(port.nodes),
         });
         return {
           content: packed.content,

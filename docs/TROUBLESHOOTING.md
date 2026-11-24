@@ -102,7 +102,7 @@ there are no preconfigured Codex MCP servers, then runs the setup from scratch.
 - Readable and writable by the user running the agent.
 - A directory (not a file).
 
-### Agent reads but can't write (`add_concept` fails)
+### Agent reads but can't write (`add_concepts` fails)
 
 Check the directory's write permission with `ls -ld $OATLAS_VAULT`. The agent runs under your shell user; if a parent dir is read-only, writes fail.
 

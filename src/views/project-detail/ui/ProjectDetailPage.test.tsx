@@ -135,7 +135,7 @@ describe("ProjectDetailPage", () => {
     fireEvent.click(within(dialog).getByTestId("project-detail-brief-ask-open"));
     expect(start).toHaveBeenCalledTimes(1);
     const seated = start.mock.calls[0][0] as string;
-    expect(seated).toContain(`get_concept("${SLUG}"`);
+    expect(seated).toContain(`get_concepts(slugs: ["${SLUG}"]`);
     expect(seated).toContain("patch_concept");
     expect(screen.getByTestId("project-agent-dock-frame")).toHaveAttribute("data-dock-state", "empty");
   });
@@ -362,7 +362,7 @@ describe("ProjectDetailPage", () => {
     fireEvent.click(screen.getByTestId("project-detail-handoff-preview"));
     const dialog = await screen.findByRole("dialog");
     expect(
-      within(dialog).getByText((_, element) => element?.tagName === "PRE" && element.textContent!.includes(`get_concept("${SLUG}")`)),
+      within(dialog).getByText((_, element) => element?.tagName === "PRE" && element.textContent!.includes(`get_concepts({slugs:["${SLUG}"]})`)),
     ).toBeInTheDocument();
   });
 
@@ -527,7 +527,7 @@ describe("ProjectDetailPage", () => {
     const dialog = await screen.findByRole("dialog");
     expect(dialog).toHaveTextContent("This overview is not laid out yet");
     const preview = dialog.querySelector("pre")?.textContent ?? "";
-    expect(preview).toContain(`get_concept("${SLUG}"`);
+    expect(preview).toContain(`get_concepts(slugs: ["${SLUG}"]`);
     expect(preview).toContain("docs/ontology/project.md");
     expect(preview).toContain("expected_mtime");
     expect(preview).toContain("patch_concept");

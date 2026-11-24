@@ -221,11 +221,11 @@ test('no prepared node tells the agent what to read first', () => {
 test('transcript call counts separate completed, failed and shell calls', () => {
   const transcript = [
     'exec',
-    'mcp: ontology-atlas/get_concept (completed)',
-    'mcp: ontology-atlas/find_path (completed)',
-    'mcp: ontology-atlas/add_concept (failed)',
+    'mcp: ontology-atlas/get_concepts (completed)',
+    'mcp: ontology-atlas/query_ontology (completed)',
+    'mcp: ontology-atlas/add_concepts (failed)',
     'mcp: ontology-atlas/validate_vault (error)',
-    'mcp: other-server/get_concept (completed)',
+    'mcp: other-server/get_concepts (completed)',
     'exec',
     '  exec',
   ].join('\n');

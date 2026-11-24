@@ -7,7 +7,7 @@ area: product
 
 # Relations between concepts
 
-Relations are the typed edges of the ontology's knowledge graph: "this capability depends on that one", "this element belongs to that capability". In Atlas, each relation is one entry in a concept's frontmatter. Below are the relation types, how to write them, and how the map and your coding agent's MCP tools (such as `find_path` and `find_backlinks`) read them.
+Relations are the typed edges of the ontology's knowledge graph: "this capability depends on that one", "this element belongs to that capability". In Atlas, each relation is one entry in a concept's frontmatter. Below are the relation types, how to write them, and how the map and your coding agent's MCP tools (such as `query_ontology` and `find_backlinks`) read them.
 
 ## Structure and meaning
 
@@ -70,12 +70,12 @@ See [Reading the map](/guide/reading-the-map) for the full line key.
 The MCP server answers graph questions from the same frontmatter, so your agent does not have to read every file.
 
 - `find_backlinks` lists every concept that points to a slug, through any relation key or a link in a body. Call it before a rename or a delete.
-- `find_path` returns the shortest path between two concepts. Each hop names the key that links it (`via`) and, when one is recorded, the reason (`rationale`).
-- `find_neighbors` returns one hop around a concept, filtered by direction and type.
+- `query_ontology` with `path` returns the shortest path between two concepts. Each hop names the key that links it (`via`) and, when one is recorded, the reason (`rationale`).
+- `query_ontology` with `neighbors` returns one hop around a concept, filtered by direction and type.
 - `query_ontology` with `impact` or `blast_radius` answers "what is affected if this changes?" It follows declared `depends_on` relations only; structure is not impact.
 - `query_ontology` with `domain_matrix` counts the relations between domains. Limited to `depends_on`, it gives the same numbers as the map's arcs.
 
-To write, `add_relation` takes `from`, `to`, a `type` (`depends_on`, `relates`, `contains`, `describes`, `domains`, `capabilities`, `elements` or `domain`) and a `why`. `remove_relation` and `replace_relation` preview by default and write only with `confirm: true`. `broader` is not one of the `add_relation` types yet. To change it, an agent calls `patch_concept` with the full new list and the file's `mtime`, then runs `validate_vault`.
+To write, `add_relations` takes a list of relations, each with `from`, `to`, a `type` (`depends_on`, `relates`, `contains`, `describes`, `domains`, `capabilities`, `elements` or `domain`) and a `why`. `remove_relation` and `replace_relation` preview by default and write only with `confirm: true`. `broader` is not one of the `add_relations` types yet. To change it, an agent calls `patch_concept` with the full new list and the file's `mtime`, then runs `validate_vault`.
 
 On the map, **Edit relations** writes one relation at a time, with the same checks as the MCP tools; see [Editing concepts and relations](/guide/studio).
 

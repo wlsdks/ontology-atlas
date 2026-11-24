@@ -77,29 +77,6 @@ export function buildGraphQuerySmokeRequests(graphSmoke) {
   return { requests, expectedResponseIds };
 }
 
-export function buildDirectGraphReadSmokeRequests(graphSmoke) {
-  const requests = [];
-  const expectedResponseIds = [];
-  if (graphSmoke?.hasNode) {
-    requests.push(
-      {
-        jsonrpc: '2.0',
-        id: 35,
-        method: 'tools/call',
-        params: { name: 'find_neighbors', arguments: { slug: graphSmoke.slug, limit: 5 } },
-      },
-      {
-        jsonrpc: '2.0',
-        id: 36,
-        method: 'tools/call',
-        params: { name: 'find_path', arguments: { from: graphSmoke.slug, to: graphSmoke.pathTarget || graphSmoke.slug } },
-      },
-    );
-    expectedResponseIds.push(35, 36);
-  }
-  return { requests, expectedResponseIds };
-}
-
 export function buildLimitedQueryConceptsSmokeRequest(listPayload) {
   const nodes = Array.isArray(listPayload?.nodes) ? listPayload.nodes : [];
   const slug = nodes.find((node) => typeof node?.slug === 'string' && node.slug.length > 0)?.slug;

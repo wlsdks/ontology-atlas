@@ -35,7 +35,7 @@ export class VaultConflictError extends Error {
         // Name only a recovery that works: seven of the eight write tools that raise
         // this do not accept `force`, and delete_concept's `force` means "despite
         // backlinks", not "ignore mtime".
-        `Re-read the doc with get_concept to get the current expected_mtime, then retry the write.`,
+        `Re-read the doc with get_concepts to get the current expected_mtime, then retry the write.`,
     );
     this.name = 'VaultConflictError';
     this.code = 'VAULT_CONFLICT';

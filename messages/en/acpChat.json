@@ -367,7 +367,7 @@
     "build": {
       "label": "Build the first map",
       "because": "{count, plural, =0 {Nothing is on the map yet} one {Only # starter concept is on the map} other {Only the # starter concepts are on the map}}",
-      "prompt": "Build the first map of this folder from the connected code. Start with connection_info and list_kinds, then read the source and add the domains, capabilities and elements it shows, each with a definition sentence, its code location and its relations, each relation with a why. Look for an existing concept before adding a near-twin. Then run validate_vault and tell me what you added, what you connected and what you could not read."
+      "prompt": "Build the first map of this folder from the connected code. Start with connection_info and the census list_concepts returns with limit 1, then read the source and add the domains, capabilities and elements it shows, each with a definition sentence, its code location and its relations, each relation with a why. Look for an existing concept before adding a near-twin. Then run validate_vault and tell me what you added, what you connected and what you could not read."
     },
     "mapArea": {
       "line": "Map the rest of the code · request {part, number}",
@@ -406,12 +406,12 @@
     "explainSubject": {
       "label": "Explain what “{subject}” does from its record and relations",
       "because": "Reads its record and relations and changes nothing",
-      "prompt": "Read the concept {slug} with get_concept and find_neighbors, then explain what it does, what it belongs to and what it relies on. Use only what the folder records; where the record is silent, say so rather than guessing."
+      "prompt": "Read the concept {slug} with get_concepts and query_ontology's neighbors operation, then explain what it does, what it belongs to and what it relies on. Use only what the folder records; where the record is silent, say so rather than guessing."
     },
     "subjectImpact": {
       "label": "Find what a change to “{subject}” would reach",
       "because": "Follows its links and changes nothing",
-      "prompt": "Starting from the concept {slug}, use find_backlinks and find_neighbors to list the concepts a change to it would reach, each with the relation that carries it. Write nothing; end with the one place you would check first and why."
+      "prompt": "Starting from the concept {slug}, use find_backlinks and query_ontology's neighbors operation to list the concepts a change to it would reach, each with the relation that carries it. Write nothing; end with the one place you would check first and why."
     }
   },
   "modeName": {

@@ -109,9 +109,9 @@ without opening every file.
 
 | 任务前后智能体会问 | 工具 |
 |---|---|
-| 这部分是做什么的，不负责什么？ | `get_concept` |
+| 这部分是做什么的，不负责什么？ | `get_concepts` |
 | 改名或删除之前，有哪些地方指向它？ | `find_backlinks` |
-| 这两个概念是怎么连起来的？ | `find_path` |
+| 这两个概念是怎么连起来的？ | `query_ontology` 的 `path` |
 | 这次改动可能影响什么？ | `query_ontology` 的 `impact` |
 | 这件事写在哪里？ | `find_evidence` |
 | 记录刚刚新建或修改的内容 | `add_concepts`、`add_relations`、`patch_concept` |

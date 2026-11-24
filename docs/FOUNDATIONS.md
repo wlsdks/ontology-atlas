@@ -235,7 +235,7 @@ edges is well-established academic and industrial prior art.
   representation (markdown frontmatter; slug-keyed nodes) over an opaque binary index.
 - **CodeQL (GitHub/Semmle)** — "**treat code as data**": extract a relational DB of facts, query it to
   find patterns/variants. → The mainstream embodiment of "**query your codebase like a database**" —
-  precisely what we offer an agent via focused MCP graph queries (`find_path`, `find_backlinks`, …)
+  precisely what we offer an agent via focused MCP graph queries (`query_ontology`, `find_backlinks`, …)
   instead of
   re-reading files.
 - **tree-sitter (Brunsfeld et al.)** — incremental parsing → concrete syntax trees with an

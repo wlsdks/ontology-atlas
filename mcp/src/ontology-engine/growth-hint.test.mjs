@@ -10,7 +10,7 @@ import {
 } from './growth-hint.mjs';
 
 
-test('buildFindPathGrowthHint — both endpoints exist, no path → suggests add_relation', () => {
+test('buildFindPathGrowthHint — both endpoints exist, no path → suggests add_relations', () => {
   const hint = buildFindPathGrowthHint({
     from: 'capabilities/login',
     to: 'elements/token',
@@ -21,12 +21,12 @@ test('buildFindPathGrowthHint — both endpoints exist, no path → suggests add
   assert.match(hint.reason, /capabilities\/login/);
   assert.match(hint.reason, /elements\/token/);
   assert.deepEqual(hint.exampleCall, {
-    tool: 'add_relation',
-    args: { from: 'capabilities/login', to: 'elements/token', type: 'relates' },
+    tool: 'add_relations',
+    args: { relations: [{ from: 'capabilities/login', to: 'elements/token', type: 'relates' }] },
   });
 });
 
-test('buildFindPathGrowthHint — from missing → suggests add_concept for from', () => {
+test('buildFindPathGrowthHint — from missing → suggests add_concepts for from', () => {
   const hint = buildFindPathGrowthHint({
     from: 'ghost-node',
     to: 'elements/token',
@@ -34,20 +34,20 @@ test('buildFindPathGrowthHint — from missing → suggests add_concept for from
     toExists: true,
   });
   assert.match(hint.reason, /"ghost-node" does not resolve/);
-  assert.equal(hint.exampleCall.tool, 'add_concept');
-  assert.equal(hint.exampleCall.args.slug, 'ghost-node');
-  assert.equal(hint.exampleCall.args.title, 'Ghost Node');
+  assert.equal(hint.exampleCall.tool, 'add_concepts');
+  assert.equal(hint.exampleCall.args.concepts[0].slug, 'ghost-node');
+  assert.equal(hint.exampleCall.args.concepts[0].title, 'Ghost Node');
 });
 
-test('buildFindPathGrowthHint — to missing → suggests add_concept for to', () => {
+test('buildFindPathGrowthHint — to missing → suggests add_concepts for to', () => {
   const hint = buildFindPathGrowthHint({
     from: 'capabilities/login',
     to: 'elements/ghost',
     fromExists: true,
     toExists: false,
   });
-  assert.equal(hint.exampleCall.args.slug, 'elements/ghost');
-  assert.equal(hint.exampleCall.args.title, 'Ghost');
+  assert.equal(hint.exampleCall.args.concepts[0].slug, 'elements/ghost');
+  assert.equal(hint.exampleCall.args.concepts[0].title, 'Ghost');
 });
 
 test('buildFindPathGrowthHint — both missing → mentions neither and picks from first', () => {
@@ -58,11 +58,11 @@ test('buildFindPathGrowthHint — both missing → mentions neither and picks fr
     toExists: false,
   });
   assert.match(hint.reason, /Neither "ghost-a" nor "ghost-b"/);
-  assert.equal(hint.exampleCall.args.slug, 'ghost-a');
+  assert.equal(hint.exampleCall.args.concepts[0].slug, 'ghost-a');
 });
 
 
-test('buildSlugNotFoundGrowthHint — with candidates → did-you-mean, exampleCall retries get_concept', () => {
+test('buildSlugNotFoundGrowthHint — with candidates → did-you-mean, exampleCall retries get_concepts', () => {
   const hint = buildSlugNotFoundGrowthHint({
     slug: 'capabilties/login',
     candidateSlugs: ['capabilities/login', 'capabilities/logout'],
@@ -71,17 +71,17 @@ test('buildSlugNotFoundGrowthHint — with candidates → did-you-mean, exampleC
   assert.match(hint.suggestion, /capabilities\/login/);
   assert.match(hint.suggestion, /capabilities\/logout/);
   assert.deepEqual(hint.exampleCall, {
-    tool: 'get_concept',
-    args: { slug: 'capabilities/login' },
+    tool: 'get_concepts',
+    args: { slugs: ['capabilities/login'] },
   });
 });
 
-test('buildSlugNotFoundGrowthHint — no candidates → add_concept scaffold', () => {
+test('buildSlugNotFoundGrowthHint — no candidates → add_concepts scaffold', () => {
   const hint = buildSlugNotFoundGrowthHint({ slug: 'elements/brand-new-thing', candidateSlugs: [] });
   assert.match(hint.reason, /no similarly-named node exists/);
   assert.deepEqual(hint.exampleCall, {
-    tool: 'add_concept',
-    args: { slug: 'elements/brand-new-thing', kind: 'element', title: 'Brand New Thing' },
+    tool: 'add_concepts',
+    args: { concepts: [{ slug: 'elements/brand-new-thing', kind: 'element', title: 'Brand New Thing' }] },
   });
 });
 
@@ -93,7 +93,7 @@ test('buildQueryConceptsZeroRowsGrowthHint — filter references a kind absent f
     byDomain: { auth: 3 },
   });
   assert.match(hint.reason, /kind="widget" has 0 nodes in this vault/);
-  assert.deepEqual(hint.exampleCall, { tool: 'list_kinds', args: {} });
+  assert.deepEqual(hint.exampleCall, { tool: 'list_concepts', args: { limit: 1 } });
 });
 
 test('buildQueryConceptsZeroRowsGrowthHint — filter references a domain absent from vault census', () => {
@@ -155,17 +155,17 @@ test('buildFindEvidenceZeroHitsGrowthHint — with near matches suggests checkin
   assert.match(hint.reason, /No vault doc mentions "Token Issuance"/);
   assert.match(hint.suggestion, /Token Issue \(capabilities\/token-issue\)/);
   assert.deepEqual(hint.exampleCall, {
-    tool: 'get_concept',
-    args: { slug: 'capabilities/token-issue' },
+    tool: 'get_concepts',
+    args: { slugs: ['capabilities/token-issue'] },
   });
 });
 
-test('buildFindEvidenceZeroHitsGrowthHint — no near matches → add_concept scaffold with slugified title', () => {
+test('buildFindEvidenceZeroHitsGrowthHint — no near matches → add_concepts scaffold with slugified title', () => {
   const hint = buildFindEvidenceZeroHitsGrowthHint({ title: 'Brand New Concept', nearMatches: [] });
   assert.match(hint.reason, /no similarly-titled node exists/);
   assert.deepEqual(hint.exampleCall, {
-    tool: 'add_concept',
-    args: { slug: 'brand-new-concept', kind: 'element', title: 'Brand New Concept' },
+    tool: 'add_concepts',
+    args: { concepts: [{ slug: 'brand-new-concept', kind: 'element', title: 'Brand New Concept' }] },
   });
 });
 
@@ -174,18 +174,18 @@ test('a Hangul title does not collapse to untitled', () => {
   const hint = buildFindEvidenceZeroHitsGrowthHint({ title: '인증 도메인' });
   // Replacing `[^a-z0-9]` erased Korean, so every Korean concept collided on
   // 'untitled' (`init --locale=ko` is supported).
-  assert.notEqual(hint.exampleCall.args.slug, 'untitled');
-  assert.equal(hint.exampleCall.args.slug, '인증-도메인');
+  assert.notEqual(hint.exampleCall.args.concepts[0].slug, 'untitled');
+  assert.equal(hint.exampleCall.args.concepts[0].slug, '인증-도메인');
 });
 
 test('English titles behave as before', () => {
   const hint = buildFindEvidenceZeroHitsGrowthHint({ title: 'Payment Billing' });
-  assert.equal(hint.exampleCall.args.slug, 'payment-billing');
+  assert.equal(hint.exampleCall.args.concepts[0].slug, 'payment-billing');
 });
 
 test('still falls back to untitled when no slug character remains', () => {
   const hint = buildFindEvidenceZeroHitsGrowthHint({ title: '!!! ???' });
-  assert.equal(hint.exampleCall.args.slug, 'untitled');
+  assert.equal(hint.exampleCall.args.concepts[0].slug, 'untitled');
 });
 
 test('zero-row census treats inherited dictionary names as absent', () => {

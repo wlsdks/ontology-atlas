@@ -5,6 +5,8 @@ import { describe, expect, it } from 'vitest';
 
 import { STANDING_APPROVAL_ATLAS_WRITES, standingApproval } from '@/features/acp-session/model/permissions/standing-approval';
 
+import { READ_TOOL_NAMES, RETIRED_TOOL_REPLACEMENTS } from '../../../mcp/src/server/registry.mjs';
+
 /**
  * Auto-approve may answer only additive or rewording Atlas writes. The server's generated tool
  * surface is the authority for what is a write; the ask list is the auto-approve decision's.
@@ -24,7 +26,12 @@ const ROOT = join(import.meta.dirname, '..', '..', '..');
 const surface = JSON.parse(readFileSync(join(ROOT, 'docs/.generated/mcp-surface.json'), 'utf8')) as {
   mcp: { tools: Array<{ name: string; mode: 'read' | 'write' }> };
 };
-const serverWrites = surface.mcp.tools.filter((tool) => tool.mode === 'write').map((tool) => tool.name);
+// A retired write is out of tools/list but still answered, so an approval naming it stays valid.
+const retiredWrites = [...RETIRED_TOOL_REPLACEMENTS.keys()].filter((name) => !READ_TOOL_NAMES.has(name));
+const serverWrites = [
+  ...surface.mcp.tools.filter((tool) => tool.mode === 'write').map((tool) => tool.name),
+  ...retiredWrites,
+];
 
 describe('auto-approve scope against the Atlas server surface', () => {
   it('names only tools the server registers as writes', () => {

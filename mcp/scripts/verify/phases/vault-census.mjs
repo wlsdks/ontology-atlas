@@ -1,7 +1,7 @@
 import { structuredContentFailure } from '../checks/structured-content.mjs';
 import {
   findOrphansFailure,
-  listKindsFailure,
+  censusFailure,
   projectProbeFailure,
   validateVaultFailure,
   validateVaultNotice,
@@ -38,30 +38,30 @@ export function verifyVaultCensus(responses, { projectProbeRes }) {
   }
 
   if (!kindsRes || !kindsRes.result) {
-    log('fail', 'no list_kinds response');
+    log('fail', 'no list_concepts census response');
     return false;
   }
   try {
     const text = kindsRes.result.content?.[0]?.text || '';
     const parsed = JSON.parse(text);
-    const failure = listKindsFailure(parsed);
+    const failure = censusFailure(parsed?.census);
     if (failure) {
       log('fail', failure);
       return false;
     }
-    const structuredFailure = structuredContentFailure(kindsRes, parsed, 'list_kinds');
+    const structuredFailure = structuredContentFailure(kindsRes, parsed, 'list_concepts');
     if (structuredFailure) {
       log('fail', structuredFailure);
       return false;
     }
-    kindsPayload = parsed;
-    const kindSummary = Object.entries(parsed.byKind)
+    kindsPayload = parsed.census;
+    const kindSummary = Object.entries(parsed.census.byKind)
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([kind, count]) => `${kind}:${count}`)
       .join(', ');
-    log('ok', `list_kinds: ${parsed.total} nodes (${kindSummary})`);
+    log('ok', `list_concepts census: ${parsed.census.total} nodes (${kindSummary})`);
   } catch (err) {
-    log('fail', `failed to parse list_kinds response: ${err.message}`);
+    log('fail', `failed to parse list_concepts census response: ${err.message}`);
     return false;
   }
 

@@ -8,13 +8,13 @@ export function formatFullDetailHandoffChain(
   slug: string,
   maxDepth: FullDetailReachDepth,
   /**
-   * `get_concept` fails for a concept with no document, so the chain creates the document first
+   * `get_concepts` finds no row for a concept with no document, so the chain creates the document first
    * under the raw reference name.
    */
   options: { documented?: boolean; kind?: string } = {},
 ): string {
   if (options.documented === false) {
-    return `add_concept({slug:"${slug}", kind:"${options.kind ?? "element"}"}) → find_backlinks → reachability --max-depth ${maxDepth}`;
+    return `add_concepts({concepts:[{slug:"${slug}", kind:"${options.kind ?? "element"}"}]}) → find_backlinks → reachability --max-depth ${maxDepth}`;
   }
-  return `get_concept("${slug}") → find_backlinks → reachability --max-depth ${maxDepth}`;
+  return `get_concepts({slugs:["${slug}"]}) → find_backlinks → reachability --max-depth ${maxDepth}`;
 }

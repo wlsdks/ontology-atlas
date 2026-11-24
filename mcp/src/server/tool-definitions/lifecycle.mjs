@@ -167,7 +167,7 @@ export const MERGE_CONCEPTS_TOOL = {
 export const DELETE_CONCEPT_TOOL = {
   name: 'delete_concept',
   description:
-    '⚠ DESTRUCTIVE: permanently delete one node\'s .md file. Dry-run with a backlinks preview unless confirm: true; throws while backlinks exist unless force: true. Responses name the permanent `uid` plus current `slug`, and a deletion returns frontmatter and body for add_concept to recreate it. Confirmed deletes return ' + POST_WRITE_MAINTENANCE_GUIDANCE + '.',
+    '⚠ DESTRUCTIVE: permanently delete one node\'s .md file. Dry-run with a backlinks preview unless confirm: true; throws while backlinks exist unless force: true. Responses name the permanent `uid` plus current `slug`, and a deletion returns frontmatter and body for add_concepts to recreate it. Confirmed deletes return ' + POST_WRITE_MAINTENANCE_GUIDANCE + '.',
   inputSchema: {
     type: 'object',
     properties: {

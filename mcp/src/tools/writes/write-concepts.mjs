@@ -151,12 +151,13 @@ function addConceptsBatch({ concepts }) {
   // fail with the confusing "already exists". Only the first row for a slug is
   // attempted; later rows with the same slug fail at the input stage.
   const seenInBatch = new Map();
-  // Rows already landed in this batch ({slug, frontmatter}) — the in-memory
-  // comparison target that catches a later row as a near-duplicate (zero vault loads).
+  // The vault as it stood before the batch plus the rows landed so far: one load
+  // serves the title check for every row, including a one-row call.
+  const vaultDocs = loadVaultDocs(VAULT_ROOT);
   const landed = [];
   // Every locale the vault or this batch names, read once for the whole batch.
   const vaultLocales = new Set([
-    ...vaultLocaleCodes(loadVaultDocs(VAULT_ROOT)),
+    ...vaultLocaleCodes(vaultDocs),
     ...concepts.flatMap((spec) => localeLabelCodes(normalizeLocaleLabels(spec?.labels))),
   ]);
   const results = concepts.map((spec, index) => {
@@ -192,10 +193,8 @@ function addConceptsBatch({ concepts }) {
       }
       if (slug) seenInBatch.set(slug, index);
       const result = addConcept(spec, { asBatchRow: true, vaultLocales });
-      // Advisory warning when a node already landed in this batch has the same
-      // normalised title, catching one concept split into two nodes without a vault load.
       if (result.ok) {
-        const dupWarning = detectDuplicateTitle(spec.title, result.slug ?? slug, landed);
+        const dupWarning = detectDuplicateTitle(spec.title, result.slug ?? slug, [...vaultDocs, ...landed]);
         if (dupWarning) result.warnings = [...(result.warnings ?? []), dupWarning];
         landed.push({
           slug: result.slug ?? slug,

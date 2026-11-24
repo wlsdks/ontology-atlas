@@ -1,6 +1,6 @@
 /**
  * Meaning gaps a write can see in the body, the half of a node the eligibility
- * gate does not open. Every real build lands through add_concept and
+ * gate does not open. Every real build lands through add_concepts and
  * patch_concept, so this door must say when a vault is shallow yet validates
  * clean (`docs/DECISIONS.md`, the dissent on "A refusal names the path that
  * stays open"). Pure over `{ kind, slug, frontmatter, body, repoRoot }`: no

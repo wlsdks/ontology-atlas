@@ -17,7 +17,6 @@ import { resolveTopologyNodeClickRouteState, selectTopologyPathRouteState } from
 interface Options {
   setExpandAllActive: React.Dispatch<React.SetStateAction<boolean>>;
   setRouteState: (updater: Partial<import("@/views/home/model/route-state/url-state").HomeRouteState> | ((current: import("@/views/home/model/route-state/url-state").HomeRouteState) => import("@/views/home/model/route-state/url-state").HomeRouteState), options?: import("@/views/home/model/route-state/use-home-route-state").HomeRouteStateUpdateOptions | undefined) => void;
-  replayPastWalk: (walkId: string) => string | null;
   topologyInspectorState: Pick<ReturnType<typeof useTopologyInspectorState>, "panelDatasheetModel">;
   topologyAgentOrchestration: Pick<ReturnType<typeof useTopologyAgentOrchestration>, "closeVaultAgent">;
   topologySourceReadiness: Pick<ReturnType<typeof useTopologySourceReadiness>, "unboundProjectSource">;
@@ -68,7 +67,7 @@ function selectFromCurrentContext(context:React.RefObject<SelectionContext>,slug
   if(options?.keepIndexOpen)current.beginExpandedIndexSelection();
 }
 export function useTopologyNavigationActions({
-  setExpandAllActive, setRouteState, replayPastWalk, topologyCanvasFocus, topologyPreferences,
+  setExpandAllActive, setRouteState, topologyCanvasFocus, topologyPreferences,
   topologyAuthoring, topologyGraphProjection, topologyIndexPresentation, topologySourceReadiness,
   topologyAgentOrchestration, topologyInspectorState
 }: Options) {
@@ -102,14 +101,6 @@ export function useTopologyNavigationActions({
     return true;
   }, [closeVaultAgent, handleSelect, unboundProjectSource]);
 
-  const handleReplayPastWalk = useCallback(
-    (walkId: string) => {
-      const last = replayPastWalk(walkId);
-      if (last) handleSelect(last);
-    },
-    [replayPastWalk, handleSelect],
-  );
-
   const handleClose = useCallback(() => {
     interactionSelectedSlugRef.current = null;
     setFullDetailSlug(null);
@@ -142,7 +133,7 @@ export function useTopologyNavigationActions({
       restoreTopologyFocusAfterDatasheetClose(focusReturnNodeId);
     });
   }, [handleClose, panelDatasheetModel?.nodeId, neural, setNodePopoverDismissed]);
-  return { handleClose, handleSelect, handleReplayPastWalk, handleDatasheetClose, handleChatSuggestionAction, handleAcpMapIntent } as const;
+  return { handleClose, handleSelect, handleDatasheetClose, handleChatSuggestionAction, handleAcpMapIntent } as const;
 }
 
 function useAcpMapIntent({

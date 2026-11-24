@@ -155,7 +155,8 @@ function actionSlugs(action) {
 
 function actionSubject(action) {
   const args = action.proposedAction?.args ?? {};
-  return args.slug ?? args.to ?? action.node?.slug ?? action.id;
+  const row = args.concepts?.[0] ?? args.relations?.[0] ?? args;
+  return row.slug ?? row.to ?? action.node?.slug ?? action.id;
 }
 
 function findingLine(action) {

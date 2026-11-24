@@ -24,8 +24,8 @@ one concrete answer and no builder has to guess. How to build it belongs to the
    acceptance criterion.
 2. **Read the real thing.** The person, moment and proof in your brief, the thesis
    in `docs/PRODUCT-DIRECTION.md`, the standing decision
-   (`pnpm decisions:find <terms>`), the vault meaning (`list_kinds`,
-   `list_concepts`, `get_concept`), and the code, message catalogues, and
+   (`pnpm decisions:find <terms>`), the vault meaning (`list_concepts`
+   and its census, `get_concepts`), and the code, message catalogues, and
    screens the moment touches. Every sentence about today cites `path:line`, a
    capture path, or a record; what you did not read is written as unknown.
    Today holds only cited observations; an inference goes to Problem. After you
