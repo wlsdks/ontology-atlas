@@ -24,7 +24,7 @@
   },
   "firstRun": {
     "title": "Downloading the agent. This happens only once.",
-    "body": "It can take a few minutes. Keep the app open until it finishes.",
+    "body": "It can take a few minutes. You can close this panel: the download keeps going while the app is open.",
     "progress": "{mb} MB downloaded so far",
     "waiting": "Starting the download",
     "barLabel": "Agent download"
@@ -484,6 +484,11 @@
         "verifying-install": "Checking that it installed correctly",
         "done": "Installed",
         "failed": "Could not install"
+      },
+      "adapter": {
+        "downloading": "Downloading the agent",
+        "done": "Agent downloaded",
+        "failed": "Could not download the agent"
       }
     }
   },

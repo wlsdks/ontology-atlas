@@ -166,6 +166,7 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .manage(VaultWatcherState::default())
         .manage(AcpInstallProgressState::default())
+        .manage(acp::install::adapter::AdapterFetches::default())
         .manage(AcpSessions::default())
         .manage(planning::PlanningSession::default())
         // A reload never runs the stage's cleanup, so arming would outlive the drop area.
@@ -264,6 +265,7 @@ pub fn run() {
             acp::runtime::acp_install_plan,
             acp::runtime::acp_install_cli,
             acp::runtime::acp_install_progress,
+            acp::runtime::acp_prepare_adapter,
             acp::session::acp_start,
             acp::session::acp_send,
             acp::session::acp_stop,

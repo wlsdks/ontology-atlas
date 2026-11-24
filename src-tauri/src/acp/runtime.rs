@@ -1,3 +1,4 @@
+use crate::acp::install::adapter::{self, AdapterFetches, AdapterReadiness};
 use crate::acp::{self, doctor};
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -285,6 +286,88 @@ pub(crate) fn acp_install_cli(
     Ok(doctor::diagnose(&after.borrow()))
 }
 
+/// Fetches the pinned npx adapter into npx's cache before a session starts, so the session
+/// launches from the cache. Asked only by the chat panel's session start (the moment that
+/// downloaded before) and the doctor's `npx-cache` fix, never at app launch. The download runs
+/// on a thread the app owns: a panel closed mid-download does not cancel it, and the next
+/// request joins it. Progress goes out as `job: "adapter"` on the install progress event.
+#[tauri::command(async)]
+pub(crate) fn acp_prepare_adapter(
+    app: tauri::AppHandle,
+    runtime_id: String,
+) -> Result<AdapterReadiness, String> {
+    prepare_adapter(&app, &runtime_id)
+}
+
+fn prepare_adapter(app: &tauri::AppHandle, runtime_id: &str) -> Result<AdapterReadiness, String> {
+    let Some(fetches) = app.try_state::<AdapterFetches>() else {
+        return Ok(AdapterReadiness::NotApplicable);
+    };
+    let (is_executable, list_dir, read_text, _) = acp::detection::login_probe::real_probe();
+    let skip_login = |_: &str, _: &std::path::Path, _: &[&str], _: &str| None;
+    let probe = acp::detection::command_lookup::FsProbe {
+        is_executable: &is_executable,
+        list_dir: &list_dir,
+        read_text: &read_text,
+        login_ok: &skip_login,
+    };
+    let home =
+        std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).map(PathBuf::from);
+    let app_data = app
+        .path()
+        .app_data_dir()
+        .map_err(|err| format!("app-data-dir-unavailable:{err}"))?;
+    // A launch that cannot resolve is the session start's to report, with the words it has.
+    let Ok(launch) = acp::launch::resolve_launch(
+        runtime_id,
+        home.as_deref(),
+        std::env::var_os("PATH").as_deref(),
+        &probe,
+        Some(&acp::install::cli::managed_cli_bin_dir(&app_data)),
+        acp::install::node::managed_node_bin_dir(&app_data).as_deref(),
+    ) else {
+        return Ok(AdapterReadiness::NotApplicable);
+    };
+    let Some(entry) = acp::launch::npx_cache::npx_cache_entry_for_launch(&launch, home.as_deref())
+    else {
+        return Ok(AdapterReadiness::NotApplicable);
+    };
+    let plan = adapter::FetchPlan {
+        runtime_id: runtime_id.to_string(),
+        launch: launch.clone(),
+        entry,
+        working_dir: app_data,
+    };
+    let reporter = app.clone();
+    fetches.ensure(
+        runtime_id,
+        || {
+            adapter::CacheCheck::from_preflight(&acp::launch::npx_cache::preflight_npx_cache(
+                &launch,
+                home.as_deref(),
+            ))
+        },
+        move || {
+            let id = plan.runtime_id.as_str();
+            emit_install_progress(&reporter, id, "adapter", "downloading", None, None, None);
+            let outcome = adapter::run_fetch(&plan, &|bytes| {
+                emit_install_progress(
+                    &reporter,
+                    id,
+                    "adapter",
+                    "downloading",
+                    Some(bytes),
+                    None,
+                    None,
+                );
+            });
+            let stage = if outcome.is_ok() { "done" } else { "failed" };
+            emit_install_progress(&reporter, id, "adapter", stage, None, None, None);
+            outcome
+        },
+    )
+}
+
 /// Returns facts per step; the screen writes the sentences.
 #[tauri::command(async)]
 pub(crate) fn acp_diagnose(
@@ -305,7 +388,13 @@ pub(crate) fn acp_repair(
     check_id: String,
 ) -> Result<Vec<doctor::AcpCheck>, String> {
     let ctx = doctor_context(&app, &runtime_id)?;
-    doctor::repair(&ctx.borrow(), &check_id)?;
+    if check_id == "npx-cache" {
+        // The same fetch the chat panel waits on: it heals the broken entry and downloads it
+        // again, or joins a download already running instead of deleting what it writes.
+        prepare_adapter(&app, &runtime_id)?;
+    } else {
+        doctor::repair(&ctx.borrow(), &check_id)?;
+    }
     // Return the re-verified state, never a bare claim of success.
     let after = doctor_context(&app, &runtime_id)?;
     Ok(doctor::diagnose(&after.borrow()))
@@ -333,6 +422,7 @@ struct OwnedDoctorContext {
     path_env: String,
     isolated_logged_out: Option<bool>,
     shadow_present: Option<bool>,
+    adapter_fetching: bool,
 }
 
 impl OwnedDoctorContext {
@@ -346,6 +436,7 @@ impl OwnedDoctorContext {
             path_env: &self.path_env,
             isolated_logged_out: self.isolated_logged_out,
             shadow_present: self.shadow_present,
+            adapter_fetching: self.adapter_fetching,
         }
     }
 }
@@ -418,6 +509,9 @@ fn doctor_context(app: &tauri::AppHandle, runtime_id: &str) -> Result<OwnedDocto
         path_env,
         isolated_logged_out,
         shadow_present,
+        adapter_fetching: app
+            .try_state::<AdapterFetches>()
+            .is_some_and(|fetches| fetches.is_fetching(runtime_id)),
     })
 }
 

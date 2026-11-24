@@ -34,10 +34,26 @@ const bridge = vi.hoisted(() => ({
   pendingPrompt: null as number | null,
   failLoad: false,
   newSessionId: 's-1',
+  /** Holds the Rust-owned adapter fetch; null answers at once. */
+  prepare: null as null | {
+    calls: number;
+    progress: ((bytes: number | null) => void) | null;
+    finish: (() => void) | null;
+  },
 }));
 
 vi.mock('@/shared/lib/agent-chat/tauri-acp', () => ({
   isAcpBridgeAvailable: () => true,
+  prepareAcpAdapter: async (_runtimeId: string, onProgress: (bytes: number | null) => void) => {
+    const held = bridge.prepare;
+    if (!held) return 'ready';
+    held.calls += 1;
+    held.progress = onProgress;
+    await new Promise<void>((resolve) => {
+      held.finish = resolve;
+    });
+    return 'fetched';
+  },
   startAcpSession: async () => {
     bridge.starts += 1;
     // The first call is held — meanwhile a second one gets its chance to enter.
@@ -172,6 +188,7 @@ afterEach(() => {
   bridge.pendingPrompt = null;
   bridge.failLoad = false;
   bridge.newSessionId = 's-1';
+  bridge.prepare = null;
   vi.useRealTimers();
 });
 
@@ -359,6 +376,61 @@ describe('pre-prompt task baseline', () => {
     await act(async () => { bridge.release?.(); await starting; await result.current.send('Continue with unknown basis.'); });
     expect(bridge.sent.some((message) => message.method === 'session/prompt')).toBe(true);
     await act(async () => { await result.current.stop(); });
+  });
+});
+
+describe('adapter fetch: owned by the app, not by the panel', () => {
+  it('shows the megabytes while Rust fetches, then starts the session from the cache', async () => {
+    bridge.prepare = { calls: 0, progress: null, finish: null };
+    const { result } = renderHook(() => useAcpSession({ runtimeId: 'claude-acp', vaultRoot: '/vault' }));
+    const started = result.current.start();
+    await waitFor(() => expect(bridge.prepare?.calls).toBe(1));
+    expect(bridge.starts, 'the session must wait for the fetch, or a second npx downloads it again').toBe(0);
+
+    act(() => bridge.prepare?.progress?.(null));
+    expect(result.current.download).toEqual({ mb: null });
+    act(() => bridge.prepare?.progress?.(42 * 1024 * 1024 + 1));
+    expect(result.current.download).toEqual({ mb: 42 });
+
+    await act(async () => {
+      bridge.prepare?.finish?.();
+    });
+    await waitFor(() => expect(bridge.starts).toBe(1));
+    expect(result.current.download, 'the fetch bar must not linger while the agent boots').toBeNull();
+    await act(async () => {
+      bridge.release?.();
+      await result.current.stop();
+      await started;
+    });
+  });
+
+  it('leaves the fetch running when the panel unmounts mid-download, and the reopened panel joins it', async () => {
+    bridge.prepare = { calls: 0, progress: null, finish: null };
+    const first = renderHook(() => useAcpSession({ runtimeId: 'claude-acp', vaultRoot: '/vault' }));
+    void first.result.current.start();
+    await waitFor(() => expect(bridge.prepare?.calls).toBe(1));
+    const finishFirst = bridge.prepare.finish;
+
+    first.unmount();
+    // Nothing tells Rust to stop: no session existed to stop, and the fetch is not the panel's.
+    expect(bridge.stopped).toEqual([]);
+
+    const reopened = renderHook(() => useAcpSession({ runtimeId: 'claude-acp', vaultRoot: '/vault' }));
+    const restarted = reopened.result.current.start();
+    await waitFor(() => expect(bridge.prepare?.calls).toBe(2));
+
+    // Rust finishes the one download and answers both requests.
+    await act(async () => {
+      finishFirst?.();
+      bridge.prepare?.finish?.();
+    });
+    await waitFor(() => expect(bridge.starts).toBe(1));
+    expect(bridge.starts, 'the closed panel must not start a session once the fetch it waited on ends').toBe(1);
+    await act(async () => {
+      bridge.release?.();
+      await reopened.result.current.stop();
+      await restarted;
+    });
   });
 });
 

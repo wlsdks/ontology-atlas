@@ -74,7 +74,8 @@ export async function installManagedNode(runtimeId: string): Promise<AcpCheck[]>
 /** 1:1 with Rust's `AcpInstallProgress`. */
 export interface AcpInstallProgress {
   runtimeId: string;
-  job: 'node' | 'cli';
+  /** `adapter` is the npx adapter fetch the chat panel's session start waits on. */
+  job: 'node' | 'cli' | 'adapter';
   stage:
     | 'downloading'
     | 'verifying'

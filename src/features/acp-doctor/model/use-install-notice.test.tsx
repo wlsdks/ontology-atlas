@@ -51,6 +51,16 @@ describe('install notice badge', () => {
     expect(result.current.count).toBe(1);
   });
 
+  it('does not count the adapter download the chat panel reports itself', async () => {
+    const { result } = renderHook(() => useInstallNotice(false));
+    await act(async () => {
+      await Promise.resolve();
+    });
+    act(() => emit?.({ ...progress('claude-acp', 'done'), job: 'adapter' }));
+    act(() => emit?.({ ...progress('codex-acp', 'failed'), job: 'adapter' }));
+    expect(result.current.count).toBe(0);
+  });
+
   it('does not count an install that is still running', async () => {
     const { result } = renderHook(() => useInstallNotice(false));
     await act(async () => {

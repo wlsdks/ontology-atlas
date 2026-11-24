@@ -387,6 +387,25 @@ describe('install progress', () => {
     expect(screen.getByTestId('agent-doctor-progress').textContent).not.toContain('%');
   });
 
+  it('shows the adapter download the chat panel started, with the bytes so far and no percentage', async () => {
+    lastInstallProgress.mockResolvedValue({
+      runtimeId: 'claude-acp',
+      job: 'adapter',
+      stage: 'downloading',
+      received: 42 * 1024 * 1024,
+      total: null,
+      note: null,
+      at: Date.now(),
+    });
+    renderHarness();
+
+    const row = await screen.findByTestId('agent-doctor-progress');
+    expect(row).toHaveAttribute('data-job', 'adapter');
+    expect(row.textContent).toContain(ko.acpChat.doctor.progress.adapter.downloading);
+    expect(screen.getByTestId('agent-doctor-progress-bytes').textContent).toBe('42.0MB');
+    expect(row.textContent).not.toContain('%');
+  });
+
   it('leaves a completion line when the install finishes', async () => {
     diagnoseAgent.mockResolvedValue([ok('cli')]);
     renderHarness();

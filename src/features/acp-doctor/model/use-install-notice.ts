@@ -17,7 +17,8 @@ export function useInstallNotice(atDestination: boolean): {
     let alive = true;
     let stop: (() => void) | null = null;
     void listenInstallProgress(null, (progress) => {
-      if (!alive || !isTerminalInstallStage(progress.stage)) return;
+      // The adapter fetch ends inside the chat panel, which says so itself; a rail badge would repeat it.
+      if (!alive || progress.job === 'adapter' || !isTerminalInstallStage(progress.stage)) return;
       setSeenIds((current) =>
         current.includes(progress.runtimeId) ? current : [...current, progress.runtimeId],
       );

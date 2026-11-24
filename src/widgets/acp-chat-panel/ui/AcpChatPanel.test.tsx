@@ -37,6 +37,7 @@ const bridge = vi.hoisted(() => {
 
 vi.mock('@/shared/lib/agent-chat/tauri-acp', () => ({
   isAcpBridgeAvailable: () => bridge.available,
+  prepareAcpAdapter: async () => 'ready',
   startAcpSession: () => {
     bridge.starts += 1;
     return bridge.hangStart ? new Promise<string>(() => {}) : Promise.resolve('acp-1-999');
