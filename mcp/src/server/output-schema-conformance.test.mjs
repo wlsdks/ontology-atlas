@@ -135,20 +135,20 @@ test('a construction pass of reads and writes matches the contract and the adver
     writeVaultFile(vault, 'capabilities/caller', '---\nuid: 00000000-0000-4000-8000-000000000004\nkind: capability\ntitle: Caller\ndomain: domains/core\ndepends_on: [capabilities/target]\n---\nThe caller.\n');
 
     const answers = await answersAgainstDeclaredSchemas(vault, [
-      ['list_kinds', {}],
+      ['list_concepts', { limit: 1 }],
       ['list_concepts', {}],
-      ['get_concept', { slug: 'capabilities/caller' }],
+      ['get_concepts', { slugs: ['capabilities/caller'], body: 'full' }],
       ['get_concepts', { slugs: ['capabilities/caller', 'capabilities/missing'] }],
       ['find_evidence', { title: 'target' }],
-      ['find_neighbors', { slug: 'capabilities/caller' }],
-      ['find_path', { from: 'capabilities/caller', to: 'domains/core' }],
+      ['query_ontology', { operation: 'neighbors', slug: 'capabilities/caller' }],
+      ['query_ontology', { operation: 'path', from: 'capabilities/caller', to: 'domains/core' }],
       ['find_orphans', {}],
       ['query_concepts', { filter: 'kind=capability' }],
       ['compile_ontology', {}],
       ['query_ontology', { operation: 'impact', slug: 'capabilities/target' }],
       ['validate_vault', {}],
-      ['add_concept', { slug: 'capabilities/reader', kind: 'capability', title: 'Reader', domain: 'domains/core', body: 'Reads the target.' }],
-      ['add_relation', { from: 'capabilities/reader', to: 'capabilities/target', type: 'depends_on', why: 'Reading calls the target first.' }],
+      ['add_concepts', { concepts: [{ slug: 'capabilities/reader', kind: 'capability', title: 'Reader', domain: 'domains/core', body: 'Reads the target.' }] }],
+      ['add_relations', { relations: [{ from: 'capabilities/reader', to: 'capabilities/target', type: 'depends_on', why: 'Reading calls the target first.' }] }],
       ['patch_concept', { slug: 'capabilities/reader', body: 'Reads the target, then reports.' }],
       ['validate_vault', {}],
     ]);

@@ -21,7 +21,7 @@ https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2
 ## Get started in 5 minutes
 
 1. Open `project.md` and write your project's name and description.
-2. Create new nodes through the map's editor or MCP `add_concept`. These
+2. Create new nodes through the map's editor or MCP `add_concepts`. These
    writers mint the immutable UID; do not copy a starter file and its identity.
 3. Use the same writer path for capabilities and elements.
 4. Register an AI agent (Claude Code, Cursor, …) and it reads/writes the
@@ -75,7 +75,7 @@ Once you register the `ontology-atlas-mcp` server, the running server gives the
 agent its current read/write inventory. Use `tools/list` for the exact names and
 `validate_vault` to prove that the server can read this vault.
 
-Start with `connection_info`, `list_kinds`, `validate_vault`, and
+Start with `connection_info`, `list_concepts`, `validate_vault`, and
 `query_ontology({ operation: "agent_brief" })`. Write only after the read-first
 checks are clean and the person accepts the proposed meaning.
 

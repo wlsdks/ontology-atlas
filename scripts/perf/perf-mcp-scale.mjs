@@ -165,9 +165,9 @@ function attachRpc(child) {
 }
 
 const READS = [
-  ['get_concept', { slug: 'capabilities/cap-5' }],
+  ['get_concepts', { slugs: ['capabilities/cap-5'] }],
   ['find_backlinks', { slug: 'elements/el-15' }],
-  ['find_path', { from: 'capabilities/cap-5', to: 'domains/dom-1' }],
+  ['query_ontology', { operation: 'path', from: 'capabilities/cap-5', to: 'domains/dom-1' }, 'path'],
   ['compile_ontology', { summary: true }],
   // The one read that scores file text, which the server reads back from disk: a
   // phrase few files hold, and a word about half of them hold, so half the bodies
@@ -258,7 +258,7 @@ async function measureTool(serverPath, flow, name) {
   try {
     await rpc('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'perf-mcp-scale', version: '0' } });
     child.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' })}\n`);
-    await measure('vault load (list_kinds)', 'tools/call', { name: 'list_kinds', arguments: {} });
+    await measure('vault load (list_concepts census)', 'tools/call', { name: 'list_concepts', arguments: { limit: 1 } });
     await measure(`${name} first`, 'tools/call', { name, arguments: {} });
     await measure(`${name} repeat`, 'tools/call', { name, arguments: {} });
     if (existsSync(edited)) {
@@ -299,7 +299,7 @@ async function measureFlow(serverPath, flow) {
   appendFileSync(touched, '\n- perf touch\n');
   let afterEdit;
   try {
-    afterEdit = await call('get_concept', { slug: 'capabilities/cap-7' });
+    afterEdit = await call('get_concepts', { slugs: ['capabilities/cap-7'] });
   } finally {
     writeFileSync(touched, original);
   }
@@ -319,7 +319,7 @@ function printTable(serverPath, results, note = '') {
   for (let index = 0; index < READS.length; index += 1) {
     console.log(`${(READS[index][2] ?? READS[index][0]).padEnd(18)}${results.map((result) => `${result.rows[index].first} / ${result.rows[index].second}`.padStart(24)).join('')}`);
   }
-  console.log(`${'after 1-file edit'.padEnd(18)}${results.map((result) => `get_concept ${result.afterEdit}`.padStart(24)).join('')}`);
+  console.log(`${'after 1-file edit'.padEnd(18)}${results.map((result) => `get_concepts ${result.afterEdit}`.padStart(24)).join('')}`);
   if (results.some((result) => result.footprint)) {
     console.log(`${`footprint after ${TOTAL_CALLS}`.padEnd(18)}${results.map((result) => `${result.footprint?.now ?? '?'} MB`.padStart(24)).join('')}`);
     console.log(`${'footprint peak'.padEnd(18)}${results.map((result) => `${result.footprint?.peak ?? '?'} MB`.padStart(24)).join('')}`);

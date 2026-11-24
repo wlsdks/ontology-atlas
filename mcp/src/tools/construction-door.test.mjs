@@ -257,7 +257,7 @@ test('a build write answers with each row, its mtime and one line per finding on
   assert.doesNotMatch(JSON.stringify(created), new RegExp(root.replaceAll('/', '\\/')), 'no absolute path leaves the server');
   const dangling = created.findings.filter((line) => line.startsWith('Graph reference'));
   assert.equal(dangling.length, 1, 'two findings of one kind share one line');
-  assert.match(dangling[0], /^Graph reference "capabilities\/charge" .* Next: add_concept\(.*\) Same for 1 more: capabilities\/refund\.$/);
+  assert.match(dangling[0], /^Graph reference "capabilities\/charge" .* Next: add_concepts\(.*\) Same for 1 more: capabilities\/refund\.$/);
   assert.ok(created.findings.every((line) => line.includes('domains/payments')), 'each finding is about the node just written');
 
   const patched = await call('patch_concept', { slug: 'domains/payments', expected_mtime: created.concepts[0].mtime, body: BODY });

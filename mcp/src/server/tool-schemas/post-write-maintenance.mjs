@@ -10,33 +10,59 @@ import { RELATION_ARRAY_PATCH_SCHEMA } from './vault-node-shapes.mjs';
 
 const POST_WRITE_MAINTENANCE_GUIDANCE =
   '`postWriteMaintenance` (byPhase, bySeverity, byKind, score, proposedAction, nextExecutableAction, nextReviewAction)';
-const COMPACT_MAINTENANCE_PROPOSED_ACTION_TOOLS = Object.freeze(['add_concept', 'add_relation', 'patch_concept']);
+const COMPACT_MAINTENANCE_PROPOSED_ACTION_TOOLS = Object.freeze(['add_concepts', 'add_relations', 'patch_concept']);
 const COMPACT_MAINTENANCE_PROPOSED_ACTION_ARGS_OUTPUT_SCHEMA = Object.freeze({
   oneOf: [
     {
       type: 'object',
       properties: {
-        slug: NON_BLANK_STRING_SCHEMA,
-        kind: { ...NON_BLANK_STRING_SCHEMA, enum: NODE_KIND_VALUES },
-        title: NON_BLANK_STRING_SCHEMA,
+        concepts: {
+          type: 'array',
+          minItems: 1,
+          maxItems: 1,
+          items: {
+            type: 'object',
+            properties: {
+              slug: NON_BLANK_STRING_SCHEMA,
+              kind: { ...NON_BLANK_STRING_SCHEMA, enum: NODE_KIND_VALUES },
+              title: NON_BLANK_STRING_SCHEMA,
+              domain: NON_BLANK_STRING_SCHEMA,
+              path: NON_BLANK_STRING_SCHEMA,
+            },
+            required: ['slug', 'kind', 'title'],
+            additionalProperties: false,
+          },
+        },
       },
-      required: ['slug', 'kind', 'title'],
+      required: ['concepts'],
       additionalProperties: false,
     },
     {
       type: 'object',
       properties: {
-        from: NON_BLANK_STRING_SCHEMA,
-        to: NON_BLANK_STRING_SCHEMA,
-        type: { ...NON_BLANK_STRING_SCHEMA, enum: WRITE_RELATION_TYPE_VALUES },
-        why: {
-          type: 'string',
-          maxLength: 300,
-          description:
-            'One-line rationale ("A leans on B because ..."), stored in relation_notes in the same write. Required for a new depends_on.',
+        relations: {
+          type: 'array',
+          minItems: 1,
+          maxItems: 1,
+          items: {
+            type: 'object',
+            properties: {
+              from: NON_BLANK_STRING_SCHEMA,
+              to: NON_BLANK_STRING_SCHEMA,
+              type: { ...NON_BLANK_STRING_SCHEMA, enum: WRITE_RELATION_TYPE_VALUES },
+              why: {
+                type: 'string',
+                maxLength: 300,
+                description:
+                  'One-line rationale ("A leans on B because ..."), stored in relation_notes in the same write. Required for a new depends_on.',
+              },
+            },
+            required: ['from', 'to', 'type'],
+            additionalProperties: false,
+          },
         },
       },
-      required: ['from', 'to', 'type'],
+      required: ['relations'],
       additionalProperties: false,
     },
     {

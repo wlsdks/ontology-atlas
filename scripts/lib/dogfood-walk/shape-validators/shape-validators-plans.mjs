@@ -268,17 +268,19 @@ function maintenanceActionFailure(action, index) {
 
 function maintenanceProposedActionFailure(action) {
   const { tool, args } = action.proposedAction;
+  const relation = args.relations?.[0] ?? {};
+  const concept = args.concepts?.[0] ?? {};
   if (action.kind === "add_missing_relation") {
-    if (tool !== "add_relation") {
+    if (tool !== "add_relations") {
       return `maintenance_plan proposedAction tool mismatch: ${action.id}`;
     }
     if (!action.nodes?.from?.slug || !action.nodes?.to?.slug) {
       return `maintenance_plan add_missing_relation missing node summaries: ${action.id}`;
     }
-    if (args.from !== action.nodes.from.slug || args.to !== action.nodes.to.slug) {
+    if (relation.from !== action.nodes.from.slug || relation.to !== action.nodes.to.slug) {
       return `maintenance_plan proposedAction endpoint mismatch: ${action.id}`;
     }
-    if (typeof args.type !== "string" || args.type.length === 0) {
+    if (typeof relation.type !== "string" || relation.type.length === 0) {
       return `maintenance_plan proposedAction missing relation type: ${action.id}`;
     }
   }
@@ -291,13 +293,13 @@ function maintenanceProposedActionFailure(action) {
     }
   }
   if (action.kind === "materialize_external_element" || action.kind === "resolve_dangling_reference") {
-    if (tool !== "add_concept") {
+    if (tool !== "add_concepts") {
       return `maintenance_plan proposedAction tool mismatch: ${action.id}`;
     }
-    if (typeof args.slug !== "string" || args.slug.length === 0) {
+    if (typeof concept.slug !== "string" || concept.slug.length === 0) {
       return `maintenance_plan proposedAction missing slug: ${action.id}`;
     }
-    if (action.kind === "materialize_external_element" && args.kind !== "element") {
+    if (action.kind === "materialize_external_element" && concept.kind !== "element") {
       return `maintenance_plan proposedAction kind mismatch: ${action.id}`;
     }
   }

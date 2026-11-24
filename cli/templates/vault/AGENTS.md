@@ -7,11 +7,11 @@ answers with parsing, validation, and relation resolution already done.
 
 | What you want | First call |
 |---|---|
-| How many of what | `list_kinds` |
+| How many of what | `list_concepts({ limit: 1 })`, its `census` |
 | The whole node table | `list_concepts` |
-| One concept and its neighbours | `get_concept({ slug })` |
+| One concept and its neighbours | `get_concepts({ slugs: [slug] })` |
 | Who depends on this | `find_backlinks(slug)` |
-| Are these two connected | `find_path(from, to)` |
+| Are these two connected | `query_ontology({ operation: 'path', from, to })` |
 | Is this vault healthy | `validate_vault({})` |
 
 Do not read frontmatter with `grep` or `sed`. You get the same answer more
@@ -23,7 +23,7 @@ node here keeps an English `title`, so a node whose `title` repeats its
 `display_ko` leaves the vault with two languages of canonical name and splits
 search.
 
-**Write through the same server** — `add_concept` · `add_relation` ·
+**Write through the same server** — `add_concepts` · `add_relations` ·
 `patch_concept` (pass `expected_mtime`) · `rename_concept` · `merge_concepts`.
 A file written by hand has no `uid:`, and one missing `uid:` fails the whole
 graph compile.
@@ -33,9 +33,10 @@ graph compile.
 
 - `components` — a node that is not reachable from the project root belongs to
   no project. New domains do not attach themselves: add
-  `add_relation(<project>, domains/<new>, 'domains')`.
+  `add_relations({ relations: [{ from: '<project>', to: 'domains/<new>', type: 'domains' }] })`.
 - `relation_recommendations` — a capability with `domain: X` still needs `X` to
-  list it back, via `add_relation(domains/X, capabilities/<new>, 'capabilities')`.
+  list it back, via
+  `add_relations({ relations: [{ from: 'domains/X', to: 'capabilities/<new>', type: 'capabilities' }] })`.
 
 Both were clean on the starter vault, so anything they report is something you
 added. Nodes that compile but hang off the project are invisible where it

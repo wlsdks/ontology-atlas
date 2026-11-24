@@ -175,7 +175,7 @@ export const GET_CONCEPTS_TOOL = {
           '`excerpt` (default) or `full` for every row; `full` caps the batch at 20.',
       },
     },
-    // Flat like get_concept; getConceptsBatch enforces exactly-one.
+    // Flat: getConceptsBatch enforces exactly one selector.
   },
   outputSchema: {
     type: 'object',

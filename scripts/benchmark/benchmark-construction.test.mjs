@@ -28,7 +28,7 @@ test('equivalent read arguments are measured as repeats but writes are not', () 
 });
 
 test('includes indexing and validation in repeated read measurements', () => {
-  for (const name of ['index_project', 'validate_vault', 'compile_ontology', 'git_history']) {
+  for (const name of ['analyze_repo_structure', 'validate_vault', 'compile_ontology', 'git_history']) {
     assert.equal(toolMetrics([{ name, args: {}, status: 'completed' },
       { name, args: {}, status: 'completed' }]).repeatedReads, 1, name);
   }

@@ -42,7 +42,7 @@ all?" Number them so the answer can be a selection.
 - `validate_vault({})` → `query_ontology({ operation: 'health' })`
 
 **A new domain does not attach itself to the project.** Skip
-`add_relation('<project>', 'domains/<new domain>', 'domains')` and you have
+`add_relations({ relations: [{ from: '<project>', to: 'domains/<new domain>', type: 'domains' }] })` and you have
 built something the map will never show. Step 4's health check catches it.
 
 ## How this skill fails

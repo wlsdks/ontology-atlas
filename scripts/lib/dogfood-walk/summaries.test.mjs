@@ -123,9 +123,11 @@ describe("rpc response completion helpers", () => {
     });
 
     const requests = buildDogfoodRequests(targets);
-    assert.deepEqual(requests.find((request) => request.id === 5)?.params.arguments, {
+    assert.deepEqual(requests.find((request) => request.id === 44)?.params.arguments, {
+      operation: "path",
       from: "capabilities/runtime-a",
       to: "domains/runtime",
+      maxHops: 4,
     });
     assert.deepEqual(requests.find((request) => request.id === 12)?.params.arguments, {
       operation: "pattern_walk",
@@ -250,7 +252,7 @@ describe("rpc response completion helpers", () => {
     drifted.find((tool) => tool.name === "list_concepts").annotations.openWorldHint = true;
     assert.equal(
       toolsListAnnotationSummary(drifted),
-      "40/40 titled; 24/24 read; 16/16 write; 9/9 destructive; 3/3 idempotent; 39/40 local-only",
+      "33/33 titled; 19/19 read; 14/14 write; 9/9 destructive; 2/2 idempotent; 32/33 local-only",
     );
     assert.equal(toolsListAnnotationSummary(null), "missing tools/list");
   });
@@ -269,8 +271,8 @@ describe("rpc response completion helpers", () => {
       `pass (${TOOLS_LIST_SCHEMA_CONTRACT_SUMMARY})`,
     );
     assert.equal(
-      toolsListSchemaStatus("add_relation inputSchema type enum drift"),
-      "add_relation inputSchema type enum drift",
+      toolsListSchemaStatus("add_relations inputSchema type enum drift"),
+      "add_relations inputSchema type enum drift",
     );
     assert.match(
       toolsListSchemaStatus(null, { color: true }),
@@ -328,10 +330,6 @@ describe("rpc response completion helpers", () => {
       "rejected true (type depend_on->depends_on; allowed 9)",
     );
     assert.equal(
-      strictRepairSummary(okShape.strictAddRelation),
-      "rejected true (type depend_on->depends_on; allowed 8)",
-    );
-    assert.equal(
       strictRepairSummary(okShape.strictFindOrphansKindFilter),
       "rejected true (kind capabilty->capability; allowed 6)",
     );
@@ -349,10 +347,6 @@ describe("rpc response completion helpers", () => {
     );
     assert.equal(
       strictClosestValueSummary(okShape.strictRelationFilter),
-      "rejected true (depend_on -> depends_on)",
-    );
-    assert.equal(
-      strictClosestValueSummary(okShape.strictFindNeighborsTypeFilter),
       "rejected true (depend_on -> depends_on)",
     );
     assert.equal(
@@ -409,8 +403,8 @@ describe("rpc response completion helpers", () => {
     );
   });
 
-  it("summarizes strict add_relation no-write metadata evidence", () => {
-    assert.equal(writeMetadataAbsenceSummary(okShape.strictAddRelation), "absent");
+  it("summarizes no-write metadata evidence of a strict add_relations rejection", () => {
+    assert.equal(writeMetadataAbsenceSummary({ result: { isError: true, structuredContent: { ok: false } } }), "absent");
     assert.equal(
       writeMetadataAbsenceSummary({
         result: {
@@ -637,7 +631,7 @@ describe("rpc response completion helpers", () => {
     assert.match(usage, /pnpm test:mcp:dogfood:timeout/);
     assert.match(usage, /Narrow dogfood timeout\/help retry diagnostics/);
     assert.match(usage, /pnpm dogfood:test\s+Full dogfood helper regression suite when focused checks are not enough/);
-    assert.match(usage, /Dogfood helper, compile\/index gates, tools\/list inventory names \+ annotation coverage, row-label guidance, batch cap gates, invalid-only batch row repair \+ no-write metadata smoke, strict closest-value and unknown-tool repair summary, vault warning and validate_vault problem gates, first-contact health\/growth\/sample-shape gates, maintenance work-queue shape \+ formatter checks, initialize tool-inventory \+ safety\/recovery guidance, destructive dry-run, help\/argument\/timeout handling, structuredContent, strict relation filters, strict add_relation type-preflight \+ no-write metadata, strict graph kind filters, stderr warning checks/);
+    assert.match(usage, /Dogfood helper, compile\/index gates, tools\/list inventory names \+ annotation coverage, row-label guidance, batch cap gates, invalid-only batch row repair \+ no-write metadata smoke, strict closest-value and unknown-tool repair summary, vault warning and validate_vault problem gates, first-contact health\/growth\/sample-shape gates, maintenance work-queue shape \+ formatter checks, initialize tool-inventory \+ safety\/recovery guidance, destructive dry-run, help\/argument\/timeout handling, structuredContent, strict relation filters, strict graph kind filters, stderr warning checks/);
     assertPnpmScriptsExist(usage, ROOT_PKG.scripts);
   });
 
@@ -721,13 +715,13 @@ describe("rpc response completion helpers", () => {
   it("formats timeout failures with missing response labels", () => {
     const labels = new Map([
       [1, "initialize"],
-      [2, "list_kinds"],
+      [2, "list_concepts_census"],
       [3, "list_concepts"],
     ]);
     const missing = missingResponseLabels([{ id: 1, result: {} }], labels);
-    assert.deepEqual(missing, ["list_kinds", "list_concepts"]);
+    assert.deepEqual(missing, ["list_concepts_census", "list_concepts"]);
     const failure = rpcTimeoutFailure(5000, missing);
-    assert.match(failure, /rpc: timed out after 5000ms waiting for list_kinds, list_concepts\./);
+    assert.match(failure, /rpc: timed out after 5000ms waiting for list_concepts_census, list_concepts\./);
     assert.match(failure, /Increase OATLAS_DOGFOOD_TIMEOUT_MS for slow dogfood runs\./);
     assert.match(failure, /OATLAS_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk/);
     assert.match(
@@ -790,12 +784,10 @@ describe("rpc response completion helpers", () => {
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(67), "strict_graph_kind_filter");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(68), "strict_graph_from_kind_filter");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(69), "strict_graph_to_kind_filter");
-    assert.equal(DOGFOOD_RESPONSE_LABELS.get(70), "strict_add_relation");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(71), "strict_recommend_relations_kind_filter");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(72), "strict_recommend_relations_unsupported_kind_filter");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(73), "strict_match_nodes_sort_filter");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(74), "strict_match_edges_type_filter");
-    assert.equal(DOGFOOD_RESPONSE_LABELS.get(75), "strict_find_neighbors_type_filter");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(76), "strict_find_orphans_kind_filter");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(77), "strict_find_orphans_exclude_kind_filter");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(78), "strict_query_concepts_kind_filter");
@@ -887,17 +879,6 @@ describe("rpc response completion helpers", () => {
     });
   });
 
-  it("keeps strict find_neighbors types dogfood request endpoint-independent", () => {
-    const requests = buildDogfoodRequests(TEST_TARGETS);
-    assert.deepEqual(requests.find((request) => request.id === 75)?.params, {
-      name: "find_neighbors",
-      arguments: {
-        slug: "missing-find-neighbors-type-source",
-        types: ["depend_on"],
-      },
-    });
-  });
-
   it("keeps strict find_orphans kind dogfood requests endpoint-independent", () => {
     const requests = buildDogfoodRequests(TEST_TARGETS);
     assert.deepEqual(requests.find((request) => request.id === 76)?.params, {
@@ -946,18 +927,6 @@ describe("rpc response completion helpers", () => {
       name: "query_ontology",
       arguments: {
         operation: "match_edges",
-        type: "depend_on",
-      },
-    });
-  });
-
-  it("keeps strict add_relation dogfood request endpoint-independent and non-writing", () => {
-    const requests = buildDogfoodRequests(TEST_TARGETS);
-    assert.deepEqual(requests.find((request) => request.id === 70)?.params, {
-      name: "add_relation",
-      arguments: {
-        from: "missing-add-relation-source",
-        to: "missing-add-relation-target",
         type: "depend_on",
       },
     });
@@ -1035,7 +1004,7 @@ describe("maintenanceNextActionSummary", () => {
     assert.equal(maintenanceNextActionSummary(undefined), "n/a");
     assert.equal(
       maintenanceNextActionSummary(okShape.maintenancePlan.nextExecutableAction),
-      "maint_link link/add_missing_relation:warn -> add_relation",
+      "maint_link link/add_missing_relation:warn -> add_relations",
     );
     assert.equal(
       maintenanceNextActionSummary(okShape.maintenancePlan.nextReviewAction),

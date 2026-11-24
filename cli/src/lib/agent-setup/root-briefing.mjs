@@ -21,11 +21,11 @@ export function rootBriefing(vaultRelativePath) {
     '',
     '**Before unfamiliar work, orient from the ontology rather than from a file**',
     '**search.** Start with `query_ontology({operation:"workspace_brief"})`, then',
-    '`get_concept({slug})` for whatever it points at. The source says what the',
+    '`get_concepts({slugs:[slug]})` for whatever it points at. The source says what the',
     'code does; the vault says why the boundary is there, which grep cannot find.',
     '',
     'After a change that adds or moves meaning, record it through the same server',
-    '(`add_concept`, `add_relation`, `patch_concept`) so the next session starts',
+    '(`add_concepts`, `add_relations`, `patch_concept`) so the next session starts',
     'from what this one learned.',
   ].join('\n');
 }

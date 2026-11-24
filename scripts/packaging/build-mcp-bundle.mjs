@@ -198,7 +198,7 @@ async function verifyUnpacked(entry, nodeBinary) {
     { jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'mcp-bundle-verify', version: '0' } } },
     { jsonrpc: '2.0', method: 'notifications/initialized' },
     { jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} },
-    { jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'get_concept', arguments: { slug: VERIFY_CONCEPT } } },
+    { jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'get_concepts', arguments: { slugs: [VERIFY_CONCEPT] } } },
   ];
 
   return await new Promise((resolve, reject) => {
@@ -231,7 +231,7 @@ async function verifyUnpacked(entry, nodeBinary) {
       const tools = messages.find((message) => message.id === 2)?.result?.tools;
       const concept = messages.find((message) => message.id === 3)?.result;
       if (!initialize || !tools || !concept) return;
-      if (concept.isError) return finish(new Error('the bundle started but could not read the verification vault'));
+      if (concept.isError || concept.structuredContent?.concepts?.[0]?.ok !== true) return finish(new Error('the bundle started but could not read the verification vault'));
       // Equality, not a floor: a floor of 32 let six tools disappear while the
       // published description still claimed the full surface.
       if (tools.length !== TOOL_INVENTORY_COUNT) {

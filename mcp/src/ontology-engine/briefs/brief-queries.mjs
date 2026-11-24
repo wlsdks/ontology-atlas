@@ -358,7 +358,7 @@ export function createBriefQueries({
         id: 'containment_cross_check',
         priority: 'confirm',
         goal: 'Cross-check path evidence against project/domain containment instead of trusting edge proximity alone.',
-        useWhen: 'The answer changes ownership, domain boundaries, or add_relation direction.',
+        useWhen: 'The answer changes ownership, domain boundaries, or add_relations direction.',
         evidence: ['pattern_walk rows for project -> domains -> capabilities', 'project_map domain placement and boundary edges'],
         stopWhen: ['pattern_walk and project_map disagree on project/domain placement.'],
         calls: containmentCrossCheckCalls,
@@ -368,7 +368,7 @@ export function createBriefQueries({
       {
         decision: 'skip_existing',
         severity: 'info',
-        meaning: 'Exact edge already exists; do not call add_relation for the same edge.',
+        meaning: 'Exact edge already exists; do not call add_relations for the same edge.',
       },
       {
         decision: 'review_inverse',
@@ -490,7 +490,7 @@ export function createBriefQueries({
           evidence: [
             'Target node profile, incoming blast radius groups, and the highest-risk affected slugs.',
             'Whether an existing path already explains the proposed relation.',
-            'The relation_check recommendation.decision before any add_relation.',
+            'The relation_check recommendation.decision before any add_relations.',
           ],
           stopWhen: [
             'health reports failing checks or actionable nextActions.',
@@ -601,7 +601,7 @@ export function createBriefQueries({
       writeGuardrails: [
         {
           id: 'preflight_relation',
-          goal: 'Before add_relation, prove the target edge is not duplicated, inverted, or already explained by an existing path.',
+          goal: 'Before add_relations, prove the target edge is not duplicated, inverted, or already explained by an existing path.',
           calls: [
             relationPreflightCall,
             pathPreflightCall,
@@ -630,13 +630,13 @@ export function createBriefQueries({
       writePolicy: [
         'Use uid as the permanent node identity and slug as its current human-readable address; graph relations and graph-operation inputs remain slug-based.',
         'Run read tools first and cite returned slugs/edges before editing.',
-        'Run relation_check before add_relation to confirm matchingEdges, inverseEdges, and schema pattern. For a new depends_on, require approvalGate.writeAllowed=false until observable ability, rationale, explicit human approval, and why are present; do not expect proposedAction args.',
+        'Run relation_check before add_relations to confirm matchingEdges, inverseEdges, and schema pattern. For a new depends_on, require approvalGate.writeAllowed=false until observable ability, rationale, explicit human approval, and why are present; do not expect proposedAction args.',
         'For all_paths, report limit/searchBudget/expandedStates/exhaustive/truncatedByBudget/totalPathsExact plus evidence.status/evidence.reason/evidence.pathsComplete and treat incomplete paths as partial evidence.',
         'For match_nodes and match_edges, report totalMatches/limited plus followUp details, then run the followUp calls before treating scan rows as evidence.',
         'Follow relationDecisionGuide: skip_existing blocks duplicate writes; safe_to_add is schema-only; review_inverse and review_new_schema require explicit justification before writing.',
         'Run find_backlinks before rename_concept or merge_concepts so backlink rewrites are intentional.',
         'Run health, cycles, growth_plan, maintenance_plan, and validate_vault after code changes or vault writes before handing the graph to another agent.',
-        'Use add_concept/add_relation/patch_concept/merge_concepts only after the intended ontology change is clear.',
+        'Use add_concepts/add_relations/patch_concept/merge_concepts only after the intended ontology change is clear.',
         'Treat Definition/Includes lists as bounded positive claims, not exhaustive inventories. Never say only/all/every/exactly unless the full node body explicitly states completeness and cites a source-backed product boundary; otherwise say "the vault names/models these items" and preserve Excludes/Uncertainty limits.',
         'When a source body says bounded packet, static packet, bounded excerpt, or selected evidence, preserve it in the same atomic claim as a measurement qualifier; never detach only/one/none/unmeasured/absent from it.',
         'Structural readiness is not semantic qualification: inspect projectSource.currentness, meaningAssessment.status, competency question witnesses, and meaningRepair before claiming a project is ontology-ready.',

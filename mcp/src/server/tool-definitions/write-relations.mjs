@@ -86,7 +86,7 @@ export const ADD_RELATIONS_TOOL = {
           required: ['from', 'to', 'type'],
           additionalProperties: false,
         },
-        description: 'Rows shaped like `add_relation` input.',
+        description: 'One row per relation: `from`, `to`, `type`, and `why` for a new depends_on.',
       },
     },
     required: ['relations'],
@@ -150,7 +150,7 @@ export const ADD_RELATIONS_TOOL = {
 export const REMOVE_RELATION_TOOL = {
   name: 'remove_relation',
   description:
-    'Safely remove one exact typed relation and its `relation_notes` rationale from a source node. Defaults to dry-run; pass confirm:true to write. Supports expected_mtime conflict protection. Use this instead of replacing a whole frontmatter array with patch_concept. `type:"contains"` also finds the typed key add_relation stored it under.',
+    'Safely remove one exact typed relation and its `relation_notes` rationale from a source node. Defaults to dry-run; pass confirm:true to write. Supports expected_mtime conflict protection. Use this instead of replacing a whole frontmatter array with patch_concept. `type:"contains"` also finds the typed key add_relations stored it under.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -179,7 +179,7 @@ export const REMOVE_RELATION_TOOL = {
 export const REPLACE_RELATION_TOOL = {
   name: 'replace_relation',
   description:
-    'Atomically replace one exact relation with a new target and/or type, moving or replacing its rationale in the same frontmatter write. `contains` as oldType or newType maps to the typed key exactly as add_relation does. Defaults to dry-run; pass confirm:true to write. Supports expected_mtime.',
+    'Atomically replace one exact relation with a new target and/or type, moving or replacing its rationale in the same frontmatter write. `contains` as oldType or newType maps to the typed key exactly as add_relations does. Defaults to dry-run; pass confirm:true to write. Supports expected_mtime.',
   inputSchema: {
     type: 'object',
     properties: {

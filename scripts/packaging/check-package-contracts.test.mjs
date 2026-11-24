@@ -198,16 +198,14 @@ describe('package contract helpers', () => {
     const mcpReadme = readFileSync('mcp/README.md', 'utf-8');
     const features = readFileSync('docs/features/mcp-server.md', 'utf-8');
     const strictInputSection = mcpReadme.split('String-array options are strict too:')[1]?.split('Scalar string options')[0] ?? '';
-    const addRelationRow = mcpReadme.split('| `add_relation` |')[1]?.split('\n')[0] ?? '';
     const addRelationsRow = mcpReadme.split('| `add_relations` |')[1]?.split('\n')[0] ?? '';
-    const addRelationFeature = features.split('4. **add_relation**')[1]?.split('\n').slice(0, 3).join('\n') ?? '';
+    const addRelationsFeature = features.split('. **add_relations**')[1]?.split('\n').slice(0, 3).join('\n') ?? '';
 
     assert.notEqual(strictInputSection, '', 'MCP README lost the strict string-array options section — move this anchor');
-    assert.notEqual(addRelationRow, '', 'MCP README lost the add_relation row — move this anchor');
+    assert.notEqual(addRelationsRow, '', 'MCP README lost the add_relations row — move this anchor');
 
     for (const value of WRITE_RELATION_TYPE_VALUES) {
-      assert.match(addRelationFeature, new RegExp(`\`${value}\``), `FEATURES documents add_relation type ${value}`);
-      assert.match(addRelationRow, new RegExp(`\`${value}\``), `MCP README documents add_relation type ${value}`);
+      assert.match(addRelationsFeature, new RegExp(`\`${value}\``), `FEATURES documents add_relations type ${value}`);
       assert.match(addRelationsRow, new RegExp(`\`${value}\``), `MCP README documents add_relations type ${value}`);
     }
 
@@ -249,7 +247,7 @@ describe('package contract helpers', () => {
   it('keeps the tools/list annotation census on its published contract', () => {
     assert.equal(
       expectedToolsListAnnotationSummary(),
-      '40/40 titled; 24/24 read; 16/16 write; 9/9 destructive; 3/3 idempotent; 40/40 local-only',
+      '33/33 titled; 19/19 read; 14/14 write; 9/9 destructive; 2/2 idempotent; 33/33 local-only',
     );
   });
 

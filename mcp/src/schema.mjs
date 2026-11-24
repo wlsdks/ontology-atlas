@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 
 /**
- * Vault kind schema: the per-kind frontmatter shape add_concept applies.
+ * Vault kind schema: the per-kind frontmatter shape add_concepts applies.
  * `arrayDefaults` are always
  * emitted, as empty arrays when unsupplied; `optional` keys are never
  * auto-emitted. `relation_notes` (`{ <ref>: "one sentence" }` on the source
@@ -426,7 +426,7 @@ export function containmentKeyFor(holderKind, childKind) {
 }
 
 /**
- * An emptied relation list is `[]` when add_concept writes that key empty for
+ * An emptied relation list is `[]` when add_concepts writes that key empty for
  * this kind (`arrayDefaults`), else `null` (the key is deleted), so a removal
  * leaves the shape creation would have. The app's `ontology-relation-edit.ts`
  * follows the same rule.
