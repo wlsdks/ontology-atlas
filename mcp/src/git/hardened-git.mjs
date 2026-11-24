@@ -172,11 +172,13 @@ export function hardenedGitArgv(cwd, args, { network = false } = {}) {
 /**
  * The environment to spawn git with: `env` without settings that conflict with
  * literal paths, and with no fetch, since the MCP server runs no network verb.
+ * `runsUserHooks` (the snapshot commit) keeps transports: its hooks are the
+ * user's own and may reach their remote.
  */
-export function gitEnv(env = process.env) {
+export function gitEnv(env = process.env, { runsUserHooks = false } = {}) {
   const out = { ...env };
   for (const name of CONFLICTING_PATHSPEC_ENV) delete out[name];
-  return { ...out, ...LOCAL_READ_ENV };
+  return runsUserHooks ? out : { ...out, ...LOCAL_READ_ENV };
 }
 
 // Test hook: repository config is discovered once per directory; clearing lets a

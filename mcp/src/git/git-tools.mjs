@@ -252,7 +252,7 @@ function git(cwd, args, { allowFailure = false } = {}) {
   }
   const result = spawnSync('git', argv, {
     encoding: 'utf8',
-    env: gitEnv(),
+    env: gitEnv(process.env, { runsUserHooks: args[0] === 'commit' }),
     maxBuffer: MAX_GIT_OUTPUT,
     stdio: ['ignore', 'pipe', 'pipe'],
   });
