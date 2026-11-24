@@ -7,6 +7,7 @@ import {
   acpPermissionVerdict,
   isAcpBridgeAvailable,
   listenToAcpSession,
+  prepareAcpAdapter,
   sendAcpLine,
   startAcpSession,
   stopAcpSession,
@@ -71,6 +72,7 @@ export interface UseAcpSessionOptions {
 }
 
 const PUT_AWAY_IDLE_STOP_MS = 10 * 60 * 1000;
+const BYTES_PER_MB = 1024 * 1024;
 
 export const TURN_STOP_GRACE_MS = 5_000;
 
@@ -342,6 +344,13 @@ export function useAcpSession({
     setStatusTracked('starting');
     setError(null);
     try {
+      // The adapter download belongs to Rust: closing the panel here leaves it running, and the
+      // next start joins it instead of beginning again.
+      await prepareAcpAdapter(runtimeId, (bytes) => {
+        if (!stale()) setDownload({ mb: bytes === null ? null : Math.floor(bytes / BYTES_PER_MB) });
+      });
+      if (stale()) return;
+      setDownload(null);
       const acpSessionId = await startAcpSession(runtimeId, vaultRoot);
       if (!acpSessionId) throw new Error('bridge-unavailable');
       if (stale()) {

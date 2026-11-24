@@ -17,7 +17,22 @@ vi.mock('@tauri-apps/api/core', () => ({
   Channel: mocks.Channel,
 }));
 
-import { acpPermissionVerdict, listenToAcpSession, startAcpSession, stopAcpSession } from './tauri-acp';
+const events = vi.hoisted(() => ({
+  handler: null as ((event: { payload: unknown }) => void) | null,
+  unlistened: 0,
+}));
+
+vi.mock('@tauri-apps/api/event', () => ({
+  listen: async (_name: string, handler: (event: { payload: unknown }) => void) => {
+    events.handler = handler;
+    return () => {
+      events.unlistened += 1;
+      events.handler = null;
+    };
+  },
+}));
+
+import { acpPermissionVerdict, listenToAcpSession, prepareAcpAdapter, startAcpSession, stopAcpSession } from './tauri-acp';
 
 type SessionChannel = { onmessage: (event: unknown) => void };
 
@@ -295,5 +310,47 @@ describe('each agent session streams on its own channel', () => {
     mocks.invoke.mockRejectedValueOnce(new Error('termination-failed'));
 
     await expect(listenToAcpSession('acp-stop-error', {})).rejects.toThrow('acp-startup-buffer-overflow');
+  });
+});
+
+describe('adapter fetch bridge', () => {
+  const progress = (overrides: Record<string, unknown>) => ({
+    runtimeId: 'claude-acp',
+    job: 'adapter',
+    stage: 'downloading',
+    received: 1024,
+    total: null,
+    note: null,
+    at: Date.now(),
+    ...overrides,
+  });
+
+  it('reports a fetch already running, then only this runtime\'s adapter bytes, and stops listening when it ends', async () => {
+    mocks.isTauri.mockReturnValue(true);
+    let finish: (value: string) => void = () => undefined;
+    mocks.invoke.mockImplementation(async (command: string) => {
+      if (command === 'acp_install_progress') return progress({ received: 7 });
+      if (command === 'acp_prepare_adapter') return new Promise((resolve) => (finish = resolve));
+      throw new Error(`unexpected ${command}`);
+    });
+    const seen: Array<number | null> = [];
+    const fetched = prepareAcpAdapter('claude-acp', (bytes) => seen.push(bytes));
+    await vi.waitFor(() => expect(mocks.invoke).toHaveBeenCalledWith('acp_prepare_adapter', { runtimeId: 'claude-acp' }));
+
+    events.handler?.({ payload: progress({ received: null }) });
+    events.handler?.({ payload: progress({ received: 2048 }) });
+    events.handler?.({ payload: progress({ runtimeId: 'codex-acp', received: 9 }) });
+    events.handler?.({ payload: progress({ job: 'cli', stage: 'installing', received: 9 }) });
+    events.handler?.({ payload: progress({ stage: 'done', received: null }) });
+    finish('fetched');
+
+    await expect(fetched).resolves.toBe('fetched');
+    expect(seen).toEqual([7, null, 2048]);
+    expect(events.unlistened).toBe(1);
+  });
+
+  it('on the web fetches nothing', async () => {
+    await expect(prepareAcpAdapter('claude-acp', () => undefined)).resolves.toBeNull();
+    expect(mocks.invoke).not.toHaveBeenCalled();
   });
 });
