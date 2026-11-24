@@ -1250,8 +1250,6 @@
     "jsdom:src/widgets/ontology-map/render/starfield.test.ts": 1.436,
     "jsdom:src/widgets/ontology-map/render/traces.test.ts": 1.05,
     "jsdom:src/widgets/ontology-map/render/viewport-cull.test.ts": 1.099,
-    "jsdom:src/widgets/ontology-map/structure/DomainStructureMap.test.tsx": 1.705,
-    "jsdom:src/widgets/ontology-map/structure/structure-index.test.ts": 1.266,
     "jsdom:src/widgets/ontology-map/tokens/read-map-tokens.test.ts": 1.549,
     "jsdom:src/widgets/ontology-map/tokens/read-tree-tokens.test.ts": 4.064,
     "jsdom:src/widgets/ontology-map/tree-view/tree-paint.test.ts": 0.992,

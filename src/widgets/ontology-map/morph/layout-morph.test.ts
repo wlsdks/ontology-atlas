@@ -5,7 +5,7 @@ import { SPRING, springVisualMs } from "@/shared/motion/spring";
 import { MOTION } from "@/shared/motion/tokens";
 import { chooseLayoutSwitch, containmentParents, planLayoutMorph, sampleLayoutMorph } from "./layout-morph";
 
-const VIEWS: readonly MapLayoutView[] = ["flat", "hex", "3d", "structure", "neural"];
+const VIEWS: readonly MapLayoutView[] = ["flat", "hex", "3d", "neural"];
 
 const mark = (id: string, x: number, y: number, extra: Partial<MapLayoutMark> = {}): MapLayoutMark => ({
   id,
@@ -55,18 +55,16 @@ describe("chooseLayoutSwitch", () => {
   it("leaves flat and Neural to the map engine's own morph, and crossfades every other switch into or out of Neural", () => {
     expect(chooseLayoutSwitch({ ...base, from: "flat", to: "neural" })).toBe("native");
     expect(chooseLayoutSwitch({ ...base, from: "neural", to: "flat" })).toBe("native");
-    for (const other of ["hex", "3d", "structure"] as const) {
+    for (const other of ["hex", "3d"] as const) {
       expect(chooseLayoutSwitch({ ...base, from: other, to: "neural" })).toBe("fade");
       expect(chooseLayoutSwitch({ ...base, from: "neural", to: other })).toBe("fade");
     }
     expect(chooseLayoutSwitch({ ...base, from: "hex", to: "neural", fromOverlay: true })).toBe("fade");
   });
 
-  it("crossfades into the flat and structure views past their measured ceilings", () => {
+  it("crossfades into the flat view past its measured ceiling", () => {
     expect(chooseLayoutSwitch({ ...base, conceptCount: 10000, from: "hex", to: "flat" })).toBe("fade");
-    expect(chooseLayoutSwitch({ ...base, conceptCount: 10000, from: "hex", to: "structure" })).toBe("fade");
     expect(chooseLayoutSwitch({ ...base, conceptCount: 10000, from: "flat", to: "hex" })).toBe("ghost");
-    expect(chooseLayoutSwitch({ ...base, conceptCount: 10000, from: "structure", to: "hex" })).toBe("fade");
   });
 
   it("retargets a travel in flight back to the view it left", () => {

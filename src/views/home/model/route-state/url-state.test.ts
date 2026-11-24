@@ -59,7 +59,7 @@ describe("parseHomeRouteState", () => {
   });
 
   it("round-trips every map view the picker offers, and drops any other value", () => {
-    for (const view of ["hex", "structure", "3d", "neural"] as const) {
+    for (const view of ["hex", "3d", "neural"] as const) {
       const state = parseHomeRouteState(new URLSearchParams(`view=${view}`));
       expect(state.mapView).toBe(view);
       expect(applyHomeRouteState(new URLSearchParams(), state).get("view")).toBe(view);
@@ -67,6 +67,8 @@ describe("parseHomeRouteState", () => {
     expect(parseHomeRouteState(new URLSearchParams("view=flat")).mapView).toBeNull();
     expect(parseHomeRouteState(new URLSearchParams("view=cone")).mapView).toBeNull();
     expect(parseHomeRouteState(new URLSearchParams("view=territories")).mapView).toBeNull();
+    expect(parseHomeRouteState(new URLSearchParams("view=structure")).mapView).toBeNull();
+    expect(parseHomeRouteState(new URLSearchParams("view=galaxy")).mapView).toBeNull();
   });
 
   it.each([

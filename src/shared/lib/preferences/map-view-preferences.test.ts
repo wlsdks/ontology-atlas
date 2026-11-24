@@ -42,7 +42,7 @@ describe("map view preferences", () => {
     expect(renderHook(() => useMapView()).result.current).toBe(view);
   });
 
-  it.each(["flat", "hex", "structure", "3d"] as const)("picking a view other than Neural removes the arrangement key (%s)", (view) => {
+  it.each(["flat", "hex", "3d"] as const)("picking a view other than Neural removes the arrangement key (%s)", (view) => {
     window.localStorage.setItem("atlas.appearance.map-arrangement", "coupling");
     writeMapView(view);
     expect(window.localStorage.getItem("atlas.appearance.map-arrangement")).toBeNull();
@@ -61,6 +61,13 @@ describe("map view preferences", () => {
     expect(renderHook(() => useFlatMapView()).result.current).toBe(true);
     writeMapView("hex");
     expect(window.localStorage.getItem("atlas.appearance.territories")).toBeNull();
+  });
+
+  it.each(["structure", "galaxy"])("never reads a retired Domain structure or Galaxy pick, and the next pick removes it (%s)", (key) => {
+    window.localStorage.setItem(`atlas.appearance.${key}`, "on");
+    expect(renderHook(() => useFlatMapView()).result.current).toBe(true);
+    writeMapView("hex");
+    expect(window.localStorage.getItem(`atlas.appearance.${key}`)).toBeNull();
   });
 
   it("still attempts the map writes when storage reads are unavailable", () => {
