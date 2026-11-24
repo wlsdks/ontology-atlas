@@ -11,7 +11,7 @@ The map is the knowledge graph Atlas draws from the Markdown files in your ontol
 
 ## The map at rest
 
-The default view is **Flat**, a force-directed graph grouped by domain. The view picker also offers **Hex**, **3D**, **Domain structure** and **Neural**. This chapter describes **Flat**.
+The default view is **Flat**, a force-directed graph grouped by domain. The view picker also offers **Hex**, **3D** and **Neural**. This chapter describes **Flat**.
 
 - **The project** is one disc at the center. While nothing is selected, it is the only mark in color.
 - **Domains** are soft pools of light, each with a disc, a large bold name, and a caption that counts its members, for example "12 capabilities · 30 elements".
