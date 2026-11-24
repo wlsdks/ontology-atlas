@@ -136,7 +136,7 @@ export interface V2HandoffInput {
   slug: string;
   /**
    * Does this node have its own `.md` document? Without one, `slug` is the raw
-   * reference text another document wrote down, so `get_concept` / `patch_concept`
+   * reference text another document wrote down, so `get_concepts` / `patch_concept`
    * do not apply — the handoff then offers the call that creates the document first.
    * (Unset reads as documented, as before.)
    */
@@ -174,12 +174,12 @@ export function formatV2HandoffText(input: V2HandoffInput): string {
     input.source !== "loaded-vault"
       ? "next: open a markdown vault, then copy a node handoff from that loaded vault"
       : documented
-        ? `next: get_concept("${input.slug}") → review context, then patch_concept / add_relation as needed`
-        // A derived node with no document — `get_concept` would look up a name that does
+        ? `next: get_concepts({slugs:["${input.slug}"]}) → review context, then patch_concept / add_relations as needed`
+        // A derived node with no document — `get_concepts` would look up a name that does
         // not exist and stop there. The only form the vault knows this concept in is a
         // reference string written by another document, so the first step is creating a
         // document under that name.
-        : `next: add_concept({slug:"${input.slug}", kind:"${input.kind}"}) — this concept has no document yet; it exists only as a reference written in another doc`;
+        : `next: add_concepts({concepts:[{slug:"${input.slug}", kind:"${input.kind}"}]}) — this concept has no document yet; it exists only as a reference written in another doc`;
   return [
     `source: ${input.source}`,
     `node: ${input.slug}`,
@@ -206,7 +206,7 @@ export function formatV2HandoffText(input: V2HandoffInput): string {
       : []),
     ...(input.source === "read-only-sample"
       ? [
-          "write_guard: do not run get_concept / patch_concept / add_relation for this sample node",
+          "write_guard: do not run get_concepts / patch_concept / add_relations for this sample node",
         ]
       : []),
     next,

@@ -1,6 +1,6 @@
 /**
  * One relation written two ways from the same source document: by hand on the map
- * (`buildOntologyRelationEditPlan`) and by `add_relation` over MCP. Both must leave the same
+ * (`buildOntologyRelationEditPlan`) and by `add_relations` over MCP. Both must leave the same
  * frontmatter; `tests/contract/analysis/relation-write.contract.test.ts` runs every row through both.
  */
 

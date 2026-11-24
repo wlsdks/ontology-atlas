@@ -27,7 +27,7 @@ export interface EvidenceRow {
   /** Why, for the unknown verdicts: `folder-only` is the one the brief names on its own line. */
   reason: string | null;
   /**
-   * The vault document slug that `get_concept` takes; the display title alone forces an agent to
+   * The vault document slug that `get_concepts` takes; the display title alone forces an agent to
    * search first.
    */
   slug: string | null;

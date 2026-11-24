@@ -555,7 +555,7 @@ export interface TopologyPathAgentPacketLabels {
 }
 
 /**
- * The path chip's single copy button: one `find_path` call; an agent chains `relation_check`
+ * The path chip's single copy button: one `query_ontology` path call; an agent chains `relation_check`
  * or `explain_relation` from its result itself.
  */
 export function formatTopologyPathAgentPacket({

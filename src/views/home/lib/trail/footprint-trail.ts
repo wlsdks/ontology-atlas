@@ -93,7 +93,7 @@ export interface FootprintTrailEntry {
    * flattened derived slugs.
    */
   agentRef?: string | null;
-  /** Without a document the packet suggests creating one instead of `get_concept`. */
+  /** Without a document the packet suggests creating one instead of `get_concepts`. */
   documented?: boolean;
 }
 
@@ -136,12 +136,12 @@ export function formatFootprintTrailAgentPacket(
   lines.push("");
   lines.push(labels.reviewHint);
   for (const entry of entries) {
-    // `get_concept` on an undocumented concept answers "not found", so name the reference another
+    // `get_concepts` on an undocumented concept answers "not found", so name the reference another
     // document wrote down.
     lines.push(
       entry.documented === false
         ? `# ${agentRefOf(entry)} — ${labels.undocumented}`
-        : `get_concept("${agentRefOf(entry)}")`,
+        : `get_concepts({slugs:["${agentRefOf(entry)}"]})`,
     );
   }
   if (entries.length >= 2) {
@@ -149,13 +149,13 @@ export function formatFootprintTrailAgentPacket(
     const last = agentRefOf(entries[entries.length - 1]);
     lines.push("");
     lines.push(labels.pathHint);
-    lines.push(`find_path("${first}", "${last}")`);
+    lines.push(formatQueryOntologyCall({ operation: "path", from: first, to: last }));
   }
   if (labels.dustyHint && dustySlugs.length > 0) {
     lines.push("");
     lines.push(labels.dustyHint);
     for (const slug of dustySlugs.slice(0, 3)) {
-      lines.push(`get_concept("${graphIdToConceptSlug(slug)}")`);
+      lines.push(`get_concepts({slugs:["${graphIdToConceptSlug(slug)}"]})`);
     }
     lines.push(formatQueryOntologyCall({ operation: "maintenance_plan" }));
   }

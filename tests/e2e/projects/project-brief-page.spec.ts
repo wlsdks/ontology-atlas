@@ -146,7 +146,7 @@ test.describe("project page reads as a brief", () => {
     await page.getByTestId("project-detail-handoff-preview").click();
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
-    await expect(dialog.locator("pre")).toContainText('get_concept("storefront")');
+    await expect(dialog.locator("pre")).toContainText('get_concepts({slugs:["storefront"]})');
   });
 
   test("the overflow menu opens under its trigger with right edges aligned", async ({ page }) => {

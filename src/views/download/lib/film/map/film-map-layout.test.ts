@@ -67,25 +67,25 @@ const COPY: Record<string, FilmCopy> = {
     units: (c, e) => `${c} capabilities · ${e} elements`,
     reach: (n, b) => [{ text: `Depends on ${n} · Used by ${b}`, ink: 'secondary' }],
     agent: 'Claude Code',
-    tool: 'get_concept',
+    tool: 'get_concepts',
   },
   ko: {
     units: (c, e) => `역량 ${c} · 요소 ${e}`,
     reach: (n, b) => [{ text: `의존 ${n}개 · 사용처 ${b}개`, ink: 'secondary' }],
     agent: 'Claude Code',
-    tool: 'get_concept',
+    tool: 'get_concepts',
   },
   ja: {
     units: (c, e) => `ケイパビリティ${c}件 · 要素${e}件`,
     reach: (n, b) => [{ text: `${n}件に依存 · ${b}件が依存`, ink: 'secondary' }],
     agent: 'Claude Code',
-    tool: 'get_concept',
+    tool: 'get_concepts',
   },
   zh: {
     units: (c, e) => `${c} 项能力 · ${e} 个元素`,
     reach: (n, b) => [{ text: `依赖 ${n} 个 · 被 ${b} 个依赖`, ink: 'secondary' }],
     agent: 'Claude Code',
-    tool: 'get_concept',
+    tool: 'get_concepts',
   },
 };
 
