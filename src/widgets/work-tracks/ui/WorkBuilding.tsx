@@ -21,9 +21,12 @@ import type { MoruCharacter } from '../model/room-look';
 import { BranchName } from './BranchName';
 import { LargeRoom } from './LargeRoom';
 import { MiniRoom } from './MiniRoom';
+import { LandedLog, landedRowId } from './LandedLog';
+import { LandedPanel } from './LandedPanel';
 import { RoomPanel } from './RoomPanel';
 import { RoomShelf } from './RoomShelf';
 import { BASE_SCREEN_COMMITS, useRoomCopy } from './use-room-copy';
+import type { LandedRead } from '@/shared/lib/work-status/tauri-work-status';
 import styles from './rooms.module.css';
 
 /** From this width a mini room spreads its newest commits and what is not committed into columns. */
@@ -477,11 +480,15 @@ function emphasise(board: HTMLElement | null, event: ReactPointerEvent<HTMLEleme
  * where each room was drawn, and nothing reads the DOM to lay them out. Pressing a room opens the
  * room panel beside the building.
  */
-export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs }: {
+export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs, root, landed }: {
   tracks: WorkTracks;
   seenRunningAt: ReadonlyMap<string, number>;
   baseBranch: string;
   nowMs: number;
+  /** The repository the rooms are read from, for opening a landed change. */
+  root: string;
+  /** The base branch's newest landed changes, listed under the building; `null` until read. */
+  landed: LandedRead | null;
 }) {
   const t = useTranslations('workStatus');
   const reduced = usePrefersReducedMotion();
@@ -562,8 +569,24 @@ export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs }: {
   const emphasiseSession = useCallback((event: ReactPointerEvent<HTMLElement>) => emphasise(boardRef.current, event), []);
 
   const panelId = useId();
+  const landedPanelId = useId();
   const [pressedKey, setPressedKey] = useState<string | null>(null);
-  const pressRoom = useCallback((key: string) => setPressedKey(current => (current === key ? null : key)), []);
+  const [landedHash, setLandedHash] = useState<string | null>(null);
+  const pressRoom = useCallback((key: string) => {
+    setLandedHash(null);
+    setPressedKey(current => (current === key ? null : key));
+  }, []);
+  const selectLanded = useCallback((hash: string) => {
+    setPressedKey(null);
+    setLandedHash(current => (current === hash ? null : hash));
+  }, []);
+  const selectedLanded = landed?.changes.find(change => change.hash === landedHash) ?? null;
+  const closeLanded = useCallback(() => {
+    setLandedHash(current => {
+      if (current) document.getElementById(landedRowId(current))?.focus();
+      return null;
+    });
+  }, []);
   // A room that leaves the building takes its panel with it.
   const pressedRoom = entries.find(room => room.key === pressedKey && layout.rooms.has(room.key)) ?? null;
   const closePanel = useCallback(() => {
@@ -573,9 +596,10 @@ export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs }: {
     });
   }, []);
   const closeOnEscape = (event: ReactKeyboardEvent<HTMLElement>) => {
-    if (event.key !== 'Escape' || event.defaultPrevented || pressedRoom === null) return;
+    if (event.key !== 'Escape' || event.defaultPrevented || (pressedRoom === null && selectedLanded === null)) return;
     event.preventDefault();
-    closePanel();
+    if (selectedLanded) closeLanded();
+    else closePanel();
   };
 
   return (
@@ -638,8 +662,10 @@ export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs }: {
           </>
         ) : null}
       </div>
+      <LandedLog read={landed} baseBranch={baseBranch} nowMs={nowMs} selectedHash={selectedLanded?.hash ?? null} onSelect={selectLanded} panelId={landedPanelId} />
     </div>
-    <RoomPanel room={pressedRoom} copy={copy} id={panelId} onClose={closePanel} />
+    <RoomPanel room={pressedRoom} copy={copy} id={panelId} onClose={closePanel} replaced={selectedLanded !== null} />
+    <LandedPanel change={selectedLanded} root={root} nowMs={nowMs} id={landedPanelId} onClose={closeLanded} replaced={pressedRoom !== null} />
     </div>
   );
 }

@@ -13,10 +13,10 @@ const EMPTY_UNIT = 1;
  * The building before any worktree: one room for the base branch, its dark screen over the rail
  * where Moru rests and which ends at the stop named `main`, and the words under it.
  */
-export function EmptyRoom({ branch, title, body, children }: { branch: string; title: ReactNode; body: string; children?: ReactNode }) {
+export function EmptyRoom({ branch, title, body, children, className }: { branch: string; title: ReactNode; body: string; children?: ReactNode; className?: string }) {
   const t = useTranslations('workStatus');
   return (
-    <div data-testid="work-empty-room" className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto px-10 py-8">
+    <div data-testid="work-empty-room" className={cn('flex min-h-0 flex-1 items-center justify-center overflow-y-auto px-10 py-8', className)}>
       <div className="flex w-full max-w-[45rem] flex-col items-center text-center">
         <div className={cn(styles.large, styles.notched, 'relative h-[18rem] w-full overflow-hidden bg-[color:var(--work-room-wall)]')} style={{ ['--ink' as string]: 'var(--work-session-1)', containerType: 'size' }}>
           <div className={styles.scene} style={{ ['--u' as string]: EMPTY_UNIT }} data-lit={false}>

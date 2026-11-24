@@ -104,7 +104,7 @@ fn subcommand_of<'a>(args: &[&'a str]) -> Option<&'a str> {
 }
 
 /// Read commands must not run repository-controlled diff, textconv or signature programs.
-pub(super) fn with_diff_family_guard<'a>(args: &[&'a str]) -> Vec<&'a str> {
+pub(crate) fn with_diff_family_guard<'a>(args: &[&'a str]) -> Vec<&'a str> {
     let mut out: Vec<&str> = Vec::with_capacity(args.len() + 3);
     let mut guarded = false;
     let mut skip_value = false;

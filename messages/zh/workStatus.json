@@ -166,10 +166,49 @@
     "copied": "已复制",
     "reading": "读取中…",
     "cleanupTitle": "要清理，请在终端中运行",
-    "copyCommand": "复制命令"
+    "copyCommand": "复制命令",
+    "stat": {
+      "commits": "{branch} 之后的提交",
+      "uncommitted": "未提交的文件"
+    },
+    "quiet": "{branch} 之后没有提交，也没有未提交的文件。"
   },
   "about": {
     "label": "这个页面显示什么",
     "body": "一个房间就是一个工作树。工作树是这个仓库里用来处理一个分支的独立文件夹。房间的屏幕上显示分支、最近的提交，以及已修改但尚未提交的文件。有代理会话正在工作的房间会亮灯。按下房间可以查看其余内容。"
+  },
+  "landed": {
+    "title": "已进入 <code>{branch}</code> 的工作",
+    "note": "删除工作树后仍保留在这里，直接从 Git 记录读取。",
+    "summary": "今天 {today} 个 · 最近 7 天 {week} 个",
+    "none": "还没有工作进入 {branch}。",
+    "today": "今天",
+    "yesterday": "昨天",
+    "dayCount": "{count} 个",
+    "files": "{count} 个文件",
+    "linesSr": "新增 {insertions} 行，删除 {deletions} 行",
+    "kind": {
+      "feat": "功能",
+      "fix": "修复",
+      "perf": "性能",
+      "design": "设计",
+      "refactor": "整理",
+      "docs": "文档",
+      "test": "测试",
+      "chore": "维护"
+    },
+    "landedAt": "{ago} · {time} 进入",
+    "stat": {
+      "commits": "提交",
+      "files": "文件",
+      "added": "新增行",
+      "removed": "删除行"
+    },
+    "commitsTitle": "这项工作的提交",
+    "filesTitle": "改动的文件",
+    "squashed": "它合并成一个提交进入，没有单独的提交可看。",
+    "binary": "二进制",
+    "unreadable": "无法从 Git 读取这项工作的提交和文件。",
+    "copyHash": "复制提交哈希"
   }
 }
