@@ -24,7 +24,7 @@ const EDGE_AIR_PX = 10;
  * The least run, px, over which a far end's tag comes in and its disc and name go: from the moment the
  * disc's rim meets the edge to the moment the edge reaches its centre, so a half-cut disc is never named.
  */
-const FADE_MIN_PX = 8;
+const FADE_MIN_PX = 2;
 /** Samples along a line's curve when finding where it leaves the free map. */
 const EXIT_SAMPLES = 24;
 const EXIT_REFINE = 8;
