@@ -79,9 +79,20 @@ export function computeFreeArea(canvas: Rect, obstacles: readonly Rect[]): Rect 
 }
 
 /**
+ * A tooltip is a hint over the map, not chrome: counted, a chip's hint left open by the focus a
+ * closing picker returns narrowed the hex board's room past the one its glide predicted. Radix
+ * positions it in a wrapper with the same box, which goes too.
+ */
+function isTooltip(domElement: Element): boolean {
+  if (domElement.closest('[role="tooltip"]')) return true;
+  return domElement.hasAttribute('data-radix-popper-content-wrapper') && domElement.firstElementChild?.getAttribute('role') === 'tooltip';
+}
+
+/**
  * Measures from the DOM what covers the canvas. Hidden, zero-size, near-transparent, collapsed
  * or `aria-hidden` boxes are skipped, as are the canvas's ancestors and descendants. A modal is
- * not a panel; `data-topology-camera-obstacle="none"` opts a non-modal transient surface out.
+ * not a panel, nor is a tooltip; `data-topology-camera-obstacle="none"` opts a non-modal
+ * transient surface out.
  */
 export function collectCanvasObstacles(
   canvas: Element,
@@ -103,6 +114,7 @@ export function collectCanvasObstacles(
     if (domElement.closest('.sr-only')) continue;
     if (domElement.closest('[aria-hidden="true"]')) continue;
     if (domElement.closest('[aria-modal="true"], [data-topology-camera-obstacle="none"]')) continue;
+    if (isTooltip(domElement)) continue;
     const style = getComputedStyle(domElement);
     if (style.visibility === 'hidden' || style.display === 'none') continue;
     if (Number(style.opacity) < 0.05) continue;
