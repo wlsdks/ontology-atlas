@@ -355,8 +355,11 @@ function paintBackings(ctx: CanvasRenderingContext2D, marks: readonly Name[], gr
   if (feathered) ctx.restore();
 }
 
-/** The ink past which a name's box is cut out of the lines under it: its halo already hides them under its strokes. */
-const KNOCKOUT_INK = 0.9;
+/**
+ * The ink past which a name's box is cut out of the lines under it, a dimmed name's too: a line run
+ * behind a name reads as striking it out, however faint the name.
+ */
+const KNOCKOUT_INK = 0.3;
 /** Air the cut leaves round a name's words, px; a name's box already holds `namePadPx` round them. */
 const KNOCKOUT_AIR_PX = 2;
 
