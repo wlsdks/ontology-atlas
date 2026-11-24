@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { FIXTURE_VAULT } from "../../fixture-vault";
+import { FRAME_INTERVAL_BUDGET_MS, PERF_BARS } from "../../motion-sampler";
 import { seedFirstRunSeen } from "../../first-run-seed";
 import { waitForAnimationsDone } from "../../settle";
 import { stubDirectoryPicker } from "../../vault-picker-stub";
@@ -225,7 +226,8 @@ test.describe("the map analysis chip", () => {
     expect(percents.some((percent) => percent > 62 && percent < 90), "the share jumped to its new value").toBe(true);
     const firstMove = samples.findIndex((entry) => entry.percent !== 62);
     const intervals = samples.slice(Math.max(1, firstMove)).map((entry, index, list) => (index === 0 ? 0 : entry.at - list[index - 1]!.at));
-    expect(Math.max(...intervals), `a frame took over 50 ms while the share moved (${moving.length} changes)`).toBeLessThanOrEqual(50);
+    console.log(`[map-analysis-chip] ${JSON.stringify({ changes: moving.length, maxIntervalMs: Math.round(Math.max(...intervals)) })}`);
+    if (PERF_BARS) expect(Math.max(...intervals), "a frame interval while the share moved").toBeLessThanOrEqual(FRAME_INTERVAL_BUDGET_MS);
   });
 
   for (const size of [

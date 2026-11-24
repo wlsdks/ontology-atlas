@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { CODE_CONCEPTS, installCodeReaderRuntime, openConceptOnMap } from "./code-reader-fixture";
-import { expectSmoothMotion, FRAME_INTERVAL_BUDGET_MS, startSmoothness, stopSmoothness } from "./motion-sampler";
+import { expectSmoothMotion, FRAME_INTERVAL_BUDGET_MS, PERF_BARS, startSmoothness, stopSmoothness } from "./motion-sampler";
 import { waitForAnimationsDone, waitForBoxStill, waitForMapStill } from "./settle";
 
 /*
@@ -70,7 +70,7 @@ function maxStepShare(values: number[]): number {
 function expectNoJump(samples: Sample[], keys: readonly (keyof Omit<Sample, "t">)[]) {
   const intervals = samples.slice(1).map((sample, index) => sample.t - samples[index]!.t);
   console.log(`[code-reader-motion] ${JSON.stringify({ frames: samples.length, maxIntervalMs: Math.round(Math.max(...intervals)) })}`);
-  expect(Math.max(...intervals), "a frame interval while the reader moved").toBeLessThanOrEqual(FRAME_INTERVAL_BUDGET_MS);
+  if (PERF_BARS) expect(Math.max(...intervals), "a frame interval while the reader moved").toBeLessThanOrEqual(FRAME_INTERVAL_BUDGET_MS);
   for (const key of keys) expect(maxStepShare(samples.map((sample) => sample[key])), `${key} jumped in one frame`).toBeLessThanOrEqual(MAX_STEP_SHARE);
 }
 
