@@ -390,6 +390,8 @@ export async function installDesktopRailRuntime(
           }
           case "plugin:event|unlisten":
             return Promise.resolve(null);
+          case "acp_prepare_adapter":
+            return Promise.resolve("ready");
           case "acp_detect_runtimes":
             return slow(input.runtimeResponses ? (args.probeLogin ? input.runtimeResponses.probed : input.runtimeResponses.fast) : []);
           case "acp_start":
