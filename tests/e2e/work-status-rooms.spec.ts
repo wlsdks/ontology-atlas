@@ -568,28 +568,38 @@ test.describe("work status rooms", () => {
       entry.branch === "feat/library-stage" ? row("feat/library-stage")
         : entry.branch === "feat/idle-one" ? working("feat/idle-one", CLAUDE) : entry);
     await setRows(page, first);
+    // The first update is read and drawn: its sequence starts. Moru's loops run all along, so a running animation does not say so.
+    await expect(room(page, "feat/idle-one")).toHaveAttribute("data-room-size", "large", { timeout: 10_000 });
     // Git says something new 150 ms into the sequence; the page reads it on its next tick, mid-sequence.
-    await page.waitForFunction(() => document.querySelector("[data-testid=work-building]")!.getAnimations({ subtree: true }).some((a) => a.playState === "running"));
     // measurement window: the next update must land 150 ms into the running sequence, the gap the owner set.
     await page.waitForTimeout(150);
-    await setRows(page, first.map((entry) => entry.branch === "feat/idle-two" ? working("feat/idle-two", CLAUDE_LATER) : entry));
+    const second = first.map((entry) => entry.branch === "feat/idle-two" ? working("feat/idle-two", CLAUDE_LATER) : entry);
+    await page.evaluate((rows) => {
+      const target = window as unknown as { __workStatusRowsWhen: (rows: unknown, when: () => boolean) => void; __readMidSequence?: boolean };
+      // Whether a room's own sequence still plays when the page reads it: a finite animation on a room.
+      target.__workStatusRowsWhen(rows, () => {
+        target.__readMidSequence = document.querySelector("[data-testid=work-building]")!.getAnimations({ subtree: true }).some((animation) =>
+          animation.playState === "running" && Number.isFinite(Number(animation.effect?.getComputedTiming().endTime))
+          && (animation.effect as KeyframeEffect | null)?.target?.closest("[data-room-key]") !== null);
+        return true;
+      });
+    }, second);
     await expect(room(page, "feat/idle-two")).toHaveAttribute("data-room-size", "large", { timeout: 10_000 });
+    expect(await page.evaluate(() => (window as unknown as { __readMidSequence?: boolean }).__readMidSequence), "the next update was read while the first sequence played").toBe(true);
     await waitForAnimationsDone(page.getByTestId("work-building"));
     // A second rise reflows the stage, so no stage box ends up handed over whole.
     await expectCleanPaint(page);
     await expectSmoothMotion(page);
   });
 
-  test("lets a room that stops mid-move leave from where it is drawn, its content fading", async ({ page }) => {
+  test("hands two stage slots over when one room stops and another starts in one read, the leaving content fading", async ({ page }) => {
     await openWorkStatus(page, SWAP);
     await expect(room(page, "feat/work-status-rooms")).toHaveAttribute("data-room-size", "large");
     await startPaintSampler(page);
-    const first = SWAP.map((entry) => entry.branch === "feat/idle-one" ? working("feat/idle-one", CLAUDE) : entry);
-    await setRows(page, first);
-    // The next update goes out once the first move has played a quarter second, so it lands mid-move.
-    await page.waitForFunction(() => document.querySelector("[data-testid=work-building]")!.getAnimations({ subtree: true })
-      .some((a) => a.playState === "running" && Number(a.currentTime) >= 250));
-    await setRows(page, first.map((entry) => entry.branch === "feat/work-status-rooms" ? row("feat/work-status-rooms") : entry));
+    // One read: the room left of the stopped one slides into its slot, and the starting one rises into the slot that frees.
+    await setRows(page, SWAP.map((entry) =>
+      entry.branch === "feat/idle-one" ? working("feat/idle-one", CLAUDE)
+        : entry.branch === "feat/work-status-rooms" ? row("feat/work-status-rooms") : entry));
     await expect(room(page, "feat/work-status-rooms")).toHaveAttribute("data-room-size", "mini", { timeout: 10_000 });
     await waitForAnimationsDone(page.getByTestId("work-building"));
     await expectCleanPaint(page, { slots: 2 });
