@@ -1,0 +1,47 @@
+{
+  "pill": {
+    "full": "지도에 {percent, number}% · {number, number}차 분석 · {when}",
+    "shareOnly": "지도에 {percent, number}% · 분석 기록 없음",
+    "noShare": "{number, number}차 분석 · {when}",
+    "running": "지도에 {percent, number}% · 지금 분석 중",
+    "changed": "지도에 {percent, number}% · {number, number}차 분석 뒤 파일 {files, number}개 바뀜",
+    "label": "코드 분석. {summary}. 누르면 분석 기록이 열려요."
+  },
+  "when": {
+    "today": "오늘",
+    "yesterday": "어제",
+    "days": "{days, number}일 전"
+  },
+  "panel": {
+    "title": "코드 분석",
+    "share": "코드에서 찾은 기능 {total, number}개 중 {mapped, number}개({percent, number}%)가 지도에 있어요.",
+    "shareAll": "코드에서 찾은 기능 {total, number}개가 모두 지도에 있어요.",
+    "counted": "{number, number}차 분석({when}) 때 센 숫자예요. 그 뒤에 바뀐 코드는 아직 세지 않았어요.",
+    "listTitle": "이 폴더에서 한 분석",
+    "row": "{number, number}차 분석 · {date} · {agent}",
+    "rowNoAgent": "{number, number}차 분석 · {date}",
+    "rowChange": "지도에 {before, number}% → {after, number}% · 개념 {added, number}개 추가, {changed, number}개 수정",
+    "rowFirst": "지도에 {after, number}% · 개념 {added, number}개 추가, {changed, number}개 수정",
+    "rowNoShare": "개념 {added, number}개 추가, {changed, number}개 수정",
+    "earlier": "이전 분석 {count, number}건은 이 폴더의 .ontology-atlas/map-analysis.jsonl 파일에 있어요.",
+    "noRecord": "이 폴더에는 아직 분석 기록이 없어요. 다음에 에이전트가 지도에 개념을 추가하면 그때부터 기록해요.",
+    "where": "이 기록은 이 폴더의 .ontology-atlas/map-analysis.jsonl 파일에 저장돼요. Git은 기본으로 이 파일을 제외해서, 폴더를 다른 곳에 복제하면 그곳에서는 기록이 새로 시작돼요.",
+    "unreadable": "Atlas가 .ontology-atlas/map-analysis.jsonl 파일을 읽지 못해서 분석 목록을 보여 주지 못해요. 위 숫자는 프로젝트 노트에서 읽은 값이에요. 다음 분석은 이 파일에 그대로 이어서 기록돼요."
+  },
+  "action": {
+    "mapRestHelp": "지도 대화를 열어요. 예상 시간과 시작 버튼이 거기에 있어요.",
+    "catchUp": "새로 생기거나 바뀐 코드 분석",
+    "catchUpBody": "읽을 파일 {files, number}개. 에이전트 요청 약 {requests, number}번, {duration} 정도 걸려요."
+  },
+  "web": {
+    "analyze": "Atlas에서 분석을 시작하려면 코딩 에이전트를 실행하는 데스크톱 앱이 필요해요. MCP로 직접 연결한 에이전트가 한 분석도 이 기록에 남아요."
+  },
+  "changed": {
+    "none": "{number, number}차 분석 뒤로 바뀐 코드 파일이 없어요.",
+    "some": "{number, number}차 분석 뒤로 코드에 새 파일 {added, number}개가 생기고 파일 {changed, number}개가 바뀌었어요. 위 숫자에는 아직 들어 있지 않아요.",
+    "behind": "개념 {count, number}개는 가리키는 코드가 바뀌기 전에 적혔어요.",
+    "unknownCommit": "바뀐 파일을 셀 수 없어요. {number, number}차 분석 때 읽은 커밋({commit})이 이 저장소 기록에 없어요.",
+    "noGit": "바뀐 파일을 셀 수 없어요. 연결된 코드 폴더가 Git 저장소가 아니에요.",
+    "web": "분석 뒤 바뀐 파일을 세려면 코드의 Git 기록을 읽는 데스크톱 앱이 필요해요."
+  }
+}
