@@ -481,3 +481,42 @@ test('a Go outline leaves out what is declared inside a function body', () => {
   const names = outlineSource(text, 'worker.go').declarations.map((row) => `${row.line} ${row.name}`);
   assert.deepEqual(names, ['2 registry', '3 Worker.Run', '7 New', '13 Name']);
 });
+
+test('a Go outline keeps every top-level declaration after a function that opens no body', () => {
+  const goNames = (lines) => outlineSource(lines.join('\n'), 'cases.go').declarations.map((row) => row.name);
+  assert.deepEqual(goNames([
+    'func SwapInt32(addr *int32, new int32) (old int32)',
+    'func SwapInt64(addr *int64, new int64) (old int64)',
+    'type Value struct {',
+    '\tv any',
+    '}',
+    'func Load(addr *int32) int32 {',
+    '\treturn 0',
+    '}',
+  ]), ['SwapInt32', 'SwapInt64', 'Value', 'Load']);
+  assert.deepEqual(goNames([
+    'func (noop) Log(string) {} // intentionally empty',
+    'func New() *Logger {',
+    '\treturn nil',
+    '}',
+    'func After() {}',
+  ]), ['noop.Log', 'New', 'After']);
+  assert.deepEqual(goNames([
+    'func Register(',
+    '\tname string,',
+    ') {}',
+    'func Serve(addr string) error {',
+    '\treturn nil',
+    '}',
+    'const Name = "x"',
+  ]), ['Register', 'Serve', 'Name']);
+  assert.deepEqual(goNames([
+    '/*',
+    'func Handler(w http.ResponseWriter, r *http.Request)',
+    '*/',
+    'package web',
+    'func Real() {',
+    '}',
+    'type T struct{}',
+  ]), ['Handler', 'Real', 'T']);
+});

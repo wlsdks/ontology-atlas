@@ -252,8 +252,7 @@ function completeLines(text) {
 /** A declaration as the text answer sends it: `L115 def name(...)`. */
 export function outlineLine(declaration) {
   const signature = String(declaration.signature ?? '').trim();
-  const ownName = String(declaration.name).split('.').pop();
-  return signature.includes(ownName)
+  return signature.includes(declaration.name)
     ? `L${declaration.line} ${repoText(signature, 240)}`
     : `L${declaration.line} ${declaration.kind} ${repoText(declaration.name, 120)}${signature ? ` ${repoText(signature, 240)}` : ''}`;
 }
