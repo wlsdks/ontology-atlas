@@ -47,7 +47,7 @@ const BATCH_TOOLS = new Set(["add_concepts", "add_relations"]);
  */
 export function entryWeight(entry: AgentActivityEntry): number {
   if (!BATCH_TOOLS.has(entry.tool)) return 1;
-  const matched = /(\d+)\s*행/.exec(entry.summary);
+  const matched = /(\d+) rows written/.exec(entry.summary);
   if (!matched) return 1;
   const parsed = Number.parseInt(matched[1], 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;

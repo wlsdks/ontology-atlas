@@ -59,7 +59,7 @@ export const ADD_RELATION_TOOL = {
 export const ADD_RELATIONS_TOOL = {
   name: 'add_relations',
   description:
-    'Add one or more typed relations between existing nodes, up to 50 per call, each written to its source node\'s matching frontmatter key. `contains` between kinds a typed key fits is written as that key, said in the row\'s `notice`. ' +
+    'Add one or more typed relations between existing nodes, up to 50 per call, each written to its source node\'s matching frontmatter key. `contains` between kinds a typed key fits is written as that key, said in the row\'s `notice`. Replaces add_relation. ' +
     'Give every new `depends_on` a nonblank `why`; an edge from imports alone, such as `infer_imports.moduleEdges`, needs exact-evidence review and the user\'s acceptance first. ' +
     'Rows are independent, idempotent and not rolled back: an existing edge returns `alreadyExists: true`; a bad row (missing slug, unknown type, unknown field) returns `{ok: false, error}` labelled `relations[n]` with a closest-value hint and repair fields, in input order. ' +
     '`mtimes` maps each source whose first changed row passed `expected_mtime` to its new mtime; when rows share one `from`, guard only its first row. ' +
@@ -81,12 +81,16 @@ export const ADD_RELATIONS_TOOL = {
               maxLength: 300,
               description: 'One-line rationale stored in relation_notes; required for a new depends_on.',
             },
-            expected_mtime: { type: 'number', minimum: 0 },
+            expected_mtime: {
+              type: 'number',
+              minimum: 0,
+              description: 'Conflict guard: the source node\'s mtime from get_concepts or the last write; a changed file throws VaultConflictError.',
+            },
           },
           required: ['from', 'to', 'type'],
           additionalProperties: false,
         },
-        description: 'One row per relation: `from`, `to`, `type`, and `why` for a new depends_on.',
+        description: 'One row per relation: `from`, `to`, `type`, and `why` for a new depends_on. `type: "domain"` sets the source\'s inline parent domain.',
       },
     },
     required: ['relations'],

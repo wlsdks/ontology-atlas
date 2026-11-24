@@ -100,7 +100,7 @@ function addRelation({ from, to, type: requestedType, why, expected_mtime }, opt
   const type = typed ?? requestedType;
   const key = RELATION_KEY[type];
   const notice = containmentNotice(requestedType, type, fromKind, toKind);
-  requireNodeNotReservedForHuman(readDocIfPresent(canonicalFrom ?? from), 'add_relation');
+  requireNodeNotReservedForHuman(readDocIfPresent(canonicalFrom ?? from), 'add_relations');
   // Both endpoints must exist, so a typo or hallucinated slug is an error rather than
   // a dangling reference; tail and frontmatter slug aliases are stored as the
   // canonical slug.

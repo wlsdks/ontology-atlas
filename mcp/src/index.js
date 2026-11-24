@@ -113,8 +113,8 @@ server.setRequestHandler('tools/call', async (request) => withRetiredToolNote(
 
 function withRetiredToolNote(name, response) {
   const replacement = RETIRED_TOOL_REPLACEMENTS.get(name);
-  if (!replacement) return response;
-  const note = { type: 'text', text: `${name} is retired from tools/list and will be removed; call ${replacement} instead.` };
+  if (!replacement || response.isError) return response;
+  const note = { type: 'text', text: `${name} is retired from tools/list and will be removed; its replacement is ${replacement}.` };
   return { ...response, content: [...(response.content ?? []), note] };
 }
 

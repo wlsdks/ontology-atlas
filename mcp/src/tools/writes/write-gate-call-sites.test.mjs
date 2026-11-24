@@ -40,7 +40,7 @@ test('every write that names a reserved node as its source is refused before any
   const open = 'capabilities/open';
   const cases = [
     ['patch_concept', () => patchConcept({ slug: reserved, frontmatter: { title: 'Renamed' } })],
-    ['add_relation', () => addRelation({ from: reserved, to: open, type: 'depends_on' })],
+    ['add_relations', () => addRelation({ from: reserved, to: open, type: 'depends_on' })],
     ['remove_relation', () => removeRelation({ from: reserved, to: open, type: 'depends_on', confirm: true })],
     ['replace_relation', () => replaceRelation({
       from: reserved, oldTo: open, oldType: 'depends_on', newTo: 'capabilities/target', newType: 'depends_on', confirm: true,

@@ -466,7 +466,7 @@ await test("tools/list — a retired tool stays out of the list and answers with
     assert.notEqual(retired.isError, true, "a retired tool still answers");
     assert.equal(
       retired.content.at(-1).text,
-      `list_kinds is retired from tools/list and will be removed; call ${RETIRED_TOOL_REPLACEMENTS.get("list_kinds")} instead.`,
+      `list_kinds is retired from tools/list and will be removed; its replacement is ${RETIRED_TOOL_REPLACEMENTS.get("list_kinds")}.`,
     );
     assert.deepEqual(retired.structuredContent.byKind, getCallStructured(responses, 4).census.byKind);
     assert.equal(responses.find((r) => r.id === 4).result.content.length, 1, "an advertised tool carries no retirement note");
@@ -7334,6 +7334,28 @@ await test("add_concepts — a second row with the same title lands with a near-
         (w) => /already exists at "alpha"/i.test(w) && /patch_concept/i.test(w),
       ),
       "the second row warns of a near-duplicate normalized title",
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("add_concepts — a row titled like a node already in the vault lands with a near-duplicate warning", async () => {
+  const root = makeVault([
+    { slug: "capabilities/issue-invoice", content: "---\nkind: capability\ntitle: Issue an invoice\ndomain: domains/billing\n---\nIssues an invoice.\n" },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "add_concepts", {
+        concepts: [{ slug: "capabilities/invoice-issuing", kind: "capability", title: "Issue an invoice", domain: "domains/billing" }],
+      }),
+    ]);
+    const [row] = getCallParsed(responses, 2).concepts;
+    assert.equal(row.ok, true, "the row lands (advisory, not blocking)");
+    assert.ok(
+      (row.warnings ?? []).some((w) => /already exists at "capabilities\/issue-invoice"/.test(w) && /patch_concept/.test(w)),
+      "the row names the existing node and patch_concept",
     );
   } finally {
     rmSync(root, { recursive: true, force: true });

@@ -8,7 +8,7 @@ import {
 export const LIST_CONCEPTS_TOOL = {
   name: 'list_concepts',
   description:
-    'List every ontology node in the vault (each .md file with a frontmatter `kind:`); AI agents call this first to grasp the codebase\'s mental model. Every page also carries `census`, the whole vault\'s kind counts, so `limit: 1` sizes up a vault. Filter by `kind`, `domain` and `since`; page with `offset` + `limit`, following `pagination.nextOffset` while `hasMore` is true. For a predicate such as "capabilities with no elements" use `query_concepts`.',
+    'List every ontology node in the vault (each .md file with a frontmatter `kind:`); AI agents call this first to grasp the codebase\'s mental model. Every page also carries `census`, the whole vault\'s kind counts, so `limit: 1` sizes up a vault; it replaces list_kinds. Filter by `kind`, `domain` and `since`; page with `offset` + `limit`, following `pagination.nextOffset` while `hasMore` is true. For a predicate such as "capabilities with no elements" use `query_concepts`.',
   inputSchema: {
     type: 'object',
     properties: {

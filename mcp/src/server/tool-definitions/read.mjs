@@ -152,7 +152,7 @@ export const GET_CONCEPT_TOOL = {
 export const GET_CONCEPTS_TOOL = {
   name: 'get_concepts',
   description:
-    'Fetch one or more nodes to read what they say, by exactly one selector array: `slugs` (canonical slugs or unique aliases) or immutable `uids`; one node is a one-item array. Each row, in input order, holds frontmatter, body, neighbours, outgoingEdges and mtime, with permanent `uid` plus current canonical `slug`; a bad row returns `{ok:false, error}` so later valid slugs still resolve. The default `excerpt` is the first paragraph: pass `body: "full"` to answer from the node, since its definition, Includes, Excludes and Uncertainty live there. Graph-operation inputs remain slug-based.',
+    'Fetch one or more nodes to read what they say, by exactly one selector array: `slugs` (canonical slugs or unique aliases) or immutable `uids`; one node is a one-item array. Each row, in input order, holds frontmatter, body, neighbours, outgoingEdges and mtime, with permanent `uid` plus current canonical `slug`; a bad row returns `{ok:false, error}` so later valid slugs still resolve. The default `excerpt` is the first paragraph: pass `body: "full"` to answer from the node, since its definition, Includes, Excludes and Uncertainty live there. Graph-operation inputs remain slug-based. Replaces get_concept.',
   inputSchema: {
     type: 'object',
     properties: {

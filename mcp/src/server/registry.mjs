@@ -182,7 +182,7 @@ const RETIRED_TOOL_REPLACEMENTS = new Map([
   ['add_concept', 'add_concepts({ concepts: [row] })'],
   ['add_relation', 'add_relations({ relations: [row] })'],
   ['find_path', "query_ontology({ operation: 'path', from, to })"],
-  ['find_neighbors', "query_ontology({ operation: 'neighbors', slug })"],
+  ['find_neighbors', "query_ontology({ operation: 'neighbors', slug, includeUnresolved: true })"],
   ['list_kinds', 'list_concepts({ limit: 1 }) and read its census'],
   ['index_project', 'analyze_repo_structure, then infer_imports and validate_vault'],
 ]);
