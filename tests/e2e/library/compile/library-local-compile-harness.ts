@@ -492,6 +492,7 @@ export async function installLocalCompileHarness(
               ? { path: '/Applications/Ontology Atlas.app/Contents/MacOS/ontology-atlas-mcp', available: true, reason: null }
               : { path: null, available: false, reason: "local fixture" });
           }
+          if (command === "acp_prepare_adapter") return Promise.resolve("ready");
           if (command === "acp_detect_runtimes") return Promise.resolve(detectedRuntime ? [{
             id: detectedRuntime, label: detectedRuntime === 'codex-acp' ? 'Codex' : 'Claude Agent',
             state: 'ready', verified: true, isolated: true, launchKind: 'npx',

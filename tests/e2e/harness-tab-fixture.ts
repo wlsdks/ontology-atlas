@@ -466,6 +466,8 @@ export async function installHarnessRuntime(
           case "start_vault_watch":
           case "ensure_vault_directory":
             return Promise.resolve(null);
+          case "acp_prepare_adapter":
+            return Promise.resolve("ready");
           case "acp_detect_runtimes":
             return Promise.resolve([]);
           case "discover_mcp_connectors":

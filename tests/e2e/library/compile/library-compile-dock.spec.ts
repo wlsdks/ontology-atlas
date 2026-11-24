@@ -120,6 +120,8 @@ async function installDesktopBridge(page: Page) {
               relativePath,
               sha256: null,
             }));
+          case "acp_prepare_adapter":
+            return Promise.resolve("ready");
           case "acp_detect_runtimes":
             return [runtime];
           case "mcp_bundled_server":

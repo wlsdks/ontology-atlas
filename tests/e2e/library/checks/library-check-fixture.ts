@@ -150,6 +150,8 @@ export async function installLibraryCheckBridge(page: Page) {
               relativePath,
               sha256: null,
             }));
+          case "acp_prepare_adapter":
+            return Promise.resolve("ready");
           // **The absence that makes this a proof.** No runtime is installed, so no door on
           // this screen can start a turn and nothing here came from an agent.
           case "acp_detect_runtimes":
