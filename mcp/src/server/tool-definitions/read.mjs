@@ -152,7 +152,7 @@ export const GET_CONCEPT_TOOL = {
 export const GET_CONCEPTS_TOOL = {
   name: 'get_concepts',
   description:
-    'Fetch several nodes in one call by exactly one selector array: `slugs` or immutable `uids`. Rows match `get_concept` in input order, each with permanent `uid` plus current canonical `slug`; a bad row returns `{ok:false, error}` so later valid slugs still resolve. Graph-operation inputs remain slug-based.',
+    'Fetch one or more nodes to read what they say, by exactly one selector array: `slugs` (canonical slugs or unique aliases) or immutable `uids`; one node is a one-item array. Each row, in input order, holds frontmatter, body, neighbours, outgoingEdges and mtime, with permanent `uid` plus current canonical `slug`; a bad row returns `{ok:false, error}` so later valid slugs still resolve. The default `excerpt` is the first paragraph: pass `body: "full"` to answer from the node, since its definition, Includes, Excludes and Uncertainty live there. Graph-operation inputs remain slug-based.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -257,7 +257,7 @@ export const GET_CONCEPTS_TOOL = {
 export const FIND_BACKLINKS_TOOL = {
   name: 'find_backlinks',
   description:
-    'Return every node that points to the target slug; call it before a rename, merge or delete. Scans both frontmatter graph keys and wikilinks / markdown links in the body, to walk the graph from a node to its dependents.',
+    'Return every node that points to the target slug; call it before a rename, merge or delete. Scans both frontmatter graph keys and wikilinks / markdown links in the body, to walk the graph from a node to its dependents. query_ontology `neighbors` reads frontmatter relations only.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -529,7 +529,7 @@ export const FIND_ORPHANS_TOOL = {
 export const QUERY_CONCEPTS_TOOL = {
   name: 'query_concepts',
   description:
-    'Typed filter DSL: find vault nodes by predicate, for questions a path search cannot answer, such as capabilities with zero elements.\n' +
+    'Typed filter DSL: find vault nodes by predicate, for questions a path search cannot answer, such as capabilities with zero elements. query_ontology `match_nodes` filters by degree instead.\n' +
     'Grammar (case-insensitive): filter := atom (AND|OR atom)* ; atom := NOT? predicate ; predicate := key=value | key!=value | has(key)\n' +
     'Keys: kind, domain, slug, title for equality; any graph frontmatter array key for has(...). Example: `kind=capability AND domain=auth AND NOT has(elements)`. No match returns a `growthHint`.',
   inputSchema: {
