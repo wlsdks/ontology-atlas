@@ -47,4 +47,16 @@ describe("readHexRoom", () => {
     placed(document.createElement("div"), 504, 848, 960, 118, board);
     expect(readHexRoom(canvas, 1448, 982, board)).toEqual(predicted);
   });
+
+  it("rests the board in the room its glide predicted while a chip's tooltip stands at the room's left edge", () => {
+    // Measured at 1512 × 982: the INDEX panel ends at 388, and the map-view chip's tooltip opens
+    // at 394 on the focus its closing picker hands back, within reach of the room's left edge.
+    placed(document.createElement("div"), 88, 24, 300, 934);
+    const canvas = placed(document.createElement("canvas"), 64, 0, 1448, 982);
+    const predicted = readHexRoom(canvas, 1448, 982);
+    const wrapper = placed(document.createElement("div"), 394, 66, 161, 26);
+    wrapper.setAttribute("data-radix-popper-content-wrapper", "");
+    placed(document.createElement("div"), 394, 66, 161, 26, wrapper).setAttribute("role", "tooltip");
+    expect(readHexRoom(canvas, 1448, 982)).toEqual(predicted);
+  });
 });
