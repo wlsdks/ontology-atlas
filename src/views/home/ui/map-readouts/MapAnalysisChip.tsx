@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useFormatter, useTranslations } from "next-intl";
 
+import { agentProductName } from "@/entities/agent-usage";
 import { useCountUp } from "@/shared/lib/render-timing/use-count-up";
 import { Button, ChromeChip, Surface } from "@/shared/ui";
 import type { MapAnalysisChipModel, MapAnalysisPill, MapAnalysisRow, MapAnalysisWhen } from "../../lib/map-analysis/map-analysis-chip";
@@ -54,6 +55,7 @@ function rowChangeLabel(t: Translate, row: MapAnalysisRow): string {
 export function MapAnalysisChip({ model, canMapTheRest, onMapTheRest }: MapAnalysisChipProps) {
   const t = useTranslations("mapAnalysis");
   const tWorkCard = useTranslations("workCard.mapping");
+  const tNavRail = useTranslations("navRail.usage");
   const format = useFormatter();
   const [open, setOpen] = useState(false);
   const [align, setAlign] = useState<LanePopoverAlign>("start");
@@ -157,7 +159,7 @@ export function MapAnalysisChip({ model, canMapTheRest, onMapTheRest }: MapAnaly
                     <li key={row.id} className="flex flex-col gap-0.5" data-testid="map-analysis-row">
                       <span className="truncate text-body leading-body text-[color:var(--color-text-secondary)]">
                         {row.agent
-                          ? t("panel.row", { number: row.number, date, agent: row.agent })
+                          ? t("panel.row", { number: row.number, date, agent: agentProductName(row.agent) ?? tNavRail("agentFallback") })
                           : t("panel.rowNoAgent", { number: row.number, date })}
                       </span>
                       <span className="text-label leading-label tabular-nums text-[color:var(--color-text-tertiary)]">

@@ -33,6 +33,29 @@ describe("the map analysis chip in the app", () => {
     expect(screen.getByTestId("map-analysis-chip-trigger")).toHaveAttribute("aria-expanded", "false");
   });
 
+  it("names each analysis's agent as a person knows it, never by its id", () => {
+    const row = (number: number, agent: string) => ({
+      id: `a${number}`, number, at: "2026-11-20T10:00:00.000Z", agent, before: null, after: 62, added: 1, changed: 0,
+    });
+    render(
+      <NextIntlClientProvider locale="en" messages={en} timeZone="UTC">
+        <MapAnalysisChip
+          model={{ ...model(38), rows: [row(3, "claude-code"), row(2, "codex-acp"), row(1, "my-review-bot")] }}
+          canMapTheRest
+          onMapTheRest={() => {}}
+        />
+      </NextIntlClientProvider>,
+    );
+    fireEvent.click(screen.getByTestId("map-analysis-chip-trigger"));
+    const rows = screen.getAllByTestId("map-analysis-row").map((item) => item.textContent ?? "");
+    expect(rows[0]).toContain("Claude Code");
+    expect(rows[1]).toContain("Codex");
+    expect(rows[2]).toContain(en.navRail.usage.agentFallback);
+    for (const id of ["claude-code", "codex-acp", "my-review-bot"]) {
+      expect(rows.join("\n"), `the id ${id} reached the panel`).not.toContain(id);
+    }
+  });
+
   it("offers nothing to map when nothing is off the map", () => {
     render(view(0));
     fireEvent.click(screen.getByTestId("map-analysis-chip-trigger"));
