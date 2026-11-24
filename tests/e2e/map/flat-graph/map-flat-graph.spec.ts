@@ -183,6 +183,24 @@ test("a capability drawn smaller than the least pick radius answers a pointer th
   }
 });
 
+test("the capability under the pointer draws larger by the hover growth and gives it back when the pointer leaves", async ({ page }) => {
+  test.setTimeout(180_000);
+  await useDogfoodSample(page);
+  const rest = await openGraph(page);
+  const grow = await tokenPx(page, "--map-graph-hover-grow-px");
+  const capabilities = new Set(rest.clusters.flatMap((c) => c.capabilityIds));
+  const smallest = rest.discs.filter((d) => capabilities.has(d.id)).reduce((a, b) => (b.r < a.r ? b : a));
+  const radiusOf = async () => (await readDial(page)).discs.find((d) => d.id === smallest.id)!.r;
+  const at = await canvasPoint(page, smallest);
+  await page.mouse.move(at.x, at.y);
+  expect(await hovered(page)).toBe(smallest.id);
+  await waitForMapStill(page);
+  expect(await radiusOf(), `${smallest.id} grows from ${smallest.r.toFixed(2)} px`).toBeCloseTo(smallest.r + grow, 1);
+  await page.mouse.move(5, VIEWPORT.height / 2);
+  await waitForMapStill(page);
+  expect(await radiusOf(), `${smallest.id} returns to its resting radius`).toBeCloseTo(smallest.r, 1);
+});
+
 test("under a path lens a concept outside the lens draws no disc and answers no pointer", async ({ page }) => {
   test.setTimeout(180_000);
   const dial = await openGraph(page, "mode=path&pathFrom=domain%3Afulfillment&pathTo=capability%3Acarrier-integration&");

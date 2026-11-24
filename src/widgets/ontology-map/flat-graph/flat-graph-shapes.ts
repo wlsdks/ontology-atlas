@@ -91,6 +91,8 @@ export interface FlatGraphPaintTokens {
   selectZoomMaxRatio: number;
   /** The least radius the pointer picks a mark within, whatever its drawn size. */
   pickMinPx: number;
+  /** How much larger the mark under the pointer draws, so a small one shows it is the mark a press takes. */
+  hoverGrowPx: number;
   /** The most screen distance a domain selection zooms in to put between its two closest member capabilities. */
   domainApartMaxPx: number;
   /** An opened star's marks grow into this share of the room to their nearest neighbour, up to the open maxima. */
