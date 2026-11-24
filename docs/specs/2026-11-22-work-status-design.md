@@ -516,3 +516,8 @@ None — the owner's answers are in the Work status spec.
   them there cut them in or out in one frame. The whole browser run on v2.6.0's tag caught it
   where frames are slow; the paint sampler now samples 15 seconds by time, since 900 frames
   ended a 120 Hz display's sampling before the change, and reads a part's own inner fade.
+- 2026-11-24: when one room stops and another starts in one read, the large slot the first
+  leaves stays covered at every millisecond of the move where any order can: the page tells the
+  planner which rooms start on the stage, a plan that leaves one of their slots bare loses to any
+  that does not, and the planner checks those slots at every millisecond, trying a bounded number
+  of further orders. The retarget test now proves its second update is read mid-sequence.
