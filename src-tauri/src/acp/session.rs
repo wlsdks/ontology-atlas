@@ -805,6 +805,8 @@ mod tests {
         let _ = std::fs::remove_dir_all(&base);
     }
 
+    // Binding resolution is Unix-only, as for Harness; elsewhere every file asks.
+    #[cfg(unix)]
     #[test]
     fn the_code_folder_is_the_one_granted_binding_and_nothing_else() {
         use crate::vault::grants::{grant_source_root, EnforcedScope};
