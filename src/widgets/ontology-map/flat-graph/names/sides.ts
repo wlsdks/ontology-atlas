@@ -101,11 +101,7 @@ function selectedNames(input: NameShape, id: string, role: "capability" | "eleme
   const px = t.selectedNamePx;
   const nameFont = font(FONT_WEIGHT.strong, px, fontFamily);
   const nameW = measureText(text, nameFont);
-  // The domain is read as the selection's address, first on its count line, so its own title can step back.
-  const domainId = input.model.domainOf.get(id);
-  const address = domainId == null ? null : input.model.domainById.get(domainId)?.label ?? null;
-  const counts = reachText(input.labels, input.reach);
-  const line = address && counts ? `${address} · ${counts}` : address ?? counts;
+  const line = reachText(input.labels, input.reach);
   const lineFont = font(400, t.captionPx, fontFamily);
   const figures = line ? tabularPieces(line, lineFont, measureText) : null;
   const lineW = figures?.width ?? 0;

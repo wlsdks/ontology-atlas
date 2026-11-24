@@ -8,6 +8,9 @@ import { CELL_PX, grown, Occupancy, StepOccupancy, stepScale, sweptBox, worldBox
 import { blockAbove, domainBlock, domainReachLine, hubCaptionBox, orphanCaption, projectName, titleMayRise } from "./titles";
 import type { NameAdmission, NameInput, PlacedName } from "./placed-name";
 
+
+/** Air, px, the selection's name keeps from every disc not its own. */
+const SELECTED_NAME_AIR_PX = 8;
 /** The axes a free map may cut an open star's rim along. */
 const AXES = ["x", "y"] as const;
 
@@ -143,11 +146,11 @@ export function admit(input: NameInput, step: number, seed: NameAdmission | null
    * and the centre of the step: `discAirPx` at the step's scales never below zero, read only from the
    * discs filed under the glyphs' swept box. O(discs near the group × scales).
    */
-  const offDiscsInStep = (at: Point, group: readonly PlacedName[]) => !group.some((n) => {
+  const offDiscsInStep = (at: Point, group: readonly PlacedName[], air = 0) => !group.some((n) => {
     const glyphs = grown(n.box, -tokens.namePadPx);
     return stepDiscs.some(span(at, glyphs), (d) => d.id !== n.id && stepScales.some((s) => {
       const b = worldBox(at, glyphs, s);
-      return Math.hypot(Math.max(b.minX - d.at.x, 0, d.at.x - b.maxX), Math.max(b.minY - d.at.y, 0, d.at.y - b.maxY)) * s < d.r;
+      return Math.hypot(Math.max(b.minX - d.at.x, 0, d.at.x - b.maxX), Math.max(b.minY - d.at.y, 0, d.at.y - b.maxY)) * s < d.r + air;
     }));
   });
   // A caption ranks lowest and gives way to every disc anywhere in the step, at rest and in the overview.
@@ -252,7 +255,9 @@ export function admit(input: NameInput, step: number, seed: NameAdmission | null
     // Names are tested against names at the step's ends and centre; a disc's box at the step's own scale.
     const discs = fan?.offsets.has(cand.id) ? litMarks : marks;
     // With no mark grown the frame draws a name as admitted, at whatever zoom of the step it rests, so a capability's name keeps off every disc not its own across the step.
-    const offDiscs = (group: readonly PlacedName[]) => cand.element || offDiscsInStep(at, group);
+    // The selection's name keeps clear air from every other disc, so it never reads as a neighbour's name.
+    const nameAir = cand.id === selectedId ? SELECTED_NAME_AIR_PX : 0;
+    const offDiscs = (group: readonly PlacedName[]) => (cand.element && nameAir === 0) || offDiscsInStep(at, group, nameAir);
     // A fanned name stands on a row the fan laid out for it, so it keeps off a title's glyphs, not the air round them.
     const titleGap = fan?.offsets.has(cand.id) === true ? 0 : tokens.selectedTitleGapPx;
     // The camera frames a selection with every side its name may take and its fan's names, so those may stand past the overview's pad.
@@ -271,7 +276,7 @@ export function admit(input: NameInput, step: number, seed: NameAdmission | null
     // every scene, unless a title, a disc, the ring or a lit line is there; then it takes the first side clear.
     const above = cand.id === selectedId && fan !== null ? all[0] : undefined;
     const steady = above !== undefined && within(above) && offTitles(at, above, 0) && !onRing(at, above) && leaderClear(above)
-      && !above.some((n) => discs.hits(worldBox(at, n.box, scale))) && offDiscsInStep(at, above) && !crossed(at, above)
+      && !above.some((n) => discs.hits(worldBox(at, n.box, scale))) && offDiscsInStep(at, above, SELECTED_NAME_AIR_PX) && !crossed(at, above)
       ? { side: above, backed: false }
       : null;
     // Only a forced name may stand on an element dot of an open star; a forced name across a lit line draws on its backing.

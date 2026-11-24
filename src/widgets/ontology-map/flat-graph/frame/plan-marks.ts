@@ -4,7 +4,7 @@ import { directItemId } from "../layout";
 import { arcPathInto, graphDiscRadiusPx, litLineTrimsInto, smoothstep } from "../marks";
 import type { GraphMotion } from "../motion";
 import type { FlatGraphCluster, FlatGraphItem } from "../flat-graph-shapes";
-import { addExitTag } from "./exit-tags";
+import { addExitTag, exitShare, exitWholeShare } from "./exit-tags";
 import { hueOf, loadMarkInk, ownerInkShare, ownerStepBack, loadGlowShare, screenOf, fanShare, alongSpoke, screenAt, onScreen, discRadius, dotRadius, segmentOnScreen, lensHidden } from "./place";
 import { crowdClear } from "./push-crowd";
 import { DRAWN_INK, ROOM_GONE_PX, ROOM_WHOLE_PX, type Disc, type Segment, type Arc, LINE_KINDS, type Light, segments, dots, discs, glows, lights, arcMarks, chordPool, alphaCache, frameChords, shownElements, cacheFor, L, F as frameState, movedRoom, scratch } from "./state";
@@ -135,6 +135,9 @@ export function planCluster(c: FlatGraphCluster, projectAt: Point | null, projec
     L.domains.add(d);
   }
   const evidence = F.evidence;
+  // A hollow domain's member links start at its rim, so they never meet in the empty disc.
+  const rimShare = ownerStepBack(c.domainId);
+  const rimPx = rimShare > 0 ? discRadius(c.domainId) * rimShare : 0;
   for (let i = 0; i < c.items.length; i += 1) {
     const it = c.items[i]!;
     if (it.direct) {
@@ -148,6 +151,11 @@ export function planCluster(c: FlatGraphCluster, projectAt: Point | null, projec
     alphas.set(it.id, itemHidden ? 0 : 1);
     if (!contextMode && segmentOnScreen(at, itemAt)) {
       const s = segmentBetween(at, itemAt, hue, false);
+      const apart = Math.hypot(itemAt.x - at.x, itemAt.y - at.y);
+      if (rimPx > 0 && apart > rimPx) {
+        s.x0 = at.x + ((itemAt.x - at.x) / apart) * rimPx;
+        s.y0 = at.y + ((itemAt.y - at.y) / apart) * rimPx;
+      }
       const alpha = P.linkCapAlpha * Math.min(ink, itemInk);
       if (s.alpha !== alpha) s.alpha = alpha;
       L.segments.add(s);
@@ -281,13 +289,42 @@ export function focusLinks(motion: GraphMotion): void {
       if (line.kind === "needs") mark.fadeStart = fade;
       else mark.fadeEnd = fade;
     }
-    L.focusArcs.add(mark);
-    // A line that runs under a panel or off the canvas names where it goes at the edge it leaves by.
+    // A line that runs under a panel or off the canvas names where it goes at the edge it leaves by, and ends there.
     const focusId = F.attention.focusId;
-    if (current && focusId !== null) addExitTag(mark.path, line.from, line.to, focusId, line.kind === "neededBy" ? F.tokens.inks.reach : F.tokens.inks.arc, reach);
+    const fromFocus = line.from === focusId;
+    const inside = focusId !== null && (fromFocus || line.to === focusId) ? exitShare(mark.path, fromFocus) : -1;
+    if (current && focusId !== null) addExitTag(mark.path, line.from, line.to, focusId, line.kind === "neededBy" ? F.tokens.inks.reach : F.tokens.inks.arc, reach, inside);
+    if (inside > 0) endAtEdge(mark, fromFocus ? 0 : 1 - inside, fromFocus ? inside : 1, fromFocus);
+    L.focusArcs.add(mark);
     if (current) F.lineKinds |= FLAT_LINE_BITS[line.kind] | (betweenDomains ? FLAT_LINE_BITS.domains : 0);
     if (chorded && current) frameChords.add(chordOf(mark, line.kind === "relates"));
   }
+}
+
+/**
+ * Cuts `arc` to the part of its curve between `t0` and `t1` and fades it out toward the cut, the end
+ * away from the selection when `cutAtEnd`. O(1).
+ */
+function endAtEdge(arc: Arc, t0: number, t1: number, cutAtEnd: boolean): void {
+  const { a, c, b } = arc.path;
+  const u0 = 1 - t0;
+  const u1 = 1 - t1;
+  const mid = t0 * u1 + u0 * t1;
+  const cx = u0 * u1 * a.x + mid * c.x + t0 * t1 * b.x;
+  const cy = u0 * u1 * a.y + mid * c.y + t0 * t1 * b.y;
+  const ax = u0 * u0 * a.x + 2 * u0 * t0 * c.x + t0 * t0 * b.x;
+  const ay = u0 * u0 * a.y + 2 * u0 * t0 * c.y + t0 * t0 * b.y;
+  const bx = u1 * u1 * a.x + 2 * u1 * t1 * c.x + t1 * t1 * b.x;
+  const by = u1 * u1 * a.y + 2 * u1 * t1 * c.y + t1 * t1 * b.y;
+  a.x = ax;
+  a.y = ay;
+  c.x = cx;
+  c.y = cy;
+  b.x = bx;
+  b.y = by;
+  const fade = Math.min(0.5, F.P.lineFadePx / (Math.hypot(bx - ax, by - ay) || 1)) * exitWholeShare();
+  if (cutAtEnd) arc.fadeEnd = Math.max(arc.fadeEnd, fade);
+  else arc.fadeStart = Math.max(arc.fadeStart, fade);
 }
 
 /** A chord runs the way impact travels: from what is needed, or the broader concept, toward what rests on it. */

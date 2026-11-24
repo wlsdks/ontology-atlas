@@ -85,8 +85,8 @@ function fitsAt(marks: readonly FramedMark[], scale: number, width: number, heig
  */
 function leastShift(span: { lo: number; hi: number }, anchor: { lo: number; hi: number }, centre: number, lo: number, hi: number, toMiddle = false): number {
   const clamp = (v: number, a: number, b: number) => Math.min(Math.max(v, a), b);
-  // A centred frame brings the anchor to the middle of the free map as far as the span still fits.
-  if (lo - span.lo <= hi - span.hi) return clamp(toMiddle ? (lo + hi) / 2 - (anchor.lo + anchor.hi) / 2 : 0, lo - span.lo, hi - span.hi);
+  // A centred frame stands the whole framed set in the middle of the free map, so the selection takes the lead room its lines need.
+  if (lo - span.lo <= hi - span.hi) return clamp(toMiddle ? (lo + hi) / 2 - (span.lo + span.hi) / 2 : 0, lo - span.lo, hi - span.hi);
   const centred = (lo + hi) / 2 - (span.lo + span.hi) / 2;
   if (lo - anchor.lo <= hi - anchor.hi) return clamp(centred, lo - anchor.lo, hi - anchor.hi);
   return clamp((lo + hi) / 2 - (anchor.lo + anchor.hi) / 2, lo - centre, hi - centre);

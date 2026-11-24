@@ -117,7 +117,13 @@ function graphSelectionFrame(
   const farEnds = [...whole].filter((of) => !near.has(of)).flatMap((of) => world.nodeById.get(of) ?? []);
   const own = world.nodeById.get(id)!;
   const disc = radius(id);
-  const sets = inOpenStar ? [marks(whole), marks(near), [{ x: own.x, y: own.y, box: { minX: -disc, maxX: disc, minY: -disc, maxY: disc } }]] : [marks(whole), marks(near)];
+  // Short of every name, the near group with each far end's own mark: the lines' ends stay on the free map, named where they land.
+  const ends = farEnds.map((end): FramedMark => {
+    const r = radius(end.id);
+    return { x: end.x, y: end.y, box: { minX: -r, maxX: r, minY: -r, maxY: r } };
+  });
+  const withEnds = [...marks(near), ...ends];
+  const sets = inOpenStar ? [marks(whole), withEnds, marks(near), [{ x: own.x, y: own.y, box: { minX: -disc, maxX: disc, minY: -disc, maxY: disc } }]] : [marks(whole), withEnds, marks(near)];
   return selectionFrameTarget(camera, sets, viewport, free, paint.frameMarginPx, band.entryScale, zoom, farEnds, band.centred);
 }
 

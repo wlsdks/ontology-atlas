@@ -63,21 +63,22 @@ function conceptText(id: string): string | null {
   return model.capabilityById.get(id)?.label ?? model.domainById.get(id)?.label ?? F.input.elementLabel(id) ?? null;
 }
 
+let exitWhole = 0;
+
+/** How whole the last `exitShare` line's leaving is, 0 to 1 as its far end slides `FADE_OUT_PX` past the edge, so its fade grows in. */
+export const exitWholeShare = (): number => exitWhole;
+
 /**
- * Records a tag for a lit line of the selection whose far end lies off the free map, under a panel or
- * past the canvas: the line's own ink names where it goes at the point it leaves. O(EXIT_SAMPLES).
+ * How far along a lit line of the selection, as a share of it from the selection's end, the line
+ * leaves the free map toward a far end under a panel or past the canvas; -1 when both ends are on
+ * the free map or the selection's own end is not. Sampled from the selection's end, then halved
+ * down to the edge. O(EXIT_SAMPLES + EXIT_REFINE).
  */
-export function addExitTag(path: ArcPath, fromId: string, toId: string, focusId: string, ink: string, reach: number): void {
-  if (reach < SHOW_FROM) return;
-  const fromFocus = fromId === focusId;
-  if (!fromFocus && toId !== focusId) return;
+export function exitShare(path: ArcPath, fromFocus: boolean): number {
   const far = fromFocus ? path.b : path.a;
   const near = fromFocus ? path.a : path.b;
-  const away = outsideBy(far.x, far.y);
-  if (away <= 0 || outsideBy(near.x, near.y) > 0) return;
-  const text = conceptText(fromFocus ? toId : fromId);
-  if (!text) return;
-  // The first sample out of the free map from the selection's end, then halved down to the edge.
+  exitWhole = smooth(0, FADE_OUT_PX, outsideBy(far.x, far.y));
+  if (exitWhole <= 0 || outsideBy(near.x, near.y) > 0) return -1;
   let inside = 0;
   let out = 1;
   for (let i = 1; i <= EXIT_SAMPLES; i += 1) {
@@ -95,6 +96,22 @@ export function addExitTag(path: ArcPath, fromId: string, toId: string, focusId:
     if (outsideBy(probe.x, probe.y) > 0) out = mid;
     else inside = mid;
   }
+  return inside;
+}
+
+/**
+ * Records a tag for a lit line of the selection whose far end lies off the free map, under a panel or
+ * past the canvas: the line's own ink names where it goes at the point it leaves, `inside` of the way
+ * from the selection (from `exitShare`). O(1).
+ */
+export function addExitTag(path: ArcPath, fromId: string, toId: string, focusId: string, ink: string, reach: number, inside: number): void {
+  if (reach < SHOW_FROM || inside < 0) return;
+  const fromFocus = fromId === focusId;
+  if (!fromFocus && toId !== focusId) return;
+  const far = fromFocus ? path.b : path.a;
+  const away = outsideBy(far.x, far.y);
+  const text = conceptText(fromFocus ? toId : fromId);
+  if (!text) return;
   // A little way back toward the selection, which side of the edge point the line runs on.
   const back = Math.max(0, inside - INWARD_SHARE);
   pointAt(path, fromFocus ? back : 1 - back, inward);

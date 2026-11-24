@@ -121,11 +121,18 @@ function strokeQuad(ctx: CanvasRenderingContext2D, path: ArcPath, offset: number
 
 const lineDash = [0, 0];
 
-/** The focus's lines: a taper per dependency, a dotted hairline per relation, a double hairline toward a broader concept. */
+/** The kind whose lines paint last: the few concepts that rest on the focus, over the many it needs. */
+const NEEDED_BY = LINE_KINDS.indexOf("neededBy") + 1;
+
+/**
+ * The focus's lines: a taper per dependency, a dotted hairline per relation, a double hairline
+ * toward a broader concept. What rests on the focus paints over what it needs.
+ */
 function paintLines(ctx: CanvasRenderingContext2D, arcs: readonly Arc[], tokens: FlatGraphTokens): void {
   const P = tokens.paint;
-  for (let arcIndex = 0; arcIndex < arcs.length; arcIndex += 1) {
+  for (let pass = 0; pass < 2; pass += 1) for (let arcIndex = 0; arcIndex < arcs.length; arcIndex += 1) {
     const arc = arcs[arcIndex]!;
+    if ((arc.kind === NEEDED_BY) !== (pass === 1)) continue;
     const kind = LINE_KINDS[arc.kind - 1];
     ctx.globalAlpha = arc.alpha;
     if (kind === "needs" || kind === "neededBy") {

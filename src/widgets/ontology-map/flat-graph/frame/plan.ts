@@ -261,7 +261,8 @@ export function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion
   if (project && projectAt) {
     alphas.set(project, 1);
     loadMarkInk(project);
-    L.project.add(disc(project, projectAt, radiusAt(project, growth), inks.project, scratch[0]!, project === attention.focusId, "current"));
+    // The project rests in the neutral ink like every mark, so the selection's ink is never read at rest.
+    L.project.add(disc(project, projectAt, radiusAt(project, growth), hueOf(project), scratch[0]!, project === attention.focusId, "current"));
   }
 
   if (project) loadMarkInk(project);

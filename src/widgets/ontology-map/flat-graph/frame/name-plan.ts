@@ -8,7 +8,7 @@ import { grownMarks, nameClear, onGrownDot, CAPTION_ROWS } from "./name-room";
 import { loadInk, ownerStepBack, screenAt, discRadius, dotRadius } from "./place";
 
 /** The share of its ink a domain's title keeps while a concept of its own is selected. */
-const OWNER_TITLE_INK = 0;
+const OWNER_TITLE_INK = 0.5;
 import { DRAWN_INK, names, L, type DrawnName, MARK_STEP_MAX_MS, NAME_REST_PX, F as frameState, scratch } from "./state";
 
 // A module-local name: see `F` in ./state.
@@ -26,8 +26,8 @@ function loadNameInk(n: PlacedName): void {
   if (n.role === "project" || n.role === "domain" || n.role === "units" || n.role === "orphans" || n.role === "reach") {
     loadInk(n.id);
     const landed = nameLanded(n.id);
-    // A domain's title and census go while a concept of its own is selected: its name is read on the
-    // selection's count line instead.
+    // A domain's title steps back to half its ink while a concept of its own is selected, and its
+    // census goes, so the selection's name leads and the hollow ring still says whose it is.
     const back = n.role === "project" || n.role === "orphans" ? 0 : ownerStepBack(n.id);
     const owner = n.role === "units" ? 1 - back : 1 - (1 - OWNER_TITLE_INK) * back;
     scratch[0] = scratch[0]! * owner * (n.role === "units" || n.role === "orphans" ? F.P.restHue * landed : landed);
@@ -164,7 +164,8 @@ export function placeName(row: DrawnName, alphas: ReadonlyMap<string, number>, s
   mark.name = n;
   const x = at.x + row.dx;
   const y = at.y + row.dy;
-  const halo = n.role === "domain" ? P.domainNameHaloPx : P.nameHaloPx;
+  // A domain's census sits under its title among the same spokes, so it takes the title's knockout.
+  const halo = n.role === "domain" || n.role === "units" ? P.domainNameHaloPx : P.nameHaloPx;
   if (mark.x !== x) mark.x = x;
   if (mark.y !== y) mark.y = y;
   if (mark.ink !== ink) mark.ink = ink;
