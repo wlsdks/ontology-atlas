@@ -128,12 +128,22 @@ const NEEDED_BY = LINE_KINDS.indexOf("neededBy") + 1;
  * The focus's lines: a taper per dependency, a dotted hairline per relation, a double hairline
  * toward a broader concept. What rests on the focus paints over what it needs.
  */
-function paintLines(ctx: CanvasRenderingContext2D, arcs: readonly Arc[], tokens: FlatGraphTokens): void {
+/** The ground-coloured casing, px each side, a used-by line draws over the lines beneath it. */
+const CASING_PX = 1.5;
+
+function paintLines(ctx: CanvasRenderingContext2D, arcs: readonly Arc[], tokens: FlatGraphTokens, ground: string): void {
   const P = tokens.paint;
   for (let pass = 0; pass < 2; pass += 1) for (let arcIndex = 0; arcIndex < arcs.length; arcIndex += 1) {
     const arc = arcs[arcIndex]!;
     if ((arc.kind === NEEDED_BY) !== (pass === 1)) continue;
     const kind = LINE_KINDS[arc.kind - 1];
+    // A used-by line draws on a casing of the ground, so it reads apart where it runs through the needs lines.
+    if (kind === "neededBy") {
+      ctx.globalAlpha = arc.alpha;
+      ctx.strokeStyle = ground;
+      ctx.lineWidth = arc.width + CASING_PX * 2;
+      strokeQuad(ctx, arc.path, 0, arc.reach);
+    }
     ctx.globalAlpha = arc.alpha;
     if (kind === "needs" || kind === "neededBy") {
       ctx.fillStyle = kind === "needs" ? tokens.inks.arc : tokens.inks.reach;
@@ -405,7 +415,7 @@ export function paintPlan(ctx: CanvasRenderingContext2D, plan: FramePlan, tokens
   ctx.strokeStyle = tokens.inks.arc;
   ctx.lineJoin = "round";
   strokeArcs(ctx, plan.arcs, tokens.inks.arc, P.arcHeadPx);
-  paintLines(ctx, plan.focusArcs, tokens);
+  paintLines(ctx, plan.focusArcs, tokens, ground);
   ctx.restore();
   paintBackings(ctx, plan.names, ground, P);
   paintDots(ctx, plan.dots, ground, dotUnlit);
