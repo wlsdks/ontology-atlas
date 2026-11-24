@@ -52,10 +52,10 @@
     --map-graph-light-alpha: 0.2;
     --map-graph-light-reach: 1.8;
     --map-graph-arc-bow: 0.14;
-    --map-graph-arc-alpha-base: 0.04;
-    --map-graph-arc-alpha-gain: 0.004;
-    --map-graph-arc-alpha-max: 0.12;
-    --map-graph-arc-width-base-px: 0.8;
+    --map-graph-arc-alpha-base: 0.16;
+    --map-graph-arc-alpha-gain: 0.01;
+    --map-graph-arc-alpha-max: 0.3;
+    --map-graph-arc-width-base-px: 1;
     --map-graph-arc-width-gain: 0.02;
     --map-graph-arc-width-max-px: 1.2;
     --map-graph-arc-glow-px: 4;

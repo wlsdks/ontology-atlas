@@ -1,7 +1,7 @@
 import type { DialChordLight, Point } from "../../dial/dial-shapes";
 import { FLAT_LINE_BITS } from "../attention";
 import { directItemId } from "../layout";
-import { arcPathInto, graphDiscRadiusPx, litLineTrimsInto, smoothstep } from "../marks";
+import { arcPathInto, graphDiscRadiusPx, litLineTrimsInto, smoothstep, sunk } from "../marks";
 import type { GraphMotion } from "../motion";
 import type { FlatGraphCluster, FlatGraphItem } from "../flat-graph-shapes";
 import { addExitTag, cutArc, exitShare, exitWholeShare } from "./exit-tags";
@@ -107,6 +107,17 @@ export function discAt(id: string, at: Point, hue: string, focus: boolean, state
   return d;
 }
 
+/**
+ * A capability's hue: its domain's, tinted toward the selection's ink as far as it is lit, so every
+ * concept the selection lights takes one colour whichever domain holds it. O(1).
+ */
+function litHue(id: string, domainId: string, domainHue: string): string {
+  loadGlowShare(id);
+  const lit = scratch[0]!;
+  const tint = F.motion.tintShare(domainId);
+  return lit <= tint ? domainHue : sunk(F.tokens.inks.project, F.tokens.inks.name, lit);
+}
+
 /** One domain's disc, its capability discs and links, and any element fan that draws. O(members). */
 export function planCluster(c: FlatGraphCluster, projectAt: Point | null, projectInk: number): void {
   const { P, attention, contextMode } = F;
@@ -161,7 +172,7 @@ export function planCluster(c: FlatGraphCluster, projectAt: Point | null, projec
       L.segments.add(s);
     }
     if (!itemHidden && onScreen(itemAt)) {
-      const d = discAt(it.id, itemAt, hue, it.id === attention.focusId, evidence !== null ? evidence.stateOf(it.id) : "current");
+      const d = discAt(it.id, itemAt, litHue(it.id, c.domainId, hue), it.id === attention.focusId, evidence !== null ? evidence.stateOf(it.id) : "current");
       const r = discRadius(it.id);
       if (d.r !== r) d.r = r;
       if (d.ink !== itemInk) d.ink = itemInk;

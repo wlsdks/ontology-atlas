@@ -51,10 +51,6 @@ export function restartExitTags(): void {
 /** How far `id`'s disc and name have given way to its tag this frame, 0 to 1. O(1). */
 export const exitedShare = (id: string): number => exited.get(id) ?? 0;
 
-export function exitTags(): readonly ExitTag[] {
-  return pool.slice(0, count);
-}
-
 const smooth = (from: number, to: number, v: number) => {
   const t = Math.min(1, Math.max(0, (v - from) / (to - from)));
   return t * t * (3 - 2 * t);
