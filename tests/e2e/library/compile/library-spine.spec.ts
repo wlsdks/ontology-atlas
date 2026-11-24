@@ -107,7 +107,8 @@ test.describe('the Library spine at one saved answer', () => {
      */
     const door = page.getByTestId('library-questions-open');
     await expect(door).toHaveText('Open saved answer');
-    await expect(door).toHaveAttribute('title', 'What is the retention policy?');
+    await door.hover();
+    await expect(page.getByRole('tooltip')).toHaveText('What is the retention policy?');
     await door.click();
     await expect(page.getByTestId('library-reading-pane')).toBeVisible();
     await expect(page.getByTestId('retained-answer-context')).toBeVisible();
