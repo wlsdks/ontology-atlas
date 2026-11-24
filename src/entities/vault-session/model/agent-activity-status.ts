@@ -27,6 +27,8 @@ export interface AgentActivityHeartbeat {
     verification: string[];
   };
   updatedAt: string;
+  /** While a press maps the rest of the code: its id, which the MCP server records each write under, and until when it holds. */
+  mapAnalysis?: { id: string; until: string };
 }
 
 type AgentActivityReviewMode = "none" | "ontology-focus" | "business-extraction";

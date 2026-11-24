@@ -6,8 +6,11 @@
  * reads it to draw the map's analysis chip
  * (`src/shared/lib/vault-document/map-analysis-record.ts`). They share no
  * module, so this table keeps them reading the same lines as the same analyses.
- * Each case is the file's text; `expected` is what both return.
+ * Each case is the file's text; `expected` is what both return when the clock
+ * reads `NOW_MS`.
  */
+
+export const NOW_MS = Date.parse('2026-11-24T09:00:00.000Z');
 
 const line = (fields) => JSON.stringify({
   v: 1,
@@ -124,9 +127,48 @@ export const MAP_ANALYSIS_LINE_CASES = Object.freeze([
     expected: { analyses: [], broken: 4 },
   },
   {
-    name: 'a commit that is not a hash and a long agent name are dropped or cut',
-    text: text(line({ sourceCommit: 'main', agent: `  ${'x'.repeat(200)}  ` })),
-    expected: { analyses: [analysis({ sourceCommit: null, agent: 'x'.repeat(120) })], broken: 0 },
+    name: 'a commit that is not a hash is dropped, and an agent is kept only when shaped like a runtime id',
+    text: text(
+      line({ sourceCommit: 'main', agent: '  codex-acp  ' }),
+      line({ analysis: 'a2', session: 's2', agent: 'src/billing/keys.ts: function charge(secret)' }),
+      line({ analysis: 'a3', session: 's3', agent: '/Users/someone/clients/acme/plan.md' }),
+      line({ analysis: 'a4', session: 's4', agent: 'claude\n{"v":1,"analysis":"x"}' }),
+      line({ analysis: 'a5', session: 's5', agent: 'x'.repeat(101) }),
+    ),
+    expected: {
+      analyses: [
+        analysis({ sourceCommit: null, agent: 'codex-acp' }),
+        analysis({ id: 'a2', number: 2, agent: null }),
+        analysis({ id: 'a3', number: 3, agent: null }),
+        analysis({ id: 'a4', number: 4, agent: null }),
+        analysis({ id: 'a5', number: 5, agent: null }),
+      ],
+      broken: 0,
+    },
+  },
+  {
+    name: 'a time before 2020 or more than a day past the clock is not read',
+    text: text(
+      line({ analysis: 'a2', session: 's2', at: '2019-12-31T23:59:59.000Z', startedAt: '2019-12-31T23:00:00.000Z' }),
+      line({ analysis: 'a3', session: 's3', at: '2026-11-25T09:00:01.000Z' }),
+      line({ analysis: 'a4', session: 's4', at: '+275760-09-13T00:00:00.000Z' }),
+      line({ analysis: 'a5', session: 's5', at: '2026-11-25T08:00:00.000Z', startedAt: '2026-11-25T07:00:00.000Z' }),
+    ),
+    expected: {
+      analyses: [analysis({ id: 'a5', startedAt: '2026-11-25T07:00:00.000Z', at: '2026-11-25T08:00:00.000Z' })],
+      broken: 3,
+    },
+  },
+  {
+    name: 'a number or count past a billion is not believed',
+    text: text(
+      line({ number: Number.MAX_SAFE_INTEGER }),
+      line({ analysis: 'a2', session: 's2', abilities: { total: 1e300, offMap: 2 }, concepts: { added: 1_000_000_001, changed: 1, removed: 0 } }),
+    ),
+    expected: {
+      analyses: [analysis({ id: 'a2', abilities: null, concepts: { added: 0, changed: 1, removed: 0 } })],
+      broken: 1,
+    },
   },
   {
     name: 'a start after its own time reads as that time',

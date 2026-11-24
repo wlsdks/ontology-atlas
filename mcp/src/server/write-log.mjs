@@ -14,59 +14,12 @@ import {
 } from '../vault/sidecar/activity-log.mjs';
 import { createMapAnalysisRecorder } from '../vault/sidecar/map-analysis-log.mjs';
 import { server } from './instance.mjs';
+import { recordWriteInMapAnalysis } from './map-analysis-effect.mjs';
 import { createMapAnalysisMeasure, MEASURED_COVERAGE } from './map-analysis-measure.mjs';
 import { VAULT_ROOT } from './runtime.mjs';
 
-/** The app names every request of one press with this id, so they read as one analysis. */
-const PRESS_ANALYSIS_ENV = 'OATLAS_MAP_ANALYSIS_ID';
-
-const mapAnalysis = createMapAnalysisRecorder({
-  vaultRoot: VAULT_ROOT,
-  pressAnalysisId: process.env[PRESS_ANALYSIS_ENV] ?? null,
-});
+const mapAnalysis = createMapAnalysisRecorder({ vaultRoot: VAULT_ROOT });
 const measureMapShare = createMapAnalysisMeasure();
-
-function slugsOf(values) {
-  return values.filter((value) => typeof value === 'string' && value.length > 0);
-}
-
-/**
- * The concepts one successful write added, changed or removed, by slug, for the
- * map analysis record; empty for a write that changed none (a dry run, a relation
- * that already existed, a source binding, a refused batch).
- */
-function conceptEffect(name, args, result) {
-  const none = { added: [], changed: [], removed: [] };
-  if (!result || result.dryRun === true || result.changed === false) return none;
-  switch (name) {
-    case 'add_concept':
-      return { ...none, added: slugsOf([result.slug ?? args.slug]) };
-    case 'add_concepts':
-      return { ...none, added: slugsOf((result.concepts ?? []).filter((row) => row?.ok && row.changed !== false).map((row) => row.slug)) };
-    case 'add_relation':
-    case 'remove_relation':
-    case 'replace_relation':
-      return { ...none, changed: slugsOf([result.from ?? args.from]) };
-    case 'add_relations':
-      return { ...none, changed: slugsOf((result.relations ?? []).filter((row) => row?.ok && row.changed !== false).map((row) => row.from)) };
-    case 'patch_concept':
-      return { ...none, changed: slugsOf([args.slug]) };
-    case 'finalize_project_meaning':
-      return result.bodyWritten ? { ...none, changed: slugsOf([args.projectSlug]) } : none;
-    case 'rename_concept':
-      return { ...none, changed: slugsOf([result.newSlug ?? args.newSlug]) };
-    case 'reclassify_concept':
-      return { ...none, changed: slugsOf([result.newSlug ?? args.slug]) };
-    case 'merge_concepts':
-      return { added: [], changed: slugsOf([args.intoSlug]), removed: slugsOf([args.fromSlug]) };
-    case 'delete_concept':
-      return { ...none, removed: slugsOf([args.slug]) };
-    case 'absorb_document':
-      return { ...none, added: slugsOf((result.written ?? []).map((entry) => entry?.slug)) };
-    default:
-      return none;
-  }
-}
 
 function summarizeWrite(name, args, result) {
   switch (name) {
@@ -144,10 +97,14 @@ function logWrite(name, args, result) {
       VAULT_ROOT,
       buildActivityEntry({ tool: name, target: summarized.target, summary: summarized.summary, why: summarized.why ?? null, agent }),
     );
-    mapAnalysis.record({
-      effect: conceptEffect(name, args, result),
+    recordWriteInMapAnalysis({
+      recorder: mapAnalysis,
+      measureShare: measureMapShare,
+      name,
+      args,
+      result,
       agent,
-      measure: () => measureMapShare(result[MEASURED_COVERAGE]),
+      measured: result[MEASURED_COVERAGE],
     });
   } catch {
     /* Both logs are side effects — they must never damage the write result */

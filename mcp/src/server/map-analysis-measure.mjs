@@ -18,11 +18,20 @@ import { REPO_ROOT, REPO_ROOT_IS_GROUNDED, VAULT_ROOT } from './runtime.mjs';
 
 const NO_SOURCE = Object.freeze({ sourceCommit: null, sourceDirty: null, abilities: null, areas: null });
 const STATUS_MAX_BUFFER = 16 * 1024 * 1024;
+/** A git call that takes longer leaves the commit or the dirty flag unknown rather than hold the write. */
+const GIT_TIMEOUT_MS = 5_000;
+/**
+ * Writes this close together reuse one walk of the code and one HEAD read: an
+ * agent patches concepts seconds apart, and code edited inside the window is
+ * counted by the next write after it.
+ */
+export const MEASURE_REUSE_MS = 30_000;
 
 function runGit(root, args) {
-  const result = spawnSync('git', hardenedGitArgv(root, args), {
+  const result = spawnSync('git', hardenedGitArgv(root, ['--no-optional-locks', ...args]), {
     env: gitEnv(),
     maxBuffer: STATUS_MAX_BUFFER,
+    timeout: GIT_TIMEOUT_MS,
     stdio: ['ignore', 'pipe', 'ignore'],
   });
   return result.status === 0 ? result.stdout : null;
@@ -43,33 +52,6 @@ function shareCounts(coverage) {
   };
 }
 
-/**
- * Reads HEAD with one `git rev-parse` per count and `git status` only when HEAD
- * or a source file's size or time changed since the last count, since a status
- * walks the whole work tree. The vault's own folder never counts as a change.
- */
-function createSourceStateReader() {
-  let last = null;
-  return function sourceState(root, stamps) {
-    const head = runGit(root, ['rev-parse', '--show-toplevel', 'HEAD']);
-    if (head === null) return { sourceCommit: null, sourceDirty: null };
-    const [topLevel, commit] = head.toString('utf8').trim().split('\n');
-    if (!/^[0-9a-f]{40,64}$/i.test(commit ?? '')) return { sourceCommit: null, sourceDirty: null };
-    const key = `${commit}\0${stamps}`;
-    if (last?.key === key) return last.state;
-    let excluded = null;
-    try {
-      excluded = vaultFolderInside(realpathSync.native(topLevel), realpathSync.native(VAULT_ROOT));
-    } catch {
-      excluded = null;
-    }
-    const status = runGit(root, ['status', '--porcelain=v1', '-z', '--untracked-files=normal']);
-    const state = { sourceCommit: commit.toLowerCase(), sourceDirty: status === null ? null : filterStatus(status, excluded).length > 0 };
-    last = { key, state };
-    return state;
-  };
-}
-
 function stampsOf(collection) {
   const hash = createHash('sha256');
   for (const file of collection?.files ?? []) hash.update(`${file.path}\0${file.size}\0${file.mtimeMs}\n`);
@@ -80,16 +62,62 @@ function stampsOf(collection) {
  * The counts for a line now, measured against the grounded repository exactly as
  * validate_vault measures them; `measured` (`{ coverage, collection }`) is what the
  * write itself took, when it took one. Null counts when no repository is grounded.
+ * The code is walked and HEAD read at most once per `MEASURE_REUSE_MS`; `git
+ * status` runs only when HEAD or a source file's size or time changed, and only
+ * over the connected folder, the vault's own folder left out.
  */
-export function createMapAnalysisMeasure() {
-  const sourceState = createSourceStateReader();
+export function createMapAnalysisMeasure({
+  repoRoot = REPO_ROOT,
+  vaultRoot = VAULT_ROOT,
+  grounded = REPO_ROOT_IS_GROUNDED,
+  survey = repositorySurvey,
+  git = runGit,
+  now = () => Date.now(),
+} = {}) {
+  let walked = null;
+  let head = null;
+  let status = null;
+
+  function surveyNow(atMs) {
+    if (walked && atMs - walked.atMs < MEASURE_REUSE_MS) return walked.repo;
+    walked = { atMs, repo: survey(repoRoot, vaultRoot) };
+    return walked.repo;
+  }
+
+  function headNow(atMs) {
+    if (head && atMs - head.atMs < MEASURE_REUSE_MS) return head.value;
+    const output = git(repoRoot, ['rev-parse', '--show-toplevel', 'HEAD']);
+    const [topLevel, commit] = output === null ? [] : output.toString('utf8').trim().split('\n');
+    const value = /^[0-9a-f]{40,64}$/i.test(commit ?? '') ? { topLevel, commit: commit.toLowerCase() } : null;
+    head = { atMs, value };
+    return value;
+  }
+
+  function sourceState(atMs, stamps) {
+    const current = headNow(atMs);
+    if (!current) return { sourceCommit: null, sourceDirty: null };
+    const key = `${current.commit}\0${stamps}`;
+    if (status?.key === key) return status.state;
+    let excluded = null;
+    try {
+      excluded = vaultFolderInside(realpathSync.native(current.topLevel), realpathSync.native(vaultRoot));
+    } catch {
+      excluded = null;
+    }
+    const output = git(repoRoot, ['status', '--porcelain=v1', '-z', '--untracked-files=normal', '--', '.']);
+    const state = { sourceCommit: current.commit, sourceDirty: output === null ? null : filterStatus(output, excluded).length > 0 };
+    status = { key, state };
+    return state;
+  }
+
   return function measure(measured) {
-    if (!REPO_ROOT_IS_GROUNDED) return NO_SOURCE;
-    if (measured) return { ...sourceState(REPO_ROOT, stampsOf(measured.collection)), ...shareCounts(measured.coverage) };
-    const repo = repositorySurvey(REPO_ROOT, VAULT_ROOT);
+    if (!grounded) return NO_SOURCE;
+    const atMs = now();
+    if (measured) return { ...sourceState(atMs, stampsOf(measured.collection)), ...shareCounts(measured.coverage) };
+    const repo = surveyNow(atMs);
     const coverage = repo
-      ? areaCoverage(loadVaultDocs(VAULT_ROOT), repo.survey, { collection: repo.collection, repoRoot: repo.repoRoot, reads: sessionReads(REPO_ROOT) })
+      ? areaCoverage(loadVaultDocs(vaultRoot), repo.survey, { collection: repo.collection, repoRoot: repo.repoRoot, reads: sessionReads(repoRoot) })
       : null;
-    return { ...sourceState(REPO_ROOT, stampsOf(repo?.collection)), ...shareCounts(coverage) };
+    return { ...sourceState(atMs, stampsOf(repo?.collection)), ...shareCounts(coverage) };
   };
 }

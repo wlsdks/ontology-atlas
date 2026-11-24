@@ -1594,7 +1594,8 @@ Every write that adds, changes or removes a concept also appends one line to
 `.ontology-atlas/map-analysis.jsonl` (decision `4f94c421`): the record the
 map's analysis chip reads. A line holds counts only, never a path, file name,
 title or code: `v` (1), `analysis` and `session` ids, `number`, `origin`
-(`press` or `session`), `startedAt`, `at`, `agent` (the activity log's name),
+(`press` or `session`), `startedAt`, `at`, `agent` (the activity log's name
+when it is shaped like a runtime id such as `codex-acp`, else null),
 `sourceCommit` and `sourceDirty` of the connected code, `abilities`
 (`total`, `offMap`) and `areas` (`total`, `notMapped`), measured as
 `validate_vault` measures them at that moment, and `concepts` (`added`,
@@ -1602,15 +1603,24 @@ title or code: `v` (1), `analysis` and `session` ids, `number`, `origin`
 example with no code connected.
 
 - The requests of one **Map the rest of the code** press share the analysis id
-  the app passes in `OATLAS_MAP_ANALYSIS_ID`. Any other server process is one
-  analysis, and a write after 60 idle minutes starts the next.
+  the app writes, with an expiry, into the turn heartbeat
+  (`.ontology-atlas/agent-activity.json`); the server reads it at each write,
+  so a server the agent registered itself counts the same. Any other stretch
+  of a server process is one analysis, and a write after 60 idle minutes
+  starts the next.
+- A relation write is never measured and keeps the last count. Other writes
+  walk the code and read HEAD at most once per 30 seconds, `git status` runs
+  over the connected folder only when HEAD or a file's size or time changed,
+  and every git call stops at 5 seconds without taking optional locks.
 - A session that writes nothing appends nothing; a dry run, an unchanged
   write, `connect_project_source` and `disconnect_project_source` count as
   nothing.
 - A reader keeps the last line per session and analysis and sums an
   analysis's sessions. When an analysis begins, the server rewrites the file
-  with each earlier session's last line, the newest 2,000 kept, unless a line
-  does not parse; it reads at most the last 1 MiB.
+  from its last 1 MiB with each earlier session's last line, the newest 2,000
+  kept, and every line it cannot parse carried through verbatim. A line dated
+  before 2020 or more than a day ahead, or holding a number above a billion,
+  does not parse.
 - A failed append or measure never changes the write's own result. The app
   only reads the file, and Git leaves it out with the rest of
   `.ontology-atlas/`.

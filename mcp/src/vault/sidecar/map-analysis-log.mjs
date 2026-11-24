@@ -8,10 +8,12 @@ import { randomUUID } from 'node:crypto';
 import {
   appendVaultSidecarLine,
   readVaultSidecarTail,
+  readVaultSidecarText,
   replaceVaultSidecarText,
 } from './vault-sidecar.mjs';
 
 export const MAP_ANALYSIS_FILENAME = 'map-analysis.jsonl';
+const HEARTBEAT_FILENAME = 'agent-activity.json';
 
 /** A session whose next write comes later than this after its last begins a new analysis (spec decision 1). */
 export const ANALYSIS_GAP_MS = 60 * 60_000;
@@ -22,18 +24,35 @@ export const RECORD_SESSIONS_KEPT = 2000;
 /** The most of the file one read takes, from its end; the app's tail read is bounded the same way. */
 const RECORD_READ_MAX_BYTES = 1024 * 1024;
 
+/** The earliest time a line may carry; Atlas wrote none before it. */
+const EARLIEST_LINE_MS = Date.UTC(2020, 0, 1);
+/** How far past the reader's clock a line may be dated, for clocks that disagree a little. */
+const FUTURE_SKEW_MS = 24 * 60 * 60_000;
+/** The largest count or analysis number a line may hold; past it a line is not believed. */
+const COUNT_MAX = 1_000_000_000;
+/** A press id in the heartbeat holds for at most this long past now, whatever `until` says. */
+const PRESS_MAX_AHEAD_MS = 60 * 60_000;
+
 const ID_PATTERN = /^[A-Za-z0-9._-]{1,80}$/;
 const COMMIT_PATTERN = /^[0-9a-f]{7,64}$/i;
-const AGENT_MAX_CHARS = 120;
+/** The runtime id shape the app's heartbeat writer enforces (`acp-agent-heartbeat.ts`). */
+const AGENT_PATTERN = /^[a-z0-9][a-z0-9._-]{0,99}$/i;
 
 function isCount(value) {
-  return Number.isSafeInteger(value) && value >= 0;
+  return Number.isSafeInteger(value) && value >= 0 && value <= COUNT_MAX;
 }
 
-function readTime(value) {
+/** An agent name only when it is shaped like a runtime id; free text may hold a path or code. */
+export function mapAnalysisAgent(value) {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return AGENT_PATTERN.test(trimmed) ? trimmed : null;
+}
+
+function readTime(value, nowMs) {
   if (typeof value !== 'string') return null;
   const ms = Date.parse(value);
-  return Number.isFinite(ms) ? ms : null;
+  return Number.isFinite(ms) && ms >= EARLIEST_LINE_MS && ms <= nowMs + FUTURE_SKEW_MS ? ms : null;
 }
 
 function readPair(value, totalKey, partKey) {
@@ -45,10 +64,11 @@ function readPair(value, totalKey, partKey) {
 
 /**
  * One line as both readers take it, or null when it is not a version 1 line: an
- * id, a session, a positive number and a time are required; every other field
- * falls back (`origin` to `session`, a count to 0, the rest to null).
+ * id, a session, a number up to `COUNT_MAX` and a time between 2020 and a day past
+ * `nowMs` are required; every other field falls back (`origin` to `session`, a
+ * count to 0, the rest to null).
  */
-function parseMapAnalysisLine(text) {
+function parseMapAnalysisLine(text, nowMs) {
   let raw;
   try {
     raw = JSON.parse(text);
@@ -59,12 +79,11 @@ function parseMapAnalysisLine(text) {
   const { analysis, session, number } = raw;
   if (typeof analysis !== 'string' || !ID_PATTERN.test(analysis)) return null;
   if (typeof session !== 'string' || !ID_PATTERN.test(session)) return null;
-  if (!Number.isSafeInteger(number) || number < 1) return null;
-  const atMs = readTime(raw.at);
+  if (!isCount(number) || number < 1) return null;
+  const atMs = readTime(raw.at, nowMs);
   if (atMs === null) return null;
-  const startedAtMs = readTime(raw.startedAt) ?? atMs;
+  const startedAtMs = readTime(raw.startedAt, nowMs) ?? atMs;
   const concepts = raw.concepts && typeof raw.concepts === 'object' ? raw.concepts : {};
-  const agent = typeof raw.agent === 'string' && raw.agent.trim() ? raw.agent.trim().slice(0, AGENT_MAX_CHARS) : null;
   return {
     analysis,
     session,
@@ -72,7 +91,7 @@ function parseMapAnalysisLine(text) {
     origin: raw.origin === 'press' ? 'press' : 'session',
     startedAt: new Date(Math.min(startedAtMs, atMs)).toISOString(),
     at: new Date(atMs).toISOString(),
-    agent,
+    agent: mapAnalysisAgent(raw.agent),
     sourceCommit: typeof raw.sourceCommit === 'string' && COMMIT_PATTERN.test(raw.sourceCommit) ? raw.sourceCommit.toLowerCase() : null,
     sourceDirty: typeof raw.sourceDirty === 'boolean' ? raw.sourceDirty : null,
     abilities: readPair(raw.abilities, 'total', 'offMap'),
@@ -91,14 +110,14 @@ function parseMapAnalysisLine(text) {
  * and numbered on from the first line's `number`. The latest line of an analysis
  * gives its counts, commit and agent. `broken` counts lines that do not parse. O(lines).
  */
-export function readMapAnalyses(text) {
+export function readMapAnalyses(text, { nowMs = Date.now() } = {}) {
   const latestBySession = new Map();
   const order = [];
   let broken = 0;
   let firstNumber = null;
   for (const rawLine of String(text ?? '').split('\n')) {
     if (!rawLine.trim()) continue;
-    const line = parseMapAnalysisLine(rawLine);
+    const line = parseMapAnalysisLine(rawLine, nowMs);
     if (!line) {
       broken += 1;
       continue;
@@ -139,20 +158,39 @@ export function readMapAnalyses(text) {
 }
 
 /**
- * Every session's last line, sessions in the order they first appear, the newest
- * `RECORD_SESSIONS_KEPT`; null when a line does not parse, so a file this
- * version does not understand is never rewritten. O(lines).
+ * Every session's last line, sessions in the order they first appear, and every
+ * line that does not parse kept verbatim where it stood, the newest
+ * `RECORD_SESSIONS_KEPT` entries in all. O(lines).
  */
-function foldMapAnalysisLines(text) {
-  const latest = new Map();
+function foldMapAnalysisLines(text, nowMs) {
+  const kept = new Map();
+  let index = 0;
   for (const rawLine of String(text ?? '').split('\n')) {
-    if (!rawLine.trim()) continue;
-    const line = parseMapAnalysisLine(rawLine);
-    if (!line) return null;
+    index += 1;
+    const trimmed = rawLine.trim();
+    if (!trimmed) continue;
+    const line = parseMapAnalysisLine(trimmed, nowMs);
     // Setting an existing key keeps its first place, so analyses keep their order.
-    latest.set(`${line.analysis}\0${line.session}`, rawLine.trim());
+    kept.set(line ? `${line.analysis}\0${line.session}` : `\0${index}`, trimmed);
   }
-  return [...latest.values()].slice(-RECORD_SESSIONS_KEPT);
+  return [...kept.values()].slice(-RECORD_SESSIONS_KEPT);
+}
+
+/**
+ * The press id the app's heartbeat names for the request running now, or null:
+ * the id must be id-shaped and its `until` in the future, at most an hour ahead.
+ */
+export function readHeartbeatPress(vaultRoot, nowMs) {
+  try {
+    const stored = readVaultSidecarText(vaultRoot, HEARTBEAT_FILENAME);
+    if (!stored) return null;
+    const press = JSON.parse(stored.text)?.mapAnalysis;
+    if (!press || typeof press.id !== 'string' || !ID_PATTERN.test(press.id)) return null;
+    const untilMs = typeof press.until === 'string' ? Date.parse(press.until) : Number.NaN;
+    return untilMs > nowMs && untilMs <= nowMs + PRESS_MAX_AHEAD_MS ? press.id : null;
+  } catch {
+    return null;
+  }
 }
 
 function emptyConcepts() {
@@ -179,6 +217,14 @@ function effectIsEmpty(effect) {
   return !effect || (effect.added.length === 0 && effect.changed.length === 0 && effect.removed.length === 0);
 }
 
+const NO_COUNTS = Object.freeze({ sourceCommit: null, sourceDirty: null, abilities: null, areas: null });
+
+function countsOf(analysis) {
+  if (!analysis) return NO_COUNTS;
+  const { sourceCommit, sourceDirty, abilities, areas } = analysis;
+  return { sourceCommit, sourceDirty, abilities, areas };
+}
+
 const SIDECAR_IO = {
   readTail: (vaultRoot) => readVaultSidecarTail(vaultRoot, MAP_ANALYSIS_FILENAME, RECORD_READ_MAX_BYTES),
   append: (vaultRoot, line) => appendVaultSidecarLine(vaultRoot, MAP_ANALYSIS_FILENAME, line),
@@ -186,57 +232,64 @@ const SIDECAR_IO = {
 };
 
 /**
- * One server process's writer. The file is read only when an analysis begins
- * (the session's first write, or its first after `ANALYSIS_GAP_MS`), which also
- * folds earlier sessions to their last line in one atomic replace; every other
- * write is one appended line. `pressAnalysisId` is the id the app gives every
- * request of one press; without it each session is its own analysis.
+ * One server process's writer. The file is read only when an analysis begins:
+ * the session's first write, its first after `ANALYSIS_GAP_MS`, or the first
+ * whose press id differs from the last. That read folds earlier sessions to their
+ * last line in one atomic replace; every other write is one appended line.
+ * `readPress` answers the press id of the request running now (null outside a
+ * press), so one press's requests read as one analysis whatever server they use.
  */
 export function createMapAnalysisRecorder({
   vaultRoot,
-  pressAnalysisId = null,
+  readPress = (nowMs) => readHeartbeatPress(vaultRoot, nowMs),
   sessionId = randomUUID(),
   now = () => Date.now(),
   newId = randomUUID,
   io = SIDECAR_IO,
 }) {
-  const press = typeof pressAnalysisId === 'string' && ID_PATTERN.test(pressAnalysisId) ? pressAnalysisId : null;
   let current = null;
 
-  function begin(atMs) {
+  function begin(atMs, press) {
     let stored = null;
     try {
       stored = io.readTail(vaultRoot);
     } catch {
       stored = null;
     }
-    const { analyses } = readMapAnalyses(stored?.text ?? '');
+    const { analyses } = readMapAnalyses(stored?.text ?? '', { nowMs: atMs });
     const pressed = press ? analyses.find((analysis) => analysis.id === press) : undefined;
-    const number = pressed?.number ?? (analyses.at(-1)?.number ?? 0) + 1;
-    const folded = stored && !stored.truncated ? foldMapAnalysisLines(stored.text) : null;
+    const number = Math.min(COUNT_MAX, pressed?.number ?? (analyses.at(-1)?.number ?? 0) + 1);
     current = {
       id: press ?? newId(),
+      press,
       number,
       startedAtMs: atMs,
       lastAtMs: atMs,
       concepts: emptyConcepts(),
+      counts: current?.counts ?? countsOf(pressed ?? analyses.at(-1)),
+      // An unterminated last line would swallow the next one.
+      lead: stored && !stored.endsWithNewline ? '\n' : '',
     };
-    return folded && stored ? { lines: folded, revision: stored.revision } : null;
+    return stored ? { lines: foldMapAnalysisLines(stored.text, atMs), revision: stored.revision } : null;
   }
 
   /**
-   * Records one write; `measure` is called only when the write changed a concept.
+   * Records one write. `measure` is called once for a write that may move the
+   * share; a write that cannot (a relation) passes null and keeps the last counts.
    * Returns whether a line was written. Never throws.
    */
   function record({ effect, agent = null, measure }) {
     try {
       if (effectIsEmpty(effect)) return false;
       const atMs = now();
-      const startsAnalysis = current === null || (press === null && atMs - current.lastAtMs > ANALYSIS_GAP_MS);
-      const fold = startsAnalysis ? begin(atMs) : null;
+      const press = readPress(atMs);
+      const startsAnalysis =
+        current === null || press !== current.press || (press === null && atMs - current.lastAtMs > ANALYSIS_GAP_MS);
+      const fold = startsAnalysis ? begin(atMs, press) : null;
       applyEffect(current.concepts, effect);
       current.lastAtMs = Math.max(current.lastAtMs, atMs);
-      const counts = measure();
+      if (typeof measure === 'function') current.counts = measure();
+      const { counts } = current;
       const line = JSON.stringify({
         v: 1,
         analysis: current.id,
@@ -245,7 +298,7 @@ export function createMapAnalysisRecorder({
         origin: press ? 'press' : 'session',
         startedAt: new Date(current.startedAtMs).toISOString(),
         at: new Date(atMs).toISOString(),
-        agent: typeof agent === 'string' && agent.trim() ? agent.trim().slice(0, AGENT_MAX_CHARS) : null,
+        agent: mapAnalysisAgent(agent),
         sourceCommit: counts.sourceCommit,
         sourceDirty: counts.sourceDirty,
         abilities: counts.abilities,
@@ -259,12 +312,14 @@ export function createMapAnalysisRecorder({
       if (fold) {
         try {
           io.replace(vaultRoot, `${[...fold.lines, line].join('\n')}\n`, fold.revision);
+          current.lead = '';
           return true;
         } catch {
           // Another session changed the file since it was read: append instead.
         }
       }
-      io.append(vaultRoot, line);
+      io.append(vaultRoot, `${current.lead}${line}`);
+      current.lead = '';
       return true;
     } catch {
       return false;

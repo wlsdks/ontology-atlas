@@ -72,7 +72,7 @@ export function analysisWhen(atMs: number, nowMs: number): MapAnalysisWhen {
   const now = new Date(nowMs);
   now.setHours(0, 0, 0, 0);
   const days = Math.round((now.getTime() - at.getTime()) / DAY_MS);
-  if (days <= 0) return { kind: 'today' };
+  if (!Number.isFinite(days) || days <= 0) return { kind: 'today' };
   if (days === 1) return { kind: 'yesterday' };
   return { kind: 'days', days };
 }
@@ -113,7 +113,12 @@ export function mapAnalysisChipModel(input: MapAnalysisChipInput): MapAnalysisCh
   if (share === null && latest === null) return null;
 
   const latestAtMs = latest ? Date.parse(latest.at) : null;
-  const runningUntilMs = latestAtMs !== null && input.nowMs - latestAtMs < MAP_ANALYSIS_RUNNING_WINDOW_MS ? latestAtMs + MAP_ANALYSIS_RUNNING_WINDOW_MS : null;
+  // A line dated after the clock is not "now": only a line from the last window counts.
+  const sinceLatestMs = latestAtMs === null ? null : input.nowMs - latestAtMs;
+  const runningUntilMs =
+    latestAtMs !== null && sinceLatestMs !== null && sinceLatestMs >= 0 && sinceLatestMs < MAP_ANALYSIS_RUNNING_WINDOW_MS
+      ? latestAtMs + MAP_ANALYSIS_RUNNING_WINDOW_MS
+      : null;
   const running = input.pressRunning || runningUntilMs !== null;
   const when = latestAtMs !== null ? analysisWhen(latestAtMs, input.nowMs) : null;
 

@@ -17,9 +17,12 @@ import {
   ANALYSIS_GAP_MS,
   createMapAnalysisRecorder,
   MAP_ANALYSIS_FILENAME,
+  mapAnalysisAgent,
+  readHeartbeatPress,
   readMapAnalyses,
   RECORD_SESSIONS_KEPT,
 } from './map-analysis-log.mjs';
+import { appendVaultSidecarLine, readVaultSidecarTail } from './vault-sidecar.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const serverEntry = process.env.OATLAS_TEST_SERVER_ENTRY ?? join(here, '..', '..', 'index.js');
@@ -54,19 +57,24 @@ function repository() {
 }
 
 const recordPath = (root) => join(root, 'atlas', '.ontology-atlas', MAP_ANALYSIS_FILENAME);
+const heartbeatPath = (vault) => join(vault, '.ontology-atlas', 'agent-activity.json');
+
+/** The heartbeat the app writes while a request of a press runs (`acp-agent-heartbeat.ts`). */
+function writeHeartbeat(vault, { agent = 'claude-acp', pressId = null, untilMs = Date.now() + 10 * 60_000 } = {}) {
+  mkdirSync(dirname(heartbeatPath(vault)), { recursive: true });
+  const mapAnalysis = pressId ? { mapAnalysis: { id: pressId, until: new Date(untilMs).toISOString() } } : {};
+  writeFileSync(heartbeatPath(vault), JSON.stringify({ agent, ...mapAnalysis }));
+}
 
 /** One server process: the calls run in order and their structured results return. */
 async function session(root, calls, { pressId = null } = {}) {
+  if (pressId) writeHeartbeat(join(root, 'atlas'), { pressId });
+  else rmSync(heartbeatPath(join(root, 'atlas')), { force: true });
   const { responses } = await runJsonRpcProcess({
     command: process.execPath,
     args: [serverEntry],
     timeoutMs: 30_000,
-    env: {
-      ...process.env,
-      OATLAS_VAULT: join(root, 'atlas'),
-      OATLAS_REPO_ROOT: root,
-      ...(pressId ? { OATLAS_MAP_ANALYSIS_ID: pressId } : {}),
-    },
+    env: { ...process.env, OATLAS_VAULT: join(root, 'atlas'), OATLAS_REPO_ROOT: root },
     requests: [
       { jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 'map-analysis-test', version: '1' } } },
       { jsonrpc: '2.0', method: 'notifications/initialized' },
@@ -143,7 +151,7 @@ test('sessions read as analyses, each count is validate_vault\'s, and no line na
     ],
     'three sessions of one press are one analysis; a session that only read is none',
   );
-  assert.equal(analyses[0].agent, 'map-analysis-test');
+  assert.deepEqual(analyses.map(({ agent }) => agent), ['claude-acp', 'map-analysis-test'], 'the heartbeat names a press\'s agent');
 
   const text = readFileSync(recordPath(root), 'utf8');
   for (const named of ['src/', 'handler', 'commerce', 'charge', 'Secret', 'ledger', 'payments', 'capabilities/', root]) {
@@ -157,7 +165,7 @@ test('sessions read as analyses, each count is validate_vault\'s, and no line na
   assert.equal(fifth.record({ effect: { added: [], changed: ['capabilities/refund'], removed: [] }, measure }), true);
   nowMs += ANALYSIS_GAP_MS + 60_000;
   assert.equal(fifth.record({ effect: { added: [], changed: ['capabilities/invoice'], removed: [] }, measure }), true);
-  const after = readMapAnalyses(readFileSync(recordPath(root), 'utf8')).analyses;
+  const after = readMapAnalyses(readFileSync(recordPath(root), 'utf8'), { nowMs }).analyses;
   assert.deepEqual(after.map(({ number, sessions }) => ({ number, sessions })), [
     { number: 1, sessions: 3 }, { number: 2, sessions: 1 }, { number: 3, sessions: 1 }, { number: 4, sessions: 1 },
   ]);
@@ -180,23 +188,6 @@ test('an append that fails leaves the write\'s own result unchanged', async (t) 
   assert.equal(readFileSync(join(broken, 'atlas', 'domains', 'payments.md'), 'utf8').includes('title: Payments'), true);
 });
 
-test('a file this version cannot parse is appended to, never rewritten', () => {
-  const root = repository();
-  try {
-    const garbage = 'not json at all\n{"v":9}\n';
-    mkdirSync(dirname(recordPath(root)), { recursive: true });
-    writeFileSync(recordPath(root), garbage);
-    const recorder = createMapAnalysisRecorder({ vaultRoot: join(root, 'atlas') });
-    const measure = () => ({ sourceCommit: null, sourceDirty: null, abilities: null, areas: null });
-    assert.equal(recorder.record({ effect: { added: ['a'], changed: [], removed: [] }, measure }), true);
-    const text = readFileSync(recordPath(root), 'utf8');
-    assert.ok(text.startsWith(garbage));
-    assert.deepEqual(readMapAnalyses(text).analyses.map(({ number }) => number), [1]);
-  } finally {
-    rmSync(root, { recursive: true, force: true });
-  }
-});
-
 function plantedSessions(count) {
   const lines = [];
   for (let index = 0; index < count; index += 1) {
@@ -209,6 +200,150 @@ function plantedSessions(count) {
   }
   return lines;
 }
+
+const NO_COUNTS = () => ({ sourceCommit: null, sourceDirty: null, abilities: null, areas: null });
+const added = (slug) => ({ added: [slug], changed: [], removed: [] });
+
+/** A vault holding only a record, written as given. */
+function plantedVault(text) {
+  const vault = realpathSync(mkdtempSync(join(tmpdir(), 'atlas-map-record-')));
+  mkdirSync(join(vault, '.ontology-atlas'));
+  writeFileSync(join(vault, '.ontology-atlas', MAP_ANALYSIS_FILENAME), text);
+  return vault;
+}
+const readRecord = (vault) => readFileSync(join(vault, '.ontology-atlas', MAP_ANALYSIS_FILENAME), 'utf8');
+
+test('lines this version cannot parse are carried through a fold verbatim', () => {
+  const garbage = 'not json at all\n{"v":9}\n';
+  const vault = plantedVault(garbage);
+  try {
+    const recorder = createMapAnalysisRecorder({ vaultRoot: vault });
+    assert.equal(recorder.record({ effect: added('a'), measure: NO_COUNTS }), true);
+    const text = readRecord(vault);
+    assert.ok(text.startsWith(garbage));
+    assert.deepEqual(readMapAnalyses(text).analyses.map(({ number }) => number), [1]);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+  }
+});
+
+test('a record whose last line is unterminated never swallows the next line', () => {
+  const [first, second, third] = plantedSessions(3);
+  const appendOnly = {
+    readTail: (root) => readVaultSidecarTail(root, MAP_ANALYSIS_FILENAME, 1024 * 1024),
+    append: (root, line) => appendVaultSidecarLine(root, MAP_ANALYSIS_FILENAME, line),
+    replace: () => {
+      throw new Error('changed since it was read');
+    },
+  };
+  for (const [label, planted] of [
+    ['a torn last line', `${first}\n${second}\n${third.slice(0, 60)}`],
+    ['a whole last line without its newline', `${first}\n${second}`],
+  ]) {
+    for (const io of [undefined, appendOnly]) {
+      const vault = plantedVault(planted);
+      try {
+        const recorder = createMapAnalysisRecorder({ vaultRoot: vault, ...(io ? { io } : {}) });
+        assert.equal(recorder.record({ effect: added('x'), measure: NO_COUNTS }), true);
+        assert.equal(recorder.record({ effect: added('y'), measure: NO_COUNTS }), true);
+        const { analyses } = readMapAnalyses(readRecord(vault));
+        assert.deepEqual(analyses.map(({ number }) => number), [1, 2, 3], `${label}, ${io ? 'appended' : 'folded'}`);
+        assert.equal(analyses.at(-1).concepts.added, 2);
+      } finally {
+        rmSync(vault, { recursive: true, force: true });
+      }
+    }
+  }
+});
+
+test('a record past the read bound folds from its tail', () => {
+  const tripled = plantedSessions(3000).flatMap((line) => [line, line, line]);
+  const vault = plantedVault(`${tripled.join('\n')}\n`);
+  try {
+    const recorder = createMapAnalysisRecorder({ vaultRoot: vault });
+    recorder.record({ effect: added('x'), measure: NO_COUNTS });
+    const text = readRecord(vault);
+    const lines = text.trim().split('\n');
+    assert.ok(Buffer.byteLength(text) < 1024 * 1024, `the record is still ${Buffer.byteLength(text)} bytes`);
+    const { analyses, broken } = readMapAnalyses(text);
+    assert.equal(broken, 0);
+    assert.equal(analyses.at(-1).number, 3001, 'numbering goes on from the tail');
+    assert.equal(new Set(lines).size, lines.length, 'each session is kept once');
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+  }
+});
+
+test('the agent is written only when it is shaped like a runtime id', () => {
+  for (const named of ['claude-code', 'codex-acp', 'gemini']) assert.equal(mapAnalysisAgent(named), named);
+  for (const freeText of ['src/billing/keys.ts: function charge(secret)', '/Users/someone/plan.md', 'claude\n{"v":1}', 'Claude Code', 'a'.repeat(101)]) {
+    assert.equal(mapAnalysisAgent(freeText), null, freeText);
+  }
+  const vault = plantedVault('');
+  try {
+    const recorder = createMapAnalysisRecorder({ vaultRoot: vault });
+    recorder.record({ effect: added('a'), agent: '/Users/someone/clients/acme/secret-plan.md', measure: NO_COUNTS });
+    assert.equal(JSON.parse(readRecord(vault).trim()).agent, null);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+  }
+});
+
+test('a press id holds only while the heartbeat says so', () => {
+  const vault = plantedVault('');
+  try {
+    const nowMs = Date.now();
+    writeHeartbeat(vault, { pressId: 'press-1764000000000-3', untilMs: nowMs + 60_000 });
+    assert.equal(readHeartbeatPress(vault, nowMs), 'press-1764000000000-3');
+    assert.equal(readHeartbeatPress(vault, nowMs + 60_000), null, 'an expired press is over');
+    writeHeartbeat(vault, { pressId: 'press-1', untilMs: nowMs + 2 * ANALYSIS_GAP_MS });
+    assert.equal(readHeartbeatPress(vault, nowMs), null, 'a press dated far ahead is not believed');
+    for (const id of ['x","agent":"injected', 'ok\n{"v":1}', '../x', 'a'.repeat(81)]) {
+      writeHeartbeat(vault, { pressId: id });
+      assert.equal(readHeartbeatPress(vault, nowMs), null, id);
+    }
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+  }
+});
+
+test('one long-lived server takes each write\'s press from the heartbeat', () => {
+  const vault = plantedVault('');
+  try {
+    const recorder = createMapAnalysisRecorder({ vaultRoot: vault });
+    recorder.record({ effect: added('before'), measure: NO_COUNTS });
+    writeHeartbeat(vault, { pressId: 'press-9' });
+    recorder.record({ effect: added('request-1'), measure: NO_COUNTS });
+    recorder.record({ effect: added('request-2'), measure: NO_COUNTS });
+    rmSync(heartbeatPath(vault));
+    recorder.record({ effect: added('after'), measure: NO_COUNTS });
+    const { analyses } = readMapAnalyses(readRecord(vault));
+    assert.deepEqual(
+      analyses.map(({ id, origin, concepts }) => ({ press: id === 'press-9', origin, added: concepts.added })),
+      [
+        { press: false, origin: 'session', added: 1 },
+        { press: true, origin: 'press', added: 2 },
+        { press: false, origin: 'session', added: 1 },
+      ],
+    );
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+  }
+});
+
+test('a relation write is never measured and keeps the count the record last held', () => {
+  const vault = plantedVault(`${plantedSessions(3).join('\n')}\n`);
+  try {
+    const recorder = createMapAnalysisRecorder({ vaultRoot: vault });
+    recorder.record({ effect: { added: [], changed: ['capabilities/a'], removed: [] }, measure: null });
+    recorder.record({ effect: { added: [], changed: ['capabilities/b'], removed: [] }, measure: null });
+    const lines = readRecord(vault).trim().split('\n').map((line) => JSON.parse(line));
+    assert.equal(lines.length, 5);
+    assert.deepEqual(lines.slice(3).map(({ abilities }) => abilities), [lines[2].abilities, lines[2].abilities]);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+  }
+});
 
 test('5,000 planted sessions read as 5,000 analyses, and a new session folds them to the newest it keeps', () => {
   const root = repository();
@@ -224,7 +359,7 @@ test('5,000 planted sessions read as 5,000 analyses, and a new session folds the
     mkdirSync(dirname(recordPath(root)), { recursive: true });
     writeFileSync(recordPath(root), `${doubled.join('\n')}\n`);
     const recorder = createMapAnalysisRecorder({ vaultRoot: join(root, 'atlas') });
-    recorder.record({ effect: { added: ['x'], changed: [], removed: [] }, measure: () => ({ sourceCommit: null, sourceDirty: null, abilities: null, areas: null }) });
+    recorder.record({ effect: added('x'), measure: NO_COUNTS });
     const lines = readFileSync(recordPath(root), 'utf8').trim().split('\n');
     assert.equal(lines.length, 301, 'every earlier session folds to its last line');
     const folded = readMapAnalyses(lines.join('\n')).analyses;
@@ -242,7 +377,7 @@ test('a session reads the record once and appends one line per later write', () 
   const io = {
     readTail: () => {
       work.reads += 1;
-      return { text: `${plantedSessions(40).join('\n')}\n`, revision: null, truncated: false };
+      return { text: `${plantedSessions(40).join('\n')}\n`, revision: null, truncated: false, endsWithNewline: true };
     },
     append: (_root, line) => {
       work.appends += 1;
@@ -253,13 +388,13 @@ test('a session reads the record once and appends one line per later write', () 
       lines.push(text.trim().split('\n').at(-1));
     },
   };
-  const recorder = createMapAnalysisRecorder({ vaultRoot: '/unused', io, now: () => Date.UTC(2026, 10, 24) });
+  const recorder = createMapAnalysisRecorder({ vaultRoot: '/unused', io, readPress: () => null, now: () => Date.UTC(2026, 10, 24) });
   const measure = () => {
     work.measures += 1;
-    return { sourceCommit: null, sourceDirty: null, abilities: null, areas: null };
+    return NO_COUNTS();
   };
   for (let index = 0; index < 50; index += 1) {
-    recorder.record({ effect: { added: [`c${index}`], changed: [], removed: [] }, measure });
+    recorder.record({ effect: added(`c${index}`), measure });
   }
   recorder.record({ effect: { added: [], changed: [], removed: [] }, measure });
   assert.deepEqual(work, { reads: 1, appends: 49, replaces: 1, measures: 50 });

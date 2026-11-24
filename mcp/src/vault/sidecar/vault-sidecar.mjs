@@ -252,7 +252,8 @@ export function readVaultSidecarText(vaultRoot, filename, { subdirectory = undef
 
 /**
  * At most the last `maxBytes` of a sidecar file, starting at a whole line, with the
- * revision a later replace must match; `truncated` when the file holds more.
+ * revision a later replace must match; `truncated` when the file holds more, and
+ * `endsWithNewline` false when its last line is unterminated.
  * Null when the file is absent. Reads O(maxBytes) whatever the file's size.
  */
 export function readVaultSidecarTail(vaultRoot, filename, maxBytes) {
@@ -282,7 +283,8 @@ export function readVaultSidecarTail(vaultRoot, filename, maxBytes) {
       const lineStart = text.indexOf('\n');
       text = lineStart === -1 ? '' : text.slice(lineStart + 1);
     }
-    return { text, revision: revisionOf(after), truncated: start > 0 };
+    const endsWithNewline = filled === 0 || buffer[filled - 1] === 0x0a;
+    return { text, revision: revisionOf(after), truncated: start > 0, endsWithNewline };
   } finally {
     if (descriptor !== null) closeSync(descriptor);
   }

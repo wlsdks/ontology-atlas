@@ -25,9 +25,9 @@ export const ABSENT_MAP_ANALYSIS_RECORD: MapAnalysisRecordState = { kind: 'absen
 export const UNREADABLE_MAP_ANALYSIS_RECORD: MapAnalysisRecordState = { kind: 'unreadable' };
 
 /** `text` is null when the file is absent; a file in which no line parses is unreadable. */
-export function mapAnalysisRecordFromText(text: string | null): MapAnalysisRecordState {
+export function mapAnalysisRecordFromText(text: string | null, nowMs = Date.now()): MapAnalysisRecordState {
   if (text === null) return ABSENT_MAP_ANALYSIS_RECORD;
-  const { analyses } = readMapAnalyses(text);
+  const { analyses } = readMapAnalyses(text, { nowMs });
   return analyses.length === 0 ? UNREADABLE_MAP_ANALYSIS_RECORD : { kind: 'read', analyses };
 }
 
@@ -91,16 +91,29 @@ interface MapAnalysisLine {
 
 const ID_PATTERN = /^[A-Za-z0-9._-]{1,80}$/;
 const COMMIT_PATTERN = /^[0-9a-f]{7,64}$/i;
-const AGENT_MAX_CHARS = 120;
+/** The runtime id shape the heartbeat writer enforces; free text may hold a path or code. */
+const AGENT_PATTERN = /^[a-z0-9][a-z0-9._-]{0,99}$/i;
+/** The earliest time a line may carry; Atlas wrote none before it. */
+const EARLIEST_LINE_MS = Date.UTC(2020, 0, 1);
+/** How far past the reader's clock a line may be dated, for clocks that disagree a little. */
+const FUTURE_SKEW_MS = 24 * 60 * 60_000;
+/** The largest count or analysis number a line may hold. */
+const COUNT_MAX = 1_000_000_000;
 
 function isCount(value: unknown): value is number {
-  return Number.isSafeInteger(value) && (value as number) >= 0;
+  return Number.isSafeInteger(value) && (value as number) >= 0 && (value as number) <= COUNT_MAX;
 }
 
-function readTimeMs(value: unknown): number | null {
+function readTimeMs(value: unknown, nowMs: number): number | null {
   if (typeof value !== 'string') return null;
   const ms = Date.parse(value);
-  return Number.isFinite(ms) ? ms : null;
+  return Number.isFinite(ms) && ms >= EARLIEST_LINE_MS && ms <= nowMs + FUTURE_SKEW_MS ? ms : null;
+}
+
+function readAgent(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return AGENT_PATTERN.test(trimmed) ? trimmed : null;
 }
 
 function readShare(value: unknown): MapAnalysisShare | null {
@@ -115,7 +128,7 @@ function readAreas(value: unknown): MapAnalysisAreas | null {
   return isCount(total) && isCount(notMapped) && notMapped <= total ? { total, notMapped } : null;
 }
 
-function parseLine(text: string): MapAnalysisLine | null {
+function parseLine(text: string, nowMs: number): MapAnalysisLine | null {
   let raw: unknown;
   try {
     raw = JSON.parse(text);
@@ -128,20 +141,19 @@ function parseLine(text: string): MapAnalysisLine | null {
   const { analysis, session, number } = fields;
   if (typeof analysis !== 'string' || !ID_PATTERN.test(analysis)) return null;
   if (typeof session !== 'string' || !ID_PATTERN.test(session)) return null;
-  if (!Number.isSafeInteger(number) || (number as number) < 1) return null;
-  const atMs = readTimeMs(fields.at);
+  if (!isCount(number) || number < 1) return null;
+  const atMs = readTimeMs(fields.at, nowMs);
   if (atMs === null) return null;
-  const startedAtMs = readTimeMs(fields.startedAt) ?? atMs;
+  const startedAtMs = readTimeMs(fields.startedAt, nowMs) ?? atMs;
   const concepts = fields.concepts && typeof fields.concepts === 'object' ? (fields.concepts as Record<string, unknown>) : {};
-  const agent = typeof fields.agent === 'string' && fields.agent.trim() ? fields.agent.trim().slice(0, AGENT_MAX_CHARS) : null;
   return {
     analysis,
     session,
-    number: number as number,
+    number,
     origin: fields.origin === 'press' ? 'press' : 'session',
     startedAt: new Date(Math.min(startedAtMs, atMs)).toISOString(),
     at: new Date(atMs).toISOString(),
-    agent,
+    agent: readAgent(fields.agent),
     sourceCommit:
       typeof fields.sourceCommit === 'string' && COMMIT_PATTERN.test(fields.sourceCommit) ? fields.sourceCommit.toLowerCase() : null,
     sourceDirty: typeof fields.sourceDirty === 'boolean' ? fields.sourceDirty : null,
@@ -159,15 +171,16 @@ function parseLine(text: string): MapAnalysisLine | null {
  * The record's lines as analyses: the last line of each session within an
  * analysis, summed per analysis, in the order each analysis first appears and
  * numbered on from the first line's `number`; the latest line gives an
- * analysis's share, commit and agent. O(lines).
+ * analysis's share, commit and agent. A line dated before 2020 or more than a
+ * day past `nowMs` does not parse. O(lines).
  */
-export function readMapAnalyses(text: string): MapAnalysisRead {
+export function readMapAnalyses(text: string, { nowMs = Date.now() }: { nowMs?: number } = {}): MapAnalysisRead {
   const sessionsByAnalysis = new Map<string, Map<string, MapAnalysisLine>>();
   let broken = 0;
   let firstNumber: number | null = null;
   for (const rawLine of text.split('\n')) {
     if (!rawLine.trim()) continue;
-    const line = parseLine(rawLine);
+    const line = parseLine(rawLine, nowMs);
     if (!line) {
       broken += 1;
       continue;

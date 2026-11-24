@@ -139,7 +139,9 @@ added to the map's top row.
    counts exactly as the app's run does. A failed append never fails the write. The app reads it
    and never writes it; a run's stop reason therefore stays in the app's History, not in the file.
 3. **A line holds counts, never names**: see "The record's format". No path, file name, code or
-   concept title is written, so the file is safe to share if the person chooses to commit it.
+   concept title is written, so the file is safe to share if the person chooses to commit it. The
+   one name it keeps is the agent's, and only when it has the shape of a runtime id (`codex-acp`);
+   any other text, which may hold a path or code, is written as null.
 4. **The code's HEAD at the count is recorded** (`sourceCommit`, with `sourceDirty`). It means
    "the share was counted against this tree", not "all code up to here was read".
 5. **"Analyzed" is not a new mark.** A file is on the map when a concept points at it by `path:`
@@ -184,11 +186,11 @@ session to one line, so the file holds about one line per session. New optional 
 | Field | Meaning |
 |---|---|
 | `v` | `1` |
-| `analysis`, `number` | the analysis's id and its ordinal in this folder; the app gives every request of one press one id through the server's start-up settings (`mcp/src/server/runtime.mjs:35`) |
+| `analysis`, `number` | the analysis's id and its ordinal in this folder; the app names every request of one press with one id in the turn heartbeat it already writes (`.ontology-atlas/agent-activity.json`, with an expiry), which the server reads at each write |
 | `session` | the server process that wrote the line |
 | `origin` | `press` or `session`; a reader treats any other value as `session` |
 | `startedAt`, `at` | ISO times of the session's first write and of this one |
-| `agent` | the name the activity log would give (`activity-log.mjs:53`), or null |
+| `agent` | the name the activity log would give (`activity-log.mjs:53`) when it is shaped like a runtime id, else null |
 | `sourceCommit`, `sourceDirty` | HEAD of the connected code at the count and whether it had uncommitted changes; null when no code is connected or it is not a Git repository |
 | `abilities` | `{ "total": T, "offMap": R }` as `validate_vault` counts them, or null |
 | `areas` | `{ "total": M, "notMapped": N }`, or null |
@@ -291,8 +293,12 @@ Written to `messages/{en,ko,ja,zh}/mapAnalysis.json`. `{when}` is one of the `wh
   file's own name and path are ASCII.
 - **Moved or renamed folder**: the record moves with the folder, since it is a file in it. A
   renamed code folder keeps its commits, so the count still works once the code is connected again.
-- **Unreadable**: `panel.unreadable`; the server appends to a file it can open and leaves a file
-  it cannot parse untouched.
+- **Unreadable**: `panel.unreadable`. When the server folds the file it carries every line it
+  cannot parse through verbatim, and starts its own line on a new line when the file's last line
+  is unterminated. A file past 1 MiB is folded from its last 1 MiB.
+- **A line outside reason**: a time before 2020 or more than a day past the reader's clock, or a
+  number or count above a billion, does not parse; a line dated after the clock never reads as
+  analyzing now.
 - **Two edits at once**: two agents write the same folder; each line carries its `session`, and
   an append is one write of one line. Two sessions that mint the same `number` are listed in file
   order; the app renumbers from the first line's `number`.
@@ -363,11 +369,11 @@ do not change: the record is no node kind and no relation. Documents that change
    and the panel show the keys named, the chip toggles its panel and stays pressed while it is
    open, the share moves from the value last drawn with no frame interval above 50 ms, and the
    chip overlaps no control at 1040×720, 1512×900 and 1920×1080. Checked:
-   `tests/e2e/map-analysis-chip.spec.ts`; `pnpm ui:look` at the three sizes.
+   `tests/e2e/map/chrome/map-analysis-chip.spec.ts`; `pnpm ui:look` at the three sizes.
 5. **The web reads the same file and promises nothing it cannot do.** Given the web build on a
    folder with a record, then the chip shows the same share, number and time as the app, the
    panel shows `web.analyze` and, in slice 2, `changed.web`, and each names where the ability
-   works. Checked: `tests/e2e/web-surface-smoke.spec.ts`.
+   works. Checked: `tests/e2e/map/chrome/map-analysis-chip.spec.ts`, which runs the web build.
 6. **Changed files are counted from the recorded commit.** Given a fixture repository with a
    recorded commit, then 3 added and 2 changed files read as 3 and 2, files under the ontology
    folder and under a dot folder are not counted, a commit absent from history answers "unknown
@@ -438,3 +444,10 @@ same complaint), and still waits for Record C and its reviewer before any of it 
   earlier sessions to their last line when an analysis begins and keeps the newest 2,000; the app
   reads the last 1 MiB. Relation writes count as a change to their `from` concept; connecting or
   disconnecting code is not an analysis.
+- 2026-11-24: after review. The press id travels in the turn heartbeat, not in the server's
+  start-up settings: a server list that changed when a press began restarted the session before
+  its first request, and a server the agent registered itself never saw the id. Decision 3 keeps
+  an agent name only when it is shaped like a runtime id. A relation write is never measured and
+  keeps the last count; other writes reuse one walk of the code and one HEAD read for 30 seconds,
+  and every git call has a 5-second limit. Edge cases now say how a fold treats lines it cannot
+  parse, an unterminated last line, a file past 1 MiB, and times and counts outside reason.

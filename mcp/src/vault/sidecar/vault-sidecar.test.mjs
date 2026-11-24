@@ -17,6 +17,7 @@ import {
   SidecarPathError,
   appendVaultSidecarLine,
   createVaultSidecarTextExclusive,
+  readVaultSidecarTail,
   readVaultSidecarText,
   removeVaultSidecarFile,
   replaceVaultSidecarText,
@@ -214,6 +215,51 @@ describe('vault sidecar path boundary', () => {
       assertUnsafe(() =>
         readVaultSidecarText(vault, 'x.json', { subdirectory: 'architecture' }));
       assert.equal(existsSync(join(outside, 'x.json')), false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('a sidecar file read from its end', () => {
+  const plant = (vault, text) => {
+    mkdirSync(join(vault, '.ontology-atlas'), { recursive: true });
+    writeFileSync(join(vault, '.ontology-atlas', 'tail.jsonl'), text);
+  };
+
+  it('answers null for an absent file and the whole text for a small one', () => {
+    const { root, vault } = sandbox();
+    try {
+      assert.equal(readVaultSidecarTail(vault, 'tail.jsonl', 64), null);
+      plant(vault, 'one\ntwo\n');
+      const read = readVaultSidecarTail(vault, 'tail.jsonl', 64);
+      assert.deepEqual({ text: read.text, truncated: read.truncated, endsWithNewline: read.endsWithNewline }, { text: 'one\ntwo\n', truncated: false, endsWithNewline: true });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('starts a truncated read at a whole line and says the last line is unterminated', () => {
+    const { root, vault } = sandbox();
+    try {
+      plant(vault, `${'a'.repeat(40)}\nbb\ncc`);
+      const read = readVaultSidecarTail(vault, 'tail.jsonl', 20);
+      assert.deepEqual({ text: read.text, truncated: read.truncated, endsWithNewline: read.endsWithNewline }, { text: 'bb\ncc', truncated: true, endsWithNewline: false });
+      plant(vault, 'x'.repeat(100));
+      assert.equal(readVaultSidecarTail(vault, 'tail.jsonl', 20).text, '', 'a window inside one line holds no whole line');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses a symlinked file as every other sidecar read does', () => {
+    const { root, vault } = sandbox();
+    try {
+      const outside = join(root, 'outside.jsonl');
+      writeFileSync(outside, 'secret\n');
+      mkdirSync(join(vault, '.ontology-atlas'));
+      symlinkSync(outside, join(vault, '.ontology-atlas', 'tail.jsonl'));
+      assertUnsafe(() => readVaultSidecarTail(vault, 'tail.jsonl', 64));
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

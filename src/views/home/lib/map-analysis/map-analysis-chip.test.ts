@@ -72,6 +72,12 @@ describe('the map analysis chip', () => {
     expect(settled?.pill).toEqual({ kind: 'full', percent: 62, number: 4, when: { kind: 'today' } });
   });
 
+  it('never reads a line dated after the clock as analyzing now', () => {
+    const ahead = mapAnalysisChipModel({ ...base, record: read(analysis(4, { at: new Date(NOW + 60 * 60_000).toISOString() })) });
+    expect(ahead?.pill).toEqual({ kind: 'full', percent: 62, number: 4, when: { kind: 'today' } });
+    expect(ahead?.runningUntilMs).toBeNull();
+  });
+
   it('lists five analyses newest first with the share before and after, and counts the rest', () => {
     const analyses = Array.from({ length: 7 }, (_, index) => analysis(index + 1, { abilities: { total: 100, offMap: 70 - index * 10 } }));
     analyses[5] = analysis(6, { abilities: null });
@@ -94,5 +100,6 @@ describe('the time since an analysis', () => {
     expect(analysisWhen(new Date(2026, 10, 23, 23, 55).getTime(), NOW)).toEqual({ kind: 'yesterday' });
     expect(analysisWhen(new Date(2026, 10, 20, 12).getTime(), NOW)).toEqual({ kind: 'days', days: 4 });
     expect(analysisWhen(NOW + 3 * 24 * 60 * 60_000, NOW)).toEqual({ kind: 'today' });
+    expect(analysisWhen(Number.NaN, NOW), 'an unreadable time never reads as NaN days').toEqual({ kind: 'today' });
   });
 });
