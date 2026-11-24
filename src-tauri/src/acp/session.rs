@@ -202,8 +202,16 @@ pub(crate) fn acp_start(
         repo_root.as_deref(),
     );
 
-    // Heal a half-downloaded npx entry just before launch (see `acp/npx_cache.rs`).
-    let npx_preflight = acp::launch::npx_cache::preflight_npx_cache(&launch, home.as_deref());
+    // Heal a half-downloaded npx entry just before launch (see `acp/npx_cache.rs`), never one
+    // the app's own adapter fetch is still writing: that entry is unfinished, not broken.
+    let fetching = app
+        .try_state::<acp::install::adapter::AdapterFetches>()
+        .is_some_and(|fetches| fetches.is_fetching(&runtime_id));
+    let npx_preflight = if fetching {
+        acp::launch::npx_cache::NpxCachePreflight::CacheUnknown
+    } else {
+        acp::launch::npx_cache::preflight_npx_cache(&launch, home.as_deref())
+    };
 
     // Never inherit the user's global settings: pre-allowed entries bypass the gate.
     let app_data = app
