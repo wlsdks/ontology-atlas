@@ -32,6 +32,8 @@ export function admit(input: NameInput, step: number, seed: NameAdmission | null
   const words = new StepOccupancy(stepScales);
   const conceptNames = new StepOccupancy(stepScales);
   const glyphs: Box[] = [];
+  /** Leaders set down so far, in world units: a name set later keeps its glyphs off them. */
+  const leaders: [number, number, number, number][] = [];
   const names: PlacedName[] = [];
   const ids = new Set<string>();
   const sides = new Map<string, number>();
@@ -100,9 +102,14 @@ export function admit(input: NameInput, step: number, seed: NameAdmission | null
   }
   const place = (n: PlacedName) => {
     const at = anchor(n.id);
+
     grid.add(worldBox(at, n.box, scale));
     words.add(at, n.box);
     glyphs.push(worldBox(at, grown(n.box, -tokens.namePadPx), scale));
+    if (n.leader) {
+      const s = leaderSegment(n, Math.abs(n.dx) - tokens.nameGapPx, tokens.namePadPx);
+      leaders.push([at.x + s.x0 / scale, at.y + s.y0 / scale, at.x + s.x1 / scale, at.y + s.y1 / scale]);
+    }
     names.push(n);
     ids.add(n.id);
   };
@@ -219,8 +226,13 @@ export function admit(input: NameInput, step: number, seed: NameAdmission | null
   // A lit name takes the first side no lit line crosses. Under a lit picture a forced name other than
   // the selection and the agent's focus keeps to the sides clear of title blocks when any is, and
   // drops when each of those prints over a concept's name; an element also keeps off discs and the ring.
-  // A leader may not run through a name already set down. O(names) per off-row try.
+  // A leader may not run through a name already set down, nor a name over a leader already set down.
+  // O(names) per off-row try, O(leaders) per try.
   const leaderClearAt = (at: Point, group: readonly PlacedName[]) => !group.some((n) => {
+    if (leaders.length > 0) {
+      const b = worldBox(at, grown(n.box, -tokens.namePadPx), scale);
+      if (leaders.some(([x0, y0, x1, y1]) => segmentCrossesBox(x0, y0, x1, y1, b))) return true;
+    }
     if (!n.leader) return false;
     const s = leaderSegment(n, Math.abs(n.dx) - tokens.nameGapPx, tokens.namePadPx);
     return glyphs.some((b) => segmentCrossesBox(at.x + s.x0 / scale, at.y + s.y0 / scale, at.x + s.x1 / scale, at.y + s.y1 / scale, b));
@@ -240,14 +252,29 @@ export function admit(input: NameInput, step: number, seed: NameAdmission | null
     const discs = fan?.offsets.has(cand.id) ? litMarks : marks;
     // With no mark grown the frame draws a name as admitted, at whatever zoom of the step it rests, so a capability's name keeps off every disc not its own across the step.
     const offDiscs = (group: readonly PlacedName[]) => cand.element || offDiscsInStep(at, group);
-    const free = (group: readonly PlacedName[]) => inside(at, group) && !group.some((n) => discs.hits(worldBox(at, n.box, scale))) && !hits(words, at, group) && (!keepsOffTitles || offTitles(at, group)) && offRing(group) && leaderClear(group) && offDiscs(group);
-    const offStarDots = (group: readonly PlacedName[]) => free(group) && !group.some((n) => starDots.hits(worldBox(at, n.box, scale)));
-    const litCrossed = (group: readonly PlacedName[]) => lit && crossed(at, group);
+    // A fanned name stands on a row the fan laid out for it, so it keeps off a title's glyphs, not the air round them.
+    const titleGap = fan?.offsets.has(cand.id) === true ? 0 : tokens.selectedTitleGapPx;
+    // The camera frames a selection with every side its name may take and its fan's names, so those may stand past the overview's pad.
+    const within = (group: readonly PlacedName[]) => cand.id === selectedId || fan?.offsets.has(cand.id) === true || inside(at, group);
+    // A fanned name rides its dot, which the fan sets a fixed px from the disc at every zoom: its rows
+    // stand a name apart at the step's own scale and would close up at the step's far end, so it is
+    // tested against names there alone.
+    const fanned = fan?.offsets.has(cand.id) === true;
+    const onWords = (group: readonly PlacedName[]) => fanned ? group.some((n) => words.hitsAtCentre(at, n.box)) : hits(words, at, group);
+    const free = (group: readonly PlacedName[]) => within(group) && !group.some((n) => discs.hits(worldBox(at, n.box, scale))) && !onWords(group) && (!keepsOffTitles || offTitles(at, group, titleGap)) && offRing(group) && leaderClear(group) && offDiscs(group);
+    // A fanned name keeps its own row over a resting dot of another capability's; its row is the fan's, laid out for it alone.
+    const offStarDots = (group: readonly PlacedName[]) => free(group) && (fanned || !group.some((n) => starDots.hits(worldBox(at, n.box, scale))));
+
+    // A fanned name crossed by a lit line keeps its row and draws on its backing; other names look for a side the line leaves.
+    const litCrossed = (group: readonly PlacedName[]) => !fanned && lit && crossed(at, group);
     // Only a forced name may stand on an element dot of an open star; a forced name across a lit line draws on its backing.
+
+
+
     let chosen = chooseSide(tries, offStarDots, litCrossed) ?? (force ? chooseSide(tries, free, litCrossed) : null);
     // A forced name with no side clear across the whole step takes one clear at the step's own scale.
     if (!chosen && force) {
-      const clearNow = (group: readonly PlacedName[]) => inside(at, group) && !group.some((n) => grid.hits(worldBox(at, n.box, scale)))
+      const clearNow = (group: readonly PlacedName[]) => within(group) && !group.some((n) => grid.hits(worldBox(at, n.box, scale)))
         && (!keepsOffTitles || !group.some((n) => titles.hitsAtCentre(at, grown(n.box, tokens.selectedTitleGapPx)))) && offRing(group) && leaderClear(group) && offDiscs(group);
       chosen = chooseSide(tries, clearNow, litCrossed);
     }
@@ -276,6 +303,7 @@ export function admit(input: NameInput, step: number, seed: NameAdmission | null
         fit = pool.length > 0 ? pool.reduce((best, group) => (crowding(at, group) < crowding(at, best) ? group : best)) : undefined;
       }
     }
+    if (fit && fanned && lit && crossed(at, fit)) backed = true;
     if (fit && backed) for (const n of fit) n.backed = true;
     if (fit) sides.set(cand.id, all.indexOf(fit));
     // A forced name standing on an open star's dots draws on its plate, which covers them.
@@ -443,11 +471,14 @@ export function admit(input: NameInput, step: number, seed: NameAdmission | null
       if (rest.length > 0) fallbacks.set(m.id, rest);
     }
   };
-  // The focus wins over every name, then capabilities over elements.
+  // The focus wins over every name, then its fan's elements, then capabilities over elements.
   const ahead = (cand: Candidate) => cand.id === input.focusId || !cand.element;
   // A name the step below showed stays wherever a side is clear of names; with none it goes, and still counts against its star.
   if (seed) for (const cand of pending) if (seed.ids.has(cand.id)) tryPlace(cand, true, false);
   for (const cand of pending) if (!ids.has(cand.id) && cand.id === input.focusId) tryPlace(cand, true);
+  // The fan's rows are laid out for its own elements' names, which have no other row: they go next.
+  // Top row first, so a name that leaves its row for the next takes room no earlier row needed.
+  if (fan) for (const cand of pending.filter((c) => fan.offsets.has(c.id)).sort((a, b) => fan.offsets.get(a.id)!.y - fan.offsets.get(b.id)!.y)) if (!ids.has(cand.id)) tryPlace(cand, true);
   for (const cand of pending) if (!ids.has(cand.id) && input.named.has(cand.id) && ahead(cand)) tryPlace(cand, true);
   if (starDomain !== null) placeStarMembers();
   if (input.lit !== null) for (const cand of pending) if (!ids.has(cand.id) && !cand.element && input.lit.has(cand.id) && !isStarMember(input, cand.id)) tryPlace(cand, false);

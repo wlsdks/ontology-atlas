@@ -1,7 +1,8 @@
 import type { MeasureText } from "../../dial/label-marks";
 import type { Box, Point } from "../../dial/dial-shapes";
 import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
-import type { FlatGraphPaintTokens } from "../flat-graph-shapes";
+import type { FlatGraphLayout, FlatGraphPaintTokens } from "../flat-graph-shapes";
+import { fanDotBox, fanSidesOf } from "../open";
 import { blockAbove, domainBlock, domainReachLine, font, reachText, tabularPieces, titleMayRise } from "./titles";
 import type { NameInput, PlacedName } from "./placed-name";
 
@@ -19,7 +20,10 @@ export function chooseSide<T>(tries: readonly T[], free: (t: T) => boolean, cros
   return fallback === null ? null : { side: fallback, backed: true };
 }
 
-export type NameShape = Pick<NameInput, "model" | "tokens" | "measureText" | "fontFamily" | "selected" | "focusId" | "discRadius" | "growth" | "named" | "lit" | "labels" | "reach" | "openStarId">;
+export type NameShape = Pick<NameInput, "model" | "tokens" | "measureText" | "fontFamily" | "selected" | "focusId" | "discRadius" | "growth" | "named" | "lit" | "labels" | "reach" | "openStarId"> & {
+  /** The layout the names stand in, which tells the side a selection's fan took; a camera judging names before the fan opens has none. */
+  layout?: FlatGraphLayout;
+};
 
 /** The domain whose star is open, null while none is or a capability's elements are. */
 export function openDomainStar(input: Pick<NameInput, "model" | "openStarId">): string | null {
@@ -125,6 +129,17 @@ function selectedNames(input: NameShape, id: string, role: "capability" | "eleme
   };
   const side = r + t.nameGapPx;
   const height = px + lineH;
+  // A capability's elements fan in rows down its sides, so its name takes the wedge the fan keeps above it, or the side the fan left.
+  if (role === "capability" && (input.model.capabilityById.get(id)?.elementIds.length ?? 0) > 0) {
+    // Without a layout the side the fan takes is unknown, so a camera's reach keeps both of the name's beside tries.
+    const fan = input.layout ? fanSidesOf(input.model, input.layout, id) : { right: false, left: false };
+    return [
+      block("center", 0, -side - height), block("right", r, -side - height), block("left", -r, -side - height),
+      ...(fan && !fan.right ? [block("left", side, -px / 2)] : []),
+      ...(fan && !fan.left ? [block("right", -side, -px / 2)] : []),
+      block("center", 0, side), block("right", r, side), block("left", -r, side),
+    ];
+  }
   return [
     block("left", side, -px / 2),
     block("right", -side, -px / 2),
@@ -166,6 +181,16 @@ export function nameReachBox(input: NameReachInput, id: string): Box {
     const label = cap?.label ?? input.elementLabel(id);
     const role = cap || !model.domainOf.has(id) ? "capability" : "element";
     if (label) for (const group of sideNames(input, id, role, label)) for (const n of group) boxes.push(n.box);
+    if (cap && input.selected && id === input.focusId) {
+      const fan = fanDotBox(cap.elementIds.length, t, r);
+      if (fan) {
+        // The column may stand on either side, with its names running outward.
+        const f = font(FONT_WEIGHT.signature, t.elementNamePx, input.fontFamily);
+        const widest = Math.max(0, ...cap.elementIds.map((of) => input.measureText(input.elementLabel(of) ?? "", f)));
+        const reach = fan.reach + t.nameGapPx + widest + t.namePadPx;
+        boxes.push({ minX: -reach, maxX: reach, minY: fan.top, maxY: fan.bottom });
+      }
+    }
   }
   return union(boxes);
 }
