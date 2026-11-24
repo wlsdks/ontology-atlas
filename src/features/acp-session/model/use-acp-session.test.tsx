@@ -133,6 +133,7 @@ vi.mock('@/shared/lib/agent-chat/tauri-acp', () => ({
 }));
 
 import { snapshotPermissionRequest } from './permissions/ask-permission';
+import { STANDING_APPROVAL_ATLAS_WRITES } from './permissions/standing-approval';
 import { TURN_STOP_GRACE_MS, useAcpSession } from './use-acp-session';
 import { unavailableTaskBaseline } from './task-baseline';
 
@@ -1834,6 +1835,119 @@ describe('auto-approve — the person answers once for the folder', () => {
     expect(answerOf(702)).toBeUndefined();
     expect(result.current.events.some((event) => event.kind === 'notice' && /^auto-/.test(event.text))).toBe(false);
     await act(async () => { result.current.pending?.resolve('reject'); });
+    await act(async () => { await result.current.stop(); });
+  });
+});
+
+/**
+ * The shapes each adapter puts on the wire for one Atlas tool call, read from the shipped code:
+ * claude-agent-acp's `GenericReporter` titles an MCP call with its full `mcp__server__tool` name,
+ * kind `other`, and its options are `allow-once`, an optional `allow-with-updates` and `reject`.
+ * codex-acp 2.10.0 first reports the call as `tool_call` with `rawInput: {server, tool,
+ * arguments}` and `_meta.is_mcp_tool_call`, then forwards the server's write elicitation under
+ * the same call id with `_meta.is_mcp_tool_approval` and options `allow_once` and `cancel`.
+ */
+const ADAPTER_SHAPES = {
+  'claude-acp': (id: number, tool: string, args: Record<string, unknown>) => [JSON.stringify({
+    jsonrpc: '2.0', id, method: 'session/request_permission', params: {
+      sessionId: 's-1',
+      options: [
+        { optionId: 'allow-once', name: 'Yes', kind: 'allow_once' },
+        { optionId: 'allow-with-updates', name: "Yes, and don't ask again for atlas-vault commands", kind: 'allow_always' },
+        { optionId: 'reject', name: 'No', kind: 'reject_once' },
+      ],
+      toolCall: { toolCallId: `toolu_${id}`, title: `mcp__atlas-vault__${tool}`, kind: 'other', rawInput: args },
+    },
+  })],
+  'codex-acp': (id: number, tool: string, args: Record<string, unknown>) => [
+    JSON.stringify({ jsonrpc: '2.0', method: 'session/update', params: { sessionId: 's-1', update: {
+      sessionUpdate: 'tool_call', toolCallId: `call_${id}`, kind: 'execute', title: `mcp.atlas-vault.${tool}`, status: 'in_progress',
+      rawInput: { server: 'atlas-vault', tool, arguments: args }, _meta: { is_mcp_tool_call: true },
+    } } }),
+    JSON.stringify({ jsonrpc: '2.0', id, method: 'session/request_permission', params: {
+      sessionId: 's-1', _meta: { is_mcp_tool_approval: true },
+      options: [
+        { optionId: 'allow_once', name: 'Allow', kind: 'allow_once' },
+        { optionId: 'cancel', name: 'Cancel', kind: 'reject_once' },
+      ],
+      toolCall: { toolCallId: `call_${id}`, kind: 'execute', status: 'pending' },
+    } }),
+  ],
+} as const;
+
+describe.each(['claude-acp', 'codex-acp'] as const)('auto-approve — a map build in %s runs to the end without a card', (runtimeId) => {
+  const allowOnceId = runtimeId === 'claude-acp' ? 'allow-once' : 'allow_once';
+  const answerOf = (id: number) =>
+    (bridge.sent.find((message) => message.id === id && 'result' in message) as { result: { outcome: { optionId?: string } } } | undefined)?.result.outcome.optionId;
+
+  /** The Atlas calls a first map build may make in `/code/atlas`, written from the build-from-code prompt and the tools' write contracts. */
+  const MAP_BUILD: Array<[string, Record<string, unknown>]> = [
+    ['analyze_repo_structure', { rootPath: '/code' }],
+    ['analyze_repo_structure', { rootPath: '/code', sourceReads: [{ path: 'src/refund.ts', symbol: 'refund' }] }],
+    ['infer_imports', { rootPath: '/code/src' }],
+    ['add_concepts', { concepts: [{ slug: 'domains/billing', kind: 'domain', title: 'Billing' }, { slug: 'capabilities/refund', kind: 'capability', title: 'Refund', path: 'src/refund.ts' }] }],
+    ['add_relations', { relations: [{ from: 'capabilities/refund', to: 'domains/billing', type: 'domain', why: 'Refunds belong to billing.' }] }],
+    ['patch_concept', { slug: 'capabilities/refund', body: 'Returns a captured payment.' }],
+    ['patch_concept', { slug: 'capabilities/refund', frontmatter: { dependencies: null } }],
+    ['replace_relation', { from: 'capabilities/refund', oldTo: 'elements/ledger', newTo: 'elements/payments', confirm: true }],
+    ['remove_relation', { from: 'capabilities/refund', to: 'elements/ledger', type: 'depends_on', confirm: true }],
+    ['rename_concept', { oldSlug: 'capabilities/refunds', newSlug: 'capabilities/refund', confirm: true }],
+    ['reclassify_concept', { slug: 'elements/refund-rules', newKind: 'capability', confirm: true }],
+    ['validate_vault', {}],
+    ['connect_project_source', { projectSlug: 'projects/shop' }],
+    ['connect_project_source', { projectSlug: 'projects/shop', rootPath: '/code', confirm: true }],
+    ['finalize_project_meaning', { projectSlug: 'projects/shop', answers: [{ question: 'q1', answer: 'a1' }] }],
+    ['git_snapshot', {}],
+  ];
+
+  async function startBuild(onWorkReceipt?: (receipt: AcpWorkReceipt) => void) {
+    bridge.permissionVerdict = 'ask';
+    const startsBefore = bridge.starts;
+    const hook = renderHook(() => useAcpSession({ runtimeId, vaultRoot: '/code/atlas', mcpServers: [{ name: 'atlas-vault' }], rememberChoices: true, onWorkReceipt }));
+    const starting = hook.result.current.start();
+    await waitFor(() => expect(bridge.starts).toBeGreaterThan(startsBefore));
+    await act(async () => { bridge.release?.(); await starting; });
+    act(() => hook.result.current.setAutoApprove(true));
+    bridge.holdPrompt = true;
+    void hook.result.current.send('Build a first map of /code.');
+    await waitFor(() => expect(bridge.pendingPrompt).not.toBeNull());
+    return hook;
+  }
+
+  it('answers every read and write of the build with allow_once, shows no card and credits no person', async () => {
+    const receipts: AcpWorkReceipt[] = [];
+    const { result } = await startBuild((receipt) => receipts.push(receipt));
+    let id = 900;
+    for (const [tool, args] of MAP_BUILD) {
+      id += 1;
+      const requestId = id;
+      await act(async () => { for (const line of ADAPTER_SHAPES[runtimeId](requestId, tool, args)) bridge.listener?.(line); });
+      await waitFor(() => expect({ tool, answer: answerOf(requestId) }).toEqual({ tool, answer: allowOnceId }));
+      expect(result.current.pending).toBeNull();
+    }
+    const writes = MAP_BUILD.filter(([tool]) => STANDING_APPROVAL_ATLAS_WRITES.has(tool));
+    expect(receipts.map((receipt) => [receipt.tool, receipt.approvedBy])).toEqual(writes.map(([tool]) => [tool, 'auto-approve']));
+    await act(async () => { await result.current.stop(); });
+  });
+
+  it.each([
+    ['a deletion', 'delete_concept', { slug: 'capabilities/refund', confirm: true }],
+    ['a merge', 'merge_concepts', { fromSlug: 'capabilities/refunds', intoSlug: 'capabilities/refund', confirm: true }],
+    ['a rename that overwrites the node at its new slug', 'rename_concept', { oldSlug: 'a', newSlug: 'b', confirm: true, overwrite: true }],
+    ['binding a code folder outside the opened folder', 'connect_project_source', { projectSlug: 'projects/shop', rootPath: '/Users/me', confirm: true }],
+    ['binding the folder the server would infer, unnamed', 'connect_project_source', { projectSlug: 'projects/shop', confirm: true }],
+    ['rewriting a project instruction file in place', 'absorb_document', { filePath: '/code/CLAUDE.md', confirm: true }],
+    ['a snapshot commit, which runs the repository hooks', 'git_snapshot', { confirm: true, expectedHead: 'abc123' }],
+    ['a read whose folder lies outside the opened folder', 'analyze_repo_structure', { rootPath: '/Users/me' }],
+    ['a read whose folder climbs out of it', 'analyze_repo_structure', { rootPath: '/code/../Users/me' }],
+    ['a read of a dot folder inside it', 'analyze_repo_structure', { rootPath: '/code/.git' }],
+    ['an Atlas tool nobody listed', 'future_write', { slug: 'a' }],
+  ])('still shows the card for %s', async (_name, tool, args) => {
+    const { result } = await startBuild();
+    await act(async () => { for (const line of ADAPTER_SHAPES[runtimeId](990, tool, args)) bridge.listener?.(line); });
+    await waitFor(() => expect(result.current.pending?.request.requestId).toBe(990));
+    expect(answerOf(990)).toBeUndefined();
+    await act(async () => { result.current.pending?.resolve(null); });
     await act(async () => { await result.current.stop(); });
   });
 });

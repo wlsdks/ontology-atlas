@@ -1,7 +1,7 @@
 /**
  * The first turn the 「make a map from my code」 door sends. A sentence, not a call: the app never calls MCP, and analysing the repository here would be a second `analyze_repo_structure`, which `AGENTS.md` forbids.
  * Breadth before depth, in one run: the agent lists every ability from the outlines and docs (the survey's list is a floor, not the inventory) and places each; then each capability is read by symbol, and the prompt asks for the rule with the cite of the lines that hold it.
- * The agent says the outline and writes it in the same run; each write still meets the app's permission card unless the person turned on auto-approve, and binding the folder and finalizing always do. Titles are the words a teammate says aloud.
+ * The agent says the outline and writes it in the same run; each write meets the app's permission card unless the person turned on auto-approve. Titles are the words a teammate says aloud.
  * English, in the person's voice, because it lands in the transcript as their turn.
  */
 export function buildFromCodePrompt(
