@@ -185,15 +185,10 @@ fn the_base_line_lists_merges_and_squashes_and_a_merge_opens_to_its_own_commits(
     );
     let signed_path = repo.join("signed-commit");
     fs::write(&signed_path, signed).unwrap();
+    // Relative to the repository Git runs in: Windows Git cannot open a `\\?\` path.
     let signed_id = git(
         repo,
-        &[
-            "hash-object",
-            "-t",
-            "commit",
-            "-w",
-            signed_path.to_str().unwrap(),
-        ],
+        &["hash-object", "-t", "commit", "-w", "signed-commit"],
     );
     git(repo, &["branch", "signed", &signed_id]);
     let _ = read_landed(repo, "signed");
