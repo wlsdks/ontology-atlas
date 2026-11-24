@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { appendFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
@@ -94,6 +94,65 @@ test('when Git cannot answer, every file is surveyed as before', () => {
     assert.deepEqual(collectSourceUnits(root).files.map((file) => file.path).sort(), expected, 'with no git program');
   } finally {
     process.env.PATH = path;
+    rmSync(base, { recursive: true, force: true });
+  }
+});
+
+function surveyedPaths(root) {
+  return collectSourceUnits(root).files.map((file) => file.path).sort();
+}
+
+test('a repository location inherited from the parent process changes nothing surveyed', () => {
+  const base = mkdtempSync(join(tmpdir(), 'atlas-git-ignored-'));
+  const inherited = { GIT_DIR: process.env.GIT_DIR, GIT_INDEX_FILE: process.env.GIT_INDEX_FILE };
+  try {
+    const project = checkout(base, 'project', CHECKOUT);
+    const other = join(base, 'other');
+    mkdirSync(other);
+    git(other, 'init', '-q');
+    const expected = surveyedPaths(project);
+    assert.ok(expected.includes('generated/schema.ts'), 'fixture precondition: the tracked file is surveyed');
+    process.env.GIT_DIR = join(other, '.git');
+    process.env.GIT_INDEX_FILE = join(other, '.git', 'index');
+    assert.deepEqual(surveyedPaths(project), expected);
+  } finally {
+    for (const [name, value] of Object.entries(inherited)) {
+      if (value === undefined) delete process.env[name];
+      else process.env[name] = value;
+    }
+    rmSync(base, { recursive: true, force: true });
+  }
+});
+
+test('a repository whose own config puts its work tree elsewhere is surveyed whole', () => {
+  const base = mkdtempSync(join(tmpdir(), 'atlas-git-ignored-'));
+  try {
+    write(base, {
+      'repo/src/app.ts': 'export function app() { return 1; }\n',
+      'repo/private/plan.ts': 'export function plan() { return 2; }\n',
+      'elsewhere/.gitignore': 'src/\nprivate/\n',
+      'elsewhere/src/app.ts': 'export function other() { return 3; }\n',
+    });
+    git(join(base, 'repo'), 'init', '-q');
+    appendFileSync(join(base, 'repo', '.git', 'config'), `[core]\n\tworktree = ${join(base, 'elsewhere')}\n`);
+    assert.deepEqual(surveyedPaths(join(base, 'repo')), ['private/plan.ts', 'src/app.ts']);
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
+});
+
+test('an ignored folder whose name is decomposed on disk is left out', () => {
+  const base = mkdtempSync(join(tmpdir(), 'atlas-git-ignored-'));
+  try {
+    const folder = 'out-산출물'.normalize('NFD');
+    write(base, {
+      '.gitignore': 'out-*/\n',
+      'src/app.ts': 'export function app() { return 1; }\n',
+      [`${folder}/result.ts`]: 'export function result() { return 2; }\n',
+    });
+    git(base, 'init', '-q');
+    assert.deepEqual(surveyedPaths(base), ['src/app.ts']);
+  } finally {
     rmSync(base, { recursive: true, force: true });
   }
 });

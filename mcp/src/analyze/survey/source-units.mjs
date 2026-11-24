@@ -14,7 +14,7 @@ import { extname, join, relative, sep } from 'node:path';
 
 import { DEFAULT_IGNORE } from '../scan-tables.mjs';
 import { discoverDeclaredWorkspacePackages } from '../../infer-imports/workspace-packages.mjs';
-import { gitIgnoredPaths } from './git-ignored-paths.mjs';
+import { gitIgnoredPaths, isGitIgnored } from './git-ignored-paths.mjs';
 
 export const UNIT_SOURCE_EXTENSIONS = new Set([
   '.c', '.cc', '.cjs', '.cpp', '.cs', '.cts', '.dart', '.ex', '.exs', '.go', '.h', '.hpp',
@@ -80,7 +80,6 @@ function classOf(path, head) {
   return 'product';
 }
 
-/** `ignoredByGit` holds whole paths; the walk meets every folder before what is under it, so `has` is enough. */
 function walkSourceFiles(rootPath, ignore, excludedPrefixes, ignoredByGit) {
   const out = [];
   const visit = (directory) => {
@@ -92,7 +91,7 @@ function walkSourceFiles(rootPath, ignore, excludedPrefixes, ignoredByGit) {
       if (name.startsWith('.') || ignore.has(name) || SENSITIVE.test(name)) continue;
       const abs = join(directory, name);
       const rel = relative(rootPath, abs).split(sep).join('/');
-      if (ignoredByGit.has(rel)) continue;
+      if (isGitIgnored(ignoredByGit, rel)) continue;
       if (excludedPrefixes.some((prefix) => rel === prefix || rel.startsWith(`${prefix}/`))) continue;
       let stat;
       // lstat: a link is neither a file nor a folder here, so the walk never follows one.

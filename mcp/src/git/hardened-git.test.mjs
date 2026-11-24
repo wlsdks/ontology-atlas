@@ -208,7 +208,57 @@ test('git reads every path as a name and spawns without a setting that conflicts
     GIT_GLOB_PATHSPECS: '1',
     GIT_NOGLOB_PATHSPECS: '1',
     GIT_ICASE_PATHSPECS: '1',
+    GIT_DIR: '/elsewhere/.git',
+    GIT_WORK_TREE: '/elsewhere',
+    GIT_COMMON_DIR: '/elsewhere/.git',
+    GIT_INDEX_FILE: '/elsewhere/.git/index',
+    GIT_ALLOW_PROTOCOL: 'file:https',
   };
-  assert.deepEqual(gitEnv(inherited), { PATH: '/usr/bin', GIT_TRACE: '0' });
+  assert.deepEqual(gitEnv(inherited), { PATH: '/usr/bin', GIT_TRACE: '0', GIT_NO_LAZY_FETCH: '1', GIT_ALLOW_PROTOCOL: '' });
   assert.equal(inherited.GIT_ICASE_PATHSPECS, '1', 'the caller\'s environment is not changed');
+});
+
+/**
+ * A partial clone whose skip-worktree `.gitignore` blob is missing, so reading the
+ * ignore rules for the folder git walks fetches it from the promisor remote, whose
+ * upload-pack command the repository's own config names.
+ */
+function buildLazyFetchRepo(base, marker) {
+  const repo = join(base, 'repo');
+  mkdirSync(join(repo, 'src'), { recursive: true });
+  plainGit(repo, ['init', '-q']);
+  writeFileSync(join(repo, '.gitignore'), 'build/\n');
+  writeFileSync(join(repo, 'src', 'app.ts'), 'export const app = 1;\n');
+  plainGit(repo, ['add', '.gitignore']);
+  const blob = plainGit(repo, ['rev-parse', ':.gitignore']).trim();
+  rmSync(join(repo, '.git', 'objects', blob.slice(0, 2), blob.slice(2)));
+  plainGit(repo, ['update-index', '--skip-worktree', '.gitignore']);
+  rmSync(join(repo, '.gitignore'));
+  plainGit(repo, ['config', 'core.repositoryformatversion', '1']);
+  plainGit(repo, ['config', 'extensions.partialClone', 'origin']);
+  plainGit(repo, ['config', 'remote.origin.url', repo]);
+  plainGit(repo, ['config', 'remote.origin.promisor', 'true']);
+  plainGit(repo, ['config', 'remote.origin.uploadpack', `touch ${marker};`]);
+  return repo;
+}
+
+const LIST_IGNORED_ARGS = ['--no-optional-locks', 'ls-files', '--others', '--ignored', '--exclude-standard', '--directory', '-z'];
+
+test('a partial clone fetches no missing object through its own upload-pack command', () => {
+  const base = mkdtempSync(join(tmpdir(), 'atlas-mcp-sec-lazy-fetch-'));
+  clearFilterCache();
+  try {
+    const marker = join(base, 'UPLOADPACK_EXECUTED');
+    const repo = buildLazyFetchRepo(base, marker);
+    spawnSync('git', ['-C', repo, ...LIST_IGNORED_ARGS], { encoding: 'utf8' });
+    assert.ok(existsSync(marker), 'fixture precondition: listing ignored files lazy-fetches through upload-pack');
+    rmSync(marker);
+
+    for (const args of [LIST_IGNORED_ARGS, STATUS_ARGS]) {
+      spawnSync('git', hardenedGitArgv(repo, args), { encoding: 'utf8', env: gitEnv() });
+      assert.ok(!existsSync(marker), `${args.find((arg) => !arg.startsWith('-'))} must not fetch through the repository's upload-pack`);
+    }
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
 });

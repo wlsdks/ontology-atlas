@@ -3,7 +3,8 @@
  * every product unit with its main files, exported names and import edges, the
  * entry points, the abilities to place (`abilities.mjs`), and the documents, so the agent can outline the whole product
  * before reading any part of it. It proposes no node: a folder is evidence, and the
- * agent names what the product does. Static text scans only; nothing runs.
+ * agent names what the product does. Static text scans only; nothing in the
+ * repository runs, and the one program started is `git`, asked what it ignores.
  */
 
 import { createHash } from 'node:crypto';
@@ -350,7 +351,7 @@ const DOC_SKIP = /(?:^|\/)(?:blog|changelog|changelogs|release-notes|news|_[^/]*
 function docPages(rootPath, ignore, ignoredByGit) {
   const pages = [];
   const visit = (directory, depth) => {
-    if (depth > 4 || ignoredByGit.has(directory)) return;
+    if (depth > 4 || isGitIgnored(ignoredByGit, directory)) return;
     if (!surveyEntry(rootPath, directory, 'directory')) return;
     let names;
     try { names = readdirSync(join(rootPath, directory)).sort(); } catch { return; }
@@ -358,7 +359,7 @@ function docPages(rootPath, ignore, ignoredByGit) {
       if (name.startsWith('.') || ignore.has(name)) continue;
       const path = `${directory}/${name}`;
       if (DOC_SKIP.test(path)) continue;
-      if (/\.(?:md|mdx|markdown|rst)$/i.test(name)) { if (!ignoredByGit.has(path) && surveyEntry(rootPath, path)) pages.push(path); }
+      if (/\.(?:md|mdx|markdown|rst)$/i.test(name)) { if (!isGitIgnored(ignoredByGit, path) && surveyEntry(rootPath, path)) pages.push(path); }
       else if (!/\.[a-z0-9]+$/i.test(name)) visit(path, depth + 1);
     }
   };

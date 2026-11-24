@@ -17,6 +17,15 @@ const BASE_HARDENING = ['-c', 'safe.bareRepository=explicit', '-c', 'core.fsmoni
 const LITERAL_PATHSPECS = ['--literal-pathspecs'];
 const CONFLICTING_PATHSPEC_ENV = ['GIT_GLOB_PATHSPECS', 'GIT_NOGLOB_PATHSPECS', 'GIT_ICASE_PATHSPECS'];
 
+// The server runs no network verb. A partial clone's missing object (a skip-worktree
+// `.gitignore` read by `ls-files` or `status`) would otherwise be fetched through the
+// transport the repository's own config names, `remote.<name>.uploadpack` included.
+const LOCAL_ONLY_ENV = { GIT_NO_LAZY_FETCH: '1', GIT_ALLOW_PROTOCOL: '' };
+
+// A repository location inherited from the parent (a git hook sets them) would point
+// git at another repository, index or work tree than the folder `-C` names.
+const INHERITED_LOCATION_ENV = ['GIT_DIR', 'GIT_WORK_TREE', 'GIT_COMMON_DIR', 'GIT_INDEX_FILE'];
+
 // Repository hooks run a repo-controlled command (post-index-change on status,
 // post-checkout on restore, post-merge on pull), so they are disabled for every
 // verb except the snapshot commit, which must run the user's pre-commit hook.
@@ -155,10 +164,13 @@ export function hardenedGitArgv(cwd, args, { network = false } = {}) {
   ];
 }
 
-/** The environment to spawn git with: `env` without settings that conflict with literal paths. */
+/**
+ * The environment to spawn git with: `env` without settings that conflict with
+ * literal paths or relocate the repository, and with no object fetched from a remote.
+ */
 export function gitEnv(env = process.env) {
-  const out = { ...env };
-  for (const name of CONFLICTING_PATHSPEC_ENV) delete out[name];
+  const out = { ...env, ...LOCAL_ONLY_ENV };
+  for (const name of [...CONFLICTING_PATHSPEC_ENV, ...INHERITED_LOCATION_ENV]) delete out[name];
   return out;
 }
 
