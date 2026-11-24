@@ -25,12 +25,9 @@ export function useMapAnalysisChip(vault: LocalVault, folderPath: string | null)
   const loaded = vault.status === "loaded" ? vault.manifest : null;
   const projects = useMemo(() => (loaded?.docs ?? []).filter((doc) => doc.frontmatter.kind === "project"), [loaded]);
   const record = vault.mapAnalysisRecord;
-  const [nowMs, setNowMs] = useState(() => Date.now());
-  // A record that arrives is read against the clock it arrived at, not the last timer's.
-  useEffect(() => {
-    const timer = window.setTimeout(() => setNowMs(Date.now()), 0);
-    return () => window.clearTimeout(timer);
-  }, [record]);
+  const [clockMs, setNowMs] = useState(() => Date.now());
+  // The record arrives with the clock it was read at, so it renders against that time in its first frame.
+  const nowMs = record.kind === "read" ? Math.max(clockMs, record.readAtMs) : clockMs;
   const model = useMemo(() => {
     if (!loaded) return null;
     const widest = widestProjectLine(projects.map((doc) => ({ project: doc.slug, figures: doc.notMappedAreas ?? null })));

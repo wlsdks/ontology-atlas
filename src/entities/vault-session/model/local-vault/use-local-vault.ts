@@ -26,6 +26,7 @@ import { createVaultLoadProgressStore } from '../vault-opening/vault-load-progre
 import { createVaultArrivalStore } from '../vault-opening/vault-arrival';
 import {
   comparableAgentActivityStatus,
+  comparableMapAnalysisRecord,
   structurallyEqualStatus,
   readVaultSidecarStatuses,
 } from './vault-sidecars';
@@ -322,7 +323,7 @@ export function useLocalVaultInternal() {
             structurallyEqualStatus(s.agentActivityLog.at(-1), sidecars.agentActivityLog.at(-1)) &&
             s.acpWorkReceipts.length === sidecars.acpWorkReceipts.length &&
             s.acpWorkReceipts.at(-1)?.updatedAt === sidecars.acpWorkReceipts.at(-1)?.updatedAt &&
-            structurallyEqualStatus(s.mapAnalysisRecord, sidecars.mapAnalysisRecord);
+            structurallyEqualStatus(comparableMapAnalysisRecord(s.mapAnalysisRecord), comparableMapAnalysisRecord(sidecars.mapAnalysisRecord));
           return same ? s : { ...s, ...sidecars, lastLoadedAt: Date.now() };
         });
         return false;

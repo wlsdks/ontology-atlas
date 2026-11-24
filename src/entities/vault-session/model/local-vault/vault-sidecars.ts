@@ -15,6 +15,7 @@ import {
   mapAnalysisRecordFromText,
   UNREADABLE_MAP_ANALYSIS_RECORD,
   wholeLinesOfTail,
+  type MapAnalysis,
   type MapAnalysisRecordState,
 } from '@/shared/lib/vault-document/map-analysis-record';
 import { parseAgentActivityLog, type AgentActivityEntry } from '@/shared/lib/agent-activity/agent-activity-log';
@@ -202,6 +203,11 @@ export function comparableAgentActivityStatus(status: AgentActivityStatus): Agen
     ageMs: null,
     refreshRequest: { ...status.refreshRequest, previousAgeMs: null },
   };
+}
+
+/** Leaves out the time the record was read at, which a reread of the same lines changes. */
+export function comparableMapAnalysisRecord(record: MapAnalysisRecordState): MapAnalysisRecordState | MapAnalysis[] {
+  return record.kind === 'read' ? record.analyses : record;
 }
 
 /**

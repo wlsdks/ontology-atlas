@@ -19,7 +19,8 @@ export const MAP_ANALYSIS_READ_MAX_LINES = 10_000;
 export type MapAnalysisRecordState =
   | { kind: 'absent' }
   | { kind: 'unreadable' }
-  | { kind: 'read'; analyses: MapAnalysis[] };
+  /** `readAtMs` is the clock the lines were read at, so a line that just arrived is never read as ahead of it. */
+  | { kind: 'read'; analyses: MapAnalysis[]; readAtMs: number };
 
 export const ABSENT_MAP_ANALYSIS_RECORD: MapAnalysisRecordState = { kind: 'absent' };
 export const UNREADABLE_MAP_ANALYSIS_RECORD: MapAnalysisRecordState = { kind: 'unreadable' };
@@ -28,7 +29,7 @@ export const UNREADABLE_MAP_ANALYSIS_RECORD: MapAnalysisRecordState = { kind: 'u
 export function mapAnalysisRecordFromText(text: string | null, nowMs = Date.now()): MapAnalysisRecordState {
   if (text === null) return ABSENT_MAP_ANALYSIS_RECORD;
   const { analyses } = readMapAnalyses(text, { nowMs });
-  return analyses.length === 0 ? UNREADABLE_MAP_ANALYSIS_RECORD : { kind: 'read', analyses };
+  return analyses.length === 0 ? UNREADABLE_MAP_ANALYSIS_RECORD : { kind: 'read', analyses, readAtMs: nowMs };
 }
 
 /** The whole lines of a file's last bytes: the first line is cut unless the read began at the file's start. */

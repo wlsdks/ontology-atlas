@@ -62,9 +62,9 @@ function stampsOf(collection) {
  * The counts for a line now, measured against the grounded repository exactly as
  * validate_vault measures them; `measured` (`{ coverage, collection }`) is what the
  * write itself took, when it took one. Null counts when no repository is grounded.
- * The code is walked and HEAD read at most once per `MEASURE_REUSE_MS`; `git
- * status` runs only when HEAD or a source file's size or time changed, and only
- * over the connected folder, the vault's own folder left out.
+ * The code is walked, HEAD read and `git status` run at most once per
+ * `MEASURE_REUSE_MS`, status sooner when HEAD or a walked file changed; status
+ * covers the connected folder only, the vault's own folder left out.
  */
 export function createMapAnalysisMeasure({
   repoRoot = REPO_ROOT,
@@ -97,7 +97,8 @@ export function createMapAnalysisMeasure({
     const current = headNow(atMs);
     if (!current) return { sourceCommit: null, sourceDirty: null };
     const key = `${current.commit}\0${stamps}`;
-    if (status?.key === key) return status.state;
+    // Files the walk never collects (a README, a config, an untracked file) change no stamp.
+    if (status?.key === key && atMs - status.atMs < MEASURE_REUSE_MS) return status.state;
     let excluded = null;
     try {
       excluded = vaultFolderInside(realpathSync.native(current.topLevel), realpathSync.native(vaultRoot));
@@ -106,7 +107,7 @@ export function createMapAnalysisMeasure({
     }
     const output = git(repoRoot, ['status', '--porcelain=v1', '-z', '--untracked-files=normal', '--', '.']);
     const state = { sourceCommit: current.commit, sourceDirty: output === null ? null : filterStatus(output, excluded).length > 0 };
-    status = { key, state };
+    status = { key, state, atMs };
     return state;
   }
 

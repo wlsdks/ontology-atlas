@@ -21,7 +21,7 @@ const analysis = (number: number, fields: Partial<MapAnalysis> = {}): MapAnalysi
   sessions: 1,
   ...fields,
 });
-const read = (...analyses: MapAnalysis[]): MapAnalysisRecordState => ({ kind: 'read', analyses });
+const read = (...analyses: MapAnalysis[]): MapAnalysisRecordState => ({ kind: 'read', analyses, readAtMs: NOW });
 const line = (abilitiesUncovered: number, abilitiesTotal = 100) => ({ abilitiesUncovered, abilitiesTotal });
 const base = { hasProject: true, noteFigures: line(38), record: read(analysis(3)), pressRunning: false, nowMs: NOW };
 

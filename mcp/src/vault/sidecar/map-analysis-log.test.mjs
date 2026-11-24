@@ -296,12 +296,72 @@ test('a press id holds only while the heartbeat says so', () => {
     writeHeartbeat(vault, { pressId: 'press-1764000000000-3', untilMs: nowMs + 60_000 });
     assert.equal(readHeartbeatPress(vault, nowMs), 'press-1764000000000-3');
     assert.equal(readHeartbeatPress(vault, nowMs + 60_000), null, 'an expired press is over');
-    writeHeartbeat(vault, { pressId: 'press-1', untilMs: nowMs + 2 * ANALYSIS_GAP_MS });
-    assert.equal(readHeartbeatPress(vault, nowMs), null, 'a press dated far ahead is not believed');
+    writeHeartbeat(vault, { pressId: 'press-1', untilMs: nowMs + 15 * 60_000 });
+    assert.equal(readHeartbeatPress(vault, nowMs), 'press-1', 'the app writes fifteen minutes ahead');
+    writeHeartbeat(vault, { pressId: 'press-1', untilMs: nowMs + 16 * 60_000 });
+    assert.equal(readHeartbeatPress(vault, nowMs), null, 'a press dated further ahead than the app writes is not believed');
     for (const id of ['x","agent":"injected', 'ok\n{"v":1}', '../x', 'a'.repeat(81)]) {
       writeHeartbeat(vault, { pressId: id });
       assert.equal(readHeartbeatPress(vault, nowMs), null, id);
     }
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+  }
+});
+
+test('a heartbeat read is retried once, and one that fails twice says nothing about the press', () => {
+  const nowMs = Date.now();
+  const beat = { text: JSON.stringify({ mapAnalysis: { id: 'press-7', until: new Date(nowMs + 60_000).toISOString() } }) };
+  const reads = (...answers) => {
+    let index = 0;
+    return () => {
+      const answer = answers[Math.min(index++, answers.length - 1)];
+      if (answer instanceof Error) throw answer;
+      return answer;
+    };
+  };
+  const renamed = new Error('the file was replaced while it was opened');
+  assert.equal(readHeartbeatPress('/unused', nowMs, { readText: reads(renamed, beat) }), 'press-7');
+  assert.equal(readHeartbeatPress('/unused', nowMs, { readText: reads(renamed, renamed) }), undefined);
+  assert.equal(readHeartbeatPress('/unused', nowMs, { readText: reads({ text: '{"mapAnalysis":' }) }), undefined, 'a half-written file');
+  assert.equal(readHeartbeatPress('/unused', nowMs, { readText: reads(null) }), null, 'no heartbeat is no press');
+});
+
+test('a press keeps every count when one heartbeat read fails or the press is briefly absent', () => {
+  for (const [label, answers, expected] of [
+    ['a failed read', ['press-1-1', 'press-1-1', 'press-1-1', new Error('renamed'), 'press-1-1'], [{ press: true, added: 5 }]],
+    ['an absent press', ['press-1-1', 'press-1-1', null, 'press-1-1'], [{ press: true, added: 3 }, { press: false, added: 1 }]],
+  ]) {
+    const vault = plantedVault('');
+    try {
+      let atMs = Date.UTC(2026, 10, 24, 1);
+      let index = 0;
+      const readPress = () => {
+        const answer = answers[index];
+        if (answer instanceof Error) throw answer;
+        return answer;
+      };
+      const recorder = createMapAnalysisRecorder({ vaultRoot: vault, sessionId: 'server-a', now: () => atMs, readPress });
+      for (; index < answers.length; index += 1) {
+        atMs += 20_000;
+        assert.equal(recorder.record({ effect: added(`c${index}`), measure: NO_COUNTS }), true);
+      }
+      const { analyses } = readMapAnalyses(readRecord(vault), { nowMs: atMs });
+      assert.deepEqual(analyses.map(({ id, concepts }) => ({ press: id === 'press-1-1', added: concepts.added })), expected, label);
+    } finally {
+      rmSync(vault, { recursive: true, force: true });
+    }
+  }
+});
+
+test('lines a fold cannot parse never push out the sessions it can', () => {
+  const junk = Array.from({ length: 2100 }, (_, index) => `{"v":1,"analysis":"ahead-${index}","at":"2099-01-01T00:00:00.000Z"}`);
+  const vault = plantedVault(`${[...plantedSessions(300), ...junk].join('\n')}\n`);
+  try {
+    createMapAnalysisRecorder({ vaultRoot: vault }).record({ effect: added('x'), measure: NO_COUNTS });
+    const { analyses, broken } = readMapAnalyses(readRecord(vault));
+    assert.equal(analyses.length, 301, 'every earlier session is kept');
+    assert.equal(broken, 200, 'the newest lines it cannot parse are carried, up to a bound');
   } finally {
     rmSync(vault, { recursive: true, force: true });
   }

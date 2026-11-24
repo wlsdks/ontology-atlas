@@ -191,7 +191,7 @@ session to one line, so the file holds about one line per session. New optional 
 | `origin` | `press` or `session`; a reader treats any other value as `session` |
 | `startedAt`, `at` | ISO times of the session's first write and of this one |
 | `agent` | the name the activity log would give (`activity-log.mjs:53`) when it is shaped like a runtime id, else null |
-| `sourceCommit`, `sourceDirty` | HEAD of the connected code at the count and whether it had uncommitted changes; null when no code is connected or it is not a Git repository |
+| `sourceCommit`, `sourceDirty` | HEAD of the connected code at the count and whether its folder had uncommitted changes, both read at most 30 seconds before the line; null when no code is connected or it is not a Git repository |
 | `abilities` | `{ "total": T, "offMap": R }` as `validate_vault` counts them, or null |
 | `areas` | `{ "total": M, "notMapped": N }`, or null |
 | `concepts` | `{ "added", "changed", "removed" }` in this session so far |
@@ -293,9 +293,13 @@ Written to `messages/{en,ko,ja,zh}/mapAnalysis.json`. `{when}` is one of the `wh
   file's own name and path are ASCII.
 - **Moved or renamed folder**: the record moves with the folder, since it is a file in it. A
   renamed code folder keeps its commits, so the count still works once the code is connected again.
-- **Unreadable**: `panel.unreadable`. When the server folds the file it carries every line it
-  cannot parse through verbatim, and starts its own line on a new line when the file's last line
-  is unterminated. A file past 1 MiB is folded from its last 1 MiB.
+- **Unreadable**: `panel.unreadable`. When the server folds the file it carries the newest 200
+  lines it cannot parse through verbatim, so they never push out sessions it can read, and starts
+  its own line on a new line when the file's last line is unterminated. A file past 1 MiB is
+  folded from its last 1 MiB.
+- **The heartbeat mid-write**: the app replaces it at every tool call, so a read can fail. The
+  server reads once more, then keeps the press of its last write; a process that returns to a
+  press it wrote under goes on counting that press's concepts.
 - **A line outside reason**: a time before 2020 or more than a day past the reader's clock, or a
   number or count above a billion, does not parse; a line dated after the clock never reads as
   analyzing now.
@@ -451,3 +455,8 @@ same complaint), and still waits for Record C and its reviewer before any of it 
   keeps the last count; other writes reuse one walk of the code and one HEAD read for 30 seconds,
   and every git call has a 5-second limit. Edge cases now say how a fold treats lines it cannot
   parse, an unterminated last line, a file past 1 MiB, and times and counts outside reason.
+- 2026-11-24: second review. A failed heartbeat read keeps the press, and a process returning to
+  a press continues its counts; a heartbeat's press holds at most 15 minutes ahead, as the app
+  writes it. The dirty flag is reread every 30 seconds like the share, since files the walk does
+  not collect change none of its stamps. A fold carries at most 200 unparseable lines. The record
+  carries the clock it was read at, so a line that just arrived never renders a frame as settled.

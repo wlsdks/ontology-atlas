@@ -74,13 +74,14 @@ test('patches within the reuse window walk the code once and read HEAD once', ()
   assert.deepEqual(work, { walks: 1, revParses: 1, statuses: 1 });
   clock.ms += MEASURE_REUSE_MS;
   patch('capabilities/later');
-  assert.deepEqual(work, { walks: 2, revParses: 2, statuses: 1 }, 'a later write walks again; an unchanged HEAD and tree need no status');
+  assert.deepEqual(work, { walks: 2, revParses: 2, statuses: 2 }, 'a later write walks and asks git again');
 });
 
-test('the dirty flag describes the connected folder, not the rest of its repository', (t) => {
+/** A committed repository with the connected folder at `app/`, its vault at `app/atlas/`, and a sibling `other/`. */
+function repositoryWithSibling(t) {
   const root = realpathSync(mkdtempSync(join(tmpdir(), 'atlas-map-measure-')));
   t.after(() => rmSync(root, { recursive: true, force: true }));
-  for (const file of ['app/main.js', 'other/tool.js']) {
+  for (const file of ['app/main.js', 'app/README.md', 'other/tool.js']) {
     mkdirSync(join(root, file, '..'), { recursive: true });
     writeFileSync(join(root, file), 'export const one = 1;\n');
   }
@@ -88,6 +89,21 @@ test('the dirty flag describes the connected folder, not the rest of its reposit
   execFileSync('git', ['init', '-q'], { cwd: root });
   execFileSync('git', ['add', '.'], { cwd: root });
   execFileSync('git', ['-c', 'user.name=Atlas Test', '-c', 'user.email=atlas@example.invalid', 'commit', '-q', '-m', 'fixture'], { cwd: root });
+  return root;
+}
+
+test('a change the walk does not collect shows in the dirty flag once the reuse window passes', (t) => {
+  const root = repositoryWithSibling(t);
+  const clock = { ms: Date.UTC(2026, 10, 24) };
+  const measure = createMapAnalysisMeasure({ repoRoot: join(root, 'app'), vaultRoot: join(root, 'app', 'atlas'), grounded: true, survey: () => null, now: () => clock.ms });
+  assert.equal(measure().sourceDirty, false);
+  writeFileSync(join(root, 'app/README.md'), '# Changed\n');
+  clock.ms += MEASURE_REUSE_MS;
+  assert.equal(measure().sourceDirty, true);
+});
+
+test('the dirty flag describes the connected folder, not the rest of its repository', (t) => {
+  const root = repositoryWithSibling(t);
   const dirty = () =>
     createMapAnalysisMeasure({ repoRoot: join(root, 'app'), vaultRoot: join(root, 'app', 'atlas'), grounded: true, survey: () => null })().sourceDirty;
 

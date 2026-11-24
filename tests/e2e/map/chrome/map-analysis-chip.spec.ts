@@ -141,6 +141,55 @@ test.describe("the map analysis chip", () => {
     await expect(chip(page)).toHaveAttribute("data-pill", "running");
   });
 
+  test("changes its label once, never blinking, as an agent's lines arrive while the map is open", async ({ page }) => {
+    await openPlantedFolder(page, { "storefront.md": withLine(38), [RECORD_PATH]: record({ number: 2, agoMs: 2 * DAY_MS }) });
+    await expect(chip(page)).toHaveAttribute("data-pill", "full");
+    await trigger(page).click();
+    await expect(page.getByTestId("map-analysis-row")).toHaveCount(1);
+    await waitForAnimationsDone(chip(page));
+
+    await page.evaluate(() => {
+      const frames: string[] = [];
+      const sample = () => {
+        const button = document.querySelector<HTMLElement>('[data-testid="map-analysis-chip-trigger"]');
+        if (button) frames.push(`${Math.round(button.getBoundingClientRect().width)}|${button.textContent ?? ""}`);
+        requestAnimationFrame(sample);
+      };
+      (window as unknown as { __chipFrames: string[] }).__chipFrames = frames;
+      requestAnimationFrame(sample);
+    });
+    const appendLine = (number: number) =>
+      page.evaluate(async (number) => {
+        const root = await navigator.storage.getDirectory();
+        let folder: FileSystemDirectoryHandle | null = null;
+        for await (const [name, handle] of (root as unknown as { entries(): AsyncIterable<[string, FileSystemHandle]> }).entries()) {
+          if (name.startsWith("stub-vault-") && handle.kind === "directory") folder = handle as FileSystemDirectoryHandle;
+        }
+        const sidecar = await folder!.getDirectoryHandle(".ontology-atlas");
+        const file = await sidecar.getFileHandle("map-analysis.jsonl");
+        const text = await (await file.getFile()).text();
+        const at = new Date().toISOString();
+        const line = JSON.stringify({ v: 1, analysis: `terminal-${number}`, number, session: `terminal-${number}`, origin: "session", startedAt: at, at, agent: "claude-code", sourceCommit: null, sourceDirty: null, abilities: { total: 100, offMap: 38 }, areas: { total: 9, notMapped: 3 }, concepts: { added: 1, changed: 0, removed: 0 } });
+        const writable = await file.createWritable();
+        await writable.write(`${text}${line}\n`);
+        await writable.close();
+        window.dispatchEvent(new Event("focus"));
+      }, number);
+
+    await appendLine(3);
+    await expect(page.getByTestId("map-analysis-row")).toHaveCount(2, { timeout: 30_000 });
+    await expect(chip(page)).toHaveAttribute("data-pill", "running");
+    await appendLine(4);
+    await expect(page.getByTestId("map-analysis-row")).toHaveCount(3, { timeout: 30_000 });
+    await waitForAnimationsDone(chip(page));
+
+    const frames = await page.evaluate(() => (window as unknown as { __chipFrames: string[] }).__chipFrames);
+    const labels = frames.map((frame) => frame.slice(frame.indexOf("|") + 1)).filter((label, index, list) => index === 0 || label !== list[index - 1]);
+    expect(labels, `the label changed ${labels.length - 1} times: ${labels.join(" -> ")}`).toHaveLength(2);
+    const widths = frames.map((frame) => frame.slice(0, frame.indexOf("|"))).filter((width, index, list) => index === 0 || width !== list[index - 1]);
+    expect(new Set(widths).size, `the width came back to a value it left: ${widths.join(" -> ")}`).toBe(widths.length);
+  });
+
   test("moves the share from the value last drawn when the note's line changes", async ({ page }) => {
     await openPlantedFolder(page, { "storefront.md": withLine(38), [RECORD_PATH]: record({ number: 3, agoMs: 4 * DAY_MS }) });
     await expect(trigger(page)).toContainText("62%");

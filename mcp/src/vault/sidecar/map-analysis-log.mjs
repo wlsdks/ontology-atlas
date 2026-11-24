@@ -30,8 +30,12 @@ const EARLIEST_LINE_MS = Date.UTC(2020, 0, 1);
 const FUTURE_SKEW_MS = 24 * 60 * 60_000;
 /** The largest count or analysis number a line may hold; past it a line is not believed. */
 const COUNT_MAX = 1_000_000_000;
-/** A press id in the heartbeat holds for at most this long past now, whatever `until` says. */
-const PRESS_MAX_AHEAD_MS = 60 * 60_000;
+/** A press id in the heartbeat holds for at most this long past now, whatever `until` says; the app writes 15 minutes. */
+const PRESS_MAX_AHEAD_MS = 15 * 60_000;
+/** A fold carries at most this many lines it cannot parse, the newest, so junk never pushes sessions out. */
+const RECORD_BROKEN_LINES_KEPT = 200;
+/** The presses one process can return to and go on counting, the most recent kept. */
+const PRESSES_REMEMBERED = 16;
 
 const ID_PATTERN = /^[A-Za-z0-9._-]{1,80}$/;
 const COMMIT_PATTERN = /^[0-9a-f]{7,64}$/i;
@@ -158,9 +162,9 @@ export function readMapAnalyses(text, { nowMs = Date.now() } = {}) {
 }
 
 /**
- * Every session's last line, sessions in the order they first appear, and every
- * line that does not parse kept verbatim where it stood, the newest
- * `RECORD_SESSIONS_KEPT` entries in all. O(lines).
+ * Every session's last line, sessions in the order they first appear, and the
+ * newest `RECORD_BROKEN_LINES_KEPT` lines that do not parse kept verbatim where
+ * they stood, the newest `RECORD_SESSIONS_KEPT` entries in all. O(lines).
  */
 function foldMapAnalysisLines(text, nowMs) {
   const kept = new Map();
@@ -173,24 +177,41 @@ function foldMapAnalysisLines(text, nowMs) {
     // Setting an existing key keeps its first place, so analyses keep their order.
     kept.set(line ? `${line.analysis}\0${line.session}` : `\0${index}`, trimmed);
   }
-  return [...kept.values()].slice(-RECORD_SESSIONS_KEPT);
+  let brokenLeft = [...kept.keys()].filter((key) => key.startsWith('\0')).length;
+  const lines = [];
+  for (const [key, line] of kept) {
+    if (key.startsWith('\0') && brokenLeft-- > RECORD_BROKEN_LINES_KEPT) continue;
+    lines.push(line);
+  }
+  return lines.slice(-RECORD_SESSIONS_KEPT);
+}
+
+function pressOf(heartbeat, nowMs) {
+  const press = heartbeat?.mapAnalysis;
+  if (!press || typeof press.id !== 'string' || !ID_PATTERN.test(press.id)) return null;
+  const untilMs = typeof press.until === 'string' ? Date.parse(press.until) : Number.NaN;
+  return untilMs > nowMs && untilMs <= nowMs + PRESS_MAX_AHEAD_MS ? press.id : null;
 }
 
 /**
  * The press id the app's heartbeat names for the request running now, or null:
- * the id must be id-shaped and its `until` in the future, at most an hour ahead.
+ * the id must be id-shaped and its `until` in the future, at most 15 minutes
+ * ahead. Undefined when the file could not be read or parsed twice running: the
+ * app replaces it at every tool call, so a failed read says nothing about the press.
  */
-export function readHeartbeatPress(vaultRoot, nowMs) {
-  try {
-    const stored = readVaultSidecarText(vaultRoot, HEARTBEAT_FILENAME);
-    if (!stored) return null;
-    const press = JSON.parse(stored.text)?.mapAnalysis;
-    if (!press || typeof press.id !== 'string' || !ID_PATTERN.test(press.id)) return null;
-    const untilMs = typeof press.until === 'string' ? Date.parse(press.until) : Number.NaN;
-    return untilMs > nowMs && untilMs <= nowMs + PRESS_MAX_AHEAD_MS ? press.id : null;
-  } catch {
-    return null;
+export function readHeartbeatPress(vaultRoot, nowMs, { readText = readVaultSidecarText } = {}) {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    let heartbeat;
+    try {
+      const stored = readText(vaultRoot, HEARTBEAT_FILENAME);
+      if (!stored) return null;
+      heartbeat = JSON.parse(stored.text);
+    } catch {
+      continue;
+    }
+    return pressOf(heartbeat, nowMs);
   }
+  return undefined;
 }
 
 function emptyConcepts() {
@@ -237,7 +258,9 @@ const SIDECAR_IO = {
  * whose press id differs from the last. That read folds earlier sessions to their
  * last line in one atomic replace; every other write is one appended line.
  * `readPress` answers the press id of the request running now (null outside a
- * press), so one press's requests read as one analysis whatever server they use.
+ * press, undefined when it could not tell, which keeps the press of the last
+ * write), so one press's requests read as one analysis whatever server they use.
+ * A process that returns to a press it wrote under goes on counting its concepts.
  */
 export function createMapAnalysisRecorder({
   vaultRoot,
@@ -248,6 +271,7 @@ export function createMapAnalysisRecorder({
   io = SIDECAR_IO,
 }) {
   let current = null;
+  const presses = new Map();
 
   function begin(atMs, press) {
     let stored = null;
@@ -258,18 +282,24 @@ export function createMapAnalysisRecorder({
     }
     const { analyses } = readMapAnalyses(stored?.text ?? '', { nowMs: atMs });
     const pressed = press ? analyses.find((analysis) => analysis.id === press) : undefined;
-    const number = Math.min(COUNT_MAX, pressed?.number ?? (analyses.at(-1)?.number ?? 0) + 1);
-    current = {
+    const counts = current?.counts ?? countsOf(pressed ?? analyses.at(-1));
+    const resumed = press ? presses.get(press) : undefined;
+    current = resumed ?? {
       id: press ?? newId(),
       press,
-      number,
+      number: Math.min(COUNT_MAX, pressed?.number ?? (analyses.at(-1)?.number ?? 0) + 1),
       startedAtMs: atMs,
       lastAtMs: atMs,
       concepts: emptyConcepts(),
-      counts: current?.counts ?? countsOf(pressed ?? analyses.at(-1)),
-      // An unterminated last line would swallow the next one.
-      lead: stored && !stored.endsWithNewline ? '\n' : '',
     };
+    current.counts = counts;
+    // An unterminated last line would swallow the next one.
+    current.lead = stored && !stored.endsWithNewline ? '\n' : '';
+    if (press) {
+      presses.delete(press);
+      presses.set(press, current);
+      if (presses.size > PRESSES_REMEMBERED) presses.delete(presses.keys().next().value);
+    }
     return stored ? { lines: foldMapAnalysisLines(stored.text, atMs), revision: stored.revision } : null;
   }
 
@@ -282,7 +312,13 @@ export function createMapAnalysisRecorder({
     try {
       if (effectIsEmpty(effect)) return false;
       const atMs = now();
-      const press = readPress(atMs);
+      let read;
+      try {
+        read = readPress(atMs);
+      } catch {
+        read = undefined;
+      }
+      const press = read === undefined ? (current?.press ?? null) : read;
       const startsAnalysis =
         current === null || press !== current.press || (press === null && atMs - current.lastAtMs > ANALYSIS_GAP_MS);
       const fold = startsAnalysis ? begin(atMs, press) : null;
