@@ -90,6 +90,8 @@ pub(crate) struct DoctorContext<'a> {
     pub path_env: &'a str,
     /// `None` if it could not be queried.
     pub isolated_logged_out: Option<bool>,
+    /// The terminal's own login, asked of the CLI without the app's folder; `None` if it could not be queried.
+    pub terminal_logged_in: Option<bool>,
     /// `None` if the OS cannot verify it.
     pub shadow_present: Option<bool>,
     /// A half-written entry is a download in progress, not a broken one.
@@ -156,21 +158,25 @@ pub(crate) fn diagnose(ctx: &DoctorContext<'_>) -> Vec<AcpCheck> {
 
     // The four isolation checks are emitted only for isolating executors; `unknown`
     // for something that does not apply would read as a half-broken tool.
-    let isolated = isolated_dir(ctx);
-    let Some(dir) = isolated.clone() else {
+    let Some(spec) = acp::isolation::isolation_for(ctx.runtime_id) else {
         return finish(out);
     };
-    out.push(if dir.join("settings.json").is_file() {
+    let dir = ctx.app_data_dir.join("agent-config").join(spec.id);
+    out.push(if dir.join(spec.settings_file).is_file() {
         AcpCheck::ok("config-dir", Some(dir.display().to_string()))
     } else {
         AcpCheck::problem("config-dir", true, Some(dir.display().to_string()))
     });
 
-    if let (Some(dir), Some(home)) = (&isolated, ctx.home) {
-        let spec_user_dir = home.join(".claude");
-        let source = spec_user_dir.join(".credentials.json");
-        let link = dir.join(".credentials.json");
-        out.push(if !source.exists() {
+    // Claude Code on macOS reads the app's keychain item first, so once the app mirrors the
+    // terminal login there, the link is taken down on purpose (`prepare_isolated_config`).
+    let mirrored = spec.id == "claude-acp" && ctx.shadow_present == Some(true);
+    if let Some(home) = ctx.home {
+        let source = home.join(spec.user_config_dir).join(spec.credentials_file);
+        let link = dir.join(spec.credentials_file);
+        out.push(if mirrored {
+            AcpCheck::ok("credentials-link", Some("keychain".into()))
+        } else if !source.exists() {
             // Never logged in from the terminal: nothing to link, not a broken link.
             AcpCheck::unknown("credentials-link", None)
         } else if std::fs::read_link(&link).ok().as_deref() == Some(source.as_path()) {
@@ -180,11 +186,25 @@ pub(crate) fn diagnose(ctx: &DoctorContext<'_>) -> Vec<AcpCheck> {
         });
     }
 
-    out.push(match ctx.shadow_present {
-        Some(true) => AcpCheck::problem("shadow-keychain", true, None),
-        Some(false) => AcpCheck::ok("shadow-keychain", None),
-        None => AcpCheck::unknown("shadow-keychain", None),
-    });
+    // Only Claude Code keeps a login in a keychain item named after the folder. The item is
+    // the app's own mirror of the terminal login; it blocks only when it no longer signs in
+    // while the terminal does, and then removing it lets the next preparation mirror again.
+    if spec.id == "claude-acp" {
+        out.push(
+            match (
+                ctx.shadow_present,
+                ctx.isolated_logged_out,
+                ctx.terminal_logged_in,
+            ) {
+                (None, _, _) => AcpCheck::unknown("shadow-keychain", None),
+                (Some(true), Some(true), Some(true)) => {
+                    AcpCheck::problem("shadow-keychain", true, None)
+                }
+                (Some(true), Some(true), None) => AcpCheck::unknown("shadow-keychain", None),
+                _ => AcpCheck::ok("shadow-keychain", None),
+            },
+        );
+    }
 
     out.push(match ctx.isolated_logged_out {
         Some(true) => AcpCheck::problem("login", false, None),
@@ -243,8 +263,14 @@ pub(crate) fn repair(ctx: &DoctorContext<'_>, check_id: &str) -> Result<(), Stri
         return Err(format!("not-repairable:{check_id}"));
     }
     match check_id {
-        // One preparation path fixes all three, so a separate fix cannot drift from it.
+        // One preparation path fixes all three, so a separate fix cannot drift from it; a stale
+        // mirror is removed first, or the preparation finds it already matching and keeps it.
         "config-dir" | "credentials-link" | "shadow-keychain" => {
+            if check_id == "shadow-keychain" {
+                if let Some(dir) = isolated_dir(ctx) {
+                    acp::isolation::remove_shadow_credentials(&dir);
+                }
+            }
             acp::isolation::prepare_isolated_config(
                 ctx.runtime_id,
                 ctx.app_data_dir,
@@ -316,6 +342,7 @@ mod tests {
             launcher: None,
             path_env: "",
             isolated_logged_out: None,
+            terminal_logged_in: None,
             shadow_present: None,
             adapter_fetching: false,
         }
@@ -662,6 +689,102 @@ mod tests {
         let fetching = npx_check(true);
         assert_eq!((fetching.state, fetching.fixable), ("ok", false));
         assert_eq!(fetching.detail.as_deref(), Some("downloading"));
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    fn state_of<'a>(checks: &'a [AcpCheck], id: &str) -> Option<&'a AcpCheck> {
+        checks.iter().find(|c| c.id == id)
+    }
+
+    fn fresh_dirs(tag: &str) -> (PathBuf, PathBuf, PathBuf) {
+        let base = std::env::temp_dir().join(format!("atlas-doctor-{tag}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        let home = base.join("home");
+        let app = base.join("app");
+        std::fs::create_dir_all(&home).unwrap();
+        std::fs::create_dir_all(&app).unwrap();
+        (base, home, app)
+    }
+
+    #[test]
+    fn a_prepared_codex_folder_reports_its_own_settings_and_login_link_as_fine() {
+        let (base, home, app) = fresh_dirs("codex");
+        std::fs::create_dir_all(home.join(".codex")).unwrap();
+        std::fs::write(home.join(".codex").join("auth.json"), "{}").unwrap();
+        // A terminal Claude login beside it must not be mistaken for Codex's.
+        std::fs::create_dir_all(home.join(".claude")).unwrap();
+        std::fs::write(home.join(".claude").join(".credentials.json"), "{}").unwrap();
+        let mut c = ctx(&app, Some(&home));
+        c.runtime_id = "codex-acp";
+        prepare_for_test(&c);
+        let checks = diagnose(&c);
+        assert_eq!(state_of(&checks, "config-dir").map(|x| x.state), Some("ok"));
+        assert_eq!(
+            state_of(&checks, "credentials-link").map(|x| x.state),
+            Some("ok")
+        );
+        assert!(
+            state_of(&checks, "shadow-keychain").is_none(),
+            "Codex keeps no keychain item named after the folder"
+        );
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn claude_mirrored_into_the_keychain_reports_the_taken_down_link_as_fine() {
+        let (base, home, app) = fresh_dirs("mirror");
+        std::fs::create_dir_all(home.join(".claude")).unwrap();
+        std::fs::write(home.join(".claude").join(".credentials.json"), "{}").unwrap();
+        let mut c = ctx(&app, Some(&home));
+        prepare_for_test(&c);
+        // The mirror took the link down.
+        let _ = std::fs::remove_file(
+            app.join("agent-config")
+                .join("claude-acp")
+                .join(".credentials.json"),
+        );
+        c.shadow_present = Some(true);
+        c.isolated_logged_out = Some(false);
+        c.terminal_logged_in = Some(true);
+        let checks = diagnose(&c);
+        assert_eq!(
+            state_of(&checks, "credentials-link").map(|x| x.state),
+            Some("ok")
+        );
+        assert_eq!(
+            state_of(&checks, "shadow-keychain").map(|x| x.state),
+            Some("ok")
+        );
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn the_keychain_mirror_is_a_problem_only_when_it_fails_while_the_terminal_signs_in() {
+        let (base, home, app) = fresh_dirs("shadow");
+        let tool = base.join("claude");
+        let mut c = ctx(&app, Some(&home));
+        prepare_for_test(&c);
+        // The tool is found and launchable, so a fix is not withheld behind a missing prerequisite.
+        c.cli = Some(&tool);
+        c.launcher = Some(&tool);
+        c.shadow_present = Some(true);
+        c.isolated_logged_out = Some(true);
+        for (terminal, expected, fixable) in [
+            (Some(true), "problem", true),
+            (Some(false), "ok", false),
+            (None, "unknown", false),
+        ] {
+            c.terminal_logged_in = terminal;
+            let checks = diagnose(&c);
+            let shadow = state_of(&checks, "shadow-keychain").unwrap();
+            assert_eq!(
+                (shadow.state, shadow.fixable),
+                (expected, fixable),
+                "terminal signed in: {terminal:?}"
+            );
+            // A dead terminal login is the login row's to name.
+            assert_eq!(state_of(&checks, "login").map(|x| x.state), Some("problem"));
+        }
         let _ = std::fs::remove_dir_all(&base);
     }
 }
