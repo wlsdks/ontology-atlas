@@ -150,6 +150,8 @@ test.describe("a wiki check keeps running away from the Library", () => {
     await page.getByTestId("topology-vault-agent-toggle").click();
     await rail(page).getByTestId("app-nav-rail-item-library").click();
     await readAndSee("the Library again");
+    // The text can update before the next recorded frame; stop only once a frame has drawn it.
+    await expect.poll(() => page.evaluate(() => (window as unknown as { __cardFrames: CardFrame[] }).__cardFrames.at(-1)?.pages), { message: "no frame drew the last count" }).toBe(read);
 
     const frames = await stopFrameLog(page);
     expect(await harnessCalls(page), "a move ended the check's turn").not.toContain("acp_stop");

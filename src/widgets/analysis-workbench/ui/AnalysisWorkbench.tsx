@@ -1,5 +1,6 @@
 'use client';
 
+import { focusWithoutTooltip } from '@/shared/ui/hints/tooltip';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import ReactMarkdown from 'react-markdown';
@@ -98,7 +99,7 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
           ? origin : returnFocusSelector ? document.querySelector<HTMLElement>(returnFocusSelector) : null;
         const putAway = !panel?.isConnected || !!panel.closest('[inert]');
         if (putAway && target?.isConnected && !target.closest('[inert]')) {
-          target.focus({ preventScroll: true });
+          focusWithoutTooltip(target, { preventScroll: true });
           return;
         }
         if ((frames += 1) < 40) window.requestAnimationFrame(restore);
