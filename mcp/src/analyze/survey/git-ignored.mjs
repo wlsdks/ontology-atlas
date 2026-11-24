@@ -5,25 +5,21 @@
  */
 
 import { spawnSync } from 'node:child_process';
+import { realpathSync } from 'node:fs';
+import { isAbsolute, relative, sep } from 'node:path';
 
 import { gitEnv, hardenedGitArgv } from '../../git/hardened-git.mjs';
 
 const GIT_TIMEOUT_MS = 5000;
 const LIST_MAX_BUFFER = 16 * 1024 * 1024;
 
-/**
- * The untracked paths under `rootPath` that Git ignores, relative to it with `/`
- * separators; a folder ignored whole is one entry, without its trailing `/`. Empty
- * outside a repository, when the folder is ignored whole, or when Git cannot
- * answer, so the walk then counts every file. One `git ls-files` run, O(entries).
- */
-export function gitIgnoredPaths(rootPath) {
-  const args = ['--no-optional-locks', 'ls-files', '-z', '--others', '--ignored', '--exclude-standard', '--directory'];
+/** A hardened git run's stdout in `rootPath`, or null when Git cannot answer. */
+function gitOutput(rootPath, args) {
   let argv;
   try {
-    argv = hardenedGitArgv(rootPath, args);
+    argv = hardenedGitArgv(rootPath, ['--no-optional-locks', ...args]);
   } catch {
-    return new Set();
+    return null;
   }
   const result = spawnSync('git', argv, {
     env: gitEnv(),
@@ -31,8 +27,36 @@ export function gitIgnoredPaths(rootPath) {
     timeout: GIT_TIMEOUT_MS,
     stdio: ['ignore', 'pipe', 'ignore'],
   });
-  if (result.status !== 0 || !result.stdout) return new Set();
+  return result.status === 0 && result.stdout ? result.stdout.toString('utf8') : null;
+}
+
+/**
+ * Whether the work tree Git uses for `rootPath` holds it: a repository whose own
+ * `core.worktree` names another folder would list that folder's ignored files.
+ */
+function workTreeHolds(rootPath) {
+  const topLevel = gitOutput(rootPath, ['rev-parse', '--show-toplevel'])?.trim();
+  if (!topLevel) return false;
+  try {
+    const inside = relative(realpathSync(topLevel), realpathSync(rootPath));
+    return inside !== '..' && !inside.startsWith(`..${sep}`) && !isAbsolute(inside);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The untracked paths under `rootPath` that Git ignores, relative to it with `/`
+ * separators; a folder ignored whole is one entry, without its trailing `/`. Empty
+ * outside a repository, when Git's work tree does not hold the folder, when the
+ * folder is ignored whole, or when Git cannot answer, so the walk then counts every
+ * file. Two git runs (`rev-parse`, `ls-files`), O(entries).
+ */
+export function gitIgnoredPaths(rootPath) {
+  if (!workTreeHolds(rootPath)) return new Set();
+  const listed = gitOutput(rootPath, ['ls-files', '-z', '--others', '--ignored', '--exclude-standard', '--directory']);
+  if (listed === null) return new Set();
   // macOS Git prints names precomposed (NFC) while the disk may keep them decomposed; the walk compares NFC too.
-  const paths = result.stdout.toString('utf8').split('\0').map((path) => path.replace(/\/$/, '').normalize('NFC'));
+  const paths = listed.split('\0').map((path) => path.replace(/\/$/, '').normalize('NFC'));
   return new Set(paths.filter((path) => path && path !== '.'));
 }

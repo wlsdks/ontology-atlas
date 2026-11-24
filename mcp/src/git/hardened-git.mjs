@@ -17,6 +17,11 @@ const BASE_HARDENING = ['-c', 'safe.bareRepository=explicit', '-c', 'core.fsmoni
 const LITERAL_PATHSPECS = ['--literal-pathspecs'];
 const CONFLICTING_PATHSPEC_ENV = ['GIT_GLOB_PATHSPECS', 'GIT_NOGLOB_PATHSPECS', 'GIT_ICASE_PATHSPECS'];
 
+// A repository location inherited from the parent (a git hook sets them) would point
+// git at another repository, index or work tree than the folder `-C` names.
+// `git_command` in src-tauri/src/harness_scopes/git.rs drops the first three.
+const INHERITED_LOCATION_ENV = ['GIT_DIR', 'GIT_WORK_TREE', 'GIT_COMMON_DIR', 'GIT_INDEX_FILE'];
+
 // Repository hooks run a repo-controlled command (post-index-change on status,
 // post-checkout on restore, post-merge on pull), so they are disabled for every
 // verb except the snapshot commit, which must run the user's pre-commit hook.
@@ -171,13 +176,13 @@ export function hardenedGitArgv(cwd, args, { network = false } = {}) {
 
 /**
  * The environment to spawn git with: `env` without settings that conflict with
- * literal paths, and with no fetch, since the MCP server runs no network verb.
- * `runsUserHooks` (the snapshot commit) keeps transports: its hooks are the
- * user's own and may reach their remote.
+ * literal paths or relocate the repository, and with no fetch, since the MCP
+ * server runs no network verb. `runsUserHooks` (the snapshot commit) keeps
+ * transports: its hooks are the user's own and may reach their remote.
  */
 export function gitEnv(env = process.env, { runsUserHooks = false } = {}) {
   const out = { ...env };
-  for (const name of CONFLICTING_PATHSPEC_ENV) delete out[name];
+  for (const name of [...CONFLICTING_PATHSPEC_ENV, ...INHERITED_LOCATION_ENV]) delete out[name];
   return runsUserHooks ? out : { ...out, ...LOCAL_READ_ENV };
 }
 
