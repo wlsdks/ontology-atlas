@@ -88,6 +88,7 @@
     --map-graph-selected-disc-gap-px: 28;
     --map-graph-select-zoom-max-ratio: 2;
     --map-graph-pick-min-px: 10;
+    --map-graph-hover-grow-px: 3;
     --map-graph-domain-apart-max-px: 160;
     --map-graph-open-fill: 0.82;
     --map-graph-cap-open-max-px: 24;
