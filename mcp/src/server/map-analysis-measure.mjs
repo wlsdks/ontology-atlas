@@ -35,7 +35,7 @@ export const MEASURED_COVERAGE = Symbol('measuredCoverage');
  * The share's counts in the record's shape; null coverage (no surveyed units)
  * gives null counts.
  */
-export function shareCounts(coverage) {
+function shareCounts(coverage) {
   if (!coverage) return { abilities: null, areas: null };
   return {
     abilities: { total: coverage.abilities, offMap: coverage.uncovered },

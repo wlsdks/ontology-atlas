@@ -20,7 +20,7 @@ export const ANALYSIS_GAP_MS = 60 * 60_000;
 export const RECORD_SESSIONS_KEPT = 2000;
 
 /** The most of the file one read takes, from its end; the app's tail read is bounded the same way. */
-export const RECORD_READ_MAX_BYTES = 1024 * 1024;
+const RECORD_READ_MAX_BYTES = 1024 * 1024;
 
 const ID_PATTERN = /^[A-Za-z0-9._-]{1,80}$/;
 const COMMIT_PATTERN = /^[0-9a-f]{7,64}$/i;
@@ -48,7 +48,7 @@ function readPair(value, totalKey, partKey) {
  * id, a session, a positive number and a time are required; every other field
  * falls back (`origin` to `session`, a count to 0, the rest to null).
  */
-export function parseMapAnalysisLine(text) {
+function parseMapAnalysisLine(text) {
   let raw;
   try {
     raw = JSON.parse(text);
@@ -143,7 +143,7 @@ export function readMapAnalyses(text) {
  * `RECORD_SESSIONS_KEPT`; null when a line does not parse, so a file this
  * version does not understand is never rewritten. O(lines).
  */
-export function foldMapAnalysisLines(text) {
+function foldMapAnalysisLines(text) {
   const latest = new Map();
   for (const rawLine of String(text ?? '').split('\n')) {
     if (!rawLine.trim()) continue;
@@ -175,7 +175,7 @@ function applyEffect(concepts, effect) {
   }
 }
 
-export function effectIsEmpty(effect) {
+function effectIsEmpty(effect) {
   return !effect || (effect.added.length === 0 && effect.changed.length === 0 && effect.removed.length === 0);
 }
 
