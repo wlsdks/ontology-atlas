@@ -266,7 +266,7 @@ export function useTopologyAgentOrchestration({
     () => ({ acpDockFrameOpen, meaningWorkbenchOpen, vaultAgentOpen, acpChatOpen }),
     [acpDockFrameOpen, meaningWorkbenchOpen, vaultAgentOpen, acpChatOpen],
   );
-  const { returnedOnItsOwn: conversationReturnedOnItsOwn } = useConversationStow({
+  const { putAway: conversationPutAway, returnedOnItsOwn: conversationReturnedOnItsOwn } = useConversationStow({
     room: codeReaderRoom,
     agentDockOpen,
     doors: conversationDoors,
@@ -368,6 +368,6 @@ export function useTopologyAgentOrchestration({
     closeVaultAgent, agentDockOpen, runtimeChatOpen, openVaultAgent, handleIndexTabExpandFromAgent,
     analyzePrompt, agentChatUsesRuntime, sendAnalyzeToAgent, askAgentAboutSelectedNode, keyChatOpen,
     vaultAgentScreenContext, askPrefill, handleWorkbenchSectionChange, businessFlowRequest,
-    conversationReturnedOnItsOwn
+    conversationReturnedOnItsOwn, conversationPutAway
   };
 }

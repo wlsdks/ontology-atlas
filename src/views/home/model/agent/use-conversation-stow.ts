@@ -27,9 +27,10 @@ interface Options {
 
 /**
  * Puts the conversation away while the code reader holds its room and brings it back as it was
- * when the reader closes. Only the doors close: the request, draft and running session stay.
- * Opening the conversation meanwhile takes the room back, and nothing is restored. Returns
- * whether the open conversation came back on its own, so it leaves focus where the person is.
+ * when the reader closes. Only the doors close: the request, draft and an answer still being
+ * written stay. Opening the conversation meanwhile takes the room back, and nothing is restored.
+ * Returns whether it is put away, so a closed door does not stop its answer, and whether it came
+ * back on its own, so it leaves focus where the person is.
  */
 export function useConversationStow({
   room,
@@ -40,7 +41,7 @@ export function useConversationStow({
   setVaultAgentOpen,
   setAcpChatOpen,
   setChatMounted,
-}: Options): { returnedOnItsOwn: boolean } {
+}: Options): { putAway: boolean; returnedOnItsOwn: boolean } {
   const stowedRef = useRef<ConversationDoors | null>(null);
   const doorsRef = useLatestRef(doors);
   const dockWasOpenRef = useRef(agentDockOpen);
@@ -79,5 +80,7 @@ export function useConversationStow({
     }
   }, [state, agentDockOpen, withdraw]);
 
-  return { returnedOnItsOwn };
+  // While the reader holds the room the doors are closed only to make it; the room is withdrawn
+  // the moment the person opens the conversation, so a close then is theirs.
+  return { putAway: state === "held", returnedOnItsOwn };
 }

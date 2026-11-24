@@ -90,6 +90,7 @@ interface TopologyAgentDockProps {
     | "openVaultAgent"
     | "businessFlowRequest"
     | "conversationReturnedOnItsOwn"
+    | "conversationPutAway"
   >;
   topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "t" | "activeLocale" | "tWorkbench">;
   topologyVaultReadModel: Pick<
@@ -115,7 +116,7 @@ export function TopologyAgentDock({
   const {
     keyChatOpen, closeVaultAgent, vaultAgentScreenContext, askPrefill, runtimeChatOpen,
     handleWorkbenchSectionChange, agentChatUsesRuntime, openVaultAgent, businessFlowRequest,
-    conversationReturnedOnItsOwn
+    conversationReturnedOnItsOwn, conversationPutAway
   } = topologyAgentOrchestration;
   const { handleSelect, handleChatSuggestionAction, handleAcpMapIntent } = topologyNavigationActions;
   const {
@@ -183,6 +184,7 @@ export function TopologyAgentDock({
           downloadHref={`/${activeLocale}/download/`}
           prefillRequest={vaultAgentPrefill ?? askPrefill}
           takesFocusOnOpen={!conversationReturnedOnItsOwn}
+          putAway={conversationPutAway}
         />
       </ErrorBoundary>
     ) : null}

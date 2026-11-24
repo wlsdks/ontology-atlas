@@ -11,7 +11,7 @@ function useDockWithReader(initial: ConversationDoors) {
   const [mounted, setChatMounted] = useState(false);
   const door = (name: keyof ConversationDoors) => (open: boolean) => setDoors((current) => ({ ...current, [name]: open }));
   const agentDockOpen = doors.acpDockFrameOpen || doors.meaningWorkbenchOpen || doors.vaultAgentOpen || doors.acpChatOpen;
-  const { returnedOnItsOwn } = useConversationStow({
+  const { putAway, returnedOnItsOwn } = useConversationStow({
     room,
     agentDockOpen,
     doors,
@@ -21,7 +21,7 @@ function useDockWithReader(initial: ConversationDoors) {
     setAcpChatOpen: door("acpChatOpen"),
     setChatMounted,
   });
-  return { room, doors, openConversation: () => setDoors((current) => ({ ...current, acpDockFrameOpen: true, acpChatOpen: true })), mounted, returnedOnItsOwn };
+  return { room, doors, openConversation: () => setDoors((current) => ({ ...current, acpDockFrameOpen: true, acpChatOpen: true })), mounted, putAway, returnedOnItsOwn };
 }
 
 const conversationOpen: ConversationDoors = { acpDockFrameOpen: true, meaningWorkbenchOpen: false, vaultAgentOpen: false, acpChatOpen: true };
@@ -32,8 +32,10 @@ describe("useConversationStow", () => {
     const { result } = renderHook(() => useDockWithReader(conversationOpen));
     act(() => result.current.room.hold());
     expect(result.current.doors).toEqual(allClosed);
+    expect(result.current.putAway).toBe(true);
     act(() => result.current.room.release());
     expect(result.current.doors).toEqual(conversationOpen);
+    expect(result.current.putAway).toBe(false);
     expect(result.current.mounted).toBe(true);
     expect(result.current.returnedOnItsOwn).toBe(true);
   });
@@ -43,6 +45,7 @@ describe("useConversationStow", () => {
     act(() => result.current.room.hold());
     act(() => result.current.openConversation());
     expect(result.current.room.state).toBe("withdrawn");
+    expect(result.current.putAway).toBe(false);
     act(() => result.current.room.release());
     expect(result.current.doors).toEqual({ ...allClosed, acpDockFrameOpen: true, acpChatOpen: true });
     expect(result.current.returnedOnItsOwn).toBe(false);

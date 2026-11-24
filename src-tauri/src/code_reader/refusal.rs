@@ -14,7 +14,7 @@ const SECRET_FILE_NAMES: &[&str] = &[
     "database.yml",
     "database.yaml",
 ];
-/// Data files whose stem says what they hold.
+/// Data files whose name can say what they hold.
 const DATA_EXTENSIONS: &[&str] = &[
     "json",
     "yaml",
@@ -26,10 +26,59 @@ const DATA_EXTENSIONS: &[&str] = &[
     "properties",
     "conf",
 ];
-const SECRET_STEM_WORDS: &[&str] = &["secret", "credential", "password", "token"];
+/// A word of a data file's name that says it holds a key or password.
+const SECRET_WORDS: &[&str] = &[
+    "secret",
+    "secrets",
+    "credential",
+    "credentials",
+    "password",
+    "passwords",
+    "passwd",
+];
+/// A word that says the file is about the secret rather than holding one: `password-reset.json`
+/// is a page's copy, `secret_scanning.yml` a scanner's settings.
+const ABOUT_WORDS: &[&str] = &[
+    "policy",
+    "policies",
+    "reset",
+    "rules",
+    "scanning",
+    "schema",
+    "strength",
+    "validation",
+];
+
+/// The words of a file stem, split at separators and lower-to-upper case changes, lowercased:
+/// `apiSecret` and `api_secret` both give `api`, `secret`. O(stem length).
+fn stem_words(stem: &str) -> Vec<String> {
+    let mut words = Vec::new();
+    let mut word = String::new();
+    let mut previous_lower = false;
+    for character in stem.chars() {
+        if !character.is_alphanumeric() {
+            if !word.is_empty() {
+                words.push(std::mem::take(&mut word));
+            }
+            previous_lower = false;
+            continue;
+        }
+        if character.is_uppercase() && previous_lower {
+            words.push(std::mem::take(&mut word));
+        }
+        previous_lower = character.is_lowercase() || character.is_ascii_digit();
+        word.extend(character.to_lowercase());
+    }
+    if !word.is_empty() {
+        words.push(word);
+    }
+    words
+}
 
 /// Names the shared Harness table does not list but the reader, which shows any file's text,
-/// also refuses. The Harness table stays as its fixture pins it.
+/// also refuses. A data file refuses when its name ends in `token` (`api_token.json`), or a word
+/// names a secret and none says the file is only about one. The Harness table stays as its
+/// fixture pins it.
 fn holds_keys_by_name(name: &str) -> bool {
     let lower = name.to_ascii_lowercase();
     if SECRET_FILE_NAMES.contains(&lower.as_str()) {
@@ -42,7 +91,18 @@ fn holds_keys_by_name(name: &str) -> bool {
     if stem.starts_with("client_secret") || stem.contains("adminsdk") {
         return true;
     }
-    DATA_EXTENSIONS.contains(&extension) && SECRET_STEM_WORDS.iter().any(|word| stem.contains(word))
+    if !DATA_EXTENSIONS.contains(&extension) {
+        return false;
+    }
+    let words = stem_words(name.rsplit_once('.').map_or(name, |(stem, _)| stem));
+    let ends_in_token = words.last().is_some_and(|word| word.ends_with("token"));
+    let names_a_secret = words
+        .iter()
+        .any(|word| SECRET_WORDS.contains(&word.as_str()));
+    let only_about_one = words
+        .iter()
+        .any(|word| ABOUT_WORDS.contains(&word.as_str()));
+    ends_in_token || (names_a_secret && !only_about_one)
 }
 
 /// A Git folder by any name: `.git` and a bare clone such as `vendor.git`.

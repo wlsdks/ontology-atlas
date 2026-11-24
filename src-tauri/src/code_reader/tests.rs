@@ -217,6 +217,10 @@ fn refuses_key_files_the_harness_table_does_not_name() {
         "credentials-prod.json",
         "my-secrets.yaml",
         "token.json",
+        "api_token.json",
+        "github-token.txt",
+        "accessToken.json",
+        "APIToken.yaml",
         "passwords.txt",
         "htpasswd",
         "local.settings.json",
@@ -230,6 +234,14 @@ fn refuses_key_files_the_harness_table_does_not_name() {
         "docker-compose.override.yml",
         "src/auth/token.ts",
         "package.json",
+        "design-tokens.json",
+        "styles/tokens.css",
+        "tokenizer.json",
+        "tokenizer_config.json",
+        "locales/en/password-reset.json",
+        "secret_scanning.yml",
+        "schemas/credential-schema.json",
+        "docs/password-policy.md",
     ] {
         f.put(path, "plain\n");
         assert_eq!(f.read(path).unwrap().lines, ["plain"], "{path:?}");

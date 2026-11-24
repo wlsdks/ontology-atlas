@@ -32,7 +32,8 @@ import { AgentConstructionSource } from './construction/AgentConstructionSource'
 /**
  * The agent panel: a dock the map yields space to on the right. It animates width only inside
  * `<main>`'s flex row, so the map's shrink and the panel's entry share one start and one curve.
- * Closing the panel cuts any in-flight call; nothing continues in the background.
+ * Closing the panel cuts any in-flight call, unless it is only put away to make room for another
+ * surface: then the answer keeps being written and is there when the panel opens again.
  */
 export function VaultAgentPanel({
   open,
@@ -48,6 +49,7 @@ export function VaultAgentPanel({
   downloadHref,
   prefillRequest,
   takesFocusOnOpen = true,
+  putAway = false,
 }: {
   open: boolean;
   onClose: () => void;
@@ -67,6 +69,8 @@ export function VaultAgentPanel({
   prefillRequest?: { text: string; nonce: number } | null;
   /** False when the panel comes back on its own, so focus stays where the person is. */
   takesFocusOnOpen?: boolean;
+  /** Closed only to make room for another surface; the answer being written keeps running. */
+  putAway?: boolean;
 }) {
   const t = useTranslations('vaultAgentPanel');
   const locale = useLocale();
@@ -149,9 +153,10 @@ export function VaultAgentPanel({
   });
 
   const { stop } = agent;
+  const putAwayRef = useLatestRef(putAway);
   useEffect(() => {
-    if (!open) stop();
-  }, [open, stop]);
+    if (!open && !putAwayRef.current) stop();
+  }, [open, stop, putAwayRef]);
 
   const takesFocusOnOpenRef = useLatestRef(takesFocusOnOpen);
   useEffect(() => {
