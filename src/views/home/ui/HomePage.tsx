@@ -68,8 +68,6 @@ import { TopologyBlockingOverlays } from "./map-overlays/TopologyBlockingOverlay
 
 
 const LEFT_PANEL_COLLAPSED_KEY = "demo:left-panel-collapsed:v2";
-// The navigation actions still accept a replay callback; trails are no longer archived.
-const replayNoPastWalk = (): string | null => null;
 /**
  * Boot render gate: the first client commit renders the server fallback's `MapEntryLoadingVisual`
  * and the body follows in a `startTransition`, splitting the largest boot long task. A client mount
@@ -470,7 +468,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     },
   });
   const topologyNavigationActions = useTopologyNavigationActions({
-    setExpandAllActive, setRouteState, replayPastWalk: replayNoPastWalk, topologyCanvasFocus, topologyPreferences,
+    setExpandAllActive, setRouteState, topologyCanvasFocus, topologyPreferences,
     topologyAuthoring, topologyGraphProjection, topologyIndexPresentation, topologySourceReadiness,
     topologyAgentOrchestration, topologyInspectorState
   });

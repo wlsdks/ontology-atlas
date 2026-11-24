@@ -118,7 +118,7 @@ export const rules = [
       /^src\/entities\/vault-session\/model\/local-vault\/use-(?:local-vault|vault-choice|vault-doc-writes)\.ts$/,
       /^src\/features\/vault-switch\//,
       /^src\/views\/home\/ui\/HomePage\.tsx$/,
-      /^src\/views\/home\/model\/(?:agent\/use-topology-agent-orchestration|keyboard\/use-topology-keyboard-tour|use-topology-vault-read-model|trail\/use-past-trails|trail\/use-footprint-trail)\.tsx?$/,
+      /^src\/views\/home\/model\/(?:agent\/use-topology-agent-orchestration|keyboard\/use-topology-keyboard-tour|use-topology-vault-read-model|trail\/session-trail-store|trail\/use-footprint-trail)\.tsx?$/,
       /^src\/views\/library\/lib\/rounds\/use-rounds-runner\.ts$/,
       /^src\/shared\/lib\/(?:use-latest-ref|derived-hook)\.ts$/,
       /^src\/widgets\/ontology-map\/ui\/camera\/use-topology-(?:camera-navigation|overview-navigation|viewport-lifecycle)\.ts$/,
