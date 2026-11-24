@@ -267,6 +267,17 @@ function endAtTag(arc: Arc, fromFocus: boolean, box: { minX: number; minY: numbe
   }
   if (clear <= 0) return;
   cutArc(arc, fromFocus ? 0 : 1 - clear, fromFocus ? clear : 1, fromFocus, whole);
+  // The cut end lands on the middle of the tag's inner side, so a tag pushed off its row still
+  // takes its own line; the control point takes half the move, so the curve bends, never kinks.
+  const end = fromFocus ? path.b : path.a;
+  const tx = edge === "left" ? box.maxX : edge === "right" ? box.minX : (box.minX + box.maxX) / 2;
+  const ty = edge === "top" ? box.maxY : edge === "bottom" ? box.minY : (box.minY + box.maxY) / 2;
+  const dx = tx - end.x;
+  const dy = ty - end.y;
+  end.x = tx;
+  end.y = ty;
+  path.c.x += dx / 2;
+  path.c.y += dy / 2;
 }
 
 /**
