@@ -189,11 +189,20 @@ const SEARCHED_MOVES = 6;
 /** A frame where a box one room hands to another shows bare background, for the largest box. */
 const BARE_COST = 6;
 /**
- * How far round a handed-over box's centre a plan must keep it covered. A plan is checked at
- * `SAMPLES` frames, not every frame; a room that covers the centre only just at two samples can
- * leave it bare in a frame between them.
+ * How far round a handed-over box's centre a plan ranked at `RANK_SAMPLES` must keep it covered: a
+ * room that covers the centre only just at two samples can leave it bare in a frame between them.
  */
 const COVER_MARGIN = 12;
+/**
+ * A plan being confirmed checks its handed-over slots at every millisecond, not at `SAMPLES` frames:
+ * a gap of a few milliseconds falls between two samples and shows in a slow frame.
+ */
+const BARE_STEP_MS = 1;
+/**
+ * Past its best `CONFIRMED_PLANS`, how many more plans of a group are looked at while every plan so
+ * far leaves a stage slot bare. It bounds planning when no plan keeps them covered (six moving rooms: about 3 ms).
+ */
+const BARE_SEARCH_PLANS = 16;
 /** A room arriving over one that waits to give up its box hides it rather than crossing it. */
 const COVERING_COST = 0.25;
 /** A room that could keep its content but crosses another on the way, and so moves as its wall. */
@@ -210,16 +219,61 @@ interface Plan {
 /** How much of the move an arc's two axes may run together, the most first. */
 const ARC_OVERLAPS = [0.6, 0.4, 0.2];
 
-/** Which rooms cross a still room or another moving room on their way, and what the crossings and bare frames cost. */
-function crossings(moves: Moves, still: readonly Box[], timing: Timing, samples = SAMPLES): { touched: boolean[]; cost: number } {
+interface HandedSlot {
+  /** The square round the slot's centre that some room must cover. */
+  centre: Box;
+  /** What one sampled frame of it bare costs. */
+  cost: number;
+  /** A slot a stage room leaves: a plan that leaves one bare loses to any plan that does not. */
+  stage: boolean;
+}
+
+/**
+ * Slots another room takes, as when a room rising to the stage takes a stopped room's slot, each with
+ * the square round its centre `margin` wide that some room must cover.
+ */
+function handedSlots(moves: Moves, margin: number, startsOnStage: (key: string) => boolean): HandedSlot[] {
+  const largest = Math.max(...moves.map(([, move]) => area(move.from)), 1);
+  return moves.flatMap(([key, move]) => moves.some(([, other]) => other !== move && sameBox(other.to, move.from))
+    ? [{ centre: { x: move.from.x + move.from.w / 2 - margin, y: move.from.y + move.from.h / 2 - margin, w: 2 * margin, h: 2 * margin }, cost: (BARE_COST * area(move.from)) / largest, stage: startsOnStage(key) }]
+    : []);
+}
+
+/** The slots left bare at each `BARE_STEP_MS` of the move, in order. O(span / step x moves x slots). */
+function* bareSlotsByStep(moves: Moves, timing: Timing, slots: readonly HandedSlot[]): Generator<HandedSlot[]> {
+  if (slots.length === 0) return;
+  const span = timing.moveAtMs + timing.moveMs;
+  const steps = Math.max(1, Math.ceil(span / BARE_STEP_MS));
+  for (let step = 0; step <= steps; step += 1) {
+    const boxes = moves.map(([, move]) => boxAt(move, timing, (step / steps) * span));
+    yield slots.filter(slot => !boxes.some(box => covers(box, slot.centre)));
+  }
+}
+
+/** Whether some millisecond of the move leaves a stage slot's centre bare; it stops at the first. */
+function leavesStageBare(moves: Moves, timing: Timing, slots: readonly HandedSlot[]): boolean {
+  const stageSlots = slots.filter(slot => slot.stage);
+  for (const bare of bareSlotsByStep(moves, timing, stageSlots)) if (bare.length > 0) return true;
+  return false;
+}
+
+/** What the slots left bare at every millisecond cost, in the units of a frame sampled at `SAMPLES`, and whether a stage slot was among them. */
+function bareFrames(moves: Moves, timing: Timing, slots: readonly HandedSlot[]): { cost: number; stageBare: boolean } {
+  const steps = Math.max(1, Math.ceil((timing.moveAtMs + timing.moveMs) / BARE_STEP_MS));
+  let cost = 0;
+  let stageBare = false;
+  for (const bare of bareSlotsByStep(moves, timing, slots)) {
+    for (const slot of bare) cost += slot.cost;
+    stageBare ||= bare.some(slot => slot.stage);
+  }
+  return { cost: (cost * SAMPLES) / steps, stageBare };
+}
+
+/** Which rooms cross a still room or another moving room on their way, and what the crossings and the `handed` slots' bare samples cost. */
+function crossings(moves: Moves, still: readonly Box[], timing: Timing, handed: readonly HandedSlot[], samples = SAMPLES): { touched: boolean[]; cost: number } {
   const touched = moves.map(() => false);
   if (moves.length === 0) return { touched, cost: 0 };
-  const largest = Math.max(...moves.map(([, move]) => area(move.from)), 1);
   const span = timing.moveAtMs + timing.moveMs;
-  // Handed over: another room takes this very box, as when a room rising to the stage takes a stopped room's slot.
-  const handed = moves.flatMap(([, move]) => moves.some(([, other]) => other !== move && sameBox(other.to, move.from))
-    ? [{ centre: { x: move.from.x + move.from.w / 2 - COVER_MARGIN, y: move.from.y + move.from.h / 2 - COVER_MARGIN, w: 2 * COVER_MARGIN, h: 2 * COVER_MARGIN }, cost: (BARE_COST * area(move.from)) / largest }]
-    : []);
   let cost = 0;
   for (let sample = 0; sample <= samples; sample += 1) {
     const time = (sample / samples) * span;
@@ -244,9 +298,9 @@ function crossings(moves: Moves, still: readonly Box[], timing: Timing, samples 
   return { touched, cost };
 }
 
-/** Crossings and bare frames, plus each room that could keep its content but loses it to a crossing. */
-function planCost(moves: Moves, still: readonly Box[], timing: Timing, samples = SAMPLES): number {
-  const { touched, cost } = crossings(moves, still, timing, samples);
+/** Crossings and the `handed` slots' bare frames, plus each room that could keep its content but loses it to a crossing. */
+function planCost(moves: Moves, still: readonly Box[], timing: Timing, handed: readonly HandedSlot[], samples = SAMPLES): number {
+  const { touched, cost } = crossings(moves, still, timing, handed, samples);
   return (cost * SAMPLES) / samples + WALL_COST * moves.filter(([, move], index) => touched[index] && move.mode !== 'wall').length;
 }
 
@@ -287,28 +341,37 @@ function stagger(moves: Moves) {
  * How the rooms travel: the order and paths with the fewest crossings and bare frames, preferring
  * all together along straight lines, then on arcs, then fewer waves.
  */
-function orderMoves(moves: Moves, still: readonly Box[]): Plan {
+function orderMoves(moves: Moves, still: readonly Box[], startsOnStage: (key: string) => boolean): Plan {
   if (moves.length === 0) return { waves: 1, path: 'straight', overlap: 1 };
+  // Ranked at `RANK_SAMPLES`, a margin round each centre stands in for frames between samples; confirmed at every millisecond, the centre itself.
+  const rankedSlots = handedSlots(moves, COVER_MARGIN, startsOnStage);
+  const exactSlots = handedSlots(moves, 0, startsOnStage);
   const timing = (plan: Plan): Timing => ({ ...plan, moveAtMs: 0, moveMs: MOVE_MS });
   const setOrder = (order: readonly number[]) => moves.forEach(([, move], index) => { move.wave = order[index] ?? 0; });
-  type Ranked = Plan & { cost: number; bend: number; order: number[] };
-  // Fewer crossings first; between plans that cross alike, the one whose rooms move their two axes most together.
-  const better = (a: Ranked, b: Ranked) => a.cost - b.cost || a.bend - b.bend;
+  type Ranked = Plan & { stageBare: boolean; cost: number; bend: number; order: number[] };
+  // A plan that keeps the stage slots covered first; then fewer crossings; between plans that cross alike, the one whose rooms move their two axes most together.
+  const better = (a: Ranked, b: Ranked) => Number(a.stageBare) - Number(b.stageBare) || a.cost - b.cost || a.bend - b.bend;
   const ranked = (plan: Plan, bend: number, order: number[] = []): Ranked => {
     setOrder(order);
-    return { ...plan, cost: planCost(moves, still, timing(plan), RANK_SAMPLES), bend, order };
+    return { ...plan, stageBare: false, cost: planCost(moves, still, timing(plan), rankedSlots, RANK_SAMPLES), bend, order };
   };
   let best: Ranked | null = null;
   /**
    * Ranks a group of plans coarsely and checks its best few closely, since a brief crossing can hide
-   * between coarse frames. Groups come in order of preference, so the first plan that is clear ends it.
+   * between coarse frames. While every plan checked so far leaves a stage slot bare, it checks
+   * further down the ranking, since a bare gap of a few milliseconds hides between coarse frames too.
+   * Groups come in order of preference, so the first plan that is clear ends it.
    */
   const tryGroup = (group: Ranked[]): boolean => {
-    for (const plan of group.sort(better).slice(0, CONFIRMED_PLANS)) {
+    for (const [index, plan] of group.sort(better).entries()) {
+      const searching = index >= CONFIRMED_PLANS;
+      if (searching && (index >= CONFIRMED_PLANS + BARE_SEARCH_PLANS || (best && !best.stageBare))) break;
       setOrder(plan.order);
-      const confirmed = { ...plan, cost: planCost(moves, still, timing(plan)) };
+      if (searching && leavesStageBare(moves, timing(plan), exactSlots)) continue;
+      const bare = bareFrames(moves, timing(plan), exactSlots);
+      const confirmed = { ...plan, stageBare: bare.stageBare, cost: planCost(moves, still, timing(plan), []) + bare.cost };
       if (!best || better(confirmed, best) < 0) best = confirmed;
-      if (confirmed.cost === 0) return true;
+      if (!confirmed.stageBare && confirmed.cost === 0) return true;
     }
     return false;
   };
@@ -326,7 +389,7 @@ function orderMoves(moves: Moves, still: readonly Box[]): Plan {
   return { waves: chosen.waves, path: chosen.path, overlap: chosen.overlap };
 }
 
-export function planSequence({ from, to, leaving, entering, keepsContent }: {
+export function planSequence({ from, to, leaving, entering, keepsContent, startsOnStage }: {
   /** Where each room is drawn now. */
   from: ReadonlyMap<string, Box>;
   /** Where each room of the new layout stands. */
@@ -336,6 +399,8 @@ export function planSequence({ from, to, leaving, entering, keepsContent }: {
   entering: number;
   /** Whether a room whose size changes stays a stage room at its scale, so it can travel resized. */
   keepsContent: (key: string) => boolean;
+  /** Whether a room stands on the stage now: the slot it hands over must not show bare. */
+  startsOnStage: (key: string) => boolean;
 }): RoomSequence {
   const moves = new Map<string, RoomMove>();
   const still: Box[] = [];
@@ -346,9 +411,9 @@ export function planSequence({ from, to, leaving, entering, keepsContent }: {
     else moves.set(key, { from: start, to: target, mode: sameSize(start, target) ? 'carried' : keepsContent(key) ? 'resized' : 'wall', wave: 0, offsetMs: 0 });
   }
   const all = [...moves.entries()];
-  const plan = orderMoves(all, still);
+  const plan = orderMoves(all, still, startsOnStage);
   const timing: Timing = { ...plan, moveAtMs: 0, moveMs: MOVE_MS };
-  const { touched } = crossings(all, still, timing);
+  const { touched } = crossings(all, still, timing, []);
   const kept = all.map(([, move]) => move.mode);
   all.forEach(([, move], index) => { if (touched[index]) move.mode = 'wall'; });
   // A crossing room keeps its content where everything it meets travels as a wall beneath it, the

@@ -150,6 +150,7 @@ export function useRoomMotion(
       leaving: fading,
       entering: entering.length,
       keepsContent: key => before.get(key)?.size === 'large' && boxes.get(key)?.size === 'large',
+      startsOnStage: key => before.get(key)?.size === 'large',
     });
     const { totalMs, enterAtMs } = sequence;
     const at = (time: number) => (totalMs === 0 ? 0 : Math.min(1, time / totalMs));
