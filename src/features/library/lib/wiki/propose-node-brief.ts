@@ -3,7 +3,7 @@ import type { LintNodeCandidate } from "./lint-brief";
 import { WIKI_DIR } from "@/shared/lib/library/wiki-page-schema";
 
 /**
- * Turns a name the wiki keeps mentioning into a node candidate through one `add_concept` turn
+ * Turns a name the wiki keeps mentioning into a node candidate through one `add_concepts` turn
  * the person approves. The agent reads first and explains its kind and parent; people and
  * dates are never nodes.
  */
@@ -36,8 +36,8 @@ function composeProposeNodeBrief({ candidate, locale, vaultRoot }: ProposeNodeBr
       "순서:",
       "0. 지도는 코드의 온톨로지야. 이 이름이 코드가 만드는 것(시스템, 서비스, 부품, 기능 영역)이 아니라 사람·조직·날짜·결정이면 노드를 만들지 말고 그렇다고 답해. 그 이름은 위키에 남는 게 맞아.",
       "1. 위 위키 문서들을 읽어. 위키는 문서가 말한 것이고, 노드는 우리가 뜻하는 것이야. 이 이름이 실제로 무엇인지 문서에서 확인해.",
-      "2. `list_kinds` 와 `list_concepts` 로 이 볼트에 이미 있는 종류와 도메인을 봐. 같은 뜻의 노드가 이미 있으면 새로 만들지 말고 그 슬러그를 답해.",
-      "3. `add_concept` 을 **한 번** 불러. kind 는 domain / capability / element / document 중 하나, 부모 domain 은 있는 것 중에서 고르고, body 에는 이 이름이 나오는 위키 문서를 `[[wiki/<슬러그>]]` 로 인용해서 근거로 남겨. 왜 그 kind 와 그 부모인지 body 첫 줄에 한 문장으로 적어.",
+      "2. `list_concepts` 와 그 `census` 로 이 볼트에 이미 있는 종류와 도메인을 봐. 같은 뜻의 노드가 이미 있으면 새로 만들지 말고 그 슬러그를 답해.",
+      "3. `add_concepts` 를 행 하나로 **한 번** 불러. kind 는 domain / capability / element / document 중 하나, 부모 domain 은 있는 것 중에서 고르고, body 에는 이 이름이 나오는 위키 문서를 `[[wiki/<슬러그>]]` 로 인용해서 근거로 남겨. 왜 그 kind 와 그 부모인지 body 첫 줄에 한 문장으로 적어.",
       "4. 다른 것은 쓰지 마. 위키 문서를 고치지 말고 `describes:` 도 넣지 마. 그건 사람이 검토한 뒤에 하는 일이야.",
       "",
       "쓰기는 사람의 허락을 기다려. 허락 카드에 뜨는 것이 곧 제안이야.",
@@ -56,8 +56,8 @@ function composeProposeNodeBrief({ candidate, locale, vaultRoot }: ProposeNodeBr
     "In this order:",
     "0. The map is the code's ontology. If this name is not something the code builds — a system, a service, a component, an area of function — but a person, an organisation, a date or a decision, create no node and say so; the name belongs in the wiki.",
     "1. Read those wiki pages. A wiki page is what a document said; a node is what we mean. Confirm from the pages what the name actually is.",
-    "2. Read the vault's own kinds and domains with `list_kinds` and `list_concepts`. If a node with the same meaning already exists, do not create another; answer with its slug instead.",
-    `3. Call \`add_concept\` **once**: kind is one of domain / capability / element / document, the parent domain is one that exists, and the body cites the wiki pages that carry the name as \`[[${WIKI_DIR}/<slug>]]\` links so the evidence stays attached. Say in the body's first sentence why that kind and that parent.`,
+    "2. Read the vault's own kinds and domains with `list_concepts` and its `census`. If a node with the same meaning already exists, do not create another; answer with its slug instead.",
+    `3. Call \`add_concepts\` **once** with one row: kind is one of domain / capability / element / document, the parent domain is one that exists, and the body cites the wiki pages that carry the name as \`[[${WIKI_DIR}/<slug>]]\` links so the evidence stays attached. Say in the body's first sentence why that kind and that parent.`,
     "4. Write nothing else. Do not edit the wiki pages and do not add `describes:` to them: this turn proposes one node, and a page's links to concepts are its writer's, written in their own pass.",
     "",
     "The write waits for the person's approval. What the permission card shows is the proposal.",

@@ -449,7 +449,7 @@ function pushNonCanonicalGraphArrayIssues(
       issues.push({
         code: "non-canonical-graph-array",
         severity: "warning",
-        message: `\`${key}:\` graph 배열이 정렬/중복제거된 canonical set 이 아닙니다 — add_relation 또는 patch_concept 로 다시 저장하면 정리됩니다.`,
+        message: `\`${key}:\` graph 배열이 정렬/중복제거된 canonical set 이 아닙니다 — add_relations 또는 patch_concept 로 다시 저장하면 정리됩니다.`,
       });
     }
   }

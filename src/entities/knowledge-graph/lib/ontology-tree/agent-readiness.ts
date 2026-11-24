@@ -56,7 +56,7 @@ const AGENT_READINESS_QUERY_OPERATIONS = new Set([
 
 const ACTION_GUIDANCE: Record<AgentReadinessActionKey, string> = {
   resolveUnknown:
-    "Resolve unknown/stub nodes: inspect get_concept and find_evidence, then patch_concept or merge_concepts.",
+    "Resolve unknown/stub nodes: inspect get_concepts and find_evidence, then patch_concept or merge_concepts.",
   addConcepts:
     "Add missing shape: create at least one domain, capability, and element before relying on graph answers.",
   linkOrphans:
@@ -192,8 +192,8 @@ export function buildAgentReadinessPrompt(summary: AgentReadinessSummary): strin
     "",
     "If these MCP tools are not available, stop and ask the person to connect this agent in the Ontology Atlas app (Agents > MCP).",
     "",
-    "Prefer read tools first (workspace_brief, health, get_concept, find_evidence, find_backlinks, node_profile).",
-    "Only write after confirming the intended ontology change; use add_concept/add_relation/patch_concept/merge_concepts and keep docs/ontology synced.",
+    "Prefer read tools first (workspace_brief, health, get_concepts, find_evidence, find_backlinks, node_profile).",
+    "Only write after confirming the intended ontology change; use add_concepts/add_relations/patch_concept/merge_concepts and keep docs/ontology synced.",
   ].join("\n");
 }
 

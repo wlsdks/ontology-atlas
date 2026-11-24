@@ -151,7 +151,7 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
         ...aroundNumber(dial('reachNeededBy', { count: neededBy }), neededBy, locale, 'reach'),
       ],
       agent: 'Claude Code',
-      tool: 'get_concept',
+      tool: 'get_concepts',
     }),
     [dial, locale],
   );

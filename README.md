@@ -120,9 +120,9 @@ your agent. These MCP tools answer the questions an agent asks most:
 
 | Before or after a task, the agent asks | Tool |
 |---|---|
-| What is this part for, and what does it exclude? | `get_concept` |
+| What is this part for, and what does it exclude? | `get_concepts` |
 | What points at it, before I rename or delete it? | `find_backlinks` |
-| How are these two concepts connected? | `find_path` |
+| How are these two concepts connected? | `query_ontology` with `path` |
 | What may this change affect? | `query_ontology` with `impact` |
 | Where is this mentioned? | `find_evidence` |
 | Record what I just built or changed | `add_concepts`, `add_relations`, `patch_concept` |

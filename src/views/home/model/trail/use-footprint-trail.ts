@@ -75,7 +75,7 @@ export function useFootprintTrail({
     [graphNodes],
   );
   /**
-   * Only the last visit per node, since repeating `get_concept` is noise; the map keeps the raw
+   * Only the last visit per node, since repeating a `get_concepts` read is noise; the map keeps the raw
    * steps.
    */
   const footprintTrailEntries = useMemo<FootprintTrailEntry[]>(() => {

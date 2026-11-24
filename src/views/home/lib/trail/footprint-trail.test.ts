@@ -81,20 +81,20 @@ describe("formatFootprintTrailAgentPacket", () => {
     { id: "capability:x", title: "Cap X", kind: "capability" },
   ];
 
-  it("carries the slug order, the get_concept sequence and a find_path hint", () => {
+  it("carries the slug order, the get_concepts sequence and a path hint", () => {
     const text = formatFootprintTrailAgentPacket(entries, LABELS);
     expect(text).toContain("# 걸어온 길");
     expect(text).toContain("1. Core (domain): domain:core");
     expect(text).toContain("2. Cap X (capability): capability:x");
-    expect(text).toContain('get_concept("core")');
-    expect(text).toContain('get_concept("x")');
-    expect(text).toContain('find_path("core", "x")');
+    expect(text).toContain('get_concepts({slugs:["core"]})');
+    expect(text).toContain('get_concepts({slugs:["x"]})');
+    expect(text).toContain('query_ontology({"operation":"path","from":"core","to":"x"})');
   });
 
-  it("omits the find_path hint for a single visit", () => {
+  it("omits the path hint for a single visit", () => {
     const text = formatFootprintTrailAgentPacket([entries[0]], LABELS);
-    expect(text).toContain('get_concept("core")');
-    expect(text).not.toContain("find_path");
+    expect(text).toContain('get_concepts({slugs:["core"]})');
+    expect(text).not.toContain('"operation":"path"');
   });
 
   /**

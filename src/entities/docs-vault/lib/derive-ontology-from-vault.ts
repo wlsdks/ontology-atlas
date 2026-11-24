@@ -228,7 +228,7 @@ function relationIntents(fm: Record<string, unknown>, nodeKind: string): Relatio
     const elSlug = kindSlug(element, 'element');
     if (elSlug) intents.push({ key: 'elements', ref: element, fallback: `element:${elSlug}` });
   }
-  // `contains[]` as written by `add_relation`; folder-prefixed refs keep their real kind.
+  // `contains[]` as written by `add_relations`; folder-prefixed refs keep their real kind.
   for (const contained of asStringArray(fm.contains)) {
     const containedSlug = anySlug(contained);
     if (!containedSlug) continue;

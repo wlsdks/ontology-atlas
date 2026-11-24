@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import { buildAgentHandoffSnippet } from "./agent-handoff-snippet";
 
 describe("buildAgentHandoffSnippet", () => {
-  it("embeds the project slug into the get_concept and project_map calls", () => {
+  it("embeds the project slug into the get_concepts and project_map calls", () => {
     const snippet = buildAgentHandoffSnippet("ontology-atlas");
-    expect(snippet).toContain('get_concept("ontology-atlas")');
+    expect(snippet).toContain('get_concepts({slugs:["ontology-atlas"]})');
     expect(snippet).toContain('project:"ontology-atlas"');
     expect(snippet).toContain("containment_tree");
   });
