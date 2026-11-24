@@ -63,7 +63,8 @@ test('one saved answer makes the header door Open saved answer with the question
   // The door names its action; the kept answer's title is its tooltip. The desk carries no second door.
   const door = page.getByTestId('library-questions-open');
   await expect(door).toHaveText('Open saved answer');
-  await expect(door).toHaveAttribute('title', title);
+  await door.hover();
+  await expect(page.getByRole('tooltip')).toHaveText(title);
   await expect(door).toHaveCount(1);
   await expect(page.getByTestId('library-question-desk').getByTestId('library-questions-open')).toHaveCount(0);
   await expect(page.getByTestId('question-desk-saved')).toContainText(title);
