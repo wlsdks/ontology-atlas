@@ -551,6 +551,25 @@ test('snapshotVaultGit is dry-run first and commits only the vault pathspec', ()
   }
 });
 
+test('snapshotVaultGit commits through a pre-commit hook that reads the remote', () => {
+  const { root, vault } = makeRepo();
+  const remote = mkdtempSync(join(tmpdir(), 'ontology-atlas-remote-'));
+  try {
+    git(remote, 'init', '--bare');
+    git(root, 'remote', 'add', 'origin', remote);
+    git(root, 'push', '-q', 'origin', 'main');
+    writeFileSync(join(root, '.git', 'hooks', 'pre-commit'), '#!/bin/sh\nexec git ls-remote origin >/dev/null\n', { mode: 0o755 });
+    writeFileSync(join(vault, 'project.md'), '---\nkind: project\ntitle: Updated\n---\n');
+
+    const preview = snapshotVaultGit({ repoRoot: root, vaultRoot: vault });
+    const result = snapshotVaultGit({ repoRoot: root, vaultRoot: vault, confirm: true, expectedHead: preview.expectedHead });
+    assert.equal(result.committed, true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+    rmSync(remote, { recursive: true, force: true });
+  }
+});
+
 test('snapshotVaultGit rejects a stale expected HEAD', () => {
   const { root, vault } = makeRepo();
   try {

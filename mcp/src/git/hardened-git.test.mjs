@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync, existsSync, chmodSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync, mkdirSync, existsSync, chmodSync, unlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -198,7 +198,7 @@ test('a required filter still lets a hardened add succeed', () => {
   }
 });
 
-test('git reads every path as a name and spawns without a setting that conflicts with that', () => {
+test('git reads every path as a name, spawns without a setting that conflicts with that, and cannot fetch', () => {
   const argv = hardenedGitArgv(tmpdir(), ['status', '--', 'a']);
   assert.ok(argv.includes('--literal-pathspecs'));
   assert.ok(argv.indexOf('--literal-pathspecs') < argv.indexOf('status'), 'a global option precedes the subcommand');
@@ -209,6 +209,65 @@ test('git reads every path as a name and spawns without a setting that conflicts
     GIT_NOGLOB_PATHSPECS: '1',
     GIT_ICASE_PATHSPECS: '1',
   };
-  assert.deepEqual(gitEnv(inherited), { PATH: '/usr/bin', GIT_TRACE: '0' });
+  assert.deepEqual(gitEnv(inherited), { PATH: '/usr/bin', GIT_TRACE: '0', GIT_NO_LAZY_FETCH: '1', GIT_ALLOW_PROTOCOL: '' });
   assert.equal(inherited.GIT_ICASE_PATHSPECS, '1', 'the caller\'s environment is not changed');
+});
+
+// A partial clone fetches a missing object through the transport its own config
+// names, here `remote.origin.uploadpack`; a read such as `ls-files` that needs
+// `.gitignore` triggers it. Only an attacker-authored `.git` can carry this.
+function buildLazyFetchRepo(base, marker) {
+  const repo = join(base, 'repo');
+  mkdirSync(repo, { recursive: true });
+  plainGit(repo, ['init', '-q']);
+  seedIdentity(repo);
+  writeFileSync(join(repo, '.gitignore'), 'target/\n');
+  plainGit(repo, ['add', '.gitignore']);
+  plainGit(repo, ['commit', '-qm', 'ignore']);
+  const blob = plainGit(repo, ['rev-parse', 'HEAD:.gitignore']).trim();
+  plainGit(repo, ['update-index', '--skip-worktree', '.gitignore']);
+  unlinkSync(join(repo, '.gitignore'));
+  unlinkSync(join(repo, '.git', 'objects', blob.slice(0, 2), blob.slice(2)));
+  plainGit(repo, ['config', 'core.repositoryformatversion', '1']);
+  plainGit(repo, ['config', 'extensions.partialClone', 'origin']);
+  plainGit(repo, ['config', 'remote.origin.url', join(base, 'nowhere')]);
+  plainGit(repo, ['config', 'remote.origin.promisor', 'true']);
+  plainGit(repo, ['config', 'remote.origin.uploadpack', `touch ${marker} #`]);
+  // An untracked file makes the read judge it against `.gitignore`, the missing object.
+  mkdirSync(join(repo, 'target'));
+  writeFileSync(join(repo, 'target', 'out.js'), 'export {};\n');
+  return repo;
+}
+
+test('a hostile partial clone cannot run its transport command on a hardened read', () => {
+  const base = mkdtempSync(join(tmpdir(), 'atlas-mcp-sec-lazy-'));
+  clearFilterCache();
+  try {
+    const marker = join(base, 'LAZY_FETCH_EXECUTED');
+    const repo = buildLazyFetchRepo(base, marker);
+    const read = ['ls-files', '-z', '--others', '--ignored', '--exclude-standard', '--directory'];
+    spawnSync('git', ['-C', repo, ...read], { encoding: 'utf8' });
+    assert.ok(existsSync(marker), 'fixture precondition: unhardened git fetches through the configured command');
+    rmSync(marker);
+    spawnSync('git', hardenedGitArgv(repo, read), { encoding: 'utf8', env: gitEnv() });
+    assert.ok(!existsSync(marker), 'a hardened read must not fetch a missing object');
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
+});
+
+test('a config that never finishes reading refuses the run instead of hanging', () => {
+  const base = mkdtempSync(join(tmpdir(), 'atlas-mcp-sec-stall-'));
+  clearFilterCache();
+  try {
+    const repo = join(base, 'repo');
+    mkdirSync(repo, { recursive: true });
+    plainGit(repo, ['init', '-q']);
+    execFileSync('/usr/bin/mkfifo', [join(repo, '.git', 'pipe')]);
+    plainGit(repo, ['config', 'include.path', 'pipe']);
+    assert.throws(() => hardenedGitArgv(repo, ['status']), /did not finish/);
+  } finally {
+    clearFilterCache();
+    rmSync(base, { recursive: true, force: true });
+  }
 });

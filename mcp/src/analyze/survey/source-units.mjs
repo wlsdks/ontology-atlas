@@ -4,13 +4,15 @@
  * units — a top-level package, workspace member or module folder, split one level
  * further when it is large. The survey lists these units, and the coverage line
  * every write reports is measured against them, so both speak of the same thing.
- * Reads file bytes only to count lines and spot a generated header; nothing runs.
+ * Reads file bytes only to count lines and spot a generated header, and asks Git
+ * once which paths it ignores (`git-ignored.mjs`); no repository code runs.
  */
 
 import { lstatSync, readdirSync, readFileSync } from 'node:fs';
 import { extname, join, relative, sep } from 'node:path';
 
 import { DEFAULT_IGNORE } from '../scan-tables.mjs';
+import { gitIgnoredPaths } from './git-ignored.mjs';
 import { discoverDeclaredWorkspacePackages } from '../../infer-imports/workspace-packages.mjs';
 
 export const UNIT_SOURCE_EXTENSIONS = new Set([
@@ -77,7 +79,12 @@ function classOf(path, head) {
   return 'product';
 }
 
-function walkSourceFiles(rootPath, ignore, excludedPrefixes) {
+/**
+ * The source files under `rootPath`, never following a link. `gitIgnored` holds paths
+ * Git ignores, each a file or a folder left out whole; the walk goes top-down, so an
+ * exact match on each entry leaves out everything below it.
+ */
+function walkSourceFiles(rootPath, ignore, excludedPrefixes, gitIgnored) {
   const out = [];
   const visit = (directory) => {
     if (out.length >= MAX_FILES) return;
@@ -88,7 +95,7 @@ function walkSourceFiles(rootPath, ignore, excludedPrefixes) {
       if (name.startsWith('.') || ignore.has(name) || SENSITIVE.test(name)) continue;
       const abs = join(directory, name);
       const rel = relative(rootPath, abs).split(sep).join('/');
-      if (excludedPrefixes.some((prefix) => rel === prefix || rel.startsWith(`${prefix}/`))) continue;
+      if (gitIgnored.has(rel.normalize('NFC')) || excludedPrefixes.some((prefix) => rel === prefix || rel.startsWith(`${prefix}/`))) continue;
       let stat;
       // lstat: a link is neither a file nor a folder here, so the walk never follows one.
       try { stat = lstatSync(abs); } catch { continue; }
@@ -216,7 +223,7 @@ function vaultExclusion(rootPath, vaultRoot) {
  */
 export function collectSourceUnits(rootPath, { ignore = [], vaultRoot } = {}) {
   const ignoreSet = new Set([...DEFAULT_IGNORE, ...ignore]);
-  const { files, truncated } = walkSourceFiles(rootPath, ignoreSet, vaultExclusion(rootPath, vaultRoot));
+  const { files, truncated } = walkSourceFiles(rootPath, ignoreSet, vaultExclusion(rootPath, vaultRoot), gitIgnoredPaths(rootPath));
   const classed = files.map((file) => ({ ...file, ...factsFor(file) }));
   const product = classed.filter((file) => file.class === 'product' && file.lines > 0);
   const members = workspaceMembers(rootPath, ignoreSet);

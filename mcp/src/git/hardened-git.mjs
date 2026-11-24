@@ -25,6 +25,15 @@ const HOOKS_HARDENING = ['-c', 'core.hooksPath=/dev/null'];
 // ext:: transports run an arbitrary command; a hostile remote URL must not reach one.
 const NETWORK_HARDENING = ['-c', 'protocol.ext.allow=never'];
 
+// A local read must never fetch: in a partial clone a missing object is fetched
+// through a transport the repository's config names (`uploadpack`, `core.sshCommand`).
+// The protocol list also covers Git before 2.45. Mirrors `read_policy_command` in
+// src-tauri/src/git/runner.rs.
+const LOCAL_READ_ENV = { GIT_NO_LAZY_FETCH: '1', GIT_ALLOW_PROTOCOL: '' };
+
+// A config pre-read past this is refused: an included named pipe never answers.
+const CONFIG_READ_TIMEOUT_MS = 5000;
+
 const DIFF_FAMILY = new Set(['diff', 'log', 'show']);
 const NETWORK_SUBCOMMANDS = new Set(['fetch', 'pull', 'push', 'clone', 'ls-remote']);
 
@@ -47,14 +56,22 @@ function subcommandOf(args) {
 
 const filterCache = new Map();
 
+/** One config pre-read; throws when it does not finish, so no git runs without its filter guard. */
+function readConfig(cwd, args) {
+  const result = spawnSync('git', [...BASE_HARDENING, ...LITERAL_PATHSPECS, '-C', cwd, 'config', ...args], {
+    encoding: 'utf8',
+    env: gitEnv(),
+    stdio: ['ignore', 'pipe', 'pipe'],
+    timeout: CONFIG_READ_TIMEOUT_MS,
+  });
+  if (result.error?.code === 'ETIMEDOUT' || result.signal) throw new Error('git config read did not finish');
+  return result;
+}
+
 // Adds every filter.<name> key from one config scope to `filters`, tracking whether
 // that name defines a process filter.
 function collectFilterKeys(cwd, scopeArgs, filters) {
-  const result = spawnSync(
-    'git',
-    [...BASE_HARDENING, ...LITERAL_PATHSPECS, '-C', cwd, 'config', ...scopeArgs, '--includes', '--name-only', '--get-regexp', '^filter\\.'],
-    { encoding: 'utf8', env: gitEnv(), stdio: ['ignore', 'pipe', 'pipe'] },
-  );
+  const result = readConfig(cwd, [...scopeArgs, '--includes', '--name-only', '--get-regexp', '^filter\\.']);
   if (result.status !== 0 || typeof result.stdout !== 'string') return;
   for (const line of result.stdout.split('\n')) {
     const key = line.trim();
@@ -72,11 +89,7 @@ function collectFilterKeys(cwd, scopeArgs, filters) {
 }
 
 function worktreeConfigEnabled(cwd) {
-  const result = spawnSync(
-    'git',
-    [...BASE_HARDENING, ...LITERAL_PATHSPECS, '-C', cwd, 'config', '--local', '--includes', '--get', 'extensions.worktreeConfig'],
-    { encoding: 'utf8', env: gitEnv(), stdio: ['ignore', 'pipe', 'pipe'] },
-  );
+  const result = readConfig(cwd, ['--local', '--includes', '--get', 'extensions.worktreeConfig']);
   return result.status === 0 && typeof result.stdout === 'string' && result.stdout.trim() === 'true';
 }
 
@@ -137,7 +150,8 @@ function withDiffFamilyGuard(args) {
 
 /**
  * Full argv for a hardened `git` run against `cwd`. `args` is the subcommand and
- * its arguments, without a leading `-C`.
+ * its arguments, without a leading `-C`. Throws when the repository's config
+ * cannot be read in time.
  */
 export function hardenedGitArgv(cwd, args, { network = false } = {}) {
   const subcommand = subcommandOf(args);
@@ -155,11 +169,16 @@ export function hardenedGitArgv(cwd, args, { network = false } = {}) {
   ];
 }
 
-/** The environment to spawn git with: `env` without settings that conflict with literal paths. */
-export function gitEnv(env = process.env) {
+/**
+ * The environment to spawn git with: `env` without settings that conflict with
+ * literal paths, and with no fetch, since the MCP server runs no network verb.
+ * `runsUserHooks` (the snapshot commit) keeps transports: its hooks are the
+ * user's own and may reach their remote.
+ */
+export function gitEnv(env = process.env, { runsUserHooks = false } = {}) {
   const out = { ...env };
   for (const name of CONFLICTING_PATHSPEC_ENV) delete out[name];
-  return out;
+  return runsUserHooks ? out : { ...out, ...LOCAL_READ_ENV };
 }
 
 // Test hook: repository config is discovered once per directory; clearing lets a

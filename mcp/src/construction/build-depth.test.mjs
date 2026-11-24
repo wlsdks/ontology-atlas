@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
@@ -691,6 +692,34 @@ test('the source walk skips links, hidden names and credential names', () => {
     symlinkSync(join(base, 'outside'), join(root, 'linked'));
     symlinkSync(join(base, 'outside', 'leak.ts'), join(root, 'src', 'leak.ts'));
     assert.deepEqual(collectSourceUnits(root, {}).files.map((file) => file.path), ['src/app.ts']);
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
+});
+
+test('the source walk leaves out what Git ignores, keeps a tracked file Git would ignore, and walks a folder outside Git whole', () => {
+  // A built checkout and a clean one must measure alike: build output Git ignores is not the product's code.
+  const base = mkdtempSync(join(tmpdir(), 'atlas-build-depth-ignored-'));
+  const root = join(base, 'repo');
+  const git = (...args) => spawnSync('git', ['-C', root, ...args], { stdio: 'ignore' });
+  try {
+    for (const [path, text] of Object.entries({
+      '.gitignore': 'target/\nnext-env.d.ts\nkept.ts\nout-*/\n',
+      'src/app.ts': 'export function app() {}\n',
+      'next-env.d.ts': 'export {};\n',
+      'kept.ts': 'export function kept() {}\n',
+      'native/target/debug/chunk.js': 'export function chunk() {}\n',
+      // Decomposed on disk; macOS Git prints it precomposed.
+      [`${'out-\u1112\u1161\u11ab'}/bundle.js`]: 'export function bundle() {}\n',
+    })) {
+      mkdirSync(dirname(join(root, path)), { recursive: true });
+      writeFileSync(join(root, path), text);
+    }
+    const walked = () => collectSourceUnits(root, {}).files.map((file) => file.path).sort();
+    assert.equal(walked().length, 5);
+    assert.equal(git('init', '-q').status, 0);
+    assert.equal(git('add', '-f', 'kept.ts').status, 0);
+    assert.deepEqual(walked(), ['kept.ts', 'src/app.ts']);
   } finally {
     rmSync(base, { recursive: true, force: true });
   }
