@@ -27,10 +27,20 @@ fn held_fetch(
     (run, release)
 }
 
+fn waiters(fetches: &AdapterFetches, runtime_id: &str) -> usize {
+    fetches
+        .in_flight
+        .lock()
+        .unwrap()
+        .get(runtime_id)
+        .map_or(0, |job| job.waiters.load(Ordering::SeqCst))
+}
+
 fn wait_until(condition: impl Fn() -> bool) {
     let deadline = Instant::now() + Duration::from_secs(5);
     while !condition() {
         assert!(Instant::now() < deadline, "condition never held");
+        // A polling interval between condition reads, not a wait for a guessed duration.
         std::thread::sleep(Duration::from_millis(5));
     }
 }
@@ -66,7 +76,7 @@ fn a_second_request_joins_the_fetch_in_flight_instead_of_starting_another() {
             )
         })
     };
-    std::thread::sleep(Duration::from_millis(50));
+    wait_until(|| waiters(&fetches, "claude-acp") == 2);
     assert!(
         !second.is_finished(),
         "the joining request must wait for the fetch in flight"
@@ -162,7 +172,7 @@ fn a_failed_fetch_reaches_every_waiter_and_the_next_request_tries_again() {
         let fetches = fetches.clone();
         std::thread::spawn(move || fetches.ensure("claude-acp", || CacheCheck::Fetch, || Ok(())))
     };
-    std::thread::sleep(Duration::from_millis(20));
+    wait_until(|| waiters(&fetches, "claude-acp") == 2);
     release
         .send(Err(
             "adapter-fetch-failed:npm error code ENOTFOUND".to_string()
@@ -496,4 +506,23 @@ fn the_app_s_exit_ends_a_running_fetch_and_its_children() {
     // Signal 0 probes whether npm's own child outlived the kill (only the group reaches it).
     wait_until(|| unsafe { libc::kill(forked_pid, 0) } != 0);
     let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[cfg(unix)]
+#[test]
+fn a_fetch_spawned_after_the_exit_collected_its_pids_is_still_ended() {
+    let fetches = AdapterFetches::default();
+    fetches.terminate_all();
+    let mut late = std::process::Command::new("/bin/sleep");
+    late.arg("30");
+    {
+        use std::os::unix::process::CommandExt;
+        late.process_group(0);
+    }
+    let mut child = late.spawn().unwrap();
+    fetches.record_pid("claude-acp", child.id());
+    assert!(
+        child.wait().unwrap().code().is_none(),
+        "the late fetch kept running"
+    );
 }

@@ -58,6 +58,8 @@ struct FetchJob {
     finished: Condvar,
     /// The npx process group, so the app's exit can end it.
     pid: Mutex<Option<u32>>,
+    /// Requests blocked on this fetch; tests observe a join through it.
+    waiters: std::sync::atomic::AtomicUsize,
 }
 
 impl FetchJob {
@@ -95,7 +97,8 @@ impl AdapterFetches {
             .contains_key(runtime_id)
     }
 
-    /// Called by the running fetch once npx is spawned.
+    /// Called by the running fetch once npx is spawned. A child spawned after `terminate_all`
+    /// collected the pids would miss it, so this ends the tree itself once the app is closing.
     pub(crate) fn record_pid(&self, runtime_id: &str, pid: u32) {
         if let Some(job) = self
             .in_flight
@@ -104,6 +107,9 @@ impl AdapterFetches {
             .get(runtime_id)
         {
             *job.pid.lock().unwrap_or_else(PoisonError::into_inner) = Some(pid);
+        }
+        if self.closing.load(Ordering::SeqCst) {
+            let _ = terminate_tree(pid);
         }
     }
 
@@ -164,6 +170,7 @@ impl AdapterFetches {
                 }
             }
         };
+        job.waiters.fetch_add(1, Ordering::SeqCst);
         job.wait().map(|()| AdapterReadiness::Fetched)
     }
 
