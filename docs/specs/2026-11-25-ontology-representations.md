@@ -87,8 +87,9 @@ capabilities stale (`CAP/hex-rest.json`).
   shown under another parent (`structure/DomainStructureMap.tsx:145`; eight of the nine element
   cards in view on `CAP/structure-open.png`) and lists concepts no path from the project reaches
   (`structure-index.ts:33`, `DomainStructureMap.tsx:152`). The concept list keeps the first of
-  several parents (`src/widgets/topology-index-panel/lib/selection-path.ts:5`). Whether the detail
-  panel names every parent was not read: unknown.
+  several parents (`src/widgets/topology-index-panel/lib/selection-path.ts:5`). The compact detail
+  panel names no parent list; Full detail's Belongs to group names every parent
+  (`src/widgets/full-detail/ui/FullDetailGroupsPanel.tsx:143`).
 
 **Closest marks, at rest on the dogfood folder at 1512** (edge to edge, from each view's own mirror
 of its marks):
@@ -222,15 +223,20 @@ on each place whether its recorded meaning still matches the code, why not, and 
 
 ## What the Domain structure view leaves behind
 
-Its removal is planned elsewhere. Three abilities exist only there and must land with the removal:
+It was removed on 2026-11-25 (pull request #3917); review found what it alone said:
 
-1. **"Also under N other concepts."** The detail panel's kind line names every parent of the
-   selected concept, each a link.
-2. **Concepts no path from the project reaches.** They stay reachable as top-level rows of the
-   concept list (`src/widgets/topology-index-panel/lib/use-index-root-window.ts:19`), and Hex and 3D
-   say how many concepts they do not draw.
-3. **A reading of membership without a canvas.** The concept list is that reading; the removal
-   checks that a keyboard walk reaches every concept the structure view reached.
+1. **"Also under N other parents."** Owed, as the next slice after the removal. The concept list
+   keeps a concept's first parent and says nothing of the rest (`build-tree.ts:50-58`); a row that
+   has others says so in the list, naming each, so a shared element never reads as under one
+   capability alone. This is the place the decision record promises; the detail panel's kind line
+   is not.
+2. **Concepts no path from the project reaches.** Already reachable: the concept list makes every
+   concept with no kept parent, and each cycle member, a top-level row (`build-tree.ts:83-88`,
+   `:117-125`). Saying in Hex and 3D how many concepts they do not draw is new behaviour, H1's to
+   decide, not something the removal owes.
+3. **A reading of membership without a canvas.** Already true: the keyboard walk runs over the
+   whole tree, not the rendered window (`TopologyIndexPanel.tsx:294`). A test that enumerates every
+   row is owed with item 1.
 
 Nothing else is absorbed: its cards and breadcrumb repeat the concept list.
 
@@ -350,8 +356,8 @@ same generator, at 1280, 1512 and 1920 wide.
 1. H2, selection on the board. Next when H1 is merged.
 2. H3, stale with a reason and a rank. Next after H2; first if criterion 1 shows readers cannot use
    the amber.
-3. Domain structure's three abilities, with its removal. Independent of Hex; next when that plan is
-   ready.
+3. The concept list's "also under" line and its full keyboard-walk test. Independent of Hex; next
+   now that the removal has merged.
 4. H4, one key. Next when H3's words are known.
 5. H6, the change on the board. Next when its probe passes and slice 4 of the review spec exists.
 6. Neural: a resting picture inside the floor and the count per hop in the key. Next after H6.
@@ -377,3 +383,5 @@ proved or removed by its own record's falsifier.
 - 2026-11-25: first draft.
 - 2026-11-25: the lead added the owner's point that touching marks cannot be told apart; separation
   became a requirement of every kept view, with a row per view and criteria 2 and 6.
+- 2026-11-25: after the removal's review, the Structure section records what the concept list
+  already does and keeps one owed slice, the "also under" line in the list.
