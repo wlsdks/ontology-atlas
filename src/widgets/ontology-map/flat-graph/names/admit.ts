@@ -17,7 +17,7 @@ const AXES = ["x", "y"] as const;
 /** The highest side cost with no dot of the open star under the name. */
 const CLEAR_SIDE = 3;
 
-/** How many capabilities a folded star names at rest: its most connected ones stand for the mass. */
+/** How many capabilities a folded star names at rest: its largest ones stand for the mass. */
 const FOLDED_STAR_NAMES = 2;
 
 export function admit(input: NameInput, step: number, seed: NameAdmission | null, ceiling: ReadonlySet<string> | null): NameAdmission {

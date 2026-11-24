@@ -20,7 +20,10 @@ export function candidates(input: NameInput, degree: ReadonlyMap<string, number>
   };
   const lit = input.lit;
   const caps = [...model.capabilityById.values()].filter((c) => layout.positions.has(c.id));
-  const rank = (a: { id: string }, b: { id: string }) => (degree.get(b.id) ?? 0) - (degree.get(a.id) ?? 0) || byId(a.id, b.id);
+  // A larger disc is named first, so the names at rest follow what the eye already ranks; equal discs by
+  // how connected they are. Radii are compared to the half pixel, the step a reader can see.
+  const size = (id: string) => Math.round(input.discRadius(id) * 2);
+  const rank = (a: { id: string }, b: { id: string }) => size(b.id) - size(a.id) || (degree.get(b.id) ?? 0) - (degree.get(a.id) ?? 0) || byId(a.id, b.id);
   const capCandidate = (c: { id: string; label: string }): Candidate => ({ id: c.id, element: false, tries: () => sideNames(input, c.id, "capability", c.label) });
   const showElements = input.elementSpacingPx >= input.tokens.elementNameSpacingPx;
   const elementIds = showElements ? [...model.capabilityOf.keys(), ...model.domains.flatMap((d) => d.directElementIds)].filter((id) => layout.positions.has(id)).sort(byId) : [];
