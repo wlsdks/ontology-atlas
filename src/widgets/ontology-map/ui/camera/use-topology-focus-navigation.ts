@@ -273,7 +273,7 @@ export function useTopologyFocusNavigation({
         const nudge = selectionSlideTarget(world, activeDial, focusedSlug, current, { width, height }, measured, overviewScaleRef.current, selectionZoomBase(memory, current, gesture), source !== "canvas-click");
         const landed = nudge ?? current;
         const fromOverview = !realmActive && holdsOverviewFit(current, world, tokens, measured, width, height);
-        selectionCameraRef.current = recordSelectionCamera(memory, { slug: focusedSlug, framed: false, current, landed, gesture, arrived: preselectedOnArrival, fromOverview });
+        selectionCameraRef.current = recordSelectionCamera(memory, { slug: focusedSlug, framed: false, current, landed, gesture, arrived: preselectedOnArrival, fromOverview, centred: source !== "canvas-click" });
         const leash = leashFor(width, height, measured);
         focusLeashPxRef.current = node
           ? { x: Math.max(leash.x, Math.abs(node.x - landed.tx) * landed.tscale + 1), y: Math.max(leash.y, Math.abs(node.y - landed.ty) * landed.tscale + 1) }

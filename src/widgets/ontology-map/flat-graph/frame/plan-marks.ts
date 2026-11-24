@@ -255,8 +255,82 @@ const LINE_TRIMS = new Float64Array(2);
  * taper's point stops short of the disc it reaches. A selection's fully drawn lines also become the
  * light layer's chords.
  */
+/** The least angle, radians, between two lit lines where they leave the selection's rim. */
+const SPREAD_MIN_RAD = 0.13;
+/** The most a line's leaving angle is turned from its own straight way, radians. */
+const SPREAD_MAX_RAD = 0.3;
+const SPREAD_PASSES = 12;
+type Leaving = { key: string; way: number; at: number };
+const leavingPool: Leaving[] = [];
+const leaving: Leaving[] = [];
+/** Each lit line's leaving angle at the selection this frame, by line key. */
+const leavingAt = new Map<string, number>();
+
+/**
+ * Turns the angles at which the selection's lit lines leave its rim apart to at least
+ * `SPREAD_MIN_RAD`, each no more than `SPREAD_MAX_RAD` from its own way, so lines bound the same way
+ * stay countable where they meet the selection. O(lines × SPREAD_PASSES + lines log lines).
+ */
+function spreadLeaving(motion: GraphMotion, focusId: string): void {
+  leavingAt.clear();
+  const at = screenAt(focusId);
+  if (!at) return;
+  leaving.length = 0;
+  for (let i = 0; i < motion.drawnCount; i += 1) {
+    const { line, reach } = motion.drawn[i]!;
+    if (reach <= DRAWN_INK || (line.from !== focusId && line.to !== focusId) || alongSpoke(line.from, line.to)) continue;
+    const other = screenAt(line.from === focusId ? line.to : line.from);
+    if (!other) continue;
+    const item = leavingPool[leaving.length] ?? (leavingPool[leaving.length] = { key: "", way: 0, at: 0 });
+    item.key = line.key;
+    item.way = Math.atan2(other.y - at.y, other.x - at.x);
+    item.at = item.way;
+    leaving.push(item);
+  }
+  const n = leaving.length;
+  if (n < 2) return;
+  leaving.sort((a, b) => a.way - b.way);
+  for (let pass = 0; pass < SPREAD_PASSES; pass += 1) {
+    let moved = false;
+    for (let i = 0; i < n; i += 1) {
+      const a = leaving[i]!;
+      const b = leaving[(i + 1) % n]!;
+      const gap = i + 1 < n ? b.at - a.at : b.at + Math.PI * 2 - a.at;
+      if (gap >= SPREAD_MIN_RAD) continue;
+      const push = (SPREAD_MIN_RAD - gap) / 2;
+      a.at = Math.max(a.way - SPREAD_MAX_RAD, a.at - push);
+      b.at = Math.min(b.way + SPREAD_MAX_RAD, b.at + push);
+      moved = true;
+    }
+    if (!moved) break;
+  }
+  for (const item of leaving) if (Math.abs(item.at - item.way) > 1e-4) leavingAt.set(item.key, item.at);
+}
+
+/** Moves the selection's end of `arc` round its rim to `angle`, its curve leaving along that angle. O(1). */
+function leaveAt(arc: Arc, focus: Point, angle: number, fromFocus: boolean): void {
+  const { a, c, b } = arc.path;
+  const end = fromFocus ? a : b;
+  const r = Math.hypot(end.x - focus.x, end.y - focus.y);
+  const reach = Math.hypot(c.x - end.x, c.y - end.y);
+  const ux = Math.cos(angle);
+  const uy = Math.sin(angle);
+  const keptX = c.x - end.x;
+  const keptY = c.y - end.y;
+  end.x = focus.x + ux * r;
+  end.y = focus.y + uy * r;
+  // The control point goes only part of the way to the new heading, so the line turns near the rim
+  // and keeps its own bow beyond it.
+  c.x = end.x + LEAVE_TURN * ux * reach + (1 - LEAVE_TURN) * keptX;
+  c.y = end.y + LEAVE_TURN * uy * reach + (1 - LEAVE_TURN) * keptY;
+}
+
+/** The share of the turn the control point takes toward a line's new leaving angle. */
+const LEAVE_TURN = 0.5;
+
 export function focusLinks(motion: GraphMotion): void {
   const P = F.P;
+  if (F.attention.focusId !== null) spreadLeaving(motion, F.attention.focusId);
   // A selection the map opened with (a deep link, a rebuilt world) changed nothing here, so it does not light.
   const chorded = motion.current.selected && motion.settled && Number.isFinite(motion.changedAt) && !F.input.reducedMotion;
   const devicePxPerCss = F.W > 0 ? F.input.ctx.canvas.width / F.W : 1;
@@ -270,9 +344,11 @@ export function focusLinks(motion: GraphMotion): void {
     const tapered = line.kind === "needs" || line.kind === "neededBy";
     const betweenDomains = F.model.domainById.has(line.from) && F.model.domainById.has(line.to);
     litLineTrimsInto(LINE_TRIMS, F.layout, line, Math.hypot(b.x - a.x, b.y - a.y), F.scale, F.growth, discRadius(line.from), discRadius(line.to), P);
-    // A line to a fanned element is a fan's length long: a taper that short reads as a blot, so it draws as a hair.
+    // A line to a fanned element is a fan's length long: a taper that short reads as a blot, so it draws
+    // at the taper's base width along that spoke, wider than the fan's member spokes, so a fanned
+    // element the selection needs or is needed by reads apart from one it only holds.
     const withinFan = fanShare(line.from) > 0 || fanShare(line.to) > 0;
-    const width = tapered && !withinFan ? Math.min(P.lineTaperMaxPx, P.lineTaperPx + P.lineTaperGainPx * (line.weight - 1)) : line.kind === "relates" ? P.lineDotPx : P.lineHairPx;
+    const width = tapered ? (withinFan ? P.lineTaperPx : Math.min(P.lineTaperMaxPx, P.lineTaperPx + P.lineTaperGainPx * (line.weight - 1))) : line.kind === "relates" ? P.lineDotPx : P.lineHairPx;
     // A relation between a capability and its own fanned element runs straight along that element's spoke, from outside the ring.
     const spoke = alongSpoke(line.from, line.to);
     const ring = spoke ? P.selectedRingGapPx + P.selectedRingPx : 0;
@@ -283,6 +359,8 @@ export function focusLinks(motion: GraphMotion): void {
     if (reach * Math.hypot(end.x - start.x, end.y - start.y) * devicePxPerCss < 1) continue;
     mark.key = line.key;
     if (mark.reach !== reach) mark.reach = reach;
+    const turned = leavingAt.get(line.key);
+    if (turned !== undefined) leaveAt(mark, line.from === F.attention.focusId ? a : b, turned, line.from === F.attention.focusId);
     if (betweenDomains) {
       // The end outside the member star fades in, so the line emerges from the cluster's light.
       const fade = Math.min(0.5, P.lineFadePx / (Math.hypot(end.x - start.x, end.y - start.y) || 1));

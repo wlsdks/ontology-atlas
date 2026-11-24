@@ -18,6 +18,8 @@ export interface SelectionCamera {
   arrived?: boolean;
   /** The chain began on the overview fit, so a deselect fits the free map as it is by then. */
   fromOverview?: boolean;
+  /** The selection came from outside the canvas, so every reframe of it centres it as its first frame did. */
+  centred?: boolean;
 }
 
 /** Room inside the free canvas for the node's disc, ring and the start of its name. */
@@ -307,13 +309,14 @@ export function selectionZoomBase(memory: SelectionCamera | null, current: Camer
 /** Selections that follow one another without a reader move share the view the first one left. */
 export function recordSelectionCamera(
   memory: SelectionCamera | null,
-  move: { slug: string; framed: boolean; current: CameraTarget; landed: CameraTarget; gesture: number; arrived?: boolean; fromOverview?: boolean },
+  move: { slug: string; framed: boolean; current: CameraTarget; landed: CameraTarget; gesture: number; arrived?: boolean; fromOverview?: boolean; centred?: boolean },
 ): SelectionCamera {
   const chained = memory !== null && untouched(memory, move.current, move.gesture);
   const restore = chained ? memory.restore : move.current;
   const arrived = chained ? memory.arrived === true : move.arrived === true;
   const fromOverview = chained ? memory.fromOverview === true : move.fromOverview === true;
-  return { slug: move.slug, framed: move.framed, restore: { ...restore }, landed: { ...move.landed }, gesture: move.gesture, arrived, fromOverview };
+  const centred = move.centred ?? (memory?.slug === move.slug ? memory.centred === true : false);
+  return { slug: move.slug, framed: move.framed, restore: { ...restore }, landed: { ...move.landed }, gesture: move.gesture, arrived, fromOverview, centred };
 }
 
 /** `refit` returns as `return` does, to the overview fit of the free map as it is now. */
