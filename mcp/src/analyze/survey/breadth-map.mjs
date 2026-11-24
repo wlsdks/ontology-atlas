@@ -13,6 +13,7 @@ import { basename, dirname, extname, isAbsolute, join, posix, relative, sep } fr
 import { inferImports } from '../../infer-imports.mjs';
 import { ABILITY_LIMIT, abilitiesOf, fairShares } from '../abilities/abilities.mjs';
 import { collectSourceUnits } from './source-units.mjs';
+import { isGitIgnored } from './git-ignored-paths.mjs';
 import { abilitiesByArea, areaLocator, surveyAreas } from './survey-areas.mjs';
 import { repoText as t } from '../repo-text.mjs';
 import { readSurveyText, surveyEntry, surveyRelativePath } from './survey-paths.mjs';
@@ -163,13 +164,19 @@ function unitImports(rootPath, collection, ignore) {
   return edges;
 }
 
+/** `surveyEntry`, unless Git ignores the file: a built `dist/cli.js` is not on a clean checkout, the source it came from is. */
+function entryFile(rootPath, collection, path) {
+  const found = surveyEntry(rootPath, path);
+  return found && !isGitIgnored(collection.ignoredByGit, found) ? found : null;
+}
+
 /** A manifest path inside `folder`, as a repository-relative file that exists inside the root, or null. */
-function resolveScriptPath(rootPath, folder, raw) {
+function resolveScriptPath(rootPath, collection, folder, raw) {
   const path = surveyRelativePath(String(raw ?? ''));
   if (!path) return null;
   const at = (inner) => (folder === '.' ? inner : posix.join(folder, inner));
   const source = path.replace(/^(?:dist|lib|build|out)\//, 'src/').replace(/\.(?:c|m)?js$/, '.ts');
-  return surveyEntry(rootPath, at(path)) ?? surveyEntry(rootPath, at(source));
+  return entryFile(rootPath, collection, at(path)) ?? entryFile(rootPath, collection, at(source));
 }
 
 function readJson(rootPath, path) {
@@ -188,7 +195,7 @@ function packageEntryPoints(rootPath, collection) {
   for (const folder of manifests) {
     const manifest = readJson(rootPath, folder === '.' ? 'package.json' : `${folder}/package.json`);
     if (!manifest) continue;
-    const at = (path) => resolveScriptPath(rootPath, folder, path);
+    const at = (path) => resolveScriptPath(rootPath, collection, folder, path);
     const bin = manifest.bin;
     if (typeof bin === 'string') rows.push({ path: at(bin), symbol: manifest.name ?? basename(folder), kind: 'command' });
     else if (bin && typeof bin === 'object') {
@@ -215,18 +222,18 @@ function tomlSection(text, header) {
   return out;
 }
 
-function pythonModulePath(rootPath, module) {
+function pythonModulePath(rootPath, collection, module) {
   const parts = module.split('.');
   for (const base of ['src', '.']) {
     for (const candidate of [`${parts.join('/')}.py`, `${parts.join('/')}/__init__.py`]) {
       const path = base === '.' ? candidate : `${base}/${candidate}`;
-      if (surveyEntry(rootPath, path)) return path;
+      if (entryFile(rootPath, collection, path)) return path;
     }
   }
   return null;
 }
 
-function pythonEntryPoints(rootPath) {
+function pythonEntryPoints(rootPath, collection) {
   const text = readText(rootPath, 'pyproject.toml');
   if (!text) return [];
   const rows = [];
@@ -241,7 +248,7 @@ function pythonEntryPoints(rootPath) {
     for (const line of tomlSection(text, header)) {
       const match = /^\s*["']?([\w.-]+)["']?\s*=\s*["']([\w.]+)(?::([\w.]+))?["']/.exec(line);
       if (!match) continue;
-      const path = pythonModulePath(rootPath, match[2]);
+      const path = pythonModulePath(rootPath, collection, match[2]);
       if (path) rows.push({ path, symbol: match[3] ?? match[1], kind, name: match[1] });
     }
   }
@@ -305,7 +312,7 @@ function entryPointsOf(rootPath, collection) {
   const seen = new Set();
   for (const row of [
     ...packageEntryPoints(rootPath, collection),
-    ...pythonEntryPoints(rootPath),
+    ...pythonEntryPoints(rootPath, collection),
     ...pythonPackageEntryPoints(collection),
     ...codeEntryPoints(rootPath, collection),
   ]) {
@@ -340,10 +347,10 @@ function readmePurpose(rootPath) {
 const DOC_FOLDERS = ['docs', 'doc', 'documentation'];
 const DOC_SKIP = /(?:^|\/)(?:blog|changelog|changelogs|release-notes|news|_[^/]*|node_modules)(?:\/|$)/i;
 
-function docPages(rootPath, ignore) {
+function docPages(rootPath, ignore, ignoredByGit) {
   const pages = [];
   const visit = (directory, depth) => {
-    if (depth > 4) return;
+    if (depth > 4 || ignoredByGit.has(directory)) return;
     if (!surveyEntry(rootPath, directory, 'directory')) return;
     let names;
     try { names = readdirSync(join(rootPath, directory)).sort(); } catch { return; }
@@ -351,7 +358,7 @@ function docPages(rootPath, ignore) {
       if (name.startsWith('.') || ignore.has(name)) continue;
       const path = `${directory}/${name}`;
       if (DOC_SKIP.test(path)) continue;
-      if (/\.(?:md|mdx|markdown|rst)$/i.test(name)) { if (surveyEntry(rootPath, path)) pages.push(path); }
+      if (/\.(?:md|mdx|markdown|rst)$/i.test(name)) { if (!ignoredByGit.has(path) && surveyEntry(rootPath, path)) pages.push(path); }
       else if (!/\.[a-z0-9]+$/i.test(name)) visit(path, depth + 1);
     }
   };
@@ -415,13 +422,12 @@ export function buildBreadthMap(rootPath, { ignore = [], vaultRoot, collection: 
     outside[row.class] = entry;
   }
   const entryPoints = entryPointsOf(rootPath, collection);
-  const pages = docPages(rootPath, ignoreSet);
+  const pages = docPages(rootPath, ignoreSet, collection.ignoredByGit);
   const readme = readmePurpose(rootPath);
   // The vault's own pages are the map being built, not documentation of the product.
   const vault = vaultRoot ? relative(rootPath, vaultRoot).split(sep).join('/') : '';
   const inVault = vault && !vault.startsWith('..') && !isAbsolute(vault) ? (path) => path === vault || path.startsWith(`${vault}/`) : () => false;
   const abilities = abilitiesOf(rootPath, collection, entryPoints.rows, {
-    ignore,
     documents: { readme: readme?.path ?? null, pages: pages.all.filter((path) => !inVault(path)) },
   });
   const next = units.length === 0

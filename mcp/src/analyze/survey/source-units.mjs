@@ -4,7 +4,9 @@
  * units — a top-level package, workspace member or module folder, split one level
  * further when it is large. The survey lists these units, and the coverage line
  * every write reports is measured against them, so both speak of the same thing.
- * Reads file bytes only to count lines and spot a generated header; nothing runs.
+ * What Git ignores is not walked, so a working checkout counts what a clean one
+ * does. Reads file bytes only to count lines and spot a generated header, and
+ * starts `git` only to ask what it ignores.
  */
 
 import { lstatSync, readdirSync, readFileSync } from 'node:fs';
@@ -12,6 +14,7 @@ import { extname, join, relative, sep } from 'node:path';
 
 import { DEFAULT_IGNORE } from '../scan-tables.mjs';
 import { discoverDeclaredWorkspacePackages } from '../../infer-imports/workspace-packages.mjs';
+import { gitIgnoredPaths } from './git-ignored-paths.mjs';
 
 export const UNIT_SOURCE_EXTENSIONS = new Set([
   '.c', '.cc', '.cjs', '.cpp', '.cs', '.cts', '.dart', '.ex', '.exs', '.go', '.h', '.hpp',
@@ -77,7 +80,8 @@ function classOf(path, head) {
   return 'product';
 }
 
-function walkSourceFiles(rootPath, ignore, excludedPrefixes) {
+/** `ignoredByGit` holds whole paths; the walk meets every folder before what is under it, so `has` is enough. */
+function walkSourceFiles(rootPath, ignore, excludedPrefixes, ignoredByGit) {
   const out = [];
   const visit = (directory) => {
     if (out.length >= MAX_FILES) return;
@@ -88,6 +92,7 @@ function walkSourceFiles(rootPath, ignore, excludedPrefixes) {
       if (name.startsWith('.') || ignore.has(name) || SENSITIVE.test(name)) continue;
       const abs = join(directory, name);
       const rel = relative(rootPath, abs).split(sep).join('/');
+      if (ignoredByGit.has(rel)) continue;
       if (excludedPrefixes.some((prefix) => rel === prefix || rel.startsWith(`${prefix}/`))) continue;
       let stat;
       // lstat: a link is neither a file nor a folder here, so the walk never follows one.
@@ -210,13 +215,16 @@ function vaultExclusion(rootPath, vaultRoot) {
 
 /**
  * Every source file with its class and line count, and the product units.
+ * `ignoredByGit` (`gitIgnoredPaths`) lets the survey's other lookups leave out
+ * what the walk left out, without asking Git again.
  *
  * @param {string} rootPath absolute repository root
  * @param {{ ignore?: string[], vaultRoot?: string }} [options]
  */
 export function collectSourceUnits(rootPath, { ignore = [], vaultRoot } = {}) {
   const ignoreSet = new Set([...DEFAULT_IGNORE, ...ignore]);
-  const { files, truncated } = walkSourceFiles(rootPath, ignoreSet, vaultExclusion(rootPath, vaultRoot));
+  const ignoredByGit = gitIgnoredPaths(rootPath);
+  const { files, truncated } = walkSourceFiles(rootPath, ignoreSet, vaultExclusion(rootPath, vaultRoot), ignoredByGit);
   const classed = files.map((file) => ({ ...file, ...factsFor(file) }));
   const product = classed.filter((file) => file.class === 'product' && file.lines > 0);
   const members = workspaceMembers(rootPath, ignoreSet);
@@ -248,6 +256,7 @@ export function collectSourceUnits(rootPath, { ignore = [], vaultRoot } = {}) {
     productFiles: product.length,
     productLines: product.reduce((sum, file) => sum + file.lines, 0),
     truncated,
+    ignoredByGit,
   };
 }
 
