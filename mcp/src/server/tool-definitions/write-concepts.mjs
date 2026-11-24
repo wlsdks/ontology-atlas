@@ -1,4 +1,4 @@
-import { ELEMENT_NAMING_RULE_BATCH_EN, ELEMENT_NAMING_RULE_EN, FAMILY_SCOPE_RULE_EN } from '../../construction/construction-rules.mjs';
+import { ELEMENT_NAMING_RULE_EN, FAMILY_SCOPE_RULE_EN } from '../../construction/construction-rules.mjs';
 import { GRAPH_REF_ARRAY_MAX_ITEMS } from '../tool-schemas/array-limits.mjs';
 import {
   NON_BLANK_STRING_SCHEMA,
