@@ -56,14 +56,22 @@ async function stopRecording(page: Page): Promise<Sample[]> {
   });
 }
 
-/** The largest share of a value's whole travel covered between two frames. */
-function maxStepShare(values: number[]): number {
-  const moving = values.filter((value) => Number.isFinite(value));
+/**
+ * The largest share of a value's whole travel covered between two frames. Outside the perf lane a
+ * step across a stalled frame is not judged: a timed motion covers that stall's time in one frame,
+ * which a GPU-less runner produces without any jump in the page.
+ */
+function maxStepShare(samples: Sample[], key: keyof Omit<Sample, "t">): number {
+  const moving = samples.filter((sample) => Number.isFinite(sample[key]));
   if (moving.length < 2) return 0;
-  const total = Math.max(...moving) - Math.min(...moving);
+  const values = moving.map((sample) => sample[key]);
+  const total = Math.max(...values) - Math.min(...values);
   if (total === 0) return 0;
   let largest = 0;
-  for (let i = 1; i < moving.length; i += 1) largest = Math.max(largest, Math.abs(moving[i]! - moving[i - 1]!) / total);
+  for (let i = 1; i < moving.length; i += 1) {
+    if (!PERF_BARS && moving[i]!.t - moving[i - 1]!.t > FRAME_INTERVAL_BUDGET_MS) continue;
+    largest = Math.max(largest, Math.abs(values[i]! - values[i - 1]!) / total);
+  }
   return largest;
 }
 
@@ -71,7 +79,7 @@ function expectNoJump(samples: Sample[], keys: readonly (keyof Omit<Sample, "t">
   const intervals = samples.slice(1).map((sample, index) => sample.t - samples[index]!.t);
   console.log(`[code-reader-motion] ${JSON.stringify({ frames: samples.length, maxIntervalMs: Math.round(Math.max(...intervals)) })}`);
   if (PERF_BARS) expect(Math.max(...intervals), "a frame interval while the reader moved").toBeLessThanOrEqual(FRAME_INTERVAL_BUDGET_MS);
-  for (const key of keys) expect(maxStepShare(samples.map((sample) => sample[key])), `${key} jumped in one frame`).toBeLessThanOrEqual(MAX_STEP_SHARE);
+  for (const key of keys) expect(maxStepShare(samples, key), `${key} jumped in one frame`).toBeLessThanOrEqual(MAX_STEP_SHARE);
 }
 
 async function settled(page: Page) {
