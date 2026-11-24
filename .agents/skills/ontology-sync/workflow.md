@@ -34,9 +34,9 @@ restores it. There is no npm-installed `ontology-atlas` command to assume.
 ### 1. Read what's already there (cheap)
 
 ```
-list_kinds                                # how many of each kind
-list_concepts                             # narrow query for the changed domain/capability
-get_concept({ slug }) or ({ uid })        # current address or permanent identity
+list_concepts({ limit: 1 })               # census: how many of each kind
+list_concepts({ kind, domain })           # narrow query for the changed domain/capability
+get_concepts({ slugs: [slug] }) or ({ uids: [uid] })  # current address or permanent identity
 find_backlinks(slug)                      # before renaming or merging
 ```
 
@@ -69,9 +69,9 @@ For each confirmed delta, prefer one tool:
 
 | Situation | Tool |
 |---|---|
-| New node | `add_concept` (frontmatter is auto-normalized to the per-kind shape — slug, kind, title, then arrays/domain — so don't hand-shape it) |
-| Existing node, new field or refined body | `patch_concept` (pass `expected_mtime` from a prior `get_concept`) |
-| Edge between existing nodes | `add_relation(from, to, type)` |
+| New node | `add_concepts({ concepts: [row] })` (frontmatter is auto-normalized to the per-kind shape — slug, kind, title, then arrays/domain — so don't hand-shape it) |
+| Existing node, new field or refined body | `patch_concept` (pass `expected_mtime` from a prior `get_concepts`) |
+| Edge between existing nodes | `add_relations({ relations: [{ from, to, type, why }] })` |
 
 Shape each body and test each `depends_on` by the construction card that
 `connection_info` returns.
@@ -89,7 +89,7 @@ address. Never mint, copy, or patch `uid` yourself, and never patch
 arguments and graph links slug-based. Rename/reclassify preserve UID; merge
 preserves the target UID and absorbs the source identity history.
 
-`add_concept` returns `warnings: ["expected field \"domain\" missing for kind \"capability\""]` when a strongly-expected field is absent. Patch only when the supported domain is already confirmed; otherwise report the missing evidence. A warning never authorizes inventing a domain.
+`add_concepts` returns `warnings: ["expected field \"domain\" missing for kind \"capability\""]` when a strongly-expected field is absent. Patch only when the supported domain is already confirmed; otherwise report the missing evidence. A warning never authorizes inventing a domain.
 
 ### 4. Verify
 
@@ -104,7 +104,7 @@ For routine success, use about five lines. Include additional lines when
 needed to show an unresolved warning, exact approval scope, or verification
 failure; brevity never hides a blocker. Cover:
 
-1. What you read (`list_kinds` summary or the slug you focused on).
+1. What you read (`list_concepts` census or the slug you focused on).
 2. What you added — uid + slug + kind + parent.
 3. What you patched / renamed — old → new.
 4. Any `warnings` returned (and whether you'll address them in a follow-up).
@@ -121,7 +121,7 @@ is a changelog.
   exist. Add it only if that parent is independently supported and approved.
   Otherwise report the unresolved parent and repair the proposal before writing.
 - **Concurrent edits**: every write tool accepts `expected_mtime` from
-  `get_concept`. Use it on `patch_concept` / `rename_concept` /
+  `get_concepts`. Use it on `patch_concept` / `rename_concept` /
   `merge_concepts` / `delete_concept` (`merge_concepts` additionally takes
   `expected_into_mtime` to guard the survivor) so a parallel human edit isn't
   silently overwritten.

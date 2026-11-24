@@ -324,52 +324,6 @@ export function inferImportsFailure(parsed) {
   return null;
 }
 
-function rustConfigurationEvidenceFailure(evidence) {
-  if (!evidence || typeof evidence !== 'object' || Array.isArray(evidence)) {
-    return 'response missing Rust configuration evidence';
-  }
-  if (evidence.contract !== 'rustFeatureConfigurationEvidence:v1') {
-    return `Rust configuration evidence contract drift: ${evidence.contract}`;
-  }
-  if (!['not_present', 'unsupported', 'observed', 'limited'].includes(evidence.status)) {
-    return `Rust configuration evidence status drift: ${evidence.status}`;
-  }
-  if (
-    evidence.writePolicy?.automaticRelation !== false ||
-    evidence.writePolicy?.writeAllowed !== false ||
-    evidence.writePolicy?.humanApprovalRequired !== true
-  ) {
-    return 'Rust configuration evidence write policy is not fail-closed';
-  }
-  for (const propertyName of [
-    'predicateEvaluation',
-    'runtimeImpact',
-    'importDependency',
-    'macroConsumers',
-    'semanticDependency',
-  ]) {
-    if (evidence.claimBoundary?.[propertyName] !== false) {
-      return `Rust configuration evidence overclaims ${propertyName}`;
-    }
-  }
-  if (
-    evidence.coverage?.predicateEvaluation !== false ||
-    evidence.coverage?.macroExpansion !== false ||
-    evidence.coverage?.buildScriptsExecuted !== false
-  ) {
-    return 'Rust configuration evidence execution boundary drift';
-  }
-  if (
-    !Array.isArray(evidence.packages) ||
-    !Array.isArray(evidence.unsupportedWorkspaceMembers) ||
-    !Array.isArray(evidence.limitations) ||
-    evidence.limitations.length === 0
-  ) {
-    return 'Rust configuration evidence bounded rows drift';
-  }
-  return null;
-}
-
 function importScanCoverageFailure(coverage) {
   if (!coverage || typeof coverage !== 'object' || Array.isArray(coverage)) {
     return 'response missing import scan coverage';
@@ -403,79 +357,6 @@ function importScanCoverageFailure(coverage) {
     coverage.allDetectedLanguagesSupported !== false
   ) {
     return 'import scan coverage overclaims C support';
-  }
-  return null;
-}
-
-export function indexProjectFailure(parsed) {
-  if (parsed?.mode !== 'plan') {
-    return `index_project response mode drift: ${parsed?.mode}`;
-  }
-  if (parsed.sideEffect !== 0) {
-    return 'index_project response must be side effect 0';
-  }
-  if (typeof parsed.rootPath !== 'string' || parsed.rootPath.length === 0) {
-    return 'index_project response missing rootPath';
-  }
-  if (!parsed.analyze || typeof parsed.analyze !== 'object' || Array.isArray(parsed.analyze)) {
-    return 'index_project response missing analyze summary';
-  }
-  for (const propertyName of ['domains', 'capabilities', 'elements', 'suggestedRelations']) {
-    if (!Number.isInteger(parsed.analyze[propertyName]) || parsed.analyze[propertyName] < 0) {
-      return `index_project response missing analyze.${propertyName} count`;
-    }
-  }
-  if (!parsed.imports || typeof parsed.imports !== 'object' || Array.isArray(parsed.imports)) {
-    return 'index_project response missing imports summary';
-  }
-  if (!Number.isInteger(parsed.imports.filesScanned) || parsed.imports.filesScanned < 0) {
-    return 'index_project response missing imports.filesScanned count';
-  }
-  if (!Number.isInteger(parsed.imports.moduleEdges) || parsed.imports.moduleEdges < 0) {
-    return 'index_project response missing imports.moduleEdges count';
-  }
-  if (!Number.isInteger(parsed.imports.packageImports) || parsed.imports.packageImports < 0) {
-    return 'index_project response missing imports.packageImports count';
-  }
-  if (!Number.isInteger(parsed.imports.packageModuleEdges) || parsed.imports.packageModuleEdges < 0) {
-    return 'index_project response missing imports.packageModuleEdges count';
-  }
-  const importCoverageFailure = importScanCoverageFailure(parsed.imports.coverage);
-  if (importCoverageFailure) return `index_project imports ${importCoverageFailure}`;
-  const configurationFailure = rustConfigurationEvidenceFailure(
-    parsed.configurationEvidence,
-  );
-  if (configurationFailure) return `index_project ${configurationFailure}`;
-  if (!parsed.plan || typeof parsed.plan !== 'object' || Array.isArray(parsed.plan)) {
-    return 'index_project response missing plan summary';
-  }
-  for (const propertyName of ['concepts', 'suggestedRelations', 'importRelations']) {
-    if (!Number.isInteger(parsed.plan[propertyName]) || parsed.plan[propertyName] < 0) {
-      return `index_project response missing plan.${propertyName} count`;
-    }
-  }
-  if (
-    parsed.plan.importRelations !==
-    parsed.imports.moduleEdges + parsed.imports.packageModuleEdges
-  ) {
-    return 'index_project response plan.importRelations must equal legacy and package module edge counts';
-  }
-  if (!Array.isArray(parsed.plan.phases)) {
-    return 'index_project response missing plan.phases array';
-  }
-  if (!parsed.validation || typeof parsed.validation !== 'object' || Array.isArray(parsed.validation)) {
-    return 'index_project response missing validation summary';
-  }
-  for (const propertyName of ['scanned', 'problemFiles', 'errorFiles', 'warningFiles']) {
-    if (!Number.isInteger(parsed.validation[propertyName]) || parsed.validation[propertyName] < 0) {
-      return `index_project response missing validation.${propertyName} count`;
-    }
-  }
-  if (!parsed.next || typeof parsed.next !== 'object' || Array.isArray(parsed.next)) {
-    return 'index_project response missing next actions';
-  }
-  if (typeof parsed.next.applyTool !== 'string' || !/add_concepts/.test(parsed.next.applyTool)) {
-    return 'index_project response missing add_concepts apply guidance';
   }
   return null;
 }

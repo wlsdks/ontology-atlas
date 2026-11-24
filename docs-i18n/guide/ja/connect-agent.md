@@ -81,8 +81,8 @@ Codexがプロジェクトの`.codex/config.toml`を読むのは、そのフォ�
 
 正確な一覧は、サーバ自身のツール一覧です。ツールはいくつかのグループに分かれます。
 
-- **作業前に読む:** `get_concept`は概念を隣接する概念とともに返し、`find_backlinks`はある概念を指しているものを示し、`find_path`は2つの概念がどうつながっているかを示します。`query_ontology`は、ワークスペースの概要や変更の影響といった問いに答えます。
-- **コードを読む:** `analyze_repo_structure`、`index_project`、`infer_imports`は、何も書き込まずにリポジトリを調べます。
+- **作業前に読む:** `get_concepts`は概念を隣接する概念とともに返し、`find_backlinks`はある概念を指しているものを示します。`query_ontology`は、2つの概念がどうつながっているか（`path`）を示し、ワークスペースの概要や変更の影響といった問いに答えます。
+- **コードを読む:** `analyze_repo_structure`と`infer_imports`は、何も書き込まずにリポジトリを調べます。
 - **書き込む:** `add_concepts`、`add_relations`、`patch_concept`、`rename_concept`、`merge_concepts`、`delete_concept`などです。名前の変更、マージ、削除、関係の削除は、まず変更内容をプレビューし、確認付きでもう一度呼び出されたときにだけ書き込みます。
 - **チェックする:** `validate_vault`と`compile_ontology`は、壊れた参照や欠けている部分を報告します。
 

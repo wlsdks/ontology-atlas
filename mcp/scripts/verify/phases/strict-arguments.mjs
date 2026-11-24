@@ -1,9 +1,7 @@
 import { maintenanceFilterEnumSummary } from '../checks/maintenance-cursor.mjs';
 import {
-  strictAddRelationFailure,
   strictArgsFailure,
   strictEnumFailure,
-  strictFindNeighborsTypeFailure,
   strictFindOrphansKindFailure,
   strictGraphKindFilterFailure,
   strictListConceptsKindFailure,
@@ -51,13 +49,11 @@ export function verifyStrictFilters(responses) {
   const strictMaintenanceKindFilterRes = responses.find((r) => r.id === 24);
   const strictRelationFilterRes = responses.find((r) => r.id === 40);
   const strictRelationCheckRes = responses.find((r) => r.id === 46);
-  const strictAddRelationRes = responses.find((r) => r.id === 50);
   const strictGraphKindFilterRes = responses.find((r) => r.id === 47);
   const strictRecommendRelationsKindFilterRes = responses.find((r) => r.id === 51);
   const strictRecommendRelationsUnsupportedKindFilterRes = responses.find((r) => r.id === 52);
   const strictMatchNodesSortFilterRes = responses.find((r) => r.id === 53);
   const strictMatchEdgesTypeFilterRes = responses.find((r) => r.id === 54);
-  const strictFindNeighborsTypeFilterRes = responses.find((r) => r.id === 55);
   const strictFindOrphansKindFilterRes = responses.find((r) => r.id === 56);
   const strictFindOrphansExcludeKindFilterRes = responses.find((r) => r.id === 57);
   const strictQueryConceptsKindFilterRes = responses.find((r) => r.id === 58);
@@ -93,12 +89,6 @@ export function verifyStrictFilters(responses) {
     return false;
   }
   log('ok', 'strict relation filters: invalid dependencyTypes rejected with closest-value hint');
-  const strictFindNeighborsTypeFilter = strictFindNeighborsTypeFailure(strictFindNeighborsTypeFilterRes);
-  if (strictFindNeighborsTypeFilter) {
-    log('fail', strictFindNeighborsTypeFilter);
-    return false;
-  }
-  log('ok', 'strict find_neighbors filters: invalid relation types rejected before slug resolution with closest-value hint');
   const strictFindOrphansKindFilter = strictFindOrphansKindFailure(strictFindOrphansKindFilterRes);
   if (strictFindOrphansKindFilter) {
     log('fail', strictFindOrphansKindFilter);
@@ -136,12 +126,6 @@ export function verifyStrictFilters(responses) {
     return false;
   }
   log('ok', 'strict relation_check: invalid type rejected before endpoint resolution with closest-value hint and structured repair');
-  const strictAddRelation = strictAddRelationFailure(strictAddRelationRes);
-  if (strictAddRelation) {
-    log('fail', strictAddRelation);
-    return false;
-  }
-  log('ok', 'strict add_relation: invalid type rejected before endpoint resolution with structured repair and no write metadata');
   const strictGraphKindFilter = strictGraphKindFilterFailure(strictGraphKindFilterRes);
   if (strictGraphKindFilter) {
     log('fail', strictGraphKindFilter);

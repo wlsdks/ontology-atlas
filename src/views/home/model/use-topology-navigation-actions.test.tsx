@@ -7,7 +7,7 @@ describe('agent map navigation during relation review', () => {
     const setSelectedEdge = vi.fn();
     const setRouteState = vi.fn();
     const options = {
-      setExpandAllActive: vi.fn(), setRouteState, replayPastWalk: vi.fn(),
+      setExpandAllActive: vi.fn(), setRouteState,
       topologyInspectorState: { panelDatasheetModel: null },
       topologyAgentOrchestration: { closeVaultAgent: vi.fn() },
       topologySourceReadiness: { unboundProjectSource: null },
@@ -31,7 +31,7 @@ describe('agent map navigation during relation review', () => {
     const setNodePopoverDismissed = vi.fn();
     const interactionSelectedSlugRef = { current: 'capability:a' as string | null };
     const options = {
-      setExpandAllActive: vi.fn(), setRouteState, replayPastWalk: vi.fn(),
+      setExpandAllActive: vi.fn(), setRouteState,
       topologyInspectorState: { panelDatasheetModel: null },
       topologyAgentOrchestration: { closeVaultAgent: vi.fn() },
       topologySourceReadiness: { unboundProjectSource: null },
@@ -57,7 +57,7 @@ describe('agent map navigation during relation review', () => {
       let selected: typeof relation | null = relation;
       const setRouteState = vi.fn();
       const options = {
-        setExpandAllActive: vi.fn(), setRouteState, replayPastWalk: vi.fn(),
+        setExpandAllActive: vi.fn(), setRouteState,
         topologyInspectorState: { panelDatasheetModel: null },
         topologyAgentOrchestration: { closeVaultAgent: vi.fn() },
         topologySourceReadiness: { unboundProjectSource: null },

@@ -4,7 +4,6 @@ import { describe, expect, it } from "vitest";
 import {
   CHAT_RULES_DELTA_EN,
   CONSTRUCTION_RULES_EN,
-  ELEMENT_NAMING_RULE_BATCH_EN,
   ELEMENT_NAMING_RULE_EN,
   denseParentActionMessage,
 } from "../../../mcp/src/construction/construction-rules.mjs";
@@ -50,7 +49,6 @@ function flat(text: string): string {
   return text.replace(/\s+/g, " ");
 }
 const NAMING_FINGERPRINT = "an element names a CONCEPT a capability uses";
-const BATCH_FINGERPRINT = "Rows whose `title` is a bare file path";
 
 describe("construction spec text reaches the place the LLM reads", () => {
   it("connection_info serves the construction guide by import, not a copy", () => {
@@ -63,12 +61,11 @@ describe("construction spec text reaches the place the LLM reads", () => {
     expect(read).toContain("construction: CONSTRUCTION_GUIDE_EN,");
   });
 
-  it("add_concept and add_concepts descriptions attach the naming rule", () => {
+  it("the add_concepts description attaches the naming rule", () => {
     // A tool description is the only text an LLM reads **immediately before calling**,
     // so the rule easiest to break at that moment (creating nodes from filenames) must
     // be carried here.
     expect(SERVER_SOURCE).toContain("ELEMENT_NAMING_RULE_EN");
-    expect(SERVER_SOURCE).toContain("ELEMENT_NAMING_RULE_BATCH_EN");
   });
 
   it("really imports the naming rules", () => {
@@ -85,7 +82,6 @@ describe("a single canonical source: derived, not copied", () => {
   it.each([
     ["CONSTRUCTION_RULES_EN", RULES_FINGERPRINT],
     ["ELEMENT_NAMING_RULE_EN", NAMING_FINGERPRINT],
-    ["ELEMENT_NAMING_RULE_BATCH_EN", BATCH_FINGERPRINT],
   ])("the sentence of %s is not duplicated as a literal in the server source", (_name, fingerprint) => {
     expect(SERVER_SOURCE).not.toContain(fingerprint);
   });
@@ -93,7 +89,6 @@ describe("a single canonical source: derived, not copied", () => {
   it("the fingerprint sentence exists on the canonical side, otherwise the check above passes silently once the fingerprint rots", () => {
     expect(flat(CONSTRUCTION_RULES_EN)).toContain(RULES_FINGERPRINT);
     expect(ELEMENT_NAMING_RULE_EN).toContain(NAMING_FINGERPRINT);
-    expect(ELEMENT_NAMING_RULE_BATCH_EN).toContain(BATCH_FINGERPRINT);
   });
 });
 
@@ -148,7 +143,6 @@ describe("the Goodhart-prevention sentence is alive", () => {
     for (const text of [
       CONSTRUCTION_RULES_EN,
       ELEMENT_NAMING_RULE_EN,
-      ELEMENT_NAMING_RULE_BATCH_EN,
       CHAT_RULES_DELTA_EN,
     ]) {
       expect(text).not.toMatch(/keep (?:it |them |the count )?under \d/i);
@@ -169,7 +163,6 @@ describe("language boundary: strings the model reads are English only", () => {
   it.each([
     ["CONSTRUCTION_RULES_EN", CONSTRUCTION_RULES_EN],
     ["ELEMENT_NAMING_RULE_EN", ELEMENT_NAMING_RULE_EN],
-    ["ELEMENT_NAMING_RULE_BATCH_EN", ELEMENT_NAMING_RULE_BATCH_EN],
     ["CHAT_RULES_DELTA_EN", CHAT_RULES_DELTA_EN],
   ])("%s contains no Hangul", (_name, text) => {
     expect(text).not.toMatch(/[가-힣]/);

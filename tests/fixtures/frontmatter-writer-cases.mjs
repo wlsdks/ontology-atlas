@@ -18,7 +18,7 @@ export const WRITER_CASES = [
      * Top-level scalars go out as **block scalars** (`|-`), which always worked. What
      * was newly closed is **inside arrays and objects**: there the value must fit on one
      * line, so block syntax is unavailable and it folds to `\n`. That is where the real
-     * breakage happened (`relation_notes: { slug: why }` — `add_relation`'s `why`).
+     * breakage happened (`relation_notes: { slug: why }` — the `why` of an `add_relations` row).
      */
     expected:
       '---\n' +

@@ -22,7 +22,7 @@ session. The rule:
 - **Skip** typos, comments, one-line style changes, lint settings and test
   fixtures that change no meaning.
 
-The agent reads the affected concepts with `get_concept`, changes them with
+The agent reads the affected concepts with `get_concepts`, changes them with
 `patch_concept`, `add_concepts` or `add_relations`, and runs `validate_vault`.
 Renaming code does not mean the concept must be renamed. Decide whether the
 meaning changed or only the file did. If only the file moved, update the
@@ -55,7 +55,7 @@ busy week.
 The most common way a map decays is the same concept written twice under two
 names. Before the agent adds one, it can ask `query_ontology` with
 `similar_nodes` for concepts that overlap the proposed title. When one matches,
-it updates the existing concept instead. `add_concept` also returns a warning
+it updates the existing concept instead. `add_concepts` also returns a warning
 when a concept with a similar title already exists. If the same concept already
 exists twice, `merge_concepts` merges the two and moves every reference to the
 surviving concept.

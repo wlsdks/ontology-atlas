@@ -19,35 +19,25 @@ export function vaultQueryToolsSchemaFailure(tools) {
   const queryTool = tools.find((tool) => tool?.name === 'query_ontology');
   if (!queryTool) return 'tools/list response missing query_ontology tool';
 
-  const listKindsTool = tools.find((tool) => tool?.name === 'list_kinds');
-  if (!listKindsTool) return 'tools/list response missing list_kinds tool';
-  if (
-    !/Vault kind distribution/i.test(listKindsTool.description || '') ||
-    !/quick census/i.test(listKindsTool.description || '') ||
-    !/size up the vault without paging through list_concepts/i.test(listKindsTool.description || '')
-  ) {
-    return 'list_kinds description missing census guidance';
+  const listConceptsTool = tools.find((tool) => tool?.name === 'list_concepts');
+  if (!listConceptsTool) return 'tools/list response missing list_concepts tool';
+  if (!/carries `census`/i.test(listConceptsTool.description || '') || !/`limit: 1` sizes up a vault/i.test(listConceptsTool.description || '')) {
+    return 'list_concepts description missing census guidance';
   }
-  if (listKindsTool.outputSchema?.type !== 'object') {
-    return 'list_kinds outputSchema root drift';
+  const censusSchema = outputPropertyAt(listConceptsTool, ['properties', 'census']);
+  if (censusSchema?.type !== 'object') {
+    return 'list_concepts outputSchema census drift';
   }
-  if (!sameArray(listKindsTool.outputSchema?.required, ['total', 'byKind', 'referencedOnlyTotal', 'conceptsIncludingReferenced'])) {
-    return 'list_kinds outputSchema required drift';
+  if (!sameArray(censusSchema.required, ['total', 'byKind', 'referencedOnlyTotal']) || censusSchema.additionalProperties !== false) {
+    return 'list_concepts outputSchema census required drift';
   }
-  if (listKindsTool.outputSchema?.additionalProperties !== false) {
-    return 'list_kinds outputSchema root openness drift';
+  for (const field of ['total', 'referencedOnlyTotal']) {
+    const schema = censusSchema.properties?.[field];
+    if (schema?.type !== 'integer' || schema.minimum !== 0) return `list_concepts outputSchema census ${field} drift`;
   }
-  const totalSchema = outputPropertyAt(listKindsTool, ['properties', 'total']);
-  if (totalSchema?.type !== 'integer' || totalSchema.minimum !== 0) {
-    return 'list_kinds outputSchema total drift';
-  }
-  const byKindSchema = outputPropertyAt(listKindsTool, ['properties', 'byKind']);
+  const byKindSchema = censusSchema.properties?.byKind;
   if (byKindSchema?.type !== 'object' || byKindSchema.additionalProperties?.type !== 'integer' || byKindSchema.additionalProperties?.minimum !== 0) {
-    return 'list_kinds outputSchema byKind drift';
-  }
-  for (const field of ['referencedOnlyTotal', 'conceptsIncludingReferenced']) {
-    const schema = outputPropertyAt(listKindsTool, ['properties', field]);
-    if (schema?.type !== 'integer' || schema.minimum !== 0) return `list_kinds outputSchema ${field} drift`;
+    return 'list_concepts outputSchema census byKind drift';
   }
 
   const validateTool = tools.find((tool) => tool?.name === 'validate_vault');

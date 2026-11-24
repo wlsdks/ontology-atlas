@@ -149,4 +149,66 @@ describe('ACP tool call -> map intent', () => {
       ),
     ).toBeNull();
   });
+
+  it('focuses the one slug a single-slug get_concepts read names', () => {
+    expect(
+      deriveAcpMapIntent(
+        [
+          { kind: 'user', id: 'u1', text: 'find the order' },
+          {
+            kind: 'tool',
+            id: 't1',
+            title: 'mcp__atlas-vault__get_concepts',
+            toolKind: 'read',
+            status: 'completed',
+            rawInput: { slugs: ['capabilities/order'] },
+          },
+        ],
+        known,
+      ),
+    ).toEqual({ kind: 'focus', slug: 'capabilities/order', toolCallId: 't1' });
+  });
+
+  it('leaves the map alone for a get_concepts read of several slugs', () => {
+    expect(
+      deriveAcpMapIntent(
+        [
+          { kind: 'user', id: 'u1', text: 'read both' },
+          {
+            kind: 'tool',
+            id: 't1',
+            title: 'mcp__atlas-vault__get_concepts',
+            toolKind: 'read',
+            status: 'completed',
+            rawInput: { slugs: ['capabilities/order', 'capabilities/cart'] },
+          },
+        ],
+        known,
+      ),
+    ).toBeNull();
+  });
+
+  it('draws the path a query_ontology path read names, and ignores its other operations', () => {
+    const pathRead = (operation: string) => deriveAcpMapIntent(
+      [
+        { kind: 'user', id: 'u1', text: 'how do cart and order connect' },
+        {
+          kind: 'tool',
+          id: 't1',
+          title: 'mcp__atlas-vault__query_ontology',
+          toolKind: 'read',
+          status: 'completed',
+          rawInput: { operation, from: 'capabilities/cart', to: 'capabilities/order' },
+        },
+      ],
+      known,
+    );
+    expect(pathRead('path')).toEqual({
+      kind: 'path',
+      from: 'capabilities/cart',
+      to: 'capabilities/order',
+      toolCallId: 't1',
+    });
+    expect(pathRead('explain_relation')).toBeNull();
+  });
 });

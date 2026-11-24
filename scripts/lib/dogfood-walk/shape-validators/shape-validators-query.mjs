@@ -345,7 +345,7 @@ export function queryPathShapeFailure(result, targets) {
     return `path operation to mismatch — ${result.to}`;
   }
   const pathFailure = pathShapeFailure(result);
-  if (pathFailure) return pathFailure.replace("find_path", "path operation");
+  if (pathFailure) return pathFailure;
   if (!result.found) {
     return `path operation expected ${targets.capabilitySlug} → ${targets.pathTargetSlug} path`;
   }

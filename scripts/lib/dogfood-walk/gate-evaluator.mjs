@@ -16,7 +16,7 @@ import { destructiveDryRunFailure } from "../../../mcp/scripts/verify/checks/wri
 import { initializeInstructionsFailure } from "../../../mcp/scripts/verify/checks/initialize.mjs";
 import { listConceptsFailure } from "../../../mcp/scripts/verify/checks/concept-reads.mjs";
 import {
-  listKindsFailure,
+  censusFailure,
   validateVaultFailure,
   validationCodeSummary,
 } from "../../../mcp/scripts/verify/checks/vault-census.mjs";
@@ -25,10 +25,8 @@ import {
   projectMapQueryPlanFailure,
 } from "../../../mcp/scripts/verify/checks/query-plans.mjs";
 import {
-  strictAddRelationFailure,
   strictArgsFailure,
   strictEnumFailure,
-  strictFindNeighborsTypeFailure,
   strictFindOrphansKindFailure,
   strictGraphKindFilterFailure,
   strictListConceptsKindFailure,
@@ -101,7 +99,6 @@ import {
   healthStatusSummary,
   matchesShapeFailure,
   orphansShapeFailure,
-  pathShapeFailure,
   workspaceBriefShapeFailure,
 } from "./shape-validators/shape-validators-workspace.mjs";
 
@@ -180,15 +177,13 @@ export function stderrWarningLines(stderr) {
 export function evaluateDogfoodGate({
   targets,
   initialize,
-  kinds,
+  census,
   list,
   listStructured,
   batch,
   batchStructured,
   ev,
   evStructured,
-  path,
-  pathStructured,
   bl,
   blStructured,
   orph,
@@ -288,7 +283,7 @@ export function evaluateDogfoodGate({
   projectScopeStructured,
   projectProbe,
   projectProbeStructured,
-  kindsStructured,
+  censusStructured,
   strictArgs,
   strictMultiArgs,
   strictEnum,
@@ -297,14 +292,12 @@ export function evaluateDogfoodGate({
   strictMaintenanceSeverityFilter,
   strictMaintenanceKindFilter,
   strictRelationFilter,
-  strictFindNeighborsTypeFilter,
   strictFindOrphansKindFilter,
   strictFindOrphansExcludeKindFilter,
   strictQueryConceptsKindFilter,
   strictQueryConceptsHasKeyFilter,
   strictListConceptsKindFilter,
   strictRelationCheck,
-  strictAddRelation,
   strictGraphKindFilter,
   strictRecommendRelationsKindFilter,
   strictRecommendRelationsUnsupportedKindFilter,
@@ -324,11 +317,10 @@ export function evaluateDogfoodGate({
   const failures = [];
   recordResult(failures, "initialize", initialize);
   recordResult(failures, "tools/list", toolsList);
-  recordResult(failures, "list_kinds", kinds);
+  recordResult(failures, "list_concepts_census", census);
   recordResult(failures, "list_concepts", list);
   recordResult(failures, "get_concepts", batch);
   recordResult(failures, "find_evidence", ev);
-  recordResult(failures, "find_path", path);
   recordResult(failures, "find_backlinks", bl);
   recordResult(failures, "find_orphans", orph);
   recordResult(failures, "query_concepts", queryConcepts);
@@ -395,8 +387,6 @@ export function evaluateDogfoodGate({
   if (strictMaintenanceKindFilterError) failures.push(`strict_maintenance_kind_filter: ${strictMaintenanceKindFilterError}`);
   const strictRelationFilterError = strictRelationFilterFailure(strictRelationFilter);
   if (strictRelationFilterError) failures.push(`strict_relation_filter: ${strictRelationFilterError}`);
-  const strictFindNeighborsTypeFilterError = strictFindNeighborsTypeFailure(strictFindNeighborsTypeFilter);
-  if (strictFindNeighborsTypeFilterError) failures.push(`strict_find_neighbors_type_filter: ${strictFindNeighborsTypeFilterError}`);
   const strictFindOrphansKindFilterError = strictFindOrphansKindFailure(strictFindOrphansKindFilter);
   if (strictFindOrphansKindFilterError) failures.push(`strict_find_orphans_kind_filter: ${strictFindOrphansKindFilterError}`);
   const strictFindOrphansExcludeKindFilterError = strictFindOrphansKindFailure(strictFindOrphansExcludeKindFilter, { field: "excludeKinds items" });
@@ -412,8 +402,6 @@ export function evaluateDogfoodGate({
   if (strictListConceptsKindFilterError) failures.push(`strict_list_concepts_kind_filter: ${strictListConceptsKindFilterError}`);
   const strictRelationCheckError = verifyStrictRelationCheckFailure(strictRelationCheck);
   if (strictRelationCheckError) failures.push(`strict_relation_check: ${strictRelationCheckError}`);
-  const strictAddRelationError = strictAddRelationFailure(strictAddRelation);
-  if (strictAddRelationError) failures.push(`strict_add_relation: ${strictAddRelationError}`);
   const strictGraphKindFilterError = strictGraphKindFilterFailure(strictGraphKindFilter);
   if (strictGraphKindFilterError) failures.push(`strict_graph_kind_filter: ${strictGraphKindFilterError}`);
   const strictRecommendRelationsKindFilterError = strictRecommendRelationsKindFilterFailure(strictRecommendRelationsKindFilter);
@@ -479,10 +467,10 @@ export function evaluateDogfoodGate({
     if (toolsListFailure) failures.push(`tools/list: ${toolsListFailure}`);
   }
 
-  if (kinds) {
-    const kindsFailure = listKindsFailure(kinds);
-    if (kindsFailure) failures.push(kindsFailure);
-    else recordStructuredContentFailure(failures, "list_kinds", kinds, kindsStructured);
+  if (census) {
+    const censusShapeFailure = censusFailure(census);
+    if (censusShapeFailure) failures.push(censusShapeFailure);
+    else recordStructuredContentFailure(failures, "list_concepts_census", census, censusStructured);
   }
   if (list) {
     const listFailure = listConceptsFailure(list) ?? dogfoodVaultWarningsFailure(list);
@@ -503,9 +491,9 @@ export function evaluateDogfoodGate({
         failures.push(`project_probe returned non-project node: ${nonProject.slug || "(unknown)"}`);
         projectProbeOk = false;
       }
-      const kindProjectCount = kinds?.byKind?.project;
+      const kindProjectCount = census?.byKind?.project;
       if (Number.isInteger(kindProjectCount) && projectProbe.total >= 1 && projectProbe.total !== kindProjectCount) {
-        failures.push(`project_probe count mismatch — list_kinds project ${kindProjectCount}, probe ${projectProbe.total}`);
+        failures.push(`project_probe count mismatch — census project ${kindProjectCount}, probe ${projectProbe.total}`);
         projectProbeOk = false;
       }
       if (projectProbeOk) {
@@ -522,14 +510,6 @@ export function evaluateDogfoodGate({
     const evidenceFailure = evidenceShapeFailure(ev);
     if (evidenceFailure) failures.push(evidenceFailure);
     else recordStructuredContentFailure(failures, "find_evidence", ev, evStructured);
-  }
-  if (path) {
-    const pathFailure = pathShapeFailure(path);
-    if (pathFailure) failures.push(pathFailure);
-    else {
-      recordStructuredContentFailure(failures, "find_path", path, pathStructured);
-      if (!path.found) failures.push(`find_path: expected ${targets.capabilitySlug} → ${targets.pathTargetSlug} path`);
-    }
   }
   if (bl) {
     const backlinksFailure = matchesShapeFailure("find_backlinks", bl);
@@ -746,7 +726,7 @@ export function evaluateDogfoodGate({
       failures.push(`all_paths query_plan limit below returned rows — rows ${allPaths.paths.length}, planned ${plannedLimit}`);
     }
   }
-  const consistencyFailures = crossToolConsistencyFailures({ kinds, list, validation, compiled, overview });
+  const consistencyFailures = crossToolConsistencyFailures({ census, list, validation, compiled, overview });
   failures.push(...consistencyFailures);
   const briefChecks = brief?.health?.checks;
   if (brief && !briefShapeFailure && brief.status !== "healthy" && !isAdvisoryOnlyStatus(brief, briefChecks)) {

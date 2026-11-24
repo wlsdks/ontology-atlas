@@ -32,12 +32,14 @@ function buildMcpFirstCallsPacket(vaultName: string, vaultPath: string | null): 
     'If tools/list disagrees with connection_info toolCount, or query_ontology is not callable, reload/restart the agent or refresh cached MCP tools.',
     '',
     'Project ontology indexing checkpoint (side effect 0):',
-    'Replace [codebase-root] with the current checkout path before running project indexing.',
-    'index_project({"rootPath":"[codebase-root]"})',
+    'Replace [codebase-root] with the current checkout path before running these reads.',
+    'analyze_repo_structure({"rootPath":"[codebase-root]"})',
+    'infer_imports({"rootPath":"[codebase-root]"})',
+    'validate_vault({})',
     '',
     'Meaning gate: report the business/product domain and capability first, then cite code index rows as implementation evidence.',
     'Business evidence: include meaningGate.businessOntology.evidence rows from README and docs/ontology.',
-    'Review queue: include meaningGate.implementationEvidence.reviewRequiredRows so humans can name folders that still lack product meaning.',
+    'Review queue: include meaningGate.implementationEvidence.reviewRequiredCapabilities so humans can name folders that still lack product meaning.',
     'Do not promote source folders to capabilities when existing ontology evidence maps them through matching slugs or capability elements.',
   ].join('\n');
 }

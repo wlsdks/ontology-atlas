@@ -1,7 +1,7 @@
 // The set difference between code-derived import edges (`inferImports()`) and
 // the vault's compiled depends_on edges, so the agent gets "exactly what to
 // sync" instead of every import. Read-only: changes still land through a
-// confirmed add_relation.
+// confirmed add_relations row.
 
 // The compiler stores `depends_on` as `dependencies`; matching 'depends_on' alone
 // would swallow every real dependency edge.

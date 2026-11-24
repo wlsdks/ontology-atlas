@@ -19,12 +19,12 @@ const CONSTRUCTION_LIFECYCLE_PHASES = Object.freeze([
 ]);
 
 // The bulk writePlan waits for an independent evaluation, but add_concepts and
-// add_relation do not, so a blocked caller is told the path that stays open.
+// add_relations do not, so a blocked caller is told the path that stays open.
 // It names tools, not a skill, since skills ship only for some clients.
 const INCREMENTAL_WRITE_RECOVERY =
   'If you cannot run an independent evaluation lane, leave the bulk plan unwritten and ' +
   'grow the vault a few concepts at a time instead: show the person a short batch with ' +
-  'its evidence, then write what they approve with `add_concepts` and `add_relation`, ' +
+  'its evidence, then write what they approve with `add_concepts` and `add_relations`, ' +
   'which this gate does not govern. Do not fabricate an evaluator to reach the bulk plan.';
 
 const MANDATORY_AXES = Object.freeze([

@@ -739,7 +739,7 @@ Tour one-click doors: hree one-click doors, plus one that reaches outside this c
   chip, and only in a folder that already holds an ontology — a folder of documents
   with no `kind:` node is a wiki on its own, and nobody who opened it asked for a map.
   The chip starts one agent turn that reads the pages carrying the name and the vault's
-  own kinds and domains, then calls `add_concept` once, citing those pages as
+  own kinds and domains, then calls `add_concepts` once with one row, citing those pages as
   `[[wiki/…]]` links in the node's body. The write reaches the ontology-write card like
   any other; nothing touches the wiki pages, and the turn sets no `describes:` (a page's
   links to concepts are its writer's, spec §11.1). People and organisations stay names in the wiki, linked by the pages

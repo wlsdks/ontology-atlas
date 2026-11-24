@@ -108,7 +108,7 @@ Closing a concept's full reading view returns to its selected map concept and in
 | Surface | Entry | Reference |
 |---|---|---|
 | Desktop app (macOS; Windows x64 beta) | Installed local workbench over a folder on disk | [`DESKTOP-MACOS.md`](DESKTOP-MACOS.md), [Download](features/download.md) |
-| MCP | JSON-RPC server an agent registers against a vault | [`mcp/README.md`](../mcp/README.md); the tool list is the server's `tools/list` answer; optional first-construction discovery exposes 20 existing tools, with full discovery as the default; exact `sourceOnly` continuations reuse bounded evidence without rescanning |
+| MCP | JSON-RPC server an agent registers against a vault | [`mcp/README.md`](../mcp/README.md); the tool list is the server's `tools/list` answer; optional first-construction discovery exposes 16 existing tools, with full discovery as the default; exact `sourceOnly` continuations reuse bounded evidence without rescanning |
 | Website | Static export; `/` is the gateway until a vault is loaded | [Gateway](features/gateway.md) |
 
 Project source-path repair opens the exact affected concept and its recorded

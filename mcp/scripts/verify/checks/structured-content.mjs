@@ -69,7 +69,6 @@ export function structuredContentVerifySummary({
   hasProject = false,
   hasGetConcept = false,
   hasFindBacklinks = false,
-  hasDirectGraphReads = false,
   hasLimitedQueryConcepts = false,
   hasCompileIndexes = false,
   hasAllPaths = false,
@@ -77,10 +76,9 @@ export function structuredContentVerifySummary({
   hasMaintenanceResumeSkipped = false,
   destructiveDryRunCount = 0,
 } = {}) {
-  const direct = 11
+  const direct = 10
     + (hasGetConcept ? 1 : 0)
     + (hasFindBacklinks ? 1 : 0)
-    + (hasDirectGraphReads ? 2 : 0)
     + (hasLimitedQueryConcepts ? 1 : 0);
   const write = 2 + destructiveDryRunCount;
   const maintenance = 2 + (hasMaintenanceResume ? 1 : 0);

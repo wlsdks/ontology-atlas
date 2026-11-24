@@ -74,8 +74,7 @@ area: architecture
 │ │                  compile_ontology · query_ontology ·  │
 │ │                  analyze_repo_structure · infer_imports│
 │ │                  inspect_architecture                 │
-│ └─ write tools    add_concept · add_concepts ·          │
-│                    add_relation · add_relations ·       │
+│ └─ write tools    add_concepts · add_relations ·        │
 │                    remove/replace relation · patch ·    │
 │                    reclassify · delete/rename/merge ·   │
 │                    absorb_document · git_snapshot ·     │

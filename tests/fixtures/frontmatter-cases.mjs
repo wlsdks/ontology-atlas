@@ -264,7 +264,7 @@ labels: {"key\\name": "001", 'tail\': "false", next: true}
     },
   },
   {
-    // The inline flow map `add_relation(why)` writes, quoted because it holds a comma and a colon.
+    // The inline flow map an `add_relations` row's `why` writes, quoted because it holds a comma and a colon.
     // Unquoted, the comma would end the entry early; every parser must read one map with two string
     // entries.
     name: "relation_notes inline flow map — quoted values with commas and colons",

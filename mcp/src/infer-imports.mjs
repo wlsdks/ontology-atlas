@@ -2,7 +2,7 @@
 // files become observed file-level dependency edges; Go imports become
 // package-directory evidence. Non-JS languages are parsed as bounded text,
 // never executed. Results are returned only: nothing enters the vault until an
-// agent reviews them and calls add_relation. Regex-based (static, dynamic,
+// agent reviews them and calls add_relations. Regex-based (static, dynamic,
 // re-export, type-only and side-effect imports); relative imports, tsconfig
 // paths and common `@/*` aliases resolve to files, an unresolved alias is
 // `alias-not-found`, and npm packages are `externalImports`. Python reads root

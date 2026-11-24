@@ -19,8 +19,8 @@ code, proposes concepts and relations with evidence, and writes the ones you
 accept as Markdown in the ontology folder. Your code is only read, never
 changed.
 
-Repository scans give evidence, not answers. `analyze_repo_structure`,
-`index_project` and `infer_imports` write nothing. A folder name or an import
+Repository scans give evidence, not answers. `analyze_repo_structure` and
+`infer_imports` write nothing. A folder name or an import
 line is something the agent observed. It is not yet a domain, a capability or
 a dependency.
 
@@ -62,8 +62,8 @@ Build the first Atlas map of this repository, focused on [one behavior,
 such as accepting an order].
 
 Call connection_info first and confirm the ontology folder and the code
-repository. Read list_kinds and the concepts that already exist, so you do
-not add duplicates. Treat the starter files as examples, not as facts.
+repository. Read the list_concepts census and the concepts that already
+exist, so you do not add duplicates. Treat the starter files as examples, not as facts.
 
 Read the entry point, its conditions and its failure paths. Propose a small
 batch before writing. For each concept give a definition sentence, what it

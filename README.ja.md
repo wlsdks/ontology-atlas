@@ -109,9 +109,9 @@ without opening every file.
 
 | タスクの前後にエージェントが尋ねること | ツール |
 |---|---|
-| この部分は何のためにあり、何を扱わないのか | `get_concept` |
+| この部分は何のためにあり、何を扱わないのか | `get_concepts` |
 | 名前を変えたり削除したりする前に、何がここを指しているか | `find_backlinks` |
-| この 2 つの概念はどうつながっているか | `find_path` |
+| この 2 つの概念はどうつながっているか | `query_ontology` の `path` |
 | この変更は何に影響しうるか | `query_ontology` の `impact` |
 | これはどこに書かれているか | `find_evidence` |
 | いま作った・変えたものを記録する | `add_concepts`、`add_relations`、`patch_concept` |

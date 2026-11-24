@@ -56,13 +56,15 @@ export function createGrowthQueries({
           suggestedSlug: slug,
           reason: `${edge.from} references external element "${edge.ref}". Materialize it if this file should become a first-class ontology node.`,
           proposedAction: {
-            tool: 'add_concept',
+            tool: 'add_concepts',
             args: {
-              slug,
-              kind: 'element',
-              title: titleFromReference(edge.ref),
-              ...(domain ? { domain } : {}),
-              path: edge.ref,
+              concepts: [{
+                slug,
+                kind: 'element',
+                title: titleFromReference(edge.ref),
+                ...(domain ? { domain } : {}),
+                path: edge.ref,
+              }],
             },
           },
           node: summarizeNode(sourceNode),
@@ -81,7 +83,7 @@ export function createGrowthQueries({
       .map((edge) => {
         const kind = inferKindFromRelation(edge.via);
         // A typo or missing-prefix dangling ref with one unambiguous existing match gets
-        // `didYouMean` and no add_concept proposal, so an agent following proposedAction
+        // `didYouMean` and no add_concepts proposal, so an agent following proposedAction
         // never creates a duplicate; the row keeps the `resolve_dangling_reference` shape.
         const didYouMean = findNearMatchSlug(edge.ref, nodes);
         return {
@@ -100,11 +102,13 @@ export function createGrowthQueries({
             ? null
             : kind
               ? {
-                  tool: 'add_concept',
+                  tool: 'add_concepts',
                   args: {
-                    slug: suggestedSlugForReference(edge.ref, kind),
-                    kind,
-                    title: titleFromReference(edge.ref),
+                    concepts: [{
+                      slug: suggestedSlugForReference(edge.ref, kind),
+                      kind,
+                      title: titleFromReference(edge.ref),
+                    }],
                   },
                 }
               : null,
@@ -187,7 +191,7 @@ export function createGrowthQueries({
 
   /**
    * Bridge nodes that group nothing. Emptiness alone is common and fine, so a node
-   * must also have a same-kind containment parent or an untouched `add_concept`
+   * must also have a same-kind containment parent or an untouched `add_concepts`
    * starter body; without `sourceDocs` only the parent shape is checked.
    */
   function unearnedNodeCandidates(limit) {
@@ -258,11 +262,13 @@ export function createGrowthQueries({
         relation,
         reason: `${node.slug} has domain "${node.domain}", but ${domainSlug} does not link back via ${relation}.`,
         proposedAction: {
-          tool: 'add_relation',
+          tool: 'add_relations',
           args: {
-            from: domainSlug,
-            to: node.slug,
-            type: relation,
+            relations: [{
+              from: domainSlug,
+              to: node.slug,
+              type: relation,
+            }],
           },
         },
         nodes: {
