@@ -20,7 +20,7 @@
   <a href="https://ontologyatlas.com/ko/guide/">가이드</a>
 </p>
 
-<p align="center"><a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-5e6ad2.svg" /></a> <a href="https://github.com/wlsdks/ontology-atlas/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/wlsdks/ontology-atlas?color=5e6ad2" /></a> <a href="https://mcpservers.org/servers/wlsdks/ontology-atlas"><img src="https://mcpservers.org/badge.svg" alt="Listed on mcpservers.org" height="20" /></a> <a href="https://stackmap.shipwithai.xyz/repos/wlsdks/ontology-atlas"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fstackmap.shipwithai.xyz%2Fapi%2Fbadge%2Fontology-atlas.json" alt="On StackMap" height="20" /></a></p>
+<p align="center"><a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-5e6ad2.svg" /></a> <a href="https://github.com/wlsdks/ontology-atlas/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/wlsdks/ontology-atlas?color=5e6ad2" /></a> <a href="https://mcpservers.org/servers/wlsdks/ontology-atlas"><img src="https://mcpservers.org/badge.svg" alt="Listed on mcpservers.org" height="20" /></a> <a href="https://stackmap.shipwithai.xyz/repos/wlsdks/ontology-atlas"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fstackmap.shipwithai.xyz%2Fapi%2Fbadge%2Fontology-atlas.json" alt="On StackMap" height="20" /></a> <a href="https://glama.ai/mcp/servers/wlsdks/ontology-atlas"><img src="https://glama.ai/mcp/servers/wlsdks/ontology-atlas/badges/score.svg" alt="wlsdks/ontology-atlas MCP server on Glama" height="20" /></a></p>
 
 ![Atlas 지도를 5초 동안 보여 주는 반복 영상: Code evidence 아래 역량 하나를 고르면 그 역량이 기대는 것과 그것을 쓰는 것으로 가는 선이 밝아지고, 패널이 열려 그 이름을 보여 줘요](docs/assets/readme/map-select.gif)
 
@@ -145,7 +145,7 @@ without opening every file.
 
 ## 한계
 
-- **Atlas가 에이전트의 쓰기를 먼저 묻는 곳은 앱 안 대화뿐이에요.** 거기서는 파일 수정과 Atlas 쓰기가 내 허락을 기다려요. 그 폴더에 자동 승인을 켜면 묻지 않지만, 셸 명령, 삭제, 폴더 밖 경로는 언제나 물어요. MCP로 연결한 에이전트는 그 도구의 권한 규칙에 따라 써요. [에이전트](docs/features/agents.md)
+- **Atlas가 에이전트의 쓰기를 먼저 묻는 곳은 앱 안 대화뿐이에요.** 거기서는 파일 수정과 Atlas 쓰기가 내 허락을 기다려요. 그 폴더에 자동 승인을 켜면 묻지 않지만, 셸 명령, 삭제, 폴더 밖 경로는 언제나 물어요. 연결한 코드 폴더의 파일 읽기만은 예외예요. MCP로 연결한 에이전트는 그 도구의 권한 규칙에 따라 써요. [에이전트](docs/features/agents.md)
 - **자료실 설정과 점검은 앱에서 해요.** 브라우저에서는 앱을 받거나 파일을 추가할 수 있어요. [자료실](docs/features/library/workspace.md)
 - **변경은 공개 GitHub 풀 리퀘스트만 읽어요.** 직접 눌러야 읽고, 목록이 일부만 나올 수 있어요. 비공개 풀 리퀘스트는 읽지 않아요. [변경 브리핑](docs/features/change-briefing.md)
 - **Git의 Pull은 열어 둔 폴더만이 아니라 저장소 어디의 파일이든 바꿀 수 있어요.** [Git](docs/features/git.md)

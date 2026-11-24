@@ -219,6 +219,15 @@ export function useAgentDoctor(
         ) : null}
         <span className="min-w-0 flex-1">
           {t(`progress.${progress.job}.${progress.stage}`)}
+          {/* No total (the npx adapter's size is pinned nowhere): the bytes so far, never a percentage. */}
+          {!percent && progress.received !== null && progress.stage === 'downloading' ? (
+            <span
+              data-testid="agent-doctor-progress-bytes"
+              className="ml-1.5 text-[color:var(--color-text-tertiary)]"
+            >
+              {formatBytes(progress.received)}
+            </span>
+          ) : null}
           {percent ? (
             <span className="ml-1.5 text-[color:var(--color-text-tertiary)]">
               {percent}

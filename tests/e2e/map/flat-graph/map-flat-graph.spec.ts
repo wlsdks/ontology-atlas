@@ -5,7 +5,6 @@ import { seedFirstRunSeen } from "../../first-run-seed";
 import { useDogfoodSample } from "../../sample-source";
 import { waitForMapSettled, waitForMapStill } from "../../settle";
 import type { DialProbe } from "../../../../src/widgets/ontology-map/dial/dial-shapes";
-import { HIT_TOUCH_SLACK_PX } from "../../../../src/widgets/ontology-map/ui/camera/topology-camera-math";
 
 const VIEWPORT = { width: 1920, height: 1080 };
 const IDLE_WINDOW_MS = 3_000;
@@ -158,7 +157,7 @@ test("a domain selected at the overview zooms in far enough that two opened capa
   expect(Math.hypot(returned.x - home.x, returned.y - home.y), "the deselect returns the domain to where it stood").toBeLessThan(1);
 });
 
-test("a capability drawn smaller than the least pick radius answers a pointer that far from its centre, past the slack every map shares", async ({ page }) => {
+test("a capability drawn smaller than the least pick radius answers a pointer that far from its centre", async ({ page }) => {
   test.setTimeout(180_000);
   await useDogfoodSample(page);
   const dial = await openGraph(page);
@@ -170,9 +169,9 @@ test("a capability drawn smaller than the least pick radius answers a pointer th
   const onMark = (p: { x: number; y: number }) =>
     dial.discs.some((d) => Math.hypot(d.x - p.x, d.y - p.y) <= d.r) ||
     dial.texts.some((t) => p.x >= t.box.minX - 1 && p.x <= t.box.maxX + 1 && p.y >= t.box.minY - 1 && p.y <= t.box.maxY + 1);
-  // Only discs whose slack ring, shared with Neural and edge hits, stops short of the point: the reach alone must answer it.
+  // Every disc drawn inside the reach: the press answers there whether the disc's slack or the least radius carries it.
   const points = dial.discs
-    .filter((d) => capabilities.has(d.id) && d.r + HIT_TOUCH_SLACK_PX < reach)
+    .filter((d) => capabilities.has(d.id) && d.r < reach)
     .flatMap((d) => Array.from({ length: 8 }, (_, k) => ({ id: d.id, x: d.x + reach * Math.cos((k * Math.PI) / 4), y: d.y + reach * Math.sin((k * Math.PI) / 4) })))
     .filter((p) => nearestId(p) === p.id && !onMark(p));
   expect(points.length, "small capabilities with a clear point at the edge of their reach").toBeGreaterThan(0);
@@ -182,6 +181,24 @@ test("a capability drawn smaller than the least pick radius answers a pointer th
     expect(await hovered(page), `${p.id} at ${reach} px from its centre`).toBe(p.id);
     await expect(page.getByTestId("ontology-map-canvas"), "the cursor offers the press").toHaveCSS("cursor", "pointer");
   }
+});
+
+test("the capability under the pointer draws larger by the hover growth and gives it back when the pointer leaves", async ({ page }) => {
+  test.setTimeout(180_000);
+  await useDogfoodSample(page);
+  const rest = await openGraph(page);
+  const grow = await tokenPx(page, "--map-graph-hover-grow-px");
+  const capabilities = new Set(rest.clusters.flatMap((c) => c.capabilityIds));
+  const smallest = rest.discs.filter((d) => capabilities.has(d.id)).reduce((a, b) => (b.r < a.r ? b : a));
+  const radiusOf = async () => (await readDial(page)).discs.find((d) => d.id === smallest.id)!.r;
+  const at = await canvasPoint(page, smallest);
+  await page.mouse.move(at.x, at.y);
+  expect(await hovered(page)).toBe(smallest.id);
+  await waitForMapStill(page);
+  expect(await radiusOf(), `${smallest.id} grows from ${smallest.r.toFixed(2)} px`).toBeCloseTo(smallest.r + grow, 1);
+  await page.mouse.move(5, VIEWPORT.height / 2);
+  await waitForMapStill(page);
+  expect(await radiusOf(), `${smallest.id} returns to its resting radius`).toBeCloseTo(smallest.r, 1);
 });
 
 test("under a path lens a concept outside the lens draws no disc and answers no pointer", async ({ page }) => {

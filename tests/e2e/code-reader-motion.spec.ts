@@ -56,22 +56,47 @@ async function stopRecording(page: Page): Promise<Sample[]> {
   });
 }
 
-/** The largest share of a value's whole travel covered between two frames. */
-function maxStepShare(values: number[]): number {
-  const moving = values.filter((value) => Number.isFinite(value));
-  if (moving.length < 2) return 0;
-  const total = Math.max(...moving) - Math.min(...moving);
+type SampleKey = keyof Omit<Sample, "t">;
+
+/** The samples that hold a value for `key`, with that value's whole travel. */
+function travelOf(samples: Sample[], key: SampleKey) {
+  const moving = samples.filter((sample) => Number.isFinite(sample[key]));
+  const values = moving.map((sample) => sample[key]);
+  const low = Math.min(...values);
+  return { moving, values, low, total: moving.length < 2 ? 0 : Math.max(...values) - low };
+}
+
+/** Perf lane: the largest share of a value's whole travel covered between two frames. */
+function maxStepShare(samples: Sample[], key: SampleKey): number {
+  const { values, total } = travelOf(samples, key);
   if (total === 0) return 0;
   let largest = 0;
-  for (let i = 1; i < moving.length; i += 1) largest = Math.max(largest, Math.abs(moving[i]! - moving[i - 1]!) / total);
+  for (let i = 1; i < values.length; i += 1) largest = Math.max(largest, Math.abs(values[i]! - values[i - 1]!) / total);
   return largest;
 }
 
-function expectNoJump(samples: Sample[], keys: readonly (keyof Omit<Sample, "t">)[]) {
+/**
+ * Every lane: a value that moved was drawn between its ends at least once, so it was not set in one
+ * frame. A runner's frame pace cannot fake that; only a travel made inside one stalled frame, where
+ * no frame could show it, goes unjudged.
+ */
+function setInOneFrame(samples: Sample[], key: SampleKey): boolean {
+  const { moving, values, low, total } = travelOf(samples, key);
+  if (total === 0) return false;
+  const between = values.some((value) => (value - low) / total > 0.02 && (value - low) / total < 0.98);
+  if (between) return false;
+  return values.some((value, i) => i > 0 && value !== values[i - 1] && moving[i]!.t - moving[i - 1]!.t <= FRAME_INTERVAL_BUDGET_MS);
+}
+
+function expectNoJump(samples: Sample[], keys: readonly SampleKey[]) {
   const intervals = samples.slice(1).map((sample, index) => sample.t - samples[index]!.t);
   console.log(`[code-reader-motion] ${JSON.stringify({ frames: samples.length, maxIntervalMs: Math.round(Math.max(...intervals)) })}`);
   if (PERF_BARS) expect(Math.max(...intervals), "a frame interval while the reader moved").toBeLessThanOrEqual(FRAME_INTERVAL_BUDGET_MS);
-  for (const key of keys) expect(maxStepShare(samples.map((sample) => sample[key])), `${key} jumped in one frame`).toBeLessThanOrEqual(MAX_STEP_SHARE);
+  for (const key of keys) {
+    expect(setInOneFrame(samples, key), `${key} was set in one frame`).toBe(false);
+    // The share of travel per frame depends on the frame pace, so it is judged where that pace is held.
+    if (PERF_BARS) expect(maxStepShare(samples, key), `${key} jumped in one frame`).toBeLessThanOrEqual(MAX_STEP_SHARE);
+  }
 }
 
 async function settled(page: Page) {

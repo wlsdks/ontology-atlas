@@ -234,7 +234,7 @@
     "connectionNeedsReview": "要確認",
     "connectionHint": ".mcp.json.exampleは別のフォルダ向けのテンプレートなので、接続ファイルには数えません。この画面で確認するのは起動の形式とフォルダのパスです。エージェントを再起動し、実際の接続は各ツールの中で確かめてください。",
     "boundaryTitle": "外部のエージェントを接続",
-    "boundaryDesc": "このパネルは、Claude Code、Codex、Cursorをそれぞれのアプリやターミナルで使えるようにつなぎます。ここでチャットが開くことはありません。アプリ内のClaude Agentチャットは、フォルダの外に触れる前に必ず確認する別の画面です。",
+    "boundaryDesc": "このパネルは、Claude Code、Codex、Cursorをそれぞれのアプリやターミナルで使えるようにつなぎます。ここでチャットが開くことはありません。アプリ内のClaude Agentチャットは、接続したコードフォルダのファイルを読む場合を除き、フォルダの外に触れる前に必ず確認する別の画面です。",
     "validationGateAriaLabel": "フォルダの状態",
     "validationGateTitle": "フォルダの状態",
     "validationGateReady": "問題なし",

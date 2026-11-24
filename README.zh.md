@@ -20,7 +20,7 @@
   <a href="https://ontologyatlas.com/zh/guide/">指南</a>
 </p>
 
-<p align="center"><a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-5e6ad2.svg" /></a> <a href="https://github.com/wlsdks/ontology-atlas/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/wlsdks/ontology-atlas?color=5e6ad2" /></a> <a href="https://mcpservers.org/servers/wlsdks/ontology-atlas"><img src="https://mcpservers.org/badge.svg" alt="Listed on mcpservers.org" height="20" /></a> <a href="https://stackmap.shipwithai.xyz/repos/wlsdks/ontology-atlas"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fstackmap.shipwithai.xyz%2Fapi%2Fbadge%2Fontology-atlas.json" alt="On StackMap" height="20" /></a></p>
+<p align="center"><a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-5e6ad2.svg" /></a> <a href="https://github.com/wlsdks/ontology-atlas/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/wlsdks/ontology-atlas?color=5e6ad2" /></a> <a href="https://mcpservers.org/servers/wlsdks/ontology-atlas"><img src="https://mcpservers.org/badge.svg" alt="Listed on mcpservers.org" height="20" /></a> <a href="https://stackmap.shipwithai.xyz/repos/wlsdks/ontology-atlas"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fstackmap.shipwithai.xyz%2Fapi%2Fbadge%2Fontology-atlas.json" alt="On StackMap" height="20" /></a> <a href="https://glama.ai/mcp/servers/wlsdks/ontology-atlas"><img src="https://glama.ai/mcp/servers/wlsdks/ontology-atlas/badges/score.svg" alt="wlsdks/ontology-atlas MCP server on Glama" height="20" /></a></p>
 
 ![Atlas 地图的 5 秒循环：选中 Code evidence 下的一个能力后，通向它所依赖的和使用它的概念的连线亮起，面板打开并列出它们的名字](docs/assets/readme/map-select.gif)
 
@@ -134,7 +134,7 @@ without opening every file.
 
 ## 局限
 
-- **只有在应用内的对话中，Atlas 才会在智能体写入前询问你。** 在那里，文件修改和 Atlas 写入都要等你允许；为该文件夹开启自动批准后不再询问，但 shell 命令、删除以及文件夹外的路径始终会询问。通过 MCP 连接的智能体按其自身工具的权限规则写入。[智能体](docs/features/agents.md)
+- **只有在应用内的对话中，Atlas 才会在智能体写入前询问你。** 在那里，文件修改和 Atlas 写入都要等你允许；为该文件夹开启自动批准后不再询问，但 shell 命令、删除以及文件夹外的路径始终会询问，读取所连接代码文件夹中的文件除外。通过 MCP 连接的智能体按其自身工具的权限规则写入。[智能体](docs/features/agents.md)
 - **资料库的设置和检查需要在应用中进行。** 浏览器里可以获取应用或添加文件。[资料库](docs/features/library/workspace.md)
 - **变更只读取公开的 GitHub 拉取请求，** 需要你明确操作，列表可能不完整；不会读取私有拉取请求。[变更简报](docs/features/change-briefing.md)
 - **Git 的拉取可能更改仓库中任何位置的文件，** 而不只是已打开的文件夹。[Git](docs/features/git.md)

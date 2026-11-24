@@ -16,7 +16,8 @@ export const ANALYZE_REPO_STRUCTURE_TOOL = {
     'docs and tooling files; every product unit (package, workspace member or module folder) with its files, lines, ' +
     'main files, exported names and import links (a repository too large for one map lists areas, to map one at a ' +
     'time with rootPath); the entry points with path and symbol; the README purpose and docs titles; the abilities ' +
-    'to place, each with `evidence` (`path:Lline`); and one `next` line. That list is a floor under the abilities ' +
+    'to place, each with `evidence` (`path:Lline`); and one `next` line. Files Git ignores (build output, scratch ' +
+    'folders) are left out, so a working checkout is surveyed like a clean one. That list is a floor under the abilities ' +
     'you name from the outlines and docs, not the inventory. It names no node: a folder is evidence, and you name ' +
     'what the product does. add_concepts and validate_vault then report unplaced abilities, entry files never read ' +
     'and rules that cite no read lines.\n' +

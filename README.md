@@ -20,7 +20,7 @@
   <a href="https://ontologyatlas.com/en/guide/">Guide</a>
 </p>
 
-<p align="center"><a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-5e6ad2.svg" /></a> <a href="https://github.com/wlsdks/ontology-atlas/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/wlsdks/ontology-atlas?color=5e6ad2" /></a> <a href="https://mcpservers.org/servers/wlsdks/ontology-atlas"><img src="https://mcpservers.org/badge.svg" alt="Listed on mcpservers.org" height="20" /></a> <a href="https://stackmap.shipwithai.xyz/repos/wlsdks/ontology-atlas"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fstackmap.shipwithai.xyz%2Fapi%2Fbadge%2Fontology-atlas.json" alt="On StackMap" height="20" /></a></p>
+<p align="center"><a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-5e6ad2.svg" /></a> <a href="https://github.com/wlsdks/ontology-atlas/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/wlsdks/ontology-atlas?color=5e6ad2" /></a> <a href="https://mcpservers.org/servers/wlsdks/ontology-atlas"><img src="https://mcpservers.org/badge.svg" alt="Listed on mcpservers.org" height="20" /></a> <a href="https://stackmap.shipwithai.xyz/repos/wlsdks/ontology-atlas"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fstackmap.shipwithai.xyz%2Fapi%2Fbadge%2Fontology-atlas.json" alt="On StackMap" height="20" /></a> <a href="https://glama.ai/mcp/servers/wlsdks/ontology-atlas"><img src="https://glama.ai/mcp/servers/wlsdks/ontology-atlas/badges/score.svg" alt="wlsdks/ontology-atlas MCP server on Glama" height="20" /></a></p>
 
 ![A five-second loop of the Atlas map: a capability under Code evidence is selected, the lines to what it depends on and what uses it light up, and a panel opens naming them](docs/assets/readme/map-select.gif)
 
@@ -146,7 +146,7 @@ Your agent reaches the folder two ways:
 
 ## Limits
 
-- **Atlas asks before an agent writes only in the app's chat.** There each file edit and Atlas write waits for you, unless you turn on Auto-approve for that folder; shell commands, deletions and paths outside the folder always ask. An agent connected over MCP writes under its own tool's permission rules. [Agents](docs/features/agents.md)
+- **Atlas asks before an agent writes only in the app's chat.** There each file edit and Atlas write waits for you, unless you turn on Auto-approve for that folder; shell commands, deletions and paths outside the folder always ask, except reading a file of its connected code folder. An agent connected over MCP writes under its own tool's permission rules. [Agents](docs/features/agents.md)
 - **Library setup and checks need the app.** In a browser, Library offers the app or adding files. [Library](docs/features/library/workspace.md)
 - **Changes reads public GitHub pull requests only,** after you ask, and the list may be incomplete; private pull requests are not read. [Change briefing](docs/features/change-briefing.md)
 - **Git's Pull can change files anywhere in the repository,** not only in the open folder. [Git](docs/features/git.md)

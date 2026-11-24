@@ -107,7 +107,9 @@ async function tapBridge(page: Page) {
           if (command === "acp_start") starts += 1;
           if (command === "acp_stop") stops += 1;
           if (command === "acp_send") {
-            const sent = JSON.parse(String(args.line ?? "{}")) as { id?: number; method?: string; result?: { outcome?: { optionId?: string; outcome?: string } } };
+            const sent = JSON.parse(String(args.line ?? "{}")) as { id?: number; method?: string; params?: { sessionId?: string }; result?: { outcome?: { optionId?: string; outcome?: string } } };
+            // The harness mints the ACP session on `session/new`; updates must name that one, not the bridge.
+            if (sent.method === "session/prompt" && harness && typeof sent.params?.sessionId === "string") harness.session = sent.params.sessionId;
             if (sent.method === "session/cancel") {
               cancels += 1;
               if (dropCancel) return null;

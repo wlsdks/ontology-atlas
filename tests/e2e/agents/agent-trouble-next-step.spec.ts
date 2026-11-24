@@ -1,16 +1,17 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import { seedFirstRunSeen } from '../first-run-seed';
-import { installLibraryWorkHarness } from '../library-work-harness';
+import { installLibraryWorkHarness, type LibraryWorkRuntimeId } from '../library-work-harness';
 
 /** Each message is the one `readAcpTrouble` classifies into that kind. */
 const LAUNCH = 'spawn npx ENOENT';
 const NETWORK = 'fetch failed: ECONNREFUSED';
+const AUTH = 'Failed to authenticate: OAuth session expired (authentication_failed)';
 
-async function openDockWithFailingStart(page: Page, startError: string) {
+async function openDockWithFailingStart(page: Page, startError: string, runtimeId?: LibraryWorkRuntimeId) {
   await page.setViewportSize({ width: 1512, height: 982 });
   await seedFirstRunSeen(page);
-  await installLibraryWorkHarness(page, { startError });
+  await installLibraryWorkHarness(page, { startError, runtimeId });
   await page.goto('/en/');
   await page.getByRole('button', { name: /Open (?:a|my) folder/i }).click();
   /*
@@ -59,3 +60,22 @@ test('a kind whose retry can work keeps the retry, and gets no door', async ({ p
   await expect(card.getByTestId('acp-chat-error-retry')).toBeVisible();
   await expect(card.getByTestId('acp-chat-error-agents')).toHaveCount(0);
 });
+
+// The harness's default runtime id is in no chat registry, so it stands for a tool the card does not know.
+const SIGN_IN_REPAIR: ReadonlyArray<{ runtimeId?: LibraryWorkRuntimeId; hint: RegExp; command: RegExp | null }> = [
+  { runtimeId: 'claude-acp', hint: /keychain entry/, command: /^security delete-generic-password/ },
+  { runtimeId: 'codex-acp', hint: /codex login/, command: /^codex login$/ },
+  { hint: /where you set it up/, command: null },
+];
+
+for (const { runtimeId, hint, command } of SIGN_IN_REPAIR) {
+  test(`a sign-in trouble names the repair for ${runtimeId ?? 'an unknown tool'}`, async ({ page }) => {
+    const card = await openDockWithFailingStart(page, AUTH, runtimeId);
+    await expect(card).toHaveAttribute('data-trouble', 'auth');
+    await expect(card).toContainText(hint);
+    await card.getByTestId('acp-chat-error-details').click();
+    const repair = card.getByTestId('acp-chat-auth-repair');
+    if (command) await expect(repair).toHaveText(command);
+    else await expect(repair).toHaveCount(0);
+  });
+}

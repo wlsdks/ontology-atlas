@@ -122,8 +122,10 @@ async function tapBridge(page: Page, options: { offerUpdate: boolean }) {
             return command === "acp_permission_verdict" ? "ask" : null;
           }
           if (command === "acp_send") {
-            const sent = JSON.parse(String(args.line ?? "{}")) as { id?: number; method?: string };
+            const sent = JSON.parse(String(args.line ?? "{}")) as { id?: number; method?: string; params?: { sessionId?: string } };
             if (sent.method === "session/prompt" && typeof sent.id === "number") promptId = sent.id;
+            // The harness mints the ACP session on `session/new`; updates must name that one, not the bridge.
+            if (sent.method === "session/prompt" && harness && typeof sent.params?.sessionId === "string") harness.session = sent.params.sessionId;
           }
           const answer = await invoke(command, args);
           if (command === "acp_start" && channel !== undefined) harness = { channel, session: null, shift: 0, last: -1 };

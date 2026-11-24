@@ -83,8 +83,14 @@ export function Tooltip({
 }: TooltipProps) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  // No hint while the trigger's own surface is open, nor on the focus it hands back while closing:
+  // an open hint would take the next Escape, which belongs to the map.
+  const openUnlessExpanded = (next: boolean) => {
+    if (next && triggerRef.current?.getAttribute("aria-expanded") === "true") return;
+    setOpen(next);
+  };
   const inner = (
-    <TooltipPrimitive.Root delayDuration={delayMs} open={open} onOpenChange={setOpen}>
+    <TooltipPrimitive.Root delayDuration={delayMs} open={open} onOpenChange={openUnlessExpanded}>
       <TooltipPrimitive.Trigger
         asChild
         ref={triggerRef}

@@ -202,8 +202,16 @@ pub(crate) fn acp_start(
         repo_root.as_deref(),
     );
 
-    // Heal a half-downloaded npx entry just before launch (see `acp/npx_cache.rs`).
-    let npx_preflight = acp::launch::npx_cache::preflight_npx_cache(&launch, home.as_deref());
+    // Heal a half-downloaded npx entry just before launch (see `acp/npx_cache.rs`), never one
+    // the app's own adapter fetch is still writing: that entry is unfinished, not broken.
+    let fetching = app
+        .try_state::<acp::install::adapter::AdapterFetches>()
+        .is_some_and(|fetches| fetches.is_fetching(&runtime_id));
+    let npx_preflight = if fetching {
+        acp::launch::npx_cache::NpxCachePreflight::CacheUnknown
+    } else {
+        acp::launch::npx_cache::preflight_npx_cache(&launch, home.as_deref())
+    };
 
     // Never inherit the user's global settings: pre-allowed entries bypass the gate.
     let app_data = app
@@ -451,10 +459,45 @@ fn permission_verdict_for_session(
     session_id: &str,
     file_path: Option<&str>,
 ) -> acp::session::permission_verdict::PermissionVerdict {
-    sessions
-        .vault_root(session_id)
-        .map(|root| acp::session::permission_verdict::permission_verdict(&root, file_path))
-        .unwrap_or(acp::session::permission_verdict::PermissionVerdict::Ask)
+    use acp::session::permission_verdict::{
+        inside_code_folder, permission_verdict, PermissionVerdict,
+    };
+    let Ok(vault_root) = sessions.vault_root(session_id) else {
+        return PermissionVerdict::Ask;
+    };
+    let verdict = permission_verdict(&vault_root, file_path);
+    if verdict != PermissionVerdict::Ask {
+        return verdict;
+    }
+    match connected_code_folder(&vault_root) {
+        Some(source_root) if inside_code_folder(&source_root, file_path) => {
+            PermissionVerdict::AllowInsideCodeFolder
+        }
+        _ => PermissionVerdict::Ask,
+    }
+}
+
+/// The code folder of the vault's one project binding, after every check a Harness read relies
+/// on (`authorized_source_root`); none when the vault binds no project or more than one.
+fn connected_code_folder(vault_root: &Path) -> Option<PathBuf> {
+    let text = crate::gray_area::scope::read_text(
+        vault_root,
+        Path::new(".ontology-atlas/project-sources.json"),
+    )
+    .ok()?;
+    let data: serde_json::Value = serde_json::from_str(&text).ok()?;
+    let mut projects: Vec<&str> = data
+        .get("bindings")?
+        .as_array()?
+        .iter()
+        .filter_map(|binding| binding.get("projectSlug")?.as_str())
+        .collect();
+    projects.sort_unstable();
+    projects.dedup();
+    let [project] = projects.as_slice() else {
+        return None;
+    };
+    crate::harness_source::authorized_source_root(&vault_root.to_string_lossy(), project).ok()
 }
 
 #[tauri::command]
@@ -475,6 +518,9 @@ fn verdict_wire_name(verdict: acp::session::permission_verdict::PermissionVerdic
         }
         acp::session::permission_verdict::PermissionVerdict::AllowInsideVaultHidden => {
             "allow-inside-vault-hidden"
+        }
+        acp::session::permission_verdict::PermissionVerdict::AllowInsideCodeFolder => {
+            "allow-inside-code-folder"
         }
         acp::session::permission_verdict::PermissionVerdict::Ask => "ask",
     }
@@ -717,6 +763,7 @@ mod tests {
         for verdict in [
             PermissionVerdict::AllowInsideVault,
             PermissionVerdict::AllowInsideVaultHidden,
+            PermissionVerdict::AllowInsideCodeFolder,
             PermissionVerdict::Ask,
         ] {
             assert_eq!(
@@ -762,6 +809,63 @@ mod tests {
             acp::session::permission_verdict::PermissionVerdict::Ask,
             "an unregistered session must not auto-allow any path"
         );
+
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    // Binding resolution is Unix-only, as for Harness; elsewhere every file asks.
+    #[cfg(unix)]
+    #[test]
+    fn the_code_folder_is_the_one_granted_binding_and_nothing_else() {
+        use crate::vault::grants::{grant_source_root, EnforcedScope};
+        let base =
+            std::env::temp_dir().join(format!("atlas-acp-code-binding-{}", std::process::id()));
+        std::fs::create_dir_all(base.join("vault/.ontology-atlas")).unwrap();
+        std::fs::create_dir_all(base.join("repo")).unwrap();
+        std::fs::create_dir_all(base.join("other")).unwrap();
+        let base = std::fs::canonicalize(&base).unwrap();
+        let (vault, repo, other) = (base.join("vault"), base.join("repo"), base.join("other"));
+        let bind = |rows: &[(&str, &Path)]| {
+            let bindings: Vec<serde_json::Value> = rows
+                .iter()
+                .map(|(slug, root)| {
+                    let root_text = root.to_string_lossy();
+                    let id = crate::source_digest(&[b"folder", root_text.as_bytes()]);
+                    serde_json::json!({"projectSlug": slug, "sourceId": id, "rootPath": root_text, "kind": "folder", "boundAt": "2026-11-24", "receipt": {"projectSlug": slug, "sourceId": id, "sourceKind": "folder"}})
+                })
+                .collect();
+            std::fs::write(
+                vault.join(".ontology-atlas/project-sources.json"),
+                serde_json::json!({"contractVersion": 1, "bindings": bindings}).to_string(),
+            )
+            .unwrap();
+        };
+        let _scope = EnforcedScope::granting(std::slice::from_ref(&vault));
+
+        bind(&[("project", &repo)]);
+        assert_eq!(
+            connected_code_folder(&vault),
+            None,
+            "a folder without a source grant gives none"
+        );
+
+        grant_source_root(&repo);
+        assert_eq!(
+            connected_code_folder(&vault),
+            Some(repo.clone()),
+            "the one granted binding is the code folder"
+        );
+
+        grant_source_root(&other);
+        bind(&[("project", &repo), ("second", &other)]);
+        assert_eq!(
+            connected_code_folder(&vault),
+            None,
+            "two projects give none"
+        );
+
+        bind(&[]);
+        assert_eq!(connected_code_folder(&vault), None, "no binding gives none");
 
         let _ = std::fs::remove_dir_all(&base);
     }

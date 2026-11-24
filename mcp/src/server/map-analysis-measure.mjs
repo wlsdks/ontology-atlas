@@ -28,7 +28,13 @@ const GIT_TIMEOUT_MS = 5_000;
 export const MEASURE_REUSE_MS = 30_000;
 
 function runGit(root, args) {
-  const result = spawnSync('git', hardenedGitArgv(root, ['--no-optional-locks', ...args]), {
+  let argv;
+  try {
+    argv = hardenedGitArgv(root, ['--no-optional-locks', ...args]);
+  } catch {
+    return null;
+  }
+  const result = spawnSync('git', argv, {
     env: gitEnv(),
     maxBuffer: STATUS_MAX_BUFFER,
     timeout: GIT_TIMEOUT_MS,

@@ -193,11 +193,17 @@ function drawnRadius(id: string, wanted: number, limit = Infinity): number {
   return r;
 }
 
+/** What the mark under the pointer adds to its radius, and to the room it may grow into; 0 for any other mark. */
+function hoverGrowth(id: string): number {
+  return id === F.input.hoveredNodeId ? F.P.hoverGrowPx : 0;
+}
+
 /** The drawn radius: the selected concept's toward the selected radius, an opened star's marks toward the room they have at this frame's zoom. */
 export function discRadius(id: string): number {
   const own = radiusNow(id);
   if (id === F.selectedId || id === F.leavingId) return noteGrown(id, own, drawnRadius(id, id === F.selectedId ? F.selectedR : F.leavingR));
-  return noteGrown(id, own, drawnRadius(id, openedRadius(id, own), roomLimit(id, own)));
+  const hover = hoverGrowth(id);
+  return noteGrown(id, own, drawnRadius(id, openedRadius(id, own) + hover, roomLimit(id, own) + hover));
 }
 
 /** The largest radius `id` may draw at this frame's zoom in every star that holds it, open or closing. O(stars). */
@@ -243,7 +249,8 @@ export function openedRadius(id: string, own: number): number {
 export function dotRadius(id: string): number {
   if (id === F.selectedId || id === F.leavingId) return discRadius(id);
   const rest = radiusNow(id) * (F.attention.lit?.has(id) === true ? LIT_DOT_SHARE : 1);
-  return noteGrown(id, rest, drawnRadius(id, openedRadius(id, rest), roomLimit(id, rest)));
+  const hover = hoverGrowth(id);
+  return noteGrown(id, rest, drawnRadius(id, openedRadius(id, rest) + hover, roomLimit(id, rest) + hover));
 }
 
 function setStar(rooms: ReadonlyMap<string, StarRoom>, world: boolean, domain: boolean, fixedPx: number): void {

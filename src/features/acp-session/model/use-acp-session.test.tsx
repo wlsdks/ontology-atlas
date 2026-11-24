@@ -26,7 +26,7 @@ const bridge = vi.hoisted(() => ({
   sessionModes: null as unknown,
   /** The `models` block `session/new` answers with. Null means the adapter offers none. */
   sessionModels: null as unknown,
-  permissionVerdict: 'ask' as 'ask' | 'allow-inside-vault' | 'allow-inside-vault-hidden',
+  permissionVerdict: 'ask' as 'ask' | 'allow-inside-vault' | 'allow-inside-vault-hidden' | 'allow-inside-code-folder',
   stopped: [] as string[],
   /** The requests we sent — the only window onto "what did we put on the wire". */
   sent: [] as Array<{ id?: number; method?: string; params?: unknown }>,
@@ -34,10 +34,26 @@ const bridge = vi.hoisted(() => ({
   pendingPrompt: null as number | null,
   failLoad: false,
   newSessionId: 's-1',
+  /** Holds the Rust-owned adapter fetch; null answers at once. */
+  prepare: null as null | {
+    calls: number;
+    progress: ((bytes: number | null) => void) | null;
+    finish: (() => void) | null;
+  },
 }));
 
 vi.mock('@/shared/lib/agent-chat/tauri-acp', () => ({
   isAcpBridgeAvailable: () => true,
+  prepareAcpAdapter: async (_runtimeId: string, onProgress: (bytes: number | null) => void) => {
+    const held = bridge.prepare;
+    if (!held) return 'ready';
+    held.calls += 1;
+    held.progress = onProgress;
+    await new Promise<void>((resolve) => {
+      held.finish = resolve;
+    });
+    return 'fetched';
+  },
   startAcpSession: async () => {
     bridge.starts += 1;
     // The first call is held — meanwhile a second one gets its chance to enter.
@@ -172,6 +188,7 @@ afterEach(() => {
   bridge.pendingPrompt = null;
   bridge.failLoad = false;
   bridge.newSessionId = 's-1';
+  bridge.prepare = null;
   vi.useRealTimers();
 });
 
@@ -359,6 +376,61 @@ describe('pre-prompt task baseline', () => {
     await act(async () => { bridge.release?.(); await starting; await result.current.send('Continue with unknown basis.'); });
     expect(bridge.sent.some((message) => message.method === 'session/prompt')).toBe(true);
     await act(async () => { await result.current.stop(); });
+  });
+});
+
+describe('adapter fetch: owned by the app, not by the panel', () => {
+  it('shows the megabytes while Rust fetches, then starts the session from the cache', async () => {
+    bridge.prepare = { calls: 0, progress: null, finish: null };
+    const { result } = renderHook(() => useAcpSession({ runtimeId: 'claude-acp', vaultRoot: '/vault' }));
+    const started = result.current.start();
+    await waitFor(() => expect(bridge.prepare?.calls).toBe(1));
+    expect(bridge.starts, 'the session must wait for the fetch, or a second npx downloads it again').toBe(0);
+
+    act(() => bridge.prepare?.progress?.(null));
+    expect(result.current.download).toEqual({ mb: null });
+    act(() => bridge.prepare?.progress?.(42 * 1024 * 1024 + 1));
+    expect(result.current.download).toEqual({ mb: 42 });
+
+    await act(async () => {
+      bridge.prepare?.finish?.();
+    });
+    await waitFor(() => expect(bridge.starts).toBe(1));
+    expect(result.current.download, 'the fetch bar must not linger while the agent boots').toBeNull();
+    await act(async () => {
+      bridge.release?.();
+      await result.current.stop();
+      await started;
+    });
+  });
+
+  it('leaves the fetch running when the panel unmounts mid-download, and the reopened panel joins it', async () => {
+    bridge.prepare = { calls: 0, progress: null, finish: null };
+    const first = renderHook(() => useAcpSession({ runtimeId: 'claude-acp', vaultRoot: '/vault' }));
+    void first.result.current.start();
+    await waitFor(() => expect(bridge.prepare?.calls).toBe(1));
+    const finishFirst = bridge.prepare.finish;
+
+    first.unmount();
+    // Nothing tells Rust to stop: no session existed to stop, and the fetch is not the panel's.
+    expect(bridge.stopped).toEqual([]);
+
+    const reopened = renderHook(() => useAcpSession({ runtimeId: 'claude-acp', vaultRoot: '/vault' }));
+    const restarted = reopened.result.current.start();
+    await waitFor(() => expect(bridge.prepare?.calls).toBe(2));
+
+    // Rust finishes the one download and answers both requests.
+    await act(async () => {
+      finishFirst?.();
+      bridge.prepare?.finish?.();
+    });
+    await waitFor(() => expect(bridge.starts).toBe(1));
+    expect(bridge.starts, 'the closed panel must not start a session once the fetch it waited on ends').toBe(1);
+    await act(async () => {
+      bridge.release?.();
+      await reopened.result.current.stop();
+      await restarted;
+    });
   });
 });
 
@@ -1470,6 +1542,10 @@ describe('auto-approve — the person answers once for the folder', () => {
     jsonrpc: '2.0', id, method: 'session/request_permission',
     params: { sessionId: 's-1', options: OPTIONS, toolCall: { toolCallId: `edit-${id}`, title: `Edit ${path}`, kind: 'edit', rawInput: { file_path: path } } },
   });
+  const codeRead = (id: number, path: string) => JSON.stringify({
+    jsonrpc: '2.0', id, method: 'session/request_permission',
+    params: { sessionId: 's-1', options: OPTIONS, toolCall: { toolCallId: `read-${id}`, title: `Read ${path}`, kind: 'read', rawInput: { file_path: path } } },
+  });
   const atlasWrite = (id: number, tool: string) => JSON.stringify({
     jsonrpc: '2.0', id, method: 'session/request_permission',
     params: { sessionId: 's-1', options: OPTIONS, toolCall: { toolCallId: `write-${id}`, title: `mcp__atlas-vault__${tool}`, kind: 'other', rawInput: { slug: `capabilities/${id}` } } },
@@ -1711,6 +1787,38 @@ describe('auto-approve — the person answers once for the folder', () => {
     await act(async () => { bridge.listener?.(fileEdit(701, '/vault/capabilities/refund.md')); });
     await waitFor(() => expect(answerOf(701)).toBe('reject'));
     expect(result.current.events.some((event) => event.kind === 'notice' && event.text === 'auto-approved')).toBe(false);
+    await act(async () => { await result.current.stop(); });
+  });
+
+  it('reads a file of the connected code folder in a running turn without a card', async () => {
+    bridge.permissionVerdict = 'allow-inside-code-folder';
+    const { result } = await startSession();
+    await startTurn(result);
+
+    await act(async () => { bridge.listener?.(codeRead(703, '/code/src/app.ts')); });
+    await waitFor(() => expect(answerOf(703)).toBe('allow'));
+    expect(result.current.pending).toBeNull();
+    await act(async () => { await result.current.stop(); });
+  });
+
+  it("lets a round's refusal of outside paths win over the code-folder read", async () => {
+    bridge.permissionVerdict = 'allow-inside-code-folder';
+    const { result } = await startSession({ autoDecide: () => ({ reject: 'outside-round-scope' }) });
+    await startTurn(result);
+
+    await act(async () => { bridge.listener?.(codeRead(704, '/code/src/app.ts')); });
+    await waitFor(() => expect(answerOf(704)).toBe('reject'));
+    await act(async () => { await result.current.stop(); });
+  });
+
+  it('shows the card for a code-folder read that arrives outside any turn', async () => {
+    bridge.permissionVerdict = 'allow-inside-code-folder';
+    const { result } = await startSession();
+
+    await act(async () => { bridge.listener?.(codeRead(705, '/code/src/app.ts')); });
+    await waitFor(() => expect(result.current.pending?.request.filePath).toBe('/code/src/app.ts'));
+    expect(answerOf(705)).toBeUndefined();
+    await act(async () => { result.current.pending?.resolve('reject'); });
     await act(async () => { await result.current.stop(); });
   });
 

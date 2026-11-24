@@ -176,3 +176,143 @@ fn a_plain_dot_path_is_hidden_and_an_ordinary_one_is_not() {
     );
     let _ = std::fs::remove_dir_all(&base);
 }
+
+#[test]
+fn only_a_file_read_inside_the_code_folder_passes_never_a_folder_sweep_or_a_dot_or_secret_file() {
+    let base = std::env::temp_dir().join(format!("atlas-acp-code-{}", std::process::id()));
+    let code = base.join("code");
+    let outside = base.join("outside");
+    std::fs::create_dir_all(code.join("src")).unwrap();
+    std::fs::create_dir_all(code.join(".git")).unwrap();
+    std::fs::create_dir_all(&outside).unwrap();
+    std::fs::write(code.join("src").join("main.rs"), "").unwrap();
+    std::fs::write(code.join(".env"), "").unwrap();
+    std::fs::write(code.join(".git").join("config"), "").unwrap();
+    std::fs::write(outside.join("secret.txt"), "").unwrap();
+    #[cfg(unix)]
+    std::os::unix::fs::symlink(
+        outside.join("secret.txt"),
+        code.join("src").join("escape.txt"),
+    )
+    .unwrap();
+    let root = std::fs::canonicalize(&code).unwrap();
+    let at = |path: std::path::PathBuf| inside_code_folder(&root, Some(path.to_str().unwrap()));
+
+    assert!(
+        at(code.join("src").join("main.rs")),
+        "a source file reads without asking"
+    );
+    assert!(
+        !at(code.clone()),
+        "a sweep of the folder itself asks, since it would reach dot files"
+    );
+    assert!(
+        !at(code.join("src")),
+        "a sweep of a folder below it asks too"
+    );
+    assert!(
+        !at(code.join("src").join("missing.rs")),
+        "a file that does not exist asks"
+    );
+    assert!(!at(code.join(".env")), "a dot file asks");
+    assert!(!at(code.join(".git").join("config")), "a dot folder asks");
+    assert!(
+        !at(outside.join("secret.txt")),
+        "a file outside the code folder asks"
+    );
+    #[cfg(unix)]
+    assert!(
+        !at(code.join("src").join("escape.txt")),
+        "a link inside that points outside asks"
+    );
+    assert!(
+        !at(code.join("src").join("..").join("..").join("outside")),
+        "a climbing path asks"
+    );
+    assert!(
+        !inside_code_folder(&root, Some("src/main.rs")),
+        "a relative path asks"
+    );
+    assert!(!inside_code_folder(&root, None), "no path asks");
+
+    let _ = std::fs::remove_dir_all(&base);
+}
+
+#[test]
+fn a_code_folder_file_whose_name_marks_a_key_or_setting_still_asks() {
+    let base = std::env::temp_dir().join(format!("atlas-acp-code-secret-{}", std::process::id()));
+    let code = base.join("code");
+    for folder in ["src", "deploy", "repo.git", "tokens", "secrets"] {
+        std::fs::create_dir_all(code.join(folder)).unwrap();
+    }
+    let root = std::fs::canonicalize(&code).unwrap();
+    let plant = |relative: &str| {
+        let path = code.join(relative);
+        std::fs::write(&path, "").unwrap();
+        inside_code_folder(&root, Some(path.to_str().unwrap()))
+    };
+
+    for name in [
+        "deploy/prod.env",
+        "deploy/secrets.prod.yaml",
+        "deploy/client_secret_1.json",
+        "deploy/terraform.tfstate",
+        "deploy/prod.tfvars",
+        "deploy/serviceAccountKey.json",
+        "deploy/id_rsa_deploy",
+        "deploy/server.pem",
+        "deploy/deploy_key",
+        "deploy/github-token.txt",
+        "deploy/credentials.json",
+        "deploy/auth.json",
+        "repo.git/config",
+        "secrets/config.yaml",
+    ] {
+        assert!(!plant(name), "{name} asks");
+    }
+    assert!(
+        plant("tokens/colors.css"),
+        "a folder of design tokens is not a key"
+    );
+    assert!(
+        plant("src/keyboard.ts"),
+        "a word that only contains `key` reads"
+    );
+
+    #[cfg(unix)]
+    {
+        std::fs::write(code.join(".env"), "").unwrap();
+        std::os::unix::fs::symlink(code.join(".env"), code.join("src").join("settings.txt"))
+            .unwrap();
+        let link = code.join("src").join("settings.txt");
+        assert!(
+            !inside_code_folder(&root, Some(link.to_str().unwrap())),
+            "a link inside that lands on a dot file asks"
+        );
+    }
+
+    let _ = std::fs::remove_dir_all(&base);
+}
+
+#[test]
+fn a_padded_or_invisible_character_path_asks_since_the_tool_reads_another_file() {
+    let base = std::env::temp_dir().join(format!("atlas-acp-code-pad-{}", std::process::id()));
+    let code = base.join("code").join("src");
+    std::fs::create_dir_all(&code).unwrap();
+    let decoy = code.join("main.rs ");
+    std::fs::write(&decoy, "").unwrap();
+    std::fs::write(code.join("main.rs\u{200b}"), "").unwrap();
+    let root = std::fs::canonicalize(base.join("code")).unwrap();
+
+    assert!(
+        !inside_code_folder(&root, Some(decoy.to_str().unwrap())),
+        "a trailing space asks"
+    );
+    let invisible = format!("{}/main.rs\u{200b}", code.to_str().unwrap());
+    assert!(
+        !inside_code_folder(&root, Some(&invisible)),
+        "a zero-width character asks"
+    );
+
+    let _ = std::fs::remove_dir_all(&base);
+}

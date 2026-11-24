@@ -48,7 +48,7 @@ Enter the name in your screen's language (a second language is optional), choose
 - A batch of writes is shown item by item, and your answer applies to the whole batch.
 - A write tool never offers **Allow this tool for the rest of this chat**.
 
-If you set the chat's **Mode** to **Auto-approve**, file edits in this folder and new or changed concepts and relations go ahead without asking. Deletions, commits, shell commands and anything outside the folder still ask first. Auto-approve stays on for this folder until you turn it off. The **Allow list** in the privacy settings shows it as **Chat auto-approve**, with a **Revoke** button.
+If you set the chat's **Mode** to **Auto-approve**, file edits in this folder and new or changed concepts and relations go ahead without asking. Deletions, commits, shell commands and changes outside the folder still ask first. Auto-approve stays on for this folder until you turn it off. The **Allow list** in the privacy settings shows it as **Chat auto-approve**, with a **Revoke** button.
 
 ### From a terminal agent
 

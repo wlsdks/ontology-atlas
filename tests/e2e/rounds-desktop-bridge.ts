@@ -212,6 +212,8 @@ export async function installDesktopBridge(
             };
           case "hash_vault_files":
             return (args.relativePaths as string[]).map((relativePath) => ({ relativePath, sha256: "a".repeat(64) }));
+          case "acp_prepare_adapter":
+            return Promise.resolve("ready");
           case "acp_detect_runtimes":
             return [runtime];
           case "mcp_bundled_server":

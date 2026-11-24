@@ -24,7 +24,7 @@
   },
   "firstRun": {
     "title": "Downloading the agent. This happens only once.",
-    "body": "It can take a few minutes. Keep the app open until it finishes.",
+    "body": "It can take a few minutes. You can close this panel: the download keeps going while the app is open.",
     "progress": "{mb} MB downloaded so far",
     "waiting": "Starting the download",
     "barLabel": "Agent download"
@@ -199,7 +199,7 @@
     "auto": "Auto-approve"
   },
   "approvalHint": {
-    "auto": "File edits in this folder and adding or changing concepts and relations go ahead without asking. Shell commands, anything outside the folder, deletions and commits still ask. It stays on for this folder until you turn it off."
+    "auto": "File edits in this folder and adding or changing concepts and relations go ahead without asking. Shell commands, changes outside the folder, deletions and commits still ask. It stays on for this folder until you turn it off."
   },
   "modeUnverifiedHint": "Not checked yet.",
   "runtimePicker": "Agent to chat with",
@@ -310,7 +310,9 @@
     },
     "auth": {
       "title": "Saved sign-in has expired",
-      "hint": "You do not need a separate sign-in. This app uses the same one you use in your terminal. What is in the way is a keychain entry from an earlier app-only sign-in: it hides the shared one and has already expired. Press \"Try again\" below and the app clears that entry and falls back to your real sign-in. If that still fails, paste the one-line command under \"Details\" into a terminal."
+      "hint": "You do not need a separate sign-in. This app uses the same one you use in your terminal. What is in the way is a keychain entry from an earlier app-only sign-in: it hides the shared one and has already expired. Press \"Try again\" below and the app clears that entry and falls back to your real sign-in. If that still fails, paste the one-line command under \"Details\" into a terminal.",
+      "hintCodex": "Codex uses the sign-in from your terminal, and that sign-in is no longer valid. Codex keeps no keychain entry here, so the app cannot repair it for you. Sign in again once in a terminal with the command under \"Details\" (codex login), then press \"Try again\" below.",
+      "hintOther": "This agent's sign-in is no longer valid. Sign in to it again where you set it up, usually a terminal, then press \"Try again\" below."
     },
     "install": {
       "title": "An interrupted download left broken files",
@@ -458,7 +460,7 @@
       "credentials-link": "Does it reuse your terminal sign-in",
       "shadow-keychain": "Is an old sign-in record in the way",
       "login": "Is this folder signed in",
-      "gate": "Does it ask before accessing anything outside the folder"
+      "gate": "Can the app hold work outside the folder for you to answer"
     },
     "next": {
       "cli": "Open that agent’s install guide from this list, install it, then press \"Check again\" above.",
@@ -482,6 +484,11 @@
         "verifying-install": "Checking that it installed correctly",
         "done": "Installed",
         "failed": "Could not install"
+      },
+      "adapter": {
+        "downloading": "Downloading the agent",
+        "done": "Agent downloaded",
+        "failed": "Could not download the agent"
       }
     }
   },

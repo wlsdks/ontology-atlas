@@ -20,7 +20,7 @@
   <a href="https://ontologyatlas.com/ja/guide/">ガイド</a>
 </p>
 
-<p align="center"><a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-5e6ad2.svg" /></a> <a href="https://github.com/wlsdks/ontology-atlas/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/wlsdks/ontology-atlas?color=5e6ad2" /></a> <a href="https://mcpservers.org/servers/wlsdks/ontology-atlas"><img src="https://mcpservers.org/badge.svg" alt="Listed on mcpservers.org" height="20" /></a> <a href="https://stackmap.shipwithai.xyz/repos/wlsdks/ontology-atlas"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fstackmap.shipwithai.xyz%2Fapi%2Fbadge%2Fontology-atlas.json" alt="On StackMap" height="20" /></a></p>
+<p align="center"><a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-5e6ad2.svg" /></a> <a href="https://github.com/wlsdks/ontology-atlas/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/wlsdks/ontology-atlas?color=5e6ad2" /></a> <a href="https://mcpservers.org/servers/wlsdks/ontology-atlas"><img src="https://mcpservers.org/badge.svg" alt="Listed on mcpservers.org" height="20" /></a> <a href="https://stackmap.shipwithai.xyz/repos/wlsdks/ontology-atlas"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fstackmap.shipwithai.xyz%2Fapi%2Fbadge%2Fontology-atlas.json" alt="On StackMap" height="20" /></a> <a href="https://glama.ai/mcp/servers/wlsdks/ontology-atlas"><img src="https://glama.ai/mcp/servers/wlsdks/ontology-atlas/badges/score.svg" alt="wlsdks/ontology-atlas MCP server on Glama" height="20" /></a></p>
 
 ![Atlas のマップを映す 5 秒のループ：Code evidence の下のケイパビリティを一つ選ぶと、それが依存するものとそれを使うものへの線が光り、パネルが開いてその名前が並ぶ](docs/assets/readme/map-select.gif)
 
@@ -134,7 +134,7 @@ without opening every file.
 
 ## 制限
 
-- **Atlas がエージェントの書き込みを事前に確認するのは、アプリ内のチャットだけです。** そこではファイルの編集と Atlas への書き込みがあなたの許可を待ちます。そのフォルダで自動承認をオンにすると確認しませんが、シェルコマンド、削除、フォルダ外のパスは常に確認します。MCP で接続したエージェントは、そのツール自身の権限ルールに従って書き込みます。[エージェント](docs/features/agents.md)
+- **Atlas がエージェントの書き込みを事前に確認するのは、アプリ内のチャットだけです。** そこではファイルの編集と Atlas への書き込みがあなたの許可を待ちます。そのフォルダで自動承認をオンにすると確認しませんが、シェルコマンド、削除、フォルダ外のパスは常に確認します。ただし、接続したコードフォルダのファイルを読むことは例外です。MCP で接続したエージェントは、そのツール自身の権限ルールに従って書き込みます。[エージェント](docs/features/agents.md)
 - **資料室の設定とチェックはアプリで行います。** ブラウザでは、アプリの入手かファイルの追加ができます。[資料室](docs/features/library/workspace.md)
 - **変更が読むのは公開 GitHub のプルリクエストだけです。** 明示的な操作で読み、一覧が一部だけになることがあります。非公開のプルリクエストは読みません。[変更ブリーフィング](docs/features/change-briefing.md)
 - **Git のプルは、開いているフォルダに限らず、リポジトリ内のどのファイルでも変更することがあります。** [Git](docs/features/git.md)

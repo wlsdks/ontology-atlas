@@ -87,6 +87,55 @@ export async function detectAcpRuntimes(
   return check.answer;
 }
 
+/** Rust `AdapterReadiness` (serde kebab-case). */
+export type AcpAdapterReadiness = 'not-applicable' | 'ready' | 'fetched';
+
+/** The slice of Rust's `AcpInstallProgress` this bridge reads; the doctor owns the full type. */
+interface AdapterFetchProgress {
+  runtimeId: string;
+  job: string;
+  stage: string;
+  received: number | null;
+}
+
+function adapterBytes(progress: AdapterFetchProgress | null | undefined, runtimeId: string): number | null | undefined {
+  if (!progress || progress.runtimeId !== runtimeId || progress.job !== 'adapter' || progress.stage !== 'downloading') return undefined;
+  return progress.received;
+}
+
+/**
+ * Fetches the pinned npx adapter in Rust before a session starts and resolves once it is in
+ * npx's cache. Rust owns the download: dropping this promise (the panel closed) does not cancel
+ * it, and a later call joins the one in flight. `onProgress` gets the bytes received so far, or
+ * null before the first measurement, about once a second.
+ */
+export async function prepareAcpAdapter(
+  runtimeId: string,
+  onProgress: (bytes: number | null) => void,
+): Promise<AcpAdapterReadiness | null> {
+  const invoke = getInvoke();
+  if (!invoke) return null;
+  let unlisten: () => void = () => undefined;
+  try {
+    const { listen } = await import('@tauri-apps/api/event');
+    unlisten = await listen<AdapterFetchProgress>('acp-install://progress', (event) => {
+      const bytes = adapterBytes(event.payload, runtimeId);
+      if (bytes !== undefined) onProgress(bytes);
+    });
+  } catch {
+    // Without the listener only the megabytes go missing; the fetch itself still runs.
+  }
+  try {
+    // A fetch already running (started before the panel reopened) shows at once, not after a second.
+    const last = await invoke<AdapterFetchProgress | null>('acp_install_progress', { runtimeId }).catch(() => null);
+    const bytes = adapterBytes(last, runtimeId);
+    if (bytes !== undefined) onProgress(bytes);
+    return await invoke<AcpAdapterReadiness>('acp_prepare_adapter', { runtimeId });
+  } finally {
+    unlisten();
+  }
+}
+
 export async function startAcpSession(
   runtimeId: string,
   cwd: string,
@@ -122,12 +171,21 @@ export async function stopAcpSession(sessionId: string): Promise<void> {
   await invoke<void>('acp_stop', { sessionId });
 }
 
-/** `allow-inside-vault-hidden`: inside, but a component below the root starts with `.` once links resolve. */
-export type AcpPermissionVerdict = 'allow-inside-vault' | 'allow-inside-vault-hidden' | 'ask';
+/**
+ * `allow-inside-vault-hidden`: inside, but a component below the root starts with `.` once links resolve.
+ * `allow-inside-code-folder`: outside the vault, inside the one code folder it is bound to, never a dot
+ * or secret-named path; Rust answers it only when the vault answer is `ask`.
+ */
+export type AcpPermissionVerdict =
+  | 'allow-inside-vault'
+  | 'allow-inside-vault-hidden'
+  | 'allow-inside-code-folder'
+  | 'ask';
 
 const KNOWN_VERDICTS: ReadonlySet<string> = new Set<AcpPermissionVerdict>([
   'allow-inside-vault',
   'allow-inside-vault-hidden',
+  'allow-inside-code-folder',
   'ask',
 ]);
 

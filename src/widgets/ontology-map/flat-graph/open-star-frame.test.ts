@@ -729,6 +729,38 @@ describe("a mark's drawn radius across frames", () => {
     expect(() => framesUntilSettled(camera, { focusedNodeId: "capability:in-app-coding-agent" }, new Set(), opened.end + FRAME_MS, 1, 1, FRAME_MS)).not.toThrow();
   });
 
+  // An element's dot draws only once the reader has zoomed in.
+  it.each([
+    ["capability:repo-structure-analysis", 1],
+    ["domain:code-evidence", 1],
+    [model.capabilityById.get("capability:repo-structure-analysis")!.elementIds[0]!, 4],
+  ] as const)(
+    "grows %s under the pointer at zoom %s by the hover growth without a jump, and gives it back when the pointer leaves",
+    (id, zoom) => {
+      const camera = cameraOn(id, {});
+      const ids = new Set([id]);
+      const rest = framesUntilSettled(camera, {}, ids, 0, zoom, zoom, FRAME_MS);
+      const restR = rest.frames.at(-1)!.get(id)!.r;
+      const hovered = framesUntilSettled(camera, { hoveredNodeId: id }, ids, rest.end + FRAME_MS, zoom, zoom, FRAME_MS);
+      const left = framesUntilSettled(camera, {}, ids, hovered.end + FRAME_MS, zoom, zoom, FRAME_MS);
+      const grown = hovered.frames.at(-1)!.get(id)!.r;
+      console.log(`[hover growth] ${id} at zoom ${zoom}: ${restR.toFixed(2)} -> ${grown.toFixed(2)} px over ${hovered.frames.length} frames`);
+      expect(grown - restR, "grows at least the hover growth").toBeGreaterThanOrEqual(TOKENS.paint.hoverGrowPx - 0.05);
+      expect(hovered.frames[0]!.get(id)!.r, "the first hovered frame starts the growth, not ends it").toBeLessThan(grown - 0.5);
+      expect(smoothness([rest.frames.at(-1)!, ...hovered.frames, ...left.frames]).pxPerMs).toBeLessThanOrEqual(TOKENS.paint.markPxPerMs + 1e-9);
+      expect(left.frames.at(-1)!.get(id)!.r).toBeCloseTo(restR, 3);
+    },
+  );
+
+  it("takes the hover growth at once under reduced motion", () => {
+    const id = "capability:repo-structure-analysis";
+    const camera = cameraOn(id, {});
+    const ids = new Set([id]);
+    const rest = framesUntilSettled(camera, { reducedMotion: true }, ids, 0, 1, 1, FRAME_MS);
+    const hovered = framesUntilSettled(camera, { hoveredNodeId: id, reducedMotion: true }, ids, rest.end + FRAME_MS, 1, 1, FRAME_MS);
+    expect(hovered.frames[0]!.get(id)!.r).toBeCloseTo(rest.frames.at(-1)!.get(id)!.r + TOKENS.paint.hoverGrowPx, 3);
+  });
+
   it("moves no further across a stalled frame than across a frame of two 60 Hz frames", () => {
     const radiiAfterGap = (gapMs: number) => {
       const camera = cameraOn("domain:code-evidence", {});

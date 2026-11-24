@@ -34,9 +34,21 @@ function screenEventName(): string {
   return match[1];
 }
 
+/** The chat panel's adapter fetch listens on the same event: `listen<AdapterFetchProgress>('…')`. */
+function sessionEventName(): string {
+  const source = read('src/shared/lib/agent-chat/tauri-acp.ts');
+  const match = /listen<AdapterFetchProgress>\(\s*'([^']+)'/.exec(source);
+  if (!match) throw new Error('could not find the adapter fetch listen call — was the wiring changed?');
+  return match[1];
+}
+
 describe('install progress event — name contract', () => {
   it('the name Rust emits equals the name the screen listens for', () => {
     expect(screenEventName()).toBe(rustEventName());
+  });
+
+  it('the chat panel hears the adapter fetch under the same name', () => {
+    expect(sessionEventName()).toBe(rustEventName());
   });
 
   it('the checker does not idle — it really read values from both sides', () => {
