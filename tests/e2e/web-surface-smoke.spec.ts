@@ -63,11 +63,12 @@ const SEED_VAULT: Record<string, string> = {
     "slug: smoke-checkout",
     "title: Checkout",
     "domain: smoke-orders",
+    "path: src/checkout/pay.ts",
     "---",
     "",
     "# Checkout",
     "",
-    "결제 역량.",
+    "결제 역량. 금액은 `src/checkout/pay.ts:L12-L20` 에서 정해요.",
     "",
   ].join("\n"),
 };
@@ -265,6 +266,24 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
     card: "gray-area-web-limit",
     reason: /브라우저는[\s\S]*코드 폴더[\s\S]*설치한 앱/,
     destination: "gray-area-get-app",
+  },
+  {
+    // The connected code folder lies outside the folder the browser was given, so the concept's code
+    // stays a path to copy here.
+    name: "code reader: the browser cannot read the connected code folder",
+    url: "/ko/library/",
+    needsVault: true,
+    open: async (page) => {
+      await page.getByTestId("library-open-vault").click();
+      await expect(page.getByTestId("library-find-documents")).toBeVisible();
+      await gotoSettled(page, "/ko/topology/?p=capabilities/checkout&guides=off");
+      await expect(page.getByTestId("map-detail-panel")).toBeVisible();
+      await expect(page.getByTestId("map-detail-panel-code")).toHaveCount(0);
+      await page.getByTestId("map-detail-panel-open-full-detail").click();
+    },
+    card: "code-reader-web-limit",
+    reason: /브라우저는[\s\S]*코드는 그 폴더 밖에 있어요/,
+    destination: "code-reader-get-app",
   },
   {
     // Agent settings live in dot folders and the home folder, which a browser cannot open; what each

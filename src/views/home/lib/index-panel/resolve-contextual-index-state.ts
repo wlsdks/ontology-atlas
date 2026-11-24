@@ -10,6 +10,8 @@ export interface ContextualIndexStateInputs {
   graphEmpty: boolean;
   emptyManualExpand: boolean;
   agentDockOpen: boolean;
+  /** The code reader needs the list's room while it is open. */
+  codeReaderHoldsRoom: boolean;
 }
 
 export function resolveContextualIndexState({
@@ -21,9 +23,10 @@ export function resolveContextualIndexState({
   graphEmpty,
   emptyManualExpand,
   agentDockOpen,
+  codeReaderHoldsRoom,
 }: ContextualIndexStateInputs): IndexPanelState {
   if (baseState === "collapsed") return "collapsed";
-  if (meaningEditorOpen || agentDockOpen) return "collapsed";
+  if (meaningEditorOpen || agentDockOpen || codeReaderHoldsRoom) return "collapsed";
   if (selectionActive && !selectionManualExpand && !selectionKeepsIndex) return "collapsed";
   if (graphEmpty && !emptyManualExpand) return "collapsed";
   return "expanded";

@@ -2,8 +2,8 @@
 //! path; every call re-derives the root and checks the request and its link target.
 
 mod projection;
-mod read;
-mod scope;
+pub(crate) mod read;
+pub(crate) mod scope;
 #[cfg(test)]
 mod tests;
 
@@ -56,7 +56,32 @@ pub(crate) fn authorized_source_root(
     if let Some(reason) = crate::vault_root_rejection(&binding.root) {
         return Err(format!("source-root-rejected: {reason}"));
     }
-    crate::canonical_source_root(&binding.root.to_string_lossy())
+    let root = crate::canonical_source_root(&binding.root.to_string_lossy())?;
+    if bound_inside_a_hidden_folder(&root) {
+        return Err("harness-source-root-hidden".into());
+    }
+    Ok(root)
+}
+
+/// The binding file is writable by the page and by an agent, so a root it names inside a dot,
+/// `*.git` or secret-named folder below the grant would make that folder's files read as plain
+/// ones. A root the person picked there is its own grant, with nothing below it to check.
+fn bound_inside_a_hidden_folder(root: &Path) -> bool {
+    let Some(granted) = crate::vault::grants::nearest_granted_root(root) else {
+        return false;
+    };
+    let Ok(below) = root.strip_prefix(&granted) else {
+        return true;
+    };
+    below.components().any(|component| {
+        let Some(name) = component.as_os_str().to_str() else {
+            return true;
+        };
+        !matches!(component, Component::Normal(_))
+            || name.starts_with('.')
+            || name.to_ascii_lowercase().ends_with(".git")
+            || is_denied_name(name)
+    })
 }
 
 /// `class` is the link target's class, not the request's.
@@ -71,7 +96,7 @@ enum Want {
     List,
 }
 
-fn relative_text(relative: &Path) -> Option<String> {
+pub(crate) fn relative_text(relative: &Path) -> Option<String> {
     let mut parts = Vec::new();
     for component in relative.components() {
         let Component::Normal(part) = component else {
@@ -114,7 +139,7 @@ fn check_class(want: &Want, path: &str) -> Result<ReadClass, String> {
     }
 }
 
-fn is_missing(error: &std::io::Error) -> bool {
+pub(crate) fn is_missing(error: &std::io::Error) -> bool {
     error.kind() == std::io::ErrorKind::NotFound
         || error.raw_os_error() == Some(if cfg!(windows) { 267 } else { 20 })
 }

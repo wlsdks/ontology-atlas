@@ -116,6 +116,8 @@ export interface TopologyMapRendererProps {
   topologyIndexPresentation: Pick<ReturnType<typeof useTopologyIndexPresentation>, "renderedIndexState">;
   topologyCreateIntent: Pick<ReturnType<typeof useTopologyCreateIntent>, "openCreateNode">;
   impactLensActive: boolean;
+  /** Bumped when the code reader settles in its seat, so the selection slides clear of it. */
+  selectionReframeToken: number;
 }
 
 export function TopologyMapRenderer({
@@ -124,7 +126,7 @@ export function TopologyMapRenderer({
   footprintBrushNodeIdRef, ontologySearchOpen, topologyInspectorState, topologyRouteControls,
   topologyNavigationActions, topologyAnalysisReview, topologyGraphProjection, topologyPreferences,
   topologyVaultReadModel, topologyAuthoring, topologySceneControls, topologyCanvasFocus, topologyExplorationLenses,
-  topologyIndexPresentation, topologyCreateIntent, impactLensActive,
+  topologyIndexPresentation, topologyCreateIntent, impactLensActive, selectionReframeToken,
 }: TopologyMapRendererProps) {
   const { t, tTopologyKeyboardWalk, structure, hexBoard, reducedMotion, audiencePlain, glyphSet, canvasBackground, view3d, neural, footprint, expand, navigationSpeed } = topologyPreferences;
   const { ontologyMapGraph, canvasSelectedSlug, resolvedRealmSlug } = topologyGraphProjection;
@@ -301,6 +303,7 @@ export function TopologyMapRenderer({
             onGrowthReplayingChange={setGrowthReplaying}
             spotlightFitToken={spotlightFitToken + constellationFitToken}
             constellationFocusId={routedConstellation?.id ?? null}
+            selectionReframeToken={selectionReframeToken}
             relayoutToken={topologyRelayoutToken}
             revealToken={mapRevealToken}
             onSelectEdge={(edge) => {

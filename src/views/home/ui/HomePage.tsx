@@ -11,6 +11,7 @@ import { useTopologyCanvasFocus } from "../model/use-topology-canvas-focus";
 import { useTopologyCreateIntent } from "../model/authoring/use-topology-create-intent";
 import { useTopologyExplorationLenses } from "../model/map-canvas/use-topology-exploration-lenses";
 import { useTopologyIndexPresentation } from "../model/index-panel/use-topology-index-presentation";
+import { useCodeReaderRoom } from "../model/inspector/use-code-reader-room";
 import { useTopologyInspectorState } from "../model/inspector/use-topology-inspector-state";
 import { useTopologyKeyboard } from "../model/keyboard/use-topology-keyboard";
 import { useTopologyNavigationActions } from "../model/use-topology-navigation-actions";
@@ -396,10 +397,11 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   // Ambient chrome yields to a surface being read: the datasheet or either right dock.
   const readoutStepsAside = Boolean(v2DatasheetModel) || acpDockFrameOpen || meaningWorkbenchOpen;
   useNavRailContextHrefs(navRailContextHrefs);
+  const codeReaderRoom = useCodeReaderRoom();
   const topologyIndexPresentation = useTopologyIndexPresentation({
     v2DatasheetModel, analysisMode, setRouteState, routeState, meaningEditorIntent, indexState,
     topologyCanvasFocus, topologyRouteControls, topologyVaultReadModel, homeWorkbenchController,
-    topologyAuthoring
+    topologyAuthoring, codeReaderRoom
   });
   const { indexSlotSwap, renderedIndexState } = topologyIndexPresentation;
   // Names only verified runtimes right after a folder opens; unmeasured ones would read as a
@@ -447,7 +449,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   const topologyAgentOrchestration = useTopologyAgentOrchestration({
     setOntologySearchOpen, setVaultAgentPrefill, routeState, agentDockTouchedRef, setRouteState,
     agentDockDefaultOpen, topologyVaultReadModel, topologyGraphProjection, acpRuntimeController,
-    homeWorkbenchController, topologyAuthoring, topologyPreferences, topologyIndexPresentation
+    homeWorkbenchController, topologyAuthoring, topologyPreferences, topologyIndexPresentation, codeReaderRoom
   });
   const { agentDockOpen, runtimeChatOpen, closeVaultAgent, openVaultAgent } = topologyAgentOrchestration;
   const askAgentFromSource = useCallback((text: string) => {
@@ -663,6 +665,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
             topologyIndexPresentation={topologyIndexPresentation}
             topologyExplorationLenses={topologyExplorationLenses}
             impactLensActive={impactMode !== "none" && selectedSlug !== null}
+            selectionReframeToken={codeReaderRoom.seatToken}
           />
           <TopologyInspectorSurfaces
             topologyKeyboard={topologyKeyboard}
@@ -689,6 +692,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
             topologyRouteControls={topologyRouteControls}
             topologyExplorationLenses={topologyExplorationLenses}
             topologyCreateIntent={topologyCreateIntent}
+            codeReaderRoom={codeReaderRoom}
           />
           {/* Node and project selections go through `handleSelect`, since the palette's
              default would leave the map for `/ontology/?node=`. The hotkeys come from
