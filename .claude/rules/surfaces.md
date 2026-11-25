@@ -97,12 +97,13 @@ The third written exception, for Work status only:
 
 | | |
 |---|---|
-| Read | the person's own processes (uid filter first): parent, start time, working folder, and the executable path of one whose kernel name looks like an agent |
-| Returned to the page | for each worktree, the agent's pid, tool (Claude Code or Codex) and start time; never a folder, path or other process |
-| Never read | arguments or environment (`KERN_PROCARGS2`, `/proc/<pid>/environ`), open files, another user's processes |
-| Platforms | macOS and Linux; Windows reads none |
-| Gate | `src-tauri/src/work_status/worktrees/tests.rs` |
-| Record | `docs/records/decisions/2026-11-22-work-status-agent-processes-87d3ada9-4740-430a-8cee-a580ce7e638e.md` |
+| Read | the person's own processes (uid filter first): parent, start time, working folder, and the executable path of one whose kernel name looks like an agent. On macOS, every 5 s while Work status is visible and its load switch (on by default) is on: memory, CPU time and kernel name of each process under an agent program; memory and working folder of a process named `java` outside every agent's tree; and for the whole Mac, memory in use, macOS's pressure level, CPU in use and the GPU's "Device Utilization %" |
+| How | system APIs through crates already in `Cargo.lock`; one process listing and one usage read per process under an agent per sample, never per process on the Mac; no spawned program, no file, no root; the previous sample is the only one kept |
+| Returned to the page | for each worktree, the agent's pid, tool (Claude Code or Codex) and start time; per worktree, memory and CPU in cores, and at most five tool groups (a closed list matched by kernel name; any other name counts as other programs) with count, memory and CPU; groups outside every room; the Mac's totals, with no GPU figure when none is reported; never a folder, path, unlisted program name, or a pid the page does not already hold |
+| Never read | arguments or environment (`KERN_PROCARGS2`, `/proc/<pid>/environ`), open files, another user's processes, a per-program GPU figure |
+| Platforms | macOS and Linux for the agent processes; the load read on macOS only; Windows reads none |
+| Gate | `src-tauri/src/work_status/worktrees/tests.rs`; for load, the tests under `src-tauri/src/work_status/load/` |
+| Record | `docs/records/decisions/2026-11-22-work-status-agent-processes-87d3ada9-4740-430a-8cee-a580ce7e638e.md`; load: `docs/records/decisions/2026-11-25-work-status-load-read-43842310-f121-42ab-973d-4b72806a0f94.md` |
 
 A new field, a signal or a send needs a new decision record.
 
@@ -132,14 +133,35 @@ The fifth written exception, for Work status only:
 | Run | `claude agents --json`, the first file among `~/.local/bin/claude`, `/opt/homebrew/bin/claude`, `/usr/local/bin/claude`; never a `PATH` lookup, an argument or a path from the page |
 | How | under `/usr/bin/sandbox-exec` with every network operation denied; environment `HOME` and `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1`; working folder Atlas's app data; no input, error output discarded; its process group is killed when it ends, or after 5 s or 1 MiB |
 | When | while Work status is visible, its session-list switch is on (the default) and a Claude Code process is seen: once in 10 s, or 1 s after one appears or ends; one at a time. Switched off, the page asks nothing, Rust holds the choice and refuses an ask, and the last list leaves memory |
-| Returned to the page | how the read went (one word of a closed list), and for a session whose folder lies in a listed worktree: the worktree's id, its pid and one of five states |
-| Never read | a session's `name`, `sessionId` or `id`; any field outside the documented ones makes its entry unknown |
+| Returned to the page | how the read went (one word of a closed list), and for a session whose folder lies in a listed worktree: the worktree's id, its pid, one of five states and, under Name below, its name |
+| Name | read with each list while the session-list switch and Show session names (on by default) are both on; only a string; control and direction-override characters removed, cut to one line of at most 60 characters, never inside a Hangul syllable; empty means no name, and the room says `{tool} {number}`. Held in Rust with the last list and dropped with it, or at once when either switch goes off; the page holds it in view state only and draws it as plain text |
+| A name never reaches | a file, a log, error text, storage, a URL, an argument the page sends back to Rust, an agent session, or the network |
+| Never read | a session's `sessionId` or `id`; any field outside the documented ones makes its entry unknown |
 | Platforms | macOS; no other platform runs it |
-| Gate | `src-tauri/src/work_status/agent_sessions/tests.rs` (`the_program_cannot_open_a_connection`, `a_name_and_a_session_id_reach_no_value`) |
-| Record | `docs/records/decisions/2026-11-23-work-status-session-list-no-network-929c2179-7882-4c40-a4bc-83cfbb2612cf.md` |
+| Gate | `src-tauri/src/work_status/agent_sessions/tests.rs` (`the_program_cannot_open_a_connection`, and the planted-name tests of criterion 2 in `docs/specs/2026-11-25-work-status-live.md`); `src/shared/lib/work-status/signals/sessions.test.ts` |
+| Record | `docs/records/decisions/2026-11-23-work-status-session-list-no-network-929c2179-7882-4c40-a4bc-83cfbb2612cf.md`; names: `docs/records/decisions/2026-11-25-work-status-session-names-3c8614d6-9b02-4b18-9e12-95d935c9434c.md` |
 
 Another program, argument or variable, or a run without the sandbox, needs a
 new decision record.
+
+### Watching the repository's worktrees for file changes
+
+The sixth written exception, for Work status only:
+
+| | |
+|---|---|
+| Watch | the OS's file-change notices, through the `notify` crate the app already ships, for the folder of each worktree drawn as a room; one watcher for every room; never a shelf worktree or a folder Git does not list for this repository |
+| When | while Work status is visible and its Watch file changes switch (on by default) is on; hidden or switched off, no watcher is alive, and switched off, no count is held |
+| Counted | a notice whose path is not under `.git`, not under a fixed list of dependency and build folder names, and not ignored by Git; Git gives that verdict through `runner.rs`, at most one call per worktree in 10 s, never twice for one path until that worktree's `.gitignore` changes |
+| Kept in Rust memory | per worktree: the time of the last counted change, counts per 10 s step for 60 minutes (99 at most), and a one-way hash of each path Git already judged (4,096 at most) |
+| Returned to the page | per worktree: that time, those counts, and whether it is watched |
+| Never | a file opened or stat'ed; a name or path from a notice in a payload, log, file or the network |
+| Platforms | macOS; no other platform watches |
+| Gate | the tests under `src-tauri/src/work_status/file_pulse/` |
+| Record | `docs/records/decisions/2026-11-25-work-status-file-change-notices-1c163935-120b-4f73-9c2e-9cf11f023ee3.md` |
+
+Another folder, a kept name or path, or a watch while hidden needs a new
+decision record.
 
 ### Folder watch is latency, not degradation
 
