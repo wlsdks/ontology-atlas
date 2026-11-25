@@ -22,7 +22,7 @@ import type { MoruCharacter } from '../model/room-look';
 import { BranchName } from './BranchName';
 import { LargeRoom } from './LargeRoom';
 import { MiniRoom } from './MiniRoom';
-import { LandedLog, landedRowId } from './LandedLog';
+import { LANDED_KEEP_PX, LandedLog, landedRowId } from './LandedLog';
 import { LandedPanel } from './LandedPanel';
 import { RoomPanel } from './RoomPanel';
 import { RoomShelf } from './RoomShelf';
@@ -529,7 +529,10 @@ export function WorkBuilding({ tracks, live, seenRunningAt, baseBranch, nowMs, r
     return () => observer.disconnect();
   }, []);
 
+  // The stage counts its rooms on the whole window; the screens then grow only into what the
+  // merged list under the building leaves, so the list keeps its strip.
   const stageLimit = stageCapacity(size?.width ?? 0, size?.height ?? 0);
+  const boardHeight = Math.max(0, (size?.height ?? 0) - (landed ? LANDED_KEEP_PX : 0));
   const plan = useMemo(() => planRooms(tracks, nowMs, seenRunningAt, stageLimit), [tracks, nowMs, seenRunningAt, stageLimit]);
   const retirees = useRetirees(plan, stageLimit, reduced);
   const retiring = useMemo(() => new Set(retirees.map(retiree => retiree.entry.key)), [retirees]);
@@ -541,12 +544,12 @@ export function WorkBuilding({ tracks, live, seenRunningAt, baseBranch, nowMs, r
   const alone = shown.stage.length === 1;
   const layout = useMemo(() => layoutBuilding({
     width: size?.width ?? 0,
-    height: size?.height ?? 0,
+    height: boardHeight,
     stage: shown.stage.map(room => room.key),
     floors: shown.floors.map(floor => ({ key: floor.key, rooms: floor.rooms.map(room => room.key) })),
     hasShelf,
     stageLists,
-  }), [size, shown, hasShelf, stageLists]);
+  }), [size, boardHeight, shown, hasShelf, stageLists]);
   const firstStageBox = shown.stage.length > 0 ? layout.rooms.get(shown.stage[0].key) : undefined;
   const stageRows = firstStageBox ? screenRows(firstStageBox) : 0;
 
@@ -625,8 +628,10 @@ export function WorkBuilding({ tracks, live, seenRunningAt, baseBranch, nowMs, r
 
   return (
     <div className="flex min-h-0 flex-1" onKeyDown={closeOnEscape}>
-    <div ref={viewportRef} className="relative min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden" data-testid="work-building-viewport">
+    <div ref={viewportRef} className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden" data-testid="work-building-viewport">
       <TintFilters />
+      {/* The building keeps its height; only a window too short for it scrolls it, never the page. */}
+      <div className="min-h-0 flex-[0_1_auto] overflow-y-auto overflow-x-hidden">
       <div
         ref={boardRef}
         data-testid="work-building"
@@ -683,6 +688,7 @@ export function WorkBuilding({ tracks, live, seenRunningAt, baseBranch, nowMs, r
             ) : null}
           </>
         ) : null}
+      </div>
       </div>
       <LandedLog read={landed} baseBranch={baseBranch} nowMs={nowMs} selectedHash={selectedLanded?.hash ?? null} onSelect={selectLanded} panelId={landedPanelId} />
     </div>

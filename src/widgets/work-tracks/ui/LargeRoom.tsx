@@ -137,7 +137,20 @@ function AreaList({ areas, rows }: { areas: readonly ScreenArea[]; rows: number 
  * under a line saying what it lists, and a room with no commits gives the files the commits' share and says so
  * on their line. With `areas`, the folders those files are in stand in a last column.
  */
-function ScreenText({ screen, rows: screenRows, fileColumns, areas }: { screen: MonitorCopy; rows: number; fileColumns: number; areas: boolean }) {
+/**
+ * Where a room says its state, once: atop its screen when it needs a person and no session line
+ * says so already, on the wall when the room is wide enough for its wall facts, else on the bezel.
+ * The fact beside the state (its time) goes to the wall when the wall shows, else to the bezel.
+ */
+type StateHome = 'screen' | 'wall' | 'bezel';
+
+function stateHome(screen: MonitorCopy, wallShown: boolean): StateHome {
+  const sessionRows = screen.sessionLines.length + (screen.moreSessions ? 1 : 0);
+  if (screen.state.tone === 'warning' && sessionRows === 0) return 'screen';
+  return wallShown ? 'wall' : 'bezel';
+}
+
+function ScreenText({ screen, rows: screenRows, fileColumns, areas, home }: { screen: MonitorCopy; rows: number; fileColumns: number; areas: boolean; home: StateHome }) {
   const sessionRows = screen.sessionLines.length + (screen.moreSessions ? 1 : 0);
   // The session lines say who waits; the lists below give them their height, and the panel keeps the rest.
   const rows = listRowsBeside(screenRows, sessionRows);
@@ -146,7 +159,7 @@ function ScreenText({ screen, rows: screenRows, fileColumns, areas }: { screen: 
       <div className={styles.screenHead}>
         <BranchName branch={screen.branch} className={cn(styles.screenBranch, 'font-mono font-[var(--font-weight-strong)]')} />
         {/* A room that needs a person says so at the top of its screen, in amber, not only on the bezel. */}
-        {screen.state.tone === 'warning' && sessionRows === 0 ? <span className={cn(styles.screenAlert, 'text-body leading-body font-[var(--font-weight-strong)]')}>{screen.state.lead}</span> : null}
+        {home === 'screen' ? <span className={cn(styles.screenAlert, 'text-body leading-body font-[var(--font-weight-strong)]')}>{screen.state.lead}</span> : null}
       </div>
       {sessionRows > 0 ? (
         <ul className={cn(styles.sessionLines, LABEL)} data-testid="work-room-sessions">
@@ -227,39 +240,55 @@ function ScreenFoot({ screen }: { screen: MonitorCopy }) {
 }
 
 /**
- * The room's state on the wall left of Moru, at a size read across the stage: the state, the fact beside it and how long the session has worked.
- * It stays drawn while the room is too narrow for it or holds a pair, and fades when that changes: a room that moves keeps its face,
- * so mounting it there would cut it in or out in one frame.
+ * The room's state on the wall left of Moru, in two lines that never wrap: the state and its time,
+ * then how long the session has worked, the last minute's file changes and the load. It stays drawn
+ * while the room is too narrow for it or holds a pair, and fades when that changes: a room that moves
+ * keeps its face, so mounting it there would cut it in or out in one frame.
  */
-function WallFacts({ screen, shown }: { screen: MonitorCopy; shown: boolean }) {
+function WallFacts({ screen, shown, home }: { screen: MonitorCopy; shown: boolean; home: StateHome }) {
+  const details = [
+    screen.worked ? { key: 'worked', value: screen.worked, className: 'text-[color:var(--color-text-tertiary)]', testId: undefined } : null,
+    screen.lastMinute ? { key: 'minute', value: screen.lastMinute, className: 'text-[color:var(--color-text-secondary)]', testId: 'work-room-last-minute' } : null,
+    screen.loadFact ? { key: 'load', value: screen.loadFact, className: 'tabular-nums text-[color:var(--color-text-tertiary)]', testId: 'work-room-load-fact' } : null,
+  ].filter(part => part !== null);
   return (
     <div className={styles.wallFacts} data-testid="work-room-facts" data-room-part>
       <div className={styles.wallFactsText} data-shown={shown} data-room-fade>
-        <span className={cn(STATE_TONE[screen.state.tone], 'text-title leading-title font-[var(--font-weight-strong)]')}><SwapText value={screen.state.lead} wrap /></span>
-        {screen.state.rest ? <span className="text-body leading-body text-[color:var(--color-text-secondary)]"><SwapText value={screen.state.rest} wrap /></span> : null}
-        {screen.worked ? <span className="text-body leading-body text-[color:var(--color-text-tertiary)]"><SwapText value={screen.worked} wrap /></span> : null}
-        {screen.lastMinute ? <span className="text-body leading-body text-[color:var(--color-text-secondary)]" data-testid="work-room-last-minute"><SwapText value={screen.lastMinute} wrap /></span> : null}
-        {screen.loadFact ? <span className="text-body leading-body tabular-nums text-[color:var(--color-text-tertiary)]" data-testid="work-room-load-fact"><SwapText value={screen.loadFact} wrap /></span> : null}
+        <span className={styles.wallLine}>
+          {home === 'wall' ? <span className={cn(STATE_TONE[screen.state.tone], 'flex-none text-title leading-title font-[var(--font-weight-strong)]')}><SwapText value={screen.state.lead} /></span> : null}
+          {screen.state.rest ? <span className="min-w-0 text-body leading-body text-[color:var(--color-text-secondary)]"><SwapText value={screen.state.rest} /></span> : null}
+        </span>
+        {details.length > 0 ? (
+          <span className={cn(styles.wallDetails, 'text-body leading-body')}>
+            {details.map((part, index) => (
+              <span key={part.key} className={styles.wallDetail}>
+                {index > 0 ? <span aria-hidden className="text-[color:var(--color-text-tertiary)]">·</span> : null}
+                <span className={part.className} data-testid={part.testId}>{part.value}</span>
+              </span>
+            ))}
+          </span>
+        ) : null}
       </div>
     </div>
   );
 }
 
 /** The room's screen: the words of what the worktree holds, over the name tag that says who works here. */
-function Monitor({ room, live, copy, rows, fileColumns, areas }: { room: RoomEntry; live: RoomLive; copy: RoomCopy; rows: number; fileColumns: number; areas: boolean }) {
+function Monitor({ room, live, copy, rows, fileColumns, areas, wallShown }: { room: RoomEntry; live: RoomLive; copy: RoomCopy; rows: number; fileColumns: number; areas: boolean; wallShown: boolean }) {
   const look = roomLook(room.state);
   const screen = copy.monitor(room, live);
+  const home = stateHome(screen, wallShown);
   const { leaving, serial } = useScreenSwap(room.state.kind, screen);
   return (
     <div className={styles.monitor} data-off={look.monitorOff}>
       <i className={cn(styles.screenFrame, styles.notched)} />
       <div className={styles.screen} data-testid="work-room-monitor" data-room-part>
         <div key={`now:${serial}`} ref={serial > 0 ? enterScreen : undefined} className={styles.screenText}>
-          <ScreenText screen={screen} rows={rows} fileColumns={fileColumns} areas={areas} />
+          <ScreenText screen={screen} rows={rows} fileColumns={fileColumns} areas={areas} home={home} />
         </div>
         {leaving ? (
           <div key={`was:${serial}`} ref={leaveScreen} aria-hidden className={cn(styles.screenText, 'pointer-events-none')}>
-            <ScreenText screen={leaving} rows={rows} fileColumns={fileColumns} areas={areas} />
+            <ScreenText screen={leaving} rows={rows} fileColumns={fileColumns} areas={areas} home={stateHome(leaving, wallShown)} />
           </div>
         ) : null}
       </div>
@@ -274,10 +303,12 @@ function Monitor({ room, live, copy, rows, fileColumns, areas }: { room: RoomEnt
           <span className={cn(styles.bezelWho, 'truncate')} data-testid="work-room-who">{screen.bezel.main}</span>
         ) : null}
         {fileColumns > 0 && room.state.kind !== 'missing' ? <ActivityStrip beats={screen.beats} ticks={screen.ticks} label={screen.hourLabel} /> : null}
-        <span className={styles.bezelState}>
-          <span className="flex-none"><SwapText value={screen.state.lead} ink={STATE_TONE[screen.state.tone]} /></span>
-          {screen.state.rest ? <span className="flex flex-none font-normal">&nbsp;·&nbsp;<SwapText value={screen.state.rest} /></span> : null}
-        </span>
+        {wallShown ? null : (
+          <span className={styles.bezelState}>
+            {home === 'bezel' ? <span className="flex-none"><SwapText value={screen.state.lead} ink={STATE_TONE[screen.state.tone]} /></span> : null}
+            {screen.state.rest ? <span className="flex flex-none font-normal">{home === 'bezel' ? <>&nbsp;·&nbsp;</> : null}<SwapText value={screen.state.rest} /></span> : null}
+          </span>
+        )}
         <i className={styles.bezelLed} />
       </div>
     </div>
@@ -367,6 +398,8 @@ export function LargeRoom({ room, live, unit, rows, pairScale, fileColumns, area
   // A new token plays the row again: each landed commit, and each time the room is newly entered.
   const request = once === null ? null : `${once}@${once === 'crate-send' ? commit.serial : once === 'settle-in' ? `face${faceId}` : 'merge'}`;
   const pair = look.cast === 'two';
+  const wallShown = wallFacts && !pair;
+  const wallScreen = copy.monitor(room, live);
   // A sent crate is followed by pride in front and joy behind; a working Moru walks his tools; a working pair talks now and then.
   const after = once === 'crate-send' ? `@${commit.serial}` : null;
   const frontOnce = request && after ? `${request} ${AFTER_CRATE.front}${after}` : request;
@@ -405,8 +438,8 @@ export function LargeRoom({ room, live, unit, rows, pairScale, fileColumns, area
             </span>
           </>
         ) : null}
-        <WallFacts screen={copy.monitor(room, live)} shown={wallFacts && !pair} />
-        <Monitor room={room} live={live} copy={copy} rows={rows} fileColumns={pair ? 0 : fileColumns} areas={!pair && areas} />
+        <WallFacts screen={wallScreen} shown={wallShown} home={stateHome(wallScreen, wallShown)} />
+        <Monitor room={room} live={live} copy={copy} rows={rows} fileColumns={pair ? 0 : fileColumns} areas={!pair && areas} wallShown={wallShown} />
         <i className={styles.dim} />
       </div>
     </div>

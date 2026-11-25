@@ -250,6 +250,7 @@
   "landed": {
     "title": "已合并到 <code>{branch}</code> 的工作",
     "note": "一行就是一个已合并的拉取请求；没有拉取请求而直接推送的提交也算一行。Atlas 读取的是这台 Mac 上的分支副本，所以你还没拉取的改动不会列出。",
+    "noteLabel": "关于此列表",
     "summary": "今天 {today} 个 · 最近 7 天 {week} 个",
     "none": "还没有工作合并到 {branch}。",
     "today": "今天",

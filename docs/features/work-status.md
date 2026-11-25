@@ -194,7 +194,7 @@ the time of the last counted change and counts in ten-second steps for an hour
 
 The page asks every two seconds while visible, and the app answers from memory.
 A counted change flashes the room's light once, at most once in two seconds and
-never as a loop; its bezel says **changed just now**; a mini room shows the
+never as a loop; the room says **changed just now** where it says its state; a mini room shows the
 same light at the start of its status line while the change is under a minute
 old; and the last-hour line gains a tick under its marks for each ten-second
 step that had one, in three heights. The file's name follows from the next Git
@@ -274,7 +274,7 @@ gives the files the whole screen and says so at the end of their line instead
 of keeping an empty column. When a commit lands
 it slides in at the top and the oldest fades out; a file that was just changed
 slides to the top of its column. The bezel under the screen names the holding
-session and the state, and for a working room when its worktree last changed:
+session and, in a room too narrow for its wall facts, the state and for a working room when its worktree last changed:
 the newer of its newest commit and the uncommitted file written last, as the
 last read saw them. It names no state from that time: a room whose session holds
 the folder and has changed nothing for ten minutes says exactly that. A light
@@ -286,8 +286,15 @@ open rises once in its place on that line, and the row of a file written again
 lights once behind its name; with reduced motion neither moves. A change less
 than a minute old reads **just now**. The screen keeps its text size. Moru is drawn at half
 his size (64 px) in every stage room, as on the floors below: the room's width and height go to the screen,
-and he only shows that work is running. Each room is as tall
-as its screen and the wall facts beside Moru need. A quiet room's screen is not dimmed: its words
+and he only shows that work is running. Every stage room has one height under
+its screen at every width, whether or not it shows wall facts: the wall left of
+Moru holds two lines, the state with its time, then how long it has worked, the
+last minute's file changes and its load, a fact that does not fit dropping out
+whole rather than cut. Moru stands left of the middle, at most 440 px in, so a
+wide room has the room for them.
+A room says its state once: a room that needs a person says it in amber at the top of its
+screen, a room wide enough for wall facts says it on the wall, and any other room on its
+bezel; the time beside the state goes to the wall when the wall shows, else to the bezel. A quiet room's screen is not dimmed: its words
 keep their contrast and the bezel says it is quiet. The building ends under what
 it holds, on the page itself: there is no slab behind the rooms. A room alone
 on the stage takes the building's whole width instead of half of it, grows to
@@ -300,7 +307,7 @@ so. The folders appear only when the files are in two or more and a column of
 files still fits beside them. Every stage room has one form: the screen across
 the room and Moru under it on the rail. A room at least 600 px wide says its
 state on the wall left of Moru, at a size read across the stage, with the fact
-beside it and how long the session has worked; when a room's width starts or
+beside it and how long the session has worked, and its bezel then carries no state; when a room's width starts or
 stops fitting those words they fade, after the room's other parts have gone
 dark for its move, never in one frame. The rail carries a cart with
 one crate per commit, six at most and then `+n`, to a stop at its end
@@ -414,7 +421,11 @@ Under the building, and under the empty or quiet building, **Merged into
 line, merges and squashed commits alike, grouped by day: each with its kind
 read from a conventional prefix, its title, its pull request number, how many
 files it changed, a bar as long as the logarithm of its changed lines, and when
-it was merged. One line is one merged pull request, and a commit pushed without
+it was merged. The page itself never scrolls: the building keeps its height
+and the list takes the rest of the window, at least its heading and two rows,
+and scrolls inside that strip, its last row fading at the edge. The stage counts
+its rooms on the whole window, so the list's strip only stops screens growing
+taller. A ? beside the heading explains the list: one line is one merged pull request, and a commit pushed without
 one is a line too. The list is read from Git (`work_status_landed`, one
 `git log`) on this Mac's copy of the branch, so a change not pulled yet is not
 listed, and Atlas stores nothing of its own. It is read again only when a worktree's
