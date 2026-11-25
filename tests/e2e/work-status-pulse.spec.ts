@@ -60,7 +60,7 @@ test.describe("work status file-change pulse", () => {
     const panel = page.getByTestId("work-room-panel-pulse");
     await expect(panel).toContainText("7 file changes in the last minute");
     await expect(panel).toContainText("in the last hour");
-    await expect(panel).toContainText("Atlas counts only while Work status is open.");
+    await expect(panel).toContainText("Atlas counts only while Workshop is open.");
   });
 
   test("keeps the light still under reduced motion while the words say the change", async ({ page }) => {

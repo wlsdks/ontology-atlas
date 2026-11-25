@@ -274,8 +274,8 @@
       "twoFilesCodex": "2回実行されることがあります",
       "twoFilesCodexHint": "{files}の両方にこのコマンドがあります。Codexは1つのイベントで2回実行することがあります。",
       "needsReview": "承認が必要",
-      "workStatus": "作業状況が追加",
-      "workStatusHint": "作業状況が、エージェントの作業を表示するために追加したフックです。",
+      "workStatus": "作業室が追加",
+      "workStatusHint": "作業室が、エージェントの作業を表示するために追加したフックです。",
       "typeOnly": "{type}フックです。Atlasはこのフックがあることだけを表示し、何を送るかは表示しません。"
     },
     "reading": "{file}を読み込み中",

@@ -167,7 +167,7 @@
       "tagFilter": "タグチップをクリックしてツリーを絞り込み",
       "modeToggle": "モードの切り替え：そのモードの文書だけを表示",
       "goTo_changes": "変更へ移動",
-      "goTo_workStatus": "作業状況へ移動",
+      "goTo_workStatus": "作業室へ移動",
       "goTo_planning": "企画へ"
     },
     "keys": {

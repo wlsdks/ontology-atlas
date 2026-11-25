@@ -13,7 +13,7 @@
   "getAppTitle": "デスクトップアプリはフォルダを記憶し、オフラインで開け、Gitの履歴とエージェント接続も扱えます",
   "changes": "変更",
   "planning": "企画",
-  "workStatus": "作業状況",
+  "workStatus": "作業室",
   "usage": {
     "agentFallback": "エージェント",
     "tileName": "{agent}の使用量",
