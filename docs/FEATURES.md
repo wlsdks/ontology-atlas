@@ -197,7 +197,7 @@ The desktop rail's order and hrefs come from
 | Agents | `/agents` (tabs: `src/views/agents/lib/agents-tab-state.ts`) | [`agents.md`](features/agents.md) |
 | Git | `/git` | [`git.md`](features/git.md) |
 | Changes: a digest of merged work (count, worth a look, groups by title label); PRs, commits and files in Originals | `/changes` | [`change-briefing.md`](features/change-briefing.md) |
-| Work status (labelled Workshop): which agent session holds which worktree of a repository, whether each is merged, and which Claude Code session waits for its person (installed app) | `/work-status` | [`work-status.md`](features/work-status.md) |
+| Work status (labelled Workshop): which agent session holds which worktree of a repository, whether each is merged, and which Claude Code session waits for its person, arranged by folder or by session (installed app) | `/work-status` | [`work-status.md`](features/work-status.md) |
 | Download | `/download` | [`download.md`](features/download.md) |
 | Guide | `/guide`, `/guide/[segment]` | [`guide-and-changelog.md`](features/guide-and-changelog.md) |
 | Changelog | `/changelog` | [`guide-and-changelog.md`](features/guide-and-changelog.md) |

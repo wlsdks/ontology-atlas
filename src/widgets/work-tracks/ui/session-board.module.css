@@ -1,0 +1,241 @@
+/*
+ * The by-session board: one block per agent session, in the rooms' own materials. The wall is the
+ * room's wall tinted by the session's ink, the folders sit on the room's black screen, the ink runs
+ * along the top edge (full while the session's program is seen at work, faint while it is not),
+ * and a session that waits for its person is framed in amber, as its room is.
+ */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: 12px;
+  align-items: stretch;
+}
+
+.block {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 16px 14px 14px;
+  background: color-mix(in srgb, var(--ink) 6%, var(--work-room-wall));
+}
+
+.edge {
+  position: absolute;
+  inset-inline: 4px;
+  top: 0;
+  height: 3px;
+  background: var(--ink);
+  pointer-events: none;
+}
+
+.block[data-running='false'] .edge {
+  background: color-mix(in srgb, var(--ink) 30%, transparent);
+}
+
+.block[data-waiting='true']::after,
+.block[data-flash='true']::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.block[data-waiting='true']::after {
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--color-status-warning) 70%, transparent);
+}
+
+/* A header warning points here, as it points at a room. */
+.block[data-flash='true']::before {
+  z-index: 1;
+  border: 3px solid var(--color-status-warning);
+  animation: blockPointedAt calc(var(--motion-choreography) * 3) var(--motion-ease) both;
+}
+
+@keyframes blockPointedAt {
+  0%, 100% {
+    opacity: 0;
+  }
+  12%, 70% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .block[data-flash='true']::before {
+    animation-timing-function: steps(1, end);
+  }
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.mark {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  background: var(--ink);
+}
+
+.name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tag {
+  flex: none;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.status {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.state[data-tone='ink'] {
+  color: color-mix(in srgb, var(--ink) 80%, var(--color-text-primary));
+}
+
+.state[data-tone='warning'] {
+  color: var(--color-status-warning);
+}
+
+.state[data-tone='plain'] {
+  color: var(--color-text-secondary);
+}
+
+.time {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.time::before {
+  content: "· ";
+}
+
+/* The folders on the room's black screen, as tall as its rows; the block's wall evens a row of blocks. */
+.screen {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--work-room-screen);
+}
+
+.folder {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 12px;
+  row-gap: 2px;
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--motion-fast) var(--motion-ease), border-color var(--motion-fast) var(--motion-ease);
+}
+
+.folder:hover {
+  background: var(--color-overlay-2);
+}
+
+.folder[aria-expanded='true'] {
+  border-color: color-mix(in srgb, var(--ink) 70%, transparent);
+}
+
+.folder:focus-visible {
+  outline: 2px solid var(--color-indigo-focus-ring);
+  outline-offset: -2px;
+}
+
+.facts {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* Who shares the folder gives way, with an ellipsis; a warning beside it never does. */
+.fact {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fact[data-tone='warning'] {
+  flex: none;
+}
+
+.fact + .fact::before {
+  content: "· ";
+  color: var(--color-text-quaternary);
+}
+
+.fact[data-tone='warning'] {
+  color: var(--color-status-warning);
+}
+
+/* The commits of a folder the session has to itself, under a hairline, newest first. */
+.commits {
+  display: flex;
+  grid-column: 1 / -1;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--color-border-soft);
+}
+
+.commit {
+  display: flex;
+  gap: 12px;
+  min-width: 0;
+}
+
+.subject {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.more {
+  width: 100%;
+  padding: 6px 10px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: color var(--motion-fast) var(--motion-ease);
+}
+
+.more:hover {
+  color: var(--color-text-primary);
+}
+
+.more:focus-visible {
+  outline: 2px solid var(--color-indigo-focus-ring);
+  outline-offset: -2px;
+}

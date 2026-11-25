@@ -6,6 +6,7 @@ import { folderName, type RoomEntry, type SessionTool, type Track, type TrackSes
 import { formatSize } from '@/shared/lib/format-size';
 import { showsLoadFact } from '@/shared/lib/work-status/signals/load';
 import { PULSE_HOUR_MS, changesWithoutAgent, type PulseFacts, type TickHeight } from '@/shared/lib/work-status/signals/pulse';
+import { BLOCK_FOLDERS_SHOWN, isWaitingBlock, type SessionBlock, type SessionFolder } from '@/shared/lib/work-status/signals/session-board';
 import type { SessionLine } from '@/shared/lib/work-status/signals/session-lines';
 import type { LoadGroup, WorktreeLoad } from '@/shared/lib/work-status/tauri-work-status';
 import { changedAreas } from '../model/changed-areas';
@@ -142,12 +143,44 @@ export interface MonitorCopy {
   count: string | null;
 }
 
+/** One folder on a session's block: its branch, and its own facts only when the session has it to itself. */
+export interface FolderRowCopy {
+  key: string;
+  branch: string;
+  /** Commits and uncommitted files, or who shares the folder; never a shared folder's figures. */
+  facts: { text: string; tone: 'plain' | 'warning' }[];
+  shared: boolean;
+  /** When the folder last changed; `null` for a shared folder. */
+  ago: string | null;
+  /** The newest commits, on a block whose one folder is its own: what the session has been doing. */
+  commits: ScreenCommit[];
+}
+
+/** One session on the by-session board. */
+export interface SessionBlockCopy {
+  key: string;
+  ink: number | null;
+  main: string;
+  tag: string | null;
+  state: { text: string; tone: StatusTone };
+  /** Since when it says so, as its line in a room says it; else when its program started. */
+  time: string | null;
+  waiting: boolean;
+  /** Its program, a command it runs, or an Atlas agent session is seen at work now. */
+  running: boolean;
+  folders: FolderRowCopy[];
+  /** `bySession.moreFolders` after the rows shown. */
+  more: string | null;
+}
+
 /** A mini room's newest subject with its time. */
 export interface MiniSubject {
   subject: string;
   ago: string | null;
 }
 
+/** The newest commits a session's block lists for the one folder it has to itself. */
+const BLOCK_COMMITS = 3;
 /** The most commits a screen lists. */
 export const SCREEN_COMMITS = 20;
 /** A room standing on the base branch lists this many of that branch's own commits: where it stands, not work of its own. */
@@ -322,6 +355,56 @@ function roomCopy(t: ReturnType<typeof useTranslations<'workStatus'>>, locale: s
   };
   const lastCommit = (track: Track) => (track.lastCommitAt === null ? null : t('room.lastCommit', { ago: timeAgo(track.lastCommitAt, nowMs, locale) }));
 
+  /** A folder's own facts on a session's block, or who shares it: a shared folder's figures stay in its panel. */
+  const folderRow = ({ room, others }: SessionFolder, alone: boolean): FolderRowCopy => {
+    const track = room.track;
+    const branch = track.branch ?? track.title;
+    if (room.state.kind === 'missing') return { key: room.key, branch, facts: [{ text: t('room.missing'), tone: 'warning' }], shared: false, ago: null, commits: [] };
+    if (others.length > 0) {
+      const who = others.length === 1 ? t('bySession.shared', { who: sessionLine(others[0]).main }) : t('bySession.sharedMany', { count: others.length });
+      const collide = room.state.kind === 'working' && room.state.tools.length > 1;
+      return {
+        key: room.key,
+        branch,
+        facts: [{ text: who, tone: 'plain' }, ...(collide ? [{ text: t('room.twoTools'), tone: 'warning' as const }] : [])],
+        shared: true,
+        ago: null,
+        commits: [],
+      };
+    }
+    const facts = [commits(track), uncommitted(track)?.text ?? null].filter((fact): fact is string => fact !== null);
+    return {
+      key: room.key,
+      branch,
+      facts: facts.map(text => ({ text, tone: 'plain' as const })),
+      shared: false,
+      ago: lastChange(track, null),
+      commits: alone ? screenCommits(track).slice(0, BLOCK_COMMITS) : [],
+    };
+  };
+  /**
+   * One session, once: its own state from its list (or that it is seen at work, when no list
+   * speaks), then since when, in the words its line in a room uses, or when its program started.
+   */
+  const sessionBlock = (block: SessionBlock, session: TrackSession | null): SessionBlockCopy => {
+    const line = sessionLine(block.line);
+    const state = line.state ?? (block.running ? { text: t('room.working'), tone: 'ink' as const } : { text: t('room.resting'), tone: 'plain' as const });
+    const started = session?.startedAt ? t('session.started', { time: clockTime(session.startedAt * 1000, nowMs, locale) }) : null;
+    const shown = block.folders.slice(0, BLOCK_FOLDERS_SHOWN);
+    return {
+      key: block.key,
+      ink: line.ink,
+      main: line.main,
+      tag: line.tag,
+      state,
+      time: line.since ?? started,
+      waiting: isWaitingBlock(block),
+      running: block.running,
+      folders: shown.map(folder => folderRow(folder, block.folders.length === 1)),
+      more: block.folders.length > shown.length ? t('bySession.moreFolders', { count: block.folders.length - shown.length }) : null,
+    };
+  };
+
   /** Who a room belongs to, under a mini room's status when there is room for it. */
   const owner = (room: RoomEntry, lines: readonly SessionLine[] = []): BezelWho =>
     bezelWho(room, lines) ?? { main: room.state.kind === 'lockLeft' ? t('session.ended') : t('session.none'), tag: null };
@@ -450,6 +533,6 @@ function roomCopy(t: ReturnType<typeof useTranslations<'workStatus'>>, locale: s
 
   return {
     baseBranch, toolName, sessionName, owner, status, monitor, newestSubject, uncommitted, screenCommits,
-    sessionLine, bezelWho, memory, cores, loadTool, groupLine,
+    sessionLine, bezelWho, memory, cores, loadTool, groupLine, sessionBlock,
   };
 }

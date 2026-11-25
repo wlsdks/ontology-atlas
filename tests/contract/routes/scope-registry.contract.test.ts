@@ -117,6 +117,7 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "atlas.workStatus.sessionNames", kind: "storage", scope: "global", note: "Whether Work status shows each agent session's own name: a reading preference of this machine, not a fact about any folder" },
   { key: "atlas.workStatus.filePulse", kind: "storage", scope: "global", note: "Whether Work status watches worktree folders for file-change counts: a choice about this machine, not about any folder" },
   { key: "atlas.workStatus.loadRead", kind: "storage", scope: "global", note: "Whether Work status reads process memory, CPU and GPU use: a choice about this machine, not about any folder" },
+  { key: "atlas.workStatus.arrangeBy", kind: "storage", scope: "global", note: "Whether Work status arranges its rooms by folder or by session: a reading preference of this machine, not a fact about any folder" },
   { key: "ontology-atlas:canvas-background:v1", kind: "storage", scope: "global", note: "canvas background preference" },
   { key: "ontology-atlas:glyph-set:v1", kind: "storage", scope: "global", note: "glyph set preference" },
   { key: "ontology-atlas:vault-index:v1", kind: "storage", scope: "global", note: "search index on/off preference" },
