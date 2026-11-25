@@ -78,6 +78,26 @@
     "forHours": "for {count} h",
     "more": "{count, plural, one {and # more session} other {and # more sessions}}"
   },
+  "arrange": {
+    "label": "Arrange by",
+    "folder": "By folder",
+    "session": "By session"
+  },
+  "bySession": {
+    "label": "Sessions at work",
+    "about": "Each agent session is shown once, with what it says of itself and the folders it works in. Commits and uncommitted files belong to a folder, not to a session: where sessions share a folder, Atlas cannot tell which one changed a file, so that folder's changes are shown once, when you press it. Only sessions working in this repository's folders are shown.",
+    "shared": "Shared with {who}",
+    "sharedMany": "Shared with {count} other sessions",
+    "moreFolders": "{count, plural, one {and # more folder} other {and # more folders}}",
+    "showInFolders": "Show this session's folders by folder",
+    "withoutSession": "{count, plural, one {# folder without a session} other {# folders without a session}}",
+    "showByFolder": "Show them by folder",
+    "pointTo": "Show which sessions",
+    "none": {
+      "title": "No agent session is working in {repo}",
+      "body": "A session shows here when Claude Code, Codex or Claude Agent in Atlas works in one of this repository's folders. By folder shows every worktree."
+    }
+  },
   "stage": {
     "label": "Worktrees at work"
   },
