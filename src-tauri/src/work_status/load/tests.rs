@@ -4,7 +4,7 @@ use std::time::{Duration, Instant};
 
 use super::attribute::ToolGroup;
 use super::source::{CpuTicks, LoadSource, MacMemory, Pressure, Usage};
-use super::{sample, LoadRead, LoadStatus, Sample};
+use super::{for_sessions, sample, LoadRead, LoadStatus, Sample};
 use crate::work_status::agent_processes::{AgentTool, ProcessFacts};
 
 const PLANTED: &str = "ATLAS_PLANTED_7f3c";
@@ -108,7 +108,16 @@ fn worktrees() -> Vec<(PathBuf, String)> {
 }
 
 fn first_sample(mac: &mut FakeMac) -> (LoadRead, Sample) {
-    sample(mac, &worktrees(), &[], None, Instant::now(), EPOCH_SECONDS).expect("a sample")
+    sample(
+        mac,
+        &worktrees(),
+        &[],
+        &[],
+        None,
+        Instant::now(),
+        EPOCH_SECONDS,
+    )
+    .expect("a sample")
 }
 
 /// An agent started outside every worktree; its child works in worktree A with 200 MiB, and the
@@ -191,6 +200,7 @@ fn an_agent_under_an_atlas_session_is_never_named_elsewhere() {
             &mut mac,
             &worktrees(),
             acp_pids,
+            &[],
             None,
             Instant::now(),
             EPOCH_SECONDS,
@@ -204,6 +214,83 @@ fn an_agent_under_an_atlas_session_is_never_named_elsewhere() {
     };
     assert_eq!(elsewhere(&[]), [7]);
     assert_eq!(elsewhere(&[6]), Vec::<u32>::new());
+}
+
+fn sessions_sent(mac: &mut FakeMac, acp_pids: &[u32], sent: &[u32]) -> LoadRead {
+    sample(
+        mac,
+        &worktrees(),
+        acp_pids,
+        sent,
+        None,
+        Instant::now(),
+        EPOCH_SECONDS,
+    )
+    .expect("a sample")
+    .0
+}
+
+/// Two Claude Code sessions share the main checkout; each figure is its own tree, wherever its
+/// commands work, and only a pid the page sent comes back.
+#[test]
+fn a_session_sums_its_own_tree_and_only_a_sent_pid_comes_back() {
+    let mut mac = FakeMac::with_cpu();
+    mac.add(20, 1, "2.1.330", Some(AgentTool::ClaudeCode), "/repo", 300);
+    mac.add(21, 20, "2.1.330", Some(AgentTool::ClaudeCode), "/repo", 40);
+    mac.add(22, 21, "cargo", None, "/repo/.worktrees/a", 80);
+    mac.add(30, 1, "2.1.330", Some(AgentTool::ClaudeCode), "/repo", 200);
+    mac.add(31, 30, "node", None, "/repo", 60);
+    mac.add(40, 1, "java", None, "/Users/me/.gradle/daemon/8.10", 500);
+
+    let read = sessions_sent(&mut mac, &[], &[20, 999]);
+    let pids: Vec<u32> = read.sessions.keys().copied().collect();
+    assert_eq!(pids, [20]);
+    let first = &read.sessions[&20];
+    assert_eq!(first.memory_bytes, 420 * MIB);
+    let groups: Vec<(ToolGroup, u32, u64)> = first
+        .groups
+        .iter()
+        .map(|group| (group.tool, group.count, group.memory_bytes))
+        .collect();
+    assert_eq!(
+        groups,
+        [
+            (ToolGroup::Agent, 2, 340 * MIB),
+            (ToolGroup::Rust, 1, 80 * MIB)
+        ]
+    );
+
+    let both = sessions_sent(&mut mac, &[], &[20, 30]);
+    assert_eq!(both.sessions[&30].memory_bytes, 260 * MIB);
+    // The shared folder keeps its own total; neither session's figure is a share of it.
+    assert_eq!(both.worktrees["main"].memory_bytes, 600 * MIB);
+    assert!(sessions_sent(&mut mac, &[], &[]).sessions.is_empty());
+}
+
+/// An Atlas agent session runs Codex through its adapter: the whole tree is that session's, and
+/// Codex's own pid has no figure even when sent.
+#[test]
+fn an_atlas_session_owns_its_tree_and_an_agent_inside_it_has_no_figure() {
+    let mut mac = FakeMac::with_cpu();
+    mac.add(5, 1, "ontology-atlas", None, "/Applications", 100);
+    mac.add(6, 5, "node", None, "/repo", 50);
+    mac.add(7, 6, "codex", Some(AgentTool::Codex), "/repo", 40);
+    mac.add(8, 7, "cargo", None, "/repo/.worktrees/a", 80);
+    let read = sessions_sent(&mut mac, &[6], &[6, 7]);
+    let pids: Vec<u32> = read.sessions.keys().copied().collect();
+    assert_eq!(pids, [6]);
+    assert_eq!(read.sessions[&6].memory_bytes, 120 * MIB);
+}
+
+/// A last sample answered again keeps only the sessions of the ask in hand.
+#[test]
+fn an_answer_from_the_last_sample_keeps_only_the_pids_sent_now() {
+    let mut mac = FakeMac::with_cpu();
+    mac.add(20, 1, "2.1.330", Some(AgentTool::ClaudeCode), "/repo", 300);
+    mac.add(30, 1, "2.1.330", Some(AgentTool::ClaudeCode), "/repo", 200);
+    let read = sessions_sent(&mut mac, &[], &[20, 30]);
+    let pids: Vec<u32> = for_sessions(read, &[30]).sessions.keys().copied().collect();
+    assert_eq!(pids, [30]);
 }
 
 #[test]
@@ -268,7 +355,7 @@ fn the_second_sample_gives_cores_and_a_rate_after_a_pause_is_withheld() {
     agent_tree(&mut mac);
     let start = Instant::now();
     let (_, first) =
-        sample(&mut mac, &worktrees(), &[], None, start, EPOCH_SECONDS).expect("first");
+        sample(&mut mac, &worktrees(), &[], &[], None, start, EPOCH_SECONDS).expect("first");
     // Two more CPU seconds for the child over five seconds: 0.4 cores.
     if let Some(usage) = mac.usage.get_mut(&11) {
         usage.cpu_ns += 2_000_000_000;
@@ -283,6 +370,7 @@ fn the_second_sample_gives_cores_and_a_rate_after_a_pause_is_withheld() {
         &mut mac,
         &worktrees(),
         &[],
+        &[],
         Some(&first),
         later,
         EPOCH_SECONDS + 5,
@@ -296,6 +384,7 @@ fn the_second_sample_gives_cores_and_a_rate_after_a_pause_is_withheld() {
     let (read, _) = sample(
         &mut mac,
         &worktrees(),
+        &[],
         &[],
         Some(&first),
         paused,
@@ -344,6 +433,7 @@ fn no_gpu_figure_leaves_the_rest_and_a_failed_read_fails_the_sample_only() {
             &mut mac,
             &worktrees(),
             &[],
+            &[],
             None,
             Instant::now(),
             EPOCH_SECONDS
@@ -353,7 +443,7 @@ fn no_gpu_figure_leaves_the_rest_and_a_failed_read_fails_the_sample_only() {
     let failed = serde_json::to_value(LoadRead::failed()).expect("serializes");
     assert_eq!(
         failed,
-        serde_json::json!({"status": "failed", "worktrees": {}, "outside": [], "mac": null})
+        serde_json::json!({"status": "failed", "worktrees": {}, "outside": [], "sessions": {}, "mac": null})
     );
     assert_eq!(
         serde_json::to_value(LoadStatus::Read).expect("serializes"),
@@ -366,8 +456,21 @@ fn the_payload_speaks_the_page_contract() {
     let mut mac = FakeMac::with_cpu();
     mac.add(20, 1, "2.1.330", Some(AgentTool::ClaudeCode), "/repo", 1);
     mac.add(22, 20, "node", None, "/repo/.worktrees/a", 2);
-    let (read, _) = first_sample(&mut mac);
+    let read = sessions_sent(&mut mac, &[], &[20]);
     let sent = serde_json::to_value(&read).expect("serializes");
+    assert_eq!(
+        sent["sessions"],
+        serde_json::json!({
+            "20": {
+                "memoryBytes": 3 * MIB,
+                "cpuCores": null,
+                "groups": [
+                    {"tool": "node", "count": 1, "memoryBytes": 2 * MIB, "cpuCores": null},
+                    {"tool": "agent", "count": 1, "memoryBytes": MIB, "cpuCores": null}
+                ]
+            }
+        })
+    );
     assert_eq!(
         sent["worktrees"]["a"],
         serde_json::json!({
@@ -476,8 +579,16 @@ mod on_this_mac {
         let worktrees = vec![(worktree.clone(), "a".to_string())];
         let deadline = Instant::now() + Duration::from_secs(30);
         let read = loop {
-            let (read, _) =
-                sample(&mut MacSource, &worktrees, &[], None, Instant::now(), 0).expect("a sample");
+            let (read, _) = sample(
+                &mut MacSource,
+                &worktrees,
+                &[],
+                &[],
+                None,
+                Instant::now(),
+                0,
+            )
+            .expect("a sample");
             let enough = read.worktrees.get("a").is_some_and(|a| {
                 a.memory_bytes >= 150 * MIB
                     && a.groups.iter().map(|group| group.count).sum::<u32>() >= 2
@@ -510,11 +621,11 @@ mod on_this_mac {
     #[test]
     fn switched_off_load_holds_no_sample_and_answers_nothing() {
         set_reading(true);
-        assert!(load_read(&[], &[]).is_some());
+        assert!(load_read(&[], &[], &[]).is_some());
         assert!(holds_a_sample());
         set_reading(false);
         assert!(!holds_a_sample());
-        assert!(load_read(&[], &[]).is_none());
+        assert!(load_read(&[], &[], &[]).is_none());
         assert!(!holds_a_sample());
         set_reading(true);
     }

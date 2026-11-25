@@ -1,7 +1,7 @@
 //! Whose load a process is: the worktree it counts for and the tool group it is shown in, from its
 //! program name, its working folder and those of its ancestors. Pure; the reads live in `source`.
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
 use serde::Serialize;
@@ -79,6 +79,9 @@ pub(crate) struct Measured {
     pub(crate) under_agent: bool,
     /// Whether an Atlas agent session's process is among itself and its ancestors.
     pub(crate) under_acp_session: bool,
+    /// The pid of the session it is credited to, as the agent read credits a folder: an Atlas agent
+    /// session's, else its nearest agent's and then the outermost one of that tool.
+    pub(crate) session: Option<u32>,
     pub(crate) memory_bytes: u64,
     /// `None` on the first sample, or after a pause long enough to make a rate meaningless.
     pub(crate) cpu_cores: Option<f64>,
@@ -110,6 +113,16 @@ pub(crate) struct WorktreeLoad {
     /// Every group with a process here, heaviest by memory first.
     pub(crate) groups: Vec<LoadGroup>,
     pub(crate) agents_elsewhere: Vec<AgentElsewhere>,
+}
+
+/// One session's own command tree, whichever folders it works in.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct SessionLoad {
+    pub(crate) memory_bytes: u64,
+    pub(crate) cpu_cores: Option<f64>,
+    /// Every group with a process in the tree, heaviest by memory first.
+    pub(crate) groups: Vec<LoadGroup>,
 }
 
 #[derive(Default)]
@@ -257,4 +270,30 @@ pub(crate) fn attribute(
         })
         .collect();
     (rooms, outside.sorted_groups())
+}
+
+/// The load of each session in `sent` with a process credited to it; a session not sent is never
+/// summed, so no pid leaves that the page did not send. O(processes).
+pub(crate) fn by_session(measured: &[Measured], sent: &HashSet<u32>) -> BTreeMap<u32, SessionLoad> {
+    let mut sessions: BTreeMap<u32, Tally> = BTreeMap::new();
+    for process in measured {
+        let Some(session) = process.session.filter(|pid| sent.contains(pid)) else {
+            continue;
+        };
+        sessions
+            .entry(session)
+            .or_default()
+            .add(group_for(&process.name, process.tool), process);
+    }
+    sessions
+        .into_iter()
+        .map(|(pid, tally)| {
+            let load = SessionLoad {
+                memory_bytes: tally.memory_bytes,
+                cpu_cores: tally.cpu_cores,
+                groups: tally.sorted_groups(),
+            };
+            (pid, load)
+        })
+        .collect()
 }

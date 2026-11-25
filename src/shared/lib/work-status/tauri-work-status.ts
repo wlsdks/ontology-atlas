@@ -271,6 +271,14 @@ export interface WorktreeLoad {
   agentsElsewhere: AgentElsewhere[];
 }
 
+/** One session's own command tree, whichever folders it works in. */
+export interface SessionLoad {
+  memoryBytes: number;
+  cpuCores: number | null;
+  /** Every group with a process in the tree. */
+  groups: LoadGroup[];
+}
+
 /** macOS's own memory pressure level. */
 export type MemoryPressure = 'normal' | 'warning' | 'critical';
 
@@ -290,15 +298,23 @@ export interface LoadRead {
   worktrees: Record<string, WorktreeLoad>;
   /** Groups whose processes lie in no worktree, such as a Gradle daemon. */
   outside: LoadGroup[];
+  /** By session pid: only pids the page sent, each with a process credited to it. */
+  sessions: Record<string, SessionLoad>;
   mac: MacLoad | null;
 }
 
+/** Session pids one ask sends at most, as Rust caps them. */
+export const MAX_SESSION_PIDS = 64;
+
 /**
  * One load sample: one process listing, one usage read per process under an agent, three reads for
- * the Mac. `null` while Rust holds load off, while another sample runs, and where this system has none.
+ * the Mac; `sessionPids` are sessions the page shows, summed by their own command trees. `null`
+ * while Rust holds load off, while another sample runs, and where this system has none.
  */
-export async function readLoad(repositoryPath: string): Promise<LoadRead | null> {
-  return isWorkStatusAvailable() ? invoke<LoadRead | null>('work_status_load', { repositoryPath }) : null;
+export async function readLoad(repositoryPath: string, sessionPids: readonly number[] = []): Promise<LoadRead | null> {
+  return isWorkStatusAvailable()
+    ? invoke<LoadRead | null>('work_status_load', { repositoryPath, sessionPids: sessionPids.slice(0, MAX_SESSION_PIDS) })
+    : null;
 }
 
 /**

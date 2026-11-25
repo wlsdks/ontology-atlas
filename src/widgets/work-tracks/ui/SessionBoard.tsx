@@ -4,7 +4,9 @@ import type { CSSProperties } from 'react';
 import { useTranslations } from 'next-intl';
 import { Users } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
+import { sessionLoadOf } from '@/shared/lib/work-status/signals/load';
 import type { SessionBoard as Board } from '@/shared/lib/work-status/signals/session-board';
+import type { LoadRead } from '@/shared/lib/work-status/tauri-work-status';
 import type { TrackSession } from '@/shared/lib/work-status/work-tracks';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { BranchName } from './BranchName';
@@ -22,9 +24,11 @@ const inkOf = (ink: number | null) => (ink === null ? 'var(--work-unheld)' : `va
  * works in. A folder row opens that folder's room panel, where a shared folder's changes are shown
  * once; a block never shows a folder's figures as a session's when another session shares it.
  */
-export function SessionBoard({ board, sessions, copy, repo, pressedKey, onPressFolder, onShowFolders }: {
+export function SessionBoard({ board, sessions, load, copy, repo, pressedKey, onPressFolder, onShowFolders }: {
   board: Board;
   sessions: readonly TrackSession[];
+  /** The last good load sample, `null` while load is off, pending or failed. */
+  load: LoadRead | null;
   copy: ReturnType<typeof useRoomCopy>;
   repo: string;
   /** The folder whose room panel is open. */
@@ -48,7 +52,8 @@ export function SessionBoard({ board, sessions, copy, repo, pressedKey, onPressF
     <div className="pb-2">
       <ul role="list" aria-label={t('bySession.label')} className={styles.grid} data-testid="work-session-board">
         {board.blocks.map(block => {
-          const view = copy.sessionBlock(block, byKey.get(block.key) ?? null);
+          const session = byKey.get(block.key) ?? null;
+          const view = copy.sessionBlock(block, session, sessionLoadOf(load, session?.pid ?? null));
           return (
             <li key={block.key} className="flex min-w-0">
               <Block view={view} pressedKey={pressedKey} roomKeys={block.folders.map(folder => folder.room.key)} onPressFolder={onPressFolder} onShowFolders={onShowFolders} />
@@ -92,6 +97,11 @@ function Block({ view, pressedKey, roomKeys, onPressFolder, onShowFolders }: {
         <span className={cn(styles.state, 'flex-none font-[var(--font-weight-emphasis)]')} data-tone={view.state.tone}>{view.state.text}</span>
         {view.time ? <span className={cn(styles.time, 'text-[color:var(--color-text-tertiary)]')}>{view.time}</span> : null}
       </p>
+      {view.load ? (
+        <p className={cn(styles.load, 'text-label leading-label tabular-nums text-[color:var(--color-text-tertiary)]')} data-testid="work-session-block-load">
+          {view.load}
+        </p>
+      ) : null}
       <ul className={styles.screen} role="list">
         {view.folders.map(folder => (
           <li key={folder.key}>

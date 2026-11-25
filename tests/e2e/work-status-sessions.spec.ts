@@ -151,6 +151,41 @@ test.describe("work status by session", () => {
     await expect(page.getByTestId("work-status-arrange-folder")).toHaveAttribute("aria-selected", "true");
   });
 
+  test("shows each session's own memory and CPU, sends session pids only By session, and drops them with load off", async ({ page }) => {
+    const MB = 1_000_000;
+    const group = (tool: string, count: number, megabytes: number) => ({ tool, count, memoryBytes: megabytes * MB, cpuCores: 0.1 });
+    const own = (megabytes: number, cpuCores: number, groups: unknown[]) => ({ memoryBytes: megabytes * MB, cpuCores, groups });
+    const load = {
+      status: "read", worktrees: {}, outside: [], mac: null,
+      sessions: {
+        [CLAUDE.pid]: own(1200, 0.4, [group("agent", 1, 600), group("node", 3, 500), group("rust", 1, 100)]),
+        201: own(700, 0.2, [group("agent", 1, 700)]),
+        202: own(300, 1.5, [group("agent", 1, 200), group("git", 2, 100)]),
+      },
+    };
+    const loadAsks = async () => (await bridgeCalls(page)).sent.map(each => JSON.parse(each) as { sessionPids?: number[] }).filter(each => each.sessionPids !== undefined);
+    await openWorkStatus(page, ROWS, ACTIVITY, { load });
+    await setSessions(page, LISTED);
+    await expect.poll(async () => (await loadAsks()).length, { timeout: 30_000 }).toBeGreaterThan(0);
+    expect((await loadAsks()).every(ask => ask.sessionPids?.length === 0), "By folder sends no session pid").toBe(true);
+
+    await page.getByTestId("work-status-arrange-session").click();
+    await expect.poll(async () => (await loadAsks()).at(-1)?.sessionPids ?? [], { timeout: 30_000 })
+      .toEqual(expect.arrayContaining([CLAUDE.pid, 201, 202, CLAUDE_LATER.pid]));
+    await expect(block(page, "solo work").getByTestId("work-session-block-load")).toContainText("CPU 0.4 cores · Node.js ×3 · Rust build ×1");
+    // Two sessions in one folder: each its own tree, neither a share of the folder.
+    await expect(block(page, "first in shared").getByTestId("work-session-block-load")).toContainText("CPU 0.2 cores");
+    await expect(block(page, "first in shared").getByTestId("work-session-block-load")).not.toContainText("×");
+    await expect(block(page, "second in shared").getByTestId("work-session-block-load")).toContainText("CPU 1.5 cores · Git ×2");
+    // A session Rust did not answer for shows no line rather than a zero.
+    await expect(block(page, "holds five").getByTestId("work-session-block-load")).toHaveCount(0);
+
+    await page.getByTestId("work-status-reads-open").click();
+    await page.getByTestId("work-status-read-load").getByRole("radio", { name: "Off" }).click();
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("work-session-block-load")).toHaveCount(0);
+  });
+
   test("says no session works here when only worktrees nobody holds remain", async ({ page }) => {
     await openBySession(page, [], [main, row("feat/nobody"), row("feat/left", { lock: { ...locked(CLAUDE, 5), state: "stale" } })]);
     await expect(page.getByTestId("work-session-none")).toContainText("No agent session is working in repo");

@@ -99,7 +99,7 @@ export async function openWorkStatus(page: Page, rows: Row[], activity: Activity
     target.__TAURI_EVENT_PLUGIN_INTERNALS__ = { unregisterListener: () => undefined };
     target.__TAURI_INTERNALS__ = {
       transformCallback: () => 1,
-      invoke(command: string, args: { worktreeId?: string; on?: boolean } = {}) {
+      invoke(command: string, args: { worktreeId?: string; on?: boolean; sessionPids?: number[] } = {}) {
         calls.sent.push(JSON.stringify(args ?? {}));
         const answer = (value: unknown) => new Promise(resolve => setTimeout(() => resolve(value), 60));
         if (command === "pick_source_directory") return answer("/Users/probe/repo");
@@ -139,7 +139,11 @@ export async function openWorkStatus(page: Page, rows: Row[], activity: Activity
         }
         if (command === "work_status_load") {
           calls.loadSamples += 1;
-          return answer(structuredClone(state.load));
+          // As Rust does: a session's figures come back only for a pid the page sent.
+          const read = structuredClone(state.load) as { sessions?: Record<string, unknown> } | null;
+          const sent = new Set((args.sessionPids ?? []).map(String));
+          if (read?.sessions) read.sessions = Object.fromEntries(Object.entries(read.sessions).filter(([pid]) => sent.has(pid)));
+          return answer(read);
         }
         if (command === "work_status_set_load") {
           calls.loadOn = Boolean(args.on);
@@ -162,7 +166,7 @@ export async function openWorkStatus(page: Page, rows: Row[], activity: Activity
         return Promise.reject(new Error(`unstubbed native command: ${command}`));
       },
     };
-  }, { initial: rows, reads: activity, pulse: "pulse" in options ? options.pulse : { worktrees: {} }, load: "load" in options ? options.load : { status: "read", worktrees: {}, outside: [], mac: null }, landedCount: options.landedCount ?? null });
+  }, { initial: rows, reads: activity, pulse: "pulse" in options ? options.pulse : { worktrees: {} }, load: "load" in options ? options.load : { status: "read", worktrees: {}, outside: [], sessions: {}, mac: null }, landedCount: options.landedCount ?? null });
   await page.setViewportSize({ width: options.width ?? 1920, height: options.height ?? 1080 });
   await page.goto(`/${options.locale ?? "en"}/work-status/`);
   await page.getByTestId("work-status-choose").click();

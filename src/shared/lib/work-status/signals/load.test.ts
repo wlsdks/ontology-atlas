@@ -10,6 +10,7 @@ import {
   nextPressure,
   outsideGroupsOf,
   roomLoadOf,
+  sessionLoadOf,
   showsLoadFact,
   type LoadPressure,
 } from './load';
@@ -26,11 +27,30 @@ const worktree = (groups: LoadGroup[], agentsElsewhere: WorktreeLoad['agentsElse
 const mac = (patch: Partial<MacLoad> = {}): MacLoad => ({
   memoryUsedBytes: 20_000 * MIB, memoryTotalBytes: 65_536 * MIB, pressure: 'normal', cpuCores: 2, coreCount: 18, gpuPercent: 31, ...patch,
 });
-const sample = (patch: Partial<MacLoad> = {}, worktrees: Record<string, WorktreeLoad> = {}): LoadRead => ({ status: 'read', worktrees, outside: [], mac: mac(patch) });
-const FAILED: LoadRead = { status: 'failed', worktrees: {}, outside: [], mac: null };
+const sample = (patch: Partial<MacLoad> = {}, worktrees: Record<string, WorktreeLoad> = {}): LoadRead => ({ status: 'read', worktrees, outside: [], sessions: {}, mac: mac(patch) });
+const FAILED: LoadRead = { status: 'failed', worktrees: {}, outside: [], sessions: {}, mac: null };
 
 const after = (samples: LoadRead[], from: LoadPressure = NO_PRESSURE) => samples.reduce(nextPressure, from);
 const repeat = (count: number, read: LoadRead) => Array.from({ length: count }, () => read);
+
+describe('sessionLoadOf', () => {
+  const read: LoadRead = {
+    ...sample(),
+    sessions: { '20': { memoryBytes: 900 * MIB, cpuCores: 0.4, groups: [group('agent', 600), group('git', 10), group('node', 200), group('rust', 90)] } },
+  };
+
+  it('gives a session its own figures and its two heaviest programs besides the agent itself', () => {
+    const facts = sessionLoadOf(read, 20);
+    expect(facts).toMatchObject({ memoryBytes: 900 * MIB, cpuCores: 0.4 });
+    expect(facts?.tools.map(each => each.tool)).toEqual(['node', 'rust']);
+  });
+
+  it('says nothing for a session without a pid, one Rust did not answer for, or no sample', () => {
+    expect(sessionLoadOf(read, null)).toBeNull();
+    expect(sessionLoadOf(read, 30)).toBeNull();
+    expect(sessionLoadOf(null, 20)).toBeNull();
+  });
+});
 
 describe('roomLoadOf', () => {
   it('lists the five heaviest tool groups and counts the rest', () => {

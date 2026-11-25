@@ -8,8 +8,8 @@ vi.mock('@/shared/lib/work-status/tauri-work-status', () => native);
 
 const settle = (ms: number) => act(() => vi.advanceTimersByTimeAsync(ms));
 const mac = { memoryUsedBytes: 1, memoryTotalBytes: 2, pressure: 'normal', cpuCores: 10, coreCount: 10, gpuPercent: null };
-const SAMPLE = { status: 'read', worktrees: { a: { memoryBytes: 5, cpuCores: 1, groups: [], agentsElsewhere: [] } }, outside: [], mac };
-const FAILED = { status: 'failed', worktrees: {}, outside: [], mac: null };
+const SAMPLE = { status: 'read', worktrees: { a: { memoryBytes: 5, cpuCores: 1, groups: [], agentsElsewhere: [] } }, outside: [], sessions: {}, mac };
+const FAILED = { status: 'failed', worktrees: {}, outside: [], sessions: {}, mac: null };
 
 let visibility: DocumentVisibilityState = 'visible';
 function setVisibility(next: DocumentVisibilityState) {
@@ -37,6 +37,18 @@ describe('useWorktreeLoad', () => {
     await settle(LOAD_SAMPLE_MS * 4);
     expect(native.readLoad).toHaveBeenCalledTimes(5);
     expect(native.setLoadRead.mock.calls).toEqual([[true]]);
+  });
+
+  it('sends the session pids of the moment with each ask, and a new set starts no sample of its own', async () => {
+    const { rerender } = renderHook(({ pids }) => useWorktreeLoad('/repo', true, pids), { initialProps: { pids: [20] } });
+    await settle(0);
+    expect(native.readLoad.mock.calls).toEqual([['/repo', [20]]]);
+    rerender({ pids: [20, 30] });
+    await settle(0);
+    expect(native.readLoad).toHaveBeenCalledTimes(1);
+    expect(native.setLoadRead.mock.calls).toEqual([[true]]);
+    await settle(LOAD_SAMPLE_MS);
+    expect(native.readLoad.mock.calls[1]).toEqual(['/repo', [20, 30]]);
   });
 
   it('never runs two samples together, however long one takes', async () => {

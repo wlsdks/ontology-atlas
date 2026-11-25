@@ -220,12 +220,13 @@ pub fn work_status_set_file_pulse(on: bool) {
     file_pulse::set_watching(on);
 }
 
-/// Memory and CPU per worktree, by tool, and this Mac's memory, CPU and GPU, sampled at most once
-/// in 4 s. `None` while switched off, while a sample runs, and on every platform but macOS.
+/// Memory and CPU per worktree and per session the page sends, by tool, and this Mac's memory, CPU
+/// and GPU, sampled at most once in 4 s. `None` while switched off, while a sample runs, and on every platform but macOS.
 #[tauri::command(async)]
 pub fn work_status_load(
     sessions: State<'_, AcpSessions>,
     repository_path: String,
+    session_pids: Option<Vec<u32>>,
 ) -> Option<load::LoadRead> {
     let root = granted_root(&repository_path).ok()?;
     let acp_pids: Vec<u32> = sessions
@@ -233,7 +234,13 @@ pub fn work_status_load(
         .iter()
         .map(|(pid, _)| *pid)
         .collect();
-    load::load_read(&agent_sessions::worktree_folders(&root), &acp_pids)
+    let mut session_pids = session_pids.unwrap_or_default();
+    session_pids.truncate(load::MAX_SESSION_PIDS);
+    load::load_read(
+        &agent_sessions::worktree_folders(&root),
+        &acp_pids,
+        &session_pids,
+    )
 }
 
 /// Load is read now (switched on and the screen visible) or not. Off holds in Rust and drops every

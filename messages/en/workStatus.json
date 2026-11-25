@@ -85,7 +85,7 @@
   },
   "bySession": {
     "label": "Sessions at work",
-    "about": "Each agent session is shown once, with what it says of itself and the folders it works in. Commits and uncommitted files belong to a folder, not to a session: where sessions share a folder, Atlas cannot tell which one changed a file, so that folder's changes are shown once, when you press it. Only sessions working in this repository's folders are shown.",
+    "about": "Each agent session is shown once, with what it says of itself and the folders it works in. Commits and uncommitted files belong to a folder, not to a session: where sessions share a folder, Atlas cannot tell which one changed a file, so that folder's changes are shown once, when you press it. Only sessions working in this repository's folders are shown. Memory and CPU on a session are its own program's and the commands it started, wherever they run, so they hold even in a shared folder.",
     "shared": "Shared with {who}",
     "sharedMany": "Shared with {count} other sessions",
     "moreFolders": "{count, plural, one {and # more folder} other {and # more folders}}",
@@ -96,7 +96,8 @@
     "none": {
       "title": "No agent session is working in {repo}",
       "body": "A session shows here when Claude Code, Codex or Claude Agent in Atlas works in one of this repository's folders. By folder shows every worktree."
-    }
+    },
+    "loadTool": "{tool} ×{count}"
   },
   "stage": {
     "label": "Worktrees at work"

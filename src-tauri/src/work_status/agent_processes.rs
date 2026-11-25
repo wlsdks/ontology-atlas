@@ -94,7 +94,7 @@ pub(crate) fn credit_to_agents(facts: &[ProcessFacts], acp_pids: &[u32]) -> Vec<
 
 /// The nearest agent above a process, then the outermost one of that same tool above it, so a
 /// `claude` an agent runs for a moment counts toward the session that started it.
-fn session_agent<'a>(
+pub(crate) fn session_agent<'a>(
     start: &'a ProcessFacts,
     by_pid: &HashMap<u32, &'a ProcessFacts>,
     acp_pids: &[u32],

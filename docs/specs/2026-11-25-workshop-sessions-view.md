@@ -87,7 +87,7 @@ several worktrees becomes several rooms tied together only by ink.
 | State (waiting, working, finished replying, failed) and since when | the session's, for Claude Code | only Claude Code has a list |
 | The folders it stands in, holds by lock or runs commands in, and who shares each | the session's | the three reads, joined by pid |
 | Commits, uncommitted files, last change, file-change counts | the folder's | Git and macOS name a path, never a session |
-| Memory and CPU | the folder's today | Rust could sum a session's own command tree; no payload does (Later 1) |
+| Memory and CPU | the folder's today | the session's own command tree, summed by Rust for the pids the page sends (Later 1, built) |
 
 **Ranked by what the owner gets back against its cost:** the session as the unit on screen comes
 first, since every fact is already on the page and no read changes. Later 1 to 4 follow in order.
@@ -318,3 +318,6 @@ the other answer.
 
 - 2026-11-25: first draft.
 - 2026-11-25: the owner left the block-or-room question to the lead; the block holds.
+- 2026-11-25: Later 1 built at the owner's request, without its panel: a block's third line gives
+  its own command tree's memory, CPU and two heaviest program groups
+  (`docs/records/decisions/2026-11-25-work-status-session-load-635500f0-5355-46c2-a37f-93d4cac16afc.md`).

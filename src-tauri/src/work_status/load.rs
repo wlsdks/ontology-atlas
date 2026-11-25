@@ -2,7 +2,7 @@
 //! tool, and how busy this Mac's memory, CPU and GPU are. One sample is one process listing, one
 //! usage read per process under an agent (and per `java` outside every tree), and three reads for
 //! the Mac. Only the previous sample is kept, in memory; arguments, environment and open files are
-//! never read, and no pid or path reaches the page.
+//! never read, and no path reaches the page, nor a pid it did not send.
 
 // Only macOS samples, so the sampler's half is unused elsewhere.
 #![cfg_attr(not(target_os = "macos"), allow(dead_code))]
@@ -14,17 +14,17 @@ mod source;
 #[cfg(test)]
 mod tests;
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::path::PathBuf;
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
 use serde::Serialize;
 
-use attribute::{attribute, LoadGroup, Measured, WorktreeLoad};
+use attribute::{attribute, by_session, LoadGroup, Measured, SessionLoad, WorktreeLoad};
 use source::{CpuTicks, LoadSource, Pressure};
 
-use super::agent_processes::under_agents;
+use super::agent_processes::{session_agent, under_agents, ProcessFacts};
 
 /// The page asks every 5 s; an ask sooner than this answers from the last sample.
 const SAMPLE_GAP: Duration = Duration::from_secs(4);
@@ -32,6 +32,8 @@ const SAMPLE_GAP: Duration = Duration::from_secs(4);
 const RATE_LAPSE: Duration = Duration::from_secs(15);
 /// A parent chain longer than this is not an agent's command tree.
 const MAX_ANCESTORS: usize = 64;
+/// Session pids one ask may send; the page shows far fewer.
+pub(crate) const MAX_SESSION_PIDS: usize = 64;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -63,6 +65,8 @@ pub(crate) struct LoadRead {
     pub(crate) worktrees: BTreeMap<String, WorktreeLoad>,
     /// Load running outside every room, by group.
     pub(crate) outside: Vec<LoadGroup>,
+    /// By session pid, only pids the page sent: each session's own command tree.
+    pub(crate) sessions: BTreeMap<u32, SessionLoad>,
     pub(crate) mac: Option<MacLoad>,
 }
 
@@ -72,6 +76,7 @@ impl LoadRead {
             status: LoadStatus::Failed,
             worktrees: BTreeMap::new(),
             outside: vec![],
+            sessions: BTreeMap::new(),
             mac: None,
         }
     }
@@ -94,29 +99,30 @@ fn rounded(cores: f64) -> f64 {
     (cores * 100.0).round() / 100.0
 }
 
-/// Whether one of `acp_pids` is `pid` or above it in `parents`. O(chain length).
-fn under_acp_session(pid: u32, parents: &HashMap<u32, u32>, acp_pids: &[u32]) -> bool {
+/// The one of `acp_pids` that is `pid` or above it in `parents`. O(chain length).
+fn acp_session_of(pid: u32, parents: &HashMap<u32, u32>, acp_pids: &[u32]) -> Option<u32> {
     let mut current = pid;
     for _ in 0..MAX_ANCESTORS {
         if acp_pids.contains(&current) {
-            return true;
+            return Some(current);
         }
         match parents.get(&current) {
             Some(parent) if *parent != 0 && *parent != current => current = *parent,
-            _ => return false,
+            _ => return None,
         }
     }
-    false
+    None
 }
 
 /// One sample through `source`, against the worktrees Git lists, with rates from `previous` when
-/// it is recent; `acp_pids` are Atlas's own agent sessions. `Err` when the listing or a read of
-/// the Mac's memory or CPU fails; a process that ends between the listing and its read is
-/// skipped. O(processes × ancestor chain).
+/// it is recent; `acp_pids` are Atlas's own agent sessions and `session_pids` the sessions the page
+/// shows. `Err` when the listing or a read of the Mac's memory or CPU fails; a process that ends
+/// between the listing and its read is skipped. O(processes × ancestor chain).
 pub(crate) fn sample(
     source: &mut impl LoadSource,
     worktrees: &[(PathBuf, String)],
     acp_pids: &[u32],
+    session_pids: &[u32],
     previous: Option<&Sample>,
     now: Instant,
     now_epoch_seconds: i64,
@@ -124,6 +130,7 @@ pub(crate) fn sample(
     let facts = source.processes().ok_or(())?;
     let under = under_agents(&facts);
     let parents: HashMap<u32, u32> = facts.iter().map(|fact| (fact.pid, fact.parent)).collect();
+    let by_pid: HashMap<u32, &ProcessFacts> = facts.iter().map(|fact| (fact.pid, fact)).collect();
     let previous =
         previous.filter(|earlier| now.saturating_duration_since(earlier.at) <= RATE_LAPSE);
     let wall_ns =
@@ -151,6 +158,13 @@ pub(crate) fn sample(
                 usage.cpu_ns.saturating_sub(before) as f64 / wall_ns.max(1.0)
             })
         });
+        let acp_session = acp_session_of(fact.pid, &parents, acp_pids);
+        let session = acp_session.or_else(|| {
+            under_agent
+                .then(|| session_agent(fact, &by_pid, acp_pids))
+                .flatten()
+                .map(|agent| agent.pid)
+        });
         measured.push(Measured {
             pid: fact.pid,
             parent: fact.parent,
@@ -158,7 +172,8 @@ pub(crate) fn sample(
             name: fact.name.clone(),
             folder: source.working_folder(fact.pid),
             under_agent,
-            under_acp_session: under_acp_session(fact.pid, &parents, acp_pids),
+            under_acp_session: acp_session.is_some(),
+            session,
             memory_bytes: usage.memory_bytes,
             cpu_cores,
         });
@@ -177,10 +192,18 @@ pub(crate) fn sample(
     for group in &mut outside {
         group.cpu_cores = group.cpu_cores.map(rounded);
     }
+    let mut sessions = by_session(&measured, &session_pids.iter().copied().collect());
+    for session in sessions.values_mut() {
+        session.cpu_cores = session.cpu_cores.map(rounded);
+        for group in &mut session.groups {
+            group.cpu_cores = group.cpu_cores.map(rounded);
+        }
+    }
     let read = LoadRead {
         status: LoadStatus::Read,
         worktrees: rooms,
         outside,
+        sessions,
         mac: Some(MacLoad {
             memory_used_bytes: memory.used_bytes,
             memory_total_bytes: memory.total_bytes,
@@ -213,10 +236,23 @@ struct Sampler {
 
 static SAMPLER: Mutex<Option<Sampler>> = Mutex::new(None);
 
-/// The load of each worktree in `worktrees` and of this Mac. Samples when `SAMPLE_GAP` has passed,
-/// else answers with the last sample; `None` while another sample runs or load is switched off.
+/// `read` with only the sessions in `session_pids`: a last sample answered again was taken for
+/// the pids of an earlier ask.
+fn for_sessions(mut read: LoadRead, session_pids: &[u32]) -> LoadRead {
+    let sent: HashSet<u32> = session_pids.iter().copied().collect();
+    read.sessions.retain(|pid, _| sent.contains(pid));
+    read
+}
+
+/// The load of each worktree in `worktrees`, of each session in `session_pids` and of this Mac.
+/// Samples when `SAMPLE_GAP` has passed, else answers with the last sample; `None` while another
+/// sample runs or load is switched off.
 #[cfg(target_os = "macos")]
-pub(crate) fn load_read(worktrees: &[(PathBuf, String)], acp_pids: &[u32]) -> Option<LoadRead> {
+pub(crate) fn load_read(
+    worktrees: &[(PathBuf, String)],
+    acp_pids: &[u32],
+    session_pids: &[u32],
+) -> Option<LoadRead> {
     let mut guard = SAMPLER.try_lock().ok()?;
     let sampler = guard.get_or_insert_with(Sampler::default);
     if sampler.off {
@@ -225,7 +261,7 @@ pub(crate) fn load_read(worktrees: &[(PathBuf, String)], acp_pids: &[u32]) -> Op
     let now = Instant::now();
     if let Some((at, read)) = &sampler.last {
         if now.saturating_duration_since(*at) < SAMPLE_GAP {
-            return Some(read.clone());
+            return Some(for_sessions(read.clone(), session_pids));
         }
     }
     let epoch_seconds = std::time::SystemTime::now()
@@ -235,6 +271,7 @@ pub(crate) fn load_read(worktrees: &[(PathBuf, String)], acp_pids: &[u32]) -> Op
         &mut source::MacSource,
         worktrees,
         acp_pids,
+        session_pids,
         sampler.previous.as_ref(),
         now,
         epoch_seconds,
@@ -251,7 +288,11 @@ pub(crate) fn load_read(worktrees: &[(PathBuf, String)], acp_pids: &[u32]) -> Op
 
 /// Load is read on macOS alone.
 #[cfg(not(target_os = "macos"))]
-pub(crate) fn load_read(_worktrees: &[(PathBuf, String)], _acp_pids: &[u32]) -> Option<LoadRead> {
+pub(crate) fn load_read(
+    _worktrees: &[(PathBuf, String)],
+    _acp_pids: &[u32],
+    _session_pids: &[u32],
+) -> Option<LoadRead> {
     None
 }
 

@@ -126,6 +126,15 @@
   content: "· ";
 }
 
+/* What the session's own command tree uses: one line, giving way before the state above it. */
+.load {
+  margin-top: -6px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* The folders on the room's black screen, as tall as its rows; the block's wall evens a row of blocks. */
 .screen {
   display: flex;

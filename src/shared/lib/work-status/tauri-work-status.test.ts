@@ -30,20 +30,21 @@ describe('Work status bridge', () => {
     expect(tauri.invoke).not.toHaveBeenCalled();
   });
 
-  it('sends each new command only its switch, the repository and worktree ids', async () => {
+  it('sends each new command only its switch, the repository, worktree ids and at most 64 session pids', async () => {
     tauri.isTauri.mockReturnValue(true);
     tauri.invoke.mockResolvedValue(null);
     await readFilePulse('/repo', ['a', 'b']);
     await pauseFilePulse();
     await setFilePulseRead(false);
-    await readLoad('/repo');
+    const pids = Array.from({ length: 70 }, (_, index) => 100 + index);
+    await readLoad('/repo', pids);
     await setLoadRead(false);
     await setSessionNamesRead(false);
     expect(tauri.invoke.mock.calls).toEqual([
       ['work_status_file_pulse', { repositoryPath: '/repo', worktreeIds: ['a', 'b'] }],
       ['work_status_pause_file_pulse'],
       ['work_status_set_file_pulse', { on: false }],
-      ['work_status_load', { repositoryPath: '/repo' }],
+      ['work_status_load', { repositoryPath: '/repo', sessionPids: pids.slice(0, 64) }],
       ['work_status_set_load', { on: false }],
       ['work_status_set_session_names', { on: false }],
     ]);
