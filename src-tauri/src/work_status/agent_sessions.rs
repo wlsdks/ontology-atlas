@@ -1,14 +1,15 @@
 //! Whether a Claude Code session waits for its person, works or has replied, from Claude Code's
 //! own session list (`claude agents --json`). The list is read by one fixed call on macOS, which
 //! gives the program no network; no argument, environment or transcript of any process is read,
-//! and nothing is written. Only the last list, without names or ids, is held, in memory, until
-//! the person switches the read off.
+//! and nothing is written. Only the last list, without ids, is held, in memory, until the person
+//! switches the read off; it holds each session's name only while the person leaves names on.
 
 // Only macOS runs the call, so its parse and half the statuses are unused elsewhere.
 #![cfg_attr(not(target_os = "macos"), allow(dead_code))]
 
 #[cfg(target_os = "macos")]
 mod call;
+mod name;
 mod pace;
 mod parse;
 #[cfg(test)]
@@ -23,6 +24,7 @@ use serde::Serialize;
 use super::agent_processes::{AgentProcess, AgentTool};
 use super::fingerprint::common_dir;
 use super::worktrees::{admin_ids_by_worktree, normalize, points_back};
+use name::SessionName;
 use pace::{Pace, SeenSession};
 use parse::{ListedSession, SessionState};
 
@@ -37,6 +39,9 @@ pub(crate) struct SessionRow {
     worktree_id: String,
     pid: u32,
     state: SessionState,
+    /// One line of at most 60 characters; never written, logged or sent anywhere but the page.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    name: Option<SessionName>,
 }
 
 /// How the last read of the list went: what the status line says beside its switch.
@@ -69,6 +74,8 @@ pub(crate) struct SessionsRead {
 struct Reader {
     /// The person switched the read off: no ask starts the program, whoever sends it.
     off: bool,
+    /// The person switched session names off: the list is read without them.
+    names_off: bool,
     pace: Pace,
     status: ReadStatus,
     listed: Vec<ListedSession>,
@@ -92,7 +99,7 @@ pub(super) fn sessions_read(
     }
     let sessions = claude_sessions(processes);
     if reader.pace.take_turn(Instant::now(), &sessions) {
-        (reader.status, reader.listed) = match read_list(working_folder) {
+        (reader.status, reader.listed) = match read_list(working_folder, !reader.names_off) {
             Ok(listed) => (ReadStatus::Read, listed),
             Err(status) => (status, vec![]),
         };
@@ -121,6 +128,27 @@ pub(super) fn set_reading(on: bool) {
     reader.pace.expect_change();
 }
 
+/// Whether the person leaves session names on. Off drops every name held at once, waiting out a
+/// read in flight; on asks for the next read as after a change, so names return within one read.
+pub(super) fn set_names(on: bool) {
+    let Ok(mut guard) = READER.lock() else {
+        return;
+    };
+    let reader = guard.get_or_insert_with(Reader::default);
+    reader.names_off = !on;
+    if on {
+        reader.pace.expect_change();
+    } else {
+        forget_names(&mut reader.listed);
+    }
+}
+
+pub(crate) fn forget_names(listed: &mut [ListedSession]) {
+    for session in listed {
+        session.name = None;
+    }
+}
+
 pub(crate) fn status_with_no_session() -> ReadStatus {
     if cfg!(target_os = "macos") {
         ReadStatus::NoSession
@@ -142,22 +170,22 @@ pub(crate) fn claude_sessions(processes: &[AgentProcess]) -> Vec<SeenSession> {
 }
 
 #[cfg(target_os = "macos")]
-fn read_list(working_folder: &Path) -> Result<Vec<ListedSession>, ReadStatus> {
+fn read_list(working_folder: &Path, keep_names: bool) -> Result<Vec<ListedSession>, ReadStatus> {
     let home = std::env::var_os("HOME").map(PathBuf::from);
     let home = home.ok_or(ReadStatus::NotFound)?;
     let program = call::installed_program(&home).ok_or(ReadStatus::NotFound)?;
     let command = call::list_command(&program, &home, working_folder);
-    listed_from(call::run_capped(
-        command,
-        call::TIME_LIMIT,
-        call::OUTPUT_CAP_BYTES,
-    ))
+    listed_from(
+        call::run_capped(command, call::TIME_LIMIT, call::OUTPUT_CAP_BYTES),
+        keep_names,
+    )
 }
 
 /// The list in what a call printed, or the reason there is none.
 #[cfg(target_os = "macos")]
 pub(crate) fn listed_from(
     printed: Result<Vec<u8>, call::CallFailure>,
+    keep_names: bool,
 ) -> Result<Vec<ListedSession>, ReadStatus> {
     let output = printed.map_err(|failure| match failure {
         call::CallFailure::TimedOut => ReadStatus::TimedOut,
@@ -165,13 +193,13 @@ pub(crate) fn listed_from(
     })?;
     std::str::from_utf8(&output)
         .ok()
-        .and_then(parse::parse_sessions)
+        .and_then(|text| parse::parse_sessions(text, keep_names))
         .ok_or(ReadStatus::UnknownForm)
 }
 
 /// Only macOS can run the program with no network, so only macOS runs it.
 #[cfg(not(target_os = "macos"))]
-fn read_list(_working_folder: &Path) -> Result<Vec<ListedSession>, ReadStatus> {
+fn read_list(_working_folder: &Path, _keep_names: bool) -> Result<Vec<ListedSession>, ReadStatus> {
     Err(ReadStatus::Unsupported)
 }
 
@@ -222,6 +250,7 @@ pub(crate) fn join(
                 worktree_id: worktree_id.clone(),
                 pid: entry.pid,
                 state: entry.state,
+                name: entry.name.clone(),
             })
         })
         .collect()
