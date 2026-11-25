@@ -27,7 +27,7 @@
   },
   "sessions": {
     "chip": {
-      "on": "세션 목록 읽는 중",
+      "on": "세션 목록 켜짐",
       "off": "세션 목록 꺼짐",
       "unreadable": "세션 목록 읽지 못함"
     },
@@ -53,6 +53,21 @@
       "unknownForm": "목록이 Atlas가 모르는 형식이에요. 새 {tool}에서 바뀌었을 수 있어요."
     }
   },
+  "reads": {
+    "title": "작업 현황이 이 Mac에서 읽는 것"
+  },
+  "names": {
+    "switch": "세션 이름 보기",
+    "status": "{tool}가 세션마다 붙인 이름을 방에 보여 줘요. 그래서 그 세션이 열린 터미널이나 창을 찾을 수 있어요. 이름은 {tool}가 대화 내용으로 지은 제목일 수도 있어요. Atlas는 작업 현황이 열려 있는 동안만 이름을 메모리에 두고, 파일이나 로그에 쓰거나 어디로 보내거나 에이전트에게 넘기지 않아요.",
+    "off": "Atlas가 세션 이름을 읽지 않아요. 방은 세션을 {example}처럼 도구와 번호로 불러요.",
+    "needsList": "세션 이름은 세션 목록에서 읽는데, 세션 목록이 꺼져 있어요."
+  },
+  "sessionLine": {
+    "workingHere": "여기서 명령 실행 중",
+    "forMinutes": "{count}분째",
+    "forHours": "{count}시간째",
+    "more": "외 세션 {count}개"
+  },
   "stage": {
     "label": "작업 중인 워크트리"
   },
@@ -76,7 +91,8 @@
     "commits": "커밋 {count}개",
     "noCommits": "아직 커밋 없음",
     "onlyInGit": "Git에만 남음",
-    "notInBase": "{branch}에 없는 커밋 {count}개"
+    "notInBase": "{branch}에 없는 커밋 {count}개",
+    "sessions": "세션 {count}개"
   },
   "monitor": {
     "lockedAt": "{time}에 잠금",
@@ -98,6 +114,45 @@
     "rootFolder": "저장소 최상위",
     "areaFiles": "{count}개",
     "areasMore": "그 외 {count}곳"
+  },
+  "pulse": {
+    "switch": "파일 변경 지켜보기",
+    "status": "작업 현황이 열려 있는 동안 이 저장소의 워크트리에서 파일이 바뀔 때마다 macOS가 Atlas에 알려 주고, Atlas는 바뀐 횟수를 세요. 파일을 열지 않고 파일 이름도 남기지 않아요. .git 안의 변경과 Git이 무시하는 파일의 변경은 세지 않아요. 센 횟수는 1시간 동안 메모리에만 있어요.",
+    "off": "Atlas가 파일 변경을 지켜보지 않아요. 방은 Atlas가 다음에 Git을 읽을 때, 길게는 1분 30초 뒤에 변경을 보여 줘요.",
+    "lastMinute": "지난 1분 파일 변경 {count}건",
+    "lastHour": "지난 1시간 파일 변경 {count}건",
+    "onlyOpen": "Atlas는 작업 현황이 열려 있는 동안만 세요.",
+    "none": "지난 1시간 동안 여기서 센 파일 변경이 없어요.",
+    "noAgent": "여기서 파일이 바뀌고 있는데, 이 폴더에서 에이전트가 보이지 않아요.",
+    "unwatched": "macOS가 이 폴더를 지켜보지 못해서, 이 방은 Atlas가 Git을 읽을 때만 변경을 보여 줘요."
+  },
+  "load": {
+    "switch": "메모리, CPU, GPU 사용량 읽기",
+    "status": "작업 현황이 열려 있는 동안 5초마다 Atlas가 각 에이전트와 그 에이전트가 시작한 명령이 메모리와 CPU를 얼마나 쓰는지, 이 Mac의 메모리, CPU, GPU가 얼마나 바쁜지 읽어요. 프로그램 이름은 읽지만 명령줄은 읽지 않아요. 아무것도 쓰지 않고, 아무것도 이 Mac 밖으로 나가지 않아요.",
+    "off": "Atlas가 메모리, CPU, GPU 사용량을 읽지 않아서 어느 방이나 머리글에도 나오지 않아요.",
+    "room": "메모리 {memory} · CPU {total}코어 중 {cores}코어",
+    "fact": "{memory} · CPU {cores}코어",
+    "groupLine": "{tool} {count}개 · {memory} · CPU {cores}코어",
+    "tool": {
+      "agent": "에이전트 프로그램",
+      "node": "Node.js",
+      "rust": "Rust 빌드",
+      "java": "Java 프로그램",
+      "gradleDaemon": "Gradle 데몬",
+      "xcode": "Xcode 빌드",
+      "python": "Python 프로그램",
+      "git": "Git",
+      "other": "그 밖의 프로그램"
+    },
+    "moreGroups": "외 {count}종류",
+    "agentElsewhere": "{who} 자체는 처음 시작한 폴더인 {branch}에서 세요. 이 방은 그 에이전트가 여기서 실행하는 명령만 세요.",
+    "none": "이 방에서 실행 중인 에이전트 프로그램이 없어서 보여 줄 부하가 없어요.",
+    "outside": "어느 방에도 속하지 않고 실행 중: {list}",
+    "mac": "이 Mac: 메모리 {total} 중 {used} · CPU {coreCount}코어 중 {cores}코어 · GPU {gpu}%",
+    "macNoGpu": "이 Mac: 메모리 {total} 중 {used} · CPU {coreCount}코어 중 {cores}코어",
+    "gpuWhy": "macOS는 GPU 사용량을 Mac 전체로만 알려 줘요. 어느 프로그램이 쓰는지 알려면 관리자 권한이 필요한데, Atlas는 그 권한을 요청하지 않아요.",
+    "gpuMissing": "이 Mac이 GPU 사용량을 알려 주지 않았어요.",
+    "failed": "지금 macOS에서 부하를 읽지 못했어요. 5초 뒤에 다시 읽어요. 이 방의 다른 내용에는 영향이 없어요."
   },
   "shelf": {
     "merged": "{branch}에 머지됨",
@@ -129,7 +184,11 @@
     "waiting": "내 답 대기 {count}",
     "sameFolder": "같은 폴더 {count}",
     "cleanup": "정리 {count}",
-    "pointTo": "어느 워크트리인지 보기"
+    "pointTo": "어느 워크트리인지 보기",
+    "memory": "메모리가 부족해요",
+    "cpu": "CPU가 꽉 찼어요",
+    "gpu": "GPU가 꽉 찼어요",
+    "pointToLoad": "가장 많이 쓰는 방 보기"
   },
   "git": {
     "uncommitted": "커밋 안 한 파일 {count}개",
@@ -171,17 +230,20 @@
       "commits": "{branch} 이후 커밋",
       "uncommitted": "커밋 안 한 파일"
     },
-    "quiet": "{branch} 이후 커밋도, 커밋 안 한 파일도 없어요."
+    "quiet": "{branch} 이후 커밋도, 커밋 안 한 파일도 없어요.",
+    "sessionsTitle": "이 폴더의 세션",
+    "pulseTitle": "파일 변경",
+    "loadTitle": "부하"
   },
   "about": {
     "label": "이 화면이 보여 주는 것",
     "body": "방 하나가 워크트리 하나예요. 워크트리는 이 저장소에서 브랜치 하나를 작업하는 별도 폴더예요. 방의 화면에는 브랜치, 최근 커밋, 바꿨지만 아직 커밋하지 않은 파일이 나와요. 에이전트 세션이 작업 중인 방은 불이 켜져 있어요. 방을 누르면 나머지를 볼 수 있어요."
   },
   "landed": {
-    "title": "<code>{branch}</code>에 들어간 작업",
-    "note": "워크트리를 지워도 여기 남아요. Git 기록에서 바로 읽어요.",
+    "title": "<code>{branch}</code>에 머지된 작업",
+    "note": "한 줄이 머지된 풀 리퀘스트 하나예요. 풀 리퀘스트 없이 푸시한 커밋도 한 줄이에요. Atlas는 이 Mac에 있는 브랜치를 읽어서, 아직 풀하지 않은 변경은 목록에 없어요.",
     "summary": "오늘 {today}개 · 최근 7일 {week}개",
-    "none": "아직 {branch}에 들어간 작업이 없어요.",
+    "none": "아직 {branch}에 머지된 작업이 없어요.",
     "today": "오늘",
     "yesterday": "어제",
     "dayCount": "{count}개",
@@ -197,18 +259,18 @@
       "test": "테스트",
       "chore": "관리"
     },
-    "landedAt": "{ago} · {time}에 들어감",
+    "landedAt": "{ago} · {time}에 머지됨",
     "stat": {
       "commits": "커밋",
       "files": "파일",
       "added": "추가한 줄",
       "removed": "지운 줄"
     },
-    "commitsTitle": "이 작업의 커밋",
+    "commitsTitle": "이 변경의 커밋",
     "filesTitle": "바뀐 파일",
-    "squashed": "커밋 하나로 합쳐서 들어와서 따로 볼 커밋이 없어요.",
+    "squashed": "커밋 하나로 합쳐서 머지돼서 따로 볼 커밋이 없어요.",
     "binary": "바이너리",
-    "unreadable": "이 작업의 커밋과 파일을 Git에서 읽지 못했어요.",
+    "unreadable": "이 변경의 커밋과 파일을 Git에서 읽지 못했어요. 닫았다가 다시 열면 다시 읽어요.",
     "copyHash": "커밋 해시 복사"
   }
 }
