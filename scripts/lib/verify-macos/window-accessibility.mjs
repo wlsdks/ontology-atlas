@@ -298,12 +298,40 @@ export function validateFrontmostAccessibilityRows(rows) {
 }
 
 
+/** What the AX probe prints, and exits with, when macOS does not let the calling process read Accessibility. */
+export const ACCESSIBILITY_NOT_TRUSTED = "ACCESSIBILITY_NOT_TRUSTED";
+export const ACCESSIBILITY_NOT_TRUSTED_EXIT = 3;
+
+/**
+ * Why the AX text probe failed, as lines for `fail()`. An untrusted caller reads every attribute as
+ * API-disabled, which says nothing about the app; the message names the permission instead.
+ */
+export function accessibilityTextProbeFailure({ status, stderr = "", error = null }) {
+  if (status === ACCESSIBILITY_NOT_TRUSTED_EXIT && stderr.includes(ACCESSIBILITY_NOT_TRUSTED)) {
+    return [
+      "this process may not read macOS Accessibility, so the app's Accessibility text was not judged",
+      "allow the program that runs this command in System Settings > Privacy & Security > Accessibility, or rerun without --require-accessibility-text if only window proof is needed",
+    ];
+  }
+  return [
+    "failed to inspect macOS Accessibility text with the Swift AX probe",
+    "grant Terminal/Codex Accessibility permission or rerun without --require-accessibility-text if only window proof is needed",
+    error?.code === "ETIMEDOUT" ? `Swift AX probe did not respond within ${ACCESSIBILITY_TEXT_TIMEOUT_MS}ms` : null,
+    stderr.trim() ? `stderr:\n${stderr.trim()}` : null,
+  ].filter(Boolean);
+}
+
 export function buildAccessibilityTextProbeSwift(pids, requiredText = []) {
   const pidList = JSON.stringify(pids);
   const requiredList = JSON.stringify(requiredText);
   return `
 import ApplicationServices
 import Foundation
+
+if !AXIsProcessTrusted() {
+  FileHandle.standardError.write("${ACCESSIBILITY_NOT_TRUSTED}\\n".data(using: .utf8)!)
+  exit(${ACCESSIBILITY_NOT_TRUSTED_EXIT})
+}
 
 let requiredPids: Set<pid_t> = ${pidList}
 let requiredText = ${requiredList}
@@ -475,18 +503,7 @@ export function readAccessibilityText(pids, requiredText) {
     timeout: ACCESSIBILITY_TEXT_TIMEOUT_MS,
   });
   if (result.status !== 0) {
-    fail(
-      [
-        "failed to inspect macOS Accessibility text with the Swift AX probe",
-        "grant Terminal/Codex Accessibility permission or rerun without --require-accessibility-text if only window proof is needed",
-        result.error?.code === "ETIMEDOUT"
-          ? `Swift AX probe did not respond within ${ACCESSIBILITY_TEXT_TIMEOUT_MS}ms`
-          : null,
-        result.stderr.trim() ? `stderr:\n${result.stderr.trim()}` : null,
-      ]
-        .filter(Boolean)
-        .join("\n"),
-    );
+    fail(accessibilityTextProbeFailure(result).join("\n"));
   }
   return result.stdout;
 }
