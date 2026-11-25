@@ -85,7 +85,6 @@ pub(crate) struct Room {
     /// Whether Git ignores the path, by hash.
     judged: HashMap<PathHash, bool>,
     pending: HashMap<String, Vec<i64>>,
-    last_git_call: Option<Instant>,
 }
 
 impl Room {
@@ -98,8 +97,14 @@ impl Room {
             last_change_ms: None,
             judged: HashMap::new(),
             pending: HashMap::new(),
-            last_git_call: None,
         }
+    }
+
+    fn judge(&mut self, hash: PathHash, is_ignored: bool) {
+        if self.judged.len() >= JUDGED_CAP {
+            self.judged.clear();
+        }
+        self.judged.insert(hash, is_ignored);
     }
 
     fn count(&mut self, hash: PathHash, at_ms: i64, now_ms: i64) {
@@ -148,9 +153,20 @@ pub(crate) struct VerdictBatch {
 }
 
 impl VerdictBatch {
+    /// In the order Git is asked about them.
     pub(crate) fn relative_paths(&self) -> impl Iterator<Item = &str> {
         self.paths.iter().map(|(path, _)| path.as_str())
     }
+}
+
+/// Git's answer for a batch, in the order it was asked.
+#[derive(Debug, Default, PartialEq, Eq)]
+pub(crate) struct Verdict {
+    /// The paths Git ignores among those it judged.
+    pub(crate) ignored: HashSet<String>,
+    /// The path Git refused to judge (inside a submodule, beyond a link): it stopped there, so
+    /// the paths after it wait for the next call.
+    pub(crate) refused: Option<String>,
 }
 
 /// What reaches the page for one worktree.
@@ -179,9 +195,25 @@ pub(crate) struct Pulse {
     /// Deepest first, so a nested worktree claims its own paths.
     listed: Vec<(PathBuf, String)>,
     rooms: HashMap<String, Room>,
+    /// The last Git call per worktree id, kept apart from the rooms so a room that leaves and
+    /// returns, or a switch turned off and on, cannot start a second call within the gap.
+    git_calls: HashMap<String, Instant>,
 }
 
 impl Pulse {
+    /// Off: every room and count goes; only the Git pace stays.
+    pub(crate) fn forget_counts(&mut self) {
+        self.listed.clear();
+        self.rooms.clear();
+    }
+
+    /// Hidden: paths waiting for Git are dropped, so no path is held while nothing is watched.
+    pub(crate) fn forget_waiting(&mut self) {
+        for room in self.rooms.values_mut() {
+            room.pending.clear();
+        }
+    }
+
     /// The worktrees Git lists and the ids the page draws; a room no longer drawn, moved or listed
     /// is dropped with its counts.
     pub(crate) fn set_rooms(&mut self, mut listed: Vec<(PathBuf, String)>, drawn: &[String]) {
@@ -251,67 +283,79 @@ impl Pulse {
     }
 
     /// macOS dropped notices under `path`, or everywhere when it names none: that step counts
-    /// one change, and nothing is rescanned.
+    /// one change, and nothing is rescanned. A folder under `.git` or a build folder counts none.
     pub(crate) fn dropped_notices(&mut self, path: Option<&Path>, at_ms: i64) {
-        match path.and_then(|path| self.room_for(path)) {
-            Some((room, _)) => room.count(RESCAN_HASH, at_ms, at_ms),
-            None => {
-                for room in self.rooms.values_mut() {
-                    room.count(RESCAN_HASH, at_ms, at_ms);
-                }
+        let Some(path) = path else {
+            for room in self.rooms.values_mut() {
+                room.count(RESCAN_HASH, at_ms, at_ms);
+            }
+            return;
+        };
+        if let Some((room, relative)) = self.room_for(path) {
+            if !is_skipped(&relative) {
+                room.count(RESCAN_HASH, at_ms, at_ms);
             }
         }
     }
 
     /// The waiting paths of each worktree whose last Git call is `GIT_CALL_GAP` behind, taken out.
     pub(crate) fn take_due_batches(&mut self, now: Instant) -> Vec<VerdictBatch> {
-        let mut batches: Vec<VerdictBatch> = self
-            .rooms
-            .values_mut()
-            .filter(|room| !room.pending.is_empty())
-            .filter(|room| {
-                room.last_git_call
-                    .is_none_or(|last| now.saturating_duration_since(last) >= GIT_CALL_GAP)
-            })
-            .map(|room| {
-                room.last_git_call = Some(now);
-                let mut paths: Vec<(String, Vec<i64>)> = room.pending.drain().collect();
-                paths.sort();
-                VerdictBatch {
-                    worktree_id: room.id.clone(),
-                    folder: room.folder.clone(),
-                    paths,
-                }
-            })
-            .collect();
+        self.git_calls
+            .retain(|_, last| now.saturating_duration_since(*last) < GIT_CALL_GAP);
+        let mut batches = Vec::new();
+        for room in self.rooms.values_mut() {
+            if room.pending.is_empty() || self.git_calls.contains_key(&room.id) {
+                continue;
+            }
+            self.git_calls.insert(room.id.clone(), now);
+            let mut paths: Vec<(String, Vec<i64>)> = room.pending.drain().collect();
+            paths.sort();
+            batches.push(VerdictBatch {
+                worktree_id: room.id.clone(),
+                folder: room.folder.clone(),
+                paths,
+            });
+        }
         batches.sort_by(|a, b| a.worktree_id.cmp(&b.worktree_id));
         batches
     }
 
-    /// Git's answer for a batch: the paths it ignores, or `None` when it could not say, which
-    /// counts nothing and remembers nothing.
+    /// Git's answer for a batch, or `None` when it could not say, which counts nothing and
+    /// remembers nothing. A refused path counts nothing and is not asked again until the
+    /// worktree's `.gitignore` changes; the paths after it wait for the next call.
     pub(crate) fn apply_verdicts(
         &mut self,
         batch: VerdictBatch,
-        ignored: Option<&HashSet<String>>,
+        verdict: Option<&Verdict>,
         now_ms: i64,
     ) {
-        let (Some(ignored), Some(room)) = (ignored, self.rooms.get_mut(&batch.worktree_id)) else {
+        let (Some(verdict), Some(room)) = (verdict, self.rooms.get_mut(&batch.worktree_id)) else {
             return;
         };
         if room.folder != batch.folder {
             return;
         }
-        for (relative, times) in batch.paths {
-            let is_ignored = ignored.contains(&relative);
+        let refused_at = verdict
+            .refused
+            .as_ref()
+            .and_then(|refused| batch.paths.iter().position(|(path, _)| path == refused));
+        for (index, (relative, times)) in batch.paths.into_iter().enumerate() {
             let hash = path_hash(&relative);
-            if room.judged.len() >= JUDGED_CAP {
-                room.judged.clear();
-            }
-            room.judged.insert(hash, is_ignored);
-            if !is_ignored {
-                for at_ms in times {
-                    room.count(hash, at_ms, now_ms);
+            match refused_at.map(|refused| index.cmp(&refused)) {
+                Some(std::cmp::Ordering::Equal) => room.judge(hash, true),
+                Some(std::cmp::Ordering::Greater) => {
+                    for at_ms in times {
+                        room.wait_for_verdict(relative.clone(), at_ms);
+                    }
+                }
+                _ => {
+                    let is_ignored = verdict.ignored.contains(&relative);
+                    room.judge(hash, is_ignored);
+                    if !is_ignored {
+                        for at_ms in times {
+                            room.count(hash, at_ms, now_ms);
+                        }
+                    }
                 }
             }
         }

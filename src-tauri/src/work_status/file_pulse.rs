@@ -8,12 +8,14 @@
 #![cfg_attr(not(target_os = "macos"), allow(dead_code))]
 
 mod counts;
+#[cfg(target_os = "macos")]
 mod ignore_check;
 #[cfg(test)]
 mod tests;
 
-use std::collections::{BTreeMap, HashSet};
+use std::collections::BTreeMap;
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
@@ -21,11 +23,17 @@ use notify_debouncer_full::notify::event::{CreateKind, ModifyKind, RemoveKind};
 use notify_debouncer_full::notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use serde::Serialize;
 
-use counts::{Pulse, VerdictBatch, WorktreePulse};
+use counts::{Pulse, Verdict, VerdictBatch, WorktreePulse};
 
-/// The page asks every 2 s while visible; a watcher not asked for this long counts nothing, so a
-/// page that vanished without saying so starts no hidden count.
-const ASK_LAPSE: Duration = Duration::from_secs(10);
+/// The page asks every 2 s while visible. Past this long without an ask, Rust takes the screen
+/// as hidden: the watcher counts nothing and is ended, even if the page never said so.
+static ASK_LAPSE_MS: AtomicU64 = AtomicU64::new(10_000);
+/// How many times per lapse the guard looks.
+const LAPSE_CHECKS: u32 = 5;
+
+fn ask_lapse() -> Duration {
+    Duration::from_millis(ASK_LAPSE_MS.load(Ordering::Relaxed))
+}
 
 #[derive(Debug, PartialEq, Eq, Serialize)]
 pub(crate) struct PulseRead {
@@ -50,10 +58,14 @@ struct Live {
     _watcher: RecommendedWatcher,
     roots: Vec<PathBuf>,
     accepted: Vec<PathBuf>,
+    /// Which watcher this is, so a lapse guard ends only its own.
+    generation: u64,
 }
 
 /// Held apart from `State`: dropping a watcher waits for its callback, which takes `State`.
+/// Lock order: `ASKING`, then `WATCHER`, then `State`; the callback takes `State` alone.
 static WATCHER: Mutex<Option<Live>> = Mutex::new(None);
+static GENERATION: AtomicU64 = AtomicU64::new(0);
 
 fn now_ms() -> i64 {
     SystemTime::now()
@@ -61,35 +73,28 @@ fn now_ms() -> i64 {
         .map_or(0, |since| since.as_millis() as i64)
 }
 
-/// One ask at a time, so two asks never race over the watcher or a worktree's Git call.
+/// One ask, pause or switch at a time, so a pause can never land inside an ask and be undone by it.
 static ASKING: Mutex<()> = Mutex::new(());
 
 /// The counts of each drawn worktree. `listed` is every worktree Git lists for the repository;
-/// `drawn` the ids the page draws as rooms, of which only listed ones are watched. Starts or
-/// moves the watcher, asks Git about waiting paths through `check` with no lock held, and
+/// `drawn` the ids the page draws as rooms, of which only listed ones are watched. Asks Git
+/// about waiting paths through `check` with no lock held, starts or moves the watcher, and
 /// answers from memory. `None` while switched off, also when switched off during the ask.
 pub(crate) fn pulse_read(
     listed: Vec<(PathBuf, String)>,
     drawn: &[String],
-    mut check: impl FnMut(&VerdictBatch) -> Option<HashSet<String>>,
+    mut check: impl FnMut(&VerdictBatch) -> Option<Verdict>,
 ) -> Option<PulseRead> {
     let _asking = ASKING.lock().ok()?;
-    let roots = {
+    let (roots, batches) = {
         let mut state = state().lock().ok()?;
         if state.off {
             return None;
         }
         state.last_ask = Some(Instant::now());
         state.pulse.set_rooms(listed, drawn);
-        outermost(state.pulse.folders())
-    };
-    let accepted = watch(&roots);
-    let batches = {
-        let mut state = state().lock().ok()?;
-        state
-            .pulse
-            .mark_watched(|folder| accepted.iter().any(|root| folder.starts_with(root)));
-        state.pulse.take_due_batches(Instant::now())
+        let batches = state.pulse.take_due_batches(Instant::now());
+        (outermost(state.pulse.folders()), batches)
     };
     let verdicts: Vec<_> = batches
         .into_iter()
@@ -98,10 +103,14 @@ pub(crate) fn pulse_read(
             (batch, verdict)
         })
         .collect();
+    let accepted = watch(&roots);
     let mut state = state().lock().ok()?;
     if state.off {
         return None;
     }
+    state
+        .pulse
+        .mark_watched(|folder| accepted.iter().any(|root| folder.starts_with(root)));
     for (batch, verdict) in verdicts {
         state
             .pulse
@@ -112,7 +121,8 @@ pub(crate) fn pulse_read(
 }
 
 /// The real verdict: `git check-ignore` in the batch's worktree.
-pub(crate) fn git_check(batch: &VerdictBatch) -> Option<HashSet<String>> {
+#[cfg(target_os = "macos")]
+pub(crate) fn git_check(batch: &VerdictBatch) -> Option<Verdict> {
     ignore_check::ignored_paths(&batch.folder, batch.relative_paths())
 }
 
@@ -129,7 +139,6 @@ fn outermost(mut folders: Vec<PathBuf>) -> Vec<PathBuf> {
 }
 
 /// Watches exactly `roots`, rebuilding the watcher when they change; the roots macOS accepted.
-/// Takes `State` only briefly inside `WATCHER`; nothing takes them the other way round.
 fn watch(roots: &[PathBuf]) -> Vec<PathBuf> {
     let Ok(mut live) = WATCHER.lock() else {
         return vec![];
@@ -162,19 +171,53 @@ fn watch(roots: &[PathBuf]) -> Vec<PathBuf> {
         .filter(|root| watcher.watch(root, RecursiveMode::Recursive).is_ok())
         .cloned()
         .collect();
+    let generation = GENERATION.fetch_add(1, Ordering::Relaxed) + 1;
     *live = Some(Live {
         _watcher: watcher,
         roots: roots.to_vec(),
         accepted: accepted.clone(),
+        generation,
     });
+    std::thread::spawn(move || end_when_unasked(generation));
     accepted
+}
+
+/// Ends watcher `generation` once no ask came for `ask_lapse`, and returns when another watcher
+/// replaced it. A thread of its own, since the watcher's callback cannot drop its own watcher.
+fn end_when_unasked(generation: u64) {
+    loop {
+        std::thread::sleep(ask_lapse() / LAPSE_CHECKS);
+        let Ok(mut live) = WATCHER.lock() else {
+            return;
+        };
+        if live.as_ref().map(|current| current.generation) != Some(generation) {
+            return;
+        }
+        let lapsed = state().lock().map_or(true, |mut state| {
+            let lapsed = state
+                .last_ask
+                .is_none_or(|ask| ask.elapsed() >= ask_lapse());
+            if lapsed {
+                state.pulse.forget_waiting();
+            }
+            lapsed
+        });
+        if lapsed {
+            let stopped = live.take();
+            drop(live);
+            drop(stopped);
+            return;
+        }
+    }
 }
 
 fn take_notice(shared: &Mutex<State>, event: &Event) {
     let Ok(mut state) = shared.lock() else {
         return;
     };
-    let asked_lately = state.last_ask.is_some_and(|ask| ask.elapsed() < ASK_LAPSE);
+    let asked_lately = state
+        .last_ask
+        .is_some_and(|ask| ask.elapsed() < ask_lapse());
     if state.off || !asked_lately {
         return;
     }
@@ -203,21 +246,26 @@ pub(crate) fn is_counted_kind(kind: &EventKind) -> bool {
     }
 }
 
-/// Work status was hidden: the watcher stops and the counts stay for when it is shown again.
+/// Work status was hidden: the watcher stops, paths waiting for Git are dropped, and the counts
+/// stay for when it is shown again. Waits for an ask in flight, so the ask cannot restart it.
 pub(crate) fn stop_watching() {
+    let _asking = ASKING.lock();
     if let Ok(mut state) = state().lock() {
         state.last_ask = None;
+        state.pulse.forget_waiting();
     }
     drop_watcher();
 }
 
-/// Whether the person leaves the pulse on. Off stops the watcher and drops every count held.
+/// Whether the person leaves the pulse on. Off stops the watcher and drops every count held,
+/// waiting for an ask in flight.
 pub(crate) fn set_watching(on: bool) {
+    let _asking = ASKING.lock();
     if let Ok(mut state) = state().lock() {
         state.off = !on;
         state.last_ask = None;
         if !on {
-            state.pulse = Pulse::default();
+            state.pulse.forget_counts();
         }
     }
     drop_watcher();
@@ -231,4 +279,25 @@ fn drop_watcher() {
 #[cfg(test)]
 pub(crate) fn watcher_is_alive() -> bool {
     WATCHER.lock().map(|live| live.is_some()).unwrap_or(false)
+}
+
+#[cfg(test)]
+pub(crate) fn set_ask_lapse(lapse: Duration) {
+    ASK_LAPSE_MS.store(lapse.as_millis() as u64, Ordering::Relaxed);
+}
+
+#[cfg(test)]
+pub(crate) fn waiting_paths() -> usize {
+    state()
+        .lock()
+        .map(|state| state.pulse.waiting_paths())
+        .unwrap_or(0)
+}
+
+/// A notice placed as the watcher would place it, for tests that cannot wait for macOS.
+#[cfg(test)]
+pub(crate) fn notice(path: &std::path::Path) {
+    if let Ok(mut state) = state().lock() {
+        state.pulse.notice(path, now_ms());
+    }
 }

@@ -1,16 +1,22 @@
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
+use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
-use super::counts::{is_skipped, Pulse, VerdictBatch, GIT_CALL_GAP, STEP_COUNT_CAP, STEP_MS};
+use super::counts::{
+    is_skipped, Pulse, Verdict, VerdictBatch, GIT_CALL_GAP, STEP_COUNT_CAP, STEP_MS,
+};
 use super::is_counted_kind;
+
+/// The watcher and its state are one per app: tests that use them take turns.
+static ONE_WATCHER_AT_A_TIME: Mutex<()> = Mutex::new(());
 
 const PLANTED: &str = "ATLAS_PLANTED_7f3c";
 /// A time on a step boundary, so a test's writes share one step.
 const NOW_MS: i64 = 1_700_000_000_000;
 
-/// The main checkout and 40 linked worktrees under it, all drawn.
-fn forty_worktrees() -> (Pulse, Vec<String>) {
+/// The main checkout and 40 linked worktrees under it.
+fn forty_listed() -> Vec<(PathBuf, String)> {
     let mut listed = vec![(PathBuf::from("/repo"), "main".to_string())];
     for index in 0..40 {
         listed.push((
@@ -18,6 +24,12 @@ fn forty_worktrees() -> (Pulse, Vec<String>) {
             format!("w{index}"),
         ));
     }
+    listed
+}
+
+/// The 40 worktrees and the main checkout, all drawn.
+fn forty_worktrees() -> (Pulse, Vec<String>) {
+    let listed = forty_listed();
     let drawn: Vec<String> = listed.iter().map(|(_, id)| id.clone()).collect();
     let mut pulse = Pulse::default();
     pulse.set_rooms(listed, &drawn);
@@ -29,11 +41,15 @@ fn judge(pulse: &mut Pulse, now: Instant, ignored: &[&str], calls: &mut usize) {
     let batches: Vec<VerdictBatch> = pulse.take_due_batches(now);
     for batch in batches {
         *calls += 1;
-        let verdict: HashSet<String> = batch
+        let ignored: HashSet<String> = batch
             .relative_paths()
             .filter(|path| ignored.iter().any(|prefix| path.starts_with(prefix)))
             .map(str::to_string)
             .collect();
+        let verdict = Verdict {
+            ignored,
+            refused: None,
+        };
         pulse.apply_verdicts(batch, Some(&verdict), NOW_MS);
     }
 }
@@ -187,8 +203,77 @@ fn dropped_notices_count_one_change_and_rescan_nothing() {
     let (mut pulse, _) = forty_worktrees();
     pulse.dropped_notices(Some(Path::new("/repo/.worktrees/w6/src")), NOW_MS);
     pulse.dropped_notices(Some(Path::new("/repo/.worktrees/w6")), NOW_MS + 1);
+    // Dropped notices under a build folder or `.git` are no sign of a change worth counting.
+    pulse.dropped_notices(
+        Some(Path::new("/repo/.worktrees/w5/node_modules/pkg")),
+        NOW_MS,
+    );
+    pulse.dropped_notices(Some(Path::new("/repo/.git/objects")), NOW_MS);
     assert_eq!(counts(&mut pulse), [("w6".to_string(), 1)]);
     assert_eq!(pulse.waiting_paths(), 0);
+}
+
+#[test]
+fn a_path_git_refuses_costs_only_itself_and_the_rest_wait_for_the_next_call() {
+    let (mut pulse, _) = forty_worktrees();
+    let start = Instant::now();
+    for name in ["a.rs", "logs/x.log", "sub/inner.rs", "z.rs"] {
+        pulse.notice(Path::new(&format!("/repo/.worktrees/w1/{name}")), NOW_MS);
+    }
+    let mut batches = pulse.take_due_batches(start);
+    let batch = batches.pop().expect("one batch");
+    let asked: Vec<&str> = batch.relative_paths().collect();
+    assert_eq!(asked, ["a.rs", "logs/x.log", "sub/inner.rs", "z.rs"]);
+    // Git judged the first two, refused the submodule path and stopped there.
+    let verdict = Verdict {
+        ignored: HashSet::from(["logs/x.log".to_string()]),
+        refused: Some("sub/inner.rs".to_string()),
+    };
+    pulse.apply_verdicts(batch, Some(&verdict), NOW_MS);
+    assert_eq!(counts(&mut pulse), [("w1".to_string(), 1)]);
+    assert_eq!(pulse.waiting_paths(), 1, "only z.rs waits");
+
+    // The refused path is never asked about again; z.rs is judged on the next call.
+    pulse.notice(Path::new("/repo/.worktrees/w1/sub/inner.rs"), NOW_MS);
+    assert!(pulse.take_due_batches(start + GIT_CALL_GAP / 2).is_empty());
+    let mut calls = 0;
+    judge(&mut pulse, start + GIT_CALL_GAP, &[], &mut calls);
+    assert_eq!(calls, 1);
+    assert_eq!(counts(&mut pulse), [("w1".to_string(), 2)]);
+}
+
+#[test]
+fn hiding_drops_every_path_waiting_for_git() {
+    let (mut pulse, _) = forty_worktrees();
+    pulse.notice(Path::new("/repo/.worktrees/w1/a.rs"), NOW_MS);
+    assert_eq!(pulse.waiting_paths(), 1);
+    pulse.forget_waiting();
+    assert_eq!(pulse.waiting_paths(), 0);
+}
+
+#[test]
+fn a_room_that_leaves_and_returns_or_a_switch_toggled_makes_no_second_git_call_in_ten_seconds() {
+    let (mut pulse, drawn) = forty_worktrees();
+    let start = Instant::now();
+    let mut calls = 0;
+    pulse.notice(Path::new("/repo/.worktrees/w2/a.rs"), NOW_MS);
+    judge(&mut pulse, start, &[], &mut calls);
+
+    let without_w2: Vec<String> = drawn.iter().filter(|id| *id != "w2").cloned().collect();
+    pulse.set_rooms(forty_listed(), &without_w2);
+    pulse.set_rooms(forty_listed(), &drawn);
+    pulse.notice(Path::new("/repo/.worktrees/w2/b.rs"), NOW_MS);
+    judge(&mut pulse, start + Duration::from_secs(2), &[], &mut calls);
+    assert_eq!(calls, 1, "the room returned within the gap");
+
+    pulse.forget_counts();
+    pulse.set_rooms(forty_listed(), &drawn);
+    pulse.notice(Path::new("/repo/.worktrees/w2/c.rs"), NOW_MS);
+    judge(&mut pulse, start + Duration::from_secs(4), &[], &mut calls);
+    assert_eq!(calls, 1, "the switch was turned off and on within the gap");
+
+    judge(&mut pulse, start + GIT_CALL_GAP, &[], &mut calls);
+    assert_eq!(calls, 2);
 }
 
 #[test]
@@ -280,7 +365,9 @@ mod with_the_watcher {
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::time::{Duration, Instant};
 
-    use super::super::{git_check, pulse_read, set_watching, stop_watching, watcher_is_alive};
+    use super::super::{
+        git_check, pulse_read, set_ask_lapse, set_watching, stop_watching, watcher_is_alive,
+    };
     use super::PLANTED;
     use crate::work_status::agent_sessions::worktree_folders;
 
@@ -328,16 +415,160 @@ mod with_the_watcher {
             "new.tmp",
             "name with space.md",
         ];
-        let ignored = super::super::ignore_check::ignored_paths(&base, paths.into_iter())
+        let verdict = super::super::ignore_check::ignored_paths(&base, paths.into_iter())
             .expect("Git gives a verdict");
-        let mut ignored: Vec<String> = ignored.into_iter().collect();
+        assert_eq!(verdict.refused, None);
+        let mut ignored: Vec<String> = verdict.ignored.into_iter().collect();
         ignored.sort();
         assert_eq!(ignored, ["logs/run.log", "new.tmp"]);
         let _ = std::fs::remove_dir_all(&base);
     }
 
+    /// File names that read as pathspec magic (`:!x`, `:(glob)x`, `:#x`, `:/x`) are plain names.
+    #[test]
+    fn a_file_name_that_looks_like_pathspec_magic_is_judged_as_a_plain_name() {
+        let base = std::env::temp_dir().join(format!("atlas-ignore-magic-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        std::fs::create_dir_all(&base).expect("repo folder");
+        git(&base, &["init", "-q", "-b", "main"]);
+        std::fs::write(base.join(".gitignore"), "/:cache/\nnew.tmp\n/logs/\n").expect("gitignore");
+        let paths = [
+            ":!x",
+            ":#x",
+            ":(glob)x",
+            ":/logs/x",
+            ":cache/x.bin",
+            ":new.tmp",
+            "logs/y",
+        ];
+        let verdict = super::super::ignore_check::ignored_paths(&base, paths.into_iter())
+            .expect("no name fails the batch");
+        assert_eq!(verdict.refused, None);
+        let mut ignored: Vec<String> = verdict.ignored.into_iter().collect();
+        ignored.sort();
+        assert_eq!(ignored, [":cache/x.bin", "logs/y"]);
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    /// Git refuses a path inside a submodule or beyond a link: it names that one, and the paths
+    /// it judged before it keep their verdicts.
+    #[test]
+    fn a_path_git_refuses_is_named_and_the_ones_before_it_are_judged() {
+        let base =
+            std::env::temp_dir().join(format!("atlas-ignore-refused-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        let repo = base.join("repo");
+        std::fs::create_dir_all(&repo).expect("repo folder");
+        git(&repo, &["init", "-q", "-b", "main"]);
+        std::fs::write(repo.join(".gitignore"), "logs/\n").expect("gitignore");
+        std::os::unix::fs::symlink(&base, repo.join("linked")).expect("a link");
+        let verdict = super::super::ignore_check::ignored_paths(
+            &repo,
+            ["a.rs", "logs/x", "linked/y.rs", "z.rs"].into_iter(),
+        )
+        .expect("Git names what it refused");
+        assert_eq!(verdict.refused.as_deref(), Some("linked/y.rs"));
+        assert_eq!(
+            verdict.ignored,
+            std::collections::HashSet::from(["logs/x".to_string()])
+        );
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    /// A `.gitignore` that is a named pipe holds Git forever; the call ends at its time limit.
+    #[test]
+    fn a_git_call_that_hangs_gives_no_verdict() {
+        let base = std::env::temp_dir().join(format!("atlas-ignore-hang-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        std::fs::create_dir_all(&base).expect("repo folder");
+        git(&base, &["init", "-q", "-b", "main"]);
+        let pipe = std::ffi::CString::new(base.join(".gitignore").to_string_lossy().as_bytes())
+            .expect("a path without NUL");
+        // SAFETY: a NUL-terminated path; mkfifo only creates the pipe.
+        assert_eq!(unsafe { libc::mkfifo(pipe.as_ptr(), 0o600) }, 0);
+        let verdict = super::super::ignore_check::ignored_paths(&base, ["a.rs"].into_iter());
+        let _ = std::fs::remove_dir_all(&base);
+        assert_eq!(verdict, None);
+    }
+
+    /// A page that stops asking without a pause leaves no watcher once the lapse has passed.
+    #[test]
+    fn a_watcher_nobody_asks_for_ends_after_the_lapse() {
+        let _turn = super::ONE_WATCHER_AT_A_TIME
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let folder = std::env::temp_dir().join(format!("atlas-pulse-lapse-{}", std::process::id()));
+        std::fs::create_dir_all(&folder).expect("folder");
+        let folder = std::fs::canonicalize(&folder).expect("canonical");
+        set_watching(true);
+        set_ask_lapse(Duration::from_millis(300));
+        let drawn = ["lapse".to_string()];
+        assert!(pulse_read(vec![(folder.clone(), "lapse".into())], &drawn, |_| None).is_some());
+        assert!(watcher_is_alive());
+        let deadline = Instant::now() + Duration::from_secs(10);
+        while watcher_is_alive() && Instant::now() < deadline {
+            std::thread::sleep(Duration::from_millis(50));
+        }
+        let ended = !watcher_is_alive();
+        set_ask_lapse(Duration::from_secs(10));
+        set_watching(false);
+        let _ = std::fs::remove_dir_all(&folder);
+        assert!(ended, "the watcher outlived the lapse");
+    }
+
+    /// A pause that arrives while an ask is between its start and its watcher waits for the ask,
+    /// so the ask cannot start a watcher after the screen was hidden.
+    #[test]
+    fn a_pause_during_an_ask_leaves_no_watcher() {
+        let _turn = super::ONE_WATCHER_AT_A_TIME
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let folder = std::env::temp_dir().join(format!("atlas-pulse-pause-{}", std::process::id()));
+        std::fs::create_dir_all(&folder).expect("folder");
+        let folder = std::fs::canonicalize(&folder).expect("canonical");
+        let listed = vec![(folder.clone(), "paused".to_string())];
+        let drawn = vec!["paused".to_string()];
+        set_watching(true);
+        assert!(pulse_read(listed.clone(), &drawn, |_| None).is_some());
+        super::super::notice(&folder.join("held.rs"));
+        assert_eq!(super::super::waiting_paths(), 1);
+        stop_watching();
+        assert!(!watcher_is_alive());
+        assert_eq!(
+            super::super::waiting_paths(),
+            0,
+            "a path was held while hidden"
+        );
+        // A waiting path, so the next ask stops in its Git check, before it starts the watcher.
+        super::super::notice(&folder.join("a.rs"));
+
+        let (in_check, entered) = std::sync::mpsc::channel();
+        let (release, released) = std::sync::mpsc::channel::<()>();
+        let ask = std::thread::spawn(move || {
+            pulse_read(listed, &drawn, |_| {
+                let _ = in_check.send(());
+                let _ = released.recv();
+                None
+            })
+        });
+        entered.recv().expect("the ask reached its Git check");
+        let pause = std::thread::spawn(stop_watching);
+        // The pause is now waiting for the ask, or would have run inside it without the order.
+        std::thread::sleep(Duration::from_millis(200));
+        release.send(()).expect("release the ask");
+        let _ = ask.join();
+        pause.join().expect("the pause ends");
+        let alive = watcher_is_alive();
+        set_watching(false);
+        let _ = std::fs::remove_dir_all(&folder);
+        assert!(!alive, "the ask started a watcher after the pause");
+    }
+
     #[test]
     fn a_save_in_one_of_forty_worktrees_counts_there_and_the_switches_end_the_watcher() {
+        let _turn = super::ONE_WATCHER_AT_A_TIME
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
         let base = std::env::temp_dir().join(format!("atlas-file-pulse-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&base);
         let repo = base.join("repo");

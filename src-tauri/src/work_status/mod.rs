@@ -190,18 +190,24 @@ pub fn work_status_file_pulse(
     repository_path: String,
     worktree_ids: Vec<String>,
 ) -> Option<file_pulse::PulseRead> {
-    if !cfg!(target_os = "macos") {
-        return None;
+    #[cfg(target_os = "macos")]
+    {
+        let root = granted_root(&repository_path).ok()?;
+        file_pulse::pulse_read(
+            agent_sessions::worktree_folders(&root),
+            &worktree_ids,
+            file_pulse::git_check,
+        )
     }
-    let root = granted_root(&repository_path).ok()?;
-    file_pulse::pulse_read(
-        agent_sessions::worktree_folders(&root),
-        &worktree_ids,
-        file_pulse::git_check,
-    )
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = (repository_path, worktree_ids);
+        None
+    }
 }
 
-/// Work status was hidden: the watcher stops, and the counts wait for it to be shown again.
+/// Work status was hidden: the watcher stops, and the counts wait for it to be shown again. Rust
+/// also ends a watcher nobody asked for in 10 s, so a page that vanished leaves none running.
 #[tauri::command(async)]
 pub fn work_status_pause_file_pulse() {
     file_pulse::stop_watching();
