@@ -133,9 +133,48 @@ has the session's ink mark, its name, its tool and number, its state in that
 state's tone, and how long it has been so, counted from the read in which Atlas
 first saw the state (its start when it was so from the first read). Waiting
 lines come first, then failed, working and replied, and the room is framed in
-amber when any line waits. A session that only runs commands in a room says
-**Running a command here**. The room panel lists every session under
-**Sessions in this folder**, twenty at most.
+amber when any line waits. A session the list places in another folder of this
+repository, and that only runs commands in this room, says **Running a command
+here**; a session no list speaks for (its folder is outside the repository, the
+list is off, or its tool has none) has a line with no state. The room panel
+lists every session under **Sessions in this folder**, twenty at most. In a
+folder two sessions of one tool share, the room's ink and the time on its wall
+are the session that holds it (the program with the lowest pid), while the
+bezel counts both.
+
+### By folder or by session
+
+A switch in the header, **By folder** and **By session**, arranges the same
+reads two ways while the building has rooms. By folder is the building above
+and the default; Atlas keeps the last choice in this browser profile's storage
+(`atlas.workStatus.arrangeBy`, `folder` or `session`, never a name or pid), and
+any other stored value opens By folder. The plan is
+[`docs/specs/2026-11-25-workshop-sessions-view.md`](../specs/2026-11-25-workshop-sessions-view.md).
+
+By session draws one block per agent session at work in the repository's
+folders, in the order the building numbers sessions, so a block never moves for
+a state. A block has the session's ink along its top (faint while its program
+is not seen at work), its name with `{tool} {number}` beside it, its own state
+in that state's tone and since when, in the words its line in a room uses, or
+when its program started; with no list it says **Working** while its program is
+seen, else **Resting**. A session that waits is framed in amber, and the
+header's waiting count counts sessions; pressing it outlines their blocks. Any
+other header count names rooms, so pressing it shows By folder first.
+
+Under that, on the room's black screen, up to three of its folders: the one the
+list places it in, then the worktrees it holds, then folders it only runs
+commands in, and **and 2 more folders**, which shows By folder with its rooms
+outlined. Commits, uncommitted files and the last change belong to a folder,
+not to a session, and nothing Atlas reads says which of two sessions in one
+folder changed a file. So a folder row gives those figures only where the
+session has the folder to itself, with the newest three commits when it is the
+block's one folder; a shared folder's row says **Shared with** the other
+session, or how many, and **Two tools at work** in amber when their tools
+differ. Every row opens that folder's room panel, where its changes are shown
+once; closing it returns to the row. Under the blocks, **1 folder without a
+session** shows By folder. With no session at all, the board says **No agent
+session is working in** the repository. By session reads nothing By folder does
+not read, and draws no Moru, shelf, light, last-hour line or load.
 
 ### The reads panel
 

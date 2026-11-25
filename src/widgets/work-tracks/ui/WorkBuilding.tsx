@@ -4,6 +4,8 @@ import { memo, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, 
 import { useLocale, useTranslations } from 'next-intl';
 import { planRooms, sessionsIn, type RoomEntry, type RoomPlan, type TrackSession, type WorkTracks } from '@/shared/lib/work-status/work-tracks';
 import { cn } from '@/shared/lib/cn';
+import type { WorkshopArrangement } from '@/shared/lib/preferences/work-status-preferences';
+import { sessionBoardOf } from '@/shared/lib/work-status/signals/session-board';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { MOTION } from '@/shared/motion';
 import { changedAreas } from '../model/changed-areas';
@@ -23,6 +25,8 @@ import { BranchName } from './BranchName';
 import { LargeRoom } from './LargeRoom';
 import { MiniRoom } from './MiniRoom';
 import { LANDED_KEEP_PX, LandedLog, landedRowId } from './LandedLog';
+import { ARRANGE_TABS_ID, SessionBoard } from './SessionBoard';
+import { pointToRoomKeys } from './point-to-rooms';
 import { LandedPanel } from './LandedPanel';
 import { RoomPanel } from './RoomPanel';
 import { RoomShelf } from './RoomShelf';
@@ -497,7 +501,7 @@ function emphasise(board: HTMLElement | null, event: ReactPointerEvent<HTMLEleme
  * where each room was drawn, and nothing reads the DOM to lay them out. Pressing a room opens the
  * room panel beside the building.
  */
-export function WorkBuilding({ tracks, live, seenRunningAt, baseBranch, nowMs, root, landed }: {
+export function WorkBuilding({ tracks, live, seenRunningAt, baseBranch, nowMs, root, landed, arrange = 'folder', onArrange, repo = '' }: {
   tracks: WorkTracks;
   /** What the session list, the file-change pulse and load say beside Git. */
   live: BuildingLive;
@@ -508,6 +512,11 @@ export function WorkBuilding({ tracks, live, seenRunningAt, baseBranch, nowMs, r
   root: string;
   /** The base branch's newest landed changes, listed under the building; `null` until read. */
   landed: LandedRead | null;
+  /** By folder draws the building; by session, one block per session over the same rooms, the building kept underneath. */
+  arrange?: WorkshopArrangement;
+  onArrange?: (arrange: WorkshopArrangement) => void;
+  /** The repository's name, for the board with no session. */
+  repo?: string;
 }) {
   const t = useTranslations('workStatus');
   const reduced = usePrefersReducedMotion();
@@ -613,12 +622,33 @@ export function WorkBuilding({ tracks, live, seenRunningAt, baseBranch, nowMs, r
   }, []);
   // A room that leaves the building takes its panel with it.
   const pressedRoom = entries.find(room => room.key === pressedKey && layout.rooms.has(room.key)) ?? null;
+  // A folder row on the by-session board opens the same panel; closing it returns focus to that row.
+  const opener = useRef<HTMLElement | null>(null);
   const closePanel = useCallback(() => {
     setPressedKey(current => {
-      if (current) focusRoom(current);
+      if (opener.current?.isConnected) opener.current.focus();
+      else if (current) focusRoom(current);
+      opener.current = null;
       return null;
     });
   }, []);
+  const pressFolder = useCallback((key: string, from: HTMLElement) => {
+    setLandedHash(null);
+    setPressedKey(current => {
+      opener.current = current === key ? null : from;
+      return current === key ? null : key;
+    });
+  }, []);
+  const bySession = arrange === 'session';
+  const board = useMemo(
+    () => (bySession ? sessionBoardOf([...plan.stage, ...plan.floors.flatMap(floor => floor.rooms)], tracks.sessions, live.sessions) : null),
+    [bySession, plan, tracks.sessions, live.sessions],
+  );
+  const showFolders = useCallback((keys: readonly string[]) => {
+    onArrange?.('folder');
+    // The building shows on the next frame; the rooms are outlined once it has.
+    if (keys.length > 0) requestAnimationFrame(() => requestAnimationFrame(() => pointToRoomKeys(keys, reduced)));
+  }, [onArrange, reduced]);
   const closeOnEscape = (event: ReactKeyboardEvent<HTMLElement>) => {
     if (event.key !== 'Escape' || event.defaultPrevented || (pressedRoom === null && selectedLanded === null)) return;
     event.preventDefault();
@@ -631,7 +661,7 @@ export function WorkBuilding({ tracks, live, seenRunningAt, baseBranch, nowMs, r
     <div ref={viewportRef} className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden" data-testid="work-building-viewport">
       <TintFilters />
       {/* The building keeps its height; only a window too short for it scrolls it, never the page. */}
-      <div className="min-h-0 flex-[0_1_auto] overflow-y-auto overflow-x-hidden">
+      <div className="min-h-0 flex-[0_1_auto] overflow-y-auto overflow-x-hidden" role="tabpanel" id={`${ARRANGE_TABS_ID}-tabpanel-folder`} aria-labelledby={`${ARRANGE_TABS_ID}-tab-folder`} hidden={bySession}>
       <div
         ref={boardRef}
         data-testid="work-building"
@@ -690,6 +720,11 @@ export function WorkBuilding({ tracks, live, seenRunningAt, baseBranch, nowMs, r
         ) : null}
       </div>
       </div>
+      {board ? (
+        <div className="min-h-0 flex-[0_1_auto] overflow-y-auto overflow-x-hidden px-10 pt-6" role="tabpanel" id={`${ARRANGE_TABS_ID}-tabpanel-session`} aria-labelledby={`${ARRANGE_TABS_ID}-tab-session`}>
+          <SessionBoard board={board} sessions={tracks.sessions} copy={copy} repo={repo} pressedKey={pressedRoom?.key ?? null} onPressFolder={pressFolder} onShowFolders={showFolders} />
+        </div>
+      ) : null}
       <LandedLog read={landed} baseBranch={baseBranch} nowMs={nowMs} selectedHash={selectedLanded?.hash ?? null} onSelect={selectLanded} panelId={landedPanelId} />
     </div>
     <RoomPanel room={pressedRoom} live={live} tracks={tracks} copy={copy} id={panelId} onClose={closePanel} replaced={selectedLanded !== null} />

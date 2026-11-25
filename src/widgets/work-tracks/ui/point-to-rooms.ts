@@ -21,9 +21,12 @@ function outline(rooms: readonly HTMLElement[], reduced: boolean): void {
   }
 }
 
-/** Shows which rooms a header warning counts. */
+/** Shows which rooms, or by session which session blocks, a header warning counts; only those drawn now. */
 export function pointToRooms(alert: RoomAlert, reduced: boolean): void {
-  outline([...document.querySelectorAll<HTMLElement>(`[data-testid="work-room"][data-room-alert="${alert}"]`)], reduced);
+  const counted = document.querySelectorAll<HTMLElement>(
+    `[data-testid="work-room"][data-room-alert="${alert}"], [data-testid="work-session-block"][data-room-alert="${alert}"]`,
+  );
+  outline([...counted].filter(element => element.getClientRects().length > 0), reduced);
 }
 
 /** Shows the rooms the header's memory or CPU words name, heaviest first. */

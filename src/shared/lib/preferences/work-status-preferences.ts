@@ -1,4 +1,5 @@
 import { useCallback, useSyncExternalStore } from "react";
+import { definePreference } from "./preference-storage/define-preference";
 import { readOnOff, writeOnOff } from "./preference-storage/on-off-preference";
 import { subscribeToPreferenceChange } from "./preference-storage/preference-change-event";
 
@@ -55,3 +56,13 @@ export function writeLoadRead(value: boolean): void {
 export function useLoadReadEnabled(): boolean {
   return useOnOff(LOAD_READ_KEY, DEFAULT_ROUND_READ);
 }
+
+/** How the Workshop arranges what it reads: by folder (the building) or by session. */
+export type WorkshopArrangement = "folder" | "session";
+
+/** By folder by default; stores the last choice only once the person presses the switch, never a name or pid. */
+export const workshopArrangement = definePreference<WorkshopArrangement>({
+  key: "atlas.workStatus.arrangeBy",
+  values: ["folder", "session"],
+  fallback: "folder",
+});

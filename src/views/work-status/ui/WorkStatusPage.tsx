@@ -6,7 +6,8 @@ import { useTranslations } from 'next-intl';
 import { FolderGit2 } from 'lucide-react';
 import { useLocalVault } from '@/entities/vault-session';
 import { useArrivalMemory } from '@/shared/lib/navigation/route-arrival-memory';
-import { useFilePulseEnabled, useLoadReadEnabled, useSessionListReadEnabled, useSessionNamesEnabled } from '@/shared/lib/preferences/work-status-preferences';
+import { useFilePulseEnabled, useLoadReadEnabled, useSessionListReadEnabled, useSessionNamesEnabled, workshopArrangement } from '@/shared/lib/preferences/work-status-preferences';
+import { isWaitingBlock, sessionBoardOf } from '@/shared/lib/work-status/signals/session-board';
 import { pickTauriSourceDirectory } from '@/shared/lib/vault-folder/native-vault/tauri-project-source';
 import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { isWorkStatusAvailable } from '@/shared/lib/work-status/tauri-work-status';
@@ -16,10 +17,10 @@ import { heaviestRooms } from '@/shared/lib/work-status/signals/load';
 import { withChangeSigns } from '@/shared/lib/work-status/signals/pulse';
 import { listedFolders, sessionsByPidOf } from '@/shared/lib/work-status/signals/session-lines';
 import { sessionNameOf } from '@/shared/lib/work-status/signals/session-name';
-import { Button, InfoHint, PageHeaderBar } from '@/shared/ui';
+import { Button, InfoHint, PageHeaderBar, TabBar } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { PAGE_FRAME_FORM, PAGE_STAGE_FILL } from '@/shared/ui/tokens/page-frame';
-import { EmptyRoom, QuietBuilding, RoomShelf, WorkBuilding, pointToRoomKeys, pointToRooms, usePulseClock, type BuildingLive, type RoomAlert } from '@/widgets/work-tracks';
+import { ARRANGE_TABS_ID, EmptyRoom, QuietBuilding, RoomShelf, WorkBuilding, pointToRoomKeys, pointToRooms, usePulseClock, type BuildingLive, type RoomAlert } from '@/widgets/work-tracks';
 import { useMinuteClock } from '../model/use-minute-clock';
 import { useRunningMemory } from '../model/use-running-memory';
 import { useSessionIdentity } from '../model/use-session-identity';
@@ -90,8 +91,21 @@ export function WorkStatusPage() {
   const shownTracks = useMemo(() => (tracks ? withActivity(tracks, activity) : null), [tracks, activity]);
   const sameFolder = tracks ? [...tracks.sessions.flatMap(session => session.tracks), ...tracks.unheld].filter(track => track.running && track.tools.length > 1).length : 0;
   const cleanup = tracks?.stuck.length ?? 0;
-  const waiting = plan ? [...plan.stage, ...plan.floors.flatMap(floor => floor.rooms)].filter(room => room.state.kind === 'waiting').length : 0;
+  const arrange = workshopArrangement.use();
   const reduced = usePrefersReducedMotion();
+  const allRooms = useMemo(() => (plan ? [...plan.stage, ...plan.floors.flatMap(floor => floor.rooms)] : []), [plan]);
+  // By session the header counts sessions that wait, not rooms; any other count names rooms.
+  const waitingSessions = useMemo(
+    () => (arrange === 'session' && tracks ? sessionBoardOf(allRooms, tracks.sessions, live.sessions).blocks.filter(isWaitingBlock).length : 0),
+    [arrange, allRooms, tracks, live.sessions],
+  );
+  const waiting = arrange === 'session' ? waitingSessions : allRooms.filter(room => room.state.kind === 'waiting').length;
+  /** Points at what a header count names; a count of rooms shows the building first. */
+  const pointTo = (show: () => void, rooms: boolean) => {
+    if (!rooms || arrange === 'folder') return show();
+    workshopArrangement.write('folder');
+    requestAnimationFrame(() => requestAnimationFrame(show));
+  };
   const alerts = [
     waiting > 0 ? { kind: 'waiting' as RoomAlert, label: t('header.waiting', { count: waiting }) } : null,
     sameFolder > 0 ? { kind: 'sameFolder' as RoomAlert, label: t('header.sameFolder', { count: sameFolder }) } : null,
@@ -137,6 +151,9 @@ export function WorkStatusPage() {
   const branch = (chunks: React.ReactNode) => <code className={BRANCH_CLASS}>{chunks}</code>;
   const empty = plan !== null && plan.stage.length === 0 && plan.floors.length === 0;
   const onlyMain = empty && snapshot !== null && snapshot.worktrees.length <= 1;
+  // The switch arranges the building's rooms, so it shows only while there are rooms to arrange.
+  const building = plan !== null && tracks !== null && !empty;
+  const arranged = building ? arrange : 'folder';
 
   return (
     <main id="main" data-work-status-surface aria-busy={!plan} className="flex h-[calc(100%_-_var(--topology-mobile-bottom-tab-reserve))] min-h-0 flex-col bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)] lg:h-full">
@@ -154,8 +171,8 @@ export function WorkStatusPage() {
                 <button
                   type="button"
                   data-testid={`work-status-alert-${alert.kind}`}
-                  title={t('header.pointTo')}
-                  onClick={() => pointToRooms(alert.kind, reduced)}
+                  title={arrange === 'session' && alert.kind === 'waiting' ? t('bySession.pointTo') : t('header.pointTo')}
+                  onClick={() => pointTo(() => pointToRooms(alert.kind, reduced), alert.kind !== 'waiting')}
                   className={ALERT_CLASS}
                 >
                   {alert.label}
@@ -169,7 +186,7 @@ export function WorkStatusPage() {
                   type="button"
                   data-testid={`work-status-alert-${alert.kind}`}
                   title={t('header.pointToLoad')}
-                  onClick={() => pointToRoomKeys(alert.rooms, reduced)}
+                  onClick={() => pointTo(() => pointToRoomKeys(alert.rooms, reduced), true)}
                   className={ALERT_CLASS}
                 >
                   {alert.label}
@@ -185,10 +202,27 @@ export function WorkStatusPage() {
           </span>
           {gpuFull ? <InfoHint label={t('load.gpuWhy')} align="left">{t('load.gpuWhy')}</InfoHint> : null}
           <WorkStatusReads line={sessionListLine(sessionList.status)} choices={{ names: namesOn, pulse: pulseOn, load: loadOn }} />
-          <InfoHint label={t('about.label')} align="left">{t('about.body')}</InfoHint>
+          <InfoHint label={t('about.label')} align="left">{arranged === 'session' ? t('bySession.about') : t('about.body')}</InfoHint>
           </span>
         ) : null}
-        actions={chooseButton('sm')}
+        actions={building ? (
+          <span className="flex items-center gap-3">
+            <TabBar
+              variant="segmented"
+              placement="header"
+              idPrefix={ARRANGE_TABS_ID}
+              ariaLabel={t('arrange.label')}
+              testId="work-status-arrange"
+              activeKey={arrange}
+              onSelect={key => workshopArrangement.write(key === 'session' ? 'session' : 'folder')}
+              items={[
+                { key: 'folder', label: t('arrange.folder'), testId: 'work-status-arrange-folder' },
+                { key: 'session', label: t('arrange.session'), testId: 'work-status-arrange-session' },
+              ]}
+            />
+            {chooseButton('sm')}
+          </span>
+        ) : chooseButton('sm')}
       />
       {plan === null || tracks === null ? (
         <div className="min-h-0 flex-1" />
@@ -205,7 +239,18 @@ export function WorkStatusPage() {
           </EmptyRoom>
         </QuietBuilding>
       ) : (
-        <WorkBuilding tracks={shownTracks ?? tracks} live={live} seenRunningAt={signsOfWork} baseBranch={baseBranch} nowMs={nowMs} root={snapshot?.root ?? root} landed={landed} />
+        <WorkBuilding
+          tracks={shownTracks ?? tracks}
+          live={live}
+          seenRunningAt={signsOfWork}
+          baseBranch={baseBranch}
+          nowMs={nowMs}
+          root={snapshot?.root ?? root}
+          landed={landed}
+          arrange={arrange}
+          onArrange={workshopArrangement.write}
+          repo={snapshot?.repository ?? folder}
+        />
       )}
     </main>
   );
