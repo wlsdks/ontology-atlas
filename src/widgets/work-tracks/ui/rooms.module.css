@@ -128,8 +128,8 @@
 }
 
 .scene {
-  /* Moru's axis along the rail: left of the middle, and never further in than a three-across room puts him. */
-  --ax: min(42%, 256px);
+  /* Moru's axis along the rail: left of the middle, far enough in on a wide room for two lines of wall facts. */
+  --ax: min(42%, 440px);
   /* The screen's height in pixels whatever the unit: its words never shrink (`SCREEN_H`). */
   --screen-h: 160px;
   /* The room's light: its session's ink, or warning amber for two tools in one folder or a lock left behind. */
@@ -357,12 +357,38 @@
   filter: drop-shadow(var(--s) 0 0 var(--rim));
 }
 
-/* The wall left of Moru, over the rail: the room's state at a size read across the stage. */
+/* The wall left of Moru, over the rail: the room's state at a size read across the stage, in two lines. */
 .wallFacts {
   position: absolute;
   left: 20px;
-  bottom: calc(var(--rail) + 12px);
+  bottom: calc(var(--rail) + 8px);
   width: calc(var(--ax) - 64 * var(--s) - 28px);
+}
+
+/* The second line: whole facts only. One that does not fit wraps to a row the line's height hides, so no fact shows cut. */
+.wallDetails {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 6px;
+  height: var(--leading-body);
+  overflow: hidden;
+}
+
+.wallDetail {
+  display: flex;
+  flex: none;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+/* One line of wall facts: its parts on one baseline, the last one cut short rather than wrapped. */
+.wallLine {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 /*

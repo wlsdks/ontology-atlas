@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useLocale, useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
+import { InfoHint } from '@/shared/ui';
 import type { LandedRead } from '@/shared/lib/work-status/tauri-work-status';
 import { MOTION, STAGGER } from '@/shared/motion';
 import { landedDays, landedWithin, readSubject, type LandedDay } from '../model/landed-change';
@@ -11,6 +12,9 @@ import { timeAgo } from '../model/format';
 
 /** Rows that settle in one after another on the first reading; later rows arrive alone. */
 const STAGGERED_ROWS = 12;
+
+/** What the list keeps under the building: its heading and about two rows, which scroll inside it. */
+export const LANDED_KEEP_PX = 160;
 /** As many changes as Rust reads (`LANDED_READ` in `landed.rs`): a list this long may stop mid-day. */
 const LANDED_READ = 30;
 /** A change of this many changed lines fills its bar; the bar grows with the logarithm below it. */
@@ -83,13 +87,13 @@ export function LandedLog({ read, baseBranch, nowMs, selectedHash, onSelect, pan
   const week = read.weekCount;
   let row = 0;
   return (
-    <section data-testid="work-landed" aria-labelledby="work-landed-title" className="px-10 pb-12 pt-8">
-      <header className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 border-t border-[color:var(--color-border-soft)] pt-6">
-        <div className="min-w-0">
+    <section data-testid="work-landed" aria-labelledby="work-landed-title" className="flex min-h-0 flex-1 flex-col px-10 pt-6" style={{ minHeight: LANDED_KEEP_PX }}>
+      <header className="flex flex-none flex-wrap items-baseline justify-between gap-x-6 gap-y-1 border-t border-[color:var(--color-border-soft)] pt-6">
+        <div className="flex min-w-0 items-center gap-1.5">
           <h2 id="work-landed-title" className="text-title leading-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
             {t.rich('title', { branch: baseBranch, code: chunks => <code className="font-mono">{chunks}</code> })}
           </h2>
-          <p className="mt-1 text-body leading-body text-[color:var(--color-text-tertiary)]">{t('note')}</p>
+          <InfoHint label={t('noteLabel')} align="left">{t('note')}</InfoHint>
         </div>
         {changes.length > 0 && todayWhole && week !== null ? (
           <p className="shrink-0 text-body leading-body tabular-nums text-[color:var(--color-text-tertiary)]" data-testid="work-landed-summary">
@@ -100,7 +104,9 @@ export function LandedLog({ read, baseBranch, nowMs, selectedHash, onSelect, pan
       {changes.length === 0 ? (
         <p className="mt-6 text-body leading-body text-[color:var(--color-text-tertiary)]">{t('none', { branch: baseBranch })}</p>
       ) : (
-        <div className="mt-6 grid gap-x-10 gap-y-6 2xl:grid-cols-2">
+        // The page never scrolls: the list scrolls inside what the building leaves it.
+        <div className="atlas-scroll-quiet -mx-2 mt-4 min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 pb-8 pt-2 [mask-image:linear-gradient(to_bottom,black_calc(100%_-_var(--tabbar-edge-fade)),transparent)]" data-testid="work-landed-scroll">
+        <div className="grid gap-x-10 gap-y-6 2xl:grid-cols-2">
           {days.map((day, dayIndex) => (
             <div key={day.key} className="@container min-w-0">
               <DayHeading day={day} locale={locale} partial={cut && dayIndex === days.length - 1} />
@@ -170,6 +176,7 @@ export function LandedLog({ read, baseBranch, nowMs, selectedHash, onSelect, pan
               </ol>
             </div>
           ))}
+        </div>
         </div>
       )}
     </section>

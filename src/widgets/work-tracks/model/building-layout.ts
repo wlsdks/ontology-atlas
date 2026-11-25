@@ -183,10 +183,10 @@ export function showsWallFacts(width: number): boolean {
 const RAIL_H = 14;
 const MORU_OVER_RAIL = 98;
 
-/** What the wall left of Moru keeps under the screen for the room's state: its title line and up to four lines under it. */
-const WALL_FACTS_H = 112;
+/** What the wall left of Moru keeps under the screen: two lines of facts over the rail. */
+const WALL_FACTS_H = 64;
 
-/** A stage room as tall as what it holds: the screen across the room, then the wall facts and Moru under it on the rail. */
+/** A stage room as tall as what it holds: the screen across the room, then Moru on the rail with the wall facts beside him. */
 function roomHeight(unit: RoomUnit): number {
   return Math.ceil(12 + SCREEN_H + 4 + Math.max(WALL_FACTS_H, RAIL_H + MORU_OVER_RAIL * unit));
 }
