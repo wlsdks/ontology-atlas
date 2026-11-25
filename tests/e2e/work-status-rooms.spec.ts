@@ -782,7 +782,7 @@ test.describe("work status rooms", () => {
     const asking = room(page, "feat/library-stage");
     const line = page.getByTestId("work-status-session-list");
     await expect(asking).toHaveAttribute("data-room-state", "waiting");
-    await expect(line).toHaveText("Session list on");
+    await expect(line).toHaveText("What Atlas reads · session list on");
 
     await line.click();
     const panel = page.getByTestId("work-status-session-list-panel");
@@ -795,13 +795,13 @@ test.describe("work status rooms", () => {
       status,
     );
     await readGoes("notFound");
-    await expect(line).toHaveText("Session list not read");
+    await expect(line).toHaveText("What Atlas reads · session list not read");
     await expect(panel.getByTestId("work-status-session-list-now")).toContainText("was not found");
     await readGoes("read");
-    await expect(line).toHaveText("Session list on");
+    await expect(line).toHaveText("What Atlas reads · session list on");
 
     await page.getByTestId("work-status-read-session-list").getByRole("radio", { name: "Off" }).click();
-    await expect(line).toHaveText("Session list off");
+    await expect(line).toHaveText("What Atlas reads · session list off");
     await expect(asking).toHaveAttribute("data-room-state", "working");
     await expect(page.getByTestId("work-status-alert-waiting")).toHaveCount(0);
     const calls = () => page.evaluate(() => (window as unknown as { __workStatusSessionCalls: () => { asks: number; forgets: number } }).__workStatusSessionCalls());
@@ -813,12 +813,12 @@ test.describe("work status rooms", () => {
     await page.reload();
     await page.getByTestId("work-status-choose").click();
     await expect(room(page, "feat/library-stage")).toHaveAttribute("data-room-state", "working");
-    await expect(page.getByTestId("work-status-session-list")).toHaveText("Session list off");
+    await expect(page.getByTestId("work-status-session-list")).toHaveText("What Atlas reads · session list off");
     expect((await calls()).asks).toBe(0);
 
     await page.getByTestId("work-status-session-list").click();
     await page.getByTestId("work-status-read-session-list").getByRole("radio", { name: "On" }).click();
-    await expect(page.getByTestId("work-status-session-list")).toHaveText("Session list on");
+    await expect(page.getByTestId("work-status-session-list")).toHaveText("What Atlas reads · session list on");
     await expect.poll(async () => (await calls()).asks).toBeGreaterThan(0);
   });
 

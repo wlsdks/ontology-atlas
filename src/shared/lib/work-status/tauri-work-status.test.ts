@@ -48,4 +48,21 @@ describe('Work status bridge', () => {
       ['work_status_set_session_names', { on: false }],
     ]);
   });
+
+  it('applies switch commands one after another, in the order the page sent them', async () => {
+    tauri.isTauri.mockReturnValue(true);
+    const finishes: Array<() => void> = [];
+    tauri.invoke.mockImplementation(() => new Promise<void>((resolve) => finishes.push(resolve)));
+    const on = setSessionNamesRead(true);
+    const off = setSessionNamesRead(false);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(tauri.invoke).toHaveBeenCalledTimes(1);
+    finishes[0]!();
+    await on;
+    await vi.waitFor(() => expect(tauri.invoke).toHaveBeenCalledTimes(2));
+    finishes[1]!();
+    await off;
+    expect(tauri.invoke.mock.calls.map(([, args]) => args)).toEqual([{ on: true }, { on: false }]);
+  });
 });

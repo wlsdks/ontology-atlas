@@ -99,7 +99,7 @@ The third written exception, for Work status only:
 |---|---|
 | Read | the person's own processes (uid filter first): parent, start time, working folder, and the executable path of one whose kernel name looks like an agent. On macOS, every 5 s while Work status is visible and its load switch (on by default) is on: memory, CPU time and kernel name of each process under an agent program; memory, CPU time and working folder of a process named `java` outside every agent's tree; and for the whole Mac, memory in use, macOS's pressure level, CPU in use and the GPU's "Device Utilization %" |
 | How | system APIs through crates already in `Cargo.lock`; one process listing and one usage read per process under an agent per sample, never per process on the Mac; no spawned program, no file, no root; the previous sample is the only one kept |
-| Returned to the page | for each worktree, the agent's pid, tool (Claude Code or Codex) and start time; per worktree, memory and CPU in cores, and at most five tool groups (a closed list matched by kernel name; any other name counts as other programs) with count, memory and CPU; groups outside every room; the Mac's totals, with no GPU figure when none is reported; never a folder, path, unlisted program name, or a pid the page does not already hold |
+| Returned to the page | for each worktree, the agent's pid, tool (Claude Code or Codex) and start time; per worktree, memory and CPU in cores, and every tool group with a process there, the page showing the five largest (a closed list matched by kernel name; any other name counts as other programs) with count, memory and CPU; groups outside every room; the Mac's totals, with no GPU figure when none is reported; never a folder, path, unlisted program name, or a pid the page does not already hold |
 | Never read | arguments or environment (`KERN_PROCARGS2`, `/proc/<pid>/environ`), open files, another user's processes, a per-program GPU figure |
 | Platforms | macOS and Linux for the agent processes; the load read on macOS only; Windows reads none |
 | Gate | `src-tauri/src/work_status/worktrees/tests.rs`; for load, the tests under `src-tauri/src/work_status/load/` |
@@ -150,7 +150,7 @@ The sixth written exception, for Work status only:
 
 | | |
 |---|---|
-| Watch | the OS's file-change notices, through the `notify` crate the app already ships, for the folder of each worktree drawn as a room; one watcher for every room; never a shelf worktree or a folder Git does not list for this repository |
+| Watch | the OS's file-change notices, through the `notify` crate the app already ships, for the folder of each worktree drawn as a room; one watcher for every room; never a shelf worktree's own folder or a folder Git does not list for this repository; a notice from a worktree nested inside a watched folder is dropped, never counted |
 | When | while Work status is visible and its Watch file changes switch (on by default) is on; hidden or switched off, no watcher is alive, and switched off, no count is held |
 | Counted | a notice whose path is not under `.git`, not under a fixed list of dependency and build folder names, and not ignored by Git; Git gives that verdict through `runner.rs`, at most one call per worktree in 10 s, never twice for one path until that worktree's `.gitignore` changes |
 | Kept in Rust memory | per worktree: the time of the last counted change, counts per 10 s step for 60 minutes (99 at most), and a one-way hash of each path Git already judged (4,096 at most) |

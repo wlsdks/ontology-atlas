@@ -138,6 +138,19 @@ export interface LandedDetail {
   fileCount: number;
 }
 
+/**
+ * Switch commands run on Rust's pool, so two sent together may apply in either order. Each waits for
+ * the one before it: the last switch the page sends is the one Rust holds.
+ */
+let switchesInOrder: Promise<unknown> = Promise.resolve();
+
+function sendSwitch(command: string, args?: Record<string, unknown>): Promise<void> {
+  if (!isWorkStatusAvailable()) return Promise.resolve();
+  const sent = switchesInOrder.catch(() => undefined).then(() => (args ? invoke(command, args) : invoke(command)));
+  switchesInOrder = sent;
+  return sent.then(() => undefined);
+}
+
 export function isWorkStatusAvailable(): boolean {
   return typeof window !== 'undefined' && isTauri();
 }
@@ -175,7 +188,7 @@ export async function readAgentSessions(repositoryPath: string): Promise<AgentSe
  * way starts no program, and Rust drops the last list it held.
  */
 export async function setAgentSessionsRead(on: boolean): Promise<void> {
-  if (isWorkStatusAvailable()) await invoke('work_status_set_agent_sessions_read', { on });
+  await sendSwitch('work_status_set_agent_sessions_read', { on });
 }
 
 /**
@@ -183,7 +196,7 @@ export async function setAgentSessionsRead(on: boolean): Promise<void> {
  * keeps no name, and the names Rust held are dropped.
  */
 export async function setSessionNamesRead(on: boolean): Promise<void> {
-  if (isWorkStatusAvailable()) await invoke('work_status_set_session_names', { on });
+  await sendSwitch('work_status_set_session_names', { on });
 }
 
 /** Counted file changes in one 10-second step: `atMs` is the step's start, `count` at most 99. */
@@ -222,12 +235,12 @@ export async function readFilePulse(repositoryPath: string, worktreeIds: readonl
 
 /** The screen is hidden or closed: the watcher ends, and the counts it had stay for the hour. */
 export async function pauseFilePulse(): Promise<void> {
-  if (isWorkStatusAvailable()) await invoke('work_status_pause_file_pulse');
+  await sendSwitch('work_status_pause_file_pulse');
 }
 
 /** Tells Rust whether the person leaves the pulse on. Off ends the watcher and drops every count. */
 export async function setFilePulseRead(on: boolean): Promise<void> {
-  if (isWorkStatusAvailable()) await invoke('work_status_set_file_pulse', { on });
+  await sendSwitch('work_status_set_file_pulse', { on });
 }
 
 /** The tool groups load is said in, by program name; a program outside the closed list is `other`. */
@@ -280,7 +293,10 @@ export interface LoadRead {
   mac: MacLoad | null;
 }
 
-/** One load sample: one process listing, one usage read per process under an agent, three reads for the Mac. `null` where this system has no load. */
+/**
+ * One load sample: one process listing, one usage read per process under an agent, three reads for
+ * the Mac. `null` while Rust holds load off, while another sample runs, and where this system has none.
+ */
 export async function readLoad(repositoryPath: string): Promise<LoadRead | null> {
   return isWorkStatusAvailable() ? invoke<LoadRead | null>('work_status_load', { repositoryPath }) : null;
 }
@@ -290,7 +306,7 @@ export async function readLoad(repositoryPath: string): Promise<LoadRead | null>
  * sample, so the first sample after it carries no CPU figure.
  */
 export async function setLoadRead(on: boolean): Promise<void> {
-  if (isWorkStatusAvailable()) await invoke('work_status_set_load', { on });
+  await sendSwitch('work_status_set_load', { on });
 }
 
 /** The newest thirty changes on the base branch's first-parent line, with their stats: one `git log`. */

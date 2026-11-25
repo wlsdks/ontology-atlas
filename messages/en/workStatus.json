@@ -27,9 +27,9 @@
   },
   "sessions": {
     "chip": {
-      "on": "Session list on",
-      "off": "Session list off",
-      "unreadable": "Session list not read"
+      "on": "What Atlas reads · session list on",
+      "off": "What Atlas reads · session list off",
+      "unreadable": "What Atlas reads · session list not read"
     },
     "title": "{tool}'s session list",
     "switch": "Read {tool}'s session list",
@@ -58,7 +58,7 @@
   },
   "names": {
     "switch": "Show session names",
-    "status": "A room shows the name {tool} gives each session, so you can match it to the terminal or window it runs in. A name can be a title {tool} wrote from your conversation. Atlas keeps names in memory while Work status is open; it never writes them to a file or a log, sends them anywhere, or gives them to an agent.",
+    "status": "A room shows the name {tool} gives each session, so you can match it to the terminal or window it runs in. A name can be a title {tool} wrote from your conversation. Atlas keeps the last names it read in memory until you switch names or the session list off, or quit the app; it never writes them to a file or a log, sends them anywhere, or gives them to an agent.",
     "off": "Atlas does not read session names. Rooms call a session by its tool and number, such as {example}.",
     "needsList": "Session names come from the session list, which is off."
   },
@@ -128,7 +128,7 @@
   },
   "load": {
     "switch": "Read memory, CPU and GPU use",
-    "status": "Every 5 seconds while Work status is open, Atlas reads how much memory and CPU each agent and the commands it started are using, and how busy this Mac's memory, CPU and GPU are. It reads each program's name, never its command line. Nothing is written and nothing leaves this Mac.",
+    "status": "Every 5 seconds while Work status is open, Atlas reads how much memory and CPU each agent and the commands it started are using, the memory and CPU of a Java program outside them, such as a Gradle daemon, and how busy this Mac's memory, CPU and GPU are. It reads each program's name, never its command line. Nothing is written and nothing leaves this Mac.",
     "off": "Atlas does not read memory, CPU or GPU use, so no room or heading shows them.",
     "room": "Memory {memory} · CPU {cores} of {total} cores",
     "fact": "{memory} · CPU {cores} cores",

@@ -202,8 +202,8 @@ Hidden, no watcher runs and the hour has gaps; switched off, no count is held.
 
 On macOS, every five seconds while Work status is visible and load is on, the
 app reads memory, CPU time and program name of each process under an agent
-program, the memory and working folder of a `java` process outside every
-agent's tree, and for the whole Mac memory in use, macOS's pressure level, CPU
+program, the memory, CPU time and working folder of a `java` process outside
+every agent's tree, and for the whole Mac memory in use, macOS's pressure level, CPU
 in use and the GPU's busy percentage. It never reads a command line, the
 environment or open files, spawns no program and needs no administrator
 rights. Why:

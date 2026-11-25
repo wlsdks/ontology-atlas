@@ -95,6 +95,14 @@ describe('useWorktreeLoad', () => {
     const { result } = renderHook(() => useWorktreeLoad('/repo', true));
     await settle(LOAD_SAMPLE_MS * 10);
     expect(result.current.status).toBe('unsupported');
-    expect(native.readLoad).toHaveBeenCalledTimes(1);
+    expect(native.readLoad).toHaveBeenCalledTimes(3);
+  });
+
+  it('asks again, telling Rust on, after one null answer from a switch held off', async () => {
+    native.readLoad.mockResolvedValueOnce(null).mockResolvedValue(SAMPLE);
+    const { result } = renderHook(() => useWorktreeLoad('/repo', true));
+    await settle(LOAD_SAMPLE_MS * 2);
+    expect(result.current.status).toBe('read');
+    expect(native.setLoadRead.mock.calls.filter(([on]) => on === true).length).toBeGreaterThanOrEqual(2);
   });
 });

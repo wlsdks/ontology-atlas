@@ -18,6 +18,9 @@ export interface WorktreeLoadState {
   pressure: LoadPressure;
 }
 
+/** Null answers in a row, each after telling Rust "on" again, before the screen says nothing. */
+const NULLS_BEFORE_UNSUPPORTED = 3;
+
 const NOT_ASKED: WorktreeLoadState & { root: string | null } = { root: null, status: 'pending', sample: null, pressure: NO_PRESSURE };
 const OFF: WorktreeLoadState = { status: 'off', sample: null, pressure: NO_PRESSURE };
 const PENDING: WorktreeLoadState = { status: 'pending', sample: null, pressure: NO_PRESSURE };
@@ -42,6 +45,7 @@ export function useWorktreeLoad(root: string | null, enabled: boolean): Worktree
     let busy = false;
     /** Rust last heard "on" from this screen; hiding tells it "off". */
     let toldOn = false;
+    let nullsInARow = 0;
     let timer: number | undefined;
     const visible = () => document.visibilityState === 'visible';
 
@@ -57,9 +61,17 @@ export function useWorktreeLoad(root: string | null, enabled: boolean): Worktree
       const answer = await readLoad(root).catch(() => undefined);
       if (cancelled) return;
       if (answer === null) {
-        setState({ root, status: 'unsupported', sample: null, pressure: NO_PRESSURE });
+        // Off or busy in Rust answers null too; only a run of nulls means this system has none.
+        nullsInARow += 1;
+        if (nullsInARow >= NULLS_BEFORE_UNSUPPORTED) {
+          setState({ root, status: 'unsupported', sample: null, pressure: NO_PRESSURE });
+          return;
+        }
+        toldOn = false;
+        if (visible()) timer = window.setTimeout(() => void run(sample), LOAD_SAMPLE_MS);
         return;
       }
+      nullsInARow = 0;
       const read: LoadRead = answer ?? { status: 'failed', worktrees: {}, outside: [], mac: null };
       setState(current => {
         const pressure = nextPressure(current.root === root ? current.pressure : NO_PRESSURE, read);
