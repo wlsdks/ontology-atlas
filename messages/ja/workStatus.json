@@ -27,7 +27,7 @@
   },
   "sessions": {
     "chip": {
-      "on": "セッション一覧を読み取り中",
+      "on": "セッション一覧オン",
       "off": "セッション一覧オフ",
       "unreadable": "セッション一覧を読めません"
     },
@@ -53,6 +53,21 @@
       "unknownForm": "一覧がAtlasの知らない形式です。新しい{tool}で変わった可能性があります。"
     }
   },
+  "reads": {
+    "title": "作業状況がこのMacで読み取るもの"
+  },
+  "names": {
+    "switch": "セッション名を表示",
+    "status": "{tool}が各セッションに付けた名前を部屋に表示するので、そのセッションが動いているターミナルやウィンドウを見つけられます。名前は{tool}が会話から付けたタイトルのこともあります。Atlasは作業状況を開いている間だけ名前をメモリに置き、ファイルやログに書いたり、どこかに送ったり、エージェントに渡したりしません。",
+    "off": "Atlasはセッション名を読み取りません。部屋では{example}のように、ツールと番号でセッションを呼びます。",
+    "needsList": "セッション名はセッション一覧から読みますが、セッション一覧がオフです。"
+  },
+  "sessionLine": {
+    "workingHere": "ここでコマンドを実行中",
+    "forMinutes": "{count}分間",
+    "forHours": "{count}時間",
+    "more": "ほかにセッション{count}個"
+  },
   "stage": {
     "label": "作業中のワークツリー"
   },
@@ -76,7 +91,8 @@
     "commits": "コミット{count}個",
     "noCommits": "まだコミットなし",
     "onlyInGit": "Gitにだけ残っています",
-    "notInBase": "{branch}にないコミット{count}個"
+    "notInBase": "{branch}にないコミット{count}個",
+    "sessions": "セッション{count}個"
   },
   "monitor": {
     "lockedAt": "{time}にロック",
@@ -98,6 +114,45 @@
     "rootFolder": "リポジトリ直下",
     "areaFiles": "{count}件",
     "areasMore": "ほか{count}か所"
+  },
+  "pulse": {
+    "switch": "ファイルの変更を見守る",
+    "status": "作業状況を開いている間、このリポジトリのワークツリーでファイルが変わるたびにmacOSがAtlasに知らせ、Atlasは変更の回数を数えます。ファイルは開かず、ファイル名も残しません。.gitの中の変更と、Gitが無視するファイルの変更は数えません。数えた回数は1時間だけメモリに残ります。",
+    "off": "Atlasはファイルの変更を見守りません。部屋は、Atlasが次にGitを読んだとき、最大1分30秒後に変更を表示します。",
+    "lastMinute": "直近1分のファイル変更{count}件",
+    "lastHour": "直近1時間のファイル変更{count}件",
+    "onlyOpen": "Atlasは作業状況を開いている間だけ数えます。",
+    "none": "直近1時間、ここで数えたファイル変更はありません。",
+    "noAgent": "ここでファイルが変わっていますが、このフォルダにエージェントは見えません。",
+    "unwatched": "macOSがこのフォルダを見守れなかったため、この部屋はAtlasがGitを読んだときだけ変更を表示します。"
+  },
+  "load": {
+    "switch": "メモリ、CPU、GPUの使用量を読み取る",
+    "status": "作業状況を開いている間、Atlasは5秒ごとに、各エージェントとそれが起動したコマンドが使うメモリとCPU、そしてこのMacのメモリ、CPU、GPUの混み具合を読み取ります。各プログラムの名前は読みますが、コマンドラインは読みません。何も書き込まず、何もこのMacの外に出ません。",
+    "off": "Atlasはメモリ、CPU、GPUの使用量を読み取らないので、部屋にも見出しにも表示されません。",
+    "room": "メモリ{memory} · CPU {total}コア中{cores}コア",
+    "fact": "{memory} · CPU {cores}コア",
+    "groupLine": "{tool} {count}個 · {memory} · CPU {cores}コア",
+    "tool": {
+      "agent": "エージェントプログラム",
+      "node": "Node.js",
+      "rust": "Rustビルド",
+      "java": "Javaプログラム",
+      "gradleDaemon": "Gradleデーモン",
+      "xcode": "Xcodeビルド",
+      "python": "Pythonプログラム",
+      "git": "Git",
+      "other": "その他のプログラム"
+    },
+    "moreGroups": "ほか{count}種類",
+    "agentElsewhere": "{who}自体は、起動したフォルダである{branch}で数えます。この部屋では、ここで実行するコマンドだけを数えます。",
+    "none": "この部屋で動いているエージェントプログラムがないので、表示する負荷はありません。",
+    "outside": "どの部屋にも属さずに実行中：{list}",
+    "mac": "このMac：メモリ{total}中{used} · CPU {coreCount}コア中{cores}コア · GPU {gpu}%",
+    "macNoGpu": "このMac：メモリ{total}中{used} · CPU {coreCount}コア中{cores}コア",
+    "gpuWhy": "macOSはGPUの使用量をMac全体でしか報告しません。どのプログラムが使っているかを知るには管理者権限が必要ですが、Atlasはその権限を求めません。",
+    "gpuMissing": "このMacはGPUの使用量を報告しませんでした。",
+    "failed": "いまmacOSから負荷を読み取れませんでした。5秒後にもう一度読みます。この部屋のほかの内容には影響しません。"
   },
   "shelf": {
     "merged": "{branch}にマージ済み",
@@ -129,7 +184,11 @@
     "waiting": "返答待ち{count}",
     "sameFolder": "同じフォルダ{count}",
     "cleanup": "整理{count}",
-    "pointTo": "どのワークツリーか表示"
+    "pointTo": "どのワークツリーか表示",
+    "memory": "メモリが不足しています",
+    "cpu": "CPUがいっぱいです",
+    "gpu": "GPUがいっぱいです",
+    "pointToLoad": "最も多く使っている部屋を表示"
   },
   "git": {
     "uncommitted": "未コミットのファイル{count}個",
@@ -171,17 +230,20 @@
       "commits": "{branch}以降のコミット",
       "uncommitted": "未コミットのファイル"
     },
-    "quiet": "{branch}以降のコミットも、未コミットのファイルもありません。"
+    "quiet": "{branch}以降のコミットも、未コミットのファイルもありません。",
+    "sessionsTitle": "フォルダのセッション",
+    "pulseTitle": "ファイル変更",
+    "loadTitle": "負荷"
   },
   "about": {
     "label": "この画面が示すもの",
     "body": "部屋ひとつがワークツリーひとつです。ワークツリーは、このリポジトリでブランチをひとつ作業するための別フォルダです。部屋の画面には、ブランチ、最近のコミット、変更したがまだコミットしていないファイルが表示されます。エージェントのセッションが作業中の部屋は明かりがついています。部屋を押すと残りを確認できます。"
   },
   "landed": {
-    "title": "<code>{branch}</code>に入った作業",
-    "note": "ワークツリーを削除してもここに残ります。Gitの記録から直接読みます。",
+    "title": "<code>{branch}</code>にマージされた作業",
+    "note": "1行が、マージされたプルリクエスト1つです。プルリクエストなしでプッシュしたコミットも1行になります。AtlasはこのMacにあるブランチを読むので、まだプルしていない変更は表示されません。",
     "summary": "今日{today}件 · 直近7日{week}件",
-    "none": "まだ{branch}に入った作業はありません。",
+    "none": "まだ{branch}にマージされた作業はありません。",
     "today": "今日",
     "yesterday": "昨日",
     "dayCount": "{count}件",
@@ -197,18 +259,18 @@
       "test": "テスト",
       "chore": "管理"
     },
-    "landedAt": "{ago} · {time}に入りました",
+    "landedAt": "{ago} · {time}にマージ",
     "stat": {
       "commits": "コミット",
       "files": "ファイル",
       "added": "追加した行",
       "removed": "削除した行"
     },
-    "commitsTitle": "この作業のコミット",
+    "commitsTitle": "この変更のコミット",
     "filesTitle": "変更されたファイル",
-    "squashed": "1つのコミットにまとめて入ったので、個別のコミットはありません。",
+    "squashed": "1つのコミットとしてマージされたので、個別のコミットはありません。",
     "binary": "バイナリ",
-    "unreadable": "この作業のコミットとファイルをGitから読めませんでした。",
+    "unreadable": "この変更のコミットとファイルをGitから読めませんでした。閉じてもう一度開くと読み直します。",
     "copyHash": "コミットハッシュをコピー"
   }
 }

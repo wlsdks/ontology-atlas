@@ -12,8 +12,10 @@ Work status answers "which agent is holding which worktree, and is that work
 merged yet?" for one Git repository, in the installed app. It is the tenth rail
 destination (`g w`). The plan, its later slices and their acceptance criteria
 live in [the spec](../specs/2026-11-21-work-status-destination.md); this page
-describes what ships today: the spec's first slice, and from its seventh the
-room that waits for its person.
+describes what ships today: the spec's first slice, from its seventh the
+room that waits for its person, and from
+[the live round](../specs/2026-11-25-work-status-live.md) a line per session
+with its name, the file-change pulse and the load each room carries.
 
 ## Which repository
 
@@ -62,7 +64,8 @@ Every read goes through the hardened Git runner in `src-tauri/src/git/runner.rs`
   Only an agent's own command tree has its working folder read. A command
   under an Atlas agent session counts for that session. A process of the same agent that
   locked worktrees joins that lock's session. Windows reads no processes;
-  Gemini CLI runs as `node` and is not named.
+  Gemini CLI runs as `node` and is not named. The load read below adds memory,
+  CPU time and program name for the processes under an agent, on macOS only.
 - A worktree that an Atlas agent session (ACP) works in sits under
   **Claude Agent in Atlas**; so does the main checkout while such a session
   works there.
@@ -84,14 +87,21 @@ session list, and on macOS Work status reads it:
 - **When.** Only while Work status is visible and a Claude Code process is
   seen: once in ten seconds, or a second after such a process appears or ends,
   never two at once. A state can therefore show up to ten seconds late.
-- **What is kept.** For each session: its process id, its folder, its start
-  and what it says of itself. Its name and ids are dropped as the list is
-  parsed and reach nothing that is kept. A session
+- **What is kept.** For each session: its process id, its folder, its start,
+  what it says of itself and, while **Show session names** is on, its name.
+  Its ids are dropped as the list is parsed and reach nothing that is kept. A
+  name is kept only when it is text: control and direction-override characters
+  are removed, and it is cut to one line of at most 60 characters, never inside
+  a Hangul syllable. It is held with the last list and dropped with it, never
+  written to a file, a log or storage, and never sent to an agent or the
+  network. Why:
+  [the decision](../records/decisions/2026-11-25-work-status-session-names-3c8614d6-9b02-4b18-9e12-95d935c9434c.md).
+  A session
   counts only when its process is one Work status already shows and its folder
   lies in one of the repository's worktrees (the main checkout, a worktree
   under it, or one whose own `.git` file names this repository); the page
-  receives the worktree, the process id and one of five states, and nothing is
-  written.
+  receives the worktree, the process id, one of five states and the name, and
+  nothing is written.
 
 | The session says | The room |
 |---|---|
@@ -110,10 +120,29 @@ folder. The
 room panel says where to answer: in the terminal or app that session runs in.
 Work status sends no answer of its own.
 
-### The status line and its switch
+### A line per session
 
-The header says how the read goes, and pressing the words opens a panel with
-its switch:
+A room with one session puts the session's name where `Claude Code 1` stood,
+with `Claude Code 1` beside it in muted ink so two sessions of one name stay
+apart; a session with no name, or with names switched off, keeps
+`Claude Code 1`. A folder two or more sessions share says how many on its bezel
+and lists up to three lines under the branch, then how many more: each line
+has the session's ink mark, its name, its tool and number, its state in that
+state's tone, and how long it has been so, counted from the read in which Atlas
+first saw the state (its start when it was so from the first read). Waiting
+lines come first, then failed, working and replied, and the room is framed in
+amber when any line waits. A session that only runs commands in a room says
+**Running a command here**. The room panel lists every session under
+**Sessions in this folder**, twenty at most.
+
+### The reads panel
+
+The header says how the session-list read goes, and pressing the words opens
+**What Work status reads on this Mac**: one row each for the session list,
+session names, file changes and load. Each row has its switch (all on by
+default), what is true now, and one sentence of what is read and what never is.
+The choices are kept in this browser profile's storage beside the session-list
+choice, and the app holds each one too. For the session list:
 
 | Header | The panel says |
 |---|---|
@@ -130,9 +159,70 @@ browser profile's storage (`atlas.workStatus.sessionListRead`) and is on until
 the person turns it off. Where the read never runs (Windows, Linux) the header
 says nothing about it.
 
+Session names switched off leave the screen at the next draw and the app drops
+the names it held; switched on, they return within one list read. With the
+session list off, the names row says names come from that list.
+
 Limits: Claude Code only, the default settings folder only, macOS only. A
 background session and a subagent's own wait have not been seen through this
 read. A running session that is missing from the list is not counted or named.
+
+## File changes
+
+On macOS, while Work status is visible and **Watch file changes** is on, the
+app takes macOS's file-change notices for the folder of each worktree drawn as
+a room, through the watcher the folder watch already uses: one watcher for
+every room, and none for a shelf worktree. A notice counts as a file change
+when its path is not under `.git`, not under a dependency or build folder
+(`node_modules`, `target`, `.next`, `out`, `dist`, `build`, `.gradle`,
+`DerivedData`, `Pods`, `.venv`, `__pycache__`, `coverage`) and not ignored by
+Git; Git answers that through the hardened runner at most once per worktree in
+ten seconds, and never twice for one path until that worktree's `.gitignore`
+changes. No file is opened and no file name is kept: per worktree the app holds
+the time of the last counted change and counts in ten-second steps for an hour
+(99 at most per step). Why:
+[the decision](../records/decisions/2026-11-25-work-status-file-change-notices-1c163935-120b-4f73-9c2e-9cf11f023ee3.md).
+
+The page asks every two seconds while visible, and the app answers from memory.
+A counted change flashes the room's light once, at most once in two seconds and
+never as a loop; its bezel says **changed just now**; a mini room shows the
+same light at the start of its status line while the change is under a minute
+old; and the last-hour line gains a tick under its marks for each ten-second
+step that had one, in three heights. The file's name follows from the next Git
+read, which the change makes due, still at most once in ten seconds. A change
+keeps a held room from dozing but promotes no room and names no state. With
+reduced motion nothing flashes or rises, and the words carry the same fact. The
+room panel's **File changes** says how many in the last minute and the last
+hour, that Atlas counts only while Work status is open, and, for a folder macOS
+cannot watch, that the room shows a change only when Atlas reads Git. A room no
+agent holds stays where it is and says files are changing with no agent seen.
+Hidden, no watcher runs and the hour has gaps; switched off, no count is held.
+
+## Load
+
+On macOS, every five seconds while Work status is visible and load is on, the
+app reads memory, CPU time and program name of each process under an agent
+program, the memory and working folder of a `java` process outside every
+agent's tree, and for the whole Mac memory in use, macOS's pressure level, CPU
+in use and the GPU's busy percentage. It never reads a command line, the
+environment or open files, spawns no program and needs no administrator
+rights. Why:
+[the decision](../records/decisions/2026-11-25-work-status-load-read-43842310-f121-42ab-973d-4b72806a0f94.md).
+
+A process counts once: for the worktree its working folder lies in, else for
+its nearest ancestor's. Programs are grouped by name: agent programs, Node.js,
+Rust build, Java (a Gradle daemon when its folder gives it away), Xcode build,
+Python, Git, and other programs. CPU is said in cores. A stage room at least
+600 px wide shows its memory and CPU on the wall when it holds 1 GB or one
+core. The room panel's **Load** gives the room's totals, up to five groups,
+what runs outside every room, and one line for this Mac; GPU use is the whole
+Mac's, since macOS names no program for it without administrator rights. A
+room whose agent was started in another folder counts only the commands it
+runs there and says so. The header warns in amber when macOS reports memory
+pressure for two samples, or CPU or GPU stays at 90 % or more for six (30
+seconds); pressing the memory or CPU words outlines the rooms using the most.
+A failed sample says so in the panel and raises no warning; a Mac that reports
+no GPU figure shows none.
 
 ## The building
 
@@ -308,16 +398,17 @@ The panel opens with its numbers in one row (commits beyond the base branch,
 uncommitted files); when both are zero one sentence replaces the empty lists.
 The folder's path sits at the panel's foot.
 
-## Landed work
+## Merged work
 
-Under the building, and under the empty or quiet building, **Landed on `main`**
-lists the base branch's newest thirty changes on its first-parent line, merges
-and squashed commits alike, grouped by day: each with its kind read from a
-conventional prefix, its title, its pull request number, how many files it
-changed, a bar as long as the logarithm of its changed lines, and when it
-landed. Worktrees are removed once their work lands, but the work stays on
-this line, so the list is read from Git (`work_status_landed`, one `git log`)
-and Atlas stores nothing of its own. It is read again only when a worktree's
+Under the building, and under the empty or quiet building, **Merged into
+`main`** lists the base branch's newest thirty changes on its first-parent
+line, merges and squashed commits alike, grouped by day: each with its kind
+read from a conventional prefix, its title, its pull request number, how many
+files it changed, a bar as long as the logarithm of its changed lines, and when
+it was merged. One line is one merged pull request, and a commit pushed without
+one is a line too. The list is read from Git (`work_status_landed`, one
+`git log`) on this Mac's copy of the branch, so a change not pulled yet is not
+listed, and Atlas stores nothing of its own. It is read again only when a worktree's
 head or standing changes, since the base branch moves only with them. The
 heading counts today's changes and the last seven days' (one `git rev-list
 --count`, so the week may hold more than the thirty listed); a day the list
@@ -334,8 +425,7 @@ worries in a room whose lock was left behind, and sighs in one whose folder is
 gone. He settles into a room new to the building or to the stage, and
 galumphs when his room moves sideways with him in it. Each change of what he
 does waits for his neutral pose, so he never jumps from one pose to another.
-Atlas does not yet read whether a session waits for its person, so no room
-shows that. Moru moves only in a stage room, each on screen in a visible
+Moru moves only in a stage room, each on screen in a visible
 window; a mini room's Moru holds still, and a mini room with a lock left
 behind or a missing folder shows its crate. Reduced motion shows the end
 states without movement.
@@ -352,10 +442,19 @@ states without movement.
 | Only the main checkout | one room for the base branch, `workStatus.empty.*`, then the landed work |
 | Every worktree merged or untouched | `workStatus.quiet.*` with the shelf, then the landed work |
 | Reading | the page title; the building follows |
+| First file-change or load read not in yet | no flash or tick; the panel's Load says `workStatus.panel.reading` |
+| A folder macOS cannot watch | `workStatus.pulse.unwatched`; times from the Git read |
+| A load sample failed | `workStatus.load.failed`; no header warning |
+| No GPU figure | `workStatus.load.macNoGpu` and `workStatus.load.gpuMissing` |
+| Names, file changes or load switched off | that part leaves every room; the reads panel says `workStatus.names.off`, `.pulse.off` or `.load.off` |
+| Windows or Linux app | no names, file changes or load, and nothing says so |
 
 ## Not yet
 
-Processes, hooks, load and disk (slice 2), fixes (slice 3), findings (slice 4)
-and anything from GitHub (slices 5 and 6) are not built. Thinking apart from
-running a command, pre-push, CI and a slow command have no room state yet; nor
-does a waiting Codex session, which has no list to read.
+Hooks and disk (slice 2), fixes (slice 3), findings (slice 4) and anything from
+GitHub (slices 5 and 6) are not built. Thinking apart from running a command,
+pre-push, CI and a slow command have no room state yet, and file changes and
+load name none either; nor does a waiting Codex session, which has no list to
+read. A process's command line is not read, so Node.js is not told into Vitest
+or Playwright. File changes and load are not read while Work status is hidden,
+or on Linux and Windows.
