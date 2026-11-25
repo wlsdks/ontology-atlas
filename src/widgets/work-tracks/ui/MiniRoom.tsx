@@ -3,6 +3,7 @@
 import type { RoomEntry } from '@/shared/lib/work-status/work-tracks';
 import { cn } from '@/shared/lib/cn';
 import { STAGE_AT, roomLook, type MoruCharacter } from '../model/room-look';
+import type { RoomLive } from '../model/room-live';
 import { BranchName } from './BranchName';
 import { CommitLog } from './CommitLog';
 import { RoomMoru } from './RoomMoru';
@@ -29,9 +30,10 @@ const TONE: Record<StatusTone, string> = {
  * committed into columns. The small Moru holds his clip's still pose: a floor of forty rooms would
  * otherwise step forty sprites every frame.
  */
-export function MiniRoom({ room, copy, tint, showOwner, character }: { room: RoomEntry; copy: RoomCopy; tint: string | null; showOwner: boolean; character: MoruCharacter }) {
+export function MiniRoom({ room, live, copy, tint, showOwner, character }: { room: RoomEntry; live: RoomLive; copy: RoomCopy; tint: string | null; showOwner: boolean; character: MoruCharacter }) {
   const look = roomLook(room.state);
-  const status = copy.status(room);
+  const status = copy.status(room, live);
+  const owner = copy.owner(room, live.lines);
   const subject = copy.newestSubject(room.track);
   const commits = copy.screenCommits(room.track);
   const files = copy.uncommitted(room.track);
@@ -52,10 +54,17 @@ export function MiniRoom({ room, copy, tint, showOwner, character }: { room: Roo
       </div>
       <div className={styles.miniText}>
         <BranchName branch={room.track.branch ?? room.track.title} className="text-body leading-body font-mono font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]" />
-        <span className="text-body leading-body text-[color:var(--color-text-tertiary)]">
+        <span className="text-body leading-body text-[color:var(--color-text-tertiary)]" data-testid="work-room-status">
+          {/* The room's light while a counted file change is under a minute old. */}
+          {live.pulse?.changedJustNow ? <i aria-hidden className={styles.miniLight} data-testid="work-room-light" /> : null}
           <SwapText value={status.lead} ink={cn('font-[var(--font-weight-emphasis)]', TONE[status.tone])} />
           {status.rest ? <> · {status.rest}</> : null}
-          {showOwner ? <span className={styles.ownerText}> · {copy.owner(room)}</span> : null}
+          {showOwner ? (
+            <span className={styles.ownerText} data-testid="work-room-who">
+              {' · '}{owner.main}
+              {owner.tag ? <span className="font-normal text-[color:var(--color-text-quaternary)]">{` ${owner.tag}`}</span> : null}
+            </span>
+          ) : null}
         </span>
         {subject ? (
           <span className={cn(styles.miniSubject, 'text-label leading-label')}>

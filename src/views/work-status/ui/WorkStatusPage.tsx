@@ -6,31 +6,39 @@ import { useTranslations } from 'next-intl';
 import { FolderGit2 } from 'lucide-react';
 import { useLocalVault } from '@/entities/vault-session';
 import { useArrivalMemory } from '@/shared/lib/navigation/route-arrival-memory';
-import { useSessionListReadEnabled } from '@/shared/lib/preferences/work-status-preferences';
+import { useFilePulseEnabled, useLoadReadEnabled, useSessionListReadEnabled, useSessionNamesEnabled } from '@/shared/lib/preferences/work-status-preferences';
 import { pickTauriSourceDirectory } from '@/shared/lib/vault-folder/native-vault/tauri-project-source';
 import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { isWorkStatusAvailable } from '@/shared/lib/work-status/tauri-work-status';
 import { buildWorkTracks, folderName, planRooms, withActivity } from '@/shared/lib/work-status/work-tracks';
 import { withAgentSessions } from '@/shared/lib/work-status/signals/sessions';
+import { heaviestRooms } from '@/shared/lib/work-status/signals/load';
+import { withChangeSigns } from '@/shared/lib/work-status/signals/pulse';
+import { listedFolders, sessionsByPidOf } from '@/shared/lib/work-status/signals/session-lines';
+import { sessionNameOf } from '@/shared/lib/work-status/signals/session-name';
 import { Button, InfoHint, PageHeaderBar } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { PAGE_FRAME_FORM, PAGE_STAGE_FILL } from '@/shared/ui/tokens/page-frame';
-import { EmptyRoom, QuietBuilding, RoomShelf, WorkBuilding, pointToRooms, type RoomAlert } from '@/widgets/work-tracks';
+import { EmptyRoom, QuietBuilding, RoomShelf, WorkBuilding, pointToRoomKeys, pointToRooms, usePulseClock, type BuildingLive, type RoomAlert } from '@/widgets/work-tracks';
 import { useMinuteClock } from '../model/use-minute-clock';
 import { useRunningMemory } from '../model/use-running-memory';
 import { useSessionIdentity } from '../model/use-session-identity';
 import { sessionListLine } from '../model/session-list-line';
 import { useAgentSessions } from '../model/use-agent-sessions';
+import { useFilePulse } from '../model/use-file-pulse';
+import { useSessionStateSince } from '../model/use-session-state-since';
+import { useWorktreeLoad } from '../model/use-worktree-load';
 import { useWorkStatus } from '../model/use-work-status';
 import { useWorktreeActivity } from '../model/use-worktree-activity';
 import { landedReadKey, useLandedChanges } from '../model/use-landed-changes';
-import { SessionListControl } from './SessionListControl';
+import { WorkStatusReads } from './WorkStatusReads';
 import { WorkStatusStage } from './WorkStatusStage';
 
 const subscribe = () => () => {};
 const webSnapshot = () => false;
 const MAIN_CLASS = 'flex min-h-full flex-col bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]';
 const BRANCH_CLASS = 'font-mono';
+const ALERT_CLASS = 'font-[var(--font-weight-emphasis)] text-[color:var(--color-status-warning)] underline-offset-4 hover:underline focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]';
 
 export function WorkStatusPage() {
   const t = useTranslations('workStatus');
@@ -42,10 +50,15 @@ export function WorkStatusPage() {
   const root = native ? chosen ?? vaultRoot : null;
   const { snapshot, failed, readAtMs } = useWorkStatus(root);
   const nowMs = useMinuteClock(readAtMs);
+  const readyRoot = snapshot?.status === 'ready' ? snapshot.root : null;
   const sessionListOn = useSessionListReadEnabled();
-  const sessionList = useAgentSessions(snapshot?.status === 'ready' ? snapshot.root : null, sessionListOn);
+  const namesOn = useSessionNamesEnabled();
+  const pulseOn = useFilePulseEnabled();
+  const loadOn = useLoadReadEnabled();
+  const sessionList = useAgentSessions(readyRoot, sessionListOn, namesOn);
   const read = useMemo(() => (snapshot?.status === 'ready' ? withAgentSessions(buildWorkTracks(snapshot), sessionList.rows) : null), [snapshot, sessionList.rows]);
   const tracks = useSessionIdentity(read);
+  const since = useSessionStateSince(sessionList.rows, sessionList.readAtMs, tracks);
   const seenRunningAt = useRunningMemory(tracks, readAtMs);
   const plan = useMemo(() => (tracks ? planRooms(tracks, nowMs, seenRunningAt) : null), [tracks, nowMs, seenRunningAt]);
   const roomKeys = useMemo(() => (plan ? [...plan.stage, ...plan.floors.flatMap(floor => floor.rooms)].map(room => room.key) : []), [plan]);
@@ -53,7 +66,25 @@ export function WorkStatusPage() {
     () => new Set(plan ? [...plan.stage, ...plan.floors.flatMap(floor => floor.rooms)].filter(room => room.track.running).map(room => room.key) : []),
     [plan],
   );
-  const activity = useWorktreeActivity(snapshot?.status === 'ready' ? snapshot.root : null, snapshot?.baseBranch ?? null, roomKeys, runningKeys);
+  const pulse = useFilePulse(readyRoot, roomKeys, pulseOn);
+  const pulseNowMs = usePulseClock(pulse.worktrees, nowMs);
+  const changedAt = useMemo(
+    () => new Map([...pulse.worktrees].flatMap(([key, worktree]) => (worktree.lastChangeAtMs === null ? [] : [[key, worktree.lastChangeAtMs] as const]))),
+    [pulse.worktrees],
+  );
+  // A counted change is a sign of work: it keeps a held room from dozing, and promotes none.
+  const signsOfWork = useMemo(() => withChangeSigns(seenRunningAt, pulse.worktrees), [seenRunningAt, pulse.worktrees]);
+  const load = useWorktreeLoad(readyRoot, loadOn);
+  const live = useMemo<BuildingLive>(() => ({
+    sessions: { sessionsByPid: sessionsByPidOf(tracks?.sessions ?? []), listedIn: listedFolders(sessionList.rows), since },
+    namesByPid: new Map(sessionList.rows.flatMap(row => {
+      const name = sessionNameOf(row.name);
+      return name ? [[row.pid, name] as const] : [];
+    })),
+    pulse: { status: pulse.status, worktrees: pulse.worktrees, flashes: pulse.flashes, nowMs: pulseNowMs },
+    load: { status: load.status, sample: load.sample },
+  }), [tracks, sessionList.rows, since, pulse, pulseNowMs, load.status, load.sample]);
+  const activity = useWorktreeActivity(readyRoot, snapshot?.baseBranch ?? null, roomKeys, runningKeys, changedAt);
   const headsKey = useMemo(() => (snapshot?.status === 'ready' ? landedReadKey(snapshot.worktrees) : null), [snapshot]);
   const landed = useLandedChanges(snapshot?.status === 'ready' ? snapshot.root : null, snapshot?.baseBranch ?? null, headsKey);
   const shownTracks = useMemo(() => (tracks ? withActivity(tracks, activity) : null), [tracks, activity]);
@@ -66,6 +97,12 @@ export function WorkStatusPage() {
     sameFolder > 0 ? { kind: 'sameFolder' as RoomAlert, label: t('header.sameFolder', { count: sameFolder }) } : null,
     cleanup > 0 ? { kind: 'cleanup' as RoomAlert, label: t('header.cleanup', { count: cleanup }) } : null,
   ].filter(alert => alert !== null);
+  const sample = load.sample;
+  const loadAlerts = [
+    load.pressure.memory.warning && sample ? { kind: 'memory' as const, label: t('header.memory'), rooms: heaviestRooms(sample, 'memory') } : null,
+    load.pressure.cpu.warning && sample ? { kind: 'cpu' as const, label: t('header.cpu'), rooms: heaviestRooms(sample, 'cpu') } : null,
+  ].filter(alert => alert !== null);
+  const gpuFull = load.pressure.gpu.warning && sample !== null;
 
   async function chooseRepository() {
     const picked = await pickTauriSourceDirectory(t('choose.title'));
@@ -119,14 +156,35 @@ export function WorkStatusPage() {
                   data-testid={`work-status-alert-${alert.kind}`}
                   title={t('header.pointTo')}
                   onClick={() => pointToRooms(alert.kind, reduced)}
-                  className="font-[var(--font-weight-emphasis)] text-[color:var(--color-status-warning)] underline-offset-4 hover:underline focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]"
+                  className={ALERT_CLASS}
                 >
                   {alert.label}
                 </button>
               </span>
             ))}
+            {loadAlerts.map(alert => (
+              <span key={alert.kind}>
+                {' · '}
+                <button
+                  type="button"
+                  data-testid={`work-status-alert-${alert.kind}`}
+                  title={t('header.pointToLoad')}
+                  onClick={() => pointToRoomKeys(alert.rooms, reduced)}
+                  className={ALERT_CLASS}
+                >
+                  {alert.label}
+                </button>
+              </span>
+            ))}
+            {gpuFull ? (
+              <span>
+                {' · '}
+                <span data-testid="work-status-alert-gpu" className="font-[var(--font-weight-emphasis)] text-[color:var(--color-status-warning)]">{t('header.gpu')}</span>
+              </span>
+            ) : null}
           </span>
-          <SessionListControl line={sessionListLine(sessionList.status)} />
+          {gpuFull ? <InfoHint label={t('load.gpuWhy')} align="left">{t('load.gpuWhy')}</InfoHint> : null}
+          <WorkStatusReads line={sessionListLine(sessionList.status)} choices={{ names: namesOn, pulse: pulseOn, load: loadOn }} />
           <InfoHint label={t('about.label')} align="left">{t('about.body')}</InfoHint>
           </span>
         ) : null}
@@ -147,7 +205,7 @@ export function WorkStatusPage() {
           </EmptyRoom>
         </QuietBuilding>
       ) : (
-        <WorkBuilding tracks={shownTracks ?? tracks} seenRunningAt={seenRunningAt} baseBranch={baseBranch} nowMs={nowMs} root={snapshot?.root ?? root} landed={landed} />
+        <WorkBuilding tracks={shownTracks ?? tracks} live={live} seenRunningAt={signsOfWork} baseBranch={baseBranch} nowMs={nowMs} root={snapshot?.root ?? root} landed={landed} />
       )}
     </main>
   );

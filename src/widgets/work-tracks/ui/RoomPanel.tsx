@@ -5,11 +5,13 @@ import { useTranslations } from 'next-intl';
 import { X } from 'lucide-react';
 import { useCopyFeedback } from '@/shared/lib/clipboard/use-copy-feedback';
 import { cn } from '@/shared/lib/cn';
-import { DOZE_AFTER_MS, type RoomEntry } from '@/shared/lib/work-status/work-tracks';
+import { DOZE_AFTER_MS, type RoomEntry, type WorkTracks } from '@/shared/lib/work-status/work-tracks';
 import { Button, IconButton, Surface } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { BranchName } from './BranchName';
 import { PanelSection as Section, PanelStats } from './panel-parts';
+import { LoadSection, PulseSection, SessionsSection } from './RoomLiveSections';
+import { roomLiveOf, type BuildingLive } from '../model/room-live';
 import type { StatusTone, useRoomCopy } from './use-room-copy';
 import styles from './rooms.module.css';
 
@@ -39,9 +41,13 @@ export function cleanupCommand(room: RoomEntry): string | null {
  * means, the commits the base branch does not have yet, what is not committed, and the folder. It
  * reads nothing of its own: every line comes from the room's entry, so it moves with the room.
  */
-export function RoomPanel({ room, copy, id, onClose, replaced = false }: {
+export function RoomPanel({ room, live, tracks, copy, id, onClose, replaced = false }: {
   /** The pressed room, or none: the panel leaves with its last room still drawn. */
   room: RoomEntry | null;
+  /** The session list, the file-change pulse and load, for every room. */
+  live: BuildingLive;
+  /** Every worktree, so a room can name the folder an agent's own load counts in. */
+  tracks: WorkTracks;
   /** Another panel takes this one's place: it goes at once, so the building never makes room for two. */
   replaced?: boolean;
   copy: RoomCopy;
@@ -60,20 +66,23 @@ export function RoomPanel({ room, copy, id, onClose, replaced = false }: {
       data-testid="work-room-panel"
       className="flex w-[min(25rem,100%)] shrink-0 flex-col overflow-y-auto border-l border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)]"
     >
-      {drawn ? <PanelBody room={drawn} copy={copy} onClose={onClose} /> : null}
+      {drawn ? <PanelBody room={drawn} live={live} tracks={tracks} copy={copy} onClose={onClose} /> : null}
     </Surface>
   );
 }
 
-function PanelBody({ room, copy, onClose }: { room: RoomEntry; copy: RoomCopy; onClose: () => void }) {
+function PanelBody({ room, live: building, tracks, copy, onClose }: { room: RoomEntry; live: BuildingLive; tracks: WorkTracks; copy: RoomCopy; onClose: () => void }) {
   const t = useTranslations('workStatus');
   const titleId = useId();
   const path = useCopyFeedback();
   const command = useCopyFeedback();
   const cleanup = cleanupCommand(room);
-  const screen = copy.monitor(room);
+  const live = roomLiveOf(room, building);
+  const screen = copy.monitor(room, live);
   const { state, track } = room;
-  const who = screen.who ?? t('tool.unknown');
+  // The sentence speaks of the session whose state the room says: the first line, waiting first.
+  const lead = live.lines[0] ? copy.sessionLine(live.lines[0]).main : null;
+  const who = lead ?? screen.who ?? t('tool.unknown');
   const now = state.kind === 'working'
     ? t(state.tools.length > 1 ? 'panel.now.twoTools' : 'panel.now.working', { who })
     : state.kind === 'resting' || state.kind === 'waiting' || state.kind === 'sessionFailed' || state.kind === 'replied'
@@ -96,8 +105,9 @@ function PanelBody({ room, copy, onClose }: { room: RoomEntry; copy: RoomCopy; o
             <BranchName branch={screen.branch} className="block truncate" />
           </h2>
           <p className="mt-1 text-body leading-body text-[color:var(--color-text-tertiary)]" data-testid="work-room-panel-state">
-            {screen.who ? <span className="font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)]">{screen.who}</span> : null}
-            {screen.who ? ' · ' : null}
+            {screen.bezel ? <span className="font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)]">{screen.bezel.main}</span> : null}
+            {screen.bezel?.tag ? ` ${screen.bezel.tag}` : null}
+            {screen.bezel ? ' · ' : null}
             <span className={cn(TONE[screen.state.tone], 'font-[var(--font-weight-emphasis)]')}>{screen.state.lead}</span>
             {screen.state.rest ? ` · ${screen.state.rest}` : null}
             {screen.worked ? ` · ${screen.worked}` : null}
@@ -116,6 +126,7 @@ function PanelBody({ room, copy, onClose }: { room: RoomEntry; copy: RoomCopy; o
           ]}
         />
       )}
+      <SessionsSection live={live} copy={copy} />
       {state.kind === 'missing' || (quietCommits && quietFiles) ? (
         state.kind === 'missing' ? null : <p className="border-t border-[color:var(--color-border-soft)] px-5 py-4 text-body leading-body text-[color:var(--color-text-tertiary)]" data-testid="work-room-panel-quiet">{t('panel.quiet', { branch: copy.baseBranch })}</p>
       ) : (
@@ -162,6 +173,12 @@ function PanelBody({ room, copy, onClose }: { room: RoomEntry; copy: RoomCopy; o
               )}
             </Section>
           )}
+        </>
+      )}
+      {state.kind === 'missing' ? null : (
+        <>
+          <PulseSection live={live} />
+          <LoadSection room={room} live={live} building={building} tracks={tracks} copy={copy} />
         </>
       )}
       {cleanup ? (
