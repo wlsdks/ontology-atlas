@@ -4,6 +4,9 @@ import {
   evaluateForegroundActivationAttempt,
   runForegroundActivationWithRetry,
   buildAccessibilityWindowProbeScript,
+  accessibilityTextProbeFailure,
+  ACCESSIBILITY_NOT_TRUSTED,
+  ACCESSIBILITY_NOT_TRUSTED_EXIT,
   buildAccessibilityTextProbeSwift,
   buildForegroundActivationScript,
   parseAccessibilityWindowRows,
@@ -121,6 +124,16 @@ test("Accessibility text probe script targets launched pids", () => {
   assert.match(script, /func isComplete/);
   assert.match(script, /func collectText/);
   assert.match(script, /kAXChildrenAttribute/);
+});
+
+test("an AX probe without Accessibility permission names the permission, not the app", () => {
+  const untrusted = accessibilityTextProbeFailure({ status: ACCESSIBILITY_NOT_TRUSTED_EXIT, stderr: `${ACCESSIBILITY_NOT_TRUSTED}\n` });
+  assert.match(untrusted[0], /may not read macOS Accessibility/);
+  assert.match(untrusted.join("\n"), /Privacy & Security > Accessibility/);
+
+  const crashed = accessibilityTextProbeFailure({ status: 1, stderr: "error: cannot find module" });
+  assert.match(crashed[0], /failed to inspect macOS Accessibility text/);
+  assert.match(crashed.join("\n"), /cannot find module/);
 });
 
 test("validateAccessibilityText requires every requested text fragment", () => {
