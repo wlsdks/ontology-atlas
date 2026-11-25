@@ -2,7 +2,7 @@ use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
 use super::claude_sessions;
-use super::name::{SessionName, NAME_MAX_CHARS};
+use super::name::{SessionName, NAME_MAX_CHARS, NAME_MAX_CODE_POINTS};
 use super::pace::{Pace, CHANGE_GAP, STEADY_GAP};
 use super::parse::{parse_sessions, session_state, SessionState};
 use crate::work_status::agent_processes::{AgentProcess, AgentTool};
@@ -166,9 +166,27 @@ fn a_name_keeps_hangul_emoji_and_right_to_left_text_and_never_splits_a_syllable(
     );
 }
 
+/// One character of 200,000 combining marks, or of 100,000 leading Hangul letters, is one
+/// grapheme cluster: only the code-point ceiling keeps it short.
+#[test]
+fn a_name_of_one_enormous_character_stays_short() {
+    let marks = format!("a{}", "\u{0301}".repeat(200_000));
+    let jamo = "\u{1100}".repeat(100_000);
+    for raw in [marks, jamo] {
+        let name = SessionName::from_raw(&raw).expect("a name");
+        assert!(name.text().chars().count() <= NAME_MAX_CODE_POINTS);
+    }
+}
+
 #[test]
 fn nothing_usable_is_no_name() {
-    for raw in ["", "   ", "\u{202E}\u{7}", "\nafter a break"] {
+    for raw in [
+        "",
+        "   ",
+        "\u{202E}\u{7}",
+        "\nafter a break",
+        "\u{200B}\u{2060}\u{FEFF} \u{200B}",
+    ] {
         assert!(SessionName::from_raw(raw).is_none(), "{:?}", raw.len());
     }
     for fields in [
