@@ -13,7 +13,7 @@
   "getAppTitle": "The desktop app remembers your folder, opens offline, and handles Git history and agent connections",
   "changes": "Changes",
   "planning": "Planning",
-  "workStatus": "Work status",
+  "workStatus": "Workshop",
   "usage": {
     "agentFallback": "Your agent",
     "tileName": "{agent} usage",

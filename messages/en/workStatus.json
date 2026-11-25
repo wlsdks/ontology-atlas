@@ -1,5 +1,5 @@
 {
-  "title": "Work status",
+  "title": "Workshop",
   "repoLine": "{repo} · {count, plural, one {# worktree} other {# worktrees}} on this Mac",
   "band": {
     "seam": "push"
@@ -34,7 +34,7 @@
       "on": "On",
       "off": "Off"
     },
-    "status": "Atlas reads {tool}'s own session list to show which sessions wait for you. While Work status is open it runs <code>{command}</code> every 10 seconds, and a second after a {tool} session starts or ends, with no network access. Atlas writes nothing.",
+    "status": "Atlas reads {tool}'s own session list to show which sessions wait for you. While Workshop is open it runs <code>{command}</code> every 10 seconds, and a second after a {tool} session starts or ends, with no network access. Atlas writes nothing.",
     "off": "Atlas does not run {tool}, so no room can say whether its session waits for you or has finished replying.",
     "unreadable": "Atlas could not read {tool}'s session list: {reason}",
     "fallback": "Until it can, no room can say whether its session waits for you. Atlas tries again within 10 seconds.",
@@ -126,17 +126,17 @@
     "areasMore": "{count, plural, one {and # more folder} other {and # more folders}}"
   },
   "pulse": {
-    "status": "While Work status is open, macOS tells Atlas each time a file changes in one of this repository's worktrees, and Atlas counts the changes. It does not open the files and keeps no file name. Changes inside .git and to files Git ignores are not counted. Counts stay in memory for an hour.",
+    "status": "While Workshop is open, macOS tells Atlas each time a file changes in one of this repository's worktrees, and Atlas counts the changes. It does not open the files and keeps no file name. Changes inside .git and to files Git ignores are not counted. Counts stay in memory for an hour.",
     "off": "Atlas does not watch for file changes. A room shows a change the next time Atlas reads Git, up to a minute and a half later.",
     "lastMinute": "{count, plural, one {# file change} other {# file changes}} in the last minute",
     "lastHour": "{count, plural, one {# file change} other {# file changes}} in the last hour",
-    "onlyOpen": "Atlas counts only while Work status is open.",
+    "onlyOpen": "Atlas counts only while Workshop is open.",
     "none": "No file change was counted here in the last hour.",
     "noAgent": "Files are changing here, and Atlas sees no agent in this folder.",
     "unwatched": "macOS could not watch this folder, so this room shows a change only when Atlas reads Git."
   },
   "load": {
-    "status": "Every 5 seconds while Work status is open, Atlas reads how much memory and CPU each agent and the commands it started are using, the memory and CPU of a Java program outside them, such as a Gradle daemon, and how busy this Mac's memory, CPU and GPU are. It reads each program's name, never its command line. Nothing is written and nothing leaves this Mac.",
+    "status": "Every 5 seconds while Workshop is open, Atlas reads how much memory and CPU each agent and the commands it started are using, the memory and CPU of a Java program outside them, such as a Gradle daemon, and how busy this Mac's memory, CPU and GPU are. It reads each program's name, never its command line. Nothing is written and nothing leaves this Mac.",
     "off": "Atlas does not read memory, CPU or GPU use, so no room or heading shows them.",
     "room": "Memory {memory} · CPU {cores} of {total} cores",
     "fact": "{memory} · CPU {cores} cores",
@@ -184,7 +184,7 @@
     "body": "Merged and long-untouched worktrees wait on the shelf below."
   },
   "web": {
-    "title": "Work status runs in the desktop app",
+    "title": "Workshop runs in the desktop app",
     "body": "A browser cannot run git or read this computer's processes. In this browser you can still open your folder's map and Library."
   },
   "notRepository": "{folder} is not a Git repository. Choose the folder that holds your project's .git.",

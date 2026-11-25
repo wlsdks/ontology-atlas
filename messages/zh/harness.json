@@ -274,8 +274,8 @@
       "twoFilesCodex": "可能运行两次",
       "twoFilesCodexHint": "{files} 都注册了这条命令。Codex 可能在一个事件中运行它两次。",
       "needsReview": "需批准",
-      "workStatus": "由工作状态添加",
-      "workStatusHint": "工作状态添加了这个钩子，用来显示代理正在做什么。",
+      "workStatus": "由工作室添加",
+      "workStatusHint": "工作室添加了这个钩子，用来显示代理正在做什么。",
       "typeOnly": "这是 {type} 钩子。Atlas 只显示它存在，不显示它发送的内容。"
     },
     "reading": "正在读取 {file}",

@@ -274,8 +274,8 @@
       "twoFilesCodex": "Can run twice",
       "twoFilesCodexHint": "{files} both register this command. Codex can run it twice for one event.",
       "needsReview": "Needs review",
-      "workStatus": "Added by Work status",
-      "workStatusHint": "Work status added this hook to show what the agent is doing.",
+      "workStatus": "Added by Workshop",
+      "workStatusHint": "Workshop added this hook to show what the agent is doing.",
       "typeOnly": "This is a {type} hook. Atlas shows that it exists and not what it sends."
     },
     "reading": "Reading {file}",

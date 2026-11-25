@@ -167,7 +167,7 @@
       "tagFilter": "태그 칩 클릭 → 트리 필터",
       "modeToggle": "모드 토글: 해당 모드 문서만",
       "goTo_changes": "변경으로",
-      "goTo_workStatus": "작업 현황으로",
+      "goTo_workStatus": "작업실로",
       "goTo_planning": "기획으로"
     },
     "keys": {

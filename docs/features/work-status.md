@@ -9,7 +9,9 @@ routes: [/work-status]
 # Work status
 
 Work status answers "which agent is holding which worktree, and is that work
-merged yet?" for one Git repository, in the installed app. It is the tenth rail
+merged yet?" for one Git repository, in the installed app.
+The rail and the page heading call it **Workshop**; the route,
+the code and these documents keep the name Work status. It is the tenth rail
 destination (`g w`). The plan, its later slices and their acceptance criteria
 live in [the spec](../specs/2026-11-21-work-status-destination.md); this page
 describes what ships today: the spec's first slice, from its seventh the

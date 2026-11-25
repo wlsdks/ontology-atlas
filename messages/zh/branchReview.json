@@ -70,7 +70,7 @@
   "map": {
     "title": "{branch} 的改动",
     "show": "在地图上显示",
-    "back": "返回工作状态"
+    "back": "返回工作室"
   },
   "answer": {
     "line": "智能体为这次回答修改了 {count} 个文件",

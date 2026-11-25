@@ -13,7 +13,7 @@
   "getAppTitle": "데스크톱 앱을 받으면 폴더를 기억하고, 인터넷 없이 열고, Git 기록과 에이전트 연결까지 다뤄요.",
   "changes": "변경",
   "planning": "기획",
-  "workStatus": "작업 현황",
+  "workStatus": "작업실",
   "usage": {
     "agentFallback": "에이전트",
     "tileName": "{agent} 사용량",

@@ -70,7 +70,7 @@
   "map": {
     "title": "Changes in {branch}",
     "show": "Show on the map",
-    "back": "Back to Work status"
+    "back": "Back to Workshop"
   },
   "answer": {
     "line": "{count, plural, one {The agent edited # file for this answer} other {The agent edited # files for this answer}}",

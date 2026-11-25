@@ -197,7 +197,7 @@ The desktop rail's order and hrefs come from
 | Agents | `/agents` (tabs: `src/views/agents/lib/agents-tab-state.ts`) | [`agents.md`](features/agents.md) |
 | Git | `/git` | [`git.md`](features/git.md) |
 | Changes: a digest of merged work (count, worth a look, groups by title label); PRs, commits and files in Originals | `/changes` | [`change-briefing.md`](features/change-briefing.md) |
-| Work status: which agent session holds which worktree of a repository, whether each is merged, and which Claude Code session waits for its person (installed app) | `/work-status` | [`work-status.md`](features/work-status.md) |
+| Work status (labelled Workshop): which agent session holds which worktree of a repository, whether each is merged, and which Claude Code session waits for its person (installed app) | `/work-status` | [`work-status.md`](features/work-status.md) |
 | Download | `/download` | [`download.md`](features/download.md) |
 | Guide | `/guide`, `/guide/[segment]` | [`guide-and-changelog.md`](features/guide-and-changelog.md) |
 | Changelog | `/changelog` | [`guide-and-changelog.md`](features/guide-and-changelog.md) |
@@ -248,7 +248,7 @@ and managed-PC risk before the executable CTA. Chrome or Edge remains the
 install-free fallback when that warning or an organization policy is a blocker;
 the web still does not offer BYOK or MCP registration.
 
-Before a vault is connected, the installed app keeps Library, Planning, Agents, Changes and Work status reachable and offers a folder chooser above the rail. A folder containing only wiki pages still opens in Library; its loaded-folder navigation remains based on its contents.
+Before a vault is connected, the installed app keeps Library, Planning, Agents, Changes and Workshop (Work status) reachable and offers a folder chooser above the rail. A folder containing only wiki pages still opens in Library; its loaded-folder navigation remains based on its contents.
 
 Library service imports stage disabled metadata, confirm credential storage, then activate and allow the exact saved definition on this Mac. Pending saves cannot be submitted twice; failed saves can resume the same row. Changed settings and duplicate names require review. Browser users get Add files or the app, with no token field. An import started while the Library has no sources or wiki pages opens the conversation beside the empty stage, and that conversation keeps its agent session when the first document arrives and the workspace replaces the stage. Service access remains unverified.
 

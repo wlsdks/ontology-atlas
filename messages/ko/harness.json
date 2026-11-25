@@ -274,8 +274,8 @@
       "twoFilesCodex": "두 번 실행될 수 있음",
       "twoFilesCodexHint": "{files} 모두에 이 명령이 있어요. Codex는 한 이벤트에 두 번 실행할 수 있어요.",
       "needsReview": "승인 필요",
-      "workStatus": "작업 현황이 추가함",
-      "workStatusHint": "작업 현황이 에이전트가 하는 일을 보여 주려고 추가한 훅이에요.",
+      "workStatus": "작업실이 추가함",
+      "workStatusHint": "작업실이 에이전트가 하는 일을 보여 주려고 추가한 훅이에요.",
       "typeOnly": "{type} 훅이에요. Atlas는 이 훅이 있다는 것만 보여 주고 무엇을 보내는지는 보여 주지 않아요."
     },
     "reading": "{file} 읽는 중",
