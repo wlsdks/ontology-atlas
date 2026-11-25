@@ -1,8 +1,8 @@
 /*
  * The by-session board: one block per agent session, in the rooms' own materials. The wall is the
- * room's wall tinted by the session's ink, the folders sit on the room's black screen, the ink runs
- * along the top edge (full while the session's program is seen at work, faint while it is not),
- * and a session that waits for its person is framed in amber, as its room is.
+ * room's wall tinted by the session's ink, its key is the bezel's square (filled while the
+ * session's program is seen at work, outlined while it is not), the folders sit on the room's black
+ * screen, and a session that waits for its person is framed in amber, as its room is.
  */
 
 .grid {
@@ -20,19 +20,6 @@
   min-width: 0;
   padding: 16px 14px 14px;
   background: color-mix(in srgb, var(--ink) 6%, var(--work-room-wall));
-}
-
-.edge {
-  position: absolute;
-  inset-inline: 4px;
-  top: 0;
-  height: 3px;
-  background: var(--ink);
-  pointer-events: none;
-}
-
-.block[data-running='false'] .edge {
-  background: color-mix(in srgb, var(--ink) 30%, transparent);
 }
 
 .block[data-waiting='true']::after,
@@ -83,6 +70,11 @@
   background: var(--ink);
 }
 
+.block[data-running='false'] .mark {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--ink);
+}
+
 .name {
   min-width: 0;
   overflow: hidden;
@@ -92,20 +84,29 @@
 
 .tag {
   flex: none;
-  margin-left: auto;
   white-space: nowrap;
+}
+
+/* State and load start on the name's edge, past the 8px key and its 8px gap. */
+.facts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding-left: 16px;
 }
 
 .status {
   display: flex;
   align-items: baseline;
-  gap: 6px;
+  gap: 8px;
   min-width: 0;
   white-space: nowrap;
 }
 
+/* Ink is the session's key, never its words: an inked word would read as a link. */
 .state[data-tone='ink'] {
-  color: color-mix(in srgb, var(--ink) 80%, var(--color-text-primary));
+  color: var(--color-text-primary);
 }
 
 .state[data-tone='warning'] {
@@ -122,23 +123,24 @@
   text-overflow: ellipsis;
 }
 
-.time::before {
-  content: "· ";
-}
-
-/* What the session's own command tree uses: one line, giving way before the state above it. */
+/* What the session's own command tree uses, in slots that line up from block to block. */
 .load {
-  margin-top: -6px;
+  display: grid;
+  grid-template-columns: 14ch 14ch minmax(0, 1fr);
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* The folders on the room's black screen, as tall as its rows; the block's wall evens a row of blocks. */
+.tools {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The folders on the room's black screen; it takes a row's slack, so no block ends in bare wall. */
 .screen {
   display: flex;
-  flex: none;
+  flex: 1;
   flex-direction: column;
   gap: 2px;
   margin: 0;
@@ -174,7 +176,7 @@
   outline-offset: -2px;
 }
 
-.facts {
+.folderFacts {
   display: flex;
   grid-column: 1 / -1;
   align-items: center;
@@ -197,7 +199,8 @@
 }
 
 .fact + .fact::before {
-  content: "· ";
+  content: "·";
+  margin-right: 6px;
   color: var(--color-text-quaternary);
 }
 
@@ -205,7 +208,7 @@
   color: var(--color-status-warning);
 }
 
-/* The commits of a folder the session has to itself, under a hairline, newest first. */
+/* The newest commit of a folder the session has to itself, under a hairline. */
 .commits {
   display: flex;
   grid-column: 1 / -1;

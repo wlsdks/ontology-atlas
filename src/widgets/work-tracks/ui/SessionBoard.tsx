@@ -2,13 +2,11 @@
 
 import type { CSSProperties } from 'react';
 import { useTranslations } from 'next-intl';
-import { Users } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { sessionLoadOf } from '@/shared/lib/work-status/signals/load';
 import type { SessionBoard as Board } from '@/shared/lib/work-status/signals/session-board';
 import type { LoadRead } from '@/shared/lib/work-status/tauri-work-status';
 import type { TrackSession } from '@/shared/lib/work-status/work-tracks';
-import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { BranchName } from './BranchName';
 import type { SessionBlockCopy, useRoomCopy } from './use-room-copy';
 import rooms from './rooms.module.css';
@@ -85,7 +83,6 @@ function Block({ view, pressedKey, roomKeys, onPressFolder, onShowFolders }: {
       data-room-alert={view.waiting ? 'waiting' : undefined}
       aria-label={view.main}
     >
-      <i aria-hidden className={styles.edge} />
       <header className={styles.head}>
         <i aria-hidden className={styles.mark} />
         <h3 className={cn(styles.name, 'text-title leading-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]')} data-testid="work-session-block-name">
@@ -93,15 +90,19 @@ function Block({ view, pressedKey, roomKeys, onPressFolder, onShowFolders }: {
         </h3>
         {view.tag ? <span className={cn(styles.tag, 'text-label leading-label text-[color:var(--color-text-tertiary)]')}>{view.tag}</span> : null}
       </header>
-      <p className={cn(styles.status, 'text-body leading-body')} data-testid="work-session-block-state">
-        <span className={cn(styles.state, 'flex-none font-[var(--font-weight-emphasis)]')} data-tone={view.state.tone}>{view.state.text}</span>
-        {view.time ? <span className={cn(styles.time, 'text-[color:var(--color-text-tertiary)]')}>{view.time}</span> : null}
-      </p>
-      {view.load ? (
-        <p className={cn(styles.load, 'text-label leading-label tabular-nums text-[color:var(--color-text-tertiary)]')} data-testid="work-session-block-load">
-          {view.load}
+      <div className={styles.facts}>
+        <p className={cn(styles.status, 'text-body leading-body')} data-testid="work-session-block-state">
+          <span className={cn(styles.state, 'flex-none font-[var(--font-weight-emphasis)]')} data-tone={view.state.tone}>{view.state.text}</span>
+          {view.time ? <span className={cn(styles.time, 'text-[color:var(--color-text-tertiary)]')}>{view.time}</span> : null}
         </p>
-      ) : null}
+        {view.load ? (
+          <p className={cn(styles.load, 'text-label leading-label tabular-nums text-[color:var(--color-text-tertiary)]')} data-testid="work-session-block-load">
+            <span className="text-[color:var(--color-text-secondary)]">{view.load.memory}</span>
+            <span className="text-[color:var(--color-text-secondary)]">{view.load.cpu}</span>
+            {view.load.tools ? <span className={styles.tools}>{view.load.tools}</span> : null}
+          </p>
+        ) : null}
+      </div>
       <ul className={styles.screen} role="list">
         {view.folders.map(folder => (
           <li key={folder.key}>
@@ -117,8 +118,7 @@ function Block({ view, pressedKey, roomKeys, onPressFolder, onShowFolders }: {
             >
               <BranchName branch={folder.branch} className="text-body leading-body text-[color:var(--color-text-primary)]" />
               <span className="self-center whitespace-nowrap text-label leading-label tabular-nums text-[color:var(--color-text-tertiary)]">{folder.ago}</span>
-              <span className={cn(styles.facts, 'text-label leading-label text-[color:var(--color-text-tertiary)]')} data-testid="work-session-folder-facts">
-                {folder.shared ? <Users size={ICON_SIZE.sm} aria-hidden className="flex-none" /> : null}
+              <span className={cn(styles.folderFacts, 'text-label leading-label text-[color:var(--color-text-tertiary)]')} data-testid="work-session-folder-facts">
                 {folder.facts.map(fact => (
                   <span key={fact.text} className={styles.fact} data-tone={fact.tone}>{fact.text}</span>
                 ))}
@@ -128,7 +128,6 @@ function Block({ view, pressedKey, roomKeys, onPressFolder, onShowFolders }: {
                   {folder.commits.map(commit => (
                     <span key={commit.key} className={styles.commit}>
                       <span className={cn(styles.subject, 'text-label leading-label text-[color:var(--color-text-secondary)]')}>{commit.subject}</span>
-                      <span className="whitespace-nowrap text-label leading-label tabular-nums text-[color:var(--color-text-quaternary)]">{commit.ago}</span>
                     </span>
                   ))}
                 </span>

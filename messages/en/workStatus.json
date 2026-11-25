@@ -97,7 +97,9 @@
       "title": "No agent session is working in {repo}",
       "body": "A session shows here when Claude Code, Codex or Claude Agent in Atlas works in one of this repository's folders. By folder shows every worktree."
     },
-    "loadTool": "{tool} ×{count}"
+    "loadTool": "{tool} ×{count}",
+    "loadMemory": "Memory {memory}",
+    "loadCpu": "CPU {cores} cores"
   },
   "stage": {
     "label": "Worktrees at work"

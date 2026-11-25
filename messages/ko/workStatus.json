@@ -97,7 +97,9 @@
       "title": "{repo}에서 작업 중인 에이전트 세션이 없어요",
       "body": "Claude Code, Codex, Atlas 안의 Claude Agent가 이 저장소의 폴더에서 작업하면 여기에 나와요. 폴더별 보기에는 모든 워크트리가 나와요."
     },
-    "loadTool": "{tool} {count}개"
+    "loadTool": "{tool} {count}개",
+    "loadMemory": "메모리 {memory}",
+    "loadCpu": "CPU {cores}코어"
   },
   "stage": {
     "label": "작업 중인 워크트리"

@@ -152,7 +152,7 @@ export interface FolderRowCopy {
   shared: boolean;
   /** When the folder last changed; `null` for a shared folder. */
   ago: string | null;
-  /** The newest commits, on a block whose one folder is its own: what the session has been doing. */
+  /** The newest commit, on a block whose one folder is its own: what the session has been doing. */
   commits: ScreenCommit[];
 }
 
@@ -172,7 +172,14 @@ export interface SessionBlockCopy {
   /** `bySession.moreFolders` after the rows shown. */
   more: string | null;
   /** Its own command tree's memory and CPU, then its heaviest programs; `null` without a figure. */
-  load: string | null;
+  load: SessionLoadCopy | null;
+}
+
+/** A session's figures as slots, so memory and CPU line up from block to block. */
+export interface SessionLoadCopy {
+  memory: string;
+  cpu: string;
+  tools: string | null;
 }
 
 /** A mini room's newest subject with its time. */
@@ -182,7 +189,7 @@ export interface MiniSubject {
 }
 
 /** The newest commits a session's block lists for the one folder it has to itself. */
-const BLOCK_COMMITS = 3;
+const BLOCK_COMMITS = 1;
 /** The most commits a screen lists. */
 export const SCREEN_COMMITS = 20;
 /** A room standing on the base branch lists this many of that branch's own commits: where it stands, not work of its own. */
@@ -405,10 +412,11 @@ function roomCopy(t: ReturnType<typeof useTranslations<'workStatus'>>, locale: s
       folders: shown.map(folder => folderRow(folder, block.folders.length === 1)),
       more: block.folders.length > shown.length ? t('bySession.moreFolders', { count: block.folders.length - shown.length }) : null,
       load: load
-        ? [
-            t('load.fact', { memory: memory(load.memoryBytes), cores: cores(load.cpuCores) }),
-            ...load.tools.map(group => t('bySession.loadTool', { tool: loadTool(group), count: group.count })),
-          ].join(' · ')
+        ? {
+            memory: t('bySession.loadMemory', { memory: memory(load.memoryBytes) }),
+            cpu: t('bySession.loadCpu', { cores: cores(load.cpuCores) }),
+            tools: load.tools.length > 0 ? load.tools.map(group => t('bySession.loadTool', { tool: loadTool(group), count: group.count })).join(' · ') : null,
+          }
         : null,
     };
   };

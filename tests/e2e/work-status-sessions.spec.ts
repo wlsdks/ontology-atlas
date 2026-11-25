@@ -172,11 +172,12 @@ test.describe("work status by session", () => {
     await page.getByTestId("work-status-arrange-session").click();
     await expect.poll(async () => (await loadAsks()).at(-1)?.sessionPids ?? [], { timeout: 30_000 })
       .toEqual(expect.arrayContaining([CLAUDE.pid, 201, 202, CLAUDE_LATER.pid]));
-    await expect(block(page, "solo work").getByTestId("work-session-block-load")).toContainText("CPU 0.4 cores · Node.js ×3 · Rust build ×1");
+    const solo = block(page, "solo work").getByTestId("work-session-block-load");
+    await expect(solo.locator("span")).toHaveText(["Memory 1.2 GB", "CPU 0.4 cores", "Node.js ×3 · Rust build ×1"]);
     // Two sessions in one folder: each its own tree, neither a share of the folder.
     await expect(block(page, "first in shared").getByTestId("work-session-block-load")).toContainText("CPU 0.2 cores");
     await expect(block(page, "first in shared").getByTestId("work-session-block-load")).not.toContainText("×");
-    await expect(block(page, "second in shared").getByTestId("work-session-block-load")).toContainText("CPU 1.5 cores · Git ×2");
+    await expect(block(page, "second in shared").getByTestId("work-session-block-load").locator("span")).toHaveText(["Memory 300 MB", "CPU 1.5 cores", "Git ×2"]);
     // A session Rust did not answer for shows no line rather than a zero.
     await expect(block(page, "holds five").getByTestId("work-session-block-load")).toHaveCount(0);
 
