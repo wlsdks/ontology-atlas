@@ -63,6 +63,17 @@ pub(crate) use webview_verify::{js_string_literal, write_verify_line};
 const MAIN_WINDOW_LABEL: &str = "main";
 /// Small on purpose: enough evidence for a bug report, not a history of the machine.
 const APP_LOG_MAX_FILE_BYTES: u128 = 5 * 1024 * 1024;
+/// Crates whose own log lines carry the full path of each file change they see; a path from a
+/// watched vault or worktree never reaches the app log.
+const PATH_LOGGING_TARGETS: [&str; 2] = ["notify", "notify_debouncer_full"];
+
+fn app_log_levels(builder: tauri_plugin_log::Builder) -> tauri_plugin_log::Builder {
+    PATH_LOGGING_TARGETS
+        .iter()
+        .fold(builder.level(log::LevelFilter::Info), |builder, target| {
+            builder.level_for(*target, log::LevelFilter::Off)
+        })
+}
 /// Restoring `FULLSCREEN` adds a Space transition, `VISIBLE` can launch with no
 /// window, and `DECORATIONS` never changes here.
 #[cfg(desktop)]
@@ -135,7 +146,7 @@ pub fn run() {
     builder
         // Outside the vault, at `Info`: what the app did, never vault content, prompts or secrets.
         .plugin(
-            tauri_plugin_log::Builder::new()
+            app_log_levels(tauri_plugin_log::Builder::new())
                 .targets([
                     tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::LogDir {
                         file_name: Some("ontology-atlas".to_string()),
@@ -147,7 +158,6 @@ pub fn run() {
                             .chain(Box::new(QuietStderr) as Box<dyn Write + Send>),
                     )),
                 ])
-                .level(log::LevelFilter::Info)
                 // Local time, matching crash report names.
                 .timezone_strategy(tauri_plugin_log::TimezoneStrategy::UseLocal)
                 .max_file_size(APP_LOG_MAX_FILE_BYTES)
@@ -403,6 +413,12 @@ pub fn run() {
             work_status::work_status_landed_detail,
             work_status::work_status_agent_sessions,
             work_status::work_status_set_agent_sessions_read,
+            work_status::work_status_set_session_names,
+            work_status::work_status_file_pulse,
+            work_status::work_status_pause_file_pulse,
+            work_status::work_status_set_file_pulse,
+            work_status::work_status_load,
+            work_status::work_status_set_load,
         ])
         .build(context)
         .expect("error while building ontology-atlas desktop app")
@@ -482,6 +498,26 @@ fn on_run_event(app_handle: &tauri::AppHandle, event: RunEvent) {
             ..
         } => app_shell::answer_drag_drop(app_handle, &drop),
         _ => {}
+    }
+}
+
+#[cfg(test)]
+mod log_tests {
+    use super::PATH_LOGGING_TARGETS;
+
+    /// `notify` traces every notice's full path, and the debouncer every event; both are named
+    /// by the crate the watchers use, so a rename or a new watcher crate must be named here too.
+    #[test]
+    fn the_watcher_crates_never_reach_the_app_log() {
+        let watcher = std::any::type_name::<notify_debouncer_full::notify::Event>();
+        let debouncer = std::any::type_name::<notify_debouncer_full::DebouncedEvent>();
+        for type_path in [watcher, debouncer] {
+            let crate_name = type_path.split("::").next().unwrap_or_default();
+            assert!(
+                PATH_LOGGING_TARGETS.contains(&crate_name),
+                "{crate_name} logs paths and is not silenced"
+            );
+        }
     }
 }
 

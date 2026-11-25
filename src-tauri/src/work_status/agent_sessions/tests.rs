@@ -2,6 +2,7 @@ use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
 use super::claude_sessions;
+use super::name::{SessionName, NAME_MAX_CHARS, NAME_MAX_CODE_POINTS};
 use super::pace::{Pace, CHANGE_GAP, STEADY_GAP};
 use super::parse::{parse_sessions, session_state, SessionState};
 use crate::work_status::agent_processes::{AgentProcess, AgentTool};
@@ -15,7 +16,7 @@ fn entry(fields: &str) -> String {
 }
 
 fn only_state(fields: &str) -> Option<SessionState> {
-    let listed = parse_sessions(&format!("[{}]", entry(fields)))?;
+    let listed = parse_sessions(&format!("[{}]", entry(fields)), true)?;
     listed.first().map(|session| session.state)
 }
 
@@ -72,7 +73,10 @@ fn a_value_outside_its_list_means_unknown() {
     }
     assert_eq!(session_state(None, None, None), None);
     let other_kind = entry(r#""status":"busy""#).replace("interactive", "remote");
-    assert_eq!(parse_sessions(&format!("[{other_kind}]")), Some(vec![]));
+    assert_eq!(
+        parse_sessions(&format!("[{other_kind}]"), true),
+        Some(vec![])
+    );
 }
 
 #[test]
@@ -83,7 +87,7 @@ fn one_unknown_entry_leaves_the_others() {
         entry(r#""status":"busy","extra":true"#),
         entry(r#""status":"idle""#).replace(r#""pid":41"#, r#""pid":42"#),
     );
-    let listed = parse_sessions(&text).expect("a list");
+    let listed = parse_sessions(&text, true).expect("a list");
     let pids: Vec<u32> = listed.iter().map(|session| session.pid).collect();
     assert_eq!(pids, [41, 42]);
 }
@@ -91,9 +95,9 @@ fn one_unknown_entry_leaves_the_others() {
 #[test]
 fn output_that_is_not_a_list_is_unreadable() {
     let whole = format!("[{}]", entry(r#""status":"busy""#));
-    assert_eq!(parse_sessions(&whole[..whole.len() - 9]), None);
-    assert_eq!(parse_sessions(r#"{"error":"not signed in"}"#), None);
-    assert_eq!(parse_sessions(""), None);
+    assert_eq!(parse_sessions(&whole[..whole.len() - 9], true), None);
+    assert_eq!(parse_sessions(r#"{"error":"not signed in"}"#, true), None);
+    assert_eq!(parse_sessions("", true), None);
 }
 
 #[test]
@@ -111,6 +115,98 @@ fn only_claude_code_programs_are_sessions() {
         process(4, AgentTool::ClaudeCode, "/repo"),
     ]);
     assert_eq!(sessions, [(4, Some(5)), (9, Some(5))]);
+}
+
+/// A name as the list could print it: the planted marker, 500 more characters, a line break and a
+/// direction override.
+fn planted_name() -> String {
+    format!("{PLANTED}{}\nsecond line\u{202E}", "x".repeat(500))
+}
+
+#[test]
+fn a_name_is_one_line_of_at_most_sixty_characters_with_no_control_or_override() {
+    let name = SessionName::from_raw(&planted_name()).expect("a name");
+    let text = name.text();
+    assert_eq!(text.chars().count(), NAME_MAX_CHARS);
+    assert!(text.starts_with(PLANTED));
+    assert!(!text.contains('\n') && !text.contains("second line"));
+
+    let overridden =
+        SessionName::from_raw("\u{202E}abc\u{2066}def\u{2069}\u{7}\t").expect("a name");
+    assert_eq!(overridden.text(), "abcdef");
+    assert!(!format!("{name:?}").contains(PLANTED));
+}
+
+#[test]
+fn a_name_keeps_hangul_emoji_and_right_to_left_text_and_never_splits_a_syllable() {
+    let hangul = "가".repeat(70);
+    let cut = SessionName::from_raw(&hangul).expect("a name");
+    assert_eq!(cut.text(), "가".repeat(NAME_MAX_CHARS));
+    assert_eq!(
+        SessionName::from_raw("작업 🚀 שלום")
+            .expect("a name")
+            .text(),
+        "작업 🚀 שלום"
+    );
+    // A syllable written as three letters, and a family emoji of five code points, each count as
+    // one character at the cut and are kept whole.
+    let letters = format!(
+        "{}\u{1100}\u{1161}\u{11A8}z",
+        "a".repeat(NAME_MAX_CHARS - 1)
+    );
+    assert_eq!(
+        SessionName::from_raw(&letters).expect("a name").text(),
+        format!("{}\u{1100}\u{1161}\u{11A8}", "a".repeat(NAME_MAX_CHARS - 1))
+    );
+    let family = "\u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467}";
+    let emoji = format!("{}{family}z", "a".repeat(NAME_MAX_CHARS - 1));
+    assert_eq!(
+        SessionName::from_raw(&emoji).expect("a name").text(),
+        format!("{}{family}", "a".repeat(NAME_MAX_CHARS - 1))
+    );
+}
+
+/// One character of 200,000 combining marks, or of 100,000 leading Hangul letters, is one
+/// grapheme cluster: only the code-point ceiling keeps it short.
+#[test]
+fn a_name_of_one_enormous_character_stays_short() {
+    let marks = format!("a{}", "\u{0301}".repeat(200_000));
+    let jamo = "\u{1100}".repeat(100_000);
+    for raw in [marks, jamo] {
+        let name = SessionName::from_raw(&raw).expect("a name");
+        assert!(name.text().chars().count() <= NAME_MAX_CODE_POINTS);
+    }
+}
+
+#[test]
+fn nothing_usable_is_no_name() {
+    for raw in [
+        "",
+        "   ",
+        "\u{202E}\u{7}",
+        "\nafter a break",
+        "\u{200B}\u{2060}\u{FEFF} \u{200B}",
+    ] {
+        assert!(SessionName::from_raw(raw).is_none(), "{:?}", raw.len());
+    }
+    for fields in [
+        r#""name":7"#,
+        r#""name":null"#,
+        r#""name":["a"]"#,
+        r#""name":"""#,
+    ] {
+        let text = format!(
+            "[{}]",
+            entry(&format!(r#""status":"busy",{fields}"#))
+                .replace(&format!(r#""name":"{PLANTED}","#), "")
+        );
+        let listed = parse_sessions(&text, true).expect("a list");
+        assert_eq!(listed.len(), 1, "{fields}");
+        assert!(
+            listed.iter().all(|session| session.name.is_none()),
+            "{fields}"
+        );
+    }
 }
 
 /// One visible hour, asked once a second: at least as often as the page asks.
@@ -207,28 +303,43 @@ mod with_posix_paths {
     use std::path::PathBuf;
 
     use super::super::parse::{parse_sessions, ListedSession, SessionState};
-    use super::super::{join, worktree_folders};
+    use super::super::{forget_names, join, worktree_folders};
     use super::{entry, PLANTED};
 
     #[test]
-    fn a_name_and_a_session_id_reach_no_value() {
+    fn a_session_id_never_reaches_a_value_and_a_name_only_while_names_are_on() {
         let text = format!(
             "[{}]",
             entry(r#""status":"busy","id":"ATLAS_PLANTED_7f3c""#)
         );
-        let listed = parse_sessions(&text).expect("a list");
-        assert_eq!(listed.len(), 1);
-        assert!(!format!("{listed:?}").contains(PLANTED));
-        let rows = join(
-            &listed,
-            &[(41, Some(1_700_000_000))],
-            &[(PathBuf::from("/repo"), "main".into())],
-        );
-        let sent = serde_json::to_string(&rows).expect("rows serialize");
+        let sessions = [(41, Some(1_700_000_000))];
+        let worktrees = [(PathBuf::from("/repo"), "main".to_string())];
+
+        let named = parse_sessions(&text, true).expect("a list");
+        let rows = join(&named, &sessions, &worktrees);
         assert_eq!(
-            sent,
+            serde_json::to_string(&rows).expect("rows serialize"),
+            format!(r#"[{{"worktreeId":"main","pid":41,"state":"working","name":"{PLANTED}"}}]"#)
+        );
+        // The name reaches the page and nothing else: no `Debug` form, so no log or error text.
+        assert!(!format!("{named:?} {rows:?}").contains(PLANTED));
+
+        let unnamed = parse_sessions(&text, false).expect("a list");
+        assert_eq!(unnamed.len(), 1);
+        assert!(!format!("{unnamed:?}").contains(PLANTED));
+        assert_eq!(
+            serde_json::to_string(&join(&unnamed, &sessions, &worktrees)).expect("rows serialize"),
             r#"[{"worktreeId":"main","pid":41,"state":"working"}]"#
         );
+    }
+
+    #[test]
+    fn switching_names_off_drops_every_name_held() {
+        let text = format!("[{}]", entry(r#""status":"busy""#));
+        let mut listed = parse_sessions(&text, true).expect("a list");
+        assert!(listed.iter().all(|session| session.name.is_some()));
+        forget_names(&mut listed);
+        assert!(listed.iter().all(|session| session.name.is_none()));
     }
 
     fn listed(pid: u32, started_at_ms: i64, folder: &str) -> ListedSession {
@@ -237,6 +348,7 @@ mod with_posix_paths {
             started_at_ms,
             folder: PathBuf::from(folder),
             state: SessionState::WaitingApproval,
+            name: None,
         }
     }
 
@@ -357,27 +469,27 @@ mod the_call {
         use super::super::{listed_from, ReadStatus};
         let list = br#"[{"pid":41,"cwd":"/repo","kind":"interactive","startedAt":1700000005000,"status":"busy"}]"#;
         assert_eq!(
-            listed_from(Ok(list.to_vec())).map(|listed| listed.len()),
+            listed_from(Ok(list.to_vec()), true).map(|listed| listed.len()),
             Ok(1)
         );
         assert_eq!(
-            listed_from(Ok(b"[]".to_vec())).map(|listed| listed.len()),
+            listed_from(Ok(b"[]".to_vec()), true).map(|listed| listed.len()),
             Ok(0)
         );
         assert_eq!(
-            listed_from(Ok(b"Usage: claude".to_vec())),
+            listed_from(Ok(b"Usage: claude".to_vec()), true),
             Err(ReadStatus::UnknownForm)
         );
         assert_eq!(
-            listed_from(Ok(vec![0xff, 0xfe])),
+            listed_from(Ok(vec![0xff, 0xfe]), true),
             Err(ReadStatus::UnknownForm)
         );
         assert_eq!(
-            listed_from(Err(CallFailure::TimedOut)),
+            listed_from(Err(CallFailure::TimedOut), true),
             Err(ReadStatus::TimedOut)
         );
         assert_eq!(
-            listed_from(Err(CallFailure::Failed)),
+            listed_from(Err(CallFailure::Failed), true),
             Err(ReadStatus::Failed)
         );
     }
@@ -397,7 +509,8 @@ mod the_call {
         )
         .expect("the list is printed");
         let raw: Vec<serde_json::Value> = serde_json::from_slice(&output).expect("a JSON list");
-        let listed = parse_sessions(std::str::from_utf8(&output).expect("text")).expect("a list");
+        let listed =
+            parse_sessions(std::str::from_utf8(&output).expect("text"), true).expect("a list");
         let states: Vec<_> = listed.iter().map(|session| session.state).collect();
         println!(
             "{} entries, {} understood, in {:?}: {states:?}",
@@ -485,7 +598,8 @@ mod the_call {
             OUTPUT_CAP_BYTES,
         )
         .expect("the stub prints a list");
-        let listed = parse_sessions(std::str::from_utf8(&output).expect("text")).expect("a list");
+        let listed =
+            parse_sessions(std::str::from_utf8(&output).expect("text"), true).expect("a list");
         assert_eq!(listed.len(), 1);
     }
 

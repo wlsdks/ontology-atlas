@@ -1,34 +1,12 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { seedFirstRunSeen } from "./first-run-seed";
 import { waitForAnimationsDone } from "./settle";
+import { CLAUDE, CLAUDE_LATER, NOW_S, bridgeCalls, lock, main, openWorkStatus, room, row, setRows, setSessions, working, type Activity } from "./work-status-bridge";
 
 /**
  * Work status in the app, with the native reads stubbed: the rooms a person sees for a
  * repository's worktrees, the shelf's list, a merge reaching the shelf, and the empty building.
  */
-
-const NOW_S = Math.floor(Date.now() / 1000);
-const CLAUDE = { pid: 101, start: NOW_S - 3 * 3600 };
-const CLAUDE_LATER = { pid: 102, start: NOW_S - 2 * 3600 };
-
-type Row = Record<string, unknown>;
-
-function row(branch: string, patch: Row = {}): Row {
-  const id = branch.replace(/[^a-z0-9]+/gi, "-");
-  return {
-    id, path: `/Users/probe/repo/.claude/worktrees/${id}`, branch, head: "abc1234", mainCheckout: false, missing: false,
-    standing: "ahead", ahead: 2, lastCommitAt: NOW_S - 600, lastCommitAuthor: "stark", lock: null, acpPid: null, agentProcesses: [],
-    ...patch,
-  };
-}
-
-const main = row("main", { id: "main", path: "/Users/probe/repo", mainCheckout: true, standing: "base", ahead: 0 });
-const lock = (session: typeof CLAUDE) => ({
-  state: "live", tool: "claudeCode", agentId: `a${session.pid}`, pid: session.pid, sessionStartedAt: session.start, lockedAt: (NOW_S - 1800) * 1000,
-});
-const working = (branch: string, session: typeof CLAUDE) =>
-  row(branch, { lock: lock(session), agentProcesses: [{ pid: session.pid, tool: "claudeCode", startedAt: session.start }] });
 
 const SIX = [
   main,
@@ -40,74 +18,53 @@ const SIX = [
   row("fix/rail-tooltip", { standing: "merged", ahead: 0 }),
 ];
 
-type Activity = Record<string, { commits: { hash: string; subject: string; at: number }[] | null; uncommitted: number; latestFile: string | null; onBase: boolean; files: { path: string; changedAt: number | null }[] }>;
+/** One checkout where several Claude Code sessions work at once, each one program. */
+const LIVE = "feat/live-lines";
+const LIVE_ID = "feat-live-lines";
+const pidOf = (index: number) => 501 + index;
+const checkout = (count: number) => row(LIVE, {
+  lock: lock({ pid: pidOf(0), start: NOW_S - 3600 }),
+  agentProcesses: Array.from({ length: count }, (_, index) => ({ pid: pidOf(index), tool: "claudeCode", startedAt: NOW_S - 3600 + index * 60 })),
+});
+/** Forty characters of Hangul with spaces, as Claude Code's desktop app names a session. */
+const HANGUL_NAME = "작업 상태 화면에서 세션 이름을 한 줄로 보여 주는 일을 하는 긴 이름의 세션".slice(0, 40);
+const PLANTED = "ATLAS_PLANTED_7f3c";
+/** Longer than any line, with a line break and a direction override that must never reach the screen. */
+const PLANTED_NAME = `${PLANTED}${"x".repeat(500)}\n‮tail`;
+/** What the session list says of each session: the second has no name, the third a Hangul one. */
+const said = (count: number, states: string[], firstName = "live-lines-a1") => Array.from({ length: count }, (_, index) => ({
+  worktreeId: LIVE_ID,
+  pid: pidOf(index),
+  state: states[index],
+  ...(index === 1 ? {} : { name: index === 0 ? firstName : index === 2 ? HANGUL_NAME : `live-lines-${index}x` }),
+}));
 
-async function openWorkStatus(page: Page, rows: Row[], activity: Activity = {}) {
-  await seedFirstRunSeen(page);
-  await page.addInitScript(({ initial, reads }: { initial: Row[]; reads: Activity }) => {
-    const state = { rows: initial, version: 1, activity: reads, activityVersion: 1, sessionStatus: "read", sessionAsks: 0, sessionForgets: 0 };
-    const nowS = Math.floor(Date.now() / 1000);
-    const LANDED_STUB = [
-      { hash: "a".repeat(40), subject: "fix(map): keep a selected element's ring off its capability's disc (#12)", at: nowS - 3600, merge: true, files: 1, insertions: 30, deletions: 4 },
-      { hash: "b".repeat(40), subject: "docs: say what landed", at: nowS - 2 * 86400, merge: false, files: 2, insertions: 5, deletions: 1 },
-    ];
-    const target = window as unknown as Record<string, unknown>;
-    // How the session-list read went, and how often the page asked for it or told Rust to forget it.
-    target.__workStatusSessionRead = (status: string) => { state.sessionStatus = status; };
-    target.__workStatusSessionCalls = () => ({ asks: state.sessionAsks, forgets: state.sessionForgets });
-    target.__workStatusRows = (next: Row[]) => { state.rows = next; state.version += 1; };
-    // Rows held back until `when` says so. While they wait every tick reads anew, so the page keeps its one-second watch.
-    let held: { rows: Row[]; when: () => boolean } | null = null;
-    let waits = 0;
-    target.__workStatusRowsWhen = (rows: Row[], when: () => boolean) => { held = { rows, when }; };
-    target.__workStatusActivity = (next: Activity) => { state.activity = next; state.activityVersion += 1; };
-    // What each Claude Code session says of itself, as the session-list read returns it.
-    let sessions: unknown[] = [];
-    target.__workStatusSessions = (next: unknown[]) => { sessions = next; };
-    target.isTauri = true;
-    target.__TAURI_EVENT_PLUGIN_INTERNALS__ = { unregisterListener: () => undefined };
-    target.__TAURI_INTERNALS__ = {
-      transformCallback: () => 1,
-      invoke(command: string, args: { worktreeId?: string } = {}) {
-        const answer = (value: unknown) => new Promise(resolve => setTimeout(() => resolve(value), 60));
-        if (command === "pick_source_directory") return answer("/Users/probe/repo");
-        if (command === "work_status_fingerprint") {
-          if (held?.when()) {
-            state.rows = held.rows;
-            state.version += 1;
-            held = null;
-          } else if (held) waits += 1;
-          return answer(`v${state.version}.${waits}`);
+/**
+ * Session words that wrap onto a second line, or whose visible box reaches past their room or panel:
+ * text an ancestor cuts with an ellipsis is measured by that ancestor's box.
+ */
+function spills(page: Page) {
+  return page.evaluate(() => {
+    const parts = [...document.querySelectorAll<HTMLElement>("[data-testid=work-session-line], [data-testid=work-room-who], [data-testid=work-room-status], [data-testid=work-room-sessions-more]")];
+    return parts.filter((part) => !part.closest("[data-face-leaving]")).flatMap((part) => {
+      const frame = part.closest("[data-testid=work-room], [data-testid=work-room-panel]");
+      if (!frame) return [];
+      let clip: HTMLElement = part;
+      for (let node: HTMLElement | null = part; node && node !== frame; node = node.parentElement) {
+        if (getComputedStyle(node).overflowX !== "visible") {
+          clip = node;
+          break;
         }
-        if (command === "work_status_agent_sessions") {
-          state.sessionAsks += 1;
-          return answer({ status: state.sessionStatus, rows: structuredClone(sessions) });
-        }
-        if (command === "work_status_set_agent_sessions_read") {
-          if (!(args as { on?: boolean }).on) state.sessionForgets += 1;
-          return answer(null);
-        }
-        if (command === "work_status_activity_stamps") {
-          return answer(Object.fromEntries(Object.keys(state.activity).map((id) => [id, `s${state.activityVersion}`])));
-        }
-        if (command === "work_status_activity") {
-          const read = state.activity[args.worktreeId ?? ""];
-          return answer(read ? { stamp: `s${state.activityVersion}`, ...structuredClone(read) } : null);
-        }
-        if (command === "work_status_landed") return answer({ changes: structuredClone(LANDED_STUB), weekCount: 2 });
-        if (command === "work_status_landed_detail") {
-          return answer({ hash: (args as { hash?: string }).hash, commits: [{ hash: "e1e1e1e", subject: "fix(map): keep the ring off the disc", at: Math.floor(Date.now() / 1000) - 7200 }], commitCount: 1, files: [{ path: "src/map/plan.ts", insertions: 30, deletions: 4 }], fileCount: 1 });
-        }
-        if (command === "work_status_read") {
-          return answer({ status: "ready", root: "/Users/probe/repo", repository: "repo", host: "github.com", baseBranch: "main", worktrees: structuredClone(state.rows) });
-        }
-        return Promise.reject(new Error(`unstubbed native command: ${command}`));
-      },
-    };
-  }, { initial: rows, reads: activity });
-  await page.setViewportSize({ width: 1920, height: 1080 });
-  await page.goto("/en/work-status/");
-  await page.getByTestId("work-status-choose").click();
+      }
+      const box = clip.getBoundingClientRect();
+      const bounds = frame.getBoundingClientRect();
+      const style = getComputedStyle(part);
+      const lineHeight = Number.parseFloat(style.lineHeight) || Number.parseFloat(style.fontSize) * 1.4;
+      const wraps = part.getBoundingClientRect().height > Math.max(lineHeight, Number.parseFloat(style.minHeight) || 0) * 1.5;
+      const past = box.left < bounds.left - 0.5 || box.right > bounds.right + 0.5;
+      return wraps || past ? [`${part.dataset.testid}: ${part.textContent?.slice(0, 40)} (${Math.round(box.width)}x${Math.round(box.height)})`] : [];
+    });
+  });
 }
 
 /** Commit subjects are anyone's text: one past the monitor's width, Korean, and an emoji. */
@@ -134,8 +91,6 @@ const ACTIVITY: Activity = {
   "fix-rail-copy": { commits: [{ hash: "d4e5f60", subject: "fix: 레일 툴팁 문구 🧭", at: NOW_S - 600 }], uncommitted: 0, latestFile: null, onBase: false, files: [] },
 };
 
-const room = (page: Page, branch: string) => page.getByTestId("work-room").filter({ hasText: branch });
-
 /** Three running rooms fill one stage row; four worktrees no session holds wait as mini rooms. */
 const SWAP = [
   main,
@@ -144,9 +99,6 @@ const SWAP = [
   row("feat/map-light", { agentProcesses: [{ pid: 301, tool: "codex", startedAt: NOW_S - 3600 }] }),
   ...["feat/idle-one", "feat/idle-two", "fix/idle-three", "fix/idle-four"].map((branch) => row(branch)),
 ];
-
-const setRows = (page: Page, next: Row[]) =>
-  page.evaluate((rows) => (window as unknown as { __workStatusRows: (rows: unknown[]) => void }).__workStatusRows(rows), next);
 
 interface PaintFrame {
   /** The most visible copies any one room had: its faces, and a copy on its way out. */
@@ -830,7 +782,7 @@ test.describe("work status rooms", () => {
     const asking = room(page, "feat/library-stage");
     const line = page.getByTestId("work-status-session-list");
     await expect(asking).toHaveAttribute("data-room-state", "waiting");
-    await expect(line).toHaveText("Session list on");
+    await expect(line).toHaveText("What Atlas reads · session list on");
 
     await line.click();
     const panel = page.getByTestId("work-status-session-list-panel");
@@ -843,13 +795,13 @@ test.describe("work status rooms", () => {
       status,
     );
     await readGoes("notFound");
-    await expect(line).toHaveText("Session list not read");
+    await expect(line).toHaveText("What Atlas reads · session list not read");
     await expect(panel.getByTestId("work-status-session-list-now")).toContainText("was not found");
     await readGoes("read");
-    await expect(line).toHaveText("Session list on");
+    await expect(line).toHaveText("What Atlas reads · session list on");
 
-    await panel.getByRole("radio", { name: "Off" }).click();
-    await expect(line).toHaveText("Session list off");
+    await page.getByTestId("work-status-read-session-list").getByRole("radio", { name: "Off" }).click();
+    await expect(line).toHaveText("What Atlas reads · session list off");
     await expect(asking).toHaveAttribute("data-room-state", "working");
     await expect(page.getByTestId("work-status-alert-waiting")).toHaveCount(0);
     const calls = () => page.evaluate(() => (window as unknown as { __workStatusSessionCalls: () => { asks: number; forgets: number } }).__workStatusSessionCalls());
@@ -861,12 +813,12 @@ test.describe("work status rooms", () => {
     await page.reload();
     await page.getByTestId("work-status-choose").click();
     await expect(room(page, "feat/library-stage")).toHaveAttribute("data-room-state", "working");
-    await expect(page.getByTestId("work-status-session-list")).toHaveText("Session list off");
+    await expect(page.getByTestId("work-status-session-list")).toHaveText("What Atlas reads · session list off");
     expect((await calls()).asks).toBe(0);
 
     await page.getByTestId("work-status-session-list").click();
-    await page.getByTestId("work-status-session-list-panel").getByRole("radio", { name: "On" }).click();
-    await expect(page.getByTestId("work-status-session-list")).toHaveText("Session list on");
+    await page.getByTestId("work-status-read-session-list").getByRole("radio", { name: "On" }).click();
+    await expect(page.getByTestId("work-status-session-list")).toHaveText("What Atlas reads · session list on");
     await expect.poll(async () => (await calls()).asks).toBeGreaterThan(0);
   });
 
@@ -904,6 +856,81 @@ test.describe("work status rooms", () => {
     await say("working");
     await expect(asking).toHaveAttribute("data-room-state", "working");
     await expect(page.getByTestId("work-status-alert-waiting")).toHaveCount(0);
+  });
+
+  test("lines up one, three and seven sessions of one checkout, waiting first, each on one line", async ({ page }) => {
+    await openWorkStatus(page, [main, checkout(1)], {}, { width: 1512, height: 945 });
+    const lines = room(page, LIVE);
+    await setSessions(page, said(1, ["working"]));
+    // One session: its own name on the bezel, its tool and number beside it.
+    const who = lines.getByTestId("work-room-who");
+    await expect(who).toContainText("live-lines-a1");
+    await expect(who).toContainText("Claude Code 1");
+    await expect(lines.getByTestId("work-room-sessions")).toHaveCount(0);
+
+    await setRows(page, [main, checkout(3)]);
+    await setSessions(page, said(3, ["replied", "working", "waitingApproval"]));
+    const shown = lines.getByTestId("work-room-sessions").getByTestId("work-session-line");
+    await expect(shown).toHaveCount(3);
+    await expect(shown.first()).toContainText("Waiting for your approval");
+    await expect(shown.first()).toContainText(HANGUL_NAME);
+    await expect(lines).toHaveAttribute("data-room-state", "waiting");
+    await expect(lines.locator("[data-scene]")).toHaveAttribute("data-tone", "warning");
+    await expect(who).toHaveText("3 sessions");
+    // The session the list gives no name reads by its tool and number.
+    await expect(shown.getByTestId("work-session-line-name").filter({ hasText: /^Claude Code \d$/ })).toHaveCount(1);
+    expect(await spills(page), "session lines that wrap or overflow at 1512 px").toEqual([]);
+
+    await setRows(page, [main, checkout(7)]);
+    await setSessions(page, said(7, ["working", "working", "replied", "waitingAnswer", "working", "replied", "working"]));
+    await expect(lines.getByTestId("work-room-sessions-more")).toHaveText("and 4 more sessions");
+    await expect(shown).toHaveCount(3);
+    await expect(shown.first()).toContainText("Waiting for your answer");
+    await lines.locator("[data-room-press]").click();
+    await expect(page.getByTestId("work-room-panel-sessions").getByTestId("work-session-line")).toHaveCount(7);
+    expect(await spills(page), "session lines that wrap or overflow in the panel").toEqual([]);
+  });
+
+  test("keeps a session's long name on one line in a 300 px mini room", async ({ page }) => {
+    // The narrowest building puts one room on the stage; two wait below as mini rooms the width of the building.
+    await openWorkStatus(page, [main, working("feat/stage-room", CLAUDE), checkout(1), row("feat/idle-room")], {}, { width: 380, height: 900 });
+    await setSessions(page, said(1, ["working"], `${HANGUL_NAME} ${HANGUL_NAME}`));
+    const mini = room(page, LIVE);
+    await expect(mini).toHaveAttribute("data-room-size", "mini");
+    expect(Math.round((await mini.boundingBox())?.width ?? 0), "the mini room's width").toBe(300);
+    await expect(mini.getByTestId("work-room-who")).toContainText(HANGUL_NAME);
+    await expect(mini.getByTestId("work-room-who")).toContainText("Claude Code");
+    expect(await spills(page), "lines that wrap or overflow in the mini room").toEqual([]);
+  });
+
+  test("keeps a session's name to one short line on the screen alone, and drops it at the names switch", async ({ page }) => {
+    const logged: string[] = [];
+    page.on("console", (message) => logged.push(message.text()));
+    await openWorkStatus(page, [main, checkout(1)]);
+    await setSessions(page, said(1, ["working"], PLANTED_NAME));
+    const name = room(page, LIVE).getByTestId("work-room-who");
+    await expect(name).toContainText(PLANTED);
+    const shown = await name.locator(":scope > span").first().textContent() ?? "";
+    expect([...shown].length, "characters of the shown name").toBeLessThanOrEqual(60);
+    expect(shown, "a line break or direction override in the shown name").not.toMatch(/[\n\r‪-‮⁦-⁩]/);
+
+    // The name is on the screen and nowhere else: not in storage, the URL, any argument sent to the bridge, or the console.
+    const kept = await page.evaluate(() => JSON.stringify([Object.entries(localStorage), Object.entries(sessionStorage), location.href]));
+    expect(kept.includes(PLANTED), "the name in storage or the URL").toBe(false);
+    expect((await bridgeCalls(page)).sent.filter((sent) => sent.includes(PLANTED)), "arguments that carry the name").toEqual([]);
+
+    await page.getByTestId("work-status-session-list").click();
+    const names = page.getByTestId("work-status-read-names");
+    await expect(page.getByTestId("work-status-names-now")).toContainText("A room shows the name Claude Code gives each session");
+    await names.getByRole("radio", { name: "Off" }).click();
+    await expect(page.getByTestId("work-status-names-now")).toHaveText("Atlas does not read session names. Rooms call a session by its tool and number, such as Claude Code 1.");
+    await expect(name).toHaveText("Claude Code 1");
+    await expect(page.locator("body")).not.toContainText(PLANTED);
+    await expect.poll(async () => (await bridgeCalls(page)).namesOn).toBe(false);
+
+    await names.getByRole("radio", { name: "On" }).click();
+    await expect(name).toContainText(PLANTED);
+    expect(logged.filter((text) => text.includes(PLANTED)), "console lines that carry the name").toEqual([]);
   });
 
   test("shows one room for the base branch when no worktree exists", async ({ page }) => {

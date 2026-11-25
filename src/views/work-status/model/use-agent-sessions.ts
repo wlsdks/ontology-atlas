@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   readAgentSessions,
   setAgentSessionsRead,
+  setSessionNamesRead,
   type AgentSessionRow,
   type AgentSessionsReadStatus,
 } from '@/shared/lib/work-status/tauri-work-status';
@@ -15,28 +16,38 @@ export type SessionListStatus = AgentSessionsReadStatus | 'off';
 export interface SessionListRead {
   rows: readonly AgentSessionRow[];
   status: SessionListStatus;
+  /** When the shown rows were answered, for since when a session says what it says; 0 before any. */
+  readAtMs: number;
 }
 
 const NO_ROWS: readonly AgentSessionRow[] = [];
-const NOT_ASKED: { root: string | null } & SessionListRead = { root: null, rows: NO_ROWS, status: 'pending' };
-const OFF: SessionListRead = { rows: NO_ROWS, status: 'off' };
-const PENDING: SessionListRead = { rows: NO_ROWS, status: 'pending' };
+const NOT_ASKED: { root: string | null } & SessionListRead = { root: null, rows: NO_ROWS, status: 'pending', readAtMs: 0 };
+const OFF: SessionListRead = { rows: NO_ROWS, status: 'off', readAtMs: 0 };
+const PENDING: SessionListRead = { rows: NO_ROWS, status: 'pending', readAtMs: 0 };
 
 const sameRows = (a: readonly AgentSessionRow[], b: readonly AgentSessionRow[]) =>
-  a.length === b.length && a.every((row, index) => row.pid === b[index].pid && row.worktreeId === b[index].worktreeId && row.state === b[index].state);
+  a.length === b.length
+  && a.every((row, index) => row.pid === b[index].pid && row.worktreeId === b[index].worktreeId && row.state === b[index].state && (row.name ?? null) === (b[index].name ?? null));
+
+const withoutName = ({ worktreeId, pid, state }: AgentSessionRow): AgentSessionRow => ({ worktreeId, pid, state });
 
 /**
  * What each Claude Code session in the repository says of itself and how the read went, asked
  * while the screen is visible and the read is switched on. An answer equal to the last keeps its
  * object, so nothing downstream recomputes; a hidden screen asks nothing. Switched off, nothing is
- * asked and Rust is told, so no program is started and the list it held is dropped.
+ * asked and Rust is told, so no program is started and the list it held is dropped. With names
+ * off Rust is told too, and no row handed on carries a name, whatever an answer holds.
  */
-export function useAgentSessions(root: string | null, enabled: boolean): SessionListRead {
+export function useAgentSessions(root: string | null, enabled: boolean, namesOn: boolean = true): SessionListRead {
   const [read, setRead] = useState(NOT_ASKED);
 
   useEffect(() => {
     if (!enabled) void setAgentSessionsRead(false).catch(() => undefined);
   }, [enabled]);
+
+  useEffect(() => {
+    void setSessionNamesRead(namesOn).catch(() => undefined);
+  }, [namesOn]);
 
   useEffect(() => {
     if (!root || !enabled) return;
@@ -50,7 +61,7 @@ export function useAgentSessions(root: string | null, enabled: boolean): Session
           setRead(current =>
             current.root === root && current.status === answer.status && sameRows(current.rows, answer.rows)
               ? current
-              : { root, rows: answer.rows, status: answer.status },
+              : { root, rows: answer.rows, status: answer.status, readAtMs: Date.now() },
           );
         }
       }
@@ -70,6 +81,7 @@ export function useAgentSessions(root: string | null, enabled: boolean): Session
     };
   }, [root, enabled]);
 
+  const named = useMemo(() => (namesOn ? read : { ...read, rows: read.rows.map(withoutName) }), [read, namesOn]);
   if (!enabled) return OFF;
-  return read.root === root && root !== null ? read : PENDING;
+  return read.root === root && root !== null ? named : PENDING;
 }

@@ -28,6 +28,8 @@ const INTENTIONALLY_STILL: Readonly<Record<string, string>> = {
     "The stepped character frames stop. The final static READ or SUCCESS pose plus the same accessible status preserves the information.",
   "acp-working-shimmer":
     "Infinite band sweep shown only while an agent tool call, work group or turn is in flight, or while the analysis brief's sums are still being counted. Reduced motion stops the travel and removes the painted gradient, leaving the words in a still, brighter ink; the running ring, the present-tense outcome word and the ticking clock beside them carry the same fact, and on the brief the counting line says it in words while the list names the core still reading.",
+  "motion-room-flash":
+    "A room's light flashing once per counted file change. Under reduced motion the light stays dark (opacity 0, no animation) and the room's change count and time in words carry the same fact; work-status-pulse.spec.ts checks no animation runs.",
   "agent-pending-dot":"an endless pulse, and stopping exactly that is what reduced motion means; the state is told by the adjacent text.",
   "motion-work-spin":
     "Infinite arc rotation shown only while a WorkStatus step of unknown length runs. Reduced motion stops the arc in place; the step's label and the consumer's live region carry the same fact.",

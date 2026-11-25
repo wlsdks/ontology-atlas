@@ -27,9 +27,9 @@
   },
   "sessions": {
     "chip": {
-      "on": "Session list on",
-      "off": "Session list off",
-      "unreadable": "Session list not read"
+      "on": "What Atlas reads · session list on",
+      "off": "What Atlas reads · session list off",
+      "unreadable": "What Atlas reads · session list not read"
     },
     "title": "{tool}'s session list",
     "switch": "Read {tool}'s session list",
@@ -52,6 +52,21 @@
       "failed": "{tool} ended with an error.",
       "unknownForm": "The list was in a form Atlas does not know; a newer {tool} may have changed it."
     }
+  },
+  "reads": {
+    "title": "What Work status reads on this Mac"
+  },
+  "names": {
+    "switch": "Show session names",
+    "status": "A room shows the name {tool} gives each session, so you can match it to the terminal or window it runs in. A name can be a title {tool} wrote from your conversation. Atlas keeps the last names it read in memory until you switch names or the session list off, or quit the app; it never writes them to a file or a log, sends them anywhere, or gives them to an agent.",
+    "off": "Atlas does not read session names. Rooms call a session by its tool and number, such as {example}.",
+    "needsList": "Session names come from the session list, which is off."
+  },
+  "sessionLine": {
+    "workingHere": "Running a command here",
+    "forMinutes": "for {count} min",
+    "forHours": "for {count} h",
+    "more": "{count, plural, one {and # more session} other {and # more sessions}}"
   },
   "stage": {
     "label": "Worktrees at work"
@@ -76,7 +91,8 @@
     "commits": "{count, plural, one {# commit} other {# commits}}",
     "noCommits": "No commits yet",
     "onlyInGit": "Only in Git now",
-    "notInBase": "{count, plural, one {# commit not in {branch}} other {# commits not in {branch}}}"
+    "notInBase": "{count, plural, one {# commit not in {branch}} other {# commits not in {branch}}}",
+    "sessions": "{count, plural, one {# session} other {# sessions}}"
   },
   "monitor": {
     "lockedAt": "Locked at {time}",
@@ -98,6 +114,45 @@
     "rootFolder": "repository root",
     "areaFiles": "{count, plural, one {# file} other {# files}}",
     "areasMore": "{count, plural, one {and # more folder} other {and # more folders}}"
+  },
+  "pulse": {
+    "switch": "Watch file changes",
+    "status": "While Work status is open, macOS tells Atlas each time a file changes in one of this repository's worktrees, and Atlas counts the changes. It does not open the files and keeps no file name. Changes inside .git and to files Git ignores are not counted. Counts stay in memory for an hour.",
+    "off": "Atlas does not watch for file changes. A room shows a change the next time Atlas reads Git, up to a minute and a half later.",
+    "lastMinute": "{count, plural, one {# file change} other {# file changes}} in the last minute",
+    "lastHour": "{count, plural, one {# file change} other {# file changes}} in the last hour",
+    "onlyOpen": "Atlas counts only while Work status is open.",
+    "none": "No file change was counted here in the last hour.",
+    "noAgent": "Files are changing here, and Atlas sees no agent in this folder.",
+    "unwatched": "macOS could not watch this folder, so this room shows a change only when Atlas reads Git."
+  },
+  "load": {
+    "switch": "Read memory, CPU and GPU use",
+    "status": "Every 5 seconds while Work status is open, Atlas reads how much memory and CPU each agent and the commands it started are using, the memory and CPU of a Java program outside them, such as a Gradle daemon, and how busy this Mac's memory, CPU and GPU are. It reads each program's name, never its command line. Nothing is written and nothing leaves this Mac.",
+    "off": "Atlas does not read memory, CPU or GPU use, so no room or heading shows them.",
+    "room": "Memory {memory} · CPU {cores} of {total} cores",
+    "fact": "{memory} · CPU {cores} cores",
+    "groupLine": "{tool} ×{count} · {memory} · CPU {cores}",
+    "tool": {
+      "agent": "Agent programs",
+      "node": "Node.js",
+      "rust": "Rust build",
+      "java": "Java",
+      "gradleDaemon": "Gradle daemon",
+      "xcode": "Xcode build",
+      "python": "Python",
+      "git": "Git",
+      "other": "Other programs"
+    },
+    "moreGroups": "{count, plural, one {and # more kind} other {and # more kinds}}",
+    "agentElsewhere": "{who} itself is counted in {branch}, the folder it was started in. This room counts only the commands it runs here.",
+    "none": "No agent program is running in this room, so there is no load to show.",
+    "outside": "Running outside every room: {list}",
+    "mac": "This Mac: memory {used} of {total} · CPU {cores} of {coreCount} cores · GPU {gpu}%",
+    "macNoGpu": "This Mac: memory {used} of {total} · CPU {cores} of {coreCount} cores",
+    "gpuWhy": "macOS reports GPU use for the whole Mac. Naming the program that uses it needs administrator rights, which Atlas does not ask for.",
+    "gpuMissing": "This Mac did not report GPU use.",
+    "failed": "Atlas could not read load from macOS just now and tries again in 5 seconds. Everything else in this room is unaffected."
   },
   "shelf": {
     "merged": "Merged into {branch}",
@@ -129,7 +184,11 @@
     "waiting": "{count} waiting for you",
     "sameFolder": "{count} in one folder",
     "cleanup": "{count} to clean up",
-    "pointTo": "Show which worktrees"
+    "pointTo": "Show which worktrees",
+    "memory": "Memory is running low",
+    "cpu": "CPU is full",
+    "gpu": "GPU is full",
+    "pointToLoad": "Show the rooms using the most"
   },
   "git": {
     "uncommitted": "{count, plural, one {# file changed, not committed} other {# files changed, not committed}}",
@@ -171,17 +230,20 @@
       "commits": "Commits since {branch}",
       "uncommitted": "Uncommitted files"
     },
-    "quiet": "No commits since {branch} and no uncommitted files."
+    "quiet": "No commits since {branch} and no uncommitted files.",
+    "sessionsTitle": "Sessions in this folder",
+    "pulseTitle": "File changes",
+    "loadTitle": "Load"
   },
   "about": {
     "label": "What this screen shows",
     "body": "One room is one worktree: a separate folder of this repository where a branch is being worked on. Each screen shows the branch, its newest commits and the files changed but not committed yet. A room is lit while an agent session is working in it. Press a room to see the rest."
   },
   "landed": {
-    "title": "Landed on <code>{branch}</code>",
-    "note": "It stays here after the worktree is removed, read straight from Git.",
+    "title": "Merged into <code>{branch}</code>",
+    "note": "One line is one merged pull request; a commit pushed without one is a line too. Atlas reads this Mac's copy of the branch, so a change you have not pulled yet is not listed.",
     "summary": "{today} today · {week} in the last 7 days",
-    "none": "Nothing has landed on {branch} yet.",
+    "none": "Nothing has been merged into {branch} yet.",
     "today": "Today",
     "yesterday": "Yesterday",
     "dayCount": "{count}",
@@ -197,18 +259,18 @@
       "test": "Tests",
       "chore": "Upkeep"
     },
-    "landedAt": "Landed {ago} · {time}",
+    "landedAt": "Merged {ago} · {time}",
     "stat": {
       "commits": "Commits",
       "files": "Files",
       "added": "Lines added",
       "removed": "Lines removed"
     },
-    "commitsTitle": "Commits in this work",
+    "commitsTitle": "Commits in this change",
     "filesTitle": "Changed files",
-    "squashed": "It landed as one commit, so there are no separate commits to show.",
+    "squashed": "It was merged as one commit, so there are no separate commits to show.",
     "binary": "binary",
-    "unreadable": "Git couldn't read this work's commits and files.",
+    "unreadable": "Atlas could not read this change's commits and files from Git. Close it and open it again to retry.",
     "copyHash": "Copy commit hash"
   }
 }

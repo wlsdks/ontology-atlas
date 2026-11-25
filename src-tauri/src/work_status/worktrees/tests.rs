@@ -458,6 +458,7 @@ fn a_command_is_credited_to_the_agent_session_above_it() {
         started_at: Some(i64::from(pid)),
         tool,
         folder: folder.map(PathBuf::from),
+        name: String::new(),
     };
     let credited = credit_to_agents(
         &[
@@ -507,6 +508,7 @@ fn only_an_agents_command_tree_needs_its_working_folder_read() {
         started_at: Some(i64::from(pid)),
         tool,
         folder: folder.map(PathBuf::from),
+        name: String::new(),
     };
     let facts = vec![
         fact(1, 0, None, Some("/")),
