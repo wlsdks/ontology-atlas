@@ -184,6 +184,25 @@ test("a WebKit gesture pinch zooms the flat map and the hex board about the fing
   expect(zoomed.r / tile.r).toBeCloseTo(1.5, 1);
   expect(Math.abs(zoomed.x - tile.x), "the mirror rounds marks to whole pixels").toBeLessThanOrEqual(1);
   expect(Math.abs(zoomed.y - tile.y), "the mirror rounds marks to whole pixels").toBeLessThanOrEqual(1);
+
+  // A legend settling after the pinch moves the footer's top but not the rest, as it did on a slow runner.
+  const footerTop = await board.getAttribute("data-hex-footer-top");
+  expect(footerTop, "the board has read its footer").not.toBeNull();
+  await page.getByTestId("hex-board-footer").evaluate((footer) => {
+    footer.style.height = `${footer.getBoundingClientRect().height - 4}px`;
+  });
+  await page.waitForFunction(
+    (before) => {
+      const wrap = document.querySelector<HTMLElement>('[data-testid="hex-board-map"]')!;
+      if (wrap.dataset.hexFooterTop === before) return false;
+      // Counted in drawn frames: two after the board read the footer, a camera move it caused has painted.
+      const host = window as unknown as { framesSinceFooter?: number };
+      host.framesSinceFooter = (host.framesSinceFooter ?? 0) + 1;
+      return host.framesSinceFooter > 2 && wrap.dataset.hexReady === "true";
+    },
+    footerTop,
+    { polling: "raf" });
+  expect((await readTile()).r, "a footer that leaves the rest in place keeps the reader's zoom").toBe(zoomed.r);
 });
 
 test("choosing speeds in Settings changes how far a drag and a zoom key move the map", async ({ page }) => {

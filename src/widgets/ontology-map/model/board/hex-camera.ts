@@ -29,6 +29,11 @@ export function restCameraAboveFooter(layout: HexBoardLayout, room: Rect, footer
   return lowest(lifted) <= footerTop - FOOTER_CLEAR ? lifted : rest;
 }
 
+/** Whether two cameras draw the board in the same place: under half a pixel of offset and a hundredth of cell radius apart. O(1). */
+export function sameHexCamera(a: Camera, b: Camera): boolean {
+  return Math.abs(a.ox - b.ox) < 0.5 && Math.abs(a.oy - b.oy) < 0.5 && Math.abs(a.R - b.R) < 0.01;
+}
+
 /** Where routes may run, in the board's unit space, for one camera. */
 export interface RouteFrame {
   key: string;

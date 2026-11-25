@@ -116,8 +116,20 @@ test("pointing at a domain sinks every other domain; selecting a capability name
   expect(selected.texts.some((t) => t.id === capability && t.role === "capability"), "the selected capability is named").toBe(true);
   expect(selected.textOverlaps, "no admitted name crosses another under a selection").toBe(0);
   const selectedInk = new Map(selected.discs.map((d) => [d.id, d.ink]));
-  expect(selectedInk.get(target.domainId), "the selected capability's domain stays lit").toBe(ink);
+  expect(selectedInk.get(capability), "the selected capability stays lit in the project's ink").toBe(ink);
+  // Its domain steps back to its resting ink below the selection, yet never sinks like an unrelated
+  // concept (docs/specs/2026-11-25-map-selection-scene.md, hierarchy step 3).
+  const domainLuma = luma(selectedInk.get(target.domainId)!);
+  const sunkLuma = Math.min(...selected.discs.map((d) => luma(d.ink)));
+  expect(domainLuma, "the selected capability's domain steps back below the selection's ink").toBeLessThan(luma(ink));
+  expect(domainLuma, "the selected capability's domain stays above the ink unrelated concepts sink to").toBeGreaterThan(sunkLuma);
 });
+
+/** Rec. 709 luma of a `#rrggbb` ink, 0 to 255: which of two drawn inks reads brighter. */
+function luma(hex: string): number {
+  const channel = (at: number) => Number.parseInt(hex.slice(at, at + 2), 16);
+  return 0.2126 * channel(1) + 0.7152 * channel(3) + 0.0722 * channel(5);
+}
 
 /** The screen distance between a domain's two closest member capabilities. */
 function membersApartPx(dial: DialProbe, domainId: string): number {
