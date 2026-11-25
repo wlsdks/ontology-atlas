@@ -781,27 +781,30 @@ test.describe("work status rooms", () => {
     );
     const asking = room(page, "feat/library-stage");
     const line = page.getByTestId("work-status-session-list");
+    const open = page.getByTestId("work-status-reads-open");
     await expect(asking).toHaveAttribute("data-room-state", "waiting");
-    await expect(line).toHaveText("What Atlas reads · session list on");
+    // While the list reads, the header says nothing about it.
+    await expect(line).toHaveCount(0);
 
-    await line.click();
+    await open.click();
     const panel = page.getByTestId("work-status-session-list-panel");
+    await expect(panel.getByTestId("work-status-session-list-now")).toHaveText("Shows which session waits for your answer.");
+    await page.getByTestId("work-status-reads-details").click();
     await expect(panel).toContainText("claude agents --json");
-    await expect(panel.getByTestId("work-status-session-list-now")).toContainText("Read.");
 
-    // A list that cannot be read says why, in the header and in the panel.
+    // A list that cannot be read says so in the header and why in the panel.
     const readGoes = (status: string) => page.evaluate(
       (next) => (window as unknown as { __workStatusSessionRead: (status: string) => void }).__workStatusSessionRead(next),
       status,
     );
     await readGoes("notFound");
-    await expect(line).toHaveText("What Atlas reads · session list not read");
+    await expect(line).toHaveText("Session status not read");
     await expect(panel.getByTestId("work-status-session-list-now")).toContainText("was not found");
     await readGoes("read");
-    await expect(line).toHaveText("What Atlas reads · session list on");
+    await expect(line).toHaveCount(0);
 
     await page.getByTestId("work-status-read-session-list").getByRole("radio", { name: "Off" }).click();
-    await expect(line).toHaveText("What Atlas reads · session list off");
+    await expect(line).toHaveText("Session status off");
     await expect(asking).toHaveAttribute("data-room-state", "working");
     await expect(page.getByTestId("work-status-alert-waiting")).toHaveCount(0);
     const calls = () => page.evaluate(() => (window as unknown as { __workStatusSessionCalls: () => { asks: number; forgets: number } }).__workStatusSessionCalls());
@@ -813,12 +816,12 @@ test.describe("work status rooms", () => {
     await page.reload();
     await page.getByTestId("work-status-choose").click();
     await expect(room(page, "feat/library-stage")).toHaveAttribute("data-room-state", "working");
-    await expect(page.getByTestId("work-status-session-list")).toHaveText("What Atlas reads · session list off");
+    await expect(page.getByTestId("work-status-session-list")).toHaveText("Session status off");
     expect((await calls()).asks).toBe(0);
 
     await page.getByTestId("work-status-session-list").click();
     await page.getByTestId("work-status-read-session-list").getByRole("radio", { name: "On" }).click();
-    await expect(page.getByTestId("work-status-session-list")).toHaveText("What Atlas reads · session list on");
+    await expect(page.getByTestId("work-status-session-list")).toHaveCount(0);
     await expect.poll(async () => (await calls()).asks).toBeGreaterThan(0);
   });
 
@@ -919,9 +922,9 @@ test.describe("work status rooms", () => {
     expect(kept.includes(PLANTED), "the name in storage or the URL").toBe(false);
     expect((await bridgeCalls(page)).sent.filter((sent) => sent.includes(PLANTED)), "arguments that carry the name").toEqual([]);
 
-    await page.getByTestId("work-status-session-list").click();
+    await page.getByTestId("work-status-reads-open").click();
     const names = page.getByTestId("work-status-read-names");
-    await expect(page.getByTestId("work-status-names-now")).toContainText("A room shows the name Claude Code gives each session");
+    await expect(page.getByTestId("work-status-names-now")).toHaveText("Shows the name each session has.");
     await names.getByRole("radio", { name: "Off" }).click();
     await expect(page.getByTestId("work-status-names-now")).toHaveText("Atlas does not read session names. Rooms call a session by its tool and number, such as Claude Code 1.");
     await expect(name).toHaveText("Claude Code 1");

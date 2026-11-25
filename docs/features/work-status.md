@@ -137,18 +137,25 @@ amber when any line waits. A session that only runs commands in a room says
 
 ### The reads panel
 
-The header says how the session-list read goes, and pressing the words opens
-**What Work status reads on this Mac**: one row each for the session list,
-session names, file changes and load. Each row has its switch (all on by
-default), what is true now, and one sentence of what is read and what never is.
-The choices are kept in this browser profile's storage beside the session-list
-choice, and the app holds each one too. For the session list:
+A small sliders button in the header opens **What this screen reads**: one
+line saying everything is read on this Mac only and nothing is saved or sent,
+then one row each for session status, session names, file changes and memory,
+CPU and GPU. Each row is its name, one line on what it shows (or what is
+missing while it is off), and an On/Off switch; all are on by default. **How
+each one is read**, folded beneath, holds the full account of each read: when
+it runs, what it reads and what it never keeps or sends. The choices are kept
+in this browser profile's storage beside the session-status choice, and the
+app holds each one too.
 
-| Header | The panel says |
+The header carries words only when rooms can no longer say who waits:
+
+| Header | The session-status row says |
 |---|---|
-| **Session list on** | that the list was read, or that no Claude Code session runs so nothing is read; then what the read is: the command, every ten seconds and a second after a session starts or ends while Work status is open, no network access, nothing written by Atlas |
-| **Session list not read**, in amber | why: Claude Code was not found in the three folders, did not answer within five seconds, ended with an error, or printed a form Atlas does not know. Until a read succeeds no room can say that its session waits |
-| **Session list off** | that Atlas does not run Claude Code, so no room can say whether its session waits or has finished replying |
+| nothing beside the button | that it shows which session waits for your answer; the folded account names the command, every ten seconds and a second after a session starts or ends while Work status is open, no network access, nothing written by Atlas |
+| **Session status not read**, in amber | why: Claude Code was not found in the three folders, did not answer within five seconds, ended with an error, or printed a form Atlas does not know. Until a read succeeds no room can say that its session waits |
+| **Session status off** | that Atlas does not run Claude Code, so no room can say whether its session waits or has finished replying |
+
+Pressing the words opens the same panel.
 
 Switched off, the page stops asking and tells the app, which holds the choice
 too: an ask already on its way starts no `claude`, and the list held in memory
@@ -160,8 +167,8 @@ the person turns it off. Where the read never runs (Windows, Linux) the header
 says nothing about it.
 
 Session names switched off leave the screen at the next draw and the app drops
-the names it held; switched on, they return within one list read. With the
-session list off, the names row says names come from that list.
+the names it held; switched on, they return within one list read. With
+session status off, the names row says names come from that list.
 
 Limits: Claude Code only, the default settings folder only, macOS only. A
 background session and a subagent's own wait have not been seen through this

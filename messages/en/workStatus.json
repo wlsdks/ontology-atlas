@@ -27,22 +27,14 @@
   },
   "sessions": {
     "chip": {
-      "on": "What Atlas reads · session list on",
-      "off": "What Atlas reads · session list off",
-      "unreadable": "What Atlas reads · session list not read"
+      "off": "Session status off",
+      "unreadable": "Session status not read"
     },
-    "title": "{tool}'s session list",
-    "switch": "Read {tool}'s session list",
     "choice": {
       "on": "On",
       "off": "Off"
     },
-    "now": {
-      "read": "Read. A room says so when its session waits for you.",
-      "noSession": "No {tool} session is running, so nothing is being read."
-    },
     "status": "Atlas reads {tool}'s own session list to show which sessions wait for you. While Work status is open it runs <code>{command}</code> every 10 seconds, and a second after a {tool} session starts or ends, with no network access. Atlas writes nothing.",
-    "statusOff": "Switched on, Atlas reads {tool}'s own session list: while Work status is open it runs <code>{command}</code> every 10 seconds, and a second after a {tool} session starts or ends, with no network access. Atlas writes nothing.",
     "off": "Atlas does not run {tool}, so no room can say whether its session waits for you or has finished replying.",
     "unreadable": "Atlas could not read {tool}'s session list: {reason}",
     "fallback": "Until it can, no room can say whether its session waits for you. Atlas tries again within 10 seconds.",
@@ -54,10 +46,28 @@
     }
   },
   "reads": {
-    "title": "What Work status reads on this Mac"
+    "title": "What this screen reads",
+    "open": "What this screen reads",
+    "promise": "Read on this Mac only; nothing is saved or sent.",
+    "details": "How each one is read",
+    "list": {
+      "label": "Session status",
+      "caption": "Shows which session waits for your answer."
+    },
+    "names": {
+      "label": "Session names",
+      "caption": "Shows the name each session has."
+    },
+    "pulse": {
+      "label": "File changes",
+      "caption": "Lights the room and counts changes as files change."
+    },
+    "load": {
+      "label": "Memory, CPU, GPU",
+      "caption": "Shows use per room and for this whole Mac."
+    }
   },
   "names": {
-    "switch": "Show session names",
     "status": "A room shows the name {tool} gives each session, so you can match it to the terminal or window it runs in. A name can be a title {tool} wrote from your conversation. Atlas keeps the last names it read in memory until you switch names or the session list off, or quit the app; it never writes them to a file or a log, sends them anywhere, or gives them to an agent.",
     "off": "Atlas does not read session names. Rooms call a session by its tool and number, such as {example}.",
     "needsList": "Session names come from the session list, which is off."
@@ -116,7 +126,6 @@
     "areasMore": "{count, plural, one {and # more folder} other {and # more folders}}"
   },
   "pulse": {
-    "switch": "Watch file changes",
     "status": "While Work status is open, macOS tells Atlas each time a file changes in one of this repository's worktrees, and Atlas counts the changes. It does not open the files and keeps no file name. Changes inside .git and to files Git ignores are not counted. Counts stay in memory for an hour.",
     "off": "Atlas does not watch for file changes. A room shows a change the next time Atlas reads Git, up to a minute and a half later.",
     "lastMinute": "{count, plural, one {# file change} other {# file changes}} in the last minute",
@@ -127,7 +136,6 @@
     "unwatched": "macOS could not watch this folder, so this room shows a change only when Atlas reads Git."
   },
   "load": {
-    "switch": "Read memory, CPU and GPU use",
     "status": "Every 5 seconds while Work status is open, Atlas reads how much memory and CPU each agent and the commands it started are using, the memory and CPU of a Java program outside them, such as a Gradle daemon, and how busy this Mac's memory, CPU and GPU are. It reads each program's name, never its command line. Nothing is written and nothing leaves this Mac.",
     "off": "Atlas does not read memory, CPU or GPU use, so no room or heading shows them.",
     "room": "Memory {memory} · CPU {cores} of {total} cores",

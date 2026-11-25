@@ -95,7 +95,7 @@ test.describe("work status load", () => {
     const heavy = room(page, "feat/heavy");
     await expect(heavy.getByTestId("work-room-load-fact")).toBeVisible();
 
-    await page.getByTestId("work-status-session-list").click();
+    await page.getByTestId("work-status-reads-open").click();
     const row = page.getByTestId("work-status-read-load");
     await row.getByRole("radio", { name: "Off" }).click();
     await expect(page.getByTestId("work-status-load-now")).toHaveText("Atlas does not read memory, CPU or GPU use, so no room or heading shows them.");
@@ -106,7 +106,7 @@ test.describe("work status load", () => {
     await expect(page.getByTestId("work-room-panel")).toBeVisible();
     await expect(page.getByTestId("work-room-panel-load")).toHaveCount(0);
 
-    await page.getByTestId("work-status-session-list").click();
+    await page.getByTestId("work-status-reads-open").click();
     await row.getByRole("radio", { name: "On" }).click();
     await expect.poll(async () => (await bridgeCalls(page)).loadOn).toBe(true);
     await expect(heavy.getByTestId("work-room-load-fact")).toBeVisible();
