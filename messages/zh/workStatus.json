@@ -78,6 +78,26 @@
     "forHours": "已 {count} 小时",
     "more": "另有 {count} 个会话"
   },
+  "arrange": {
+    "label": "排列方式",
+    "folder": "按文件夹",
+    "session": "按会话"
+  },
+  "bySession": {
+    "label": "工作中的会话",
+    "about": "每个代理会话只显示一次，包括它自己报告的状态和它正在工作的文件夹。提交和未提交的文件属于文件夹，而不属于会话。多个会话共用一个文件夹时，Atlas 无法分辨是哪个会话改了文件，所以该文件夹的更改只在你按下它时显示一次。这里只显示在这个仓库的文件夹中工作的会话。",
+    "shared": "与 {who} 共用",
+    "sharedMany": "与另外 {count} 个会话共用",
+    "moreFolders": "另有 {count} 个文件夹",
+    "showInFolders": "按文件夹显示这个会话的文件夹",
+    "withoutSession": "{count} 个文件夹没有会话",
+    "showByFolder": "按文件夹显示",
+    "pointTo": "显示是哪些会话",
+    "none": {
+      "title": "{repo} 中没有正在工作的代理会话",
+      "body": "Claude Code、Codex 或 Atlas 中的 Claude Agent 在这个仓库的文件夹中工作时，会显示在这里。按文件夹排列时会显示所有工作树。"
+    }
+  },
   "stage": {
     "label": "工作中的工作树"
   },
