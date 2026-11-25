@@ -10,8 +10,8 @@ import styles from './rooms.module.css';
 const DOZING_CELL = 9;
 
 /**
- * Moru in a room: an existing native 128px row, enlarged by whole pixels on a large room and
- * halved on a mini one. A session's ink retints only the saturated indigo of the flippers, tail and
+ * Moru in a room: an existing native 128px row, drawn at half size, which a Retina display shows
+ * pixel for pixel. A session's ink retints only the saturated indigo of the flippers, tail and
  * laptop through the board's filter; the silhouette and every other pixel stay as drawn. A live Moru's
  * strips are tinted once ahead (`prepareTint`) and then shown without the filter, so a step does not
  * run it again.
@@ -25,7 +25,7 @@ export function RoomMoru({ clip, character = 'grey', still, zoom, tint, phase = 
   /** Which Moru the room has; it changes the costume, never the row. */
   character?: MoruCharacter;
   still: boolean;
-  /** 1, 2 or 3 on a large room (128 × zoom px), as the scene's `var(--u)` so it glides with it; 0.5 on a mini room. */
+  /** 128 × zoom px: the scene's `var(--u)` on a large room, so it glides with it; 0.5 on a mini room. */
   zoom: number | string;
   /** The board's tint filter id for the room's session ink, or none for an untinted Moru. */
   tint: string | null;

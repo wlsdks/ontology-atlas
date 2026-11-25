@@ -7,7 +7,7 @@ import { RoomMoru } from './RoomMoru';
 import styles from './rooms.module.css';
 
 /** Moru at his drawn size, as in every stage room. */
-const EMPTY_UNIT = 1;
+const EMPTY_UNIT = 0.5;
 
 /**
  * The building before any worktree: one room for the base branch, its dark screen over the rail
