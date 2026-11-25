@@ -204,7 +204,9 @@ test.describe("Neural on the dogfood vault", () => {
         if (performance.now() - start < 4_000) requestAnimationFrame(tick);
         else host.flySamplesDone = true;
       };
-      requestAnimationFrame(tick);
+      // The first sample is read now, before the double-click is sent: a first animation frame can
+      // land after the press, when the flight has already left its starting pose.
+      tick();
     });
     await page.mouse.dblclick(target.x, target.y);
     await expect.poll(() => probe(page, (p) => p.dome()!.flight)).toBe(target.id);
