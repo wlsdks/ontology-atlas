@@ -168,11 +168,11 @@ const TRANSCRIBED_FROM = {
    */
   claude: '@agentclientprotocol/claude-agent-acp@0.110.0',
   /**
-   * 2.10.0 src/AgentMode.ts (identical to 2.7.0) keeps readOnly and workspace-write; Atlas
+   * 2.12.0 src/AgentMode.ts (identical to 2.7.0) keeps readOnly and workspace-write; Atlas
    * excludes the latter because its workspaceWrite sandbox permits edits before an approval.
-   * 2.9.0→2.10.0: bundled src/AgentMode.ts block byte-identical, checked 2026-11-23.
+   * 2.10.0→2.12.0: bundled src/AgentMode.ts block byte-identical, checked 2026-11-25.
    */
-  codexLaunch: '@agentclientprotocol/codex-acp@2.10.0',
+  codexLaunch: '@agentclientprotocol/codex-acp@2.12.0',
 };
 
 const REPO_ROOT = join(import.meta.dirname, '..', '..', '..');
