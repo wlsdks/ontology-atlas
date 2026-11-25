@@ -9,10 +9,12 @@ import { AFTER_CRATE, CART_CRATES, ROOM_TALKS, cartLoad, moruPhase, roomLook, ro
 import { MERGE_LIGHTS_OUT_MS } from '../model/moru-clock';
 import { useRise } from '../model/use-rise';
 import { SCREEN_H, SCREEN_ROW_H, type RoomUnit } from '../model/building-layout';
+import { listRowsBeside, type RoomLive } from '../model/room-live';
 import { ActivityStrip } from './ActivityStrip';
 import { BranchName } from './BranchName';
 import { CommitLog } from './CommitLog';
 import { RoomMoru } from './RoomMoru';
+import { SessionLineRow } from './SessionLineRow';
 import { SwapText } from './SwapText';
 import type { MonitorCopy, ScreenArea, ScreenFile, StatusTone, useRoomCopy } from './use-room-copy';
 import styles from './rooms.module.css';
@@ -135,14 +137,33 @@ function AreaList({ areas, rows }: { areas: readonly ScreenArea[]; rows: number 
  * under a line saying what it lists, and a room with no commits gives the files the commits' share and says so
  * on their line. With `areas`, the folders those files are in stand in a last column.
  */
-function ScreenText({ screen, rows, fileColumns, areas }: { screen: MonitorCopy; rows: number; fileColumns: number; areas: boolean }) {
+function ScreenText({ screen, rows: screenRows, fileColumns, areas }: { screen: MonitorCopy; rows: number; fileColumns: number; areas: boolean }) {
+  const sessionRows = screen.sessionLines.length + (screen.moreSessions ? 1 : 0);
+  // The session lines say who waits; the lists below give them their height, and the panel keeps the rest.
+  const rows = listRowsBeside(screenRows, sessionRows);
   const head = (
-    <div className={styles.screenHead}>
-      <BranchName branch={screen.branch} className={cn(styles.screenBranch, 'font-mono font-[var(--font-weight-strong)]')} />
-      {/* A room that needs a person says so at the top of its screen, in amber, not only on the bezel. */}
-      {screen.state.tone === 'warning' ? <span className={cn(styles.screenAlert, 'text-body leading-body font-[var(--font-weight-strong)]')}>{screen.state.lead}</span> : null}
-    </div>
+    <>
+      <div className={styles.screenHead}>
+        <BranchName branch={screen.branch} className={cn(styles.screenBranch, 'font-mono font-[var(--font-weight-strong)]')} />
+        {/* A room that needs a person says so at the top of its screen, in amber, not only on the bezel. */}
+        {screen.state.tone === 'warning' && sessionRows === 0 ? <span className={cn(styles.screenAlert, 'text-body leading-body font-[var(--font-weight-strong)]')}>{screen.state.lead}</span> : null}
+      </div>
+      {sessionRows > 0 ? (
+        <ul className={cn(styles.sessionLines, LABEL)} data-testid="work-room-sessions">
+          {screen.sessionLines.map(line => <SessionLineRow key={line.key} line={line} place="screen" />)}
+          {screen.moreSessions ? <li className={styles.sessionLine} data-testid="work-room-sessions-more">{screen.moreSessions}</li> : null}
+        </ul>
+      ) : null}
+    </>
   );
+  if (rows === 0) {
+    return (
+      <>
+        {head}
+        {screen.lastLine || screen.count ? <ScreenFoot screen={screen} /> : null}
+      </>
+    );
+  }
   if (fileColumns > 0) {
     const listsCommits = screen.commits.length > 0;
     return (
@@ -182,21 +203,26 @@ function ScreenText({ screen, rows, fileColumns, areas }: { screen: MonitorCopy;
       ) : screen.note ? (
         <div className={cn(styles.screenNote, 'text-body leading-body')}><SwapText value={screen.note} wrap /></div>
       ) : null}
-      {screen.lastLine || screen.count ? (
-        <div className={cn(styles.screenFoot, LABEL)} data-tone={screen.lastLine?.tone}>
-          <span className="flex min-w-0 items-baseline">
-            {screen.lastLine ? <SwapText value={screen.lastLine.text} /> : null}
-            {screen.lastLine?.file ? (
-              <span className="flex min-w-0 items-baseline">
-                <span className="flex-none">&nbsp;·&nbsp;</span>
-                <SwapText value={screen.lastLine.file} className={cn(styles.screenFile, 'font-mono')} />
-              </span>
-            ) : null}
-          </span>
-          {screen.count ? <span className="flex-none tabular-nums"><SwapText value={screen.count} /></span> : null}
-        </div>
-      ) : null}
+      {screen.lastLine || screen.count ? <ScreenFoot screen={screen} /> : null}
     </>
+  );
+}
+
+/** The screen's last line: what is not committed and how many commits the base branch lacks. */
+function ScreenFoot({ screen }: { screen: MonitorCopy }) {
+  return (
+    <div className={cn(styles.screenFoot, LABEL)} data-tone={screen.lastLine?.tone}>
+      <span className="flex min-w-0 items-baseline">
+        {screen.lastLine ? <SwapText value={screen.lastLine.text} /> : null}
+        {screen.lastLine?.file ? (
+          <span className="flex min-w-0 items-baseline">
+            <span className="flex-none">&nbsp;·&nbsp;</span>
+            <SwapText value={screen.lastLine.file} className={cn(styles.screenFile, 'font-mono')} />
+          </span>
+        ) : null}
+      </span>
+      {screen.count ? <span className="flex-none tabular-nums"><SwapText value={screen.count} /></span> : null}
+    </div>
   );
 }
 
@@ -212,15 +238,17 @@ function WallFacts({ screen, shown }: { screen: MonitorCopy; shown: boolean }) {
         <span className={cn(STATE_TONE[screen.state.tone], 'text-title leading-title font-[var(--font-weight-strong)]')}><SwapText value={screen.state.lead} wrap /></span>
         {screen.state.rest ? <span className="text-body leading-body text-[color:var(--color-text-secondary)]"><SwapText value={screen.state.rest} wrap /></span> : null}
         {screen.worked ? <span className="text-body leading-body text-[color:var(--color-text-tertiary)]"><SwapText value={screen.worked} wrap /></span> : null}
+        {screen.lastMinute ? <span className="text-body leading-body text-[color:var(--color-text-secondary)]" data-testid="work-room-last-minute"><SwapText value={screen.lastMinute} wrap /></span> : null}
+        {screen.loadFact ? <span className="text-body leading-body tabular-nums text-[color:var(--color-text-tertiary)]" data-testid="work-room-load-fact"><SwapText value={screen.loadFact} wrap /></span> : null}
       </div>
     </div>
   );
 }
 
 /** The room's screen: the words of what the worktree holds, over the name tag that says who works here. */
-function Monitor({ room, copy, rows, fileColumns, areas }: { room: RoomEntry; copy: RoomCopy; rows: number; fileColumns: number; areas: boolean }) {
+function Monitor({ room, live, copy, rows, fileColumns, areas }: { room: RoomEntry; live: RoomLive; copy: RoomCopy; rows: number; fileColumns: number; areas: boolean }) {
   const look = roomLook(room.state);
-  const screen = copy.monitor(room);
+  const screen = copy.monitor(room, live);
   const { leaving, serial } = useScreenSwap(room.state.kind, screen);
   return (
     <div className={styles.monitor} data-off={look.monitorOff}>
@@ -236,9 +264,16 @@ function Monitor({ room, copy, rows, fileColumns, areas }: { room: RoomEntry; co
         ) : null}
       </div>
       {/* The bezel names who works here: a name tag fixed to the screen, kept while the room travels. */}
-      <div data-room-tag className={cn(styles.bezel, LABEL, 'font-[var(--font-weight-emphasis)]')} data-held={screen.who !== null}>
-        {screen.who ? <span className={cn(styles.bezelWho, 'truncate')}>{screen.who}</span> : null}
-        {fileColumns > 0 && room.state.kind !== 'missing' ? <ActivityStrip beats={screen.beats} /> : null}
+      <div data-room-tag className={cn(styles.bezel, LABEL, 'font-[var(--font-weight-emphasis)]')} data-held={screen.bezel !== null}>
+        {screen.bezel?.tag ? (
+          <span className={styles.bezelNamed} data-testid="work-room-who">
+            <span className={styles.bezelName}>{screen.bezel.main}</span>
+            <span className={styles.bezelTag}>{screen.bezel.tag}</span>
+          </span>
+        ) : screen.bezel ? (
+          <span className={cn(styles.bezelWho, 'truncate')} data-testid="work-room-who">{screen.bezel.main}</span>
+        ) : null}
+        {fileColumns > 0 && room.state.kind !== 'missing' ? <ActivityStrip beats={screen.beats} ticks={screen.ticks} label={screen.hourLabel} /> : null}
         <span className={styles.bezelState}>
           <span className="flex-none"><SwapText value={screen.state.lead} ink={STATE_TONE[screen.state.tone]} /></span>
           {screen.state.rest ? <span className="flex flex-none font-normal">&nbsp;·&nbsp;<SwapText value={screen.state.rest} /></span> : null}
@@ -298,8 +333,10 @@ function Cart({ room, landing }: { room: RoomEntry; landing: number }) {
  * named `main`; the session is on the screen's bezel. Two tools in one folder: the second Moru
  * stands behind the first on his tail side, both facing the screen.
  */
-export function LargeRoom({ room, unit, rows, pairScale, fileColumns, areas, wallFacts, copy, tint, guestTint, retiring, entered, faceId, character }: {
+export function LargeRoom({ room, live, unit, rows, pairScale, fileColumns, areas, wallFacts, copy, tint, guestTint, retiring, entered, faceId, character }: {
   room: RoomEntry;
+  /** What the session list, the file-change pulse and load say of this room. */
+  live: RoomLive;
   /** The room's Moru, cast across the building. */
   character: MoruCharacter;
   unit: RoomUnit;
@@ -368,8 +405,8 @@ export function LargeRoom({ room, unit, rows, pairScale, fileColumns, areas, wal
             </span>
           </>
         ) : null}
-        <WallFacts screen={copy.monitor(room)} shown={wallFacts && !pair} />
-        <Monitor room={room} copy={copy} rows={rows} fileColumns={pair ? 0 : fileColumns} areas={!pair && areas} />
+        <WallFacts screen={copy.monitor(room, live)} shown={wallFacts && !pair} />
+        <Monitor room={room} live={live} copy={copy} rows={rows} fileColumns={pair ? 0 : fileColumns} areas={!pair && areas} />
         <i className={styles.dim} />
       </div>
     </div>

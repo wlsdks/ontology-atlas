@@ -729,6 +729,23 @@
   background: var(--ink);
 }
 
+/* A session's own name gives way before its tool and number, which tell two of one name apart. */
+.bezelName {
+  min-width: 0;
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bezelTag {
+  flex: 0 20 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 400;
+  color: var(--color-text-tertiary);
+}
+
 /* The session names read in full; the state's lead and then how long give way first. */
 .bezelWho {
   flex: none;
@@ -737,7 +754,9 @@
 .bezelState {
   display: flex;
   min-width: 0;
-  flex: 0 1 auto;
+  /* The last-hour line gives way first; the state is cut only past most of the bezel. */
+  flex: none;
+  max-width: 60%;
   overflow: hidden;
   margin-left: auto;
   color: var(--color-text-secondary);
@@ -746,7 +765,8 @@
 /* The last hour between the name and the state: one mark per change, now at the right end. */
 .strip {
   display: flex;
-  flex: 0 1 320px;
+  /* It gives way before the state beside it, which says when the worktree last changed. */
+  flex: 0 10 320px;
   align-items: center;
   gap: 8px;
   min-width: 0;
@@ -759,20 +779,30 @@
   margin-left: 14px;
 }
 
+/* The marks stand on the hour's baseline; the pulse's ticks hang under it. */
 .stripLine {
+  --base: 5px;
   position: relative;
   flex: 1;
   min-width: 0;
-  height: 10px;
+  height: 16px;
   container-type: inline-size;
-  border-bottom: 1px solid color-mix(in srgb, var(--color-text-primary) 12%, transparent);
+}
+
+.stripLine::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: var(--base);
+  height: 1px;
+  background: color-mix(in srgb, var(--color-text-primary) 12%, transparent);
 }
 
 /* A mark's place is its age across the hour, and it fades as it ages; a commit's is wider and in the page's ink. */
 .beat {
   position: absolute;
   right: 0;
-  bottom: 0;
+  bottom: calc(var(--base) + 1px);
   width: 1px;
   height: 7px;
   background: color-mix(in srgb, var(--ink) 80%, var(--color-text-primary));
@@ -790,8 +820,33 @@
   background: var(--color-text-primary);
 }
 
+/* A ten-second step with a counted file change: one change, two to five, six or more. */
+.tick {
+  position: absolute;
+  right: 0;
+  top: calc(100% - var(--base) + 1px);
+  width: 2px;
+  height: 2px;
+  background: color-mix(in srgb, var(--ink) 70%, var(--color-text-secondary));
+  opacity: calc(1 - var(--age) * 0.5);
+  transform: translateX(calc(var(--age) * -100cqw));
+  transform-origin: 50% 0;
+  transition:
+    transform var(--motion-slow) var(--motion-ease),
+    opacity var(--motion-slow) var(--motion-ease);
+}
+
+.tick[data-height='2'] {
+  height: 3px;
+}
+
+.tick[data-height='3'] {
+  height: calc(var(--base) - 1px);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .beat {
+  .beat,
+  .tick {
     transition: none;
   }
 }
@@ -1191,4 +1246,117 @@
 
 .floorPlate[data-emphasis='up'] {
   background: color-mix(in srgb, var(--ink) 10%, var(--work-room-pit));
+}
+
+/* ---------- live reads: session lines, the file-change light, load */
+
+/* The bezel's one named session: its name, then its tool and number. */
+.bezelNamed {
+  display: flex;
+  flex: none;
+  max-width: 40%;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* Under the screen's branch, one row per session: its ink, its name, its tool and number, its state and since when. */
+.sessionLines {
+  flex: none;
+  margin: 0 0 calc(2 * var(--s));
+  padding: 0;
+  list-style: none;
+}
+
+.sessionLine {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 20px;
+  min-width: 0;
+  white-space: nowrap;
+  color: var(--color-text-tertiary);
+}
+
+.sessionMark {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  background: var(--line-ink, var(--work-unheld));
+}
+
+/* When the line is short, since when gives way first, then the tool and number, and the name last; the state never does. */
+.sessionName,
+.sessionTag,
+.sessionSince {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sessionName {
+  flex: 0 1 auto;
+  color: var(--color-text-primary);
+}
+
+.sessionTag {
+  flex: 0 20 auto;
+}
+
+.sessionSince {
+  flex: 0 60 auto;
+  margin-left: auto;
+}
+
+.sessionSince[data-after-state='true'] {
+  margin-left: -4px;
+}
+
+.sessionSince[data-after-state='true']::before {
+  content: "· ";
+}
+
+.sessionState {
+  flex: none;
+  margin-left: auto;
+}
+
+/*
+ * The room's light, once per answer that carries a newly counted file change: a wash of the
+ * session's ink over the room (`.motion-room-flash` plays it once). It sits under the press target.
+ */
+.flash {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--ink) 9%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 45%, transparent);
+  opacity: 0;
+}
+
+/* A mini room's light at the start of its status line, while a counted change is under a minute old. */
+.miniLight {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 6px;
+  vertical-align: 1px;
+  background: var(--ink);
+}
+
+.sessionLine[data-in='panel'] {
+  height: auto;
+  min-height: 24px;
+}
+
+.sessionState[data-tone='ink'] {
+  color: color-mix(in srgb, var(--line-ink, var(--work-unheld)) 80%, var(--color-text-primary));
+}
+
+.sessionState[data-tone='warning'] {
+  color: var(--color-status-warning);
+}
+
+.sessionState[data-tone='plain'] {
+  color: var(--color-text-secondary);
 }
