@@ -286,21 +286,20 @@ Assume it shipped and failed. The three likeliest reasons:
 1. What each session runs: memory, CPU and tools of its own command tree on its block, with a
    panel for a session. Next when criterion 8 says a block is thin; it adds a payload field and a
    record amending `43842310`.
-2. A room per session in the building, with its own Moru: next if the Owner question says so.
+2. A room per session in the building, with its own Moru: next if criterion 8's walk asks for it.
 3. A warning when two sessions of one tool share a folder: next when such a collision is reported;
    today it would warn all day, since the owner shares the main checkout on purpose.
 4. Sessions outside this repository: next when the owner asks where the other sessions are.
 5. What a session changed, from the tool's own record: with the destination spec's slice 2.
 6. By session as the default: next when it has been the owner's stored choice for a week.
 
-## Owner question
+## Owner question, answered
 
-In By session, is a session a compact block of text, as this spec has it, or a room in the
-building with its own Moru and screen?
-
-A room matches the building the owner already reads. But a session has few facts of its own, so
-its screen would stand mostly empty or repeat a shared folder's files, and it needs a second stage
-layout and a cast per session. Until answered, the block holds; Later 2 is the other answer.
+In By session, is a session a compact block of text, or a room in the building with its own Moru
+and screen? On 2026-11-25 the owner left the choice to the lead ("decide it yourself, with the best
+design and feature design you can"), and the lead chose the block: a session has few facts of its
+own, so a room's screen would stand mostly empty or repeat a shared folder's files. Later 2 stays
+the other answer.
 
 ## Rules and records
 
@@ -318,3 +317,4 @@ layout and a cast per session. Until answered, the block holds; Later 2 is the o
 ## Revisions
 
 - 2026-11-25: first draft.
+- 2026-11-25: the owner left the block-or-room question to the lead; the block holds.
