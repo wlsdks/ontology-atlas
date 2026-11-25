@@ -1,4 +1,4 @@
-import type { AgentSessionState, AgentTool, LockTool, WorkStatusSnapshot, WorktreeActivity, WorktreeRow, WorktreeStanding } from './tauri-work-status';
+import type { AgentSessionRow, AgentSessionState, AgentTool, LockTool, WorkStatusSnapshot, WorktreeActivity, WorktreeRow, WorktreeStanding } from './tauri-work-status';
 
 /** Who holds a worktree, as far as Git, the pids its lock names and the agent programs running in it can say. */
 export type TrackHolder =
@@ -34,8 +34,10 @@ export interface Track {
   lockedAt: number | null;
   /** Its newest commit subjects and uncommitted files, once read (`withActivity`). */
   activity: WorktreeActivity | null;
-  /** What the Claude Code session standing in the folder says of itself, once read (`withAgentSessions`). */
+  /** What the strongest Claude Code session standing in the folder says of itself, once read (`withAgentSessions`). */
   agentState: AgentSessionState | null;
+  /** Every Claude Code session the list places in the folder, each with its own state and name. */
+  sessionsSaid: readonly AgentSessionRow[];
 }
 
 export type SessionTool = LockTool | AgentTool | 'acp';
@@ -44,6 +46,8 @@ export interface TrackSession {
   key: string;
   tool: SessionTool;
   startedAt: number | null;
+  /** The program's pid, which the session list names too; `null` when Atlas knows none. */
+  pid: number | null;
   /** 1 for the tool's oldest live session, 2 for its next: what tells two sessions of one tool apart. */
   ordinal: number;
   /** Index into the session ink ramp, by start order; `keepSessionIdentity` keeps it while the session lives. */
@@ -154,8 +158,11 @@ function toTrack(row: WorktreeRow, lockKeysByPid: ReadonlyMap<number, string>): 
     lockedAt: row.lock && row.lock.state !== 'stale' ? row.lock.lockedAt : null,
     activity: null,
     agentState: null,
+    sessionsSaid: NO_SESSIONS_SAID,
   };
 }
+
+const NO_SESSIONS_SAID: readonly AgentSessionRow[] = [];
 
 const byLockTime = (a: Track, b: Track) => lockTime(a) - lockTime(b) || a.key.localeCompare(b.key);
 const lockTime = (track: Track) => (track.holder.kind === 'subagent' ? track.holder.lockedAt ?? 0 : 0);
@@ -196,7 +203,7 @@ export function buildWorkTracks(snapshot: WorkStatusSnapshot): WorkTracks {
     for (const process of row.agentProcesses) {
       const key = processSessionKey(process, lockKeysByPid);
       if (!tracks[index].guestSessionKeys.includes(key) || sessionsByKey.has(key)) continue;
-      sessionsByKey.set(key, { key, tool: process.tool, startedAt: process.startedAt, ordinal: 0, ink: 0, tracks: [] });
+      sessionsByKey.set(key, { key, tool: process.tool, startedAt: process.startedAt, pid: process.pid, ordinal: 0, ink: 0, tracks: [] });
     }
   });
   const sessionsPerTool = new Map<SessionTool, number>();
@@ -282,11 +289,11 @@ export function keepSessionIdentity(
 
 const isProcessOnly = (session: TrackSession) => session.key.startsWith(PROCESS_SESSION_PREFIX);
 
-function sessionOrigin(row: WorktreeRow): { tool: SessionTool; startedAt: number | null } {
-  if (row.lock?.state === 'live') return { tool: row.lock.tool, startedAt: row.lock.sessionStartedAt };
-  if (row.acpPid !== null) return { tool: 'acp', startedAt: null };
+function sessionOrigin(row: WorktreeRow): { tool: SessionTool; startedAt: number | null; pid: number | null } {
+  if (row.lock?.state === 'live') return { tool: row.lock.tool, startedAt: row.lock.sessionStartedAt, pid: row.lock.pid };
+  if (row.acpPid !== null) return { tool: 'acp', startedAt: null, pid: row.acpPid };
   const process = row.agentProcesses[0];
-  return process ? { tool: process.tool, startedAt: process.startedAt } : { tool: 'acp', startedAt: null };
+  return process ? { tool: process.tool, startedAt: process.startedAt, pid: process.pid } : { tool: 'acp', startedAt: null, pid: null };
 }
 
 /**

@@ -49,6 +49,9 @@ serde_json = "1"
 sha2 = { version = "0.11.1", default-features = false }
 chrono = { version = "0.4", default-features = false, features = ["std", "now"] }
 notify-debouncer-full = "0.3"
+# Already in the graph (1.13.2, through tokenizers and tauri-utils): no new crate. Work status cuts a
+# session's name at 60 user-perceived characters, as the page counts them, never inside one.
+unicode-segmentation = "1"
 futures-util = "0.3"
 tokio = { version = "1.53.3", features = ["io-util", "process", "rt", "sync", "time"] }
 tauri-plugin-updater = { version = "2.10.1", default-features = false, features = ["rustls-tls"] }

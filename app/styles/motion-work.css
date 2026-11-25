@@ -266,6 +266,24 @@
     animation: motionRowOut var(--motion-settle) var(--motion-ease-exit) forwards;
   }
 
+  /* Work status: a room's light flashes once for an answer that carries a newly counted file
+     change. One shot, opacity only; the element mounts per flash, so no frame runs between them. */
+  @keyframes motionRoomFlash {
+    0% {
+      opacity: 0;
+    }
+    15% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+
+  .motion-room-flash {
+    animation: motionRoomFlash var(--motion-choreography) var(--motion-ease) both;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .motion-writing-dot::after,
     .motion-sheet-scan {
@@ -299,7 +317,8 @@
       opacity: 0.6;
     }
 
-    .motion-run-pulse {
+    .motion-run-pulse,
+    .motion-room-flash {
       animation: none !important;
       opacity: 0 !important;
     }

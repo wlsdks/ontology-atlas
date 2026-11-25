@@ -13,6 +13,7 @@ import { mountWhenFree } from '../model/face-mount-queue';
 import { clockTime } from '../model/format';
 import { MERGE_LIGHTS_OUT_MS, createMoruClock } from '../model/moru-clock';
 import { retireeOf, roomAlertOf, roomLook, withRetirees, type Retiree } from '../model/room-look';
+import { roomLiveOf, type BuildingLive, type RoomLive } from '../model/room-live';
 import { FADE_MS, MOVE_MS } from '../model/room-sequence';
 import { FACE_KEPT_EVENT, FACE_LEFT_EVENT, exitRoom, translate, useRoomMotion } from '../model/use-room-motion';
 import { useStableOrder } from '../model/use-stable-order';
@@ -102,11 +103,11 @@ function screenLists(room: RoomEntry): ScreenLists {
   return { commits: activity?.onBase ? Math.min(commits, BASE_SCREEN_COMMITS) : commits, files: activity?.files.length ?? 0, areas: changedAreas(activity?.files ?? []).length };
 }
 
-function RoomFace({ room, face, copy, retiring, showOwner, alone, character }: { room: RoomEntry; face: FaceSize; copy: RoomCopy; retiring: boolean; showOwner: boolean; alone: boolean; character: MoruCharacter }) {
-  if (face.size !== 'large') return <MiniRoom room={room} copy={copy} tint={tintOf(room.session)} showOwner={showOwner} character={character} />;
+function RoomFace({ room, live, face, copy, retiring, showOwner, alone, character }: { room: RoomEntry; live: RoomLive; face: FaceSize; copy: RoomCopy; retiring: boolean; showOwner: boolean; alone: boolean; character: MoruCharacter }) {
+  if (face.size !== 'large') return <MiniRoom room={room} live={live} copy={copy} tint={tintOf(room.session)} showOwner={showOwner} character={character} />;
   const lists = screenLists(room);
   const areas = listsAreas(face.w, lists, alone);
-  return <LargeRoom room={room} unit={face.unit} rows={screenRows(face)} pairScale={pairUnit(face.w, face.unit) / face.unit} fileColumns={fileColumns(face.w, lists.commits > 0, areas)} areas={areas} wallFacts={showsWallFacts(face.w)} copy={copy} tint={tintOf(room.session)} guestTint={tintOf(room.guests[0] ?? null)} retiring={retiring} entered={face.entered} faceId={face.id} character={character} />;
+  return <LargeRoom room={room} live={live} unit={face.unit} rows={screenRows(face)} pairScale={pairUnit(face.w, face.unit) / face.unit} fileColumns={fileColumns(face.w, lists.commits > 0, areas)} areas={areas} wallFacts={showsWallFacts(face.w)} copy={copy} tint={tintOf(room.session)} guestTint={tintOf(room.guests[0] ?? null)} retiring={retiring} entered={face.entered} faceId={face.id} character={character} />;
 }
 
 /** A merged room fades its content to its own wall, then the wall fades, in the last moments of its stay. */
@@ -114,6 +115,8 @@ const RETIRE_FADE_MS = FADE_MS;
 
 interface RoomProps {
   room: RoomEntry;
+  /** What the session list, the file-change pulse and load say of the room. */
+  live: RoomLive;
   box: RoomBox;
   copy: RoomCopy;
   retiring: boolean;
@@ -145,7 +148,8 @@ const sameBox = (a: RoomBox, b: RoomBox) => a.x === b.x && a.y === b.y && a.w ==
 function sameRoomProps(a: RoomProps, b: RoomProps) {
   return a.copy === b.copy && a.retiring === b.retiring && a.showOwner === b.showOwner && a.alone === b.alone && a.reduced === b.reduced && a.entered === b.entered
     && a.windowKey === b.windowKey && a.ghost === b.ghost && a.character === b.character && a.pressed === b.pressed && a.onPress === b.onPress && sameBox(a.box, b.box)
-    && (a.room === b.room || JSON.stringify(a.room) === JSON.stringify(b.room));
+    && (a.room === b.room || JSON.stringify(a.room) === JSON.stringify(b.room))
+    && (a.live === b.live || JSON.stringify(a.live) === JSON.stringify(b.live));
 }
 
 const Room = memo(DrawnRoom, sameRoomProps);
@@ -156,7 +160,7 @@ const Room = memo(DrawnRoom, sameRoomProps);
  * (`useRoomMotion` plays that); the new face is drawn hidden and fades in once the room has arrived,
  * so a room never shows two faces. When the window itself resizes, the face takes the new size at once.
  */
-function DrawnRoom({ room, box, copy, retiring, showOwner, alone, reduced, windowKey, entered, ghost, character, pressed = false, onPress, panelId }: RoomProps) {
+function DrawnRoom({ room, live, box, copy, retiring, showOwner, alone, reduced, windowKey, entered, ghost, character, pressed = false, onPress, panelId }: RoomProps) {
   const t = useTranslations('workStatus');
   const ghostFrom = ghost?.from;
   const onGhostDone = ghost?.onDone;
@@ -215,6 +219,8 @@ function DrawnRoom({ room, box, copy, retiring, showOwner, alone, reduced, windo
     return () => fades.forEach(fade => fade.cancel());
   }, [retiring, reduced]);
 
+  // A room's light flashes for changes counted while it is drawn, never for the count it was drawn with.
+  const [flashFrom] = useState(live.flash);
   const look = roomLook(room.state);
   const style = {
     transform: translate(ghost?.from ?? box),
@@ -236,6 +242,7 @@ function DrawnRoom({ room, box, copy, retiring, showOwner, alone, reduced, windo
       data-room-alert={ghost ? undefined : roomAlertOf(room.state) ?? undefined}
       data-room-pressed={pressed || undefined}
       data-session={ghost ? undefined : room.session?.key}
+      data-room-flashes={ghost ? undefined : live.flash}
       aria-hidden={ghost ? true : undefined}
       inert={ghost ? true : undefined}
       className={cn(styles.room, ghost && 'pointer-events-none')}
@@ -261,12 +268,15 @@ function DrawnRoom({ room, box, copy, retiring, showOwner, alone, reduced, windo
           className={cn(styles.face, styles.notched)}
           style={{ width: faces.leaving.w, height: faces.leaving.h }}
         >
-          <RoomFace room={faces.leaving.room} face={faces.leaving} copy={copy} retiring={retiring} showOwner={showOwner} alone={alone} character={character} />
+          <RoomFace room={faces.leaving.room} live={live} face={faces.leaving} copy={copy} retiring={retiring} showOwner={showOwner} alone={alone} character={character} />
         </div>
       ) : null}
       <div key={`face-${current.id}`} data-room-face data-spread={current.size === 'mini' && current.w >= SPREAD_MINI_W} data-unit={current.unit} className={cn(styles.face, styles.notched, 'h-full w-full')}>
-        {faces.ready ? <RoomFace room={room} face={current} copy={copy} retiring={retiring} showOwner={showOwner} alone={alone} character={character} /> : null}
+        {faces.ready ? <RoomFace room={room} live={live} face={current} copy={copy} retiring={retiring} showOwner={showOwner} alone={alone} character={character} /> : null}
       </div>
+      {!ghost && live.flash > flashFrom ? (
+        <i key={`flash-${live.flash}`} aria-hidden data-testid="work-room-flash" className={cn(styles.flash, 'motion-room-flash')} />
+      ) : null}
       {onPress && !ghost ? (
         <button
           type="button"
@@ -295,8 +305,10 @@ function Placed({ box, children, className, testId, id }: { box: Box; children: 
   );
 }
 
-function FloorPlate({ session, total, waiting, attention, onStage, below, copy, nowMs }: {
+function FloorPlate({ session, name, total, waiting, attention, onStage, below, copy, nowMs }: {
   session: TrackSession | null;
+  /** The name the session's tool gives it, drawn before its tool and number. */
+  name: string | null;
   total: number;
   waiting: number;
   attention: number;
@@ -322,7 +334,12 @@ function FloorPlate({ session, total, waiting, attention, onStage, below, copy, 
     <div className={cn(styles.floorPlate, 'h-full w-full')} data-floor-plate data-session={session?.key} style={{ ['--ink' as string]: inkOf(session) }}>
       <div className={cn(styles.inkText, 'truncate text-body leading-body font-[var(--font-weight-emphasis)]')}>
         <span aria-hidden className={styles.floorMark} />
-        {copy.sessionName(session) ?? t('session.none')}
+        {name ? (
+          <>
+            {name}
+            <span className="font-normal text-[color:var(--color-text-tertiary)]">{` ${copy.sessionName(session)}`}</span>
+          </>
+        ) : copy.sessionName(session) ?? t('session.none')}
       </div>
       <div className="truncate text-label leading-label text-[color:var(--color-text-quaternary)]">{facts}</div>
       <div className="mt-0.5 truncate text-label leading-label font-[var(--font-weight-emphasis)] text-[color:var(--color-text-tertiary)]">
@@ -480,8 +497,10 @@ function emphasise(board: HTMLElement | null, event: ReactPointerEvent<HTMLEleme
  * where each room was drawn, and nothing reads the DOM to lay them out. Pressing a room opens the
  * room panel beside the building.
  */
-export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs, root, landed }: {
+export function WorkBuilding({ tracks, live, seenRunningAt, baseBranch, nowMs, root, landed }: {
   tracks: WorkTracks;
+  /** What the session list, the file-change pulse and load say beside Git. */
+  live: BuildingLive;
   seenRunningAt: ReadonlyMap<string, number>;
   baseBranch: string;
   nowMs: number;
@@ -549,6 +568,8 @@ export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs, root, l
   useAmbientMotion(boardRef, layout.rooms, reduced);
 
   const entries = useMemo(() => allRooms(shown).map(({ room }) => room), [shown]);
+  const lives = useMemo(() => new Map(entries.map(room => [room.key, roomLiveOf(room, live)])), [entries, live]);
+  const liveOf = (room: RoomEntry) => lives.get(room.key) ?? roomLiveOf(room, live);
   const characterOf = useRoomCast(entries);
   useLayoutEffect(() => {
     lastDrawn.current = new Map(entries.flatMap(room => {
@@ -625,6 +646,7 @@ export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs, root, l
                 <Placed key={`floor:${floor.key}`} box={plate} testId="work-floor">
                   <FloorPlate
                     session={floor.session}
+                    name={floor.session?.pid != null ? live.namesByPid.get(floor.session.pid) ?? null : null}
                     total={floor.total}
                     waiting={floor.waiting}
                     attention={floor.attention}
@@ -646,12 +668,12 @@ export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs, root, l
               </Placed>
             ) : null}
             {ghosts.map(ghost => (
-              <Room key={`ghost:${ghost.room.key}`} room={ghost.room} box={ghost.box} copy={copy} retiring={ghost.retiring} showOwner={!layout.banded} alone={false} reduced={reduced} windowKey={windowKey} entered={false} ghost={{ from: ghost.from, onDone: forgetGhost }} character={ghost.character} />
+              <Room key={`ghost:${ghost.room.key}`} room={ghost.room} live={liveOf(ghost.room)} box={ghost.box} copy={copy} retiring={ghost.retiring} showOwner={!layout.banded} alone={false} reduced={reduced} windowKey={windowKey} entered={false} ghost={{ from: ghost.from, onDone: forgetGhost }} character={ghost.character} />
             ))}
             {drawnRooms.map(room => {
               const box = layout.rooms.get(room.key);
               return box ? (
-                <Room key={room.key} room={room} box={box} copy={copy} retiring={retiring.has(room.key)} showOwner={!layout.banded} alone={alone} reduced={reduced} windowKey={windowKey} entered={firstDrawn !== null && !firstDrawn.has(room.key)} character={characterOf(room)} pressed={pressedRoom?.key === room.key} onPress={pressRoom} panelId={panelId} />
+                <Room key={room.key} room={room} live={liveOf(room)} box={box} copy={copy} retiring={retiring.has(room.key)} showOwner={!layout.banded} alone={alone} reduced={reduced} windowKey={windowKey} entered={firstDrawn !== null && !firstDrawn.has(room.key)} character={characterOf(room)} pressed={pressedRoom?.key === room.key} onPress={pressRoom} panelId={panelId} />
               ) : null;
             })}
             {layout.shelf ? (
@@ -664,7 +686,7 @@ export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs, root, l
       </div>
       <LandedLog read={landed} baseBranch={baseBranch} nowMs={nowMs} selectedHash={selectedLanded?.hash ?? null} onSelect={selectLanded} panelId={landedPanelId} />
     </div>
-    <RoomPanel room={pressedRoom} copy={copy} id={panelId} onClose={closePanel} replaced={selectedLanded !== null} />
+    <RoomPanel room={pressedRoom} live={live} tracks={tracks} copy={copy} id={panelId} onClose={closePanel} replaced={selectedLanded !== null} />
     <LandedPanel change={selectedLanded} root={root} nowMs={nowMs} id={landedPanelId} onClose={closeLanded} replaced={pressedRoom !== null} />
     </div>
   );

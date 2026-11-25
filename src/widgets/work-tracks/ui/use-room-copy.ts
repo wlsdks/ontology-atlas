@@ -3,8 +3,14 @@
 import { useMemo } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { folderName, type RoomEntry, type SessionTool, type Track, type TrackSession } from '@/shared/lib/work-status/work-tracks';
+import { formatSize } from '@/shared/lib/format-size';
+import { showsLoadFact } from '@/shared/lib/work-status/signals/load';
+import { PULSE_HOUR_MS, changesWithoutAgent, type PulseFacts, type TickHeight } from '@/shared/lib/work-status/signals/pulse';
+import type { SessionLine } from '@/shared/lib/work-status/signals/session-lines';
+import type { LoadGroup, WorktreeLoad } from '@/shared/lib/work-status/tauri-work-status';
 import { changedAreas } from '../model/changed-areas';
 import { clockTime, timeAgo } from '../model/format';
+import { screenSessionLines, type RoomLive } from '../model/room-live';
 
 const MINUTE_MS = 60_000;
 const HOUR_MS = 60 * MINUTE_MS;
@@ -69,6 +75,30 @@ export interface ScreenBeat {
   age: number;
 }
 
+/** A counted file change's step on the last-hour line, under the marks: its age as a share of the hour, and its height. */
+export interface ScreenTick {
+  key: string;
+  age: number;
+  height: TickHeight;
+}
+
+/** Who the bezel names: one session's name with its tool and number beside it, how many sessions, or the folder's holder. */
+export interface BezelWho {
+  main: string;
+  /** `{tool} {number}` beside a session's own name, in muted ink. */
+  tag: string | null;
+}
+
+/** One session line, in words: its name or tool and number, its state, and since when. */
+export interface SessionLineCopy {
+  key: string;
+  ink: number | null;
+  main: string;
+  tag: string | null;
+  state: { text: string; tone: StatusTone } | null;
+  since: string | null;
+}
+
 /** What a large room's screen and its bezel say. */
 export interface MonitorCopy {
   branch: string;
@@ -91,6 +121,20 @@ export interface MonitorCopy {
   areasTitle: string;
   /** The changes of the last hour, in no order. */
   beats: ScreenBeat[];
+  /** The ten-second steps of the last hour with a counted file change. */
+  ticks: ScreenTick[];
+  /** What the last-hour line says to a screen reader. */
+  hourLabel: string;
+  /** `pulse.lastMinute` on the wall facts, while a change is under a minute old. */
+  lastMinute: string | null;
+  /** `load.fact` on the wall facts of a room that holds 1 GB or one core. */
+  loadFact: string | null;
+  /** Who the bezel names; `null` when no session holds the folder. */
+  bezel: BezelWho | null;
+  /** Two or more sessions: up to three lines under the branch, waiting first. */
+  sessionLines: SessionLineCopy[];
+  /** `sessionLine.more` after them. */
+  moreSessions: string | null;
   /** In place of commits when there are none to list: no commits beyond the base, or the prune command. */
   note: string | null;
   lastLine: LastLine | null;
@@ -157,9 +201,73 @@ function roomCopy(t: ReturnType<typeof useTranslations<'workStatus'>>, locale: s
   const isJustNow = (at: number) => nowMs / 1000 - at < JUST_NOW_S;
   const agoOf = (at: number | null) => (at === null ? null : isJustNow(at) ? t('monitor.justNow') : timeAgo(at, nowMs, locale));
   /** When the worktree last changed, as far as the reads tell: its newest commit, or an uncommitted file written after it. */
-  const lastChange = (track: Track) => {
-    const at = Math.max(track.lastCommitAt ?? 0, track.activity?.commits?.[0]?.at ?? 0, ...(track.activity?.files ?? []).map(file => file.changedAt ?? 0));
+  const lastChange = (track: Track, pulse: PulseFacts | null) => {
+    if (pulse?.changedJustNow) return t('monitor.lastChangeNow');
+    const counted = pulse?.lastChangeAtMs ? Math.floor(pulse.lastChangeAtMs / 1000) : 0;
+    const at = Math.max(counted, track.lastCommitAt ?? 0, track.activity?.commits?.[0]?.at ?? 0, ...(track.activity?.files ?? []).map(file => file.changedAt ?? 0));
     return at <= 0 ? null : isJustNow(at) ? t('monitor.lastChangeNow') : t('monitor.lastChange', { ago: timeAgo(at, nowMs, locale) });
+  };
+  const ticks = (live: RoomLive | null): ScreenTick[] => {
+    return (live?.pulse?.ticks ?? []).map(tick => ({
+      key: `step:${tick.atMs}`,
+      age: Math.round(Math.min(1, Math.max(0, (nowMs - tick.atMs) / PULSE_HOUR_MS)) * 1000) / 1000,
+      height: tick.height,
+    }));
+  };
+  const coresFormat = new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const memory = (bytes: number) => formatSize(bytes, locale);
+  const cores = (count: number | null) => (count === null ? '–' : coresFormat.format(count));
+  const loadFact = (load: WorktreeLoad | undefined) =>
+    load && showsLoadFact(load) ? t('load.fact', { memory: memory(load.memoryBytes), cores: cores(load.cpuCores) }) : null;
+  const loadTool = (group: LoadGroup) => t(`load.tool.${group.tool}`);
+  const groupLine = (group: LoadGroup) => t('load.groupLine', { tool: loadTool(group), count: group.count, memory: memory(group.memoryBytes), cores: cores(group.cpuCores) });
+
+  /** A session's tool and number, or the tool alone when Atlas holds no session for it. */
+  const sessionTag = (line: SessionLine) =>
+    line.tool === 'acp' || line.ordinal === null ? toolName(line.tool) : t('session.name', { tool: toolName(line.tool), number: line.ordinal });
+  const lineState = (line: SessionLine): SessionLineCopy['state'] => {
+    switch (line.state) {
+      case 'waitingApproval':
+        return { text: t('room.waitingApproval'), tone: 'warning' };
+      case 'waitingAnswer':
+        return { text: t('room.waitingAnswer'), tone: 'warning' };
+      case 'failed':
+        return { text: t('room.sessionFailed'), tone: 'warning' };
+      case 'working':
+        return { text: t('room.working'), tone: 'ink' };
+      case 'replied':
+        return { text: t('room.replied'), tone: 'plain' };
+      case 'workingHere':
+        return { text: t('sessionLine.workingHere'), tone: 'plain' };
+      case null:
+        return null;
+    }
+  };
+  /** Since when the session says what it says: "for 12 min" from the read that saw it change, or its start. */
+  const lineSince = (line: SessionLine) => {
+    const since = line.since;
+    if (!since || since.sinceMs === null) return null;
+    if (since.sinceStart) return t('session.started', { time: clockTime(since.sinceMs, nowMs, locale) });
+    const minutes = Math.max(1, Math.floor((nowMs - since.sinceMs) / MINUTE_MS));
+    return minutes < 60 ? t('sessionLine.forMinutes', { count: minutes }) : t('sessionLine.forHours', { count: Math.floor(minutes / 60) });
+  };
+  const sessionLine = (line: SessionLine): SessionLineCopy => ({
+    key: line.key,
+    ink: line.ink,
+    main: line.name ?? sessionTag(line),
+    tag: line.name ? sessionTag(line) : null,
+    state: lineState(line),
+    since: lineSince(line),
+  });
+  /** Who the bezel and a mini room name: the one session by its name, or how many share the folder. */
+  const bezelWho = (room: RoomEntry, lines: readonly SessionLine[]): BezelWho | null => {
+    if (lines.length >= 2) return { main: t('room.sessions', { count: lines.length }), tag: null };
+    if (lines.length === 1) {
+      const line = sessionLine(lines[0]);
+      return { main: line.main, tag: line.tag };
+    }
+    const who = monitorWho(room);
+    return who ? { main: who, tag: null } : null;
   };
   const beats = (track: Track): ScreenBeat[] => {
     const age = (at: number | null) => (at === null ? null : (nowMs / 1000 - at) / BEAT_WINDOW_S);
@@ -215,11 +323,15 @@ function roomCopy(t: ReturnType<typeof useTranslations<'workStatus'>>, locale: s
   const lastCommit = (track: Track) => (track.lastCommitAt === null ? null : t('room.lastCommit', { ago: timeAgo(track.lastCommitAt, nowMs, locale) }));
 
   /** Who a room belongs to, under a mini room's status when there is room for it. */
-  const owner = (room: RoomEntry) =>
-    sessionName(room.session) ?? (room.state.kind === 'lockLeft' ? t('session.ended') : t('session.none'));
+  const owner = (room: RoomEntry, lines: readonly SessionLine[] = []): BezelWho =>
+    bezelWho(room, lines) ?? { main: room.state.kind === 'lockLeft' ? t('session.ended') : t('session.none'), tag: null };
+  const noAgent = (room: RoomEntry, live: RoomLive | null): StatusLine | null =>
+    live?.pulse && changesWithoutAgent(live.pulse, room.track.running) ? { lead: t('pulse.noAgent'), tone: 'plain', rest: null } : null;
 
-  function status(room: RoomEntry): StatusLine {
+  function status(room: RoomEntry, live: RoomLive | null = null): StatusLine {
     const { state, track } = room;
+    const unattended = noAgent(room, live);
+    if (unattended) return unattended;
     switch (state.kind) {
       case 'waiting':
         return { lead: t(state.on === 'approval' ? 'room.waitingApproval' : 'room.waitingAnswer'), tone: 'warning', rest: commits(track) };
@@ -251,15 +363,18 @@ function roomCopy(t: ReturnType<typeof useTranslations<'workStatus'>>, locale: s
   }
 
   /** The bezel's state: its few words and, for a working room, when its worktree last changed; else how long, or since when. */
-  function bezelState(room: RoomEntry): StatusLine {
+  function bezelState(room: RoomEntry, live: RoomLive | null): StatusLine {
     const { state, track } = room;
+    const unattended = noAgent(room, live);
+    if (unattended) return unattended;
+    const pulse = live?.pulse ?? null;
     switch (state.kind) {
       case 'waiting':
       case 'sessionFailed':
       case 'replied':
-        return { ...status(room), rest: lastChange(track) ?? workedFor(room.session) };
+        return { ...status(room), rest: lastChange(track, pulse) ?? workedFor(room.session) };
       case 'working':
-        return { lead: t(state.tools.length > 1 ? 'room.twoTools' : 'room.working'), tone: state.tools.length > 1 ? 'warning' : 'ink', rest: lastChange(track) ?? workedFor(room.session) };
+        return { lead: t(state.tools.length > 1 ? 'room.twoTools' : 'room.working'), tone: state.tools.length > 1 ? 'warning' : 'ink', rest: lastChange(track, pulse) ?? workedFor(room.session) };
       case 'resting':
         return { lead: t('room.resting'), tone: 'plain', rest: lastCommit(track) };
       case 'dozing':
@@ -275,11 +390,18 @@ function roomCopy(t: ReturnType<typeof useTranslations<'workStatus'>>, locale: s
     }
   }
 
-  function monitor(room: RoomEntry): MonitorCopy {
-    const { state, track } = room;
+  function monitorWho(room: RoomEntry): string | null {
     const others = room.guests.map(guest => sessionName(guest)).filter((name): name is string => name !== null);
-    const who = [sessionName(room.session), ...others].filter((name): name is string => name !== null).join(' · ') || null;
-    const listed = track.activity?.onBase ? screenCommits(track).slice(0, BASE_SCREEN_COMMITS) : screenCommits(track);
+    return [sessionName(room.session), ...others].filter((name): name is string => name !== null).join(' · ') || null;
+  }
+
+  function monitor(room: RoomEntry, live: RoomLive | null = null): MonitorCopy {
+    const { state, track } = room;
+    const who = monitorWho(room);
+    const pulse = live?.pulse ?? null;
+    const lines = live?.lines ?? [];
+    const onScreen = screenSessionLines(lines);
+    const listed =track.activity?.onBase ? screenCommits(track).slice(0, BASE_SCREEN_COMMITS) : screenCommits(track);
     const notInBase = state.kind === 'lockLeft' && track.ahead ? t('room.notInBase', { count: track.ahead, branch: baseBranch }) : null;
     const files = uncommitted(track);
     const commitsTitle = listed.length === 0
@@ -304,7 +426,7 @@ function roomCopy(t: ReturnType<typeof useTranslations<'workStatus'>>, locale: s
     return {
       branch: track.branch ?? track.title,
       who,
-      state: bezelState(room),
+      state: bezelState(room, live),
       worked: state.kind === 'working' || state.kind === 'waiting' ? workedFor(room.session) : null,
       commits: listed,
       commitsTitle,
@@ -313,11 +435,21 @@ function roomCopy(t: ReturnType<typeof useTranslations<'workStatus'>>, locale: s
       areas: state.kind === 'missing' ? [] : screenAreas(track),
       areasTitle: areasTitle(track),
       beats: state.kind === 'missing' ? [] : beats(track),
+      ticks: state.kind === 'missing' ? [] : ticks(live),
+      hourLabel: pulse ? t('pulse.lastHour', { count: pulse.lastHour }) : t('monitor.lastHourChanges', { count: beats(track).length }),
+      lastMinute: pulse && pulse.lastMinute > 0 ? t('pulse.lastMinute', { count: pulse.lastMinute }) : null,
+      loadFact: live?.loadStatus === 'read' ? loadFact(live.load) : null,
+      bezel: bezelWho(room, lines),
+      sessionLines: onScreen.lines.map(sessionLine),
+      moreSessions: onScreen.more > 0 ? t('sessionLine.more', { count: onScreen.more }) : null,
       note,
       lastLine,
       count: notInBase ? null : track.ahead && track.ahead > 0 ? t('room.commits', { count: track.ahead }) : null,
     };
   }
 
-  return { baseBranch, toolName, sessionName, owner, status, monitor, newestSubject, uncommitted, screenCommits };
+  return {
+    baseBranch, toolName, sessionName, owner, status, monitor, newestSubject, uncommitted, screenCommits,
+    sessionLine, bezelWho, memory, cores, loadTool, groupLine,
+  };
 }

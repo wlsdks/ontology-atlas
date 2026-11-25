@@ -6,6 +6,8 @@ use std::path::PathBuf;
 use serde::de::IgnoredAny;
 use serde::{Deserialize, Serialize};
 
+use super::name::SessionName;
+
 const KINDS: [&str; 2] = ["interactive", "background"];
 const STATUSES: [&str; 3] = ["busy", "waiting", "idle"];
 const WAITS: [&str; 5] = [
@@ -35,10 +37,12 @@ pub(crate) struct ListedSession {
     pub(crate) started_at_ms: i64,
     pub(crate) folder: PathBuf,
     pub(crate) state: SessionState,
+    /// Absent when the person switched names off, or the entry has no usable one.
+    pub(crate) name: Option<SessionName>,
 }
 
-/// One entry of the list. A field outside these makes the entry unknown; the session's name and
-/// ids are never read into a value, since a name can hold the person's own title text.
+/// One entry of the list. A field outside these makes the entry unknown. The ids are never read
+/// into a value; the name is read only while the person leaves names on.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Entry {
@@ -51,27 +55,28 @@ struct Entry {
     #[serde(rename = "waitingFor")]
     waiting_for: Option<String>,
     state: Option<String>,
-    #[serde(rename = "name", default)]
-    _name: IgnoredAny,
+    #[serde(default)]
+    name: Option<serde_json::Value>,
     #[serde(rename = "sessionId", default)]
     _session_id: IgnoredAny,
     #[serde(rename = "id", default)]
     _id: IgnoredAny,
 }
 
-/// The entries that are wholly understood; `None` when the text is not a JSON list. O(entries).
-pub(crate) fn parse_sessions(text: &str) -> Option<Vec<ListedSession>> {
+/// The entries that are wholly understood, with their names when `keep_names`; `None` when the
+/// text is not a JSON list. O(entries).
+pub(crate) fn parse_sessions(text: &str, keep_names: bool) -> Option<Vec<ListedSession>> {
     let entries: Vec<serde_json::Value> = serde_json::from_str(text).ok()?;
     Some(
         entries
             .into_iter()
             .filter_map(|entry| Entry::deserialize(entry).ok())
-            .filter_map(listed)
+            .filter_map(|entry| listed(entry, keep_names))
             .collect(),
     )
 }
 
-fn listed(entry: Entry) -> Option<ListedSession> {
+fn listed(entry: Entry, keep_names: bool) -> Option<ListedSession> {
     if !KINDS.contains(&entry.kind.as_deref()?) {
         return None;
     }
@@ -84,6 +89,10 @@ fn listed(entry: Entry) -> Option<ListedSession> {
             entry.waiting_for.as_deref(),
             entry.state.as_deref(),
         )?,
+        name: match (keep_names, entry.name) {
+            (true, Some(serde_json::Value::String(raw))) => SessionName::from_raw(&raw),
+            _ => None,
+        },
     })
 }
 

@@ -27,9 +27,9 @@
   },
   "sessions": {
     "chip": {
-      "on": "正在读取会话列表",
-      "off": "会话列表已关闭",
-      "unreadable": "无法读取会话列表"
+      "on": "Atlas 读取的内容 · 会话列表已开启",
+      "off": "Atlas 读取的内容 · 会话列表已关闭",
+      "unreadable": "Atlas 读取的内容 · 无法读取会话列表"
     },
     "title": "{tool} 会话列表",
     "switch": "读取 {tool} 会话列表",
@@ -52,6 +52,21 @@
       "failed": "{tool} 出错结束。",
       "unknownForm": "列表的格式 Atlas 不认识，可能是新版 {tool} 改了它。"
     }
+  },
+  "reads": {
+    "title": "工作状态在这台 Mac 上读取的内容"
+  },
+  "names": {
+    "switch": "显示会话名称",
+    "status": "房间会显示 {tool} 给每个会话起的名称，方便你找到它所在的终端或窗口。名称可能是 {tool} 根据你的对话写的标题。Atlas 把最后读到的名称保存在内存中，直到你关闭名称显示或会话列表，或退出应用；从不写入文件或日志，不发送到任何地方，也不交给代理。",
+    "off": "Atlas 不读取会话名称。房间用工具和编号来称呼会话，例如 {example}。",
+    "needsList": "会话名称来自会话列表，而会话列表已关闭。"
+  },
+  "sessionLine": {
+    "workingHere": "正在这里运行命令",
+    "forMinutes": "已 {count} 分钟",
+    "forHours": "已 {count} 小时",
+    "more": "另有 {count} 个会话"
   },
   "stage": {
     "label": "工作中的工作树"
@@ -76,7 +91,8 @@
     "commits": "{count} 个提交",
     "noCommits": "还没有提交",
     "onlyInGit": "只留在 Git 中",
-    "notInBase": "{count} 个提交不在 {branch} 中"
+    "notInBase": "{count} 个提交不在 {branch} 中",
+    "sessions": "{count} 个会话"
   },
   "monitor": {
     "lockedAt": "{time} 锁定",
@@ -98,6 +114,45 @@
     "rootFolder": "仓库根目录",
     "areaFiles": "{count} 个",
     "areasMore": "另有 {count} 处"
+  },
+  "pulse": {
+    "switch": "监视文件改动",
+    "status": "工作状态打开期间，每当这个仓库的工作树中有文件改动，macOS 都会通知 Atlas，Atlas 会统计改动次数。它不打开文件，也不保留文件名。.git 内的改动和 Git 忽略的文件的改动不计入。统计结果只在内存中保留一小时。",
+    "off": "Atlas 不监视文件改动。房间会在 Atlas 下次读取 Git 时显示改动，最多晚一分半钟。",
+    "lastMinute": "最近 1 分钟有 {count} 处文件改动",
+    "lastHour": "最近 1 小时有 {count} 处文件改动",
+    "onlyOpen": "Atlas 只在工作状态打开期间统计。",
+    "none": "最近 1 小时这里没有统计到文件改动。",
+    "noAgent": "这里有文件在改动，但 Atlas 在此文件夹中没有看到代理。",
+    "unwatched": "macOS 无法监视此文件夹，所以这个房间只在 Atlas 读取 Git 时显示改动。"
+  },
+  "load": {
+    "switch": "读取内存、CPU 和 GPU 使用情况",
+    "status": "工作状态打开期间，Atlas 每 5 秒读取一次每个代理及其启动的命令使用了多少内存和 CPU，在它们之外运行的 Java 程序（如 Gradle 守护进程）的内存和 CPU，以及这台 Mac 的内存、CPU 和 GPU 有多忙。它读取每个程序的名称，从不读取其命令行。不写入任何内容，也没有任何内容离开这台 Mac。",
+    "off": "Atlas 不读取内存、CPU 和 GPU 使用情况，所以房间和标题中都不会显示。",
+    "room": "内存 {memory} · CPU {cores} / {total} 核",
+    "fact": "{memory} · CPU {cores} 核",
+    "groupLine": "{tool} {count} 个 · {memory} · CPU {cores} 核",
+    "tool": {
+      "agent": "代理程序",
+      "node": "Node.js",
+      "rust": "Rust 构建",
+      "java": "Java 程序",
+      "gradleDaemon": "Gradle 守护进程",
+      "xcode": "Xcode 构建",
+      "python": "Python 程序",
+      "git": "Git",
+      "other": "其他程序"
+    },
+    "moreGroups": "另有 {count} 类",
+    "agentElsewhere": "{who} 本身计入它启动时所在的文件夹 {branch}。这个房间只统计它在这里运行的命令。",
+    "none": "这个房间没有正在运行的代理程序，所以没有负载可显示。",
+    "outside": "在所有房间之外运行：{list}",
+    "mac": "这台 Mac：内存 {used} / {total} · CPU {cores} / {coreCount} 核 · GPU {gpu}%",
+    "macNoGpu": "这台 Mac：内存 {used} / {total} · CPU {cores} / {coreCount} 核",
+    "gpuWhy": "macOS 只报告整台 Mac 的 GPU 使用情况。要知道是哪个程序在用，需要管理员权限，而 Atlas 不会请求这一权限。",
+    "gpuMissing": "这台 Mac 没有报告 GPU 使用情况。",
+    "failed": "Atlas 刚才无法从 macOS 读取负载，将在 5 秒后重试。这个房间的其他内容不受影响。"
   },
   "shelf": {
     "merged": "已合并到 {branch}",
@@ -129,7 +184,11 @@
     "waiting": "等你回复 {count}",
     "sameFolder": "同一文件夹 {count}",
     "cleanup": "待清理 {count}",
-    "pointTo": "显示是哪些工作树"
+    "pointTo": "显示是哪些工作树",
+    "memory": "内存不足",
+    "cpu": "CPU 已满",
+    "gpu": "GPU 已满",
+    "pointToLoad": "显示用得最多的房间"
   },
   "git": {
     "uncommitted": "{count} 个文件未提交",
@@ -171,17 +230,20 @@
       "commits": "{branch} 之后的提交",
       "uncommitted": "未提交的文件"
     },
-    "quiet": "{branch} 之后没有提交，也没有未提交的文件。"
+    "quiet": "{branch} 之后没有提交，也没有未提交的文件。",
+    "sessionsTitle": "此文件夹中的会话",
+    "pulseTitle": "文件改动",
+    "loadTitle": "负载"
   },
   "about": {
     "label": "这个页面显示什么",
     "body": "一个房间就是一个工作树。工作树是这个仓库里用来处理一个分支的独立文件夹。房间的屏幕上显示分支、最近的提交，以及已修改但尚未提交的文件。有代理会话正在工作的房间会亮灯。按下房间可以查看其余内容。"
   },
   "landed": {
-    "title": "已进入 <code>{branch}</code> 的工作",
-    "note": "删除工作树后仍保留在这里，直接从 Git 记录读取。",
+    "title": "已合并到 <code>{branch}</code> 的工作",
+    "note": "一行就是一个已合并的拉取请求；没有拉取请求而直接推送的提交也算一行。Atlas 读取的是这台 Mac 上的分支副本，所以你还没拉取的改动不会列出。",
     "summary": "今天 {today} 个 · 最近 7 天 {week} 个",
-    "none": "还没有工作进入 {branch}。",
+    "none": "还没有工作合并到 {branch}。",
     "today": "今天",
     "yesterday": "昨天",
     "dayCount": "{count} 个",
@@ -197,18 +259,18 @@
       "test": "测试",
       "chore": "维护"
     },
-    "landedAt": "{ago} · {time} 进入",
+    "landedAt": "{ago} · {time} 合并",
     "stat": {
       "commits": "提交",
       "files": "文件",
       "added": "新增行",
       "removed": "删除行"
     },
-    "commitsTitle": "这项工作的提交",
+    "commitsTitle": "这项改动的提交",
     "filesTitle": "改动的文件",
-    "squashed": "它合并成一个提交进入，没有单独的提交可看。",
+    "squashed": "它以一个提交的形式合并，没有单独的提交可看。",
     "binary": "二进制",
-    "unreadable": "无法从 Git 读取这项工作的提交和文件。",
+    "unreadable": "无法从 Git 读取这项改动的提交和文件。关闭后重新打开即可重试。",
     "copyHash": "复制提交哈希"
   }
 }
