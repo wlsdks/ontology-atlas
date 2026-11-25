@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { TreeInputEdge, TreeInputNode } from "../containment-tree";
 import { hexRestCamera, type MapChrome } from "../../morph/hex-marks";
 import { computeHexBoard, HEX_MAX_RADIUS, HEX_MIN_RADIUS, type HexBoardLayout } from "./hex-board";
-import { clampHexCamera, focusShift, regionFitCamera, restCameraAboveFooter, routeFrameOf } from "./hex-camera";
+import { clampHexCamera, focusShift, regionFitCamera, restCameraAboveFooter, routeFrameOf, sameHexCamera } from "./hex-camera";
 
 function board(): HexBoardLayout {
   const nodes: TreeInputNode[] = [
@@ -58,6 +58,22 @@ describe("restCameraAboveFooter", () => {
     const rest = restCameraAboveFooter(layout, room, lowestY - 20, 0);
     expect(rest.oy).toBeLessThan(predicted.oy);
     expect(rest.oy + layout.bounds.maxY * rest.R).toBeLessThanOrEqual(lowestY - 20 - 8 + 1e-6);
+  });
+});
+
+describe("sameHexCamera", () => {
+  it("finds no new rest when the footer moves without reaching the lowest tiles, and one when it lifts them", () => {
+    const predicted = hexRestCamera(layout, room);
+    const lowestY = predicted.oy + layout.bounds.maxY * predicted.R;
+    const before = restCameraAboveFooter(layout, room, lowestY + 40, 0);
+    expect(sameHexCamera(before, restCameraAboveFooter(layout, room, lowestY + 44, 0))).toBe(true);
+    expect(sameHexCamera(before, restCameraAboveFooter(layout, room, lowestY - 20, 0))).toBe(false);
+  });
+
+  it("tells a camera the reader zoomed or panned from the rest", () => {
+    const rest = hexRestCamera(layout, room);
+    expect(sameHexCamera(rest, { ...rest, R: rest.R * 1.5 })).toBe(false);
+    expect(sameHexCamera(rest, { ...rest, ox: rest.ox + 4 })).toBe(false);
   });
 });
 

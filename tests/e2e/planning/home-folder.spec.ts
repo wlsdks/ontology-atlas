@@ -18,7 +18,8 @@ async function openVault(page: Page, files: Record<string, string> = VAULT) {
   await stubDirectoryPicker(page, files);
   await page.goto('/en/library/');
   await page.getByTestId('library-open-vault').click();
-  await expect(page.getByTestId('library-page')).toBeVisible();
+  // The no-folder stage is a `library-page` too; any other one has the picked folder open, so the folder exists on disk.
+  await expect(page.locator('[data-testid="library-page"]:not([data-library-state="no-folder"])')).toBeVisible();
 }
 
 /** Reads, writes or removes one entry of the folder the stubbed picker handed out, in the browser's private storage. */
@@ -183,7 +184,7 @@ test('a save over a file changed elsewhere is refused and keeps the text', async
 
 test('a document that is not UTF-8 offers no Edit and says why', async ({ page }) => {
   await openVault(page, { ...VAULT, 'planning/a.md': '# A\n' });
-  await onDisk(page, 'planning/legacy.md', { write: [0x23, 0x20, 0xb0, 0xe1, 0x0a] });
+  expect(await onDisk(page, 'planning/legacy.md', { write: [0x23, 0x20, 0xb0, 0xe1, 0x0a] }), 'the document is written into the open folder').not.toBeNull();
   await goTo(page, 'Planning');
   await page.getByRole('button', { name: 'legacy.md' }).click();
   await expect(page.getByText(planning.notEditable)).toBeVisible();

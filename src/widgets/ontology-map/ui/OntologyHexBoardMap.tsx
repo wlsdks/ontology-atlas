@@ -32,7 +32,7 @@ import {
   type HexWalkDirection,
   hexGutter,
 } from "../model/board/hex-board";
-import { clampHexCamera, focusShift, regionFitCamera, restCameraAboveFooter, routeFrameOf, type RouteFrame } from "../model/board/hex-camera";
+import { clampHexCamera, focusShift, regionFitCamera, restCameraAboveFooter, routeFrameOf, sameHexCamera, type RouteFrame } from "../model/board/hex-camera";
 import { computeFocusPlan, planCanals, type FocusJob } from "../model/board/hex-focus-plan";
 import { pickFlatTile, placeHexTooltip } from "../model/board/hex-hover";
 import { useHexMeasure } from "../model/board/use-hex-measure";
@@ -608,7 +608,7 @@ export function OntologyHexBoardMap({
       if (!from) return;
       // Routes are laid for where the camera is going, so they do not re-route on arrival.
       frameRoutes(to);
-      if (Math.abs(from.ox - to.ox) < 0.5 && Math.abs(from.oy - to.oy) < 0.5 && Math.abs(from.R - to.R) < 0.01) return;
+      if (sameHexCamera(from, to)) return;
       zoomRef.current = null;
       if (reducedMotion) camRef.current = to;
       else animRef.current = { from, to, start: performance.now() };
@@ -618,19 +618,24 @@ export function OntologyHexBoardMap({
   );
 
   /*
-   * Rest camera: the board fitted to the room. A new room or board re-rests unless focused. A
+   * Rest camera: the board fitted to the room. A rest that moved re-rests the board unless focused. A
    * board already on screen travels there on the camera's own easing rather than cutting: the
    * room moves when INDEX folds or opens, and when a room first read under a selection is read
-   * again at rest.
+   * again at rest. A reading that leaves the rest in place, such as the legend resizing, keeps the
+   * reader's own zoom or pan.
    */
   useEffect(() => {
     const rest = restCamera();
     if (!rest) return;
+    const previousRest = restRef.current;
     restRef.current = rest;
     if (!camRef.current) {
       camRef.current = rest;
       frameRoutes(rest);
-    } else if (!selectedRef.current) moveCamera(rest);
+    } else if (!selectedRef.current) {
+      if (previousRest && sameHexCamera(previousRest, rest)) frameRoutes(animRef.current?.to ?? camRef.current);
+      else moveCamera(rest);
+    }
     requestDraw();
   }, [restCamera, requestDraw, frameRoutes, moveCamera]);
 
@@ -995,6 +1000,7 @@ export function OntologyHexBoardMap({
       data-hex-pips-from={HEX_BAND_PIPS}
       data-hex-r={drawnR ?? undefined}
       data-hex-room={room ? `${room.x},${room.y},${room.width},${room.height}` : undefined}
+      data-hex-footer-top={footerTop ?? undefined}
       data-hex-capabilities={layout?.capabilities.length ?? 0}
       data-hex-stale={evidenceMeasured ? staleTotal : undefined}
       data-hex-evidence={evidenceMeasured ? "measured" : "unknown"}
