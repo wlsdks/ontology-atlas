@@ -173,8 +173,15 @@ session, or how many, and **Two tools at work** in amber when their tools
 differ. Every row opens that folder's room panel, where its changes are shown
 once; closing it returns to the row. Under the blocks, **1 folder without a
 session** shows By folder. With no session at all, the board says **No agent
-session is working in** the repository. By session reads nothing By folder does
-not read, and draws no Moru, shelf, light, last-hour line or load.
+session is working in** the repository. By session draws no Moru, shelf, light
+or last-hour line. While load is on, a block's third line gives the memory and
+CPU of the session's own command tree, its program and every command it
+started wherever that runs (for a session Atlas started, the agent and its
+commands, not the adapter Atlas runs it through), with its two heaviest program groups besides the
+agent itself; it holds in a shared folder, since it counts no other session's
+processes. By session sends the pids of the sessions it shows with each load
+ask (By folder sends none); nothing else it reads differs. The figures come
+with the next sample, up to 5 seconds after By session is pressed.
 
 ### The reads panel
 
@@ -271,6 +278,14 @@ pressure for two samples, or CPU or GPU stays at 90 % or more for six (30
 seconds); pressing the memory or CPU words outlines the rooms using the most.
 A failed sample says so in the panel and raises no warning; a Mac that reports
 no GPU figure shows none.
+
+By session, the page also sends the pids of the sessions it shows, at most 64,
+and Rust credits each process it already measured to a session the page sent:
+an Atlas agent session when one is among its ancestors, else the nearest agent
+program among itself and its ancestors whose pid was sent, so a session started
+inside another keeps its own tree. Only a pid the page sent comes back. A session whose figure Rust did not
+give, such as one Atlas knows no pid for, shows no load line. Why:
+[the decision](../records/decisions/2026-11-25-work-status-session-load-635500f0-5355-46c2-a37f-93d4cac16afc.md).
 
 ## The building
 

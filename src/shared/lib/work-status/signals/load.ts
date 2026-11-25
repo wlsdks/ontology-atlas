@@ -1,4 +1,4 @@
-import type { LoadGroup, LoadRead, LoadTool, MacLoad, WorktreeLoad } from '../tauri-work-status';
+import type { LoadGroup, LoadRead, LoadTool, MacLoad, SessionLoad, WorktreeLoad } from '../tauri-work-status';
 
 /** Tool groups a room's panel lists before `load.moreGroups`. */
 export const LOAD_GROUPS_SHOWN = 5;
@@ -43,6 +43,28 @@ export function roomLoadOf(load: WorktreeLoad | undefined): RoomLoad | null {
     groups: groups.slice(0, LOAD_GROUPS_SHOWN),
     moreGroups: Math.max(0, groups.length - LOAD_GROUPS_SHOWN),
     agentsElsewhere: load.agentsElsewhere,
+  };
+}
+
+/** Program groups a session block names beside its figures, heaviest first. */
+export const SESSION_TOOLS_SHOWN = 2;
+
+/** What a session block says of its own command tree. */
+export interface SessionLoadFacts {
+  memoryBytes: number;
+  cpuCores: number | null;
+  /** The heaviest groups besides the agent program itself, which every session has. */
+  tools: LoadGroup[];
+}
+
+/** `null`: Atlas knows no pid for the session, or no process was credited to it. O(groups log groups). */
+export function sessionLoadOf(read: LoadRead | null, pid: number | null): SessionLoadFacts | null {
+  const load: SessionLoad | undefined = read && pid !== null ? read.sessions[String(pid)] : undefined;
+  if (!load) return null;
+  return {
+    memoryBytes: load.memoryBytes,
+    cpuCores: load.cpuCores,
+    tools: load.groups.filter(group => group.tool !== 'agent').sort(byWeight).slice(0, SESSION_TOOLS_SHOWN),
   };
 }
 

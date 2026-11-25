@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { NO_PRESSURE, nextPressure, type LoadPressure } from '@/shared/lib/work-status/signals/load';
 import { readLoad, setLoadRead, type LoadRead } from '@/shared/lib/work-status/tauri-work-status';
 
@@ -24,15 +24,21 @@ const NULLS_BEFORE_UNSUPPORTED = 3;
 const NOT_ASKED: WorktreeLoadState & { root: string | null } = { root: null, status: 'pending', sample: null, pressure: NO_PRESSURE };
 const OFF: WorktreeLoadState = { status: 'off', sample: null, pressure: NO_PRESSURE };
 const PENDING: WorktreeLoadState = { status: 'pending', sample: null, pressure: NO_PRESSURE };
+const NO_PIDS: readonly number[] = [];
 
 /**
- * Memory, CPU and GPU use for each room and this Mac, sampled while the screen is visible and load
- * is on; one sample at a time, the next five seconds after the last answer. Hidden, closed or
- * switched off, Rust is told and drops its previous sample, so the first sample after carries no CPU
- * figure. An answer that lands after that is dropped.
+ * Memory, CPU and GPU use for each room, each session in `sessionPids` and this Mac, sampled while
+ * the screen is visible and load is on; one sample at a time, the next five seconds after the last
+ * answer. Hidden, closed or switched off, Rust is told and drops its previous sample, so the first
+ * sample after carries no CPU figure. An answer that lands after that is dropped. A new set of
+ * pids rides the next ask and starts no sample of its own.
  */
-export function useWorktreeLoad(root: string | null, enabled: boolean): WorktreeLoadState {
+export function useWorktreeLoad(root: string | null, enabled: boolean, sessionPids: readonly number[] = NO_PIDS): WorktreeLoadState {
   const [state, setState] = useState(NOT_ASKED);
+  const pids = useRef(sessionPids);
+  useEffect(() => {
+    pids.current = sessionPids;
+  }, [sessionPids]);
 
   useEffect(() => {
     if (!enabled) void setLoadRead(false).catch(() => undefined);
@@ -58,7 +64,7 @@ export function useWorktreeLoad(root: string | null, enabled: boolean): Worktree
         await setLoadRead(true).catch(() => undefined);
         if (!visible() || cancelled) return;
       }
-      const answer = await readLoad(root).catch(() => undefined);
+      const answer = await readLoad(root, pids.current).catch(() => undefined);
       if (cancelled) return;
       if (answer === null) {
         // Off or busy in Rust answers null too; only a run of nulls means this system has none.
@@ -72,7 +78,7 @@ export function useWorktreeLoad(root: string | null, enabled: boolean): Worktree
         return;
       }
       nullsInARow = 0;
-      const read: LoadRead = answer ?? { status: 'failed', worktrees: {}, outside: [], mac: null };
+      const read: LoadRead = answer ?? { status: 'failed', worktrees: {}, outside: [], sessions: {}, mac: null };
       setState(current => {
         const pressure = nextPressure(current.root === root ? current.pressure : NO_PRESSURE, read);
         return read.status === 'read'

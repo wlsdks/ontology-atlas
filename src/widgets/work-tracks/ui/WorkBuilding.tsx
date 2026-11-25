@@ -722,7 +722,7 @@ export function WorkBuilding({ tracks, live, seenRunningAt, baseBranch, nowMs, r
       </div>
       {board ? (
         <div className="min-h-0 flex-[0_1_auto] overflow-y-auto overflow-x-hidden px-10 pt-6" role="tabpanel" id={`${ARRANGE_TABS_ID}-tabpanel-session`} aria-labelledby={`${ARRANGE_TABS_ID}-tab-session`}>
-          <SessionBoard board={board} sessions={tracks.sessions} copy={copy} repo={repo} pressedKey={pressedRoom?.key ?? null} onPressFolder={pressFolder} onShowFolders={showFolders} />
+          <SessionBoard board={board} sessions={tracks.sessions} load={live.load.status === 'read' ? live.load.sample : null} copy={copy} repo={repo} pressedKey={pressedRoom?.key ?? null} onPressFolder={pressFolder} onShowFolders={showFolders} />
         </div>
       ) : null}
       <LandedLog read={landed} baseBranch={baseBranch} nowMs={nowMs} selectedHash={selectedLanded?.hash ?? null} onSelect={selectLanded} panelId={landedPanelId} />

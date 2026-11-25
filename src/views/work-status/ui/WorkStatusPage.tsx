@@ -75,7 +75,13 @@ export function WorkStatusPage() {
   );
   // A counted change is a sign of work: it keeps a held room from dozing, and promotes none.
   const signsOfWork = useMemo(() => withChangeSigns(seenRunningAt, pulse.worktrees), [seenRunningAt, pulse.worktrees]);
-  const load = useWorktreeLoad(readyRoot, loadOn);
+  const arrange = workshopArrangement.use();
+  // Only By session draws a session's own figures, so only then are its pids sent.
+  const sessionPids = useMemo(
+    () => (arrange === 'session' && tracks ? tracks.sessions.flatMap(session => (session.pid === null ? [] : [session.pid])) : []),
+    [arrange, tracks],
+  );
+  const load = useWorktreeLoad(readyRoot, loadOn, sessionPids);
   const live = useMemo<BuildingLive>(() => ({
     sessions: { sessionsByPid: sessionsByPidOf(tracks?.sessions ?? []), listedIn: listedFolders(sessionList.rows), since },
     namesByPid: new Map(sessionList.rows.flatMap(row => {
@@ -91,7 +97,6 @@ export function WorkStatusPage() {
   const shownTracks = useMemo(() => (tracks ? withActivity(tracks, activity) : null), [tracks, activity]);
   const sameFolder = tracks ? [...tracks.sessions.flatMap(session => session.tracks), ...tracks.unheld].filter(track => track.running && track.tools.length > 1).length : 0;
   const cleanup = tracks?.stuck.length ?? 0;
-  const arrange = workshopArrangement.use();
   const reduced = usePrefersReducedMotion();
   const allRooms = useMemo(() => (plan ? [...plan.stage, ...plan.floors.flatMap(floor => floor.rooms)] : []), [plan]);
   // By session the header counts sessions that wait, not rooms; any other count names rooms.

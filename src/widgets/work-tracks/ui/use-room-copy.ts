@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { folderName, type RoomEntry, type SessionTool, type Track, type TrackSession } from '@/shared/lib/work-status/work-tracks';
 import { formatSize } from '@/shared/lib/format-size';
-import { showsLoadFact } from '@/shared/lib/work-status/signals/load';
+import { showsLoadFact, type SessionLoadFacts } from '@/shared/lib/work-status/signals/load';
 import { PULSE_HOUR_MS, changesWithoutAgent, type PulseFacts, type TickHeight } from '@/shared/lib/work-status/signals/pulse';
 import { BLOCK_FOLDERS_SHOWN, isWaitingBlock, type SessionBlock, type SessionFolder } from '@/shared/lib/work-status/signals/session-board';
 import type { SessionLine } from '@/shared/lib/work-status/signals/session-lines';
@@ -152,7 +152,7 @@ export interface FolderRowCopy {
   shared: boolean;
   /** When the folder last changed; `null` for a shared folder. */
   ago: string | null;
-  /** The newest commits, on a block whose one folder is its own: what the session has been doing. */
+  /** The newest commit, on a block whose one folder is its own: what the session has been doing. */
   commits: ScreenCommit[];
 }
 
@@ -171,6 +171,15 @@ export interface SessionBlockCopy {
   folders: FolderRowCopy[];
   /** `bySession.moreFolders` after the rows shown. */
   more: string | null;
+  /** Its own command tree's memory and CPU, then its heaviest programs; `null` without a figure. */
+  load: SessionLoadCopy | null;
+}
+
+/** A session's figures as slots, so memory and CPU line up from block to block. */
+export interface SessionLoadCopy {
+  memory: string;
+  cpu: string;
+  tools: string | null;
 }
 
 /** A mini room's newest subject with its time. */
@@ -180,7 +189,7 @@ export interface MiniSubject {
 }
 
 /** The newest commits a session's block lists for the one folder it has to itself. */
-const BLOCK_COMMITS = 3;
+const BLOCK_COMMITS = 1;
 /** The most commits a screen lists. */
 export const SCREEN_COMMITS = 20;
 /** A room standing on the base branch lists this many of that branch's own commits: where it stands, not work of its own. */
@@ -386,7 +395,7 @@ function roomCopy(t: ReturnType<typeof useTranslations<'workStatus'>>, locale: s
    * One session, once: its own state from its list (or that it is seen at work, when no list
    * speaks), then since when, in the words its line in a room uses, or when its program started.
    */
-  const sessionBlock = (block: SessionBlock, session: TrackSession | null): SessionBlockCopy => {
+  const sessionBlock = (block: SessionBlock, session: TrackSession | null, load: SessionLoadFacts | null = null): SessionBlockCopy => {
     const line = sessionLine(block.line);
     const state = line.state ?? (block.running ? { text: t('room.working'), tone: 'ink' as const } : { text: t('room.resting'), tone: 'plain' as const });
     const started = session?.startedAt ? t('session.started', { time: clockTime(session.startedAt * 1000, nowMs, locale) }) : null;
@@ -402,6 +411,13 @@ function roomCopy(t: ReturnType<typeof useTranslations<'workStatus'>>, locale: s
       running: block.running,
       folders: shown.map(folder => folderRow(folder, block.folders.length === 1)),
       more: block.folders.length > shown.length ? t('bySession.moreFolders', { count: block.folders.length - shown.length }) : null,
+      load: load
+        ? {
+            memory: t('bySession.loadMemory', { memory: memory(load.memoryBytes) }),
+            cpu: t('bySession.loadCpu', { cores: cores(load.cpuCores) }),
+            tools: load.tools.length > 0 ? load.tools.map(group => t('bySession.loadTool', { tool: loadTool(group), count: group.count })).join(' · ') : null,
+          }
+        : null,
     };
   };
 
