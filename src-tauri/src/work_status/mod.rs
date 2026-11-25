@@ -1,14 +1,17 @@
 //! Work status: which agent session holds which worktree of a chosen repository, read from Git,
 //! from the pids that worktree locks name, from the working folders of agent programs, and from
-//! Claude Code's own session list. Nothing here writes or leaves the machine, and the only process
-//! it signals is one it started.
+//! Claude Code's own session list; while visible, from macOS's file-change notices and from the
+//! memory and CPU agents' commands use. Nothing here writes or leaves the machine, and the only
+//! process it signals is one it started.
 
 mod activity;
 mod agent_processes;
 mod agent_sessions;
+mod file_pulse;
 mod fingerprint;
 mod git_read;
 mod landed;
+mod load;
 mod worktrees;
 
 use std::collections::BTreeMap;
@@ -169,4 +172,59 @@ pub fn work_status_landed_detail(
     hash: String,
 ) -> Option<landed::LandedDetail> {
     landed::read_detail(&granted_root(&repository_path).ok()?, &hash)
+}
+
+/// The person switched session names on or off. Off holds in Rust: the list is read without
+/// names and the names held leave memory at once; on, they return with the next list read.
+#[tauri::command(async)]
+pub fn work_status_set_session_names(on: bool) {
+    agent_sessions::set_names(on);
+}
+
+/// How many files changed in each drawn worktree, per 10 s step for the last hour, and when the
+/// last change was. Watches the folders of `worktree_ids` that Git lists for the repository, one
+/// watcher for all, and answers from memory; at most one `git check-ignore` per worktree in 10 s.
+/// `None` while switched off, and on every platform but macOS.
+#[tauri::command(async)]
+pub fn work_status_file_pulse(
+    repository_path: String,
+    worktree_ids: Vec<String>,
+) -> Option<file_pulse::PulseRead> {
+    if !cfg!(target_os = "macos") {
+        return None;
+    }
+    let root = granted_root(&repository_path).ok()?;
+    file_pulse::pulse_read(
+        agent_sessions::worktree_folders(&root),
+        &worktree_ids,
+        file_pulse::git_check,
+    )
+}
+
+/// Work status was hidden: the watcher stops, and the counts wait for it to be shown again.
+#[tauri::command(async)]
+pub fn work_status_pause_file_pulse() {
+    file_pulse::stop_watching();
+}
+
+/// The person switched the file-change pulse on or off. Off stops the watcher, drops every count,
+/// and holds in Rust, so no ask starts it again.
+#[tauri::command(async)]
+pub fn work_status_set_file_pulse(on: bool) {
+    file_pulse::set_watching(on);
+}
+
+/// Memory and CPU per worktree, by tool, and this Mac's memory, CPU and GPU, sampled at most once
+/// in 4 s. `None` while switched off, while a sample runs, and on every platform but macOS.
+#[tauri::command(async)]
+pub fn work_status_load(repository_path: String) -> Option<load::LoadRead> {
+    let root = granted_root(&repository_path).ok()?;
+    load::load_read(&agent_sessions::worktree_folders(&root))
+}
+
+/// Load is read now (switched on and the screen visible) or not. Off holds in Rust and drops every
+/// sample held, so the first sample after it has no CPU figure.
+#[tauri::command(async)]
+pub fn work_status_set_load(on: bool) {
+    load::set_reading(on);
 }

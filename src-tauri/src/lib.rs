@@ -403,6 +403,12 @@ pub fn run() {
             work_status::work_status_landed_detail,
             work_status::work_status_agent_sessions,
             work_status::work_status_set_agent_sessions_read,
+            work_status::work_status_set_session_names,
+            work_status::work_status_file_pulse,
+            work_status::work_status_pause_file_pulse,
+            work_status::work_status_set_file_pulse,
+            work_status::work_status_load,
+            work_status::work_status_set_load,
         ])
         .build(context)
         .expect("error while building ontology-atlas desktop app")

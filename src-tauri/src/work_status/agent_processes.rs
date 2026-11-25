@@ -2,8 +2,8 @@
 //! credited to the nearest agent program among itself and its ancestors. That is how a tool that
 //! leaves no worktree lock, such as Codex, still shows where it works, including the Codex app,
 //! whose one background server runs each command in that command's folder.
-//! Only the person's own processes are read, and of those only the parent, start time, executable
-//! path and working folder; never arguments or environment.
+//! Only the person's own processes are read, and of those only the parent, start time, kernel
+//! program name, executable path and working folder; never arguments or environment.
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -21,7 +21,7 @@ const MAX_ANCESTORS: usize = 64;
 const SYSTEM_LAUNCHER_PID: u32 = 1;
 
 #[cfg_attr(not(any(target_os = "macos", target_os = "linux")), allow(dead_code))]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) enum AgentTool {
     ClaudeCode,
@@ -47,6 +47,8 @@ pub(crate) struct ProcessFacts {
     pub(crate) started_at: Option<i64>,
     pub(crate) tool: Option<AgentTool>,
     pub(crate) folder: Option<PathBuf>,
+    /// The kernel's short program name (at most 16 bytes), never a path or an argument.
+    pub(crate) name: String,
 }
 
 /// Claude Code installs as `claude` or as `.../claude/versions/<version>`; Codex as `codex`.
@@ -203,31 +205,11 @@ pub(crate) fn remember(
     all
 }
 
-/// The process name is checked first, so only an agent-looking process pays for its path read.
 #[cfg(target_os = "macos")]
 fn own_processes() -> Vec<ProcessFacts> {
-    // SAFETY: a null buffer asks only for the number of pids.
-    let estimate = unsafe { libc::proc_listallpids(std::ptr::null_mut(), 0) };
-    if estimate <= 0 {
+    let Some(mut facts) = listed_processes() else {
         return vec![];
-    }
-    /// Room for processes that start between the count and the listing.
-    const LISTING_SLACK: usize = 64;
-    let mut pids = vec![0 as libc::pid_t; estimate as usize + LISTING_SLACK];
-    let bytes = (pids.len() * std::mem::size_of::<libc::pid_t>()) as libc::c_int;
-    // SAFETY: the buffer holds `bytes` bytes of pids, the size the call is told.
-    let listed = unsafe { libc::proc_listallpids(pids.as_mut_ptr().cast(), bytes) };
-    if listed <= 0 {
-        return vec![];
-    }
-    pids.truncate((listed as usize).min(pids.len()));
-    // SAFETY: getuid has no failure mode.
-    let own_uid = unsafe { libc::getuid() };
-    let mut facts: Vec<ProcessFacts> = pids
-        .into_iter()
-        .filter(|pid| *pid > 0)
-        .filter_map(|pid| mac_process(pid, own_uid))
-        .collect();
+    };
     // A working folder is a path lookup in the kernel; only an agent's own command tree needs one.
     let wanted = under_agents(&facts);
     for fact in &mut facts {
@@ -236,6 +218,36 @@ fn own_processes() -> Vec<ProcessFacts> {
         }
     }
     facts
+}
+
+/// The person's own processes without their working folders: one listing and one kernel record
+/// per process. The name is checked first, so only an agent-looking process pays for its path
+/// read. `None` when the kernel refuses the listing.
+#[cfg(target_os = "macos")]
+pub(crate) fn listed_processes() -> Option<Vec<ProcessFacts>> {
+    // SAFETY: a null buffer asks only for the number of pids.
+    let estimate = unsafe { libc::proc_listallpids(std::ptr::null_mut(), 0) };
+    if estimate <= 0 {
+        return None;
+    }
+    /// Room for processes that start between the count and the listing.
+    const LISTING_SLACK: usize = 64;
+    let mut pids = vec![0 as libc::pid_t; estimate as usize + LISTING_SLACK];
+    let bytes = (pids.len() * std::mem::size_of::<libc::pid_t>()) as libc::c_int;
+    // SAFETY: the buffer holds `bytes` bytes of pids, the size the call is told.
+    let listed = unsafe { libc::proc_listallpids(pids.as_mut_ptr().cast(), bytes) };
+    if listed <= 0 {
+        return None;
+    }
+    pids.truncate((listed as usize).min(pids.len()));
+    // SAFETY: getuid has no failure mode.
+    let own_uid = unsafe { libc::getuid() };
+    Some(
+        pids.into_iter()
+            .filter(|pid| *pid > 0)
+            .filter_map(|pid| mac_process(pid, own_uid))
+            .collect(),
+    )
 }
 
 #[cfg(target_os = "macos")]
@@ -273,6 +285,7 @@ fn mac_process(pid: libc::pid_t, own_uid: libc::uid_t) -> Option<ProcessFacts> {
             .flatten()
             .and_then(|path| tool_for_executable(&path)),
         folder: None,
+        name,
     })
 }
 
@@ -302,7 +315,7 @@ fn mac_executable(pid: libc::pid_t) -> Option<PathBuf> {
 }
 
 #[cfg(target_os = "macos")]
-fn mac_working_folder(pid: libc::pid_t) -> Option<PathBuf> {
+pub(crate) fn mac_working_folder(pid: libc::pid_t) -> Option<PathBuf> {
     let mut info = std::mem::MaybeUninit::<libc::proc_vnodepathinfo>::zeroed();
     let size = std::mem::size_of::<libc::proc_vnodepathinfo>() as libc::c_int;
     // SAFETY: the buffer is exactly one `proc_vnodepathinfo`, the size the call is told.
@@ -341,6 +354,11 @@ fn own_processes() -> Vec<ProcessFacts> {
                 return None;
             }
             let stat = std::fs::read_to_string(entry.path().join("stat")).ok()?;
+            let name = stat
+                .split_once('(')
+                .and_then(|(_, rest)| rest.rsplit_once(')'))
+                .map(|(name, _)| name.to_string())
+                .unwrap_or_default();
             /// `ppid` is field 4; the fields after `comm`'s closing parenthesis begin at field 3.
             const PARENT_FIELD_AFTER_COMM: usize = 4 - 3;
             let parent = stat
@@ -364,6 +382,7 @@ fn own_processes() -> Vec<ProcessFacts> {
                 started_at,
                 tool,
                 folder: std::fs::read_link(entry.path().join("cwd")).ok(),
+                name,
             })
         })
         .collect()
