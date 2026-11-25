@@ -75,11 +75,17 @@ export interface WorktreeActivity {
 /** What a Claude Code session says of itself in its own session list. */
 export type AgentSessionState = 'waitingApproval' | 'waitingAnswer' | 'working' | 'replied' | 'failed';
 
-/** One Claude Code session standing in a worktree; never its name, id or folder. */
+/** One Claude Code session standing in a worktree; never its id or folder. */
 export interface AgentSessionRow {
   worktreeId: string;
   pid: number;
   state: AgentSessionState;
+  /**
+   * The name Claude Code gives the session: one line of at most 60 characters, control and
+   * direction-override characters removed. Absent while names are switched off, or when the list
+   * gives none. Plain text from the person's own tool: render it, never parse, link or pass it on.
+   */
+  name?: string | null;
 }
 
 /**
@@ -170,6 +176,121 @@ export async function readAgentSessions(repositoryPath: string): Promise<AgentSe
  */
 export async function setAgentSessionsRead(on: boolean): Promise<void> {
   if (isWorkStatusAvailable()) await invoke('work_status_set_agent_sessions_read', { on });
+}
+
+/**
+ * Tells Rust whether the person leaves session names on. Off holds there too: the next list read
+ * keeps no name, and the names Rust held are dropped.
+ */
+export async function setSessionNamesRead(on: boolean): Promise<void> {
+  if (isWorkStatusAvailable()) await invoke('work_status_set_session_names', { on });
+}
+
+/** Counted file changes in one 10-second step: `atMs` is the step's start, `count` at most 99. */
+export interface PulseStep {
+  atMs: number;
+  count: number;
+}
+
+/**
+ * One worktree's counted file changes, as Rust keeps them in memory: never a name or a path. A
+ * counted change is outside `.git`, outside the fixed dependency and build folders, and not ignored
+ * by Git.
+ */
+export interface WorktreePulse {
+  /** macOS watches the folder; `false` when it could not, so only the Git read's times hold. */
+  watched: boolean;
+  /** Milliseconds since the epoch: the last counted change; `null` with none in the last hour. */
+  lastChangeAtMs: number | null;
+  /** The steps of the last hour that had a change, oldest first. */
+  steps: PulseStep[];
+}
+
+/** Every watched worktree's pulse, by worktree id, answered from Rust's memory. */
+export interface FilePulseRead {
+  worktrees: Record<string, WorktreePulse>;
+}
+
+/**
+ * The counted file changes of the worktrees drawn as rooms. Asking starts or narrows the one
+ * watcher to those worktrees; Rust answers from memory, so every notice since the last ask arrives
+ * in one answer. `null` where this system has no pulse.
+ */
+export async function readFilePulse(repositoryPath: string, worktreeIds: readonly string[]): Promise<FilePulseRead | null> {
+  return isWorkStatusAvailable() ? invoke<FilePulseRead | null>('work_status_file_pulse', { repositoryPath, worktreeIds }) : null;
+}
+
+/** The screen is hidden or closed: the watcher ends, and the counts it had stay for the hour. */
+export async function pauseFilePulse(): Promise<void> {
+  if (isWorkStatusAvailable()) await invoke('work_status_pause_file_pulse');
+}
+
+/** Tells Rust whether the person leaves the pulse on. Off ends the watcher and drops every count. */
+export async function setFilePulseRead(on: boolean): Promise<void> {
+  if (isWorkStatusAvailable()) await invoke('work_status_set_file_pulse', { on });
+}
+
+/** The tool groups load is said in, by program name; a program outside the closed list is `other`. */
+export type LoadTool = 'agent' | 'node' | 'rust' | 'java' | 'gradleDaemon' | 'xcode' | 'python' | 'git' | 'other';
+
+/** The processes of one tool group: how many, their memory and their CPU. */
+export interface LoadGroup {
+  tool: LoadTool;
+  count: number;
+  memoryBytes: number;
+  /** Cores busy over the sample: 1.0 is one core for the whole sample; `null` on the first sample. */
+  cpuCores: number | null;
+}
+
+/** An agent program whose commands run in this worktree, while the program itself counts for another. */
+export interface AgentElsewhere {
+  /** The agent program's pid, one the snapshot already holds. */
+  pid: number;
+  worktreeId: string;
+}
+
+/** What one worktree's processes hold: each counts once, for the worktree its folder, or its nearest ancestor's, lies in. */
+export interface WorktreeLoad {
+  memoryBytes: number;
+  cpuCores: number | null;
+  /** Every group with a process here; the page shows the five largest. */
+  groups: LoadGroup[];
+  agentsElsewhere: AgentElsewhere[];
+}
+
+/** macOS's own memory pressure level. */
+export type MemoryPressure = 'normal' | 'warning' | 'critical';
+
+export interface MacLoad {
+  memoryUsedBytes: number;
+  memoryTotalBytes: number;
+  pressure: MemoryPressure;
+  cpuCores: number | null;
+  coreCount: number;
+  /** The busiest accelerator's "Device Utilization %"; `null` when the Mac reports none. */
+  gpuPercent: number | null;
+}
+
+/** One load sample. `failed`: a read of this sample failed, and no number in it stands. */
+export interface LoadRead {
+  status: 'read' | 'failed';
+  worktrees: Record<string, WorktreeLoad>;
+  /** Groups whose processes lie in no worktree, such as a Gradle daemon. */
+  outside: LoadGroup[];
+  mac: MacLoad | null;
+}
+
+/** One load sample: one process listing, one usage read per process under an agent, three reads for the Mac. `null` where this system has no load. */
+export async function readLoad(repositoryPath: string): Promise<LoadRead | null> {
+  return isWorkStatusAvailable() ? invoke<LoadRead | null>('work_status_load', { repositoryPath }) : null;
+}
+
+/**
+ * Tells Rust whether load is read now: switched on and the screen visible. Off drops the previous
+ * sample, so the first sample after it carries no CPU figure.
+ */
+export async function setLoadRead(on: boolean): Promise<void> {
+  if (isWorkStatusAvailable()) await invoke('work_status_set_load', { on });
 }
 
 /** The newest thirty changes on the base branch's first-parent line, with their stats: one `git log`. */

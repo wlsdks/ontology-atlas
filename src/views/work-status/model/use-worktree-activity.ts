@@ -24,11 +24,16 @@ interface Visit {
   stamp: string | null;
 }
 
-/** Whether a worktree's activity is due: never read, its stamp moved, or its beat came, and not read in the last ten seconds. */
-export function activityDue(visit: Visit | undefined, stamp: string | undefined, beatMs: number | null, nowMs: number): boolean {
+/**
+ * Whether a worktree's activity is due: never read, its stamp moved, its beat came, or a file
+ * change was counted since the last read, and not read in the last ten seconds.
+ */
+export function activityDue(visit: Visit | undefined, stamp: string | undefined, beatMs: number | null, nowMs: number, changedAtMs: number | null = null): boolean {
   if (!visit) return true;
   if (nowMs - visit.atMs < ACTIVITY_MIN_GAP_MS) return false;
-  return (stamp !== undefined && stamp !== visit.stamp) || (beatMs !== null && nowMs - visit.atMs >= beatMs);
+  return (stamp !== undefined && stamp !== visit.stamp)
+    || (beatMs !== null && nowMs - visit.atMs >= beatMs)
+    || (changedAtMs !== null && changedAtMs > visit.atMs);
 }
 
 /**
@@ -43,12 +48,14 @@ export function useWorktreeActivity(
   /** The worktrees shown as rooms, the stage first. */
   keys: readonly string[],
   running: ReadonlySet<string>,
+  /** When the pulse last counted a file change in each worktree, in milliseconds. */
+  changedAt: ReadonlyMap<string, number> = NO_CHANGES,
 ): ReadonlyMap<string, WorktreeActivity> {
   const [state, setState] = useState<{ root: string | null; activity: ReadonlyMap<string, WorktreeActivity> }>({ root: null, activity: new Map() });
-  const wanted = useRef({ keys, running, baseBranch });
+  const wanted = useRef({ keys, running, baseBranch, changedAt });
   useEffect(() => {
-    wanted.current = { keys, running, baseBranch };
-  }, [keys, running, baseBranch]);
+    wanted.current = { keys, running, baseBranch, changedAt };
+  }, [keys, running, baseBranch, changedAt]);
 
   useEffect(() => {
     if (!root) return;
@@ -71,10 +78,11 @@ export function useWorktreeActivity(
         const stamps = await readActivityStamps(root).catch(() => null);
         for (;;) {
           if (cancelled || !visible()) return;
-          const { keys: order, running: live, baseBranch: base } = wanted.current;
+          const { keys: order, running: live, baseBranch: base, changedAt: changed } = wanted.current;
           const nowMs = Date.now();
           const beatMs = beatFor(live.size);
-          const key = order.find(candidate => activityDue(visits.get(candidate), stamps?.[candidate], live.has(candidate) ? beatMs : null, nowMs));
+          const key = order.find(candidate =>
+            activityDue(visits.get(candidate), stamps?.[candidate], live.has(candidate) ? beatMs : null, nowMs, changed.get(candidate) ?? null));
           if (key === undefined) return;
           didRead = true;
           visits.set(key, { atMs: nowMs, stamp: stamps?.[key] ?? null });
@@ -116,3 +124,4 @@ export function useWorktreeActivity(
 }
 
 const EMPTY: ReadonlyMap<string, WorktreeActivity> = new Map();
+const NO_CHANGES: ReadonlyMap<string, number> = new Map();
