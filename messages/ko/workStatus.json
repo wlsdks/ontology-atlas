@@ -270,6 +270,7 @@
   "landed": {
     "title": "<code>{branch}</code>에 머지된 작업",
     "note": "한 줄이 머지된 풀 리퀘스트 하나예요. 풀 리퀘스트 없이 푸시한 커밋도 한 줄이에요. Atlas는 이 Mac에 있는 브랜치를 읽어서, 아직 풀하지 않은 변경은 목록에 없어요.",
+    "noteLabel": "이 목록에 대해",
     "summary": "오늘 {today}개 · 최근 7일 {week}개",
     "none": "아직 {branch}에 머지된 작업이 없어요.",
     "today": "오늘",

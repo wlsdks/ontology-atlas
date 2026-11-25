@@ -270,6 +270,7 @@
   "landed": {
     "title": "Merged into <code>{branch}</code>",
     "note": "One line is one merged pull request; a commit pushed without one is a line too. Atlas reads this Mac's copy of the branch, so a change you have not pulled yet is not listed.",
+    "noteLabel": "About this list",
     "summary": "{today} today · {week} in the last 7 days",
     "none": "Nothing has been merged into {branch} yet.",
     "today": "Today",

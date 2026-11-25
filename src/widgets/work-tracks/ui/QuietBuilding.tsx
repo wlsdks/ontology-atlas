@@ -33,7 +33,7 @@ export function QuietBuilding({ children, landed, root, baseBranch, nowMs }: {
   };
   return (
     <div className="flex min-h-0 flex-1" onKeyDown={closeOnEscape}>
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto" data-testid="work-quiet-viewport">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden" data-testid="work-quiet-viewport">
         {children}
         <LandedLog read={landed} baseBranch={baseBranch} nowMs={nowMs} selectedHash={selected?.hash ?? null} onSelect={select} panelId={panelId} />
       </div>

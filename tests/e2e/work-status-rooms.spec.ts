@@ -960,6 +960,19 @@ test("lists the work that landed on the base branch under the building and opens
   await expect(page.getByTestId("work-landed-panel")).toHaveCount(0);
 });
 
+test("keeps the page from scrolling and scrolls a long landed list inside its own strip", async ({ page }) => {
+  await openWorkStatus(page, [main, working("design/workshop", CLAUDE), working("feat/other", CLAUDE_LATER)], {}, { width: 1512, height: 860, landedCount: 30 });
+  await expect(page.getByTestId("work-landed-row")).toHaveCount(30);
+  const overflow = (testId: string) => page.getByTestId(testId).evaluate(element => element.scrollHeight - element.clientHeight);
+  await expect.poll(() => overflow("work-building-viewport")).toBe(0);
+  expect(await page.locator("main#main").evaluate(element => element.scrollHeight - element.clientHeight)).toBe(0);
+  expect(await overflow("work-landed-scroll")).toBeGreaterThan(0);
+  // The building and the list's heading stay in the window.
+  const viewport = page.viewportSize()!;
+  const heading = await page.locator("#work-landed-title").boundingBox();
+  expect(heading!.y + heading!.height).toBeLessThanOrEqual(viewport.height);
+});
+
 test("shows the landed work under the empty building too", async ({ page }) => {
   await openWorkStatus(page, [main]);
   await expect(page.getByTestId("work-empty-room")).toBeVisible();

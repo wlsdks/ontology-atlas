@@ -40,7 +40,7 @@ test.describe("work status file-change pulse", () => {
     await expect(a.getByTestId("work-room-flash")).toHaveCount(1);
     await expect(b).toHaveAttribute("data-room-flashes", "0");
     await expect(b.getByTestId("work-room-flash")).toHaveCount(0);
-    await expect(a.locator("[data-room-tag]")).toContainText("changed just now");
+    await expect(a.getByTestId("work-room-facts")).toContainText("changed just now");
     await expect(a.getByTestId("work-room-last-minute")).toHaveText("3 file changes in the last minute");
     await expect(a.locator("[data-tick]")).toHaveCount(1);
     await expect(a.locator("[data-tick]")).toHaveAttribute("data-height", "2");
