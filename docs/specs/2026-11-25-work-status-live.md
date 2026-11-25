@@ -195,7 +195,7 @@ This table is the contract between the Rust readers and the page, and the edge o
 |---|---|---|---|---|
 | A session's `name` | with each session-list read, names on | with the last list | on that session's row: one line, at most 60 characters, control and direction-override characters removed; absent when not a string or empty | a file, log, error text, storage, URL, an argument sent back to Rust, an agent session, the network; `sessionId`, `id` |
 | File-change notices for the folder of each worktree drawn as a room | visible, pulse on | per worktree: the time of the last counted change, counts per 10 s step for 60 min (99 at most), and a one-way hash of each path Git already judged (4,096 at most) | per worktree: that time, those counts, whether it is watched | a file opened or stat'ed; a name or path; shelf worktrees; any folder Git does not list for this repository |
-| Memory, CPU time and program name of each process under an agent program; memory and working folder of a process named `java` outside every tree | every 5 s, visible, load on | the previous sample | per worktree: memory, CPU in cores, and at most five groups (group, count, memory, CPU) plus the rest; groups outside every room | arguments, environment, open files; a path; a name outside the closed list; a pid the page does not already hold |
+| Memory, CPU time and program name of each process under an agent program; memory, CPU time and working folder of a process named `java` outside every tree | every 5 s, visible, load on | the previous sample | per worktree: memory, CPU in cores, and at most five groups (group, count, memory, CPU) plus the rest; groups outside every room | arguments, environment, open files; a path; a name outside the closed list; a pid the page does not already hold |
 | This Mac: memory in use and macOS's own pressure level, CPU in use, the GPU's "Device Utilization %" (the highest accelerator) | the same sample | the previous sample | those numbers; no GPU number when none is reported | a per-program GPU figure; `powermetrics`; any spawned program; root |
 
 **A counted change** is a notice whose path is not under `.git`, not under a fixed list of
@@ -511,3 +511,4 @@ Slice A changes this rule text:
 ## Revisions
 
 - 2026-11-25: first draft.
+- 2026-11-25: a `java` process outside every agent tree also reports CPU time, so a Gradle daemon's build load shows (`docs/records/decisions/2026-11-25-work-status-java-cpu-d400da6f-da60-48b3-b9fe-cf0fbd202bb6.md`).
