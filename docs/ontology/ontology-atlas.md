@@ -27,9 +27,9 @@ Ontology Atlas is a local-first workbench that keeps one reviewable Markdown rec
 - Any backend, login, account, or hosted store holding the person's meaning.
 
 ## Uncertainty
-Not mapped yet: 41 of 42 areas, 67 of 71 abilities.
+Not mapped yet: 41 of 42 areas, 68 of 72 abilities.
 - Not mapped yet: src/views (22 of 22 abilities not on the map)
-- Not mapped yet: src-tauri (11 of 11 abilities not on the map)
+- Not mapped yet: src-tauri (12 of 12 abilities not on the map)
 - Not mapped yet: app (8 of 8 abilities not on the map)
 - Not mapped yet: src/features (7 of 9 abilities not on the map)
 - Not mapped yet: src/widgets/ontology-map (4 of 5 abilities not on the map)
