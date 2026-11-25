@@ -81,10 +81,11 @@ const TWO_ROW_MIN_H = 300;
 export const SCREEN_H = 160;
 
 /**
- * Moru's scale in a stage room: his drawn size, whatever the room's. The room's width and height go to
- * its screen, which says what the worktree is doing; he only shows that it is.
+ * Moru's scale in a stage room, whatever the room's size: half his drawn size, as on the floors below,
+ * which a Retina display draws pixel for pixel. The room's width and height go to its screen, which
+ * says what the worktree is doing; he only shows that it is.
  */
-const STAGE_UNIT: RoomUnit = 1;
+const STAGE_UNIT: RoomUnit = 0.5;
 
 /** The least a screen column keeps: a commit subject of about forty characters, or a file's name and folder. */
 const SCREEN_COLUMN_MIN_W = 270;
@@ -182,9 +183,12 @@ export function showsWallFacts(width: number): boolean {
 const RAIL_H = 14;
 const MORU_OVER_RAIL = 98;
 
-/** A stage room as tall as what it holds: the screen across the room, then Moru under it on the rail. */
+/** What the wall left of Moru keeps under the screen for the room's state: its title line and up to four lines under it. */
+const WALL_FACTS_H = 112;
+
+/** A stage room as tall as what it holds: the screen across the room, then the wall facts and Moru under it on the rail. */
 function roomHeight(unit: RoomUnit): number {
-  return Math.ceil(12 + SCREEN_H + 4 + RAIL_H + MORU_OVER_RAIL * unit);
+  return Math.ceil(12 + SCREEN_H + 4 + Math.max(WALL_FACTS_H, RAIL_H + MORU_OVER_RAIL * unit));
 }
 
 /** What a board keeps under two rows of rooms: the edges, one row of mini rooms and the shelf. */

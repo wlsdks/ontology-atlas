@@ -282,10 +282,10 @@ each uncommitted file where it was last written, a wider mark for each commit
 where it landed, each fading as it ages. A change that arrives while the page is
 open rises once in its place on that line, and the row of a file written again
 lights once behind its name; with reduced motion neither moves. A change less
-than a minute old reads **just now**. The screen keeps its text size. Moru is drawn at his own
-size (128 px) in every stage room: the room's width and height go to the screen,
+than a minute old reads **just now**. The screen keeps its text size. Moru is drawn at half
+his size (64 px) in every stage room, as on the floors below: the room's width and height go to the screen,
 and he only shows that work is running. Each room is as tall
-as its screen or its Moru needs. A quiet room's screen is not dimmed: its words
+as its screen and the wall facts beside Moru need. A quiet room's screen is not dimmed: its words
 keep their contrast and the bezel says it is quiet. The building ends under what
 it holds, on the page itself: there is no slab behind the rooms. A room alone
 on the stage takes the building's whole width instead of half of it, grows to

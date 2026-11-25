@@ -149,10 +149,10 @@ describe('floor rows', () => {
     expect(pairUnit(200, 1)).toBe(0.5);
   });
 
-  it('keeps Moru at his drawn size in a room of any size, so the width goes to the screen', () => {
+  it('keeps Moru at half his drawn size in a room of any size, so the width goes to the screen', () => {
     for (const width of [1368, 2400]) {
       const room = layout({ width, height: 1200, stage: keys('s', 2), hasShelf: false }).rooms.get('s0')!;
-      expect(room.unit).toBe(1);
+      expect(room.unit).toBe(0.5);
     }
   });
 
