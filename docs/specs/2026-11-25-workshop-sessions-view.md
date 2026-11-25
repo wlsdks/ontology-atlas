@@ -206,8 +206,6 @@ must hold the same keys. Every other word By session shows is an existing key, u
 
 - What a session changed, file by file: no read names a session for a change; it needs the tool's
   own record of its writes (slice 2 of `docs/specs/2026-11-21-work-status-destination.md`).
-- Memory and CPU per session: a new field under the third read exception, which needs a decision
-  record (`.claude/rules/surfaces.md:108`). Later 1.
 - Sessions in other repositories: the list read returns only sessions in this repository's
   worktrees (`.claude/rules/surfaces.md:136`), and another project's folder names stay out.
 - Moru per session: a Moru is cast for a worktree's room (`docs/features/work-status.md:383`); a
@@ -304,10 +302,10 @@ the other answer.
 ## Rules and records
 
 - **Not a one-way change.** The route stays `/work-status`; nothing new leaves the machine; no
-  MCP, CLI or vault contract changes; no agent gains a write. No Rust reader changes, so no field,
-  signal or send is added and no decision record is needed. It is built as product behaviour with
-  `/ui-build`, and `docs/features/work-status.md` gains By session. Later 1 adds a field to a
-  read, which needs a record (`.claude/rules/surfaces.md:108`).
+  MCP, CLI or vault contract changes; no agent gains a write. The first build changed no Rust reader, so
+  it added no field, signal or send and needed no decision record. It is built as product behaviour with
+  `/ui-build`, and `docs/features/work-status.md` gains By session. Later 1 added a field to the
+  load read under record `635500f0`.
 - **Records relied on,** each rechecked against the code cited under Today: `929c2179` (what the
   list gives the page, for this repository's worktrees only); `3c8614d6` (a name reaches no
   storage key, address or argument; criterion 6 keeps it); `87d3ada9` (pid, tool and start per
@@ -321,3 +319,5 @@ the other answer.
 - 2026-11-25: Later 1 built at the owner's request, without its panel: a block's third line gives
   its own command tree's memory, CPU and two heaviest program groups
   (`docs/records/decisions/2026-11-25-work-status-session-load-635500f0-5355-46c2-a37f-93d4cac16afc.md`).
+- 2026-11-25: after review, a process counts toward the nearest sent session above it, so a session
+  started inside another keeps its own tree; the block drops its edge stripe, icon and commit age.

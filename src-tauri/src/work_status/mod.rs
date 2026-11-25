@@ -234,12 +234,10 @@ pub fn work_status_load(
         .iter()
         .map(|(pid, _)| *pid)
         .collect();
-    let mut session_pids = session_pids.unwrap_or_default();
-    session_pids.truncate(load::MAX_SESSION_PIDS);
     load::load_read(
         &agent_sessions::worktree_folders(&root),
         &acp_pids,
-        &session_pids,
+        &session_pids.unwrap_or_default(),
     )
 }
 

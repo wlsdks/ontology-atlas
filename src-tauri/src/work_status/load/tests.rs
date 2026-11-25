@@ -4,7 +4,7 @@ use std::time::{Duration, Instant};
 
 use super::attribute::ToolGroup;
 use super::source::{CpuTicks, LoadSource, MacMemory, Pressure, Usage};
-use super::{for_sessions, sample, LoadRead, LoadStatus, Sample};
+use super::{sample, LoadRead, LoadStatus, Sample, Sampler, MAX_SESSION_PIDS, SAMPLE_GAP};
 use crate::work_status::agent_processes::{AgentTool, ProcessFacts};
 
 const PLANTED: &str = "ATLAS_PLANTED_7f3c";
@@ -282,15 +282,86 @@ fn an_atlas_session_owns_its_tree_and_an_agent_inside_it_has_no_figure() {
     assert_eq!(read.sessions[&6].memory_bytes, 120 * MIB);
 }
 
-/// A last sample answered again keeps only the sessions of the ask in hand.
+/// A Claude Code session started inside another, holding its own lock, keeps its own tree; an
+/// agent the page did not send counts toward the nearest one it did.
+#[test]
+fn a_session_inside_another_keeps_its_own_tree() {
+    let mut mac = FakeMac::with_cpu();
+    mac.add(20, 1, "2.1.330", Some(AgentTool::ClaudeCode), "/repo", 300);
+    mac.add(21, 20, "2.1.330", Some(AgentTool::ClaudeCode), "/repo", 40);
+    mac.add(22, 21, "cargo", None, "/repo/.worktrees/a", 80);
+    mac.add(23, 20, "node", None, "/repo", 10);
+
+    let both = sessions_sent(&mut mac, &[], &[20, 21]);
+    assert_eq!(both.sessions[&20].memory_bytes, 310 * MIB);
+    assert_eq!(both.sessions[&21].memory_bytes, 120 * MIB);
+
+    let outer = sessions_sent(&mut mac, &[], &[20]);
+    assert_eq!(outer.sessions[&20].memory_bytes, 430 * MIB);
+}
+
+/// Codex run by a Claude Code session: each pid sent gets its own tool's tree.
+#[test]
+fn codex_under_claude_code_is_its_own_session_when_sent() {
+    let mut mac = FakeMac::with_cpu();
+    mac.add(30, 1, "2.1.330", Some(AgentTool::ClaudeCode), "/repo", 200);
+    mac.add(31, 30, "codex", Some(AgentTool::Codex), "/repo", 60);
+    mac.add(32, 31, "cargo", None, "/repo/.worktrees/a", 90);
+    let read = sessions_sent(&mut mac, &[], &[30, 31]);
+    assert_eq!(read.sessions[&30].memory_bytes, 200 * MIB);
+    let codex = &read.sessions[&31];
+    assert_eq!(codex.memory_bytes, 150 * MIB);
+    let groups: Vec<(ToolGroup, u32)> = codex
+        .groups
+        .iter()
+        .map(|group| (group.tool, group.count))
+        .collect();
+    assert_eq!(groups, [(ToolGroup::Rust, 1), (ToolGroup::Agent, 1)]);
+}
+
+/// An ask inside `SAMPLE_GAP` reads nothing again and keeps only the sessions it sent itself.
 #[test]
 fn an_answer_from_the_last_sample_keeps_only_the_pids_sent_now() {
     let mut mac = FakeMac::with_cpu();
     mac.add(20, 1, "2.1.330", Some(AgentTool::ClaudeCode), "/repo", 300);
     mac.add(30, 1, "2.1.330", Some(AgentTool::ClaudeCode), "/repo", 200);
-    let read = sessions_sent(&mut mac, &[], &[20, 30]);
-    let pids: Vec<u32> = for_sessions(read, &[30]).sessions.keys().copied().collect();
-    assert_eq!(pids, [30]);
+    let mut sampler = Sampler::default();
+    let at = Instant::now();
+    let pids = |read: Option<LoadRead>| -> Vec<u32> {
+        read.expect("an answer").sessions.keys().copied().collect()
+    };
+    let first = sampler.answer(&mut mac, &worktrees(), &[], &[20, 30], at, EPOCH_SECONDS);
+    assert_eq!(pids(first), [20, 30]);
+    let soon = at + SAMPLE_GAP / 2;
+    let again = sampler.answer(&mut mac, &worktrees(), &[], &[30], soon, EPOCH_SECONDS);
+    assert_eq!(pids(again), [30]);
+    let none = sampler.answer(&mut mac, &worktrees(), &[], &[], soon, EPOCH_SECONDS);
+    assert!(pids(none).is_empty());
+    assert_eq!(mac.listings, 1);
+}
+
+/// Pids past the first `MAX_SESSION_PIDS` of one ask are dropped before the sample.
+#[test]
+fn an_ask_past_the_session_cap_answers_only_the_first_pids() {
+    let mut mac = FakeMac::with_cpu();
+    let first = 1000;
+    let mut sent = Vec::new();
+    for pid in first..first + MAX_SESSION_PIDS as u32 + 1 {
+        mac.add(pid, 1, "2.1.330", Some(AgentTool::ClaudeCode), "/repo", 1);
+        sent.push(pid);
+    }
+    let read = Sampler::default()
+        .answer(
+            &mut mac,
+            &worktrees(),
+            &[],
+            &sent,
+            Instant::now(),
+            EPOCH_SECONDS,
+        )
+        .expect("an answer");
+    assert_eq!(read.sessions.len(), MAX_SESSION_PIDS);
+    assert!(!read.sessions.contains_key(sent.last().expect("a pid")));
 }
 
 #[test]
