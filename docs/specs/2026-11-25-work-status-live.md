@@ -248,9 +248,11 @@ settles pixels.
 - **A counted change is a sign of work:** it keeps a held room from dozing
   (`src/shared/lib/work-status/work-tracks.ts:363-367`) and makes that worktree's Git read due,
   still at most once in 10 s. It promotes no room and names no new state.
-- **The reads panel** is the panel the session-list words already open, retitled `reads.title`,
-  with four rows: the session list, names, file changes, load. Each row has a switch (all on by
-  default), what is true now, and one sentence of what is read and what never is. The choices
+- **The reads panel** opens from a sliders button in the header (and from the header words,
+  which show only while session status is off or unreadable). Under its title and a one-line
+  promise it has four rows: session status, names, file changes, load. Each row has its name, one
+  line on what it shows or what is missing while off, and a switch (all on by default); the full
+  account of each read (`*.status`) sits folded under `reads.details`. The choices
   live where the first one does (`src/shared/lib/preferences/work-status-preferences.ts:9-10`),
   and Rust holds each choice too, as it does today.
 
@@ -263,7 +265,7 @@ and shelf already use.
 
 | Key | Where it appears | English |
 |---|---|---|
-| `sessions.chip.on` | header | Session list on (unchanged; only the Korean changes, from "being read" to "on") |
+| `sessions.chip.off` / `.unreadable` | header, only then | Session status off / Session status not read |
 | `landed.title` | heading of the merged list | Merged into <code>{branch}</code> |
 | `landed.note` | under that heading | One line is one merged pull request; a commit pushed without one is a line too. Atlas reads this Mac's copy of the branch, so a change you have not pulled yet is not listed. |
 | `landed.none` | empty merged list | Nothing has been merged into {branch} yet. |
@@ -271,9 +273,14 @@ and shelf already use.
 | `landed.commitsTitle` | change panel | Commits in this change |
 | `landed.squashed` | change panel | It was merged as one commit, so there are no separate commits to show. |
 | `landed.unreadable` | change panel | Atlas could not read this change's commits and files from Git. Close it and open it again to retry. |
-| `reads.title` | reads panel heading | What Work status reads on this Mac |
-| `names.switch` | reads panel | Show session names |
-| `names.status` | reads panel, names on | A room shows the name {tool} gives each session, so you can match it to the terminal or window it runs in. A name can be a title {tool} wrote from your conversation. Atlas keeps names in memory while Work status is open; it never writes them to a file or a log, sends them anywhere, or gives them to an agent. |
+| `reads.title` / `reads.open` | reads panel heading; the header button's name | What this screen reads |
+| `reads.promise` | under the heading | Read on this Mac only; nothing is saved or sent. |
+| `reads.details` | folded account of every read | How each one is read |
+| `reads.list.label` / `.caption` | reads panel row | Session status / Shows which session waits for your answer. |
+| `reads.names.label` / `.caption` | reads panel row | Session names / Shows the name each session has. |
+| `reads.pulse.label` / `.caption` | reads panel row | File changes / Lights the room and counts changes as files change. |
+| `reads.load.label` / `.caption` | reads panel row | Memory, CPU, GPU / Shows use per room and for this whole Mac. |
+| `names.status` | folded account | A room shows the name {tool} gives each session, so you can match it to the terminal or window it runs in. A name can be a title {tool} wrote from your conversation. Atlas keeps names in memory while Work status is open; it never writes them to a file or a log, sends them anywhere, or gives them to an agent. |
 | `names.off` | reads panel, names off | Atlas does not read session names. Rooms call a session by its tool and number, such as {example}. |
 | `names.needsList` | reads panel, list off | Session names come from the session list, which is off. |
 | `room.sessions` | bezel, two or more sessions | {count, plural, one {# session} other {# sessions}} |
@@ -281,8 +288,7 @@ and shelf already use.
 | `sessionLine.workingHere` | session line | Running a command here |
 | `sessionLine.forMinutes` / `.forHours` | session line | for {count} min / for {count} h |
 | `sessionLine.more` | after the listed lines | {count, plural, one {and # more session} other {and # more sessions}} |
-| `pulse.switch` | reads panel | Watch file changes |
-| `pulse.status` | reads panel, pulse on | While Work status is open, macOS tells Atlas each time a file changes in one of this repository's worktrees, and Atlas counts the changes. It does not open the files and keeps no file name. Changes inside .git and to files Git ignores are not counted. Counts stay in memory for an hour. |
+| `pulse.status` | folded account | While Work status is open, macOS tells Atlas each time a file changes in one of this repository's worktrees, and Atlas counts the changes. It does not open the files and keeps no file name. Changes inside .git and to files Git ignores are not counted. Counts stay in memory for an hour. |
 | `pulse.off` | reads panel, pulse off | Atlas does not watch for file changes. A room shows a change the next time Atlas reads Git, up to a minute and a half later. |
 | `panel.pulseTitle` | room panel | File changes |
 | `pulse.lastMinute` | wall facts, room panel | {count, plural, one {# file change} other {# file changes}} in the last minute |
@@ -291,8 +297,7 @@ and shelf already use.
 | `pulse.none` | room panel | No file change was counted here in the last hour. |
 | `pulse.noAgent` | status line of an unheld room | Files are changing here, and Atlas sees no agent in this folder. |
 | `pulse.unwatched` | room panel | macOS could not watch this folder, so this room shows a change only when Atlas reads Git. |
-| `load.switch` | reads panel | Read memory, CPU and GPU use |
-| `load.status` | reads panel, load on | Every 5 seconds while Work status is open, Atlas reads how much memory and CPU each agent and the commands it started are using, and how busy this Mac's memory, CPU and GPU are. It reads each program's name, never its command line. Nothing is written and nothing leaves this Mac. |
+| `load.status` | folded account | Every 5 seconds while Work status is open, Atlas reads how much memory and CPU each agent and the commands it started are using, and how busy this Mac's memory, CPU and GPU are. It reads each program's name, never its command line. Nothing is written and nothing leaves this Mac. |
 | `load.off` | reads panel, load off | Atlas does not read memory, CPU or GPU use, so no room or heading shows them. |
 | `panel.loadTitle` | room panel | Load |
 | `load.room` | room panel | Memory {memory} · CPU {cores} of {total} cores |
@@ -518,3 +523,4 @@ Slice A changes this rule text:
 - 2026-11-25: a `java` process outside every agent tree also reports CPU time, so a Gradle daemon's build load shows (`docs/records/decisions/2026-11-25-work-status-java-cpu-d400da6f-da60-48b3-b9fe-cf0fbd202bb6.md`).
 - 2026-11-25: review round. Rust returns every tool group and the page shows five; criterion 5 names the spec that exists and what is still unchecked; switch commands apply in the order sent, and a null load answer is asked again before the screen calls load unsupported.
 - 2026-11-25: the owner question is answered no (command lines stay unread); Later 1 reopens it only on evidence.
+- 2026-11-25: the owner found the reads chip and its four prose blocks strange on the installed app. The header now holds a sliders button and words only while session status is off or unreadable; each row is a name, one line and a switch, and the full accounts fold beneath.

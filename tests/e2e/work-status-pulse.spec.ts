@@ -96,9 +96,9 @@ test.describe("work status file-change pulse", () => {
     const a = room(page, "feat/pulse-a");
     await expect(a.locator("[data-tick]")).toHaveCount(1);
 
-    await page.getByTestId("work-status-session-list").click();
+    await page.getByTestId("work-status-reads-open").click();
     const reads = page.getByTestId("work-status-read-pulse");
-    await expect(page.getByTestId("work-status-pulse-now")).toContainText("macOS tells Atlas each time a file changes");
+    await expect(page.getByTestId("work-status-pulse-now")).toHaveText("Lights the room and counts changes as files change.");
     await reads.getByRole("radio", { name: "Off" }).click();
     await expect(page.getByTestId("work-status-pulse-now")).toContainText("Atlas does not watch for file changes.");
     await expect(a.locator("[data-tick]")).toHaveCount(0);
