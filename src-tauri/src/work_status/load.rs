@@ -30,6 +30,8 @@ use super::agent_processes::under_agents;
 const SAMPLE_GAP: Duration = Duration::from_secs(4);
 /// A previous sample older than this (Work status was hidden) makes no CPU rate.
 const RATE_LAPSE: Duration = Duration::from_secs(15);
+/// A parent chain longer than this is not an agent's command tree.
+const MAX_ANCESTORS: usize = 64;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -92,18 +94,36 @@ fn rounded(cores: f64) -> f64 {
     (cores * 100.0).round() / 100.0
 }
 
+/// Whether one of `acp_pids` is `pid` or above it in `parents`. O(chain length).
+fn under_acp_session(pid: u32, parents: &HashMap<u32, u32>, acp_pids: &[u32]) -> bool {
+    let mut current = pid;
+    for _ in 0..MAX_ANCESTORS {
+        if acp_pids.contains(&current) {
+            return true;
+        }
+        match parents.get(&current) {
+            Some(parent) if *parent != 0 && *parent != current => current = *parent,
+            _ => return false,
+        }
+    }
+    false
+}
+
 /// One sample through `source`, against the worktrees Git lists, with rates from `previous` when
-/// it is recent. `Err` when the listing or a read of the Mac's memory or CPU fails; a process that
-/// ends between the listing and its read is skipped. O(processes × ancestor chain).
+/// it is recent; `acp_pids` are Atlas's own agent sessions. `Err` when the listing or a read of
+/// the Mac's memory or CPU fails; a process that ends between the listing and its read is
+/// skipped. O(processes × ancestor chain).
 pub(crate) fn sample(
     source: &mut impl LoadSource,
     worktrees: &[(PathBuf, String)],
+    acp_pids: &[u32],
     previous: Option<&Sample>,
     now: Instant,
     now_epoch_seconds: i64,
 ) -> Result<(LoadRead, Sample), ()> {
     let facts = source.processes().ok_or(())?;
     let under = under_agents(&facts);
+    let parents: HashMap<u32, u32> = facts.iter().map(|fact| (fact.pid, fact.parent)).collect();
     let previous =
         previous.filter(|earlier| now.saturating_duration_since(earlier.at) <= RATE_LAPSE);
     let wall_ns =
@@ -138,6 +158,7 @@ pub(crate) fn sample(
             name: fact.name.clone(),
             folder: source.working_folder(fact.pid),
             under_agent,
+            under_acp_session: under_acp_session(fact.pid, &parents, acp_pids),
             memory_bytes: usage.memory_bytes,
             cpu_cores,
         });
@@ -195,7 +216,7 @@ static SAMPLER: Mutex<Option<Sampler>> = Mutex::new(None);
 /// The load of each worktree in `worktrees` and of this Mac. Samples when `SAMPLE_GAP` has passed,
 /// else answers with the last sample; `None` while another sample runs or load is switched off.
 #[cfg(target_os = "macos")]
-pub(crate) fn load_read(worktrees: &[(PathBuf, String)]) -> Option<LoadRead> {
+pub(crate) fn load_read(worktrees: &[(PathBuf, String)], acp_pids: &[u32]) -> Option<LoadRead> {
     let mut guard = SAMPLER.try_lock().ok()?;
     let sampler = guard.get_or_insert_with(Sampler::default);
     if sampler.off {
@@ -213,6 +234,7 @@ pub(crate) fn load_read(worktrees: &[(PathBuf, String)]) -> Option<LoadRead> {
     let read = match sample(
         &mut source::MacSource,
         worktrees,
+        acp_pids,
         sampler.previous.as_ref(),
         now,
         epoch_seconds,
@@ -229,7 +251,7 @@ pub(crate) fn load_read(worktrees: &[(PathBuf, String)]) -> Option<LoadRead> {
 
 /// Load is read on macOS alone.
 #[cfg(not(target_os = "macos"))]
-pub(crate) fn load_read(_worktrees: &[(PathBuf, String)]) -> Option<LoadRead> {
+pub(crate) fn load_read(_worktrees: &[(PathBuf, String)], _acp_pids: &[u32]) -> Option<LoadRead> {
     None
 }
 

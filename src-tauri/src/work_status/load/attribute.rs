@@ -77,6 +77,8 @@ pub(crate) struct Measured {
     pub(crate) folder: Option<PathBuf>,
     /// Whether an agent is among itself and its ancestors.
     pub(crate) under_agent: bool,
+    /// Whether an Atlas agent session's process is among itself and its ancestors.
+    pub(crate) under_acp_session: bool,
     pub(crate) memory_bytes: u64,
     /// `None` on the first sample, or after a pause long enough to make a rate meaningless.
     pub(crate) cpu_cores: Option<f64>,
@@ -183,7 +185,12 @@ pub(crate) fn attribute(
     };
     // The nearest agent above, then the outermost one of that same tool, as the worktree read
     // credits a session: a `claude` an agent runs for a moment counts toward the session above it.
+    // A chain through an Atlas agent session is that session's, which the page shows by its own
+    // pid, so no agent pid below it is sent.
     let agent_of = |process: &Measured| -> Option<&Measured> {
+        if process.under_acp_session {
+            return None;
+        }
         let mut found: Option<&Measured> = None;
         let mut current = by_pid.get(&process.parent).copied()?;
         for _ in 0..MAX_ANCESTORS {
