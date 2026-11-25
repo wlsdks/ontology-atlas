@@ -459,8 +459,8 @@ Assume it shipped and failed. The three likeliest reasons:
 
 ## Later
 
-1. Tool names from command lines (Vitest, Playwright, a Gradle daemon by its class): next when the
-   owner answers yes below, or when "Node.js" and "Java" prove too coarse in criterion 1.
+1. Tool names from command lines (Vitest, Playwright, a Gradle daemon by its class): next when
+   "Node.js" and "Java" prove too coarse for a person to act on, with its own decision record.
 2. Moving, Quiet and Stalled from the pulse and CPU: next when the Work status spec's criterion
    33 has its sitting.
 3. Counts while Work status is hidden, and the rail tile's number: next when the gaps in the
@@ -477,9 +477,12 @@ May Work status read the command line of a `node` or `java` process, to say "Vit
 daemon" instead of "Node.js" or "Java", knowing that the one macOS call that returns a command
 line also hands Atlas that program's environment variables, which Atlas would discard unread?
 
-This spec is built on **no**: decision `87d3ada9` says arguments are never read, and the owner's
-approval of 2026-11-25 named what to show, not this read. A yes adds Later 1 with its own
-decision record and changes nothing else here.
+**Answered no, 2026-11-25.** The owner left the choice to the lead, who kept the read closed.
+The one macOS call that returns a command line also returns the environment, where API keys and
+tokens live, and arguments themselves carry tokens (`--token=`); holding them even briefly
+breaks decision `87d3ada9`'s promise. The gain is a label: a Gradle daemon is already placed by
+its working folder, and a busy worktree already shows as Node.js with its memory and CPU. Later
+1 reopens it only on evidence that the coarse label stops a person from acting.
 
 ## Rules and records
 
@@ -514,3 +517,4 @@ Slice A changes this rule text:
 - 2026-11-25: first draft.
 - 2026-11-25: a `java` process outside every agent tree also reports CPU time, so a Gradle daemon's build load shows (`docs/records/decisions/2026-11-25-work-status-java-cpu-d400da6f-da60-48b3-b9fe-cf0fbd202bb6.md`).
 - 2026-11-25: review round. Rust returns every tool group and the page shows five; criterion 5 names the spec that exists and what is still unchecked; switch commands apply in the order sent, and a null load answer is asked again before the screen calls load unsupported.
+- 2026-11-25: the owner question is answered no (command lines stay unread); Later 1 reopens it only on evidence.
