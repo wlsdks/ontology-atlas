@@ -256,6 +256,28 @@ describe('useLocalVaultInternal: reopening a recent vault on desktop', () => {
     expect(hook.result.current.errorMessage).toBe('Operation not permitted (os error 1)');
   });
 
+  it('keeps a vanished folder\'s last-used time when the app start cannot reach it', async () => {
+    store.getLocalFsHandle.mockResolvedValue(desktopRecord());
+    store.verifyHandlePermission.mockResolvedValue('granted');
+    tauri.tauriVaultPathExists.mockResolvedValue(false);
+
+    const hook = renderHook(() => useLocalVaultInternal());
+
+    await waitFor(() => expect(hook.result.current.errorCode).toBe('path-missing'));
+    expect(store.touchLocalFsHandle).not.toHaveBeenCalled();
+  });
+
+  it('stamps the last-used time when the app start reopens a reachable folder', async () => {
+    store.getLocalFsHandle.mockResolvedValue(desktopRecord());
+    store.verifyHandlePermission.mockResolvedValue('granted');
+    docsVault.buildLocalManifestWithEntries.mockResolvedValue(successfulBuild());
+
+    const hook = renderHook(() => useLocalVaultInternal());
+
+    await waitFor(() => expect(hook.result.current.status).toBe('loaded'));
+    expect(store.touchLocalFsHandle).toHaveBeenCalledTimes(1);
+  });
+
   it('still says a folder that vanished rather than being blocked has vanished', async () => {
     // The narrowing must not swallow its neighbour: sending somebody to System Settings to fix a
     // folder that is simply gone is a wrong instruction, and they will follow it and find nothing.
