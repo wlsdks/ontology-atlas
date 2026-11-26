@@ -302,11 +302,6 @@ export function useVaultChoice({
       }
       const storedHandle = record.handle;
       session = beginVaultReadSession(storedHandle);
-      /*
-       * Not awaited: an extra await delays the vault past the map's `?edit=` deeplink consumption.
-       * `store.ts` queues every recent-list write, so no caller waits to keep the list intact.
-       */
-      void touchLocalFsHandle();
       const permission = await verifyRead(storedHandle, false);
       if (!isCurrent()) return;
       if (permission === 'granted') {
@@ -335,6 +330,11 @@ export function useVaultChoice({
           }
           return;
         }
+        /*
+         * Stamped only once the folder answers, so a missing folder keeps its real last use. Not
+         * awaited: an extra await delays the vault past the map's `?edit=` deeplink consumption.
+         */
+        void touchLocalFsHandle();
         const resolvedHandle = await resolveVaultHandle(storedHandle);
         if (!isCurrent()) return;
         session.handle = resolvedHandle.handle;
