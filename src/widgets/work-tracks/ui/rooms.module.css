@@ -414,8 +414,6 @@
 .screenHead {
   display: flex;
   flex: none;
-  /* The branch reads in full first: an alert that does not fit beside it wraps onto a line that is not shown; the amber frame and light still say it. */
-  flex-wrap: wrap;
   height: calc(var(--text-body--line-height) + 2 * var(--s) + 1px);
   overflow: hidden;
   min-width: 0;
@@ -424,14 +422,6 @@
   border-bottom: 1px solid color-mix(in srgb, var(--room-ink) 16%, color-mix(in srgb, var(--color-text-primary) 6%, transparent));
   color: var(--color-text-primary);
   white-space: nowrap;
-}
-
-/* What needs a person, at the top of the screen beside the branch. */
-.screenAlert {
-  flex: none;
-  margin-left: auto;
-  padding-left: 12px;
-  color: var(--color-status-warning);
 }
 
 .screenBranch {

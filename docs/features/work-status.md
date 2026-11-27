@@ -113,7 +113,7 @@ session list, and on macOS Work status reads it:
 
 | The session says | The room |
 |---|---|
-| it waits on a permission prompt or a sandbox request | **Waiting for your approval**: an amber frame, the words at the top of its screen, an amber light |
+| it waits on a permission prompt or a sandbox request | **Waiting for your approval**: an amber frame, the words in amber on its wall, an amber light |
 | it waits for input, a dialog or a worker's request | **Waiting for your answer**, drawn the same way |
 | it is busy | **Working**, as before |
 | it is idle | **Finished replying**: a quiet, unlit room, unless another tool works in the folder |
@@ -352,8 +352,8 @@ rather than cut. On a narrow room the time beside the state gives way first and
 the cart waits nearer `main`, so the state reads in full. The cart waits left
 of the middle on a wide room, at most 496 px in, always a cart's length before
 `main`.
-A room says its state once: a room that needs a person says it in amber at the
-top of its screen, and any other room on its wall. A quiet room's screen is not
+A room says its state once, on its wall, in amber when it needs a person, so
+the words never compete with the branch name for the screen's top line. A quiet room's screen is not
 dimmed: its words keep their contrast and its wall says it is quiet. The building ends under what
 it holds, on the page itself: there is no slab behind the rooms. A room alone
 on the stage takes the building's whole width instead of half of it, grows to

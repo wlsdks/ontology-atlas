@@ -745,7 +745,9 @@ test.describe("work status rooms", () => {
     await say("waitingApproval");
     await expect(asking).toHaveAttribute("data-room-state", "waiting");
     await expect(asking).toHaveAttribute("data-room-size", "large");
-    await expect(asking.getByTestId("work-room-monitor")).toContainText("Waiting for your approval");
+    // The state stands on the wall, never on the screen's top line where a long branch name would push it out.
+    await expect(asking.getByTestId("work-room-facts").getByText("Waiting for your approval")).toBeVisible();
+    await expect(asking.getByTestId("work-room-monitor")).not.toContainText("Waiting for your approval");
     await expect(asking.locator("[data-scene]")).toHaveAttribute("data-tone", "warning");
     // A session that has replied is quiet, not at work, and keeps its place on the stage.
     const replied = room(page, "feat/work-status-rooms");
