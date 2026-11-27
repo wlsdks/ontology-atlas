@@ -1,7 +1,5 @@
-//! The one type that opens, reads and writes files under a vault or source root. No other crate calls `std::fs` directly.
+//! Opening, reading and writing files under a vault or source root, and nothing outside it. The
+//! credential-name filter, the slug-to-path rules, the scan and the snapshot limits join as the
+//! tools that need them are ported.
 
 pub mod confined_root;
-pub mod credential_names;
-pub mod scan_root;
-pub mod slug_paths;
-pub mod snapshot_limits;
