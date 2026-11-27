@@ -102,6 +102,8 @@ fn a_revision_or_option_in_place_of_a_branch_name_reads_nothing() {
     let fixture = repository("merged-count-names");
     let repo = &fixture.dir;
     commit(repo, "base.md", "chore: start", None);
+    // A parent commit gives `main^` and `main~1` something to resolve to if the guard let them in.
+    commit(repo, "next.md", "chore: next", None);
     for name in [
         "--output=/tmp/x",
         "main..evil",
@@ -121,6 +123,9 @@ fn a_revision_or_option_in_place_of_a_branch_name_reads_nothing() {
     // A plain folder inside the repository is not the repository: nothing is read upward.
     fs::create_dir_all(repo.join("notes")).unwrap();
     assert!(read_merged_count(&repo.join("notes"), "main", now_s() - DAY_S).is_none());
+    // Nor is a folder whose `.git` is an empty directory, which Git would climb out of.
+    fs::create_dir_all(repo.join("planted/.git")).unwrap();
+    assert!(read_merged_count(&repo.join("planted"), "main", now_s() - DAY_S).is_none());
 }
 
 /// Pull requests merge on the remote and the local base is often left behind; a fetched

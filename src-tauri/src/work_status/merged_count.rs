@@ -29,6 +29,11 @@ pub(super) fn read_merged_count(root: &Path, base_branch: &str, since_epoch_s: i
         return None;
     }
     common_dir(root)?;
+    // An empty `.git` folder is not a repository, and Git would climb from it to an enclosing one.
+    let toplevel = git_read(root, &["rev-parse", "--show-toplevel"]).ok()?;
+    if std::fs::canonicalize(toplevel.trim()).ok()? != std::fs::canonicalize(root).ok()? {
+        return None;
+    }
     let reference = base_reference(root, base_branch)?;
     // With its zone Git reads `@N` as epoch seconds; without one a small N is read as a date.
     let since = format!("--since=@{since_epoch_s} +0000");
