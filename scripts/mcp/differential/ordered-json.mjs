@@ -122,7 +122,7 @@ function getEntry(node, key) {
   return node.entries.find(([name]) => name === key)?.[1];
 }
 
-/** The node at `a.b[2].c` (the form `walkOrdered` reports), or undefined. */
+/** The node at a path such as `a.b[2].c`, or undefined. */
 export function nodeAtPath(node, pathText) {
   let current = node;
   for (const segment of pathText.match(/[^.[\]]+|\[\d+\]/g) ?? []) {
@@ -131,15 +131,6 @@ export function nodeAtPath(node, pathText) {
     else current = getEntry(current, segment);
   }
   return current;
-}
-
-/** Applies `fn` to every node, depth first, with its path (`a.b[2]`). */
-export function walkOrdered(node, fn, pathText = '') {
-  fn(node, pathText);
-  if (node.t === 'arr') node.items.forEach((item, i) => walkOrdered(item, fn, `${pathText}[${i}]`));
-  if (node.t === 'obj') {
-    for (const [key, child] of node.entries) walkOrdered(child, fn, pathText ? `${pathText}.${key}` : key);
-  }
 }
 
 /**
