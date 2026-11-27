@@ -1,0 +1,197 @@
+{
+  "serverName": "ontology-atlas-mcp",
+  "serverVersion": "0.13.0",
+  "toolInventoryPlaceholder": "__ONTOLOGY_ATLAS_ACTIVE_TOOL_INVENTORY__",
+  "readTools": [
+    "connection_info",
+    "git_status",
+    "git_history",
+    "list_concepts",
+    "list_constellations",
+    "get_constellation",
+    "get_concept",
+    "get_concepts",
+    "find_evidence",
+    "find_backlinks",
+    "find_neighbors",
+    "find_path",
+    "list_kinds",
+    "find_orphans",
+    "query_concepts",
+    "compile_ontology",
+    "query_ontology",
+    "validate_vault",
+    "validate_wiki",
+    "read_source",
+    "inspect_architecture",
+    "analyze_repo_structure",
+    "infer_imports",
+    "index_project"
+  ],
+  "retiredTools": [
+    {
+      "name": "get_concept",
+      "replacement": "get_concepts({ slugs: [slug] })"
+    },
+    {
+      "name": "add_concept",
+      "replacement": "add_concepts({ concepts: [row] })"
+    },
+    {
+      "name": "add_relation",
+      "replacement": "add_relations({ relations: [row] })"
+    },
+    {
+      "name": "find_path",
+      "replacement": "query_ontology({ operation: 'path', from, to })"
+    },
+    {
+      "name": "find_neighbors",
+      "replacement": "query_ontology({ operation: 'neighbors', slug, includeUnresolved: true })"
+    },
+    {
+      "name": "list_kinds",
+      "replacement": "list_concepts({ limit: 1 }) and read its census"
+    },
+    {
+      "name": "index_project",
+      "replacement": "analyze_repo_structure, then infer_imports and validate_vault"
+    }
+  ],
+  "constructionTools": [
+    "connection_info",
+    "list_concepts",
+    "get_concepts",
+    "find_evidence",
+    "finalize_project_meaning",
+    "connect_project_source",
+    "add_concepts",
+    "add_relations",
+    "patch_concept",
+    "find_backlinks",
+    "compile_ontology",
+    "query_ontology",
+    "validate_vault",
+    "read_source",
+    "infer_imports",
+    "analyze_repo_structure"
+  ],
+  "topLevelNonBlankArguments": {
+    "git_snapshot": [
+      "expectedHead"
+    ],
+    "list_concepts": [
+      "domain"
+    ],
+    "get_concept": [
+      "slug"
+    ],
+    "find_evidence": [
+      "title"
+    ],
+    "finalize_project_meaning": [
+      "projectSlug"
+    ],
+    "connect_project_source": [
+      "projectSlug",
+      "rootPath"
+    ],
+    "disconnect_project_source": [
+      "projectSlug"
+    ],
+    "add_concept": [
+      "slug",
+      "title",
+      "domain",
+      "path"
+    ],
+    "add_relation": [
+      "from",
+      "to"
+    ],
+    "remove_relation": [
+      "from",
+      "to"
+    ],
+    "replace_relation": [
+      "from",
+      "oldTo",
+      "newTo"
+    ],
+    "patch_concept": [
+      "slug"
+    ],
+    "find_backlinks": [
+      "slug"
+    ],
+    "find_neighbors": [
+      "slug"
+    ],
+    "find_path": [
+      "from",
+      "to"
+    ],
+    "query_concepts": [
+      "filter"
+    ],
+    "query_ontology": [
+      "recordId",
+      "analysisCursor",
+      "slug",
+      "seed",
+      "candidateSlug",
+      "title",
+      "from",
+      "project",
+      "task",
+      "expectedGraphHash",
+      "expectedSourceFingerprint",
+      "reviewRevision",
+      "cursor",
+      "to",
+      "domain",
+      "slugContains",
+      "afterActionId"
+    ],
+    "validate_vault": [
+      "repoRoot"
+    ],
+    "read_source": [
+      "path"
+    ],
+    "inspect_architecture": [
+      "rootPath",
+      "profileSlug"
+    ],
+    "infer_imports": [
+      "rootPath",
+      "afterReviewId",
+      "focusPath",
+      "focusAfterEdgeId"
+    ],
+    "index_project": [
+      "rootPath"
+    ],
+    "analyze_repo_structure": [
+      "rootPath"
+    ],
+    "rename_concept": [
+      "oldSlug",
+      "newSlug"
+    ],
+    "reclassify_concept": [
+      "slug",
+      "newSlug"
+    ],
+    "merge_concepts": [
+      "fromSlug",
+      "intoSlug"
+    ],
+    "delete_concept": [
+      "slug"
+    ],
+    "absorb_document": [
+      "filePath"
+    ]
+  }
+}
