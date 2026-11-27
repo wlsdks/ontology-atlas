@@ -22,12 +22,10 @@ use crate::import_edges::{ImportKind, ImportUsage, SourceRole};
 use crate::import_rollup::{evidence_priority, EdgeStats, EvidenceRow};
 use crate::path_facts::{resolve_below, PathFacts};
 use crate::source_language::{extension_of, SourceLanguage};
-use crate::source_walk::{list_sorted, IgnoredNames, GO_EXTENSION};
+use crate::source_walk::{list_sorted, IgnoredNames, GO_EXTENSION, WALK_MAX_DEPTH};
 
 pub const GO_FILE_MAX_BYTES: usize = 256 * 1024;
 pub const GO_IMPORTS_PER_FILE_LIMIT: usize = 256;
-/// No module nests packages this deep; the cap keeps a hostile tree from being walked forever.
-const GO_WALK_MAX_DEPTH: usize = 128;
 
 /// One import as written: its path, and whether it is a blank (`_`) import kept for its effect.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -282,7 +280,7 @@ enum Pending {
 
 /// The Go files of the module in name order, a folder's files where its name falls, and whether
 /// more than `max_files` were found. A stack stands in for recursion, so a folder tree thousands
-/// deep cannot overflow, and folders deeper than [`GO_WALK_MAX_DEPTH`] are not entered.
+/// deep cannot overflow, and folders deeper than [`WALK_MAX_DEPTH`] are not entered.
 fn list_go_files(
     layout: &GoLayout<'_, '_>,
     ignore: &IgnoredNames,
@@ -313,7 +311,7 @@ fn list_go_files(
                     let path = directory.join(&name);
                     match kind {
                         EntryKind::Directory
-                            if depth < GO_WALK_MAX_DEPTH && !layout.in_nested_module(&path) =>
+                            if depth < WALK_MAX_DEPTH && !layout.in_nested_module(&path) =>
                         {
                             in_order.push(Pending::Folder(path, depth + 1));
                         }

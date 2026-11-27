@@ -646,7 +646,7 @@ add('imports', 'inspect-architecture-storefront-profile', { vault: 'storefront' 
   call('inspect_architecture', { profileSlug: 'storefront-services' }),
   call('inspect_architecture', { rootPath: '$VAULT', profileSlug: 'architecture/storefront-services' }),
 ]);
-// Where the syntax tree reads what the line scanners did not (rows 2, 33, 34 and 36 of the table).
+// Where the syntax tree reads what the line scanners did not (rows 2, 33 and 34 of the table, and a hidden folder an import may name).
 const plant = (path, text) => ({ $: 'write-file', path: `../parser/${path}`, text });
 add('imports', 'infer-imports-syntax-tree-reads', { vault: 'miniature-repo' }, [
   plant('binary/a.ts', '\u0000\u0001\u0002 import { b } from \'./b\';\n'),
@@ -665,6 +665,18 @@ add('imports', 'infer-imports-syntax-tree-reads', { vault: 'miniature-repo' }, [
   plant('hidden/a.ts', 'import data from \'./.hidden/data.json\';\n'),
   plant('hidden/.hidden/data.json', '{}\n'),
   call('infer_imports', { rootPath: '$PARENT/parser/hidden', reconcile: false }),
+]);
+// The per-file limit of 256 Rust statements and 256 Go imports, and a tree 130 folders deep.
+const limitLines = (count, line) => Array.from({ length: count }, (_, index) => line(index)).join('\n');
+add('imports', 'infer-imports-per-file-limits-and-depth', { vault: 'miniature-repo' }, [
+  plant('limits/rust/lib.rs', `${limitLines(300, (index) => `use crate_${index}::item;`)}\n`),
+  call('infer_imports', { rootPath: '$PARENT/parser/limits/rust', reconcile: false }),
+  plant('limits/go/go.mod', 'module example.com/app\n'),
+  plant('limits/go/main.go', `package main\n\nimport (\n${limitLines(300, (index) => `\t"example.com/app/pkg${index}"`)}\n)\n`),
+  call('infer_imports', { rootPath: '$PARENT/parser/limits/go', reconcile: false }),
+  plant(`limits/deep/${'d/'.repeat(130)}a.ts`, "import './b';\n"),
+  plant(`limits/deep/${'d/'.repeat(130)}b.ts`, 'export const b = 1;\n'),
+  call('infer_imports', { rootPath: '$PARENT/parser/limits/deep', reconcile: false }),
 ]);
 add('imports', 'infer-imports-review-and-focus-pages', { vault: 'miniature-repo' }, [
   call('infer_imports', { rootPath: '$PARENT', reviewMode: 'next' }, { as: 'review-1' }),

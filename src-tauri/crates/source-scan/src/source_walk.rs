@@ -86,9 +86,11 @@ pub fn list_sorted(files: &dyn SourceFiles, directory: &Path) -> Vec<(String, En
     entries
 }
 
-/// Folders deeper than this below a walk's start are not entered: no repository nests source
-/// this deep, and a hostile tree must not walk the scan forever.
-pub const WALK_MAX_DEPTH: usize = 128;
+/// Folders deeper than this below a walk's start are not entered. Every file system ends a path
+/// before this many folders (a path of one-letter folders is two bytes a level, and no system
+/// takes one of 8 KiB), so on a real tree the limit never binds; it only bounds a walk a hostile
+/// file system could keep extending.
+pub const WALK_MAX_DEPTH: usize = 4096;
 
 enum Step {
     Folder(PathBuf, usize),
