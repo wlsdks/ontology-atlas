@@ -15,6 +15,8 @@ use crate::write_checkpoint::Permit;
 use crate::write_tool::WriteTool;
 
 mod argument_checks;
+mod compile_ontology;
+mod compiled_graph;
 mod concept_row;
 mod connection_info;
 mod find_backlinks;
@@ -24,10 +26,13 @@ mod git_history;
 mod git_status;
 mod list_concepts;
 mod query_concepts;
+mod query_ontology;
 mod read_vault;
 #[cfg(feature = "test-hooks")]
 mod test_hooks;
 mod vault_repository;
+
+pub use compiled_graph::KeptGraph;
 
 /// A write tool's handler. It receives the proof that the checkpoint passed, and answers with what
 /// the audit lines record, so it cannot finish without saying.
@@ -50,6 +55,8 @@ pub fn call(
         "find_backlinks" => Some(find_backlinks::call(context, arguments)),
         "find_orphans" => Some(find_orphans::call(context, arguments)),
         "query_concepts" => Some(query_concepts::call(context, arguments)),
+        "compile_ontology" => Some(compile_ontology::call(context, arguments)),
+        "query_ontology" => Some(query_ontology::call(context, arguments)),
         "git_status" => Some(git_status::call(context)),
         "git_history" => Some(git_history::call(context, arguments)),
         _ => None,

@@ -3548,7 +3548,7 @@ checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
 
 [[package]]
 name = "ontology-atlas"
-version = "2.7.14"
+version = "2.7.15"
 dependencies = [
  "candle-core",
  "candle-nn",
@@ -3595,6 +3595,15 @@ dependencies = [
 name = "ontology-graph"
 version = "0.1.0"
 dependencies = [
+ "answer-format",
+ "confined-files",
+ "indexmap 2.14.0",
+ "serde",
+ "serde_json",
+ "sha2 0.11.1",
+ "strsim",
+ "tempfile",
+ "thiserror 2.0.21",
  "vault-document",
 ]
 

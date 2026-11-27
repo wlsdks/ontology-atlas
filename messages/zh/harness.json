@@ -5,7 +5,8 @@
   "views": {
     "overview": "配置",
     "architecture": "架构",
-    "improve": "改进"
+    "improve": "改进",
+    "tokens": "Token"
   },
   "retry": "重新读取",
   "toolsSource": "来源",

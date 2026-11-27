@@ -463,6 +463,25 @@ const QUERY_STOREFRONT = [
   { operation: 'overview', limit: 1 }, { operation: 'centrality', iterations: 3, limit: 3 }, { operation: 'match_nodes', limit: 2, cursor: 'x' },
 ];
 add('graph', 'query-ontology-storefront', { vault: 'storefront' }, QUERY_STOREFRONT.map((args) => call('query_ontology', args)));
+add('graph', 'query-ontology-tangle', { vault: 'tangle' }, [
+  { operation: 'overview' }, { operation: 'schema' }, { operation: 'facets' }, { operation: 'components' },
+  { operation: 'cycles' }, { operation: 'cycles', maxHops: 3 }, { operation: 'cycles', limit: 1 },
+  { operation: 'cycles', searchBudget: 5 }, { operation: 'cycles', types: ['depends_on'] },
+  { operation: 'topological_order' }, { operation: 'topological_order', limit: 2 },
+  { operation: 'centrality' }, { operation: 'centrality', iterations: 1, limit: 4 }, { operation: 'centrality', types: ['depends_on'] },
+  { operation: 'communities' }, { operation: 'communities', iterations: 1 }, { operation: 'communities', limit: 1, nodeLimit: 2 },
+  { operation: 'neighbors', slug: 'capabilities/b' }, { operation: 'neighbors', slug: 'capabilities/b', direction: 'in', depth: 3 },
+  { operation: 'neighbors', slug: 'capabilities/b', direction: 'both', depth: 20, limit: 3 },
+  { operation: 'path', from: 'capabilities/l', to: 'capabilities/g' }, { operation: 'path', from: 'capabilities/g', to: 'capabilities/l' },
+  { operation: 'path', from: 'capabilities/a', to: 'capabilities/a' }, { operation: 'path', from: 'capabilities/a', to: 'capabilities/h' },
+  { operation: 'path', from: 'capabilities/a', to: 'capabilities/g', direction: 'both', maxHops: 2 },
+  { operation: 'all_paths', from: 'capabilities/l', to: 'capabilities/g' },
+  { operation: 'all_paths', from: 'capabilities/a', to: 'capabilities/e', maxHops: 5, limit: 3 },
+  { operation: 'all_paths', from: 'capabilities/a', to: 'capabilities/g', searchBudget: 4 },
+  { operation: 'all_paths', from: 'capabilities/a', to: 'capabilities/a' },
+  { operation: 'neighbors', slug: 'capabilites/b' }, { operation: 'path', from: 'capabilities/a', to: 'capabilities/z' },
+  { operation: 'cycles', maxHops: 21 }, { operation: 'topological_order', types: ['bogus'] }, { operation: 'neighbors', slug: 'capabilities/b', direction: 'up' },
+].map((args) => call('query_ontology', args)));
 add('graph', 'query-ontology-edge-names', { vault: 'edge-names' }, [
   { operation: 'overview' }, { operation: 'health' }, { operation: 'communities' }, { operation: 'centrality' }, { operation: 'containment_tree' },
   { operation: 'match_nodes', sort: 'title' }, { operation: 'match_nodes', sort: 'slug', limit: 30 }, { operation: 'similar_nodes', slug: 'capabilities/\uc8fc\ubb38-\ucde8\uc18c' },
@@ -485,6 +504,43 @@ add('graph', 'query-ontology-recompiles-after-disk-change', { vault: 'storefront
   { $: 'write-file', path: 'elements/new-element.md', text: '---\nuid: 22222222-3333-4444-8555-666666666666\nslug: elements/new-element\nkind: element\ntitle: New Element\n---\n\nAdded behind the server.\n' },
   call('query_ontology', { operation: 'overview' }),
   call('compile_ontology', { summary: true }),
+]);
+
+// Identity faults stop every graph command with one refusal naming the files.
+for (const vault of ['identity-uid-missing', 'identity-uid-invalid', 'identity-uid-duplicate', 'identity-merged-collision']) {
+  add('graph', `graph-refuses-${vault}`, { vault }, [
+    call('compile_ontology', {}),
+    call('query_ontology', { operation: 'overview' }),
+    call('query_ontology', { operation: 'neighbors', slug: 'capabilities/a' }),
+  ]);
+}
+// A vote that two names tie for is settled the same way on every machine.
+add('graph', 'query-ontology-communities-ties', { vault: 'communities-ties' }, [
+  { operation: 'communities' }, { operation: 'communities', iterations: 1 }, { operation: 'centrality' },
+  { operation: 'neighbors', slug: 'capabilities/a' }, { operation: 'topological_order' },
+].map((args) => call('query_ontology', args)));
+// A node named for a whole number, and the ordered tables that name it.
+add('graph', 'graph-numeric-names', { vault: 'numeric-names' }, [
+  call('compile_ontology', { includeIndexes: true }),
+  call('compile_ontology', { summary: true }),
+  call('query_ontology', { operation: 'overview' }),
+  call('query_ontology', { operation: 'schema' }),
+  call('query_ontology', { operation: 'all_paths', from: 'capabilities/plan', to: 'capabilities/review' }),
+  call('query_ontology', { operation: 'centrality' }),
+]);
+// Issues that do not stop the compile: a name two nodes answer to, references to nothing, a cycle.
+add('graph', 'graph-ambiguous-and-dangling', { vault: 'ambiguous-dangling' }, [
+  call('compile_ontology', { includeIndexes: true }),
+  call('compile_ontology', { summary: true }),
+  call('query_ontology', { operation: 'overview' }),
+  call('query_ontology', { operation: 'cycles' }),
+  call('query_ontology', { operation: 'neighbors', slug: 'capabilities/a', includeUnresolved: true, includeExternal: true }),
+]);
+// A topological order cut at `limit` cuts its blocked list too.
+add('graph', 'query-ontology-tangle-limited-order', { vault: 'tangle' }, [
+  call('query_ontology', { operation: 'topological_order', limit: 2 }),
+  call('query_ontology', { operation: 'topological_order', limit: 1 }),
+  call('query_ontology', { operation: 'topological_order', limit: 500 }),
 ]);
 
 // ---------------------------------------------------------------------------------------------
