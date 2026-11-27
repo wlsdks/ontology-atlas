@@ -1,8 +1,7 @@
-import type { TauriTextFile, TauriVaultEntry } from './tauri-vault-files';
+import { failureCodeOf } from '@/shared/lib/failures/failure-code';
+import { readStrictUtf8Text } from '../strict-utf8-text';
+import { unstampTauriVaultBytes, type TauriTextFile, type TauriVaultEntry } from './tauri-vault-files';
 import { getTauriInvoke, type TauriInvoke } from './tauri-vault-runtime';
-
-/** Raw bytes follow a little-endian u64 mtime. */
-const BINARY_FILE_STAMP_BYTES = 8;
 
 type WritableChunk = string | Blob | ArrayBuffer | ArrayBufferView;
 
@@ -27,10 +26,13 @@ function mimeForPath(path: string): string {
   return 'application/octet-stream';
 }
 
-async function chunkToText(chunk: WritableChunk): Promise<string> {
+/**
+ * The app writes text, so bytes are written only when they are UTF-8: a copy of a file that is not
+ * would otherwise land with replacement characters where its bytes were.
+ */
+async function chunkToText(chunk: WritableChunk, path: string): Promise<string> {
   if (typeof chunk === 'string') return chunk;
-  if (chunk instanceof Blob) return chunk.text();
-  return new TextDecoder().decode(chunk);
+  return readStrictUtf8Text(chunk instanceof Blob ? chunk : new Blob([chunk as BlobPart]), path);
 }
 
 class TauriWritableFileStream {
@@ -46,7 +48,7 @@ class TauriWritableFileStream {
   }
 
   async write(chunk: WritableChunk): Promise<void> {
-    this.content += await chunkToText(chunk);
+    this.content += await chunkToText(chunk, this.relativePath);
   }
 
   async close(): Promise<void> {
@@ -74,9 +76,9 @@ class TauriFileHandle {
 
   /**
    * A `File` holds bytes, as a browser's does. Markdown is read as text first; the text read refuses
-   * bytes that are not UTF-8, so those are read as they are and the reader decides: Planning refuses
-   * to edit them, the vault decodes them as a browser would, and one such file never fails a whole
-   * folder. What the byte read refuses as well keeps the text read's reason.
+   * bytes that are not UTF-8, so those are read as they are and the reader decides: a writer refuses
+   * them (`readStrictUtf8Text`), the vault decodes them as a browser would, and one such file never
+   * fails a whole folder. Any other failure of the text read is the answer.
    */
   async getFile(): Promise<File> {
     if (!this.name.endsWith('.md')) return this.readBytes(mimeForPath(this.relativePath));
@@ -87,9 +89,8 @@ class TauriFileHandle {
         relativePath: this.relativePath,
       });
     } catch (textError) {
-      return this.readBytes('text/markdown').catch(() => {
-        throw textError;
-      });
+      if (failureCodeOf(textError) !== 'not-utf8') throw textError;
+      return this.readBytes('text/markdown');
     }
     return new File([file.text], this.name, {
       type: 'text/markdown',
@@ -98,14 +99,13 @@ class TauriFileHandle {
   }
 
   private async readBytes(type: string): Promise<File> {
-    const stamped = await this.invoke<ArrayBuffer>('read_vault_binary_file', {
-      rootPath: this.rootPath,
-      relativePath: this.relativePath,
-    });
-    return new File([new Uint8Array(stamped, BINARY_FILE_STAMP_BYTES)], this.name, {
-      type,
-      lastModified: Number(new DataView(stamped).getBigUint64(0, true)),
-    });
+    const { bytes, lastModified } = unstampTauriVaultBytes(
+      await this.invoke<ArrayBuffer>('read_vault_binary_file', {
+        rootPath: this.rootPath,
+        relativePath: this.relativePath,
+      }),
+    );
+    return new File([bytes], this.name, { type, lastModified });
   }
 
   async createWritable(): Promise<TauriWritableFileStream> {

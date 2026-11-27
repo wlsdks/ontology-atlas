@@ -24,6 +24,7 @@ describe('failure codes — the throw names the failure, the screen owns the sen
     ['No such file or directory (os error 2)', 'target-missing'],
     ['A requested file or directory could not be found', 'target-missing'],
     ['EEXIST: file already exists', 'already-exists'],
+    ['stream did not contain valid UTF-8', 'not-utf8'],
   ])('reads the operating system\'s own wording: %s', (text, code) => {
     // These are not ours to re-mint, so the signature tables recognise them instead.
     expect(failureCodeOf(new Error(text))).toBe(code);

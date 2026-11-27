@@ -9,6 +9,7 @@ import {
   type FrontmatterUpdateValue,
 } from '@/entities/docs-vault';
 import { verifyHandlePermission } from '@/entities/local-fs-handle';
+import { readStrictUtf8Text } from '@/shared/lib/vault-folder/strict-utf8-text';
 import {
   VaultConflictError,
   assertExpectedMtime,
@@ -162,7 +163,7 @@ export function useVaultDocWrites(
       await requireWritePermission(fh);
       const file = await fh.getFile();
       guardExpectedMtime(slug, options.expectedMtime, file.lastModified);
-      assertIdentityTransition(await file.text(), content);
+      assertIdentityTransition(await readStrictUtf8Text(file, `${slug}.md`), content);
       assertNodeIdentityContent(slug, content, live.manifest?.docs ?? []);
       const writable = await fh.createWritable();
       await writable.write(content);
@@ -245,7 +246,7 @@ export function useVaultDocWrites(
       await requireWritePermission(fh);
       const file = await fh.getFile();
       guardExpectedMtime(slug, options.expectedMtime, file.lastModified);
-      const raw = await file.text();
+      const raw = await readStrictUtf8Text(file, `${slug}.md`);
       assertIdentityPatch(raw, updates);
       const next = applyFrontmatterUpdates(raw, updates);
       assertNodeIdentityContent(slug, next, live.manifest?.docs ?? []);
@@ -330,7 +331,7 @@ export function useVaultDocWrites(
       if (!oldFh) throw new Error(`Local vault: no file handle for "${oldSlug}"`);
       const file = await oldFh.getFile();
       guardExpectedMtime(oldSlug, options.expectedMtime, file.lastModified);
-      const raw = await file.text();
+      const raw = await readStrictUtf8Text(file, `${oldSlug}.md`);
       if (options.frontmatterUpdates) assertIdentityPatch(raw, options.frontmatterUpdates);
       const content = rewriteMovedDocSelf(raw, {
         oldSlug,

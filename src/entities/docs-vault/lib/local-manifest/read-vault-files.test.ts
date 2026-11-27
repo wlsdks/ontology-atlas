@@ -2,9 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const readTauriVaultTextFile = vi.fn();
 const readTauriVaultTextFiles = vi.fn();
+const readTauriVaultBytes = vi.fn();
 vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-files', () => ({
   readTauriVaultTextFile: (...args: unknown[]) => readTauriVaultTextFile(...args),
   readTauriVaultTextFiles: (...args: unknown[]) => readTauriVaultTextFiles(...args),
+  readTauriVaultBytes: (...args: unknown[]) => readTauriVaultBytes(...args),
 }));
 
 const { createMarkdownReader, mapPooled } = await import('./read-vault-files');
@@ -53,7 +55,11 @@ describe('createMarkdownReader', () => {
   beforeEach(() => {
     readTauriVaultTextFile.mockReset();
     readTauriVaultTextFiles.mockReset();
+    readTauriVaultBytes.mockReset();
   });
+
+  const refused = 'stream did not contain valid UTF-8';
+  const legacyBytes = { bytes: Uint8Array.from([0x23, 0x20, 0xb0, 0xe1, 0x0a]), lastModified: 7 };
 
   function entry(relativePath: string, text: string, lastModified: number) {
     return {
@@ -85,18 +91,37 @@ describe('createMarkdownReader', () => {
     ]);
   });
 
-  it('reads a document the native text read refuses through its handle, so the batch still answers', async () => {
-    const refused = 'stream did not contain valid UTF-8';
+  it('reads a document the batch refused as not UTF-8 once more, as bytes, so the batch still answers', async () => {
     readTauriVaultTextFiles.mockResolvedValue([
       { relativePath: 'a.md', text: 'native A', lastModified: 10, error: null },
       { relativePath: 'legacy.md', text: null, lastModified: null, error: refused },
     ]);
-    readTauriVaultTextFile.mockRejectedValue(new Error(refused));
+    readTauriVaultBytes.mockResolvedValue(legacyBytes);
     const read = createMarkdownReader('/vault');
-    expect(await read([entry('a.md', 'A', 1), entry('legacy.md', '# ��\n', 2)])).toEqual([
+    expect(await read([entry('a.md', 'A', 1), entry('legacy.md', 'unused', 2)])).toEqual([
       { text: 'native A', lastModified: 10 },
-      { text: '# ��\n', lastModified: 2 },
+      { text: '# ��\n', lastModified: 7 },
     ]);
+    expect(readTauriVaultTextFile).not.toHaveBeenCalled();
+    expect(readTauriVaultBytes).toHaveBeenCalledTimes(1);
+  });
+
+  it('reads a document the single text read refused as not UTF-8 as bytes, once', async () => {
+    readTauriVaultTextFiles.mockRejectedValue(new Error('bridge down'));
+    readTauriVaultTextFile.mockRejectedValue(new Error(refused));
+    readTauriVaultBytes.mockResolvedValue(legacyBytes);
+    const read = createMarkdownReader('/vault');
+    expect(await read([entry('legacy.md', 'unused', 2)])).toEqual([{ text: '# ��\n', lastModified: 7 }]);
+    expect(readTauriVaultTextFile).toHaveBeenCalledTimes(1);
+    expect(readTauriVaultBytes).toHaveBeenCalledTimes(1);
+  });
+
+  it('answers any other failure of the native read as it is, with no second read', async () => {
+    readTauriVaultTextFiles.mockRejectedValue(new Error('bridge down'));
+    readTauriVaultTextFile.mockRejectedValue(new Error('No such file or directory (os error 2)'));
+    const read = createMarkdownReader('/vault');
+    await expect(read([entry('gone.md', 'unused', 2)])).rejects.toThrow('os error 2');
+    expect(readTauriVaultBytes).not.toHaveBeenCalled();
   });
 
   it('stops asking for batches after one batch call fails', async () => {

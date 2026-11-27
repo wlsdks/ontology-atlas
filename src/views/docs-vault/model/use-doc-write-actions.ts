@@ -18,6 +18,7 @@ import { codedFailure } from '@/shared/lib/failures/failure-code';
 import { resolveLocaleDisplayName } from '@/shared/lib/locale-text/locale-display-name';
 import { findSimilarNodeByTitle, type SimilarNodeMatch } from '@/shared/lib/search-match/similar-node-title';
 import { useFailureSentence } from '@/shared/lib/failures/use-failure-sentence';
+import { readStrictUtf8Text } from '@/shared/lib/vault-folder/strict-utf8-text';
 import { useToast } from '@/shared/ui';
 import {
   PINNED_DOCS_STORAGE_PREFIX,
@@ -332,7 +333,7 @@ export function useDocWriteActions({
     }
     try {
       const file = await fh.getFile();
-      const raw = await file.text();
+      const raw = await readStrictUtf8Text(file, `${selectedSlug}.md`);
       // Decided from the text just read, so a pending detail is never taken for "no headings".
       const headings = deriveDocumentDetail(raw).headings.filter((h) => h.depth >= 2 && h.depth <= 3);
       if (headings.length === 0) {
