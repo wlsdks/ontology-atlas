@@ -479,7 +479,7 @@ export function ChangeBriefingPage() {
           <section aria-label={t('repository')} className="space-y-2 py-3">
           {!sourceChoice && <Select ariaLabel={t('project')} value={project} onChange={setProjectChoice} options={projects.map(doc => ({ value: doc.slug, label: title(doc.slug) }))} />}
 
-            <p className="break-all text-body">{t('repository')}: {data.sourceRoot} · {t('head', { hash: data.head.slice(0, 8) })}</p>
+            <p className="break-all text-body">{t('repository')}: {data.sourceRoot} · {data.line ? t('headOnLine', { hash: data.head.slice(0, 8), branch: data.line }) : t('head', { hash: data.head.slice(0, 8) })}</p>
             <p className="text-body text-[color:var(--color-text-secondary)]">{t('scope')}</p>
             <p className="text-body text-[color:var(--color-text-secondary)]">{t('timezone', { timezone: Intl.DateTimeFormat().resolvedOptions().timeZone })}</p>
           </section>

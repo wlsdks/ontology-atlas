@@ -37,19 +37,6 @@ const shownFace = (element: HTMLElement) => facesOf(element).find(isOld) ?? face
 /** The parts of a stage room that fade while it travels resized: its monitor and its belt. */
 const partsOf = (element: HTMLElement) => [...(shownFace(element)?.querySelectorAll<HTMLElement>('[data-room-part]') ?? [])];
 const opacityOf = (element: HTMLElement) => Number(getComputedStyle(element).opacity);
-/** Travel shorter than this along the floor is not a walk. */
-const WALK_MIN_PX = 8;
-let walks = 0;
-
-/** A room that keeps its content while it moves sideways: its Moru galumphs once the way it goes. */
-function walk(element: HTMLElement, move: RoomMove) {
-  const dx = move.to.x - move.from.x;
-  if (Math.abs(dx) < WALK_MIN_PX) return;
-  const face = shownFace(element);
-  const clip = dx > 0 ? 'galumph' : 'galumph-left';
-  walks += 1;
-  for (const sprite of face?.querySelectorAll<HTMLElement>('[data-moru-live]') ?? []) sprite.dataset.moruTravel = `${clip}@walk${walks}`;
-}
 
 /** A move that keeps the room's content: the face on screen stays the room's own, and the waiting one goes. */
 const keepShownFace = (element: HTMLElement) => {
@@ -67,7 +54,7 @@ interface Drawn {
 /**
  * Plays each building update as one sequence (`planSequence`). Each moving room, a little after the
  * one before it, fades what must not show while it travels, goes to its new box and brings it back:
- * a stage room that stays one keeps its Moru, tag, plaque and hue edge and fades only its monitor and
+ * a stage room that stays one keeps its tag, plaque and hue edge and fades only its monitor and
  * belt while its box and scale glide; a room that changes tier travels as its wall with its hue edge
  * and plaque. Only one copy of a room is ever drawn. Fades out are linear, so no frame cuts. An update
  * that lands mid-sequence starts the next from what each room shows. The first drawing fades up; a
@@ -162,16 +149,12 @@ export function useRoomMotion(
       if (move && shows) {
         const timing: MoveTiming = { sequence, total: totalMs, at, shows };
         if (move.mode === 'resized') {
-          walk(element, move);
           keepShownFace(element);
           animations.push(...playResized(element, move, timing, boxes.get(key)!.unit));
         } else {
           animations.push(...playMove(element, move, timing));
           if (move.mode === 'wall') animations.push(...playWall(element, move, timing));
-          else {
-            walk(element, move);
-            keepShownFace(element);
-          }
+          else keepShownFace(element);
         }
         continue;
       }
@@ -258,9 +241,9 @@ function fadeFrames(from: number, steps: ReturnType<typeof stepsOf>): Keyframe[]
 const layerOf = (move: RoomMove) => (move.mode === 'wall' ? 0 : 10) + 5 - move.wave;
 
 /**
- * A stage room that stays one: its box itself grows or shrinks along its path, so its Moru, name tag,
- * plaque and hue edge lay out at every frame, and its scale glides to the new unit with it. Only its
- * monitor and belt fade while it travels.
+ * A stage room that stays one: its box itself grows or shrinks along its path, so its name tag,
+ * plaque and hue edge lay out at every frame, and its scenery's scale glides to the new unit with
+ * it. Only its monitor and belt fade while it travels.
  */
 function playResized(element: HTMLElement, move: RoomMove, timing: MoveTiming, unit: number): Animation[] {
   const steps = stepsOf(move, timing);
@@ -268,15 +251,15 @@ function playResized(element: HTMLElement, move: RoomMove, timing: MoveTiming, u
   for (const part of partsOf(element)) played.push(part.animate(fadeFrames(timing.shows.parts, steps), { duration: timing.total }));
   const scene = shownFace(element)?.querySelector<HTMLElement>('[data-scene]');
   const from = timing.shows.unit;
-  if (scene && from !== unit) played.push(gliding(scene, scene.animate(scaleFrames(move, timing, from, unit), { duration: timing.total })));
+  if (scene && from !== unit) played.push(scene.animate(scaleFrames(move, timing, from, unit), { duration: timing.total }));
   return played;
 }
 
 /**
- * Moru's scale through a resize: one glide in log space as long as a move, on the move's curve, so he grows or
- * shrinks by the same share each moment (1 to 3 at most about 12 % in 40 ms), however briefly his box changes
- * size. Each frame he is held to what the box fits then, so he never outgrows his room: growing, the glide
- * starts with the box and lags it; shrinking, it ends with the box and leads it. It lands on the new unit.
+ * The scenery's scale through a resize: one glide in log space as long as a move, on the move's curve, so it
+ * grows or shrinks by the same share each moment (1 to 3 at most about 12 % in 40 ms), however briefly its box
+ * changes size. Each frame it is held to what the box fits then, so it never outgrows its room: growing, the
+ * glide starts with the box and lags it; shrinking, it ends with the box and leads it. It lands on the new unit.
  */
 function scaleFrames(move: RoomMove, { sequence, total, at }: MoveTiming, from: number, unit: number): Keyframe[] {
   const sideways = move.from.w !== move.to.w;
@@ -303,19 +286,6 @@ function scaleFrames(move: RoomMove, { sequence, total, at }: MoveTiming, from: 
   return frames;
 }
 
-/**
- * Marks a scene whose scale glides until the glide ends: a stepping Moru gives up his own layer meanwhile
- * (`rooms.module.css`, `.moruCells`), as WebKit would size it anew on every frame and drop frames.
- */
-function gliding(scene: HTMLElement, animation: Animation) {
-  scene.dataset.gliding = 'true';
-  const done = () => {
-    if (!scene.getAnimations().some(other => other !== animation && other.playState === 'running')) delete scene.dataset.gliding;
-  };
-  animation.addEventListener?.('finish', done);
-  animation.addEventListener?.('cancel', done);
-  return animation;
-}
 
 /**
  * A room going to its new box by transform: it holds while its fade step plays and passes its

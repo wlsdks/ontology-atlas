@@ -734,3 +734,67 @@ fn public_repository_discovery_works_for_empty_period_but_rejects_a_stale_snapsh
         prs::inventory::git_briefing_public_repositories(path, data.head, data.snapshot).is_err()
     );
 }
+
+#[test]
+fn a_checkout_on_a_feature_branch_reads_the_merged_line_not_its_own_commits() {
+    let f = Fixture::new();
+    let _scope = crate::vault::grants::EnforcedScope::granting(&[]);
+    crate::vault::grants::grant_source_root(&f.source);
+    let source = f.source.to_string_lossy().to_string();
+    let subjects = || -> Vec<String> {
+        git_source_briefing(source.clone(), START - 100, START + 100)
+            .unwrap()
+            .commits
+            .into_iter()
+            .map(|commit| commit.subject)
+            .collect()
+    };
+    f.write("a.txt", "base");
+    let base = f.commit(START - 10, "chore: base");
+    git(&f.source, &["switch", "-q", "-c", "feat/unmerged"]);
+    f.write("a.txt", "feature");
+    f.commit(START, "feat: not merged yet");
+    assert_eq!(subjects(), ["chore: base"]);
+
+    // A merge on the remote that the local main has not pulled yet is merged work.
+    git(&f.source, &["switch", "-q", "-c", "remote-line", &base]);
+    f.write("b.txt", "merged");
+    let merged = f.commit(START + 1, "fix: merged on the remote");
+    git(
+        &f.source,
+        &["update-ref", "refs/remotes/origin/main", &merged],
+    );
+    git(&f.source, &["switch", "-q", "feat/unmerged"]);
+    assert_eq!(subjects(), ["fix: merged on the remote", "chore: base"]);
+}
+
+#[test]
+fn pull_request_lookups_accept_a_read_taken_on_a_feature_branch() {
+    let f = Fixture::new();
+    let _scope = f.grant();
+    f.write("source.ts", "one");
+    f.commit(START, "chore: base");
+    git(
+        &f.source,
+        &[
+            "remote",
+            "add",
+            "origin",
+            "https://github.com/owner/repo.git",
+        ],
+    );
+    git(&f.source, &["switch", "-q", "-c", "feat/unmerged"]);
+    f.commit(START + 1, "feat: not merged yet");
+    let data =
+        git_source_briefing(f.source.to_string_lossy().into(), START - 10, START + 10).unwrap();
+    assert_eq!(data.line.as_deref(), Some("main"));
+    assert_eq!(
+        prs::inventory::git_briefing_public_repositories(
+            f.source.to_string_lossy().into(),
+            data.head,
+            data.snapshot
+        )
+        .unwrap(),
+        vec!["owner/repo"]
+    );
+}

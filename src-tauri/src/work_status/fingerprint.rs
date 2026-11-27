@@ -11,7 +11,6 @@ const PER_WORKTREE_FILES: &[&str] = &["HEAD", "locked", "logs/HEAD"];
 const REPOSITORY_FILES: &[&str] = &["HEAD", "logs/HEAD", "packed-refs", "worktrees"];
 /// A merge landed by `git fetch origin main:main` moves only the base's loose ref, and a plain
 /// fetch only `origin/<base>`'s.
-const BASE_CANDIDATES: &[&str] = &["main", "master"];
 const REMOTE_HEAD_PREFIX: &str = "ref: refs/remotes/origin/";
 
 /// Stats a fixed set of administrative files and asks whether each locked pid still runs, so an
@@ -80,7 +79,11 @@ fn base_branches(common: &Path) -> Vec<String> {
         .filter(|name| !name.split('/').any(|part| part.is_empty() || part == ".."));
     remote_head
         .into_iter()
-        .chain(BASE_CANDIDATES.iter().map(|name| name.to_string()))
+        .chain(
+            crate::git::base_line::BASE_CANDIDATES
+                .iter()
+                .map(|name| name.to_string()),
+        )
         .collect()
 }
 

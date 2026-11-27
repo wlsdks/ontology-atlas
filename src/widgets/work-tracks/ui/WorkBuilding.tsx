@@ -9,18 +9,14 @@ import { sessionBoardOf } from '@/shared/lib/work-status/signals/session-board';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { MOTION } from '@/shared/motion';
 import { changedAreas } from '../model/changed-areas';
-import { fileColumns, layoutBuilding, listsAreas, pairUnit, screenRows, showsWallFacts, stageCapacity, type Box, type RoomBox, type RoomSize, type RoomUnit, type ScreenLists } from '../model/building-layout';
-import { TINT_GAIN } from '../model/cast-strip';
+import { fileColumns, layoutBuilding, listsAreas, screenRows, stageCapacity, type Box, type RoomBox, type RoomSize, type RoomUnit, type ScreenLists } from '../model/building-layout';
 import { mountWhenFree } from '../model/face-mount-queue';
 import { clockTime } from '../model/format';
-import { MERGE_LIGHTS_OUT_MS, createMoruClock } from '../model/moru-clock';
-import { retireeOf, roomAlertOf, roomLook, withRetirees, type Retiree } from '../model/room-look';
+import { MERGE_LIGHTS_OUT_MS, retireeOf, roomAlertOf, roomLook, withRetirees, type Retiree } from '../model/room-look';
 import { roomLiveOf, type BuildingLive, type RoomLive } from '../model/room-live';
 import { FADE_MS, MOVE_MS } from '../model/room-sequence';
 import { FACE_KEPT_EVENT, FACE_LEFT_EVENT, exitRoom, translate, useRoomMotion } from '../model/use-room-motion';
 import { useStableOrder } from '../model/use-stable-order';
-import { useRoomCast } from '../model/use-room-cast';
-import type { MoruCharacter } from '../model/room-look';
 import { BranchName } from './BranchName';
 import { LargeRoom } from './LargeRoom';
 import { MiniRoom } from './MiniRoom';
@@ -38,41 +34,12 @@ import styles from './rooms.module.css';
 const SPREAD_MINI_W = 900;
 /** The building's side margin: rooms line up with the page title above them. */
 const SIDE_PADDING_PX = 40;
-const TINT_ID = 'work-room-tint';
-const SESSION_INKS = [1, 2, 3, 4, 5] as const;
-/** How long a merged room stays: its crate rides in, Moru cheers, its lights go out and it fades. */
+/** How long a merged room stays: its crate rides in, the stop turns green, its lights go out and it fades. */
 export const RETIRE_MS = MERGE_LIGHTS_OUT_MS + MOTION.slow.duration * 1000 + 2 * FADE_MS;
 
 type RoomCopy = ReturnType<typeof useRoomCopy>;
 
 const inkOf = (session: TrackSession | null) => (session ? `var(--work-session-${session.ink + 1})` : 'var(--work-unheld)');
-const tintOf = (session: TrackSession | null) => (session ? `${TINT_ID}-${session.ink + 1}` : null);
-
-/**
- * One filter per session ink. It keeps every pixel of Moru and adds the ink over the saturated
- * indigo only (flippers, tail, laptop), scaled by that pixel's own lightness so the shading stays.
- */
-function TintFilters() {
-  return (
-    <svg aria-hidden width="0" height="0" className="absolute">
-      <defs>
-        {SESSION_INKS.map(ink => (
-          <filter key={ink} id={`${TINT_ID}-${ink}`} colorInterpolationFilters="sRGB" x="0" y="0" width="1" height="1">
-            <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  -7 0 7 0 -1.1" result="indigo" />
-            <feColorMatrix in="SourceGraphic" type="matrix" values="0.3 0.5 0.2 0 0  0.3 0.5 0.2 0 0  0.3 0.5 0.2 0 0  0 0 0 1 0" result="lightness" />
-            <feFlood style={{ floodColor: `var(--work-session-${ink})` }} result="ink" />
-            <feComposite in="lightness" in2="ink" operator="arithmetic" k1={TINT_GAIN} k2="0" k3="0" k4="0" result="inked" />
-            <feComposite in="inked" in2="indigo" operator="in" result="accent" />
-            <feMerge>
-              <feMergeNode in="SourceGraphic" />
-              <feMergeNode in="accent" />
-            </feMerge>
-          </filter>
-        ))}
-      </defs>
-    </svg>
-  );
-}
 
 interface FaceState {
   current: FaceSize;
@@ -91,13 +58,11 @@ interface FaceSize {
   unit: RoomUnit;
   w: number;
   h: number;
-  /** A large face of a room new to the building or newly on the stage. */
-  entered: boolean;
   /** Which drawn face this is: a face keeps its element, and what it is playing, while it changes role. */
   id: number;
 }
 
-/** A leaving face fades out the room it showed, not the room's new state: its Moru, tag and monitor stay as they were. */
+/** A leaving face fades out the room it showed, not the room's new state: its tag and monitor stay as they were. */
 type LeavingFace = FaceSize & { room: RoomEntry };
 
 /** What a stage room's screen has to list: its commits (a room on the base branch lists few of that branch's own), its files and the folders they are in. */
@@ -107,11 +72,11 @@ function screenLists(room: RoomEntry): ScreenLists {
   return { commits: activity?.onBase ? Math.min(commits, BASE_SCREEN_COMMITS) : commits, files: activity?.files.length ?? 0, areas: changedAreas(activity?.files ?? []).length };
 }
 
-function RoomFace({ room, live, face, copy, retiring, showOwner, alone, character }: { room: RoomEntry; live: RoomLive; face: FaceSize; copy: RoomCopy; retiring: boolean; showOwner: boolean; alone: boolean; character: MoruCharacter }) {
-  if (face.size !== 'large') return <MiniRoom room={room} live={live} copy={copy} tint={tintOf(room.session)} showOwner={showOwner} character={character} />;
+function RoomFace({ room, live, face, copy, retiring, showOwner, alone }: { room: RoomEntry; live: RoomLive; face: FaceSize; copy: RoomCopy; retiring: boolean; showOwner: boolean; alone: boolean }) {
+  if (face.size !== 'large') return <MiniRoom room={room} live={live} copy={copy} showOwner={showOwner} />;
   const lists = screenLists(room);
   const areas = listsAreas(face.w, lists, alone);
-  return <LargeRoom room={room} live={live} unit={face.unit} rows={screenRows(face)} pairScale={pairUnit(face.w, face.unit) / face.unit} fileColumns={fileColumns(face.w, lists.commits > 0, areas)} areas={areas} wallFacts={showsWallFacts(face.w)} copy={copy} tint={tintOf(room.session)} guestTint={tintOf(room.guests[0] ?? null)} retiring={retiring} entered={face.entered} faceId={face.id} character={character} />;
+  return <LargeRoom room={room} live={live} unit={face.unit} rows={screenRows(face)} fileColumns={fileColumns(face.w, lists.commits > 0, areas)} areas={areas} copy={copy} retiring={retiring} />;
 }
 
 /** A merged room fades its content to its own wall, then the wall fades, in the last moments of its stay. */
@@ -130,12 +95,8 @@ interface RoomProps {
   reduced: boolean;
   /** The building's measured size: a change of it is a window resize, not a move. */
   windowKey: string;
-  /** A room new to the building since it was first drawn. */
-  entered: boolean;
   /** A room that left: drawn once more from where it was, fading away. */
   ghost?: { from: Box; onDone: (key: string) => void };
-  /** The room's Moru, cast across the whole building. */
-  character: MoruCharacter;
   /** The room panel shows this room. */
   pressed?: boolean;
   /** Opens the room panel on this room, or closes it when it already shows it. */
@@ -150,8 +111,8 @@ const sameBox = (a: RoomBox, b: RoomBox) => a.x === b.x && a.y === b.y && a.w ==
  * and an update that leaves it and its box alone does not draw the room again.
  */
 function sameRoomProps(a: RoomProps, b: RoomProps) {
-  return a.copy === b.copy && a.retiring === b.retiring && a.showOwner === b.showOwner && a.alone === b.alone && a.reduced === b.reduced && a.entered === b.entered
-    && a.windowKey === b.windowKey && a.ghost === b.ghost && a.character === b.character && a.pressed === b.pressed && a.onPress === b.onPress && sameBox(a.box, b.box)
+  return a.copy === b.copy && a.retiring === b.retiring && a.showOwner === b.showOwner && a.alone === b.alone && a.reduced === b.reduced
+    && a.windowKey === b.windowKey && a.ghost === b.ghost && a.pressed === b.pressed && a.onPress === b.onPress && sameBox(a.box, b.box)
     && (a.room === b.room || JSON.stringify(a.room) === JSON.stringify(b.room))
     && (a.live === b.live || JSON.stringify(a.live) === JSON.stringify(b.live));
 }
@@ -164,12 +125,12 @@ const Room = memo(DrawnRoom, sameRoomProps);
  * (`useRoomMotion` plays that); the new face is drawn hidden and fades in once the room has arrived,
  * so a room never shows two faces. When the window itself resizes, the face takes the new size at once.
  */
-function DrawnRoom({ room, live, box, copy, retiring, showOwner, alone, reduced, windowKey, entered, ghost, character, pressed = false, onPress, panelId }: RoomProps) {
+function DrawnRoom({ room, live, box, copy, retiring, showOwner, alone, reduced, windowKey, ghost, pressed = false, onPress, panelId }: RoomProps) {
   const t = useTranslations('workStatus');
   const ghostFrom = ghost?.from;
   const onGhostDone = ghost?.onDone;
   const [faces, setFaces] = useState<FaceState>({
-    current: { size: box.size, unit: box.unit, w: box.w, h: box.h, id: 0, entered: entered && box.size === 'large' },
+    current: { size: box.size, unit: box.unit, w: box.w, h: box.h, id: 0 },
     leaving: null,
     room,
     windowKey,
@@ -181,13 +142,13 @@ function DrawnRoom({ room, live, box, copy, retiring, showOwner, alone, reduced,
     const sized = { size: box.size, unit: box.unit, w: box.w, h: box.h };
     if (faces.windowKey !== windowKey) {
       // A window resize takes the new size at once.
-      setFaces({ current: { ...sized, id: current.size === box.size ? current.id : faces.next, entered: current.entered && box.size === current.size }, leaving: null, room, windowKey, next: faces.next + 1, ready: true });
+      setFaces({ current: { ...sized, id: current.size === box.size ? current.id : faces.next }, leaving: null, room, windowKey, next: faces.next + 1, ready: true });
     } else {
       const shown = faces.leaving ?? { ...current, room: faces.room };
       // The face on screen keeps its element and how far it has faded, and becomes the one that may
       // leave; the new face is drawn hidden, its content a few frames later. A move that keeps the
       // room's content hands the face back (`FACE_KEPT_EVENT`) before anything paints.
-      setFaces({ current: { ...sized, id: faces.next, entered: box.size === 'large' && shown.size !== 'large' }, leaving: shown, room, windowKey, next: faces.next + 1, ready: false });
+      setFaces({ current: { ...sized, id: faces.next }, leaving: shown, room, windowKey, next: faces.next + 1, ready: false });
     }
   } else if (faces.windowKey !== windowKey) {
     setFaces({ ...faces, leaving: null, room, windowKey, ready: true });
@@ -197,7 +158,7 @@ function DrawnRoom({ room, live, box, copy, retiring, showOwner, alone, reduced,
   const oldFace = useCallback((element: HTMLDivElement) => {
     const left = () => setFaces(state => ({ ...state, leaving: null, ready: true }));
     const kept = () => setFaces(state => (state.leaving && state.leaving.size === state.current.size
-      ? { ...state, current: { ...state.current, id: state.leaving.id, entered: state.leaving.entered }, leaving: null, ready: true }
+      ? { ...state, current: { ...state.current, id: state.leaving.id }, leaving: null, ready: true }
       : { ...state, leaving: null, ready: true }));
     element.addEventListener(FACE_LEFT_EVENT, left);
     element.addEventListener(FACE_KEPT_EVENT, kept);
@@ -272,11 +233,11 @@ function DrawnRoom({ room, live, box, copy, retiring, showOwner, alone, reduced,
           className={cn(styles.face, styles.notched)}
           style={{ width: faces.leaving.w, height: faces.leaving.h }}
         >
-          <RoomFace room={faces.leaving.room} live={live} face={faces.leaving} copy={copy} retiring={retiring} showOwner={showOwner} alone={alone} character={character} />
+          <RoomFace room={faces.leaving.room} live={live} face={faces.leaving} copy={copy} retiring={retiring} showOwner={showOwner} alone={alone} />
         </div>
       ) : null}
       <div key={`face-${current.id}`} data-room-face data-spread={current.size === 'mini' && current.w >= SPREAD_MINI_W} data-unit={current.unit} className={cn(styles.face, styles.notched, 'h-full w-full')}>
-        {faces.ready ? <RoomFace room={room} live={live} face={current} copy={copy} retiring={retiring} showOwner={showOwner} alone={alone} character={character} /> : null}
+        {faces.ready ? <RoomFace room={room} live={live} face={current} copy={copy} retiring={retiring} showOwner={showOwner} alone={alone} /> : null}
       </div>
       {!ghost && live.flash > flashFrom ? (
         <i key={`flash-${live.flash}`} aria-hidden data-testid="work-room-flash" className={cn(styles.flash, 'motion-room-flash')} />
@@ -412,55 +373,6 @@ function useRetirees(plan: RoomPlan, stageLimit: number, reduced: boolean) {
   return retirees;
 }
 
-/**
- * Sets which rooms may move: a running room's light only while it is on screen in a visible window,
- * never under reduced motion. Every room on screen is `seen`, and the board's one clock steps the Moru
- * of seen rooms; the clock lives as long as the board, so it remembers what each Moru has played.
- */
-function useAmbientMotion(boardRef: React.RefObject<HTMLElement | null>, layoutKey: unknown, reduced: boolean) {
-  const [clock, setClock] = useState<ReturnType<typeof createMoruClock> | null>(null);
-  useEffect(() => {
-    const board = boardRef.current;
-    if (!board) return;
-    const created = createMoruClock(board);
-    setClock(created);
-    return () => created.stop();
-  }, [boardRef]);
-  useEffect(() => {
-    const board = boardRef.current;
-    if (!board || !clock || typeof IntersectionObserver === 'undefined') return;
-    const visible = new Set<Element>();
-    const update = (element: HTMLElement) => {
-      const seen = !reduced && !document.hidden && visible.has(element);
-      element.dataset.roomSeen = String(seen);
-      element.dataset.roomMotion = seen && element.dataset.roomRunning === 'true' ? 'running' : 'paused';
-    };
-    const rooms = () => board.querySelectorAll<HTMLElement>('[data-room-key]');
-    const observer = new IntersectionObserver(entries => {
-      for (const entry of entries) {
-        if (entry.isIntersecting) visible.add(entry.target);
-        else visible.delete(entry.target);
-        update(entry.target as HTMLElement);
-      }
-      clock.sync(!reduced);
-    });
-    rooms().forEach(element => observer.observe(element));
-    const updateAll = () => {
-      rooms().forEach(update);
-      clock.sync(!reduced);
-    };
-    document.addEventListener('visibilitychange', updateAll);
-    const mutations = new MutationObserver(updateAll);
-    mutations.observe(board, { subtree: true, attributes: true, attributeFilter: ['data-room-running', 'data-moru-clip', 'data-moru-once', 'data-moru-travel'] });
-    clock.sync(!reduced);
-    return () => {
-      observer.disconnect();
-      mutations.disconnect();
-      document.removeEventListener('visibilitychange', updateAll);
-    };
-  }, [boardRef, layoutKey, reduced, clock]);
-}
-
 const roomKeyOf = (room: RoomEntry) => room.key;
 const floorKeyOf = (floor: { key: string }) => floor.key;
 /** A worktree key has no whitespace, so it can name an element the region reads in order. */
@@ -471,8 +383,6 @@ const focusRoom = (key: string) => document.getElementById(roomDomId(key))?.quer
 interface Ghost {
   room: RoomEntry;
   box: RoomBox;
-  /** The Moru it had, kept while it fades. */
-  character: MoruCharacter;
   /** A merged room leaves with its lights already out. */
   retiring: boolean;
   from: Box;
@@ -562,14 +472,14 @@ export function WorkBuilding({ tracks, live, seenRunningAt, baseBranch, nowMs, r
   const firstStageBox = shown.stage.length > 0 ? layout.rooms.get(shown.stage[0].key) : undefined;
   const stageRows = firstStageBox ? screenRows(firstStageBox) : 0;
 
-  const lastDrawn = useRef(new Map<string, { room: RoomEntry; box: RoomBox; retiring: boolean; character: MoruCharacter }>());
+  const lastDrawn = useRef(new Map<string, { room: RoomEntry; box: RoomBox; retiring: boolean }>());
   const [ghosts, setGhosts] = useState<Ghost[]>([]);
   const onRemoved = useCallback((removed: Map<string, Box>) => {
     const left: Ghost[] = [];
     for (const [key, from] of removed) {
       const drawn = lastDrawn.current.get(key);
       // A merged room has already faded where it stood; only a room that left otherwise fades now.
-      if (drawn && !drawn.retiring) left.push({ room: drawn.room, box: drawn.box, retiring: drawn.retiring, character: drawn.character, from });
+      if (drawn && !drawn.retiring) left.push({ room: drawn.room, box: drawn.box, retiring: drawn.retiring, from });
     }
     if (left.length > 0) setGhosts(current => [...current.filter(ghost => !removed.has(ghost.room.key)), ...left]);
   }, []);
@@ -577,25 +487,20 @@ export function WorkBuilding({ tracks, live, seenRunningAt, baseBranch, nowMs, r
   // A stage that grows by a row takes its new size at once, as a window resize does.
   const windowKey = size ? `${size.width}x${size.height}:${stageRows}` : '';
   useRoomMotion(boardRef, layout.rooms, { reduced, sizeKey: windowKey, onRemoved });
-  useAmbientMotion(boardRef, layout.rooms, reduced);
 
   const entries = useMemo(() => allRooms(shown).map(({ room }) => room), [shown]);
   const lives = useMemo(() => new Map(entries.map(room => [room.key, roomLiveOf(room, live)])), [entries, live]);
   const liveOf = (room: RoomEntry) => lives.get(room.key) ?? roomLiveOf(room, live);
-  const characterOf = useRoomCast(entries);
   useLayoutEffect(() => {
     lastDrawn.current = new Map(entries.flatMap(room => {
       const box = layout.rooms.get(room.key);
-      return box ? [[room.key, { room, box, retiring: retiring.has(room.key), character: characterOf(room) }] as const] : [];
+      return box ? [[room.key, { room, box, retiring: retiring.has(room.key) }] as const] : [];
     }));
-  }, [entries, layout, retiring, characterOf]);
+  }, [entries, layout, retiring]);
 
   // Elements keep their first order; the region reads them in the plan's order.
   const drawnRooms = useStableOrder(entries, roomKeyOf);
   const drawnFloors = useStableOrder(shown.floors, floorKeyOf);
-  // The rooms of the building's first drawing are not new; any room after them settles in.
-  const [firstDrawn, setFirstDrawn] = useState<ReadonlySet<string> | null>(null);
-  if (firstDrawn === null && size && drawnRooms.length > 0) setFirstDrawn(new Set(drawnRooms.map(roomKeyOf)));
   const readingOrder = [...entries.filter(room => layout.rooms.has(room.key)).map(room => roomDomId(room.key)), ...(layout.shelf ? [SHELF_DOM_ID] : [])].join(' ');
 
 
@@ -659,7 +564,6 @@ export function WorkBuilding({ tracks, live, seenRunningAt, baseBranch, nowMs, r
   return (
     <div className="flex min-h-0 flex-1" onKeyDown={closeOnEscape}>
     <div ref={viewportRef} className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden" data-testid="work-building-viewport">
-      <TintFilters />
       {/* The building keeps its height; only a window too short for it scrolls it, never the page. */}
       <div className="min-h-0 flex-[0_1_auto] overflow-y-auto overflow-x-hidden" role="tabpanel" id={`${ARRANGE_TABS_ID}-tabpanel-folder`} aria-labelledby={`${ARRANGE_TABS_ID}-tab-folder`} hidden={bySession}>
       <div
@@ -703,12 +607,12 @@ export function WorkBuilding({ tracks, live, seenRunningAt, baseBranch, nowMs, r
               </Placed>
             ) : null}
             {ghosts.map(ghost => (
-              <Room key={`ghost:${ghost.room.key}`} room={ghost.room} live={liveOf(ghost.room)} box={ghost.box} copy={copy} retiring={ghost.retiring} showOwner={!layout.banded} alone={false} reduced={reduced} windowKey={windowKey} entered={false} ghost={{ from: ghost.from, onDone: forgetGhost }} character={ghost.character} />
+              <Room key={`ghost:${ghost.room.key}`} room={ghost.room} live={liveOf(ghost.room)} box={ghost.box} copy={copy} retiring={ghost.retiring} showOwner={!layout.banded} alone={false} reduced={reduced} windowKey={windowKey} ghost={{ from: ghost.from, onDone: forgetGhost }} />
             ))}
             {drawnRooms.map(room => {
               const box = layout.rooms.get(room.key);
               return box ? (
-                <Room key={room.key} room={room} live={liveOf(room)} box={box} copy={copy} retiring={retiring.has(room.key)} showOwner={!layout.banded} alone={alone} reduced={reduced} windowKey={windowKey} entered={firstDrawn !== null && !firstDrawn.has(room.key)} character={characterOf(room)} pressed={pressedRoom?.key === room.key} onPress={pressRoom} panelId={panelId} />
+                <Room key={room.key} room={room} live={liveOf(room)} box={box} copy={copy} retiring={retiring.has(room.key)} showOwner={!layout.banded} alone={alone} reduced={reduced} windowKey={windowKey} pressed={pressedRoom?.key === room.key} onPress={pressRoom} panelId={panelId} />
               ) : null;
             })}
             {layout.shelf ? (

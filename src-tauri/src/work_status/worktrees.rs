@@ -14,14 +14,12 @@ use std::time::UNIX_EPOCH;
 use serde::Serialize;
 
 use super::agent_processes::{AgentProcess, AgentTool};
-use super::git_read::{base_reference, git_read, read_admin_file, read_first_line, GitFailure};
+use super::git_read::{git_read, read_admin_file, read_first_line, GitFailure};
 use lock::{judge_lock, parse_lock_reason, process_start, LockState, LockTool};
 
 const AUTHOR_MAX_CHARS: usize = 200;
 /// Each row runs two `git` processes; this bounds how many run at once on a busy Mac.
 const MEASURE_WORKERS: usize = 6;
-const BASE_CANDIDATES: &[&str] = &["main", "master"];
-
 /// Where a worktree's head stands against the base branch (`main` in most repositories).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -194,11 +192,11 @@ pub(super) fn read_repository(
         git_read(&root, &["worktree", "list", "--porcelain", "-z"]).map_err(failure_status)?;
     let entries = parse_porcelain(&listing);
 
-    let base_branch = base_branch(&root);
-    let base_head = base_branch
-        .as_deref()
-        .and_then(|branch| base_reference(&root, branch))
-        .and_then(|reference| verified_head(&root, &reference));
+    let base = crate::git::base_line::base_line(&|args: &[&str]| git_read(&root, args).ok());
+    let base_head = base
+        .as_ref()
+        .and_then(|line| verified_head(&root, &line.reference));
+    let base_branch = base.map(|line| line.branch);
     let admin_ids = admin_ids_by_worktree(&common_dir);
     let (host, slug) = remote::origin(&root);
     let repository = slug.unwrap_or_else(|| folder_name(&root));
@@ -350,22 +348,6 @@ fn base_row(
     }
 }
 
-fn base_branch(root: &Path) -> Option<String> {
-    let remote_head = git_read(
-        root,
-        &["symbolic-ref", "--quiet", "refs/remotes/origin/HEAD"],
-    )
-    .ok();
-    let from_remote = remote_head
-        .as_deref()
-        .and_then(|name| name.trim().strip_prefix("refs/remotes/origin/"))
-        .map(str::to_string);
-    from_remote
-        .into_iter()
-        .chain(BASE_CANDIDATES.iter().map(|name| name.to_string()))
-        .find(|name| base_reference(root, name).is_some())
-}
-
 fn verified_head(root: &Path, reference: &str) -> Option<String> {
     git_read(root, &["rev-parse", "--verify", "--quiet", reference])
         .ok()
@@ -463,7 +445,10 @@ fn measure_head(root: &Path, row: &mut WorktreeRow, base: Option<&str>, base_hea
     let Some(head) = row.head.clone() else {
         return;
     };
-    if let Some(base_head) = base_head.filter(|_| base.is_some()) {
+    if base.is_some() && row.branch.as_deref() == base {
+        // The base branch is the base, even with unpushed commits beside a fetched remote.
+        row.ahead = Some(0);
+    } else if let Some(base_head) = base_head.filter(|_| base.is_some()) {
         let range = format!("{base_head}..{head}");
         row.ahead = git_read(root, &["rev-list", "--count", &range])
             .ok()

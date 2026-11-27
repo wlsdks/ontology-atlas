@@ -94,8 +94,17 @@ Choose a project and a calendar period, move back or forward, or open the date
 control to choose an anchor or apply inclusive custom dates. The initial period
 is the latest day with changes; weeks start Monday. First entry to Custom dates copies the displayed range, including full week, month and year boundaries. Later visits preserve both the applied custom range and any unfinished date draft. The displayed local timezone and exact dates determine
 committer-time membership. Uncommitted work and separately counted commits
-inside merged branches are excluded: this is current-HEAD first-parent history,
-including merge integration differences.
+inside merged branches are excluded: this is the first-parent history of the
+branch the checked-out work merges into, including merge integration
+differences. The integration branches are the one `origin/HEAD` names, then
+`main`, `master`, `develop`, `development`, `dev` and `trunk`. A checkout on one
+of them reads it, so a team that merges into `develop` sees develop's merges; any
+other checkout reads the one holding the most of its history (fewest of HEAD's
+commits outside it), so a feature branch never counts its own unmerged commits
+as merged. Each is read at the fetched `origin/<branch>` unless the local branch
+is strictly ahead of it or has diverged without tracking it. A failed read of
+the candidates reads nothing rather than falling back to HEAD. "What was read" names the branch. A repository with no
+integration branch reads HEAD; a line whose tip is not a commit reads nothing.
 
 From a commit original, its file action shows only that commit's recorded paths.
 From a PR original, the file action shows files touched in the whole selected
@@ -137,7 +146,7 @@ Out-of-order dates can include intervening changes outside the chosen dates in
 this endpoint comparison; exact revisions and that qualification stay visible.
 
 The project-bound native bridge requires the recorded source binding and source grant, pins
-and rechecks root identity, binding and HEAD, and refuses stale evidence. Patch
+and rechecks root identity, binding and the base branch's tip, and refuses stale evidence. Patch
 reads require a recently issued snapshot and its literal touched path. It runs
 no external diff/textconv, hooks, network fetch or write operation. Missing or
 moved source access offers folder permission recovery and Projects; it never
@@ -172,7 +181,7 @@ this grants source reading only and does not create/open an ontology or grant va
 must itself be the Git worktree root; choosing a child does not authorize its parent repository.
 Models is reachable without a vault and returns to the same repository/calendar. Local connection checks without
 a vault use a fixed Atlas app-data audit location and send no repository text. Full commit messages and explicitly fetched public GitHub PR descriptions remain inspectable as author records.
-In the earlier combined briefing, an optional action reads public GitHub PR descriptions matched to first-parent commits, where authors may have recorded reasons and validation. The separate commit-only explanation retains its missing-context limit. PR lookup never starts a model request automatically. A failed refresh keeps previously collected PR versions and the explanation for the same repository and period, with an explicit freshness warning; a successful empty response still replaces them. The earlier combined briefing keeps bounded local copies of these matched PR originals (400 records / 16 MiB, 512 KiB per entry); the direct PR inventory uses session memory only. Returning to the granted source and selecting matching history opens eligible saved copies without GitHub or model requests, with their original read times and remotely unchecked coverage. A changed HEAD can reuse eligible integrations; another folder/object or remote cannot. Refresh is explicit. Saved-copy management remains available without a usable source or a nonempty period; clearing all copies preserves open session originals and fences pending saves. Save failures and omissions remain visible. Recognized GitHub rate limits stop the remaining lookup, show the provider retry time when available, and temporarily disable only PR reading until that time. The button becomes available without sending automatically; local sources and explanation previews remain usable.
+In the earlier combined briefing, an optional action reads public GitHub PR descriptions matched to first-parent commits, where authors may have recorded reasons and validation. The separate commit-only explanation retains its missing-context limit. PR lookup never starts a model request automatically. A failed refresh keeps previously collected PR versions and the explanation for the same repository and period, with an explicit freshness warning; a successful empty response still replaces them. The earlier combined briefing keeps bounded local copies of these matched PR originals (400 records / 16 MiB, 512 KiB per entry); the direct PR inventory uses session memory only. Returning to the granted source and selecting matching history opens eligible saved copies without GitHub or model requests, with their original read times and remotely unchecked coverage. A moved base-branch tip can reuse eligible integrations; another folder/object or remote cannot. Refresh is explicit. Saved-copy management remains available without a usable source or a nonempty period; clearing all copies preserves open session originals and fences pending saves. Save failures and omissions remain visible. Recognized GitHub rate limits stop the remaining lookup, show the provider retry time when available, and temporarily disable only PR reading until that time. The button becomes available without sending automatically; local sources and explanation previews remain usable.
 A connected local text model can propose a passage-cited explanation after a whole-record source preview.
 Invalid citations or incomplete model responses are rejected; the original records remain readable.
 Korean explanations request Hangul prose. Responses with Han or kana text absent from their cited sent passages are rejected across titles and claims; literal source names remain intact. This detects foreign-script drift, not translation correctness. The reader can inspect a rejected response and explicitly retry without changing the originals.

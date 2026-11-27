@@ -170,12 +170,10 @@ pub(super) fn identity_until(
     if fs::canonicalize(top).ok().as_ref() != Some(&root) {
         return Err("unavailable".into());
     }
-    let head = local_git(
-        &root,
-        &["rev-parse", "--verify", "HEAD"],
-        deadline,
-        cancelled,
-    )?;
+    let (head, line) = crate::git::base_line::merged_line_tip(&|args: &[&str]| {
+        local_git(&root, args, deadline, cancelled).ok()
+    })
+    .ok_or("unavailable")?;
     let metadata = fs::metadata(&root).map_err(|_| "unavailable")?;
     #[cfg(unix)]
     let object = {
@@ -191,6 +189,7 @@ pub(super) fn identity_until(
         scope: SourceScope::Picked,
         root,
         head,
+        line,
         object,
     })
 }

@@ -15,6 +15,8 @@ export interface ChangeBriefing {
   sourceRoot: string;
   snapshot: string;
   head: string;
+  /** The branch the history was read on; null when the repository has no integration branch. */
+  line: string | null;
   base: string | null;
   tip: string | null;
   commits: BriefingCommit[];

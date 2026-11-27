@@ -9,7 +9,7 @@
   "readError": "Could not read the Git history. Your repository and dates are kept; try again.",
   "empty": "No commits were found in this period. Choose another period.",
   "evidenceReady": "Commits are ready. Read them, or create a summary.",
-  "scope": "Commits on the current branch (first-parent) in the dates shown, in local time. Commits inside merged branches are not counted separately; uncommitted changes are excluded.",
+  "scope": "Commits on the branch your work merges into (first-parent) in the dates shown, in local time. Commits inside merged branches are not counted separately; uncommitted changes are excluded.",
   "partialHistory": "Part of the Git history could not be read within the limit. Counts cover only what was read; narrow the dates to read more.",
   "readPrs": "Read GitHub PR descriptions",
   "prTransfer": "This sends {repository} and the selected commit hashes or PR numbers to GitHub. Commit messages and file contents are not sent.",

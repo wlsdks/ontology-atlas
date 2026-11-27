@@ -2,11 +2,10 @@
 
 import type { RoomEntry } from '@/shared/lib/work-status/work-tracks';
 import { cn } from '@/shared/lib/cn';
-import { STAGE_AT, roomLook, type MoruCharacter } from '../model/room-look';
+import { STAGE_AT, roomLook } from '../model/room-look';
 import type { RoomLive } from '../model/room-live';
 import { BranchName } from './BranchName';
 import { CommitLog } from './CommitLog';
-import { RoomMoru } from './RoomMoru';
 import { SwapText } from './SwapText';
 import type { StatusTone, useRoomCopy } from './use-room-copy';
 import styles from './rooms.module.css';
@@ -24,34 +23,26 @@ const TONE: Record<StatusTone, string> = {
 };
 
 /**
- * A worktree on the lower floor: its own corner of floor where a small Moru, or its crate, stands in
- * the room's light; then the branch, the status and the newest commit subject with its time. With the
- * floor to itself (`data-spread` on its face) it spreads the newest commits and what is not
- * committed into columns. The small Moru holds his clip's still pose: a floor of forty rooms would
- * otherwise step forty sprites every frame.
+ * A worktree on the lower floor: the branch, the status and the newest commit subject with its time,
+ * beside a corner where its crate stands on the room's rail when the crate says something (taped,
+ * dashed or dusty). With the floor to itself (`data-spread` on its face) it spreads the newest
+ * commits and what is not committed into columns.
  */
-export function MiniRoom({ room, live, copy, tint, showOwner, character }: { room: RoomEntry; live: RoomLive; copy: RoomCopy; tint: string | null; showOwner: boolean; character: MoruCharacter }) {
+export function MiniRoom({ room, live, copy, showOwner }: { room: RoomEntry; live: RoomLive; copy: RoomCopy; showOwner: boolean }) {
   const look = roomLook(room.state);
   const status = copy.status(room, live);
   const owner = copy.owner(room, live.lines);
   const subject = copy.newestSubject(room.track);
   const commits = copy.screenCommits(room.track);
   const files = copy.uncommitted(room.track);
-  // A mini Moru holds his pose, so a sigh would not show: a lock left behind or a folder gone keeps its crate.
-  const crateOnly = look.cast === 'none' || look.monitorOff;
   return (
     <div className={styles.mini} data-lit={look.running}>
       <i aria-hidden className={styles.miniBar} />
-      <div className={styles.niche} data-crate={crateOnly}>
-        {crateOnly ? (
+      {look.crate === 'plain' ? null : (
+        <div className={styles.niche}>
           <i className={styles.crate} data-kind={look.crate} />
-        ) : (
-          <span className={styles.miniActor}>
-            <RoomMoru key={look.clip} clip={look.clip} character={character} still zoom={0.5} tint={tint} dozing={look.dozing} />
-          </span>
-        )}
-        {look.dozing ? <span aria-hidden className={cn(styles.miniZ, 'text-label font-mono font-[var(--font-weight-strong)]')}>z<br />&nbsp;z</span> : null}
-      </div>
+        </div>
+      )}
       <div className={styles.miniText}>
         <BranchName branch={room.track.branch ?? room.track.title} className="text-body leading-body font-mono font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]" />
         <span className="text-body leading-body text-[color:var(--color-text-tertiary)]" data-testid="work-room-status">
