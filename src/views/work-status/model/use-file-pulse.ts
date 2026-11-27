@@ -11,7 +11,7 @@ export type FilePulseStatus = 'off' | 'pending' | 'read' | 'unsupported';
 export interface FilePulseState {
   status: FilePulseStatus;
   worktrees: ReadonlyMap<string, WorktreePulse>;
-  /** Each room's light: its `count` rises once per answer that carries a new counted change. */
+  /** Each room's light: its `count` rises when a new counted change flashes it (`nextFlashes`). */
   flashes: ReadonlyMap<string, FlashMark>;
 }
 

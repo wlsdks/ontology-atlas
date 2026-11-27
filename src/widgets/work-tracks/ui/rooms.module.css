@@ -1289,7 +1289,7 @@
 }
 
 /*
- * A pulse, once per answer that carries a newly counted file change (`RoomPulse` plays it): the
+ * A pulse, once per flash for a newly counted file change (`RoomPulse` plays it): the
  * light inside the frame flares under the room's words and settles, and one spark runs once round
  * the frame. Each edge's spark waits off its edge, so nothing shows once it has run.
  */

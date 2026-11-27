@@ -34,7 +34,7 @@ export interface RoomLive {
   pulseStatus: LiveReadStatus;
   /** `null` until the pulse answers for this room. */
   pulse: PulseFacts | null;
-  /** Rises once per answer that carries a new counted change: the room's light flashes once for each. */
+  /** Rises when the room's light flashes for a new counted change (`nextFlashes`): it flashes once for each rise. */
   flash: number;
   loadStatus: LiveReadStatus;
   /** `undefined` when the sample holds nothing for this room. */
