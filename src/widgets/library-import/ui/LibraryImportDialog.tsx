@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
 import { CloseButton, Dialog } from '@/shared/ui';
-import { connectorSecretRef, isConnectorSecretBridgeAvailable } from '@/shared/lib/connectors/tauri-connector-secrets';
+import { connectorSecretRef } from '@/shared/lib/connectors/tauri-connector-secrets';
 import {
   resolveConnectorRuntimes,
   runtimePath,
@@ -41,9 +41,12 @@ type LibraryImportProps = {
   onAddFiles: () => void;
   onBrief: (brief: string) => void;
   onOpenAdvanced: () => void;
-  /** Whether an in-app conversation can start here; when it cannot, the last press is not offered. */
+  /**
+   * Whether an in-app conversation can start here; when it cannot (the app may lack a verified
+   * coding tool), the last press is not offered and the runtime remedy shows instead.
+   */
   canRunAgent: boolean;
-  /** A browser starts no program, while the app may lack a verified coding tool; the remedies differ. */
+  /** The library folder the import lands in. */
   destination?: ImportDestination;
   testIdPrefix?: string;
 };
@@ -79,7 +82,6 @@ function LibraryImportFlow({
   const [inspection, setInspection] = useState<SetupInspection | null>(null);
   const generation = useRef(0);
   const saving = useRef(false);
-  const native = isConnectorSecretBridgeAvailable();
   const [connectedName, setConnectedName] = useState<string | null>(null);
 
   const serviceButtons = useRef(new Map<ImportServiceId, HTMLButtonElement>());
@@ -159,7 +161,7 @@ function LibraryImportFlow({
   useEffect(() => {
     const attempt = ++generation.current;
     saving.current = false;
-    if (!open || step !== 'connect' || !service || !entry || !askName || !native) return;
+    if (!open || step !== 'connect' || !service || !entry || !askName) return;
     const live = () => generation.current === attempt;
     void (async () => {
       await Promise.resolve();
@@ -187,7 +189,7 @@ function LibraryImportFlow({
       if (live()) { setFailed('setupFolderUnavailable'); setChecking(false); }
     });
     return () => { generation.current += 1; };
-  }, [open, step, service, entry, askName, native, setup, checkVersion]);
+  }, [open, step, service, entry, askName, setup, checkVersion]);
 
   const back = () => {
     generation.current += 1;
@@ -271,7 +273,6 @@ function LibraryImportFlow({
           service={service}
           entry={entry}
           ask={ask}
-          native={native}
           destination={destination}
           inspection={inspection}
           failed={failed}

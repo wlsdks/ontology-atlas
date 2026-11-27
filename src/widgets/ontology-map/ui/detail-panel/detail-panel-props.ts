@@ -195,16 +195,6 @@ export interface OntologyMapDetailPanelProps {
   /** Localized explicit-action failure; never used for picker cancellation. */
   projectSourceError?: string | null;
   /**
-   * Passed only when the action is unavailable (the web cannot know the folder's absolute path).
-   * Carries why it does not work, where it does, and what works here (`surfaces.md`).
-   */
-  projectSourceDegraded?: {
-    why: string;
-    ctaLabel: string;
-    href: string;
-    stillWorks: string;
-  } | null;
-  /**
    * "Is This the Folder?": measuring the vault root tells the app which git repository encloses it, so connecting drops from two steps to one.
    * `reason` is one human line on why this folder, from measured facts (a git repository, how many declared paths exist there). Without a
    * confident guess the prop is not passed and only the picker draws.

@@ -33,7 +33,7 @@ import { ActionDock, DiscardDock } from "./ActionDock";
  * The stage: only `workbench` can record. `loading` and `error` use the setup frame too,
  * since waiting or re-checking is all the user can do.
  */
-export type GitStage = "web" | "no-vault" | "loading" | "not-installed" | "error" | "not-initialized" | "workbench";
+export type GitStage = "no-vault" | "loading" | "not-installed" | "error" | "not-initialized" | "workbench";
 
 export function DesktopBody({
   t,

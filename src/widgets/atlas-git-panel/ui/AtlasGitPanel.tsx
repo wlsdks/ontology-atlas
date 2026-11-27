@@ -24,7 +24,7 @@ import { useWorkbenchSelection } from "../model/use-workbench-selection";
 import type { ChangedDocument } from "./PendingDocumentPane";
 import { DesktopBody, type GitStage } from "./DesktopBody";
 import { LocationLine } from "./remote-controls";
-import { NoVaultSetup, WebSetup } from "./setup-panels";
+import { NoVaultSetup } from "./setup-panels";
 import { cn } from "@/shared/lib/cn";
 import { useViewportBelow } from "@/shared/lib/use-viewport-below";
 import { PageHeaderBar, WaitStage } from "@/shared/ui";
@@ -199,8 +199,10 @@ export function AtlasGitPanel({
     diffTooLarge,
   });
 
+  // Without the bridge (the server's HTML, the first client render) nothing is known yet, which is
+  // the loading stage.
   const stage: GitStage = !bridgeAvailable
-    ? "web"
+    ? "loading"
     : !vaultPath
       ? "no-vault"
       /*
@@ -340,7 +342,10 @@ export function AtlasGitPanel({
             data-testid="atlas-git-loading"
             className={PAGE_WAIT_LIFT}
           />
-        ) : stage === "workbench" || stage === "not-initialized" || stage === "error" ? (
+        ) : stage === "workbench" ||
+          stage === "not-installed" ||
+          stage === "not-initialized" ||
+          stage === "error" ? (
           <DesktopBody
             locationLine={narrow ? locationLine : null}
             snapshotMessage={snapshotMessage}
@@ -426,14 +431,8 @@ export function AtlasGitPanel({
             focusedConceptId={focusedConceptId}
             setFocusedConceptId={setFocusedConceptId}
           />
-        ) : stage === "no-vault" ? (
-          <NoVaultSetup key={stage} t={t} />
         ) : (
-          <WebSetup
-            key={stage}
-            t={t}
-            sessionChangeset={sessionChangeset}
-          />
+          <NoVaultSetup key={stage} t={t} />
         )}
       </div>
     </section>

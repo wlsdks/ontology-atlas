@@ -114,11 +114,8 @@ describe("what the desktop bundle leaves out has no way in from the app", () => 
       "src/features/gray-area/ui/GrayAreaInspector.tsx",
       "src/features/library/ui/FindDocumentsDialog.tsx",
       "src/features/mcp-connectors/ui/add-connector/FoundSection.tsx",
-      "src/views/home/model/project-source/use-topology-source-actions.tsx",
       "src/views/terminal-state/ui/NotFoundScreen.tsx",
-      "src/widgets/bottom-tab-bar/lib/is-tab-active.ts",
       "src/widgets/gateway-chrome/ui/GatewayNav.tsx",
-      "src/widgets/library-import/ui/ImportConnectStep.tsx",
     ]);
     const linksDownload = /["']\/download\/?["'?#]|<GetAppLink\b/;
     const naming = appSource.filter(

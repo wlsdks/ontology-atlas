@@ -1,4 +1,3 @@
-import { Link } from "@/i18n/navigation";
 import { truncateMiddlePath } from "@/shared/lib/concept-display/truncate-middle-path";
 import { controlClass } from "@/shared/ui";
 import type { OntologyMapDetailPanelProps } from "./detail-panel-props";
@@ -10,7 +9,6 @@ export function ProjectSourceRemedy({
   busyLabel,
   busy,
   onAction,
-  degraded,
   proposal,
   onConfirmProposal,
 }: {
@@ -19,7 +17,6 @@ export function ProjectSourceRemedy({
   busyLabel?: string;
   busy: boolean;
   onAction?: () => void | Promise<void>;
-  degraded?: OntologyMapDetailPanelProps["projectSourceDegraded"];
   proposal?: OntologyMapDetailPanelProps["projectSourceProposal"];
   onConfirmProposal?: () => void | Promise<void>;
 }) {
@@ -33,9 +30,7 @@ export function ProjectSourceRemedy({
   return (
     <div
       data-testid="map-project-source-remedy"
-      data-remedy-mode={
-        onAction ? (showProposal ? "proposed" : "actionable") : "degraded"
-      }
+      data-remedy-mode={showProposal ? "proposed" : "actionable"}
       // `keep-all`: Korean breaks at any character and these sentences wrap at the panel's narrow width.
       // No top margin: in a `RowDisclosure` a child's margin collapses out of the measured body, so the
       // pinned height comes up 2px short and clips this box's bottom border.
@@ -115,38 +110,6 @@ export function ProjectSourceRemedy({
               : busy ? busyLabel ?? actionLabel : actionLabel}
           </button>
         </div>
-      ) : degraded ? (
-        <>
-          {/* ① Why it does not work on this screen — a reason, not an apology. */}
-          <p
-            data-testid="map-project-source-degraded-why"
-            className="text-label text-[color:var(--map-panel-text-tertiary)]"
-          >
-            {degraded.why}
-          </p>
-          {/* ② Where to go instead — a destination that actually opens, not a sentence. */}
-          <Link
-            href={degraded.href}
-            data-testid="map-project-source-degraded-cta"
-            className={controlClass({
-              shape: "chip",
-              size: "lg",
-              className:
-                "w-fit shrink-0 font-[var(--font-weight-emphasis)] border-[color:var(--map-panel-primary-border)] bg-[color:var(--map-panel-primary-surface)] text-[color:var(--map-panel-primary-text)] hover:border-[color:var(--map-panel-primary-border-hover)] hover:bg-[color:var(--map-panel-primary-surface-hover)]",
-            })}
-          >
-            {degraded.ctaLabel}
-          </Link>
-          {/* ③ What does still work here — never say that even what works does not.
-              It sits on a tinted background, so the ink starts at tertiary rather
-              than quaternary (the `quaternary-ink-surface` contract). */}
-          <p
-            data-testid="map-project-source-degraded-still-works"
-            className="text-label text-[color:var(--map-panel-text-tertiary)]"
-          >
-            {degraded.stillWorks}
-          </p>
-        </>
       ) : null}
     </div>
   );

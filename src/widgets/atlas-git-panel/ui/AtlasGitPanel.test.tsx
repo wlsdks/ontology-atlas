@@ -185,41 +185,13 @@ function snapshotInvokeCalls() {
   return tauriApiMock.invoke.mock.calls.filter(([command]) => command === "git_snapshot");
 }
 
-describe("AtlasGitPanel web fallback for a browser vault", () => {
-  it("renders the session changeset summary, CLI command, and desktop hint without any invoke", async () => {
-    const changeset = {
-      addedNodes: ["a"],
-      removedNodes: [],
-      changedNodes: ["b", "c"],
-      addedEdges: ["e1"],
-      removedEdges: [],
-      total: 4,
-      touchedNodeIds: new Set(["a", "b", "c"]),
-      removedNodeKinds: new Map(),
-    } satisfies OntologyChangeset;
+describe("AtlasGitPanel without git on the computer", () => {
+  it("shows the install guide instead of an empty workbench", async () => {
+    installDesktopGit({ probe: { installed: false, version: null } });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
 
-    renderPanel(<AtlasGitPanel sessionChangeset={changeset} />);
-
-    // The web state shares the one setup frame with no-folder and not-yet-recording.
-    const setup = await screen.findByTestId("atlas-git-setup");
-    expect(setup).toHaveAttribute("data-setup-state", "web");
-    expect(screen.getByText("개념 추가 1")).toBeInTheDocument();
-    expect(screen.getByText("개념 수정 2")).toBeInTheDocument();
-    expect(screen.getByText("관계 추가 1")).toBeInTheDocument();
-    // No terminal escape: it needs a source checkout, and a git vault needs only `git commit`.
-    expect(screen.queryByTestId("atlas-git-web-copy")).toBeNull();
-    expect(screen.queryByText(/cli\/src\/index\.mjs snapshot/)).toBeNull();
-    expect(
-      screen.getByText(
-        "브라우저는 이 컴퓨터의 git을 실행할 권한이 없어요. 무엇이 바뀌었는지는 여기서 그대로 보여드릴게요.",
-      ),
-    ).toBeInTheDocument();
-    expect(tauriApiMock.invoke).not.toHaveBeenCalled();
-  });
-
-  it("shows the empty-session message when the changeset has no changes", async () => {
-    renderPanel(<AtlasGitPanel sessionChangeset={null} />);
-    expect(await screen.findByText("아직 없어요. 문서를 고치면 여기에 나타나요.")).toBeInTheDocument();
+    expect(await screen.findByTestId("atlas-git-not-installed")).toBeInTheDocument();
+    expect(screen.getByTestId("atlas-git-panel")).toHaveAttribute("data-stage", "not-installed");
   });
 });
 
@@ -641,16 +613,8 @@ describe("AtlasGitPanel desktop", () => {
 
 /** Setup and workbench shapes, split by whether the screen can record right now. */
 describe("AtlasGitPanel setup mode", () => {
-  it("uses one setup frame for all three pre-connection states", async () => {
-    // ① web
-    const web = renderPanel(<AtlasGitPanel />);
-    expect(await screen.findByTestId("atlas-git-setup")).toHaveAttribute(
-      "data-setup-state",
-      "web",
-    );
-    web.unmount();
-
-    // ② in the app, but no folder
+  it("uses one setup frame for both pre-connection states", async () => {
+    // ① in the app, but no folder
     tauriApiMock.runtimeAvailable = true;
     const noVault = renderPanel(<AtlasGitPanel vaultPath={null} />);
     expect(await screen.findByTestId("atlas-git-setup")).toHaveAttribute(
@@ -659,7 +623,7 @@ describe("AtlasGitPanel setup mode", () => {
     );
     noVault.unmount();
 
-    // ③ app plus folder, but not yet recording
+    // ② app plus folder, but not yet recording
     installDesktopGit({
       status: {
         initialized: false,
@@ -698,19 +662,19 @@ describe("AtlasGitPanel setup mode", () => {
     renderPanel(<AtlasGitPanel vaultPath={null} />);
 
     expect(await screen.findByTestId("atlas-git-pick-vault")).toBeInTheDocument();
-    expect(document.querySelector('[data-setup-state="web"]')).toBeNull();
     expect(tauriApiMock.invoke).not.toHaveBeenCalled();
   });
 
   it("shows a three-step ladder without the optional remote step", async () => {
-    renderPanel(<AtlasGitPanel />);
+    tauriApiMock.runtimeAvailable = true;
+    renderPanel(<AtlasGitPanel vaultPath={null} />);
 
     const ladder = await screen.findByTestId("atlas-git-ladder");
     const steps = ladder.querySelectorAll("li");
     expect(steps).toHaveLength(3);
-    // On the web the first step is "what to do now" and the rest are still ahead.
-    expect(steps[0]).toHaveAttribute("data-step-state", "current");
-    expect(steps[1]).toHaveAttribute("data-step-state", "todo");
+    // Without a folder the app has not reached the folder step yet; the rest are still ahead.
+    expect(steps[0]).toHaveAttribute("data-step-state", "done");
+    expect(steps[1]).toHaveAttribute("data-step-state", "current");
     expect(steps[2]).toHaveAttribute("data-step-state", "todo");
     expect(ladder).not.toHaveTextContent("Push");
   });
@@ -1319,11 +1283,6 @@ describe("AtlasGitPanel changes without git", () => {
     expect(await screen.findByTestId("atlas-git-init")).toHaveTextContent("Git 저장소 만들기");
     expect(screen.getByTestId("atlas-git-setup")).toHaveTextContent("이 폴더는 아직 Git 저장소가 아니에요");
   });
-
-  it("uses the same summary component in the web fallback", async () => {
-    renderPanel(<AtlasGitPanel sessionChangeset={CHANGESET} />);
-    expect(await screen.findByTestId("atlas-git-session-changes")).toHaveTextContent("개념 추가 1");
-  });
 });
 
 describe("AtlasGitPanel full history", () => {
@@ -1484,7 +1443,9 @@ describe("AtlasGitPanel follows the folder while open", () => {
 
   it("does not subscribe to the watcher while no bridge answers", async () => {
     renderPanel(<AtlasGitPanel vaultPath={null} />);
-    await waitFor(() => expect(document.querySelector('[data-setup-state="web"]')).not.toBeNull());
+    await waitFor(() =>
+      expect(screen.getByTestId("atlas-git-panel")).toHaveAttribute("data-stage", "loading"),
+    );
     expect(tauriEventMock.listen).not.toHaveBeenCalled();
   });
 });

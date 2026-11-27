@@ -4,7 +4,6 @@ import type { RefObject } from 'react';
 import { useTranslations } from 'next-intl';
 
 import { Button, Chip } from '@/shared/ui';
-import { Link } from '@/i18n/navigation';
 import { Input } from '@/shared/ui/fields/input';
 import { controlClass } from '@/shared/ui/control-class';
 import type { CatalogueEntry } from '@/shared/config/mcp/mcp-catalogue';
@@ -24,7 +23,6 @@ export function ImportConnectStep({
   service,
   entry,
   ask,
-  native,
   destination,
   inspection,
   failed,
@@ -44,7 +42,6 @@ export function ImportConnectStep({
   service: ImportService;
   entry: CatalogueEntry | null;
   ask: ImportAsk;
-  native: boolean;
   destination: ImportDestination;
   inspection: SetupInspection | null;
   failed: ImportSetupFailure | null;
@@ -72,16 +69,6 @@ export function ImportConnectStep({
       >
         {t('stepOf', { step: 1, total: 3 })}
       </p>
-      {!native ? (
-        <div data-testid={`${testIdPrefix}-web-setup`} className="mt-3">
-          <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">{t('webSetupTitle')}</p>
-          <p className="mt-2 text-label leading-prose text-[color:var(--color-text-tertiary)]">{t('webSetupBody', { service: serviceTitle })}</p>
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <Link href="/download/" data-testid={`${testIdPrefix}-no-agent-app`} className={controlClass({ shape: 'link', tone: 'accent', hoverInk: 'strong', className: 'atlas-touch-floor atlas-touch-floor-wide' })}>{t('noAgentGetApp')}</Link>
-            <Button className="atlas-touch-floor" onClick={onAddFiles} data-testid={`${testIdPrefix}-add-files`}>{t('addFiles')}</Button>
-          </div>
-        </div>
-      ) : <>
       <p className="mt-1 max-w-prose break-keep text-body leading-prose text-[color:var(--color-text-secondary)]">
         {ask.kind === 'browser'
           ? t('connectBrowser', { service: serviceTitle })
@@ -156,12 +143,11 @@ export function ImportConnectStep({
       {inspection?.existing && !inspection.hasSecret && !failed && !pending ? <p className="mt-3 text-label leading-prose text-[color:var(--color-text-tertiary)]">{t('resumeSetupBody', { service: serviceTitle })}</p> : null}
       {failed === 'setupRuntimeUnavailable' && destination === 'sources' ? <Button className="atlas-touch-floor mt-2" onClick={onAddFiles}>{t('addFiles')}</Button> : null}
       {failed || inspection?.existing ? <Button variant="ghost" className="atlas-touch-floor mt-2" onClick={onOpenAdvanced}>{t('inspectSetup')}</Button> : null}
-      </>}
       <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
         <Button variant="ghost" className="atlas-touch-floor" onClick={onBack}>
           {t('back')}
         </Button>
-        {native ? <Chip
+        <Chip
           ref={saveButton}
           size="lg"
           tone="accent"
@@ -172,7 +158,7 @@ export function ImportConnectStep({
           className="border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] hover:bg-[color:var(--color-indigo-a24)]"
         >
           {t(connectActionLabelKey(state))}
-        </Chip> : null}
+        </Chip>
       </div>
     </>
   );
