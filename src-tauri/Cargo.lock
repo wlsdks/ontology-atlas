@@ -2228,6 +2228,7 @@ dependencies = [
 name = "hardened-git"
 version = "0.1.0"
 dependencies = [
+ "dunce",
  "hardened-git",
  "thiserror 2.0.21",
 ]
@@ -3024,7 +3025,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2 0.11.1",
- "source-evidence",
+ "source-scan",
  "strsim",
  "tempfile",
  "thiserror 2.0.21",
@@ -4975,7 +4976,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "source-evidence"
+name = "source-scan"
 version = "0.1.0"
 dependencies = [
  "confined-files",

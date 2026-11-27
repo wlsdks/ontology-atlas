@@ -8,14 +8,22 @@ use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
+use crate::repo_path::RepoPath;
 use crate::runner::{run_git, GitInvocation, GitOutput, GitRunError};
+use crate::touch_history::{parse_touch_history, TouchedCommit};
+use crate::working_tree::{parse_working_tree, WorkingTree};
 
 /// One read's bound per stream.
 const MAX_READ_OUTPUT: usize = 4 * 1024 * 1024;
 /// Bound for a batch of object reads.
 const MAX_BATCH_OUTPUT: usize = 64 * 1024 * 1024;
+/// Bound for the walk over history that dates files; a commit that touched a folder lists every
+/// file below it.
+const MAX_TOUCH_HISTORY_OUTPUT: usize = 64 * 1024 * 1024;
 /// A read that has not finished by now is killed.
 const READ_TIMEOUT: Duration = Duration::from_secs(120);
+/// Paths named in one `status`, so a command line stays under Windows's 32,767 characters.
+const STATUS_PATHS_PER_RUN: usize = 256;
 
 /// Why a read produced no answer.
 #[derive(Debug, thiserror::Error)]
@@ -27,48 +35,6 @@ pub enum GitReadError {
     /// `git` ran and failed; the text is what it printed.
     #[error("git {subcommand} failed: {message}")]
     Failed { subcommand: String, message: String },
-}
-
-/// A path inside a repository, `/`-separated, never absolute, never climbing, never an option and
-/// never a pathspec word: what a vault, a page or an agent may name in a `git` question. `.` is the
-/// repository root.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct RepoPath(String);
-
-impl RepoPath {
-    /// Trailing slashes are dropped. `None` for an empty path, an absolute one, one that starts
-    /// with `-`, one with a backslash, a NUL, a newline or a `..` part.
-    pub fn new(raw: &str) -> Option<Self> {
-        let trimmed = raw.trim().trim_end_matches('/');
-        let refused = trimmed.is_empty()
-            || trimmed.starts_with('/')
-            || trimmed.starts_with('-')
-            || trimmed.contains(['\\', '\0', '\n', '\r'])
-            || trimmed.split('/').any(|part| part == "..");
-        (!refused).then(|| Self(trimmed.to_string()))
-    }
-
-    /// The repository root as a path.
-    pub fn root() -> Self {
-        Self(".".to_string())
-    }
-
-    /// A path below the repository as the platform writes it, with `/` separators. `None` when it
-    /// is not a valid [`RepoPath`] (for example it climbs).
-    pub fn from_path(relative: &Path) -> Option<Self> {
-        if relative.as_os_str().is_empty() {
-            return Some(Self::root());
-        }
-        let text: Vec<String> = relative
-            .components()
-            .map(|part| part.as_os_str().to_string_lossy().into_owned())
-            .collect();
-        Self::new(&text.join("/"))
-    }
-
-    pub fn as_str(&self) -> &str {
-        &self.0
-    }
 }
 
 /// A commit id: 40 hex digits, or 64 for a SHA-256 repository, lower-cased.
@@ -100,26 +66,6 @@ impl BlobAt {
     }
 }
 
-/// How a file differs from the last commit, as the working tree and the index tell it.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ChangeKind {
-    Untracked,
-    Deleted,
-    Added,
-    Modified,
-}
-
-/// One row of `git status --porcelain=v1 -z`.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct StatusRow {
-    pub path: String,
-    pub index: char,
-    pub worktree: char,
-    pub kind: ChangeKind,
-    pub staged: bool,
-    pub unstaged: bool,
-}
-
 /// One commit of a history list.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CommitSummary {
@@ -149,13 +95,13 @@ impl OperationInProgress {
     }
 }
 
-/// What untracked files a status lists.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum UntrackedFiles {
-    /// Each file (`--untracked-files=all`).
-    All,
-    /// A new folder as one row (`--untracked-files=normal`).
-    Normal,
+/// What one `rev-parse` says about the repository a folder is in.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RepositoryFacts {
+    /// The top of the working tree as a real path (links resolved, no `\\?\` prefix).
+    pub top_level: PathBuf,
+    /// Whether the history is cut short (a shallow clone).
+    pub shallow: bool,
 }
 
 /// A repository, read through the hardened runner.
@@ -180,6 +126,21 @@ impl Repository {
     #[cfg(feature = "test-hooks")]
     #[must_use]
     pub fn with_environment(mut self, environment: Vec<(OsString, OsString)>) -> Self {
+        self.environment = Some(environment);
+        self
+    }
+
+    /// Runs `git` with this `PATH`, and the rest of the process's environment, so a program
+    /// started from a launcher with a minimal `PATH` still finds the person's `git`. The
+    /// hardening is applied on top and does not depend on it.
+    #[must_use]
+    pub fn with_search_path(mut self, path: OsString) -> Self {
+        let mut environment = self
+            .environment
+            .take()
+            .unwrap_or_else(|| std::env::vars_os().collect());
+        environment.retain(|(name, _)| !is_search_path_name(name));
+        environment.push((OsString::from("PATH"), path));
         self.environment = Some(environment);
         self
     }
@@ -231,6 +192,29 @@ impl Repository {
         Ok((output.success() && !text.trim().is_empty()).then(|| PathBuf::from(text.trim())))
     }
 
+    /// The top of the working tree and whether history is shallow, from one run, or `None` when
+    /// the folder is not in a working tree. The top is a real path, so a folder reached through
+    /// a link can be placed below it with [`RepoPath::of_folder`].
+    pub fn facts(&self) -> Result<Option<RepositoryFacts>, GitReadError> {
+        let output = self.read(&["rev-parse", "--is-shallow-repository", "--show-toplevel"])?;
+        if !output.success() {
+            return Ok(None);
+        }
+        let text = output.stdout_text();
+        let mut lines = text.trim_end_matches('\n').split('\n');
+        let (Some(shallow), Some(top), None) = (lines.next(), lines.next(), lines.next()) else {
+            return Err(GitReadError::Failed {
+                subcommand: "rev-parse".to_string(),
+                message: "the top of the repository is not one line".to_string(),
+            });
+        };
+        let top = PathBuf::from(top);
+        Ok(Some(RepositoryFacts {
+            top_level: dunce::canonicalize(&top).unwrap_or(top),
+            shallow: shallow == "true",
+        }))
+    }
+
     /// The commit `HEAD` names, or `None` before the first commit.
     pub fn head(&self) -> Result<Option<CommitId>, GitReadError> {
         let output = self.read(&["rev-parse", "HEAD"])?;
@@ -238,19 +222,6 @@ impl Repository {
             .success()
             .then(|| CommitId::new(&output.stdout_text()))
             .flatten())
-    }
-
-    /// The branch `HEAD` is on, or `None` for a detached `HEAD`.
-    pub fn branch(&self) -> Result<Option<String>, GitReadError> {
-        let output = self.read(&["symbolic-ref", "--quiet", "--short", "HEAD"])?;
-        let text = output.stdout_text();
-        Ok((output.success() && !text.trim().is_empty()).then(|| text.trim().to_string()))
-    }
-
-    /// Whether the history is cut short (a shallow clone).
-    pub fn is_shallow(&self) -> Result<bool, GitReadError> {
-        let output = self.read(&["rev-parse", "--is-shallow-repository"])?;
-        Ok(output.success() && output.stdout_text().trim() == "true")
     }
 
     /// The merge, cherry-pick, revert or rebase in progress, from the marker files `git` leaves
@@ -272,32 +243,54 @@ impl Repository {
         })
     }
 
-    /// `git status --porcelain=v1 -z` for `scope` (the whole repository when `None`), one row per
-    /// path. A rename or copy row is the destination.
-    pub fn status(
-        &self,
-        scope: Option<&RepoPath>,
-        untracked: UntrackedFiles,
-    ) -> Result<Vec<StatusRow>, GitReadError> {
-        let mut args = vec![
-            "status".to_string(),
-            "--porcelain=v1".to_string(),
-            "-z".to_string(),
-            match untracked {
-                UntrackedFiles::All => "--untracked-files=all".to_string(),
-                UntrackedFiles::Normal => "--untracked-files=normal".to_string(),
-            },
-        ];
-        if let Some(path) = scope {
-            args.push("--".to_string());
-            args.push(path.as_str().to_string());
+    /// `HEAD` and the changed paths from one `git status`, below `paths` (the whole repository
+    /// when empty). Untracked files are listed one by one, renames are two rows, and ahead and
+    /// behind are not counted, which walks history for nothing the rows use. More than
+    /// [`STATUS_PATHS_PER_RUN`] paths are asked in runs of that many.
+    pub fn working_tree(&self, paths: &[RepoPath]) -> Result<WorkingTree, GitReadError> {
+        let chunks: Vec<&[RepoPath]> = if paths.is_empty() {
+            vec![paths]
+        } else {
+            paths.chunks(STATUS_PATHS_PER_RUN).collect()
+        };
+        let mut merged: Option<WorkingTree> = None;
+        for chunk in chunks {
+            let mut args: Vec<String> = [
+                "status",
+                "--porcelain=v2",
+                "-z",
+                "--branch",
+                "--no-ahead-behind",
+                "--no-renames",
+                "--untracked-files=all",
+            ]
+            .iter()
+            .map(|arg| (*arg).to_string())
+            .collect();
+            if !chunk.is_empty() {
+                args.push("--".to_string());
+                args.extend(chunk.iter().map(|path| path.as_str().to_string()));
+            }
+            let tree = parse_working_tree(&self.succeeded(&args)?.stdout_text())?;
+            match merged.as_mut() {
+                None => merged = Some(tree),
+                Some(so_far) => so_far.rows.extend(tree.rows),
+            }
         }
-        Ok(parse_status(&self.succeeded(&args)?.stdout_text()))
+        merged.ok_or_else(|| GitReadError::Failed {
+            subcommand: "status".to_string(),
+            message: "no run".to_string(),
+        })
     }
 
-    /// The newest `limit` commits that touched `scope`, newest first. A repository with no commits
-    /// has none.
-    pub fn log(&self, scope: &RepoPath, limit: usize) -> Result<Vec<CommitSummary>, GitReadError> {
+    /// The newest `limit` commits that touched `scope`, newest first. The caller asks only
+    /// when `HEAD` names a commit: a failure is an error, never an empty history that reads as
+    /// a complete one.
+    pub fn history(
+        &self,
+        scope: &RepoPath,
+        limit: usize,
+    ) -> Result<Vec<CommitSummary>, GitReadError> {
         let args = [
             "log".to_string(),
             "-z".to_string(),
@@ -306,12 +299,37 @@ impl Repository {
             "--".to_string(),
             scope.as_str().to_string(),
         ];
-        let output = self.run(&args, MAX_READ_OUTPUT)?;
-        Ok(if output.success() {
-            parse_history(&output.stdout_text())
-        } else {
-            Vec::new()
-        })
+        Ok(parse_history(&self.succeeded(&args)?.stdout_text()))
+    }
+
+    /// The commits, newest first up to `max_commits`, that touched any of `paths`, each with the
+    /// touched paths among them (a folder matches the files below it). Renames are not followed,
+    /// so a rename is a deletion and an addition. Before the first commit the answer is a
+    /// [`GitReadError::Failed`], which a caller dating files reads as no history.
+    pub fn touch_history(
+        &self,
+        paths: &[RepoPath],
+        max_commits: usize,
+    ) -> Result<Vec<TouchedCommit>, GitReadError> {
+        let mut args: Vec<String> = vec![
+            "log".to_string(),
+            format!("--max-count={max_commits}"),
+            "-z".to_string(),
+            "--format=%x1e%H %cI".to_string(),
+            "--raw".to_string(),
+            "--no-abbrev".to_string(),
+            "--no-renames".to_string(),
+            "--".to_string(),
+        ];
+        args.extend(paths.iter().map(|path| path.as_str().to_string()));
+        let output = self.run(&args, MAX_TOUCH_HISTORY_OUTPUT)?;
+        if !output.success() {
+            return Err(GitReadError::Failed {
+                subcommand: "log".to_string(),
+                message: output.stderr_text().trim().to_string(),
+            });
+        }
+        Ok(parse_touch_history(&output.stdout_text()))
     }
 
     /// The newest `limit` commits that touched `path`, as commit and author time, newest first.
@@ -451,45 +469,12 @@ impl Repository {
     }
 }
 
-/// The rows of `git status --porcelain=v1 -z`.
-pub fn parse_status(text: &str) -> Vec<StatusRow> {
-    let records: Vec<&str> = text.split('\0').collect();
-    let mut rows = Vec::new();
-    let mut position = 0;
-    while let Some(record) = records.get(position) {
-        position += 1;
-        if record.is_empty() {
-            continue;
-        }
-        let mut characters = record.chars();
-        let index = characters.next().unwrap_or(' ');
-        let worktree = characters.next().unwrap_or(' ');
-        let path: String = record.chars().skip(3).collect();
-        // A rename or copy record holds the destination first and the source in the next record;
-        // agents use the destination.
-        if matches!(index, 'R' | 'C') || matches!(worktree, 'R' | 'C') {
-            position += 1;
-        }
-        let untracked = index == '?' && worktree == '?';
-        let kind = if untracked {
-            ChangeKind::Untracked
-        } else if index == 'D' || worktree == 'D' {
-            ChangeKind::Deleted
-        } else if index == 'A' {
-            ChangeKind::Added
-        } else {
-            ChangeKind::Modified
-        };
-        rows.push(StatusRow {
-            path,
-            index,
-            worktree,
-            kind,
-            staged: !untracked && index != ' ',
-            unstaged: untracked || worktree != ' ',
-        });
+fn is_search_path_name(name: &std::ffi::OsStr) -> bool {
+    if cfg!(windows) {
+        name.to_string_lossy().eq_ignore_ascii_case("PATH")
+    } else {
+        name == "PATH"
     }
-    rows
 }
 
 /// The commits of `git log -z --format=%H%x1f%h%x1f%aI%x1f%s`.
@@ -558,47 +543,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn a_repository_path_refuses_every_spelling_that_could_be_an_option_or_an_escape() {
-        for refused in [
-            "",
-            "  ",
-            "/etc/passwd",
-            "-rf",
-            "--output=/tmp/x",
-            "a\\b",
-            "a\0b",
-            "a\nb",
-            "../x",
-            "a/../b",
-            "a/..",
-        ] {
-            assert_eq!(RepoPath::new(refused), None, "{refused:?}");
-        }
-        assert_eq!(
-            RepoPath::new("docs/ontology/").map(|p| p.0),
-            Some("docs/ontology".to_string())
-        );
-        assert_eq!(
-            RepoPath::new(" src/a.ts ").map(|p| p.0),
-            Some("src/a.ts".to_string())
-        );
-        assert_eq!(
-            RepoPath::new(":(top)x").map(|p| p.0),
-            Some(":(top)x".to_string())
-        );
-        assert_eq!(RepoPath::new(".").map(|p| p.0), Some(".".to_string()));
-        assert_eq!(
-            RepoPath::from_path(Path::new("")).map(|p| p.0),
-            Some(".".to_string())
-        );
-        assert_eq!(
-            RepoPath::from_path(Path::new("a/b")).map(|p| p.0),
-            Some("a/b".to_string())
-        );
-        assert_eq!(RepoPath::from_path(Path::new("../b")), None);
-    }
-
-    #[test]
     fn a_commit_id_cannot_be_read_as_an_option_or_a_path() {
         let commit = "0123456789abcdef0123456789abcdef01234567";
         assert_eq!(CommitId::new(commit).map(|c| c.0), Some(commit.to_string()));
@@ -615,28 +559,6 @@ mod tests {
             assert_eq!(CommitId::new(refused), None, "{refused:?}");
         }
         assert!(CommitId::new(&"a".repeat(64)).is_some());
-    }
-
-    #[test]
-    fn a_status_row_follows_the_two_status_letters_and_a_rename_is_its_destination() {
-        let text = "?? new file.md\0 M changed.md\0A  added.md\0D  gone.md\0 D gone-too.md\0R  renamed.md\0old-name.md\0MM both.md\0";
-        let rows = parse_status(text);
-        let summary: Vec<(&str, ChangeKind, bool, bool)> = rows
-            .iter()
-            .map(|row| (row.path.as_str(), row.kind, row.staged, row.unstaged))
-            .collect();
-        assert_eq!(
-            summary,
-            [
-                ("new file.md", ChangeKind::Untracked, false, true),
-                ("changed.md", ChangeKind::Modified, false, true),
-                ("added.md", ChangeKind::Added, true, false),
-                ("gone.md", ChangeKind::Deleted, true, false),
-                ("gone-too.md", ChangeKind::Deleted, false, true),
-                ("renamed.md", ChangeKind::Modified, true, false),
-                ("both.md", ChangeKind::Modified, true, true),
-            ]
-        );
     }
 
     #[test]

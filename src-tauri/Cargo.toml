@@ -16,7 +16,7 @@ members = [
   "crates/hardened-git",
   "crates/vault-document",
   "crates/ontology-graph",
-  "crates/source-evidence",
+  "crates/source-scan",
   "crates/mcp-server",
 ]
 
