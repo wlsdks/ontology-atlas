@@ -1,0 +1,12 @@
+{
+  "about": "Cases whose answers differ between ko_KR and en_US until fix/mcp-sort-locale pins localeCompare to 'en' (measured 2026-11-27 on the Node server). `--ko-vs-en` reports these as expected and fails when one no longer differs, so the list only shrinks and is deleted with that fix.",
+  "cases": [
+    "graph/compile-ontology-edge-names",
+    "graph/query-ontology-edge-names",
+    "meaning/validate-vault-edge-names",
+    "vault-read/list-concepts-edge-names",
+    "writes/add-concepts-hangul-and-emoji",
+    "writes/rename-concept",
+    "writes/rename-concept-hangul-and-normalization"
+  ]
+}
