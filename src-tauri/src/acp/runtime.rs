@@ -214,6 +214,7 @@ pub(crate) fn acp_install_cli(
 
     let mut command = Command::new(&npm);
     crate::child_process::no_console::hide_console(&mut command);
+    crate::child_process::working_dir::run_from_temp_dir(&mut command);
     command
         .arg("install")
         .arg("--prefix")
