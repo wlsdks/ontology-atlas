@@ -157,10 +157,10 @@ drops it, and the agent that dropped it cannot know.
    model in use (`model.using`), `stage.local`, **Check now**, and the switch **Check every night**,
    off. With no runner set in Agents › Models, or one that does not answer, the stage shows
    `model.none*` instead and **Check now** is absent; an address off this computer shows
-   `model.notLocal`.
+   `model.notLocal`; without search by meaning's model, `model.search*`.
 3. When they press **Check now**, Atlas reads the session files in the background (`run.reading`),
    then sends each typed message, one at a time, to the model (`run.sorting`), then checks each
-   request at least 2 days old against Git (`run.checking`). Requests appear in the list as each is
+   code request at least 2 days old against Git (`run.checking`). Requests appear in the list as each is
    judged; Stop keeps what was found.
 4. When the dialog is closed, the run continues; Workshop's header shows `run.sorting` or
    `run.checking` in place of the fact.
@@ -194,6 +194,7 @@ drops it, and the agent that dropped it cannot know.
 | First run, model ready | Out of scope — web card | `stage.*` with `model.using`; Check now, the nightly switch |
 | No model, or not answering | Out of scope — web card | `model.noneTitle`, `model.noneBody`, Open Models |
 | Model off this computer | Out of scope — web card | `model.notLocal`, Open Models |
+| Search model not prepared | Out of scope — web card | `model.searchTitle`, `model.searchBody`, Set up search by meaning |
 | Reading, sorting, checking | Out of scope — web card | `run.reading` / `run.sorting` / `run.checking` in the dialog and header; Stop |
 | Paused for input, or waiting for idle | Out of scope — web card | `run.paused` / `run.waiting`; Check now runs at once |
 | Stopped | Out of scope — web card | `run.stopped`; the list so far |
@@ -215,6 +216,7 @@ Keys are in `messages/<locale>/missedRequests.json` (en, ko, ja, zh). The Englis
 | `stage.local` / `stage.scope` | stage | Your messages go only to {model} at {address} on this computer. Nothing is sent anywhere else, and nothing is written into your repository or your agent's memory. / Reads {count} sessions from the last 14 days in {worktrees} folders of this repository. |
 | `stage.start` / `stage.nightly` / `stage.nightlyNote` | stage | Check now / Check every night / Runs at most once a day, after 1:00, while Atlas is open, this computer is on power and no one has used it for 10 minutes. It stops when you touch the keyboard or mouse. |
 | `model.noneTitle` / `model.noneBody` / `model.noneAction` | stage | Needs a model on this computer / Picking requests out of your messages needs a language model running on this computer, such as one in Ollama or LM Studio. Add its address in Agents › Models, then come back. / Open Models |
+| `model.searchTitle` / `model.searchBody` / `model.searchAction` | stage | Needs the search-by-meaning model / Finding the commits closest to each request uses the model that search by meaning prepares on this computer. Set it up once in the Library, then come back. / Set up search by meaning |
 | `model.notLocal` / `model.using` | stage | {address} is not on this computer. Only a model at localhost, 127.0.0.1 or ::1 may read your messages. / {model} at {address} |
 | `run.reading` / `run.sorting` / `run.checking` | progress | Reading {done} of {total} sessions / Picking out requests: {done} of {total} messages / Checking {done} of {total} requests against Git |
 | `run.paused` / `run.waiting` | progress | Paused while you use this computer. It goes on the next time the computer is idle on power. / Waiting for this computer to be idle on power |
