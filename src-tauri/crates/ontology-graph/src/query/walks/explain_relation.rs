@@ -270,17 +270,7 @@ pub fn explain_relation<'a>(
                     .map(|node| graph.node(*node).slug())
                     .collect(),
                 nodes: summaries(graph, found.hops.iter().copied()),
-                edges: path_edges(
-                    graph,
-                    found
-                        .edges
-                        .iter()
-                        .map(|&(edge, entered, left)| super::hop::Hop {
-                            edge,
-                            entered,
-                            left,
-                        }),
-                ),
+                edges: path_edges(graph, found.edges.iter().copied()),
             },
             None => ShortestPath {
                 found: false,
