@@ -194,11 +194,21 @@ whether it is better for the person or the agent, and is kept only as an entry h
 ids in the harness manifest (`declaredChanges`) and summarised in the merge's change record. An
 entry names the tool, the field's JSON path, before, after and why. The harness treats it as an
 expected difference only at its request ids and paths; a difference elsewhere fails, and so does an
-entry whose difference no longer appears. Any part of the starting contract may be listed: refusals,
-limits, error text and codes, tool descriptions, and the bytes a write puts on disk. One limit
-holds: what a write puts on disk stays Markdown with frontmatter that the app of the same release
-reads, and a changed tool name or schema is also changed in the vault README and the agent skills
-in the same merge.
+entry whose difference no longer appears. Refusals, limits, error text, tool descriptions and
+answer content may all be listed. Two things are shared with other programs and stay stable:
+
+- **The vault file format.** A team keeps the vault in its own Git repository, and teammates run
+  different Atlas versions for days after a release; the app's own editor writes the same files. If
+  two writers format frontmatter differently, every save rewrites lines nobody changed and two
+  writers keep rewriting each other's files. So a write changes only the lines it means to change
+  and formats them in the one format the app also writes; the Rust server never reformats untouched
+  keys, comments, quoting or order. Changing the format itself is a separate, deliberate change with
+  its own decision record, never a side effect of this port.
+- **The set of `errorCode` values.** Agents and saved prompts branch on them. A new code may be
+  added as a listed change; an existing code keeps its meaning and is not renamed or removed.
+
+A changed tool name or schema is also changed in the vault README and the agent skills in the same
+merge.
 
 | # | Tool, field | Before (JavaScript) | After (Rust) | Why |
 |---|---|---|---|---|
@@ -641,3 +651,6 @@ None — the owner delegated the open points and the lead decided them on 2026-1
   and may change as listed entries; the harness only catches unlisted differences; JavaScript's
   refusals are a floor for criterion 9. Reviews no longer treat "differs from JavaScript" as a
   defect by itself.
+- 2026-11-27: the vault file format and the `errorCode` set stay stable, because teammates on
+  different versions share one vault through Git and the app writes the same files; a write changes
+  only the lines it means to change. Everything else stays judged on merit.
