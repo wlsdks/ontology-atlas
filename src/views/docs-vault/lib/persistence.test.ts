@@ -2,23 +2,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { VaultConflictError } from "@/entities/vault-session";
 import {
   DOCS_VAULT_LIST_COLLAPSED_KEY,
-  DOCS_VAULT_SOURCE_KEY,
   escapeHtml,
-  isDocsVaultLocalSourceDisabled,
-  parseDocsVaultSource,
   parseDocsVaultView,
   persistEditorSave,
   readStoredListCollapsed,
-  readStoredSource,
   scheduleStateSync,
-  settledDocsSource,
   shouldShowDogfoodVaultHint,
   shouldShowDesktopVaultWelcome,
   shouldSwitchToDogfoodVault,
-  shouldHonorLocalIntent,
-  shouldPreferLocalOnLanding,
   storeListCollapsed,
-  storeSource,
 } from "./persistence";
 
 describe("parseDocsVaultView", () => {
@@ -29,15 +21,6 @@ describe("parseDocsVaultView", () => {
     expect(parseDocsVaultView(undefined)).toBe("doc");
     expect(parseDocsVaultView("")).toBe("doc");
     expect(parseDocsVaultView("alien")).toBe("doc");
-  });
-});
-
-describe("parseDocsVaultSource", () => {
-  it("accepts only explicit server/local source values", () => {
-    expect(parseDocsVaultSource("server")).toBe("server");
-    expect(parseDocsVaultSource("local")).toBe("local");
-    expect(parseDocsVaultSource("README")).toBeNull();
-    expect(parseDocsVaultSource(null)).toBeNull();
   });
 });
 
@@ -97,106 +80,6 @@ describe("escapeHtml", () => {
   });
 });
 
-describe("source storage", () => {
-  beforeEach(() => {
-    window.localStorage.clear();
-  });
-  afterEach(() => {
-    window.localStorage.clear();
-  });
-
-  it("source defaults to 'server' with empty storage", () => {
-    expect(readStoredSource()).toBe("server");
-  });
-
-  it("source reads back the saved value", () => {
-    storeSource("local");
-    expect(readStoredSource()).toBe("local");
-    expect(window.localStorage.getItem(DOCS_VAULT_SOURCE_KEY)).toBe("local");
-  });
-
-  it("source falls back to 'server' for an invalid value", () => {
-    window.localStorage.setItem(DOCS_VAULT_SOURCE_KEY, "garbage");
-    expect(readStoredSource()).toBe("server");
-  });
-});
-
-describe("shouldPreferLocalOnLanding (C5)", () => {
-  it("prefers local when a vault is loaded and current source is Sample", () => {
-    expect(shouldPreferLocalOnLanding("loaded", "server")).toBe(true);
-  });
-
-  it("keeps an explicit packaged-doc deep link on Sample without changing the stored local preference", () => {
-    expect(shouldPreferLocalOnLanding("loaded", "server", "server")).toBe(false);
-  });
-
-  it("does not re-flip when already local", () => {
-    expect(shouldPreferLocalOnLanding("loaded", "local")).toBe(false);
-  });
-
-  it("does not force local while the vault is still restoring / idle / errored", () => {
-    expect(shouldPreferLocalOnLanding("idle", "server")).toBe(false);
-    expect(shouldPreferLocalOnLanding("loading", "server")).toBe(false);
-    expect(shouldPreferLocalOnLanding("error", "server")).toBe(false);
-    expect(shouldPreferLocalOnLanding("unsupported", "server")).toBe(false);
-  });
-
-  it("prefers local when the launch stopped for the person to choose a folder", () => {
-    // A deferred launch loads no manifest by design; without this arm the person meant to pick
-    // a folder lands on the sample.
-    expect(shouldPreferLocalOnLanding("idle", "server", null, true)).toBe(true);
-  });
-
-  it("still respects an explicit Sample deep link while choosing", () => {
-    // An explicit sample URL still wins.
-    expect(shouldPreferLocalOnLanding("idle", "server", "server", true)).toBe(false);
-  });
-
-  it("does not re-flip while choosing if the source is already local", () => {
-    expect(shouldPreferLocalOnLanding("idle", "local", null, true)).toBe(false);
-  });
-
-  it("leaves the idle verdict unchanged when nothing is being chosen", () => {
-    // Without a pending choice an idle vault must not force local.
-    expect(shouldPreferLocalOnLanding("idle", "server", null, false)).toBe(false);
-  });
-});
-
-describe("settledDocsSource", () => {
-  const stored = () => "server" as const;
-  const settle = (over: Partial<Parameters<typeof settledDocsSource>[0]>) =>
-    settledDocsSource({
-      installedShell: false,
-      hasLocalManifest: false,
-      querySource: null,
-      localIntent: false,
-      readStored: stored,
-      ...over,
-    });
-
-  it("settles the installed app on its folders before any folder is open", () => {
-    expect(settle({ installedShell: true })).toBe("local");
-    expect(settle({ installedShell: true, querySource: "server" })).toBe("local");
-  });
-
-  it("does not consult the stored preference once the shell is the installed app", () => {
-    const readStored = vi.fn(() => "server" as const);
-    settle({ installedShell: true, readStored });
-    expect(readStored).not.toHaveBeenCalled();
-  });
-
-  it("lets a mounted folder win on the web unless the address asks for the sample", () => {
-    expect(settle({ hasLocalManifest: true })).toBe("local");
-    expect(settle({ hasLocalManifest: true, querySource: "server" })).toBe("server");
-  });
-
-  it("follows the address, then a local intent, then the stored choice on the web", () => {
-    expect(settle({ querySource: "local" })).toBe("local");
-    expect(settle({ localIntent: true })).toBe("keep");
-    expect(settle({ readStored: () => "local" })).toBe("local");
-  });
-});
-
 describe("doc list collapse storage", () => {
   beforeEach(() => {
     window.localStorage.clear();
@@ -227,90 +110,35 @@ describe("doc list collapse storage", () => {
   });
 });
 
-// Capability (FSA support) gates the source, not the runtime.
-describe("capability-gated local vault source", () => {
-  it("honors ?intent=local in every runtime (web included — builder parity)", () => {
-    expect(shouldHonorLocalIntent("local", true)).toBe(true);
-    expect(shouldHonorLocalIntent("local", false)).toBe(true);
-    expect(shouldHonorLocalIntent("server", true)).toBe(false);
-    expect(shouldHonorLocalIntent(null, true)).toBe(false);
-    expect(shouldHonorLocalIntent(undefined, true)).toBe(false);
+describe("the folder screen's dogfood and welcome rules", () => {
+  it("shows the dogfood hint only for a dogfood hand-off with no folder read", () => {
+    expect(shouldShowDogfoodVaultHint({ dogfood: "1", hasLocalManifest: false })).toBe(true);
+    expect(shouldShowDogfoodVaultHint({ dogfood: null, hasLocalManifest: false })).toBe(false);
+    expect(shouldShowDogfoodVaultHint({ dogfood: "1", hasLocalManifest: true })).toBe(false);
   });
 
-  it("shows dogfood vault hint only for desktop local dogfood handoff", () => {
-    expect(
-      shouldShowDogfoodVaultHint({
-        dogfood: "1",
-        isDesktopRuntime: true,
-        source: "local",
-        hasLocalManifest: false,
-      }),
-    ).toBe(true);
-    expect(
-      shouldShowDogfoodVaultHint({
-        dogfood: "1",
-        isDesktopRuntime: false,
-        source: "local",
-        hasLocalManifest: false,
-      }),
-    ).toBe(false);
-    expect(
-      shouldShowDogfoodVaultHint({
-        dogfood: null,
-        isDesktopRuntime: true,
-        source: "local",
-        hasLocalManifest: false,
-      }),
-    ).toBe(false);
-    expect(
-      shouldShowDogfoodVaultHint({
-        dogfood: "1",
-        isDesktopRuntime: true,
-        source: "local",
-        hasLocalManifest: true,
-      }),
-    ).toBe(false);
-  });
-
-  it("switches dogfood deep links away from a different loaded desktop vault", () => {
+  const ATLAS = "/Users/dana/side-project/ontology-atlas/docs/ontology";
+  it("switches a dogfood deep link away from a different loaded folder", () => {
     expect(
       shouldSwitchToDogfoodVault({
         dogfood: "1",
-        isDesktopRuntime: true,
-        source: "local",
         localVaultStatus: "loaded",
         currentRootPath: "/private/tmp/ontology-atlas-editor-smoke",
-        dogfoodRootPath: "/Users/dana/side-project/ontology-atlas/docs/ontology",
+        dogfoodRootPath: ATLAS,
       }),
     ).toBe(true);
     expect(
-      shouldSwitchToDogfoodVault({
-        dogfood: "1",
-        isDesktopRuntime: true,
-        source: "local",
-        localVaultStatus: "loaded",
-        currentRootPath: "/Users/dana/side-project/ontology-atlas/docs/ontology",
-        dogfoodRootPath: "/Users/dana/side-project/ontology-atlas/docs/ontology",
-      }),
+      shouldSwitchToDogfoodVault({ dogfood: "1", localVaultStatus: "loaded", currentRootPath: ATLAS, dogfoodRootPath: ATLAS }),
     ).toBe(false);
     expect(
-      shouldSwitchToDogfoodVault({
-        dogfood: "1",
-        isDesktopRuntime: true,
-        source: "local",
-        localVaultStatus: "idle",
-        currentRootPath: null,
-        dogfoodRootPath: "/Users/dana/side-project/ontology-atlas/docs/ontology",
-      }),
+      shouldSwitchToDogfoodVault({ dogfood: "1", localVaultStatus: "idle", currentRootPath: null, dogfoodRootPath: ATLAS }),
     ).toBe(false);
     expect(
       shouldSwitchToDogfoodVault({
         dogfood: null,
-        isDesktopRuntime: true,
-        source: "local",
         localVaultStatus: "loaded",
         currentRootPath: "/private/tmp/ontology-atlas-editor-smoke",
-        dogfoodRootPath: "/Users/dana/side-project/ontology-atlas/docs/ontology",
+        dogfoodRootPath: ATLAS,
       }),
     ).toBe(false);
   });
@@ -319,100 +147,23 @@ describe("capability-gated local vault source", () => {
     expect(
       shouldSwitchToDogfoodVault({
         dogfood: "1",
-        isDesktopRuntime: true,
-        source: "local",
         localVaultStatus: "loaded",
         currentRootPath: "/Users/dana/side-project/oh-my-ontology/docs/ontology",
-        dogfoodRootPath: "/Users/dana/side-project/ontology-atlas/docs/ontology",
-        dogfoodRootPaths: [
-          "/Users/dana/side-project/ontology-atlas/docs/ontology",
-          "/Users/dana/side-project/oh-my-ontology/docs/ontology",
-        ],
+        dogfoodRootPath: ATLAS,
+        dogfoodRootPaths: [ATLAS, "/Users/dana/side-project/oh-my-ontology/docs/ontology"],
       }),
     ).toBe(false);
   });
 
-  it("gates local vault source on capability, not runtime", () => {
-    expect(
-      isDocsVaultLocalSourceDisabled({
-        isDesktopRuntime: false,
-        localVaultStatus: "idle",
-      }),
-    ).toBe(false);
-    expect(
-      isDocsVaultLocalSourceDisabled({
-        isDesktopRuntime: false,
-        localVaultStatus: "unsupported",
-      }),
-    ).toBe(true);
-    expect(
-      isDocsVaultLocalSourceDisabled({
-        isDesktopRuntime: true,
-        localVaultStatus: "idle",
-      }),
-    ).toBe(false);
-    expect(
-      isDocsVaultLocalSourceDisabled({
-        isDesktopRuntime: true,
-        localVaultStatus: "unsupported",
-      }),
-    ).toBe(true);
-  });
-
-  it("shows the desktop vault welcome before a local vault is selected", () => {
-    expect(
-      shouldShowDesktopVaultWelcome({
-        isDesktopRuntime: true,
-        source: "local",
-        localVaultStatus: "idle",
-        hasLocalManifest: false,
-      }),
-    ).toBe(true);
-    expect(
-      shouldShowDesktopVaultWelcome({
-        isDesktopRuntime: true,
-        source: "local",
-        localVaultStatus: "loaded",
-        hasLocalManifest: true,
-      }),
-    ).toBe(false);
-    // A web session gets the welcome with its open CTA too.
-    expect(
-      shouldShowDesktopVaultWelcome({
-        isDesktopRuntime: false,
-        source: "local",
-        localVaultStatus: "idle",
-        hasLocalManifest: false,
-      }),
-    ).toBe(true);
-    expect(
-      shouldShowDesktopVaultWelcome({
-        isDesktopRuntime: true,
-        source: "server",
-        localVaultStatus: "idle",
-        hasLocalManifest: false,
-      }),
-    ).toBe(false);
+  it("shows the vault welcome before a folder is read", () => {
+    expect(shouldShowDesktopVaultWelcome({ localVaultStatus: "idle", hasLocalManifest: false })).toBe(true);
+    expect(shouldShowDesktopVaultWelcome({ localVaultStatus: "loaded", hasLocalManifest: true })).toBe(false);
   });
 
   it("shows the welcome when the only known folder failed to restore, not a loading frame", () => {
-    expect(
-      shouldShowDesktopVaultWelcome({
-        isDesktopRuntime: true,
-        source: "local",
-        localVaultStatus: "error",
-        hasLocalManifest: false,
-      }),
-    ).toBe(true);
+    expect(shouldShowDesktopVaultWelcome({ localVaultStatus: "error", hasLocalManifest: false })).toBe(true);
     // A folder already read stays on screen when a later refresh fails.
-    expect(
-      shouldShowDesktopVaultWelcome({
-        isDesktopRuntime: true,
-        source: "local",
-        localVaultStatus: "error",
-        hasLocalManifest: true,
-      }),
-    ).toBe(false);
+    expect(shouldShowDesktopVaultWelcome({ localVaultStatus: "error", hasLocalManifest: true })).toBe(false);
   });
 });
 

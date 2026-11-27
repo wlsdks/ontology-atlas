@@ -1,7 +1,4 @@
-export {
-  ONTOLOGY_ATLAS_REPO_BLOB_BASE,
-  DOCS_VAULT_REPO_ROOT,
-} from './lib/resolve-doc-link';
+export { ONTOLOGY_ATLAS_REPO_BLOB_BASE } from './lib/resolve-doc-link';
 export {
   readRecentDocs,
   migrateLegacyRecentDocs,

@@ -14,7 +14,7 @@ import { DocsHeaderTile } from './header/DocsHeaderTile';
 import { DocsVaultVaultChip } from './header/DocsVaultVaultChip';
 import { DocsVaultTabStrip } from './header/DocsVaultTabStrip';
 import { resolveVaultChipIdentity } from '../lib/vault-source/vault-chip-identity';
-import type { DocsVaultSource as Source, DocsVaultView } from '../lib/persistence';
+import type { DocsVaultView } from '../lib/persistence';
 
 export function DocsVaultHeader({
   legacyDocumentMode,
@@ -33,10 +33,6 @@ export function DocsVaultHeader({
   vaultChipMenuRef,
   setAdvancedOpen,
   handleVaultPillSwap,
-  source,
-  installedShell,
-  handleSourceChange,
-  localSourceDisabled,
   openContract,
   view,
   openDocTabs,
@@ -63,10 +59,6 @@ export function DocsVaultHeader({
   vaultChipMenuRef: ComponentProps<typeof DocsVaultVaultChip>['menuRef'];
   setAdvancedOpen: (open: boolean) => void;
   handleVaultPillSwap: () => void;
-  source: Source;
-  installedShell: boolean;
-  handleSourceChange: (next: Source) => void;
-  localSourceDisabled: boolean;
   openContract: () => void;
   view: DocsVaultView;
   openDocTabs: ComponentProps<typeof DocsVaultTabStrip>['tabs'];
@@ -175,16 +167,6 @@ export function DocsVaultHeader({
           setVaultChipOpen(false);
           handleVaultPillSwap();
         }}
-        isSample={source === 'server'}
-        allowSample={!installedShell}
-        onUseSample={() => {
-          setVaultChipOpen(false);
-          handleSourceChange('server');
-        }}
-        localDisabled={localSourceDisabled}
-        localDisabledReason={
-          localSourceDisabled ? t('vaultStatus.unsupportedTooltip') : undefined
-        }
         onOpenAudit={() => {
           setVaultChipOpen(false);
           openContract();
@@ -228,10 +210,7 @@ export function DocsVaultHeader({
         }}
       />
       <div className="lg:hidden">
-        <AppSettingsMenu
-          mode={source === 'local' ? 'local' : 'static'}
-          triggerVariant="chrome-tile"
-        />
+        <AppSettingsMenu mode="local" triggerVariant="chrome-tile" />
       </div>
     </div>
   );

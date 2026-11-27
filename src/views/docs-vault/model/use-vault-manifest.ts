@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useLocalVault, useStaticVaultSource, useStaticVaultStatus } from '@/entities/vault-session';
+import { useLocalVault } from '@/entities/vault-session';
 import {
   deriveOntologyFromVault,
   type VaultManifest,
@@ -11,30 +11,32 @@ import {
   resolveDocsVaultSlugAlias,
 } from '../lib/docs-vault-collection';
 
+/** What the screen reads while no folder is: nothing, never a stand-in. */
+const NO_FOLDER_MANIFEST: VaultManifest = {
+  version: '',
+  generatedAt: '',
+  docs: [],
+  backlinkSources: {},
+  tags: {},
+  tree: { name: 'root', path: '', type: 'dir' },
+};
+
 export function useVaultManifest({
   isLocalSourceLoaded,
-  staticSampleOverride,
   querySlug,
   selectedSlug,
   legacyEntry,
   documentScope,
 }: {
   isLocalSourceLoaded: boolean;
-  staticSampleOverride: 'dogfood' | null;
   querySlug: string | null;
   selectedSlug: string | null;
   legacyEntry: boolean;
   documentScope: 'all' | 'ontology';
 }) {
   const localVault = useLocalVault();
-  const staticVault = useStaticVaultSource(staticSampleOverride ?? undefined);
-  // A pinned sample still downloading holds every redirect: its documents are not "missing" yet.
-  const staticPending =
-    useStaticVaultStatus(staticSampleOverride ?? undefined) === 'loading' && !isLocalSourceLoaded;
   const manifest: VaultManifest =
-    isLocalSourceLoaded && localVault.manifest
-      ? localVault.manifest
-      : staticVault.manifest;
+    isLocalSourceLoaded && localVault.manifest ? localVault.manifest : NO_FOLDER_MANIFEST;
   const normalizedQuerySlug = useMemo(
     () => resolveDocsVaultSlugAlias(querySlug, manifest.docs, manifest.aliases),
     [manifest.aliases, manifest.docs, querySlug],
@@ -104,8 +106,6 @@ export function useVaultManifest({
     return map;
   }, [manifest]);
   return {
-    staticVault,
-    staticPending,
     manifest,
     normalizedQuerySlug,
     legacyDocumentMode,

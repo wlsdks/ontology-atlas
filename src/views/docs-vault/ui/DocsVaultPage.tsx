@@ -4,20 +4,18 @@ import { Suspense, useCallback, useMemo, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { Link } from '@/i18n/navigation';
 import { useLocale, useTranslations } from 'next-intl';
-import {
-  useLocalVault,
-  VaultSourceHydrationBoundary,
-} from '@/entities/vault-session';
+import { useLocalVault } from '@/entities/vault-session';
 import { useAdoptDocumentText, useDocumentDetail } from '@/features/document-detail';
 import { OntologyStarterCta } from '@/features/docs-vault-local';
 import { recentVaultRowKey } from '@/features/vault-switch';
 import { buildOntologyDeeplinkForDoc } from '@/entities/docs-vault';
 import { useDocumentTitle } from '@/shared/lib/public-pages/use-document-title';
-import { firstHeading, parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
+import { firstHeading } from '@/shared/lib/vault-document/parse-frontmatter';
 import { resolveLocaleDisplayName } from '@/shared/lib/locale-text/locale-display-name';
 import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { useClaimShellKey } from '@/shared/lib/keyboard/shell-key-claims';
 import { useLatestRef } from '@/shared/lib/use-latest-ref';
+import { useHydrated } from '@/shared/lib/render-timing/use-hydrated';
 import { usePanelPresence } from '@/shared/lib/render-timing/use-presence';
 import { useTypingShortcuts } from '@/shared/lib/keyboard/use-typing-shortcut';
 import {
@@ -37,12 +35,9 @@ import { useQuerySlugVerdict } from '../model/use-query-slug-verdict';
 import { useDocWriteActions } from '../model/use-doc-write-actions';
 import { useDocsVaultAddress, useDocsVaultUrlSync } from '../model/use-docs-vault-url';
 import { useDocsVaultCommands } from '../model/use-docs-vault-commands';
-import { useDocsVaultSource } from '../model/use-docs-vault-source';
+import { useDocsVaultFolder } from '../model/use-docs-vault-folder';
 import { useVaultManifest } from '../model/use-vault-manifest';
-import {
-  shouldShowSampleWelcomeNote,
-  type DocsVaultDocCollection,
-} from '../lib/docs-vault-collection';
+import type { DocsVaultDocCollection } from '../lib/docs-vault-collection';
 import {
   readStoredListCollapsed,
   storeListCollapsed,
@@ -92,7 +87,6 @@ function DocsVaultContent({
   const { setOpen: setAdvancedOpen } = useAdvancedMenu();
   const { open: vaultChipOpen, setOpen: setVaultChipOpen, ref: vaultChipMenuRef } =
     useAdvancedMenu();
-  const [sampleWelcomeDismissed, setSampleWelcomeDismissed] = useState(false);
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [sourceTreeOpen, setSourceTreeOpen] = useState(false);
   const [docListCollapsed, setDocListCollapsedState] = useState(readStoredListCollapsed);
@@ -108,25 +102,13 @@ function DocsVaultContent({
       return next;
     });
   }, []);
-  const src = useDocsVaultSource({
-    address,
-    setAdvancedOpen,
-    setSelectedSlug,
-    setActiveTag,
-    setSampleWelcomeDismissed,
-  });
+  const src = useDocsVaultFolder({ address });
   const {
-    source,
-    installedShell,
-    isDesktopRuntime,
-    localSourceDisabled,
     localVaultRootPath,
     handleTogglePin,
     showDesktopWelcome,
     vaultScopeSettled,
     handleOpenDogfoodVault,
-    handleSourceChange,
-    handleOpenAgentGraphWorkflowGuide,
     showDogfoodHint,
     isLocalSourceLoaded,
     vaultChipIdentity,
@@ -144,20 +126,17 @@ function DocsVaultContent({
   }, [closePopovers]);
   const closeContract = useCallback(() => setContractOpen(false), []);
   const { articleScrollRef, activeHeadingSlug, setActiveHeadingSlug } =
-    useDocReadingScrollSpy(selectedSlug, source);
+    useDocReadingScrollSpy(selectedSlug, src.recentKey);
   const backToTop = useBackToTop(articleScrollRef, selectedSlug);
   const vault = useVaultManifest({
     isLocalSourceLoaded,
-    staticSampleOverride: src.staticSampleOverride,
     querySlug: address.querySlug,
     selectedSlug,
     legacyEntry,
     documentScope,
   });
   const {
-    staticVault,
     manifest,
-    normalizedQuerySlug,
     legacyDocumentMode,
     legacyRedirectToLibrary,
     scopedDocs,
@@ -168,7 +147,7 @@ function DocsVaultContent({
     vaultSlugs,
     refSlugResolver,
   } = vault;
-  const access = useDocAccess({ source, isLocalSourceLoaded, selectedSlug });
+  const access = useDocAccess({ isLocalSourceLoaded, selectedSlug });
   const { getDocContent, resolveImage, canEditCurrent, editResolver, editing, setEditing } = access;
   const selectedDetail = useDocumentDetail(selectedDoc);
   const latestAdopt = useLatestRef(useAdoptDocumentText());
@@ -191,7 +170,7 @@ function DocsVaultContent({
       selectedSlug,
       setSelectedSlug,
       setAdvancedOpen,
-      vaultScopeSettled: vaultScopeSettled && !vault.staticPending,
+      vaultScopeSettled,
     });
   const tabs = useDocTabs({ address, vault, src, selectedSlug, setSelectedSlug });
   const { openDocTabs } = tabs;
@@ -199,11 +178,6 @@ function DocsVaultContent({
     address,
     vault,
     src,
-  });
-  const showSampleWelcomeNote = shouldShowSampleWelcomeNote({
-    source,
-    normalizedQuerySlug: normalizedQuerySlug ?? selectedSlug,
-    dismissed: sampleWelcomeDismissed,
   });
   const selectedDocDisplayTitle = selectedDoc
     ? resolveLocaleDisplayName(selectedDoc.frontmatter, locale, selectedDoc.title)
@@ -249,8 +223,6 @@ function DocsVaultContent({
   const { reviewQueue, selectedReviewRow, reviewBusy, handleReviewWrite } = useDocReview({
     scopedDocs,
     getDocContent,
-    source,
-    staticVault,
     selectedSlug,
     selectedDoc,
   });
@@ -277,7 +249,6 @@ function DocsVaultContent({
     selectedSlug,
     setSelectedSlug,
     setActiveTag,
-    setSampleWelcomeDismissed,
   });
   const handleSelectFromSidebar = useCallback(
     (slug: string) => {
@@ -328,9 +299,7 @@ function DocsVaultContent({
   });
   const agentFiles = useAgentFilesModel(manifest, localVault.fileHandles);
   const skillParityRoot =
-    isDesktopRuntime && localVault.handle
-      ? getTauriVaultRootPath(localVault.handle) ?? null
-      : null;
+    localVault.handle ? getTauriVaultRootPath(localVault.handle) ?? null : null;
   const skillParity = useSkillParity(skillParityRoot);
   const handleCopySkillParityHandoff = useCallback(
     (rows: SkillParityRow[]) => {
@@ -345,34 +314,23 @@ function DocsVaultContent({
     [toast, tSkillParity, skillParityRoot],
   );
   const handleVaultPillSwap = useCallback(() => {
-    if (source !== 'local' && isDesktopRuntime) {
-      handleSourceChange('local');
-      return;
-    }
     void openLocalVault();
-  }, [source, isDesktopRuntime, handleSourceChange, openLocalVault]);
+  }, [openLocalVault]);
 
   const [paintedBody, setPaintedBody] = useState<{ doc: string; titled: boolean } | null>(null);
-  const paintedDoc = selectedDoc ? `${source}:${selectedDoc.slug}` : null;
+  const paintedDoc = selectedDoc?.slug ?? null;
   const reportPaintedBody = useCallback((doc: string, body: string | null) => {
     const titled = body !== null && firstHeading(body) !== null;
     setPaintedBody((previous) => (previous?.doc === doc && previous.titled === titled ? previous : { doc, titled }));
   }, []);
-  const bundledBodyBeforePaint = selectedDoc && source !== 'local' ? staticVault.content[selectedDoc.slug] : undefined;
-  const bundledBodyTitled = useMemo(
-    () => (bundledBodyBeforePaint === undefined ? undefined : firstHeading(parseFrontmatter(bundledBodyBeforePaint).body) !== null),
-    [bundledBodyBeforePaint],
-  );
-  const titledBeforeBodyPaints =
-    source === 'local' ? selectedDetail?.headings.some((heading) => heading.depth === 1) : bundledBodyTitled;
+  const titledBeforeBodyPaints = selectedDetail?.headings.some((heading) => heading.depth === 1);
   const bodyTitled = paintedBody?.doc === paintedDoc ? paintedBody.titled : titledBeforeBodyPaints;
   const columnTitle = selectedDoc && !showDesktopWelcome && bodyTitled === false ? selectedDocDisplayTitle : null;
   const headerTreeTools =
     documentScope === 'ontology' && !legacyDocumentMode && !docListCollapsed && !showDesktopWelcome;
 
-  // One neutral frame until source and restored manifest settle, so the static manifest
-  // never paints as the installed app's data.
-  if (!vaultScopeSettled || vault.staticPending || legacyRedirectToLibrary) return <RouteLoadingFallback />;
+  // One neutral frame until the remembered folder settles, so the empty state never paints as its data.
+  if (!vaultScopeSettled || legacyRedirectToLibrary) return <RouteLoadingFallback />;
 
   return (
     <div className="flex h-full w-full">
@@ -397,10 +355,6 @@ function DocsVaultContent({
         vaultChipMenuRef={vaultChipMenuRef}
         setAdvancedOpen={setAdvancedOpen}
         handleVaultPillSwap={handleVaultPillSwap}
-        source={source}
-        installedShell={installedShell}
-        handleSourceChange={handleSourceChange}
-        localSourceDisabled={localSourceDisabled}
         openContract={openContract}
         view={view}
         openDocTabs={openDocTabs}
@@ -430,8 +384,7 @@ function DocsVaultContent({
         t={t}
       />
 
-      {source === 'local' &&
-      (localVault.status === 'error' ||
+      {(localVault.status === 'error' ||
         localVault.status === 'permission-needed') &&
       /* The chooser marks a vanished folder itself; the banner's "showing sample documents" is false there. */
       !(showDesktopWelcome && localVault.errorCode === 'path-missing') ? (
@@ -500,8 +453,7 @@ function DocsVaultContent({
           status={localVault.status}
           recentVaults={localVault.recentVaults}
           onOpen={() => void openLocalVault()}
-          // The web cannot open an absolute path (`.claude/rules/surfaces.md` forbids a dead CTA), and working web paths sit beside it.
-          onOpenDogfoodPath={isDesktopRuntime ? handleOpenDogfoodVault : undefined}
+          onOpenDogfoodPath={handleOpenDogfoodVault}
           onOpenRecent={(record) => void localVault.openRecent(record)}
           onForgetRecent={(record) => void localVault.forgetRecent(record)}
           currentVaultKey={
@@ -510,7 +462,7 @@ function DocsVaultContent({
               : null
           }
           choosing={localVault.awaitingVaultChoice}
-          canResumeWithoutGesture={isDesktopRuntime}
+          canResumeWithoutGesture
           showDogfoodHint={showDogfoodHint}
           t={t}
         />
@@ -574,10 +526,6 @@ function DocsVaultContent({
               onBodyPainted={reportPaintedBody}
               editing={editing}
               setEditing={setEditing}
-              showSampleWelcomeNote={showSampleWelcomeNote}
-              localSourceDisabled={localSourceDisabled}
-              handleSourceChange={handleSourceChange}
-              setSampleWelcomeDismissed={setSampleWelcomeDismissed}
               canEditCurrent={canEditCurrent}
               handleRenameCurrent={handleRenameCurrent}
               handleDeleteCurrent={handleDeleteCurrent}
@@ -602,16 +550,13 @@ function DocsVaultContent({
               getDocContent={readOpenDocText}
               reviewBusy={reviewBusy}
               handleReviewWrite={handleReviewWrite}
-              source={source}
               vaultSlugs={vaultSlugs}
               getDocHref={getDocHref}
               getProjectHref={getProjectHref}
               highlightQuery={highlightQuery}
               resolveImage={resolveImage}
-              staticVault={staticVault}
             />
-          ) : source === 'local' &&
-            localVault.status === 'loaded' &&
+          ) : localVault.status === 'loaded' &&
             canEditCurrent &&
             scopedDocs.length === 0 ? (
             <div className="min-h-0 flex-1 overflow-y-auto">
@@ -632,7 +577,6 @@ function DocsVaultContent({
           ) : (
             <DocsVaultEmptyState
               docCount={scopedDocs.length}
-              onOpenAgentWorkflow={handleOpenAgentGraphWorkflowGuide}
               onOpenTree={() => setSourceTreeOpen(true)}
             />
           )}
@@ -711,22 +655,17 @@ export function DocsVaultPage({
   legacyEntry?: boolean;
 } = {}) {
   // Local-first core (`.claude/rules/local-first.md` §1): no auth gate before the vault picker.
-  // An address that names the dogfood sample waits for that sample, not the one stored as preferred.
-  const pinnedSample =
-    typeof window !== 'undefined' &&
-    new URLSearchParams(window.location.search).get('sample') === 'dogfood'
-      ? 'dogfood'
-      : undefined;
+  // The exported HTML holds only the neutral frame: the remembered folder is known after hydration.
+  const hydrated = useHydrated();
+  if (!hydrated) return <RouteLoadingFallback />;
   return (
-    <VaultSourceHydrationBoundary sample={pinnedSample}>
-      {/* Prerendered HTML carries this fallback; null would start as a black screen. */}
-      <Suspense fallback={<RouteLoadingFallback />}>
-        <DocsVaultContent
-          initialCollection={initialCollection}
-          documentScope={documentScope}
-          legacyEntry={legacyEntry}
-        />
-      </Suspense>
-    </VaultSourceHydrationBoundary>
+    // Prerendered HTML carries this fallback; null would start as a black screen.
+    <Suspense fallback={<RouteLoadingFallback />}>
+      <DocsVaultContent
+        initialCollection={initialCollection}
+        documentScope={documentScope}
+        legacyEntry={legacyEntry}
+      />
+    </Suspense>
   );
 }

@@ -10,7 +10,6 @@ import {
   resolveDocsVaultCollection,
   resolveInitialDocsCollection,
   shouldDeferDocsVaultDefaultSelection,
-  shouldShowSampleWelcomeNote,
 } from './docs-vault-collection';
 
 function doc(
@@ -149,38 +148,6 @@ describe('docs vault collections', () => {
         selectionReady: false,
       }),
     ).toBe(true);
-  });
-
-  it('shows the sample welcome note only on a fresh, undismissed sample landing', () => {
-    expect(
-      shouldShowSampleWelcomeNote({
-        source: 'server',
-        normalizedQuerySlug: null,
-        dismissed: false,
-      }),
-    ).toBe(true);
-    // A shared `?slug=` link goes straight to its document.
-    expect(
-      shouldShowSampleWelcomeNote({
-        source: 'server',
-        normalizedQuerySlug: 'ARCHITECTURE',
-        dismissed: false,
-      }),
-    ).toBe(false);
-    expect(
-      shouldShowSampleWelcomeNote({
-        source: 'server',
-        normalizedQuerySlug: null,
-        dismissed: true,
-      }),
-    ).toBe(false);
-    expect(
-      shouldShowSampleWelcomeNote({
-        source: 'local',
-        normalizedQuerySlug: null,
-        dismissed: false,
-      }),
-    ).toBe(false);
   });
 });
 

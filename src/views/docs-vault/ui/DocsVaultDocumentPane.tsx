@@ -15,24 +15,15 @@ import { useLocalVault } from '@/entities/vault-session';
 import { IconButton, controlClass, useToast } from '@/shared/ui';
 import { cn } from '@/shared/lib/cn';
 import { DocReadingPane, useBackToTop, useDocReadingScrollSpy } from '@/widgets/doc-reading-pane';
-import {
-  DocsVaultBacklinks,
-  DocsVaultEditor,
-  DocsVaultViewer,
-  ONTOLOGY_ATLAS_REPO_BLOB_BASE,
-  DOCS_VAULT_REPO_ROOT,
-} from '@/widgets/docs-vault';
+import { DocsVaultBacklinks, DocsVaultEditor, DocsVaultViewer } from '@/widgets/docs-vault';
 import {
   buildOntologyDeeplinkForDoc,
   buildTopologyDeeplinkForDoc,
-  type StaticVaultSource,
   type VaultManifest,
 } from '@/entities/docs-vault';
 import { DocMetaBar } from './DocMetaBar';
 import { DocFrontmatterBlock } from './DocFrontmatterBlock';
-import { SampleNotice } from './welcome/SampleNotice';
-import { SampleWelcomeNote } from './welcome/SampleWelcomeNote';
-import { persistEditorSave, type DocsVaultSource as Source } from '../lib/persistence';
+import { persistEditorSave } from '../lib/persistence';
 
 function splitVaultSlugPath(slug: string): { dir: string; name: string } {
   const parts = slug.split('/');
@@ -46,10 +37,6 @@ export function DocsVaultDocumentPane({
   onBodyPainted,
   editing,
   setEditing,
-  showSampleWelcomeNote,
-  localSourceDisabled,
-  handleSourceChange,
-  setSampleWelcomeDismissed,
   canEditCurrent,
   handleRenameCurrent,
   handleDeleteCurrent,
@@ -74,23 +61,17 @@ export function DocsVaultDocumentPane({
   getDocContent,
   reviewBusy,
   handleReviewWrite,
-  source,
   vaultSlugs,
   getDocHref,
   getProjectHref,
   highlightQuery,
   resolveImage,
-  staticVault,
 }: {
   selectedDoc: VaultManifest['docs'][number];
   columnTitle: string | null;
   onBodyPainted: (doc: string, body: string | null) => void;
   editing: boolean;
   setEditing: Dispatch<SetStateAction<boolean>>;
-  showSampleWelcomeNote: boolean;
-  localSourceDisabled: boolean;
-  handleSourceChange: (next: Source) => void;
-  setSampleWelcomeDismissed: Dispatch<SetStateAction<boolean>>;
   canEditCurrent: boolean;
   handleRenameCurrent: () => void;
   handleDeleteCurrent: () => void;
@@ -115,13 +96,11 @@ export function DocsVaultDocumentPane({
   getDocContent: ReturnType<typeof useDocAccess>['getDocContent'];
   reviewBusy: boolean;
   handleReviewWrite: ReturnType<typeof useDocReview>['handleReviewWrite'];
-  source: Source;
   vaultSlugs: ReturnType<typeof useVaultManifest>['vaultSlugs'];
   getDocHref: ReturnType<typeof useDocsVaultAddress>['getDocHref'];
   getProjectHref: ReturnType<typeof useDocsVaultAddress>['getProjectHref'];
   highlightQuery: string | undefined;
   resolveImage: ReturnType<typeof useDocAccess>['resolveImage'];
-  staticVault: StaticVaultSource;
 }) {
   const t = useTranslations('docsVault');
   const toast = useToast();
@@ -163,9 +142,6 @@ export function DocsVaultDocumentPane({
           </IconButton>
         </span>
       ) : null}
-      {!editing && !isLocalSourceLoaded ? (
-        <SampleNotice onOpenFolder={() => handleSourceChange('local')} />
-      ) : null}
       {canEditCurrent ? (
         <div
           role="tablist"
@@ -206,13 +182,6 @@ export function DocsVaultDocumentPane({
   );
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      {!editing && showSampleWelcomeNote ? (
-        <SampleWelcomeNote
-          canOpenLocalVault={!localSourceDisabled}
-          onOpenFolder={() => handleSourceChange('local')}
-          onDismiss={() => setSampleWelcomeDismissed(true)}
-        />
-      ) : null}
       <div className="flex min-h-0 flex-1">
         <DocReadingPane
           data-testid="docs-reading-pane"
@@ -304,9 +273,9 @@ export function DocsVaultDocumentPane({
                     : {})}
                 />
                 <DocsVaultViewer
-                  key={`${source}:${selectedDoc.slug}`}
+                  key={selectedDoc.slug}
                   doc={selectedDoc}
-                  onBodyPainted={(body) => onBodyPainted(`${source}:${selectedDoc.slug}`, body)}
+                  onBodyPainted={(body) => onBodyPainted(selectedDoc.slug, body)}
                   compactTop
                   vaultSlugs={vaultSlugs}
                   onNavigate={handleSelect}
@@ -315,13 +284,6 @@ export function DocsVaultDocumentPane({
                   getProjectHref={getProjectHref}
                   highlightQuery={highlightQuery}
                   resolveImage={resolveImage}
-                  {...(source === 'local'
-                    ? {}
-                    : {
-                        bundledContent: staticVault.content,
-                        repoBlobBase: ONTOLOGY_ATLAS_REPO_BLOB_BASE,
-                        vaultRepoRoot: DOCS_VAULT_REPO_ROOT,
-                      })}
                 />
               </>
             )}

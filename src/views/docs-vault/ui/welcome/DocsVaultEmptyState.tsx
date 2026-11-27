@@ -1,16 +1,14 @@
 import { Link } from "@/i18n/navigation";
-import { Bot, Network, PanelLeftOpen } from "lucide-react";
+import { Network, PanelLeftOpen } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { useTranslations } from "next-intl";
 import { controlClass } from "@/shared/ui";
 
 export function DocsVaultEmptyState({
   docCount,
-  onOpenAgentWorkflow,
   onOpenTree,
 }: {
   docCount: number;
-  onOpenAgentWorkflow: () => void;
   onOpenTree: () => void;
 }) {
   const t = useTranslations("vaultWidgets.parts.empty");
@@ -26,7 +24,7 @@ export function DocsVaultEmptyState({
         <p className="mx-auto mt-2 max-w-[var(--dialog-w-sm)] text-body leading-prose text-[color:var(--color-text-tertiary)]">
           {t("body")}
         </p>
-        <div className="mt-5 grid gap-2 sm:grid-cols-3">
+        <div className="mt-5 grid gap-2 sm:grid-cols-2">
           <button
             type="button"
             onClick={onOpenTree}
@@ -40,19 +38,6 @@ export function DocsVaultEmptyState({
           >
             <PanelLeftOpen size={ICON_SIZE.md} aria-hidden />
             {t("openTree")}
-          </button>
-          <button
-            type="button"
-            onClick={onOpenAgentWorkflow}
-            className={controlClass({ hoverInk: 'strong',
-              shape: "chip",
-              size: "lg",
-              tone: "secondary",
-              className: "justify-center gap-2 hover:border-[color:var(--color-indigo-line-a32)]",
-            })}
-          >
-            <Bot size={ICON_SIZE.md} aria-hidden />
-            {t("openAgent")}
           </button>
           <Link
             href="/topology/"

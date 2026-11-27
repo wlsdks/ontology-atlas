@@ -10,7 +10,7 @@ import { scheduleStateSync } from "@/shared/lib/render-timing/schedule-state-syn
  */
 export function useDocReadingScrollSpy(
   selectedSlug: string | null,
-  source: string,
+  vaultKey: string,
 ): {
   articleScrollRef: React.MutableRefObject<HTMLDivElement | null>;
   activeHeadingSlug: string | null;
@@ -75,7 +75,7 @@ export function useDocReadingScrollSpy(
       root.removeEventListener("scroll", onScroll);
       domObserver.disconnect();
     };
-  }, [selectedSlug, source]);
+  }, [selectedSlug, vaultKey]);
 
   return { articleScrollRef, activeHeadingSlug, setActiveHeadingSlug };
 }

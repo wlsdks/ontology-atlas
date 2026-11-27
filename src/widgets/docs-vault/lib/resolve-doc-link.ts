@@ -1,13 +1,11 @@
 /**
  * Resolves a relative `.md` link in the /docs viewer, or a vault-escaping link
  * like `../mcp/README.md` resolves against the route and 404s. Absolute URLs, anchors and non-md paths
- * pass through; known slugs route internally; others go to a GitHub blob with repoBlobBase, else
- * stay unresolved.
+ * pass through; known slugs route internally; others stay unresolved.
  */
 
 export type ResolvedDocLink =
   | { kind: 'internal'; slug: string; anchor?: string }
-  | { kind: 'external'; url: string }
   | { kind: 'unresolved' }
   | { kind: 'passthrough' };
 
@@ -15,30 +13,6 @@ export interface ResolveDocLinkParams {
   href: string;
   fromSlug: string;
   vaultSlugs: Set<string>;
-  /**
-   * Base for a vault-external GitHub blob URL; undefined for a local vault, where such links stay
-   * unresolved.
-   */
-  repoBlobBase?: string;
-  /**
-   * Where this vault sits in the repo (bundled docs vault = `docs`); needed with repoBlobBase for
-   * external URLs.
-   */
-  vaultRepoRoot?: string;
-}
-
-function collapsePath(pathText: string): string {
-  const out: string[] = [];
-  for (const seg of pathText.split('/')) {
-    if (seg === '' || seg === '.') continue;
-    if (seg === '..') {
-      if (out.length > 0 && out[out.length - 1] !== '..') out.pop();
-      else out.push('..');
-      continue;
-    }
-    out.push(seg);
-  }
-  return out.join('/');
 }
 
 /**
@@ -59,8 +33,6 @@ export function resolveDocLink({
   href,
   fromSlug,
   vaultSlugs,
-  repoBlobBase,
-  vaultRepoRoot,
 }: ResolveDocLinkParams): ResolvedDocLink {
   if (!href || href.startsWith('#') || /^[a-z][a-z0-9+.-]*:/i.test(href)) {
     return { kind: 'passthrough' };
@@ -106,18 +78,11 @@ export function resolveDocLink({
     }
   }
 
-  if (repoBlobBase && vaultRepoRoot !== undefined) {
-    const repoRel = collapsePath(`${vaultRepoRoot}/${joined}`);
-    const base = repoBlobBase.replace(/\/+$/, '');
-    const url = `${base}/${repoRel}${anchor ? `#${anchor}` : ''}`;
-    return { kind: 'external', url };
-  }
   return { kind: 'unresolved' };
 }
 
 export const ONTOLOGY_ATLAS_REPO_BLOB_BASE =
   'https://github.com/wlsdks/ontology-atlas/blob/main';
-export const DOCS_VAULT_REPO_ROOT = 'docs';
 
 export function githubBlobUrl(
   repoRelativePath: string,

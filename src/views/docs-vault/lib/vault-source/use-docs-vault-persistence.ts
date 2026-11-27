@@ -22,7 +22,6 @@ interface LocalVaultLike {
 }
 
 interface UseDocsVaultPersistenceArgs {
-  source: 'server' | 'local';
   localVault: LocalVaultLike;
 }
 
@@ -37,19 +36,12 @@ interface UseDocsVaultPersistenceResult {
 }
 
 export function useDocsVaultPersistence({
-  source,
   localVault,
 }: UseDocsVaultPersistenceArgs): UseDocsVaultPersistenceResult {
-  /**
-   * The chosen source decides the namespace: a local source with no folder is not `server`,
-   * or the sample's tabs stay on the local screen.
-   */
-  const recentKey = useMemo<VaultRecentKey>(() => {
-    if (source === 'local') {
-      return localVault.handle ? `local:${localVault.handle.name}` : 'local:';
-    }
-    return 'server';
-  }, [source, localVault.handle]);
+  const recentKey = useMemo<VaultRecentKey>(
+    () => (localVault.handle ? `local:${localVault.handle.name}` : 'local:'),
+    [localVault.handle],
+  );
 
   const [recentSlugs, setRecentSlugsInternal] = useState<string[]>(() => readRecentDocs(recentKey));
   const [pinnedSlugs, setPinnedSlugsInternal] = useState<string[]>(() => readPinnedDocs(recentKey));

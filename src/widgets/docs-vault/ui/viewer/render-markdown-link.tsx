@@ -40,8 +40,6 @@ export interface MarkdownLinkContext {
   onCitationPress: ((citation: ViewerCitation, button: HTMLButtonElement) => void) | undefined;
   onConceptNavigate: ((slug: string) => void) | undefined;
   linkTargets: ReadonlyMap<string, { title: string; kind: string | null }> | undefined;
-  repoBlobBase: string | undefined;
-  vaultRepoRoot: string | undefined;
 }
 
 /**
@@ -71,7 +69,7 @@ export function renderMarkdownLink(
   const {
     docSlug, t, libraryT, vaultSlugs, normalizedVaultSlugs, normalizedOriginalPaths, namedSource,
     reducedMotion, getDocHref, getProjectHref, onNavigate, onSourceNavigate, onCitationPress,
-    onConceptNavigate, linkTargets, repoBlobBase, vaultRepoRoot,
+    onConceptNavigate, linkTargets,
   } = ctx;
   const docLink = (slug: string, anchor: string | undefined, label: React.ReactNode) => (
     <Link
@@ -268,11 +266,8 @@ export function renderMarkdownLink(
     href,
     fromSlug: docSlug,
     vaultSlugs,
-    repoBlobBase,
-    vaultRepoRoot,
   });
   if (resolved.kind === 'internal') return docLink(resolved.slug, resolved.anchor, children);
-  if (resolved.kind === 'external') return externalLink(resolved.url);
   if (resolved.kind === 'unresolved') {
     return (
       <span
