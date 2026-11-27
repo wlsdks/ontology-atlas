@@ -12,7 +12,7 @@ import { describe, expect, it } from "vitest";
 const WORKFLOWS = path.join(process.cwd(), ".github/workflows");
 
 /** Jobs that delegate to a reusable workflow; the callee owns the timeout. */
-const DELEGATING_JOBS = new Set(["release-macos.yml:list-mcp-registry"]);
+const DELEGATING_JOBS = new Set(["release-macos.yml:list-mcp-registry", "promote-release.yml:list-mcp-registry"]);
 
 /**
  * The one exemption from the 1.5x ceiling, and it is another contract's ceiling

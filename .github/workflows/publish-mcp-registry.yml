@@ -22,10 +22,11 @@ run-name: Publish ${{ inputs.tag }} to the MCP Registry
 # owns the `io.github.wlsdks/*` namespace with the workflow's own identity, so no
 # token is stored and no person has to complete a device flow.
 #
-# The registry treats a version as immutable, and our server version
-# (`mcp/package.json`) moves independently of the app tag. A release that carries an
-# unchanged server version therefore has nothing new to publish, and this workflow
-# says so and stops instead of failing.
+# The registry treats a version as immutable. The server version (`mcp/package.json`)
+# equals the app version, and `pnpm desktop:release-tag` refuses a tag where it does
+# not (docs/records/decisions/2026-11-28-mcp-version-follows-app-3ef6b195-7e4f-400f-a928-76ed621a31f2.md),
+# so every final release lists a new version. The "already lists" stop below fires only
+# when a dispatch repeats a release the registry already holds.
 
 on:
   workflow_call:
@@ -106,8 +107,8 @@ jobs:
         env:
           SERVER_VERSION: ${{ steps.server.outputs.version }}
         run: |
-          # The registry rejects a repeat publication of one version, so an app
-          # release that changed no server code has nothing to add here.
+          # The registry rejects a repeat publication of one version; this holds
+          # only when a dispatch re-runs a release that is already listed.
           listed="$(curl -fsS "https://registry.modelcontextprotocol.io/v0/servers?search=io.github.wlsdks/ontology-atlas" \
             | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{
                 let versions=[];

@@ -168,7 +168,7 @@ describe('bundle manifest', () => {
 
 describe('registry entry', () => {
   it('names the release-asset channel and no package registry', () => {
-    const document = serverJson({ version: '0.13.0', tag: 'v1.1.0', fileSha256: 'a'.repeat(64) });
+    const document = serverJson({ version: MCP_PACKAGE.version, tag: 'v1.1.0', fileSha256: 'a'.repeat(64) });
 
     assert.deepEqual(document.packages.map((entry) => entry.registryType), ['mcpb']);
     assert.equal(document.name, REGISTRY_SERVER_NAME);
@@ -177,7 +177,7 @@ describe('registry entry', () => {
   });
 
   it('keeps the artifact URL verifiable: GitHub-hosted and carrying "mcp"', () => {
-    assert.deepEqual(artifactUrlProblems(bundleDownloadUrl('v1.1.0', '0.13.0')), []);
+    assert.deepEqual(artifactUrlProblems(bundleDownloadUrl('v1.1.0', MCP_PACKAGE.version)), []);
     assert.deepEqual(artifactUrlProblems('https://example.com/bundle.mcpb'), [
       'the registry accepts MCPB artifacts hosted on GitHub or GitLab releases only',
     ]);
@@ -228,7 +228,7 @@ describe('what the artifact must not carry, and what it must', () => {
    * maintainer note in the most public copy of that file.
    */
   it('writes its own manifest instead of copying the repository one', () => {
-    const manifest = bundlePackageJson({ version: '0.13.0' });
+    const manifest = bundlePackageJson({ version: MCP_PACKAGE.version });
 
     assert.equal(manifest.type, 'module', 'Node needs this to load the server as ESM');
     assert.equal(manifest.license, 'MIT');
@@ -249,7 +249,7 @@ describe('what the artifact must not carry, and what it must', () => {
 
   it('states which commit produced the file, since two releases can share a version', () => {
     const text = bundleProvenance({
-      version: '0.13.0',
+      version: MCP_PACKAGE.version,
       commit: 'abc1234',
       tag: 'v1.1.0',
       builtAt: '2026-09-11T00:00:00.000Z',
@@ -270,7 +270,7 @@ describe('what the registry would actually accept', () => {
    * the schema limit, so a three-field check would pass and the publish would be rejected.
    */
   it('keeps the description inside the schema limit the registry enforces', () => {
-    const document = serverJson({ version: '0.13.0', tag: 'v1.1.0', fileSha256: 'a'.repeat(64) });
+    const document = serverJson({ version: MCP_PACKAGE.version, tag: 'v1.1.0', fileSha256: 'a'.repeat(64) });
 
     assert.ok(document.description.length <= REGISTRY_DESCRIPTION_LIMIT);
     assert.notEqual(document.description, MCP_PACKAGE.description, 'the npm description is too long for this field');
@@ -285,7 +285,7 @@ describe('what the registry would actually accept', () => {
       'name must be <namespace>/<id>, received "nope"',
       'version must be a semantic version',
     ]);
-    const overlong = serverJson({ version: '0.13.0', tag: 'v1.1.0', fileSha256: 'a'.repeat(64) });
+    const overlong = serverJson({ version: MCP_PACKAGE.version, tag: 'v1.1.0', fileSha256: 'a'.repeat(64) });
     overlong.description = 'x'.repeat(REGISTRY_DESCRIPTION_LIMIT + 1);
     assert.match(serverJsonProblems(overlong)[0], /description is 101 characters/);
   });
@@ -295,8 +295,8 @@ describe('what the registry would actually accept', () => {
    * which is exactly what the registry's ownership check exists to prevent.
    */
   it('leaves the image entry out until a person passes --with-image', () => {
-    const withoutImage = serverJson({ version: '0.13.0', tag: 'v1.1.0', fileSha256: 'a'.repeat(64) });
-    const withImage = serverJson({ version: '0.13.0', tag: 'v1.1.0', fileSha256: 'a'.repeat(64), withImage: true });
+    const withoutImage = serverJson({ version: MCP_PACKAGE.version, tag: 'v1.1.0', fileSha256: 'a'.repeat(64) });
+    const withImage = serverJson({ version: MCP_PACKAGE.version, tag: 'v1.1.0', fileSha256: 'a'.repeat(64), withImage: true });
 
     assert.deepEqual(withoutImage.packages.map((entry) => entry.registryType), ['mcpb']);
     assert.deepEqual(withImage.packages.map((entry) => entry.registryType), ['mcpb', 'oci']);
@@ -307,7 +307,7 @@ describe('what the registry would actually accept', () => {
   });
 
   it('refuses an oci identifier that is not registry/repository:tag', () => {
-    const document = serverJson({ version: '0.13.0', tag: 'v1.1.0', fileSha256: 'a'.repeat(64), withImage: true });
+    const document = serverJson({ version: MCP_PACKAGE.version, tag: 'v1.1.0', fileSha256: 'a'.repeat(64), withImage: true });
     document.packages[1].identifier = 'ontology-atlas-mcp';
     assert.match(serverJsonProblems(document).join(' '), /registry\/repository:tag/);
   });

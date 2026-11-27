@@ -21,8 +21,10 @@ function jobBlock(source: string, job: string): string {
 function jobHeader(source: string, job: string): string {
   const block = jobBlock(source, job);
   const at = block.indexOf("\n    steps:");
-  if (at < 0) throw new Error(`${job} has no steps`);
-  return block.slice(0, at);
+  if (at >= 0) return block.slice(0, at);
+  // A job that calls a reusable workflow has no steps: its whole block is its header.
+  if (/^    uses: /m.test(block)) return block;
+  throw new Error(`${job} has no steps`);
 }
 
 function jobNames(source: string): string[] {
@@ -76,7 +78,10 @@ function assertPromotionWorkflow(source: string): void {
     throw new Error("promotion creates or moves a tag");
   }
   const writers = writes(source);
-  if (JSON.stringify(writers) !== JSON.stringify({ "stage-promotion": ["contents"], "publish-promotion": ["contents"] })) {
+  // `list-mcp-registry`'s `id-token: write` mints the OIDC assertion the MCP Registry
+  // exchanges for proof of namespace ownership; it is no write over this repository.
+  const expectedWriters = { "stage-promotion": ["contents"], "publish-promotion": ["contents"], "list-mcp-registry": ["id-token"] };
+  if (JSON.stringify(writers) !== JSON.stringify(expectedWriters)) {
     throw new Error(`write permissions are ${JSON.stringify(writers)}`);
   }
 

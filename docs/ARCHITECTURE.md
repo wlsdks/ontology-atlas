@@ -69,7 +69,7 @@ area: architecture
        ↑ stdio JSON-RPC
 
 ┌────────────────────────────────────────────────────────┐
-│ MCP server (mcp/, v0.13.0)                              │
+│ MCP server (mcp/, app version)                          │
 │ ├─ read tools     connection/git proof · list/get/find ·│
 │ │                  compile_ontology · query_ontology ·  │
 │ │                  analyze_repo_structure · infer_imports│
