@@ -81,6 +81,13 @@ export const REVIEW_DIGEST_CASES = Object.freeze([
     why: 'A canvas coordinate is where someone dragged a dot. Reporting meaning drift for it teaches people to ignore the signal.',
   },
   {
+    name: 'a recheck mark keeps the approval',
+    frontmatter: { evidence_checked: '0123456789abcdef0123456789abcdef01234567' },
+    body: undefined,
+    sameAsBase: true,
+    why: 'A recheck that found the concept still accurate claims nothing new about it; expiring the approval would make every recheck undo a person\'s confirmation.',
+  },
+  {
     name: 'trailing whitespace in the body is not a change',
     frontmatter: {},
     body: '  The meaning a person read and accepted.\n\n  ',

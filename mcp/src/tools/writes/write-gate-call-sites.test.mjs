@@ -20,7 +20,7 @@ after(() => rmSync(vaultRoot, { recursive: true, force: true }));
 // Each handler reads the vault root once at import; point it at the fixture first.
 process.env.OATLAS_VAULT = vaultRoot;
 process.env.OATLAS_REPO_ROOT = vaultRoot;
-const { patchConcept } = await import('./write-concepts.mjs');
+const { addConceptsBatch, patchConcept } = await import('./write-concepts.mjs');
 const { addRelation, removeRelation, replaceRelation } = await import('./write-relations.mjs');
 const { deleteConcept, mergeConcepts, reclassifyConcept, renameConcept } = await import('../lifecycle.mjs');
 const { finalizeProjectMeaningTool } = await import('../project-source.mjs');
@@ -96,5 +96,14 @@ test('a relation to a document without a kind is refused at either end', () => {
     () => addRelation({ from: 'notes/memo', to: 'capabilities/open', type: 'depends_on' }),
     /Source "notes\/memo" is not a graph node/,
   );
+  assertVaultUntouched();
+});
+
+test('patch_concept and add_concepts refuse the recheck mark, so no write tool clears a stale concept unread', () => {
+  const mark = { evidence_checked: 'a'.repeat(40) };
+  assert.throws(() => patchConcept({ slug: 'capabilities/open', frontmatter: mark }), /frontmatter\.evidence_checked is written only by the desktop app's recheck/);
+  const added = addConceptsBatch({ concepts: [{ slug: 'capabilities/marked', kind: 'capability', title: 'Marked', domain: 'domains/orders', ...mark }] });
+  assert.equal(added.concepts[0].ok, false);
+  assert.match(added.concepts[0].error, /concepts\[0\]\.evidence_checked is written only by the desktop app's recheck/);
   assertVaultUntouched();
 });

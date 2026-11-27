@@ -26,6 +26,9 @@ const REVIEW_KEYS = [
 /** Mirrors `DIGEST_IGNORED_KEY_PREFIXES` in `mcp/src/schema.mjs`. */
 const DIGEST_IGNORED_KEY_PREFIXES = ['display', 'canvasPosition'];
 
+/** Mirrors `DIGEST_IGNORED_KEYS`: a recheck mark claims nothing new about the concept. */
+const DIGEST_IGNORED_KEYS = ['evidence_checked'];
+
 /** Mirrors `REVIEWED_DIGEST_PATTERN`: a binding this code could have written. */
 const REVIEWED_DIGEST_PATTERN = /^[0-9a-f]{32}$/;
 
@@ -35,7 +38,7 @@ export type ReviewCurrentness = 'not-confirmed' | 'current' | 'changed-since-rev
 function digestPayload(frontmatter: Record<string, unknown>, body: string): string {
   const meaning: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(frontmatter ?? {})) {
-    if (REVIEW_KEYS.includes(key)) continue;
+    if (REVIEW_KEYS.includes(key) || DIGEST_IGNORED_KEYS.includes(key)) continue;
     if (DIGEST_IGNORED_KEY_PREFIXES.some((prefix) => key === prefix || key.startsWith(`${prefix}_`))) {
       continue;
     }

@@ -32,6 +32,7 @@ import { agentProvenance, readDocIfPresent } from '../vault-nodes.mjs';
 import {
   ADD_CONCEPT_KINDS,
   requireNodeNotReservedForHuman,
+  refuseRecheckMark,
   requireValidFrontmatterPatch,
 } from './write-gates.mjs';
 
@@ -165,6 +166,7 @@ function addConceptsBatch({ concepts }) {
     try {
       requirePlainObject(spec, `concepts[${index}]`);
       slug = typeof spec.slug === 'string' ? spec.slug : '';
+      refuseRecheckMark(spec, `concepts[${index}]`);
       requireAllowedObjectKeys(spec, `concepts[${index}]`, [
         'slug',
         'kind',

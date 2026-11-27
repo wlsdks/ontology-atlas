@@ -116,6 +116,15 @@ export const CREATED_BY_AGENT_PREFIX = 'agent:';
 /** The call path proves an agent wrote it but not which one; unknown stays unknown, never `human`. */
 export const CREATED_BY_AGENT_UNKNOWN = `${CREATED_BY_AGENT_PREFIX}unknown`;
 
+/**
+ * The commit at which an agent reread a concept against its cited code and found it still
+ * accurate. Only the desktop app's recheck writes it, after the agent's read-only turn; an Atlas
+ * write tool refuses it like `created_by`, or a write could clear a stale concept without a read.
+ */
+export const EVIDENCE_CHECKED_KEY = 'evidence_checked';
+/** A full SHA-1 or SHA-256 commit name; a value of any other shape is no mark. */
+export const EVIDENCE_CHECKED_PATTERN = /^[0-9a-f]{40}([0-9a-f]{24})?$/;
+
 /** Agent name → `agent:<name>`. With no name, `agent:unknown`. */
 export function agentCreatedBy(agentName) {
   const name = typeof agentName === 'string' ? agentName.trim() : '';
@@ -167,6 +176,9 @@ const REVIEW_KEYS = Object.freeze([
  */
 const DIGEST_IGNORED_KEY_PREFIXES = ['display', 'canvasPosition'];
 
+/** A recheck mark claims nothing new about the concept, so writing it expires no confirmation. */
+const DIGEST_IGNORED_KEYS = [EVIDENCE_CHECKED_KEY];
+
 /**
  * 32 lowercase hex characters, the only binding this module writes. Anything else
  * never set a baseline, and reporting drift against it would accuse a person of
@@ -182,7 +194,7 @@ const REVIEWED_DIGEST_PATTERN = /^[0-9a-f]{32}$/;
 function reviewDigest(frontmatter, body) {
   const meaning = {};
   for (const [key, value] of Object.entries(frontmatter ?? {})) {
-    if (REVIEW_KEYS.includes(key)) continue;
+    if (REVIEW_KEYS.includes(key) || DIGEST_IGNORED_KEYS.includes(key)) continue;
     if (DIGEST_IGNORED_KEY_PREFIXES.some((prefix) => key === prefix || key.startsWith(`${prefix}_`))) continue;
     meaning[key] = value;
   }
@@ -287,7 +299,7 @@ export const VAULT_KIND_SCHEMA = {
   domain: {
     folder: 'domains/',
     arrayDefaults: ['capabilities'],
-    optional: ['depends_on', 'relates', 'broader', 'relation_notes', 'description', 'display', CREATED_BY_KEY, ...REVIEW_KEYS],
+    optional: ['depends_on', 'relates', 'broader', 'relation_notes', 'description', 'display', CREATED_BY_KEY, EVIDENCE_CHECKED_KEY, ...REVIEW_KEYS],
     requiredExtras: [],
     preferredOrder: [
       'uid',
@@ -300,6 +312,7 @@ export const VAULT_KIND_SCHEMA = {
       'depends_on',
       'capabilities',
       CREATED_BY_KEY,
+      EVIDENCE_CHECKED_KEY,
       ...REVIEW_KEYS,
     ],
     bodyTemplate: (title) =>
@@ -319,7 +332,7 @@ export const VAULT_KIND_SCHEMA = {
   capability: {
     folder: 'capabilities/',
     arrayDefaults: ['elements'],
-    optional: ['path', 'depends_on', 'relates', 'broader', 'relation_notes', 'description', 'display', CREATED_BY_KEY, ...REVIEW_KEYS],
+    optional: ['path', 'depends_on', 'relates', 'broader', 'relation_notes', 'description', 'display', CREATED_BY_KEY, EVIDENCE_CHECKED_KEY, ...REVIEW_KEYS],
     // `domain` is the tree parent; without it the capability floats as an orphan.
     requiredExtras: ['domain'],
     preferredOrder: [
@@ -335,6 +348,7 @@ export const VAULT_KIND_SCHEMA = {
       'elements',
       'path',
       CREATED_BY_KEY,
+      EVIDENCE_CHECKED_KEY,
       ...REVIEW_KEYS,
     ],
     bodyTemplate: (title) =>
@@ -354,7 +368,7 @@ export const VAULT_KIND_SCHEMA = {
   element: {
     folder: 'elements/',
     arrayDefaults: [],
-    optional: ['path', 'depends_on', 'relates', 'broader', 'relation_notes', 'description', 'display', CREATED_BY_KEY, ...REVIEW_KEYS],
+    optional: ['path', 'depends_on', 'relates', 'broader', 'relation_notes', 'description', 'display', CREATED_BY_KEY, EVIDENCE_CHECKED_KEY, ...REVIEW_KEYS],
     requiredExtras: ['domain'],
     preferredOrder: [
       'uid',
@@ -368,6 +382,7 @@ export const VAULT_KIND_SCHEMA = {
       'path',
       'depends_on',
       CREATED_BY_KEY,
+      EVIDENCE_CHECKED_KEY,
       ...REVIEW_KEYS,
     ],
     bodyTemplate: (title) =>

@@ -1642,10 +1642,20 @@ later.
 | kind | required | always emitted | strongly expected | optional |
 |---|---|---|---|---|
 | `project` | `uid`, `slug`, `kind`, `title` | `domains: []`, `capabilities: []`, `elements: []` | — | merge-owned `merged_uids`, `display`, `display_<locale>`, `description`, `status`, `dependencies`, `relates`, `relation_notes`, `created_by` |
-| `domain` | `uid`, `slug`, `kind`, `title` | `capabilities: []` | — | merge-owned `merged_uids`, `display`, `display_<locale>`, `description`, `depends_on`, `relates`, `broader`, `relation_notes`, `created_by` |
+| `domain` | `uid`, `slug`, `kind`, `title` | `capabilities: []` | — | merge-owned `merged_uids`, `display`, `display_<locale>`, `description`, `depends_on`, `relates`, `broader`, `relation_notes`, `created_by`, recheck-owned `evidence_checked` |
 | `capability` | `uid`, `slug`, `kind`, `title` | `elements: []` | `domain` | same as `domain`, plus `path` |
 | `element` | `uid`, `slug`, `kind`, `title` | — | `domain` | same as `domain`, plus `path` |
 | `document` | `uid`, `slug`, `kind`, `title` | — | — | merge-owned `merged_uids`, `display`, `display_<locale>`, `describes`, `relates`, `relation_notes`, `created_by` |
+
+`evidence_checked` (domain, capability and element) is the commit at which an agent
+reread the concept against what changed in its cited code and found it still
+accurate: 40 or 64 lowercase hex characters, written only by the desktop app's
+recheck schedule after the agent's read-only turn, with the body unchanged.
+`patch_concept` and `add_concepts` refuse it beside `created_by`, the review
+digest leaves it out so the mark expires no confirmation, and a value that is
+not a commit in the repository is no mark. A concept document is dated by the
+first commit at which it held its present bytes, so the mark's commit makes
+the concept current and undoing it makes the concept stale again.
 
 “Strongly expected” fields don’t throw — they come back in the response under
 `warnings`, and the validator (`mcp:validate`) flags them with the
