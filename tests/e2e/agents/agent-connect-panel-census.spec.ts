@@ -1,6 +1,51 @@
 import { expect, test } from "@playwright/test";
 
-import { installDesktopRailRuntime } from "../desktop-rail-arrival-harness";
+import { installDesktopRailRuntime, mountDesktopVault } from "../desktop-rail-arrival-harness";
+
+/**
+ * The installed app connects an agent program by a press on its row, so the pane holds no command to copy. The
+ * ceilings are what the pane measures there (1512x900): 0 copy actions, 4 connect presses (one per program) all
+ * on the first screen, and a pane a third of a screen tall. A copy action returning means the hand-copy flow
+ * came back; a taller or denser pane means the first screen got heavier.
+ */
+const CEILING = { copyTotal: 0, connectPresses: 4, scrollRatio: 1 };
+
+test("the connection pane keeps its first screen simple and its content within reach", async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1512, height: 900 });
+  await installDesktopRailRuntime(page);
+  await mountDesktopVault(page, "ko");
+  await page.getByTestId("app-nav-rail-item-agents").click();
+  await page.getByTestId("agents-tab-mcp").click();
+
+  const pane = page.getByTestId("agent-setup-section");
+  await expect(pane).toBeVisible();
+  const census = await pane.evaluate((root) => {
+    const buttons = [...root.querySelectorAll("button")];
+    const named = (button: HTMLElement) => `${button.textContent ?? ""} ${button.getAttribute("aria-label") ?? ""}`;
+    const visible = (button: HTMLElement) => {
+      const box = button.getBoundingClientRect();
+      return box.width > 0 && box.height > 0 && box.bottom > 0 && box.top < window.innerHeight;
+    };
+    const connect = buttons.filter((button) => (button.textContent ?? "").trim() === "연결");
+    return {
+      copyTotal: buttons.filter((button) => /복사|copy/i.test(named(button))).length,
+      connectPresses: connect.length,
+      connectVisibleFirstScreen: connect.filter(visible).length,
+      scrollHeight: root.scrollHeight,
+      visibleHeight: Math.min(root.clientHeight, window.innerHeight),
+    };
+  });
+  await testInfo.attach("agent-connect-census.json", {
+    body: JSON.stringify(census, null, 2),
+    contentType: "application/json",
+  });
+  expect(census.connectPresses, "the pane must hold its connect presses before measuring their density").toBeGreaterThan(0);
+  expect(census.visibleHeight, "the pane must occupy visible space").toBeGreaterThan(0);
+  expect(census.copyTotal, "the app connects by a press: no command is left to copy by hand").toBeLessThanOrEqual(CEILING.copyTotal);
+  expect(census.connectPresses).toBeLessThanOrEqual(CEILING.connectPresses);
+  expect(census.connectVisibleFirstScreen, "every connect press is on the first screen").toBe(census.connectPresses);
+  expect(census.scrollHeight / census.visibleHeight, "the pane must fit within one visible screen").toBeLessThanOrEqual(CEILING.scrollRatio);
+});
 
 for (const tool of ['Codex', 'Claude Code'] as const) {
   test(`the connection check follows ${tool} without requiring the other host`, async ({ page }) => {
