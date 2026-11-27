@@ -1,8 +1,7 @@
-import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { WorkStatusSnapshot, WorktreeRow } from '@/shared/lib/work-status/tauri-work-status';
 import { buildWorkTracks, planRooms, type RoomPlan } from '@/shared/lib/work-status/work-tracks';
-import { AFTER_CRATE, MORU_CAST, ROOM_TALKS, workLoops, cartLoad, castRooms, moruCharacter, moruPhase, retireeOf, roomAlertOf, roomLook, roomOnce, withRetirees, type RoomClip } from './room-look';
+import { cartLoad, retireeOf, roomAlertOf, roomLook, withRetirees } from './room-look';
 
 const NOW_MS = 1_795_260_000_000;
 
@@ -33,22 +32,18 @@ function plan(worktrees: WorktreeRow[]): RoomPlan {
 }
 
 describe('roomLook', () => {
-  it('plays the row of what Git and the locks show, and leaves a folder nobody held without Moru', () => {
-    expect(roomLook({ kind: 'working', tools: ['codex'] })).toMatchObject({ running: true, cast: 'one', clip: 'desk-type', still: false });
-    expect(roomLook({ kind: 'working', tools: ['claudeCode', 'codex'] })).toMatchObject({ cast: 'two', backClip: 'monitor-read' });
-    expect(roomLook({ kind: 'resting', quietSinceMs: 0 })).toMatchObject({ running: false, still: true });
-    expect(roomLook({ kind: 'dozing', quietSinceMs: 0 })).toMatchObject({ running: false, dozing: true, clip: 'nod-off', still: false });
-    expect(roomLook({ kind: 'lockLeft', tool: 'claudeCode' })).toMatchObject({ clip: 'feel-worried', monitorOff: true, crate: 'taped' });
-    expect(roomLook({ kind: 'missing' })).toMatchObject({ clip: 'sigh', crate: 'ghost' });
-    expect(roomLook({ kind: 'merged' })).toMatchObject({ running: false, still: true });
-    expect(roomLook({ kind: 'unheld', lastCommitAt: null }).cast).toBe('none');
+  it('lights only a room at work, and marks a stuck, missing or unheld folder by its crate', () => {
+    expect(roomLook({ kind: 'working', tools: ['codex'] })).toEqual({ running: true, monitorOff: false, crate: 'plain' });
+    expect(roomLook({ kind: 'working', tools: ['claudeCode', 'codex'] }).running).toBe(true);
+    for (const state of [{ kind: 'resting', quietSinceMs: 0 }, { kind: 'dozing', quietSinceMs: 0 }, { kind: 'merged' }, { kind: 'waiting', on: 'approval' }, { kind: 'replied' }, { kind: 'sessionFailed' }] as const) {
+      expect(roomLook(state)).toEqual({ running: false, monitorOff: false, crate: 'plain' });
+    }
+    expect(roomLook({ kind: 'lockLeft', tool: 'claudeCode' })).toEqual({ running: false, monitorOff: true, crate: 'taped' });
+    expect(roomLook({ kind: 'missing' })).toEqual({ running: false, monitorOff: true, crate: 'ghost' });
+    expect(roomLook({ kind: 'unheld', lastCommitAt: null })).toEqual({ running: false, monitorOff: false, crate: 'dusty' });
   });
 
-  it('has a waiting Moru look up, a replied one stand still and neither light the room', () => {
-    expect(roomLook({ kind: 'waiting', on: 'approval' })).toMatchObject({ running: false, clip: 'heads-up', still: false, cast: 'one' });
-    expect(roomLook({ kind: 'waiting', on: 'answer' }).clip).toBe('heads-up');
-    expect(roomLook({ kind: 'replied' })).toMatchObject({ running: false, clip: 'waiting', still: true });
-    expect(roomLook({ kind: 'sessionFailed' })).toMatchObject({ running: false, clip: 'feel-worried', monitorOff: false });
+  it('counts a waiting session for the header, and a replied one not', () => {
     expect(roomAlertOf({ kind: 'waiting', on: 'answer' })).toBe('waiting');
     expect(roomAlertOf({ kind: 'replied' })).toBeNull();
   });
@@ -88,85 +83,5 @@ describe('cartLoad', () => {
     expect(cartLoad(9, false)).toEqual({ crates: 6, more: 3 });
     expect(cartLoad(0, false)).toEqual({ crates: 0, more: 0 });
     expect(cartLoad(0, true)).toEqual({ crates: 1, more: 0 });
-  });
-});
-
-describe('moruPhase', () => {
-  it('starts rooms at whole poses that differ between neighbours', () => {
-    const phases = ['feat/a', 'feat/b', 'fix/c', 'refactor/d', 'docs/e'].map(moruPhase);
-    for (const phase of phases) expect(Number.isInteger(phase * 24) && phase >= 0 && phase < 1).toBe(true);
-    expect(new Set(phases).size).toBeGreaterThan(3);
-    expect(moruPhase('feat/a')).toBe(phases[0]);
-  });
-});
-
-describe('moruCharacter', () => {
-  it('gives a branch the same preferred Moru every time, and spreads the preference across the cast', () => {
-    const branches = Array.from({ length: 120 }, (_, index) => `feat/branch-${index}`);
-    const characters = branches.map(moruCharacter);
-    expect(branches.map(moruCharacter)).toEqual(characters);
-    // 24 each on an even spread; no character is missing or takes twice its share.
-    for (const character of MORU_CAST) expect(characters.filter(found => found === character).length).toBeGreaterThan(12);
-    for (const character of MORU_CAST) expect(characters.filter(found => found === character).length).toBeLessThan(48);
-  });
-});
-
-describe('castRooms', () => {
-  const rooms = (...branches: string[]) => branches.map(branch => ({ key: branch, branch, base: false }));
-  // Five branches the cast's preferences collide on: two prefer one character, two another.
-  const five = rooms('feat/library-stage', 'feat/work-status-rooms', 'feat/map-light', 'feat/moru-cast-rooms', 'fix/rail-tooltip');
-
-  it('gives five rooms five different characters, and the main checkout the grey original', () => {
-    const cast = castRooms([{ key: 'main', branch: 'main', base: true }, ...five]);
-    expect(cast.get('main')).toBe('grey');
-    expect(new Set(five.map(room => cast.get(room.key)))).toEqual(new Set(MORU_CAST));
-    expect(cast.get('feat/library-stage')).toBe(moruCharacter('feat/library-stage'));
-  });
-
-  it('leaves the older rooms their Moru when a newer room arrives, and repeats the least used only once all are in use', () => {
-    const before = castRooms(five);
-    const after = castRooms([...five, ...rooms('feat/sixth', 'feat/seventh')]);
-    for (const room of five) expect(after.get(room.key)).toBe(before.get(room.key));
-    expect(after.get('feat/sixth')).not.toBe(after.get('feat/seventh'));
-  });
-
-  it('changes no room older than one that leaves', () => {
-    const before = castRooms(five);
-    const after = castRooms(five.filter(room => room.key !== 'feat/map-light'));
-    for (const room of five.slice(0, 2)) expect(after.get(room.key)).toBe(before.get(room.key));
-  });
-
-  it('has every row a room can play drawn for every character', () => {
-    const states = [
-      { kind: 'working', tools: ['codex', 'claudeCode'] }, { kind: 'resting', quietSinceMs: 0 }, { kind: 'dozing', quietSinceMs: 0 },
-      { kind: 'merged' }, { kind: 'locked' }, { kind: 'lockLeft', tool: 'claudeCode' }, { kind: 'missing' },
-    ] as const;
-    const rows = new Set<RoomClip>(['galumph', 'galumph-left', 'merge-cheer', 'crate-send', 'settle-in']);
-    for (const state of states) {
-      const look = roomLook(state);
-      rows.add(look.clip).add(look.backClip);
-    }
-    for (const clip of [...workLoops('a'), ...ROOM_TALKS, AFTER_CRATE.front, AFTER_CRATE.back]) rows.add(clip);
-    // A room row ships per character; a cast clip ships once, grey, and is dressed for each character in the room.
-    const cast = JSON.parse(readFileSync('public/brand/moru-room-clips.json', 'utf8')) as { clips: Record<string, { file: string }>; cast: Record<string, unknown> };
-    const missing = [...rows].flatMap(row => cast.clips[row]
-      ? [`public/brand/${cast.clips[row].file}`]
-      : MORU_CAST.map(character => `public/brand/mascot-${row}-row-128-${character}.png`)).filter(file => !existsSync(file));
-    expect(missing).toEqual([]);
-    expect(Object.keys(cast.cast).sort()).toEqual([...MORU_CAST].sort());
-  });
-});
-
-describe('roomOnce', () => {
-  const working = { kind: 'working', tools: ['claudeCode'] } as const;
-  const none = { merged: false, landed: false, entered: false };
-
-  it('cheers only a merge it observed, sends a landed commit only from a working room, and settles into a new room', () => {
-    expect(roomOnce({ kind: 'merged' }, { ...none, merged: true })).toBe('merge-cheer');
-    expect(roomOnce({ kind: 'merged' }, none)).toBeNull();
-    expect(roomOnce(working, { ...none, landed: true })).toBe('crate-send');
-    expect(roomOnce({ kind: 'resting', quietSinceMs: null }, { ...none, landed: true })).toBeNull();
-    expect(roomOnce(working, { ...none, entered: true })).toBe('settle-in');
-    expect(roomOnce({ kind: 'unheld', lastCommitAt: null }, { ...none, entered: true })).toBeNull();
   });
 });
