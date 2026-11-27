@@ -167,7 +167,6 @@ test.describe("interaction sweep — projects, agents, git", () => {
     // No particle that fits only vowel-final queries: the sentence reads right after any word.
     await expect(none).toContainText("「zzzqq」에 맞는 게 없어요");
     await expect(page.getByTestId("connectors-found-section")).toHaveCount(0);
-    await expect(page.getByTestId("connectors-discovery-unavailable")).toHaveCount(0);
     const groups = await box(page.getByTestId("connectors-add-groups"));
     const noneBox = await box(none);
     expect(noneBox.y - groups.y, "the empty answer is not the first thing in the list").toBeLessThanOrEqual(1);

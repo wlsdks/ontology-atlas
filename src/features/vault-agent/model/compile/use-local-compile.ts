@@ -59,7 +59,6 @@ export interface UseLocalCompileArgs {
   labels: {
     createFile: (path: string) => string;
     modifyFile: (path: string) => string;
-    bridgeMissing: string;
   };
 }
 
@@ -241,7 +240,7 @@ export function useLocalCompile({
                 scope,
                 baseUrl: endpoint.baseUrl,
               });
-              if (!echo) throw new Error(labels.bridgeMissing);
+              if (!echo) throw new Error('desktop_bridge_unavailable');
               return echo;
             },
           },

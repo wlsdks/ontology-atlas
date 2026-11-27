@@ -11,7 +11,6 @@ import { useVaultConceptFacts } from '@/features/vault-ontology';
 import { useHeldValue } from '@/shared/lib/render-timing/use-presence';
 import { cn } from '@/shared/lib/cn';
 import { AGENT_DOCK_INSET_SURFACE_CLASS, CloseButton } from '@/shared/ui';
-import { isLlmChatBridgeAvailable } from '@/shared/lib/llm-connection/tauri-llm';
 import { VAULT_AGENT_PANEL_ID } from '@/shared/config/agent/agent-panel';
 
 import { connectionHost } from '../model/connection-host';
@@ -47,7 +46,6 @@ export function VaultAgentPanel({
   canWrite,
   onFocusNode,
   onOpenFolder,
-  downloadHref,
   prefillRequest,
   takesFocusOnOpen = true,
   putAway = false,
@@ -62,7 +60,6 @@ export function VaultAgentPanel({
   canWrite: boolean;
   onFocusNode: (slug: string) => void;
   onOpenFolder?: () => void;
-  downloadHref: string;
   /**
    * A first message handed over from outside, such as "Ask the agent" on a queue row: a prefill, not
    * a send. `nonce` lets the same sentence be seated again.
@@ -88,11 +85,10 @@ export function VaultAgentPanel({
   const mirrorRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const bridgeAvailable = isLlmChatBridgeAvailable();
   const conceptFacts = useVaultConceptFacts();
 
   const panelRef = usePanelDismissal({ open, onClose });
-  const { provider, localEndpoint } = useConnectionProvider({ open, bridgeAvailable });
+  const { provider, localEndpoint } = useConnectionProvider({ open });
 
   const [recentChanges, setRecentChanges] = useState<readonly string[]>([]);
 
@@ -144,7 +140,6 @@ export function VaultAgentPanel({
 
   const construction = useConstructionSource({
     open,
-    bridgeAvailable,
     vaultPath: readableVaultPath,
     provider,
     localEndpoint,
@@ -192,7 +187,6 @@ export function VaultAgentPanel({
    * changes.
    */
   const stage = agentPanelStage({
-    bridgeAvailable,
     vaultPath: readableVaultPath,
     provider,
     scopeAccepted,
@@ -312,7 +306,6 @@ export function VaultAgentPanel({
           <div key={stage.kind} className="agent-panel-stage-swap flex grow flex-col">
           <div className="mb-3 space-y-2">
             <AgentConstructionSource
-              bridgeAvailable={bridgeAvailable}
               hasVault={Boolean(readableVaultPath)}
               busy={agent.running || applying}
               running={agent.running}
@@ -347,7 +340,7 @@ export function VaultAgentPanel({
         </div>
 
         {/* The locked state's composer position stands on the same strip as the real composer. */}
-        <AgentStageFloor stage={stage} downloadHref={downloadHref} onOpenFolder={onOpenFolder} />
+        <AgentStageFloor stage={stage} onOpenFolder={onOpenFolder} />
 
         {stage.kind === 'chat' ? (
           // The stage and this strip arrive on one curve, with no new duration, or the same input would read

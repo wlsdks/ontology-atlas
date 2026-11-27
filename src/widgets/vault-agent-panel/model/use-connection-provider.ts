@@ -21,13 +21,7 @@ import {
  * vendor in registration order (`secrets.rs`'s allowlist order) with a stored key. No picker exists,
  * and the full key never arrives here, so only "there is one" is known.
  */
-export function useConnectionProvider({
-  open,
-  bridgeAvailable,
-}: {
-  open: boolean;
-  bridgeAvailable: boolean;
-}) {
+export function useConnectionProvider({ open }: { open: boolean }) {
   const [provider, setProvider] = useState<ConnectionProvider | null>(null);
   /**
    * The connect-by-address settings live in localStorage, not the keychain (not a secret), and a
@@ -38,7 +32,7 @@ export function useConnectionProvider({
   const [changeNonce, setChangeNonce] = useState(0);
 
   useEffect(() => {
-    if (!open || !bridgeAvailable) return undefined;
+    if (!open) return undefined;
     const bump = () => setChangeNonce((value) => value + 1);
     const offSecret = subscribeSecretChange(bump);
     const offLocal = subscribeLocalEndpointChange(bump);
@@ -46,9 +40,9 @@ export function useConnectionProvider({
       offSecret();
       offLocal();
     };
-  }, [open, bridgeAvailable]);
+  }, [open]);
   useEffect(() => {
-    if (!open || !bridgeAvailable) return;
+    if (!open) return;
     let cancelled = false;
     void (async () => {
       /**
@@ -78,7 +72,7 @@ export function useConnectionProvider({
     return () => {
       cancelled = true;
     };
-  }, [open, bridgeAvailable, changeNonce]);
+  }, [open, changeNonce]);
 
   return { provider, localEndpoint };
 }

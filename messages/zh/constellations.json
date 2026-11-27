@@ -20,7 +20,6 @@
   "clearFocus": "取消只看概念集",
   "clearFocusNamed": "取消只看 {name}",
   "prepare": "询问智能体",
-  "prepareUnavailable": "请在桌面应用中询问智能体",
   "edit": "编辑",
   "createTitle": "新建概念集",
   "editTitle": "编辑概念集",

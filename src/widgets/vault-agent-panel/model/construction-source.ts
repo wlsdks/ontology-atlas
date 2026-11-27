@@ -26,15 +26,13 @@ export function constructionResourceKey({
 }
 
 export function canChooseConstructionSource({
-  bridgeAvailable,
   running,
   applying,
 }: {
-  bridgeAvailable: boolean;
   running: boolean;
   applying: boolean;
 }): boolean {
-  return bridgeAvailable && !running && !applying;
+  return !running && !applying;
 }
 
 /** Reading source files for construction is local-only: a model on this computer's own address. */

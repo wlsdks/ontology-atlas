@@ -8,10 +8,9 @@ import { Button, RowButton, Surface } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
 /** Returning users choose a folder; the ways to create one wait in a popover under one plain button. */
-export function FirstRunFolderActions({ busy, showJustStart, onOpen, onCreate, onCodeProject, trigger }: {
+export function FirstRunFolderActions({ busy, onOpen, onCreate, onCodeProject, trigger }: {
   trigger: RefObject<HTMLButtonElement | null>;
   busy: boolean;
-  showJustStart: boolean;
   onOpen: () => void;
   onCreate: (kind: 'just-start' | 'create') => void;
   /** Starts the project picker; the path is confirmed in a dialog before anything is written. */
@@ -49,14 +48,14 @@ export function FirstRunFolderActions({ busy, showJustStart, onOpen, onCreate, o
         </Button>
         <Surface open={open} className="absolute left-0 top-full z-20 mt-2 w-64 max-w-full origin-top-left rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-2 shadow-[var(--shadow-elevation-2)] sm:right-0 sm:left-auto sm:origin-top-right">
           <div id="first-run-create-options" className="grid gap-1">
-            {showJustStart ? <RowButton tone="strong" hoverInk="strong" hoverSurface="lift" className="w-full text-left"
+            <RowButton tone="strong" hoverInk="strong" hoverSurface="lift" className="w-full text-left"
               disabled={busy} onClick={() => { setOpen(false); onCodeProject(); }} data-testid="first-run-code-project">
               {tFirstRun('codeTitle')}
-            </RowButton> : null}
-            {showJustStart ? <RowButton tone="strong" hoverInk="strong" hoverSurface="lift" className="w-full text-left"
+            </RowButton>
+            <RowButton tone="strong" hoverInk="strong" hoverSurface="lift" className="w-full text-left"
               disabled={busy} onClick={() => choose('just-start')} data-testid="first-run-just-start">
               {t('defaultLocationAction')}
-            </RowButton> : null}
+            </RowButton>
             <RowButton tone="strong" hoverInk="strong" hoverSurface="lift" className="w-full text-left"
               disabled={busy} onClick={() => choose('create')} data-testid="first-run-create">
               {t('chooseLocationAction')}

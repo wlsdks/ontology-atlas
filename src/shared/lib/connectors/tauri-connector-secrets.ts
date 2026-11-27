@@ -30,10 +30,6 @@ export interface ConnectorSecretStatus {
   last4: string | null;
 }
 
-export function isConnectorSecretBridgeAvailable(): boolean {
-  return getInvoke() !== null;
-}
-
 export { connectorSecretRef } from './connector-record';
 
 export async function connectorSecretSet(

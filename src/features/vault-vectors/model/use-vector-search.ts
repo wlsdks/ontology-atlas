@@ -1,7 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react';
-import { isTauriVaultRuntime } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
+import { useCallback, useEffect, useRef } from 'react';
 import { vaultIndexPreference } from '@/shared/lib/vault-folder/vault-index/tauri-vault-index';
 import {
   searchVectors,
@@ -17,11 +16,9 @@ import { afterJob, readStatusAgain, useVectorStatusOf } from './vector-store';
 
 export const VECTOR_SEARCH_LIMIT = 24;
 
-const noSubscribe = () => () => undefined;
-
-/** `null` (words alone) unless in the app, with the index on, for a folder with a stored choice whose vectors hold something. */
-export function searchableSource(status: VectorStatus | null, choice: VectorChoice | null, isApp: boolean, indexOn: boolean): VectorSource | null {
-  if (!isApp || !indexOn || choice === null || status === null) return null;
+/** `null` (words alone) unless the index is on, for a folder with a stored choice whose vectors hold something. */
+export function searchableSource(status: VectorStatus | null, choice: VectorChoice | null, indexOn: boolean): VectorSource | null {
+  if (!indexOn || choice === null || status === null) return null;
   if (status.phase === 'ready' || status.phase === 'preparing') return choice.source;
   if (status.phase === 'stopped' && status.filesDone > 0) return choice.source;
   return null;
@@ -46,12 +43,10 @@ export interface VectorSearch {
 
 /** The folder's status is read as two yes-or-no values, so a progress event does not draw the desk. */
 export function useVectorSearch(rootPath: string | null, markdownFiles: number, visible: boolean): VectorSearch {
-  const isApp = useSyncExternalStore(noSubscribe, isTauriVaultRuntime, () => false);
   const indexOn = vaultIndexPreference.use() === 'on';
   const choice = vaultVectorSource.use(rootPath);
-  const statusRoot = isApp ? rootPath : null;
-  const searchable = useVectorStatusOf(statusRoot, (status) => searchableSource(status, choice, isApp, indexOn) !== null);
-  const offerSetup = useVectorStatusOf(statusRoot, (status) => deskLine({ status, isApp, indexOn, markdownFiles, runnerModel: null })?.message === 'words');
+  const searchable = useVectorStatusOf(rootPath, (status) => searchableSource(status, choice, indexOn) !== null);
+  const offerSetup = useVectorStatusOf(rootPath, (status) => deskLine({ status, indexOn, markdownFiles, runnerModel: null })?.message === 'words');
   const source = rootPath !== null && searchable ? choice?.source ?? null : null;
   const warmed = useRef<string | null>(null);
 

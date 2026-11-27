@@ -4,7 +4,6 @@
   "exportBusy": "내보내는 중…",
   "exportDone": "{count}개 내보냄",
   "exportError": "내보내지 못했어요. 다시 시도해 주세요.",
-  "exportUnsupportedHint": "이 환경은 폴더 선택을 지원하지 않아요",
   "vaultRequiredHint": "내 폴더를 열면 쓸 수 있어요",
   "importAction": "다른 폴더에서 개념 가져오기",
   "importCaption": "다른 폴더의 .md를 고르면 무엇이 들어올지 먼저 보여 드리고, 확인한 뒤에 합쳐요.",

@@ -70,7 +70,6 @@ interface TopologyInspectorSurfacesProps {
     ReturnType<typeof useTopologyVaultReadModel>,
     | "summaryFreshness"
     | "summaryHistoryUnavailable"
-    | "llmBridgeAvailable"
     | "setNeedsVaultReason"
     | "selectedOntologyNode"
     | "vault"
@@ -173,7 +172,7 @@ export function TopologyInspectorSurfaces({
     handleDatasheetHoverEvidence, setFullDetailSlug, contextMenuNode, closeContextMenu, FullDetailCard,
     fullDetailOpen
   } = topologyCanvasFocus;
-  const { summaryFreshness, summaryHistoryUnavailable, llmBridgeAvailable, setNeedsVaultReason, selectedOntologyNode, vault, gitVaultPath, ontologyInsight } = topologyVaultReadModel;
+  const { summaryFreshness, summaryHistoryUnavailable, setNeedsVaultReason, selectedOntologyNode, vault, gitVaultPath, ontologyInsight } = topologyVaultReadModel;
   const { projectSource } = topologySourceReadiness;
   const {
     projectSourceLabels, copyV2NodeHandoff, projectSourceErrorLabel,
@@ -248,7 +247,7 @@ export function TopologyInspectorSurfaces({
       reader={conceptCode.reader}
       documentModifiedMs={conceptCode.documentModifiedMs}
       nextSteps={{
-        askToFind: llmBridgeAvailable ? askAgentAboutSelectedNode : undefined,
+        askToFind: askAgentAboutSelectedNode,
         openCodeFolder: onlyProjectSlug ? () => handleSelect(onlyProjectSlug) : undefined,
       }}
       onClose={closeReaderToCodeRow}
@@ -439,9 +438,7 @@ export function TopologyInspectorSurfaces({
                 actionMore: t("nodeDatasheet.actionMore"),
                 actionCreateLinked: t("nodeDatasheet.actionCreateLinked"),
                 actionCopyHandoff: t("nodeDatasheet.actionCopyHandoff"),
-                actionAskAgent: llmBridgeAvailable
-                  ? t("nodeDatasheet.actionAskAgent")
-                  : undefined,
+                actionAskAgent: t("nodeDatasheet.actionAskAgent"),
                 actionAskAgentShort: t("nodeDatasheet.actionAskAgentShort"),
                 actionRealm: t("realm.enterAction"),
                 actionAskAgentTip: t("nodeDatasheet.actionAskAgentTip"),
@@ -492,9 +489,7 @@ export function TopologyInspectorSurfaces({
               onRename={conceptWritable ? renameConcept : undefined}
               onSaveDescription={conceptWritable ? saveConceptDescription : undefined}
               deleteConcept={conceptWritable ? { referrers: deleteReferrers, onDelete: deleteConcept } : undefined}
-              // Without an agent surface (web) only the handoff copy is offered; no door that will
-              // not open.
-              onAskAgent={llmBridgeAvailable ? askAgentAboutSelectedNode : undefined}
+              onAskAgent={askAgentAboutSelectedNode}
               meaningReview={{ label: tWorkbench('meaningTitle'), onOpen: openMeaningWorkbench }}
               suppressPrimaryAction={acpPresentationVisible}
               onClose={handleDatasheetClose}

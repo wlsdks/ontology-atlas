@@ -16,7 +16,6 @@ import { VariableFields } from './VariableFields';
 export function ConnectorDetailDialog({
   connector,
   on,
-  canStoreSecrets,
   storedRefs,
   onClose,
   onUpsert,
@@ -25,7 +24,6 @@ export function ConnectorDetailDialog({
 }: {
   connector: ConnectorRecord | null;
   on: boolean;
-  canStoreSecrets: boolean;
   storedRefs: ReadonlySet<string> | null;
   onClose: () => void;
   onUpsert: (connector: ConnectorRecord) => void;
@@ -95,7 +93,6 @@ export function ConnectorDetailDialog({
 
           <VariableFields
             connector={connector}
-            canStoreSecrets={canStoreSecrets}
             storedRefs={storedRefs}
             onUpsert={onUpsert}
             testIdPrefix={testIdPrefix}

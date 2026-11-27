@@ -47,7 +47,6 @@ export function useLibraryAgent(
   compileLabels: {
     createFile: (path: string) => string;
     modifyFile: (path: string) => string;
-    bridgeMissing: string;
   } = DEFAULT_COMPILE_LABELS,
   wikiPages?: ReadonlyMap<string, WikiRetrievalPage>,
 ) {
@@ -200,5 +199,4 @@ export function useLibraryAgent(
 const DEFAULT_COMPILE_LABELS = {
   createFile: (path: string) => `create ${path}`,
   modifyFile: (path: string) => `edit ${path}`,
-  bridgeMissing: "This can only run in the installed app.",
 };

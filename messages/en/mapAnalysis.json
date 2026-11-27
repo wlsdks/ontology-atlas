@@ -33,9 +33,6 @@
     "catchUp": "Analyze new and changed code",
     "catchUpBody": "{files, plural, one {# file} other {# files}} to read. About {requests, plural, one {# request} other {# requests}} to your agent, about {duration}."
   },
-  "web": {
-    "analyze": "Starting an analysis from Atlas needs the desktop app, which runs your coding agent. An agent you connect yourself over MCP adds to this record too."
-  },
   "changed": {
     "none": "No file in the code changed since analysis {number, number}.",
     "some": "Since analysis {number, number}, {added, plural, one {# new file} other {# new files}} and {changed, plural, one {# changed file} other {# changed files}} in the code. The share above does not count them yet.",

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Info, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
 import { Chip, ServiceMark, resolveServiceMark } from '@/shared/ui';
 import { badgeClass } from '@/shared/ui/badge-class';
@@ -20,14 +20,12 @@ type SourceKey = `source.${ReturnType<typeof shortSourceKey>}`;
 const FOUND_FOLD = 3;
 
 export function FoundSection({
-  canDiscover,
   discovery,
   matches,
   query,
   onAdd,
   testIdPrefix,
 }: {
-  canDiscover: boolean;
   discovery: ConnectorDiscoveryState;
   matches: DiscoveredGroup[];
   query: string;
@@ -43,31 +41,6 @@ export function FoundSection({
   const searching = query.trim().length > 0;
   const visible = searching || showAll ? matches : matches.slice(0, FOUND_FOLD);
   const folded = matches.length - visible.length;
-  if (!canDiscover) {
-    return (
-      <div
-        role="status"
-        data-testid="connectors-discovery-unavailable"
-        className="rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 py-2.5"
-      >
-        <div className="flex items-start gap-2">
-          <Info
-            size={ICON_SIZE.md}
-            aria-hidden
-            className="mt-0.5 shrink-0 text-[color:var(--color-text-quaternary)]"
-          />
-          <div className="min-w-0">
-            <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-              {t('webTitle')}
-            </p>
-            <p className="mt-1 break-keep text-label leading-prose text-[color:var(--color-text-tertiary)]">
-              {t('webBody')}
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
   // Searching hides an empty group; the dialog's one line explains it.
   if (discovery.status === 'done' && matches.length === 0 && query.trim()) return null;
   return (

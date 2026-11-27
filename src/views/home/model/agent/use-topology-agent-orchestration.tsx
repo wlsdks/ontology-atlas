@@ -75,7 +75,6 @@ interface Options {
     | "gitVaultPath"
     | "tAgent"
     | "vaultConceptFacts"
-    | "llmBridgeAvailable"
     | "vault"
   >;
 }
@@ -84,7 +83,7 @@ export function useTopologyAgentOrchestration({
   agentDockDefaultOpen, topologyVaultReadModel, topologyGraphProjection, acpRuntimeController,
   homeWorkbenchController, topologyAuthoring, topologyPreferences, topologyIndexPresentation, codeReaderRoom
 }: Options) {
-  const { selectedOntologyNode, spotlightOn, gitVaultPath, tAgent, vaultConceptFacts, llmBridgeAvailable, vault } = topologyVaultReadModel;
+  const { selectedOntologyNode, spotlightOn, gitVaultPath, tAgent, vaultConceptFacts, vault } = topologyVaultReadModel;
   const { realmTitle, ontologyMapGraph } = topologyGraphProjection;
   const visibleNodeCount = ontologyMapGraph.nodes.length;
   const vaultHandle = vault.handle;
@@ -181,13 +180,13 @@ export function useTopologyAgentOrchestration({
   const askPrefill = useMemo(() => {
     // Rebuilt from the app's localized string, so no sentence rides a shared URL and old links get
     // today's request.
-    if (llmBridgeAvailable && routeState.askBusinessFlow) {
+    if (routeState.askBusinessFlow) {
       return {
         text: businessFlowRequest,
         nonce: BUSINESS_FLOW_PREFILL_NONCE,
       };
     }
-    if (!llmBridgeAvailable || !routeState.askIntent) return null;
+    if (!routeState.askIntent) return null;
     const intent = nodeIntent(selectedOntologyNode, routeState.askIntent);
     if (!intent) return null;
     return {
@@ -196,7 +195,6 @@ export function useTopologyAgentOrchestration({
       nonce: hashAskRequest(routeState.askIntent, "ref" in intent ? intent.ref : ""),
     };
   }, [
-    llmBridgeAvailable,
     routeState.askBusinessFlow,
     routeState.askIntent,
     selectedOntologyNode,

@@ -18,7 +18,6 @@ import {
   connectorSecretRef,
   connectorSecretSet,
   connectorSecretStatus,
-  isConnectorSecretBridgeAvailable,
   subscribeConnectorSecretChange,
 } from './tauri-connector-secrets';
 
@@ -29,7 +28,6 @@ afterEach(() => {
 
 describe('connector secret bridge', () => {
   it('degrades honestly in a browser: null, with zero invokes', async () => {
-    expect(isConnectorSecretBridgeAvailable()).toBe(false);
     expect(await connectorSecretSet('connector:c1:NOTION_TOKEN', 'ntn_live')).toBeNull();
     expect(await connectorSecretStatus('connector:c1:NOTION_TOKEN')).toBeNull();
     expect(await connectorSecretDelete('connector:c1:NOTION_TOKEN')).toBeNull();

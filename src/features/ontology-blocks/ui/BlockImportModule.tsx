@@ -15,7 +15,6 @@ import {
 import { useBodyScrollLock } from "@/shared/lib/overlays/use-body-scroll-lock";
 import { isPickerAbort } from "@/shared/lib/failures/picker-abort";
 import { pickTauriVaultDirectory } from "@/shared/lib/vault-folder/native-vault/tauri-vault-location";
-import { isTauriVaultRuntime } from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
 import { useRovingRadioGroup } from "@/shared/lib/keyboard/use-roving-radio-group";
 import { controlClass } from "@/shared/ui/control-class";
 import { CloseButton } from "@/shared/ui/controls/close-button";
@@ -158,9 +157,6 @@ export function BlockImportModule({
     return () => window.removeEventListener("keydown", handler);
   }, [open, busy]);
 
-  // Only the app can pick a folder; elsewhere the control says so instead of failing.
-  const supported = isTauriVaultRuntime();
-
   const pickBlockFolder = async () => {
     if (!vaultLoaded) return;
     dispatchImportUi({ type: "set-inline-text", inlineText: null });
@@ -225,9 +221,7 @@ export function BlockImportModule({
 
   const triggerTitle = !vaultLoaded
     ? t("vaultRequiredHint")
-    : supported
-      ? t("importAria")
-      : t("exportUnsupportedHint");
+    : t("importAria");
 
   const newEntries = plan?.entries.filter((e) => e.status === "new") ?? [];
   const conflictEntries =
@@ -243,7 +237,7 @@ export function BlockImportModule({
           caption: t("importCaption"),
           action: t("importPick"),
           title: triggerTitle,
-          disabled: !vaultLoaded || !supported,
+          disabled: !vaultLoaded,
           onPick: () => void pickBlockFolder(),
           status: inlineText?.text ?? null,
           statusKind: inlineText?.kind ?? null,
@@ -253,7 +247,7 @@ export function BlockImportModule({
       <button
         type="button"
         onClick={() => void pickBlockFolder()}
-        disabled={!vaultLoaded || !supported}
+        disabled={!vaultLoaded}
         title={triggerTitle}
         data-testid="block-import-open"
         className={controlClass({

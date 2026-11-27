@@ -17,16 +17,14 @@ import {
 
 import { forgetSecrets } from '../model/connector-secrets';
 
-/** The person chooses per variable, because a name does not reveal a credential (`OPENAPI_MCP_HEADERS` carries a bearer token). A credential-shaped name is still never written to the file: with the keychain off it gets no field, and the row says why. */
+/** The person chooses per variable, because a name does not reveal a credential (`OPENAPI_MCP_HEADERS` carries a bearer token). A credential-shaped name is still never written to the file. */
 export function VariableFields({
   connector,
-  canStoreSecrets,
   storedRefs,
   onUpsert,
   testIdPrefix,
 }: {
   connector: ConnectorRecord;
-  canStoreSecrets: boolean;
   storedRefs: ReadonlySet<string> | null;
   onUpsert: (connector: ConnectorRecord) => void;
   testIdPrefix: string;
@@ -70,7 +68,6 @@ export function VariableFields({
                 data-testid={`${testIdPrefix}-item-variable-keychain`}
                 label={t('keepInKeychain', { name: entry.name })}
                 checked={inKeychain}
-                disabled={!canStoreSecrets}
                 onChange={(event) => {
                   if (event.target.checked) {
                     rewriteVariable(slot, entry.name, (current) => ({
@@ -87,15 +84,7 @@ export function VariableFields({
                 }}
                 className="text-label text-[color:var(--color-text-secondary)]"
               />
-              {!canStoreSecrets && inKeychain ? (
-                <p
-                  data-testid={`${testIdPrefix}-item-secrets-unavailable`}
-                  className="break-keep text-label leading-prose text-[color:var(--color-text-tertiary)]"
-                >
-                  {t('secretsWeb', { keys: entry.name })}
-                </p>
-              ) : null}
-              {canStoreSecrets && inKeychain ? (
+              {inKeychain ? (
                 <>
                   {stored ? (
                     <p

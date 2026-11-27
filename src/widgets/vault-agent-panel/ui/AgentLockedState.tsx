@@ -61,13 +61,11 @@ export function AgentLockedComposer({
   hint,
   actionLabel,
   onAction,
-  actionHref,
   testId,
 }: {
   hint: string;
   actionLabel: string;
   onAction?: () => void;
-  actionHref?: string;
   testId: string;
 }) {
   const content = (
@@ -93,26 +91,15 @@ export function AgentLockedComposer({
     // Same entry curve as the real composer strip, which this position becomes, so the swap reads as
     // "this opened".
     <footer className="agent-panel-stage-swap shrink-0 border-t border-[color:var(--color-border-soft)] p-2.5">
-      {actionHref ? (
-        <a
-          data-testid={testId}
-          href={actionHref}
-          aria-label={actionLabel}
-          className={shell}
-        >
-          {content}
-        </a>
-      ) : (
-        <button
-          type="button"
-          data-testid={testId}
-          onClick={onAction}
-          aria-label={actionLabel}
-          className={shell}
-        >
-          {content}
-        </button>
-      )}
+      <button
+        type="button"
+        data-testid={testId}
+        onClick={onAction}
+        aria-label={actionLabel}
+        className={shell}
+      >
+        {content}
+      </button>
     </footer>
   );
 }

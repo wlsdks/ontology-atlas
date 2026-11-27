@@ -1,18 +1,16 @@
-// What the panel holds: honest web degradation · closing = stopping · the scope sheet comes first · the reflow contract.
+// What the panel holds: closing = stopping · the scope sheet comes first · the reflow contract.
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import messages from '../../../../messages/ko.json';
 
-const bridge = vi.hoisted(() => ({ available: false }));
 const constructionBridge = vi.hoisted(() => ({ pick: vi.fn(), preview: vi.fn(), read: vi.fn() }));
 vi.mock('@/shared/lib/llm-connection/tauri-local-construction', () => ({ previewConstructionSource: constructionBridge.preview, readConstructionSource: constructionBridge.read }));
 vi.mock('@/shared/lib/vault-folder/native-vault/tauri-project-source', async (importOriginal) => ({ ...(await importOriginal<Record<string, unknown>>()), pickTauriSourceDirectory: constructionBridge.pick }));
 const secrets = vi.hoisted(() => ({ stored: true, listeners: new Set<() => void>() }));
 
 vi.mock('@/shared/lib/llm-connection/tauri-llm', () => ({
-  isLlmChatBridgeAvailable: () => bridge.available,
   llmChat: vi.fn(async () => null),
   llmChatErrorMessage: (error: unknown) => String(error),
 }));
@@ -111,7 +109,6 @@ function panelElement(overrides: Partial<Parameters<typeof VaultAgentPanel>[0]> 
         vaultIsGit={false}
         canWrite
         onFocusNode={vi.fn()}
-        downloadHref="/ko/download/"
         {...overrides}
       />
     </NextIntlClientProvider>
@@ -153,23 +150,13 @@ describe('VaultAgentPanel', () => {
     gitBridge.commits = [];
   });
 
-  it('on the web it draws an honest demotion instead of the input', () => {
-    // Drawing a composer with nowhere safe to keep a key and no route to send is a lie.
-    bridge.available = false;
-    renderPanel();
-    expect(screen.getByTestId('vault-agent-download-link')).toBeInTheDocument();
-    expect(screen.queryByTestId('vault-agent-input')).not.toBeInTheDocument();
-  });
-
   it('with no folder it first tells the user to open one', () => {
-    bridge.available = true;
     renderPanel({ vaultPath: null });
     expect(screen.getByTestId('vault-agent-notice')).toBeInTheDocument();
     expect(screen.queryByTestId('vault-agent-input')).not.toBeInTheDocument();
   });
 
   it('when only the path is restored and there is no manifest, it does not open a hidden folder agent on the sample map', async () => {
-    bridge.available = true;
     renderPanel({
       vaultPath: '/restored-but-unreadable-vault',
       manifest: null,
@@ -188,7 +175,6 @@ describe('VaultAgentPanel', () => {
 
   it('before the first turn the scope sheet stands first and there is no input', async () => {
     // Before sending, it states once what goes where.
-    bridge.available = true;
     renderPanel();
     expect(await screen.findByTestId('agent-scope-sheet')).toBeInTheDocument();
     expect(screen.getByTestId('agent-scope-audit-path')).toHaveTextContent(
@@ -198,7 +184,6 @@ describe('VaultAgentPanel', () => {
   });
 
   it('reflow moves both columns together with a single width', () => {
-    bridge.available = true;
     const { rerender } = renderPanel();
     const panel = screen.getByTestId('vault-agent-panel');
     expect(panel).toHaveAttribute('data-agent-panel-state', 'open');
@@ -226,8 +211,7 @@ describe('VaultAgentPanel', () => {
           vaultIsGit={false}
           canWrite
           onFocusNode={vi.fn()}
-          downloadHref="/ko/download/"
-        />
+          />
       </NextIntlClientProvider>,
     );
     expect(screen.getByTestId('vault-agent-panel').style.width).toBe('0px');
@@ -235,7 +219,6 @@ describe('VaultAgentPanel', () => {
 
   it('with no key it offers a door to the place instead of giving directions in words', async () => {
     // With no key the panel offers a door to settings in the composer's position rather than directions.
-    bridge.available = true;
     secrets.stored = false;
     renderPanel();
     const door = await screen.findByTestId('vault-agent-open-settings');
@@ -251,7 +234,6 @@ describe('VaultAgentPanel', () => {
 
   it('after entering a key and coming back it comes alive without a refresh', async () => {
     // Demanding F5 from a user who just registered a key is a defect.
-    bridge.available = true;
     secrets.stored = false;
     renderPanel();
     expect(await screen.findByTestId('vault-agent-open-settings')).toBeInTheDocument();
@@ -262,19 +244,7 @@ describe('VaultAgentPanel', () => {
     expect(screen.queryByTestId('vault-agent-open-settings')).not.toBeInTheDocument();
   });
 
-  it('the browser demotion sends the user to the app, not to settings', () => {
-    // The web has nowhere to keep a key at all — sending them to settings here is a door that does not open.
-    bridge.available = false;
-    renderPanel();
-    expect(screen.getByTestId('vault-agent-download-link')).toHaveAttribute(
-      'href',
-      '/ko/download/',
-    );
-    expect(screen.queryByTestId('vault-agent-open-settings')).not.toBeInTheDocument();
-  });
-
   it('an empty conversation gets first-words chips first, rather than handing over a blank page', async () => {
-    bridge.available = true;
     loadQueueFolder();
     renderPanel({ insight: { nodes: [payNode, refundNode], edges: [] } as never });
     fireEvent.click(await screen.findByTestId('agent-scope-accept'));
@@ -292,7 +262,6 @@ describe('VaultAgentPanel', () => {
   it('pressing a chip sends nothing, because it prefills rather than sends', async () => {
     // This slice's core contract. A chip calling the model would be a transmission
     // without consent, and it spends someone else's money (BYOK charges).
-    bridge.available = true;
     loadQueueFolder();
     const { llmChat } = await import('@/shared/lib/llm-connection/tauri-llm');
     vi.mocked(llmChat).mockClear();
@@ -311,7 +280,6 @@ describe('VaultAgentPanel', () => {
   });
 
   it('an empty folder does not force the chips up to three', async () => {
-    bridge.available = true;
     renderPanel({ insight: { nodes: [], edges: [] } as never });
     fireEvent.click(await screen.findByTestId('agent-scope-accept'));
     const chips = await screen.findAllByTestId('agent-first-words-chip');
@@ -321,7 +289,6 @@ describe('VaultAgentPanel', () => {
 
   it('the list without a key comes from the same generator, only as plain text', async () => {
     // Drawing a button in a moment that cannot be completed is a trap. Same sentence, different clothes.
-    bridge.available = true;
     secrets.stored = false;
     loadQueueFolder();
     renderPanel({ insight: { nodes: [payNode, refundNode], edges: [] } as never });
@@ -336,7 +303,6 @@ describe('VaultAgentPanel', () => {
     // A safeguard in the code is not enough — if "files change only after I confirm"
     // is not on screen at **the moment** a person decides whether to entrust their key
     // and docs folder, that safeguard does nothing for the decision.
-    bridge.available = true;
     secrets.stored = false;
     renderPanel();
     expect(await screen.findByTestId('vault-agent-consent-promise')).toHaveTextContent(
@@ -347,7 +313,6 @@ describe('VaultAgentPanel', () => {
 
   it('the scope sheet says that the granted scope includes writing', async () => {
     // Speaking only of reading, sending and logging while omitting writing makes it consent with an unknown scope.
-    bridge.available = true;
     renderPanel();
     expect(await screen.findByTestId('agent-scope-consent')).toHaveTextContent(
       messages.vaultAgentPanel.scope.consent,
@@ -355,7 +320,6 @@ describe('VaultAgentPanel', () => {
   });
 
   it('the first words handed over from outside land in the input without sending', async () => {
-    bridge.available = true;
     const { llmChat } = await import('@/shared/lib/llm-connection/tauri-llm');
     vi.mocked(llmChat).mockClear();
     renderPanel({ prefillRequest: { text: '「환불」의 소속을 찾아 줘', nonce: 1 } });
@@ -366,7 +330,6 @@ describe('VaultAgentPanel', () => {
   });
 
   it('with no progress the header subtitle stays as it was, since there is only one place for it', async () => {
-    bridge.available = true;
     renderPanel();
     const slot = screen.getByTestId('vault-agent-panel-subtitle');
     // What a screen reader reads there: the subtitle, and no session summary before there is progress.
@@ -375,7 +338,6 @@ describe('VaultAgentPanel', () => {
   });
 
   it('expanding resume shows the boundary together with the absolute folder path and the request sentence', async () => {
-    bridge.available = true;
     renderPanel();
     fireEvent.click(await screen.findByTestId('agent-scope-accept'));
 
@@ -392,7 +354,6 @@ describe('VaultAgentPanel', () => {
   });
 
   it('a side branch opens only one at a time, so transient surfaces do not stack', async () => {
-    bridge.available = true;
     renderPanel();
     fireEvent.click(await screen.findByTestId('agent-scope-accept'));
 
@@ -419,7 +380,6 @@ describe('VaultAgentPanel', () => {
   it('someone who has said nothing yet has nothing to resume, so the placeholder differs', async () => {
     // The locked strip and the real composer use **the same copy**: even after a key
     // arrives, the same text stays in the same place, so it reads as "this opened".
-    bridge.available = true;
     secrets.stored = false;
     renderPanel();
     expect(await screen.findByTestId('vault-agent-open-settings')).toHaveTextContent(
@@ -440,7 +400,6 @@ describe('VaultAgentPanel', () => {
     const ANSWER = '결제 처리는 두 규칙을 모두 지켜요.';
 
     async function startAnswer() {
-      bridge.available = true;
       let finish!: () => void;
       let signal: AbortSignal | undefined;
       vi.mocked(llmChat).mockReset().mockImplementation((args) => {
@@ -475,7 +434,6 @@ describe('VaultAgentPanel', () => {
   });
 
   it('holds every Enter that belongs to an IME composition and sends on the next plain Enter', async () => {
-    bridge.available = true;
     const { llmChat } = await import('@/shared/lib/llm-connection/tauri-llm');
     vi.mocked(llmChat).mockClear();
     renderPanel();
@@ -499,7 +457,6 @@ describe('VaultAgentPanel', () => {
 
 describe('local construction preview and consent', () => {
   beforeEach(() => {
-    bridge.available = true;
     writeLocalEndpoint({ baseUrl: 'http://localhost:11434', model: 'local-fixture' });
     vi.mocked(llmChat).mockClear();
     constructionBridge.pick.mockReset().mockResolvedValue('/chosen-code');
@@ -561,13 +518,5 @@ describe('local construction preview and consent', () => {
     fireEvent.click(screen.getByTestId('construction-run'));
     await waitFor(() => expect(screen.getByTestId('construction-evidence')).toHaveTextContent('entry.py:11-11'));
     expect(screen.getByTestId('construction-evidence')).toHaveTextContent('…');
-  });
-
-  it('does not prepare source or expose Run on the web', () => {
-    bridge.available = false;
-    renderPanel();
-    expect(screen.queryByRole('button', { name: '코드에서 만들기' })).not.toBeInTheDocument();
-    expect(constructionBridge.pick).not.toHaveBeenCalled();
-    expect(screen.queryByTestId('construction-run')).not.toBeInTheDocument();
   });
 });

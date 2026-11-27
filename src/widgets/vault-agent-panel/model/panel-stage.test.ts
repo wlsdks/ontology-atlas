@@ -2,13 +2,10 @@ import { describe, expect, it } from 'vitest';
 
 import { agentPanelStage, canSendDraft } from './panel-stage';
 
-const connected = { bridgeAvailable: true, vaultPath: '/vault', provider: 'anthropic' as const };
+const connected = { vaultPath: '/vault', provider: 'anthropic' as const };
 
 describe('agentPanelStage', () => {
   it('names the first thing that is missing, in the order a person fixes it', () => {
-    expect(
-      agentPanelStage({ bridgeAvailable: false, vaultPath: null, provider: null, scopeAccepted: true }),
-    ).toEqual({ kind: 'web' });
     expect(
       agentPanelStage({ ...connected, vaultPath: null, provider: null, scopeAccepted: true }),
     ).toEqual({ kind: 'no-folder' });

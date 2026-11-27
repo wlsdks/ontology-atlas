@@ -30,7 +30,7 @@ function failureLine(rootPath: string, status: VectorStatus): VectorRun['failure
   if (status.failure === null) return null;
   const source = vaultVectorSource.read(rootPath)?.source ?? null;
   const line = deskLine({
-    status, isApp: true, indexOn: true, markdownFiles: status.filesTotal,
+    status, indexOn: true, markdownFiles: status.filesTotal,
     runnerModel: source?.kind === 'runner' ? source.model : null,
   });
   return line ? { message: line.message, values: line.values } : null;

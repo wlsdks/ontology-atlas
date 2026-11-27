@@ -41,7 +41,6 @@ vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-location', async (im
 }));
 vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime')>()),
-  isTauriVaultRuntime: () => true,
   getTauriVaultRootPath: () => mocks.pickedProject,
 }));
 

@@ -71,14 +71,13 @@ export function DocsVaultHeader({
 }) {
   const t = useTranslations('docsVault');
   const localVault = useLocalVault();
-  // Show the real path only for an open local folder; the build machine's dogfood path
-  // would otherwise leak into the sample.
+  // The path of the open folder; before one opens, the chip says so.
   const vaultPillPath =
     isLocalSourceLoaded && localVaultRootPath
       ? localVaultRootPath
       : isLocalSourceLoaded && localVault.handle
         ? localVault.handle.name
-        : t('header.vaultPillSampleLabel');
+        : t('header.vaultChipLocalPending');
   const vaultTopLevelFolderCount = manifest.tree.children?.filter(
     (child) =>
       child.type === 'dir' &&
@@ -144,13 +143,7 @@ export function DocsVaultHeader({
         className="hidden lg:inline-flex"
       />
       <DocsVaultVaultChip
-        label={
-          vaultChipIdentity.kind === 'local'
-            ? vaultChipIdentity.label
-            : vaultChipIdentity.kind === 'local-pending'
-              ? t('header.vaultChipLocalPending')
-              : t('advanced.sourceServer')
-        }
+        label={vaultChipIdentity.kind === 'local' ? vaultChipIdentity.label : t('header.vaultChipLocalPending')}
         docCount={vaultChipIdentity.showDocCount ? scopedDocs.length : null}
         folderCount={vaultTopLevelFolderCount}
         path={vaultPillPath}

@@ -91,7 +91,6 @@ test.describe("the map analysis chip", () => {
     await expect(page.getByTestId("map-analysis-row")).toHaveCount(5);
     await expect(page.getByTestId("map-analysis-earlier")).toBeVisible();
     await expect(page.getByTestId("map-analysis-map-rest"), "the app names where an analysis starts").toBeVisible();
-    await expect(page.getByTestId("map-analysis-web-analyze")).toHaveCount(0);
 
     await trigger(page).click();
     await expect(trigger(page), "a second press does not close the panel").toHaveAttribute("aria-expanded", "false");
@@ -135,7 +134,7 @@ test.describe("the map analysis chip", () => {
     await expect(trigger(page)).toContainText("100%");
     await trigger(page).click();
     await expect(page.getByTestId("map-analysis-share")).toContainText("383");
-    await expect(page.getByTestId("map-analysis-web-analyze"), "nothing is left to map").toHaveCount(0);
+    await expect(page.getByTestId("map-analysis-map-rest"), "nothing is left to map").toHaveCount(0);
   });
 
   test("reads as analyzing now while the latest line is minutes old", async ({ page }) => {

@@ -10,10 +10,7 @@ import {
 } from '@/shared/lib/vault-folder/native-vault/tauri-vault-files';
 import { createTauriVaultHandle } from '@/shared/lib/vault-folder/native-vault/tauri-vault-handle';
 import { pickTauriVaultDirectory } from '@/shared/lib/vault-folder/native-vault/tauri-vault-location';
-import {
-  isTauriVaultRuntime,
-  getTauriVaultRootPath,
-} from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 
 import {
   PROJECT_VAULT_DIR,
@@ -58,7 +55,6 @@ export function useBuildFromCode({ openRecord, handoff }: BuildFromCodeDeps) {
   const reset = useCallback(() => setState(IDLE), []);
 
   const chooseProject = useCallback(async () => {
-    if (!isTauriVaultRuntime()) return;
     setState({ ...IDLE, stage: 'choosing' });
     try {
       /* The default title asks for a vault, which the person does not have in this flow. */

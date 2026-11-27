@@ -17,7 +17,6 @@
     "contractToggleShow": "폴더 검사 보기",
     "vaultPillFolders": "{count}개 폴더",
     "vaultPillSwap": "폴더 바꾸기",
-    "vaultPillSampleLabel": "내장 샘플 (Atlas 자체 문서)",
     "docListCollapse": "문서 목록 접기",
     "docListExpand": "문서 목록 펼치기",
     "vaultChipLocalPending": "폴더 미선택"
@@ -180,7 +179,6 @@
   "sourceContract": {
     "filesLabel": "폴더 파일",
     "filesLocalValue": "로컬 문서 {count}개",
-    "filesSampleValue": "샘플 마크다운 {count}개",
     "filesBody": "선택한 폴더의 마크다운 문서가 기준이에요. 온톨로지 변경은 파일 맨 위 정보칸의 변경으로 남아요.",
     "filesChip": "로컬 md",
     "filesCta": "문서 보기",
@@ -202,9 +200,6 @@
     "closeTitle": "닫기 (Esc)",
     "filesTruncated": "폴더가 너무 커서 일부만 읽었어요. 문서 폴더를 더 좁게 골라 주세요.",
     "filesPruned": "빌드·의존성 폴더 {count}개는 건너뛰었어요({names})."
-  },
-  "advanced": {
-    "sourceServer": "샘플"
   },
   "agentSetup": {
     "ariaLabel": "MCP 연결",

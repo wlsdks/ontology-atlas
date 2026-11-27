@@ -19,7 +19,6 @@ import { useState } from "react";
 import { canCopyTopologyPathPacket } from "../../lib/map-canvas/topology-path-chip-state";
 import { useMapToolbarTopReserve } from "../../model/map-canvas/use-map-toolbar-top-reserve";
 import { useMapAnalysisChip } from "../../model/map-readouts/use-map-analysis-chip";
-import type { useHomeWorkbenchController } from "../../model/use-home-workbench-controller";
 import type { useTopologyAgentActivity } from "../../model/agent/use-topology-agent-activity";
 import type { useTopologyAgentOrchestration } from "../../model/agent/use-topology-agent-orchestration";
 import type { useTopologyAuthoring } from "../../model/authoring/use-topology-authoring";
@@ -62,7 +61,6 @@ interface TopologyCommandChromeProps {
   restoreKnown: boolean;
   requestVaultOpen: () => void;
   topologyAgentActivity: Pick<ReturnType<typeof useTopologyAgentActivity>, "acpLiveWork">;
-  homeWorkbenchController: Pick<ReturnType<typeof useHomeWorkbenchController>, "meaningWorkbenchOpen" | "toggleMeaningWorkbench">;
   topologyNavigationActions: Pick<ReturnType<typeof useTopologyNavigationActions>, "handleSelect">;
   topologyRouteControls: Pick<ReturnType<typeof useTopologyRouteControls>, "handleExitRealm" | "indexPanelCollapsedStored" | "handleChangeIndexDefaultCollapsed">;
   topologySceneControls: Pick<
@@ -80,7 +78,6 @@ interface TopologyCommandChromeProps {
   topologyVaultReadModel: Pick<
     ReturnType<typeof useTopologyVaultReadModel>,
     | "vault"
-    | "llmBridgeAvailable"
     | "tAgent"
     | "spotlightOn"
     | "recentChanges"
@@ -122,7 +119,7 @@ export function TopologyCommandChrome({
   handleFootprintLens, handleFootprintBrush, agentDockTouchedRef, noFolderSettled, restoreKnown, requestVaultOpen,
   topologyPreferences, topologyInspectorState, topologyAuthoring, topologyCanvasFocus,
   topologyVaultReadModel, topologyGraphProjection, topologyAgentOrchestration, topologySceneControls,
-  topologyRouteControls, topologyNavigationActions, homeWorkbenchController, topologyAgentActivity,
+  topologyRouteControls, topologyNavigationActions, topologyAgentActivity,
   topologyCreateIntent, topologyIndexPresentation, topologyExplorationLenses
 }: TopologyCommandChromeProps) {
   const { topologyBlockingOverlayState, createNodePending, topologyBlockingOverlayActive } = topologyCreateIntent;
@@ -138,7 +135,7 @@ export function TopologyCommandChrome({
   const { createNodeOpen, setSelectedEdge } = topologyAuthoring;
   const { selectedRelationActive, setSelectedRelationActive } = topologyCanvasFocus;
   const {
-    vault, llmBridgeAvailable, tAgent, spotlightOn, recentChanges, handleToggleSpotlight,
+    vault, tAgent, spotlightOn, recentChanges, handleToggleSpotlight,
     spotlightNeedsVault, ontologyChangeset, gitVaultPath
   } = topologyVaultReadModel;
   const { canvasSelectedSlug, resolvedRealmSlug, realmTitle } = topologyGraphProjection;
@@ -146,7 +143,6 @@ export function TopologyCommandChrome({
   const { handleToggleExpandAll, pathChipLabel, pathChipOutcome, pathChipState, pathPacketCopied, copyPathPacket, handleClearPath } = topologySceneControls;
   const { handleExitRealm, indexPanelCollapsedStored, handleChangeIndexDefaultCollapsed } = topologyRouteControls;
   const { handleSelect } = topologyNavigationActions;
-  const { meaningWorkbenchOpen, toggleMeaningWorkbench } = homeWorkbenchController;
   const { acpLiveWork } = topologyAgentActivity;
   const mapAnalysis = useMapAnalysisChip(vault, gitVaultPath);
   const [toolbarElement, setToolbarElement] = useState<HTMLDivElement | null>(null);
@@ -318,7 +314,6 @@ export function TopologyCommandChrome({
                   });
                   openVaultAgent();
                 }}
-                canPrepare={llmBridgeAvailable}
               />
               {routedConstellation && grayAreaAction ? <ChromeChip onClick={grayAreaAction.onOpen} icon={<ScanSearch size={14}/>} data-testid="gray-area-set-entry">{grayAreaAction.label}</ChromeChip> : null}
               </>
@@ -337,7 +332,7 @@ export function TopologyCommandChrome({
             allExpanded={expandAllActive}
             analysisChip={
               mapAnalysis ? (
-                <MapAnalysisChip model={mapAnalysis} canMapTheRest={llmBridgeAvailable} onMapTheRest={openVaultAgent} />
+                <MapAnalysisChip model={mapAnalysis} onMapTheRest={openVaultAgent} />
               ) : undefined
             }
             realmChip={
@@ -431,48 +426,30 @@ export function TopologyCommandChrome({
                   className="relative flex items-center gap-[var(--topology-utility-lane-gap)]"
                   data-testid="topology-utility-action-row"
                 >
-                  {/* The agent tile opens the same dock, so this second door stands only where
-                     that tile cannot: the web, which has no agent to talk to. */}
-                  {llmBridgeAvailable ? null : (
-                    <ChromeChip
-                      icon={<ScanSearch />}
-                      aria-label={tWorkbench('meaningTitle')}
-                      title={tWorkbench('meaningTitle')}
-                      active={meaningWorkbenchOpen}
-                      aria-pressed={meaningWorkbenchOpen}
-                      compact={topologyUtilityChromeCompact || searchLaneCrowded}
-                      data-testid="topology-meaning-workbench-toggle"
-                      onClick={toggleMeaningWorkbench}
-                    >{tWorkbench('meaningTitle')}</ChromeChip>
-                  )}
                   {/* The name comes only from `vaultAgentPanel.title`, shared by chip, tooltip,
-                     aria and panel header.
-                     Desktop only: the web has no safe place for the key, so no door that will not
-                     open. */}
-                  {llmBridgeAvailable ? (
-                    <Tooltip content={tAgent('title')} side="bottom" withProvider={false}>
-                      <ChromeChip
-                        // The press closes what it opened, matching the review chip beside it.
-                        onClick={() => {
-                          agentDockTouchedRef.current = true;
-                          if (agentDockOpen) {
-                            closeVaultAgent();
-                            return;
-                          }
-                          openVaultAgent();
-                        }}
-                        aria-label={tAgent('title')}
-                        aria-expanded={agentDockOpen}
-                        aria-controls={VAULT_AGENT_PANEL_ID}
-                        data-testid="topology-vault-agent-toggle"
-                        active={agentDockOpen}
-                        compact={topologyUtilityChromeCompact}
-                        icon={<MessageCircle />}
-                      >
-                        {tAgent('title')}
-                      </ChromeChip>
-                    </Tooltip>
-                  ) : null}
+                     aria and panel header. */}
+                  <Tooltip content={tAgent('title')} side="bottom" withProvider={false}>
+                    <ChromeChip
+                      // The press closes what it opened, matching the review chip beside it.
+                      onClick={() => {
+                        agentDockTouchedRef.current = true;
+                        if (agentDockOpen) {
+                          closeVaultAgent();
+                          return;
+                        }
+                        openVaultAgent();
+                      }}
+                      aria-label={tAgent('title')}
+                      aria-expanded={agentDockOpen}
+                      aria-controls={VAULT_AGENT_PANEL_ID}
+                      data-testid="topology-vault-agent-toggle"
+                      active={agentDockOpen}
+                      compact={topologyUtilityChromeCompact}
+                      icon={<MessageCircle />}
+                    >
+                      {tAgent('title')}
+                    </ChromeChip>
+                  </Tooltip>
                   {noFolderSettled ? (
                     <Tooltip content={t('controls.switchToMyDataTooltip')} side="bottom" withProvider={false}>
                       <ChromeChip
@@ -498,13 +475,13 @@ export function TopologyCommandChrome({
                     </Tooltip>
                   ) : null}
                   <Tooltip
-                    // The sample is decided first: before a folder opens the press opens folder
-                    // guidance, and the tooltip says so.
+                    // Decided first: before a folder opens the press opens folder guidance, and the
+                    // tooltip says so.
                     // Zero recent changes in a user's folder is disabled with its reason, never a
                     // popup. `{days}` is the real window.
                     content={
                       vault.status !== 'loaded'
-                        ? t('controls.spotlightSampleTooltip')
+                        ? t('controls.spotlightNeedsFolderTooltip')
                         : spotlightOn || recentChanges.recentNodeIds.size > 0 || recentChanges.reading
                           ? t('controls.spotlightTooltip', { days: recentChanges.windowDays })
                           : t('controls.spotlightEmptyTooltip')
@@ -518,7 +495,7 @@ export function TopologyCommandChrome({
                       // has dated documents:
                       // never a popup for an absence and never hidden, since a vanished control
                       // reads as a missing feature.
-                      // On the sample it stays pressable and opens folder guidance.
+                      // With no folder loaded it stays pressable and opens folder guidance.
                       disabled={
                         !spotlightNeedsVault &&
                         !spotlightOn &&

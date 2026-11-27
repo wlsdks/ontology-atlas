@@ -204,7 +204,7 @@
     "relayoutToast": "正在重新排列地图",
     "spotlightTooltip": "最近变更：{days, plural, other {最近 # 天内}}改动的概念保持明亮，其余变淡",
     "spotlightEmptyTooltip": "最近没有改动。编辑文档后会在这里显示",
-    "spotlightSampleTooltip": "示例中的日期不是你的工作。打开本体文件夹后，你自己的改动会显示在这里",
+    "spotlightNeedsFolderTooltip": "打开本体文件夹后，最近改动的概念会显示在这里",
     "spotlightAriaLabel": "开关最近变更高亮",
     "spotlightLabel": "近期",
     "switchToMyDataLabel": "打开本体文件夹",

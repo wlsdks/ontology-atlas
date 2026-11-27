@@ -17,7 +17,6 @@
     "contractToggleShow": "显示文件夹检查",
     "vaultPillFolders": "{count} 个文件夹",
     "vaultPillSwap": "切换文件夹",
-    "vaultPillSampleLabel": "内置示例（Atlas 自己的文档）",
     "docListCollapse": "收起文档列表",
     "docListExpand": "展开文档列表",
     "vaultChipLocalPending": "尚无文件夹"
@@ -180,7 +179,6 @@
   "sourceContract": {
     "filesLabel": "文件夹文件",
     "filesLocalValue": "{count} 个本地 md 文件",
-    "filesSampleValue": "{count} 个示例 md 文件",
     "filesBody": "所选文件夹是唯一的事实来源；本体的每处改动都是文件顶部信息块的改动。",
     "filesChip": "本地 md",
     "filesCta": "来源",
@@ -202,9 +200,6 @@
     "closeTitle": "关闭（Esc）",
     "filesTruncated": "文件夹太大，没能完整读取：请选择范围更小的文档文件夹。",
     "filesPruned": "已跳过 {count} 个构建或依赖文件夹（{names}）。"
-  },
-  "advanced": {
-    "sourceServer": "示例"
   },
   "agentSetup": {
     "ariaLabel": "MCP 连接",
