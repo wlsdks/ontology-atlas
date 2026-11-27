@@ -43,3 +43,16 @@ impl Kind {
 pub fn string_value(raw: &RawValue) -> Option<String> {
     serde_json::from_str(raw.get()).ok()
 }
+
+/// The elements of a JSON array, each left as text; `None` when `raw` is not an array.
+pub fn elements(raw: &RawValue) -> Option<Vec<&RawValue>> {
+    serde_json::from_str(raw.get()).ok()
+}
+
+/// The string at `key` of a JSON object; `None` when `raw` is no object, has no such member or the
+/// member is not a string.
+pub fn string_member(raw: &RawValue, key: &str) -> Option<String> {
+    let members: std::collections::HashMap<String, &RawValue> =
+        serde_json::from_str(raw.get()).ok()?;
+    members.get(key).and_then(|member| string_value(member))
+}

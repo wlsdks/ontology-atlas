@@ -159,6 +159,15 @@ impl Surface {
         self.read_tools.contains(name)
     }
 
+    /// Every registered tool, retired ones included, that is not a read tool: the tools that write.
+    pub fn write_tool_names(&self) -> Vec<&str> {
+        self.tools
+            .iter()
+            .filter(|tool| !self.read_tools.contains(&tool.name))
+            .map(|tool| tool.name.as_str())
+            .collect()
+    }
+
     /// The tool that replaces a retired one, in the words the answer's note uses.
     pub fn retired_replacement(&self, name: &str) -> Option<&str> {
         self.retired.get(name).map(String::as_str)

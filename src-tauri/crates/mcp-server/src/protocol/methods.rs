@@ -76,7 +76,7 @@ pub fn handle_request(
         "initialize" => {
             let initialize = initialize(params).map_err(RpcError::InvalidRequest)?;
             let version = negotiated_version(&initialize.protocol_version);
-            session.set_client_capabilities(initialize.capabilities);
+            session.set_client(initialize.capabilities, initialize.client_name);
             written(&InitializeResult {
                 protocol_version: version,
                 capabilities: Capabilities { tools: Empty {} },

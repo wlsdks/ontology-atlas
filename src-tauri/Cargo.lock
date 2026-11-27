@@ -2972,10 +2972,12 @@ dependencies = [
  "indexmap 2.14.0",
  "mcp-server",
  "ontology-graph",
+ "regex",
  "serde",
  "serde_json",
  "source-evidence",
  "strsim",
+ "tempfile",
  "thiserror 2.0.18",
  "vault-document",
 ]

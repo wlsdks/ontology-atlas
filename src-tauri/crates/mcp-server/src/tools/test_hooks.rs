@@ -5,10 +5,14 @@ use std::time::{Duration, Instant};
 
 use serde::Serialize;
 
+use confined_files::{PlanEntry, Reservations, ReservedForPerson};
+
 use crate::answer::ToolOutput;
 use crate::arguments::Arguments;
+use crate::audit::{ActivityContent, ConceptEffect, ShareMeasure, WriteDone, WriteRecord};
 use crate::dispatch::CallContext;
 use crate::error::ToolError;
+use crate::write_checkpoint::WritePermit;
 
 /// A held call gives up after this, so a test that forgets to cancel it still ends.
 const HOLD_LIMIT: Duration = Duration::from_secs(20);
@@ -89,4 +93,50 @@ fn write_marker(arguments: &Arguments) -> Result<ToolOutput, ToolError> {
         .ok_or_else(|| ToolError::invalid("path must be a string."))?;
     std::fs::write(path, "ran").map_err(|error| ToolError::failed(error.to_string()))?;
     ToolOutput::json(&Written { written: true })
+}
+
+/// Writes `text` to the file named by `slug`, the way a real write tool does: its path comes from
+/// the permit and its plan goes through the permit. It says it changed a concept, so the audit
+/// lines have something to record.
+pub fn write_through_checkpoint(
+    permit: &WritePermit<'_>,
+    arguments: &Arguments,
+) -> Result<WriteDone, ToolError> {
+    let slug = arguments
+        .string("slug")
+        .ok_or_else(|| ToolError::invalid("slug must be a string."))?;
+    let text = arguments.string("text").unwrap_or_default();
+    let path = permit
+        .vault()
+        .write_path(&slug)
+        .map_err(|error| ToolError::invalid(error.to_string()))?;
+    let reserved = |_: &std::path::Path, text: &str| {
+        text.contains("review_state: human_decides")
+            .then(|| ReservedForPerson {
+                slug: slug.clone(),
+                note: None,
+            })
+    };
+    let dry_run = arguments.is_dry_run();
+    if !dry_run {
+        permit.apply(
+            vec![PlanEntry::write(path, text)],
+            Reservations::Refuse(&reserved),
+        )?;
+    }
+    let output = ToolOutput::json(&Written { written: !dry_run })?;
+    let record = if dry_run {
+        WriteRecord::Nothing
+    } else {
+        WriteRecord::Wrote {
+            activity: ActivityContent {
+                target: slug.clone(),
+                summary: format!("test write {slug}"),
+                why: arguments.string("why"),
+            },
+            concepts: ConceptEffect::new(vec![slug], vec![], vec![]),
+            share: ShareMeasure::Unchanged,
+        }
+    };
+    Ok(WriteDone { output, record })
 }

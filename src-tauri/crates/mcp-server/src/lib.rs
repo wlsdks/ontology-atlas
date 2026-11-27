@@ -4,6 +4,8 @@
 
 pub mod answer;
 pub mod arguments;
+pub mod audit;
+pub mod consent;
 pub mod dispatch;
 pub mod error;
 pub mod protocol;
@@ -13,3 +15,5 @@ pub mod server;
 pub mod suggestions;
 pub mod surface;
 pub mod tools;
+pub mod write_checkpoint;
+pub mod write_tool;

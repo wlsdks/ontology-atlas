@@ -49,12 +49,24 @@ pub struct Request {
     pub params: Option<Params>,
 }
 
+/// How the client answered a request the server made.
+#[derive(Debug)]
+pub enum ClientReply {
+    Result(Box<RawValue>),
+    Failure { code: i64, message: String },
+}
+
 /// What the session acts on; every other line, and every notification but one, is dropped.
 #[derive(Debug)]
 pub enum Inbound {
     Request(Request),
     /// `notifications/cancelled`, naming the request to cancel.
     Cancel(Id),
+    /// The client's answer to a request the server made (a question to a person).
+    Answer {
+        id: Id,
+        reply: ClientReply,
+    },
 }
 
 /// The top-level members of a message, each left as text.
@@ -103,9 +115,10 @@ fn classify(text: &str) -> Option<Inbound> {
     if string_value(members.get("jsonrpc")?).as_deref() != Some("2.0") {
         return None;
     }
-    // A message with no `method` is an answer to something the server asked; the server asks
-    // nothing yet, so there is no one to give it to.
-    let method = string_value(members.get("method")?)?;
+    let Some(method) = members.get("method") else {
+        return answer_to_server(&members);
+    };
+    let method = string_value(method)?;
     let params = match members.get("params") {
         Some(raw) => Some(read_params(raw)?),
         None => None,
@@ -132,6 +145,31 @@ fn classify(text: &str) -> Option<Inbound> {
             }
         }
     }
+}
+
+/// A message with no `method`: the client's answer to a request the server made. As in the SDK's
+/// schema it is exactly `jsonrpc`, an `id`, and either a `result` object or an `error` with an
+/// integer `code` and a string `message`; anything else is dropped.
+fn answer_to_server(members: &Members<'_>) -> Option<Inbound> {
+    if !only_keys(members, &["jsonrpc", "id", "result", "error"]) {
+        return None;
+    }
+    let id = Id::from_raw(members.get("id")?)?;
+    let reply = match (members.get("result"), members.get("error")) {
+        (Some(result), None) if Kind::of(result) == Kind::Object => {
+            ClientReply::Result(RawValue::from_string(result.get().to_string()).ok()?)
+        }
+        (None, Some(error)) => {
+            let fields: Members<'_> = serde_json::from_str(error.get()).ok()?;
+            let code: i64 = fields.get("code")?.get().parse().ok()?;
+            ClientReply::Failure {
+                code,
+                message: string_value(fields.get("message")?)?,
+            }
+        }
+        _ => return None,
+    };
+    Some(Inbound::Answer { id, reply })
 }
 
 /// The names of the `tools/call` arguments of `text`, as written, that hold a lone surrogate. A line
@@ -163,6 +201,7 @@ fn restore_exact_ids(text: &str, inbound: &mut Inbound) {
                 request.id = id;
             }
         }
+        Inbound::Answer { .. } => {}
         Inbound::Cancel(id) => {
             let exact = members
                 .get("params")
@@ -226,11 +265,42 @@ mod tests {
         );
         for dropped in [
             r#"{"jsonrpc":"2.0","method":"notifications/initialized"}"#,
-            r#"{"jsonrpc":"2.0","id":"a","result":{}}"#,
-            r#"{"jsonrpc":"2.0","id":2,"error":{"code":-1,"message":"no"}}"#,
             r#"{"jsonrpc":"2.0","method":"notifications/cancelled","params":{"requestId":1.5}}"#,
         ] {
             assert!(read_line(dropped).is_none(), "{dropped}");
+        }
+    }
+
+    #[test]
+    fn an_answer_to_a_server_request_is_a_result_object_or_an_error_with_a_code_and_words() {
+        let reply = |line: &str| match read_line(line) {
+            Some(Inbound::Answer { id, reply }) => Some((id, reply)),
+            _ => None,
+        };
+        let (id, result) =
+            reply(r#"{"jsonrpc":"2.0","id":0,"result":{"action":"accept"}}"#).expect("a result");
+        assert_eq!(id, Id::Number(0));
+        assert!(
+            matches!(result, ClientReply::Result(raw) if raw.get() == r#"{"action":"accept"}"#)
+        );
+        let (_, failure) =
+            reply(r#"{"jsonrpc":"2.0","id":"q","error":{"code":-32601,"message":"no"}}"#)
+                .expect("an error");
+        assert!(
+            matches!(failure, ClientReply::Failure { code: -32601, message } if message == "no")
+        );
+        for dropped in [
+            r#"{"jsonrpc":"2.0","id":0,"result":5}"#,
+            r#"{"jsonrpc":"2.0","id":0,"result":[]}"#,
+            r#"{"jsonrpc":"2.0","id":0}"#,
+            r#"{"jsonrpc":"2.0","id":0,"result":{},"error":{"code":1,"message":"x"}}"#,
+            r#"{"jsonrpc":"2.0","id":0,"result":{},"extra":1}"#,
+            r#"{"jsonrpc":"2.0","id":null,"result":{}}"#,
+            r#"{"jsonrpc":"2.0","id":0,"error":{"code":1.5,"message":"x"}}"#,
+            r#"{"jsonrpc":"2.0","id":0,"error":{"code":1}}"#,
+            r#"{"jsonrpc":"2.0","id":0,"error":"no"}"#,
+        ] {
+            assert!(reply(dropped).is_none(), "{dropped}");
         }
     }
 
