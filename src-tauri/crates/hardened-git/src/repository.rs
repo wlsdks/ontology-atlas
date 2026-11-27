@@ -18,36 +18,15 @@ const MAX_BATCH_OUTPUT: usize = 64 * 1024 * 1024;
 const READ_TIMEOUT: Duration = Duration::from_secs(120);
 
 /// Why a read produced no answer.
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum GitReadError {
     /// `git` was not run or did not finish: not installed, hardening failed, too much output,
     /// timed out.
-    Run(GitRunError),
+    #[error(transparent)]
+    Run(#[from] GitRunError),
     /// `git` ran and failed; the text is what it printed.
+    #[error("git {subcommand} failed: {message}")]
     Failed { subcommand: String, message: String },
-    /// A name that would have been an option, an escape or a second line.
-    InvalidName { kind: &'static str, value: String },
-}
-
-impl std::fmt::Display for GitReadError {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Run(error) => error.fmt(formatter),
-            Self::Failed {
-                subcommand,
-                message,
-            } => write!(formatter, "git {subcommand} failed: {message}"),
-            Self::InvalidName { kind, value } => write!(formatter, "not a valid {kind}: {value:?}"),
-        }
-    }
-}
-
-impl std::error::Error for GitReadError {}
-
-impl From<GitRunError> for GitReadError {
-    fn from(error: GitRunError) -> Self {
-        Self::Run(error)
-    }
 }
 
 /// A path inside a repository, `/`-separated, never absolute, never climbing, never an option and
@@ -105,39 +84,6 @@ impl CommitId {
 
     pub fn as_str(&self) -> &str {
         &self.0
-    }
-}
-
-/// A name for `git` to resolve: a branch, a tag, `HEAD`, a commit id. It starts with a letter or
-/// digit, so it can never be read as an option, and holds no whitespace, control character or
-/// `:` (a path in a revision is a [`BlobAt`]).
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Revision(String);
-
-impl Revision {
-    pub fn new(raw: &str) -> Option<Self> {
-        let valid = raw
-            .chars()
-            .next()
-            .is_some_and(|first| first.is_ascii_alphanumeric())
-            && !raw.chars().any(|character| {
-                character.is_whitespace() || character.is_control() || character == ':'
-            });
-        valid.then(|| Self(raw.to_string()))
-    }
-
-    pub fn head() -> Self {
-        Self("HEAD".to_string())
-    }
-
-    pub fn as_str(&self) -> &str {
-        &self.0
-    }
-}
-
-impl From<&CommitId> for Revision {
-    fn from(commit: &CommitId) -> Self {
-        Self(commit.0.clone())
     }
 }
 
@@ -228,8 +174,10 @@ impl Repository {
         }
     }
 
-    /// Starts every run from this environment instead of the process's own, for a caller (a test)
-    /// that must not depend on what the machine configured. The hardening still applies on top.
+    /// Starts every run from this environment instead of the process's own, for a test that must
+    /// not depend on what the machine configured. The hardening still applies on top. Only a
+    /// test build has it, so no program can swap the environment the hardening starts from.
+    #[cfg(feature = "test-hooks")]
     #[must_use]
     pub fn with_environment(mut self, environment: Vec<(OsString, OsString)>) -> Self {
         self.environment = Some(environment);
@@ -590,7 +538,10 @@ fn parse_batch(output: &[u8], count: usize) -> Vec<Option<Vec<u8>>> {
         let Some(size) = size.parse::<usize>().ok().filter(|_| *kind == "blob") else {
             break;
         };
-        let Some(content) = output.get(offset..offset + size) else {
+        let Some(content) = offset
+            .checked_add(size)
+            .and_then(|end| output.get(offset..end))
+        else {
             break;
         };
         *slot = Some(content.to_vec());
@@ -648,22 +599,7 @@ mod tests {
     }
 
     #[test]
-    fn a_revision_and_a_commit_id_cannot_be_read_as_options_or_paths() {
-        for refused in [
-            "",
-            "-x",
-            "--upload-pack=x",
-            " HEAD",
-            "a b",
-            "HEAD:path",
-            "a\nb",
-            "a\0b",
-        ] {
-            assert_eq!(Revision::new(refused), None, "{refused:?}");
-        }
-        assert!(Revision::new("main").is_some());
-        assert!(Revision::new("v1.2.3").is_some());
-        assert!(Revision::new("HEAD~3").is_some());
+    fn a_commit_id_cannot_be_read_as_an_option_or_a_path() {
         let commit = "0123456789abcdef0123456789abcdef01234567";
         assert_eq!(CommitId::new(commit).map(|c| c.0), Some(commit.to_string()));
         assert_eq!(
