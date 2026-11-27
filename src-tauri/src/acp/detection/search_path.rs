@@ -45,6 +45,26 @@ pub(crate) fn path_without_vault_node_modules_bin(
         .unwrap_or_else(|_| path_env.to_string())
 }
 
+/// One PATH serves Git in every vault and repository, so no project's
+/// `node_modules/.bin` may stand in it: a `git-*` or `ssh` planted there would run.
+/// Empty only when no entry survives; the caller then leaves PATH alone.
+pub(crate) fn path_without_relative_or_node_modules_bin(dirs: &[PathBuf]) -> OsString {
+    joined_without_unjoinable(
+        dirs.iter()
+            .filter(|entry| entry.is_absolute() && !is_node_modules_bin(entry)),
+    )
+}
+
+/// An entry holding the separator (a home folder named `a:b`) cannot stand in a PATH.
+/// It is dropped alone: failing the whole join would leave an empty PATH, and an
+/// empty PATH makes the child search its working folder, which may be the vault.
+pub(crate) fn joined_without_unjoinable<'a>(dirs: impl Iterator<Item = &'a PathBuf>) -> OsString {
+    let kept: Vec<&PathBuf> = dirs
+        .filter(|entry| std::env::join_paths([entry]).is_ok())
+        .collect();
+    std::env::join_paths(kept).unwrap_or_default()
+}
+
 pub(crate) fn sanitized_process_path(path_env: &OsStr) -> OsString {
     let kept: Vec<PathBuf> = std::env::split_paths(path_env)
         .filter(|entry| !entry.as_os_str().is_empty() && entry.has_root())

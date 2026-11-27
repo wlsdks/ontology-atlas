@@ -40,6 +40,29 @@ fn a_vault_or_repo_bin_never_reaches_the_adapter_path() {
     let _ = std::fs::remove_dir_all(&base);
 }
 
+/// Fed directly: `candidate_bin_dirs` already drops rootless entries, so only this
+/// clause stops a drive-less Windows entry (`\tools\bin`), which resolves against
+/// whatever drive the working folder sits on.
+#[test]
+fn the_git_search_path_keeps_only_absolute_entries_outside_node_modules_bin() {
+    use std::path::PathBuf;
+    let absolute = std::env::temp_dir().join("atlas-tools").join("bin");
+    let mut dirs = vec![
+        PathBuf::from("relative").join("bin"),
+        std::env::temp_dir()
+            .join("project")
+            .join("node_modules")
+            .join(".bin"),
+        absolute.clone(),
+    ];
+    if cfg!(windows) {
+        dirs.insert(0, PathBuf::from(r"\tools\bin"));
+    }
+    let joined = super::path_without_relative_or_node_modules_bin(&dirs);
+    let entries: Vec<PathBuf> = std::env::split_paths(&joined).collect();
+    assert_eq!(entries, vec![absolute]);
+}
+
 #[cfg(unix)]
 #[test]
 fn the_process_path_sanitizer_drops_empty_and_relative_entries() {
