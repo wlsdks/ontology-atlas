@@ -754,3 +754,12 @@ None — the owner delegated the open points and the lead decided them on 2026-1
   health and `get_concepts`, slice 4), the comparable-code normaliser and import reconciliation
   (slice 6), and `detect-drift` (slice 9); the app's screens still run the shared JavaScript
   comparison.
+- 2026-11-28 (lessons from two public migration reports, Anthropic's Messages API move to Rust,
+  2026-11-25, and claude.com's "How Anthropic runs large-scale code migrations", 2026-07-16):
+  their tests passed about 98% while only about a quarter of real inputs matched, so the corpus is
+  not enough. Before slice 14, a replay step feeds both servers the MCP calls that real agent
+  sessions on this machine made (read from local session transcripts, never sent anywhere; only the
+  call shape and arguments, against the same vault copy) and counts differing answers; every
+  difference is fixed or declared. Every assertion a slice weakened is listed for the final review,
+  because their audit found more than a hundred weakened ones. The one switch stays (no gradual
+  move), since the replay stands in for their shadow traffic.
