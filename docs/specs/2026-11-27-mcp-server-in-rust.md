@@ -156,6 +156,26 @@ children, 982 ms reads files, 361 ms is `lstat`.
 New in Atlas's combination: the product is the files on disk, so after every write the two vault
 folders are compared byte for byte, and no declared change may touch them.
 
+## One way per concern
+
+Every crate and every tool does each of these the one way named here; a second way is a defect
+the reviewer rejects, and changing the way changes it everywhere in the same slice.
+
+| Concern | The one way |
+|---|---|
+| Reading or writing a file | `confined-files` (`VaultRoot`, `SourceRoot`, `write_atomically`); nothing else names `std::fs` (clippy and `family_boundary`) |
+| A write to the vault | a `WritePermit` from `write_checkpoint`: read-only, consent, reservation, one write at a time, then the audit line |
+| Running git | `hardened-git`'s typed reads; no other process spawn |
+| Errors | a `thiserror` enum per crate with typed reasons; the server maps each to one public `errorCode`; no error text parsed for meaning |
+| Arguments | `Arguments::read`/`read_all` into typed structs; refusals as `invalid_arguments` naming the argument |
+| Answers and text an agent reads | `answer-format` (numbers, UTF-16 counts, time as JavaScript wrote it); one answer text written once |
+| Ids | `uuid` v4 |
+| Order of names | one collation in `answer-format`, used by every sorted answer |
+| Concurrency | the protocol's worker threads, `rayon` for data parallel work; no async runtime |
+| Logging | `tracing`, no subscriber in release; standard error only for the lines the contract names |
+| Tests | `cargo nextest`; `proptest` for rules over inputs, `insta` for answer shapes, the differential harness for agent-visible behaviour |
+| Names | a crate, module or file is named for what it owns or exports; a tool's handler is found from the tool's name |
+
 ## Problem and alternatives
 
 The pains, ranked by what the person gets back: (1) LGPL code inside a file Atlas ships; (2) every
@@ -683,3 +703,4 @@ None — the owner delegated the open points and the lead decided them on 2026-1
   the line end and none is ever written, checked from the bytes the program writes; the worker
   stack is 8 MiB on every platform in place of 256 MiB; tests for a vault path with backslashes,
   slashes and a verbatim prefix are `cfg(windows)` and run in CI only.
+- 2026-11-28 (owner: every function and rule must be consistent; different ways for the same thing are hard to manage): added "One way per concern"; reviewers reject a second way.
