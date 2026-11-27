@@ -1880,7 +1880,7 @@ verifier itself and change only when the tool contract changes.
 · step 1 — parser smoke test
 ✓ result: 7 passed, 0 failed
 · step 2 — server boot + tools/list + list_concepts/census/project probe/get_concepts/find_evidence/find_backlinks/query_concepts/limited query_concepts/analyze_repo_structure/infer_imports/find_orphans/destructive dry-runs (vault=<vault>, timeout=<N>ms)
-✓ initialize OK — server ontology-atlas-mcp@2.7.15
+✓ initialize OK — server ontology-atlas-mcp@<version>
 ✓ initialize instructions — tool inventory, construction card, write sequence and guide pointer present
 ✓ tools/list 33/33 (33/33 titled; 19/19 read; 14/14 write; 9/9 destructive; 2/2 idempotent; 33/33 local-only) — absorb_document · add_concepts · add_relations · analyze_repo_structure · compile_ontology · connect_project_source · connection_info · delete_concept · disconnect_project_source · finalize_project_meaning · find_backlinks · find_evidence · find_orphans · get_concepts · get_constellation · git_history · git_snapshot · git_status · infer_imports · inspect_architecture · list_concepts · list_constellations · merge_concepts · patch_concept · query_concepts · query_ontology · read_source · reclassify_concept · remove_relation · rename_concept · replace_relation · validate_vault · validate_wiki
 ✓ tools/list inventory names — missing/extra/duplicate/invalid checks passed
