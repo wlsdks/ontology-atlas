@@ -14,7 +14,7 @@ use std::time::UNIX_EPOCH;
 use serde::Serialize;
 
 use super::agent_processes::{AgentProcess, AgentTool};
-use super::git_read::{git_read, read_admin_file, read_first_line, GitFailure};
+use super::git_read::{base_reference, git_read, read_admin_file, read_first_line, GitFailure};
 use lock::{judge_lock, parse_lock_reason, process_start, LockState, LockTool};
 
 const AUTHOR_MAX_CHARS: usize = 200;
@@ -197,7 +197,8 @@ pub(super) fn read_repository(
     let base_branch = base_branch(&root);
     let base_head = base_branch
         .as_deref()
-        .and_then(|branch| verified_branch_head(&root, branch));
+        .and_then(|branch| base_reference(&root, branch))
+        .and_then(|reference| verified_head(&root, &reference));
     let admin_ids = admin_ids_by_worktree(&common_dir);
     let (host, slug) = remote::origin(&root);
     let repository = slug.unwrap_or_else(|| folder_name(&root));
@@ -362,12 +363,11 @@ fn base_branch(root: &Path) -> Option<String> {
     from_remote
         .into_iter()
         .chain(BASE_CANDIDATES.iter().map(|name| name.to_string()))
-        .find(|name| verified_branch_head(root, name).is_some())
+        .find(|name| base_reference(root, name).is_some())
 }
 
-fn verified_branch_head(root: &Path, branch: &str) -> Option<String> {
-    let reference = format!("refs/heads/{branch}");
-    git_read(root, &["rev-parse", "--verify", "--quiet", &reference])
+fn verified_head(root: &Path, reference: &str) -> Option<String> {
+    git_read(root, &["rev-parse", "--verify", "--quiet", reference])
         .ok()
         .map(|head| head.trim().to_string())
         .filter(|head| !head.is_empty())

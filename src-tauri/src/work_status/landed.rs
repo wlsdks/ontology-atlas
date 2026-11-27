@@ -12,7 +12,7 @@ use serde::Serialize;
 
 use super::activity::{clean_subject, CommitLine};
 use super::fingerprint::common_dir;
-use super::git_read::git_read;
+use super::git_read::{base_reference, git_read};
 
 /// The most changes the page lists; a window rarely has room for more.
 const LANDED_READ: usize = 30;
@@ -93,7 +93,7 @@ pub(super) fn read_landed(root: &Path, base_branch: &str) -> Option<LandedRead> 
         return None;
     }
     let shallow = common_dir(root)?.join("shallow").exists();
-    let reference = format!("refs/heads/{base_branch}");
+    let reference = base_reference(root, base_branch)?;
     let with_stat = log_landed(root, &reference, true);
     // A partial clone cannot diff without fetching; the list still stands without its stat.
     let text = match with_stat {
