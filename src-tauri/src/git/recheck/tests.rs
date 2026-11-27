@@ -119,6 +119,7 @@ fn a_run_commits_only_its_documents_and_leaves_every_other_change_as_it_was() {
     let head = scratch.git(&["rev-parse", "HEAD"]);
     let result = git_recheck_commit(
         vault,
+        "round-1".into(),
         "pass-1".into(),
         head.clone(),
         "docs: recheck 2 concepts against the code".into(),
@@ -162,6 +163,7 @@ fn a_moved_head_changes_no_document() {
     scratch.commit("later.md", "later");
     let result = git_recheck_commit(
         vault,
+        "round-1".into(),
         "pass-2".into(),
         started,
         "docs: recheck 1 concepts against the code".into(),
@@ -197,6 +199,7 @@ fn a_refused_commit_puts_back_what_atlas_wrote_and_leaves_a_persons_edit() {
     let refund = scratch.work.join("docs/capabilities/refund.md");
     let result = commit_documents(
         &opened,
+        "round-1",
         "pass-3",
         &head,
         "docs: recheck 2 concepts against the code",
@@ -239,6 +242,7 @@ fn a_run_atlas_quit_before_committing_is_put_back_when_the_folder_opens() {
     let status_before = scratch.git(&["status", "--porcelain"]);
     opened
         .write_pending(&PendingRun {
+            round_id: "round-1".into(),
             pass_id: "pass-4".into(),
             documents: vec![document("capabilities/pay.md", "pay")],
         })
@@ -250,6 +254,10 @@ fn a_run_atlas_quit_before_committing_is_put_back_when_the_folder_opens() {
     .unwrap();
     let recovered = git_recheck_recover(vault.clone()).unwrap().unwrap();
     assert_eq!(recovered.restored, vec!["capabilities/pay.md".to_string()]);
+    assert_eq!(
+        (recovered.round_id.as_str(), recovered.pass_id.as_str()),
+        ("round-1", "pass-4")
+    );
     assert_eq!(
         read(&scratch, "docs/capabilities/pay.md"),
         STALE.replace("Pay", "pay")
@@ -263,6 +271,7 @@ fn committed_run(scratch: &Scratch, vault: &str) -> String {
     let head = scratch.git(&["rev-parse", "HEAD"]);
     let result = git_recheck_commit(
         vault.to_string(),
+        "round-1".into(),
         "pass-5".into(),
         head,
         "docs: recheck 2 concepts against the code".into(),

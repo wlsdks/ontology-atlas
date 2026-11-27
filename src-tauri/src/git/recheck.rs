@@ -323,6 +323,8 @@ pub struct RecheckDocument {
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct PendingRun {
+    #[serde(default)]
+    round_id: String,
     pass_id: String,
     documents: Vec<RecheckDocument>,
 }
@@ -462,20 +464,30 @@ fn is_pass_id(value: &str) -> bool {
 #[tauri::command(async)]
 pub fn git_recheck_commit(
     vault_path: String,
+    round_id: String,
     pass_id: String,
     expected_head: String,
     message: String,
     documents: Vec<RecheckDocument>,
 ) -> Result<RecheckCommit, String> {
     let vault = open_vault(&vault_path)?;
-    if !is_pass_id(&pass_id) || message.trim().is_empty() {
+    if !is_pass_id(&round_id) || !is_pass_id(&pass_id) || message.trim().is_empty() {
         return Err("recheck-request-invalid".into());
     }
-    commit_documents(&vault, &pass_id, &expected_head, &message, documents, || {})
+    commit_documents(
+        &vault,
+        &round_id,
+        &pass_id,
+        &expected_head,
+        &message,
+        documents,
+        || {},
+    )
 }
 
 fn commit_documents(
     vault: &Vault,
+    round_id: &str,
     pass_id: &str,
     expected_head: &str,
     message: &str,
@@ -507,6 +519,7 @@ fn commit_documents(
         return Ok(result);
     }
     vault.write_pending(&PendingRun {
+        round_id: round_id.to_string(),
         pass_id: pass_id.to_string(),
         documents: taken.iter().map(|(document, _)| document.clone()).collect(),
     })?;
@@ -578,6 +591,7 @@ fn put_back(
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RecheckRecovered {
+    round_id: String,
     pass_id: String,
     restored: Vec<String>,
 }
@@ -609,6 +623,7 @@ pub fn git_recheck_recover(vault_path: String) -> Result<Option<RecheckRecovered
     }
     vault.remove_pending();
     Ok(Some(RecheckRecovered {
+        round_id: pending.round_id,
         pass_id: pending.pass_id,
         restored,
     }))
