@@ -56,6 +56,10 @@ fn a_request_before_initialize_is_answered_as_after() {
 
 #[test]
 fn initialize_negotiates_each_supported_version_and_falls_back_to_the_latest() {
+    let registry: serde_json::Value =
+        serde_json::from_str(include_str!("../surface/registry.json"))
+            .expect("the generated registry");
+    let version = registry["serverVersion"].as_str().expect("serverVersion");
     for (asked, negotiated) in [
         ("2025-11-25", "2025-11-25"),
         ("2025-06-18", "2025-06-18"),
@@ -70,7 +74,7 @@ fn initialize_negotiates_each_supported_version_and_falls_back_to_the_latest() {
         let line = run.lines.first().expect("an answer");
         assert!(
             line.starts_with(&format!(
-                "{{\"result\":{{\"protocolVersion\":\"{negotiated}\",\"capabilities\":{{\"tools\":{{}}}},\"serverInfo\":{{\"name\":\"ontology-atlas-mcp\",\"version\":\"0.13.0\"}},\"instructions\":\"ontology-atlas"
+                "{{\"result\":{{\"protocolVersion\":\"{negotiated}\",\"capabilities\":{{\"tools\":{{}}}},\"serverInfo\":{{\"name\":\"ontology-atlas-mcp\",\"version\":\"{version}\"}},\"instructions\":\"ontology-atlas"
             )),
             "asked {asked:?}: {}",
             &line[..line.len().min(200)]
