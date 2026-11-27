@@ -105,10 +105,12 @@ Nothing, except what a committed list names:
   base-ref check skips it. Every differing leaf of a request is reported, and an entry names one path
   and excuses that path and everything below it (`result.content[0].text#/checks` excuses
   `.../text#/checks/2/status`, not `#/checks/20`; the boundary is a `.`, `[`, `#` or `/`). Name the leaf
-  a row is about. An entry that names `result.content[0].text` whole still works and excuses every
-  leaf of that answer's text, so `pnpm mcp:differential:check` prints how many such whole-answer
-  entries there are; narrow one when the leaves it covers are known. A run also fails on an entry
-  that excuses no difference.
+  a row is about. A tool answer carries the same JSON twice, as the text and as
+  `result.structuredContent`, so a row names both (`result.content[0].text#/edges` and
+  `result.structuredContent.edges`). An entry that names `result.content[0].text` whole still works
+  and excuses every leaf of that answer's text, so `pnpm mcp:differential:check` prints how many such
+  whole-answer entries each list holds (a plain-text refusal counts too); narrow one when the leaves
+  it covers are known. A run also fails on an entry that excuses no difference.
 
 ## Corpus steps
 

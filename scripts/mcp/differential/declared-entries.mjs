@@ -38,5 +38,5 @@ export function describeWholeAnswerEntries(entries) {
   const whole = entries.filter(isWholeAnswerEntry);
   const cases = new Set(whole.map((entry) => entry.case));
   const line = `${whole.length} of ${entries.length} declared entries are whole-answer entries (they excuse every difference inside the answer)`;
-  return whole.length === 0 ? line : `${line}, in ${cases.size} cases`;
+  return whole.length === 0 ? line : `${line}, in ${cases.size} ${cases.size === 1 ? 'case' : 'cases'}`;
 }

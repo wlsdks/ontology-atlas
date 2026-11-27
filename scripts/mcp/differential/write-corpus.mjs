@@ -58,7 +58,9 @@ function main() {
       process.exit(1);
     }
     console.log(`corpus current: ${files.size} cases`);
-    console.log(`declared-changes.json: ${describeWholeAnswerEntries(loadExpectedDifferences(repoRoot, 'node-vs-rust', { everyPlatform: true }))}`);
+    for (const [list, file] of [['node-vs-rust', 'declared-changes.json'], ['locale', 'expect-locale-diff.json'], ['node-vs-bun', 'node-vs-bun-differences.json']]) {
+      console.log(`${file}: ${describeWholeAnswerEntries(loadExpectedDifferences(repoRoot, list, { everyPlatform: true }))}`);
+    }
     return;
   }
   rmSync(corpusRoot, { recursive: true, force: true });
