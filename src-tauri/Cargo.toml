@@ -88,6 +88,11 @@ tauri-plugin-window-state = "2.4.1"
 # directly adds zero new supply-chain surface (same rationale as objc2).
 log = "0.4"
 vault-index = { path = "crates/vault-index" }
+# The one implementation of what the MCP server also answers: git reads and the dating of cited
+# paths and files (`src/git/evidence/`). Neither depends on tauri or an async runtime.
+hardened-git = { path = "crates/hardened-git" }
+source-scan = { path = "crates/source-scan" }
+confined-files = { path = "crates/confined-files" }
 # The built-in bge-m3 model: candle reads `pytorch_model.bin` without executing it; tokenizers and
 # safetensors are the copies candle already resolves (`fancy-regex` keeps them pure Rust); url is
 # already in the graph through tauri and parses the download's redirect targets.

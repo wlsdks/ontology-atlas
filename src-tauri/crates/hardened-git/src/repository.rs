@@ -322,8 +322,8 @@ impl Repository {
 
     /// The commits, newest first up to `max_commits`, that touched any of `paths`, each with the
     /// touched paths among them (a folder matches the files below it). Renames are not followed,
-    /// so a rename is a deletion and an addition. Before the first commit the answer is a
-    /// [`GitReadError::Failed`], which a caller dating files reads as no history.
+    /// so a rename is a deletion and an addition. Before the first commit git refuses, and the
+    /// answer is a [`GitReadError::Failed`]; a caller asks only when `HEAD` names a commit.
     pub fn touch_history(
         &self,
         paths: &[RepoPath],

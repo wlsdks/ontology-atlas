@@ -140,24 +140,10 @@ fn a_secret_file_is_never_read_as_asked_or_through_a_link() {
 }
 
 #[test]
-fn working_files_share_one_budget_and_each_is_read_once() {
+fn one_working_file_serves_every_pair_that_names_it() {
     let scratch = Scratch::new("evidence-text-budget");
     scratch.commit("a.ts", "aaaaaaaa");
     scratch.commit("b.ts", "bbbbbbbb");
-    let root = std::fs::canonicalize(&scratch.work).unwrap();
-    let mut budget = 12;
-    assert_eq!(
-        read_working(&root, "a.ts", &mut budget).as_deref(),
-        Some("aaaaaaaa")
-    );
-    assert_eq!(budget, 4);
-    assert_eq!(
-        read_working(&root, "b.ts", &mut budget),
-        None,
-        "over what is left"
-    );
-    assert_eq!(budget, 4);
-
     let first = scratch.git(&["rev-parse", "HEAD~1"]);
     let head = scratch.git(&["rev-parse", "HEAD"]);
     let pairs = read_text_pairs(
@@ -167,37 +153,4 @@ fn working_files_share_one_budget_and_each_is_read_once() {
     assert!(pairs
         .iter()
         .all(|pair| pair.after.as_deref() == Some("aaaaaaaa")));
-}
-
-#[test]
-fn hidden_or_credential_names_match_the_mcp_rule() {
-    for refused in [
-        ".env",
-        "credentials.json",
-        "secrets",
-        "private-key.txt",
-        "id_rsa",
-        "a.pem",
-        "A.KEY",
-        "store.keystore",
-    ] {
-        assert!(hidden_or_credential_segment(refused), "{refused}");
-    }
-    for read in [
-        "pay.ts",
-        "secrets.prod.json",
-        "keys.ts",
-        "credential_store.rs",
-        "pem",
-    ] {
-        assert!(!hidden_or_credential_segment(read), "{read}");
-    }
-}
-
-#[test]
-fn blob_size_reads_only_a_blob_header() {
-    assert_eq!(blob_size("0123abcd blob 12"), Some(12));
-    assert_eq!(blob_size("0123abcd tree 12"), None);
-    assert_eq!(blob_size("abc:x blob 5 missing"), None);
-    assert_eq!(blob_size("HEAD:pay.ts missing"), None);
 }

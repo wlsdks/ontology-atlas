@@ -169,6 +169,30 @@ fn every_read_answers_what_git_says_about_a_repository() {
     assert_eq!(listed, ["docs/guide.md", "note.md", "untracked file.md"]);
 }
 
+/// Git for Windows prints the top of a repository as `C:/Users/me/repo` (forward slashes), and
+/// `std::fs::canonicalize` answers a verbatim `\\?\` path on Windows (its documentation), which
+/// Windows tools and a person comparing paths do not expect. The top must come back as the plain
+/// path both sides name, with no prefix and no line ending left on it.
+#[cfg(windows)]
+#[test]
+fn a_windows_top_level_is_a_plain_path_with_no_prefix_or_line_ending() {
+    let base = TempDir::new("typed-windows-top");
+    let repo = new_repository(&base, "repo");
+    let facts = repository(&repo)
+        .facts()
+        .expect("facts")
+        .expect("inside a repository");
+    let printed = facts.top_level.to_string_lossy().into_owned();
+    assert!(
+        !printed.contains('\r') && !printed.starts_with(r"\\?\"),
+        "{printed}"
+    );
+    assert_eq!(
+        facts.top_level,
+        dunce::canonicalize(&repo).expect("the real path")
+    );
+}
+
 #[test]
 fn a_folder_outside_a_repository_has_no_facts_head_or_working_tree() {
     let base = TempDir::new("typed-none");
