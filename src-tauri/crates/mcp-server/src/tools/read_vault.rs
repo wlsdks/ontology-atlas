@@ -1,5 +1,6 @@
-//! The vault a read tool answers from, read afresh for the call: nothing is kept from an earlier
-//! one, so a file changed behind the server is seen by the next call.
+//! The vault a read tool answers from, for the call: each file is read again unless it is as an
+//! earlier call read it (see `vault_document::DocumentCache`), so a file changed behind the server
+//! is seen by the next call.
 
 use confined_files::VaultRoot;
 use vault_document::LoadedVault;
@@ -14,7 +15,8 @@ pub struct ReadVault {
 
 pub fn read_vault(context: &CallContext<'_>) -> Result<ReadVault, ToolError> {
     let root = open_root(context)?;
-    let vault = LoadedVault::load(&root);
+    let vault = LoadedVault::load(&root, context.documents())
+        .map_err(|error| ToolError::failed(error.to_string()))?;
     Ok(ReadVault { root, vault })
 }
 

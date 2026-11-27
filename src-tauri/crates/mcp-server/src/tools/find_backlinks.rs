@@ -1,6 +1,6 @@
 //! `find_backlinks`: who points at a node, asked before a rename, a merge or a delete.
 
-use answer_format::utf16;
+use answer_format::collation::compare_text;
 use serde::Serialize;
 use vault_document::{find_backlinks, Backlink, ReferenceIndex};
 
@@ -23,8 +23,9 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
     let read = read_vault(context)?;
     let documents = read.vault.documents();
     let index = ReferenceIndex::new(documents);
-    let mut matches = find_backlinks(documents, &index, &slug);
-    matches.sort_by(|left, right| utf16::compare(left.slug, right.slug));
+    let mut matches = find_backlinks(documents, &index, &slug)
+        .map_err(|error| ToolError::failed(error.to_string()))?;
+    matches.sort_by(|left, right| compare_text(left.slug, right.slug));
     ToolOutput::json(&Backlinks {
         target: &slug,
         total: matches.len(),

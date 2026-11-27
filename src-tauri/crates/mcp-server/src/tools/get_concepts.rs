@@ -10,9 +10,8 @@ use vault_document::schema::node_uid_issue;
 use vault_document::{
     dependency_refs, describe_body_delivery, describe_review, find_graph_references, neighbor_refs,
     normalized_refs, relation_note_for, resolve_uid, slug_not_found_hint, suggest_similar_slugs,
-    validate_document, BodyDelivery, BodyMode, Issue, LoadedDocument, LoadedVault, NamedReadError,
-    ReferenceIndex, SlugLookup, VaultIssues, EXCERPT_MAX_CHARS, FULL_BODY_MAX_CHARS,
-    FULL_BODY_MAX_DOCUMENTS,
+    BodyDelivery, BodyMode, Issue, LoadedDocument, LoadedVault, NamedReadError, ReferenceIndex,
+    SlugLookup, VaultIssues, EXCERPT_MAX_CHARS, FULL_BODY_MAX_CHARS, FULL_BODY_MAX_DOCUMENTS,
 };
 
 use super::argument_checks::{argument, non_blank_text};
@@ -98,6 +97,8 @@ struct Edge {
 /// One node read, with what it says about itself and what the vault finds wrong with it.
 struct Found {
     document: LoadedDocument,
+    /// The body of the version the rest was read from.
+    body: String,
     mode: BodyMode,
     delivery: BodyDelivery,
     edges: Vec<Edge>,
@@ -124,10 +125,7 @@ impl Serialize for Found {
         map.serialize_entry("bodyInfo", &self.delivery.info)?;
         map.serialize_entry("neighbors", &Neighbors::of(frontmatter))?;
         map.serialize_entry("outgoingEdges", &self.edges)?;
-        map.serialize_entry(
-            "review",
-            &describe_review(frontmatter, &self.document.document().body()),
-        )?;
+        map.serialize_entry("review", &describe_review(frontmatter, &self.body))?;
         if let Some(mtime) = self.document.modified_ms() {
             map.serialize_entry("mtime", &mtime)?;
         }
@@ -220,7 +218,7 @@ fn unopenable(error: &NamedReadError) -> ToolError {
             ToolError::invalid(raw_source_issue(raw_source))
         }
         NamedReadError::Slug(SlugError::OutsideRootThroughLink { .. })
-        | NamedReadError::Unreadable { .. } => ToolError::failed(error.to_string()),
+        | NamedReadError::File(_) => ToolError::failed(error.to_string()),
         NamedReadError::Slug(other) => ToolError::invalid(other.to_string()),
     }
 }
@@ -263,16 +261,16 @@ impl Request<'_> {
         let document = LoadedVault::read_named(self.root, &canonical)
             .map_err(|error| unopenable(&error))?
             .ok_or_else(missing)?;
-        Ok(self.describe(document))
+        self.describe(document)
     }
 
-    fn describe(&self, document: LoadedDocument) -> Found {
+    fn describe(&self, document: LoadedDocument) -> Result<Found, ToolError> {
         let slug = document.slug();
-        let mut warnings = if document.document().raw().is_empty() {
-            Vec::new()
-        } else {
-            validate_document(document.document(), None)
-        };
+        let body = document
+            .body()
+            .map_err(|error| ToolError::failed(error.to_string()))?
+            .into_owned();
+        let mut warnings = document.issues().to_vec();
         if document.node_kind().is_none() {
             warnings.push(Issue::warning("not-a-graph-node", NOT_A_NODE));
         }
@@ -294,19 +292,15 @@ impl Request<'_> {
                 "Only the first prose paragraph was returned. Call get_concepts({{ slugs: [\"{slug}\"], body: \"full\" }}) for the whole body (definition / evidence / confidence / in-scope-out-of-scope sections live there)."
             ),
         };
-        let delivery = describe_body_delivery(
-            &document.document().body(),
-            self.mode,
-            EXCERPT_MAX_CHARS,
-            Some(&hint),
-        );
-        Found {
+        let delivery = describe_body_delivery(&body, self.mode, EXCERPT_MAX_CHARS, Some(&hint));
+        Ok(Found {
             mode: self.mode,
             delivery,
             edges,
             warnings,
+            body,
             document,
-        }
+        })
     }
 }
 

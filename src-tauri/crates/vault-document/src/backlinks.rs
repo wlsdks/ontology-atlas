@@ -4,7 +4,7 @@
 use serde::Serialize;
 
 use crate::frontmatter::Value;
-use crate::loaded_vault::{DisplayTitle, LoadedDocument};
+use crate::loaded_document::{DisplayTitle, FileReadError, LoadedDocument};
 use crate::reference_index::ReferenceIndex;
 use crate::relations::neighbor_refs;
 use crate::schema::is_node_uid;
@@ -30,27 +30,14 @@ pub struct Backlink<'a> {
     pub matched_in_body: Option<bool>,
 }
 
-/// Whether `body` links to `needle` as a wiki link (`[[n]]`, `[[n#`, `[[n|`) or a Markdown link to
-/// its file (`(n.md`, `/n.md`).
-fn body_links_to(body: &str, needle: &str) -> bool {
-    [
-        format!("[[{needle}]]"),
-        format!("[[{needle}#"),
-        format!("[[{needle}|"),
-        format!("({needle}.md"),
-        format!("/{needle}.md"),
-    ]
-    .iter()
-    .any(|form| body.contains(form.as_str()))
-}
-
 /// Every document that points at `target_slug`, in the order the vault lists them. The target is the
-/// document its name resolves to, when it names exactly one.
+/// document its name resolves to, when it names exactly one. A body is asked about only through
+/// its links ([`LoadedDocument::links_to`]); a body the list cannot speak for is read again.
 pub fn find_backlinks<'a>(
     documents: &'a [LoadedDocument],
     index: &ReferenceIndex<'a>,
     target_slug: &str,
-) -> Vec<Backlink<'a>> {
+) -> Result<Vec<Backlink<'a>>, FileReadError> {
     let resolved_target = index.resolve(target_slug).unwrap_or(target_slug);
     let mut needles: Vec<&str> = Vec::new();
     for needle in [
@@ -79,10 +66,13 @@ pub fn find_backlinks<'a>(
                 matched_keys.push(neighbor.key);
             }
         }
-        let body_hit = {
-            let body = document.document().body();
-            needles.iter().any(|needle| body_links_to(&body, needle))
-        };
+        let mut body_hit = false;
+        for needle in &needles {
+            if document.links_to(needle)? {
+                body_hit = true;
+                break;
+            }
+        }
         if matched_keys.is_empty() && !body_hit {
             continue;
         }
@@ -104,5 +94,5 @@ pub fn find_backlinks<'a>(
             matched_in_body: body_hit.then_some(true),
         });
     }
-    matches
+    Ok(matches)
 }

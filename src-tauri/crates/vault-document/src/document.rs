@@ -69,10 +69,15 @@ struct EntrySpan {
 impl Document {
     /// Reads a file from its bytes. Bytes that are not UTF-8 become U+FFFD, as Node decodes them,
     /// and the document says so ([`Document::is_exact`]).
-    pub fn from_bytes(bytes: &[u8]) -> Self {
-        match std::str::from_utf8(bytes) {
-            Ok(text) => Self::parse(text.to_string(), true),
-            Err(_) => Self::parse(String::from_utf8_lossy(bytes).into_owned(), false),
+    ///
+    /// A `Vec` is read in place; a slice is copied once.
+    pub fn from_bytes(bytes: impl Into<Vec<u8>>) -> Self {
+        match String::from_utf8(bytes.into()) {
+            Ok(text) => Self::parse(text, true),
+            Err(error) => Self::parse(
+                String::from_utf8_lossy(error.as_bytes()).into_owned(),
+                false,
+            ),
         }
     }
 
@@ -162,6 +167,11 @@ impl Document {
 
     pub fn frontmatter(&self) -> &Frontmatter {
         &self.frontmatter
+    }
+
+    /// The frontmatter alone, once the rest has been used.
+    pub fn into_frontmatter(self) -> Frontmatter {
+        self.frontmatter
     }
 
     pub fn diagnostics(&self) -> &[Diagnostic] {

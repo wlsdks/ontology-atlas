@@ -34,10 +34,14 @@ const FAMILY: [(&str, &[&str]); 5] = [
         "answer-format",
         &[
             "icu_collator",
+            "icu_collections",
             "icu_locale_core",
+            "icu_normalizer",
+            "icu_provider",
             "ryu-js",
             "serde",
             "serde_json",
+            "zerovec",
         ],
     ),
     (
@@ -48,6 +52,7 @@ const FAMILY: [(&str, &[&str]); 5] = [
             "icu_normalizer",
             "indexmap",
             "pulldown-cmark",
+            "rayon",
             "regex",
             "serde",
             "serde_json",

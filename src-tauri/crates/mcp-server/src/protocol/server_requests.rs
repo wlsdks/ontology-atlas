@@ -196,10 +196,7 @@ mod tests {
 
     fn session(output: Written) -> Arc<Session> {
         Session::new(
-            Config {
-                modes: Modes::FULL,
-                vault_root: std::env::temp_dir(),
-            },
+            Config::at_vault(Modes::FULL, std::env::temp_dir()),
             Box::new(output),
         )
     }
@@ -362,10 +359,7 @@ mod tests {
             }
         }
         let session = Session::new(
-            Config {
-                modes: Modes::FULL,
-                vault_root: std::env::temp_dir(),
-            },
+            Config::at_vault(Modes::FULL, std::env::temp_dir()),
             Box::new(Closed),
         );
         let cancelled = AtomicBool::new(false);

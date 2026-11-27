@@ -357,7 +357,7 @@ for (const vault of ['storefront', 'edge-names', 'edge-bytes', 'edge-hostile', '
 const FILTERS = [
   'kind=capability', 'kind=domain', 'kind!=capability', 'kind=capability AND has(elements)', 'kind=capability AND NOT has(elements)',
   'has(dependencies)', 'NOT has(dependencies)', 'kind=domain OR kind=project', 'slug=capabilities/cart', 'title="Shopping Cart"',
-  'title=\'Shopping Cart\'', 'KIND=Capability', 'kind = capability', 'domain=domains/order', 'domain=domains/\uacb0\uc81c',
+  'title=\'Shopping Cart\'', 'KIND=Capability', 'kind = capability', 'domain=domains/order',
   'title=\uacb0\uc81c', 'title="\uc8fc\ubb38 \ucde8\uc18c"', 'has(review_state)', 'kind=capability AND domain=domains/order AND NOT has(elements)',
   'kind=capability OR kind=domain AND has(elements)', 'NOT NOT kind=domain', '', 'kind', 'has()', 'has(x', 'kind=capability AND', 'slug=*', 'title=""',
   'kind=capability AND kind=domain', 'has(__proto__)', 'has(constructor)', 'kind=\u00e9', 'kind="unterminated',
@@ -371,6 +371,27 @@ for (const vault of ['storefront', 'edge-names', 'edge-bytes', 'miniature-repo',
     call('query_concepts', { filter: 'kind=capability', limit: 0 }),
   ]);
 }
+// A domain named in Hangul matches rows in this vault, so its zero-row hint is not in question.
+add('vault-read', 'query-concepts-hangul-domain', { vault: 'edge-names' }, [
+  call('query_concepts', { filter: 'domain=domains/\uacb0\uc81c' }),
+  call('query_concepts', { filter: 'domain=domains/\uacb0\uc81c AND kind=capability' }),
+]);
+// A filter is read by recursion, so the Rust server refuses one nested deeper than 32 levels of NOT
+// and brackets or holding more than 256 clauses; the JavaScript server reads any until its stack ends.
+add('vault-read', 'query-concepts-filter-bounds', { vault: 'storefront' }, [
+  call('query_concepts', { filter: `${'NOT '.repeat(32)}kind=domain` }),
+  call('query_concepts', { filter: `${'NOT '.repeat(33)}kind=domain` }),
+  call('query_concepts', { filter: Array(256).fill('kind=domain').join(' AND ') }),
+  call('query_concepts', { filter: Array(257).fill('kind=domain').join(' AND ') }),
+]);
+// The names a zero-row hint reports come from the parsed filter: a name inside a quoted title is not a
+// kind, and a domain with a non-ASCII letter is named whole.
+add('vault-read', 'query-concepts-zero-row-names', { vault: 'storefront' }, [
+  call('query_concepts', { filter: 'title="kind=widget" AND kind=domain' }),
+  call('query_concepts', { filter: 'domain=domains/\uc5c6\ub294-\ub3c4\uba54\uc778' }),
+  call('query_concepts', { filter: 'kind=domain AND domain=domains/nothing-here' }),
+  call('query_concepts', { filter: 'NOT kind=domain AND kind=capability AND slug=x' }),
+]);
 add('vault-read', 'connection-info-on-each-vault', { vault: 'storefront' }, [call('connection_info', {})]);
 for (const vault of ['edge-names', 'edge-hostile', 'miniature-repo', 'library', 'atlas-ontology', 'empty']) {
   add('vault-read', `connection-info-${vault}`, { vault }, [call('connection_info', {}), call('connection_info', { guide: 'construction' })]);

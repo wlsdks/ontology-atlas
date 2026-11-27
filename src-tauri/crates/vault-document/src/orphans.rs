@@ -5,7 +5,7 @@ use std::collections::HashSet;
 use serde::Serialize;
 
 use crate::frontmatter::Value;
-use crate::loaded_vault::{DisplayTitle, LoadedDocument};
+use crate::loaded_document::{DisplayTitle, LoadedDocument};
 use crate::reference_index::ReferenceIndex;
 use crate::relations::neighbor_refs;
 

@@ -5,6 +5,7 @@
 use std::path::PathBuf;
 
 use confined_files::confined_root::{ensure_vault_root, resolve_path, VaultRootError};
+use hardened_git::Repository;
 
 use answer_format::whitespace::trim;
 
@@ -96,6 +97,24 @@ impl Modes {
 pub struct Config {
     pub modes: Modes,
     pub vault_root: PathBuf,
+    /// The code repository the vault belongs to, which `connection_info` reports.
+    pub repo_root: PathBuf,
+    /// How each root was found: the variable that named it, `git.rev-parse`, or `process.cwd`.
+    pub vault_resolution: &'static str,
+    pub repo_resolution: &'static str,
+}
+
+/// An environment variable that is set to something: an empty one counts as unset, as it does for
+/// the launcher that exports it blank.
+fn set_variable(lookup: &impl Fn(&str) -> Option<String>, name: &str) -> Option<PathBuf> {
+    lookup(name)
+        .filter(|value| !value.is_empty())
+        .map(PathBuf::from)
+}
+
+/// The top of the repository `folder` is in, when it is in one.
+fn repository_top(folder: &std::path::Path) -> Option<PathBuf> {
+    Repository::at(folder).top_level().ok().flatten()
 }
 
 impl Config {
@@ -107,15 +126,50 @@ impl Config {
         cwd: &std::path::Path,
     ) -> Result<Self, StartupError> {
         let modes = Modes::from_lookup(&lookup)?;
-        let vault_root = match lookup("OATLAS_VAULT").filter(|value| !value.is_empty()) {
-            Some(value) => resolve_path(cwd, std::path::Path::new(&value)),
+        let named_vault = set_variable(&lookup, "OATLAS_VAULT");
+        let vault_resolution = if named_vault.is_some() {
+            "OATLAS_VAULT"
+        } else {
+            "process.cwd"
+        };
+        let vault_root = match &named_vault {
+            Some(value) => resolve_path(cwd, value),
             None => resolve_path(cwd, cwd),
         };
         ensure_vault_root(&vault_root).map_err(|reason| StartupError::VaultRoot {
             reason,
             root: vault_root.clone(),
         })?;
-        Ok(Self { modes, vault_root })
+        // The repository root is the one the launcher named, else the repository the vault is in,
+        // else the one the server was started in, else the folder it was started in. It is found
+        // once, here, and never again.
+        let named_repository = set_variable(&lookup, "OATLAS_REPO_ROOT");
+        let (repo_root, repo_resolution) = match named_repository {
+            Some(named) => (named, "OATLAS_REPO_ROOT"),
+            None => match repository_top(&vault_root).or_else(|| repository_top(cwd)) {
+                Some(found) => (found, "git.rev-parse"),
+                None => (cwd.to_path_buf(), "process.cwd"),
+            },
+        };
+        Ok(Self {
+            modes,
+            repo_root: resolve_path(cwd, &repo_root),
+            vault_root,
+            vault_resolution,
+            repo_resolution,
+        })
+    }
+
+    /// A configuration for the vault folder alone: the vault is also the repository root, and the
+    /// environment is not read. For tests and for a program that embeds the server.
+    pub fn at_vault(modes: Modes, vault_root: PathBuf) -> Self {
+        Self {
+            modes,
+            repo_root: vault_root.clone(),
+            vault_root,
+            vault_resolution: "OATLAS_VAULT",
+            repo_resolution: "OATLAS_REPO_ROOT",
+        }
     }
 
     pub fn from_environment() -> Result<Self, StartupError> {
@@ -258,5 +312,50 @@ mod tests {
         let cwd = std::env::temp_dir();
         let config = Config::from_lookup(|_| None, &cwd).expect("the temp folder exists");
         assert_eq!(config.vault_root, resolve_path(&cwd, &cwd));
+    }
+
+    #[test]
+    fn a_named_repository_root_wins_and_is_resolved_against_the_working_folder() {
+        let cwd = std::env::temp_dir();
+        let config = Config::from_lookup(
+            |name| (name == "OATLAS_REPO_ROOT").then(|| "elsewhere".to_string()),
+            &cwd,
+        )
+        .expect("the temp folder exists");
+        assert_eq!(config.repo_root, cwd.join("elsewhere"));
+        assert_eq!(config.repo_resolution, "OATLAS_REPO_ROOT");
+        // An empty name is no name.
+        let config =
+            Config::from_lookup(|name| (name == "OATLAS_REPO_ROOT").then(String::new), &cwd)
+                .expect("the temp folder exists");
+        assert_ne!(config.repo_resolution, "OATLAS_REPO_ROOT");
+    }
+
+    #[test]
+    fn a_vault_inside_a_repository_finds_the_top_of_that_repository_once() {
+        let here = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        let config = Config::from_lookup(
+            |name| (name == "OATLAS_VAULT").then(|| here.to_string_lossy().into_owned()),
+            &std::env::temp_dir(),
+        )
+        .expect("the crate folder exists");
+        assert_eq!(config.repo_resolution, "git.rev-parse");
+        assert!(here.starts_with(
+            config
+                .repo_root
+                .canonicalize()
+                .expect("the top of the repository exists")
+        ));
+        assert!(config.repo_root.join(".git").exists());
+        assert_ne!(config.repo_root, here, "the crate is not the top");
+    }
+
+    #[test]
+    fn outside_any_repository_the_root_is_the_working_folder() {
+        let folder = tempfile::tempdir().expect("a temporary folder");
+        let cwd = folder.path();
+        let config = Config::from_lookup(|_| None, cwd).expect("the folder exists");
+        assert_eq!(config.repo_resolution, "process.cwd");
+        assert_eq!(config.repo_root, cwd);
     }
 }

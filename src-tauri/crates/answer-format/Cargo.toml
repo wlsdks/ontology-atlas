@@ -9,9 +9,16 @@ publish = false
 [dependencies]
 # The order `Intl.Collator('en')` gives, which every list the server sorts follows. Unicode-3.0; on
 # the ICU 2.2 line the workspace already links (`icu_normalizer` 2.2.0), so the ICU crates stay one
-# version. `compiled_data` bakes the collation tables in: no data file and no network at run time.
-icu_collator = { version = "=2.2.0", default-features = false, features = ["compiled_data"] }
+# version. Not `compiled_data`: that bakes the tailorings of every language (about 3 MB of tables
+# for Chinese, Swedish and a hundred more) and English uses none of them. The tables are generated
+# for English alone in `src/collation_data/` (its README says how), and the collator is built on
+# them, so there is no data file and no network at run time.
+icu_collator = { version = "=2.2.0", default-features = false }
+icu_collections = { version = "=2.2.0", default-features = false }
 icu_locale_core = { version = "=2.2.0", default-features = false }
+icu_normalizer = { version = "=2.2.0", default-features = false }
+icu_provider = { version = "=2.2.0", default-features = false, features = ["baked"] }
+zerovec = { version = "0.11", default-features = false }
 # Writes a number as `Number.prototype.toString` does. `Apache-2.0 OR BSL-1.0`; nothing under it.
 ryu-js = "1"
 serde = { version = "1", features = ["derive"] }

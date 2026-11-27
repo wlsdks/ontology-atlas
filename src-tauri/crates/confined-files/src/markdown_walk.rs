@@ -42,8 +42,30 @@ pub(crate) fn list_markdown_files(root: &Path) -> Vec<ConfinedPath> {
         .filter(|entry| entry.file_name().to_string_lossy().ends_with(".md"))
         .map(walkdir::DirEntry::into_path)
         .collect();
-    found.sort_by(|left, right| utf16_order(&left.to_string_lossy(), &right.to_string_lossy()));
+    sort_utf16(&mut found);
     found.into_iter().map(ConfinedPath::new).collect()
+}
+
+/// Sorts `paths` by UTF-16 code unit. The byte order of UTF-8 is the same order unless a path holds
+/// a character from U+E000 up to U+FFFF (which UTF-16 puts after the astral characters that UTF-8
+/// puts after it), so the common listing is sorted as bytes; one that has such a character is
+/// sorted on keys of UTF-16 units made once per path.
+fn sort_utf16(paths: &mut [PathBuf]) {
+    let beyond_astral_lead = |path: &PathBuf| {
+        path.to_string_lossy()
+            .chars()
+            .any(|character| ('\u{e000}'..='\u{ffff}').contains(&character))
+    };
+    if paths.iter().any(beyond_astral_lead) {
+        paths
+            .sort_by_cached_key(|path| path.to_string_lossy().encode_utf16().collect::<Vec<u16>>());
+    } else {
+        paths.sort_unstable_by(|left, right| {
+            left.as_os_str()
+                .as_encoded_bytes()
+                .cmp(right.as_os_str().as_encoded_bytes())
+        });
+    }
 }
 
 fn keeps_entry(entry: &walkdir::DirEntry) -> bool {
@@ -69,6 +91,30 @@ fn keeps_entry(entry: &walkdir::DirEntry) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_byte_sort_and_the_unit_sort_agree_unless_a_path_holds_a_character_from_u_e000_up() {
+        let sorted = |names: &[&str]| {
+            let mut paths: Vec<PathBuf> = names.iter().map(PathBuf::from).collect();
+            sort_utf16(&mut paths);
+            paths
+                .iter()
+                .map(|path| path.to_string_lossy().into_owned())
+                .collect::<Vec<_>>()
+        };
+        let by_units = |names: &[&str]| {
+            let mut names: Vec<String> = names.iter().map(ToString::to_string).collect();
+            names.sort_by(|left, right| utf16_order(left, right));
+            names
+        };
+        for names in [
+            vec!["b/a.md", "a/b.md", "a b/c.md", "a-c/d.md", "a/b/c.md"],
+            vec!["\u{1F600}.md", "z.md", "\u{FF5E}.md", "\u{D7FF}.md"],
+            vec!["\u{1F600}/a.md", "\u{AC00}/a.md", "caf\u{e9}.md", "cafe.md"],
+        ] {
+            assert_eq!(sorted(&names), by_units(&names), "{names:?}");
+        }
+    }
 
     #[test]
     fn the_order_is_utf16_not_utf8() {

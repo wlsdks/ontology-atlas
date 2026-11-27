@@ -13,28 +13,25 @@
 //! Equality keys are `kind`, `domain`, `slug`, `title` and `created_by`; `has(key)` takes any
 //! relation key. Example: `(kind=domain OR kind=capability) AND has(elements)`.
 
+use std::cell::Cell;
 use std::fmt::Write as _;
 
 use answer_format::whitespace::{is_whitespace, trim};
 
 use crate::frontmatter::Value;
-use crate::loaded_vault::LoadedDocument;
-use crate::relations::GRAPH_ARRAY_KEYS;
-
-/// The kinds a filter may name, and the ones a list may be narrowed to.
-pub const NODE_KINDS: [&str; 6] = [
-    "project",
-    "domain",
-    "capability",
-    "element",
-    "document",
-    "vault-readme",
-];
+use crate::loaded_document::LoadedDocument;
+use crate::schema::{GRAPH_ARRAY_KEYS, KNOWN_KINDS};
 
 const EQUALITY_KEYS: [&str; 5] = ["kind", "domain", "slug", "title", "created_by"];
 
-/// Why a filter was refused. The two kinds are told apart so an agent that named a value the filter
-/// does not allow is given what is allowed, and one that wrote something unreadable is not.
+/// How deeply `NOT` and brackets may nest, and how many clauses a filter may hold. A filter is read
+/// and tried by recursion, so a bound on both keeps a hostile one from using up the stack.
+pub const MAX_NESTING: usize = 32;
+pub const MAX_CLAUSES: usize = 256;
+
+/// Why a filter was refused. The kinds are told apart so an agent that named a value the filter
+/// does not allow is given what is allowed, one that wrote something unreadable is not, and one
+/// that wrote more than the filter holds is told the bound.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FilterError {
     /// A key or kind outside what the filter allows.
@@ -43,6 +40,8 @@ pub enum FilterError {
         received: String,
         allowed: &'static [&'static str],
     },
+    /// A filter nested deeper, or with more clauses, than [`MAX_NESTING`] and [`MAX_CLAUSES`].
+    TooLarge(String),
     /// Anything else the reader could not read.
     Unreadable(String),
 }
@@ -217,6 +216,7 @@ fn is_key(text: &str) -> bool {
 
 struct Reader {
     tokens: Vec<Token>,
+    clauses: Cell<usize>,
 }
 
 impl Reader {
@@ -224,51 +224,77 @@ impl Reader {
         self.tokens.get(position)
     }
 
-    fn or(&self, position: usize) -> Result<(Node, usize), FilterError> {
-        let (mut left, mut next) = self.and(position)?;
+    fn or(&self, position: usize, depth: usize) -> Result<(Node, usize), FilterError> {
+        let (mut left, mut next) = self.and(position, depth)?;
         while self.at(next) == Some(&Token::Or) {
-            let (right, after) = self.and(next + 1)?;
+            let (right, after) = self.and(next + 1, depth)?;
             left = Node::Or(Box::new(left), Box::new(right));
             next = after;
         }
         Ok((left, next))
     }
 
-    fn and(&self, position: usize) -> Result<(Node, usize), FilterError> {
-        let (mut left, mut next) = self.atom(position)?;
+    fn and(&self, position: usize, depth: usize) -> Result<(Node, usize), FilterError> {
+        let (mut left, mut next) = self.atom(position, depth)?;
         while self.at(next) == Some(&Token::And) {
-            let (right, after) = self.atom(next + 1)?;
+            let (right, after) = self.atom(next + 1, depth)?;
             left = Node::And(Box::new(left), Box::new(right));
             next = after;
         }
         Ok((left, next))
     }
 
-    fn atom(&self, position: usize) -> Result<(Node, usize), FilterError> {
+    fn atom(&self, position: usize, depth: usize) -> Result<(Node, usize), FilterError> {
         match self.at(position) {
             None => Err(FilterError::unreadable("unexpected end of filter")),
             Some(Token::Not) => {
-                let (node, next) = self.atom(position + 1)?;
+                let (node, next) = self.atom(position + 1, Self::deeper(depth)?)?;
                 Ok((Node::Not(Box::new(node)), next))
             }
-            Some(_) => self.primary(position),
+            Some(_) => self.primary(position, depth),
         }
     }
 
-    fn primary(&self, position: usize) -> Result<(Node, usize), FilterError> {
+    fn deeper(depth: usize) -> Result<usize, FilterError> {
+        if depth >= MAX_NESTING {
+            return Err(FilterError::TooLarge(format!(
+                "filter nests NOT and brackets more than {MAX_NESTING} levels deep."
+            )));
+        }
+        Ok(depth + 1)
+    }
+
+    fn clause(&self) -> Result<(), FilterError> {
+        let clauses = self.clauses.get() + 1;
+        if clauses > MAX_CLAUSES {
+            return Err(FilterError::TooLarge(format!(
+                "filter holds more than {MAX_CLAUSES} clauses."
+            )));
+        }
+        self.clauses.set(clauses);
+        Ok(())
+    }
+
+    fn primary(&self, position: usize, depth: usize) -> Result<(Node, usize), FilterError> {
         let Some(token) = self.at(position) else {
             return Err(FilterError::unreadable("unexpected end of filter"));
         };
         match token {
             Token::Open => {
-                let (node, next) = self.or(position + 1)?;
+                let (node, next) = self.or(position + 1, Self::deeper(depth)?)?;
                 if self.at(next) != Some(&Token::Close) {
                     return Err(FilterError::unreadable("expected `)` to close group"));
                 }
                 Ok((node, next + 1))
             }
-            Token::Has => self.has(position),
-            Token::Word(key) => self.comparison(key, position),
+            Token::Has => {
+                self.clause()?;
+                self.has(position)
+            }
+            Token::Word(key) => {
+                self.clause()?;
+                self.comparison(key, position)
+            }
             other => Err(FilterError::unreadable(format!(
                 "unexpected token: {}",
                 other.text()
@@ -330,11 +356,11 @@ impl Reader {
                 "expected value after {key} {operator}"
             )));
         };
-        if key == "kind" && !NODE_KINDS.contains(&value.to_lowercase().as_str()) {
+        if key == "kind" && !KNOWN_KINDS.contains(&value.to_lowercase().as_str()) {
             return Err(FilterError::NotAllowed {
                 what: "kind",
                 received: value.clone(),
-                allowed: &NODE_KINDS,
+                allowed: &KNOWN_KINDS,
             });
         }
         Ok((
@@ -356,8 +382,9 @@ impl QueryFilter {
         }
         let reader = Reader {
             tokens: tokenize(trimmed)?,
+            clauses: Cell::new(0),
         };
-        let (root, next) = reader.or(0)?;
+        let (root, next) = reader.or(0, 0)?;
         if let Some(token) = reader.at(next) {
             return Err(FilterError::unreadable(format!(
                 "unexpected token at position {next}: {}",
@@ -371,11 +398,35 @@ impl QueryFilter {
         evaluate(&self.root, document)
     }
 
+    /// The values the filter asks `key` to equal, in the order written. A comparison under a `NOT`
+    /// counts as the opposite one, so `NOT kind!=a` asks for `a` and `NOT kind=a` asks for nothing.
+    pub fn required_values(&self, key: &str) -> Vec<&str> {
+        let mut found = Vec::new();
+        collect_required(&self.root, key, true, &mut found);
+        found
+    }
+
     /// The filter as it was read, fully bracketed.
     pub fn represented(&self) -> String {
         let mut text = String::new();
         write_node(&self.root, &mut text);
         text
+    }
+}
+
+fn collect_required<'a>(node: &'a Node, key: &str, positive: bool, found: &mut Vec<&'a str>) {
+    match node {
+        Node::Or(left, right) | Node::And(left, right) => {
+            collect_required(left, key, positive, found);
+            collect_required(right, key, positive, found);
+        }
+        Node::Not(child) => collect_required(child, key, !positive, found),
+        Node::Compare {
+            key: compared,
+            equals,
+            value,
+        } if compared == key && *equals == positive => found.push(value),
+        Node::Compare { .. } | Node::Has(_) => {}
     }
 }
 
@@ -437,5 +488,71 @@ fn evaluate(node: &Node, document: &LoadedDocument) -> bool {
                 None => false,
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn too_large(input: &str) -> bool {
+        matches!(QueryFilter::parse(input), Err(FilterError::TooLarge(_)))
+    }
+
+    #[test]
+    fn a_hundred_thousand_nots_or_clauses_are_refused_not_recursed_into() {
+        assert!(too_large(&format!("{}kind=domain", "NOT ".repeat(100_000))));
+        assert!(too_large(&vec!["kind=domain"; 100_000].join(" AND ")));
+        assert!(too_large(&vec!["kind=domain"; 100_000].join(" OR ")));
+        assert!(too_large(&format!(
+            "{}kind=domain{}",
+            "(".repeat(100_000),
+            ")".repeat(100_000)
+        )));
+    }
+
+    #[test]
+    fn the_bounds_are_exact() {
+        let nots = |count: usize| format!("{}kind=domain", "NOT ".repeat(count));
+        assert!(QueryFilter::parse(&nots(MAX_NESTING)).is_ok());
+        assert!(too_large(&nots(MAX_NESTING + 1)));
+        let clauses = |count: usize| vec!["kind=domain"; count].join(" AND ");
+        let widest = QueryFilter::parse(&clauses(MAX_CLAUSES)).expect("the widest filter is read");
+        assert_eq!(widest.represented().matches("kind").count(), MAX_CLAUSES);
+        assert!(too_large(&clauses(MAX_CLAUSES + 1)));
+    }
+
+    #[test]
+    fn the_values_a_filter_requires_are_read_from_its_parse() {
+        let required = |text: &str, key: &str| -> Vec<String> {
+            QueryFilter::parse(text)
+                .expect("the filter is read")
+                .required_values(key)
+                .into_iter()
+                .map(str::to_string)
+                .collect()
+        };
+        assert_eq!(
+            required("domain=domains/\u{ac01}\u{ae30} AND kind=domain", "domain"),
+            ["domains/\u{ac01}\u{ae30}"]
+        );
+        // A name inside a quoted title is a title, not a kind.
+        assert_eq!(
+            required("title=\"kind=widget\" AND kind=domain", "kind"),
+            ["domain"]
+        );
+        assert!(required("NOT kind=domain", "kind").is_empty());
+        assert_eq!(
+            required("NOT kind!=domain OR kind=element", "kind"),
+            ["domain", "element"]
+        );
+    }
+
+    #[test]
+    fn a_filter_that_is_merely_wrong_is_still_unreadable_not_too_large() {
+        assert!(matches!(
+            QueryFilter::parse("NOT NOT"),
+            Err(FilterError::Unreadable(_))
+        ));
     }
 }

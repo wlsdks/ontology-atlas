@@ -2,12 +2,12 @@
 
 use std::collections::{HashMap, HashSet};
 
-use answer_format::utf16;
+use answer_format::collation::compare_text;
 use answer_format::whitespace::trim;
 use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
 
-use crate::loaded_vault::LoadedDocument;
+use crate::loaded_document::LoadedDocument;
 use crate::reference_index::tail_of;
 use crate::relations::neighbor_refs;
 
@@ -83,7 +83,7 @@ pub fn kind_census(documents: &[LoadedDocument]) -> KindCensus {
         .into_iter()
         .map(|(kind, count)| (kind.to_string(), count))
         .collect();
-    by_kind.sort_by(|(left, _), (right, _)| utf16::compare(left, right));
+    by_kind.sort_by(|(left, _), (right, _)| compare_text(left, right));
     KindCensus {
         total,
         by_kind: KindCounts(by_kind),

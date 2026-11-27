@@ -198,7 +198,7 @@ test('scopes the printed-string scan to programs whose strings are output', () =
   // Test names are Korean by convention here, fixtures must hold Korean input, and the product's
   // own locale data is not this ratchet's business.
   assert.equal(classifyStringScanPath('scripts/release-rehearsal.test.mjs'), null);
-  assert.equal(classifyStringScanPath('tests/fixtures/frontmatter-cases.mjs'), null);
+  assert.equal(classifyStringScanPath('tests/fixtures/frontmatter-cases.json'), null);
   assert.equal(classifyStringScanPath('src/entities/status/model/default-statuses.ts'), null);
   assert.equal(classifyStringScanPath('messages/ko.json'), null);
 });

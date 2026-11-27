@@ -18,6 +18,21 @@ pub const KNOWN_KINDS: [&str; 6] = [
     "vault-readme",
 ];
 
+/// The list keys that draw edges, most specific first, then the alias `depends_on` of
+/// `dependencies`. Every reader of relations, the reader of a block and the `has(...)` filter share
+/// this one list.
+pub const GRAPH_ARRAY_KEYS: [&str; 9] = [
+    "domains",
+    "capabilities",
+    "elements",
+    "dependencies",
+    "relates",
+    "contains",
+    "describes",
+    "broader",
+    "depends_on",
+];
+
 /// The folder a kind lives in; `project` and `document` live at the root, as does any kind a vault
 /// invents.
 pub fn folder_for_kind(kind: &str) -> &'static str {

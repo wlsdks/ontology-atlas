@@ -14,20 +14,7 @@ use super::inline::split_top_level;
 use super::line::Line;
 use super::quoting::{parse_scalar, quote_fault, suggested_value, unquote, QuoteFault};
 use super::value::{Scalar, Value};
-
-/// Keys whose value is a list of relations: a scalar or object under one draws no edge, so it is
-/// reported.
-const RELATION_KEYS: [&str; 9] = [
-    "domains",
-    "capabilities",
-    "elements",
-    "dependencies",
-    "depends_on",
-    "relates",
-    "contains",
-    "describes",
-    "broader",
-];
+use crate::schema::GRAPH_ARRAY_KEYS;
 
 /// Keys that would shadow what a JavaScript object inherits; the vault never holds them.
 const UNSAFE_KEYS: [&str; 3] = ["__proto__", "constructor", "prototype"];
@@ -86,20 +73,34 @@ fn list_marker_rest(text: &str) -> Option<&str> {
 
 /// `^\s*-\s+(.+)$` : the item of a block list. `.` takes no line break, so a break inside the item
 /// ends the list.
+///
+/// The expression gives back whitespace one character at a time until what is left holds no line
+/// break; that is the longest whitespace run that stops after the last break, found here in one
+/// pass instead of one pass per character given back.
 fn list_item(text: &str) -> Option<&str> {
     let rest = list_marker_rest(text)?;
     let whitespace = rest
         .chars()
         .take_while(|character| is_whitespace(*character))
         .count();
-    (1..=whitespace).rev().find_map(|skipped| {
-        let start = rest
-            .char_indices()
-            .nth(skipped)
-            .map_or(rest.len(), |(index, _)| index);
-        let item = rest.get(start..)?;
-        (!item.is_empty() && !item.chars().any(is_line_terminator)).then_some(item)
-    })
+    let mut length = 0;
+    let mut after_last_break = 1;
+    for (index, character) in rest.chars().enumerate() {
+        length = index + 1;
+        if is_line_terminator(character) {
+            after_last_break = index + 1;
+        }
+    }
+    // The item starts after `skipped` characters of the whitespace and is not empty.
+    let skipped = whitespace.min(length.saturating_sub(1));
+    if skipped < after_last_break {
+        return None;
+    }
+    let start = rest
+        .char_indices()
+        .nth(skipped)
+        .map_or(rest.len(), |(index, _)| index);
+    rest.get(start..)
 }
 
 #[derive(PartialEq, Eq)]
@@ -349,7 +350,7 @@ impl ReadBlock {
             });
             return;
         }
-        if check_relation && RELATION_KEYS.contains(&key.as_str()) && value.as_list().is_none() {
+        if check_relation && GRAPH_ARRAY_KEYS.contains(&key.as_str()) && value.as_list().is_none() {
             self.diagnostics
                 .push(Diagnostic::relation_not_a_list(line_number, &key));
         }
@@ -359,5 +360,53 @@ impl ReadBlock {
             line_count,
             value: Some(value),
         });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use proptest::prelude::*;
+
+    /// The expression itself, taking back one whitespace character at a time.
+    fn list_item_by_giving_back(text: &str) -> Option<&str> {
+        let rest = list_marker_rest(text)?;
+        let whitespace = rest
+            .chars()
+            .take_while(|character| is_whitespace(*character))
+            .count();
+        (1..=whitespace).rev().find_map(|skipped| {
+            let start = rest
+                .char_indices()
+                .nth(skipped)
+                .map_or(rest.len(), |(index, _)| index);
+            let item = rest.get(start..)?;
+            (!item.is_empty() && !item.chars().any(is_line_terminator)).then_some(item)
+        })
+    }
+
+    proptest! {
+        #[test]
+        fn one_pass_gives_the_item_the_expression_gives(
+            text in proptest::collection::vec(
+                prop_oneof![Just(' '), Just('\t'), Just('\r'), Just('\n'), Just('\u{2028}'), Just('-'), Just('a')],
+                0..24,
+            )
+        ) {
+            let text: String = text.into_iter().collect();
+            prop_assert_eq!(list_item(&text), list_item_by_giving_back(&text));
+        }
+    }
+
+    #[test]
+    fn a_dash_and_eighty_thousand_carriage_returns_is_read_at_once() {
+        let text = format!("- {}", "\r".repeat(80_000));
+        let started = std::time::Instant::now();
+        assert_eq!(list_item(&text), None);
+        assert_eq!(list_item(&format!("{text}x")), Some("x"));
+        assert!(
+            started.elapsed() < std::time::Duration::from_secs(1),
+            "a line of whitespace is read in one pass"
+        );
     }
 }

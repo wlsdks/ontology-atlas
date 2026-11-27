@@ -6,18 +6,7 @@ use answer_format::collation::compare_text;
 use answer_format::whitespace::trim;
 
 use crate::frontmatter::{Frontmatter, Value};
-
-/// The list keys read as graph edges, most specific first. Every reader shares this one list.
-pub const NEIGHBOR_KEYS: [&str; 8] = [
-    "domains",
-    "capabilities",
-    "elements",
-    "dependencies",
-    "relates",
-    "contains",
-    "describes",
-    "broader",
-];
+use crate::schema::GRAPH_ARRAY_KEYS;
 
 /// `depends_on:` is an authoring alias of `dependencies:`.
 const DEPENDS_ON: &str = "depends_on";
@@ -25,19 +14,6 @@ const DEPENDENCIES: &str = "dependencies";
 
 /// The key of the single parent reference.
 const DOMAIN: &str = "domain";
-
-/// The keys a `has(...)` filter and a graph-array check accept: the list keys and the alias.
-pub const GRAPH_ARRAY_KEYS: [&str; 9] = [
-    "domains",
-    "capabilities",
-    "elements",
-    "dependencies",
-    "relates",
-    "contains",
-    "describes",
-    "broader",
-    DEPENDS_ON,
-];
 
 /// One edge a document draws: the canonical key it came under and the reference as written,
 /// trimmed.
@@ -64,7 +40,7 @@ pub fn neighbor_refs(frontmatter: &Frontmatter) -> Vec<NeighborRef> {
             });
         }
     };
-    for key in NEIGHBOR_KEYS {
+    for key in GRAPH_ARRAY_KEYS.iter().filter(|key| **key != DEPENDS_ON) {
         for item in frontmatter.list(key).unwrap_or_default() {
             push(key, item);
         }

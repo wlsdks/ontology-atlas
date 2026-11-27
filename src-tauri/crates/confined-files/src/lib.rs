@@ -22,6 +22,7 @@ mod slug_rules;
 mod source_access;
 mod source_disk;
 mod source_snapshot;
+mod stable_read;
 mod temporary_name;
 mod vault_root;
 mod vault_sidecar;
@@ -50,6 +51,7 @@ pub use source_snapshot::{
     SnapshotSource, SourceSnapshot, MAX_ENTRIES, MAX_FILE_TEXT_BYTES, MAX_TEXT_BYTES,
     MAX_TRANSPORT_BYTES, SNAPSHOT_CONTRACT, SNAPSHOT_DESCRIPTOR,
 };
+pub use stable_read::{FileSnapshot, FileStamp, StableReadError, MAX_ATTEMPTS};
 pub use vault_root::{ConfinedPath, SlugError, VaultRoot, WritablePath};
 pub use vault_sidecar::{Revision, SidecarError, Stored, StoredTail, Unsafe, VaultSidecar};
 pub use write_plan::{

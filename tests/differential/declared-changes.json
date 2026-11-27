@@ -126,6 +126,86 @@
       "path": "result.content[0].text",
       "change": 13,
       "reason": "A file that exists and cannot be read is reported by its slug and the OS code, never by an absolute path on the disk, and as a tool failure rather than as a mistyped argument (row 13 of the specification's table)."
+    },
+    {
+      "case": "vault-read/backlinks-and-orphans-edge-names-late-clock",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text",
+      "change": 16,
+      "reason": "The matches of find_backlinks are listed in the one order every list of the server follows (the English collation of `Intl.Collator`), where the JavaScript server listed these by UTF-16 code unit, so a slug in Hangul or with an accent sorts among the Latin ones as a reader expects (row 16)."
+    },
+    {
+      "case": "vault-read/backlinks-and-orphans-edge-names",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text",
+      "change": 16,
+      "reason": "The matches of find_backlinks are listed in the one order every list of the server follows (the English collation of `Intl.Collator`), where the JavaScript server listed these by UTF-16 code unit, so a slug in Hangul or with an accent sorts among the Latin ones as a reader expects (row 16)."
+    },
+    {
+      "case": "vault-read/query-concepts-filter-bounds-late-clock",
+      "where": "answer",
+      "id": 2,
+      "path": "result.isError",
+      "change": 14,
+      "reason": "A filter nested deeper than 32 levels of NOT and brackets, or holding more than 256 clauses, is refused as invalid_arguments naming `filter`; the JavaScript server reads any of them until its stack ends (row 14)."
+    },
+    {
+      "case": "vault-read/query-concepts-filter-bounds-late-clock",
+      "where": "answer",
+      "id": 4,
+      "path": "result.isError",
+      "change": 14,
+      "reason": "A filter nested deeper than 32 levels of NOT and brackets, or holding more than 256 clauses, is refused as invalid_arguments naming `filter`; the JavaScript server reads any of them until its stack ends (row 14)."
+    },
+    {
+      "case": "vault-read/query-concepts-filter-bounds",
+      "where": "answer",
+      "id": 2,
+      "path": "result.isError",
+      "change": 14,
+      "reason": "A filter nested deeper than 32 levels of NOT and brackets, or holding more than 256 clauses, is refused as invalid_arguments naming `filter`; the JavaScript server reads any of them until its stack ends (row 14)."
+    },
+    {
+      "case": "vault-read/query-concepts-filter-bounds",
+      "where": "answer",
+      "id": 4,
+      "path": "result.isError",
+      "change": 14,
+      "reason": "A filter nested deeper than 32 levels of NOT and brackets, or holding more than 256 clauses, is refused as invalid_arguments naming `filter`; the JavaScript server reads any of them until its stack ends (row 14)."
+    },
+    {
+      "case": "vault-read/query-concepts-zero-row-names-late-clock",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text",
+      "change": 15,
+      "reason": "The kind and domain a zero-row hint reports missing are the ones the parsed filter requires, whole: a name inside a quoted title is not a kind, and a domain with a non-ASCII letter is not cut where the letters stop (row 15)."
+    },
+    {
+      "case": "vault-read/query-concepts-zero-row-names-late-clock",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text",
+      "change": 15,
+      "reason": "The kind and domain a zero-row hint reports missing are the ones the parsed filter requires, whole: a name inside a quoted title is not a kind, and a domain with a non-ASCII letter is not cut where the letters stop (row 15)."
+    },
+    {
+      "case": "vault-read/query-concepts-zero-row-names",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text",
+      "change": 15,
+      "reason": "The kind and domain a zero-row hint reports missing are the ones the parsed filter requires, whole: a name inside a quoted title is not a kind, and a domain with a non-ASCII letter is not cut where the letters stop (row 15)."
+    },
+    {
+      "case": "vault-read/query-concepts-zero-row-names",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text",
+      "change": 15,
+      "reason": "The kind and domain a zero-row hint reports missing are the ones the parsed filter requires, whole: a name inside a quoted title is not a kind, and a domain with a non-ASCII letter is not cut where the letters stop (row 15)."
     }
   ]
 }

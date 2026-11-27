@@ -23,11 +23,15 @@ thiserror = "2"
 # The evidence-limit phrasings of an exclusion are ten patterns tested together; MIT OR Apache-2.0. ASCII
 # patterns only, so the Unicode tables stay out.
 regex = { version = "1", default-features = false, features = ["std", "perf"] }
+# Reads and checks every file of a large vault on all the cores: one `par_iter`, results in order.
+# MIT OR Apache-2.0; the app already links it (through the image crates).
+rayon = "1"
 # CommonMark with source offsets; MIT.
 pulldown-cmark = { version = "0.13", default-features = false }
 
 [dev-dependencies]
 proptest = "1"
+tempfile = "3"
 # The YAML 1.2 oracle of the frontmatter property test: where it and our parser both accept a
 # document they must agree. MIT OR Apache-2.0; a dev dependency only, never linked into the program.
 saphyr = "0.4"

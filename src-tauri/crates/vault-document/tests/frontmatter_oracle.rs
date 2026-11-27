@@ -9,6 +9,8 @@ use saphyr::{LoadableYamlNode, ScalarOwned, YamlOwned};
 use vault_document::frontmatter::Value;
 use vault_document::Document;
 
+mod support;
+
 /// A word that YAML 1.2 reads as text, not as null, a boolean or a number.
 fn plain_word() -> impl Strategy<Value = String> {
     "[a-z][a-z ]{0,8}[a-z]".prop_filter("a word YAML reads as something else", |word| {
@@ -216,5 +218,22 @@ proptest! {
             prop_assert_eq!(&ours, &theirs, "key {} in\n{}", key, yaml);
             prop_assert_eq!(ours, Some(expected(shape)), "key {} in\n{}", key, yaml);
         }
+    }
+
+    /// A write to any key of a file of the shapes the vault has changes that key and no other: the
+    /// keys around a block list, a literal block or an inline list read as they did.
+    #[test]
+    fn a_write_to_any_key_of_a_generated_file_changes_only_that_key(
+        entries in proptest::collection::vec(("[a-z][a-z_]{0,6}", shape()), 1..6)
+    ) {
+        let mut seen = std::collections::HashSet::new();
+        let yaml: String = entries
+            .iter()
+            .filter(|(key, _)| seen.insert(key.clone()))
+            .map(|(key, shape)| written(key, shape))
+            .collect();
+        let text = format!("---\n{yaml}---\nbody\n");
+        let keys = support::assert_a_write_changes_only_its_key(&text);
+        prop_assert_eq!(keys, seen.len(), "every key was rewritten in\n{}", yaml);
     }
 }

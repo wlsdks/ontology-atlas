@@ -8,7 +8,7 @@ use answer_format::whitespace::trim;
 use confined_files::VaultRoot;
 
 use crate::frontmatter::Value;
-use crate::loaded_vault::LoadedDocument;
+use crate::loaded_document::LoadedDocument;
 use crate::read_hints::Reference;
 use crate::reference_index::tail_of;
 
@@ -48,10 +48,6 @@ impl<'a> SlugLookup<'a> {
             by_tail,
             by_declared_slug,
         }
-    }
-
-    pub fn document(&self, slug: &str) -> Option<&'a LoadedDocument> {
-        self.by_slug.get(slug).copied()
     }
 
     /// The slug `name` means, or `None` when it means no document. An exact slug first; then the
@@ -162,8 +158,9 @@ pub fn find_graph_references(documents: &[LoadedDocument], reference: &str) -> V
 }
 
 /// Up to `limit` slugs near `missing`, for a not-found answer: the same last segment first, then a
-/// slug containing the name or contained in it, then one that starts with it. No edit distance: on
-/// a large vault it is slow and noisy, and the aim is "these exist", not "did you mean".
+/// slug containing the name or contained in it (a slug that starts with the name contains it). No
+/// edit distance: on a large vault it is slow and noisy, and the aim is "these exist", not "did you
+/// mean".
 pub fn suggest_similar_slugs(
     documents: &[LoadedDocument],
     missing: &str,
@@ -176,8 +173,7 @@ pub fn suggest_similar_slugs(
     let tail = if tail.is_empty() { missing } else { tail };
     let lower_tail = tail.to_lowercase();
     let lower_missing = missing.to_lowercase();
-    let (mut same_tail, mut containing, mut starting): (Vec<&str>, Vec<&str>, Vec<&str>) =
-        (Vec::new(), Vec::new(), Vec::new());
+    let (mut same_tail, mut containing): (Vec<&str>, Vec<&str>) = (Vec::new(), Vec::new());
     for document in documents {
         let slug = document.slug();
         if slug == missing {
@@ -200,15 +196,11 @@ pub fn suggest_similar_slugs(
             || lower_slug.contains(&lower_missing)
         {
             containing.push(slug);
-        } else if candidate_tail.starts_with(&lower_tail) || lower_slug.starts_with(&lower_missing)
-        {
-            starting.push(slug);
         }
     }
     same_tail
         .into_iter()
         .chain(containing)
-        .chain(starting)
         .take(limit)
         .map(str::to_string)
         .collect()

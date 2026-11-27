@@ -8,6 +8,7 @@ use answer_format::whitespace::{is_whitespace, trim};
 use confined_files::raw_source_file_for_slug;
 use serde::Serialize;
 
+use crate::query_filter::QueryFilter;
 use crate::reference_index::tail_of;
 
 /// A hint: why the answer is empty, what to do, and a call that does it.
@@ -170,102 +171,6 @@ pub fn slug_not_found_hint(
     }
 }
 
-/// The names `key=` is written with anywhere in `text`, as a person reading the filter would spot
-/// them: the key as a word on its own (any case), `=`, an optional quote, then a name that starts
-/// with `first` and goes on with `rest`. Spaces may sit around the `=`. This reads the text, not
-/// the parsed filter, so a name beyond the letters it allows is cut where they stop.
-fn names_after(
-    text: &str,
-    key: &str,
-    first: fn(char) -> bool,
-    rest: fn(char) -> bool,
-) -> Vec<String> {
-    let characters: Vec<char> = text.chars().collect();
-    let key: Vec<char> = key.chars().collect();
-    let is_word = |character: char| character.is_ascii_alphanumeric() || character == '_';
-    let mut names = Vec::new();
-    let mut at = 0;
-    while at < characters.len() {
-        let on_boundary = at == 0
-            || characters
-                .get(at - 1)
-                .is_none_or(|before| !is_word(*before));
-        let spelled_key = characters.get(at..at + key.len()).is_some_and(|candidate| {
-            candidate
-                .iter()
-                .zip(&key)
-                .all(|(left, right)| left.eq_ignore_ascii_case(right))
-        });
-        if !(on_boundary && spelled_key) {
-            at += 1;
-            continue;
-        }
-        let mut next = at + key.len();
-        while characters
-            .get(next)
-            .is_some_and(|character| is_whitespace(*character))
-        {
-            next += 1;
-        }
-        if characters.get(next) != Some(&'=') {
-            at += 1;
-            continue;
-        }
-        next += 1;
-        while characters
-            .get(next)
-            .is_some_and(|character| is_whitespace(*character))
-        {
-            next += 1;
-        }
-        if characters.get(next) == Some(&'"') {
-            next += 1;
-        }
-        if !characters
-            .get(next)
-            .is_some_and(|character| first(*character))
-        {
-            at += 1;
-            continue;
-        }
-        let start = next;
-        while characters
-            .get(next)
-            .is_some_and(|character| rest(*character))
-        {
-            next += 1;
-        }
-        names.push(
-            characters
-                .get(start..next)
-                .unwrap_or_default()
-                .iter()
-                .collect(),
-        );
-        if characters.get(next) == Some(&'"') {
-            next += 1;
-        }
-        at = next;
-    }
-    names
-}
-
-fn is_kind_start(character: char) -> bool {
-    character.is_ascii_alphabetic()
-}
-
-fn is_kind_part(character: char) -> bool {
-    character.is_ascii_alphanumeric() || matches!(character, '_' | '-')
-}
-
-fn is_domain_start(character: char) -> bool {
-    character.is_ascii_alphanumeric()
-}
-
-fn is_domain_part(character: char) -> bool {
-    character.is_ascii_alphanumeric() || matches!(character, '_' | '.' | '/' | '-')
-}
-
 fn missing_names(wanted: Vec<String>, counts: &HashMap<String, usize>) -> Vec<String> {
     let mut missing: Vec<String> = Vec::new();
     for name in wanted {
@@ -277,18 +182,25 @@ fn missing_names(wanted: Vec<String>, counts: &HashMap<String, usize>) -> Vec<St
 }
 
 /// A filter that matched no row. A `kind=` or `domain=` the vault has no node of is named, so the
-/// agent sees the filter aimed at something that does not exist.
+/// agent sees the filter aimed at something that does not exist. The names are the ones the parsed
+/// filter requires, whole: a name inside a quoted title or one a `NOT` rules out is not one.
 pub fn query_zero_rows_hint(
+    filter: &QueryFilter,
     filter_text: &str,
     nodes_by_kind: &HashMap<String, usize>,
     nodes_by_domain: &HashMap<String, usize>,
 ) -> GrowthHint {
-    let kinds = names_after(filter_text, "kind", is_kind_start, is_kind_part)
+    let kinds = filter
+        .required_values("kind")
         .into_iter()
-        .map(|kind| kind.to_lowercase())
+        .map(str::to_lowercase)
         .collect();
     let missing_kinds = missing_names(kinds, nodes_by_kind);
-    let domains = names_after(filter_text, "domain", is_domain_start, is_domain_part);
+    let domains = filter
+        .required_values("domain")
+        .into_iter()
+        .map(str::to_string)
+        .collect();
     let missing_domains = missing_names(domains, nodes_by_domain);
     let example_call = ExampleCall {
         tool: "list_concepts",

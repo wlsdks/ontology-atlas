@@ -4,9 +4,9 @@
 use answer_format::collation::compare_text;
 use serde::Serialize;
 use vault_document::frontmatter::Value;
+use vault_document::schema::KNOWN_KINDS;
 use vault_document::{
-    count_vault_issues, kind_census, KindCensus, LoadedDocument, ReferenceIndex, NODE_KINDS,
-    SUMMARY_MAX_CHARS,
+    count_vault_issues, kind_census, KindCensus, LoadedDocument, ReferenceIndex, SUMMARY_MAX_CHARS,
 };
 
 use super::argument_checks::{
@@ -76,7 +76,7 @@ fn count(number: f64) -> usize {
 pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutput, ToolError> {
     let kind = optional_non_blank_text(arguments, "kind")?;
     let kind = match &kind {
-        Some(_) => optional_one_of(arguments, "kind", &NODE_KINDS)?,
+        Some(_) => optional_one_of(arguments, "kind", &KNOWN_KINDS)?,
         None => None,
     };
     let domain = optional_non_blank_text(arguments, "domain")?;
@@ -113,28 +113,28 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
 
     let wants_summary = summary == Some(true);
     let mut truncated_summaries = 0;
-    let nodes: Vec<ConceptRow<'_>> = matching
-        .iter()
-        .skip(offset)
-        .take(limit)
-        .map(|document| {
-            let row = ConceptRow::of(document);
-            if !wants_summary {
-                return row;
-            }
-            let delivery = vault_document::describe_body_delivery(
-                &document.document().body(),
-                vault_document::BodyMode::Excerpt,
-                SUMMARY_MAX_CHARS,
-                None,
-            );
-            let truncated = delivery.info.truncated();
-            if truncated {
-                truncated_summaries += 1;
-            }
-            row.with_summary(delivery.text, truncated)
-        })
-        .collect();
+    let mut nodes: Vec<ConceptRow<'_>> = Vec::new();
+    for document in matching.iter().skip(offset).take(limit) {
+        let row = ConceptRow::of(document);
+        if !wants_summary {
+            nodes.push(row);
+            continue;
+        }
+        let body = document
+            .body()
+            .map_err(|error| ToolError::failed(error.to_string()))?;
+        let delivery = vault_document::describe_body_delivery(
+            &body,
+            vault_document::BodyMode::Excerpt,
+            SUMMARY_MAX_CHARS,
+            None,
+        );
+        let truncated = delivery.info.truncated();
+        if truncated {
+            truncated_summaries += 1;
+        }
+        nodes.push(row.with_summary(delivery.text, truncated));
+    }
     let has_more = offset + nodes.len() < matching.len();
     let returned = nodes.len();
     ToolOutput::json(&Listing {

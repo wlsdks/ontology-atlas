@@ -10,7 +10,10 @@ use confined_files::VaultRoot;
 use proptest::prelude::*;
 use vault_document::{Document, RawShape};
 
-/// What the format promises of any file, however odd.
+mod support;
+
+/// What the format promises of any file, however odd: its parts are its bytes, and a write to one
+/// key changes that key and no other.
 fn assert_round_trip(bytes: &[u8]) {
     let document = Document::from_bytes(bytes);
     if document.is_exact() {
@@ -19,31 +22,7 @@ fn assert_round_trip(bytes: &[u8]) {
             bytes,
             "the parts are the file"
         );
-    }
-    let raw = document.raw();
-    for key in document.frontmatter().keys() {
-        let Some(range) = document.entry_range(key) else {
-            continue;
-        };
-        let original = raw
-            .get(range.clone())
-            .expect("an entry range is inside the file");
-        // Writing a key's own lines back changes nothing.
-        assert_eq!(
-            document
-                .with_range_replaced(range.clone(), original)
-                .as_deref(),
-            Some(raw)
-        );
-        // Writing other lines in its place changes those bytes and no others.
-        let replaced = document
-            .with_range_replaced(range.clone(), "replaced: 1\n")
-            .expect("inside the file");
-        assert_eq!(replaced.get(..range.start), raw.get(..range.start));
-        assert_eq!(
-            replaced.get(range.start + "replaced: 1\n".len()..),
-            raw.get(range.end..)
-        );
+        support::assert_a_write_changes_only_its_key(document.raw());
     }
 }
 
@@ -57,9 +36,13 @@ fn every_file_of_the_repository_ontology_round_trips() {
         "the repository ontology has files: {}",
         files.len()
     );
+    let mut rewritten = 0;
     for file in files {
-        assert_round_trip(&file.read_bytes().expect("readable"));
+        let bytes = file.read_bytes().expect("readable");
+        assert_round_trip(&bytes);
+        rewritten += support::assert_a_write_changes_only_its_key(&String::from_utf8_lossy(&bytes));
     }
+    assert!(rewritten > 200, "the check ran over many keys: {rewritten}");
 }
 
 #[test]
@@ -89,6 +72,19 @@ fn planted_shapes_round_trip_and_read_as_a_person_would() {
         };
         assert_eq!(document.shape(), expected_shape, "{name}");
     }
+    // The write check ran over every key these files hold.
+    assert_eq!(
+        support::assert_a_write_changes_only_its_key(
+            "---\r\nuid: x\r\nkind: domain\r\ntitle: A\r\n---\r\nBody\r\n"
+        ),
+        3
+    );
+    assert_eq!(
+        support::assert_a_write_changes_only_its_key(
+            "---\ntitle: First\nkind: domain\ntitle: Second\n---\n"
+        ),
+        2
+    );
     // CRLF is kept in the file and gone from what is read of it.
     let crlf = Document::from_text("---\r\nkind: domain\r\n---\r\nBody\r\n");
     assert_eq!(crlf.line_ending(), "\r\n");
@@ -136,10 +132,10 @@ proptest! {
 }
 
 /// A Windows editor saves CRLF and a byte-order mark; reading and writing such a file keeps both.
-#[cfg(windows)]
+/// Every platform runs it: the bytes are the ones a Windows editor writes, wherever the test runs.
 #[test]
 fn a_windows_file_keeps_its_line_endings_and_mark_through_a_write() {
-    let text = "\u{feff}---\r\nkind: domain\r\ntitle: A\r\n---\r\nBody\r\n";
+    let text = "\u{feff}---\r\nkind: domain\r\ntitle: A\r\ncapabilities:\r\n  - x\r\n  - y\r\n---\r\nBody\r\n";
     let document = Document::from_text(text);
     let range = document.entry_range("title").expect("title is written");
     let replaced = document
@@ -147,6 +143,27 @@ fn a_windows_file_keeps_its_line_endings_and_mark_through_a_write() {
         .expect("inside the file");
     assert_eq!(
         replaced,
-        "\u{feff}---\r\nkind: domain\r\ntitle: B\r\n---\r\nBody\r\n"
+        "\u{feff}---\r\nkind: domain\r\ntitle: B\r\ncapabilities:\r\n  - x\r\n  - y\r\n---\r\nBody\r\n"
+    );
+    assert_eq!(support::assert_a_write_changes_only_its_key(text), 3);
+}
+
+/// A block-list item that is only carriage returns once took the reader's time to the square of the
+/// line's length (80,000 of them: 9.2 seconds in one `get_concepts`). The whole document is read
+/// in one pass now, and a line of that kind is read for what it is.
+#[test]
+fn a_list_item_of_eighty_thousand_carriage_returns_is_read_at_once() {
+    let text = format!(
+        "---\nkind: domain\nitems:\n- {}\nafter: kept\n---\nbody\n",
+        "\r".repeat(80_000)
+    );
+    let started = std::time::Instant::now();
+    let document = Document::from_text(&text);
+    assert_eq!(document.frontmatter().text("after"), Some("kept"));
+    assert_eq!(document.parts().concat(), text, "the parts are the file");
+    assert!(
+        started.elapsed() < std::time::Duration::from_secs(2),
+        "read in {:?}",
+        started.elapsed()
     );
 }

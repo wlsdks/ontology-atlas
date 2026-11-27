@@ -6,12 +6,11 @@ use std::collections::{HashMap, HashSet};
 
 use answer_format::whitespace::trim;
 
-use crate::loaded_vault::LoadedDocument;
-use crate::parallel_map::parallel_map;
+use crate::loaded_document::LoadedDocument;
 use crate::reference_index::ReferenceIndex;
 use crate::relations::neighbor_refs;
 use crate::schema::node_uid_issue;
-use crate::validation::{validate_document, Issue, Severity};
+use crate::validation::{Issue, Severity};
 
 /// The vault-wide findings, by the slug each is about.
 #[derive(Debug, Default)]
@@ -198,15 +197,9 @@ pub fn count_vault_issues(
     index: &ReferenceIndex<'_>,
 ) -> (usize, usize) {
     let mut by_slug: HashMap<String, Vec<Issue>> = HashMap::new();
-    let own_issues = parallel_map(documents, |document| {
-        if document.document().shape() == crate::document::RawShape::Empty {
-            return Vec::new();
-        }
-        validate_document(document.document(), None)
-    });
-    for (document, issues) in documents.iter().zip(own_issues) {
-        if !issues.is_empty() {
-            by_slug.insert(document.slug().to_string(), issues);
+    for document in documents {
+        if !document.issues().is_empty() {
+            by_slug.insert(document.slug().to_string(), document.issues().to_vec());
         }
     }
     for (slug, issues) in VaultIssues::find(documents, index, false).into_by_slug() {

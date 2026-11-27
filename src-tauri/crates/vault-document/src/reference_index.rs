@@ -7,7 +7,7 @@ use std::collections::{HashMap, HashSet};
 
 use icu_normalizer::ComposingNormalizerBorrowed;
 
-use crate::loaded_vault::LoadedDocument;
+use crate::loaded_document::LoadedDocument;
 
 /// The slug a reference is looked up as: slugs come from the file walk in NFC, so a reference typed
 /// in another form names the same document.

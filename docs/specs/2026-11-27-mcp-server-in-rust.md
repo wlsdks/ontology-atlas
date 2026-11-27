@@ -245,6 +245,9 @@ merge.
 | 11 | An audit line that cannot be written | the failure is swallowed in silence | one line on standard error naming the tool and the cause, `[ontology-atlas-mcp] audit line not written after <tool>: <cause>`, and a panic while writing it is reported the same way; the write's answer never changes. Corpus: replays from slice 10 | a finished write is not a failure, and the person can still find out the log is broken |
 | 12 | An `activity.jsonl` or `map-analysis.jsonl` whose last line was torn (no final newline) | the next line is appended to the torn one and both are lost to a reader | the torn line is ended with a newline before the next line; the format of every line is unchanged. Corpus: replays from slice 10 | one interrupted write must not make the next line unreadable |
 | 13 | `get_concepts` row for a file that exists and cannot be read (a link that loops, a permission) | `Could not capture a stable file snapshot: <absolute path> (ELOOP: ..., open '<absolute path>')`, classed `invalid_arguments` because the OS text holds the words "too many" | `Could not read the file of "<slug>": too many symbolic links encountered (ELOOP)`, classed `tool_error` | the answer shows an agent a path on the user's disk it never named, and the code says the agent mistyped an argument when the file is the problem |
+| 14 | `query_concepts` filter nested deeper than 32 levels of `NOT` and brackets, or holding more than 256 clauses | the filter is read by recursion until the process's stack ends, so a filter of a hundred thousand clauses ends the whole server | refused as `invalid_arguments` naming `filter`, before the vault is read. Corpus: `query-concepts-filter-bounds` | a filter no agent wrote by hand must not end every agent's session |
+| 15 | `query_concepts` zero-row `growthHint.reason` | the `kind=` and `domain=` names are found by scanning the filter's text, so a name inside a quoted title counts as a kind and a domain with a non-ASCII letter is cut where the letters stop | the names are the ones the parsed filter requires, whole. Corpus: `query-concepts-zero-row-names` | the hint names what the filter asked for |
+| 16 | order of `find_backlinks` matches and of the kinds in `kind_census` | by UTF-16 code unit, the default sort | by the one collation every other list uses (`Intl.Collator('en')`). Corpus: `backlinks-and-orphans-edge-names` | one order for every list an agent reads |
 
 Slices add rows only with a corpus case for each; the lead reviews each row in the slice's pull
 request.
@@ -634,6 +637,12 @@ every slice merges into `integration/mcp-rust-2026-11-27` with `git merge --no-f
 Slice 10 may start after slice 4 under named fields if the manifest shows that the bytes a write
 puts on disk depend only on built functions.
 
+One change for the three readers together, after the merge: the vault dialect reads `''` inside
+single quotes as two characters, a `|` block without its last line break, and a blank line in a `>`
+block as a blank line, where YAML 1.2 reads one quote, the break and a space. The app's reader, the
+JavaScript server and the Rust reader agree on the dialect today (`vault-document`'s oracle test
+names the three places), so each is changed in the same pull request or none is.
+
 After the merge: the app's screens ask Rust through Tauri commands and the twins go, next when the
 workbench removal has merged; the app calls the crates in-process where it spawns the bundled
 server today (the gray-area reader); `gix` for Git read hot paths, next when a profile shows Git
@@ -725,3 +734,7 @@ None — the owner delegated the open points and the lead decided them on 2026-1
   the changes this slice makes. Windows: a link is refused by the handle's reparse tag and hard
   links by the link count; the code is not compiled on this machine (no Windows target), so
   `cfg(windows)` rests on the cited Microsoft documentation until CI runs it.
+- 2026-11-28: slice 3 review fixes. A filter is refused beyond 32 levels or 256 clauses (row 14);
+  the zero-row hint reads the parsed filter (row 15); `find_backlinks` and the kind census use the
+  one collation (row 16). The reads keep a document cache between calls, revalidated by stat, with
+  a racy window of two seconds. The `''` dialect point is recorded under Later for a joint fix.

@@ -34,6 +34,8 @@ fn refusal(error: FilterError) -> ToolError {
         // A filter that cannot be read is a failure of the tool's own language, as it always was
         // answered; only a name the filter does not allow is an invalid argument.
         FilterError::Unreadable(message) => ToolError::failed(message),
+        // A filter too large to read safely names the argument, like any refused argument.
+        FilterError::TooLarge(message) => ToolError::invalid(message),
         FilterError::NotAllowed {
             what,
             received,
@@ -98,7 +100,7 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
                 *by_domain.entry(domain.clone()).or_default() += 1;
             }
         }
-        query_zero_rows_hint(&filter_text, &by_kind, &by_domain)
+        query_zero_rows_hint(&filter, &filter_text, &by_kind, &by_domain)
     });
     ToolOutput::json(&Matches {
         filter: &filter_text,
