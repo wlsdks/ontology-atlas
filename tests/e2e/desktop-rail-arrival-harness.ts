@@ -10,7 +10,7 @@ import {
   discoveryExtension,
   discoverySkipReason,
   type DiscoverySkipReason,
-} from "../../src/entities/docs-vault/lib/library/source-discovery";
+} from "./source-discovery-rules";
 import { FIXTURE_VAULT } from "./fixture-vault";
 import { seedFirstRunSeen } from "./first-run-seed";
 import { dogfoodVaultFiles } from "./map/dogfood-vault-files";

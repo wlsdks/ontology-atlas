@@ -7,7 +7,6 @@ import {
   DISCOVERY_DENIED_NAME_FRAGMENTS,
   DISCOVERY_DOCUMENT_EXTENSIONS,
   DISCOVERY_GUIDE_STEMS,
-  DISCOVERY_MARKDOWN_EXTENSIONS,
   DISCOVERY_VAULT_OWNED_DIRS,
   DISCOVERY_MAX_CANDIDATES,
   DISCOVERY_MAX_DEPTH,
@@ -17,7 +16,8 @@ import {
   DISCOVERY_PRUNE_DIR_NAMES,
   DISCOVERY_PRUNE_DIR_PATHS,
   discoveryAcceptsFile,
-} from '@/entities/docs-vault/lib/library/source-discovery';
+} from '../../e2e/source-discovery-rules';
+import { DISCOVERY_MARKDOWN_EXTENSIONS } from '@/entities/docs-vault/lib/library/source-candidate';
 
 /**
  * **Two walks, one rule.**
@@ -36,7 +36,7 @@ import {
  * constants are compared as sets rather than as prose.
  *
  * The gate compares the **rules**, not the walks. Both walks run one table,
- * `tests/fixtures/source-discovery-cases.json`, through `source-discovery.test.ts`
+ * `tests/fixtures/source-discovery-cases.json`, through `source-discovery-cases.contract.test.ts`
  * (TypeScript) and the `tests.rs` files under `src-tauri/src/library/` (Rust), planting each row as
  * a file.
  */

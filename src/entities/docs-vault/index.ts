@@ -44,13 +44,13 @@ export type { SourceProgress, SourceProgressPoint } from './lib/library/source-p
 export {
   candidateKey,
   withoutVaultOwnedMarkdown,
-} from './lib/library/source-discovery';
+} from './lib/library/source-candidate';
 export { sourceFolderOf } from './lib/library/source-folder';
 export type {
   DiscoverySkipReason,
   SourceCandidate,
   SourceDiscoveryReport,
-} from './lib/library/source-discovery';
+} from './lib/library/source-candidate';
 export {
   buildProjectMarkdown,
   projectToFrontmatter,
