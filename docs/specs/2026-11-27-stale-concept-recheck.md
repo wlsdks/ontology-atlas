@@ -104,8 +104,9 @@ a confirmed concept that changed afterwards, which slice 2's sheet must reuse.
 were accurate and no action clears an accurate one. Reading 51 to 76 bodies against diffs by hand
 is the per-item review the owner retired.
 
-**Ranked, value against cost.** (1) Recording "still accurate" returns 15 of 20 for one key and one
-commit, and leaves a count that again means "read this". (2) Seeing and undoing a run is the
+**Ranked, value against cost.** (1) Recording "still accurate" returns 11 of 20 for one key and one
+commit (15 were accurate by the reader; the stricter brief of Probe 2 leaves 4 of those to a
+person), and leaves a count that again means "read this". (2) Seeing and undoing a run is the
 owner's condition for unattended writes. (3) The clock is nearly free. (4) Editing outdated
 sentences returns the other 5 and is where a wrong write can happen. Slice 1 is 1 to 3: its only
 write is one frontmatter line, and it proves the commit, the dating, the undo and the agent's
@@ -137,7 +138,7 @@ it stale again.
 | Status quo: the "Update N concepts" suggestion | Accurate concepts stay stale | A person present, no cap | Exists | Cannot clear 15 of 20 |
 | Narrow the rule further (comments, cited ranges) | Removes noise only | Invisible | In progress | Cannot judge a changed function body; complements this |
 | Agent writes with `patch_concept` in the pass | All 20 | Same | Whole-body replace; a stopped turn leaves half a run | The limit on what changes would be a request |
-| **Chosen: read-only turn; Atlas marks and commits (slice 1), then applies edits (slice 2)** | 15 of 20, then all 20 | One run, one commit | New apply step, dating change | |
+| **Chosen: read-only turn; Atlas marks and commits (slice 1), then applies edits (slice 2)** | 11 of 20, then all 20 | One run, one commit | New apply step, dating change | |
 
 Every row is local-first: no backend, files and Git only.
 
@@ -189,11 +190,12 @@ Steps are slice 1 unless marked.
    resumes once a run commits). With no remote, or no remote default known, the run goes ahead
    on the checked-out branch.
 3. Atlas finds the stale concepts of every kind from Git with no agent; with none the run ends
-   "No changes". It takes them longest-waiting document first until the cap or 200 KB of documents
-   and diffs. It skips a concept whose document or cited file has uncommitted changes, one raised
-   with `review_state: human_decides`, and one left "Not decided" before whose document and files
-   have not changed since. A concept with a cited path the code reader refuses is listed "Not
-   decided" and never sent.
+   "No changes". It takes them longest-waiting document first until the cap or a 200 KB brief,
+   and reads no further once the next would not fit. It skips a concept whose document or cited
+   file has uncommitted changes, one raised with `review_state: human_decides`, and one left "Not
+   decided" or undone before whose document and files have not changed since. A concept with a
+   cited path the code reader refuses, or one larger than a whole brief, is listed "Not decided"
+   and never sent.
 4. Atlas gives one read-only agent turn each document and the diff of its moved files from the
    document's commit to `HEAD`, cut at 400 lines per concept. For a cut diff the agent reads the
    current file with `analyze_repo_structure` `sourceReads` on the bound project source. It
@@ -206,7 +208,11 @@ Steps are slice 1 unless marked.
    outside the described code do not count. A claim not confirmed against the diff or the current
    code is "cannot tell"; the brief says when in doubt, cannot tell, because a wrong "still
    accurate" hides an outdated description and a wrong "cannot tell" only leaves it for a person.
-5. Atlas applies the reply itself, only if `HEAD` is still the start commit. The document comes
+5. Atlas applies the reply itself, only if `HEAD` is still the start commit and step 2's holds
+   still pass when it commits (an undo checks them too). Two answers for one concept are none.
+   A commit that runs past 60 seconds is stopped and refused. When a hook changed a document
+   while it was committed, the run is failed, names the documents and leaves the commit for the
+   person to undo. The document comes
    from the run's list, never from the reply. For "still accurate" Atlas adds `evidence_checked`
    through the line patcher and then compares before and after: the body is byte-identical and
    the frontmatter equal except that key. "Still accurate" on a cut diff counts only when tool
@@ -422,12 +428,23 @@ all four because the catalogue test requires equal keys. No live string changed.
    one `evidence_checked` line from the installed app in a hooks-on checkout of this repository,
    and in one with `commit.gpgsign`. If it is refused, the commit path is fixed before anything
    else is built. In use, the hold in step 2 stops a refused schedule from spending turns.
+   *Result:* from an app launched from the Dock, the repository's pre-commit hook fails with
+   `node: command not found`, so the commit is refused and the run puts its documents back; a
+   separate change gives Git's children the PATH of the usual tool folders.
 2. **A wrong "still accurate" hides a stale concept.** Probe 2, before any screen: replay the 20
    judged concepts through the reply format, plus one cut diff and one diff with a planted
    instruction. Pass: none of the 5 outdated is called accurate, the planted instruction marks
    nothing, and the owner or another model re-reads 5 of the "accurate" and agrees. The 20 slugs
    and verdicts, re-classified under the comment-edit rule, go on the pull request. Afterwards
-   the falsifier and one-press undo answer it.
+   the falsifier and one-press undo answer it. *Result:* the first brief called 2 of the 5
+   outdated still accurate (source-inspection-probe, wiki-pages), which failed. With the stricter
+   rule in Flow step 4: 0 of the 5 marked, 11 of the 15 accurate marked (3 "cannot tell", 1
+   "out of date"). A hold-out of 10 pairs no one had judged (a second model judging): 4 of the 4
+   it called outdated were not marked, after the lead re-judged `source-declaration-outline` as
+   still accurate (its Uncertainty already says the per-language rules were not read, and the
+   change touched only those rules). The planted instruction was named in the reply as data and
+   changed no verdict. The cut-diff rule never had to refuse an answer: the model either read the
+   cut file first or made no tool call and did not answer "accurate" on it.
 3. **Dating by bytes shifts verdicts or the two walks disagree.** A document once restored to
    earlier bytes turns stale where it read current. Measure this vault before and after the
    change and name every concept that moves; the parity contract in criterion 4 holds the two
@@ -483,3 +500,11 @@ None. The owner delegated three choices to the lead, who decided them on 2026-11
   step 4 and the brief now require both no contradicted sentence and no behaviour change the
   document would need to mention, and send an unconfirmed claim to "cannot tell"; re-probed on the
   same 20 and on a hold-out of 10 never-judged pairs.
+- 2026-11-27: Probe 1 and 2 results under Risks; the headline counts now 11 of 20 under the
+  stricter brief. Review fixes: a run whose commit Git refused or that found `HEAD` moved leaves
+  its concepts free for the next run; Git's branch and holds are read again at commit and undo
+  time; the run journal lives in the app's data folder; a commit has a 60-second deadline; a
+  document's mode and line endings survive a run; a hook that rewrites a committed document fails
+  the run and leaves the commit to undo; an undone concept waits for a change; two answers for
+  one concept are none; the map's line counts a mark only while the document is unchanged since;
+  a concept too large for any run is listed instead of waiting.
