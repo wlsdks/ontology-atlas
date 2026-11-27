@@ -16,7 +16,8 @@ use crate::private_names::{is_credential_name, is_hidden_name};
 use crate::real_paths::{is_within, real_path, segments_below};
 use crate::scan_root::SourceRoot;
 use crate::source_access::{
-    absolute, address, DirectoryEntry, EntryKind, Refusal, SourceFiles, SourceReadError,
+    absolute, address, address_seeing_hidden, is_never_shown, DirectoryEntry, EntryKind, Refusal,
+    SourceFiles, SourceReadError,
 };
 
 /// A file larger than this is never re-read as evidence: it stays moved.
@@ -105,6 +106,17 @@ impl DiskSource {
     /// may be a link that leads anywhere (it is only looked at, never opened), so its folder is
     /// judged.
     fn confine(&self, checked: &Path, follow: bool) -> Result<Option<PathBuf>, Refusal> {
+        self.confine_showing(checked, follow, false)
+    }
+
+    /// [`Self::confine`], with hidden parts allowed when `sees_hidden`: credential names and
+    /// `.git` stay refused, also as the path really resolves.
+    fn confine_showing(
+        &self,
+        checked: &Path,
+        follow: bool,
+        sees_hidden: bool,
+    ) -> Result<Option<PathBuf>, Refusal> {
         let real_root = self
             .real_root
             .as_ref()
@@ -130,10 +142,18 @@ impl DiskSource {
             None
         }
         .ok_or(Refusal::OutsideApprovedRoot)?;
-        if below
-            .iter()
-            .any(|part| is_hidden_name(part) || is_credential_name(part))
-        {
+        let refused = |part: &String| {
+            if sees_hidden {
+                is_never_shown(part)
+            } else {
+                is_hidden_name(part) || is_credential_name(part)
+            }
+        };
+        // Seeing through hidden folders stops at a hidden file: the last part is the file only
+        // when the whole path is there.
+        let hidden_file =
+            sees_hidden && probe == judged && below.last().is_some_and(|last| is_hidden_name(last));
+        if hidden_file || below.iter().any(refused) {
             return Err(Refusal::PrivateOrHiddenPath);
         }
         Ok((probe == judged && follow).then_some(real))
@@ -202,6 +222,19 @@ impl SourceFiles for DiskSource {
         Ok(std::fs::symlink_metadata(&checked)
             .ok()
             .map(|found| kind_of(found.file_type())))
+    }
+
+    fn regular_file_exists(&self, path: &Path) -> Result<bool, SourceReadError> {
+        let checked = address_seeing_hidden(&self.root, &self.excluded, path)
+            .map(|name| absolute(&self.root, &name))
+            .map_err(SourceReadError::Refused)?;
+        let Some(real) = self
+            .confine_showing(&checked, true, true)
+            .map_err(SourceReadError::Refused)?
+        else {
+            return Ok(false);
+        };
+        Ok(std::fs::metadata(real).is_ok_and(|found| found.is_file()))
     }
 
     fn read_text(&self, path: &Path) -> Result<std::borrow::Cow<'_, str>, SourceReadError> {
@@ -544,6 +577,82 @@ mod tests {
             tree.source
                 .read_evidence_text(&tree.root.join("src/a.ts"), &mut short),
             None
+        );
+    }
+
+    #[test]
+    fn a_file_in_a_hidden_folder_is_known_to_exist_but_credentials_and_git_stay_refused() {
+        let tree = tree();
+        for (name, text) in [
+            (".generated/surface.json", "{}"),
+            (".storybook/main.ts", ""),
+            (".env", "KEY=1"),
+            (".git/config", ""),
+            ("src/credentials.json", "{}"),
+            (".generated/secret.pem", ""),
+        ] {
+            let path = tree.root.join(name);
+            std::fs::create_dir_all(path.parent().expect("parent")).expect("folder");
+            std::fs::write(path, text).expect("file");
+        }
+        let exists = |name: &str| tree.source.regular_file_exists(&tree.root.join(name));
+        assert_eq!(exists(".generated/surface.json"), Ok(true));
+        assert_eq!(exists(".storybook/main.ts"), Ok(true));
+        assert_eq!(exists("src/a.ts"), Ok(true));
+        assert_eq!(exists(".generated/none.json"), Ok(false));
+        assert_eq!(exists("src"), Ok(false), "a folder is not a regular file");
+        for refused in [
+            ".git/config",
+            ".git",
+            ".env",
+            ".generated",
+            "src/credentials.json",
+            ".generated/secret.pem",
+            "../outside/sentinel.ts",
+        ] {
+            assert!(
+                matches!(exists(refused), Err(SourceReadError::Refused(_))),
+                "{refused}"
+            );
+        }
+        // A hidden file is not seen through, only hidden folders are: `.env` stays refused, and a
+        // read of a file in a hidden folder is refused as before.
+        assert_eq!(refusal(exists(".env")), Refusal::PrivateOrHiddenPath);
+        assert_eq!(
+            refusal(
+                tree.source
+                    .read_text(&tree.root.join(".generated/surface.json"))
+            ),
+            Refusal::PrivateOrHiddenPath
+        );
+    }
+
+    #[test]
+    fn a_link_is_followed_only_while_it_stays_inside_the_root_and_off_the_credentials() {
+        let tree = tree();
+        std::fs::create_dir_all(tree.root.join(".generated")).expect("folder");
+        std::fs::write(tree.root.join(".generated/surface.json"), "{}").expect("file");
+        std::fs::write(tree.root.join(".env"), "KEY=1").expect("env");
+        symlink(
+            tree.root.join(".generated/surface.json"),
+            tree.root.join("src/inside.json"),
+        )
+        .expect("link");
+        symlink(
+            tree.outside.join("sentinel.ts"),
+            tree.root.join("src/leaves.ts"),
+        )
+        .expect("link");
+        symlink(tree.root.join(".env"), tree.root.join("src/sees-env.txt")).expect("link");
+        let exists = |name: &str| tree.source.regular_file_exists(&tree.root.join(name));
+        assert_eq!(exists("src/inside.json"), Ok(true));
+        assert_eq!(
+            refusal(exists("src/leaves.ts")),
+            Refusal::OutsideApprovedRoot
+        );
+        assert_eq!(
+            refusal(exists("src/sees-env.txt")),
+            Refusal::PrivateOrHiddenPath
         );
     }
 

@@ -156,6 +156,33 @@ fn a_repository_of_every_language_gives_edges_modules_and_go_package_evidence() 
 }
 
 #[test]
+fn an_import_into_a_hidden_folder_is_placed_and_one_into_a_secret_or_git_is_not() {
+    let scratch = Scratch::new("hidden-targets");
+    let root = scratch.path();
+    write(
+        root,
+        "src/a.ts",
+        "import data from './.generated/surface.json';\nimport './.storybook/main';\nimport env from './.env';\nimport key from './secrets';\nimport cfg from '../.git/config';\n",
+    );
+    write(root, "src/.generated/surface.json", "{}\n");
+    write(root, "src/.storybook/main.ts", "");
+    write(root, "src/.env", "KEY=1\n");
+    write(root, "src/secrets.ts", "");
+    write(root, ".git/config", "");
+
+    let found = scan(root, &ImportScanOptions::default());
+    let mut targets: Vec<&str> = found.edges.iter().map(|e| e.to.as_str()).collect();
+    targets.sort_unstable();
+    assert_eq!(
+        targets,
+        ["src/.generated/surface.json", "src/.storybook/main.ts"]
+    );
+    let mut refused: Vec<&str> = found.unresolved.iter().map(|u| u.spec.as_str()).collect();
+    refused.sort_unstable();
+    assert_eq!(refused, ["../.git/config", "./.env", "./secrets"]);
+}
+
+#[test]
 fn windows_line_endings_and_a_byte_order_mark_give_the_edges_unix_ones_do() {
     let scratch = Scratch::new("line-endings");
     let root = scratch.path();

@@ -261,7 +261,6 @@ merge.
 | 33 | `infer_imports` `unresolved` for a source file whose bytes are not text (binary data under `.ts`, `.rs` and the like) | the bytes are read as text and any import-shaped text in them becomes an edge | the file is listed with the reason `source-not-parsed` and no edges, so "nothing was read" is never reported as "nothing was found". A new reason value, added to the set. Corpus: `infer-imports-syntax-tree-reads` | an import list for a file that is not source is a guess an agent would trust |
 | 34 | `infer_imports` edges for Rust and JVM source | a `mod` after an inner attribute (`#![allow(..)]`) is dropped, a `use` under `#[cfg]` or split over lines is not read, a `use` inside a macro body is read, a JVM name stops at its first non-ASCII letter, text in comments and strings that looks like an import is read as one, and `import('./x').T` in a type position counts as a value import | all of them follow the syntax tree: the `mod` and the two `use` forms are read, the macro body is not, a name in any script is read whole, also inside a Kotlin string template, import-shaped text inside a comment or a string literal is no import, and `import('./x').T` in a type position is `type_only`. Corpus: `infer-imports-syntax-tree-reads`. An instance of row 2 | a parser reads the file the compiler reads; the scanners read what they happened to match |
 | 35 | `inspect_architecture` `measured` for a scan root that is not inside a git repository | a `sha256:` fingerprint of every file's name, size and bytes, hidden and credential-named files included | no `measured` key: the brief and its conformance are unchanged, and a git repository still gets its commit and `dirty` flag. Corpus: `inspect-architecture-storefront-profile` | the fingerprint cannot be made without opening files the confined reader never opens; a stamp the app's own probe cannot reproduce is worse than none |
-| 36 | `infer_imports` for a specifier that names a file below a hidden folder (`./.hidden/data.json`) | the file is found and the edge is read | the specifier is listed in `unresolved` as `relative-not-found`: the confined reader refuses every path with a hidden or credential-named part, so existence is not confirmed either (`.claude/rules/local-first.md`). Corpus: `infer-imports-syntax-tree-reads`. Kept as a consequence of that boundary, not as an improvement: a reader that may confirm existence of a hidden folder's files needs a decision on `confined-files` | the scan must not tell an agent whether a credential-named or hidden file is there; the cost is a missed edge to a generated file such as `docs/.generated/mcp-surface.json` |
 
 Slices add rows only with a corpus case for each; the lead reviews each row in the slice's pull
 request.
@@ -787,3 +786,11 @@ None — the owner delegated the open points and the lead decided them on 2026-1
   difference is fixed or declared. Every assertion a slice weakened is listed for the final review,
   because their audit found more than a hundred weakened ones. The one switch stays (no gradual
   move), since the replay stands in for their shadow traffic.
+- 2026-11-28 (slice 6, lead's review): `infer_imports` places an import into a hidden folder
+  (`.generated`, `.storybook`) with an existence-only question added to `confined-files`
+  (`regular_file_exists`): it never opens the file, sees through hidden folders, and refuses a
+  hidden file such as `.env`, a credential name, `.git` and a link that leaves the root, so the
+  proposed row 36 is dropped. The walk depth limit is 4096 folders, beyond what any path allows,
+  because a limit of 128 would have dropped files Node read; the 256-statement limit for Rust and
+  the 256-import limit for Go match Node and each has a corpus case. Row 35 stands: a folder not
+  under git has no head to stamp.

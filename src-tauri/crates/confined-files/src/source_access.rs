@@ -115,6 +115,13 @@ pub trait SourceFiles {
     /// The kind of the path itself, a link being a link.
     fn link_kind(&self, path: &Path) -> Result<Option<EntryKind>, SourceReadError>;
 
+    /// Whether the path names a regular file, through links that stay inside the root, answered
+    /// from the file's entry and never by opening it. A hidden folder (`.generated`,
+    /// `.storybook`) is seen through, so an import into one can be placed; a hidden file
+    /// (`.env`), a credential-named part, `.git` and a link that leaves the root are refused, as
+    /// for every other question.
+    fn regular_file_exists(&self, path: &Path) -> Result<bool, SourceReadError>;
+
     /// The text of a regular file, as Node's `readFileSync(path, 'utf8')` decodes it.
     fn read_text(&self, path: &Path) -> Result<Cow<'_, str>, SourceReadError>;
 
@@ -165,6 +172,40 @@ pub(crate) fn address(root: &Path, excluded: &[String], path: &Path) -> Result<S
         return Err(Refusal::DeliberatelyExcluded);
     }
     Ok(normalized)
+}
+
+/// `path` checked like [`address`] except that a hidden folder is allowed: a credential name or
+/// `.git` among its parts is refused, and so is a hidden last part, which is a hidden file. A
+/// file's existence may be asked about this way; reading it still goes through [`address`].
+pub(crate) fn address_seeing_hidden(
+    root: &Path,
+    excluded: &[String],
+    path: &Path,
+) -> Result<String, Refusal> {
+    let parts = parts_below(root, path)?;
+    if parts.iter().any(|part| is_never_shown(part))
+        || parts.last().is_some_and(|last| is_hidden_name(last))
+    {
+        return Err(Refusal::PrivateOrHiddenPath);
+    }
+    let normalized = if parts.is_empty() {
+        ".".to_string()
+    } else {
+        parts.join("/")
+    };
+    if excluded
+        .iter()
+        .any(|prefix| normalized == *prefix || normalized.starts_with(&format!("{prefix}/")))
+    {
+        return Err(Refusal::DeliberatelyExcluded);
+    }
+    Ok(normalized)
+}
+
+/// A name no question may touch even when hidden folders are seen through: a credential, or the
+/// repository's own `.git`.
+pub(crate) fn is_never_shown(part: &str) -> bool {
+    is_credential_name(part) || part == ".git"
 }
 
 /// The absolute path of a `/`-separated name below `root`.

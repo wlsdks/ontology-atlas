@@ -3,8 +3,9 @@
 //! A resolver tries several candidates per specifier (`a.ts`, `a.tsx`, `a/index.ts`...). A path
 //! whose parent is not a folder is absent without a probe, and every answer is remembered, so a
 //! scan costs one disk call per distinct path whose parent exists however often a module is
-//! imported. A path the root refuses to show (hidden, credential-named, outside, through a link
-//! that leaves) is absent: a scan never learns that it exists.
+//! imported. A path the root refuses to show (credential-named, `.git`, outside, through a link
+//! that leaves) is absent: a scan never learns that it exists. Whether a file exists is the one
+//! question asked through hidden folders (`.generated`), so an import into one is placed.
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -16,6 +17,7 @@ pub struct PathFacts<'files> {
     files: &'files dyn SourceFiles,
     through_links: RefCell<HashMap<PathBuf, Option<EntryKind>>>,
     as_written: RefCell<HashMap<PathBuf, Option<EntryKind>>>,
+    regular_files: RefCell<HashMap<PathBuf, bool>>,
 }
 
 impl<'files> PathFacts<'files> {
@@ -24,6 +26,7 @@ impl<'files> PathFacts<'files> {
             files,
             through_links: RefCell::default(),
             as_written: RefCell::default(),
+            regular_files: RefCell::default(),
         }
     }
 
@@ -67,8 +70,16 @@ impl<'files> PathFacts<'files> {
         answer
     }
 
+    /// A regular file, through links that stay inside the root, also below a hidden folder.
     pub fn is_file(&self, path: &Path) -> bool {
-        self.kind(path) == Some(EntryKind::File)
+        if let Some(known) = self.regular_files.borrow().get(path) {
+            return *known;
+        }
+        let answer = self.files.regular_file_exists(path).unwrap_or(false);
+        self.regular_files
+            .borrow_mut()
+            .insert(path.to_path_buf(), answer);
+        answer
     }
 
     pub fn is_directory(&self, path: &Path) -> bool {

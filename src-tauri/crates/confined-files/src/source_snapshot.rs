@@ -446,6 +446,11 @@ impl SourceFiles for SnapshotSource<'_> {
         self.kind(path)
     }
 
+    /// A census lists no hidden entry, so a hidden path is refused here as it is for `kind`.
+    fn regular_file_exists(&self, path: &Path) -> Result<bool, SourceReadError> {
+        Ok(self.kind(path)?.is_some_and(EntryKind::is_file))
+    }
+
     fn read_text(&self, path: &Path) -> Result<Cow<'_, str>, SourceReadError> {
         let (name, entry) = self.get(path)?;
         let entry = entry.ok_or(SourceReadError::Absent)?;

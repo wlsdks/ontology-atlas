@@ -464,14 +464,6 @@
       "path": "result.content[0].text",
       "change": 34,
       "reason": "Imports are read from the syntax tree: import-shaped text inside a comment or a string literal is no import, and `import('./x').T` in a type position is `type_only`; the line scanner read both comment and string text as imports and counted the type position as a value (row 34, an instance of row 2)."
-    },
-    {
-      "case": "imports/infer-imports-syntax-tree-reads",
-      "where": "answer",
-      "id": 5,
-      "path": "result.content[0].text",
-      "change": 36,
-      "reason": "A specifier that names a file below a hidden folder is `relative-not-found`: the confined reader never looks below a hidden or credential-named part, so the scan cannot confirm that such a file exists (row 36); the JavaScript server resolved it."
     }
   ]
 }
