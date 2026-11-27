@@ -98,7 +98,8 @@ impl OperationInProgress {
 /// What one `rev-parse` says about the repository a folder is in.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RepositoryFacts {
-    /// The top of the working tree as a real path (links resolved, no `\\?\` prefix).
+    /// The top of the working tree as git prints it: on Windows with `/` separators, and on macOS
+    /// possibly through a link. A caller that compares it with a folder resolves both first.
     pub top_level: PathBuf,
     /// Whether the history is cut short (a shallow clone).
     pub shallow: bool,
@@ -193,8 +194,7 @@ impl Repository {
     }
 
     /// The top of the working tree and whether history is shallow, from one run, or `None` when
-    /// the folder is not in a working tree. The top is a real path, so a folder reached through
-    /// a link can be placed below it with [`RepoPath::of_folder`].
+    /// the folder is not in a working tree.
     pub fn facts(&self) -> Result<Option<RepositoryFacts>, GitReadError> {
         let output = self.read(&["rev-parse", "--is-shallow-repository", "--show-toplevel"])?;
         if !output.success() {
@@ -208,9 +208,8 @@ impl Repository {
                 message: "the top of the repository is not one line".to_string(),
             });
         };
-        let top = PathBuf::from(top);
         Ok(Some(RepositoryFacts {
-            top_level: dunce::canonicalize(&top).unwrap_or(top),
+            top_level: PathBuf::from(top),
             shallow: shallow == "true",
         }))
     }
@@ -322,25 +321,39 @@ impl Repository {
 
     /// The commits, newest first up to `max_commits`, that touched any of `paths`, each with the
     /// touched paths among them (a folder matches the files below it). Renames are not followed,
-    /// so a rename is a deletion and an addition. Before the first commit git refuses, and the
-    /// answer is a [`GitReadError::Failed`]; a caller asks only when `HEAD` names a commit.
+    /// so a rename is a deletion and an addition. The paths go to `git log --stdin` after a `--`
+    /// line, so their number and length cannot reach the command-line limit of a platform (32,767
+    /// characters on Windows). Before the first commit git refuses, and the answer is a
+    /// [`GitReadError::Failed`]; a caller asks only when `HEAD` names a commit.
     pub fn touch_history(
         &self,
         paths: &[RepoPath],
         max_commits: usize,
     ) -> Result<Vec<TouchedCommit>, GitReadError> {
-        let mut args: Vec<String> = vec![
-            "log".to_string(),
-            format!("--max-count={max_commits}"),
-            "-z".to_string(),
-            "--format=%x1e%H %cI".to_string(),
-            "--raw".to_string(),
-            "--no-abbrev".to_string(),
-            "--no-renames".to_string(),
-            "--".to_string(),
-        ];
-        args.extend(paths.iter().map(|path| path.as_str().to_string()));
-        let output = self.run(&args, MAX_TOUCH_HISTORY_OUTPUT)?;
+        let args: Vec<String> = [
+            "log",
+            "--stdin",
+            "-z",
+            "--format=%x1e%H %cI",
+            "--raw",
+            "--no-abbrev",
+            "--no-renames",
+        ]
+        .iter()
+        .map(|arg| (*arg).to_string())
+        .chain(std::iter::once(format!("--max-count={max_commits}")))
+        .collect();
+        let mut input = String::from("--\n");
+        for path in paths {
+            input.push_str(path.as_str());
+            input.push('\n');
+        }
+        let mut invocation = GitInvocation::new(&self.folder, &args);
+        invocation.max_output = MAX_TOUCH_HISTORY_OUTPUT;
+        invocation.timeout = Some(READ_TIMEOUT);
+        invocation.stdin = Some(input.as_bytes());
+        invocation.environment = self.environment.clone();
+        let output = run_git(invocation)?;
         if !output.success() {
             return Err(GitReadError::Failed {
                 subcommand: "log".to_string(),
@@ -351,6 +364,7 @@ impl Repository {
     }
 
     /// The newest `limit` commits that touched `path`, as commit and author time, newest first.
+    /// Git refusing (no commit yet, a damaged repository) is an error, never an empty history.
     pub fn file_commits(
         &self,
         path: &RepoPath,
@@ -364,10 +378,7 @@ impl Repository {
             "--".to_string(),
             path.as_str().to_string(),
         ];
-        let output = self.run(&args, MAX_READ_OUTPUT)?;
-        if !output.success() {
-            return Ok(Vec::new());
-        }
+        let output = self.succeeded(&args)?;
         Ok(output
             .stdout_text()
             .lines()
@@ -380,7 +391,9 @@ impl Repository {
             .collect())
     }
 
-    /// `git show <commit>:<path>`: the committed bytes, or `None` when the commit has no such file.
+    /// `git show <commit>:<path>`: the committed bytes, or `None` when git cannot show them: the
+    /// commit has no such file, or the commit or the repository cannot be read. Output past the
+    /// read bound is an error.
     pub fn show_blob(&self, blob: &BlobAt) -> Result<Option<Vec<u8>>, GitReadError> {
         let args = ["show".to_string(), blob.spec()];
         let output = self.run(&args, MAX_READ_OUTPUT)?;
@@ -456,8 +469,8 @@ impl Repository {
     }
 
     /// The bytes of each blob through one `cat-file --batch`, in the order asked. `None` for a
-    /// missing object; a reply that does not parse ends the list early with `None`s, and the
-    /// caller reads those one at a time with [`Self::show_blob`].
+    /// missing object; a reply that does not parse ends the list early with `None`s, which a
+    /// caller treats as unread.
     pub fn blobs(&self, blobs: &[BlobAt]) -> Result<Vec<Option<Vec<u8>>>, GitReadError> {
         if blobs.is_empty() {
             return Ok(Vec::new());

@@ -37,6 +37,7 @@ pub use markdown_walk::utf16_order;
 pub use modified_time::ModifiedTime;
 pub use os_error::{IoFailure, OsErrorCode};
 pub use private_names::{is_credential_name, is_hidden_name, names_hidden_or_credential_file};
+pub use real_paths::{is_within_folding_case, real_path};
 pub use scan_root::{ScanRootRefused, ScanRoots, SourceRoot};
 pub use slug_rules::{
     is_vault_source_path, raw_source_file_for_slug, unwritable_slug_reason, UnwritableReason,

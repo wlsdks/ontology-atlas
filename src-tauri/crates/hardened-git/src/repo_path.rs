@@ -1,32 +1,16 @@
 //! The name of a place inside a repository: what a vault, a page or an agent may say in a `git`
 //! question, checked when it is built so no later code has to check it again.
 
-use std::path::{Component, Path, PathBuf};
-
-/// A path inside a repository, `/`-separated, never absolute, never climbing, never an option and
-/// never a pathspec word. `.` is the repository root.
+/// A path inside a repository, `/`-separated, never absolute, never climbing, and never holding a
+/// line break, because `cat-file --batch` and `log --stdin` read one name per line. `.` is the
+/// repository root.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RepoPath(String);
 
-/// A folder that is not below the repository's top level once both are real paths.
-#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
-#[error("the folder is outside the repository")]
-pub struct OutsideRepository {
-    /// The folder's real path, which is what an answer says about it.
-    pub real: PathBuf,
-}
-
-/// A folder inside a repository: the real path it was reached at, and where it lies below the
-/// top.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PlacedFolder {
-    pub real: PathBuf,
-    pub path: RepoPath,
-}
-
 impl RepoPath {
-    /// Trailing slashes are dropped. `None` for an empty path, an absolute one, one that starts
-    /// with `-`, one with a backslash, a NUL, a newline or a `..` part.
+    /// A name an agent or a page wrote: trailing slashes are dropped, and an empty name, an
+    /// absolute one, one that starts with `-`, one with a backslash, a NUL, a line break or a
+    /// `..` part is refused.
     pub fn new(raw: &str) -> Option<Self> {
         let trimmed = raw.trim().trim_end_matches('/');
         let refused = trimmed.is_empty()
@@ -42,30 +26,36 @@ impl RepoPath {
         Self(".".to_string())
     }
 
-    /// A path below the repository as the platform writes it, with `/` separators. `None` when it
-    /// is not a valid [`RepoPath`] (for example it climbs).
-    pub fn from_path(relative: &Path) -> Option<Self> {
-        if relative.as_os_str().is_empty() {
-            return Some(Self::root());
+    /// A place built from the real names of the folders on the way, which may start with `-` or a
+    /// space and may hold a backslash on a platform where that is a letter of a name: a folder the
+    /// person made is never refused for its spelling, because every path goes to `git` after
+    /// `--` and as a literal. `.` parts are skipped and no parts is the root. `None` for an empty
+    /// part, a `..` part, or a part with a `/`, a NUL or a line break.
+    pub fn from_parts<'a>(parts: impl IntoIterator<Item = &'a str>) -> Option<Self> {
+        let mut kept: Vec<&str> = Vec::new();
+        for part in parts {
+            let refused = part.is_empty() || part == ".." || part.contains(['/', '\0', '\n', '\r']);
+            if refused {
+                return None;
+            }
+            if part != "." {
+                kept.push(part);
+            }
         }
-        let text: Vec<String> = relative
-            .components()
-            .map(|part| part.as_os_str().to_string_lossy().into_owned())
-            .collect();
-        Self::new(&text.join("/"))
+        Some(if kept.is_empty() {
+            Self::root()
+        } else {
+            Self(kept.join("/"))
+        })
     }
 
-    /// Where `folder` lies below `top_level`, both resolved to real paths first (macOS reaches
-    /// `/var` through `/private/var`, a Windows path may carry a `\\?\` prefix). Windows compares
-    /// letters without regard to case, because NTFS keeps a name's case but looks it up without
-    /// it (Microsoft, "Case Sensitivity" in the file-name documentation).
-    pub fn of_folder(top_level: &Path, folder: &Path) -> Result<PlacedFolder, OutsideRepository> {
-        let real = dunce::canonicalize(folder).unwrap_or_else(|_| folder.to_path_buf());
-        let top = dunce::canonicalize(top_level).unwrap_or_else(|_| top_level.to_path_buf());
-        let placed = below(&top, &real).and_then(|relative| Self::from_path(&relative));
-        match placed {
-            Some(path) => Ok(PlacedFolder { real, path }),
-            None => Err(OutsideRepository { real }),
+    /// `below` placed under this place. `below` was already checked, so the result is too.
+    #[must_use]
+    pub fn join(&self, below: &Self) -> Self {
+        match (self.0.as_str(), below.0.as_str()) {
+            (".", _) => below.clone(),
+            (_, ".") => self.clone(),
+            (top, rest) => Self(format!("{top}/{rest}")),
         }
     }
 
@@ -83,32 +73,12 @@ impl RepoPath {
     }
 }
 
-fn below(root: &Path, path: &Path) -> Option<PathBuf> {
-    let mut rest = path.components();
-    for expected in root.components() {
-        let actual = rest.next()?;
-        if !same_component(expected, actual) {
-            return None;
-        }
-    }
-    Some(rest.as_path().to_path_buf())
-}
-
-fn same_component(left: Component<'_>, right: Component<'_>) -> bool {
-    if cfg!(windows) {
-        left.as_os_str().to_string_lossy().to_lowercase()
-            == right.as_os_str().to_string_lossy().to_lowercase()
-    } else {
-        left == right
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn a_repository_path_refuses_every_spelling_that_could_be_an_option_or_an_escape() {
+    fn a_name_an_agent_wrote_refuses_every_spelling_that_could_be_an_option_or_an_escape() {
         for refused in [
             "",
             "  ",
@@ -124,28 +94,56 @@ mod tests {
         ] {
             assert_eq!(RepoPath::new(refused), None, "{refused:?}");
         }
-        assert_eq!(
-            RepoPath::new("docs/ontology/").map(|p| p.0),
-            Some("docs/ontology".to_string())
-        );
-        assert_eq!(
-            RepoPath::new(" src/a.ts ").map(|p| p.0),
-            Some("src/a.ts".to_string())
-        );
-        assert_eq!(
-            RepoPath::new(":(top)x").map(|p| p.0),
-            Some(":(top)x".to_string())
-        );
-        assert_eq!(RepoPath::new(".").map(|p| p.0), Some(".".to_string()));
-        assert_eq!(
-            RepoPath::from_path(Path::new("")).map(|p| p.0),
-            Some(".".to_string())
-        );
-        assert_eq!(
-            RepoPath::from_path(Path::new("a/b")).map(|p| p.0),
-            Some("a/b".to_string())
-        );
-        assert_eq!(RepoPath::from_path(Path::new("../b")), None);
+        for (raw, kept) in [
+            ("docs/ontology/", "docs/ontology"),
+            (" src/a.ts ", "src/a.ts"),
+            (":(top)x", ":(top)x"),
+            (".", "."),
+        ] {
+            assert_eq!(
+                RepoPath::new(raw).as_ref().map(RepoPath::as_str),
+                Some(kept)
+            );
+        }
+    }
+
+    #[test]
+    fn a_folder_the_person_made_is_never_refused_for_how_it_is_spelled() {
+        for (parts, kept) in [
+            (vec![], "."),
+            (vec!["."], "."),
+            (vec!["docs", "ontology"], "docs/ontology"),
+            (vec![" notes"], " notes"),
+            (vec!["-drafts", "a b"], "-drafts/a b"),
+            (vec!["notes "], "notes "),
+            (vec![":(top)"], ":(top)"),
+        ] {
+            assert_eq!(
+                RepoPath::from_parts(parts.clone())
+                    .as_ref()
+                    .map(RepoPath::as_str),
+                Some(kept),
+                "{parts:?}"
+            );
+        }
+        for refused in [
+            vec![".."],
+            vec!["a", ""],
+            vec!["a/b"],
+            vec!["a\nb"],
+            vec!["a\0b"],
+        ] {
+            assert_eq!(RepoPath::from_parts(refused.clone()), None, "{refused:?}");
+        }
+    }
+
+    #[test]
+    fn a_checked_name_is_placed_under_a_folder_without_being_checked_again() {
+        let vault = RepoPath::from_parts(["-drafts"]).expect("vault");
+        let page = RepoPath::new("capabilities/pay.md").expect("page");
+        assert_eq!(vault.join(&page).as_str(), "-drafts/capabilities/pay.md");
+        assert_eq!(RepoPath::root().join(&page), page);
+        assert_eq!(vault.join(&RepoPath::root()), vault);
     }
 
     #[test]
@@ -156,38 +154,5 @@ mod tests {
         assert!(!docs.holds("docs-old/a.md"));
         assert!(!docs.holds("a/docs"));
         assert!(RepoPath::root().holds("anything/at/all"));
-    }
-
-    #[cfg(unix)]
-    #[test]
-    fn a_folder_reached_through_a_link_is_placed_by_where_it_really_is() {
-        let base = std::env::temp_dir().join(format!("repo-path-{}", std::process::id()));
-        let top = base.join("top");
-        let vault = top.join("docs/ontology");
-        std::fs::create_dir_all(&vault).expect("vault");
-        std::os::unix::fs::symlink(&top, base.join("alias")).expect("link");
-        let through_link = base.join("alias/docs/ontology");
-        let placed = RepoPath::of_folder(&top, &through_link).expect("inside");
-        assert_eq!(placed.path.as_str(), "docs/ontology");
-        assert_eq!(placed.real, dunce::canonicalize(&vault).expect("real"));
-        let at_top = RepoPath::of_folder(&top, &top).expect("inside");
-        assert_eq!(at_top.path.as_str(), ".");
-        assert!(RepoPath::of_folder(&vault, &top).is_err());
-        let _ = std::fs::remove_dir_all(&base);
-    }
-
-    /// NTFS stores a name's case but finds it without regard to case, and `git rev-parse
-    /// --show-toplevel` prints the drive letter as the process folder spelled it, so the two
-    /// paths may differ only in case.
-    #[cfg(windows)]
-    #[test]
-    fn a_windows_folder_is_placed_without_regard_to_case_and_with_forward_slashes() {
-        let top = Path::new("C:\\Users\\me\\Repo");
-        let vault = Path::new("c:\\users\\me\\repo\\docs\\ontology");
-        assert_eq!(
-            below(top, vault).and_then(|relative| RepoPath::from_path(&relative)),
-            RepoPath::new("docs/ontology")
-        );
-        assert_eq!(below(top, Path::new("C:\\Users\\me\\Repository")), None);
     }
 }

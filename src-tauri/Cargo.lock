@@ -2228,7 +2228,6 @@ dependencies = [
 name = "hardened-git"
 version = "0.1.0"
 dependencies = [
- "dunce",
  "hardened-git",
  "thiserror 2.0.21",
 ]

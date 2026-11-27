@@ -40,7 +40,8 @@ pub struct DatingCommit {
 }
 
 /// Dates each wanted path, in the order given; a path nothing in the window touched is `None`.
-/// A folder is touched by any file below it. The caller asks only when `HEAD` names a commit:
+/// Only the first [`MAX_DATED_PATHS`] are asked; the rest are `None`, so a caller cannot make one
+/// walk read an unbounded list. A folder is touched by any file below it. The caller asks only when `HEAD` names a commit:
 /// a `git log` that fails, an unborn branch included, is an error, so a repository that cannot
 /// be read is never mistaken for a quiet one.
 pub fn date_paths(
@@ -48,12 +49,15 @@ pub fn date_paths(
     wanted: &[WantedPath],
     max_commits: usize,
 ) -> Result<Vec<Option<DatingCommit>>, GitReadError> {
-    if wanted.is_empty() {
-        return Ok(Vec::new());
+    let asked = wanted.get(..MAX_DATED_PATHS).unwrap_or(wanted);
+    if asked.is_empty() {
+        return Ok(vec![None; wanted.len()]);
     }
-    let paths: Vec<RepoPath> = wanted.iter().map(|path| path.resolved.clone()).collect();
+    let paths: Vec<RepoPath> = asked.iter().map(|path| path.resolved.clone()).collect();
     let commits = repository.touch_history(&paths, max_commits)?;
-    Ok(fold_dating(wanted, &commits))
+    let mut dated = fold_dating(asked, &commits);
+    dated.resize(wanted.len(), None);
+    Ok(dated)
 }
 
 /// What is known about one wanted path while the commits are read newest first.

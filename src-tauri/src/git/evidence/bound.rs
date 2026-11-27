@@ -6,7 +6,7 @@ use hardened_git::RepoPath;
 use serde::Serialize;
 use source_scan::{date_paths, Dating, WantedPath, DATING_WINDOW_COMMITS};
 
-use super::super::repo::{require_repo_root, vault_pathspec};
+use super::super::repo::{require_repo_root, vault_place};
 use super::super::runner::{hardened_repository, validate_vault_dir};
 use crate::gray_area::scope::{resolve_binding_metadata, verify_identity};
 
@@ -140,7 +140,7 @@ fn path_kind(root: &Path, raw: &str) -> Option<(bool, bool)> {
 
 struct Wanted {
     key: String,
-    resolved: String,
+    resolved: RepoPath,
     exists: bool,
     is_dir: bool,
 }
@@ -161,7 +161,7 @@ fn wanted_with(
     omitted: &mut Vec<String>,
     mut inspect: impl FnMut(&Path, &str) -> Option<(bool, bool)>,
 ) -> Vec<Wanted> {
-    let prefix = vault_pathspec(repo, root);
+    let prefix = vault_place(repo, root);
     let mut seen = HashSet::new();
     paths
         .iter()
@@ -174,17 +174,14 @@ fn wanted_with(
                 return None;
             }
             *remaining -= 1;
-            let Some((exists, is_dir)) = inspect(root, raw) else {
+            let (Some((exists, is_dir)), Some(named)) = (inspect(root, raw), RepoPath::new(raw))
+            else {
                 omitted.push(raw.clone());
                 return None;
             };
             Some(Wanted {
                 key: raw.clone(),
-                resolved: if prefix == "." {
-                    raw.clone()
-                } else {
-                    format!("{prefix}/{raw}")
-                },
+                resolved: prefix.join(&named),
                 exists,
                 is_dir,
             })
@@ -197,7 +194,7 @@ fn dirty_paths(root: &Path, paths: &[Wanted]) -> Result<HashSet<String>, String>
     let files: Vec<RepoPath> = paths
         .iter()
         .filter(|path| !path.is_dir)
-        .filter_map(|path| RepoPath::new(&path.resolved))
+        .map(|path| path.resolved.clone())
         .collect();
     if files.is_empty() {
         return Ok(HashSet::new());
@@ -206,12 +203,6 @@ fn dirty_paths(root: &Path, paths: &[Wanted]) -> Result<HashSet<String>, String>
         .working_tree(&files)
         .map_err(|_| "unreadable")?;
     Ok(tree.rows.into_iter().map(|row| row.path).collect())
-}
-fn matches_path(path: &str, candidate: &str) -> bool {
-    candidate == path
-        || candidate
-            .strip_prefix(path)
-            .is_some_and(|rest| rest.starts_with('/'))
 }
 fn walk(root: &Path, paths: &[Wanted], dating: Dating) -> Result<Vec<BoundPathChange>, String> {
     if paths.is_empty() {
@@ -222,15 +213,15 @@ fn walk(root: &Path, paths: &[Wanted], dating: Dating) -> Result<Vec<BoundPathCh
         .iter()
         .enumerate()
         .filter(|(_, path)| !path.is_dir)
-        .filter_map(|(position, path)| {
-            Some((
+        .map(|(position, path)| {
+            (
                 position,
                 WantedPath {
                     key: path.key.clone(),
-                    resolved: RepoPath::new(&path.resolved)?,
+                    resolved: path.resolved.clone(),
                     dating,
                 },
-            ))
+            )
         })
         .collect();
     let mut dated: Vec<Option<String>> = vec![None; paths.len()];
@@ -257,7 +248,7 @@ fn walk(root: &Path, paths: &[Wanted], dating: Dating) -> Result<Vec<BoundPathCh
             let dirty = before
                 .iter()
                 .chain(after.iter())
-                .any(|candidate| matches_path(&path.resolved, candidate));
+                .any(|candidate| path.resolved.holds(candidate));
             BoundPathChange {
                 path: path.key.clone(),
                 exists: path.exists,
@@ -362,10 +353,7 @@ fn measure(
             Err(reason) => return BoundEvidenceDates::unavailable(&reason),
         };
         for (path, row) in wanted.iter().zip(rows.iter_mut()) {
-            if dirty
-                .iter()
-                .any(|candidate| matches_path(&path.resolved, candidate))
-            {
+            if dirty.iter().any(|candidate| path.resolved.holds(candidate)) {
                 row.dirty = true;
                 row.last_changed_at = None;
             }

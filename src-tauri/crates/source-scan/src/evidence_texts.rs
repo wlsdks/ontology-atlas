@@ -59,12 +59,9 @@ fn readable(
     base: &RepoPath,
     files: &dyn EvidenceFiles,
 ) -> Option<Readable> {
-    let named = RepoPath::new(request.path)?;
-    let working_path = if base.as_str() == "." {
-        named
-    } else {
-        RepoPath::new(&format!("{}/{}", base.as_str(), named.as_str()))?
-    };
+    // The name the caller wrote is checked as written, before it goes under the folder, so a
+    // folder spelled ` notes` or `-drafts` does not decide whether a cited name is acceptable.
+    let working_path = base.join(&RepoPath::new(request.path)?);
     if names_hidden_or_credential_file(working_path.as_str()) || files.refuses(&working_path) {
         return None;
     }

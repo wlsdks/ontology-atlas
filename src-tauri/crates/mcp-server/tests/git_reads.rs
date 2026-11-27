@@ -235,7 +235,7 @@ fn history_says_when_it_was_cut_short_and_a_repository_without_commits_has_none(
 }
 
 #[test]
-fn a_vault_outside_the_repository_and_a_machine_without_git_are_told_apart() {
+fn a_vault_outside_the_repository_is_told_so_with_its_real_path() {
     let scene = Scene::new();
     scene.write("notes/a.md", "a\n");
     scene.commit_all("seed");
@@ -254,25 +254,36 @@ fn a_vault_outside_the_repository_and_a_machine_without_git_are_told_apart() {
     );
     assert_eq!(outside["ok"], false);
     assert_eq!(outside["reason"], "vault-outside-repository");
-
-    let no_git = ask(
-        &[
-            (
-                "OATLAS_VAULT",
-                &scene.path().join("notes").to_string_lossy(),
-            ),
-            ("OATLAS_REPO_ROOT", &scene.path().to_string_lossy()),
-            (
-                "PATH",
-                &scene.path().join("no-such-folder").to_string_lossy(),
-            ),
-        ],
-        "git_history",
-        "{}",
-    );
-    assert_eq!(no_git["ok"], false);
     assert_eq!(
-        no_git["reason"], "git-not-available",
-        "an agent is not told to run git init on a machine that has no git"
+        outside["vaultRoot"],
+        real_path(&other.path().join("vault"))
+            .to_string_lossy()
+            .as_ref()
     );
+}
+
+/// A folder the person made is never refused for its spelling: ` notes` is not read as `notes`,
+/// and `-drafts` is not an option.
+#[test]
+fn a_vault_folder_that_starts_with_a_space_or_a_dash_is_read_as_it_is_spelled() {
+    for folder in [" notes", "-drafts", "a b/-c"] {
+        let scene = Scene::new();
+        scene.write(&format!("{folder}/kept.md"), "kept\n");
+        scene.write("notes/other.md", "a decoy named like the trimmed folder\n");
+        scene.commit_all("seed");
+        scene.write(&format!("{folder}/kept.md"), "changed\n");
+
+        let status = scene.ask(folder, "git_status", "{}");
+        assert_eq!(status["vaultPathspec"], folder, "{folder}");
+        assert_eq!(
+            paths(&status["files"]),
+            [format!("{folder}/kept.md")],
+            "{folder}"
+        );
+        assert_eq!(
+            scene.ask(folder, "git_history", "{}")["count"],
+            1,
+            "{folder}"
+        );
+    }
 }

@@ -4,8 +4,10 @@
 
 use std::path::PathBuf;
 
+use confined_files::real_path;
 use hardened_git::{GitReadError, GitRunError, RepoPath, Repository};
 use serde::Serialize;
+use source_scan::{place_folder, FolderPlacementError};
 
 use crate::dispatch::CallContext;
 use crate::error::ToolError;
@@ -40,8 +42,9 @@ pub enum Located {
 }
 
 /// Looks for the repository of `context`'s repository root and places the vault below it. A
-/// `git` that cannot start is its own reason, not "not a repository", so an agent is not told to
-/// run `git init` on a machine that has no git.
+/// `git` that is not installed is its own reason, not "not a repository", so an agent is not told
+/// to run `git init` on a machine that has no git. A `git` that is there and cannot start is an
+/// error with the operating system's words.
 pub fn locate(context: &CallContext<'_>, operation: &'static str) -> Result<Located, ToolError> {
     let config = context.config();
     let missing =
@@ -63,19 +66,27 @@ pub fn locate(context: &CallContext<'_>, operation: &'static str) -> Result<Loca
                 &config.vault_root,
             )
         }
-        Err(GitReadError::Run(GitRunError::Spawn(_))) => {
+        Err(GitReadError::Run(GitRunError::Spawn(cause)))
+            if cause.kind() == std::io::ErrorKind::NotFound =>
+        {
             return missing("git-not-available", &config.repo_root, &config.vault_root)
         }
         Err(other) => return Err(ToolError::failed(other.to_string())),
     };
-    match RepoPath::of_folder(&facts.top_level, &config.vault_root) {
+    let top_level = real_path(&facts.top_level).unwrap_or(facts.top_level);
+    match place_folder(&top_level, &config.vault_root) {
         Ok(placed) => Ok(Located::Found(Box::new(VaultRepository {
-            repository: Repository::at(&facts.top_level),
+            repository: Repository::at(&top_level),
             vault: placed.real,
             scope: placed.path,
-            top_level: facts.top_level,
+            top_level,
             shallow: facts.shallow,
         }))),
-        Err(outside) => missing("vault-outside-repository", &facts.top_level, &outside.real),
+        Err(FolderPlacementError::Outside { real }) => {
+            missing("vault-outside-repository", &top_level, &real)
+        }
+        Err(not_askable @ FolderPlacementError::NotAskable { .. }) => {
+            Err(ToolError::failed(not_askable.to_string()))
+        }
     }
 }

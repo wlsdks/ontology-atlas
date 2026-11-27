@@ -5,7 +5,7 @@ use source_scan::{date_paths, Dating, DatingCommit, WantedPath, DATING_WINDOW_CO
 pub(crate) mod bound;
 pub(crate) mod text;
 
-use super::repo::{require_repo_root, vault_pathspec};
+use super::repo::{require_repo_root, vault_place};
 use super::runner::{hardened_repository, validate_vault_dir};
 use crate::coded_error::coded;
 
@@ -38,19 +38,14 @@ pub fn git_paths_last_change(
 ) -> Result<Vec<PathLastChange>, String> {
     let vault_dir = validate_vault_dir(&vault_path)?;
     let repo_root = require_repo_root(&vault_dir)?;
-    let pathspec = vault_pathspec(&repo_root, &vault_dir);
-    let prefix = if pathspec == "." {
-        String::new()
-    } else {
-        format!("{pathspec}/")
-    };
+    let vault_place = vault_place(&repo_root, &vault_dir);
 
     let mut wanted: Vec<WantedPath> = Vec::new();
-    let mut push = |key: &str, resolved: String, dating: Dating| {
+    let mut push = |key: &str, resolved: Option<RepoPath>, dating: Dating| {
         if wanted.len() >= MAX_EVIDENCE_PATHS || wanted.iter().any(|path| path.key == key) {
             return;
         }
-        if let Some(resolved) = RepoPath::new(&resolved) {
+        if let Some(resolved) = resolved {
             wanted.push(WantedPath {
                 key: key.to_string(),
                 resolved,
@@ -59,20 +54,17 @@ pub fn git_paths_last_change(
         }
     };
     // Documents first: the cap is shared, and implementation paths must not starve
-    // concept documents.
+    // concept documents. A name is checked as written, then placed under the vault, so the
+    // vault's own spelling decides nothing about whether a cited name is acceptable.
     for raw in &vault_paths {
         push(
             raw,
-            format!("{prefix}{}", raw.trim().trim_end_matches('/')),
+            RepoPath::new(raw).map(|named| vault_place.join(&named)),
             Dating::FirstCommitWithPresentBytes,
         );
     }
     for raw in &repo_paths {
-        push(
-            raw,
-            raw.trim().trim_end_matches('/').to_string(),
-            Dating::NewestCommit,
-        );
+        push(raw, RepoPath::new(raw), Dating::NewestCommit);
     }
     if wanted.is_empty() {
         return Ok(Vec::new());

@@ -590,7 +590,7 @@ fn the_bound_walk_dates_documents_by_their_bytes_as_the_shared_cases_say() {
         let wanted_one = |path: &str| {
             vec![Wanted {
                 key: path.to_string(),
-                resolved: path.to_string(),
+                resolved: RepoPath::new(path).expect("a path"),
                 exists: true,
                 is_dir: false,
             }]
