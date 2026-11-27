@@ -92,7 +92,7 @@ current value emphasis and workflow priorities where wording differs.
 > This product is not a "system *for* agents." It is **a single layer of meaning that humans and AI agents read and edit together**, with agents being formal users just like humans. Here, *meaning layer* refers to the markdown folder where each part of the product's identity, responsibility, and proof are recorded.
 > Agents maintain this folder in its latest state and are also the ones who read it most (MCP), while humans make the final judgment on what the correct meaning is — what humans see is ordinary markdown and git diffs, and the original files are on their own disks. These two categories and locations differ. One is a repository only machines read (vector DB · auto extraction), which loses in automation scale competition. The other is a wiki only humans use, which quickly becomes outdated.
 > **Marketing copy starts from the friction experienced while using agents, but the product's core remains "a set used together by both."** Every screen must satisfy two things: can agents use it directly (typed facts · redirect text), and can humans read and judge it (plain language · visible priority)?
-> The first screen is also split. The public web has an introduction page (the place to bring people in), and the installed app has a first-run screen that opens folders immediately like Obsidian (no marketing copy).
+> The first screen is also split. The public website has an introduction page (the place to bring people in) and a read-only sample map, and the installed app has a first-run screen that opens folders immediately like Obsidian (no marketing copy).
 
 > **[Current Canonical] This document handles product direction, and `docs/DECISIONS.md` handles decision rationale.**
 > Earlier product plans are history in Git; they do not indicate current state or execution order.
@@ -286,9 +286,10 @@ person or agent understand, judge, correct, or reuse meaning in actual work.
 ### Decision 1 — Direction A (ontology-first, historical; superseded 2026-07-29)
 
 This records the route framing that was reviewed at the time. The current route
-contract is: a web visitor without a vault sees the gateway at `/`; a vault-bearing
-web visitor and the installed app enter the map/first-run surface; and
-`/topology` is the explicit map address. The retired `/ontology` routes redirect
+contract is: a plain browser sees the gateway at `/`; the installed app enters the
+map/first-run surface; `/topology` is the explicit map address in the app, and any
+app address opened in a plain browser shows a page saying Atlas runs in the installed
+app (2026-11-27). The retired `/ontology` routes redirect
 to current surfaces and do not own separate chrome.
 
 `/` becomes the **ontology hub**:
@@ -430,8 +431,8 @@ project an unnamed answer would be misleading.
 
 The installable macOS app is the first-class writable workbench, not a future
 exploration. The user opens a vault folder from disk and keeps the same
-markdown + MCP graph loop without a backend. On the hosted web, root is
-the gateway until a vault is loaded; `/topology` is the explicit map address.
+markdown + MCP graph loop without a backend. In a plain
+browser, root is the gateway; in the app, `/topology` is the explicit map address.
 
 Quality bar: it has to feel like a real Mac app, not a web page in a window.
 Compare against Obsidian, Claude Desktop, and Codex Desktop on the basics: the
@@ -568,8 +569,8 @@ is historical, not a current deployment surface. This is
 evidence for goal completion, not a substitute for publishing signed/notarized
 release assets.
 The hosted landing page biases toward the installer selected from generated
-release facts and product explanation; the browser folder picker remains the
-web gateway fallback when installation is not the visitor's path.
+release facts and product explanation; a visitor for whom
+installation is not the path sees the sample map or runs the MCP server from source.
 
 ### Option A — npm package + CLI (historical, retired)
 
@@ -623,9 +624,8 @@ agent execution track: it exposes the same graph to Claude Code, Codex, Cursor,
 and other agents.
 
 The hosted website is the product introduction and download entry point. It
-should not be treated as the writable workbench. Keep browser-based local vault
-flows as the install-free/degraded fallback, while the installed app + MCP carry the
-real local-first product promise.
+opens no folder and is not a workbench. The installed app + MCP carry the real
+local-first product promise; the website adds only a read-only sample map.
 
 ---
 

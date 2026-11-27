@@ -22,7 +22,7 @@ meaning to source evidence. Structural health is not accepted meaning.
 - MCP internals split by responsibility.
 - State is React/URL/in-memory; IndexedDB stores only the vault handle. The
   app's derived index (OS cache) is rebuildable and never canonical.
-  App and web share parser/data contracts, not identical screens.
+  Only the app opens a folder.
 
 ## Working and finishing
 
@@ -73,8 +73,8 @@ ships (`committed-media.contract.test.ts`). Skill design:
 
 Delegate only large, independent, parallelizable work; finish what a handful of
 tool calls can do yourself, and never delegate to verify or double-check your
-own work. Opus builds and investigates; Fable specs, plans, reviews,
-researches and judges design (`docs/engineering/agent-effort.md`). Disclose shared-context reviews. Subagents do not stash,
+own work. Agents run on Opus; Fable needs the owner's yes per task
+(`docs/engineering/agent-effort.md`). Disclose shared-context reviews. Subagents do not stash,
 delete worktrees, or run `git add -A`.
 
 Before reversing an existing product or architecture choice, find
@@ -97,12 +97,13 @@ Read the named authority only for its subject:
 | Storage/surface boundaries | `.claude/rules/local-first.md`, `.claude/rules/surfaces.md`, `.claude/rules/forbidden.md` |
 | Tests, docs, Git | `.claude/rules/testing.md`, `.claude/rules/documentation.md`, `.claude/rules/git.md` |
 
-Routes are locale-prefixed; use `@/i18n/navigation`. `/` chooses gateway or
-vault-bearing map/first-run; a wiki without nodes opens `/library`. The app must
-not offer its own download. `/topology` owns map/relation review; ACP writes wait
-for `allow_once` or `reject_once`. Route additions/removals require a decision
-fragment. `/ontology`, `/ontology/edit`, `/ontology/studio`, `/ontology/insights` and
-`/mcp` are redirects. Check the forbidden rule before reviving a retired namespace.
+Routes are locale-prefixed; use `@/i18n/navigation`. `/` is the gateway in a
+browser, the map/first-run in the app; a wiki without nodes opens `/library`.
+The app must not offer its own download. `/topology` owns map/relation review;
+ACP writes wait for `allow_once` or `reject_once`. Route additions/removals
+require a decision fragment. `/ontology`, `/ontology/edit`, `/ontology/studio`,
+`/ontology/insights` and `/mcp` are redirects. Check the forbidden rule before
+reviving a retired namespace.
 
 ## Source authority and ontology loop
 
@@ -149,24 +150,10 @@ optimizing Codex instructions.
 
 ## Harness loading and hooks
 
-This file is the only root instruction file: Claude Code reads it directly, and
-a root `CLAUDE.md` would replace it. `.claude/rules/` always loads `forbidden`,
-`git` and `local-first`; `design`, `design-gates`, `architecture`, `testing`,
-`surfaces` and `documentation` load by their frontmatter paths
-(`rules-path-scope.contract.test.ts`). Making a rule resident updates that
-contract, this sentence, and the commit's reason together. Codex loads no rule
-by itself. Claude discovers skills in `.claude/skills/`, Codex in
-`.agents/skills/`.
-
-`.claude/settings.json` owns Claude permissions and hooks, `.codex/hooks.json`
-Codex hooks; Codex skips a new or changed entry until a person trusts it in
-`/hooks`. Hooks block irreversible commands, report lint and language findings
-at edit time, and inject the vault census at session start; each header says
-why. Each has a `.codex/hooks/` adaptation (a Codex edit is an `apply_patch`
-envelope), not a copy, except Codex-only
-`block-secret-read.sh` (Claude uses `permissions.deny`) and Claude-only
-`session-length.sh` (it reads Claude's transcript). `pnpm test:claude:hooks`
-guards the wiring.
+This is the only root instruction file; a root `CLAUDE.md` would replace it.
+Codex loads no rule by itself. Which rules load every turn, which wait for a
+path, and which hooks run for which host: `docs/engineering/agent-instructions.md`,
+"Loading and hooks". Read it before editing a rule, a hook or `.codex/hooks.json`.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

@@ -54,15 +54,15 @@ Read it, then merge it into your file yourself.
 Then quit and reopen your agent. An agent reads its MCP config only when a
 session starts.
 
-In the browser, Atlas cannot save the config file, because a web page does not
-know the folder's absolute path. Instead, the MCP tab asks you for that path and
-for the path of an Atlas source checkout. It then builds the config text for
-you to copy and save. Nothing is written or sent. The desktop app is the
-shorter route: [download the app](https://ontologyatlas.com/en/download/).
+Only the app writes these files, because only it knows the folder's absolute
+path. A web page, including ontologyatlas.com, opens no folder and writes
+nothing. Without the app, run the server from a source checkout, as described
+next. To get the app,
+[download it](https://ontologyatlas.com/en/download/).
 
 ## Connect from a source checkout
 
-Without the app, for example on Linux, run the server from a clone of the
+Without the app, for example on Linux or an Intel Mac, run the server from a clone of the
 repository. You need Git, Node.js 24 and pnpm:
 
 ```bash

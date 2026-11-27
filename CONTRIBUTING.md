@@ -13,7 +13,8 @@ guidance.
 git clone https://github.com/wlsdks/ontology-atlas
 cd ontology-atlas
 pnpm install
-pnpm dev                          # http://localhost:3000
+pnpm desktop:dev                  # the app, on a real folder; needs Rust (docs/DESKTOP-MACOS.md)
+pnpm dev                          # http://localhost:3000: the website's pages only; app addresses show the app-only page
 
 # Before opening a PR
 pnpm typecheck

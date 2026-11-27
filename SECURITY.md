@@ -19,8 +19,8 @@ usual web attack surface does not exist here because the server does not exist.
 
 That shifts the interesting questions to three places.
 
-**The desktop app's native bridge.** The macOS shell (Tauri) is what lets the web
-layer touch your disk at all. Its window is granted a deliberately short list of
+**The desktop app's native bridge.** The macOS shell (Tauri) is what lets the interface
+(a WebView) touch your disk at all. Its window is granted a deliberately short list of
 permissions — broad filesystem, shell, HTTP, and opener grants are refused by
 `pnpm desktop:check`, and adding one requires naming it in an allowlist with a
 reason. If you find a path that reaches beyond the folder you chose, that is a

@@ -2,11 +2,14 @@
  * Accessibility inventory: count the violations before switching a rule engine on, since a rule at
  * a scale one PR cannot clear is noise. It is an inventory, not a gate. Usage: serve the static
  * export after `pnpm build`, then `node scripts/design/measure-a11y.mjs [baseUrl] [route...]`.
+ * The website's pages are measured as a visitor sees them; every other route is measured in the
+ * app with the Storefront sample folder open (`scripts/lib/desktop-app/open-folder-in-app.mjs`).
  */
 
 import { chromium } from "@playwright/test";
 import { createRequire } from "node:module";
-import { rmSync } from "node:fs";
+
+import { loadDesktopHarness, openSurfaces } from "../lib/desktop-app/open-folder-in-app.mjs";
 
 const require = createRequire(import.meta.url);
 const AXE_PATH = require.resolve("axe-core/axe.min.js");
@@ -23,18 +26,18 @@ const DEFAULT_ROUTES = [
   "/ko/guide",
 ];
 const VIEWPORT = { width: 1512, height: 900 };
-const PROFILE = `/tmp/atlas-a11y-${process.pid}`;
 
-const ctx = await chromium.launchPersistentContext(PROFILE, {
-  headless: true,
-  viewport: VIEWPORT,
-  deviceScaleFactor: 2,
+const browser = await chromium.launch({ headless: true });
+const surfaces = openSurfaces(browser, {
+  baseUrl: BASE,
+  files: (await loadDesktopHarness()).storefrontFiles(),
+  locale: "ko",
+  context: { viewport: VIEWPORT, deviceScaleFactor: 2 },
 });
-const page = ctx.pages()[0] ?? (await ctx.newPage());
 const rows = [];
 
 for (const route of ROUTES.length > 0 ? ROUTES : DEFAULT_ROUTES) {
-  await page.goto(`${BASE}${route}?guides=off`, { waitUntil: "networkidle" });
+  const page = await surfaces.visit(`${route}${route.includes("?") ? "&" : "?"}guides=off`);
   await page.waitForTimeout(2500);
   await page.addScriptTag({ path: AXE_PATH });
   const result = await page.evaluate(async () => {
@@ -55,8 +58,8 @@ for (const route of ROUTES.length > 0 ? ROUTES : DEFAULT_ROUTES) {
   rows.push({ route, violations: result });
 }
 
-await ctx.close();
-rmSync(PROFILE, { recursive: true, force: true });
+await surfaces.close();
+await browser.close();
 
 /** Folded by rule — **the unit of prescription is the rule, not the route.** */
 const byRule = new Map();

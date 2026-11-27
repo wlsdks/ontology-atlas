@@ -30,8 +30,8 @@ Atlas 把这些答案放在代码旁边：
 
 - **macOS 应用**（Apple Silicon）：已签名并经过公证，MCP 服务器内置在应用中。
 - **Windows x64 测试版**：未签名，文件夹和 MCP 功能与 macOS 版相同。
-- **浏览器**：Chrome 或 Edge 可以打开你磁盘上的文件夹并显示地图。浏览器版不能注册智能体，没有智能体对话，也不保存 API 密钥。没有打开文件夹时，它会显示一张示例地图。
-- **Linux**：使用浏览器版，或者从源码的本地克隆运行 MCP 服务器（[连接编码智能体](/guide/connect-agent)）。
+- **网站**：ontologyatlas.com 介绍 Atlas，并提供一张只读的示例地图。它不打开文件夹，不注册智能体，也不保存密钥。
+- **Linux 和 Intel Mac**：没有对应的应用。请查看示例地图，或者从源码的本地克隆运行 MCP 服务器（[连接编码智能体](/guide/connect-agent)）。
 
 没有账号，没有 Atlas 服务器，也没有遥测。你的文件夹始终是你磁盘上的普通 Markdown（[数据、隐私与安全](/guide/trust)）。
 
@@ -45,6 +45,6 @@ Atlas 把这些答案放在代码旁边：
 
 1. [什么是本体？](/guide/what-is-an-ontology)：地图背后的思想，包括一般意义上的本体和代码库的本体。
 2. [Atlas 与代码图谱、Wiki、笔记应用和 CLAUDE.md 的比较](/guide/atlas-compared)：Atlas 记录了哪些这些工具没有的内容，以及什么时候这些工具才是更好的选择。
-3. [快速上手](/guide/first-five-minutes)：下载应用或在浏览器中试用，然后打开或创建你的本体文件夹。
+3. [快速上手](/guide/first-five-minutes)：下载应用或先看看示例地图，然后打开或创建你的本体文件夹。
 4. [通过 MCP 连接编码智能体](/guide/connect-agent)：让 Claude Code、Codex 或 Cursor 通过 MCP 读取地图。
 5. [从代码构建第一张地图](/guide/from-your-repo)。

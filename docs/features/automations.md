@@ -29,7 +29,7 @@ under reduced motion it rests with one proposal waiting. Saving the first schedu
 rises. The new-schedule button keeps its place in the header bar. The header bar starts at the page
 gutter like every destination's; the body wears the 960px column centred at every width, as Agents does.
 Without a folder, the installed app opens a folder in place.
-The browser explains the installed-app requirement. Cancelling a new schedule returns keyboard
+Cancelling a new schedule returns keyboard
 focus to the header action in both lanes, including after an unfocused native pointer click.
 
 Edit opens the schedule's own sheet on the schedule as it stands, with its name, cadence and

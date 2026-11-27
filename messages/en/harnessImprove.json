@@ -1,0 +1,129 @@
+{
+  "stage": {
+    "title": "Improve what your agent reads",
+    "body": "One run checks Claude Code's memory against this repository's Git history and proposes changes line by line. Nothing changes until you keep it.",
+    "folder": "{count, plural, one {# note} other {# notes}} in {path}",
+    "indexSize": "Index: {lines} of {lineLimit} lines · {bytes} of {byteLimit}",
+    "start": "Check memory",
+    "startWithAgent": "Check memory and sessions",
+    "local": "Reads files on this computer only. Nothing is sent anywhere, and nothing changes until you keep it."
+  },
+  "folders": {
+    "title": "Claude Code keeps memory for this repository in {count} folders. Choose the one to check.",
+    "row": "{path} · {count, plural, one {# note} other {# notes}} · changed {date}"
+  },
+  "lanes": {
+    "paths": "Paths",
+    "index": "Index",
+    "notes": "Stale notes",
+    "corrections": "Repeated corrections",
+    "count": "{done} of {total}"
+  },
+  "run": {
+    "checkingNote": "Checking {note}",
+    "askingGit": "Looking up {path} in Git history",
+    "readingSessions": "Reading {done} of {total} sessions",
+    "sending": "Waiting for {agent}",
+    "stop": "Stop",
+    "stopped": "Stopped. What was found so far stays in the list."
+  },
+  "groups": {
+    "moved": "Moved, new place known",
+    "gone": "No longer in this repository",
+    "notJudged": "{count, plural, one {# path names a file outside this repository and was not checked} other {# paths name files outside this repository and were not checked}}",
+    "duplicate": "Listed twice in the index",
+    "dangling": "Index links to a missing note",
+    "unlisted": "Notes missing from the index",
+    "similar": "Notes that say nearly the same",
+    "overLimit": "Not loaded: past the limit",
+    "stale": "Every file it cites is gone",
+    "rules": "Proposed rules"
+  },
+  "detail": {
+    "line": "Line {line} of {note}",
+    "now": "Now",
+    "afterKeep": "After you keep it",
+    "moved": "{old} moved to {new} on {date} in commit {commit}: {subject}",
+    "gone": "{old} was removed on {date} in commit {commit}: {subject}. Git records no new place, so Atlas proposes no change. Edit this line yourself.",
+    "duplicate": "{note} is listed on line {first} and again on line {line}. Keeping removes the second link.",
+    "dangling": "Line {line} links to {note}, which is not in the folder. Keeping removes that link.",
+    "unlisted": "{note}, last changed {date}, is in the folder but not in the index, so Claude Code does not see it at session start. Read it below; keeping adds a link named {name} at the end of the index.",
+    "similar": "{first} and {second} describe nearly the same thing. Atlas proposes no change; merge them yourself if they do.",
+    "overLimit": "Claude Code loads the first {lineLimit} lines or {byteLimit} of the index. From line {line} on, nothing is loaded.",
+    "stale": "Every file this note cites is gone: {paths}. Keeping deletes {note} and its index link; Undo brings both back.",
+    "rule": "{agent} grouped {count, plural, one {# message} other {# messages}} of yours from {sessions, plural, one {# session} other {# sessions}} under this rule.",
+    "ruleEvidence": "{date} · after {tool} on {file}",
+    "ruleTarget": "Add to",
+    "ruleTargetMemory": "Claude Code memory, as a new note",
+    "hiddenLine": "This line looks like it holds a key or token, so Atlas does not show it. Open {note} in your editor."
+  },
+  "action": {
+    "keep": "Keep",
+    "leave": "Leave as is",
+    "copy": "Copy",
+    "keepAll": "Keep all {count}",
+    "checkAgain": "Check again"
+  },
+  "keepAll": {
+    "title": "Make {count, plural, one {# change} other {# changes}} in {files, plural, one {# file} other {# files}}",
+    "body": "Each follows Git's record or removes a repeated or broken index link. Adding a note to the index, deleting a note and adding a rule are never in this list. One Undo puts all of them back.",
+    "confirm": "Keep all {count}",
+    "cancel": "Cancel"
+  },
+  "toast": {
+    "kept": "Changed line {line} of {note}.",
+    "keptAll": "Made {count, plural, one {# change} other {# changes}} in {files, plural, one {# file} other {# files}}.",
+    "deleted": "Deleted {note} and its index link.",
+    "ruleAdded": "Added the rule to {file}.",
+    "undo": "Undo",
+    "undone": "Put {file} back as it was."
+  },
+  "kept": {
+    "tag": "Kept"
+  },
+  "done": {
+    "cleanTitle": "Nothing to change",
+    "cleanBody": "{paths, plural, one {# path} other {# paths}}, the index and {notes, plural, one {# note} other {# notes}} checked against Git at {commit}.",
+    "foundTitle": "{count, plural, one {# change to review} other {# changes to review}}"
+  },
+  "empty": {
+    "title": "No Claude Code memory for this repository",
+    "body": "Atlas looked in {paths} and found no notes. Claude Code writes them there once auto memory is on."
+  },
+  "partial": {
+    "body": "{count, plural, one {# file was not read} other {# files were not read}}: {reason}. What they hold is not in the list."
+  },
+  "error": {
+    "git": "Could not read this repository's Git history, so no path was judged: {reason}",
+    "folder": "Could not open {path}: {reason}. Nothing was changed.",
+    "changedSince": "{file} changed after the check, so Atlas did not change it. Check again to see its current lines.",
+    "writeFailed": "Could not write {file}: {reason}. It is unchanged.",
+    "undoChanged": "{file} changed after Atlas wrote it and Atlas's change is no longer there, so nothing was put back."
+  },
+  "managed": {
+    "body": "Your organisation manages Claude Code on this Mac, so Atlas changes no file here. Copy each change instead."
+  },
+  "agent": {
+    "switch": "Also find repeated corrections with my agent",
+    "what": "Atlas reads the last 30 days of this repository's Claude Code sessions on this computer and picks the messages you typed right after the agent acted. You see them before anything is sent. Then only their text goes to {agent}, which sends it to {provider} under the account it uses in Atlas, which may not be the one you used in those sessions.",
+    "logNote": "Each send is recorded on this computer in {logPath}. What {agent} itself sends to {provider} is not in that record.",
+    "sendTitle": "{count, plural, one {# message} other {# messages}}, {size}, from {sessions, plural, one {# session} other {# sessions}}, ready to send. Only the text below goes to {agent}.",
+    "send": "Send {count, plural, one {# message} other {# messages}} to {agent}",
+    "skip": "Skip",
+    "none": "Connect an agent in Agents to also turn corrections you repeat into proposed rules.",
+    "openAgents": "Open Agents",
+    "failed": "{agent} did not finish: {reason}. The other lanes are complete.",
+    "cleanupFailed": "Atlas could not delete {path}, where {agent} kept this run's transcript. Delete it yourself.",
+    "dropped": "{count, plural, one {# proposal was dropped} other {# proposals were dropped}}: each copied your words, held a command, a link or a hidden character, or rested on fewer than two sessions.",
+    "noRepeat": "No correction came up twice in the last 30 days."
+  },
+  "web": {
+    "title": "Improving agent memory needs the app",
+    "body": "Claude Code keeps these notes in your home folder, which a browser cannot open. The app reads them and changes a line only when you keep it."
+  },
+  "card": {
+    "running": "Improving agent memory · {done} of {total}",
+    "found": "{count, plural, one {# change to review} other {# changes to review}} in Claude Code memory",
+    "open": "Open"
+  }
+}

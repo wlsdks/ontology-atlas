@@ -63,6 +63,9 @@ test('schedule rows never unfold: the row carries the result, selection narrows 
   await page.getByTestId('automations-tab-ontology').click();
   await expect(page.getByTestId('automations-tab-ontology')).toHaveAttribute('aria-selected', 'true');
   await page.getByTestId('automations-new').press('Enter');
+  // The kind is the sheet's first field: it decides the default name and the fields after it.
+  await expect(page.getByTestId('ontology-automation-kind-check')).toBeFocused();
+  await page.keyboard.press('Tab');
   await expect(page.getByTestId('ontology-automation-name')).toBeFocused();
   await page.keyboard.type('A review that will be cancelled');
   await page.keyboard.press('Tab');

@@ -4,7 +4,8 @@
   "viewsAria": "ハーネスの表示",
   "views": {
     "overview": "構成",
-    "architecture": "アーキテクチャ"
+    "architecture": "アーキテクチャ",
+    "improve": "改善"
   },
   "retry": "もう一度読み込む",
   "toolsSource": "出典",

@@ -6,7 +6,7 @@ use std::time::{Duration, Instant};
 use super::counts::{
     is_skipped, Pulse, Verdict, VerdictBatch, GIT_CALL_GAP, STEP_COUNT_CAP, STEP_MS,
 };
-use super::is_counted_kind;
+use super::{affordable_roots, is_counted_kind, watch_cost};
 
 /// The watcher and its state are one per app: tests that use them take turns.
 static ONE_WATCHER_AT_A_TIME: Mutex<()> = Mutex::new(());
@@ -357,6 +357,26 @@ fn no_path_reaches_the_payload() {
     assert!(!format!("{read:?}").contains(PLANTED));
 }
 
+#[test]
+fn a_root_costs_one_open_file_per_folder_on_its_path_and_four_more() {
+    assert_eq!(watch_cost(Path::new("/Users/someone/repo")), 8);
+    assert_eq!(watch_cost(Path::new("/r/a")), 7);
+}
+
+#[test]
+fn roots_are_watched_until_the_next_would_pass_half_the_open_file_limit() {
+    let roots = ["/r/a", "/r/deep/deeper/deepest", "/r/b"].map(PathBuf::from);
+    let affordable = |soft_open_file_limit| -> Vec<&PathBuf> {
+        affordable_roots(&roots, soft_open_file_limit).collect()
+    };
+    // Costs 7, 9 and 7.
+    assert_eq!(affordable(46), roots.iter().collect::<Vec<_>>());
+    assert_eq!(affordable(45), vec![&roots[0], &roots[1]]);
+    // `/r/b` alone would still fit, but the roots stop at the first that does not.
+    assert_eq!(affordable(31), vec![&roots[0]]);
+    assert!(affordable(13).is_empty());
+}
+
 /// The watcher on a real repository with 40 linked worktrees, through the command's own path.
 #[cfg(target_os = "macos")]
 mod with_the_watcher {
@@ -369,6 +389,7 @@ mod with_the_watcher {
         git_check, pulse_read, set_ask_lapse, set_watching, stop_watching, watcher_is_alive,
     };
     use super::PLANTED;
+    use crate::app_shell::open_file_limit::soft_open_file_limit;
     use crate::work_status::agent_sessions::worktree_folders;
 
     fn git(folder: &Path, args: &[&str]) {
@@ -390,10 +411,15 @@ mod with_the_watcher {
     }
 
     fn ask(repo: &Path, drawn: &[String]) -> Option<super::super::PulseRead> {
-        pulse_read(worktree_folders(repo), drawn, |batch| {
-            GIT_CALLS.fetch_add(1, Ordering::SeqCst);
-            git_check(batch)
-        })
+        pulse_read(
+            worktree_folders(repo),
+            drawn,
+            soft_open_file_limit(),
+            |batch| {
+                GIT_CALLS.fetch_add(1, Ordering::SeqCst);
+                git_check(batch)
+            },
+        )
     }
 
     /// The hardened runner reads pathspecs literally, which `check-ignore` refuses outright.
@@ -503,7 +529,8 @@ mod with_the_watcher {
         set_watching(true);
         set_ask_lapse(Duration::from_millis(300));
         let drawn = ["lapse".to_string()];
-        assert!(pulse_read(vec![(folder.clone(), "lapse".into())], &drawn, |_| None).is_some());
+        let listed = vec![(folder.clone(), "lapse".to_string())];
+        assert!(pulse_read(listed, &drawn, soft_open_file_limit(), |_| None).is_some());
         assert!(watcher_is_alive());
         let deadline = Instant::now() + Duration::from_secs(10);
         while watcher_is_alive() && Instant::now() < deadline {
@@ -514,6 +541,39 @@ mod with_the_watcher {
         set_watching(false);
         let _ = std::fs::remove_dir_all(&folder);
         assert!(ended, "the watcher outlived the lapse");
+    }
+
+    /// A room past half the soft limit on open files is not watched, so FSEvents never runs out of
+    /// them: notify 9 answers that by freeing the stream's context twice.
+    #[test]
+    fn a_room_past_half_the_open_file_limit_is_not_watched() {
+        let _turn = super::ONE_WATCHER_AT_A_TIME
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let base = std::env::temp_dir().join(format!("atlas-pulse-budget-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        let [first, second] = ["first", "second"].map(|name| {
+            std::fs::create_dir_all(base.join(name)).expect("folder");
+            std::fs::canonicalize(base.join(name)).expect("canonical")
+        });
+        let listed = vec![
+            (first.clone(), "first".to_string()),
+            (second.clone(), "second".to_string()),
+        ];
+        let drawn = ["first".to_string(), "second".to_string()];
+        // Half of this is one open file short of both rooms.
+        let soft_open_file_limit = 2 * (super::watch_cost(&first) + super::watch_cost(&second)) - 1;
+        set_watching(true);
+        let read = pulse_read(listed, &drawn, soft_open_file_limit, |_| None);
+        set_watching(false);
+        let _ = std::fs::remove_dir_all(&base);
+        let watched = |id: &str| {
+            read.as_ref()
+                .and_then(|read| read.worktrees.get(id))
+                .map(|room| room.watched)
+        };
+        assert_eq!(watched("first"), Some(true));
+        assert_eq!(watched("second"), Some(false));
     }
 
     /// A pause that arrives while an ask is between its start and its watcher waits for the ask,
@@ -529,7 +589,7 @@ mod with_the_watcher {
         let listed = vec![(folder.clone(), "paused".to_string())];
         let drawn = vec!["paused".to_string()];
         set_watching(true);
-        assert!(pulse_read(listed.clone(), &drawn, |_| None).is_some());
+        assert!(pulse_read(listed.clone(), &drawn, soft_open_file_limit(), |_| None).is_some());
         super::super::notice(&folder.join("held.rs"));
         assert_eq!(super::super::waiting_paths(), 1);
         stop_watching();
@@ -545,7 +605,7 @@ mod with_the_watcher {
         let (in_check, entered) = std::sync::mpsc::channel();
         let (release, released) = std::sync::mpsc::channel::<()>();
         let ask = std::thread::spawn(move || {
-            pulse_read(listed, &drawn, |_| {
+            pulse_read(listed, &drawn, soft_open_file_limit(), |_| {
                 let _ = in_check.send(());
                 let _ = released.recv();
                 None

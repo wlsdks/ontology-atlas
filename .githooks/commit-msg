@@ -1,10 +1,10 @@
 #!/bin/sh
 # Commit-message language gate (2026-08-24)
 #
-# `.claude/rules/git.md` has required an English conventional prefix and an
-# English subject since this repository started. It was never enforced, and when
-# this hook landed 269 of the last 300 subjects and 180 of the last 300 bodies
-# were Korean. A rule that every commit breaks is not a rule; the 2026 harness
+# `.claude/rules/git.md` has required an English message since this repository
+# started; the prefix list lives in `commit-msg-language.mjs`, which this hook
+# runs. The rule was never enforced, and when this hook landed 269 of the last
+# 300 subjects and 180 of the last 300 bodies were Korean. A rule that every commit breaks is not a rule; the 2026 harness
 # literature names prompt-only enforcement the first anti-pattern, and this was
 # the clearest instance of it here.
 #

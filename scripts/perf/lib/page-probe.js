@@ -1,6 +1,6 @@
-// In-page probe for perf:web-open (Playwright init script) and perf:app-open (a <script> the perf
-// build adds to every page). It records frame gaps, long tasks, load milestones and walk segments,
-// and drives the map and Library walks with synthetic input, so both surfaces run the same walk.
+// In-page probe for perf:app-open (a <script> the perf build adds to every page). It records frame
+// gaps, long tasks, load milestones and walk segments, and drives the map and Library walks with
+// synthetic input, so every run takes the same walk.
 // The app build replaces `__PERF_PROBE_COLLECTOR__` with the folder the harness reads reports from.
 (() => {
   if (window.__perfProbe) return;

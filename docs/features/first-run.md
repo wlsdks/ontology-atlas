@@ -27,13 +27,11 @@ file without a `kind:` are never touched. The success toast's Undo moves that re
 back, skipping any path that holds a file again; the copies stay in the sidecar folder, so
 they can also be put back by hand. The empty map then shows the existing first-run starter.
 
-The sample starter keeps its folder-opening action and sample switch, and nothing
-on it unfolds in place. Under the folder action one row of quiet text buttons
+The starter card keeps its folder-opening action, and nothing on it unfolds in
+place; it offers no bundled sample. Under the folder action one row of quiet text buttons
 creates a new folder (through the folder guide) and opens the map's glossary in a
 small centred dialog with the plain-view action. The terminal command is the
-folder guide's last section; a browser without folder access shows it from the
-row instead, in its own dialog. The installed app also shows the build-from-code
-door on the card. Its first turn asks the agent to outline every source unit,
+folder guide's last section. The card also shows the build-from-code door. Its first turn asks the agent to outline every source unit,
 read the one main flow, say the outline in a few sentences and write the whole
 first map in the same run, with titles in the words a teammate says aloud; a
 question the agent asks carries the default it takes. Each write meets the

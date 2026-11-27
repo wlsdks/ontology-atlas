@@ -61,7 +61,7 @@ A completed meaning write requires structured same-session writer correlation
 and two matching fresh reads of the sealed expected bytes. Rejecting execution
 leaves the earlier meaning decision intact and records that the writer did not
 run. Allowing execution without an explicit meaning action creates no meaning
-transition. Unsupported browser and Windows surfaces report the decision as
+transition. Where archival is unsupported (Windows today), the decision is reported as
 unsaved; archive failures remain visible.
 
 The existing History tab separates Meaning decisions from diagnostic analyses.
@@ -80,6 +80,6 @@ turn refuses the pending write; neither action rolls back code already changed.
 
 This implementation does not establish exact task-owned source diffs, trusted
 batch semantic acceptance, durable rejection/defer queues, or human decision-quality
-and repeat-use benefits. Those remain open work. Browser fixture journeys
+and repeat-use benefits. Those remain open work. Test-browser fixture journeys
 exercise the real components and protocol controller with disclosed test data;
 they do not prove an installed native bridge or an actual participant's judgment.

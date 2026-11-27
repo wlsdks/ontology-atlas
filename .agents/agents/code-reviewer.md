@@ -60,7 +60,7 @@ it before anything is built and add `spec: pass` or `spec: revise` to the report
   - copy that describes words rather than giving them ("a friendly error"), or a
     listed key absent from `messages/en/` or `messages/ko/`;
   - a state left undecided: empty, loading, error, partial, largest vault, or a
-    web or app cell with neither a specification nor an out-of-scope reason;
+    website or app cell with neither a specification nor an out-of-scope reason;
   - an acceptance criterion that cannot fail: nothing observable, no named test
     or capture, or a check on implementation details ("the panel renders");
   - a symptom fix: the cause behind the moment survives, or the status quo is

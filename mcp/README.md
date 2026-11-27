@@ -1243,7 +1243,7 @@ the source node's own `path:`, and
 every repository-relative file path written in that edge's `relation_notes`,
 each clamped inside the repository and each required to exist. Naming the
 witness in the `why` is therefore a real repair and not a formality — it is also
-the only way a cross-boundary edge gets witnessed, because what proves a browser
+the only way a cross-boundary edge gets witnessed, because what proves an app
 module depends on an MCP module is the barrel, bridge or contract test between
 them. Write that path from the repository root; a path relative to `src/` or to
 the module's own folder resolves to nothing and is ignored rather than guessed
@@ -1708,7 +1708,7 @@ Where the stamp comes from, per path:
 | Path | Stamp |
 |---|---|
 | `add_concepts` · `absorb_document` | `agent:<heartbeat agent>`, or `agent:unknown` when no heartbeat names it |
-| The web workbench composer (the map's contextual meaning editor at `/topology/?workbench=edit`, direct save) | `human` |
+| The map's contextual meaning editor (`/topology/?workbench=edit`, direct save) | `human` |
 | The in-app agent panel's **Apply** | `agent:<provider>` — the draft's author is the model; a person's approval click is not authorship |
 
 `patch_concept` **preserves** an existing `created_by` and refuses to set one:
@@ -1788,7 +1788,7 @@ A slug is the node's **name**, flat under its kind folder: `elements/<role-name>
 
 Why the R15 stance ("pick flat or path-style per what the element is") was
 overturned (2026-08-01, `docs/DECISIONS.md` "Slugs are flat identifiers"): node
-identity is resolved by the slug *tail* on three surfaces — the web derivation,
+identity is resolved by the slug *tail* on three surfaces — the app's derivation,
 the unique-tail slug lookup this server documents for `get_concepts`, and deep
 links. Path-style slugs collide the moment two files share a basename, and the
 graph silently merges distinct nodes. Measured on the regenerated dogfood vault:

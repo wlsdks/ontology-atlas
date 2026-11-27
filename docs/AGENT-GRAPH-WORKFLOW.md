@@ -25,8 +25,7 @@ register `node /absolute/path/to/ontology-atlas/mcp/src/index.js`. A config that
 still holds `command: "npx"` cannot start.
 
 In the installed app, **Connect** on a tool's row writes that tool's config
-files into the folder and confirms completion. A browser has no absolute path to
-write, so it copies the config with instructions instead.
+files into the folder and confirms completion.
 
 Codex ignores a project-scoped `.codex/config.toml` until it trusts the
 project, and Atlas cannot inspect that trust. A Codex registration stays

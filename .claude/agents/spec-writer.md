@@ -1,7 +1,7 @@
 ---
 name: spec-writer
 description: Writes the product spec for one product change, after the decision to build and before its one review: the person and moment, the problem, patterns that already worked, the options, the flow, every web and app state, exact en/ko copy, the first slice and acceptance criteria that can fail. Use for a one-way change (the `AGENTS.md` workflow table) or when the owner asks for a spec; not for splitting the work into slices (slice-planner), judging it (code-reviewer, design-reviewer), or open research (researcher).
-model: fable
+model: opus
 effort: high
 maxTurns: 250
 tools: Read, Edit, Write, Bash, Grep, Glob, WebSearch, WebFetch, mcp__ontology-atlas__list_kinds, mcp__ontology-atlas__list_concepts, mcp__ontology-atlas__get_concept, mcp__ontology-atlas__get_concepts, mcp__ontology-atlas__find_backlinks
@@ -65,7 +65,7 @@ is a new spec that names the old one in `supersedes`.
 
 - **Flow**: numbered steps, each "When <the person does X>, Atlas <does Y>",
   including one where the agent is wrong or the evidence is missing.
-- **States**: every row has a web cell and a macOS app cell, and every state the
+- **States**: every row has a website cell and a macOS app cell, and every state the
   flow creates gets a row. A cell names what the person sees (a message key)
   and what they can do next, or reads `Out of scope — <reason>`. No blank cell.
 - **Copy**: the exact words, never a description of them. Write each new or

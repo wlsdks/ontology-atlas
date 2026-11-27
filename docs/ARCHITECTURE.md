@@ -24,9 +24,9 @@ area: architecture
 ┌────────────────────────────────────────────────────────┐
 │ User                                                    │
 │ ├─ /                       who is asking decides —     │
-│ │                          gateway face for a vault-   │
-│ │                          less web visitor, map for   │
-│ │                          the app and vault users     │
+│ │                          gateway face in a plain     │
+│ │                          browser, map or first run   │
+│ │                          in the installed app        │
 │ ├─ /topology               map + contextual write     │
 │ ├─ /architecture           harness: setup ·           │
 │ │                          architecture                │
@@ -47,23 +47,23 @@ area: architecture
 │ ├─ /agents                 agents · MCP, two tabs      │
 │ ├─ /mcp                    compatibility → /agents      │
 │ ├─ /projects               project list                │
-│ ├─ /project/[slug]         project detail              │
+│ ├─ /project/fallback       project detail + editor     │
 │ ├─ /download               gateway as an explicit link │
+│ ├─ /sample                 read-only sample map        │
 │ └─ /guide · /changelog     gateway reading (vault md)  │
 ├────────────────────────────────────────────────────────┤
 │ App layer                                               │
 │ ├─ Next.js 16 App Router                               │
 │ ├─ next-intl /[locale]/ (en, ko, ja, zh)               │
 │ ├─ output: 'export'  (static)                          │
-│ ├─ Tauri macOS shell (installed local workbench)        │
+│ ├─ Tauri shell (the installed local workbench)          │
 │ └─ TaxonomyProvider · ToastProvider · MotionProvider   │
 ├────────────────────────────────────────────────────────┤
 │ Data sources (mode-aware)                               │
 │ ├─ vault           Tauri native bridge → user disk      │
-│ │                  (source browser dev can use FSA)     │
 │ │                  (`src/entities/vault-session/`)     │
-│ └─ static          build-time dogfood manifest         │
-│                    (`docs/ontology/` → JSON import)    │
+│ └─ no folder       the app's "no folder loaded" state  │
+│                    (first run, restore, folder switch) │
 └────────────────────────────────────────────────────────┘
 
        ↑ stdio JSON-RPC
@@ -209,8 +209,7 @@ background thread. A schema version that differs in either direction
 discards the index and rebuilds it; a damaged file is set aside and
 rebuilt while the session continues from the vault files. The file uses WAL,
 so the app and another process can read at the same time. Settings › Privacy ·
-data shows the size, deletes the index and can turn it off. The web playground
-has no index.
+data shows the size, deletes the index and can turn it off.
 
 Beside it, `rows.sqlite` holds per file and per producer what a program
 computed from that file, so a reopen reads and derives only the files that
@@ -267,7 +266,7 @@ when its stdin closes, and after five idle minutes of its own. The WebView reach
 `_reveal_model`
 (`src-tauri/src/vault/vectors/commands.rs`, bridged by
 `src/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors.ts`), and follows each folder's
-job through the `vault-vectors-status` event. The web playground has none.
+job through the `vault-vectors-status` event.
 One store in `src/features/vault-vectors/` keeps each folder's last status for
 the Wiki desk; the shell's adapter `src/app/providers/MeaningRunSeat.tsx`
 listens to it, words a failure with the desk's own sentence, and copies the
@@ -315,22 +314,23 @@ same screen on an example repository; `reveal={false}` keeps that copy from scro
 its host page. `?view=guides`, `?view=structure`, `?view=coverage` and `?view=sensors` are rewritten to it.
 It reads files only, through the installed app's read-only harness commands
 (`src-tauri/src/harness_source/`), which serve only the connected repository's allowlisted harness
-files; the browser cannot see a dot directory at all and says so instead of drawing a shorter list.
+files, and a refused read is named instead of drawing a shorter list.
 The retired `/ontology/insights?tab=harness` address replaces itself with
 `/architecture/?view=overview`, keeping the other flags and adding no history entry. The measured/null availability contract, scanner, join, and write
 authority remain unchanged; declaration counts, discovered tests, and execution evidence are not merged.
 
-## Surface contract — web and app
+## Surface contract — the app and the website
 
-Decided 2026-07-27 (`docs/DECISIONS.md`); the working rule agents load is
+Decided 2026-07-27 and narrowed 2026-11-27 (`docs/DECISIONS.md`: Atlas opens a
+folder only in the installed app); the working rule agents load is
 `.claude/rules/surfaces.md`.
 
 **One codebase, one build.** The macOS app is not a port. Tauri loads the very
 same static export into a WebView. Nothing is forked, and nothing should be.
 The macOS and Windows bundles leave out only what the website alone serves:
 `scripts/desktop/stage-desktop-frontend.mjs` copies `out/` to
-`src-tauri/target/desktop-frontend` (`frontendDist`) without `/download`, the
-sample `/project/<slug>` pages, the gateway's videos and screenshots, Open Graph
+`src-tauri/target/desktop-frontend` (`frontendDist`) without `/download`,
+`/sample`, the gateway's videos and screenshots, Open Graph
 images, `llms*.txt`, the sitemap and `robots.txt`. Tauri compiles that folder
 into the executable, and the updater ships the executable whole, so each of
 those megabytes was paid on every install and update. A path the copy lacks is
@@ -339,7 +339,7 @@ answered with the root `index.html`, which sends the window to the map;
 to the copy unless the app has no way to it.
 The macOS shell also owns one Rust-native, state-free menu-bar item that opens
 the existing main window or quits. It creates no second window, background
-service, webview tray permission, or web equivalent.
+service, webview tray permission, or website equivalent.
 
 **One inbound address.** Since 2026-09-07 the installed app registers the
 `ontology-atlas://` URL scheme (`tauri-plugin-deep-link`, declared in
@@ -351,7 +351,7 @@ query key besides `install`, a payload with a character outside the URL-safe set
 or one over 4 KiB. A refused URL is logged with its reason and dropped; it never
 moves the window, and the URL itself is never written to the log. On success the
 window is brought forward and sent to `/<locale>/mcp/?tab=connectors&install=…`,
-the same address the web app reads, where `parseMcpInstallLink` pre-fills the
+the same address the app reads, where `parseMcpInstallLink` pre-fills the
 add-connector form and stops: nothing is written, nothing is enabled, and the
 person still presses Add. The deep-link plugin is registered immediately after
 `tauri-plugin-single-instance`, so a second press while the app is running routes
@@ -365,37 +365,46 @@ carries its Content-Security-Policy as a meta tag in the root layout
 (`src/shared/config/site/web-content-security-policy.ts`): no remote image, connection,
 plugin, `<base>` or form target, and scripts from the page's own origin (inline ones
 included until the export's inline scripts are hashed). The app loads the same HTML
-under its own policy (`tauri.conf.json`), and both apply there, so the web policy allows
+under its own policy (`tauri.conf.json`), and both apply there, so the page policy allows
 everything the app's does, IPC included; `tests/contract/security/web-csp-parity.contract.test.ts`
 holds the two together. `next dev` gets no meta, because refresh needs `eval`.
 
 **What each surface is for.** The app is where the vault lives day to day: the
-place a person reads the map, judges it, and connects their AI agents. The web
-has two jobs, in this order. (1) It is the **gateway** — it opens the map with
-no install, for a demo, someone's first five minutes, or a shared link. (2) It
-is a **second-best workbench** where no app exists yet, which in practice means
-Chromium on Windows and Linux, because the whole web surface needs the browser's
-File System Access API to work at all. The order matters: every visitor we have
-observed so far arrived through the web, so treating the gateway as merely "the
-Windows stand-in" would downgrade the only way people currently arrive. A
-Windows app would end job 2 on that operating system; job 1 never expires.
+place a person reads the map, judges it, and connects their AI agents. It is
+the only place a folder is opened. The website introduces Atlas and hands over
+the app. It serves the **gateway**
+(`/` and `/download`), the guide, the changelog and `/sample`, a read-only map
+of a sample online store drawn by the app's map renderer from a file made at
+build time, so there is no server and nothing a visitor does is kept. The
+gateway stays because every visitor recorded so far arrived through the web.
 
-**The two surfaces differ in a small set of modules — we call them bridges — not
-in the router.** Each bridge is the single file that calls a desktop-only
-ability. The canonical roster is the bridge table in
+Any other address opened in a plain browser answers with one page, "Ontology
+Atlas runs in the installed app", with the download page and the sample map.
+Each app route's HTML carries two faces, the workbench and that page. The boot
+script (`src/shared/ui/document/lang-boot-script.tsx`) runs first in the body
+and sets `data-shell="desktop"` on `<html>` when `window.isTauri` is true; CSS
+keyed on that mark paints exactly one face, so a plain browser, with scripts or
+without, never paints the rail and the app never paints the page meant for
+browsers. A browser that kept a remembered folder from the old browser
+workbench has its `demo-kv` database deleted at its next visit; the folder on
+disk is not touched.
+
+**The app and the website differ in a small set of modules — we call them
+bridges — not in the router.** Each bridge is the single file that calls a
+desktop-only ability. The canonical roster is the bridge table in
 `.claude/rules/surfaces.md`; the ones that shape this document are:
 
-| Bridge | Module | Web behaviour |
+| Bridge | Module | What it does in the app |
 |---|---|---|
-| Vault absolute path | `src/shared/lib/vault-folder/native-vault/tauri-vault-handle.ts` | FSA handle instead (no path) |
-| Git | `src/shared/lib/git/tauri-git.ts` | Cannot run → degraded card |
-| Gray-area evidence | `src/shared/lib/project-source/tauri-gray-area.ts`, `src-tauri/src/gray_area.rs` | Cannot inspect the bound code root → degraded card |
-| Harness source read | `src/shared/lib/project-source/tauri-harness-source.ts`, `src-tauri/src/harness_source/` | Cannot see dot directories → Harness names what it cannot reach |
-| Keychain | `src/shared/lib/llm-connection/tauri-secrets.ts` | Impossible by design → degraded card |
-| LLM calls | `src/shared/lib/llm-connection/tauri-llm.ts` | Impossible by design → action not rendered |
-| In-app agent runtime (ACP) | `src/shared/lib/agent-chat/tauri-acp.ts` | A browser cannot spawn a process → one row states why and where |
-| Connector discovery | `src/shared/lib/connectors/tauri-connectors.ts` | Cannot read the person's own agent config files → degraded card; adding one by hand still works |
-| Connector secrets | `src/shared/lib/connectors/tauri-connector-secrets.ts` | No keychain in a browser → degraded card |
+| Vault absolute path | `src/shared/lib/vault-folder/native-vault/tauri-vault-handle.ts` | Returns an object shaped like a folder handle over native commands, and carries the absolute path |
+| Git | `src/shared/lib/git/tauri-git.ts` | Runs Git for the vault's history and snapshots |
+| Gray-area evidence | `src/shared/lib/project-source/tauri-gray-area.ts`, `src-tauri/src/gray_area.rs` | Inspects the bound code root |
+| Harness source read | `src/shared/lib/project-source/tauri-harness-source.ts`, `src-tauri/src/harness_source/` | Reads the dot directories where a harness lives |
+| Keychain | `src/shared/lib/llm-connection/tauri-secrets.ts` | Keeps API keys in the OS credential store |
+| LLM calls | `src/shared/lib/llm-connection/tauri-llm.ts` | Sends a call from Rust, after the audit line is written |
+| In-app agent runtime (ACP) | `src/shared/lib/agent-chat/tauri-acp.ts` | Spawns the agent process |
+| Connector discovery | `src/shared/lib/connectors/tauri-connectors.ts` | Reads the person's own agent config files; adding one by hand also works |
+| Connector secrets | `src/shared/lib/connectors/tauri-connector-secrets.ts` | Keeps a connector token in the keychain |
 
 The gray-area reader is a fixed local read-only MCP client, using only the bundled
 executable and a source root resolved from one existing project binding. Native
@@ -423,49 +432,53 @@ selection and the existing map path/conversation actions. An investigation actio
 prepares an editable draft and does not enforce a new ACP execution mode.
 
 Every bridge follows one convention: `getInvoke()` returns `null` when
-`isTauri()` is false, and the screen then says plainly that it cannot do this
-here. Such a screen must tell the reader two things: **why** it cannot work here
-and **where** it can. New desktop abilities attach the same way. They do not get
-a web version added later — that is a decision we have made, not a task waiting
-in a backlog.
+`isTauri()` is false. Only a test browser without the faked app runtime
+(`installDesktopRailRuntime`) or `pnpm dev` ever sees that answer, because a
+plain browser never reaches the screens that call a bridge; no screen draws an
+explanatory card for it. New desktop abilities attach the same way. They do not
+get a website version added later — that is a decision we have made, not a task
+waiting in a backlog.
 
 **What "the same data" actually guarantees.** The folder on disk is the single
-source of truth, and both surfaces open the *physically same folder* — the web
-through an FSA handle, the app through an absolute path. The two surfaces cannot
-end up reading the same file differently, because one contract test runs the
-same file through all three parsers (web, MCP, scripts) and the schema is
-written in exactly one place, `mcp/src/schema.mjs`. Anything that has to pass
-between the two surfaces is written **inside the vault** as plain text —
+source of truth. The app opens it through an absolute path, and MCP agents read
+the same folder through the filesystem. They cannot end up reading the same
+file differently, because one contract test runs the same file through all
+three parsers (app, MCP, scripts) and the schema is written in exactly one
+place, `mcp/src/schema.mjs`. Anything that has to pass between programs is
+written **inside the vault** as plain text —
 `.ontology-atlas/activity.jsonl`, `map-analysis.jsonl` (the MCP server's
 record of each map analysis, counts only, which the map's chip reads) and
 `llm-audit.jsonl`. That is the rule this
-contract sets: *anything shared between surfaces lives in the vault folder.*
+contract sets: *anything shared between programs lives in the vault folder.*
 The derived index is not shared state: it is a cache each program validates
 against the files for itself, and deleting it changes no answer. If
 two people (or an agent and a person) edit at once,
 `patch_concept(expected_mtime)` stops the second write from silently erasing the
 first.
 
-Three things are deliberately **not** shared. The "last opened vault" handle:
-each surface keeps its own IndexedDB, so you pick the folder once per surface,
-and `/download`'s install step 02 says so. API keys: they live in the operating
+Three things are deliberately **not** shared. The "last opened vault" record:
+the app keeps it in its own IndexedDB (carrying the folder's absolute path). API keys: they live in the operating
 system's credential store, app only. UI preferences: localStorage. API keys and
 personal display settings are not part of the shared model, so they stay out of
 the vault.
 
-**Verification is split three ways** (this replaced the old web↔app round-trip
-check, which the same decision abolished). First, screens that both surfaces
-share are tested once in the browser, and that counts as proof for the app too,
-because it is literally the same bundle — the exceptions are font rendering,
-scrolling, and the window frame, which still have to be checked in the installed
-app. Second, desktop-only abilities are proved *only* in the installed app.
-Third, the web surface has its own test, `tests/e2e/web-surface-smoke.spec.ts`,
-which every whole run of `.github/workflows/e2e.yml` runs on its own runner, and
-a planned dispatch runs on a deliberately wider condition than the rest of the
-suite — nobody watches the web by hand, so that test is its only guard.
+**Verification is split three ways.** First, app screens are tested once in a
+test browser that installs the faked app runtime
+(`tests/e2e/desktop-rail-arrival-harness.ts`), and that counts as proof for the
+app too, because it is literally the same bundle — the exceptions are font
+rendering, scrolling, and the window frame, which still have to be checked in
+the installed app. Second, desktop-only abilities are proved *only* in the
+installed app. Third, the website has its own test,
+`tests/e2e/web-surface-smoke.spec.ts` (the gateway, `/sample`, and the app-only
+page on every app route), which every whole run of `.github/workflows/e2e.yml`
+runs on its own runner, and a planned dispatch runs on a deliberately wider
+condition than the rest of the suite — nobody watches the website by hand, so
+that test is its only guard.
 
-A deep link built on one surface is not guaranteed to rebuild the same screen on
-the other. Where such links work, treat it as a convenience, not a promise.
+An address copied from the app shows the app-only page in a plain browser; the
+only door from a browser into the app is the `ontology-atlas://` grammar above.
+Treat a copied app address as a reference for a person who has the app, not as a
+link that works everywhere.
 
 ### In-app coding agents over ACP (2026-08-16)
 
@@ -524,7 +537,7 @@ decision records behind it are in `docs/DECISIONS.md`, dated 2026-08-16.
 | `src-tauri/src/acp/` (root `acp.rs` declares the submodules, grouped by job: `registry`; `detection` with `command_lookup`, `login_probe`, `search_path`; `launch` with `npx_cache`, `runtime_environment`; `isolation` with `credential_mirror`; `install` with `node`, `cli`; `session` with `agent_process`, `permission_verdict`; `runtime`; `bounded_command`; `doctor`) | Registry snapshot parsing, runtime detection (`ready` · `cli-missing` · `node-missing` · `uvx-missing` · `binary-missing`), launch resolution, isolated config + credential symlink, permission verdict, process-group termination, connection doctor, app-owned Node runtime |
 | `src-tauri/src/acp/session.rs`, `acp/runtime.rs` | The five Tauri commands (`acp_detect_runtimes`, `acp_start`, `acp_send`, `acp_stop`, `acp_permission_verdict`) and the four `acp://*` events; `vault/scope.rs` holds the vault-root rejection that also guards a session's working directory |
 | `src-tauri/src/acp-registry.json` | The committed registry snapshot, generated by `scripts/registry-snapshots/build-acp-registry.mjs` (`pnpm acp:registry`); icons are fetched at build time into `public/acp-icons/` |
-| `src/shared/lib/agent-chat/tauri-acp.ts` | The capability bridge and its web degradation. It never re-implements the permission policy |
+| `src/shared/lib/agent-chat/tauri-acp.ts` | The capability bridge. It never re-implements the permission policy |
 | `src/features/acp-session/` | `acp-client.ts` (JSON-RPC framing over the bridge; `permissions/permission-answer.ts` decides which requests the app answers without a card and what is written back) and `use-acp-session.ts` (one session's lifetime; a permission request blocks until the screen answers, and an unanswered one is refused; `connection/open-session.ts` resumes or creates the conversation and raises the permission gate) |
 | `src/widgets/acp-chat-panel/` | The existing Home workbench conversation, task-bound meaning review and separate execution permission card; `AcpChatPanelKeeper` in the locale layout renders every panel through a portal, so an answer in flight outlives the screen that asked for it |
 | `src/widgets/app-settings-menu/ui/agent-setup/AcpRuntimeSettings.tsx` | The one ACP surface a user can reach today: the Agents destination's coding tools list |
@@ -554,8 +567,8 @@ graph. The separation is a property of the **walk**, not a filter applied later.
   fingerprint that counted a different file set would make the app rebuild constantly or
   miss a dropped document.
 - The wiki page contract is `docs/ONTOLOGY-ATLAS-SPEC.md` §11. Its machine half is
-  `mcp/src/library/wiki-schema.mjs` (executed by MCP `validate_wiki`), mirrored for the web
-  bundle by `src/shared/lib/library/wiki-page-schema.ts` and held together by
+  `mcp/src/library/wiki-schema.mjs` (executed by MCP `validate_wiki`), mirrored for the
+  renderer by `src/shared/lib/library/wiki-page-schema.ts` and held together by
   `tests/contract/library/wiki-page-schema.contract.test.ts`.
 - `tests/contract/library/library-never-enters-the-graph.contract.test.ts` runs one fixture
   folder through both walkers and the derivation, so neither file kind can become a node
@@ -593,7 +606,7 @@ graph. The separation is a property of the **walk**, not a filter applied later.
   Only the active view mounts, and no view imports another view. The workspace loads the
   Concept documents module while idle, so the first switch to it arrives with the panel's
   own fade rather than after a loading placeholder. The mobile Library
-  slot replaces Docs. The editor flushes a pending browser draft on unmount; explicit
+  slot replaces Docs. The editor flushes a pending local draft on unmount; explicit
   Save and the existing mtime conflict guard still own file writes. Markdown source
   outlines preserve line anchors used by MCP citations and store no converted copy.
   `tree-query.ts` gives the Ontology tree and its result count one locale-aware
@@ -618,8 +631,8 @@ graph. The separation is a property of the **walk**, not a filter applied later.
   ontology/file write and `finalize_project_meaning`. Its Documents lane opens the existing
   Library round registration and draws the pass ledger (`src/widgets/round-ledger/`). The rail's Automations destination opens on the
   Ontology lane (the map no longer repeats it as a toolbar chip, 2026-09-24); the retired
-  `/library/?tab=rounds` address replaces itself with the Documents lane. No scheduler runs while the
-  web build lacks a native folder root.
+  `/library/?tab=rounds` address replaces itself with the Documents lane. No scheduler runs while no folder
+  with a native root is open.
 - `src/entities/library-collection/` owns the compatible `v1` saved-constellation
   schema and UID-based member resolution. The selected vault sidecar is shared by
   Map and Library; MCP mirrors it for read-only recovery. The Map
@@ -678,8 +691,7 @@ graph. The separation is a property of the **walk**, not a filter applied later.
   current claim and its cited original can reach the existing fixed Jev bridge
   only through a blocking exact-payload consent dialog. Its Keychain key and
   audit-before-send contract remain in `src-tauri/src/jev.rs`; the answer is
-  advisory and grants no Wiki or ontology authority. The browser has no Jev
-  key or send path.
+  advisory and grants no Wiki or ontology authority.
   A separate explicit report request reuses the ACP answer turn and shows its
   actual response as a sectioned unreviewed draft before expandable leads.
   Compact coverage opens full omissions without changing the read contract.
@@ -773,18 +785,15 @@ partial artifact.
 3. `useProjects()` derives projects from `manifest.docs` (filter `kind: project`).
 4. `useOntologyInsight()` derives ontology nodes/edges from vault frontmatter.
 5. Mutations (`useProjectMutations.updateProject`) write directly to `.md`
-   files — the installed desktop app uses the Tauri native vault bridge,
-   hosted web uses the browser File System Access API directly (root-first-open,
-   2026-07: `FirstRunStarterModule` in the topology hub's INDEX panel calls
-   `useLocalVault().open()` on `/` itself, no install required). `/docs`'s own
-   separate local-source tab (browsing a second vault as a documentation
-   source inside that page) stays desktop-gated — that is a narrower, older
-   feature unrelated to opening your primary vault from the map.
-6. Ontology block import/export follows the same split: browser
-   `showDirectoryPicker()` or the Tauri `FileSystemDirectoryHandle` shim feeds
-   one recursive block reader/writer. Import plans conflicts before writing;
-   native or browser picker cancellation has no side effect.
-7. The installed shell and any web session with a mounted vault commit destination content only
+   files through the Tauri native vault bridge. `/docs`'s own separate
+   local-source tab (browsing a second vault as a documentation source inside
+   that page) is a narrower, older feature unrelated to opening your primary
+   vault from the map.
+6. Ontology block import/export reads the folder the Tauri native picker
+   returns, through the `FileSystemDirectoryHandle` shape the bridge implements,
+   into one recursive block reader/writer. Import plans conflicts before
+   writing; cancelling the native picker has no side effect.
+7. The installed shell commits destination content only
    after one local manifest is ready, except the map. While a folder is first read, the build
    reads the project, then `domains/`, `capabilities/` and `elements/`, then the rest; in a
    folder of 400 or more documents, once the read has run 0.2 s, it publishes what has arrived to
@@ -799,45 +808,40 @@ partial artifact.
    which equals a build that publishes nothing. LNB route changes mount against the
    current provider before paint; a true folder switch holds a neutral body until the new manifest
    (on the map, its first part holding a concept) arrives, while a same-vault reread keeps the existing facts and
-   publishes no part. Picker, recent reopen, and cold restore all resolve a project root containing
+   publishes no part. The native picker, recent reopen, and cold restore all resolve a project root containing
    Markdown under `atlas/` to that child before building.
 
 The MCP server is independent: it reads the same vault directory through the
 filesystem (Node.js `fs`), not the WebView bridge. AI agents and the installed app end up with the same view.
 
-### Static mode (vault-less web only)
+### No folder loaded
 
 1. `useLocalVault()` returns `{ status: 'closed' }`.
-2. `useDataSourceMode()` returns `'static'`.
-3. `useProjects()` derives projects from the paired manifest/content chosen by
-   `useStaticVaultSource()` (Storefront or dogfood, both generated by `pnpm docs-vault:build`).
-   The pair is fetched with `import()` only on a screen that draws it: `VaultSourceHydrationBoundary`
-   suspends until it lands, so the page's own exported fallback is the single loading state, then
-   stays mounted when the other sample is chosen. Ambient readers (the rail's Projects door, the
-   closed palette and drawers) pass `demand: false` and start nothing, so `/`, `/download` and
-   `/guide` fetch no Storefront JSON. A chunk that fails is retried once, then
-   `useStaticVaultStatus()` says `failed` and the boundary offers a retry; it never reads as an
-   empty folder. The installed app fetches none of it (status `none`). Build-time code (sitemap,
-   route params, Open Graph cards) and `/download`'s hero data import the JSON statically instead.
-   `pnpm build` ends with `first-load-report` for `en`, `en/topology` and `en/download`; it fails on a
-   page that names no chunks, a missing chunk file, or a JSON literal over 50 KB outside
-   `en/download`. `pnpm build:first-load -- out <route>...` checks any other route by hand.
-4. Mutations are blocked with a toast pointing to the vault picker.
+2. `useDataSourceMode()` reports the app's own "no folder loaded" state, which
+   holds no bundled data.
+3. The app is in this state on first run, during a cold restore or a folder
+   switch before the manifest arrives, and on the destinations that open without
+   a folder (`src/shared/config/destinations.ts`). Each shows its own
+   "no folder" screen; none draws a sample.
+4. Mutations are blocked with a toast pointing to the folder chooser.
 
-This is what a vault-less web visitor sees before choosing a folder. The installed app never uses
-this fallback: its first run offers only local create/open paths and its workbench rail stays hidden
-until a local manifest, or the first part of one, exists.
+The first run offers only local create/open paths and the workbench rail stays
+hidden until a local manifest, or the first part of one, exists. No page of the
+website reads a folder or a manifest, so this state exists only in the app (and
+in a test browser that installs the faked app runtime). The one bundled map is
+`/sample`, a read-only page of the website (`src/views/sample-map`) that imports
+the Storefront sample the build generates with `pnpm docs-vault:build`; it is
+left out of the app's bundle like `/download`.
 
 ## Routes
 
 ```
-/                          shows a different screen depending on who opens it. A web visitor
-                           with no vault gets the gateway — the install-free intro page, the
-                           same view /download renders. A web user who has a vault, and anyone
-                           in the installed app, gets the map (or first run) unchanged. The
-                           installed app must never offer "download this app" to someone who is
-                           already running it. One function decides: isGatewaySurface() in
-                           shared/lib/navigation/nav-destination
+/                          shows a different screen depending on who opens it. A plain browser
+                           gets the gateway — the intro page, the same view /download renders,
+                           with "See a sample map" beside the download. Anyone in the installed
+                           app gets the map (or first run). The installed app must never offer
+                           "download this app" to someone who is already running it, and the
+                           shell chrome and the content always agree on which of the two
 /topology                  map + contextual relation editor + change review. Any link labelled
                            "map" or "edit relation" points here, not at / (gate:
                            tests/contract/routes/map-destination-route.contract.test.ts)
@@ -856,7 +860,6 @@ until a local manifest, or the first part of one, exists.
                            rewrite to overview. Never an ontology map
 /planning                  session-only, read-only project-folder reader; native reads use a
                            Planning-specific root descriptor and never add source/vault grants.
-                           The browser displays an unsupported state pending separate proof.
 /docs                      vault picker / editor / unified palette
 /ontology                  thin redirect → /topology?index=expanded (old tree/ego hub retired, B3)
 /ontology/edit             compatibility redirect → /topology contextual workbench
@@ -884,13 +887,12 @@ until a local manifest, or the first part of one, exists.
                            platforms retain existing file transport. Changed/failed/
                            expired bounded reads remain unavailable with Retry;
                            only complete scans publish count
-                           and five recent rows. Web retains FSA. Keychain presence
+                           and five recent rows. Keychain presence
                            lookups dispatch off the window event thread. A renderer
                            shares only pending lookups per provider; mutation
                            boundaries detach older reads and completed values are
                            never cached.
-                           Desktop launches the tools; on the web the page
-                           still renders and says what it cannot do, plus what it can. MCP
+                           The app launches the tools. MCP
                            left this screen on 2026-09-05 for /mcp, came back on 2026-09-17
                            as the second tab of one Agents destination, and on 2026-09-18
                            became the page's last section (the owner: fold it into the
@@ -921,14 +923,20 @@ until a local manifest, or the first part of one, exists.
 /changes                   what was merged in the connected source repository, and which few
                            changes deserve a person's own eyes
 /work-status               which agent session holds which worktree of a repository and
-                           whether its work is merged; the web shows a degradation card
+                           whether its work is merged
 /projects                  project list (cards)
-/project/[slug]            project detail (inline edit when vault loaded)
-/project/[slug]/edit       full project editor
 /project/new               new project form
-/project/fallback          fallback page for missing slugs
+/project/fallback          the one project address: ?slug= is project detail (inline edit when
+                           a vault is loaded) and &mode=edit the full editor, both read from
+                           the query; an address with no slug returns to /projects. The per-slug
+                           pages /project/[slug] and /project/[slug]/edit existed only for
+                           bundled samples and are removed
 /download                  the same gateway page at its own address — it keeps the breadcrumb
                            and the back-to-map link that / leaves out
+/sample                    a read-only map of the Storefront sample, drawn by the app's map
+                           renderer from a file made at build time; no rail, no open-folder
+                           control, no edit, no agent panel. Website only: the app's bundle
+                           leaves it out
 /guide                     the project guide, several chapters rendering docs/guide/*.md vault
                            docs in English and docs-i18n/guide/<locale>/*.md in ko, ja, zh. Named `guide` and not `docs` because /docs is already the
                            vault workbench (2026-07-30 ledger). Order and slugs live once in
@@ -943,16 +951,18 @@ Two layouts own that segment, and the URLs do not show which one a page has,
 because a route group adds no segment. `app/[locale]/layout.tsx` is the
 workbench: the app shell, vault and agent providers, and the whole message
 catalog, which the shell's rail, settings and agent dock read. The gateway
-pages, `/download`, `/guide` and `/changelog`, live in
+pages, `/download`, `/sample`, `/guide` and `/changelog`, live in
 `app/(gateway)/[locale]/` under `GatewayShell`, the same viewport frame without
 the rail, and the client provider receives only the message paths in
 `src/i18n/gateway-messages.ts`. The client provider serialises its messages into
 every exported page, so this keeps the workbench's copy out of the public pages'
 HTML; `gateway-messages.test.ts` walks those pages' client import graph and fails
-when the list drifts. A move between the two layouts remounts the providers, so
-a web visitor returning from `/download` to the map restores the remembered
-folder as on a first load. `/` stays a workbench route, since it is the work
-entry point in the installed app and for a web visitor with a folder open.
+when the list drifts. A move between the two layouts remounts the providers.
+`/` stays a workbench route, since it is the work entry point in the installed
+app; in a plain browser its gateway face shows from the first paint. The
+workbench layout also renders the app-only page (`src/views/app-only`) beside
+the workbench in every app route's HTML, marks it `noindex`, and leaves the
+choice of face to CSS keyed on `data-shell`.
 
 The workbench layout's props are one segment that every workbench route shares,
 `/` included, so it serialises only `/`'s subset
@@ -961,14 +971,14 @@ entry's copy, and the hidden rail's folder tile and settings search). The whole
 catalog arrives as one chunk per locale (`src/i18n/workbench-catalog.ts`)
 through `WorkbenchMessagesProvider`: every other workbench route, and `/` in the
 installed app, renders from it on the server and holds hydration until the
-browser has it. A web visitor on `/` fetches it, with the map and first-run
-views, only once a folder is on its way (`src/views/root-entry`); until then the
-gateway stays on screen and the shell keeps its rail hidden. The export of `/`
+browser has it. In a plain browser `/` keeps the gateway on screen and the shell
+keeps its rail hidden (`src/views/root-entry`). The export of `/`
 fails on a message its subset lacks.
 
 > Removed in earlier rounds: `/admin/*`, `/review/*`, `/diagnostics/*`,
 > `/knowledge/*`. Removed in Round 10: `/login`, `/signup`, `/account`,
-> `/reset-password`, `/settings/*`.
+> `/reset-password`, `/settings/*`. Removed 2026-11-27: `/project/[slug]` and
+> `/project/[slug]/edit`, which existed only for bundled samples.
 
 **Above the destinations the rail carries exactly one thing: the open folder's
 identity** (`src/features/vault-switch`, 2026-09-13). It is the only persistent
@@ -992,8 +1002,7 @@ for observed read/completion events; it adds no polling or idle simulation.
 different list of buttons.** The desktop rail shows Map,
 Architecture, Library, Planning, Automations, Projects, Agents, Changes and Git. Agents carries
 three body tabs, `agents`, `models` and `mcp`, addressed by `?tab=`. The mobile bottom
-bar shows Map, Architecture, Library, Planning and Projects;
-web adds Get App as a separate utility. Library contains Sources, Wiki, Ontology, and Check history;
+bar shows Map, Architecture, Library, Planning and Projects. Library contains Sources, Wiki, Ontology, and Check history;
 Bookmarks live inside Ontology alongside Concept documents;
 `/docs` remains an exact-document compatibility address for non-ontology files and resolves
 active navigation to Library; it does not restore a general Docs home.
@@ -1128,8 +1137,7 @@ than substituting path identity. Artifacts are published and
 read back before the immutable transition record becomes visible; malformed
 history members remain reported on their requested page. Each history request
 enumerates bounded member names, then opens and validates only that page;
-completed membership or record values are not cached. Browser builds expose
-no archive write fallback.
+completed membership or record values are not cached.
 Archive integrity proves only that the supplied bytes were retained: it does not
 authenticate a human decision, verify a writer or check, or grant Git, merge,
 deployment, ontology-write, or source-repository authority. Existing analysis
@@ -1147,4 +1155,4 @@ timestamps as proof of ordering.
 
 Changes uses `tauri-change-briefing.ts` and `git/briefing/prs/cache.rs` for app-only historical copies of explicitly read public PR descriptions. `public-pr-copies/copies.json` under app-local data is a bounded, versioned disposable envelope, separate from source transfer receipts and ontology truth. It stores no folder grants, model results or commit bodies. Native restore requires a fresh granted source receipt, current selected remote and local merge/introduction proof; its scope hashes canonical folder and filesystem identity, excluding HEAD. Disk-only restore leaves every selected commit remotely unchecked.
 
-Unix storage uses component-wise no-follow directory handles, private regular files, a bounded record-count/byte reader, a dedicated cross-process lock and atomic replacement. Clear changes a persisted generation so an earlier network read cannot repopulate copies; its command has no caller path or source-grant prerequisite. Unsupported safe storage degrades to session-only fresh reads. The web bridge returns absence.
+Unix storage uses component-wise no-follow directory handles, private regular files, a bounded record-count/byte reader, a dedicated cross-process lock and atomic replacement. Clear changes a persisted generation so an earlier network read cannot repopulate copies; its command has no caller path or source-grant prerequisite. Unsupported safe storage degrades to session-only fresh reads. The bridge answers "no runtime" outside the app.

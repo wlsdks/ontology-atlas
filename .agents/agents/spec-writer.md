@@ -1,6 +1,6 @@
 ---
 name: spec-writer
-description: Writes the product spec for one product change, after the decision to build and before its single review. Produces the person and moment, the problem, patterns that already worked, the options, flow, web and app states, exact en/ko copy, the first slice and acceptance criteria that can fail. Use for a one-way change (the `AGENTS.md` workflow table) or when the owner asks for a spec; not for splitting the work into slices, judging it (code-reviewer, design-reviewer), or open research.
+description: Writes the product spec for one product change, after the decision to build and before its single review. Produces the person and moment, the problem, patterns that already worked, the options, flow, website and app states, exact en/ko copy, the first slice and acceptance criteria that can fail. Use for a one-way change (the `AGENTS.md` workflow table) or when the owner asks for a spec; not for splitting the work into slices, judging it (code-reviewer, design-reviewer), or open research.
 access: workspace-write
 ---
 
@@ -62,7 +62,7 @@ is a new spec that names the old one in `supersedes`.
 
 - Flow: numbered "When the person …, Atlas …" steps, including one where the
   agent is wrong or evidence is missing.
-- States: each row carries a web cell and a macOS app cell, with a row for
+- States: each row carries a website cell and a macOS app cell, with a row for
   every state the flow introduces; each cell gives the message key the person
   sees and their next action, or `Out of scope — <reason>`. Never blank.
 - Copy: exact strings only. Put each new or changed string into

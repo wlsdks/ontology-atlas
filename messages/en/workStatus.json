@@ -271,5 +271,67 @@
   "about": {
     "label": "What this screen shows",
     "body": "One room is one worktree: a separate folder of this repository where a branch is being worked on. Each screen shows the branch, its newest commits and the files changed but not committed yet. A room is lit while an agent session is working in it. Press a room to see the rest."
+  },
+  "tower": {
+    "label": "This computer's load",
+    "verdict": {
+      "calm": "Room to spare",
+      "busy": "Busy",
+      "over": "Overloaded",
+      "unread": "Not read"
+    },
+    "cpu": "CPU · {cores} cores",
+    "times": "×{times}",
+    "timesTitle": "{load} tasks on average over the last minute wanted {cores} cores: {times} times what the cores can run at once.",
+    "memory": "Memory · {pressure}",
+    "pressure": {
+      "normal": "normal",
+      "warning": "high",
+      "critical": "critical"
+    },
+    "gpu": "GPU {percent}%",
+    "top": "{name} · CPU {cores} cores · {memory}",
+    "other": "Other programs",
+    "moreSessions": "{count, plural, one {# more session} other {# more sessions}}",
+    "showRooms": "Show {name}'s rooms",
+    "fits": "{running, plural, one {# worktree} other {# worktrees}} running work · fits about {fits}",
+    "noneRunning": "No worktree is running work",
+    "advice": "{running} worktrees are running work and this computer keeps up with about {fits}. {name} uses the most. Starting no more until some finish lets the rest finish sooner.",
+    "adviceMemory": "macOS reports memory pressure as {pressure}. {name} holds the most: {memory}.",
+    "failed": "Atlas could not read this computer's load just now and tries again in 5 seconds.",
+    "windows": "On Windows, Atlas does not read this computer's load yet, so it does not judge it. Worktrees and sessions still show.",
+    "about": "Atlas compares the work waiting for the CPU, macOS's average over the last minute, with this computer's cores, and judges memory by macOS's own pressure level. Busy: more work than cores, or memory pressure high. Overloaded: 2.5 times the work the cores can run, or memory pressure critical. The fit is the worktrees running work times 2.5, divided by how many times over the cores the last 5 minutes ran; other programs' work counts against them too. A subagent with no worktree of its own runs inside its session's program and is counted there.",
+    "sessionNever": "Atlas does not stop agent sessions. To stop one, press Esc or Ctrl-C in its own window, where you can see what it was doing.",
+    "leftover": {
+      "counts": "{list}",
+      "button": "Stop {count, plural, one {# leftover process} other {# leftover processes}} ({memory})",
+      "note": "Each one kept running after whatever started it ended, its folder was removed or its branch merged, and it has no terminal or child process. Stopping asks each to quit; nothing else is touched.",
+      "done": "{count, plural, one {# process quit.} other {# processes quit.}}",
+      "someLeft": "{gone} quit; {left} still running.",
+      "changed": "Nothing was stopped: these processes changed after the list was drawn. The list is updated."
+    },
+    "remove": {
+      "button": "Remove this worktree",
+      "title": "Remove {branch}'s worktree?",
+      "body": "It is merged into {base} and has no uncommitted changes. Git deletes the folder with its ignored files. The branch stays, and git worktree add brings the folder back.",
+      "others": "These ignored files are deleted too, and Atlas cannot tell whether a build makes them again: {paths}",
+      "confirm": "Remove",
+      "done": "Removed {branch}'s worktree."
+    },
+    "refused": "{target} was not changed: {reason}",
+    "build": {
+      "background": "Run {name}'s build in the background",
+      "backgroundNote": "It keeps running at the lowest priority, with slower disk and network, so other work finishes first. The load stays the same, since the build still runs. Press again to set it back.",
+      "backgroundOn": "In the background"
+    },
+    "subagents": {
+      "title": "{count, plural, one {# subagent running} other {# subagents running}}",
+      "row": "{type} · {model} · {where}",
+      "noWorktree": "no worktree",
+      "quiet": "quiet for {minutes} min",
+      "unknown": "Subagents unknown",
+      "unknownWhy": "Atlas reads Claude Code's own subagent files, whose form is not documented. For this session they were not found or not in a form Atlas knows, so it shows none rather than guess. Nothing else is affected."
+    },
+    "adviceSubagents": "{name} is running {count} subagents, and each adds its checks to this load."
   }
 }

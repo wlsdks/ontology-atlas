@@ -10,8 +10,8 @@ area: map
 
 > Design rationale and implemented contract for how the topology map reveals a
 > node on click and stays readable + fast as the vault grows. `/topology` is the
-> explicit map address; `/` is the map only after a vault is available (a web
-> visitor without one sees the gateway).
+> explicit map address; `/` is the map in the installed app once a vault is available (a plain
+> browser sees the gateway).
 > This is the canonical decision; `.claude/rules/design.md` and
 > `DESIGN-SYSTEM.md` carry the short rule, this doc carries the reasoning +
 > cited references.

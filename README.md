@@ -16,7 +16,7 @@
 
 <p align="center">
   <a href="https://ontologyatlas.com/en/download/"><strong>Download</strong></a> ·
-  <a href="https://ontologyatlas.com/en/topology/">Try it in the browser</a> ·
+  <a href="https://ontologyatlas.com/en/sample/">See a sample map</a> ·
   <a href="https://ontologyatlas.com/en/guide/">Guide</a>
 </p>
 
@@ -42,11 +42,11 @@ How is this different from a code graph, a wiki, Obsidian or `CLAUDE.md`? See
 
 ## Quick start
 
-1. **Install** the app from the [download page](https://ontologyatlas.com/en/download/), or open the [browser version](https://ontologyatlas.com/en/topology/).
+1. **Install** the app from the [download page](https://ontologyatlas.com/en/download/).
 2. **Open a folder.** Atlas reads its Markdown in place, or starts an `atlas/` folder in your repository, and shows the path before it writes anything.
 3. **Connect your agent.** In **Agents › MCP**, press **Connect** for your tool, restart the agent, and ask about your next task.
 
-macOS (Apple Silicon) is signed and notarized and carries the MCP server inside the app. Windows x64 is an unsigned beta. On Linux, use the browser version or run the [MCP server from a source checkout](mcp/README.md#1-register-with-an-agent). [Releases](https://github.com/wlsdks/ontology-atlas/releases) list each version's files and checksums. Releases marked **Pre-release** on GitHub are betas: installed apps update only to stable releases, so a beta reaches only someone who installs it by hand.
+macOS (Apple Silicon) is signed and notarized and carries the MCP server inside the app. Windows x64 is an unsigned beta. There is no app for Linux or an Intel Mac: look at the [sample map](https://ontologyatlas.com/en/sample/), or run the [MCP server from a source checkout](mcp/README.md#1-register-with-an-agent) to connect a coding agent. [Releases](https://github.com/wlsdks/ontology-atlas/releases) list each version's files and checksums. Releases marked **Pre-release** on GitHub are betas: installed apps update only to stable releases, so a beta reaches only someone who installs it by hand.
 
 ## See it
 
@@ -61,7 +61,7 @@ macOS (Apple Silicon) is signed and notarized and carries the MCP server inside 
 </tr>
 <tr>
 <td width="50%"><img src="public/gateway/library.en.webp" alt="Library: wiki pages on the left with whether each still matches its source, a search box in the middle, and the sources to read first" /><br /><b>Library</b> — documents in, cited wiki pages out; find a passage, then check it in the source.</td>
-<td width="50%"><img src="public/gateway/planning.en.webp" alt="Planning: Markdown files listed on the left, one document open on the right" /><br /><b>Planning</b> — write plans as Markdown in the open folder's <code>planning/</code>, in the app or the browser; the macOS app can also read another folder in place.</td>
+<td width="50%"><img src="public/gateway/planning.en.webp" alt="Planning: Markdown files listed on the left, one document open on the right" /><br /><b>Planning</b> — write plans as Markdown in the open folder's <code>planning/</code>, in the app; the macOS app can also read another folder in place.</td>
 </tr>
 <tr>
 <td width="50%"><img src="public/gateway/changes.en.webp" alt="Changes: one day of merged work with its count, the hours it was merged, and the changes grouped by scope" /><br /><b>Changes</b> — what was merged in a period, counted and grouped, with the pull requests, commits and files behind it.</td>
@@ -147,7 +147,7 @@ Your agent reaches the folder two ways:
 ## Limits
 
 - **Atlas asks before an agent writes only in the app's chat.** There each file edit and Atlas write waits for you, unless you turn on Auto-approve for that folder; shell commands, deleting or merging concepts, commits, and paths outside the folder always ask, except Atlas reading the code folder the map was made in and reading a file of its connected code folder. An agent connected over MCP writes under its own tool's permission rules. [Agents](docs/features/agents.md)
-- **Library setup and checks need the app.** In a browser, Library offers the app or adding files. [Library](docs/features/library/workspace.md)
+- **Atlas works only in the installed app,** which exists for Apple Silicon Macs and, as a beta, Windows x64. A browser opens no folder; the website shows a read-only sample map. [Download](docs/features/download.md)
 - **Changes reads public GitHub pull requests only,** after you ask, and the list may be incomplete; private pull requests are not read. [Change briefing](docs/features/change-briefing.md)
 - **Git's Pull can change files anywhere in the repository,** not only in the open folder. [Git](docs/features/git.md)
 
@@ -169,9 +169,11 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md); external pull requests come from forks.
 
 ```bash
 pnpm install
-pnpm dev
+pnpm desktop:dev
 pnpm checks:changed -- --run
 ```
+
+`pnpm desktop:dev` runs the app and needs the Rust toolchain ([Desktop](docs/DESKTOP-MACOS.md)). `pnpm dev` serves only the website's pages in a browser; every app address there shows the page that says Atlas runs in the installed app.
 
 Installs refuse dependency versions published less than seven days ago;
 [SECURITY.md](SECURITY.md#dependency-installs) explains the install settings

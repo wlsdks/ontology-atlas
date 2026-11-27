@@ -1,7 +1,6 @@
 {
-  "$comment": "Every budget of docs/specs/2026-11-20-performance-strategy.md, one row each. limits[shape][files]; shape '*' applies to every shape without its own entry. A size between two budgeted sizes is held to the next larger one. The web is budgeted at 2,000 and 20,000 only; above webGatedUpTo its figures are reported, not checked (spec decision 12).",
+  "$comment": "Every budget of docs/specs/2026-11-20-performance-strategy.md, one row each. limits[shape][files]; shape '*' applies to every shape without its own entry. A size between two budgeted sizes is held to the next larger one.",
   "sizes": [2000, 20000, 50000],
-  "webGatedUpTo": 20000,
   "rows": [
     {
       "id": "app-webview-steady",
@@ -54,20 +53,6 @@
       "limits": { "*": { "2000": 150, "20000": 300, "50000": 470 } }
     },
     {
-      "id": "web-heap-steady",
-      "label": "Web heap steady",
-      "unit": "MB",
-      "command": "perf:web-open",
-      "limits": { "*": { "2000": 60, "20000": 90, "50000": 120 } }
-    },
-    {
-      "id": "web-heap-peak",
-      "label": "Web heap peak",
-      "unit": "MB",
-      "command": "perf:web-open",
-      "limits": { "*": { "2000": 100, "20000": 150, "50000": 200 } }
-    },
-    {
       "id": "first-concepts-app-reopen",
       "label": "First concepts, app reopen",
       "unit": "s",
@@ -85,21 +70,21 @@
       "id": "loaded-first-open",
       "label": "Loaded, first open",
       "unit": "s",
-      "command": "perf:app-open perf:web-open",
+      "command": "perf:app-open",
       "limits": { "*": { "2000": 2, "20000": 6, "50000": 15 }, "all": { "50000": 40 } }
     },
     {
       "id": "longest-task",
-      "label": "Longest main-thread task after first paint (web: longtask; app: frame gap)",
+      "label": "Longest main-thread task after first paint (app: frame gap)",
       "unit": "ms",
-      "command": "perf:app-open perf:web-open",
+      "command": "perf:app-open",
       "limits": { "*": { "2000": 50, "20000": 50, "50000": 50 } }
     },
     {
       "id": "frame-p95",
       "label": "Frame p95 for pan, zoom, hover, drag",
       "unit": "ms",
-      "command": "perf:app-open perf:web-open",
+      "command": "perf:app-open",
       "walk": "map",
       "limits": { "*": { "2000": 16.7, "20000": 16.7, "50000": 16.7 } }
     },
@@ -107,7 +92,7 @@
       "id": "row-pick-first-frame",
       "label": "Sources home row pick, first frame",
       "unit": "ms",
-      "command": "perf:app-open perf:web-open",
+      "command": "perf:app-open",
       "walk": "library",
       "limits": { "*": { "2000": 300, "20000": 300, "50000": 300 } }
     },

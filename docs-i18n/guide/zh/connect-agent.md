@@ -31,11 +31,11 @@
 
 然后退出并重新打开你的智能体。智能体只在会话开始时读取 MCP 配置。
 
-在浏览器中，Atlas 无法保存配置文件，因为网页不知道文件夹的绝对路径。这时 MCP 标签页会请你填写这个路径和 Atlas 源码本地克隆的路径，然后生成配置文本，供你复制保存。整个过程不写入也不发送任何内容。桌面应用更省事：[在这里下载](https://ontologyatlas.com/zh/download/)。
+只有应用会写入这些文件，因为只有它知道文件夹的绝对路径。包括 ontologyatlas.com 在内的网页不会打开文件夹，也不会写入任何内容。不用应用时，请按下一节所述，从源码克隆运行服务器。应用可以[在这里下载](https://ontologyatlas.com/zh/download/)。
 
 ## 从源码克隆连接
 
-不用应用时（例如在 Linux 上），可以从仓库的本地克隆运行服务器。你需要 Git、Node.js 24 和 pnpm：
+不用应用时（例如在 Linux 或 Intel Mac 上），可以从仓库的本地克隆运行服务器。你需要 Git、Node.js 24 和 pnpm：
 
 ```bash
 git clone https://github.com/wlsdks/ontology-atlas ~/tools/ontology-atlas

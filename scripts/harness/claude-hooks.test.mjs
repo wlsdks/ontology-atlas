@@ -511,7 +511,7 @@ describe('commit-msg language gate', () => {
       for (const prefix of ['feat:', 'fix:', 'docs:', 'refactor:', 'chore:', 'test:', 'style:', 'perf:', 'design:']) {
         assert.match(stderr, new RegExp(prefix.replace(':', ':')), `${prefix} missing from the refusal`);
       }
-      assert.match(stderr, /rules\/git\.md/);
+      assert.match(stderr, /commit-msg-language\.mjs/);
       assert.match(stderr, /"wip" is not a prefix/);
     }
   });

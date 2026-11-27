@@ -38,8 +38,8 @@ of them writes anything until you choose what to keep.
 In the desktop app, the map marks concepts whose evidence may be out of date.
 A concept is **stale** when a file it cites was committed after the concept's
 own document last changed. Each map view marks stale concepts in amber or gold,
-and its legend names the mark. This needs the folder's Git history, so the
-browser version and a folder without Git show no stale marks.
+and its legend names the mark. This needs the folder's Git history, so a
+folder without Git shows no stale marks.
 
 An agent's `validate_vault` checks the Markdown and its references, and its
 `pathDrift` list names the source paths that concepts cite but that no longer

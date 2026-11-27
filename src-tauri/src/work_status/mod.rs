@@ -192,6 +192,7 @@ pub fn work_status_file_pulse(
         file_pulse::pulse_read(
             agent_sessions::worktree_folders(&root),
             &worktree_ids,
+            crate::app_shell::open_file_limit::soft_open_file_limit(),
             file_pulse::git_check,
         )
     }

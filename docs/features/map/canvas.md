@@ -40,12 +40,11 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   when the first part arrives, and nothing can be written until the read ends. The finished
   map is the one a full read builds. The app reads 64 Markdown files per native call (each
   at most 4 MiB, Markdown only, never through a link into a dot file), eight calls at a
-  time; the browser keeps 64 reads in flight. Measured at 120 ms per native answer on the
+  time. Measured at 120 ms per native answer on the
   static export (median of 3): a 2,000-document vault drew its first frame at 0.87 s
   instead of 16.5 s and finished at 2.0 s; 10,000 documents drew at 0.88 s instead of 77.7 s
   and finished at 4.9 s, with no task longer than 343 ms (492 ms before), no homing spring
-  at all, and still frames up to 350 ms apart while documents are parsed. In Chrome over an origin-private folder, 10,000
-  documents drew at 0.67 s instead of 26.3 s and finished at 6.6 s. Gate:
+  at all, and still frames up to 350 ms apart while documents are parsed. Gate:
   `tests/e2e/vault-session/vault-progressive-open.spec.ts`.
 
 - **A name blocked below tries the slot above** (2026-09-20) → the greedy label
@@ -66,7 +65,7 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
 
 - **A realm calls its root one name** (2026-09-20) → entering a realm names its
   root in four places at once, and the ledger's header reached past `display` to
-  the canonical `title`: on the sample map the chip, the chip's title and the
+  the canonical `title`: in the Storefront sample the chip, the chip's title and the
   node on the canvas read the Korean display name while the header read
   `Payments`. Its own
   boundary rows and subtree were already localized; the header now uses the same
@@ -143,8 +142,7 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   date when Git shows it edited or new since (the rule the bundled manifest is built
   with). A clone, checkout or restored backup stamps every file with the moment it
   landed, so the file dates alone called 98 of 98 concepts changed today. Until Git
-  answers the lens counts nothing and the date slot stays empty; the web build,
-  which reads no Git, keeps the file dates.
+  answers the lens counts nothing and the date slot stays empty.
 
 - **The chrome may not eat the map** (2026-09-20) → the camera's side insets are
   absolute pixels (350 for the INDEX panel, 120 for the tool rail), so they did
@@ -163,9 +161,9 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
 - **Expand realm** → focus a node (click) and an orbital **Expand realm** button appears just outside its ring (also offered as an action in the node datasheet, for container nodes). Activating it transforms the map into *that node's world*: only its containment subtree remains, re-laid-out with the node as a temporary root at the origin (children map to rings by **depth**, not kind), and everything outside unmounts behind a 1px indigo warding circle. Relations crossing the boundary fade to a stub at the ring. The transition is a 600ms choreography — outside nodes fling out along curved "gravity" trajectories, inside nodes FLIP to their new spots, the camera dollies in to fit the realm (`prefers-reduced-motion` snaps instantly). The active realm lives in the URL (`?realm=slug`) so a shared link or an AI agent reproduces the same world; a top-center **Realm: {title} ✕** chip and **Esc** (highest ladder priority) return to the full map. Click, `?open` density gating, selective ego, and top-K labels all still work inside a realm.
 - **Ontology block exchange** — feature to exchange concept bundles folder-by-folder. INDEX's
   **Import Block** reads `.md` folders and, if present, `block-manifest.json`, showing **only what is coming in and what conflicts with existing files first**
-  (dry-run — running it tentatively without writing anything). Then only the files approved by the person are written via the vault's existing `createDoc` path. **Export this realm's source .mds as a block folder** on the realm expansion screen copies only the source files of the child nodes contained in that realm. The folder picker window uses
-  `showDirectoryPicker()` on the web, and Tauri's own picker following the same `FileSystemDirectoryHandle`
-  protocol on the installed app. Canceling that window is neither an error nor a write.
+  (dry-run — running it tentatively without writing anything). Then only the files approved by the person are written via the vault's existing `createDoc` path. **Export this realm's source .mds as a block folder** on the realm expansion screen copies only the source files of the child nodes contained in that realm. The folder picker window is Tauri's
+  own picker, answered through the same `FileSystemDirectoryHandle` protocol the rest of the app reads.
+  Canceling that window is neither an error nor a write.
 - **Tab** → keyboard cycle to neighbor hub
 - **Empty state** (0–1 nodes) → `TopologyEmptyState` explains whether the
   vault lacks projects or relations, then offers the applicable next actions:
@@ -180,7 +178,7 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   and empty cells between regions keep them apart. A tile's brightness and its row
   of dots count its elements (a gold dot is a stale element); a gold rim is stale
   and a dashed, hatched tile is unknown, by the same rule and Git walk as
-  the MCP server. Where the evidence was not read at all (the web, or a folder without
+  the MCP server. Where the evidence was not read at all (a folder without
   Git history) no tile is marked and one line under the legend says so. Placement is append-only per folder: a new capability takes a free
   cell of its region and a new domain the next free slot, so nothing already placed
   moves; only a region that outgrows its room re-seeds the board, and the board says
@@ -245,7 +243,7 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
 - **Evidence is leaf colour** — a stale element is an amber leaf, and a stale
   capability or domain, or a folded branch that holds stale concepts, carries an
   amber dot, by the same rule and Git walk as the MCP server. Where the evidence
-  was not read (the web, or a folder without Git history) nothing is amber and
+  was not read (a folder without Git history) nothing is amber and
   one line under the legend says so.
 - **Turning and zooming the tree** — a drag turns the tree about its trunk and
   tilts it between 0.17 and 0.70 rad, resisting at either end; letting go while
@@ -287,12 +285,12 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   cell in the strong ink, a capability larger and with a dark nucleus, both growing
   with the square root of their dependency count; the domain is the ringed heart of
   its cluster and the project its own ink, named beside it at rest. In the app a stale concept's cell is
-  amber, by the rule the MCP server uses (one Git walk); the web has no Git walk, so
-  nothing there is amber and the legend's quiet line says why. Kind is not drawn
+  amber, by the rule the MCP server uses (one Git walk); a folder without Git history
+  has nothing amber and the legend's quiet line says why. Kind is not drawn
   by colour, and containment is not drawn as a line: only declared `depends_on`
   relations are, as tapered axons that bow a little inside a cluster and share one
   tract through the gap between clusters. Paint, pointer hit test and measurement
-  use the same route. Where the browser opens a hardware WebGL2 context, three.js
+  use the same route. Where the WebView opens a hardware WebGL2 context, three.js
   paints the frame on a canvas beside the map canvas: a cell is a lit sphere that
   hides what stands behind it, an axon is a ribbon, and each cluster carries a
   faint shell round its own cells. Without that context, or when the painter's code

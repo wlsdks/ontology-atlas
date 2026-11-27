@@ -8,9 +8,9 @@ routes: []
 
 # Mode branching (data source)
 
-This file describes where the workbench's data comes from — a local vault or
-the bundled web sample — and the surfaces that depend on that choice. It is for
-anyone changing how a folder is opened, seeded, or read.
+This file describes where the workbench's data comes from — the vault folder
+the installed app has open, or no folder yet — and the surfaces that depend on
+that choice. It is for anyone changing how a folder is opened, seeded, or read.
 
 ## 1. Mode branching (data source)
 
@@ -18,15 +18,17 @@ anyone changing how a folder is opened, seeded, or read.
 
 | Mode | Condition | Behavior |
 |---|---|---|
-| **local** | a vault folder is active — picked in the installed app, or in an FSA-capable browser | vault manifest is the source of truth |
-| **static** | no active vault in the web fallback workbench | bundled sample selected by the web visitor |
+| **local** | a vault folder is active, picked or restored in the installed app | vault manifest is the source of truth |
+| **static** | no folder is loaded: first run, a cold restore or folder switch in progress, or a destination that opens without a folder | nothing is read; the screen shows its own "no folder loaded" state |
 
-**Effect**: the installed app never enters static mode. Until its restored or newly selected local
-manifest is ready, the shell commits no destination content; a route change then mounts against
-that one provider before paint. On the web, choosing a folder moves every workbench route from the
-explicit sample to local in the same fail-closed way. Mutations (create / edit / connect) are
-mode-aware: local → show an exact change review, then write to vault `.md`; static web → ask for a
-writable folder instead of presenting a dead editor.
+This is the app's "no folder loaded" state; it holds no bundled data, and no page of the
+website reads a folder at all.
+
+**Effect**: until the restored or newly selected local manifest is ready, the shell commits no
+destination content; a route change then mounts against that one provider before paint.
+Mutations (create / edit / connect) are mode-aware: local → show an exact change review, then
+write to vault `.md`; with no folder loaded → ask for a folder instead of presenting a dead
+editor.
 
 **Single source of truth**: `LocalVaultProvider` mounts once in `app/[locale]/layout.tsx`, and once more in `app/(gateway)/[locale]/layout.tsx` for the public pages' mobile tab bar; a move between the two remounts it, which restores the remembered folder as a first load does. Its many `useLocalVault()` consumers (`RootEntryPage` / `AppNavRail` / `HomePage` / `DocsVaultPage` / `useDataSourceMode` / `useProjects` / `useProjectMutations` / `useVaultOntology` and the persistent app shell) share one state instance, one IDB rehydrate, one filesystem walk.
 
@@ -45,7 +47,7 @@ my documents** — a blocking dialog that proposes candidates from the already s
 manifest (root README → project title · 1-depth folders → domains · each doc →
 element with `domain:`), and on confirm writes only frontmatter to the accepted
 docs (bodies untouched) plus one new `project.md`. Candidate derivation is pure:
-`src/features/docs-vault-local/lib/bootstrap-candidates.ts`, the browser
+`src/features/docs-vault-local/lib/bootstrap-candidates.ts`, the in-app
 equivalent of MCP `analyze_repo_structure`, so both ingress paths converge on
 the same shape. The dialog never says "ontology".
 
@@ -95,10 +97,8 @@ the same shape. The dialog never says "ontology".
   (`src/views/home/model/index-panel/use-topology-index-read-model.ts`) and project detail
   (`src/views/project-detail/ui/ProjectDetailPage.tsx`); a surface-specific
   subset is labeled as a subset rather than presented as the vault total.
-- **Library on the web** — the local-vault gate is capability-based
-  (File System Access), not runtime-based: the same browser session that
-  writes via the meaning editor or the document editor can read and edit in
-  the Library.
+- **Library needs a loaded folder** — the same vault session that writes via
+  the meaning editor or the document editor can read and edit in the Library.
 - **Relation vocabulary** — one dictionary (formal/plain × 7 types × ko/en)
   feeds the map's relation guide, the meaning editor, and datasheet
   (contract-tested); the "?" sheet footer defines domain/capability/element in
@@ -120,8 +120,8 @@ is that project path on the launch screen: it picks the project, shows
 `<project>/atlas` in the confirm dialog, creates and opens it, and asks a coding
 agent for a first draft only when one is ready at the press
 (`src/views/first-run/model/use-code-project-handoff.ts`); without one the
-folder opens and no request waits. Bundled demo vaults are web-only; no demo or
-download CTA appears inside the installed app. Creation doors hand the starter
+folder opens and no request waits. The app bundles no demo vault, and no demo or
+download CTA appears inside it. Creation doors hand the starter
 seed to the open itself (`open`/`openRecent` with `starter`), so it lands before
 the folder is first shown. A seed that cannot be written is said in a toast that
 points to Settings › Workspace.
@@ -142,31 +142,26 @@ share that resolver and persist the canonical child before building its
 manifest. Rationale: `docs/DECISIONS.md`.
 
 **Vault-carried agent skills**: every scaffolded vault — CLI `init` and the
-in-app/web starter alike — ships `.claude/skills/atlas-{review,grow,absorb}/SKILL.md`.
+in-app starter alike — ships `.claude/skills/atlas-{review,grow,absorb}/SKILL.md`.
 The app launches the coding agent with the vault as its working folder, so
 these appear in the composer's `/` menu tagged `(project)`. They encode order
 and stopping conditions the tool list alone cannot: review reads
 `validate_vault` + `health` and writes nothing, grow filters `growth_plan`
 candidates against evidence before proposing, absorb checks for duplicates
 before extracting. All three refuse to write until a person picks. Byte-parity
-between the CLI templates and the web starter constants is gated by
+between the CLI templates and the starter constants is gated by
 `tests/contract/vault-format/starter-templates.contract.test.ts`.
 
-## 5. Web first open
+## 5. The website's first open
 
-On hosted web with no vault selected, `/` shows the gateway
-(`GatewayLandingPage`, chosen by `src/views/root-entry/ui/RootEntryPage.tsx`;
-see [`gateway.md`](gateway.md)). `/topology` draws the bundled sample
-read-only, with a first-run starter module inside the INDEX panel (`FirstRunStarterModule`,
-`src/features/first-run-starter/`). It leads with one line naming the sample beside a quiet
-Close, a heading, one sentence and two actions (open my markdown folder, the two-minute tour);
-one row of quiet buttons under the folder action creates a folder or opens the glossary
-dialog, and the sample switch and its size sit below them; the terminal command is the
-folder guide's last section. Opening a
-folder from it first shows a guide sheet (`VaultOpenGuideSheet`,
-`src/features/docs-vault-local/`): any
-markdown folder is fine; Atlas opens it locally and does not upload it to an
-Atlas backend, while a connected coding agent is a separate provider boundary;
-an empty folder gets starter docs. A returning user whose vault handle restores
-from IndexedDB goes straight to their own workspace. The product introduction
-lives on `/download` ([`download.md`](download.md)).
+In a plain browser, `/` shows the gateway (`GatewayLandingPage`; see
+[`gateway.md`](gateway.md)), `/sample` draws the Storefront sample read-only, and any other
+address shows the app-only page. None of them opens, reads or remembers a folder. A browser
+that kept a remembered folder from the old browser workbench has that database (`demo-kv`)
+deleted at its next visit; the folder on disk is not touched. The product introduction lives
+on `/download` ([`download.md`](download.md)).
+
+In the app, the first-run page's open button calls `vault.open()`
+(`src/views/first-run/ui/FirstRunPage.tsx`), which shows the system folder chooser at once and
+loads the chosen folder; no guide sheet comes first. A returning user whose folder record
+restores from IndexedDB goes straight to their own workspace.

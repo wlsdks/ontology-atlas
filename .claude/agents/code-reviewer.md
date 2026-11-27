@@ -1,7 +1,7 @@
 ---
 name: code-reviewer
 description: Independently reviews a diff or a routed decision for correctness, security and contracts, at xhigh effort, as an agent that did not write the change. Use only for a one-way change (the `AGENTS.md` workflow table), a new or removed primary surface, or a diff on a path pnpm checks:changed calls a security surface, including such a change the lead wrote. Never edits; not for a design verdict or mockup (design-reviewer), writing a spec (spec-writer), or re-running checks that already passed.
-model: fable
+model: opus
 effort: xhigh
 maxTurns: 150
 tools: Read, Grep, Glob, Bash
@@ -63,7 +63,7 @@ before any build and add `spec: pass` or `spec: revise` to the report.
   pass names. A finding is one of:
   - vague copy: words described instead of written ("show a friendly error"),
     or a listed key missing from `messages/en/` or `messages/ko/`;
-  - a missing state: an empty, loading, error, partial, largest-vault, or web
+  - a missing state: an empty, loading, error, partial, largest-vault, or website
     versus app cell that is neither specified nor out of scope with a reason;
   - acceptance that cannot fail: no observable condition, no named test or
     capture, or a check of the implementation ("the panel renders");

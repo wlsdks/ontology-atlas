@@ -27,8 +27,7 @@ measured: there is no completeness score.
 Pressing the chip opens a short panel under it and keeps the chip pressed; a
 second press, Escape or a press outside closes it. The panel gives the share
 in counts, when it was counted, the five newest analyses with the share before
-and after each, and the next step: **Map the rest of the code** in the app, or
-on the web a line naming where that works. Without a record the chip says no
+and after each, and the next step: **Map the rest of the code**. Without a record the chip says no
 analysis was recorded and the panel says where the record comes from; a record
 that cannot be read says so and keeps the note's share. A line under ten
 minutes old, or a press that is mapping, reads as analyzing now. The app reads
@@ -65,5 +64,5 @@ It retains the inspected code folder and quotes the prior answer as untrusted
 evidence. Sending, write permission and meaning review remain separate actions;
 after a change, inspect again to discover what remains. There is no global
 completion percentage, automatic paid analysis or automatic write approval.
-The browser explains the native inspection boundary. Native local-model source
+Native local-model source
 construction remains unavailable.

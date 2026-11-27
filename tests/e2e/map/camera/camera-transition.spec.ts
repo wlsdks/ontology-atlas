@@ -141,7 +141,6 @@ test.describe("camera transition spec", () => {
     const canvas = page.getByTestId("ontology-map-canvas");
     await canvas.focus();
     const measured = await page.evaluate(async () => {
-      const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
       const el = document.querySelector('[data-surface-role="map-canvas"]');
       const probe = window.__atlasMap;
       if (!el || !probe) return null;
@@ -230,7 +229,9 @@ test.describe("camera transition spec", () => {
         });
         if (hit) popoverFrame = frame;
       }, 4);
-      await wait(700);
+      // The window is counted in frames as well, or a slow runner draws too few to judge: 700 ms at 60 fps.
+      const WINDOW_FRAMES = 42;
+      while (frame - dispatchFrame < WINDOW_FRAMES) await new Promise((r) => requestAnimationFrame(() => r(null)));
       clearInterval(watcher);
       running = false;
 

@@ -5,11 +5,11 @@
 
 ## Layer 1 promises
 
-1. **Start without a gate.** `pnpm dev` opens a usable first screen; there is no
-   login or access check.
-2. **Choose a folder and continue.** Point at a Markdown folder and enter the
-   topology, tree, and editing workflow immediately. The browser path uses the
-   File System Access API.
+1. **Start without a gate.** `pnpm desktop:dev` opens a usable first screen;
+   there is no login or access check.
+2. **Choose a folder and continue.** Point the app at a Markdown folder and
+   enter the topology, tree, and editing workflow immediately. The website
+   opens none.
 3. **The answer lives on the user's disk.** Vault frontmatter is the ontology.
    Only the user's files hold it; beside them Atlas keeps only what it can
    rebuild or ask for again (vault handle, preferences, the app's index).
@@ -42,8 +42,8 @@
 ## Security
 
 - Never scan password, credential, or key files from the user's disk.
-  `permissions.deny` in `.claude/settings.json` enforces the read side. The
-  read-only exceptions, each with its gate and decision record, are listed in
-  `surfaces.md`.
+  `permissions.deny` in `.claude/settings.json` enforces the read side.
+  `surfaces.md` lists exceptions, gates and records; only Harness › Improve
+  writes, each after a Keep.
 - Skip dotfiles and system directories such as `.env.local` and `.git/` while
   reading a vault.
