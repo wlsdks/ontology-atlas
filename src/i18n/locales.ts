@@ -1,4 +1,4 @@
-import { routing } from "@/i18n/routing";
+import { routing } from "./routing";
 
 export type AppLocale = (typeof routing.locales)[number];
 

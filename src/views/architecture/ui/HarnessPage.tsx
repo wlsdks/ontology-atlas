@@ -32,6 +32,7 @@ import {
 import { ArchitecturePage } from './ArchitecturePage';
 import { HarnessConnectSource } from './HarnessConnectSource';
 import { HARNESS_FRAME_CONTAINER, HARNESS_GUTTER_X } from './harness-frame';
+import { guardedHistoryWrite } from '@/shared/lib/navigation/history-write-guard';
 
 /**
  * How long a read may take before the progress screen is shown: the app's anti-flash delay, the
@@ -78,7 +79,7 @@ function HarnessPageInner() {
     const rewritten = rewriteRetiredView(window.location.search);
     if (rewritten === null) return;
     const { pathname, hash } = window.location;
-    window.history.replaceState(window.history.state, '', pathname + rewritten + hash);
+    guardedHistoryWrite('replace', pathname + rewritten + hash);
   }, [searchParams]);
 
   useEffect(() => {
@@ -114,16 +115,12 @@ function HarnessPageInner() {
     (next: HarnessView) => {
       setViewOverride(next);
       /*
-       * `history.replaceState`, not a router push: a view switch is not a new place, and Back should
+       * A replace through the history door, not a router push: a view switch is not a new place, and Back should
        * leave the screen.
        */
       if (typeof window === 'undefined') return;
       const url = new URL(window.location.href);
-      window.history.replaceState(
-        window.history.state,
-        '',
-        buildHarnessViewHref(next, url.pathname, url.search) + url.hash,
-      );
+      guardedHistoryWrite('replace', buildHarnessViewHref(next, url.pathname, url.search) + url.hash);
     },
     [],
   );

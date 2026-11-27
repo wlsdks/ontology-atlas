@@ -132,8 +132,6 @@ test.describe("a wiki check keeps running away from the Library", () => {
       read += 1;
       await readPage(page, `wiki/walk-${read}.md`);
       await expect(page.getByTestId("work-run-figures"), `the count on ${where}`).toContainText(`${read} page${read === 1 ? "" : "s"} read`);
-      // Dev server only: Next's badge floats at the bottom right; the exported app has none.
-      await page.evaluate(() => document.querySelector("nextjs-portal")?.remove());
       await expect.poll(() => cardCover(page), { message: `something covers the card on ${where}` }).toEqual([]);
     };
 

@@ -208,6 +208,114 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 
 </details>
 
+## JetBrains Mono (SIL Open Font License 1.1)
+
+The app and the website ship the Latin file of `JetBrains Mono` as a woff2 font, from the
+`@fontsource-variable/jetbrains-mono` package. JetBrains Mono is copyright 2020 The
+JetBrains Mono Project Authors, released under the SIL Open Font License 1.1.
+Source: <https://github.com/JetBrains/JetBrainsMono>.
+
+<details>
+<summary>SIL Open Font License, Version 1.1</summary>
+
+```
+Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono) JetBrainsMono-Italic[wght].ttf: Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono)
+
+This Font Software is licensed under the SIL Open Font License, Version 1.1.
+This license is copied below, and is also available with a FAQ at:
+http://scripts.sil.org/OFL
+
+
+-----------------------------------------------------------
+SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007
+-----------------------------------------------------------
+
+PREAMBLE
+The goals of the Open Font License (OFL) are to stimulate worldwide
+development of collaborative font projects, to support the font creation
+efforts of academic and linguistic communities, and to provide a free and
+open framework in which fonts may be shared and improved in partnership
+with others.
+
+The OFL allows the licensed fonts to be used, studied, modified and
+redistributed freely as long as they are not sold by themselves. The
+fonts, including any derivative works, can be bundled, embedded,
+redistributed and/or sold with any software provided that any reserved
+names are not used by derivative works. The fonts and derivatives,
+however, cannot be released under any other type of license. The
+requirement for fonts to remain under this license does not apply
+to any document created using the fonts or their derivatives.
+
+DEFINITIONS
+"Font Software" refers to the set of files released by the Copyright
+Holder(s) under this license and clearly marked as such. This may
+include source files, build scripts and documentation.
+
+"Reserved Font Name" refers to any names specified as such after the
+copyright statement(s).
+
+"Original Version" refers to the collection of Font Software components as
+distributed by the Copyright Holder(s).
+
+"Modified Version" refers to any derivative made by adding to, deleting,
+or substituting -- in part or in whole -- any of the components of the
+Original Version, by changing formats or by porting the Font Software to a
+new environment.
+
+"Author" refers to any designer, engineer, programmer, technical
+writer or other person who contributed to the Font Software.
+
+PERMISSION & CONDITIONS
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of the Font Software, to use, study, copy, merge, embed, modify,
+redistribute, and sell modified and unmodified copies of the Font
+Software, subject to the following conditions:
+
+1) Neither the Font Software nor any of its individual components,
+in Original or Modified Versions, may be sold by itself.
+
+2) Original or Modified Versions of the Font Software may be bundled,
+redistributed and/or sold with any software, provided that each copy
+contains the above copyright notice and this license. These can be
+included either as stand-alone text files, human-readable headers or
+in the appropriate machine-readable metadata fields within text or
+binary files as long as those fields can be easily viewed by the user.
+
+3) No Modified Version of the Font Software may use the Reserved Font
+Name(s) unless explicit written permission is granted by the corresponding
+Copyright Holder. This restriction only applies to the primary font name as
+presented to the users.
+
+4) The name(s) of the Copyright Holder(s) or the Author(s) of the Font
+Software shall not be used to promote, endorse or advertise any
+Modified Version, except to acknowledge the contribution(s) of the
+Copyright Holder(s) and the Author(s) or with their explicit written
+permission.
+
+5) The Font Software, modified or unmodified, in part or in whole,
+must be distributed entirely under this license, and must not be
+distributed under any other license. The requirement for fonts to
+remain under this license does not apply to any document created
+using the Font Software.
+
+TERMINATION
+This license becomes null and void if any of the above conditions are
+not met.
+
+DISCLAIMER
+THE FONT SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT
+OF COPYRIGHT, PATENT, TRADEMARK, OR OTHER RIGHT. IN NO EVENT SHALL THE
+COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
+DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
+OTHER DEALINGS IN THE FONT SOFTWARE.
+```
+
+</details>
+
 ## Mozilla Public License 2.0 components
 
 The application binary links these Rust crates, which are licensed under MPL-2.0:
@@ -353,7 +461,7 @@ build and proc-macro crates that are not linked into the shipped binary.
 
 `foldhash`
 
-## npm packages (248)
+## npm packages (259)
 
 Present in the production dependency tree that builds the static web export.
 Platform-specific native build tools, which differ per build machine and never
@@ -383,13 +491,17 @@ ship, are held to the license policy but not listed.
 
 `@ungap/structured-clone`, `electron-to-chromium`, `lru-cache`, `lucide-react`, `picocolors`, `semver`, `yallist`
 
-### MIT (220)
+### MIT (229)
 
-`@babel/code-frame`, `@babel/compat-data`, `@babel/core`, `@babel/generator`, `@babel/helper-compilation-targets`, `@babel/helper-globals`, `@babel/helper-module-imports`, `@babel/helper-module-transforms`, `@babel/helper-string-parser`, `@babel/helper-validator-identifier`, `@babel/helper-validator-option`, `@babel/helpers`, `@babel/parser`, `@babel/template`, `@babel/traverse`, `@babel/types`, `@eloqnt/config`, `@eloqnt/format-json`, `@eloqnt/format-po`, `@floating-ui/core`, `@floating-ui/dom`, `@floating-ui/react-dom`, `@floating-ui/utils`, `@formatjs/fast-memoize`, `@formatjs/icu-messageformat-parser`, `@formatjs/icu-skeleton-parser`, `@formatjs/intl-localematcher`, `@hookform/resolvers`, `@img/colour`, `@jridgewell/gen-mapping`, `@jridgewell/remapping`, `@jridgewell/resolve-uri`, `@jridgewell/sourcemap-codec`, `@jridgewell/trace-mapping`, `@next/env`, `@parcel/watcher`, `@radix-ui/primitive`, `@radix-ui/react-arrow`, `@radix-ui/react-compose-refs`, `@radix-ui/react-context`, `@radix-ui/react-dialog`, `@radix-ui/react-dismissable-layer`, `@radix-ui/react-focus-guards`, `@radix-ui/react-focus-scope`, `@radix-ui/react-id`, `@radix-ui/react-popper`, `@radix-ui/react-portal`, `@radix-ui/react-presence`, `@radix-ui/react-primitive`, `@radix-ui/react-slot`, `@radix-ui/react-tooltip`, `@radix-ui/react-use-callback-ref`, `@radix-ui/react-use-controllable-state`, `@radix-ui/react-use-effect-event`, `@radix-ui/react-use-layout-effect`, `@radix-ui/react-use-rect`, `@radix-ui/react-use-size`, `@radix-ui/react-visually-hidden`, `@radix-ui/rect`, `@schummar/icu-type-parser`, `@standard-schema/spec`, `@standard-schema/utils`, `@tanstack/react-virtual`, `@tanstack/virtual-core`, `@types/debug`, `@types/estree`, `@types/estree-jsx`, `@types/hast`, `@types/mdast`, `@types/ms`, `@types/node`, `@types/react`, `@types/react-dom`, `@types/unist`, `aria-hidden`, `bail`, `browserslist`, `ccount`, `character-entities`, `character-entities-html4`, `character-entities-legacy`, `character-reference-invalid`, `client-only`, `clsx`, `cmdk`, `comma-separated-tokens`, `convert-source-map`, `csstype`, `debug`, `decode-named-character-reference`, `dequal`, `detect-node-es`, `devlop`, `escalade`, `escape-string-regexp`, `estree-util-is-identifier-name`, `events`, `extend`, `framer-motion`, `gensync`, `get-nonce`, `graphology`, `graphology-layout-forceatlas2`, `graphology-types`, `graphology-utils`, `hast-util-to-jsx-runtime`, `hast-util-whitespace`, `html-url-attributes`, `icu-minify`, `inline-style-parser`, `is-alphabetical`, `is-alphanumerical`, `is-decimal`, `is-extglob`, `is-glob`, `is-hexadecimal`, `is-plain-obj`, `js-tokens`, `jsesc`, `json5`, `jsonc-parser`, `lodash.debounce`, `longest-streak`, `markdown-table`, `mdast-util-find-and-replace`, `mdast-util-from-markdown`, `mdast-util-gfm`, `mdast-util-gfm-autolink-literal`, `mdast-util-gfm-footnote`, `mdast-util-gfm-strikethrough`, `mdast-util-gfm-table`, `mdast-util-gfm-task-list-item`, `mdast-util-mdx-expression`, `mdast-util-mdx-jsx`, `mdast-util-mdxjs-esm`, `mdast-util-phrasing`, `mdast-util-to-hast`, `mdast-util-to-markdown`, `mdast-util-to-string`, `micromark`, `micromark-core-commonmark`, `micromark-extension-gfm`, `micromark-extension-gfm-autolink-literal`, `micromark-extension-gfm-footnote`, `micromark-extension-gfm-strikethrough`, `micromark-extension-gfm-table`, `micromark-extension-gfm-tagfilter`, `micromark-extension-gfm-task-list-item`, `micromark-factory-destination`, `micromark-factory-label`, `micromark-factory-space`, `micromark-factory-title`, `micromark-factory-whitespace`, `micromark-util-character`, `micromark-util-chunked`, `micromark-util-classify-character`, `micromark-util-combine-extensions`, `micromark-util-decode-numeric-character-reference`, `micromark-util-decode-string`, `micromark-util-encode`, `micromark-util-html-tag-name`, `micromark-util-normalize-identifier`, `micromark-util-resolve-all`, `micromark-util-sanitize-uri`, `micromark-util-subtokenize`, `micromark-util-symbol`, `micromark-util-types`, `motion-dom`, `motion-utils`, `ms`, `nanoid`, `negotiator`, `next`, `next-intl`, `next-intl-swc-plugin-extractor`, `node-addon-api`, `node-releases`, `parse-entities`, `picomatch`, `po-parser`, `postcss`, `property-information`, `react`, `react-dom`, `react-hook-form`, `react-markdown`, `react-remove-scroll`, `react-remove-scroll-bar`, `react-style-singleton`, `remark-gfm`, `remark-parse`, `remark-rehype`, `remark-stringify`, `scheduler`, `sonner`, `space-separated-tokens`, `stringify-entities`, `style-to-js`, `style-to-object`, `styled-jsx`, `tailwind-merge`, `three`, `trim-lines`, `trough`, `undici-types`, `unified`, `unist-util-is`, `unist-util-position`, `unist-util-stringify-position`, `unist-util-visit`, `unist-util-visit-parents`, `update-browserslist-db`, `use-callback-ref`, `use-intl`, `use-sidecar`, `usehooks-ts`, `vfile`, `vfile-message`, `zod`, `zwitch`
+`@babel/code-frame`, `@babel/compat-data`, `@babel/core`, `@babel/generator`, `@babel/helper-compilation-targets`, `@babel/helper-globals`, `@babel/helper-module-imports`, `@babel/helper-module-transforms`, `@babel/helper-string-parser`, `@babel/helper-validator-identifier`, `@babel/helper-validator-option`, `@babel/helpers`, `@babel/parser`, `@babel/template`, `@babel/traverse`, `@babel/types`, `@eloqnt/config`, `@eloqnt/format-json`, `@eloqnt/format-po`, `@floating-ui/core`, `@floating-ui/dom`, `@floating-ui/react-dom`, `@floating-ui/utils`, `@formatjs/fast-memoize`, `@formatjs/icu-messageformat-parser`, `@formatjs/icu-skeleton-parser`, `@formatjs/intl-localematcher`, `@hookform/resolvers`, `@img/colour`, `@jridgewell/gen-mapping`, `@jridgewell/remapping`, `@jridgewell/resolve-uri`, `@jridgewell/sourcemap-codec`, `@jridgewell/trace-mapping`, `@next/env`, `@parcel/watcher`, `@radix-ui/primitive`, `@radix-ui/react-arrow`, `@radix-ui/react-compose-refs`, `@radix-ui/react-context`, `@radix-ui/react-dialog`, `@radix-ui/react-dismissable-layer`, `@radix-ui/react-focus-guards`, `@radix-ui/react-focus-scope`, `@radix-ui/react-id`, `@radix-ui/react-popper`, `@radix-ui/react-portal`, `@radix-ui/react-presence`, `@radix-ui/react-primitive`, `@radix-ui/react-slot`, `@radix-ui/react-tooltip`, `@radix-ui/react-use-callback-ref`, `@radix-ui/react-use-controllable-state`, `@radix-ui/react-use-effect-event`, `@radix-ui/react-use-layout-effect`, `@radix-ui/react-use-rect`, `@radix-ui/react-use-size`, `@radix-ui/react-visually-hidden`, `@radix-ui/rect`, `@schummar/icu-type-parser`, `@standard-schema/spec`, `@standard-schema/utils`, `@tanstack/history`, `@tanstack/react-router`, `@tanstack/react-store`, `@tanstack/react-virtual`, `@tanstack/router-core`, `@tanstack/store`, `@tanstack/virtual-core`, `@types/debug`, `@types/estree`, `@types/estree-jsx`, `@types/hast`, `@types/mdast`, `@types/ms`, `@types/node`, `@types/react`, `@types/react-dom`, `@types/unist`, `aria-hidden`, `bail`, `browserslist`, `ccount`, `character-entities`, `character-entities-html4`, `character-entities-legacy`, `character-reference-invalid`, `client-only`, `clsx`, `cmdk`, `comma-separated-tokens`, `convert-source-map`, `cookie-es`, `csstype`, `debug`, `decode-named-character-reference`, `dequal`, `detect-node-es`, `devlop`, `escalade`, `escape-string-regexp`, `estree-util-is-identifier-name`, `events`, `extend`, `framer-motion`, `gensync`, `get-nonce`, `graphology`, `graphology-layout-forceatlas2`, `graphology-types`, `graphology-utils`, `hast-util-to-jsx-runtime`, `hast-util-whitespace`, `html-url-attributes`, `icu-minify`, `inline-style-parser`, `is-alphabetical`, `is-alphanumerical`, `is-decimal`, `is-extglob`, `is-glob`, `is-hexadecimal`, `is-plain-obj`, `js-tokens`, `jsesc`, `json5`, `jsonc-parser`, `lodash.debounce`, `longest-streak`, `markdown-table`, `mdast-util-find-and-replace`, `mdast-util-from-markdown`, `mdast-util-gfm`, `mdast-util-gfm-autolink-literal`, `mdast-util-gfm-footnote`, `mdast-util-gfm-strikethrough`, `mdast-util-gfm-table`, `mdast-util-gfm-task-list-item`, `mdast-util-mdx-expression`, `mdast-util-mdx-jsx`, `mdast-util-mdxjs-esm`, `mdast-util-phrasing`, `mdast-util-to-hast`, `mdast-util-to-markdown`, `mdast-util-to-string`, `micromark`, `micromark-core-commonmark`, `micromark-extension-gfm`, `micromark-extension-gfm-autolink-literal`, `micromark-extension-gfm-footnote`, `micromark-extension-gfm-strikethrough`, `micromark-extension-gfm-table`, `micromark-extension-gfm-tagfilter`, `micromark-extension-gfm-task-list-item`, `micromark-factory-destination`, `micromark-factory-label`, `micromark-factory-space`, `micromark-factory-title`, `micromark-factory-whitespace`, `micromark-util-character`, `micromark-util-chunked`, `micromark-util-classify-character`, `micromark-util-combine-extensions`, `micromark-util-decode-numeric-character-reference`, `micromark-util-decode-string`, `micromark-util-encode`, `micromark-util-html-tag-name`, `micromark-util-normalize-identifier`, `micromark-util-resolve-all`, `micromark-util-sanitize-uri`, `micromark-util-subtokenize`, `micromark-util-symbol`, `micromark-util-types`, `motion-dom`, `motion-utils`, `ms`, `nanoid`, `negotiator`, `next`, `next-intl`, `next-intl-swc-plugin-extractor`, `node-addon-api`, `node-releases`, `parse-entities`, `picomatch`, `po-parser`, `postcss`, `property-information`, `react`, `react-dom`, `react-hook-form`, `react-markdown`, `react-remove-scroll`, `react-remove-scroll-bar`, `react-style-singleton`, `remark-gfm`, `remark-parse`, `remark-rehype`, `remark-stringify`, `scheduler`, `seroval`, `seroval-plugins`, `sonner`, `space-separated-tokens`, `stringify-entities`, `style-to-js`, `style-to-object`, `styled-jsx`, `tailwind-merge`, `three`, `trim-lines`, `trough`, `undici-types`, `unified`, `unist-util-is`, `unist-util-position`, `unist-util-stringify-position`, `unist-util-visit`, `unist-util-visit-parents`, `update-browserslist-db`, `use-callback-ref`, `use-intl`, `use-sidecar`, `use-sync-external-store`, `usehooks-ts`, `vfile`, `vfile-message`, `zod`, `zwitch`
 
-### OFL-1.1 (1)
+### OFL-1.1 (2)
 
-`pretendard`
+`@fontsource-variable/jetbrains-mono`, `pretendard`
+
+### Unlicense (1)
+
+`isbot`
 
 ## MCP sidecar npm packages (10)
 

@@ -116,6 +116,7 @@ describe("CI job budgets — a lane cannot grow in silence", () => {
       "e2e.yml:quarantined",
       "e2e.yml:suite",
       "e2e.yml:surfaces",
+      "e2e.yml:vite-app",
     ]);
   });
 

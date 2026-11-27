@@ -2,14 +2,14 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import enMessages from "../../../../messages/en.json";
-import { buildLocaleTarget, LocaleSwitch } from "./LocaleSwitch";
+import { LocaleSwitch } from "./LocaleSwitch";
 
 const mocks = vi.hoisted(() => ({
-  pathname: "/en/",
+  pathname: "/",
   replace: vi.fn(),
 }));
 
-vi.mock("next/navigation", () => ({
+vi.mock("@/i18n/navigation", () => ({
   usePathname: () => mocks.pathname,
   useRouter: () => ({ replace: mocks.replace }),
 }));
@@ -24,37 +24,14 @@ function renderSwitch(onSwitchStart?: (nextLocale: string) => void) {
 
 describe("LocaleSwitch", () => {
   beforeEach(() => {
-    mocks.pathname = "/en/";
+    mocks.pathname = "/";
     mocks.replace.mockReset();
     window.localStorage.clear();
     window.history.replaceState({}, "", "/en/");
   });
 
-  it("preserves raw query order, duplicate keys, encoded values, and the hash", () => {
-    expect(
-      buildLocaleTarget(
-        "/ko/architecture/",
-        "ko",
-        "en",
-        "?tab=freshness&tag=a&tag=b&node=%ED%95%9C%EA%B8%80%2Ffact",
-        "#recent",
-      ),
-    ).toBe(
-      "/en/architecture/?tab=freshness&tag=a&tag=b&node=%ED%95%9C%EA%B8%80%2Ffact#recent",
-    );
-  });
-
-  it.each([
-    ["/en", "/ko"],
-    ["/en/", "/ko/"],
-    ["/", "/ko/"],
-    ["/architecture/", "/ko/architecture/"],
-  ])("keeps the trailing-slash contract for %s", (pathname, expected) => {
-    expect(buildLocaleTarget(pathname, "en", "ko")).toBe(expected);
-  });
-
   it("replaces only the locale while keeping the current review state", () => {
-    mocks.pathname = "/en/architecture/";
+    mocks.pathname = "/architecture/";
     window.history.replaceState(
       {},
       "",
@@ -65,8 +42,8 @@ describe("LocaleSwitch", () => {
     fireEvent.click(screen.getByRole("radio", { name: "KO 한국어" }));
 
     expect(mocks.replace).toHaveBeenCalledWith(
-      "/ko/architecture/?tab=freshness&tag=a&tag=b#recent",
-      { scroll: false },
+      "/architecture/?tab=freshness&tag=a&tag=b#recent",
+      { locale: "ko", scroll: false },
     );
     expect(window.localStorage.getItem("ontology-atlas:locale")).toBe("ko");
   });

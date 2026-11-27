@@ -1,5 +1,5 @@
 import { AppWindow } from 'lucide-react';
-import { getTranslations } from 'next-intl/server';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
 import { PAGE_GUTTER } from '@/shared/lib/public-pages/gateway-frame';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
@@ -14,8 +14,8 @@ const INLINE_LINK_CLASS =
  * with plain anchors and no client component, so it reads and links the same with scripts off, and
  * the exported HTML paints it from the first frame (`AppAddressFaces`).
  */
-export async function AppOnlyPage({ locale }: { locale: string }) {
-  const t = await getTranslations({ locale, namespace: 'appOnly' });
+export function AppOnlyPage({ locale }: { locale: string }) {
+  const t = useTranslations('appOnly');
   const downloadHref = withBasePath(`/${locale}/download/`);
   const sampleHref = withBasePath(`/${locale}/sample/`);
   const guideHref = withBasePath(`/${locale}/guide/connect-agent/`);

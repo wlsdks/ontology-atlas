@@ -9,6 +9,7 @@ import {
 } from '@/widgets/docs-vault';
 
 import type { DocsVaultView } from './persistence';
+import { guardedHistoryWrite } from '@/shared/lib/navigation/history-write-guard';
 
 interface DocsVaultUrlState {
   slug?: string | null;
@@ -45,7 +46,7 @@ function docsVaultHref(next: DocsVaultUrlState): string {
 
 export function replaceDocsVaultUrlState(next: DocsVaultUrlState): void {
   if (typeof window === 'undefined') return;
-  window.history.replaceState({}, '', docsVaultHref(next));
+  guardedHistoryWrite('replace', docsVaultHref(next));
   window.dispatchEvent(new Event('app:urlchange'));
 }
 
@@ -54,6 +55,6 @@ const withoutTrailingSlash = (pathname: string) => pathname.replace(/\/+$/, '');
 export function settleDocsVaultAddress(routePathname: string, slug: string): void {
   if (typeof window === 'undefined') return;
   if (withoutTrailingSlash(window.location.pathname) !== withoutTrailingSlash(withBasePath(routePathname))) return;
-  window.history.replaceState(window.history.state, '', docsVaultHref({ slug }));
+  guardedHistoryWrite('replace', docsVaultHref({ slug }));
   window.dispatchEvent(new Event('app:urlchange'));
 }

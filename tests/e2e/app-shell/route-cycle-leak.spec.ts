@@ -60,6 +60,9 @@ async function census(cdp: CDPSession): Promise<{ nodes: number; listeners: numb
 }
 
 test("three tours of every destination leave the map's DOM and listeners flat", async ({ page }) => {
+  // The tour pushes through Next's `window.next.router` and visits /guide/, which the Vite build
+  // gets in slice 2 with the public pages; until then the folder run leaves this one out.
+  test.skip(Boolean(process.env.ATLAS_E2E_APP_FOLDER), "needs /guide/ and a router handle the Vite app folder lacks until its public pages exist");
   test.setTimeout(300_000);
   await page.setViewportSize({ width: 1512, height: 949 });
   await installDesktopRailRuntime(page, DOCS, undefined, { replaceFixture: true });

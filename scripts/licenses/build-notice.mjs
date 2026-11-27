@@ -159,6 +159,12 @@ const STATICALLY_LINKED = [
 
 const SUPPLIED_LICENSE_TEXTS = new Map([["npm pretendard", PRETENDARD_LICENSE]]);
 
+/** The font package carries its own license text, copyright line included, so it is read, not copied. */
+const JETBRAINS_MONO_LICENSE = fs
+  .readFileSync(path.join(REPO_ROOT, "node_modules/@fontsource-variable/jetbrains-mono/LICENSE"), "utf8")
+  .replace(/\r\n/g, "\n")
+  .trim();
+
 /** The hand-written part. Everything below the inventory heading is generated. */
 const PREAMBLE = `# Third-party notices
 
@@ -274,6 +280,22 @@ carry the text, so it is reproduced in full below.
 
 \`\`\`
 ${PRETENDARD_LICENSE}
+\`\`\`
+
+</details>
+
+## JetBrains Mono (SIL Open Font License 1.1)
+
+The app and the website ship the Latin file of \`JetBrains Mono\` as a woff2 font, from the
+\`@fontsource-variable/jetbrains-mono\` package. JetBrains Mono is copyright 2020 The
+JetBrains Mono Project Authors, released under the SIL Open Font License 1.1.
+Source: <https://github.com/JetBrains/JetBrainsMono>.
+
+<details>
+<summary>SIL Open Font License, Version 1.1</summary>
+
+\`\`\`
+${JETBRAINS_MONO_LICENSE}
 \`\`\`
 
 </details>

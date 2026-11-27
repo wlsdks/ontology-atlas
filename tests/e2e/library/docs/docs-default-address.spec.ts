@@ -32,7 +32,7 @@ test("a rail press made while the Ontology tab opens still reaches its destinati
   await page.goto("/en/library/?guides=off", { waitUntil: "domcontentloaded" });
   await waitForPageSettled(page);
 
-  const docsView = holdRequests(page, (url) => url.pathname.startsWith("/_next/static/chunks/"));
+  const docsView = holdRequests(page, (url) => url.pathname.startsWith("/assets/") && url.pathname.endsWith(".js"));
   await docsView.registered;
   await page.getByTestId("library-workspace-ontology").click();
   await expect(page).toHaveURL((url) => url.searchParams.get("tab") === "ontology");

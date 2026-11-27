@@ -150,8 +150,6 @@ test.describe("a scheduled check keeps running and in view away from Automations
     await expect(rail(page).getByTestId("app-nav-rail-ring-library")).toBeVisible();
     await expect(rail(page).getByTestId("app-nav-rail-ring-automations")).toBeVisible();
 
-    // Dev server only: Next's badge floats at the bottom right; the exported app has none.
-    await page.evaluate(() => document.querySelector("nextjs-portal")?.remove());
     await more.click();
     const dialog = page.getByTestId("work-runs-dialog");
     await expect(dialog).toBeVisible();
@@ -200,8 +198,6 @@ test.describe("a scheduled check keeps running and in view away from Automations
       read += 1;
       await reviewReads(page, `wiki/walk-${read}.md`);
       await expect(page.getByTestId("work-run-figures"), `the count on ${where}`).toContainText(`${read} document${read === 1 ? "" : "s"} checked`);
-      // Dev server only: Next's badge floats at the bottom right; the exported app has none.
-      await page.evaluate(() => document.querySelector("nextjs-portal")?.remove());
       await expect.poll(() => cardCover(page), { message: `something covers the card on ${where}` }).toEqual([]);
     };
 

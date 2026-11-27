@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createHistoryWriteGuard, HISTORY_WRITE_BUDGET } from "./history-write-guard";
+import { createHistoryWriteGuard, guardedHistoryWrite, HISTORY_WRITE_BUDGET, setRouterHistory } from "./history-write-guard";
 
 describe("history write guard", () => {
   it("stays under WebKit's 100-per-10s limit and reports a runaway once", () => {
@@ -16,5 +16,21 @@ describe("history write guard", () => {
     const guard = createHistoryWriteGuard(3, 1_000);
     expect([0, 1, 2, 3].map((t) => guard.allow(t))).toEqual([true, true, true, false]);
     expect(guard.allow(1_001)).toBe(true);
+  });
+
+  it("hands a write to the router's history as a path, flushed before it returns", () => {
+    const written: string[] = [];
+    setRouterHistory({
+      push: (url) => written.push(`push ${url}`),
+      replace: (url) => written.push(`replace ${url}`),
+      flush: () => written.push("flush"),
+    });
+    try {
+      // `URL.toString()` gives the absolute form; the router takes a path.
+      guardedHistoryWrite("replace", new URL("/ko/library/?slug=a%20b#h", window.location.href).toString());
+      expect(written).toEqual(["replace /ko/library/?slug=a%20b#h", "flush"]);
+    } finally {
+      setRouterHistory(null);
+    }
   });
 });
