@@ -53,7 +53,7 @@ const MUST_NOT_BLOCK_THE_MAIN_THREAD: { file: string; fn: string; because: strin
   { file: 'git/document.rs', fn: 'git_document_diff', because: 'runs git' },
   { file: 'git/recheck.rs', fn: 'git_recheck_state', because: 'runs git' },
   { file: 'git/recheck.rs', fn: 'git_recheck_diffs', because: 'runs git diff for up to 256 cited files' },
-  { file: 'git/recheck.rs', fn: 'git_known_commits', because: 'runs git' },
+  { file: 'git/recheck.rs', fn: 'git_recheck_marks_hold', because: 'runs git' },
   { file: 'git/recheck.rs', fn: 'git_uncommitted_paths', because: 'runs git status' },
   { file: 'git/recheck.rs', fn: 'git_recheck_commit', because: 'writes documents and runs the commit hooks of the repository' },
   { file: 'git/recheck.rs', fn: 'git_recheck_recover', because: 'reads and writes vault documents' },
