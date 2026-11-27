@@ -9,7 +9,8 @@ import ts from "typescript";
  *
  * A name reaches a declaration only where the code uses it: an import that nothing mentions reaches nothing, and a
  * function a module exports but the test never names stays out. A module the test does not import, or a package
- * outside `tests/`, is not followed.
+ * outside `tests/`, is not followed. A declaration is reached whole: naming one method of an object or class that
+ * also holds an installer reaches the installer too.
  */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
