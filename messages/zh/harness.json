@@ -4,7 +4,8 @@
   "viewsAria": "Harness 视图",
   "views": {
     "overview": "配置",
-    "architecture": "架构"
+    "architecture": "架构",
+    "improve": "改进"
   },
   "retry": "重新读取",
   "toolsSource": "来源",
