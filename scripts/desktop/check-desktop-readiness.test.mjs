@@ -66,7 +66,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop package, Tauri, and Rust crate versions stay aligned for release tags/,
+    /✓ desktop package, Tauri, Rust crate and MCP server versions stay aligned for release tags/,
   );
   assert.match(
     result.stdout,
@@ -626,7 +626,7 @@ process.exit(1);
 
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /all required split-scope signing secret names/);
-    assert.match(result.stdout, new RegExp(`${APP_TAG_PATTERN} matches package, Tauri, and Cargo versions`));
+    assert.match(result.stdout, new RegExp(`${APP_TAG_PATTERN} matches package, Tauri, Cargo, and MCP server versions`));
     assert.match(result.stdout, new RegExp(`${APP_TAG_PATTERN} has no existing GitHub Release`));
   } finally {
     rmSync(directory, { recursive: true, force: true });
@@ -1052,12 +1052,12 @@ test("desktop release tag gate requires the v-prefixed tag to match app versions
   assert.equal(ok.status, 0, ok.stderr);
   assert.match(
     ok.stdout,
-    /matches package, Tauri and Cargo versions, and \/download derives its own from package\.json/,
+    /matches package, Tauri, Cargo and MCP server versions, and \/download derives its own from package\.json/,
   );
 
   assert.equal(mismatch.status, 1);
   assert.match(mismatch.stderr, /does not match macOS app versions/);
-  for (const field of ["package", "tauri", "cargo"]) {
+  for (const field of ["package", "tauri", "cargo", "mcp"]) {
     assert.ok(
       mismatch.stderr.includes(`${field}=${version}`),
       `expected ${field}=${version} in ${mismatch.stderr}`,
@@ -1071,4 +1071,44 @@ test("desktop release tag gate requires the v-prefixed tag to match app versions
   assert.ok(suffixed.stderr.includes(`tag v${version} instead`), suffixed.stderr);
   assert.equal(partial.status, 1);
   assert.match(partial.stderr, /must be vMAJOR\.MINOR\.PATCH/);
+});
+
+test("desktop release tag gate refuses a tag when only the MCP server version lags the app", () => {
+  // The registry skips a version it already lists, so an MCP version left behind
+  // keeps serving an old server under a release that claims to ship a new one.
+  const { version } = JSON.parse(readFileSync("package.json", "utf8"));
+  const root = mkdtempSync(join(tmpdir(), "release-tag-mcp-"));
+  const copiedFiles = [
+    "package.json",
+    "next.config.ts",
+    "src-tauri/tauri.conf.json",
+    "src-tauri/Cargo.toml",
+    "src/views/download/lib/release/release-facts.ts",
+  ];
+  const writeMcpVersion = (mcpVersion) =>
+    writeFileSync(join(root, "mcp", "package.json"), JSON.stringify({ version: mcpVersion }));
+  const run = () =>
+    spawnSync(
+      process.execPath,
+      [join(process.cwd(), "scripts/desktop-release/check-macos-release-tag.mjs"), `--tag=v${version}`],
+      { cwd: root, encoding: "utf8" },
+    );
+  try {
+    for (const file of copiedFiles) {
+      mkdirSync(join(root, file, ".."), { recursive: true });
+      writeFileSync(join(root, file), readFileSync(file));
+    }
+    mkdirSync(join(root, "mcp"));
+
+    writeMcpVersion("0.13.0");
+    const lagging = run();
+    assert.equal(lagging.status, 1, lagging.stdout);
+    assert.match(lagging.stderr, /does not match macOS app versions: mcp=0\.13\.0\./);
+
+    writeMcpVersion(version);
+    const aligned = run();
+    assert.equal(aligned.status, 0, aligned.stderr);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });

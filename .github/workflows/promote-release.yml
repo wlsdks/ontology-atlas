@@ -244,3 +244,19 @@ jobs:
             echo ""
             echo "${RELEASE_TAG} is published with the bytes of ${BETA_TAG}: ${release_url}"
           } >> "$GITHUB_STEP_SUMMARY"
+
+  # A promoted stable release is the same app version as its beta and carries the same
+  # `.mcpb`, so it is listed exactly as `release-macos.yml` lists a cut. The registry
+  # fetches the asset anonymously, hence `needs: publish-promotion`.
+  list-mcp-registry:
+    name: List the MCP server entry
+    needs: [admit-promotion, publish-promotion]
+    permissions:
+      # Not repository write. `id-token: write` mints the short-lived OIDC assertion
+      # `mcp-publisher login github-oidc` exchanges to prove this repository owns the
+      # `io.github.wlsdks/*` namespace; it grants nothing over this repository's contents.
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/publish-mcp-registry.yml
+    with:
+      tag: ${{ needs.admit-promotion.outputs.release_tag }}

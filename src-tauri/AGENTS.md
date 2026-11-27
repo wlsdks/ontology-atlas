@@ -4,6 +4,7 @@ Claude Code loads the rules below automatically from their `paths:` frontmatter.
 Codex, Cursor, Antigravity CLI, Copilot and every other agent must open them
 before changing a file in this directory — nothing else surfaces them.
 
+- `.claude/rules/surface-exceptions.md` — `src-tauri/**`
 - `.claude/rules/surfaces.md` — `src-tauri/**`
 - `.claude/rules/architecture.md` — `src-tauri/src/**` ("Code explains itself")
 
