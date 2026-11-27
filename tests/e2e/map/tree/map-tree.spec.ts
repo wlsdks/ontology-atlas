@@ -148,44 +148,66 @@ async function shot(page: Page, name: string) {
 }
 
 /**
- * Pixels of the tree canvas in the stale warning ink at any depth tone, counted in the page.
- * `region` limits the count to a disc in canvas CSS px.
+ * Pixels of the tree canvas in the stale warning ink at any depth tone inside `rim` (a disc in
+ * canvas CSS px), and the centre of each amber patch that reaches into it, traced whole through
+ * the window around the rim. The centre says whose amber it is: a stale element's leaf beside a
+ * mark is a patch centred on that leaf, not on the mark's dot.
  */
-async function countAmber(page: Page, region?: { x: number; y: number; r: number }): Promise<number> {
-  return page.evaluate(
-    (disc) => {
-      const canvas = document.querySelector<HTMLCanvasElement>('[data-testid="tree-map"] canvas')!;
-      const ctx = canvas.getContext("2d")!;
-      const scale = canvas.width / canvas.getBoundingClientRect().width;
-      const x0 = disc ? Math.max(0, Math.floor((disc.x - disc.r) * scale)) : 0;
-      const y0 = disc ? Math.max(0, Math.floor((disc.y - disc.r) * scale)) : 0;
-      const x1 = disc ? Math.min(canvas.width, Math.ceil((disc.x + disc.r) * scale)) : canvas.width;
-      const y1 = disc ? Math.min(canvas.height, Math.ceil((disc.y + disc.r) * scale)) : canvas.height;
-      if (x1 <= x0 || y1 <= y0) return 0;
-      const data = ctx.getImageData(x0, y0, x1 - x0, y1 - y0).data;
-      const w = x1 - x0;
-      let count = 0;
-      for (let i = 0; i < data.length; i += 4) {
-        if (disc) {
-          const px = (x0 + ((i / 4) % w) + 0.5) / scale;
-          const py = (y0 + Math.floor(i / 4 / w) + 0.5) / scale;
-          if (Math.hypot(px - disc.x, py - disc.y) > disc.r) continue;
+async function amberInRim(page: Page, rim: { x: number; y: number; r: number }): Promise<{ count: number; patches: { x: number; y: number }[] }> {
+  return page.evaluate((disc) => {
+    const canvas = document.querySelector<HTMLCanvasElement>('[data-testid="tree-map"] canvas')!;
+    const ctx = canvas.getContext("2d")!;
+    const scale = canvas.width / canvas.getBoundingClientRect().width;
+    const reach = disc.r * 4;
+    const x0 = Math.max(0, Math.floor((disc.x - reach) * scale));
+    const y0 = Math.max(0, Math.floor((disc.y - reach) * scale));
+    const x1 = Math.min(canvas.width, Math.ceil((disc.x + reach) * scale));
+    const y1 = Math.min(canvas.height, Math.ceil((disc.y + reach) * scale));
+    if (x1 <= x0 || y1 <= y0) return { count: 0, patches: [] };
+    const w = x1 - x0;
+    const h = y1 - y0;
+    const data = ctx.getImageData(x0, y0, w, h).data;
+    const amber = new Uint8Array(w * h);
+    for (let p = 0; p < w * h; p += 1) {
+      const r = data[p * 4]! / 255;
+      const g = data[p * 4 + 1]! / 255;
+      const b = data[p * 4 + 2]! / 255;
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      if (max === min) continue;
+      const s = (max - min) / max;
+      const hue = ((max === r ? ((g - b) / (max - min)) % 6 : max === g ? (b - r) / (max - min) + 2 : (r - g) / (max - min) + 4) * 60 + 360) % 360;
+      if (hue >= 32 && hue <= 55 && s >= 0.55 && max >= 0.3) amber[p] = 1;
+    }
+    const cssX = (p: number) => (x0 + (p % w) + 0.5) / scale;
+    const cssY = (p: number) => (y0 + Math.floor(p / w) + 0.5) / scale;
+    const inRim = (p: number) => Math.hypot(cssX(p) - disc.x, cssY(p) - disc.y) <= disc.r;
+    let count = 0;
+    const patches: { x: number; y: number }[] = [];
+    const seen = new Uint8Array(w * h);
+    for (let seed = 0; seed < w * h; seed += 1) {
+      if (!amber[seed] || !inRim(seed)) continue;
+      count += 1;
+      if (seen[seed]) continue;
+      seen[seed] = 1;
+      const queue = [seed];
+      let sx = 0;
+      let sy = 0;
+      for (let at = 0; at < queue.length; at += 1) {
+        const p = queue[at]!;
+        sx += cssX(p);
+        sy += cssY(p);
+        const col = p % w;
+        for (const next of [col > 0 ? p - 1 : -1, col < w - 1 ? p + 1 : -1, p - w, p + w]) {
+          if (next < 0 || next >= w * h || !amber[next] || seen[next]) continue;
+          seen[next] = 1;
+          queue.push(next);
         }
-        const r = data[i]! / 255;
-        const g = data[i + 1]! / 255;
-        const b = data[i + 2]! / 255;
-        const max = Math.max(r, g, b);
-        const min = Math.min(r, g, b);
-        const s = max === 0 ? 0 : (max - min) / max;
-        if (max === min) continue;
-        const h = (max === r ? ((g - b) / (max - min)) % 6 : max === g ? (b - r) / (max - min) + 2 : (r - g) / (max - min) + 4) * 60;
-        const hue = h < 0 ? h + 360 : h;
-        if (hue >= 32 && hue <= 55 && s >= 0.55 && max >= 0.3) count += 1;
       }
-      return count;
-    },
-    region ?? null,
-  );
+      patches.push({ x: sx / queue.length, y: sy / queue.length });
+    }
+    return { count, patches };
+  }, rim);
 }
 
 test.describe("the 3D tree on the dogfood vault", () => {
@@ -227,18 +249,24 @@ test.describe("the 3D tree on the dogfood vault", () => {
     const listed = await readList(page);
     expect(listed.filter((c) => c.evidence === "stale").map((c) => c.id).sort()).toEqual(listed.map((c) => c.id).filter((id) => vault.stale.has(id)).sort());
 
-    // A stale concept carries amber at its upper-right rim, where the dot sits; a current one does not,
-    // unless a stale neighbour's own amber reaches into that rim.
+    // A stale concept carries amber at its upper-right rim, where the dot sits; a current one carries no
+    // amber centred there. Another mark's amber may reach into a current concept's rim: a stale
+    // neighbour's dot, or a stale element's leaf, which the list carries only under a selected capability.
     const misdrawn: string[] = [];
     for (const c of listed) {
       if (!c.mark || c.kind === "project") continue;
       const rim = { x: c.mark.x + c.mark.r * Math.SQRT1_2, y: c.mark.y - c.mark.r * Math.SQRT1_2, r: Math.max(2.2, c.mark.r / 2) };
+      const { count, patches } = await amberInRim(page, rim);
+      if (vault.stale.has(c.id)) {
+        if (count === 0) misdrawn.push(`${c.id}: no amber, stale`);
+        continue;
+      }
       const staleNeighbourInRim = listed.some(
         (o) => o !== c && o.mark && vault.stale.has(o.id) && Math.hypot(o.mark.x - rim.x, o.mark.y - rim.y) <= rim.r + o.mark.r * 2,
       );
-      if (!vault.stale.has(c.id) && staleNeighbourInRim) continue;
-      const amber = await countAmber(page, rim);
-      if ((amber > 0) !== vault.stale.has(c.id)) misdrawn.push(`${c.id}: ${amber} amber px, ${vault.stale.has(c.id) ? "stale" : "current"}`);
+      if (staleNeighbourInRim) continue;
+      const own = patches.filter((patch) => Math.hypot(patch.x - rim.x, patch.y - rim.y) < rim.r);
+      if (own.length > 0) misdrawn.push(`${c.id}: ${count} amber px centred on its dot, current`);
     }
     expect(misdrawn).toEqual([]);
     await shot(page, "b-evidence");
