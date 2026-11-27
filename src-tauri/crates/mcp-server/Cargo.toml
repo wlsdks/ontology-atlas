@@ -35,6 +35,10 @@ indexmap = { version = "2", features = ["serde"] }
 thiserror = "2"
 # Edit distance for "did you mean"; MIT, already in the lockfile through the app's dependencies.
 strsim = "0.11"
+# Hidden characters in a question shown to a person are spelled out, by Unicode category.
+# Random ids for an agent session and a map analysis; the app already links it (v4 only).
+uuid = { version = "1", default-features = false, features = ["v4"] }
+regex = { version = "1", default-features = false, features = ["std", "unicode-gencat"] }
 
 [features]
 # Pause points and answers only a test build has: tools not yet ported reply `not_ported`, and
@@ -44,6 +48,7 @@ test-hooks = []
 
 [dev-dependencies]
 mcp-server = { path = ".", features = ["test-hooks"] }
+tempfile = "3"
 
 [lints]
 workspace = true

@@ -83,7 +83,7 @@ struct ErrorLine<'a> {
 
 const WRITE_BUFFER_BYTES: usize = 64 * 1024;
 
-fn write_line<T: Serialize>(output: &mut dyn Write, line: &T) -> io::Result<()> {
+pub(super) fn write_line<T: Serialize>(output: &mut dyn Write, line: &T) -> io::Result<()> {
     let mut buffered = BufWriter::with_capacity(WRITE_BUFFER_BYTES, output);
     to_writer(&mut buffered, line)?;
     buffered.write_all(b"\n")?;

@@ -16,12 +16,15 @@ use answer_format::whitespace::{is_line_terminator, trim};
 
 use crate::answer::{CallToolResult, ToolOutput};
 use crate::arguments::Arguments;
+use crate::audit::WriteRecord;
 use crate::error::{ToolError, UnknownField};
-use crate::protocol::Session;
+use crate::protocol::{ClientAnswer, ServerRequestWait, Session};
 use crate::runtime::Config;
 use crate::suggestions::closest_allowed_value;
 use crate::surface::Surface;
 use crate::tools;
+use crate::write_checkpoint::{self, Permit};
+use crate::write_tool::WriteTool;
 
 /// What a handler can see of the call it answers.
 pub struct CallContext<'a> {
@@ -38,6 +41,16 @@ impl<'a> CallContext<'a> {
             cancelled,
             can_ask_client: session.client_capabilities().can_ask_client(),
         }
+    }
+
+    /// The write lock, taken after a person has said yes; see `write_checkpoint`.
+    pub(crate) fn lock_writes(&self) -> std::sync::MutexGuard<'a, ()> {
+        let session: &'a Session = self.session;
+        session.lock_writes()
+    }
+
+    pub fn audit(&self) -> &crate::audit::AuditLog {
+        self.session.audit()
     }
 
     pub fn config(&self) -> &Config {
@@ -58,6 +71,26 @@ impl<'a> CallContext<'a> {
     /// requests: another worker answers them meanwhile.
     pub fn wait_off_queue<R>(&self, wait: impl FnOnce() -> R) -> R {
         self.session.wait_off_queue(wait)
+    }
+
+    /// Puts a request to the client and waits off the queue for its answer, for at most `limit`;
+    /// the wait also ends when this call is cancelled or the session ends.
+    pub fn ask_client<T: serde::Serialize>(
+        &self,
+        method: &str,
+        params: &T,
+        limit: std::time::Duration,
+    ) -> ClientAnswer {
+        let wait = ServerRequestWait {
+            limit,
+            cancelled: self.cancelled,
+        };
+        self.wait_off_queue(|| self.session.ask_client(method, params, wait))
+    }
+
+    /// The name the client gave itself in `initialize`, empty before it has.
+    pub fn client_name(&self) -> String {
+        self.session.client_name()
     }
 }
 
@@ -88,12 +121,16 @@ pub fn call_tool(
     result
 }
 
-fn unexpected_stop(name: &str, payload: &(dyn std::any::Any + Send)) -> ToolError {
-    let detail = payload
+fn panic_detail(payload: &(dyn std::any::Any + Send)) -> String {
+    payload
         .downcast_ref::<&str>()
         .map(|text| (*text).to_string())
         .or_else(|| payload.downcast_ref::<String>().cloned())
-        .unwrap_or_else(|| "no detail".to_string());
+        .unwrap_or_else(|| "no detail".to_string())
+}
+
+fn unexpected_stop(name: &str, payload: &(dyn std::any::Any + Send)) -> ToolError {
+    let detail = panic_detail(payload);
     ToolError::failed(format!("Tool \"{name}\" stopped unexpectedly: {detail}"))
 }
 
@@ -103,18 +140,42 @@ fn run_checked(
     name: &str,
     arguments: Option<Arguments>,
 ) -> Result<ToolOutput, ToolError> {
-    let modes = &context.config().modes;
-    // Reject a known write tool even when the caller's cached `tools/list` still shows it; an
-    // unknown name reaches the unknown-tool error below.
-    if modes.read_only && surface.tool(name).is_some() && !surface.is_read_tool(name) {
-        return Err(ToolError::failed(format!(
-            "Tool \"{name}\" is unavailable: server is in read-only mode (OATLAS_READ_ONLY). Only read tools are exposed."
-        )));
+    // A write tool is refused in read-only mode even when the caller's cached `tools/list` still
+    // shows it, and before its arguments are read; an unknown name reaches the unknown-tool error
+    // below.
+    let write_tool = WriteTool::from_name(name);
+    if write_tool.is_some() {
+        write_checkpoint::refuse_in_read_only_mode(context, name)?;
     }
     let arguments = normalize_tool_arguments(surface, arguments, name)?;
-    match tools::call(context, name, &arguments) {
-        Some(result) => result,
-        None => Err(unported_or_unknown(surface, name)),
+    let Some(tool) = write_tool else {
+        return tools::call(context, name, &arguments)
+            .unwrap_or_else(|| Err(unported_or_unknown(surface, name)));
+    };
+    let handler = tools::write_handler(tool).ok_or_else(|| unported_or_unknown(surface, name))?;
+    let permit = Permit::pass(context, tool, &arguments)?;
+    let done = handler(&permit, &arguments)?;
+    // The write is done and the answer is the tool's. The audit lines are written while the permit
+    // still holds the write lock; one that cannot be written, or a panic while writing it, is said
+    // on standard error and changes nothing the agent reads.
+    record_audit(context, tool, name, done.record);
+    drop(permit);
+    Ok(done.output)
+}
+
+fn record_audit(context: &CallContext<'_>, tool: WriteTool, name: &str, record: WriteRecord) {
+    let recorded = catch_unwind(AssertUnwindSafe(|| {
+        context.audit().record(tool, &context.client_name(), record)
+    }));
+    match recorded {
+        Ok(Ok(())) => {}
+        Ok(Err(error)) => {
+            eprintln!("[ontology-atlas-mcp] audit line not written after {name}: {error}");
+        }
+        Err(payload) => {
+            let detail = panic_detail(payload.as_ref());
+            eprintln!("[ontology-atlas-mcp] audit line not written after {name}: it stopped unexpectedly: {detail}");
+        }
     }
 }
 
