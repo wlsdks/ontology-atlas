@@ -98,9 +98,9 @@ this computer. Atlas never fetches, creates, moves or deletes a tag.
   the newest release on it. A tag on a tree or a file is not a release.
 - **The list** is drawn as the branch: one line with a mark per release, rows of one height, newest
   first by position on the read branch. A filled disc in three sizes marks which number changed
-  (major, minor, patch); a ring marks a pre-release; Unreleased is the line's open, dashed top
-  end; a tag off the branch sits beside the line on a short stub at its date and says so. Each row
-  names its tags in the mono face, its date, its count and a bar whose length is the square root
+  (major, minor, patch); a ring marks a pre-release; Unreleased is the line's open top end, a
+  dotted ring above a dashed run; a tag off the branch sits beside the line on a short stub at its
+  date and says so. Each row names its tags in the mono face, its date, its count and a bar whose length is the square root
   of the count against the largest, split into kinds as group bars are. The selected row alone
   carries the accent, and the line thickens from the selected release to where its span starts.
   Forty rows are drawn, then Show more. Find a release filters by any name in one Unicode form;

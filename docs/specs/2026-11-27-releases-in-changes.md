@@ -362,7 +362,11 @@ by a Later line or a one-word catalogue change; nothing here spends money, publi
   re-reads tags, since they live in the code folder; Refresh does. A name without a version, which
   stands alone, counts from the first commit. Off-branch Since offers the releases in that tag's
   own history. `tag-limit` past 10,000 tags is returned but has no catalogue line yet. Criterion 1
-  could not run on other repositories: every clone under the reference folder is a one-commit
-  shallow copy with no tags, and fetching history needs the network. Below 640 px the date
-  navigation moves under the other period controls, so the new control keeps the bar at two lines
-  down to about 350 px; at 320 px it takes three.
+  is deferred until a second repository that carries an Atlas vault exists on this computer: the
+  concept reach it measures needs recorded concepts, and the clones under the reference folder are
+  one-commit shallow copies with no tags and no vault. No history was fetched. The view stands
+  without concepts, as this spec's fallback asks: the concept strip says when none was touched, and
+  a repository picked alone draws none. Unreleased carries a mark after all, a dotted hollow ring
+  where the dashed run begins, so the column reads as one line from its open end. Below 640 px the
+  date navigation moves under the other period controls, so the new control keeps the bar at two
+  lines down to about 350 px; at 320 px it takes three.

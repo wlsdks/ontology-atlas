@@ -63,7 +63,7 @@ export function ReleaseList({ rows, unreleased, selected, since, branch, largest
     <h3 id={headingId} className="sr-only">{t('list')}</h3>
     <div role="listbox" aria-labelledby={headingId} data-testid="release-list" onKeyDown={move} className="relative">
       <span aria-hidden data-release-line className={cn('absolute bottom-0 w-px bg-[color:var(--color-border-strong)]', LINE_X)} style={{ top: lineTop }} />
-      {unreleased && <span aria-hidden data-release-open-end className={cn('absolute top-0 border-l border-dashed border-[color:var(--color-border-strong)]', LINE_X)} style={{ height: lineTop }} />}
+      {unreleased && <span aria-hidden data-release-open-end className={cn('absolute border-l border-dashed border-[color:var(--color-border-strong)]', LINE_X)} style={{ top: ROW_HEIGHT_PX / 2, height: lineTop - ROW_HEIGHT_PX / 2 }} />}
       <span aria-hidden data-release-span className={cn('motion-span-mark absolute top-0 left-3 w-[3px] origin-top rounded-micro bg-[color:var(--color-text-primary)]', spanTo <= spanFrom && 'opacity-0')}
         style={{ height: 1, transform: `translateY(${spanFrom}px) scaleY(${Math.max(1, spanTo - spanFrom)})` }} />
       {entries.map(entry => {
@@ -101,6 +101,13 @@ function Mark({ row, selected }: { row: ReleaseRow; selected: boolean }) {
   </span>;
 }
 
+/** Unreleased is the line's open end: a dotted hollow ring, apart from a pre-release's solid one. */
+function OpenEndMark({ selected }: { selected: boolean }) {
+  return <span aria-hidden data-release-mark="open" className="absolute top-1/2 left-[14px] -translate-x-1/2 -translate-y-1/2">
+    <span className={cn('block size-3 rounded-full border-2 border-dotted bg-[color:var(--color-canvas)]', selected ? 'border-[color:var(--color-indigo-accent)]' : 'border-[color:var(--color-text-secondary)]')} />
+  </span>;
+}
+
 function ReleaseOption({ row, unreleased, selected, branch, largest, formatDate, optionRef, tabbable, onPress }: {
   row: ReleaseRow | null; unreleased: UnreleasedSpan | null; selected: boolean; branch: string; largest: number; formatDate: (epochSeconds: number) => string;
   optionRef: (element: HTMLDivElement | null) => void; tabbable: boolean; onPress: () => void;
@@ -116,7 +123,7 @@ function ReleaseOption({ row, unreleased, selected, branch, largest, formatDate,
   return <div ref={optionRef} role="option" aria-selected={selected} aria-label={note ? `${label} · ${note}` : label} tabIndex={tabbable ? 0 : -1}
     data-release-row={row ? row.release.names[0] : 'unreleased'} data-release-placement={row?.placement ?? 'unreleased'} onClick={onPress}
     className={cn('relative flex h-14 cursor-pointer items-stretch rounded-card transition-colors', FOCUS_RING, selected ? 'bg-[color:var(--color-overlay-2)]' : 'hover:bg-[color:var(--color-overlay-1)]')}>
-    <span aria-hidden className={cn('relative shrink-0', GUTTER)}>{row && <Mark row={row} selected={selected} />}</span>
+    <span aria-hidden className={cn('relative shrink-0', GUTTER)}>{row ? <Mark row={row} selected={selected} /> : <OpenEndMark selected={selected} />}</span>
     <span className={cn('flex min-w-0 flex-1 flex-col justify-center gap-1 pr-3', row?.placement === 'off' && 'pl-3')}>
       <span className="flex items-baseline justify-between gap-3">
         <span className="flex min-w-0 items-baseline gap-2">
