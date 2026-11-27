@@ -43,8 +43,7 @@ function HarnessGuardArtwork({ arriving, engaged, reduced, labels }: FeatureStag
   </div>;
 }
 
-export function HarnessUnreadStage({ state, title, body, action, note }: {
-  state: 'browser' | 'no-source';
+export function HarnessUnreadStage({ title, body, action, note }: {
   title: string;
   body: string;
   action: ReactNode;
@@ -54,7 +53,7 @@ export function HarnessUnreadStage({ state, title, body, action, note }: {
   const labels = [t('sections.context.title'), t('sections.guardrails.title'), t('sections.verification.title')];
   return <FeatureStage
     data-testid="harness-unread-stage"
-    data-harness-unread={state}
+    data-harness-unread="no-source"
     art={motionState => <HarnessGuardArtwork {...motionState} labels={labels} />}
     title={title}
     body={body}

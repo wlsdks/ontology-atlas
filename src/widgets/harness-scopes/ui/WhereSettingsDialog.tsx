@@ -208,10 +208,8 @@ function WhereSettingsBody({
   pickOutcome,
   onPick,
   onClose,
-  inApp,
 }: {
   request: WhereSettingsRequest;
-  inApp: boolean;
   scopes: HarnessScopes | null;
   report: HarnessReport | null;
   pickOutcome: PickOutcome | null;
@@ -366,8 +364,8 @@ function WhereSettingsBody({
         />
       </div>
       <footer className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-4 border-t border-[color:var(--color-border-soft)] px-6 pb-4 pt-3 text-label text-[color:var(--color-text-tertiary)]">
-        <span className="text-[color:var(--color-text-tertiary)]">{say({ key: inApp ? 'scopes.label.notRead' : 'scopes.label.web' })}</span>
-        <span className="text-pretty">{say({ key: inApp ? `scopes.notRead.${tool === 'codex' ? 'codex' : 'claude'}` : 'scopes.webNote' })}</span>
+        <span className="text-[color:var(--color-text-tertiary)]">{say({ key: 'scopes.label.notRead' })}</span>
+        <span className="text-pretty">{say({ key: `scopes.notRead.${tool === 'codex' ? 'codex' : 'claude'}` })}</span>
       </footer>
     </div>
   );
@@ -381,7 +379,6 @@ export function WhereSettingsDialog({
   request,
   onClose,
   scopes,
-  inApp = false,
   report = null,
   pickOutcome = null,
   onPick,
@@ -389,9 +386,7 @@ export function WhereSettingsDialog({
   /** `null` closes the popup. */
   request: WhereSettingsRequest | null;
   onClose: () => void;
-  /** The installed app: the foot names what Atlas does not read instead of what a browser cannot. */
-  inApp?: boolean;
-  /** `null` on the web and wherever the app has not read the files. */
+  /** `null` wherever the app has not read the files. */
   scopes: HarnessScopes | null;
   report?: HarnessReport | null;
   pickOutcome?: PickOutcome | null;
@@ -411,7 +406,6 @@ export function WhereSettingsDialog({
           pickOutcome={pickOutcome}
           onPick={onPick}
           onClose={onClose}
-          inApp={inApp}
         />
       ) : null}
     </Dialog>

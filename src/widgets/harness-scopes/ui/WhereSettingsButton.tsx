@@ -6,14 +6,10 @@ import { CircleHelp } from 'lucide-react';
 import { Button } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
-/** Opens "Where settings live"; the page header and the browser's stage both carry it. */
-export function WhereSettingsButton({ onClick, variant = 'header' }: { onClick: () => void; variant?: 'header' | 'stage' }) {
+/** Opens "Where settings live" from the page header. */
+export function WhereSettingsButton({ onClick }: { onClick: () => void }) {
   const t = useTranslations('harness');
-  return variant === 'stage' ? (
-    <Button variant="ghost" size="lg" data-testid="where-settings-open" className="atlas-touch-floor atlas-touch-floor-wide" onClick={onClick}>
-      {t('scopes.open')}
-    </Button>
-  ) : (
+  return (
     <Button
       variant="ghost"
       size="sm"

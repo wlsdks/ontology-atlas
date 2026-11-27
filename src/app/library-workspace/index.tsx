@@ -7,7 +7,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, typ
 
 import { LibraryConstellations, LibraryPage } from '@/views/library';
 import type { DocsVaultPage } from '@/views/docs-vault';
-import { startPreferredSampleDownload, useLocalVault } from '@/entities/vault-session';
+import { useLocalVault } from '@/entities/vault-session';
 import { selectWikiPages } from '@/entities/docs-vault';
 import { useRouter } from '@/i18n/navigation';
 import { DESTINATION_HREF, withQuery } from '@/shared/config/destinations';
@@ -75,10 +75,6 @@ export function LibraryWorkspace() {
     router.replace(`/library/?${query}${window.location.hash}`, { scroll: false });
   }, [params, requested, router]);
   useEffect(() => whenIdle(() => void import('@/views/docs-vault').then(rememberOntologyPage)), []);
-  // The Ontology tab draws the bundled sample when no folder is open. Its download starts with the
-  // view's code, so a tab press commits at once instead of waiting for it inside the navigation.
-  const noFolder = !vault.manifest;
-  useEffect(() => (noFolder ? whenIdle(startPreferredSampleDownload) : undefined), [noFolder]);
   const handle = selectOpenVaultHandle(vault.status, vault.handle);
   const [toolsHost, setToolsHost] = useState<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);

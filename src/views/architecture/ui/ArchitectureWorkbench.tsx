@@ -15,7 +15,6 @@ import {
 import type { ArchitectureRecord } from '@/entities/architecture-record';
 import type { AcpTurnActivity } from '@/features/acp-session';
 import { useVaultSessionIdentityScope } from '@/entities/vault-session';
-import { Link } from '@/i18n/navigation';
 import { cn } from '@/shared/lib/cn';
 import { copyText } from '@/shared/lib/clipboard/copy-text';
 import { LG_BREAKPOINT_PX, useViewportBelow } from '@/shared/lib/use-viewport-below';
@@ -72,7 +71,6 @@ export function ArchitectureWorkbench({
   draftSource = null,
   sourceModulesByProfile = {},
   sourceListingCapable = false,
-  sourceUnavailableReason = 'browser',
   recordsByProfile = {},
   recordsLoaded = true,
   conceptsByProfile = {},
@@ -83,7 +81,6 @@ export function ArchitectureWorkbench({
   contextDockOpen = false,
   agentActivity = null,
   copyFeedbackMs = COPY_FEEDBACK_MS,
-  offersInstalledApp = false,
   embedded = false,
 }: {
   profiles: ArchitectureProfile[];
@@ -95,7 +92,6 @@ export function ArchitectureWorkbench({
   draftSource?: DraftPreviewSource | null;
   sourceModulesByProfile?: Readonly<Record<string, Record<string, RoleSourceModule[]>>>;
   sourceListingCapable?: boolean;
-  sourceUnavailableReason?: 'browser' | 'unbound' | null;
   recordsByProfile?: Readonly<Record<string, ArchitectureRecord | undefined>>;
   recordsLoaded?: boolean;
   conceptsByProfile?: Readonly<Record<string, Record<string, RoleConcept[]>>>;
@@ -106,8 +102,6 @@ export function ArchitectureWorkbench({
   contextDockOpen?: boolean;
   agentActivity?: AcpTurnActivity | null;
   copyFeedbackMs?: number;
-  /** Whether this runtime may point at the installed app. False inside the app itself. */
-  offersInstalledApp?: boolean;
 }) {
   const vaultKey = useVaultSessionIdentityScope();
   const t = useTranslations('architecture');
@@ -380,24 +374,11 @@ export function ArchitectureWorkbench({
 
   const activeIndex = activeRole === null ? -1 : matrix.order.indexOf(activeRole);
   const activeMembers = activeRole ? members[activeRole] ?? { members: [], source: 'none' as const } : null;
-  const sourceNote =
-    sourceListingCapable || !sourceUnavailableReason ? null : (
-      <div className="mt-1">
-        <p className="break-keep text-label text-[color:var(--color-text-quaternary)]" data-testid="architecture-source-unavailable">
-          {t(sourceUnavailableReason === 'unbound' ? 'sourceListingUnbound' : 'sourceListingUnavailable')}
-        </p>
-        {/* A browser can never read a source folder, so the note names the installed app; the app never offers its own download. */}
-        {offersInstalledApp ? (
-          <Link
-            href="/download"
-            className={controlClass({ shape: 'chip', size: 'sm', tone: 'secondary', className: 'mt-2 w-fit' })}
-            data-testid="architecture-get-installed-app"
-          >
-            {t('getInstalledApp')}
-          </Link>
-        ) : null}
-      </div>
-    );
+  const sourceNote = sourceListingCapable ? null : (
+    <p className="mt-1 break-keep text-label text-[color:var(--color-text-quaternary)]" data-testid="architecture-source-unavailable">
+      {t('sourceListingUnbound')}
+    </p>
+  );
 
   const agentActionIcon =
     agentRoute === 'clipboard' && copyState === 'copied' ? (

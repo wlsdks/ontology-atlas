@@ -7,8 +7,6 @@ import type { HarnessReport } from '@/entities/agent-files';
 
 const state = {
   mode: 'local' as 'local' | 'static',
-  /* Only a desktop bridge can read the dot directories the overview is about. */
-  bridge: true,
   docs: [] as Array<{
     slug: string;
     title: string;
@@ -29,14 +27,8 @@ const state = {
 vi.mock('@/entities/vault-session', () => ({
   useDataSourceMode: () => state.mode,
   useLocalVault: () => ({ status: 'loaded', handle: {}, manifest: { docs: state.docs } }),
-  useStaticVaultSource: () => ({ manifest: { docs: [] } }),
-  VaultSourceHydrationBoundary: ({ children }: { children: React.ReactNode }) => children,
 }));
 // The report sits behind its feature's public API, so this mock names the slice, not the file.
-vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime')>()),
-  isTauriVaultRuntime: () => state.bridge,
-}));
 vi.mock('@/features/harness-report', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/features/harness-report')>()),
   useHarnessReport: () => state.report ?? { status: 'unsupported' },
@@ -117,7 +109,6 @@ function fakeReport(overrides: Partial<HarnessReport> = {}): HarnessReport {
 
 beforeEach(() => {
   state.mode = 'local';
-  state.bridge = true;
   state.docs = [];
   state.report = null;
   /* Only the wait-screen tests fake timers; they must not leak into the arrival's count-up. */
@@ -138,17 +129,8 @@ describe('the destination identity', () => {
     expect(screen.queryByTestId('architecture-page')).toBeNull();
   });
 
-  it('arrives on the blueprint in a browser, which is the view a browser can answer', () => {
-    /* The File System Access API cannot see dot directories, so the overview is empty on the web. */
-    state.bridge = false;
-    mount();
-    expect(screen.getByTestId('architecture-page')).toBeInTheDocument();
-    expect(screen.queryByTestId('harness-setup')).toBeNull();
-  });
-
-  it('arrives on Setup in the app before a repository is connected, where it is connected', () => {
-    state.bridge = true;
-    state.report = { status: 'no-source' };
+  it('arrives on Setup before a repository is connected, where it is connected', () => {
+      state.report = { status: 'no-source' };
     mount();
     expect(screen.getByTestId('harness-unread-stage')).toHaveAttribute('data-harness-unread', 'no-source');
     expect(screen.queryByTestId('architecture-page')).toBeNull();
@@ -218,25 +200,6 @@ describe('the segmented control', () => {
       fireEvent.click(document.querySelector('#harness-tab-overview')!);
     });
     expect(screen.getByTestId('harness-setup')).toBeInTheDocument();
-    expect(window.location.search).toBe('');
-  });
-
-  it('writes the overview into a browser address, where the plain one means the blueprint', () => {
-    /* On the web the plain address means the blueprint, so the overview tab must write `?view=` or a refresh reopens the ladder. */
-    state.bridge = false;
-    const view = mount();
-    act(() => {
-      fireEvent.click(document.querySelector('#harness-tab-overview')!);
-    });
-    expect(window.location.search).toBe('?view=overview');
-
-    view.unmount();
-    mount();
-    expect(screen.queryByTestId('architecture-page')).toBeNull();
-
-    act(() => {
-      fireEvent.click(document.querySelector('#harness-tab-architecture')!);
-    });
     expect(window.location.search).toBe('');
   });
 
@@ -346,13 +309,6 @@ describe('the segmented control', () => {
 });
 
 describe('honest degradation', () => {
-  it('names what a browser cannot reach instead of drawing a shorter list', () => {
-    window.history.replaceState(null, '', '/ko/architecture/?view=overview');
-    state.report = { status: 'unsupported' };
-    mount();
-    expect(screen.getByTestId('harness-unread-stage')).toHaveAttribute('data-harness-unread', 'browser');
-  });
-
   it('says no repository is connected rather than guessing which one was meant', () => {
     window.history.replaceState(null, '', '/ko/architecture/?view=overview');
     state.report = { status: 'no-source' };

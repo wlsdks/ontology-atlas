@@ -1,26 +1,20 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 
-import {
-  useDataSourceMode,
-  useLocalVault,
-  useStaticVaultSource,
-  VaultSourceHydrationBoundary,
-} from '@/entities/vault-session';
-import { isTauriVaultRuntime } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
+import { useDataSourceMode, useLocalVault } from '@/entities/vault-session';
+import { useHydrated } from '@/shared/lib/render-timing/use-hydrated';
 import { RefreshCw } from 'lucide-react';
 
-import { Button, FeatureStage, GetAppLink, PageHeaderBar, Surface, TabBar } from '@/shared/ui';
+import { Button, FeatureStage, PageHeaderBar, RouteLoadingFallback, Surface, TabBar } from '@/shared/ui';
 import { BrandPortrait } from '@/shared/ui/marks/moru/brand-portrait';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { cn } from '@/shared/lib/cn';
 
 import {
   buildHarnessViewHref,
-  defaultViewForSurface,
   HARNESS_VIEW_ORDER,
   parseHarnessView,
   resolveAddressView,
@@ -37,7 +31,6 @@ import {
 } from '@/widgets/harness-scopes';
 import { ArchitecturePage } from './ArchitecturePage';
 import { HarnessConnectSource } from './HarnessConnectSource';
-import { HarnessUnreadStage } from './HarnessUnreadStage';
 import { HARNESS_FRAME_CONTAINER, HARNESS_GUTTER_X } from './harness-frame';
 
 /**
@@ -46,11 +39,6 @@ import { HARNESS_FRAME_CONTAINER, HARNESS_GUTTER_X } from './harness-frame';
  * the answer.
  */
 const PROGRESS_REVEAL_MS = 400;
-
-const subscribeNever = () => () => {};
-
-/** The server's answer is the browser's: a static export is built with no desktop bridge. */
-const readHarnessSurfaceOnServer = () => false;
 
 function failedReasonKey(code: string | null) {
   if (code === 'source-root-not-granted') return 'failedNotGranted';
@@ -75,16 +63,6 @@ function HarnessPageInner() {
    * history move, because `setView` uses `replaceState`, which `useSearchParams` does not observe.
    */
   const [viewOverride, setViewOverride] = useState<HarnessView | null>(null);
-  /*
-   * The server snapshot is `false`, the browser's answer the exported HTML must carry; the client
-   * reads the real runtime. `useSyncExternalStore` makes the first client render correct with no
-   * hydration mismatch.
-   */
-  const surfaceHasBridge = useSyncExternalStore(
-    subscribeNever,
-    isTauriVaultRuntime,
-    readHarnessSurfaceOnServer,
-  );
   const [reloadNonce, setReloadNonce] = useState(0);
   const tabpanelRef = useRef<HTMLDivElement>(null);
   const rereadHarness = useCallback(() => {
@@ -93,11 +71,7 @@ function HarnessPageInner() {
   }, []);
   const mode = useDataSourceMode();
   const localVault = useLocalVault();
-  const { manifest: staticManifest } = useStaticVaultSource();
-  const docs = useMemo(
-    () => (mode === 'static' ? staticManifest.docs : (localVault.manifest?.docs ?? EMPTY_DOCS)),
-    [localVault.manifest, mode, staticManifest.docs],
-  );
+  const docs = localVault.manifest?.docs ?? EMPTY_DOCS;
   const projectSlugs = useMemo(
     () =>
       docs
@@ -117,23 +91,22 @@ function HarnessPageInner() {
   useEffect(() => {
     const onPopState = () => {
       const params = new URL(window.location.href).searchParams;
-      setViewOverride(resolveAddressView(params, isTauriVaultRuntime()));
+      setViewOverride(resolveAddressView(params));
     };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
-  /* Not gated on the view: the arrival view depends on whether a reading exists. Without a bridge the hook returns `unsupported` at no cost. */
+  /* Not gated on the view: a reading decides what Overview shows. With no folder loaded the hook returns `unsupported` at no cost. */
   const reportState = useHarnessReport(
     mode === 'local' && localVault.status === 'loaded' ? localVault.handle : null,
     projectSlugs,
-    surfaceHasBridge,
+    true,
     reloadNonce,
   );
   const scopesRead = useHarnessScopes(
     mode === 'local' && localVault.status === 'loaded' ? localVault.handle : null,
     projectSlugs,
-    surfaceHasBridge,
     reloadNonce,
   );
   const scopes = scopesRead.state.status === 'ready' ? scopesRead.state.scopes : null;
@@ -143,31 +116,24 @@ function HarnessPageInner() {
     const name = reportState.sourceRoot.split(/[\\/]+/).filter(Boolean).pop();
     return name ? { name, folders: reportState.report.topLevelFolders } : null;
   }, [reportState]);
-  const harnessUnavailable =
-    reportState.status === 'unsupported' || reportState.status === 'no-source';
-  /* `no-source` still arrives on Setup, where the repository is connected; a named `?view=` wins. */
-  const canReadHarness = surfaceHasBridge && reportState.status !== 'unsupported';
-  const addressView = resolveAddressView(searchParams, canReadHarness);
-  const view: HarnessView = viewOverride ?? addressView;
+  const view: HarnessView = viewOverride ?? resolveAddressView(searchParams);
 
   const setView = useCallback(
     (next: HarnessView) => {
       setViewOverride(next);
       /*
        * `history.replaceState`, not a router push: a view switch is not a new place, and Back should
-       * leave the screen. Only this surface's own arrival view may go unwritten, so the writer gets
-       * the same default `resolveAddressView(..., canReadHarness)` reads with.
+       * leave the screen.
        */
       if (typeof window === 'undefined') return;
       const url = new URL(window.location.href);
       window.history.replaceState(
         window.history.state,
         '',
-        buildHarnessViewHref(next, url.pathname, url.search, defaultViewForSurface(canReadHarness)) +
-          url.hash,
+        buildHarnessViewHref(next, url.pathname, url.search) + url.hash,
       );
     },
-    [canReadHarness],
+    [],
   );
 
   /* `loading` stays true for the whole read, so this starts one timer per read; the panel appears only if the read outlasts it. */
@@ -196,7 +162,7 @@ function HarnessPageInner() {
   );
 
   const overviewFills = view === 'overview' && reportState.status === 'ready';
-  const staged = (harnessUnavailable || reportState.status === 'failed') && view !== 'architecture';
+  const staged = (reportState.status === 'no-source' || reportState.status === 'failed') && view !== 'architecture';
 
   return (
     <div className={cn('flex min-h-0 flex-1 flex-col overflow-hidden', HARNESS_FRAME_CONTAINER)}>
@@ -300,21 +266,7 @@ function HarnessPageInner() {
                   </Button>
                 }
               />
-            ) : (
-              /* The browser sees no dot directory, so it does not draw a shorter list and call it the harness. */
-              <HarnessUnreadStage
-                state="browser"
-                title={t('browserOnly')}
-                body={t('browserOnlyBody')}
-                action={
-                  <div className="flex flex-wrap items-center justify-center gap-3">
-                    <GetAppLink data-testid="harness-get-app">{t('browserAction')}</GetAppLink>
-                    <WhereSettingsButton variant="stage" onClick={() => setWhereRequest({})} />
-                  </div>
-                }
-                note={t('scopes.webStageNote')}
-              />
-            )}
+            ) : null}
           </div>
         </div>
         </main>
@@ -323,19 +275,16 @@ function HarnessPageInner() {
         request={whereRequest}
         onClose={() => setWhereRequest(null)}
         scopes={scopes}
-        inApp={surfaceHasBridge}
         report={reportState.status === 'ready' ? reportState.report : null}
         pickOutcome={scopesRead.lastPick}
-        onPick={surfaceHasBridge ? (title) => void scopesRead.pick(title) : undefined}
+        onPick={(title) => void scopesRead.pick(title)}
       />
     </div>
   );
 }
 
+/** The exported HTML holds only the neutral loading surface: a restored folder is known after hydration. */
 export function HarnessPage() {
-  return (
-    <VaultSourceHydrationBoundary>
-      <HarnessPageInner />
-    </VaultSourceHydrationBoundary>
-  );
+  const hydrated = useHydrated();
+  return hydrated ? <HarnessPageInner /> : <RouteLoadingFallback />;
 }

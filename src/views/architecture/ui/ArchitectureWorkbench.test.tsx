@@ -557,28 +557,6 @@ describe('ArchitectureWorkbench — persisted conformance receipt', () => {
   });
 });
 
-/* Only the installed app reads a source folder, and it must never offer its own download (`AGENTS.md`). */
-describe('the source-listing note', () => {
-  it('offers the installed app only when the runtime is not the app itself', () => {
-    const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
-    const browser = render(
-      <NextIntlClientProvider locale="en" messages={en}>
-        <ArchitectureWorkbench profiles={[profile]} offersInstalledApp />
-      </NextIntlClientProvider>,
-    );
-    expect(screen.getByTestId('architecture-source-unavailable')).toBeInTheDocument();
-    expect(screen.getByTestId('architecture-get-installed-app')).toHaveAttribute(
-      'href',
-      expect.stringContaining('/download'),
-    );
-    browser.unmount();
-
-    renderWorkbench();
-    expect(screen.getByTestId('architecture-source-unavailable')).toBeInTheDocument();
-    expect(screen.queryByTestId('architecture-get-installed-app')).toBeNull();
-  });
-});
-
 /*
  * `summary_<role>_<locale>` restates the canonical sentence for the screen; `summary_<role>` stays
  * the fact that briefs and prompts print.

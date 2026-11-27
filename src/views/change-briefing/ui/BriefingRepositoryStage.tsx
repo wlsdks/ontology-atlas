@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { useTranslations } from 'next-intl';
 import { FolderGit2 } from 'lucide-react';
 import { MOTION, STAGGER } from '@/shared/motion';
-import { Button, FeatureStage, FeatureStagePulse, GetAppLink, type FeatureStageMotion } from '@/shared/ui';
+import { Button, FeatureStage, FeatureStagePulse, type FeatureStageMotion } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
 const HISTORY_X = 52;
@@ -37,17 +37,14 @@ function DigestArtwork({ arriving, engaged, reduced }: FeatureStageMotion) {
   </div>;
 }
 
-export function BriefingRepositoryStage({ onChoose }: { onChoose?: () => void }) {
+export function BriefingRepositoryStage({ onChoose }: { onChoose: () => void }) {
   const t = useTranslations('gitBriefing');
-  const nav = useTranslations('navRail');
   return <FeatureStage
     data-testid="briefing-stage"
-    data-briefing-state={onChoose ? 'no-repository' : 'app-required'}
+    data-briefing-state="no-repository"
     art={state => <DigestArtwork {...state} />}
     title={t('startTitle')}
-    body={t(onChoose ? 'startBody' : 'webBody')}
-    action={onChoose
-      ? <Button size="lg" data-briefing-choose onClick={onChoose}><FolderGit2 size={ICON_SIZE.lg} aria-hidden />{t('chooseRepository')}</Button>
-      : <GetAppLink data-testid="briefing-get-app">{nav('getApp')}</GetAppLink>}
+    body={t('startBody')}
+    action={<Button size="lg" data-briefing-choose onClick={onChoose}><FolderGit2 size={ICON_SIZE.lg} aria-hidden />{t('chooseRepository')}</Button>}
   />;
 }
