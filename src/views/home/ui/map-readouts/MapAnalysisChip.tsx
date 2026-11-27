@@ -13,8 +13,6 @@ const PANEL_WIDTH = 320;
 
 export interface MapAnalysisChipProps {
   model: MapAnalysisChipModel;
-  /** The desktop app can start a run; the web says where that works instead. */
-  canMapTheRest: boolean;
   /** Opens the map conversation, whose row holds the estimate and Start. */
   onMapTheRest: () => void;
 }
@@ -52,7 +50,7 @@ function rowChangeLabel(t: Translate, row: MapAnalysisRow): string {
  * short panel under it (share, when it was counted, the last five analyses, the next step) and the
  * chip stays pressed; a second press, Escape or a press outside closes it.
  */
-export function MapAnalysisChip({ model, canMapTheRest, onMapTheRest }: MapAnalysisChipProps) {
+export function MapAnalysisChip({ model, onMapTheRest }: MapAnalysisChipProps) {
   const t = useTranslations("mapAnalysis");
   const tWorkCard = useTranslations("workCard.mapping");
   const tNavRail = useTranslations("navRail.usage");
@@ -188,29 +186,20 @@ export function MapAnalysisChip({ model, canMapTheRest, onMapTheRest }: MapAnaly
             </p>
           ) : null}
           {offMap > 0 ? (
-            canMapTheRest ? (
-              <div className="flex flex-col items-start gap-1.5 border-t border-[color:var(--topology-floating-panel-divider)] pt-3">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  data-testid="map-analysis-map-rest"
-                  onClick={() => {
-                    close(false);
-                    onMapTheRest();
-                  }}
-                >
-                  {tWorkCard("startTitle")}
-                </Button>
-                <p className="text-label leading-label text-[color:var(--color-text-tertiary)]">{t("action.mapRestHelp")}</p>
-              </div>
-            ) : (
-              <p
-                className="border-t border-[color:var(--topology-floating-panel-divider)] pt-3 text-label leading-label text-[color:var(--color-text-tertiary)]"
-                data-testid="map-analysis-web-analyze"
+            <div className="flex flex-col items-start gap-1.5 border-t border-[color:var(--topology-floating-panel-divider)] pt-3">
+              <Button
+                size="sm"
+                variant="outline"
+                data-testid="map-analysis-map-rest"
+                onClick={() => {
+                  close(false);
+                  onMapTheRest();
+                }}
               >
-                {t("web.analyze")}
-              </p>
-            )
+                {tWorkCard("startTitle")}
+              </Button>
+              <p className="text-label leading-label text-[color:var(--color-text-tertiary)]">{t("action.mapRestHelp")}</p>
+            </div>
           ) : null}
         </div>
       </Surface>

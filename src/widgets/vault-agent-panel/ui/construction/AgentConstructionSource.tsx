@@ -15,7 +15,6 @@ import type { ConstructionSourceSelection } from '../../model/construction-sourc
  * surface does not collapse around an empty box.
  */
 export function AgentConstructionSource({
-  bridgeAvailable,
   hasVault,
   busy,
   running,
@@ -27,7 +26,6 @@ export function AgentConstructionSource({
   onCancel,
   onRun,
 }: {
-  bridgeAvailable: boolean;
   hasVault: boolean;
   /** The agent is running or applying: the action is disabled. */
   busy: boolean;
@@ -44,7 +42,7 @@ export function AgentConstructionSource({
   const router = useRouter();
   return (
     <>
-      {!bridgeAvailable ? <p className="text-label text-[color:var(--color-text-secondary)]">{t('construction.webUnavailable')}</p> : hasVault ? (
+      {hasVault ? (
         <>
           <Chip data-testid="construction-action" disabled={busy}
             title={running ? t('stop') : t('construction.action')} onClick={onChoose}>

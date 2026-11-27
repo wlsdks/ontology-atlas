@@ -10,7 +10,6 @@ import { choosePlanningFolder, planningAvailable, type PlanningInventory } from 
 import { pickPlanningFiles, planningAddAvailable } from '@/shared/lib/planning/add-files';
 import { requestLibraryImport } from '@/shared/lib/library-import/destination';
 import { navigateWithViewTransition } from '@/shared/lib/navigation/route-view-transition';
-import { isAcpBridgeAvailable } from '@/shared/lib/agent-chat/tauri-acp';
 import { createPlanningHomeDocument, PLANNING_HOME_FOLDER, planningIdentity, savePlanningHomeDocument } from '@/shared/lib/planning/home-source';
 import { editablePlanningText, planningTextForDisk, type PlanningEditableText } from '@/shared/lib/planning/editable-text';
 import { planningSourceFor, type HomePlanningSelection, type PlanningSelection } from '@/shared/lib/planning/source';
@@ -470,7 +469,7 @@ export function PlanningPage() {
         {/* An empty folder's stage carries these three in its centre; the header would repeat them. */}
         {isHome && !firstDocumentStage && <ChromeChip icon={<FilePlus aria-hidden />} data-planning-new onClick={startDraft} aria-label={t('newDocument')} title={t('newDocument')} className={ICON_ONLY_BELOW_XL}>{t('newDocument')}</ChromeChip>}
         {canAddFiles && !firstDocumentStage && <ChromeChip icon={<FileUp aria-hidden />} data-planning-add disabled={adding} onClick={() => void addFiles()} aria-label={t('addFiles')} title={t('addFiles')} className={ICON_ONLY_BELOW_XL}>{t('addFiles')}</ChromeChip>}
-        {isHome && !firstDocumentStage && isAcpBridgeAvailable() && <ChromeChip icon={<CloudDownload aria-hidden />} data-planning-import title={t('importServiceHint')} onClick={importFromService} aria-label={t('importService')} className={ICON_ONLY_BELOW_XL}>{t('importService')}</ChromeChip>}
+        {isHome && !firstDocumentStage && <ChromeChip icon={<CloudDownload aria-hidden />} data-planning-import title={t('importServiceHint')} onClick={importFromService} aria-label={t('importService')} className={ICON_ONLY_BELOW_XL}>{t('importService')}</ChromeChip>}
         {!isHome && vaultRoot && <ChromeChip icon={<FolderPen aria-hidden />} data-planning-home disabled={creatingHome} onClick={returnHome} aria-label={t('homeFolder')} title={t('homeFolder')} className={ICON_ONLY_BELOW_XL}>{t('homeFolder')}</ChromeChip>}
         {available === true && <ChromeChip icon={<FolderOpen aria-hidden />} data-planning-choose onClick={() => void choose(false)} aria-label={t('chooseFolder')} title={t('chooseFolder')} className={ICON_ONLY_BELOW_XL}>{t('chooseFolder')}</ChromeChip>}
       </> : undefined}
@@ -481,7 +480,7 @@ export function PlanningPage() {
         : holdsCreateStage && vaultRoot ? <PlanningFolderStage door={{ kind: 'create', folder: vaultRoot.name, onCreate: () => void openHome(true), onChoose: available ? () => void choose(true) : null, failed: createFailed, creating: creatingHome || homePending }} />
         : firstDocumentStage && workbench?.kind === 'home' ? <PlanningFolderStage door={{
           kind: 'first-document', folder: workbench.root.name, creating: creatingDocument, failed: draftFailed, onCreate: (title) => void createDocument(title),
-          onAddFiles: canAddFiles ? () => void addFiles() : null, adding, onImport: isAcpBridgeAvailable() ? importFromService : null,
+          onAddFiles: canAddFiles ? () => void addFiles() : null, adding, onImport: importFromService,
           readScope: inventory && inventory.visited > 0 ? readScope('stage') : null,
         }} />
         : homePending ? <WaitStage title={t('loading')} delayed data-planning-loading />

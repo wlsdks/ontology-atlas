@@ -204,7 +204,7 @@
     "relayoutToast": "Rearranging the map",
     "spotlightTooltip": "Recent changes: concepts changed in {days, plural, one {the last day} other {the last # days}} stay bright, the rest fade",
     "spotlightEmptyTooltip": "Nothing changed recently. Edit a document and it shows here",
-    "spotlightSampleTooltip": "The sample's dates are not your work. Open your ontology folder to see your own changes here",
+    "spotlightNeedsFolderTooltip": "Open your ontology folder to see which concepts changed recently",
     "spotlightAriaLabel": "Turn recent-change highlighting on or off",
     "spotlightLabel": "Recent",
     "switchToMyDataLabel": "Open ontology folder",

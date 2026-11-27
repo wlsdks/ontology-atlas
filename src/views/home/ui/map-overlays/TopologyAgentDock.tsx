@@ -92,10 +92,9 @@ interface TopologyAgentDockProps {
     | "conversationReturnedOnItsOwn"
     | "conversationPutAway"
   >;
-  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "t" | "activeLocale" | "tWorkbench">;
+  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "t" | "tWorkbench">;
   topologyVaultReadModel: Pick<
     ReturnType<typeof useTopologyVaultReadModel>,
-    | "llmBridgeAvailable"
     | "gitVaultPath"
     | "ontologyInsight"
     | "vault"
@@ -110,9 +109,9 @@ export function TopologyAgentDock({
 }: TopologyAgentDockProps) {
   const tGray=useTranslations('grayArea');
   const [investigationRefused,setInvestigationRefused]=useState(false);
-  const { llmBridgeAvailable, gitVaultPath, ontologyInsight, vault, selectedOntologyNode } = topologyVaultReadModel;
+  const { gitVaultPath, ontologyInsight, vault, selectedOntologyNode } = topologyVaultReadModel;
   const vaultAgentPrefill=incomingPrefill?.context&&incomingPrefill.context.vaultPath!==gitVaultPath?null:incomingPrefill;
-  const { t, activeLocale, tWorkbench } = topologyPreferences;
+  const { t, tWorkbench } = topologyPreferences;
   const {
     keyChatOpen, closeVaultAgent, vaultAgentScreenContext, askPrefill, runtimeChatOpen,
     handleWorkbenchSectionChange, agentChatUsesRuntime, openVaultAgent, businessFlowRequest,
@@ -155,39 +154,36 @@ export function TopologyAgentDock({
 
 
   return (<>
-    {llmBridgeAvailable ? (
-      <ErrorBoundary
-        fallback={({ error, reset }) => (
-          <WidgetErrorFallback
-            error={error}
-            onReset={reset}
-            title={t('widgetError.panelTitle')}
-            body={t('widgetError.body')}
-            retryLabel={t('widgetError.retry')}
-            className="m-2 w-[320px] shrink-0"
-          />
-        )}
-      >
-        <VaultAgentPanel
-          // Never while the coding-agent branch holds the panel, or a URL request raises a second
-          // one.
-          open={keyChatOpen}
-          onClose={closeVaultAgent}
-          vaultPath={gitVaultPath}
-          insight={ontologyInsight}
-          manifest={vault.manifest}
-          screenContext={vaultAgentScreenContext}
-          vaultIsGit={false}
-          canWrite={vault.status === "loaded" && Boolean(vault.handle)}
-          onFocusNode={(slug) => handleSelect(slug)}
-          onOpenFolder={() => void vault.open()}
-          downloadHref={`/${activeLocale}/download/`}
-          prefillRequest={vaultAgentPrefill ?? askPrefill}
-          takesFocusOnOpen={!conversationReturnedOnItsOwn}
-          putAway={conversationPutAway}
+    <ErrorBoundary
+      fallback={({ error, reset }) => (
+        <WidgetErrorFallback
+          error={error}
+          onReset={reset}
+          title={t('widgetError.panelTitle')}
+          body={t('widgetError.body')}
+          retryLabel={t('widgetError.retry')}
+          className="m-2 w-[320px] shrink-0"
         />
-      </ErrorBoundary>
-    ) : null}
+      )}
+    >
+      <VaultAgentPanel
+        // Never while the coding-agent branch holds the panel, or a URL request raises a second
+        // one.
+        open={keyChatOpen}
+        onClose={closeVaultAgent}
+        vaultPath={gitVaultPath}
+        insight={ontologyInsight}
+        manifest={vault.manifest}
+        screenContext={vaultAgentScreenContext}
+        vaultIsGit={false}
+        canWrite={vault.status === "loaded" && Boolean(vault.handle)}
+        onFocusNode={(slug) => handleSelect(slug)}
+        onOpenFolder={() => void vault.open()}
+        prefillRequest={vaultAgentPrefill ?? askPrefill}
+        takesFocusOnOpen={!conversationReturnedOnItsOwn}
+        putAway={conversationPutAway}
+      />
+    </ErrorBoundary>
     {/* The user's own coding agent, sharing the key branch's slot; it stands beside the map, never
        over it. */}
     {gitVaultPath || meaningWorkbenchPresence.mounted ? (
@@ -244,7 +240,7 @@ export function TopologyAgentDock({
             >
               <AnalysisWorkbench
                 takesFocusOnOpen={!conversationReturnedOnItsOwn}
-                returnFocusSelector={meaningWorkbenchOpen ? '[data-testid="topology-meaning-workbench-toggle"]' : '[data-testid="topology-vault-agent-toggle"]'}
+                returnFocusSelector={'[data-testid="topology-vault-agent-toggle"]'}
                 context={meaningAnalysisContext}
                 capture={analysisCapture}
                 conversationLabel={investigationLabel??preparedContext}

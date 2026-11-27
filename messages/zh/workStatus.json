@@ -206,9 +206,6 @@
     "title": "{repo} 中没有正在工作的地方",
     "body": "已合并或长期未动的工作树放在下方的架子上。"
   },
-  "web": {
-    "body": "浏览器无法运行 git，也无法读取这台计算机的进程。工作室在 Atlas 应用中打开。"
-  },
   "notRepository": "文件夹 {folder} 不是 Git 仓库。请选择包含项目 .git 的文件夹。",
   "header": {
     "waiting": "等你回复 {count}",

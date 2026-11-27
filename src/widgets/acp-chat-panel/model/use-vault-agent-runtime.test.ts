@@ -20,17 +20,12 @@ describe("selectVaultAgentRuntimes", () => {
 
 describe("resolveVaultAgentRoute", () => {
   const ready = {
-    bridgeAvailable: true,
     runtimeCheckComplete: true,
     serverCheckComplete: true,
     runtime,
     vaultRoot: "/vault",
     serverReady: true,
   };
-
-  it("is unavailable without the desktop bridge, whatever else is ready", () => {
-    expect(resolveVaultAgentRoute({ ...ready, bridgeAvailable: false })).toBe("unavailable");
-  });
 
   it("is checking until both the runtime and the server have answered", () => {
     expect(resolveVaultAgentRoute({ ...ready, runtimeCheckComplete: false })).toBe("checking");

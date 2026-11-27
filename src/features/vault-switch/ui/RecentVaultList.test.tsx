@@ -98,25 +98,6 @@ describe('RecentVaultList reachability', () => {
     expect(screen.getByTestId('recent-vault-forget')).toBeTruthy();
   });
 
-  it('refuses a folder whose permission was denied', () => {
-    mocks.reachability.mockReturnValue({ '/Users/dana/walled': 'blocked' });
-    renderList([record('walled')]);
-
-    expect(screen.getByTestId('recent-vault-notice-blocked')).toBeTruthy();
-    expect(screen.queryByTestId('recent-vault-open')).toBeNull();
-  });
-
-  it('keeps a folder that will prompt pressable, and warns that it will', () => {
-    // The press is the gesture that grants permission, so it stays pressable but warns.
-    mocks.reachability.mockReturnValue({ '/Users/dana/atlas': 'needs-permission' });
-    renderList([record('atlas')]);
-
-    expect(screen.getByTestId('recent-vault-open')).toBeTruthy();
-    expect(screen.getByTestId('recent-vault-notice-needs-permission').textContent).toMatch(
-      /ask for permission/,
-    );
-  });
-
   it('says it could not check rather than implying the folder is fine', () => {
     mocks.reachability.mockReturnValue({});
     renderList([record('atlas')]);
@@ -161,15 +142,6 @@ describe('RecentVaultList leaves no dead ends', () => {
     fireEvent.click(screen.getByTestId('recent-vault-missing-toggle'));
     const locate = screen.getByTestId('recent-vault-locate');
     fireEvent.click(locate);
-    expect(onLocate).toHaveBeenCalledTimes(1);
-  });
-
-  it('keeps its own picker on a folder the browser refused, which is still there', () => {
-    mocks.reachability.mockReturnValue({ '/Users/dana/walled': 'blocked' });
-    const { onLocate } = renderList([record('walled')]);
-
-    expect(screen.queryByTestId('recent-vault-missing-group')).toBeNull();
-    fireEvent.click(screen.getByTestId('recent-vault-locate'));
     expect(onLocate).toHaveBeenCalledTimes(1);
   });
 

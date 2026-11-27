@@ -206,7 +206,6 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null, showHo
   const agent = useLibraryAgent(nativeVaultRootPath, model.sources, {
     createFile: (path: string) => t("wiki.compileCreateFile", { path }),
     modifyFile: (path: string) => t("wiki.compileModifyFile", { path }),
-    bridgeMissing: t("stage.blockedWeb"),
   }, retrievalPages);
   const stageAgentName = agent.runtime?.label ?? null;
   const answerRefresh = useAnswerRefresh({

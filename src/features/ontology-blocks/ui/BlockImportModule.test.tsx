@@ -10,7 +10,6 @@ interface MockVault {
 
 const mocks = vi.hoisted(() => ({ vault: null as unknown as MockVault }));
 const tauriMocks = vi.hoisted(() => ({
-  isTauriVaultRuntime: vi.fn(() => false),
   pickTauriVaultDirectory: vi.fn(),
 }));
 
@@ -26,7 +25,6 @@ vi.mock('@/entities/vault-session/model/vault-provider/LocalVaultProvider', asyn
 }));
 
 vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-location', () => tauriMocks);
-vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', () => tauriMocks);
 
 vi.mock('next-intl', () => ({
   useLocale: () => 'en',
@@ -133,7 +131,6 @@ async function openPreview() {
 describe('BlockImportModule', () => {
   beforeEach(() => {
     mocks.vault = makeVault();
-    tauriMocks.isTauriVaultRuntime.mockReturnValue(true);
     tauriMocks.pickTauriVaultDirectory.mockReset();
     stubPicker(fakeBlockDir(BLOCK_FILES));
   });

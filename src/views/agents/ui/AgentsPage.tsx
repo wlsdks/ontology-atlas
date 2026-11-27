@@ -2,7 +2,6 @@
 
 import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
-import { motion } from 'framer-motion';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 
 import { AcpRuntimeSettings, ModelConnections } from '@/widgets/app-settings-menu';
@@ -10,14 +9,11 @@ import { PageHeaderBar, TabBar } from '@/shared/ui';
 import { Link, useRouter } from '@/i18n/navigation';
 import { DESTINATION_HREF } from '@/shared/config/destinations';
 import { queueAgentChatIntent } from '@/shared/lib/agent-chat/agent-chat-intent';
-import { isAcpBridgeAvailable } from '@/shared/lib/agent-chat/tauri-acp';
 import { controlClass } from '@/shared/ui/control-class';
 import { cn } from '@/shared/lib/cn';
-import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
-import { framerSpring, SPRING } from '@/shared/motion/spring';
 import { useSwapHeight } from '@/shared/lib/render-timing/use-presence';
 import { TermHint } from '@/shared/ui/hints/term-hint';
-import { PAGE_FRAME_FORM, PAGE_LEDE, PAGE_STAGE_FILL } from '@/shared/ui/tokens/page-frame';
+import { PAGE_FRAME_FORM, PAGE_LEDE } from '@/shared/ui/tokens/page-frame';
 
 import { AGENTS_TAB_PARAM, buildAgentsTabHref, parseAgentsTab, type AgentsTab } from '../lib/agents-tab-state';
 import { guardedHistoryWrite } from '@/shared/lib/navigation/history-write-guard';
@@ -39,7 +35,6 @@ export function AgentsPage({
     [router],
   );
 
-  const reduced = usePrefersReducedMotion();
   const searchParams = useSearchParams();
   const [tab, setTabState] = useState<AgentsTab>(() =>
     parseAgentsTab(searchParams?.get(AGENTS_TAB_PARAM)),
@@ -75,8 +70,6 @@ export function AgentsPage({
     /* The history door, not a router navigation: that would move WebView focus off the strip. */
     guardedHistoryWrite('replace', buildAgentsTabHref(nextTab, new URL(window.location.href)));
   };
-
-  const staged = tab !== 'mcp' && !isAcpBridgeAvailable();
 
   return (
     /*
@@ -120,28 +113,18 @@ export function AgentsPage({
       <div
         className={cn(
           PAGE_FRAME_FORM,
-          staged
-            ? PAGE_STAGE_FILL
-            : 'pt-8 md:pt-10 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]',
+          'pt-8 md:pt-10 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]',
         )}
       >
       {searchParams?.get('returnTo') === 'changes' && <Link href="/changes/" className={controlClass({ shape: 'chip', hoverSurface: 'lift', hoverInk: 'strong', className: 'mb-4 w-fit' })}>{tBriefing('back')}</Link>}
-      <motion.div
-        data-placement={staged ? 'stage' : 'list'}
-        className={cn('min-w-0', staged && 'my-auto')}
-        layout={reduced ? false : 'position'}
-        layoutDependency={staged}
-        transition={framerSpring(SPRING.surface)}
-      >
-      {staged ? null : (
-        <p data-testid="agents-lede" className={`max-w-2xl ${PAGE_LEDE}`}>
-          {tab === 'mcp'
-            ? <>{tMcp('lede')} <TermHint term="mcp" /></>
-            : tab === 'models'
-              ? t('models.lede')
-              : t('lede')}
-        </p>
-      )}
+      <div className="min-w-0">
+      <p data-testid="agents-lede" className={`max-w-2xl ${PAGE_LEDE}`}>
+        {tab === 'mcp'
+          ? <>{tMcp('lede')} <TermHint term="mcp" /></>
+          : tab === 'models'
+            ? t('models.lede')
+            : t('lede')}
+      </p>
 
       <div
         ref={panelHostRef}
@@ -149,7 +132,7 @@ export function AgentsPage({
         id={`agents-tabpanel-${tab}`}
         aria-labelledby={`agents-tab-${tab}`}
         data-testid="agents-tabpanel"
-        className={cn('min-w-0', !staged && 'mt-5')}
+        className="mt-5 min-w-0"
       >
         {tab === 'agents' ? (
           /* No sr-only heading: the tool group inside already shows this name visibly. */
@@ -164,7 +147,7 @@ export function AgentsPage({
           children
         )}
       </div>
-      </motion.div>
+      </div>
       </div>
     </main>
   );

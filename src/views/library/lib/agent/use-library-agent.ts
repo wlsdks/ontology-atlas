@@ -9,7 +9,6 @@ import {
   readLocalEndpoint,
   subscribeLocalEndpointChange,
 } from "@/shared/lib/llm-connection/local-endpoint";
-import { isLlmChatBridgeAvailable } from "@/shared/lib/llm-connection/tauri-llm";
 import { useVaultAgentRuntime } from "@/widgets/acp-chat-panel";
 
 import type { LibrarySourceRow, WikiRetrievalPage } from "@/entities/docs-vault";
@@ -47,7 +46,6 @@ export function useLibraryAgent(
   compileLabels: {
     createFile: (path: string) => string;
     modifyFile: (path: string) => string;
-    bridgeMissing: string;
   } = DEFAULT_COMPILE_LABELS,
   wikiPages?: ReadonlyMap<string, WikiRetrievalPage>,
 ) {
@@ -72,7 +70,7 @@ export function useLibraryAgent(
   useEffect(() => {
     const read = () => {
       const settings = readLocalEndpoint();
-      if (!isLlmChatBridgeAvailable() || !isLocalEndpointReady(settings)) {
+      if (!isLocalEndpointReady(settings)) {
         setLocalModel(null);
         setLocalEndpoint(null);
         return;
@@ -92,9 +90,8 @@ export function useLibraryAgent(
 
   const { runtime, runtimes, runtimeId, setRuntimeId, mcpServers } = vaultAgent;
 
-  const runtimesChecked = !vaultAgent.bridgeAvailable || vaultAgent.runtimeCheckComplete;
+  const runtimesChecked = vaultAgent.runtimeCheckComplete;
   const serverCheckComplete = vaultAgent.serverCheckComplete;
-  const bridgeAvailable = vaultAgent.bridgeAvailable;
   /*
    * A coding agent outranks the local model because it is the only one of the two that
    * can actually finish Compile — it opens the sources itself and its writes stop at a
@@ -108,7 +105,7 @@ export function useLibraryAgent(
   const agentAvailable = vaultAgent.route === "agent";
   const localAvailable = localModel !== null;
   const { stored: storedBrain, choose: chooseBrain, forget: forgetBrain } = useCompileBrainChoice();
-  const brainSettled = !bridgeAvailable || (runtimesChecked && serverCheckComplete);
+  const brainSettled = runtimesChecked && serverCheckComplete;
   const brain = resolveCompileBrain({
     agentAvailable,
     localAvailable,
@@ -126,13 +123,9 @@ export function useLibraryAgent(
     // the object would rerun this effect on every render.
   }, [brain.staleChoice, brainSettled, forgetBrain]);
 
-  const route: LibraryAgentRoute = !bridgeAvailable
-    ? localAvailable
-      ? "local"
-      : "unavailable"
-    : !runtimesChecked || !serverCheckComplete
-      ? "checking"
-      : (brain.brain ?? "unavailable");
+  const route: LibraryAgentRoute = !runtimesChecked || !serverCheckComplete
+    ? "checking"
+    : (brain.brain ?? "unavailable");
 
   /**
    * The turn a connect-by-address runner actually runs. It is built in every route so the
@@ -200,5 +193,4 @@ export function useLibraryAgent(
 const DEFAULT_COMPILE_LABELS = {
   createFile: (path: string) => `create ${path}`,
   modifyFile: (path: string) => `edit ${path}`,
-  bridgeMissing: "This can only run in the installed app.",
 };

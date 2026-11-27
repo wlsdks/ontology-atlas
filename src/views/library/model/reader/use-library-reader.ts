@@ -5,7 +5,7 @@ import { useLatestRef } from "@/shared/lib/use-latest-ref";
 import type { LibraryOriginalLink, VaultDoc, VaultManifest } from "@/entities/docs-vault";
 import { isRetainedAnswerPath, type LibraryUiModel } from "@/features/library";
 import { useBackToTop, useDocReadingScrollSpy } from "@/widgets/doc-reading-pane";
-import { vaultImageUrl } from "@/shared/lib/library/open-vault-file";
+import { vaultImageUrl } from "@/shared/lib/library/vault-image-url";
 import { useCitedPassage } from "../../lib/sources/use-cited-passage";
 import { useSourceOutline } from "../../lib/sources/use-source-outline";
 import { useAnswerHistory } from "../../lib/questions/use-answer-history";

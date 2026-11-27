@@ -1,9 +1,6 @@
 import { createDocumentStore, type DocumentRef, type DocumentStore } from '@/entities/docs-vault';
 import type { GrantedVaultFiles } from '@/entities/vault-session';
-import {
-  getTauriVaultRootPath,
-  isTauriVaultRuntime,
-} from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { createVaultTextReader } from '@/shared/lib/vault-folder/vault-text-reader';
 
 export interface ResolvedDocumentStore {
@@ -20,7 +17,7 @@ const localStores = new WeakMap<ReadonlyMap<string, FileSystemFileHandle>, Docum
 function localStoreFor({ root, fileHandles }: GrantedVaultFiles): DocumentStore {
   let store = localStores.get(fileHandles);
   if (!store) {
-    const nativeRoot = isTauriVaultRuntime() ? getTauriVaultRootPath(root) ?? null : null;
+    const nativeRoot = getTauriVaultRootPath(root) ?? null;
     store = createDocumentStore({ readTexts: createVaultTextReader(nativeRoot, fileHandles) });
     localStores.set(fileHandles, store);
   }

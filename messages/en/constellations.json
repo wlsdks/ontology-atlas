@@ -20,7 +20,6 @@
   "clearFocus": "Clear concept set focus",
   "clearFocusNamed": "Clear {name} focus",
   "prepare": "Ask agent",
-  "prepareUnavailable": "Ask the agent in the desktop app",
   "edit": "Edit",
   "createTitle": "Create a concept set",
   "editTitle": "Edit concept set",

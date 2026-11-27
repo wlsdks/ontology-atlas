@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 
 import { createSummaryStalenessScan, SUMMARY_KINDS, type SummaryStaleness } from "@/entities/docs-vault";
 import { gitNodeRevisionContent, gitNodeRevisions } from "@/shared/lib/git/tauri-git";
-import { isTauriVaultRuntime } from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
 
 export interface SummaryCandidate {
   slug: string;
@@ -68,7 +67,7 @@ export function useSummaryFreshness(
   const requestKey = vaultRootPath && summarySlugsKey ? `${vaultRootPath}\u0000${summarySlugsKey}` : null;
 
   useEffect(() => {
-    if (!requestKey || !vaultRootPath || !isTauriVaultRuntime()) return;
+    if (!requestKey || !vaultRootPath) return;
     let cancelled = false;
     void readSummaryFreshness(vaultRootPath, summarySlugsKey.split("\n"), () => !cancelled)
       .then((result) => {

@@ -10,7 +10,6 @@ const mocks = vi.hoisted(() => ({
     manifest: null as VaultManifest | null,
     handle: { rootPath: '/vaults/atlas' } as unknown,
   },
-  bridge: true,
   pathsLastChange: vi.fn(),
   diff: vi.fn(),
 }));
@@ -21,7 +20,6 @@ vi.mock('@/entities/vault-session/model/vault-provider/LocalVaultProvider', asyn
 }));
 vi.mock('@/shared/lib/git/tauri-git', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/shared/lib/git/tauri-git')>()),
-  isGitBridgeAvailable: () => mocks.bridge,
   gitPathsLastChange: (...args: unknown[]) => mocks.pathsLastChange(...args),
   gitDiff: (...args: unknown[]) => mocks.diff(...args),
 }));
@@ -65,7 +63,6 @@ function deferred<T>() {
 
 let folder = 0;
 beforeEach(() => {
-  mocks.bridge = true;
   mocks.pathsLastChange.mockReset();
   mocks.diff.mockReset();
   // The settled walk is shared page-wide, so each test opens its own folder.
@@ -141,9 +138,8 @@ describe('useVaultDocDates', () => {
     expect(result.current.index.get('capabilities/git-history')).toBe(LANDED);
   });
 
-  it('reads the manifest at once where there is no Git bridge (the web build)', () => {
-    mocks.bridge = false;
-    mocks.vault = { ...mocks.vault, manifest: manifest([doc('capabilities/git-history')]) };
+  it('reads the manifest at once when the folder has no path to ask Git about', () => {
+    mocks.vault = { ...mocks.vault, handle: {}, manifest: manifest([doc('capabilities/git-history')]) };
     const { result } = renderHook(() => useVaultDocDates());
 
     expect(result.current.reading).toBe(false);

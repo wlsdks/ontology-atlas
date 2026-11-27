@@ -30,7 +30,6 @@ export interface DocsVaultAuditModalProps {
   nodeCount: number;
   edgeCount: number;
   graphHref: string;
-  isLocalSourceLoaded: boolean;
   onClose: () => void;
   t: ReturnType<typeof useTranslations<"docsVault">>;
   tSkillParity: ReturnType<typeof useTranslations<"skillParity">>;
@@ -48,7 +47,6 @@ export function DocsVaultAuditModal({
   nodeCount,
   edgeCount,
   graphHref,
-  isLocalSourceLoaded,
   onClose,
   tSkillParity,
   t,
@@ -108,9 +106,7 @@ export function DocsVaultAuditModal({
   // Inline framer sits outside the global reduced-motion layer, so it branches here.
   const reducedMotion = useReducedMotion();
 
-  const sourceLabel = isLocalSourceLoaded
-    ? t("sourceContract.filesLocalValue", { count: manifest.docs.length })
-    : t("sourceContract.filesSampleValue", { count: manifest.docs.length });
+  const sourceLabel = t("sourceContract.filesLocalValue", { count: manifest.docs.length });
 
   const cells = [
     {

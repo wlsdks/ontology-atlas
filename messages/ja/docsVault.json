@@ -17,7 +17,6 @@
     "contractToggleShow": "フォルダのチェックを表示",
     "vaultPillFolders": "フォルダ{count}個",
     "vaultPillSwap": "フォルダを切り替え",
-    "vaultPillSampleLabel": "組み込みサンプル（Atlas自身の文書）",
     "docListCollapse": "文書一覧を折りたたむ",
     "docListExpand": "文書一覧を展開",
     "vaultChipLocalPending": "フォルダ未選択"
@@ -180,7 +179,6 @@
   "sourceContract": {
     "filesLabel": "フォルダのファイル",
     "filesLocalValue": "ローカルのMarkdownファイル{count}件",
-    "filesSampleValue": "サンプルのMarkdownファイル{count}件",
     "filesBody": "選んだフォルダが唯一の正です。オントロジーの変更はすべて、ファイル先頭の情報ブロックの変更になります。",
     "filesChip": "ローカルmd",
     "filesCta": "ソース",
@@ -202,9 +200,6 @@
     "closeTitle": "閉じる(Esc)",
     "filesTruncated": "フォルダが大きすぎて全体を読み取れませんでした。範囲の狭い文書フォルダを選んでください。",
     "filesPruned": "ビルド・依存関係のフォルダを{count}個スキップしました({names})。"
-  },
-  "advanced": {
-    "sourceServer": "サンプル"
   },
   "agentSetup": {
     "ariaLabel": "MCP接続",

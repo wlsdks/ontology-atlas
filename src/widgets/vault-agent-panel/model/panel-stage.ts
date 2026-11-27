@@ -5,21 +5,18 @@ import type { ConnectionProvider } from '@/shared/lib/llm-connection/tauri-secre
  * `scope` and `chat` exist only once a provider is connected, so they carry it.
  */
 export type AgentPanelStage =
-  | { kind: 'web' | 'no-folder' | 'no-key' }
+  | { kind: 'no-folder' | 'no-key' }
   | { kind: 'scope' | 'chat'; provider: ConnectionProvider };
 
 export function agentPanelStage({
-  bridgeAvailable,
   vaultPath,
   provider,
   scopeAccepted,
 }: {
-  bridgeAvailable: boolean;
   vaultPath: string | null;
   provider: ConnectionProvider | null;
   scopeAccepted: boolean;
 }): AgentPanelStage {
-  if (!bridgeAvailable) return { kind: 'web' };
   if (!vaultPath) return { kind: 'no-folder' };
   if (!provider) return { kind: 'no-key' };
   return { kind: scopeAccepted ? 'chat' : 'scope', provider };

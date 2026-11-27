@@ -14,11 +14,6 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(search),
 }));
 
-let bridge = true;
-vi.mock('@/shared/lib/agent-chat/tauri-acp', () => ({
-  isAcpBridgeAvailable: () => bridge,
-}));
-
 vi.mock('@/widgets/app-settings-menu', () => ({
   AcpRuntimeSettings: ({ embedded }: { embedded?: boolean }) => (
     <div data-testid="acp-runtimes" data-embedded={embedded ? 'true' : 'false'} />
@@ -35,7 +30,6 @@ function renderPage(children?: React.ReactNode, mcpCount?: number) {
 }
 
 afterEach(() => {
-  bridge = true;
   search = '';
   window.history.replaceState(null, '', '/ko/agents/');
 });
@@ -45,12 +39,6 @@ describe('agents destination', () => {
     renderPage();
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(ko.agents.title);
     expect(screen.getByText(ko.agents.lede)).toBeInTheDocument();
-  });
-
-  it('draws no lede over the agents tab on the web, where the stage states it', () => {
-    bridge = false;
-    renderPage();
-    expect(screen.queryByTestId('agents-lede')).toBeNull();
   });
 
   it('tells the runtime panel not to draw its own intro because the page already did', () => {
@@ -66,21 +54,6 @@ describe('agents destination', () => {
     expect(row).not.toBeNull();
     expect(row!.contains(lede)).toBe(false);
     expect(heading.compareDocumentPosition(lede) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  });
-
-  it('is a stage on the web agents and models tabs and a list on mcp and in the app', () => {
-    bridge = false;
-    const { container, unmount } = renderPage();
-    const placement = () => container.querySelector('[data-placement]')?.getAttribute('data-placement');
-    expect(placement()).toBe('stage');
-    fireEvent.click(screen.getByTestId('agents-tab-models'));
-    expect(placement()).toBe('stage');
-    fireEvent.click(screen.getByTestId('agents-tab-mcp'));
-    expect(placement()).toBe('list');
-    unmount();
-    bridge = true;
-    const app = renderPage();
-    expect(app.container.querySelector('[data-placement]')).toHaveAttribute('data-placement', 'list');
   });
 
   it('says one lede sentence with no folded paragraph or pointer sentence', () => {

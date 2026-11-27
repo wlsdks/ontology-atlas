@@ -11,7 +11,6 @@ vi.mock('@tauri-apps/api/core', () => ({
 }));
 
 import {
-  isSecretBridgeAvailable,
   secretClear,
   secretErrorMessage,
   secretSet,
@@ -26,15 +25,9 @@ afterEach(() => {
 });
 
 describe('tauri secrets bridge', () => {
-  it('reports availability from the Tauri runtime at call time', () => {
-    expect(isSecretBridgeAvailable()).toBe(false);
-    tauriApiMock.runtimeAvailable = true;
-    expect(isSecretBridgeAvailable()).toBe(true);
-  });
-
-  it('degrades honestly on the web: every wrapper returns null with zero invokes', async () => {
-    // In a browser there is nowhere to put a key at all. Degrading to null rather than
-    // failing quietly is what stops the caller from rendering an input field.
+  it('answers null with zero invokes while there is no Tauri runtime', async () => {
+    // Without the app there is nowhere to put a key at all. Answering null rather than
+    // failing quietly is what stops a caller from rendering an input field.
     expect(await secretStatus('anthropic')).toBeNull();
     expect(await secretSet('anthropic', 'sk-ant-test')).toBeNull();
     expect(await secretClear('anthropic')).toBeNull();

@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertTriangle, Folder, HardDrive, KeyRound, Search } from 'lucide-react';
+import { AlertTriangle, Folder, HardDrive, Search } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
@@ -148,7 +148,7 @@ export function RecentVaultList({
   );
 }
 
-/** The caution each unreachable or gesture-requiring state owes the person before a press. */
+/** The caution each unreachable or unchecked state owes the person before a press. */
 function noticeFor(
   state: RecentVaultReachability,
   t: ReturnType<typeof useTranslations>,
@@ -156,10 +156,6 @@ function noticeFor(
   switch (state) {
     case 'missing':
       return { text: t('state.missing'), Icon: AlertTriangle, danger: true };
-    case 'blocked':
-      return { text: t('state.blocked'), Icon: AlertTriangle, danger: true };
-    case 'needs-permission':
-      return { text: t('state.needsPermission'), Icon: KeyRound, danger: false };
     case 'unknown':
       return { text: t('state.unknown'), Icon: Search, danger: false };
     case 'ready':

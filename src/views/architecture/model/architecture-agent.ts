@@ -34,21 +34,18 @@ export function selectArchitectureAgentRuntimes(
 }
 
 export function resolveArchitectureAgentRoute({
-  bridgeAvailable,
   runtimeCheckComplete,
   serverCheckComplete,
   runtime,
   vaultRoot,
   serverReady,
 }: {
-  bridgeAvailable: boolean;
   runtimeCheckComplete: boolean;
   serverCheckComplete: boolean;
   runtime: ArchitectureAgentRuntime | null;
   vaultRoot: string | null;
   serverReady: boolean;
 }): ArchitectureAgentRoute {
-  if (!bridgeAvailable) return 'clipboard';
   if (!runtimeCheckComplete || !serverCheckComplete) return 'checking';
   if (runtime && vaultRoot && serverReady) return 'agent';
   return 'clipboard';

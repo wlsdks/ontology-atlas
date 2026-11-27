@@ -378,7 +378,6 @@ function DocsVaultContent({
             ? (buildOntologyDeeplinkForDoc(selectedDoc) ?? '/ontology/')
             : '/ontology/'
         }
-        isLocalSourceLoaded={isLocalSourceLoaded}
         onClose={closeContract}
         t={t}
       />

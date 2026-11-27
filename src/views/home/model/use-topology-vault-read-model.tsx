@@ -5,7 +5,6 @@ import { computeOntologyChangeset, useChangeBaseline } from "@/entities/knowledg
 import { useArrivingVaultIdentityScope, useLocalVault, useSummaryFreshness, useVaultSessionIdentityScope } from "@/entities/vault-session";
 import { useProjects } from "@/features/project-data-source";
 import { useAdaptiveRecentChanges, useArrivingOntologyInsight, useOntologyInsight, useVaultConceptFacts, useVaultDocDates, useVaultDocFileDates, useVaultValidationSummary } from "@/features/vault-ontology";
-import { isLlmChatBridgeAvailable } from "@/shared/lib/llm-connection/tauri-llm";
 import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
 import { useToast } from "@/shared/ui";
 import { useTranslations } from "next-intl";
@@ -38,9 +37,6 @@ export function useTopologyVaultReadModel({
 
   const vault = useLocalVault();
   const tAgent = useTranslations("vaultAgentPanel");
-  // Without a bridge (web build) neither button nor panel is drawn: never paint a door that will
-  // not open.
-  const llmBridgeAvailable = isLlmChatBridgeAvailable();
   const vaultConceptFacts = useVaultConceptFacts();
   const arrivingInsight = useArrivingOntologyInsight();
   const { insight: settledInsight } = useOntologyInsight();
@@ -67,9 +63,8 @@ export function useTopologyVaultReadModel({
   const recentChanges = useAdaptiveRecentChanges(
     spotlightOn && recentWindow !== "auto" ? recentWindow : undefined,
   );
-  // On the sample the zero-change chip opens a folder dialog, since waiting never makes the
-  // fixture's count non-zero; in a user's folder zero means nothing to show, so the chip stays
-  // disabled with its tooltip.
+  // With no folder loaded the chip opens a folder dialog, since waiting never produces a change;
+  // in a user's folder zero means nothing to show, so the chip stays disabled with its tooltip.
   const [recentNeedsVaultOpen, setRecentNeedsVaultOpen] = useState(false);
   const [needsVaultReason, setNeedsVaultReason] = useState<"createNeedsVault" | "editNeedsVault" | null>(null);
   const spotlightNeedsVault = vault.status !== 'loaded';
@@ -225,7 +220,7 @@ export function useTopologyVaultReadModel({
   return {
     vault, selectedOntologyNode, ontologyInsight, setNeedsVaultReason, recentChanges, docFreshnessIndex,
     docFileDateIndex, docDatesReading, updatedAgoNowMs, spotlightOn, changedSlugs, dustySlugs, deeplinkSourceReady, handoffSource, vaultIdentity,
-    llmBridgeAvailable, gitVaultPath, tAgent, vaultConceptFacts, handleToggleSpotlight, spotlightNeedsVault,
+    gitVaultPath, tAgent, vaultConceptFacts, handleToggleSpotlight, spotlightNeedsVault,
     ontologyChangeset, brokenDocCount, spotlightFitToken, recentNeedsVaultOpen, setRecentNeedsVaultOpen,
     needsVaultReason, summaryFreshness, summaryHistoryUnavailable
   } as const;

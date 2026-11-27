@@ -37,10 +37,6 @@ export interface LlmChatEcho {
   loggedAt: string;
 }
 
-export function isLlmChatBridgeAvailable(): boolean {
-  return getInvoke() !== null;
-}
-
 const cancelledRequests = new Map<string, Set<Promise<void>>>();
 
 function rejectAborted(signal?: AbortSignal): void {

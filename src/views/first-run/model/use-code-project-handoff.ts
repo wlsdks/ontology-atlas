@@ -5,7 +5,7 @@ import { useCallback, useRef } from 'react';
 import { isGuardedRuntime } from '@/features/acp-session';
 import { buildFromCodePrompt, type ProjectVaultLocation } from '@/features/first-run-starter';
 import { queueAgentChatIntent, requestAgentChat } from '@/shared/lib/agent-chat/agent-chat-intent';
-import { detectAcpRuntimes, isAcpBridgeAvailable } from '@/shared/lib/agent-chat/tauri-acp';
+import { detectAcpRuntimes } from '@/shared/lib/agent-chat/tauri-acp';
 
 /**
  * Hands the new project folder to a coding agent only when one is ready at the press. Without
@@ -15,18 +15,16 @@ export function useCodeProjectHandoff() {
   const agentReady = useRef<Promise<boolean> | null>(null);
 
   const prepare = useCallback(() => {
-    agentReady.current = isAcpBridgeAvailable()
-      ? detectAcpRuntimes()
-          .then((runtimes) =>
-            (runtimes ?? []).some(
-              (runtime) =>
-                runtime.state === 'ready' &&
-                runtime.verified &&
-                isGuardedRuntime(runtime.id, runtime.isolated),
-            ),
-          )
-          .catch(() => false)
-      : Promise.resolve(false);
+    agentReady.current = detectAcpRuntimes()
+      .then((runtimes) =>
+        (runtimes ?? []).some(
+          (runtime) =>
+            runtime.state === 'ready' &&
+            runtime.verified &&
+            isGuardedRuntime(runtime.id, runtime.isolated),
+        ),
+      )
+      .catch(() => false);
   }, []);
 
   const handoff = useCallback((location: ProjectVaultLocation) => {

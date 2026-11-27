@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { useTranslations } from 'next-intl';
 
-import { isAgentDoctorAvailable, useAgentDoctor } from '@/features/acp-doctor';
+import { useAgentDoctor } from '@/features/acp-doctor';
 import { authRepairOf, isSendableSuggestion, readAcpTrouble, useAcpSession, VAULT_MCP_SERVER_NAME, type ChatSuggestion } from '@/features/acp-session';
 import { useMappingSessions, useMappingStage, workRuns, type TurnWorkReport } from '@/features/work-run';
 import { usePressingLimit } from '@/entities/agent-usage';
@@ -257,7 +257,7 @@ export function AcpChatPanelBody({
   const authRepair = authRepairOf(runtimeId);
   const troubleHintKey = troubleHintKeyOf(trouble, canChooseAnotherTool, authRepair.tool);
   const doctor = useAgentDoctor(runtimeId);
-  const showDoctor = Boolean(runtimeId) && isAgentDoctorAvailable();
+  const showDoctor = Boolean(runtimeId);
 
   const [restoredDraft] = useState(() => {
     const restored = draftStore?.read() ?? { text: '', prefillNonce: null };

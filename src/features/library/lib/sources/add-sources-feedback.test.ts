@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from 'vitest';
 import { addSources } from './add-sources';
 
 const bridge = vi.hoisted(() => ({ pick: vi.fn(), import: vi.fn() }));
-vi.mock('@/entities/docs-vault', () => ({ VAULT_SOURCES_DIR: 'sources' }));
 vi.mock('@/shared/lib/vault-folder/native-vault/tauri-library-sources', () => ({ pickTauriSourceFiles: bridge.pick, importTauriSourceFiles: bridge.import }));
 const options = { vaultRootPath: '/fixture', dialogTitle: 'Pick source' };
 

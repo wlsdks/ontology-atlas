@@ -10,7 +10,6 @@ import {
 import {
   addSources,
   useSourceImportFeedback,
-  addSourcesInBrowser,
   discoverSources,
   forgetDeclinedCandidates,
   partitionByDeclined,
@@ -19,10 +18,8 @@ import {
   startSourceCopy,
   summarizeAddSources,
   withoutImportedNames,
-  type BrowserSourcePick,
   type DiscoveryOutcome,
 } from "@/features/library";
-import { handOverVaultFile } from "@/shared/lib/library/open-vault-file";
 import { revealTauriSourcesFolder } from "@/shared/lib/vault-folder/native-vault/tauri-library-sources";
 import { revealTauriVaultFile } from "@/shared/lib/vault-folder/native-vault/tauri-vault-location";
 import { useToast } from "@/shared/ui";
@@ -48,18 +45,6 @@ function folderCounts(candidates: readonly SourceCandidate[], folderName: string
   return [...counts].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
 }
 
-async function browserPicks(handle: FileSystemDirectoryHandle, chosen: readonly SourceCandidate[]): Promise<BrowserSourcePick[]> {
-  const picks: BrowserSourcePick[] = [];
-  for (const candidate of chosen) {
-    const segments = candidate.relativePath.split("/");
-    const name = segments.pop() as string;
-    let cursor: FileSystemDirectoryHandle = handle;
-    for (const segment of segments) cursor = await cursor.getDirectoryHandle(segment);
-    picks.push({ file: await (await cursor.getFileHandle(name)).getFile(), relativePath: candidate.relativePath });
-  }
-  return picks;
-}
-
 export function useLibrarySources({
   t, toast, localVault, handle, manifest, nativeVaultRootPath, busy, setBusy,
 }: {
@@ -81,11 +66,11 @@ export function useLibrarySources({
     [manifest],
   );
   const docs = manifest?.docs;
-  const openRoot = nativeVaultRootPath ?? handle?.name ?? "";
+  const openRoot = nativeVaultRootPath ?? "";
   const fileManager = hostFileManager();
   const fileManagerName = t("start.fileManagerName", { fileManager });
 
-  const { state: sourceImportFeedback, begin: beginSourceImport } = useSourceImportFeedback(nativeVaultRootPath ?? handle);
+  const { state: sourceImportFeedback, begin: beginSourceImport } = useSourceImportFeedback(nativeVaultRootPath);
 
   const handleAddFiles = useCallback(() => {
     if (!handle || busy) return;
@@ -170,32 +155,28 @@ export function useLibrarySources({
     });
   }, [localVault, runDiscovery, t, toast, vaultScope]);
 
-  const copyAllRequest = useCallback(async (): Promise<CopyRequest | null> => {
-    if (!handle || found.inFolder.length === 0) return null;
+  const copyAllRequest = useCallback((): CopyRequest | null => {
+    if (!nativeVaultRootPath || found.inFolder.length === 0) return null;
     const totalBytes = found.inFolder.reduce((sum, candidate) => sum + candidate.size, 0);
-    const plan = nativeVaultRootPath
-      ? { kind: "native" as const, rootPath: nativeVaultRootPath, skipped: [], paths: found.inFolder.map((candidate) => `${candidate.rootPath}/${candidate.relativePath}`) }
-      : { kind: "browser" as const, root: handle, skipped: [], picks: await browserPicks(handle, found.inFolder) };
+    const plan = {
+      rootPath: nativeVaultRootPath,
+      skipped: [],
+      paths: found.inFolder.map((candidate) => `${candidate.rootPath}/${candidate.relativePath}`),
+    };
     return { files: found.inFolder.length, totalBytes, plan, holdsOpenFolder: [] };
-  }, [found.inFolder, handle, nativeVaultRootPath]);
+  }, [found.inFolder, nativeVaultRootPath]);
 
   const handleAddCandidates = useCallback(
     (chosen: SourceCandidate[], declined: SourceCandidate[]) => {
-      if (!handle || chosen.length === 0) return;
+      if (!nativeVaultRootPath || chosen.length === 0) return;
       setBusy(true);
       rememberDeclinedCandidates(vaultScope, declined);
       void (async () => {
         try {
-          if (nativeVaultRootPath) {
-            const { importTauriSourceFiles } = await import("@/shared/lib/vault-folder/native-vault/tauri-library-sources");
-            const absolute = chosen.map(
-              (candidate) => `${candidate.rootPath}/${candidate.relativePath}`,
-            );
-            const results = (await importTauriSourceFiles(nativeVaultRootPath, absolute)) ?? [];
-            reportAddOutcome(summarizeAddSources({ results, cancelled: false }));
-          } else {
-            reportAddOutcome(summarizeAddSources(await addSourcesInBrowser(handle, await browserPicks(handle, chosen))));
-          }
+          const { importTauriSourceFiles } = await import("@/shared/lib/vault-folder/native-vault/tauri-library-sources");
+          const absolute = chosen.map((candidate) => `${candidate.rootPath}/${candidate.relativePath}`);
+          const results = (await importTauriSourceFiles(nativeVaultRootPath, absolute)) ?? [];
+          reportAddOutcome(summarizeAddSources({ results, cancelled: false }));
           setFindOpen(false);
           await localVault.refresh();
         } catch (error) {
@@ -226,7 +207,7 @@ export function useLibrarySources({
         if (failed > 0) toast.show(t("sources.failed", { count: failed }), "error");
       }
     },
-    [handle, localVault, nativeVaultRootPath, setBusy, t, toast, vaultScope],
+    [localVault, nativeVaultRootPath, setBusy, t, toast, vaultScope],
   );
 
   /** The suggestion's Hide: the existing declined store, so the find dialog can bring them back. */
@@ -260,22 +241,9 @@ export function useLibrarySources({
 
   const handleOpenSource = useCallback(
     (row: LibrarySourceRow) => {
-      if (nativeVaultRootPath) {
-        void revealTauriVaultFile(nativeVaultRootPath, row.path).catch(revealFailed);
-        return;
-      }
-      const sourceHandle = localVault.sourceHandles.get(row.path);
-      if (!sourceHandle) return;
-      void sourceHandle
-        .getFile()
-        .then((file) => {
-          if (handOverVaultFile(file) === "saved") {
-            toast.show(t("sources.savedInstead", { name: file.name }), "info");
-          }
-        })
-        .catch(() => toast.show(t("sources.openFailed"), "error"));
+      if (nativeVaultRootPath) void revealTauriVaultFile(nativeVaultRootPath, row.path).catch(revealFailed);
     },
-    [localVault.sourceHandles, nativeVaultRootPath, revealFailed, t, toast],
+    [nativeVaultRootPath, revealFailed],
   );
 
   return {

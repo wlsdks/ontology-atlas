@@ -69,7 +69,6 @@
   "valuePlaceholder": "値",
   "secretMissing": "このマシンにはまだ値がありません。値がないとMCPサーバは起動しません。",
   "secretSave": "保存",
-  "secretsWeb": "このMCPサーバには{keys}の値が必要です。値を保存するにはデスクトップアプリが必要です。",
   "customBody": "まだどこにも登録されていないサーバ向けです。",
   "transportLabel": "トランスポート",
   "customAdd": "MCPサーバを追加",
@@ -87,8 +86,6 @@
   "fieldUrl": "アドレス",
   "fieldEnvKeys": "環境変数名",
   "fieldHeaderKeys": "ヘッダー名",
-  "webTitle": "登録済みのものを探すにはデスクトップアプリが必要です",
-  "webBody": "「~/.claude.json」や「~/.codex/config.toml」を読むには、このコンピュータ上で動くプログラムが必要です。また、この画面にはトークンを保管する場所がありません。MCPサーバの手動追加は引き続き使え、一覧はフォルダに保存されます。",
   "transport": {
     "stdio": "プログラム",
     "http": "アドレス"

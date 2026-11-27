@@ -2,10 +2,7 @@
 
 import { useEffect } from "react";
 import { listen } from "@tauri-apps/api/event";
-import {
-  getTauriVaultRootPath,
-  isTauriVaultRuntime,
-} from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
+import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
 import { syncVaultIndex, vaultIndexPreference } from "@/shared/lib/vault-folder/vault-index/tauri-vault-index";
 import { vectorStatus } from "@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors";
 import { vaultVectorSource } from "@/shared/lib/vault-folder/vault-vectors/vault-vector-source";
@@ -25,7 +22,7 @@ export function TauriVaultIndexBridge() {
   const { status, handle, lastLoadedAt } = useLocalVault();
   const rootPath = handle ? getTauriVaultRootPath(handle) ?? null : null;
   const indexSwitch = vaultIndexPreference.use();
-  const active = isTauriVaultRuntime() && status === "loaded" && rootPath !== null;
+  const active = status === "loaded" && rootPath !== null;
 
   useEffect(() => {
     if (!active || rootPath === null) return;

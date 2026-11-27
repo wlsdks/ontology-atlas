@@ -2,12 +2,10 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const bridge = vi.hoisted(() => ({
-  available: true,
   detect: vi.fn(),
 }));
 
 vi.mock('@/shared/lib/agent-chat/tauri-acp', () => ({
-  isAcpBridgeAvailable: () => bridge.available,
   detectAcpRuntimes: bridge.detect,
 }));
 
@@ -63,7 +61,6 @@ function makeRuntime(over: {
 
 afterEach(() => {
   cleanup();
-  bridge.available = true;
   bridge.detect.mockReset();
 });
 
@@ -110,10 +107,7 @@ describe('runtime list: what works now comes first', () => {
 
     await screen.findByTestId('app-settings-runtime-claude-acp');
     expect(screen.queryByTestId('app-settings-runtimes-mcp-link')).toBeNull();
-    // The bridge really was available on this path — otherwise this test measures the browser
-    // branch and passes for the wrong reason.
     expect(bridge.detect).toHaveBeenCalled();
-    expect(screen.queryByTestId('app-settings-runtimes-web')).toBeNull();
   });
 
   it('omits the disk notice when no tool can open a chat', async () => {

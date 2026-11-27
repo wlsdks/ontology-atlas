@@ -1650,9 +1650,6 @@ if (
 if (
   localFsHandleStore.includes("listRecentLocalFsHandles") &&
   localFsHandleStore.includes("forgetRecentLocalFsHandle") &&
-  localFsHandleStore.includes("canUseStoredRecord") &&
-  localFsHandleStore.includes("!record.desktopRootPath || isTauriVaultRuntime()") &&
-  localFsHandleStore.includes(".filter((record): record is LocalFsHandleRecord => Boolean(record))") &&
   vaultChoiceHook.includes("recentVaults") &&
   vaultSidecars.includes("mcpJsonValid: looksLikeOmotMcpJson(mcpJsonText, { expectedVault: '.' })") &&
   vaultSidecars.includes("codexConfigValid: looksLikeOmotCodexToml(codexConfigText, { expectedVault: '.' })") &&

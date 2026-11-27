@@ -20,8 +20,8 @@ async function install(page: Page) {
     const kv = {}; (function(exports) { ${kvSource} })(kv);
     const handles = {}; (function(exports, require) { ${handleSource} })(handles, name => {
       if (name === '@/shared/lib/vault-folder/idb-kv') return kv;
-      if (name === '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime') return { getTauriVaultRootPath: () => null, isTauriVaultRuntime: () => false };
-      if (name === '@/shared/lib/vault-folder/native-vault/tauri-vault-handle') return {};
+      if (name === '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime') return { getTauriVaultRootPath: () => null };
+      if (name === '@/shared/lib/vault-folder/native-vault/tauri-vault-handle') return { createTauriVaultHandle: path => ({ name: path.split('/').pop() }) };
       throw new Error('Unexpected fixture import: ' + name);
     });
     window.idbFixture = { kv, handles, done: false, aborted: 0, settled: [], opened: new Set(), closes: new Map() };
@@ -116,7 +116,7 @@ test('a real aborted preference write cannot strand later folder records in the 
     const first = await root.getDirectoryHandle('first', { create: true });
     const second = await root.getDirectoryHandle('second', { create: true });
     const store = window.idbFixture.handles;
-    const write = (handle: FileSystemDirectoryHandle, time: number) => store.putLocalFsHandle({ id: 'current', handle, name: handle.name, createdAt: time, lastAccessedAt: time });
+    const write = (handle: FileSystemDirectoryHandle, time: number) => store.putLocalFsHandle({ id: 'current', handle, desktopRootPath: `/probe/${handle.name}`, name: handle.name, createdAt: time, lastAccessedAt: time });
     void Promise.all([write(first, 1), write(second, 2)]).then(() => { window.idbFixture.done = true; });
   });
   await expect.poll(() => page.evaluate(() => window.idbFixture.aborted)).toBe(1);

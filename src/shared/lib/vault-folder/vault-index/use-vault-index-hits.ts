@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import {
-  isVaultIndexAvailable,
   onVaultIndexUpdated,
   searchVaultIndex,
   vaultIndexPreference,
@@ -39,7 +38,7 @@ export function useVaultIndexHits({
   enabled?: boolean;
 }): { hits: VaultIndexHit[] | undefined; answeredQuery: string | null; status: VaultIndexStatus | null } {
   const indexSwitch = vaultIndexPreference.use();
-  const active = enabled && rootPath !== null && isVaultIndexAvailable();
+  const active = enabled && rootPath !== null;
   const [status, setStatus] = useState<VaultIndexStatus | null>(null);
   const [answer, setAnswer] = useState<Answer | null>(null);
   const [generation, setGeneration] = useState(0);

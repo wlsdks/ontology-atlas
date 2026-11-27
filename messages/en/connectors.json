@@ -69,7 +69,6 @@
   "valuePlaceholder": "value",
   "secretMissing": "No value on this machine yet. The MCP server will not start without it.",
   "secretSave": "Save",
-  "secretsWeb": "This MCP server needs a value for {keys}. Keeping it needs the desktop app.",
   "customBody": "For a server that is not registered anywhere yet.",
   "transportLabel": "Transport",
   "customAdd": "Add MCP server",
@@ -87,8 +86,6 @@
   "fieldUrl": "Address",
   "fieldEnvKeys": "Environment variable names",
   "fieldHeaderKeys": "Header names",
-  "webTitle": "Finding what is already registered needs the desktop app",
-  "webBody": "Reading ~/.claude.json or ~/.codex/config.toml needs a program running on this computer, and there is nowhere on this surface to keep a token. Adding an MCP server by hand still works, and the list is saved in your folder.",
   "transport": {
     "stdio": "A program",
     "http": "An address"

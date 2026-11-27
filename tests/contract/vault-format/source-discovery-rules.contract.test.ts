@@ -7,11 +7,7 @@ import {
   DISCOVERY_DENIED_NAME_FRAGMENTS,
   DISCOVERY_DOCUMENT_EXTENSIONS,
   DISCOVERY_GUIDE_STEMS,
-  DISCOVERY_MARKDOWN_EXTENSIONS,
   DISCOVERY_VAULT_OWNED_DIRS,
-  DROP_MAX_FILES,
-  DROP_MAX_VISITED,
-  DROP_SKIPPED_NAMES,
   DISCOVERY_MAX_CANDIDATES,
   DISCOVERY_MAX_DEPTH,
   DISCOVERY_MIN_FILE_BYTES,
@@ -20,16 +16,17 @@ import {
   DISCOVERY_PRUNE_DIR_NAMES,
   DISCOVERY_PRUNE_DIR_PATHS,
   discoveryAcceptsFile,
-} from '@/entities/docs-vault/lib/library/source-discovery';
+} from '../../e2e/source-discovery-rules';
+import { DISCOVERY_MARKDOWN_EXTENSIONS } from '@/entities/docs-vault/lib/library/source-candidate';
 
 /**
  * **Two walks, one rule.**
  *
- * "Find documents" proposes candidates from roots the person granted. The browser walks
- * the open folder's File System Access handle; Rust walks that folder *and* the project
- * roots only an absolute path can reach. Neither can call the other, so the judgement
- * about a file name lives twice — and if the two copies drift, a person is offered a
- * file on one surface that the other refuses, with nothing on screen to explain it.
+ * "Find documents" proposes candidates from roots the person granted. Rust walks the open
+ * folder *and* the project roots only an absolute path can reach. The faked app runtime that
+ * the browser specs run on answers the same call in TypeScript, and cannot call Rust, so the
+ * judgement about a file name lives twice — and if the two copies drift, a spec passes on a
+ * rule the app does not hold, with nothing on screen to explain it.
  *
  * What is actually at stake is narrower than "consistency". The allow-list is the lock
  * that keeps `.env`, `id_rsa` and `server.pem` out of a proposal
@@ -39,7 +36,7 @@ import {
  * constants are compared as sets rather than as prose.
  *
  * The gate compares the **rules**, not the walks. Both walks run one table,
- * `tests/fixtures/source-discovery-cases.json`, through `source-discovery.test.ts`
+ * `tests/fixtures/source-discovery-cases.json`, through `source-discovery-cases.contract.test.ts`
  * (TypeScript) and the `tests.rs` files under `src-tauri/src/library/` (Rust), planting each row as
  * a file.
  */
@@ -128,17 +125,6 @@ describe('the discovery rule is the same in both walks', () => {
       [...DISCOVERY_VAULT_OWNED_DIRS].sort(),
     );
     expect(walkSource).toMatch(/root\.open_folder \|\| !offered_only_from_open_folder\(&name\)/);
-  });
-
-  it('caps a dropped folder at the same file, visit and skipped-name counts', () => {
-    const dropSource = readFileSync(resolve(repoRoot, 'src-tauri/src/library/dropped.rs'), 'utf8');
-    for (const [name, value] of [
-      ['DROP_MAX_FILES', DROP_MAX_FILES],
-      ['DROP_MAX_VISITED', DROP_MAX_VISITED],
-      ['DROP_SKIPPED_NAMES', DROP_SKIPPED_NAMES],
-    ] as const) {
-      expect(dropSource).toMatch(new RegExp(`const ${name}: usize = ${value.toLocaleString('en').replaceAll(',', '_')};`));
-    }
   });
 
   /**

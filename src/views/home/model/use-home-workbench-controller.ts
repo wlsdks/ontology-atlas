@@ -33,13 +33,6 @@ export function useHomeWorkbenchController() {
     setMeaningWorkbenchOpen(true);
     requestWorkbenchSection("history");
   }, [requestWorkbenchSection]);
-  const toggleMeaningWorkbench = useCallback(() => {
-    if (meaningWorkbenchOpen) {
-      setMeaningWorkbenchOpen(false);
-      return;
-    }
-    openMeaningWorkbench();
-  }, [meaningWorkbenchOpen, openMeaningWorkbench]);
   const [analysisFindings, setAnalysisFindings] = useState<readonly AnalysisFinding[]>([]);
 
   return {
@@ -61,7 +54,6 @@ export function useHomeWorkbenchController() {
     workbenchOpenRef,
     requestWorkbenchSection,
     openMeaningWorkbench,
-    toggleMeaningWorkbench,
     analysisFindings,
     setAnalysisFindings,
   };

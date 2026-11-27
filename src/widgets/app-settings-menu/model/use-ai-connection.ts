@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  isSecretBridgeAvailable,
   secretStatus,
   SECRET_PROVIDERS,
   type SecretProvider,
@@ -17,7 +16,6 @@ import { AuditReadError, readLlmAuditSummary, type AuditReadFailure, type LlmAud
  * footer see one value after a save. No key lives here, only `stored` and `last4`.
  */
 export interface AiConnectionState {
-  bridgeAvailable: boolean;
   statuses: Record<SecretProvider, SecretStatus | null>;
   /** Reflect a save or delete result directly, so the screen states the fact immediately with no re-query round trip. */
   applyStatus: (provider: SecretProvider, next: SecretStatus) => void;
@@ -47,8 +45,6 @@ export function useAiConnection({
 }: {
   vaultHandle: FileSystemDirectoryHandle | null;
 }): AiConnectionState {
-  // Detected once at mount; false during static export, where there is no window.
-  const [bridgeAvailable] = useState(() => isSecretBridgeAvailable());
   const [statuses, setStatuses] =
     useState<Record<SecretProvider, SecretStatus | null>>(EMPTY_STATUSES);
   const [jevStatus, setJevStatus] = useState<JevSecretStatus | null>(null);
@@ -63,7 +59,6 @@ export function useAiConnection({
   const jevEpoch = useRef(0);
 
   useEffect(() => {
-    if (!bridgeAvailable) return undefined;
     let cancelled = false;
     const initialEpochs = { ...statusEpochs.current };
     const initialJevEpoch = jevEpoch.current;
@@ -96,7 +91,7 @@ export function useAiConnection({
     return () => {
       cancelled = true;
     };
-  }, [bridgeAvailable]);
+  }, []);
 
   // Native root paths and browser handle identity distinguish same-name vaults.
   const vaultHandleRef = useRef(vaultHandle);
@@ -149,7 +144,6 @@ export function useAiConnection({
   const refreshAudit = useCallback(() => setAuditNonce((n) => n + 1), []);
 
   return {
-    bridgeAvailable,
     statuses,
     applyStatus,
     jevStatus,

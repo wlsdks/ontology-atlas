@@ -18,7 +18,7 @@ const model = (offMap: number): MapAnalysisChipModel => ({
 
 const view = (offMap: number, onMapTheRest = () => {}) => (
   <NextIntlClientProvider locale="en" messages={en} timeZone="UTC">
-    <MapAnalysisChip model={model(offMap)} canMapTheRest onMapTheRest={onMapTheRest} />
+    <MapAnalysisChip model={model(offMap)} onMapTheRest={onMapTheRest} />
   </NextIntlClientProvider>
 );
 
@@ -27,7 +27,6 @@ describe("the map analysis chip in the app", () => {
     const onMapTheRest = vi.fn();
     render(view(38, onMapTheRest));
     fireEvent.click(screen.getByTestId("map-analysis-chip-trigger"));
-    expect(screen.queryByTestId("map-analysis-web-analyze")).not.toBeInTheDocument();
     fireEvent.click(screen.getByTestId("map-analysis-map-rest"));
     expect(onMapTheRest).toHaveBeenCalledTimes(1);
     expect(screen.getByTestId("map-analysis-chip-trigger")).toHaveAttribute("aria-expanded", "false");
@@ -41,7 +40,6 @@ describe("the map analysis chip in the app", () => {
       <NextIntlClientProvider locale="en" messages={en} timeZone="UTC">
         <MapAnalysisChip
           model={{ ...model(38), rows: [row(3, "claude-code"), row(2, "codex-acp"), row(1, "my-review-bot")] }}
-          canMapTheRest
           onMapTheRest={() => {}}
         />
       </NextIntlClientProvider>,

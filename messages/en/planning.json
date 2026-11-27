@@ -69,7 +69,7 @@
   "discard": "Discard",
   "keepWriting": "Keep writing",
   "createDocumentFailed": "Could not create this document. Check that the planning folder can be written.",
-  "browserUnavailable": "Open an ontology folder to make a planning folder inside it. Choosing another folder to read works only in the macOS app.",
+  "folderPickerMacOnly": "Open an ontology folder to make a planning folder inside it. Choosing another folder to read works only in the macOS app.",
   "notEditable": "This file is not UTF-8, so it cannot be edited here.",
   "importService": "Bring from a service",
   "importServiceHint": "Bring documents from a service such as Notion into the planning folder. It continues in Library.",

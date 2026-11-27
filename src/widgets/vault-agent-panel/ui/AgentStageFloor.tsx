@@ -10,28 +10,19 @@ import { AgentLockedComposer } from './AgentLockedState';
 
 /**
  * The strip where the composer will stand while the conversation cannot start: it carries the one
- * door that fixes what is missing (download the app, open a folder, connect a model). Nothing in the
+ * door that fixes what is missing (open a folder, connect a model). Nothing in the
  * chat or scope stages.
  */
 export function AgentStageFloor({
   stage,
-  downloadHref,
   onOpenFolder,
 }: {
   stage: AgentPanelStage;
-  downloadHref: string;
   onOpenFolder?: () => void;
 }) {
   const t = useTranslations('vaultAgentPanel');
   const router = useRouter();
-  return stage.kind === 'web' ? (
-    <AgentLockedComposer
-      testId="vault-agent-download-link"
-      hint={t('placeholderFirst')}
-      actionLabel={t('degraded.download')}
-      actionHref={downloadHref}
-    />
-  ) : stage.kind === 'no-folder' ? (
+  return stage.kind === 'no-folder' ? (
     <AgentLockedComposer
       testId="vault-agent-open-folder"
       hint={t('placeholderFirst')}

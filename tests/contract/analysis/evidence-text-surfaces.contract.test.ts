@@ -41,7 +41,6 @@ vi.mock("@/shared/lib/vault-folder/native-vault/tauri-vault-runtime", () => ({
   getTauriVaultRootPath: () => repo.vault,
 }));
 vi.mock("@/shared/lib/git/tauri-git", () => ({
-  isGitBridgeAvailable: () => true,
   gitPathsLastChange: async (_vaultPath: string, repoPaths: string[], vaultPaths: string[]) => {
     const walk = collectPathLastChanges({ repoRoot: repo.root, vaultRoot: repo.vault, repoPaths, vaultPaths });
     if (!walk.ok) return null;

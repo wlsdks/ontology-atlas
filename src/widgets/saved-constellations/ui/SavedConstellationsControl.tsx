@@ -31,7 +31,6 @@ interface Props {
   onFocus: (id: string, memberSlugs: ReadonlySet<string>) => void;
   onClear: () => void;
   onPrepare: (saved: SavedConstellation) => void;
-  canPrepare?: boolean;
 }
 
 const TITLE_ID = 'saved-constellation-editor-title';
@@ -144,7 +143,7 @@ function resolvedMembers(saved: SavedConstellation, candidates: readonly Constel
   });
 }
 
-export function SavedConstellationsControl({ handle, candidates, selectedSlug, intent = null, activeId = null, onFocus, onClear, onPrepare, canPrepare = false }: Props) {
+export function SavedConstellationsControl({ handle, candidates, selectedSlug, intent = null, activeId = null, onFocus, onClear, onPrepare }: Props) {
   const t = useTranslations('constellations');
   const tNode = useTranslations('topology.createNode');
   const store = useSavedConstellations(handle);
@@ -507,26 +506,11 @@ export function SavedConstellationsControl({ handle, candidates, selectedSlug, i
                   </span>
                 </RowButton>
                 <div className="flex shrink-0 flex-col gap-1">
-                  {canPrepare ? (
-                    <Tooltip content={t('prepare')}>
-                      <IconButton label={t('prepare')} size="sm" tone="accent" className="atlas-touch-floor atlas-touch-floor-wide" onClick={() => prepare(saved)}>
-                        <MessageCircle size={ICON_SIZE.sm} aria-hidden="true" />
-                      </IconButton>
-                    </Tooltip>
-                  ) : (
-                    <Tooltip content={t('prepareUnavailable')}>
-                      <span
-                        className="inline-flex rounded-control"
-                        tabIndex={0}
-                        role="note"
-                        aria-label={t('prepareUnavailable')}
-                      >
-                        <IconButton label={t('prepareUnavailable')} size="sm" tone="accent" className="atlas-touch-floor atlas-touch-floor-wide" disabled>
-                          <MessageCircle size={ICON_SIZE.sm} aria-hidden="true" />
-                        </IconButton>
-                      </span>
-                    </Tooltip>
-                  )}
+                  <Tooltip content={t('prepare')}>
+                    <IconButton label={t('prepare')} size="sm" tone="accent" className="atlas-touch-floor atlas-touch-floor-wide" onClick={() => prepare(saved)}>
+                      <MessageCircle size={ICON_SIZE.sm} aria-hidden="true" />
+                    </IconButton>
+                  </Tooltip>
                   <Tooltip content={t('edit')}><IconButton label={t('edit')} size="sm" className="atlas-touch-floor atlas-touch-floor-wide" onClick={() => openEditor(saved)}><Pencil size={ICON_SIZE.sm} aria-hidden="true" /></IconButton></Tooltip>
                 </div>
               </div>

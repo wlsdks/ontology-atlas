@@ -16,7 +16,6 @@ import {
   type DiscoverySource,
   discoverMcpConnectors,
   isAttachableTransport,
-  isConnectorDiscoveryAvailable,
 } from './tauri-connectors';
 
 afterEach(() => {
@@ -25,12 +24,6 @@ afterEach(() => {
 });
 
 describe('external MCP connector discovery bridge', () => {
-  it('reports availability from the Tauri runtime at call time', () => {
-    expect(isConnectorDiscoveryAvailable()).toBe(false);
-    tauriApiMock.runtimeAvailable = true;
-    expect(isConnectorDiscoveryAvailable()).toBe(true);
-  });
-
   it('degrades honestly on the web: null, with zero invokes', async () => {
     // A browser cannot read `~/.claude.json`. Returning an empty list here would read on
     // screen as "you have nothing registered", which is a different and false statement.

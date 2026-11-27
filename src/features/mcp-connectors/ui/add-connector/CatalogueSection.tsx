@@ -31,7 +31,6 @@ export function CatalogueSection({
   runtimes,
   attachedNames,
   asking,
-  canStoreSecrets,
   onPress,
   onEdit,
   onDismiss,
@@ -43,7 +42,6 @@ export function CatalogueSection({
   runtimes: readonly ResolvedRuntime[] | null;
   attachedNames: Set<string>;
   asking: { entryId: string; variant: string } | null;
-  canStoreSecrets: boolean;
   onPress: (entry: CatalogueEntry, variant: CatalogueVariant) => void;
   onEdit: (entry: CatalogueEntry, variant: CatalogueVariant) => void;
   onDismiss: () => void;
@@ -177,7 +175,6 @@ export function CatalogueSection({
                   entry={entry}
                   variant={askingHere}
                   runtimes={runtimes}
-                  canStoreSecrets={canStoreSecrets}
                   onAttach={(values) => onAttach(entry, askingHere, values)}
                   onEdit={() => onEdit(entry, askingHere)}
                   onDismiss={onDismiss}

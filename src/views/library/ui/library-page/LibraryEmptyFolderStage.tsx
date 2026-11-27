@@ -58,7 +58,7 @@ export function LibraryEmptyFolderStage({
     if (copyNeedsConfirm(next.files, next.totalBytes)) setConfirming(next);
     else startCopy(next);
   }, [busy, copying, startCopy, vaultScope]);
-  const { over } = useSourceDrop({ root: handle, nativeRootPath: nativeVaultRootPath, onRequest: request });
+  const { over } = useSourceDrop({ nativeRootPath: nativeVaultRootPath, onRequest: request });
 
   const agentNote = agentConnected ? null : (
     <p data-testid="library-start-agent-note" className="flex flex-wrap items-center gap-x-2 text-body text-[color:var(--color-text-tertiary)]">
@@ -82,7 +82,10 @@ export function LibraryEmptyFolderStage({
             found={found.inFolderSummary}
             folderName={handle.name}
             busy={busy || copying}
-            onCopyAll={() => void copyAllRequest().then((next) => next && request(next))}
+            onCopyAll={() => {
+              const next = copyAllRequest();
+              if (next) request(next);
+            }}
             onChoose={handleShowFoundDocuments}
             t={t}
           />

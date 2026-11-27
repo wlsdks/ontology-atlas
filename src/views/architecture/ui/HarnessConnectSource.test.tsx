@@ -61,7 +61,6 @@ function sidecarOnlyHandle(): FileSystemDirectoryHandle {
 
 function runtime(overrides: Partial<ProjectSourceRuntime>): ProjectSourceRuntime {
   return {
-    available: () => true,
     pickRoot: async () => inspection.rootPath,
     inspect: async () => inspection,
     rootPathOf: () => null,

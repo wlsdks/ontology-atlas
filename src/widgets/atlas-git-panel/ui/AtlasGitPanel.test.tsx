@@ -1441,10 +1441,10 @@ describe("AtlasGitPanel follows the folder while open", () => {
     await waitFor(() => expect(statusCalls()).toBeGreaterThanOrEqual(before + 2));
   });
 
-  it("does not subscribe to the watcher while no bridge answers", async () => {
+  it("does not subscribe to the watcher while no folder is open", async () => {
     renderPanel(<AtlasGitPanel vaultPath={null} />);
     await waitFor(() =>
-      expect(screen.getByTestId("atlas-git-panel")).toHaveAttribute("data-stage", "loading"),
+      expect(screen.getByTestId("atlas-git-panel")).toHaveAttribute("data-stage", "no-vault"),
     );
     expect(tauriEventMock.listen).not.toHaveBeenCalled();
   });

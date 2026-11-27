@@ -20,19 +20,17 @@ const emptyManifest = {} as VaultManifest;
 const neverListed: ListDir = async () => {
   throw new Error('no folder should be listed');
 };
-const nothingPending = async () => new Set<string>();
 
 function plan(
   entries: BuiltVaultEntry[],
   changes: VaultPathChange[],
-  options: { manifest?: Partial<VaultManifest>; list?: ListDir; pending?: Set<string> } = {},
+  options: { manifest?: Partial<VaultManifest>; list?: ListDir } = {},
 ) {
   return planVaultChanges(
     { ...emptyManifest, ...options.manifest } as VaultManifest,
     takeState(entries),
     changes,
     options.list ?? neverListed,
-    options.pending ? async () => options.pending! : nothingPending,
   );
 }
 
@@ -107,15 +105,6 @@ describe('planVaultChanges: reads and removals', () => {
     const result = await plan([note('a.md')], [{ path: 'a.md', kind: 'missing' }, { path: 'never.md', kind: 'missing' }]);
     expect([...result!.removals]).toEqual(['a.md']);
     expect(result!.upserts.size).toBe(0);
-  });
-
-  it('does not read a raw source whose copy is still being published, and removes a known one', async () => {
-    const entries = [source('sources/old.pdf', 1, 5)];
-    const result = await plan(entries, [file('sources/new.pdf', 2, 5), file('sources/old.pdf', 3, 6)], {
-      pending: new Set(['sources/new.pdf', 'sources/old.pdf']),
-    });
-    expect(result!.upserts.size).toBe(0);
-    expect([...result!.removals]).toEqual(['sources/old.pdf']);
   });
 
   it('gives up past the ceiling, where a walk is cheaper', async () => {

@@ -33,9 +33,6 @@
     "catchUp": "分析新增和变更的代码",
     "catchUpBody": "要读取 {files, number} 个文件。约需向智能体发送 {requests, number} 个请求，用时约 {duration}。"
   },
-  "web": {
-    "analyze": "要从 Atlas 开始分析，需要能运行编码智能体的桌面应用。你自己通过 MCP 连接的智能体所做的分析也会记入这份记录。"
-  },
   "changed": {
     "none": "第 {number, number} 次分析之后，代码里没有文件变更。",
     "some": "第 {number, number} 次分析之后，代码里新增了 {added, number} 个文件，变更了 {changed, number} 个文件。上面的比例还没有计入它们。",

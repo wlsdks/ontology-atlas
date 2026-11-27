@@ -21,11 +21,9 @@ const NO_HISTORY: readonly GitCommitInfo[] = [];
 
 export function useGitWorkspace({
   vaultPath,
-  desktop,
   nativeErrors,
 }: {
   vaultPath: string | null;
-  desktop: boolean;
   nativeErrors: NativeErrorLookup;
 }) {
   /*
@@ -106,7 +104,7 @@ export function useGitWorkspace({
   });
 
   useEffect(() => {
-    if (!desktop || !vaultPath) return;
+    if (!vaultPath) return;
     let cancelled = false;
     const seq = ++readSeqRef.current;
     const limit = currentHistoryLimit();
@@ -120,7 +118,7 @@ export function useGitWorkspace({
     return () => {
       cancelled = true;
     };
-  }, [desktop, vaultPath]);
+  }, [vaultPath]);
 
   /**
    * Older steps, one page at a time. The click only raises the depth; the effect below reads
@@ -155,7 +153,7 @@ export function useGitWorkspace({
    */
   const historyShort = Boolean(workspace) && historyHasMore && history.length < historyLimit;
   useEffect(() => {
-    if (!desktop || !vaultPath || !historyShort) return;
+    if (!vaultPath || !historyShort) return;
     let cancelled = false;
     void readGitHistoryPage(vaultPath, historyLimit)
       .then((page) => {
@@ -167,7 +165,7 @@ export function useGitWorkspace({
     return () => {
       cancelled = true;
     };
-  }, [desktop, vaultPath, historyLimit, historyShort]);
+  }, [vaultPath, historyLimit, historyShort]);
 
   return {
     status,

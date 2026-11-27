@@ -9,14 +9,9 @@ vi.mock('@tauri-apps/api/core', () => ({
   isTauri: mocks.isTauri,
 }));
 
-import { isLlmChatBridgeAvailable, llmChat, llmChatErrorMessage } from './tauri-llm';
+import { llmChat, llmChatErrorMessage } from './tauri-llm';
 
 describe('tauri-llm web downgrade', () => {
-  it('outside the Tauri runtime it reports that there is no bridge', () => {
-    mocks.isTauri.mockReturnValue(false);
-    expect(isLlmChatBridgeAvailable()).toBe(false);
-  });
-
   it('on the web it returns null without invoke, since there is no transfer path at all', async () => {
     mocks.isTauri.mockReturnValue(false);
     mocks.invoke.mockClear();

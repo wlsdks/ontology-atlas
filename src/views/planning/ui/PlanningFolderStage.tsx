@@ -19,7 +19,7 @@ type FirstDocumentDoor = {
   onCreate: (title: string) => void;
   onAddFiles: (() => void) | null;
   adding: boolean;
-  onImport: (() => void) | null;
+  onImport: () => void;
   readScope: ReactNode;
 };
 
@@ -76,10 +76,10 @@ function FirstDocumentAction({ door }: { door: FirstDocumentDoor }) {
       <Input {...field} size="lg" data-planning-first-title className="w-64 min-w-0 grow text-left" />
       <Button data-planning-first-create disabled={!submittable} onClick={submit} className="max-sm:grow"><FilePlus size={ICON_SIZE.lg} aria-hidden />{t('createDocument')}</Button>
     </div>
-    {(door.onAddFiles || door.onImport) && <div className="flex flex-wrap justify-center gap-1">
+    <div className="flex flex-wrap justify-center gap-1">
       {door.onAddFiles && <Button variant="ghost" data-planning-stage-add disabled={door.adding} onClick={door.onAddFiles}><FileUp size={ICON_SIZE.sm} aria-hidden />{t('addFiles')}</Button>}
-      {door.onImport && <Button variant="ghost" data-planning-stage-import title={t('importServiceHint')} onClick={door.onImport}><CloudDownload size={ICON_SIZE.sm} aria-hidden />{t('importService')}</Button>}
-    </div>}
+      <Button variant="ghost" data-planning-stage-import title={t('importServiceHint')} onClick={door.onImport}><CloudDownload size={ICON_SIZE.sm} aria-hidden />{t('importService')}</Button>
+    </div>
   </div>;
 }
 
@@ -118,7 +118,7 @@ export function PlanningFolderStage({ door }: { door: PlanningDoor }) {
     : {
       state: 'unsupported',
       title: t('startTitle'),
-      body: t('browserUnavailable'),
+      body: t('folderPickerMacOnly'),
     };
   const readOnlyNote = <>
     <LockKeyhole size={ICON_SIZE.sm} aria-hidden /><span>{t('readOnly')}</span>

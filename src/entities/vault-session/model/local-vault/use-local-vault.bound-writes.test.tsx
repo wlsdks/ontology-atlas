@@ -3,7 +3,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 
 const tauri = vi.hoisted(() => ({
-  isTauriVaultRuntime: vi.fn(() => true),
   tauriVaultPathExists: vi.fn(async () => true),
   listTauriDirectoryNames: vi.fn(async () => [] as string[]),
   getTauriVaultRootPath: vi.fn((h: { rootPath?: string }) => h?.rootPath),

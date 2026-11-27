@@ -1,15 +1,10 @@
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 
 /** `unknown` is distinct from `ready`: claiming reachability because nothing said otherwise is the failure. */
-export type RecentVaultReachability =
-  | 'ready'
-  | 'needs-permission'
-  | 'missing'
-  | 'blocked'
-  | 'unknown';
+export type RecentVaultReachability = 'ready' | 'missing' | 'unknown';
 
 export function canOpenReachability(state: RecentVaultReachability): boolean {
-  return state === 'ready' || state === 'needs-permission' || state === 'unknown';
+  return state !== 'missing';
 }
 
 /** Null `counts` renders "not counted yet", never `0 documents`. */
@@ -27,9 +22,7 @@ export interface RecentVaultRow {
 export function recentVaultRowKey(record: LocalFsHandleRecord): string {
   // The store's identity rule (`recordIdentity` in `entities/local-fs-handle/api/store.ts`),
   // recomputed to keep this module pure; a divergence only warns about a React key.
-  if (record.desktopRootPath) return record.desktopRootPath;
-  const folderName = record.handle?.name;
-  return folderName ? `fsa:${folderName}` : record.id;
+  return record.desktopRootPath ?? record.id;
 }
 
 export function partitionRecentVaultRows(rows: readonly RecentVaultRow[]): {

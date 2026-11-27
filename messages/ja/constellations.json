@@ -20,7 +20,6 @@
   "clearFocus": "概念セットの絞り込みを解除",
   "clearFocusNamed": "「{name}」の絞り込みを解除",
   "prepare": "エージェントに聞く",
-  "prepareUnavailable": "エージェントへの依頼はデスクトップアプリで行います",
   "edit": "編集",
   "createTitle": "概念セットを作成",
   "editTitle": "概念セットを編集",

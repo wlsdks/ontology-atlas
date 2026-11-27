@@ -33,8 +33,6 @@ export function AddConnectorDialog({
   open,
   onClose,
   discovery,
-  canDiscover,
-  canStoreSecrets,
   attachedNames,
   onAddDiscovered,
   onAddCustom,
@@ -44,8 +42,6 @@ export function AddConnectorDialog({
   open: boolean;
   onClose: () => void;
   discovery: ConnectorDiscoveryState;
-  canDiscover: boolean;
-  canStoreSecrets: boolean;
   attachedNames: Set<string>;
   onAddDiscovered: (server: DiscoveredConnector) => Promise<ConnectorWriteResult | null>;
   onAddCustom: (connector: ConnectorRecord) => Promise<ConnectorWriteResult | null>;
@@ -79,7 +75,6 @@ export function AddConnectorDialog({
     open,
     onClose,
     discovery,
-    canDiscover,
     attachedNames,
     onAddDiscovered,
     onAddCustom,
@@ -89,7 +84,6 @@ export function AddConnectorDialog({
 
   const foundSection = (
     <FoundSection
-      canDiscover={canDiscover}
       discovery={discovery}
       matches={foundMatches}
       query={query}
@@ -189,7 +183,6 @@ export function AddConnectorDialog({
           runtimes={runtimes}
           attachedNames={attachedNames}
           asking={asking}
-          canStoreSecrets={canStoreSecrets}
           onPress={pressCatalogue}
           onEdit={editCatalogue}
           onDismiss={dismissAsking}
@@ -228,7 +221,6 @@ export function AddConnectorDialog({
                 key={prefillTick}
                 prefill={prefill}
                 runtimes={runtimes}
-                canStoreSecrets={canStoreSecrets}
                 onAdd={(connector, secrets) => void addWithSecrets(connector, secrets)}
                 testIdPrefix={testIdPrefix}
               />

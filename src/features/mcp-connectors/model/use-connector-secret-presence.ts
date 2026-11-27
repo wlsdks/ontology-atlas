@@ -8,10 +8,9 @@ import {
 
 import { ownRefs } from './connector-secrets';
 
-/** Read at the panel because the row decides whether the switch may turn on. `null` means the keychain was never asked (a browser); treating that as none would call every web connector broken. */
+/** Read at the panel because the row decides whether the switch may turn on. `null` means the keychain has not answered yet; treating that as none would call every connector broken. */
 export function useConnectorSecretPresence(
   connectors: readonly ConnectorRecord[],
-  canStoreSecrets: boolean,
 ): ReadonlySet<string> | null {
   const refs = useMemo(
     () => connectors.flatMap((connector) => ownRefs(connector.id, [...connector.env, ...connector.headers])),
@@ -34,9 +33,6 @@ export function useConnectorSecretPresence(
   }, [key]);
 
   useEffect(() => {
-    if (!canStoreSecrets) {
-      return;
-    }
     let cancelled = false;
     const refresh = () => {
       void read().then((next) => {
@@ -51,7 +47,7 @@ export function useConnectorSecretPresence(
       cancelled = true;
       stop();
     };
-  }, [canStoreSecrets, read]);
+  }, [read]);
 
-  return canStoreSecrets ? stored : null;
+  return stored;
 }

@@ -6,8 +6,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ko from '../../../../messages/ko.json';
 
 const bridge = vi.hoisted(() => ({
-  discoveryAvailable: true,
-  secretsAvailable: true,
   discovered: null as unknown,
   /** Makes `discover_mcp_connectors` reject, as an unreadable config file does. */
   discoveryRejects: false,
@@ -27,7 +25,6 @@ vi.mock('@/shared/lib/connectors/tauri-connectors', async () => {
   );
   return {
     ...actual,
-    isConnectorDiscoveryAvailable: () => bridge.discoveryAvailable,
     discoverMcpConnectors: async () => {
       if (bridge.discoveryRejects) throw new Error('discover_mcp_connectors failed');
       return bridge.discovered;
@@ -41,7 +38,6 @@ vi.mock('@/shared/lib/connectors/tauri-connector-secrets', async () => {
   );
   return {
     ...actual,
-    isConnectorSecretBridgeAvailable: () => bridge.secretsAvailable,
     connectorSecretStatus: async (secretRef: string) => ({
       secretRef,
       stored: bridge.stored.has(secretRef),
@@ -185,8 +181,6 @@ function seeded(...connectors: unknown[]) {
 
 beforeEach(() => {
   motion.reduced = false;
-  bridge.discoveryAvailable = true;
-  bridge.secretsAvailable = true;
   bridge.discovered = null;
   bridge.secretSets = [];
   bridge.discoveryRejects = false;
@@ -602,30 +596,6 @@ describe('connectors panel explains what runs before enabling', () => {
     expect(bridge.secretSets).toEqual([]);
   });
 
-  it('explains without the app runtime what is unavailable and what still works', async () => {
-    bridge.discoveryAvailable = false;
-    bridge.secretsAvailable = false;
-    const vault = fakeVault(seeded(stdioRecord));
-    draw(<Panel handle={vault.handle} />);
-    await waitFor(() => expect(screen.getByTestId('connectors-list')).toBeInTheDocument());
-    /*
-     * The reason card stands in the add dialog where the scan would be, beside a list that
-     * still works.
-     */
-    openAdd();
-    await waitFor(() =>
-      expect(screen.getByTestId('connectors-discovery-unavailable')).toBeInTheDocument(),
-    );
-    fireEvent.keyDown(document, { key: 'Escape' });
-
-    openDetail();
-    expect(screen.getByTestId('connectors-item-secrets-unavailable')).toHaveTextContent(
-      'NOTION_TOKEN',
-    );
-    // …and the choice cannot be made where there is no keychain.
-    expect(screen.getByTestId('connectors-item-variable-keychain')).toBeDisabled();
-  });
-
   it('adds a manual connector disabled', async () => {
     const vault = fakeVault();
     draw(<Panel handle={vault.handle} />);
@@ -857,34 +827,10 @@ describe('connectors panel explains what runs before enabling', () => {
     expect(bridge.secretSets[0].ref).toMatch(/NOTION_TOKEN$/);
   });
 
-  it('offers no value input without a keychain and states why', async () => {
-    bridge.discoveryAvailable = false;
-    bridge.secretsAvailable = false;
-    const vault = fakeVault();
-    draw(<Panel handle={vault.handle} />);
-    await waitFor(() => expect(screen.getByTestId('connectors-empty')).toBeInTheDocument());
-    openAdd();
-    const notion = document.querySelector(
-      '[data-testid="connectors-catalogue-item"][data-catalogue-id="notion"]',
-    ) as HTMLElement;
-    fireEvent.click(notion.querySelector('[data-testid="connectors-catalogue-add"]') as HTMLElement);
-    const ask = await screen.findByTestId('connectors-catalogue-ask');
-    // A box whose contents would be thrown away is worse than no box.
-    expect(screen.queryByTestId('connectors-catalogue-ask-value')).toBeNull();
-    expect(screen.queryByTestId('connectors-catalogue-ask-add')).toBeNull();
-    expect(ask).toHaveTextContent('NOTION_TOKEN');
-    // The by-hand form can still take the name without a value.
-    fireEvent.click(screen.getByTestId('connectors-catalogue-ask-edit'));
-    await waitFor(() => expect(screen.getByTestId('connectors-custom-name')).toHaveValue('notion'));
-    expect(screen.getByTestId('connectors-custom-provenance')).toBeInTheDocument();
-  });
-
   it('reduced motion brings an edited catalogue prefill into view without smooth scrolling', async () => {
     motion.reduced = true;
     const scrollSpy = vi.fn();
     Element.prototype.scrollIntoView = scrollSpy;
-    bridge.discoveryAvailable = false;
-    bridge.secretsAvailable = false;
     const vault = fakeVault();
     draw(<Panel handle={vault.handle} />);
     await waitFor(() => expect(screen.getByTestId('connectors-empty')).toBeInTheDocument());
@@ -1034,8 +980,7 @@ describe('a press that writes shows the whole line first', () => {
     expect(shown).toContain(writtenLines(vault.files)[0]);
   });
 
-  it('without a keychain, a way in that asks nothing still attaches from its panel', async () => {
-    bridge.secretsAvailable = false;
+  it('a way in that asks for nothing attaches straight from its panel', async () => {
     const vault = fakeVault();
     draw(<Panel handle={vault.handle} />);
     await waitFor(() => expect(screen.getByTestId('connectors-empty')).toBeInTheDocument());

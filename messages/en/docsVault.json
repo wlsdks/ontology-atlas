@@ -17,7 +17,6 @@
     "contractToggleShow": "Show folder checks",
     "vaultPillFolders": "{count} folders",
     "vaultPillSwap": "Switch folder",
-    "vaultPillSampleLabel": "Built-in sample (Atlas's own documents)",
     "docListCollapse": "Collapse document list",
     "docListExpand": "Expand document list",
     "vaultChipLocalPending": "No folder yet"
@@ -180,7 +179,6 @@
   "sourceContract": {
     "filesLabel": "Folder files",
     "filesLocalValue": "{count} local markdown files",
-    "filesSampleValue": "{count} sample markdown files",
     "filesBody": "The selected folder is the source of truth; every ontology change is a change to the info block at the top of a file.",
     "filesChip": "local md",
     "filesCta": "Source",
@@ -202,9 +200,6 @@
     "closeTitle": "Close (Esc)",
     "filesTruncated": "The folder was too large to read fully: pick a narrower document folder.",
     "filesPruned": "Skipped {count} build/dependency folder(s) ({names})."
-  },
-  "advanced": {
-    "sourceServer": "Sample"
   },
   "agentSetup": {
     "ariaLabel": "MCP connection",

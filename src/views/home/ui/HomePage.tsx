@@ -553,7 +553,6 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
             topologySceneControls={topologySceneControls}
             topologyRouteControls={topologyRouteControls}
             topologyNavigationActions={topologyNavigationActions}
-            homeWorkbenchController={homeWorkbenchController}
             topologyAgentActivity={topologyAgentActivity}
             topologyCreateIntent={topologyCreateIntent}
             topologyIndexPresentation={topologyIndexPresentation}

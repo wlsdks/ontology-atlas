@@ -96,7 +96,6 @@ vi.mock('@/features/library', async () => ({
 vi.mock('@/features/mcp-connectors', () => ({ useVaultConnectors: () => h.connectors }));
 vi.mock('@/shared/lib/agent-chat/tauri-acp', () => ({
   detectAcpRuntimes: vi.fn(async () => h.runtimes),
-  isAcpBridgeAvailable: () => true,
 }));
 vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-files', () => ({
   listTauriVaultLinks: async () => [],

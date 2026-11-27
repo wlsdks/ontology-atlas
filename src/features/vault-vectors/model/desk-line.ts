@@ -1,7 +1,6 @@
 import type { VectorFailure, VectorStatus } from '@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors';
 
 export type DeskLineMessage =
-  | 'web'
   | 'words'
   | 'noFiles'
   | 'indexOff'
@@ -48,7 +47,6 @@ export interface DeskLine {
 
 export interface DeskLineInput {
   status: VectorStatus | null;
-  isApp: boolean;
   indexOn: boolean;
   markdownFiles: number;
   runnerModel: string | null;
@@ -105,8 +103,7 @@ const FAILURE_LINES: Record<VectorFailure, (status: VectorStatus, input: DeskLin
 };
 
 export function deskLine(input: DeskLineInput): DeskLine | null {
-  const { status, isApp, indexOn, markdownFiles } = input;
-  if (!isApp) return line('web');
+  const { status, indexOn, markdownFiles } = input;
   if (!indexOn || status?.phase === 'off') return line('indexOff', { action: 'openSettings' });
   if (status === null) return null;
   if (status.failure !== null && (status.phase === 'failed' || status.phase === 'stopped')) {

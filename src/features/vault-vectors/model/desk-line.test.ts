@@ -5,16 +5,12 @@ import { deskLine, type DeskLineInput } from './desk-line';
 
 const status = (fields: Partial<VectorStatus>): VectorStatus => ({ ...OFF_VECTOR_STATUS, ...fields });
 const app = (value: VectorStatus | null, fields: Partial<DeskLineInput> = {}): DeskLineInput => ({
-  status: value, isApp: true, indexOn: true, markdownFiles: 60, runnerModel: null, ...fields,
+  status: value, indexOn: true, markdownFiles: 60, runnerModel: null, ...fields,
 });
 const PREPARING = status({ phase: 'preparing', filesDone: 312, filesTotal: 2000, passagesDone: 1480, passagesTotal: 9800, currentPath: 'wiki/architecture.md' });
 const STOPPED = status({ phase: 'stopped', filesDone: 1240, filesTotal: 2000, passagesDone: 6020, passagesTotal: 9800 });
 
 describe('deskLine', () => {
-  it('says the web sentence with no press, whatever the status', () => {
-    expect(deskLine(app(PREPARING, { isApp: false }))).toMatchObject({ message: 'web', action: null, progress: null });
-  });
-
   it('offers setup when the folder is not set up', () => {
     expect(deskLine(app(status({ phase: 'notSetUp' })))).toMatchObject({ message: 'words', action: 'setup', tone: 'quiet' });
   });
