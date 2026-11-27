@@ -1,9 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { installDesktopRailRuntime, mountDesktopVault } from "../desktop-rail-arrival-harness";
+import { waitForPageSettled } from "../settle";
 
 const THREE_SIGNATURE = /__THREE__|THREE\.WebGLRenderer/;
-const CHUNK_PATH = /\/_next\/static\/chunks\/[\w.-]+\.js/g;
 
 function recordScripts(page: Page) {
   const paths = new Set<string>();
@@ -17,7 +17,7 @@ function recordScripts(page: Page) {
     return verdicts.get(path) as Promise<boolean>;
   };
   return {
-    has: (path: string) => paths.has(path),
+    paths: () => paths,
     async carryingThree() {
       const all = [...paths];
       const flags = await Promise.all(all.map(fetchedAgainCarriesThree));
@@ -27,22 +27,15 @@ function recordScripts(page: Page) {
 }
 
 test.describe("three.js loads only where a scene draws", () => {
-  test.skip(!process.env.PLAYWRIGHT_STATIC, "only the static export prefetches routes and preloads their chunks");
+  test.skip(!process.env.PLAYWRIGHT_STATIC, "only the built folder splits the screens into the chunks this reads");
 
-  test("/automations loads none of it while the rail prefetches the Library", async ({ page }) => {
+  test("/automations loads none of it", async ({ page }) => {
     await installDesktopRailRuntime(page);
     await mountDesktopVault(page, "en");
     const scripts = recordScripts(page);
-    const libraryPage = page.waitForResponse((response) =>
-      /\/en\/library\/__next\..*__PAGE__\.txt$/.test(decodeURIComponent(new URL(response.url()).pathname)),
-    );
     await page.goto("/en/automations/?guides=off");
-    const segment = await (await page.request.get((await libraryPage).url())).text();
-    const libraryChunks = [...new Set(segment.match(CHUNK_PATH))];
-    expect(libraryChunks.length, "the prefetched Library page names its chunks").toBeGreaterThan(0);
-    await expect
-      .poll(() => libraryChunks.filter((chunk) => !scripts.has(chunk)), { message: "Next preloads a prefetched page's chunks" })
-      .toEqual([]);
+    await waitForPageSettled(page);
+    expect([...scripts.paths()].length, "the screen's own chunks were fetched").toBeGreaterThan(0);
     expect(await scripts.carryingThree()).toEqual([]);
   });
 

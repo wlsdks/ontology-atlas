@@ -116,11 +116,6 @@ test("job notifications in the inbox speak by agent name", async ({ page }) => {
 
   const bell = page.getByTestId("agent-activity-bell");
   await expect(bell, "the notification bell did not appear").toBeVisible({ timeout: 30_000 });
-  // Dev server only: Next's dev badge (<nextjs-portal>, bottom right) floats in the
-  // same corner as the bell and intercepts the click (measured — 0 console errors, a
-  // pure badge). It does not exist in the product, so removing it does not distort the
-  // screen. A no-op in a static build.
-  await page.evaluate(() => document.querySelector("nextjs-portal")?.remove());
   await bell.click();
 
   /*

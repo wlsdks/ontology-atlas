@@ -108,12 +108,6 @@ async function parkPointer(page: Page): Promise<void> {
   throw new Error("no empty spot to move the pointer to, so the resting state may be read while hovered");
 }
 
-/**
- * Next's dev overlay is tooling that exists only on the dev server and is not shipped UI,
- * so it is excluded from the audit.
- */
-const DEV_TOOLING_SELECTOR = "nextjs-portal, [data-nextjs-toast], [data-nextjs-dev-tools-button]";
-
 async function auditRoute(page: Page) {
   const offenders: string[] = [];
   let compared = 0;
@@ -131,11 +125,9 @@ async function auditRoute(page: Page) {
   for (const el of controls) resting.push(await readState(el));
   for (const [i, el] of controls.entries()) {
     const visible = await el
-      .evaluate((node, devTooling) => {
+      .evaluate((node) => {
         // A control the page removed since the resting pass cannot be hovered.
         if (!node.isConnected) return false;
-        // Tooling UI that exists only on the dev server is not ours — see the constant's comment above.
-        if (node.closest(devTooling)) return false;
         // An inert subtree, such as a film playing the real screen as a picture, takes no pointer: nobody can hover it.
         if (node.closest("[inert]")) return false;
         const c = getComputedStyle(node), r = node.getBoundingClientRect();
@@ -147,7 +139,7 @@ async function auditRoute(page: Page) {
           r.width > 6 && r.height > 6 && c.visibility !== "hidden" && Number(c.opacity) > 0.05 &&
           !(node as HTMLButtonElement).disabled && node.getAttribute("aria-disabled") !== "true"
         );
-      }, DEV_TOOLING_SELECTOR)
+      })
       .catch(() => false);
     if (!visible) continue;
 

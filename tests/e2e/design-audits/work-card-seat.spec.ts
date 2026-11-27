@@ -59,8 +59,6 @@ test.describe("the work card in the shell's notice seat", () => {
       const card = page.getByTestId("work-run-card");
       await expect(card).toHaveAttribute("data-state", "open");
       await waitForAnimationsDone(card);
-      // Dev server only: Next's badge floats at the bottom right; the exported app has none.
-      await page.evaluate(() => document.querySelector("nextjs-portal")?.remove());
       expect(await topmostAtNinePoints(card), "something covers the card").toEqual([]);
       await expect.poll(() => coveredStartButtons(page), { message: "the card covers a first-run button" }).toEqual([]);
       await expect(page.getByTestId("app-update-toast")).toHaveCount(0);
@@ -156,7 +154,6 @@ test.describe("a mapping run in the notice seat", () => {
       const card = page.getByTestId("work-run-card");
       await expect(card).toHaveAttribute("data-run-kind", "mapping");
       await waitForAnimationsDone(card);
-      await page.evaluate(() => document.querySelector("nextjs-portal")?.remove());
       expect(await topmostAtNinePoints(card), "something covers the card").toEqual([]);
       expect(await controlsUnderCard(card), "the running card covers a control").toEqual([]);
 
