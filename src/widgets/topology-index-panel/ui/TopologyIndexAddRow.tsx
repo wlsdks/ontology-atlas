@@ -28,12 +28,17 @@ export function TopologyIndexAddRow({
   parent,
   kind,
   depth,
+  position,
+  setSize,
   onAdd,
   labels,
 }: {
   parent: KnowledgeGraphNode;
   kind: IndexAddKind;
   depth: number;
+  /** Its place after the group's concepts, one-based, and the group's count with the add rows. */
+  position: number;
+  setSize: number;
   onAdd: IndexAddConcept;
   labels: { action: string; field: string };
 }) {
@@ -64,6 +69,8 @@ export function TopologyIndexAddRow({
     <div
       role="treeitem"
       aria-level={depth + 1}
+      aria-posinset={position}
+      aria-setsize={setSize}
       aria-selected={false}
       aria-label={naming ? labels.field : labels.action}
       data-testid="topology-index-add-row"

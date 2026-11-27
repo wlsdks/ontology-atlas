@@ -408,6 +408,42 @@ describe("TopologyIndexPanel", () => {
     }
   });
 
+  it("counts an open group's add rows among its siblings", () => {
+    const treeResult = buildFixtureTree();
+    const add = { action: "Add", field: "Name" };
+    render(
+      <TopologyIndexPanel
+        treeResult={treeResult}
+        totalConcepts={4}
+        totalRelations={3}
+        domainCount={1}
+        changedSlugs={new Set()}
+        selectedId={null}
+        onSelect={() => {}}
+        onCollapse={() => {}}
+        onAddInGroup={async () => true}
+        labels={{ ...labels, add: { domain: add, capability: add, element: add } }}
+      />,
+    );
+    fireEvent.click(screen.getByText("Onboarding & UX").closest('[data-index-row]')!.querySelector("button")!);
+
+    const rows = Array.from(document.querySelectorAll<HTMLElement>('[role="treeitem"]'));
+    expect(rows.filter((row) => row.dataset.testid === "topology-index-add-row")).toHaveLength(3);
+    const setsByLevel = new Map<string, Array<{ pos: number; size: number }>>();
+    for (const row of rows) {
+      const level = row.getAttribute("aria-level")!;
+      setsByLevel.set(level, [
+        ...(setsByLevel.get(level) ?? []),
+        { pos: Number(row.getAttribute("aria-posinset")), size: Number(row.getAttribute("aria-setsize")) },
+      ]);
+    }
+    // The fixture has one group per level, so each level's rows are one sibling set.
+    for (const [level, set] of setsByLevel) {
+      expect(set.map((row) => row.pos), `positions at level ${level}`).toEqual(set.map((_, index) => index + 1));
+      expect(set.map((row) => row.size), `set sizes at level ${level}`).toEqual(set.map(() => set.length));
+    }
+  });
+
   it("INDEX tree is a single Tab stop — roving tabindex + Arrow/Home/End move the roving focus (P0)", () => {
     // WAI-ARIA `tree` has exactly one Tab entry point, with arrow keys walking siblings.
     const treeResult = buildFixtureTree();
