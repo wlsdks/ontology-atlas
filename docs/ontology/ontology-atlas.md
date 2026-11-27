@@ -27,7 +27,7 @@ Ontology Atlas is a local-first workbench that keeps one reviewable Markdown rec
 - Any backend, login, account, or hosted store holding the person's meaning.
 
 ## Uncertainty
-Not mapped yet: 41 of 42 areas, 68 of 72 abilities.
+Not mapped yet: 41 of 42 areas, 69 of 73 abilities.
 - Not mapped yet: src/views (22 of 22 abilities not on the map)
 - Not mapped yet: src-tauri (12 of 12 abilities not on the map)
 - Not mapped yet: app (8 of 8 abilities not on the map)
@@ -38,8 +38,8 @@ Not mapped yet: 41 of 42 areas, 68 of 72 abilities.
 - Not mapped yet: src/entities (2 of 2 abilities not on the map)
 - Not mapped yet: src/widgets/acp-chat-panel (2 of 2 abilities not on the map)
 - Not mapped yet: src/widgets/atlas-git-panel (1 of 1 ability not on the map)
+- Not mapped yet: src/widgets/work-tracks (1 of 1 ability not on the map)
 - Not mapped yet: src/widgets/vault-agent-panel (1 of 1 ability not on the map)
-- Not mapped yet: src/widgets/library-sources-overview (1 of 1 ability not on the map)
 
 - Built from `README.md`, `AGENTS.md`, `docs/PRODUCT-DIRECTION.md`, `docs/ARCHITECTURE.md`, section 0 of `docs/FEATURES.md` (the rest by heading only) and a file-level reading of the four domains; `docs/ontology` was not read.
 - Initial construction ran, rendered and tested nothing and did not open `src-tauri/`; nodes describe source readings, often headers and imports.
