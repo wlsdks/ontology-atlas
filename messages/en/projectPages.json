@@ -183,8 +183,7 @@
     "toCheckRaisedNote": "Needs a decision: “{note}”",
     "rowOpensDocument": "Opens its document.",
     "rowOpensMap": "Opens it on the map.",
-    "domainStaleWords": "{count, plural, one {# capability} other {# capabilities}} with a source changed after the document",
-    "toCheckRecheck": "Recheck with an agent"
+    "domainStaleWords": "{count, plural, one {# capability} other {# capabilities}} with a source changed after the document"
   },
   "editor": {
     "documentTitleEdit": "Edit project · Ontology Atlas",

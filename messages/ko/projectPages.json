@@ -183,8 +183,7 @@
     "toCheckRaisedNote": "결정 필요: “{note}”",
     "rowOpensDocument": "문서를 열어요.",
     "rowOpensMap": "지도에서 열어요.",
-    "domainStaleWords": "문서를 쓴 뒤 근거 파일이 바뀐 역량 {count}개",
-    "toCheckRecheck": "에이전트로 다시 확인"
+    "domainStaleWords": "문서를 쓴 뒤 근거 파일이 바뀐 역량 {count}개"
   },
   "editor": {
     "documentTitleEdit": "프로젝트 편집 · Ontology Atlas",
