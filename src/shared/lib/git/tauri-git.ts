@@ -366,6 +366,33 @@ export interface GitPathLastChange {
   isDir: boolean;
   /** ISO time of the newest commit touching the path in the walk window, else null. */
   lastChangedAt: string | null;
+  /** Hash of that commit; a concept document's is where its cited files are re-read. */
+  lastCommit?: string | null;
+}
+
+/** One cited file at a commit and in the working tree, as `git_evidence_text_pairs` reads it. */
+export interface GitEvidenceTextPair {
+  path: string;
+  commit: string;
+  /** `null` when absent at the commit, binary, not UTF-8, over 1 MiB or refused. */
+  before: string | null;
+  after: string | null;
+}
+
+/**
+ * Reads each moved (commit, `path:`) pair so the shared normalizer can tell a comment-only change
+ * from a code change. Bounded on the Rust side; `null` without the bridge.
+ */
+export async function gitEvidenceTextPairs(
+  vaultPath: string,
+  pairs: readonly { path: string; commit: string }[],
+): Promise<GitEvidenceTextPair[] | null> {
+  const invoke = getInvoke();
+  if (!invoke) return null;
+  return invoke<GitEvidenceTextPair[]>('git_evidence_text_pairs', {
+    vaultPath,
+    pairs: pairs.map(({ path, commit }) => ({ path, commit })),
+  });
 }
 
 /**

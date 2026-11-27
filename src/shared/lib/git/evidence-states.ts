@@ -14,6 +14,8 @@ export interface EvidenceChange {
   /** A folder path. Its change time says only that something under it moved. */
   isDir?: boolean;
   lastChangedAt: string | null;
+  /** Hash of that newest commit; a concept document's is where its cited files are re-read. */
+  lastCommit?: string | null;
 }
 
 /** What moved under one concept, so a screen can name the file and the date, not just a count. */
@@ -60,12 +62,14 @@ export interface EvidenceStates {
 
 /**
  * Compares each concept's document with the code it cites through the one rule the MCP server uses,
- * so the screen and an agent agree.
+ * so the screen and an agent agree. `unchangedPairs` (`unchangedEvidencePairs`) names the moved
+ * files whose only change since the document's newest commit is in comments, imports or whitespace.
  */
 export function resolveEvidenceStates(
   concepts: readonly EvidenceConceptInput[],
   changes: ReadonlyMap<string, EvidenceChange>,
   sourceChanges: ReadonlyMap<string, EvidenceChange> = changes,
+  unchangedPairs: ReadonlySet<string> | null = null,
 ): EvidenceStates {
   const current = new Set<string>();
   const stale = new Set<string>();
@@ -77,7 +81,8 @@ export function resolveEvidenceStates(
     const doc = concept.docPath ? changes.get(concept.docPath) : undefined;
     const docChangedAt = concept.docPath ? (doc?.lastChangedAt ?? null) : null;
     const entries = concept.evidencePaths.map((path) => ({ path, change: sourceChanges.get(path) ?? null }));
-    const { verdict, reason, moved, folders, gone } = judgeEvidence({ docChangedAt, entries });
+    const docCommit = concept.docPath ? (doc?.lastCommit ?? null) : null;
+    const { verdict, reason, moved, folders, gone } = judgeEvidence({ docChangedAt, docCommit, unchangedPairs, entries });
     if (verdict === 'current') current.add(concept.id);
     else if (verdict === 'stale') stale.add(concept.id);
     else if (verdict === 'missing') missing.add(concept.id);
