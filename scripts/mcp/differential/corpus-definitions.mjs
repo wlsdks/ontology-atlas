@@ -198,7 +198,7 @@ add('shell', 'vault-root-from-working-directory', { vault: 'storefront', env: { 
   call('list_concepts', { limit: 2 }),
 ]);
 add('shell', 'vault-root-relative', { vault: 'one-node', env: { OATLAS_VAULT: '../vault' }, cwd: 'vault' }, [call('connection_info', {})]);
-add('shell', 'vault-root-with-spaces-and-hangul', { vault: 'one-node', env: { OATLAS_VAULT: '$VAULT/../다른 볼트 dir' } }, [call('connection_info', {})]);
+add('shell', 'vault-root-with-spaces-and-hangul', { vault: 'one-node', env: { OATLAS_VAULT: '$VAULT/../\ub2e4\ub978 \ubcfc\ud2b8 dir' } }, [call('connection_info', {})]);
 add('shell', 'repo-root-from-environment', { vault: 'miniature-repo', env: { OATLAS_REPO_ROOT: '$PARENT' } }, [
   call('connection_info', {}),
   call('git_status', {}),
@@ -254,7 +254,7 @@ for (const vault of READ_VAULTS) {
     call('list_concepts', { kind: 'domain', summary: true }),
     call('list_concepts', { kind: 'nonsense' }),
     call('list_concepts', { domain: 'domains/order' }),
-    call('list_concepts', { domain: 'domains/결제' }),
+    call('list_concepts', { domain: 'domains/\uacb0\uc81c' }),
     call('list_concepts', { since: 1_700_000_100_000 }),
     call('list_concepts', { since: 1_700_000_100_000.5 }),
     call('list_concepts', { since: 0, limit: 500 }),
@@ -288,7 +288,7 @@ add('vault-read', 'get-concepts-storefront', { vault: 'storefront' }, [
 ]);
 for (const vault of ['edge-names', 'edge-bytes', 'edge-hostile', 'library', 'miniature-repo', 'one-node']) {
   const slugs = {
-    'edge-names': ['atlas-edge', 'domains/결제', 'domains/원장'.normalize('NFD'), 'domains/원장', 'capabilities/주문-취소', 'capabilities/Éclair', 'capabilities/Éclair'.normalize('NFD'), 'capabilities/가나다', 'capabilities/ｆｕｌｌ-width', 'domains/😀-smile'],
+    'edge-names': ['atlas-edge', 'domains/\uacb0\uc81c', 'domains/\uc6d0\uc7a5'.normalize('NFD'), 'domains/\uc6d0\uc7a5', 'capabilities/\uc8fc\ubb38-\ucde8\uc18c', 'capabilities/Éclair', 'capabilities/Éclair'.normalize('NFD'), 'capabilities/\uac00\ub098\ub2e4', 'capabilities/ｆｕｌｌ-width', 'domains/😀-smile'],
     'edge-bytes': ['capabilities/crlf', 'capabilities/bom', 'capabilities/numbers', 'capabilities/prototype-keys', 'capabilities/no-final-newline', 'capabilities/unicode-separators', 'invalid-utf8', 'capabilities/nul-byte', 'empty-file', 'frontmatter-only', 'duplicate-keys', 'notes/plain'],
     'edge-hostile': ['hostile', 'escape-file', 'escape-dir/secret', 'inside-link', 'absolute-link', 'loop-a', 'secrets', 'oversized', 'inside-hidden', '.hidden/inside-hidden', 'ignored/inside', 'note.skip', 'capital', 'Capital'],
     library: ['library', 'capabilities/annotate', 'wiki/plan', 'wiki/broken', 'sources/notes'],
@@ -302,7 +302,7 @@ for (const vault of ['edge-names', 'edge-bytes', 'edge-hostile', 'library', 'min
 }
 for (const vault of ['storefront', 'edge-names', 'edge-bytes', 'edge-hostile', 'library', 'miniature-repo', 'empty']) {
   const slugs = vault === 'storefront' ? ['capabilities/cart', 'domains/order', 'storefront', 'capabilities/nonexistent']
-    : vault === 'edge-names' ? ['capabilities/cancel-order', 'domains/결제', 'capabilities/주문-취소', 'domains/Zebra']
+    : vault === 'edge-names' ? ['capabilities/cancel-order', 'domains/\uacb0\uc81c', 'capabilities/\uc8fc\ubb38-\ucde8\uc18c', 'domains/Zebra']
       : vault === 'miniature-repo' ? ['capabilities/charge-card', 'domains/order']
         : ['capabilities/normal', 'domains/inside', 'capabilities/annotate', 'domains/bytes'];
   add('vault-read', `backlinks-and-orphans-${vault}`, { vault }, [
@@ -317,8 +317,8 @@ for (const vault of ['storefront', 'edge-names', 'edge-bytes', 'edge-hostile', '
 const FILTERS = [
   'kind=capability', 'kind=domain', 'kind!=capability', 'kind=capability AND has(elements)', 'kind=capability AND NOT has(elements)',
   'has(dependencies)', 'NOT has(dependencies)', 'kind=domain OR kind=project', 'slug=capabilities/cart', 'title="Shopping Cart"',
-  'title=\'Shopping Cart\'', 'KIND=Capability', 'kind = capability', 'domain=domains/order', 'domain=domains/결제',
-  'title=결제', 'title="주문 취소"', 'has(review_state)', 'kind=capability AND domain=domains/order AND NOT has(elements)',
+  'title=\'Shopping Cart\'', 'KIND=Capability', 'kind = capability', 'domain=domains/order', 'domain=domains/\uacb0\uc81c',
+  'title=\uacb0\uc81c', 'title="\uc8fc\ubb38 \ucde8\uc18c"', 'has(review_state)', 'kind=capability AND domain=domains/order AND NOT has(elements)',
   'kind=capability OR kind=domain AND has(elements)', 'NOT NOT kind=domain', '', 'kind', 'has()', 'has(x', 'kind=capability AND', 'slug=*', 'title=""',
   'kind=capability AND kind=domain', 'has(__proto__)', 'has(constructor)', 'kind=\u00e9', 'kind="unterminated',
 ];
@@ -404,9 +404,9 @@ const QUERY_STOREFRONT = [
 add('graph', 'query-ontology-storefront', { vault: 'storefront' }, QUERY_STOREFRONT.map((args) => call('query_ontology', args)));
 add('graph', 'query-ontology-edge-names', { vault: 'edge-names' }, [
   { operation: 'overview' }, { operation: 'health' }, { operation: 'communities' }, { operation: 'centrality' }, { operation: 'containment_tree' },
-  { operation: 'match_nodes', sort: 'title' }, { operation: 'match_nodes', sort: 'slug', limit: 30 }, { operation: 'similar_nodes', slug: 'capabilities/주문-취소' },
-  { operation: 'neighbors', slug: 'capabilities/주문-취소' }, { operation: 'node_profile', slug: 'capabilities/가나다' },
-  { operation: 'domain_profile', domain: 'domains/결제' }, { operation: 'topological_order' }, { operation: 'domain_matrix' },
+  { operation: 'match_nodes', sort: 'title' }, { operation: 'match_nodes', sort: 'slug', limit: 30 }, { operation: 'similar_nodes', slug: 'capabilities/\uc8fc\ubb38-\ucde8\uc18c' },
+  { operation: 'neighbors', slug: 'capabilities/\uc8fc\ubb38-\ucde8\uc18c' }, { operation: 'node_profile', slug: 'capabilities/\uac00\ub098\ub2e4' },
+  { operation: 'domain_profile', domain: 'domains/\uacb0\uc81c' }, { operation: 'topological_order' }, { operation: 'domain_matrix' },
 ].map((args) => call('query_ontology', args)));
 add('graph', 'query-ontology-miniature-repo', { vault: 'miniature-repo' }, [
   { operation: 'overview' }, { operation: 'health' }, { operation: 'workspace_brief' }, { operation: 'impact', slug: 'capabilities/charge-card' },
@@ -527,7 +527,7 @@ add('evidence', 'find-evidence-miniature-repo', { vault: 'miniature-repo' }, [
   call('find_evidence', { title: 'no such thing anywhere' }),
   call('find_evidence', { title: '' }),
   call('find_evidence', { title: '   ' }),
-  call('find_evidence', { title: '결제' }),
+  call('find_evidence', { title: '\uacb0\uc81c' }),
   call('find_evidence', { title: 'a'.repeat(5000) }),
   call('find_evidence', { title: 'TOKEN' }),
   call('find_evidence', { title: 'sentinel' }),
@@ -536,7 +536,7 @@ for (const vault of ['storefront', 'edge-names', 'edge-hostile']) {
   add('evidence', `find-evidence-${vault}`, { vault }, [
     call('find_evidence', { title: 'Cart' }),
     call('find_evidence', { title: 'Order' }),
-    call('find_evidence', { title: '주문 취소' }),
+    call('find_evidence', { title: '\uc8fc\ubb38 \ucde8\uc18c' }),
     call('find_evidence', { title: 'Éclair' }),
     call('find_evidence', { title: 'Éclair'.normalize('NFD') }),
     call('find_evidence', { title: 'Cancel', limit: 2, nodesOnly: true }),
@@ -600,7 +600,7 @@ add('evidence', 'agent-brief-operations', { vault: 'miniature-repo' }, [
 add('evidence', 'agent-brief-storefront', { vault: 'storefront' }, [
   call('query_ontology', { operation: 'agent_brief', task: 'change how coupons are applied at checkout' }),
   call('query_ontology', { operation: 'agent_brief', task: 'add a gift wrap option to orders', detail: 'full' }),
-  call('query_ontology', { operation: 'agent_brief', task: '주문 취소 흐름 수정' }),
+  call('query_ontology', { operation: 'agent_brief', task: '\uc8fc\ubb38 \ucde8\uc18c \ud750\ub984 \uc218\uc815' }),
   call('query_ontology', { operation: 'workspace_brief' }),
 ]);
 
@@ -698,13 +698,13 @@ add('writes', 'add-concepts-batch-with-invalid-rows', { vault: 'storefront' }, [
 ]);
 add('writes', 'add-concepts-hangul-and-emoji', { vault: 'edge-names' }, [
   call('add_concepts', { concepts: [
-    { slug: 'capabilities/환불-처리', kind: 'capability', title: '환불 처리', domain: 'domains/결제', body: '환불을 처리한다.', labels: { en: 'Refund', ko: '환불' } },
+    { slug: 'capabilities/\ud658\ubd88-\ucc98\ub9ac', kind: 'capability', title: '\ud658\ubd88 \ucc98\ub9ac', domain: 'domains/\uacb0\uc81c', body: '\ud658\ubd88\uc744 \ucc98\ub9ac\ud55c\ub2e4.', labels: { en: 'Refund', ko: '\ud658\ubd88' } },
     { slug: 'capabilities/😀-react', kind: 'capability', title: '😀 React', domain: 'domains/😀-smile' },
     { slug: 'capabilities/Éclair-2', kind: 'capability', title: 'Éclair'.normalize('NFD'), domain: 'domains/apple' },
-    { slug: `capabilities/${'가'.repeat(120)}`, kind: 'capability', title: '긴 이름', domain: 'domains/결제' },
+    { slug: `capabilities/${'\uac00'.repeat(120)}`, kind: 'capability', title: '\uae34 \uc774\ub984', domain: 'domains/\uacb0\uc81c' },
   ] }),
   call('list_concepts', { kind: 'capability', summary: true }),
-  call('query_concepts', { filter: 'title=환불 처리' }),
+  call('query_concepts', { filter: 'title=\ud658\ubd88 \ucc98\ub9ac' }),
 ]);
 add('writes', 'add-concepts-with-labels-extra-and-body-shapes', { vault: 'storefront' }, [
   call('add_concepts', { concepts: [
@@ -791,14 +791,14 @@ add('writes', 'rename-concept', { vault: 'storefront' }, [
   call('rename_concept', { oldSlug: 'capabilities/basket', newSlug: 'capabilities/checkout', confirm: true, overwrite: true }),
   call('rename_concept', { oldSlug: 'capabilities/nonexistent', newSlug: 'capabilities/x', confirm: true }),
   call('rename_concept', { oldSlug: 'capabilities/order-cancel', newSlug: '../escape', confirm: true }),
-  call('rename_concept', { oldSlug: 'capabilities/order-cancel', newSlug: 'capabilities/주문-취소', confirm: true }),
+  call('rename_concept', { oldSlug: 'capabilities/order-cancel', newSlug: 'capabilities/\uc8fc\ubb38-\ucde8\uc18c', confirm: true }),
   call('find_backlinks', { slug: 'capabilities/basket' }),
   call('validate_vault', { limit: 3 }),
 ]);
 add('writes', 'rename-concept-hangul-and-normalization', { vault: 'edge-names' }, [
-  call('rename_concept', { oldSlug: 'capabilities/주문-취소', newSlug: 'capabilities/주문-철회', confirm: true }),
+  call('rename_concept', { oldSlug: 'capabilities/\uc8fc\ubb38-\ucde8\uc18c', newSlug: 'capabilities/\uc8fc\ubb38-\ucca0\ud68c', confirm: true }),
   call('rename_concept', { oldSlug: 'capabilities/Éclair', newSlug: 'capabilities/Éclair'.normalize('NFD'), confirm: true }),
-  call('rename_concept', { oldSlug: 'domains/원장'.normalize('NFD'), newSlug: 'domains/원장-new', confirm: true }),
+  call('rename_concept', { oldSlug: 'domains/\uc6d0\uc7a5'.normalize('NFD'), newSlug: 'domains/\uc6d0\uc7a5-new', confirm: true }),
   call('find_backlinks', { slug: 'capabilities/cancel-order' }),
   call('list_concepts', { summary: true }),
 ]);
@@ -1201,7 +1201,7 @@ add('safety', 'audit-lines-for-each-writer', { vault: 'storefront' }, [
   call('query_ontology', { operation: 'analysis_history' }),
 ]);
 add('safety', 'audit-lines-carry-the-client-name', { vault: 'storefront', handshake: false }, [
-  req('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'Línea "quoted" \n newline \u2028 エージェント', version: '1' } }),
+  req('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'Línea "quoted" \n newline \u2028 \u30a8\u30fc\u30b8\u30a7\u30f3\u30c8', version: '1' } }),
   { notify: 'notifications/initialized' },
   call('add_concepts', { concepts: [{ slug: 'elements/named-client', kind: 'element', title: 'Named Client' }] }),
   req('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'x'.repeat(500), version: '1' } }),
