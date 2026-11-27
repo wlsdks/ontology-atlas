@@ -198,6 +198,8 @@ servers can share one vault during an upgrade.
 |---|---|---|---|---|
 | 1 | every limited text field | a cut through an emoji emits half of it | the cut falls before it | half a character is not text |
 | 2 | `infer_imports` edges; outlines in `read_source` and `find_evidence` | line scanners per language | `tree-sitter` parse for TS/JS, Python, Go, Java, Kotlin, Rust, C; other languages keep a Rust scanner with today's rules | a parser sees multi-line imports and nested declarations a scanner misses |
+| 3 | every answer that repeats a string the agent sent (tool name, argument name or value, method) holding a lone surrogate escape such as a half emoji | the half is kept and written back as the escape, `"\ud800"` | it reads as U+FFFD and is written as that character; a request `id` is the exception and is written back exactly as sent | a Rust string cannot hold half a character, and half of an emoji is not text, the reason of row 1 |
+| 4 | `unknown_argument` `structuredContent`: `receivedArguments`, `unknownArguments`, and the fields beside them | for an argument name with a comma, edge spaces or a quote, the fields are read back out of the message text: a comma splits the name, edge spaces are trimmed, a quote drops the fields | the names are written as the agent sent them; the message, the code and every other name are unchanged | the fields come from the typed error and are never parsed out of message text; the code is unaffected |
 
 Slices add rows only with a corpus case for each; the lead reviews each row in the slice's pull
 request.
