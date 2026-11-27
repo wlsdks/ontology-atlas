@@ -28,7 +28,9 @@ decisions: [RECORD_ID]
 - **Measured on the owner's Mac** with the 27-billion-parameter model he already runs: it picks out
   19 of 23 hand-labelled requests with 2 false; asking Git about every request lists 8 old ones of
   which only 3 were really not done, but asking only about requests for a code change lists 4, 3
-  of them right. A 4-billion model: MINIMUM_MODEL. So slice 1 asks Git only about those.
+  of them right. A 4-billion model called 15 other messages requests and found none of the 3
+  lost ones. So slice 1 asks Git only about code requests, and only with a model that passes a
+  check on example messages that come with the app.
 - **Why Atlas.** The agent cannot judge this itself: the request it lost is no longer in its
   context, and its own summary says it is done. Git can judge it, from outside the conversation.
   Atlas already reads this repository's sessions and Git side by side in Workshop, keeps a model
@@ -104,7 +106,11 @@ Read at `origin/main` `ea6698fdb4` and on the owner's Mac, 2026-11-27, by scratc
     listed, 3 truly not done, none of the 3 missed.
   - *Background priority on the runner* starved it: with Ollama's server at `PRIO_DARWIN_BG`, a
     one-word vector request did not finish in 120 s, twice; back at normal priority it took 9 s.
-  - *A 4-billion model* (`qwen3:4b`, pulled for this measurement): MINIMUM_DETAIL
+  - *A 4-billion model* (`qwen3:4b`, pulled for this measurement and removed after): 0.69 s a
+    message, 4.9 GB, but 33 of 50 kinds right, 22 of 23 tasks found with 15 false, and as judge
+    "unclear" for 11 of 19 and none of the 3 old lost requests found. Models between 4 and 27
+    billion were not measured. **Minimum:** a model that passes the bundled check (criterion 4);
+    measured, that is the 27B class, about 19 GB of memory, so a Mac with 32 GB or more.
 
 **Unknown:** other people's rate of lost requests; how many tasks are done in a way no commit shows;
 Codex's session format on this Mac (not read).
@@ -194,6 +200,7 @@ drops it, and the agent that dropped it cannot know.
 | First run, model ready | Out of scope — web card | `stage.*` with `model.using`; Check now, the nightly switch |
 | No model, or not answering | Out of scope — web card | `model.noneTitle`, `model.noneBody`, Open Models |
 | Model off this computer | Out of scope — web card | `model.notLocal`, Open Models |
+| Model fails the bundled check | Out of scope — web card | `model.weakTitle`, `model.weakBody`, Open Models |
 | Search model not prepared | Out of scope — web card | `model.searchTitle`, `model.searchBody`, Set up search by meaning |
 | Reading, sorting, checking | Out of scope — web card | `run.reading` / `run.sorting` / `run.checking` in the dialog and header; Stop |
 | Paused for input, or waiting for idle | Out of scope — web card | `run.paused` / `run.waiting`; Check now runs at once |
@@ -216,6 +223,7 @@ Keys are in `messages/<locale>/missedRequests.json` (en, ko, ja, zh). The Englis
 | `stage.local` / `stage.scope` | stage | Your messages go only to {model} at {address} on this computer. Nothing is sent anywhere else, and nothing is written into your repository or your agent's memory. / Reads {count} sessions from the last 14 days in {worktrees} folders of this repository. |
 | `stage.start` / `stage.nightly` / `stage.nightlyNote` | stage | Check now / Check every night / Runs at most once a day, after 1:00, while Atlas is open, this computer is on power and no one has used it for 10 minutes. It stops when you touch the keyboard or mouse. |
 | `model.noneTitle` / `model.noneBody` / `model.noneAction` | stage | Needs a model on this computer / Picking requests out of your messages needs a language model running on this computer, such as one in Ollama or LM Studio. Add its address in Agents › Models, then come back. / Open Models |
+| `model.weakTitle` / `model.weakBody` | stage | {model} is too small for this check / Atlas gave {model} {total} example messages that come with the app. It found {found} of {requests} requests for a code change and called {wrong} other messages requests; this check needs {neededFound} found and at most {neededWrong} wrong. Choose a larger model in Agents › Models. None of your own messages were read. |
 | `model.searchTitle` / `model.searchBody` / `model.searchAction` | stage | Needs the search-by-meaning model / Finding the commits closest to each request uses the model that search by meaning prepares on this computer. Set it up once in the Library, then come back. / Set up search by meaning |
 | `model.notLocal` / `model.using` | stage | {address} is not on this computer. Only a model at localhost, 127.0.0.1 or ::1 may read your messages. / {model} at {address} |
 | `run.reading` / `run.sorting` / `run.checking` | progress | Reading {done} of {total} sessions / Picking out requests: {done} of {total} messages / Checking {done} of {total} requests against Git |
@@ -312,10 +320,12 @@ Keys are in `messages/<locale>/missedRequests.json` (en, ko, ja, zh). The Englis
 3. **Nothing leaves.** Given a runner set to `https://example.test` or `http://192.168.1.2`, no
    request is sent and `model.notLocal` shows; given a loopback runner, a packet capture during a
    full run shows traffic only on loopback (Rust test; installed-app walk with `nettop`).
-4. **Worth showing.** On this repository's hand-labelled set (`tests/fixtures/missed-requests-labels.json`,
-   the 50 + 21 labels of Today), with the owner's 27B model: tasks found at least 80%, and of
-   requests listed, at least 2 in 3 truly have no commit. A model below that bar shows
-   `model.noneBody` instead of results (measured in the pull request; `pnpm` script reruns it).
+4. **Worth showing, and a small model refused.** On this repository's labels (Today, relabelled
+   by the owner in five minutes), the owner's 27B model finds at least 80% of code requests, and of
+   old requests listed at least 2 in 3 truly have no commit. A bundled check of 40 example
+   messages in four languages, run on a model before its first use, passes that model and refuses
+   one with the 4B's measured errors, showing `model.weakTitle` before any session is read (a
+   `pnpm` script over a scratchpad copy of the labels; Rust test for the check).
 5. **Gentle.** With the nightly switch on, on power, idle 10 minutes, a run starts; a key press
    ends it within one message (under 30 s at the measured p90) and `run.paused` shows; on battery
    nothing starts (installed-app walk, `pmset -g log` and the run log).
@@ -333,7 +343,8 @@ Keys are in `messages/<locale>/missedRequests.json` (en, ko, ja, zh). The Englis
    Answer: only "not done" is listed, the 2-day wait, criterion 4's bar, and the Done elsewhere
    count, which shows the false-alarm rate on this computer.
 2. **Most people have no local model, or a small one.** Then it is empty for them. Answer: the
-   stage says so in one line and links Models; MINIMUM_MODEL. If fewer than one in ten users
+   stage says so in one line and links Models, and a small model is refused by the bundled
+   check before any of the person's messages are read. If fewer than one in ten users
    connect a runner, Later 3 (a downloaded model) becomes next.
 3. **The overnight window never comes.** A Mac that sleeps, or Atlas closed at night. Answer: Check
    now works any time, `run.last` shows when it last ran, and the run picks up where it stopped.

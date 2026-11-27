@@ -16,6 +16,8 @@
     "noneTitle": "Needs a model on this computer",
     "noneBody": "Picking requests out of your messages needs a language model running on this computer, such as one in Ollama or LM Studio. Add its address in Agents › Models, then come back.",
     "noneAction": "Open Models",
+    "weakTitle": "{model} is too small for this check",
+    "weakBody": "Atlas gave {model} {total} example messages that come with the app. It found {found} of {requests} requests for a code change and called {wrong} other messages requests; this check needs {neededFound} found and at most {neededWrong} wrong. Choose a larger model in Agents › Models. None of your own messages were read.",
     "searchTitle": "Needs the search-by-meaning model",
     "searchBody": "Finding the commits closest to each request uses the model that search by meaning prepares on this computer. Set it up once in the Library, then come back.",
     "searchAction": "Set up search by meaning",

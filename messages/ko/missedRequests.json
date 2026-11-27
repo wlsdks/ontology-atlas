@@ -16,6 +16,8 @@
     "noneTitle": "이 컴퓨터에서 도는 모델이 필요해요",
     "noneBody": "메시지에서 요청을 골라내려면 Ollama나 LM Studio처럼 이 컴퓨터에서 실행되는 언어 모델이 필요해요. 에이전트 › 모델에서 주소를 추가한 뒤 돌아오세요.",
     "noneAction": "모델 열기",
+    "weakTitle": "{model} 모델은 이 확인에 쓰기에 너무 작아요",
+    "weakBody": "Atlas가 앱에 들어 있는 예시 메시지 {total}개를 {model} 모델에 줬어요. 코드 변경 요청 {requests}개 중 {found}개를 찾았고, 다른 메시지 {wrong}개를 요청으로 잘못 봤어요. 이 확인에는 {neededFound}개 이상 찾고 잘못 본 것이 {neededWrong}개 이하여야 해요. 에이전트 › 모델에서 더 큰 모델을 고르세요. 내 메시지는 하나도 읽지 않았어요.",
     "searchTitle": "의미 검색 모델이 필요해요",
     "searchBody": "요청마다 가장 가까운 커밋을 찾을 때 의미 검색이 이 컴퓨터에 준비해 두는 모델을 써요. 자료실에서 한 번 준비한 뒤 돌아오세요.",
     "searchAction": "의미 검색 설정",
