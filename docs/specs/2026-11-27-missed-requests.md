@@ -61,12 +61,13 @@ no lasting change of its own (merge, release, run, check, research, plan); a *qu
 
 ## Today
 
-Read at `origin/main` `ea6698fdb4` (merged forward to `#4014`) and on the owner's Mac, 2026-11-27,
+Read at `origin/main` `ea6698fdb4` (merged forward to `#4016`) and on the owner's Mac, 2026-11-27,
 by scratchpad scripts that are not committed.
 
 - **No Atlas code reads session text.** Workshop runs `claude agents --json` for states and names
-  only (`.claude/rules/surfaces.md:127-146`); Harness Improve's session read is specified, not
-  built (`:167-184`). Web Workshop shows its own app-only card first
+  only (`.claude/rules/surface-exceptions.md:89-108`); Harness Improve's session read is
+  specified, not built (`:129-145`), and Harness Tokens reads session files for usage figures,
+  never text (`:162-172`). Web Workshop shows its own app-only card first
   (`src/views/work-status/ui/WorkStatusPage.tsx:147`).
 - **Workshop's header** ends with "11 merged today", a link to Changes
   (`docs/features/work-status.md:473-478`).
@@ -412,3 +413,5 @@ None. Placement in Workshop is decided above; reversing it means a rail entry wi
   Later 1. Cloud models and proxies are refused, Stop cancels within a second, unclear verdicts
   are shown, commits are searched up to now, the read boundary and run log are tightened, the
   bundled check has thresholds, and the web keys are gone. The sort was rerun with five kinds.
+- 2026-11-28: merged `#4016`; the exception is the eleventh, in
+  `.claude/rules/surface-exceptions.md`, with its gate and platforms.

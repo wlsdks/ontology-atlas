@@ -170,3 +170,19 @@ The tenth, specified, not built (`docs/specs/2026-11-28-harness-token-inspector.
 | Gate, record | `no_planted_text_leaves_any_inspector_result`; `d55c209e` |
 
 Another file, field or stored figure needs a new record.
+
+## Workshop › Asked, not done
+
+The eleventh, specified, not built (`docs/specs/2026-11-27-missed-requests.md`):
+
+| | |
+|---|---|
+| When | only after Check now in Workshop, one run per repository; Stop cancels the request in flight within 1 s; no schedule, idle, power or priority read |
+| Read | config homes' `projects/` folders, each by real path once; lines whose `cwd` is the checkout, a path under it by whole parts, or a worktree Git lists; never `subagents/`. From a typed message only: text (2,000 characters), time, file name, `uuid` (held once), worktree, `gitBranch` |
+| Send | each message alone, quoted, to the Agents › Models runner: a loopback host resolved and pinned, `noproxy`, proxy variables removed; a model `is_cloud_name` flags or `refuse_remote_model` finds remote is refused first, then the bundled check |
+| Write | app data per repository, mode 0700: requests, verdicts, commit vectors, marks; a run-log line before the first send and one after the last, never text; items past 90 days deleted |
+| Never | agent text, tool fields, commands or environment values; a secret-shaped line; the vault, the repository, `llm-audit.jsonl`, any memory or instruction file, the network |
+| Platforms | macOS and Windows |
+| Gate, record | the spec's criteria 2, 3, 5 and 6; `19077fe5` |
+
+Another field, recipient, schedule or file needs a new record.
