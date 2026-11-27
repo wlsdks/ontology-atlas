@@ -269,4 +269,19 @@ describe("`.claude/rules` path scoping contract", () => {
         + "rule or a skill.",
     ).toBeLessThanOrEqual(20_000);
   });
+
+  /**
+   * A path-scoped rule arrives on top of `AGENTS.md` in the same turn, and 32 KiB is the cap the
+   * nested pointers already keep for Codex. When a rule outgrows it, split it by subject into
+   * another path-scoped rule, as `surface-exceptions.md` was split from `surfaces.md`.
+   */
+  it("keeps AGENTS.md plus any one path-scoped rule at or under 32 KiB", () => {
+    const agents = authoredBytes("AGENTS.md");
+    const over = rules
+      .filter((rule) => rule.paths !== null)
+      .map((rule) => ({ file: rule.file, total: agents + authoredBytes(join(".claude/rules", rule.file)) }))
+      .filter(({ total }) => total > 32_768)
+      .map(({ file, total }) => `  ${total} AGENTS.md + ${file}`);
+    expect(over, `over 32,768 bytes:\n${over.join("\n")}\n`).toEqual([]);
+  });
 });

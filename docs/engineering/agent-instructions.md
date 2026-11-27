@@ -38,7 +38,7 @@ and discovery behavior; a Claude rule glob is not a Codex loader. See
 `AGENTS.md` is the only root instruction file: Claude Code reads it directly,
 and a root `CLAUDE.md` would replace it. `.claude/rules/` always loads `forbidden`,
 `git` and `local-first`; `design`, `design-gates`, `architecture`, `testing`,
-`surfaces` and `documentation` load by their frontmatter paths
+`surfaces`, `surface-exceptions` and `documentation` load by their frontmatter paths
 (`rules-path-scope.contract.test.ts`). Making a rule resident updates that
 contract, this section, and the commit's reason together. Codex loads no rule
 by itself. Claude discovers skills in `.claude/skills/`, Codex in
