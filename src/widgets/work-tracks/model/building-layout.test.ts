@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SCREEN_H, MAX_SCREEN_ROWS, SCREEN_ROW_H, SHARED_SCREEN_ROWS, fileColumns, layoutBuilding, listsAreas, pairUnit, screenRows, showsWallFacts, stageCapacity, type Box, type LayoutInput, type ScreenLists } from './building-layout';
+import { SCREEN_H, MAX_SCREEN_ROWS, SCREEN_ROW_H, SHARED_SCREEN_ROWS, fileColumns, layoutBuilding, listsAreas, screenRows, stageCapacity, type Box, type LayoutInput, type ScreenLists } from './building-layout';
 
 const keys = (prefix: string, count: number) => Array.from({ length: count }, (_, index) => `${prefix}${index}`);
 
@@ -34,19 +34,16 @@ describe('layoutBuilding', () => {
     const stage = keys('s', 3).map(key => result.rooms.get(key)!);
     const mini = result.rooms.get('m0')!;
     expect(stage[0].y).toBe(24);
-    // The screen, Moru under it on the rail, and two more rows for the five its rooms have to list.
+    // The screen, the wall facts over the rail under it, and two more rows for the five its rooms have to list.
     expect(stage[0].h).toBe(12 + SCREEN_H + 68 + 2 * SCREEN_ROW_H);
     expect(screenRows(stage[0])).toBe(5);
     expect(mini.y - (stage[0].y + stage[0].h)).toBe(16);
     expectNoOverlap([...result.rooms.values()]);
   });
 
-  it('keeps one height under every room\'s screen, whether or not it shows its wall facts', () => {
+  it('keeps one height under every room\'s screen at every width', () => {
     const roomAt = (width: number) => layout({ width, height: 1020, stage: keys('s', 3), hasShelf: false }).rooms.get('s0')!;
-    const narrow = roomAt(1296);
-    const wide = roomAt(2300);
-    expect([showsWallFacts(narrow.w), showsWallFacts(wide.w)]).toEqual([false, true]);
-    expect([narrow.h, wide.h]).toEqual([12 + SCREEN_H + 68, 12 + SCREEN_H + 68]);
+    expect([roomAt(1296).h, roomAt(2300).h]).toEqual([12 + SCREEN_H + 68, 12 + SCREEN_H + 68]);
   });
 
   it('bands forty worktrees by session under one row of six, all inside the window', () => {
@@ -139,24 +136,6 @@ describe('floor rows', () => {
     expect(rows('c', 3)).toEqual([3]);
   });
 
-  it('gives two Moru a scale in half steps, the largest that fits both apart on the rail, up to the room\'s own', () => {
-    expect(pairUnit(882, 3)).toBe(3);
-    // The 1440 and 1512 boards: three quarters of the single Moru beside them, both on the floor.
-    for (const width of [424, 448]) {
-      expect(pairUnit(width, 2)).toBe(1.5);
-      expect(218 * pairUnit(width, 2)).toBeLessThanOrEqual(width - 32 - 16);
-    }
-    expect(pairUnit(320, 1)).toBe(1);
-    expect(pairUnit(200, 1)).toBe(0.5);
-  });
-
-  it('keeps Moru at half his drawn size in a room of any size, so the width goes to the screen', () => {
-    for (const width of [1368, 2400]) {
-      const room = layout({ width, height: 1200, stage: keys('s', 2), hasShelf: false }).rooms.get('s0')!;
-      expect(room.unit).toBe(0.5);
-    }
-  });
-
   it('gives a room alone on the stage the whole width, as tall as what it lists and no taller than the window', () => {
     const lone = (patch: Partial<LayoutInput>) => layout({ width: 1840, height: 1100, stage: ['s0'], hasShelf: false, ...patch });
     const rowsFor = (lists: Partial<ScreenLists>, patch: Partial<LayoutInput> = {}) => screenRows(lone({ stageLists: [{ commits: 0, files: 0, areas: 0, ...lists }], ...patch }).rooms.get('s0')!);
@@ -191,13 +170,6 @@ describe('floor rows', () => {
     // The folders take a column's worth from the files.
     expect(fileColumns(1840, true, true)).toBe(2);
     expect(fileColumns(1840, false, true)).toBe(3);
-  });
-
-  it('says a room\'s state on its wall once three rooms across leave the wall beside Moru', () => {
-    const across = (width: number, count: number) => layout({ width, stage: keys('s', count), hasShelf: false }).rooms.get('s0')!.w;
-    expect(showsWallFacts(across(1840, 3))).toBe(true);
-    expect(showsWallFacts(across(1296, 3))).toBe(false);
-    expect(showsWallFacts(across(1296, 2))).toBe(true);
   });
 
   it('lists the folders only for a room alone on the stage, with files in two or more, where a column of files still fits', () => {

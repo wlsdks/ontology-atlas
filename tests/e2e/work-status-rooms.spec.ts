@@ -114,12 +114,10 @@ interface PaintFrame {
   tags: number;
   /** How much of each room's content shows: its faces and each of their fading parts, by room. */
   content: Record<string, number>;
-  /** Per room: how much of its Moru or name tag shows inside its plate, the better of them. */
+  /** Per room: how much of its name tag shows inside its plate. */
   held: Record<string, number>;
   /** Parts drawn past their room's plate while they show. */
   spills: string[];
-  /** How wide each room's showing Moru is drawn, so a scale change can be checked for a jump. */
-  moru: Record<string, number>;
   /** The thickest and thinnest hue edge any room draws: it stays 3 px however its wall scales. */
   edges: [number, number];
   /** Where each room's plate is drawn: x, y, width and height. */
@@ -183,11 +181,6 @@ async function startPaintSampler(page: Page) {
         for (let node: Element | null = element; node && node !== building; node = node.parentElement) value *= Number(getComputedStyle(node).opacity);
         return value;
       };
-      // A part may hold content that fades on its own inside it (`data-room-fade`): the wall facts.
-      const shows = (part: Element) => {
-        const inner = part.querySelector("[data-room-fade]");
-        return seen(part) * (inner ? Number(getComputedStyle(inner).opacity) : 1);
-      };
       const tags = [...document.querySelectorAll("[data-testid=work-building] :is([data-room-tag], [data-room-plaque])")].filter((tag) => seen(tag) > 0.5).length;
       const visible: Record<string, number> = {};
       for (const element of all) {
@@ -196,7 +189,7 @@ async function startPaintSampler(page: Page) {
         for (const face of faces) {
           face.querySelectorAll("[data-room-part]").forEach((part, index) => {
             const name = `${keyOf(element)}:part${index}`;
-            visible[name] = Math.max(visible[name] ?? 0, shows(part));
+            visible[name] = Math.max(visible[name] ?? 0, seen(part));
           });
         }
       }
@@ -209,18 +202,10 @@ async function startPaintSampler(page: Page) {
           const h = Math.min(rect.bottom, plate.bottom) - Math.max(rect.top, plate.top);
           return rect.width * rect.height > 0 ? (Math.max(0, w) * Math.max(0, h)) / (rect.width * rect.height) : 0;
         };
-        held[keyOf(element)] = Math.max(0, ...[...element.querySelectorAll<HTMLElement>(":scope > [data-room-face] :is([data-room-moru], [data-room-tag])")].map((figure) => seen(figure) * inside(figure.getBoundingClientRect())));
+        held[keyOf(element)] = Math.max(0, ...[...element.querySelectorAll<HTMLElement>(":scope > [data-room-face] [data-room-tag]")].map((figure) => seen(figure) * inside(figure.getBoundingClientRect())));
         element.querySelectorAll<HTMLElement>(":scope > [data-room-face] [data-room-part]").forEach((part) => {
           const rect = part.getBoundingClientRect();
-          if (shows(part) > 0.05 && rect.width > 0 && (rect.right > plate.right + 2 || rect.bottom > plate.bottom + 2 || rect.left < plate.left - 2 || rect.top < plate.top - 2)) spills.push(keyOf(element));
-        });
-      }
-      const moru: Record<string, number> = {};
-      for (const element of all) {
-        // The room's Moru as drawn: from its most visible face, so a swap of faces at a new scale counts.
-        const face = [...element.querySelectorAll<HTMLElement>(":scope > [data-room-face]")].sort((a, b) => seen(b) - seen(a))[0];
-        face?.querySelectorAll("[data-room-moru]").forEach((figure, index) => {
-          if (seen(figure) > 0.5) moru[`${keyOf(element)}:${index}`] = figure.getBoundingClientRect().width;
+          if (seen(part) > 0.05 && rect.width > 0 && (rect.right > plate.right + 2 || rect.bottom > plate.bottom + 2 || rect.left < plate.left - 2 || rect.top < plate.top - 2)) spills.push(keyOf(element));
         });
       }
       const thickness = all.flatMap((element) => [...element.querySelectorAll(":scope > [data-room-edge]")].map((edge) => edge.getBoundingClientRect().height));
@@ -238,7 +223,7 @@ async function startPaintSampler(page: Page) {
           boxes[`cart:${keyOf(element)}`] = [box.x, box.y, box.width, box.height];
         }
       }
-      frames.push({ copies: Math.max(0, ...copies.values()), overlaps, covered, litGhost, time: frameTime, tags, content: visible, held, spills, moru, edges, boxes });
+      frames.push({ copies: Math.max(0, ...copies.values()), overlaps, covered, litGhost, time: frameTime, tags, content: visible, held, spills, edges, boxes });
       // By time, not by frames: a fixed frame count ends a 120 Hz display's sampling in half the time of a 60 Hz one.
       if (frameTime - firstTime < SAMPLED_MS) requestAnimationFrame(sample);
     };
@@ -267,7 +252,7 @@ async function expectCleanPaint(page: Page, { slots: handed = 0 } = {}) {
   expect.soft(frames.filter((frame) => handedOver.some((index) => !frame.covered[index])).length, "frames with a bare slot").toBe(0);
   expect.soft(frames.filter((frame) => frame.litGhost).length, "frames where a leaving room is lit").toBe(0);
   expect.soft(frames.filter((frame) => frame.tags === 0).length, "frames with no room name on the stage").toBe(0);
-  // A room's Moru and name tag leave by fading, never from one frame to the next.
+  // A room's name tag leaves by fading, never from one frame to the next.
   const pops = frames.slice(1).flatMap((frame, index) => Object.entries(frames[index].held)
     .filter(([key, before]) => frame.time - frames[index].time <= 40 && before > 0.5 && key in frame.held && frame.held[key] < 0.1)
     .map(([key]) => `${key} at ${Math.round(frame.time - frames[0].time)}ms`));
@@ -284,21 +269,6 @@ async function expectCleanPaint(page: Page, { slots: handed = 0 } = {}) {
     }
   });
   expect.soft([...new Set(cuts)].slice(0, 6), "content that cut instead of fading").toEqual([]);
-  // Moru glides to a new scale: within any 40 ms its drawn width changes by at most a fifth. A frame
-  // that came late and repeated the one before is timed from that one, so it is not read as a jump.
-  const jumps: string[] = [];
-  frames.forEach((frame, index) => {
-    const next = frames[index + 1];
-    if (!next) return;
-    for (const [name, width] of Object.entries(frame.moru)) {
-      const after = next.moru[name];
-      if (after === undefined || width <= 0 || after === width) continue;
-      const repeated = frames[index - 1]?.moru[name] === width && frames[index - 2]?.moru[name] !== width;
-      const from = repeated ? frames[index - 1].time : frame.time;
-      if (next.time - from <= 40 && Math.abs(after - width) / width > 0.2) jumps.push(`${name} ${Math.round(width)}→${Math.round(after)}px`);
-    }
-  });
-  expect.soft([...new Set(jumps)].slice(0, 6), "Moru that jumped to a new scale").toEqual([]);
   expect.soft(frames.filter((frame) => frame.edges[0] > 3.5 || frame.edges[1] < 2.5).length, "frames where a hue edge scaled with its wall").toBe(0);
 }
 
@@ -501,7 +471,7 @@ test.describe("work status rooms", () => {
     await setRows(page, full.map((entry) => entry.branch === "feat/library-stage" ? row("feat/library-stage", { standing: "merged", ahead: 0 }) : entry));
     await expect(room(page, "feat/library-stage").locator("[data-arrived=true]")).toHaveCount(1);
     await expect(room(page, "feat/library-stage").getByTestId("work-room-cart")).toHaveAttribute("data-crates", "7");
-    // measurement window: the crate ride, the hatch turning green and Moru's cheer are sampled frame by frame before the room leaves.
+    // measurement window: the crate ride, the hatch turning green and its two blinks are sampled frame by frame before the room leaves.
     await page.waitForTimeout(2500);
     await expectSmoothMotion(page);
   });
@@ -529,7 +499,7 @@ test.describe("work status rooms", () => {
       entry.branch === "feat/library-stage" ? row("feat/library-stage")
         : entry.branch === "feat/idle-one" ? working("feat/idle-one", CLAUDE) : entry);
     await setRows(page, first);
-    // The first update is read and drawn: its sequence starts. Moru's loops run all along, so a running animation does not say so.
+    // The first update is read and drawn: its sequence starts.
     await expect(room(page, "feat/idle-one")).toHaveAttribute("data-room-size", "large", { timeout: 10_000 });
     // Git says something new 150 ms into the sequence; the page reads it on its next tick, mid-sequence.
     // measurement window: the next update must land 150 ms into the running sequence, the gap the owner set.
@@ -597,10 +567,10 @@ test.describe("work status rooms", () => {
     await openWorkStatus(page, [...SIX, row("fix/rail-copy")], ACTIVITY);
     const stage = room(page, "feat/library-stage").getByTestId("work-room-monitor");
     await expect(stage).toContainText(LONG_SUBJECT.slice(0, 40));
-    // Under the commits: what is not committed, with the file changed last; the bezel says when the worktree last changed.
+    // Under the commits: what is not committed, with the file changed last; the wall says when the worktree last changed.
     await expect(stage).toContainText("3 files changed, not committed");
     await expect(stage).toContainText("LibraryPage.tsx");
-    await expect(room(page, "feat/library-stage").locator("[data-room-tag]")).toContainText(/Working\s·\schanged \d+ minutes? ago/);
+    await expect(room(page, "feat/library-stage").getByTestId("work-room-facts")).toContainText(/Working\s*changed \d+ minutes? ago/);
     await expect(room(page, "feat/map-light").getByTestId("work-room-monitor")).toContainText("빛 레이어를 부드럽게 ✨");
     const editing = room(page, "feat/work-status-rooms").getByTestId("work-room-monitor");
     await expect(editing).toContainText("12 files changed, not committed");
@@ -673,69 +643,6 @@ test.describe("work status rooms", () => {
     expect(gone.length, "the oldest row is drawn while it leaves").toBeGreaterThan(3);
     expect(steps(gone, "opacity").every(({ change }) => change <= 0.01), "the oldest row only fades").toBe(true);
     expect(trace.at(-1)!.rows).not.toHaveProperty("f6a7b8c");
-  });
-
-  test("rests the cast between turns after the lively stretch, and cuts a new commit in at once", async ({ page }) => {
-    // The lively stretch runs fifteen seconds from the first step before the building rests.
-    test.setTimeout(90_000);
-    await openWorkStatus(page, SIX);
-    const working = room(page, "feat/library-stage");
-    await expect(working.locator("[data-moru-live]").first()).toBeVisible();
-    await page.evaluate(() => {
-      // When any Moru last changed what he shows (a room sprite's style), and in the
-      // working room, when it was asked to play a row once and when its Moru first changed after that.
-      const seen = { last: performance.now(), changes: 0, longest: 0, askedAt: 0, answeredAt: 0, rowBefore: "", answeredRow: "", roomLast: performance.now() };
-      let asked: HTMLElement | null = null;
-      const note = (at: number) => {
-        seen.longest = Math.max(seen.longest, at - seen.last);
-        seen.last = at;
-        seen.changes += 1;
-      };
-      const inWorking = (node: Element) => node.closest("[data-testid='work-room']")?.textContent?.includes("feat/library-stage");
-      new MutationObserver((records) => {
-        const at = performance.now();
-        for (const record of records) {
-          const target = record.target as HTMLElement;
-          if (!target.matches("[data-moru-live]")) continue;
-          if (record.attributeName === "data-moru-once" && target.dataset.moruOnce && inWorking(target) && !asked) {
-            asked = target;
-            seen.askedAt = at;
-            seen.rowBefore = target.style.backgroundImage;
-          }
-          if (record.attributeName !== "style") continue;
-          note(at);
-          if (!inWorking(target)) continue;
-          seen.roomLast = at;
-          if (target === asked && !seen.answeredAt) { seen.answeredAt = at; seen.answeredRow = target.style.backgroundImage; }
-        }
-      }).observe(document.body, { subtree: true, attributes: true, attributeFilter: ["style", "data-moru-once"] });
-      (window as unknown as { __moruSeen: typeof seen }).__moruSeen = seen;
-    });
-    type Seen = { last: number; changes: number; longest: number; askedAt: number; answeredAt: number; rowBefore: string; answeredRow: string; roomLast: number };
-    const seen = () => page.evaluate(() => {
-      const value = (window as unknown as { __moruSeen: Seen }).__moruSeen;
-      return { ...value, still: performance.now() - value.last, roomStill: performance.now() - value.roomLast };
-    });
-
-    // Lively first: the rooms step without a pause longer than a few beats.
-    await expect.poll(async () => (await seen()).changes, { timeout: 10_000 }).toBeGreaterThan(20);
-    // Then a rest: three seconds and more with no Moru anywhere changing his pose.
-    await expect.poll(async () => { const now = await seen(); return Math.max(now.longest, now.still); }, { timeout: 40_000 }).toBeGreaterThanOrEqual(3000);
-
-    // A new commit in the resting working room plays its row at once, without waiting for a turn. It
-    // lands just after the cast last moved: a rest of three seconds follows a turn, so no loop is under way.
-    await page.evaluate((rows) => {
-      const target = window as unknown as { __moruSeen: { last: number }; __workStatusRowsWhen: (rows: unknown[], when: () => boolean) => void };
-      target.__workStatusRowsWhen(rows, () => {
-        const still = performance.now() - target.__moruSeen.last;
-        return still >= 450 && still <= 2000;
-      });
-    }, SIX.map((each) => (each.branch === "feat/library-stage" ? { ...each, ahead: 3 } : each)));
-    await expect.poll(async () => (await seen()).answeredAt, { timeout: 30_000 }).toBeGreaterThan(0);
-    const cut = await seen();
-    // His first new pose is the commit's row, not the next cell of the one he rested on.
-    expect(cut.answeredRow, "the row he shows after the commit").not.toBe(cut.rowBefore);
-    expect(cut.answeredAt - cut.askedAt, "ms from the commit's request to his first new pose").toBeLessThanOrEqual(400);
   });
 
   test("lists the files a worktree is changing beside its commits, and opens the room panel on a press", async ({ page }) => {
@@ -840,7 +747,6 @@ test.describe("work status rooms", () => {
     await expect(asking).toHaveAttribute("data-room-size", "large");
     await expect(asking.getByTestId("work-room-monitor")).toContainText("Waiting for your approval");
     await expect(asking.locator("[data-scene]")).toHaveAttribute("data-tone", "warning");
-    await expect(asking.locator("[data-room-moru='heads-up']")).toHaveCount(1);
     // A session that has replied is quiet, not at work, and keeps its place on the stage.
     const replied = room(page, "feat/work-status-rooms");
     await expect(replied).toHaveAttribute("data-room-state", "replied");

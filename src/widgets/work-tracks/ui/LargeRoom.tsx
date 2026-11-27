@@ -5,15 +5,13 @@ import { useTranslations } from 'next-intl';
 import type { RoomEntry } from '@/shared/lib/work-status/work-tracks';
 import { cn } from '@/shared/lib/cn';
 import { MOTION } from '@/shared/motion';
-import { AFTER_CRATE, CART_CRATES, ROOM_TALKS, cartLoad, moruPhase, roomLook, roomOnce, workLoops, type MoruCharacter } from '../model/room-look';
-import { MERGE_LIGHTS_OUT_MS } from '../model/moru-clock';
+import { CART_CRATES, MERGE_LIGHTS_OUT_MS, cartLoad, roomLook } from '../model/room-look';
 import { useRise } from '../model/use-rise';
 import { SCREEN_H, SCREEN_ROW_H, type RoomUnit } from '../model/building-layout';
 import { listRowsBeside, type RoomLive } from '../model/room-live';
 import { ActivityStrip } from './ActivityStrip';
 import { BranchName } from './BranchName';
 import { CommitLog } from './CommitLog';
-import { RoomMoru } from './RoomMoru';
 import { SessionLineRow } from './SessionLineRow';
 import { SwapText } from './SwapText';
 import type { MonitorCopy, ScreenArea, ScreenFile, StatusTone, useRoomCopy } from './use-room-copy';
@@ -132,24 +130,23 @@ function AreaList({ areas, rows }: { areas: readonly ScreenArea[]; rows: number 
 }
 
 /**
+ * Where a room says its state, once: atop its screen when it needs a person and no session line
+ * says so already, else on the wall under the screen. The fact beside the state (its time) is
+ * always on the wall.
+ */
+type StateHome = 'screen' | 'wall';
+
+function stateHome(screen: MonitorCopy): StateHome {
+  const sessionRows = screen.sessionLines.length + (screen.moreSessions ? 1 : 0);
+  return screen.state.tone === 'warning' && sessionRows === 0 ? 'screen' : 'wall';
+}
+
+/**
  * What the screen says: the branch, the newest commits with their times, then what is not committed and the count.
  * With `fileColumns`, on a screen wide enough: the commits and the uncommitted files stand side by side, each
  * under a line saying what it lists, and a room with no commits gives the files the commits' share and says so
  * on their line. With `areas`, the folders those files are in stand in a last column.
  */
-/**
- * Where a room says its state, once: atop its screen when it needs a person and no session line
- * says so already, on the wall when the room is wide enough for its wall facts, else on the bezel.
- * The fact beside the state (its time) goes to the wall when the wall shows, else to the bezel.
- */
-type StateHome = 'screen' | 'wall' | 'bezel';
-
-function stateHome(screen: MonitorCopy, wallShown: boolean): StateHome {
-  const sessionRows = screen.sessionLines.length + (screen.moreSessions ? 1 : 0);
-  if (screen.state.tone === 'warning' && sessionRows === 0) return 'screen';
-  return wallShown ? 'wall' : 'bezel';
-}
-
 function ScreenText({ screen, rows: screenRows, fileColumns, areas, home }: { screen: MonitorCopy; rows: number; fileColumns: number; areas: boolean; home: StateHome }) {
   const sessionRows = screen.sessionLines.length + (screen.moreSessions ? 1 : 0);
   // The session lines say who waits; the lists below give them their height, and the panel keeps the rest.
@@ -158,7 +155,7 @@ function ScreenText({ screen, rows: screenRows, fileColumns, areas, home }: { sc
     <>
       <div className={styles.screenHead}>
         <BranchName branch={screen.branch} className={cn(styles.screenBranch, 'font-mono font-[var(--font-weight-strong)]')} />
-        {/* A room that needs a person says so at the top of its screen, in amber, not only on the bezel. */}
+        {/* A room that needs a person says so at the top of its screen, in amber, not only by its frame and light. */}
         {home === 'screen' ? <span className={cn(styles.screenAlert, 'text-body leading-body font-[var(--font-weight-strong)]')}>{screen.state.lead}</span> : null}
       </div>
       {sessionRows > 0 ? (
@@ -240,12 +237,11 @@ function ScreenFoot({ screen }: { screen: MonitorCopy }) {
 }
 
 /**
- * The room's state on the wall left of Moru, in two lines that never wrap: the state and its time,
- * then how long the session has worked, the last minute's file changes and the load. It stays drawn
- * while the room is too narrow for it or holds a pair, and fades when that changes: a room that moves
- * keeps its face, so mounting it there would cut it in or out in one frame.
+ * The room's state on the wall under its screen, left of the cart, in two lines that never wrap: the
+ * state and its time, then how long the session has worked, the last minute's file changes and the
+ * load.
  */
-function WallFacts({ screen, shown, home }: { screen: MonitorCopy; shown: boolean; home: StateHome }) {
+function WallFacts({ screen, home }: { screen: MonitorCopy; home: StateHome }) {
   const details = [
     screen.worked ? { key: 'worked', value: screen.worked, className: 'text-[color:var(--color-text-tertiary)]', testId: undefined } : null,
     screen.lastMinute ? { key: 'minute', value: screen.lastMinute, className: 'text-[color:var(--color-text-secondary)]', testId: 'work-room-last-minute' } : null,
@@ -253,10 +249,11 @@ function WallFacts({ screen, shown, home }: { screen: MonitorCopy; shown: boolea
   ].filter(part => part !== null);
   return (
     <div className={styles.wallFacts} data-testid="work-room-facts" data-room-part>
-      <div className={styles.wallFactsText} data-shown={shown} data-room-fade>
+      <div className={styles.wallFactsText}>
         <span className={styles.wallLine}>
-          {home === 'wall' ? <span className={cn(STATE_TONE[screen.state.tone], 'flex-none text-title leading-title font-[var(--font-weight-strong)]')}><SwapText value={screen.state.lead} /></span> : null}
-          {screen.state.rest ? <span className="min-w-0 text-body leading-body text-[color:var(--color-text-secondary)]"><SwapText value={screen.state.rest} /></span> : null}
+          {/* The time beside the state gives way first; the state is cut only when it alone is wider than the wall. */}
+          {home === 'wall' ? <span className={cn(STATE_TONE[screen.state.tone], 'flex max-w-full flex-none text-title leading-title font-[var(--font-weight-strong)]')}><SwapText value={screen.state.lead} /></span> : null}
+          {screen.state.rest ? <span className="flex min-w-0 text-body leading-body text-[color:var(--color-text-secondary)]"><SwapText value={screen.state.rest} /></span> : null}
         </span>
         {details.length > 0 ? (
           <span className={cn(styles.wallDetails, 'text-body leading-body')}>
@@ -274,10 +271,10 @@ function WallFacts({ screen, shown, home }: { screen: MonitorCopy; shown: boolea
 }
 
 /** The room's screen: the words of what the worktree holds, over the name tag that says who works here. */
-function Monitor({ room, live, copy, rows, fileColumns, areas, wallShown }: { room: RoomEntry; live: RoomLive; copy: RoomCopy; rows: number; fileColumns: number; areas: boolean; wallShown: boolean }) {
+function Monitor({ room, live, copy, rows, fileColumns, areas }: { room: RoomEntry; live: RoomLive; copy: RoomCopy; rows: number; fileColumns: number; areas: boolean }) {
   const look = roomLook(room.state);
   const screen = copy.monitor(room, live);
-  const home = stateHome(screen, wallShown);
+  const home = stateHome(screen);
   const { leaving, serial } = useScreenSwap(room.state.kind, screen);
   return (
     <div className={styles.monitor} data-off={look.monitorOff}>
@@ -288,7 +285,7 @@ function Monitor({ room, live, copy, rows, fileColumns, areas, wallShown }: { ro
         </div>
         {leaving ? (
           <div key={`was:${serial}`} ref={leaveScreen} aria-hidden className={cn(styles.screenText, 'pointer-events-none')}>
-            <ScreenText screen={leaving} rows={rows} fileColumns={fileColumns} areas={areas} home={stateHome(leaving, wallShown)} />
+            <ScreenText screen={leaving} rows={rows} fileColumns={fileColumns} areas={areas} home={stateHome(leaving)} />
           </div>
         ) : null}
       </div>
@@ -303,12 +300,6 @@ function Monitor({ room, live, copy, rows, fileColumns, areas, wallShown }: { ro
           <span className={cn(styles.bezelWho, 'truncate')} data-testid="work-room-who">{screen.bezel.main}</span>
         ) : null}
         {fileColumns > 0 && room.state.kind !== 'missing' ? <ActivityStrip beats={screen.beats} ticks={screen.ticks} label={screen.hourLabel} /> : null}
-        {wallShown ? null : (
-          <span className={styles.bezelState}>
-            {home === 'bezel' ? <span className="flex-none"><SwapText value={screen.state.lead} ink={STATE_TONE[screen.state.tone]} /></span> : null}
-            {screen.state.rest ? <span className="flex flex-none font-normal">{home === 'bezel' ? <>&nbsp;·&nbsp;</> : null}<SwapText value={screen.state.rest} /></span> : null}
-          </span>
-        )}
         <i className={styles.bezelLed} />
       </div>
     </div>
@@ -360,86 +351,47 @@ function Cart({ room, landing }: { room: RoomEntry; landing: number }) {
 
 /**
  * One worktree on the front stage: a screen that says what the worktree is doing, over one rail.
- * Moru stands on the rail facing the screen, the cart of commits rides it, and it ends at a stop
- * named `main`; the session is on the screen's bezel. Two tools in one folder: the second Moru
- * stands behind the first on his tail side, both facing the screen.
+ * The wall under the screen says the room's state, the cart of commits rides the rail, and it ends
+ * at a stop named `main`; the session is on the screen's bezel.
  */
-export function LargeRoom({ room, live, unit, rows, pairScale, fileColumns, areas, wallFacts, copy, tint, guestTint, retiring, entered, faceId, character }: {
+export function LargeRoom({ room, live, unit, rows, fileColumns, areas, copy, retiring }: {
   room: RoomEntry;
   /** What the session list, the file-change pulse and load say of this room. */
   live: RoomLive;
-  /** The room's Moru, cast across the building. */
-  character: MoruCharacter;
   unit: RoomUnit;
   /** Commit rows its screen lists (`screenRows`): the screen grows by a row for each. */
   rows: number;
-  /** The share of `unit` two Moru take when two tools share the folder (`pairUnit`). */
-  pairScale: number;
   /** The columns its uncommitted files flow into (`fileColumns`); none on a screen too narrow to list them. */
   fileColumns: number;
   /** Its screen also lists the folders those files are in (`listsAreas`). */
   areas: boolean;
-  /** The room is wide enough to say its state on the wall left of Moru (`showsWallFacts`). */
-  wallFacts: boolean;
-  /** The room is new to the building, or newly on the stage: Moru settles in once. */
-  entered: boolean;
-  /** Which drawn face this is, so each new entry settles in once. */
-  faceId: number;
   copy: RoomCopy;
-  tint: string | null;
-  /** The tint of the second tool's session, when two tools share the folder. */
-  guestTint: string | null;
   /** The worktree just merged: once the crate is in, the lights go out. */
   retiring: boolean;
 }) {
-  const commit = useRise(room.track.ahead, MOTION.choreography.duration * 1000);
+  const landed = useRise(room.track.ahead);
   const look = roomLook(room.state);
-  const once = roomOnce(room.state, { merged: retiring, landed: commit.fresh, entered });
-  // A new token plays the row again: each landed commit, and each time the room is newly entered.
-  const request = once === null ? null : `${once}@${once === 'crate-send' ? commit.serial : once === 'settle-in' ? `face${faceId}` : 'merge'}`;
-  const pair = look.cast === 'two';
-  const wallShown = wallFacts && !pair;
+  const sameFolder = room.state.kind === 'working' && room.state.tools.length > 1;
   const wallScreen = copy.monitor(room, live);
-  // A sent crate is followed by pride in front and joy behind; a working Moru walks his tools; a working pair talks now and then.
-  const after = once === 'crate-send' ? `@${commit.serial}` : null;
-  const frontOnce = request && after ? `${request} ${AFTER_CRATE.front}${after}` : request;
-  const backOnce = after ? `${AFTER_CRATE.back}${after}` : null;
-  // A pair types and talks; tools would reach past the floor, onto the cart or into the screen.
-  const loops = room.state.kind === 'working' && !pair ? workLoops(room.key) : null;
-  const tone = pair || room.state.kind === 'lockLeft' || room.state.kind === 'waiting' || room.state.kind === 'sessionFailed' ? 'warning' : undefined;
-  // Two Moru share a smaller scale, as a share of the room's unit so it eases with the room.
-  const zoom = pair ? 'calc(var(--u) * var(--pair))' : 'var(--u)';
+  const tone = sameFolder || room.state.kind === 'lockLeft' || room.state.kind === 'waiting' || room.state.kind === 'sessionFailed' ? 'warning' : undefined;
   return (
     <div className={cn(styles.large, 'h-full w-full')}>
       <div
         data-scene
         className={styles.scene}
-        style={{ '--u': unit, '--pair': pairScale, '--screen-h': `${SCREEN_H + (rows - 3) * SCREEN_ROW_H}px`, '--lights-out': `${MERGE_LIGHTS_OUT_MS}ms` } as CSSProperties}
+        style={{ '--u': unit, '--screen-h': `${SCREEN_H + (rows - 3) * SCREEN_ROW_H}px`, '--lights-out': `${MERGE_LIGHTS_OUT_MS}ms` } as CSSProperties}
         data-lit={look.running}
         data-tone={tone}
         data-dark={retiring}
-        data-cast={look.cast}
       >
         <i className={styles.track} />
         <div className={styles.sideWall}>
           <span className={cn(styles.mainPlate, LABEL, 'font-mono font-[var(--font-weight-strong)]')}>main</span>
           <i className={styles.hatch} data-open={room.stage === 'main'} />
         </div>
-        <Cart room={room} landing={commit.serial} />
-        {pair ? (
-          <>
-            <span className={cn(styles.actor, styles.actorBack)}><RoomMoru live slot="back" character={character} clip={look.backClip} still={look.still} zoom={zoom} tint={guestTint} phase={(moruPhase(room.key) + 0.5) % 1} once={backOnce} talks={look.running ? ROOM_TALKS : null} /></span>
-          </>
-        ) : null}
-        {look.cast !== 'none' ? (
-          <>
-            <span className={styles.actor}>
-              <RoomMoru live character={character} clip={look.clip} still={look.still} zoom={zoom} tint={tint} phase={moruPhase(room.key)} once={frontOnce} loops={loops} />
-            </span>
-          </>
-        ) : null}
-        <WallFacts screen={wallScreen} shown={wallShown} home={stateHome(wallScreen, wallShown)} />
-        <Monitor room={room} live={live} copy={copy} rows={rows} fileColumns={pair ? 0 : fileColumns} areas={!pair && areas} wallShown={wallShown} />
+        <Cart room={room} landing={landed} />
+        <WallFacts screen={wallScreen} home={stateHome(wallScreen)} />
+        <Monitor room={room} live={live} copy={copy} rows={rows} fileColumns={sameFolder ? 0 : fileColumns} areas={!sameFolder && areas} />
         <i className={styles.dim} />
       </div>
     </div>

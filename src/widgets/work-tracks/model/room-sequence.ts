@@ -16,8 +16,8 @@ const STAGGER_SPAN_MS = 160;
 
 /**
  * How a room travels. `carried`: same size on a clear path, all of it shows. `resized`: a stage room
- * that stays one, its box growing or shrinking as it goes; its Moru, name tag, plaque and hue edge
- * stay, and only its monitor and belt fade. `wall`: a room that changes tier or scale travels as its
+ * that stays one, its box growing or shrinking as it goes; its name tag, plaque and hue edge stay,
+ * and only its monitor and belt fade. `wall`: a room that changes tier or scale travels as its
  * wall with its hue edge and branch plaque, and its content fades.
  */
 export type MoveMode = 'carried' | 'resized' | 'wall';

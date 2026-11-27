@@ -1,10 +1,9 @@
 /*
  * The building of rooms. Every prop is flat pixel geometry on one grid: `--u` is the room's pixel
- * unit (Moru is 128 × u pixels) and `--s` one drawn pixel. A room sets `--ink` to its session's
- * ink. One rail, one place for words: the screen is the room's content, and the rail under it carries
- * while its work runs, and every label is fixed to an object. Moru's cells change on the board's
- * clock, only while the room runs and is on screen; everything else here animates opacity or
- * transform, which the compositor runs.
+ * unit and `--s` one drawn pixel. A room sets `--ink` to its session's ink. The screen is the room's
+ * content, the wall under it says the room's state, the rail under that carries the cart to `main`,
+ * and every label is fixed to an object. Everything here animates opacity or transform, which the
+ * compositor runs.
  */
 
 .notched {
@@ -107,7 +106,7 @@
   overflow: hidden;
 }
 
-/* ---------- large room: a screen over one rail, where Moru stands and the cart rides to main */
+/* ---------- large room: a screen over its wall and one rail, where the cart rides to main */
 
 .large {
   position: relative;
@@ -128,15 +127,19 @@
 }
 
 .scene {
-  /* Moru's axis along the rail: left of the middle, far enough in on a wide room for two lines of wall facts. */
-  --ax: min(42%, 440px);
+  /*
+   * Where the cart waits on the rail, always a cart's length before main: left of the middle on a
+   * wide room, so its ride to main reads, and nearer main on a narrow one, so the wall facts left of
+   * it keep room for a state such as "Two tools at work".
+   */
+  --cart-at: min(496px, calc(100% - 52px - 72 * var(--s)), max(calc(42% + 56px), 190px));
   /* The screen's height in pixels whatever the unit: its words never shrink (`SCREEN_H`). */
   --screen-h: 160px;
   /* The room's light: its session's ink, or warning amber for two tools in one folder or a lock left behind. */
   --room-ink: var(--ink);
   --lit: 0;
   --s: calc(1px * var(--u));
-  /* The rail's height above the room's bottom edge: Moru's feet and the cart's wheels are on it. */
+  /* The rail's height above the room's bottom edge: the cart's wheels are on it. */
   --rail: calc(14 * var(--s));
   --shade-black: color-mix(in srgb, var(--work-room-outline) 34%, transparent);
   position: absolute;
@@ -199,9 +202,26 @@
   transition: opacity var(--motion-expressive) var(--motion-ease);
 }
 
+/* Once green, the stop blinks twice, so the merge reads as done (`MERGE_LIGHTS_OUT_MS` waits for it). */
+@keyframes roomStopBlink {
+  0%, 50%, 100% {
+    opacity: 1;
+  }
+  25%, 75% {
+    opacity: 0.2;
+  }
+}
+
 .hatch[data-open='true']::after {
   opacity: 1;
   transition-delay: calc(var(--motion-choreography) * 0.8);
+  animation: roomStopBlink calc(var(--motion-choreography) * 0.8) var(--motion-ease) calc(var(--motion-choreography) * 0.8 + var(--motion-expressive));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hatch[data-open='true']::after {
+    animation: none;
+  }
 }
 
 .mainPlate {
@@ -214,7 +234,7 @@
   color: var(--color-text-tertiary);
 }
 
-/* The rail: one line across the room that Moru stands on and the cart rides, lit in the session's ink while its work runs. */
+/* The rail: one line across the room that the cart rides, lit in the session's ink while its work runs. */
 .track {
   left: 0;
   right: 52px;
@@ -230,8 +250,7 @@
  * slides one length past the stop and out of the room.
  */
 .way {
-  /* Past the bench where Moru works a tool (111 drawn pixels from his axis), and always with a cart's length before main. */
-  left: min(calc(var(--ax) + 113 * var(--s)), calc(100% - 52px - 72 * var(--s)));
+  left: var(--cart-at);
   right: 52px;
   bottom: calc(var(--rail) + 1px);
   height: calc(10 * var(--s));
@@ -311,58 +330,12 @@
   transition-delay: var(--motion-choreography);
 }
 
-/* Moru on the rail: his feet are 30 drawn pixels above his cell's bottom edge. */
-.actor {
-  left: calc(var(--ax) - 64 * var(--s));
-  bottom: calc(var(--rail) - 30 * var(--s));
-  width: calc(128 * var(--s));
-  height: calc(128 * var(--s));
-  z-index: 3;
-  display: flex;
-  align-items: flex-end;
-}
-
-/*
- * Two tools in one folder: each Moru has his own place on the rail, side by side and apart, both
- * facing the same way. They share a smaller
- * scale than the room's (`pairUnit`), kept as a share of `--u` so it eases with the room.
- */
-.scene[data-cast='two'] {
-  /* One drawn pixel of the pair; the room's own scenery keeps `--s`. */
-  --ps: calc(1px * var(--u) * var(--pair, 1));
-  /* The pair stand in the middle of the rail. */
-  --ax: calc(50% + 61 * var(--ps));
-}
-
-.scene[data-cast='two'] .actor {
-  left: calc(var(--ax) - 64 * var(--ps));
-  bottom: calc(var(--rail) - 30 * var(--ps));
-  width: calc(128 * var(--ps));
-  height: calc(128 * var(--ps));
-}
-
-.scene[data-cast='two'] .actor.actorBack {
-  left: calc(var(--ax) - 184 * var(--ps));
-}
-
-
-/* The cart waits at the feet of the one behind, clear of the tablet the one in front types on. */
-.scene[data-cast='two'] .way {
-  left: calc(var(--ax) - 146 * var(--ps));
-}
-
-/* The screen's light catches the side of Moru that faces it: its ink, thin enough to read as light, not an outline. */
-.scene[data-lit='true'] .actor {
-  --rim: color-mix(in srgb, var(--room-ink) 55%, transparent);
-  filter: drop-shadow(var(--s) 0 0 var(--rim));
-}
-
-/* The wall left of Moru, over the rail: the room's state at a size read across the stage, in two lines. */
+/* The wall under the screen, over the rail and left of the cart: the room's state at a size read across the stage, in two lines. */
 .wallFacts {
   position: absolute;
   left: 20px;
   bottom: calc(var(--rail) + 8px);
-  width: calc(var(--ax) - 64 * var(--s) - 28px);
+  width: calc(var(--cart-at) - 32px);
 }
 
 /* The second line: whole facts only. One that does not fit wraps to a row the line's height hides, so no fact shows cut. */
@@ -391,35 +364,13 @@
   overflow: hidden;
 }
 
-/*
- * The facts fade on their own when the room's width starts or stops fitting them. They wait first:
- * a room that moves fades its parts out before it travels, so the change happens while they are dark.
- */
 .wallFactsText {
   display: flex;
   flex-direction: column;
   gap: 1px;
-  transition:
-    opacity var(--motion-base) linear var(--motion-settle),
-    visibility 0s linear var(--motion-settle);
 }
 
-.wallFactsText[data-shown='false'] {
-  opacity: 0;
-  visibility: hidden;
-  transition:
-    opacity var(--motion-base) linear var(--motion-settle),
-    visibility 0s linear calc(var(--motion-settle) + var(--motion-base));
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .wallFactsText,
-  .wallFactsText[data-shown='false'] {
-    transition: none;
-  }
-}
-
-/* The screen spans the room above Moru, who stands under it on the rail. */
+/* The screen spans the room above its wall and rail. */
 .monitor {
   left: 12px;
   right: 12px;
@@ -463,7 +414,7 @@
 .screenHead {
   display: flex;
   flex: none;
-  /* The branch reads in full first: an alert that does not fit beside it wraps onto a line that is not shown, and the bezel still says it. */
+  /* The branch reads in full first: an alert that does not fit beside it wraps onto a line that is not shown; the amber frame and light still say it. */
   flex-wrap: wrap;
   height: calc(var(--text-body--line-height) + 2 * var(--s) + 1px);
   overflow: hidden;
@@ -732,7 +683,7 @@
   }
 }
 
-/* The bezel under the screen: who works here, then the state and how long, and a light. */
+/* The bezel under the screen: who works here, the last hour on a wide screen, and a light. */
 .bezel {
   position: absolute;
   left: 8px;
@@ -772,26 +723,14 @@
   color: var(--color-text-tertiary);
 }
 
-/* The session names read in full; the state's lead and then how long give way first. */
+/* The session names read in full; the last hour gives way first. */
 .bezelWho {
   flex: none;
 }
 
-.bezelState {
-  display: flex;
-  min-width: 0;
-  /* The last-hour line gives way first; the state is cut only past most of the bezel. */
-  flex: none;
-  max-width: 60%;
-  overflow: hidden;
-  margin-left: auto;
-  color: var(--color-text-secondary);
-}
-
-/* The last hour between the name and the state: one mark per change, now at the right end. */
+/* The last hour between the name and the light: one mark per change, now at the right end. */
 .strip {
   display: flex;
-  /* It gives way before the state beside it, which says when the worktree last changed. */
   flex: 0 10 320px;
   align-items: center;
   gap: 8px;
@@ -801,8 +740,8 @@
   color: var(--color-text-tertiary);
 }
 
-.strip + .bezelState {
-  margin-left: 14px;
+.strip + .bezelLed {
+  margin-left: 0;
 }
 
 /* The marks stand on the hour's baseline; the pulse's ticks hang under it. */
@@ -877,11 +816,9 @@
   }
 }
 
-.bezel[data-held='false'] .bezelState {
-  margin-left: 0;
-}
-
+/* The light stands at the bezel's right end, after the last hour when the bezel draws it. */
 .bezelLed {
+  margin-left: auto;
   flex: none;
   width: 4px;
   height: 4px;
@@ -924,32 +861,12 @@
 
 .scene[data-dark='true'] .dim {
   opacity: 1;
-  /* The lights go out once the crate is in, the hatch has turned green and Moru has cheered (`--lights-out`). */
+  /* The lights go out once the crate is in and the stop has turned green and blinked (`--lights-out`). */
   transition-delay: var(--lights-out);
 }
 
 .scene[data-dark='true'] {
   transition-delay: var(--lights-out);
-}
-
-/* One native row of 128px cells: the board's clock steps a large room's, a mini room's holds a pose. */
-.moruCells {
-  width: 128px;
-  height: 128px;
-  background-repeat: no-repeat;
-  background-position-y: 0;
-  image-rendering: pixelated;
-}
-
-/* A Moru stepping through his cells is a layer of his own, so each step repaints his box and not his room's
-   (WebKit at 1512px: the rooms' GPU time fell from about 13 % to 3 %). A held Moru gives his up, and so does one
-   whose scale glides (`use-room-motion.ts`), since the layer would be sized anew every frame. */
-.moruCells[data-moru-live]:not([data-moru-hold='true']) {
-  will-change: transform;
-}
-
-[data-scene][data-gliding] .moruCells[data-moru-live] {
-  will-change: auto;
 }
 
 /* The newest crate drops onto the cart in three steps as a commit lands. */
@@ -1019,37 +936,12 @@
   background: color-mix(in srgb, var(--ink) 70%, transparent);
 }
 
-/* The room's corner: Moru, or the crate of a room no one is in, standing on the room's rail. */
+/* The room's corner: a taped, dashed or dusty crate standing on the room's rail. A room without one has no corner. */
 .niche {
   position: relative;
   flex: none;
-  width: 72px;
-  align-self: stretch;
-}
-
-/* A crate needs less of the corner than Moru does, so its facts start nearer the edge. */
-.niche[data-crate='true'] {
   width: 44px;
-}
-
-.miniActor {
-  position: absolute;
-  left: 4px;
-  bottom: 1px;
-  z-index: 1;
-  width: 64px;
-  height: 64px;
-  display: flex;
-  align-items: flex-end;
-}
-
-.miniZ {
-  position: absolute;
-  left: 56px;
-  bottom: 50px;
-  z-index: 1;
-  line-height: 8px;
-  color: var(--color-text-tertiary);
+  align-self: stretch;
 }
 
 .niche .crate {
@@ -1067,7 +959,11 @@
   flex-direction: column;
   justify-content: center;
   gap: 1px;
-  padding: 4px 14px 4px 0;
+  padding: 4px 14px;
+}
+
+.niche + .miniText {
+  padding-left: 0;
 }
 
 .miniText > * {
