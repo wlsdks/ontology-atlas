@@ -6,14 +6,9 @@ const OPEN_MAX: libc::rlim_t = 10_240;
 /// one per folder on each watched root's path and crashes the app when it runs out, so the soft
 /// limit rises to the hard one, at most `OPEN_MAX`; a refusal leaves it as it was.
 pub(crate) fn raise_open_file_limit() {
-    let mut limit = libc::rlimit {
-        rlim_cur: 0,
-        rlim_max: 0,
-    };
-    // SAFETY: `limit` is a valid `rlimit` for `getrlimit` to fill.
-    if unsafe { libc::getrlimit(libc::RLIMIT_NOFILE, &mut limit) } != 0 {
+    let Some(limit) = open_file_limit() else {
         return;
-    }
+    };
     let wanted = limit.rlim_max.min(OPEN_MAX);
     if wanted <= limit.rlim_cur {
         return;
@@ -26,9 +21,23 @@ pub(crate) fn raise_open_file_limit() {
     unsafe { libc::setrlimit(libc::RLIMIT_NOFILE, &raised) };
 }
 
+/// The soft limit on open files now; 0 when it cannot be read.
+pub(crate) fn soft_open_file_limit() -> u64 {
+    open_file_limit().map_or(0, |limit| limit.rlim_cur)
+}
+
+fn open_file_limit() -> Option<libc::rlimit> {
+    let mut limit = libc::rlimit {
+        rlim_cur: 0,
+        rlim_max: 0,
+    };
+    // SAFETY: `limit` is a valid `rlimit` for `getrlimit` to fill.
+    (unsafe { libc::getrlimit(libc::RLIMIT_NOFILE, &mut limit) } == 0).then_some(limit)
+}
+
 #[cfg(test)]
 mod tests {
-    use super::raise_open_file_limit;
+    use super::{raise_open_file_limit, soft_open_file_limit};
     use notify_debouncer_full::notify::{recommended_watcher, Event, RecursiveMode, Watcher};
     use std::path::{Path, PathBuf};
     use std::process::Command;
@@ -70,6 +79,7 @@ mod tests {
     }
 
     fn watch_deep_roots_after_the_raise(base: &Path) {
+        assert_eq!(soft_open_file_limit(), 256);
         raise_open_file_limit();
         let roots: Vec<PathBuf> = (0..ROOTS)
             .map(|index| {
