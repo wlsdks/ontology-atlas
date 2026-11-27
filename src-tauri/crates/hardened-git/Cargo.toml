@@ -9,6 +9,9 @@ publish = false
 [dependencies]
 # One `Error` derive per error type; the app already links this version (through tauri).
 thiserror = "2"
+# The real path of a folder, without the `\\?\` prefix Windows `canonicalize` adds, so a folder can
+# be placed below the repository's top level. A no-op elsewhere; already linked by confined-files.
+dunce = "1.0"
 
 [features]
 # Lets a test start a read from its own environment (`Repository::with_environment`). The

@@ -2228,6 +2228,7 @@ dependencies = [
 name = "hardened-git"
 version = "0.1.0"
 dependencies = [
+ "dunce",
  "hardened-git",
  "thiserror 2.0.21",
 ]
@@ -3024,7 +3025,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2 0.11.1",
- "source-evidence",
+ "source-scan",
  "strsim",
  "tempfile",
  "thiserror 2.0.21",
@@ -3554,8 +3555,10 @@ dependencies = [
  "candle-nn",
  "candle-transformers",
  "chrono",
+ "confined-files",
  "dirs",
  "futures-util",
+ "hardened-git",
  "keyring",
  "libc",
  "log",
@@ -3569,6 +3572,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2 0.11.1",
+ "source-scan",
  "tauri",
  "tauri-build",
  "tauri-plugin-deep-link",
@@ -4975,12 +4979,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "source-evidence"
+name = "source-scan"
 version = "0.1.0"
 dependencies = [
  "confined-files",
  "hardened-git",
- "vault-document",
 ]
 
 [[package]]
