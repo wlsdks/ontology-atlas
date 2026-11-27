@@ -6,6 +6,9 @@ import { POST_MERGE_SPECS } from './tests/e2e/post-merge-specs';
 import { foreignServer } from './scripts/lib/ci/playwright-server-owner.mjs';
 
 const servesStaticExport = Boolean(process.env.PLAYWRIGHT_STATIC);
+// The folder the Vite build writes for the installed app (`pnpm app:build`); when set, static mode
+// serves it, with the one document every path falls back to, instead of the Next export in `out/`.
+const viteAppFolder = process.env.ATLAS_E2E_APP_FOLDER;
 const isCI = process.env.CI === 'true' || process.env.CI === '1';
 // The static export gets its own port so it never reuses a dev server left on 3100.
 const baseURL = process.env.PLAYWRIGHT_BASE_URL || (servesStaticExport ? 'http://127.0.0.1:3110' : 'http://127.0.0.1:3100');
@@ -16,7 +19,7 @@ const webServerPort = new URL(baseURL).port || '3100';
 // that another worktree or project started.
 const foreignServerMessage = process.env.CI ? null : foreignServer(new URL(baseURL).hostname, webServerPort, process.cwd());
 if (foreignServerMessage) throw new Error(foreignServerMessage);
-if (!process.env.CI && servesStaticExport && !existsSync('out/index.html')) {
+if (!process.env.CI && servesStaticExport && !viteAppFolder && !existsSync('out/index.html')) {
   throw new Error('PLAYWRIGHT_STATIC=1 serves the static export in out/, which is missing: run `pnpm build` first.');
 }
 
@@ -96,7 +99,9 @@ export default defineConfig({
     // serve the built static export: some specs measure layers absent in dev, e.g. same-route
     // navigation that only fails in production.
     command: servesStaticExport
-      ? `node scripts/web/serve-static-export.mjs --port=${webServerPort}`
+      ? viteAppFolder
+        ? `pnpm exec vite preview --port ${webServerPort} --outDir ${viteAppFolder}`
+        : `node scripts/web/serve-static-export.mjs --port=${webServerPort}`
       : `pnpm dev -p ${webServerPort}`,
     url: webServerOrigin,
     reuseExistingServer: !process.env.CI && !servesStaticExport,

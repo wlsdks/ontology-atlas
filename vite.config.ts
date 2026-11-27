@@ -1,0 +1,82 @@
+import path from 'node:path';
+
+import tailwindcss from '@tailwindcss/vite';
+import { tanstackRouter } from '@tanstack/router-plugin/vite';
+import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite';
+
+import packageJson from './package.json' with { type: 'json' };
+import { rowProducerHash } from './scripts/lib/row-producer.mjs';
+import { atlasAppFolder } from './scripts/vite/atlas-app-folder';
+import { atlasIndexHtml } from './scripts/vite/atlas-index-html';
+
+const root = __dirname;
+
+/** Where the installed app's files are written; the website's folder is a separate build. */
+const APP_FOLDER = process.env.ATLAS_APP_FOLDER ?? 'src-tauri/target/desktop-frontend-vite';
+
+/**
+ * Until the Next build is gone, source files still import `next/*` and `next-intl`; these answer them
+ * over TanStack Router and `use-intl` (`src/app/next-shims/`). A specific prefix comes before a general one.
+ */
+const nextShims = (name: string) => path.join(root, 'src/app/next-shims', name);
+
+export default defineConfig(({ command }) => ({
+  root,
+  plugins: [
+    tanstackRouter({
+      target: 'react',
+      routesDirectory: './src/app/routes',
+      generatedRouteTree: './src/app/route-tree.gen.ts',
+      autoCodeSplitting: true,
+      quoteStyle: 'single',
+      semicolons: true,
+    }),
+    react(),
+    tailwindcss(),
+    atlasIndexHtml(root),
+    atlasAppFolder(),
+  ],
+  resolve: {
+    alias: [
+      { find: /^next-intl\/navigation$/, replacement: nextShims('next-intl-navigation.tsx') },
+      { find: /^next-intl\/routing$/, replacement: nextShims('next-intl-routing.ts') },
+      { find: /^next-intl$/, replacement: nextShims('next-intl.ts') },
+      { find: /^next\/navigation$/, replacement: nextShims('next-navigation.ts') },
+      { find: /^next\/dynamic$/, replacement: nextShims('next-dynamic.tsx') },
+      { find: /^next\/image$/, replacement: nextShims('next-image.tsx') },
+      { find: /^@\/app-providers/, replacement: path.join(root, 'src/app') },
+      { find: /^@\/views/, replacement: path.join(root, 'src/views') },
+      { find: /^@\/widgets/, replacement: path.join(root, 'src/widgets') },
+      { find: /^@\/features/, replacement: path.join(root, 'src/features') },
+      { find: /^@\/entities/, replacement: path.join(root, 'src/entities') },
+      { find: /^@\/shared/, replacement: path.join(root, 'src/shared') },
+      { find: /^@\/i18n/, replacement: path.join(root, 'src/i18n') },
+      { find: /^@\//, replacement: `${root}/` },
+    ],
+  },
+  define: {
+    'process.env.NEXT_PUBLIC_RELEASE_VERSION': JSON.stringify(packageJson.version),
+    // The dev server reloads source without a restart, so it names no producer and keeps no cached rows.
+    'process.env.NEXT_PUBLIC_ROW_PRODUCER': JSON.stringify(command === 'build' ? rowProducerHash() : undefined),
+    'process.env.NEXT_PUBLIC_BASE_PATH': JSON.stringify(process.env.NEXT_PUBLIC_BASE_PATH),
+    'process.env.NEXT_PUBLIC_DOGFOOD_VAULT_PATHS': JSON.stringify(process.env.NEXT_PUBLIC_DOGFOOD_VAULT_PATHS),
+    'process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION': JSON.stringify(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION),
+    'process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION': JSON.stringify(process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION),
+  },
+  build: {
+    outDir: APP_FOLDER,
+    emptyOutDir: true,
+    // Every asset is a file the WebView's `'self'` policy covers; none becomes an inline `data:` address.
+    assetsInlineLimit: 0,
+    target: 'es2022',
+  },
+  server: {
+    host: '127.0.0.1',
+    strictPort: true,
+  },
+  preview: {
+    host: '127.0.0.1',
+    strictPort: true,
+  },
+}));

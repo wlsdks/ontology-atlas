@@ -1,12 +1,4 @@
 @import "tailwindcss" source(none);
-
-/*
- * Tailwind v4 scans the whole repository without `@source`; class-like text in markdown
- * (`text-[var(…)]`) generates CSS that Turbopack rejects and breaks `pnpm dev`. Scan code only.
- */
-@source "../app/**/*.{ts,tsx}";
-@source "../src/**/*.{ts,tsx}";
-
 @import "./styles/tokens.css";
 @import "./styles/base-foundation.css";
 @import "./styles/base-motion.css";
@@ -30,3 +22,13 @@
 @import "./styles/gateway.css";
 @import "./styles/control-floors.css";
 @import "./styles/map-wait-orbit.css";
+
+/*
+ * Tailwind v4 scans the whole repository without `@source`; class-like text in markdown
+ * (`text-[var(…)]`) generates CSS that the bundler rejects and breaks the dev server. Scan code only.
+ * Every `@import` comes first: CSS ends its imports at the first other rule, and Vite refuses the rest.
+ * `scripts/vite` holds the class names of the loading picture that `index.html` carries.
+ */
+@source "../app/**/*.{ts,tsx}";
+@source "../src/**/*.{ts,tsx}";
+@source "../scripts/vite/*.ts";
