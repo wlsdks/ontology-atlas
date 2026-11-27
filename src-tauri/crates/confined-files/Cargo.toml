@@ -6,5 +6,44 @@ edition = "2021"
 license = "MIT"
 publish = false
 
+[dependencies]
+# One walk of a vault, in an order that does not depend on the file system. MIT or Unlicense;
+# the app already links it.
+walkdir = "2.5"
+# A Windows path without the `\\?\` prefix `canonicalize` adds, so a real path prints and compares
+# as Node's `realpath` does. A no-op elsewhere. CC0-1.0 or MIT or Apache-2.0; already linked.
+dunce = "1.0"
+# `\p{Cc}` and `\p{Cf}`, the invisible characters a write tool never names in a slug.
+regex = { version = "1", default-features = false, features = ["std", "perf", "unicode-case", "unicode-perl", "unicode-gencat"] }
+# NFC for slugs and NFKC for the instruction-file names; the app already links this exact version.
+icu_normalizer = { version = "=2.2.0", default-features = false, features = ["compiled_data"] }
+# The immutable source snapshot the app hands the program, and a file's hash in the read boundary.
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = { version = "0.11.1", default-features = false }
+# A modification time in the text JavaScript gives a number, so a conflict message reads the same.
+ryu-js = "1"
+# One `Error` derive per error type; the app already links this version (through tauri).
+thiserror = "2"
+
+[target.'cfg(unix)'.dependencies]
+# `access(2)` as a safe call for the writability pre-check, and the error numbers JavaScript names
+# (`EACCES`). The app already links this version (through tempfile).
+rustix = { version = "1", default-features = false, features = ["std", "fs"] }
+
+[features]
+# Pause points a test parks a racing edit at (`before_commit`, `before_entry`). The released
+# program never enables it; the crate's own tests do, through the dev-dependency below.
+test-hooks = []
+
+[dev-dependencies]
+confined-files = { path = ".", features = ["test-hooks"] }
+proptest = "1"
+insta = { version = "1", features = ["json"] }
+tempfile = "3"
+
+[target.'cfg(unix)'.dev-dependencies]
+rustix = { version = "1", default-features = false, features = ["std", "fs", "process"] }
+
 [lints]
 workspace = true

@@ -71,32 +71,17 @@ impl GitOutput {
 }
 
 /// Why a hardened `git` produced no [`GitOutput`].
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum GitRunError {
-    Hardening(HardeningError),
+    #[error(transparent)]
+    Hardening(#[from] HardeningError),
     /// `git` could not be started (not installed, or not on the search path).
+    #[error("git could not start: {0}")]
     Spawn(std::io::Error),
+    #[error("git printed more than the allowed output")]
     OutputTooLarge,
+    #[error("git did not finish in time")]
     TimedOut,
-}
-
-impl std::fmt::Display for GitRunError {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Hardening(error) => error.fmt(formatter),
-            Self::Spawn(error) => write!(formatter, "git could not start: {error}"),
-            Self::OutputTooLarge => formatter.write_str("git printed more than the allowed output"),
-            Self::TimedOut => formatter.write_str("git did not finish in time"),
-        }
-    }
-}
-
-impl std::error::Error for GitRunError {}
-
-impl From<HardeningError> for GitRunError {
-    fn from(error: HardeningError) -> Self {
-        Self::Hardening(error)
-    }
 }
 
 /// A Windows child must not open a console window.

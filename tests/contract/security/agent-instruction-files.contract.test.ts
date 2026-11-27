@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { standingApproval } from "@/features/acp-session/model/permissions/standing-approval";
@@ -48,6 +50,31 @@ describe("auto-approve refuses every file the vault write tools refuse as instru
       const slug = `notes/a${String.fromCodePoint(code)}b`;
       const serverRefuses = unwritableSlugIssue(slug) !== null;
       expect(standingApproval(vaultEdit(`${slug}.md`), context) === null, code.toString(16)).toBe(serverRefuses);
+    }
+  });
+});
+
+describe("the Rust server names the same instruction files as the vault write tools", () => {
+  const source = readFileSync(
+    fileURLToPath(new URL("../../../src-tauri/crates/confined-files/src/slug_rules.rs", import.meta.url)),
+    "utf8",
+  );
+  const list = /AGENT_INSTRUCTION_FILE_STEMS: \[&str; \d+\] = \[([^\]]*)\]/.exec(source)?.[1] ?? "";
+  const rustStems = [...list.matchAll(/"([^"]+)"/g)].map((match) => match[1]);
+  const refusedAsInstructions = (stem: string) => /instructions/.test(unwritableSlugIssue(stem) ?? "");
+
+  it("reads a non-empty list from the Rust source", () => {
+    expect(rustStems.length).toBeGreaterThan(0);
+  });
+
+  it("lists exactly the stems the JavaScript server refuses as instructions", () => {
+    const pool = new Set([
+      ...rustStems,
+      ...["agents", "agents.override", "claude", "claude.local", "gemini", "readme", "copilot-instructions", "notes"],
+      ...instructionRecords.map((record) => record.path.replace(/\.md$/i, "").split("/").at(-1)!.toLowerCase()),
+    ]);
+    for (const stem of pool) {
+      expect(rustStems.includes(stem), stem).toBe(refusedAsInstructions(stem));
     }
   });
 });
