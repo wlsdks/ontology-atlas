@@ -3,8 +3,8 @@
 //! operations answer from (`ontology_graph::run_query`).
 
 use ontology_graph::{
-    Direction, NodeSort, Operation, QueryError, QueryRequest, SelectionArguments,
-    RELATION_TYPE_VALUES,
+    AnalysisOperation, Direction, NodeSort, Operation, QueryError, QueryRequest,
+    SelectionArguments, RELATION_TYPE_VALUES,
 };
 use serde_json::Value;
 
@@ -12,13 +12,16 @@ use super::argument_checks::{
     argument, optional_boolean, optional_non_blank_text, optional_non_negative_integer,
     optional_one_of, optional_positive_integer, optional_text_list, required_non_blank_text,
 };
+use crate::analysis_records::{
+    AnalysisArchive, AnalysisMode, ArchiveError, HistoryQuery, HISTORY_LIMIT_DEFAULT,
+};
 use crate::answer::ToolOutput;
 use crate::arguments::Arguments;
 use crate::dispatch::CallContext;
 use vault_document::slug_not_found_hint;
 
 use super::read_vault::open_root;
-use crate::error::{MissingNodeDetails, ReceivedValue, ToolError};
+use crate::error::{ErrorCode, MissingNodeDetails, ReceivedValue, ToolError};
 
 const NODE_KINDS: [&str; 6] = [
     "project",
@@ -131,8 +134,15 @@ fn page_size(value: &Value, name: &str) -> Result<usize, ToolError> {
     Ok(count(number))
 }
 
+/// The arguments only the analysis records read.
+struct AnalysisArguments {
+    record_id: Option<String>,
+    cursor: Option<String>,
+    mode: Option<AnalysisMode>,
+}
+
 /// Reads every argument of the call once, in the JavaScript server's order, into the request.
-fn read_request(arguments: &Arguments) -> Result<QueryRequest, ToolError> {
+fn read_request(arguments: &Arguments) -> Result<(QueryRequest, AnalysisArguments), ToolError> {
     let operation_name = required_non_blank_text(arguments, "operation")?;
     let operation = Operation::parse(&operation_name).ok_or_else(|| {
         ToolError::not_an_allowed_value(
@@ -141,6 +151,7 @@ fn read_request(arguments: &Arguments) -> Result<QueryRequest, ToolError> {
             &Operation::names(),
         )
     })?;
+    let mut target_operation = None;
     if let Some(target) = optional_non_blank_text(arguments, "targetOperation")? {
         let targets = Operation::plan_target_names();
         if !targets.contains(&target.as_str()) {
@@ -150,6 +161,7 @@ fn read_request(arguments: &Arguments) -> Result<QueryRequest, ToolError> {
                 &targets,
             ));
         }
+        target_operation = Operation::parse(&target);
     }
     let record_id = optional_non_blank_text(arguments, "recordId")?;
     let analysis_cursor = optional_non_blank_text(arguments, "analysisCursor")?;
@@ -308,6 +320,7 @@ fn read_request(arguments: &Arguments) -> Result<QueryRequest, ToolError> {
     request.project = text_of(&texts, "project").cloned();
     request.relation_type = text_of(&texts, "type").cloned();
     request.relation = text_of(&texts, "relation").cloned();
+    request.target_operation = target_operation;
     let text = |name: &str| text_of(&texts, name).cloned();
     let size = |name: &str| {
         counts
@@ -354,7 +367,12 @@ fn read_request(arguments: &Arguments) -> Result<QueryRequest, ToolError> {
         executable_only: flag("executableOnly"),
         after_action_id: text("afterActionId"),
     };
-    Ok(request)
+    let analysis = AnalysisArguments {
+        record_id,
+        cursor: analysis_cursor,
+        mode: analysis_mode.and_then(AnalysisMode::parse),
+    };
+    Ok((request, analysis))
 }
 
 fn check_kind(texts: &[(&str, Option<String>)], allowed: &[&str]) -> Result<(), ToolError> {
@@ -438,9 +456,9 @@ fn check_meaning_repair(
 fn refusal(error: QueryError, operation: &str) -> ToolError {
     match error {
         QueryError::Invalid(message) => ToolError::invalid(message),
-        QueryError::NotAnsweredYet(_) | QueryError::Failed(_) => {
-            ToolError::failed(error.to_string())
-        }
+        QueryError::NotAnsweredYet(_)
+        | QueryError::NotAGraphOperation(_)
+        | QueryError::Failed(_) => ToolError::failed(error.to_string()),
         QueryError::UnknownNode {
             field,
             name,
@@ -486,8 +504,57 @@ fn read_ignore_patterns(context: &CallContext<'_>) -> Result<Vec<String>, ToolEr
     }))
 }
 
+/// What a refusal of the archive says and how it is classed: a wrong argument is the caller's to
+/// fix, a missing record is not found, and everything else is about the vault.
+fn archive_refusal(error: &ArchiveError) -> ToolError {
+    match error {
+        ArchiveError::InvalidLimit
+        | ArchiveError::InvalidCursor
+        | ArchiveError::InvalidRecordId => ToolError::invalid(error.to_string()),
+        ArchiveError::NotFound => ToolError::new(ErrorCode::NotFound, error.to_string()),
+        ArchiveError::Ambiguous | ArchiveError::FolderRefused | ArchiveError::Unreadable(_) => {
+            ToolError::failed(error.to_string())
+        }
+    }
+}
+
+/// The analysis operations answer from the vault's record files and never compile the graph, so a
+/// vault whose graph cannot compile still lists its records.
+fn answer_from_archive(
+    context: &CallContext<'_>,
+    operation: AnalysisOperation,
+    request: &QueryRequest,
+    analysis: AnalysisArguments,
+) -> Result<ToolOutput, ToolError> {
+    let archive = AnalysisArchive::new(context.config().vault_root.clone());
+    match operation {
+        AnalysisOperation::History => {
+            let query = HistoryQuery {
+                limit: request.limit.unwrap_or(HISTORY_LIMIT_DEFAULT),
+                cursor: analysis.cursor,
+                mode: analysis.mode,
+                project: request.project.clone(),
+            };
+            let answer = archive
+                .history(&query)
+                .map_err(|error| archive_refusal(&error))?;
+            ToolOutput::json(&answer)
+        }
+        AnalysisOperation::Record => {
+            let id = analysis.record_id.unwrap_or_default();
+            let answer = archive
+                .record(&id)
+                .map_err(|error| archive_refusal(&error))?;
+            ToolOutput::json(&answer)
+        }
+    }
+}
+
 pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutput, ToolError> {
-    let mut request = read_request(arguments)?;
+    let (mut request, analysis) = read_request(arguments)?;
+    if let Operation::Analysis(operation) = request.operation {
+        return answer_from_archive(context, operation, &request, analysis);
+    }
     if matches!(
         request.operation.name(),
         "growth_plan" | "maintenance_plan" | "workspace_brief"
