@@ -5,62 +5,62 @@
   },
   "stage": {
     "title": "요청했는데 반영되지 않은 일 찾기",
-    "body": "이 저장소에서 Claude Code에 직접 입력한 메시지를 읽고, 그중 요청을 골라 {branch}의 커밋과 하나씩 맞춰 봅니다. 2일 넘게 지났는데 맞는 커밋이 없는 요청이 여기에 나옵니다.",
-    "local": "메시지는 이 컴퓨터의 {address}에 있는 {model}에만 보냅니다. 다른 곳으로는 아무것도 보내지 않고, 저장소나 에이전트 메모리에도 아무것도 쓰지 않습니다.",
-    "scope": "이 저장소의 폴더 {worktrees, plural, other {#개}}에서 최근 14일 동안의 세션 {count, plural, other {#개}}를 읽습니다.",
+    "body": "이 저장소에서 Claude Code에 직접 입력한 메시지를 읽고, 그중 요청을 골라 {branch} 브랜치의 커밋과 하나씩 맞춰 봐요. 2일 넘게 지났는데 맞는 커밋이 없는 요청이 여기에 나와요.",
+    "local": "메시지는 이 컴퓨터의 {address} 주소에 있는 {model} 모델에만 보내요. 다른 곳으로는 아무것도 보내지 않고, 저장소나 에이전트 메모리에도 아무것도 쓰지 않아요.",
+    "scope": "이 저장소의 폴더 {worktrees, plural, other {#개}}에서 최근 14일 동안의 세션 {count, plural, other {#개}}를 읽어요.",
     "start": "지금 확인",
     "nightly": "매일 밤 확인",
-    "nightlyNote": "하루에 한 번까지, 새벽 1시 이후에 Atlas가 열려 있고 이 컴퓨터가 전원에 연결되어 있으며 10분 동안 아무도 쓰지 않았을 때 실행합니다. 키보드나 마우스를 건드리면 멈춥니다."
+    "nightlyNote": "하루에 한 번까지, 새벽 1시 이후에 Atlas가 열려 있고 이 컴퓨터가 전원에 연결되어 있으며 10분 동안 아무도 쓰지 않았을 때 실행해요. 키보드나 마우스를 건드리면 멈춰요."
   },
   "model": {
-    "noneTitle": "이 컴퓨터에서 도는 모델이 필요합니다",
-    "noneBody": "메시지에서 요청을 골라내려면 Ollama나 LM Studio처럼 이 컴퓨터에서 실행되는 언어 모델이 필요합니다. 에이전트 › 모델에서 주소를 추가한 뒤 돌아오세요.",
+    "noneTitle": "이 컴퓨터에서 도는 모델이 필요해요",
+    "noneBody": "메시지에서 요청을 골라내려면 Ollama나 LM Studio처럼 이 컴퓨터에서 실행되는 언어 모델이 필요해요. 에이전트 › 모델에서 주소를 추가한 뒤 돌아오세요.",
     "noneAction": "모델 열기",
-    "notLocal": "{address}는 이 컴퓨터가 아닙니다. 메시지는 localhost, 127.0.0.1, ::1에 있는 모델만 읽을 수 있습니다.",
+    "notLocal": "{address} 주소는 이 컴퓨터가 아니에요. 메시지는 localhost, 127.0.0.1, ::1에 있는 모델만 읽을 수 있어요.",
     "using": "{address}의 {model}"
   },
   "run": {
     "reading": "세션 {total}개 중 {done}개 읽는 중",
     "sorting": "요청 골라내는 중: 메시지 {total}개 중 {done}개",
     "checking": "요청 {total}개 중 {done}개를 Git과 맞춰 보는 중",
-    "paused": "컴퓨터를 쓰는 동안 잠시 멈췄습니다. 다음에 전원에 연결된 채 쉬고 있을 때 이어서 합니다.",
+    "paused": "컴퓨터를 쓰는 동안 잠시 멈췄어요. 다음에 전원에 연결된 채 쉬고 있을 때 이어서 해요.",
     "waiting": "컴퓨터가 전원에 연결된 채 쉬기를 기다리는 중",
     "stop": "멈추기",
-    "stopped": "멈췄습니다. 지금까지 확인한 요청은 목록에 남습니다.",
+    "stopped": "멈췄어요. 지금까지 확인한 요청은 목록에 남아요.",
     "last": "마지막 확인 {time} · 새 메시지 {count, plural, other {#개}}"
   },
   "list": {
     "title": "요청했지만 안 된 일",
-    "onBranch": "{branch}에만 있고 머지 안 됨",
+    "onBranch": "{branch} 브랜치에만 있고 머지 안 됨",
     "noMatch": "맞는 커밋 없음",
     "row": "{date} · {worktree}",
-    "young": "{count, plural, other {2일이 안 된 요청 #개는 나중에 확인합니다.}}",
-    "emptyTitle": "빠진 요청이 없습니다",
-    "emptyBody": "{from}부터 {to}까지의 요청은 모두 {branch}에 맞는 커밋이 있거나 직접 표시했습니다."
+    "young": "{count, plural, other {2일이 안 된 요청 #개는 나중에 확인해요.}}",
+    "emptyTitle": "빠진 요청이 없어요",
+    "emptyBody": "{from}부터 {to}까지의 요청은 모두 {branch} 브랜치에 맞는 커밋이 있거나 직접 표시했어요."
   },
   "detail": {
     "youWrote": "{date}, {worktree}에서 입력한 메시지",
     "readAs": "Atlas가 읽은 요청: {ask}",
-    "closest": "{branch}에서 가장 가까운 커밋",
-    "closestBranch": "{branch}에 맞는 커밋이 있지만 {base}에 머지되지 않음",
-    "noneMatch": "이 중 요청한 일을 한 커밋은 없습니다.",
+    "closest": "{branch} 브랜치에서 가장 가까운 커밋",
+    "closestBranch": "{branch} 브랜치에 맞는 커밋이 있지만 {base} 브랜치에 머지되지 않았어요",
+    "noneMatch": "이 중 요청한 일을 한 커밋은 없어요.",
     "copy": "요청 복사",
-    "copied": "복사했습니다",
+    "copied": "복사했어요",
     "resume": "이어가기 명령 복사",
     "done": "다른 곳에서 끝냄",
     "notNeeded": "필요 없음",
-    "marked": "표시했습니다. 목록에서 빠집니다.",
+    "marked": "표시했어요. 목록에서 빠져요.",
     "undo": "되돌리기"
   },
   "error": {
-    "model": "{address}의 {model}이 응답하지 않아 메시지 {total}개 중 {done}개에서 확인을 멈췄습니다. 지금까지 찾은 요청은 목록에 남습니다. 모델을 실행한 뒤 지금 확인을 누르면 이어서 합니다.",
-    "reply": "{count, plural, other {메시지 #개는 Atlas가 읽을 수 없는 답이 와서 빠졌습니다.}}",
-    "git": "Git이 {repository}를 읽지 못해 요청을 확인하지 못했습니다. 찾은 요청은 그대로 두고 Git이 응답하면 확인합니다.",
-    "unreadable": "{count, plural, other {세션 파일 #개를 읽지 못해 건너뛰었습니다.}} {path}",
-    "noSessions": "{paths}에서 이 저장소의 Claude Code 세션을 찾지 못했습니다."
+    "model": "{address}의 {model} 모델이 응답하지 않아 메시지 {total}개 중 {done}개에서 확인을 멈췄어요. 지금까지 찾은 요청은 목록에 남아요. 모델을 실행한 뒤 지금 확인을 누르면 이어서 해요.",
+    "reply": "{count, plural, other {메시지 #개는 Atlas가 읽을 수 없는 답이 와서 빠졌어요.}}",
+    "git": "Git이 {repository} 저장소를 읽지 못해 요청을 확인하지 못했어요. 찾은 요청은 그대로 두고 Git이 응답하면 확인해요.",
+    "unreadable": "{count, plural, other {세션 파일 #개를 읽지 못해 건너뛰었어요.}} {path}",
+    "noSessions": "{paths}에서 이 저장소의 Claude Code 세션을 찾지 못했어요."
   },
   "web": {
-    "title": "요청했지만 안 된 일은 앱에서 확인합니다",
-    "body": "Claude Code의 세션 파일을 읽고 이 컴퓨터에서 모델을 실행해야 하는데, 브라우저는 둘 다 열 수 없습니다. 그래서 이 페이지에서는 요청을 확인할 수 없습니다."
+    "title": "요청했지만 안 된 일은 앱에서 확인해요",
+    "body": "Claude Code의 세션 파일을 읽고 이 컴퓨터에서 모델을 실행해야 하는데, 브라우저는 둘 다 열 수 없어요. 그래서 이 페이지에서는 요청을 확인할 수 없어요."
   }
 }
