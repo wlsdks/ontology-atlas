@@ -153,7 +153,7 @@ being gone. The harness commands take the opened folder and a project, never a p
 that project's one recorded code folder, and only when the app already holds its read grant (the
 repository containing the opened folder, or a folder picked in the app since it last opened). Inside it they return the
 allowlisted harness files' text, configuration reduced to names, hooks and scripts, and every
-other file's name only (`.claude/rules/surfaces.md`). The binding they read is macOS-only today, so on Windows the reading fails and says so.
+other file's name only (`.claude/rules/surface-exceptions.md`). The binding they read is macOS-only today, so on Windows the reading fails and says so.
 
 - Architecture is separate from the Ontology Map and from the public five-kind
   ontology schema. A non-kind `architecture-profile/v1` Markdown document keeps

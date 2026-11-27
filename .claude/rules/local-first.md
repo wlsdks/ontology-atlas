@@ -43,7 +43,7 @@
 
 - Never scan password, credential, or key files from the user's disk.
   `permissions.deny` in `.claude/settings.json` enforces the read side.
-  `surfaces.md` lists exceptions, gates and records; only Harness › Improve
-  writes, each after a Keep.
+  `surface-exceptions.md` lists exceptions, gates and records; only Harness ›
+  Improve writes, each after a Keep.
 - Skip dotfiles and system directories such as `.env.local` and `.git/` while
   reading a vault.
