@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { seedFirstRunSeen } from "../first-run-seed";
+import { installDesktopRailRuntime, mountDesktopVault } from "../desktop-rail-arrival-harness";
 import { waitFrames } from "../settle";
 
 /** Same order as the table — when the table changes this must too, and a contract test catches it. */
@@ -42,7 +42,8 @@ test.describe("destination shortcuts", () => {
   // focus to the content root before testing keys that intentionally pause while typing.
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
-    await seedFirstRunSeen(page);
+    await installDesktopRailRuntime(page);
+    await mountDesktopVault(page, "ko");
   });
 
   test("G plus a letter reaches every destination", async ({ page }) => {
@@ -152,6 +153,7 @@ test.describe("destination shortcuts", () => {
     await page.goto("/ko/topology/?guides=off");
     await page.waitForLoadState("domcontentloaded");
     await dismissBlockingSurface(page);
+    await focusShortcutSurface(page);
     await go(page, "p");
     await expect(page, "the shortcut itself does not work, which makes the verdict below meaningless").toHaveURL(
       /\/ko\/projects\/?($|\?)/,
@@ -161,6 +163,7 @@ test.describe("destination shortcuts", () => {
     await page.goto("/ko/topology/?guides=off");
     await page.waitForLoadState("domcontentloaded");
     await dismissBlockingSurface(page);
+    await focusShortcutSurface(page);
     const before = page.url();
     await page.keyboard.press("g");
     // ⚠️ Kept in milliseconds: this wait **is** the thing under test — it has to be

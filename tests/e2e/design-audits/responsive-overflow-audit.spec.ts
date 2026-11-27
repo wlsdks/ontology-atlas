@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 
+import { installDesktopRailRuntime, mountDesktopVault } from "../desktop-rail-arrival-harness";
 import { waitForAnimationsDone } from "../settle";
 
 /**
@@ -27,7 +28,9 @@ const SELECTOR = "button, a, h1, h2, h3, p, li, dt, dd, input, kbd, [role='tab']
 for (const vp of WIDTHS) {
   for (const route of ROUTES) {
     test(`${vp.label} ${vp.width}px: ${route} has no horizontal overflow or overlap`, async ({ page }) => {
+      await installDesktopRailRuntime(page);
       await page.setViewportSize({ width: vp.width, height: vp.height });
+      await mountDesktopVault(page, route.slice(1, 3));
       await page.goto(route === "/ko/docs/" ? "/ko/library/?tab=ontology" : route);
       if (route === "/ko/docs/") {
         await expect(page).toHaveURL(

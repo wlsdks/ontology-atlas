@@ -1,9 +1,8 @@
 import { expect, test, type CDPSession, type Page } from "@playwright/test";
 
-import { seedFirstRunSeen } from "../first-run-seed";
+import { installDesktopRailRuntime, mountDesktopVault } from "../desktop-rail-arrival-harness";
 import { syntheticVault } from "../hex-board-vaults";
 import { waitForDomQuiet, waitForPageSettled } from "../settle";
-import { stubDirectoryPicker } from "../vault-picker-stub";
 
 const DOCS = syntheticVault(990, 10);
 
@@ -63,13 +62,11 @@ async function census(cdp: CDPSession): Promise<{ nodes: number; listeners: numb
 test("three tours of every destination leave the map's DOM and listeners flat", async ({ page }) => {
   test.setTimeout(300_000);
   await page.setViewportSize({ width: 1512, height: 949 });
-  await stubDirectoryPicker(page, DOCS);
-  await seedFirstRunSeen(page);
+  await installDesktopRailRuntime(page, DOCS, undefined, { replaceFixture: true });
   const cdp = await page.context().newCDPSession(page);
   await cdp.send("HeapProfiler.enable");
+  await mountDesktopVault(page);
   await page.goto("/en/topology/?guides=off");
-  await page.getByTestId("first-run-starter-open").click();
-  await page.getByTestId("vault-guide-pick-existing").click();
   await mapHoldsTheFolder(page, 90_000);
 
   const afterTour: { nodes: number; listeners: number }[] = [];

@@ -1,7 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { FIXTURE_VAULT, FIXTURE_VAULT_NODE_COUNT } from "../fixture-vault";
-import { seedFirstRunSeen } from "../first-run-seed";
-import { stubDirectoryPicker } from "../vault-picker-stub";
+import { installDesktopRailRuntime, mountDesktopVault } from "../desktop-rail-arrival-harness";
 import { waitForPageSettled } from "../settle";
 
 // The shared fixture's cross-domain links are relates, not declared dependencies.
@@ -209,13 +208,8 @@ test("vault-backed accessibility and contrast ratchet: measures states that exis
   await page.setViewportSize({ width: 1512, height: 900 });
 
   // ① Attach the vault
-  await stubDirectoryPicker(page, ANALYSIS_VAULT);
-  await seedFirstRunSeen(page);
-  await page.goto("/ko/topology/?guides=off");
-  await page.waitForLoadState("networkidle");
-  await page.getByTestId("first-run-starter-open").click();
-  await expect(page.getByTestId("vault-guide-sheet")).toBeVisible();
-  await page.getByTestId("vault-guide-pick-existing").click();
+  await installDesktopRailRuntime(page, ANALYSIS_VAULT, undefined, { replaceFixture: true });
+  await mountDesktopVault(page, "ko");
 
   // ★ Evidence ① — if the vault does not attach, everything below measures the
   //   sample vault, which the existing ratchets already cover. Passing silently

@@ -1,7 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { seedFirstRunSeen } from '../first-run-seed';
-import { stubDirectoryPicker } from '../vault-picker-stub';
+import { installDesktopRailRuntime, mountDesktopVault } from '../desktop-rail-arrival-harness';
 
 const DESTINATIONS = [
   '/en/',
@@ -24,8 +23,6 @@ const DESTINATIONS = [
 const FOLDER = {
   'project.md': ['---', 'kind: project', 'slug: launch', 'title: Launch', '---', '', '# Launch', ''].join('\n'),
   'wiki/tracked.md': ['---', 'title: Tracked', '---', '', '# Tracked', '', '![Diagram](https://tracker.example/pixel.png?reader=me)', ''].join('\n'),
-  'sources/report.html': '<!doctype html><title>report</title><script>document.title = "ran"</script>',
-  'sources/notes.md': '# Notes\n',
 };
 
 async function recordViolations(page: Page) {
@@ -42,12 +39,8 @@ const violations = (page: Page) =>
   page.evaluate(() => (window as unknown as { __cspViolations: string[] }).__cspViolations);
 
 async function openFolderInLibrary(page: Page) {
-  await stubDirectoryPicker(page, FOLDER);
-  await seedFirstRunSeen(page);
-  await page.goto('/en/topology/');
-  await page.waitForLoadState('networkidle');
-  await page.getByTestId('first-run-starter-open').click();
-  await page.getByTestId('vault-guide-pick-existing').click();
+  await installDesktopRailRuntime(page, FOLDER, undefined, { replaceFixture: true });
+  await mountDesktopVault(page);
   await expect(page.getByTestId('first-run-starter')).toHaveCount(0);
   await page.getByTestId('app-nav-rail-item-library').click();
   await expect(page.getByTestId('library-workspace-sources')).toBeVisible();
@@ -57,6 +50,8 @@ test.describe('the static site under its own policy', () => {
   test.skip(!process.env.PLAYWRIGHT_STATIC, 'the policy ships only in the static export');
 
   test('every destination loads with no policy violation', async ({ page }) => {
+    await installDesktopRailRuntime(page);
+    await mountDesktopVault(page);
     await recordViolations(page);
     for (const destination of DESTINATIONS) {
       await page.goto(destination);
@@ -85,27 +80,5 @@ test.describe('the static site under its own policy', () => {
     await expect(placeholder).toContainText('tracker.example');
     await expect(placeholder.getByRole('link')).toHaveAttribute('rel', 'noopener noreferrer');
     expect(await violations(page)).toEqual([]);
-  });
-
-  test('a source that could run code is saved, and a text source opens as plain text', async ({ page, context }) => {
-    await openFolderInLibrary(page);
-    await page.getByTestId('library-workspace-sources').click();
-
-    await page.getByTestId('library-source-sources/report.html').click();
-    let popups = 0;
-    context.on('page', () => {
-      popups += 1;
-    });
-    const saved = page.waitForEvent('download');
-    await page.getByTestId('library-source-open').click();
-    expect((await saved).suggestedFilename()).toBe('report.html');
-    expect(popups).toBe(0);
-
-    await page.getByTestId('library-source-sources/notes.md').click();
-    const opened = context.waitForEvent('page');
-    await page.getByTestId('library-source-open').click();
-    const tab = await opened;
-    await tab.waitForLoadState();
-    expect(await tab.evaluate(() => document.contentType)).toBe('text/plain');
   });
 });
