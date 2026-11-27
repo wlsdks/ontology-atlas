@@ -122,8 +122,6 @@ export const CREATED_BY_AGENT_UNKNOWN = `${CREATED_BY_AGENT_PREFIX}unknown`;
  * write tool refuses it like `created_by`, or a write could clear a stale concept without a read.
  */
 export const EVIDENCE_CHECKED_KEY = 'evidence_checked';
-/** A full SHA-1 or SHA-256 commit name; a value of any other shape is no mark. */
-export const EVIDENCE_CHECKED_PATTERN = /^[0-9a-f]{40}([0-9a-f]{24})?$/;
 
 /** Agent name → `agent:<name>`. With no name, `agent:unknown`. */
 export function agentCreatedBy(agentName) {

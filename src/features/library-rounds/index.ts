@@ -9,8 +9,8 @@ export { createLandings, createPassPages, pageIdentity, settlePassPages, undoneR
 export { readOrMissing, scanPassFolders } from './model/pass-folder-scan';
 export type { PassPages } from './model/pass-pages';
 export { TICK_MS, afterPass, planTick, triggerFor } from './model/round-schedule';
-export { EVIDENCE_CHECKED_KEY, applyRecheckReply, markEvidenceChecked, parseRecheckReply } from './model/recheck-apply';
-export type { RecheckAnswer, RecheckApplied, TakenConcept } from './model/recheck-apply';
+export { applyRecheckReply } from './model/recheck-apply';
+export type { TakenConcept } from './model/recheck-apply';
 export { buildRecheckBrief } from './model/recheck-brief';
 export {
   RECHECK_DIFF_MAX_LINES,
