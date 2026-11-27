@@ -25,10 +25,7 @@ import {
   type ProjectSourceInspection,
 } from "@/shared/lib/vault-folder/native-vault/tauri-project-source";
 import { pickTauriVaultDirectory } from "@/shared/lib/vault-folder/native-vault/tauri-vault-location";
-import {
-  getTauriVaultRootPath,
-  isTauriVaultRuntime,
-} from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
+import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
 import { resolveProjectSourceRepair } from "./project-source-repair";
 import { deriveProjectSourceWitnesses } from "../lib/project-source-witnesses";
 
@@ -41,7 +38,6 @@ export type ProjectSourceModelError =
   | "persistence_failed";
 
 export interface ProjectSourceRuntime {
-  available(): boolean;
   pickRoot(title?: string): Promise<string | null>;
   inspect(rootPath: string, vaultRoot?: string | null): Promise<ProjectSourceInspection | null>;
   rootPathOf(handle: FileSystemDirectoryHandle): string | null;
@@ -58,7 +54,6 @@ export interface ProjectSourceProposedRoot {
 }
 
 const defaultRuntime: ProjectSourceRuntime = {
-  available: isTauriVaultRuntime,
   pickRoot: async (title) => {
     const handle = await pickTauriVaultDirectory(title ?? "Connect project code folder");
     if (!handle) return null;
@@ -180,7 +175,6 @@ export function useProjectSourceModel(input: {
   runtime?: ProjectSourceRuntime;
 }) {
   const runtime = input.runtime ?? defaultRuntime;
-  const runtimeAvailable = runtime.available();
   const store = useMemo(
     () => input.vaultHandle ? createVaultFileProjectSourceStore(input.vaultHandle) : null,
     [input.vaultHandle],
@@ -233,8 +227,8 @@ export function useProjectSourceModel(input: {
     };
   }, [snapshot, input.projectSlug, repairUnavailable, graphHash]);
   const vaultRootPath = useMemo(
-    () => runtimeAvailable && input.vaultHandle ? runtime.rootPathOf(input.vaultHandle) : null,
-    [runtimeAvailable, input.vaultHandle, runtime],
+    () => input.vaultHandle ? runtime.rootPathOf(input.vaultHandle) : null,
+    [input.vaultHandle, runtime],
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<ProjectSourceModelError | null>(null);
@@ -256,7 +250,7 @@ export function useProjectSourceModel(input: {
       store,
       projectSlug: input.projectSlug,
       graphHash,
-      inspect: runtimeAvailable ? (rootPath) => runtime.inspect(rootPath, vaultRootPath) : undefined,
+      inspect: (rootPath) => runtime.inspect(rootPath, vaultRootPath),
     }).then((next) => {
       if (cancelled || generation.current !== currentGeneration) return;
       setSnapshot(next);
@@ -264,7 +258,7 @@ export function useProjectSourceModel(input: {
       else if (next.readStatus === "unavailable") setError("sidecar_unavailable");
     });
     return () => { cancelled = true; };
-  }, [store, input.projectSlug, graphHash, runtime, runtimeAvailable, vaultRootPath]);
+  }, [store, input.projectSlug, graphHash, runtime, vaultRootPath]);
 
   /**
    * One `inspect_project_source` call already climbs to the enclosing git repository, so the app never scans folders itself, which local-first forbids. It runs only while the proposal is drawn (`.claude/rules/architecture.md`), or one click pays for two measurements; the receipt is built in memory, never written.
@@ -340,7 +334,6 @@ export function useProjectSourceModel(input: {
       || !graphHash
       || !snapshot
       || snapshot.view.projectSlug !== input.projectSlug
-      || !runtimeAvailable
       || busy
     ) return;
     const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -427,7 +420,6 @@ export function useProjectSourceModel(input: {
     input.projectSlug,
     graphHash,
     snapshot,
-    runtimeAvailable,
     busy,
     runtime,
     witnesses,
@@ -443,8 +435,7 @@ export function useProjectSourceModel(input: {
   // instead of rebuilding once it lands.
   const loading = Boolean(store && input.projectSlug && graphHash) && !snapshotMatchesProject;
   const canRunSourceAction = Boolean(
-    runtimeAvailable
-    && snapshot
+    snapshot
     && snapshotMatchesProject
     && snapshot.readStatus !== "malformed"
     && snapshot.readStatus !== "unavailable"
@@ -458,7 +449,6 @@ export function useProjectSourceModel(input: {
     loading,
     busy,
     error: snapshotMatchesProject ? error : null,
-    runtimeAvailable,
     canRunSourceAction,
     runNextAction,
     /**

@@ -4,7 +4,6 @@ import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 import type { VaultBuildObserver } from '@/entities/docs-vault';
 
 const tauri = vi.hoisted(() => ({
-  isTauriVaultRuntime: vi.fn(() => true),
   tauriVaultPathExists: vi.fn(async () => true),
   listTauriDirectoryNames: vi.fn(async () => [] as string[]),
   createTauriVaultHandle: vi.fn((rootPath: string) => ({ kind: 'directory' as const, name: 'vault', rootPath })),

@@ -2,10 +2,7 @@
 
 import { idbDel, idbGet, idbSet } from '@/shared/lib/vault-folder/idb-kv';
 import { createTauriVaultHandle } from '@/shared/lib/vault-folder/native-vault/tauri-vault-handle';
-import {
-  getTauriVaultRootPath,
-  isTauriVaultRuntime,
-} from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import type { LocalFsHandleRecord } from '../model/local-fs-handle-record';
 
 export const CURRENT_LOCAL_FS_HANDLE_ID = 'current';
@@ -19,12 +16,7 @@ function recordKey(id: string): string {
   return `${KEY_PREFIX}${id}`;
 }
 
-function canUseStoredRecord(record: LocalFsHandleRecord): boolean {
-  return !record.desktopRootPath || isTauriVaultRuntime();
-}
-
-function normalizeStoredRecord(record: LocalFsHandleRecord): LocalFsHandleRecord | undefined {
-  if (!canUseStoredRecord(record)) return undefined;
+function normalizeStoredRecord(record: LocalFsHandleRecord): LocalFsHandleRecord {
   if (record.desktopRootPath) {
     return {
       ...record,
@@ -173,7 +165,6 @@ export async function listRecentLocalFsHandles(): Promise<LocalFsHandleRecord[]>
   const records = (await idbGet<LocalFsHandleRecord[]>(RECENT_KEY)) ?? [];
   return records
     .map(normalizeStoredRecord)
-    .filter((record): record is LocalFsHandleRecord => Boolean(record))
     .sort((a, b) => b.lastAccessedAt - a.lastAccessedAt)
     .slice(0, MAX_RECENT_HANDLES);
 }

@@ -27,9 +27,6 @@
   "state": {
     "missing": "这个路径下已没有它。它可能被重命名、移动，或位于未挂载的卷上。",
     "missingShort": "找不到文件夹",
-    "blockedShort": "需要授权",
-    "blocked": "浏览器拒绝了对这个文件夹的权限。请通过文件夹选择器重新打开。",
-    "needsPermission": "打开时浏览器会再次请求权限。",
     "unknown": "无法确认这个文件夹是否可访问。"
   },
   "choose": {

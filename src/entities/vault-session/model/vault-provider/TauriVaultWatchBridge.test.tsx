@@ -24,12 +24,10 @@ vi.mock('@tauri-apps/api/event', () => ({
 }));
 
 const tauriFsMocks = vi.hoisted(() => ({
-  isTauriVaultRuntime: vi.fn(() => false),
   getTauriVaultRootPath: vi.fn(() => null as string | null),
 }));
 
 vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', () => ({
-  isTauriVaultRuntime: tauriFsMocks.isTauriVaultRuntime,
   getTauriVaultRootPath: tauriFsMocks.getTauriVaultRootPath,
 }));
 
@@ -49,18 +47,16 @@ function fakeHandle(name = 'vault'): FileSystemDirectoryHandle {
 
 afterEach(() => {
   vi.clearAllMocks();
-  tauriFsMocks.isTauriVaultRuntime.mockReturnValue(false);
   tauriFsMocks.getTauriVaultRootPath.mockReturnValue(null);
 });
 
 describe('TauriVaultWatchBridge', () => {
-  it('is a no-op on the web (non-Tauri) runtime and leaves the file watcher off; the 5-second polling fallback covers it', () => {
+  it('leaves the file watcher off for a folder with no native path; the 5-second polling covers it', () => {
     localVaultMocks.useLocalVault.mockReturnValue({
       status: 'loaded',
       handle: fakeHandle(),
       applyVaultChangeBatch: vi.fn(),
     });
-    tauriFsMocks.isTauriVaultRuntime.mockReturnValue(false);
 
     render(<TauriVaultWatchBridge />);
 
@@ -69,7 +65,6 @@ describe('TauriVaultWatchBridge', () => {
   });
 
   it('starts the file watcher and subscribes to vault-changed events on the Tauri runtime when loaded', async () => {
-    tauriFsMocks.isTauriVaultRuntime.mockReturnValue(true);
     tauriFsMocks.getTauriVaultRootPath.mockReturnValue('/Users/me/vault');
     tauriMocks.invoke.mockResolvedValue(undefined);
     const unlisten = vi.fn();
@@ -91,7 +86,6 @@ describe('TauriVaultWatchBridge', () => {
   });
 
   it('hands each batch for the watched folder to the vault with its handle, a malformed one as a rescan, and drops another folder\'s', async () => {
-    tauriFsMocks.isTauriVaultRuntime.mockReturnValue(true);
     tauriFsMocks.getTauriVaultRootPath.mockReturnValue('/Users/me/vault');
     // The watcher answers with the canonical root its batches name.
     tauriMocks.invoke.mockResolvedValue('/private/Users/me/vault');
@@ -126,7 +120,6 @@ describe('TauriVaultWatchBridge', () => {
   });
 
   it('follows the latest change handler without resubscribing while status and root stay', async () => {
-    tauriFsMocks.isTauriVaultRuntime.mockReturnValue(true);
     tauriFsMocks.getTauriVaultRootPath.mockReturnValue('/Users/me/vault');
     tauriMocks.invoke.mockResolvedValue(undefined);
     let capturedHandler: ((event: { payload: unknown }) => void) | null = null;
@@ -164,7 +157,6 @@ describe('TauriVaultWatchBridge', () => {
   });
 
   it('does not throw when invoke fails (permission denied and the like); the polling fallback must keep covering', async () => {
-    tauriFsMocks.isTauriVaultRuntime.mockReturnValue(true);
     tauriFsMocks.getTauriVaultRootPath.mockReturnValue('/Users/me/vault');
     tauriMocks.invoke.mockRejectedValue(new Error('permission denied'));
     localVaultMocks.useLocalVault.mockReturnValue({

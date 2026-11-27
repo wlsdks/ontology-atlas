@@ -26,7 +26,8 @@
     "library": "Gather sources, write wiki pages from them, and ask questions that cite their passages, all inside your local Markdown folder.",
     "agents": "See the coding agents on this computer and connect them to Ontology Atlas over MCP.",
     "automations": "Schedule ontology reviews and document checks that run on your computer and leave proposals for you to review.",
-    "git": "Review your folder's Git history, read each change as a document, and restore a single file."
+    "git": "Review your folder's Git history, read each change as a document, and restore a single file.",
+    "workStatus": "See the coding agent sessions and worktrees on this computer, what each one is changing, and what waits for you before a push."
   },
   "guideDescriptions": {
     "whatIsAnOntology": "What an ontology is: concepts, kinds, relations and agreed meaning, how it differs from a taxonomy, schema or knowledge graph, and one for a codebase.",

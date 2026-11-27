@@ -47,7 +47,6 @@ vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-location', () => ({
 }));
 vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', () => ({
   getTauriVaultRootPath: () => (env.desktop ? '/Users/probe/atlas-vault' : null),
-  isTauriVaultRuntime: () => env.desktop,
 }));
 vi.mock('@/i18n/navigation', () => ({
   Link: ({ children, href, ...rest }: { children: React.ReactNode; href: string }) => (

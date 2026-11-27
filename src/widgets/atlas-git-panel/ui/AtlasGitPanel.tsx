@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useMemo, useSyncExternalStore } from "react";
+import { useCallback, useMemo } from "react";
 import { useFormatter, useTranslations } from "next-intl";
 import { countChangesByStatus, formatSnapshotSummary } from "@/shared/lib/git/atlas-git-changes";
 import { describeChangePath, parseUnifiedDiff, splitConceptChanges } from "@/shared/lib/git/atlas-git-record";
-import { isGitBridgeAvailable } from "@/shared/lib/git/tauri-git";
+import { useHydrated } from "@/shared/lib/render-timing/use-hydrated";
 import { useNativeErrorLookup } from "@/shared/lib/desktop-shell/use-native-error-lookup";
 import {
   isCanonicalConcept,
@@ -38,7 +38,7 @@ import { PAGE_STAGE_FILL, PAGE_WAIT_LIFT } from "@/shared/ui/tokens/page-frame";
  */
 
 export interface AtlasGitPanelProps {
-  /** Absolute path of the Tauri desktop vault; null or undefined renders the web degradation. */
+  /** Absolute path of the open folder; null or undefined shows the no-folder stage. */
   vaultPath?: string | null;
   sessionChangeset?: OntologyChangeset | null;
   /**
@@ -48,8 +48,6 @@ export interface AtlasGitPanelProps {
   graph?: { nodes: readonly KnowledgeGraphNode[]; edges: readonly KnowledgeGraphEdge[] } | null;
   className?: string;
 }
-
-const noopSubscribe = () => () => {};
 
 export function AtlasGitPanel({
   vaultPath = null,
@@ -70,14 +68,8 @@ export function AtlasGitPanel({
     [tKinds],
   );
 
-  // SSR/hydration-safe runtime detection — the server snapshot is false (web),
-  // and the client re-renders to true under Tauri (uSES resolves the mismatch).
-  const bridgeAvailable = useSyncExternalStore(
-    noopSubscribe,
-    () => isGitBridgeAvailable(),
-    () => false,
-  );
-  const desktop = bridgeAvailable && Boolean(vaultPath);
+  // The exported HTML knows no folder yet; saying "no folder" there would flash before the app's own.
+  const hydrated = useHydrated();
 
   const { gitInstalled, probeGit } = useGitProbe(vaultPath);
   const {
@@ -99,7 +91,7 @@ export function AtlasGitPanel({
     loadMoreHistory,
     setJumpHash,
     historyShort,
-  } = useGitWorkspace({ vaultPath, desktop, nativeErrors });
+  } = useGitWorkspace({ vaultPath, nativeErrors });
   // The bridge's `relativeTime` is git-formatted and may be in another language, so it is only
   // a fallback. One reference instant per read keeps wording stable across unrelated renders
   // and fresh after a refresh.
@@ -199,9 +191,9 @@ export function AtlasGitPanel({
     diffTooLarge,
   });
 
-  // Without the bridge (the server's HTML, the first client render) nothing is known yet, which is
+  // Before hydration (the server's HTML, the first client render) nothing is known yet, which is
   // the loading stage.
-  const stage: GitStage = !bridgeAvailable
+  const stage: GitStage = !hydrated
     ? "loading"
     : !vaultPath
       ? "no-vault"
@@ -283,7 +275,6 @@ export function AtlasGitPanel({
     setOriginJustSaved,
   });
   useFollowVaultChanges({
-    desktop,
     vaultPath,
     refresh,
     followBusy: snapshotting || initRunning || remoteRunning || remoteBusy !== null || restoreBusy,

@@ -85,7 +85,6 @@ export async function planVaultChanges(
   state: DeltaState,
   changes: readonly VaultPathChange[],
   list: ListDir,
-  pendingSources: () => Promise<ReadonlySet<string>>,
 ): Promise<ChangePlan | null> {
   const prunedDirs = manifest.prunedDirs ?? [];
   const codeFiles = manifest.sourceFileCount ?? 0;
@@ -176,14 +175,6 @@ export async function planVaultChanges(
     }
   }
 
-  if ([...upserts.values()].some((upsert) => upsert.kind === 'source')) {
-    const pending = await pendingSources();
-    for (const [path, upsert] of upserts) {
-      if (upsert.kind !== 'source' || !pending.has(path)) continue;
-      upserts.delete(path);
-      if (state.byPath.has(path)) removals.add(path);
-    }
-  }
   for (const path of upserts.keys()) removals.delete(path);
   if (upserts.size + removals.size > deltaCeiling(state.byPath.size)) return null;
   let size = state.byPath.size - removals.size;

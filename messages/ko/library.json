@@ -396,8 +396,6 @@
     "failed": "{count, number}개는 복사하지 못했어요",
     "failedReason": "넣지 못했어요: {reason}",
     "revealFailed": "{fileManagerName}에서 보여 주지 못했어요: {reason}",
-    "openFailed": "그 파일을 열지 못했어요.",
-    "savedInstead": "{name}은 여기서 열면 이 페이지에서 코드가 실행될 수 있는 종류라, 대신 내려받았어요.",
     "needsCompileSplit": "{notCompiled, number}개는 아직 위키 문서가 없고, {stale, number}개는 자료 버전 확인이 필요해요",
     "staleOnly": "자료 {count, number}개의 버전을 확인해야 해요",
     "partialOnly": "{count, number}개는 앞부분만 읽었어요",

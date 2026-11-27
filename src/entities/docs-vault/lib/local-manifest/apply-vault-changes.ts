@@ -4,7 +4,6 @@ import {
 } from '@/shared/lib/vault-folder/native-vault/tauri-vault-files';
 import { tauriVaultFileHandleAt } from '@/shared/lib/vault-folder/native-vault/tauri-vault-handle';
 import type { VaultPathChange } from '@/shared/lib/vault-folder/vault-change-batch';
-import { pendingSourceCopyPaths } from '../library/source-copy-publication';
 import type { WalkEntry } from './walk-vault';
 import { nativeRootPath, type LocalVaultBuild } from './build-local-manifest';
 import { compareCollated } from './collated-order';
@@ -173,7 +172,7 @@ export async function applyVaultChanges(
   let plan: ChangePlan | null;
   let read: BuiltVaultEntry[];
   try {
-    plan = await planVaultChanges(prior, state, changes, directoryLister(root, lookup), () => pendingSourceCopyPaths(root));
+    plan = await planVaultChanges(prior, state, changes, directoryLister(root, lookup));
     if (!plan) return RESCAN;
     read = await readUpserts(root, state, plan.upserts.values(), lookup);
   } catch {

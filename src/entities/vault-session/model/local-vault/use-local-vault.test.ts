@@ -62,7 +62,6 @@ vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-location', () => ({
   pickTauriVaultDirectory: vi.fn(),
 }));
 vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', () => ({
-  isTauriVaultRuntime: vi.fn(() => true),
   getTauriVaultRootPath: vi.fn(() => null),
 }));
 

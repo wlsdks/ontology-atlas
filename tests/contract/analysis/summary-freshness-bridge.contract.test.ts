@@ -37,16 +37,11 @@ describe('summary freshness bridge', () => {
   });
 
   it('keeps the client calling the command by the name Rust exports', () => {
-    const hook = read('src/entities/vault-session/model/use-summary-freshness.ts');
     const bridge = read('src/shared/lib/git/tauri-git.ts');
     expect(bridge, 'the invoke name drifted from the Rust command name').toContain(
       "'vault_node_revisions'",
     );
     expect(bridge).toContain("'vault_node_revision_content'");
-    expect(
-      hook,
-      'the runtime guard is gone — the browser would attempt a Tauri invoke that cannot exist',
-    ).toContain('isTauriVaultRuntime');
   });
 
   it('keeps the judgement in the shared module rather than a second copy', () => {

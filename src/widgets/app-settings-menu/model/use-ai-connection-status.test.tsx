@@ -1,7 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
 const bridge = vi.hoisted(() => ({ secretStatus: vi.fn(), jevSecretStatus: vi.fn(), providers: ['openai'] }));
-vi.mock('@/shared/lib/llm-connection/tauri-secrets', () => ({ isSecretBridgeAvailable: () => true, SECRET_PROVIDERS: bridge.providers, secretStatus: bridge.secretStatus }));
+vi.mock('@/shared/lib/llm-connection/tauri-secrets', () => ({ SECRET_PROVIDERS: bridge.providers, secretStatus: bridge.secretStatus }));
 vi.mock('@/shared/lib/llm-connection/tauri-jev', () => ({ jevSecretStatus: bridge.jevSecretStatus }));
 import { useAiConnection } from './use-ai-connection';
 it('preserves newer save and clear results after a delayed initial keychain snapshot', async () => {

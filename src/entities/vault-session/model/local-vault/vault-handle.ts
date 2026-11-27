@@ -4,22 +4,18 @@ import {
   tauriVaultPathExists,
 } from '@/shared/lib/vault-folder/native-vault/tauri-vault-files';
 import { createTauriVaultHandle } from '@/shared/lib/vault-folder/native-vault/tauri-vault-handle';
-import {
-  getTauriVaultRootPath,
-  isTauriVaultRuntime,
-} from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { resolvePickedVaultFolder } from './resolve-picked-vault-folder';
 
 /**
- * (Desktop) Does the stored absolute path still resolve to a directory? False means the folder
- * moved or was deleted; non-Tauri runtimes and records without a path short-circuit to true.
+ * Does the stored absolute path still resolve to a directory? `missing` means the folder moved or
+ * was deleted; a record without a path has nothing to check and resolves.
  */
 type VaultRecordResolution = 'ok' | 'missing' | 'grant-needed';
 
 export async function tauriVaultRecordResolves(
   record: LocalFsHandleRecord,
 ): Promise<VaultRecordResolution> {
-  if (!isTauriVaultRuntime()) return 'ok';
   const rootPath = record.desktopRootPath ?? getTauriVaultRootPath(record.handle);
   if (!rootPath) return 'ok';
   try {

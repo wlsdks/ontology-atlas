@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { buildDocsVaultHref } from '@/entities/docs-vault';
@@ -27,7 +27,7 @@ import {
 } from '@/features/acp-session';
 import { useVaultConnectors } from '@/features/mcp-connectors';
 import { bridgePort } from '@/features/harness-report';
-import { detectAcpRuntimes, isAcpBridgeAvailable } from '@/shared/lib/agent-chat/tauri-acp';
+import { detectAcpRuntimes } from '@/shared/lib/agent-chat/tauri-acp';
 import { useRememberedTool } from '@/widgets/acp-chat-panel';
 import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { deriveRoleConcepts, type RoleConcept } from '../model/role-concepts';
@@ -52,8 +52,6 @@ import {
   type ArchitectureAgentRuntime,
 } from '../model/architecture-agent';
 
-const subscribeDesktopRuntime = () => () => undefined;
-const readServerDesktopRuntime = () => false;
 
 type VaultDoc = { slug: string; frontmatter: Record<string, unknown> };
 const EMPTY_HANDOFF_CONTEXTS: Record<string, ArchitectureHandoffContext> = {};
@@ -85,11 +83,6 @@ export function ArchitecturePage({
   const localVault = useLocalVault();
   const { insight } = useOntologyInsight();
   const agentServer = useAgentServer();
-  const acpBridgeAvailable = useSyncExternalStore(
-    subscribeDesktopRuntime,
-    isAcpBridgeAvailable,
-    readServerDesktopRuntime,
-  );
   const docs = useOpenFolderManifest().docs;
   /* The report, not the list: an unreadable document is named instead of failing every profile. */
   const profileReport = useMemo(() => deriveArchitectureProfilesReport(docs), [docs]);
@@ -111,7 +104,6 @@ export function ArchitecturePage({
     useState<ArchitectureAgentOpeningRequest | null>(null);
 
   useEffect(() => {
-    if (!acpBridgeAvailable) return;
     let cancelled = false;
     const apply = (list: Awaited<ReturnType<typeof detectAcpRuntimes>>) => {
       if (cancelled) return;
@@ -137,7 +129,7 @@ export function ArchitecturePage({
     return () => {
       cancelled = true;
     };
-  }, [acpBridgeAvailable]);
+  }, []);
 
   const chooseAcpRuntime = useRememberedTool({
     vaultRoot: gitVaultPath,
@@ -172,7 +164,6 @@ export function ArchitecturePage({
     vaultConnectors.connectors,
   ]);
   const agentRoute = resolveArchitectureAgentRoute({
-    bridgeAvailable: acpBridgeAvailable,
     runtimeCheckComplete,
     serverCheckComplete: agentServer.launch !== null || agentServer.reason !== null,
     runtime: acpRuntime,

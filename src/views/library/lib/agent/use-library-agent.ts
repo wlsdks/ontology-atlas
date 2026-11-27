@@ -91,9 +91,8 @@ export function useLibraryAgent(
 
   const { runtime, runtimes, runtimeId, setRuntimeId, mcpServers } = vaultAgent;
 
-  const runtimesChecked = !vaultAgent.bridgeAvailable || vaultAgent.runtimeCheckComplete;
+  const runtimesChecked = vaultAgent.runtimeCheckComplete;
   const serverCheckComplete = vaultAgent.serverCheckComplete;
-  const bridgeAvailable = vaultAgent.bridgeAvailable;
   /*
    * A coding agent outranks the local model because it is the only one of the two that
    * can actually finish Compile — it opens the sources itself and its writes stop at a
@@ -107,7 +106,7 @@ export function useLibraryAgent(
   const agentAvailable = vaultAgent.route === "agent";
   const localAvailable = localModel !== null;
   const { stored: storedBrain, choose: chooseBrain, forget: forgetBrain } = useCompileBrainChoice();
-  const brainSettled = !bridgeAvailable || (runtimesChecked && serverCheckComplete);
+  const brainSettled = runtimesChecked && serverCheckComplete;
   const brain = resolveCompileBrain({
     agentAvailable,
     localAvailable,
@@ -125,13 +124,9 @@ export function useLibraryAgent(
     // the object would rerun this effect on every render.
   }, [brain.staleChoice, brainSettled, forgetBrain]);
 
-  const route: LibraryAgentRoute = !bridgeAvailable
-    ? localAvailable
-      ? "local"
-      : "unavailable"
-    : !runtimesChecked || !serverCheckComplete
-      ? "checking"
-      : (brain.brain ?? "unavailable");
+  const route: LibraryAgentRoute = !runtimesChecked || !serverCheckComplete
+    ? "checking"
+    : (brain.brain ?? "unavailable");
 
   /**
    * The turn a connect-by-address runner actually runs. It is built in every route so the

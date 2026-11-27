@@ -20,7 +20,7 @@ async function install(page: Page) {
     const kv = {}; (function(exports) { ${kvSource} })(kv);
     const handles = {}; (function(exports, require) { ${handleSource} })(handles, name => {
       if (name === '@/shared/lib/vault-folder/idb-kv') return kv;
-      if (name === '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime') return { getTauriVaultRootPath: () => null, isTauriVaultRuntime: () => false };
+      if (name === '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime') return { getTauriVaultRootPath: () => null };
       if (name === '@/shared/lib/vault-folder/native-vault/tauri-vault-handle') return {};
       throw new Error('Unexpected fixture import: ' + name);
     });

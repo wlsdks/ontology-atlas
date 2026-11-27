@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { MemoryVault } from '../../../../../tests/helpers/memory-vault';
 import { deriveOntologyFromVault } from '../derive-ontology-from-vault';
 import type { VaultManifest } from '../../model/vault-manifest';
-import { createSourceCopyBatch } from '../library/source-copy-publication';
 import { applyVaultChanges, type LocalVaultSnapshot, type VaultChangeResult } from './apply-vault-changes';
 import { buildLocalManifestWithEntries, rebuildLocalManifestIncremental } from './build-local-manifest';
 
@@ -463,24 +462,5 @@ describe('applyVaultChanges', () => {
     expect((await applyVaultChanges(vault.root(), snapshot, [vault.change('pkg')])).kind).toBe('rescan');
     vault.removeDir('cache');
     expect((await applyVaultChanges(vault.root(), snapshot, [vault.change('cache')])).kind).toBe('rescan');
-  });
-
-  it('leaves out a raw source still being copied in, as the full build does', async () => {
-    const vault = new MemoryVault({ 'a.md': '# A', 'sources/done.pdf': 'pdf' });
-    const root = vault.root();
-    const snapshot = await buildLocalManifestWithEntries(root);
-    const copying = createSourceCopyBatch(root);
-    try {
-      copying.hold('done.pdf');
-      copying.hold('arriving.pdf');
-      vault.write('sources/arriving.pdf', 'half');
-      vault.write('sources/done.pdf', 'pdf, again');
-      vault.write('sources/kept.pdf', 'kept');
-      const next = await applied(await applyVaultChanges(root, snapshot, ['sources/arriving.pdf', 'sources/done.pdf', 'sources/kept.pdf'].map((path) => vault.change(path))));
-      expect(next.build.manifest.sources?.map((row) => row.path)).toEqual(['sources/kept.pdf']);
-      await expectSameAsFullBuild(vault, next, root);
-    } finally {
-      copying.finish();
-    }
   });
 });

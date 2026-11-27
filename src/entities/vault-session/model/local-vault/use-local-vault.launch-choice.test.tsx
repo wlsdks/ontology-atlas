@@ -9,7 +9,6 @@ import { vaultVectorSource } from '@/shared/lib/vault-folder/vault-vectors/vault
  */
 
 const tauri = vi.hoisted(() => ({
-  isTauriVaultRuntime: vi.fn(() => true),
   tauriVaultPathExists: vi.fn(async (_path: string) => true),
   listTauriDirectoryNames: vi.fn<(rootPath: string) => Promise<string[]>>(async () => []),
   createTauriVaultHandle: vi.fn((rootPath: string) => ({
@@ -98,7 +97,6 @@ function successfulBuild(slug = 'project') {
 }
 
 beforeEach(() => {
-  tauri.isTauriVaultRuntime.mockReturnValue(true);
   tauri.tauriVaultPathExists.mockResolvedValue(true);
   tauri.listTauriDirectoryNames.mockResolvedValue([]);
   store.getLocalFsHandle.mockResolvedValue(undefined);

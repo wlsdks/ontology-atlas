@@ -34,7 +34,6 @@ export type {
 } from './lib/local-manifest/build-local-manifest';
 export type { BuiltVaultEntry } from './lib/local-manifest/md-entry';
 export { VAULT_SOURCES_DIR } from './lib/local-manifest/walk-vault';
-export { createSourceCopyBatch } from './lib/library/source-copy-publication';
 export { buildLibraryModel, createLibraryModelBuilder, sourceNeedsCompile } from './lib/library/vault-library';
 export type { LibraryModel, LibraryOriginalLink, LibrarySourceRow, LibraryWriteUpLink } from './lib/library/vault-library';
 export { countWikiPages, isWikiPage, newestWikiPage, selectWikiPages } from './lib/library/wiki-page-facts';
@@ -44,14 +43,11 @@ export { deriveSourceProgress } from './lib/library/source-progress';
 export type { SourceProgress, SourceProgressPoint } from './lib/library/source-progress';
 export {
   candidateKey,
-  discoverySkipReason,
-  walkDroppedFolder,
   withoutVaultOwnedMarkdown,
 } from './lib/library/source-discovery';
 export { sourceFolderOf } from './lib/library/source-folder';
 export type {
   DiscoverySkipReason,
-  DroppedEntry,
   SourceCandidate,
   SourceDiscoveryReport,
 } from './lib/library/source-discovery';

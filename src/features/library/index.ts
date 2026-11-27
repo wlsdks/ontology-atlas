@@ -1,6 +1,5 @@
 export {
   addSources,
-  addSourcesInBrowser,
   copyNeedsConfirm,
   dismissSourceCopy,
   readSourceCopy,
@@ -8,11 +7,9 @@ export {
   stopSourceCopy,
   subscribeSourceCopy,
   summarizeAddSources,
-  type BrowserSourcePick,
   type SkippedUnlisted,
   type SourceCopyJob,
   type SourceCopyPlan,
-  type SourceCopySkip,
   type SourceCopySkipReason,
 } from "./lib/sources/add-sources";
 export { useSourceImportFeedback } from './model/use-source-import-feedback';

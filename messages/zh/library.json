@@ -396,8 +396,6 @@
     "failed": "{count} 份无法复制",
     "failedReason": "无法添加：{reason}",
     "revealFailed": "无法在 {fileManagerName} 中显示：{reason}",
-    "openFailed": "无法打开该文件。",
-    "savedInstead": "{name} 属于在此页面打开时可能运行代码的文件类型，因此改为下载。",
     "needsCompileSplit": "{notCompiled} 份还没有 Wiki 页面 · {stale} 份需要核对来源版本",
     "staleOnly": "{count} 个来源版本待复核",
     "partialOnly": "{count} 个仅读取了部分内容",
