@@ -59,6 +59,58 @@ export async function gitSourceBriefingPatch(sourcePath: string, head: string, b
     : null;
 }
 
+/** One release per tagged commit; `committedAt` is the tagged commit's epoch seconds. */
+export interface TaggedCommit { commit: string; committedAt: number; names: string[] }
+
+export interface ReleaseList {
+  status: ChangeBriefing['status'];
+  sourceRoot: string;
+  snapshot: string;
+  head: string;
+  line: string | null;
+  tags: TaggedCommit[];
+  unreadableNames: number;
+  /** `shallow`, `names` or `tag-limit`. */
+  partialReasons: string[];
+  walkStep: number;
+  walkLimit: number;
+}
+
+/** One step of the first-parent walk from a tip, newest first. */
+export interface ReleaseWalk {
+  status: ChangeBriefing['status'];
+  skip: number;
+  /** Each walked commit's type as an index into `types`; -1 when its title carries none. */
+  kinds: number[];
+  types: string[];
+  /** Tagged commits met, at their distance from the walk's tip. */
+  marks: { position: number; commit: string }[];
+  ended: boolean;
+}
+
+const nativeGit = () => typeof window !== 'undefined' && isTauri();
+
+/** A project-bound read when `project` is set, else a read of the picked repository at `root`. */
+export async function gitReleases(root: string, project: string): Promise<ReleaseList | null> {
+  if (!nativeGit()) return null;
+  return project ? invoke<ReleaseList>('git_change_releases', { vaultPath: root, projectSlug: project }) : invoke<ReleaseList>('git_source_releases', { sourcePath: root });
+}
+
+export async function gitReleaseWalk(root: string, project: string, snapshot: string, tip: string, skip: number): Promise<ReleaseWalk | null> {
+  if (!nativeGit()) return null;
+  return project
+    ? invoke<ReleaseWalk>('git_change_release_walk', { vaultPath: root, projectSlug: project, snapshot, tip, skip })
+    : invoke<ReleaseWalk>('git_source_release_walk', { sourcePath: root, snapshot, tip, skip });
+}
+
+/** The changes after `base` (null: from the first commit) up to `tip`, both issued by the list `snapshot` names. */
+export async function gitReleaseSpan(root: string, project: string, snapshot: string, base: string | null, tip: string): Promise<ChangeBriefing | null> {
+  if (!nativeGit()) return null;
+  return project
+    ? invoke<ChangeBriefing>('git_change_release_span', { vaultPath: root, projectSlug: project, snapshot, base, tip })
+    : invoke<ChangeBriefing>('git_source_release_span', { sourcePath: root, snapshot, base, tip });
+}
+
 export interface PullDescription {
   number: number; title: string; body: string; url: string;
   updatedAt: string; fetchedAt: string; digest: string; integration: string; copyKind?: 'fresh' | 'saved' | 'session';

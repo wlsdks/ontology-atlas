@@ -40,14 +40,14 @@ pub struct BriefingCommit {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ChangeBriefing {
-    status: String,
+    pub(super) status: String,
     source_root: String,
     snapshot: String,
     head: String,
     line: Option<String>,
-    base: Option<String>,
+    pub(super) base: Option<String>,
     tip: Option<String>,
-    commits: Vec<BriefingCommit>,
+    pub(super) commits: Vec<BriefingCommit>,
     net_paths: Option<Vec<String>>,
     limit: usize,
     partial_reasons: Vec<String>,
@@ -88,12 +88,12 @@ impl ChangeBriefingPatch {
 }
 
 #[derive(Clone)]
-struct Identity {
+pub(super) struct Identity {
     scope: SourceScope,
-    root: PathBuf,
-    head: String,
-    line: Option<String>,
-    object: (u64, u64),
+    pub(super) root: PathBuf,
+    pub(super) head: String,
+    pub(super) line: Option<String>,
+    pub(super) object: (u64, u64),
 }
 
 /// `line` names the branch for display; one commit read under two names is the same read.
@@ -108,7 +108,7 @@ impl PartialEq for Identity {
 impl Eq for Identity {}
 
 #[derive(Clone, PartialEq, Eq)]
-enum SourceScope {
+pub(super) enum SourceScope {
     Bound {
         vault: PathBuf,
         binding: String,
@@ -117,12 +117,16 @@ enum SourceScope {
     },
     Picked,
 }
-struct BoundedOutput {
-    bytes: Vec<u8>,
-    truncated: bool,
+pub(super) struct BoundedOutput {
+    pub(super) bytes: Vec<u8>,
+    pub(super) truncated: bool,
 }
 
-fn read_bounded_git(root: &Path, args: &[&str], limit: usize) -> Result<BoundedOutput, String> {
+pub(super) fn read_bounded_git(
+    root: &Path,
+    args: &[&str],
+    limit: usize,
+) -> Result<BoundedOutput, String> {
     let mut command = hardened_base_command();
     command
         .env("GIT_NO_LAZY_FETCH", "1")
@@ -162,7 +166,7 @@ fn read_bounded_git(root: &Path, args: &[&str], limit: usize) -> Result<BoundedO
     bytes.truncate(limit);
     Ok(BoundedOutput { bytes, truncated })
 }
-fn text_git(root: &Path, args: &[&str]) -> Result<String, String> {
+pub(super) fn text_git(root: &Path, args: &[&str]) -> Result<String, String> {
     let out = read_bounded_git(root, args, 4096)?;
     if out.truncated {
         return Err("unreadable".into());
@@ -175,7 +179,7 @@ fn merged_line_tip(root: &Path) -> Result<(String, Option<String>), String> {
     base_line::merged_line_tip(&|args: &[&str]| text_git(root, args).ok())
         .ok_or_else(|| "no-history".into())
 }
-fn identity(vault_path: &str, project: &str) -> Result<Identity, String> {
+pub(super) fn identity(vault_path: &str, project: &str) -> Result<Identity, String> {
     let vault = validate_vault_dir(vault_path).map_err(|_| "unreadable")?;
     let binding = resolve_binding_metadata(&vault, project).map_err(|_| "no-source")?;
     crate::canonical_source_root(&binding.root.to_string_lossy()).map_err(|reason| {
@@ -225,7 +229,7 @@ fn identity(vault_path: &str, project: &str) -> Result<Identity, String> {
         object,
     })
 }
-fn picked_identity(source_path: &str) -> Result<Identity, String> {
+pub(super) fn picked_identity(source_path: &str) -> Result<Identity, String> {
     let root = crate::canonical_source_root(source_path).map_err(|reason| {
         if reason == "source-root-not-granted" {
             "ungranted"
@@ -305,7 +309,7 @@ fn snapshot_for_identity(
     Ok(receipt)
 }
 
-fn valid_hash(value: &str) -> bool {
+pub(super) fn valid_hash(value: &str) -> bool {
     matches!(value.len(), 40 | 64) && value.bytes().all(|b| b.is_ascii_hexdigit())
 }
 fn valid_path(value: &str) -> bool {
@@ -609,6 +613,137 @@ fn measure_identity(
         line: before.line.clone(),
         base,
         tip,
+        commits: parsed.into_iter().map(|c| c.commit).collect(),
+        net_paths: net,
+        limit: COMMIT_LIMIT,
+        partial_reasons: reasons,
+    };
+    remember(before, &result, start, end);
+    result
+}
+
+#[tauri::command(async)]
+pub fn git_change_release_span(
+    vault_path: String,
+    project_slug: String,
+    snapshot: String,
+    base: Option<String>,
+    tip: String,
+) -> Result<ChangeBriefing, String> {
+    Ok(measure_span(
+        || identity(&vault_path, &project_slug),
+        &snapshot,
+        base.as_deref(),
+        &tip,
+        || {},
+    ))
+}
+
+#[tauri::command(async)]
+pub fn git_source_release_span(
+    source_path: String,
+    snapshot: String,
+    base: Option<String>,
+    tip: String,
+) -> Result<ChangeBriefing, String> {
+    Ok(measure_span(
+        || picked_identity(&source_path),
+        &snapshot,
+        base.as_deref(),
+        &tip,
+        || {},
+    ))
+}
+
+/// The first-parent changes after `base` up to `tip`, both commits a release list issued; no
+/// `base` reads from the first commit. Returns the date read's shape so the digest, Originals and
+/// patches read it unchanged.
+pub(super) fn measure_span(
+    resolve: impl Fn() -> Result<Identity, String>,
+    list_snapshot: &str,
+    base: Option<&str>,
+    tip: &str,
+    after_read: impl FnOnce(),
+) -> ChangeBriefing {
+    if !valid_hash(tip) || base.is_some_and(|b| !valid_hash(b)) {
+        return ChangeBriefing::unavailable("unreadable");
+    }
+    let before = match resolve() {
+        Ok(value) => value,
+        Err(status) => return ChangeBriefing::unavailable(&status),
+    };
+    if let Err(status) = super::releases::span_issued(&before, list_snapshot, base, tip) {
+        return ChangeBriefing::unavailable(status);
+    }
+    let range = base.map(|base| format!("{base}..{tip}"));
+    let max = format!("--max-count={}", COMMIT_LIMIT + 1);
+    let out = match read_bounded_git(
+        &before.root,
+        &[
+            "log",
+            "--first-parent",
+            "--diff-merges=first-parent",
+            "--raw",
+            "--no-abbrev",
+            "--no-renames",
+            "-z",
+            "--format=%H%x00%P%x00%ct%x00%B",
+            &max,
+            range.as_deref().unwrap_or(tip),
+            "--",
+        ],
+        HISTORY_BYTES,
+    ) {
+        Ok(value) => value,
+        Err(_) => return ChangeBriefing::unavailable("unreadable"),
+    };
+    let (parsed, reasons) =
+        match parse_nul_git_history(&out.bytes, out.truncated, i64::MIN, i64::MAX) {
+            Ok(value) => value,
+            Err(_) => return ChangeBriefing::unavailable("unreadable"),
+        };
+    let span_base = match parsed.last() {
+        Some(oldest) => oldest.parent.clone(),
+        None => base.map(str::to_owned),
+    };
+    let span_tip = parsed.first().map(|c| c.commit.hash.clone());
+    let net = span_tip
+        .as_ref()
+        .and_then(|tip| net_paths(&before.root, span_base.as_deref(), tip));
+    after_read();
+    let after = resolve().ok();
+    if after.as_ref() != Some(&before)
+        || super::releases::span_issued(&before, list_snapshot, base, tip).is_err()
+    {
+        return ChangeBriefing::unavailable("stale");
+    }
+    let epochs: Vec<i64> = parsed
+        .iter()
+        .filter_map(|c| chrono::DateTime::parse_from_rfc3339(&c.commit.committed_at).ok())
+        .map(|at| at.timestamp())
+        .collect();
+    let start = epochs.iter().copied().min().unwrap_or(0);
+    let end = epochs.iter().copied().max().map_or(1, |newest| newest + 1);
+    let snapshot = lower_hex(&Sha256::digest(format!(
+        "{}\0{}\0{:?}\0{}\0{tip}",
+        before.root.to_string_lossy(),
+        before.head,
+        before.object,
+        base.unwrap_or("")
+    )));
+    let result = ChangeBriefing {
+        snapshot,
+        status: if reasons.is_empty() {
+            "measured"
+        } else {
+            "partial"
+        }
+        .into(),
+        source_root: before.root.to_string_lossy().into_owned(),
+        head: before.head.clone(),
+        line: before.line.clone(),
+        base: span_base,
+        tip: span_tip,
         commits: parsed.into_iter().map(|c| c.commit).collect(),
         net_paths: net,
         limit: COMMIT_LIMIT,
