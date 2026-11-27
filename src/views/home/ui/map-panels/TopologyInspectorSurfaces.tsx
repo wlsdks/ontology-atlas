@@ -18,6 +18,7 @@ import type { useTopologyVaultReadModel } from "../../model/use-topology-vault-r
 
 import { daysBehind } from "@/entities/docs-vault";
 import { MeaningEditorPanel } from "@/features/ontology-meaning-editor";
+import { useMapEvidenceStates } from "@/features/vault-ontology";
 import { formatProjectSourceHandoff } from "@/shared/lib/project-source/project-source-receipt";
 import { Dialog, Surface, controlClass } from "@/shared/ui";
 import { morphName, runMorph } from "@/shared/motion/shared-element";
@@ -75,6 +76,7 @@ interface TopologyInspectorSurfacesProps {
     | "selectedOntologyNode"
     | "vault"
     | "gitVaultPath"
+    | "ontologyInsight"
   >;
   topologyCanvasFocus: Pick<
     ReturnType<typeof useTopologyCanvasFocus>,
@@ -172,7 +174,7 @@ export function TopologyInspectorSurfaces({
     handleDatasheetHoverEvidence, setFullDetailSlug, contextMenuNode, closeContextMenu, FullDetailCard,
     fullDetailOpen
   } = topologyCanvasFocus;
-  const { summaryFreshness, summaryHistoryUnavailable, llmBridgeAvailable, setNeedsVaultReason, selectedOntologyNode, vault, gitVaultPath } = topologyVaultReadModel;
+  const { summaryFreshness, summaryHistoryUnavailable, llmBridgeAvailable, setNeedsVaultReason, selectedOntologyNode, vault, gitVaultPath, ontologyInsight } = topologyVaultReadModel;
   const { projectSource } = topologySourceReadiness;
   const {
     projectSourceLabels, copyV2NodeHandoff, projectSourceErrorLabel, projectSourceDegraded,
@@ -209,6 +211,11 @@ export function TopologyInspectorSurfaces({
     [panelShown, nodeEditTarget],
   );
   const conceptCode = useConceptCodeReader({ concept: codeConcept, readBody: readConceptBody, vaultPath: gitVaultPath });
+  // The same nodes as the map's walk, so this reads its answer instead of walking Git again.
+  const mapEvidence = useMapEvidenceStates({ nodes: ontologyInsight?.nodes, enabled: true });
+  const changedEvidence = panelDatasheetModel && mapEvidence.availability === "measured"
+    ? mapEvidence.stalePaths.get(panelDatasheetModel.nodeId) ?? null
+    : null;
   const measurePanelWidth = useCallback(
     () => nodePopoverPositionerRef.current?.querySelector<HTMLElement>('[data-testid="map-detail-panel"]')?.offsetWidth ?? 0,
     [nodePopoverPositionerRef],
@@ -525,6 +532,7 @@ export function TopologyInspectorSurfaces({
                 citeCount: conceptCode.target.ranges.length,
                 readerOpen: conceptCode.readerOpen,
                 onToggle: conceptCode.toggle,
+                changedEvidence: changedEvidence ? { path: changedEvidence.path, gone: changedEvidence.gone } : null,
               } : undefined}
               className="max-lg:w-[min(520px,calc(100vw-1.5rem))]"
             />

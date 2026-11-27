@@ -2,7 +2,9 @@
   "row": {
     "label": "代码",
     "open": "阅读 {path}",
-    "cites": "文档引用了 {count} 处"
+    "cites": "文档引用了 {count} 处",
+    "changed": "这篇文档写成后，{path} 有改动。",
+    "gone": "此仓库中的该路径下没有 {path}。"
   },
   "title": "{concept} 的代码",
   "lines": {

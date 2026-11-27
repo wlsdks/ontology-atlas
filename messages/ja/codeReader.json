@@ -2,7 +2,9 @@
   "row": {
     "label": "コード",
     "open": "{path}を読む",
-    "cites": "文書が指す範囲{count}件"
+    "cites": "文書が指す範囲{count}件",
+    "changed": "この文書を書いた後に{path}が変更されました。",
+    "gone": "{path}はこのリポジトリのそのパスにありません。"
   },
   "title": "{concept}のコード",
   "lines": {
