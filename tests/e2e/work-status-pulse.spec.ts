@@ -5,8 +5,9 @@ import { CLAUDE, CLAUDE_LATER, bridgeCalls, failOnConsoleNoise, main, openWorkSt
 
 /**
  * The file-change pulse on Work status, with the bridge stubbed: a room's light flares and a spark
- * runs once round its frame per answer that carries a newly counted change, the words and the
- * last-hour line say the same, and the switch stops it. Rust's own counting is proven in `src-tauri/src/work_status/file_pulse/tests.rs`.
+ * runs once round its frame for a newly counted change, at most once in `FLASH_MIN_GAP_MS`; the
+ * words and the last-hour line say every change, and the switch stops it. Rust's own counting is
+ * proven in `src-tauri/src/work_status/file_pulse/tests.rs`.
  */
 
 const STEP_MS = 10_000;
@@ -105,7 +106,7 @@ function pulseJumps(frames: PulseFrame[]): string[] {
 test.describe("work status file-change pulse", () => {
   failOnConsoleNoise();
 
-  test("flashes a room's light once per answer that carries a new change, and says it in words", async ({ page }) => {
+  test("flashes a room's light for a new change, at most once in its quiet window, and says each in words", async ({ page }) => {
     await openWorkStatus(page, ROWS, {}, { pulse: { worktrees: quiet } });
     const a = room(page, "feat/pulse-a");
     const b = room(page, "feat/pulse-b");
@@ -126,11 +127,10 @@ test.describe("work status file-change pulse", () => {
     await answered(page, 2);
     await expect(a).toHaveAttribute("data-room-flashes", "1");
 
-    // The next change flashes once more, in its own element, so the one-shot plays again.
+    // A change inside the flash's quiet window says itself in words and ticks, and does not flash.
     await setPulse(page, changedNow("feat-pulse-a", 7));
-    await expect(a).toHaveAttribute("data-room-flashes", "2");
-    await expect(a.getByTestId("work-room-flash")).toHaveCount(1);
     await expect(a.locator("[data-tick]").last()).toHaveAttribute("data-height", "3");
+    await expect(a).toHaveAttribute("data-room-flashes", "1");
 
     // The panel counts the minute and the hour, and says it counts only while the screen is open.
     await a.locator("[data-room-press]").click();
@@ -160,6 +160,35 @@ test.describe("work status file-change pulse", () => {
     expect(Math.max(...frames.map((frame) => frame.elsewhere)), "animations in the rooms whose files did not change").toBe(0);
     expect(pulseJumps(frames).slice(0, 6), "frames where the pulse jumped or stood still").toEqual([]);
     expect(await runningAnimations(page), "animations running once the pulse has played").toBe(0);
+  });
+
+  test("plays one spark for a burst of five changes, keeps the room fresh, then runs nothing", async ({ page }) => {
+    await openWorkStatus(page, ROWS, {}, { pulse: { worktrees: quiet } });
+    const a = room(page, "feat/pulse-a");
+    await answered(page);
+    await waitForAnimationsDone(page.getByTestId("work-building"));
+    await a.evaluate((element) => {
+      const target = window as unknown as { __sparksMounted: number };
+      target.__sparksMounted = 0;
+      new MutationObserver((records) => {
+        for (const record of records) {
+          for (const node of record.addedNodes) {
+            if (node instanceof HTMLElement && node.matches("[data-testid=work-room-flash]")) target.__sparksMounted += 1;
+          }
+        }
+      }).observe(element, { childList: true, subtree: true });
+    });
+
+    for (let change = 1; change <= 5; change += 1) {
+      await setPulse(page, changedNow("feat-pulse-a", change));
+      await answered(page);
+    }
+    await expect(a.getByTestId("work-room-last-minute")).toHaveText("5 file changes in the last minute");
+    await expect(a.locator("[data-scene]")).toHaveAttribute("data-fresh", "true");
+    await expect(a).toHaveAttribute("data-room-flashes", "1");
+    expect(await page.evaluate(() => (window as unknown as { __sparksMounted: number }).__sparksMounted), "sparks the burst played").toBe(1);
+    await waitForAnimationsDone(page.getByTestId("work-building"));
+    expect(await runningAnimations(page), "animations running once the burst has been said").toBe(0);
   });
 
   test("raises the light without motion under reduced motion while the words say the change", async ({ page }) => {
