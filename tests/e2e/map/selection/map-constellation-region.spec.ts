@@ -1,6 +1,8 @@
 import { expect, test } from "@playwright/test";
 import koMessages from '../../../../messages/ko.json';
-import { seedFirstRunSeen } from "../../first-run-seed";
+import { installDesktopRailRuntime } from "../../desktop-rail-arrival-harness";
+import { openMapOnApp } from "../open-map-on-app";
+import { storefrontSampleFiles } from "../storefront-sample-files";
 import { waitForMapStill } from "../../settle";
 
 /**
@@ -10,8 +12,8 @@ import { waitForMapStill } from "../../settle";
 test("the constellation chip opens a named region and points at it", async ({ page }) => {
   test.setTimeout(120_000);
   await page.setViewportSize({ width: 1512, height: 900 });
-  await seedFirstRunSeen(page);
-  await page.goto("/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
+  await installDesktopRailRuntime(page, storefrontSampleFiles(), undefined, { replaceFixture: true });
+  await openMapOnApp(page, "/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
   await waitForMapStill(page, { what: "camera" });
 
   const trigger = page.getByTestId("saved-constellations-open");

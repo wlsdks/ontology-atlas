@@ -1,6 +1,4 @@
 import { expect, test } from '@playwright/test';
-import { stubDirectoryPicker } from '../../vault-picker-stub';
-import { seedFirstRunSeen } from '../../first-run-seed';
 import { installDesktopRailRuntime, mountDesktopVault } from '../../desktop-rail-arrival-harness';
 
 test('Map announces preparation before leaving the current pane and reveals a drawn canvas', async ({ page }) => {
@@ -262,11 +260,9 @@ for (const fixture of [
 ]) {
   test(`Map entry reveals the start actions for ${fixture.name}`, async ({ page }) => {
     await page.setViewportSize({ width: 1512, height: 982 });
-    await stubDirectoryPicker(page, fixture.files);
-    await seedFirstRunSeen(page);
-    await page.goto('/en/topology/?guides=off');
-    await page.getByTestId('first-run-starter-open').click();
-    await page.getByTestId('vault-guide-pick-existing').click();
+    await installDesktopRailRuntime(page, fixture.files, undefined, { replaceFixture: true });
+    await page.goto('/en/?guides=off');
+    await page.getByTestId('first-run-open').click();
     const start = page.getByTestId('vault-start-steps');
     await expect(start).toBeVisible();
     await page.getByTestId('app-nav-rail-item-agents').click();

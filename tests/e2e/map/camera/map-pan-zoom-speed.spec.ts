@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
-import { seedFirstRunSeen } from "../../first-run-seed";
+import { installDesktopRailRuntime } from "../../desktop-rail-arrival-harness";
+import { openMapOnApp } from "../open-map-on-app";
+import { storefrontSampleFiles } from "../storefront-sample-files";
 import { waitForMapSettled, waitForMapStill } from "../../settle";
 
 const DRAG_PX = 200;
@@ -64,9 +66,9 @@ async function dragMap(page: Page, from: { x: number; y: number;
 
 async function openFlatMap(page: Page) {
   await page.setViewportSize({ width: 1400, height: 860 });
-  await seedFirstRunSeen(page);
+  await installDesktopRailRuntime(page, storefrontSampleFiles(), undefined, { replaceFixture: true });
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
+  await openMapOnApp(page, "/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
   await waitForMapSettled(page);
 }
 
@@ -81,10 +83,10 @@ test("at 2x drag speed a 200 px background drag moves the flat map 400 px", asyn
 
 test("at 0.5x drag speed a 200 px drag moves the hex board 100 px", async ({ page }) => {
   await page.setViewportSize({ width: 1400, height: 860 });
-  await seedFirstRunSeen(page);
+  await installDesktopRailRuntime(page, storefrontSampleFiles(), undefined, { replaceFixture: true });
   await seedSpeeds(page, { drag: "0.5" });
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/ko/topology/?view=hex&e2e=1&guides=off", { waitUntil: "domcontentloaded" });
+  await openMapOnApp(page, "/ko/topology/?view=hex&e2e=1&guides=off", { waitUntil: "domcontentloaded" });
   const board = page.getByTestId("hex-board-map");
   await expect(board).toHaveAttribute("data-hex-ready", "true");
   const readTile = () =>

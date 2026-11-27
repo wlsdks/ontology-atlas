@@ -1,8 +1,8 @@
 import { expect, type Page } from "@playwright/test";
 
 import "../../atlas-map-probe";
-import { seedFirstRunSeen } from "../../first-run-seed";
-import { useDogfoodSample as serveDogfoodSample } from "../../sample-source";
+import { atlasSampleFiles, installDesktopRailRuntime } from "../../desktop-rail-arrival-harness";
+import { openMapOnApp, READY_AGENT } from "../open-map-on-app";
 import { waitForMapSettled, waitForMapStill } from "../../settle";
 import type { DialProbe } from "../../../../src/widgets/ontology-map/dial/dial-shapes";
 
@@ -26,16 +26,25 @@ export const readDial = (page: Page) => page.evaluate(() => window.__atlasMap!.d
 
 export const tokenOf = (page: Page, name: string) => page.evaluate((v) => Number(getComputedStyle(document.documentElement).getPropertyValue(v)), name);
 
-/** Opens the dogfood map on Flat at `viewport`, with the agent dock open on the right when `dock`. */
+const FLAT_ADDRESS = "/en/topology/?guides=off&e2e=1";
+
+/** The pages that already hold the Atlas sample folder, so a second open only visits the address. */
+const foldersMounted = new WeakSet<Page>();
+
+/** Opens the Atlas sample map on Flat at `viewport`, with the agent dock open on the right when `dock`. */
 export async function openDogfoodFlat(page: Page, viewport: { width: number; height: number }, dock: boolean): Promise<void> {
   await page.setViewportSize(viewport);
-  await seedFirstRunSeen(page);
-  await serveDogfoodSample(page);
-  await page.goto("/en/topology/?guides=off&e2e=1", { waitUntil: "domcontentloaded" });
+  if (foldersMounted.has(page)) {
+    await page.goto(FLAT_ADDRESS, { waitUntil: "domcontentloaded" });
+  } else {
+    await installDesktopRailRuntime(page, atlasSampleFiles(), READY_AGENT, { replaceFixture: true });
+    await openMapOnApp(page, FLAT_ADDRESS, { waitUntil: "domcontentloaded" });
+    foldersMounted.add(page);
+  }
   await waitForMapSettled(page, { timeout: 90_000 });
   await page.waitForFunction(() => window.__atlasMap?.dial?.()?.owns === true, undefined, { timeout: 90_000 });
   if (dock) {
-    await page.getByTestId("topology-meaning-workbench-toggle").click();
+    await page.getByTestId("topology-vault-agent-toggle").click();
     await expect(page.getByTestId("analysis-workbench")).toBeVisible();
     await page.waitForFunction(() => {
       const surface = document.querySelector("[data-agent-dock-surface=\"inset\"]");

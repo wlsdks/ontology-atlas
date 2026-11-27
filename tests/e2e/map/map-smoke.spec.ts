@@ -2,8 +2,8 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { expect, test } from "@playwright/test";
 import en from "../../../messages/en.json";
-import { seedFirstRunSeen } from "../first-run-seed";
-import { useDogfoodSample } from "../sample-source";
+import { atlasSampleFiles, installDesktopRailRuntime } from "../desktop-rail-arrival-harness";
+import { openMapOnApp } from "./open-map-on-app";
 
 /**
  * Small and stable on purpose: a handful of contracts true of the current map, using real
@@ -44,19 +44,15 @@ const REAL_CAPABILITY_SLUG = (() => {
 // on it — same fix applied to the analogous `project-selector-new-cta`
 // duplicate in `ontology-ui.spec.ts`.
 async function gotoAndSettle(page: import("@playwright/test").Page, url: string) {
-  // Seed first-run so no automatic onboarding surface appears: the auto tour's full-screen scrim
-  // can cover the panel action button on a slow runner.
-  await seedFirstRunSeen(page);
-  await page.goto(url);
+  // The runtime seeds first-run so no automatic onboarding surface appears: the auto tour's
+  // full-screen scrim can cover the panel action button on a slow runner.
+  await installDesktopRailRuntime(page, atlasSampleFiles(), undefined, { replaceFixture: true });
+  await openMapOnApp(page, url);
   await page.waitForLoadState("networkidle");
 }
 
 test.describe("ontology-map smoke", () => {
-  // Assertions lean on dogfood vault data, so select that vault explicitly rather than the default.
-  test.beforeEach(async ({ page }) => {
-    await useDogfoodSample(page);
-  });
-
+  // Assertions lean on dogfood vault data, so `gotoAndSettle` serves that vault as the folder.
   test("a valid ?p= deep link keeps the URL and opens the datasheet", async ({ page }) => {
     await gotoAndSettle(page, `/en/topology/?p=${encodeURIComponent(REAL_CAPABILITY_SLUG)}`);
     const detailPanel = page.getByTestId("map-detail-panel");

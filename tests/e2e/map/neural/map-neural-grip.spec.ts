@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
-import { seedFirstRunSeen } from "../../first-run-seed";
+import { installDesktopRailRuntime } from "../../desktop-rail-arrival-harness";
+import { openMapOnApp } from "../open-map-on-app";
+import { storefrontSampleFiles } from "../storefront-sample-files";
 import { waitForDomeEntered, waitForMapStill, waitFrames } from "../../settle";
 
 /**
@@ -111,13 +113,13 @@ async function outsidePoint(page: import("@playwright/test").Page) {
 test("Neural: dragging inside the dome rotates it, and dragging the black area outside pans the map", async ({ page }) => {
   test.setTimeout(120_000);
   await page.setViewportSize({ width: 1512, height: 900 });
-  await seedFirstRunSeen(page);
+  await installDesktopRailRuntime(page, storefrontSampleFiles(), undefined, { replaceFixture: true });
   await page.addInitScript(() => {
     // Neural is opt-in and its choice lives in localStorage (`map-view-preferences`).
     window.localStorage.setItem("atlas.appearance.view3d", "on");
     window.localStorage.setItem("atlas.appearance.map-arrangement", "coupling");
   });
-  await page.goto("/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
+  await openMapOnApp(page, "/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
   await page.evaluate(() => document.fonts.ready);
   // Measure after assembly and the entry sweep both finish — while the sweep is
   // alive the drawn attitude keeps moving and cannot be told apart from what the
@@ -203,12 +205,12 @@ test("Neural: dragging inside the dome rotates it, and dragging the black area o
 test("Neural: the cursor names two zones (grab over the dome, move outside)", async ({ page }) => {
   test.setTimeout(120_000);
   await page.setViewportSize({ width: 1512, height: 900 });
-  await seedFirstRunSeen(page);
+  await installDesktopRailRuntime(page, storefrontSampleFiles(), undefined, { replaceFixture: true });
   await page.addInitScript(() => {
     window.localStorage.setItem("atlas.appearance.view3d", "on");
     window.localStorage.setItem("atlas.appearance.map-arrangement", "coupling");
   });
-  await page.goto("/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
+  await openMapOnApp(page, "/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
   await page.evaluate(() => document.fonts.ready);
   await waitForDomeEntered(page);
 

@@ -2,14 +2,14 @@ import { expect, test, type Page } from "@playwright/test";
 
 import { FIXTURE_VAULT } from "../../fixture-vault";
 import { FRAME_INTERVAL_BUDGET_MS, PERF_BARS } from "../../motion-sampler";
-import { seedFirstRunSeen } from "../../first-run-seed";
+import { installDesktopRailRuntime, readDesktopFile, writeDesktopFile } from "../../desktop-rail-arrival-harness";
+import { openMapOnApp } from "../open-map-on-app";
 import { waitForAnimationsDone } from "../../settle";
-import { stubDirectoryPicker } from "../../vault-picker-stub";
 
 /**
  * The map analysis chip reads the project note's `Not mapped yet` line and
  * `.ontology-atlas/map-analysis.jsonl`; each test plants one row of the spec's States table
- * (`docs/specs/2026-11-24-map-analysis-record.md`) in a picked folder on the web build.
+ * (`docs/specs/2026-11-24-map-analysis-record.md`) in a picked folder.
  */
 
 const DAY_MS = 24 * 60 * 60_000;
@@ -26,7 +26,7 @@ interface PlantedAnalysis {
   total?: number;
 }
 
-/** One line per analysis; `{{NOW-<ms>}}` resolves when the folder is picked. */
+/** One line per analysis; `{{NOW-<ms>}}` resolves when the folder is served. */
 function record(...analyses: PlantedAnalysis[]): string {
   return analyses
     .map(({ number, agoMs, offMap = 38, total = 100 }) =>
@@ -50,14 +50,15 @@ function record(...analyses: PlantedAnalysis[]): string {
     .concat("\n");
 }
 
+/** `{{NOW-<ms>}}` becomes an ISO timestamp that many milliseconds ago, read when the folder is served. */
+const resolveNowTokens = (body: string) =>
+  body.replace(/\{\{NOW-(\d+)\}\}/g, (_match, ms: string) => new Date(Date.now() - Number(ms)).toISOString());
+
 async function openPlantedFolder(page: Page, files: Record<string, string>, size = { width: 1512, height: 900 }) {
   await page.setViewportSize(size);
-  await stubDirectoryPicker(page, { ...FIXTURE_VAULT, ...files });
-  await seedFirstRunSeen(page);
-  await page.goto("/en/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
-  await page.getByTestId("first-run-starter-open").click();
-  await page.getByTestId("vault-guide-pick-existing").click();
-  await page.getByTestId("first-run-starter").waitFor({ state: "detached", timeout: 30_000 });
+  const served = Object.fromEntries(Object.entries(files).map(([path, body]) => [path, resolveNowTokens(body)]));
+  await installDesktopRailRuntime(page, served);
+  await openMapOnApp(page, "/en/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
 }
 
 const chip = (page: Page) => page.getByTestId("map-analysis-chip");
@@ -89,8 +90,8 @@ test.describe("the map analysis chip", () => {
     await expect(page.getByTestId("map-analysis-counted")).toBeVisible();
     await expect(page.getByTestId("map-analysis-row")).toHaveCount(5);
     await expect(page.getByTestId("map-analysis-earlier")).toBeVisible();
-    await expect(page.getByTestId("map-analysis-web-analyze"), "the web names where an analysis starts").toBeVisible();
-    await expect(page.getByTestId("map-analysis-map-rest")).toHaveCount(0);
+    await expect(page.getByTestId("map-analysis-map-rest"), "the app names where an analysis starts").toBeVisible();
+    await expect(page.getByTestId("map-analysis-web-analyze")).toHaveCount(0);
 
     await trigger(page).click();
     await expect(trigger(page), "a second press does not close the panel").toHaveAttribute("aria-expanded", "false");
@@ -160,22 +161,13 @@ test.describe("the map analysis chip", () => {
       requestAnimationFrame(sample);
     });
     const appendLine = (number: number) =>
-      page.evaluate(async (number) => {
-        const root = await navigator.storage.getDirectory();
-        let folder: FileSystemDirectoryHandle | null = null;
-        for await (const [name, handle] of (root as unknown as { entries(): AsyncIterable<[string, FileSystemHandle]> }).entries()) {
-          if (name.startsWith("stub-vault-") && handle.kind === "directory") folder = handle as FileSystemDirectoryHandle;
-        }
-        const sidecar = await folder!.getDirectoryHandle(".ontology-atlas");
-        const file = await sidecar.getFileHandle("map-analysis.jsonl");
-        const text = await (await file.getFile()).text();
+      (async () => {
+        const text = (await readDesktopFile(page, RECORD_PATH)) ?? "";
         const at = new Date().toISOString();
         const line = JSON.stringify({ v: 1, analysis: `terminal-${number}`, number, session: `terminal-${number}`, origin: "session", startedAt: at, at, agent: "claude-code", sourceCommit: null, sourceDirty: null, abilities: { total: 100, offMap: 38 }, areas: { total: 9, notMapped: 3 }, concepts: { added: 1, changed: 0, removed: 0 } });
-        const writable = await file.createWritable();
-        await writable.write(`${text}${line}\n`);
-        await writable.close();
-        window.dispatchEvent(new Event("focus"));
-      }, number);
+        await writeDesktopFile(page, RECORD_PATH, `${text}${line}\n`);
+        await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+      })();
 
     await appendLine(3);
     await expect(page.getByTestId("map-analysis-row")).toHaveCount(2, { timeout: 30_000 });
@@ -196,7 +188,7 @@ test.describe("the map analysis chip", () => {
     await expect(trigger(page)).toContainText("62%");
     await waitForAnimationsDone(chip(page));
 
-    await page.evaluate(async () => {
+    await page.evaluate(() => {
       const percentOf = () => Number(/(\d+)%/.exec(document.querySelector('[data-testid="map-analysis-chip-trigger"]')?.textContent ?? "")?.[1]);
       const samples: Array<{ at: number; percent: number }> = [];
       const sample = (at: number) => {
@@ -205,18 +197,10 @@ test.describe("the map analysis chip", () => {
       };
       (window as unknown as { __shareSamples: typeof samples }).__shareSamples = samples;
       requestAnimationFrame(sample);
-      const root = await navigator.storage.getDirectory();
-      let folder: FileSystemDirectoryHandle | null = null;
-      for await (const [name, handle] of (root as unknown as { entries(): AsyncIterable<[string, FileSystemHandle]> }).entries()) {
-        if (name.startsWith("stub-vault-") && handle.kind === "directory") folder = handle as FileSystemDirectoryHandle;
-      }
-      const note = await folder!.getFileHandle("storefront.md");
-      const text = await (await note.getFile()).text();
-      const writable = await note.createWritable();
-      await writable.write(text.replace("38 of 100 abilities", "10 of 100 abilities"));
-      await writable.close();
-      window.dispatchEvent(new Event("focus"));
     });
+    const note = (await readDesktopFile(page, "storefront.md"))!;
+    await writeDesktopFile(page, "storefront.md", note.replace("38 of 100 abilities", "10 of 100 abilities"));
+    await page.evaluate(() => window.dispatchEvent(new Event("focus")));
 
     await expect(trigger(page)).toContainText("90%", { timeout: 30_000 });
     const samples = await page.evaluate(() => (window as unknown as { __shareSamples: Array<{ at: number; percent: number }> }).__shareSamples);

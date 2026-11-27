@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { seedFirstRunSeen } from '../../first-run-seed';
+import { installDesktopRailRuntime } from '../../desktop-rail-arrival-harness';
+import { openMapOnApp } from '../open-map-on-app';
 import { waitForDomeEntered, waitForMapStill } from '../../settle';
 
 type ProbeNode = { id: string; kind: string; x: number; y: number; radius: number; hidden: boolean };
@@ -8,12 +9,12 @@ type Probe = { __atlasMap: { nodes(): ProbeNode[]; selection(): { nodeId: string
 test.use({ viewport: { width: 1440, height: 900 }, contextOptions: { reducedMotion: 'reduce' } });
 
 test('Neural: zoomed in, a press just inside the largest cell rim selects that cell', async ({ page }) => {
-  await seedFirstRunSeen(page);
+  await installDesktopRailRuntime(page);
   await page.addInitScript(() => {
     localStorage.setItem('atlas.appearance.view3d', 'on');
     localStorage.setItem('atlas.appearance.map-arrangement', 'coupling');
   });
-  await page.goto('/en/topology/?synth=31&synthDeps=1&e2e=1&guides=off');
+  await openMapOnApp(page, '/en/topology/?synth=31&synthDeps=1&e2e=1&guides=off');
   await waitForDomeEntered(page);
   await waitForMapStill(page);
   const canvas = (await page.getByTestId('ontology-map-canvas').boundingBox())!;

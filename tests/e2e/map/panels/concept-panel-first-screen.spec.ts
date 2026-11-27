@@ -1,9 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import "../../atlas-map-probe";
-import { seedFirstRunSeen } from "../../first-run-seed";
+import { installDesktopRailRuntime } from "../../desktop-rail-arrival-harness";
 import { waitForMapStill } from "../../settle";
-import { stubDirectoryPicker } from "../../vault-picker-stub";
 import type { DialProbe } from "../../../../src/widgets/ontology-map/dial/dial-shapes";
 
 const SIDE = 20;
@@ -63,11 +62,9 @@ function generatedVault(): Record<string, string> {
 }
 
 async function openVault(page: Page): Promise<void> {
-  await seedFirstRunSeen(page);
-  await stubDirectoryPicker(page, generatedVault());
-  await page.goto("/en/topology/?guides=off&e2e=1", { waitUntil: "networkidle" });
-  await page.getByTestId("first-run-starter-open").click();
-  await page.getByTestId("vault-guide-pick-existing").click();
+  await installDesktopRailRuntime(page, generatedVault(), undefined, { replaceFixture: true });
+  await page.goto("/en/?guides=off&e2e=1", { waitUntil: "networkidle" });
+  await page.getByTestId("first-run-open").click();
   await page.waitForFunction((count) => {
     const dial = window.__atlasMap?.dial?.() as DialProbe | undefined;
     const drawn = window.__atlasMap?.nodes().filter((n) => n.kind === "capability").length;
@@ -295,7 +292,7 @@ test.describe("the concept panel's first screen holds its parts", () => {
     });
   }
 
-  test("a calm concept emphasises nothing, and missing reasons warn without a review action where no agent can write them", async ({ page }) => {
+  test("a calm concept emphasises nothing, and missing reasons warn with a review action where an agent can write them", async ({ page }) => {
     test.setTimeout(180_000);
     await page.setViewportSize({ width: 1512, height: 949 });
     await openVault(page);
@@ -305,9 +302,9 @@ test.describe("the concept panel's first screen holds its parts", () => {
     await expect(panel.getByTestId("map-detail-panel-judgment")).toHaveCount(0);
     await expect(panel.getByTestId("map-detail-panel-definition")).toHaveText(TYPICAL_DEFINITION);
     await select(page, "capability:hub");
-    await expect(panel).toHaveAttribute("data-panel-emphasis", "judgment");
+    await expect(panel).toHaveAttribute("data-panel-emphasis", "meaning-review");
     await expect(panel.getByTestId("map-detail-panel-judgment")).toBeVisible();
-    await expect(panel.getByTestId("map-detail-panel-judgment-action")).toHaveCount(0);
+    await expect(panel.getByTestId("map-detail-panel-judgment-action")).toHaveAttribute("data-judgment-action", "meaning-review");
   });
 
   test("the reach block stays where it first painted", async ({ page }) => {

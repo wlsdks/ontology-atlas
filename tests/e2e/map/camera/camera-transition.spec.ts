@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
-import { seedFirstRunSeen } from "../../first-run-seed";
+import { installDesktopRailRuntime } from "../../desktop-rail-arrival-harness";
+import { openMapOnApp } from "../open-map-on-app";
+import { storefrontSampleFiles } from "../storefront-sample-files";
 // The `window.__atlasMap` type is declared in exactly one place — two copies raise TS2717.
 import "../../atlas-map-probe";
 
@@ -121,8 +123,8 @@ async function walkUntilCameraMoves(page: import("@playwright/test").Page) {
 test.describe("camera transition spec", () => {
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize({ width: 1512, height: 982 });
-    await seedFirstRunSeen(page);
-    await page.goto("/ko/topology/?guides=off&e2e=1");
+    await installDesktopRailRuntime(page, storefrontSampleFiles(), undefined, { replaceFixture: true });
+    await openMapOnApp(page, "/ko/topology/?guides=off&e2e=1");
     const canvas = page.getByTestId("ontology-map-canvas");
     await canvas.waitFor({ state: "visible", timeout: 20_000 });
     await expect

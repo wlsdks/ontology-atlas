@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
-import { seedFirstRunSeen } from "../../first-run-seed";
+import { installDesktopRailRuntime } from "../../desktop-rail-arrival-harness";
+import { openMapOnApp } from "../open-map-on-app";
+import { storefrontSampleFiles } from "../storefront-sample-files";
 import { waitForMapStill } from "../../settle";
 
 type MapNode = { id: string; kind: string; label: string; x: number; y: number; hidden: boolean;
@@ -33,8 +35,8 @@ const readMap = (page: import("@playwright/test").Page) =>
 
 test.beforeEach(async ({ page }) => {
   await page.setViewportSize({ width: 1400, height: 860 });
-  await seedFirstRunSeen(page);
-  await page.goto("/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
+  await installDesktopRailRuntime(page, storefrontSampleFiles(), undefined, { replaceFixture: true });
+  await openMapOnApp(page, "/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
   await expect.poll(async () => (await readMap(page)).visible, { timeout: 20000 }).toBeGreaterThan(0);
   await waitForMapStill(page);
 });
@@ -131,18 +133,6 @@ test("the Korean relation sentence joins its particles to the names", async ({ p
   const sentence = page.locator('[data-testid="map-edge-sentence"]');
   await expect(sentence).toBeVisible({ timeout: 5000 });
   await expect(sentence).toHaveText("배송이 택배사 연동을 포함해요.");
-});
-
-test("an edit intent that arrives by URL on the sample says why it cannot edit and offers the folder", async ({ page }) => {
-  await page.goto(
-    "/ko/topology/?e2e=1&guides=off&p=capability%3Aorder-placement&workbench=edit",
-    { waitUntil: "domcontentloaded" });
-  const dialog = page.locator('[data-testid="recent-changes-needs-vault-dialog"]');
-  await expect(dialog).toBeVisible({ timeout: 15000 });
-  await expect(dialog).toContainText("고칠 수 있어요");
-  await expect.poll(() => new URL(page.url()).searchParams.get("workbench"), { timeout: 5000 }).toBeNull();
-  await page.locator('[data-testid="recent-changes-needs-vault-close"]').click();
-  await expect(dialog).toHaveCount(0, { timeout: 3000 });
 });
 
 test("a deep link that opens one domain frames its revealed children, and the 0 key agrees", async ({ page }) => {

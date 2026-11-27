@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
-import { seedFirstRunSeen } from "../../first-run-seed";
+import { installDesktopRailRuntime } from "../../desktop-rail-arrival-harness";
+import { openMapOnApp } from "../open-map-on-app";
+import { storefrontSampleFiles } from "../storefront-sample-files";
 import { waitForMapSettled, waitForMapStill } from "../../settle";
 
 /**
@@ -28,8 +30,8 @@ async function readTargetScale(page: import("@playwright/test").Page): Promise<n
 test("+ zooms in a step, - zooms out, 0 returns to the fit, and a modifier leaves the browser alone", async ({ page }) => {
   test.setTimeout(90_000);
   await page.setViewportSize({ width: 1400, height: 860 });
-  await seedFirstRunSeen(page);
-  await page.goto("/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
+  await installDesktopRailRuntime(page, storefrontSampleFiles(), undefined, { replaceFixture: true });
+  await openMapOnApp(page, "/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
   await waitForMapSettled(page);
   const canvas = page.locator('[data-testid="ontology-map-canvas"]');
   const box = (await canvas.boundingBox())!;

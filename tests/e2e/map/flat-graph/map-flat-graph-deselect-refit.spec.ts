@@ -1,6 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import en from "../../../../messages/en.json";
 import { waitForMapStill } from "../../settle";
 import { canvasBox, openDogfoodFlat, pressAt, readDial, settleSelection } from "./domain-star";
 
@@ -44,7 +43,7 @@ async function dockAtRest(page: Page): Promise<void> {
 
 /** Opens the dock from the chrome's toggle, or, with a concept selected, from its panel, which covers the toggle. */
 async function openDock(page: Page): Promise<void> {
-  if (await page.evaluate(() => window.__atlasMap!.selection().nodeId) === null) await page.getByTestId("topology-meaning-workbench-toggle").click();
+  if (await page.evaluate(() => window.__atlasMap!.selection().nodeId) === null) await page.getByTestId("topology-vault-agent-toggle").click();
   else {
     await page.getByTestId("map-detail-panel-more-menu-trigger").click();
     await page.getByTestId("map-detail-panel-action-meaning").click();
@@ -61,7 +60,7 @@ async function dockClosed(page: Page, restWidth: number): Promise<void> {
   await waitForMapStill(page, { what: "camera" });
 }
 
-const pressDockClose = (page: Page) => page.getByTestId("analysis-workbench").getByRole("button", { name: en.analysisWorkbench.close }).click();
+const pressDockClose = (page: Page) => page.getByTestId("analysis-workbench-close").click();
 
 /**
  * How far the closing dock has handed its width back to the map when the Escape lands: late in the

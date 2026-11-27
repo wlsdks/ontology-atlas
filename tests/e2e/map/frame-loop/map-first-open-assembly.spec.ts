@@ -1,7 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import type { AtlasMapProbe } from "../../atlas-map-probe";
-import { seedFirstRunSeen } from "../../first-run-seed";
+import { installDesktopRailRuntime } from "../../desktop-rail-arrival-harness";
+import { openFirstMapOnApp } from "../open-map-on-app";
+import { storefrontSampleFiles } from "../storefront-sample-files";
 import { waitForMapSettled } from "../../settle";
 
 interface Frame {
@@ -28,7 +30,9 @@ async function installSampler(page: Page): Promise<void> {
     w.__assembly = { frames: [], kinds: {}, parent: {}, rafTimes: [], pressedAt: null };
     addEventListener(
       "pointerdown",
-      () => {
+      (event) => {
+        // The press that opens the folder is not the press the spec measures.
+        if ((event.target as Element | null)?.closest?.('[data-testid="first-run-open"]')) return;
         w.__assembly.pressedAt ??= performance.now();
       },
       { capture: true },
@@ -111,13 +115,13 @@ async function waitForAssemblyMotion(page: Page): Promise<void> {
 
 test.describe("first-open map assembly", () => {
   test.beforeEach(async ({ page }) => {
-    await seedFirstRunSeen(page);
+    await installDesktopRailRuntime(page, storefrontSampleFiles(), undefined, { replaceFixture: true });
     await installSampler(page);
   });
 
   test("the tiers rise in order out of a still project under a still camera, then the map sleeps", async ({ page }) => {
     test.setTimeout(90_000);
-    await page.goto("/ko/topology/?synth=300&guides=off&e2e=1");
+    await openFirstMapOnApp(page, "/ko/topology/?synth=300&guides=off&e2e=1");
     await waitPastAssembly(page);
     const { frames, kinds, parent } = await readFrames(page);
     const d = displacement(frames);
@@ -167,7 +171,7 @@ test.describe("first-open map assembly", () => {
   });
 
   test("a press mid-assembly lands every concept on the next frames", async ({ page }) => {
-    await page.goto("/ko/topology/?synth=300&guides=off&e2e=1");
+    await openFirstMapOnApp(page, "/ko/topology/?synth=300&guides=off&e2e=1");
     const canvas = page.getByTestId("ontology-map-canvas");
     await canvas.waitFor();
     await waitForAssemblyMotion(page);
@@ -186,7 +190,7 @@ test.describe("first-open map assembly", () => {
 
   test("a fit pressed mid-assembly frames the assembled map", async ({ page }) => {
     test.setTimeout(90_000);
-    await page.goto("/ko/topology/?synth=300&guides=off&e2e=1");
+    await openFirstMapOnApp(page, "/ko/topology/?synth=300&guides=off&e2e=1");
     await waitForAssemblyMotion(page);
     const arrange = page.getByTestId("topology-auto-arrange");
     await arrange.click();
@@ -203,7 +207,7 @@ test.describe("first-open map assembly", () => {
 
   test("a second visit in the same session opens assembled", async ({ page }) => {
     test.setTimeout(90_000);
-    await page.goto("/ko/topology/?guides=off&e2e=1");
+    await openFirstMapOnApp(page, "/ko/topology/?guides=off&e2e=1");
     await waitPastAssembly(page);
     expect(Math.max(...displacement((await readFrames(page)).frames))).toBeGreaterThan(0.5);
 
@@ -215,21 +219,21 @@ test.describe("first-open map assembly", () => {
       (window as unknown as { __sameDocument?: boolean }).__sameDocument = true;
     });
     await page.goBack();
-    await expect(page).toHaveURL(/\/topology\/\?guides=off&e2e=1$/);
+    await expect(page).toHaveURL(/\/ko\/\?guides=off&e2e=1$/);
     expect(await page.evaluate(() => (window as unknown as { __sameDocument?: boolean }).__sameDocument)).toBe(true);
     await waitPastAssembly(page);
     expect(Math.max(...displacement((await readFrames(page)).frames))).toBeLessThan(0.5);
   });
 
   test("a ?p= arrival opens assembled", async ({ page }) => {
-    await page.goto("/ko/topology/?p=capability%3Acheckout&guides=off&e2e=1");
+    await openFirstMapOnApp(page, "/ko/topology/?p=capability%3Acheckout&guides=off&e2e=1");
     await waitPastAssembly(page);
     expect(Math.max(...displacement((await readFrames(page)).frames))).toBeLessThan(0.5);
   });
 
   test("reduced motion places every concept on the first frame", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
-    await page.goto("/ko/topology/?synth=300&guides=off&e2e=1");
+    await openFirstMapOnApp(page, "/ko/topology/?synth=300&guides=off&e2e=1");
     await waitPastAssembly(page);
     expect(Math.max(...displacement((await readFrames(page)).frames))).toBeLessThan(0.5);
   });

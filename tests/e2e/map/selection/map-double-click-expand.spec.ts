@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
-import { seedFirstRunSeen } from "../../first-run-seed";
+import { installDesktopRailRuntime } from "../../desktop-rail-arrival-harness";
+import { openMapOnApp } from "../open-map-on-app";
+import { storefrontSampleFiles } from "../storefront-sample-files";
 import { waitForMapStill } from "../../settle";
 
 /** A repeated click never becomes an undo: two taps in the double-click window must not deselect. */
@@ -11,8 +13,8 @@ type Probe = {
 test("a double-click keeps the selection and does not undo it", async ({ page }) => {
   test.setTimeout(120_000);
   await page.setViewportSize({ width: 1512, height: 900 });
-  await seedFirstRunSeen(page);
-  await page.goto("/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
+  await installDesktopRailRuntime(page, storefrontSampleFiles(), undefined, { replaceFixture: true });
+  await openMapOnApp(page, "/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
   await page.evaluate(() => document.fonts.ready);
   await waitForMapStill(page);
   const chip = () =>

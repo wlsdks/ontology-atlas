@@ -2,9 +2,9 @@ import { createHash } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 
 import "../atlas-map-probe";
-import { seedFirstRunSeen } from "../first-run-seed";
+import { installDesktopRailRuntime } from "../desktop-rail-arrival-harness";
+import { openMapOnApp } from "./open-map-on-app";
 import { waitForMapStill } from "../settle";
-import { stubDirectoryPicker } from "../vault-picker-stub";
 import type { DialProbe } from "../../../src/widgets/ontology-map/dial/dial-shapes";
 
 /** One project, six domains whose titles are long enough to collide, eighteen capabilities and one shared element. */
@@ -68,34 +68,10 @@ function folder(): Record<string, string> {
 const FOLDER = folder();
 const CONCEPTS = Object.keys(FOLDER).length;
 
-/**
- * A reopened folder's read ends after the map has drawn its first world, as any folder larger than
- * this one does; holding the reads keeps a fast disk from winning that race and hiding the order.
- */
-async function holdFolderReadsUntilMapDraws(page: Page): Promise<void> {
-  await page.addInitScript(() => {
-    const read = FileSystemFileHandle.prototype.getFile;
-    const drawn = new Promise<void>((resolve) => {
-      const check = () => ((window.__atlasMap?.nodes().length ?? 0) > 0 ? resolve() : requestAnimationFrame(check));
-      requestAnimationFrame(check);
-    });
-    FileSystemFileHandle.prototype.getFile = async function getFile(this: FileSystemFileHandle) {
-      await drawn;
-      return read.call(this);
-    };
-  });
-}
-
 /** Opens the folder once through the picker, then reopens the map the way a returning person does. */
 async function reopenFolder(page: Page): Promise<DialProbe> {
-  await seedFirstRunSeen(page);
-  await stubDirectoryPicker(page, FOLDER);
-  await page.goto("/en/topology/?guides=off&e2e=1", { waitUntil: "domcontentloaded" });
-  await page.getByTestId("first-run-starter-open").click();
-  await page.getByTestId("vault-guide-pick-existing").click();
-  await page.getByTestId("first-run-starter").waitFor({ state: "detached" });
-  await holdFolderReadsUntilMapDraws(page);
-  await page.goto("/en/topology/?guides=off&e2e=1", { waitUntil: "domcontentloaded" });
+  await installDesktopRailRuntime(page, FOLDER, undefined, { replaceFixture: true });
+  await openMapOnApp(page, "/en/topology/?guides=off&e2e=1", { waitUntil: "domcontentloaded" });
   await expect(page.locator(`[data-testid="topology-scope-readout"][data-total-concepts="${CONCEPTS}"]`)).toBeVisible();
   await waitForMapStill(page, { what: "camera" });
   await waitForMapStill(page);

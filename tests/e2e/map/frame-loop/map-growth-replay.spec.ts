@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
-import { seedFirstRunSeen } from "../../first-run-seed";
+import { installDesktopRailRuntime, mountDesktopVault } from "../../desktop-rail-arrival-harness";
+import { openMapOnApp } from "../open-map-on-app";
+import { storefrontSampleFiles } from "../storefront-sample-files";
 import { waitForMapStill, waitFrames } from "../../settle";
 
 type LastActive = { t: number; causes: string[] } | null;
@@ -51,8 +53,8 @@ type ReplayWindow = { __atlasMap: { dial: () => FlatNames }; __replayFrames: Rep
 
 async function openFlat(page: import("@playwright/test").Page): Promise<void> {
   await page.setViewportSize({ width: 1400, height: 860 });
-  await seedFirstRunSeen(page);
-  await page.goto("/en/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
+  await installDesktopRailRuntime(page, storefrontSampleFiles(), undefined, { replaceFixture: true });
+  await openMapOnApp(page, "/en/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => (window as unknown as Partial<ReplayWindow>).__atlasMap?.dial?.()?.owns === true, undefined, { timeout: 90_000 });
   await waitForMapStill(page);
 }
@@ -84,7 +86,7 @@ test("on the Flat map the replay clears every name and brings each domain back b
   const clusters = await page.evaluate(() => (window as unknown as ReplayWindow).__atlasMap.dial().clusters);
   const domains = clusters.map((c) => c.domainId).sort();
   expect(domains.length, "the sample has more than one domain to order").toBeGreaterThan(1);
-  expect(await namedDomains(page), "every domain is named at rest").toEqual(domains);
+  await expect.poll(() => namedDomains(page), { message: "every domain is named at rest" }).toEqual(domains);
 
   const tile = page.locator('[data-testid="topology-replay-growth"]');
   await recordNamedConcepts(page);
@@ -133,8 +135,9 @@ test("stopping the Flat replay midway brings every domain's name back", async ({
 test("the replay tile is offered only on the views that replay", async ({ page }) => {
   test.setTimeout(120_000);
   await page.setViewportSize({ width: 1400, height: 860 });
-  await seedFirstRunSeen(page);
+  await installDesktopRailRuntime(page, storefrontSampleFiles(), undefined, { replaceFixture: true });
   const tile = page.locator('[data-testid="topology-replay-growth"]');
+  await mountDesktopVault(page);
   for (const view of ["hex", "neural"]) {
     await page.goto(`/en/topology/?e2e=1&guides=off&view=${view}`, { waitUntil: "domcontentloaded" });
     await expect(page.locator('[data-testid="topology-fit-control"]'), `${view} shows the map utilities`).toBeVisible();
@@ -147,8 +150,8 @@ test("the replay tile is offered only on the views that replay", async ({ page }
 test("the play tile toggles the replay, survives pointer input, and stops on a second press", async ({ page }) => {
   test.setTimeout(120_000);
   await page.setViewportSize({ width: 1400, height: 860 });
-  await seedFirstRunSeen(page);
-  await page.goto("/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
+  await installDesktopRailRuntime(page, storefrontSampleFiles(), undefined, { replaceFixture: true });
+  await openMapOnApp(page, "/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
   await waitForMapStill(page);
 
   const tile = page.locator('[data-testid="topology-replay-growth"]');
@@ -180,8 +183,8 @@ test("the play tile toggles the replay, survives pointer input, and stops on a s
 test("Escape and a press on the canvas each end a running replay", async ({ page }) => {
   test.setTimeout(120_000);
   await page.setViewportSize({ width: 1400, height: 860 });
-  await seedFirstRunSeen(page);
-  await page.goto("/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
+  await installDesktopRailRuntime(page, storefrontSampleFiles(), undefined, { replaceFixture: true });
+  await openMapOnApp(page, "/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
   await waitForMapStill(page);
 
   const tile = page.locator('[data-testid="topology-replay-growth"]');

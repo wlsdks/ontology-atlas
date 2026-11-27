@@ -1,7 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { seedFirstRunSeen } from "../../first-run-seed";
-import { stubDirectoryPicker, writeFolderBeforePick } from "../../vault-picker-stub";
+import { installDesktopRailRuntime } from "../../desktop-rail-arrival-harness";
 
 const TREE = '[data-testid="topology-index-tree"]';
 const LOOSE_CONCEPTS = 120;
@@ -36,13 +35,9 @@ const focusedRow = (page: Page) =>
 test("the INDEX renders the rows in view and still reaches every row", async ({ page }) => {
   test.setTimeout(120_000);
   await page.setViewportSize({ width: 1512, height: 900 });
-  await seedFirstRunSeen(page);
-  await stubDirectoryPicker(page, {});
-  await page.goto("/en/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
-  await writeFolderBeforePick(page, folderWithLooseConcepts());
-  // The probe attaches after mount: press a hydrated button.
-  await page.waitForFunction(() => "__atlasMap" in window);
-  await page.getByTestId("topology-switch-to-my-data").click();
+  await installDesktopRailRuntime(page, folderWithLooseConcepts(), undefined, { replaceFixture: true });
+  await page.goto("/en/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
+  await page.getByTestId("first-run-open").click();
   await expect.poll(async () => (await topLevel(page)).total).toBeGreaterThan(LOOSE_CONCEPTS);
 
   const first = await topLevel(page);
