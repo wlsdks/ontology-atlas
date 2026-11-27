@@ -9,6 +9,7 @@ import type { KnowledgeProjectInsight } from '@/entities/knowledge-graph';
 import { buildFirstWords, type ScreenContextSnapshot } from '@/features/vault-agent';
 import { useVaultConceptFacts } from '@/features/vault-ontology';
 import { useHeldValue } from '@/shared/lib/render-timing/use-presence';
+import { cn } from '@/shared/lib/cn';
 import { AGENT_DOCK_INSET_SURFACE_CLASS, CloseButton } from '@/shared/ui';
 import { isLlmChatBridgeAvailable } from '@/shared/lib/llm-connection/tauri-llm';
 import { VAULT_AGENT_PANEL_ID } from '@/shared/config/agent/agent-panel';
@@ -269,17 +270,30 @@ export function VaultAgentPanel({
             <p className="truncate text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
               {t('title')}
             </p>
-            {/* One subtitle slot: when progress happens only the text changes, so the layout does not jump. */}
+            {/*
+              One subtitle slot as tall as the longer of its two sentences: both share one cell and
+              the one not shown stays invisible, so progress replacing the subtitle never moves the
+              conversation below. At the panel's 320px floor a sentence wraps rather than being cut.
+            */}
             <p
               data-testid="vault-agent-panel-subtitle"
-              className="truncate text-label tracking-label text-[color:var(--color-text-quaternary)]"
+              className="grid text-balance text-label tracking-label text-[color:var(--color-text-quaternary)]"
             >
-              {appliedTally > 0
-                ? t('sessionSummary', {
-                    concepts: agent.sessionSummary.concepts,
-                    relations: agent.sessionSummary.relations,
-                  })
-                : t('subtitle')}
+              <span
+                aria-hidden={appliedTally > 0 || undefined}
+                className={cn('col-start-1 row-start-1', appliedTally > 0 && 'invisible')}
+              >
+                {t('subtitle')}
+              </span>
+              <span
+                aria-hidden={appliedTally === 0 || undefined}
+                className={cn('col-start-1 row-start-1', appliedTally === 0 && 'invisible')}
+              >
+                {t('sessionSummary', {
+                  concepts: agent.sessionSummary.concepts,
+                  relations: agent.sessionSummary.relations,
+                })}
+              </span>
             </p>
           </div>
           <CloseButton data-testid="vault-agent-panel-close" onClick={onClose} label={t('close')} />
