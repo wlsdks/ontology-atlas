@@ -314,9 +314,9 @@ export function DesktopBody({
               className={SETUP_ACTION_PLACEMENT}
             >
               {initCopyState === "copied"
-                ? t("webCopied")
+                ? t("copied")
                 : initCopyState === "failed"
-                  ? t("webCopyFailed")
+                  ? t("copyFailed")
                   : t("initTerminalButton")}
             </Button>
           </div>

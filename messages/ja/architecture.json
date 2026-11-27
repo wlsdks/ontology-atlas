@@ -48,8 +48,6 @@
   "moduleCount": "モジュール{count}件",
   "trafficEdge": "{from} → {to}: import {count}件",
   "roleNotInProfile": "このプロファイルに「{role}」というレイヤーはありません。別のプロファイル向けのリンクかもしれません。",
-  "sourceListingUnavailable": "ソースモジュールは、プロジェクトのソースフォルダを接続すると表示されます。ブラウザはソースフォルダを読み取れません。このオントロジーフォルダをデスクトップアプリで開くと、ここが埋まります。",
-  "getInstalledApp": "アプリを入手",
   "sourceListingUnbound": "ソースフォルダがまだ接続されていません。このプロファイルが説明するフォルダを開くと、各レイヤーに実際のモジュールが並びます。",
   "connectedAgent": "接続中のエージェント",
   "draftWithAgent": "{agent}で草案を作成",

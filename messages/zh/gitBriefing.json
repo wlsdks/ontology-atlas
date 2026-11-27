@@ -2,7 +2,6 @@
   "title": "变更",
   "sourcePrompt": "选择一个 Git 仓库，查看它的提交和 PR 描述。本体不是必需的。",
   "chooseRepository": "选择 Git 仓库",
-  "webBody": "本地 Git 仓库只能在已安装的应用中读取。浏览器中不显示历史。",
   "sourceUnavailable": "无法读取此仓库，或文件夹访问权限已过期。日期已保留，请重新选择。",
   "noHistory": "此文件夹中没有可读取的 Git 提交。请选择其他仓库，或在第一次提交后重试。",
   "loading": "正在读取此仓库和周期的提交…",

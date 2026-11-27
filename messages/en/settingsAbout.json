@@ -26,8 +26,6 @@
     "diagnostics": "bug, report, debug, support, system info",
     "logs": "log, logs, crash, debug, finder"
   },
-  "webVersion": "Website version {version}",
-  "webVersionCaption": "This page is the website. The desktop app checks for its own updates.",
   "on": "On",
   "off": "Off",
   "whatsNewCaption": "What changed in each version",
@@ -53,11 +51,9 @@
   "diagnostic": {
     "build": "Version",
     "buildApp": "App {version}",
-    "buildWeb": "Website {version}",
     "buildUnknown": "unknown",
     "surface": "Platform",
     "surfaceDesktop": "desktop",
-    "surfaceWeb": "web",
     "userAgent": "User agent",
     "language": "Screen language",
     "textSize": "Text size",

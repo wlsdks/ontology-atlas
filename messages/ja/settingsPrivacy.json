@@ -1,6 +1,5 @@
 {
   "leadDesktop": "Atlasの画面はインターネットに接続しません。外に出るのは、下の一覧にあるものだけです。",
-  "leadWeb": "このWebサイトは、このコンピュータ上のフォルダを読み取ります。フォルダがアップロードされることはありません。",
   "outbound": {
     "title": "外部への送信",
     "keywords": "ネットワーク インターネット 送信 アップロード 外部 転送 監査 ログ 更新 確認 プロバイダ　network internet send upload outbound transfer audit log update check provider",
@@ -65,7 +64,6 @@
     "keywords": "最近 フォルダ 履歴 消去 一覧　recent folders history clear list",
     "label": "最近のフォルダ",
     "count": "{count, plural, =0 {保存されたフォルダなし} other {フォルダ#件}}",
-    "captionWeb": "このコンピュータに保存されています。一覧を消去してもフォルダには影響しません。",
     "captionDesktop": "このアプリに保存されています。一覧を消去してもフォルダには影響しません。",
     "failed": "一覧を消去できませんでした。もう一度お試しください。",
     "forgetAll": "すべて消去",

@@ -1,6 +1,5 @@
 {
   "localVaultPicker": {
-    "unsupported": "ここではローカルフォルダの編集は使えません。ディスク上のフォルダを開いて編集するには、デスクトップアプリをインストールしてください。",
     "copyPathAriaLabel": "ローカルフォルダのパスをコピー：{path}",
     "copyPathCopied": "パスをコピーしました",
     "copyPathFailed": "パスをコピーできませんでした",

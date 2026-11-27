@@ -11,7 +11,6 @@
     "localBadge": "ローカル",
     "paletteTooltip": "検索・コマンド・タグ(⌘K)",
     "paletteAriaLabel": "パレットを開く（検索・コマンド・タグ）",
-    "sourceAriaLabel": "オントロジーフォルダ",
     "vaultToolsMovedHint": "コーディングエージェントの設定と確認のツールは設定に移りました。右上の歯車(⚙)から開けます。",
     "contractToggleLabel": "フォルダのチェック",
     "contractToggleHide": "フォルダのチェックを閉じる",
@@ -21,9 +20,7 @@
     "vaultPillSampleLabel": "組み込みサンプル（Atlas自身の文書）",
     "docListCollapse": "文書一覧を折りたたむ",
     "docListExpand": "文書一覧を展開",
-    "vaultChipLocalPending": "フォルダ未選択",
-    "sourcePickSample": "サンプルを見る",
-    "sourcePickLocal": "自分のフォルダを開く"
+    "vaultChipLocalPending": "フォルダ未選択"
   },
   "tabs": {
     "stripAriaLabel": "開いている文書",
@@ -128,22 +125,11 @@
     "backToTop": "先頭へ戻る",
     "backToTopAria": "文書の先頭へスクロール"
   },
-  "sampleNotice": {
-    "title": "これは読み取り専用のサンプルです",
-    "body": "この文書はAtlas自身の例のため、編集はロックされています。"
-  },
-  "sampleWelcome": {
-    "title": "このサンプルとは",
-    "body": "Atlas自身の文書を、読み取り専用のサンプルとして見ています。左の一覧から好きなものを選んでください。大半は開発者向けのリファレンスです。自分のMarkdownフォルダを開くと、この画面にはそちらの内容が表示されます。",
-    "openFolderCta": "自分のフォルダを開く",
-    "dismissAria": "閉じる"
-  },
   "backlinksStrip": {
     "openInOntology": "マップで開く",
     "empty": "この文書へのリンクはまだありません"
   },
   "vaultStatus": {
-    "unsupportedTooltip": "ローカルのオントロジーフォルダの編集は、インストールしたデスクトップアプリで使えます。",
     "permissionNeededBanner": "フォルダへのアクセスが止まっています。編集を続けるには、アクセスを許可し直してください。",
     "errorBanner": "フォルダを読み取れませんでした({message})。フォルダを選び直すか、別のフォルダを選んでください。",
     "rootRejectedBanner": "このフォルダはマップとして使えません。システムフォルダやホームフォルダ全体ではなく、文書が入っているフォルダを選んでください。",
@@ -335,8 +321,6 @@
     "openPalette": "パレットを開く（検索・コマンド・タグ）",
     "findTags": "タグを探す",
     "viewDoc": "表示 · 文書",
-    "sourceServer": "サンプルフォルダを表示",
-    "sourceLocal": "ローカルフォルダを開く",
     "pinDoc": "この文書を固定",
     "unpinDoc": "固定を解除",
     "copyUrl": "現在の文書のURLをコピー",

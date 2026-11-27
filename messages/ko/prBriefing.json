@@ -42,7 +42,6 @@
   "noRecords": "요약을 준비하려면 완전한 PR을 하나 이상 고르세요.",
   "original": "PR 열기",
   "return": "요약으로 돌아가기",
-  "web": "로컬 Git 이력을 읽고 코딩 에이전트를 실행하려면 설치된 앱이 필요해요.",
   "publicChoice": "공개 GitHub",
   "githubAccount": "GitHub CLI 계정",
   "privateTransfer": "GitHub CLI가 github.com의 {account} 계정으로 {repository}의 PR을 요청해요. 계정에 이미 있는 권한이 적용돼요. Atlas는 비공개 PR 설명을 앱을 닫기 전까지만 보관하며, 에이전트에게 보내면 다른 곳에 복사될 수 있어요.",

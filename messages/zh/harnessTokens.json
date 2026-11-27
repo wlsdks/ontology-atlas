@@ -101,10 +101,6 @@
   "error": {
     "home": "无法读取 {path}：{reason}。其中内容未检查。"
   },
-  "web": {
-    "title": "检查 token 用量需要使用应用",
-    "body": "Claude Code 把会话文件放在你的主文件夹中，浏览器无法打开该文件夹。应用在本机读取这些文件，保留数量、时间、短会话 ID，以及模型、effort、智能体和工具服务器的名称。"
-  },
   "card": {
     "running": "正在检查 token 用量 · {done}/{total}",
     "done": "已检查 token 用量：{count} 项发现",

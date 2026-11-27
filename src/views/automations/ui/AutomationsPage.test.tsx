@@ -237,7 +237,7 @@ describe('Automations manager', () => {
     renderPage(runner({ storeStatus: 'no-vault' }));
     fireEvent.click(screen.getByTestId('automations-open-vault'));
     expect(mocks.open).toHaveBeenCalledTimes(1);
-    expect(screen.queryByRole('link', { name: en.automations.getApp })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /get the app/i })).not.toBeInTheDocument();
     expect(screen.queryByTestId('automations-new')).not.toBeInTheDocument();
   });
 

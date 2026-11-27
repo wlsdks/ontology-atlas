@@ -50,9 +50,5 @@
   "copyPath": "Copy path",
   "copied": "Copied",
   "close": "Close",
-  "back": "Back to {concept}",
-  "web": {
-    "title": "Reading code needs the desktop app",
-    "body": "A browser can open only the folder you chose, and the code is outside it. The desktop app reads the code folder connected on this computer."
-  }
+  "back": "Back to {concept}"
 }

@@ -1,6 +1,5 @@
 {
   "leadDesktop": "Atlas screens do not connect to the internet; only the paths below do.",
-  "leadWeb": "This website reads your folder on this computer. Your folder is never uploaded.",
   "outbound": {
     "title": "Outbound transfers",
     "keywords": "network internet send upload outbound transfer audit log update check provider",
@@ -65,7 +64,6 @@
     "keywords": "recent folders history clear list",
     "label": "Recent folders",
     "count": "{count, plural, =0 {None saved} one {# folder} other {# folders}}",
-    "captionWeb": "Saved on this computer. Clearing the list does not touch the folders.",
     "captionDesktop": "Saved in this app. Clearing the list does not touch the folders.",
     "failed": "Could not clear the list. Try again.",
     "forgetAll": "Clear all",

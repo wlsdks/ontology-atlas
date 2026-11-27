@@ -7,7 +7,6 @@
   "codingToolsKeywords": "智能体 安装 连接 终端",
   "modelsLabel": "模型 · API key",
   "modelsCaptionKeys": "{count, plural, =0 {钥匙串中没有密钥} other {钥匙串中有 # 个密钥}}",
-  "modelsCaptionWeb": "在桌面应用中",
   "modelsKeywords": "密钥 钥匙串 模型 服务商 本地模型服务器 api key",
   "mcpLabel": "MCP",
   "mcpCaption": "此文件夹的 MCP 服务器",

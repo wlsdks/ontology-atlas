@@ -3,10 +3,9 @@ import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 /**
- * Single-source guard: in static mode the answer to which bundled vault is in use must come from
- * `useStaticVaultSource`, which downloads the sample on demand and never in the installed app.
- * `resolveStaticVaultSource` statically imports all five JSON files, so only the build-time and
- * `/download` callers named below may use it (the guide pages and the `/sample` map's size line).
+ * Single-source guard: the bundled vault's JSON reaches screens only through the callers named
+ * below. `resolveStaticVaultSource` statically imports all five JSON files, so only the build-time
+ * and `/download` callers may use it (the guide pages and the `/sample` map's size line).
  * Walks with node:fs and asserts the file count, since a missing external tool returns 0 hits
  * quietly.
  */
@@ -97,9 +96,8 @@ describe('static vault single entry point contract', () => {
       offenders,
       [
         'Importing the bundled vault sources (the dogfood or storefront manifest and bodies) directly',
-        'makes that one surface silently ignore the choice to view the sample business.',
-        'Screen code uses useStaticVaultSource() instead, so the manifest and bodies arrive as a pair',
-        'and only when a web screen shows them.',
+        'puts the bundled vault back into every route\'s first load.',
+        'Read them through resolveStaticVaultSource() in the files STATIC_IMPORTERS names.',
         'Offending files:',
         ...offenders,
       ].join('\n'),
@@ -122,7 +120,7 @@ describe('static vault single entry point contract', () => {
       const callers = used.get(binding) ?? [];
       expect(
         callers.filter((rel) => !allowed.has(rel)),
-        `${binding} imports bundled vault JSON statically; screen code uses useStaticVaultSource().`,
+        `${binding} imports bundled vault JSON statically; only the files STATIC_IMPORTERS names may.`,
       ).toEqual([]);
       // Alive both ways: a renamed caller must leave the list rather than rot in it.
       expect([...allowed].filter((rel) => !callers.includes(rel))).toEqual([]);

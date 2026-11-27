@@ -516,7 +516,7 @@ export function ProjectDetailPage({
               className="max-w-[var(--measure-prose)] break-keep text-pretty text-title leading-title text-[color:var(--color-text-primary)]"
             />
             {bodyPending ? (
-              <div data-testid="project-detail-lead-pending" aria-hidden className="mt-3 min-h-[7.4rem] max-md:min-h-[12.4rem] [html[data-sample=dogfood]_&]:md:min-h-[1.75rem] [html[data-sample=dogfood]_&]:max-md:min-h-[1.5rem]" />
+              <div data-testid="project-detail-lead-pending" aria-hidden className="mt-3 min-h-[7.4rem] max-md:min-h-[12.4rem]" />
             ) : (
               <>
               {leadParagraph ? (
@@ -636,7 +636,7 @@ export function ProjectDetailPage({
             </p>
           </div>
           {insightPending ? (
-            <div data-testid="project-detail-composition-pending" aria-busy="true" className="min-h-[22.75rem] max-md:min-h-[48rem] [html[data-sample=dogfood]_&]:md:min-h-[16rem] [html[data-sample=dogfood]_&]:max-md:min-h-[41.75rem]" />
+            <div data-testid="project-detail-composition-pending" aria-busy="true" className="min-h-[22.75rem] max-md:min-h-[48rem]" />
           ) : domainComposition.domains.length > 0 ? (
             <DomainMasterDetail
               domains={domainComposition.domains}

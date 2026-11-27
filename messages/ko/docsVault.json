@@ -11,7 +11,6 @@
     "localBadge": "로컬",
     "paletteTooltip": "검색 · 명령 · 태그 (⌘K)",
     "paletteAriaLabel": "팔레트 열기 (검색 · 명령 · 태그)",
-    "sourceAriaLabel": "폴더 선택",
     "vaultToolsMovedHint": "코딩 에이전트 설정·확인 도구는 설정으로 옮겼어요. 오른쪽 위 설정(⚙)에서 열어요.",
     "contractToggleLabel": "폴더 검사",
     "contractToggleHide": "폴더 검사 닫기",
@@ -21,9 +20,7 @@
     "vaultPillSampleLabel": "내장 샘플 (Atlas 자체 문서)",
     "docListCollapse": "문서 목록 접기",
     "docListExpand": "문서 목록 펼치기",
-    "vaultChipLocalPending": "폴더 미선택",
-    "sourcePickSample": "샘플 보기",
-    "sourcePickLocal": "내 폴더 열기"
+    "vaultChipLocalPending": "폴더 미선택"
   },
   "tabs": {
     "stripAriaLabel": "열린 문서",
@@ -128,22 +125,11 @@
     "backToTop": "맨 위로",
     "backToTopAria": "문서 맨 위로 이동"
   },
-  "sampleNotice": {
-    "title": "읽기 전용 샘플이에요",
-    "body": "이 문서는 Atlas 자체 예시라 편집이 잠겨 있어요."
-  },
-  "sampleWelcome": {
-    "title": "이 샘플은 무엇인가요?",
-    "body": "Atlas 자체 문서를 읽기 전용 샘플로 보여주고 있어요. 왼쪽 목록에서 아무 문서나 눌러 둘러보세요. 대부분은 개발자용 기술 문서예요. 내 마크다운 폴더를 열면 그 폴더가 이 화면을 채워요.",
-    "openFolderCta": "내 폴더 열기",
-    "dismissAria": "안내 닫기"
-  },
   "backlinksStrip": {
     "openInOntology": "지도에서 열기",
     "empty": "아직 이 문서를 참조한 문서가 없어요"
   },
   "vaultStatus": {
-    "unsupportedTooltip": "로컬 온톨로지 폴더 편집은 설치된 데스크톱 앱에서 사용할 수 있어요.",
     "permissionNeededBanner": "온톨로지 폴더 접근이 멈췄어요. 편집을 이어가려면 접근을 다시 허용해 주세요.",
     "errorBanner": "폴더를 읽지 못했어요 ({message}). 폴더를 다시 고르거나 다른 폴더를 골라 주세요.",
     "rootRejectedBanner": "이 폴더는 지도로 만들 수 없어요. 시스템 폴더나 홈 폴더 전체 말고, 문서가 들어 있는 폴더를 골라 주세요.",
@@ -335,8 +321,6 @@
     "openPalette": "팔레트 열기 (검색 · 명령 · 태그)",
     "findTags": "태그 찾기",
     "viewDoc": "뷰 · 문서 보기",
-    "sourceServer": "샘플 폴더 보기",
-    "sourceLocal": "내 폴더 열기",
     "pinDoc": "이 문서 고정",
     "unpinDoc": "고정 해제",
     "copyUrl": "현재 문서 URL 복사",

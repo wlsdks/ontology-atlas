@@ -77,7 +77,7 @@ export function CommitDetailHeader({
             className: "-ml-2.5 border-transparent font-mono tabular-nums",
           })}
         >
-          {hashState === "copied" ? t("webCopied") : shortHash(hash)}
+          {hashState === "copied" ? t("copied") : shortHash(hash)}
         </button>
         <time dateTime={isoTime} className="tabular-nums">
           {dateLabel}

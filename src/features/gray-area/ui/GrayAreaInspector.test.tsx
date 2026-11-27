@@ -88,12 +88,11 @@ it.each(['binding_changed','binding_identity_changed','source_unavailable','unsa
   expect(runtime.invoke.mock.calls.some(([command])=>command==='read_gray_area_evidence')).toBe(false);
 });
 
-it('a native sample without a local folder offers no download and makes no source read', async () => {
+it('without a local folder it says so and makes no source read', async () => {
   render(<NextIntlClientProvider locale="en" messages={{grayArea:messages}}>
     <GrayAreaInspector open vaultPath={null} selection={{projectSlug:'sample',uids:['sample'],label:'Sample',key:'sample'}} onClose={()=>{}} onFocus={()=>{}} onPrepare={()=>{}}/>
   </NextIntlClientProvider>);
   await waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument());
-  expect(screen.queryByRole('link', {name:'Get the app'})).not.toBeInTheDocument();
   expect(screen.getByTestId('gray-area-local-folder-required')).toBeVisible();
   expect(runtime.invoke).not.toHaveBeenCalled();
 });

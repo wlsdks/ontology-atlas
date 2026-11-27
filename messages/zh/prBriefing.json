@@ -42,7 +42,6 @@
   "noRecords": "请至少选择一个完整的 PR 来准备摘要。",
   "original": "打开 PR",
   "return": "返回摘要",
-  "web": "读取本地 Git 历史和运行编码智能体需要安装的应用。",
   "publicChoice": "公开 GitHub",
   "githubAccount": "GitHub CLI 账户",
   "privateTransfer": "GitHub CLI 将使用 github.com 上的 {account} 账号请求 {repository} 的 PR。该账号已有的权限会生效。Atlas 只在关闭应用前保留私有 PR 描述；发送给智能体后可能会被复制到其他地方。",

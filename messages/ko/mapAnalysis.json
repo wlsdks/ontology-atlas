@@ -41,7 +41,6 @@
     "some": "{number, number}차 분석 뒤로 코드에 새 파일 {added, number}개가 생기고 파일 {changed, number}개가 바뀌었어요. 위 숫자에는 아직 들어 있지 않아요.",
     "behind": "개념 {count, number}개는 가리키는 코드가 바뀌기 전에 적혔어요.",
     "unknownCommit": "바뀐 파일을 셀 수 없어요. {number, number}차 분석 때 읽은 커밋({commit})이 이 저장소 기록에 없어요.",
-    "noGit": "바뀐 파일을 셀 수 없어요. 연결된 코드 폴더가 Git 저장소가 아니에요.",
-    "web": "분석 뒤 바뀐 파일을 세려면 코드의 Git 기록을 읽는 데스크톱 앱이 필요해요."
+    "noGit": "바뀐 파일을 셀 수 없어요. 연결된 코드 폴더가 Git 저장소가 아니에요."
   }
 }

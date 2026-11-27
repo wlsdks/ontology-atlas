@@ -284,14 +284,12 @@
     "agentFallback": "Your coding agent",
     "bodyWikiOnly": "This folder has wiki pages but no sources yet. Add the documents they came from, so every claim can cite one.",
     "where": "The Library lists only files in the sources folder inside {folder}. You can also put files there in {fileManagerName}.",
-    "whereWeb": "The Library lists only files in the sources folder inside {folder}.",
     "copyNote": "Files outside the sources folder are copied in. The original files are not moved or deleted.",
     "reveal": "{fileManager, select, finder {Show in Finder} explorer {Show in File Explorer} other {Show in file manager}}",
     "fileManagerName": "{fileManager, select, finder {Finder} explorer {File Explorer} other {the file manager}}",
     "privacy": "Atlas sends your sources nowhere; work you give an agent goes through that agent's service.",
     "noAgent": "No coding agent is connected yet. You can add sources now and connect one later.",
     "noAgentLink": "Connect an agent",
-    "web": "In the browser you can add and read sources. Writing wiki pages needs the Atlas app.",
     "drop": {
       "title": "Drop files or folders to copy them into the sources folder",
       "or": "or",
@@ -432,7 +430,6 @@
     "unknownAuthor": "unknown",
     "transfer": "The coding agent sends requests directly to its provider; Atlas does not record that traffic. Wiki pages that fit the template can be saved automatically. Saved answers always need separate review.",
     "compileFailed": "Could not start the agent: {reason}",
-    "compileWebGetApp": "Get the app",
     "agentMissing": "Connect a coding agent to check the wiki and write wiki pages from sources.",
     "agentMissingDoor": "Connect an agent",
     "offTemplateAriaLabel": "How this page differs from the wiki template",
@@ -612,7 +609,6 @@
     "clearSearch": "Clear search",
     "title": "Documents found in {folders}",
     "preamble": "Chosen by file name, format and size. Nothing is copied until you press Add.",
-    "webLimit": "Only the open folder can be listed here; a connected code folder needs the app.",
     "walkedRoots": "Also listed: {roots}",
     "walking": "Reading the folder listings…",
     "empty": "No file in {folders} looks like a document. Atlas skips licence and notice files, files named by random letters and digits, build and test files, empty files, and folders such as public, output, build and vendor.",
@@ -624,7 +620,6 @@
     "cancel": "Cancel",
     "close": "Close",
     "add": "{count, plural, =0 {Add selected} one {Add # file} other {Add # files}}",
-    "webGetApp": "Get the app",
     "emptyAllDeclined": "{count, plural, one {The only document left here is one you passed on before.} other {The only documents left here are # you passed on before.}}"
   },
   "source": {
@@ -1113,7 +1108,6 @@
     "writer": "<name>{agent}</name> writes the pages",
     "writerAnyAgent": "The coding agent you connected writes the pages",
     "batchReturned": "{count, plural, one {# source from the last request still has no wiki page and moved to the end of the list.} other {# sources from the last request still have no wiki page and moved to the end of the list.}}",
-    "webLine": "Only the app writes wiki pages. Reading works here.",
     "allDone": "No wiki page left to write"
   },
   "sourcesHome": {
@@ -1145,7 +1139,6 @@
       "lead": "Press “{action}” and the agent reads the sources below, top first, and writes their wiki pages.",
       "leadRunning": "The agent is writing wiki pages from the top. A source leaves this list once its page is written.",
       "privacy": "Atlas sends your sources nowhere; work you give an agent goes through that agent's service.",
-      "webNote": "In the app, wiki pages are written for these first.",
       "waitingTitle": "Pages to write here",
       "nextEmpty": "Every source here has a wiki page that matches it.",
       "unreadable": "{count, plural, one {# source here can't be read} other {# sources here can't be read}}",

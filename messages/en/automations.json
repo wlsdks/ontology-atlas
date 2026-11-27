@@ -39,8 +39,6 @@
     "ontology": "Ontology",
     "documents": "Documents"
   },
-  "appRequiredDescription": "Open your folder in the app to create schedules right on this screen.",
-  "getApp": "Get the app",
   "loadingTitle": "Loading scheduled checks",
   "malformedTitle": "The schedules file needs attention",
   "malformedDescription": "Atlas could not read the local schedule file and left it unchanged. Fix it, then refresh.",

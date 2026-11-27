@@ -126,13 +126,6 @@ export const VOCABULARY = {
       ],
     },
   },
-  installedApp: {
-    applies: ['ko', 'en', 'ja', 'zh'],
-    ko: { all: [/설치(된|해)/, /앱/] },
-    ja: { all: [/インストール/, /アプリ/] },
-    zh: { all: [/安装/, /应用/] },
-    en: { all: [/installed|install the/i, /app/i] },
-  },
   // A Library source (a file under sources/). docs/specs/2026-11-21-library-words-and-first-run.md
   sourceWord: {
     applies: ['ko', 'ja'],
@@ -208,10 +201,6 @@ export function column(id, locale, table = VOCABULARY) {
 
 export function matches(id, locale, text, table = VOCABULARY) {
   return column(id, locale, table).pattern.test(text);
-}
-
-export function matchesAll(id, locale, text, table = VOCABULARY) {
-  return column(id, locale, table).all.every((pattern) => pattern.test(text));
 }
 
 /**

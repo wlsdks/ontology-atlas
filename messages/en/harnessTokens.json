@@ -101,10 +101,6 @@
   "error": {
     "home": "Could not read {path}: {reason}. Nothing there was inspected."
   },
-  "web": {
-    "title": "Inspecting token use needs the app",
-    "body": "Claude Code keeps its session files in your home folder, which a browser cannot open. The app reads them on this computer and keeps counts, times, short session ids, and model, effort, agent and tool server names."
-  },
   "card": {
     "running": "Inspecting token use · {done} of {total}",
     "done": "Token use inspected: {count, plural, one {# finding} other {# findings}}",

@@ -4,7 +4,6 @@
   "bulletAnyFolder": "任何 Markdown 文件夹都可以，不需要特殊格式。",
   "bulletLocal": "Atlas 在本地打开这个文件夹，不会上传到 Atlas 后端。之后连接的编码智能体可能会把提示词和上下文发给它自己的服务商。",
   "bulletStarter": "选一个空文件夹，Atlas 会添加起步文档。",
-  "bulletPermission": "选好后，浏览器会请求“允许”。这是授予此页面访问本地文件的权限，与编码智能体的连接无关。",
   "actionPickExisting": "选择现有文件夹",
   "actionCreateNew": "用空文件夹重新开始",
   "actionCancel": "以后再说"

@@ -1,6 +1,5 @@
 {
   "localVaultPicker": {
-    "unsupported": "여기서는 온톨로지 폴더를 열어 편집할 수 없어요. 데스크톱 앱을 설치해 디스크의 폴더를 열고 편집하세요.",
     "copyPathAriaLabel": "온톨로지 폴더 경로 복사: {path}",
     "copyPathCopied": "경로 복사됨",
     "copyPathFailed": "경로 복사 실패",

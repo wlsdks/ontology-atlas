@@ -39,8 +39,6 @@
     "ontology": "本体",
     "documents": "文档"
   },
-  "appRequiredDescription": "在应用中打开文件夹，即可在此界面直接创建计划。",
-  "getApp": "获取应用",
   "loadingTitle": "正在加载定时检查",
   "malformedTitle": "计划文件需要处理",
   "malformedDescription": "Atlas 无法读取本地计划文件，已保持原样。请修复后刷新。",

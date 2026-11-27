@@ -48,8 +48,6 @@
   "moduleCount": "{count} 个模块",
   "trafficEdge": "{from} → {to}：{count} 个导入",
   "roleNotInProfile": "此规则配置中没有名为“{role}”的层。该链接可能属于另一份规则配置。",
-  "sourceListingUnavailable": "连接项目源文件夹后，这里会显示源码模块。浏览器无法读取源文件夹；在桌面应用中打开此本体文件夹，就会填充。",
-  "getInstalledApp": "下载应用",
   "sourceListingUnbound": "尚未连接源文件夹。打开此规则配置描述的文件夹后，每一层都会列出实际的模块。",
   "connectedAgent": "已连接的智能体",
   "draftWithAgent": "用 {agent} 起草",

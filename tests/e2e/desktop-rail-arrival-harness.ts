@@ -21,25 +21,24 @@ import { dogfoodVaultFiles } from "./map/dogfood-vault-files";
  * delayed by `NATIVE_LATENCY_MS`: a stub that resolves in the same microtask hides the window a
  * flash lives in. The Tauri runtime signal is injected because the app ships the same export.
  *
- * ## Moving a spec onto it
+ * ## Using it
  *
  * Call `installDesktopRailRuntime(page, extraFiles, undefined, options)` before the first
  * `page.goto`, then open the folder the way a person does: `mountDesktopVault(page)`, or press
  * `first-run-open` / `first-run-starter-open` and then `vault-guide-pick-existing` on the screen
- * under test. `tests/contract/e2e/app-route-runtime.contract.test.ts` lists the specs not yet
- * moved; a spec leaves its list when it installs this runtime and names none of the browser doors.
+ * under test. `tests/contract/e2e/app-route-runtime.contract.test.ts` fails a spec that visits an
+ * app route without installing it.
  *
- * | The spec used | It now does |
- * |---|---|
- * | `stubDirectoryPicker(page, files)` | `installDesktopRailRuntime(page, files, undefined, { replaceFixture: true })`; the picker is `pick_vault_directory`. |
- * | `writeFolderBeforePick` | put the files in `extraFiles`, or `writeDesktopFile` before the press. |
- * | `useDogfoodSample` or `demo:sample-source` (the bundled Atlas sample) | `{ replaceFixture: true }` with `atlasSampleFiles()` as `extraFiles`. |
- * | the Storefront sample (`/project/storefront`, the bundled Online Store) | the default: with no `replaceFixture` the folder holds `storefrontFiles()`; `{ replaceFixture: true }` with `storefrontSampleFiles()` serves the bundled sample itself. |
- * | `?shell=desktop` | drop it: the runtime is the desktop shell. |
- * | a browser handle written through OPFS | `writeDesktopFile` / `removeDesktopFile` / `renameDesktopFile`, read back with `readDesktopFile`. |
- * | `showOpenFilePicker` stubbed | `externalFiles` + `chooseSourceFiles` (`pick_source_files`, then `import_source_files`). |
- * | a records seed in IndexedDB (`demo-kv`) | `seedKnownDesktopFolders`, which writes the app's records with `desktopRootPath`. |
- * | `queryPermission` patched to `denied` | the app has no permission prompt: a folder it holds no grant for is `ungrantedFolders`, one that vanished is a root `folders` does not serve. |
+ * - The folder picker is `pick_vault_directory`; `{ replaceFixture: true }` serves `extraFiles`
+ *   instead of the default Storefront fixture folder.
+ * - Files change through `writeDesktopFile`, `removeDesktopFile` and `renameDesktopFile`, and are
+ *   read back with `readDesktopFile`.
+ * - The source file picker is `externalFiles` with `chooseSourceFiles` (`pick_source_files`, then
+ *   `import_source_files`).
+ * - Remembered folders are seeded with `seedKnownDesktopFolders`, which writes the app's records
+ *   with `desktopRootPath`.
+ * - The app has no permission prompt: a folder it holds no grant for is `ungrantedFolders`, and one
+ *   that vanished is a root `folders` does not serve.
  *
  * Seeding: `storefrontFiles()` is the shared fixture folder (Storefront), `storefrontSampleFiles()`
  * the bundled Online Store (`samples/storefront`), `atlasSampleFiles()` the product's own vault

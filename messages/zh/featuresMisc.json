@@ -1,6 +1,5 @@
 {
   "localVaultPicker": {
-    "unsupported": "这里无法编辑本地文件夹。请安装桌面应用，以打开并编辑磁盘上的文件夹。",
     "copyPathAriaLabel": "复制本地文件夹路径：{path}",
     "copyPathCopied": "路径已复制",
     "copyPathFailed": "路径复制失败",

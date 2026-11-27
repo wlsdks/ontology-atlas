@@ -4,7 +4,7 @@ import path from "node:path";
 import { evaluateDesktopReleasePreflight } from "../lib/desktop/release-script-contract.mjs";
 import { inspectCodexRunContract } from "../lib/desktop/codex-run-contract.mjs";
 import { connectSrcIsExact, DESKTOP_CONNECT_SRC_TOKENS } from "../lib/desktop/desktop-csp.mjs";
-import { matches, matchesAll } from "../lib/i18n/locale-vocabulary.mjs";
+import { matches } from "../lib/i18n/locale-vocabulary.mjs";
 import { blankComments } from "../quality/source-language/inventory.mjs";
 import { APP_VERSION_FILE_LIST, readAppVersions, versionMismatches } from "../lib/release-versions.mjs";
 
@@ -727,49 +727,31 @@ if (!downloadPage.includes('/docs/?intent=local')) {
 
 /*
  * Checks facts, not sentences: a sentence pin goes red when the copy improves, the failure direction
- * .claude/rules/documentation.md forbids. The one contract kept: guidance for local-folder work points
- * at the installed app, and browser File System Access is not advertised as a capability.
+ * .claude/rules/documentation.md forbids. The one contract kept: the shortcut description and the
+ * open label name the folder they open, and neither advertises browser File System Access as a
+ * capability.
  */
 const desktopRoutingCopy = [
   enMessages.searchWidgets.shortcuts.rows.localVault,
   koMessages.searchWidgets.shortcuts.rows.localVault,
-  enMessages.docsVault.vaultStatus.unsupportedTooltip,
-  koMessages.docsVault.vaultStatus.unsupportedTooltip,
-  enMessages.featuresMisc.localVaultPicker.unsupported,
-  koMessages.featuresMisc.localVaultPicker.unsupported,
+  enMessages.featuresMisc.localVaultPicker.openLabel,
+  koMessages.featuresMisc.localVaultPicker.openLabel,
 ];
-// Does each locale point at "the installed app" in its own words?
-const namesInstalledApp = (text, locale) => matchesAll("installedApp", locale, text);
-// Browser FSA must not be **advertised as a capability**. Naming it in an honest
-// degradation notice is fine, so only "you can do X" sentences are checked.
-const advertisesBrowserFsa = desktopRoutingCopy.some(
-  (text) => text.includes("File System Access") && !/desktop|설치/i.test(text),
-);
-/**
- * Two degradation notices (`unsupportedTooltip`, `localVaultPicker.unsupported`) tell a browser
- * without FSA "not here, but it works in the app", so they point at the installed app. The shortcut
- * description (`shortcuts.rows.localVault`) is true on the web too (`isDocsVaultLocalSourceDisabled`),
- * so it must name what it opens (a folder), not a runtime. FSA advertised as a capability is checked
- * across all six strings.
- */
+const advertisesBrowserFsa = desktopRoutingCopy.some((text) => text.includes("File System Access"));
 const namesTheFolder = (text, locale) => matches("folderWord", locale, text);
 
 if (
   namesTheFolder(enMessages.searchWidgets.shortcuts.rows.localVault, "en") &&
   namesTheFolder(koMessages.searchWidgets.shortcuts.rows.localVault, "ko") &&
-  namesInstalledApp(enMessages.docsVault.vaultStatus.unsupportedTooltip, "en") &&
-  namesInstalledApp(koMessages.docsVault.vaultStatus.unsupportedTooltip, "ko") &&
-  namesInstalledApp(enMessages.featuresMisc.localVaultPicker.unsupported, "en") &&
-  namesInstalledApp(koMessages.featuresMisc.localVaultPicker.unsupported, "ko") &&
   !advertisesBrowserFsa &&
   // An open label must name **what it opens**. Which word it uses is not pinned.
   namesTheFolder(enMessages.featuresMisc.localVaultPicker.openLabel, "en") &&
   namesTheFolder(koMessages.featuresMisc.localVaultPicker.openLabel, "ko")
 ) {
-  pass("the demotion notice names the installed app and the shortcut copy names the folder it opens — neither advertises FSA as a capability");
+  pass("the shortcut and open-label copy name the folder they open — neither advertises FSA as a capability");
 } else {
   fail(
-    "the demotion notice must point at the installed app, the shortcut copy must name what it opens (the folder), and neither may advertise browser File System Access as a capability",
+    "the shortcut copy and the open label must name what they open (the folder), and neither may advertise browser File System Access as a capability",
   );
 }
 

@@ -3,9 +3,8 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * Keeps the folder-watch bridge alive on both surfaces. The app uses an OS watcher with a 500ms
- * debounce and has no polling fallback; the web polls adaptively. This is latency, not degradation,
- * so it is a different gate from `DEGRADED_SURFACES`.
+ * Keeps the folder-watch bridge alive: the app uses an OS watcher with a 500ms debounce, and the
+ * front end listens for the event it emits.
  */
 
 function read(relative: string): string {
@@ -34,14 +33,5 @@ describe("folder watch bridge", () => {
       "Without a listener the screen does nothing when Rust emits the event, " +
         "which is the quietest kind of failure.",
     ).toContain("vault-changed");
-  });
-
-  it("web side: the polling fallback is alive — the web is not 'unable' but 'late'", () => {
-    const cadence = read("src/entities/vault-session/model/local-vault/poll-cadence.test.ts");
-    expect(
-      cadence,
-      "Without the polling cadence the web build really cannot see file changes. Then " +
-        "this capability moves to the degraded axis and needs a DEGRADED_SURFACES entry.",
-    ).toMatch(/burstMs|idleMs/);
   });
 });

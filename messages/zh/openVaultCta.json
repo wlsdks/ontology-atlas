@@ -1,5 +1,4 @@
 {
   "label": "打开我的文件夹",
-  "busyLabel": "正在打开…",
-  "unsupportedLabel": "在应用中打开"
+  "busyLabel": "正在打开…"
 }

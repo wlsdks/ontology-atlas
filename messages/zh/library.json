@@ -284,14 +284,12 @@
     "agentFallback": "你的编码智能体",
     "bodyWikiOnly": "此文件夹有 Wiki 页面，但还没有来源。添加这些页面依据的文档，每个论断就能引用一个来源。",
     "where": "资料库只列出“{folder}”文件夹中 sources 文件夹里的文件。你也可以在 {fileManagerName} 中把文件放进去。",
-    "whereWeb": "资料库只列出“{folder}”文件夹中 sources 文件夹里的文件。",
     "copyNote": "sources 文件夹之外的文件会被复制进来。原文件不会被移动或删除。",
     "reveal": "{fileManager, select, finder {在访达中显示} explorer {在文件资源管理器中显示} other {在文件管理器中显示}}",
     "fileManagerName": "{fileManager, select, finder {访达} explorer {文件资源管理器} other {文件管理器}}",
     "privacy": "Atlas 不会把你的来源发送到任何地方，只有交给智能体的工作会经过该智能体的服务。",
     "noAgent": "尚未连接编码智能体。你可以现在添加来源，稍后再连接智能体。",
     "noAgentLink": "连接智能体",
-    "web": "在浏览器中可以添加和阅读来源。撰写 Wiki 页面需要 Atlas 应用。",
     "drop": {
       "title": "拖放文件或文件夹即可复制到 sources 文件夹",
       "or": "或",
@@ -432,7 +430,6 @@
     "unknownAuthor": "未知",
     "transfer": "编码智能体直接向其服务商发送请求；Atlas 不记录这部分流量。符合模板的 Wiki 页面可以自动保存，但保存的答案始终需要单独复核。",
     "compileFailed": "无法启动智能体：{reason}",
-    "compileWebGetApp": "获取应用",
     "agentMissing": "连接编码智能体后，就可以让它检查 Wiki 并生成 Wiki 页面。",
     "agentMissingDoor": "连接智能体",
     "offTemplateAriaLabel": "此页面与 Wiki 模板的差异",
@@ -612,7 +609,6 @@
     "clearSearch": "清除搜索",
     "title": "在“{folders}”中找到的文档",
     "preamble": "仅根据文件名、格式和大小挑选。点按“添加”之前不会复制任何内容。",
-    "webLimit": "这里只能读取当前打开的文件夹；已连接的代码文件夹只能在应用中读取。",
     "walkedRoots": "同时读取了：{roots}",
     "walking": "正在读取文件夹列表…",
     "empty": "“{folders}”中没有看起来像文档的文件。Atlas 会跳过许可证和声明文件、以随机字母和数字命名的文件、构建和测试文件、空文件，以及 public、output、build 等文件夹。",
@@ -624,7 +620,6 @@
     "cancel": "取消",
     "close": "关闭",
     "add": "{count, plural, =0 {添加所选} other {添加 # 个文件}}",
-    "webGetApp": "获取应用",
     "emptyAllDeclined": "这里仅剩的文档是你之前跳过的 {count} 个。"
   },
   "source": {
@@ -1113,7 +1108,6 @@
     "writer": "由 <name>{agent}</name> 撰写",
     "writerAnyAgent": "由你连接的编码代理撰写",
     "batchReturned": "上次请求中有 {count, number} 份来源仍没有 Wiki 页面，已移到列表末尾。",
-    "webLine": "只有应用能撰写 Wiki 页面，在这里可以阅读。",
     "allDone": "没有待写的 Wiki 页面了"
   },
   "sourcesHome": {
@@ -1145,7 +1139,6 @@
       "lead": "按下“{action}”后，代理会从上往下读取下面的来源并写 Wiki 页面。",
       "leadRunning": "代理正在从上往下写 Wiki 页面。写完的来源会从这个列表中移除。",
       "privacy": "Atlas 不会把你的来源发送到任何地方，只有交给智能体的工作会经过该智能体的服务。",
-      "webNote": "在应用中会先为这些来源撰写 Wiki 页面。",
       "waitingTitle": "此处待写页面的来源",
       "nextEmpty": "这里的每份来源都有与当前内容一致的 Wiki 页面。",
       "unreadable": "这里有 {count, number} 份来源无法读取",

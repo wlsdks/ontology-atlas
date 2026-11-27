@@ -19,7 +19,7 @@ describe('isPickerAbort', () => {
   });
 
   it('does not swallow a real failure as a cancel', () => {
-    expect(isPickerAbort(new TypeError('window.showDirectoryPicker is not a function'))).toBe(
+    expect(isPickerAbort(new TypeError('picker is not a function'))).toBe(
       false,
     );
     expect(isPickerAbort(new DOMException('denied', 'NotAllowedError'))).toBe(false);

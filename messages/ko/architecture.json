@@ -48,8 +48,6 @@
   "moduleCount": "모듈 {count}개",
   "trafficEdge": "{from} → {to} import {count}개",
   "roleNotInProfile": "이 프로필에는 「{role}」 층이 없어요. 다른 프로필의 링크일 수 있어요.",
-  "sourceListingUnavailable": "소스 모듈은 소스 폴더가 연결돼야 표시돼요. 브라우저는 소스 폴더를 읽을 수 없으니, 설치된 Atlas 앱에서 이 온톨로지 폴더를 열면 여기가 채워져요.",
-  "getInstalledApp": "앱 받기",
   "sourceListingUnbound": "아직 연결된 소스 폴더가 없어요. 이 프로필이 설명하는 폴더를 열면 층마다 실제 모듈이 채워져요.",
   "connectedAgent": "연결된 에이전트",
   "draftWithAgent": "{agent}와 초안 만들기",

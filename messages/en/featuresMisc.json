@@ -1,6 +1,5 @@
 {
   "localVaultPicker": {
-    "unsupported": "Local folder editing is unavailable here. Install the desktop app to open and edit folders on disk.",
     "copyPathAriaLabel": "Copy local folder path: {path}",
     "copyPathCopied": "Path copied",
     "copyPathFailed": "Path copy failed",

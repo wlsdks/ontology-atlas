@@ -117,10 +117,6 @@
     "dropped": "{count, plural, one {# proposal was dropped} other {# proposals were dropped}}: each copied your words, held a command, a link or a hidden character, or rested on fewer than two sessions.",
     "noRepeat": "No correction came up twice in the last 30 days."
   },
-  "web": {
-    "title": "Improving agent memory needs the app",
-    "body": "Claude Code keeps these notes in your home folder, which a browser cannot open. The app reads them and changes a line only when you keep it."
-  },
   "card": {
     "running": "Improving agent memory · {done} of {total}",
     "found": "{count, plural, one {# change to review} other {# changes to review}} in Claude Code memory",

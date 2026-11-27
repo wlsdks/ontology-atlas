@@ -89,7 +89,6 @@
   "fieldHeaderKeys": "Header names",
   "webTitle": "Finding what is already registered needs the desktop app",
   "webBody": "Reading ~/.claude.json or ~/.codex/config.toml needs a program running on this computer, and there is nowhere on this surface to keep a token. Adding an MCP server by hand still works, and the list is saved in your folder.",
-  "webGetApp": "Get the app",
   "transport": {
     "stdio": "A program",
     "http": "An address"

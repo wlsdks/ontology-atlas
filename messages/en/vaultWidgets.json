@@ -287,7 +287,6 @@
       "title": "Start from one document",
       "body": "Open the document list to pick a document, or go to the agent workflow or the map when you need relations and evidence.",
       "openTree": "Document list",
-      "openAgent": "Agent workflow",
       "openTopology": "Map"
     },
     "outline": {
