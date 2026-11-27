@@ -11,6 +11,8 @@
   "trustLineHandheld": "Free · No sign-up · Nothing to install",
   "heroWindowsCta": "Windows x64 beta",
   "heroPlaygroundCta": "Try it in the browser",
+  "sampleCta": "See a sample map",
+  "otherComputers": "The app runs on Apple Silicon Macs and, as a beta, on Windows x64. On an Intel Mac, Linux or a phone, <sample>see a sample map</sample>, or <guide>run the MCP server from the source code</guide> to connect a coding agent.",
   "githubCta": "View the source on GitHub",
   "windowsUnsignedShort": "unsigned",
   "demoHeading": "The app, recorded on this repository's folder",
@@ -50,6 +52,9 @@
     "listLabel": "Screens of the app",
     "mapLink": "Map, opens the live map in this browser",
     "mapHint": "in the browser",
+    "subSample": "The same Markdown folder opens as a screen for each job in the app. Press a name to see that screen; Map opens a sample map in this browser.",
+    "sampleMapLink": "Map, opens a sample map in this browser",
+    "sampleMapHint": "sample map",
     "door": "Open {name}",
     "alt": "The {name} screen of the Atlas app",
     "caption": {

@@ -11,6 +11,8 @@
   "trustLineHandheld": "무료 · 가입 없이 바로 · 설치 없음",
   "heroWindowsCta": "Windows x64 베타",
   "heroPlaygroundCta": "브라우저에서 써보기",
+  "sampleCta": "예시 지도 보기",
+  "otherComputers": "앱은 Apple Silicon Mac과 Windows x64 베타에서 실행돼요. Intel Mac, Linux, 휴대폰에서는 <sample>예시 지도</sample>를 보거나, <guide>소스 코드에서 MCP 서버를 실행</guide>해 코딩 에이전트를 연결할 수 있어요.",
   "githubCta": "GitHub에서 소스 보기",
   "windowsUnsignedShort": "미서명",
   "demoHeading": "이 저장소의 폴더를 연 앱을 녹화한 영상",
@@ -50,6 +52,9 @@
     "listLabel": "앱의 화면",
     "mapLink": "지도, 이 브라우저에서 움직이는 지도 열기",
     "mapHint": "브라우저에서",
+    "subSample": "같은 마크다운 폴더가 앱에서 하는 일마다 화면 하나로 열려요. 이름을 누르면 그 화면이 보이고, 지도는 이 브라우저에서 예시 지도로 열려요.",
+    "sampleMapLink": "지도, 이 브라우저에서 예시 지도 열기",
+    "sampleMapHint": "예시 지도",
     "door": "{name} 열기",
     "alt": "Atlas 앱의 {name} 화면",
     "caption": {
