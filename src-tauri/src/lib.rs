@@ -37,6 +37,8 @@ use acp::session::{terminate_all_acp_sessions, AcpSessions};
 use app_shell::answer_deep_link;
 use app_shell::app_log::{install_panic_logger, QuietStderr};
 #[cfg(target_os = "macos")]
+use app_shell::open_file_limit::raise_open_file_limit;
+#[cfg(target_os = "macos")]
 use app_shell::tray::install_native_tray;
 #[cfg(target_os = "macos")]
 use app_shell::window::disable_webview_frame_rate_cap;
@@ -94,6 +96,8 @@ pub fn run_embed_worker() -> i32 {
 }
 
 pub fn run() {
+    #[cfg(target_os = "macos")]
+    raise_open_file_limit();
     install_panic_logger();
     if let Some(path) = std::env::var_os("PATH") {
         std::env::set_var(

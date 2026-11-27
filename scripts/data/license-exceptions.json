@@ -23,7 +23,7 @@
       "ecosystem": "cargo",
       "package": "xxhash-rust",
       "license": "BSL-1.0",
-      "reason": "A required dependency of notify 9, the file watcher behind the vault watch and the Work status file pulse; notify uses it only for PollWatcher's content comparison, and the app builds no PollWatcher. notify 9 is the first release whose macOS callback catches panics instead of aborting the app or unwinding through macOS's run loop. BSL-1.0 is permissive, with no copyleft or field-of-use term, and asks only that its text travel with source copies, exempting machine code; third-party-licenses.txt carries it anyway."
+      "reason": "notify 9 pulls it in only for PollWatcher's content comparison, and the app never builds a PollWatcher. BSL-1.0 is permissive and puts no notice duty on binaries: its text must travel only with source copies, and third-party-licenses.txt carries it anyway."
     }
   ]
 }
