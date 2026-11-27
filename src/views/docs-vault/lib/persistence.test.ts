@@ -11,6 +11,7 @@ import {
   readStoredListCollapsed,
   readStoredSource,
   scheduleStateSync,
+  settledDocsSource,
   shouldShowDogfoodVaultHint,
   shouldShowDesktopVaultWelcome,
   shouldSwitchToDogfoodVault,
@@ -158,6 +159,42 @@ describe("shouldPreferLocalOnLanding (C5)", () => {
   it("leaves the idle verdict unchanged when nothing is being chosen", () => {
     // Without a pending choice an idle vault must not force local.
     expect(shouldPreferLocalOnLanding("idle", "server", null, false)).toBe(false);
+  });
+});
+
+describe("settledDocsSource", () => {
+  const stored = () => "server" as const;
+  const settle = (over: Partial<Parameters<typeof settledDocsSource>[0]>) =>
+    settledDocsSource({
+      installedShell: false,
+      hasLocalManifest: false,
+      querySource: null,
+      localIntent: false,
+      readStored: stored,
+      ...over,
+    });
+
+  it("settles the installed app on its folders before any folder is open", () => {
+    // Waiting for a manifest here held the docs page on its loading frame while the launch asked which folder.
+    expect(settle({ installedShell: true })).toBe("local");
+    expect(settle({ installedShell: true, querySource: "server" })).toBe("local");
+  });
+
+  it("never reads the stored preference in the installed app", () => {
+    const readStored = vi.fn(() => "server" as const);
+    settle({ installedShell: true, readStored });
+    expect(readStored).not.toHaveBeenCalled();
+  });
+
+  it("lets a mounted folder win on the web unless the address asks for the sample", () => {
+    expect(settle({ hasLocalManifest: true })).toBe("local");
+    expect(settle({ hasLocalManifest: true, querySource: "server" })).toBe("server");
+  });
+
+  it("follows the address, then a local intent, then the stored choice on the web", () => {
+    expect(settle({ querySource: "local" })).toBe("local");
+    expect(settle({ localIntent: true })).toBe("keep");
+    expect(settle({ readStored: () => "local" })).toBe("local");
   });
 });
 

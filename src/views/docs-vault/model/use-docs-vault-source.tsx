@@ -24,6 +24,7 @@ import {
   isDocsVaultLocalSourceDisabled,
   readStoredSource,
   scheduleStateSync,
+  settledDocsSource,
   shouldHonorLocalIntent,
   shouldPreferLocalOnLanding,
   shouldShowDesktopVaultWelcome,
@@ -163,30 +164,18 @@ export function useDocsVaultSource({
 
   useEffect(() => {
     migrateLegacyRecentDocs();
-    if (localVault.manifest && (installedShell || querySource !== 'server')) {
-      scheduleStateSync(() => {
-        setSource('local');
-        setSourcePreferenceHydrated(true);
-      });
-      return;
-    }
-    if (installedShell) return;
-    if (querySource) {
-      scheduleStateSync(() => {
-        setSource(querySource);
-        setSourcePreferenceHydrated(true);
-      });
-      return;
-    }
-    if (typeof window !== 'undefined') {
-      const intent = new URLSearchParams(window.location.search).get('intent');
-      if (shouldHonorLocalIntent(intent, isDesktopRuntime)) {
-        scheduleStateSync(() => setSourcePreferenceHydrated(true));
-        return;
-      }
-    }
+    const localIntent =
+      typeof window !== 'undefined' &&
+      shouldHonorLocalIntent(new URLSearchParams(window.location.search).get('intent'), isDesktopRuntime);
     scheduleStateSync(() => {
-      setSource(readStoredSource());
+      const settled = settledDocsSource({
+        installedShell,
+        hasLocalManifest: Boolean(localVault.manifest),
+        querySource,
+        localIntent,
+        readStored: readStoredSource,
+      });
+      if (settled !== 'keep') setSource(settled);
       setSourcePreferenceHydrated(true);
     });
   }, [installedShell, isDesktopRuntime, localVault.manifest, querySource]);
