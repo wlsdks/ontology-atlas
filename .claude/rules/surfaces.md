@@ -51,7 +51,7 @@ never a parallel router or surface fork.
 | Connector secrets | `src/shared/lib/connectors/tauri-connector-secrets.ts`, `src-tauri/src/connectors/secrets.rs` | degradation card; Rust resolves the token into the outgoing ACP line, so the WebView never holds it |
 | Connector runtimes | `src/shared/lib/connectors/tauri-connector-runtimes.ts`, `resolve_connector_runtimes` in `src-tauri/src/connectors/runtimes.rs` | typed absolute path; **not** a degradation card, because only a convenience is missing |
 | Folder watch | `start_vault_watch` in `src-tauri/src/vault/watch.rs`, `TauriVaultWatchBridge.tsx` | periodic reread (`poll-cadence.ts`); delayed, not unavailable |
-| Library sources | `src/shared/lib/vault-folder/native-vault/tauri-library-sources.ts`, `src-tauri/src/library/` | same ability by other means (`showOpenFilePicker`, `crypto.subtle`); Rust hashes whole scans so files do not cross IPC; Planning's Add files uses the same import with its `planning` destination |
+| Library sources | `src/shared/lib/vault-folder/native-vault/tauri-library-sources.ts`, `src-tauri/src/library/` | same ability by other means (`showOpenFilePicker`, `crypto.subtle`); Rust hashes whole scans so files do not cross IPC; Planning's Add files reuses it |
 | Discovery outside the folder | `discover_source_candidates` in `src-tauri/src/library/source_discovery.rs` | degradation card `find-documents-web-limit`; a bound project root is an absolute path |
 | Reveal a file in Finder | `reveal_vault_file` in `src-tauri/src/library/reveal.rs` | hands over the granted file; reveal, never launch |
 | Work status | `src/shared/lib/work-status/tauri-work-status.ts`, `src-tauri/src/work_status/` | degradation card `work-status-get-app`; a browser cannot run Git or read a lock holder's start time |
@@ -97,7 +97,7 @@ The third written exception, for Work status only:
 
 | | |
 |---|---|
-| Read | the person's own processes (uid filter first): parent, start time, working folder, and the executable path of one whose kernel name looks like an agent. On macOS, every 5 s while Work status is visible and its load switch (on by default) is on: memory, CPU time and kernel name of each process under an agent program; memory, CPU time and working folder of a process named `java` outside every agent's tree; and for the whole Mac, memory in use, macOS's pressure level, CPU in use and the GPU's "Device Utilization %" |
+| Read | the person's own processes (uid filter first): parent, start time, working folder, and the executable path of one whose kernel name looks like an agent. On macOS, every 5 s while Work status is visible and its load switch (on by default) is on: memory, CPU time and kernel name of each process under an agent program; memory, CPU time and working folder of a process named `java` outside every agent's tree; and for the whole Mac, memory in use, macOS's pressure level, CPU in use, the 1- and 5-minute load average and the GPU's "Device Utilization %" |
 | How | system APIs through crates already in `Cargo.lock`; one process listing and one usage read per process under an agent per sample, never per process on the Mac; no spawned program, no file, no root; the previous sample is the only one kept |
 | Returned to the page | for each worktree, the agent's pid, tool (Claude Code or Codex) and start time; per worktree, memory and CPU in cores, and every tool group with a process there, the page showing the five largest (a closed list matched by kernel name; any other name counts as other programs) with count, memory and CPU; groups outside every room; for each session pid the page sent (at most 64), the memory, CPU and groups of the processes credited to that session; the Mac's totals, with no GPU figure when none is reported; never a folder, path, unlisted program name, or a pid the page does not already hold; session figures only for pids it sent |
 | Never read | arguments or environment (`KERN_PROCARGS2`, `/proc/<pid>/environ`), open files, another user's processes, a per-program GPU figure |
@@ -136,8 +136,9 @@ The fifth written exception, for Work status only:
 | Returned to the page | how the read went (one word of a closed list), and for a session whose folder lies in a listed worktree: the worktree's id, its pid, one of five states and, under Name below, its name |
 | Name | read with each list while the session-list switch and Show session names (on by default) are both on; only a string; control and direction-override characters removed, cut to one line of at most 60 characters, never inside a Hangul syllable; empty means no name, and the room says `{tool} {number}`. Held in Rust with the last list and dropped with it, or at once when either switch goes off; the page holds it in view state only and draws it as plain text |
 | A name never reaches | a file, a log, error text, storage, a URL, an argument the page sends back to Rust, an agent session, or the network |
-| Never read | a session's `sessionId` or `id`; any field outside the documented ones makes its entry unknown |
-| Platforms | macOS; no other platform runs it |
+| Subagents | with each list, in `~/.claude`, a visible `CLAUDE_CONFIG_DIR` and Orca profile homes: `projects/<cwd>/<sessionId>/subagents/`; `agentType`, `model`, worktree and file times from `agent-*.meta.json` (another key: unknown); from the session's `.jsonl`, its `cwd` (a listed worktree, else skip) and `<task-notification>` ids and statuses; the page gets type, model, worktree id or unknown. Never `description` or other text (`67a26c36`) |
+| Never read | a session's `id`; `sessionId` stays in Rust; any field outside the documented ones makes its entry unknown |
+| Platforms | macOS only |
 | Gate | `src-tauri/src/work_status/agent_sessions/tests.rs` (`the_program_cannot_open_a_connection`, and the planted-name tests of criterion 2 in `docs/specs/2026-11-25-work-status-live.md`); `src/shared/lib/work-status/signals/sessions.test.ts` |
 | Record | `docs/records/decisions/2026-11-23-work-status-session-list-no-network-929c2179-7882-4c40-a4bc-83cfbb2612cf.md`; names: `docs/records/decisions/2026-11-25-work-status-session-names-3c8614d6-9b02-4b18-9e12-95d935c9434c.md` |
 
@@ -165,7 +166,7 @@ decision record.
 
 ### Harness › Improve: agent memory and session files
 
-The seventh and eighth written exceptions, specified and not yet built
+The seventh and eighth, specified, not built
 (`docs/specs/2026-11-27-harness-self-improvement.md`):
 
 | | |
@@ -181,27 +182,33 @@ The seventh and eighth written exceptions, specified and not yet built
 
 Another folder, field, recipient or file needs a new decision record.
 
-### Workshop › Asked, not done: typed messages to a local model
+### Workshop › control tower: acting on the person's processes
 
-The ninth, specified and not yet built
-(`docs/specs/2026-11-27-missed-requests.md`):
+The ninth, specified, not built (`docs/specs/2026-11-27-workshop-control-tower-controls.md`):
 
 | | |
 |---|---|
-| Read | after Check now or with its nightly switch on: Claude Code session lines whose `cwd` is the checkout, a path under it or a listed worktree; typed text, time, ids, `gitBranch` |
-| When | on Check now, or once a day after 01:00 with Atlas open, on power, 10 min without input; stops at the next message on input |
-| Send | one message at a time to the Agents › Models runner, loopback only; never off this computer |
-| Write | app data only: findings, marks, a run log without text |
-| Never | agent text, tool fields, the vault, Git, memory or instruction files |
-| Gate | the spec's criteria 2, 3 and 6 |
-| Record | `RECORD_ID` |
+| Read | while visible, each minute, from the existing listing: for own processes parented by launchd, folder, terminal, any child; a leftover's memory; no spawn |
+| Signal | one press on a list Rust offered: `SIGTERM` to a leftover; background priority and back for an agent's build |
+| Write | `git worktree unlock` of a stale lock, then `remove` without `--force`, after a confirm; a log line first (no path, last 1,000) |
+| Never | `SIGKILL`, `SIGSTOP`, group signals; agent programs, Atlas or its ancestors, pid 1, another user, a terminal's job; a pid whose start, uid, parent, name or folder changed; acting hidden or unpressed |
+| Gate | the controls spec's criteria |
+| Record | `ed30a160` |
+
+Another read, signal or target needs a new record.
+
+### Workshop › Asked, not done
+
+The tenth, specified, not built (`docs/specs/2026-11-27-missed-requests.md`,
+`RECORD_ID`): after a press or its nightly switch, this repository's typed
+Claude Code messages go one at a time to a loopback model;
+results stay in app data; never agent text or tool fields.
 
 ### Folder watch is latency, not degradation
 
 The app applies the changed paths the OS watcher's `vault-changed` event
-carries (0.45–0.61 s from save to map end to end, measured 2026-11-19, most of
-it the watcher's 500 ms debounce; a burst past a fifth of the vault walks it);
-the web rereads the folder (1.5 s after activity, 5 s idle, paused in hidden
+carries (about 0.5 s from save to map, mostly the 500 ms debounce, measured
+2026-11-19; a burst past a fifth of the vault walks it); the web rereads the folder (1.5 s after activity, 5 s idle, paused in hidden
 tabs). Gate the event-driven invariant, never milliseconds. Do
 not add folder watch to `DEGRADED_SURFACES`, never claim "instant" on the web,
 and prefer "updates automatically" for the app.
@@ -222,19 +229,18 @@ exposed to any injected script) and writing agent config from the web (no
 absolute path; `WebManualConnectPanel.tsx` renders the config locally instead).
 
 A degradation card states why the ability is unavailable, where it works
-(usually `/download/`), and what remains possible here, as
-in `atlas-git-web-get-app` and `ai-connection-web-degraded`. "Coming soon" is
-not a reason, and calling an available path unavailable is equally false.
+(usually `/download/`), and what remains possible here
+(`atlas-git-web-get-app`, `ai-connection-web-degraded`). "Coming soon" is no
+reason; calling an available path unavailable is false too.
 
 ## Web smoke and the degradation registry
 
 `tests/e2e/web-surface-smoke.spec.ts` is the web's only standing signal: the
 gateway renders a real map with facts and two live next actions; the fallback
 workbench reads a fake folder with correct counts; every `DEGRADED_SURFACES`
-entry gives a reason and a destination that opens. Add every new app-only
-ability to `DEGRADED_SURFACES`. It runs in every nightly browser run and
-before every stable release; a planned dispatch runs it for any runtime change,
-including `src-tauri/**`.
+entry, which every new app-only ability joins, gives a reason and a destination
+that opens. It runs nightly, before every stable release, and by planned
+dispatch for any runtime change, `src-tauri/**` included.
 
 `DEGRADED_SURFACES` holds only web-versus-app absence. Absence below a viewport
 breakpoint belongs to `tests/e2e/design-audits/responsive-overflow-audit.spec.ts`, and a
@@ -246,7 +252,7 @@ app separately".
 The app bundle, whose connect button writes absolute paths, or a source checkout
 whose MCP server runs as `node <checkout>/mcp/src/index.js` and whose only
 command, `node <checkout>/cli init`, scaffolds a vault. Neither `ontology-atlas` nor
-`ontology-atlas-mcp` exists on npm; `npx ontology-atlas init` is a 404. Code
+`ontology-atlas-mcp` is on npm. Code
 authority: `src/shared/config/mcp/mcp-server-launch.ts`. Gate:
 `tests/contract/release/npm-channel-retired.contract.test.ts`.
 
@@ -256,7 +262,6 @@ The one installation `forbidden.md` allows. All four conditions must hold: the
 user initiates it, sees the exact command first, it installs into an app-owned
 location, and the version is pinned. Downloading a Node runtime was approved in
 decision (89); any other runtime family needs a new record.
-The pinned npx adapter a conversation start fetches into npx's own cache is not
-such an install: it is the session launch's own download moved ahead of the
-session, for chat-eligible runtimes only
-(`docs/records/decisions/2026-11-24-acp-adapter-download-app-owned-d4b27660-5946-4463-a9d1-71f4f65a17da.md`).
+The pinned npx adapter a conversation start fetches into npx's cache is not
+one: it is that launch's own download, moved earlier, for chat-eligible
+runtimes only (`docs/records/decisions/2026-11-24-acp-adapter-download-app-owned-d4b27660-5946-4463-a9d1-71f4f65a17da.md`).
