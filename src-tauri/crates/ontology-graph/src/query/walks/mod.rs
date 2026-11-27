@@ -16,7 +16,7 @@ mod explain_relation;
 mod graph_walk;
 mod hop;
 mod impact;
-mod lineage;
+pub(in crate::query) mod lineage;
 mod neighborhood;
 mod neighbors;
 mod paths;

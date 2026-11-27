@@ -1,6 +1,7 @@
 //! `containment_tree`: what holds what, as a tree from a node, from every project, or from every
 //! node nothing holds. The tree is cut at `limit` nodes in all and at `depth` levels, and a node
-//! that holds something above it is reported as a cycle, not followed.
+//! that holds something above it is reported as a cycle, not followed. The cycles listed are cut
+//! at `limit` too, and the answer says so.
 
 use serde::Serialize;
 
@@ -78,6 +79,8 @@ struct TreeBuilder<'a> {
     limit: usize,
     emitted: usize,
     limited: bool,
+    /// More cycles were met than the `limit` kept.
+    cycles_cut: bool,
     cycles: Vec<ContainmentCycle<'a>>,
 }
 
@@ -111,6 +114,10 @@ impl<'a> TreeBuilder<'a> {
         for step in children(graph, node) {
             let via = graph.edge(step.edge).via;
             if above.contains(&step.next) {
+                if self.cycles.len() >= self.limit {
+                    self.cycles_cut = true;
+                    continue;
+                }
                 self.cycles.push(ContainmentCycle {
                     from: graph.node(node).slug(),
                     to: graph.node(step.next).slug(),
@@ -157,6 +164,7 @@ pub fn containment_tree<'a>(
         limit,
         emitted: 0,
         limited: false,
+        cycles_cut: false,
         cycles: Vec::new(),
     };
     let mut trees = Vec::new();
@@ -174,7 +182,7 @@ pub fn containment_tree<'a>(
         depth,
         total_roots: roots.len(),
         emitted_nodes: builder.emitted,
-        limited: builder.limited,
+        limited: builder.limited || builder.cycles_cut,
         roots: trees,
         cycles: builder.cycles,
     })

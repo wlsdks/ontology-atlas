@@ -136,3 +136,79 @@ fn a_limit_cuts_the_lists_an_answer_writes_and_not_what_it_counts() {
         assert_eq!(slice["limited"], true, "{operation}");
     }
 }
+
+/// A capability file whose uid is `number`, holding the capabilities `holds`.
+fn holder(name: &str, number: usize, holds: &[&str]) -> (String, String) {
+    let lines: String = holds
+        .iter()
+        .map(|held| format!("  - capabilities/{held}\n"))
+        .collect();
+    let extra = if holds.is_empty() {
+        String::new()
+    } else {
+        format!("contains:\n{lines}")
+    };
+    (
+        format!("capabilities/{name}.md"),
+        node(number, "capability", &extra),
+    )
+}
+
+#[test]
+fn lineage_writes_the_edges_it_may_and_counts_all_of_them() {
+    let graph = compiled(&[
+        holder("p1", 1, &["c"]),
+        holder("p2", 2, &["c"]),
+        holder("p3", 3, &["c"]),
+        holder("c", 4, &[]),
+    ]);
+    let lineage = |limit| {
+        answer(
+            &graph,
+            &QueryRequest {
+                slug: Some("capabilities/c".to_string()),
+                limit: Some(limit),
+                ..call("lineage")
+            },
+        )
+    };
+    let cut = lineage(2);
+    assert_eq!(cut["ancestors"]["total"], 3);
+    assert_eq!(rows(&cut["ancestors"]["nodes"]).len(), 2);
+    assert_eq!(cut["edges"]["total"], 3);
+    assert_eq!(rows(&cut["edges"]["rows"]).len(), 2);
+    assert_eq!(cut["edges"]["limited"], true);
+
+    let whole = lineage(3);
+    assert_eq!(rows(&whole["edges"]["rows"]).len(), 3);
+    assert_eq!(whole["edges"]["limited"], false);
+}
+
+#[test]
+fn a_containment_tree_cuts_the_cycles_it_lists_at_limit_and_says_so() {
+    // Each of b, c and d holds every capability above it: six cycles in a tree of four nodes.
+    let graph = compiled(&[
+        holder("a", 1, &["b"]),
+        holder("b", 2, &["a", "c"]),
+        holder("c", 3, &["a", "b", "d"]),
+        holder("d", 4, &["a", "b", "c"]),
+    ]);
+    let tree = |limit| {
+        answer(
+            &graph,
+            &QueryRequest {
+                slug: Some("capabilities/a".to_string()),
+                limit: Some(limit),
+                ..call("containment_tree")
+            },
+        )
+    };
+    let cut = tree(4);
+    assert_eq!(cut["emittedNodes"], 4);
+    assert_eq!(rows(&cut["cycles"]).len(), 4);
+    assert_eq!(cut["limited"], true);
+
+    let whole = tree(6);
+    assert_eq!(rows(&whole["cycles"]).len(), 6);
+    assert_eq!(whole["limited"], false);
+}
