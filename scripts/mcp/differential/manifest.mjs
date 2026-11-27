@@ -81,7 +81,10 @@ const SHRINKING_LISTS = new Set(['locale', 'node-vs-bun']);
 
 export function loadExpectedDifferences(repoRoot, which) {
   const name = EXPECTED_DIFFERENCE_FILES[which];
-  return existsSync(filePath(repoRoot, name)) ? (readJson(repoRoot, name).differences ?? []) : [];
+  const entries = existsSync(filePath(repoRoot, name)) ? (readJson(repoRoot, name).differences ?? []) : [];
+  // An entry with a `platform` is a difference only there (a Windows path rule the Node server
+  // gets wrong); on another platform the case is equal and the entry is not looked for.
+  return entries.filter((entry) => entry.platform === undefined || entry.platform === process.platform);
 }
 
 export function exceptRulesByFamily(repoRoot) {
