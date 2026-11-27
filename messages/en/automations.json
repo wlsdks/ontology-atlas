@@ -177,5 +177,72 @@
   "stage": {
     "note": "It keeps running wherever you go in the app. Stop ends this run only; the schedule stays on.",
     "label": "Run in progress"
+  },
+  "recheck": {
+    "defaultName": "Recheck changed concepts",
+    "kindLabel": "What it does",
+    "kindCheck": "Propose one improvement",
+    "kindRecheck": "Recheck concepts whose code changed",
+    "facts": {
+      "runs": "The coding agent reads the ontology and its linked code. An ontology check proposes one small improvement. A recheck rereads each concept whose code changed after its document.",
+      "writes": "An ontology check changes nothing. A recheck edits only the documents of concepts whose code changed, commits them, and lists every change under Run history, where one press undoes it."
+    },
+    "sheet": {
+      "editTitle": "Edit recheck",
+      "description": "At the chosen time the agent rereads each concept whose code changed after its document. Atlas records the documents that are still accurate, edits only the sentences that are not, and commits those documents so you can undo the whole run.",
+      "limit": "Concepts per run",
+      "limitHint": "Between 1 and 25. The concepts that have waited longest go first; the rest wait for the next run.",
+      "mayRead": "Send the agent each concept document and what changed in the files it cites.",
+      "mayWrite": "Edit sentences in the body of those documents and record the commit each was checked at as evidence_checked.",
+      "mayCommit": "Commit those documents on the branch {branch}. Atlas never pushes.",
+      "mayNever": "Never change a title, kind, code location or relation, any other concept, or a file outside this folder.",
+      "cost": "No agent run when no concept's code changed. Otherwise one agent run that reads up to {limit, number} concepts · at most {count, number} a day at this cadence.",
+      "noGit": "This folder is not in a Git repository, so a recheck could not commit its changes or undo them. Open Git to make it a repository, then schedule the recheck."
+    },
+    "allowHere": "rechecks up to {limit, number} concepts per run and commits on {branch}",
+    "outcome": "Rechecked",
+    "summary": "{checked, plural, one {# concept reread} other {# concepts reread}}: {accurate, number} still accurate, {updated, number} updated, {left, number} not decided.",
+    "waiting": "{count, plural, one {# more concept waits} other {# more concepts wait}} for the next run.",
+    "skippedUncommitted": "{count, plural, one {# concept was skipped because its document has} other {# concepts were skipped because their documents have}} changes you have not committed.",
+    "ignored": "{count, plural, one {# answer named a concept that was not in this run, so Atlas ignored it.} other {# answers named concepts that were not in this run, so Atlas ignored them.}}",
+    "none": "No concept's code changed after its document, so no agent ran.",
+    "noAgent": "No coding agent was ready on this Mac, so nothing was rechecked. Open Agents to sign in, then run it again.",
+    "heldBranch": "Not run: this schedule commits on {allowed} and the repository is on {current}. Switch to {allowed}, or edit the schedule to commit here.",
+    "heldGit": "Not run: Git cannot commit in this repository right now ({detail}). Finish that in Git, then run it again.",
+    "replyUnreadable": "The agent's reply could not be read, so no document was changed. Run it again.",
+    "commitRefused": "Git refused the commit: {detail}. Atlas put {count, plural, one {# document} other {# documents}} back as before this run and kept the new text in {copy}. Fix what Git reported, then run it again.",
+    "stopped": "Stopped before it finished. No document was changed.",
+    "interrupted": "Atlas closed during this run, so when it opened again it put {count, plural, one {# document} other {# documents}} back as before the run.",
+    "viewResults": "View results",
+    "dialog": {
+      "title": "Recheck results",
+      "listLabel": "Concepts in this run",
+      "accurate": "Still accurate",
+      "updated": "Updated",
+      "left": "Not decided",
+      "undone": "Undone",
+      "accurateLine": "The agent reread this document against what changed in {files} and found nothing to change. Atlas recorded the commit it was checked at in the document.",
+      "updatedLine": "{count, plural, one {The agent changed # passage} other {The agent changed # passages}} after reading what changed in {files}.",
+      "leftLine": "Atlas changed nothing, so this concept still counts as one whose code changed.",
+      "agentReason": "The agent's reason: {reason}",
+      "diffLabel": "What changed in {document}",
+      "openConcept": "Open on the map",
+      "undoOne": "Undo this concept",
+      "undoAll": "Undo this run",
+      "undoing": "Undoing…"
+    },
+    "reason": {
+      "noAnswer": "The agent's reply did not cover this concept.",
+      "noMatch": "The agent named text to replace that is not in the document.",
+      "changedMeanwhile": "The document changed while the agent was reading it.",
+      "heading": "The agent asked to change a section heading, which a recheck never changes.",
+      "tooMany": "The agent asked for more than {count, number} changes. Rewriting a document is a conversation with the agent, not a recheck."
+    },
+    "undo": {
+      "done": "{count, plural, one {Put # document back as it was before this run and committed that. It counts as a concept whose code changed again.} other {Put # documents back as they were before this run and committed that. They count as concepts whose code changed again.}}",
+      "skipped": "{document} changed after this run, so Atlas left it as it is.",
+      "failed": "Git refused the commit for the undo: {detail}. No document was changed. Fix what Git reported, then press Undo again.",
+      "gone": "This run's commit is no longer on this branch, so Atlas cannot undo it here. Open Git to restore a document from its history."
+    }
   }
 }

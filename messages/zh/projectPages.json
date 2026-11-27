@@ -183,7 +183,8 @@
     "toCheckRaisedNote": "需要决定：“{note}”",
     "rowOpensDocument": "打开它的文档。",
     "rowOpensMap": "在地图上打开。",
-    "domainStaleWords": "{count} 个文档写成后代码文件有改动的能力"
+    "domainStaleWords": "{count} 个文档写成后代码文件有改动的能力",
+    "toCheckRecheck": "用智能体重新检查"
   },
   "editor": {
     "documentTitleEdit": "编辑项目 · Ontology Atlas",

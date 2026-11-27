@@ -183,7 +183,8 @@
     "toCheckRaisedNote": "判断が必要：「{note}」",
     "rowOpensDocument": "文書を開きます。",
     "rowOpensMap": "マップで開きます。",
-    "domainStaleWords": "文書を書いた後にコードファイルが変わったケイパビリティ{count}件"
+    "domainStaleWords": "文書を書いた後にコードファイルが変わったケイパビリティ{count}件",
+    "toCheckRecheck": "エージェントで再確認"
   },
   "editor": {
     "documentTitleEdit": "プロジェクトを編集 · Ontology Atlas",
