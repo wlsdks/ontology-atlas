@@ -15,6 +15,8 @@ use crate::write_checkpoint::Permit;
 use crate::write_tool::WriteTool;
 
 mod argument_checks;
+mod compile_ontology;
+mod compiled_graph;
 mod concept_row;
 mod connection_info;
 mod find_backlinks;
@@ -47,6 +49,7 @@ pub fn call(
         "find_backlinks" => Some(find_backlinks::call(context, arguments)),
         "find_orphans" => Some(find_orphans::call(context, arguments)),
         "query_concepts" => Some(query_concepts::call(context, arguments)),
+        "compile_ontology" => Some(compile_ontology::call(context, arguments)),
         _ => None,
     }
 }

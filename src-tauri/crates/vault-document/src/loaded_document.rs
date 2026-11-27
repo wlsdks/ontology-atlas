@@ -13,7 +13,7 @@ use sha2::{Digest, Sha256};
 
 use crate::body_links::BodyLinks;
 use crate::document::{Document, RawShape};
-use crate::frontmatter::{Frontmatter, Value};
+use crate::frontmatter::{Diagnostic, Frontmatter, Value};
 use crate::validation::{validate_document, Issue};
 
 /// Why a file could not be read.
@@ -69,6 +69,8 @@ struct Record {
     modified_ms: f64,
     shape: RawShape,
     frontmatter: Frontmatter,
+    /// The lines of the frontmatter the reader could not honour, with their line numbers.
+    diagnostics: Vec<Diagnostic>,
     /// What the file says wrong of itself, with the sentences.
     issues: Vec<Issue>,
     links: BodyLinks,
@@ -95,6 +97,7 @@ impl LoadedDocument {
         } else {
             validate_document(&document, None)
         };
+        let diagnostics = document.diagnostics().to_vec();
         let body = document.body();
         let links = BodyLinks::of(&body);
         let kept = keep_body.then(|| body.into_owned());
@@ -105,6 +108,7 @@ impl LoadedDocument {
                 modified_ms,
                 shape,
                 frontmatter: document.into_frontmatter(),
+                diagnostics,
                 issues,
                 links,
                 digest,
@@ -143,6 +147,17 @@ impl LoadedDocument {
     /// What the file says wrong of itself: its fences, its keys, its body.
     pub fn issues(&self) -> &[Issue] {
         &self.record.issues
+    }
+
+    /// The frontmatter lines the reader could not honour, each with its line number.
+    pub fn diagnostics(&self) -> &[Diagnostic] {
+        &self.record.diagnostics
+    }
+
+    /// Whether both are the one read of one file: a cache that kept a file hands out the same read
+    /// again, so a derived value built from these reads is current while every read is the same.
+    pub fn is_same_read(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.record, &other.record)
     }
 
     /// Whether the body links to `needle` as a wiki link or a Markdown link to its file.

@@ -3592,6 +3592,12 @@ dependencies = [
 name = "ontology-graph"
 version = "0.1.0"
 dependencies = [
+ "answer-format",
+ "confined-files",
+ "serde",
+ "sha2 0.11.1",
+ "tempfile",
+ "thiserror 2.0.21",
  "vault-document",
 ]
 

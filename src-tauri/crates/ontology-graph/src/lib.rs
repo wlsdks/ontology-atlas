@@ -1,2 +1,20 @@
-//! The compiler, engine, queries and agent brief over a vault's documents. Each joins as the tools
-//! that need it are ported.
+//! The ontology a vault's documents make: the compiler that reads nodes and edges out of them, the
+//! compiled graph, and the answers `compile_ontology` and `query_ontology` give. See `README.md`.
+
+mod compile_answer;
+mod compile_issue;
+mod compiled_graph;
+mod graph_compiler;
+mod graph_hash;
+mod identity_error;
+mod object_map;
+
+pub use compile_answer::{compile_answer, CompileAnswer, CompileRequest, COMPILE_PAGE_MAX};
+pub use compile_issue::{CompileIssue, IssueSeverity};
+pub use compiled_graph::{
+    Alias, AmbiguousAlias, CanonicalizationAction, CompiledGraph, Edge, EdgeCounts, EdgeId,
+    EdgeView, Node, NodeId, Target,
+};
+pub use graph_compiler::compile;
+pub use identity_error::{IdentityError, IdentityFault};
+pub use object_map::ObjectMap;

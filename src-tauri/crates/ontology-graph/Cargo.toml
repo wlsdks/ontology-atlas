@@ -7,7 +7,18 @@ license = "MIT"
 publish = false
 
 [dependencies]
+answer-format = { path = "../answer-format" }
 vault-document = { path = "../vault-document" }
+serde = { version = "1", features = ["derive"] }
+# The hash of a compiled graph is a SHA-256; the workspace links this exact version already.
+sha2 = { version = "0.11.1", default-features = false }
+# Why a vault cannot be compiled, with the words an agent reads.
+thiserror = "2"
+
+[dev-dependencies]
+# The tests plant a vault in a temporary folder and compile what the document cache reads of it.
+confined-files = { path = "../confined-files" }
+tempfile = "3"
 
 [lints]
 workspace = true

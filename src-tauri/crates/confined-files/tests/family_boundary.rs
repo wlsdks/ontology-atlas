@@ -60,7 +60,10 @@ const FAMILY: [(&str, &[&str]); 5] = [
             "thiserror",
         ],
     ),
-    ("ontology-graph", &["vault-document"]),
+    (
+        "ontology-graph",
+        &["answer-format", "serde", "sha2", "thiserror", "vault-document"],
+    ),
     (
         "source-evidence",
         &["confined-files", "hardened-git", "vault-document"],
