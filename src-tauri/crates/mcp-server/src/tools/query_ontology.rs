@@ -15,6 +15,8 @@ use super::argument_checks::{
 use crate::answer::ToolOutput;
 use crate::arguments::Arguments;
 use crate::dispatch::CallContext;
+use vault_document::slug_not_found_hint;
+
 use super::read_vault::open_root;
 use crate::error::{MissingNodeDetails, ReceivedValue, ToolError};
 
@@ -409,7 +411,9 @@ fn check_meaning_repair(
     Ok(())
 }
 
-fn refusal(error: QueryError) -> ToolError {
+/// The refusal an agent reads. `node_profile` alone adds a growth hint to a name that is no node, so a
+/// vault that lacks it is told what to add.
+fn refusal(error: QueryError, operation: &str) -> ToolError {
     match error {
         QueryError::Invalid(message) => ToolError::invalid(message),
         QueryError::NotAnsweredYet(_) | QueryError::Failed(_) => {
@@ -426,6 +430,8 @@ fn refusal(error: QueryError) -> ToolError {
                 similar: similar.clone(),
             }
             .to_string();
+            let growth_hint = (operation == "node_profile")
+                .then(|| slug_not_found_hint(&name, None, &similar, &[]));
             ToolError::missing_node(
                 message,
                 MissingNodeDetails {
@@ -434,6 +440,7 @@ fn refusal(error: QueryError) -> ToolError {
                     recovery_tools: vec!["list_concepts", "find_evidence"],
                     create_tool: Some("add_concepts"),
                     similar_slugs: Some(similar),
+                    growth_hint,
                     ..MissingNodeDetails::default()
                 },
             )
@@ -466,6 +473,6 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
         request.selection.outside.ignore_patterns = read_ignore_patterns(context)?;
     }
     let graph = context.compiled_graph().read(context)?;
-    let answer = ontology_graph::run_query(&graph, &request).map_err(refusal)?;
+    let answer = ontology_graph::run_query(&graph, &request).map_err(|error| refusal(error, request.operation.name()))?;
     ToolOutput::json(&answer)
 }

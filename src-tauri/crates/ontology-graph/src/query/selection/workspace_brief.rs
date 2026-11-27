@@ -7,6 +7,7 @@
 //! the tool that serves it, after the graph has answered.
 
 use serde::Serialize;
+use serde_json::value::RawValue;
 
 use super::containment::Containment;
 use super::graph_summary::{top_hubs, DegreeRow};
@@ -14,6 +15,7 @@ use super::growth_candidates::DanglingReferenceRow;
 use super::growth_plan::{growth_plan_with_limit, GrowthPlanAnswer, GrowthSummary};
 use super::health::{health, HealthAnswer, HealthCheck, HealthQuestion};
 use super::limited_nodes::LimitedNodes;
+use super::outside_checks::{AttentionAction, OutsideChecks};
 use super::project_map::{DomainMapRow, MapSummary, ProjectMapBase};
 use super::proposed_action::ProposedAction;
 use crate::compiled_graph::{CompiledGraph, NodeId};
@@ -54,6 +56,8 @@ struct BriefSummary<'a> {
 struct BriefHealth {
     status: &'static str,
     checks: Vec<HealthCheck>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    validation: Option<Box<RawValue>>,
 }
 
 #[derive(Serialize)]
@@ -101,6 +105,7 @@ struct SampledAction<Sample> {
 #[derive(Serialize)]
 #[serde(untagged)]
 enum NextAction<'a> {
+    Outside(AttentionAction),
     Check(HealthCheckAction),
     Writes(SampledAction<ProposedAction>),
     References(SampledAction<DanglingReferenceRow<'a>>),
@@ -247,7 +252,15 @@ pub fn workspace_brief<'a>(
         .collect();
     let growth_actions = growth.summary.total_actions();
     let growth_summary = growth.summary.clone();
-    let actions = next_actions(&checks, growth, limit);
+    let mut actions = next_actions(&checks, growth, limit);
+    let outside = OutsideChecks::of(&request.selection.outside);
+    let status = outside.status(status);
+    let parts = outside.into_parts();
+    let mut checks = checks;
+    checks.extend(parts.checks);
+    let attention: Vec<NextAction<'a>> = parts.actions.into_iter().map(NextAction::Outside).collect();
+    actions.splice(0..0, attention);
+    actions.truncate(limit);
     Ok(WorkspaceBriefAnswer {
         operation: "workspace_brief",
         status,
@@ -265,7 +278,11 @@ pub fn workspace_brief<'a>(
             issues: graph.issues().len(),
             growth_actions,
         },
-        health: BriefHealth { status, checks },
+        health: BriefHealth {
+            status,
+            checks,
+            validation: parts.validation,
+        },
         growth: growth_summary,
         projects: BriefProjects {
             total: roots.len(),

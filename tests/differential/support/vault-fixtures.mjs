@@ -256,6 +256,88 @@ const FIXTURE_BUILDERS = {
     },
   },
 
+  // Two projects sharing a domain, a domain nobody fills, nodes in no domain, a cycle, references
+  // to nothing and to code, a flat slug, a body that admits what it does not know, and an ignore
+  // file: what the selection operations pick from.
+  'selection-rich': {
+    vaultRel: 'vault',
+    build(dir) {
+      const v = (name) => `vault/${name}`;
+      write(dir, v('alpha.md'), projectNode('alpha', 'Alpha', ['domains/billing', 'domains/empty-domain']));
+      write(dir, v('beta.md'), projectNode('beta', 'Beta', ['domains/billing', 'domains/shipping']));
+      write(dir, v('domains/billing.md'), domainNode('domains/billing', 'Billing', ['capabilities/invoice', 'capabilities/pay', 'capabilities/refund', 'capabilities/invoice-export']));
+      write(dir, v('domains/empty-domain.md'), domainNode('domains/empty-domain', 'Empty Domain'));
+      write(dir, v('domains/shipping.md'), domainNode('domains/shipping', 'Shipping', ['capabilities/ship']));
+      write(dir, v('capabilities/invoice.md'), capabilityNode('capabilities/invoice', 'Invoice', 'domains/billing', {
+        dependencies: '[capabilities/pay]',
+        elements: '[elements/ledger, src/billing/invoice.ts, src/ignored/generated.ts, src/vendor/lib/extra.ts]',
+        path: 'src/billing/invoice.ts',
+      }));
+      write(dir, v('capabilities/pay.md'), capabilityNode('capabilities/pay', 'Pay', 'domains/billing', {
+        dependencies: '[capabilities/refund]',
+        elements: '[elements/ledger]',
+      }));
+      write(dir, v('capabilities/refund.md'), node({
+        slug: 'capabilities/refund', kind: 'capability', title: 'Refund',
+        extra: { description: '"Refund: what a person can do here."', domain: 'domains/billing', dependencies: '[capabilities/pay]', elements: '[src/billing/refund.ts]' },
+        body: '# Refund\n\nReturns money to the payer.\n\n## Includes\n\n- Full refunds.\n',
+      }));
+      write(dir, v('capabilities/invoice-export.md'), capabilityNode('capabilities/invoice-export', 'Invoice Export', 'domains/billing', {
+        dependencies: '[capabilities/invoice]',
+      }));
+      write(dir, v('capabilities/invoice-import.md'), capabilityNode('capabilities/invoice-import', 'Invoice Import', 'domains/billing', {
+        relates: '[capabilities/invoice, capabilities/invoice-export]',
+      }));
+      write(dir, v('capabilities/orphan-cap.md'), capabilityNode('capabilities/orphan-cap', 'Orphan Capability', 'domains/missing-domain'));
+      write(dir, v('capabilities/ship.md'), capabilityNode('capabilities/ship', 'Ship', 'domains/shipping', {
+        dependencies: '[capabilities/not-written-yet, capabilities/invoice]',
+        elements: '[elements/label-printer]',
+      }));
+      write(dir, v('elements/ledger.md'), node({
+        slug: 'elements/ledger', kind: 'element', title: 'Ledger',
+        extra: { description: '"Ledger: a role two capabilities share."', domain: 'domains/billing' },
+      }));
+      write(dir, v('elements/label-printer.md'), node({
+        slug: 'elements/label-printer', kind: 'element', title: 'Label Printer',
+        extra: { description: '"Label printer: prints."', domain: 'domains/shipping' },
+      }));
+      write(dir, v('elements/stray.md'), node({ slug: 'elements/stray', kind: 'element', title: 'Stray Element' }));
+      write(dir, v('loose-capability.md'), capabilityNode('loose-capability', 'Loose Capability', 'domains/billing'));
+      write(dir, v('documents/notes.md'), node({ slug: 'documents/notes', kind: 'document', title: 'Notes' }));
+      write(dir, v('.ontology-atlasignore'), '# generated and vendored code\nsrc/ignored/**\nsrc/vendor/*/extra.ts\n');
+    },
+  },
+
+  // A dependency chain ten thousand long: a walk that recurses as deep as the graph overflows.
+  'selection-chain': {
+    vaultRel: 'vault',
+    build(dir) {
+      const v = (name) => `vault/${name}`;
+      const length = 10_000;
+      write(dir, v('chain.md'), projectNode('chain', 'Chain', ['domains/links']));
+      write(dir, v('domains/links.md'), domainNode('domains/links', 'Links'));
+      for (let index = 0; index < length; index += 1) {
+        const next = index + 1 < length ? `[capabilities/link-${index + 1}]` : '[]';
+        write(dir, v(`capabilities/link-${index}.md`), capabilityNode(`capabilities/link-${index}`, `Link ${index}`, 'domains/links', { dependencies: next }));
+      }
+    },
+  },
+
+  // One node fifty thousand others depend on: a list that ignores `limit` writes them all.
+  'selection-hub': {
+    vaultRel: 'vault',
+    build(dir) {
+      const v = (name) => `vault/${name}`;
+      const spokes = 50_000;
+      write(dir, v('hub.md'), projectNode('hub', 'Hub', ['domains/spokes']));
+      write(dir, v('domains/spokes.md'), domainNode('domains/spokes', 'Spokes', ['capabilities/hub-core']));
+      write(dir, v('capabilities/hub-core.md'), capabilityNode('capabilities/hub-core', 'Hub Core', 'domains/spokes'));
+      for (let index = 0; index < spokes; index += 1) {
+        write(dir, v(`capabilities/spoke-${index}.md`), capabilityNode(`capabilities/spoke-${index}`, `Spoke ${index}`, 'domains/spokes', { dependencies: '[capabilities/hub-core]' }));
+      }
+    },
+  },
+
   'edge-names': {
     vaultRel: 'vault',
     build(dir) {

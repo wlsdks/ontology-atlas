@@ -19,6 +19,7 @@ mod maintenance_action;
 mod maintenance_plan;
 mod match_nodes;
 mod node_profile;
+mod outside_checks;
 mod project_map;
 mod project_root;
 mod proposed_action;
@@ -33,8 +34,8 @@ mod workspace_brief;
 
 pub use ignored_references::parse_patterns as parse_ignore_patterns;
 pub use selection_request::{
-    LineSpan, NodeSort, OutsideFacts, SelectionArguments, SelectionRequest, StaleSummary,
-    UncertaintyRead,
+    LineSpan, MeaningReviewFacts, NodeSort, OutsideFacts, SelectionArguments, SelectionRequest,
+    StaleSummary, UncertaintyRead, VaultValidationFacts,
 };
 
 use serde::Serialize;
@@ -165,10 +166,10 @@ pub fn run<'a>(
         SelectionOperation::MaintenancePlan => SelectionAnswer::MaintenancePlan(
             maintenance_plan::maintenance_plan(graph, request)?,
         ),
-        SelectionOperation::Health => SelectionAnswer::Health(health::health(
-            graph,
-            &health::HealthQuestion::from_request(request),
-        )?),
+        SelectionOperation::Health => SelectionAnswer::Health(
+            health::health(graph, &health::HealthQuestion::from_request(request))?
+                .with_outside(outside_checks::OutsideChecks::of(&request.selection.outside)),
+        ),
         SelectionOperation::WorkspaceBrief => SelectionAnswer::WorkspaceBrief(
             workspace_brief::workspace_brief(graph, request)?,
         ),

@@ -105,9 +105,34 @@ pub struct UncertaintyRead {
     pub proposed_action: String,
 }
 
+/// What the vault's validation found, as `validate_vault` reports it. `health` and `workspace_brief`
+/// carry it as one more check; the graph cannot know it, because it is about files, not nodes.
+#[derive(Debug, Clone)]
+pub struct VaultValidationFacts {
+    /// The `validation` object the brief writes, as the validation tool wrote it.
+    pub brief: Box<serde_json::value::RawValue>,
+    pub error_files: usize,
+    pub warning_files: usize,
+    pub path_drifts: usize,
+    /// Whether the source paths were compared with a repository at all.
+    pub paths_checked: bool,
+    pub repo_root: Option<String>,
+}
+
+/// A project meaning assessment that is not current, as the meaning tools judge it. Supplied only
+/// when something needs review; a vault whose assessments are current supplies none.
+#[derive(Debug, Clone)]
+pub struct MeaningReviewFacts {
+    pub count: usize,
+    pub message: String,
+}
+
 /// What the tool layer reads from beside the graph.
 #[derive(Debug, Clone, Default)]
 pub struct OutsideFacts {
+    /// `None` when no validation was handed over: the answer then carries no validation check.
+    pub validation: Option<VaultValidationFacts>,
+    pub meaning_review: Option<MeaningReviewFacts>,
     /// The `.ontology-atlasignore` patterns of the vault, one per line of the file.
     pub ignore_patterns: Vec<String>,
     pub stale_summaries: Vec<StaleSummary>,

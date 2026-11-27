@@ -9,6 +9,7 @@ use serde_json::value::RawValue;
 use super::clusters::{connected_components, describe_components, ComponentRow};
 use super::containment::Containment;
 use super::dependency_view::{self, default_types};
+use super::outside_checks::OutsideChecks;
 use super::relation_recommendations::{recommend, Recommendation};
 use crate::compiled_graph::{CompiledGraph, NodeId};
 use crate::query::query_error::QueryError;
@@ -29,10 +30,36 @@ pub struct HealthCheck {
     id: &'static str,
     status: &'static str,
     count: usize,
+    #[serde(rename = "pathsChecked", skip_serializing_if = "Option::is_none")]
+    paths_checked: Option<bool>,
     message: String,
 }
 
 impl HealthCheck {
+    pub fn new(id: &'static str, status: &'static str, count: usize, message: String) -> Self {
+        Self {
+            id,
+            status,
+            count,
+            paths_checked: None,
+            message,
+        }
+    }
+
+    /// The validation check names whether source paths were compared, beside its count.
+    pub fn with_paths_checked(
+        id: &'static str,
+        status: &'static str,
+        count: usize,
+        paths_checked: bool,
+        message: String,
+    ) -> Self {
+        Self {
+            paths_checked: Some(paths_checked),
+            ..Self::new(id, status, count, message)
+        }
+    }
+
     pub fn id(&self) -> &'static str {
         self.id
     }
@@ -199,6 +226,19 @@ pub struct HealthAnswer<'a> {
     relation_recommendations: HealthRecommendations<'a>,
     #[serde(rename = "dependencyOrder")]
     dependency_order: HealthOrder,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    validation: Option<Box<RawValue>>,
+}
+
+impl HealthAnswer<'_> {
+    /// The answer with the checks only the outside can make added after its own.
+    pub fn with_outside(mut self, outside: OutsideChecks) -> Self {
+        self.status = outside.status(self.status);
+        let parts = outside.into_parts();
+        self.checks.extend(parts.checks);
+        self.validation = parts.validation;
+        self
+    }
 }
 
 /// What a call asks of `health`: the limits and the relation filters its arguments carry.
@@ -247,12 +287,7 @@ impl HealthQuestion {
 }
 
 fn check(id: &'static str, status: &'static str, count: usize, message: &str) -> HealthCheck {
-    HealthCheck {
-        id,
-        status,
-        count,
-        message: message.to_string(),
-    }
+    HealthCheck::new(id, status, count, message.to_string())
 }
 
 /// Whether every node of a group is of a kind the health check does not count.
@@ -345,14 +380,14 @@ pub fn health<'a>(
             } else {
                 format!("{subject} is connected.")
             };
-            HealthCheck { id: "components", status: "pass", count: actionable, message }
+            HealthCheck::new("components", "pass", actionable, message)
         } else {
-            HealthCheck {
-                id: "components",
-                status: "info",
-                count: actionable,
-                message: format!("{subject} has disconnected actionable islands."),
-            }
+            HealthCheck::new(
+                "components",
+                "info",
+                actionable,
+                format!("{subject} has disconnected actionable islands."),
+            )
         },
     ];
     let status = if checks
@@ -414,6 +449,7 @@ pub fn health<'a>(
             ordered_count: order.ordered_count,
             blocked: order.blocked,
         },
+        validation: None,
     })
 }
 

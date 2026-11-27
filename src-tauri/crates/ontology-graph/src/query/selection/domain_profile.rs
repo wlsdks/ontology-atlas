@@ -103,7 +103,11 @@ pub fn domain_profile<'a>(
         .arguments
         .item_limit
         .unwrap_or(DEFAULT_ITEM_LIMIT);
-    let domain = resolve_domain(graph, request.slug.as_deref())?;
+    let named = request
+        .slug
+        .as_deref()
+        .or(request.selection.arguments.domain.as_deref());
+    let domain = resolve_domain(graph, named)?;
     let containment = Containment::of(graph);
     let scope = containment.scope_under(domain);
     let edges = ScopeEdges::of(graph, &scope);

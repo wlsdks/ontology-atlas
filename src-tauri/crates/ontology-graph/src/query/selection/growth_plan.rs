@@ -16,8 +16,11 @@ use crate::query::request::QueryRequest;
 
 const DEFAULT_LIMIT: usize = 25;
 
-/// The reads the vault's own uncertainty sections ask for. `no_bodies` says no body was handed to
-/// the reader of them, so an empty list is never taken for "nothing to read".
+/// The reads the vault's own uncertainty sections ask for. `no_bodies` says the vault holds no
+/// document, so an empty list is never taken for "nothing to read". The reads themselves come from
+/// outside the graph (`OutsideFacts::next_reads`): finding them means reading the prose of each
+/// uncertainty section, which belongs to the meaning slice, and ordering them means looking at the
+/// source files, which belongs to the source scan.
 #[derive(Serialize)]
 pub struct NextReads {
     total: usize,
@@ -27,20 +30,21 @@ pub struct NextReads {
 }
 
 impl NextReads {
-    fn of(reads: Option<&[UncertaintyRead]>, limit: usize) -> Self {
-        match reads {
-            None => Self {
+    fn of(vault_has_documents: bool, reads: Option<&[UncertaintyRead]>, limit: usize) -> Self {
+        if !vault_has_documents {
+            return Self {
                 total: 0,
                 limited: false,
                 rows: Vec::new(),
                 reason: Some("no_bodies"),
-            },
-            Some(all) => Self {
-                total: all.len(),
-                limited: all.len() > limit,
-                rows: all.iter().take(limit).cloned().collect(),
-                reason: None,
-            },
+            };
+        }
+        let all = reads.unwrap_or_default();
+        Self {
+            total: all.len(),
+            limited: all.len() > limit,
+            rows: all.iter().take(limit).cloned().collect(),
+            reason: None,
         }
     }
 }
@@ -124,7 +128,7 @@ pub fn growth_plan_with_limit<'a>(
     let dangling = dangling_references(graph, limit);
     let unassigned = unassigned_nodes(graph, &containment, limit);
     let empty = empty_domains(graph, &containment, limit);
-    let next_reads = NextReads::of(outside.next_reads.as_deref(), limit);
+    let next_reads = NextReads::of(!graph.nodes().is_empty(), outside.next_reads.as_deref(), limit);
     let summary = GrowthSummary {
         relation_recommendations: recommendations.total(),
         external_element_refs: external.total(),
