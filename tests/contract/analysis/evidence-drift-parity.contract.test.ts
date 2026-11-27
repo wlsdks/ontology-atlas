@@ -15,9 +15,17 @@ import {
   movedEvidencePairs as movedPairsInServer,
   unchangedEvidencePairs as unchangedInServer,
 } from "../../../mcp/src/drift/evidence-verdict.mjs";
-import { collectPathLastChanges } from "../../../mcp/src/git/git-tools.mjs";
+import * as gitTools from "../../../mcp/src/git/git-tools.mjs";
 import { COMPARABLE_CODE_CASES } from "../../fixtures/comparable-code-cases.mjs";
 import DOCUMENT_DATING from "../../fixtures/document-dating-cases.json";
+
+/** The MCP walk, typed as this test calls it; the module ships plain ESM. */
+const collectPathLastChanges = gitTools.collectPathLastChanges as unknown as (input: {
+  repoRoot: string;
+  vaultRoot: string;
+  repoPaths: string[];
+  vaultPaths: string[];
+}) => { ok: boolean; changes: Map<string, { exists: boolean; lastChangedAt: string | null; lastCommit: string | null }> };
 
 /** The server's answer, as this test reads it; the module ships plain ESM without types. */
 type ServerStates = Record<
@@ -215,7 +223,7 @@ describe("a document is dated by its bytes, on both surfaces", () => {
         vaultRoot: join(root, vaultFolder),
         repoPaths: [DOCUMENT_DATING.code],
         vaultPaths: [documentKey],
-      }) as { ok: boolean; changes: Map<string, { exists: boolean; lastChangedAt: string | null; lastCommit: string | null }> };
+      });
       expect(walk.ok).toBe(true);
       expect(walk.changes.get(documentKey)?.lastCommit).toBe(labels.get(testCase.dates.document));
       expect(walk.changes.get(DOCUMENT_DATING.code)?.lastCommit).toBe(labels.get(testCase.dates.code));

@@ -26,6 +26,8 @@
     "redraftedBody": "{name}・下書きを書き直しました。実行履歴に一件ずつあります。",
     "reviewedTitle": "{name}・レビュー完了",
     "reviewedBody": "提案は実行履歴にあります。",
+    "recheckedTitle": "{name}・再確認完了",
+    "recheckedBody": "{count, plural, =0 {今も正しいと記録した文書はありません。概念ごとに実行履歴にあります。} other {#件の文書を今も正しいと記録してコミットしました。概念ごとに実行履歴にあります。}}",
     "refusedTitle": "{name}がブロックされました",
     "refusedBody": "予約で許可されていない操作を求めました。実行履歴に内容があります。",
     "failedTitle": "{name}が途中で終了",

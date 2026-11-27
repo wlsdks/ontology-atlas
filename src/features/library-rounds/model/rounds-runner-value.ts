@@ -1,5 +1,12 @@
 import type { RoundPassEntry, RoundPassOutcome, RoundRecord, RoundState } from '@/entities/library-round';
 
+export interface RecheckUndoOutcome {
+  outcome: 'undone' | 'nothing' | 'gone' | 'refused';
+  undone: string[];
+  skipped: string[];
+  detail: string | null;
+}
+
 export type RoundsStoreStatus = 'no-vault' | 'loading' | 'ok' | 'missing' | 'malformed' | 'unavailable';
 
 export interface RoundUnrecorded {
@@ -34,5 +41,10 @@ export interface RoundsRunnerValue {
   remove(id: string): Promise<boolean>;
   setEnabled(id: string, enabled: boolean): Promise<boolean>;
   runNow(id: string): void;
+  /**
+   * Puts back the documents a recheck run marked, or the given ones of them, and commits that.
+   * `null` without a desktop folder or while another run is going.
+   */
+  undoRecheck(runId: string, paths?: readonly string[]): Promise<RecheckUndoOutcome | null>;
   refresh(): Promise<void>;
 }

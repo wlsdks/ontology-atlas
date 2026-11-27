@@ -36,4 +36,16 @@ describe("summarizeAgentTurn", () => {
     expect(summarizeAgentTurn([notice("auto-allowed", "write wiki/a.md")]).answer).toBeNull();
     expect(summarizeAgentTurn([]).written).toEqual([]);
   });
+
+  it("names the files a completed source read covered and keeps the whole last message", () => {
+    const tool = (status: string, rawInput: unknown) => ({ kind: "tool" as const, id: `t-${status}`, title: "analyze_repo_structure", toolKind: "other", status, rawInput });
+    const reply = `answers\n${"x".repeat(500)}`;
+    const summary = summarizeAgentTurn([
+      tool("completed", { rootPath: "/repo", sourceReads: [{ path: "src/pay.ts", mode: "outline" }, { path: "./src/ship.ts" }] }),
+      tool("failed", { sourceReads: [{ path: "src/never.ts" }] }),
+      agent(reply),
+    ]);
+    expect(summary.sourceReads).toEqual(["src/pay.ts", "src/ship.ts"]);
+    expect(summary.reply).toBe(reply);
+  });
 });

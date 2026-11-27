@@ -86,6 +86,9 @@ describe('an edit that widens what this Mac allowed', () => {
     expect(roundWidens(round({ onStale: 'mark' }), round({ onStale: 'redraft' }))).toBe(true);
     expect(roundWidens(round({ kind: 'consistency' }), { ...service, cadence: { every: 'hour' } })).toBe(true);
     expect(roundWidens(service, { ...service, limit: 50 })).toBe(true);
+    expect(roundWidens(round({ kind: 'ontology' }), round({ kind: 'recheck' }))).toBe(true);
+    expect(roundWidens(round({ kind: 'recheck' }), round({ kind: 'recheck', limit: 11 }))).toBe(true);
+    expect(roundWidens(round({ kind: 'recheck', limit: 20 }), round({ kind: 'recheck', limit: 5 }))).toBe(false);
     expect(roundWidens(service, { ...service, places: [{ kind: 'vault', paths: [] }, service.places![1]] })).toBe(true);
     expect(roundWidens(service, { ...service, places: [{ kind: 'vault', paths: ['wiki/releases', 'sources/planning'] }, service.places![1]] })).toBe(true);
     expect(roundWidens(service, { ...service, places: [service.places![0], { kind: 'service', connectorId: 'c1', connectorName: 'slack' }] })).toBe(true);
@@ -266,6 +269,8 @@ describe('problems', () => {
     expect(roundProblems(round({ name: '  ' }))).toEqual(['name-empty']);
     expect(roundProblems(round({ limit: 0 }))).toEqual(['limit-invalid']);
     expect(roundProblems(round({ limit: 500 }))).toEqual(['limit-invalid']);
+    expect(roundProblems(round({ kind: 'recheck', limit: 25 }))).toEqual([]);
+    expect(roundProblems(round({ kind: 'recheck', limit: 26 }))).toEqual(['limit-invalid']);
   });
 });
 

@@ -9,6 +9,7 @@ const ROUNDS_LEDGER_FILE = 'rounds-ledger.jsonl';
 export const ROUNDS_LEDGER_CAP = 500;
 
 export type RoundPassOutcome =
+  | 'rechecked'
   | 'held'
   | 'reviewed'
   | 'stale'
@@ -23,7 +24,7 @@ export interface RoundPassEntry {
   /** Absent for an `asleep` gap, which belongs to no round. */
   roundId?: string;
   roundName?: string;
-  kind?: 'consistency' | 'service' | 'ontology';
+  kind?: 'consistency' | 'service' | 'ontology' | 'recheck';
   startedAt: string;
   endedAt: string;
   outcome: RoundPassOutcome;
@@ -46,6 +47,105 @@ export interface RoundPassEntry {
   note?: 'no-agent' | 'stopped';
   undone?: RoundUndone[];
   leftAsIs?: string[];
+  /** A recheck run, or the undo of one (`undoOf`). */
+  recheck?: RecheckRecord;
+}
+
+/** How Atlas settled one concept of a recheck run. */
+export type RecheckConceptOutcome = 'accurate' | 'outdated' | 'left';
+
+/** Why a concept was left "Not decided", when the agent's own reason is not the reason. */
+export type RecheckLeftReason = 'no-answer' | 'changed-meanwhile' | 'refused-path' | 'cut-unread' | 'cannot-tell';
+
+export interface RecheckConcept {
+  slug: string;
+  /** Vault-relative document. */
+  path: string;
+  outcome: RecheckConceptOutcome;
+  /** Cited files whose change was sent to the agent. */
+  files: string[];
+  /** The agent's reason, cut. */
+  reason?: string;
+  /** The passage the agent named as out of date, cut. */
+  passage?: string;
+  leftReason?: RecheckLeftReason;
+  /** The cited path that was refused or not read, for the two reasons that name one. */
+  leftPath?: string;
+  /** The document's dating commit and its files' commits, so an unchanged concept left undecided is not sent again. */
+  basis?: string;
+}
+
+export type RecheckHoldReason = 'git' | 'branch' | 'refused';
+export type RecheckError = 'reply-unreadable' | 'head-moved' | 'commit-refused' | 'interrupted';
+
+export interface RecheckRecord {
+  /** HEAD when the run started. */
+  head?: string;
+  /** The run's own commit, when it committed. */
+  commit?: string;
+  concepts: RecheckConcept[];
+  sentBytes: number;
+  waiting: number;
+  skippedUncommitted: number;
+  ignored: number;
+  hold?: { reason: RecheckHoldReason; detail: string };
+  error?: RecheckError;
+  /** Git's words for a refusal. */
+  detail?: string;
+  /** After a refused commit or an interrupted run: documents put back, and where the taken-out text was kept. */
+  restored?: number;
+  copy?: string;
+  /** Set on the ledger line that undid part or all of the run with this id. */
+  undoOf?: string;
+  /** On an undo line: the documents it put back. */
+  undone?: string[];
+}
+
+const RECHECK_OUTCOMES: readonly RecheckConceptOutcome[] = ['accurate', 'outdated', 'left'];
+const RECHECK_LEFT_REASONS: readonly RecheckLeftReason[] = ['no-answer', 'changed-meanwhile', 'refused-path', 'cut-unread', 'cannot-tell'];
+const RECHECK_HOLDS: readonly RecheckHoldReason[] = ['git', 'branch', 'refused'];
+const RECHECK_ERRORS: readonly RecheckError[] = ['reply-unreadable', 'head-moved', 'commit-refused', 'interrupted'];
+
+const optionalString = (value: unknown) => (typeof value === 'string' ? value : undefined);
+const count = (value: unknown) => (typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : 0);
+
+function parseRecheckConcept(value: unknown): RecheckConcept[] {
+  if (!value || typeof value !== 'object') return [];
+  const item = value as Record<string, unknown>;
+  if (typeof item.slug !== 'string' || typeof item.path !== 'string') return [];
+  if (!RECHECK_OUTCOMES.includes(item.outcome as RecheckConceptOutcome)) return [];
+  const concept: RecheckConcept = { slug: item.slug, path: item.path, outcome: item.outcome as RecheckConceptOutcome, files: stringList(item.files) };
+  for (const key of ['reason', 'passage', 'leftPath', 'basis'] as const) {
+    const text = optionalString(item[key]);
+    if (text !== undefined) concept[key] = text;
+  }
+  if (RECHECK_LEFT_REASONS.includes(item.leftReason as RecheckLeftReason)) concept.leftReason = item.leftReason as RecheckLeftReason;
+  return [concept];
+}
+
+function parseRecheckRecord(value: unknown): RecheckRecord | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  const item = value as Record<string, unknown>;
+  const record: RecheckRecord = {
+    concepts: Array.isArray(item.concepts) ? item.concepts.flatMap(parseRecheckConcept) : [],
+    sentBytes: count(item.sentBytes),
+    waiting: count(item.waiting),
+    skippedUncommitted: count(item.skippedUncommitted),
+    ignored: count(item.ignored),
+  };
+  for (const key of ['head', 'commit', 'detail', 'copy', 'undoOf'] as const) {
+    const text = optionalString(item[key]);
+    if (text !== undefined) record[key] = text;
+  }
+  const hold = item.hold as Record<string, unknown> | undefined;
+  if (hold && RECHECK_HOLDS.includes(hold.reason as RecheckHoldReason)) {
+    record.hold = { reason: hold.reason as RecheckHoldReason, detail: optionalString(hold.detail) ?? '' };
+  }
+  if (RECHECK_ERRORS.includes(item.error as RecheckError)) record.error = item.error as RecheckError;
+  if (typeof item.restored === 'number') record.restored = count(item.restored);
+  const undone = stringList(item.undone);
+  if (undone.length > 0) record.undone = undone;
+  return record;
 }
 
 export type RoundUndoReason = 'not-draft' | 'duplicate-key' | 'forbidden-key' | 'no-frontmatter' | 'unreadable';
@@ -72,7 +172,7 @@ function parseUndone(value: unknown): RoundUndone[] {
   return [undone];
 }
 
-const OUTCOMES: readonly RoundPassOutcome[] = ['held', 'reviewed', 'stale', 'redrafted', 'refused', 'failed', 'asleep'];
+const OUTCOMES: readonly RoundPassOutcome[] = ['rechecked', 'held', 'reviewed', 'stale', 'redrafted', 'refused', 'failed', 'asleep'];
 
 /** Filler older builds stored as a summary; read as no summary. */
 const LEGACY_ONTOLOGY_FILLER = 'Read-only refinement review completed.';
@@ -110,7 +210,7 @@ export function parseRoundPassEntry(line: string): RoundPassEntry | null {
   };
   if (typeof record.roundId === 'string') entry.roundId = record.roundId;
   if (typeof record.roundName === 'string') entry.roundName = record.roundName;
-  if (record.kind === 'consistency' || record.kind === 'service' || record.kind === 'ontology')
+  if (record.kind === 'consistency' || record.kind === 'service' || record.kind === 'ontology' || record.kind === 'recheck')
     entry.kind = record.kind;
   if (entry.kind === 'ontology' && entry.summary === LEGACY_ONTOLOGY_FILLER) entry.summary = '';
   if (record.note === 'no-agent' || record.note === 'stopped') entry.note = record.note;
@@ -120,6 +220,8 @@ export function parseRoundPassEntry(line: string): RoundPassEntry | null {
   if (undone.length > 0) entry.undone = undone;
   const leftAsIs = stringList(record.leftAsIs);
   if (leftAsIs.length > 0) entry.leftAsIs = leftAsIs;
+  const recheck = parseRecheckRecord(record.recheck);
+  if (recheck) entry.recheck = recheck;
   return entry;
 }
 

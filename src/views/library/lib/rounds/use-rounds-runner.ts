@@ -5,6 +5,7 @@ import { useLocale } from "next-intl";
 
 import { buildLibraryModel, type VaultDoc, type VaultSourceFile } from "@/entities/docs-vault";
 import {
+  DEFAULT_RECHECK_LIMIT,
   type RoundLedger,
   type RoundPassEntry,
   type RoundRecord,
@@ -13,6 +14,7 @@ import {
   type RoundUndone,
   createVaultFileRoundStore,
   createVaultRoundLedger,
+  isOntologyRoundKind,
   isRoundDue,
   nextDueAt,
   roundFingerprint,
@@ -52,7 +54,7 @@ import {
   type PassPages,
   type ScopeRequest,
 } from "@/features/library-rounds";
-import type { RoundUnrecorded, RoundsRunnerValue, RoundsStoreStatus } from "@/features/library-rounds";
+import type { RecheckUndoOutcome, RoundUnrecorded, RoundsRunnerValue, RoundsStoreStatus } from "@/features/library-rounds";
 import { useVaultConnectors } from "@/features/mcp-connectors";
 import { workRuns } from "@/features/work-run";
 import { isWikiFurnitureSlug } from "@/shared/lib/library/wiki-page-schema";
@@ -66,11 +68,29 @@ import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/native-vault/ta
 import { parseFrontmatter } from "@/shared/lib/vault-document/parse-frontmatter";
 import { selectOpenVaultHandle } from "@/shared/lib/vault-folder/select-open-vault-handle";
 import { useLatestRef } from "@/shared/lib/use-latest-ref";
+import {
+  gitRecheckCommit,
+  gitRecheckDiffs,
+  gitRecheckRecover,
+  gitRecheckState,
+  gitRecheckUndo,
+  gitUncommittedPaths,
+} from "@/shared/lib/git/tauri-recheck";
 
 import { summarizeAgentTurn } from "./agent-turn-summary";
 import { runHeadlessTurn } from "./headless-turn";
 import { unallowedRoundIds } from "./round-allowance";
 import { reconcileRoundDueTimes } from "./round-due-times";
+import { readStaleCandidates } from "./recheck-candidates";
+import {
+  type RecheckPassResult,
+  buildInterruptedRecheckEntry,
+  buildRecheckPassEntry,
+  buildRecheckUndoEntry,
+  recheckUndoMessage,
+  runRecheckPass,
+  undonePaths,
+} from "./recheck-pass";
 import { buildFailedPassEntry, buildFinishedPassEntry, buildRevisedPagesLogLine, type PassEntryStart } from "./round-pass-entry";
 import { useGuardedAcpRuntime } from "./use-guarded-acp-runtime";
 
@@ -96,6 +116,16 @@ const NO_UNRECORDED: ReadonlyMap<string, RoundUnrecorded> = new Map();
 const SCHEDULE_FILE = ".ontology-atlas/rounds.json";
 const LEDGER_FILE = ".ontology-atlas/rounds-ledger.jsonl";
 
+const emptyPassData = (): PassData => ({
+  sources: [],
+  docs: [],
+  concepts: wikiNodeIndexOfDocs([]),
+  hashes: new Map<string, string>(),
+  pageTexts: new Map<string, string>(),
+  pages: createPassPages([]),
+  knownSources: new Set<string>(),
+});
+
 function newId(): string {
   return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
 }
@@ -111,6 +141,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
   const [storeStatus, setStoreStatus] = useState<RoundsStoreStatus>("no-vault");
   const [state, setState] = useState<RoundState | null>(null);
   const [entries, setEntries] = useState<RoundPassEntry[]>([]);
+  const entriesRef = useLatestRef(entries);
   const [running, setRunning] = useState<RoundsRunnerValue['running']>(null);
   const [lastTickAt, setLastTickAt] = useState<string | null>(null);
   const [revision, setRevision] = useState(0);
@@ -274,7 +305,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
   const agentTurn = useCallback(async (
     brief: string,
     aborted: Promise<void>,
-  ): Promise<{ failed: boolean; written: string[]; refused: string[]; called: string[]; answer: string | null }> => {
+  ): Promise<{ failed: boolean } & ReturnType<typeof summarizeAgentTurn>> => {
     const done = new Promise<AcpTurnCompletion | null>((resolve) => {
       completionRef.current = resolve;
     });
@@ -317,7 +348,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
       id: passId,
       roundId: round.id,
       name: round.name,
-      lane: round.kind === "ontology" ? "ontology" : "documents",
+      lane: isOntologyRoundKind(round.kind) ? "ontology" : "documents",
       folder: workRuns.read().folder,
       startedAt: startedAt.getTime(),
     });
@@ -346,8 +377,8 @@ export function useRoundsRunner(): RoundsRunnerValue {
     const start: PassEntryStart = { v: 1, id: passId, roundId: round.id, roundName: round.name, kind: round.kind, startedAt: startedAt.toISOString(), places: roundPlaceLabels(places), trigger };
     let entry: RoundPassEntry;
     try {
-      const data: PassData | null = round.kind === "ontology"
-        ? { sources: [], docs: [], concepts: wikiNodeIndexOfDocs([]), hashes: new Map<string, string>(), pageTexts: new Map<string, string>(), pages: createPassPages([]), knownSources: new Set<string>() }
+      const data: PassData | null = isOntologyRoundKind(round.kind)
+        ? emptyPassData()
         : await readPassData((path) => workRuns.observeScheduledDocument(seatKey, path, round.kind === "consistency"));
       if (!data) throw new Error("no-manifest");
       const fromService = new Set<string>();
@@ -367,7 +398,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
         round.kind === "consistency"
           ? runConsistencyPass({ ...data, paths: watched.paths, ownDocumentsOnly: watched.ownDocumentsOnly, fromService })
           : null;
-      const model = round.kind === "ontology"
+      const model = isOntologyRoundKind(round.kind)
         ? null
         : buildLibraryModel({ sources: data.sources, docs: data.docs, hashes: data.hashes });
       let written: string[] = [];
@@ -381,10 +412,11 @@ export function useRoundsRunner(): RoundsRunnerValue {
       let note: RoundPassEntry["note"];
       /** Service round: the documents this pass was sent to refresh — what `checked` counts there. */
       let refreshed = 0;
+      let recheck: RecheckPassResult | null = null;
       const turn = async (brief: string): Promise<Awaited<ReturnType<typeof agentTurn>> & { undone: RoundUndone[]; leftAsIs: string[]; agentTurns: 0 | 1 }> => {
         if (stoppedByPerson || !allowedNow(round)) {
           stoppedByPerson = true;
-          return { failed: true, written: [], refused: [], called: [], answer: null, undone: [], leftAsIs: [], agentTurns: 0 };
+          return { failed: true, written: [], refused: [], called: [], answer: null, reply: null, sourceReads: [], undone: [], leftAsIs: [], agentTurns: 0 };
         }
         const read = readOrMissing(vault, (path) => readTauriVaultText(rootPath, path));
         const landings = createLandings(data.pages, read);
@@ -462,6 +494,35 @@ export function useRoundsRunner(): RoundsRunnerValue {
           });
           ({ failed, written, refused, called, answer, undone, leftAsIs, agentTurns } = await turn(brief));
         }
+      } else if (round.kind === "recheck") {
+        const docs = manifestRef.current?.docs;
+        if (!docs) throw new Error("no-manifest");
+        recheck = await runRecheckPass({
+          ports: {
+            gitState: () => gitRecheckState(rootPath),
+            staleCandidates: () => readStaleCandidates(rootPath, docs),
+            uncommitted: (vaultPaths, repoPaths) => gitUncommittedPaths(rootPath, vaultPaths, repoPaths),
+            readDocument: async (path) => {
+              workRuns.observeScheduledDocument(seatKey, path, true);
+              return readTauriVaultText(rootPath, path).catch(() => null);
+            },
+            diffs: (requests, maxLines) => gitRecheckDiffs(rootPath, requests, maxLines),
+            agentTurn: async (brief) => {
+              const result = await turn(brief);
+              return { ...result, stopped: stoppedByPerson };
+            },
+            commit: (input) => gitRecheckCommit({ vaultPath: rootPath, ...input }),
+          },
+          roundId: round.id,
+          limit: round.limit ?? DEFAULT_RECHECK_LIMIT,
+          trigger,
+          passId,
+          vaultRoot: rootPath,
+          locale,
+          agentReady: Boolean(agentReady && runtimeId),
+          previous: entriesRef.current,
+          raised: new Set(docs.filter((doc) => doc.frontmatter.review_state === "human_decides").map((doc) => doc.slug)),
+        });
       } else {
         /*
          * Ontology round: one read-only refinement review. The brief forbids every write tool,
@@ -475,7 +536,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
           ({ failed, written, refused, called, answer, undone, leftAsIs, agentTurns } = await turn(brief));
         }
       }
-      entry = buildFinishedPassEntry({
+      entry = recheck ? buildRecheckPassEntry({ start, endedAt: new Date(), result: recheck }) : buildFinishedPassEntry({
         round,
         start,
         endedAt: new Date(),
@@ -542,7 +603,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
         }, ended);
       }
     }
-  }, [agentReady, agentTurn, allowedNow, handle, ledger, locale, readPassData, refresh, rootPath, runtimeId, store]);
+  }, [agentReady, agentTurn, allowedNow, entriesRef, handle, ledger, locale, manifestRef, readPassData, refresh, rootPath, runtimeId, store]);
 
   const tick = useCallback(async () => {
     if (!store || !ledger) return;
@@ -678,6 +739,48 @@ export function useRoundsRunner(): RoundsRunnerValue {
     return result.status === "saved";
   }, [refresh, rootPath, stopPassFor, store]);
 
+  // A run Atlas quit in the middle of committing is put back once, when its folder opens.
+  useEffect(() => {
+    if (!rootPath || !ledger) return;
+    void (async () => {
+      const recovered = await gitRecheckRecover(rootPath).catch(() => null);
+      if (!recovered || recovered.restored.length === 0 || !recovered.roundId) return;
+      const round = stateRef.current?.rounds.find((item) => item.id === recovered.roundId);
+      await ledger.append(buildInterruptedRecheckEntry({
+        id: newId(),
+        roundId: recovered.roundId,
+        roundName: round?.name,
+        at: new Date(),
+        restored: recovered.restored.length,
+      })).catch(() => undefined);
+      await refresh();
+    })();
+  }, [ledger, refresh, rootPath]);
+
+  const undoRecheck = useCallback(async (runId: string, paths?: readonly string[]): Promise<RecheckUndoOutcome | null> => {
+    if (!rootPath || !ledger || runningRef.current) return null;
+    const run = entriesRef.current.find((entry) => entry.id === runId);
+    const runCommit = run?.recheck?.commit;
+    if (!run || !runCommit) return null;
+    const done = undonePaths(entriesRef.current, runId);
+    const wanted = paths ? new Set(paths) : null;
+    const chosen = run.recheck!.concepts.filter((concept) =>
+      concept.outcome === "accurate" && !done.has(concept.path) && (!wanted || wanted.has(concept.path)));
+    if (chosen.length === 0) return { outcome: "nothing", undone: [], skipped: [], detail: null };
+    const result = await gitRecheckUndo({
+      vaultPath: rootPath,
+      runCommit,
+      paths: chosen.map((concept) => concept.path),
+      message: recheckUndoMessage(chosen.map((concept) => concept.slug)),
+    }).catch((error: unknown) => ({ outcome: "refused" as const, commit: null, undone: [], skipped: [], detail: error instanceof Error ? error.message : String(error) }));
+    if (!result) return null;
+    if (result.outcome === "undone" && result.undone.length > 0) {
+      await ledger.append(buildRecheckUndoEntry({ id: newId(), run, at: new Date(), commit: result.commit, undone: result.undone })).catch(() => undefined);
+      await refresh();
+    }
+    return { outcome: result.outcome, undone: result.undone, skipped: result.skipped, detail: result.detail };
+  }, [entriesRef, ledger, refresh, rootPath]);
+
   const runNow = useCallback((id: string) => {
     const round = stateRef.current?.rounds.find((entry) => entry.id === id);
     if (!round || runningRef.current) return;
@@ -724,6 +827,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
     remove,
     setEnabled,
     runNow,
+    undoRecheck,
     refresh,
   };
 }

@@ -1,4 +1,4 @@
-import { type RoundRecord, isRoundDue, nextDueAt } from '@/entities/library-round';
+import { type RoundRecord, isOntologyRoundKind, isRoundDue, nextDueAt } from '@/entities/library-round';
 
 /**
  * One clock tick as a pure decision: one pass at a time, local rounds first, a missed window
@@ -42,7 +42,7 @@ export function planTick({ rounds, now, lastTickAt, running, allowedHere, ready 
 
 function kindRank(round: RoundRecord): number {
   if (round.kind === 'consistency') return 0;
-  if (round.kind === 'ontology') return 1;
+  if (isOntologyRoundKind(round.kind)) return 1;
   return 2;
 }
 
