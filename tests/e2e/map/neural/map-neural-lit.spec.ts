@@ -122,7 +122,7 @@ test.describe("Neural on the dogfood vault", () => {
 
   for (const width of [1512, 1920]) {
     test(`at ${width} px a focus's lit far ends stay clear of the detail panel`, async ({ page }) => {
-      const { vault } = await openNeural(page, "desktop", width);
+      const { vault } = await openNeural(page, width);
       const focusId = idOf("capability", "capabilities/mcp-tool-server");
       const ends = dependencyEnds(vault.files, "capabilities/mcp-tool-server");
       expect(ends.length).toBeGreaterThan(2);
@@ -154,16 +154,6 @@ test.describe("Neural on the dogfood vault", () => {
       expect(misplaced).toEqual([]);
     });
   }
-
-  test("on the web nothing is amber and the quiet evidence line says why", async ({ page }) => {
-    const { legend } = await openNeural(page, "web");
-    await expect(legend).not.toHaveAttribute("data-evidence-availability", "measured");
-    await expect(page.getByTestId("topology-neural-legend-note")).toBeVisible();
-    await expect(page.getByTestId("topology-neural-legend-stale")).toHaveCount(0);
-    await page.mouse.move(2, 2);
-    await waitForMapStill(page, { what: "camera" });
-    expect(await countAmber(page), "amber pixels on the web").toBe(0);
-  });
 
   test("Neural: lit by the same evidence, captured at rest and on a focus", async ({ page }) => {
     const { legend } = await openNeural(page);

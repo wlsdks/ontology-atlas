@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { installDesktopRailRuntime } from "../../desktop-rail-arrival-harness";
 import { dogfoodEvidenceVault } from "../../hex-board-vaults";
-import { seedFirstRunSeen } from "../../first-run-seed";
+import { openMapOnApp } from "../open-map-on-app";
 import { waitForMapSettled, waitFrames } from "../../settle";
 
 type Pt = [number, number];
@@ -265,8 +265,8 @@ test("the glide from Flat lands on the relief's drawn tops as closely as on the 
 test("the glide into a 10,000-concept board lands on its raised slabs as closely as top-down", async ({ page }) => {
   test.setTimeout(240_000);
   await page.setViewportSize({ width: 1512, height: 982 });
-  await seedFirstRunSeen(page);
-  await page.goto("/en/topology/?synth=10000&synthDeps=1&guides=off&e2e=1", { waitUntil: "domcontentloaded" });
+  await installDesktopRailRuntime(page);
+  await openMapOnApp(page, "/en/topology/?synth=10000&synthDeps=1&guides=off&e2e=1", { waitUntil: "domcontentloaded" });
   await waitForMapSettled(page);
   const flat = distances(await landing(page));
   await page.getByTestId("topology-view-3d").click();
@@ -287,9 +287,9 @@ test("the glide into a 10,000-concept board lands on its raised slabs as closely
 for (const size of [{ width: 1512, height: 982 }, { width: 1040, height: 720 }]) {
   test(`the relief legend line stays clear of the map scope at ${size.width}`, async ({ page }) => {
     await page.setViewportSize(size);
-    await seedFirstRunSeen(page);
     await page.addInitScript(() => localStorage.setItem("atlas.appearance.hex-relief", "on"));
-    await page.goto("/en/topology/?synth=500&synthDeps=1&view=hex&guides=off&e2e=1");
+    await installDesktopRailRuntime(page);
+    await openMapOnApp(page, "/en/topology/?synth=500&synthDeps=1&view=hex&guides=off&e2e=1");
     await expect(page.getByTestId("hex-board-map")).toHaveAttribute("data-hex-ready", "true", { timeout: 60_000 });
     await expect(page.getByTestId("topology-scope-readout")).toBeVisible();
     await expect(page.getByTestId("sample-node-hint")).toHaveCount(0);

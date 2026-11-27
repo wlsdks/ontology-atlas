@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { installDesktopRailRuntime } from '../desktop-rail-arrival-harness';
+import { installDesktopRailRuntime, mountDesktopVault } from '../desktop-rail-arrival-harness';
 import { openSettings } from './settings-reading-harness';
 
 // The app's window floor and a common desktop window; phone and tablet widths are not a target.
@@ -32,7 +32,9 @@ for (const [width, height] of [[1040, 720], [1440, 900]] as const) {
     }
 
     test('expanded map controls fit the pane and remain reachable', async ({ page }) => {
+      await installDesktopRailRuntime(page);
       await page.emulateMedia({ reducedMotion: 'reduce' });
+      await mountDesktopVault(page, 'ko');
       await page.goto('/ko/automations/?guides=off');
       await page.locator('[data-testid="app-settings-trigger"]:visible').click();
       for (const section of ['expand', 'footprint']) {

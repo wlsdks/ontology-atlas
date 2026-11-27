@@ -1,14 +1,7 @@
 import { expect, test } from "@playwright/test";
-import { seedFirstRunSeen } from "../first-run-seed";
+import { installDesktopRailRuntime } from "../desktop-rail-arrival-harness";
+import { openMapOnApp } from "../map/open-map-on-app";
 import { waitForBoxStill } from "../settle";
-
-const DESKTOP_INIT = () => {
-  (window as unknown as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__ = {
-    invoke: () => Promise.reject(new Error("stub")),
-    transformCallback: (cb: unknown) => cb,
-  };
-  (window as unknown as { isTauri?: boolean }).isTauri = true;
-};
 
 /**
  * The rail is present and has stopped moving.
@@ -38,10 +31,9 @@ async function railState(page: import("@playwright/test").Page) {
 
 test.describe("left rail of the desktop shell", () => {
   test("`/` in the installed app without a vault shows only first run and hides the rail", async ({ page }) => {
-    await page.addInitScript(DESKTOP_INIT);
+    await installDesktopRailRuntime(page);
     await page.setViewportSize({ width: 1512, height: 949 });
-    await seedFirstRunSeen(page);
-    await page.goto("/ko/", { waitUntil: "networkidle" });
+    await page.goto("/ko/?guides=off", { waitUntil: "networkidle" });
     await expect(page.getByTestId("first-run-open")).toBeVisible();
     await railSettled(page);
     await expect(page.getByText("Storefront Services")).toHaveCount(0);
@@ -54,33 +46,20 @@ test.describe("left rail of the desktop shell", () => {
     expect(rail.hidden).toBe("true");
   });
 
-  test("`/` on the web gateway still hides the rail, so the fix did not break the other side", async ({
-    page,
-  }) => {
+  test("the map address has the rail", async ({ page }) => {
+    await installDesktopRailRuntime(page);
     await page.setViewportSize({ width: 1512, height: 949 });
-    await seedFirstRunSeen(page);
-    await page.goto("/ko/", { waitUntil: "networkidle" });
-    await railSettled(page);
-
-    const rail = await railState(page);
-    expect(rail.present, "the rail must stay in the DOM (hidden, not unmounted)").toBe(true);
-    expect(
-      rail.width,
-      "the workbench rail appeared on the gateway for a web visitor without a vault, seven doors that lead nowhere yet",
-    ).toBe(0);
-  });
-
-  test("the map address has the rail on both surfaces", async ({ page }) => {
-    await page.setViewportSize({ width: 1512, height: 949 });
-    await seedFirstRunSeen(page);
-    await page.goto("/ko/topology/", { waitUntil: "networkidle" });
+    await openMapOnApp(page, "/ko/topology/", { waitUntil: "networkidle" });
+    /* The remembered folder is restored after the document loads; before it, the rail rests at width 0. */
+    await expect(page.getByTestId("app-nav-rail-item-map")).toBeVisible();
     await railSettled(page);
     expect((await railState(page)).width).toBeGreaterThan(0);
   });
 
   /** Measures the rendered border width; no value lint can see a border that a shape adds. */
   test("rail destination tiles have no drawn border", async ({ page }) => {
-    await page.goto("/ko/topology/?guides=off");
+    await installDesktopRailRuntime(page);
+    await openMapOnApp(page, "/ko/topology/?guides=off");
     await expect(page.getByTestId("app-nav-rail-item-map")).toBeVisible();
 
     const tiles = await page.evaluate(() => {

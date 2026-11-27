@@ -2,14 +2,14 @@ import { expect, test, type Page } from '@playwright/test';
 import { installDesktopBridge } from '../rounds-desktop-bridge';
 
 test.describe('Automations workspace', () => {
-  test('exposes both lanes and a valid tabpanel in the browser no-vault state', async ({ page }) => {
+  test('exposes both lanes and a valid tabpanel in the app', async ({ page }) => {
+    await installDesktopBridge(page, { seedRounds: true });
     await page.setViewportSize({ width: 1280, height: 800 });
-    await page.goto('/ko/automations/?guides=off', { waitUntil: 'domcontentloaded' });
+    await openFolderThen(page, '/ko/automations/?guides=off');
 
     await expect(page.getByTestId('app-nav-rail-item-automations')).toHaveAttribute('aria-current', 'page');
     await expect(page.getByTestId('automations-tab-ontology')).toHaveAttribute('aria-selected', 'true');
     await expect(page.locator('[role="tabpanel"]')).toHaveAttribute('id', 'automations-tabpanel-ontology');
-    await expect(page.getByText('앱에서 폴더를 열면 이 화면에서 바로 예약을 만들 수 있어요.')).toBeVisible();
 
     await page.getByTestId('automations-tab-documents').click();
     await expect(page).toHaveURL(/\/ko\/automations\/\?guides=off&kind=documents$/);

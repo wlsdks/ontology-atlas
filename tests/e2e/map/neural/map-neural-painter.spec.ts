@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { installDesktopRailRuntime } from "../../desktop-rail-arrival-harness";
-import { seedFirstRunSeen } from "../../first-run-seed";
 import { liveInstances } from "../../heap-census";
+import { openMapOnApp } from "../open-map-on-app";
 import { waitForDomeEntered, waitForMapStill, waitFrames } from "../../settle";
 import { dogfoodVault, probe } from "./neural-dogfood";
 
@@ -30,12 +30,12 @@ type MapWindow = Window & {
 test.use({ viewport: { width: 1440, height: 900 }, contextOptions: { reducedMotion: "reduce" } });
 
 async function openNeural(page: Page, query: string): Promise<void> {
-  await seedFirstRunSeen(page);
   await page.addInitScript(() => {
     localStorage.setItem("atlas.appearance.view3d", "on");
     localStorage.setItem("atlas.appearance.map-arrangement", "coupling");
   });
-  await page.goto(`/en/topology/?synth=31&synthDeps=1&e2e=1&guides=off${query}`);
+  await installDesktopRailRuntime(page);
+  await openMapOnApp(page, `/en/topology/?synth=31&synthDeps=1&e2e=1&guides=off${query}`);
   await waitForDomeEntered(page);
   await waitForMapStill(page);
 }

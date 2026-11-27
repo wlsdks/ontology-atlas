@@ -1,0 +1,8 @@
+import { expect, test } from "@playwright/test";
+import { idOf } from "../../../e2e/map/neural/neural-dogfood";
+
+// neural-dogfood installs the runtime in `openNeural`; this test names only `idOf`.
+test("opens the library", async ({ page }) => {
+  expect(idOf("capability", "mcp-tool-server")).toBe("capability:mcp-tool-server");
+  await page.goto("/en/library/");
+});

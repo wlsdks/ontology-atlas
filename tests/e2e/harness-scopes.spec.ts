@@ -3,9 +3,9 @@ import { expect, test, type Page } from "@playwright/test";
 import { HARNESS_SOURCE_ROOT, installHarnessRuntime, mountHarnessVault } from "./harness-tab-fixture";
 
 /*
- * Where settings live: the popup that explains every agent settings scope. On the web it shows what
- * each file is with no counts; in the app it also shows what the files read from every scope hold,
- * and Setup lists hooks from files outside the repository under their own headings.
+ * Where settings live: the popup that explains every agent settings scope: what each file is and what
+ * the files read from every scope hold, and Setup lists hooks from files outside the repository under
+ * their own headings.
  */
 
 const HOME = "/Users/probe";
@@ -88,10 +88,13 @@ async function installScopeBridge(page: Page, scopes: unknown = SCOPES_FIXTURE) 
 }
 
 test.describe("Where settings live", () => {
-  test("the browser explains every scope with no counts, from the keyboard, and Escape closes it", async ({ page }) => {
+  test("the app explains every scope from the keyboard, and Escape closes it", async ({ page }) => {
+    await installHarnessRuntime(page);
+    await installScopeBridge(page);
+    await mountHarnessVault(page);
     await page.goto("/ko/architecture/?view=overview");
-    await expect(page.getByTestId("harness-unread-stage")).toBeVisible({ timeout: 30_000 });
-    const open = page.getByTestId("harness-unread-stage").getByTestId("where-settings-open");
+    const open = page.getByTestId("where-settings-open");
+    await expect(open).toBeVisible({ timeout: 60_000 });
     await open.focus();
     await page.keyboard.press("Enter");
 
@@ -100,9 +103,7 @@ test.describe("Where settings live", () => {
     await expect(dialog.getByRole("heading", { name: "Claude Code 설정이 있는 곳" })).toBeVisible();
     const stack = dialog.getByTestId("where-settings-stack");
     await expect(stack.getByRole("option")).toHaveText([/Managed/, /User/, /Project/, /Local/]);
-    await expect(dialog.locator("[data-where-count]")).toHaveCount(0);
-    await expect(dialog.getByTestId("where-settings-detail")).toContainText("<저장소>/.claude/settings.json");
-    await expect(dialog).toContainText("이 브라우저에서는");
+    await expect(dialog.getByTestId("where-settings-detail")).toContainText(`${HARNESS_SOURCE_ROOT}/.claude/settings.json`);
 
     /* The kinds are a tab set: arrows move between them. */
     await dialog.getByRole("tab", { name: "훅" }).focus();

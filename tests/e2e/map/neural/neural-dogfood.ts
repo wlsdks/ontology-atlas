@@ -4,9 +4,7 @@ import { expect, type Page } from "@playwright/test";
 import { parseFrontmatter } from "../../../../src/shared/lib/vault-document/parse-frontmatter";
 import { judgeEvidence } from "../../../../src/shared/lib/git/evidence-verdict.mjs";
 import { installDesktopRailRuntime, type StubPathChange } from "../../desktop-rail-arrival-harness";
-import { seedFirstRunSeen } from "../../first-run-seed";
 import { waitForDomeEntered } from "../../settle";
-import { stubDirectoryPicker } from "../../vault-picker-stub";
 
 /**
  * The dogfood vault opened in Neural through the installed-app runtime, with the Git walk answered
@@ -131,26 +129,18 @@ export type Probe = {
 export const probe = <T>(page: Page, read: (p: Probe) => T) =>
   page.evaluate(`(${read.toString()})(window.__atlasMap)`) as Promise<T>;
 
-export async function openNeural(page: Page, runtime: "desktop" | "web" = "desktop", width = 1512) {
+export async function openNeural(page: Page, width = 1512) {
   const vault = dogfoodVault();
   await page.setViewportSize({ width, height: Math.round((width * 982) / 1512) });
-  if (runtime === "web") {
-    await seedFirstRunSeen(page);
-    await stubDirectoryPicker(page, vault.files);
-    await page.goto("/ko/topology/?guides=off&e2e=1&view=neural", { waitUntil: "domcontentloaded" });
-    await page.getByTestId("first-run-starter-open").click();
-    await page.getByTestId("vault-guide-pick-existing").click();
-  } else {
-    await installDesktopRailRuntime(page, vault.files, undefined, { replaceFixture: true, gitPathChanges: vault.changes });
-    await page.goto("/ko/?guides=off&e2e=1", { waitUntil: "domcontentloaded" });
-    await page.getByTestId("first-run-open").click();
-    await page.getByTestId("topology-view-3d").click();
-    await page.getByTestId("topology-view-3d-choice-neural").click();
-  }
+  await installDesktopRailRuntime(page, vault.files, undefined, { replaceFixture: true, gitPathChanges: vault.changes });
+  await page.goto("/ko/?guides=off&e2e=1", { waitUntil: "domcontentloaded" });
+  await page.getByTestId("first-run-open").click();
+  await page.getByTestId("topology-view-3d").click();
+  await page.getByTestId("topology-view-3d-choice-neural").click();
   // The starter's own Neural may already be drawn; the claims are about this vault.
   await expect.poll(() => probe(page, (p) => p.nodes().some((n) => n.id === "capability:mcp-tool-server")), { timeout: 60_000 }).toBe(true);
   await waitForDomeEntered(page, 60_000);
   const legend = page.getByTestId("topology-neural-legend");
-  if (runtime === "desktop") await expect(legend).toHaveAttribute("data-evidence-availability", "measured", { timeout: 30_000 });
+  await expect(legend).toHaveAttribute("data-evidence-availability", "measured", { timeout: 30_000 });
   return { vault, legend };
 }
