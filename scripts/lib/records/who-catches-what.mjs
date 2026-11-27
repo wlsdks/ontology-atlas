@@ -38,11 +38,11 @@ const NEVER_COUNTED = [
   /(^|\/)(pnpm-lock\.yaml|Cargo\.lock|package-lock\.json)$/,
 ];
 
-export function isNeverCounted(path) {
+function isNeverCounted(path) {
   return NEVER_COUNTED.some((pattern) => pattern.test(path));
 }
 
-export function isTestOrDocument(path) {
+function isTestOrDocument(path) {
   const name = path.split('/').pop();
   return (
     /^(tests|e2e)\//.test(path) ||
@@ -236,7 +236,7 @@ export function classifyCatch({ texts, issues, mainRedThenGreen, owner, sharesFi
 }
 
 /** mulberry32: a 32-bit seeded generator, so the hand-checked sample is the same on every run. */
-export function seededRandom(seed) {
+function seededRandom(seed) {
   let state = seed >>> 0;
   return () => {
     state = (state + 0x6d2b79f5) >>> 0;
