@@ -183,18 +183,18 @@ Another folder, field, recipient or file needs a new decision record.
 
 ### Workshop › control tower: acting on the person's processes
 
-The ninth written exception, specified and not yet built
-(`docs/specs/2026-11-27-workshop-control-tower.md`, Controls):
+The ninth, specified, not built (`docs/specs/2026-11-27-workshop-control-tower-controls.md`):
 
 | | |
 |---|---|
-| Signal | after one press on a list Rust offered: `SIGTERM` to a leftover process; `SIGSTOP`, then `SIGCONT`, or background priority, for a build an agent started in a listed worktree |
-| Write | `git worktree remove` without `--force` after a confirm; a log line in app data before each action |
-| Never | `SIGKILL`; a group signal; an agent program, Atlas, pid 1, another user; a pid whose start, uid, name or folder changed since offered; any action without a press |
-| Gate | the spec's Controls; each slice's criteria |
+| Read | while visible, each minute, from the existing listing: for own processes parented by launchd, folder, terminal, any child; a leftover's memory; no spawn |
+| Signal | one press on a list Rust offered: `SIGTERM` to a leftover; background priority and back for an agent's build |
+| Write | `git worktree unlock` of a stale lock, then `remove` without `--force`, after a confirm; a log line first (no path, last 1,000) |
+| Never | `SIGKILL`, `SIGSTOP`, group signals; agent programs, Atlas or its ancestors, pid 1, another user, a terminal's job; a pid whose start, uid, parent, name or folder changed; acting hidden or unpressed |
+| Gate | the controls spec's criteria |
 | Record | `ed30a160` |
 
-Another signal, target or automatic action needs a new decision record.
+Another read, signal or target needs a new record.
 
 ### Folder watch is latency, not degradation
 

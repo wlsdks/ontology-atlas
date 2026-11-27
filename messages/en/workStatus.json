@@ -275,7 +275,6 @@
   "tower": {
     "label": "This computer's load",
     "verdict": {
-      "measuring": "Measuring",
       "calm": "Room to spare",
       "busy": "Busy",
       "over": "Overloaded",
@@ -301,24 +300,29 @@
     "adviceMemory": "macOS reports memory pressure as {pressure}. {name} holds the most: {memory}.",
     "failed": "Atlas could not read this computer's load just now and tries again in 5 seconds.",
     "windows": "On Windows, Atlas does not read this computer's load yet, so it does not judge it. Worktrees and sessions still show.",
-    "about": "Atlas compares the work waiting for the CPU, macOS's average over the last minute, with this computer's cores, and judges memory by macOS's own pressure level. Busy: more work than cores, or memory pressure high. Overloaded: 2.5 times the work the cores can run, or memory pressure critical. The fit divides the worktrees running work by how many times over the cores they ran in the last 5 minutes. A subagent with no worktree of its own runs inside its session's program and is counted there.",
+    "about": "Atlas compares the work waiting for the CPU, macOS's average over the last minute, with this computer's cores, and judges memory by macOS's own pressure level. Busy: more work than cores, or memory pressure high. Overloaded: 2.5 times the work the cores can run, or memory pressure critical. The fit is the worktrees running work times 2.5, divided by how many times over the cores the last 5 minutes ran; other programs' work counts against them too. A subagent with no worktree of its own runs inside its session's program and is counted there.",
     "sessionNever": "Atlas does not stop agent sessions. To stop one, press Esc or Ctrl-C in its own window, where you can see what it was doing.",
     "leftover": {
+      "counts": "{list}",
       "button": "Stop {count, plural, one {# leftover process} other {# leftover processes}} ({memory})",
-      "note": "Each one's folder was removed or its branch is merged, and no agent or terminal started it. Stopping asks each to quit; nothing else is touched.",
-      "done": "Stopped {count}.",
+      "note": "Each one kept running after whatever started it ended, its folder was removed or its branch merged, and it has no terminal or child process. Stopping asks each to quit; nothing else is touched.",
+      "done": "{count, plural, one {# process quit.} other {# processes quit.}}",
+      "someLeft": "{gone} quit; {left} still running.",
       "changed": "Nothing was stopped: these processes changed after the list was drawn. The list is updated."
     },
     "remove": {
-      "title": "Remove {count, plural, one {# merged worktree} other {# merged worktrees}}?",
-      "body": "Each is merged into {base} and has no uncommitted changes. Git deletes each folder with its ignored files, such as {ignored}. The branches stay, and git worktree add brings a folder back."
+      "button": "Remove this worktree",
+      "title": "Remove {branch}'s worktree?",
+      "body": "It is merged into {base} and has no uncommitted changes. Git deletes the folder with its ignored files. The branch stays, and git worktree add brings the folder back.",
+      "others": "These ignored files are deleted too, and Atlas cannot tell whether a build makes them again: {paths}",
+      "confirm": "Remove",
+      "done": "Removed {branch}'s worktree."
     },
+    "refused": "{target} was not changed: {reason}",
     "build": {
       "background": "Run {name}'s build in the background",
-      "backgroundNote": "It keeps running at lower priority, so other work finishes first. Press again to set it back.",
-      "pause": "Pause {name}'s build",
-      "pauseNote": "It stops until you resume it, for 10 minutes at most. An agent waiting on it may give up after 2 minutes and try again.",
-      "resume": "Resume"
+      "backgroundNote": "It keeps running at the lowest priority, with slower disk and network, so other work finishes first. The load stays the same, since the build still runs. Press again to set it back.",
+      "backgroundOn": "In the background"
     }
   }
 }
