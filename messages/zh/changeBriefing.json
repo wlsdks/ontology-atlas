@@ -37,7 +37,7 @@
   "emptyHint": "请选择其他周期，或在有新提交后刷新。",
   "repository": "仓库",
   "head": "基准提交 {hash}",
-  "scope": "只统计当前分支的提交（first-parent）。已合并分支中的提交不单独计数，也不包含未提交的更改。",
+  "scope": "只统计默认分支的提交（first-parent）。已合并分支中的提交不单独计数，也不包含未提交的更改。",
   "totals": "{commits} 个提交 · {files} 个更改的文件 · {groups} 个能力",
   "coverage": "{mapped} 个文件关联到能力 · {unmapped} 个未关联",
   "partial": "只读取了此周期的一部分。缩小日期范围即可查看全部。",

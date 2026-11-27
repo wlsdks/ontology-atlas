@@ -6,6 +6,7 @@ use std::process::Stdio;
 use std::sync::{Mutex, OnceLock};
 use std::time::Duration;
 
+use super::base_line;
 use crate::lower_hex::lower_hex;
 use serde::Serialize;
 use sha2::{Digest, Sha256};
@@ -156,6 +157,16 @@ fn text_git(root: &Path, args: &[&str]) -> Result<String, String> {
         .map(|v| v.trim().into())
         .map_err(|_| "unreadable".into())
 }
+/// The commit the history is read from: the base branch's tip (`base_line`), so a checkout on a
+/// feature branch never reports its own unmerged commits as merged. HEAD when there is no base.
+fn merged_line_tip(root: &Path) -> Result<String, String> {
+    let read = |args: &[&str]| text_git(root, args).ok();
+    let tip = match base_line::base_line(&read) {
+        Some(line) => format!("{}^{{commit}}", line.reference),
+        None => "HEAD".to_string(),
+    };
+    text_git(root, &["rev-parse", "--verify", &tip]).map_err(|_| "no-history".into())
+}
 fn identity(vault_path: &str, project: &str) -> Result<Identity, String> {
     let vault = validate_vault_dir(vault_path).map_err(|_| "unreadable")?;
     let binding = resolve_binding_metadata(&vault, project).map_err(|_| "no-source")?;
@@ -170,8 +181,7 @@ fn identity(vault_path: &str, project: &str) -> Result<Identity, String> {
     if binding.kind != "git" {
         return Err("no-history".into());
     }
-    let head =
-        text_git(&binding.root, &["rev-parse", "--verify", "HEAD"]).map_err(|_| "no-history")?;
+    let head = merged_line_tip(&binding.root)?;
     let metadata = fs::metadata(&binding.root).map_err(|_| "unreadable")?;
     let vault_metadata = fs::metadata(&vault).map_err(|_| "unreadable")?;
     #[cfg(unix)]
@@ -219,7 +229,7 @@ fn picked_identity(source_path: &str) -> Result<Identity, String> {
     if fs::canonicalize(repository).ok().as_ref() != Some(&root) {
         return Err("no-history".into());
     }
-    let head = text_git(&root, &["rev-parse", "--verify", "HEAD"]).map_err(|_| "no-history")?;
+    let head = merged_line_tip(&root)?;
     let metadata = fs::metadata(&root).map_err(|_| "unreadable")?;
     #[cfg(unix)]
     let object = {
