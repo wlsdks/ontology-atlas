@@ -1,6 +1,7 @@
 use serde::Serialize;
 
 pub(crate) mod bound;
+pub(crate) mod text;
 
 use super::repo::{require_repo_root, vault_pathspec};
 use super::runner::{run_git, validate_vault_dir};
@@ -18,6 +19,15 @@ pub struct PathLastChange {
     is_dir: bool,
     /// `None` when uncommitted or older than the window.
     last_changed_at: Option<String>,
+    /// Hash of that commit: a concept document's is where its cited files are re-read.
+    last_commit: Option<String>,
+}
+
+/// The newest commit touching one wanted path.
+#[derive(Debug, Clone)]
+struct NewestCommit {
+    at: String,
+    hash: String,
 }
 
 /// One `git log --name-only` walk matched in memory, not one process per concept.
@@ -74,23 +84,25 @@ pub fn git_paths_last_change(
         .enumerate()
         .map(|(index, (key, resolved))| {
             let on_disk = repo_root.join(resolved);
+            let newest = last.get(&index);
             PathLastChange {
                 path: key.clone(),
                 exists: on_disk.exists(),
                 is_dir: on_disk.is_dir(),
-                last_changed_at: last.get(&index).cloned(),
+                last_changed_at: newest.map(|commit| commit.at.clone()),
+                last_commit: newest.map(|commit| commit.hash.clone()),
             }
         })
         .collect())
 }
 
-/// The newest commit time of each wanted path, by its index. O(log lines x wanted).
+/// The newest commit of each wanted path, by its index. O(log lines x wanted).
 fn last_changes(
     repo_root: &std::path::Path,
     wanted: &[(String, String)],
-) -> Result<std::collections::HashMap<usize, String>, String> {
+) -> Result<std::collections::HashMap<usize, NewestCommit>, String> {
     const REC: char = '\x1e';
-    let format = format!("--pretty=format:{REC}%cI");
+    let format = format!("--pretty=format:{REC}%H %cI");
     let mut args: Vec<&str> = vec![
         // Otherwise git C-quotes non-ASCII paths and Korean names never match.
         "-c",
@@ -107,19 +119,22 @@ fn last_changes(
     }
     let out = run_git(repo_root, &args)?;
 
-    let mut last: std::collections::HashMap<usize, String> = std::collections::HashMap::new();
+    let mut last: std::collections::HashMap<usize, NewestCommit> = std::collections::HashMap::new();
     if out.success {
-        let mut current_time: Option<String> = None;
+        let mut current: Option<NewestCommit> = None;
         for line in out.stdout.lines() {
             let line = line.trim();
             if line.is_empty() {
                 continue;
             }
             if let Some(rest) = line.strip_prefix(REC) {
-                current_time = Some(rest.trim().to_string());
+                current = rest.trim().split_once(' ').map(|(hash, at)| NewestCommit {
+                    at: at.to_string(),
+                    hash: hash.to_string(),
+                });
                 continue;
             }
-            let Some(time) = current_time.as_ref() else {
+            let Some(time) = current.as_ref() else {
                 continue;
             };
             for (index, (_, resolved)) in wanted.iter().enumerate() {

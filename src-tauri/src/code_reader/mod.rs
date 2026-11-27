@@ -3,7 +3,7 @@
 //! line; every call re-derives the root from the vault's recorded binding and checks the request
 //! and its link target.
 
-mod refusal;
+pub(crate) mod refusal;
 #[cfg(test)]
 mod tests;
 mod window;
