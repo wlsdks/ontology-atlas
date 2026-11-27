@@ -103,6 +103,13 @@ said plainly, offline and with no second document to keep.
 release**, joins the period bar. By date stays the default and behaves as before, so decision
 4ee43750 holds. The slice is read-only: Atlas never creates, moves, deletes or fetches a tag.
 
+**Decided, owner delegated to the lead, 2026-11-27.** (1) The first version lists one repository,
+the one Changes reads; gathering every connected repository is Later 6. (2) The first slice is
+read-only; drafting notes, creating a tag and pushing stay later slices, each with its own
+decision. (3) A pre-release is its own row with the pre-release mark, and a final release counts
+the changes of its betas (rule 4 below). (4) The Korean catalogue says "release" as
+`README.ko.md` spells it, the standard spelling.
+
 ### What a release is
 
 1. One release per tagged commit; several tags on one commit are one release with every name.
@@ -263,7 +270,7 @@ The words are in `messages/{en,ko,ja,zh}/releases.json`, written with this spec.
 - **Files and concepts on every row** (Later 1): they need every release's paths, 19 MB here
   against the 8 MiB bound, so rows carry name, date, count and kinds.
 - **Drafting notes** (Later 3), **an MCP tool** (Later 2), **the author's own notes** (Later 5),
-  **every connected repository** (Owner question).
+  **every connected repository** (Later 6).
 - **One package's files in a monorepo**: Atlas does not know which folder a tag prefix owns.
 - **Concepts as they stood at the tag**: the anchors are today's.
 - **Pull requests in Originals for a release**: that inventory selects by update time in dates
@@ -332,17 +339,19 @@ no public contract, nothing sent, nothing an agent writes.
 3. Release notes as Markdown: first a copy of the digest built without a model, then an agent's draft from titles and concept names, never diff hunks, which needs a decision on what an agent may write. Next by risk 3.
 4. Wider anchors (cited lines, folders) so more changes reach a concept. Next by criterion 1.
 5. The author's notes beside the measured digest: tag messages and `CHANGELOG.md` sections. Next when a walk shows him opening the changelog file.
-6. Every connected repository in one list, and a route of its own if By release outgrows Changes. Next by the Owner question.
+6. Every connected repository in one list, and a route of its own if By release outgrows Changes. Next when he asks for a second repository beside the first.
 7. Creating a tag, then pushing it. A tag writes to the code folder, so the read-only source grant needs a decision; a push leaves the machine, so it needs an explicit action, a statement of what is sent and a local record. Next only when the owner asks after using slices 1 and 3.
 8. One package's files for a monorepo sequence. Next when a monorepo owner walks the view.
 
 ## Owner question
 
-Is one repository's releases in one list enough for the first version (the repository Changes is
-reading), or must it list the releases of every connected repository together? Decided here as
-one repository: his words name "the source" in the singular and Changes reads one repository at
-a time. Reversing it moves Later 6 into the first slice and adds a read per connected folder.
+None. The four questions of the first draft (one repository or all, read-only first, how
+pre-releases count, the Korean word) are decided under "Problem and alternatives". Each reverses
+by a Later line or a one-word catalogue change; nothing here spends money, publishes or sends.
 
 ## Revisions
 
 - 2026-11-27: first draft.
+- 2026-11-27: the owner delegated the open questions to the lead, who decided them: one
+  repository, read-only first, pre-releases as their own rows counted into their final release,
+  and the Korean word as `README.ko.md` spells it. The Owner question is now None.
