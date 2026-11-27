@@ -247,6 +247,8 @@ type DegradedSurface = {
    * is on screen and resolves there.
    */
   alsoHereLink?: { testId: string; href: RegExp };
+  /** Controls of the app's surface that the browser must not draw, since they would offer what it cannot do. */
+  absent?: string[];
   /** This card only renders after a vault is open — attach the fixture folder first. */
   needsVault?: true;
 };
@@ -314,6 +316,7 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
     card: "briefing-stage",
     reason: /로컬 Git 저장소는 설치한 앱에서만 읽을 수 있어요/,
     destination: "briefing-get-app",
+    absent: ["change-grouping"],
   },
   {
     name: "work status: the browser cannot run git or read this computer's processes",
@@ -469,6 +472,7 @@ test.describe("web smoke 3: honest downgrade", () => {
         await expect(destination).toHaveAttribute("href", /\/download\//);
       }
       if (surface.destinationText) await expect(card).toHaveText(surface.destinationText);
+      for (const testId of surface.absent ?? []) await expect(page.getByTestId(testId)).toHaveCount(0);
       if (surface.alsoHereLink) {
         const link = page.getByTestId(surface.alsoHereLink.testId);
         await expect(link, "there is no link to a place that works on this screen").toBeVisible();

@@ -28,7 +28,7 @@ test('opens a busy day on one number, at most eight groups that add up and only 
   const digest = page.getByTestId('change-digest');
   await expect(digest.getByRole('heading').first()).toHaveText('33');
   await expect(page.getByRole('tablist')).toHaveCount(0);
-  await expect(page.getByRole('radiogroup')).toHaveCount(0);
+  await expect(page.getByRole('radiogroup')).toHaveAccessibleName('Read changes by date or by release');
   const groups = page.getByTestId('change-digest-groups').locator('[data-digest-group]');
   const names = await groups.evaluateAll(rows => rows.map(row => row.getAttribute('aria-label') ?? ''));
   expect(names.length).toBeLessThanOrEqual(8);

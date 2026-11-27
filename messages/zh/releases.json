@@ -1,0 +1,57 @@
+{
+  "byDate": "按日期",
+  "byRelease": "按发布",
+  "grouping": "选择按日期还是按发布查看变更",
+  "list": "发布",
+  "choose": "发布",
+  "unreleased": "未发布",
+  "row": {
+    "count": "{count} 项变更",
+    "name": "{release}，{date}：{count} 项变更",
+    "uncounted": "{release}，{date}：尚未统计"
+  },
+  "mark": {
+    "preRelease": "预发布",
+    "offBranch": "不在 {branch} 分支上"
+  },
+  "find": {
+    "label": "查找发布",
+    "none": "没有名称包含 {query} 的发布。"
+  },
+  "prefix": {
+    "label": "标签名称开头",
+    "all": "所有标签"
+  },
+  "since": {
+    "label": "从哪个发布之后",
+    "firstCommit": "第一个提交",
+    "option": "{release} · {date}"
+  },
+  "more": "再显示 {count} 个",
+  "reading": "正在读取此仓库的标签…",
+  "counting": "正在统计较早发布的变更…",
+  "concepts": {
+    "title": "代码文件有变更的概念",
+    "chip": "{concept}：{count} 项变更",
+    "none": "此发布中变更的文件里，没有已记录的概念所指向的文件。",
+    "more": "再显示 {count} 个概念"
+  },
+  "nothingUnreleased": "{release} 之后，{branch} 分支上没有合并任何变更。",
+  "empty": {
+    "title": "此仓库没有标签",
+    "body": "Atlas 会为这台电脑上仓库里的每个 Git 标签列出一个发布，而这个仓库没有标签。如果标签只在远程仓库上，请在仓库中运行 git fetch，然后点击“重新读取”。",
+    "readAgain": "重新读取"
+  },
+  "partial": {
+    "size": "此发布只读取了最新的 {count} 项变更。在“从哪个发布之后”中选择更近的发布，即可完整读取较短的范围。",
+    "depth": "比 {branch} 分支上最新 {count} 项变更更早的发布只列出名称，不显示数量。选择其中一个，Atlas 就会统计它的变更。",
+    "shallow": "这台电脑上的仓库是只有部分历史的 shallow clone，因此较早的发布缺失或统计不完整。请在仓库中 fetch 完整历史，然后点击“重新读取”。",
+    "names": "有 {count} 个标签的名称无法显示为文字，因此没有列出。"
+  },
+  "offBranch": "此标签不在 {branch} 分支上。变更是沿着此标签自身的历史，统计到最近的上一个标签为止。",
+  "basis": {
+    "tags": "标签读取自这台电脑上的仓库。Atlas 不会执行 fetch，因此只存在于远程仓库的标签不会列出。",
+    "range": "一个发布包含从名称开头相同的上一个标签之后，到它自己的标签为止，合并到 {branch} 分支的变更。正式发布还会计入同一版本的预发布中的变更。",
+    "concepts": "概念按文档现在指向的代码路径匹配，而不是按打标签时文档的内容匹配。"
+  }
+}
