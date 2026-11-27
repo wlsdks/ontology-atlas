@@ -108,7 +108,7 @@ One accurate word per thing. Canonical spellings live in
   `render/node-shapes.ts` and `shared/ui/ontology-node/map-kind-glyph.tsx` aligned
   (`node-kind-shape-parity` contract). Radii 30/17/11/7,
   `DOMAIN_HALF_EXTENT_RATIO`, and any bridge-node visual require reopening the
-  map research through a `reviewer` with the `map-marks` lens. Full Flat is
+  map research through a `code-reviewer` with the `map-marks` lens. Full Flat is
   outside that ladder: its marks are `--map-graph-*` ("Map marks and ink").
 - Canvas paint composites `source-over`. `globalCompositeOperation = "lighter"`
   is for a mark that is light itself (today the gateway field, the walked-path

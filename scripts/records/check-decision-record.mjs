@@ -190,7 +190,7 @@ for (const trigger of triggers) console.error(`[decisions]   - ${trigger}`);
 console.error(`
 [decisions] Do one of these:
 [decisions]   1. run pnpm decisions:find <terms> and cite the record this change keeps or overturns
-[decisions]   2. if the change is one-way (AGENTS.md workflow table), give one reviewer the evidence
+[decisions]   2. if the change is one-way (AGENTS.md workflow table), give one code-reviewer the evidence
 [decisions]   3. create a decision fragment with the before-state, decision delta, dissent, and falsifier
 [decisions]   4. if the trigger is a false positive (a route file move, say), say so in one line in the record
 [decisions]

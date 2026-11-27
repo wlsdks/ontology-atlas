@@ -96,7 +96,7 @@ current need requires, so the source alone carries the meaning.
   resolves it). A numeric bound may keep one line naming its measurement.
 - Algorithmic code (layout, search and matching, diffing, parsing, graph
   traversal) states its complexity in a name, type or one line, chooses its
-  data structure on purpose, and lands only after an independent `reviewer`.
+  data structure on purpose, and lands only after an independent `code-reviewer`.
 - Split a file when it stops being one job, by responsibility into a cohesive
   subfolder within its layer; add an `index` only where the layer's public API
   already has one. `pnpm review:facts` marks a changed file over 800 lines:

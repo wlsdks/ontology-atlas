@@ -140,6 +140,6 @@ differ. Change the shared table only for an intentional change.
   imported constant with a literal, pins prose or source text, restates the
   implementation, or is contained in a stronger test of the same subject.
   Deleting a gate, a regression test a record names, or a cross-package table
-  row needs a `reviewer`.
+  row needs a `code-reviewer`.
 - Renaming a title matched by a `--test-name-pattern` keeps the matched set
   identical, or changes the pattern in the same commit.

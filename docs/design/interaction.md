@@ -9,7 +9,7 @@ area: map
 
 > A record of decisions applying open principles from the Apple *Designing Fluid Interfaces* (WWDC18) lineage to this project's design charter
 > (`DESIGN-SYSTEM.md` · `.claude/rules/design.md`).
-> **If in conflict with the charter, the charter wins** — see "Conflict Resolution" below. This is a design gate input document for ontology-map (Slice 2), and design-guardian verification is performed via screenshot evidence at implementation time.
+> **If in conflict with the charter, the charter wins** — see "Conflict Resolution" below. This is a design gate input document for ontology-map (Slice 2), and design-reviewer verification is performed via screenshot evidence at implementation time.
 
 ## 0. Boundary Between Two Worlds (Core Decision)
 

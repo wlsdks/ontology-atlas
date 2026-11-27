@@ -41,7 +41,7 @@ request.
 
 ## 2. Add each slice as it returns
 
-Review it first (`/merge` §1-2: one reviewer when due, one fix round). Then, in
+Review it first (`/merge` §1-2: one `code-reviewer` when due, one fix round). Then, in
 the integration worktree:
 
     pnpm integration:add <slice branch>
@@ -77,7 +77,7 @@ run it again), runs `pnpm checks:changed -- --run` on every path in
 a `### Conflicts` section naming each file that conflicted and the merge commit
 that resolved it, and the lanes that passed. `--notes` adds your summary and
 how each conflict was resolved. Read every file two slices both touched before
-you continue, even without a textual conflict. One `reviewer` reads the pull
+you continue, even without a textual conflict. One `code-reviewer` reads the pull
 request when the `AGENTS.md` workflow table requires one.
 
 ## 4. Merge it
