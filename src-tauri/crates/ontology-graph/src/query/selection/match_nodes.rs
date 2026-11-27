@@ -26,7 +26,11 @@ impl NodeFilters<'_> {
         let arguments = self.arguments;
         let (in_degree, out_degree) = (node.in_degree as usize, node.out_degree as usize);
         let degree = in_degree + out_degree;
-        if arguments.kind.as_deref().is_some_and(|kind| node.kind() != kind) {
+        if arguments
+            .kind
+            .as_deref()
+            .is_some_and(|kind| node.kind() != kind)
+        {
             return false;
         }
         if let Some(domain) = &arguments.domain {
@@ -41,8 +45,12 @@ impl NodeFilters<'_> {
         }
         arguments.min_degree.is_none_or(|least| degree >= least)
             && arguments.max_degree.is_none_or(|most| degree <= most)
-            && arguments.min_in_degree.is_none_or(|least| in_degree >= least)
-            && arguments.min_out_degree.is_none_or(|least| out_degree >= least)
+            && arguments
+                .min_in_degree
+                .is_none_or(|least| in_degree >= least)
+            && arguments
+                .min_out_degree
+                .is_none_or(|least| out_degree >= least)
             && arguments
                 .has_incoming
                 .is_none_or(|wanted| (in_degree > 0) == wanted)
@@ -120,10 +128,7 @@ pub fn match_nodes<'a>(
     let total = matched.len();
     matched.sort_by(|left, right| by_sort(graph, sort, *left, *right));
     matched.truncate(limit);
-    let rows: Vec<DegreeRow<'a>> = matched
-        .iter()
-        .map(|id| DegreeRow::of(graph, *id))
-        .collect();
+    let rows: Vec<DegreeRow<'a>> = matched.iter().map(|id| DegreeRow::of(graph, *id)).collect();
     let follow_up = matched
         .first()
         .map(|first| NodeFollowUp::about(graph.node(*first).slug()));

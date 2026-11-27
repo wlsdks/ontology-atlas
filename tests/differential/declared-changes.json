@@ -408,6 +408,142 @@
       "path": "result.content[0].text",
       "change": 26,
       "reason": "A table keyed by names lists them in the order the graph holds them (row 26); a JavaScript object lists a key that is a whole number before every other."
+    },
+    {
+      "case": "graph/graph-selection-ambiguous-and-dangling",
+      "where": "answer",
+      "id": 7,
+      "path": "result.content[0].text",
+      "change": 31,
+      "reason": "A maintenance action for a dependency cycle takes its address from the cycle it names; the JavaScript server hashed the cycle as null, so every cycle of one length shared an address and afterActionId skipped the others (row 31)."
+    },
+    {
+      "case": "graph/graph-selection-refusals",
+      "where": "answer",
+      "id": 17,
+      "path": "result.structuredContent.errorCode",
+      "change": 22,
+      "reason": "A missing required name (slug, domain) is refused as invalid_arguments (row 22); the JavaScript server answered tool_error."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 27,
+      "path": "result.content[0].text",
+      "change": 30,
+      "reason": "A lineage list says limited only when a node past the limit exists; the JavaScript walk said limited as soon as it had found as many nodes as the limit, even when the list was complete (row 30)."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 33,
+      "path": "result.structuredContent.errorCode",
+      "change": 22,
+      "reason": "A missing required name (slug, domain) is refused as invalid_arguments (row 22); the JavaScript server answered tool_error."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 40,
+      "path": "result.structuredContent.errorCode",
+      "change": 22,
+      "reason": "A missing required name (slug, domain) is refused as invalid_arguments (row 22); the JavaScript server answered tool_error."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 60,
+      "path": "result.content[0].text",
+      "change": 24,
+      "reason": "health cuts dependencyOrder.blocked at orderLimit and says it was limited, as topological_order does (row 24); the JavaScript server listed every blocked node."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 72,
+      "path": "result.content[0].text",
+      "change": 31,
+      "reason": "A maintenance action for a dependency cycle takes its address from the cycle it names; the JavaScript server hashed the cycle as null, so every cycle of one length shared an address and afterActionId skipped the others (row 31)."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 73,
+      "path": "result.content[0].text",
+      "change": 31,
+      "reason": "A maintenance action for a dependency cycle takes its address from the cycle it names; the JavaScript server hashed the cycle as null, so every cycle of one length shared an address and afterActionId skipped the others (row 31)."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 74,
+      "path": "result.content[0].text",
+      "change": 31,
+      "reason": "A maintenance action for a dependency cycle takes its address from the cycle it names; the JavaScript server hashed the cycle as null, so every cycle of one length shared an address and afterActionId skipped the others (row 31)."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 75,
+      "path": "result.content[0].text",
+      "change": 31,
+      "reason": "A maintenance action for a dependency cycle takes its address from the cycle it names; the JavaScript server hashed the cycle as null, so every cycle of one length shared an address and afterActionId skipped the others (row 31)."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 78,
+      "path": "result.content[0].text",
+      "change": 31,
+      "reason": "A maintenance action for a dependency cycle takes its address from the cycle it names; the JavaScript server hashed the cycle as null, so every cycle of one length shared an address and afterActionId skipped the others (row 31)."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 79,
+      "path": "result.content[0].text",
+      "change": 31,
+      "reason": "A maintenance action for a dependency cycle takes its address from the cycle it names; the JavaScript server hashed the cycle as null, so every cycle of one length shared an address and afterActionId skipped the others (row 31)."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 82,
+      "path": "result.content[0].text",
+      "change": 31,
+      "reason": "A maintenance action for a dependency cycle takes its address from the cycle it names; the JavaScript server hashed the cycle as null, so every cycle of one length shared an address and afterActionId skipped the others (row 31)."
+    },
+    {
+      "case": "graph/graph-selection-tangle",
+      "where": "answer",
+      "id": 7,
+      "path": "result.content[0].text",
+      "change": 24,
+      "reason": "health cuts dependencyOrder.blocked at orderLimit and says it was limited, as topological_order does (row 24); the JavaScript server listed every blocked node."
+    },
+    {
+      "case": "graph/graph-selection-tangle",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text",
+      "change": 31,
+      "reason": "A maintenance action for a dependency cycle takes its address from the cycle it names; the JavaScript server hashed the cycle as null, so every cycle of one length shared an address and afterActionId skipped the others (row 31)."
+    },
+    {
+      "case": "graph/graph-selection-tangle",
+      "where": "answer",
+      "id": 11,
+      "path": "result.content[0].text",
+      "change": 31,
+      "reason": "A maintenance action for a dependency cycle takes its address from the cycle it names; the JavaScript server hashed the cycle as null, so every cycle of one length shared an address and afterActionId skipped the others (row 31)."
+    },
+    {
+      "case": "graph/graph-selection-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text",
+      "change": 25,
+      "reason": "The nodes of a health component are in the order of the graph, the collation of slugs (row 25); the JavaScript server sorted them by UTF-16 code unit."
     }
   ]
 }

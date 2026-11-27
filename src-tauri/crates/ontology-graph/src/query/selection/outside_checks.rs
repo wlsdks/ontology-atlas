@@ -54,7 +54,10 @@ impl OutsideChecks {
                     ),
                 )
             } else if warnings > 0 {
-                ("warn", format!("{warnings} warning(s) require review.{tail}"))
+                (
+                    "warn",
+                    format!("{warnings} warning(s) require review.{tail}"),
+                )
             } else {
                 (
                     "pass",

@@ -126,7 +126,9 @@ impl Step<'_> {
 
     fn node_slug(&self) -> Option<&str> {
         match &self.subject {
-            Subject::Write { node, .. } | Subject::Review { node } => node.as_ref().map(NodeSummary::slug),
+            Subject::Write { node, .. } | Subject::Review { node } => {
+                node.as_ref().map(NodeSummary::slug)
+            }
             _ => None,
         }
     }
@@ -140,8 +142,8 @@ impl Step<'_> {
             node: self.node_slug(),
             nodes: match &self.subject {
                 Subject::Link { nodes, .. } => Some(IdNodes {
-                    from: nodes.from_slug(),
-                    to: nodes.to_slug(),
+                    from: nodes.source_slug(),
+                    to: nodes.target_slug(),
                 }),
                 _ => None,
             },

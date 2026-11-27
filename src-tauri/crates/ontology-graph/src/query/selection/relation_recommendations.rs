@@ -23,11 +23,11 @@ pub struct RecommendationNodes<'a> {
 }
 
 impl RecommendationNodes<'_> {
-    pub fn from_slug(&self) -> &str {
+    pub fn source_slug(&self) -> &str {
         self.from.slug()
     }
 
-    pub fn to_slug(&self) -> &str {
+    pub fn target_slug(&self) -> &str {
         self.to.slug()
     }
 }

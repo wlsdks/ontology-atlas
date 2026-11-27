@@ -55,9 +55,7 @@ fn walk_request(operation: WalkOperation, limit: usize, types: &[String]) -> Que
     request
 }
 
-fn written<T: for<'de> Deserialize<'de>>(
-    answer: &impl serde::Serialize,
-) -> Result<T, QueryError> {
+fn written<T: for<'de> Deserialize<'de>>(answer: &impl serde::Serialize) -> Result<T, QueryError> {
     let text = answer_format::json::to_string(answer)
         .map_err(|error| QueryError::Failed(error.to_string()))?;
     serde_json::from_str(&text).map_err(|error| QueryError::Failed(error.to_string()))

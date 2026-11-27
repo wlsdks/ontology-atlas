@@ -75,9 +75,10 @@ pub fn suggested_slug(reference: &str, kind: &str) -> String {
     let folder = folder_name(kind);
     let raw = trim(reference);
     let without_extension = match raw.rfind('.') {
-        Some(dot) if raw.get(dot + 1..).is_some_and(|rest| {
-            !rest.is_empty() && !rest.contains(['.', '/', '\\'])
-        }) =>
+        Some(dot)
+            if raw
+                .get(dot + 1..)
+                .is_some_and(|rest| !rest.is_empty() && !rest.contains(['.', '/', '\\'])) =>
         {
             raw.get(..dot).unwrap_or(raw)
         }
@@ -151,12 +152,15 @@ mod tests {
             suggested_slug("elements/already.md", "element"),
             "elements/already"
         );
-        assert_eq!(suggested_slug("...", "domain"), "domains/unnamed");
+        assert_eq!(suggested_slug("--", "domain"), "domains/unnamed");
     }
 
     #[test]
     fn a_reference_becomes_a_title() {
-        assert_eq!(title_from_reference("src/auth_service-core.ts"), "Auth service core");
+        assert_eq!(
+            title_from_reference("src/auth_service-core.ts"),
+            "Auth service core"
+        );
         assert_eq!(title_from_reference("src/"), "Src/");
         assert_eq!(title_from_reference("_.ts"), "Untitled");
     }

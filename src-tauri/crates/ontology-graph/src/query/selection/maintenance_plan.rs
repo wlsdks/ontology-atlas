@@ -27,9 +27,9 @@ use crate::query::name_counts::sorted_counts;
 use crate::query::node_summary::NodeSummary;
 use crate::query::query_error::QueryError;
 use crate::query::request::QueryRequest;
+use vault_document::body_findings;
 use vault_document::meaning_wording::slug_outside_kind_folder;
 use vault_document::schema::folder_for_kind;
-use vault_document::body_findings;
 
 const DEFAULT_LIMIT: usize = 25;
 
@@ -182,7 +182,9 @@ fn filter_of(
     name: &str,
     allowed: &[&'static str],
 ) -> Result<Option<HashSet<String>>, QueryError> {
-    let Some(values) = values else { return Ok(None) };
+    let Some(values) = values else {
+        return Ok(None);
+    };
     let mut chosen = HashSet::new();
     for value in values {
         if !allowed.contains(&value.as_str()) {
@@ -397,11 +399,7 @@ pub fn maintenance_plan<'a>(
     let arguments = &request.selection.arguments;
     let phase_filter = filter_of(arguments.phases.as_deref(), "phases", &PHASES)?;
     let severity_filter = filter_of(arguments.severities.as_deref(), "severities", &SEVERITIES)?;
-    let kind_filter = filter_of(
-        arguments.kinds.as_deref(),
-        "kinds",
-        &KINDS,
-    )?;
+    let kind_filter = filter_of(arguments.kinds.as_deref(), "kinds", &KINDS)?;
     let dependency_types = arguments
         .dependency_types
         .clone()
@@ -499,7 +497,12 @@ pub fn maintenance_plan<'a>(
             },
         });
     }
-    for group in [unassigned.rows, unearned.rows, empty.rows, without_evidence.rows] {
+    for group in [
+        unassigned.rows,
+        unearned.rows,
+        empty.rows,
+        without_evidence.rows,
+    ] {
         for row in group {
             steps.push(Step {
                 phase: "review",
@@ -537,11 +540,15 @@ pub fn maintenance_plan<'a>(
             let action = slot.as_ref()?;
             let step = &action.step;
             let keeps = (!executable_only || action.is_executable())
-                && phase_filter.as_ref().is_none_or(|set| set.contains(step.phase))
+                && phase_filter
+                    .as_ref()
+                    .is_none_or(|set| set.contains(step.phase))
                 && severity_filter
                     .as_ref()
                     .is_none_or(|set| set.contains(step.severity))
-                && kind_filter.as_ref().is_none_or(|set| set.contains(step.kind));
+                && kind_filter
+                    .as_ref()
+                    .is_none_or(|set| set.contains(step.kind));
             keeps.then_some(index)
         })
         .collect();
@@ -565,7 +572,12 @@ pub fn maintenance_plan<'a>(
         (Some(_), Some(at)) => filtered.get(at + 1..).unwrap_or_default(),
         (Some(_), None) => &[],
     };
-    let step_of = |index: &usize| slots.get(*index).and_then(Option::as_ref).map(|action| &action.step);
+    let step_of = |index: &usize| {
+        slots
+            .get(*index)
+            .and_then(Option::as_ref)
+            .map(|action| &action.step)
+    };
     let by_phase = sorted_counts(cursor.iter().filter_map(step_of).map(|step| step.phase));
     let by_severity = sorted_counts(cursor.iter().filter_map(step_of).map(|step| step.severity));
     let by_kind = sorted_counts(cursor.iter().filter_map(step_of).map(|step| step.kind));
@@ -580,8 +592,15 @@ pub fn maintenance_plan<'a>(
         .iter()
         .filter_map(|index| slots.get_mut(*index).and_then(Option::take))
         .collect();
-    let (dangling_total, recommended_total, external_total, external_ignored, unassigned_total, empty_total, evidence_total) =
-        totals;
+    let (
+        dangling_total,
+        recommended_total,
+        external_total,
+        external_ignored,
+        unassigned_total,
+        empty_total,
+        evidence_total,
+    ) = totals;
 
     Ok(MaintenancePlanAnswer {
         graph_hash: graph.graph_hash(),
@@ -603,9 +622,18 @@ pub fn maintenance_plan<'a>(
             capabilities_without_evidence: evidence_total,
         },
         filter_names: [
-            sorted(phase_filter.as_ref()).into_iter().map(String::from).collect(),
-            sorted(severity_filter.as_ref()).into_iter().map(String::from).collect(),
-            sorted(kind_filter.as_ref()).into_iter().map(String::from).collect(),
+            sorted(phase_filter.as_ref())
+                .into_iter()
+                .map(String::from)
+                .collect(),
+            sorted(severity_filter.as_ref())
+                .into_iter()
+                .map(String::from)
+                .collect(),
+            sorted(kind_filter.as_ref())
+                .into_iter()
+                .map(String::from)
+                .collect(),
         ],
         executable_only,
         after_action_id,

@@ -21,7 +21,7 @@ const TEXT_CHARS: usize = 36_000;
 const DOMAIN_HOTSPOTS: usize = 5;
 
 #[derive(Serialize, Clone)]
-pub struct MapSummary {
+pub struct PageSummary {
     nodes: usize,
     domains: usize,
     capabilities: usize,
@@ -33,7 +33,7 @@ pub struct MapSummary {
 }
 
 #[derive(Serialize)]
-pub struct DomainMapRow<'a> {
+pub struct DomainPageRow<'a> {
     pub(super) slug: &'a str,
     pub(super) node: NodeSummary<'a>,
     pub(super) summary: DomainSummary,
@@ -43,13 +43,12 @@ pub struct DomainMapRow<'a> {
 }
 
 #[derive(Serialize)]
-pub struct ProjectMap<'a> {
-    operation: &'static str,
+pub struct ProjectPage<'a> {
     pub(super) project: &'a str,
     pub(super) node: NodeSummary<'a>,
-    pub(super) summary: MapSummary,
+    pub(super) summary: PageSummary,
     limited: bool,
-    pub(super) domains: Vec<DomainMapRow<'a>>,
+    pub(super) domains: Vec<DomainPageRow<'a>>,
     pub(super) unassigned: LimitedNodes<'a>,
     hotspots: Vec<DegreeRow<'a>>,
 }
@@ -61,7 +60,7 @@ struct DomainBase {
     summary: DomainSummary,
 }
 
-pub struct ProjectMapBase<'a> {
+pub struct ProjectPageBase<'a> {
     graph: &'a CompiledGraph,
     project: NodeId,
     scope: Scope,
@@ -69,10 +68,10 @@ pub struct ProjectMapBase<'a> {
     rows: Vec<DomainBase>,
     row_limit: usize,
     unassigned: Vec<NodeId>,
-    summary: MapSummary,
+    summary: PageSummary,
 }
 
-impl<'a> ProjectMapBase<'a> {
+impl<'a> ProjectPageBase<'a> {
     /// Reads the project's scope, then each domain's scope inside it. A domain's counts are worked
     /// out only for the `limit` rows the page shows; the others are only walked, to know which
     /// nodes no domain holds.
@@ -105,7 +104,7 @@ impl<'a> ProjectMapBase<'a> {
             .filter(|id| !covered.contains(id))
             .collect();
         let edges = ScopeEdges::of(graph, &scope);
-        let summary = MapSummary {
+        let summary = PageSummary {
             nodes: scope.len(),
             domains: domains.len(),
             capabilities: of_kind(graph, &scope, "capability").len(),
@@ -126,10 +125,9 @@ impl<'a> ProjectMapBase<'a> {
     }
 
     /// The page with lists cut to `item_limit`.
-    fn page(&self, item_limit: usize) -> ProjectMap<'a> {
+    fn page(&self, item_limit: usize) -> ProjectPage<'a> {
         let graph = self.graph;
-        ProjectMap {
-            operation: "project_map",
+        ProjectPage {
             project: graph.node(self.project).slug(),
             node: NodeSummary::of(graph, self.project),
             summary: self.summary.clone(),
@@ -137,7 +135,7 @@ impl<'a> ProjectMapBase<'a> {
             domains: self
                 .rows
                 .iter()
-                .map(|row| DomainMapRow {
+                .map(|row| DomainPageRow {
                     slug: graph.node(row.domain).slug(),
                     node: NodeSummary::of(graph, row.domain),
                     summary: row.summary.clone(),
@@ -165,7 +163,7 @@ impl<'a> ProjectMapBase<'a> {
 
     /// The page with the longest lists, up to `requested`, that keep its pretty-printed text within
     /// the bound: the limit is halved until it fits or reaches one, so at most log2 of it builds.
-    pub fn fitted(&self, requested: usize) -> ProjectMap<'a> {
+    pub fn fitted(&self, requested: usize) -> ProjectPage<'a> {
         let mut item_limit = requested;
         let mut page = self.page(item_limit);
         while item_limit > 1 && written_length(&page) > TEXT_CHARS {
@@ -177,7 +175,7 @@ impl<'a> ProjectMapBase<'a> {
 }
 
 /// How many UTF-16 code units `JSON.stringify(page, null, 2)` would write.
-fn written_length(page: &ProjectMap<'_>) -> usize {
+fn written_length(page: &ProjectPage<'_>) -> usize {
     answer_format::json::to_string_indented(page, 2)
         .map(|text| utf16::len(&text))
         .unwrap_or(0)

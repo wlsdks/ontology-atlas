@@ -16,7 +16,7 @@ use super::growth_plan::{growth_plan_with_limit, GrowthPlanAnswer, GrowthSummary
 use super::health::{health, HealthAnswer, HealthCheck, HealthQuestion};
 use super::limited_nodes::LimitedNodes;
 use super::outside_checks::{AttentionAction, OutsideChecks};
-use super::project_map::{DomainMapRow, MapSummary, ProjectMapBase};
+use super::project_page::{DomainPageRow, PageSummary, ProjectPageBase};
 use super::proposed_action::ProposedAction;
 use crate::compiled_graph::{CompiledGraph, NodeId};
 use crate::query::name_counts::kind_counts;
@@ -71,7 +71,7 @@ struct BriefDomain<'a> {
 struct ProjectBrief<'a> {
     project: &'a str,
     node: NodeSummary<'a>,
-    summary: MapSummary,
+    summary: PageSummary,
     domains: Vec<BriefDomain<'a>>,
     unassigned: LimitedNodes<'a>,
 }
@@ -130,9 +130,8 @@ fn project_roots(graph: &CompiledGraph) -> Vec<NodeId> {
         .node_ids()
         .filter(|id| graph.node(*id).kind() == "project")
         .collect();
-    roots.sort_by(|left, right| {
-        utf16::compare(graph.node(*left).slug(), graph.node(*right).slug())
-    });
+    roots
+        .sort_by(|left, right| utf16::compare(graph.node(*left).slug(), graph.node(*right).slug()));
     roots
 }
 
@@ -231,7 +230,7 @@ pub fn workspace_brief<'a>(
         .iter()
         .take(limit)
         .map(|project| {
-            let base = ProjectMapBase::of(graph, &containment, *project, limit);
+            let base = ProjectPageBase::of(graph, &containment, *project, limit);
             let map = base.fitted(limit.min(PROJECT_ITEM_LIMIT));
             ProjectBrief {
                 project: map.project,
@@ -240,11 +239,18 @@ pub fn workspace_brief<'a>(
                 domains: map
                     .domains
                     .into_iter()
-                    .map(|DomainMapRow { slug, node, summary, .. }| BriefDomain {
-                        slug,
-                        node,
-                        summary,
-                    })
+                    .map(
+                        |DomainPageRow {
+                             slug,
+                             node,
+                             summary,
+                             ..
+                         }| BriefDomain {
+                            slug,
+                            node,
+                            summary,
+                        },
+                    )
                     .collect(),
                 unassigned: map.unassigned,
             }
@@ -258,7 +264,8 @@ pub fn workspace_brief<'a>(
     let parts = outside.into_parts();
     let mut checks = checks;
     checks.extend(parts.checks);
-    let attention: Vec<NextAction<'a>> = parts.actions.into_iter().map(NextAction::Outside).collect();
+    let attention: Vec<NextAction<'a>> =
+        parts.actions.into_iter().map(NextAction::Outside).collect();
     actions.splice(0..0, attention);
     actions.truncate(limit);
     Ok(WorkspaceBriefAnswer {

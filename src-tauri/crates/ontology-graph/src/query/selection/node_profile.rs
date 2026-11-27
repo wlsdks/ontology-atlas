@@ -149,12 +149,18 @@ impl<'a> LineageGroup<'a> {
             nodes: lineage
                 .steps
                 .iter()
-                .map(|LineageStep { node, distance, via }| LineageRow {
-                    slug: graph.node(*node).slug(),
-                    distance: *distance,
-                    via,
-                    node: NodeSummary::of(graph, *node),
-                })
+                .map(
+                    |LineageStep {
+                         node,
+                         distance,
+                         via,
+                     }| LineageRow {
+                        slug: graph.node(*node).slug(),
+                        distance: *distance,
+                        via,
+                        node: NodeSummary::of(graph, *node),
+                    },
+                )
                 .collect(),
         }
     }

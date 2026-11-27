@@ -6,10 +6,7 @@ use crate::query::query_error::QueryError;
 
 /// The project `name` means. With no name the graph's only project is meant, and a graph with none
 /// or several asks for one, saying which exist.
-pub fn resolve_project(
-    graph: &CompiledGraph,
-    name: Option<&str>,
-) -> Result<NodeId, QueryError> {
+pub fn resolve_project(graph: &CompiledGraph, name: Option<&str>) -> Result<NodeId, QueryError> {
     if name.is_some_and(|text| !answer_format::whitespace::trim(text).is_empty()) {
         let project = resolve(graph, name, "project")?;
         let node = graph.node(project);

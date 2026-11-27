@@ -167,10 +167,8 @@ impl VaultRoot {
     /// `.ontology-atlasignore`: `None` when there is no such file. `name` is one file name; a name
     /// with a separator or a `..` is refused, so no call can reach outside the vault through it.
     pub fn read_top_file(&self, name: &str) -> io::Result<Option<String>> {
-        let is_one_name = !name.is_empty()
-            && name != ".."
-            && name != "."
-            && !name.contains(['/', '\\', '\0']);
+        let is_one_name =
+            !name.is_empty() && name != ".." && name != "." && !name.contains(['/', '\\', '\0']);
         if !is_one_name {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidInput,

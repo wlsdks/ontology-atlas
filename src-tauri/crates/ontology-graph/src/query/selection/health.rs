@@ -306,7 +306,12 @@ pub fn health<'a>(
         question.component_types_argument,
     )?;
     let groups = connected_components(graph, component_types.as_ref());
-    let components = describe_components(graph, &groups, question.component_limit, question.node_limit);
+    let components = describe_components(
+        graph,
+        &groups,
+        question.component_limit,
+        question.node_limit,
+    );
     let actionable = groups
         .iter()
         .filter(|group| !only_ignored_kinds(graph, group))
@@ -350,29 +355,69 @@ pub fn health<'a>(
         if nodes == 0 {
             check("vault_present", "fail", nodes, "This folder has no ontology nodes, so every other check below passed with nothing to count. Either the path is not a vault, or the vault is empty: check the folder you passed, or scaffold one with the first-run starter in the app or `node <checkout>/cli init`.")
         } else {
-            check("vault_present", "pass", nodes, "The folder contains ontology nodes.")
+            check(
+                "vault_present",
+                "pass",
+                nodes,
+                "The folder contains ontology nodes.",
+            )
         },
         if issues == 0 {
-            check("compile_issues", "pass", issues, "Compiled ontology artifact has no compiler issues.")
+            check(
+                "compile_issues",
+                "pass",
+                issues,
+                "Compiled ontology artifact has no compiler issues.",
+            )
         } else {
             check("compile_issues", "warn", issues, "Compiled ontology artifact has compiler issues; compile_ontology({ nodesLimit: 1, edgesLimit: 1 }) returns every issue.")
         },
         if counts.unresolved == 0 {
-            check("unresolved_edges", "pass", counts.unresolved, "Every internal edge resolves to a known ontology node.")
+            check(
+                "unresolved_edges",
+                "pass",
+                counts.unresolved,
+                "Every internal edge resolves to a known ontology node.",
+            )
         } else {
-            check("unresolved_edges", "warn", counts.unresolved, "Some internal edges do not resolve to a known ontology node.")
+            check(
+                "unresolved_edges",
+                "warn",
+                counts.unresolved,
+                "Some internal edges do not resolve to a known ontology node.",
+            )
         },
         if cycles.total > 0 {
-            check("dependency_cycles", "fail", cycles.total, "Directed dependency cycles block a clean prerequisite-first graph order.")
+            check(
+                "dependency_cycles",
+                "fail",
+                cycles.total,
+                "Directed dependency cycles block a clean prerequisite-first graph order.",
+            )
         } else if order.acyclic {
-            check("dependency_cycles", "pass", cycles.total, "No directed dependency cycles were detected.")
+            check(
+                "dependency_cycles",
+                "pass",
+                cycles.total,
+                "No directed dependency cycles were detected.",
+            )
         } else {
             check("dependency_cycles", "warn", cycles.total, "The dependency order is not acyclic, but the cycle search ran out of budget before naming a cycle; cycles({ maxHops }) with a narrower scope names them.")
         },
         if recommended.total == 0 {
-            check("relation_recommendations", "pass", recommended.total, "No safe domain-containment relation suggestions are pending.")
+            check(
+                "relation_recommendations",
+                "pass",
+                recommended.total,
+                "No safe domain-containment relation suggestions are pending.",
+            )
         } else {
-            check("relation_recommendations", "warn", recommended.total, "Safe domain-containment relation suggestions are available.")
+            check(
+                "relation_recommendations",
+                "warn",
+                recommended.total,
+                "Safe domain-containment relation suggestions are available.",
+            )
         },
         if actionable <= 1 {
             let message = if ignored > 0 {
@@ -452,4 +497,3 @@ pub fn health<'a>(
         validation: None,
     })
 }
-

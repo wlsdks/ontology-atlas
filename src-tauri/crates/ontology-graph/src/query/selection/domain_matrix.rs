@@ -219,14 +219,23 @@ pub fn domain_matrix<'a>(
         .iter()
         .map(|(pair, tally)| (*pair, tally))
         .collect();
-    pairs.sort_by(|((left_from, left_to), left), ((right_from, right_to), right)| {
-        right
-            .edges
-            .len()
-            .cmp(&left.edges.len())
-            .then_with(|| compare_text(graph.node(*left_from).slug(), graph.node(*right_from).slug()))
-            .then_with(|| compare_text(graph.node(*left_to).slug(), graph.node(*right_to).slug()))
-    });
+    pairs.sort_by(
+        |((left_from, left_to), left), ((right_from, right_to), right)| {
+            right
+                .edges
+                .len()
+                .cmp(&left.edges.len())
+                .then_with(|| {
+                    compare_text(
+                        graph.node(*left_from).slug(),
+                        graph.node(*right_from).slug(),
+                    )
+                })
+                .then_with(|| {
+                    compare_text(graph.node(*left_to).slug(), graph.node(*right_to).slug())
+                })
+        },
+    );
     let total_pairs = pairs.len();
     let rows: Vec<Connection<'a>> = pairs
         .iter()

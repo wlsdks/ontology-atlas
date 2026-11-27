@@ -13,14 +13,14 @@ mod growth_candidates;
 mod growth_plan;
 mod health;
 mod ignored_references;
-mod match_edges;
 mod limited_nodes;
 mod maintenance_action;
 mod maintenance_plan;
+mod match_edges;
 mod match_nodes;
 mod node_profile;
 mod outside_checks;
-mod project_map;
+mod project_page;
 mod project_root;
 mod proposed_action;
 mod reference_repair;
@@ -163,15 +163,16 @@ pub fn run<'a>(
         SelectionOperation::GrowthPlan => {
             SelectionAnswer::GrowthPlan(growth_plan::growth_plan(graph, request)?)
         }
-        SelectionOperation::MaintenancePlan => SelectionAnswer::MaintenancePlan(
-            maintenance_plan::maintenance_plan(graph, request)?,
-        ),
+        SelectionOperation::MaintenancePlan => {
+            SelectionAnswer::MaintenancePlan(maintenance_plan::maintenance_plan(graph, request)?)
+        }
         SelectionOperation::Health => SelectionAnswer::Health(
-            health::health(graph, &health::HealthQuestion::from_request(request))?
-                .with_outside(outside_checks::OutsideChecks::of(&request.selection.outside)),
+            health::health(graph, &health::HealthQuestion::from_request(request))?.with_outside(
+                outside_checks::OutsideChecks::of(&request.selection.outside),
+            ),
         ),
-        SelectionOperation::WorkspaceBrief => SelectionAnswer::WorkspaceBrief(
-            workspace_brief::workspace_brief(graph, request)?,
-        ),
+        SelectionOperation::WorkspaceBrief => {
+            SelectionAnswer::WorkspaceBrief(workspace_brief::workspace_brief(graph, request)?)
+        }
     })
 }

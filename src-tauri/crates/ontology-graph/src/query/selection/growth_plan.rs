@@ -128,7 +128,11 @@ pub fn growth_plan_with_limit<'a>(
     let dangling = dangling_references(graph, limit);
     let unassigned = unassigned_nodes(graph, &containment, limit);
     let empty = empty_domains(graph, &containment, limit);
-    let next_reads = NextReads::of(!graph.nodes().is_empty(), outside.next_reads.as_deref(), limit);
+    let next_reads = NextReads::of(
+        !graph.nodes().is_empty(),
+        outside.next_reads.as_deref(),
+        limit,
+    );
     let summary = GrowthSummary {
         relation_recommendations: recommendations.total(),
         external_element_refs: external.total(),

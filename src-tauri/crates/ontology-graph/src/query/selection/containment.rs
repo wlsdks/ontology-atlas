@@ -226,10 +226,10 @@ impl<'a> Containment<'a> {
 
     /// The node the `domain:` of `node` names, as a slug or an alias.
     pub fn named_domain(&self, node: NodeId) -> Option<NodeId> {
-        self.graph
-            .node(node)
-            .domain_name()
-            .and_then(|name| self.graph.resolve_name(answer_format::whitespace::trim(name)))
+        self.graph.node(node).domain_name().and_then(|name| {
+            self.graph
+                .resolve_name(answer_format::whitespace::trim(name))
+        })
     }
 
     /// The nodes over or under `center`, nearest first and in slug order within a distance, at
