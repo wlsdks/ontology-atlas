@@ -214,7 +214,9 @@ fn read_paths(
     arguments.put("to", ArgumentValue::text(graph.node(to).slug()));
     arguments.put("direction", ArgumentValue::text(direction_name(direction)));
     arguments.put("maxHops", ArgumentValue::Count(max_hops));
-    arguments.put("searchBudget", ArgumentValue::of_count(search_budget));
+    if let Some(budget) = search_budget {
+        arguments.put("searchBudget", ArgumentValue::Count(budget));
+    }
     let mut indexes = adjacency_indexes(direction);
     indexes.push("aliasToSlug");
     if types.is_some() {
