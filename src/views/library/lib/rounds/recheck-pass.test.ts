@@ -106,6 +106,24 @@ describe("a recheck run", () => {
     expect(vi.mocked(port.agentTurn).mock.calls[0]![0]).not.toContain(huge);
   });
 
+  it("sends at most 200 KB when 25 concepts of 20 KB each are stale", async () => {
+    const slugs = Array.from({ length: 25 }, (_, index) => `capabilities/c${String(index).padStart(2, "0")}`);
+    const diff = "-old\n+new";
+    const port = ports(
+      {
+        readDocument: vi.fn(async (path: string) => doc(path).padEnd(20_000 - diff.length, "x")),
+        diffs: vi.fn(async (requests: readonly { commit: string; path: string }[]) => requests.map((request) => ({ ...request, refused: false, diff, lines: 2, cut: false }))),
+        agentTurn: vi.fn(async () => turnWith(answer([]))),
+      },
+      slugs.map((slug, index) => candidate(slug, `2026-01-${String(index + 1).padStart(2, "0")}T00:00:00Z`)),
+    );
+    const result = await runRecheckPass(input(port, { limit: 25 }));
+    expect(result.recheck.sentBytes).toBe(RECHECK_MAX_SENT_BYTES);
+    expect(result.recheck.waiting).toBe(15);
+    const brief = vi.mocked(port.agentTurn).mock.calls[0]![0];
+    expect(brief.match(/^## Concept \d+/gm)).toHaveLength(10);
+  });
+
   it("sends nothing of a concept whose cited path is refused, and reports it", async () => {
     const port = ports({
       diffs: vi.fn(async (requests: readonly { commit: string; path: string }[]) => requests.map((request) => ({ ...request, refused: request.path.includes("pay"), diff: request.path.includes("pay") ? null : "+new", lines: 1, cut: false }))),

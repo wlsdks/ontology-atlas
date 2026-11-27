@@ -27,15 +27,7 @@ export function useRecheckedConcepts({
   const handle = mode === 'local' ? selectOpenVaultHandle(vault.status, vault.handle) : null;
   const rootPath = handle ? (getTauriVaultRootPath(handle) ?? null) : null;
   const docs = mode === 'local' ? vault.manifest?.docs : null;
-  const marks = useMemo(() => {
-    const bySlug = new Map((docs ?? []).map((doc) => [doc.slug, doc.frontmatter.evidence_checked]));
-    const found = new Map<string, string>();
-    for (const node of nodes ?? []) {
-      const mark = bySlug.get(node.evidenceIds[0] ?? '');
-      if (typeof mark === 'string' && MARK.test(mark)) found.set(node.id, mark);
-    }
-    return found;
-  }, [docs, nodes]);
+  const marks = useMemo(() => readRecheckMarks(nodes ?? [], docs ?? []), [docs, nodes]);
   const hashes = useMemo(() => [...new Set(marks.values())].sort(), [marks]);
   const key = rootPath && hashes.length > 0 ? `${rootPath}\0${hashes.join(',')}` : '';
   const [known, setKnown] = useState<{ key: string; set: ReadonlySet<string> }>({ key: '', set: NO_KNOWN });
@@ -52,8 +44,27 @@ export function useRecheckedConcepts({
     };
   }, [hashes, key, rootPath]);
   const knownSet = known.key === key ? known.set : NO_KNOWN;
-  return useMemo(
-    () => new Set([...marks].filter(([id, mark]) => knownSet.has(mark) && current(id)).map(([id]) => id)),
-    [current, knownSet, marks],
-  );
+  return useMemo(() => recheckedIds(marks, knownSet, current), [current, knownSet, marks]);
+}
+
+/** Node id to the commit its document's recheck mark names, for marks shaped like a commit name. */
+export function readRecheckMarks(
+  nodes: readonly Pick<KnowledgeGraphNode, 'id' | 'evidenceIds'>[],
+  docs: readonly { slug: string; frontmatter: Record<string, unknown> }[],
+): Map<string, string> {
+  const bySlug = new Map(docs.map((doc) => [doc.slug, doc.frontmatter.evidence_checked]));
+  const found = new Map<string, string>();
+  for (const node of nodes) {
+    const mark = bySlug.get(node.evidenceIds[0] ?? '');
+    if (typeof mark === 'string' && MARK.test(mark)) found.set(node.id, mark);
+  }
+  return found;
+}
+
+export function recheckedIds(
+  marks: ReadonlyMap<string, string>,
+  known: ReadonlySet<string>,
+  current: (id: string) => boolean,
+): Set<string> {
+  return new Set([...marks].filter(([id, mark]) => known.has(mark) && current(id)).map(([id]) => id));
 }

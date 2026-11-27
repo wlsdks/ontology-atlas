@@ -1,5 +1,5 @@
 {
-  "about": "Which commit dates a concept document and a cited file, after each history. A document is dated by the first commit at which it held its present bytes; a cited file by its newest commit. Run by tests/contract/analysis/document-dating.contract.test.ts (MCP walk) and src-tauri/src/git/evidence/tests.rs (both desktop walks). Each commit step is one minute after the previous one.",
+  "about": "Which commit dates a concept document and a cited file, after each history. A document is dated by the first commit at which it held its present bytes; a cited file by its newest commit. Run by tests/contract/analysis/evidence-drift-parity.contract.test.ts (MCP walk) and src-tauri/src/git/evidence/tests.rs (both desktop walks). Each commit step is one minute after the previous one.",
   "document": "docs/capabilities/pay.md",
   "code": "src/pay.ts",
   "cases": [
@@ -12,6 +12,15 @@
       ],
       "dates": { "document": "M", "code": "B" },
       "verdict": "current"
+    },
+    {
+      "name": "a mark naming a commit the repository does not have carries no weight once the code moves",
+      "steps": [
+        { "commit": "A", "files": { "docs/capabilities/pay.md": "---\nkind: capability\nevidence_checked: ffffffffffffffffffffffffffffffffffffffff\n---\nPays.\n", "src/pay.ts": "pay(1);\n" } },
+        { "commit": "B", "files": { "src/pay.ts": "pay(2);\n" } }
+      ],
+      "dates": { "document": "A", "code": "B" },
+      "verdict": "stale"
     },
     {
       "name": "a git revert of the run's commit returns the earlier date",
