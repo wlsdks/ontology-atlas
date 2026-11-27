@@ -248,6 +248,10 @@ merge.
 | 14 | `query_concepts` filter nested deeper than 32 levels of `NOT` and brackets, or holding more than 256 clauses | the filter is read by recursion until the process's stack ends, so a filter of a hundred thousand clauses ends the whole server | refused as `invalid_arguments` naming `filter`, before the vault is read. Corpus: `query-concepts-filter-bounds` | a filter no agent wrote by hand must not end every agent's session |
 | 15 | `query_concepts` zero-row `growthHint.reason` | the `kind=` and `domain=` names are found by scanning the filter's text, so a name inside a quoted title counts as a kind and a domain with a non-ASCII letter is cut where the letters stop | the names are the ones the parsed filter requires, whole. Corpus: `query-concepts-zero-row-names` | the hint names what the filter asked for |
 | 16 | order of `find_backlinks` matches and of the kinds in `kind_census` | by UTF-16 code unit, the default sort | by the one collation every other list uses (`Intl.Collator('en')`). Corpus: `backlinks-and-orphans-edge-names` | one order for every list an agent reads |
+| 17 | `git_status` and `git_history` `reason` when `git` cannot start (not installed, not on `PATH`) | `not-a-git-repository`, because every failed first call reads as no repository | `git-not-available`; a missing repository keeps `not-a-git-repository`. Corpus: `no-git-executable` | an agent told "not a repository" on a machine with no git is led to run `git init` |
+| 18 | `git_status` `files` for a file renamed in the working tree or index | one row for the new path, as `modified`, when the person's `status.renames` or `diff.renames` allows it, and an `added` row for the new path and a `deleted` row for the old when it does not | always two rows, the old path `deleted` and the new one `added` or `untracked`, whatever the person configured; `counts` follow. No corpus case has a rename: `hardened-git`'s `a_rename_is_two_rows_and_odd_names_are_read_whole` states it | the answer must not depend on a setting of the person's, and the old path is not lost |
+| 19 | `git_history` when `git log` fails on a repository that has a commit | the failure is swallowed: no commits, `historyComplete: true` | `tool_error` carrying git's words. A branch with no commit has no history and answers as before. No corpus case makes `git log` fail | an empty list that reads as a complete history is a false answer |
+| 20 | `git_status` and `git_history` for a vault in a folder of its repository, on Windows | the pathspec is built with backslashes, which a literal pathspec never matches, so the vault's changes and commits are missing | the vault is placed below the top as a `/` path, with letters compared without case. Windows only, so no corpus case | the same vault must answer the same on every platform |
 
 Slices add rows only with a corpus case for each; the lead reviews each row in the slice's pull
 request.
@@ -738,3 +742,15 @@ None — the owner delegated the open points and the lead decided them on 2026-1
   the zero-row hint reads the parsed filter (row 15); `find_backlinks` and the kind census use the
   one collation (row 16). The reads keep a document cache between calls, revalidated by stat, with
   a racy window of two seconds. The `''` dialect point is recorded under Later for a joint fix.
+- 2026-11-28: slice 5 (git reads and staleness). `source-evidence` is renamed `source-scan`
+  (the survey half gets `repository-survey` in slice 8). `hardened-git` reads `HEAD` and the
+  changed paths from one `status`, so a commit between two runs cannot split them; every read
+  sets `GIT_OPTIONAL_LOCKS=0`, because `status` otherwise rewrites the index under
+  `index.lock` and can fail a commit the person makes at that moment. History dating uses
+  `log -z`, so no path is read through C-style quoting. `git_status` and `git_history` answer
+  as JavaScript does except rows 17 to 20. The app's three evidence commands call
+  `source-scan` for dating and text pairs; its `git/runner.rs` stays for the other git modules.
+  Not done here: node revisions and the stale-parent clock (their callers are `query_ontology`
+  health and `get_concepts`, slice 4), the comparable-code normaliser and import reconciliation
+  (slice 6), and `detect-drift` (slice 9); the app's screens still run the shared JavaScript
+  comparison.
