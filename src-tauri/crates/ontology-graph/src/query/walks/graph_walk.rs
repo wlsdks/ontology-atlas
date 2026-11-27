@@ -1,18 +1,10 @@
 //! Which edges a walk may follow from a node, in the order it follows them.
 
-use answer_format::collation::compare_text;
-
 use crate::compiled_graph::{CompiledGraph, EdgeId, NodeId};
 use crate::query::edge_rows::name_reached;
 use crate::query::relation_set::{allowed, RelationSet};
 use crate::query::request::Direction;
-
-/// One step of a walk: the edge and the node it leads to.
-#[derive(Debug, Clone, Copy)]
-pub struct Step {
-    pub next: NodeId,
-    pub edge: EdgeId,
-}
+use crate::query::step::Step;
 
 /// The text edges are ordered by: `from:via:to:ref`.
 pub fn edge_order_key(graph: &CompiledGraph, id: EdgeId) -> String {
@@ -27,20 +19,21 @@ pub fn edge_order_key(graph: &CompiledGraph, id: EdgeId) -> String {
 }
 
 /// The resolved edges leaving and entering `node` that `direction` follows and `types` allows,
-/// each with the node on its other end, ordered by that node's slug and then the edge's own text.
+/// each with the node on its other end, ordered by that node and then by the edge. Both are
+/// positions in the graph's own order, so no text is built to sort a hub's fifty thousand edges.
 pub fn traversal_steps(
     graph: &CompiledGraph,
     node: NodeId,
     direction: Direction,
     types: Option<&RelationSet>,
 ) -> Vec<Step> {
-    let mut keyed: Vec<(String, Step)> = Vec::new();
+    let mut steps: Vec<Step> = Vec::new();
     if direction.follows_outgoing() {
         for &id in graph.outgoing(node) {
             let edge = graph.edge(id);
             let Some(next) = edge.to() else { continue };
             if allowed(types, edge.via) {
-                keyed.push((step_key(graph, next, id), Step { next, edge: id }));
+                steps.push(Step { next, edge: id });
             }
         }
     }
@@ -48,20 +41,33 @@ pub fn traversal_steps(
         for &id in graph.incoming(node) {
             let edge = graph.edge(id);
             if allowed(types, edge.via) {
-                keyed.push((
-                    step_key(graph, edge.from, id),
-                    Step {
-                        next: edge.from,
-                        edge: id,
-                    },
-                ));
+                steps.push(Step {
+                    next: edge.from,
+                    edge: id,
+                });
             }
         }
     }
-    keyed.sort_by(|left, right| compare_text(&left.0, &right.0));
-    keyed.into_iter().map(|(_, step)| step).collect()
+    steps.sort_unstable_by_key(|step| (step.next, step.edge));
+    steps
 }
 
-fn step_key(graph: &CompiledGraph, next: NodeId, id: EdgeId) -> String {
-    format!("{}:{}", graph.node(next).slug(), edge_order_key(graph, id))
+/// Whether a walk could take any step from `node`: `traversal_steps` is not empty.
+pub fn has_traversal_step(
+    graph: &CompiledGraph,
+    node: NodeId,
+    direction: Direction,
+    types: Option<&RelationSet>,
+) -> bool {
+    let leaves = direction.follows_outgoing()
+        && graph.outgoing(node).iter().any(|&id| {
+            let edge = graph.edge(id);
+            edge.to().is_some() && allowed(types, edge.via)
+        });
+    let enters = direction.follows_incoming()
+        && graph
+            .incoming(node)
+            .iter()
+            .any(|&id| allowed(types, graph.edge(id).via));
+    leaves || enters
 }

@@ -8,7 +8,7 @@ use std::cmp::Ordering;
 use answer_format::collation::compare_text;
 use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
-use vault_document::frontmatter::Value;
+use vault_document::frontmatter::{Scalar, Value};
 use vault_document::LoadedDocument;
 
 use crate::compile_issue::CompileIssue;
@@ -112,6 +112,21 @@ impl Node {
     /// The body as readers see it, read from the file again when the cache did not keep it.
     pub fn body(&self) -> Result<Cow<'_, str>, vault_document::FileReadError> {
         self.document.body()
+    }
+
+    /// Where the workbench placed the node: `canvasPosition` when it holds a finite `x` and `y`.
+    pub fn canvas_position(&self) -> Option<(f64, f64)> {
+        let Some(Value::Map(members)) = self.document.frontmatter().get("canvasPosition") else {
+            return None;
+        };
+        match (members.get("x"), members.get("y")) {
+            (Some(Scalar::Number(x)), Some(Scalar::Number(y)))
+                if x.is_finite() && y.is_finite() =>
+            {
+                Some((*x, *y))
+            }
+            _ => None,
+        }
     }
 
     pub fn degree(&self) -> u32 {

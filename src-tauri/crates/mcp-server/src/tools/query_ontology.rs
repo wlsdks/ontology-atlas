@@ -208,6 +208,7 @@ fn read_request(arguments: &Arguments) -> Result<QueryRequest, ToolError> {
     }
     let mut limit = None;
     let mut node_limit = None;
+    let mut item_limit = None;
     let mut counts: Vec<(&str, Option<usize>)> = Vec::with_capacity(COUNT_ARGUMENTS.len());
     for key in COUNT_ARGUMENTS {
         let size = if key == "limit" {
@@ -221,6 +222,7 @@ fn read_request(arguments: &Arguments) -> Result<QueryRequest, ToolError> {
         match key {
             "limit" => limit = size,
             "nodeLimit" => node_limit = size,
+            "itemLimit" => item_limit = size,
             _ => {}
         }
         counts.push((key, size));
@@ -254,6 +256,7 @@ fn read_request(arguments: &Arguments) -> Result<QueryRequest, ToolError> {
         check_text_in(&texts, "toKind", &EDGE_TARGET_KINDS)?;
     }
     let mut include_isolated = None;
+    let mut include_orphans = None;
     let mut include_external = None;
     let mut include_unresolved = None;
     let mut flags: Vec<(&str, Option<bool>)> = Vec::with_capacity(BOOLEAN_ARGUMENTS.len());
@@ -261,6 +264,7 @@ fn read_request(arguments: &Arguments) -> Result<QueryRequest, ToolError> {
         let flag = optional_boolean(arguments, key)?;
         match key {
             "includeIsolated" => include_isolated = flag,
+            "includeOrphans" => include_orphans = flag,
             "includeExternal" => include_external = flag,
             "includeUnresolved" => include_unresolved = flag,
             _ => {}
@@ -269,7 +273,7 @@ fn read_request(arguments: &Arguments) -> Result<QueryRequest, ToolError> {
     }
     let relations = RELATION_TYPE_VALUES.len();
     let types = optional_text_list(arguments, "types", relations)?;
-    optional_text_list(arguments, "pattern", relations)?;
+    let pattern = optional_text_list(arguments, "pattern", relations)?;
     let phases = optional_text_list(arguments, "phases", MAINTENANCE_PHASES)?;
     let severities = optional_text_list(arguments, "severities", MAINTENANCE_SEVERITIES)?;
     let kinds = optional_text_list(arguments, "kinds", MAINTENANCE_KINDS)?;
@@ -297,6 +301,13 @@ fn read_request(arguments: &Arguments) -> Result<QueryRequest, ToolError> {
     request.include_isolated = include_isolated;
     request.include_external = include_external;
     request.include_unresolved = include_unresolved;
+    request.item_limit = item_limit;
+    request.include_orphans = include_orphans;
+    request.pattern = pattern;
+    request.seed = text_of(&texts, "seed").cloned();
+    request.project = text_of(&texts, "project").cloned();
+    request.relation_type = text_of(&texts, "type").cloned();
+    request.relation = text_of(&texts, "relation").cloned();
     let text = |name: &str| text_of(&texts, name).cloned();
     let size = |name: &str| {
         counts

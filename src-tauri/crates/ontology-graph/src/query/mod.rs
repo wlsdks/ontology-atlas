@@ -6,15 +6,21 @@
 //! they share lives here: the request, the error, the names of relations and nodes, and the rows
 //! every answer repeats.
 
+mod containment_steps;
+mod domain_lookup;
 mod edge_rows;
 mod name_counts;
+mod node_mask;
 mod node_resolution;
 mod node_summary;
 mod operation;
+mod project_root;
 mod query_error;
 mod relation_set;
 mod request;
+mod scope;
 mod selection;
+mod step;
 mod walks;
 
 use serde::Serialize;
@@ -36,8 +42,8 @@ pub use walks::WalkOperation;
 #[derive(Serialize)]
 #[serde(untagged)]
 pub enum OperationAnswer<'a> {
-    Walk(walks::WalkAnswer<'a>),
-    Selection(selection::SelectionAnswer<'a>),
+    Walk(Box<walks::WalkAnswer<'a>>),
+    Selection(Box<selection::SelectionAnswer<'a>>),
 }
 
 /// The counts of the graph an answer was read from, which close every answer.
@@ -72,9 +78,11 @@ pub fn run<'a>(
     request: &QueryRequest,
 ) -> Result<QueryAnswer<'a>, QueryError> {
     let answer = match request.operation {
-        Operation::Walk(operation) => OperationAnswer::Walk(walks::run(graph, operation, request)?),
+        Operation::Walk(operation) => {
+            OperationAnswer::Walk(Box::new(walks::run(graph, operation, request)?))
+        }
         Operation::Selection(operation) => {
-            OperationAnswer::Selection(selection::run(graph, operation, request)?)
+            OperationAnswer::Selection(Box::new(selection::run(graph, operation, request)?))
         }
         Operation::Pending(operation) => {
             return Err(QueryError::NotAnsweredYet(operation.name()));

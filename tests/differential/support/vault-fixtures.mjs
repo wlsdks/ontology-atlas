@@ -256,6 +256,62 @@ const FIXTURE_BUILDERS = {
     },
   },
 
+  // What holds what, made awkward: two projects, nodes two containers hold, containers that hold
+  // each other and themselves, a node and a subtree nothing holds, a dependency with a stated
+  // reason, and two names whose order depends on the collation.
+  'containment-tangle': {
+    vaultRel: 'vault',
+    build(dir) {
+      const v = (name) => `vault/${name}`;
+      write(dir, v('walks.md'), projectNode('walks', 'Walks', ['domains/core', 'domains/edge']));
+      write(dir, v('second.md'), projectNode('second', 'Second', ['domains/solo']));
+      write(dir, v('domains/core.md'), domainNode('domains/core', 'Core', [
+        'capabilities/load', 'capabilities/save', 'capabilities/loop-a', 'capabilities/loop-b', 'capabilities/self',
+        'capabilities/Zeta', 'capabilities/alpha-gamma',
+      ]));
+      write(dir, v('domains/edge.md'), domainNode('domains/edge', 'Edge', ['capabilities/ship']));
+      write(dir, v('domains/solo.md'), domainNode('domains/solo', 'Solo', ['capabilities/solo-one']));
+      write(dir, v('capabilities/load.md'), capabilityNode('capabilities/load', 'Load', 'domains/core', {
+        dependencies: '[capabilities/save, capabilities/Zeta, capabilities/alpha-gamma]',
+        elements: '[elements/shared]',
+        relation_notes: '{ capabilities/save: "Loading needs a saved copy to read." }',
+        canvasPosition: '{ x: 120, y: -40.5 }',
+      }));
+      write(dir, v('capabilities/save.md'), capabilityNode('capabilities/save', 'Save', 'domains/core', {
+        elements: '[elements/shared]',
+        canvasPosition: '{ x: 10 }',
+      }));
+      write(dir, v('capabilities/loop-a.md'), capabilityNode('capabilities/loop-a', 'Loop A', 'domains/core', {
+        contains: '[capabilities/loop-b]',
+      }));
+      write(dir, v('capabilities/loop-b.md'), capabilityNode('capabilities/loop-b', 'Loop B', 'domains/core', {
+        contains: '[capabilities/loop-a]',
+      }));
+      write(dir, v('capabilities/self.md'), capabilityNode('capabilities/self', 'Self', 'domains/core', {
+        contains: '[capabilities/self]',
+      }));
+      write(dir, v('capabilities/Zeta.md'), capabilityNode('capabilities/Zeta', 'Zeta', 'domains/core'));
+      write(dir, v('capabilities/alpha-gamma.md'), capabilityNode('capabilities/alpha-gamma', 'Alpha Gamma', 'domains/core', {
+        dependencies: '[capabilities/save]',
+      }));
+      write(dir, v('capabilities/ship.md'), capabilityNode('capabilities/ship', 'Ship', 'domains/edge', {
+        dependencies: '[capabilities/load, capabilities/save, src/outside.rs]',
+        relates: '[capabilities/solo-one]',
+      }));
+      write(dir, v('capabilities/solo-one.md'), capabilityNode('capabilities/solo-one', 'Solo One', 'domains/solo'));
+      write(dir, v('elements/shared.md'), node({ slug: 'elements/shared', kind: 'element', title: 'Shared' }));
+      write(dir, v('capabilities/orphan.md'), node({ slug: 'capabilities/orphan', kind: 'capability', title: 'Orphan' }));
+      write(dir, v('capabilities/orphan-parent.md'), node({
+        slug: 'capabilities/orphan-parent', kind: 'capability', title: 'Orphan Parent',
+        extra: { contains: '[capabilities/orphan-child]' },
+      }));
+      write(dir, v('capabilities/orphan-child.md'), node({ slug: 'capabilities/orphan-child', kind: 'capability', title: 'Orphan Child' }));
+      write(dir, v('documents/guide.md'), node({
+        slug: 'documents/guide', kind: 'document', title: 'Guide', extra: { describes: '[capabilities/load]' },
+      }));
+    },
+  },
+
   // Two projects sharing a domain, a domain nobody fills, nodes in no domain, a cycle, references
   // to nothing and to code, a flat slug, a body that admits what it does not know, and an ignore
   // file: what the selection operations pick from.
@@ -367,6 +423,17 @@ const FIXTURE_BUILDERS = {
       write(dir, v('capabilities/ten.md'), capabilityNode('capabilities/ten', 'Ten', 'domains/Zebra'));
       write(dir, v('capabilities/Two.md'), capabilityNode('capabilities/Two', 'Two', 'domains/Zebra'));
       write(dir, v('capabilities/one.md'), capabilityNode('capabilities/one', 'One', 'domains/Zebra'));
+      // Two ways from `start` to `target` that are equally short, whose names share a prefix.
+      write(dir, v('capabilities/start.md'), capabilityNode('capabilities/start', 'Start', 'domains/Zebra', {
+        dependencies: '[capabilities/build, capabilities/build-index]',
+      }));
+      write(dir, v('capabilities/build.md'), capabilityNode('capabilities/build', 'Build', 'domains/Zebra', {
+        dependencies: '[capabilities/target]',
+      }));
+      write(dir, v('capabilities/build-index.md'), capabilityNode('capabilities/build-index', 'Build index', 'domains/Zebra', {
+        dependencies: '[capabilities/target]',
+      }));
+      write(dir, v('capabilities/target.md'), capabilityNode('capabilities/target', 'Target', 'domains/Zebra'));
     },
   },
 

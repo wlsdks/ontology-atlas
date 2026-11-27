@@ -410,6 +410,774 @@
       "reason": "A table keyed by names lists them in the order the graph holds them (row 26); a JavaScript object lists a key that is a whole number before every other."
     },
     {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 22,
+      "path": "result.structuredContent.errorCode",
+      "change": 22,
+      "reason": "A missing required name is a wrong call and answers invalid_arguments (row 22); the JavaScript server said tool_error."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 23,
+      "path": "result.structuredContent.errorCode",
+      "change": 22,
+      "reason": "A missing required name is a wrong call and answers invalid_arguments (row 22); the JavaScript server said tool_error."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 26,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 27,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 37,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-atlas-ontology",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-atlas-ontology",
+      "where": "answer",
+      "id": 15,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-atlas-ontology",
+      "where": "answer",
+      "id": 16,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-atlas-ontology",
+      "where": "answer",
+      "id": 17,
+      "path": "result.content[0].text",
+      "change": 27,
+      "reason": "The edges of lineage are cut at limit like every other list, so they are a page (total, limited, rows) where the JavaScript server wrote every edge between the nodes shown (row 27)."
+    },
+    {
+      "case": "graph/graph-walks-atlas-ontology",
+      "where": "answer",
+      "id": 18,
+      "path": "result.content[0].text",
+      "change": 27,
+      "reason": "The walk finishes its search, so every total, count and qualification covers everything it reaches and only the lists written are cut at limit; the JavaScript server stopped searching once limit nodes were found and counted what it had (row 27)."
+    },
+    {
+      "case": "graph/graph-walks-atlas-ontology",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text",
+      "change": 27,
+      "reason": "The walk finishes its search, so every total, count and qualification covers everything it reaches and only the lists written are cut at limit; the JavaScript server stopped searching once limit nodes were found and counted what it had (row 27)."
+    },
+    {
+      "case": "graph/graph-walks-atlas-ontology",
+      "where": "answer",
+      "id": 6,
+      "path": "result.content[0].text",
+      "change": 27,
+      "reason": "The walk finishes its search, so every total, count and qualification covers everything it reaches and only the lists written are cut at limit; the JavaScript server stopped searching once limit nodes were found and counted what it had (row 27). An edge a walk met from both ends is also listed and counted once, written from the node it starts at (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-atlas-ontology",
+      "where": "answer",
+      "id": 7,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-atlas-ontology",
+      "where": "answer",
+      "id": 8,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-atlas-ontology",
+      "where": "answer",
+      "id": 9,
+      "path": "result.content[0].text",
+      "change": 27,
+      "reason": "The walk finishes its search, so every total, count and qualification covers everything it reaches and only the lists written are cut at limit; the JavaScript server stopped searching once limit nodes were found and counted what it had (row 27)."
+    },
+    {
+      "case": "graph/graph-walks-containment-tangle",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-containment-tangle",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text",
+      "change": 27,
+      "reason": "The edges of lineage are cut at limit like every other list, so they are a page (total, limited, rows) where the JavaScript server wrote every edge between the nodes shown (row 27)."
+    },
+    {
+      "case": "graph/graph-walks-containment-tangle",
+      "where": "answer",
+      "id": 11,
+      "path": "result.content[0].text",
+      "change": 27,
+      "reason": "The edges of lineage are cut at limit like every other list, so they are a page (total, limited, rows) where the JavaScript server wrote every edge between the nodes shown (row 27)."
+    },
+    {
+      "case": "graph/graph-walks-containment-tangle",
+      "where": "answer",
+      "id": 12,
+      "path": "result.content[0].text",
+      "change": 27,
+      "reason": "The edges of lineage are cut at limit like every other list, so they are a page (total, limited, rows) where the JavaScript server wrote every edge between the nodes shown (row 27)."
+    },
+    {
+      "case": "graph/graph-walks-containment-tangle",
+      "where": "answer",
+      "id": 13,
+      "path": "result.structuredContent.errorCode",
+      "change": 29,
+      "reason": "A wrong call (a missing pattern or type, a structural type given to impact, a project argument that is no project, several projects and none named) answers invalid_arguments; the JavaScript server said tool_error because its classifier read only certain words (row 29)."
+    },
+    {
+      "case": "graph/graph-walks-containment-tangle",
+      "where": "answer",
+      "id": 16,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-containment-tangle",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-containment-tangle",
+      "where": "answer",
+      "id": 23,
+      "path": "result.content[0].text",
+      "change": 25,
+      "reason": "A list of nodes the walk reaches is in the order of the graph, the collation of slugs, where the JavaScript server sorted by UTF-16 code unit (row 25)."
+    },
+    {
+      "case": "graph/graph-walks-containment-tangle",
+      "where": "answer",
+      "id": 24,
+      "path": "result.content[0].text",
+      "change": 25,
+      "reason": "A list of nodes the walk reaches is in the order of the graph, the collation of slugs, where the JavaScript server sorted by UTF-16 code unit (row 25)."
+    },
+    {
+      "case": "graph/graph-walks-containment-tangle",
+      "where": "answer",
+      "id": 25,
+      "path": "result.content[0].text",
+      "change": 25,
+      "reason": "A list of nodes the walk reaches is in the order of the graph, the collation of slugs, where the JavaScript server sorted by UTF-16 code unit (row 25)."
+    },
+    {
+      "case": "graph/graph-walks-containment-tangle",
+      "where": "answer",
+      "id": 26,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-containment-tangle",
+      "where": "answer",
+      "id": 27,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-containment-tangle",
+      "where": "answer",
+      "id": 28,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-containment-tangle",
+      "where": "answer",
+      "id": 30,
+      "path": "result.content[0].text",
+      "change": 27,
+      "reason": "The walk finishes its search, so every total, count and qualification covers everything it reaches and only the lists written are cut at limit; the JavaScript server stopped searching once limit nodes were found and counted what it had (row 27)."
+    },
+    {
+      "case": "graph/graph-walks-containment-tangle",
+      "where": "answer",
+      "id": 35,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-containment-tangle",
+      "where": "answer",
+      "id": 36,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-containment-tangle",
+      "where": "answer",
+      "id": 37,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-containment-tangle",
+      "where": "answer",
+      "id": 38,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-containment-tangle",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-containment-tangle",
+      "where": "answer",
+      "id": 8,
+      "path": "result.content[0].text",
+      "change": 27,
+      "reason": "The edges of lineage are cut at limit like every other list, so they are a page (total, limited, rows) where the JavaScript server wrote every edge between the nodes shown (row 27)."
+    },
+    {
+      "case": "graph/graph-walks-containment-tangle",
+      "where": "answer",
+      "id": 9,
+      "path": "result.content[0].text",
+      "change": 27,
+      "reason": "The edges of lineage are cut at limit like every other list, so they are a page (total, limited, rows) where the JavaScript server wrote every edge between the nodes shown (row 27)."
+    },
+    {
+      "case": "graph/graph-walks-edge-names",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "A walk that follows edges both ways lists and counts each edge once, written from the node it starts at; the JavaScript server listed it once from each end it was met from (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-edge-names",
+      "where": "answer",
+      "id": 13,
+      "path": "result.content[0].text",
+      "change": 25,
+      "reason": "Of two equally near nodes a walk takes the one first in the order of the graph; the JavaScript server ordered a node's steps by the text slug:edge, so a name that continues a shorter one with a hyphen came first (row 25)."
+    },
+    {
+      "case": "graph/graph-walks-edge-names",
+      "where": "answer",
+      "id": 14,
+      "path": "result.content[0].text",
+      "change": 25,
+      "reason": "Of two equally near nodes a walk takes the one first in the order of the graph; the JavaScript server ordered a node's steps by the text slug:edge, so a name that continues a shorter one with a hyphen came first (row 25)."
+    },
+    {
+      "case": "graph/graph-walks-edge-names",
+      "where": "answer",
+      "id": 15,
+      "path": "result.content[0].text",
+      "change": 25,
+      "reason": "Of two equally near nodes a walk takes the one first in the order of the graph; the JavaScript server ordered a node's steps by the text slug:edge, so a name that continues a shorter one with a hyphen came first (row 25)."
+    },
+    {
+      "case": "graph/graph-walks-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-edge-names",
+      "where": "answer",
+      "id": 6,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-edge-names",
+      "where": "answer",
+      "id": 8,
+      "path": "result.content[0].text",
+      "change": 27,
+      "reason": "The edges of lineage are cut at limit like every other list, so they are a page (total, limited, rows) where the JavaScript server wrote every edge between the nodes shown (row 27)."
+    },
+    {
+      "case": "graph/graph-walks-empty",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-miniature-repo",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "A walk that follows edges both ways lists and counts each edge once, written from the node it starts at; the JavaScript server listed it once from each end it was met from (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-miniature-repo",
+      "where": "answer",
+      "id": 7,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-storefront",
+      "where": "answer",
+      "id": 15,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-storefront",
+      "where": "answer",
+      "id": 16,
+      "path": "result.structuredContent.errorCode",
+      "change": 29,
+      "reason": "A wrong call (a missing pattern or type, a structural type given to impact, a project argument that is no project, several projects and none named) answers invalid_arguments; the JavaScript server said tool_error because its classifier read only certain words (row 29)."
+    },
+    {
+      "case": "graph/graph-walks-storefront",
+      "where": "answer",
+      "id": 17,
+      "path": "result.structuredContent.errorCode",
+      "change": 29,
+      "reason": "A wrong call (a missing pattern or type, a structural type given to impact, a project argument that is no project, several projects and none named) answers invalid_arguments; the JavaScript server said tool_error because its classifier read only certain words (row 29)."
+    },
+    {
+      "case": "graph/graph-walks-storefront",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "A walk that follows edges both ways lists and counts each edge once, written from the node it starts at; the JavaScript server listed it once from each end it was met from (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-storefront",
+      "where": "answer",
+      "id": 21,
+      "path": "result.content[0].text",
+      "change": 27,
+      "reason": "The walk finishes its search, so every total, count and qualification covers everything it reaches and only the lists written are cut at limit; the JavaScript server stopped searching once limit nodes were found and counted what it had (row 27). An edge a walk met from both ends is also listed and counted once, written from the node it starts at (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-storefront",
+      "where": "answer",
+      "id": 24,
+      "path": "result.structuredContent.errorCode",
+      "change": 29,
+      "reason": "A wrong call (a missing pattern or type, a structural type given to impact, a project argument that is no project, several projects and none named) answers invalid_arguments; the JavaScript server said tool_error because its classifier read only certain words (row 29)."
+    },
+    {
+      "case": "graph/graph-walks-storefront",
+      "where": "answer",
+      "id": 26,
+      "path": "result.content[0].text",
+      "change": 27,
+      "reason": "The walk finishes its search, so every total, count and qualification covers everything it reaches and only the lists written are cut at limit; the JavaScript server stopped searching once limit nodes were found and counted what it had (row 27)."
+    },
+    {
+      "case": "graph/graph-walks-storefront",
+      "where": "answer",
+      "id": 27,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "A walk that follows edges both ways lists and counts each edge once, written from the node it starts at; the JavaScript server listed it once from each end it was met from (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-storefront",
+      "where": "answer",
+      "id": 28,
+      "path": "result.structuredContent.errorCode",
+      "change": 29,
+      "reason": "A wrong call (a missing pattern or type, a structural type given to impact, a project argument that is no project, several projects and none named) answers invalid_arguments; the JavaScript server said tool_error because its classifier read only certain words (row 29)."
+    },
+    {
+      "case": "graph/graph-walks-storefront",
+      "where": "answer",
+      "id": 29,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-storefront",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "A walk that follows edges both ways lists and counts each edge once, written from the node it starts at; the JavaScript server listed it once from each end it was met from (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-storefront",
+      "where": "answer",
+      "id": 30,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-storefront",
+      "where": "answer",
+      "id": 31,
+      "path": "result.content[0].text",
+      "change": 27,
+      "reason": "The walk finishes its search, so every total, count and qualification covers everything it reaches and only the lists written are cut at limit; the JavaScript server stopped searching once limit nodes were found and counted what it had (row 27)."
+    },
+    {
+      "case": "graph/graph-walks-storefront",
+      "where": "answer",
+      "id": 33,
+      "path": "result.content[0].text",
+      "change": 27,
+      "reason": "The walk finishes its search, so every total, count and qualification covers everything it reaches and only the lists written are cut at limit; the JavaScript server stopped searching once limit nodes were found and counted what it had (row 27)."
+    },
+    {
+      "case": "graph/graph-walks-storefront",
+      "where": "answer",
+      "id": 34,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-storefront",
+      "where": "answer",
+      "id": 35,
+      "path": "result.structuredContent.errorCode",
+      "change": 22,
+      "reason": "A missing required name is a wrong call and answers invalid_arguments (row 22); the JavaScript server said tool_error."
+    },
+    {
+      "case": "graph/graph-walks-storefront",
+      "where": "answer",
+      "id": 36,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-storefront",
+      "where": "answer",
+      "id": 37,
+      "path": "result.content[0].text",
+      "change": 27,
+      "reason": "The walk finishes its search, so every total, count and qualification covers everything it reaches and only the lists written are cut at limit; the JavaScript server stopped searching once limit nodes were found and counted what it had (row 27)."
+    },
+    {
+      "case": "graph/graph-walks-storefront",
+      "where": "answer",
+      "id": 38,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-storefront",
+      "where": "answer",
+      "id": 39,
+      "path": "result.content[0].text",
+      "change": 27,
+      "reason": "The walk finishes its search, so every total, count and qualification covers everything it reaches and only the lists written are cut at limit; the JavaScript server stopped searching once limit nodes were found and counted what it had (row 27)."
+    },
+    {
+      "case": "graph/graph-walks-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text",
+      "change": 27,
+      "reason": "The walk finishes its search, so every total, count and qualification covers everything it reaches and only the lists written are cut at limit; the JavaScript server stopped searching once limit nodes were found and counted what it had (row 27)."
+    },
+    {
+      "case": "graph/graph-walks-storefront",
+      "where": "answer",
+      "id": 40,
+      "path": "result.content[0].text",
+      "change": 27,
+      "reason": "The walk finishes its search, so every total, count and qualification covers everything it reaches and only the lists written are cut at limit; the JavaScript server stopped searching once limit nodes were found and counted what it had (row 27)."
+    },
+    {
+      "case": "graph/graph-walks-storefront",
+      "where": "answer",
+      "id": 42,
+      "path": "result.structuredContent.errorCode",
+      "change": 22,
+      "reason": "A missing required name is a wrong call and answers invalid_arguments (row 22); the JavaScript server said tool_error."
+    },
+    {
+      "case": "graph/graph-walks-storefront",
+      "where": "answer",
+      "id": 49,
+      "path": "result.structuredContent.errorCode",
+      "change": 22,
+      "reason": "A missing required name is a wrong call and answers invalid_arguments (row 22); the JavaScript server said tool_error."
+    },
+    {
+      "case": "graph/graph-walks-storefront",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text",
+      "change": 27,
+      "reason": "The walk finishes its search, so every total, count and qualification covers everything it reaches and only the lists written are cut at limit; the JavaScript server stopped searching once limit nodes were found and counted what it had (row 27)."
+    },
+    {
+      "case": "graph/graph-walks-storefront",
+      "where": "answer",
+      "id": 50,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-storefront",
+      "where": "answer",
+      "id": 51,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-storefront",
+      "where": "answer",
+      "id": 52,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-storefront",
+      "where": "answer",
+      "id": 54,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-storefront",
+      "where": "answer",
+      "id": 56,
+      "path": "result.structuredContent.errorCode",
+      "change": 29,
+      "reason": "A wrong call (a missing pattern or type, a structural type given to impact, a project argument that is no project, several projects and none named) answers invalid_arguments; the JavaScript server said tool_error because its classifier read only certain words (row 29)."
+    },
+    {
+      "case": "graph/graph-walks-storefront",
+      "where": "answer",
+      "id": 57,
+      "path": "result.content[0].text",
+      "change": 27,
+      "reason": "The edges of lineage are cut at limit like every other list, so they are a page (total, limited, rows) where the JavaScript server wrote every edge between the nodes shown (row 27)."
+    },
+    {
+      "case": "graph/graph-walks-storefront",
+      "where": "answer",
+      "id": 58,
+      "path": "result.content[0].text",
+      "change": 27,
+      "reason": "The walk finishes its search, so every total, count and qualification covers everything it reaches and only the lists written are cut at limit; the JavaScript server stopped searching once limit nodes were found and counted what it had (row 27)."
+    },
+    {
+      "case": "graph/graph-walks-storefront",
+      "where": "answer",
+      "id": 59,
+      "path": "result.content[0].text",
+      "change": 27,
+      "reason": "The edges of lineage are cut at limit like every other list, so they are a page (total, limited, rows) where the JavaScript server wrote every edge between the nodes shown (row 27)."
+    },
+    {
+      "case": "graph/graph-walks-storefront",
+      "where": "answer",
+      "id": 6,
+      "path": "result.content[0].text",
+      "change": 27,
+      "reason": "The walk finishes its search, so every total, count and qualification covers everything it reaches and only the lists written are cut at limit; the JavaScript server stopped searching once limit nodes were found and counted what it had (row 27)."
+    },
+    {
+      "case": "graph/graph-walks-storefront",
+      "where": "answer",
+      "id": 60,
+      "path": "result.content[0].text",
+      "change": 27,
+      "reason": "The edges of lineage are cut at limit like every other list, so they are a page (total, limited, rows) where the JavaScript server wrote every edge between the nodes shown (row 27)."
+    },
+    {
+      "case": "graph/graph-walks-storefront",
+      "where": "answer",
+      "id": 70,
+      "path": "result.structuredContent.errorCode",
+      "change": 29,
+      "reason": "A wrong call (a missing pattern or type, a structural type given to impact, a project argument that is no project, several projects and none named) answers invalid_arguments; the JavaScript server said tool_error because its classifier read only certain words (row 29)."
+    },
+    {
+      "case": "graph/graph-walks-storefront",
+      "where": "answer",
+      "id": 76,
+      "path": "result.structuredContent.errorCode",
+      "change": 29,
+      "reason": "A wrong call (a missing pattern or type, a structural type given to impact, a project argument that is no project, several projects and none named) answers invalid_arguments; the JavaScript server said tool_error because its classifier read only certain words (row 29)."
+    },
+    {
+      "case": "graph/graph-walks-storefront",
+      "where": "answer",
+      "id": 9,
+      "path": "result.structuredContent.errorCode",
+      "change": 22,
+      "reason": "A missing required name is a wrong call and answers invalid_arguments (row 22); the JavaScript server said tool_error."
+    },
+    {
+      "case": "graph/graph-walks-tangle",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text",
+      "change": 27,
+      "reason": "The walk finishes its search, so every total, count and qualification covers everything it reaches and only the lists written are cut at limit; the JavaScript server stopped searching once limit nodes were found and counted what it had (row 27). An edge a walk met from both ends is also listed and counted once, written from the node it starts at (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-tangle",
+      "where": "answer",
+      "id": 12,
+      "path": "result.content[0].text",
+      "change": 27,
+      "reason": "The walk finishes its search, so every total, count and qualification covers everything it reaches and only the lists written are cut at limit; the JavaScript server stopped searching once limit nodes were found and counted what it had (row 27)."
+    },
+    {
+      "case": "graph/graph-walks-tangle",
+      "where": "answer",
+      "id": 13,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-tangle",
+      "where": "answer",
+      "id": 14,
+      "path": "result.content[0].text",
+      "change": 27,
+      "reason": "The walk finishes its search, so every total, count and qualification covers everything it reaches and only the lists written are cut at limit; the JavaScript server stopped searching once limit nodes were found and counted what it had (row 27)."
+    },
+    {
+      "case": "graph/graph-walks-tangle",
+      "where": "answer",
+      "id": 15,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-tangle",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "A walk that follows edges both ways lists and counts each edge once, written from the node it starts at; the JavaScript server listed it once from each end it was met from (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-tangle",
+      "where": "answer",
+      "id": 20,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-tangle",
+      "where": "answer",
+      "id": 21,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-tangle",
+      "where": "answer",
+      "id": 22,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "The answer lists what the question asks and no more: the edges among the nodes shown, a node that contains itself as a cycle and not as its own child, the nearby patterns without the one just matched, a pattern_walk total that counts paths found, and a refusal that names the operation called (row 28)."
+    },
+    {
+      "case": "graph/graph-walks-tangle",
+      "where": "answer",
+      "id": 24,
+      "path": "result.content[0].text",
+      "change": 27,
+      "reason": "The edges of lineage are cut at limit like every other list, so they are a page (total, limited, rows) where the JavaScript server wrote every edge between the nodes shown (row 27)."
+    },
+    {
+      "case": "graph/graph-walks-tangle",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text",
+      "change": 27,
+      "reason": "The walk finishes its search, so every total, count and qualification covers everything it reaches and only the lists written are cut at limit; the JavaScript server stopped searching once limit nodes were found and counted what it had (row 27)."
+    },
+    {
+      "case": "graph/graph-walks-tangle",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text",
+      "change": 28,
+      "reason": "A walk that follows edges both ways lists and counts each edge once, written from the node it starts at; the JavaScript server listed it once from each end it was met from (row 28)."
+    },
+    {
       "case": "graph/graph-selection-ambiguous-and-dangling",
       "where": "answer",
       "id": 7,
