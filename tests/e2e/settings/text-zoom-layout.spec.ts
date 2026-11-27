@@ -126,7 +126,8 @@ test.describe("real browser text size setting at 200%", () => {
 
   test("the gateway headline never gets smaller than its section title", async ({ page }) => {
     await page.setViewportSize({ width: 1040, height: 900 });
-    await openRouteInAppAtBrowserZoom(page, "/ko/download/");
+    // A public page: the site serves it to a browser that has no app runtime, so it opens plainly.
+    await page.goto("/ko/download/", { waitUntil: "domcontentloaded" });
     await expect(page.locator("h1").first()).toBeVisible({ timeout: 30_000 });
 
     // `--text-monument`'s `cqw` term cannot be reached by text zoom, so while its floor was

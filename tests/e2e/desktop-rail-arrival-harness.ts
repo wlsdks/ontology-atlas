@@ -130,12 +130,6 @@ index 1111111..2222222 100644
 +One more sentence of meaning.
 `;
 
-/**
- * Installs the runtime before any application script runs.
- *
- * Everything is defined inside the init script's own scope: `addInitScript` serializes the
- * function, so a reference to a module-level constant here would be `undefined` in the page.
- */
 /** When one path last changed, as the native `git_paths_last_change` walk answers it. */
 export interface StubPathChange {
   exists: boolean;
@@ -219,6 +213,10 @@ export interface DesktopRuntimeOptions {
   sourcePick?: { folder?: string | null; files?: string[] };
   /** The answer to `ensure_default_vault_parent_dir` ("Just start"). Unstubbed without it. */
   defaultVaultParent?: string;
+  /**
+   * Vault-relative paths whose text reads stay pending until `releaseDesktopReads`, so a folder arrives
+   * in parts and a spec sees the screen between them. `holdDesktopReads` sets another list later.
+   */
   holdReadsUntilReleased?: readonly string[];
   /**
    * Let `discover_source_candidates` propose the default folder's own documents, as the app does
@@ -244,6 +242,12 @@ export interface ModelsStubOptions {
   audit?: Record<string, unknown>[];
 }
 
+/**
+ * Installs the runtime before any application script runs.
+ *
+ * Everything is defined inside the init script's own scope: `addInitScript` serializes the
+ * function, so a reference to a module-level constant here would be `undefined` in the page.
+ */
 export async function installDesktopRailRuntime(
   page: Page,
   extraFiles: Record<string, string> = {},

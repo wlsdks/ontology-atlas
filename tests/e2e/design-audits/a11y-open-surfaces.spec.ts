@@ -95,8 +95,8 @@ const READY_RUNTIME = { id: "codex-acp", label: "Codex", verified: true, isolate
 
 const OPENERS: readonly Opener[] = [
   {
-    // The app has the agent tile where the web has the meaning-review chip; both open the same dock.
-    name: "Map meaning review",
+    // The agent tile opens the dock that holds the chat panel.
+    name: "ACP chat panel",
     route: "/ko/topology/",
     trigger: "topology-vault-agent-toggle",
     surface: '[data-testid="acp-chat-panel"]',

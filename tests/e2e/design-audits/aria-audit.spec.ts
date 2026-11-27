@@ -1,4 +1,4 @@
-import { expect, test, type Browser, type Page } from "@playwright/test";
+import { expect, test, type Browser, type BrowserContext, type Page } from "@playwright/test";
 
 import { atlasSampleFiles, installDesktopRailRuntime, mountDesktopVault, storefrontSampleFiles } from "../desktop-rail-arrival-harness";
 
@@ -25,9 +25,16 @@ const ROUTES = [
   { url: `/ko/topology/?mode=focus&p=${encodeURIComponent(FOCUS_NODE_ID)}`, folder: "storefront" },
 ] as const;
 
-/** A window of its own: the app remembers the folder a window chose, so two folders need two. */
+const windows: BrowserContext[] = [];
+
+test.afterEach(async () => {
+  await Promise.all(windows.splice(0).map((context) => context.close()));
+});
+
+/** A window of its own: the app remembers the folder a window chose, so two folders need two. Closed after the test. */
 async function openApp(browser: Browser, baseURL: string | undefined, folder: "storefront" | "atlas"): Promise<Page> {
   const context = await browser.newContext({ baseURL, viewport: { width: 1440, height: 900 } });
+  windows.push(context);
   const page = await context.newPage();
   await installDesktopRailRuntime(page, folder === "atlas" ? atlasSampleFiles() : storefrontSampleFiles(), undefined, { replaceFixture: true });
   await mountDesktopVault(page, "en");

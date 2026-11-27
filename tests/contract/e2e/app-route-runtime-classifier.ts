@@ -151,7 +151,7 @@ function callsFunction(text: string, name: string): boolean {
 /**
  * The functions among these modules that install a faked app runtime: one whose body defines the native
  * bridge in the page, or one that calls such a function (`openLibraryWorkScenario` installs through
- * `installLibraryWorkHarness`). A function that only serves fixture data, such as `storefrontFiles`, is
+ * `installLibraryWorkHarness`). A function that only serves fixture data, such as `storefrontSampleFiles`, is
  * not one, however much its module mentions the bridge.
  */
 function installerFunctions(closure: string[]): Set<string> {
