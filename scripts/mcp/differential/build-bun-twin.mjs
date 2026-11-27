@@ -10,11 +10,17 @@
  */
 import { spawnSync } from 'node:child_process';
 import * as nodeCrypto from 'node:crypto';
-import { existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { bunCompileArgs, hostTargetTriple } from '../../lib/packaging/mcp-binary.mjs';
+import {
+  BUN_VERSION_FILE,
+  bunCompileArgs,
+  bunVersionVerdict,
+  hostTargetTriple,
+  pinnedBunVersion,
+} from '../../lib/packaging/mcp-binary.mjs';
 import { streamNameOfModule } from '../../../tests/differential/support/deterministic-inputs.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -22,11 +28,25 @@ const repoRoot = path.resolve(here, '..', '..', '..');
 const entry = path.join(repoRoot, 'tests', 'differential', 'support', 'bun-deterministic-entry.mjs');
 const inputs = path.join(repoRoot, 'tests', 'differential', 'support', 'deterministic-inputs.mjs');
 
+// `ATLAS_DIFF_BUN` names the Bun executable when the pinned release is not the one on the search path.
+const bunProgram = process.env.ATLAS_DIFF_BUN ?? 'bun';
+
 if (typeof Bun === 'undefined') {
-  const result = spawnSync('bun', [fileURLToPath(import.meta.url), ...process.argv.slice(2)], {
+  const result = spawnSync(bunProgram, [fileURLToPath(import.meta.url), ...process.argv.slice(2)], {
     stdio: 'inherit',
   });
   process.exit(result.status ?? 1);
+}
+
+// The comparison is only worth anything against the runtime people run, so any other release is
+// refused here, unlike a local `pnpm mcp:build-binary`, which only warns.
+{
+  const pinned = pinnedBunVersion(readFileSync(path.join(repoRoot, BUN_VERSION_FILE), 'utf8'));
+  const verdict = bunVersionVerdict(pinned, Bun.version, { ci: true });
+  if (verdict) {
+    console.error(`${verdict.message}\n  (or point ATLAS_DIFF_BUN at a ${pinned} executable)`);
+    process.exit(1);
+  }
 }
 
 const outfileArg = process.argv.slice(2).find((value) => value.startsWith('--outfile='));
@@ -90,7 +110,7 @@ if (!built.success) {
   process.exit(1);
 }
 const compiled = spawnSync(
-  'bun',
+  bunProgram,
   bunCompileArgs({ triple: hostTargetTriple(), entry: path.join(stage, 'twin.mjs'), outfile }),
   { stdio: 'inherit' },
 );

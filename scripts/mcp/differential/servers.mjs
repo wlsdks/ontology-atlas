@@ -7,14 +7,16 @@ import { MCP_BINARY_NAME, MCP_BINARY_OUTPUT_DIR, hostTargetTriple } from '../../
 import { GIT_ENV } from '../../../tests/differential/support/vault-fixtures.mjs';
 
 export const FIXED_CLOCK_MS = 1_790_000_000_000;
-export const UID_SEED = 'differential';
+/** A clock so far ahead that no file a run touches counts as recently written. */
+export const LATE_CLOCK_MS = 4_102_444_800_000;
+const UID_SEED = 'differential';
 export const LOCALES = Object.freeze(['ko_KR.UTF-8', 'en_US.UTF-8']);
 
 /**
  * @typedef {{ label: string, command: string, args: string[], deterministic: boolean }} ServerSpec
  */
 
-export function splitCommand(text) {
+function splitCommand(text) {
   const parts = [];
   for (const match of text.matchAll(/"([^"]*)"|'([^']*)'|(\S+)/g)) parts.push(match[1] ?? match[2] ?? match[3]);
   return parts;
@@ -22,18 +24,26 @@ export function splitCommand(text) {
 
 /**
  * `node` the JavaScript server on Node with the pinned inputs; `node:<checkout>` the same from
- * another checkout (the drift mode); `bun` the Bun twin, built on first use; `bun-shipped` the
- * binary `pnpm mcp:build-binary` made (its clock and UIDs are not pinned); `rust` the Rust program
- * (`ATLAS_MCP_RUST` or the cargo release path); `cmd:<command line>` anything else.
+ * another checkout (the drift mode); `bun` the Bun twin, built on first use with the pinned Bun
+ * release; `bun-shipped` the binary `pnpm mcp:build-binary` made, whose clock and UIDs cannot be
+ * pinned (the harness compares it only on cases whose answers do not show either); `rust` the Rust
+ * program (`ATLAS_MCP_RUST` or the cargo release path); `cmd:<command line>` anything else.
+ *
+ * `coverage` adds the preload that records which functions each response ran (Node only).
  */
-export function resolveServer(spec, { repoRoot, workRoot }) {
-  const preload = path.join(repoRoot, 'tests', 'differential', 'support', 'deterministic-preload.mjs');
+export function resolveServer(spec, { repoRoot, workRoot, coverage = false }) {
+  const support = path.join(repoRoot, 'tests', 'differential', 'support');
+  const preload = path.join(support, 'deterministic-preload.mjs');
   if (spec === 'node' || spec.startsWith('node:')) {
     const tree = spec === 'node' ? repoRoot : path.resolve(spec.slice('node:'.length));
     return {
       label: spec,
       command: process.execPath,
-      args: ['--import', preload, path.join(tree, 'mcp', 'src', 'index.js')],
+      args: [
+        '--import', preload,
+        ...(coverage ? ['--import', path.join(support, 'coverage-preload.mjs')] : []),
+        path.join(tree, 'mcp', 'src', 'index.js'),
+      ],
       deterministic: true,
     };
   }
@@ -68,22 +78,39 @@ export function resolveServer(spec, { repoRoot, workRoot }) {
   throw new Error(`unknown server "${spec}"; use node, node:<checkout>, bun, bun-shipped, rust or cmd:<command>`);
 }
 
-/** The whole environment one server process sees; nothing is inherited but the search path. */
-export function serverEnvironment({ locale, vaultPath, homeDir, extra = {}, coverageDir, deterministic = true }) {
+/** What a Windows program needs to start at all; empty elsewhere. */
+function platformEnvironment(homeDir) {
+  if (process.platform !== 'win32') return {};
   return {
-    PATH: process.env.PATH,
+    SystemRoot: process.env.SystemRoot,
+    SYSTEMROOT: process.env.SYSTEMROOT ?? process.env.SystemRoot,
+    COMSPEC: process.env.COMSPEC,
+    PATHEXT: process.env.PATHEXT,
+    USERPROFILE: homeDir,
+    TEMP: homeDir,
+    TMP: homeDir,
+    HOMEDRIVE: process.env.HOMEDRIVE,
+    HOMEPATH: process.env.HOMEPATH,
+  };
+}
+
+/** The whole environment one server process sees; nothing is inherited but the search path. */
+export function serverEnvironment({ locale, vaultPath, homeDir, extra = {}, coverageDir, deterministic = true, clockMs = FIXED_CLOCK_MS }) {
+  return {
+    PATH: process.env.PATH ?? process.env.Path,
     HOME: homeDir,
     TMPDIR: homeDir,
+    ...platformEnvironment(homeDir),
     TZ: 'UTC',
     LANG: locale,
     ...GIT_ENV,
     GIT_AUTHOR_DATE: '2026-09-21T14:13:20+00:00',
     GIT_COMMITTER_DATE: '2026-09-21T14:13:20+00:00',
     ...(deterministic
-      ? { ATLAS_DIFF_CLOCK_MS: String(FIXED_CLOCK_MS), ATLAS_DIFF_UID_SEED: UID_SEED }
+      ? { ATLAS_DIFF_CLOCK_MS: String(clockMs), ATLAS_DIFF_UID_SEED: UID_SEED }
       : {}),
     OATLAS_VAULT: vaultPath,
-    ...(coverageDir ? { NODE_V8_COVERAGE: coverageDir } : {}),
+    ...(coverageDir ? { ATLAS_DIFF_COVERAGE_DIR: coverageDir } : {}),
     ...extra,
   };
 }

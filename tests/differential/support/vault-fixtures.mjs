@@ -18,6 +18,13 @@ import {
 } from 'node:fs';
 import path from 'node:path';
 
+/**
+ * Every secret a fixture plants (credential files, a repository's `.env`, a file the vault only
+ * reaches through a symlink out of it) carries a string of this shape. No server answer may show
+ * one unless the request that asked for it holds the same string.
+ */
+export const SECRET_SENTINEL = /SECRET-SENTINEL-[a-z-]+/g;
+
 /** Planted times sit in 2023, far from the clock the files get when a server writes them. */
 export const PLANTED_BASE_MS = 1_700_000_000_000;
 /** Whole millisecond, a fraction, and exactly half a millisecond, in turn. */
@@ -235,20 +242,20 @@ const FIXTURE_BUILDERS = {
       write(dir, v('hostile.md'), projectNode('hostile', 'Hostile', ['domains/inside']));
       write(dir, v('domains/inside.md'), domainNode('domains/inside', 'Inside', ['capabilities/normal']));
       write(dir, v('capabilities/normal.md'), capabilityNode('capabilities/normal', 'Normal', 'domains/inside'));
-      write(dir, 'outside/secret.md', node({ slug: 'outside-secret', kind: 'element', title: 'Outside Secret', body: 'OUTSIDE-SENTINEL' }));
-      write(dir, 'outside/data.txt', 'OUTSIDE-SENTINEL-TEXT\n');
+      write(dir, 'outside/secret.md', node({ slug: 'outside-secret', kind: 'element', title: 'Outside Secret', body: 'SECRET-SENTINEL-outside' }));
+      write(dir, 'outside/data.txt', 'SECRET-SENTINEL-outside-text\n');
       symlinkSync('../outside/secret.md', path.join(dir, v('escape-file.md')));
       symlinkSync('../outside', path.join(dir, v('escape-dir')));
       symlinkSync('capabilities/normal.md', path.join(dir, v('inside-link.md')));
       symlinkSync('/etc/hosts', path.join(dir, v('absolute-link.md')));
       symlinkSync('loop-b.md', path.join(dir, v('loop-a.md')));
       symlinkSync('loop-a.md', path.join(dir, v('loop-b.md')));
-      write(dir, v('.env'), 'API_KEY=sentinel-key\n');
-      write(dir, v('.env.local'), 'API_KEY=sentinel-key-local\n');
-      write(dir, v('credentials.json'), '{"key":"sentinel"}\n');
-      write(dir, v('id_rsa'), '-----BEGIN PRIVATE KEY-----\nsentinel\n');
-      write(dir, v('service-account.json'), '{"private_key":"sentinel"}\n');
-      write(dir, v('.npmrc'), '//registry.npmjs.org/:_authToken=sentinel\n');
+      write(dir, v('.env'), 'API_KEY=SECRET-SENTINEL-env\n');
+      write(dir, v('.env.local'), 'API_KEY=SECRET-SENTINEL-env-local\n');
+      write(dir, v('credentials.json'), '{"key":"SECRET-SENTINEL-credentials"}\n');
+      write(dir, v('id_rsa'), '-----BEGIN PRIVATE KEY-----\nSECRET-SENTINEL-private-key\n');
+      write(dir, v('service-account.json'), '{"private_key":"SECRET-SENTINEL-service-account"}\n');
+      write(dir, v('.npmrc'), '//registry.npmjs.org/:_authToken=SECRET-SENTINEL-npmrc\n');
       write(dir, v('secrets.md'), node({ slug: 'secrets', kind: 'element', title: 'Secrets', body: 'a node whose file name looks like a credential' }));
       write(dir, v('.hidden/inside-hidden.md'), node({ slug: 'inside-hidden', kind: 'element', title: 'Inside Hidden' }));
       write(dir, v('.git/config'), '[core]\n\tfsmonitor = touch /tmp/oatlas-differential-must-not-run\n');
@@ -396,7 +403,7 @@ const FIXTURE_BUILDERS = {
       write(dir, r('src/core/lib.rs'), "pub mod ledger;\n\npub fn total(values: &[u32]) -> u32 {\n    values.iter().sum()\n}\n");
       write(dir, r('src/core/ledger.rs'), "use crate::total;\n\npub fn balance() -> u32 {\n    total(&[1, 2, 3])\n}\n");
       write(dir, r('src/shipping/Carrier.java'), "package shipping;\n\npublic class Carrier {\n  public String label() { return \"carrier\"; }\n}\n");
-      write(dir, r('.env'), 'TOKEN=sentinel\n');
+      write(dir, r('.env'), 'TOKEN=SECRET-SENTINEL-repo-env\n');
       write(dir, r('ontology/miniature-shop.md'), projectNode('miniature-shop', 'Miniature Shop', ['domains/order', 'domains/payment']));
       write(dir, r('ontology/domains/order.md'), domainNode('domains/order', 'Order', ['capabilities/place-order', 'capabilities/cancel-order']));
       write(dir, r('ontology/domains/payment.md'), domainNode('domains/payment', 'Payment', ['capabilities/charge-card']));

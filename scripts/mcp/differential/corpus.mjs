@@ -4,7 +4,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
-export const HEADER_DEFAULTS = Object.freeze({
+const HEADER_DEFAULTS = Object.freeze({
   vault: 'storefront',
   protocol: '2025-06-18',
   capabilities: {},
@@ -15,11 +15,11 @@ export const HEADER_DEFAULTS = Object.freeze({
   mustNotExist: [],
 });
 
-export function corpusDirectory(repoRoot) {
+function corpusDirectory(repoRoot) {
   return path.join(repoRoot, 'tests', 'differential', 'corpus');
 }
 
-export function parseCaseFile(text, file) {
+function parseCaseFile(text, file) {
   const lines = text.split('\n').filter((line) => line.trim() !== '' && !line.startsWith('#'));
   if (lines.length === 0) throw new Error(`${file}: empty case`);
   const header = { ...HEADER_DEFAULTS, ...JSON.parse(lines[0]) };
@@ -35,8 +35,8 @@ export function parseCaseFile(text, file) {
 }
 
 /** @returns {{ family: string, name: string, file: string, header: object, steps: object[] }[]} */
-export function loadCorpus(repoRoot, { family, caseName } = {}) {
-  const root = corpusDirectory(repoRoot);
+export function loadCorpus(repoRoot, { family, caseName, directory } = {}) {
+  const root = directory ? path.resolve(directory) : corpusDirectory(repoRoot);
   if (!existsSync(root)) return [];
   const cases = [];
   for (const familyName of readdirSync(root).sort()) {

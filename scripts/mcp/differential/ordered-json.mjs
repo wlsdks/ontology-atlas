@@ -100,7 +100,7 @@ export function parseOrdered(text) {
   return root;
 }
 
-export function serializeOrdered(node) {
+function serializeOrdered(node) {
   switch (node.t) {
     case 'null':
       return 'null';
@@ -117,9 +117,20 @@ export function serializeOrdered(node) {
   }
 }
 
-export function getEntry(node, key) {
+function getEntry(node, key) {
   if (node?.t !== 'obj') return undefined;
   return node.entries.find(([name]) => name === key)?.[1];
+}
+
+/** The node at `a.b[2].c` (the form `walkOrdered` reports), or undefined. */
+export function nodeAtPath(node, pathText) {
+  let current = node;
+  for (const segment of pathText.match(/[^.[\]]+|\[\d+\]/g) ?? []) {
+    if (current === undefined) return undefined;
+    if (segment.startsWith('[')) current = current.t === 'arr' ? current.items[Number(segment.slice(1, -1))] : undefined;
+    else current = getEntry(current, segment);
+  }
+  return current;
 }
 
 /** Applies `fn` to every node, depth first, with its path (`a.b[2]`). */

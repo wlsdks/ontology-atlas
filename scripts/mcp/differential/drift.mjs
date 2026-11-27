@@ -31,7 +31,7 @@ function installDependencies(folder) {
 }
 
 /** The JavaScript server tree as of `days` days ago, extracted under `workRoot`; returns its path. */
-export function extractTreeFromDaysAgo({ repoRoot, workRoot, days }) {
+function extractTreeFromDaysAgo({ repoRoot, workRoot, days }) {
   const commit = git(repoRoot, ['rev-list', '-1', `--before=${days} days ago`, 'HEAD']);
   if (!commit) throw new Error(`no commit older than ${days} days on this branch`);
   const tree = path.join(workRoot, `drift-tree-${commit.slice(0, 12)}`);

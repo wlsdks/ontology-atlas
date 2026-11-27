@@ -1,21 +1,20 @@
 {
-  "about": "Per family: the tools it proves, the named fields its answers may differ in while something it calls is not ported (a list that may only shrink, bounded by equal-except-ceiling.json), whether it counts as proven, and the functions its corpus leaves unrun, each with a reason. `node scripts/mcp/differential/differential.mjs --coverage --write-manifest` refreshes unrunFunctions and keeps existing reasons.",
+  "about": "Per family: the tools it proves, the named fields its answers may differ in while something it calls is not ported (each rule names a tool and a path inside result; the list may only shrink, bounded by equal-except-ceiling.json), and whether it counts as proven. The functions each family leaves unrun are in unrun-functions.json and the functions each tool runs in tool-functions.json; `node scripts/mcp/differential/differential.mjs --coverage --write-manifest` rewrites both.",
   "floors": { "functions": 0.95, "blocks": 0.85 },
   "families": {
-    "shell": { "tools": [], "proven": false, "equalExcept": [], "unrunFunctions": [] },
-    "safety": { "tools": [], "proven": false, "equalExcept": [], "unrunFunctions": [] },
+    "shell": { "tools": [], "proven": false, "equalExcept": [] },
+    "safety": { "tools": [], "proven": false, "equalExcept": [] },
     "vault-read": {
       "tools": ["connection_info", "list_concepts", "get_concepts", "find_backlinks", "find_orphans", "query_concepts"],
       "proven": false,
-      "equalExcept": [],
-      "unrunFunctions": []
+      "equalExcept": []
     },
-    "graph": { "tools": ["compile_ontology", "query_ontology"], "proven": false, "equalExcept": [], "unrunFunctions": [] },
-    "git": { "tools": ["git_status", "git_history"], "proven": false, "equalExcept": [], "unrunFunctions": [] },
-    "imports": { "tools": ["infer_imports", "inspect_architecture"], "proven": false, "equalExcept": [], "unrunFunctions": [] },
-    "evidence": { "tools": ["find_evidence", "read_source"], "proven": false, "equalExcept": [], "unrunFunctions": [] },
-    "survey": { "tools": ["analyze_repo_structure"], "proven": false, "equalExcept": [], "unrunFunctions": [] },
-    "meaning": { "tools": ["validate_vault"], "proven": false, "equalExcept": [], "unrunFunctions": [] },
+    "graph": { "tools": ["compile_ontology", "query_ontology"], "proven": false, "equalExcept": [] },
+    "git": { "tools": ["git_status", "git_history"], "proven": false, "equalExcept": [] },
+    "imports": { "tools": ["infer_imports", "inspect_architecture"], "proven": false, "equalExcept": [] },
+    "evidence": { "tools": ["find_evidence", "read_source"], "proven": false, "equalExcept": [] },
+    "survey": { "tools": ["analyze_repo_structure"], "proven": false, "equalExcept": [] },
+    "meaning": { "tools": ["validate_vault"], "proven": false, "equalExcept": [] },
     "writes": {
       "tools": [
         "add_concepts",
@@ -30,8 +29,7 @@
         "git_snapshot"
       ],
       "proven": false,
-      "equalExcept": [],
-      "unrunFunctions": []
+      "equalExcept": []
     },
     "library": {
       "tools": [
@@ -44,8 +42,7 @@
         "finalize_project_meaning"
       ],
       "proven": false,
-      "equalExcept": [],
-      "unrunFunctions": []
+      "equalExcept": []
     }
   }
 }

@@ -1,10 +1,12 @@
-// Compares two recorded runs of one corpus case: per request id the answer (text bytes, structured
-// keys in emitted order, number text, `isError`), then the written folder, the server's own
-// messages, stderr and exit. Nothing is masked except what a family lists as "equal except".
+// Compares two recorded runs of one corpus case: per request id the whole answer line (the JSON-RPC
+// envelope, text bytes, structured keys in emitted order, number text, `isError`, escapes and
+// spacing), then the written folders, the server's own messages, stderr, exit and the repository.
+// Nothing is masked except the times of files this run wrote and what a family lists as "equal
+// except".
 import { Buffer } from 'node:buffer';
 
 import { diffSnapshots } from './folder-snapshot.mjs';
-import { firstTreeDifference, getEntry, parseOrdered, walkOrdered } from './ordered-json.mjs';
+import { firstTreeDifference, parseOrdered } from './ordered-json.mjs';
 
 const NUMBER = /-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/g;
 const OWN_TIME = '<own-file-time>';
@@ -49,18 +51,18 @@ function maskPath(node, pattern) {
   return apply(node, 0);
 }
 
-export function firstDifferingByte(a, b) {
-  const left = Buffer.from(a, 'utf8');
-  const right = Buffer.from(b, 'utf8');
+function firstDifferingByte(a, b, encoding = 'utf8') {
+  const left = Buffer.from(a, encoding);
+  const right = Buffer.from(b, encoding);
   const common = Math.min(left.length, right.length);
   for (let i = 0; i < common; i += 1) if (left[i] !== right[i]) return i;
   return left.length === right.length ? -1 : common;
 }
 
-function around(text, byteOffset, width = 40) {
-  const bytes = Buffer.from(text, 'utf8');
+function around(text, byteOffset, width = 40, encoding = 'utf8') {
+  const bytes = Buffer.from(text, encoding);
   const from = Math.max(0, byteOffset - width);
-  return JSON.stringify(bytes.subarray(from, byteOffset + width).toString('utf8'));
+  return JSON.stringify(bytes.subarray(from, byteOffset + width).toString(encoding));
 }
 
 function describeValueDifference(difference) {
@@ -79,48 +81,55 @@ function parseAnswer(raw) {
   }
 }
 
-/** The part of an answer the harness compares: its `result` or `error`, without the envelope. */
-function compared(tree) {
-  return getEntry(tree, 'result') ?? getEntry(tree, 'error') ?? tree;
-}
-
-function methodOf(request) {
-  return request?.method;
+/** A line as the bytes it arrived in: Latin-1, one character per byte. */
+function bytesOf(text, bytes) {
+  return bytes ?? Buffer.from(text, 'utf8').toString('latin1');
 }
 
 /**
- * First difference between two raw answer lines for one request, or null.
- * `except` are the family's named fields (`{ tool, path }`).
+ * First difference between two raw answer lines for one request, or null. The whole JSON-RPC
+ * response is compared, `jsonrpc`, `id` as written and the exclusive `result` or `error` included,
+ * and when nothing but the bytes differ (an escape, a space) that is a difference too.
+ * `except` are the family's named fields (`{ tool, path }`, the path from the response root).
  */
-export function compareAnswerLines({ request, a, b, ownTimesA, ownTimesB, except = [] }) {
+function compareAnswerLines({ request, a, b, bytesA, bytesB, ownTimesA, ownTimesB, except = [] }) {
   if (a === null || b === null) {
     if (a === b) return null;
     return { kind: 'no-answer', path: '', a: a === null ? 'no answer' : 'answered', b: b === null ? 'no answer' : 'answered' };
   }
+  const toolName = request?.params?.name;
+  const rules = except.filter((rule) => rule.tool === toolName).map((rule) => rule.path);
+  const rawA = maskOwnTimesInText(bytesOf(a, bytesA), ownTimesA);
+  const rawB = maskOwnTimesInText(bytesOf(b, bytesB), ownTimesB);
+  if (rules.length === 0 && rawA === rawB) return null;
   const treeA = parseAnswer(a);
   const treeB = parseAnswer(b);
   if (!treeA || !treeB) {
-    if (a === b) return null;
-    const byte = firstDifferingByte(a, b);
-    return { kind: 'unparsed', path: '', a, b, byte };
+    return { kind: 'unparsed', path: '', a, b, byte: firstDifferingByte(rawA, rawB, 'latin1') };
   }
-  const toolName = request?.params?.name;
-  const rules = except.filter((rule) => !rule.tool || rule.tool === toolName).map((rule) => rule.path);
-  let left = maskOwnTimesInTree(compared(treeA), ownTimesA);
-  let right = maskOwnTimesInTree(compared(treeB), ownTimesB);
+  let left = maskOwnTimesInTree(treeA, ownTimesA);
+  let right = maskOwnTimesInTree(treeB, ownTimesB);
   for (const pattern of rules) {
     left = maskPath(left, pattern);
     right = maskPath(right, pattern);
   }
-  const rootLabel = getEntry(treeA, 'error') && !getEntry(treeA, 'result') ? 'error' : 'result';
-  const found = firstTreeDifference(left, right, rootLabel);
+  const found = firstTreeDifference(left, right, '');
   if (found) return describeValueDifference(found);
-  if (methodOf(request) !== 'tools/call') return null;
-  return null;
+  if (rules.length > 0 || rawA === rawB) return null;
+  const byte = firstDifferingByte(rawA, rawB, 'latin1');
+  return {
+    kind: 'bytes',
+    path: '',
+    a: 'same JSON, other bytes',
+    b: 'same JSON, other bytes',
+    byte,
+    aAround: around(rawA, byte, 40, 'latin1'),
+    bAround: around(rawB, byte, 40, 'latin1'),
+  };
 }
 
 function messageList(run) {
-  return run.serverMessages.map((message) => message.raw);
+  return run.serverMessages.map((message) => bytesOf(message.raw, message.bytes));
 }
 
 /**
@@ -139,6 +148,8 @@ export function compareRuns(a, b, { except = [], folderIgnore = () => false } = 
       request,
       a: left ? left.response : null,
       b: right ? right.response : null,
+      bytesA: left?.responseBytes,
+      bytesB: right?.responseBytes,
       ownTimesA: a.ownTimes,
       ownTimesB: b.ownTimes,
       except,
@@ -162,7 +173,14 @@ export function compareRuns(a, b, { except = [], folderIgnore = () => false } = 
   if (JSON.stringify(listA) !== JSON.stringify(listB)) {
     const index = listA.findIndex((line, i) => line !== listB[i]);
     const at = index === -1 ? Math.min(listA.length, listB.length) : index;
-    differences.push({ where: 'server-message', kind: 'value', path: `message ${at}`, answerA: listA[at] ?? null, answerB: listB[at] ?? null });
+    differences.push({
+      where: 'server-message',
+      kind: 'value',
+      path: `message ${at}`,
+      answerA: listA[at] ?? null,
+      answerB: listB[at] ?? null,
+      byte: firstDifferingByte(listA[at] ?? '', listB[at] ?? '', 'latin1'),
+    });
   }
   for (const difference of diffSnapshots(a.folder, b.folder)) {
     if (folderIgnore(difference.path)) continue;
@@ -174,27 +192,21 @@ export function compareRuns(a, b, { except = [], folderIgnore = () => false } = 
   if (a.stderr !== b.stderr) {
     differences.push({ where: 'stderr', kind: 'value', path: 'stderr', answerA: a.stderr, answerB: b.stderr, byte: firstDifferingByte(a.stderr, b.stderr) });
   }
-  if (a.exit.code !== b.exit.code || a.exit.signal !== b.exit.signal) {
+  if (a.exit.code !== b.exit.code || a.exit.signal !== b.exit.signal || a.exit.spawnError !== b.exit.spawnError) {
     differences.push({ where: 'exit', kind: 'value', path: 'exit', answerA: JSON.stringify(a.exit), answerB: JSON.stringify(b.exit) });
   }
   for (const [label, run] of [['a', a], ['b', b]]) {
-    for (const problem of run.ownTimeProblems ?? []) {
-      differences.push({ where: 'own-time', kind: 'own-time', path: problem.path, answerA: label === 'a' ? problem.detail : null, answerB: label === 'b' ? problem.detail : null });
+    for (const problem of run.problems ?? []) {
+      differences.push({
+        where: problem.kind,
+        kind: problem.kind,
+        path: problem.path,
+        answerA: label === 'a' ? problem.detail : null,
+        answerB: label === 'b' ? problem.detail : null,
+      });
     }
   }
   return differences;
-}
-
-export function findNumbersNamed(rawAnswer, names) {
-  const tree = parseAnswer(rawAnswer);
-  const found = [];
-  if (!tree) return found;
-  walkOrdered(tree, (node, pathText) => {
-    if (node.t !== 'num') return;
-    const last = pathText.split('.').at(-1)?.replace(/\[\d+\]$/, '');
-    if (names.includes(last)) found.push({ path: pathText, value: Number(node.text) });
-  });
-  return found;
 }
 
 function clip(text, length = 700) {
@@ -218,8 +230,8 @@ export function formatDifference(difference, { family, caseName, labelA, labelB 
     lines.push(`  ${labelA}: ${difference.folderA ? clip(difference.folderA.text ?? JSON.stringify(difference.folderA), 300) : 'absent'}`);
     lines.push(`  ${labelB}: ${difference.folderB ? clip(difference.folderB.text ?? JSON.stringify(difference.folderB), 300) : 'absent'}`);
     if (difference.folderA?.text !== undefined && difference.folderB?.text !== undefined) {
-      const byte = firstDifferingByte(difference.folderA.text, difference.folderB.text);
-      lines.push(`  first differing byte ${byte}: ${labelA} ${around(difference.folderA.text, byte)}  ${labelB} ${around(difference.folderB.text, byte)}`);
+      const byte = firstDifferingByte(difference.folderA.text, difference.folderB.text, 'latin1');
+      lines.push(`  first differing byte ${byte}: ${labelA} ${around(difference.folderA.text, byte, 40, 'latin1')}  ${labelB} ${around(difference.folderB.text, byte, 40, 'latin1')}`);
     }
   } else {
     lines.push(`  ${labelA}: ${clip(difference.answerA)}`);
