@@ -13,6 +13,8 @@ decisions: []
 
 ## Today
 
+## Patterns that already worked
+
 ## Problem and alternatives
 
 ## Flow

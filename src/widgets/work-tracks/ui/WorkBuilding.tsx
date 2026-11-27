@@ -20,14 +20,11 @@ import { useStableOrder } from '../model/use-stable-order';
 import { BranchName } from './BranchName';
 import { LargeRoom } from './LargeRoom';
 import { MiniRoom } from './MiniRoom';
-import { LANDED_KEEP_PX, LandedLog, landedRowId } from './LandedLog';
 import { ARRANGE_TABS_ID, SessionBoard } from './SessionBoard';
 import { pointToRoomKeys } from './point-to-rooms';
-import { LandedPanel } from './LandedPanel';
 import { RoomPanel } from './RoomPanel';
 import { RoomShelf } from './RoomShelf';
 import { BASE_SCREEN_COMMITS, useRoomCopy } from './use-room-copy';
-import type { LandedRead } from '@/shared/lib/work-status/tauri-work-status';
 import styles from './rooms.module.css';
 
 /** From this width a mini room spreads its newest commits and what is not committed into columns. */
@@ -73,7 +70,7 @@ function screenLists(room: RoomEntry): ScreenLists {
 }
 
 function RoomFace({ room, live, face, copy, retiring, showOwner, alone }: { room: RoomEntry; live: RoomLive; face: FaceSize; copy: RoomCopy; retiring: boolean; showOwner: boolean; alone: boolean }) {
-  if (face.size !== 'large') return <MiniRoom room={room} live={live} copy={copy} showOwner={showOwner} />;
+  if (face.size !== 'large') return <MiniRoom room={room} live={live} copy={copy} showOwner={showOwner} retiring={retiring} />;
   const lists = screenLists(room);
   const areas = listsAreas(face.w, lists, alone);
   return <LargeRoom room={room} live={live} unit={face.unit} rows={screenRows(face)} fileColumns={fileColumns(face.w, lists.commits > 0, areas)} areas={areas} copy={copy} retiring={retiring} />;
@@ -184,8 +181,6 @@ function DrawnRoom({ room, live, box, copy, retiring, showOwner, alone, reduced,
     return () => fades.forEach(fade => fade.cancel());
   }, [retiring, reduced]);
 
-  // A room's light flashes for changes counted while it is drawn, never for the count it was drawn with.
-  const [flashFrom] = useState(live.flash);
   const look = roomLook(room.state);
   const style = {
     transform: translate(ghost?.from ?? box),
@@ -239,9 +234,6 @@ function DrawnRoom({ room, live, box, copy, retiring, showOwner, alone, reduced,
       <div key={`face-${current.id}`} data-room-face data-spread={current.size === 'mini' && current.w >= SPREAD_MINI_W} data-unit={current.unit} className={cn(styles.face, styles.notched, 'h-full w-full')}>
         {faces.ready ? <RoomFace room={room} live={live} face={current} copy={copy} retiring={retiring} showOwner={showOwner} alone={alone} /> : null}
       </div>
-      {!ghost && live.flash > flashFrom ? (
-        <i key={`flash-${live.flash}`} aria-hidden data-testid="work-room-flash" className={cn(styles.flash, 'motion-room-flash')} />
-      ) : null}
       {onPress && !ghost ? (
         <button
           type="button"
@@ -411,17 +403,13 @@ function emphasise(board: HTMLElement | null, event: ReactPointerEvent<HTMLEleme
  * where each room was drawn, and nothing reads the DOM to lay them out. Pressing a room opens the
  * room panel beside the building.
  */
-export function WorkBuilding({ tracks, live, seenRunningAt, baseBranch, nowMs, root, landed, arrange = 'folder', onArrange, repo = '' }: {
+export function WorkBuilding({ tracks, live, seenRunningAt, baseBranch, nowMs, arrange = 'folder', onArrange, repo = '' }: {
   tracks: WorkTracks;
   /** What the session list, the file-change pulse and load say beside Git. */
   live: BuildingLive;
   seenRunningAt: ReadonlyMap<string, number>;
   baseBranch: string;
   nowMs: number;
-  /** The repository the rooms are read from, for opening a landed change. */
-  root: string;
-  /** The base branch's newest landed changes, listed under the building; `null` until read. */
-  landed: LandedRead | null;
   /** By folder draws the building; by session, one block per session over the same rooms, the building kept underneath. */
   arrange?: WorkshopArrangement;
   onArrange?: (arrange: WorkshopArrangement) => void;
@@ -448,10 +436,7 @@ export function WorkBuilding({ tracks, live, seenRunningAt, baseBranch, nowMs, r
     return () => observer.disconnect();
   }, []);
 
-  // The stage counts its rooms on the whole window; the screens then grow only into what the
-  // merged list under the building leaves, so the list keeps its strip.
   const stageLimit = stageCapacity(size?.width ?? 0, size?.height ?? 0);
-  const boardHeight = Math.max(0, (size?.height ?? 0) - (landed ? LANDED_KEEP_PX : 0));
   const plan = useMemo(() => planRooms(tracks, nowMs, seenRunningAt, stageLimit), [tracks, nowMs, seenRunningAt, stageLimit]);
   const retirees = useRetirees(plan, stageLimit, reduced);
   const retiring = useMemo(() => new Set(retirees.map(retiree => retiree.entry.key)), [retirees]);
@@ -463,12 +448,12 @@ export function WorkBuilding({ tracks, live, seenRunningAt, baseBranch, nowMs, r
   const alone = shown.stage.length === 1;
   const layout = useMemo(() => layoutBuilding({
     width: size?.width ?? 0,
-    height: boardHeight,
+    height: size?.height ?? 0,
     stage: shown.stage.map(room => room.key),
     floors: shown.floors.map(floor => ({ key: floor.key, rooms: floor.rooms.map(room => room.key) })),
     hasShelf,
     stageLists,
-  }), [size, boardHeight, shown, hasShelf, stageLists]);
+  }), [size, shown, hasShelf, stageLists]);
   const firstStageBox = shown.stage.length > 0 ? layout.rooms.get(shown.stage[0].key) : undefined;
   const stageRows = firstStageBox ? screenRows(firstStageBox) : 0;
 
@@ -507,24 +492,8 @@ export function WorkBuilding({ tracks, live, seenRunningAt, baseBranch, nowMs, r
   const emphasiseSession = useCallback((event: ReactPointerEvent<HTMLElement>) => emphasise(boardRef.current, event), []);
 
   const panelId = useId();
-  const landedPanelId = useId();
   const [pressedKey, setPressedKey] = useState<string | null>(null);
-  const [landedHash, setLandedHash] = useState<string | null>(null);
-  const pressRoom = useCallback((key: string) => {
-    setLandedHash(null);
-    setPressedKey(current => (current === key ? null : key));
-  }, []);
-  const selectLanded = useCallback((hash: string) => {
-    setPressedKey(null);
-    setLandedHash(current => (current === hash ? null : hash));
-  }, []);
-  const selectedLanded = landed?.changes.find(change => change.hash === landedHash) ?? null;
-  const closeLanded = useCallback(() => {
-    setLandedHash(current => {
-      if (current) document.getElementById(landedRowId(current))?.focus();
-      return null;
-    });
-  }, []);
+  const pressRoom = useCallback((key: string) => setPressedKey(current => (current === key ? null : key)), []);
   // A room that leaves the building takes its panel with it.
   const pressedRoom = entries.find(room => room.key === pressedKey && layout.rooms.has(room.key)) ?? null;
   // A folder row on the by-session board opens the same panel; closing it returns focus to that row.
@@ -538,7 +507,6 @@ export function WorkBuilding({ tracks, live, seenRunningAt, baseBranch, nowMs, r
     });
   }, []);
   const pressFolder = useCallback((key: string, from: HTMLElement) => {
-    setLandedHash(null);
     setPressedKey(current => {
       opener.current = current === key ? null : from;
       return current === key ? null : key;
@@ -555,10 +523,9 @@ export function WorkBuilding({ tracks, live, seenRunningAt, baseBranch, nowMs, r
     if (keys.length > 0) requestAnimationFrame(() => requestAnimationFrame(() => pointToRoomKeys(keys, reduced)));
   }, [onArrange, reduced]);
   const closeOnEscape = (event: ReactKeyboardEvent<HTMLElement>) => {
-    if (event.key !== 'Escape' || event.defaultPrevented || (pressedRoom === null && selectedLanded === null)) return;
+    if (event.key !== 'Escape' || event.defaultPrevented || pressedRoom === null) return;
     event.preventDefault();
-    if (selectedLanded) closeLanded();
-    else closePanel();
+    closePanel();
   };
 
   return (
@@ -629,10 +596,8 @@ export function WorkBuilding({ tracks, live, seenRunningAt, baseBranch, nowMs, r
           <SessionBoard board={board} sessions={tracks.sessions} load={live.load.status === 'read' ? live.load.sample : null} copy={copy} repo={repo} pressedKey={pressedRoom?.key ?? null} onPressFolder={pressFolder} onShowFolders={showFolders} />
         </div>
       ) : null}
-      <LandedLog read={landed} baseBranch={baseBranch} nowMs={nowMs} selectedHash={selectedLanded?.hash ?? null} onSelect={selectLanded} panelId={landedPanelId} />
     </div>
-    <RoomPanel room={pressedRoom} live={live} tracks={tracks} copy={copy} id={panelId} onClose={closePanel} replaced={selectedLanded !== null} />
-    <LandedPanel change={selectedLanded} root={root} nowMs={nowMs} id={landedPanelId} onClose={closeLanded} replaced={pressedRoom !== null} />
+    <RoomPanel room={pressedRoom} live={live} tracks={tracks} copy={copy} id={panelId} onClose={closePanel} />
     </div>
   );
 }

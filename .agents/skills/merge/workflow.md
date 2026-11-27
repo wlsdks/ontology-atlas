@@ -3,20 +3,20 @@
 The author never approves its own slice, and nothing is deleted until `main`
 provably has it. This is the order that keeps both promises cheap.
 
-## 1. Read the slice; brief one reviewer when one is due
+## 1. Read the slice; brief one code-reviewer when one is due
 
 A single branch with its own draft starts its CI first, so the run is done or
 nearly done when you merge: `pnpm pr:ci <number>`. A slice of parallel work has
 no pull request and runs no CI until the integration pull request.
 
-Read a returned slice yourself against its brief. One reviewer is due, even
+Read a returned slice yourself against its brief. One `code-reviewer` is due, even
 for a change you wrote, when the change is one-way (the `AGENTS.md` workflow
 table), adds or removes a primary surface or changes navigation or grouping,
 or touches a path `pnpm checks:changed` calls a security surface. Token and
-primitive changes get the rendered inventory (`/ui-proof`), not a reviewer.
+primitive changes get the rendered inventory (`/ui-proof`), not a `code-reviewer`.
 
 Give a due review to one agent that did not write the change, with
-the current host's reviewer brief. The brief carries:
+the current host's `code-reviewer` brief. The brief carries:
 
 - **Kind**: returned slice, with its branch, worktree path (read-only), the
   pull request number when it has one, and the diff to read:
@@ -32,7 +32,7 @@ the current host's reviewer brief. The brief carries:
 
 | The diff | Lenses |
 |---|---|
-| any returned slice | the returned-slice checks in the reviewer brief |
+| any returned slice | the returned-slice checks in the `code-reviewer` brief |
 | hygiene, refactor, or structure | `self-explaining` and `lean`; `algorithm` for layout, search and matching, diffing, parsing, or graph traversal |
 | a new or removed primary surface | `attention`, `reversibility`, `responsive-bands`, and `motion`, `map-marks`, `installed-app` or `agent-action` where the surface has them, with the `/ui-build` captures |
 | a one-way change | `moment`, `evidence`, `boundaries`, `smallest-slice`; `spec` when a spec was written |
@@ -49,7 +49,7 @@ integration branch at once (`/integrate`); do not hold slices for the end.
 - `fix`: send the numbered list unchanged to the same
   agent, in the same worktree. It answers each number with a commit, or with one
   line when a finding conflicts with its brief; you decide those.
-- Send the fixes back to the reviewer only when a fix changed behaviour or
+- Send the fixes back to the `code-reviewer` only when a fix changed behaviour or
   answered a `security` or `algorithm` finding; otherwise check each number
   against the fix commit's diff yourself.
 - A finding that comes back a second time means the slice needed judgment:

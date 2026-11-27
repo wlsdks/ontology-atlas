@@ -6,6 +6,8 @@ import { STAGE_AT, roomLook } from '../model/room-look';
 import type { RoomLive } from '../model/room-live';
 import { BranchName } from './BranchName';
 import { CommitLog } from './CommitLog';
+import { RoomComplete } from './RoomComplete';
+import { RoomPulse } from './RoomPulse';
 import { SwapText } from './SwapText';
 import type { StatusTone, useRoomCopy } from './use-room-copy';
 import styles from './rooms.module.css';
@@ -28,7 +30,7 @@ const TONE: Record<StatusTone, string> = {
  * dashed or dusty). With the floor to itself (`data-spread` on its face) it spreads the newest
  * commits and what is not committed into columns.
  */
-export function MiniRoom({ room, live, copy, showOwner }: { room: RoomEntry; live: RoomLive; copy: RoomCopy; showOwner: boolean }) {
+export function MiniRoom({ room, live, copy, showOwner, retiring }: { room: RoomEntry; live: RoomLive; copy: RoomCopy; showOwner: boolean; retiring: boolean }) {
   const look = roomLook(room.state);
   const status = copy.status(room, live);
   const owner = copy.owner(room, live.lines);
@@ -75,6 +77,8 @@ export function MiniRoom({ room, live, copy, showOwner }: { room: RoomEntry; liv
       <div className={styles.miniTrack} data-arrived={room.stage === 'main'}>
         <i className={styles.miniFill} style={{ transform: `scaleX(${STAGE_AT[room.stage]})` }} />
       </div>
+      <RoomPulse flash={live.flash} />
+      {retiring ? <RoomComplete /> : null}
     </div>
   );
 }

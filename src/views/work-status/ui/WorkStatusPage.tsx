@@ -5,6 +5,8 @@ import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-
 import { useTranslations } from 'next-intl';
 import { FolderGit2 } from 'lucide-react';
 import { useLocalVault } from '@/entities/vault-session';
+import { Link } from '@/i18n/navigation';
+import { DESTINATION_HREF } from '@/shared/config/destinations';
 import { useArrivalMemory } from '@/shared/lib/navigation/route-arrival-memory';
 import { useFilePulseEnabled, useLoadReadEnabled, useSessionListReadEnabled, useSessionNamesEnabled, workshopArrangement } from '@/shared/lib/preferences/work-status-preferences';
 import { isWaitingBlock, sessionBoardOf } from '@/shared/lib/work-status/signals/session-board';
@@ -20,7 +22,7 @@ import { sessionNameOf } from '@/shared/lib/work-status/signals/session-name';
 import { Button, InfoHint, PageHeaderBar, TabBar } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { PAGE_FRAME_FORM, PAGE_STAGE_FILL } from '@/shared/ui/tokens/page-frame';
-import { ARRANGE_TABS_ID, EmptyRoom, QuietBuilding, RoomShelf, WorkBuilding, pointToRoomKeys, pointToRooms, usePulseClock, type BuildingLive, type RoomAlert } from '@/widgets/work-tracks';
+import { ARRANGE_TABS_ID, EmptyRoom, RoomShelf, WorkBuilding, pointToRoomKeys, pointToRooms, usePulseClock, type BuildingLive, type RoomAlert } from '@/widgets/work-tracks';
 import { useMinuteClock } from '../model/use-minute-clock';
 import { useRunningMemory } from '../model/use-running-memory';
 import { useSessionIdentity } from '../model/use-session-identity';
@@ -31,7 +33,7 @@ import { useSessionStateSince } from '../model/use-session-state-since';
 import { useWorktreeLoad } from '../model/use-worktree-load';
 import { useWorkStatus } from '../model/use-work-status';
 import { useWorktreeActivity } from '../model/use-worktree-activity';
-import { landedReadKey, useLandedChanges } from '../model/use-landed-changes';
+import { mergedCountKey, useMergedToday } from '../model/use-merged-today';
 import { WorkStatusReads } from './WorkStatusReads';
 import { WorkStatusStage } from './WorkStatusStage';
 
@@ -39,6 +41,8 @@ const subscribe = () => () => {};
 const webSnapshot = () => false;
 const MAIN_CLASS = 'flex min-h-full flex-col bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]';
 const BRANCH_CLASS = 'font-mono';
+const MERGED_CLASS = 'text-[color:var(--color-text-secondary)] underline-offset-4 hover:text-[color:var(--color-text-primary)] hover:underline focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]';
+const QUIET_CLASS = 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden';
 const ALERT_CLASS = 'font-[var(--font-weight-emphasis)] text-[color:var(--color-status-warning)] underline-offset-4 hover:underline focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]';
 
 export function WorkStatusPage() {
@@ -92,8 +96,8 @@ export function WorkStatusPage() {
     load: { status: load.status, sample: load.sample },
   }), [tracks, sessionList.rows, since, pulse, pulseNowMs, load.status, load.sample]);
   const activity = useWorktreeActivity(readyRoot, snapshot?.baseBranch ?? null, roomKeys, runningKeys, changedAt);
-  const headsKey = useMemo(() => (snapshot?.status === 'ready' ? landedReadKey(snapshot.worktrees) : null), [snapshot]);
-  const landed = useLandedChanges(snapshot?.status === 'ready' ? snapshot.root : null, snapshot?.baseBranch ?? null, headsKey);
+  const headsKey = useMemo(() => (snapshot?.status === 'ready' ? mergedCountKey(snapshot.worktrees) : null), [snapshot]);
+  const mergedToday = useMergedToday(readyRoot, snapshot?.baseBranch ?? null, headsKey, nowMs);
   const shownTracks = useMemo(() => (tracks ? withActivity(tracks, activity) : null), [tracks, activity]);
   const sameFolder = tracks ? [...tracks.sessions.flatMap(session => session.tracks), ...tracks.unheld].filter(track => track.running && track.tools.length > 1).length : 0;
   const cleanup = tracks?.stuck.length ?? 0;
@@ -170,6 +174,14 @@ export function WorkStatusPage() {
           <span className="flex min-w-0 items-center gap-2">
           <span className="truncate text-body leading-body text-[color:var(--color-text-tertiary)]">
             {t('repoLine', { repo: snapshot.repository, count: snapshot.worktrees.length })}
+            {mergedToday ? (
+              <span>
+                {' · '}
+                <Link href={DESTINATION_HREF.changes} data-testid="work-status-merged-today" title={t('header.mergedTodayOpen')} className={MERGED_CLASS}>
+                  {t('header.mergedToday', { count: mergedToday })}
+                </Link>
+              </span>
+            ) : null}
             {alerts.map(alert => (
               <span key={alert.kind}>
                 {' · '}
@@ -232,17 +244,17 @@ export function WorkStatusPage() {
       {plan === null || tracks === null ? (
         <div className="min-h-0 flex-1" />
       ) : onlyMain ? (
-        <QuietBuilding landed={landed} root={snapshot?.root ?? root} baseBranch={baseBranch} nowMs={nowMs}>
+        <div className={QUIET_CLASS}>
           <EmptyRoom className="flex-none py-10" branch={baseBranch} title={t.rich('empty.title', { branch: baseBranch, code: branch })} body={t('empty.body')} />
-        </QuietBuilding>
+        </div>
       ) : empty ? (
-        <QuietBuilding landed={landed} root={snapshot?.root ?? root} baseBranch={baseBranch} nowMs={nowMs}>
+        <div className={QUIET_CLASS}>
           <EmptyRoom className="flex-none py-10" branch={baseBranch} title={t('quiet.title', { repo: snapshot?.repository ?? folder })} body={t('quiet.body')}>
             <div className="relative h-10">
               <RoomShelf merged={plan.shelf.merged} untouched={plan.shelf.untouched} baseBranch={baseBranch} nowMs={nowMs} />
             </div>
           </EmptyRoom>
-        </QuietBuilding>
+        </div>
       ) : (
         <WorkBuilding
           tracks={shownTracks ?? tracks}
@@ -250,8 +262,6 @@ export function WorkStatusPage() {
           seenRunningAt={signsOfWork}
           baseBranch={baseBranch}
           nowMs={nowMs}
-          root={snapshot?.root ?? root}
-          landed={landed}
           arrange={arrange}
           onArrange={workshopArrangement.write}
           repo={snapshot?.repository ?? folder}

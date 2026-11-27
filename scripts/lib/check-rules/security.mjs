@@ -1,4 +1,4 @@
-/** Where untrusted input meets a capability. Every match runs the security contracts; the first rule also asks for the reviewer's `security` lens. */
+/** Where untrusted input meets a capability. Every match runs the security contracts; the first rule also asks for the code-reviewer's `security` lens. */
 
 const SECURITY_CONTRACTS = [
   'tests/contract/security/security-surfaces.contract.test.ts',
@@ -31,7 +31,7 @@ export const rules = [
   {
     order: 1350,
     command,
-    reason: 'a security surface changed: the security contracts run, and it lands only after one `reviewer` applies the `security` lens',
+    reason: 'a security surface changed: the security contracts run, and it lands only after one `code-reviewer` applies the `security` lens',
     matches: [
       /^mcp\/src\/(?!.*\.test\.mjs$).+\.(?:mjs|js)$/,
       /^src-tauri\/src\/.+\.rs$/,
