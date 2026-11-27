@@ -7,6 +7,15 @@ use crate::arguments::Arguments;
 use crate::dispatch::CallContext;
 use crate::error::ToolError;
 
+mod argument_checks;
+mod concept_row;
+mod connection_info;
+mod find_backlinks;
+mod find_orphans;
+mod get_concepts;
+mod list_concepts;
+mod query_concepts;
+mod read_vault;
 #[cfg(feature = "test-hooks")]
 mod test_hooks;
 
@@ -20,6 +29,13 @@ pub fn call(
     if let Some(result) = test_hooks::call(context, name, arguments) {
         return Some(result);
     }
-    let _ = (context, name, arguments);
-    None
+    match name {
+        "connection_info" => Some(connection_info::call(context, arguments)),
+        "list_concepts" => Some(list_concepts::call(context, arguments)),
+        "get_concepts" => Some(get_concepts::call(context, arguments)),
+        "find_backlinks" => Some(find_backlinks::call(context, arguments)),
+        "find_orphans" => Some(find_orphans::call(context, arguments)),
+        "query_concepts" => Some(query_concepts::call(context, arguments)),
+        _ => None,
+    }
 }

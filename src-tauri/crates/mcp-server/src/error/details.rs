@@ -137,6 +137,100 @@ impl Serialize for UnknownArgumentDetails {
     }
 }
 
+/// What the agent sent where only a few values are allowed, in the words the message names it:
+/// the text itself for a string, the kind of value for anything else.
+#[derive(Debug, Clone, Copy)]
+pub enum ReceivedValue<'a> {
+    Text(&'a str),
+    Other(&'static str),
+}
+
+impl ReceivedValue<'_> {
+    fn quoted(self) -> String {
+        match self {
+            Self::Text(text) => format!("\"{text}\""),
+            Self::Other(kind) => kind.to_string(),
+        }
+    }
+
+    fn plain(self) -> String {
+        match self {
+            Self::Text(text) => text.to_string(),
+            Self::Other(kind) => kind.to_string(),
+        }
+    }
+}
+
+/// A node that is not in the vault, and where the agent may go from there.
+#[derive(Debug, Default, Serialize)]
+pub struct MissingNodeDetails {
+    #[serde(rename = "missingSubject")]
+    pub subject: &'static str,
+    #[serde(rename = "missingSlug", skip_serializing_if = "Option::is_none")]
+    pub slug: Option<String>,
+    #[serde(rename = "missingUid", skip_serializing_if = "Option::is_none")]
+    pub uid: Option<String>,
+    #[serde(rename = "recoveryTools")]
+    pub recovery_tools: Vec<&'static str>,
+    #[serde(rename = "createTool", skip_serializing_if = "Option::is_none")]
+    pub create_tool: Option<&'static str>,
+    #[serde(rename = "similarSlugs", skip_serializing_if = "Option::is_none")]
+    pub similar_slugs: Option<Vec<String>>,
+    #[serde(rename = "referencedBy", skip_serializing_if = "Option::is_none")]
+    pub referenced_by: Option<Vec<vault_document::Reference>>,
+    #[serde(rename = "growthHint", skip_serializing_if = "Option::is_none")]
+    pub growth_hint: Option<vault_document::GrowthHint>,
+}
+
+impl ToolError {
+    /// A node the vault does not hold, with the fields that point the agent to the next call.
+    pub fn missing_node(message: impl Into<String>, details: MissingNodeDetails) -> Self {
+        Self {
+            details: Some(Box::new(Details::MissingNode(details))),
+            ..Self::new(ErrorCode::NotFound, message)
+        }
+    }
+}
+
+/// A value outside the few an argument allows.
+#[derive(Debug, Serialize)]
+pub struct AllowedValueDetails {
+    #[serde(rename = "valueName")]
+    pub name: String,
+    #[serde(rename = "receivedValue")]
+    pub received: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub suggestion: Option<String>,
+    #[serde(rename = "allowedValues")]
+    pub allowed: Vec<String>,
+}
+
+impl ToolError {
+    /// `name` held `received`, which is not one of `allowed`. The nearest allowed value is offered
+    /// for a text near enough to be a typo of one.
+    pub fn not_an_allowed_value(name: &str, received: ReceivedValue<'_>, allowed: &[&str]) -> Self {
+        let suggestion = match received {
+            ReceivedValue::Text(text) => crate::suggestions::closest_allowed_value(text, allowed),
+            ReceivedValue::Other(_) => None,
+        };
+        let message = format!(
+            "{name} must be one of: {}. Received: {}.{}",
+            allowed.join(", "),
+            received.quoted(),
+            did_you_mean(suggestion.as_deref())
+        );
+        Self {
+            details: Some(Box::new(Details::AllowedValue(AllowedValueDetails {
+                name: name.to_string(),
+                received: received.plain(),
+                suggestion,
+                allowed: allowed.iter().map(|value| (*value).to_string()).collect(),
+            }))),
+            ..Self::new(ErrorCode::InvalidArguments, message)
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

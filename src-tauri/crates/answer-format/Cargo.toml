@@ -7,6 +7,11 @@ license = "MIT"
 publish = false
 
 [dependencies]
+# The order `Intl.Collator('en')` gives, which every list the server sorts follows. Unicode-3.0; on
+# the ICU 2.2 line the workspace already links (`icu_normalizer` 2.2.0), so the ICU crates stay one
+# version. `compiled_data` bakes the collation tables in: no data file and no network at run time.
+icu_collator = { version = "=2.2.0", default-features = false, features = ["compiled_data"] }
+icu_locale_core = { version = "=2.2.0", default-features = false }
 # Writes a number as `Number.prototype.toString` does. `Apache-2.0 OR BSL-1.0`; nothing under it.
 ryu-js = "1"
 serde = { version = "1", features = ["derive"] }

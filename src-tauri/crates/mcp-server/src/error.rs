@@ -12,7 +12,10 @@ mod details;
 use serde::Serialize;
 use thiserror::Error;
 
-pub use details::{UnknownArgumentDetails, UnknownField, UnknownToolDetails};
+pub use details::{
+    AllowedValueDetails, MissingNodeDetails, ReceivedValue, UnknownArgumentDetails, UnknownField,
+    UnknownToolDetails,
+};
 
 /// The `errorCode` values an agent branches on. The set is shared with the JavaScript server and
 /// with saved prompts: a code may be added, and an existing one keeps its meaning.
@@ -40,6 +43,8 @@ pub enum ErrorCode {
 enum Details {
     UnknownTool(UnknownToolDetails),
     UnknownArgument(UnknownArgumentDetails),
+    AllowedValue(AllowedValueDetails),
+    MissingNode(MissingNodeDetails),
 }
 
 /// A handler's failure: a code, the words, and the fields the code derives from the call.
@@ -79,6 +84,15 @@ impl ToolError {
         &self.message
     }
 
+    /// This failure as one row of a batch answer.
+    pub fn as_row(&self) -> RowFailure<'_> {
+        RowFailure {
+            error: &self.message,
+            error_code: self.code,
+            details: self.details.as_deref(),
+        }
+    }
+
     /// The `structuredContent` of a failed call: `ok: false`, the code, the message and the fields
     /// the code derives.
     pub fn structured(&self) -> Structured<'_> {
@@ -89,6 +103,17 @@ impl ToolError {
             details: self.details.as_deref(),
         }
     }
+}
+
+/// A failed row of a batch answer: the words and code of the failure and the fields its code
+/// derives, written after the row's own `ok` and the name it was asked for.
+#[derive(Serialize)]
+pub struct RowFailure<'a> {
+    error: &'a str,
+    #[serde(rename = "errorCode")]
+    error_code: ErrorCode,
+    #[serde(flatten)]
+    details: Option<&'a Details>,
 }
 
 /// The `structuredContent` of a failed call.

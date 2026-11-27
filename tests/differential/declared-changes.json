@@ -94,6 +94,38 @@
       "path": "message 0",
       "change": 5,
       "reason": "Arguments are listed in the order sent and `__proto__` is an argument like any other; the JavaScript server lists integer-like names first and drops `__proto__` silently (row 5)."
+    },
+    {
+      "case": "vault-read/get-concepts-edge-hostile-late-clock",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text",
+      "change": 6,
+      "reason": "A file that exists and cannot be read is reported by its slug and the OS code, never by an absolute path on the disk, and as a tool failure rather than as a mistyped argument (row 6 of the specification's table)."
+    },
+    {
+      "case": "vault-read/get-concepts-edge-hostile-late-clock",
+      "where": "answer",
+      "id": 7,
+      "path": "result.content[0].text",
+      "change": 6,
+      "reason": "A file that exists and cannot be read is reported by its slug and the OS code, never by an absolute path on the disk, and as a tool failure rather than as a mistyped argument (row 6 of the specification's table)."
+    },
+    {
+      "case": "vault-read/get-concepts-edge-hostile",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text",
+      "change": 6,
+      "reason": "A file that exists and cannot be read is reported by its slug and the OS code, never by an absolute path on the disk, and as a tool failure rather than as a mistyped argument (row 6 of the specification's table)."
+    },
+    {
+      "case": "vault-read/get-concepts-edge-hostile",
+      "where": "answer",
+      "id": 7,
+      "path": "result.content[0].text",
+      "change": 6,
+      "reason": "A file that exists and cannot be read is reported by its slug and the OS code, never by an absolute path on the disk, and as a tool failure rather than as a mistyped argument (row 6 of the specification's table)."
     }
   ]
 }

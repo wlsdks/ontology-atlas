@@ -33,6 +33,8 @@ serde_json = { version = "1", features = ["raw_value"] }
 indexmap = { version = "2", features = ["serde"] }
 # The errors a request or a call fails with, each with its message.
 thiserror = "2"
+# The hash of the tool list `connection_info` reports; already built for the document crate.
+sha2 = { version = "0.11.1", default-features = false }
 # Edit distance for "did you mean"; MIT, already in the lockfile through the app's dependencies.
 strsim = "0.11"
 
