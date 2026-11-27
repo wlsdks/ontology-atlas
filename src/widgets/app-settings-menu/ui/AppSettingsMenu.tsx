@@ -187,14 +187,23 @@ export function AppSettingsMenu({
 
   const triggerVisible = () => triggerRef.current !== null && triggerRef.current.offsetParent !== null;
 
+  /*
+   * The trigger may mount hidden (the rail waits while the remembered folder restores), so the
+   * intent is not taken at mount: the observer fires each time the trigger's box changes, and the
+   * first time this instance is on screen it takes the intent and reopens.
+   */
   useEffect(() => {
-    const timer = window.setTimeout(() => {
+    const trigger = triggerRef.current;
+    if (!trigger) return undefined;
+    const watch = new ResizeObserver(() => {
       const reopen = consumeSettingsLocaleFocus(locale, triggerVariant, triggerVisible);
       if (!reopen) return;
+      watch.disconnect();
       setSection(reopen);
       setOpen(true);
-    }, 0);
-    return () => window.clearTimeout(timer);
+    });
+    watch.observe(trigger);
+    return () => watch.disconnect();
   }, [locale, triggerVariant, setOpen]);
 
   useSurfaceRequest(OPEN_SETTINGS_EVENT, () => {

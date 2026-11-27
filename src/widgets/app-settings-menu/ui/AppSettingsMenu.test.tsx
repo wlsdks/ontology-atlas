@@ -2,10 +2,43 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { MouseEventHandler, ReactNode } from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { requestSettingsOpen } from '@/shared/lib/keyboard/surface-requests';
 import { AGENT_GRAPH_WORKFLOW_HREF } from '@/shared/config';
 import { AppSettingsMenu } from './AppSettingsMenu';
+
+/**
+ * jsdom never reports a box change, so the trigger's observer is replaced by one the test fires:
+ * the moment layout would tell the menu its trigger changed size or came on screen.
+ */
+const triggerWatchers = vi.hoisted(() => ({ callbacks: new Set<() => void>() }));
+
+beforeEach(() => {
+  vi.stubGlobal(
+    'ResizeObserver',
+    class {
+      constructor(private readonly callback: () => void) {
+        triggerWatchers.callbacks.add(callback);
+      }
+      observe() {}
+      unobserve() {}
+      disconnect() {
+        triggerWatchers.callbacks.delete(this.callback);
+      }
+    },
+  );
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  triggerWatchers.callbacks.clear();
+});
+
+function reportTriggerLayout() {
+  act(() => {
+    for (const callback of [...triggerWatchers.callbacks]) callback();
+  });
+}
 
 const mocks = vi.hoisted(() => ({
   isDesktopRuntime: false,
@@ -127,6 +160,7 @@ vi.mock('next-intl', () => ({
   useTranslations: (namespace: string) =>
     Object.assign((key: string) => `${namespace}.${key}`, { rich: (key: string) => `${namespace}.${key}` }),
   useLocale: () => mocks.locale,
+  useFormatter: () => ({ dateTime: () => '', relativeTime: () => '' }),
 }));
 
 /** Open the sheet on a section, by clicking the LNB; defaults to the Screen section. */
@@ -137,29 +171,18 @@ function openSheet(ui?: ReactNode, section?: string) {
   return view;
 }
 
-/**
- * The workspace docs-vault link (`vaultHref`) routes desktop to `/docs/?intent=local` and the
- * web to `/download/`; `test:desktop:runtime` needs this direct guard.
- */
-describe('AppSettingsMenu desktop acquisition boundary', () => {
+/** The workspace link always goes to `/docs/`, where the folder is opened or read; it never offers the app's own download. */
+describe('AppSettingsMenu folder action', () => {
   beforeEach(() => {
     mocks.isDesktopRuntime = false;
     mocks.rememberRouteFocusIntent.mockClear();
   });
 
-  it('routes the hosted browser vault action to the app download page', () => {
+  it('sends a window with no folder to /docs to open one', () => {
     openSheet(undefined, 'workspace');
     expect(
       screen.getByTestId('app-settings-vault-docs-open'),
-    ).toHaveAttribute('href', '/download/?focus=main');
-  });
-
-  it('keeps the installed desktop app vault action on the native local picker path', () => {
-    mocks.isDesktopRuntime = true;
-    openSheet(undefined, 'workspace');
-    expect(
-      screen.getByTestId('app-settings-vault-docs-open'),
-    ).toHaveAttribute('href', '/docs/?intent=local&focus=main');
+    ).toHaveAttribute('href', '/docs/?focus=main');
   });
 
   it('sends an already-loaded local vault straight back to /docs', () => {
@@ -463,6 +486,7 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
 
     mocks.locale = 'ko';
     render(<AppSettingsMenu mode="static" />);
+    reportTriggerLayout();
 
     await waitFor(() => {
       expect(screen.getByTestId('app-settings-trigger')).toHaveAttribute('aria-expanded', 'true');
@@ -487,6 +511,7 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
         <AppSettingsMenu mode="static" triggerVariant="chrome-tile" />
       </>,
     );
+    reportTriggerLayout();
     const triggers = screen.getAllByTestId('app-settings-trigger');
     const railTrigger = triggers.find(
       (trigger) => trigger.getAttribute('data-trigger-variant') === 'rail-tile',
@@ -508,16 +533,8 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
 
     mocks.locale = 'ko';
     // jsdom: offsetParent is null, so this instance counts as not on screen.
-    // The reopen check runs on a timer after mount; run it rather than sleep past it.
-    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
-    try {
-      render(<AppSettingsMenu mode="static" triggerVariant="chrome-tile" />);
-      act(() => {
-        vi.runOnlyPendingTimers();
-      });
-    } finally {
-      vi.useRealTimers();
-    }
+    render(<AppSettingsMenu mode="static" triggerVariant="chrome-tile" />);
+    reportTriggerLayout();
     expect(screen.getByTestId('app-settings-trigger')).toHaveAttribute('aria-expanded', 'false');
     expect(window.sessionStorage.getItem('ontology-atlas:settings-locale-focus')).not.toBeNull();
     window.sessionStorage.clear();
@@ -993,7 +1010,27 @@ describe('AppSettingsMenu search and requests', () => {
       .spyOn(HTMLElement.prototype, 'offsetParent', 'get')
       .mockImplementation(() => document.body);
     render(<AppSettingsMenu mode="static" />);
+    reportTriggerLayout();
     await waitFor(() => expect(screen.getByTestId('app-settings-pane-map')).toBeInTheDocument());
+    spy.mockRestore();
+  });
+
+  it('waits for a trigger that mounts hidden, then reopens the sheet on the same pane', async () => {
+    window.sessionStorage.setItem(
+      'ontology-atlas:settings-locale-focus',
+      JSON.stringify({ locale: 'en', triggerVariant: 'header-pill', section: 'agents', createdAt: Date.now() }),
+    );
+    render(<AppSettingsMenu mode="static" />);
+    reportTriggerLayout();
+    expect(screen.getByTestId('app-settings-trigger')).toHaveAttribute('aria-expanded', 'false');
+    expect(window.sessionStorage.getItem('ontology-atlas:settings-locale-focus')).not.toBeNull();
+
+    const spy = vi
+      .spyOn(HTMLElement.prototype, 'offsetParent', 'get')
+      .mockImplementation(() => document.body);
+    reportTriggerLayout();
+    await waitFor(() => expect(screen.getByTestId('app-settings-pane-agents')).toBeInTheDocument());
+    expect(window.sessionStorage.getItem('ontology-atlas:settings-locale-focus')).toBeNull();
     spy.mockRestore();
   });
 });

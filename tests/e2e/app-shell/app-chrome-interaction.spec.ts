@@ -297,5 +297,9 @@ test.describe('settings', () => {
     await sheet.getByRole('radio', { name: /EN/ }).click();
     await expect(page).toHaveURL(/\/en\/topology\//, { timeout: 20_000 });
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+    // The remembered folder restores after the reload, so the rail trigger is not on screen yet;
+    // the sheet comes back on the pane it was on once the trigger is.
+    await expect(page.getByTestId('app-settings-popover')).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByTestId('app-settings-pane-screen')).toBeVisible();
   });
 });
