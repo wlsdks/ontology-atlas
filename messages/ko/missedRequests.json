@@ -16,6 +16,9 @@
     "noneTitle": "이 컴퓨터에서 도는 모델이 필요해요",
     "noneBody": "메시지에서 요청을 골라내려면 Ollama나 LM Studio처럼 이 컴퓨터에서 실행되는 언어 모델이 필요해요. 에이전트 › 모델에서 주소를 추가한 뒤 돌아오세요.",
     "noneAction": "모델 열기",
+    "searchTitle": "의미 검색 모델이 필요해요",
+    "searchBody": "요청마다 가장 가까운 커밋을 찾을 때 의미 검색이 이 컴퓨터에 준비해 두는 모델을 써요. 자료실에서 한 번 준비한 뒤 돌아오세요.",
+    "searchAction": "의미 검색 설정",
     "notLocal": "{address} 주소는 이 컴퓨터가 아니에요. 메시지는 localhost, 127.0.0.1, ::1에 있는 모델만 읽을 수 있어요.",
     "using": "{address}의 {model}"
   },

@@ -16,6 +16,9 @@
     "noneTitle": "需要在这台电脑上运行的模型",
     "noneBody": "从消息中挑出请求，需要一个在这台电脑上运行的语言模型，例如 Ollama 或 LM Studio 中的模型。请在“代理 › 模型”中添加它的地址，然后回来。",
     "noneAction": "打开模型",
+    "searchTitle": "需要语义搜索的模型",
+    "searchBody": "为每个请求找出最接近的提交时，会用到语义搜索在这台电脑上准备的模型。请先在资料库中准备一次，然后回来。",
+    "searchAction": "设置语义搜索",
     "notLocal": "{address} 不在这台电脑上。只有 localhost、127.0.0.1 或 ::1 上的模型可以读取你的消息。",
     "using": "{address} 上的 {model}"
   },

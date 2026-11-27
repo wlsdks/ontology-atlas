@@ -14,8 +14,8 @@ decisions: [RECORD_ID]
 - People ask their coding agents for many things in one conversation. Some never get done, and
   nobody notices: the agent moved on, the conversation was compacted, or the worktree was removed.
 - **Asked, not done** finds them. Atlas reads only the messages the person typed to Claude Code in
-  this repository, asks a model running on this computer which ones are requests, and checks each
-  request against the commits on the base branch. A request at least 2 days old with no matching
+  this repository, asks a model running on this computer which ones ask for a code change, and
+  checks each against the commits on the base branch. One at least 2 days old with no matching
   commit is listed.
 - It lives in **Workshop**, as one fact in the header beside "11 merged today" and a centred
   dialog behind it. No new tab: a tab comes only if it is opened most days.
@@ -25,7 +25,10 @@ decisions: [RECORD_ID]
 - **Nothing leaves the computer.** The model must be on `localhost`; findings stay in Atlas's app
   data; nothing is written into the repository, the vault, or any agent's memory or instructions.
   The person marks each item **Done elsewhere** or **Not needed**, or copies it to ask again.
-- Measured on the owner's Mac with the 27-billion-parameter model he already has: MEASURED_SUMMARY
+- **Measured on the owner's Mac** with the 27-billion-parameter model he already runs: it picks out
+  19 of 23 hand-labelled requests with 2 false; asking Git about every request lists 8 old ones of
+  which only 3 were really not done, but asking only about requests for a code change lists 4, 3
+  of them right. A 4-billion model: MINIMUM_MODEL. So slice 1 asks Git only about those.
 - **Why Atlas.** The agent cannot judge this itself: the request it lost is no longer in its
   context, and its own summary says it is done. Git can judge it, from outside the conversation.
   Atlas already reads this repository's sessions and Git side by side in Workshop, keeps a model
@@ -34,9 +37,10 @@ decisions: [RECORD_ID]
 **Words.** A *typed message* is defined in
 `docs/specs/2026-11-27-harness-self-improvement.md:38-41`; this spec also drops one that starts
 with `Here is a note offered by a side agent:`, text another program pastes in. A *request* is a
-typed message the model calls a task. The *base branch* is the one Workshop counts merges on. A
-request is *matched* when the model, shown the closest commits made after it, names one that does
-what was asked.
+typed message the model calls a task; a *code request* is one that asks for a lasting change to
+the product (a feature, fix, redesign or removal), as opposed to an action (merge, release, run,
+check, research, plan). The *base branch* is the one Workshop counts merges on. A request is
+*matched* when the model, shown the closest commits made after it, names one that does it.
 
 ## Person and moment
 
@@ -79,12 +83,28 @@ Read at `origin/main` `ea6698fdb4` and on the owner's Mac, 2026-11-27, by scratc
   checkout that was later removed; Git no longer lists it.
 - **How many requests get lost.** Hand-labelled samples of 50 typed messages (random, at least 20
   characters) and 45 more (at least 40 characters, before 2026-11-25): 23 of the 50 are tasks, 13
-  preferences, 9 questions, 5 not the person's words. Of 21 tasks whose result Git can show, 15
-  have a matching commit and 6 do not; 3 of those 6 were under a day old, the other 3 were 3 to 6
-  days old (a Git sign-in with a CI view, a time estimate for pull requests and CI, Moru talking in
-  speech bubbles). Many tasks cannot be judged by Git at all ("run it so I can see", "merge after
-  review").
-- **The model on this Mac:** MEASURED_TODAY
+  preferences, 9 questions, 5 not the person's words. Of 19 tasks whose result Git can show (2
+  more dropped as unclear once commit times were read in UTC), 13 have a matching commit and 6 do
+  not; 3 of those 6 were under a day old, the other 3 were 3 to 6 days old (a Git sign-in with a
+  CI view, a time estimate for pull requests and CI, Moru talking in speech bubbles), all three
+  code requests. Many tasks leave no commit by nature ("run it so I can see", "merge after
+  review"). One labeller; the owner has not checked the labels.
+- **The model on this Mac.** Ollama 0.40.17 serves `atlas-qwen3.8:27b` (27.8B parameters, nvfp4,
+  MLX), 18.2 to 18.7 GB resident in unified memory while loaded; Ollama's own processes held 214
+  MB besides. Other agents kept the load average at 25 to 95 throughout. Scripts and results:
+  the session scratchpad, not committed.
+  - *Sorting 54 messages*, runner at background priority: 434 s; median 2.4 s a message, p90
+    10.4 s, slowest 129.9 s; 306 prompt and 10.6 generated tokens a second; Ollama's CPU 36% of
+    one core on average, 170% at peak; GPU 32% on average. Kinds agree with the labels for 42 of
+    50; 19 of 23 tasks found, 2 false.
+  - *Judging done* for the 19, runner at normal priority: median 5.6 s, slowest 12.5 s; GPU 98%
+    on average, so a run takes the GPU whole while it lasts. Closest commits by word match: 9
+    old requests listed, 2 truly not done. By bge-m3 vectors of subject and body (2,413 commits
+    in 71.4 s): 8 listed, 3 truly not done, none missed. The same, asked only of code requests: 4
+    listed, 3 truly not done, none of the 3 missed.
+  - *Background priority on the runner* starved it: with Ollama's server at `PRIO_DARWIN_BG`, a
+    one-word vector request did not finish in 120 s, twice; back at normal priority it took 9 s.
+  - *A 4-billion model* (`qwen3:4b`, pulled for this measurement): MINIMUM_DETAIL
 
 **Unknown:** other people's rate of lost requests; how many tasks are done in a way no commit shows;
 Codex's session format on this Mac (not read).
@@ -221,16 +241,19 @@ Keys are in `messages/<locale>/missedRequests.json` (en, ko, ja, zh). The Englis
   text, a tool call, a tool result, a command or an environment value. First run: 14 days back.
   Later runs: from the byte where the last run stopped in each file; a file that shrank is reread.
 - **Runs.** The runner and model chosen in Agents › Models, only when its host is loopback by the
-  rule in `src-tauri/src/llm/local_endpoint.rs:47-57`; plain `http` only. One request at a time, the
-  message quoted as data, `temperature` 0, answer as JSON: kind, the work asked for in English (for
-  finding commits) and in the message's language (for `detail.readAs`). Commits are found by word
-  match of the English ask against subjects on the base branch made after the message, 14 days at
-  most, then the top 12 go to the model with the message; it answers done, not done or unclear,
-  and a commit id. Only not done is listed; unclear is not. Local branches not merged into the base
-  get the same check, and a match there moves the request to `list.onBranch`.
+  rule in `src-tauri/src/llm/local_endpoint.rs:47-57`; plain `http` only. One message at a time,
+  quoted as data, `temperature` 0, answer as JSON: kind (code request, action, question,
+  preference, other) and the work asked for in the message's language (for `detail.readAs`). For
+  a code request only, the built-in bge-m3 (Search by meaning's model) finds the 15 commits whose
+  subject and first 300 characters of body are closest to the message, among commits on the base
+  branch in the 7 days after it; the model, shown those and the message, answers done, not done
+  or unclear and a commit id. Only not done is listed. Local branches not merged into the base get
+  the same check, and a match there moves the request to `list.onBranch`. Without the built-in
+  model prepared, the stage offers Search by meaning's own preparing step first.
 - **Gentle.** Atlas's own reading runs at background priority (macOS `PRIO_DARWIN_BG`; Windows
-  background mode). Atlas never changes the priority of the runner, another program that may serve
-  other work. Atlas checks input idle time and power before each message.
+  background mode). Atlas never changes the runner's priority: it is another program, and at
+  background priority it starved (Today). Since a run takes the GPU whole, gentleness is timing:
+  Atlas checks input idle time and power before each message and runs only while both hold.
 - **Kept.** In Atlas's app data, one folder per repository named by the SHA-256 of its real path,
   mode 0700: each request's message, times, ids, the model's answer, the commits shown and the
   verdict (rebuildable from session files, Git and the model), and the person's marks with their
