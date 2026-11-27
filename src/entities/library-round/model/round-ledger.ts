@@ -101,6 +101,15 @@ export interface RecheckRecord {
   undone?: string[];
 }
 
+/** Documents of the recheck run `runId` that a later undo line put back. */
+export function recheckUndonePaths(entries: readonly RoundPassEntry[], runId: string): Set<string> {
+  const paths = new Set<string>();
+  for (const entry of entries) {
+    if (entry.recheck?.undoOf === runId) for (const path of entry.recheck.undone ?? []) paths.add(path);
+  }
+  return paths;
+}
+
 const RECHECK_OUTCOMES: readonly RecheckConceptOutcome[] = ['accurate', 'outdated', 'left'];
 const RECHECK_LEFT_REASONS: readonly RecheckLeftReason[] = ['no-answer', 'changed-meanwhile', 'refused-path', 'cut-unread', 'cannot-tell'];
 const RECHECK_HOLDS: readonly RecheckHoldReason[] = ['git', 'branch', 'refused'];

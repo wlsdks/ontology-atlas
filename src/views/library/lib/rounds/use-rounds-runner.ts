@@ -17,6 +17,7 @@ import {
   isOntologyRoundKind,
   isRoundDue,
   nextDueAt,
+  recheckUndonePaths,
   roundFingerprint,
   roundPlaceLabels,
   roundPlaces,
@@ -89,7 +90,6 @@ import {
   buildRecheckUndoEntry,
   recheckUndoMessage,
   runRecheckPass,
-  undonePaths,
 } from "./recheck-pass";
 import { buildFailedPassEntry, buildFinishedPassEntry, buildRevisedPagesLogLine, type PassEntryStart } from "./round-pass-entry";
 import { useGuardedAcpRuntime } from "./use-guarded-acp-runtime";
@@ -145,6 +145,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
   const [running, setRunning] = useState<RoundsRunnerValue['running']>(null);
   const [lastTickAt, setLastTickAt] = useState<string | null>(null);
   const [revision, setRevision] = useState(0);
+  const [inRepository, setInRepository] = useState<boolean | null>(null);
 
   const stateRef = useRef<RoundState | null>(null);
   const runningRef = useRef<RoundsRunnerValue['running']>(null);
@@ -164,7 +165,12 @@ export function useRoundsRunner(): RoundsRunnerValue {
       setEntries([]);
       return;
     }
-    const [read, lines] = await Promise.all([store.read(), ledger.read().catch(() => [] as RoundPassEntry[])]);
+    const [read, lines, git] = await Promise.all([
+      store.read(),
+      ledger.read().catch(() => [] as RoundPassEntry[]),
+      rootPath ? gitRecheckState(rootPath).catch(() => null) : Promise.resolve(null),
+    ]);
+    setInRepository(git ? git.repository : null);
     const now = new Date();
     const rounds = await reconcileRoundDueTimes(read.state.rounds, heldDueRef.current, store, now);
     const current: RoundState = { ...read.state, rounds };
@@ -173,7 +179,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
     stateRef.current = current;
     setEntries(lines);
     setRevision((value) => value + 1);
-  }, [ledger, store]);
+  }, [ledger, rootPath, store]);
 
   useEffect(() => {
     void (async () => {
@@ -762,7 +768,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
     const run = entriesRef.current.find((entry) => entry.id === runId);
     const runCommit = run?.recheck?.commit;
     if (!run || !runCommit) return null;
-    const done = undonePaths(entriesRef.current, runId);
+    const done = recheckUndonePaths(entriesRef.current, runId);
     const wanted = paths ? new Set(paths) : null;
     const chosen = run.recheck!.concepts.filter((concept) =>
       concept.outcome === "accurate" && !done.has(concept.path) && (!wanted || wanted.has(concept.path)));
@@ -817,6 +823,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
     agentLabel: runtime?.label ?? null,
     connectors: connectorRows,
     lastTickAt,
+    inRepository,
     revision,
     notAllowedHere,
     changedSinceAllowed,

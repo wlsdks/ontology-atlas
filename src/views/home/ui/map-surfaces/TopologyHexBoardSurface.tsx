@@ -7,7 +7,7 @@ import { type MapNavigationSpeed } from "@/shared/lib/preferences/map-navigation
 import { useHexRelief, writeHexRelief } from "@/shared/lib/preferences/map-view-preferences";
 import { OntologyHexBoardMap, type HexBoardLabels, type HexPlacementRecord, type OntologyMapEdge, type OntologyMapNode } from "@/widgets/ontology-map";
 import { readHexPlacement, writeHexPlacement } from "../../model/map-canvas/hex-board-placement-store";
-import { useMapEvidenceStates, type MapEvidence, type MapEvidenceAvailability } from "@/features/vault-ontology";
+import { useMapEvidenceStates, useRecheckedConcepts, type MapEvidence, type MapEvidenceAvailability } from "@/features/vault-ontology";
 
 const HEX_SWATCH = "15,7 11.5,13 4.5,13 1,7 4.5,1 11.5,1";
 
@@ -78,6 +78,12 @@ export function TopologyHexBoardSurface({
   const countOf = (state: "stale" | "unknown") =>
     measured ? nodes.filter((n) => n.kind === "capability" && (evidence.states.get(n.id) ?? "unknown") === state).length : 0;
   const staleTotal = countOf("stale");
+  const capabilityIds = useMemo(() => new Set(nodes.filter((n) => n.kind === "capability").map((n) => n.id)), [nodes]);
+  const isCurrentCapability = useCallback(
+    (id: string) => measured && capabilityIds.has(id) && evidence.states.get(id) === "current",
+    [capabilityIds, evidence.states, measured],
+  );
+  const rechecked = useRecheckedConcepts({ nodes: insightNodes, current: isCurrentCapability }).size;
   const unknownTotal = countOf("unknown");
   const note: Record<MapEvidenceAvailability, string> = {
     measured: t("evidenceMeasured", { stale: staleTotal, total: capabilityCount }),
@@ -157,6 +163,11 @@ export function TopologyHexBoardSurface({
       <span data-testid="hex-board-evidence-note" className="text-center text-[color:var(--map-panel-text-tertiary)]">
         {note[evidence.availability]}
       </span>
+      {measured && rechecked > 0 ? (
+        <span data-testid="hex-board-evidence-checked" className="text-center text-[color:var(--map-panel-text-tertiary)]">
+          {t("evidenceChecked", { count: rechecked })}
+        </span>
+      ) : null}
     </div>
   );
 

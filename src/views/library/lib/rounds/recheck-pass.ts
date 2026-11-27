@@ -367,15 +367,6 @@ export function buildInterruptedRecheckEntry(input: {
   return entry;
 }
 
-/** Documents of `run` put back by a later undo line. */
-export function undonePaths(entries: readonly RoundPassEntry[], runId: string): Set<string> {
-  const paths = new Set<string>();
-  for (const entry of entries) {
-    if (entry.recheck?.undoOf === runId) for (const path of entry.recheck.undone ?? []) paths.add(path);
-  }
-  return paths;
-}
-
 export function recheckUndoMessage(slugs: readonly string[]): string {
   return [
     `docs: undo the recheck of ${slugs.length} ${slugs.length === 1 ? "concept" : "concepts"}`,

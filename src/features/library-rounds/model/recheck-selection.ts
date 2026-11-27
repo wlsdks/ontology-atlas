@@ -7,7 +7,7 @@ import type { RoundPassEntry } from '@/entities/library-round';
  */
 
 /** What a run sends at most: documents plus diffs. */
-export const RECHECK_MAX_SENT_BYTES = 200 * 1024;
+export const RECHECK_MAX_SENT_BYTES = 200_000;
 /** A cited file's diff is cut after this many lines. */
 export const RECHECK_DIFF_MAX_LINES = 400;
 

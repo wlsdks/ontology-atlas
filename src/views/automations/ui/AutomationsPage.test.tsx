@@ -44,6 +44,7 @@ function runner(overrides: Partial<RoundsRunnerValue> = {}): RoundsRunnerValue {
     setEnabled: vi.fn(async () => true),
     runNow: vi.fn(),
     undoRecheck: vi.fn(async () => null),
+    inRepository: true,
     refresh: vi.fn(async () => undefined),
     ...overrides,
   };

@@ -28,6 +28,8 @@ export interface RoundsRunnerValue {
   /** `enabled` is whether it would attach on this Mac, so the sheet offers only what a pass can reach. */
   connectors: { id: string; name: string; enabled: boolean }[];
   lastTickAt: string | null;
+  /** Whether the open folder sits in a Git repository, which a recheck needs; `null` until known. */
+  inRepository: boolean | null;
   /** Bumps on every ledger or state write, so a screen can re-read without a folder watcher. */
   revision: number;
   /** None of these runs here, by the clock or by "Run now", whatever the folder's switch says. */

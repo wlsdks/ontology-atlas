@@ -4,7 +4,7 @@ import { useId, useState, type ReactNode } from 'react';
 import { FileText } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import type { RoundPassEntry } from '@/entities/library-round';
-import { type RoundUnrecorded, undoneReasonKey } from '@/features/library-rounds';
+import { type RoundUnrecorded, type RoundsRunnerValue, undoneReasonKey } from '@/features/library-rounds';
 import { Link } from '@/i18n/navigation';
 import { DESTINATION_HREF } from '@/shared/config/destinations';
 import { cn } from '@/shared/lib/cn';
@@ -15,6 +15,7 @@ import { LANDED, useLandOnce } from '@/widgets/round-ledger';
 import { runsNewestFirst } from '../model/run-order';
 import { automationDate } from './automation-date';
 import listStyles from './automation-list-frame.module.css';
+import { RecheckResults, RecheckRunLines, useRecheckLead } from './RecheckRunDetails';
 
 export const WARNING_INK = 'text-[color:var(--color-amber-source-a90)]';
 
@@ -26,10 +27,21 @@ interface RunLead {
   warning: boolean;
 }
 
+/** A run's outcome word; a recheck names its own. */
+export function useOutcomeLabel(): (outcome: RoundPassEntry['outcome']) => string {
+  const t = useTranslations('automations');
+  return (outcome) => (outcome === 'rechecked' ? t('recheck.outcome') : t(`outcome.${outcome}`));
+}
+
 export function useRunLead(): (entry: RoundPassEntry) => RunLead & { undone: string | null; noteText: string | null } {
   const t = useTranslations('automations');
   const ledgerText = useTranslations('library.rounds.ledger');
+  const recheckLead = useRecheckLead();
   return (entry) => {
+    if (entry.recheck) {
+      const lead = recheckLead(entry, entry.recheck);
+      return { text: lead.text, note: null, warning: lead.warning, undone: null, noteText: null };
+    }
     const noteText = entry.note === 'no-agent'
       ? entry.kind === 'ontology' ? t('noAgentReview') : ledgerText('noAgent')
       : entry.note === 'stopped' ? t('runStopped') : null;
@@ -79,10 +91,13 @@ export function AutomationHistoryHeading({ name, onShowAll }: { name: string | n
   </div>;
 }
 
-export function AutomationRunHistory({ entries, named, landedRunId = null }: {
+export function AutomationRunHistory({ entries, named, landedRunId = null, ledger = entries, onUndoRecheck }: {
   entries: readonly RoundPassEntry[];
   named: boolean;
   landedRunId?: string | null;
+  /** The whole ledger, where a recheck run finds the lines that undid it. */
+  ledger?: readonly RoundPassEntry[];
+  onUndoRecheck?: RoundsRunnerValue['undoRecheck'];
 }) {
   const t = useTranslations('automations');
   const recent = runsNewestFirst(entries.filter((entry) => entry.outcome !== 'asleep'));
@@ -95,7 +110,7 @@ export function AutomationRunHistory({ entries, named, landedRunId = null }: {
     <div className="flex flex-col gap-2">
       <ol data-testid="automations-history" className="divide-y divide-[color:var(--color-divider)] border-y border-[color:var(--color-divider)]">
         {recent.slice(0, shown).map((entry, index) => <RunEntry key={entry.id} entry={entry} named={named} latest={index === 0}
-          landOn={entry.id === landedRunId ? landOn : null} />)}
+          landOn={entry.id === landedRunId ? landOn : null} ledger={ledger} onUndoRecheck={onUndoRecheck} />)}
       </ol>
       {more > 0 ? <div>
         <button type="button" onClick={() => setShown((count) => count + RUNS_PER_PAGE)} data-testid="automations-history-more"
@@ -107,14 +122,17 @@ export function AutomationRunHistory({ entries, named, landedRunId = null }: {
   );
 }
 
-function RunEntry({ entry, named, latest, landOn }: {
+function RunEntry({ entry, named, latest, landOn, ledger, onUndoRecheck }: {
   entry: RoundPassEntry;
   named: boolean;
   latest: boolean;
   landOn: ((element: HTMLElement | null) => void) | null;
+  ledger: readonly RoundPassEntry[];
+  onUndoRecheck?: RoundsRunnerValue['undoRecheck'];
 }) {
   const t = useTranslations('automations');
   const locale = useLocale();
+  const outcomeLabel = useOutcomeLabel();
   const lead = useRunLead()(entry);
   const [toolsOpen, setToolsOpen] = useState(false);
   const toolsTitleId = useId();
@@ -124,10 +142,12 @@ function RunEntry({ entry, named, latest, landOn }: {
       tabIndex={landOn ? -1 : undefined} data-landed={landOn ? '' : undefined} className={cn('py-4', landOn && cn(LANDED, '-mx-3 px-3'))}>
       <div className="mb-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
         {named && entry.roundName ? <span className="min-w-0 truncate text-body font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{entry.roundName}</span> : null}
-        <span className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)]">{t(`outcome.${entry.outcome}`)}</span>
+        <span className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)]">{outcomeLabel(entry.outcome)}</span>
         <time dateTime={entry.endedAt} className="text-label text-[color:var(--color-text-tertiary)]">{automationDate(locale, entry.endedAt)}</time>
       </div>
       <p data-run-note={lead.note ?? undefined} className={cn('break-words text-body', lead.warning ? WARNING_INK : 'text-[color:var(--color-text-secondary)]')}>{lead.text}</p>
+      {entry.recheck ? <RecheckRunLines recheck={entry.recheck} /> : null}
+      {entry.recheck && onUndoRecheck ? <RecheckResults entry={entry} recheck={entry.recheck} ledger={ledger} onUndo={onUndoRecheck} /> : null}
       {entry.leftAsIs?.length ? <p data-testid="automations-left-as-is" className="mt-2 break-words text-body text-[color:var(--color-text-tertiary)]">
         {entry.leftAsIs.map((page) => t('leftAsIs', { page })).join(' ')}
       </p> : null}
