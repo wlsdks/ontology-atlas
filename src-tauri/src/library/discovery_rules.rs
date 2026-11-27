@@ -199,6 +199,16 @@ pub(crate) fn is_markdown_name(name: &str) -> bool {
     DISCOVERY_MARKDOWN_EXTENSIONS.contains(&lower_extension(&name.to_ascii_lowercase()).as_str())
 }
 
+/// A bound code root's Markdown is developer documentation and its HTML a page or template
+/// the code serves; only the open folder offers either.
+const DISCOVERY_CODE_ROOT_PAGE_EXTENSIONS: &[&str] = &["html", "htm"];
+
+pub(crate) fn offered_only_from_open_folder(name: &str) -> bool {
+    is_markdown_name(name)
+        || DISCOVERY_CODE_ROOT_PAGE_EXTENSIONS
+            .contains(&lower_extension(&name.to_ascii_lowercase()).as_str())
+}
+
 fn names_a_repository_guide(lowered: &str) -> bool {
     let extension = lower_extension(lowered);
     if !DISCOVERY_MARKDOWN_EXTENSIONS.contains(&extension.as_str()) {
