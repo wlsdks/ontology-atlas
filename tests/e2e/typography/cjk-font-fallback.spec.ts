@@ -1,4 +1,5 @@
 import { expect, test, type CDPSession } from '@playwright/test';
+import { installDesktopRailRuntime } from '../desktop-rail-arrival-harness';
 
 const PROBES = [
   { lang: 'ja', text: 'Atlas 0123', expectPretendard: true },
@@ -18,6 +19,7 @@ async function platformFonts(cdp: CDPSession, selector: string): Promise<string[
 test.describe('CJK font fallback', () => {
   for (const probe of PROBES) {
     test(`${probe.lang}: "${probe.text}" ${probe.expectPretendard ? 'keeps' : 'leaves'} Pretendard`, async ({ page }) => {
+      await installDesktopRailRuntime(page);
       await page.goto('/en/');
       await page.evaluate(async () => {
         await document.fonts.ready;

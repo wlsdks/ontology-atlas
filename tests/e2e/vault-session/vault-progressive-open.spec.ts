@@ -2,9 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 import type { AtlasMapProbe } from "../atlas-map-probe";
 import { installDesktopRailRuntime } from "../desktop-rail-arrival-harness";
-import { seedFirstRunSeen } from "../first-run-seed";
 import { waitForMapStill } from "../settle";
-import { stubDirectoryPicker, writeFolderBeforePick } from "../vault-picker-stub";
 
 const DOMAINS = 50;
 const CAPABILITIES = 200;
@@ -171,31 +169,6 @@ test("a 2,000-document vault draws its overview while it is still being read, an
   );
   expect(reads.filter((command) => command === "read_vault_text_file"), "a batch fell back to single reads").toEqual([]);
   expect(reads.filter((command) => command === "read_vault_text_files").length).toBeGreaterThan(0);
-});
-
-test("on the web, a folder that is still arriving reaches the map and no other reader", async ({ page }) => {
-  test.setTimeout(120_000);
-  await seedFirstRunSeen(page);
-  await stubDirectoryPicker(page, {});
-  await page.goto("/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
-  await writeFolderBeforePick(page, generatedVault());
-  await page.waitForFunction(() => "__atlasMap" in window);
-  await page.getByTestId("topology-switch-to-my-data").click();
-
-  const arriving = await page.waitForFunction(
-    () => {
-      const reading = document.querySelector("[data-vault-load-progress]")?.getAttribute("data-vault-load-progress");
-      const drawn = (window as unknown as ArrivalWindow).__atlasMap?.nodes().some((node) => node.id === "domain:d-00000");
-      if (!reading || !drawn) return null;
-      return { reading, mode: (window as unknown as { __ohMyOntologyMode?: string }).__ohMyOntologyMode };
-    },
-    undefined,
-    { timeout: 60_000 },
-  );
-  expect((await arriving.jsonValue())?.mode).toBe("static");
-
-  await expect(page.locator("[data-vault-load-progress]")).toHaveCount(0, { timeout: 60_000 });
-  await expect.poll(() => page.evaluate(() => (window as unknown as { __ohMyOntologyMode?: string }).__ohMyOntologyMode)).toBe("local");
 });
 
 test("a large folder of wiki pages that arrives in parts reaches the Library without drawing the map", async ({ page }) => {

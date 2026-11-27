@@ -88,7 +88,6 @@
     "tests/e2e/map/transient-surface-contract.spec.ts",
     "tests/e2e/map/tree/map-tree.spec.ts",
     "tests/e2e/moru-companion.spec.ts",
-    "tests/e2e/planning/home-folder.spec.ts",
     "tests/e2e/projects/change-briefing.spec.ts",
     "tests/e2e/projects/project-brief-page.spec.ts",
     "tests/e2e/projects/project-composition-width.spec.ts",
@@ -99,19 +98,6 @@
     "tests/e2e/projects/user-journey-a.spec.ts",
     "tests/e2e/settings/clear-all-concepts.spec.ts",
     "tests/e2e/settings/settings-text-size.spec.ts",
-    "tests/e2e/settings/text-zoom-layout.spec.ts",
-    "tests/e2e/typography/cjk-font-fallback.spec.ts",
-    "tests/e2e/typography/cjk-locale-sweep.spec.ts",
-    "tests/e2e/vault-session/folder-chooser-layout.spec.ts",
-    "tests/e2e/vault-session/local-vault-picker.spec.ts",
-    "tests/e2e/vault-session/local-vault-route-identity.spec.ts",
-    "tests/e2e/vault-session/open-vault-cta.spec.ts",
-    "tests/e2e/vault-session/retired-game-storage.spec.ts",
-    "tests/e2e/vault-session/vault-launch-chooser.spec.ts",
-    "tests/e2e/vault-session/vault-progressive-open.spec.ts",
-    "tests/e2e/vault-session/vault-reflect-loop.spec.ts",
-    "tests/e2e/vault-session/vault-start-recovery.spec.ts",
-    "tests/e2e/vault-session/vault-switch-release.spec.ts",
-    "tests/e2e/vault-session/vault-truth-telling.spec.ts"
+    "tests/e2e/settings/text-zoom-layout.spec.ts"
   ]
 }

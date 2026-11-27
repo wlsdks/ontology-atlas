@@ -1,14 +1,12 @@
 import { expect, test } from '@playwright/test';
-import { seedFirstRunSeen } from '../first-run-seed';
-import { stubDirectoryPicker } from '../vault-picker-stub';
+import { installDesktopRailRuntime } from '../desktop-rail-arrival-harness';
 
 for (const populated of [false, true]) {
   test(`folder entry leaves retired personal saves untouched (${populated ? 'existing' : 'absent'})`, async ({ page }) => {
-    await seedFirstRunSeen(page);
-    await stubDirectoryPicker(page, {
+    await installDesktopRailRuntime(page, {
       'project.md': '---\nuid: 11111111-1111-4111-8111-111111111111\nslug: project\nkind: project\ntitle: Retirement fixture\ncontains:\n  - capabilities/pay\n---\n',
       'capabilities/pay.md': '---\nuid: 22222222-2222-4222-8222-222222222222\nslug: capabilities/pay\nkind: capability\ntitle: Pay\n---\n',
-    });
+    }, undefined, { replaceFixture: true });
     await page.addInitScript((hasSaves) => {
       const entries: Record<string, string> = {
         'ontology-atlas:companion-journal:v1': '{invalid json',
@@ -30,8 +28,8 @@ for (const populated of [false, true]) {
       Storage.prototype.clear = function () { calls.push('clear'); return clear.call(this); };
       Object.assign(window, { retiredSaveProbe: () => ({ calls, values: Object.fromEntries(Object.keys(entries).map(key => [key, original.call(localStorage, key)])), expected: Object.fromEntries(Object.entries(entries).map(([key, value]) => [key, hasSaves ? value : null])) }) });
     }, populated);
-    await page.goto('/en/topology/?e2e=1&guides=off&index=collapsed');
-    await page.getByTestId('topology-switch-to-my-data').click();
+    await page.goto('/en/?e2e=1&guides=off');
+    await page.getByTestId('first-run-open').click();
     await expect(page.getByTestId('ontology-map-canvas')).toBeVisible();
     await expect(page.getByTestId('companion-trigger')).toHaveCount(0);
     await expect(page.getByTestId('companion-home')).toHaveCount(0);
@@ -50,13 +48,8 @@ for (const populated of [false, true]) {
 }
 
 test('first-run folder entry has no personal-game door', async ({ page }) => {
-  await page.addInitScript(() => {
-    Object.assign(window, { isTauri: true, __TAURI_INTERNALS__: {
-      transformCallback: () => 0,
-      invoke: async () => { throw new Error('Native operations unavailable in first-run fixture'); },
-    } });
-  });
-  await page.goto('/en/?shell=desktop&guides=off');
+  await installDesktopRailRuntime(page);
+  await page.goto('/en/?guides=off');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await expect(page.getByTestId('companion-home')).toHaveCount(0);
   await expect(page.getByTestId('companion-trigger')).toHaveCount(0);

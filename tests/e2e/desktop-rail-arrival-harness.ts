@@ -43,8 +43,10 @@ import { dogfoodVaultFiles } from "./map/dogfood-vault-files";
  * in the same tab: changes are laid over the seed from this tab's sessionStorage, so the seed
  * never overwrites them. Tests write and read the same store: `writeDesktopFile`,
  * `readDesktopFile`, `readDesktopBytes`, `removeDesktopFile`, `renameDesktopFile`,
- * `listDesktopFiles`; a write after the page opened changes `vault_fingerprint`, which is how the
- * app notices an outside edit. `refuseDesktopWrites` makes matching writes fail.
+ * `listDesktopFiles`; a write after the page opened changes `vault_fingerprint` and sends the
+ * app's `vault-changed` event, which is how the app notices an outside edit.
+ * `refuseDesktopWrites` makes matching writes fail. `options.binaryFiles` seeds files that hold
+ * bytes: an image, or a `.md` that is not UTF-8, which a text read refuses as the disk does.
  *
  * Source pickers: `chooseSourceFolder` answers `pick_source_directory`, `chooseSourceFiles`
  * answers `pick_source_files`; `import_source_files` then copies from `externalFiles` into
@@ -180,6 +182,11 @@ export interface DesktopRuntimeOptions {
    * `import_source_files` to offer and copy. A value is text, or `{ bytes }` for a binary file.
    */
   externalFiles?: Record<string, string | { bytes: number[] }>;
+  /**
+   * Files of the default folder that hold bytes, not text, by vault-relative path: an image, or a
+   * `.md` that is not UTF-8, which `read_vault_text_file` refuses as the disk does.
+   */
+  binaryFiles?: Record<string, number[]>;
   /** Answers of `pick_source_directory` (a path, or `null` cancelled) and `pick_source_files`. */
   sourcePick?: { folder?: string | null; files?: string[] };
   /** The answer to `ensure_default_vault_parent_dir` ("Just start"). Unstubbed without it. */
@@ -232,6 +239,7 @@ export async function installDesktopRailRuntime(
       ungrantedFolders?: string[];
       vaultPick: string | null;
       externalFiles?: Record<string, string | { bytes: number[] }>;
+      binaryFiles?: Record<string, number[]>;
       sourcePick?: { folder?: string | null; files?: string[] };
       defaultVaultParent?: string;
       holdReadsUntilReleased?: string[];
@@ -258,7 +266,7 @@ export async function installDesktopRailRuntime(
         binaries: Record<string, number[]>;
         dirs: Set<string>;
       }
-      const folders = new Map<string, Folder>([[root, { files, binaries: {}, dirs: new Set() }]]);
+      const folders = new Map<string, Folder>([[root, { files, binaries: { ...(input.binaryFiles ?? {}) }, dirs: new Set() }]]);
       for (const [folderRoot, seed] of Object.entries(input.folders ?? {})) {
         if (folderRoot === root) Object.assign(files, seed);
         else folders.set(folderRoot, { files: { ...seed }, binaries: {}, dirs: new Set() });
@@ -654,6 +662,8 @@ export async function installDesktopRailRuntime(
           case "list_vault_directory": {
             if (!target) return gone();
             const directory = relative(args.relativePath);
+            // A folder that is gone cannot be listed; a writable fake answers as the disk does.
+            if (persist && !isDirectory(target, directory)) return Promise.reject(enoent(directory));
             const prefix = directory ? `${directory}/` : "";
             const entries = new Map<string, "file" | "directory">();
             for (const file of [...Object.keys(target.files), ...Object.keys(target.binaries), ...target.dirs]) {
@@ -686,9 +696,12 @@ export async function installDesktopRailRuntime(
                   asked.map((relativePath) => {
                     const path = relative(relativePath);
                     const text = path in target.files ? target.files[path] : path in target.binaries ? decodeText(target.binaries[path]) : null;
-                    return text !== null
-                      ? { relativePath, text, error: null }
-                      : { relativePath, text: null, error: `missing ${path}` };
+                    if (text !== null) return { relativePath, text, error: null };
+                    return {
+                      relativePath,
+                      text: null,
+                      error: path in target.binaries ? "stream did not contain valid UTF-8" : `missing ${path}`,
+                    };
                   }),
                 ),
               ),
@@ -985,6 +998,7 @@ export async function installDesktopRailRuntime(
       ungrantedFolders: options.ungrantedFolders ? [...options.ungrantedFolders] : undefined,
       vaultPick: options.vaultPick === undefined ? DESKTOP_VAULT_ROOT : options.vaultPick,
       externalFiles: options.externalFiles,
+      binaryFiles: options.binaryFiles,
       sourcePick: options.sourcePick,
       defaultVaultParent: options.defaultVaultParent,
       holdReadsUntilReleased: options.holdReadsUntilReleased ? [...options.holdReadsUntilReleased] : undefined,
@@ -996,8 +1010,8 @@ export async function installDesktopRailRuntime(
  * Opens the installed-app entry point and mounts the fixture vault through the native picker,
  * leaving the rail on screen with a settled workbench.
  */
-export async function mountDesktopVault(page: Page): Promise<void> {
-  await page.goto("/en/?guides=off");
+export async function mountDesktopVault(page: Page, locale: string = "en"): Promise<void> {
+  await page.goto(`/${locale}/?guides=off`);
   await page.waitForLoadState("networkidle");
   await page.getByTestId("first-run-open").click();
   await page.getByTestId("app-nav-rail").waitFor({ timeout: 60_000 });
