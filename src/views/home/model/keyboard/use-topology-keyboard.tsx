@@ -9,7 +9,7 @@ import type { useTopologyRouteControls } from "../route-state/use-topology-route
 import type { useHomeWorkbenchController } from "../use-home-workbench-controller";
 
 import { type ProjectImpactMode } from "@/entities/project";
-import { useFirstRunSampleModeSettled } from "@/features/first-run-starter";
+import { useFirstRunNoFolderSettled } from "@/features/first-run-starter";
 import { useClaimShellKey } from "@/shared/lib/keyboard/shell-key-claims";
 import { useFlatMapView } from "@/shared/lib/preferences/map-view-preferences";
 import { useTypingShortcuts } from "@/shared/lib/keyboard/use-typing-shortcut";
@@ -30,7 +30,7 @@ interface Options {
   localGraphRoot: string | null;
   setLocalGraphStack: React.Dispatch<React.SetStateAction<string[]>>;
   setRouteState: (updater: Partial<import("@/views/home/model/route-state/url-state").HomeRouteState> | ((current: import("@/views/home/model/route-state/url-state").HomeRouteState) => import("@/views/home/model/route-state/url-state").HomeRouteState), options?: import("@/views/home/model/route-state/use-home-route-state").HomeRouteStateUpdateOptions | undefined) => void;
-  sampleModeSettled: ReturnType<typeof useFirstRunSampleModeSettled>;
+  noFolderSettled: ReturnType<typeof useFirstRunNoFolderSettled>;
   requestVaultOpen: () => void;
   topologyAgentOrchestration: Pick<ReturnType<typeof useTopologyAgentOrchestration>, "agentDockOpen" | "closeVaultAgent">;
   homeWorkbenchController: Pick<ReturnType<typeof useHomeWorkbenchController>, "workbenchOpenRef">;
@@ -64,7 +64,7 @@ interface Options {
 }
 export function useTopologyKeyboard({
   setOntologySearchOpen, setShortcutsOpen, setDocsDrawerOpen, ontologySearchOpen,
-  localGraphRoot, setLocalGraphStack, setRouteState, sampleModeSettled, requestVaultOpen,
+  localGraphRoot, setLocalGraphStack, setRouteState, noFolderSettled, requestVaultOpen,
   topologyGraphProjection, topologyNavigationActions, topologyAuthoring, topologyCanvasFocus,
   topologyInspectorState, topologyRouteControls, topologyExplorationLenses, topologyAgentOrchestration,
   homeWorkbenchController
@@ -242,7 +242,7 @@ export function useTopologyKeyboard({
       combo: { key: "o", meta: true },
       onFire: () => {
         if (shortcutsSuppressed) return;
-        if (!sampleModeSettled) return;
+        if (!noFolderSettled) return;
         requestVaultOpen();
       },
     },

@@ -58,8 +58,8 @@ interface TopologyCommandChromeProps {
   handleFootprintLens: (active: boolean) => void;
   handleFootprintBrush: (id: string | null) => void;
   agentDockTouchedRef: React.RefObject<boolean>;
-  sampleModeSettled: boolean;
-  sampleModeKnown: boolean;
+  noFolderSettled: boolean;
+  restoreKnown: boolean;
   requestVaultOpen: () => void;
   topologyAgentActivity: Pick<ReturnType<typeof useTopologyAgentActivity>, "acpLiveWork">;
   homeWorkbenchController: Pick<ReturnType<typeof useHomeWorkbenchController>, "meaningWorkbenchOpen" | "toggleMeaningWorkbench">;
@@ -119,7 +119,7 @@ export function TopologyCommandChrome({
   routeState, setRouteState, setVaultAgentPrefill, setOntologySearchOpen, setTopologyRelayoutToken, toast,
   expandAllActive, analysisMode, footprintTrailEntries,
   footprintTrailStepCaptions, footprintPacketCopied, copyFootprintPacket, clearFootprintTrail,
-  handleFootprintLens, handleFootprintBrush, agentDockTouchedRef, sampleModeSettled, sampleModeKnown, requestVaultOpen,
+  handleFootprintLens, handleFootprintBrush, agentDockTouchedRef, noFolderSettled, restoreKnown, requestVaultOpen,
   topologyPreferences, topologyInspectorState, topologyAuthoring, topologyCanvasFocus,
   topologyVaultReadModel, topologyGraphProjection, topologyAgentOrchestration, topologySceneControls,
   topologyRouteControls, topologyNavigationActions, homeWorkbenchController, topologyAgentActivity,
@@ -234,7 +234,7 @@ export function TopologyCommandChrome({
               data-testid="topology-mobile-settings"
             >
               <AppSettingsMenu
-                mode={vault.status === 'loaded' ? 'local' : 'static'}
+                mode={vault.status === 'loaded' ? 'local' : 'no-folder'}
                 triggerVariant="chrome-tile"
                 screenControls={{
                   indexCollapsed: indexPanelCollapsedStored,
@@ -406,10 +406,10 @@ export function TopologyCommandChrome({
               ) : undefined
             }
           />
-          <div data-toolbar-right-column className={cn("flex shrink-0 flex-col items-end gap-4 transition-none xl:ml-auto", !sampleModeKnown && "invisible")}>
+          <div data-toolbar-right-column className={cn("flex shrink-0 flex-col items-end gap-4 transition-none xl:ml-auto", !restoreKnown && "invisible")}>
               <div
                 inert={inspectorOwnsRightRail}
-                className={`${rightChromeMotion(sampleModeKnown ? "topology-chrome-in" : "")} shrink-0 flex-col items-end gap-2 xl:ml-auto ${renderedIndexState === "expanded" ? "hidden md:flex" : "flex"}`}
+                className={`${rightChromeMotion(restoreKnown ? "topology-chrome-in" : "")} shrink-0 flex-col items-end gap-2 xl:ml-auto ${renderedIndexState === "expanded" ? "hidden md:flex" : "flex"}`}
                 data-phone-sheet-utility-contract={
                   renderedIndexState === "expanded"
                     ? "hidden-below-md-while-index-sheet-owns-surface"
@@ -473,7 +473,7 @@ export function TopologyCommandChrome({
                       </ChromeChip>
                     </Tooltip>
                   ) : null}
-                  {sampleModeSettled ? (
+                  {noFolderSettled ? (
                     <Tooltip content={t('controls.switchToMyDataTooltip')} side="bottom" withProvider={false}>
                       <ChromeChip
                         onClick={requestVaultOpen}
@@ -598,7 +598,7 @@ export function TopologyCommandChrome({
                   )}
                   <div className="lg:hidden">
                     <AppSettingsMenu
-                      mode={vault.status === 'loaded' ? 'local' : 'static'}
+                      mode={vault.status === 'loaded' ? 'local' : 'no-folder'}
                       triggerVariant="chrome-tile"
                       screenControls={{
                         indexCollapsed: indexPanelCollapsedStored,

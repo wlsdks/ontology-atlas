@@ -5,10 +5,8 @@ export const RECENT_DOCS_STORAGE_PREFIX = 'demo:docs-vault:recent:v2:';
 const STORAGE_PREFIX = RECENT_DOCS_STORAGE_PREFIX;
 const MAX_RECENTS = 5;
 
-/**
- * Vault namespace key: 'server' or 'local:{folder name}'. Folders with the same name share a key.
- */
-export type VaultRecentKey = 'server' | `local:${string}`;
+/** Vault namespace key: `local:{folder name}`. Folders with the same name share a key. */
+export type VaultRecentKey = `local:${string}`;
 
 function storageKey(key: VaultRecentKey): string {
   return `${STORAGE_PREFIX}${key}`;
@@ -42,29 +40,4 @@ export function pushRecentDoc(
     /* private mode — ignore */
   }
   return next;
-}
-
-export function migrateLegacyRecentDocs(): void {
-  if (typeof window === 'undefined') return;
-  const LEGACY = 'demo:docs-vault:recent:v1';
-  try {
-    const raw = window.localStorage.getItem(LEGACY);
-    if (!raw) return;
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) {
-      window.localStorage.removeItem(LEGACY);
-      return;
-    }
-    const slugs = parsed
-      .filter((x): x is string => typeof x === 'string')
-      .slice(0, MAX_RECENTS);
-    // The old single list belonged to the server vault; local vaults did not exist then.
-    const targetKey = storageKey('server');
-    if (!window.localStorage.getItem(targetKey) && slugs.length > 0) {
-      window.localStorage.setItem(targetKey, JSON.stringify(slugs));
-    }
-    window.localStorage.removeItem(LEGACY);
-  } catch {
-    /* ignore */
-  }
 }

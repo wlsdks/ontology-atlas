@@ -6,7 +6,7 @@ import koMessages from '../../../../messages/ko.json';
 import type { HarnessReport } from '@/entities/agent-files';
 
 const state = {
-  mode: 'local' as 'local' | 'static',
+  mode: 'local' as 'local' | 'no-folder',
   docs: [] as Array<{
     slug: string;
     title: string;

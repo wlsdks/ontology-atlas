@@ -13,7 +13,7 @@ import {
   type ArchitectureHandoffContext,
   type ArchitectureProfile,
 } from '@/entities/architecture-profile';
-import { useAgentServer, useDataSourceMode, useLocalVault } from '@/entities/vault-session';
+import { useAgentServer, useDataSourceMode, useLocalVault, useOpenFolderManifest } from '@/entities/vault-session';
 import { createVaultFileProjectSourceStore } from '@/shared/lib/project-source/project-source-store';
 import {
   type AcpTurnActivity,
@@ -56,7 +56,6 @@ const subscribeDesktopRuntime = () => () => undefined;
 const readServerDesktopRuntime = () => false;
 
 type VaultDoc = { slug: string; frontmatter: Record<string, unknown> };
-const EMPTY_DOCS: VaultDoc[] = [];
 const EMPTY_HANDOFF_CONTEXTS: Record<string, ArchitectureHandoffContext> = {};
 
 function projectSlugForProfile(profile: ArchitectureProfile, docs: ReadonlyArray<VaultDoc>) {
@@ -91,7 +90,7 @@ export function ArchitecturePage({
     isAcpBridgeAvailable,
     readServerDesktopRuntime,
   );
-  const docs = localVault.manifest?.docs ?? EMPTY_DOCS;
+  const docs = useOpenFolderManifest().docs;
   /* The report, not the list: an unreadable document is named instead of failing every profile. */
   const profileReport = useMemo(() => deriveArchitectureProfilesReport(docs), [docs]);
   const profiles = profileReport.profiles;

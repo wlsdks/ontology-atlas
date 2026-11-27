@@ -88,7 +88,7 @@ export function WorkspacePane({
   mode,
   onClose,
 }: {
-  mode: 'static' | 'local';
+  mode: 'no-folder' | 'local';
   onClose: () => void;
 }) {
   const t = useTranslations('settingsFolder');

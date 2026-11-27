@@ -62,7 +62,7 @@ function ProjectSelectorContent() {
   const dataSourceMode = useDataSourceMode();
   // Without a folder there is no selection.
   const selection = useSelectedProjectSlug();
-  const selectedSlug = dataSourceMode === "static" ? null : selection;
+  const selectedSlug = dataSourceMode === "no-folder" ? null : selection;
   const orderedProjects = useMemo(() => selectedFirst(projects, selectedSlug), [projects, selectedSlug]);
   const docs = useVaultDocs();
   const vault = useLocalVault();
@@ -118,7 +118,7 @@ function ProjectSelectorContent() {
           }
           actions={
             <>
-              {dataSourceMode === "static" ? <OpenVaultCta testId="project-selector-open-vault" /> : null}
+              {dataSourceMode === "no-folder" ? <OpenVaultCta testId="project-selector-open-vault" /> : null}
               <div className="lg:hidden">
                 <AppSettingsMenu mode={dataSourceMode} triggerVariant="chrome-tile" />
               </div>

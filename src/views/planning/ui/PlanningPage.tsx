@@ -394,7 +394,7 @@ export function PlanningPage() {
     setAdding(true);
     try {
       const rootPath = getTauriVaultRootPath(scope.root) ?? null;
-      const outcome = await pickPlanningFiles({ directory: scope.directory, rootPath, beforeWrite: markOwnWrite });
+      const outcome = await pickPlanningFiles({ rootPath });
       if (!outcome) return;
       if (rootPath) outcome.added.forEach(markOwnWrite);
       for (const [path, slug] of marked) if (!outcome.added.includes(path)) unmarkSelfWrite(slug);

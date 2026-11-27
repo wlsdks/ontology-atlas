@@ -2,8 +2,8 @@
 
 import { useMemo } from "react";
 import { useLocale } from "next-intl";
-import { buildDocsVaultHref, findRelatedDocs, type VaultDoc } from "@/entities/docs-vault";
-import { useLocalVault } from "@/entities/vault-session";
+import { buildDocsVaultHref, findRelatedDocs } from "@/entities/docs-vault";
+import { useOpenFolderManifest } from "@/entities/vault-session";
 import { useDocumentDetails } from "@/features/document-detail";
 import { useTaxonomy } from "@/features/taxonomy";
 import {
@@ -31,7 +31,6 @@ import {
 type IntegrityIssue = ReturnType<typeof getProjectIntegrityIssues>[number];
 
 const RELATED_DOCS_LIMIT = 5;
-const NO_DOCS: VaultDoc[] = [];
 
 export interface ProjectDrawerModel {
   isContainerNode: boolean;
@@ -125,7 +124,7 @@ export function useProjectDrawerModel({
   const referencedByRelations = project ? buildReferencedByRelations(project, referencedBy) : [];
 
   // The documents of the open folder, the same ones the rest of the screen reads.
-  const folderDocs = useLocalVault().manifest?.docs ?? NO_DOCS;
+  const folderDocs = useOpenFolderManifest().docs;
   const relatedDocs = useMemo(() => {
     if (!project) return [];
     return findRelatedDocs(
@@ -139,7 +138,7 @@ export function useProjectDrawerModel({
     [relatedDocs],
   );
   // The section appears once every row has its excerpt, so no row fills in after the others.
-  const relatedDocDetails = useDocumentDetails(relatedDocRefs, { headings: false });
+  const relatedDocDetails = useDocumentDetails(relatedDocRefs);
   const primaryRelatedDocSlug = relatedDocs[0]?.doc.slug ?? null;
 
   return {

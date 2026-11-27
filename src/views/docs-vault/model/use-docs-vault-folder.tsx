@@ -5,7 +5,6 @@ import { useLocalVault } from '@/entities/vault-session';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 import { AppSettingsMenu } from '@/widgets/app-settings-menu';
 import { useNavRailSettingsSlot } from '@/widgets/app-nav-rail';
-import { migrateLegacyRecentDocs } from '@/widgets/docs-vault';
 import { createTauriVaultHandle } from '@/shared/lib/vault-folder/native-vault/tauri-vault-handle';
 import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import {
@@ -83,10 +82,6 @@ export function useDocsVaultFolder({ address }: { address: ReturnType<typeof use
     pinnedSet,
     togglePin: handleTogglePin,
   } = useDocsVaultPersistence({ localVault });
-
-  useEffect(() => {
-    migrateLegacyRecentDocs();
-  }, []);
 
   /**
    * One predicate for scope-switch cleanup, the missing-document banner and default selection:
