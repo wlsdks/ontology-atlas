@@ -197,3 +197,54 @@ fn the_base_line_lists_merges_and_squashes_and_a_merge_opens_to_its_own_commits(
     assert!(read_detail(repo, "HEAD").is_none());
     assert!(read_detail(repo, "--all").is_none());
 }
+
+/// Pull requests merge on the remote and the local base is often left behind; a fetched
+/// `origin/main` that contains it is the line read, and a local base with unpushed commits
+/// stays the base.
+#[test]
+fn the_fetched_remote_base_wins_unless_the_local_base_is_ahead() {
+    let dir = std::env::temp_dir().join(format!("atlas-landed-remote-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&dir);
+    fs::create_dir_all(&dir).unwrap();
+    let fixture = Fixture {
+        dir: fs::canonicalize(&dir).unwrap(),
+    };
+    let repo = &fixture.dir;
+    git(repo, &["init", "-q", "-b", "main"]);
+    git(repo, &["config", "user.email", "test@example.invalid"]);
+    git(repo, &["config", "user.name", "atlas test"]);
+    git(repo, &["config", "commit.gpgsign", "false"]);
+    commit(repo, "base.md", "base\n", "chore: start");
+    let behind = git(repo, &["rev-parse", "HEAD"]);
+    commit(
+        repo,
+        "a.md",
+        "merged on the remote\n",
+        "fix: merged on the remote (#1)",
+    );
+    let remote = git(repo, &["rev-parse", "HEAD"]);
+    git(repo, &["update-ref", "refs/remotes/origin/main", &remote]);
+    git(repo, &["update-ref", "refs/heads/main", &behind]);
+
+    let subjects = |read: super::LandedRead| -> Vec<String> {
+        read.changes
+            .into_iter()
+            .map(|change| change.subject)
+            .collect()
+    };
+    assert_eq!(
+        subjects(read_landed(repo, "main").expect("the remote line reads")),
+        ["fix: merged on the remote (#1)", "chore: start"]
+    );
+
+    git(repo, &["update-ref", "refs/heads/main", &remote]);
+    commit(repo, "b.md", "not pushed\n", "fix: not pushed yet");
+    assert_eq!(
+        subjects(read_landed(repo, "main").expect("the local line reads")),
+        [
+            "fix: not pushed yet",
+            "fix: merged on the remote (#1)",
+            "chore: start"
+        ]
+    );
+}
