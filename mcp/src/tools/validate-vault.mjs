@@ -34,8 +34,9 @@ import { buildDepthFindings, measureBuildDepth, repositorySurvey } from '../cons
 import { sessionReads } from '../construction/session-reads.mjs';
 import { validateLoadedVaultDocument } from '../vault/documents/doc-facts.mjs';
 import { loadVaultDocs } from '../vault/documents/document-cache.mjs';
-import { collectPathLastChanges } from '../git/git-tools.mjs';
+import { collectPathLastChanges, readEvidenceTextPairs } from '../git/git-tools.mjs';
 import { evidenceConceptsFromDocs, resolveEvidenceStates } from '../drift/evidence-drift.mjs';
+import { EVIDENCE_TEXT_CHUNK, movedEvidencePairs, unchangedEvidencePairs } from '../drift/evidence-verdict.mjs';
 import { okResponseBytes } from '../server/rpc.mjs';
 import { repoText } from '../analyze/repo-text.mjs';
 import { foldRepeatedGuidance } from './validate-page-fold.mjs';
@@ -647,7 +648,9 @@ function buildEvidenceDrift(docs, repoRoot, vaultRoot) {
       'Evidence was NOT dated: the vault is not inside a Git repository this process can read, so no concept is called current here.',
     );
   }
-  const states = resolveEvidenceStates(concepts, walk.changes);
+  const states = resolveEvidenceStates(concepts, walk.changes, {
+    unchangedPairs: commentOnlyEvidencePairs(concepts, walk.changes, repoRoot, vaultRoot),
+  });
   const folderOnly = states.unknown.filter((row) => row.reason === 'folder-only').length;
   const counts = {
     current: states.current.length,
@@ -671,6 +674,26 @@ function buildEvidenceDrift(docs, repoRoot, vaultRoot) {
     folderOnly: states.unknown.filter((row) => row.reason === 'folder-only').slice(0, EVIDENCE_ROW_LIMIT).map((row) => ({ slug: row.slug, kind: row.kind, docChangedAt: row.docChangedAt ?? null, folders: row.folders ?? [] })),
     hint,
   };
+}
+
+/**
+ * The moved files whose only change since their concept's document is in comments,
+ * import paths or layout, read chunk by chunk until every pair is judged. A chunk that
+ * fails leaves its pairs moved; the others still count.
+ */
+function commentOnlyEvidencePairs(concepts, changes, repoRoot, vaultRoot) {
+  const pairs = movedEvidencePairs(concepts, changes);
+  if (pairs.length === 0) return null;
+  const unchanged = new Set();
+  for (let start = 0; start < pairs.length; start += EVIDENCE_TEXT_CHUNK) {
+    try {
+      const read = readEvidenceTextPairs({ repoRoot, vaultRoot, pairs: pairs.slice(start, start + EVIDENCE_TEXT_CHUNK) });
+      if (read?.ok) for (const key of unchangedEvidencePairs(read.readings)) unchanged.add(key);
+    } catch {
+      // This chunk stays moved.
+    }
+  }
+  return unchanged;
 }
 
 export {

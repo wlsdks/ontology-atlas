@@ -163,7 +163,7 @@ fn is_git_folder(part: &str) -> bool {
 /// folder and a dot path the Harness read does not show as plain text are `HIDDEN`; a path that
 /// leaves the folder is `OUTSIDE`. Dot files the Harness read projects (`.mcp.json`) are refused
 /// rather than shown raw.
-pub(super) fn path_refusal(path: &str) -> Option<&'static str> {
+pub(crate) fn path_refusal(path: &str) -> Option<&'static str> {
     if path.is_empty() || path.len() > PATH_MAX_BYTES || path.contains('\0') || path.contains('\\')
     {
         return Some(OUTSIDE);

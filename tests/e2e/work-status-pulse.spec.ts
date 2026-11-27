@@ -1,11 +1,12 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { waitForAnimationsDone } from "./settle";
 import { CLAUDE, CLAUDE_LATER, bridgeCalls, failOnConsoleNoise, main, openWorkStatus, room, row, setPulse, working, type Row } from "./work-status-bridge";
 
 /**
- * The file-change pulse on Work status, with the bridge stubbed: a room's light flashes once per
- * answer that carries a newly counted change, the words and the last-hour line say the same, and
- * the switch stops it. Rust's own counting is proven in `src-tauri/src/work_status/file_pulse/tests.rs`.
+ * The file-change pulse on Work status, with the bridge stubbed: a room's light flares and a spark
+ * runs once round its frame per answer that carries a newly counted change, the words and the
+ * last-hour line say the same, and the switch stops it. Rust's own counting is proven in `src-tauri/src/work_status/file_pulse/tests.rs`.
  */
 
 const STEP_MS = 10_000;
@@ -23,6 +24,82 @@ function changedNow(key: string, count: number, base: Record<string, unknown> = 
 async function answered(page: Page, more = 1) {
   const from = (await bridgeCalls(page)).pulseAsks;
   await expect.poll(async () => (await bridgeCalls(page)).pulseAsks).toBeGreaterThanOrEqual(from + more);
+}
+
+/** Animations running anywhere on the page: none while nothing happens. */
+const runningAnimations = (page: Page) => page.evaluate(() => document.getAnimations().filter((animation) => animation.playState === "running").length);
+
+interface PulseFrame { at: number; round: number; flare: number; elsewhere: number }
+
+/**
+ * Samples every frame from now on: how far round the frame the spark's head in `branch`'s room has
+ * come (each edge's travel, held to its length), its flare's opacity, and how many animations run
+ * in the other rooms.
+ */
+async function startPulseSampler(page: Page, branch: string) {
+  await page.evaluate((name) => {
+    const frames: PulseFrame[] = [];
+    const target = window as unknown as { __pulseFrames: PulseFrame[]; __pulseStop: boolean };
+    target.__pulseFrames = frames;
+    target.__pulseStop = false;
+    const rooms = () => [...document.querySelectorAll<HTMLElement>("[data-testid=work-room]")];
+    // An edge whose run has ended goes back off its start, so each edge keeps the furthest it came.
+    const furthest = new Map<string, number>();
+    const tick = (at: number) => {
+      if (target.__pulseStop) return;
+      const mine = rooms().find((element) => element.textContent?.includes(name));
+      const spark = mine?.querySelector<HTMLElement>("[data-testid=work-room-flash]");
+      let round = 0;
+      for (const edge of spark?.querySelectorAll<HTMLElement>("[data-edge]") ?? []) {
+        const across = edge.dataset.edge === "top" || edge.dataset.edge === "bottom";
+        const matrix = new DOMMatrix(getComputedStyle(edge).transform);
+        const length = across ? spark!.offsetWidth : spark!.offsetHeight;
+        const sparkPx = across ? edge.offsetWidth : edge.offsetHeight;
+        const shift = across ? matrix.m41 : matrix.m42;
+        const travelled = edge.dataset.edge === "top" || edge.dataset.edge === "right" ? shift + sparkPx : sparkPx - shift;
+        furthest.set(edge.dataset.edge!, Math.max(furthest.get(edge.dataset.edge!) ?? 0, Math.min(length, travelled)));
+        round += furthest.get(edge.dataset.edge!)!;
+      }
+      const flare = spark?.previousElementSibling;
+      frames.push({
+        at,
+        round,
+        flare: flare ? Number(getComputedStyle(flare).opacity) : 0,
+        elsewhere: rooms().filter((element) => element !== mine).reduce((sum, element) => sum + element.getAnimations({ subtree: true }).length, 0),
+      });
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }, branch);
+}
+
+const stopPulseSampler = (page: Page) => page.evaluate(() => {
+  const target = window as unknown as { __pulseFrames: PulseFrame[]; __pulseStop: boolean };
+  target.__pulseStop = true;
+  return target.__pulseFrames;
+});
+
+/**
+ * The spark's head goes round at one pace, in px per ms so a late frame is no jump: no step more
+ * than twice the median, none backwards, and no still frame between its first and last move. The
+ * flare's opacity never moves more than a quarter in one 60 Hz frame's time.
+ */
+function pulseJumps(frames: PulseFrame[]): string[] {
+  const steps = frames.slice(1).map((frame, index) => ({
+    at: Math.round(frame.at - frames[0].at),
+    dt: Math.max(1, frame.at - frames[index].at),
+    px: frame.round - frames[index].round,
+    flare: Math.abs(frame.flare - frames[index].flare),
+  }));
+  const moving = steps.filter((step) => step.px > 0);
+  const median = moving.map((step) => step.px / step.dt).sort((a, b) => a - b)[Math.floor(moving.length / 2)] ?? 0;
+  const [first, last] = [steps.findIndex((step) => step.px > 0), steps.findLastIndex((step) => step.px > 0)];
+  return steps.flatMap((step, index) => [
+    ...(step.px / step.dt > 2 * median ? [`spark ${(step.px / step.dt).toFixed(2)}px/ms at ${step.at}ms, median ${median.toFixed(2)}`] : []),
+    ...(index > first && index < last && step.px === 0 ? [`spark stood still at ${step.at}ms`] : []),
+    ...(step.px < 0 ? [`spark went back at ${step.at}ms`] : []),
+    ...(step.flare / step.dt > 0.25 / 16.7 ? [`flare moved ${step.flare.toFixed(2)} in ${step.dt.toFixed(0)}ms at ${step.at}ms`] : []),
+  ]);
 }
 
 test.describe("work status file-change pulse", () => {
@@ -63,7 +140,29 @@ test.describe("work status file-change pulse", () => {
     await expect(panel).toContainText("Atlas counts only while Workshop is open.");
   });
 
-  test("keeps the light still under reduced motion while the words say the change", async ({ page }) => {
+  test("pulses only the room whose files changed, round its frame at one pace, then runs nothing", async ({ page }) => {
+    await openWorkStatus(page, ROWS, {}, { pulse: { worktrees: quiet } });
+    const a = room(page, "feat/pulse-a");
+    await answered(page);
+    await waitForAnimationsDone(page.getByTestId("work-building"));
+    expect(await runningAnimations(page), "animations running before any change").toBe(0);
+
+    await startPulseSampler(page, "feat/pulse-a");
+    await setPulse(page, changedNow("feat-pulse-a", 3));
+    await expect(a).toHaveAttribute("data-room-flashes", "1");
+    await expect(a.locator("[data-scene]")).toHaveAttribute("data-fresh", "true");
+    await waitForAnimationsDone(page.getByTestId("work-building"));
+    const frames = await stopPulseSampler(page);
+
+    const roundPx = await a.getByTestId("work-room-flash").evaluate((spark) => 2 * ((spark as HTMLElement).offsetWidth + (spark as HTMLElement).offsetHeight));
+    expect(Math.max(...frames.map((frame) => frame.round)), "how far round the frame the spark came").toBeCloseTo(roundPx, 0);
+    expect(Math.max(...frames.map((frame) => frame.flare)), "the flare's brightest frame").toBeGreaterThan(0.9);
+    expect(Math.max(...frames.map((frame) => frame.elsewhere)), "animations in the rooms whose files did not change").toBe(0);
+    expect(pulseJumps(frames).slice(0, 6), "frames where the pulse jumped or stood still").toEqual([]);
+    expect(await runningAnimations(page), "animations running once the pulse has played").toBe(0);
+  });
+
+  test("raises the light without motion under reduced motion while the words say the change", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await openWorkStatus(page, ROWS, {}, { pulse: { worktrees: quiet } });
     const a = room(page, "feat/pulse-a");
@@ -71,9 +170,12 @@ test.describe("work status file-change pulse", () => {
     await setPulse(page, changedNow("feat-pulse-a", 1));
     await expect(a).toHaveAttribute("data-room-flashes", "1");
     await expect(a.getByTestId("work-room-last-minute")).toHaveText("1 file change in the last minute");
-    const flash = a.getByTestId("work-room-flash");
-    expect(await flash.evaluate((element) => ({ running: element.getAnimations().length, opacity: getComputedStyle(element).opacity })), "the reduced flash").toEqual({ running: 0, opacity: "0" });
-    expect(await a.locator("[data-tick]").evaluate((element) => element.getAnimations().length), "a tick that rises").toBe(0);
+    // The pulse becomes a still, brighter light for the minute the change is new.
+    const scene = a.locator("[data-scene]");
+    await expect(scene).toHaveAttribute("data-fresh", "true");
+    expect(await a.getByTestId("work-room-flash").evaluate((element) => getComputedStyle(element).display), "the reduced spark").toBe("none");
+    expect(await scene.evaluate((element) => getComputedStyle(element.querySelector(":scope > [data-room-light]")!, "::after").opacity), "the raised light").toBe("1");
+    expect(await runningAnimations(page), "animations running under reduced motion").toBe(0);
   });
 
   test("says when files change where no agent works, and when macOS cannot watch a folder", async ({ page }) => {

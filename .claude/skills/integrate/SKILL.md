@@ -8,6 +8,6 @@ description: Carry parallel slices to main through one integration branch: `pnpm
 Follow the [shared workflow](../../../.agents/skills/integrate/workflow.md) at the requested or routed scope.
 Read supporting references only for the current phase.
 
-Use Claude's named `reviewer` when the workflow requires one, and
+Use Claude's named `code-reviewer` when the workflow requires one, and
 `implementer` for a fix on the integration branch. Keep the existing agent
 effort tiers.

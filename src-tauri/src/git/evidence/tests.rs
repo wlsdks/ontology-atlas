@@ -22,6 +22,19 @@ fn safe_relative_path_refuses_escapes_and_options() {
 }
 
 #[test]
+fn the_walk_names_the_newest_commit_beside_its_time() {
+    let scratch = crate::git::test_support::Scratch::new("evidence-newest-commit");
+    scratch.commit("pay.md", "first");
+    let first = scratch.git(&["rev-parse", "HEAD"]);
+    scratch.commit("other.md", "unrelated");
+    let wanted = [("pay.md".to_string(), "pay.md".to_string())];
+    let last = last_changes(&scratch.work, &wanted).unwrap();
+    let newest = last.get(&0).expect("pay.md is dated");
+    assert_eq!(newest.hash, first);
+    assert!(!newest.at.is_empty());
+}
+
+#[test]
 fn a_path_written_as_pathspec_magic_hides_no_other_path() {
     // An exclude pattern drops the other path from the walk; malformed magic makes
     // Git refuse the whole walk. Read as names, neither touches the other date.

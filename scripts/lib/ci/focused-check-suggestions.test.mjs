@@ -1719,11 +1719,11 @@ describe('agent-file surface', () => {
       'CLAUDE.md',
       'AGENTS.md',
       'src/AGENTS.md',
-      '.claude/agents/reviewer.md',
+      '.claude/agents/code-reviewer.md',
       '.claude/skills/ui-build/SKILL.md',
       '.claude/settings.json',
       '.agents/skills/ui-build/SKILL.md',
-      '.agents/agents/reviewer.md',
+      '.agents/agents/code-reviewer.md',
       '.codex/hooks.json',
       '.mcp.json',
     ]) {

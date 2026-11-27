@@ -87,7 +87,7 @@ keep real folders.
 
 A one-way change (the `AGENTS.md` workflow table) follows
 [the owner procedure](../PRODUCT-OWNER-OPERATING-SYSTEM.md) and gets one
-`reviewer`; behavior-preserving maintenance goes straight to technical checks.
+`code-reviewer`; behavior-preserving maintenance goes straight to technical checks.
 Motion proof follows one [recording procedure](motion-recording.md) for both
 hosts.
 

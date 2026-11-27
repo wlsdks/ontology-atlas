@@ -15,7 +15,7 @@ several classes runs each row once.
 | journey order, destination, agent handoff | none | [user-walkthrough](guides/user-walkthrough.md) | no |
 | window, menu, Tauri bridge, WKWebView | installed app (Computer Use) | installed-app evidence | no |
 | token, ramp, primitive interface | `ui:look` over `tests/e2e/audited-routes.ts` | [design-system-audit](guides/design-system-audit.md) | no |
-| new or removed primary surface; navigation or grouping | `ui:look`, full surface | full [responsive-sweep](guides/responsive-sweep.md), [user-walkthrough](guides/user-walkthrough.md), [directions](../ui-build/guides/directions.md) | one `reviewer` |
+| new or removed primary surface; navigation or grouping | `ui:look`, full surface | full [responsive-sweep](guides/responsive-sweep.md), [user-walkthrough](guides/user-walkthrough.md), [directions](../ui-build/guides/directions.md) | one `code-reviewer` |
 
 Computer Use is for the installed app and the motion recording only. The
 [design-audit](guides/design-audit.md) guide explains what `pnpm ui:audit`
@@ -28,5 +28,5 @@ cannot, and promote a visual suspicion to a defect only after a measurement
 confirms it.
 
 Report each row's verdict first, then the script output as printed, the capture
-paths, and the fixes with their remeasured values. A `reviewer` follows only on
+paths, and the fixes with their remeasured values. A `code-reviewer` follows only on
 the last row.

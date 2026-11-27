@@ -406,7 +406,7 @@ test.describe("work status rooms", () => {
     page.on("pageerror", (error) => noise.push(`pageerror: ${error.message}`));
   });
   test.afterEach(() => {
-    expect(noise.filter((text) => !/was preloaded using link preload but not used/.test(text)), "console errors and warnings").toEqual([]);
+    expect(noise.filter((text) => !/was preloaded using link preload but not used|You have Reduced Motion enabled/.test(text)), "console errors and warnings").toEqual([]);
   });
 
   test("puts work on the stage, keeps a left lock as a mini and counts the rest on the shelf", async ({ page }) => {
@@ -474,6 +474,35 @@ test.describe("work status rooms", () => {
     // measurement window: the crate ride, the hatch turning green and its two blinks are sampled frame by frame before the room leaves.
     await page.waitForTimeout(2500);
     await expectSmoothMotion(page);
+  });
+
+  test("lights a merged room once in success, and runs nothing once it has gone", async ({ page }) => {
+    await openWorkStatus(page, SIX);
+    const merging = room(page, "feat/library-stage");
+    await expect(merging).toHaveAttribute("data-room-size", "large");
+    await waitForAnimationsDone(page.getByTestId("work-building"));
+    await expect(page.getByTestId("work-room-complete")).toHaveCount(0);
+
+    await setRows(page, SIX.map((entry) => entry.branch === "feat/library-stage" ? row("feat/library-stage", { standing: "merged", ahead: 0 }) : entry));
+    await expect(merging.getByTestId("work-room-complete")).toHaveCount(1);
+    await expect(page.getByTestId("work-room-complete"), "completions on the page").toHaveCount(1);
+    expect(await merging.getByTestId("work-room-complete").evaluate((rim) => rim.getAnimations().map((animation) => (animation as CSSAnimation).animationName)), "the completion's flare").toEqual([expect.stringContaining("roomCompleteFlare")]);
+
+    await expect(merging).toHaveCount(0, { timeout: 10_000 });
+    await waitForAnimationsDone(page.getByTestId("work-building"));
+    expect(await page.evaluate(() => document.getAnimations().filter((animation) => animation.playState === "running").length), "animations running once the merge has played").toBe(0);
+  });
+
+  test("under reduced motion moves a merged room to the shelf at once, with no light running", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await openWorkStatus(page, SIX);
+    const merging = room(page, "feat/library-stage");
+    await expect(merging).toHaveAttribute("data-room-size", "large");
+    await setRows(page, SIX.map((entry) => entry.branch === "feat/library-stage" ? row("feat/library-stage", { standing: "merged", ahead: 0 }) : entry));
+    await expect(merging).toHaveCount(0);
+    await expect(page.getByTestId("work-shelf-merged")).toContainText("2");
+    await expect(page.getByTestId("work-room-complete")).toHaveCount(0);
+    await expect.poll(() => page.evaluate(() => document.getAnimations().filter((animation) => animation.playState === "running").length), { message: "animations running under reduced motion" }).toBe(0);
   });
 
   test("hands a stage slot from a room that stops to one that starts without a bare frame", async ({ page }) => {
@@ -745,7 +774,9 @@ test.describe("work status rooms", () => {
     await say("waitingApproval");
     await expect(asking).toHaveAttribute("data-room-state", "waiting");
     await expect(asking).toHaveAttribute("data-room-size", "large");
-    await expect(asking.getByTestId("work-room-monitor")).toContainText("Waiting for your approval");
+    // The state stands on the wall, never on the screen's top line where a long branch name would push it out.
+    await expect(asking.getByTestId("work-room-facts").getByText("Waiting for your approval")).toBeVisible();
+    await expect(asking.getByTestId("work-room-monitor")).not.toContainText("Waiting for your approval");
     await expect(asking.locator("[data-scene]")).toHaveAttribute("data-tone", "warning");
     // A session that has replied is quiet, not at work, and keeps its place on the stage.
     const replied = room(page, "feat/work-status-rooms");
@@ -849,38 +880,19 @@ test.describe("work status rooms", () => {
   });
 });
 
-test("lists the work that landed on the base branch under the building and opens one beside it", async ({ page }) => {
-  await openWorkStatus(page, SIX, ACTIVITY);
-  const rows = page.getByTestId("work-landed-row");
-  await expect(rows).toHaveCount(2);
-  await expect(rows.first()).toContainText("keep a selected element's ring off its capability's disc");
-  await rows.first().click();
-  const panel = page.getByTestId("work-landed-panel");
-  await expect(panel.getByTestId("work-landed-panel-commits")).toContainText("keep the ring off the disc");
-  await expect(panel.getByTestId("work-landed-panel-files")).toContainText("plan.ts");
-  await expect(rows.first()).toHaveAttribute("aria-expanded", "true");
-  await room(page, "feat/library-stage").first().click();
-  await expect(page.getByTestId("work-room-panel")).toBeVisible();
-  await expect(rows.first()).toHaveAttribute("aria-expanded", "false");
-  // One panel beside the building at a time: the landed change leaves as the room's panel opens.
-  await expect(page.getByTestId("work-landed-panel")).toHaveCount(0);
+test("says today's merge count in the header, opens Changes on it, and keeps the page from scrolling", async ({ page }) => {
+  await openWorkStatus(page, [main, working("design/workshop", CLAUDE), working("feat/other", CLAUDE_LATER)], {}, { width: 1512, height: 860 });
+  const merged = page.getByTestId("work-status-merged-today");
+  await expect(merged).toHaveText("11 merged today");
+  const overflow = (selector: string) => page.locator(selector).evaluate(element => element.scrollHeight - element.clientHeight);
+  await expect.poll(() => overflow("[data-testid=work-building-viewport]")).toBe(0);
+  expect(await overflow("main#main")).toBe(0);
+  await merged.click();
+  await expect(page).toHaveURL(/\/en\/changes\/?$/);
 });
 
-test("keeps the page from scrolling and scrolls a long landed list inside its own strip", async ({ page }) => {
-  await openWorkStatus(page, [main, working("design/workshop", CLAUDE), working("feat/other", CLAUDE_LATER)], {}, { width: 1512, height: 860, landedCount: 30 });
-  await expect(page.getByTestId("work-landed-row")).toHaveCount(30);
-  const overflow = (testId: string) => page.getByTestId(testId).evaluate(element => element.scrollHeight - element.clientHeight);
-  await expect.poll(() => overflow("work-building-viewport")).toBe(0);
-  expect(await page.locator("main#main").evaluate(element => element.scrollHeight - element.clientHeight)).toBe(0);
-  expect(await overflow("work-landed-scroll")).toBeGreaterThan(0);
-  // The building and the list's heading stay in the window.
-  const viewport = page.viewportSize()!;
-  const heading = await page.locator("#work-landed-title").boundingBox();
-  expect(heading!.y + heading!.height).toBeLessThanOrEqual(viewport.height);
-});
-
-test("shows the landed work under the empty building too", async ({ page }) => {
-  await openWorkStatus(page, [main]);
+test("says nothing of merges on a day without one", async ({ page }) => {
+  await openWorkStatus(page, [main], {}, { mergedToday: 0 });
   await expect(page.getByTestId("work-empty-room")).toBeVisible();
-  await expect(page.getByTestId("work-landed-row")).toHaveCount(2);
+  await expect(page.getByTestId("work-status-merged-today")).toHaveCount(0);
 });

@@ -5,17 +5,17 @@ parallel alternatives beat serial iteration (Dow et al., TOCHI 2010). Generic
 redirection such as “cleaner” replaces one default with another; only a concrete
 specification changes the structure.
 
-One `reviewer` reviews the built direction when the route says `review=yes`.
+One `code-reviewer` reviews the built direction when the route says `review=yes`.
 This skill cheaply creates the alternatives before that review when the route
 identifies a structural choice.
 
 ## Ownership
 
-The coordinating session sketches the directions, never the builder
-(`design-guardian` or an implementer). A builder who authors the options biases
-them toward the one they want to implement and turns the rest into straw men. If
-the coordinator will also build, it says so. The human owner chooses, the builder
-implements, and the `reviewer` never sketches.
+The coordinating session or a `design-reviewer` sketches the directions, never
+the builder (an `implementer`). A builder who authors the options biases them
+toward the one they want to implement and turns the rest into straw men. If the
+coordinator will also build, it says so. The human owner chooses, the builder
+implements, and the `code-reviewer` never sketches.
 
 ## A direction is structural, not a palette
 
@@ -97,7 +97,7 @@ or inspecting the current baseline. An already selected direction proceeds to
 
 1. Record the selected direction in one implementation-grade sentence.
 2. Implement only that sentence and retain rejected directions as history.
-3. A new or removed primary surface goes to one `reviewer`; it reviews the
+3. A new or removed primary surface goes to one `code-reviewer`; it reviews the
    chosen direction rather than selecting one.
 4. Run the `/ui-proof` row for that class. Every rendered result includes the
    `/ui-build` §0-B render-loop packet; motion includes a real screen
