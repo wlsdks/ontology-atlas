@@ -25,7 +25,7 @@ only introduces Atlas and hands over the app.
 
 There is no app for Linux or an Intel Mac. There, look at the sample map below,
 or run the MCP server from a source checkout:
-[Connect from a source checkout](/guide/connect-agent#connect-from-a-source-checkout).
+[Connect from a source checkout](/guide/connect-agent).
 
 ## Look at the sample map
 

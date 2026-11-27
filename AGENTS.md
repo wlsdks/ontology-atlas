@@ -22,7 +22,7 @@ meaning to source evidence. Structural health is not accepted meaning.
 - MCP internals split by responsibility.
 - State is React/URL/in-memory; IndexedDB stores only the vault handle. The
   app's derived index (OS cache) is rebuildable and never canonical.
-  Only the app opens a folder; the website's `/sample` is read-only.
+  Only the app opens a folder.
 
 ## Working and finishing
 
@@ -97,12 +97,13 @@ Read the named authority only for its subject:
 | Storage/surface boundaries | `.claude/rules/local-first.md`, `.claude/rules/surfaces.md`, `.claude/rules/forbidden.md` |
 | Tests, docs, Git | `.claude/rules/testing.md`, `.claude/rules/documentation.md`, `.claude/rules/git.md` |
 
-Routes are locale-prefixed; use `@/i18n/navigation`. `/` is the gateway
-in a browser, the map/first-run in the app; a wiki without nodes opens
-`/library`. The app must not offer its own download. `/topology` owns map/relation review; ACP writes wait
-for `allow_once` or `reject_once`. Route additions/removals require a decision
-fragment. `/ontology`, `/ontology/edit`, `/ontology/studio`, `/ontology/insights` and
-`/mcp` are redirects. Check the forbidden rule before reviving a retired namespace.
+Routes are locale-prefixed; use `@/i18n/navigation`. `/` is the gateway in a
+browser, the map/first-run in the app; a wiki without nodes opens `/library`.
+The app must not offer its own download. `/topology` owns map/relation review;
+ACP writes wait for `allow_once` or `reject_once`. Route additions/removals
+require a decision fragment. `/ontology`, `/ontology/edit`, `/ontology/studio`,
+`/ontology/insights` and `/mcp` are redirects. Check the forbidden rule before
+reviving a retired namespace.
 
 ## Source authority and ontology loop
 
@@ -150,8 +151,9 @@ optimizing Codex instructions.
 ## Harness loading and hooks
 
 This is the only root instruction file; a root `CLAUDE.md` would replace it.
-Which rules load every turn, which wait for a path, and which hooks run for
-which host: `docs/engineering/agent-instructions.md`, "Loading and hooks".
+Codex loads no rule by itself. Which rules load every turn, which wait for a
+path, and which hooks run for which host: `docs/engineering/agent-instructions.md`,
+"Loading and hooks". Read it before editing a rule, a hook or `.codex/hooks.json`.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

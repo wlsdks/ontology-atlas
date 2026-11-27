@@ -481,9 +481,9 @@ download artifact
 `src-tauri/target/release/bundle/dmg/ontology-atlas_1.0.0_aarch64.dmg` after
 adding the Tauri icon set derived from `public/logo.png` and a repo-owned
 `hdiutil` DMG packager. The desktop shell now has a native Tauri vault bridge:
-it opens a native folder
+when WebView `showDirectoryPicker` is unavailable, it opens a native folder
 dialog and adapts that folder into the same manifest/editor/image handle shape
-the rest of the app reads. The same adapter now carries ontology-block
+used by the web prototype. The same adapter now carries ontology-block
 import/export as well: INDEX import recursively reads the selected `.md` block
 through the shim's `values()` iterator and keeps the approval-before-write merge
 preview, while realm export writes its bounded subtree through a purpose-titled

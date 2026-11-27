@@ -218,7 +218,7 @@ Decided in `docs/DECISIONS.md` (2026-11-27); the enforceable version is
 `.claude/rules/surfaces.md`. Atlas opens a folder only in the installed app. The
 website introduces it: the gateway, the guide, the changelog and `/sample`, a
 read-only map of a sample online store. No page of the website opens, reads or
-remembers a folder, and any other address opened in a plain browser shows one page
+remembers a folder, and every app address opened in a plain browser shows one page
 saying Atlas runs in the installed app. The app loads the same static export in a
 WebView, so this table lists what the app does, not a parity backlog.
 

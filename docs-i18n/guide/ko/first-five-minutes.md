@@ -18,7 +18,7 @@ macOS 빌드는 Apple Silicon용이고 서명과 공증을 마쳤어요. Windows
 
 Linux와 Intel Mac용 앱은 없어요. 그럴 때는 아래 샘플 지도를 보거나, 소스
 체크아웃에서 MCP 서버를 실행하세요.
-[소스 체크아웃에서 연결하기](/guide/connect-agent#connect-from-a-source-checkout)를
+[소스 체크아웃에서 연결하기](/guide/connect-agent)를
 참고하세요.
 
 ## 샘플 지도 보기

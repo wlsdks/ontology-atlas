@@ -138,4 +138,4 @@ Create is a **different screen from edit**, not the same one with fewer values. 
 The app opens every project here: `?slug=` is the detail page and `&mode=edit` the full editor,
 both read from the query, so a folder's slug needs no page built for it. The per-slug pages
 `/project/<slug>` and `/project/<slug>/edit` existed only for bundled samples and were removed
-(2026-11-27). An address without a resolvable slug returns to `/projects`.
+(2026-11-27). Only an address with no slug returns to `/projects`.

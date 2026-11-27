@@ -372,8 +372,7 @@ holds the two together. `next dev` gets no meta, because refresh needs `eval`.
 **What each surface is for.** The app is where the vault lives day to day: the
 place a person reads the map, judges it, and connects their AI agents. It is
 the only place a folder is opened. The website introduces Atlas and hands over
-the app; until 2026-11-27 it also served as a "second-best workbench" for
-Chromium on Windows and Linux, and that job ended. It serves the **gateway**
+the app. It serves the **gateway**
 (`/` and `/download`), the guide, the changelog and `/sample`, a read-only map
 of a sample online store drawn by the app's map renderer from a file made at
 build time, so there is no server and nothing a visitor does is kept. The
@@ -458,9 +457,7 @@ two people (or an agent and a person) edit at once,
 first.
 
 Three things are deliberately **not** shared. The "last opened vault" record:
-the app keeps it in its own IndexedDB (carrying the folder's absolute path), so
-a person who tried the old browser workbench picks the folder once in the app,
-and `/download`'s install step 02 says so. API keys: they live in the operating
+the app keeps it in its own IndexedDB (carrying the folder's absolute path). API keys: they live in the operating
 system's credential store, app only. UI preferences: localStorage. API keys and
 personal display settings are not part of the shared model, so they stay out of
 the vault.
@@ -817,11 +814,11 @@ partial artifact.
 The MCP server is independent: it reads the same vault directory through the
 filesystem (Node.js `fs`), not the WebView bridge. AI agents and the installed app end up with the same view.
 
-### No folder loaded (the mode still named `static` in code)
+### No folder loaded
 
 1. `useLocalVault()` returns `{ status: 'closed' }`.
-2. `useDataSourceMode()` returns `'static'`; the mode is the app's own "no folder
-   loaded" state and holds no bundled data.
+2. `useDataSourceMode()` reports the app's own "no folder loaded" state, which
+   holds no bundled data.
 3. The app is in this state on first run, during a cold restore or a folder
    switch before the manifest arrives, and on the destinations that open without
    a folder (`src/shared/config/destinations.ts`). Each shows its own
@@ -843,9 +840,8 @@ left out of the app's bundle like `/download`.
                            gets the gateway — the intro page, the same view /download renders,
                            with "See a sample map" beside the download. Anyone in the installed
                            app gets the map (or first run). The installed app must never offer
-                           "download this app" to someone who is already running it. The
-                           decision lives in shared/lib/navigation/nav-destination and is keyed
-                           on the boot script's data-shell mark
+                           "download this app" to someone who is already running it, and the
+                           shell chrome and the content always agree on which of the two
 /topology                  map + contextual relation editor + change review. Any link labelled
                            "map" or "edit relation" points here, not at / (gate:
                            tests/contract/routes/map-destination-route.contract.test.ts)
@@ -932,7 +928,7 @@ left out of the app's bundle like `/download`.
 /project/new               new project form
 /project/fallback          the one project address: ?slug= is project detail (inline edit when
                            a vault is loaded) and &mode=edit the full editor, both read from
-                           the query; an unresolved slug returns to /projects. The per-slug
+                           the query; an address with no slug returns to /projects. The per-slug
                            pages /project/[slug] and /project/[slug]/edit existed only for
                            bundled samples and are removed
 /download                  the same gateway page at its own address — it keeps the breadcrumb

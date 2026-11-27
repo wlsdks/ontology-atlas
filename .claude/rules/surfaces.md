@@ -26,7 +26,7 @@ to it.
 - **Website:** introduces Atlas and hands over the app: the gateway (`/` and
   `/download`), the guide, the changelog, and `/sample`, a read-only map of a
   sample project. It opens, reads and remembers no folder and never installs an
-  agent. Any other address opened in a plain browser shows one page, "Ontology
+  agent. Every app address opened in a plain browser shows one page, "Ontology
   Atlas runs in the installed app", with links to the download and the sample.
 
 ## One build, thin bridges
@@ -182,7 +182,7 @@ automatically".
 
 ## Only the vault is shared
 
-Data that must outlast a session lives in the vault folder, as frontmatter or
+Data that agents and other programs read lives in the vault folder, as frontmatter or
 `.ontology-atlas/*.jsonl`; `patch_concept(expected_mtime)` guards concurrent
 writes. The last-opened folder record (IndexedDB), API keys (app keychain) and
 display preferences (localStorage) belong to the installed app alone; never
@@ -197,6 +197,11 @@ An app capability creates no website obligation: no folder picker, key, agent
 launch or config write goes onto a public page. Rejected: browser BYOK (keys
 exposed to any injected script) and writing agent config from a page (no
 absolute path).
+
+An ability that works on macOS only and is missing on Windows says so
+honestly: a short line states why it is unavailable, where it works, and what
+remains possible on Windows. "Coming soon" is not a reason, and calling an
+available path unavailable is equally false.
 
 An address that is not public answers with the app-only page (`appOnly.*`
 messages, `data-testid="app-only-page"`): it says the screen lives in the

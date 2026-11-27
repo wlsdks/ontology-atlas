@@ -21,8 +21,8 @@ that choice. It is for anyone changing how a folder is opened, seeded, or read.
 | **local** | a vault folder is active, picked or restored in the installed app | vault manifest is the source of truth |
 | **static** | no folder is loaded: first run, a cold restore or folder switch in progress, or a destination that opens without a folder | nothing is read; the screen shows its own "no folder loaded" state |
 
-The mode is still named `static` in code; it is the app's "no folder loaded" state and holds no
-bundled data, and no page of the website reads a folder at all.
+This is the app's "no folder loaded" state; it holds no bundled data, and no page of the
+website reads a folder at all.
 
 **Effect**: until the restored or newly selected local manifest is ready, the shell commits no
 destination content; a route change then mounts against that one provider before paint.
@@ -161,8 +161,7 @@ that kept a remembered folder from the old browser workbench has that database (
 deleted at its next visit; the folder on disk is not touched. The product introduction lives
 on `/download` ([`download.md`](download.md)).
 
-In the app, opening a folder from the first-run page first shows a guide
-sheet (`VaultOpenGuideSheet`, `src/features/docs-vault-local/`): any markdown folder is fine;
-Atlas opens it locally and does not upload it to an Atlas backend, while a connected coding
-agent is a separate provider boundary; an empty folder gets starter docs. A returning user
-whose folder record restores from IndexedDB goes straight to their own workspace.
+In the app, the first-run page's open button calls `vault.open()`
+(`src/views/first-run/ui/FirstRunPage.tsx`), which shows the system folder chooser at once and
+loads the chosen folder; no guide sheet comes first. A returning user whose folder record
+restores from IndexedDB goes straight to their own workspace.
