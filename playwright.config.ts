@@ -14,6 +14,8 @@ const isCI = process.env.CI === 'true' || process.env.CI === '1';
 const baseURL = process.env.PLAYWRIGHT_BASE_URL || (servesStaticExport ? 'http://127.0.0.1:3110' : 'http://127.0.0.1:3100');
 const webServerOrigin = new URL(baseURL).origin;
 const webServerPort = new URL(baseURL).port || '3100';
+// Vite binds `localhost` to 127.0.0.1 alone, but Node-side requests (`route.fetch`, `page.request`) try ::1 first.
+const previewHost = new URL(baseURL).hostname === 'localhost' ? '::1' : new URL(baseURL).hostname;
 
 // Locally Playwright reuses whatever already listens on the port; refuse one
 // that another worktree or project started.
@@ -100,7 +102,7 @@ export default defineConfig({
     // navigation that only fails in production.
     command: servesStaticExport
       ? viteAppFolder
-        ? `pnpm exec vite preview --host ${new URL(baseURL).hostname} --port ${webServerPort} --outDir ${viteAppFolder}`
+        ? `pnpm exec vite preview --host ${previewHost} --port ${webServerPort} --outDir ${viteAppFolder}`
         : `node scripts/web/serve-static-export.mjs --port=${webServerPort}`
       : `pnpm dev -p ${webServerPort}`,
     url: webServerOrigin,
