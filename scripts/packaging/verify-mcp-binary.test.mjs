@@ -11,8 +11,10 @@ import {
   countExactReadmeAddresses,
 } from './verify-mcp-binary.mjs';
 
+const MCP_VERSION = JSON.parse(fs.readFileSync(new URL('../../mcp/package.json', import.meta.url), 'utf8')).version;
+
 const contractFixture = () => ({
-  initialize: { serverInfo: { version: '0.13.0' } },
+  initialize: { serverInfo: { version: MCP_VERSION } },
   tools: [
     {
       name: 'connection_info',

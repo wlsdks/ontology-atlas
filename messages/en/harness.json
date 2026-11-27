@@ -5,7 +5,8 @@
   "views": {
     "overview": "Setup",
     "architecture": "Architecture",
-    "improve": "Improve"
+    "improve": "Improve",
+    "tokens": "Tokens"
   },
   "retry": "Read it again",
   "toolsSource": "Source",

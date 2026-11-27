@@ -5,7 +5,8 @@
   "views": {
     "overview": "構成",
     "architecture": "アーキテクチャ",
-    "improve": "改善"
+    "improve": "改善",
+    "tokens": "トークン"
   },
   "retry": "もう一度読み込む",
   "toolsSource": "出典",

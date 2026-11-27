@@ -6,6 +6,7 @@ import { inspectCodexRunContract } from "../lib/desktop/codex-run-contract.mjs";
 import { connectSrcIsExact, DESKTOP_CONNECT_SRC_TOKENS } from "../lib/desktop/desktop-csp.mjs";
 import { matches, matchesAll } from "../lib/i18n/locale-vocabulary.mjs";
 import { blankComments } from "../quality/source-language/inventory.mjs";
+import { APP_VERSION_FILE_LIST, readAppVersions, versionMismatches } from "../lib/release-versions.mjs";
 
 const root = process.cwd();
 
@@ -176,7 +177,6 @@ const tauriCapability = fs.existsSync(tauriCapabilityPath)
 
 console.log("[desktop-check] macOS desktop Tauri-shell readiness");
 
-const cargoPackageVersion = cargoToml.match(/\[package\][\s\S]*?\nversion\s*=\s*"([^"]+)"/)?.[1];
 const cargoPackageName = cargoToml.match(/\[package\][\s\S]*?\nname\s*=\s*"([^"]+)"/)?.[1];
 // mcp/ and cli/ are separate install roots; without the same pin they run whatever pnpm is
 // installed globally, and an older one ignores their supply-chain settings.
@@ -223,15 +223,12 @@ if (tsConfig?.exclude?.includes("src-tauri/target")) {
   );
 }
 
-if (
-  typeof pkg.version === "string" &&
-  tauriConfig?.version === pkg.version &&
-  cargoPackageVersion === pkg.version
-) {
-  pass("desktop package, Tauri, and Rust crate versions stay aligned for release tags");
+const appVersionMismatches = versionMismatches(readAppVersions(root), pkg.version);
+if (typeof pkg.version === "string" && appVersionMismatches.length === 0) {
+  pass("desktop package, Tauri, Rust crate and MCP server versions stay aligned for release tags");
 } else {
   fail(
-    `package.json, src-tauri/tauri.conf.json, and src-tauri/Cargo.toml versions must match before macOS release packaging (package=${pkg.version ?? "missing"}, tauri=${tauriConfig?.version ?? "missing"}, cargo=${cargoPackageVersion ?? "missing"})`,
+    `${APP_VERSION_FILE_LIST} versions must match before macOS release packaging (expected ${pkg.version ?? "missing"}: ${appVersionMismatches.join(", ")})`,
   );
 }
 

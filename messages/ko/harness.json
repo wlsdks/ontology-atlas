@@ -5,7 +5,8 @@
   "views": {
     "overview": "구성",
     "architecture": "아키텍처",
-    "improve": "개선"
+    "improve": "개선",
+    "tokens": "토큰"
   },
   "retry": "다시 읽기",
   "toolsSource": "출처",
