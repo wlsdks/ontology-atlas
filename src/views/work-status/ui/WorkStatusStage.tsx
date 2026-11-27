@@ -2,9 +2,8 @@
 
 import type { ReactNode } from 'react';
 import { motion } from 'framer-motion';
-import { useTranslations } from 'next-intl';
 import { MOTION, STAGGER } from '@/shared/motion';
-import { FeatureStage, FeatureStagePulse, GetAppLink, type FeatureStageMotion } from '@/shared/ui';
+import { FeatureStage, FeatureStagePulse, type FeatureStageMotion } from '@/shared/ui';
 
 const TRUNK_X = 56;
 const SEAM_X = 196;
@@ -44,10 +43,9 @@ function TracksArtwork({ arriving, engaged, reduced }: FeatureStageMotion) {
   );
 }
 
-export type WorkStatusStageState = 'web' | 'choose' | 'not-repository' | 'unreadable' | 'git-missing' | 'empty';
+export type WorkStatusStageState = 'choose' | 'not-repository' | 'unreadable' | 'git-missing' | 'empty';
 
 export function WorkStatusStage({ state, title, body, action }: { state: WorkStatusStageState; title: string; body?: string; action?: ReactNode }) {
-  const nav = useTranslations('navRail');
   return (
     <FeatureStage
       data-testid="work-status-stage"
@@ -55,7 +53,7 @@ export function WorkStatusStage({ state, title, body, action }: { state: WorkSta
       art={motionState => <TracksArtwork {...motionState} />}
       title={title}
       body={body}
-      action={state === 'web' ? <GetAppLink data-testid="work-status-get-app">{nav('getApp')}</GetAppLink> : action}
+      action={action}
     />
   );
 }

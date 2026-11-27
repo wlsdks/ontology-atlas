@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { CircleHelp, CloudDownload, FilePlus, FileUp, FolderOpen, FolderPlus, LockKeyhole } from 'lucide-react';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
-import { Button, FeatureStage, GetAppLink, IconButton } from '@/shared/ui';
+import { Button, FeatureStage, IconButton } from '@/shared/ui';
 import { Input } from '@/shared/ui/fields/input';
 import { Tooltip } from '@/shared/ui/hints/tooltip';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
@@ -27,7 +27,7 @@ type PlanningDoor =
   | { kind: 'create'; folder: string; onCreate: () => void; onChoose: (() => void) | null; failed: boolean; creating: boolean }
   | FirstDocumentDoor
   | { kind: 'choose'; onChoose: () => void; unavailable: boolean }
-  | { kind: 'unsupported'; offersApp: boolean };
+  | { kind: 'unsupported' };
 
 const ALERT_CLASS = 'mt-4 text-body text-[color:var(--color-text-primary)]';
 
@@ -84,7 +84,6 @@ function FirstDocumentAction({ door }: { door: FirstDocumentDoor }) {
 }
 
 export function PlanningFolderStage({ door }: { door: PlanningDoor }) {
-  const nav = useTranslations('navRail');
   const t = useTranslations('planning');
   const host = useStageGlide(door.kind);
   const stage = { 'data-testid': 'planning-stage', artWidth: 'wide' as const, art: (state: Parameters<typeof PlanningSourceArtwork>[0]) => <PlanningSourceArtwork {...state} /> };
@@ -120,7 +119,6 @@ export function PlanningFolderStage({ door }: { door: PlanningDoor }) {
       state: 'unsupported',
       title: t('startTitle'),
       body: t('browserUnavailable'),
-      action: door.offersApp ? <GetAppLink data-testid="planning-get-app">{nav('getApp')}</GetAppLink> : undefined,
     };
   const readOnlyNote = <>
     <LockKeyhole size={ICON_SIZE.sm} aria-hidden /><span>{t('readOnly')}</span>

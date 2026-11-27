@@ -144,7 +144,8 @@ export function WorkStatusPage() {
     </main>
   );
 
-  if (!native) return stagePage(<WorkStatusStage state="web" title={t('web.title')} body={t('web.body')} />);
+  // The exported page and the first client frame hold the header alone; the bridge answers after hydration.
+  if (!native) return stagePage(null);
   if (!root) return stagePage(<WorkStatusStage state="choose" title={t('choose.title')} action={chooseButton('lg')} />);
   const folder = folderName(snapshot?.root || root);
   const status = failed ? 'unreadable' : snapshot?.status;
