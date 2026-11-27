@@ -105,7 +105,7 @@ export function VaultAgentPanel({
 
   /**
    * An absolute path alone is not ready to send: a desktop restore can return the handle and path
-   * before the manifest, while the screen shows the bundled sample, and the audit log would land in a
+   * before the manifest, and the audit log would land in a
    * hidden folder. With no manifest it falls back to the no-folder state.
    */
   const readableVaultPath = manifest ? vaultPath : null;

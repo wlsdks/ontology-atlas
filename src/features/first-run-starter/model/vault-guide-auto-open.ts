@@ -1,4 +1,4 @@
-/** In settled sample mode with this flag unrecorded, `VaultOpenGuideSheet` auto-opens once. localStorage because one prompt is enough. */
+/** With no folder loaded and this flag unrecorded, `VaultOpenGuideSheet` auto-opens once. localStorage because one prompt is enough. */
 import { readGuideAutoStart } from '@/shared/lib/preferences/guide-auto-start';
 
 const VAULT_GUIDE_AUTO_OPENED_KEY = 'vault-open-guide:auto:v1';

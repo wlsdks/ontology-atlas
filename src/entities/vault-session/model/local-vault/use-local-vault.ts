@@ -52,7 +52,7 @@ export function useLocalVaultInternal() {
   // Start 'idle' on both server and client, so hydration matches.
   const [state, setState] = useState<State>(() => emptyState('idle'));
   const stateRef = useLatestRef(state);
-  /** The launch stopped at the chooser on purpose (two or more folders are known); not a failure, and 'idle' alone would land on the sample. */
+  /** The launch stopped at the chooser on purpose (two or more folders are known); not a failure, and 'idle' alone would read as no folder chosen. */
   const [awaitingVaultChoice, setAwaitingVaultChoice] = useState(false);
 
   const lastFingerprintRef = useRef<string | null>(null);

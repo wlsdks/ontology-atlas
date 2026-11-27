@@ -253,7 +253,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     ],
   );
   useNavRailSettingsSlot(navRailSettingsSlot);
-  // In sample mode a quiet "switch to my data ⌘O" pill stays in the top row until a real vault
+  // With no folder open a quiet "switch to my data ⌘O" pill stays in the top row until a vault
   // connects.
   const noFolderSettled = useFirstRunNoFolderSettled();
   const restoreKnown = useFirstRunRestoreKnown();

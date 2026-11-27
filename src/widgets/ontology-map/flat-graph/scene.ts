@@ -9,8 +9,7 @@ let remembered: (FlatGraphMemory & { fittedAt: FittedScales | null; orphans: str
 let rememberedFolder: string | null = null;
 
 /**
- * A different folder forgets the session's positions, so one folder never pins another; that
- * includes the bundled map shown before any folder was claimed.
+ * A different folder forgets the session's positions, so one folder never pins another.
  */
 export function claimFlatGraphFolder(folder: string): void {
   if (rememberedFolder !== folder) remembered = null;
@@ -75,7 +74,7 @@ function rememberFlatGraph(model: DialModel, layout: FlatGraphLayout, face: stri
 
 /**
  * Domains go round in the content's own circular order, never a remembered one: an order kept from
- * a partial read, the bundled sample or an earlier session would seed the layout.
+ * a partial read or an earlier session would seed the layout.
  */
 export function buildFlatGraphScene(model: DialModel, tokens: FlatGraphLayoutTokens, pins: RememberedPins | null, frame: FlatGraphFrame | null = null): DialScene {
   return drainSteps(buildFlatGraphSceneSteps(model, tokens, pins, frame));

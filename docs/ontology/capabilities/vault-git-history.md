@@ -22,4 +22,4 @@ Shows the open vault folder's own Git status and history, and takes snapshot com
 - Branching, merging, pushing, or any remote operation.
 
 ## Uncertainty
-- Read from `src/views/git/`, `src/widgets/atlas-git-panel/`, `mcp/src/git/git-tools.mjs` and `src-tauri/src/git.rs` with its `src-tauri/src/git/` modules by name, plus the repository's note that a browser has no right to run Git and degrades to a card. No commit or snapshot was taken during this scan.
+- Read from `src/views/git/`, `src/widgets/atlas-git-panel/`, `mcp/src/git/git-tools.mjs` and `src-tauri/src/git.rs` with its `src-tauri/src/git/` modules by name. Git runs only in the installed app, through the native bridge. No commit or snapshot was taken during this scan.
