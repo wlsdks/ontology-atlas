@@ -212,3 +212,50 @@ fn a_containment_tree_cuts_the_cycles_it_lists_at_limit_and_says_so() {
     assert_eq!(rows(&whole["cycles"]).len(), 6);
     assert_eq!(whole["limited"], false);
 }
+
+#[test]
+fn blast_radius_names_the_nearest_domain_and_a_named_one_before_any() {
+    let lean = "dependencies:\n  - capabilities/hub\n";
+    let domain = |name: &str, number, holds: &[&str]| {
+        let lines: String = holds
+            .iter()
+            .map(|held| format!("  - capabilities/{held}\n"))
+            .collect();
+        (
+            format!("domains/{name}.md"),
+            node(number, "domain", &format!("capabilities:\n{lines}")),
+        )
+    };
+    let graph = compiled(&[
+        domain("d1", 1, &["p1", "q", "r"]),
+        domain("d2", 2, &["p2"]),
+        holder("p1", 3, &["n"]),
+        holder("p2", 4, &["n", "q"]),
+        capability("hub", 5, &[]),
+        // Held by p1 and p2, each one step below a domain: the holder first in the order wins.
+        ("capabilities/n.md".to_string(), node(6, "capability", lean)),
+        // Held by d1 itself and, further down, by d2 through p2: the nearer wins.
+        ("capabilities/q.md".to_string(), node(7, "capability", lean)),
+        // Held by d1 but naming d2 as its domain: the name wins.
+        (
+            "capabilities/r.md".to_string(),
+            node(8, "capability", &format!("domain: domains/d2\n{lean}")),
+        ),
+    ]);
+    let blast = answer(
+        &graph,
+        &QueryRequest {
+            slug: Some("capabilities/hub".to_string()),
+            ..call("blast_radius")
+        },
+    );
+    let domain_of = |slug: &str| {
+        rows(&blast["nodes"]["rows"])
+            .iter()
+            .find(|row| row["slug"] == slug)
+            .map(|row| row["domain"].clone())
+    };
+    assert_eq!(domain_of("capabilities/n"), Some("domains/d1".into()));
+    assert_eq!(domain_of("capabilities/q"), Some("domains/d1".into()));
+    assert_eq!(domain_of("capabilities/r"), Some("domains/d2".into()));
+}
