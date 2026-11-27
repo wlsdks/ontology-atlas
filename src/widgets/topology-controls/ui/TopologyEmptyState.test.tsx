@@ -86,26 +86,13 @@ describe("TopologyEmptyState", () => {
     expect(panel).toHaveTextContent(EMPTY.bodyNoDeps);
   });
 
-  // Capability decides: a browser that can open a folder gets picker copy, not an app-install
-  // prompt.
-  it('uses picker copy instead of a download prompt when a folder can be opened', () => {
-    render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
-        <TopologyEmptyState conceptCount={0} reason="no-projects" canPickFolder />
-      </NextIntlClientProvider>,
-    );
+  it('offers to open a folder, never the app\'s own download', () => {
+    renderEmpty(0, "no-projects");
     const panel = screen.getByRole("status");
     expect(panel).not.toHaveTextContent("macOS 앱");
     expect(panel).toHaveTextContent(EMPTY.bodyNoProjectsPicker);
     const links = screen.getAllByRole("link").map((a) => a.getAttribute("href"));
     expect(links).not.toContain("/download/");
-  });
-
-  // Negative control: without the capability the copy still degrades to download.
-  it('falls back to download when a folder cannot be opened', () => {
-    renderEmpty(0, "no-projects");
-    const links = screen.getAllByRole("link").map((a) => a.getAttribute("href"));
-    expect(links).toContain("/download/");
   });
 
   it('prefers the empty-project notice for reason no-projects even with a projectCount', () => {

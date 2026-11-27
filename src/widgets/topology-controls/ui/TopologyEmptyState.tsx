@@ -14,7 +14,6 @@ export function TopologyEmptyState({
   onCreateNode,
   docsFoundCount = 0,
   onStartFromDocs,
-  canPickFolder = false,
 }: {
   conceptCount: number;
   reason?: 'no-projects' | 'no-relations';
@@ -26,17 +25,10 @@ export function TopologyEmptyState({
    */
   docsFoundCount?: number;
   onStartFromDocs?: () => void;
-  /**
-   * Capability decides, not the runtime: `vault.status !== 'unsupported'` (as in `OpenVaultCta`)
-   * covers Tauri and FSA-capable web browsers. Passed in by `HomePage` so this widget stays
-   * provider-free.
-   */
-  canPickFolder?: boolean;
 }) {
   const t = useTranslations('topology.empty');
   /* The graph's node count; named for what it is so the copy does not leak the `project` kind. */
   const isNoProjects = reason ? reason === 'no-projects' : conceptCount === 0;
-  const showPickerPath = canPickFolder;
   const hasDocsToBootstrap = docsFoundCount > 0 && onStartFromDocs !== undefined;
   const kicker = hasDocsToBootstrap
     ? t('kickerDocsFound', { count: docsFoundCount })
@@ -86,11 +78,7 @@ export function TopologyEmptyState({
           {hasDocsToBootstrap
             ? t('bodyDocsFound', { count: docsFoundCount })
             : isNoProjects
-              ? t(
-                  showPickerPath
-                    ? 'bodyNoProjectsPicker'
-                    : 'bodyNoProjectsDownload',
-                )
+              ? t('bodyNoProjectsPicker')
               : t('bodyNoDeps')}
         </p>
         {/* Only when concepts exist; with none it points at things the person does not have. */}
@@ -134,12 +122,9 @@ export function TopologyEmptyState({
             </Link>
           )}
           {hasDocsToBootstrap ? null : (
-            <Link
-              href={showPickerPath ? '/docs/?intent=local' : '/download/'}
-              className={SECONDARY}
-            >
+            <Link href="/docs/" className={SECONDARY}>
               <FolderOpen size={ICON_SIZE.md} aria-hidden="true" />
-              {t(showPickerPath ? 'ctaOpenVaultPicker' : 'ctaOpenVaultDownload')}
+              {t('ctaOpenVaultPicker')}
             </Link>
           )}
         </div>
