@@ -1,4 +1,5 @@
-/// macOS's `OPEN_MAX`: `setrlimit` refuses a higher soft limit on open files.
+/// macOS's `OPEN_MAX`. The kernel accepts a higher soft limit, but `setrlimit(2)` asks for
+/// `min(OPEN_MAX, rlim_max)` open files.
 const OPEN_MAX: libc::rlim_t = 10_240;
 
 /// An app started from the Dock gets a soft limit of 256 open files. notify's FSEvents stream holds
@@ -29,13 +30,13 @@ pub(crate) fn raise_open_file_limit() {
 mod tests {
     use super::raise_open_file_limit;
     use notify_debouncer_full::notify::{recommended_watcher, Event, RecursiveMode, Watcher};
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
     use std::process::Command;
     use std::sync::mpsc;
     use std::time::{Duration, Instant};
 
-    /// Set in the copy of this test that starts with the Dock's limit.
-    const CHILD: &str = "ATLAS_OPEN_FILE_LIMIT_CHILD";
+    /// The folder for the deep roots, set in the copy of this test that starts with the Dock's limit.
+    const BASE: &str = "ATLAS_OPEN_FILE_LIMIT_BASE";
     const ROOTS: usize = 22;
     /// 22 roots this deep need about 4,000 descriptors: more than the 2,560 a Dock launch has once
     /// its first stream starts, as about 250 roots of an ordinary depth would.
@@ -43,14 +44,17 @@ mod tests {
 
     #[test]
     fn started_from_the_dock_the_app_watches_twenty_two_deep_roots_and_hears_the_last() {
-        if std::env::var_os(CHILD).is_some() {
-            watch_deep_roots_after_the_raise();
+        if let Some(base) = std::env::var_os(BASE) {
+            watch_deep_roots_after_the_raise(Path::new(&base));
             return;
         }
         let (_, module) = module_path!().split_once("::").unwrap();
         let name = format!(
             "{module}::started_from_the_dock_the_app_watches_twenty_two_deep_roots_and_hears_the_last"
         );
+        let base =
+            std::env::temp_dir().join(format!("atlas-open-file-limit-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
         let status = Command::new("/bin/sh")
             .args([
                 "-c",
@@ -58,17 +62,15 @@ mod tests {
             ])
             .arg(std::env::current_exe().unwrap())
             .arg(name)
-            .env(CHILD, "1")
-            .status()
-            .unwrap();
+            .env(BASE, &base)
+            .status();
+        let _ = std::fs::remove_dir_all(&base);
+        let status = status.unwrap();
         assert!(status.success(), "the watching copy ended with {status}");
     }
 
-    fn watch_deep_roots_after_the_raise() {
+    fn watch_deep_roots_after_the_raise(base: &Path) {
         raise_open_file_limit();
-        let base =
-            std::env::temp_dir().join(format!("atlas-open-file-limit-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&base);
         let roots: Vec<PathBuf> = (0..ROOTS)
             .map(|index| {
                 let mut root = base.join(format!("r{index}"));
@@ -110,7 +112,6 @@ mod tests {
                 .is_ok_and(|path| path.starts_with(last));
         }
         drop(watcher);
-        let _ = std::fs::remove_dir_all(&base);
         assert!(heard, "a save in the last of {ROOTS} roots arrives");
     }
 }
