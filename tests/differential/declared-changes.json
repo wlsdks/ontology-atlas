@@ -434,36 +434,36 @@
       "reason": "Imports are read from the syntax tree, so a Rust `mod` after an inner attribute, a `use` under `#[cfg]`, a `use` path split over lines and a Java or Kotlin name in any script or inside a string template are found, and a `use` inside a macro body is not; the line scanners lost the first four and read the fifth (row 34, an instance of row 2)."
     },
     {
-      "case": "imports/infer-imports-atlas-ontology-vault-as-root",
-      "where": "answer",
-      "id": 2,
-      "path": "result.content[0].text",
-      "change": 35,
-      "reason": "A scan root that is not inside a git repository has no `measured` stamp: its fingerprint hashes every file's bytes, hidden and credential-named files included, which the confined reader never opens; the JavaScript server stamped it (row 35)."
-    },
-    {
-      "case": "imports/inspect-architecture-storefront-profile",
-      "where": "answer",
-      "id": 1,
-      "path": "result.content[0].text",
-      "change": 35,
-      "reason": "A scan root that is not inside a git repository has no `measured` stamp: its fingerprint hashes every file's bytes, hidden and credential-named files included, which the confined reader never opens; the JavaScript server stamped it (row 35)."
-    },
-    {
-      "case": "imports/inspect-architecture-storefront-profile",
-      "where": "answer",
-      "id": 3,
-      "path": "result.content[0].text",
-      "change": 35,
-      "reason": "A scan root that is not inside a git repository has no `measured` stamp: its fingerprint hashes every file's bytes, hidden and credential-named files included, which the confined reader never opens; the JavaScript server stamped it (row 35)."
-    },
-    {
       "case": "imports/infer-imports-syntax-tree-reads",
       "where": "answer",
       "id": 4,
       "path": "result.content[0].text",
       "change": 34,
       "reason": "Imports are read from the syntax tree: import-shaped text inside a comment or a string literal is no import, and `import('./x').T` in a type position is `type_only`; the line scanner read both comment and string text as imports and counted the type position as a value (row 34, an instance of row 2)."
+    },
+    {
+      "case": "imports/inspect-architecture-atlas-ontology-vault-as-root",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text",
+      "change": 35,
+      "reason": "Unfinished, not decided: a scan root that is not inside a git repository gets no `measured` stamp from the Rust server until slice 11 ports the app's folder probe once for both tools; the JavaScript server stamps it (row 35). The harness names only the text of the answer, so a second difference in this one answer would not show: the brief's judgement is proven by the `architecture_conformance` unit tests and a repository's stamp by `mcp-server/tests/inspects_architecture.rs`."
+    },
+    {
+      "case": "imports/inspect-architecture-folder-without-git",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text",
+      "change": 35,
+      "reason": "Unfinished, not decided: a scan root that is not inside a git repository gets no `measured` stamp from the Rust server until slice 11 ports the app's folder probe once for both tools; the JavaScript server stamps it (row 35). The harness names only the text of the answer, so a second difference in this one answer would not show: the brief's judgement is proven by the `architecture_conformance` unit tests and a repository's stamp by `mcp-server/tests/inspects_architecture.rs`."
+    },
+    {
+      "case": "imports/inspect-architecture-profile-by-slug-without-git",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text",
+      "change": 35,
+      "reason": "Unfinished, not decided: a scan root that is not inside a git repository gets no `measured` stamp from the Rust server until slice 11 ports the app's folder probe once for both tools; the JavaScript server stamps it (row 35). The harness names only the text of the answer, so a second difference in this one answer would not show: the brief's judgement is proven by the `architecture_conformance` unit tests and a repository's stamp by `mcp-server/tests/inspects_architecture.rs`."
     }
   ]
 }

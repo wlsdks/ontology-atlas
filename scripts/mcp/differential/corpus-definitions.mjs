@@ -641,10 +641,17 @@ add('imports', 'inspect-architecture-miniature-repo', { vault: 'miniature-repo' 
   call('inspect_architecture', { rootPath: '$PARENT', maxFiles: 0 }),
 ]);
 add('imports', 'inspect-architecture-storefront-profile', { vault: 'storefront' }, [
-  call('inspect_architecture', {}),
   call('inspect_architecture', { profileSlug: 'architecture/storefront-services' }),
-  call('inspect_architecture', { profileSlug: 'storefront-services' }),
   call('inspect_architecture', { rootPath: '$VAULT', profileSlug: 'architecture/storefront-services' }),
+]);
+// A brief for a folder that is not under git: it is the one answer in which the Node server adds a
+// `measured` stamp the Rust server does not yet (row 35), so each request stands alone and the
+// other answers of the tool are compared whole in the cases above.
+add('imports', 'inspect-architecture-folder-without-git', { vault: 'storefront' }, [
+  call('inspect_architecture', {}),
+]);
+add('imports', 'inspect-architecture-profile-by-slug-without-git', { vault: 'storefront' }, [
+  call('inspect_architecture', { profileSlug: 'storefront-services' }),
 ]);
 // Where the syntax tree reads what the line scanners did not (rows 2, 33 and 34 of the table, and a hidden folder an import may name).
 const plant = (path, text) => ({ $: 'write-file', path: `../parser/${path}`, text });
@@ -704,7 +711,8 @@ add('imports', 'infer-imports-after-a-vault-write', { vault: 'miniature-repo' },
   call('infer_imports', { rootPath: '$PARENT', reviewMode: 'full', allowLargeResponse: true }),
   call('infer_imports', { rootPath: '$PARENT', reviewMode: 'next' }),
 ]);
-add('imports', 'infer-imports-atlas-ontology-vault-as-root',{ vault: 'atlas-ontology' }, [call('infer_imports', { rootPath: '$VAULT' }), call('inspect_architecture', { rootPath: '$VAULT' })]);
+add('imports', 'infer-imports-atlas-ontology-vault-as-root',{ vault: 'atlas-ontology' }, [call('infer_imports', { rootPath: '$VAULT' })]);
+add('imports', 'inspect-architecture-atlas-ontology-vault-as-root',{ vault: 'atlas-ontology' }, [call('inspect_architecture', { rootPath: '$VAULT' })]);
 
 // ---------------------------------------------------------------------------------------------
 // evidence: find_evidence, read_source, the agent brief

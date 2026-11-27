@@ -521,3 +521,224 @@ pub fn build_architecture_brief<'a>(
         measured,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::architecture_profile::ProfileRole;
+    use crate::import_coverage::ImportCoverage;
+    use crate::import_edges::{ImportEdge, SourceRole};
+
+    fn profile(
+        policy: DependencyPolicy,
+        roles: &[&str],
+        allows: &[(&str, &[&str])],
+    ) -> ArchitectureProfile {
+        ArchitectureProfile {
+            uid: "00000000-0000-4000-8000-000000000001".to_string(),
+            slug: "architecture/layers".to_string(),
+            project_uid: "00000000-0000-4000-8000-000000000002".to_string(),
+            title: "Layers".to_string(),
+            patterns: Vec::new(),
+            scope_paths: vec!["src/**".to_string()],
+            exclude_paths: vec!["src/generated/**".to_string()],
+            roles: roles
+                .iter()
+                .map(|role| ProfileRole {
+                    id: (*role).to_string(),
+                    paths: vec![format!("src/{role}/**")],
+                })
+                .collect(),
+            dependency_policy: policy,
+            dependency_usages: vec!["value".to_string()],
+            allows: allows
+                .iter()
+                .map(|(role, targets)| {
+                    (
+                        (*role).to_string(),
+                        targets.iter().map(|target| (*target).to_string()).collect(),
+                    )
+                })
+                .collect(),
+            evidence: Vec::new(),
+            document_slug: "architecture/layers".to_string(),
+        }
+    }
+
+    fn scan(edges: &[(&str, &str, ImportUsage)], languages_all_supported: bool) -> ImportScan {
+        let mut coverage = ImportCoverage::new(!languages_all_supported, false);
+        coverage.all_detected_languages_supported = languages_all_supported;
+        ImportScan {
+            root_path: "/repo".to_string(),
+            files_scanned: edges.len(),
+            coverage,
+            edges: edges
+                .iter()
+                .map(|(from, to, usage)| ImportEdge {
+                    from: (*from).to_string(),
+                    to: (*to).to_string(),
+                    kind: ImportKind::Static,
+                    source_role: SourceRole::Production,
+                    import_usage: *usage,
+                })
+                .collect(),
+            external_imports: Vec::new(),
+            unresolved: Vec::new(),
+            module_edges: Vec::new(),
+            package_import_evidence: None,
+        }
+    }
+
+    fn layers() -> ArchitectureProfile {
+        profile(DependencyPolicy::LowerOnly, &["ui", "domain", "data"], &[])
+    }
+
+    #[test]
+    fn an_import_that_climbs_the_layers_is_a_violation_even_when_other_edges_are_unknown() {
+        let found = evaluate_architecture_conformance(
+            &layers(),
+            &scan(
+                &[
+                    ("src/ui/a.ts", "src/domain/b.ts", ImportUsage::Value),
+                    ("src/data/c.ts", "src/ui/a.ts", ImportUsage::Value),
+                    ("src/ui/a.ts", "src/unowned/x.ts", ImportUsage::Value),
+                ],
+                true,
+            ),
+        );
+        assert_eq!(found.status, ConformanceStatus::Violated);
+        assert_eq!(found.violation_count, 1);
+        let violation = &found.violations[0];
+        assert_eq!(
+            (
+                violation.from.as_str(),
+                violation.to.as_str(),
+                violation.rule.as_str()
+            ),
+            ("src/data/c.ts", "src/ui/a.ts", "lower-only")
+        );
+        assert_eq!(found.unknown.unmapped_edges, 1);
+    }
+
+    #[test]
+    fn an_edge_no_role_owns_or_a_role_no_file_matched_makes_the_answer_unknown_not_conforming() {
+        let unowned = evaluate_architecture_conformance(
+            &layers(),
+            &scan(
+                &[
+                    ("src/ui/a.ts", "src/domain/b.ts", ImportUsage::Value),
+                    ("src/domain/b.ts", "src/data/c.ts", ImportUsage::Value),
+                    ("src/ui/a.ts", "src/unowned/x.ts", ImportUsage::Value),
+                ],
+                true,
+            ),
+        );
+        assert_eq!(unowned.status, ConformanceStatus::Unknown);
+        assert_eq!(unowned.unknown.unmapped_edges, 1);
+
+        let empty_role = evaluate_architecture_conformance(
+            &layers(),
+            &scan(
+                &[("src/ui/a.ts", "src/domain/b.ts", ImportUsage::Value)],
+                true,
+            ),
+        );
+        assert_eq!(empty_role.status, ConformanceStatus::Unknown);
+        assert_eq!(empty_role.unknown.empty_roles, ["data"]);
+
+        let unknown_usage = evaluate_architecture_conformance(
+            &layers(),
+            &scan(
+                &[
+                    ("src/ui/a.ts", "src/domain/b.ts", ImportUsage::Value),
+                    ("src/domain/b.ts", "src/data/c.ts", ImportUsage::Unknown),
+                ],
+                true,
+            ),
+        );
+        assert_eq!(unknown_usage.status, ConformanceStatus::Unknown);
+        assert_eq!(unknown_usage.unknown.unknown_import_usages, 1);
+
+        let unsupported_language = evaluate_architecture_conformance(
+            &layers(),
+            &scan(
+                &[
+                    ("src/ui/a.ts", "src/domain/b.ts", ImportUsage::Value),
+                    ("src/domain/b.ts", "src/data/c.ts", ImportUsage::Value),
+                ],
+                false,
+            ),
+        );
+        assert_eq!(unsupported_language.status, ConformanceStatus::Unknown);
+        assert!(unsupported_language.unknown.coverage_incomplete);
+    }
+
+    #[test]
+    fn only_a_scan_whose_every_edge_was_mapped_and_ruled_conforms() {
+        let found = evaluate_architecture_conformance(
+            &layers(),
+            &scan(
+                &[
+                    ("src/ui/a.ts", "src/domain/b.ts", ImportUsage::Value),
+                    ("src/domain/b.ts", "src/data/c.ts", ImportUsage::Value),
+                    ("src/domain/b.ts", "src/domain/d.ts", ImportUsage::Value),
+                    ("src/data/c.ts", "src/ui/a.ts", ImportUsage::TypeOnly),
+                    ("src/ui/a.ts", "src/generated/g.ts", ImportUsage::Value),
+                ],
+                true,
+            ),
+        );
+        assert_eq!(found.status, ConformanceStatus::Conforms);
+        assert_eq!(found.violation_count, 0);
+        assert_eq!(
+            found.excluded_by_usage, 1,
+            "a type-only climb is outside the profile's usages"
+        );
+        let rows: Vec<_> = found
+            .observed_role_edges
+            .iter()
+            .map(|row| (row.from_role.as_str(), row.to_role.as_str(), row.count))
+            .collect();
+        assert_eq!(
+            rows,
+            [
+                ("data", "ui", 1),
+                ("domain", "data", 1),
+                ("domain", "domain", 1),
+                ("ui", "domain", 1)
+            ]
+        );
+    }
+
+    #[test]
+    fn an_explicit_profile_judges_by_its_allow_lists_and_is_unknown_for_a_role_without_one() {
+        let explicit = profile(
+            DependencyPolicy::Explicit,
+            &["ui", "domain", "data"],
+            &[("ui", &["domain"]), ("domain", &["data"])],
+        );
+        let forbidden = evaluate_architecture_conformance(
+            &explicit,
+            &scan(
+                &[("src/ui/a.ts", "src/data/c.ts", ImportUsage::Value)],
+                true,
+            ),
+        );
+        assert_eq!(forbidden.status, ConformanceStatus::Violated);
+        assert_eq!(forbidden.violations[0].rule, "allow-ui");
+
+        let unruled = evaluate_architecture_conformance(
+            &explicit,
+            &scan(
+                &[
+                    ("src/ui/a.ts", "src/domain/b.ts", ImportUsage::Value),
+                    ("src/domain/b.ts", "src/data/c.ts", ImportUsage::Value),
+                    ("src/data/c.ts", "src/domain/b.ts", ImportUsage::Value),
+                ],
+                true,
+            ),
+        );
+        assert_eq!(unruled.status, ConformanceStatus::Unknown);
+        assert_eq!(unruled.unknown.unruled_edges, 1);
+    }
+}
