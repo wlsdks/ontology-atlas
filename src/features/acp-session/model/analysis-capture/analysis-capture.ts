@@ -72,8 +72,8 @@ function object(value: unknown): Record<string, unknown> | null {
 
 export async function analysisGraphDigest(graph: AnalysisGraphSnapshot): Promise<string> {
   return analysisDigest({
-    nodes: graph.nodes.map(({ id, title, kind, uid }) => ({ id, title, kind, uid: uid ?? null })).sort((a, b) => a.id.localeCompare(b.id)),
-    edges: graph.edges.map(({ from, to, type, label }) => ({ from, to, type, label: label ?? null })).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))),
+    nodes: graph.nodes.map(({ id, title, kind, uid }) => ({ id, title, kind, uid: uid ?? null })).sort((a, b) => a.id.localeCompare(b.id, 'en')),
+    edges: graph.edges.map(({ from, to, type, label }) => ({ from, to, type, label: label ?? null })).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b), 'en')),
   });
 }
 

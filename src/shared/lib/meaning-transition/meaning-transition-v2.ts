@@ -77,7 +77,7 @@ function stable(value: unknown): unknown {
 }
 function proposalStable(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(proposalStable);
-  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b)).map(([key, child]) => [key, proposalStable(child)]));
+  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b, 'en')).map(([key, child]) => [key, proposalStable(child)]));
   return value;
 }
 async function hash(value: unknown): Promise<Sha256> {

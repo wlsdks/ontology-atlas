@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { assertMeaningTransitionV2Link, meaningTransitionV2DecisionArtifact, meaningTransitionV2TextDigest, parseMeaningTransitionV2, prepareMeaningTransitionV2, serializeMeaningTransitionV2, verifyMeaningTransitionV2, type MeaningTransitionV2Input } from './meaning-transition-v2';
+import { assertMeaningTransitionV2Link, meaningTransitionV2DecisionArtifact, meaningTransitionV2TextDigest, parseMeaningTransitionV2, prepareMeaningTransitionV2, serializeMeaningTransitionV2, verifyMeaningTransitionV2, type MeaningTransitionV2, type MeaningTransitionV2Input } from './meaning-transition-v2';
+import { underDefaultLocale } from '../../../../tests/helpers/under-collation';
 
 const A = `sha256:${'a'.repeat(64)}` as const;
 const B = `sha256:${'b'.repeat(64)}` as const;
@@ -231,5 +232,28 @@ describe('meaning transition v2 snapshots', () => {
     const { recordDigest: _, ...content } = record;
     record.recordDigest = await recordDigest(content);
     expect(await verifyMeaningTransitionV2(record)).toBe(false);
+  });
+
+  it('accepts a proposal digest sealed with Hangul keys whatever locale the app launched in', async () => {
+    expect(await underDefaultLocale('ko', async () => 'a'.localeCompare('가'))).toBeGreaterThan(0);
+    const content = {
+      identity,
+      request: { outcome: 'Change refund meaning', nonGoals: ['Keep capture unchanged.'] },
+      sourceRevision: SOURCE_BASIS,
+      meaningRevision: MEANING_BASIS,
+      contentDigest: A,
+      rawInput: { slug: 'capabilities/refund', 환불: true, 가: 1, notes: 'x' },
+    };
+    const reviewEvidence = {
+      status: 'observed' as const,
+      proposalBinding: { ...content, digest: await recordDigest(content) },
+      source: { status: 'observed' as const, rootPath: '/repo', sourceId: C, kind: 'git' as const,
+        revision: 'abc123', fingerprint: B, dirty: true, sourceBasisId: SOURCE_BASIS },
+    };
+    for (const locale of ['ko', 'en']) {
+      const prepared = await underDefaultLocale(locale, async () => prepareMeaningTransitionV2(await input({ reviewEvidence })));
+      expect(prepared).toMatchObject({ status: 'snapshot' });
+      expect(await underDefaultLocale(locale, () => verifyMeaningTransitionV2((prepared as { record: MeaningTransitionV2 }).record))).toBe(true);
+    }
   });
 });
