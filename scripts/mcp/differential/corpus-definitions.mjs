@@ -693,6 +693,17 @@ add('imports', 'infer-imports-review-and-focus-pages', { vault: 'miniature-repo'
   call('infer_imports', { rootPath: '$PARENT', focusDirection: 'both' }),
   call('infer_imports', { rootPath: '$PARENT', reviewMode: 'focus' }),
 ]);
+// The vault is read through the kept graph: a node and a source file added between two scans are
+// in the second answer, and a relation the vault never had shows as drift.
+const auditNode = '---\nuid: 33333333-4444-4555-8666-777777777777\nslug: capabilities/audit-order\nkind: capability\ntitle: Audit Order\ndescription: "Audit Order: what a person can do here."\ndomain: domains/order\ndependencies: [capabilities/charge-card]\nelements: []\npath: src/order/audit.ts\nsymbol: auditOrder\n---\n\n# Audit Order\n\nA fixture node about Audit Order.\n';
+add('imports', 'infer-imports-after-a-vault-write', { vault: 'miniature-repo' }, [
+  call('infer_imports', { rootPath: '$PARENT', reviewMode: 'summary' }),
+  { $: 'write-file', path: 'capabilities/audit-order.md', text: auditNode },
+  call('infer_imports', { rootPath: '$PARENT', reviewMode: 'summary' }),
+  { $: 'write-file', path: '../src/order/audit.ts', text: "import { charge } from '../payment/charge';\nexport const audit = charge;\n" },
+  call('infer_imports', { rootPath: '$PARENT', reviewMode: 'full', allowLargeResponse: true }),
+  call('infer_imports', { rootPath: '$PARENT', reviewMode: 'next' }),
+]);
 add('imports', 'infer-imports-atlas-ontology-vault-as-root',{ vault: 'atlas-ontology' }, [call('infer_imports', { rootPath: '$VAULT' }), call('inspect_architecture', { rootPath: '$VAULT' })]);
 
 // ---------------------------------------------------------------------------------------------
