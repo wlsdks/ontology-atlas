@@ -189,6 +189,10 @@ fn a_worktree_reads_its_subjects_beyond_the_base_and_its_newest_uncommitted_file
     assert_eq!(read_activity(&main, "absent", Some("main")), None);
     let refused = read_activity(&main, "feat-lines", Some("--output=/tmp/x")).expect("reads");
     assert_eq!(refused.commits, None, "an option is never a base branch");
+    // An empty `.git` folder is no repository: Git run beside it would read the enclosing one.
+    let planted = main.join("planted");
+    fs::create_dir_all(planted.join(".git")).unwrap();
+    assert_eq!(read_activity(&planted, "main", Some("main")), None);
 }
 
 /// Prints the CPU one read costs on a real repository, in this process and its `git` children:

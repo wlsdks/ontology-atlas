@@ -113,7 +113,7 @@ session list, and on macOS Work status reads it:
 
 | The session says | The room |
 |---|---|
-| it waits on a permission prompt or a sandbox request | **Waiting for your approval**: an amber frame, the words at the top of its screen, an amber light |
+| it waits on a permission prompt or a sandbox request | **Waiting for your approval**: an amber frame, the words in amber on its wall, an amber light |
 | it waits for input, a dialog or a worker's request | **Waiting for your answer**, drawn the same way |
 | it is busy | **Working**, as before |
 | it is idle | **Finished replying**: a quiet, unlit room, unless another tool works in the folder |
@@ -352,8 +352,8 @@ rather than cut. On a narrow room the time beside the state gives way first and
 the cart waits nearer `main`, so the state reads in full. The cart waits left
 of the middle on a wide room, at most 496 px in, always a cart's length before
 `main`.
-A room says its state once: a room that needs a person says it in amber at the
-top of its screen, and any other room on its wall. A quiet room's screen is not
+A room says its state once, on its wall, in amber when it needs a person, so
+the words never compete with the branch name for the screen's top line. A quiet room's screen is not
 dimmed: its words keep their contrast and its wall says it is quiet. The building ends under what
 it holds, on the page itself: there is no slab behind the rooms. A room alone
 on the stage takes the building's whole width instead of half of it, grows to
@@ -468,26 +468,15 @@ The folder's path sits at the panel's foot.
 
 ## Merged work
 
-Under the building, and under the empty or quiet building, **Merged into
-`main`** lists the base branch's newest thirty changes on its first-parent
-line, merges and squashed commits alike, grouped by day: each with its kind
-read from a conventional prefix, its title, its pull request number, how many
-files it changed, a bar as long as the logarithm of its changed lines, and when
-it was merged. The page itself never scrolls: the building keeps its height
-and the list takes the rest of the window, at least its heading and two rows,
-and scrolls inside that strip, its last row fading at the edge. The stage counts
-its rooms on the whole window, so the list's strip only stops screens growing
-taller. A ? beside the heading explains the list: one line is one merged pull request, and a commit pushed without
-one is a line too. The list is read from Git (`work_status_landed`, one
-`git log`) on this Mac's copy of the branch, so a change not pulled yet is not
-listed, and Atlas stores nothing of its own. It is read again only when a worktree's
-head or standing changes, since the base branch moves only with them. The
-heading counts today's changes and the last seven days' (one `git rev-list
---count`, so the week may hold more than the thirty listed); a day the list
-stops in shows no count. Pressing a change opens it beside the building in
-place of the room panel: its numbers, the branch's own commits a merge brought
-(`work_status_landed_detail`, merges left out) and its files, most changed
-first, with **Copy commit hash**.
+Work status shows only work in flight; merged work has its own screen, Changes.
+The header's facts end with today's count, **11 merged today**, a link that
+opens Changes on the latest day with changes. The count is the base branch's
+first-parent commits since the person's local midnight, merges and squashed
+commits alike (`work_status_merged_count`, one `git rev-list --count`), on this
+Mac's copy of the branch, so a change not pulled yet is not counted. It is read
+again when a worktree's head or standing changes, since the base branch moves
+only with them, and when a new day starts. A day with no merge shows no count.
+A merge still plays in its room, as Live updates describes.
 
 Work status draws no Moru. Reduced motion shows the end states of its rooms
 without movement.
@@ -501,8 +490,8 @@ without movement.
 | Not a repository | the same choice |
 | Git missing | `atlasGit.install.*` |
 | Unreadable or not granted | `workStatus.unreadable` with the choice |
-| Only the main checkout | one room for the base branch, `workStatus.empty.*`, then the landed work |
-| Every worktree merged or untouched | `workStatus.quiet.*` with the shelf, then the landed work |
+| Only the main checkout | one room for the base branch and `workStatus.empty.*` |
+| Every worktree merged or untouched | `workStatus.quiet.*` with the shelf |
 | Reading | the page title; the building follows |
 | First file-change or load read not in yet | no flash or tick; the panel's Load says `workStatus.panel.reading` |
 | A folder macOS cannot watch | `workStatus.pulse.unwatched`; times from the Git read |

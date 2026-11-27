@@ -219,7 +219,9 @@
     "memory": "메모리가 부족해요",
     "cpu": "CPU가 꽉 찼어요",
     "gpu": "GPU가 꽉 찼어요",
-    "pointToLoad": "가장 많이 쓰는 방 보기"
+    "pointToLoad": "가장 많이 쓰는 방 보기",
+    "mergedToday": "오늘 머지 {count}개",
+    "mergedTodayOpen": "변경에서 보기"
   },
   "git": {
     "uncommitted": "커밋 안 한 파일 {count}개",
@@ -269,40 +271,5 @@
   "about": {
     "label": "이 화면이 보여 주는 것",
     "body": "방 하나가 워크트리 하나예요. 워크트리는 이 저장소에서 브랜치 하나를 작업하는 별도 폴더예요. 방의 화면에는 브랜치, 최근 커밋, 바꿨지만 아직 커밋하지 않은 파일이 나와요. 에이전트 세션이 작업 중인 방은 불이 켜져 있어요. 방을 누르면 나머지를 볼 수 있어요."
-  },
-  "landed": {
-    "title": "<code>{branch}</code>에 머지된 작업",
-    "note": "한 줄이 머지된 풀 리퀘스트 하나예요. 풀 리퀘스트 없이 푸시한 커밋도 한 줄이에요. Atlas는 이 Mac에 있는 브랜치를 읽어서, 아직 풀하지 않은 변경은 목록에 없어요.",
-    "noteLabel": "이 목록에 대해",
-    "summary": "오늘 {today}개 · 최근 7일 {week}개",
-    "none": "아직 {branch}에 머지된 작업이 없어요.",
-    "today": "오늘",
-    "yesterday": "어제",
-    "dayCount": "{count}개",
-    "files": "파일 {count}개",
-    "linesSr": "{insertions}줄 추가, {deletions}줄 삭제",
-    "kind": {
-      "feat": "기능",
-      "fix": "수정",
-      "perf": "성능",
-      "design": "디자인",
-      "refactor": "정리",
-      "docs": "문서",
-      "test": "테스트",
-      "chore": "관리"
-    },
-    "landedAt": "{ago} · {time}에 머지됨",
-    "stat": {
-      "commits": "커밋",
-      "files": "파일",
-      "added": "추가한 줄",
-      "removed": "지운 줄"
-    },
-    "commitsTitle": "이 변경의 커밋",
-    "filesTitle": "바뀐 파일",
-    "squashed": "커밋 하나로 합쳐서 머지돼서 따로 볼 커밋이 없어요.",
-    "binary": "바이너리",
-    "unreadable": "이 변경의 커밋과 파일을 Git에서 읽지 못했어요. 닫았다가 다시 열면 다시 읽어요.",
-    "copyHash": "커밋 해시 복사"
   }
 }
