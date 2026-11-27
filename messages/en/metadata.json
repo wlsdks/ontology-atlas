@@ -6,6 +6,7 @@
   "keywords": "ontology, codebase ontology, code knowledge graph, MCP server, Claude Code, Codex, coding agents, software architecture",
   "pages": {
     "topology": "Map",
+    "sample": "Sample map",
     "docs": "Ontology · Library",
     "projects": "Projects",
     "ontology": "Ontology",
@@ -17,6 +18,7 @@
     "home": "Keep understanding your system as coding agents change its code. Share context, inspect recorded meaning and evidence, and keep it in a local Markdown folder.",
     "download": "Download Ontology Atlas to share codebase context with agents and inspect meaning, evidence and unknowns. Signed macOS app, Windows beta, no Atlas backend.",
     "topology": "See your project's domains, capabilities, elements and dependencies as one map. Each file's info block is the map, and the files stay on your own disk.",
+    "sample": "A read-only map of a sample online store's code: domains, capabilities, elements and their relations. Ontology Atlas draws your own code this way in the app.",
     "docs": "Read and edit the markdown folder directly. Change the info block at the top of a file and the map follows.",
     "projects": "Every project and hub on this map, with the domains and capabilities each one is made of.",
     "guide": "Start with a Markdown folder, connect your coding agent, and learn how to inspect recorded meaning, evidence, and unknowns in Ontology Atlas.",
