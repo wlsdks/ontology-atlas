@@ -5,7 +5,7 @@
 
 use tree_sitter::Node;
 
-use crate::bounded_parse::{walk, ParsedSource, Visit};
+use crate::bounded_parse::{ParseRefusal, ParsedSource, ScopedVisitor, Visit};
 use crate::import_edges::ImportUsage;
 
 /// One imported module as written (`.x`, `..`, `a.b`) and the names taken from it; none for a
@@ -17,12 +17,61 @@ pub struct PythonImport {
     pub usage: ImportUsage,
 }
 
-pub fn read_python_imports(parsed: &ParsedSource<'_>) -> Vec<PythonImport> {
-    let mut found = Vec::new();
-    walk(parsed.root(), |node| {
+/// Every import of `parsed`, in source order; refused when the time the parse had runs out first.
+pub fn read_python_imports(parsed: &ParsedSource<'_>) -> Result<Vec<PythonImport>, ParseRefusal> {
+    let mut reader = ImportReader {
+        parsed,
+        found: Vec::new(),
+        type_only: false,
+        open: Vec::new(),
+    };
+    parsed.walk_scoped(&mut reader)?;
+    Ok(reader.found)
+}
+
+/// What an entered node says to the nodes below it.
+struct Open {
+    /// For an `if` whose condition is `TYPE_CHECKING`: the body that makes its imports type-only.
+    type_only_body: Option<usize>,
+    /// Whether the imports outside this node were type-only.
+    type_only_outside: bool,
+}
+
+/// Whether a statement stands in an `if TYPE_CHECKING:` body, kept as the walk goes down and up:
+/// asking the tree for each ancestor of each statement would cost the depth every time.
+struct ImportReader<'parsed, 'text> {
+    parsed: &'parsed ParsedSource<'text>,
+    found: Vec<PythonImport>,
+    type_only: bool,
+    open: Vec<Open>,
+}
+
+impl ImportReader<'_, '_> {
+    fn usage(&self) -> ImportUsage {
+        if self.type_only {
+            ImportUsage::TypeOnly
+        } else {
+            ImportUsage::Value
+        }
+    }
+
+    /// The body of `statement` when its condition is `TYPE_CHECKING`.
+    fn type_checking_body(&self, statement: Node<'_>) -> Option<usize> {
+        let condition = statement.child_by_field_name("condition")?;
+        is_type_checking(&compact(self.parsed.text_of(condition)))
+            .then(|| {
+                statement
+                    .child_by_field_name("consequence")
+                    .map(|body| body.id())
+            })
+            .flatten()
+    }
+
+    fn read(&mut self, node: Node<'_>) {
+        let parsed = self.parsed;
         match node.kind() {
             "import_statement" => {
-                let usage = usage_of(parsed, node);
+                let usage = self.usage();
                 for name in named(node, "name") {
                     let dotted = if name.kind() == "aliased_import" {
                         name.child_by_field_name("name")
@@ -30,7 +79,7 @@ pub fn read_python_imports(parsed: &ParsedSource<'_>) -> Vec<PythonImport> {
                         Some(name)
                     };
                     if let Some(dotted) = dotted {
-                        found.push(PythonImport {
+                        self.found.push(PythonImport {
                             module: compact(parsed.text_of(dotted)),
                             names: Vec::new(),
                             usage,
@@ -40,21 +89,48 @@ pub fn read_python_imports(parsed: &ParsedSource<'_>) -> Vec<PythonImport> {
             }
             "import_from_statement" => {
                 if let Some(module) = node.child_by_field_name("module_name") {
-                    found.push(PythonImport {
+                    self.found.push(PythonImport {
                         module: compact(parsed.text_of(module)),
                         names: named(node, "name")
                             .into_iter()
                             .filter_map(|name| imported_name(parsed, name))
                             .collect(),
-                        usage: usage_of(parsed, node),
+                        usage: self.usage(),
                     });
                 }
             }
             _ => {}
         }
+    }
+}
+
+impl<'tree> ScopedVisitor<'tree> for ImportReader<'_, '_> {
+    fn enter(&mut self, node: Node<'tree>) -> Visit {
+        let type_only_outside = self.type_only;
+        if self
+            .open
+            .last()
+            .and_then(|parent| parent.type_only_body)
+            .is_some_and(|body| body == node.id())
+        {
+            self.type_only = true;
+        }
+        let type_only_body = (node.kind() == "if_statement")
+            .then(|| self.type_checking_body(node))
+            .flatten();
+        self.open.push(Open {
+            type_only_body,
+            type_only_outside,
+        });
+        self.read(node);
         Visit::Into
-    });
-    found
+    }
+
+    fn leave(&mut self, _node: Node<'tree>) {
+        if let Some(left) = self.open.pop() {
+            self.type_only = left.type_only_outside;
+        }
+    }
 }
 
 fn named<'tree>(node: Node<'tree>, field: &str) -> Vec<Node<'tree>> {
@@ -79,25 +155,6 @@ fn compact(text: &str) -> String {
         .collect()
 }
 
-/// Type-only when the statement stands in the body of an `if TYPE_CHECKING:`.
-fn usage_of(parsed: &ParsedSource<'_>, statement: Node<'_>) -> ImportUsage {
-    let mut child = statement;
-    while let Some(parent) = child.parent() {
-        if parent.kind() == "if_statement"
-            && parent
-                .child_by_field_name("consequence")
-                .is_some_and(|body| body.id() == child.id())
-            && parent
-                .child_by_field_name("condition")
-                .is_some_and(|condition| is_type_checking(&compact(parsed.text_of(condition))))
-        {
-            return ImportUsage::TypeOnly;
-        }
-        child = parent;
-    }
-    ImportUsage::Value
-}
-
 fn is_type_checking(condition: &str) -> bool {
     let bare = condition.trim_start_matches('(').trim_end_matches(')');
     bare == "TYPE_CHECKING" || bare == "typing.TYPE_CHECKING"
@@ -117,6 +174,7 @@ mod tests {
         )
         .expect("parses");
         read_python_imports(&parsed)
+            .expect("in time")
             .into_iter()
             .map(|found| (found.module, found.names, found.usage))
             .collect()

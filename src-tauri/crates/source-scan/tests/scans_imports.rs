@@ -42,6 +42,18 @@ fn hostile_files_cost_a_bounded_time_and_are_named_not_skipped_silently() {
         "src/line.ts",
         &format!("const x = '{}';\n", "x".repeat(5 * 1024 * 1024)),
     );
+    // Every level holds an import and the next level, so each import has two thousand ancestors:
+    // asking the tree for them one by one took minutes.
+    let levels = 2_000;
+    write(
+        root,
+        "src/nested.ts",
+        &format!(
+            "export const x = {}import('./b'){};\n",
+            "[import('./b'),".repeat(levels),
+            "]".repeat(levels)
+        ),
+    );
     let mut binary = vec![0u8, 1, 2, 0, 255];
     binary.extend_from_slice(b"import './b';");
     std::fs::write(root.join("src/binary.ts"), binary).expect("binary file");
@@ -54,7 +66,7 @@ fn hostile_files_cost_a_bounded_time_and_are_named_not_skipped_silently() {
     let started = Instant::now();
     let found = scan(root, &ImportScanOptions::default());
     assert!(
-        started.elapsed() < Duration::from_secs(20),
+        started.elapsed() < Duration::from_secs(2),
         "hostile files must not stall the scan: {:?}",
         started.elapsed()
     );
@@ -68,6 +80,10 @@ fn hostile_files_cost_a_bounded_time_and_are_named_not_skipped_silently() {
     assert!(
         edges.contains(&("src/deep.ts", "src/b.ts")),
         "a file nested ten thousand brackets deep is still read"
+    );
+    assert!(
+        edges.contains(&("src/nested.ts", "src/b.ts")),
+        "a file with an import on each of two thousand levels is still read"
     );
     let unresolved: Vec<(&str, UnresolvedReason)> = found
         .unresolved

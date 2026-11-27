@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 
 use crate::import_edges::{Findings, ImportKind, ImportUsage, UnresolvedReason};
 use crate::path_facts::{resolve_below, PathFacts};
-use crate::rust_dependencies::{RustDependency, UsePath, MAX_DEPENDENCIES_PER_FILE};
+use crate::rust_dependencies::{RustDependencies, RustDependency, UsePath};
 use crate::source_walk::IgnoredNames;
 
 /// Crates the compiler ships; importing one is not a dependency worth listing.
@@ -94,19 +94,16 @@ impl<'facts, 'files> RustResolver<'facts, 'files> {
         ignore: &IgnoredNames,
         file: &Path,
         from: &str,
-        dependencies: &[RustDependency],
+        dependencies: &RustDependencies,
     ) {
-        let admitted = dependencies
-            .get(..MAX_DEPENDENCIES_PER_FILE)
-            .unwrap_or(dependencies);
-        if dependencies.len() > admitted.len() {
+        if dependencies.limit_reached {
             findings.could_not_place(
                 from,
                 "<rust-statement-limit>",
                 UnresolvedReason::UnsupportedStaticForm,
             );
         }
-        for dependency in admitted {
+        for dependency in &dependencies.found {
             match dependency {
                 RustDependency::Module {
                     name,
@@ -449,7 +446,7 @@ mod tests {
             &IgnoredNames::defaults(),
             &root.join(from),
             from,
-            &read_rust_dependencies(&parsed),
+            &read_rust_dependencies(&parsed).expect("in time"),
         );
         findings
     }

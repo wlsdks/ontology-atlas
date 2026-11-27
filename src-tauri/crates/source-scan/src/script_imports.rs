@@ -4,7 +4,7 @@
 
 use tree_sitter::Node;
 
-use crate::bounded_parse::{walk, ParsedSource, Visit};
+use crate::bounded_parse::{ParseRefusal, ParsedSource, ScopedVisitor, Visit};
 use crate::import_edges::{ImportKind, ImportUsage};
 
 /// One specifier and how the file names it.
@@ -15,20 +15,50 @@ pub struct ScriptImport {
     pub usage: ImportUsage,
 }
 
-/// Every import of `parsed`, in source order.
-pub fn read_script_imports(parsed: &ParsedSource<'_>) -> Vec<ScriptImport> {
-    let mut found = Vec::new();
-    walk(parsed.root(), |node| {
-        let read = match node.kind() {
-            "import_statement" => import_statement(parsed, node),
-            "export_statement" => export_statement(parsed, node),
-            "call_expression" => call_expression(parsed, node),
+/// Every import of `parsed`, in source order; refused when the time the parse had runs out first.
+pub fn read_script_imports(parsed: &ParsedSource<'_>) -> Result<Vec<ScriptImport>, ParseRefusal> {
+    let mut reader = ImportReader {
+        parsed,
+        found: Vec::new(),
+        in_type: false,
+        outside: Vec::new(),
+    };
+    parsed.walk_scoped(&mut reader)?;
+    Ok(reader.found)
+}
+
+/// Whether the node being read stands in a type, kept as the walk goes down and up: asking the
+/// tree for each ancestor of each `import()` would cost the depth of the node every time.
+struct ImportReader<'parsed, 'text> {
+    parsed: &'parsed ParsedSource<'text>,
+    found: Vec<ScriptImport>,
+    in_type: bool,
+    /// What `in_type` was outside each node entered and not yet left.
+    outside: Vec<bool>,
+}
+
+impl<'tree> ScopedVisitor<'tree> for ImportReader<'_, '_> {
+    fn enter(&mut self, node: Node<'tree>) -> Visit {
+        self.outside.push(self.in_type);
+        let kind = node.kind();
+        if is_type_context(kind) {
+            self.in_type = true;
+        } else if is_function_boundary(kind) {
+            self.in_type = false;
+        }
+        let read = match kind {
+            "import_statement" => import_statement(self.parsed, node),
+            "export_statement" => export_statement(self.parsed, node),
+            "call_expression" => call_expression(self.parsed, node, self.in_type),
             _ => None,
         };
-        found.extend(read);
+        self.found.extend(read);
         Visit::Into
-    });
-    found
+    }
+
+    fn leave(&mut self, _node: Node<'tree>) {
+        self.in_type = self.outside.pop().unwrap_or(false);
+    }
 }
 
 fn import_statement(parsed: &ParsedSource<'_>, node: Node<'_>) -> Option<ScriptImport> {
@@ -93,7 +123,11 @@ fn export_statement(parsed: &ParsedSource<'_>, node: Node<'_>) -> Option<ScriptI
 
 /// `import("x")` and `require("x")`; the first argument must be a plain string, since a computed
 /// one names nothing a static reading can resolve. An `import()` inside a type is type-only.
-fn call_expression(parsed: &ParsedSource<'_>, node: Node<'_>) -> Option<ScriptImport> {
+fn call_expression(
+    parsed: &ParsedSource<'_>,
+    node: Node<'_>,
+    in_type: bool,
+) -> Option<ScriptImport> {
     let function = node.child_by_field_name("function")?;
     let kind = match (function.kind(), parsed.text_of(function)) {
         ("import", _) => ImportKind::Dynamic,
@@ -103,7 +137,7 @@ fn call_expression(parsed: &ParsedSource<'_>, node: Node<'_>) -> Option<ScriptIm
     let arguments = node.child_by_field_name("arguments")?;
     let first = arguments.named_child(0)?;
     let specifier = string_content(parsed, first)?;
-    let usage = if kind == ImportKind::Dynamic && inside_a_type(node) {
+    let usage = if kind == ImportKind::Dynamic && in_type {
         ImportUsage::TypeOnly
     } else {
         ImportUsage::Value
@@ -136,32 +170,28 @@ fn specifiers_are_all_types(list: Node<'_>, specifier_kind: &str) -> bool {
     count > 0
 }
 
-fn inside_a_type(node: Node<'_>) -> bool {
-    let mut current = node.parent();
-    while let Some(parent) = current {
-        if matches!(
-            parent.kind(),
-            "type_annotation"
-                | "type_alias_declaration"
-                | "type_arguments"
-                | "interface_declaration"
-                | "extends_type_clause"
-                | "opting_type_annotation"
-                | "omitting_type_annotation"
-                | "asserts_annotation"
-                | "type_predicate_annotation"
-        ) {
-            return true;
-        }
-        if matches!(
-            parent.kind(),
-            "statement_block" | "arrow_function" | "function_expression" | "class_body"
-        ) {
-            return false;
-        }
-        current = parent.parent();
-    }
-    false
+/// A node that makes everything below it a type, until a function boundary says otherwise.
+fn is_type_context(kind: &str) -> bool {
+    matches!(
+        kind,
+        "type_annotation"
+            | "type_alias_declaration"
+            | "type_arguments"
+            | "interface_declaration"
+            | "extends_type_clause"
+            | "opting_type_annotation"
+            | "omitting_type_annotation"
+            | "asserts_annotation"
+            | "type_predicate_annotation"
+    )
+}
+
+/// Code below one of these is a value again, even inside a type annotation.
+fn is_function_boundary(kind: &str) -> bool {
+    matches!(
+        kind,
+        "statement_block" | "arrow_function" | "function_expression" | "class_body"
+    )
 }
 
 /// The characters between the quotes of a plain string literal, as written; `None` for any other
@@ -185,6 +215,7 @@ mod tests {
         let parsed =
             parse_bounded(language, source, ParseLimits::for_imports(1 << 20)).expect("parses");
         read_script_imports(&parsed)
+            .expect("in time")
             .into_iter()
             .map(|found| (found.specifier, found.kind, found.usage))
             .collect()

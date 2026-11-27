@@ -52,6 +52,8 @@ pub struct ParsedSource<'text> {
     text: &'text str,
     tree: Tree,
     language: SourceLanguage,
+    /// The parse's own budget, kept for the readers: reading a tree is bounded by it too.
+    deadline: Instant,
 }
 
 impl<'text> ParsedSource<'text> {
@@ -72,6 +74,36 @@ impl<'text> ParsedSource<'text> {
 
     pub fn text(&self) -> &'text str {
         self.text
+    }
+
+    /// Visits every node below the root as [`walk`] does, and gives up with
+    /// [`ParseRefusal::TookTooLong`] once the time the parse was allowed has passed: reading a
+    /// tree is bounded by the budget the parse was.
+    pub fn walk<'tree>(
+        &'tree self,
+        enter: impl FnMut(Node<'tree>) -> Visit,
+    ) -> Result<(), ParseRefusal> {
+        walk_nodes(self.root(), Some(self.deadline), &mut EnterOnly(enter))
+    }
+
+    /// [`Self::walk`] for a reader that also needs to be told when a node is left.
+    pub fn walk_scoped<'tree>(
+        &'tree self,
+        visitor: &mut impl ScopedVisitor<'tree>,
+    ) -> Result<(), ParseRefusal> {
+        walk_nodes(self.root(), Some(self.deadline), visitor)
+    }
+
+    /// The same source with its time gone, so a test sees what a reader does at the deadline.
+    #[cfg(test)]
+    pub(crate) fn with_time_gone(mut self) -> Self {
+        self.deadline = Instant::now();
+        self
+    }
+
+    /// Whether the time the parse was allowed is gone, for a reader that loops without a walk.
+    pub fn out_of_time(&self) -> bool {
+        Instant::now() >= self.deadline
     }
 }
 
@@ -120,6 +152,7 @@ pub fn parse_bounded<'text>(
         text,
         tree,
         language,
+        deadline,
     };
     let mut nodes = 0usize;
     walk(parsed.root(), |_| {
@@ -150,12 +183,51 @@ pub enum Visit {
 /// Visits `root` and everything below it, parents before children, in source order, with a
 /// cursor instead of recursion: a file nested ten thousand brackets deep costs the same stack as
 /// a flat one.
-pub fn walk<'tree>(root: Node<'tree>, mut visit: impl FnMut(Node<'tree>) -> Visit) {
+pub fn walk<'tree>(root: Node<'tree>, enter: impl FnMut(Node<'tree>) -> Visit) {
+    let _ = walk_nodes(root, None, &mut EnterOnly(enter));
+}
+
+/// A reader that keeps what the ancestors of the node in front of it say. A node's ancestors are
+/// the nodes entered and not yet left; asking the tree for a parent instead costs the depth of
+/// the node each time, which makes a file of nested imports cubic.
+pub trait ScopedVisitor<'tree> {
+    fn enter(&mut self, node: Node<'tree>) -> Visit;
+
+    /// Called after the last child of every node `enter` was shown (at once for one whose
+    /// children were skipped), and for none when the walk stops.
+    fn leave(&mut self, node: Node<'tree>);
+}
+
+struct EnterOnly<Enter>(Enter);
+
+impl<'tree, Enter: FnMut(Node<'tree>) -> Visit> ScopedVisitor<'tree> for EnterOnly<Enter> {
+    fn enter(&mut self, node: Node<'tree>) -> Visit {
+        (self.0)(node)
+    }
+
+    fn leave(&mut self, _node: Node<'tree>) {}
+}
+
+/// How many nodes pass between two looks at the clock.
+const NODES_PER_CLOCK_LOOK: u32 = 256;
+
+fn walk_nodes<'tree>(
+    root: Node<'tree>,
+    deadline: Option<Instant>,
+    visitor: &mut impl ScopedVisitor<'tree>,
+) -> Result<(), ParseRefusal> {
     let mut cursor = root.walk();
-    'tree: loop {
-        let node = cursor.node();
-        match visit(node) {
-            Visit::Stop => return,
+    let mut until_clock_look = NODES_PER_CLOCK_LOOK;
+    loop {
+        until_clock_look -= 1;
+        if until_clock_look == 0 {
+            until_clock_look = NODES_PER_CLOCK_LOOK;
+            if deadline.is_some_and(|deadline| Instant::now() >= deadline) {
+                return Err(ParseRefusal::TookTooLong);
+            }
+        }
+        match visitor.enter(cursor.node()) {
+            Visit::Stop => return Ok(()),
             Visit::Into => {
                 if cursor.goto_first_child() {
                     continue;
@@ -164,14 +236,15 @@ pub fn walk<'tree>(root: Node<'tree>, mut visit: impl FnMut(Node<'tree>) -> Visi
             Visit::Over => {}
         }
         loop {
+            visitor.leave(cursor.node());
             if cursor.node() == root {
-                break 'tree;
+                return Ok(());
             }
             if cursor.goto_next_sibling() {
                 break;
             }
             if !cursor.goto_parent() {
-                break 'tree;
+                return Ok(());
             }
         }
     }
@@ -182,44 +255,6 @@ mod tests {
     use super::*;
 
     const LIMITS: ParseLimits = ParseLimits::for_imports(2 * 1024 * 1024);
-
-    fn node_kinds(parsed: &ParsedSource<'_>) -> usize {
-        let mut count = 0;
-        walk(parsed.root(), |_| {
-            count += 1;
-            Visit::Into
-        });
-        count
-    }
-
-    #[test]
-    fn ten_thousand_nested_brackets_are_parsed_and_read_without_recursion() {
-        let nested = format!("{}1{}", "[".repeat(10_000), "]".repeat(10_000));
-        let source = format!("import x from './a';\nconst deep = {nested};\n");
-        let parsed = parse_bounded(SourceLanguage::TypeScript, &source, LIMITS).expect("parsed");
-        assert!(node_kinds(&parsed) > 10_000);
-        drop(parsed);
-    }
-
-    #[test]
-    fn a_five_megabyte_line_is_refused_before_the_parser_sees_it() {
-        let line = format!("const s = '{}';", "x".repeat(5 * 1024 * 1024));
-        assert!(matches!(
-            parse_bounded(SourceLanguage::JavaScript, &line, LIMITS),
-            Err(ParseRefusal::TooLarge)
-        ));
-    }
-
-    #[test]
-    fn bytes_posing_as_source_are_binary_not_syntax() {
-        let bytes: Vec<u8> = (0..4096u32).map(|index| (index % 251) as u8).collect();
-        let text = String::from_utf8_lossy(&bytes).into_owned();
-        assert!(text.contains('\0'));
-        assert!(matches!(
-            parse_bounded(SourceLanguage::TypeScript, &text, LIMITS),
-            Err(ParseRefusal::Binary)
-        ));
-    }
 
     #[test]
     fn a_tree_with_more_nodes_than_the_budget_is_dropped() {
@@ -247,6 +282,61 @@ mod tests {
             parse_bounded(SourceLanguage::JavaScript, &source, none),
             Err(ParseRefusal::TookTooLong)
         ));
+    }
+
+    struct Ancestry<'tree> {
+        open: Vec<Node<'tree>>,
+        parents_agree: bool,
+        left: usize,
+        entered: usize,
+    }
+
+    impl<'tree> ScopedVisitor<'tree> for Ancestry<'tree> {
+        fn enter(&mut self, node: Node<'tree>) -> Visit {
+            self.entered += 1;
+            self.parents_agree &= node.parent() == self.open.last().copied();
+            self.open.push(node);
+            if node.kind() == "array" && self.entered % 2 == 0 {
+                Visit::Over
+            } else {
+                Visit::Into
+            }
+        }
+
+        fn leave(&mut self, node: Node<'tree>) {
+            self.left += 1;
+            self.parents_agree &= self.open.pop() == Some(node);
+        }
+    }
+
+    #[test]
+    fn the_nodes_entered_and_not_yet_left_are_the_ancestors_of_the_next_one() {
+        let parsed = parse_bounded(
+            SourceLanguage::JavaScript,
+            "const a = [[1, [2]], {b: [3]}];\nf([4], [[5]]);",
+            LIMITS,
+        )
+        .expect("parsed");
+        let mut ancestry = Ancestry {
+            open: Vec::new(),
+            parents_agree: true,
+            left: 0,
+            entered: 0,
+        };
+        parsed.walk_scoped(&mut ancestry).expect("in time");
+        assert!(ancestry.parents_agree);
+        assert!(ancestry.open.is_empty());
+        assert_eq!(ancestry.left, ancestry.entered);
+        assert!(ancestry.entered > 20);
+    }
+
+    #[test]
+    fn a_walk_that_outruns_the_time_the_parse_had_says_so() {
+        let source = "a;".repeat(5_000);
+        let parsed = parse_bounded(SourceLanguage::JavaScript, &source, LIMITS)
+            .expect("parsed")
+            .with_time_gone();
+        assert_eq!(parsed.walk(|_| Visit::Into), Err(ParseRefusal::TookTooLong));
     }
 
     #[test]

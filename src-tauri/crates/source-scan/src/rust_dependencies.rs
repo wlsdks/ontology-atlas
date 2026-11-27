@@ -6,9 +6,11 @@
 //! arguments of another macro are not read, so a `use` written in a macro's token tree is not an
 //! import of the file.
 
+use std::collections::HashSet;
+
 use tree_sitter::Node;
 
-use crate::bounded_parse::{walk, ParsedSource, Visit};
+use crate::bounded_parse::{ParseRefusal, ParsedSource, ScopedVisitor, Visit};
 
 /// A file holding more dependency statements than this is read up to this many.
 pub const MAX_DEPENDENCIES_PER_FILE: usize = 256;
@@ -38,73 +40,153 @@ pub enum RustDependency {
     },
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum UsePath {
     Segments(Vec<String>),
     /// A form the reader does not follow (`use <T as Trait>::x`), with its text.
     Unsupported(String),
 }
 
-pub fn read_rust_dependencies(parsed: &ParsedSource<'_>) -> Vec<RustDependency> {
-    let mut found = Vec::new();
-    walk(parsed.root(), |node| match node.kind() {
-        "mod_item" => {
-            if node.child_by_field_name("body").is_some() {
-                return Visit::Over;
+/// What a file declares, up to [`MAX_DEPENDENCIES_PER_FILE`] statements.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RustDependencies {
+    pub found: Vec<RustDependency>,
+    /// The file holds more statements than were read: the reader stopped at the limit.
+    pub limit_reached: bool,
+}
+
+/// The dependencies of `parsed`, in source order. The reading stops at the limit instead of
+/// collecting a file's every statement for the placement to drop; it is refused when the time
+/// the parse had runs out first.
+pub fn read_rust_dependencies(parsed: &ParsedSource<'_>) -> Result<RustDependencies, ParseRefusal> {
+    let mut reader = DependencyReader {
+        parsed,
+        found: Vec::new(),
+        limit_reached: false,
+        open: Vec::new(),
+        out_of_time: false,
+    };
+    parsed.walk_scoped(&mut reader)?;
+    if reader.out_of_time {
+        return Err(ParseRefusal::TookTooLong);
+    }
+    Ok(RustDependencies {
+        found: reader.found,
+        limit_reached: reader.limit_reached,
+    })
+}
+
+/// A node entered and not yet left, as its children need to know it: what it is, and the
+/// attributes written among them that no sibling has claimed yet. Asking the tree for the parent
+/// or the previous sibling costs the depth or the sibling count each time.
+struct Open<'tree> {
+    kind: &'tree str,
+    attributes: Vec<Node<'tree>>,
+}
+
+struct DependencyReader<'parsed, 'text, 'tree> {
+    parsed: &'parsed ParsedSource<'text>,
+    found: Vec<RustDependency>,
+    limit_reached: bool,
+    open: Vec<Open<'tree>>,
+    out_of_time: bool,
+}
+
+impl<'tree> DependencyReader<'_, '_, 'tree> {
+    /// The attributes directly before `node` among its siblings, nearest last, comments between
+    /// skipped; an attribute or a comment adds to them and anything else ends them.
+    fn attributes_before(&mut self, node: Node<'tree>) -> Vec<Node<'tree>> {
+        let Some(parent) = self.open.last_mut() else {
+            return Vec::new();
+        };
+        match node.kind() {
+            "attribute_item" => {
+                parent.attributes.push(node);
+                Vec::new()
             }
-            if let Some(name) = node.child_by_field_name("name") {
-                let attributes = attributes_before(node);
+            "line_comment" | "block_comment" => Vec::new(),
+            _ => std::mem::take(&mut parent.attributes),
+        }
+    }
+
+    /// Whether another statement may be taken; a file past the limit stops the walk instead.
+    fn has_room(&mut self) -> bool {
+        self.limit_reached = self.found.len() >= MAX_DEPENDENCIES_PER_FILE;
+        !self.limit_reached
+    }
+}
+
+impl<'tree> ScopedVisitor<'tree> for DependencyReader<'_, '_, 'tree> {
+    fn enter(&mut self, node: Node<'tree>) -> Visit {
+        let parsed = self.parsed;
+        let attributes = self.attributes_before(node);
+        let parent_kind = self.open.last().map(|parent| parent.kind);
+        self.open.push(Open {
+            kind: node.kind(),
+            attributes: Vec::new(),
+        });
+        match node.kind() {
+            "mod_item" => {
+                if node.child_by_field_name("body").is_some() {
+                    return Visit::Over;
+                }
+                let Some(name) = node.child_by_field_name("name") else {
+                    return Visit::Over;
+                };
+                if !self.has_room() {
+                    return Visit::Stop;
+                }
                 let path_attribute = match attributes.as_slice() {
                     [only] => path_attribute_of(parsed.text_of(*only)),
                     _ => None,
                 };
                 let first = attributes.first().copied().unwrap_or(node);
-                found.push(RustDependency::Module {
+                self.found.push(RustDependency::Module {
                     name: parsed.text_of(name).to_string(),
                     conditional: !attributes.is_empty() && path_attribute.is_none(),
                     path_attribute,
                     statement: statement_text(parsed, first, node),
                 });
+                Visit::Over
             }
-            Visit::Over
-        }
-        "macro_definition" | "token_tree" => Visit::Over,
-        "macro_invocation" => {
-            if let Some(include) = include_of(parsed, node) {
-                found.push(include);
+            "macro_definition" | "token_tree" => Visit::Over,
+            "macro_invocation" => {
+                let Some(include) = include_of(parsed, node, parent_kind) else {
+                    return Visit::Over;
+                };
+                if !self.has_room() {
+                    return Visit::Stop;
+                }
+                self.found.push(include);
+                Visit::Over
             }
-            Visit::Over
+            "use_declaration" => {
+                if !self.has_room() {
+                    return Visit::Stop;
+                }
+                let paths = match node.child_by_field_name("argument") {
+                    Some(argument) => match use_paths(parsed, argument) {
+                        Ok(paths) => paths,
+                        Err(_) => {
+                            self.out_of_time = true;
+                            return Visit::Stop;
+                        }
+                    },
+                    None => Vec::new(),
+                };
+                self.found.push(RustDependency::Use {
+                    paths,
+                    statement: statement_text(parsed, node, node),
+                });
+                Visit::Over
+            }
+            _ => Visit::Into,
         }
-        "use_declaration" => {
-            let paths = node
-                .child_by_field_name("argument")
-                .map(|argument| use_paths(parsed, argument))
-                .unwrap_or_default();
-            found.push(RustDependency::Use {
-                paths,
-                statement: statement_text(parsed, node, node),
-            });
-            Visit::Over
-        }
-        _ => Visit::Into,
-    });
-    found
-}
-
-/// The attributes written directly before an item, nearest last; comments between are skipped.
-fn attributes_before<'tree>(item: Node<'tree>) -> Vec<Node<'tree>> {
-    let mut attributes = Vec::new();
-    let mut previous = item.prev_sibling();
-    while let Some(node) = previous {
-        match node.kind() {
-            "attribute_item" => attributes.push(node),
-            "line_comment" | "block_comment" => {}
-            _ => break,
-        }
-        previous = node.prev_sibling();
     }
-    attributes.reverse();
-    attributes
+
+    fn leave(&mut self, _node: Node<'tree>) {
+        self.open.pop();
+    }
 }
 
 /// The text from `first` to the end of `last`, without the closing `;`.
@@ -137,7 +219,11 @@ fn path_attribute_of(attribute: &str) -> Option<String> {
     (!literal.is_empty() && !literal.contains(['"', '\r', '\n'])).then(|| literal.to_string())
 }
 
-fn include_of(parsed: &ParsedSource<'_>, node: Node<'_>) -> Option<RustDependency> {
+fn include_of(
+    parsed: &ParsedSource<'_>,
+    node: Node<'_>,
+    parent_kind: Option<&str>,
+) -> Option<RustDependency> {
     let name = node.child_by_field_name("macro")?;
     if name.kind() != "identifier"
         || !matches!(
@@ -147,9 +233,9 @@ fn include_of(parsed: &ParsedSource<'_>, node: Node<'_>) -> Option<RustDependenc
     {
         return None;
     }
-    let statement_position = node.parent().is_some_and(|parent| {
+    let statement_position = parent_kind.is_some_and(|parent| {
         matches!(
-            parent.kind(),
+            parent,
             "source_file" | "declaration_list" | "expression_statement" | "block"
         )
     });
@@ -233,16 +319,20 @@ fn unescape_json_string(inner: &str) -> Option<String> {
 
 /// Every path a `use` argument names, a list expanded with its prefix, `self` and `*` dropped
 /// from the end of a path, repeats removed. Found with a stack: a use list nested ten thousand
-/// deep costs the same stack as a flat one.
-fn use_paths(parsed: &ParsedSource<'_>, argument: Node<'_>) -> Vec<UsePath> {
+/// deep costs the same stack as a flat one, and the time the parse had bounds it as it does a walk.
+fn use_paths(parsed: &ParsedSource<'_>, argument: Node<'_>) -> Result<Vec<UsePath>, ParseRefusal> {
     let mut paths: Vec<UsePath> = Vec::new();
+    let mut known: HashSet<UsePath> = HashSet::new();
     let mut push = |path: UsePath| {
-        if !paths.contains(&path) {
+        if known.insert(path.clone()) {
             paths.push(path);
         }
     };
     let mut pending: Vec<(Node<'_>, Vec<String>)> = vec![(argument, Vec::new())];
     while let Some((node, prefix)) = pending.pop() {
+        if parsed.out_of_time() {
+            return Err(ParseRefusal::TookTooLong);
+        }
         match node.kind() {
             "use_list" => {
                 let mut cursor = node.walk();
@@ -288,7 +378,7 @@ fn use_paths(parsed: &ParsedSource<'_>, argument: Node<'_>) -> Vec<UsePath> {
         }
     }
     paths.retain(|path| !matches!(path, UsePath::Segments(segments) if segments.is_empty()));
-    paths
+    Ok(paths)
 }
 
 fn joined(mut prefix: Vec<String>, segments: Vec<String>) -> UsePath {
@@ -335,7 +425,7 @@ mod tests {
             ParseLimits::for_imports(256 * 1024),
         )
         .expect("parses");
-        read_rust_dependencies(&parsed)
+        read_rust_dependencies(&parsed).expect("in time").found
     }
 
     fn paths(source: &str) -> Vec<String> {
@@ -374,7 +464,8 @@ mod tests {
         let found = read(
             "mod a;\n#[path = \"x/y.rs\"] mod b;\n#[cfg(unix)] mod c;\nmod inline { use hidden::x; }\n\
              macro_rules! m { () => { use in_macro::y; } }\nfn f() { use in_fn::z; }\n\
-             include!(\"gen.rs\");\ninclude_str!(r#\"raw.txt\"#);\n",
+             include!(\"gen.rs\");\ninclude_str!(r#\"raw.txt\"#);\n\
+             #[cfg(a)] // between\n#[cfg(b)] mod d;\n#[cfg(e)] fn f() {}\nmod g;\n",
         );
         let kinds: Vec<String> = found
             .iter()
@@ -400,7 +491,35 @@ mod tests {
                 "use use in_fn::z",
                 "include Some(\"gen.rs\")",
                 "include Some(\"raw.txt\")",
+                "mod d None true",
+                "mod g None false",
             ]
+        );
+    }
+
+    #[test]
+    fn a_file_with_more_statements_than_the_limit_is_read_up_to_it() {
+        let source = "mod m;\n".repeat(MAX_DEPENDENCIES_PER_FILE + 40);
+        let parsed = parse_bounded(
+            SourceLanguage::Rust,
+            &source,
+            ParseLimits::for_imports(256 * 1024),
+        )
+        .expect("parses");
+        let read = read_rust_dependencies(&parsed).expect("in time");
+        assert_eq!(read.found.len(), MAX_DEPENDENCIES_PER_FILE);
+        assert!(read.limit_reached);
+        let exact = "mod m;\n".repeat(MAX_DEPENDENCIES_PER_FILE);
+        let parsed = parse_bounded(
+            SourceLanguage::Rust,
+            &exact,
+            ParseLimits::for_imports(256 * 1024),
+        )
+        .expect("parses");
+        assert!(
+            !read_rust_dependencies(&parsed)
+                .expect("in time")
+                .limit_reached
         );
     }
 

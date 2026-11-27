@@ -412,7 +412,7 @@ mod tests {
                 let base = name.rsplit('/').next().expect("name");
                 JvmSource {
                     path: (*name).to_string(),
-                    file: read_jvm_source(&parsed, base, kotlin),
+                    file: read_jvm_source(&parsed, base, kotlin).expect("in time"),
                 }
             })
             .collect();

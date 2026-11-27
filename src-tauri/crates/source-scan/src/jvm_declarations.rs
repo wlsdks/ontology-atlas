@@ -10,7 +10,7 @@ use std::collections::HashSet;
 
 use tree_sitter::Node;
 
-use crate::bounded_parse::{walk, ParsedSource, Visit};
+use crate::bounded_parse::{ParseRefusal, ParsedSource, Visit};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct JvmImport {
@@ -35,8 +35,13 @@ pub struct JvmFile {
 }
 
 /// The file's package, imports, declarations and type references. `file_name` is its last path
-/// segment, to name the public type (Java) or the facade class (Kotlin).
-pub fn read_jvm_source(parsed: &ParsedSource<'_>, file_name: &str, kotlin: bool) -> JvmFile {
+/// segment, to name the public type (Java) or the facade class (Kotlin). Refused when the time the
+/// parse had runs out first.
+pub fn read_jvm_source(
+    parsed: &ParsedSource<'_>,
+    file_name: &str,
+    kotlin: bool,
+) -> Result<JvmFile, ParseRefusal> {
     let mut file = JvmFile::default();
     let mut local_names: HashSet<String> = HashSet::new();
     let mut references: Vec<String> = Vec::new();
@@ -51,6 +56,9 @@ pub fn read_jvm_source(parsed: &ParsedSource<'_>, file_name: &str, kotlin: bool)
         top_level.extend(root.children(&mut cursor));
     }
     for node in &top_level {
+        if parsed.out_of_time() {
+            return Err(ParseRefusal::TookTooLong);
+        }
         match node.kind() {
             "package_declaration" | "package_header" if file.package.is_none() => {
                 file.package = qualified_name(parsed, *node).map(|(name, _)| name);
@@ -95,7 +103,7 @@ pub fn read_jvm_source(parsed: &ParsedSource<'_>, file_name: &str, kotlin: bool)
         }
     }
 
-    walk(root, |node| {
+    parsed.walk(|node| {
         match node.kind() {
             "class_declaration"
             | "interface_declaration"
@@ -130,7 +138,7 @@ pub fn read_jvm_source(parsed: &ParsedSource<'_>, file_name: &str, kotlin: bool)
             _ => {}
         }
         Visit::Into
-    });
+    })?;
 
     // Declarations start with the types, as the file lists them.
     let mut declarations = file.types.clone();
@@ -157,7 +165,7 @@ pub fn read_jvm_source(parsed: &ParsedSource<'_>, file_name: &str, kotlin: bool)
         .into_iter()
         .filter(|name| !local_names.contains(name))
         .collect();
-    file
+    Ok(file)
 }
 
 fn push_unique(names: &mut Vec<String>, name: &str) {
@@ -302,7 +310,7 @@ mod tests {
     fn read(language: SourceLanguage, name: &str, source: &str) -> JvmFile {
         let parsed =
             parse_bounded(language, source, ParseLimits::for_imports(1 << 20)).expect("parses");
-        read_jvm_source(&parsed, name, language == SourceLanguage::Kotlin)
+        read_jvm_source(&parsed, name, language == SourceLanguage::Kotlin).expect("in time")
     }
 
     #[test]
