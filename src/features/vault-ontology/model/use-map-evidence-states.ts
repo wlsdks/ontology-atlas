@@ -5,7 +5,7 @@ import { useDataSourceMode, useLocalVault } from '@/entities/vault-session';
 import type { VaultDoc } from '@/entities/docs-vault';
 import type { KnowledgeGraphNode } from '@/entities/knowledge-graph';
 import { buildEvidenceConcepts, resolveEvidenceStates, type EvidenceConceptInput } from '@/shared/lib/git/evidence-states';
-import { movedEvidencePairs, unchangedEvidencePairs } from '@/shared/lib/git/evidence-verdict.mjs';
+import { EVIDENCE_TEXT_CHUNK, movedEvidencePairs, unchangedEvidencePairs } from '@/shared/lib/git/evidence-verdict.mjs';
 import { selectOpenVaultHandle } from '@/shared/lib/vault-folder/select-open-vault-handle';
 import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import {
@@ -80,8 +80,32 @@ async function walkInBatches(rootPath: string, repoPaths: readonly string[], vau
 }
 
 /**
- * Re-reads each file the dates call moved, at its concept document's newest commit and on disk. Any
- * failure answers no pair, so every pair stays moved.
+ * Each pair's last verdict, keyed by pair, with a fingerprint of the working text it was judged on.
+ * The committed side never changes for a pair, so an unchanged working file reuses the verdict
+ * instead of normalizing both sides again on the main thread.
+ */
+const pairVerdicts = new Map<string, Map<string, { after: string; unchangedKey: string | null }>>();
+/** Normalizing gives the main thread back after this long. */
+const NORMALIZE_SLICE_MS = 8;
+
+/** Length and two independent 32-bit hashes: a false match needs all three to collide. */
+function fingerprint(text: string): string {
+  let a = 0x811c9dc5;
+  let b = 0x01000193;
+  for (let index = 0; index < text.length; index += 1) {
+    const code = text.charCodeAt(index);
+    a = Math.imul(a ^ code, 0x01000193);
+    b = Math.imul(b + code, 0x5bd1e995) ^ (b >>> 15);
+  }
+  return `${text.length}:${(a >>> 0).toString(36)}:${(b >>> 0).toString(36)}`;
+}
+
+const yieldToMainThread = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+/**
+ * Re-reads each file the dates call moved, at its concept document's newest commit and on disk,
+ * one chunk per call until every pair is judged, the order `validate_vault` reads them in. A chunk
+ * that fails leaves its pairs moved.
  */
 async function readUnchangedPairs(
   rootPath: string,
@@ -90,12 +114,35 @@ async function readUnchangedPairs(
 ): Promise<ReadonlySet<string>> {
   const pairs = movedEvidencePairs(concepts, changes);
   if (pairs.length === 0) return NO_UNCHANGED_PAIRS;
-  try {
-    const readings = await gitEvidenceTextPairs(rootPath, pairs);
-    return readings ? unchangedEvidencePairs(readings) : NO_UNCHANGED_PAIRS;
-  } catch {
-    return NO_UNCHANGED_PAIRS;
+  const unchanged = new Set<string>();
+  const previous = pairVerdicts.get(rootPath);
+  // Only the pairs this folder asks about now are remembered.
+  const remembered = new Map<string, { after: string; unchangedKey: string | null }>();
+  for (let start = 0; start < pairs.length; start += EVIDENCE_TEXT_CHUNK) {
+    let readings: Awaited<ReturnType<typeof gitEvidenceTextPairs>> = null;
+    try {
+      readings = await gitEvidenceTextPairs(rootPath, pairs.slice(start, start + EVIDENCE_TEXT_CHUNK));
+    } catch {
+      readings = null;
+    }
+    let sliceStart = performance.now();
+    for (const reading of readings ?? []) {
+      if (typeof reading.before !== 'string' || typeof reading.after !== 'string') continue;
+      const memoKey = `${reading.commit}\0${reading.path}`;
+      const after = fingerprint(reading.after);
+      const known = previous?.get(memoKey);
+      const unchangedKey =
+        known && known.after === after ? known.unchangedKey : ([...unchangedEvidencePairs([reading])][0] ?? null);
+      remembered.set(memoKey, { after, unchangedKey });
+      if (unchangedKey) unchanged.add(unchangedKey);
+      if (performance.now() - sliceStart >= NORMALIZE_SLICE_MS) {
+        await yieldToMainThread();
+        sliceStart = performance.now();
+      }
+    }
   }
+  pairVerdicts.set(rootPath, remembered);
+  return unchanged;
 }
 
 function revalidate(
@@ -127,6 +174,7 @@ function revalidate(
 export function resetSharedEvidenceWalk(): void {
   answers.clear();
   inFlight.clear();
+  pairVerdicts.clear();
 }
 
 export function useMapEvidenceStates({

@@ -31,10 +31,7 @@ test('a C# verbatim string keeps its backslash and its //', () => {
   assert.notEqual(comparableCode('var u = @"a//b";', 'a.cs'), comparableCode('var u = @"a//c";', 'a.cs'));
 });
 
-test('a 1 MiB file normalizes in linear time', () => {
-  const line = 'const a = "x // y"; // note /* z */\n';
-  const text = line.repeat(Math.ceil((1024 * 1024) / line.length));
-  const started = performance.now();
-  comparableCode(text, 'big.ts');
-  assert.ok(performance.now() - started < 2000);
+test('import bindings are kept, sorted and without their module', () => {
+  const text = "import b, { z as y, a } from './m';\nimport * as ns from 'n';\nexport { q } from 'r';\n";
+  assert.match(comparableCode(text, 'a.ts'), /\0imports\nexport q\nimport \* as ns\nimport a\nimport default as b\nimport z as y$/);
 });

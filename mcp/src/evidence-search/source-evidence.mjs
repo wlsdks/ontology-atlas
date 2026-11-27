@@ -13,6 +13,7 @@ import { basename, extname, isAbsolute, join, relative, resolve, sep } from 'nod
 import { DEFAULT_IGNORE } from '../analyze/scan-tables.mjs';
 import { repoText } from '../analyze/repo-text.mjs';
 import { calleesOf } from './callees.mjs';
+import { SENSITIVE } from './credential-names.mjs';
 import { productFiles } from './declaration-index.mjs';
 import { OUTLINE_DECLARATION_LIMIT, outlineSource } from './source-outline.mjs';
 import { SYMBOL_CONTEXT_LIMITS, symbolContext } from './symbol-context.mjs';
@@ -43,7 +44,6 @@ const MANIFESTS = new Set([
   'Cargo.toml', 'Gemfile', 'go.mod', 'package.json', 'pyproject.toml',
   'requirements.txt', 'setup.cfg', 'setup.py',
 ]);
-const SENSITIVE = /^(?:credential|credentials|secret|secrets|private[-_]?key|id_rsa|id_ed25519)(?:\.[^.]+)?$|\.(?:pem|key|p12|pfx|jks|keystore)$/i;
 const DIGEST = /^[a-f0-9]{64}$/;
 
 function sha256(bytes) {
@@ -166,10 +166,6 @@ function pathRefusal(path, ignore) {
   return null;
 }
 
-/** Whether any segment of a `/` path is hidden (leading `.`) or named like a credential, so it is never read. */
-export function namesHiddenOrCredentialFile(path) {
-  return path.split('/').some((part) => part.startsWith('.') || SENSITIVE.test(part));
-}
 
 function sameIdentity(left, right) {
   return left.dev === right.dev && left.ino === right.ino && left.size === right.size &&

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test, { after } from 'node:test';
@@ -85,4 +85,41 @@ test('a concept stays stale when its cited file cannot be read at the document c
   writeFileSync(join(root, 'src', 'logo.ts'), Buffer.from([0x2f, 0x2f, 0x00, 0x02]));
   commit('change logo');
   assert.equal(verdictOf('logo'), 'stale');
+});
+
+test('a cited secret file, named so or linked to, is never read and stays stale', () => {
+  mkdirSync(join(root, 'config'), { recursive: true });
+  writeFileSync(join(root, 'config', 'secrets.ts'), 'export const key = "k";\n');
+  writeFileSync(join(root, '.env.local'), 'TOKEN=planted\n');
+  writeFileSync(join(root, 'src', 'notes.ts'), 'TOKEN=planted\n');
+  concept('secrets', 'config/secrets.ts');
+  concept('notes', 'src/notes.ts');
+  execFileSync('git', ['-C', root, 'add', '-f', '.env.local']);
+  commit('record secrets and notes');
+
+  writeFileSync(join(root, 'config', 'secrets.ts'), '// The key.\nexport const key = "k";\n');
+  rmSync(join(root, 'src', 'notes.ts'));
+  symlinkSync('../.env.local', join(root, 'src', 'notes.ts'));
+  commit('comment the secret and link the notes to it');
+  assert.equal(verdictOf('secrets'), 'stale');
+  assert.equal(verdictOf('notes'), 'stale');
+});
+
+test('more moved files than one read answers are all judged', () => {
+  // One concept citing 300 files: 300 pairs, more than one 256-pair read, the last sorted last.
+  mkdirSync(join(root, 'many'), { recursive: true });
+  const files = Array.from({ length: 300 }, (_, index) => `many/f${String(index).padStart(3, '0')}.ts`);
+  for (const file of files) writeFileSync(join(root, file), `export const v = "${file}";\n`);
+  writeFileSync(
+    join(vault, 'capabilities', 'many.md'),
+    `---\nkind: capability\nslug: capabilities/many\ntitle: many\nelements:\n${files.map((file) => `  - ${file}\n`).join('')}---\n\nCites many.\n`,
+  );
+  commit('record many');
+  for (const file of files) writeFileSync(join(root, file), `// Why ${file}.\nexport const v = "${file}";\n`);
+  commit('comment every file');
+  assert.equal(verdictOf('many'), 'not-stale');
+
+  writeFileSync(join(root, files.at(-1)), `export const v = "changed";\n`);
+  commit('change the last file');
+  assert.equal(verdictOf('many'), 'stale');
 });

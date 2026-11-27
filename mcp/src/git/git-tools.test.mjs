@@ -789,3 +789,49 @@ test('readEvidenceTextPairs reads both sides inside the repository and refuses e
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('readEvidenceTextPairs never reads a secret file, as asked or through a link', () => {
+  const { root, vault } = makeRepo();
+  try {
+    mkdirSync(join(root, 'config'));
+    writeFileSync(join(root, '.env.local'), 'TOKEN=planted\n');
+    writeFileSync(join(root, 'config', 'credentials.json'), '{"key":"planted"}\n');
+    writeFileSync(join(root, 'deploy.pem'), 'planted\n');
+    writeFileSync(join(root, 'notes.ts'), 'const a = 1;\n');
+    git(root, 'add', '-f', '.env.local', 'config/credentials.json', 'deploy.pem', 'notes.ts');
+    git(root, 'commit', '-m', 'planted');
+    const head = git(root, 'rev-parse', 'HEAD');
+    rmSync(join(root, 'notes.ts'));
+    symlinkSync('.env.local', join(root, 'notes.ts'));
+    symlinkSync('config/credentials.json', join(root, 'creds.ts'));
+    symlinkSync('.git/config', join(root, 'git.ts'));
+    const paths = ['.env.local', 'config/credentials.json', 'deploy.pem', '.git/config', 'notes.ts', 'creds.ts', 'git.ts'];
+    const { readings } = readEvidenceTextPairs({ repoRoot: root, vaultRoot: vault, pairs: paths.map((path) => ({ commit: head, path })) });
+    for (const reading of readings) {
+      assert.equal(reading.after, null, reading.path);
+      assert.ok(!`${reading.before}`.includes('planted'), reading.path);
+    }
+    // The committed notes.ts is code; only its working side, a link to a secret, is refused.
+    assert.equal(readings.find((reading) => reading.path === 'notes.ts').before, 'const a = 1;\n');
+    for (const path of paths.slice(0, 4)) assert.equal(readings.find((reading) => reading.path === path).before, null, path);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('readEvidenceTextPairs answers one chunk per call and reads each working file once', () => {
+  const { root, vault } = makeRepo();
+  try {
+    const first = git(root, 'rev-parse', 'HEAD');
+    writeFileSync(join(root, 'outside.txt'), 'outside v2\n');
+    git(root, 'commit', '-am', 'second');
+    const second = git(root, 'rev-parse', 'HEAD');
+    const many = Array.from({ length: 300 }, (_, index) => ({ commit: index % 2 ? first : second, path: 'outside.txt' }));
+    const { readings } = readEvidenceTextPairs({ repoRoot: root, vaultRoot: vault, pairs: many });
+    assert.equal(readings.length, 256);
+    assert.ok(readings.every((reading) => reading.after === 'outside v2\n'));
+    assert.deepEqual(new Set(readings.map((reading) => reading.before)), new Set(['outside v1\n', 'outside v2\n']));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});

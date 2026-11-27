@@ -1,9 +1,11 @@
 //! Each cited file at a commit and in the working tree, as text, so the screen can ask
-//! whether only comments, imports or whitespace changed since a concept's document was written.
+//! whether only comments, imports or layout changed since a concept's document was written.
 //! The comparison itself runs in the shared JS normalizer the MCP server also uses
 //! (`mcp/src/drift/comparable-code.mjs`); this side only reads, bounded and inside the repo.
 
+use std::collections::HashMap;
 use std::fs;
+use std::io::Read;
 use std::path::Path;
 
 use serde::{Deserialize, Serialize};
@@ -11,19 +13,34 @@ use serde::{Deserialize, Serialize};
 use super::super::repo::require_repo_root;
 use super::super::runner::{run_git_read_with_input, validate_vault_dir};
 use super::safe_relative_path;
+use crate::code_reader::refusal::path_refusal;
 
 #[cfg(test)]
 mod tests;
 
-/// Pairs past this are not read and keep the date rule's answer
-/// (`EVIDENCE_TEXT_PAIR_LIMIT`, `mcp/src/drift/evidence-verdict.mjs`).
+/// Pairs one call answers; the screen asks again for the rest
+/// (`EVIDENCE_TEXT_CHUNK`, `mcp/src/drift/evidence-verdict.mjs`).
 const MAX_TEXT_PAIRS: usize = 256;
 /// A larger file is never read: its pair stays moved.
 const MAX_TEXT_BYTES: u64 = 1024 * 1024;
-/// Committed bytes one call reads at most; the pairs after it stay moved.
-const MAX_COMMITTED_BYTES: u64 = 32 * 1024 * 1024;
+/// Bytes one call reads at most, committed and working sides together; the pairs after
+/// it stay moved, as in the MCP server's reader.
+const MAX_READ_BYTES: u64 = 32 * 1024 * 1024;
 /// Git's own binary test: a NUL byte in the first 8000 bytes.
 const BINARY_PROBE_BYTES: usize = 8000;
+/// Names the MCP server's reader also refuses (`mcp/src/evidence-search/credential-names.mjs`).
+const CREDENTIAL_STEMS: [&str; 9] = [
+    "credential",
+    "credentials",
+    "secret",
+    "secrets",
+    "privatekey",
+    "private-key",
+    "private_key",
+    "id_rsa",
+    "id_ed25519",
+];
+const CREDENTIAL_EXTENSIONS: [&str; 6] = ["pem", "key", "p12", "pfx", "jks", "keystore"];
 
 #[derive(Debug, Deserialize)]
 pub struct EvidenceTextRequest {
@@ -43,8 +60,9 @@ pub struct EvidenceTextPair {
 }
 
 /// Reads each (commit, repository path) pair under the vault grant. A path that could
-/// climb out of the repository, read as an option, or reach outside it through a link
-/// is refused and answers `None` on both sides.
+/// climb out of the repository, read as an option, reach outside it through a link, or
+/// name a hidden or key-holding file, as asked or as its link resolves, is refused and
+/// answers `None` on both sides.
 #[tauri::command(async)]
 pub fn git_evidence_text_pairs(
     vault_path: String,
@@ -56,28 +74,40 @@ pub fn git_evidence_text_pairs(
 }
 
 fn read_text_pairs(repo_root: &Path, pairs: &[EvidenceTextRequest]) -> Vec<EvidenceTextPair> {
-    let requests: Vec<(&EvidenceTextRequest, Option<String>)> = pairs
+    let requests: Vec<(&EvidenceTextRequest, Option<(String, String)>)> = pairs
         .iter()
         .take(MAX_TEXT_PAIRS)
         .map(|pair| (pair, object_spec(pair)))
         .collect();
     let mut specs: Vec<String> = Vec::new();
-    for (_, spec) in &requests {
-        if let Some(spec) = spec {
+    for (_, request) in &requests {
+        if let Some((spec, _)) = request {
             if !specs.contains(spec) {
                 specs.push(spec.clone());
             }
         }
     }
-    let committed = read_committed(repo_root, &specs);
+    let mut budget = MAX_READ_BYTES;
+    let committed = read_committed(repo_root, &specs, &mut budget);
+    let root = fs::canonicalize(repo_root).ok();
+    let mut working: HashMap<String, Option<String>> = HashMap::new();
+    for (_, request) in &requests {
+        if let (Some((_, clean)), Some(root)) = (request, root.as_ref()) {
+            if !working.contains_key(clean) {
+                let text = read_working(root, clean, &mut budget);
+                working.insert(clean.clone(), text);
+            }
+        }
+    }
     requests
         .into_iter()
-        .map(|(pair, spec)| {
-            let before = spec.as_ref().and_then(|spec| committed.get(spec).cloned());
-            let after = spec
+        .map(|(pair, request)| {
+            let before = request
                 .as_ref()
-                .and_then(|_| safe_relative_path(&pair.path))
-                .and_then(|clean| read_working(repo_root, &clean));
+                .and_then(|(spec, _)| committed.get(spec).cloned());
+            let after = request
+                .as_ref()
+                .and_then(|(_, clean)| working.get(clean).cloned().flatten());
             EvidenceTextPair {
                 path: pair.path.clone(),
                 commit: pair.commit.clone(),
@@ -88,10 +118,11 @@ fn read_text_pairs(repo_root: &Path, pairs: &[EvidenceTextRequest]) -> Vec<Evide
         .collect()
 }
 
-/// `<commit>:<path>` for `cat-file`, or `None` for a path or hash that is not plainly one.
-fn object_spec(pair: &EvidenceTextRequest) -> Option<String> {
+/// `(<commit>:<path>, <path>)` for `cat-file` and the working tree, or `None` for a path
+/// or hash that is not plainly one, or a path either reader refuses by name.
+fn object_spec(pair: &EvidenceTextRequest) -> Option<(String, String)> {
     let clean = safe_relative_path(&pair.path)?;
-    if clean.contains('\n') || clean.contains('\r') {
+    if clean.contains('\n') || clean.contains('\r') || refused_name(&clean) {
         return None;
     }
     let commit = pair.commit.trim().to_ascii_lowercase();
@@ -99,7 +130,25 @@ fn object_spec(pair: &EvidenceTextRequest) -> Option<String> {
     if !hex || !(commit.len() == 40 || commit.len() == 64) {
         return None;
     }
-    Some(format!("{commit}:{clean}"))
+    Some((format!("{commit}:{clean}"), clean))
+}
+
+/// The code reader's refusal, and the MCP server's hidden or credential name, for a `/` path.
+fn refused_name(path: &str) -> bool {
+    path_refusal(path).is_some() || path.split('/').any(hidden_or_credential_segment)
+}
+
+fn hidden_or_credential_segment(part: &str) -> bool {
+    if part.starts_with('.') {
+        return true;
+    }
+    let lower = part.to_ascii_lowercase();
+    let (stem, extension) = match lower.rsplit_once('.') {
+        Some((stem, extension)) if !stem.is_empty() => (stem, Some(extension)),
+        _ => (lower.as_str(), None),
+    };
+    CREDENTIAL_STEMS.contains(&stem)
+        || extension.is_some_and(|extension| CREDENTIAL_EXTENSIONS.contains(&extension))
 }
 
 fn text_of(bytes: &[u8]) -> Option<String> {
@@ -114,8 +163,8 @@ fn text_of(bytes: &[u8]) -> Option<String> {
 }
 
 /// One `--batch-check` for sizes, then one `--batch` for the blobs small enough to read.
-fn read_committed(repo_root: &Path, specs: &[String]) -> std::collections::HashMap<String, String> {
-    let mut texts = std::collections::HashMap::new();
+fn read_committed(repo_root: &Path, specs: &[String], budget: &mut u64) -> HashMap<String, String> {
+    let mut texts = HashMap::new();
     if specs.is_empty() {
         return texts;
     }
@@ -126,16 +175,15 @@ fn read_committed(repo_root: &Path, specs: &[String]) -> std::collections::HashM
         return texts;
     };
     let checked = String::from_utf8_lossy(&checked);
-    let mut budget = MAX_COMMITTED_BYTES;
     let mut readable: Vec<&String> = Vec::new();
     for (spec, header) in specs.iter().zip(checked.lines()) {
         let Some(size) = blob_size(header) else {
             continue;
         };
-        if size > MAX_TEXT_BYTES || size > budget {
+        if size > MAX_TEXT_BYTES || size > *budget {
             continue;
         }
-        budget -= size;
+        *budget -= size;
         readable.push(spec);
     }
     if readable.is_empty() {
@@ -199,16 +247,30 @@ fn blob_size(header: &str) -> Option<u64> {
     size.parse().ok()
 }
 
-/// The working-tree file, only when it resolves inside the repository.
-fn read_working(repo_root: &Path, clean: &str) -> Option<String> {
-    let root = fs::canonicalize(repo_root).ok()?;
+/// The working-tree file, only when it resolves inside the repository to a name neither
+/// reader refuses and fits what is left of the budget. At most one byte past the size
+/// limit is read, however large the file has grown.
+fn read_working(root: &Path, clean: &str, budget: &mut u64) -> Option<String> {
     let real = fs::canonicalize(root.join(clean)).ok()?;
-    if !real.starts_with(&root) || real == root {
+    let inside = real.strip_prefix(root).ok()?;
+    let mut parts = Vec::new();
+    for component in inside.components() {
+        parts.push(component.as_os_str().to_str()?);
+    }
+    if parts.is_empty() || refused_name(&parts.join("/")) {
         return None;
     }
-    let metadata = fs::metadata(&real).ok()?;
-    if !metadata.is_file() || metadata.len() > MAX_TEXT_BYTES {
+    let file = fs::File::open(&real).ok()?;
+    let metadata = file.metadata().ok()?;
+    if !metadata.is_file() || metadata.len() > MAX_TEXT_BYTES || metadata.len() > *budget {
         return None;
     }
-    text_of(&fs::read(&real).ok()?)
+    let mut bytes = Vec::new();
+    file.take(MAX_TEXT_BYTES + 1).read_to_end(&mut bytes).ok()?;
+    let length = bytes.len() as u64;
+    if length > *budget {
+        return None;
+    }
+    *budget -= length;
+    text_of(&bytes)
 }

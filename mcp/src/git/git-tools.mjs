@@ -1,9 +1,11 @@
-import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs';
+import { closeSync, existsSync, fstatSync, openSync, readFileSync, readSync, realpathSync, statSync } from 'node:fs';
 import { isAbsolute, relative, resolve, sep } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { gitEnv, hardenedGitArgv } from './hardened-git.mjs';
 
 import { detachText } from '../parser.mjs';
+import { namesHiddenOrCredentialFile } from '../evidence-search/credential-names.mjs';
+import { EVIDENCE_TEXT_CHUNK } from '../drift/evidence-verdict.mjs';
 import { CONTAINMENT_KEYS, revisionClocks } from './stale-parent.mjs';
 
 const MAX_GIT_OUTPUT = 4 * 1024 * 1024;
@@ -677,9 +679,8 @@ function repoPathPrefix(gitRoot, repoRoot) {
 
 /** A file larger than this is never re-read: it stays moved. */
 const MAX_EVIDENCE_TEXT_BYTES = 1024 * 1024;
-const MAX_EVIDENCE_TEXT_PAIRS = 256;
-/** Committed bytes one call reads at most, as the desktop app's reader; later pairs stay moved. */
-const MAX_EVIDENCE_COMMITTED_BYTES = 32 * 1024 * 1024;
+/** Bytes one call reads at most, committed and working sides together, as the desktop app's reader. */
+const MAX_EVIDENCE_READ_BYTES = 32 * 1024 * 1024;
 /** Git's own binary test: a NUL byte in the first 8000 bytes. */
 const BINARY_PROBE_BYTES = 8000;
 const COMMIT_HASH = /^[0-9a-f]{40}([0-9a-f]{24})?$/;
@@ -688,8 +689,12 @@ const COMMIT_HASH = /^[0-9a-f]{40}([0-9a-f]{24})?$/;
  * Each cited file at a commit and in the working tree, as text, so the caller can ask
  * whether only comments, imports or whitespace changed. `pairs` hold a commit hash and a
  * `path:` value. A side that cannot be read, is binary, is not UTF-8 or exceeds
- * 1 MiB is `null`; the caller keeps such a pair moved. One `git cat-file
- * --batch-check` and one `--batch` serve every pair.
+ * 1 MiB is `null`; the caller keeps such a pair moved. A hidden or credential-named
+ * path, asked for or reached through a link, is never read. At most
+ * `EVIDENCE_TEXT_CHUNK` pairs are answered per call; the caller asks again for the rest.
+ * Committed sides are read first, then each working file once, all against one 32 MiB
+ * budget in the order asked. One `git cat-file --batch-check` and one `--batch` serve
+ * every committed side.
  */
 export function readEvidenceTextPairs({ repoRoot, vaultRoot, pairs = [] }) {
   const scope = resolveVaultGitScope({ repoRoot, vaultRoot, operation: 'evidence_text_pairs' });
@@ -697,23 +702,28 @@ export function readEvidenceTextPairs({ repoRoot, vaultRoot, pairs = [] }) {
   const { gitRoot } = scope;
   const repoPrefix = repoPathPrefix(gitRoot, repoRoot);
   const requests = [];
-  for (const pair of pairs.slice(0, MAX_EVIDENCE_TEXT_PAIRS)) {
+  for (const pair of pairs.slice(0, EVIDENCE_TEXT_CHUNK)) {
     const clean = safeRelativePath(pair?.path);
     const commit = typeof pair?.commit === 'string' ? pair.commit.trim().toLowerCase() : '';
-    if (!clean || /[\r\n]/.test(clean) || !COMMIT_HASH.test(commit)) {
+    const resolved = clean ? `${repoPrefix}${clean}` : '';
+    if (!clean || /[\r\n]/.test(clean) || !COMMIT_HASH.test(commit) || namesHiddenOrCredentialFile(resolved)) {
       requests.push({ pair, spec: null, resolved: null });
       continue;
     }
-    const resolved = `${repoPrefix}${clean}`;
     requests.push({ pair, spec: `${commit}:${resolved}`, resolved });
   }
+  const budget = { left: MAX_EVIDENCE_READ_BYTES };
   const specs = requests.filter((request) => request.spec).map((request) => request.spec);
-  const blobs = readCommittedTexts(gitRoot, specs);
+  const blobs = readCommittedTexts(gitRoot, specs, budget);
+  const working = new Map();
+  for (const { resolved } of requests) {
+    if (resolved && !working.has(resolved)) working.set(resolved, readWorkingText(gitRoot, resolved, budget));
+  }
   const readings = requests.map(({ pair, spec, resolved }) => ({
     commit: pair?.commit ?? '',
     path: pair?.path ?? '',
     before: spec ? (blobs.get(spec) ?? null) : null,
-    after: resolved ? readWorkingText(gitRoot, resolved) : null,
+    after: resolved ? (working.get(resolved) ?? null) : null,
   }));
   return { operation: 'evidence_text_pairs', ok: true, repoRoot: gitRoot, readings };
 }
@@ -729,7 +739,7 @@ function evidenceText(bytes) {
 }
 
 /** Committed blobs by `<commit>:<path>`; sizes are checked before any content is read. */
-function readCommittedTexts(gitRoot, specs) {
+function readCommittedTexts(gitRoot, specs, budget) {
   const texts = new Map();
   const unique = [...new Set(specs)];
   if (unique.length === 0) return texts;
@@ -737,13 +747,12 @@ function readCommittedTexts(gitRoot, specs) {
   const check = spawnGitBatch(gitRoot, ['cat-file', '--batch-check'], input);
   if (!check) return texts;
   const headers = check.toString('utf8').split('\n');
-  let budget = MAX_EVIDENCE_COMMITTED_BYTES;
   const readable = unique.filter((_, index) => {
     const parts = (headers[index] ?? '').split(' ');
     const size = Number(parts[2]);
     const blob = parts.length === 3 && /^[0-9a-f]+$/i.test(parts[0]) && parts[1] === 'blob' && Number.isSafeInteger(size);
-    if (!blob || size > MAX_EVIDENCE_TEXT_BYTES || size > budget) return false;
-    budget -= size;
+    if (!blob || size > MAX_EVIDENCE_TEXT_BYTES || size > budget.left) return false;
+    budget.left -= size;
     return true;
   });
   if (readable.length === 0) return texts;
@@ -786,18 +795,36 @@ function spawnGitBatch(cwd, args, input) {
   return result.status === 0 && Buffer.isBuffer(result.stdout) ? result.stdout : null;
 }
 
-/** The working-tree file, only when it resolves inside the repository. */
-function readWorkingText(gitRoot, resolved) {
+/**
+ * The working-tree file, only when it resolves inside the repository to a path that is
+ * neither hidden nor named like a credential, and fits what is left of the budget. At
+ * most one byte past the size limit is read, however large the file has grown.
+ */
+function readWorkingText(gitRoot, resolved, budget) {
+  let fd = null;
   try {
     const real = realpathSync(resolve(gitRoot, resolved));
     const inside = relative(gitRoot, real);
     // A Windows path on another drive comes back absolute, not under `..`.
     if (!inside || inside === '..' || inside.startsWith(`..${sep}`) || isAbsolute(inside)) return null;
-    const stats = statSync(real);
-    if (!stats.isFile() || stats.size > MAX_EVIDENCE_TEXT_BYTES) return null;
-    return evidenceText(readFileSync(real));
+    if (namesHiddenOrCredentialFile(inside.split(sep).join('/'))) return null;
+    fd = openSync(real, 'r');
+    const stats = fstatSync(fd);
+    if (!stats.isFile() || stats.size > MAX_EVIDENCE_TEXT_BYTES || stats.size > budget.left) return null;
+    const bytes = Buffer.alloc(MAX_EVIDENCE_TEXT_BYTES + 1);
+    let length = 0;
+    while (length < bytes.length) {
+      const read = readSync(fd, bytes, length, bytes.length - length, length);
+      if (read === 0) break;
+      length += read;
+    }
+    if (length > budget.left) return null;
+    budget.left -= length;
+    return evidenceText(bytes.subarray(0, length));
   } catch {
     return null;
+  } finally {
+    if (fd !== null) closeSync(fd);
   }
 }
 

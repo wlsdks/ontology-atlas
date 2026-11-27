@@ -24,7 +24,7 @@ export function judgeEvidence(input: {
   docChangedAt: string | null | undefined;
   /** The document's newest commit, the revision `unchangedPairs` was read at. */
   docCommit?: string | null;
-  /** Pairs from `unchangedEvidencePairs`: files that changed only in comments, imports or whitespace. */
+  /** Pairs from `unchangedEvidencePairs`: files that changed only in comments, import paths or layout. */
   unchangedPairs?: ReadonlySet<string> | null;
   entries: readonly EvidenceEntry[];
 }): EvidenceVerdict;
@@ -34,6 +34,10 @@ export interface EvidenceTextPair {
   path: string;
 }
 
+/** How many pairs one read asks for; every surface reads the sorted pairs in chunks of this size. */
+export const EVIDENCE_TEXT_CHUNK: number;
+
+/** Moved pairs sorted by path then commit, hidden and credential-named paths left out. */
 export function movedEvidencePairs(
   concepts: readonly { docPath: string | null; evidencePaths: readonly string[] }[],
   changes: ReadonlyMap<string, EvidencePathChange & { lastCommit?: string | null }>,

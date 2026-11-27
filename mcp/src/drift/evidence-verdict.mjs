@@ -5,6 +5,7 @@
  */
 
 import { comparableCode } from './comparable-code.mjs';
+import { namesHiddenOrCredentialFile } from '../evidence-search/credential-names.mjs';
 
 /**
  * @param {string|null|undefined} value
@@ -17,10 +18,11 @@ function toMs(value) {
 }
 
 /**
- * How many (document commit, file) pairs one judgement re-reads. Pairs past it keep
- * the date rule's answer, so both surfaces stop at the same pair.
+ * How many pairs one read asks for. Every surface reads the same sorted list in chunks
+ * of this size, so each judges every pair and the readers' byte budgets fall on the
+ * same pairs.
  */
-const EVIDENCE_TEXT_PAIR_LIMIT = 256;
+export const EVIDENCE_TEXT_CHUNK = 256;
 
 /** One (document commit, cited file) pair, as a set key. */
 function evidencePairKey(commit, path) {
@@ -28,9 +30,10 @@ function evidencePairKey(commit, path) {
 }
 
 /**
- * Every pair the date rule calls moved, in concept order, deduplicated and bounded:
- * the files to re-read at the concept document's newest commit. A document without a
- * commit names no pair, so it stays moved.
+ * Every pair the date rule calls moved, deduplicated and sorted by path then commit, so
+ * the order does not depend on which concepts a surface walked first: the files to
+ * re-read at the concept document's newest commit. A document without a commit names no
+ * pair, and a hidden or credential-named path is never asked for; both stay moved.
  *
  * @param {readonly {docPath: string|null, evidencePaths: readonly string[]}[]} concepts
  * @param {ReadonlyMap<string, {exists: boolean, isDir?: boolean, lastChangedAt: string|null, lastCommit?: string|null}>} changes
@@ -38,8 +41,7 @@ function evidencePairKey(commit, path) {
  * @returns {{commit: string, path: string}[]}
  */
 export function movedEvidencePairs(concepts, changes, sourceChanges = changes) {
-  const pairs = [];
-  const seen = new Set();
+  const pairs = new Map();
   for (const concept of concepts) {
     const doc = concept.docPath ? changes.get(concept.docPath) : undefined;
     const commit = doc?.lastCommit;
@@ -49,14 +51,16 @@ export function movedEvidencePairs(concepts, changes, sourceChanges = changes) {
       entries: concept.evidencePaths.map((path) => ({ path, change: sourceChanges.get(path) ?? null })),
     });
     for (const { path } of moved) {
-      const key = evidencePairKey(commit, path);
-      if (seen.has(key)) continue;
-      if (pairs.length >= EVIDENCE_TEXT_PAIR_LIMIT) return pairs;
-      seen.add(key);
-      pairs.push({ commit, path });
+      if (namesHiddenOrCredentialFile(path)) continue;
+      pairs.set(evidencePairKey(commit, path), { commit, path });
     }
   }
-  return pairs;
+  const byPathThenCommit = (a, b) => (a.path === b.path ? compare(a.commit, b.commit) : compare(a.path, b.path));
+  return [...pairs.values()].sort(byPathThenCommit);
+}
+
+function compare(a, b) {
+  return a < b ? -1 : a > b ? 1 : 0;
 }
 
 /**

@@ -36,7 +36,7 @@ import { validateLoadedVaultDocument } from '../vault/documents/doc-facts.mjs';
 import { loadVaultDocs } from '../vault/documents/document-cache.mjs';
 import { collectPathLastChanges, readEvidenceTextPairs } from '../git/git-tools.mjs';
 import { evidenceConceptsFromDocs, resolveEvidenceStates } from '../drift/evidence-drift.mjs';
-import { movedEvidencePairs, unchangedEvidencePairs } from '../drift/evidence-verdict.mjs';
+import { EVIDENCE_TEXT_CHUNK, movedEvidencePairs, unchangedEvidencePairs } from '../drift/evidence-verdict.mjs';
 import { okResponseBytes } from '../server/rpc.mjs';
 import { repoText } from '../analyze/repo-text.mjs';
 import { foldRepeatedGuidance } from './validate-page-fold.mjs';
@@ -677,18 +677,23 @@ function buildEvidenceDrift(docs, repoRoot, vaultRoot) {
 }
 
 /**
- * The moved files whose only change since their concept's document is in comments or
- * whitespace. Any failure reads as no such file, so every pair stays moved.
+ * The moved files whose only change since their concept's document is in comments,
+ * import paths or layout, read chunk by chunk until every pair is judged. A chunk that
+ * fails leaves its pairs moved; the others still count.
  */
 function commentOnlyEvidencePairs(concepts, changes, repoRoot, vaultRoot) {
   const pairs = movedEvidencePairs(concepts, changes);
   if (pairs.length === 0) return null;
-  try {
-    const read = readEvidenceTextPairs({ repoRoot, vaultRoot, pairs });
-    return read?.ok ? unchangedEvidencePairs(read.readings) : null;
-  } catch {
-    return null;
+  const unchanged = new Set();
+  for (let start = 0; start < pairs.length; start += EVIDENCE_TEXT_CHUNK) {
+    try {
+      const read = readEvidenceTextPairs({ repoRoot, vaultRoot, pairs: pairs.slice(start, start + EVIDENCE_TEXT_CHUNK) });
+      if (read?.ok) for (const key of unchangedEvidencePairs(read.readings)) unchanged.add(key);
+    } catch {
+      // This chunk stays moved.
+    }
   }
+  return unchanged;
 }
 
 export {
