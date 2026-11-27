@@ -382,11 +382,15 @@ fn roots_are_watched_until_the_next_would_pass_half_the_open_file_limit() {
 mod with_the_watcher {
     use std::path::{Path, PathBuf};
     use std::process::Command;
-    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::{Mutex, PoisonError};
     use std::time::{Duration, Instant};
 
+    use notify_debouncer_full::notify::event::{CreateKind, DataChange, MetadataKind, ModifyKind};
+    use notify_debouncer_full::notify::{Event, EventKind};
+
     use super::super::{
-        git_check, pulse_read, set_ask_lapse, set_watching, stop_watching, watcher_is_alive,
+        git_check, pulse_read, set_ask_lapse, set_watching, state, stop_watching, take_notice,
+        waiting_paths, watcher_is_alive, PulseRead,
     };
     use super::PLANTED;
     use crate::app_shell::open_file_limit::soft_open_file_limit;
@@ -402,21 +406,53 @@ mod with_the_watcher {
         assert!(status.status.success(), "git {args:?}");
     }
 
-    static GIT_CALLS: AtomicUsize = AtomicUsize::new(0);
+    /// The worktree of each Git call, in the order they were made.
+    static GIT_CALLS: Mutex<Vec<String>> = Mutex::new(Vec::new());
 
-    fn total(read: &super::super::PulseRead, id: &str) -> u32 {
+    fn git_calls() -> Vec<String> {
+        GIT_CALLS
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone()
+    }
+
+    /// What notify gave the watcher, flag by flag, for a file this test wrote on macOS 27.
+    fn file_notices(path: &Path) -> Vec<Event> {
+        [
+            EventKind::Create(CreateKind::File),
+            EventKind::Modify(ModifyKind::Metadata(MetadataKind::Extended)),
+            EventKind::Modify(ModifyKind::Data(DataChange::Content)),
+        ]
+        .map(|kind| Event::new(kind).add_path(path.to_path_buf()))
+        .to_vec()
+    }
+
+    /// The same for a folder it made.
+    fn folder_notices(path: &Path) -> Vec<Event> {
+        [
+            EventKind::Create(CreateKind::Folder),
+            EventKind::Modify(ModifyKind::Metadata(MetadataKind::Extended)),
+        ]
+        .map(|kind| Event::new(kind).add_path(path.to_path_buf()))
+        .to_vec()
+    }
+
+    fn total(read: &PulseRead, id: &str) -> u32 {
         read.worktrees.get(id).map_or(0, |room| {
             room.steps.iter().map(|step| u32::from(step.count)).sum()
         })
     }
 
-    fn ask(repo: &Path, drawn: &[String]) -> Option<super::super::PulseRead> {
+    fn ask(repo: &Path, drawn: &[String]) -> Option<PulseRead> {
         pulse_read(
             worktree_folders(repo),
             drawn,
             soft_open_file_limit(),
             |batch| {
-                GIT_CALLS.fetch_add(1, Ordering::SeqCst);
+                GIT_CALLS
+                    .lock()
+                    .unwrap_or_else(PoisonError::into_inner)
+                    .push(batch.worktree_id.clone());
                 git_check(batch)
             },
         )
@@ -634,9 +670,9 @@ mod with_the_watcher {
         let repo = base.join("repo");
         std::fs::create_dir_all(&repo).expect("repo folder");
         let repo = std::fs::canonicalize(&repo).expect("canonical repo");
-        // macOS can report the setup's own writes after the watcher starts, seconds late and in no
-        // fixed order, so the setup writes only under `.git`, where no notice counts: the ignore
-        // rules go to `info/exclude`, which every linked worktree reads, and the commit is empty.
+        // macOS can report the setup's own writes after the watcher starts, seconds late, so the
+        // setup writes only under `.git`, where no notice counts: the ignore rules go to
+        // `info/exclude`, which every linked worktree reads, and the commit is empty.
         git(&repo, &["init", "-q", "-b", "main"]);
         std::fs::write(repo.join(".git/info/exclude"), "logs/\n.worktrees/\n").expect("exclude");
         git(&repo, &["commit", "-q", "--allow-empty", "-m", "init"]);
@@ -667,41 +703,41 @@ mod with_the_watcher {
         assert!(ask(&repo, &drawn).is_some());
         assert!(watcher_is_alive());
         let before = ask(&repo, &drawn).expect("a read");
-        let calls_before = GIT_CALLS.load(Ordering::SeqCst);
+        let calls_before = git_calls().len();
 
+        // A save in w7 and writes that count nowhere, as notify gave them to the watcher, go to
+        // the watcher's own callback: macOS can drop a notice and flag nothing (a loaded Mac
+        // reported 7 of 20 plain writes), so a real write cannot tell a lost count from a lost
+        // notice. Nothing is written, so no late notice adds to these, and the pulse counts a
+        // path it never opens.
         let planted = a.join(format!("{PLANTED}.txt"));
-        std::fs::write(&planted, "x").expect("planted file");
-        // Unreadable to anyone: counting needs no open.
-        std::fs::set_permissions(
-            &planted,
-            std::os::unix::fs::PermissionsExt::from_mode(0o000),
-        )
-        .expect("chmod");
-        for (folder, file) in [
-            (repo.join(".git"), "scratch"),
-            (a.join("node_modules/pkg"), "index.js"),
-            (a.join("target/debug"), "app"),
-            (a.join("logs"), "run.log"),
+        let mut notices = file_notices(&planted);
+        let made_unreadable = EventKind::Modify(ModifyKind::Metadata(MetadataKind::Ownership));
+        notices.insert(1, Event::new(made_unreadable).add_path(planted));
+        notices.extend(file_notices(&repo.join(".git/scratch")));
+        for (folders, file) in [
+            (["node_modules", "node_modules/pkg"].as_slice(), "index.js"),
+            (["target", "target/debug"].as_slice(), "app"),
+            (["logs"].as_slice(), "run.log"),
         ] {
-            std::fs::create_dir_all(&folder).expect("folder");
-            std::fs::write(folder.join(file), "x").expect("file");
+            for folder in folders {
+                notices.extend(folder_notices(&a.join(folder)));
+            }
+            let deepest = folders.last().expect("a folder");
+            notices.extend(file_notices(&a.join(deepest).join(file)));
         }
-
-        let deadline = Instant::now() + Duration::from_secs(30);
-        let mut after = ask(&repo, &drawn).expect("a read");
-        while total(&after, &a_id) == total(&before, &a_id) && Instant::now() < deadline {
-            std::thread::sleep(Duration::from_millis(200));
-            after = ask(&repo, &drawn).expect("a read");
+        for notice in &notices {
+            take_notice(state(), notice);
         }
-        // Late notices would land within this.
-        std::thread::sleep(Duration::from_millis(1500));
         let after = ask(&repo, &drawn).expect("a read");
+        assert_eq!(waiting_paths(), 0, "one ask judges every waiting path");
         for id in &drawn {
             let added = total(&after, id) - total(&before, id);
             assert_eq!(added, u32::from(*id == a_id), "worktree {id}");
         }
         assert!(after.worktrees.values().all(|room| room.watched));
-        assert!(GIT_CALLS.load(Ordering::SeqCst) - calls_before <= 2);
+        // One Git call, for w7: the build folders, `.git` and the folders cost none.
+        assert_eq!(git_calls()[calls_before..], *std::slice::from_ref(&a_id));
         let sent = serde_json::to_string(&after).expect("serializes");
         assert!(!sent.contains(PLANTED) && !sent.contains(&*repo.to_string_lossy()));
 
@@ -721,11 +757,6 @@ mod with_the_watcher {
         let fresh = ask(&repo, &drawn).expect("a read");
         assert_eq!(total(&fresh, &a_id), 0);
         set_watching(false);
-
-        let _ = std::fs::set_permissions(
-            &planted,
-            std::os::unix::fs::PermissionsExt::from_mode(0o600),
-        );
         let _ = std::fs::remove_dir_all(PathBuf::from(&base));
     }
 }
