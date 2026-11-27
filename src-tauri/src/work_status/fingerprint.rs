@@ -99,10 +99,26 @@ pub(super) fn common_dir(root: &Path) -> Option<PathBuf> {
     let dot_git = root.join(".git");
     let meta = std::fs::symlink_metadata(&dot_git).ok()?;
     if meta.is_dir() {
-        return Some(dot_git);
+        return is_git_directory(&dot_git).then_some(dot_git);
     }
     let pointer = read_admin_file(&dot_git)?;
     let record = root.join(pointer.trim().strip_prefix("gitdir:")?.trim());
     let common = read_admin_file(&record.join("commondir"))?;
-    std::fs::canonicalize(record.join(common.trim())).ok()
+    let common = std::fs::canonicalize(record.join(common.trim())).ok()?;
+    is_git_directory(&common).then_some(common)
+}
+
+/// Git's own test for a repository folder: a `HEAD` file beside `objects` and `refs`. A folder
+/// that fails it is no repository, and Git run inside would climb to an enclosing one.
+fn is_git_directory(dir: &Path) -> bool {
+    let is = |name: &str, dir_expected: bool| {
+        std::fs::symlink_metadata(dir.join(name)).is_ok_and(|meta| {
+            if dir_expected {
+                meta.is_dir()
+            } else {
+                meta.is_file()
+            }
+        })
+    };
+    is("HEAD", false) && is("objects", true) && is("refs", true)
 }
