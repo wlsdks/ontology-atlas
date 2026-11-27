@@ -774,17 +774,19 @@ dependencies = [
 name = "confined-files"
 version = "0.1.0"
 dependencies = [
+ "confined-files",
  "dunce",
  "icu_normalizer",
  "insta",
- "libc",
  "proptest",
  "regex",
+ "rustix",
  "ryu-js",
  "serde",
  "serde_json",
  "sha2 0.11.1",
  "tempfile",
+ "thiserror 2.0.18",
  "walkdir",
 ]
 
@@ -2198,6 +2200,10 @@ dependencies = [
 [[package]]
 name = "hardened-git"
 version = "0.1.0"
+dependencies = [
+ "hardened-git",
+ "thiserror 2.0.18",
+]
 
 [[package]]
 name = "hashbrown"
