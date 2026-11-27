@@ -11,6 +11,8 @@
   "trustLineHandheld": "無料 · 登録不要 · インストール不要",
   "heroWindowsCta": "Windows x64ベータ",
   "heroPlaygroundCta": "ブラウザで試す",
+  "sampleCta": "サンプル地図を見る",
+  "otherComputers": "アプリはApple Silicon搭載のMacと、ベータ版としてWindows x64で動きます。Intel Mac、Linux、スマートフォンでは<sample>サンプル地図</sample>を見るか、<guide>ソースコードからMCPサーバーを動かして</guide>コーディングエージェントを接続できます。",
   "githubCta": "GitHubでソースを見る",
   "windowsUnsignedShort": "署名なし",
   "demoHeading": "このリポジトリのフォルダを開いたアプリの録画",
@@ -50,6 +52,9 @@
     "listLabel": "アプリの画面",
     "mapLink": "マップ、このブラウザで動くマップを開く",
     "mapHint": "ブラウザで",
+    "subSample": "同じMarkdownフォルダが、アプリでは役割ごとの画面として開きます。名前を押すとその画面が見られ、マップはこのブラウザでサンプル地図として開けます。",
+    "sampleMapLink": "マップ、このブラウザでサンプル地図を開く",
+    "sampleMapHint": "サンプル地図",
     "door": "{name}を開く",
     "alt": "Atlasアプリの{name}画面",
     "caption": {

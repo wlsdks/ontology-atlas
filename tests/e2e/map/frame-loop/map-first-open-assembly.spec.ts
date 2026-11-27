@@ -99,14 +99,22 @@ async function waitPastAssembly(page: Page): Promise<void> {
   await waitForMapSettled(page, { frames: STILL_THROUGH_TIER_HOLD });
 }
 
-async function waitForAssemblyMotion(page: Page): Promise<void> {
-  await page.waitForFunction(() => {
+/** Given a control's test id, presses it in the check that first sees motion, so no round trip lets the assembly end first. */
+async function waitForAssemblyMotion(page: Page, pressTestId?: string): Promise<void> {
+  await page.waitForFunction((pressTestId) => {
     const frames = (window as unknown as SamplerWindow).__assembly.frames;
     const first = frames[0]?.pos;
     const last = frames.at(-1)?.pos;
     if (!first || !last) return false;
-    return Object.keys(first).some((id) => last[id] && Math.hypot(last[id][0] - first[id][0], last[id][1] - first[id][1]) > 2);
-  });
+    const moved = Object.keys(first).some((id) => last[id] && Math.hypot(last[id][0] - first[id][0], last[id][1] - first[id][1]) > 2);
+    if (moved && pressTestId) {
+      const control = document.querySelector<HTMLElement>(`[data-testid="${pressTestId}"]`);
+      if (!control) return false;
+      control.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, cancelable: true }));
+      control.click();
+    }
+    return moved;
+  }, pressTestId);
 }
 
 test.describe("first-open map assembly", () => {
@@ -187,15 +195,13 @@ test.describe("first-open map assembly", () => {
   test("a fit pressed mid-assembly frames the assembled map", async ({ page }) => {
     test.setTimeout(90_000);
     await page.goto("/ko/topology/?synth=300&guides=off&e2e=1");
-    await waitForAssemblyMotion(page);
-    const arrange = page.getByTestId("topology-auto-arrange");
-    await arrange.click();
+    await waitForAssemblyMotion(page, "topology-auto-arrange");
     await waitPastAssembly(page);
     const { frames, pressedAt } = await readFrames(page);
     const d = displacement(frames);
     expect(d[frames.findLastIndex((f) => f.t < pressedAt!)]).toBeGreaterThan(0.5);
     const midAssembly = await page.evaluate(() => (window as unknown as SamplerWindow).__atlasMap?.camera()?.scale ?? 0);
-    await arrange.click();
+    await page.getByTestId("topology-auto-arrange").click();
     await waitPastAssembly(page);
     const assembled = await page.evaluate(() => (window as unknown as SamplerWindow).__atlasMap?.camera()?.scale ?? 0);
     expect(Math.abs(midAssembly - assembled)).toBeLessThan(0.01);

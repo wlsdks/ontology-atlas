@@ -97,7 +97,7 @@ The third written exception, for Work status only:
 
 | | |
 |---|---|
-| Read | the person's own processes (uid filter first): parent, start time, working folder, and the executable path of one whose kernel name looks like an agent. On macOS, every 5 s while Work status is visible and its load switch (on by default) is on: memory, CPU time and kernel name of each process under an agent program; memory, CPU time and working folder of a process named `java` outside every agent's tree; and for the whole Mac, memory in use, macOS's pressure level, CPU in use and the GPU's "Device Utilization %" |
+| Read | the person's own processes (uid filter first): parent, start time, working folder, and the executable path of one whose kernel name looks like an agent. On macOS, every 5 s while Work status is visible and its load switch (on by default) is on: memory, CPU time and kernel name of each process under an agent program; memory, CPU time and working folder of a process named `java` outside every agent's tree; and for the whole Mac, memory in use, macOS's pressure level, CPU in use, the 1- and 5-minute load average and the GPU's "Device Utilization %" |
 | How | system APIs through crates already in `Cargo.lock`; one process listing and one usage read per process under an agent per sample, never per process on the Mac; no spawned program, no file, no root; the previous sample is the only one kept |
 | Returned to the page | for each worktree, the agent's pid, tool (Claude Code or Codex) and start time; per worktree, memory and CPU in cores, and every tool group with a process there, the page showing the five largest (a closed list matched by kernel name; any other name counts as other programs) with count, memory and CPU; groups outside every room; for each session pid the page sent (at most 64), the memory, CPU and groups of the processes credited to that session; the Mac's totals, with no GPU figure when none is reported; never a folder, path, unlisted program name, or a pid the page does not already hold; session figures only for pids it sent |
 | Never read | arguments or environment (`KERN_PROCARGS2`, `/proc/<pid>/environ`), open files, another user's processes, a per-program GPU figure |
@@ -136,7 +136,8 @@ The fifth written exception, for Work status only:
 | Returned to the page | how the read went (one word of a closed list), and for a session whose folder lies in a listed worktree: the worktree's id, its pid, one of five states and, under Name below, its name |
 | Name | read with each list while the session-list switch and Show session names (on by default) are both on; only a string; control and direction-override characters removed, cut to one line of at most 60 characters, never inside a Hangul syllable; empty means no name, and the room says `{tool} {number}`. Held in Rust with the last list and dropped with it, or at once when either switch goes off; the page holds it in view state only and draws it as plain text |
 | A name never reaches | a file, a log, error text, storage, a URL, an argument the page sends back to Rust, an agent session, or the network |
-| Never read | a session's `sessionId` or `id`; any field outside the documented ones makes its entry unknown |
+| Subagents | with each list, in `~/.claude`, a visible `CLAUDE_CONFIG_DIR` and Orca profile homes: `projects/<cwd>/<sessionId>/subagents/`; `agentType`, `model`, worktree and file times from `agent-*.meta.json` (another key: unknown); from the session's `.jsonl`, its `cwd` (a listed worktree, else skip) and `<task-notification>` ids and statuses; the page gets type, model, worktree id or unknown. Never `description` or other text (`67a26c36`) |
+| Never read | a session's `id`; `sessionId` stays in Rust; any field outside the documented ones makes its entry unknown |
 | Platforms | macOS; no other platform runs it |
 | Gate | `src-tauri/src/work_status/agent_sessions/tests.rs` (`the_program_cannot_open_a_connection`, and the planted-name tests of criterion 2 in `docs/specs/2026-11-25-work-status-live.md`); `src/shared/lib/work-status/signals/sessions.test.ts` |
 | Record | `docs/records/decisions/2026-11-23-work-status-session-list-no-network-929c2179-7882-4c40-a4bc-83cfbb2612cf.md`; names: `docs/records/decisions/2026-11-25-work-status-session-names-3c8614d6-9b02-4b18-9e12-95d935c9434c.md` |
@@ -162,6 +163,39 @@ The sixth written exception, for Work status only:
 
 Another folder, a kept name or path, or a watch while hidden needs a new
 decision record.
+
+### Harness › Improve: agent memory and session files
+
+The seventh and eighth written exceptions, specified and not yet built
+(`docs/specs/2026-11-27-harness-self-improvement.md`):
+
+| | |
+|---|---|
+| 7: read | the repository's Claude Code memory folder by real path from config homes, and `autoMemoryDirectory` in user or managed settings only; its `.md` files |
+| 7: write | after a Keep, over an unchanged file: one path or index link changed, one link appended, one note deleted; a version first, then a swap |
+| 8: read | with its switch on: session lines whose `cwd` is the checkout or a listed worktree; typed text, tool name and `file_path`, the interrupt marker |
+| 8: send | after Send: ids and text only, logged first, to an agent with no MCP server and no allowed tool |
+| 8: write | one kept rule: a memory note, or one line appended to an existing `AGENTS.md`, `CLAUDE.md` or `.claude/rules/*.md` |
+| Never | note or session text in a log or error; a folder from project settings; a new instruction file |
+| Gate | the spec's criteria 2, 4, 8, 9 and 11 |
+| Records | `d73dd377` (7), `4919ff56` (8: read, send), `aa764ca0` (8: write) |
+
+Another folder, field, recipient or file needs a new decision record.
+
+### Workshop › control tower: acting on the person's processes
+
+The ninth, specified, not built (`docs/specs/2026-11-27-workshop-control-tower-controls.md`):
+
+| | |
+|---|---|
+| Read | while visible, each minute, from the existing listing: for own processes parented by launchd, folder, terminal, any child; a leftover's memory; no spawn |
+| Signal | one press on a list Rust offered: `SIGTERM` to a leftover; background priority and back for an agent's build |
+| Write | `git worktree unlock` of a stale lock, then `remove` without `--force`, after a confirm; a log line first (no path, last 1,000) |
+| Never | `SIGKILL`, `SIGSTOP`, group signals; agent programs, Atlas or its ancestors, pid 1, another user, a terminal's job; a pid whose start, uid, parent, name or folder changed; acting hidden or unpressed |
+| Gate | the controls spec's criteria |
+| Record | `ed30a160` |
+
+Another read, signal or target needs a new record.
 
 ### Folder watch is latency, not degradation
 

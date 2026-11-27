@@ -495,7 +495,7 @@ without movement.
 | Every worktree merged or untouched | `workStatus.quiet.*` with the shelf |
 | Reading | the page title; the building follows |
 | First file-change or load read not in yet | no flash or tick; the panel's Load says `workStatus.panel.reading` |
-| A folder macOS cannot watch | `workStatus.pulse.unwatched`; times from the Git read |
+| A folder macOS cannot watch, or one whose watch would pass half the open-file limit | `workStatus.pulse.unwatched`; times from the Git read |
 | A load sample failed | `workStatus.load.failed`; no header warning |
 | No GPU figure | `workStatus.load.macNoGpu` and `workStatus.load.gpuMissing` |
 | Names, file changes or load switched off | that part leaves every room; the reads panel says `workStatus.names.off`, `.pulse.off` or `.load.off` |

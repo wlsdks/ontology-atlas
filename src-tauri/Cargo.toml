@@ -1,6 +1,6 @@
 [package]
 name = "ontology-atlas"
-version = "2.7.13"
+version = "2.7.14"
 description = "Local-first codebase ontology workbench"
 authors = ["ontology-atlas contributors"]
 edition = "2021"
@@ -58,7 +58,10 @@ serde_json = "1"
 # `oid` and `alloc` defaults stay off. Tauri's build-time codegen still uses 0.10.
 sha2 = { version = "0.11.1", default-features = false }
 chrono = { version = "0.4", default-features = false, features = ["std", "now"] }
-notify-debouncer-full = "0.3"
+# 0.8 brings notify 9, whose FSEvents callback catches panics. Through notify 8 a path that is not
+# UTF-8, a flag bit newer than the crate or a panicking handler panics inside that callback, which
+# under notify 6 aborts the app.
+notify-debouncer-full = "0.8"
 # Already in the graph (1.13.2, through tokenizers and tauri-utils): no new crate. Work status cuts a
 # session's name at 60 user-perceived characters, as the page counts them, never inside one.
 unicode-segmentation = "1"

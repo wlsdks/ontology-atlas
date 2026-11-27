@@ -271,5 +271,67 @@
   "about": {
     "label": "这个页面显示什么",
     "body": "一个房间就是一个工作树。工作树是这个仓库里用来处理一个分支的独立文件夹。房间的屏幕上显示分支、最近的提交，以及已修改但尚未提交的文件。有代理会话正在工作的房间会亮灯。按下房间可以查看其余内容。"
+  },
+  "tower": {
+    "label": "这台电脑的负载",
+    "verdict": {
+      "calm": "尚有余量",
+      "busy": "繁忙",
+      "over": "过载",
+      "unread": "未读取"
+    },
+    "cpu": "CPU · {cores} 核",
+    "times": "×{times}",
+    "timesTitle": "过去 1 分钟平均有 {load} 个任务需要 {cores} 个核心，是核心一次能运行的 {times} 倍。",
+    "memory": "内存 · {pressure}",
+    "pressure": {
+      "normal": "正常",
+      "warning": "偏高",
+      "critical": "危急"
+    },
+    "gpu": "GPU 使用率 {percent}%",
+    "top": "{name} · CPU {cores} 核 · {memory}",
+    "other": "其他程序",
+    "moreSessions": "另有 {count} 个会话",
+    "showRooms": "显示 {name} 的房间",
+    "fits": "{running} 个工作树正在运行 · 约可承载 {fits} 个",
+    "noneRunning": "没有正在运行的工作树",
+    "advice": "{running} 个工作树正在运行，这台电脑约能承载 {fits} 个。{name} 用得最多。在一些任务结束前不再启动新的，其余的会更快完成。",
+    "adviceMemory": "macOS 报告内存压力为 {pressure}。{name} 占用最多：{memory}。",
+    "failed": "Atlas 刚才无法读取这台电脑的负载，将在 5 秒后重试。",
+    "windows": "在 Windows 上，Atlas 还不读取这台电脑的负载，因此不做判断。工作树和会话仍会显示。",
+    "about": "Atlas 把等待 CPU 的工作量（macOS 给出的过去 1 分钟平均值）与这台电脑的核心数比较，并按 macOS 自己的内存压力等级判断内存。繁忙：工作多于核心，或内存压力偏高。过载：工作量达到核心能处理的 2.5 倍，或内存压力危急。可承载数是正在运行的工作树数乘以 2.5，再除以过去 5 分钟超出核心的倍数；其他程序的工作也计算在内。没有自己工作树的子代理在其会话的程序里运行，计入该会话。",
+    "sessionNever": "Atlas 不会停止代理会话。要停止某个会话，请在它自己的窗口里按 Esc 或 Ctrl-C，在那里能看到它正在做什么。",
+    "leftover": {
+      "counts": "{list}",
+      "button": "停止 {count} 个遗留进程（{memory}）",
+      "note": "这些进程在启动它们的程序结束后仍在运行，文件夹已删除或分支已合并，且没有终端或子进程。停止会请求每个进程退出，不会动其他任何东西。",
+      "done": "{count} 个进程已退出。",
+      "someLeft": "{gone} 个已退出，{left} 个仍在运行。",
+      "changed": "没有停止任何进程：列表显示后这些进程发生了变化。列表已更新。"
+    },
+    "remove": {
+      "button": "删除这个工作树",
+      "title": "删除 {branch} 的工作树？",
+      "body": "它已合并到 {base}，且没有未提交的更改。Git 会连同被忽略的文件一起删除这个文件夹。分支会保留，git worktree add 可以恢复文件夹。",
+      "others": "以下被忽略的文件也会被删除，Atlas 无法判断构建能否重新生成它们：{paths}",
+      "confirm": "删除",
+      "done": "已删除 {branch} 的工作树。"
+    },
+    "refused": "{target} 没有被更改：{reason}",
+    "build": {
+      "background": "在后台运行 {name} 的构建",
+      "backgroundNote": "它会以最低优先级继续运行，磁盘和网络也会变慢，让其他工作先完成。构建仍在运行，所以负载数字不变。再按一次可恢复。",
+      "backgroundOn": "在后台运行中"
+    },
+    "subagents": {
+      "title": "{count} 个子代理正在运行",
+      "row": "{type} · {model} · {where}",
+      "noWorktree": "无工作树",
+      "quiet": "已安静 {minutes} 分钟",
+      "unknown": "子代理情况未知",
+      "unknownWhy": "Atlas 读取 Claude Code 自己的子代理文件，其格式没有公开文档。这个会话的文件没有找到，或不是 Atlas 认识的格式，所以宁可不显示也不猜测。其他内容不受影响。"
+    },
+    "adviceSubagents": "{name} 正在运行 {count} 个子代理，每个都会把自己的检查加到这份负载上。"
   }
 }

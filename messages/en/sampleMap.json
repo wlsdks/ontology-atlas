@@ -1,0 +1,9 @@
+{
+  "title": "Sample map",
+  "lead": "The concepts of a sample online store's code and the relations between them. In the app, Ontology Atlas draws your own code this way from the Markdown files in your folder.",
+  "readOnly": "This page opens no folder, so nothing here can be edited.",
+  "size": "{concepts, plural, one {# concept} other {# concepts}} · {relations, plural, one {# relation} other {# relations}}",
+  "download": "Get the app",
+  "loadFailed": "The sample map did not load. Check your connection, then try again.",
+  "retry": "Try again"
+}
