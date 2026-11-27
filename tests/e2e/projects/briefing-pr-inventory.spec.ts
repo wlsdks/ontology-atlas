@@ -320,11 +320,13 @@ test('measures the PR list and original at desktop, narrow and doubled text size
     if (process.env.ATLAS_PR_PROOF) await page.screenshot({ path: `${process.env.ATLAS_PR_PROOF}/pr-list-${width}.png` });
     const scope = page.getByRole('button', { name: 'Read scope' });
     const refresh = page.getByRole('button', { name: 'Refresh PRs' });
+    // Scrolled before opening: a pressed panel closes when the page under it scrolls, and whether this
+    // page can scroll at all depends on the width.
+    await page.locator('main').evaluate(element => { element.scrollTop += 16; });
     const refreshTop = await refresh.evaluate(element => element.getBoundingClientRect().top);
     await scope.click();
     await expect(page.getByRole('tooltip').filter({ hasText: 'PRs updated in the selected local dates' })).toBeVisible();
     expect(Math.abs(await refresh.evaluate(element => element.getBoundingClientRect().top) - refreshTop)).toBeLessThanOrEqual(1);
-    await page.locator('main').evaluate(element => { element.scrollTop += 16; });
     const tooltip = page.getByRole('tooltip').filter({ hasText: 'PRs updated in the selected local dates' });
     const box = await tooltip.boundingBox();
     expect(box).not.toBeNull();
