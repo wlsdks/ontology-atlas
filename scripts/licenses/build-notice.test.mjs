@@ -79,6 +79,12 @@ describe("buildOutputs", () => {
       assert.ok(text.includes("https://example.com/a") && text.includes("Example Holder") && text.includes("src/a.ts"));
     }
   });
+
+  it("ships the full LGPL-2.1 text once for every library the sidecar links statically", () => {
+    const licenses = buildOutputs(trees)[LICENSES_FILE];
+    assert.equal(licenses.split("GNU LESSER GENERAL PUBLIC LICENSE\n\nVersion 2.1, February 1999").length - 1, 1);
+    for (const library of ["JavaScriptCore and WebKit", "TinyCC"]) assert.ok(licenses.includes(library), library);
+  });
 });
 
 describe("license texts", () => {
