@@ -1390,7 +1390,7 @@ describe('focused check suggestions', () => {
   it('suggests direct Playwright specs for changed e2e tests', () => {
     const result = suggestFocusedChecks([
       'tests/e2e/gateway/ontology-ui.spec.ts',
-      'tests/e2e/vault-session/local-vault-picker.spec.ts',
+      'tests/e2e/vault-session/vault-launch-chooser.spec.ts',
     ]);
 
     /*
@@ -1399,7 +1399,7 @@ describe('focused check suggestions', () => {
      */
     assert.deepEqual(domainCommands(result), [
       'pnpm exec playwright test tests/e2e/gateway/ontology-ui.spec.ts',
-      'pnpm exec playwright test tests/e2e/vault-session/local-vault-picker.spec.ts',
+      'pnpm exec playwright test tests/e2e/vault-session/vault-launch-chooser.spec.ts',
       // A spec may not add a fixed sleep.
       'pnpm test:e2e:sleeps && pnpm e2e:sleeps:check',
       'pnpm typecheck',
@@ -1416,7 +1416,7 @@ describe('focused check suggestions', () => {
     const playwright = suggestFocusedChecks(['playwright.config.ts']);
 
     assert.deepEqual(domainCommands(playwright), [
-      'pnpm exec playwright test tests/e2e/vault-session/local-vault-picker.spec.ts',
+      'pnpm exec playwright test tests/e2e/vault-session/vault-launch-chooser.spec.ts',
     ]);
   });
 
