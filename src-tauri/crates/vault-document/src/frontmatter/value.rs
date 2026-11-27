@@ -94,7 +94,7 @@ impl Serialize for Value {
             }
             Self::Map(members) => {
                 let mut map = serializer.serialize_map(Some(members.len()))?;
-                for (key, member) in super::key_order::in_object_order(members.iter()) {
+                for (key, member) in super::in_object_order(members.iter()) {
                     map.serialize_entry(key, member)?;
                 }
                 map.end()

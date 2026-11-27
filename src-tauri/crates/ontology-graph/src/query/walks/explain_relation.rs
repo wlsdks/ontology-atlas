@@ -11,14 +11,12 @@ use crate::query::domain_lookup::DomainLookup;
 use crate::query::edge_rows::{CompiledEdge, PathEdge};
 use crate::query::node_resolution::resolve;
 use crate::query::node_summary::{summaries, NodeSummary};
+use crate::query::operation_defaults::{EXPLAIN_RELATION_LIMIT, PATH_MAX_HOPS};
 use crate::query::query_error::QueryError;
 use crate::query::relation_set::{allowed, RelationSet};
 use crate::query::request::{Direction, QueryRequest};
 
 use super::row_page::RowPage;
-
-const DEFAULT_LIMIT: usize = 20;
-const DEFAULT_MAX_HOPS: usize = 5;
 
 #[derive(Serialize)]
 struct DomainsOfPair<'a> {
@@ -161,8 +159,8 @@ pub fn explain_relation<'a>(
 ) -> Result<ExplainRelationAnswer<'a>, QueryError> {
     let from = resolve(graph, request.from.as_deref(), "from")?;
     let to = resolve(graph, request.to.as_deref(), "to")?;
-    let limit = request.limit.unwrap_or(DEFAULT_LIMIT);
-    let max_hops = request.max_hops.unwrap_or(DEFAULT_MAX_HOPS);
+    let limit = request.limit.unwrap_or(EXPLAIN_RELATION_LIMIT);
+    let max_hops = request.max_hops.unwrap_or(PATH_MAX_HOPS);
     let direction = Direction::for_paths(request.direction);
     let types = RelationSet::parse(request.types.as_deref(), "types")?;
 

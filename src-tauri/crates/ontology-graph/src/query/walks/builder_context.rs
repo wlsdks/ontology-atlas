@@ -8,10 +8,9 @@ use super::subgraph::Subgraph;
 use crate::compiled_graph::{CompiledGraph, NodeId};
 use crate::query::edge_rows::PathEdge;
 use crate::query::node_summary::NodeSummary;
+use crate::query::operation_defaults::BUILDER_CONTEXT;
 use crate::query::query_error::QueryError;
 use crate::query::request::{Direction, QueryRequest};
-
-const DEFAULT_DEPTH: usize = 1;
 
 #[derive(Serialize)]
 struct Builder {
@@ -86,7 +85,7 @@ pub fn builder_context<'a>(
         .as_deref()
         .or(request.seed.as_deref())
         .map(slug_of_focus);
-    let slice = Subgraph::of_call(graph, request, name.as_deref(), DEFAULT_DEPTH)?;
+    let slice = Subgraph::of_call(graph, request, name.as_deref(), &BUILDER_CONTEXT)?;
     let focus = graph.node(slice.seed);
     let param = focus_param(focus);
     Ok(BuilderContextAnswer {

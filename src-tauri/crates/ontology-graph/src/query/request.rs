@@ -90,6 +90,8 @@ pub struct QueryRequest {
     /// `type`, the relation a `relation_check` proposes; `relation` is its other spelling.
     pub relation_type: Option<String>,
     pub relation: Option<String>,
+    /// `targetOperation`: the operation a `query_plan` describes.
+    pub target_operation: Option<Operation>,
 }
 
 impl QueryRequest {
@@ -119,6 +121,7 @@ impl QueryRequest {
             project: None,
             relation_type: None,
             relation: None,
+            target_operation: None,
         }
     }
 

@@ -2072,6 +2072,342 @@
       "path": "result.structuredContent.errorCode",
       "change": 22,
       "reason": "An argument that only another argument allows, sent alone (`task` without `detail` `compact`), is a wrong call and answers invalid_arguments (row 22); the JavaScript server answered tool_error."
+    },
+    {
+      "case": "graph/analysis-folder-is-a-link",
+      "where": "answer",
+      "id": 1,
+      "path": "result.structuredContent.errorCode",
+      "change": 42,
+      "reason": "An archive the vault cannot give (a folder that is a link or not a folder, a cursor that names no record file) is told by who must act: a cursor is the caller's, so `invalid_arguments`, and an unsafe folder is the vault's, so `tool_error` (row 42); the JavaScript server classed both by the words of their sentences."
+    },
+    {
+      "case": "graph/analysis-folder-is-a-link",
+      "where": "answer",
+      "id": 2,
+      "path": "result.structuredContent.errorCode",
+      "change": 42,
+      "reason": "An archive the vault cannot give (a folder that is a link or not a folder, a cursor that names no record file) is told by who must act: a cursor is the caller's, so `invalid_arguments`, and an unsafe folder is the vault's, so `tool_error` (row 42); the JavaScript server classed both by the words of their sentences."
+    },
+    {
+      "case": "graph/analysis-records-over-a-hundred-files-paged-by-cursor",
+      "where": "answer",
+      "id": 4,
+      "path": "result.structuredContent.errorCode",
+      "change": 42,
+      "reason": "An archive the vault cannot give (a folder that is a link or not a folder, a cursor that names no record file) is told by who must act: a cursor is the caller's, so `invalid_arguments`, and an unsafe folder is the vault's, so `tool_error` (row 42); the JavaScript server classed both by the words of their sentences."
+    },
+    {
+      "case": "graph/analysis-records-over-a-hundred-files-paged-by-cursor",
+      "where": "answer",
+      "id": 5,
+      "path": "result.structuredContent.errorCode",
+      "change": 42,
+      "reason": "An archive the vault cannot give (a folder that is a link or not a folder, a cursor that names no record file) is told by who must act: a cursor is the caller's, so `invalid_arguments`, and an unsafe folder is the vault's, so `tool_error` (row 42); the JavaScript server classed both by the words of their sentences."
+    },
+    {
+      "case": "graph/analysis-records-with-line-separators",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text",
+      "change": 42,
+      "reason": "A record whose header holds U+2028 or U+2029, which the app's own writer can produce, is read and listed (row 42); the JavaScript reader refused it as not JSON."
+    },
+    {
+      "case": "graph/analysis-records-with-line-separators",
+      "where": "answer",
+      "id": 2,
+      "path": "result.isError",
+      "change": 42,
+      "reason": "A record whose header holds U+2028 or U+2029, which the app's own writer can produce, is read and listed (row 42); the JavaScript reader refused it as not JSON."
+    },
+    {
+      "case": "graph/query-plan-containment-tangle",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text",
+      "change": 43,
+      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+    },
+    {
+      "case": "graph/query-plan-containment-tangle",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text",
+      "change": 43,
+      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+    },
+    {
+      "case": "graph/query-plan-containment-tangle",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text",
+      "change": 43,
+      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+    },
+    {
+      "case": "graph/query-plan-empty",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text",
+      "change": 43,
+      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+    },
+    {
+      "case": "graph/query-plan-empty",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text",
+      "change": 43,
+      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+    },
+    {
+      "case": "graph/query-plan-one-node",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text",
+      "change": 43,
+      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+    },
+    {
+      "case": "graph/query-plan-one-node",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text",
+      "change": 43,
+      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 11,
+      "path": "result.content[0].text",
+      "change": 43,
+      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 14,
+      "path": "result.structuredContent.errorCode",
+      "change": 43,
+      "reason": "A wrong call to `query_plan` (no `targetOperation`, no `slug`, structural `types` for `impact`) is an `invalid_arguments`, the code row 29 gives a wrong call to a walk (row 43); the JavaScript server answered tool_error."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 15,
+      "path": "result.content[0].text",
+      "change": 43,
+      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 16,
+      "path": "result.content[0].text",
+      "change": 43,
+      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 17,
+      "path": "result.structuredContent.errorCode",
+      "change": 43,
+      "reason": "A wrong call to `query_plan` (no `targetOperation`, no `slug`, structural `types` for `impact`) is an `invalid_arguments`, the code row 29 gives a wrong call to a walk (row 43); the JavaScript server answered tool_error."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 18,
+      "path": "result.content[0].text",
+      "change": 43,
+      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 19,
+      "path": "result.content[0].text",
+      "change": 43,
+      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 25,
+      "path": "result.content[0].text",
+      "change": 43,
+      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 26,
+      "path": "result.content[0].text",
+      "change": 43,
+      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 27,
+      "path": "result.content[0].text",
+      "change": 43,
+      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 29,
+      "path": "result.content[0].text",
+      "change": 43,
+      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text",
+      "change": 43,
+      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 30,
+      "path": "result.content[0].text",
+      "change": 43,
+      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 31,
+      "path": "result.content[0].text",
+      "change": 43,
+      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 32,
+      "path": "result.content[0].text",
+      "change": 43,
+      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 33,
+      "path": "result.content[0].text",
+      "change": 43,
+      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 34,
+      "path": "result.content[0].text",
+      "change": 43,
+      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 35,
+      "path": "result.content[0].text",
+      "change": 43,
+      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 36,
+      "path": "result.content[0].text",
+      "change": 43,
+      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 40,
+      "path": "result.structuredContent.errorCode",
+      "change": 43,
+      "reason": "A wrong call to `query_plan` (no `targetOperation`, no `slug`, structural `types` for `impact`) is an `invalid_arguments`, the code row 29 gives a wrong call to a walk (row 43); the JavaScript server answered tool_error."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 6,
+      "path": "result.structuredContent.errorCode",
+      "change": 43,
+      "reason": "A wrong call to `query_plan` (no `targetOperation`, no `slug`, structural `types` for `impact`) is an `invalid_arguments`, the code row 29 gives a wrong call to a walk (row 43); the JavaScript server answered tool_error."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 7,
+      "path": "result.content[0].text",
+      "change": 43,
+      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+    },
+    {
+      "case": "graph/query-plan-storefront",
+      "where": "answer",
+      "id": 8,
+      "path": "result.content[0].text",
+      "change": 43,
+      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text",
+      "change": 43,
+      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text",
+      "change": 43,
+      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text",
+      "change": 43,
+      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text",
+      "change": 43,
+      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 7,
+      "path": "result.content[0].text",
+      "change": 43,
+      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
+    },
+    {
+      "case": "graph/query-plan-tangle",
+      "where": "answer",
+      "id": 9,
+      "path": "result.content[0].text",
+      "change": 43,
+      "reason": "A plan states the arguments the operation would use and the call that was planned: the operation's own defaults, the public relation names, the subject arguments the call sent, and a limit only where there is one (row 43); the JavaScript plan stated defaults its operations never used and dropped arguments from the call it suggested."
     }
   ]
 }
