@@ -8,14 +8,13 @@ mod diagnostic;
 mod entry_line;
 mod inline;
 mod javascript_number;
-mod key_order;
 mod line;
 mod quoting;
 mod value;
 
+pub use answer_format::key_order::in_object_order;
 pub use block::{read_block, ReadBlock, ReadEntry};
 pub use diagnostic::{Diagnostic, DiagnosticCode};
-pub use key_order::in_object_order;
 pub use line::Line;
 pub use value::{Scalar, Value};
 

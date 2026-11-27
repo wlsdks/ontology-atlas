@@ -90,10 +90,32 @@ pub struct StoredTail {
     pub revision: Revision,
 }
 
-/// The sidecar folder of one vault.
+/// The sidecar folder of one vault, or one folder directly below it.
 #[derive(Debug, Clone)]
 pub struct VaultSidecar {
     vault: PathBuf,
+    below: Option<&'static str>,
+}
+
+/// The names in the folder, one at a time, so a folder of a hundred thousand files is never held.
+/// A name that is not valid text is skipped: no file the server writes has one.
+pub struct FileNames(Option<std::fs::ReadDir>);
+
+impl Iterator for FileNames {
+    type Item = io::Result<String>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            match self.0.as_mut()?.next()? {
+                Err(error) => return Some(Err(error)),
+                Ok(entry) => {
+                    if let Ok(name) = entry.file_name().into_string() {
+                        return Some(Ok(name));
+                    }
+                }
+            }
+        }
+    }
 }
 
 /// A file name that is one plain name, so it cannot step out of the folder.
@@ -126,14 +148,26 @@ fn plain_facts(file: &File) -> Result<FileFacts, SidecarError> {
 
 impl VaultSidecar {
     pub fn new(vault: PathBuf) -> Self {
-        Self { vault }
+        Self { vault, below: None }
     }
 
-    /// The folder, checked: a real folder whose real parent is the real vault. `None` when it does
-    /// not exist and `create` is false.
-    fn folder(&self, create: bool) -> Result<Option<PathBuf>, SidecarError> {
-        let root = real_path(&self.vault).map_err(|_| Unsafe::VaultUnresolvable)?;
-        let folder = root.join(SIDECAR_FOLDER);
+    /// The folder `name` directly below `.ontology-atlas`, held to the same rules as the folder
+    /// above it: a real folder, not a link or junction, whose real parent is the real folder above.
+    pub fn below(&self, name: &'static str) -> Self {
+        Self {
+            vault: self.vault.clone(),
+            below: Some(name),
+        }
+    }
+
+    /// One folder, checked: a real folder whose real parent is `parent`. `None` when it does not
+    /// exist and `create` is false.
+    fn checked_child(
+        parent: &Path,
+        name: &str,
+        create: bool,
+    ) -> Result<Option<PathBuf>, SidecarError> {
+        let folder = parent.join(name);
         match folder.symlink_metadata() {
             Ok(_) => {}
             Err(error) if error.kind() == io::ErrorKind::NotFound => {
@@ -149,10 +183,24 @@ impl VaultSidecar {
             _ => return Err(Unsafe::FolderIsLink.into()),
         }
         let real = real_path(&folder).map_err(|_| Unsafe::FolderUnresolvable)?;
-        if real.parent() != Some(root.as_path()) {
+        if real.parent() != Some(parent) {
             return Err(Unsafe::FolderOutsideVault.into());
         }
         Ok(Some(folder))
+    }
+
+    /// The folder files are kept in, checked at every level from the vault down. `None` when it
+    /// does not exist and `create` is false.
+    fn folder(&self, create: bool) -> Result<Option<PathBuf>, SidecarError> {
+        let root = real_path(&self.vault).map_err(|_| Unsafe::VaultUnresolvable)?;
+        let Some(sidecar) = Self::checked_child(&root, SIDECAR_FOLDER, create)? else {
+            return Ok(None);
+        };
+        let Some(name) = self.below else {
+            return Ok(Some(sidecar));
+        };
+        let real_sidecar = real_path(&sidecar).map_err(|_| Unsafe::FolderUnresolvable)?;
+        Self::checked_child(&real_sidecar, name, create)
     }
 
     /// The folder is still the folder after a file was opened in it.
@@ -179,6 +227,16 @@ impl VaultSidecar {
         Ok(Some((file, facts)))
     }
 
+    /// The names of the entries of the folder, files or not; none when the folder does not exist.
+    pub fn file_names(&self) -> Result<FileNames, SidecarError> {
+        let Some(folder) = self.folder(false)? else {
+            return Ok(FileNames(None));
+        };
+        let names = std::fs::read_dir(folder)?;
+        self.still_inside()?;
+        Ok(FileNames(Some(names)))
+    }
+
     /// The file's text, or `None` when there is no file; a file over `max_bytes` is not read.
     pub fn read_text(
         &self,
@@ -191,8 +249,12 @@ impl VaultSidecar {
         if before.size > max_bytes {
             return Err(SidecarError::TooLarge(filename.to_string(), max_bytes));
         }
+        // One byte past the limit: a file that grew after its size was read is refused, not held.
         let mut bytes = Vec::new();
-        file.read_to_end(&mut bytes)?;
+        (&mut file).take(max_bytes + 1).read_to_end(&mut bytes)?;
+        if bytes.len() as u64 > max_bytes {
+            return Err(SidecarError::TooLarge(filename.to_string(), max_bytes));
+        }
         let after = plain_facts(&file)?;
         if before != after {
             return Err(SidecarError::Changed(filename.to_string()));
@@ -634,5 +696,59 @@ mod tests {
         assert!(status.success());
         assert!(unsafe_reason(sidecar(&vault).append_line("activity.jsonl", "evil")).is_some());
         assert!(!outside.path().join("activity.jsonl").exists());
+    }
+    #[test]
+    fn a_folder_below_the_sidecar_lists_its_names_and_reads_its_files_where_none_means_none() {
+        let vault = vault();
+        let analyses = sidecar(&vault).below("analyses");
+        assert_eq!(analyses.file_names().expect("lists").count(), 0);
+        assert!(analyses.read_text("a.md", 100).expect("reads").is_none());
+        let folder = vault.path().join(SIDECAR_FOLDER).join("analyses");
+        std::fs::create_dir_all(&folder).expect("folder");
+        std::fs::write(folder.join("a.md"), "text").expect("file");
+        std::fs::write(folder.join("b.md"), "more").expect("file");
+        let mut names: Vec<String> = analyses
+            .file_names()
+            .expect("lists")
+            .collect::<Result<_, _>>()
+            .expect("names");
+        names.sort();
+        assert_eq!(names, ["a.md", "b.md"]);
+        let read = analyses
+            .read_text("a.md", 100)
+            .expect("reads")
+            .expect("a file");
+        assert_eq!(read.text, "text");
+        assert!(
+            sidecar(&vault)
+                .read_text("a.md", 100)
+                .expect("reads")
+                .is_none(),
+            "the folder above does not hold the file"
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_link_in_place_of_a_folder_below_the_sidecar_is_refused() {
+        use std::os::unix::fs::symlink;
+        let outside = tempfile::tempdir().expect("temp dir");
+        std::fs::write(outside.path().join("a.md"), "secret").expect("file");
+        let vault = vault();
+        std::fs::create_dir(vault.path().join(SIDECAR_FOLDER)).expect("folder");
+        symlink(
+            outside.path(),
+            vault.path().join(SIDECAR_FOLDER).join("analyses"),
+        )
+        .expect("link");
+        let analyses = sidecar(&vault).below("analyses");
+        assert!(matches!(
+            analyses.file_names(),
+            Err(SidecarError::Unsafe(Unsafe::FolderIsLink))
+        ));
+        assert!(matches!(
+            analyses.read_text("a.md", 100),
+            Err(SidecarError::Unsafe(Unsafe::FolderIsLink))
+        ));
     }
 }

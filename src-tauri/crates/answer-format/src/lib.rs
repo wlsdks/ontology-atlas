@@ -10,6 +10,7 @@
 pub mod collation;
 pub mod iso_time;
 pub mod json;
+pub mod key_order;
 pub mod number;
 pub mod utf16;
 pub mod whitespace;
