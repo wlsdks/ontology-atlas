@@ -136,6 +136,8 @@ const E2E_BROAD_INPUTS = [
   /^playwright\.config\.ts$/,
   /^next\.config\.ts$/,
   /^postcss\.config\.mjs$/,
+  // The Vite build of the app folder: its document and its config shape every screen it serves.
+  /^(?:index\.html|vite\.config\.ts)$/,
   /^\.github\/actions\/setup-playwright\//,
   /^scripts\/(?:web\/serve-static-export|ci\/run-with-retry)(?:\.test)?\.mjs$/,
   // Path aliases and compiler options the Next build reads.
@@ -160,7 +162,7 @@ const KNOWN_PATHS = [
   /^\.(?:bun-version|env\.example|gitattributes|gitignore|mcp\.json(?:\.example)?|nvmrc)$/,
   /^(?:AGENTS|CLAUDE|CODE_OF_CONDUCT|CONTRIBUTING|NOTICE|README(?:\.(?:ja|ko|zh))?|SECURITY)\.md$/,
   /^LICENSE$/,
-  /^(?:eslint\.config\.mjs|next\.config\.ts|package\.json|playwright\.config\.ts|pnpm-lock\.yaml|pnpm-workspace\.yaml|postcss\.config\.mjs|rust-toolchain\.toml|tsconfig\.json|vitest\.config\.ts|vitest\.setup\.ts)$/,
+  /^(?:eslint\.config\.mjs|index\.html|next\.config\.ts|package\.json|playwright\.config\.ts|pnpm-lock\.yaml|pnpm-workspace\.yaml|postcss\.config\.mjs|rust-toolchain\.toml|tsconfig\.json|vite\.config\.ts|vitest\.config\.ts|vitest\.setup\.ts)$/,
   // A third-party directory reads this at the repository root and nothing here builds from it,
   // so it is known and drives no lane. `glama.json` names who may maintain the Glama listing.
   /^glama\.json$/,
@@ -182,7 +184,7 @@ const BROWSER_INPUTS = [
   /^messages\//,
   /^public\//,
   /^assets\//,
-  /^(?:next\.config\.ts|postcss\.config\.mjs|playwright\.config\.ts)$/,
+  /^(?:index\.html|next\.config\.ts|postcss\.config\.mjs|playwright\.config\.ts|vite\.config\.ts)$/,
   /^tests\/e2e\//,
 ];
 
