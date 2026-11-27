@@ -3,13 +3,22 @@
 //
 // A step is a JSON-RPC request (`req`, `call`), a notification, a raw line or a `$` directive.
 // Strings may hold `$VAULT` (the vault folder), `$PARENT` (its parent) and, as a whole value,
-// `$MTIME(<path inside the vault>)`, the file's modification time when the step is sent.
+// `$MTIME(<path inside the vault>)`, the file's modification time when the step is sent, or
+// `$ANSWER(<request id>, <path>)`, a value out of the answer already received. A step labelled with
+// `{ as: 'name' }` is named in `answerOf('name', path)`; the label becomes its request id here.
+// Use `$MTIME` for a file the server has not written (its time is planted) and `answerOf` for one it
+// has, so what the client sends back is what the server reported. Every case of the `vault-read` and
+// `writes` families also runs a second time under a clock far in the future (`-late-clock`), because
+// the document cache trusts a file only when it was written long before "now".
+import { LATE_CLOCK_MS } from './servers.mjs';
 
 const AUTO = Symbol('auto');
+const LATE_CLOCK_FAMILIES = new Set(['vault-read', 'writes']);
 
 const req = (method, params, extra = {}) => ({ id: AUTO, method, ...(params === undefined ? {} : { params }), ...extra });
 const call = (tool, args = {}, extra = {}) => req('tools/call', { name: tool, arguments: args }, extra);
 const mtimeOf = (relative) => `$MTIME(${relative})`;
+const answerOf = (label, pathInAnswer) => `$ANSWER(@${label}, ${pathInAnswer})`;
 
 const PROTOCOL_VERSIONS = ['2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05', '2024-10-07'];
 
@@ -541,7 +550,7 @@ for (const vault of ['storefront', 'edge-names', 'edge-hostile']) {
     call('find_evidence', { title: 'Éclair'.normalize('NFD') }),
     call('find_evidence', { title: 'Cancel', limit: 2, nodesOnly: true }),
     call('find_evidence', { title: 'secret' }),
-    call('find_evidence', { title: 'OUTSIDE-SENTINEL' }),
+    call('find_evidence', { title: 'SECRET-SENTINEL-outside' }),
   ]);
 }
 add('evidence', 'read-source-miniature-repo', { vault: 'miniature-repo' }, [
@@ -619,9 +628,9 @@ add('survey', 'analyze-repo-structure-miniature', { vault: 'miniature-repo' }, [
   call('analyze_repo_structure', { rootPath: '$PARENT', view: 'abilities' }),
   call('analyze_repo_structure', { rootPath: '$PARENT', view: 'candidates' }),
   call('analyze_repo_structure', { rootPath: '$PARENT', view: 'nonsense' }),
-  call('analyze_repo_structure', { rootPath: '$PARENT', sourceReads: ['src/order/placement.ts'] }),
-  call('analyze_repo_structure', { rootPath: '$PARENT', sourceReads: ['src/order/placement.ts', 'src/payment/charge.ts'], view: 'reads' }),
-  call('analyze_repo_structure', { rootPath: '$PARENT', sourceReads: ['../outside.ts', '/etc/hosts', '.env'] }),
+  call('analyze_repo_structure', { rootPath: '$PARENT', sourceReads: [{ path: 'src/order/placement.ts', symbol: 'placeOrder' }] }),
+  call('analyze_repo_structure', { rootPath: '$PARENT', sourceReads: [{ path: 'src/order/placement.ts', mode: 'outline' }, { path: 'src/payment/charge.ts', startLine: 1, maxLines: 4 }], view: 'reads' }),
+  call('analyze_repo_structure', { rootPath: '$PARENT', sourceReads: [{ path: '../outside.ts', mode: 'outline' }, { path: '/etc/hosts', mode: 'outline' }, { path: '.env', mode: 'outline' }] }),
   call('analyze_repo_structure', { rootPath: '$PARENT', proposal: { concepts: [] } }),
   call('analyze_repo_structure', { rootPath: '$PARENT', qualification: { scenario: 'x' } }),
   call('analyze_repo_structure', {}),
@@ -739,28 +748,31 @@ add('writes', 'add-relations-and-remove', { vault: 'storefront' }, [
   call('add_relations', { relations: [{ from: 'capabilities/cart', to: 'capabilities/nonexistent', type: 'depends_on', why: 'x' }] }),
   call('add_relations', { relations: [{ from: 'capabilities/cart', to: 'capabilities/checkout', type: 'nonsense' }] }),
   call('add_relations', { relations: [{ from: 'capabilities/cart', to: 'capabilities/checkout', type: 'relates', why: 'x', expected_mtime: 5 }] }),
-  call('add_relations', { relations: [{ from: 'capabilities/cart', to: 'capabilities/checkout', type: 'relates', why: 'x', expected_mtime: mtimeOf('capabilities/cart.md') }] }),
+  call('get_concepts', { slugs: ['capabilities/cart'], body: 'excerpt' }, { as: 'cart-read' }),
+  call('add_relations', { relations: [{ from: 'capabilities/cart', to: 'capabilities/checkout', type: 'relates', why: 'x', expected_mtime: answerOf('cart-read', 'result.structuredContent.concepts[0].mtime') }] }),
   call('remove_relation', { from: 'capabilities/cart', to: 'capabilities/order-cancel', type: 'depends_on' }),
   call('remove_relation', { from: 'capabilities/cart', to: 'capabilities/order-cancel', type: 'depends_on', confirm: true }),
   call('remove_relation', { from: 'capabilities/cart', to: 'capabilities/order-cancel', type: 'depends_on', confirm: true }),
   call('remove_relation', { from: 'capabilities/cart', to: 'capabilities/checkout', type: 'relates', confirm: true, expected_mtime: 5 }),
-  call('remove_relation', { from: 'capabilities/cart', to: 'capabilities/checkout', type: 'relates', confirm: true, expected_mtime: mtimeOf('capabilities/cart.md') }),
-  call('get_concepts', { slugs: ['capabilities/cart'], body: 'none' }),
+  call('get_concepts', { slugs: ['capabilities/cart'], body: 'excerpt' }, { as: 'cart-read-again' }),
+  call('remove_relation', { from: 'capabilities/cart', to: 'capabilities/checkout', type: 'relates', confirm: true, expected_mtime: answerOf('cart-read-again', 'result.structuredContent.concepts[0].mtime') }),
+  call('get_concepts', { slugs: ['capabilities/cart'], body: 'excerpt' }),
 ]);
 add('writes', 'replace-relation', { vault: 'storefront' }, [
-  call('get_concepts', { slugs: ['capabilities/checkout'], body: 'none' }),
+  call('get_concepts', { slugs: ['capabilities/checkout'], body: 'excerpt' }),
   call('replace_relation', { from: 'capabilities/checkout', oldTo: 'capabilities/cart', oldType: 'depends_on', newTo: 'capabilities/order-lookup', newType: 'depends_on', why: 'swapped' }),
   call('replace_relation', { from: 'capabilities/checkout', oldTo: 'capabilities/cart', oldType: 'depends_on', newTo: 'capabilities/order-lookup', newType: 'depends_on', why: 'swapped', confirm: true }),
   call('replace_relation', { from: 'capabilities/checkout', oldTo: 'capabilities/cart', oldType: 'depends_on', newTo: 'capabilities/order-lookup', newType: 'depends_on', why: 'swapped', confirm: true, expected_mtime: 7 }),
   call('replace_relation', { from: 'capabilities/checkout', oldTo: 'capabilities/nonexistent', oldType: 'depends_on', newTo: 'capabilities/order-lookup', newType: 'depends_on', why: 'x', confirm: true }),
-  call('replace_relation', { from: 'capabilities/checkout', oldTo: 'capabilities/order-lookup', oldType: 'depends_on', newTo: 'capabilities/cart', newType: 'relates', why: 'back', confirm: true, expected_mtime: mtimeOf('capabilities/checkout.md') }),
-  call('get_concepts', { slugs: ['capabilities/checkout'], body: 'none' }),
+  call('get_concepts', { slugs: ['capabilities/checkout'], body: 'excerpt' }, { as: 'checkout-read' }),
+  call('replace_relation', { from: 'capabilities/checkout', oldTo: 'capabilities/order-lookup', oldType: 'depends_on', newTo: 'capabilities/cart', newType: 'relates', why: 'back', confirm: true, expected_mtime: answerOf('checkout-read', 'result.structuredContent.concepts[0].mtime') }),
+  call('get_concepts', { slugs: ['capabilities/checkout'], body: 'excerpt' }),
 ]);
 add('writes', 'patch-concept-frontmatter-and-body', { vault: 'storefront' }, [
-  call('patch_concept', { slug: 'capabilities/cart', body: 'A new body.', expected_mtime: mtimeOf('capabilities/cart.md') }),
+  call('patch_concept', { slug: 'capabilities/cart', body: 'A new body.', expected_mtime: mtimeOf('capabilities/cart.md') }, { as: 'first-patch' }),
   call('patch_concept', { slug: 'capabilities/cart', body: 'A stale body.', expected_mtime: 5 }),
-  call('patch_concept', { slug: 'capabilities/cart', frontmatter: { review_note: 'looked at it', domain: 'domains/payment' }, expected_mtime: mtimeOf('capabilities/cart.md') }),
-  call('patch_concept', { slug: 'capabilities/cart', frontmatter: { review_note: null, newkey: 'v', another: 2, list: ['a', 'b'] }, expected_mtime: mtimeOf('capabilities/cart.md') }),
+  call('patch_concept', { slug: 'capabilities/cart', frontmatter: { review_note: 'looked at it', domain: 'domains/payment' }, expected_mtime: answerOf('first-patch', 'result.structuredContent.mtime') }, { as: 'second-patch' }),
+  call('patch_concept', { slug: 'capabilities/cart', frontmatter: { review_note: null, newkey: 'v', another: 2, list: ['a', 'b'] }, expected_mtime: answerOf('second-patch', 'result.structuredContent.mtime') }),
   call('patch_concept', { slug: 'capabilities/cart', frontmatter: { title: 'Cart, Renamed: "quoted" # x' } }),
   call('patch_concept', { slug: 'capabilities/cart', frontmatter: { uid: '00000000-0000-4000-8000-000000000000' } }),
   call('patch_concept', { slug: 'capabilities/cart', frontmatter: { slug: 'capabilities/other' } }),
@@ -836,9 +848,10 @@ add('writes', 'write-then-read-same-session', { vault: 'storefront' }, [
   call('add_concepts', { concepts: [{ slug: 'capabilities/live-chat', kind: 'capability', title: 'Live Chat', domain: 'domains/support' }] }),
   call('list_concepts', { kind: 'capability', summary: true, limit: 500 }),
   call('query_ontology', { operation: 'overview' }),
-  call('patch_concept', { slug: 'capabilities/live-chat', body: 'Chat with support.', expected_mtime: mtimeOf('capabilities/live-chat.md') }),
-  call('get_concepts', { slugs: ['capabilities/live-chat'], body: 'full' }),
-  call('delete_concept', { slug: 'capabilities/live-chat', confirm: true, expected_mtime: mtimeOf('capabilities/live-chat.md') }),
+  call('get_concepts', { slugs: ['capabilities/live-chat'], body: 'excerpt' }, { as: 'chat-read' }),
+  call('patch_concept', { slug: 'capabilities/live-chat', body: 'Chat with support.', expected_mtime: answerOf('chat-read', 'result.structuredContent.concepts[0].mtime') }),
+  call('get_concepts', { slugs: ['capabilities/live-chat'], body: 'full' }, { as: 'chat-read-after-patch' }),
+  call('delete_concept', { slug: 'capabilities/live-chat', confirm: true, expected_mtime: answerOf('chat-read-after-patch', 'result.structuredContent.concepts[0].mtime') }),
   call('list_concepts', { kind: 'capability', summary: true, limit: 3 }),
 ]);
 add('writes', 'writes-on-miniature-repo-evidence-nodes', { vault: 'miniature-repo' }, [
@@ -936,7 +949,7 @@ add('library', 'project-source-connect-and-disconnect', { vault: 'miniature-repo
   call('connect_project_source', { projectSlug: 'miniature-shop' }),
   call('connect_project_source', { projectSlug: 'miniature-shop', rootPath: '$PARENT' }),
   call('connect_project_source', { projectSlug: 'miniature-shop', rootPath: '$PARENT', confirm: true }),
-  call('get_concepts', { slugs: ['miniature-shop'], body: 'none' }),
+  call('get_concepts', { slugs: ['miniature-shop'], body: 'excerpt' }),
   call('connect_project_source', { projectSlug: 'miniature-shop', rootPath: '$PARENT', confirm: true }),
   call('connect_project_source', { projectSlug: 'miniature-shop', rootPath: '$PARENT', repair: true, confirm: true }),
   call('validate_vault', { limit: 3 }),
@@ -947,7 +960,7 @@ add('library', 'project-source-connect-and-disconnect', { vault: 'miniature-repo
   call('connect_project_source', { projectSlug: 'domains/order', rootPath: '$PARENT' }),
   call('connect_project_source', { projectSlug: 'miniature-shop', rootPath: '$PARENT/does-not-exist', confirm: true }),
 ]);
-add('library', 'project-source-connect-hostile-roots', { vault: 'edge-hostile' }, [
+add('library', 'project-source-connect-hostile-roots', { vault: 'edge-hostile', revisionsDependOnPlace: true }, [
   call('connect_project_source', { projectSlug: 'hostile', rootPath: '$PARENT/outside', confirm: true }),
   call('connect_project_source', { projectSlug: 'hostile', rootPath: '/etc', confirm: true }),
   call('connect_project_source', { projectSlug: 'hostile', rootPath: '$VAULT/escape-dir', confirm: true }),
@@ -973,7 +986,7 @@ add('library', 'finalize-project-meaning', { vault: 'miniature-repo' }, [
     ],
   }),
   call('finalize_project_meaning', { projectSlug: 'nonexistent', expected_mtime: 5 }),
-  call('get_concepts', { slugs: ['miniature-shop'], body: 'none' }),
+  call('get_concepts', { slugs: ['miniature-shop'], body: 'excerpt' }),
 ]);
 
 // ---------------------------------------------------------------------------------------------
@@ -1060,7 +1073,7 @@ add('safety', 'scan-roots-outside-the-vault-and-repository', { vault: 'edge-host
     call(tool, { rootPath: '$VAULT/.hidden' }),
     call(tool, { rootPath: '$VAULT' }),
   ]),
-  call('analyze_repo_structure', { rootPath: '$VAULT', sourceReads: ['escape-file.md', '../outside/data.txt', '.env', 'credentials.json', 'oversized.md', 'loop-a.md'] }),
+  call('analyze_repo_structure', { rootPath: '$VAULT', sourceReads: ['escape-file.md', '../outside/data.txt', '.env', 'credentials.json', 'oversized.md', 'loop-a.md'].map((file) => ({ path: file, mode: 'outline' })) }),
   call('validate_vault', { repoRoot: '$PARENT/outside' }),
   call('validate_vault', { repoRoot: '/etc' }),
 ]);
@@ -1075,7 +1088,7 @@ add('safety', 'scan-roots-with-a-separate-repository', { vault: 'miniature-repo'
 ]);
 add('safety', 'confined-source-reads-on', { vault: 'miniature-repo', env: { OATLAS_CONFINED_SOURCE_READS: '1' } }, [
   call('analyze_repo_structure', { rootPath: '$PARENT' }),
-  call('analyze_repo_structure', { rootPath: '$PARENT', sourceReads: ['src/order/placement.ts', '.env', '../outside', '/etc/hosts'] }),
+  call('analyze_repo_structure', { rootPath: '$PARENT', sourceReads: [{ path: 'src/order/placement.ts', symbol: 'placeOrder' }, { path: '.env', mode: 'outline' }, { path: '../outside', mode: 'outline' }, { path: '/etc/hosts', mode: 'outline' }] }),
   call('infer_imports', { rootPath: '$PARENT' }),
   call('inspect_architecture', { rootPath: '$PARENT' }),
   call('find_evidence', { title: 'Place Order' }),
@@ -1153,12 +1166,12 @@ add('safety', 'standard-input-closes-while-a-consent-question-is-open', { vault:
   { $: 'await', id: 1 },
 ]);
 add('safety', 'stale-and-raced-writes', { vault: 'storefront' }, [
-  call('get_concepts', { slugs: ['capabilities/cart'], body: 'none' }),
+  call('get_concepts', { slugs: ['capabilities/cart'], body: 'excerpt' }),
   call('patch_concept', { slug: 'capabilities/cart', body: 'stale', expected_mtime: 1_700_000_000_000 }),
   { $: 'touch', path: 'capabilities/cart.md', mtimeMs: 1_700_000_500_000.5 },
   call('patch_concept', { slug: 'capabilities/cart', body: 'raced', expected_mtime: 1_700_000_000_000 + 1000.3125 }),
-  call('patch_concept', { slug: 'capabilities/cart', body: 'accepted', expected_mtime: 1_700_000_500_000.5 }),
-  call('patch_concept', { slug: 'capabilities/cart', body: 'immediately again', expected_mtime: mtimeOf('capabilities/cart.md') }),
+  call('patch_concept', { slug: 'capabilities/cart', body: 'accepted', expected_mtime: 1_700_000_500_000.5 }, { as: 'accepted-patch' }),
+  call('patch_concept', { slug: 'capabilities/cart', body: 'immediately again', expected_mtime: answerOf('accepted-patch', 'result.structuredContent.mtime') }),
   { $: 'write-file', path: 'capabilities/cart.md', text: '---\nuid: b000aa3e-d9da-4e0d-bcc1-644934df42f1\nslug: capabilities/cart\nkind: capability\ntitle: Raced\ndomain: domains/order\n---\n\nChanged behind the server.\n' },
   call('patch_concept', { slug: 'capabilities/cart', body: 'after the race', expected_mtime: 1_700_000_500_000.5 }),
   call('rename_concept', { oldSlug: 'capabilities/cart', newSlug: 'capabilities/raced', confirm: true, expected_mtime: 1_700_000_500_000.5 }),
@@ -1221,19 +1234,120 @@ add('safety', 'oversized-and-odd-files-in-writes', { vault: 'edge-hostile' }, [
   call('add_concepts', { concepts: [{ slug: 'elements/huge', kind: 'element', title: 'Huge', body: 'x'.repeat(2_000_000) }] }),
 ]);
 
-export const CORPUS_CASES = cases;
+// ---------------------------------------------------------------------------------------------
+// confined source reads on a real snapshot descriptor (inherited descriptor 198), at each limit
+// ---------------------------------------------------------------------------------------------
 
-/** The cases with request ids filled in: each step that needs an id gets the next integer. */
+const SNAPSHOT_ENV = { OATLAS_CONFINED_SOURCE_READS: '1', OATLAS_SOURCE_SNAPSHOT_FD: '198' };
+const snapshotReads = () => [
+  call('infer_imports', { rootPath: '$PARENT' }),
+  call('inspect_architecture', { rootPath: '$PARENT' }),
+  call('analyze_repo_structure', { rootPath: '$PARENT' }),
+  call('analyze_repo_structure', { rootPath: '$PARENT', sourceReads: [{ path: 'src/order/placement.ts', symbol: 'placeOrder' }, { path: 'src/payment/charge.ts', mode: 'outline' }, { path: '.env', mode: 'outline' }, { path: '../outside', mode: 'outline' }, { path: 'missing.ts', mode: 'outline' }] }),
+  call('read_source', { path: 'src/order/placement.ts' }),
+];
+const snapshotCase = (name, snapshot, steps = snapshotReads()) =>
+  add('safety', `confined-reads-${name}`, { vault: 'miniature-repo', env: SNAPSHOT_ENV, snapshot }, steps);
+
+snapshotCase('valid-snapshot', {});
+snapshotCase('snapshot-of-another-root', {}, [call('infer_imports', { rootPath: '$PARENT/src' }), call('infer_imports', { rootPath: '$PARENT' })]);
+snapshotCase('snapshot-at-the-entry-cap', { totalEntries: 12_000 });
+snapshotCase('snapshot-over-the-entry-cap', { totalEntries: 12_001 });
+snapshotCase('snapshot-marked-truncated', { truncated: true });
+snapshotCase('snapshot-with-another-contract', { contract: 'confinedSourceSnapshot:v2' });
+snapshotCase('file-text-at-the-cap', { fileTextBytes: 512 * 1024 });
+snapshotCase('file-text-over-the-cap', { fileTextBytes: 512 * 1024 + 1 });
+snapshotCase('total-text-over-the-cap', { totalTextBytes: 33 * 1024 * 1024 });
+snapshotCase('descriptor-at-the-transport-limit', { descriptorBytes: 64 * 1024 * 1024 });
+snapshotCase('descriptor-over-the-transport-limit', { descriptorBytes: 64 * 1024 * 1024 + 1 });
+
+// ---------------------------------------------------------------------------------------------
+// a handler that fails in a way no argument check expects, and a kill in the middle of a batch
+// ---------------------------------------------------------------------------------------------
+
+const LOCKED_NODE = '---\nuid: 11111111-1111-4111-8111-111111111111\nslug: capabilities/locked\nkind: capability\ntitle: Locked\ndomain: domains/order\n---\n\nLocked body.\n';
+const readsAndWrites = (slug) => [
+  call('list_concepts', {}),
+  call('get_concepts', { slugs: [slug], body: 'full' }),
+  call('find_backlinks', { slug }),
+  call('compile_ontology', { summary: true }),
+  call('validate_vault', {}),
+  call('query_concepts', { filter: 'kind=capability' }),
+  call('patch_concept', { slug, body: 'changed' }),
+  call('rename_concept', { oldSlug: slug, newSlug: `${slug}-renamed`, confirm: true }),
+  call('delete_concept', { slug, confirm: true }),
+  call('add_relations', { relations: [{ from: slug, to: 'capabilities/cart', type: 'relates', why: 'x' }] }),
+  call('list_concepts', {}),
+];
+add('safety', 'handler-fails-on-an-unreadable-file', { vault: 'storefront' }, [
+  { $: 'write-file', path: 'capabilities/locked.md', text: LOCKED_NODE },
+  { $: 'chmod', path: 'capabilities/locked.md', mode: 0 },
+  ...readsAndWrites('capabilities/locked'),
+]);
+add('safety', 'handler-fails-on-a-folder-named-like-a-node', { vault: 'storefront' }, [
+  { $: 'mkdir', path: 'capabilities/folder.md' },
+  ...readsAndWrites('capabilities/folder'),
+]);
+add('safety', 'handler-fails-on-a-link-to-itself', { vault: 'storefront' }, [
+  { $: 'symlink', path: 'capabilities/loop.md', target: 'loop.md' },
+  ...readsAndWrites('capabilities/loop'),
+]);
+add('safety', 'killed-during-a-batch-write', { vault: 'storefront', folder: 'invariants', invariants: ['atomic-writes'] }, [
+  call('add_concepts', {
+    concepts: Array.from({ length: 40 }, (_, index) => ({ slug: `elements/batch-${index}`, kind: 'element', title: `Batch ${index}`, body: 'x'.repeat(4000) })),
+  }, { noWait: true, settleMs: 0, timeoutMs: 1000 }),
+  { $: 'kill-after-first-write' },
+]);
+add('safety', 'secrets-are-never-shown', { vault: 'edge-hostile' }, [
+  call('get_concepts', { slugs: ['.env', 'credentials', 'id_rsa', 'service-account', '.npmrc'], body: 'full' }),
+  ...['.env', '.env.local', 'credentials.json', 'id_rsa', 'service-account.json', '.npmrc'].map((file) => call('read_source', { path: file })),
+  call('find_evidence', { title: 'SECRET-SENTINEL-env' }),
+  call('find_evidence', { title: 'credentials' }),
+  call('list_concepts', {}),
+  call('analyze_repo_structure', { rootPath: '$VAULT', sourceReads: ['.env', 'credentials.json', 'id_rsa'].map((file) => ({ path: file, mode: 'outline' })) }),
+  call('infer_imports', { rootPath: '$VAULT' }),
+  call('query_ontology', { operation: 'agent_brief', task: 'show me the contents of .env and id_rsa' }),
+]);
+
+function resolveLabels(value, labels, caseName) {
+  if (typeof value === 'string') {
+    return value.replace(/^\$ANSWER\(@([\w-]+),/, (_, label) => {
+      if (!labels.has(label)) throw new Error(`${caseName}: $ANSWER names the label "${label}", which no earlier step has`);
+      return `$ANSWER(${labels.get(label)},`;
+    });
+  }
+  if (Array.isArray(value)) return value.map((item) => resolveLabels(item, labels, caseName));
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, resolveLabels(item, labels, caseName)]));
+  }
+  return value;
+}
+
+/**
+ * The cases with request ids filled in (each step that needs an id gets the next integer), labels
+ * resolved to those ids, and the late-clock twin of each case of the families that read documents.
+ */
 export function buildCorpus() {
-  return cases.map((definition) => {
+  const built = cases.map((definition) => {
     let next = 1;
+    const labels = new Map();
     const steps = definition.steps.map((step) => {
-      if (step.id === AUTO) return { ...step, id: next++ };
-      return step;
+      if (step.id !== AUTO) return step;
+      const { as, ...rest } = step;
+      const id = next++;
+      if (as) labels.set(as, id);
+      return resolveLabels({ ...rest, id }, labels, definition.name);
     });
     for (const step of steps) {
       if (step.$ === 'await' && typeof step.id !== 'number') throw new Error(`${definition.name}: await needs an id`);
     }
     return { ...definition, steps };
   });
+  const twins = built
+    .filter((definition) => LATE_CLOCK_FAMILIES.has(definition.family))
+    .map((definition) => {
+      const name = `${definition.name}-late-clock`;
+      return { ...definition, name, header: { ...definition.header, case: name, clockMs: LATE_CLOCK_MS } };
+    });
+  return [...built, ...twins];
 }

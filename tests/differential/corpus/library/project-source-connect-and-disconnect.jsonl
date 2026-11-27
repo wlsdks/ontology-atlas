@@ -3,7 +3,7 @@
 {"id":1,"method":"tools/call","params":{"name":"connect_project_source","arguments":{"projectSlug":"miniature-shop"}}}
 {"id":2,"method":"tools/call","params":{"name":"connect_project_source","arguments":{"projectSlug":"miniature-shop","rootPath":"$PARENT"}}}
 {"id":3,"method":"tools/call","params":{"name":"connect_project_source","arguments":{"projectSlug":"miniature-shop","rootPath":"$PARENT","confirm":true}}}
-{"id":4,"method":"tools/call","params":{"name":"get_concepts","arguments":{"slugs":["miniature-shop"],"body":"none"}}}
+{"id":4,"method":"tools/call","params":{"name":"get_concepts","arguments":{"slugs":["miniature-shop"],"body":"excerpt"}}}
 {"id":5,"method":"tools/call","params":{"name":"connect_project_source","arguments":{"projectSlug":"miniature-shop","rootPath":"$PARENT","confirm":true}}}
 {"id":6,"method":"tools/call","params":{"name":"connect_project_source","arguments":{"projectSlug":"miniature-shop","rootPath":"$PARENT","repair":true,"confirm":true}}}
 {"id":7,"method":"tools/call","params":{"name":"validate_vault","arguments":{"limit":3}}}

@@ -42,6 +42,6 @@
 {"id":40,"method":"tools/call","params":{"name":"inspect_architecture","arguments":{"rootPath":"$VAULT/loop-a.md"}}}
 {"id":41,"method":"tools/call","params":{"name":"inspect_architecture","arguments":{"rootPath":"$VAULT/.hidden"}}}
 {"id":42,"method":"tools/call","params":{"name":"inspect_architecture","arguments":{"rootPath":"$VAULT"}}}
-{"id":43,"method":"tools/call","params":{"name":"analyze_repo_structure","arguments":{"rootPath":"$VAULT","sourceReads":["escape-file.md","../outside/data.txt",".env","credentials.json","oversized.md","loop-a.md"]}}}
+{"id":43,"method":"tools/call","params":{"name":"analyze_repo_structure","arguments":{"rootPath":"$VAULT","sourceReads":[{"path":"escape-file.md","mode":"outline"},{"path":"../outside/data.txt","mode":"outline"},{"path":".env","mode":"outline"},{"path":"credentials.json","mode":"outline"},{"path":"oversized.md","mode":"outline"},{"path":"loop-a.md","mode":"outline"}]}}}
 {"id":44,"method":"tools/call","params":{"name":"validate_vault","arguments":{"repoRoot":"$PARENT/outside"}}}
 {"id":45,"method":"tools/call","params":{"name":"validate_vault","arguments":{"repoRoot":"/etc"}}}

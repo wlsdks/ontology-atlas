@@ -7,4 +7,4 @@
 {"id":5,"method":"tools/call","params":{"name":"find_evidence","arguments":{"title":"Éclair"}}}
 {"id":6,"method":"tools/call","params":{"name":"find_evidence","arguments":{"title":"Cancel","limit":2,"nodesOnly":true}}}
 {"id":7,"method":"tools/call","params":{"name":"find_evidence","arguments":{"title":"secret"}}}
-{"id":8,"method":"tools/call","params":{"name":"find_evidence","arguments":{"title":"OUTSIDE-SENTINEL"}}}
+{"id":8,"method":"tools/call","params":{"name":"find_evidence","arguments":{"title":"SECRET-SENTINEL-outside"}}}
