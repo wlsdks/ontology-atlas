@@ -28,8 +28,11 @@ pub(crate) fn base_line(read: &impl Fn(&[&str]) -> Option<String>) -> Option<Bas
 /// The line the checked-out work merges into. A checkout on an integration branch reads that
 /// branch; any other checkout reads the integration branch holding the most of its history,
 /// the one with the fewest of HEAD's commits outside it, `origin/HEAD`'s first on a tie.
-/// One `for-each-ref` finds every candidate, then one count per existing candidate.
-pub(crate) fn merged_line(read: &impl Fn(&[&str]) -> Option<String>) -> Option<BaseLine> {
+/// `Err` when a read failed, so a caller never mistakes a failed read for "no branch".
+/// One `show-ref` finds every candidate, then one count per candidate when there are several.
+pub(crate) fn merged_line(
+    read: &impl Fn(&[&str]) -> Option<String>,
+) -> Result<Option<BaseLine>, ()> {
     let mut names: Vec<String> = remote_default(read).into_iter().collect();
     for name in INTEGRATION_CANDIDATES {
         if !names.iter().any(|known| known == name) {
@@ -45,42 +48,46 @@ pub(crate) fn merged_line(read: &impl Fn(&[&str]) -> Option<String>) -> Option<B
             ]
         })
         .collect();
-    let mut args = vec!["for-each-ref", "--format=%(refname)"];
+    // `--head` always prints HEAD, so Git exits 0 and an empty answer means a failed read;
+    // `show-ref` matches whole trailing components, so `dev/...` branches never list.
+    let mut args = vec!["show-ref", "--head"];
     args.extend(patterns.iter().map(String::as_str));
-    let existing = read(&args).unwrap_or_default();
-    let exists = |reference: &str| existing.lines().any(|line| line.trim() == reference);
-    let lines: Vec<BaseLine> = names
-        .into_iter()
-        .filter_map(|branch| {
-            let local = format!("refs/heads/{branch}");
-            let remote = format!("refs/remotes/origin/{branch}");
-            choose_reference(
-                read,
-                exists(&local).then_some(local),
-                exists(&remote).then_some(remote),
-            )
-            .map(|reference| BaseLine { branch, reference })
-        })
+    let listing = read(&args).ok_or(())?;
+    let existing: Vec<&str> = listing
+        .lines()
+        .filter_map(|line| line.split_once(' ').map(|(_, name)| name.trim()))
         .collect();
-    let checked_out =
-        read(&["symbolic-ref", "--quiet", "--short", "HEAD"]).map(|name| name.trim().to_string());
+    let exists = |reference: &str| existing.contains(&reference);
+    let mut lines = Vec::new();
+    for branch in names {
+        let local = format!("refs/heads/{branch}");
+        let remote = format!("refs/remotes/origin/{branch}");
+        let local = exists(&local).then_some(local);
+        let remote = exists(&remote).then_some(remote);
+        if let Some(reference) = choose_reference(read, local, remote) {
+            lines.push(BaseLine { branch, reference });
+        }
+    }
+    let checked_out = read(&["symbolic-ref", "--quiet", "HEAD"])
+        .and_then(|name| name.trim().strip_prefix("refs/heads/").map(str::to_string));
     if let Some(index) =
         checked_out.and_then(|branch| lines.iter().position(|line| line.branch == branch))
     {
-        return lines.into_iter().nth(index);
+        return Ok(lines.into_iter().nth(index));
     }
-    lines
-        .into_iter()
-        .enumerate()
-        .filter_map(|(order, line)| {
-            let outside = read(&["rev-list", "--count", &format!("{}..HEAD", line.reference)])?
-                .trim()
-                .parse::<u64>()
-                .ok()?;
-            Some((outside, order, line))
-        })
-        .min_by_key(|(outside, order, _)| (*outside, *order))
-        .map(|(_, _, line)| line)
+    if lines.len() <= 1 {
+        return Ok(lines.pop());
+    }
+    let mut best: Option<(u64, BaseLine)> = None;
+    for line in lines {
+        let outside = read(&["rev-list", "--count", &format!("{}..HEAD", line.reference)])
+            .and_then(|count| count.trim().parse::<u64>().ok())
+            .ok_or(())?;
+        if best.as_ref().is_none_or(|(fewest, _)| outside < *fewest) {
+            best = Some((outside, line));
+        }
+    }
+    Ok(best.map(|(_, line)| line))
 }
 
 /// The commit history is read from and the branch it is on: the tip of `merged_line`, so a
@@ -89,7 +96,7 @@ pub(crate) fn merged_line(read: &impl Fn(&[&str]) -> Option<String>) -> Option<B
 pub(crate) fn merged_line_tip(
     read: &impl Fn(&[&str]) -> Option<String>,
 ) -> Option<(String, Option<String>)> {
-    let (tip, branch) = match merged_line(read) {
+    let (tip, branch) = match merged_line(read).ok()? {
         Some(line) => (format!("{}^{{commit}}", line.reference), Some(line.branch)),
         None => ("HEAD".to_string(), None),
     };
@@ -114,8 +121,9 @@ pub(crate) fn base_reference(
 }
 
 /// Pull requests merge on the remote and the local branch is often left behind, so the fetched
-/// `origin/<branch>` wins unless the local branch is strictly ahead of it; a local branch that
-/// has gone its own way still reads the remote, where merges land.
+/// `origin/<branch>` wins unless the local branch is strictly ahead of it. A local branch that
+/// has gone its own way reads the remote only when it tracks it: a branch following another
+/// remote (a fork's upstream) keeps its own line.
 fn choose_reference(
     read: &impl Fn(&[&str]) -> Option<String>,
     local: Option<String>,
@@ -125,8 +133,17 @@ fn choose_reference(
         (Some(local), Some(remote)) => {
             let is_ancestor =
                 |a: &str, b: &str| read(&["merge-base", "--is-ancestor", a, b]).is_some();
-            let local_is_ahead = !is_ancestor(&local, &remote) && is_ancestor(&remote, &local);
-            Some(if local_is_ahead { local } else { remote })
+            if is_ancestor(&local, &remote) {
+                return Some(remote);
+            }
+            if is_ancestor(&remote, &local) {
+                return Some(local);
+            }
+            let branch = local.strip_prefix("refs/heads/").unwrap_or(&local);
+            let upstream = format!("{branch}@{{upstream}}");
+            let tracks_remote = read(&["rev-parse", "--symbolic-full-name", &upstream])
+                .is_some_and(|name| name.trim() == remote);
+            Some(if tracks_remote { remote } else { local })
         }
         (local, remote) => local.or(remote),
     }

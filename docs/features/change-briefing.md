@@ -102,7 +102,8 @@ of them reads it, so a team that merges into `develop` sees develop's merges; an
 other checkout reads the one holding the most of its history (fewest of HEAD's
 commits outside it), so a feature branch never counts its own unmerged commits
 as merged. Each is read at the fetched `origin/<branch>` unless the local branch
-is strictly ahead of it. "What was read" names the branch. A repository with no
+is strictly ahead of it or has diverged without tracking it. A failed read of
+the candidates reads nothing rather than falling back to HEAD. "What was read" names the branch. A repository with no
 integration branch reads HEAD; a line whose tip is not a commit reads nothing.
 
 From a commit original, its file action shows only that commit's recorded paths.

@@ -445,7 +445,10 @@ fn measure_head(root: &Path, row: &mut WorktreeRow, base: Option<&str>, base_hea
     let Some(head) = row.head.clone() else {
         return;
     };
-    if let Some(base_head) = base_head.filter(|_| base.is_some()) {
+    if base.is_some() && row.branch.as_deref() == base {
+        // The base branch is the base, even with unpushed commits beside a fetched remote.
+        row.ahead = Some(0);
+    } else if let Some(base_head) = base_head.filter(|_| base.is_some()) {
         let range = format!("{base_head}..{head}");
         row.ahead = git_read(root, &["rev-list", "--count", &range])
             .ok()

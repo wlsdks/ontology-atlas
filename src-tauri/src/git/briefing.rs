@@ -87,7 +87,7 @@ impl ChangeBriefingPatch {
     }
 }
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone)]
 struct Identity {
     scope: SourceScope,
     root: PathBuf,
@@ -95,6 +95,17 @@ struct Identity {
     line: Option<String>,
     object: (u64, u64),
 }
+
+/// `line` names the branch for display; one commit read under two names is the same read.
+impl PartialEq for Identity {
+    fn eq(&self, other: &Self) -> bool {
+        self.scope == other.scope
+            && self.root == other.root
+            && self.head == other.head
+            && self.object == other.object
+    }
+}
+impl Eq for Identity {}
 
 #[derive(Clone, PartialEq, Eq)]
 enum SourceScope {

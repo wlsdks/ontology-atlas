@@ -59,7 +59,9 @@ impl Repository {
                 .success()
                 .then(|| String::from_utf8_lossy(&out.stdout).into_owned())
         };
-        merged_line(&read).map(|line| (line.branch, line.reference))
+        merged_line(&read)
+            .unwrap()
+            .map(|line| (line.branch, line.reference))
     }
 }
 
@@ -119,6 +121,20 @@ fn a_repository_that_merges_into_develop_reads_develop() {
 fn the_remote_wins_unless_the_local_branch_is_strictly_ahead() {
     let repository = Repository::new();
     repository.publish("main");
+    repository
+        .git(&[
+            "remote",
+            "add",
+            "origin",
+            "https://example.invalid/repo.git",
+        ])
+        .unwrap();
+    repository
+        .git(&["config", "branch.main.remote", "origin"])
+        .unwrap();
+    repository
+        .git(&["config", "branch.main.merge", "refs/heads/main"])
+        .unwrap();
     repository.git(&["switch", "-q", "-c", "work"]).unwrap();
 
     repository.git(&["switch", "-q", "main"]).unwrap();
@@ -135,6 +151,58 @@ fn the_remote_wins_unless_the_local_branch_is_strictly_ahead() {
     repository.git(&["switch", "-q", "work"]).unwrap();
     assert_eq!(repository.git(&["rev-parse", "main"]).unwrap(), local);
     assert_eq!(repository.line(), line("main", "refs/remotes/origin/main"));
+}
+
+#[test]
+fn a_diverged_branch_that_follows_another_remote_keeps_its_own_line() {
+    let repository = Repository::new();
+    repository.publish("main");
+    repository.commit("followed from upstream");
+    let local = repository.git(&["rev-parse", "main"]).unwrap();
+    repository
+        .git(&["switch", "-q", "--detach", "main~1"])
+        .unwrap();
+    repository.commit("only on the fork");
+    repository.publish_detached();
+    repository
+        .git(&["switch", "-q", "-c", "work", &local])
+        .unwrap();
+    assert_eq!(repository.line(), line("main", "refs/heads/main"));
+}
+
+#[test]
+fn many_branches_under_an_integration_name_never_hide_it() {
+    let repository = Repository::new();
+    repository.publish("main");
+    let head = repository.git(&["rev-parse", "HEAD"]).unwrap();
+    for n in 0..120 {
+        let name = format!("refs/remotes/origin/dev/teammate/feature-topic-{n}");
+        repository.git(&["update-ref", &name, &head]).unwrap();
+    }
+    repository.git(&["switch", "-q", "-c", "feat/x"]).unwrap();
+    repository.commit("feature");
+    assert_eq!(repository.line(), line("main", "refs/remotes/origin/main"));
+}
+
+#[test]
+fn a_tag_named_like_the_branch_does_not_hide_the_checkout() {
+    let repository = Repository::new();
+    repository.git(&["branch", "develop"]).unwrap();
+    repository.publish("develop");
+    repository.git(&["tag", "main"]).unwrap();
+    repository
+        .git(&[
+            "symbolic-ref",
+            "refs/remotes/origin/HEAD",
+            "refs/remotes/origin/develop",
+        ])
+        .unwrap();
+    assert_eq!(repository.line(), line("main", "refs/heads/main"));
+}
+
+#[test]
+fn a_failed_read_is_not_mistaken_for_no_branch() {
+    assert!(merged_line(&|_: &[&str]| None).is_err());
 }
 
 #[test]
