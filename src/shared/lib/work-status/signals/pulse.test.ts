@@ -67,12 +67,18 @@ describe('nextFlashes', () => {
     expect(changed.get('b')).toBe(first.get('b'));
   });
 
-  it('flashes at most once in two seconds, and flashes for a held-back change after the gap', () => {
+  it('flashes once for a burst of five changes in ten seconds, and never later for the burst', () => {
     let marks: ReadonlyMap<string, FlashMark> = nextFlashes(new Map(), answer({ a: pulse(null) }), 0);
-    marks = nextFlashes(marks, answer({ a: pulse(100) }), 1000);
-    marks = nextFlashes(marks, answer({ a: pulse(1500) }), 1000 + FLASH_MIN_GAP_MS - 1);
+    for (const atMs of [1000, 3000, 5500, 8000, 11_000]) marks = nextFlashes(marks, answer({ a: pulse(atMs) }), atMs + 500);
     expect(marks.get('a')?.count).toBe(1);
-    marks = nextFlashes(marks, answer({ a: pulse(1500) }), 1000 + FLASH_MIN_GAP_MS);
+    marks = nextFlashes(marks, answer({ a: pulse(11_000) }), 1500 + FLASH_MIN_GAP_MS + 2000);
+    expect(marks.get('a')?.count).toBe(1);
+  });
+
+  it('flashes again for a change sixteen seconds after the last flash', () => {
+    let marks: ReadonlyMap<string, FlashMark> = nextFlashes(new Map(), answer({ a: pulse(null) }), 0);
+    marks = nextFlashes(marks, answer({ a: pulse(1000) }), 1500);
+    marks = nextFlashes(marks, answer({ a: pulse(17_000) }), 17_500);
     expect(marks.get('a')?.count).toBe(2);
   });
 
