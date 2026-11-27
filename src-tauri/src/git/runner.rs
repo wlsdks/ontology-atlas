@@ -345,7 +345,112 @@ pub(super) fn run_network_git(cwd: &Path, args: &[&str]) -> Result<GitRun, Strin
         .spawn()
         .map_err(|err| coded("git-not-runnable", err))?;
     let label = args.first().copied().unwrap_or("command");
-    wait_with_deadline(&mut child, label, NETWORK_GIT_DEADLINE)
+    wait_with_deadline(
+        &mut child,
+        label,
+        NETWORK_GIT_DEADLINE,
+        "git-network-timeout",
+        false,
+    )
+}
+
+/// A local command that may run the user's hooks (a commit) and so may never return: on Unix
+/// it runs in its own process group, and on expiry the group is killed with every hook it started.
+pub(super) fn run_git_with_deadline(
+    cwd: &Path,
+    args: &[&str],
+    deadline: std::time::Duration,
+) -> Result<GitRun, String> {
+    use std::process::Stdio;
+
+    let mut command = read_policy_command(cwd, args, false);
+    command
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        command.process_group(0);
+    }
+    let mut child = command
+        .spawn()
+        .map_err(|err| coded("git-not-runnable", err))?;
+    let label = subcommand_of(args).unwrap_or("command");
+    wait_with_deadline(&mut child, label, deadline, "git-timeout", true)
+}
+
+pub(super) struct BoundedLines {
+    pub(super) success: bool,
+    /// The first lines, within `max_lines` and `max_bytes`.
+    pub(super) kept: String,
+    /// Lines read; a lower bound when `complete` is false.
+    pub(super) lines: usize,
+    pub(super) cut: bool,
+    /// False when the output passed `ceiling` bytes and Git was stopped.
+    pub(super) complete: bool,
+}
+
+/// A local read whose output is kept only up to `max_lines` and `max_bytes` and read at most
+/// to `ceiling` bytes, so a huge diff never sits whole in memory.
+pub(super) fn run_git_read_lines_bounded(
+    cwd: &Path,
+    args: &[&str],
+    max_lines: usize,
+    max_bytes: usize,
+    ceiling: usize,
+) -> Result<BoundedLines, String> {
+    use std::io::BufRead;
+    use std::process::Stdio;
+
+    let mut command = read_policy_command(cwd, args, true);
+    command
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null());
+    let mut child = command
+        .spawn()
+        .map_err(|err| coded("git-not-runnable", err))?;
+    let mut answer = BoundedLines {
+        success: false,
+        kept: String::new(),
+        lines: 0,
+        cut: false,
+        complete: true,
+    };
+    if let Some(stdout) = child.stdout.take() {
+        let mut reader = std::io::BufReader::new(stdout);
+        let mut buffer = Vec::new();
+        let mut read = 0usize;
+        loop {
+            buffer.clear();
+            match reader.read_until(b'\n', &mut buffer) {
+                Ok(0) | Err(_) => break,
+                Ok(count) => read += count,
+            }
+            let text = String::from_utf8_lossy(&buffer);
+            let line = text.strip_suffix('\n').unwrap_or(&text);
+            let line = line.strip_suffix('\r').unwrap_or(line);
+            if !answer.cut {
+                if answer.lines >= max_lines || answer.kept.len() + line.len() + 1 > max_bytes {
+                    answer.cut = true;
+                } else {
+                    answer.kept.push_str(line);
+                    answer.kept.push('\n');
+                }
+            }
+            answer.lines += 1;
+            if read > ceiling {
+                answer.complete = false;
+                answer.cut = true;
+                let _ = child.kill();
+                break;
+            }
+        }
+    }
+    let status = child.wait().map_err(|err| coded("git-not-runnable", err))?;
+    answer.success = status.success() || !answer.complete;
+    Ok(answer)
 }
 
 /// The pipes drain while waiting, or output past their 64 KiB buffer blocks the child.
@@ -353,6 +458,8 @@ fn wait_with_deadline(
     child: &mut std::process::Child,
     label: &str,
     deadline: std::time::Duration,
+    timeout_code: &str,
+    own_group: bool,
 ) -> Result<GitRun, String> {
     let stdout = drain_pipe(child.stdout.take());
     let stderr = drain_pipe(child.stderr.take());
@@ -368,10 +475,10 @@ fn wait_with_deadline(
             }
             Ok(None) => {
                 if started.elapsed() >= deadline {
-                    let _ = child.kill();
+                    kill_child(child, own_group);
                     let _ = child.wait();
                     return Err(coded(
-                        "git-network-timeout",
+                        timeout_code,
                         format!("git {label} did not finish within {}s", deadline.as_secs()),
                     ));
                 }
@@ -380,6 +487,22 @@ fn wait_with_deadline(
             Err(err) => return Err(coded("git-not-runnable", err)),
         }
     }
+}
+
+fn kill_child(child: &mut std::process::Child, own_group: bool) {
+    #[cfg(unix)]
+    {
+        if own_group {
+            if let Ok(group) = libc::pid_t::try_from(child.id()) {
+                // SAFETY: the group is the one `process_group(0)` made, named by the child's own pid.
+                unsafe { libc::killpg(group, libc::SIGKILL) };
+                return;
+            }
+        }
+    }
+    #[cfg(not(unix))]
+    let _ = own_group;
+    let _ = child.kill();
 }
 
 fn drain_pipe<R: std::io::Read + Send + 'static>(

@@ -6,11 +6,14 @@ import {
   buildRecheckBrief,
   chooseRecheckCandidates,
   leftBefore,
+  recheckBriefHeader,
+  recheckBriefSection,
   type RecheckCandidate,
   type TakenConcept,
 } from "@/features/library-rounds";
 import type { RecheckCommitResult, RecheckDiff, RecheckDocumentWrite, RecheckGitState } from "@/shared/lib/git/tauri-recheck";
 
+import type { SourceRead } from "./agent-turn-summary";
 import type { PassEntryStart } from "./round-pass-entry";
 
 /**
@@ -23,8 +26,8 @@ export interface RecheckTurn {
   failed: boolean;
   /** The agent's whole last message. */
   reply: string | null;
-  /** Repository paths the agent read through `analyze_repo_structure` `sourceReads`. */
-  sourceReads: readonly string[];
+  /** Files the agent read as source text through `analyze_repo_structure` `sourceReads`. */
+  sourceReads: readonly SourceRead[];
   refused: string[];
   called: string[];
 }
@@ -103,18 +106,31 @@ function emptyRecord(head: string | null): RecheckRecord {
   return record;
 }
 
-/** Answers the agent gave that Atlas did not act on read as "Not decided". */
-function unmarked(concepts: readonly RecheckConcept[], reason?: RecheckConcept["leftReason"]): RecheckConcept[] {
+/**
+ * Answers the agent gave that Atlas could not record read as "Not decided". They carry no
+ * basis, so the next run takes them again instead of parking them on a commit Git refused.
+ */
+function unmarked(concepts: readonly RecheckConcept[]): RecheckConcept[] {
   return concepts.map((concept) => {
     if (concept.outcome !== "accurate") return concept;
-    const left: RecheckConcept = { ...concept, outcome: "left" };
-    if (reason) left.leftReason = reason;
-    return left;
+    const { basis: _basis, ...rest } = concept;
+    return { ...rest, outcome: "left" };
   });
+}
+
+const ID = /^[A-Za-z0-9-]{1,64}$/;
+
+/** Reads under the repository's own root count; a read of another folder says nothing here. */
+function readsUnder(reads: readonly SourceRead[], repoRoot: string | null): Set<string> {
+  const trim = (path: string) => path.replace(/[\\/]+$/, "");
+  const root = repoRoot ? trim(repoRoot) : null;
+  return new Set(reads.filter((read) => root !== null && read.root !== null && trim(read.root) === root).map((read) => read.path));
 }
 
 export async function runRecheckPass(input: RecheckPassInput): Promise<RecheckPassResult> {
   const { ports } = input;
+  // Git refuses these names at the commit; finding out after the agent's turn would waste it.
+  if (!ID.test(input.roundId) || !ID.test(input.passId)) throw new Error("the schedule or run id is not one Git accepts");
   const state = await ports.gitState();
   const head = state?.head ?? null;
   const record = emptyRecord(head);
@@ -158,30 +174,26 @@ export async function runRecheckPass(input: RecheckPassInput): Promise<RecheckPa
   record.skippedUncommitted = skippedUncommitted;
   if (ordered.length === 0) return finish("held");
 
-  const taken = await takeCandidates(ports, ordered, input.limit);
+  const budget = RECHECK_MAX_SENT_BYTES - byteLength(recheckBriefHeader(input.vaultRoot, input.locale));
+  const taken = await takeCandidates(ports, ordered, input.limit, budget);
   record.waiting = ordered.length - taken.length;
-  const refusedConcepts = taken.filter((item) => item.refusedPath !== null);
-  const sent = taken.filter((item) => item.refusedPath === null);
-  const leftRefused: RecheckConcept[] = refusedConcepts.map((item) => ({
-    slug: item.candidate.slug,
-    path: item.candidate.path,
-    outcome: "left",
-    files: [],
-    leftReason: "refused-path",
-    leftPath: item.refusedPath!,
-    basis: item.candidate.basis,
-  }));
+  const sent = taken.filter((item) => item.refusedPath === null && !item.tooLarge);
+  const leftRefused: RecheckConcept[] = taken.flatMap((item): RecheckConcept[] => {
+    const base = { slug: item.candidate.slug, path: item.candidate.path, outcome: "left" as const, files: [], basis: item.candidate.basis };
+    if (item.refusedPath !== null) return [{ ...base, leftReason: "refused-path", leftPath: item.refusedPath }];
+    return item.tooLarge ? [{ ...base, leftReason: "too-large" }] : [];
+  });
   record.concepts = leftRefused;
   const checked = taken.length;
   if (sent.length === 0) return finish("rechecked", { checked });
   if (!input.agentReady) return finish("failed", { checked: 0, note: "no-agent", recheck: { ...record, concepts: [] } });
 
-  record.sentBytes = sent.reduce((total, item) => total + item.bytes, 0);
   const brief = buildRecheckBrief({
     vaultRoot: input.vaultRoot,
     locale: input.locale,
     concepts: sent.map((item) => ({ slug: item.candidate.slug, text: item.text, files: item.files })),
   });
+  record.sentBytes = byteLength(brief);
   const turn = await ports.agentTurn(brief);
   const toolFacts = { agentTurns: 1 as const, refused: turn.refused, called: turn.called };
   if (turn.stopped) return finish("failed", { ...toolFacts, checked, note: "stopped" });
@@ -193,7 +205,8 @@ export async function runRecheckPass(input: RecheckPassInput): Promise<RecheckPa
     files: item.files.map((file) => ({ path: file.path, cut: file.cut })),
     basis: item.candidate.basis,
   }));
-  const applied = turn.failed ? null : applyRecheckReply({ taken: takenConcepts, reply: turn.reply, sourceReads: new Set(turn.sourceReads), commit: head });
+  const sourceReads = readsUnder(turn.sourceReads, state.repoRoot);
+  const applied = turn.failed ? null : applyRecheckReply({ taken: takenConcepts, reply: turn.reply, sourceReads, commit: head });
   if (!applied) {
     record.error = "reply-unreadable";
     return finish("failed", { ...toolFacts, checked });
@@ -216,10 +229,21 @@ export async function runRecheckPass(input: RecheckPassInput): Promise<RecheckPa
   );
   if (committed.outcome === "committed" && committed.commit) {
     record.commit = committed.commit;
+    if (committed.rewritten.length > 0) {
+      // The commit stays for the person to read and undo; Atlas never rewrites history.
+      record.error = "commit-rewritten";
+      record.rewritten = committed.rewritten;
+      return finish("failed", { ...toolFacts, checked });
+    }
     return finish("rechecked", { ...toolFacts, checked });
   }
   if (committed.outcome === "nothing") return finish("rechecked", { ...toolFacts, checked });
   record.concepts = unmarked(record.concepts);
+  if (committed.outcome === "held" && committed.hold) {
+    record.error = "commit-held";
+    record.hold = committed.hold;
+    return finish("failed", { ...toolFacts, checked });
+  }
   if (committed.outcome === "head-moved") {
     record.error = "head-moved";
     return finish("failed", { ...toolFacts, checked });
@@ -237,17 +261,21 @@ interface SizedCandidate {
   files: { path: string; diff: string; cut: boolean; lines: number }[];
   /** The first cited path the code reader refuses; nothing of this concept is sent. */
   refusedPath: string | null;
-  bytes: number;
+  /** Its part of the brief alone is over the run's budget; nothing of it is sent. */
+  tooLarge: boolean;
 }
 
 /**
  * Takes candidates in order until `limit`, reading each one's document and the diff of each moved
- * file; one that would take the run past `RECHECK_MAX_SENT_BYTES` waits. A concept with a refused
- * path is taken without reading anything of it, so it is reported rather than retried unseen.
+ * file, while their parts of the brief fit `budget` bytes; at the first that does not fit, the
+ * rest wait and nothing more is read. A concept with a refused path is taken without reading
+ * anything of it, and one too large for any run is taken and not sent, so each is reported
+ * rather than retried unseen.
  */
-async function takeCandidates(ports: RecheckPassPorts, ordered: readonly RecheckCandidate[], limit: number): Promise<SizedCandidate[]> {
+async function takeCandidates(ports: RecheckPassPorts, ordered: readonly RecheckCandidate[], limit: number, budget: number): Promise<SizedCandidate[]> {
   const taken: SizedCandidate[] = [];
   let bytes = 0;
+  let sentCount = 0;
   for (const candidate of ordered) {
     if (taken.length >= limit) break;
     const found = new Map<string, RecheckDiff>();
@@ -257,7 +285,7 @@ async function takeCandidates(ports: RecheckPassPorts, ordered: readonly Recheck
     }
     const refused = candidate.moved.find((path) => found.get(path)?.refused);
     if (refused !== undefined) {
-      taken.push({ candidate, text: "", files: [], refusedPath: refused, bytes: 0 });
+      taken.push({ candidate, text: "", files: [], refusedPath: refused, tooLarge: false });
       continue;
     }
     const files = candidate.moved.flatMap((path) => {
@@ -267,10 +295,15 @@ async function takeCandidates(ports: RecheckPassPorts, ordered: readonly Recheck
     if (files.length !== candidate.moved.length) continue;
     const text = await ports.readDocument(candidate.path);
     if (text === null) continue;
-    const size = byteLength(text) + files.reduce((total, file) => total + byteLength(file.diff), 0);
-    if (bytes + size > RECHECK_MAX_SENT_BYTES) continue;
+    const size = byteLength(recheckBriefSection({ slug: candidate.slug, text, files }, sentCount)) + 1;
+    if (size > budget) {
+      taken.push({ candidate, text: "", files: [], refusedPath: null, tooLarge: true });
+      continue;
+    }
+    if (bytes + size > budget) break;
     bytes += size;
-    taken.push({ candidate, text, files, refusedPath: null, bytes: size });
+    sentCount += 1;
+    taken.push({ candidate, text, files, refusedPath: null, tooLarge: false });
   }
   return taken;
 }

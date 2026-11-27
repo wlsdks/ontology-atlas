@@ -28,11 +28,25 @@ export function recheckBasis(docCommit: string, files: readonly { path: string; 
   return [docCommit, ...files.map((file) => `${file.path}@${file.commit ?? ''}`).sort()].join(' ');
 }
 
-/** Per slug, the basis it was last left "Not decided" on, from this schedule's earlier runs. */
+/**
+ * Per slug, the basis it was last parked on in this schedule's runs: left "Not decided", or
+ * marked and then undone. An undone document returns to the bytes it had, so its basis returns
+ * too, and the next run does not send the same document and diff again.
+ */
 export function leftBefore(entries: readonly RoundPassEntry[], roundId: string): Map<string, string> {
   const left = new Map<string, string>();
+  const runs = new Map<string, RoundPassEntry>();
   for (const entry of entries) {
-    if (entry.roundId !== roundId || !entry.recheck || entry.recheck.undoOf) continue;
+    if (entry.roundId !== roundId || !entry.recheck) continue;
+    const { undoOf, undone } = entry.recheck;
+    if (undoOf) {
+      const paths = new Set(undone ?? []);
+      for (const concept of runs.get(undoOf)?.recheck?.concepts ?? []) {
+        if (paths.has(concept.path) && concept.basis) left.set(concept.slug, concept.basis);
+      }
+      continue;
+    }
+    runs.set(entry.id, entry);
     for (const concept of entry.recheck.concepts) {
       if (concept.outcome === 'left' && concept.basis) left.set(concept.slug, concept.basis);
       else left.delete(concept.slug);

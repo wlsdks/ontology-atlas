@@ -234,7 +234,8 @@
       "noAnswer": "The agent's reply did not cover this concept.",
       "changedMeanwhile": "The document changed while the agent was reading it.",
       "refusedPath": "Atlas does not send {path} to an agent, because its name says it holds keys or passwords or it lies outside this folder.",
-      "cutUnread": "What changed in {path} was too long to send whole and the agent did not read the file, so its answer was not taken."
+      "cutUnread": "What changed in {path} was too long to send whole and the agent did not read the file, so its answer was not taken.",
+      "tooLarge": "This document and what changed in its files are more than one run sends, so Atlas did not send it to the agent."
     },
     "undo": {
       "done": "{count, plural, one {Put # document back as it was before this run and committed that. It counts as a concept whose code changed again.} other {Put # documents back as they were before this run and committed that. They count as concepts whose code changed again.}}",
@@ -244,6 +245,9 @@
     },
     "heldRefused": "Not run: Git refused this schedule's last commit ({detail}). Fix what Git reported, then press Run now. The schedule runs by the clock again once a run commits.",
     "headMoved": "The repository moved to another commit during this run, so Atlas changed no document. Run it again.",
+    "commitHeldBranch": "When the agent finished, {branch} was checked out, and it is the remote's default branch, so Atlas changed no document. Switch to a working branch, then run it again.",
+    "commitHeldGit": "When the agent finished, Git could not commit in this repository ({detail}), so Atlas changed no document. Finish that in Git, then run it again.",
+    "commitRewritten": "Git's hook changed {files} while committing, so the commit holds text Atlas did not write. The commit stays as it is: check it, and undo this run if it is not what you want.",
     "offHere": "This recheck came with the folder and was never allowed on this Mac, so it does not run here. To recheck here, remove it and schedule your own.",
     "sent": "Sent {size} of documents and code changes to the agent.",
     "edits": {

@@ -3,16 +3,18 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useDataSourceMode, useLocalVault } from '@/entities/vault-session';
 import type { KnowledgeGraphNode } from '@/entities/knowledge-graph';
-import { gitKnownCommits } from '@/shared/lib/git/tauri-recheck';
+import { gitRecheckMarksHold } from '@/shared/lib/git/tauri-recheck';
 import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { selectOpenVaultHandle } from '@/shared/lib/vault-folder/select-open-vault-handle';
 
 const MARK = /^[0-9a-f]{40}([0-9a-f]{24})?$/;
-const NO_KNOWN: ReadonlySet<string> = new Set();
+const NONE: ReadonlySet<string> = new Set();
 
 /**
- * The map nodes that read current and whose document carries a recheck mark naming a commit this
- * repository has. A mark naming an unknown commit counts as none: it says nothing Git can back.
+ * The map nodes that read current and whose document carries a recheck mark that still stands:
+ * it names a commit this repository has, and the document differs from that commit's text only
+ * by the mark. A mark naming an unknown commit, or one on a document a person edited after the
+ * recheck, counts as none (`git_recheck_marks_hold`).
  */
 export function useRecheckedConcepts({
   nodes,
@@ -28,43 +30,45 @@ export function useRecheckedConcepts({
   const rootPath = handle ? (getTauriVaultRootPath(handle) ?? null) : null;
   const docs = mode === 'local' ? vault.manifest?.docs : null;
   const marks = useMemo(() => readRecheckMarks(nodes ?? [], docs ?? []), [docs, nodes]);
-  const hashes = useMemo(() => [...new Set(marks.values())].sort(), [marks]);
-  const key = rootPath && hashes.length > 0 ? `${rootPath}\0${hashes.join(',')}` : '';
-  const [known, setKnown] = useState<{ key: string; set: ReadonlySet<string> }>({ key: '', set: NO_KNOWN });
+  const asked = useMemo(() => [...marks.values()].sort((a, b) => (a.path < b.path ? -1 : 1)), [marks]);
+  const key = rootPath && asked.length > 0 ? `${rootPath}\0${asked.map((mark) => `${mark.path}@${mark.mark}`).join(',')}` : '';
+  const [standing, setStanding] = useState<{ key: string; set: ReadonlySet<string> }>({ key: '', set: NONE });
   useEffect(() => {
     if (!key || !rootPath) return;
     let live = true;
-    void gitKnownCommits(rootPath, hashes)
+    void gitRecheckMarksHold(rootPath, asked)
       .then((answer) => {
-        if (live) setKnown({ key, set: new Set(answer ?? []) });
+        if (live) setStanding({ key, set: new Set(answer ?? []) });
       })
       .catch(() => undefined);
     return () => {
       live = false;
     };
-  }, [hashes, key, rootPath]);
-  const knownSet = known.key === key ? known.set : NO_KNOWN;
-  return useMemo(() => recheckedIds(marks, knownSet, current), [current, knownSet, marks]);
+  }, [asked, key, rootPath]);
+  const standingSet = standing.key === key ? standing.set : NONE;
+  return useMemo(() => recheckedIds(marks, standingSet, current), [current, standingSet, marks]);
 }
 
-/** Node id to the commit its document's recheck mark names, for marks shaped like a commit name. */
+/** Node id to its document and the commit the document's recheck mark names, for marks shaped like a commit name. */
 export function readRecheckMarks(
   nodes: readonly Pick<KnowledgeGraphNode, 'id' | 'evidenceIds'>[],
   docs: readonly { slug: string; frontmatter: Record<string, unknown> }[],
-): Map<string, string> {
-  const bySlug = new Map(docs.map((doc) => [doc.slug, doc.frontmatter.evidence_checked]));
-  const found = new Map<string, string>();
+): Map<string, { path: string; mark: string }> {
+  const bySlug = new Map(docs.map((doc) => [doc.slug, doc]));
+  const found = new Map<string, { path: string; mark: string }>();
   for (const node of nodes) {
-    const mark = bySlug.get(node.evidenceIds[0] ?? '');
-    if (typeof mark === 'string' && MARK.test(mark)) found.set(node.id, mark);
+    const doc = bySlug.get(node.evidenceIds[0] ?? '');
+    const mark = doc?.frontmatter.evidence_checked;
+    if (doc && typeof mark === 'string' && MARK.test(mark)) found.set(node.id, { path: `${doc.slug}.md`, mark });
   }
   return found;
 }
 
+/** Of the marked nodes, those whose document's mark stands and which read current. */
 export function recheckedIds(
-  marks: ReadonlyMap<string, string>,
-  known: ReadonlySet<string>,
+  marks: ReadonlyMap<string, { path: string; mark: string }>,
+  standing: ReadonlySet<string>,
   current: (id: string) => boolean,
 ): Set<string> {
-  return new Set([...marks].filter(([id, mark]) => known.has(mark) && current(id)).map(([id]) => id));
+  return new Set([...marks].filter(([id, mark]) => standing.has(mark.path) && current(id)).map(([id]) => id));
 }

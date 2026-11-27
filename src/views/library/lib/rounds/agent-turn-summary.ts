@@ -12,16 +12,27 @@ export interface AgentTurnSummary {
   answer: string | null;
   /** The last message whole, for a reply Atlas parses. */
   reply: string | null;
-  /** Repository paths a completed `analyze_repo_structure` call read through `sourceReads`. */
-  sourceReads: string[];
+  /**
+   * Files a completed `analyze_repo_structure` call read through `sourceReads` as source text
+   * (an outline reads none), with the `rootPath` the call named.
+   */
+  sourceReads: SourceRead[];
 }
 
-function sourceReadPaths(rawInput: unknown): string[] {
-  const reads = (rawInput as { sourceReads?: unknown } | null)?.sourceReads;
+export interface SourceRead {
+  path: string;
+  root: string | null;
+}
+
+function sourceReadsOf(rawInput: unknown): SourceRead[] {
+  const input = rawInput as { sourceReads?: unknown; rootPath?: unknown } | null;
+  const reads = input?.sourceReads;
   if (!Array.isArray(reads)) return [];
+  const root = typeof input?.rootPath === "string" && input.rootPath.trim() ? input.rootPath.trim() : null;
   return reads.flatMap((read) => {
-    const path = (read as { path?: unknown } | null)?.path;
-    return typeof path === "string" && path.trim() ? [path.trim().replace(/^\.\//, "")] : [];
+    const { path, mode } = (read ?? {}) as { path?: unknown; mode?: unknown };
+    if (mode === "outline" || typeof path !== "string" || !path.trim()) return [];
+    return [{ path: path.trim().replace(/^\.\//, ""), root }];
   });
 }
 
@@ -32,9 +43,11 @@ export function summarizeAgentTurn(events: AcpTurnCompletion["events"]): AgentTu
   const called: string[] = [];
   const last = [...events].reverse().find((event) => event.kind === "agent")?.text ?? null;
   const answer = last?.replace(/\s+/g, " ").trim().slice(0, ANSWER_MAX_CHARS) ?? null;
-  const sourceReads: string[] = [];
+  const sourceReads = new Map<string, SourceRead>();
   for (const event of events) {
-    if (event.kind === "tool" && event.status === "completed") sourceReads.push(...sourceReadPaths(event.rawInput));
+    if (event.kind === "tool" && event.status === "completed") {
+      for (const read of sourceReadsOf(event.rawInput)) sourceReads.set(`${read.root ?? ""}\0${read.path}`, read);
+    }
     if (event.kind !== "notice") continue;
     if (event.text === "auto-allowed" && event.detail) {
       const effect = scopeNoteEffect(event.detail);
@@ -49,6 +62,6 @@ export function summarizeAgentTurn(events: AcpTurnCompletion["events"]): AgentTu
     called: [...new Set(called)],
     answer,
     reply: last && last.length <= REPLY_MAX_CHARS ? last : null,
-    sourceReads: [...new Set(sourceReads)],
+    sourceReads: [...sourceReads.values()],
   };
 }

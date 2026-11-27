@@ -11,7 +11,7 @@ export type { PassPages } from './model/pass-pages';
 export { TICK_MS, afterPass, planTick, triggerFor } from './model/round-schedule';
 export { applyRecheckReply } from './model/recheck-apply';
 export type { TakenConcept } from './model/recheck-apply';
-export { buildRecheckBrief } from './model/recheck-brief';
+export { buildRecheckBrief, recheckBriefHeader, recheckBriefSection } from './model/recheck-brief';
 export {
   RECHECK_DIFF_MAX_LINES,
   RECHECK_MAX_SENT_BYTES,

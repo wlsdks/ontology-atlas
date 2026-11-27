@@ -88,7 +88,7 @@ describe('settling a run from the reply', () => {
         { slug: 'capabilities/ship', verdict: 'outdated', reason: 'Ships twice now', passage: 'Pays one invoice.' },
         { slug: 'capabilities/refund', verdict: 'unsure', reason: 'The handler moved' },
         { slug: 'domains/billing', verdict: 'accurate' },
-        { slug: 'capabilities/pay', verdict: 'outdated' },
+        { slug: 'capabilities/pay', verdict: 'accurate' },
       ]),
       sourceReads: new Set(),
       commit: HEAD,
@@ -102,6 +102,20 @@ describe('settling a run from the reply', () => {
       { slug: 'capabilities/refund', outcome: 'left', leftReason: 'cannot-tell', reason: 'The handler moved' },
       { slug: 'capabilities/void', outcome: 'left', leftReason: 'no-answer', reason: undefined },
     ]);
+  });
+
+  it('takes no answer for a concept the reply answers two ways', () => {
+    const applied = applyRecheckReply({
+      taken: [concept('capabilities/pay')],
+      reply: reply([
+        { slug: 'capabilities/pay', verdict: 'accurate' },
+        { slug: 'capabilities/pay', verdict: 'outdated', reason: 'Pays twice' },
+      ]),
+      sourceReads: new Set(),
+      commit: HEAD,
+    })!;
+    expect(applied.marks).toEqual([]);
+    expect(applied.concepts[0]).toMatchObject({ outcome: 'left', leftReason: 'no-answer' });
   });
 
   it('takes "accurate" on a cut diff only when the agent read that file', () => {

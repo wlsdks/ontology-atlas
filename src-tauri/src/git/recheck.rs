@@ -4,12 +4,13 @@
 
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
+use std::time::Duration;
 
 use super::classify::git_error_text;
-use super::repo::{
-    find_repo_root, get_current_branch, get_head_hash, is_head_detached, vault_pathspec,
+use super::repo::{find_repo_root, get_head_hash, vault_pathspec};
+use super::runner::{
+    run_git, run_git_read_lines_bounded, run_git_with_deadline, validate_vault_dir,
 };
-use super::runner::{run_git, validate_vault_dir};
 use crate::code_reader::refusal::path_refusal;
 use crate::vault::scope::{normalize_relative_path, resolve_existing_inside};
 use crate::vault::write::{ensure_vault_directory_blocking, write_vault_text_file_blocking};
@@ -17,15 +18,22 @@ use crate::vault::write::{ensure_vault_directory_blocking, write_vault_text_file
 #[cfg(test)]
 mod tests;
 
-/// Written before any document and removed once the run's documents are committed or put back,
-/// so a run Atlas quit in the middle of is put back when the folder opens again.
-const PENDING_FILE: &str = ".ontology-atlas/recheck-pending.json";
+/// Under the app's data folder, never the opened folder: a journal in the folder could be
+/// planted to make Atlas write chosen text into its documents when the folder opens.
+const JOURNAL_FOLDER: &str = "recheck-pending";
 const UNDONE_FOLDER: &str = ".ontology-atlas/undone";
 /// Git's refusal shown in a sentence: its first lines, cut.
 const DETAIL_MAX_CHARS: usize = 400;
 /// A diff over this many bytes is cut like one over the line limit.
 const DIFF_MAX_BYTES: usize = 64 * 1024;
+/// Git is stopped once a diff's output passes this, and the line count is a lower bound.
+const DIFF_READ_CEILING: usize = 8 * 1024 * 1024;
 const DIFF_REQUEST_MAX: usize = 256;
+/// A commit runs the person's hooks; one that has not finished by then is stopped and refused.
+const COMMIT_DEADLINE: Duration = Duration::from_secs(60);
+const MARKS_MAX: usize = 4096;
+const DOCUMENT_MAX_BYTES: u64 = 1024 * 1024;
+const EVIDENCE_CHECKED_KEY: &str = "evidence_checked:";
 
 #[derive(Debug, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -39,6 +47,8 @@ pub struct RecheckHold {
 #[serde(rename_all = "camelCase")]
 pub struct RecheckGitState {
     repository: bool,
+    /// The repository's top folder, so a source read can be matched to it.
+    repo_root: Option<String>,
     head: Option<String>,
     branch: Option<String>,
     remote_default: Option<String>,
@@ -54,21 +64,37 @@ pub fn git_recheck_state(vault_path: String) -> Result<RecheckGitState, String> 
     let Some(repo_root) = find_repo_root(&vault_dir)? else {
         return Ok(RecheckGitState {
             repository: false,
+            repo_root: None,
             head: None,
             branch: None,
             remote_default: None,
             hold: None,
         });
     };
-    let head = get_head_hash(&repo_root);
-    let detached = is_head_detached(&repo_root);
-    let branch = if detached {
-        None
-    } else {
-        get_current_branch(&repo_root)
-    };
-    let remote_default = remote_default_branch(&repo_root);
-    let hold = git_hold(&repo_root, head.is_some(), detached)
+    let place = commit_place(&repo_root);
+    Ok(RecheckGitState {
+        repository: true,
+        repo_root: Some(repo_root.to_string_lossy().into_owned()),
+        head: place.head,
+        branch: place.branch,
+        remote_default: place.remote_default,
+        hold: place.hold,
+    })
+}
+
+struct CommitPlace {
+    head: Option<String>,
+    branch: Option<String>,
+    remote_default: Option<String>,
+    hold: Option<RecheckHold>,
+}
+
+/// Read again right before every commit and undo, not only before the turn.
+fn commit_place(repo_root: &Path) -> CommitPlace {
+    let head = get_head_hash(repo_root);
+    let branch = checked_out_branch(repo_root);
+    let remote_default = remote_default_branch(repo_root);
+    let hold = git_hold(repo_root, head.is_some(), branch.is_none())
         .map(|detail| RecheckHold {
             reason: "git",
             detail,
@@ -80,13 +106,26 @@ pub fn git_recheck_state(vault_path: String) -> Result<RecheckGitState, String> 
             }),
             _ => None,
         });
-    Ok(RecheckGitState {
-        repository: true,
+    CommitPlace {
         head,
         branch,
         remote_default,
         hold,
-    })
+    }
+}
+
+/// The checked-out branch as `HEAD` names it, `None` when detached. Read as a ref, because
+/// `rev-parse --abbrev-ref` answers `heads/main` when a tag is also called `main`.
+fn checked_out_branch(repo_root: &Path) -> Option<String> {
+    let out = run_git(repo_root, &["symbolic-ref", "--quiet", "HEAD"]).ok()?;
+    if !out.success {
+        return None;
+    }
+    out.stdout
+        .trim()
+        .strip_prefix("refs/heads/")
+        .filter(|name| !name.is_empty())
+        .map(str::to_string)
 }
 
 fn git_hold(repo_root: &Path, has_head: bool, detached: bool) -> Option<String> {
@@ -186,7 +225,7 @@ fn cited_diff(repo_root: &Path, request: RecheckDiffRequest, max_lines: usize) -
     if refused || !is_commit_name(&answer.commit) || answer.path.starts_with('-') {
         return answer;
     }
-    let Ok(out) = run_git(
+    let Ok(out) = run_git_read_lines_bounded(
         repo_root,
         &[
             "-c",
@@ -199,23 +238,18 @@ fn cited_diff(repo_root: &Path, request: RecheckDiffRequest, max_lines: usize) -
             "--",
             &answer.path,
         ],
+        max_lines,
+        DIFF_MAX_BYTES,
+        DIFF_READ_CEILING,
     ) else {
         return answer;
     };
     if !out.success {
         return answer;
     }
-    answer.lines = out.stdout.lines().count();
-    let mut kept = String::new();
-    for (index, line) in out.stdout.lines().enumerate() {
-        if index >= max_lines || kept.len() + line.len() + 1 > DIFF_MAX_BYTES {
-            answer.cut = true;
-            break;
-        }
-        kept.push_str(line);
-        kept.push('\n');
-    }
-    answer.diff = Some(kept);
+    answer.lines = out.lines;
+    answer.cut = out.cut;
+    answer.diff = Some(out.kept);
     answer
 }
 
@@ -226,36 +260,66 @@ fn is_commit_name(value: &str) -> bool {
             .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
 }
 
-/// The subset of `hashes` that name a commit in this repository: a mark naming anything else is no mark.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RecheckMark {
+    /// Vault-relative document.
+    path: String,
+    /// The commit its `evidence_checked` names.
+    mark: String,
+}
+
+/// The documents whose mark still stands: it names a commit of this repository, and the
+/// document then and now differ only in their `evidence_checked` line. A mark naming an
+/// unknown commit, or a document a person changed after the recheck, counts as none.
 #[tauri::command(async)]
-pub fn git_known_commits(vault_path: String, hashes: Vec<String>) -> Result<Vec<String>, String> {
-    let vault_dir = validate_vault_dir(&vault_path)?;
-    let repo_root = super::repo::require_repo_root(&vault_dir)?;
-    let mut wanted: Vec<String> = hashes
+pub fn git_recheck_marks_hold(
+    vault_path: String,
+    marks: Vec<RecheckMark>,
+) -> Result<Vec<String>, String> {
+    let vault = open_vault(&vault_path)?;
+    Ok(marks
         .into_iter()
-        .filter(|hash| is_commit_name(hash))
-        .collect();
-    wanted.sort();
-    wanted.dedup();
-    if wanted.is_empty() {
-        return Ok(Vec::new());
-    }
-    let input: String = wanted
-        .iter()
-        .map(|hash| format!("{hash}^{{commit}}\n"))
-        .collect();
-    let (_, out) = super::runner::run_git_read_with_input(
-        &repo_root,
-        &["cat-file", "--batch-check"],
-        input.into_bytes(),
-    )?;
-    let answers = String::from_utf8_lossy(&out);
-    Ok(wanted
-        .into_iter()
-        .zip(answers.lines())
-        .filter(|(_, line)| line.split(' ').nth(1) == Some("commit"))
-        .map(|(hash, _)| hash)
+        .take(MARKS_MAX)
+        .filter(|mark| is_commit_name(&mark.mark))
+        .filter_map(|mark| {
+            let repo_path = vault.repo_path(&mark.path).ok()?;
+            let then = vault.committed(&format!("{}^{{commit}}", mark.mark), &repo_path)?;
+            let now = vault.read(&mark.path)?;
+            (without_marks(&then) == without_marks(&now)).then_some(mark.path)
+        })
         .collect())
+}
+
+/// The text with line endings as LF and every `evidence_checked` line of its frontmatter removed.
+fn without_marks(text: &str) -> String {
+    let text = text.replace("\r\n", "\n");
+    let mut lines = text.split('\n');
+    let mut out: Vec<&str> = Vec::new();
+    if text.starts_with("---\n") {
+        if let Some(open) = lines.next() {
+            out.push(open);
+        }
+        for line in lines.by_ref() {
+            if line == "---" {
+                out.push(line);
+                break;
+            }
+            if !line.starts_with(EVIDENCE_CHECKED_KEY) {
+                out.push(line);
+            }
+        }
+    }
+    out.extend(lines);
+    out.join("\n")
+}
+
+#[derive(Debug, Default, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UncommittedPaths {
+    changed: Vec<String>,
+    /// Paths past the request cap, which Git was not asked about: treat them as changed.
+    unchecked: Vec<String>,
 }
 
 /// Which of the given paths have uncommitted changes, staged or not, as the caller wrote them:
@@ -265,24 +329,35 @@ pub fn git_uncommitted_paths(
     vault_path: String,
     vault_paths: Vec<String>,
     repo_paths: Vec<String>,
-) -> Result<Vec<String>, String> {
+) -> Result<UncommittedPaths, String> {
     let vault = open_vault(&vault_path)?;
     let prefix = if vault.pathspec == "." {
         String::new()
     } else {
         format!("{}/", vault.pathspec)
     };
-    let wanted: Vec<(String, String)> = vault_paths
+    let mut wanted: Vec<(String, String)> = vault_paths
         .iter()
         .map(|path| (path.clone(), format!("{prefix}{path}")))
         .chain(repo_paths.iter().map(|path| (path.clone(), path.clone())))
         .filter(|(key, _)| {
             !key.is_empty() && !key.starts_with('-') && normalize_relative_path(key).is_ok()
         })
-        .take(super::evidence::MAX_EVIDENCE_PATHS)
         .collect();
+    let unchecked: Vec<String> = if wanted.len() > super::evidence::MAX_EVIDENCE_PATHS {
+        wanted
+            .split_off(super::evidence::MAX_EVIDENCE_PATHS)
+            .into_iter()
+            .map(|(key, _)| key)
+            .collect()
+    } else {
+        Vec::new()
+    };
     if wanted.is_empty() {
-        return Ok(Vec::new());
+        return Ok(UncommittedPaths {
+            changed: Vec::new(),
+            unchecked,
+        });
     }
     let mut args = vec![
         "-c",
@@ -304,11 +379,14 @@ pub fn git_uncommitted_paths(
         .filter_map(|record| record.get(3..))
         .filter(|path| !path.is_empty())
         .collect();
-    Ok(wanted
-        .into_iter()
-        .filter(|(_, resolved)| changed.contains(resolved.as_str()))
-        .map(|(key, _)| key)
-        .collect())
+    Ok(UncommittedPaths {
+        changed: wanted
+            .into_iter()
+            .filter(|(_, resolved)| changed.contains(resolved.as_str()))
+            .map(|(key, _)| key)
+            .collect(),
+        unchecked,
+    })
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -332,7 +410,7 @@ struct PendingRun {
 #[derive(Debug, Default, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RecheckCommit {
-    /// `committed`, `nothing`, `head-moved` or `refused`.
+    /// `committed`, `nothing`, `held`, `head-moved` or `refused`.
     outcome: &'static str,
     commit: Option<String>,
     written: Vec<String>,
@@ -340,18 +418,26 @@ pub struct RecheckCommit {
     changed_meanwhile: Vec<String>,
     /// Git's refusal.
     detail: Option<String>,
+    /// When `held`: why Git could not commit when the run finished.
+    hold: Option<RecheckHold>,
     /// After a refusal: documents put back as before the run.
     restored: Vec<String>,
     /// After a refusal: documents a person changed after Atlas wrote them, left as they are.
     left: Vec<String>,
     /// After a refusal: the folder holding the text Atlas took back out.
     copy: Option<String>,
+    /// After a commit: documents whose committed text is not what Atlas wrote (a hook changed
+    /// them). The commit stays for the person to undo.
+    rewritten: Vec<String>,
 }
 
 struct Vault {
     root: String,
     repo_root: PathBuf,
     pathspec: String,
+    /// The run journal for this folder, under the app's data folder.
+    journal: Option<PathBuf>,
+    commit_deadline: Duration,
 }
 
 fn open_vault(vault_path: &str) -> Result<Vault, String> {
@@ -362,7 +448,32 @@ fn open_vault(vault_path: &str) -> Result<Vault, String> {
         root: vault_dir.to_string_lossy().into_owned(),
         repo_root,
         pathspec,
+        journal: None,
+        commit_deadline: COMMIT_DEADLINE,
     })
+}
+
+/// `vault_path` with its run journal kept in `journal_dir`, one file per folder.
+fn open_vault_with_journal(vault_path: &str, journal_dir: &Path) -> Result<Vault, String> {
+    use sha2::{Digest, Sha256};
+    let mut vault = open_vault(vault_path)?;
+    let name = crate::lower_hex::lower_hex(&Sha256::digest(vault.root.as_bytes()));
+    vault.journal = Some(journal_dir.join(format!("{name}.json")));
+    Ok(vault)
+}
+
+fn journal_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    use tauri::Manager;
+    app.path()
+        .app_data_dir()
+        .map(|dir| dir.join(JOURNAL_FOLDER))
+        .map_err(|error| error.to_string())
+}
+
+enum CommitStop {
+    Held(RecheckHold),
+    HeadMoved,
+    Refused(String),
 }
 
 impl Vault {
@@ -382,6 +493,9 @@ impl Vault {
 
     fn read(&self, relative: &str) -> Option<String> {
         let path = resolve_existing_inside(&self.root, relative).ok()?;
+        if std::fs::metadata(&path).ok()?.len() > DOCUMENT_MAX_BYTES {
+            return None;
+        }
         std::fs::read_to_string(path).ok()
     }
 
@@ -389,39 +503,89 @@ impl Vault {
         write_vault_text_file_blocking(self.root.clone(), relative.to_string(), text.to_string())
     }
 
+    /// The blob at `revision:repo_path` as Git stores it, at most `DOCUMENT_MAX_BYTES`.
     fn committed(&self, revision: &str, repo_path: &str) -> Option<String> {
-        let out = run_git(
-            &self.repo_root,
-            &["cat-file", "blob", &format!("{revision}:{repo_path}")],
-        )
-        .ok()?;
+        let object = format!("{revision}:{repo_path}");
+        let size = run_git(&self.repo_root, &["cat-file", "-s", &object]).ok()?;
+        if !size.success || size.stdout.trim().parse::<u64>().ok()? > DOCUMENT_MAX_BYTES {
+            return None;
+        }
+        let out = run_git(&self.repo_root, &["cat-file", "blob", &object]).ok()?;
         out.success.then_some(out.stdout)
+    }
+
+    /// Git's own answer to "is this document at `HEAD` exactly as on disk": tracked in `HEAD`
+    /// and with no staged, unstaged or untracked change, line-ending rules applied.
+    fn clean_at_head(&self, repo_path: &str) -> bool {
+        let tracked = run_git(
+            &self.repo_root,
+            &["cat-file", "-e", &format!("HEAD:{repo_path}")],
+        )
+        .is_ok_and(|out| out.success);
+        tracked
+            && run_git(
+                &self.repo_root,
+                &[
+                    "-c",
+                    "core.quotepath=false",
+                    "status",
+                    "--porcelain=v1",
+                    "-z",
+                    "--untracked-files=all",
+                    "--",
+                    repo_path,
+                ],
+            )
+            .is_ok_and(|out| out.success && out.stdout.is_empty())
     }
 
     fn head(&self) -> Option<String> {
         get_head_hash(&self.repo_root)
     }
 
-    fn commit_only(&self, message: &str, repo_paths: &[String]) -> Result<(), String> {
+    /// The commit only when `HEAD` is still `expected_head` and Git may commit here now.
+    fn commit_checked(
+        &self,
+        expected_head: Option<&str>,
+        message: &str,
+        repo_paths: &[String],
+    ) -> Result<(), CommitStop> {
+        let place = commit_place(&self.repo_root);
+        if let Some(hold) = place.hold {
+            return Err(CommitStop::Held(hold));
+        }
+        if expected_head.is_some_and(|expected| place.head.as_deref() != Some(expected)) {
+            return Err(CommitStop::HeadMoved);
+        }
         let mut args: Vec<&str> = vec!["commit", "--only", "-m", message, "--"];
         args.extend(repo_paths.iter().map(String::as_str));
-        let out = run_git(&self.repo_root, &args)?;
+        let out = run_git_with_deadline(&self.repo_root, &args, self.commit_deadline)
+            .map_err(|error| CommitStop::Refused(short_detail(&error)))?;
         if out.success {
             Ok(())
         } else {
-            Err(short_detail(&git_error_text(&out)))
+            Err(CommitStop::Refused(short_detail(&git_error_text(&out))))
         }
     }
 
     fn write_pending(&self, pending: &PendingRun) -> Result<(), String> {
-        ensure_vault_directory_blocking(self.root.clone(), ".ontology-atlas".into())?;
-        let text = serde_json::to_string(pending).map_err(|err| err.to_string())?;
-        self.write(PENDING_FILE, &text)
+        let journal = self.journal.as_ref().ok_or("recheck-journal-missing")?;
+        if let Some(parent) = journal.parent() {
+            std::fs::create_dir_all(parent).map_err(|error| error.to_string())?;
+        }
+        let text = serde_json::to_string(pending).map_err(|error| error.to_string())?;
+        let temporary = journal.with_extension("json.tmp");
+        std::fs::write(&temporary, text).map_err(|error| error.to_string())?;
+        std::fs::rename(&temporary, journal).map_err(|error| error.to_string())
+    }
+
+    fn read_pending(&self) -> Option<String> {
+        std::fs::read_to_string(self.journal.as_ref()?).ok()
     }
 
     fn remove_pending(&self) {
-        if let Ok(path) = resolve_existing_inside(&self.root, PENDING_FILE) {
-            let _ = std::fs::remove_file(path);
+        if let Some(journal) = &self.journal {
+            let _ = std::fs::remove_file(journal);
         }
     }
 
@@ -458,11 +622,13 @@ fn is_pass_id(value: &str) -> bool {
 }
 
 /// Writes each document's marked text and commits exactly those documents on the checked-out
-/// branch, only while `HEAD` is `expected_head` and each document still holds what the run read.
-/// When Git refuses, each document that still holds what Atlas wrote is put back; one a person
-/// changed since is left and named, and the text taken out is kept under `.ontology-atlas/undone/`.
+/// branch, only while Git may commit here, `HEAD` is `expected_head` and each document still
+/// holds what the run read. When Git refuses, each document that still holds what Atlas wrote is
+/// put back; one a person changed since is left and named, and the text taken out is kept under
+/// `.ontology-atlas/undone/`.
 #[tauri::command(async)]
 pub fn git_recheck_commit(
+    app: tauri::AppHandle,
     vault_path: String,
     round_id: String,
     pass_id: String,
@@ -470,7 +636,7 @@ pub fn git_recheck_commit(
     message: String,
     documents: Vec<RecheckDocument>,
 ) -> Result<RecheckCommit, String> {
-    let vault = open_vault(&vault_path)?;
+    let vault = open_vault_with_journal(&vault_path, &journal_dir(&app)?)?;
     if !is_pass_id(&round_id) || !is_pass_id(&pass_id) || message.trim().is_empty() {
         return Err("recheck-request-invalid".into());
     }
@@ -494,7 +660,15 @@ fn commit_documents(
     documents: Vec<RecheckDocument>,
     before_commit: impl FnOnce(),
 ) -> Result<RecheckCommit, String> {
-    if vault.head().as_deref() != Some(expected_head) {
+    let place = commit_place(&vault.repo_root);
+    if let Some(hold) = place.hold {
+        return Ok(RecheckCommit {
+            outcome: "held",
+            hold: Some(hold),
+            ..RecheckCommit::default()
+        });
+    }
+    if place.head.as_deref() != Some(expected_head) {
         return Ok(RecheckCommit {
             outcome: "head-moved",
             ..RecheckCommit::default()
@@ -504,11 +678,9 @@ fn commit_documents(
     let mut taken: Vec<(RecheckDocument, String)> = Vec::new();
     for document in documents {
         let repo_path = vault.repo_path(&document.path)?;
-        let unchanged_on_disk =
-            vault.read(&document.path).as_deref() == Some(document.before.as_str());
-        let unchanged_at_head =
-            vault.committed("HEAD", &repo_path).as_deref() == Some(document.before.as_str());
-        if unchanged_on_disk && unchanged_at_head && document.before != document.after {
+        let unchanged = vault.read(&document.path).as_deref() == Some(document.before.as_str())
+            && vault.clean_at_head(&repo_path);
+        if unchanged && document.before != document.after {
             taken.push((document, repo_path));
         } else {
             result.changed_meanwhile.push(document.path);
@@ -534,30 +706,35 @@ fn commit_documents(
     }
     before_commit();
     let repo_paths: Vec<String> = taken.iter().map(|(_, path)| path.clone()).collect();
-    let committed = if vault.head().as_deref() == Some(expected_head) {
-        vault.commit_only(message, &repo_paths)
-    } else {
-        Err("HEAD moved".into())
-    };
-    match committed {
+    match vault.commit_checked(Some(expected_head), message, &repo_paths) {
         Ok(()) => {
             vault.remove_pending();
             result.outcome = "committed";
             result.commit = vault.head();
-            result.written = taken
-                .into_iter()
-                .map(|(document, _)| document.path)
-                .collect();
+            for (document, repo_path) in taken {
+                let as_written = vault.read(&document.path).as_deref()
+                    == Some(document.after.as_str())
+                    && vault.clean_at_head(&repo_path);
+                if !as_written {
+                    result.rewritten.push(document.path.clone());
+                }
+                result.written.push(document.path);
+            }
         }
-        Err(detail) => {
+        Err(stop) => {
             put_back(vault, pass_id, &taken, &mut result);
             vault.remove_pending();
-            result.outcome = if detail == "HEAD moved" {
-                "head-moved"
-            } else {
-                "refused"
-            };
-            result.detail = Some(detail);
+            match stop {
+                CommitStop::Held(hold) => {
+                    result.outcome = "held";
+                    result.hold = Some(hold);
+                }
+                CommitStop::HeadMoved => result.outcome = "head-moved",
+                CommitStop::Refused(detail) => {
+                    result.outcome = "refused";
+                    result.detail = Some(detail);
+                }
+            }
         }
     }
     Ok(result)
@@ -598,15 +775,21 @@ pub struct RecheckRecovered {
 
 /// After Atlas quit between writing a run's documents and committing them: puts back each that
 /// still holds what Atlas wrote and was never committed. `None` when no run was left open.
+/// Only the journal this app wrote is read; a file in the opened folder is never trusted.
 #[tauri::command(async)]
-pub fn git_recheck_recover(vault_path: String) -> Result<Option<RecheckRecovered>, String> {
-    let vault = open_vault(&vault_path)?;
-    let Some(text) = vault.read(PENDING_FILE) else {
-        return Ok(None);
-    };
+pub fn git_recheck_recover(
+    app: tauri::AppHandle,
+    vault_path: String,
+) -> Result<Option<RecheckRecovered>, String> {
+    let vault = open_vault_with_journal(&vault_path, &journal_dir(&app)?)?;
+    Ok(recover_run(&vault))
+}
+
+fn recover_run(vault: &Vault) -> Option<RecheckRecovered> {
+    let text = vault.read_pending()?;
     let Ok(pending) = serde_json::from_str::<PendingRun>(&text) else {
         vault.remove_pending();
-        return Ok(None);
+        return None;
     };
     let mut restored = Vec::new();
     for document in &pending.documents {
@@ -615,18 +798,19 @@ pub fn git_recheck_recover(vault_path: String) -> Result<Option<RecheckRecovered
         };
         let holds_atlas_text =
             vault.read(&document.path).as_deref() == Some(document.after.as_str());
-        let committed =
-            vault.committed("HEAD", &repo_path).as_deref() == Some(document.after.as_str());
-        if holds_atlas_text && !committed && vault.write(&document.path, &document.before).is_ok() {
+        if holds_atlas_text
+            && !vault.clean_at_head(&repo_path)
+            && vault.write(&document.path, &document.before).is_ok()
+        {
             restored.push(document.path.clone());
         }
     }
     vault.remove_pending();
-    Ok(Some(RecheckRecovered {
+    Some(RecheckRecovered {
         round_id: pending.round_id,
         pass_id: pending.pass_id,
         restored,
-    }))
+    })
 }
 
 #[derive(Debug, Default, Serialize)]
@@ -641,8 +825,19 @@ pub struct RecheckUndo {
     detail: Option<String>,
 }
 
+/// `text` with the line endings `like` uses on disk, so a put-back document keeps them.
+fn with_line_endings_of(text: &str, like: &str) -> String {
+    if like.contains("\r\n") && !text.contains('\r') {
+        text.replace('\n', "\r\n")
+    } else {
+        text.to_string()
+    }
+}
+
 /// Commits the text each document had before `run_commit`, for those still exactly as the run
-/// left them. A run whose commit is no longer on this branch is `gone`.
+/// left them, under the same holds as a run's commit. A run whose commit is no longer on this
+/// branch is `gone`. When Git refuses, every document Atlas changed for the undo is put back
+/// unless a person changed it meanwhile.
 #[tauri::command(async)]
 pub fn git_recheck_undo(
     vault_path: String,
@@ -654,17 +849,34 @@ pub fn git_recheck_undo(
     if !is_commit_name(&run_commit) || message.trim().is_empty() {
         return Err("recheck-request-invalid".into());
     }
-    let detached = is_head_detached(&vault.repo_root);
-    if let Some(detail) = git_hold(&vault.repo_root, vault.head().is_some(), detached) {
+    undo_run(&vault, &run_commit, paths, &message, || {})
+}
+
+fn hold_detail(hold: &RecheckHold) -> String {
+    if hold.reason == "branch" {
+        format!("{} is the remote's default branch", hold.detail)
+    } else {
+        hold.detail.clone()
+    }
+}
+
+fn undo_run(
+    vault: &Vault,
+    run_commit: &str,
+    paths: Vec<String>,
+    message: &str,
+    before_commit: impl FnOnce(),
+) -> Result<RecheckUndo, String> {
+    if let Some(hold) = commit_place(&vault.repo_root).hold {
         return Ok(RecheckUndo {
             outcome: "refused",
-            detail: Some(detail),
+            detail: Some(hold_detail(&hold)),
             ..RecheckUndo::default()
         });
     }
     let on_branch = run_git(
         &vault.repo_root,
-        &["merge-base", "--is-ancestor", &run_commit, "HEAD"],
+        &["merge-base", "--is-ancestor", run_commit, "HEAD"],
     )?
     .success;
     if !on_branch {
@@ -674,48 +886,73 @@ pub fn git_recheck_undo(
         });
     }
     let mut result = RecheckUndo::default();
-    let mut written: Vec<(String, String, String)> = Vec::new();
+    // Per document: the vault path, Git's path, the text on disk before the undo and the text written.
+    let mut written: Vec<(String, String, String, String)> = Vec::new();
     let parent = format!("{run_commit}^");
     for path in paths {
         let repo_path = vault.repo_path(&path)?;
-        let (Some(at_run), Some(before_run)) = (
-            vault.committed(&run_commit, &repo_path),
+        let (Some(at_run), Some(before_run), Some(on_disk)) = (
+            vault.committed(run_commit, &repo_path),
             vault.committed(&parent, &repo_path),
+            vault.read(&path),
         ) else {
             result.skipped.push(path);
             continue;
         };
         let unchanged_since = vault.committed("HEAD", &repo_path).as_deref()
             == Some(at_run.as_str())
-            && vault.read(&path).as_deref() == Some(at_run.as_str());
+            && vault.clean_at_head(&repo_path);
         if !unchanged_since || at_run == before_run {
             result.skipped.push(path);
             continue;
         }
-        vault.write(&path, &before_run)?;
-        written.push((path, repo_path, at_run));
+        let text = with_line_endings_of(&before_run, &on_disk);
+        if let Err(error) = vault.write(&path, &text) {
+            restore_undo(vault, &written, &mut result);
+            result.outcome = "refused";
+            result.detail = Some(short_detail(&error));
+            return Ok(result);
+        }
+        written.push((path, repo_path, on_disk, text));
     }
     if written.is_empty() {
         result.outcome = "nothing";
         return Ok(result);
     }
+    before_commit();
     let repo_paths: Vec<String> = written
         .iter()
-        .map(|(_, repo_path, _)| repo_path.clone())
+        .map(|(_, repo_path, _, _)| repo_path.clone())
         .collect();
-    match vault.commit_only(&message, &repo_paths) {
+    match vault.commit_checked(None, message, &repo_paths) {
         Ok(()) => {
             result.outcome = "undone";
             result.commit = vault.head();
-            result.undone = written.into_iter().map(|(path, _, _)| path).collect();
+            result.undone = written.into_iter().map(|(path, ..)| path).collect();
         }
-        Err(detail) => {
-            for (path, _, at_run) in &written {
-                let _ = vault.write(path, at_run);
-            }
+        Err(stop) => {
+            restore_undo(vault, &written, &mut result);
             result.outcome = "refused";
-            result.detail = Some(detail);
+            result.detail = Some(match stop {
+                CommitStop::Held(hold) => hold_detail(&hold),
+                CommitStop::HeadMoved => "HEAD moved".into(),
+                CommitStop::Refused(detail) => detail,
+            });
         }
     }
     Ok(result)
+}
+
+/// Puts back each document the undo rewrote, unless a person changed it since; that one is named.
+fn restore_undo(
+    vault: &Vault,
+    written: &[(String, String, String, String)],
+    result: &mut RecheckUndo,
+) {
+    for (path, _, on_disk, text) in written {
+        if vault.read(path).as_deref() != Some(text.as_str()) || vault.write(path, on_disk).is_err()
+        {
+            result.skipped.push(path.clone());
+        }
+    }
 }

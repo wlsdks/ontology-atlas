@@ -37,7 +37,7 @@ describe("summarizeAgentTurn", () => {
     expect(summarizeAgentTurn([]).written).toEqual([]);
   });
 
-  it("names the files a completed source read covered and keeps the whole last message", () => {
+  it("names the files a completed source read covered, never an outline, and keeps the whole last message", () => {
     const tool = (status: string, rawInput: unknown) => ({ kind: "tool" as const, id: `t-${status}`, title: "analyze_repo_structure", toolKind: "other", status, rawInput });
     const reply = `answers\n${"x".repeat(500)}`;
     const summary = summarizeAgentTurn([
@@ -45,7 +45,7 @@ describe("summarizeAgentTurn", () => {
       tool("failed", { sourceReads: [{ path: "src/never.ts" }] }),
       agent(reply),
     ]);
-    expect(summary.sourceReads).toEqual(["src/pay.ts", "src/ship.ts"]);
+    expect(summary.sourceReads).toEqual([{ path: "src/ship.ts", root: "/repo" }]);
     expect(summary.reply).toBe(reply);
   });
 });

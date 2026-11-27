@@ -55,7 +55,7 @@ export interface RoundPassEntry {
 export type RecheckConceptOutcome = 'accurate' | 'outdated' | 'left';
 
 /** Why a concept was left "Not decided", when the agent's own reason is not the reason. */
-export type RecheckLeftReason = 'no-answer' | 'changed-meanwhile' | 'refused-path' | 'cut-unread' | 'cannot-tell';
+export type RecheckLeftReason = 'no-answer' | 'changed-meanwhile' | 'refused-path' | 'cut-unread' | 'cannot-tell' | 'too-large';
 
 export interface RecheckConcept {
   slug: string;
@@ -76,7 +76,7 @@ export interface RecheckConcept {
 }
 
 export type RecheckHoldReason = 'git' | 'branch' | 'refused';
-export type RecheckError = 'reply-unreadable' | 'head-moved' | 'commit-refused' | 'interrupted';
+export type RecheckError = 'reply-unreadable' | 'head-moved' | 'commit-held' | 'commit-refused' | 'commit-rewritten' | 'interrupted';
 
 export interface RecheckRecord {
   /** HEAD when the run started. */
@@ -99,6 +99,8 @@ export interface RecheckRecord {
   undoOf?: string;
   /** On an undo line: the documents it put back. */
   undone?: string[];
+  /** After `commit-rewritten`: documents a hook changed while Git committed them. */
+  rewritten?: string[];
 }
 
 /** Documents of the recheck run `runId` that a later undo line put back. */
@@ -111,9 +113,9 @@ export function recheckUndonePaths(entries: readonly RoundPassEntry[], runId: st
 }
 
 const RECHECK_OUTCOMES: readonly RecheckConceptOutcome[] = ['accurate', 'outdated', 'left'];
-const RECHECK_LEFT_REASONS: readonly RecheckLeftReason[] = ['no-answer', 'changed-meanwhile', 'refused-path', 'cut-unread', 'cannot-tell'];
+const RECHECK_LEFT_REASONS: readonly RecheckLeftReason[] = ['no-answer', 'changed-meanwhile', 'refused-path', 'cut-unread', 'cannot-tell', 'too-large'];
 const RECHECK_HOLDS: readonly RecheckHoldReason[] = ['git', 'branch', 'refused'];
-const RECHECK_ERRORS: readonly RecheckError[] = ['reply-unreadable', 'head-moved', 'commit-refused', 'interrupted'];
+const RECHECK_ERRORS: readonly RecheckError[] = ['reply-unreadable', 'head-moved', 'commit-held', 'commit-refused', 'commit-rewritten', 'interrupted'];
 
 const optionalString = (value: unknown) => (typeof value === 'string' ? value : undefined);
 const count = (value: unknown) => (typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : 0);
@@ -154,6 +156,8 @@ function parseRecheckRecord(value: unknown): RecheckRecord | undefined {
   if (typeof item.restored === 'number') record.restored = count(item.restored);
   const undone = stringList(item.undone);
   if (undone.length > 0) record.undone = undone;
+  const rewritten = stringList(item.rewritten);
+  if (rewritten.length > 0) record.rewritten = rewritten;
   return record;
 }
 

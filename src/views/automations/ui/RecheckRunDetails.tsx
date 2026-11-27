@@ -25,6 +25,14 @@ const WARNING = 'text-[color:var(--color-amber-source-a90)]';
 export function useRecheckLead(): (entry: RoundPassEntry, recheck: RecheckRecord) => { text: string; warning: boolean } {
   const t = useTranslations('automations.recheck');
   return (entry, recheck) => {
+    if (recheck.error === 'commit-held') {
+      const hold = recheck.hold;
+      if (hold?.reason === 'branch') return { text: t('commitHeldBranch', { branch: hold.detail }), warning: true };
+      return { text: t('commitHeldGit', { detail: hold?.detail ?? '' }), warning: true };
+    }
+    if (recheck.error === 'commit-rewritten') {
+      return { text: t('commitRewritten', { files: (recheck.rewritten ?? []).join(', ') }), warning: true };
+    }
     if (recheck.hold) {
       const detail = recheck.hold.detail;
       if (recheck.hold.reason === 'branch') return { text: t('heldBranch', { branch: detail }), warning: true };
@@ -114,7 +122,7 @@ export function RecheckResults({ entry, recheck, ledger, onUndo }: {
     if (!result || result.outcome === 'nothing') return null;
     const skipped = result.skipped.map((path) => t('undo.skipped', { document: path })).join(' ');
     if (result.outcome === 'gone') return { text: t('undo.gone'), warning: true };
-    if (result.outcome === 'refused') return { text: t('undo.failed', { detail: result.detail ?? '' }), warning: true };
+    if (result.outcome === 'refused') return { text: [t('undo.failed', { detail: result.detail ?? '' }), skipped].filter(Boolean).join(' '), warning: true };
     return { text: [t('undo.done', { count: result.undone.length }), skipped].filter(Boolean).join(' '), warning: result.skipped.length > 0 };
   };
 
@@ -123,6 +131,7 @@ export function RecheckResults({ entry, recheck, ledger, onUndo }: {
     if (concept.leftReason === 'changed-meanwhile') return t('reason.changedMeanwhile');
     if (concept.leftReason === 'refused-path') return t('reason.refusedPath', { path: concept.leftPath ?? '' });
     if (concept.leftReason === 'cut-unread') return t('reason.cutUnread', { path: concept.leftPath ?? '' });
+    if (concept.leftReason === 'too-large') return t('reason.tooLarge');
     return concept.reason ? t('dialog.agentReason', { reason: concept.reason }) : null;
   };
 

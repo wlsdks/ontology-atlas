@@ -9,6 +9,8 @@ function invoke<T>(command: string, args: Record<string, unknown>): Promise<T> |
 
 export interface RecheckGitState {
   repository: boolean;
+  /** The repository's top folder. */
+  repoRoot: string | null;
   head: string | null;
   branch: string | null;
   remoteDefault: string | null;
@@ -31,14 +33,18 @@ export interface RecheckDocumentWrite {
 }
 
 export interface RecheckCommitResult {
-  outcome: 'committed' | 'nothing' | 'head-moved' | 'refused';
+  outcome: 'committed' | 'nothing' | 'held' | 'head-moved' | 'refused';
   commit: string | null;
   written: string[];
   changedMeanwhile: string[];
   detail: string | null;
+  /** When `held`: why Git could not commit when the run finished. */
+  hold: { reason: 'git' | 'branch'; detail: string } | null;
   restored: string[];
   left: string[];
   copy: string | null;
+  /** After a commit: documents whose committed text is not what Atlas wrote. */
+  rewritten: string[];
 }
 
 export interface RecheckUndoResult {
@@ -61,16 +67,18 @@ export async function gitRecheckDiffs(
   return (await invoke<RecheckDiff[]>('git_recheck_diffs', { vaultPath, requests: [...requests], maxLines })) ?? null;
 }
 
+/** `unchecked`: paths past Git's request cap, which were not asked about. */
 export async function gitUncommittedPaths(
   vaultPath: string,
   vaultPaths: readonly string[],
   repoPaths: readonly string[],
-): Promise<string[] | null> {
-  return (await invoke<string[]>('git_uncommitted_paths', { vaultPath, vaultPaths: [...vaultPaths], repoPaths: [...repoPaths] })) ?? null;
+): Promise<{ changed: string[]; unchecked: string[] } | null> {
+  return (await invoke<{ changed: string[]; unchecked: string[] }>('git_uncommitted_paths', { vaultPath, vaultPaths: [...vaultPaths], repoPaths: [...repoPaths] })) ?? null;
 }
 
-export async function gitKnownCommits(vaultPath: string, hashes: readonly string[]): Promise<string[] | null> {
-  return (await invoke<string[]>('git_known_commits', { vaultPath, hashes: [...hashes] })) ?? null;
+/** The documents whose `evidence_checked` mark still stands; see `git_recheck_marks_hold`. */
+export async function gitRecheckMarksHold(vaultPath: string, marks: readonly { path: string; mark: string }[]): Promise<string[] | null> {
+  return (await invoke<string[]>('git_recheck_marks_hold', { vaultPath, marks: [...marks] })) ?? null;
 }
 
 export async function gitRecheckCommit(input: {

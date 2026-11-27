@@ -507,7 +507,11 @@ export function useRoundsRunner(): RoundsRunnerValue {
           ports: {
             gitState: () => gitRecheckState(rootPath),
             staleCandidates: () => readStaleCandidates(rootPath, docs),
-            uncommitted: (vaultPaths, repoPaths) => gitUncommittedPaths(rootPath, vaultPaths, repoPaths),
+            uncommitted: async (vaultPaths, repoPaths) => {
+              const answer = await gitUncommittedPaths(rootPath, vaultPaths, repoPaths);
+              // A path Git was not asked about counts as changed, so its concept is skipped.
+              return answer ? [...answer.changed, ...answer.unchecked] : null;
+            },
             readDocument: async (path) => {
               workRuns.observeScheduledDocument(seatKey, path, true);
               return readTauriVaultText(rootPath, path).catch(() => null);

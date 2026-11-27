@@ -395,7 +395,7 @@ pub fn run() {
             git::evidence::bound::git_bound_evidence_dates,
             git::recheck::git_recheck_state,
             git::recheck::git_recheck_diffs,
-            git::recheck::git_known_commits,
+            git::recheck::git_recheck_marks_hold,
             git::recheck::git_uncommitted_paths,
             git::recheck::git_recheck_commit,
             git::recheck::git_recheck_recover,

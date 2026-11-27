@@ -127,11 +127,15 @@ export function applyRecheckReply({
   if (!answers) return null;
   const inRun = new Set(taken.map((concept) => concept.slug));
   const bySlug = new Map<string, RecheckAnswer>();
+  const conflicting = new Set<string>();
   let ignored = 0;
   for (const answer of answers) {
     if (!inRun.has(answer.slug)) ignored += 1;
     else if (!bySlug.has(answer.slug)) bySlug.set(answer.slug, answer);
+    else if (bySlug.get(answer.slug)!.verdict !== answer.verdict) conflicting.add(answer.slug);
   }
+  // Two verdicts for one concept say nothing Atlas can act on.
+  for (const slug of conflicting) bySlug.delete(slug);
   const marks: RecheckApplied['marks'] = [];
   const concepts = taken.map((concept): RecheckConcept => {
     const base = { slug: concept.slug, path: concept.path, files: concept.files.map((file) => file.path), basis: concept.basis };
