@@ -967,12 +967,6 @@ describe('AppSettingsMenu search and requests', () => {
     );
   });
 
-  it('offers no app-only result on the web', () => {
-    openSheet();
-    type('settingsAbout.rows.logs');
-    expect(screen.getByTestId('app-settings-search-empty')).toBeInTheDocument();
-  });
-
   it('clears the query on Escape before the sheet closes', () => {
     openSheet();
     type('map');

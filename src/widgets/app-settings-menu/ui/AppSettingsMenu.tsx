@@ -6,7 +6,6 @@ import { Settings } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { cn } from '@/shared/lib/cn';
-import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import { OPEN_SETTINGS_EVENT, useSurfaceRequest } from '@/shared/lib/keyboard/surface-requests';
 import { useDialogFocusTrap } from '@/shared/lib/overlays/use-dialog-focus-trap';
 import { usePanelPresence } from '@/shared/lib/render-timing/use-presence';
@@ -166,9 +165,8 @@ export function AppSettingsMenu({
   });
   const titleId = useId();
   const listId = useId();
-  const desktop = isDesktopShell();
 
-  const searchItems = useSettingsSearchItems(desktop);
+  const searchItems = useSettingsSearchItems();
   const searching = query.trim() !== '';
   const groups = searching ? groupSettingsResults(searchSettings(searchItems, query)) : [];
   const ordered = orderedSettingsResults(groups);

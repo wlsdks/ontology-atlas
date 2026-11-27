@@ -28,7 +28,3 @@ export const SETTINGS_CATALOG: readonly SettingsCatalogEntry[] = [
 export const SETTINGS_SEARCH_MESSAGE_PATHS: readonly string[] = SETTINGS_CATALOG.flatMap((entry) =>
   entry.keywordsKey ? [entry.labelKey, entry.keywordsKey] : [entry.labelKey],
 );
-
-export function settingsCatalogFor(desktop: boolean): readonly SettingsCatalogEntry[] {
-  return desktop ? SETTINGS_CATALOG : SETTINGS_CATALOG.filter((entry) => entry.surface === 'both');
-}

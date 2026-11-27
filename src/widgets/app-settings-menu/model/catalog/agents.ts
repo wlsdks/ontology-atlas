@@ -7,14 +7,12 @@ export const AGENTS_CATALOG: readonly SettingsCatalogEntry[] = [
     section: 'agents',
     labelKey: 'settings.wikiWriteModeLabel',
     keywordsKey: 'settingsAgents.wikiWriteModeKeywords',
-    surface: 'desktop',
   },
   {
     id: 'door-coding-tools',
     section: 'agents',
     labelKey: 'settingsAgents.codingToolsLabel',
     keywordsKey: 'settingsAgents.codingToolsKeywords',
-    surface: 'both',
     href: DESTINATION_HREF.agents,
   },
   {
@@ -22,7 +20,6 @@ export const AGENTS_CATALOG: readonly SettingsCatalogEntry[] = [
     section: 'agents',
     labelKey: 'settingsAgents.modelsLabel',
     keywordsKey: 'settingsAgents.modelsKeywords',
-    surface: 'both',
     href: AGENTS_MODELS_HREF,
   },
   {
@@ -30,7 +27,6 @@ export const AGENTS_CATALOG: readonly SettingsCatalogEntry[] = [
     section: 'agents',
     labelKey: 'settingsAgents.mcpLabel',
     keywordsKey: 'settingsAgents.mcpKeywords',
-    surface: 'both',
     href: DESTINATION_HREF.mcp,
   },
 ];
