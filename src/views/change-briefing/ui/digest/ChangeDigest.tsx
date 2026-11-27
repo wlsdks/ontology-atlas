@@ -33,6 +33,8 @@ interface ChangeDigestProps {
   formatTime: (committedAt: string) => string;
   pullUrl: (number: number) => string | null;
   onOpen: (commit: BriefingCommit) => void;
+  /** Drawn under the headline and timeline, above the notable changes. */
+  afterHeadline?: ReactNode;
 }
 
 function HeadlineBand({ count, children, figure }: { count: number; children?: ReactNode; figure: ReactNode }) {
@@ -45,7 +47,7 @@ function HeadlineBand({ count, children, figure }: { count: number; children?: R
   </section>;
 }
 
-export function ChangeDigest({ digest, range, unit, selection, onSelection, partialCount, conceptTitle, formatTime, pullUrl, onOpen }: ChangeDigestProps) {
+export function ChangeDigest({ digest, range, unit, selection, onSelection, partialCount, conceptTitle, formatTime, pullUrl, onOpen, afterHeadline }: ChangeDigestProps) {
   const t = useTranslations('changeDigest');
   const rootRef = useRef<HTMLDivElement>(null);
   const changes = useMemo(() => digest.groups.flatMap(group => group.changes), [digest]);
@@ -72,6 +74,7 @@ export function ChangeDigest({ digest, range, unit, selection, onSelection, part
         <KindsLine kinds={digest.kinds} counts={[...digest.kinds.kinds.map(kind => kind.count), digest.kinds.other]} label={t('kinds')} className="text-body" />
       </div>}
     </HeadlineBand>
+    {afterHeadline}
     {digest.notable.length > 0 && <NotableCards notable={digest.notable} conceptTitle={conceptTitle} formatTime={formatTime} onReveal={reveal} />}
     <DigestSummarySeat />
     <DigestGroups digest={digest} selection={selection} onSelection={onSelection} conceptTitle={conceptTitle} formatTime={formatTime} pullUrl={pullUrl} onOpen={onOpen} />

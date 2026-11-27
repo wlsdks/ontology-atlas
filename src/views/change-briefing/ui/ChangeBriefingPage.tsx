@@ -25,6 +25,7 @@ import { findLatestChangeDay } from '../model/latest-change-day';
 import { timelineUnit } from '../model/digest-timeline';
 import { useBriefing } from '../model/use-briefing';
 import { useChangeDigest } from '../model/use-change-digest';
+import { useReleaseReading } from '../model/use-release-reading';
 import { BriefingPatch } from './sources/BriefingPatch';
 import { BriefingFileList } from './sources/BriefingFileList';
 import { BriefingOriginFiles } from './sources/BriefingOriginFiles';
@@ -35,6 +36,7 @@ import { CommitInventory } from './CommitInventory';
 import { BriefingRepositoryStage } from './BriefingRepositoryStage';
 import { ChangeDigest, EmptyDigest, type DigestSelection } from './digest/ChangeDigest';
 import { PublicPullInventory } from './PublicPullInventory';
+import { ReleasesView } from './releases/ReleasesView';
 import { briefingStatus, needsSourceChoice } from '../model/briefing-status';
 
 const subscribe = () => () => {};
@@ -42,12 +44,14 @@ const webSnapshot = () => false;
 const NO_DOCS: VaultDoc[] = [];
 const PERIODS: BriefingPeriod[] = ['day', 'week', 'month', 'year', 'custom'];
 type BriefingSection = 'prs' | 'commits' | 'files' | 'mixed';
+type Grouping = 'date' | 'release';
 
 export function ChangeBriefingPage() {
   const t = useTranslations('changeBriefing');
   const git = useTranslations('gitBriefing');
   const review = useTranslations('prBriefing');
   const digestCopy = useTranslations('changeDigest');
+  const releaseCopy = useTranslations('releases');
   const locale = useLocale();
   const vault = useLocalVault();
   const identity = useVaultSessionIdentityScope();
@@ -57,6 +61,8 @@ export function ChangeBriefingPage() {
   const native = useSyncExternalStore(subscribe, isGitBridgeAvailable, webSnapshot);
   const today = localDate(new Date());
   const [period, setPeriod] = useArrivalMemory<BriefingPeriod>(memory && `${memory}:period`, 'day');
+  const [grouping, setGrouping] = useArrivalMemory<Grouping>(`${memory}:grouping`, 'date');
+  const byRelease = grouping === 'release';
   const [chosenAnchor, setAnchor] = useArrivalMemory<string | null>(memory && `${memory}:anchor:${today}`, null);
   const [latest, setLatest] = useState<{ key: string; day: string | null } | null>(null);
   const [view, setView] = useArrivalMemory<'digest' | 'originals'>(`${memory}:view:${today}`, 'digest');
@@ -102,7 +108,12 @@ export function ChangeBriefingPage() {
   const anchor = chosenAnchor ?? latestDay ?? today;
   const range = briefingRange(period, anchor, custom?.from, custom?.to);
   const invalidDraft = period === 'custom' && !briefingRange('custom', anchor, from, to);
-  const { data, loading, error, refresh } = useBriefing(root, project, range, vault.lastLoadedAt);
+  const dated = useBriefing(root, project, byRelease ? null : range, vault.lastLoadedAt);
+  const releases = useReleaseReading(root, project, byRelease, memory);
+  const data = byRelease ? releases.span : dated.data;
+  const loading = byRelease ? releases.spanLoading : dated.loading;
+  const error = byRelease ? releases.spanError : dated.error;
+  const refresh = byRelease ? releases.refresh : dated.refresh;
   const { capabilityGroups, conceptTitles, digest } = useChangeDigest(data, sourceChoice ? NO_DOCS : docs, locale, project, { digest: view === 'digest', files: section === 'files' });
   const grouped = section === 'files' ? capabilityGroups : null;
   const scopeKey = JSON.stringify([root, project, range?.startEpoch, range?.endEpoch, data?.snapshot, data?.head, data?.base, data?.tip]);
@@ -307,9 +318,9 @@ export function ChangeBriefingPage() {
     requestAnimationFrame(() => container?.querySelectorAll<HTMLElement>('[data-control="row"]')[before]?.focus({ preventScroll: true }));
   }
   const validData = data && (data.status === 'measured' || data.status === 'partial');
-  const status = briefingStatus({ root, hasRange: Boolean(range), error, loading, data });
+  const status = briefingStatus({ root, hasRange: byRelease || Boolean(range), error, loading, data });
   const readHistory = (start: number, end: number) => !root ? Promise.resolve(null) : project ? gitChangeBriefing(root, project, start, end) : gitSourceBriefing(root, start, end);
-  const seekingLatest = chosenAnchor === null && period === 'day' && latestDay === undefined && status === 'empty';
+  const seekingLatest = !byRelease && chosenAnchor === null && period === 'day' && latestDay === undefined && status === 'empty';
   useEffect(() => {
     if (!seekingLatest || !root) return;
     let cancelled = false;
@@ -326,7 +337,7 @@ export function ChangeBriefingPage() {
     return () => { cancelled = true; };
   }, [wantsPullLinks, data, scopeKey]);
   const githubRepository = pullRepository?.scope === scopeKey ? pullRepository.repository : null;
-  const clockFormat = new Intl.DateTimeFormat(locale, period === 'day' ? { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' } : { month: 'short', day: 'numeric' });
+  const clockFormat = new Intl.DateTimeFormat(locale, period === 'day' && !byRelease ? { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' } : { month: 'short', day: 'numeric' });
   const formatTime = (committedAt: string) => { const at = new Date(committedAt); return Number.isNaN(at.getTime()) ? '' : clockFormat.format(at); };
   function readAgain() {
     setLatest(null);
@@ -389,8 +400,12 @@ export function ChangeBriefingPage() {
     <div className={`${PAGE_FRAME_FORM} ${PAGE_STAGE_FILL}`}><BriefingRepositoryStage onChoose={() => void chooseRepository()} /></div>
     <BriefingSettings showFolderEntry={!vault.handle} open={settingsOpen} close={() => setSettingsOpen(false)} repository={repository} onCleared={() => setClearedAt(Date.now())} />
   </main>;
+  const groupingControl = <SegmentedControl<Grouping> className="-my-0.5 max-[769px]:[&_[role=radio]]:min-h-11" size="md" ariaLabel={releaseCopy('grouping')} value={grouping} onChange={setGrouping} testId="change-grouping"
+    options={[{ value: 'date', label: releaseCopy('byDate') }, { value: 'release', label: releaseCopy('byRelease') }]} />;
   const periodBar = <section aria-label={t('period')} className="flex min-w-0 flex-wrap items-center gap-2">
-    <div className="flex min-h-8 min-w-0 basis-full items-center gap-1 sm:basis-auto">
+    {groupingControl}
+    {!byRelease && <>
+    <div className="flex min-h-8 min-w-0 basis-full items-center gap-1 max-sm:order-last sm:basis-auto">
       {period !== 'custom' && <IconButton className="atlas-touch-floor atlas-touch-floor-wide" label={t('previous')} onClick={() => setAnchor(movePeriod(period, anchor, -1))}><ChevronLeft size={16} /></IconButton>}
       <p data-testid="briefing-range" className="min-w-0 break-words px-1 text-title font-[var(--font-weight-strong)]">{range ? periodLabel(period, range, locale, today) : t('invalidRange')}</p>
       {period !== 'custom' && <IconButton className="atlas-touch-floor atlas-touch-floor-wide" label={t('next')} onClick={() => setAnchor(movePeriod(period, anchor, 1))}><ChevronRight size={16} /></IconButton>}
@@ -398,9 +413,10 @@ export function ChangeBriefingPage() {
     <Select size="md" className="max-[769px]:[&>button]:min-h-11" ariaLabel={t('period')} value={period} onChange={value => changePeriod(value as BriefingPeriod)} options={PERIODS.map(value => ({ value, label: t(value) }))} />
     <IconButton className="atlas-touch-floor atlas-touch-floor-wide" label={t('chooseDates')} aria-haspopup="dialog" aria-expanded={datesOpen} onClick={event => { event.currentTarget.focus({ preventScroll: true }); setDatesOpen(true); }}><CalendarDays size={16} /></IconButton>
     {period !== 'custom' && range && (today < range.start || today > range.end) && <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="ghost" size="sm" onClick={() => setAnchor(today)}>{t('today')}</Button>}
+    </>}
     <IconButton className="atlas-touch-floor atlas-touch-floor-wide" label={t('refresh')} onClick={readAgain}><RefreshCw size={16} /></IconButton>
   </section>;
-  const digestStatus = seekingLatest ? 'loading' : status === 'empty' ? null : status;
+  const digestStatus = byRelease ? null : seekingLatest ? 'loading' : status === 'empty' ? null : status;
   return <main ref={mainRef} id="main" data-briefing-surface className="flex h-[calc(100%_-_var(--topology-mobile-bottom-tab-reserve))] min-h-0 flex-col overflow-y-auto bg-[color:var(--color-canvas)] pb-8 text-body text-[color:var(--color-text-primary)] lg:h-full">
     <PageHeaderBar
       frame="page"
@@ -422,12 +438,15 @@ export function ChangeBriefingPage() {
         {needsSourceChoice(digestStatus) && <div className="flex flex-wrap gap-3"><Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" onClick={() => void chooseRepository()}>{digestStatus === 'sourceUnavailable' ? t('retry') : git('chooseRepository')}</Button><Link className={controlClass({ shape: 'chip', hoverSurface: 'lift', hoverInk: 'strong' })} href="/projects/">{t('openProjects')}</Link></div>}
         {(digestStatus === 'readError' || digestStatus === 'stale' || digestStatus === 'noHistory') && <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" onClick={readAgain}>{t('retry')}</Button>}
       </section>}
-      {view === 'digest' && !digestStatus && status === 'empty' && range && <EmptyDigest range={range} unit={timelineUnit(period, range)} title={digestCopy('empty')}
+      {view === 'digest' && !byRelease && !digestStatus && status === 'empty' && range && <EmptyDigest range={range} unit={timelineUnit(period, range)} title={digestCopy('empty')}
         action={latestDay !== null && <Button size="lg" onClick={() => void goLatest()}>{digestCopy('goLatest')}</Button>} />}
-      {!digestStatus && digest && range && <ChangeDigest digest={digest} range={range} unit={timelineUnit(period, range)} selection={digestSelection} onSelection={setDigestSelection} partialCount={data?.status !== 'partial' ? null : data.partialReasons.some(reason => reason === 'commit-limit' || reason === 'byte-limit') ? data.commits.length : 'limited'}
+      {view === 'digest' && byRelease && <ReleasesView reading={releases} digest={digest} groups={capabilityGroups?.groups ?? null} showConcepts={!sourceChoice && docs.length > 0}
+        selection={digestSelection} onSelection={setDigestSelection} conceptTitle={id => conceptTitles.get(id) ?? id} formatTime={formatTime}
+        pullUrl={number => githubRepository ? `https://github.com/${githubRepository}/pull/${number}` : null} onOpen={openChange} onChooseRepository={() => void chooseRepository()} />}
+      {!byRelease && !digestStatus && digest && range && <ChangeDigest digest={digest} range={range} unit={timelineUnit(period, range)} selection={digestSelection} onSelection={setDigestSelection} partialCount={data?.status !== 'partial' ? null : data.partialReasons.some(reason => reason === 'commit-limit' || reason === 'byte-limit') ? data.commits.length : 'limited'}
         conceptTitle={id => conceptTitles.get(id) ?? id} formatTime={formatTime}
         pullUrl={number => githubRepository ? `https://github.com/${githubRepository}/pull/${number}` : null} onOpen={openChange} />}
-      {view === 'digest' && !digestStatus && !digest && data?.status === 'partial' && <p role="status" className="text-body text-[color:var(--color-status-warning)]">{t('partial')}</p>}
+      {view === 'digest' && !byRelease && !digestStatus && !digest && data?.status === 'partial' && <p role="status" className="text-body text-[color:var(--color-status-warning)]">{t('partial')}</p>}
     </div>
     {originalsStarted && <div hidden={view !== 'originals'} className="mx-auto w-full max-w-screen-xl space-y-4 px-4 pt-5 md:px-8">
       <header className="space-y-4 border-b border-[color:var(--color-border-soft)] pb-5">

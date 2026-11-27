@@ -1,0 +1,57 @@
+{
+  "byDate": "By date",
+  "byRelease": "By release",
+  "grouping": "Read changes by date or by release",
+  "list": "Releases",
+  "choose": "Release",
+  "unreleased": "Unreleased",
+  "row": {
+    "count": "{count, plural, one {# change} other {# changes}}",
+    "name": "{release}, {date}: {count, plural, one {# change} other {# changes}}",
+    "uncounted": "{release}, {date}: not counted yet"
+  },
+  "mark": {
+    "preRelease": "Pre-release",
+    "offBranch": "Not on {branch}"
+  },
+  "find": {
+    "label": "Find a release",
+    "none": "No release name contains {query}."
+  },
+  "prefix": {
+    "label": "Tags starting with",
+    "all": "All tags"
+  },
+  "since": {
+    "label": "Since",
+    "firstCommit": "The first commit",
+    "option": "{release} · {date}"
+  },
+  "more": "Show {count} more",
+  "reading": "Reading the tags of this repository…",
+  "counting": "Counting the changes in older releases…",
+  "concepts": {
+    "title": "Recorded concepts whose files changed",
+    "chip": "{concept}: {count, plural, one {# change} other {# changes}}",
+    "none": "No recorded concept names a file that changed in this release.",
+    "more": "Show {count} more concepts"
+  },
+  "nothingUnreleased": "Nothing was merged into {branch} after {release}.",
+  "empty": {
+    "title": "This repository has no tags",
+    "body": "Atlas lists one release for each Git tag in the copy of this repository on this computer, and this copy has none. If the tags are on the remote, run git fetch in the repository, then press Read again.",
+    "readAgain": "Read again"
+  },
+  "partial": {
+    "size": "Only the newest {count} changes of this release were read. Choose a later release under Since to read a shorter span in full.",
+    "depth": "Releases older than the newest {count} changes on {branch} are listed without counts. Select one and Atlas counts it.",
+    "shallow": "This copy of the repository is a shallow clone that holds only part of its history, so older releases are missing or incomplete. Fetch the full history in the repository, then press Read again.",
+    "names": "{count, plural, one {# tag is not listed, because its name is not text Atlas can show.} other {# tags are not listed, because their names are not text Atlas can show.}}"
+  },
+  "offBranch": "This tag is not on {branch}. Its changes are counted back to the nearest earlier tag in its own history.",
+  "basis": {
+    "tags": "Tags are read from the copy of this repository on this computer. Atlas does not fetch, so a tag that exists only on the remote is not listed.",
+    "range": "A release holds the changes merged into {branch} after the previous tag whose name starts the same way, up to its own tag. A release that is not a pre-release also counts the changes of its own pre-releases.",
+    "concepts": "Concepts are matched by the code paths their documents name today, not by how the documents stood when the release was tagged."
+  }
+}

@@ -330,4 +330,45 @@
       display: none !important;
     }
   }
+
+  /* Releases in Changes: a count's bar grows once from zero when it first arrives, the span being
+     read slides or stretches along the branch line, the pane cross-fades to another release, and
+     the reading line waits 150 ms so a fast read never flashes it. */
+  @keyframes motionBarGrow {
+    from {
+      transform: scaleX(0);
+    }
+  }
+
+  .motion-bar-grow {
+    transform-origin: left center;
+    animation: motionBarGrow var(--motion-settle) var(--motion-ease) both;
+  }
+
+  .motion-span-mark {
+    transform-origin: top center;
+    transition: transform var(--motion-settle) var(--motion-ease);
+  }
+
+  .motion-release-swap {
+    animation: panelCrossfadeIn var(--motion-fast) var(--motion-ease) both;
+  }
+
+  .motion-reading-in {
+    animation: routeLoadingIn var(--motion-fast) var(--motion-ease) both;
+    animation-delay: calc(var(--motion-fast) * 1.25);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .motion-bar-grow,
+    .motion-release-swap,
+    .motion-reading-in {
+      animation-name: panelCrossfadeIn !important;
+      animation-duration: var(--motion-fast) !important;
+    }
+
+    .motion-span-mark {
+      transition: none !important;
+    }
+  }
 }
