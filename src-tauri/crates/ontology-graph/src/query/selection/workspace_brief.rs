@@ -6,24 +6,23 @@
 //! The vault's own validation report and the project meaning assessment are added to this answer by
 //! the tool that serves it, after the graph has answered.
 
+use answer_format::json::RawJson;
 use serde::Serialize;
-use serde_json::value::RawValue;
 
-use super::containment::Containment;
 use super::graph_summary::{top_hubs, DegreeRow};
 use super::growth_candidates::DanglingReferenceRow;
 use super::growth_plan::{growth_plan_with_limit, GrowthPlanAnswer, GrowthSummary};
 use super::health::{health, HealthAnswer, HealthCheck, HealthQuestion};
-use super::limited_nodes::LimitedNodes;
 use super::outside_checks::{AttentionAction, OutsideChecks};
-use super::project_page::{DomainPageRow, PageSummary, ProjectPageBase};
 use super::proposed_action::ProposedAction;
-use crate::compiled_graph::{CompiledGraph, NodeId};
+use crate::compiled_graph::CompiledGraph;
 use crate::query::name_counts::kind_counts;
 use crate::query::node_summary::NodeSummary;
+use crate::query::project_root::project_roots;
 use crate::query::query_error::QueryError;
 use crate::query::request::QueryRequest;
-use answer_format::utf16;
+use crate::query::walks::project_map::{fitted_map, DomainRow, DomainSummary, MapSummary};
+use crate::query::walks::row_page::NodePage;
 
 const DEFAULT_LIMIT: usize = 10;
 /// A project's page is asked for at most this many items per list.
@@ -57,23 +56,23 @@ struct BriefHealth {
     status: &'static str,
     checks: Vec<HealthCheck>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    validation: Option<Box<RawValue>>,
+    validation: Option<Box<RawJson>>,
 }
 
 #[derive(Serialize)]
 struct BriefDomain<'a> {
     slug: &'a str,
     node: NodeSummary<'a>,
-    summary: super::domain_profile::DomainSummary,
+    summary: DomainSummary,
 }
 
 #[derive(Serialize)]
 struct ProjectBrief<'a> {
     project: &'a str,
     node: NodeSummary<'a>,
-    summary: PageSummary,
+    summary: MapSummary,
     domains: Vec<BriefDomain<'a>>,
-    unassigned: LimitedNodes<'a>,
+    unassigned: NodePage<NodeSummary<'a>>,
 }
 
 #[derive(Serialize)]
@@ -124,17 +123,6 @@ pub struct WorkspaceBriefAnswer<'a> {
     next_actions: Vec<NextAction<'a>>,
 }
 
-/// The project nodes in the order their slugs sort by UTF-16 code unit.
-fn project_roots(graph: &CompiledGraph) -> Vec<NodeId> {
-    let mut roots: Vec<NodeId> = graph
-        .node_ids()
-        .filter(|id| graph.node(*id).kind() == "project")
-        .collect();
-    roots
-        .sort_by(|left, right| utf16::compare(graph.node(*left).slug(), graph.node(*right).slug()));
-    roots
-}
-
 fn next_actions<'a>(
     checks: &[HealthCheck],
     growth: GrowthPlanAnswer<'a>,
@@ -183,7 +171,11 @@ fn next_actions<'a>(
             severity: "warn",
             count: summary.dangling(),
             message: "Resolve dangling graph references or create the missing ontology nodes.",
-            sample: dangling_references.rows.into_iter().take(sample).collect(),
+            sample: dangling_references
+                .into_rows()
+                .into_iter()
+                .take(sample)
+                .collect(),
         }));
     }
     if summary.external() > 0 {
@@ -225,13 +217,11 @@ pub fn workspace_brief<'a>(
     let counts = graph.edge_counts();
     let by_kind = kind_counts(graph, graph.node_ids());
     let roots = project_roots(graph);
-    let containment = Containment::of(graph);
     let maps: Vec<ProjectBrief<'a>> = roots
         .iter()
         .take(limit)
         .map(|project| {
-            let base = ProjectPageBase::of(graph, &containment, *project, limit);
-            let map = base.fitted(limit.min(PROJECT_ITEM_LIMIT));
+            let map = fitted_map(graph, *project, limit, limit.min(PROJECT_ITEM_LIMIT));
             ProjectBrief {
                 project: map.project,
                 node: map.node,
@@ -240,7 +230,7 @@ pub fn workspace_brief<'a>(
                     .domains
                     .into_iter()
                     .map(
-                        |DomainPageRow {
+                        |DomainRow {
                              slug,
                              node,
                              summary,

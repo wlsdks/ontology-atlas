@@ -55,7 +55,7 @@ fn hotspots<'a>(graph: &'a CompiledGraph, nodes: &[NodeId], count: usize) -> Vec
 }
 
 #[derive(Serialize)]
-struct MapSummary {
+pub struct MapSummary {
     nodes: usize,
     domains: usize,
     capabilities: usize,
@@ -66,8 +66,10 @@ struct MapSummary {
     edges: EdgeCounts,
 }
 
+/// What a domain holds, counted: its nodes, how many are capabilities and elements, and its edges
+/// by where they end.
 #[derive(Serialize)]
-struct DomainSummary {
+pub struct DomainSummary {
     nodes: usize,
     capabilities: usize,
     elements: usize,
@@ -75,11 +77,22 @@ struct DomainSummary {
     edges: EdgeCounts,
 }
 
+impl DomainSummary {
+    pub fn of(graph: &CompiledGraph, scope: &Scope, edges: &ScopeEdges) -> Self {
+        Self {
+            nodes: scope.nodes.len(),
+            capabilities: scope.of_kind(graph, "capability").len(),
+            elements: scope.of_kind(graph, "element").len(),
+            edges: EdgeCounts::of(edges),
+        }
+    }
+}
+
 #[derive(Serialize)]
-struct DomainRow<'a> {
-    slug: &'a str,
-    node: NodeSummary<'a>,
-    summary: DomainSummary,
+pub struct DomainRow<'a> {
+    pub(in crate::query) slug: &'a str,
+    pub(in crate::query) node: NodeSummary<'a>,
+    pub(in crate::query) summary: DomainSummary,
     capabilities: NodePage<NodeSummary<'a>>,
     elements: NodePage<NodeSummary<'a>>,
     hotspots: Vec<Hotspot<'a>>,
@@ -97,12 +110,12 @@ struct NarrowedToFit {
 #[derive(Serialize)]
 pub struct ProjectMapAnswer<'a> {
     operation: &'static str,
-    project: &'a str,
-    node: NodeSummary<'a>,
-    summary: MapSummary,
+    pub(in crate::query) project: &'a str,
+    pub(in crate::query) node: NodeSummary<'a>,
+    pub(in crate::query) summary: MapSummary,
     limited: bool,
-    domains: Vec<DomainRow<'a>>,
-    unassigned: NodePage<NodeSummary<'a>>,
+    pub(in crate::query) domains: Vec<DomainRow<'a>>,
+    pub(in crate::query) unassigned: NodePage<NodeSummary<'a>>,
     hotspots: Vec<Hotspot<'a>>,
     #[serde(rename = "narrowedToFit", skip_serializing_if = "Option::is_none")]
     narrowed_to_fit: Option<NarrowedToFit>,
@@ -262,15 +275,15 @@ fn written_length(answer: &ProjectMapAnswer<'_>) -> usize {
         .map_or(usize::MAX, |text| answer_format::utf16::len(&text))
 }
 
-pub fn project_map<'a>(
+/// The map of `project` with every per-domain list as long as `requested` allows while the answer
+/// stays within [`MAP_TEXT_CHARS`]; `narrowed_to_fit` says how far the lists were cut.
+pub fn fitted_map<'a>(
     graph: &'a CompiledGraph,
-    request: &QueryRequest,
-) -> Result<ProjectMapAnswer<'a>, QueryError> {
-    let requested = request.item_limit.unwrap_or(DEFAULT_ITEM_LIMIT);
-    let limit = request.limit.unwrap_or(DEFAULT_LIMIT);
-    let project = project_root(graph, request, "project_map")?;
+    project: NodeId,
+    limit: usize,
+    requested: usize,
+) -> ProjectMapAnswer<'a> {
     let facts = MapFacts::gather(graph, project, limit, requested);
-
     let mut item_limit = requested;
     let mut map = facts.render(graph, limit, item_limit);
     while item_limit > 1 && written_length(&map) > MAP_TEXT_CHARS {
@@ -284,5 +297,15 @@ pub fn project_map<'a>(
             next: format!("Lists were cut to {item_limit} per domain to keep this answer under {MAP_TEXT_CHARS} characters; query_ontology({{operation:\"domain_profile\", slug}}) lists one domain in full."),
         });
     }
-    Ok(map)
+    map
+}
+
+pub fn project_map<'a>(
+    graph: &'a CompiledGraph,
+    request: &QueryRequest,
+) -> Result<ProjectMapAnswer<'a>, QueryError> {
+    let requested = request.item_limit.unwrap_or(DEFAULT_ITEM_LIMIT);
+    let limit = request.limit.unwrap_or(DEFAULT_LIMIT);
+    let project = project_root(graph, request, "project_map")?;
+    Ok(fitted_map(graph, project, limit, requested))
 }

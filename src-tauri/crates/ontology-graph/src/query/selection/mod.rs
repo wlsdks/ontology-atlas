@@ -1,9 +1,12 @@
-//! The operations that pick nodes out of the graph or summarize it: `overview`, `schema`, `facets`,
-//! `components`, `communities` and `centrality`.
+//! The operations that pick nodes out of the graph or summarize it: `overview`, `schema`,
+//! `facets`, `components`, `communities`, `centrality`, `similar_nodes`, `match_nodes`,
+//! `match_edges`, `recommend_relations`, `node_profile`, `domain_profile`, `domain_matrix`,
+//! `growth_plan`, `maintenance_plan`, `health` and `workspace_brief`. What they read about the
+//! world beside the graph (the vault's validation, its ignore file, the reads its bodies ask for)
+//! reaches them in `QueryRequest::selection`, handed over by the tool layer.
 
 mod centrality;
 mod clusters;
-mod containment;
 mod dependency_view;
 mod domain_matrix;
 mod domain_profile;
@@ -13,20 +16,16 @@ mod growth_candidates;
 mod growth_plan;
 mod health;
 mod ignored_references;
-mod limited_nodes;
 mod maintenance_action;
 mod maintenance_plan;
 mod match_edges;
 mod match_nodes;
 mod node_profile;
 mod outside_checks;
-mod project_page;
-mod project_root;
 mod proposed_action;
 mod reference_repair;
 mod relation_filter;
 mod relation_recommendations;
-mod scope_edges;
 mod selection_request;
 mod similar_nodes;
 mod starter_examples;

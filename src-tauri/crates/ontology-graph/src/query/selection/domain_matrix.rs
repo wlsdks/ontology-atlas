@@ -8,16 +8,18 @@ use answer_format::collation::compare_text;
 use indexmap::IndexMap;
 use serde::Serialize;
 
-use super::containment::{Containment, Scope};
-use super::project_root::resolve_project;
 use super::relation_filter::EchoedRelations;
 use crate::compiled_graph::{CompiledGraph, EdgeId, NodeId};
+use crate::query::domain_lookup::DomainLookup;
 use crate::query::edge_rows::CompiledEdge;
 use crate::query::name_counts::sorted_counts;
 use crate::query::node_summary::NodeSummary;
+use crate::query::project_root::project_named_or_only;
 use crate::query::query_error::QueryError;
 use crate::query::relation_set::{allowed, public_relation_type, RelationSet};
 use crate::query::request::QueryRequest;
+use crate::query::scope::Scope;
+use crate::query::walks::row_page::RowPage;
 
 const DEFAULT_LIMIT: usize = 100;
 const EXAMPLES_PER_PAIR: usize = 3;
@@ -69,13 +71,6 @@ struct Connection<'a> {
 }
 
 #[derive(Serialize)]
-struct Connections<'a> {
-    total: usize,
-    limited: bool,
-    rows: Vec<Connection<'a>>,
-}
-
-#[derive(Serialize)]
 struct MatrixSummary {
     domains: usize,
     nodes: usize,
@@ -99,8 +94,8 @@ pub struct DomainMatrixAnswer<'a> {
     project: Option<&'a str>,
     filters: EchoedRelations,
     summary: MatrixSummary,
-    domains: Vec<DomainRow<'a>>,
-    connections: Connections<'a>,
+    domains: RowPage<DomainRow<'a>>,
+    connections: RowPage<Connection<'a>>,
 }
 
 /// The edges of the scope that join two different domains, grouped by the pair they join.
@@ -186,31 +181,25 @@ pub fn domain_matrix<'a>(
     request: &QueryRequest,
 ) -> Result<DomainMatrixAnswer<'a>, QueryError> {
     let limit = request.limit.unwrap_or(DEFAULT_LIMIT);
-    let arguments = &request.selection.arguments;
-    let project_name = arguments.project.as_deref().or(request.slug.as_deref());
     let types = RelationSet::parse(request.types.as_deref(), "types")?;
-    let containment = Containment::of(graph);
-    let project = project_name
-        .map(|name| resolve_project(graph, Some(name)))
+    let named = request
+        .project
+        .as_deref()
+        .or(request.slug.as_deref())
+        .filter(|name| !answer_format::whitespace::trim(name).is_empty());
+    let project = named
+        .map(|name| project_named_or_only(graph, Some(name), "domain_matrix"))
         .transpose()?;
     let scope = match project {
-        Some(root) => containment.scope_under(root),
+        Some(root) => Scope::of(graph, root),
         None => Scope::everything(graph),
     };
-    let domains: Vec<NodeId> = scope
-        .ids()
-        .iter()
-        .copied()
-        .filter(|id| graph.node(*id).kind() == "domain")
-        .collect();
+    let domains = scope.of_kind(graph, "domain");
+    let mut lookup = DomainLookup::within(graph, &scope);
     let domain_for: HashMap<NodeId, NodeId> = scope
-        .ids()
+        .nodes
         .iter()
-        .filter_map(|id| {
-            containment
-                .nearest_domain(*id, &scope)
-                .map(|domain| (*id, domain))
-        })
+        .filter_map(|&id| lookup.of(id).map(|domain| (id, domain)))
         .collect();
     let tallied = tally(graph, &scope, types.as_ref(), &domain_for, &domains);
 
@@ -237,7 +226,7 @@ pub fn domain_matrix<'a>(
         },
     );
     let total_pairs = pairs.len();
-    let rows: Vec<Connection<'a>> = pairs
+    let connections: Vec<Connection<'a>> = pairs
         .iter()
         .take(limit)
         .map(|((from, to), pair)| Connection {
@@ -263,6 +252,7 @@ pub fn domain_matrix<'a>(
 
     let domain_rows: Vec<DomainRow<'a>> = domains
         .iter()
+        .take(limit)
         .map(|domain| {
             let counts = tallied.domain_counts.get(domain);
             let count = |read: fn(&DomainCounts) -> usize| counts.map_or(0, read);
@@ -285,19 +275,15 @@ pub fn domain_matrix<'a>(
         filters: EchoedRelations::of(types.as_ref()),
         summary: MatrixSummary {
             domains: domains.len(),
-            nodes: scope.len(),
+            nodes: scope.nodes.len(),
             assigned_nodes: domain_for.len(),
-            unassigned_nodes: scope.len() - domain_for.len(),
+            unassigned_nodes: scope.nodes.len() - domain_for.len(),
             cross_domain_edges: tallied.cross,
             self_domain_edges: tallied.own,
             external_edges: tallied.external,
             unresolved_edges: tallied.unresolved,
         },
-        domains: domain_rows,
-        connections: Connections {
-            total: total_pairs,
-            limited: total_pairs > limit,
-            rows,
-        },
+        domains: RowPage::new(domains.len(), limit, domain_rows),
+        connections: RowPage::new(total_pairs, limit, connections),
     })
 }

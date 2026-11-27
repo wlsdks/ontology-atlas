@@ -35,13 +35,13 @@ impl NodeSort {
     }
 }
 
-/// The arguments of the selection operations, each as the call sent it: `None` is an argument
-/// that was not sent.
+/// The arguments only the selection operations read, each as the call sent it: `None` is an
+/// argument that was not sent. The arguments every family reads (`slug`, `limit`, `itemLimit`,
+/// `project`, `type`, `relation`, `types`) are on the request itself.
 #[derive(Debug, Clone, Default)]
 pub struct SelectionArguments {
     pub kind: Option<String>,
     pub domain: Option<String>,
-    pub project: Option<String>,
     pub slug_contains: Option<String>,
     pub min_degree: Option<usize>,
     pub max_degree: Option<usize>,
@@ -52,13 +52,8 @@ pub struct SelectionArguments {
     pub sort: Option<NodeSort>,
     pub from_kind: Option<String>,
     pub to_kind: Option<String>,
-    /// `type`, the argument `match_edges` names a relation by.
-    pub relation_type: Option<String>,
-    /// `relation`, the alias of `type`.
-    pub relation: Option<String>,
     pub candidate_slug: Option<String>,
     pub title: Option<String>,
-    pub item_limit: Option<usize>,
     pub component_limit: Option<usize>,
     pub cycle_limit: Option<usize>,
     pub recommendation_limit: Option<usize>,
@@ -110,7 +105,7 @@ pub struct UncertaintyRead {
 #[derive(Debug, Clone)]
 pub struct VaultValidationFacts {
     /// The `validation` object the brief writes, as the validation tool wrote it.
-    pub brief: Box<serde_json::value::RawValue>,
+    pub brief: Box<answer_format::json::RawJson>,
     pub error_files: usize,
     pub warning_files: usize,
     pub path_drifts: usize,

@@ -154,12 +154,23 @@ struct LayerRow<'a> {
     limited: bool,
 }
 
+/// A blocked node as an answer writes it.
 #[derive(Serialize)]
-struct BlockedRow<'a> {
+pub struct BlockedRow<'a> {
     slug: &'a str,
     #[serde(rename = "remainingInDegree")]
     remaining_in_degree: usize,
     node: NodeSummary<'a>,
+}
+
+impl<'a> BlockedRow<'a> {
+    pub fn of(graph: &'a CompiledGraph, blocked: &Blocked) -> Self {
+        Self {
+            slug: graph.node(blocked.node).slug(),
+            remaining_in_degree: blocked.remaining_in_degree,
+            node: NodeSummary::of(graph, blocked.node),
+        }
+    }
 }
 
 #[derive(Serialize)]
@@ -233,11 +244,7 @@ pub fn topological_order<'a>(
             .blocked
             .iter()
             .take(limit)
-            .map(|blocked| BlockedRow {
-                slug: graph.node(blocked.node).slug(),
-                remaining_in_degree: blocked.remaining_in_degree,
-                node: NodeSummary::of(graph, blocked.node),
-            })
+            .map(|blocked| BlockedRow::of(graph, blocked))
             .collect(),
     })
 }

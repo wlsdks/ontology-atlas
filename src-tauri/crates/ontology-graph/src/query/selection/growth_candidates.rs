@@ -12,30 +12,15 @@ use serde::Serialize;
 use vault_document::frontmatter::Value;
 use vault_document::starter_body::starter_body;
 
-use super::containment::Containment;
 use super::ignored_references::is_ignored;
 use super::proposed_action::{ConceptRow, ProposedAction};
 use super::reference_repair::{near_match_slug, suggested_slug, title_from_reference};
 use crate::compiled_graph::{CompiledGraph, EdgeId, NodeId};
+use crate::query::containment_steps::{children, has_children, has_parent, parents};
+use crate::query::domain_lookup::named_domain;
+use crate::query::node_mask::NodeMask;
 use crate::query::node_summary::NodeSummary;
-
-/// The candidates of one kind: how many there are and the first `limit` of them.
-#[derive(Serialize)]
-pub struct CandidateGroup<Row> {
-    pub total: usize,
-    pub limited: bool,
-    pub rows: Vec<Row>,
-}
-
-impl<Row> CandidateGroup<Row> {
-    fn of(total: usize, limit: usize, rows: Vec<Row>) -> Self {
-        Self {
-            total,
-            limited: total > limit,
-            rows,
-        }
-    }
-}
+use crate::query::walks::row_page::RowPage;
 
 /// A candidate that names one node and says why.
 #[derive(Serialize)]
@@ -83,14 +68,14 @@ pub struct ExternalElementRow<'a> {
 #[derive(Serialize)]
 pub struct ExternalElements<'a> {
     #[serde(flatten)]
-    group: CandidateGroup<ExternalElementRow<'a>>,
+    group: RowPage<ExternalElementRow<'a>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     ignored: Option<usize>,
 }
 
 impl<'a> ExternalElements<'a> {
     pub fn total(&self) -> usize {
-        self.group.total
+        self.group.total()
     }
 
     pub fn ignored(&self) -> usize {
@@ -98,7 +83,7 @@ impl<'a> ExternalElements<'a> {
     }
 
     pub(crate) fn into_rows(self) -> Vec<ExternalElementRow<'a>> {
-        self.group.rows
+        self.group.into_rows()
     }
 }
 
@@ -156,13 +141,9 @@ pub fn external_elements<'a>(
         })
         .collect();
     ExternalElements {
-        group: CandidateGroup::of(kind_total(&kept), limit, rows),
+        group: RowPage::new(kept.len(), limit, rows),
         ignored: Some(ignored).filter(|count| *count > 0),
     }
-}
-
-fn kind_total<T>(items: &[T]) -> usize {
-    items.len()
 }
 
 /// The kind of node a dangling reference under `relation` most plausibly names.
@@ -209,7 +190,7 @@ pub struct DanglingReferenceRow<'a> {
 pub fn dangling_references(
     graph: &CompiledGraph,
     limit: usize,
-) -> CandidateGroup<DanglingReferenceRow<'_>> {
+) -> RowPage<DanglingReferenceRow<'_>> {
     let dangling: Vec<EdgeId> = graph
         .edge_ids()
         .filter(|id| graph.edge(*id).is_dangling())
@@ -264,7 +245,7 @@ pub fn dangling_references(
             }
         })
         .collect();
-    CandidateGroup::of(dangling.len(), limit, rows)
+    RowPage::new(dangling.len(), limit, rows)
 }
 
 fn concept_kind(kind: &str) -> &'static str {
@@ -276,15 +257,11 @@ fn concept_kind(kind: &str) -> &'static str {
 }
 
 /// Capabilities and elements with no domain of their own and nothing containing them.
-pub fn unassigned_nodes<'a>(
-    graph: &'a CompiledGraph,
-    containment: &Containment<'_>,
-    limit: usize,
-) -> CandidateGroup<NodeCandidate<'a>> {
+pub fn unassigned_nodes<'a>(graph: &'a CompiledGraph, limit: usize) -> RowPage<NodeCandidate<'a>> {
     let unassigned: Vec<NodeId> = graph
         .node_ids()
         .filter(|id| matches!(graph.node(*id).kind(), "capability" | "element"))
-        .filter(|id| containment.named_domain(*id).is_none() && !containment.has_parents(*id))
+        .filter(|id| named_domain(graph, *id).is_none() && !has_parent(graph, *id))
         .collect();
     let rows = unassigned
         .iter()
@@ -302,21 +279,16 @@ pub fn unassigned_nodes<'a>(
             )
         })
         .collect();
-    CandidateGroup::of(unassigned.len(), limit, rows)
+    RowPage::new(unassigned.len(), limit, rows)
 }
 
 /// Domains that contain no capability and no element.
-pub fn empty_domains<'a>(
-    graph: &'a CompiledGraph,
-    containment: &Containment<'_>,
-    limit: usize,
-) -> CandidateGroup<NodeCandidate<'a>> {
+pub fn empty_domains<'a>(graph: &'a CompiledGraph, limit: usize) -> RowPage<NodeCandidate<'a>> {
     let empty: Vec<NodeId> = graph
         .node_ids()
         .filter(|id| graph.node(*id).kind() == "domain")
         .filter(|id| {
-            !containment
-                .children(*id)
+            !children(graph, *id)
                 .iter()
                 .any(|link| matches!(graph.node(link.next).kind(), "capability" | "element"))
         })
@@ -337,7 +309,7 @@ pub fn empty_domains<'a>(
             )
         })
         .collect();
-    CandidateGroup::of(empty.len(), limit, rows)
+    RowPage::new(empty.len(), limit, rows)
 }
 
 /// Capabilities that never reach code: no canonical `path:` entry point and no `elements:` link
@@ -345,7 +317,7 @@ pub fn empty_domains<'a>(
 pub fn capabilities_without_evidence<'a>(
     graph: &'a CompiledGraph,
     limit: usize,
-) -> CandidateGroup<NodeCandidate<'a>> {
+) -> RowPage<NodeCandidate<'a>> {
     let with_elements: HashSet<NodeId> = graph
         .edge_ids()
         .map(|id| graph.edge(id))
@@ -373,7 +345,7 @@ pub fn capabilities_without_evidence<'a>(
             )
         })
         .collect();
-    CandidateGroup::of(bare.len(), limit, rows)
+    RowPage::new(bare.len(), limit, rows)
 }
 
 /// `\s+` folded to one space and trimmed: the shape two bodies are compared in.
@@ -396,7 +368,7 @@ fn folded(text: &str) -> String {
 
 /// Whether a body is still the template `add_concepts` writes: it holds the template's prose
 /// after its heading, which boilerplate plus one more line still says nothing beyond.
-fn is_starter_body(kind: &str, title: &str, body: &str) -> bool {
+pub(super) fn is_starter_body(kind: &str, title: &str, body: &str) -> bool {
     if trim(body).is_empty() {
         return false;
     }
@@ -408,31 +380,26 @@ fn is_starter_body(kind: &str, title: &str, body: &str) -> bool {
     !tail.is_empty() && folded(body).contains(&tail)
 }
 
-fn has_starter_body(graph: &CompiledGraph, id: NodeId) -> bool {
-    let node = graph.node(id);
-    node.body()
-        .is_ok_and(|body| is_starter_body(node.kind(), &node.title_text(), body.as_ref()))
-}
-
 /// Capabilities that group nothing. Having no children is common and fine, so one is named only
 /// when it also sits under a parent of its own kind, or still carries its starter body.
+/// `starter_bodies` holds the nodes whose body is the starter's: the caller reads each body once
+/// and shares what it found.
 pub fn unearned_nodes<'a>(
     graph: &'a CompiledGraph,
-    containment: &Containment<'_>,
+    starter_bodies: &NodeMask,
     limit: usize,
-) -> CandidateGroup<NodeCandidate<'a>> {
+) -> RowPage<NodeCandidate<'a>> {
     let mut found: Vec<(NodeId, Option<NodeId>)> = Vec::new();
     for id in graph.node_ids() {
         let node = graph.node(id);
-        if node.kind() != "capability" || containment.has_children(id) {
+        if node.kind() != "capability" || has_children(graph, id) {
             continue;
         }
-        let same_kind_parent = containment
-            .parents(id)
+        let same_kind_parent = parents(graph, id)
             .iter()
             .map(|link| link.next)
             .find(|parent| graph.node(*parent).kind() == node.kind());
-        if same_kind_parent.is_some() || has_starter_body(graph, id) {
+        if same_kind_parent.is_some() || starter_bodies.contains(id) {
             found.push((id, same_kind_parent));
         }
     }
@@ -453,5 +420,5 @@ pub fn unearned_nodes<'a>(
             NodeCandidate::about(graph, *id, "retire_unearned_node", 0.55, reason)
         })
         .collect();
-    CandidateGroup::of(found.len(), limit, rows)
+    RowPage::new(found.len(), limit, rows)
 }

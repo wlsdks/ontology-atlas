@@ -5,9 +5,9 @@
 use indexmap::IndexMap;
 use serde::Serialize;
 
-use super::containment::{Containment, Lineage, LineageDirection, LineageStep};
 use super::relation_filter::edge_passes;
 use crate::compiled_graph::{CompiledGraph, EdgeId, NodeId};
+use crate::query::containment_steps::{children, parents};
 use crate::query::edge_rows::CompiledEdge;
 use crate::query::name_counts::sorted_counts;
 use crate::query::node_resolution::resolve;
@@ -15,6 +15,8 @@ use crate::query::node_summary::NodeSummary;
 use crate::query::query_error::QueryError;
 use crate::query::relation_set::{public_relation_type, RelationSet};
 use crate::query::request::QueryRequest;
+use crate::query::step::Step;
+use crate::query::walks::lineage::{lineage_reach, LineageRows};
 
 const DEFAULT_LIMIT: usize = 20;
 const DEFAULT_DEPTH: usize = 3;
@@ -127,50 +129,10 @@ struct ProfileContainment<'a> {
 }
 
 #[derive(Serialize)]
-struct LineageRow<'a> {
-    slug: &'a str,
-    distance: usize,
-    via: &'static str,
-    node: NodeSummary<'a>,
-}
-
-#[derive(Serialize)]
-struct LineageGroup<'a> {
-    total: usize,
-    limited: bool,
-    nodes: Vec<LineageRow<'a>>,
-}
-
-impl<'a> LineageGroup<'a> {
-    fn of(graph: &'a CompiledGraph, lineage: Lineage) -> Self {
-        Self {
-            total: lineage.steps.len(),
-            limited: lineage.limited,
-            nodes: lineage
-                .steps
-                .iter()
-                .map(
-                    |LineageStep {
-                         node,
-                         distance,
-                         via,
-                     }| LineageRow {
-                        slug: graph.node(*node).slug(),
-                        distance: *distance,
-                        via,
-                        node: NodeSummary::of(graph, *node),
-                    },
-                )
-                .collect(),
-        }
-    }
-}
-
-#[derive(Serialize)]
 struct ProfileLineage<'a> {
     depth: usize,
-    ancestors: LineageGroup<'a>,
-    descendants: LineageGroup<'a>,
+    ancestors: LineageRows<'a>,
+    descendants: LineageRows<'a>,
 }
 
 #[derive(Serialize)]
@@ -201,7 +163,7 @@ fn filtered(
 
 fn rows<'a>(
     graph: &'a CompiledGraph,
-    links: &[super::containment::Link],
+    links: &[Step],
     limit: usize,
 ) -> (Vec<ContainmentRow<'a>>, bool) {
     (
@@ -220,12 +182,11 @@ pub fn node_profile<'a>(
 ) -> Result<NodeProfileAnswer<'a>, QueryError> {
     let center = resolve(graph, request.slug.as_deref(), "slug")?;
     let limit = request.limit.unwrap_or(DEFAULT_LIMIT);
-    let depth = request.depth.unwrap_or(DEFAULT_DEPTH);
+    let depth = request.depth_or(DEFAULT_DEPTH);
     let include_external = request.include_external.unwrap_or(true);
     let include_unresolved = request.include_unresolved.unwrap_or(true);
     let types = RelationSet::parse(request.types.as_deref(), "types")?;
     let node = graph.node(center);
-    let containment = Containment::of(graph);
     let outgoing = filtered(
         graph,
         graph.outgoing(center),
@@ -240,8 +201,9 @@ pub fn node_profile<'a>(
         include_external,
         include_unresolved,
     );
-    let (parents, parent_limited) = rows(graph, &containment.parents(center), limit);
-    let (children, child_limited) = rows(graph, &containment.children(center), limit);
+    let reach = lineage_reach(graph, center, depth, limit);
+    let (parents, parent_limited) = rows(graph, &parents(graph, center), limit);
+    let (children, child_limited) = rows(graph, &children(graph, center), limit);
     Ok(NodeProfileAnswer {
         operation: "node_profile",
         center: node.slug(),
@@ -269,14 +231,8 @@ pub fn node_profile<'a>(
         },
         lineage: ProfileLineage {
             depth,
-            ancestors: LineageGroup::of(
-                graph,
-                containment.lineage(center, LineageDirection::Ancestors, depth, limit),
-            ),
-            descendants: LineageGroup::of(
-                graph,
-                containment.lineage(center, LineageDirection::Descendants, depth, limit),
-            ),
+            ancestors: LineageRows::written(graph, &reach.ancestors),
+            descendants: LineageRows::written(graph, &reach.descendants),
         },
     })
 }

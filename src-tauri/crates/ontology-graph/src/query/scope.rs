@@ -43,6 +43,24 @@ impl Scope {
         Self::holding(graph, &[root])
     }
 
+    /// Every node of the graph.
+    pub fn everything(graph: &CompiledGraph) -> Self {
+        let nodes: Vec<NodeId> = graph.node_ids().collect();
+        Self {
+            mask: NodeMask::of(graph, nodes.iter().copied()),
+            nodes,
+        }
+    }
+
+    /// The nodes of this scope of one kind, in the order of the graph.
+    pub fn of_kind(&self, graph: &CompiledGraph, kind: &str) -> Vec<NodeId> {
+        self.nodes
+            .iter()
+            .copied()
+            .filter(|&node| graph.node(node).kind() == kind)
+            .collect()
+    }
+
     pub fn contains(&self, node: NodeId) -> bool {
         self.mask.contains(node)
     }

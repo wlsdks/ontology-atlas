@@ -4,8 +4,8 @@
 //! the verdict it changes. With nothing handed over there is no check, so an answer never claims a
 //! validation that did not run.
 
+use answer_format::json::RawJson;
 use serde::Serialize;
-use serde_json::value::RawValue;
 
 use super::health::HealthCheck;
 use super::selection_request::OutsideFacts;
@@ -21,7 +21,7 @@ pub struct AttentionAction {
 
 pub struct OutsideChecks {
     checks: Vec<HealthCheck>,
-    validation: Option<Box<RawValue>>,
+    validation: Option<Box<RawJson>>,
     validation_action: Option<AttentionAction>,
     meaning_action: Option<AttentionAction>,
     needs_attention: bool,
@@ -135,6 +135,6 @@ impl OutsideChecks {
 /// the meaning review before the validation, as an agent should read them.
 pub struct OutsideParts {
     pub checks: Vec<HealthCheck>,
-    pub validation: Option<Box<RawValue>>,
+    pub validation: Option<Box<RawJson>>,
     pub actions: Vec<AttentionAction>,
 }

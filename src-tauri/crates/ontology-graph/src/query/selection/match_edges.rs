@@ -25,8 +25,7 @@ fn relation_filter(request: &QueryRequest) -> Result<Option<RelationSet>, QueryE
     {
         return RelationSet::parse(request.types.as_deref(), "types");
     }
-    let arguments = &request.selection.arguments;
-    let (field, value) = match (&arguments.relation_type, &arguments.relation) {
+    let (field, value) = match (&request.relation_type, &request.relation) {
         (Some(value), _) => ("type", value),
         (None, Some(value)) => ("relation", value),
         (None, None) => return Ok(None),

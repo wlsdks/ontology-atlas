@@ -19,8 +19,8 @@ use crate::query::relation_set::{allowed, RelationSet};
 use crate::query::request::QueryRequest;
 
 const DEFAULT_CYCLE_LIMIT: usize = 20;
-const DEFAULT_CYCLE_DEPTH: usize = 8;
-const DEFAULT_SEARCH_BUDGET: usize = 5000;
+pub const DEFAULT_CYCLE_DEPTH: usize = 8;
+pub const DEFAULT_SEARCH_BUDGET: usize = 5000;
 
 /// A loop of dependencies, rotated to start at its lowest node and closed by repeating it.
 pub struct DependencyCycle {
@@ -140,14 +140,40 @@ impl CycleSearch<'_> {
     }
 }
 
+/// A cycle as an answer writes it.
 #[derive(Serialize)]
-struct CycleRow<'a> {
+pub struct CycleRow<'a> {
     id: String,
     length: usize,
     nodes: Vec<&'a str>,
     #[serde(rename = "nodeSummaries")]
     node_summaries: Vec<NodeSummary<'a>>,
     edges: Vec<CompiledEdge<'a>>,
+}
+
+impl<'a> CycleRow<'a> {
+    pub fn of(graph: &'a CompiledGraph, cycle: &DependencyCycle) -> Self {
+        Self {
+            id: cycle.key.clone(),
+            length: cycle.nodes.len() - 1,
+            nodes: cycle
+                .nodes
+                .iter()
+                .map(|node| graph.node(*node).slug())
+                .collect(),
+            node_summaries: summaries(graph, cycle.nodes.iter().copied()),
+            edges: cycle
+                .edges
+                .iter()
+                .map(|edge| CompiledEdge::of(graph, *edge))
+                .collect(),
+        }
+    }
+
+    /// The slugs around the cycle, the first again at the end.
+    pub fn nodes(&self) -> &[&'a str] {
+        &self.nodes
+    }
 }
 
 #[derive(Serialize)]
@@ -284,21 +310,7 @@ pub fn cycles<'a>(
     let rows: Vec<CycleRow<'a>> = search
         .cycles
         .iter()
-        .map(|cycle| CycleRow {
-            id: cycle.key.clone(),
-            length: cycle.nodes.len() - 1,
-            nodes: cycle
-                .nodes
-                .iter()
-                .map(|node| graph.node(*node).slug())
-                .collect(),
-            node_summaries: summaries(graph, cycle.nodes.iter().copied()),
-            edges: cycle
-                .edges
-                .iter()
-                .map(|edge| CompiledEdge::of(graph, *edge))
-                .collect(),
-        })
+        .map(|cycle| CycleRow::of(graph, cycle))
         .collect();
     Ok(CyclesAnswer {
         operation: "cycles",

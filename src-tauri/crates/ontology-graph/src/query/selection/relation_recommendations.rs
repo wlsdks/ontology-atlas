@@ -6,9 +6,9 @@ use std::collections::{HashMap, HashSet};
 
 use serde::Serialize;
 
-use super::containment::Containment;
 use super::proposed_action::ProposedAction;
 use crate::compiled_graph::{CompiledGraph, NodeId};
+use crate::query::domain_lookup::named_domain;
 use crate::query::node_summary::NodeSummary;
 use crate::query::query_error::QueryError;
 use crate::query::request::QueryRequest;
@@ -104,7 +104,6 @@ fn is_owned(graph: &CompiledGraph, node: NodeId) -> bool {
 /// The links missing for capabilities and elements, of `kind` only when one is asked for.
 pub fn recommend<'a>(
     graph: &'a CompiledGraph,
-    containment: &Containment<'_>,
     kind: Option<&str>,
     limit: usize,
 ) -> Recommendations<'a> {
@@ -119,7 +118,7 @@ pub fn recommend<'a>(
         if kind.is_some_and(|wanted| node.kind() != wanted) {
             continue;
         }
-        let Some(domain) = containment.named_domain(id) else {
+        let Some(domain) = named_domain(graph, id) else {
             continue;
         };
         if node.kind() == "element" && is_owned(graph, id) {
@@ -192,12 +191,6 @@ pub fn recommend_relations<'a>(
     request: &QueryRequest,
 ) -> Result<RecommendRelationsAnswer<'a>, QueryError> {
     let limit = request.limit.unwrap_or(DEFAULT_LIMIT);
-    let containment = Containment::of(graph);
-    let found = recommend(
-        graph,
-        &containment,
-        request.selection.arguments.kind.as_deref(),
-        limit,
-    );
+    let found = recommend(graph, request.selection.arguments.kind.as_deref(), limit);
     Ok(RecommendRelationsAnswer::of(found, limit))
 }

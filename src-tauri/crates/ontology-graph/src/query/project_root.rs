@@ -18,17 +18,24 @@ pub fn project_roots(graph: &CompiledGraph) -> Vec<NodeId> {
         .collect()
 }
 
-/// The project node the call means. `operation` names the call in the refusals.
+/// The project node the call means: the one named by `slug`, else `project`, else the only one.
+/// `operation` names the call in the refusals.
 pub fn project_root(
     graph: &CompiledGraph,
     request: &QueryRequest,
     operation: &str,
 ) -> Result<NodeId, QueryError> {
-    let named = request
-        .slug
-        .as_deref()
-        .or(request.project.as_deref())
-        .filter(|name| !trim(name).is_empty());
+    let named = request.slug.as_deref().or(request.project.as_deref());
+    project_named_or_only(graph, named, operation)
+}
+
+/// The project node `named` means; with no name (or a blank one) the graph's only project.
+pub fn project_named_or_only(
+    graph: &CompiledGraph,
+    named: Option<&str>,
+    operation: &str,
+) -> Result<NodeId, QueryError> {
+    let named = named.filter(|name| !trim(name).is_empty());
     if let Some(name) = named {
         let node = resolve(graph, Some(name), "project")?;
         if graph.node(node).kind() != "project" {

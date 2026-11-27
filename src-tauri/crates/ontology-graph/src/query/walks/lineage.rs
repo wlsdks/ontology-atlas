@@ -148,15 +148,17 @@ struct LineageNodeRow<'a> {
     node: NodeSummary<'a>,
 }
 
+/// One side of a lineage as an answer writes it: how many, whether some are missing, and the
+/// nodes shown.
 #[derive(Serialize)]
-struct Side<'a> {
+pub struct LineageRows<'a> {
     total: usize,
     limited: bool,
     nodes: Vec<LineageNodeRow<'a>>,
 }
 
-impl<'a> Side<'a> {
-    fn written(graph: &'a CompiledGraph, side: &LineageSide) -> Self {
+impl<'a> LineageRows<'a> {
+    pub fn written(graph: &'a CompiledGraph, side: &LineageSide) -> Self {
         Self {
             total: side.total,
             limited: side.limited(),
@@ -180,8 +182,8 @@ pub struct LineageAnswer<'a> {
     center: &'a str,
     node: &'a Node,
     depth: usize,
-    ancestors: Side<'a>,
-    descendants: Side<'a>,
+    ancestors: LineageRows<'a>,
+    descendants: LineageRows<'a>,
     edges: RowPage<PathEdge<'a>>,
 }
 
@@ -198,8 +200,8 @@ pub fn lineage<'a>(
         center: graph.node(center).slug(),
         node: graph.node(center),
         depth,
-        ancestors: Side::written(graph, &reach.ancestors),
-        descendants: Side::written(graph, &reach.descendants),
+        ancestors: LineageRows::written(graph, &reach.ancestors),
+        descendants: LineageRows::written(graph, &reach.descendants),
         edges: RowPage::partial(
             reach.edges_total,
             path_edges(graph, reach.edges.iter().copied()),

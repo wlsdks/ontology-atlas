@@ -3,11 +3,10 @@
 //! and is the graph one piece. Each is a check that passes, warns, fails or informs, so an agent
 //! reads the verdict first and the evidence after.
 
+use answer_format::json::RawJson;
 use serde::Serialize;
-use serde_json::value::RawValue;
 
 use super::clusters::{connected_components, describe_components, ComponentRow};
-use super::containment::Containment;
 use super::dependency_view::{self, default_types};
 use super::outside_checks::OutsideChecks;
 use super::relation_recommendations::{recommend, Recommendation};
@@ -15,6 +14,8 @@ use crate::compiled_graph::{CompiledGraph, NodeId};
 use crate::query::query_error::QueryError;
 use crate::query::relation_set::RelationSet;
 use crate::query::request::QueryRequest;
+use crate::query::walks::dependency_cycles::CycleRow;
+use crate::query::walks::topological_order::BlockedRow;
 
 const DEFAULT_COMPONENT_LIMIT: usize = 5;
 const DEFAULT_NODE_LIMIT: usize = 10;
@@ -180,13 +181,13 @@ struct HealthComponents<'a> {
 }
 
 #[derive(Serialize)]
-struct HealthCycles {
+struct HealthCycles<'a> {
     #[serde(rename = "totalCycles")]
     total_cycles: usize,
     #[serde(rename = "totalCyclesExact")]
     total_cycles_exact: bool,
     limited: bool,
-    cycles: Vec<Box<RawValue>>,
+    cycles: Vec<CycleRow<'a>>,
 }
 
 #[derive(Serialize)]
@@ -198,13 +199,13 @@ struct HealthRecommendations<'a> {
 }
 
 #[derive(Serialize)]
-struct HealthOrder {
+struct HealthOrder<'a> {
     acyclic: bool,
     #[serde(rename = "totalNodes")]
     total_nodes: usize,
     #[serde(rename = "orderedCount")]
     ordered_count: usize,
-    blocked: Box<RawValue>,
+    blocked: Vec<BlockedRow<'a>>,
 }
 
 #[derive(Serialize)]
@@ -221,13 +222,13 @@ pub struct HealthAnswer<'a> {
     pub(super) checks: Vec<HealthCheck>,
     components: HealthComponents<'a>,
     #[serde(rename = "dependencyCycles")]
-    dependency_cycles: HealthCycles,
+    dependency_cycles: HealthCycles<'a>,
     #[serde(rename = "relationRecommendations")]
     relation_recommendations: HealthRecommendations<'a>,
     #[serde(rename = "dependencyOrder")]
-    dependency_order: HealthOrder,
+    dependency_order: HealthOrder<'a>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    validation: Option<Box<RawValue>>,
+    validation: Option<Box<RawJson>>,
 }
 
 impl HealthAnswer<'_> {
@@ -317,8 +318,7 @@ pub fn health<'a>(
         .filter(|group| !only_ignored_kinds(graph, group))
         .count();
     let ignored = groups.len() - actionable;
-    let containment = Containment::of(graph);
-    let recommended = recommend(graph, &containment, None, question.recommendation_limit);
+    let recommended = recommend(graph, None, question.recommendation_limit);
     let dependency_types = question
         .dependency_types
         .clone()
@@ -481,7 +481,7 @@ pub fn health<'a>(
             total_cycles: cycles.total,
             total_cycles_exact: cycles.exact,
             limited: cycles.limited,
-            cycles: cycles.cycles.into_iter().map(|cycle| cycle.row).collect(),
+            cycles: cycles.cycles,
         },
         relation_recommendations: HealthRecommendations {
             total_recommendations: recommended.total,

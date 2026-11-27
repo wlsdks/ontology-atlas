@@ -12,18 +12,18 @@ use indexmap::IndexMap;
 use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
 
-use super::containment::Containment;
 use super::dependency_view::{self, default_types};
 use super::growth_candidates::{
     capabilities_without_evidence, dangling_references, empty_domains, external_elements,
-    unassigned_nodes, unearned_nodes,
+    is_starter_body, unassigned_nodes, unearned_nodes,
 };
 use super::maintenance_action::{compare_steps, Action, Step, Subject};
 use super::proposed_action::{ActionArguments, FrontmatterPatch, ProposedAction};
 use super::relation_recommendations::recommend;
 use super::starter_examples::starter_examples;
-use crate::compiled_graph::CompiledGraph;
+use crate::compiled_graph::{CompiledGraph, NodeId};
 use crate::query::name_counts::sorted_counts;
+use crate::query::node_mask::NodeMask;
 use crate::query::node_summary::NodeSummary;
 use crate::query::query_error::QueryError;
 use crate::query::request::QueryRequest;
@@ -119,25 +119,113 @@ fn review<'a>(row: GapRow<'a>) -> Step<'a> {
     }
 }
 
-/// What the bodies of the vault leave unsaid, node by node in slug order.
-fn meaning_gaps(graph: &CompiledGraph, limit: usize) -> Capped<GapRow<'_>> {
-    let mut gaps = Capped::new(limit);
-    for id in graph.node_ids() {
+/// Fewer nodes than this are read in one thread: starting a thread costs more than reading them.
+const NODES_PER_WORKER_MIN: usize = 256;
+
+/// Background work leaves two cores to whatever else the machine is doing.
+fn worker_count() -> usize {
+    std::thread::available_parallelism()
+        .map(|cores| cores.get().saturating_sub(2))
+        .unwrap_or(1)
+        .clamp(1, 6)
+}
+
+/// A finding of the body reader about one node, as a plan will word it.
+struct BodyGap {
+    node: NodeId,
+    kind: &'static str,
+    score: f64,
+    reason: String,
+}
+
+/// What reading a run of nodes' bodies found: how many gaps, the first `limit` of them, and which
+/// capabilities hold the starter's own text.
+#[derive(Default)]
+struct RunReading {
+    gap_total: usize,
+    gaps: Vec<BodyGap>,
+    starter_bodies: Vec<NodeId>,
+}
+
+fn read_run(graph: &CompiledGraph, nodes: &[NodeId], limit: usize) -> RunReading {
+    let mut reading = RunReading::default();
+    for &id in nodes {
         let node = graph.node(id);
         let Ok(body) = node.body() else { continue };
-        for finding in body_findings(node.kind(), node.slug(), &node.title_text(), &body) {
+        let title = node.title_text();
+        if node.kind() == "capability" && is_starter_body(node.kind(), &title, &body) {
+            reading.starter_bodies.push(id);
+        }
+        for finding in body_findings(node.kind(), node.slug(), &title, &body) {
             let Some((kind, score)) = meaning_gap(finding.code) else {
                 continue;
             };
-            gaps.push(|| GapRow {
-                kind,
-                score,
-                reason: finding.message,
-                node: NodeSummary::of(graph, id),
-            });
+            reading.gap_total += 1;
+            if reading.gaps.len() < limit {
+                reading.gaps.push(BodyGap {
+                    node: id,
+                    kind,
+                    score,
+                    reason: finding.message,
+                });
+            }
         }
     }
-    gaps
+    reading
+}
+
+/// What the bodies of the vault say, found while each body is read once: what they leave unsaid,
+/// node by node in slug order, and which capabilities still hold the starter's own text. A body
+/// that was not kept in the document record is a file read and a parse, so no check reads one of
+/// its own, and the runs of nodes are read by several threads at once; each keeps only its first
+/// `limit` gaps, so what is held stays as small as the plan.
+struct BodyReading<'a> {
+    gaps: Capped<GapRow<'a>>,
+    starter_bodies: NodeMask,
+}
+
+fn read_bodies(graph: &CompiledGraph, limit: usize) -> BodyReading<'_> {
+    let nodes: Vec<NodeId> = graph.node_ids().collect();
+    let run = nodes
+        .len()
+        .div_ceil(worker_count())
+        .max(NODES_PER_WORKER_MIN);
+    let runs: Vec<RunReading> = std::thread::scope(|scope| {
+        let handles: Vec<_> = nodes
+            .chunks(run)
+            .map(|part| scope.spawn(move || read_run(graph, part, limit)))
+            .collect();
+        handles
+            .into_iter()
+            .map(|handle| {
+                handle
+                    .join()
+                    .unwrap_or_else(|panic| std::panic::resume_unwind(panic))
+            })
+            .collect()
+    });
+    let mut gaps = Capped::new(limit);
+    let mut starter_bodies = NodeMask::empty(graph);
+    for reading in runs {
+        gaps.total += reading.gap_total;
+        for gap in reading.gaps {
+            if gaps.rows.len() < limit {
+                gaps.rows.push(GapRow {
+                    kind: gap.kind,
+                    score: gap.score,
+                    reason: gap.reason,
+                    node: NodeSummary::of(graph, gap.node),
+                });
+            }
+        }
+        for node in reading.starter_bodies {
+            starter_bodies.insert(node);
+        }
+    }
+    BodyReading {
+        gaps,
+        starter_bodies,
+    }
 }
 
 /// Nodes written at the vault root instead of inside the folder of their kind.
@@ -405,27 +493,26 @@ pub fn maintenance_plan<'a>(
         .clone()
         .unwrap_or_else(default_types);
     let cycle_report = dependency_view::cycles(graph, limit, None, &dependency_types, "types")?;
-    let containment = Containment::of(graph);
-    let recommendations = recommend(graph, &containment, None, limit);
+    let recommendations = recommend(graph, None, limit);
     let external = external_elements(graph, &request.selection.outside.ignore_patterns, limit);
     let dangling = dangling_references(graph, limit);
-    let unassigned = unassigned_nodes(graph, &containment, limit);
-    let empty = empty_domains(graph, &containment, limit);
-    let unearned = unearned_nodes(graph, &containment, limit);
+    let unassigned = unassigned_nodes(graph, limit);
+    let empty = empty_domains(graph, limit);
+    let bodies = read_bodies(graph, limit);
+    let unearned = unearned_nodes(graph, &bodies.starter_bodies, limit);
     let without_evidence = capabilities_without_evidence(graph, limit);
-    let gaps = meaning_gaps(graph, limit);
     let flat = flat_slugs(graph, limit);
     let starters = starter_gaps(graph, limit);
 
     let (total_cycles, cycle_rows) = (cycle_report.total, cycle_report.cycles);
     let totals = (
-        dangling.total,
+        dangling.total(),
         recommendations.total,
         external.total(),
         external.ignored(),
-        unassigned.total,
-        empty.total,
-        without_evidence.total,
+        unassigned.total(),
+        empty.total(),
+        without_evidence.total(),
     );
 
     let mut steps: Vec<Step<'a>> = Vec::new();
@@ -450,15 +537,15 @@ pub fn maintenance_plan<'a>(
             kind: "break_dependency_cycle",
             severity: "fail",
             score: 1.0,
-            reason: format!("Dependency cycle detected across {} nodes.", cycle.length),
-            subject: Subject::Cycle {
-                nodes: cycle.nodes,
-                row: cycle.row,
-            },
+            reason: format!(
+                "Dependency cycle detected across {} nodes.",
+                cycle.nodes().len() - 1
+            ),
+            subject: Subject::Cycle(cycle),
         });
     }
     canonicalization_steps(graph, &mut steps);
-    for row in dangling.rows {
+    for row in dangling.into_rows() {
         steps.push(Step {
             phase: "repair",
             kind: row.kind,
@@ -498,10 +585,10 @@ pub fn maintenance_plan<'a>(
         });
     }
     for group in [
-        unassigned.rows,
-        unearned.rows,
-        empty.rows,
-        without_evidence.rows,
+        unassigned.into_rows(),
+        unearned.into_rows(),
+        empty.into_rows(),
+        without_evidence.into_rows(),
     ] {
         for row in group {
             steps.push(Step {
@@ -516,7 +603,13 @@ pub fn maintenance_plan<'a>(
             });
         }
     }
-    for row in gaps.rows.into_iter().chain(flat.rows).chain(starters.rows) {
+    for row in bodies
+        .gaps
+        .rows
+        .into_iter()
+        .chain(flat.rows)
+        .chain(starters.rows)
+    {
         steps.push(review(row));
     }
     stale_summary_steps(graph, request, &mut steps);

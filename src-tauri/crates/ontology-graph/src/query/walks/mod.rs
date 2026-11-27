@@ -21,11 +21,11 @@ mod neighborhood;
 mod neighbors;
 mod paths;
 mod pattern_walk;
-mod project_map;
+pub(in crate::query) mod project_map;
 mod project_scope;
 mod reachability;
 mod relation_check;
-mod row_page;
+pub(in crate::query) mod row_page;
 mod subgraph;
 pub(in crate::query) mod topological_order;
 

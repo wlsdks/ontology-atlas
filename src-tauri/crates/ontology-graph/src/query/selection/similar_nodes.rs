@@ -14,6 +14,7 @@ use crate::query::node_summary::NodeSummary;
 use crate::query::query_error::QueryError;
 use crate::query::relation_set::RelationSet;
 use crate::query::request::QueryRequest;
+use crate::query::walks::row_page::RowPage;
 use vault_document::frontmatter::Value;
 
 const DEFAULT_LIMIT: usize = 10;
@@ -106,7 +107,7 @@ struct SimilarRow<'a> {
     score: f64,
     signals: Signals,
     #[serde(rename = "sharedNeighbors")]
-    shared_neighbors: Vec<NodeSummary<'a>>,
+    shared_neighbors: RowPage<NodeSummary<'a>>,
 }
 
 #[derive(Serialize)]
@@ -265,10 +266,15 @@ pub fn similar_nodes<'a>(
                     domain,
                     neighbors,
                 },
-                shared_neighbors: shared
-                    .into_iter()
-                    .map(|node| NodeSummary::of(graph, node))
-                    .collect(),
+                shared_neighbors: RowPage::new(
+                    shared.len(),
+                    limit,
+                    shared
+                        .iter()
+                        .take(limit)
+                        .map(|&node| NodeSummary::of(graph, node))
+                        .collect(),
+                ),
             }
         })
         .collect();

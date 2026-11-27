@@ -3,16 +3,16 @@
 
 use serde::Serialize;
 
-use super::containment::Containment;
 use super::growth_candidates::{
-    dangling_references, empty_domains, external_elements, unassigned_nodes, CandidateGroup,
-    DanglingReferenceRow, ExternalElements, NodeCandidate,
+    dangling_references, empty_domains, external_elements, unassigned_nodes, DanglingReferenceRow,
+    ExternalElements, NodeCandidate,
 };
 use super::relation_recommendations::{recommend, RecommendRelationsAnswer};
 use super::selection_request::UncertaintyRead;
 use crate::compiled_graph::CompiledGraph;
 use crate::query::query_error::QueryError;
 use crate::query::request::QueryRequest;
+use crate::query::walks::row_page::RowPage;
 
 const DEFAULT_LIMIT: usize = 25;
 
@@ -97,11 +97,11 @@ pub struct GrowthPlanAnswer<'a> {
     #[serde(rename = "externalElementRefs")]
     pub(super) external_element_refs: ExternalElements<'a>,
     #[serde(rename = "danglingReferences")]
-    pub(super) dangling_references: CandidateGroup<DanglingReferenceRow<'a>>,
+    pub(super) dangling_references: RowPage<DanglingReferenceRow<'a>>,
     #[serde(rename = "unassignedNodes")]
-    unassigned_nodes: CandidateGroup<NodeCandidate<'a>>,
+    unassigned_nodes: RowPage<NodeCandidate<'a>>,
     #[serde(rename = "emptyDomains")]
-    empty_domains: CandidateGroup<NodeCandidate<'a>>,
+    empty_domains: RowPage<NodeCandidate<'a>>,
     #[serde(rename = "nextReads")]
     next_reads: NextReads,
 }
@@ -121,13 +121,11 @@ pub fn growth_plan_with_limit<'a>(
     limit: usize,
 ) -> Result<GrowthPlanAnswer<'a>, QueryError> {
     let outside = &request.selection.outside;
-    let containment = Containment::of(graph);
-    let recommendations =
-        RecommendRelationsAnswer::of(recommend(graph, &containment, None, limit), limit);
+    let recommendations = RecommendRelationsAnswer::of(recommend(graph, None, limit), limit);
     let external = external_elements(graph, &outside.ignore_patterns, limit);
     let dangling = dangling_references(graph, limit);
-    let unassigned = unassigned_nodes(graph, &containment, limit);
-    let empty = empty_domains(graph, &containment, limit);
+    let unassigned = unassigned_nodes(graph, limit);
+    let empty = empty_domains(graph, limit);
     let next_reads = NextReads::of(
         !graph.nodes().is_empty(),
         outside.next_reads.as_deref(),
@@ -137,11 +135,11 @@ pub fn growth_plan_with_limit<'a>(
         relation_recommendations: recommendations.total(),
         external_element_refs: external.total(),
         external_element_refs_ignored: external.ignored(),
-        dangling_references: dangling.total,
-        unassigned_nodes: unassigned.total,
-        empty_domains: empty.total,
+        dangling_references: dangling.total(),
+        unassigned_nodes: unassigned.total(),
+        empty_domains: empty.total(),
         next_reads: next_reads.total,
-        total_actions: recommendations.total() + external.total() + dangling.total,
+        total_actions: recommendations.total() + external.total() + dangling.total(),
     };
     Ok(GrowthPlanAnswer {
         operation: "growth_plan",

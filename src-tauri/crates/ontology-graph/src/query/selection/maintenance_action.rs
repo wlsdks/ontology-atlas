@@ -6,22 +6,19 @@ use std::cmp::Ordering;
 use answer_format::collation::compare_text;
 use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
-use serde_json::value::RawValue;
 
 use super::proposed_action::ProposedAction;
 use super::relation_recommendations::RecommendationNodes;
 use crate::compile_issue::CompileIssue;
 use crate::query::node_summary::NodeSummary;
+use crate::query::walks::dependency_cycles::CycleRow;
 
 /// What a step is about, which decides the keys it carries beyond its kind and reason.
 pub enum Subject<'a> {
     /// A compile issue, carried as the compiler wrote it.
     Issue(&'a CompileIssue),
-    /// A dependency cycle: the nodes it passes through, and the row the walk wrote for it.
-    Cycle {
-        nodes: Vec<String>,
-        row: Box<RawValue>,
-    },
+    /// A dependency cycle, as the walk writes it.
+    Cycle(CycleRow<'a>),
     /// A write to propose on one node; `None` when the step is only a repair to think through.
     Write {
         proposed: Option<ProposedAction>,
@@ -100,7 +97,7 @@ struct IdPayload<'a> {
     node: Option<&'a str>,
     nodes: Option<IdNodes<'a>>,
     issue: Option<IdIssue<'a>>,
-    cycle: Option<&'a [String]>,
+    cycle: Option<&'a [&'a str]>,
     reason: &'a str,
 }
 
@@ -156,7 +153,7 @@ impl Step<'_> {
                 _ => None,
             },
             cycle: match &self.subject {
-                Subject::Cycle { nodes, .. } => Some(nodes),
+                Subject::Cycle(cycle) => Some(cycle.nodes()),
                 _ => None,
             },
             reason: &self.reason,
@@ -207,7 +204,7 @@ impl Serialize for Action<'_> {
         map.serialize_entry("reason", &step.reason)?;
         match &step.subject {
             Subject::Issue(issue) => map.serialize_entry("issue", issue)?,
-            Subject::Cycle { row, .. } => map.serialize_entry("cycle", row)?,
+            Subject::Cycle(cycle) => map.serialize_entry("cycle", cycle)?,
             Subject::Write { proposed, node } => {
                 map.serialize_entry("proposedAction", proposed)?;
                 map.serialize_entry("node", node)?;
