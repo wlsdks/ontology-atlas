@@ -5,8 +5,11 @@ export const PULSE_STEP_MS = 10_000;
 export const PULSE_HOUR_MS = 60 * 60_000;
 /** A change this recent is "just now": the bezel says so and the wall facts count it. */
 export const PULSE_RECENT_MS = 60_000;
-/** A room's light flashes at most once in this long, however often changes arrive. */
-export const FLASH_MIN_GAP_MS = 2000;
+/**
+ * A room's light flashes at most once in this long, however often changes arrive: an agent saving
+ * every few seconds would otherwise keep every room in motion, and each repaint costs CPU in WKWebView.
+ */
+export const FLASH_MIN_GAP_MS = 15_000;
 
 /** A tick's height on the last-hour line: 1 change, 2 to 5, 6 or more. */
 export type TickHeight = 1 | 2 | 3;
@@ -63,8 +66,9 @@ export interface FlashMark {
 /**
  * Each room's flash after one answer. The first answer that carries a room only sets where it
  * stands, so changes from before the screen opened or the room appeared never flash. A room flashes
- * when its last change is newer than the answer before said, and no sooner than two seconds after
- * its last flash. The previous map comes back when no mark moved. O(rooms).
+ * when its last change is newer than the answer before said, and no sooner than `FLASH_MIN_GAP_MS`
+ * after its last flash; a change inside that gap only moves the mark, so it never flashes later. The
+ * previous map comes back when no mark moved. O(rooms).
  */
 export function nextFlashes(previous: ReadonlyMap<string, FlashMark>, answer: FilePulseRead, answeredAtMs: number): ReadonlyMap<string, FlashMark> {
   const next = new Map<string, FlashMark>();
@@ -78,13 +82,14 @@ export function nextFlashes(previous: ReadonlyMap<string, FlashMark>, answer: Fi
     }
     const newer = pulse.lastChangeAtMs !== null && (mark.lastChangeAtMs === null || pulse.lastChangeAtMs > mark.lastChangeAtMs);
     const rested = mark.flashedAtMs === null || answeredAtMs - mark.flashedAtMs >= FLASH_MIN_GAP_MS;
-    // A change held back by the gap keeps the old mark, so the first answer after the gap flashes for it.
-    if (newer && rested) {
-      changed = true;
-      next.set(key, { count: mark.count + 1, lastChangeAtMs: pulse.lastChangeAtMs, flashedAtMs: answeredAtMs });
-    } else {
+    if (!newer) {
       next.set(key, mark);
+      continue;
     }
+    changed = true;
+    next.set(key, rested
+      ? { count: mark.count + 1, lastChangeAtMs: pulse.lastChangeAtMs, flashedAtMs: answeredAtMs }
+      : { ...mark, lastChangeAtMs: pulse.lastChangeAtMs });
   }
   return changed ? next : previous;
 }

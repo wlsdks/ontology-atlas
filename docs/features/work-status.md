@@ -245,8 +245,9 @@ the time of the last counted change and counts in ten-second steps for an hour
 [the decision](../records/decisions/2026-11-25-work-status-file-change-notices-1c163935-120b-4f73-9c2e-9cf11f023ee3.md).
 
 The page asks every two seconds while visible, and the app answers from memory.
-A counted change flashes the room's light once, at most once in two seconds and
-never as a loop; the room says **changed just now** where it says its state; a mini room shows the
+A counted change flashes the room's light once, at most once in fifteen seconds
+and never as a loop: a change inside that window keeps the room's light raised
+without new motion; the room says **changed just now** where it says its state; a mini room shows the
 same light at the start of its status line while the change is under a minute
 old; and the last-hour line gains a tick under its marks for each ten-second
 step that had one, in three heights. The file's name follows from the next Git
