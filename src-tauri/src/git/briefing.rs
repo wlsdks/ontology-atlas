@@ -44,6 +44,7 @@ pub struct ChangeBriefing {
     source_root: String,
     snapshot: String,
     head: String,
+    line: Option<String>,
     base: Option<String>,
     tip: Option<String>,
     commits: Vec<BriefingCommit>,
@@ -58,6 +59,7 @@ impl ChangeBriefing {
             source_root: String::new(),
             snapshot: String::new(),
             head: String::new(),
+            line: None,
             base: None,
             tip: None,
             commits: vec![],
@@ -90,6 +92,7 @@ struct Identity {
     scope: SourceScope,
     root: PathBuf,
     head: String,
+    line: Option<String>,
     object: (u64, u64),
 }
 
@@ -157,15 +160,9 @@ fn text_git(root: &Path, args: &[&str]) -> Result<String, String> {
         .map(|v| v.trim().into())
         .map_err(|_| "unreadable".into())
 }
-/// The commit the history is read from: the base branch's tip (`base_line`), so a checkout on a
-/// feature branch never reports its own unmerged commits as merged. HEAD when there is no base.
-fn merged_line_tip(root: &Path) -> Result<String, String> {
-    let read = |args: &[&str]| text_git(root, args).ok();
-    let tip = match base_line::base_line(&read) {
-        Some(line) => format!("{}^{{commit}}", line.reference),
-        None => "HEAD".to_string(),
-    };
-    text_git(root, &["rev-parse", "--verify", &tip]).map_err(|_| "no-history".into())
+fn merged_line_tip(root: &Path) -> Result<(String, Option<String>), String> {
+    base_line::merged_line_tip(&|args: &[&str]| text_git(root, args).ok())
+        .ok_or_else(|| "no-history".into())
 }
 fn identity(vault_path: &str, project: &str) -> Result<Identity, String> {
     let vault = validate_vault_dir(vault_path).map_err(|_| "unreadable")?;
@@ -181,7 +178,7 @@ fn identity(vault_path: &str, project: &str) -> Result<Identity, String> {
     if binding.kind != "git" {
         return Err("no-history".into());
     }
-    let head = merged_line_tip(&binding.root)?;
+    let (head, line) = merged_line_tip(&binding.root)?;
     let metadata = fs::metadata(&binding.root).map_err(|_| "unreadable")?;
     let vault_metadata = fs::metadata(&vault).map_err(|_| "unreadable")?;
     #[cfg(unix)]
@@ -213,6 +210,7 @@ fn identity(vault_path: &str, project: &str) -> Result<Identity, String> {
         },
         root: binding.root,
         head,
+        line,
         object,
     })
 }
@@ -229,7 +227,7 @@ fn picked_identity(source_path: &str) -> Result<Identity, String> {
     if fs::canonicalize(repository).ok().as_ref() != Some(&root) {
         return Err("no-history".into());
     }
-    let head = merged_line_tip(&root)?;
+    let (head, line) = merged_line_tip(&root)?;
     let metadata = fs::metadata(&root).map_err(|_| "unreadable")?;
     #[cfg(unix)]
     let object = {
@@ -245,6 +243,7 @@ fn picked_identity(source_path: &str) -> Result<Identity, String> {
         scope: SourceScope::Picked,
         root,
         head,
+        line,
         object,
     })
 }
@@ -596,6 +595,7 @@ fn measure_identity(
         .into(),
         source_root: before.root.to_string_lossy().into_owned(),
         head: before.head.clone(),
+        line: before.line.clone(),
         base,
         tip,
         commits: parsed.into_iter().map(|c| c.commit).collect(),

@@ -36,9 +36,10 @@ Every read goes through the hardened Git runner in `src-tauri/src/git/runner.rs`
   repository's record for it point at each other.
 - A row whose head has commits the base branch (`origin/HEAD`, else `main`,
   else `master`) does not have stands at **Working** with its commit count.
-  The base is read at the fetched `origin/<base>` when it contains the local
-  branch, since pull requests merge on the remote and the local branch is often
-  left behind; a local branch holding unpushed commits stays the base.
+  The base is read at the fetched `origin/<base>`, since pull requests merge on
+  the remote and the local branch is often left behind; only a local branch
+  strictly ahead of the remote stays the base, and one that has gone its own
+  way still reads the remote.
 - A head with nothing beyond the base branch has **no commits beyond** it,
   naming the base branch. It is **merged**, and folds into the Merged group,
   only when its branch moved after it was created (the first entry of its

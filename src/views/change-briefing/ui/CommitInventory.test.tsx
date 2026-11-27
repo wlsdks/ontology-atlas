@@ -5,7 +5,7 @@ import type { ChangeBriefing } from '@/shared/lib/git/tauri-change-briefing';
 vi.mock('next-intl', () => ({ useLocale: () => 'en', useTranslations: () => (key: string) => key }));
 import { CommitInventory } from './CommitInventory';
 
-const data: ChangeBriefing = { status: 'measured', sourceRoot: '/source', head: 'head', snapshot: 'period', base: null, tip: 'tip', netPaths: [], limit: 10, partialReasons: [], commits: [
+const data: ChangeBriefing = { status: 'measured', sourceRoot: '/source', head: 'head', line: null, snapshot: 'period', base: null, tip: 'tip', netPaths: [], limit: 10, partialReasons: [], commits: [
   { hash: 'a'.repeat(40), subject: 'First commit', message: 'first original', messageComplete: true, committedAt: '2026-01-01T00:00:00Z', paths: [] },
   { hash: 'b'.repeat(40), subject: 'Incomplete commit', message: 'truncated', messageComplete: false, committedAt: '2026-01-02T00:00:00Z', paths: [] },
 ] };

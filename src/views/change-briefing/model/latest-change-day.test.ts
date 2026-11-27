@@ -4,7 +4,7 @@ import { briefingRange } from './briefing-model';
 import { findLatestChangeDay } from './latest-change-day';
 
 const history = (status: ChangeBriefing['status'], committedAt: string[]): ChangeBriefing => ({
-  status, sourceRoot: '/repo', snapshot: 's', head: 'h', base: null, tip: null, netPaths: null, limit: 2000, partialReasons: [],
+  status, sourceRoot: '/repo', snapshot: 's', head: 'h', line: null, base: null, tip: null, netPaths: null, limit: 2000, partialReasons: [],
   commits: committedAt.map((at, index) => ({ hash: String(index), subject: 'fix(map): a', committedAt: at, paths: [] })),
 });
 

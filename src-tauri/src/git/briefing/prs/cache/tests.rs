@@ -313,6 +313,7 @@ fn restore_rechecks_current_local_introduction_and_does_not_key_on_head() {
         scope: SourceScope::Picked,
         root: root.clone(),
         head: second.clone(),
+        line: None,
         object: (1, 2),
     };
     let mut pr = original(1, "author original");
@@ -408,6 +409,7 @@ fn failed_refresh_preserves_prior_copies_but_a_first_partial_read_can_save_accep
         scope: SourceScope::Picked,
         root: f.root.clone(),
         head: "c".repeat(40),
+        line: None,
         object: (1, 2),
     };
     let scope = scope(&identity, "owner/repo");
@@ -607,6 +609,7 @@ fn restore_limits_count_and_the_whole_serialized_reply_at_the_exact_byte_boundar
         scope: SourceScope::Picked,
         root,
         head: first.clone(),
+        line: None,
         object: (1, 2),
     };
     let commits = vec![BriefingCommit {

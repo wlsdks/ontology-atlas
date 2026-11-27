@@ -8,6 +8,7 @@ fn scan() -> Scan {
             scope: SourceScope::Picked,
             root: "/fixture".into(),
             head: "a".repeat(40),
+            line: None,
             object: (1, 2),
         },
         snapshot: "snapshot".into(),

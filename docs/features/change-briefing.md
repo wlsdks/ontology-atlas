@@ -94,11 +94,16 @@ Choose a project and a calendar period, move back or forward, or open the date
 control to choose an anchor or apply inclusive custom dates. The initial period
 is the latest day with changes; weeks start Monday. First entry to Custom dates copies the displayed range, including full week, month and year boundaries. Later visits preserve both the applied custom range and any unfinished date draft. The displayed local timezone and exact dates determine
 committer-time membership. Uncommitted work and separately counted commits
-inside merged branches are excluded: this is the base branch's first-parent
-history (the branch `origin/HEAD` names, else `main`, else `master`, read at the
-fetched `origin/<base>` when it contains the local one), including merge
-integration differences, so a checkout on a feature branch never counts its own
-unmerged commits as merged. A repository with no base branch reads HEAD; a base branch whose tip is not a commit reads nothing.
+inside merged branches are excluded: this is the first-parent history of the
+branch the checked-out work merges into, including merge integration
+differences. The integration branches are the one `origin/HEAD` names, then
+`main`, `master`, `develop`, `development`, `dev` and `trunk`. A checkout on one
+of them reads it, so a team that merges into `develop` sees develop's merges; any
+other checkout reads the one holding the most of its history (fewest of HEAD's
+commits outside it), so a feature branch never counts its own unmerged commits
+as merged. Each is read at the fetched `origin/<branch>` unless the local branch
+is strictly ahead of it. "What was read" names the branch. A repository with no
+integration branch reads HEAD; a line whose tip is not a commit reads nothing.
 
 From a commit original, its file action shows only that commit's recorded paths.
 From a PR original, the file action shows files touched in the whole selected

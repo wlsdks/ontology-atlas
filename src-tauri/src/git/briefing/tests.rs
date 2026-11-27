@@ -767,3 +767,34 @@ fn a_checkout_on_a_feature_branch_reads_the_merged_line_not_its_own_commits() {
     git(&f.source, &["switch", "-q", "feat/unmerged"]);
     assert_eq!(subjects(), ["fix: merged on the remote", "chore: base"]);
 }
+
+#[test]
+fn pull_request_lookups_accept_a_read_taken_on_a_feature_branch() {
+    let f = Fixture::new();
+    let _scope = f.grant();
+    f.write("source.ts", "one");
+    f.commit(START, "chore: base");
+    git(
+        &f.source,
+        &[
+            "remote",
+            "add",
+            "origin",
+            "https://github.com/owner/repo.git",
+        ],
+    );
+    git(&f.source, &["switch", "-q", "-c", "feat/unmerged"]);
+    f.commit(START + 1, "feat: not merged yet");
+    let data =
+        git_source_briefing(f.source.to_string_lossy().into(), START - 10, START + 10).unwrap();
+    assert_eq!(data.line.as_deref(), Some("main"));
+    assert_eq!(
+        prs::inventory::git_briefing_public_repositories(
+            f.source.to_string_lossy().into(),
+            data.head,
+            data.snapshot
+        )
+        .unwrap(),
+        vec!["owner/repo"]
+    );
+}
