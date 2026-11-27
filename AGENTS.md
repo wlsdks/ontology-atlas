@@ -152,10 +152,10 @@ optimizing Codex instructions.
 This file is the only root instruction file: Claude Code reads it directly, and
 a root `CLAUDE.md` would replace it. `.claude/rules/` always loads `forbidden`,
 `git` and `local-first`; `design`, `design-gates`, `architecture`, `testing`,
-`surfaces` and `documentation` load by their frontmatter paths
-(`rules-path-scope.contract.test.ts`). Making a rule resident updates that
-contract, this sentence, and the commit's reason together. Codex loads no rule
-by itself. Claude discovers skills in `.claude/skills/`, Codex in
+`surfaces`, `surface-exceptions` and `documentation` load by their frontmatter
+paths (`rules-path-scope.contract.test.ts`). Making a rule resident updates
+that contract, this sentence, and the commit's reason together. Codex loads no
+rule by itself. Claude discovers skills in `.claude/skills/`, Codex in
 `.agents/skills/`.
 
 `.claude/settings.json` owns Claude permissions and hooks, `.codex/hooks.json`
