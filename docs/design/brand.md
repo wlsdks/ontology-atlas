@@ -53,14 +53,15 @@ return hop in each longer three-phrase sequence; waiting has no bubble. These or
 ornaments stay within the actor bounds, ignore pointer input and share its pause,
 visibility and reduced-motion behavior. A still response uses a still bubble.
 
-Eleven gestures for the Work status rooms add typing at a laptop that rises in
+Eleven room gestures add typing at a laptop that rises in
 front of Moru, reading the room monitor, nodding off, a heads-up for a waiting
 session, a sigh, a crate heaved onto the head and patted down through the
 floor, a belt lever, a
 merge cheer, a galumph along the floor in each direction and settling into a new
 room. They are
 drawn in code from the neutral pose (see "Rebuild"), so the body, face and
-outline are the catalogue's own pixels.
+outline are the catalogue's own pixels. No surface plays them today: Work status
+draws no Moru.
 
 ### Cast
 
@@ -73,7 +74,7 @@ outline are the catalogue's own pixels.
 | Rabbit | `#E8CEC2` / `#FEF0E6` | two upright ears with pink insides |
 | Builder | `#D1CCC0` / `#F7EDD9` | a hard hat |
 
-Each Work status room has one of these. A palette swaps only the body fill and
+No surface draws the cast today: Work status draws no Moru. A palette swaps only the body fill and
 the belly tone, and a head piece drawn in them; the outline, the eyes, the indigo
 flippers and tail and the shading stay, so the cast reads as one family. Each
 tint has the original tone's luminance (the builder's body 7% less), so contrast
@@ -83,11 +84,7 @@ that says which Moru it is, never a token or a status. A head piece is a typed
 pixel map on the 64px grid that follows where each pose carries the head,
 mirrored on a pose turned to the left, and stays behind a flipper or a prop over
 the head; `pnpm brand:cast` doubles it onto the work grid and reduces it with the
-catalogue's reducer. Rooms are cast oldest first: each takes the character a
-hash of its branch name prefers, or the next one in the cast's order no older
-room has, and a character repeats only once all are in use, the least used
-first. A room joins the cast when it first shows a Moru; a newer room never
-changes an older room's Moru, and the main checkout keeps the grey original. A
+catalogue's reducer. A
 character is costume only: every character plays the same rows, so a pose means
 what it means on the grey Moru, and it says nothing about which agent or model
 is at work. The pieces are generic pastel costume shapes; none copies an
@@ -281,7 +278,6 @@ script.
 | In-app agent asks before a file or tool action (permission card) | `await-permission` for an ask inside the folder, `uncertain` for one outside it or with no path; `tail` / tail-wag row while Allow once is hovered or focused, `stop` while Reject is hovered | Native 128px rows at the play pace, centred above the question where the work stage stood, which is hidden while the turn waits. No row here is played by another surface. A new row fades in over the one it replaces, which plays on until it is gone; reduced motion swaps the held neutral pose with no fade. Moru is absent at window heights of 800px or less, where the slot halves the card and the path needs the room, and from the task-bound ontology change review, whose evidence needs the height. The card's words still name the agent's action; Moru only accompanies the ask |
 | Planning empty stage | `folder-open` once, then `blink` / waiting row with `compare` every second loop; `hop` when the action is hovered or focused | Native 128px rows. Moru opens the folder as the two sheets rise, then looks from the document to the screen while visible; the stage's pause holds him on his clip's first frame, and reduced motion shows the settled picture |
 | Automations empty stage | `blink` / waiting row, `source-read` / read row on each pass of the dial hand; `tilt` / curious row when the action is hovered or focused | Native 128px rows. Moru reads once per example run as a proposal lands in the tray; same pause and reduced-motion rest. The schedule is marked as an example in words, so he claims no real run |
-| Work status rooms: what a worktree's room observed | Writing: `desk-type`, `laptop-code` / code row. Reading: `monitor-read`, `source-read` / read row. Thinking: `thinking` / think row, `pondering`. Idle: `blink` / waiting row. Untouched for a while: `nod-off`. Waiting for the person: `heads-up`. Commit observed: `crate-send` or `lever-pull`. Merge observed: `merge-cheer`, `clap`. Working, between typing loops: the tool clips in turn (`hook-wrench`, `gear-start`, `magnifier-read`, `switch-flip`, `book-stack`, `timer-set`, `lock-check`, `sapling-tend`). Two tools working, now and then together: `ask-idea`, `teach`, `ask-fish`, `idea-shrug-sulk`. After a sent crate: `feel-proud` in front, `feel-happy` behind. A lock left with nobody working: `feel-worried`. Stuck, or a folder gone: `sigh`. Entering a new room: `settle-in`. Moving in or out as a room changes size: `galumph` to the right, `galumph-left` to the left. Two tools in one room: `monitor-read` behind and `desk-type` or the code row in front | Native 128px rows at the play pace; the 32-cell rows keep each cell's time. The cast clips ship as one grey strip each (`pnpm brand:room-clips`) and are dressed for the room's Moru at run time. Every new row opens and closes on the shared neutral pose, so a state change swaps there, and reduced motion holds that pose. The room moves the cell; the two galumphs move only the body, and their loop closes without a hold. A row claims no progress and nothing about a commit's content, the cheer needs the observed merge, and the permission card's `await-permission` and `uncertain` are never played here. Move, then rest (`pixel-stage.ts`): lively for 8 s when the screen opens or its window comes back, then the rooms and the lobby take turns two at a time, one loop or one talk each, while the rest hold the neutral pose; every room's turn comes within 44 s, about a quarter of the time moves, and no rest stands still past about 8 s (the next lobby Moru in turn blinks, glances or sways); a rest starts only where a loop ends, and a commit or a state change plays at once, turn or not |
 | Verified entrance (`walk`) | `wave` | Existing finite entrance |
 | Verified read (`read`) | `source-read` | Existing finite cycle, then still |
 | Verified completion (`success`) | `dance` | One finite celebration, then existing hide timer |

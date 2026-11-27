@@ -110,7 +110,7 @@ export interface MonitorCopy {
   commits: ScreenCommit[];
   /** What the listed commits are: the ones the base branch lacks, or the base branch's own newest. */
   commitsTitle: { text: string; tone: 'plain' | 'warning' } | null;
-  /** How long a working session has held the folder; the bezel says when the worktree last changed instead. */
+  /** How long the session has held the folder, on the wall under its state. */
   worked: string | null;
   /** How many files are not committed, or that all are; `null` until read. */
   filesTitle: string | null;
@@ -230,7 +230,7 @@ function roomCopy(t: ReturnType<typeof useTranslations<'workStatus'>>, locale: s
     track.standing === 'unknown' || track.ahead === null
       ? t('monitor.notMeasured', { branch: baseBranch })
       : track.ahead > 0 ? null : t('monitor.noCommitsNote', { branch: baseBranch });
-  /** How long the session has worked, short, on the bezel beside its state. */
+  /** How long the session has worked, short, on the wall under its state. */
   const workedFor = (session: TrackSession | null) => {
     if (!session?.startedAt) return null;
     const minutes = Math.max(1, Math.floor((nowMs - session.startedAt * 1000) / MINUTE_MS));
@@ -461,8 +461,8 @@ function roomCopy(t: ReturnType<typeof useTranslations<'workStatus'>>, locale: s
     }
   }
 
-  /** The bezel's state: its few words and, for a working room, when its worktree last changed; else how long, or since when. */
-  function bezelState(room: RoomEntry, live: RoomLive | null): StatusLine {
+  /** The stage room's state: its few words and, for a working room, when its worktree last changed; else how long, or since when. */
+  function wallState(room: RoomEntry, live: RoomLive | null): StatusLine {
     const { state, track } = room;
     const unattended = noAgent(room, live);
     if (unattended) return unattended;
@@ -525,7 +525,7 @@ function roomCopy(t: ReturnType<typeof useTranslations<'workStatus'>>, locale: s
     return {
       branch: track.branch ?? track.title,
       who,
-      state: bezelState(room, live),
+      state: wallState(room, live),
       worked: state.kind === 'working' || state.kind === 'waiting' ? workedFor(room.session) : null,
       commits: listed,
       commitsTitle,

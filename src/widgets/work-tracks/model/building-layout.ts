@@ -14,7 +14,7 @@ export interface Box {
 
 export type RoomSize = 'large' | 'mini';
 
-/** Moru's scale in a room, in half steps so each of his drawn pixels stays whole on screen: he is 128 × unit pixels. */
+/** The scale a room draws its pixel scenery at (the rail, the cart and its crates), in half steps so each drawn pixel stays whole on screen. */
 export type RoomUnit = number;
 
 export interface RoomBox extends Box {
@@ -60,7 +60,7 @@ const EDGE_TOP = 24;
 const EDGE_BOTTOM = 20;
 const BAND_GAP = 16;
 const SHELF_H = 40;
-/** Every mini room, banded or not: Moru's corner, the branch, the status and the newest subject. */
+/** Every mini room, banded or not: the branch, the status and the newest subject, beside a crate's corner when it has one. */
 export const MINI_H = 96;
 const MINI_MIN_W = 300;
 /** Beside the floors' plate a mini room keeps this much, so its branch is not cut; narrower, the heading goes above. */
@@ -75,15 +75,15 @@ const LARGE_MIN_W = 260;
 const LARGE_MIN_H = 300;
 const TWO_ROW_MIN_H = 300;
 /**
- * A stage room's screen, in pixels whatever Moru's scale: the branch, three commit rows, the foot
- * and the bezel (`--screen-h` in `rooms.module.css`). Its text never shrinks; the scenery does.
+ * A stage room's screen, in pixels whatever the scenery's scale: the branch, three commit rows, the
+ * foot and the bezel (`--screen-h` in `rooms.module.css`). Its text never shrinks; the scenery does.
  */
 export const SCREEN_H = 160;
 
 /**
- * Moru's scale in a stage room, whatever the room's size: half his drawn size, as on the floors below,
- * which a Retina display draws pixel for pixel. The room's width and height go to its screen, which
- * says what the worktree is doing; he only shows that it is.
+ * The scenery's scale in a stage room, whatever the room's size: half a drawn pixel, which a Retina
+ * display draws pixel for pixel. The room's width and height go to its screen, which says what the
+ * worktree is doing.
  */
 const STAGE_UNIT: RoomUnit = 0.5;
 
@@ -153,43 +153,16 @@ export const MAX_SCREEN_ROWS = 20;
 export const SHARED_SCREEN_ROWS = 8;
 
 /** How many rows a stage room's screen shows: three, and one more for each row its box is taller than what it holds. */
-export function screenRows(box: Pick<RoomBox, 'h' | 'unit'>): number {
-  const spare = box.h - roomHeight(box.unit);
+export function screenRows(box: Pick<RoomBox, 'h'>): number {
+  const spare = box.h - ROOM_H;
   return Math.min(MAX_SCREEN_ROWS, BASE_SCREEN_ROWS + Math.max(0, Math.floor(spare / SCREEN_ROW_H)));
 }
 
-/** Two Moru side by side, from the tail of the one behind to the face of the one in front, per unit. */
-const PAIR_BODIES = 218;
-/** What a room keeps beside the pair: a margin at each end. */
-const PAIR_MARGIN = 8;
-
-/**
- * The scale two Moru share in one room, in half steps so each drawn pixel stays whole: as large as
- * both fit apart on the rail, up to the room's own.
- */
-export function pairUnit(width: number, unit: RoomUnit): number {
-  return Math.max(0.5, Math.min(unit, Math.floor((2 * (width - 2 * PAIR_MARGIN)) / PAIR_BODIES) / 2));
-}
-
-/** From this width a room keeps bare wall left of Moru, where its state is read across the stage: his cell starts 192px in. */
-const WALL_FACTS_MIN_W = 600;
-
-/** Whether a stage room this wide says its state on the wall left of Moru. */
-export function showsWallFacts(width: number): boolean {
-  return width >= WALL_FACTS_MIN_W;
-}
-
-/** The rail's height above a room's bottom edge, and Moru's cell above it: his feet are 30 drawn pixels over the cell's bottom. */
-const RAIL_H = 14;
-const MORU_OVER_RAIL = 98;
-
-/** What the wall left of Moru keeps under the screen: two lines of facts over the rail. */
+/** What the wall keeps under the screen: two lines of facts over the rail. */
 const WALL_FACTS_H = 64;
 
-/** A stage room as tall as what it holds: the screen across the room, then Moru on the rail with the wall facts beside him. */
-function roomHeight(unit: RoomUnit): number {
-  return Math.ceil(12 + SCREEN_H + 4 + Math.max(WALL_FACTS_H, RAIL_H + MORU_OVER_RAIL * unit));
-}
+/** A stage room as tall as what it holds: the screen across the room, then the wall facts over the rail. */
+const ROOM_H = 12 + SCREEN_H + 4 + WALL_FACTS_H;
 
 /** What a board keeps under two rows of rooms: the edges, one row of mini rooms and the shelf. */
 const UNDER_STAGE_H = EDGE_TOP + BAND_GAP + MINI_H + BAND_GAP + SHELF_H + EDGE_BOTTOM;
@@ -257,11 +230,10 @@ export function layoutBuilding(input: LayoutInput): BuildingLayout {
     const solo = count === 1;
     const cols = solo ? 1 : rows === 1 ? Math.max(count, Math.min(2, maxCols)) : Math.ceil(count / rows);
     const roomW = Math.floor((width - (cols - 1) * STAGE_GAP) / cols / 2) * 2;
-    const unit = STAGE_UNIT;
     // Height the window has to spare goes to more rows on a one-row stage's screens, as many as
     // its rooms have to list: a screen is never taller than its longest list. Two rows keep their
     // fitted height, so a room moving between rows never changes height on the way.
-    const fitted = roomHeight(unit);
+    const fitted = ROOM_H;
     const spare = rows === 1 ? available - fitted : 0;
     const longest = Math.max(0, ...(input.stageLists ?? []).map(lists => rowsToList(roomW, lists, solo)));
     const wanted = Math.min(solo ? MAX_SCREEN_ROWS : SHARED_SCREEN_ROWS, Math.max(BASE_SCREEN_ROWS, longest));
@@ -278,7 +250,7 @@ export function layoutBuilding(input: LayoutInput): BuildingLayout {
         w: roomW,
         h: roomH,
         size: 'large',
-        unit,
+        unit: STAGE_UNIT,
       });
     });
   } else if (backTop > EDGE_TOP) {
