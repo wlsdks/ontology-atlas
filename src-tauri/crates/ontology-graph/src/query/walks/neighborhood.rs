@@ -10,8 +10,9 @@ use serde::Serialize;
 use crate::compiled_graph::{CompiledGraph, Node, NodeId};
 use crate::query::relation_set::RelationSet;
 use crate::query::request::{Direction, DEPTH_MAX};
+use crate::query::step::Step;
 
-use super::graph_walk::{traversal_steps, Step};
+use super::graph_walk::traversal_steps;
 use super::hop::Hop;
 
 /// A node of an answer with how far it is from the seed.

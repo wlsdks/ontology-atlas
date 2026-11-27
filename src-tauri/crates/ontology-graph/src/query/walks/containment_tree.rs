@@ -4,13 +4,14 @@
 
 use serde::Serialize;
 
-use super::containment::{children, has_parent, project_roots};
-use super::scope::Scope;
 use crate::compiled_graph::{CompiledGraph, NodeId};
+use crate::query::containment_steps::{children, has_parent};
 use crate::query::node_resolution::resolve;
 use crate::query::node_summary::NodeSummary;
+use crate::query::project_root::project_roots;
 use crate::query::query_error::QueryError;
 use crate::query::request::QueryRequest;
+use crate::query::scope::Scope;
 
 const DEFAULT_DEPTH: usize = 20;
 const DEFAULT_LIMIT: usize = 200;

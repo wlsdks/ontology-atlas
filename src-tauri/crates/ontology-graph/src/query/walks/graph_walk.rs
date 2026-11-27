@@ -4,13 +4,7 @@ use crate::compiled_graph::{CompiledGraph, EdgeId, NodeId};
 use crate::query::edge_rows::name_reached;
 use crate::query::relation_set::{allowed, RelationSet};
 use crate::query::request::Direction;
-
-/// One step of a walk: the edge and the node it leads to.
-#[derive(Debug, Clone, Copy)]
-pub struct Step {
-    pub next: NodeId,
-    pub edge: EdgeId,
-}
+use crate::query::step::Step;
 
 /// The text edges are ordered by: `from:via:to:ref`.
 pub fn edge_order_key(graph: &CompiledGraph, id: EdgeId) -> String {

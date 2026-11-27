@@ -3,8 +3,8 @@
 
 use serde::Serialize;
 
-use super::containment::children;
 use crate::compiled_graph::{CompiledGraph, EdgeId, NodeId, Target};
+use crate::query::containment_steps::children;
 use crate::query::edge_rows::CompiledEdge;
 use crate::query::name_counts::sorted_counts;
 use crate::query::node_mask::NodeMask;

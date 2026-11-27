@@ -3,11 +3,11 @@
 
 use serde::Serialize;
 
-use super::containment::DomainLookup;
 use super::graph_walk::traversal_steps;
 use super::hop::path_edges;
 use super::paths::shortest_path;
 use crate::compiled_graph::{CompiledGraph, EdgeId, NodeId};
+use crate::query::domain_lookup::DomainLookup;
 use crate::query::edge_rows::{CompiledEdge, PathEdge};
 use crate::query::node_resolution::resolve;
 use crate::query::node_summary::{summaries, NodeSummary};

@@ -6,13 +6,13 @@
 
 use serde::Serialize;
 
-use super::project_root::project_root;
 use super::row_page::NodePage;
-use super::scope::{EdgeCounts, Scope, ScopeEdges};
 use crate::compiled_graph::{CompiledGraph, NodeId};
 use crate::query::node_summary::NodeSummary;
+use crate::query::project_root::project_root;
 use crate::query::query_error::QueryError;
 use crate::query::request::QueryRequest;
+use crate::query::scope::{EdgeCounts, Scope, ScopeEdges};
 
 /// The characters an answer keeps to, counted in pretty-printed JSON.
 const MAP_TEXT_CHARS: usize = 36_000;

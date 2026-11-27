@@ -29,6 +29,11 @@ from the whole graph.
 | `node_resolution.rs` | `resolve`: a slug or alias to a node, or the slugs near a name that is none |
 | `node_summary.rs` | `NodeIdentity`, `NodeSummary`: the node row every answer writes |
 | `node_mask.rs` | `NodeMask`: a set of nodes, one flag each |
+| `step.rs` | `Step`: the edge a walk takes and the node it leads to |
+| `containment_steps.rs` | `containment_steps`, `children`, `parents`, `has_parent`: what a node holds and what holds it, from its own edges |
+| `domain_lookup.rs` | `DomainLookup`: the domain a node belongs to |
+| `project_root.rs` | `project_roots`, `project_root`: the project nodes of a graph, and which one a call means |
+| `scope.rs` | `Scope`, `ScopeEdges`: a node and everything it holds, and where the edges that start inside end |
 | `edge_rows.rs` | the edge rows of an answer: directed, on a path, compiled |
 | `name_counts.rs` | counts by kind, domain or relation, in the order of the names |
 | `walks/graph_walk.rs` | `traversal_steps`: the edges a walk may follow from a node, in the order walks use |
@@ -37,10 +42,10 @@ from the whole graph.
 | `walks/neighborhood.rs`, `walks/hop.rs`, `walks/row_page.rs` | `Neighborhood`: the exact breadth-first search that `reachability`, `impact`, `blast_radius`, `subgraph` and `builder_context` cut; `Hop`; the page of rows an answer cuts at `limit` |
 | `walks/reachability.rs`, `walks/lineage.rs` | `reachability` and `lineage`: what a node reaches, and its containers and contents |
 | `walks/pattern_walk.rs` | `pattern_walk`: simple paths that follow a list of relations, a layer at a time |
-| `walks/impact.rs`, `walks/blast_radius.rs`, `walks/dependency_qualification.rs`, `walks/containment.rs` | `impact` and `blast_radius` over declared `depends_on` edges, whether each edge carries a reason, and the nearest domain of a node |
+| `walks/impact.rs`, `walks/blast_radius.rs`, `walks/dependency_qualification.rs` | `impact` and `blast_radius` over declared `depends_on` edges, and whether each edge carries a reason |
 | `walks/subgraph.rs`, `walks/builder_context.rs`, `walks/builder_focus.rs` | `subgraph`, and `builder_context`: the same cut with the workbench's focus name, canvas position and handoff |
 | `walks/explain_relation.rs`, `walks/relation_check.rs` | `explain_relation` and `relation_check`: how two nodes relate, and whether a proposed edge fits the graph's patterns |
-| `walks/containment_tree.rs`, `walks/project_scope.rs`, `walks/project_map.rs`, `walks/project_root.rs`, `walks/scope.rs` | `containment_tree`, `project_scope` and `project_map`: what each project holds, and which project a call means |
+| `walks/containment_tree.rs`, `walks/project_scope.rs`, `walks/project_map.rs` | `containment_tree`, `project_scope` and `project_map`: what holds what, and what each project holds |
 | `selection/clusters.rs` | `components` and `communities` (label propagation) |
 | `selection/centrality.rs` | `centrality`: PageRank and degree rankings |
 | `selection/graph_summary.rs` | `overview`, `schema`, `facets` |

@@ -4,10 +4,10 @@ use std::collections::HashSet;
 
 use serde::Serialize;
 
-use super::containment::{containment_steps, Way};
 use super::hop::{path_edges, Hop};
 use super::neighborhood::{hops_between, Neighborhood};
 use crate::compiled_graph::{CompiledGraph, Node, NodeId};
+use crate::query::containment_steps::{containment_steps, Way};
 use crate::query::edge_rows::PathEdge;
 use crate::query::node_mask::NodeMask;
 use crate::query::node_resolution::resolve;

@@ -9,7 +9,6 @@
 mod blast_radius;
 mod builder_context;
 mod builder_focus;
-mod containment;
 mod containment_tree;
 mod dependency_order;
 mod dependency_qualification;
@@ -23,12 +22,10 @@ mod neighbors;
 mod paths;
 mod pattern_walk;
 mod project_map;
-mod project_root;
 mod project_scope;
 mod reachability;
 mod relation_check;
 mod row_page;
-mod scope;
 mod subgraph;
 
 use serde::Serialize;

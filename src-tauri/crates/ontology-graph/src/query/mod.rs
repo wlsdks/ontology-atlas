@@ -6,16 +6,21 @@
 //! they share lives here: the request, the error, the names of relations and nodes, and the rows
 //! every answer repeats.
 
+mod containment_steps;
+mod domain_lookup;
 mod edge_rows;
 mod name_counts;
 mod node_mask;
 mod node_resolution;
 mod node_summary;
 mod operation;
+mod project_root;
 mod query_error;
 mod relation_set;
 mod request;
+mod scope;
 mod selection;
+mod step;
 mod walks;
 
 use serde::Serialize;

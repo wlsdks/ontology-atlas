@@ -4,13 +4,13 @@
 use indexmap::IndexMap;
 use serde::Serialize;
 
-use super::containment::DomainLookup;
 use super::dependency_qualification::{DependencyEdge, EdgeDomains, Qualification};
 use super::hop::Hop;
 use super::impact::DependencyWalk;
 use super::neighborhood::hops_between;
 use super::row_page::RowPage;
 use crate::compiled_graph::{CompiledGraph, NodeId};
+use crate::query::domain_lookup::DomainLookup;
 use crate::query::name_counts::{kind_counts, sorted_counts};
 use crate::query::node_summary::NodeSummary;
 use crate::query::query_error::QueryError;

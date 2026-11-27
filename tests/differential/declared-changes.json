@@ -668,14 +668,6 @@
     {
       "case": "graph/graph-walks-empty",
       "where": "answer",
-      "id": 1,
-      "path": "result.structuredContent.errorCode",
-      "change": 29,
-      "reason": "A wrong call (a missing pattern or type, a structural type given to impact, a project argument that is no project, several projects and none named) answers invalid_arguments; the JavaScript server said tool_error because its classifier read only certain words (row 29)."
-    },
-    {
-      "case": "graph/graph-walks-empty",
-      "where": "answer",
       "id": 2,
       "path": "result.content[0].text",
       "change": 28,

@@ -3,14 +3,14 @@
 use indexmap::IndexMap;
 use serde::Serialize;
 
-use super::project_root::project_root;
 use super::row_page::RowPage;
-use super::scope::{EdgeCounts, Scope, ScopeEdgeGroup, ScopeEdges};
 use crate::compiled_graph::CompiledGraph;
 use crate::query::name_counts::{domain_counts, kind_counts};
 use crate::query::node_summary::NodeSummary;
+use crate::query::project_root::project_root;
 use crate::query::query_error::QueryError;
 use crate::query::request::QueryRequest;
+use crate::query::scope::{EdgeCounts, Scope, ScopeEdgeGroup, ScopeEdges};
 
 const DEFAULT_LIMIT: usize = 200;
 
