@@ -8,6 +8,8 @@ description: Before handing work to parallel agents: open the integration branch
 Follow the [shared workflow](../../../.agents/skills/delegate/workflow.md) at the requested or routed scope.
 Read supporting references only for the current phase.
 
-Use Claude's named `reviewer` and `product-planner` when the workflow requires
-them. Planned implementation uses `implementer`; unplanned work uses `planner`,
-and a reproduced failure `investigator`. Keep the existing agent effort tiers.
+Use Claude's named `code-reviewer` and `spec-writer` when the workflow requires
+them, and `design-reviewer` for a design verdict or mockup. Planned
+implementation uses `implementer`; unplanned work uses `slice-planner`, a
+reproduced failure `investigator`, and a research question `researcher`. Keep
+the existing agent effort tiers.

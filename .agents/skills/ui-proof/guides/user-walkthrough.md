@@ -87,9 +87,9 @@ automation alone does not satisfy the design evidence contract.
 
 ## Where results go
 
-- Stalls become direct-use evidence in the pull request and, when a reviewer
-  is due, for the `reviewer`'s `evidence` lens.
-- Hierarchy and interaction findings feed the `reviewer`'s `attention` and
+- Stalls become direct-use evidence in the pull request and, when a review is
+  due, for the `code-reviewer`'s `evidence` lens.
+- Hierarchy and interaction findings feed the `code-reviewer`'s `attention` and
   `reversibility` lenses.
 - A clean walkthrough does not justify “Build and verify”; it proves only that
   this journey exposed no named stall.

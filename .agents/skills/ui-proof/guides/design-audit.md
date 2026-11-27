@@ -100,5 +100,5 @@ confirms it.
 ```
 
 Motion and breakpoint coverage have their own guides in this skill.
-A `reviewer` is not an automatic next step; use one only when the route says
+A `code-reviewer` is not an automatic next step; use one only when the route says
 `review=yes`.

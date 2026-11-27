@@ -78,7 +78,7 @@ These are the words that were drifting. The **Use** column is binding.
 | **facade** | gateway | A single entry point hiding several render paths | The map's canvas/DOM render paths were called "gateways", colliding with the product screen. English already has "facade" |
 | **workbench** | — | The macOS app window where the work happens | VS Code and Eclipse both use "workbench" for exactly this |
 | **decision ledger** | — | `docs/DECISIONS.md` — append-only decisions, each with the dissent that lost | — |
-| **lens** | — | One question the independent `reviewer` applies, chosen by the route's change facts | — |
+| **lens** | — | One question the independent `code-reviewer` applies, chosen by the route's change facts | — |
 | **seat** | — | Retired 2026-09-27: one standing reviewer on the former PO or design council; kept so older records stay readable | Standard for panels and boards |
 
 ### Words that legitimately mean different things
