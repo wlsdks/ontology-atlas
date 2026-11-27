@@ -1,6 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
-import { seedFirstRunSeen } from "../../first-run-seed";
+import { installDesktopRailRuntime } from "../../desktop-rail-arrival-harness";
 import { waitForDomeEntered, waitForMapStill, waitFrames } from "../../settle";
+import { openMapOnApp } from "../open-map-on-app";
+import { storefrontSampleFiles } from "../storefront-sample-files";
 import { probe } from "./neural-dogfood";
 
 /**
@@ -72,12 +74,12 @@ async function cellsOutsideFreeArea(page: Page) {
 test("turning Neural after a selection keeps every cell in the free area, and the map comes to rest", async ({ page }) => {
   test.setTimeout(180_000);
   await page.setViewportSize({ width: 1512, height: 945 });
-  await seedFirstRunSeen(page);
   await page.addInitScript(() => {
     window.localStorage.setItem("atlas.appearance.view3d", "on");
     window.localStorage.setItem("atlas.appearance.map-arrangement", "coupling");
   });
-  await page.goto("/ko/topology/?guides=off&e2e=1", { waitUntil: "domcontentloaded" });
+  await installDesktopRailRuntime(page, storefrontSampleFiles(), undefined, { replaceFixture: true });
+  await openMapOnApp(page, "/ko/topology/?guides=off&e2e=1", { waitUntil: "domcontentloaded" });
   await waitForDomeEntered(page, 120_000);
   await expect.poll(() => probe(page, (p) => p.nodes().some((n) => n.id === "capability:order-placement")), { timeout: 60_000 }).toBe(true);
 
