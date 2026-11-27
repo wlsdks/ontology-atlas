@@ -1,8 +1,5 @@
 {
   "specs": [
-    "tests/e2e/agents/agent-activity-chip.spec.ts",
-    "tests/e2e/agents/agent-connect-panel-census.spec.ts",
-    "tests/e2e/agents/mcp-connector-add.spec.ts",
     "tests/e2e/app-shell/back-navigation.spec.ts",
     "tests/e2e/app-shell/destination-shortcuts.spec.ts",
     "tests/e2e/app-shell/focus-before-hydration.spec.ts",
@@ -87,17 +84,6 @@
     "tests/e2e/map/selection/map-focus-dangling.spec.ts",
     "tests/e2e/map/transient-surface-contract.spec.ts",
     "tests/e2e/map/tree/map-tree.spec.ts",
-    "tests/e2e/moru-companion.spec.ts",
-    "tests/e2e/projects/change-briefing.spec.ts",
-    "tests/e2e/projects/project-brief-page.spec.ts",
-    "tests/e2e/projects/project-composition-width.spec.ts",
-    "tests/e2e/projects/project-construction-review.spec.ts",
-    "tests/e2e/projects/project-discard.spec.ts",
-    "tests/e2e/projects/project-missing-portrait.spec.ts",
-    "tests/e2e/projects/project-switch.spec.ts",
-    "tests/e2e/projects/user-journey-a.spec.ts",
-    "tests/e2e/settings/clear-all-concepts.spec.ts",
-    "tests/e2e/settings/settings-text-size.spec.ts",
-    "tests/e2e/settings/text-zoom-layout.spec.ts"
+    "tests/e2e/moru-companion.spec.ts"
   ]
 }

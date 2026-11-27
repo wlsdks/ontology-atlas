@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { installDesktopRailRuntime, mountDesktopVault } from "../desktop-rail-arrival-harness";
 import projectPages from "../../../messages/ko/projectPages.json";
 
 const detail = projectPages.detail;
@@ -6,6 +7,8 @@ const detail = projectPages.detail;
 const PROJECT_PAGE = "/ko/project/storefront/?guides=off";
 
 async function openProjectPage(page: Page) {
+  await installDesktopRailRuntime(page);
+  await mountDesktopVault(page, "ko");
   await page.goto(PROJECT_PAGE);
   await expect(page.getByTestId("project-detail-identity")).toBeVisible({ timeout: 30_000 });
   await page.evaluate(() => document.fonts.ready);
@@ -39,14 +42,6 @@ test.describe("project page reads as a brief", () => {
       const box = (await locator.boundingBox())!;
       expect(box.y + box.height, `the ${name} ends below the first screen`).toBeLessThanOrEqual(720);
     }
-  });
-
-  test("on the web no stale row is drawn, and the evidence line says only the app reads Git", async ({ page }) => {
-    await openProjectPage(page);
-    await expect(page.getByTestId("project-detail-evidence-line")).toHaveText(detail.toCheckEvidenceAppOnly);
-    await expect(page.locator('[data-testid="project-detail-to-check-row"][data-reason="stale"]')).toHaveCount(0);
-    await expect(page.getByTestId("project-detail-capability-stale")).toHaveCount(0);
-    await expect(page.getByTestId("project-detail-to-check-heading")).toContainText(detail.toCheckHeading.split(" ·")[0]!);
   });
 
   test("every row opens where it is judged", async ({ page }) => {

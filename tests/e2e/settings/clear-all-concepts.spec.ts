@@ -1,7 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { seedFirstRunSeen } from '../first-run-seed';
-import { stubDirectoryPicker } from '../vault-picker-stub';
+import { installDesktopRailRuntime, listDesktopFiles, mountDesktopVault } from '../desktop-rail-arrival-harness';
 
 const concept = (path: string, kind: string, slug: string, title: string, extra: string[] = []) => [
   path,
@@ -16,35 +15,15 @@ const SEED: Record<string, string> = Object.fromEntries([
   ['wiki/notes.md', '---\ntitle: Notes\n---\n\n# Notes\n'],
 ]);
 
-/** Paths in the picked OPFS folder, so the spec reads the disk rather than the screen. */
+/** Paths in the served folder, so the spec reads the disk rather than the screen. */
 async function folderFiles(page: Page): Promise<string[]> {
-  return page.evaluate(async () => {
-    const root = await navigator.storage.getDirectory();
-    const walk = async (dir: FileSystemDirectoryHandle, prefix: string): Promise<string[]> => {
-      const out: string[] = [];
-      for await (const [name, handle] of (dir as unknown as AsyncIterable<[string, FileSystemHandle]>)) {
-        const path = prefix ? `${prefix}/${name}` : name;
-        if (handle.kind === 'directory') out.push(...(await walk(handle as FileSystemDirectoryHandle, path)));
-        else out.push(path);
-      }
-      return out;
-    };
-    const folders: string[] = [];
-    for await (const [name] of (root as unknown as AsyncIterable<[string, FileSystemHandle]>)) {
-      if (name.startsWith('stub-vault-')) folders.push(name);
-    }
-    const picked = folders.sort().at(-1);
-    return picked ? (await walk(await root.getDirectoryHandle(picked), '')).sort() : [];
-  });
+  return (await listDesktopFiles(page)) ?? [];
 }
 
 test('Clear all concepts moves the concept documents aside, and Undo puts them back on the map', async ({ page }) => {
-  await seedFirstRunSeen(page);
-  await stubDirectoryPicker(page, SEED);
+  await installDesktopRailRuntime(page, SEED, undefined, { replaceFixture: true, writable: true });
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.goto('/en/topology/?guides=off');
-  await page.getByTestId('first-run-starter-open').click();
-  await page.getByTestId('vault-guide-pick-existing').click();
+  await mountDesktopVault(page);
   const index = page.getByTestId('topology-index-panel');
   await expect(index).toContainText('3 concepts', { timeout: 30_000 });
 

@@ -1,7 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import en from "../../../messages/en.json";
-import { seedFirstRunSeen } from "../first-run-seed";
-import { stubDirectoryPicker } from "../vault-picker-stub";
+import { installDesktopRailRuntime, mountDesktopVault } from "../desktop-rail-arrival-harness";
 
 /*
  * The Projects destination means the selected project: the one whose page was opened last in this
@@ -24,11 +23,8 @@ const ONE_PROJECT = { "projects/alpha-shop.md": projectDoc("alpha-shop", "Alpha 
 
 async function openFolder(page: Page, files: Record<string, string>) {
   await page.setViewportSize({ width: 1440, height: 900 });
-  await stubDirectoryPicker(page, files);
-  await seedFirstRunSeen(page);
-  await page.goto("/en/topology/");
-  await page.getByTestId("first-run-starter-open").click();
-  await page.getByTestId("vault-guide-pick-existing").click();
+  await installDesktopRailRuntime(page, files, undefined, { replaceFixture: true });
+  await mountDesktopVault(page);
   await expect(page.getByTestId("first-run-starter")).toHaveCount(0, { timeout: 20_000 });
 }
 

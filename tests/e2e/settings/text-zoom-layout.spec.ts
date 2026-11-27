@@ -2,14 +2,13 @@ import { expect, test } from "@playwright/test";
 
 import {
   CUT_TEXT,
+  openRouteInAppAtBrowserZoom,
   TEXT_ZOOM_ROUTES,
   ZOOMED_ROOT_PX,
 } from "./text-zoom-probes";
-import { seedFirstRunSeen } from "../first-run-seed";
-import { stubDirectoryPicker } from "../vault-picker-stub";
 
 async function openOntologyAudit(page: import("@playwright/test").Page) {
-  await page.goto("/ko/library/?tab=ontology&guides=off", { waitUntil: "domcontentloaded" });
+  await openRouteInAppAtBrowserZoom(page, "/ko/library/?tab=ontology&guides=off");
   await expect(page).toHaveURL(
     (url) => url.pathname === "/ko/library/" && url.searchParams.get("tab") === "ontology",
   );
@@ -70,11 +69,7 @@ test.describe("real browser text size setting at 200%", () => {
 
   test("the selected shared tab keeps the enlarged line box within its bounds", async ({ page }) => {
     await page.setViewportSize({ width: 1040, height: 900 });
-    await seedFirstRunSeen(page);
-    await page.addInitScript(() => {
-      window.localStorage.setItem("demo:sample-source:v1", "storefront");
-    });
-    await page.goto("/ko/library/?guides=off", { waitUntil: "domcontentloaded" });
+    await openRouteInAppAtBrowserZoom(page, "/ko/library/?guides=off");
     const selected = page.locator('[role="tab"][aria-selected="true"]');
     await expect(selected).toHaveCount(1);
     await expect(selected).toBeVisible({ timeout: 30_000 });
@@ -110,7 +105,7 @@ test.describe("real browser text size setting at 200%", () => {
     for (const route of TEXT_ZOOM_ROUTES) {
       test(`${route} · ${width}px: no text is clipped and unreachable`, async ({ page }) => {
         await page.setViewportSize({ width, height: 900 });
-        await page.goto(route, { waitUntil: "domcontentloaded" });
+        await openRouteInAppAtBrowserZoom(page, route);
         await expect(page.locator("main").first()).toBeVisible({ timeout: 30_000 });
         await page.evaluate(
           () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
@@ -129,55 +124,9 @@ test.describe("real browser text size setting at 200%", () => {
     }
   }
 
-  test("the first-run folder picker remains reachable above the bottom tab bar", async ({ page }) => {
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await stubDirectoryPicker(page, {
-      "README.md": "# Text zoom fixture\n\nA folder chosen from the first-run guide.\n",
-    });
-    await page.goto("/en/topology/?guides=off", { waitUntil: "domcontentloaded" });
-    await page.getByTestId("first-run-starter-open").click();
-    const sheet = page.getByTestId("vault-guide-sheet");
-    const pick = page.getByTestId("vault-guide-pick-existing");
-    await expect(sheet).toBeVisible();
-    await pick.scrollIntoViewIfNeeded();
-
-    const measured = await page.evaluate(() => {
-      const sheetElement = document.querySelector<HTMLElement>('[data-testid="vault-guide-sheet"]');
-      const pickElement = document.querySelector<HTMLElement>('[data-testid="vault-guide-pick-existing"]');
-      const bar = document.querySelector<HTMLElement>('[data-tabbar="primary"]');
-      if (!sheetElement || !pickElement || !bar) return { subjects: 0 };
-      const pickRect = pickElement.getBoundingClientRect();
-      const barRect = bar.getBoundingClientRect();
-      const hit = document.elementFromPoint(
-        pickRect.x + pickRect.width / 2,
-        pickRect.y + pickRect.height / 2,
-      );
-      return {
-        subjects: 1,
-        sheetScrollable:
-          /auto|scroll/.test(getComputedStyle(sheetElement).overflowY) &&
-          sheetElement.scrollHeight > sheetElement.clientHeight,
-        pickBottom: pickRect.bottom,
-        barTop: barRect.top,
-        hit: hit === pickElement || pickElement.contains(hit),
-      };
-    });
-
-    expect(measured.subjects, "first-run picker measurement found no subject").toBe(1);
-    expect(measured.sheetScrollable, "the enlarged guide has no vertical scroller").toBe(true);
-    expect(
-      measured.pickBottom,
-      `folder picker bottom ${measured.pickBottom} crosses tab bar top ${measured.barTop}`,
-    ).toBeLessThanOrEqual(measured.barTop!);
-    expect(measured.hit, "the bottom tab bar intercepts the folder picker").toBe(true);
-
-    await pick.click();
-    await expect(page.getByTestId("first-run-starter")).toHaveCount(0);
-  });
-
   test("the gateway headline never gets smaller than its section title", async ({ page }) => {
     await page.setViewportSize({ width: 1040, height: 900 });
-    await page.goto("/ko/download/", { waitUntil: "domcontentloaded" });
+    await openRouteInAppAtBrowserZoom(page, "/ko/download/");
     await expect(page.locator("h1").first()).toBeVisible({ timeout: 30_000 });
 
     // `--text-monument`'s `cqw` term cannot be reached by text zoom, so while its floor was

@@ -1,10 +1,17 @@
 import { expect, test, type Page } from "@playwright/test";
+import { installDesktopRailRuntime, mountDesktopVault } from "../desktop-rail-arrival-harness";
 
 const PROJECT_PAGE = "/ko/project/storefront/?guides=off";
 /** No blank run between blocks, or between the last block and the column's edge, may exceed this share. */
 const MAX_GAP_SHARE = 0.12;
 
 async function openProjectPage(page: Page) {
+  await installDesktopRailRuntime(page);
+  // The rail that `mountDesktopVault` waits for is hidden below the desktop breakpoint, so the folder opens at a desktop width first.
+  const requested = page.viewportSize()!;
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await mountDesktopVault(page, "ko");
+  await page.setViewportSize(requested);
   await page.goto(PROJECT_PAGE);
   await expect(page.getByTestId("project-detail-domain-list")).toBeVisible({ timeout: 30_000 });
   await page.evaluate(() => document.fonts.ready);

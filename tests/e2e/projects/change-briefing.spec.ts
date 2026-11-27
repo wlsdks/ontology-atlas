@@ -161,15 +161,8 @@ test('narrows unmapped evidence by literal source area and expands every counted
   await expect(evidence.getByRole('button', { name: 'Show diff: 한글/unmapped.ts', exact: true })).toBeVisible();
 });
 
-test('offers an honest browser limit without fabricated source history', async ({ page }) => {
-  await page.goto('/en/changes/?guides=off');
-  await expect(page.getByTestId('briefing-stage')).toContainText('installed app');
-  await expect(page.getByTestId('briefing-get-app')).toHaveAttribute('href', /\/download\//);
-  await expect(page.getByTestId('briefing-ready')).toHaveCount(0);
-  await capture(page, 'web-limit');
-});
-
 test('draws the prerendered stage settled as soon as reduced motion is known', async ({ page }) => {
+  await installBriefingRuntime(page);
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/en/changes/?guides=off');
   const faintestMarkOpacity = await page.waitForFunction(() => {
@@ -255,7 +248,7 @@ test('keeps file switching reachable during a long diff and scopes navigation to
 test('starts from a cold native launch and reads source history without opening an ontology', async ({ page }) => {
   await installBriefingRuntime(page);
   await page.setViewportSize({ width: 768, height: 1024 });
-  await page.goto('/en/?shell=desktop');
+  await page.goto('/en/');
   await page.getByRole('link', { name: /^Changes/ }).click();
   await expect(page.locator('[data-tabbar=primary]')).toHaveCount(0);
   await expect(page).toHaveURL(/\/changes/);

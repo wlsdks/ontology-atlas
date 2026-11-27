@@ -1,6 +1,12 @@
 import { expect, test } from "@playwright/test";
-import { seedFirstRunSeen } from "../first-run-seed";
-import { stubDirectoryPicker } from "../vault-picker-stub";
+import {
+  installDesktopRailRuntime,
+  mountDesktopVault,
+  removeDesktopFile,
+} from "../desktop-rail-arrival-harness";
+
+/** An ISO timestamp this many milliseconds ago: the fake serves texts as written, so the spec resolves the time. */
+const ago = (ms: number) => new Date(Date.now() - ms).toISOString();
 
 test("only a fresh heartbeat states the current step and map target, and removal falls back to change detection", async ({ page }) => {
   test.setTimeout(120_000);
@@ -8,7 +14,7 @@ test("only a fresh heartbeat states the current step and map target, and removal
 
   const activityLine = JSON.stringify({
     v: 1,
-    at: "{{NOW-30000}}",
+    at: ago(30_000),
     tool: "add_concept",
     target: "capabilities/pay",
     summary: "add_concept capability:capabilities/pay",
@@ -25,20 +31,18 @@ test("only a fresh heartbeat states the current step and map target, and removal
     },
     plan: ["변경 결과 확인"],
     evidence: { mcp: ["validate_vault"], source: [], codegraph: [], verification: [] },
-    updatedAt: "{{NOW-1000}}",
+    updatedAt: ago(1_000),
   });
 
-  await seedFirstRunSeen(page);
-  await stubDirectoryPicker(page, {
+  await installDesktopRailRuntime(page, {
     "shop.md": `---\nuid: 11111111-1111-4111-8111-111111111111\nslug: shop\nkind: project\ntitle: Chip Shop\ncontains:\n  - capabilities/pay\n---\n\n# Chip Shop\n`,
     "capabilities/pay.md": `---\nuid: 22222222-2222-4222-8222-222222222222\nslug: capabilities/pay\nkind: capability\ntitle: Pay\n---\n\n# Pay\n`,
     ".ontology-atlas/activity.jsonl": `${activityLine}\n`,
     ".ontology-atlas/agent-activity.json": `${heartbeat}\n`,
-  });
+  }, undefined, { replaceFixture: true, writable: true });
 
-  await page.goto("/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
-  await page.getByTestId("first-run-starter-open").click();
-  await page.getByTestId("vault-guide-pick-existing").click();
+  await mountDesktopVault(page, "ko");
+  await page.goto("/ko/topology/?e2e=1&guides=off");
 
   const status = page.getByTestId("agent-activity-status");
   await expect(status, "the fresh heartbeat did not reach the status chip").toBeVisible({
@@ -65,21 +69,7 @@ test("only a fresh heartbeat states the current step and map target, and removal
     });
   await expect.poll(focused, { timeout: 30_000 }).toEqual(["capability:pay"]);
 
-  const cleared = await page.evaluate(async () => {
-    const root = await navigator.storage.getDirectory();
-    const names: string[] = [];
-    for await (const key of (root as unknown as { keys: () => AsyncIterable<string> }).keys()) {
-      if (key.startsWith("stub-vault-")) names.push(key);
-    }
-    names.sort();
-    const dirName = names.at(-1);
-    if (!dirName) return false;
-    const dir = await root.getDirectoryHandle(dirName);
-    const sidecar = await dir.getDirectoryHandle(".ontology-atlas");
-    await sidecar.removeEntry("agent-activity.json");
-    return true;
-  });
-  expect(cleared).toBe(true);
+  await removeDesktopFile(page, ".ontology-atlas/agent-activity.json");
   await expect(status).toHaveText(/Codex · 변경 감지/, { timeout: 30_000 });
   await expect.poll(focused, { timeout: 30_000 }).toEqual([]);
 
@@ -103,7 +93,7 @@ test("job notifications in the inbox speak by agent name", async ({ page }) => {
   // For the same reason as the test above, timestamps are created **at write time** —
   // the margin is large here, but two ways of seeding in one file means the next person
   // copies the stale one.
-  const at = (minAgo: number) => `{{NOW-${minAgo * 60_000}}}`;
+  const at = (minAgo: number) => ago(minAgo * 60_000);
   const line = (iso: string) =>
     JSON.stringify({
       v: 1,
@@ -115,16 +105,14 @@ test("job notifications in the inbox speak by agent name", async ({ page }) => {
       why: null,
     });
 
-  await seedFirstRunSeen(page);
-  await stubDirectoryPicker(page, {
+  await installDesktopRailRuntime(page, {
     "shop.md": `---\nuid: 11111111-1111-4111-8111-111111111111\nslug: shop\nkind: project\ntitle: Chip Shop\ncontains:\n  - capabilities/pay\n---\n\n# Chip Shop\n`,
     "capabilities/pay.md": `---\nuid: 22222222-2222-4222-8222-222222222222\nslug: capabilities/pay\nkind: capability\ntitle: Pay\n---\n\n# Pay\n`,
     ".ontology-atlas/activity.jsonl": `${line(at(21))}\n${line(at(20))}\n`,
-  });
+  }, undefined, { replaceFixture: true, writable: true });
 
-  await page.goto("/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
-  await page.getByTestId("first-run-starter-open").click();
-  await page.getByTestId("vault-guide-pick-existing").click();
+  await mountDesktopVault(page, "ko");
+  await page.goto("/ko/topology/?e2e=1&guides=off");
 
   const bell = page.getByTestId("agent-activity-bell");
   await expect(bell, "the notification bell did not appear").toBeVisible({ timeout: 30_000 });
