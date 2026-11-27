@@ -20,6 +20,7 @@ mod compiled_graph;
 mod concept_row;
 mod connection_info;
 mod find_backlinks;
+mod find_evidence;
 mod find_orphans;
 mod get_concepts;
 mod git_history;
@@ -31,6 +32,7 @@ mod inspect_architecture;
 mod list_concepts;
 mod query_concepts;
 mod query_ontology;
+mod read_source;
 mod read_vault;
 mod reply_bytes;
 #[cfg(feature = "test-hooks")]
@@ -60,6 +62,8 @@ pub fn call(
         "get_concepts" => Some(get_concepts::call(context, arguments)),
         "find_backlinks" => Some(find_backlinks::call(context, arguments)),
         "find_orphans" => Some(find_orphans::call(context, arguments)),
+        "find_evidence" => Some(find_evidence::call(context, arguments)),
+        "read_source" => Some(read_source::call(context, arguments)),
         "query_concepts" => Some(query_concepts::call(context, arguments)),
         "compile_ontology" => Some(compile_ontology::call(context, arguments)),
         "query_ontology" => Some(query_ontology::call(context, arguments)),

@@ -6,14 +6,16 @@
 //! version the rest was read from. A document that was named, not listed, keeps its body.
 
 use std::borrow::Cow;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 
 use confined_files::{ConfinedPath, FileSnapshot, OsErrorCode, StableReadError};
 use sha2::{Digest, Sha256};
 
 use crate::body_links::BodyLinks;
+use crate::body_signature::BodySignature;
 use crate::document::{Document, RawShape};
 use crate::frontmatter::{Diagnostic, Frontmatter, Value};
+use crate::search_text::folded;
 use crate::validation::{validate_document, Issue};
 
 /// Why a file could not be read.
@@ -78,6 +80,8 @@ struct Record {
     digest: Digest256,
     /// The body as readers see it, kept for a document that was named.
     body: Option<String>,
+    /// What a text search may skip this body by, made by the first search that reads it.
+    signature: OnceLock<BodySignature>,
 }
 
 impl LoadedDocument {
@@ -113,6 +117,7 @@ impl LoadedDocument {
                 links,
                 digest,
                 body: kept,
+                signature: OnceLock::new(),
             }),
         }
     }
@@ -193,6 +198,24 @@ impl LoadedDocument {
         Ok(Cow::Owned(
             Document::from_bytes(snapshot.bytes).body().into_owned(),
         ))
+    }
+
+    /// Whether the body, folded to lower case and one Unicode form, holds `folded_needle`. The first
+    /// call reads the body and keeps a fingerprint of it, so a later search for text the body lacks
+    /// opens no file.
+    pub fn body_includes(&self, folded_needle: &str) -> Result<bool, FileReadError> {
+        if let Some(signature) = self.record.signature.get() {
+            if !signature.may_contain(folded_needle) {
+                return Ok(false);
+            }
+        }
+        let body = self.body()?;
+        let folded_body = folded(&body);
+        let signature = self
+            .record
+            .signature
+            .get_or_init(|| BodySignature::of(&folded_body));
+        Ok(signature.may_contain(folded_needle) && folded_body.contains(folded_needle))
     }
 
     /// `frontmatter.kind` when it is a non-blank text: what makes a document a node.

@@ -3020,6 +3020,7 @@ dependencies = [
  "indexmap 2.14.0",
  "mcp-server",
  "ontology-graph",
+ "raw-source-text",
  "regex",
  "serde",
  "serde_json",
@@ -4143,6 +4144,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "498cd0dc59d73224351ee52a95fee0f1a617a2eae0e7d9d720cc622c73a54186"
 dependencies = [
  "bitflags 2.11.1",
+]
+
+[[package]]
+name = "raw-source-text"
+version = "0.1.0"
+dependencies = [
+ "answer-format",
+ "icu_normalizer",
+ "miniz_oxide",
+ "proptest",
+ "serde",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -6325,6 +6338,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2 0.11.1",
+ "strsim",
  "tempfile",
  "thiserror 2.0.21",
 ]

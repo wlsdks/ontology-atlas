@@ -16,6 +16,7 @@ mod modified_time;
 mod os_error;
 mod plain_file;
 mod private_names;
+mod raw_source_read;
 mod real_paths;
 mod scan_root;
 mod slug_rules;
@@ -37,6 +38,9 @@ pub use markdown_walk::utf16_order;
 pub use modified_time::ModifiedTime;
 pub use os_error::{IoFailure, OsErrorCode};
 pub use private_names::{is_credential_name, is_hidden_name, names_hidden_or_credential_file};
+pub use raw_source_read::{
+    RawSourcePath, RawSourcePathRefusal, RawSourceReadRefusal, RAW_SOURCE_PATH_MAX_BYTES,
+};
 pub use real_paths::{is_within_folding_case, real_path};
 pub use scan_root::{ScanRootRefused, ScanRoots, SourceRoot};
 pub use slug_rules::{
@@ -50,7 +54,7 @@ pub use source_disk::{
     evidence_text, DiskSource, ReadBudget, MAX_EVIDENCE_READ_BYTES, MAX_EVIDENCE_TEXT_BYTES,
 };
 pub use source_snapshot::{
-    confined_source_reads_enabled, ListedDirectory, Lookup, ReadBoundary, ReadFile, SnapshotError,
+    confined_source_reads_enabled, sha256_hex, ListedDirectory, Lookup, ReadBoundary, ReadFile, SnapshotError,
     SnapshotSource, SourceSnapshot, MAX_ENTRIES, MAX_FILE_TEXT_BYTES, MAX_TEXT_BYTES,
     MAX_TRANSPORT_BYTES, SNAPSHOT_CONTRACT, SNAPSHOT_DESCRIPTOR,
 };

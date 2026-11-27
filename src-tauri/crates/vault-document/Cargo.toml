@@ -26,6 +26,9 @@ regex = { version = "1", default-features = false, features = ["std", "perf"] }
 # Reads and checks every file of a large vault on all the cores: one `par_iter`, results in order.
 # MIT OR Apache-2.0; the app already links it (through the image crates).
 rayon = "1"
+# Edit distance for the titles a search that found nothing offers instead; MIT, already in the
+# lockfile through the app's dependencies and the server's suggestions.
+strsim = "0.11"
 # CommonMark with source offsets; MIT.
 pulldown-cmark = { version = "0.13", default-features = false }
 
