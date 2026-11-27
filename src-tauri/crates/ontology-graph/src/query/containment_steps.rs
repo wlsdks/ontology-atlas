@@ -77,11 +77,6 @@ pub fn children(graph: &CompiledGraph, node: NodeId) -> Vec<Step> {
     one_step_per_node(graph, containment_steps(graph, node, Way::Descendants))
 }
 
-/// What holds `node`, one step to each parent, in the order of the graph.
-pub fn parents(graph: &CompiledGraph, node: NodeId) -> Vec<Step> {
-    one_step_per_node(graph, containment_steps(graph, node, Way::Ancestors))
-}
-
 /// Whether something holds `node`.
 pub fn has_parent(graph: &CompiledGraph, node: NodeId) -> bool {
     let held = graph.incoming(node).iter().any(|&id| {

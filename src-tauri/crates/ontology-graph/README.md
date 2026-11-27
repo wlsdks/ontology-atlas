@@ -30,8 +30,8 @@ from the whole graph.
 | `node_summary.rs` | `NodeIdentity`, `NodeSummary`: the node row every answer writes |
 | `node_mask.rs` | `NodeMask`: a set of nodes, one flag each |
 | `step.rs` | `Step`: the edge a walk takes and the node it leads to |
-| `containment_steps.rs` | `containment_steps`, `children`, `parents`, `has_parent`: what a node holds and what holds it, from its own edges |
-| `domain_lookup.rs` | `DomainLookup`: the domain a node belongs to |
+| `containment_steps.rs` | `containment_steps`, `children`, `has_parent`: what a node holds and what holds it, from its own edges |
+| `domain_lookup.rs` | `DomainLookup`: the domain a node belongs to, for every node from one search down from the domains |
 | `project_root.rs` | `project_roots`, `project_root`: the project nodes of a graph, and which one a call means |
 | `scope.rs` | `Scope`, `ScopeEdges`: a node and everything it holds, and where the edges that start inside end |
 | `edge_rows.rs` | the edge rows of an answer: directed, on a path, compiled |

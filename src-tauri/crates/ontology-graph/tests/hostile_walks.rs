@@ -1,8 +1,12 @@
 //! Vaults built to hurt the walks of `query_ontology` that count and list what a node reaches: a
 //! chain and a ring ten thousand long, and a hub fifty thousand nodes lean on. Every answer must
 //! come back with exact totals, lists no longer than `limit`, and no recursion as deep as the graph.
+//! A walk that also names the domain of every node it reaches must take no longer than one that
+//! does not.
 
 mod support;
+
+use std::time::{Duration, Instant};
 
 use ontology_graph::{compile, run_query, CompiledGraph, Direction, Operation, QueryRequest};
 use support::{node, plant};
@@ -218,4 +222,122 @@ fn two_nodes_that_share_a_hub_are_explained_through_it() {
     );
     assert_eq!(explained["commonNeighbors"]["total"], 1);
     assert_eq!(explained["commonNeighbors"]["rows"][0]["slug"], slug(0));
+}
+
+/// How long `request` takes to answer, the best of three runs.
+fn time_of(graph: &CompiledGraph, request: &QueryRequest) -> Duration {
+    (0..3)
+        .map(|_| {
+            let started = Instant::now();
+            answer(graph, request);
+            started.elapsed()
+        })
+        .min()
+        .unwrap_or_default()
+}
+
+/// The room `blast_radius` gets beside `impact`: it does the same walk and names a domain per
+/// node. A climb repeated for each node takes seconds where this takes milliseconds.
+fn blast_radius_time_limit(impact: Duration) -> Duration {
+    impact * 10 + Duration::from_millis(250)
+}
+
+/// Capabilities that each hold the next and each depend on one hub, with a domain over the first
+/// when `under_a_domain`: a containment chain `count` long that either has no domain above it or
+/// has one over all of it.
+fn chain_leaning_on_a_hub(count: usize, under_a_domain: bool) -> CompiledGraph {
+    let mut files: Vec<(String, String)> = (0..count)
+        .map(|number| {
+            let holds = if number + 1 < count {
+                format!("contains:\n  - {}\n", slug(number + 1))
+            } else {
+                String::new()
+            };
+            (
+                format!("{}.md", slug(number)),
+                node(
+                    number,
+                    "capability",
+                    &format!("{holds}dependencies:\n  - {}\n", slug(count)),
+                ),
+            )
+        })
+        .collect();
+    files.push((format!("{}.md", slug(count)), node(count, "capability", "")));
+    if under_a_domain {
+        files.push((
+            "domains/core.md".to_string(),
+            node(
+                count + 1,
+                "domain",
+                &format!("capabilities:\n  - {}\n", slug(0)),
+            ),
+        ));
+    }
+    compile(&plant(&files).documents).expect("compiles")
+}
+
+/// One project that holds `count` capabilities directly, with no domain between, each depending on
+/// the first.
+fn project_holding_without_a_domain(count: usize) -> CompiledGraph {
+    let held: String = (0..count)
+        .map(|number| format!("  - {}\n", slug(number)))
+        .collect();
+    let mut files: Vec<(String, String)> = (0..count)
+        .map(|number| {
+            let extra = if number == 0 {
+                String::new()
+            } else {
+                format!("dependencies:\n  - {}\n", slug(0))
+            };
+            (
+                format!("{}.md", slug(number)),
+                node(number, "capability", &extra),
+            )
+        })
+        .collect();
+    files.push((
+        "atlas.md".to_string(),
+        node(count, "project", &format!("contains:\n{held}")),
+    ));
+    compile(&plant(&files).documents).expect("compiles")
+}
+
+#[test]
+fn blast_radius_names_a_domain_for_every_node_as_fast_as_impact_finds_them() {
+    let chain = chain_leaning_on_a_hub(CHAIN, false);
+    let hub = at("blast_radius", CHAIN);
+    let blast = answer(&chain, &hub);
+    assert_eq!(blast["summary"]["affectedNodes"], CHAIN);
+    assert_eq!(blast["summary"]["affectedDomains"], 0);
+    let impact = time_of(&chain, &at("impact", CHAIN));
+    let took = time_of(&chain, &hub);
+    assert!(
+        took <= blast_radius_time_limit(impact),
+        "blast_radius took {took:?} on a chain of {CHAIN}, impact {impact:?}"
+    );
+
+    let domained = chain_leaning_on_a_hub(CHAIN, true);
+    let hub = at("blast_radius", CHAIN);
+    let blast = answer(&domained, &hub);
+    assert_eq!(blast["summary"]["affectedNodes"], CHAIN);
+    assert_eq!(blast["byDomain"]["domains/core"], CHAIN);
+    let impact = time_of(&domained, &at("impact", CHAIN));
+    let took = time_of(&domained, &hub);
+    assert!(
+        took <= blast_radius_time_limit(impact),
+        "blast_radius took {took:?} under one domain over {CHAIN}, impact {impact:?}"
+    );
+
+    let project = project_holding_without_a_domain(MANY);
+    let hub = at("blast_radius", 0);
+    let blast = answer(&project, &hub);
+    assert_eq!(blast["summary"]["affectedNodes"], MANY - 1);
+    assert_eq!(blast["summary"]["affectedDomains"], 0);
+    let impact = time_of(&project, &at("impact", 0));
+    let took = time_of(&project, &hub);
+    assert!(
+        took <= blast_radius_time_limit(impact),
+        "blast_radius took {took:?} under a project of {MANY}, impact {impact:?}"
+    );
 }
