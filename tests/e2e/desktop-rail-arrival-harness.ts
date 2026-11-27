@@ -731,6 +731,9 @@ export async function installDesktopRailRuntime(
           return Promise.reject(new Error("vault-root-not-granted"));
         }
         switch (command) {
+          // The macOS answer (`src-tauri/src/planning/commands.rs`): the native planning folder picker exists.
+          case "planning_supported":
+            return slow(true);
           case "git_probe":
             return slow({ installed: true, version: "git version 2.49.0", path: "/usr/bin/git" });
           case "git_status":

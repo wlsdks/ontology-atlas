@@ -23,6 +23,7 @@ async function goTo(page: Page, destination: 'Planning' | 'Library') {
 async function openVault(page: Page, files: Record<string, string> = VAULT, binaryFiles?: Record<string, number[]>) {
   await installDesktopRailRuntime(page, files, undefined, { replaceFixture: true, writable: true, binaryFiles });
   await page.goto('/en/library/');
+  await page.waitForLoadState('networkidle');
   await page.getByTestId('library-open-vault').click();
   // The no-folder stage is a `library-page` too; any other one has the picked folder open, so the folder exists on disk.
   await expect(page.locator('[data-testid="library-page"]:not([data-library-state="no-folder"])')).toBeVisible();
@@ -62,7 +63,7 @@ test('creating the planning folder turns the same stage into a title field that 
   const stage = page.locator('[data-planning-state="no-home"]');
   await expect(stage).toBeVisible();
   await expect(stage.getByRole('button').first()).toHaveAccessibleName(planning.createHome);
-  await expect(stage.getByRole('button', { name: planning.chooseAnother }), 'with no native planning picker the stage offers no folder outside the open one').toHaveCount(0);
+  await expect(stage.getByRole('button', { name: planning.chooseAnother }), 'with the native planning picker the stage offers a folder outside the open one').toBeVisible();
   await page.locator('[data-feature-stage-art]').evaluate((node) => { (window as unknown as { stageArt: Element }).stageArt = node; });
   await stage.getByRole('button', { name: planning.createHome }).click();
 
