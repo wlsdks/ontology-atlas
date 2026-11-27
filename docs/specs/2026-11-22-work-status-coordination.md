@@ -423,3 +423,7 @@ text in a PR, branch, commit, log, lane name, ticket or subagent file; a paused 
   changed files reach a capability (slice 5 of the Work status spec, which Findings in slice 14
   reads to name the capability two branches change), and
   `docs/specs/2026-11-24-open-outside-tools.md` owns Open in editor and Open in terminal.
+- 2026-11-27: superseded by `docs/specs/2026-11-27-workshop-control-tower.md` before any slice was
+  built. Stop, remove and pause move there under record `ed30a160`, with background priority by
+  hand; Automatic, holds, build-folder deletion, findings and the local model are not carried.
+  Record 2 above was never recorded and does not stand.

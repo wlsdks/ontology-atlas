@@ -97,7 +97,7 @@ The third written exception, for Work status only:
 
 | | |
 |---|---|
-| Read | the person's own processes (uid filter first): parent, start time, working folder, and the executable path of one whose kernel name looks like an agent. On macOS, every 5 s while Work status is visible and its load switch (on by default) is on: memory, CPU time and kernel name of each process under an agent program; memory, CPU time and working folder of a process named `java` outside every agent's tree; and for the whole Mac, memory in use, macOS's pressure level, CPU in use and the GPU's "Device Utilization %" |
+| Read | the person's own processes (uid filter first): parent, start time, working folder, and the executable path of one whose kernel name looks like an agent. On macOS, every 5 s while Work status is visible and its load switch (on by default) is on: memory, CPU time and kernel name of each process under an agent program; memory, CPU time and working folder of a process named `java` outside every agent's tree; and for the whole Mac, memory in use, macOS's pressure level, CPU in use, the 1- and 5-minute load average and the GPU's "Device Utilization %" |
 | How | system APIs through crates already in `Cargo.lock`; one process listing and one usage read per process under an agent per sample, never per process on the Mac; no spawned program, no file, no root; the previous sample is the only one kept |
 | Returned to the page | for each worktree, the agent's pid, tool (Claude Code or Codex) and start time; per worktree, memory and CPU in cores, and every tool group with a process there, the page showing the five largest (a closed list matched by kernel name; any other name counts as other programs) with count, memory and CPU; groups outside every room; for each session pid the page sent (at most 64), the memory, CPU and groups of the processes credited to that session; the Mac's totals, with no GPU figure when none is reported; never a folder, path, unlisted program name, or a pid the page does not already hold; session figures only for pids it sent |
 | Never read | arguments or environment (`KERN_PROCARGS2`, `/proc/<pid>/environ`), open files, another user's processes, a per-program GPU figure |
@@ -180,6 +180,21 @@ The seventh and eighth written exceptions, specified and not yet built
 | Records | `d73dd377` (7), `4919ff56` (8: read, send), `aa764ca0` (8: write) |
 
 Another folder, field, recipient or file needs a new decision record.
+
+### Workshop › control tower: acting on the person's processes
+
+The ninth written exception, specified and not yet built
+(`docs/specs/2026-11-27-workshop-control-tower.md`, Controls):
+
+| | |
+|---|---|
+| Signal | after one press on a list Rust offered: `SIGTERM` to a leftover process; `SIGSTOP`, then `SIGCONT`, or background priority, for a build an agent started in a listed worktree |
+| Write | `git worktree remove` without `--force` after a confirm; a log line in app data before each action |
+| Never | `SIGKILL`; a group signal; an agent program, Atlas, pid 1, another user; a pid whose start, uid, name or folder changed since offered; any action without a press |
+| Gate | the spec's Controls; each slice's criteria |
+| Record | `ed30a160` |
+
+Another signal, target or automatic action needs a new decision record.
 
 ### Folder watch is latency, not degradation
 
