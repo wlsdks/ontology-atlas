@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
+import { compareText } from './compare-text.mjs';
 
 /**
  * Vault kind schema: the per-kind frontmatter shape add_concepts applies.
@@ -69,7 +70,7 @@ export function inspectMergedUids(uid, mergedUids) {
       };
     }
   }
-  const canonical = [...new Set(mergedUids)].sort((a, b) => a.localeCompare(b, 'en'));
+  const canonical = [...new Set(mergedUids)].sort((a, b) => compareText(a, b));
   return {
     canonical,
     invalidIssue: null,
@@ -100,7 +101,7 @@ export function mergeNodeIdentityHistory(fromFrontmatter, intoFrontmatter) {
   return {
     survivorUid: intoFrontmatter.uid,
     absorbedUids: sourceClaims,
-    merged_uids: [...new Set([...intoMerged, ...sourceClaims])].sort((a, b) => a.localeCompare(b, 'en')),
+    merged_uids: [...new Set([...intoMerged, ...sourceClaims])].sort((a, b) => compareText(a, b)),
   };
 }
 
@@ -197,7 +198,7 @@ function reviewDigest(frontmatter, body) {
     meaning[key] = value;
   }
   const ordered = Object.keys(meaning)
-    .sort((a, b) => a.localeCompare(b, 'en'))
+    .sort((a, b) => compareText(a, b))
     .map((key) => [key, meaning[key]]);
   const payload = JSON.stringify([ordered, String(body ?? '').trim()]);
   return createHash('sha256').update(payload, 'utf8').digest('hex').slice(0, 32);
@@ -477,7 +478,7 @@ function normalizeGraphArray(key, value) {
     seen.add(ref);
     refs.push(ref);
   }
-  refs.sort((a, b) => a.localeCompare(b, 'en'));
+  refs.sort((a, b) => compareText(a, b));
   return [...refs, ...passthrough];
 }
 

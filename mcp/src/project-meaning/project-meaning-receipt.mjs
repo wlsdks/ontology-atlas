@@ -12,6 +12,7 @@ import {
   replaceVaultSidecarText,
 } from '../vault/sidecar/vault-sidecar.mjs';
 import { isPersistableEvidenceReference, isPersistablePathWitness } from '../meaning/source-range-citation.mjs';
+import { compareText } from '../compare-text.mjs';
 
 export const PROJECT_MEANING_RECEIPT_VERSION = 1;
 export const PROJECT_MEANING_STATE_RELATIVE_PATH = '.ontology-atlas/project-meaning.json';
@@ -369,7 +370,7 @@ export function finalizeProjectMeaningReceipt({
   const retained = (existing.state?.receipts ?? []).filter((row) => row.projectSlug !== projectSlug);
   const state = {
     version: PROJECT_MEANING_RECEIPT_VERSION,
-    receipts: [...retained, receipt].sort((left, right) => left.projectSlug.localeCompare(right.projectSlug)),
+    receipts: [...retained, receipt].sort((left, right) => compareText(left.projectSlug, right.projectSlug)),
   };
   replaceVaultSidecarText(
     vaultRoot,

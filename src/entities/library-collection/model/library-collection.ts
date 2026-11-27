@@ -131,11 +131,11 @@ function isConstellationFolder(folder: LibraryCollectionFolder): boolean {
 }
 
 export function constellationFolders(value: LibraryCollections): LibraryCollectionFolder[] {
-  return value.folders.filter(isConstellationFolder).sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
+  return value.folders.filter(isConstellationFolder).sort((a, b) => a.order - b.order || a.name.localeCompare(b.name, 'en'));
 }
 
 export function collectionItems(value: LibraryCollections, folderId: string): LibraryCollectionItem[] {
-  return value.items.filter((item) => item.folderId === folderId).sort((a, b) => a.order - b.order || a.label.localeCompare(b.label));
+  return value.items.filter((item) => item.folderId === folderId).sort((a, b) => a.order - b.order || a.label.localeCompare(b.label, 'en'));
 }
 
 function assertFolderMoveIsAcyclic(folders: readonly LibraryCollectionFolder[], folderId: string, parentId: string | null): void {

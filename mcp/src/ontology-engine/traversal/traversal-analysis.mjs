@@ -10,6 +10,7 @@ import {
   summarizeNode,
   typeAllowed,
 } from '../query-operation/query-primitives.mjs';
+import { compareText } from '../../compare-text.mjs';
 
 export function createTraversalAnalysis({
   artifact,
@@ -181,7 +182,7 @@ export function createTraversalAnalysis({
 
     const rows = [...discovered.values()]
       .filter((row) => row.slug !== start)
-      .sort((a, b) => a.distance - b.distance || a.slug.localeCompare(b.slug));
+      .sort((a, b) => a.distance - b.distance || compareText(a.slug, b.slug));
     const limitedRows = rows.slice(0, limit);
     const visibleSlugs = new Set([start, ...limitedRows.map((row) => row.slug)]);
     const layerMap = new Map();
@@ -191,7 +192,7 @@ export function createTraversalAnalysis({
     }
     const edgeRows = uniqueEdges(collectedEdges)
       .filter((edge) => visibleSlugs.has(edge.from) && visibleSlugs.has(edge.to))
-      .sort((a, b) => edgeSortKey(a).localeCompare(edgeSortKey(b)));
+      .sort((a, b) => compareText(edgeSortKey(a), edgeSortKey(b)));
     const terminalRows = limitedRows.filter(
       (row) => traversalEdges(row.slug, direction, typeSet).length === 0,
     );
@@ -272,7 +273,7 @@ export function createTraversalAnalysis({
         if (stepLimited) break;
       }
       if (stepLimited) limited = true;
-      nextPaths.sort((a, b) => a.path.join('\0').localeCompare(b.path.join('\0')));
+      nextPaths.sort((a, b) => compareText(a.path.join('\0'), b.path.join('\0')));
       totalPaths = nextPaths.length;
       const visiblePaths = nextPaths.slice(0, limit);
       layers.push(patternLayer(index + 1, relation, visiblePaths));
@@ -281,7 +282,7 @@ export function createTraversalAnalysis({
 
     const endSlugs = [...new Set(paths.map((row) => row.slug))].sort();
     const edgeRows = uniqueEdges(paths.flatMap((row) => row.edges)).sort((a, b) =>
-      edgeSortKey(a).localeCompare(edgeSortKey(b)),
+      compareText(edgeSortKey(a), edgeSortKey(b)),
     );
     const pathTotal = limited && totalPaths <= paths.length ? paths.length + 1 : totalPaths;
 
@@ -344,7 +345,7 @@ export function createTraversalAnalysis({
 
     const nodeRows = [...discovered.values()]
       .filter((row) => row.slug !== center)
-      .sort((a, b) => a.distance - b.distance || a.slug.localeCompare(b.slug));
+      .sort((a, b) => a.distance - b.distance || compareText(a.slug, b.slug));
     const edgeRows = qualifyDeclaredDependencyEdges(uniqueEdges(collectedEdges));
 
     return {
@@ -391,7 +392,7 @@ export function createTraversalAnalysis({
 
     const nodeRows = [...discovered.values()]
       .filter((row) => row.slug !== center)
-      .sort((a, b) => a.distance - b.distance || a.slug.localeCompare(b.slug));
+      .sort((a, b) => a.distance - b.distance || compareText(a.slug, b.slug));
     const enrichedNodes = nodeRows.map((row) => {
       const node = nodeBySlug.get(row.slug);
       const domain = nearestDomainFor(row.slug, allSlugs);
@@ -414,7 +415,7 @@ export function createTraversalAnalysis({
           qualification: edge.rationale ? 'declared_with_rationale' : 'review_required',
         };
       })
-      .sort((a, b) => edgeSortKey(a).localeCompare(edgeSortKey(b)));
+      .sort((a, b) => compareText(edgeSortKey(a), edgeSortKey(b)));
     const byKind = countBy(
       enrichedNodes.map((row) => nodeBySlug.get(row.slug)).filter(Boolean),
       'kind',
@@ -486,13 +487,13 @@ export function createTraversalAnalysis({
     }
 
     const nodeRows = [...discovered.values()].sort(
-      (a, b) => a.distance - b.distance || a.slug.localeCompare(b.slug),
+      (a, b) => a.distance - b.distance || compareText(a.slug, b.slug),
     );
     const visibleRows = nodeRows.slice(0, limit);
     const allowedSlugs = new Set(visibleRows.map((row) => row.slug));
     const internalEdges = uniqueEdges(collectedEdges)
       .filter((edge) => allowedSlugs.has(edge.from) && allowedSlugs.has(edge.to))
-      .sort((a, b) => edgeSortKey(a).localeCompare(edgeSortKey(b)));
+      .sort((a, b) => compareText(edgeSortKey(a), edgeSortKey(b)));
 
     return {
       operation: 'subgraph',

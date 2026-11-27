@@ -18,6 +18,7 @@ import { abilitiesByArea, areaLocator, surveyAreas } from './survey-areas.mjs';
 import { repoText as t } from '../repo-text.mjs';
 import { readSurveyText, surveyEntry, surveyRelativePath } from './survey-paths.mjs';
 import { withoutSpans } from '../text.mjs';
+import { compareText } from '../../compare-text.mjs';
 
 const MAIN_FILES_PER_UNIT = 3;
 const EXPORTS_PER_UNIT = 6;
@@ -50,7 +51,7 @@ function mainFilesOf(unit) {
     if (ENTRY_FILE_STEMS.has(stem) && file.lines >= 20) return 1;
     return 2;
   };
-  const byLength = [...unit.files].sort((a, b) => b.lines - a.lines || a.path.localeCompare(b.path));
+  const byLength = [...unit.files].sort((a, b) => b.lines - a.lines || compareText(a.path, b.path));
   const named = byLength.filter((file) => rank(file) < 2).sort((a, b) => rank(a) - rank(b));
   const picked = [];
   for (const file of [...named.slice(0, 1), byLength[0], ...named.slice(1), ...byLength]) {
@@ -367,7 +368,7 @@ function docPages(rootPath, ignore) {
     const title = (front?.[1].trim().replace(/^["']|["']$/g, '') ?? heading?.[1] ?? rst?.[1] ?? stemOf(path)).replace(/[`*_]/g, '').trim();
     return { path, title: title.slice(0, DOC_TITLE_CHARS) };
   });
-  titled.sort((a, b) => a.path.split('/').length - b.path.split('/').length || a.path.localeCompare(b.path));
+  titled.sort((a, b) => a.path.split('/').length - b.path.split('/').length || compareText(a.path, b.path));
   return {
     rows: titled.slice(0, DOC_PAGE_LIMIT),
     omitted: Math.max(0, titled.length - DOC_PAGE_LIMIT),

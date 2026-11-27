@@ -4,6 +4,7 @@ import {
   agentBriefPlainObject,
   agentBriefPrivateSourceCoordinate,
 } from './agent-brief-shapes.mjs';
+import { compareText } from '../../../src/compare-text.mjs';
 
 const MEANING_REPAIR_PACKET_MAX_BYTES = 5 * 1024;
 
@@ -261,8 +262,8 @@ export function meaningRepairReviewChainFailure(agentBrief, pages, requestArgume
     domains.length !== repair.questions.abilities.targetCount
     || capabilities.length !== repair.questions.evidence.targetCount
     || kinds !== expectedKinds
-    || domains.some((slug, index) => index > 0 && domains[index - 1].localeCompare(slug) > 0)
-    || capabilities.some((slug, index) => index > 0 && capabilities[index - 1].localeCompare(slug) > 0)
+    || domains.some((slug, index) => index > 0 && compareText(domains[index - 1], slug) > 0)
+    || capabilities.some((slug, index) => index > 0 && compareText(capabilities[index - 1], slug) > 0)
   ) return 'meaning repair review page union order or kind counts drifted';
   return null;
 }

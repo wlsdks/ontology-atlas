@@ -9,6 +9,8 @@
  * cannot move the root. Never self-confirming: a person or `confirm` writes it.
  */
 
+import { compareText } from '../compare-text.mjs';
+
 const PROJECT_SOURCE_INFERENCE_CONTRACT = 'projectSourceInference:v1';
 
 /** Directory levels walked up from the vault root before giving up. */
@@ -72,7 +74,7 @@ export function rankProjectSourceCandidates(candidates) {
     .sort((left, right) => (
       MARKER_RANK.get(left.marker) - MARKER_RANK.get(right.marker)
       || left.ancestorDepth - right.ancestorDepth
-      || left.rootPath.localeCompare(right.rootPath)
+      || compareText(left.rootPath, right.rootPath)
     ));
 }
 

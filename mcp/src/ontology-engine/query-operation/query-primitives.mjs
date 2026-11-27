@@ -5,6 +5,7 @@ import {
   MAX_ALL_PATHS_SEARCH_BUDGET,
   RELATION_TYPE_VALUES,
 } from './query-values.mjs';
+import { compareText } from '../../compare-text.mjs';
 const RELATION_TYPES = new Set(RELATION_TYPE_VALUES);
 
 export function countEdges(items, key) {
@@ -25,7 +26,7 @@ export function sortedCountObject(counts) {
   return Object.fromEntries(
     [...counts.entries()].sort(([leftKey, leftCount], [rightKey, rightCount]) => {
       if (rightCount !== leftCount) return rightCount - leftCount;
-      return leftKey.localeCompare(rightKey);
+      return compareText(leftKey, rightKey);
     }),
   );
 }
@@ -216,5 +217,5 @@ export function uniqueEdges(edges) {
 }
 
 export function compareEdges(a, b) {
-  return edgeSortKey(a).localeCompare(edgeSortKey(b));
+  return compareText(edgeSortKey(a), edgeSortKey(b));
 }

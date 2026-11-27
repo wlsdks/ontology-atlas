@@ -11,6 +11,7 @@
 // Revisions are injected, so the caller decides where history comes from.
 
 import { createHash } from 'node:crypto';
+import { compareText } from '../compare-text.mjs';
 
 /** Frontmatter arrays through which a parent holds what is below it. Mirrors `CONTAINMENT_KEYS` in `validate.mjs`. */
 export const CONTAINMENT_KEYS = Object.freeze(['contains', 'capabilities', 'elements', 'domains']);
@@ -145,7 +146,7 @@ export function findStaleParentSummaries({ docs, revisionsOf } = {}) {
 
   rows.sort((a, b) => {
     const byLag = (b.behindByMs ?? -1) - (a.behindByMs ?? -1);
-    return byLag !== 0 ? byLag : a.slug.localeCompare(b.slug);
+    return byLag !== 0 ? byLag : compareText(a.slug, b.slug);
   });
   return rows;
 }

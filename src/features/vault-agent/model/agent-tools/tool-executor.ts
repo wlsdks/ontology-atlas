@@ -415,7 +415,7 @@ export function createToolExecutor(port: VaultReadPort) {
           .filter((doc) => (kind ? doc.kind === kind : true))
           .filter((doc) => (domain ? doc.domain === domain : true))
           .filter((doc) => (since === undefined ? true : (doc.mtime ?? 0) > since))
-          .sort((a, b) => a.slug.localeCompare(b.slug));
+          .sort((a, b) => a.slug.localeCompare(b.slug, 'en'));
         if (offset > filtered.length) {
           return {
             content: JSON.stringify({

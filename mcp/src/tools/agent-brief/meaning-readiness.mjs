@@ -13,6 +13,7 @@ import { projectSourceRemedy } from '../../project-source/project-source-remedy.
 import { deriveProjectSourceWitnessesFromDocs } from '../../project-source/project-source-witnesses.mjs';
 import { VAULT_ROOT } from '../../server/runtime.mjs';
 import { loadVaultDocs } from '../../vault/documents/document-cache.mjs';
+import { compareText } from '../../compare-text.mjs';
 
 // One gap id, two situations: when the project document already has a parseable
 // `## Competency answers` section only the finalize receipt is missing, so a person
@@ -81,7 +82,7 @@ function meaningReadinessCheck(artifact, loadedDocs) {
   const projectSlugs = (Array.isArray(artifact?.nodes) ? artifact.nodes : [])
     .filter((node) => node?.kind === 'project' && typeof node.slug === 'string')
     .map((node) => node.slug)
-    .sort((left, right) => left.localeCompare(right));
+    .sort((left, right) => compareText(left, right));
   const assessments = projectSlugs.map((projectSlug) => {
     try {
       // The graph engine's health status includes semantic checks; meaning

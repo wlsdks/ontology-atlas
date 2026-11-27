@@ -15,6 +15,7 @@ import {
   summarizeNode,
   typeAllowed,
 } from '../query-operation/query-primitives.mjs';
+import { compareText } from '../../compare-text.mjs';
 
 export function createTraversalQueries({
   resolve,
@@ -43,9 +44,7 @@ export function createTraversalQueries({
     }
   
     rows.sort((a, b) =>
-      `${a.direction}:${edgeSortKey(a.edge)}`.localeCompare(
-        `${b.direction}:${edgeSortKey(b.edge)}`,
-      ),
+      compareText(`${a.direction}:${edgeSortKey(a.edge)}`, `${b.direction}:${edgeSortKey(b.edge)}`),
     );
     return rows;
   }
@@ -184,7 +183,7 @@ export function createTraversalQueries({
         edges: row.edges,
         byRelation: countEdges(row.edges, 'via'),
       }))
-      .sort((a, b) => a.hopCount - b.hopCount || a.hops.join('\0').localeCompare(b.hops.join('\0')));
+      .sort((a, b) => a.hopCount - b.hopCount || compareText(a.hops.join('\0'), b.hops.join('\0')));
     const lengthCounts = new Map();
     for (const row of rows) {
       const key = String(row.hopCount);
@@ -285,7 +284,7 @@ export function createTraversalQueries({
       candidate,
       key: `${candidate.next}:${edgeSortKey(candidate.edge)}`,
     }));
-    keyed.sort((left, right) => left.key.localeCompare(right.key));
+    keyed.sort((left, right) => compareText(left.key, right.key));
     return keyed.map(({ candidate }) => candidate);
   }
   

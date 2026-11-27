@@ -95,6 +95,7 @@
     "src/vault/writes/document-patch.mjs",
     "src/project-source/project-source-vocabulary.mjs",
     "src/query.mjs",
+    "src/compare-text.mjs",
     "src/schema.mjs",
     "src/validate.mjs",
     "src/library/wiki-schema.mjs",

@@ -1,6 +1,7 @@
 import { existsSync } from './confinement/confined-source-fs.mjs';
 import { join, extname } from 'node:path';
 import { RUST_SOURCE_EXTENSION, SOURCE_EXT } from './source-files.mjs';
+import { compareText } from '../compare-text.mjs';
 
 const SUPPORT_ELEMENT_BUCKETS = new Set([
   'app',
@@ -131,7 +132,7 @@ function workspacePackageForFile(filePath, workspacePackages) {
     .filter((workspacePackage) =>
       filePath === workspacePackage.path || filePath.startsWith(`${workspacePackage.path}/`),
     )
-    .sort((a, b) => b.path.length - a.path.length || a.path.localeCompare(b.path))[0] ?? null;
+    .sort((a, b) => b.path.length - a.path.length || compareText(a.path, b.path))[0] ?? null;
 }
 
 function isSupportElementBucket(segment) {

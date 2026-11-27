@@ -16,6 +16,7 @@
 
 import { calleesOf, callsOnLine, enclosingClass } from './callees.mjs';
 import { callSitesOf } from './declaration-index.mjs';
+import { compareText } from '../compare-text.mjs';
 
 /**
  * 6 KiB holds the three to five deciding parts measured on the trial
@@ -439,7 +440,7 @@ export function symbolContext({ rootPath, ignore, path, lines, declarations, dec
     taken.push({ path: row.file.path, startLine: row.line, endLine: row.line });
     parts.push({ role: 'constant', path: row.file.path, symbol: row.name, startLine: row.line, endLine: row.line, cite: `${row.file.path}:L${row.line}-L${row.line}`, text });
   }
-  parts.sort((a, b) => order[a.role] - order[b.role] || a.path.localeCompare(b.path) || a.startLine - b.startLine);
+  parts.sort((a, b) => order[a.role] - order[b.role] || compareText(a.path, b.path) || a.startLine - b.startLine);
 
   let deciding = null;
   const callerShown = parts.some((part) => part.role === 'caller');

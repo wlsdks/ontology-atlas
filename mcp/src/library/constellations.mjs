@@ -10,6 +10,7 @@ import {
 } from '../schema.mjs';
 import { readLibraryCollections } from './library-collections.mjs';
 import { buildUidClaims, collectScopeRelations, resolveMember } from './constellation-scope.mjs';
+import { compareText } from '../compare-text.mjs';
 
 function purposeView(folder) {
   return typeof folder.purpose === 'string' && folder.purpose.trim()
@@ -20,13 +21,13 @@ function purposeView(folder) {
 function constellationFolders(value) {
   return value.folders
     .filter((folder) => folder.presentation === 'constellation')
-    .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
+    .sort((a, b) => a.order - b.order || compareText(a.name, b.name) || compareText(a.id, b.id));
 }
 
 function itemsFor(value, folderId) {
   return value.items
     .filter((item) => item.folderId === folderId)
-    .sort((a, b) => a.order - b.order || a.label.localeCompare(b.label) || a.id.localeCompare(b.id));
+    .sort((a, b) => a.order - b.order || compareText(a.label, b.label) || compareText(a.id, b.id));
 }
 
 function paginate(rows, offset, limit) {

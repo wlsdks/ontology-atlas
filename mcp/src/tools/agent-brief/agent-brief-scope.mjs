@@ -7,6 +7,7 @@ import { queryCompiledOntology, shareArtifact } from '../../ontology-engine.mjs'
 import { buildProjectSourceGraphHash } from '../../project-source/project-source-graph-hash.mjs';
 import { readProjectSourceBindings, readProjectSourceView } from '../../project-source/project-source-receipt.mjs';
 import { VAULT_ROOT } from '../../server/runtime.mjs';
+import { compareText } from '../../compare-text.mjs';
 
 function resolveAgentBriefProject(artifact, requestedProject) {
   if (typeof requestedProject === 'string' && requestedProject.trim()) {
@@ -19,7 +20,7 @@ function resolveAgentBriefProject(artifact, requestedProject) {
   const projects = (Array.isArray(artifact?.nodes) ? artifact.nodes : [])
     .filter((node) => node?.kind === 'project' && typeof node.slug === 'string')
     .map((node) => node.slug)
-    .sort((left, right) => left.localeCompare(right));
+    .sort((left, right) => compareText(left, right));
   if (projects.length === 1) return projects[0];
   if (projects.length === 0) return null;
   throw new Error(
@@ -55,7 +56,7 @@ function completeAgentBriefProjectScope(artifact, projectSlug, loadedDocs) {
   const rows = [...included]
     .map((slug) => nodeBySlug.get(slug))
     .filter(Boolean)
-    .sort((left, right) => left.slug.localeCompare(right.slug));
+    .sort((left, right) => compareText(left.slug, right.slug));
   const docs = loadedDocs.filter((doc) => included.has(doc.slug));
   if (rows.length !== included.size || docs.length !== included.size) {
     throw new Error(

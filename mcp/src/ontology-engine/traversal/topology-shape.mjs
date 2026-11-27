@@ -1,7 +1,9 @@
+import { compareText } from '../../compare-text.mjs';
+
 export function normalizeCycle(nodes, edges) {
   let startIndex = 0;
   for (let i = 1; i < nodes.length; i += 1) {
-    if (nodes[i].localeCompare(nodes[startIndex]) < 0) startIndex = i;
+    if (compareText(nodes[i], nodes[startIndex]) < 0) startIndex = i;
   }
   const rotatedNodes = [...nodes.slice(startIndex), ...nodes.slice(0, startIndex)];
   const rotatedEdges = [...edges.slice(startIndex), ...edges.slice(0, startIndex)];

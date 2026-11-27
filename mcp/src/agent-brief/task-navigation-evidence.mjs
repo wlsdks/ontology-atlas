@@ -3,6 +3,7 @@ import { isAbsolute, relative, resolve, sep } from 'node:path';
 
 import { readReviewedEvidence } from './reviewed-evidence.mjs';
 import { extractSummaryExcerpt } from '../vault/documents/body-delivery.mjs';
+import { compareText } from '../compare-text.mjs';
 
 const TASK_NAVIGATION_EVIDENCE_CONTRACT = 'taskNavigation:v1';
 
@@ -746,7 +747,7 @@ export function buildTaskNavigationEvidence(input = {}) {
       blockedBy: 'coordinate_verification',
       currentness,
       ...provenance,
-      diagnostics: diagnostics.sort((left, right) => left.code.localeCompare(right.code)),
+      diagnostics: diagnostics.sort((left, right) => compareText(left.code, right.code)),
     });
   }
   const targets = verified.map((row) => row.target);

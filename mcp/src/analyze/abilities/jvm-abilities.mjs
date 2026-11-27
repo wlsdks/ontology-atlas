@@ -25,6 +25,7 @@
 import { posix } from 'node:path';
 
 import { jvmHeader, maskJvmSource } from '../../infer-imports/languages/java-imports.mjs';
+import { compareText } from '../../compare-text.mjs';
 
 const JVM_FILE = /\.(?:java|kt)$/;
 const FAMILY_SIZE = 3;
@@ -702,7 +703,7 @@ function familyRows(classes, types) {
   const rows = [];
   for (const { folder, base, members } of groups.values()) {
     if (members.length < FAMILY_SIZE) continue;
-    members.sort((a, b) => a.file.path.localeCompare(b.file.path) || a.start - b.start);
+    members.sort((a, b) => compareText(a.file.path, b.file.path) || a.start - b.start);
     const first = evidence(members[0]);
     rows.push({
       kind: 'family',
@@ -713,7 +714,7 @@ function familyRows(classes, types) {
       members: members.map((cls) => cls.name),
     });
   }
-  return rows.sort((a, b) => a.path.localeCompare(b.path) || a.name.localeCompare(b.name));
+  return rows.sort((a, b) => compareText(a.path, b.path) || compareText(a.name, b.name));
 }
 
 /**

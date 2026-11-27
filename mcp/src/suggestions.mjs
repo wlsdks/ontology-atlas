@@ -1,3 +1,5 @@
+import { compareText } from './compare-text.mjs';
+
 export function closestAllowedValue(input, allowed) {
   if (!input || !Array.isArray(allowed) || allowed.length === 0) return null;
   let best = null;
@@ -55,7 +57,7 @@ export function suggestCompiledSlugs(input, slugs, limit = 3) {
       substring.push(slug);
     }
   }
-  typoTail.sort((a, b) => a.distance - b.distance || a.slug.localeCompare(b.slug));
+  typoTail.sort((a, b) => a.distance - b.distance || compareText(a.slug, b.slug));
   return [...exactTail, ...typoTail.map((t) => t.slug), ...substring].slice(0, limit);
 }
 

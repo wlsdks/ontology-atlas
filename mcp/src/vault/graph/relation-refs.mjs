@@ -2,6 +2,8 @@
  * The frontmatter array keys read as graph edges. findOrphans, findPath and the
  * rest share this one list; a private copy is how they drifted before.
  */
+import { compareText } from '../../compare-text.mjs';
+
 const NEIGHBOR_KEYS = Object.freeze([
   'domains',
   'capabilities',
@@ -39,7 +41,7 @@ export function normalizeRelationRefs(values) {
     seen.add(ref);
     refs.push(ref);
   }
-  refs.sort((a, b) => a.localeCompare(b, 'en'));
+  refs.sort((a, b) => compareText(a, b));
   return [...refs, ...passthrough];
 }
 
@@ -109,5 +111,5 @@ export function findGraphReferences(docs, ref) {
       break;
     }
   }
-  return hits.sort((a, b) => a.slug.localeCompare(b.slug));
+  return hits.sort((a, b) => compareText(a.slug, b.slug));
 }

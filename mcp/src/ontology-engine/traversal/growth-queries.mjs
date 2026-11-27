@@ -3,6 +3,7 @@ import { refMatchesOntologyAtlasIgnore } from '../../vault/sidecar/ontology-atla
 import { orderUncertaintyReads } from '../../meaning/uncertainty-reads.mjs';
 import { docBodyAnswer, docHasBody, docUncertaintyReads } from '../../vault/documents/doc-facts.mjs';
 import { normalizeLimit, summarizeNode } from '../query-operation/query-primitives.mjs';
+import { compareText } from '../../compare-text.mjs';
 
 /** What the vault should add, repair or read next: relation recommendations and every growth candidate group. */
 export function createGrowthQueries({
@@ -123,7 +124,7 @@ export function createGrowthQueries({
     const rows = nodes
       .filter((node) => (node.kind === 'capability' || node.kind === 'element') && !resolveOptional(node.domain))
       .filter((node) => containmentParentsFor(node.slug).length === 0)
-      .sort((a, b) => a.slug.localeCompare(b.slug))
+      .sort((a, b) => compareText(a.slug, b.slug))
       .map((node) => ({
         kind: 'unassigned_node',
         score: 0.5,
@@ -142,7 +143,7 @@ export function createGrowthQueries({
         const child = nodeBySlug.get(next);
         return child?.kind === 'capability' || child?.kind === 'element';
       }))
-      .sort((a, b) => a.slug.localeCompare(b.slug))
+      .sort((a, b) => compareText(a.slug, b.slug))
       .map((node) => ({
         kind: 'empty_domain',
         score: 0.4,
@@ -174,7 +175,7 @@ export function createGrowthQueries({
             hasElementsEdge: hasElementsEdge.has(node.slug),
           }),
       )
-      .sort((a, b) => a.slug.localeCompare(b.slug))
+      .sort((a, b) => compareText(a.slug, b.slug))
       .map((node) => ({
         kind: 'capability_without_evidence',
         score: 0.5,
@@ -209,7 +210,7 @@ export function createGrowthQueries({
         return { node, sameKindParent, starterBody };
       })
       .filter((row) => row.sameKindParent || row.starterBody)
-      .sort((a, b) => a.node.slug.localeCompare(b.node.slug))
+      .sort((a, b) => compareText(a.node.slug, b.node.slug))
       // `starterBody` did its job in the filter above; past this point the two
       // shapes are told apart by `sameKindParent` alone.
       .map(({ node, sameKindParent }) => ({
@@ -238,7 +239,7 @@ export function createGrowthQueries({
     const kindFilter = normalizeRecommendRelationKind(options.kind);
     const recommendations = [];
 
-    for (const node of [...nodes].sort((a, b) => a.slug.localeCompare(b.slug))) {
+    for (const node of [...nodes].sort((a, b) => compareText(a.slug, b.slug))) {
       if (node.kind !== 'capability' && node.kind !== 'element') continue;
       if (kindFilter && node.kind !== kindFilter) continue;
       const domainSlug = resolveOptional(node.domain);

@@ -10,6 +10,7 @@
 import { basename, dirname, extname } from 'node:path';
 
 import { nameKey } from './operator-abilities.mjs';
+import { compareText } from '../../compare-text.mjs';
 
 const OPERATION_KINDS = new Set(['class', 'function', 'method']);
 /** Package and barrel files hold no operation of their own. */
@@ -52,7 +53,7 @@ export function siblingFamilies(productFiles, index, familySize) {
   for (const [folder, { files, members }] of byFolder) {
     // Most of the folder follows the convention; a helper file or two beside the operations is normal.
     if (members.length < familySize || members.length * 2 < files) continue;
-    members.sort((a, b) => a.path.localeCompare(b.path));
+    members.sort((a, b) => compareText(a.path, b.path));
     rows.push({
       kind: 'family',
       name: folder,
@@ -61,5 +62,5 @@ export function siblingFamilies(productFiles, index, familySize) {
       members: members.map((member) => member.name),
     });
   }
-  return rows.sort((a, b) => b.members.length - a.members.length || a.path.localeCompare(b.path));
+  return rows.sort((a, b) => b.members.length - a.members.length || compareText(a.path, b.path));
 }

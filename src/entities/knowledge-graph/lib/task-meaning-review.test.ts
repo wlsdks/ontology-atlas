@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildMeaningDiff, buildProposalBinding, canReuseMeaningDecision, createUnknownAuthority, resolveTrustedBeforeSnapshot, type MeaningClaimInput, type TaskReviewIdentity, type TaskReviewRequest, type TrustedBeforeSnapshot } from './task-meaning-review';
+import { underDefaultLocale } from '../../../../tests/helpers/under-collation';
 
 const identity: TaskReviewIdentity = { vaultId: 'vault:a', sessionGeneration: 3, userEventId: 'event:7', requestId: 'request:9', toolCallId: 'tool:11' };
 const request: TaskReviewRequest = { outcome: 'Change refund eligibility.', nonGoals: ['Do not change capture.'] };
@@ -225,5 +226,14 @@ describe('task meaning review model', () => {
       merge: { state: 'unknown', basisIds: [], scope: 'no merge receipt supplied' },
       deployment: { state: 'unknown', basisIds: [], scope: 'no deployment receipt supplied' },
     });
+  });
+
+  it('binds a proposal to one digest whatever locale the app launched in', async () => {
+    expect(await underDefaultLocale('ko', async () => 'a'.localeCompare('가'))).toBeGreaterThan(0);
+    expect(await underDefaultLocale('en', async () => 'a'.localeCompare('가'))).toBeLessThan(0);
+    const rawInput = { slug: 'capabilities/refund', 환불: true, 가: 1, notes: 'x', confirm: true };
+    const basis = { sourceRevision: 'source:a', meaningRevision: 'meaning:a', contentDigest };
+    const bind = (locale: string) => underDefaultLocale(locale, () => buildProposalBinding({ identity, request, ...basis, rawInput }));
+    expect((await bind('ko')).digest).toBe((await bind('en')).digest);
   });
 });

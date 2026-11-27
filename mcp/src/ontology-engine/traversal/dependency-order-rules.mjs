@@ -1,5 +1,6 @@
 import { typeAllowed } from '../query-operation/query-primitives.mjs';
 import { normalizeCycle } from './topology-shape.mjs';
+import { compareText } from '../../compare-text.mjs';
 
 /**
  * Every simple cycle over the allowed relation types, up to `maxDepth` hops, with the shortest
@@ -9,7 +10,7 @@ import { normalizeCycle } from './topology-shape.mjs';
  */
 export function findDependencyCycles({ nodes, outgoing, typeSet, maxDepth, limit, searchBudget }) {
   const rank = new Map(
-    [...nodes].sort((a, b) => a.slug.localeCompare(b.slug)).map((node, index) => [node.slug, index]),
+    [...nodes].sort((a, b) => compareText(a.slug, b.slug)).map((node, index) => [node.slug, index]),
   );
   const successors = new Map();
   for (const [from, list] of outgoing) {
@@ -66,7 +67,7 @@ export function findDependencyCycles({ nodes, outgoing, typeSet, maxDepth, limit
   }
 
   function keepShortest() {
-    shortest.sort((a, b) => a.nodes.length - b.nodes.length || a.sortKey.localeCompare(b.sortKey));
+    shortest.sort((a, b) => a.nodes.length - b.nodes.length || compareText(a.sortKey, b.sortKey));
     shortest.length = Math.min(shortest.length, limit);
     if (shortest.length === limit) longestKept = shortest[limit - 1].nodes.length - 1;
   }

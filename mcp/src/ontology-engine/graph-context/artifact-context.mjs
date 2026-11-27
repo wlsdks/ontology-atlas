@@ -1,6 +1,7 @@
 import { buildSlugNotFoundGrowthHint } from '../growth-hint.mjs';
 import { suggestCompiledSlugs } from '../../suggestions.mjs';
 import { edgeSortKey } from '../query-operation/query-primitives.mjs';
+import { compareText } from '../../compare-text.mjs';
 
 const sharedArtifacts = new WeakSet();
 const indexesByArtifact = new WeakMap();
@@ -54,7 +55,7 @@ function buildArtifactIndexes(artifact, shared) {
   // instead of rebuilding it for every comparison in both indexes. Compiler
   // output is already ordered, but callers may supply an unordered artifact.
   const orderedEdges = edges.map((edge) => ({ edge, key: edgeSortKey(edge) }));
-  orderedEdges.sort((left, right) => left.key.localeCompare(right.key));
+  orderedEdges.sort((left, right) => compareText(left.key, right.key));
   for (const { edge } of orderedEdges) {
     if (!outgoing.has(edge.from)) outgoing.set(edge.from, []);
     outgoing.get(edge.from).push(edge);
@@ -88,7 +89,7 @@ function buildArtifactIndexes(artifact, shared) {
     else referencedOnlyByRef.set(edge.ref, [hit]);
   }
   for (const list of referencedOnlyByRef.values()) {
-    list.sort((left, right) => left.slug.localeCompare(right.slug) || left.via.localeCompare(right.via));
+    list.sort((left, right) => compareText(left.slug, right.slug) || compareText(left.via, right.via));
     Object.freeze(list);
   }
 

@@ -13,6 +13,7 @@
 import { basename, dirname } from 'node:path';
 
 import { boundedLines, nameKey, wordsOf } from './operator-abilities.mjs';
+import { compareText } from '../../compare-text.mjs';
 
 const PAGE_LIMIT = 200;
 const PAGE_BYTES = 64 * 1024;
@@ -107,7 +108,7 @@ function codeVocabulary(files, index) {
     if (folder === '.') continue;
     const name = basename(folder);
     const main = members.find((file) => basename(file.path).replace(/\.[^.]+$/, '') === name)
-      ?? [...members].sort((a, b) => (b.lines ?? 0) - (a.lines ?? 0) || a.path.localeCompare(b.path))[0];
+      ?? [...members].sort((a, b) => (b.lines ?? 0) - (a.lines ?? 0) || compareText(a.path, b.path))[0];
     add(nameKey(name), { rank: 0, path: main.path, line: 1, symbol: name });
   }
   for (const file of files) {

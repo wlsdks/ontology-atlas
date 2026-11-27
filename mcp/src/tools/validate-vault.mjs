@@ -49,6 +49,7 @@ import {
 } from './vault-nodes.mjs';
 import { existsSync } from 'node:fs';
 import { relative } from 'node:path';
+import { compareText } from '../compare-text.mjs';
 
 /**
  * Judges wiki pages against their own contract, which `validate_vault` cannot: a
@@ -388,7 +389,7 @@ function validateVaultReport({ repoRoot } = {}, loadedDocs = null) {
   const problemSlugsInPageOrder = [...docs.map((doc) => doc.slug), ...rawSourceSlugs]
     .filter((slug) => (docIssues.get(slug) || []).length > 0)
     .map((slug) => ({ slug, hasError: docIssues.get(slug).some((issue) => issue.severity === 'error') }))
-    .sort((left, right) => Number(right.hasError) - Number(left.hasError) || left.slug.localeCompare(right.slug))
+    .sort((left, right) => Number(right.hasError) - Number(left.hasError) || compareText(left.slug, right.slug))
     .map(({ slug }) => slug);
   for (const slug of problemSlugsInPageOrder) {
     const issues = docIssues.get(slug);

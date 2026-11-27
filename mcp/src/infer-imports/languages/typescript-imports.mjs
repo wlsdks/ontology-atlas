@@ -3,6 +3,7 @@ import { join, resolve, relative, isAbsolute } from 'node:path';
 import { pathResolvesInsideRoot } from '../confinement/path-confinement.mjs';
 import { DEFAULT_IGNORE, isIgnoredPath } from '../source-files.mjs';
 import { sourceRoleOf } from '../source-role.mjs';
+import { compareText } from '../../compare-text.mjs';
 
 const RESOLVE_EXT_ORDER = [
   '.ts',
@@ -152,7 +153,7 @@ function resolveWorkspacePackageImport(spec, rootPath, workspacePackages, facts)
       workspacePackage.name &&
       (spec === workspacePackage.name || spec.startsWith(`${workspacePackage.name}/`)),
     )
-    .sort((a, b) => b.name.length - a.name.length || a.path.localeCompare(b.path))[0];
+    .sort((a, b) => b.name.length - a.name.length || compareText(a.path, b.path))[0];
   if (!matchingPackage) return { matched: false, path: null, denied: false };
 
   const packageRoot = join(rootPath, matchingPackage.path);
@@ -281,7 +282,7 @@ export function readTsconfigPathAliases(rootPath) {
     });
   }
   aliases.sort(
-    (a, b) => b.prefix.length - a.prefix.length || a.pattern.localeCompare(b.pattern),
+    (a, b) => b.prefix.length - a.prefix.length || compareText(a.pattern, b.pattern),
   );
   return aliases;
 }

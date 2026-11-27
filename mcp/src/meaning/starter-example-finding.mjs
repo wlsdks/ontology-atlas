@@ -6,6 +6,7 @@ import {
   starterExampleNodeMessage,
 } from '../construction/construction-rules.mjs';
 import { folderForKind } from '../schema.mjs';
+import { compareText } from '../compare-text.mjs';
 
 const STARTER_EXAMPLE_KINDS = new Set(Object.keys(STARTER_EXAMPLE_SLUGS));
 
@@ -82,5 +83,5 @@ export function starterExampleFindings(nodes) {
     const finding = starterExampleFinding({ ...row.node, kind: row.kind, starter: true, realSlug: sibling.slug ?? null });
     if (finding) findings.push(finding);
   }
-  return findings.sort((a, b) => String(a.slug).localeCompare(String(b.slug)));
+  return findings.sort((a, b) => compareText(String(a.slug), String(b.slug)));
 }

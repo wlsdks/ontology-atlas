@@ -5,6 +5,7 @@ import { completeMarkdownUnits } from './recorded-evidence.mjs';
 import { readReviewedEvidence } from './reviewed-evidence.mjs';
 import { verifyTaskNavigationEvidencePath } from './task-navigation-evidence.mjs';
 import { lexicalTokens } from './task-intent.mjs';
+import { compareText } from '../compare-text.mjs';
 
 export function compactDoc(doc) {
   if (!doc) return null;
@@ -202,9 +203,9 @@ export function compactRecordedQualifiers(capabilityDoc, anchorDocs, intent) {
   };
   const ordered = (units) => [...units].sort((left, right) => (
     score(right) - score(left)
-    || left.slug.localeCompare(right.slug)
-    || left.section.localeCompare(right.section)
-    || left.text.localeCompare(right.text)
+    || compareText(left.slug, right.slug)
+    || compareText(left.section, right.section)
+    || compareText(left.text, right.text)
   ));
   const selected = [];
   const add = (unit) => {
@@ -237,7 +238,7 @@ export function compactRecordedQualifiers(capabilityDoc, anchorDocs, intent) {
     };
     return rarityScore(right) - rarityScore(left)
       || score(right) - score(left)
-      || left.text.localeCompare(right.text);
+      || compareText(left.text, right.text);
   }).slice(0, 1);
   for (const unit of capabilityConditions) add(unit);
   add(ordered(eligible.filter((unit) => (
@@ -254,7 +255,7 @@ export function compactRecordedQualifiers(capabilityDoc, anchorDocs, intent) {
         .filter((term) => uncertaintyRiskTerms.has(term)).length;
       return riskScore(right) - riskScore(left)
         || score(right) - score(left)
-        || left.text.localeCompare(right.text);
+        || compareText(left.text, right.text);
     });
   add(capabilityUncertainty[0] ?? ordered(eligible.filter((unit) => unit.role === 'uncertainty'))[0]);
   const primaryAnchor = anchorDocs[0]?.slug;
@@ -270,7 +271,7 @@ export function compactRecordedQualifiers(capabilityDoc, anchorDocs, intent) {
     return scopeScore(right) - scopeScore(left)
       || overlap(left) - overlap(right)
       || score(right) - score(left)
-      || left.text.localeCompare(right.text);
+      || compareText(left.text, right.text);
   });
   add(anchorConditions[0]);
   for (const unit of ordered(eligible)) {

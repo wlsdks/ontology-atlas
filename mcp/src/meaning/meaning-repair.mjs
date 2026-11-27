@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 
 import { GET_CONCEPTS_FULL_BODY_MAX } from '../vault/documents/body-delivery.mjs';
+import { compareText } from '../compare-text.mjs';
 
 const CONTRACT = 'meaningRepair:v2';
 const REVIEW_CONTRACT = 'meaningRepairReviewPage:v1';
@@ -45,7 +46,7 @@ function nonBlank(value, maxLength = 500) {
 }
 
 function sorted(values) {
-  return [...new Set(values)].sort((left, right) => left.localeCompare(right));
+  return [...new Set(values)].sort((left, right) => compareText(left, right));
 }
 
 function writePolicy() {
@@ -240,7 +241,7 @@ function buildProjection(input = {}) {
       && (relation.type === 'capabilities' || relation.type === 'contains')
       && capabilityBySlug.get(relation.to).domain === relation.from
     ))
-    .sort((left, right) => relationKey(left).localeCompare(relationKey(right)));
+    .sort((left, right) => compareText(relationKey(left), relationKey(right)));
   const structuralByCapability = new Map(
     structuralRelations.map((relation) => [relation.to, relation]),
   );

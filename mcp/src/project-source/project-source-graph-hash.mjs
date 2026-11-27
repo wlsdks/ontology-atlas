@@ -1,4 +1,6 @@
 // Shared by the MCP server and the web bridge.
+import { compareText } from '../compare-text.mjs';
+
 const GRAPH_ARRAY_KEYS = Object.freeze([
   "domains",
   "capabilities",
@@ -17,7 +19,7 @@ function nonBlank(value) {
 
 function stringArray(value) {
   if (!Array.isArray(value)) return [];
-  return [...new Set(value.map(nonBlank).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  return [...new Set(value.map(nonBlank).filter(Boolean))].sort((a, b) => compareText(a, b));
 }
 
 function canonicalDoc(doc) {
@@ -54,7 +56,7 @@ export function buildProjectSourceGraphHash(projectSlug, docs) {
   const canonical = [...docs]
     .filter((doc) => doc && typeof doc.slug === "string" && doc.slug.length > 0)
     .map(canonicalDoc)
-    .sort((a, b) => a.slug.localeCompare(b.slug));
+    .sort((a, b) => compareText(a.slug, b.slug));
   const value = JSON.stringify({ version: 1, projectSlug, docs: canonical });
   let hash = 0x811c9dc5;
   for (let index = 0; index < value.length; index += 1) {

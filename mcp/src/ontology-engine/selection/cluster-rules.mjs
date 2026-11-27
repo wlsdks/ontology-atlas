@@ -1,4 +1,5 @@
 import { countEdges, summarizeNode, typeAllowed } from '../query-operation/query-primitives.mjs';
+import { compareText } from '../../compare-text.mjs';
 
 /**
  * The connected groups of `nodes`, largest first, each with its slugs sorted. `neighborsOf(slug)`
@@ -32,7 +33,7 @@ export function connectedComponents(nodes, neighborsOf) {
   }
 
   groups.sort(
-    (a, b) => b.size - a.size || (a.slugs[0] || '').localeCompare(b.slugs[0] || ''),
+    (a, b) => b.size - a.size || compareText((a.slugs[0] || ''), b.slugs[0] || ''),
   );
   return groups;
 }
@@ -76,7 +77,7 @@ export function groupCommunities({ nodes, edges, labels, typeSet, nodeBySlug }) 
         [...groupNodes].sort(
           (a, b) =>
             (b.inDegree || 0) + (b.outDegree || 0) - ((a.inDegree || 0) + (a.outDegree || 0)) ||
-            a.slug.localeCompare(b.slug),
+            compareText(a.slug, b.slug),
         )[0],
       ),
     };
@@ -86,7 +87,7 @@ export function groupCommunities({ nodes, edges, labels, typeSet, nodeBySlug }) 
     (a, b) =>
       b.size - a.size ||
       b.internalEdges - a.internalEdges ||
-      (a.representative?.slug || a.label).localeCompare(b.representative?.slug || b.label),
+      compareText((a.representative?.slug || a.label), b.representative?.slug || b.label),
   );
 
   const communityBySlug = new Map();

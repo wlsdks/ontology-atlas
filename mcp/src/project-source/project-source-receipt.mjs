@@ -18,6 +18,7 @@ import {
   PROJECT_SOURCE_RECEIPT_VERSION,
   buildProjectSourceReceipt,
 } from './project-source-mint.mjs';
+import { compareText } from '../compare-text.mjs';
 
 export { PROJECT_SOURCE_RECEIPT_VERSION, buildProjectSourceReceipt };
 export const PROJECT_SOURCE_STATE_RELATIVE_PATH = '.ontology-atlas/project-sources.json';
@@ -318,7 +319,7 @@ function liveWitnessCheck(probe, receipt, basis) {
   const missing = witnesses
     .filter((witness) => typeof witness?.path !== 'string' || !files.has(witness.path))
     .map((witness) => witness?.path ?? '')
-    .sort((left, right) => left.localeCompare(right));
+    .sort((left, right) => compareText(left, right));
   const status = witnesses.length === 0
     ? 'no_witnesses'
     : probe.truncated

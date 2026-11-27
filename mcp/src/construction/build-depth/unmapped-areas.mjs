@@ -5,6 +5,7 @@ import { abilityRowText } from '../../analyze/survey/breadth-map.mjs';
 import { areaLocator } from '../../analyze/survey/survey-areas.mjs';
 import { lineCites } from './line-cites.mjs';
 import { kindOf, pathOf, sectionOf } from './node-fields.mjs';
+import { compareText } from '../../compare-text.mjs';
 
 /** One press of the panel's step is one request of at most this many files, across at most this many areas. */
 const BATCH_FILES = 18;
@@ -269,7 +270,7 @@ export function areaCoverage(docs, survey, { collection = null, repoRoot = null,
     const files = found.filter((file) => !pathAndFolders(file.path).some((path) => leavesOutPath(excludes, path)));
     if (found.length > 0 && files.length === 0) continue;
     const uncoveredFiles = files.filter((file) => !isPointedAt(onTheMap, file.path))
-      .sort((left, right) => right.abilities - left.abilities || left.path.localeCompare(right.path));
+      .sort((left, right) => right.abilities - left.abilities || compareText(left.path, right.path));
     counted.push({
       ...area,
       abilities: files.reduce((sum, file) => sum + file.abilities, 0),

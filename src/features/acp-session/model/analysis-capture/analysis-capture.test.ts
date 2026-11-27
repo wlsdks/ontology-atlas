@@ -6,6 +6,7 @@ import { TOOL_OUTPUT_KEEP_CHARS, keepToolOutput } from '../tool-calls/tool-outpu
 import type { KnowledgeProjectInsight } from '@/entities/knowledge-graph';
 import { VAULT_MCP_SERVER_NAME } from '../runtime-wiring/vault-mcp-server';
 import type { AcpEvent, AcpTurnCompletion } from '../use-acp-session';
+import { underDefaultLocale } from '../../../../../tests/helpers/under-collation';
 
 const slug = 'capabilities/refund';
 const frontmatter = { kind: 'capability', title: 'Refund' };
@@ -124,5 +125,22 @@ describe('analysis evidence capture', () => {
     expect(result.sourceAccess).toBe('source-included');
     expect(result.qualification.status).toBe('unverified');
     expect(result.qualification.reasons).toContain('sourceFingerprint_unrecorded');
+  });
+
+  it('hashes a graph with Hangul and Latin names to one digest whatever locale the app launched in', async () => {
+    expect(await underDefaultLocale('ko', async () => 'a'.localeCompare('가'))).toBeGreaterThan(0);
+    const graph: AnalysisCaptureContext['graph'] = {
+      nodes: [
+        { id: 'capabilities/refund', title: 'Refund', kind: 'capability' },
+        { id: 'capabilities/환불', title: '환불', kind: 'capability' },
+        { id: 'domains/billing', title: 'Billing', kind: 'domain' },
+      ],
+      edges: [
+        { from: 'capabilities/환불', to: 'domains/billing', type: 'domains' },
+        { from: 'capabilities/refund', to: 'domains/billing', type: 'domains' },
+      ],
+    };
+    const digest = (locale: string) => underDefaultLocale(locale, () => analysisGraphDigest(graph));
+    expect(await digest('ko')).toBe(await digest('en'));
   });
 });

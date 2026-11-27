@@ -11,6 +11,7 @@ import {
   spokenForms,
 } from './name-matching.mjs';
 import { kindOf, pathOf, sectionOf } from './node-fields.mjs';
+import { compareText } from '../../compare-text.mjs';
 
 /** Context parts that are code a capability leans on: not its callers, its own class header or a constant. */
 const ROLE_PARTS = new Set(['callee', 'constructor', 'implementation']);
@@ -78,7 +79,7 @@ export function measureRoles(docs, reads, repoRoot) {
     }
   }
   const candidates = [...groups.values()].filter((group) => group.users.size >= 2)
-    .sort((a, b) => b.users.size - a.users.size || a.path.localeCompare(b.path) || a.line - b.line)
+    .sort((a, b) => b.users.size - a.users.size || compareText(a.path, b.path) || a.line - b.line)
     .slice(0, ROLE_LIMIT)
     .map((group) => ({ ...group, evidence: `${group.path}:L${group.line}`, lines: `${group.path}:L${group.line}-L${group.endLine}`, users: [...group.users].sort() }));
   const elements = docs.filter((doc) => kindOf(doc) === 'element').map((doc) => {

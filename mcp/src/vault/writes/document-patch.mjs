@@ -1,4 +1,5 @@
 import { buildMarkdown, parseFrontmatter } from '../../parser.mjs';
+import { compareText } from '../../compare-text.mjs';
 
 const GRAPH_ARRAY_KEYS = new Set([
   'domains', 'capabilities', 'elements', 'dependencies', 'depends_on',
@@ -16,7 +17,7 @@ function normalizeDocumentRelationRefs(values) {
     if (!ref || seen.has(ref)) continue;
     seen.add(ref); refs.push(ref);
   }
-  refs.sort((left, right) => left.localeCompare(right, 'en'));
+  refs.sort((left, right) => compareText(left, right));
   return [...refs, ...passthrough];
 }
 

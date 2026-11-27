@@ -4,6 +4,7 @@
 
 import { existsSync } from 'node:fs';
 import { basename, resolve } from 'node:path';
+import { compareText } from '../compare-text.mjs';
 
 const ONTOLOGY_SLUG_PREFIXES = ['capabilities/', 'domains/', 'elements/', 'documents/'];
 
@@ -65,9 +66,9 @@ export function detectVaultPathDrift({ docs = [], repoRoot = process.cwd(), file
   // makes git treat the file as binary and hides its diff.
   drifts.sort(
     (a, b) =>
-      a.slug.localeCompare(b.slug) ||
-      a.key.localeCompare(b.key) ||
-      a.missingPath.localeCompare(b.missingPath),
+      compareText(a.slug, b.slug) ||
+      compareText(a.key, b.key) ||
+      compareText(a.missingPath, b.missingPath),
   );
   return { repoRoot, nodesScanned, pathsChecked, drifts };
 }

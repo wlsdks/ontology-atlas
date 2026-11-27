@@ -52,6 +52,7 @@ import {
 } from './infer-imports/languages/typescript-imports.mjs';
 import { discoverDeclaredWorkspacePackages } from './infer-imports/workspace-packages.mjs';
 import { zeroCounts } from './infer-imports/zero-counts.mjs';
+import { compareText } from './compare-text.mjs';
 
 const IGNORE_ARRAY_MAX_ITEMS = 200;
 const SOURCE_FOLDER_ARRAY_MAX_ITEMS = 50;
@@ -321,7 +322,7 @@ function inferImportsWithinRoot(rootPath, options = {}) {
       to,
       count: bucket.count,
       kindCounts: Object.fromEntries(
-        [...bucket.kindCounts.entries()].sort(([a], [b]) => a.localeCompare(b)),
+        [...bucket.kindCounts.entries()].sort(([a], [b]) => compareText(a, b)),
       ),
       sourceRoleCounts: bucket.sourceRoleCounts,
       importUsageCounts: bucket.importUsageCounts,
@@ -371,7 +372,7 @@ function importScanCoverage(rootPath, jvmFilesScanned) {
 
 function pruneNestedRoots(roots, rootPath) {
   const byRelativePath = [...new Set(roots.map((root) => relative(rootPath, root) || '.'))]
-    .sort((a, b) => a.length - b.length || a.localeCompare(b));
+    .sort((a, b) => a.length - b.length || compareText(a, b));
   const retained = [];
   for (const candidate of byRelativePath) {
     if (retained.some((parent) => parent === '.' || candidate === parent || candidate.startsWith(`${parent}/`))) continue;
@@ -384,9 +385,9 @@ function compareImportEvidence(a, b) {
   const priority = (row) =>
     row.sourceRole === 'production' && row.importUsage === 'value' ? 0 : 1;
   return priority(a) - priority(b) ||
-    a.from.localeCompare(b.from) ||
-    a.to.localeCompare(b.to) ||
-    a.kind.localeCompare(b.kind);
+    compareText(a.from, b.from) ||
+    compareText(a.to, b.to) ||
+    compareText(a.kind, b.kind);
 }
 
 function validateRootPath(rootPath) {
