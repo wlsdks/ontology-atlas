@@ -23,11 +23,12 @@ from the whole graph.
 |---|---|
 | `mod.rs` | `run`: the family an operation belongs to, and the `compiledSummary` that closes every answer |
 | `operation.rs` | `Operation`: every operation, its name, and whether a plan may target it |
-| `request.rs` | `QueryRequest`, `Direction`: what a call asked, read once by the tool layer |
+| `request.rs` | `QueryRequest`, `Direction`: what a call asked, read once by the tool layer, and the defaults and caps a walk applies to `depth` and `direction` |
 | `query_error.rs` | `QueryError`: an invalid call, a value not allowed, an unknown node, an operation not answered yet |
 | `relation_set.rs` | `RelationSet`: the relation names a call may select, with their aliases |
 | `node_resolution.rs` | `resolve`: a slug or alias to a node, or the slugs near a name that is none |
 | `node_summary.rs` | `NodeIdentity`, `NodeSummary`: the node row every answer writes |
+| `node_mask.rs` | `NodeMask`: a set of nodes, one flag each |
 | `edge_rows.rs` | the edge rows of an answer: directed, on a path, compiled |
 | `name_counts.rs` | counts by kind, domain or relation, in the order of the names |
 | `walks/graph_walk.rs` | `traversal_steps`: the edges a walk may follow from a node, in the order walks use |

@@ -6,13 +6,12 @@ use serde::Serialize;
 
 use super::graph_walk::traversal_steps;
 use super::hop::{path_edges, Hop};
-use super::neighborhood::{
-    depth_of, direction_as_sent, hops_between, is_set, mask_of, Neighborhood,
-};
+use super::neighborhood::{hops_between, Neighborhood};
 use super::row_page::RowPage;
 use crate::compiled_graph::{CompiledGraph, NodeId};
 use crate::query::edge_rows::PathEdge;
 use crate::query::name_counts::{kind_counts, sorted_counts};
+use crate::query::node_mask::NodeMask;
 use crate::query::node_resolution::resolve;
 use crate::query::node_summary::{summaries, NodeSummary};
 use crate::query::query_error::QueryError;
@@ -78,8 +77,8 @@ pub fn reachability<'a>(
     request: &QueryRequest,
 ) -> Result<ReachabilityAnswer<'a>, QueryError> {
     let start = resolve(graph, request.slug.as_deref(), "slug")?;
-    let direction = direction_as_sent(request, Direction::Outgoing);
-    let depth = depth_of(request, DEFAULT_DEPTH);
+    let direction = request.direction_or(Direction::Outgoing);
+    let depth = request.depth_or(DEFAULT_DEPTH);
     let limit = request.limit.unwrap_or(DEFAULT_LIMIT);
     let types = RelationSet::parse(request.types.as_deref(), "types")?;
 
@@ -91,11 +90,11 @@ pub fn reachability<'a>(
         .filter_map(|&place| neighborhood.reached().get(place))
         .map(|row| row.node)
         .collect();
-    let visible = mask_of(
+    let visible = NodeMask::of(
         graph,
         std::iter::once(start).chain(shown_nodes.iter().copied()),
     );
-    let among = hops_between(graph, neighborhood.hops(), |node| is_set(&visible, node));
+    let among = hops_between(graph, neighborhood.hops(), |node| visible.contains(node));
 
     let rows: Vec<ReachedRow<'a>> = shown
         .iter()

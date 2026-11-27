@@ -113,7 +113,7 @@ pub fn pattern_walk<'a>(
 ) -> Result<PatternWalkAnswer<'a>, QueryError> {
     let start = resolve(graph, request.slug.as_deref(), "slug")?;
     let pattern = read_pattern(request)?;
-    let direction = request.direction.unwrap_or(Direction::Outgoing);
+    let direction = request.direction_or(Direction::Outgoing);
     let limit = request.limit.unwrap_or(DEFAULT_LIMIT);
 
     let mut paths = vec![Walk {

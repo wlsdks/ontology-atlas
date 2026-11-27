@@ -5,7 +5,6 @@
 use serde::Serialize;
 
 use super::containment::{children, has_parent, project_roots};
-use super::neighborhood::MAX_DEPTH;
 use super::scope::Scope;
 use crate::compiled_graph::{CompiledGraph, NodeId};
 use crate::query::node_resolution::resolve;
@@ -144,7 +143,7 @@ pub fn containment_tree<'a>(
         .as_deref()
         .map(|name| resolve(graph, Some(name), "slug"))
         .transpose()?;
-    let depth = request.depth.unwrap_or(DEFAULT_DEPTH).min(MAX_DEPTH);
+    let depth = request.depth_or(DEFAULT_DEPTH);
     let limit = request.limit.unwrap_or(DEFAULT_LIMIT);
     let roots = match named {
         Some(root) => vec![root],

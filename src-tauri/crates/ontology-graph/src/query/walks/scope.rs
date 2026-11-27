@@ -4,40 +4,34 @@
 use serde::Serialize;
 
 use super::containment::children;
-use super::neighborhood::is_set;
 use crate::compiled_graph::{CompiledGraph, EdgeId, NodeId, Target};
 use crate::query::edge_rows::CompiledEdge;
 use crate::query::name_counts::sorted_counts;
+use crate::query::node_mask::NodeMask;
 use crate::query::node_summary::NodeSummary;
 
 /// The nodes a root holds, itself included, in the order of the graph.
 pub struct Scope {
     pub nodes: Vec<NodeId>,
-    mask: Vec<bool>,
+    mask: NodeMask,
 }
 
 impl Scope {
     /// Every node that any of `roots` holds, directly or through what it holds.
     pub fn holding(graph: &CompiledGraph, roots: &[NodeId]) -> Self {
-        let mut mask = vec![false; graph.nodes().len()];
+        let mut mask = NodeMask::empty(graph);
         let mut queue: Vec<NodeId> = Vec::new();
         for &root in roots {
-            if let Some(slot) = mask.get_mut(root.index()) {
-                if !*slot {
-                    *slot = true;
-                    queue.push(root);
-                }
+            if mask.insert(root) {
+                queue.push(root);
             }
         }
         let mut head = 0;
         while let Some(&current) = queue.get(head) {
             head += 1;
             for step in children(graph, current) {
-                if let Some(slot) = mask.get_mut(step.next.index()) {
-                    if !*slot {
-                        *slot = true;
-                        queue.push(step.next);
-                    }
+                if mask.insert(step.next) {
+                    queue.push(step.next);
                 }
             }
         }
@@ -50,7 +44,7 @@ impl Scope {
     }
 
     pub fn contains(&self, node: NodeId) -> bool {
-        is_set(&self.mask, node)
+        self.mask.contains(node)
     }
 }
 

@@ -8,6 +8,7 @@
 
 mod edge_rows;
 mod name_counts;
+mod node_mask;
 mod node_resolution;
 mod node_summary;
 mod operation;

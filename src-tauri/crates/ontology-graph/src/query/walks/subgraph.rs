@@ -2,11 +2,10 @@
 
 use serde::Serialize;
 
-use super::neighborhood::{
-    depth_of, direction_both_for_undirected, is_set, mask_of, Neighborhood, NodeAtDistance,
-};
+use super::neighborhood::{Neighborhood, NodeAtDistance};
 use crate::compiled_graph::{CompiledGraph, EdgeId, NodeId};
 use crate::query::edge_rows::PathEdge;
+use crate::query::node_mask::NodeMask;
 use crate::query::node_resolution::resolve;
 use crate::query::query_error::QueryError;
 use crate::query::relation_set::{allowed, RelationSet};
@@ -41,8 +40,8 @@ impl Subgraph {
         default_depth: usize,
     ) -> Result<Self, QueryError> {
         let seed = resolve(graph, name, "slug")?;
-        let direction = direction_both_for_undirected(request, Direction::Both);
-        let depth = depth_of(request, default_depth);
+        let direction = request.direction_undirected_as_both(Direction::Both);
+        let depth = request.depth_or(default_depth);
         let limit = request.limit.unwrap_or(DEFAULT_LIMIT);
         let types = RelationSet::parse(request.types.as_deref(), "types")?;
         let neighborhood = Neighborhood::explore(graph, seed, direction, depth, types.as_ref());
@@ -58,13 +57,13 @@ impl Subgraph {
             )
             .take(limit)
             .collect();
-        let shown = mask_of(graph, nodes.iter().map(|&(node, _)| node));
+        let shown = NodeMask::of(graph, nodes.iter().map(|&(node, _)| node));
         let mut among: Vec<EdgeId> = Vec::new();
         for &(node, _) in &nodes {
             for &id in graph.outgoing(node) {
                 let edge = graph.edge(id);
                 if allowed(types.as_ref(), edge.via)
-                    && edge.to().is_some_and(|to| is_set(&shown, to))
+                    && edge.to().is_some_and(|to| shown.contains(to))
                 {
                     among.push(id);
                 }

@@ -31,7 +31,8 @@ impl<T> RowPage<T> {
     }
 }
 
-/// A list of nodes under `nodes`, as `domain_profile`-style rows write it.
+/// A list of nodes written under `nodes`, with how many there were and whether some are missing:
+/// the form a project map gives each of its lists of nodes.
 #[derive(Serialize)]
 pub struct NodePage<T> {
     total: usize,

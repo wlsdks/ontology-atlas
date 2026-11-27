@@ -9,32 +9,10 @@ use serde::Serialize;
 
 use crate::compiled_graph::{CompiledGraph, Node, NodeId};
 use crate::query::relation_set::RelationSet;
-use crate::query::request::{Direction, QueryRequest};
+use crate::query::request::{Direction, DEPTH_MAX};
 
 use super::graph_walk::{traversal_steps, Step};
 use super::hop::Hop;
-
-/// The most hops a call may ask for; the tool layer refuses more.
-pub const MAX_DEPTH: usize = 20;
-
-/// The direction as the call sent it, `undirected` included.
-pub fn direction_as_sent(request: &QueryRequest, default: Direction) -> Direction {
-    request.direction.unwrap_or(default)
-}
-
-/// The direction an answer that only knows incoming, outgoing and both reports: `undirected` is
-/// `both`.
-pub fn direction_both_for_undirected(request: &QueryRequest, default: Direction) -> Direction {
-    match request.direction {
-        None => default,
-        Some(Direction::Undirected) => Direction::Both,
-        Some(other) => other,
-    }
-}
-
-pub fn depth_of(request: &QueryRequest, default: usize) -> usize {
-    request.depth.unwrap_or(default).min(MAX_DEPTH)
-}
 
 /// A node of an answer with how far it is from the seed.
 #[derive(Serialize)]
@@ -91,7 +69,7 @@ impl Neighborhood {
         depth: usize,
         mut steps_of: impl FnMut(NodeId) -> Vec<Step>,
     ) -> Self {
-        let depth = depth.min(MAX_DEPTH);
+        let depth = depth.min(DEPTH_MAX);
         let mut seen = vec![false; node_count];
         if let Some(slot) = seen.get_mut(seed.index()) {
             *slot = true;
@@ -200,19 +178,4 @@ pub fn hops_between(
         .collect();
     among.sort_by_key(|hop| hop.edge);
     among
-}
-
-/// A mask over the graph's nodes that is set for `nodes`.
-pub fn mask_of(graph: &CompiledGraph, nodes: impl IntoIterator<Item = NodeId>) -> Vec<bool> {
-    let mut mask = vec![false; graph.nodes().len()];
-    for node in nodes {
-        if let Some(slot) = mask.get_mut(node.index()) {
-            *slot = true;
-        }
-    }
-    mask
-}
-
-pub fn is_set(mask: &[bool], node: NodeId) -> bool {
-    mask.get(node.index()).copied().unwrap_or(false)
 }

@@ -52,6 +52,9 @@ impl Direction {
 /// The most expanded states one search may be given to spend.
 pub const SEARCH_BUDGET_MAX: usize = 50_000;
 
+/// The most hops a call may ask for; the tool layer refuses more.
+pub const DEPTH_MAX: usize = 20;
+
 /// The arguments of one `query_ontology` call that the operations read, each read once by the
 /// tool layer. The operation asks for the argument its own way: `search_budget` is judged only by
 /// the two operations that spend one, after they have resolved their nodes.
@@ -112,6 +115,26 @@ impl QueryRequest {
             project: None,
             relation_type: None,
             relation: None,
+        }
+    }
+
+    /// The hops a walk may take: the call's `depth` or `default`, never more than [`DEPTH_MAX`].
+    pub fn depth_or(&self, default: usize) -> usize {
+        self.depth.unwrap_or(default).min(DEPTH_MAX)
+    }
+
+    /// The direction as the call sent it, `undirected` included.
+    pub fn direction_or(&self, default: Direction) -> Direction {
+        self.direction.unwrap_or(default)
+    }
+
+    /// The direction for an answer that only knows incoming, outgoing and both: `undirected` is
+    /// read as `both`.
+    pub fn direction_undirected_as_both(&self, default: Direction) -> Direction {
+        match self.direction {
+            None => default,
+            Some(Direction::Undirected) => Direction::Both,
+            Some(other) => other,
         }
     }
 

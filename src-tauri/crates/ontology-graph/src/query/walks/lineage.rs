@@ -6,9 +6,10 @@ use serde::Serialize;
 
 use super::containment::{containment_steps, Way};
 use super::hop::{path_edges, Hop};
-use super::neighborhood::{depth_of, hops_between, is_set, mask_of, Neighborhood};
+use super::neighborhood::{hops_between, Neighborhood};
 use crate::compiled_graph::{CompiledGraph, Node, NodeId};
 use crate::query::edge_rows::PathEdge;
+use crate::query::node_mask::NodeMask;
 use crate::query::node_resolution::resolve;
 use crate::query::node_summary::NodeSummary;
 use crate::query::query_error::QueryError;
@@ -90,12 +91,12 @@ pub fn lineage<'a>(
     request: &QueryRequest,
 ) -> Result<LineageAnswer<'a>, QueryError> {
     let center = resolve(graph, request.slug.as_deref(), "slug")?;
-    let depth = depth_of(request, DEFAULT_DEPTH);
+    let depth = request.depth_or(DEFAULT_DEPTH);
     let limit = request.limit.unwrap_or(DEFAULT_LIMIT);
     let ancestors = Reach::new(graph, center, Way::Ancestors, depth);
     let descendants = Reach::new(graph, center, Way::Descendants, depth);
 
-    let visible = mask_of(
+    let visible = NodeMask::of(
         graph,
         std::iter::once(center)
             .chain(ancestors.shown(limit).map(|(node, _, _)| node))
@@ -105,7 +106,7 @@ pub fn lineage<'a>(
     let mut hops: Vec<Hop> = Vec::new();
     for reach in [&ancestors, &descendants] {
         for hop in hops_between(graph, reach.neighborhood.hops(), |node| {
-            is_set(&visible, node)
+            visible.contains(node)
         }) {
             if seen.insert(hop) {
                 hops.push(hop);

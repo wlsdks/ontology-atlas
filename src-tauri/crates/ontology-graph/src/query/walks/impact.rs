@@ -4,7 +4,7 @@
 use serde::Serialize;
 
 use super::dependency_qualification::{DependencyEdge, Qualification};
-use super::neighborhood::{depth_of, direction_both_for_undirected, Neighborhood, NodeAtDistance};
+use super::neighborhood::{Neighborhood, NodeAtDistance};
 use crate::compiled_graph::{CompiledGraph, NodeId};
 use crate::query::node_resolution::resolve;
 use crate::query::query_error::QueryError;
@@ -27,8 +27,8 @@ pub struct DependencyWalk {
 impl DependencyWalk {
     pub fn run(graph: &CompiledGraph, request: &QueryRequest) -> Result<Self, QueryError> {
         let center = resolve(graph, request.slug.as_deref(), "slug")?;
-        let direction = direction_both_for_undirected(request, Direction::Incoming);
-        let depth = depth_of(request, DEFAULT_DEPTH);
+        let direction = request.direction_undirected_as_both(Direction::Incoming);
+        let depth = request.depth_or(DEFAULT_DEPTH);
         let limit = request.limit.unwrap_or(DEFAULT_LIMIT);
         refuse_structural_types(request)?;
         let types = RelationSet::dependencies();
