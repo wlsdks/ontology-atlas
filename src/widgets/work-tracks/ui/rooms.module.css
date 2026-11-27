@@ -145,6 +145,8 @@
   position: absolute;
   inset: 0;
   overflow: hidden;
+  /* Its own stacking context, so the light under its words (`z-index: -1`) still lies over its wall. */
+  isolation: isolate;
   background: var(--work-room-wall);
   transition: background-color var(--motion-expressive) var(--motion-ease);
 }
@@ -159,14 +161,66 @@
   --lit: 0.7;
 }
 
-/* A room that needs a person is framed in amber, so it wins over the healthy lit rooms beside it. */
-.scene[data-tone='warning']::after {
+/*
+ * The room's light at rest, in its light colour: a soft light inside the frame under the room's
+ * words, and a hairline on the frame, brightest along the top and fading down the sides. A room at
+ * work glows faintly in its session's ink; one that needs a person glows in amber, brighter, so it
+ * wins over the healthy rooms beside it. A quiet room has none. Nothing here moves at rest.
+ */
+.light,
+.rim {
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--motion-expressive) var(--motion-ease);
+}
+
+.light {
+  z-index: -1;
+  box-shadow: inset 0 0 var(--work-room-glow-reach) color-mix(in srgb, var(--room-ink) var(--work-room-glow-rest), transparent);
+}
+
+/* A counted change in the last minute adds light, by opacity, and takes it back when the minute is over. */
+.light::after {
   content: "";
   position: absolute;
   inset: 0;
+  box-shadow: inset 0 0 var(--work-room-glow-reach) color-mix(in srgb, var(--room-ink) var(--work-room-glow-fresh), transparent);
+  opacity: 0;
+  transition: opacity var(--motion-expressive) var(--motion-ease);
+}
+
+.scene[data-fresh='true'] .light::after {
+  opacity: 1;
+}
+
+.rim {
   z-index: 6;
-  pointer-events: none;
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--color-status-warning) 70%, transparent);
+  border: 1px solid transparent;
+  border-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--room-ink) var(--work-room-rim-top), transparent),
+    color-mix(in srgb, var(--room-ink) var(--work-room-rim-foot), transparent)
+  ) 1;
+}
+
+.scene[data-lit='true'] > .light,
+.scene[data-lit='true'] > .rim,
+.scene[data-tone='warning'] > .light,
+.scene[data-tone='warning'] > .rim {
+  opacity: 1;
+}
+
+.scene[data-tone='warning'] > .light {
+  box-shadow: inset 0 0 var(--work-room-glow-reach) color-mix(in srgb, var(--room-ink) var(--work-room-glow-alert), transparent);
+}
+
+.scene[data-tone='warning'] > .rim {
+  border-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--room-ink) var(--work-room-rim-alert-top), transparent),
+    color-mix(in srgb, var(--room-ink) var(--work-room-rim-alert-foot), transparent)
+  ) 1;
 }
 
 .scene > i,
@@ -842,7 +896,7 @@
 /* Lights out: the dim layer fades over the whole scene. */
 .dim {
   inset: 0;
-  z-index: 6;
+  z-index: 7;
   pointer-events: none;
   background: var(--work-room-dark);
   opacity: 0;
@@ -907,6 +961,8 @@
   display: flex;
   gap: 14px;
   overflow: hidden;
+  /* Its own stacking context, so a pulse's light under its words (`z-index: -1`) still lies over its wall. */
+  isolation: isolate;
   background: var(--work-room-wall);
   transition: background-color var(--motion-expressive) var(--motion-ease);
 }
@@ -1233,17 +1289,195 @@
 }
 
 /*
- * The room's light, once per answer that carries a newly counted file change: a wash of the
- * session's ink over the room (`.motion-room-flash` plays it once). It sits under the press target.
+ * A pulse, once per answer that carries a newly counted file change (`RoomPulse` plays it): the
+ * light inside the frame flares under the room's words and settles, and one spark runs once round
+ * the frame. Each edge's spark waits off its edge, so nothing shows once it has run.
  */
-.flash {
+.flare,
+.spark {
   position: absolute;
   inset: 0;
-  z-index: 3;
   pointer-events: none;
-  background: color-mix(in srgb, var(--ink) 9%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 45%, transparent);
+}
+
+.flare {
+  z-index: -1;
   opacity: 0;
+  box-shadow: inset 0 0 var(--work-room-glow-reach) color-mix(in srgb, var(--room-ink, var(--ink)) var(--work-room-glow-flare), transparent);
+}
+
+.spark {
+  --spark-ink: color-mix(in srgb, var(--room-ink, var(--ink)) 85%, transparent);
+  --spark-head: color-mix(in srgb, var(--room-ink, var(--ink)) 45%, var(--color-text-primary));
+  z-index: 6;
+}
+
+.spark > i {
+  position: absolute;
+}
+
+/* The spark's head: a small soft light on the frame, so it reads as a spark rather than a line. */
+.spark > i::after {
+  content: "";
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: radial-gradient(circle, var(--spark-head), transparent 70%);
+}
+
+.spark > i[data-edge='top']::after {
+  right: -6px;
+  top: -5px;
+}
+
+.spark > i[data-edge='right']::after {
+  bottom: -6px;
+  left: -5px;
+}
+
+.spark > i[data-edge='bottom']::after {
+  left: -6px;
+  top: -5px;
+}
+
+.spark > i[data-edge='left']::after {
+  top: -6px;
+  left: -5px;
+}
+
+.spark > i[data-edge='top'],
+.spark > i[data-edge='bottom'] {
+  width: var(--work-room-spark-length);
+  height: 2px;
+}
+
+.spark > i[data-edge='right'],
+.spark > i[data-edge='left'] {
+  width: 2px;
+  height: var(--work-room-spark-length);
+}
+
+.spark > i[data-edge='top'] {
+  left: 0;
+  top: 0;
+  background: linear-gradient(to right, transparent, var(--spark-ink) 80%, var(--spark-head));
+  transform: translateX(-100%);
+}
+
+.spark > i[data-edge='right'] {
+  right: 0;
+  top: 0;
+  background: linear-gradient(to bottom, transparent, var(--spark-ink) 80%, var(--spark-head));
+  transform: translateY(-100%);
+}
+
+.spark > i[data-edge='bottom'] {
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to left, transparent, var(--spark-ink) 80%, var(--spark-head));
+  transform: translateX(100%);
+}
+
+.spark > i[data-edge='left'] {
+  left: 0;
+  bottom: 0;
+  background: linear-gradient(to top, transparent, var(--spark-ink) 80%, var(--spark-head));
+  transform: translateY(100%);
+}
+
+/*
+ * A merge, once and the strongest light on the page: a light runs along the rail to the `main`
+ * stop beside the cart, a square ring of light leaves the stop as it turns green, and the frame and
+ * the light inside it flare in success emerald, then rest lit until the room leaves.
+ */
+@keyframes roomCompleteFlare {
+  0% {
+    opacity: 0;
+  }
+  18% {
+    opacity: 1;
+  }
+  60%,
+  100% {
+    opacity: 0.6;
+  }
+}
+
+@keyframes roomRailRun {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes roomStopRing {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  12% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(4);
+  }
+}
+
+.completeGlow,
+.completeRim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  animation: roomCompleteFlare calc(var(--motion-choreography) * 0.8 + var(--motion-expressive) + var(--motion-slow)) var(--motion-ease) calc(var(--motion-choreography) * 0.8) both;
+}
+
+.completeGlow {
+  z-index: -1;
+  box-shadow: inset 0 0 var(--work-room-glow-reach) color-mix(in srgb, var(--color-status-success) var(--work-room-glow-complete), transparent);
+}
+
+.completeRim {
+  z-index: 6;
+  border: 2px solid transparent;
+  border-image: linear-gradient(to bottom, var(--color-status-success), color-mix(in srgb, var(--color-status-success) var(--work-room-rim-alert-top), transparent)) 1;
+}
+
+.railRun {
+  left: 0;
+  right: 52px;
+  bottom: var(--rail);
+  z-index: 1;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--color-status-success));
+  transform-origin: left center;
+  animation: roomRailRun calc(var(--motion-choreography) * 0.8) var(--motion-ease) both;
+}
+
+.stopRing {
+  right: 42px;
+  bottom: calc(var(--rail) - 10px);
+  /* Under the side wall, so the `main` plate's name stays over the ring as it leaves the stop. */
+  z-index: 4;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--color-status-success);
+  pointer-events: none;
+  animation: roomStopRing var(--motion-choreography) var(--motion-ease) calc(var(--motion-choreography) * 0.8) both;
+}
+
+/*
+ * Reduced motion draws no pulse: the room's light stays raised while its change is under a minute
+ * old (`data-fresh`). A merged room leaves at once instead of staying for its merge (`useRetirees`),
+ * so no completion is drawn.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .flare,
+  .spark {
+    display: none;
+  }
 }
 
 /* A mini room's light at the start of its status line, while a counted change is under a minute old. */

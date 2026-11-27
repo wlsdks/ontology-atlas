@@ -10,6 +10,8 @@ import { useRise } from '../model/use-rise';
 import { SCREEN_H, SCREEN_ROW_H, type RoomUnit } from '../model/building-layout';
 import { listRowsBeside, type RoomLive } from '../model/room-live';
 import { ActivityStrip } from './ActivityStrip';
+import { RoomComplete } from './RoomComplete';
+import { RoomPulse } from './RoomPulse';
 import { BranchName } from './BranchName';
 import { CommitLog } from './CommitLog';
 import { SessionLineRow } from './SessionLineRow';
@@ -368,8 +370,11 @@ export function LargeRoom({ room, live, unit, rows, fileColumns, areas, copy, re
         data-lit={look.running}
         data-tone={tone}
         data-dark={retiring}
+        data-fresh={live.pulse?.changedJustNow ?? false}
       >
+        <i aria-hidden data-room-light className={styles.light} />
         <i className={styles.track} />
+        {retiring ? <i aria-hidden className={styles.railRun} /> : null}
         <div className={styles.sideWall}>
           <span className={cn(styles.mainPlate, LABEL, 'font-mono font-[var(--font-weight-strong)]')}>main</span>
           <i className={styles.hatch} data-open={room.stage === 'main'} />
@@ -377,6 +382,9 @@ export function LargeRoom({ room, live, unit, rows, fileColumns, areas, copy, re
         <Cart room={room} landing={landed} />
         <WallFacts screen={wallScreen} />
         <Monitor room={room} live={live} copy={copy} rows={rows} fileColumns={sameFolder ? 0 : fileColumns} areas={!sameFolder && areas} />
+        <i aria-hidden className={styles.rim} />
+        <RoomPulse flash={live.flash} />
+        {retiring ? <RoomComplete ring /> : null}
         <i className={styles.dim} />
       </div>
     </div>

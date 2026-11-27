@@ -70,7 +70,7 @@ function screenLists(room: RoomEntry): ScreenLists {
 }
 
 function RoomFace({ room, live, face, copy, retiring, showOwner, alone }: { room: RoomEntry; live: RoomLive; face: FaceSize; copy: RoomCopy; retiring: boolean; showOwner: boolean; alone: boolean }) {
-  if (face.size !== 'large') return <MiniRoom room={room} live={live} copy={copy} showOwner={showOwner} />;
+  if (face.size !== 'large') return <MiniRoom room={room} live={live} copy={copy} showOwner={showOwner} retiring={retiring} />;
   const lists = screenLists(room);
   const areas = listsAreas(face.w, lists, alone);
   return <LargeRoom room={room} live={live} unit={face.unit} rows={screenRows(face)} fileColumns={fileColumns(face.w, lists.commits > 0, areas)} areas={areas} copy={copy} retiring={retiring} />;
@@ -181,8 +181,6 @@ function DrawnRoom({ room, live, box, copy, retiring, showOwner, alone, reduced,
     return () => fades.forEach(fade => fade.cancel());
   }, [retiring, reduced]);
 
-  // A room's light flashes for changes counted while it is drawn, never for the count it was drawn with.
-  const [flashFrom] = useState(live.flash);
   const look = roomLook(room.state);
   const style = {
     transform: translate(ghost?.from ?? box),
@@ -236,9 +234,6 @@ function DrawnRoom({ room, live, box, copy, retiring, showOwner, alone, reduced,
       <div key={`face-${current.id}`} data-room-face data-spread={current.size === 'mini' && current.w >= SPREAD_MINI_W} data-unit={current.unit} className={cn(styles.face, styles.notched, 'h-full w-full')}>
         {faces.ready ? <RoomFace room={room} live={live} face={current} copy={copy} retiring={retiring} showOwner={showOwner} alone={alone} /> : null}
       </div>
-      {!ghost && live.flash > flashFrom ? (
-        <i key={`flash-${live.flash}`} aria-hidden data-testid="work-room-flash" className={cn(styles.flash, 'motion-room-flash')} />
-      ) : null}
       {onPress && !ghost ? (
         <button
           type="button"

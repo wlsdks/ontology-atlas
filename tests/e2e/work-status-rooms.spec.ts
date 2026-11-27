@@ -406,7 +406,7 @@ test.describe("work status rooms", () => {
     page.on("pageerror", (error) => noise.push(`pageerror: ${error.message}`));
   });
   test.afterEach(() => {
-    expect(noise.filter((text) => !/was preloaded using link preload but not used/.test(text)), "console errors and warnings").toEqual([]);
+    expect(noise.filter((text) => !/was preloaded using link preload but not used|You have Reduced Motion enabled/.test(text)), "console errors and warnings").toEqual([]);
   });
 
   test("puts work on the stage, keeps a left lock as a mini and counts the rest on the shelf", async ({ page }) => {
@@ -474,6 +474,35 @@ test.describe("work status rooms", () => {
     // measurement window: the crate ride, the hatch turning green and its two blinks are sampled frame by frame before the room leaves.
     await page.waitForTimeout(2500);
     await expectSmoothMotion(page);
+  });
+
+  test("lights a merged room once in success, and runs nothing once it has gone", async ({ page }) => {
+    await openWorkStatus(page, SIX);
+    const merging = room(page, "feat/library-stage");
+    await expect(merging).toHaveAttribute("data-room-size", "large");
+    await waitForAnimationsDone(page.getByTestId("work-building"));
+    await expect(page.getByTestId("work-room-complete")).toHaveCount(0);
+
+    await setRows(page, SIX.map((entry) => entry.branch === "feat/library-stage" ? row("feat/library-stage", { standing: "merged", ahead: 0 }) : entry));
+    await expect(merging.getByTestId("work-room-complete")).toHaveCount(1);
+    await expect(page.getByTestId("work-room-complete"), "completions on the page").toHaveCount(1);
+    expect(await merging.getByTestId("work-room-complete").evaluate((rim) => rim.getAnimations().map((animation) => (animation as CSSAnimation).animationName)), "the completion's flare").toEqual([expect.stringContaining("roomCompleteFlare")]);
+
+    await expect(merging).toHaveCount(0, { timeout: 10_000 });
+    await waitForAnimationsDone(page.getByTestId("work-building"));
+    expect(await page.evaluate(() => document.getAnimations().filter((animation) => animation.playState === "running").length), "animations running once the merge has played").toBe(0);
+  });
+
+  test("under reduced motion moves a merged room to the shelf at once, with no light running", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await openWorkStatus(page, SIX);
+    const merging = room(page, "feat/library-stage");
+    await expect(merging).toHaveAttribute("data-room-size", "large");
+    await setRows(page, SIX.map((entry) => entry.branch === "feat/library-stage" ? row("feat/library-stage", { standing: "merged", ahead: 0 }) : entry));
+    await expect(merging).toHaveCount(0);
+    await expect(page.getByTestId("work-shelf-merged")).toContainText("2");
+    await expect(page.getByTestId("work-room-complete")).toHaveCount(0);
+    await expect.poll(() => page.evaluate(() => document.getAnimations().filter((animation) => animation.playState === "running").length), { message: "animations running under reduced motion" }).toBe(0);
   });
 
   test("hands a stage slot from a room that stops to one that starts without a bare frame", async ({ page }) => {
