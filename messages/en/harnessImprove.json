@@ -1,0 +1,84 @@
+{
+  "stage": {
+    "title": "Agent memory, checked against today's code",
+    "body": "Claude Code reads these notes in every session. Atlas checks each file path they name against this repository's Git history.",
+    "folder": "{count, plural, one {# note} other {# notes}} in {path}",
+    "indexSize": "Loaded at session start: {used} of {limit}",
+    "start": "Check memory",
+    "local": "Reads files on this computer only. Nothing is sent anywhere, and no note changes until you keep the change."
+  },
+  "run": {
+    "progress": "{done} of {total} notes checked",
+    "checkingNote": "Checking {note}",
+    "askingGit": "Looking up {path} in Git history",
+    "stop": "Stop",
+    "stopped": "Stopped after {done} of {total} notes. What was found so far stays in the list."
+  },
+  "groups": {
+    "moved": "Moved, new place known",
+    "gone": "No longer in this repository",
+    "notJudged": "{count, plural, one {# path names a file outside this repository and was not checked} other {# paths name files outside this repository and were not checked}}"
+  },
+  "detail": {
+    "line": "Line {line} of {note}",
+    "now": "Now",
+    "afterKeep": "After you keep it",
+    "movedBody": "{old} moved to {new} on {date} in commit {commit}: {subject}",
+    "goneBody": "{old} was removed on {date} in commit {commit}: {subject}. Git records no new place, so Atlas proposes no change. Rewrite or delete this line yourself.",
+    "hiddenLine": "This line looks like it holds a key or token, so Atlas does not show it. Open {note} in your editor."
+  },
+  "action": {
+    "keep": "Keep",
+    "leave": "Leave as is",
+    "keepAll": "Keep all {count} moves",
+    "copyPath": "Copy new path",
+    "checkAgain": "Check again"
+  },
+  "keepAll": {
+    "title": "Change {count, plural, one {# line} other {# lines}} in {files, plural, one {# note} other {# notes}}",
+    "body": "Each line changes only the path shown. Every other character in each note stays as it is. One Undo puts all of them back.",
+    "confirm": "Keep all {count}",
+    "cancel": "Cancel"
+  },
+  "toast": {
+    "kept": "Changed line {line} of {note}.",
+    "keptAll": "Changed {count, plural, one {# line} other {# lines}} in {files, plural, one {# note} other {# notes}}.",
+    "undo": "Undo",
+    "undone": "Put {note} back as it was."
+  },
+  "kept": {
+    "tag": "Kept"
+  },
+  "done": {
+    "cleanTitle": "Every path in these notes is where they say",
+    "cleanBody": "{paths, plural, one {# path} other {# paths}} in {notes, plural, one {# note} other {# notes}} checked against Git at {commit}.",
+    "foundTitle": "{count, plural, one {# line points to a file that is not there} other {# lines point to files that are not there}}"
+  },
+  "empty": {
+    "title": "No Claude Code memory for this repository",
+    "body": "Atlas looked in {path} and found no notes. Claude Code writes them there once auto memory is on. If autoMemoryDirectory is set in a settings file, the notes are elsewhere and Atlas does not read them."
+  },
+  "partial": {
+    "body": "{count, plural, one {# note was not read} other {# notes were not read}}: {reason}. Their paths are not in the list."
+  },
+  "error": {
+    "git": "Could not read this repository's Git history, so no path was judged: {reason}",
+    "folder": "Could not open {path}: {reason}. Nothing was changed.",
+    "link": "{path} is a link, and Atlas opens memory only through real folders, so nothing was read.",
+    "changedSince": "{note} changed after the check, so Atlas did not change it. Check memory again to see its current lines.",
+    "writeFailed": "Could not write {note}: {reason}. The note is unchanged.",
+    "undoChanged": "{note} changed after Atlas wrote it and the new path is no longer on line {line}, so nothing was put back."
+  },
+  "managed": {
+    "body": "Your organisation manages Claude Code on this Mac, so Atlas changes no memory file here. Copy each new path instead."
+  },
+  "web": {
+    "title": "Checking agent memory needs the app",
+    "body": "Claude Code keeps these notes in your home folder, which a browser cannot open. The app reads them and changes a line only when you keep the change."
+  },
+  "card": {
+    "running": "Checking memory · {done} of {total}",
+    "found": "{count, plural, one {# line to review} other {# lines to review}} in Claude Code memory",
+    "open": "Open"
+  }
+}
