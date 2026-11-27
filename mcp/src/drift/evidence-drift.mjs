@@ -46,7 +46,7 @@ export function evidenceConceptsFromDocs(docs = []) {
 
 /**
  * `unchangedPairs` (from `unchangedEvidencePairs`) names the moved files whose only
- * change since the document's newest commit is in comments, import lines or whitespace.
+ * change since the commit that dates the document is in comments, import lines or whitespace.
  *
  * @param {readonly {slug: string, kind: string, docPath: string|null, evidencePaths: readonly string[]}[]} concepts
  * @param {ReadonlyMap<string, {exists: boolean, isDir?: boolean, lastChangedAt: string|null, lastCommit?: string|null}>} changes

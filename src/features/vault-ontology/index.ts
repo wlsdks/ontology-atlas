@@ -14,5 +14,6 @@ export {
   type MapEvidenceAvailability,
   type StaleEvidencePath,
 } from './model/use-map-evidence-states';
+export { useRecheckedConcepts } from './model/use-rechecked-concepts';
 export { OntologyLiveBaselineInit } from './ui/OntologyLiveBaselineInit';
 export { RecentChangesNeedsVaultDialog } from './ui/RecentChangesNeedsVaultDialog';

@@ -26,6 +26,8 @@
     "redraftedBody": "{name} redrafted them. The run lists each one.",
     "reviewedTitle": "{name} · review complete",
     "reviewedBody": "The run has what it proposes.",
+    "recheckedTitle": "{name} · recheck complete",
+    "recheckedBody": "{count, plural, =0 {No document was recorded as still accurate. The run lists each concept.} one {# document recorded as still accurate and committed. The run lists each concept.} other {# documents recorded as still accurate and committed. The run lists each concept.}}",
     "refusedTitle": "{name} was blocked",
     "refusedBody": "It asked for something its schedule does not allow. The run names it.",
     "failedTitle": "{name} ended early",

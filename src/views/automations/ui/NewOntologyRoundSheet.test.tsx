@@ -5,10 +5,10 @@ import { describe, expect, it, vi } from 'vitest';
 import en from '../../../../messages/en.json';
 import { NewOntologyRoundSheet } from './NewOntologyRoundSheet';
 
-function open(onSave: Parameters<typeof NewOntologyRoundSheet>[0]['onSave'], onClose = vi.fn()) {
+function open(onSave: Parameters<typeof NewOntologyRoundSheet>[0]['onSave'], onClose = vi.fn(), inRepository: boolean | null = true) {
   const view = render(
     <NextIntlClientProvider locale="en" messages={en}>
-      <NewOntologyRoundSheet open onClose={onClose} onSave={onSave} />
+      <NewOntologyRoundSheet open onClose={onClose} onSave={onSave} inRepository={inRepository} />
     </NextIntlClientProvider>,
   );
   return { ...view, onClose, onSave };
@@ -45,6 +45,35 @@ describe('the new ontology round sheet', () => {
 
     finish(true);
     await vi.waitFor(() => expect(view.onClose).toHaveBeenCalledTimes(1));
+    view.unmount();
+  });
+
+  it('schedules a recheck with its limit, four scope lines and the size it may send', async () => {
+    const view = open(vi.fn(async () => true));
+    fireEvent.click(screen.getByTestId('ontology-automation-kind-recheck'));
+    expect(screen.getByTestId('ontology-automation-name')).toHaveValue(en.automations.recheck.defaultName);
+    expect(screen.queryByTestId('ontology-automation-focus')).toBeNull();
+    for (const line of ['mayRead', 'mayWrite', 'mayCommit', 'mayNever'] as const) {
+      expect(screen.getByText(en.automations.recheck.sheet[line])).toBeInTheDocument();
+    }
+    expect(screen.getByTestId('ontology-automation-cost')).toHaveTextContent(/up to 10 concepts and at most 200 kB of text/);
+
+    fireEvent.change(screen.getByTestId('ontology-automation-limit'), { target: { value: '26' } });
+    expect(screen.getByTestId('ontology-automation-allow')).toBeDisabled();
+    fireEvent.change(screen.getByTestId('ontology-automation-limit'), { target: { value: '12' } });
+    fireEvent.click(screen.getByTestId('ontology-automation-allow'));
+
+    await vi.waitFor(() => expect(view.onSave).toHaveBeenCalledTimes(1));
+    expect(view.onSave).toHaveBeenCalledWith(expect.objectContaining({ kind: 'recheck', limit: 12, query: '', name: en.automations.recheck.defaultName }));
+    view.unmount();
+  });
+
+  it('cannot save a recheck for a folder outside Git, and says how to fix it', () => {
+    const view = open(vi.fn(async () => true), vi.fn(), false);
+    expect(screen.getByTestId('ontology-automation-allow')).toBeEnabled();
+    fireEvent.click(screen.getByTestId('ontology-automation-kind-recheck'));
+    expect(screen.getByTestId('ontology-automation-no-git')).toHaveTextContent(en.automations.recheck.sheet.noGit);
+    expect(screen.getByTestId('ontology-automation-allow')).toBeDisabled();
     view.unmount();
   });
 });

@@ -10,7 +10,7 @@ import { isImeComposing } from '@/shared/lib/keyboard/ime-composition';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { AutomationAllowHere } from './AutomationAllowHere';
 import { AutomationRemoveConfirm, AutomationScheduleActions, useScheduleChange } from './AutomationScheduleActions';
-import { useRunLead, useUnrecordedText, WARNING_INK } from './AutomationRunHistory';
+import { useOutcomeLabel, useRunLead, useUnrecordedText, WARNING_INK } from './AutomationRunHistory';
 import { runsNewestFirst } from '../model/run-order';
 import { automationDate } from './automation-date';
 import { AUTOMATION_CELL, AUTOMATION_ROW_GRID } from './automation-list-layout';
@@ -52,11 +52,12 @@ export function AutomationScheduleRow({ round, runner, selected, tabbable, onSel
   const ledgerText = useTranslations('library.rounds.ledger');
   const locale = useLocale();
   const runLead = useRunLead();
+  const outcomeLabel = useOutcomeLabel();
   const unrecordedText = useUnrecordedText();
   const change = useScheduleChange();
   const [confirmRemove, setConfirmRemove] = useState(false);
   const menuTrigger = useRef<HTMLButtonElement>(null);
-  const recorded = runsNewestFirst(runner.ledger.filter((entry) => entry.roundId === round.id))[0];
+  const recorded = runsNewestFirst(runner.ledger.filter((entry) => entry.roundId === round.id && !entry.recheck?.undoOf))[0];
   const unrecorded = runner.unrecorded.get(round.id);
   const lastIsUnrecorded = unrecorded !== undefined && (!recorded || Date.parse(unrecorded.endedAt) >= Date.parse(recorded.endedAt));
   const last = lastIsUnrecorded ? unrecorded : recorded;
@@ -100,12 +101,13 @@ export function AutomationScheduleRow({ round, runner, selected, tabbable, onSel
         <div role="gridcell" data-automation-col="cadence" className={AUTOMATION_CELL.cadence}>
           <span className="block truncate text-body text-[color:var(--color-text-secondary)]">{cadence}</span>
           <span className="mt-0.5 block truncate text-label text-[color:var(--color-text-tertiary)]">
-            {onHere ? t('nextRunAt', { time: automationDate(locale, round.nextDueAt) }) : notHere ? t('allowHere.noNextRun') : t('noNextRun')}
+            {onHere ? t('nextRunAt', { time: automationDate(locale, round.nextDueAt) })
+              : notHere ? (round.kind === 'recheck' ? null : t('allowHere.noNextRun')) : t('noNextRun')}
           </span>
         </div>
         <div role="gridcell" data-automation-col="outcome" className={AUTOMATION_CELL.outcome}>
           <span className="block truncate text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-            {last ? t(`outcome.${last.outcome}`) : t('outcome.none')}
+            {last ? outcomeLabel(last.outcome) : t('outcome.none')}
           </span>
           <span data-testid="automation-summary" title={summary} data-run-note={lead?.note ?? undefined}
             className={cn('mt-0.5 block truncate text-body', lead?.warning || lastIsUnrecorded ? WARNING_INK : 'text-[color:var(--color-text-secondary)]')}>
@@ -122,7 +124,12 @@ export function AutomationScheduleRow({ round, runner, selected, tabbable, onSel
             notAllowedSentenceId={notHere ? allowSentenceId : null} onEdit={onEdit} onRemove={() => setConfirmRemove(true)} />
         </div>
       </div>
-      {notHere ? (
+      {notHere && round.kind === 'recheck' ? (
+        <RowStrip testId="automation-recheck-off-here">
+          {/* A folder cannot hand this Mac a schedule that commits, so there is no Allow here. */}
+          <p id={allowSentenceId} role="status" className="break-words text-body text-[color:var(--color-status-warning)]">{t('recheck.offHere')}</p>
+        </RowStrip>
+      ) : notHere ? (
         <RowStrip>
           <AutomationAllowHere round={round} runner={runner} cadence={cadence}
             changed={runner.changedSinceAllowed.has(round.id)} sentenceId={allowSentenceId} />

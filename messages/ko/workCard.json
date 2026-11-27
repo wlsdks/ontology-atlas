@@ -26,6 +26,8 @@
     "redraftedBody": "{name} · 초안을 다시 썼어요. 실행 기록에 하나씩 있어요.",
     "reviewedTitle": "{name} · 검토 완료",
     "reviewedBody": "제안은 실행 기록에 있어요.",
+    "recheckedTitle": "{name} · 다시 확인 완료",
+    "recheckedBody": "{count, plural, =0 {여전히 맞다고 기록한 문서가 없어요. 개념마다 실행 기록에 있어요.} other {문서 #개를 여전히 맞다고 기록하고 커밋했어요. 개념마다 실행 기록에 있어요.}}",
     "refusedTitle": "{name} 차단됨",
     "refusedBody": "예약이 허용하지 않는 작업을 요청했어요. 실행 기록에 무엇인지 있어요.",
     "failedTitle": "{name} 일찍 끝남",

@@ -5,8 +5,13 @@
 
 const ROUND_STORE_VERSION = 1 as const;
 
-const ROUND_KINDS = ['consistency', 'service', 'ontology'] as const;
+const ROUND_KINDS = ['consistency', 'service', 'ontology', 'recheck'] as const;
 export type RoundKind = (typeof ROUND_KINDS)[number];
+
+/** The Ontology lane's kinds: a read-only check, and a recheck that commits its marks. */
+export function isOntologyRoundKind(kind: RoundKind | undefined): boolean {
+  return kind === 'ontology' || kind === 'recheck';
+}
 
 export type RoundOnStale = 'mark' | 'redraft';
 
@@ -59,7 +64,7 @@ export interface RoundRecord {
   connectorName?: string;
   /** Service only: what to look for beyond re-reading known documents. */
   query?: string;
-  /** Service only: cap on new documents per pass. */
+  /** Service: cap on new documents per pass. Recheck: concepts per run. */
   limit?: number;
   /** Absent on older records, which read as the whole vault plus the legacy connector fields. */
   places?: RoundPlace[];
@@ -79,6 +84,8 @@ export interface RoundState {
 }
 
 export const DEFAULT_SERVICE_ROUND_LIMIT = 20;
+export const DEFAULT_RECHECK_LIMIT = 10;
+export const MAX_RECHECK_LIMIT = 25;
 
 /** `HH:MM`, 24-hour, both parts two digits. */
 const TIME_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
@@ -204,7 +211,8 @@ export function roundProblems(round: RoundRecord): RoundProblem[] {
   if (!ROUND_KINDS.includes(round.kind)) problems.push('kind-unknown');
   if (!isValidCadence(round.cadence)) problems.push('cadence-invalid');
   if (round.kind === 'service' && !round.connectorId) problems.push('service-without-connector');
-  if (round.limit !== undefined && !(Number.isInteger(round.limit) && round.limit > 0 && round.limit <= 100)) {
+  const maxLimit = round.kind === 'recheck' ? MAX_RECHECK_LIMIT : 100;
+  if (round.limit !== undefined && !(Number.isInteger(round.limit) && round.limit > 0 && round.limit <= maxLimit)) {
     problems.push('limit-invalid');
   }
   return problems;
@@ -315,6 +323,8 @@ export function roundWidens(before: RoundRecord, after: RoundRecord): boolean {
   if (before.kind !== 'service' && after.kind === 'service') return true;
   if (before.kind === 'consistency' && after.kind === 'consistency' && before.onStale === 'mark' && after.onStale !== 'mark') return true;
   if (after.kind === 'service' && (after.limit ?? DEFAULT_SERVICE_ROUND_LIMIT) > (before.limit ?? DEFAULT_SERVICE_ROUND_LIMIT)) return true;
+  if (before.kind !== 'recheck' && after.kind === 'recheck') return true;
+  if (after.kind === 'recheck' && (after.limit ?? DEFAULT_RECHECK_LIMIT) > (before.limit ?? DEFAULT_RECHECK_LIMIT)) return true;
   const beforePlaces = roundPlaces(before);
   const afterPlaces = roundPlaces(after);
   const was = vaultPlace(beforePlaces);

@@ -602,10 +602,10 @@ export function collectPathLastChanges({ repoRoot, vaultRoot, repoPaths = [], va
   const repoPrefix = repoPathPrefix(gitRoot, repoRoot);
   const wanted = [];
   const seen = new Set();
-  const push = (key, resolved) => {
+  const push = (key, resolved, byBytes) => {
     if (wanted.length >= MAX_WALK_PATHS || seen.has(key)) return;
     seen.add(key);
-    wanted.push({ key, resolved });
+    wanted.push({ key, resolved, byBytes });
   };
   /*
    * Documents first: the cap is shared, and implementation paths must not starve
@@ -613,11 +613,11 @@ export function collectPathLastChanges({ repoRoot, vaultRoot, repoPaths = [], va
    */
   for (const raw of vaultPaths) {
     const clean = safeRelativePath(raw);
-    if (clean) push(raw, `${prefix}${clean}`);
+    if (clean) push(raw, `${prefix}${clean}`, true);
   }
   for (const raw of repoPaths) {
     const clean = safeRelativePath(raw);
-    if (clean) push(raw, `${repoPrefix}${clean}`);
+    if (clean) push(raw, `${repoPrefix}${clean}`, false);
   }
   const changes = new Map();
   if (wanted.length === 0) return { operation: 'path_last_changes', ok: true, repoRoot: gitRoot, changes };
@@ -847,6 +847,12 @@ function pathHistoryState(gitRoot) {
   return JSON.stringify([head, ...historyFiles, replacements.stdout]);
 }
 
+/**
+ * Per key, the commit that dates it: for a cited file its newest commit, for a concept document
+ * (`byBytes`) the first commit at which it held its present bytes, so a commit that puts earlier
+ * bytes back (an undo, a revert) returns the earlier date. Mirrors `last_changes` in
+ * `src-tauri/src/git/evidence.rs`. O(log lines x wanted).
+ */
 function walkPathLastChanges(gitRoot, wanted, commitLimit) {
   const REC = '\x1e';
   const log = git(
@@ -859,33 +865,48 @@ function walkPathLastChanges(gitRoot, wanted, commitLimit) {
       'log',
       `--max-count=${commitLimit}`,
       `--pretty=format:${REC}%H %cI`,
-      '--name-only',
+      '--raw',
+      '--no-abbrev',
       '--no-renames',
       '--',
       ...wanted.map((w) => w.resolved),
     ],
     { allowFailure: true },
   );
-  // Per key, the newest commit touching it: its time, and its hash for re-reading the file there.
   const last = new Map();
+  const present = new Map();
   if (log.ok) {
     let current = null;
-    for (const rawLine of log.stdout.split('\n')) {
-      const line = rawLine.trim();
-      if (!line) continue;
+    for (const line of log.stdout.split('\n')) {
       if (line.startsWith(REC)) {
         const [commit, at] = line.slice(1).trim().split(' ');
         current = commit && at ? { commit, at } : null;
         continue;
       }
-      if (!current) continue;
-      for (const { key, resolved } of wanted) {
-        if (last.has(key)) continue;
-        if (line === resolved || line.startsWith(`${resolved}/`)) last.set(key, current);
+      const touch = rawTouch(line);
+      if (!current || !touch) continue;
+      for (const { key, resolved, byBytes } of wanted) {
+        const exact = touch.path === resolved;
+        if (!exact && !touch.path.startsWith(`${resolved}/`)) continue;
+        if (!present.has(key)) {
+          present.set(key, touch.blob);
+          last.set(key, current);
+        } else if (byBytes && exact && present.get(key) === touch.blob) {
+          last.set(key, current);
+        }
       }
     }
   }
   return { ok: log.ok, last };
+}
+
+/** One `git log --raw --no-abbrev` line: the path a commit touched and the blob it left there. */
+function rawTouch(line) {
+  if (!line.startsWith(':')) return null;
+  const tab = line.indexOf('\t');
+  if (tab < 0) return null;
+  const blob = line.slice(1, tab).split(' ')[3];
+  return blob ? { blob, path: line.slice(tab + 1) } : null;
 }
 
 function safeRelativePath(raw) {

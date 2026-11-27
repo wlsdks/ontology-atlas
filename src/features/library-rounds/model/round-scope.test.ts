@@ -155,21 +155,21 @@ describe('round scope', () => {
     }
   });
 
-  it('lets an ontology review read the folder but refuses every file write', () => {
+  it.each([ontology, { kind: 'recheck' as const }])('lets a $kind round read the folder but refuses every file write', (round) => {
     expect(judge({
-      round: ontology,
+      round,
       request: request({ filePath: `${VAULT}/capabilities/x.md`, toolKind: 'read' }),
     }).decision).toBe('allow');
     expect(judge({
-      round: ontology,
+      round,
       request: request({ filePath: `${VAULT}/wiki/x.md`, toolKind: 'edit', rawInput: { content: 'draft' } }),
     }).decision).toBe('reject');
     expect(judge({
-      round: ontology,
+      round,
       request: request({ filePath: `${VAULT}/capabilities/x.md`, toolKind: 'edit' }),
     }).decision).toBe('reject');
     expect(judge({
-      round: ontology,
+      round,
       request: request({ toolName: 'mcp__atlas-vault__add_concepts' }),
     })).toEqual({ decision: 'reject', reason: 'mcp__atlas-vault__add_concepts' });
   });

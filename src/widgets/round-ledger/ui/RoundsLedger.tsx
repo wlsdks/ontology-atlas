@@ -36,6 +36,7 @@ function useDurationWords() {
 
 const DOT: Record<Exclude<RoundPassOutcome, "asleep">, string> = {
   held: "h-1.5 w-1.5 bg-[color:var(--color-text-quaternary)]",
+  rechecked: "h-2 w-2 bg-[color:var(--color-indigo-text-soft)]",
   reviewed: "h-2 w-2 bg-[color:var(--color-indigo-text-soft)]",
   stale: "h-2 w-2 bg-[color:var(--color-status-warning)]",
   redrafted: "h-2 w-2 bg-[color:var(--color-indigo-text-soft)]",
@@ -44,6 +45,7 @@ const DOT: Record<Exclude<RoundPassOutcome, "asleep">, string> = {
 };
 
 const OUTCOME_BADGE: Record<Exclude<RoundPassOutcome, "asleep" | "held">, string> = {
+  rechecked: "border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-a06)] text-[color:var(--color-indigo-text-soft)]",
   reviewed: "border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-a06)] text-[color:var(--color-indigo-text-soft)]",
   stale: "border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] text-[color:var(--color-amber-source-a90)]",
   redrafted: "border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-a06)] text-[color:var(--color-indigo-text-soft)]",
@@ -275,7 +277,9 @@ export function RoundsLedger({
                               ? t("outcome.stale", { count: entry.stale.length })
                               : entry.outcome === "redrafted"
                                 ? t("outcome.redrafted", { count: pagesWritten(entry).length })
-                                : t(`outcome.${entry.outcome}`)}
+                                : entry.outcome === "rechecked"
+                                  ? tAutomations("recheck.outcome")
+                                  : t(`outcome.${entry.outcome}`)}
                           </span>
                           {/* "0 s" is not a duration a person can use, so a pass under a second names none. */}
                           <span className="text-label leading-label tabular-nums text-[color:var(--color-text-quaternary)]">

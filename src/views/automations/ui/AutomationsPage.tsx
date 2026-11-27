@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, useTransition, type CSSProperties } from "react";
 
 import { OpenVaultCta } from "@/features/docs-vault-local";
-import type { RoundPassEntry, RoundRecord } from "@/entities/library-round";
+import { isOntologyRoundKind, type RoundPassEntry, type RoundRecord } from "@/entities/library-round";
 import { useLocalVault } from "@/entities/vault-session";
 import type { RoundsRunnerValue } from "@/features/library-rounds";
 import { isScheduledActive, useAutomationsStage, useScheduledRuns } from "@/features/work-run";
@@ -44,7 +44,7 @@ const EMPTY_LEDGER: RoundPassEntry[] = [];
 const ARRIVAL_MS = Math.max(springSettleMs(SPRING.surface), MOTION.settle.duration * 1000);
 
 function isLaneRound(round: RoundRecord, lane: AutomationLane): boolean {
-  return lane === "ontology" ? round.kind === "ontology" : round.kind !== "ontology";
+  return (lane === "ontology") === isOntologyRoundKind(round.kind);
 }
 
 export function AutomationsPage({
@@ -100,7 +100,7 @@ export function AutomationsPage({
   };
 
   const edit = (round: RoundRecord) => {
-    if (round.kind !== "ontology") {
+    if (!isOntologyRoundKind(round.kind)) {
       onEditDocumentSchedule(round);
       return;
     }
@@ -151,7 +151,7 @@ export function AutomationsPage({
     : state === "no-vault"
       ? { body: t("openFolderDescription"),
         action: <OpenVaultCta testId="automations-open-vault" className="atlas-touch-floor atlas-touch-floor-wide" /> }
-      : { body: t(`${lane}.facts.runs.body`),
+      : { body: lane === "ontology" ? t("recheck.facts.runs") : t(`${lane}.facts.runs.body`),
         action: <Button size="lg" data-testid="automations-stage-new" disabled={lanePending} onClick={() => {
           // The header button outlives this stage, so it is the sheet's return point.
           newButtonRef.current?.focus({ preventScroll: true });
@@ -195,7 +195,7 @@ export function AutomationsPage({
                   title={t("stageTitle")}
                   body={stageCopy.body}
                   action={stageCopy.action}
-                  note={state === "ready" || stage.exiting ? t(`${lane}.facts.writes.body`) : undefined} />
+                  note={state === "ready" || stage.exiting ? (lane === "ontology" ? t("recheck.facts.writes") : t(`${lane}.facts.writes.body`)) : undefined} />
               </section>
             ) : null}
             {staged && broken ? (
@@ -238,14 +238,15 @@ export function AutomationsPage({
                         {selected && "query" in selected && selected.query ? <p className="break-words text-body text-[color:var(--color-text-secondary)]">
                           <span className="text-[color:var(--color-text-tertiary)]">{t("scopeLabel")} · </span>{selected.query}</p> : null}
                         <AutomationUnrecorded unrecorded={history.unrecorded} />
-                        {history.ran || history.unrecorded.length === 0 ? <AutomationRunHistory key={selected?.id ?? ""} entries={history.entries} named={!selected} landedRunId={landedRunId} /> : null}
+                        {history.ran || history.unrecorded.length === 0 ? <AutomationRunHistory key={selected?.id ?? ""} entries={history.entries} named={!selected} landedRunId={landedRunId}
+                          ledger={runner.ledger} onUndoRecheck={runner.undoRecheck} /> : null}
                       </>
                     )}
                   </section> : null}
                   <AutomationLaneFacts facts={[
-                    { title: t(`${lane}.facts.runs.title`), body: t(`${lane}.facts.runs.body`) },
+                    { title: t(`${lane}.facts.runs.title`), body: lane === "ontology" ? t("recheck.facts.runs") : t(`${lane}.facts.runs.body`) },
                     { title: t(`${lane}.facts.when.title`), body: t(`${lane}.facts.when.body`) },
-                    { title: t(`${lane}.facts.writes.title`), body: t(`${lane}.facts.writes.body`) },
+                    { title: t(`${lane}.facts.writes.title`), body: lane === "ontology" ? t("recheck.facts.writes") : t(`${lane}.facts.writes.body`) },
                   ]} />
                 </section>
               </div>
@@ -253,7 +254,8 @@ export function AutomationsPage({
           </div>
         )}
         <NewOntologyRoundSheet key={ontologyDraft} open={ready && ontologySheetOpen} onClose={() => setOntologySheetOpen(false)} onSave={saveOntology}
-          round={editingOntology} allowedHere={editingOntology ? !runner?.notAllowedHere.has(editingOntology.id) : true} />
+          round={editingOntology} allowedHere={editingOntology ? !runner?.notAllowedHere.has(editingOntology.id) : true}
+          inRepository={runner?.inRepository ?? null} />
       </div>
     </main>
   );
@@ -262,7 +264,8 @@ export function AutomationsPage({
 function useLaneHistory(runner: RoundsRunnerValue | null, lane: AutomationLane, rounds: readonly RoundRecord[], selected: RoundRecord | null) {
   const vault = useLocalVault();
   const ledger = runner?.ledger ?? EMPTY_LEDGER;
-  const laneEntries = useMemo(() => ledger.filter((entry) => lane === "ontology" ? entry.kind === "ontology" : entry.kind !== "ontology"), [ledger, lane]);
+  // An undo line belongs to the run it undid, which shows it; it is not a run of its own.
+  const laneEntries = useMemo(() => ledger.filter((entry) => (lane === "ontology") === isOntologyRoundKind(entry.kind) && !entry.recheck?.undoOf), [ledger, lane]);
   const entries = useMemo(() => selected ? laneEntries.filter((entry) => entry.roundId === selected.id || entry.outcome === "asleep") : laneEntries,
     [laneEntries, selected]);
   const pageTitles = useMemo(() => new Map((vault.manifest?.docs ?? []).map((doc) => [doc.slug, doc.title])), [vault.manifest]);
