@@ -6,6 +6,7 @@ use std::process::Stdio;
 use std::sync::{Mutex, OnceLock};
 use std::time::Duration;
 
+use super::base_line;
 use crate::lower_hex::lower_hex;
 use serde::Serialize;
 use sha2::{Digest, Sha256};
@@ -43,6 +44,7 @@ pub struct ChangeBriefing {
     source_root: String,
     snapshot: String,
     head: String,
+    line: Option<String>,
     base: Option<String>,
     tip: Option<String>,
     commits: Vec<BriefingCommit>,
@@ -57,6 +59,7 @@ impl ChangeBriefing {
             source_root: String::new(),
             snapshot: String::new(),
             head: String::new(),
+            line: None,
             base: None,
             tip: None,
             commits: vec![],
@@ -84,13 +87,25 @@ impl ChangeBriefingPatch {
     }
 }
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone)]
 struct Identity {
     scope: SourceScope,
     root: PathBuf,
     head: String,
+    line: Option<String>,
     object: (u64, u64),
 }
+
+/// `line` names the branch for display; one commit read under two names is the same read.
+impl PartialEq for Identity {
+    fn eq(&self, other: &Self) -> bool {
+        self.scope == other.scope
+            && self.root == other.root
+            && self.head == other.head
+            && self.object == other.object
+    }
+}
+impl Eq for Identity {}
 
 #[derive(Clone, PartialEq, Eq)]
 enum SourceScope {
@@ -156,6 +171,10 @@ fn text_git(root: &Path, args: &[&str]) -> Result<String, String> {
         .map(|v| v.trim().into())
         .map_err(|_| "unreadable".into())
 }
+fn merged_line_tip(root: &Path) -> Result<(String, Option<String>), String> {
+    base_line::merged_line_tip(&|args: &[&str]| text_git(root, args).ok())
+        .ok_or_else(|| "no-history".into())
+}
 fn identity(vault_path: &str, project: &str) -> Result<Identity, String> {
     let vault = validate_vault_dir(vault_path).map_err(|_| "unreadable")?;
     let binding = resolve_binding_metadata(&vault, project).map_err(|_| "no-source")?;
@@ -170,8 +189,7 @@ fn identity(vault_path: &str, project: &str) -> Result<Identity, String> {
     if binding.kind != "git" {
         return Err("no-history".into());
     }
-    let head =
-        text_git(&binding.root, &["rev-parse", "--verify", "HEAD"]).map_err(|_| "no-history")?;
+    let (head, line) = merged_line_tip(&binding.root)?;
     let metadata = fs::metadata(&binding.root).map_err(|_| "unreadable")?;
     let vault_metadata = fs::metadata(&vault).map_err(|_| "unreadable")?;
     #[cfg(unix)]
@@ -203,6 +221,7 @@ fn identity(vault_path: &str, project: &str) -> Result<Identity, String> {
         },
         root: binding.root,
         head,
+        line,
         object,
     })
 }
@@ -219,7 +238,7 @@ fn picked_identity(source_path: &str) -> Result<Identity, String> {
     if fs::canonicalize(repository).ok().as_ref() != Some(&root) {
         return Err("no-history".into());
     }
-    let head = text_git(&root, &["rev-parse", "--verify", "HEAD"]).map_err(|_| "no-history")?;
+    let (head, line) = merged_line_tip(&root)?;
     let metadata = fs::metadata(&root).map_err(|_| "unreadable")?;
     #[cfg(unix)]
     let object = {
@@ -235,6 +254,7 @@ fn picked_identity(source_path: &str) -> Result<Identity, String> {
         scope: SourceScope::Picked,
         root,
         head,
+        line,
         object,
     })
 }
@@ -586,6 +606,7 @@ fn measure_identity(
         .into(),
         source_root: before.root.to_string_lossy().into_owned(),
         head: before.head.clone(),
+        line: before.line.clone(),
         base,
         tip,
         commits: parsed.into_iter().map(|c| c.commit).collect(),
