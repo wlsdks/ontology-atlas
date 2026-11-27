@@ -1,8 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import "../../atlas-map-probe";
-import { seedFirstRunSeen } from "../../first-run-seed";
-import { useDogfoodSample } from "../../sample-source";
+import { atlasSampleFiles, installDesktopRailRuntime } from "../../desktop-rail-arrival-harness";
+import { openMapOnApp } from "../open-map-on-app";
 import { waitForMapSettled, waitForMapStill } from "../../settle";
 import type { DialProbe } from "../../../../src/widgets/ontology-map/dial/dial-shapes";
 
@@ -17,7 +17,7 @@ interface MotionSample { t: number; settled: boolean; hover: string | null; sele
 type MotionWindow = Window & { __frames: number[]; __motion: MotionSample[] };
 
 async function open(page: Page): Promise<DialProbe> {
-  await seedFirstRunSeen(page);
+  await installDesktopRailRuntime(page, atlasSampleFiles(), undefined, { replaceFixture: true });
   await page.addInitScript(() => {
     const w = window as unknown as MotionWindow;
     w.__frames = [];
@@ -30,7 +30,7 @@ async function open(page: Page): Promise<DialProbe> {
       if (probe?.dialMotionSettled) w.__motion.push({ t: performance.now(), settled: probe.dialMotionSettled(), hover: probe.hover(), selected: probe.selection().nodeId });
     });
   });
-  await page.goto("/en/topology/?guides=off&e2e=1", { waitUntil: "domcontentloaded" });
+  await openMapOnApp(page, "/en/topology/?guides=off&e2e=1", { waitUntil: "domcontentloaded" });
   await waitForMapSettled(page, { timeout: 90_000 });
   await page.waitForFunction(() => window.__atlasMap?.dial?.()?.owns === true, undefined, { timeout: 90_000 });
   await waitForMapStill(page);
@@ -51,7 +51,6 @@ const resetSamples = (page: Page) => page.evaluate(() => {
 
 test("after a selection the attention motion lands and the map stops drawing", async ({ page }) => {
   test.setTimeout(120_000);
-  await useDogfoodSample(page);
   const dial = await open(page);
   const disc = dial.discs.find((d) => dial.clusters.some((c) => c.capabilityIds.includes(d.id)))!;
   const at = await canvasPoint(page, disc);
@@ -80,7 +79,6 @@ test("after a selection the attention motion lands and the map stops drawing", a
 test("under reduced motion every lit state is complete on its first frame", async ({ page }) => {
   test.setTimeout(120_000);
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await useDogfoodSample(page);
   const dial = await open(page);
   const domain = dial.clusters[0]!;
   const capability = dial.discs.find((d) => domain.capabilityIds.includes(d.id))!;

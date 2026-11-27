@@ -1,8 +1,7 @@
 import { expect, test } from "@playwright/test";
 import "../../atlas-map-probe";
-import { seedFirstRunSeen } from "../../first-run-seed";
+import { installDesktopRailRuntime } from "../../desktop-rail-arrival-harness";
 import { waitForMapStill } from "../../settle";
-import { stubDirectoryPicker } from "../../vault-picker-stub";
 
 /**
  * `?p=<project slug>` matches no `kind:slug` node name; with no selection match, nothing
@@ -43,7 +42,7 @@ async function readablePixelCount(page: import("@playwright/test").Page) {
   });
 }
 
-/** The bundled sample stays drawn for a few frames after a pick or a reload; readings wait for the picked vault. */
+/** The folder is read after the map first draws; readings wait for the picked vault. */
 async function waitForPickedVault(page: import("@playwright/test").Page) {
   await page.waitForFunction(
     (count) => {
@@ -57,11 +56,9 @@ async function waitForPickedVault(page: import("@playwright/test").Page) {
 
 async function openVault(page: import("@playwright/test").Page, query: string) {
   await page.setViewportSize({ width: 1512, height: 900 });
-  await seedFirstRunSeen(page);
-  await stubDirectoryPicker(page, VAULT);
-  await page.goto(`/ko/topology/?e2e=1&guides=off`, { waitUntil: "domcontentloaded" });
-  await page.getByTestId("first-run-starter-open").click();
-  await page.getByTestId("vault-guide-pick-existing").click();
+  await installDesktopRailRuntime(page, VAULT, undefined, { replaceFixture: true });
+  await page.goto(`/ko/?e2e=1&guides=off`, { waitUntil: "domcontentloaded" });
+  await page.getByTestId("first-run-open").click();
   await expect(page.getByTestId("ontology-map-canvas").first()).toBeVisible({ timeout: 30_000 });
   await waitForPickedVault(page);
   await waitForMapStill(page);

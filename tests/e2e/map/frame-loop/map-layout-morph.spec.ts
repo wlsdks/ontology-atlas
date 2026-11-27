@@ -2,7 +2,9 @@ import { expect, test, type Page } from "@playwright/test";
 
 import { SPRING, springVisualMs } from "../../../../src/shared/motion/spring";
 import { MOTION, STAGGER } from "../../../../src/shared/motion/tokens";
-import { seedFirstRunSeen } from "../../first-run-seed";
+import { installDesktopRailRuntime } from "../../desktop-rail-arrival-harness";
+import { openMapOnApp } from "../open-map-on-app";
+import { storefrontSampleFiles } from "../storefront-sample-files";
 import { waitForAnimationsDone, waitForMapSettled, waitForTreeStill } from "../../settle";
 
 type View = "flat" | "hex" | "3d";
@@ -208,7 +210,7 @@ async function openAt(page: Page, view: View, reduced = false, synth: number | n
     await page.setViewportSize({ width: 1400, height: 860 });
     if (reduced)
         await page.emulateMedia({ reducedMotion: "reduce" });
-    await seedFirstRunSeen(page);
+    await installDesktopRailRuntime(page, storefrontSampleFiles(), undefined, { replaceFixture: true });
     await page.addInitScript(({ initial, tilted }: {
         initial: View;
         tilted: boolean;
@@ -219,7 +221,7 @@ async function openAt(page: Page, view: View, reduced = false, synth: number | n
         flag("view3d", initial === "3d");
     }, { initial: view, tilted: relief });
     await installSampler(page);
-    await page.goto(`/ko/topology/?${synth === null ? "" : `synth=${synth}&`}guides=off&e2e=1`, { waitUntil: "domcontentloaded" });
+    await openMapOnApp(page, `/ko/topology/?${synth === null ? "" : `synth=${synth}&`}guides=off&e2e=1`, { waitUntil: "domcontentloaded" });
   await settled(page, view);
 }
 

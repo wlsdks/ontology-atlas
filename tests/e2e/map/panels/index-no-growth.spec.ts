@@ -1,9 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import "../../atlas-map-probe";
-import { seedFirstRunSeen } from "../../first-run-seed";
+import { installDesktopRailRuntime } from "../../desktop-rail-arrival-harness";
 import { waitForMapStill } from "../../settle";
-import { stubDirectoryPicker, writeFolderBeforePick } from "../../vault-picker-stub";
 
 /**
  * The INDEX has one job, getting to a concept, so a selection made on the map must not change its
@@ -93,12 +92,9 @@ for (const viewport of VIEWPORTS) {
   test(`at ${viewport.width}x${viewport.height} a selection marks its place in the INDEX without growing or scrolling it`, async ({ page }) => {
     test.setTimeout(120_000);
     await page.setViewportSize(viewport);
-    await seedFirstRunSeen(page);
-    await stubDirectoryPicker(page, {});
-    await page.goto("/en/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
-    await writeFolderBeforePick(page, folder());
-    await page.waitForFunction(() => "__atlasMap" in window);
-    await page.getByTestId("topology-switch-to-my-data").click();
+    await installDesktopRailRuntime(page, folder(), undefined, { replaceFixture: true });
+    await page.goto("/en/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
+    await page.getByTestId("first-run-open").click();
     await expect(page.locator(`${PANEL} [data-testid="topology-index-uncataloged-docs"]`)).toBeVisible({ timeout: 60_000 });
     await expect(page.getByTestId("topology-index-source"), "the folder line outlived the read").toHaveCount(0);
     await waitForMapStill(page);

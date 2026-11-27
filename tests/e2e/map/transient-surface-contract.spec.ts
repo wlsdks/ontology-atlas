@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
-import { seedFirstRunSeen } from "../first-run-seed";
-import { FIRST_RUN_STARTER_DISMISSED_KEY } from "../../../src/features/first-run-starter/model/first-run-starter-dismiss";
+import { installDesktopRailRuntime, mountDesktopVault } from "../desktop-rail-arrival-harness";
+import { openMapOnApp } from "./open-map-on-app";
+import { storefrontSampleFiles } from "./storefront-sample-files";
 import { waitForAnimationsDone, waitForBoxStill, waitForMapStill, waitFrames } from "../settle";
 
 /**
@@ -76,7 +77,8 @@ test.describe("three contracts for transient surfaces", () => {
   test("each declared surface keeps its own contract", async ({ page }) => {
     test.setTimeout(300_000);
     await page.setViewportSize({ width: 1512, height: 900 });
-    await seedFirstRunSeen(page);
+    await installDesktopRailRuntime(page, storefrontSampleFiles(), undefined, { replaceFixture: true });
+    await mountDesktopVault(page, "ko");
 
     const opened: Opened[] = [];
     const violations: string[] = [];
@@ -301,25 +303,8 @@ test.describe("three contracts for transient surfaces", () => {
    */
   test("a notice that appears only by keyboard does not take focus either", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
-    await seedFirstRunSeen(page);
-    /*
-     * ⚠️ **Collapse the getting-started card.** In a browser with no vault chosen it
-     * covers the canvas, so **surfaces opened by mouse cannot be reached** (measured:
-     * `.map-overlay-in` swallowed the right click, and that click also closed the
-     * popover). The keyboard passes through, so the walk tests above were unaffected,
-     * which is why this hole stayed invisible.
-     *
-     * It is collapsed using what the product already has — the same key "just browsing"
-     * uses. No test-only bypass is introduced.
-     */
-    await page.addInitScript((key: string) => {
-      try {
-        window.sessionStorage.setItem(key, "1");
-      } catch {
-        /* private mode */
-      }
-    }, FIRST_RUN_STARTER_DISMISSED_KEY);
-    await page.goto("/ko/topology/?e2e=1&guides=off");
+    await installDesktopRailRuntime(page, storefrontSampleFiles(), undefined, { replaceFixture: true });
+    await openMapOnApp(page, "/ko/topology/?e2e=1&guides=off");
     const canvas = page.getByTestId("ontology-map-canvas");
     await canvas.waitFor({ state: "visible", timeout: 20_000 });
     await canvas.focus();
@@ -351,13 +336,13 @@ test.describe("three contracts for transient surfaces", () => {
 
   /**
    * Opens a node popover (`anchored`) for real: the route sweep only reaches `sheet` kinds. Select with
-   * arrow keys, not the mouse, since a panel over the map eats the click when no vault is chosen.
+   * arrow keys, not the mouse.
    */
   test("the node popover stands beside what summoned it and closes with Escape", async ({ page }) => {
     test.setTimeout(180_000);
     await page.setViewportSize({ width: 1512, height: 900 });
-    await seedFirstRunSeen(page);
-    await page.goto("/ko/topology/?e2e=1&guides=off");
+    await installDesktopRailRuntime(page, storefrontSampleFiles(), undefined, { replaceFixture: true });
+    await openMapOnApp(page, "/ko/topology/?e2e=1&guides=off");
     const canvas = page.getByTestId("ontology-map-canvas");
     await canvas.waitFor({ state: "visible", timeout: 20_000 });
     await expect

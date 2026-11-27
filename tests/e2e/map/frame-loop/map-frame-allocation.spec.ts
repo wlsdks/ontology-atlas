@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import type { AtlasMapProbe } from "../../atlas-map-probe";
-import { seedFirstRunSeen } from "../../first-run-seed";
+import { installDesktopRailRuntime, mountDesktopVault } from "../../desktop-rail-arrival-harness";
 import { waitForMapSettled } from "../../settle";
 
 async function kilobytesPerFrame(page: Page, concepts: number): Promise<number> {
@@ -54,7 +54,7 @@ async function kilobytesPerFrame(page: Page, concepts: number): Promise<number> 
 
 test("an awake map allocates per frame far slower than its graph grows", async ({ page }) => {
   test.setTimeout(120_000);
-  await seedFirstRunSeen(page);
+  await installDesktopRailRuntime(page);
   await page.addInitScript(() => {
     const w = window as unknown as { __rafFrames: number };
     w.__rafFrames = 0;
@@ -65,6 +65,7 @@ test("an awake map allocates per frame far slower than its graph grows", async (
         callback(time);
       });
   });
+  await mountDesktopVault(page, "ko");
   const small = await kilobytesPerFrame(page, 300);
   const large = await kilobytesPerFrame(page, 3000);
   // Per-frame graph rebuilds push the large/small KB ratio past 4.

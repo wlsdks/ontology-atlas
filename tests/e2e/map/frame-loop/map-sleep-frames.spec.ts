@@ -1,9 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
-import { seedFirstRunSeen } from "../../first-run-seed";
+import { installDesktopRailRuntime } from "../../desktop-rail-arrival-harness";
+import { openMapOnApp } from "../open-map-on-app";
 import { waitForAnimationsDone, waitForMapSettled } from "../../settle";
 
 async function countFrames(page: Page): Promise<void> {
-  await seedFirstRunSeen(page);
+  await installDesktopRailRuntime(page);
   await page.addInitScript(() => {
     const w = window as unknown as { __rafTimes?: number[];
         };
@@ -33,7 +34,7 @@ test("a layout morph stops its own frames once the new view has landed", async (
         window.localStorage.setItem("atlas.appearance.hex-board", "off");
         window.localStorage.setItem("atlas.appearance.view3d", "off");
     });
-    await page.goto("/ko/topology?synth=300&guides=off&e2e=1");
+    await openMapOnApp(page, "/ko/topology?synth=300&guides=off&e2e=1");
     await waitForMapSettled(page);
     await page.getByTestId("topology-view-3d").click();
     await waitForAnimationsDone(page.getByTestId("topology-view-3d-menu"));
@@ -45,7 +46,7 @@ test("a layout morph stops its own frames once the new view has landed", async (
 test("a resting map schedules no animation frame until input wakes it", async ({ page }) => {
     test.setTimeout(120000);
     await countFrames(page);
-    await page.goto("/ko/topology?synth=300&guides=off&e2e=1");
+    await openMapOnApp(page, "/ko/topology?synth=300&guides=off&e2e=1");
     await expect(page.getByTestId("ontology-map-canvas")).toBeVisible();
     await waitForMapSettled(page);
     await waitForNoFrames(page);

@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { seedFirstRunSeen } from '../../first-run-seed';
+import { installDesktopRailRuntime } from '../../desktop-rail-arrival-harness';
+import { openMapOnApp } from '../open-map-on-app';
 import { waitForDomeEntered, waitForMapStill } from '../../settle';
 
 // Record the actual canvas paths, independently of __atlasMap.edges(). Neural strokes each axon in
@@ -8,7 +9,7 @@ import { waitForDomeEntered, waitForMapStill } from '../../settle';
 test.use({ viewport: { width: 1440, height: 900 }, contextOptions: { reducedMotion: 'reduce' } });
 
 test('Neural: visible dependency strokes lie on the curves a pointer selects', async ({ page }) => {
-  await seedFirstRunSeen(page);
+  await installDesktopRailRuntime(page);
   await page.addInitScript(() => {
     localStorage.setItem('atlas.appearance.view3d', 'on');
     localStorage.setItem('atlas.appearance.map-arrangement', 'coupling');
@@ -44,7 +45,7 @@ test('Neural: visible dependency strokes lie on the curves a pointer selects', a
       if (path) stroke.call(this, path); else strokePlain.call(this);
     };
   });
-  await page.goto('/en/topology/?synth=31&synthDeps=1&e2e=1&guides=off');
+  await openMapOnApp(page, '/en/topology/?synth=31&synthDeps=1&e2e=1&guides=off');
   await waitForDomeEntered(page);
   await waitForMapStill(page);
   const result = await page.evaluate(() => {

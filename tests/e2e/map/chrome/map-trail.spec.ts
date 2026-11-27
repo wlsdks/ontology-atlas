@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
-import { seedFirstRunSeen } from "../../first-run-seed";
+import { installDesktopRailRuntime } from "../../desktop-rail-arrival-harness";
+import { openMapOnApp } from "../open-map-on-app";
+import { storefrontSampleFiles } from "../storefront-sample-files";
 import { waitForMapStill } from "../../settle";
 
 type MapProbe = {
@@ -12,8 +14,8 @@ const selection = (page: Page) =>
 
 async function openSampleMap(page: Page) {
   await page.setViewportSize({ width: 1512, height: 900 });
-  await seedFirstRunSeen(page);
-  await page.goto("/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
+  await installDesktopRailRuntime(page, storefrontSampleFiles(), undefined, { replaceFixture: true });
+  await openMapOnApp(page, "/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
   await page.evaluate(() => document.fonts.ready);
   await waitForMapStill(page);
 }

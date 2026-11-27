@@ -1,8 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import { parseFrontmatter } from '../../../src/shared/lib/vault-document/parse-frontmatter';
-import { seedFirstRunSeen } from '../first-run-seed';
-import { stubDirectoryPicker } from '../vault-picker-stub';
+import { installDesktopRailRuntime, readDesktopFile } from '../desktop-rail-arrival-harness';
 
 const concept = (path: string, kind: string, slug: string, title: string, extra: string[] = []) => [
   path,
@@ -15,26 +14,8 @@ const SEED: Record<string, string> = Object.fromEntries([
   ['README.md', '---\nkind: vault-readme\ntitle: Read me\n---\n\n# Read me\n'],
 ]);
 
-/** One file of the picked OPFS folder, read from disk rather than from the screen; null when absent. */
-async function readFile(page: Page, path: string): Promise<string | null> {
-  return page.evaluate(async (target) => {
-    const root = await navigator.storage.getDirectory();
-    const folders: string[] = [];
-    for await (const [name] of (root as unknown as AsyncIterable<[string, FileSystemHandle]>)) {
-      if (name.startsWith('stub-vault-')) folders.push(name);
-    }
-    const picked = folders.sort().at(-1);
-    if (!picked) return null;
-    let dir = await root.getDirectoryHandle(picked);
-    const segments = target.split('/');
-    try {
-      for (const segment of segments.slice(0, -1)) dir = await dir.getDirectoryHandle(segment);
-      return await (await (await dir.getFileHandle(segments.at(-1)!)).getFile()).text();
-    } catch {
-      return null;
-    }
-  }, path);
-}
+/** One file of the served folder, read from the "disk" rather than from the screen; null when absent. */
+const readFile = (page: Page, path: string) => readDesktopFile(page, path);
 
 async function frontmatterOf(page: Page, path: string): Promise<Record<string, unknown> | null> {
   const text = await readFile(page, path);
@@ -64,12 +45,10 @@ async function selectInList(page: Page, title: string) {
 test('a person builds a small ontology by hand on the map, and takes changes back', async ({ page }) => {
   test.setTimeout(150_000);
   await page.setViewportSize({ width: 1440, height: 900 });
-  await seedFirstRunSeen(page);
-  await stubDirectoryPicker(page, SEED);
+  await installDesktopRailRuntime(page, SEED, undefined, { replaceFixture: true, writable: true });
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.goto('/en/topology/?guides=off&e2e=1');
-  await page.getByTestId('first-run-starter-open').click();
-  await page.getByTestId('vault-guide-pick-existing').click();
+  await page.goto('/en/?guides=off&e2e=1');
+  await page.getByTestId('first-run-open').click();
   await expect(page.getByTestId('topology-index-tree')).toContainText('Orders', { timeout: 30_000 });
 
   // A domain from the concept list's add row.

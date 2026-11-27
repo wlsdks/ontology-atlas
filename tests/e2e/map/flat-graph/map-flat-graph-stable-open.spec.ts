@@ -1,10 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import "../../atlas-map-probe";
-import { seedFirstRunSeen } from "../../first-run-seed";
-import { useDogfoodSample } from "../../sample-source";
+import { holdDesktopReads, installDesktopRailRuntime, releaseDesktopReads } from "../../desktop-rail-arrival-harness";
 import { waitForMapStill } from "../../settle";
-import { stubDirectoryPicker } from "../../vault-picker-stub";
 import type { DialProbe } from "../../../../src/widgets/ontology-map/dial/dial-shapes";
 
 const DOMAINS = ["orders", "catalog", "payments", "shipping", "returns", "inventory", "merchants", "platform"];
@@ -33,17 +31,13 @@ function generatedVault(): Record<string, string> {
   return files;
 }
 
-/** Slows every file read by a varying few milliseconds, so the folder arrives in several partial reads. */
-async function streamReads(page: Page): Promise<void> {
-  await page.addInitScript(() => {
-    const read = FileSystemFileHandle.prototype.getFile;
-    let calls = 0;
-    FileSystemFileHandle.prototype.getFile = async function (this: FileSystemFileHandle) {
-      calls += 1;
-      await new Promise((resolve) => setTimeout(resolve, 20 + (calls * 37) % 60));
-      return read.call(this);
-    };
-  });
+/** The capability files, whose reads a streamed folder answers after the map has drawn its first world. */
+const streamedPaths = (vault: Record<string, string>) => Object.keys(vault).filter((path) => path.startsWith("capabilities/"));
+
+/** Lets the held reads answer once the map has drawn a first world, as any folder past 400 documents does. */
+async function releaseReadsAfterFirstDraw(page: Page): Promise<void> {
+  await page.waitForFunction(() => (window.__atlasMap?.nodes().length ?? 0) > 0, undefined, { timeout: 60_000 });
+  await releaseDesktopReads(page);
 }
 
 interface Picture {
@@ -82,11 +76,10 @@ async function settledPicture(page: Page): Promise<Picture> {
   return { at: new Map(at), rim: new Map(rim.filter(([id]) => domains.has(id))) };
 }
 
-async function pickFolder(page: Page): Promise<void> {
-  await page.goto("/en/topology/?guides=off&e2e=1", { waitUntil: "networkidle" });
-  await page.getByTestId("first-run-starter-open").click();
-  await page.getByTestId("vault-guide-pick-existing").click();
-  await page.getByTestId("first-run-starter").waitFor({ state: "detached", timeout: 60_000 });
+async function pickFolder(page: Page, streamed = false): Promise<void> {
+  await page.goto("/en/?guides=off&e2e=1", { waitUntil: "networkidle" });
+  await page.getByTestId("first-run-open").click();
+  if (streamed) await releaseReadsAfterFirstDraw(page);
 }
 
 /** The largest distance between matching marks once the camera's zoom is divided out, relative to the graph's spread. */
@@ -102,26 +95,23 @@ function shapeDrift(a: Picture, b: Picture): number {
 const VIEWPORT = { width: 1920, height: 1080 };
 test.use({ viewport: VIEWPORT });
 
-test("one folder draws one Flat picture whichever sample showed first, however its reads were batched, and after a reload", async ({ page, browser, baseURL }) => {
+test("one folder draws one Flat picture however its reads were batched, and after a reload", async ({ page, browser, baseURL }) => {
   test.setTimeout(240_000);
   const vault = generatedVault();
   const pictures = new Map<string, Picture>();
 
-  await seedFirstRunSeen(page);
-  await page.addInitScript(() => window.localStorage.setItem("demo:sample-source:v1", "storefront"));
-  await stubDirectoryPicker(page, vault);
+  await installDesktopRailRuntime(page, vault, undefined, { replaceFixture: true });
   await pickFolder(page);
-  pictures.set("one read after the storefront sample", await settledPicture(page));
+  pictures.set("one read", await settledPicture(page));
 
   const session = await browser.newContext({ baseURL, viewport: VIEWPORT });
   const streamed = await session.newPage();
-  await seedFirstRunSeen(streamed);
-  await useDogfoodSample(streamed);
-  await stubDirectoryPicker(streamed, vault);
-  await streamReads(streamed);
-  await pickFolder(streamed);
-  pictures.set("streamed reads after the dogfood sample", await settledPicture(streamed));
+  await installDesktopRailRuntime(streamed, vault, undefined, { replaceFixture: true, holdReadsUntilReleased: streamedPaths(vault) });
+  await pickFolder(streamed, true);
+  pictures.set("streamed reads", await settledPicture(streamed));
+  await holdDesktopReads(streamed, streamedPaths(vault));
   await streamed.goto("/en/topology/?guides=off&e2e=1", { waitUntil: "domcontentloaded" });
+  await releaseReadsAfterFirstDraw(streamed);
   pictures.set("streamed restore after a reload", await settledPicture(streamed));
   await session.close();
 

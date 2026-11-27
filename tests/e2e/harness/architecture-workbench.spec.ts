@@ -1,8 +1,9 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { seedFirstRunSeen } from '../first-run-seed';
+import { atlasSampleFiles, installDesktopRailRuntime } from '../desktop-rail-arrival-harness';
 import { HARNESS_VAULT_ROOT, installHarnessRuntime, mountHarnessVault } from '../harness-tab-fixture';
-import { useDogfoodSample } from '../sample-source';
+import { openMapOnApp } from '../map/open-map-on-app';
+import { storefrontSampleFiles } from '../map/storefront-sample-files';
 
 test.use({ viewport: { width: 1512, height: 945 } });
 
@@ -97,8 +98,7 @@ async function openRecordedStorefront(page: Page) {
 }
 
 test('the agent task chooser offers a re-check and an improvement search beside the derived task', async ({ page }) => {
-  await seedFirstRunSeen(page);
-  await useDogfoodSample(page);
+  await installDesktopRailRuntime(page, atlasSampleFiles(), undefined, { replaceFixture: true });
   await page.addInitScript(() => {
     (window as unknown as { __copied: string[] }).__copied = [];
     Object.defineProperty(navigator, 'clipboard', {
@@ -110,7 +110,7 @@ test('the agent task chooser offers a re-check and an improvement search beside 
       },
     });
   });
-  await page.goto('/ko/architecture/?view=architecture&guides=off');
+  await openMapOnApp(page, '/ko/architecture/?view=architecture&guides=off');
   await expect(page.getByTestId('architecture-matrix')).toBeVisible();
 
   const trigger = page.getByTestId('architecture-agent-task-menu');
@@ -145,7 +145,8 @@ test('the agent task chooser offers a re-check and an improvement search beside 
 });
 
 test('obsolete workflow-stage links do not resurrect the removed prose panels', async ({ page }) => {
-  await page.goto('/ko/architecture/?view=architecture&stage=plan');
+  await installDesktopRailRuntime(page, storefrontSampleFiles(), undefined, { replaceFixture: true });
+  await openMapOnApp(page, '/ko/architecture/?view=architecture&stage=plan');
   await expect(page.getByTestId('architecture-matrix')).toBeVisible();
   await expect(page.getByRole('radio')).toHaveCount(0);
   await expect(page.locator('[data-architecture-stage]')).toHaveCount(0);
@@ -234,7 +235,8 @@ test('at 1280x800 the verdict, every cell and the pane are in view and the page 
 });
 
 test("an explicit (hexagonal) profile allows the cells each role's reach names, wherever they fall", async ({ page }) => {
-  await page.goto('/en/architecture/?view=architecture&guides=off');
+  await installDesktopRailRuntime(page, storefrontSampleFiles(), undefined, { replaceFixture: true });
+  await openMapOnApp(page, '/en/architecture/?view=architecture&guides=off');
   await expect(page.getByTestId('architecture-matrix')).toBeVisible({ timeout: 60_000 });
   await expect(page.getByTestId('architecture-cell-adapter-domain')).toHaveAttribute('data-cell-kind', 'allowed');
   await expect(page.getByTestId('architecture-cell-domain-adapter')).toHaveAttribute('data-cell-kind', 'forbidden');
@@ -242,7 +244,8 @@ test("an explicit (hexagonal) profile allows the cells each role's reach names, 
 });
 
 test('a link to a role the profile lacks is declined in words', async ({ page }) => {
-  await page.goto('/ko/architecture/?view=architecture&role=not-a-real-role');
+  await installDesktopRailRuntime(page, storefrontSampleFiles(), undefined, { replaceFixture: true });
+  await openMapOnApp(page, '/ko/architecture/?view=architecture&role=not-a-real-role');
   const notice = page.getByTestId('architecture-role-not-in-profile');
   await expect(notice).toBeVisible({ timeout: 60_000 });
   await expect(notice).toContainText('not-a-real-role');

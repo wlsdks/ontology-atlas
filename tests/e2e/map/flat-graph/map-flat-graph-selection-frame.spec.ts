@@ -1,10 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import "../../atlas-map-probe";
-import { seedFirstRunSeen } from "../../first-run-seed";
+import { installDesktopRailRuntime } from "../../desktop-rail-arrival-harness";
 import { waitForMapStill } from "../../settle";
 import { elementsByContainer } from "./domain-star";
-import { stubDirectoryPicker } from "../../vault-picker-stub";
 import type { Box, DialProbe } from "../../../../src/widgets/ontology-map/dial/dial-shapes";
 
 /**
@@ -57,11 +56,9 @@ function generatedVault(elementNeeds = false): Record<string, string> {
 }
 
 async function openVault(page: Page, elementNeeds = false): Promise<void> {
-  await seedFirstRunSeen(page);
-  await stubDirectoryPicker(page, generatedVault(elementNeeds));
-  await page.goto("/en/topology/?guides=off&e2e=1", { waitUntil: "networkidle" });
-  await page.getByTestId("first-run-starter-open").click();
-  await page.getByTestId("vault-guide-pick-existing").click();
+  await installDesktopRailRuntime(page, generatedVault(elementNeeds), undefined, { replaceFixture: true });
+  await page.goto("/en/?guides=off&e2e=1", { waitUntil: "networkidle" });
+  await page.getByTestId("first-run-open").click();
   await page.waitForFunction((marks) => {
     const dial = window.__atlasMap?.dial?.();
     const drawn = window.__atlasMap?.nodes().filter((n) => n.kind === "domain" || n.kind === "capability").length;

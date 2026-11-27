@@ -1,5 +1,8 @@
 import { expect, test } from "@playwright/test";
+import { installDesktopRailRuntime } from "../../desktop-rail-arrival-harness";
 import { waitForMapSettled } from "../../settle";
+import { openMapOnApp } from "../open-map-on-app";
+import { storefrontSampleFiles } from "../storefront-sample-files";
 
 /** Reduced motion, deliberately: this spec measures the **resting** frame. */
 test.use({ contextOptions: { reducedMotion: "reduce" } });
@@ -21,7 +24,8 @@ interface LabelBox {
 
 test.describe("map labels are measured by their drawn boxes", () => {
   test("names do not overlap each other", async ({ page }) => {
-    await page.goto("/ko/topology/?e2e=1&guides=off");
+    await installDesktopRailRuntime(page, storefrontSampleFiles(), undefined, { replaceFixture: true });
+    await openMapOnApp(page, "/ko/topology/?e2e=1&guides=off");
     await page.waitForFunction(
       () => Boolean((window as unknown as { __atlasMap?: { labels?: unknown } }).__atlasMap?.labels),
       undefined,

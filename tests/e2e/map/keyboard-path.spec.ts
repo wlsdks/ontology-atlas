@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
-import { seedFirstRunSeen } from "../first-run-seed";
+import { installDesktopRailRuntime } from "../desktop-rail-arrival-harness";
+import { openMapOnApp } from "./open-map-on-app";
+import { storefrontSampleFiles } from "./storefront-sample-files";
 import { FIRST_RUN_STARTER_DISMISSED_KEY } from "../../../src/features/first-run-starter/model/first-run-starter-dismiss";
 
 /**
@@ -11,8 +13,9 @@ test.use({ viewport: { width: 1512, height: 950 } });
 
 async function openTopology(page: import("@playwright/test").Page) {
   // `?guides=off` — the first-visit guidance intercepts the keyboard path with a scrim.
+  await installDesktopRailRuntime(page, storefrontSampleFiles(), undefined, { replaceFixture: true });
   await page.addInitScript((key) => window.sessionStorage.setItem(key, "1"), FIRST_RUN_STARTER_DISMISSED_KEY);
-  await page.goto("/ko/topology/?guides=off");
+  await openMapOnApp(page, "/ko/topology/?guides=off");
   await expect(page.getByTestId("topology-index-panel")).toBeVisible();
   await expect(page.getByTestId("topology-index-row").first()).toBeVisible();
 }
@@ -65,9 +68,9 @@ test.describe("keyboard path (trusted events)", () => {
 /** When the return target is gone, focus goes to `<main>`; a surviving trigger always wins. */
 test.describe("focus return", () => {
   test("closing the shortcuts sheet moves focus to the main content, not body", async ({ page }) => {
-    await seedFirstRunSeen(page);
+    await installDesktopRailRuntime(page, storefrontSampleFiles(), undefined, { replaceFixture: true });
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto("/ko/topology/?guides=off", { waitUntil: "domcontentloaded" });
+    await openMapOnApp(page, "/ko/topology/?guides=off", { waitUntil: "domcontentloaded" });
 
     const opener = page.getByTestId("topology-shortcuts-help-button");
     await expect(opener).toBeVisible({ timeout: 30_000 });
@@ -100,9 +103,9 @@ test.describe("focus return", () => {
    * is a change, not a fix.
    */
   test("opening from a surviving trigger returns exactly to that trigger", async ({ page }) => {
-    await seedFirstRunSeen(page);
+    await installDesktopRailRuntime(page, storefrontSampleFiles(), undefined, { replaceFixture: true });
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto("/ko/topology/?guides=off", { waitUntil: "domcontentloaded" });
+    await openMapOnApp(page, "/ko/topology/?guides=off", { waitUntil: "domcontentloaded" });
 
     const survivor = page.getByTestId("topology-auto-arrange");
     await expect(survivor).toBeVisible({ timeout: 30_000 });

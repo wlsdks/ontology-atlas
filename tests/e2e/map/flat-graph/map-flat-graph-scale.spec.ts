@@ -1,8 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import "../../atlas-map-probe";
-import { seedFirstRunSeen } from "../../first-run-seed";
-import { useDogfoodSample } from "../../sample-source";
+import { atlasSampleFiles, installDesktopRailRuntime } from "../../desktop-rail-arrival-harness";
+import { openMapOnApp } from "../open-map-on-app";
+import { storefrontSampleFiles } from "../storefront-sample-files";
 import { waitForMapSettled, waitForMapStill } from "../../settle";
 import type { DialProbe } from "../../../../src/widgets/ontology-map/dial/dial-shapes";
 
@@ -39,9 +40,9 @@ async function instrument(page: Page): Promise<void> {
   });
 }
 
-async function open(page: Page, query: string): Promise<DialProbe> {
-  await seedFirstRunSeen(page);
-  await page.goto(`/en/topology/?${query}guides=off&e2e=1`, { waitUntil: "domcontentloaded" });
+async function open(page: Page, query: string, sample?: Record<string, string>): Promise<DialProbe> {
+  await installDesktopRailRuntime(page, sample, undefined, sample ? { replaceFixture: true } : {});
+  await openMapOnApp(page, `/en/topology/?${query}guides=off&e2e=1`, { waitUntil: "domcontentloaded" });
   await waitForMapSettled(page, { timeout: 120_000 });
   await page.waitForFunction(() => window.__atlasMap?.dial?.()?.owns === true, undefined, { timeout: 120_000 });
   await waitForMapStill(page);
@@ -153,9 +154,8 @@ for (const source of ["dogfood", "storefront", "synth"] as const) {
   test(`at a laptop width every ${source} name stays inside the free map and no disc sits on a domain title`, async ({ page }) => {
     test.setTimeout(180_000);
     await page.setViewportSize({ width: 1512, height: 900 });
-    if (source === "dogfood") await useDogfoodSample(page);
-    if (source === "storefront") await page.addInitScript(() => window.localStorage.setItem("demo:sample-source:v1", "storefront"));
-    const dial = await open(page, source === "synth" ? "synth=2000&synthDeps=1&" : "");
+    const sample = source === "dogfood" ? atlasSampleFiles() : source === "storefront" ? storefrontSampleFiles() : undefined;
+    const dial = await open(page, source === "synth" ? "synth=2000&synthDeps=1&" : "", sample);
     expect(dial.texts.length).toBeGreaterThan(0);
     expect(namesOutside(dial)).toEqual([]);
     expect(discsOnTitles(dial)).toEqual([]);

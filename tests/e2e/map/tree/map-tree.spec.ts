@@ -5,17 +5,14 @@ import { expect, test, type Page } from "@playwright/test";
 import { judgeEvidence } from "../../../../src/shared/lib/git/evidence-verdict.mjs";
 import { parseFrontmatter } from "../../../../src/shared/lib/vault-document/parse-frontmatter";
 import type { TreePose } from "../../../../src/widgets/ontology-map/model/tree-view/tree-shapes";
-import mapTree from "../../../../messages/ko/mapTree.json";
 import { installDesktopRailRuntime } from "../../desktop-rail-arrival-harness";
 import { dogfoodEvidenceVault } from "../../hex-board-vaults";
 import { waitForTreeStill } from "../../settle";
-import { seedFirstRunSeen } from "../../first-run-seed";
-import { stubDirectoryPicker } from "../../vault-picker-stub";
 
 /**
  * The 3D tree on the product's own vault (`docs/ontology`). Evidence claims open it through the
- * installed-app runtime with the Git walk answered from this repository's history; the web claims
- * open the same files through the browser's folder picker. Captures go to `TREE_CAPTURE_DIR`.
+ * installed-app runtime with the Git walk answered from this repository's history. Captures go
+ * to `TREE_CAPTURE_DIR`.
  */
 
 const CAPTURE_DIR = process.env.TREE_CAPTURE_DIR ?? null;
@@ -121,20 +118,12 @@ function dogfoodTreeVault(): VaultFacts {
   return { files, changes, stale, domains };
 }
 
-async function openTree(page: Page, vault: VaultFacts, how: { runtime: "desktop" | "desktop-without-git" | "web"; view?: string; reduced?: boolean }) {
+async function openTree(page: Page, vault: VaultFacts, how: { runtime: "desktop" | "desktop-without-git"; view?: string; reduced?: boolean }) {
   if (how.reduced) await page.emulateMedia({ reducedMotion: "reduce" });
-  if (how.runtime === "web") {
-    await seedFirstRunSeen(page);
-    await stubDirectoryPicker(page, vault.files);
-    await page.goto(`/ko/topology/?guides=off&e2e=1&view=${how.view ?? "3d"}`, { waitUntil: "domcontentloaded" });
-    await page.getByTestId("first-run-starter-open").click();
-    await page.getByTestId("vault-guide-pick-existing").click();
-  } else {
-    const gitPathChanges = how.runtime === "desktop" ? vault.changes : undefined;
-    await installDesktopRailRuntime(page, vault.files, undefined, { replaceFixture: true, gitPathChanges });
-    await page.goto(`/ko/?guides=off&e2e=1&view=${how.view ?? "3d"}`, { waitUntil: "domcontentloaded" });
-    await page.getByTestId("first-run-open").click();
-  }
+  const gitPathChanges = how.runtime === "desktop" ? vault.changes : undefined;
+  await installDesktopRailRuntime(page, vault.files, undefined, { replaceFixture: true, gitPathChanges });
+  await page.goto(`/ko/?guides=off&e2e=1&view=${how.view ?? "3d"}`, { waitUntil: "domcontentloaded" });
+  await page.getByTestId("first-run-open").click();
   const tree = page.getByTestId("tree-map");
   await expect(tree).toHaveAttribute("data-tree-ready", "true", { timeout: 60_000 });
   if (how.runtime === "desktop") await expect(tree).toHaveAttribute("data-tree-evidence", "measured", { timeout: 30_000 });
@@ -253,18 +242,6 @@ test.describe("the 3D tree on the dogfood vault", () => {
     }
     expect(misdrawn).toEqual([]);
     await shot(page, "b-evidence");
-  });
-
-  test("on the web nothing is amber and the quiet evidence line says why", async ({ page }) => {
-    const vault = dogfoodTreeVault();
-    const tree = await openTree(page, vault, { runtime: "web" });
-    await expect(tree).toHaveAttribute("data-tree-evidence", "unknown");
-    await expect(page.getByTestId("tree-map-evidence-note")).toHaveText(mapTree.evidenceAppOnly);
-    await expect(page.getByTestId("tree-map-legend-stale")).toHaveCount(0);
-    await leaveCanvas(page);
-    await waitForTreeStill(page);
-    expect(await countAmber(page), "amber pixels on the web").toBe(0);
-    await shot(page, "c-web");
   });
 
   test("a click opens the compact panel and leaves the rail tiles in place", async ({ page }) => {

@@ -1,37 +1,54 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import en from '../../../messages/en.json';
-import { readFileSync } from 'node:fs';
 import { FIT_LOCALES } from '../locales';
-import { seedFirstRunSeen } from '../first-run-seed';
+import { atlasSampleFiles, installDesktopRailRuntime } from '../desktop-rail-arrival-harness';
+import { openMapOnApp, READY_AGENT } from './open-map-on-app';
+import { storefrontSampleFiles } from './storefront-sample-files';
 import { waitForAnimationsDone, waitForMapSettled } from '../settle';
-import { FIXTURE_VAULT } from '../fixture-vault';
-import { stubDirectoryPicker } from '../vault-picker-stub';
 import { analysisDigest, analysisRecordFileName, serializeAnalysisRecord, type AnalysisRun } from '../../../mcp/src/analysis-history/analysis-record.mts';
+
+/** The folder is the Online Store sample unless a spec plants its own files over the shared fixture folder. */
+async function openOnApp(page: Page, address: string, planted?: Record<string, string>) {
+  const sample = address.includes('/architecture/') ? atlasSampleFiles() : storefrontSampleFiles();
+  await installDesktopRailRuntime(page, planted ?? sample, READY_AGENT, planted ? {} : { replaceFixture: true });
+  if (planted) await serveAnalysisRecords(page, planted);
+  await openMapOnApp(page, address);
+}
+
+/** The faked runtime lists a planted review record but does not answer the native reader for it; this does. */
+async function serveAnalysisRecords(page: Page, planted: Record<string, string>) {
+  await page.addInitScript((records) => {
+    const internals = (window as unknown as { __TAURI_INTERNALS__: { invoke(command: string, args?: Record<string, unknown>): Promise<unknown> } }).__TAURI_INTERNALS__;
+    const inner = internals.invoke.bind(internals);
+    internals.invoke = (command, args = {}) => {
+      const text = command === 'read_analysis_record_text' ? records[`.ontology-atlas/analyses/${String(args.fileName)}`] : undefined;
+      return text === undefined ? inner(command, args) : Promise.resolve(text);
+    };
+  }, planted);
+}
 
 type CaptionBox = { edgeId: string; text: string; minX: number; maxX: number; minY: number; maxY: number };
 
 for (const width of [1280, 1920]) {
   test(`expanded INDEX keeps search and meaning reachable at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
-    await page.goto('/en/topology/?e2e=1&guides=off&index=expanded');
+    await openOnApp(page, '/en/topology/?e2e=1&guides=off&index=expanded');
     await expect(page.getByTestId('topology-index-panel')).toBeVisible();
     await page.getByTestId('topology-concept-search').click({ timeout: 8000 });
     await expect(page.locator('[cmdk-item]').first()).toBeVisible();
     await page.keyboard.press('Escape');
-    await page.getByTestId('topology-meaning-workbench-toggle').click({ timeout: 8000 });
+    await page.getByTestId('topology-vault-agent-toggle').click({ timeout: 8000 });
     await expect(page.getByTestId('analysis-workbench')).toBeVisible();
   });
 }
 
 test.beforeEach(async ({ page }) => {
-  await seedFirstRunSeen(page);
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.addInitScript(() => window.localStorage.setItem('demo:sample-source:v1', 'storefront'));
 });
 
 test('a selected concept opens the review dock, which draws bounded directional relation captions while it is open', async ({ page }) => {
   await page.setViewportSize({ width: 1512, height: 945 });
-  await page.goto('/en/topology/?e2e=1&guides=off&p=capability%3Acart&open=domain%3Aorder%2Cproject%3Astorefront');
+  await openOnApp(page, '/en/topology/?e2e=1&guides=off&p=capability%3Acart&open=domain%3Aorder%2Cproject%3Astorefront');
   await page.getByTestId('map-detail-panel-more-menu-trigger').click();
   await page.getByTestId('map-detail-panel-action-meaning').click();
   const workbench = page.getByTestId('analysis-workbench');
@@ -56,8 +73,8 @@ for (const width of [1040, 2560]) {
   test(`${locale}: meaning review and close remain reachable at ${width}px`, async ({ page }) => {
     const height = width <= 1040 ? 720 : 1080;
     await page.setViewportSize({ width, height });
-    await page.goto(`/${locale}/topology/?e2e=1&guides=off&index=collapsed`);
-    await page.getByTestId('topology-meaning-workbench-toggle').click();
+    await openOnApp(page, `/${locale}/topology/?e2e=1&guides=off&index=collapsed`);
+    await page.getByTestId('topology-vault-agent-toggle').click();
     const panel = page.getByTestId('analysis-workbench');
     await expect(panel).toBeVisible();
     await page.waitForFunction(() => {
@@ -65,22 +82,21 @@ for (const width of [1040, 2560]) {
       const frame = document.querySelector('[data-agent-dock-frame]');
       return surface && frame && Number(getComputedStyle(surface).opacity) > 0.99 && [...surface.getAnimations(), ...frame.getAnimations()].every((animation) => animation.playState !== 'running');
     });
-    const closeLabel = (JSON.parse(readFileSync(`messages/${locale}.json`, 'utf8')) as typeof en).analysisWorkbench.close;
-    const proof = await panel.evaluate((element, closeLabel) => {
+    const proof = await panel.evaluate((element) => {
       const box = element.getBoundingClientRect();
-      const close = [...element.querySelectorAll<HTMLButtonElement>('button')].find((button) => button.getAttribute('aria-label') === closeLabel)!;
+      const close = element.querySelector<HTMLButtonElement>('[data-testid="analysis-workbench-close"]')!;
       const button = close.getBoundingClientRect();
       const hit = document.elementFromPoint(button.x + button.width / 2, button.y + button.height / 2);
       const canvas = document.querySelector('[data-testid="ontology-map-canvas"]')!.getBoundingClientRect();
       return { left: box.left, right: box.right, bottom: box.bottom, viewportWidth: innerWidth, viewportHeight: innerHeight, closeReachable: !!hit && close.contains(hit), canvasWidth: canvas.width, canvasRight: canvas.right, panelFont: getComputedStyle(element).fontSize };
-    }, closeLabel);
+    });
     expect(proof.left).toBeGreaterThanOrEqual(0);
     expect(proof.right).toBeLessThanOrEqual(proof.viewportWidth);
     expect(proof.bottom).toBeLessThanOrEqual(proof.viewportHeight);
     expect(proof.closeReachable).toBe(true);
     expect(proof.canvasWidth).toBeGreaterThanOrEqual(480);
     expect(proof.canvasRight).toBeLessThanOrEqual(proof.left);
-    await panel.getByRole('button', { name: closeLabel }).click();
+    await page.getByTestId('analysis-workbench-close').click();
     await expect(panel).toBeHidden();
   });
 }
@@ -88,7 +104,7 @@ for (const width of [1040, 2560]) {
 
 test('Architecture exposes version history without requiring an agent process', async ({ page }) => {
   await page.setViewportSize({ width: 1040, height: 720 });
-  await page.goto('/en/architecture/?guides=off');
+  await openOnApp(page, '/en/architecture/?view=architecture&guides=off');
   await page.getByTestId('architecture-review-open').click();
   await expect(page.getByTestId('analysis-workbench')).toBeVisible();
   await expect(page.getByRole('tab', { name: en.analysisWorkbench.history })).toHaveAttribute('aria-selected', 'true');
@@ -123,12 +139,9 @@ test.describe('review results as a short list', () => {
   test.use({ viewport: { width: 1410, height: 840 } });
   test('four findings fit as rows; a row drills in, Escape returns to it, and the record details hold the answer', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'no-preference' });
-    await stubDirectoryPicker(page, { ...FIXTURE_VAULT, ...await reviewRecordFiles(4) });
-    await page.goto('/en/topology/?guides=off&e2e=1', { waitUntil: 'domcontentloaded' });
-    await page.getByTestId('first-run-starter-open').click();
-    await page.getByTestId('vault-guide-pick-existing').click();
-    await expect(page.getByTestId('first-run-starter')).toHaveCount(0, { timeout: 30_000 });
-    await page.getByTestId('topology-meaning-workbench-toggle').click();
+    await openOnApp(page, '/en/topology/?guides=off&e2e=1', await reviewRecordFiles(4));
+    await page.getByTestId('topology-vault-agent-toggle').click();
+    await page.getByRole('tab', { name: en.analysisWorkbench.history }).click();
     const list = page.getByTestId('review-finding-list');
     const rows = list.getByRole('button', { name: /^Question \d/ });
     await expect(rows).toHaveCount(4, { timeout: 15_000 });
@@ -181,28 +194,28 @@ test.describe('keyboard review at the app minimum window', () => {
   test.use({ viewport: { width: 1040, height: 720 } });
   test('an opening review answers Escape before its focus handoff finishes', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'no-preference' });
-    await page.goto('/en/topology/?e2e=1&guides=off&index=collapsed');
+    await openOnApp(page, '/en/topology/?e2e=1&guides=off&index=collapsed');
     await waitForMapSettled(page);
-    const opener = page.getByTestId('topology-meaning-workbench-toggle');
+    const opener = page.getByTestId('topology-vault-agent-toggle');
     for (let cycle = 0; cycle < 6; cycle += 1) {
       await opener.focus();
       await page.keyboard.press('Enter');
       await page.keyboard.press('Escape');
-      await expect(opener).toHaveAttribute('aria-pressed', 'false');
+      await expect(opener).toHaveAttribute('aria-expanded', 'false');
       await expect(page.getByTestId('analysis-workbench')).toBeHidden();
       await expect(opener).toBeFocused();
     }
   });
   for (const route of ['topology', 'architecture']) {
     test(`${route}: review takes visible focus and restores its opener`, async ({ page }) => {
-      await page.goto(`/en/${route}/?e2e=1&guides=off&index=collapsed`);
-      const opener = page.getByTestId(route === 'topology' ? 'topology-meaning-workbench-toggle' : 'architecture-review-open');
+      await openOnApp(page, `/en/${route}/?${route === 'architecture' ? 'view=architecture&' : ''}e2e=1&guides=off&index=collapsed`);
+      const opener = page.getByTestId(route === 'topology' ? 'topology-vault-agent-toggle' : 'architecture-review-open');
       await expect(opener).toBeVisible();
       await opener.focus();
       await expect(opener).toBeFocused();
       await page.keyboard.press('Enter');
       const panel = page.getByTestId('analysis-workbench');
-      await expect(panel.getByRole('button', { name: en.analysisWorkbench.close })).toBeFocused();
+      await expect(page.getByTestId('analysis-workbench-close')).toBeFocused();
       for (let i = 0; i < 5; i++) {
         await page.keyboard.press('Tab');
         expect(await page.evaluate(() => {
@@ -215,7 +228,7 @@ test.describe('keyboard review at the app minimum window', () => {
           return !!hit && focused.contains(hit) && !focused.closest('[inert]');
         })).toBe(true);
       }
-      await panel.getByRole('button', { name: en.analysisWorkbench.close }).focus();
+      await page.getByTestId('analysis-workbench-close').focus();
       await page.keyboard.press('Escape');
       await expect(panel).toBeHidden();
       await expect(opener).toBeFocused();

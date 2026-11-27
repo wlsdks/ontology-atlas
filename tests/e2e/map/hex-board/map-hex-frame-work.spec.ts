@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { seedFirstRunSeen } from "../../first-run-seed";
+import { installDesktopRailRuntime } from "../../desktop-rail-arrival-harness";
+import { openMapOnApp } from "../open-map-on-app";
 import { installFrameWork, p95, startFrameWork, stopFrameWork } from "../frame-work";
 
 const PAN_MS = 3_000;
@@ -124,7 +125,7 @@ for (const relief of [false, true]) {
 test(`the hex board at 10,000 concepts${relief ? " in relief" : ""}: one gradient per frame, culled tiles, frame work per band`, async ({ page }) => {
   test.setTimeout(300_000);
   await installFrameWork(page);
-  await seedFirstRunSeen(page);
+  await installDesktopRailRuntime(page);
   await page.addInitScript((tilted: boolean) => window.localStorage.setItem("atlas.appearance.hex-relief", tilted ? "on" : "off"), relief);
   await page.addInitScript(() => {
     const w = window as Probe;
@@ -148,7 +149,7 @@ test(`the hex board at 10,000 concepts${relief ? " in relief" : ""}: one gradien
       };
     }
   });
-  await page.goto("/en/topology/?synth=10000&synthDeps=1&synthEvidence=12&view=hex&guides=off&e2e=1");
+  await openMapOnApp(page, "/en/topology/?synth=10000&synthDeps=1&synthEvidence=12&view=hex&guides=off&e2e=1");
   await expect(page.getByTestId("hex-board-map")).toHaveAttribute("data-hex-ready", "true", { timeout: 90_000 });
   await still(page);
   await expect(page.getByTestId("hex-board-map")).toHaveAttribute("data-hex-relief-pitch", relief ? "0.750" : "0.000");
@@ -190,7 +191,7 @@ for (const pose of [{ relief: false, R: 0 }, { relief: true, R: 0 }, { relief: t
 test(`the hex board at 10,000 concepts${pose.relief ? ` in relief at ${pose.R ? `R ${pose.R}` : "rest"}` : ""}: hover and wheel read no layout and leave no long frame`, async ({ page }) => {
   test.setTimeout(300_000);
   await installFrameWork(page);
-  await seedFirstRunSeen(page);
+  await installDesktopRailRuntime(page);
   await page.addInitScript((tilted: boolean) => window.localStorage.setItem("atlas.appearance.hex-relief", tilted ? "on" : "off"), pose.relief);
   await page.addInitScript(() => {
     const w = window as Reads;
@@ -206,7 +207,7 @@ test(`the hex board at 10,000 concepts${pose.relief ? ` in relief at ${pose.R ? 
       for (const entry of list.getEntries()) if (rects.counting) w.__loaf!.push(entry.duration);
     }).observe({ type: "long-animation-frame" });
   });
-  await page.goto("/en/topology/?synth=10000&synthDeps=1&view=hex&guides=off&e2e=1");
+  await openMapOnApp(page, "/en/topology/?synth=10000&synthDeps=1&view=hex&guides=off&e2e=1");
   await expect(page.getByTestId("hex-board-map")).toHaveAttribute("data-hex-ready", "true", { timeout: 90_000 });
   await still(page);
   if (pose.R) await zoomTo(page, pose.R);

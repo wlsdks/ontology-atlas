@@ -1,7 +1,9 @@
 import { expect, test } from "@playwright/test";
 import ko from "../../../messages/ko.json";
 import { FIRST_RUN_STARTER_DISMISSED_KEY } from "../../../src/features/first-run-starter/model/first-run-starter-dismiss";
-import { seedFirstRunSeen } from "../first-run-seed";
+import { installDesktopRailRuntime } from "../desktop-rail-arrival-harness";
+import { openMapOnApp } from "./open-map-on-app";
+import { storefrontSampleFiles } from "./storefront-sample-files";
 // The `window.__atlasMap` type is declared in exactly one place — two copies raise TS2717.
 import "../atlas-map-probe";
 import { waitForMapStill, waitFrames } from "../settle";
@@ -98,7 +100,7 @@ async function walkUntilDeadEnd(page: import("@playwright/test").Page, direction
 test.describe("ways to focus the map", () => {
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
-    await seedFirstRunSeen(page);
+    await installDesktopRailRuntime(page, storefrontSampleFiles(), undefined, { replaceFixture: true });
   });
 
   /**
@@ -114,7 +116,7 @@ test.describe("ways to focus the map", () => {
    * property to lock is **"there is a path reachable in one key"**.
    */
   test("pressing G M from another screen focuses the map canvas", async ({ page }) => {
-    await page.goto("/ko/projects/?guides=off&e2e=1");
+    await openMapOnApp(page, "/ko/projects/?guides=off&e2e=1");
     await page.locator("main").first().click({ position: { x: 5, y: 5 } });
     await page.keyboard.press("g");
     await page.keyboard.press("m");
@@ -132,12 +134,8 @@ test.describe("ways to focus the map", () => {
 
   /** Can you walk immediately after grabbing — is the entrance really wired to the feature. */
   test("after G M, the arrow keys can walk the map", async ({ page }) => {
-    await seedFirstRunSeen(page);
-    await page.addInitScript((key) => {
-      window.sessionStorage.setItem(key, "1");
-      window.localStorage.setItem("demo:sample-source:v1", "storefront");
-    }, FIRST_RUN_STARTER_DISMISSED_KEY);
-    await page.goto("/ko/topology/?guides=off&e2e=1");
+    await page.addInitScript((key) => window.sessionStorage.setItem(key, "1"), FIRST_RUN_STARTER_DISMISSED_KEY);
+    await openMapOnApp(page, "/ko/topology/?guides=off&e2e=1");
     await page.locator("main").first().click({ position: { x: 5, y: 5 } });
     await page.keyboard.press("g");
     await page.keyboard.press("m");
@@ -170,8 +168,8 @@ test.describe("ways to focus the map", () => {
 test.describe("map keyboard walk", () => {
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
-    await seedFirstRunSeen(page);
-    await page.goto("/ko/topology/?guides=off&e2e=1");
+    await installDesktopRailRuntime(page, storefrontSampleFiles(), undefined, { replaceFixture: true });
+    await openMapOnApp(page, "/ko/topology/?guides=off&e2e=1");
   });
 
   test("the walk lands on a real neighbor and never jumps to an arbitrary node", async ({ page }) => {

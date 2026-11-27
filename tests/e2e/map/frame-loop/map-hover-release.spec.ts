@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
-import { seedFirstRunSeen } from "../../first-run-seed";
+import { installDesktopRailRuntime } from "../../desktop-rail-arrival-harness";
+import { openMapOnApp } from "../open-map-on-app";
 import type { AtlasMapProbe } from "../../atlas-map-probe";
 import { waitForMapSettled } from "../../settle";
 
@@ -10,7 +11,7 @@ import { waitForMapSettled } from "../../settle";
  * `hoveredNodeIdRef`; a coarse rAF-time comparison backs this up.
  */
 test("the map stops drawing frames once the cursor leaves the canvas", async ({ page }) => {
-  await seedFirstRunSeen(page);
+  await installDesktopRailRuntime(page);
   // Accumulates the time rAF callbacks spent **synchronously** — frame intervals are
   // contaminated by refresh rate, but callback time belongs to the app (the same
   // discipline as scripts/perf/perf-node-drag.mjs).
@@ -28,7 +29,7 @@ test("the map stops drawing frames once the cursor leaves the canvas", async ({ 
         }
       });
   });
-  await page.goto("/ko/topology?synth=800&guides=off&e2e=1");
+  await openMapOnApp(page, "/ko/topology?synth=800&guides=off&e2e=1");
 
   const canvas = page.getByTestId("ontology-map-canvas");
   await expect(canvas).toBeVisible();

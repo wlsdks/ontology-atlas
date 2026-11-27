@@ -1,8 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import "../../atlas-map-probe";
-import { seedFirstRunSeen } from "../../first-run-seed";
-import { useDogfoodSample } from "../../sample-source";
+import { atlasSampleFiles, installDesktopRailRuntime } from "../../desktop-rail-arrival-harness";
+import { openMapOnApp } from "../open-map-on-app";
+import { storefrontSampleFiles } from "../storefront-sample-files";
 import { waitForMapSettled, waitForMapStill } from "../../settle";
 import type { DialProbe } from "../../../../src/widgets/ontology-map/dial/dial-shapes";
 
@@ -11,15 +12,12 @@ const IDLE_WINDOW_MS = 3_000;
 
 test.use({ viewport: VIEWPORT });
 
-test.beforeEach(async ({ page }) => {
-  await seedFirstRunSeen(page);
-});
-
 type FrameWindow = Window & { __graphFrameAt?: number };
 
 const readDial = (page: Page) => page.evaluate(() => window.__atlasMap!.dial!() as DialProbe);
 
-async function openGraph(page: Page, query = ""): Promise<DialProbe> {
+async function openGraph(page: Page, query = "", sample: Record<string, string> = atlasSampleFiles()): Promise<DialProbe> {
+  await installDesktopRailRuntime(page, sample, undefined, { replaceFixture: true });
   await page.addInitScript(() => {
     const w = window as FrameWindow;
     w.__graphFrameAt = 0;
@@ -29,7 +27,7 @@ async function openGraph(page: Page, query = ""): Promise<DialProbe> {
       callback(t);
     });
   });
-  await page.goto(`/en/topology/?${query}guides=off&e2e=1`, { waitUntil: "domcontentloaded" });
+  await openMapOnApp(page, `/en/topology/?${query}guides=off&e2e=1`, { waitUntil: "domcontentloaded" });
   await waitForMapSettled(page, { timeout: 90_000 });
   await page.waitForFunction(() => window.__atlasMap?.dial?.()?.owns === true, undefined, { timeout: 90_000 });
   await waitForMapStill(page);
@@ -59,7 +57,6 @@ test("Flat draws the domain graph: every capability is pointable, names never ov
   test.setTimeout(180_000);
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  await useDogfoodSample(page);
   const dial = await openGraph(page);
   const capabilityIds = await page.evaluate(() => window.__atlasMap!.nodes().filter((n) => n.kind === "capability" && !n.hidden).map((n) => n.id));
 
@@ -86,7 +83,6 @@ test("Flat draws the domain graph: every capability is pointable, names never ov
 
 test("pointing at a domain sinks every other domain; selecting a capability names it and keeps its reach lit", async ({ page }) => {
   test.setTimeout(180_000);
-  await useDogfoodSample(page);
   const rest = await openGraph(page);
   const restInk = new Map(rest.discs.map((d) => [d.id, d.ink]));
   const target = [...rest.clusters].sort((a, b) => b.capabilityIds.length - a.capabilityIds.length)[0]!;
@@ -142,7 +138,6 @@ const tokenPx = (page: Page, name: string) => page.evaluate((v) => Number(getCom
 
 test("a domain selected at the overview zooms in far enough that two opened capability discs fit between its closest members, and one deselect returns the view", async ({ page }) => {
   test.setTimeout(180_000);
-  await useDogfoodSample(page);
   await openGraph(page);
   const box = (await page.getByTestId("ontology-map-canvas").boundingBox())!;
   const apart = 2 * (await tokenPx(page, "--map-graph-cap-open-max-px"));
@@ -171,7 +166,6 @@ test("a domain selected at the overview zooms in far enough that two opened capa
 
 test("a capability drawn smaller than the least pick radius answers a pointer that far from its centre", async ({ page }) => {
   test.setTimeout(180_000);
-  await useDogfoodSample(page);
   const dial = await openGraph(page);
   const pickMin = await tokenPx(page, "--map-graph-pick-min-px");
   const reach = pickMin - 0.5;
@@ -197,7 +191,6 @@ test("a capability drawn smaller than the least pick radius answers a pointer th
 
 test("the capability under the pointer draws larger by the hover growth and gives it back when the pointer leaves", async ({ page }) => {
   test.setTimeout(180_000);
-  await useDogfoodSample(page);
   const rest = await openGraph(page);
   const grow = await tokenPx(page, "--map-graph-hover-grow-px");
   const capabilities = new Set(rest.clusters.flatMap((c) => c.capabilityIds));
@@ -215,7 +208,7 @@ test("the capability under the pointer draws larger by the hover growth and give
 
 test("under a path lens a concept outside the lens draws no disc and answers no pointer", async ({ page }) => {
   test.setTimeout(180_000);
-  const dial = await openGraph(page, "mode=path&pathFrom=domain%3Afulfillment&pathTo=capability%3Acarrier-integration&");
+  const dial = await openGraph(page, "mode=path&pathFrom=domain%3Afulfillment&pathTo=capability%3Acarrier-integration&", storefrontSampleFiles());
   await expect(page.getByTestId("ontology-map")).toHaveAttribute("data-map-lens", "path");
   await waitForMapStill(page);
   const nodes = await page.evaluate(() => window.__atlasMap!.nodes().filter((n) => n.kind === "capability"));
@@ -238,7 +231,6 @@ const overlap = (a: { minX: number; maxX: number; minY: number; maxY: number }, 
 
 test("selecting a capability lights and names what it needs and what needs it, and keeps its name clear of the panel and the domain names", async ({ page }) => {
   test.setTimeout(180_000);
-  await useDogfoodSample(page);
   const rest = await openGraph(page);
   const litRims = await litInks(page);
   let chosen: { id: string; needs: string[]; neededBy: string[] } | null = null;
