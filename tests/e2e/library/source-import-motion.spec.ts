@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { writeDesktopFile } from '../desktop-rail-arrival-harness';
 import { openEmptyLibrary, visibleAdd, run } from './source-import-fixture';
 
 for (const reducedMotion of ['no-preference', 'reduce'] as const) {
@@ -37,6 +38,7 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
     expect(await page.evaluate(() => document.getElementById('main')?.contains(document.activeElement))).toBe(true);
     await expect(page.getByTestId('library-add-files').locator('[data-action-feedback="idle"]')).toBeVisible();
     await page.getByTestId('library-add-files').click();
+    await page.waitForFunction(() => typeof (window as unknown as { __finishPicker?: unknown }).__finishPicker === 'function');
     await run(page, '__finishPicker');
     await expect(page.getByTestId('library-add-files')).toBeEnabled();
     await expect(page.getByTestId('library-add-files').locator('[data-action-feedback="idle"]')).toBeVisible();
@@ -67,18 +69,6 @@ test('failed source writes show failure and never a success glyph', async ({ pag
 });
 
 test('a source poll cannot publish an unfinished copy or move its working control', async ({ page }) => {
-  await page.addInitScript(() => {
-    const target = window as unknown as { __sourceWalks?: number };
-    target.__sourceWalks = 0;
-    const original = FileSystemDirectoryHandle.prototype.entries;
-    FileSystemDirectoryHandle.prototype.entries = async function* () {
-      try {
-        for await (const [name, handle] of original.call(this)) yield [name, handle as FileSystemDirectoryHandle | FileSystemFileHandle] as [string, FileSystemDirectoryHandle | FileSystemFileHandle];
-      }
-      finally { if (this.name === 'sources') target.__sourceWalks = (target.__sourceWalks ?? 0) + 1; }
-      return undefined;
-    };
-  });
   await openEmptyLibrary(page);
   const button = page.getByTestId('library-start-add-files');
   await button.click();
@@ -116,23 +106,9 @@ test('unrelated source and Wiki changes remain visible while an original is bein
   await page.waitForFunction(() => typeof (window as unknown as { __finishPicker?: unknown }).__finishPicker === 'function');
   await run(page, '__finishPicker');
   await page.waitForFunction(() => (window as unknown as { __writing?: boolean }).__writing === true);
-  await page.evaluate(async () => {
-    const storage = await navigator.storage.getDirectory();
-    const names: string[] = [];
-    for await (const [name, handle] of storage.entries()) if (handle.kind === 'directory' && name.startsWith('stub-vault-')) names.push(name);
-    if (names.length !== 1) throw new Error('Owned test folder is ambiguous');
-    const root = await storage.getDirectoryHandle(names[0]!);
-    for (const [folder, name, body] of [
-      ['sources', 'external.txt', 'Externally gathered original\n'],
-      ['wiki', 'external.md', '---\ndoc_type: wiki\nslug: wiki/external\ntitle: External page\n---\n# External page\n'],
-    ]) {
-      const dir = await root.getDirectoryHandle(folder!, { create: true });
-      const writer = await (await dir.getFileHandle(name!, { create: true })).createWritable();
-      await writer.write(body!);
-      await writer.close();
-    }
-    window.dispatchEvent(new Event('focus'));
-  });
+  await writeDesktopFile(page, 'sources/external.txt', 'Externally gathered original\n');
+  await writeDesktopFile(page, 'wiki/external.md', '---\ndoc_type: wiki\nslug: wiki/external\ntitle: External page\n---\n# External page\n');
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
   try {
     await expect(page.getByTestId('library-source-sources/external.txt')).toBeVisible();
     await expect(page.getByTestId('library-workspace-sources')).toHaveText(/Sources\s*1/);

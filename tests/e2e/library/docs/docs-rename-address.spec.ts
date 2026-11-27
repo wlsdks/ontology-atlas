@@ -1,6 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { seedFirstRunSeen } from "../../first-run-seed";
-import { stubDirectoryPicker } from "../../vault-picker-stub";
+import { installDesktopRailRuntime, mountDesktopVault } from "../../desktop-rail-arrival-harness";
 
 const VAULT = {
   "README.md": "# 걷기 볼트\n",
@@ -19,14 +18,8 @@ test("after a rename, no warning appears and the address points at the new name"
     void d.dismiss();
   });
   await page.setViewportSize({ width: 1512, height: 900 });
-  await seedFirstRunSeen(page);
-  await stubDirectoryPicker(page, VAULT);
-  await page.goto("/ko/topology/?guides=off", { waitUntil: "domcontentloaded" });
-  await expect(page.getByTestId("first-run-starter-open")).toBeVisible({ timeout: 30_000 });
-  await page.evaluate(() => document.querySelector("nextjs-portal")?.remove());
-  await page.getByTestId("first-run-starter-open").click();
-  await expect(page.getByTestId("vault-guide-sheet")).toBeVisible();
-  await page.getByTestId("vault-guide-pick-existing").click();
+  await installDesktopRailRuntime(page, VAULT, undefined, { replaceFixture: true, writable: true });
+  await mountDesktopVault(page, "ko");
   /*
    * The folder is open once the first-run door is gone. The map canvas is deliberately
    * **not** the condition: this fixture is three files with no project node, and such a
@@ -86,14 +79,8 @@ test("after a delete, no warning appears and the address does not point at the d
     void d.dismiss();
   });
   await page.setViewportSize({ width: 1512, height: 900 });
-  await seedFirstRunSeen(page);
-  await stubDirectoryPicker(page, VAULT);
-  await page.goto("/ko/topology/?guides=off", { waitUntil: "domcontentloaded" });
-  await expect(page.getByTestId("first-run-starter-open")).toBeVisible({ timeout: 30_000 });
-  await page.evaluate(() => document.querySelector("nextjs-portal")?.remove());
-  await page.getByTestId("first-run-starter-open").click();
-  await expect(page.getByTestId("vault-guide-sheet")).toBeVisible();
-  await page.getByTestId("vault-guide-pick-existing").click();
+  await installDesktopRailRuntime(page, VAULT, undefined, { replaceFixture: true, writable: true });
+  await mountDesktopVault(page, "ko");
   /*
    * The folder is open once the first-run door is gone. The map canvas is deliberately
    * **not** the condition: this fixture is three files with no project node, and such a

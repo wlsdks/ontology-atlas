@@ -1,6 +1,6 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
 
-import { seedFirstRunSeen } from "../../first-run-seed";
+import { installDesktopRailRuntime, mountDesktopVault } from "../../desktop-rail-arrival-harness";
 import { waitForPageSettled } from "../../settle";
 
 function holdRequests(page: Page, matches: (url: URL) => boolean) {
@@ -22,7 +22,8 @@ function holdRequests(page: Page, matches: (url: URL) => boolean) {
 
 test("a rail press made while the Ontology tab opens still reaches its destination", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
-  await seedFirstRunSeen(page);
+  await installDesktopRailRuntime(page);
+  await mountDesktopVault(page, "en");
   const destination = holdRequests(
     page,
     (url) => url.pathname.startsWith("/en/automations/") && (url.pathname.endsWith(".txt") || url.searchParams.has("_rsc")),
@@ -51,7 +52,8 @@ test("a rail press made while the Ontology tab opens still reaches its destinati
 
 test("a document the address could not open is announced once, not again after a tab round trip", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
-  await seedFirstRunSeen(page);
+  await installDesktopRailRuntime(page);
+  await mountDesktopVault(page, "en");
   await page.goto("/en/library/?guides=off&tab=ontology&slug=no-such-document", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("docs-missing-slug-banner")).toBeVisible();
   await expect(page).toHaveURL((url) => (url.searchParams.get("slug") ?? "no-such-document") !== "no-such-document");

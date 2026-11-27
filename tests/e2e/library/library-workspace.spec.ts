@@ -1,14 +1,11 @@
 import { expect, test, type Page } from '@playwright/test';
+import { installDesktopRailRuntime, mountDesktopVault } from '../desktop-rail-arrival-harness';
 import { FIXTURE_VAULT } from '../fixture-vault';
 import { DAY_ONE_TEXT } from './library-day-one-fixture';
-import { stubDirectoryPicker } from '../vault-picker-stub';
 
 async function openLibrary(page: Page, files = { ...FIXTURE_VAULT, ...DAY_ONE_TEXT }) {
-  await stubDirectoryPicker(page, files);
-  await page.goto('/en/topology/?guides=off&e2e=1');
-  await page.getByTestId('first-run-starter-open').click();
-  await page.getByTestId('vault-guide-pick-existing').click();
-  await expect(page.getByTestId('first-run-starter')).toBeHidden();
+  await installDesktopRailRuntime(page, files, undefined, { replaceFixture: true });
+  await mountDesktopVault(page, 'en');
   await page.goto('/en/library/?guides=off&e2e=1');
   await expect(page.getByTestId('library-workspace-tabs')).toBeVisible();
 }

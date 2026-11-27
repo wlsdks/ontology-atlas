@@ -2,8 +2,8 @@ import { createHash } from "node:crypto";
 
 import { expect, test, type Page } from "@playwright/test";
 
-import { seedFirstRunSeen } from "../../first-run-seed";
-import { stubDirectoryPicker, writeFolderBeforePick } from "../../vault-picker-stub";
+import { installDesktopRailRuntime, mountDesktopVault, removeDesktopFile } from "../../desktop-rail-arrival-harness";
+import { hashServedFilesLikeTheDisk } from "../served-file-hashes";
 
 /**
  * The Wiki column is the wiki's index (`docs/specs/2026-11-21-library-index-column.md`, criteria
@@ -82,15 +82,11 @@ function manyPages(count: number): Record<string, string> {
 
 async function openWiki(page: Page, vault: Record<string, string>, { locale = "en", width = 1920, height = 1080 } = {}) {
   await page.setViewportSize({ width, height });
-  await seedFirstRunSeen(page);
-  await stubDirectoryPicker(page, {});
+  // The folder is served whole before the press, so the wait below times the Library reading it, not the fixture writing it.
+  await installDesktopRailRuntime(page, vault, undefined, { replaceFixture: true, writable: true });
+  await hashServedFilesLikeTheDisk(page);
+  await mountDesktopVault(page, locale);
   await page.goto(`/${locale}/library/?tab=wiki`);
-  await page.waitForLoadState("networkidle");
-  // Written before the press, so the wait below times the Library reading the folder, not the fixture writing it.
-  await writeFolderBeforePick(page, vault);
-  const picker = page.getByTestId("library-open-vault");
-  await picker.waitFor({ timeout: 25_000 });
-  await picker.click();
   await page.getByTestId("wiki-index").locator("[data-index-row]").first().waitFor({ timeout: 60_000 });
 }
 
@@ -143,16 +139,8 @@ test.describe("the Wiki column is the wiki's index", () => {
     await openWiki(page, sixtyPages());
     await page.getByTestId("library-wiki-wiki/answers/answer-0").click();
     await expect(page.getByTestId("library-page")).toHaveAttribute("data-library-state", "wiki");
-    await page.evaluate(async () => {
-      const root = await navigator.storage.getDirectory();
-      for await (const [name, handle] of (root as unknown as { entries(): AsyncIterable<[string, FileSystemHandle]> }).entries()) {
-        if (name.startsWith("stub-vault-") && handle.kind === "directory") {
-          const wiki = await (handle as FileSystemDirectoryHandle).getDirectoryHandle("wiki");
-          await (await wiki.getDirectoryHandle("answers")).removeEntry("answer-0.md");
-        }
-      }
-    });
-    // The web rereads the folder on focus; each poll offers one.
+    await removeDesktopFile(page, "wiki/answers/answer-0.md");
+    // The app rereads the folder when it is told of a change and on focus; each poll offers one.
     await expect
       .poll(async () => {
         await page.evaluate(() => window.dispatchEvent(new Event("focus")));

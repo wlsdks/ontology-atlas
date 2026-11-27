@@ -2,8 +2,13 @@ import { createHash } from "node:crypto";
 
 import { expect, test, type Page } from "@playwright/test";
 
-import { seedFirstRunSeen } from "../first-run-seed";
-import { stubDirectoryPicker } from "../vault-picker-stub";
+import {
+  installDesktopRailRuntime,
+  listDesktopFiles,
+  mountDesktopVault,
+  renameDesktopFile,
+} from "../desktop-rail-arrival-harness";
+import { hashServedFilesLikeTheDisk } from "./served-file-hashes";
 
 /**
  * The Sources home on a real folder: 54 sources in five first-level folders, 14 with a wiki page.
@@ -69,13 +74,10 @@ function buildVault({ written = true }: { written?: boolean } = {}): Record<stri
 
 async function openSources(page: Page, { vault = buildVault(), locale = "en", width = 1920, height = 1080 } = {}) {
   await page.setViewportSize({ width, height });
-  await seedFirstRunSeen(page);
-  await stubDirectoryPicker(page, vault);
+  await installDesktopRailRuntime(page, vault, undefined, { replaceFixture: true, writable: true });
+  await hashServedFilesLikeTheDisk(page);
+  await mountDesktopVault(page, locale);
   await page.goto(`/${locale}/library/?tab=sources`);
-  await page.waitForLoadState("networkidle");
-  const picker = page.getByTestId("library-open-vault");
-  await picker.waitFor({ timeout: 25_000 });
-  await picker.click();
   await page.locator('[data-testid="library-page"][data-library-state="nothing-open"]').waitFor({ timeout: 25_000 });
   await expect(page.getByTestId("library-source-states-checking")).toHaveCount(0, { timeout: 25_000 });
   await expect(page.getByTestId("sources-meta")).toBeVisible();
@@ -183,24 +185,10 @@ test.describe("the Sources home", () => {
     await openSources(page, { height: 2400 });
     await page.locator('[data-testid="sources-row"][data-key="folder:inbox"]').click();
     await expect(page.getByTestId("library-source-group-chip")).toHaveText("Folder: inbox");
-    await page.evaluate(async () => {
-      const root = await navigator.storage.getDirectory();
-      let vault: FileSystemDirectoryHandle | null = null;
-      for await (const [name, handle] of (root as unknown as { entries(): AsyncIterable<[string, FileSystemHandle]> }).entries()) {
-        if (name.startsWith("stub-vault-") && handle.kind === "directory") vault = handle as FileSystemDirectoryHandle;
-      }
-      const sources = await vault!.getDirectoryHandle("sources");
-      const from = await sources.getDirectoryHandle("inbox");
-      const to = await sources.getDirectoryHandle("inbox-archive", { create: true });
-      for await (const [name, handle] of (from as unknown as { entries(): AsyncIterable<[string, FileSystemHandle]> }).entries()) {
-        const text = await (await (handle as FileSystemFileHandle).getFile()).text();
-        const writable = await (await to.getFileHandle(name, { create: true })).createWritable();
-        await writable.write(text);
-        await writable.close();
-      }
-      await sources.removeEntry("inbox", { recursive: true });
-    });
-    // The web rereads the folder on focus; each poll offers one.
+    for (const path of ((await listDesktopFiles(page)) ?? []).filter((file) => file.startsWith("sources/inbox/"))) {
+      await renameDesktopFile(page, path, path.replace("sources/inbox/", "sources/inbox-archive/"));
+    }
+    // The app rereads the folder when it is told of a change and on focus; each poll offers one.
     await expect
       .poll(async () => {
         await page.evaluate(() => window.dispatchEvent(new Event("focus")));

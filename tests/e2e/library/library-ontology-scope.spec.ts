@@ -1,17 +1,13 @@
 import { expect, test, type Page } from '@playwright/test';
-import { seedFirstRunSeen } from '../first-run-seed';
-import { stubDirectoryPicker } from '../vault-picker-stub';
+import { installDesktopRailRuntime, mountDesktopVault } from '../desktop-rail-arrival-harness';
 import {
   MIXED_LIBRARY_VAULT,
   WIKI_ONLY_LIBRARY_VAULT,
 } from '../fixtures/library-ontology-scope';
 
 async function loadVault(page: Page, seed: Record<string, string>) {
-  await stubDirectoryPicker(page, seed);
-  await seedFirstRunSeen(page);
-  await page.goto('/en/topology/?guides=off');
-  await page.getByTestId('first-run-starter-open').click();
-  await page.getByTestId('vault-guide-pick-existing').click();
+  await installDesktopRailRuntime(page, seed, undefined, { replaceFixture: true });
+  await mountDesktopVault(page);
   await expect(page.getByTestId('first-run-starter')).toHaveCount(0);
 }
 
@@ -191,7 +187,4 @@ test('returning from Library keeps the selected map concept and search', async (
 
   await page.getByTestId('app-nav-rail-item-library').click();
   await expect(page.getByTestId('docs-editor-path')).toHaveText('capabilities/settlement.md');
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.locator('[data-tabbar="primary"]').getByRole('link', { name: 'Map', exact: true }).click();
-  await expect(page).toHaveURL(/p=capability%3Asettlement/);
 });

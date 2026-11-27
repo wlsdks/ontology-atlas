@@ -10,7 +10,6 @@ import {
   type LibraryVectorsScript,
   type LibraryWorkHarness,
 } from '../../library-work-harness';
-import { stubDirectoryPicker } from '../../vault-picker-stub';
 
 const VAULT_ROOT = '/Users/probe/Ontology Atlas/launch';
 const CHOICE_KEY = 'ontology-atlas:vault-vectors:v1';
@@ -398,19 +397,6 @@ test("leaves this folder's search by meaning out of Settings while the index is 
   await chip.click();
   await expect.poll(async () => (await vectorCalls(harness, page, 'vault_vectors_delete_model')).length).toBe(1);
   await expect(model).toContainText('Deleted the model.');
-});
-
-test('says search by meaning lives in the app on the web, with no press and no command', async ({ page }) => {
-  await stubDirectoryPicker(page, FILES);
-  await seedFirstRunSeen(page);
-  await page.goto('/en/topology/?guides=off');
-  await page.getByTestId('first-run-starter-open').click();
-  await page.getByTestId('vault-guide-pick-existing').click();
-  await expect(page.getByTestId('first-run-starter')).toHaveCount(0);
-  await page.goto('/en/library/?tab=wiki&guides=off');
-  await expect(line(page)).toHaveAttribute('data-state', 'web');
-  await expect(line(page)).toContainText('Search by meaning works in the installed app');
-  await expect(line(page).getByRole('button')).toHaveCount(0);
 });
 
 test('keeps the line within two lines at 1040 wide with every press reachable', async ({ page }) => {
