@@ -4,7 +4,6 @@ import { SCREEN_CATALOG } from '../../model/catalog/screen';
 import { ScreenPane } from './ScreenPane';
 
 const mocks = vi.hoisted(() => ({
-  desktop: false,
   reducedMotion: false,
 }));
 
@@ -12,7 +11,6 @@ vi.mock('next-intl', () => ({
   useTranslations: (namespace: string) => (key: string) => `${namespace}.${key}`,
   useLocale: () => 'en',
 }));
-vi.mock('@/shared/lib/desktop-shell/desktop-shell', () => ({ isDesktopShell: () => mocks.desktop }));
 vi.mock('@/shared/lib/render-timing/use-prefers-reduced-motion', () => ({
   usePrefersReducedMotion: () => mocks.reducedMotion,
 }));
@@ -41,7 +39,6 @@ function renderPane() {
 }
 
 beforeEach(() => {
-  mocks.desktop = false;
   mocks.reducedMotion = false;
   window.localStorage.clear();
   document.documentElement.removeAttribute('data-text-size');
@@ -82,17 +79,11 @@ describe('ScreenPane', () => {
     expect(document.documentElement.hasAttribute('data-text-size')).toBe(false);
   });
 
-  it('names the motion source for the app and the web', () => {
+  it('names the motion source the app reads', () => {
     mocks.reducedMotion = true;
-    const { unmount } = renderPane();
+    renderPane();
     const row = screen.getByTestId('app-settings-motion');
     expect(row.textContent).toContain('settingsScreen.motionReduced');
-    expect(row.textContent).toContain('settingsScreen.motionCaptionWeb');
-    unmount();
-    mocks.desktop = true;
-    renderPane();
-    expect(screen.getByTestId('app-settings-motion').textContent).toContain(
-      'settingsScreen.motionCaptionApp',
-    );
+    expect(row.textContent).toContain('settingsScreen.motionCaptionApp');
   });
 });

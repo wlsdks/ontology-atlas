@@ -4,7 +4,6 @@ import { useTranslations } from 'next-intl';
 import { LocaleSwitch } from '@/features/locale-switch';
 import { useGuideAutoStart, writeGuideAutoStart } from '@/shared/lib/preferences/guide-auto-start';
 import { useAudiencePlain } from '@/shared/lib/preferences/audience-preference';
-import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import { TEXT_SIZES, useTextSize, writeTextSize } from '@/shared/lib/preferences/text-size';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { SegmentedControl } from '@/shared/ui/fields/segmented-control';
@@ -74,7 +73,7 @@ export function ScreenPane({
         settingId="motion"
         testId="app-settings-motion"
         label={t('motionLabel')}
-        caption={isDesktopShell() ? t('motionCaptionApp') : t('motionCaptionWeb')}
+        caption={t('motionCaptionApp')}
         control={
           <span className="text-label leading-label text-[color:var(--color-text-secondary)]">
             {reducedMotion ? t('motionReduced') : t('motionFull')}

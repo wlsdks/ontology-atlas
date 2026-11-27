@@ -4,7 +4,6 @@ import { AGENTS_CATALOG } from '../../model/catalog/agents';
 import { AgentsPane } from './AgentsPane';
 
 const mocks = vi.hoisted(() => ({
-  desktop: false,
   keysRead: true,
   stored: { anthropic: true, openai: false, gemini: true } as Record<string, boolean>,
   push: vi.fn(),
@@ -15,7 +14,6 @@ vi.mock('next-intl', () => ({
     values?.count === undefined ? `${namespace}.${key}` : `${namespace}.${key}:${values.count}`,
 }));
 vi.mock('@/i18n/navigation', () => ({ useRouter: () => ({ push: mocks.push }) }));
-vi.mock('@/shared/lib/desktop-shell/desktop-shell', () => ({ isDesktopShell: () => mocks.desktop }));
 vi.mock('../../model/use-ai-connection', () => ({
   useAiConnection: ({ enabled }: { enabled: boolean }) => ({
     keysRead: enabled && mocks.keysRead,
@@ -29,7 +27,6 @@ vi.mock('../pane-settings/WikiWriteModeSettings', () => ({
 }));
 
 beforeEach(() => {
-  mocks.desktop = false;
   mocks.keysRead = true;
   mocks.push.mockReset();
 });
@@ -38,23 +35,13 @@ const anchors = (container: HTMLElement) =>
   [...container.querySelectorAll('[data-setting-id]')].map((domElement) => domElement.getAttribute('data-setting-id'));
 
 describe('AgentsPane', () => {
-  it('on desktop anchors every agents catalog entry and counts the stored keys', () => {
-    mocks.desktop = true;
+  it('anchors every agents catalog entry and counts the stored keys', () => {
     const { container } = render(<AgentsPane onClose={vi.fn()} />);
     expect(anchors(container)).toEqual(AGENTS_CATALOG.map((entry) => entry.id));
     expect(screen.getByTestId('app-settings-door-models').textContent).toContain('settingsAgents.modelsCaptionKeys:2');
   });
 
-  it('on the web hides Wiki write mode and points keys at the desktop app', () => {
-    const { container } = render(<AgentsPane onClose={vi.fn()} />);
-    expect(anchors(container)).toEqual(
-      AGENTS_CATALOG.filter((entry) => entry.surface === 'both').map((entry) => entry.id),
-    );
-    expect(screen.getByTestId('app-settings-door-models').textContent).toContain('settingsAgents.modelsCaptionWeb');
-  });
-
   it('shows no key count before the Keychain answers', () => {
-    mocks.desktop = true;
     mocks.keysRead = false;
     render(<AgentsPane onClose={vi.fn()} />);
     expect(screen.getByTestId('app-settings-door-models').textContent).not.toContain('modelsCaption');

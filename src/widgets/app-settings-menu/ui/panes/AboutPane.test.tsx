@@ -6,14 +6,13 @@ import en from '../../../../../messages/en.json';
 import { ABOUT_CATALOG } from '../../model/catalog/about';
 import { AboutPane } from './AboutPane';
 
-let desktop = false;
 const push = vi.fn();
 const requestShortcutSheet = vi.fn(() => true);
 const revealAppLogFolder = vi.fn(() => Promise.resolve());
 const copyText = vi.fn((_text: string) => Promise.resolve(true));
 
 vi.mock('@/shared/lib/desktop-shell/desktop-shell', () => ({
-  isDesktopShell: () => desktop,
+  isDesktopShell: () => true,
 }));
 
 vi.mock('@/i18n/navigation', () => ({
@@ -79,7 +78,6 @@ function drawnIds(container: HTMLElement): string[] {
 }
 
 beforeEach(() => {
-  desktop = false;
   push.mockClear();
   onLeave.mockClear();
   requestShortcutSheet.mockClear();
@@ -88,15 +86,7 @@ beforeEach(() => {
 });
 
 describe('AboutPane', () => {
-  it('draws every web catalog entry on the web and no app-only row', () => {
-    const { container } = renderPane();
-    const web = ABOUT_CATALOG.filter((entry) => entry.surface === 'both').map((entry) => entry.id);
-    expect(drawnIds(container).sort()).toEqual([...web].sort());
-    expect(screen.getByTestId('app-settings-about-web-version')).toHaveTextContent('Website version');
-  });
-
   it('draws every catalog entry in the app', () => {
-    desktop = true;
     const { container } = renderPane();
     expect(drawnIds(container).sort()).toEqual(ABOUT_CATALOG.map((entry) => entry.id).sort());
   });
@@ -150,7 +140,6 @@ describe('AboutPane', () => {
   });
 
   it('reveals the log folder in the app and says when it could not', async () => {
-    desktop = true;
     revealAppLogFolder.mockImplementationOnce(() => Promise.reject(new Error('denied')));
     renderPane();
     fireEvent.click(screen.getByTestId('app-settings-about-logs-open'));

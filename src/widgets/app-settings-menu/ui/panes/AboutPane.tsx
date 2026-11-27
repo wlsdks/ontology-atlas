@@ -7,7 +7,6 @@ import { Newspaper } from 'lucide-react';
 import { useLocalVault } from '@/entities/vault-session';
 import { GITHUB_REPO_URL } from '@/shared/config/site/social-links';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
-import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import { revealAppLogFolder } from '@/shared/lib/desktop-shell/tauri-app-logs';
 import { requestShortcutSheet } from '@/shared/lib/keyboard/surface-requests';
 import { useCopyFeedback } from '@/shared/lib/clipboard/use-copy-feedback';
@@ -22,29 +21,15 @@ import { useRunningVersion } from '../../model/use-running-version';
 import { AppUpdateSettings } from '../pane-settings/AppUpdateSettings';
 import { SettingsDoorRow, SettingsGroup, SettingsRow } from '../settings-primitives';
 
-const WEBSITE_VERSION = process.env.NEXT_PUBLIC_RELEASE_VERSION ?? '';
 const LICENSES_PATH = '/third-party-licenses.txt';
 const PANE_CHIP =
   'shrink-0 border-[color:var(--color-border-soft)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]';
 
 export function AboutPane({ onLeave }: { onLeave: () => void }) {
   const t = useTranslations('settingsAbout');
-  const desktop = isDesktopShell();
   return (
     <div className="grid min-w-0 gap-4" data-testid="app-settings-about">
-      {desktop ? (
-        <AppUpdateSettings />
-      ) : (
-        <SettingsGroup label={t('groups.app')}>
-          <SettingsRow
-            settingId="version"
-            label={t('webVersion', { version: WEBSITE_VERSION || t('diagnostic.buildUnknown') })}
-            caption={t('webVersionCaption')}
-            testId="app-settings-about-web-version"
-            control={null}
-          />
-        </SettingsGroup>
-      )}
+      <AppUpdateSettings />
       <SettingsGroup label={t('groups.help')}>
         <SettingsDoorRow
           settingId="whats-new"
@@ -107,7 +92,7 @@ export function AboutPane({ onLeave }: { onLeave: () => void }) {
       </SettingsGroup>
       <SettingsGroup label={t('groups.trouble')}>
         <DiagnosticsRow />
-        {desktop ? <LogsRow /> : null}
+        <LogsRow />
       </SettingsGroup>
     </div>
   );
@@ -265,13 +250,10 @@ function useDiagnosticsText(): string {
   const t = useTranslations('settingsAbout.diagnostic');
   const locale = useLocale();
   const reducedMotion = usePrefersReducedMotion();
-  const desktop = isDesktopShell();
   const { version } = useRunningVersion();
   const localVault = useLocalVault();
 
-  const build = desktop
-    ? t('buildApp', { version: version || t('buildUnknown') })
-    : t('buildWeb', { version: WEBSITE_VERSION || t('buildUnknown') });
+  const build = t('buildApp', { version: version || t('buildUnknown') });
   const docs = localVault.status === 'loaded' ? localVault.manifest?.docs : undefined;
   const folder = docs
     ? (() => {
@@ -295,7 +277,7 @@ function useDiagnosticsText(): string {
 
   return [
     `${t('build')}: ${build}`,
-    `${t('surface')}: ${desktop ? t('surfaceDesktop') : t('surfaceWeb')}`,
+    `${t('surface')}: ${t('surfaceDesktop')}`,
     `${t('userAgent')}: ${userAgent}`,
     `${t('language')}: ${locale}`,
     `${t('textSize')}: ${textSize}`,
