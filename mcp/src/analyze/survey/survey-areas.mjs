@@ -9,6 +9,7 @@
 import { posix } from 'node:path';
 
 import { folderTree } from './source-units.mjs';
+import { compareText } from '../../compare-text.mjs';
 
 /** Area rows one survey lists; at about 200 characters a row the section stays near 12 KB. */
 const AREA_ROW_LIMIT = 60;
@@ -45,7 +46,7 @@ function partsWithin(node, rows) {
   const parts = partsOf(node);
   if (parts.length <= rows) return parts;
   const own = parts.filter((part) => part.own);
-  const folders = parts.filter((part) => !part.own).sort((a, b) => b.lines - a.lines || a.path.localeCompare(b.path));
+  const folders = parts.filter((part) => !part.own).sort((a, b) => b.lines - a.lines || compareText(a.path, b.path));
   const shown = rows - own.length - 1;
   if (shown < 2) return null;
   const rest = folders.slice(shown);
@@ -83,7 +84,7 @@ export function surveyAreas(productFiles) {
     if (!parts) break;
     areas = areas.flatMap((area) => (area === largest ? parts : [area]));
   }
-  return areas.sort((a, b) => b.lines - a.lines || a.path.localeCompare(b.path));
+  return areas.sort((a, b) => b.lines - a.lines || compareText(a.path, b.path));
 }
 
 /**

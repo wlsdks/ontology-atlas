@@ -1,3 +1,5 @@
+import { compareText } from '../../compare-text.mjs';
+
 export function compareMaintenanceActions(left, right) {
   const severityRank = { fail: 0, warn: 1, info: 2 };
   const phaseRank = { validate: 0, repair: 1, link: 2, materialize: 3, review: 4 };
@@ -6,7 +8,7 @@ export function compareMaintenanceActions(left, right) {
   const phaseDelta = (phaseRank[left.phase] ?? 9) - (phaseRank[right.phase] ?? 9);
   if (phaseDelta !== 0) return phaseDelta;
   if ((right.score || 0) !== (left.score || 0)) return (right.score || 0) - (left.score || 0);
-  return `${left.kind}:${left.reason}`.localeCompare(`${right.kind}:${right.reason}`);
+  return compareText(`${left.kind}:${left.reason}`, `${right.kind}:${right.reason}`);
 }
 
 export function annotateMaintenanceAction(action) {
@@ -45,7 +47,7 @@ function normalizeMaintenanceActionNodes(nodesValue) {
     return Object.fromEntries(
       Object.entries(nodesValue)
         .map(([key, node]) => [key, node?.slug ?? node])
-        .sort(([left], [right]) => left.localeCompare(right)),
+        .sort(([left], [right]) => compareText(left, right)),
     );
   }
   return nodesValue;

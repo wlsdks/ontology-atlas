@@ -4,6 +4,7 @@ import { markdownSection } from './recorded-evidence.mjs';
 import { readCapabilityClaim } from './reviewed-evidence.mjs';
 import { extractSummaryExcerpt } from '../vault/documents/body-delivery.mjs';
 import { lexicalTokens } from './task-intent.mjs';
+import { compareText } from '../compare-text.mjs';
 
 function scoreLexicalDocument(doc, terms) {
   const titleTokens = new Set(lexicalTokens(doc.frontmatter?.title || doc.frontmatter?.name || ''));
@@ -149,7 +150,7 @@ export function selectCapability(docs, intent) {
     const matchedChildren = (Array.isArray(doc.frontmatter?.elements) ? doc.frontmatter.elements : [])
       .map((slug) => elementScores.get(slug))
       .filter((row) => defensibleMatch(row))
-      .sort((left, right) => right.score - left.score || left.doc.slug.localeCompare(right.doc.slug));
+      .sort((left, right) => right.score - left.score || compareText(left.doc.slug, right.doc.slug));
     const matchedTerms = [...new Set([
       ...claim.matchedTerms,
       ...matchedChildren.flatMap((row) => row.matchedTerms),
@@ -184,7 +185,7 @@ export function selectCapability(docs, intent) {
     };
   });
   const ordered = (values) => [...values]
-    .sort((left, right) => right.score - left.score || left.doc.slug.localeCompare(right.doc.slug));
+    .sort((left, right) => right.score - left.score || compareText(left.doc.slug, right.doc.slug));
   const candidates = (values) => {
     const all = ordered(values);
     return {

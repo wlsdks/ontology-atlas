@@ -86,6 +86,7 @@ import {
   uidNotFoundError,
 } from './vault-nodes.mjs';
 import { createHash } from 'node:crypto';
+import { compareText } from '../compare-text.mjs';
 
 function listConcepts({ kind, domain, since, summary, offset = 0, limit = 100 }) {
   requireOptionalNonBlankString(kind, 'kind');
@@ -136,7 +137,7 @@ function listConcepts({ kind, domain, since, summary, offset = 0, limit = 100 })
     if (domain && doc.frontmatter.domain !== domain) return false;
     if (sinceMs !== null && (typeof doc.mtime !== 'number' || doc.mtime <= sinceMs)) return false;
     return true;
-  }).sort((a, b) => a.slug.localeCompare(b.slug));
+  }).sort((a, b) => compareText(a.slug, b.slug));
   if (offset > filtered.length) {
     throw new Error(
       `offset must be less than or equal to the total matching nodes (${filtered.length}); Received: ${offset}.`,
@@ -398,7 +399,7 @@ function findEvidence({ title, limit = FIND_EVIDENCE_DEFAULT_LIMIT, nodesOnly = 
     (a, b) =>
       b.score - a.score ||
       Number(b.isNode) - Number(a.isNode) ||
-      a.doc.slug.localeCompare(b.doc.slug),
+      compareText(a.doc.slug, b.doc.slug),
   );
   // Only the rows returned carry an excerpt, so only their bodies are read for it.
   const matches = scored.map(({ doc, isNode, matchedIn, score }, index) => {
@@ -584,9 +585,7 @@ function findNeighborsTool({ slug, direction = 'both', types, includeNodes = tru
   }
 
   edges.sort((a, b) =>
-    `${a.direction}:${a.via}:${a.from}:${a.to}`.localeCompare(
-      `${b.direction}:${b.via}:${b.from}:${b.to}`,
-    )
+    compareText(`${a.direction}:${a.via}:${a.from}:${a.to}`, `${b.direction}:${b.via}:${b.from}:${b.to}`)
   );
   const limitedEdges = edges.slice(0, edgeLimit);
   const neighborSlugs = new Set();

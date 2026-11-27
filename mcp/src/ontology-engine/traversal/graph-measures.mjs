@@ -1,4 +1,5 @@
 import { typeAllowed } from '../query-operation/query-primitives.mjs';
+import { compareText } from '../../compare-text.mjs';
 
 export function pageRankScores(nodes, outgoingEdgesBySlug, iterations) {
   const totalNodes = nodes.length;
@@ -64,7 +65,7 @@ export function propagateCommunityLabels(adjacency, iterations) {
       if (counts.size === 0) continue;
       const nextLabel = [...counts.entries()].sort(
         ([leftLabel, leftCount], [rightLabel, rightCount]) =>
-          rightCount - leftCount || leftLabel.localeCompare(rightLabel),
+          rightCount - leftCount || compareText(leftLabel, rightLabel),
       )[0][0];
       if (labels.get(slug) !== nextLabel) {
         labels.set(slug, nextLabel);

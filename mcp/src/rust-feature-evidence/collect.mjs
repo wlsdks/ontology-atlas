@@ -1,6 +1,7 @@
 import { existsSync, lstatSync, readFileSync, readdirSync, realpathSync, statSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, sep } from 'node:path';
 import { extractRustFeatureAttributes } from './attributes.mjs';
+import { compareText } from '../compare-text.mjs';
 
 const CONTRACT = 'rustFeatureConfigurationEvidence:v1';
 const SOURCE_FILE_LIMIT = 5000;
@@ -65,7 +66,7 @@ export function collectRustFeatureConfigurationEvidence(rootPath) {
   const unsupportedWorkspaceMembersLimited =
     workspaceMembersLimited ||
     unsupportedWorkspaceMemberRows.length > unsupportedWorkspaceMembers.length;
-  packageCandidates.sort((left, right) => left.path.localeCompare(right.path));
+  packageCandidates.sort((left, right) => compareText(left.path, right.path));
   if (packageCandidates.length === 0) {
     return {
       ...emptyEvidence('unsupported'),
@@ -291,7 +292,7 @@ function buildPackageEvidence(
         );
         bucket.references.sort(
           (left, right) =>
-            left.path.localeCompare(right.path) || left.line - right.line,
+            compareText(left.path, right.path) || left.line - right.line,
         );
         return {
           name: feature.name,
@@ -417,7 +418,7 @@ function readCargoManifest(rootPath, manifestPath) {
       );
     }
   }
-  features.sort((left, right) => left.name.localeCompare(right.name));
+  features.sort((left, right) => compareText(left.name, right.name));
   return { packageName, features, workspaceMembers };
 }
 

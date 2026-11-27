@@ -15,6 +15,7 @@ import {
 import { PYTHON_NON_PRODUCT_PACKAGES, SOURCE_FOLDERS, WORKSPACE_FOLDERS } from '../scan-tables.mjs';
 import { humanize, slugify, uniqueStrings } from '../text.mjs';
 import { pathResolvesInsideRoot, pushSkippedOnce } from './scan-guards.mjs';
+import { compareText } from '../../compare-text.mjs';
 
 export function materializeGoPackageElements(packageImportEvidence, { existingElements, skipped }) {
   const candidatesByPath = new Map();
@@ -38,7 +39,7 @@ export function materializeGoPackageElements(packageImportEvidence, { existingEl
   const candidates = [...candidatesByPath.values()].sort((a, b) =>
     b.productValueCount - a.productValueCount ||
     b.count - a.count ||
-    a.path.localeCompare(b.path),
+    compareText(a.path, b.path),
   );
   const admittedCandidates = candidates.slice(0, GO_PACKAGE_ELEMENT_LIMIT);
   if (candidates.length > admittedCandidates.length) {
@@ -155,8 +156,8 @@ export function buildSuggestedDependencyRelations(moduleEdges, implementationNod
       implementationSlugs.has(edge.to),
     )
     .sort((a, b) =>
-      a.from.localeCompare(b.from) ||
-      a.to.localeCompare(b.to),
+      compareText(a.from, b.from) ||
+      compareText(a.to, b.to),
     )
     .slice(0, 24)
     .map((edge) => ({
@@ -476,7 +477,7 @@ export function detectPythonImportBoundaryElements(
       const degreeDelta = (neighbors.get(b)?.size ?? 0) - (neighbors.get(a)?.size ?? 0);
       if (degreeDelta !== 0) return degreeDelta;
       const weightDelta = (scores.get(b) ?? 0) - (scores.get(a) ?? 0);
-      return weightDelta !== 0 ? weightDelta : a.localeCompare(b);
+      return weightDelta !== 0 ? weightDelta : compareText(a, b);
     });
   const admissible = ranked.filter((slug) => {
     const paths = pathCandidates.get(slug) ?? [];
@@ -501,7 +502,7 @@ export function detectPythonImportBoundaryElements(
       return false;
     })
     .map(([slug, [candidate]]) => ({ slug, ...candidate }))
-    .sort((a, b) => b.priority - a.priority || a.slug.localeCompare(b.slug));
+    .sort((a, b) => b.priority - a.priority || compareText(a.slug, b.slug));
   const selectedRisk = riskAdmissible.slice(0, PYTHON_IMPORT_RISK_ELEMENT_LIMIT);
   const selectedRiskSlugs = new Set(selectedRisk.map((row) => row.slug));
   const selected = [

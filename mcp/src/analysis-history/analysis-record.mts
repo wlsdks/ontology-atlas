@@ -385,5 +385,5 @@ export function analysisScopeKey(mode: AnalysisRun['mode'], scope: AnalysisScope
 
 export function latestFindingReview(records: readonly AnalysisRecord[], runId: string, findingId: string): AnalysisReview | null {
   return records.filter((row): row is AnalysisReview => row.recordType === 'review' && row.runId === runId && row.findingId === findingId)
-    .sort((left, right) => right.createdAt.localeCompare(left.createdAt) || right.id.localeCompare(left.id))[0] ?? null;
+    .sort((left, right) => right.createdAt.localeCompare(left.createdAt, 'en') || right.id.localeCompare(left.id, 'en'))[0] ?? null;
 }

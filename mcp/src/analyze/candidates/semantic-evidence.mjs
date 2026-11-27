@@ -51,6 +51,7 @@ import {
   semanticContentScore,
   extractSemanticDocument,
 } from './semantic-document.mjs';
+import { compareText } from '../../compare-text.mjs';
 
 export function collectSemanticEvidence(rootPath, skipped = []) {
   const candidates = discoverSemanticEvidenceCandidates(rootPath, skipped);
@@ -156,7 +157,7 @@ export function collectSemanticEvidence(rootPath, skipped = []) {
     }
   }
   const ranked = rows.sort(
-    (a, b) => b._score - a._score || a.source.localeCompare(b.source),
+    (a, b) => b._score - a._score || compareText(a.source, b.source),
   );
   const selected = [];
   const selectedSources = new Set();

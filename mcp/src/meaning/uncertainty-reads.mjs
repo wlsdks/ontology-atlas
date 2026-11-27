@@ -7,6 +7,7 @@ import { join, posix } from 'node:path';
 
 import { areaOfLabel } from '../construction/build-depth/unmapped-areas.mjs';
 import { uncertaintySectionLines } from './meaning-findings.mjs';
+import { compareText } from '../compare-text.mjs';
 
 /**
  * Kinds in working order: a named range (a bounded remainder) first, then a
@@ -405,7 +406,7 @@ export function orderUncertaintyReads(rows, { sourceRoot = null } = {}) {
         (KIND_ORDER.get(a.row.kind) ?? UNCERTAINTY_READ_KINDS.length) -
         (KIND_ORDER.get(b.row.kind) ?? UNCERTAINTY_READ_KINDS.length);
       if (kindDelta !== 0) return kindDelta;
-      const slugDelta = String(a.row.slug).localeCompare(String(b.row.slug));
+      const slugDelta = compareText(String(a.row.slug), String(b.row.slug));
       if (slugDelta !== 0) return slugDelta;
       return a.index - b.index;
     })

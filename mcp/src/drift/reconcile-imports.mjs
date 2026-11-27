@@ -2,6 +2,7 @@
 // the vault's compiled depends_on edges, so the agent gets "exactly what to
 // sync" instead of every import. Read-only: changes still land through a
 // confirmed add_relations row.
+import { compareText } from '../compare-text.mjs';
 
 // The compiler stores `depends_on` as `dependencies`; matching 'depends_on' alone
 // would swallow every real dependency edge.
@@ -189,7 +190,7 @@ export function reconcileImportEdges({
     inVaultNotInCode.push({ from: edge.from, to: edge.to, ref: edge.ref, via: edge.via });
   }
 
-  const byFromTo = (a, b) => key(a.from, a.to).localeCompare(key(b.from, b.to));
+  const byFromTo = (a, b) => compareText(key(a.from, a.to), key(b.from, b.to));
   inBoth.sort(byFromTo);
   inCodeMissingFromVault.sort(byFromTo);
   inCodeMissingEndpointAbsent.sort(byFromTo);

@@ -1,4 +1,5 @@
 import { isPersistableRelativePath, parseSourceRangeCitation } from '../meaning/source-range-citation.mjs';
+import { compareText } from '../compare-text.mjs';
 
 const COMPETENCY_HEADING = '## Competency answers';
 
@@ -9,7 +10,7 @@ const COMPETENCY_HEADING = '## Competency answers';
  */
 export function extractProjectMeaningEvidencePaths(body) {
   return [...new Set(competencyEvidenceValues(body).map(({ path }) => path))]
-    .sort((left, right) => left.localeCompare(right, 'en'));
+    .sort((left, right) => compareText(left, right));
 }
 
 /** The pinned `source:<path>#L..@sha256:..` citations among the section's Evidence values. */
@@ -17,7 +18,7 @@ export function extractProjectMeaningEvidenceCitations(body) {
   return [...new Set(competencyEvidenceValues(body)
     .filter(({ citation }) => citation !== null)
     .map(({ citation }) => citation))]
-    .sort((left, right) => left.localeCompare(right, 'en'));
+    .sort((left, right) => compareText(left, right));
 }
 
 function competencyEvidenceValues(body) {

@@ -7,6 +7,7 @@ import {
   collectNeighborRefs,
   normalizeRelationRefs,
 } from './vault/graph/relation-refs.mjs';
+import { compareText } from './compare-text.mjs';
 
 const COMPILER_VERSION = 2;
 
@@ -54,7 +55,7 @@ export function compileOntology(loadedDocs, options = {}) {
   const aliases = [];
   const ambiguousAliases = [];
   const aliasToSlug = new Map();
-  for (const [alias, slugs] of [...aliasEntries].sort(([a], [b]) => a.localeCompare(b))) {
+  for (const [alias, slugs] of [...aliasEntries].sort(([a], [b]) => compareText(a, b))) {
     const sortedSlugs = [...slugs].sort();
     if (sortedSlugs.length === 1) {
       aliasToSlug.set(alias, sortedSlugs[0]);
@@ -195,7 +196,7 @@ export function compileOntology(loadedDocs, options = {}) {
         inDegree: 0,
       };
     })
-    .sort((a, b) => a.slug.localeCompare(b.slug));
+    .sort((a, b) => compareText(a.slug, b.slug));
   const nodeBySlug = new Map(nodes.map((node) => [node.slug, node]));
   const out = {};
   const incoming = {};
@@ -235,9 +236,9 @@ export function compileOntology(loadedDocs, options = {}) {
     line: typeof issue.line === 'number' ? issue.line : Number.POSITIVE_INFINITY,
     key: JSON.stringify(issue),
   }));
-  const compareText = (left, right) => left < right ? -1 : left > right ? 1 : 0;
+  const compareCodeUnits = (left, right) => left < right ? -1 : left > right ? 1 : 0;
   orderedIssues.sort((left, right) => left.priority - right.priority ||
-    compareText(left.location, right.location) || left.line - right.line || compareText(left.key, right.key));
+    compareCodeUnits(left.location, right.location) || left.line - right.line || compareCodeUnits(left.key, right.key));
   for (let index = 0; index < orderedIssues.length; index += 1) issues[index] = orderedIssues[index].issue;
   const graphHash = hashGraph({
     version: COMPILER_VERSION,
@@ -390,7 +391,7 @@ function optionalBoolean(value, name) {
 
 function sortEdges(edges) {
   const ordered = edges.map(edge => ({ edge, key: `${edge.from}:${edge.via}:${edge.to}:${edge.ref}` }));
-  ordered.sort((a, b) => a.key.localeCompare(b.key));
+  ordered.sort((a, b) => compareText(a.key, b.key));
   for (let index = 0; index < ordered.length; index += 1) edges[index] = ordered[index].edge;
 }
 
@@ -410,7 +411,7 @@ function countByGroup(nodes, key) {
     counts[value] = (counts[value] || 0) + 1;
   }
   return Object.fromEntries(
-    Object.entries(counts).sort(([a], [b]) => a.localeCompare(b)),
+    Object.entries(counts).sort(([a], [b]) => compareText(a, b)),
   );
 }
 
@@ -446,7 +447,7 @@ function groupNodes(nodes, key) {
     grouped[value].push(node.slug);
   }
   for (const slugs of Object.values(grouped)) slugs.sort();
-  return Object.fromEntries(Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b)));
+  return Object.fromEntries(Object.entries(grouped).sort(([a], [b]) => compareText(a, b)));
 }
 
 function hashGraph(payload) {
@@ -510,7 +511,7 @@ function validateGraphIdentity(graphDocs) {
     primaryUidSlugs.get(uid).push(doc.slug);
   }
 
-  for (const [uid, rawSlugs] of [...primaryUidSlugs].sort(([a], [b]) => a.localeCompare(b))) {
+  for (const [uid, rawSlugs] of [...primaryUidSlugs].sort(([a], [b]) => compareText(a, b))) {
     const slugs = rawSlugs.sort();
     if (slugs.length > 1) {
       issues.push({
@@ -553,7 +554,7 @@ function validateGraphIdentity(graphDocs) {
       mergedUidSlugs.get(mergedUid).push(doc.slug);
     }
   }
-  for (const [uid, rawSlugs] of [...mergedUidSlugs].sort(([a], [b]) => a.localeCompare(b))) {
+  for (const [uid, rawSlugs] of [...mergedUidSlugs].sort(([a], [b]) => compareText(a, b))) {
     const mergedSlugs = rawSlugs.sort();
     if (mergedSlugs.length > 1) {
       issues.push({

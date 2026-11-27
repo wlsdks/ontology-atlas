@@ -6,6 +6,7 @@ import {
   normalizeTypes,
   summarizeNode,
 } from '../query-operation/query-primitives.mjs';
+import { compareText } from '../../compare-text.mjs';
 
 /** The character bound every answer keeps (the field-trial response bound). */
 const PROJECT_MAP_TEXT_CHARS = 36_000;
@@ -148,7 +149,7 @@ export function createProfileQueries({
     const nodeRows = [...included]
       .map((slug) => nodeBySlug.get(slug))
       .filter(Boolean)
-      .sort((a, b) => a.slug.localeCompare(b.slug));
+      .sort((a, b) => compareText(a.slug, b.slug));
     const edgesByScope = partitionScopeEdges(included);
 
     return {
@@ -218,7 +219,7 @@ export function createProfileQueries({
     });
     const unassignedNodes = scopedNodes
       .filter((node) => !covered.has(node.slug))
-      .sort((a, b) => a.slug.localeCompare(b.slug));
+      .sort((a, b) => compareText(a.slug, b.slug));
     const edgesByScope = partitionScopeEdges(included);
 
     return {

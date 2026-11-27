@@ -5,6 +5,7 @@
 // add_concepts scaffold rather than a guessed node.
 
 import { isVaultSourcePath, rawSourceFileForSlug } from '../schema.mjs';
+import { compareText } from '../compare-text.mjs';
 
 const TOKEN_RE = /[a-z0-9]+/g;
 
@@ -207,6 +208,6 @@ export function findNearTitleMatches(query, candidates = [], { limit = 3, minSco
       });
     }
   }
-  scored.sort((a, b) => b.score - a.score || a.slug.localeCompare(b.slug));
+  scored.sort((a, b) => b.score - a.score || compareText(a.slug, b.slug));
   return scored.slice(0, limit);
 }

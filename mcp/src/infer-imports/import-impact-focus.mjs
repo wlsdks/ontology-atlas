@@ -1,5 +1,6 @@
 import { isAbsolute } from 'node:path';
 import { createHash } from 'node:crypto';
+import { compareText } from '../compare-text.mjs';
 
 /**
  * A bounded, path-focused static import neighbourhood from one scan. Source
@@ -112,13 +113,13 @@ export function buildImportImpactFocus(
 }
 
 function compareFocusedImportEdges(a, b) {
-  return JSON.stringify([
+  return compareText(JSON.stringify([
     a?.from ?? '',
     a?.to ?? '',
     a?.kind ?? '',
     a?.sourceRole ?? '',
     a?.importUsage ?? '',
-  ]).localeCompare(JSON.stringify([
+  ]), JSON.stringify([
     b?.from ?? '',
     b?.to ?? '',
     b?.kind ?? '',

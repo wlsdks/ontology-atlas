@@ -11,6 +11,7 @@ import {
   PROJECT_SOURCE_ACTION_IDS as SOURCE_ACTION_IDS,
   PROJECT_SOURCE_GAP_IDS as SOURCE_GAP_IDS,
 } from '../project-source/project-source-vocabulary.mjs';
+import { compareText } from '../compare-text.mjs';
 
 const MAX_SCOPE_NODES = 500;
 const ALLOWED_RELATION_TYPES = new Set(WRITE_RELATION_TYPE_VALUES);
@@ -235,17 +236,17 @@ export function buildProjectMeaningInventory({
   return {
     status: 'ready',
     evidenceClaims: [...evidenceClaims.entries()]
-      .sort(([left], [right]) => left.localeCompare(right))
+      .sort(([left], [right]) => compareText(left, right))
       .map(([, claim]) => claim),
     inventory: {
       contract: MEANING_WITNESS_INVENTORY_CONTRACT,
       graphHash,
       sourceFingerprint: receipt.sourceFingerprint,
-      concepts: [...concepts].sort((a, b) => a.localeCompare(b)),
+      concepts: [...concepts].sort((a, b) => compareText(a, b)),
       ...(Object.keys(kinds).length > 0 ? { kinds } : {}),
-      relations: [...relationsByKey.values()].sort((a, b) => relationKey(a).localeCompare(relationKey(b))),
-      evidence: [...evidence].sort((a, b) => a.localeCompare(b)),
-      paths: paths.sort((a, b) => a.localeCompare(b)),
+      relations: [...relationsByKey.values()].sort((a, b) => compareText(relationKey(a), relationKey(b))),
+      evidence: [...evidence].sort((a, b) => compareText(a, b)),
+      paths: paths.sort((a, b) => compareText(a, b)),
     },
   };
 }

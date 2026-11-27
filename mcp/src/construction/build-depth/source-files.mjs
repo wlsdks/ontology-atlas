@@ -4,6 +4,7 @@ import { dirname, extname, join } from 'node:path';
 import { surveyEntry } from '../../analyze/survey/survey-paths.mjs';
 import { withoutSpans } from '../../analyze/text.mjs';
 import { UNIT_SOURCE_EXTENSIONS, unitForPath } from '../../analyze/survey/source-units.mjs';
+import { compareText } from '../../compare-text.mjs';
 
 /** Comments, docstrings, imports and re-exports removed; what is left is code. */
 export function hasCode(text, path) {
@@ -47,6 +48,6 @@ export function nearbyFiles(collection, path) {
   const candidates = collection.files
     .filter((file) => file.class === 'product' && file.path !== path && file.lines > 0)
     .filter((file) => (unit && unit.files.includes(file)) || file.path.startsWith(`${folder}/`))
-    .sort((a, b) => b.lines - a.lines || a.path.localeCompare(b.path));
+    .sort((a, b) => b.lines - a.lines || compareText(a.path, b.path));
   return candidates.slice(0, 3).map((file) => file.path);
 }

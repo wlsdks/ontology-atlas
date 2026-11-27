@@ -6,6 +6,7 @@ import {
   normalizeOptionalBoolean,
   summarizeNode,
 } from '../query-operation/query-primitives.mjs';
+import { compareText } from '../../compare-text.mjs';
 
 /** What contains a node, what it contains, and the whole containment tree. */
 export function createContainmentQueries({
@@ -42,7 +43,7 @@ export function createContainmentQueries({
         nodes: descendants.rows,
       },
       edges: uniqueEdges([...ancestors.edges, ...descendants.edges]).sort((a, b) =>
-        edgeSortKey(a).localeCompare(edgeSortKey(b)),
+        compareText(edgeSortKey(a), edgeSortKey(b)),
       ),
     };
   }

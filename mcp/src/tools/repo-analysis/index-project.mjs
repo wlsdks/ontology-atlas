@@ -14,6 +14,7 @@ import { validateVaultReport } from '../validate-vault.mjs';
 import { inferImportsTool } from './infer-imports.mjs';
 import { buildConceptDelta, classifyVaultAlignment } from './plan-rules.mjs';
 import { aliasToSlugOf } from './vault-reconciliation.mjs';
+import { compareText } from '../../compare-text.mjs';
 
 export function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports = false } = {}) {
   requireOptionalNonBlankString(rootPath, 'rootPath');
@@ -202,7 +203,7 @@ function summarizeBusinessEvidenceRows(rows) {
   return [...rows]
     .sort((a, b) => {
       if (a.kind !== b.kind) return a.kind === 'capability' ? -1 : 1;
-      return String(a.slug).localeCompare(String(b.slug));
+      return compareText(String(a.slug), String(b.slug));
     })
     .slice(0, MEANING_GATE_EVIDENCE_ROW_LIMIT)
     .map((row) => ({

@@ -32,6 +32,7 @@ import {
   pushSkippedOnce,
 } from './scan-guards.mjs';
 import { extractCargoPackageContract } from './package-contracts.mjs';
+import { compareText } from '../../compare-text.mjs';
 
 function readAutotoolsRoleManifest(rootPath, path, skipped) {
   const source = relative(rootPath, path);
@@ -282,7 +283,7 @@ function compareNativeEvidenceCandidates(left, right) {
   const basePriority = (base) => (
     base === 'main.c' || base === 'main.h' ? 0 : base.endsWith('.c') ? 1 : 2
   );
-  return basePriority(leftBase) - basePriority(rightBase) || left.source.localeCompare(right.source);
+  return basePriority(leftBase) - basePriority(rightBase) || compareText(left.source, right.source);
 }
 
 export function discoverAutotoolsImplementationEvidence(rootPath, { ignore, skipped }) {

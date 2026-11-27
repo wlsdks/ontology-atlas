@@ -20,6 +20,7 @@ import {
   tailSlug,
   uniqueStrings,
 } from '../text.mjs';
+import { compareText } from '../../compare-text.mjs';
 
 export function deriveBusinessCapabilityCandidates({
   domains,
@@ -94,7 +95,7 @@ export function deriveBusinessCapabilityCandidates({
         row.role,
       ),
     )
-    .sort((a, b) => a.source.localeCompare(b.source));
+    .sort((a, b) => compareText(a.source, b.source));
   const genericImplementationRows = elements
     .map((row) => ({
       path: row.path,
@@ -102,11 +103,11 @@ export function deriveBusinessCapabilityCandidates({
     }))
     .filter((row) => row.path)
     .sort((a, b) =>
-      a.path.localeCompare(b.path) || a.slug.localeCompare(b.slug),
+      compareText(a.path, b.path) || compareText(a.slug, b.slug),
     );
   const genericCandidates = [];
   for (const capability of [...capabilities].sort((a, b) =>
-    a.slug.localeCompare(b.slug),
+    compareText(a.slug, b.slug),
   )) {
     if (emittedSlugs.has(capability.slug)) continue;
     const candidateTokens = semanticTokens(tailSlug(capability.slug));
@@ -159,7 +160,7 @@ export function deriveBusinessCapabilityCandidates({
       slug: row.slug,
     }))
     .filter((row) => row.path)
-    .sort((a, b) => a.path.localeCompare(b.path) || a.slug.localeCompare(b.slug));
+    .sort((a, b) => compareText(a.path, b.path) || compareText(a.slug, b.slug));
   for (const clue of GENERIC_NARRATIVE_CAPABILITY_CLUES) {
     if (emittedSlugs.has(clue.slug)) continue;
     const matchedEvidence = genericBusinessEvidence.filter((row) =>

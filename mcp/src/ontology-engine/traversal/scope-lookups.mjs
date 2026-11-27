@@ -1,4 +1,5 @@
 import { summarizeNode } from '../query-operation/query-primitives.mjs';
+import { compareText } from '../../compare-text.mjs';
 
 /** Which nodes sit under a project or domain, and which domain a node belongs to. */
 export function createScopeLookups({
@@ -95,7 +96,7 @@ export function createScopeLookups({
     return [...scopeSlugs]
       .map((slug) => nodeBySlug.get(slug))
       .filter(Boolean)
-      .sort((a, b) => a.slug.localeCompare(b.slug));
+      .sort((a, b) => compareText(a.slug, b.slug));
   }
 
   function domainMapRow(domainSlug, domainScope, itemLimit) {

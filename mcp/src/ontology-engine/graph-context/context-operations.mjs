@@ -7,6 +7,7 @@ import {
   summarizeNode,
   typeAllowed,
 } from '../query-operation/query-primitives.mjs';
+import { compareText } from '../../compare-text.mjs';
 
 export function createContextOperations({
   artifact,
@@ -61,9 +62,9 @@ export function createContextOperations({
     return [...patternMap.values()].sort(
       (a, b) =>
         b.count - a.count ||
-        a.fromKind.localeCompare(b.fromKind) ||
-        a.relation.localeCompare(b.relation) ||
-        a.toKind.localeCompare(b.toKind),
+        compareText(a.fromKind, b.fromKind) ||
+        compareText(a.relation, b.relation) ||
+        compareText(a.toKind, b.toKind),
     );
   }
 
@@ -82,9 +83,9 @@ export function createContextOperations({
         if (b.similarity !== a.similarity) return b.similarity - a.similarity;
         if (b.count !== a.count) return b.count - a.count;
         return (
-          a.fromKind.localeCompare(b.fromKind) ||
-          a.relation.localeCompare(b.relation) ||
-          a.toKind.localeCompare(b.toKind)
+          compareText(a.fromKind, b.fromKind) ||
+          compareText(a.relation, b.relation) ||
+          compareText(a.toKind, b.toKind)
         );
       })
       .slice(0, 5);
@@ -125,7 +126,7 @@ export function createContextOperations({
     return rows.sort((a, b) => {
       const aDegree = (a.node?.inDegree || 0) + (a.node?.outDegree || 0);
       const bDegree = (b.node?.inDegree || 0) + (b.node?.outDegree || 0);
-      return bDegree - aDegree || a.slug.localeCompare(b.slug);
+      return bDegree - aDegree || compareText(a.slug, b.slug);
     });
   }
 
@@ -140,7 +141,7 @@ export function createContextOperations({
       });
     }
     for (const rows of byNeighbor.values()) {
-      rows.sort((a, b) => edgeSortKey(a).localeCompare(edgeSortKey(b)));
+      rows.sort((a, b) => compareText(edgeSortKey(a), edgeSortKey(b)));
     }
     return byNeighbor;
   }
@@ -224,7 +225,7 @@ export function createContextOperations({
       }
     }
     candidates.sort((a, b) =>
-      `${a.next}:${edgeSortKey(a.edge)}`.localeCompare(`${b.next}:${edgeSortKey(b.edge)}`),
+      compareText(`${a.next}:${edgeSortKey(a.edge)}`, `${b.next}:${edgeSortKey(b.edge)}`),
     );
     return candidates;
   }
@@ -243,7 +244,7 @@ export function createContextOperations({
         bySlug.set(candidate.next, candidate);
       }
     }
-    const children = [...bySlug.values()].sort((a, b) => a.next.localeCompare(b.next));
+    const children = [...bySlug.values()].sort((a, b) => compareText(a.next, b.next));
     childrenBySlug.set(slug, children);
     return children;
   }
@@ -257,7 +258,7 @@ export function createContextOperations({
         bySlug.set(candidate.next, candidate);
       }
     }
-    const parents = [...bySlug.values()].sort((a, b) => a.next.localeCompare(b.next));
+    const parents = [...bySlug.values()].sort((a, b) => compareText(a.next, b.next));
     parentsBySlug.set(slug, parents);
     return parents;
   }

@@ -440,7 +440,7 @@ function pushNonCanonicalGraphArrayIssues(
       .filter((item): item is string => typeof item === "string")
       .map((item) => item.trim());
     const canonical = [...new Set(refs.filter(Boolean))].sort((a, b) =>
-      a.localeCompare(b),
+      a.localeCompare(b, "en"),
     );
     if (
       refs.length !== canonical.length ||

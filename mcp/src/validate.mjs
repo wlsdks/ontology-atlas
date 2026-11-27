@@ -21,6 +21,7 @@ import {
   nodeUidIssue,
 } from './schema.mjs';
 import { slugOutsideKindFolderMessage } from './construction/construction-rules.mjs';
+import { compareText } from './compare-text.mjs';
 
 export const VAULT_ISSUE_CODE_VALUES = Object.freeze([
   'unclosed-frontmatter',
@@ -99,7 +100,7 @@ export function rawSourceKindIssues(rootPath) {
       }
     }
   }
-  return rows.sort((a, b) => a.path.localeCompare(b.path));
+  return rows.sort((a, b) => compareText(a.path, b.path));
 }
 
 function directoryEntries(directory) {
@@ -439,7 +440,7 @@ function pushNonCanonicalGraphArrayIssues(frontmatter, issues) {
       .filter((item) => typeof item === 'string')
       .map((item) => item.trim());
     const canonical = [...new Set(refs.filter(Boolean))].sort((a, b) =>
-      a.localeCompare(b),
+      compareText(a, b),
     );
     if (
       refs.length !== canonical.length ||

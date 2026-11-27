@@ -1,3 +1,5 @@
+import { compareText } from '../compare-text.mjs';
+
 const PROFILE_CONTRACT = 'architecture-profile/v1';
 const BRIEF_CONTRACT = 'architectureBrief:v1';
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
@@ -345,7 +347,7 @@ export function findArchitectureProfiles(docs) {
     seen.set(profile.slug, { uid: profile.uid, fingerprint, documentSlug });
     profiles.push({ ...profile, documentSlug });
   }
-  return profiles.sort((left, right) => left.slug.localeCompare(right.slug, 'en'));
+  return profiles.sort((left, right) => compareText(left.slug, right.slug));
 }
 
 function matchingRoles(profile, path, match) {
@@ -487,7 +489,7 @@ export function evaluateArchitectureConformance(profile, importResult) {
     status,
     roles,
     observedRoleEdges: [...observed.values()].sort((a, b) =>
-      `${a.fromRole}:${a.toRole}`.localeCompare(`${b.fromRole}:${b.toRole}`, 'en'),
+      compareText(`${a.fromRole}:${a.toRole}`, `${b.fromRole}:${b.toRole}`),
     ),
     excludedByUsage,
     violationCount: violations.length,

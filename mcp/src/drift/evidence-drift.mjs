@@ -3,6 +3,7 @@
 // validate_vault and the analysis brief agree. A missing time is unknown, never current.
 
 import { judgeEvidence } from './evidence-verdict.mjs';
+import { compareText } from '../compare-text.mjs';
 
 const CONCEPT_KINDS = new Set(['domain', 'capability', 'element']);
 const ONTOLOGY_SLUG_PREFIXES = ['capabilities/', 'domains/', 'elements/', 'documents/'];
@@ -73,7 +74,7 @@ export function resolveEvidenceStates(concepts, changes, { unchangedPairs = null
       );
     } else states.current.push(row);
   }
-  const bySlug = (a, b) => a.slug.localeCompare(b.slug);
+  const bySlug = (a, b) => compareText(a.slug, b.slug);
   for (const key of ['current', 'stale', 'missing', 'unknown']) states[key].sort(bySlug);
   return states;
 }

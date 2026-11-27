@@ -8,6 +8,7 @@ import {
 import { join, dirname, resolve, relative, extname, sep } from 'node:path';
 import { pathResolvesInsideRoot } from '../confinement/path-confinement.mjs';
 import { zeroCounts } from '../zero-counts.mjs';
+import { compareText } from '../../compare-text.mjs';
 
 const GO_IMPORT_TEXT_MAX_BYTES = 256 * 1024;
 const GO_IMPORTS_PER_FILE_LIMIT = 256;
@@ -376,7 +377,7 @@ function collapseGoPackageImports(imports, countKeys) {
       fromPackage: bucket.fromPackage,
       toPackage: bucket.toPackage,
       count: bucket.count,
-      kindCounts: Object.fromEntries([...bucket.kindCounts.entries()].sort(([a], [b]) => a.localeCompare(b))),
+      kindCounts: Object.fromEntries([...bucket.kindCounts.entries()].sort(([a], [b]) => compareText(a, b))),
       sourceRoleCounts: bucket.sourceRoleCounts,
       importUsageCounts: bucket.importUsageCounts,
       productValueCount: bucket.productValueCount,
@@ -385,20 +386,20 @@ function collapseGoPackageImports(imports, countKeys) {
     }))
     .sort((a, b) =>
       b.count - a.count ||
-      a.fromPackage.localeCompare(b.fromPackage) ||
-      a.toPackage.localeCompare(b.toPackage),
+      compareText(a.fromPackage, b.fromPackage) ||
+      compareText(a.toPackage, b.toPackage),
     );
 }
 
 function compareGoPackageImportEvidence(a, b) {
   const priority = (row) => row.sourceRole === 'production' && row.importUsage === 'value' ? 0 : 1;
   return priority(a) - priority(b) ||
-    a.fromFile.localeCompare(b.fromFile) ||
-    a.toPackage.localeCompare(b.toPackage) ||
-    a.importSpec.localeCompare(b.importSpec) ||
-    a.kind.localeCompare(b.kind);
+    compareText(a.fromFile, b.fromFile) ||
+    compareText(a.toPackage, b.toPackage) ||
+    compareText(a.importSpec, b.importSpec) ||
+    compareText(a.kind, b.kind);
 }
 
 function compareGoSkippedFile(a, b) {
-  return a.file.localeCompare(b.file) || a.reason.localeCompare(b.reason);
+  return compareText(a.file, b.file) || compareText(a.reason, b.reason);
 }

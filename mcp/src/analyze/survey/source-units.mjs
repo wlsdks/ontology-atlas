@@ -14,6 +14,7 @@ import { extname, join, relative, sep } from 'node:path';
 import { DEFAULT_IGNORE } from '../scan-tables.mjs';
 import { gitIgnoredPaths } from './git-ignored.mjs';
 import { discoverDeclaredWorkspacePackages } from '../../infer-imports/workspace-packages.mjs';
+import { compareText } from '../../compare-text.mjs';
 
 export const UNIT_SOURCE_EXTENSIONS = new Set([
   '.c', '.cc', '.cjs', '.cpp', '.cs', '.cts', '.dart', '.ex', '.exs', '.go', '.h', '.hpp',
@@ -232,7 +233,7 @@ export function collectSourceUnits(rootPath, { ignore = [], vaultRoot } = {}) {
       ...unit,
       lines: unit.files.reduce((sum, file) => sum + file.lines, 0),
     }))
-    .sort((a, b) => a.path.localeCompare(b.path));
+    .sort((a, b) => compareText(a.path, b.path));
   const unitOfFile = new Map();
   for (const unit of units) for (const file of unit.files) unitOfFile.set(file.path, unit);
   const excluded = new Map();

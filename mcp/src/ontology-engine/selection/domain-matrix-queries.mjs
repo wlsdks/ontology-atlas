@@ -5,6 +5,7 @@ import {
   summarizeNode,
 } from '../query-operation/query-primitives.mjs';
 import { assignNodesToDomains, tallyDomainEdges } from './domain-matrix-rules.mjs';
+import { compareText } from '../../compare-text.mjs';
 
 /** How the domains of a project, or of the whole graph, connect to one another. */
 export function createDomainMatrixQueries({
@@ -60,7 +61,7 @@ export function createDomainMatrixQueries({
         toNode: summarizeNode(nodeBySlug.get(row.to)),
         examples: row.examples,
       }))
-      .sort((a, b) => b.count - a.count || a.from.localeCompare(b.from) || a.to.localeCompare(b.to));
+      .sort((a, b) => b.count - a.count || compareText(a.from, b.from) || compareText(a.to, b.to));
 
     return {
       operation: 'domain_matrix',
@@ -79,7 +80,7 @@ export function createDomainMatrixQueries({
         externalEdges,
         unresolvedEdges,
       },
-      domains: [...domainStats.values()].sort((a, b) => a.slug.localeCompare(b.slug)),
+      domains: [...domainStats.values()].sort((a, b) => compareText(a.slug, b.slug)),
       connections: {
         total: connections.length,
         limited: connections.length > limit,

@@ -8,6 +8,7 @@ import {
 import { basename, join, relative } from 'node:path';
 import { pathResolvesInsideRoot } from './confinement/path-confinement.mjs';
 import { DEFAULT_IGNORE } from './source-files.mjs';
+import { compareText } from '../compare-text.mjs';
 
 const WORKSPACE_DISCOVERY_MAX_ENTRIES = 10000;
 const WORKSPACE_PACKAGE_LIMIT = 500;
@@ -98,7 +99,7 @@ export function discoverDeclaredWorkspacePackages(rootPath, options = {}) {
     });
   }
 
-  packages.sort((a, b) => a.path.localeCompare(b.path));
+  packages.sort((a, b) => compareText(a.path, b.path));
   const omitted = Math.max(0, packages.length - WORKSPACE_PACKAGE_LIMIT);
   if (omitted > 0) {
     declarations.skipped.push({

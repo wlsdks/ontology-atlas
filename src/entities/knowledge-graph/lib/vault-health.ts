@@ -289,10 +289,10 @@ function actionableComponentCounts(graph: CompiledGraph): {
       ignored += 1;
     } else {
       actionable += 1;
-      actionableGroups.push(groupSlugs.slice().sort((a, b) => a.localeCompare(b)));
+      actionableGroups.push(groupSlugs.slice().sort((a, b) => a.localeCompare(b, 'en')));
     }
   }
-  actionableGroups.sort((a, b) => b.length - a.length || (a[0] ?? '').localeCompare(b[0] ?? ''));
+  actionableGroups.sort((a, b) => b.length - a.length || (a[0] ?? '').localeCompare(b[0] ?? '', 'en'));
   return { actionable, ignored, actionableGroups };
 }
 
@@ -318,7 +318,7 @@ function missingDomainContainment(graph: CompiledGraph): MissingContainmentTarge
   }
 
   const targets: MissingContainmentTarget[] = [];
-  for (const node of [...graph.nodes].sort((a, b) => a.slug.localeCompare(b.slug))) {
+  for (const node of [...graph.nodes].sort((a, b) => a.slug.localeCompare(b.slug, 'en'))) {
     if (node.kind !== 'capability' && node.kind !== 'element') continue;
     const domainSlug = resolveOptional(node.domain);
     if (!domainSlug) continue;

@@ -1,4 +1,5 @@
 import { collectNeighborRefs, relationNoteFor } from '../vault/graph/relation-refs.mjs';
+import { compareText } from '../compare-text.mjs';
 
 function buildUidClaims(docs) {
   const claims = new Map();
@@ -144,9 +145,9 @@ function collectScopeRelations(docs, resolvedScope, relationLimit, dependencyLim
     }
   }
 
-  const internalRows = [...internal.values()].sort((a, b) => relationKey(a).localeCompare(relationKey(b)));
+  const internalRows = [...internal.values()].sort((a, b) => compareText(relationKey(a), relationKey(b)));
   const outsideRows = [...outside.values()].sort((a, b) =>
-    `${a.scopeDirection}\0${relationKey(a)}`.localeCompare(`${b.scopeDirection}\0${relationKey(b)}`),
+    compareText(`${a.scopeDirection}\0${relationKey(a)}`, `${b.scopeDirection}\0${relationKey(b)}`),
   );
   return {
     internal: internalRows.slice(0, relationLimit),

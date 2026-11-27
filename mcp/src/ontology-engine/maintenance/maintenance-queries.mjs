@@ -3,6 +3,7 @@ import { folderForKind } from '../../schema.mjs';
 import { starterExampleFindings } from '../../meaning/meaning-findings.mjs';
 import { docBodyMeaningFindings, docHasBody } from '../../vault/documents/doc-facts.mjs';
 import { slugOutsideKindFolderMessage } from '../../construction/construction-rules.mjs';
+import { compareText } from '../../compare-text.mjs';
 
 const MEANING_GAP_KIND_BY_CODE = Object.freeze({
   'definition-missing': 'definition_missing',
@@ -55,7 +56,7 @@ export function createMaintenanceQueries({
 
   function meaningGapCandidates(limit) {
     const rows = [];
-    for (const node of [...nodes].sort((a, b) => a.slug.localeCompare(b.slug))) {
+    for (const node of [...nodes].sort((a, b) => compareText(a.slug, b.slug))) {
       const doc = sourceDocFor(node.slug);
       if (!docHasBody(doc)) continue;
       for (const finding of docBodyMeaningFindings(doc, { kind: node.kind, slug: node.slug, title: node.title })) {
@@ -73,7 +74,7 @@ export function createMaintenanceQueries({
 
   function slugOutsideKindFolderCandidates(limit) {
     const rows = [];
-    for (const node of [...nodes].sort((a, b) => a.slug.localeCompare(b.slug))) {
+    for (const node of [...nodes].sort((a, b) => compareText(a.slug, b.slug))) {
       if (typeof node.kind !== 'string' || typeof node.slug !== 'string') continue;
       const folder = folderForKind(node.kind);
       if (!folder || node.slug.startsWith(folder)) continue;
@@ -95,7 +96,7 @@ export function createMaintenanceQueries({
    */
   function starterExampleCandidates(limit) {
     const rows = starterExampleFindings(
-      [...nodes].sort((a, b) => String(a.slug).localeCompare(String(b.slug))),
+      [...nodes].sort((a, b) => compareText(String(a.slug), String(b.slug))),
     ).map((finding) => ({
       kind: 'retire_starter_example',
       score: MEANING_GAP_SCORE_BY_CODE['starter-example-node'],

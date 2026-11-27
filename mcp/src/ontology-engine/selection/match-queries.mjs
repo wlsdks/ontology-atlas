@@ -15,6 +15,7 @@ import {
   nodeDegree,
   nodeMatchesFilters,
 } from './match-rules.mjs';
+import { compareText } from '../../compare-text.mjs';
 
 /** Which nodes and edges meet a condition or resemble a given node, and whether a proposed relation is new, present or off-pattern. */
 export function createMatchQueries({
@@ -232,7 +233,7 @@ export function createMatchQueries({
       });
     }
 
-    rows.sort((a, b) => b.score - a.score || a.node.slug.localeCompare(b.node.slug));
+    rows.sort((a, b) => b.score - a.score || compareText(a.node.slug, b.node.slug));
 
     return {
       operation: 'similar_nodes',
