@@ -13,53 +13,9 @@ use answer_format::collation::compare_text;
 use answer_format::whitespace::trim;
 use vault_document::frontmatter::{Frontmatter, Value};
 
+use crate::source_scan_error::SourceScanError;
+
 pub const PROFILE_CONTRACT: &str = "architecture-profile/v1";
-
-/// What kind of failure a refused profile is, as an agent's `errorCode` tells it.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ProfileErrorKind {
-    /// A value the profile holds is not what it must be.
-    Invalid,
-    /// Something the profile names does not exist.
-    NotFound,
-    /// Any other refusal.
-    Failed,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ProfileError {
-    pub kind: ProfileErrorKind,
-    pub message: String,
-}
-
-impl std::fmt::Display for ProfileError {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        formatter.write_str(&self.message)
-    }
-}
-
-impl std::error::Error for ProfileError {}
-
-impl ProfileError {
-    fn invalid(message: String) -> Self {
-        Self {
-            kind: ProfileErrorKind::Invalid,
-            message,
-        }
-    }
-    fn failed(message: String) -> Self {
-        Self {
-            kind: ProfileErrorKind::Failed,
-            message,
-        }
-    }
-    fn not_found(message: String) -> Self {
-        Self {
-            kind: ProfileErrorKind::NotFound,
-            message,
-        }
-    }
-}
 
 /// `axis:name`, such as `style:layered`.
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
@@ -138,10 +94,10 @@ fn is_locale(text: &str) -> bool {
     text.len() == 2 && text.chars().all(|c| c.is_ascii_lowercase())
 }
 
-fn non_blank(value: Option<&Value>, name: &str) -> Result<String, ProfileError> {
+fn non_blank(value: Option<&Value>, name: &str) -> Result<String, SourceScanError> {
     match value {
         Some(Value::Text(text)) if !trim(text).is_empty() => Ok(trim(text).to_string()),
-        _ => Err(ProfileError::invalid(format!(
+        _ => Err(SourceScanError::invalid(format!(
             "{name} must be a non-empty string."
         ))),
     }
@@ -151,15 +107,15 @@ fn string_array(
     value: Option<&Value>,
     name: &str,
     allow_empty: bool,
-) -> Result<Vec<String>, ProfileError> {
+) -> Result<Vec<String>, SourceScanError> {
     let Some(Value::List(items)) = value else {
-        return Err(ProfileError::invalid(format!(
+        return Err(SourceScanError::invalid(format!(
             "{name} must be {} array of strings.",
             if allow_empty { "an" } else { "a non-empty" }
         )));
     };
     if !allow_empty && items.is_empty() {
-        return Err(ProfileError::invalid(format!(
+        return Err(SourceScanError::invalid(format!(
             "{name} must be a non-empty array of strings."
         )));
     }
@@ -172,21 +128,21 @@ fn string_array(
     }
     let mut seen = std::collections::HashSet::new();
     if !rows.iter().all(|row| seen.insert(row.as_str())) {
-        return Err(ProfileError::invalid(format!(
+        return Err(SourceScanError::invalid(format!(
             "{name} must not contain duplicates."
         )));
     }
     Ok(rows)
 }
 
-fn parse_patterns(value: Option<&Value>) -> Result<Vec<ProfilePattern>, ProfileError> {
+fn parse_patterns(value: Option<&Value>) -> Result<Vec<ProfilePattern>, SourceScanError> {
     string_array(value, "patterns", false)?
         .into_iter()
         .enumerate()
         .map(|(index, row)| {
             let separator = row.find(':').filter(|at| *at > 0 && *at + 1 < row.len());
             let Some(at) = separator else {
-                return Err(ProfileError::failed(format!(
+                return Err(SourceScanError::failed(format!(
                     "patterns[{index}] must use axis:name."
                 )));
             };
@@ -204,7 +160,7 @@ fn parse_patterns(value: Option<&Value>) -> Result<Vec<ProfilePattern>, ProfileE
         .collect()
 }
 
-fn parse_dependency_usages(value: Option<&Value>) -> Result<Vec<String>, ProfileError> {
+fn parse_dependency_usages(value: Option<&Value>) -> Result<Vec<String>, SourceScanError> {
     let Some(value) = value else {
         return Ok(DEPENDENCY_USAGE_VALUES
             .iter()
@@ -216,7 +172,7 @@ fn parse_dependency_usages(value: Option<&Value>) -> Result<Vec<String>, Profile
         .iter()
         .find(|usage| !DEPENDENCY_USAGE_VALUES.contains(&usage.as_str()))
     {
-        return Err(ProfileError::failed(format!(
+        return Err(SourceScanError::failed(format!(
             "dependency_usages contains unsupported usage: {unsupported}. Expected one of {}.",
             DEPENDENCY_USAGE_VALUES.join(", ")
         )));
@@ -227,28 +183,28 @@ fn parse_dependency_usages(value: Option<&Value>) -> Result<Vec<String>, Profile
 pub fn parse_architecture_profile(
     frontmatter: &Frontmatter,
     document_slug: &str,
-) -> Result<ArchitectureProfile, ProfileError> {
+) -> Result<ArchitectureProfile, SourceScanError> {
     if frontmatter.text("architecture_schema") != Some(PROFILE_CONTRACT) {
-        return Err(ProfileError::invalid(format!(
+        return Err(SourceScanError::invalid(format!(
             "architecture_schema must be {PROFILE_CONTRACT}."
         )));
     }
     let uid = non_blank(frontmatter.get("profile_uid"), "profile_uid")?;
     let project_uid = non_blank(frontmatter.get("project_uid"), "project_uid")?;
     if !is_uuid_v4(&uid) {
-        return Err(ProfileError::invalid(
+        return Err(SourceScanError::invalid(
             "profile_uid must be a lowercase UUIDv4.".to_string(),
         ));
     }
     if !is_uuid_v4(&project_uid) {
-        return Err(ProfileError::invalid(
+        return Err(SourceScanError::invalid(
             "project_uid must be a lowercase UUIDv4.".to_string(),
         ));
     }
     // An alias would keep two spellings of one policy in two parsers, and ignoring the key
     // would silently flip a profile's result.
     if frontmatter.contains_key("type_only_dependencies") {
-        return Err(ProfileError::failed(
+        return Err(SourceScanError::failed(
             "type_only_dependencies was replaced by dependency_usages: write dependency_usages: [value] for the old free, or omit the key for the old ruled.".to_string(),
         ));
     }
@@ -269,7 +225,7 @@ pub fn parse_architecture_profile(
             _ => rest,
         };
         if !is_role_id(id) {
-            return Err(ProfileError::failed(format!(
+            return Err(SourceScanError::failed(format!(
                 "Invalid architecture role id: {id}."
             )));
         }
@@ -295,14 +251,14 @@ pub fn parse_architecture_profile(
             continue;
         }
         if !is_role_id(id) {
-            return Err(ProfileError::failed(format!(
+            return Err(SourceScanError::failed(format!(
                 "Invalid architecture role id: {id}."
             )));
         }
         role_paths.push((id.to_string(), string_array(Some(value), key, false)?));
     }
     if role_paths.len() < 2 {
-        return Err(ProfileError::failed(
+        return Err(SourceScanError::failed(
             "architecture profile needs at least two roles.".to_string(),
         ));
     }
@@ -316,13 +272,13 @@ pub fn parse_architecture_profile(
         Some(value) => string_array(Some(value), "role_order", false)?,
     };
     if role_order.len() != role_paths.len() || role_order.iter().any(|id| !has_role(id)) {
-        return Err(ProfileError::failed(
+        return Err(SourceScanError::failed(
             "role_order must name every role exactly once.".to_string(),
         ));
     }
     for summary_id in &role_summaries {
         if !has_role(summary_id) {
-            return Err(ProfileError::not_found(format!(
+            return Err(SourceScanError::not_found(format!(
                 "summary_{summary_id} describes a role that does not exist."
             )));
         }
@@ -333,12 +289,12 @@ pub fn parse_architecture_profile(
         for locale in locales {
             let key = format!("summary_{summary_id}_{locale}");
             if !has_role(summary_id) {
-                return Err(ProfileError::not_found(format!(
+                return Err(SourceScanError::not_found(format!(
                     "{key} describes a role that does not exist."
                 )));
             }
             if !role_summaries.contains(summary_id) {
-                return Err(ProfileError::failed(format!(
+                return Err(SourceScanError::failed(format!(
                     "{key} translates summary_{summary_id}, which this profile does not declare."
                 )));
             }
@@ -351,7 +307,7 @@ pub fn parse_architecture_profile(
             "explicit" => DependencyPolicy::Explicit,
             "lower-only" => DependencyPolicy::LowerOnly,
             _ => {
-                return Err(ProfileError::invalid(
+                return Err(SourceScanError::invalid(
                     "dependency_policy must be explicit or lower-only.".to_string(),
                 ))
             }
@@ -365,7 +321,7 @@ pub fn parse_architecture_profile(
         };
         let targets = string_array(Some(value), &key, true)?;
         if let Some(unknown) = targets.iter().find(|target| !has_role(target)) {
-            return Err(ProfileError::failed(format!(
+            return Err(SourceScanError::failed(format!(
                 "{key} references unknown role: {unknown}."
             )));
         }
@@ -437,7 +393,7 @@ fn serde_json_text(value: &Value) -> String {
 /// slug is a real conflict that fails closed, naming both files.
 pub fn find_architecture_profiles(
     documents: &[ProfileDocument<'_>],
-) -> Result<Vec<ArchitectureProfile>, ProfileError> {
+) -> Result<Vec<ArchitectureProfile>, SourceScanError> {
     let mut profiles: Vec<ArchitectureProfile> = Vec::new();
     let mut seen: BTreeMap<String, (String, String, String)> = BTreeMap::new();
     for document in documents {
@@ -450,7 +406,7 @@ pub fn find_architecture_profiles(
             if *uid == profile.uid && *previous_print == print {
                 continue;
             }
-            return Err(ProfileError::failed(format!(
+            return Err(SourceScanError::failed(format!(
                 "Duplicate architecture profile slug: {}. {previous_slug} and {} both declare it with different contents. Give one of them another profile_slug, or narrow the scan so only one is read.",
                 profile.slug, document.slug
             )));
@@ -468,6 +424,7 @@ pub fn find_architecture_profiles(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::source_scan_error::ScanErrorCode;
     use vault_document::Document;
 
     fn profile_text(extra: &str) -> String {
@@ -479,7 +436,7 @@ mod tests {
         )
     }
 
-    fn parse(text: &str) -> Result<ArchitectureProfile, ProfileError> {
+    fn parse(text: &str) -> Result<ArchitectureProfile, SourceScanError> {
         let document = Document::from_text(text);
         parse_architecture_profile(document.frontmatter(), "layers")
     }
@@ -501,22 +458,22 @@ mod tests {
     fn each_refusal_names_the_key_and_carries_the_kind_an_agent_branches_on() {
         let bad_policy = parse(&profile_text("dependency_policy: strict\n")).expect_err("refused");
         assert_eq!(
-            bad_policy.message,
+            bad_policy.to_string(),
             "dependency_policy must be explicit or lower-only."
         );
-        assert_eq!(bad_policy.kind, ProfileErrorKind::Invalid);
+        assert_eq!(bad_policy.code(), ScanErrorCode::Invalid);
         let renamed = parse(&profile_text("type_only_dependencies: [x]\n")).expect_err("refused");
-        assert_eq!(renamed.kind, ProfileErrorKind::Failed);
+        assert_eq!(renamed.code(), ScanErrorCode::Failed);
         let orphan =
             parse(&profile_text("summary_ghost: A role nobody has.\n")).expect_err("refused");
         assert_eq!(
-            orphan.message,
+            orphan.to_string(),
             "summary_ghost describes a role that does not exist."
         );
-        assert_eq!(orphan.kind, ProfileErrorKind::NotFound);
+        assert_eq!(orphan.code(), ScanErrorCode::NotFound);
         let unknown = parse(&profile_text("allow_views: [nope]\n")).expect_err("refused");
         assert_eq!(
-            unknown.message,
+            unknown.to_string(),
             "allow_views references unknown role: nope."
         );
     }
@@ -541,7 +498,7 @@ mod tests {
         assert_eq!(documents(&first, &mirror).expect("one record").len(), 1);
         let conflict = documents(&first, &other).expect_err("conflict");
         assert!(conflict
-            .message
+            .to_string()
             .starts_with("Duplicate architecture profile slug: layers. a and b both declare it"));
     }
 }

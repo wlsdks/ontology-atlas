@@ -83,6 +83,7 @@ const FAMILY: [(&str, &[&str]); 5] = [
             "serde",
             "serde_json",
             "sha2",
+            "thiserror",
             "tree-sitter",
             "tree-sitter-go",
             "tree-sitter-java",

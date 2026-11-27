@@ -6,34 +6,13 @@
 
 use std::path::Path;
 
-use hardened_git::{GitReadError, Repository};
+use hardened_git::Repository;
 
 use crate::architecture_conformance::{MeasuredSource, MeasuredStamp, MeasuredTool};
+use crate::source_scan_error::SourceScanError;
 
 /// The length of the commit id a stamp carries.
 const REVISION_LENGTH: usize = 12;
-
-/// Why a repository's state could not be read.
-#[derive(Debug)]
-pub enum SourceStateError {
-    /// `git` ran and failed, or could not be read.
-    Git(GitReadError),
-    /// The branch has no commit yet.
-    NoCommit,
-}
-
-impl std::fmt::Display for SourceStateError {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Git(error) => write!(formatter, "{error}"),
-            Self::NoCommit => formatter.write_str(
-                "The repository has no commit yet, so the state of its source cannot be stamped.",
-            ),
-        }
-    }
-}
-
-impl std::error::Error for SourceStateError {}
 
 /// The commit `HEAD` names and whether any file differs from it.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -45,14 +24,14 @@ pub struct GitSourceState {
 /// The git state of the repository that holds `root`, or `None` when `root` is not in one (or
 /// `git` cannot be run, which is the same to the caller: there is nothing to stamp). Read from
 /// the top of the working tree, as the whole repository is what a commit names.
-pub fn read_git_source_state(root: &Path) -> Result<Option<GitSourceState>, SourceStateError> {
+pub fn read_git_source_state(root: &Path) -> Result<Option<GitSourceState>, SourceScanError> {
     let Ok(Some(top)) = Repository::at(root).top_level() else {
         return Ok(None);
     };
     let tree = Repository::at(top)
         .working_tree(&[])
-        .map_err(SourceStateError::Git)?;
-    let commit = tree.head.commit().ok_or(SourceStateError::NoCommit)?;
+        .map_err(SourceScanError::Git)?;
+    let commit = tree.head.commit().ok_or(SourceScanError::NoCommit)?;
     Ok(Some(GitSourceState {
         revision: commit.as_str().to_string(),
         dirty: !tree.rows.is_empty(),

@@ -11,7 +11,7 @@ use sha2::{Digest, Sha256};
 use answer_format::collation::compare_text;
 
 use crate::import_edges::{ImportEdge, ImportKind, ImportUsage, SourceRole};
-use crate::review_refusal::ReviewRefusal;
+use crate::source_scan_error::SourceScanError;
 
 pub const DEFAULT_FOCUS_LIMIT: usize = 50;
 pub const MAX_FOCUS_LIMIT: usize = 100;
@@ -123,10 +123,10 @@ fn edge_id(identity: &str, duplicate_index: usize) -> String {
 pub fn build_import_impact_focus(
     edges: &[ImportEdge],
     request: &FocusRequest<'_>,
-) -> Result<ImportImpactFocus, ReviewRefusal> {
+) -> Result<ImportImpactFocus, SourceScanError> {
     let path = request.focus_path;
     if path.is_empty() || answer_format::whitespace::trim(path) != path {
-        return Err(ReviewRefusal::invalid(
+        return Err(SourceScanError::invalid(
             "focusPath must be a nonblank repository-relative path without surrounding whitespace.",
         ));
     }
@@ -137,18 +137,18 @@ pub fn build_import_impact_focus(
         || normalized.starts_with("../")
         || normalized.contains("/../")
     {
-        return Err(ReviewRefusal::invalid(
+        return Err(SourceScanError::invalid(
             "focusPath must be a repository-relative path that stays inside the repository.",
         ));
     }
     if request.limit < 1 || request.limit > MAX_FOCUS_LIMIT {
-        return Err(ReviewRefusal::invalid(
+        return Err(SourceScanError::invalid(
             "limit must be an integer between 1 and 100.",
         ));
     }
     if let Some(after) = request.after_edge_id {
         if after.is_empty() || answer_format::whitespace::trim(after) != after {
-            return Err(ReviewRefusal::invalid(
+            return Err(SourceScanError::invalid(
                 "afterEdgeId must be null or a nonblank string without surrounding whitespace.",
             ));
         }
@@ -189,7 +189,7 @@ pub fn build_import_impact_focus(
         Some(after) => match identified.iter().position(|edge| edge.edge_id == after) {
             Some(previous) => previous + 1,
             None => {
-                return Err(ReviewRefusal::not_found(format!(
+                return Err(SourceScanError::not_found(format!(
                     "afterEdgeId was not found in the current focused import evidence: {after}. Omit afterEdgeId to restart from the first current edge."
                 )))
             }
@@ -230,6 +230,7 @@ pub fn build_import_impact_focus(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::source_scan_error::ScanErrorCode;
 
     fn edge(from: &str, to: &str, kind: ImportKind) -> ImportEdge {
         ImportEdge {
@@ -294,17 +295,20 @@ mod tests {
         assert!(
             build_import_impact_focus(&edges, &request("../x.ts", None, 5))
                 .expect_err("outside")
-                .is_invalid()
+                .code()
+                == ScanErrorCode::Invalid
         );
         assert!(
             build_import_impact_focus(&edges, &request("/etc/x", None, 5))
                 .expect_err("rooted")
-                .is_invalid()
+                .code()
+                == ScanErrorCode::Invalid
         );
         assert!(
             build_import_impact_focus(&edges, &request("a.ts", Some("import-impact:0"), 5))
                 .expect_err("lost")
-                .is_not_found()
+                .code()
+                == ScanErrorCode::NotFound
         );
     }
 
@@ -316,7 +320,8 @@ mod tests {
             assert!(
                 build_import_impact_focus(&edges, &request(rooted, None, 5))
                     .expect_err("rooted")
-                    .is_invalid(),
+                    .code()
+                    == ScanErrorCode::Invalid,
                 "{rooted}"
             );
         }

@@ -35,12 +35,12 @@ mod path_pattern;
 mod planted_tree;
 mod python_imports;
 mod python_resolution;
-mod review_refusal;
 mod rust_dependencies;
 mod rust_resolution;
 mod script_imports;
 mod script_resolution;
 mod source_language;
+mod source_scan_error;
 mod source_stamp;
 mod source_walk;
 mod workspace_packages;
@@ -59,7 +59,6 @@ pub use architecture_conformance::{
 };
 pub use architecture_profile::{
     find_architecture_profiles, parse_architecture_profile, ArchitectureProfile, ProfileDocument,
-    ProfileError, ProfileErrorKind,
 };
 pub use bounded_parse::{parse_bounded, walk, ParseLimits, ParseRefusal, ParsedSource, Visit};
 pub use go_imports::GoPackageEvidence;
@@ -85,6 +84,6 @@ pub use import_scan::{
     scan_imports, ImportScan, ImportScanOptions, ModuleEdge, DEFAULT_MAX_FILES, MAX_MAX_FILES,
     SOURCE_FILE_MAX_BYTES,
 };
-pub use review_refusal::ReviewRefusal;
 pub use source_language::{extension_of, SourceLanguage};
-pub use source_stamp::{read_git_source_state, GitSourceState, SourceStateError};
+pub use source_scan_error::{ScanErrorCode, SourceScanError};
+pub use source_stamp::{read_git_source_state, GitSourceState};

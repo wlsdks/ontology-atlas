@@ -6,7 +6,7 @@
 
 use serde::Serialize;
 
-use crate::review_refusal::ReviewRefusal;
+use crate::source_scan_error::SourceScanError;
 
 /// The size above which a reply that was not asked for whole becomes a compact review.
 pub const AUTOMATIC_LIMIT_BYTES: usize = 128 * 1024;
@@ -44,37 +44,37 @@ pub struct ModeArguments {
 /// leaves the choice to the size of the reply.
 pub fn resolve_import_review_mode(
     arguments: &ModeArguments,
-) -> Result<Option<ReviewMode>, ReviewRefusal> {
+) -> Result<Option<ReviewMode>, SourceScanError> {
     let requested = arguments
         .review_mode
         .or(arguments.has_focus_path.then_some(ReviewMode::Focus));
     if arguments.allow_large_response.is_some() && arguments.review_mode != Some(ReviewMode::Full) {
-        return Err(ReviewRefusal::failed(
+        return Err(SourceScanError::failed(
             "allowLargeResponse is only valid with reviewMode \"full\".",
         ));
     }
     if arguments.has_after_review_id && arguments.review_mode != Some(ReviewMode::Next) {
-        return Err(ReviewRefusal::failed(
+        return Err(SourceScanError::failed(
             "afterReviewId is only valid with reviewMode \"next\".",
         ));
     }
     if requested == Some(ReviewMode::Focus) && !arguments.has_focus_path {
-        return Err(ReviewRefusal::failed(
+        return Err(SourceScanError::failed(
             "reviewMode \"focus\" requires focusPath.",
         ));
     }
     if arguments.has_focus_path && requested != Some(ReviewMode::Focus) {
-        return Err(ReviewRefusal::failed(
+        return Err(SourceScanError::failed(
             "focusPath is only valid with reviewMode \"focus\" or with reviewMode omitted.",
         ));
     }
     if arguments.has_focus_options && requested != Some(ReviewMode::Focus) {
-        return Err(ReviewRefusal::failed(
+        return Err(SourceScanError::failed(
             "focusDirection, focusLimit, and focusAfterEdgeId are only valid in focus mode.",
         ));
     }
     if arguments.review_mode == Some(ReviewMode::Next) && arguments.reconcile == Some(false) {
-        return Err(ReviewRefusal::failed(
+        return Err(SourceScanError::failed(
             "reviewMode \"next\" requires reconcile:true because the review queue is a vault diff.",
         ));
     }
@@ -192,7 +192,7 @@ mod tests {
         assert_eq!(
             resolve_import_review_mode(&next_without_reconcile)
                 .expect_err("refused")
-                .message(),
+                .to_string(),
             "reviewMode \"next\" requires reconcile:true because the review queue is a vault diff."
         );
     }

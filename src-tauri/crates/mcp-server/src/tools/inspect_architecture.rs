@@ -6,8 +6,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use source_scan::{
     build_architecture_brief, find_architecture_profiles, read_git_source_state,
-    ArchitectureProfile, ImportScanOptions, MeasuredStamp, ProfileDocument, ProfileError,
-    ProfileErrorKind,
+    ArchitectureProfile, ImportScanOptions, MeasuredStamp, ProfileDocument,
 };
 
 use super::argument_checks::{optional_non_blank_text, optional_positive_integer};
@@ -16,7 +15,7 @@ use super::read_vault::read_vault;
 use crate::answer::ToolOutput;
 use crate::arguments::Arguments;
 use crate::dispatch::CallContext;
-use crate::error::{ErrorCode, ToolError};
+use crate::error::ToolError;
 use crate::surface::Surface;
 
 const MAX_FILES_MAX: f64 = 50_000.0;
@@ -28,14 +27,6 @@ const MAX_FILES_MAX: f64 = 50_000.0;
 )]
 fn count(number: f64) -> usize {
     number as usize
-}
-
-fn profile_failure(error: ProfileError) -> ToolError {
-    match error.kind {
-        ProfileErrorKind::Invalid => ToolError::invalid(error.message),
-        ProfileErrorKind::NotFound => ToolError::new(ErrorCode::NotFound, error.message),
-        ProfileErrorKind::Failed => ToolError::failed(error.message),
-    }
 }
 
 /// The profile `profile_slug` names, or the only one the vault holds. Refuses with a repair hint
@@ -66,8 +57,7 @@ fn select_profile<'a>(
 /// When and by what the measurement was made, and the commit it saw; `None` for a folder that is
 /// not under git, which has no commit to name.
 fn measured_stamp(root: &Path) -> Result<Option<MeasuredStamp>, ToolError> {
-    let state =
-        read_git_source_state(root).map_err(|error| ToolError::failed(error.to_string()))?;
+    let state = read_git_source_state(root)?;
     let now_ms = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map_or(0, |elapsed| {
@@ -99,7 +89,7 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
             frontmatter: document.frontmatter(),
         })
         .collect();
-    let profiles = find_architecture_profiles(&documents).map_err(profile_failure)?;
+    let profiles = find_architecture_profiles(&documents)?;
     let profile = select_profile(&profiles, profile_slug.as_deref())?;
 
     let scan = target.scan(&ImportScanOptions {

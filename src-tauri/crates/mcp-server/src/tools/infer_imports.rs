@@ -8,8 +8,7 @@ use source_scan::{
     build_import_impact_focus, build_next_relation_review, choose_automatic_import_delivery,
     reconcile_import_edges, resolve_import_review_mode, summarize_reconciliation, Delivery,
     DeliveryRefusal, FocusDirection, FocusRequest, ImportScan, ImportScanOptions, ModeArguments,
-    Reconciliation, ReconciliationSummary, ReviewMode, ReviewRefusal, DEFAULT_FOCUS_LIMIT,
-    MAX_FOCUS_LIMIT,
+    Reconciliation, ReconciliationSummary, ReviewMode, DEFAULT_FOCUS_LIMIT, MAX_FOCUS_LIMIT,
 };
 
 use super::argument_checks::{
@@ -39,16 +38,6 @@ const MAX_FILES_MAX: f64 = 50_000.0;
 )]
 fn count(number: f64) -> usize {
     number as usize
-}
-
-fn refusal(refusal: ReviewRefusal) -> ToolError {
-    if refusal.is_invalid() {
-        ToolError::invalid(refusal.message())
-    } else if refusal.is_not_found() {
-        ToolError::new(crate::error::ErrorCode::NotFound, refusal.message())
-    } else {
-        ToolError::failed(refusal.message())
-    }
 }
 
 /// What the call asked, once every argument is checked.
@@ -165,8 +154,7 @@ fn focus_answer(scan: &ImportScan, request: &Request) -> Result<ToolOutput, Tool
             limit: request.focus_limit.unwrap_or(DEFAULT_FOCUS_LIMIT),
             after_edge_id: request.focus_after_edge_id.as_deref(),
         },
-    )
-    .map_err(refusal)?;
+    )?;
     let package_evidence = package_evidence(scan, request);
     if package_evidence.is_some() {
         focus_review.interpretation.push_str(" This focus response covers legacy file edges only; use the explicit full-evidence call for typed Go package imports.");
@@ -215,7 +203,7 @@ fn delivery_failure(refused: DeliveryRefusal) -> ToolError {
 
 pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutput, ToolError> {
     let request = read_request(arguments)?;
-    let requested_mode = resolve_import_review_mode(&request.mode_arguments()).map_err(refusal)?;
+    let requested_mode = resolve_import_review_mode(&request.mode_arguments())?;
     let target = ScanTarget::open(context, request.root_path.as_deref())?;
     let scan = target.scan(&request.scan_options());
 
@@ -278,8 +266,7 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
             reconciliation,
             request.after_review_id.as_deref(),
             &scan.root_path,
-        )
-        .map_err(refusal)?;
+        )?;
         return ToolOutput::json(&ReviewAnswer {
             contract: "inferImportsReview:v1",
             delivery,

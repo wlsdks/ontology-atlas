@@ -8,7 +8,7 @@ use answer_format::utf16;
 
 use crate::import_edges::ImportEdge;
 use crate::import_reconciliation::{CodeCandidate, EvidenceQualification, Reconciliation};
-use crate::review_refusal::ReviewRefusal;
+use crate::source_scan_error::SourceScanError;
 
 #[derive(Debug, Serialize)]
 pub struct QueueOrdering {
@@ -301,7 +301,7 @@ pub fn build_next_relation_review(
     reconciliation: &Reconciliation,
     after_review_id: Option<&str>,
     root_path: &str,
-) -> Result<Option<NextRelationReview>, ReviewRefusal> {
+) -> Result<Option<NextRelationReview>, SourceScanError> {
     let queue = queue_of(reconciliation);
     let ids: Vec<String> = queue
         .iter()
@@ -312,7 +312,7 @@ pub fn build_next_relation_review(
         Some(after) => match ids.iter().position(|id| id == after) {
             Some(previous) => previous + 1,
             None => {
-                return Err(ReviewRefusal::not_found(format!(
+                return Err(SourceScanError::not_found(format!(
                     "afterReviewId was not found in the current import review queue: {after}. Omit afterReviewId to restart from the first current candidate."
                 )))
             }
@@ -412,6 +412,7 @@ mod tests {
     use crate::import_reconciliation::{reconcile_import_edges, VaultFacts};
     use crate::import_rollup::EdgeStats;
     use crate::import_scan::ModuleEdge;
+    use crate::source_scan_error::ScanErrorCode;
 
     fn module(from: &str, to: &str) -> ModuleEdge {
         let mut stats = EdgeStats::default();
@@ -464,6 +465,6 @@ mod tests {
         );
         let lost = build_next_relation_review(&found, Some("import-review:x:y"), "/repo")
             .expect_err("unknown cursor");
-        assert!(lost.is_not_found());
+        assert!(lost.code() == ScanErrorCode::NotFound);
     }
 }
