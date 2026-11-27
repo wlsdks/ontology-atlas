@@ -38,20 +38,9 @@ type RealProbe = (
     fn(&str, &Path, &[&str], &str) -> Option<bool>,
 );
 
-// Output goes to null: `claude auth status` prints the email and organization ID.
-// One log line per probe keeps the id, exit code and duration, never output.
 fn run_login_probe(runtime_id: &str, path: &Path, args: &[&str], child_path: &str) -> Option<bool> {
-    use std::process::{Command, Stdio};
     let started = std::time::Instant::now();
-    let mut command = Command::new(path);
-    crate::child_process::no_console::hide_console(&mut command);
-    command
-        .args(args)
-        .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null());
-    // The rebuilt PATH, or the `claude` wrapper cannot find node and reads as signed out.
-    apply_runtime_environment(&mut command, runtime_id, child_path);
+    let mut command = login_probe_command(runtime_id, path, args, child_path);
     let mut child = match command.spawn() {
         Ok(child) => child,
         Err(err) => {
@@ -104,6 +93,28 @@ fn run_login_probe(runtime_id: &str, path: &Path, args: &[&str], child_path: &st
             }
         }
     }
+}
+
+// Output goes to null: `claude auth status` prints the email and organization ID.
+// One log line per probe keeps the id, exit code and duration, never output.
+fn login_probe_command(
+    runtime_id: &str,
+    path: &Path,
+    args: &[&str],
+    child_path: &str,
+) -> std::process::Command {
+    use std::process::{Command, Stdio};
+    let mut command = Command::new(path);
+    crate::child_process::no_console::hide_console(&mut command);
+    crate::child_process::working_dir::run_from_temp_dir(&mut command);
+    command
+        .args(args)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
+    // The rebuilt PATH, or the `claude` wrapper cannot find node and reads as signed out.
+    apply_runtime_environment(&mut command, runtime_id, child_path);
+    command
 }
 
 pub(crate) fn real_probe() -> RealProbe {
