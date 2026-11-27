@@ -12,38 +12,34 @@ decisions: []
 **In one minute.**
 
 - **Verdict: possible, with no model and nothing leaving the computer.** Claude Code writes every
-  model call's token counts into its session files on this computer. A pass over 30 days of them
-  (1,031 files, 6.3 GB) took 29 s and peaked at 359 MB in a Node script.
-- **What it found here.** Of 19.89B context tokens processed in 30 days, turns above 200K context
-  carried 68.3%, and context loaded before any work carried 19.7%. Claude Code compacted 388 times,
-  at 367K tokens on average. Cache misses rewrote 19.7M tokens.
-- **The view.** Harness gets a view, **Tokens**, beside Improve. One press reads the files and
-  shows three shapes: a 30-day strip of context per turn, one bar split into "loaded at start",
-  "work" and "beyond 200K", and five findings sized on one scale. Each finding names where it
-  happened (session, turn, tokens) and what to change, with Copy.
-- **Did a change help?** Pick a date, or a commit that changed the agent files. Each figure is
-  compared before and after it against the usual day-to-day range, and inside that range the view
-  says "No detectable difference". Today that range is ±16%.
-- **Money** appears only as Claude Code's own estimate, labelled so, never as a bill.
-- **Why Atlas.** ccusage and the Anthropic Console show what was spent. Atlas shows which habit
-  or setting caused it, links it to this repository's agent files and their Git history, and says
-  honestly whether a fix changed anything.
+  model call's token counts into session files here; 30 days (1,031 files, 6.3 GB) took a Node
+  script 29 s and 359 MB.
+- **What it found.** Of 19.89B context tokens in 30 days, turns above 200K context carried 68.3%
+  and context loaded before any work 19.7%; 388 automatic compactions at 367K tokens on average;
+  cache misses rewrote 19.7M tokens.
+- **The view.** Harness › **Tokens**, beside Improve. One press draws a 30-day strip of context per
+  turn, one bar split into loaded at start, work and beyond 200K, and five findings on one scale,
+  each with where it happened (session, turn, tokens) and what to change, with Copy.
+- **Did a change help?** Pick a date or a commit that changed the agent files. Each figure is
+  compared against the usual day-to-day range (today ±16%); inside it the view says "No detectable
+  difference". **Money** is only Claude Code's own estimate, labelled so.
+- **Why Atlas.** ccusage and the Anthropic Console show what was spent. Atlas shows which habit or
+  setting caused it, ties it to this repository's agent files and their commits, and says honestly
+  whether a fix changed anything.
 
-**Words.** A *turn* is one model response, counted once per `message.id`. A turn's *context* is
+**Words.** A *turn* is one model response, counted once per `message.id`; its *context* is
 `input_tokens + cache_read_input_tokens + cache_creation_input_tokens`. A *run* is one session
-file: a main session, or a subagent's under `<session>/subagents/`. A *program run* is one Claude
-Code process, which its `cost-state` records share as `startTime`. A *typed message* is defined as
-in `docs/specs/2026-11-27-harness-self-improvement.md:37-42`. The *mark* is the date chosen for
-comparing before and after.
+file, a main session's or a subagent's. A *program run* is one Claude Code process, which its
+`cost-state` records share as `startTime`. A *typed message* is as in
+`docs/specs/2026-11-27-harness-self-improvement.md:38-42`. The *mark* is the comparison date.
 
 ## Person and moment
 
 1. **The owner**, 2026-11-28, translated from Korean: "A feature that, in one go, sees through
    where my token efficiency is leaking. As an inspection feature, inside the Harness tab. Is it
    possible or not?" That day the repository moved every agent to Opus
-   (`docs/engineering/agent-effort.md:9-14`), a change whose effect he will want to see. Today he
-   measures with `pnpm harness:tokens`, a contributor script (Today). Nobody has been watched using
-   a token view; criterion 1 captures the first look.
+   (`docs/engineering/agent-effort.md:9-13`), a change whose effect he will want to see. Nobody has
+   been watched using a token view; criterion 1 captures the first look.
 2. **Someone learning coding agents (not observed)** may not know that every turn re-reads the
    whole context. The split bar shows it as a shape, without the sentence.
 3. **Someone who wants an ontology without agents** has no session files. The view shows `empty.*`
@@ -54,35 +50,31 @@ comparing before and after.
 Read at `origin/main` `1edb4d13d8`. No running screen was looked at.
 
 - **Harness has two built views** (`src/views/architecture/lib/harness-view-state.ts:1`); Improve
-  is specified, not built (`.claude/rules/surfaces.md:167-183`), and its view label exists
-  (`messages/en/harness.json:8`). No Atlas code reads session usage. The vault has no Harness
+  is specified, not built (`.claude/rules/surfaces.md:167-182`), its label in
+  `messages/en/harness.json:8`. No Atlas code reads session usage. The vault has no Harness
   capability; the nearest is `capabilities/agent-work-visibility`.
-- **The contributor script** `scripts/harness/harness-token-report.mjs` sums turns per agent type
-  over 14 days (`:9`). It picks folders whose name *contains* the repository name (`:51`), so other
-  repositories' scratchpad sessions count, and it reads the subagent's `description` text (`:63`).
-- **Settings in play:** `autoCompactWindow` 400000 and `effortLevel` high
-  (`.claude/settings.json:7-8`); every agent file now says `model: opus`.
+- **The contributor script** `scripts/harness/harness-token-report.mjs` (`pnpm harness:tokens`)
+  picks folders whose name *contains* the repository name (`:51`), so colliding repositories count,
+  and reads the subagent's `description` text (`:63`).
+- **Settings:** `autoCompactWindow` 400000, `effortLevel` high (`.claude/settings.json:7-8`).
 - **Reusable parts:** the shared background card (`src/features/work-run/model/work-run.ts:24`,
-  `src/app/providers/AppShell.tsx:111`); Improve's config-home discovery, `cwd` check and
-  secret-shaped line filter (`docs/specs/2026-11-27-harness-self-improvement.md:155-164`, `:199-202`,
-  `:231-238`); the Workshop's subagent meta reading (`.claude/rules/surfaces.md:139`).
-- **Measured on the owner's Mac, 2026-11-28,** by scratchpad scripts that kept only numbers, enums,
+  `src/app/providers/AppShell.tsx:111`); Improve's config homes, `cwd` check and secret-shaped
+  line filter (`docs/specs/2026-11-27-harness-self-improvement.md:155-164`, `:199-202`,
+  `:231-238`); the Workshop's subagent meta read (`.claude/rules/surfaces.md:139`).
+- **Measured on the owner's Mac, 2026-11-28,** by scratchpad scripts keeping only numbers, enums,
   ids and sizes (not committed):
-  - Every sampled assistant record (8,564) carries `message.usage`, with `model` and `effort` beside
-    it. Claude Code writes one record per content block, so turns are deduplicated by `message.id`.
-  - Claude Code also records `diagnostics.cache_miss_reason` with missed tokens,
-    `compact_boundary` with `preTokens` and `postTokens`, `api-request-shape` (the system prompt
-    and tool list *as text*, with a `shapeHash`), and `cost-state`.
-  - All four config homes reach one `projects` folder (as Improve found). Of 1,031 files in folders
-    whose name contains `ontology-atlas`, 611 runs (22 main, 589 subagent) have a `cwd` in this
-    repository. Excluded: 247 sessions of other repositories whose folder names collide, and 105
-    from a removed worktree outside the checkout; the 420 excluded hold 4.11B tokens.
-  - The 611 runs: 97,060 turns, 19.89B context tokens, 98.2% of them cache reads; 349M cache
-    writes; 91.5M output.
-  - **`cost-state` is a running total per program run, not per file.** One program run wrote it
-    into two session files. In the main checkout's folder, summing the last value per file gives
-    $10,014; the largest value per program run gives $7,493. Its `modelUsage` tokens do not match
-    the file's own turns (one file: 157M tokens with subagents, its `cost-state` 5.46B).
+  - All 8,564 sampled assistant records carry `message.usage`, `model` and `effort`; one record is
+    written per content block, so turns are deduplicated by `message.id`. Other records:
+    `diagnostics.cache_miss_reason` with missed tokens, `compact_boundary` with `preTokens` and
+    `postTokens`, `cost-state`, and `api-request-shape`, which holds the system prompt and tool list
+    *as text* with a `shapeHash`.
+  - Four config homes reach one `projects` folder. Of 1,031 files in folders whose name contains
+    `ontology-atlas`, 611 runs (22 main, 589 subagent) have a `cwd` here: 97,060 turns, 19.89B
+    context tokens (98.2% cache reads), 349M cache writes, 91.5M output. Excluded, 4.11B tokens:
+    247 sessions of colliding repositories and 105 from a removed worktree outside the checkout.
+  - **`cost-state` is a running total per program run, not per file.** One program run wrote into
+    two files; in the main checkout's folder, the last value per file sums to $10,014, the largest
+    per program run to $7,493. Its tokens do not match the file's (157M against 5.46B in one).
   - Daily context per turn over 16 days: mean 204K, standard deviation 16K (8%).
 
 **Unknown:** when Claude Code writes `cost-state`; the meaning of `messages_changed`,
@@ -94,8 +86,8 @@ Rust reader is on the same files.
 | Pattern | Mechanism, and why it worked | How it fails | What Atlas borrows (mechanism only) |
 |---|---|---|---|
 | [ccusage](https://github.com/ryoppippi/ccusage) | Reads coding agents' local usage files offline; daily, session and 5-hour block reports; prices from a LiteLLM snapshot. No account, no proxy. | Totals with no cause: shows that a day cost more, not why; prices lag the snapshot. | Reading local session files, offline; nothing else. |
-| Anthropic Console usage and cost ([help](https://support.claude.com/en/articles/9534590-cost-and-usage-reporting-in-console), [API](https://platform.claude.com/docs/en/build-with-claude/usage-cost-api)) | The vendor's own counts split by model, key and token type, cache reads separate. Trusted because it is the source. | API keys only, not subscription sessions; no session or turn. | Token types kept separate; the vendor's own figure as the only money. |
-| [Langfuse](https://langfuse.com/docs/observability/features/token-and-cost-tracking) | Traces each call with usage in non-overlapping buckets; dashboards by model, user and time; no estimates without counts. | Needs instrumentation and a server; dashboards drift into alarm fatigue. | Disjoint buckets (every token counted once); "unknown" instead of a guess. |
+| Anthropic Console usage and cost ([help](https://support.claude.com/en/articles/9534590-cost-and-usage-reporting-in-console), [API](https://platform.claude.com/docs/en/build-with-claude/usage-cost-api)) | The vendor's own counts split by model, key and token type, cache reads separate. Trusted because it is the source. | No session or turn; subscription use likely absent (assumption). | Token types kept separate; the vendor's own figure as the only money. |
+| [Langfuse](https://langfuse.com/docs/observability/features/token-and-cost-tracking) | Traces each call with usage in non-overlapping buckets; dashboards by model, user and time; no estimates without counts. | Needs instrumentation and a server; many charts, no verdict, invite alarm fatigue (assumption). | Disjoint buckets (every token counted once); "unknown" instead of a guess. |
 | [Helicone](https://docs.helicone.ai/features/advanced-usage/custom-properties) | A proxy tags requests with session and properties, so cost groups by workflow. | Sees only traffic routed through it; a proxy is a send. | Grouping by session and agent type, from ids already in the file. |
 | Lighthouse opportunities and [variability](https://github.com/GoogleChrome/lighthouse/blob/main/docs/variability.md) | Each finding carries its evidence and fix, sorted by size; "beware of variability before drawing conclusions" about a change. | Estimated savings read as promises. | Finding, evidence and fix together; a noise band before any verdict; no savings promise. |
 
@@ -116,13 +108,13 @@ commits, and the comparison declines to call noise a change.
 | 6 | One-hour cache lifetime | 63.6M written; 976 gaps of 5–60 min where it helped | not a leak today | Later |
 | 7–10 | Re-reads, huge outputs, failed calls and polling, tiny subagents | 8.5 MB; 37.1 MB; 2,166 errors; 599K tokens | small | Later |
 
-Leaks 1–5 need only counts the files already hold; together they explain most of the context
-processed. Leaks 7–8 need tool inputs and outputs, a wider read for little gain.
+Leaks 1–5 need only counts the files already hold and cover most of the context processed; 7–8
+need tool inputs and outputs, a wider read for little gain.
 
-**Cause, not symptom.** The tokens are spent by session habits and by the harness: settings, agent
-files, tool servers. Harness is where those live, so the inspector belongs there, as its own view:
-Improve proposes line edits checked against Git; this measures use over time. Existing Harness
-views do not change.
+**Cause, not symptom.** Tokens are spent by session habits and the harness (settings, agent files,
+tool servers), which Harness holds. It is its own view because Improve proposes line edits checked
+against Git, while this measures use over time. Existing Harness views do not change. Record:
+`docs/records/decisions/2026-11-28-harness-token-inspector-read-d55c209e-b3dd-4889-aff4-0b4f1a84ff4e.md`.
 
 | Option | Gives back | Costs | Verdict |
 |---|---|---|---|
@@ -134,30 +126,30 @@ views do not change.
 
 ## Flow
 
-1. When the person opens Harness › **Tokens** in the app, Atlas lists session files changed in
-   the last 30 days in folders whose name begins with the encoded checkout or a listed worktree,
-   and shows `stage.*` with `stage.files`. Nothing inside a file is read yet.
-2. When they press **Inspect token use**, Atlas reads files newest first. The strip grows day by
-   day from the right, the split bar's parts widen, and the five finding bars grow on one scale.
-   Rows re-sort once, at the end.
+1. When the person opens Harness › **Tokens** in the app, Atlas lists this repository's session
+   files of the last 30 days and shows `stage.*` with `stage.files`. No file is read yet.
+2. When they press **Inspect token use**, Atlas reads files newest first: the strip grows day by
+   day from the right, the split bar's parts widen, the five finding bars grow on one scale. Rows
+   re-sort once, at the end.
 3. When they switch tabs, the inspection continues and the shared card shows `card.running`.
-4. When it ends, motion stops and the largest finding is selected. Its detail shows the fact, the
-   evidence rows (`evidence.row`, the 20 largest) and the fix with **Copy**.
-5. When they open an evidence row and press **Show the message before this turn**, Atlas reads
-   that one file again and shows the typed message before that turn as plain text, at most 280
-   characters, until the panel closes.
-6. When they pick a mark, from a date or a tick for a commit that changed `.claude/settings.json`,
+4. When it ends, motion stops and the largest finding is selected: its fact, the 20 largest
+   evidence rows (`evidence.row`) and the fix with **Copy**.
+5. When they press **Show the message before this turn** on an evidence row, Atlas re-reads that
+   file and shows the typed message before the turn as plain text, at most 280 characters, until
+   the panel closes.
+6. When they pick a mark, a date or a tick for a commit that changed `.claude/settings.json`,
    `.claude/agents/`, `.claude/rules/`, `AGENTS.md` or `.mcp.json`, the strip draws the usual range
-   from the days before it. Each figure says lower, higher or `compare.same`.
-7. **Evidence missing or wrong.** A record type or key Atlas does not know makes the figures that
-   need it `unknown`, never zero (`partial.unknown`). A file that changed after the inspection
-   refuses to show text (`evidence.changed`). A config home it cannot read is named
-   (`error.home`); the others still count. A run whose `cwd` was a removed worktree outside the
-   checkout is counted only in `partial.elsewhere`.
-8. When they press **Inspect again**, figures are rebuilt from the files; nothing was stored but
-   the mark.
+   of the days before it, and each figure says `compare.lower`, `compare.higher` or `compare.same`.
+7. **Evidence missing or wrong.** An unknown record type or key makes the figures that need it
+   `unknown`, never zero (`partial.unknown`). A file changed after the inspection shows no text
+   (`evidence.changed`). An unreadable config home is named (`error.home`); the others count. A
+   removed worktree outside the checkout is only counted (`partial.elsewhere`).
+8. When they press **Inspect again**, figures are rebuilt from the files.
 
-## What is read, and what is never kept
+## First slice: what it reads, keeps and shows
+
+Slice 1 is the Tokens view with findings 1–5, evidence, Copy, the comparison and Claude Code's
+estimate, on macOS and Windows. No model, no write, no send, no cache.
 
 - **Which files.** Config homes as Improve finds them. Inside `projects/`, only folders whose name
   begins with the encoded checkout path or a listed worktree's (every character outside `a-z`,
@@ -249,8 +241,10 @@ Plural keys use ICU plurals in English; the table shows the `other` form.
 - **Zero, one, largest.** No files: Empty. One session of one turn: every shape draws one day;
   comparison reads `compare.tooFew`. Largest measured: 611 runs, 97,060 turns, one file of 603 MB.
 - **First run.** No mark; the strip shows no band until one is picked.
-- **Hangul.** A folder or worktree path with Hangul encodes to `-` per character as Claude Code
-  does, and `cwd` comparison uses the real path; an opened message is cut on a character boundary.
+- **Hangul and long paths.** A Hangul character encodes to one `-`, as Claude Code's
+  `[^a-zA-Z0-9]` rule does per UTF-16 unit; a name Claude Code cut and hashed for length matches on
+  its kept prefix; `cwd` is always compared as the real path. An opened message is cut on a
+  character boundary.
 - **Moved, renamed, unreadable.** A file that vanishes mid-read is Partial. A checkout moved since
   the sessions ran: its old `cwd` counts only in `partial.elsewhere`.
 - **Two edits at once.** Claude Code appends while Atlas reads: Atlas reads up to the size it saw
@@ -280,8 +274,9 @@ Plural keys use ICU plurals in English; the table shows the `other` form.
 2. **The right files.** Given `tests/fixtures/token-inspector-files/`: a colliding folder with
    another repository's `cwd`; a removed worktree under the checkout; a removed one outside it; a
    subagent counted by its parent; one turn in three records; four homes linked to one folder; a
-   folder whose name does not match; Windows-shaped paths in both encodings. Each counts as the
-   section above says, and the unmatched folder is never opened (Rust tests with an open-call log).
+   folder whose name does not match; a name Claude Code cut with a hash; Windows-shaped paths in
+   both encodings. Each counts as "Which files" says, and the unmatched folder is never opened (Rust
+   tests with an open-call log).
 3. **The right numbers.** Given fixture sessions with known totals, every figure matches exactly;
    an unknown key shows `unknown`, never 0; two files of one program run count its money once; a
    `hasUnknownModelCost` run shows `money.partial` (Rust tests).
@@ -311,9 +306,9 @@ Plural keys use ICU plurals in English; the table shows the `other` form.
    than it seems. Answer: an allow-list of record types and keys; anything else degrades to
    `unknown` with a count (criteria 3, 4); fixtures taken from the current Claude Code version.
 2. **People see numbers and nothing changes.** Fixes are habits, and an 8% daily noise hides small
-   gains. Answer: each finding names its own measure, and the comparison says when it is noise. The
-   2026-11-28 move to Opus is a certain change the first comparison must show (criterion 1); if it
-   does not, the comparison is wrong.
+   gains. Answer: each finding names its own measure, and the comparison says when it is noise.
+   Probe: three days after 2026-11-28, Model and effort marked there must read `compare.lower` for
+   Fable's share; if it does not, the comparison is wrong, and it is fixed before anything else.
 3. **The pass is too slow or heavy** (29 s and 359 MB in Node; the files grow). Answer: Rust
    streams with a key prefilter, newest files first, so findings appear early; criterion 7 sets the
    budget, and its failure starts Later 5.
@@ -330,11 +325,14 @@ Plural keys use ICU plurals in English; the table shows the `other` form.
 
 ## Owner question
 
-None. "Is it possible?" is answered yes. The lead decided the rest: a separate view, numbers only,
-money only from Claude Code, this repository only. Reversing any of them changes this spec, not a
-one-way door: nothing is written and the read can be switched off by removing the view.
+None. "Is it possible?" is answered yes. Decided here, each with its reversal: a separate view (fold
+it into Improve by moving its rows); numbers only (a wider read needs a new record); money only
+from Claude Code (pricing tokens would need a price source); this repository only (the owner's
+words). Reading the session files is the one-way part, under `d55c209e`; removing the view stops it.
 
 ## Revisions
 
 - 2026-11-28: first draft, on a previous run's measurements, rechecked for the noise band and
   `cost-state`, which proved to be a running total per program run.
+- 2026-11-28: tightened; named the record `d55c209e` and the tenth `surfaces.md` exception; added
+  hashed long folder names, the three-day probe of the Opus move, and a "First slice" section.
