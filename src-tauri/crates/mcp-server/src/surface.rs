@@ -155,10 +155,6 @@ impl Surface {
             .and_then(|position| self.tools.get(*position))
     }
 
-    pub fn is_read_tool(&self, name: &str) -> bool {
-        self.read_tools.contains(name)
-    }
-
     /// Every registered tool, retired ones included, that is not a read tool: the tools that write.
     pub fn write_tool_names(&self) -> Vec<&str> {
         self.tools

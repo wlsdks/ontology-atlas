@@ -11,7 +11,8 @@
 //! whole answer. The `_meta` hint carries no authority; it lets the app bind the card to the call.
 //!
 //! A dry run changes nothing, so it asks nothing: pausing it would train people to click through the
-//! card that matters.
+//! card that matters. That is decided before this module is reached: a dry run gets a
+//! [`crate::write_checkpoint::PreviewPermit`], which never asks.
 
 mod consent_refusal;
 mod person_answer;
@@ -29,13 +30,13 @@ use crate::protocol::{ClientAnswer, ClientReply, MAX_OPEN_REQUESTS};
 use crate::write_tool::WriteTool;
 
 pub use consent_refusal::{ConsentRefusal, QuestionProblem};
-pub use person_answer::PersonAnswer;
+pub use person_answer::{Action, PersonAnswer};
 
-/// How long a person has to answer. The JavaScript server's SDK gave 60 seconds, which is less than
-/// it takes to read a diff in a card; a client with a shorter limit of its own cancels the call
-/// sooner and the wait ends then. Waiting longer holds one thread and an agent that is waiting on a
-/// person's decision anyway, and a refusal at the end costs a second card, never a write.
-pub const ANSWER_WINDOW: Duration = Duration::from_secs(5 * 60);
+/// How long a person has to answer. The JavaScript server's SDK gave a request 60 seconds, and
+/// clients built on it give up at the same moment: a yes that arrives after the agent was told the
+/// call failed is worse than a second question, so the wait ends when theirs does. A refusal at the
+/// end costs a second card, never a write.
+pub const ANSWER_WINDOW: Duration = Duration::from_secs(60);
 
 #[derive(Serialize)]
 struct Meta {
@@ -79,7 +80,7 @@ fn ask_within(
     arguments: &Arguments,
     window: Duration,
 ) -> Result<(), ToolError> {
-    if !context.config().modes.write_consent || arguments.is_dry_run() {
+    if !context.config().modes.write_consent {
         return Ok(());
     }
     if !context.can_ask_client() {
@@ -103,13 +104,13 @@ fn ask_within(
         ClientAnswer::Replied(ClientReply::Result(result)) => match PersonAnswer::read(&result) {
             Some(answer) if answer.approves() => Ok(()),
             Some(answer) => Err(ConsentRefusal::NotApproved {
-                action: answer.action.word().to_string(),
+                action: answer.action,
                 summary,
             }
             .into()),
             None => Err(failed(QuestionProblem::UnreadableAnswer)),
         },
-        ClientAnswer::Replied(ClientReply::Failure { message, .. }) => {
+        ClientAnswer::Replied(ClientReply::Failure { message }) => {
             Err(failed(QuestionProblem::ClientRefused(message)))
         }
         ClientAnswer::TimedOut => Err(failed(QuestionProblem::NoAnswerInTime(window))),
@@ -117,30 +118,5 @@ fn ask_within(
         ClientAnswer::SessionEnded => Err(failed(QuestionProblem::ConnectionClosed)),
         ClientAnswer::ClientUnreachable => Err(failed(QuestionProblem::ClientUnreachable)),
         ClientAnswer::TooManyOpen => Err(failed(QuestionProblem::TooManyOpen(MAX_OPEN_REQUESTS))),
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn the_question_is_one_message_with_no_fields_in_the_order_clients_already_read_it() {
-        let question = serde_json::to_string(&Question {
-            mode: "form",
-            meta: Meta {
-                codex_approval_kind: "mcp_tool_call",
-            },
-            message: "Edit concept a. Apply this change to the vault?",
-            requested_schema: MessageOnly {
-                kind: "object",
-                properties: NoFields {},
-            },
-        })
-        .expect("writes");
-        assert_eq!(
-            question,
-            r#"{"mode":"form","_meta":{"codex_approval_kind":"mcp_tool_call"},"message":"Edit concept a. Apply this change to the vault?","requestedSchema":{"type":"object","properties":{}}}"#
-        );
     }
 }

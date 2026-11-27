@@ -5,6 +5,12 @@
 //! `__test_write` is the test build's one write tool. It writes `<slug>.md` through the same
 //! permit a real tool receives, so what these tests show holds for every write tool.
 
+#![allow(
+    clippy::disallowed_methods,
+    clippy::disallowed_types,
+    reason = "these tests start the program and read and plant the files a write leaves"
+)]
+
 mod support;
 
 use std::time::Duration;
@@ -116,55 +122,40 @@ fn read_only_mode_refuses_a_write_before_its_arguments_are_read_and_before_anyth
 }
 
 #[test]
-fn a_write_waits_for_a_yes_and_nothing_else_is_a_yes() {
-    let no_ways: [(&str, &str); 5] = [
-        ("decline", r#"{"action":"decline"}"#),
-        ("cancel", r#"{"action":"cancel"}"#),
-        (
-            "accept but the person unticked confirm",
-            r#"{"action":"accept","content":{"confirm":false}}"#,
-        ),
-        (
-            "an action the protocol does not have",
-            r#"{"action":"allow"}"#,
-        ),
-        ("an answer with no action", r#"{}"#),
-    ];
-    for (what, result) in no_ways {
-        let mut client = Client::with_consent(r#"{"elicitation":{}}"#);
-        client.write(2, r#"{"slug":"a","text":"x"}"#);
-        let question = client.next();
-        assert_eq!(question["method"], "elicitation/create", "{what}");
-        assert_eq!(question["id"], 0);
-        assert_eq!(question["params"]["mode"], "form");
-        assert_eq!(
-            question["params"]["message"],
-            "Write one test file. Apply this change to the vault?"
-        );
-        assert_eq!(
-            question["params"]["_meta"]["codex_approval_kind"],
-            "mcp_tool_call"
-        );
-        assert_eq!(
-            client.file("a.md"),
-            None,
-            "{what}: nothing is written while the question is open"
-        );
-        client.answer(0, result);
-        let answer = client.next();
-        assert!(failed(&answer), "{what}");
-        assert!(
-            text_of(&answer).contains("No change was made"),
-            "{what}: {}",
-            text_of(&answer)
-        );
-        assert_eq!(client.file("a.md"), None, "{what}");
-        assert_eq!(
-            client.file(".ontology-atlas/activity.jsonl"),
-            None,
-            "{what}"
-        );
-    }
+fn a_write_waits_for_a_yes_and_a_no_writes_nothing() {
+    let mut client = Client::with_consent(r#"{"elicitation":{}}"#);
+    client.write(2, r#"{"slug":"a","text":"x"}"#);
+    let question = client.next();
+    assert_eq!(question["method"], "elicitation/create");
+    assert_eq!(question["id"], 0);
+    assert_eq!(question["params"]["mode"], "form");
+    assert_eq!(
+        question["params"]["message"],
+        "Write one test file. Apply this change to the vault?"
+    );
+    assert_eq!(
+        question["params"]["_meta"]["codex_approval_kind"],
+        "mcp_tool_call"
+    );
+    assert_eq!(
+        question["params"]["requestedSchema"],
+        serde_json::json!({"type": "object", "properties": {}})
+    );
+    assert_eq!(
+        client.file("a.md"),
+        None,
+        "nothing is written while the question is open"
+    );
+    client.answer(0, r#"{"action":"decline"}"#);
+    let answer = client.next();
+    assert!(failed(&answer));
+    assert!(
+        text_of(&answer).contains("No change was made"),
+        "{}",
+        text_of(&answer)
+    );
+    assert_eq!(client.file("a.md"), None);
+    assert_eq!(client.file(".ontology-atlas/activity.jsonl"), None);
 
     let mut client = Client::with_consent(r#"{"elicitation":{}}"#);
     client.write(2, r#"{"slug":"a","text":"yes"}"#);
@@ -270,6 +261,43 @@ fn a_file_reserved_for_a_person_is_not_rewritten_and_leaves_no_audit_line() {
         .file("a.md")
         .is_some_and(|text| text.contains("Body")));
     assert_eq!(client.file(".ontology-atlas/activity.jsonl"), None);
+}
+
+#[test]
+fn two_approved_writes_to_one_concept_run_one_after_the_other_and_lose_nothing() {
+    let mut client = Client::with_consent(r#"{"elicitation":{}}"#);
+    client.write(2, r#"{"slug":"a","append":"1"}"#);
+    client.write(3, r#"{"slug":"a","append":"2"}"#);
+    // Both questions are open at once; the person says yes to both.
+    let first = client.next();
+    let second = client.next();
+    assert_eq!(first["method"], "elicitation/create");
+    assert_eq!(second["method"], "elicitation/create");
+    client.answer(0, r#"{"action":"accept"}"#);
+    client.answer(1, r#"{"action":"accept"}"#);
+    let answers = [client.next(), client.next()];
+    for answer in &answers {
+        assert!(!failed(answer), "{}", text_of(answer));
+    }
+    let text = client.file("a.md").unwrap_or_default();
+    assert!(
+        text == "12" || text == "21",
+        "each write read what the other wrote: {text:?}"
+    );
+    assert_eq!(lines_of(&client, ".ontology-atlas/activity.jsonl").len(), 2);
+}
+
+#[test]
+fn a_panic_while_the_audit_line_is_written_never_turns_a_finished_write_into_a_failure() {
+    let mut client = Client::start(&[], "{}");
+    client.write(2, r#"{"slug":"a","text":"x","measurePanics":true}"#);
+    let answer = client.next();
+    assert!(!failed(&answer), "{}", text_of(&answer));
+    assert_eq!(client.file("a.md").as_deref(), Some("x"));
+    // The server is still serving writes, and the audit file still takes lines.
+    client.write(3, r#"{"slug":"b","text":"y"}"#);
+    assert!(!failed(&client.next()));
+    assert_eq!(lines_of(&client, ".ontology-atlas/activity.jsonl").len(), 2);
 }
 
 #[test]

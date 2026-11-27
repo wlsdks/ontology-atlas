@@ -8,9 +8,10 @@
 use answer_format::json::to_string;
 use serde::Serialize;
 
-use super::utc_time::iso_8601;
-use super::vault_sidecar::{SidecarError, VaultSidecar};
 use super::write_record::ActivityContent;
+use super::AuditError;
+use answer_format::iso_time::to_iso_string;
+use confined_files::{SidecarError, VaultSidecar};
 
 const ACTIVITY_FILE: &str = "activity.jsonl";
 /// Rotation cap: past it, the first half is dropped.
@@ -38,7 +39,7 @@ fn line_for(
 ) -> Result<String, serde_json::Error> {
     to_string(&ActivityLine {
         v: 1,
-        at: iso_8601(now_ms),
+        at: to_iso_string(now_ms),
         tool,
         target: &content.target,
         summary: &content.summary,
@@ -56,9 +57,8 @@ pub fn append(
     content: &ActivityContent,
     agent: Option<&str>,
     now_ms: i64,
-) -> Result<(), SidecarError> {
-    let line = line_for(tool, content, agent, now_ms)
-        .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
+) -> Result<(), AuditError> {
+    let line = line_for(tool, content, agent, now_ms)?;
     sidecar.append_line(ACTIVITY_FILE, &line)?;
     // A failed rotation never hides that the line was recorded.
     let _ = rotate_if_needed(sidecar);

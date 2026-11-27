@@ -5,24 +5,33 @@
 
 mod activity_log;
 mod agent_heartbeat;
+mod map_analysis_lines;
 mod map_analysis_record;
 mod record_shapes;
-mod unique_id;
-mod utc_time;
-mod vault_sidecar;
 mod write_record;
 
 use std::path::PathBuf;
 use std::sync::{Mutex, PoisonError};
 
+use confined_files::{SidecarError, VaultSidecar};
+use thiserror::Error;
+
 use crate::write_tool::WriteTool;
 
 pub use map_analysis_record::{MapAnalysisRecorder, Recorded, RecorderInputs};
-pub use vault_sidecar::{SidecarError, VaultSidecar};
 pub use write_record::{
     AbilityShare, ActivityContent, AreaShare, ConceptEffect, ShareCounts, ShareMeasure, WriteDone,
     WriteRecord,
 };
+
+/// Why an audit line was not written.
+#[derive(Debug, Error)]
+pub enum AuditError {
+    #[error(transparent)]
+    Sidecar(#[from] SidecarError),
+    #[error("the line could not be written as JSON: {0}")]
+    Line(#[from] serde_json::Error),
+}
 
 /// One server process's audit lines for one vault.
 pub struct AuditLog {
@@ -55,7 +64,7 @@ impl AuditLog {
         tool: WriteTool,
         client_name: &str,
         record: WriteRecord,
-    ) -> Result<(), SidecarError> {
+    ) -> Result<(), AuditError> {
         let WriteRecord::Wrote {
             activity,
             concepts,

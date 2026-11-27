@@ -31,6 +31,11 @@ thiserror = "2"
 # (`EACCES`). The app already links this version (through tempfile).
 rustix = { version = "1", default-features = false, features = ["std", "fs"] }
 
+[target.'cfg(windows)'.dependencies]
+# A sidecar file's identity, link count and change time from its open handle; the app already links
+# this exact version (vault-index reads the same facts for its stamps).
+windows-sys = { version = "=0.61.2", features = ["Win32_Foundation", "Win32_Storage_FileSystem"] }
+
 [features]
 # Pause points a test parks a racing edit at (`before_commit`, `before_entry`). The released
 # program never enables it; the crate's own tests do, through the dev-dependency below.

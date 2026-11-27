@@ -5,6 +5,7 @@ use std::time::Duration;
 
 use thiserror::Error;
 
+use super::person_answer::Action;
 use crate::error::ToolError;
 
 /// Why the question could not be put to a person or came back without a yes.
@@ -20,7 +21,7 @@ where the client owns the gate."
     #[error("Asking for permission failed ({0}). No change was made.")]
     QuestionFailed(QuestionProblem),
     #[error("The change was not approved ({action}). No change was made: {summary}.")]
-    NotApproved { action: String, summary: String },
+    NotApproved { action: Action, summary: String },
 }
 
 /// What went wrong between the question and a person's answer.

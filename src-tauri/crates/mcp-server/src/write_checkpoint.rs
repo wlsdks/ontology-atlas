@@ -1,15 +1,28 @@
 //! The one gate every write tool passes, in the order the checks must run: read-only mode, then the
-//! person's consent, then the write itself with its reservation rule.
+//! person's consent, then the session's write lock, then the write itself with its reservation rule.
 //!
-//! A write handler is a function of a [`WritePermit`], and the only way to a permit is
-//! [`WritePermit::pass`], which `dispatch` calls for every [`WriteTool`]. A handler cannot get a
-//! vault to write into except from its permit ([`WritePermit::vault`]) and cannot apply a plan
-//! except through [`WritePermit::apply`], whose [`Reservations`] argument has no default. So a tool
-//! added later cannot skip a check by forgetting it: it does not compile.
+//! A write handler is a function of a [`Permit`], and the only way to one is [`Permit::pass`], which
+//! `dispatch` calls for every [`WriteTool`]. Dry run is decided there, once, from the call's
+//! arguments: a dry run gets a [`PreviewPermit`], which can look at the vault and cannot write, and
+//! asks nobody; every other call gets a [`WritePermit`], which asked first, holds the write lock
+//! until `dispatch` has recorded the write, and is the only thing that makes a [`WritablePath`] or
+//! applies a plan. `clippy.toml` disallows the vault's own `write_path` and `writable` and the
+//! `confined-files` writers everywhere except this file, so a handler that writes around its permit
+//! does not pass clippy, and a tool added later cannot skip a check by forgetting it.
+//!
+//! The lock makes a write tool's read-modify-write one step: two approved calls on one concept run
+//! one after the other, so the second reads what the first wrote and neither is lost.
+
+#![allow(
+    clippy::disallowed_methods,
+    reason = "this file is the one place a write path and a plan are made from the vault"
+)]
+
+use std::sync::MutexGuard;
 
 use confined_files::{
-    apply_all_or_nothing, Applied, ApplyOptions, PlanEntry, Reservations, VaultRoot, WriteError,
-    WriteErrorClass,
+    apply_all_or_nothing, Applied, ApplyOptions, ConfinedPath, PlanEntry, Reservations, SlugError,
+    VaultRoot, WritablePath, WriteError, WriteErrorClass,
 };
 
 use crate::arguments::Arguments;
@@ -31,42 +44,109 @@ pub(crate) fn refuse_in_read_only_mode(
     Ok(())
 }
 
-/// Proof that a write passed read-only mode and consent for this call.
-pub struct WritePermit<'a> {
-    context: &'a CallContext<'a>,
-    tool: WriteTool,
-    vault: VaultRoot,
+fn open_vault(context: &CallContext<'_>) -> Result<VaultRoot, ToolError> {
+    VaultRoot::open(&context.config().vault_root)
+        .map_err(|error| ToolError::failed(error.to_string()))
 }
 
-impl<'a> WritePermit<'a> {
+/// What a write tool's handler is given: the right to write, or only to look.
+pub enum Permit<'a> {
+    Apply(WritePermit<'a>),
+    /// A dry run: the same tool, the same arguments, no write.
+    Preview(PreviewPermit<'a>),
+}
+
+impl<'a> Permit<'a> {
     /// Runs the checks. `Err` is the answer of a write that did not happen.
     pub(crate) fn pass(
         context: &'a CallContext<'a>,
         tool: WriteTool,
         arguments: &Arguments,
     ) -> Result<Self, ToolError> {
-        refuse_in_read_only_mode(context, tool.name())?;
-        consent::ask_before_writing(context, tool, arguments)?;
-        let vault = VaultRoot::open(&context.config().vault_root)
-            .map_err(|error| ToolError::failed(error.to_string()))?;
-        Ok(Self {
-            context,
-            tool,
-            vault,
-        })
+        if arguments.is_dry_run() {
+            PreviewPermit::pass(context, tool).map(Self::Preview)
+        } else {
+            WritePermit::pass(context, tool, arguments).map(Self::Apply)
+        }
     }
 
     pub fn tool(&self) -> WriteTool {
-        self.tool
+        match self {
+            Self::Apply(permit) => permit.tool,
+            Self::Preview(permit) => permit.tool,
+        }
     }
 
     pub fn context(&self) -> &CallContext<'a> {
-        self.context
+        match self {
+            Self::Apply(permit) => permit.context,
+            Self::Preview(permit) => permit.context,
+        }
     }
 
-    /// The vault, the only source of a path a plan may write.
+    /// The vault to read from. Writing into it goes through [`WritePermit`] alone.
     pub fn vault(&self) -> &VaultRoot {
-        &self.vault
+        match self {
+            Self::Apply(permit) => &permit.vault,
+            Self::Preview(permit) => &permit.vault,
+        }
+    }
+}
+
+/// Proof that a call is a dry run and passed read-only mode.
+pub struct PreviewPermit<'a> {
+    context: &'a CallContext<'a>,
+    tool: WriteTool,
+    vault: VaultRoot,
+}
+
+impl<'a> PreviewPermit<'a> {
+    fn pass(context: &'a CallContext<'a>, tool: WriteTool) -> Result<Self, ToolError> {
+        refuse_in_read_only_mode(context, tool.name())?;
+        Ok(Self {
+            context,
+            tool,
+            vault: open_vault(context)?,
+        })
+    }
+}
+
+/// Proof that a write passed read-only mode and consent for this call, and the right to be the one
+/// write in progress.
+pub struct WritePermit<'a> {
+    context: &'a CallContext<'a>,
+    tool: WriteTool,
+    vault: VaultRoot,
+    /// Held until the permit is dropped, which `dispatch` does after the audit lines are written.
+    _write_lock: MutexGuard<'a, ()>,
+}
+
+impl<'a> WritePermit<'a> {
+    fn pass(
+        context: &'a CallContext<'a>,
+        tool: WriteTool,
+        arguments: &Arguments,
+    ) -> Result<Self, ToolError> {
+        refuse_in_read_only_mode(context, tool.name())?;
+        consent::ask_before_writing(context, tool, arguments)?;
+        // After the question, which can take minutes: nothing else waits behind a person's answer.
+        let write_lock = context.lock_writes();
+        Ok(Self {
+            context,
+            tool,
+            vault: open_vault(context)?,
+            _write_lock: write_lock,
+        })
+    }
+
+    /// The file a slug names, as a path this write may change.
+    pub fn write_path(&self, slug: &str) -> Result<WritablePath, SlugError> {
+        self.vault.write_path(slug)
+    }
+
+    /// A file already read from the vault, as a path this write may change.
+    pub fn writable(&self, file: &ConfinedPath) -> Result<WritablePath, SlugError> {
+        self.vault.writable(file)
     }
 
     /// Applies `plan` all or nothing. `reservations` is the tool's statement of how a file reserved

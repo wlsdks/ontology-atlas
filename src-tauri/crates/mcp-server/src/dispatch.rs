@@ -16,13 +16,14 @@ use answer_format::whitespace::{is_line_terminator, trim};
 
 use crate::answer::{CallToolResult, ToolOutput};
 use crate::arguments::Arguments;
+use crate::audit::WriteRecord;
 use crate::error::{ToolError, UnknownField};
 use crate::protocol::{ClientAnswer, ServerRequestWait, Session};
 use crate::runtime::Config;
 use crate::suggestions::closest_allowed_value;
 use crate::surface::Surface;
 use crate::tools;
-use crate::write_checkpoint::{self, WritePermit};
+use crate::write_checkpoint::{self, Permit};
 use crate::write_tool::WriteTool;
 
 /// What a handler can see of the call it answers.
@@ -40,6 +41,12 @@ impl<'a> CallContext<'a> {
             cancelled,
             can_ask_client: session.client_capabilities().can_ask_client(),
         }
+    }
+
+    /// The write lock, taken after a person has said yes; see `write_checkpoint`.
+    pub(crate) fn lock_writes(&self) -> std::sync::MutexGuard<'a, ()> {
+        let session: &'a Session = self.session;
+        session.lock_writes()
     }
 
     pub fn audit(&self) -> &crate::audit::AuditLog {
@@ -114,12 +121,16 @@ pub fn call_tool(
     result
 }
 
-fn unexpected_stop(name: &str, payload: &(dyn std::any::Any + Send)) -> ToolError {
-    let detail = payload
+fn panic_detail(payload: &(dyn std::any::Any + Send)) -> String {
+    payload
         .downcast_ref::<&str>()
         .map(|text| (*text).to_string())
         .or_else(|| payload.downcast_ref::<String>().cloned())
-        .unwrap_or_else(|| "no detail".to_string());
+        .unwrap_or_else(|| "no detail".to_string())
+}
+
+fn unexpected_stop(name: &str, payload: &(dyn std::any::Any + Send)) -> ToolError {
+    let detail = panic_detail(payload);
     ToolError::failed(format!("Tool \"{name}\" stopped unexpectedly: {detail}"))
 }
 
@@ -142,17 +153,30 @@ fn run_checked(
             .unwrap_or_else(|| Err(unported_or_unknown(surface, name)));
     };
     let handler = tools::write_handler(tool).ok_or_else(|| unported_or_unknown(surface, name))?;
-    let permit = WritePermit::pass(context, tool, &arguments)?;
+    let permit = Permit::pass(context, tool, &arguments)?;
     let done = handler(&permit, &arguments)?;
-    // The write is done and the answer is the tool's: a line that cannot be written is said on
-    // standard error and changes nothing the agent reads.
-    if let Err(error) = context
-        .audit()
-        .record(tool, &context.client_name(), done.record)
-    {
-        eprintln!("[ontology-atlas-mcp] audit line not written after {name}: {error}");
-    }
+    // The write is done and the answer is the tool's. The audit lines are written while the permit
+    // still holds the write lock; one that cannot be written, or a panic while writing it, is said
+    // on standard error and changes nothing the agent reads.
+    record_audit(context, tool, name, done.record);
+    drop(permit);
     Ok(done.output)
+}
+
+fn record_audit(context: &CallContext<'_>, tool: WriteTool, name: &str, record: WriteRecord) {
+    let recorded = catch_unwind(AssertUnwindSafe(|| {
+        context.audit().record(tool, &context.client_name(), record)
+    }));
+    match recorded {
+        Ok(Ok(())) => {}
+        Ok(Err(error)) => {
+            eprintln!("[ontology-atlas-mcp] audit line not written after {name}: {error}");
+        }
+        Err(payload) => {
+            let detail = panic_detail(payload.as_ref());
+            eprintln!("[ontology-atlas-mcp] audit line not written after {name}: it stopped unexpectedly: {detail}");
+        }
+    }
 }
 
 #[cfg(feature = "test-hooks")]

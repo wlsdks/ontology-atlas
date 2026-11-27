@@ -797,6 +797,7 @@ dependencies = [
  "tempfile",
  "thiserror 2.0.18",
  "walkdir",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -2979,6 +2980,7 @@ dependencies = [
  "strsim",
  "tempfile",
  "thiserror 2.0.18",
+ "uuid",
  "vault-document",
 ]
 

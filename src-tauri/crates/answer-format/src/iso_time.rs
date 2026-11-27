@@ -1,8 +1,8 @@
-//! A moment as the audit lines write it (`Date.prototype.toISOString`) and read it back.
+//! A moment as `Date.prototype.toISOString` writes it, and as `Date.parse` reads it back.
 //!
-//! A line carries `2026-11-27T09:15:30.123Z`: UTC, always milliseconds, always `Z`. Counting days from
-//! the epoch uses the proleptic Gregorian calendar, as ECMAScript's `Date` does; the arithmetic is
-//! Howard Hinnant's `civil_from_days` and `days_from_civil`.
+//! `2026-11-27T09:15:30.123Z`: UTC, always milliseconds, always `Z`. Counting days from the epoch
+//! uses the proleptic Gregorian calendar, as ECMAScript's `Date` does; the arithmetic is Howard
+//! Hinnant's `civil_from_days` and `days_from_civil`.
 
 const MS_PER_DAY: i64 = 86_400_000;
 
@@ -38,7 +38,7 @@ fn days_from_civil(year: i64, month: i64, day: i64) -> i64 {
 
 /// `epoch_ms` as `YYYY-MM-DDTHH:MM:SS.mmmZ`; a year outside 0 to 9999 takes the six digits and sign
 /// ECMAScript gives it.
-pub fn iso_8601(epoch_ms: i64) -> String {
+pub fn to_iso_string(epoch_ms: i64) -> String {
     let days = epoch_ms.div_euclid(MS_PER_DAY);
     let in_day = epoch_ms.rem_euclid(MS_PER_DAY);
     let (year, month, day) = civil_from_days(days);
@@ -67,7 +67,7 @@ fn digits(text: &str, length: usize) -> Option<i64> {
 /// The milliseconds a line's time names: `YYYY-MM-DD`, optionally `THH:MM`, `:SS` and `.fff`
 /// (one to nine digits, cut to milliseconds), then `Z` or `+HH:MM` / `-HH:MM`. Anything else is
 /// `None`. A time with no zone is UTC, which is what the writer always wrote.
-pub fn parse_iso_8601(text: &str) -> Option<i64> {
+pub fn parse_iso(text: &str) -> Option<i64> {
     let (date, rest) = match text.split_once('T') {
         Some((date, rest)) => (date, Some(rest)),
         None => (text, None),
@@ -145,13 +145,13 @@ mod tests {
 
     #[test]
     fn a_moment_is_written_as_to_iso_string_writes_it() {
-        assert_eq!(iso_8601(0), "1970-01-01T00:00:00.000Z");
-        assert_eq!(iso_8601(1_790_000_000_000), "2026-09-21T14:13:20.000Z");
-        assert_eq!(iso_8601(4_102_444_800_000), "2100-01-01T00:00:00.000Z");
-        assert_eq!(iso_8601(951_782_400_123), "2000-02-29T00:00:00.123Z");
-        assert_eq!(iso_8601(-1), "1969-12-31T23:59:59.999Z");
+        assert_eq!(to_iso_string(0), "1970-01-01T00:00:00.000Z");
+        assert_eq!(to_iso_string(1_790_000_000_000), "2026-09-21T14:13:20.000Z");
+        assert_eq!(to_iso_string(4_102_444_800_000), "2100-01-01T00:00:00.000Z");
+        assert_eq!(to_iso_string(951_782_400_123), "2000-02-29T00:00:00.123Z");
+        assert_eq!(to_iso_string(-1), "1969-12-31T23:59:59.999Z");
         assert_eq!(
-            iso_8601(8_640_000_000_000_000),
+            to_iso_string(8_640_000_000_000_000),
             "+275760-09-13T00:00:00.000Z"
         );
     }
@@ -165,27 +165,27 @@ mod tests {
             951_782_400_000,
             1_582_934_400_999,
         ] {
-            assert_eq!(parse_iso_8601(&iso_8601(moment)), Some(moment), "{moment}");
+            assert_eq!(parse_iso(&to_iso_string(moment)), Some(moment), "{moment}");
         }
     }
 
     #[test]
     fn zones_fractions_and_impossible_dates_read_as_a_script_reads_them() {
         assert_eq!(
-            parse_iso_8601("2026-11-20T09:10:00Z"),
-            parse_iso_8601("2026-11-20T09:10:00.000Z")
+            parse_iso("2026-11-20T09:10:00Z"),
+            parse_iso("2026-11-20T09:10:00.000Z")
         );
         assert_eq!(
-            parse_iso_8601("2026-11-20T18:10:00+09:00"),
-            parse_iso_8601("2026-11-20T09:10:00.000Z")
+            parse_iso("2026-11-20T18:10:00+09:00"),
+            parse_iso("2026-11-20T09:10:00.000Z")
         );
         assert_eq!(
-            parse_iso_8601("2026-11-20T09:10:00.1234567Z"),
-            parse_iso_8601("2026-11-20T09:10:00.123Z")
+            parse_iso("2026-11-20T09:10:00.1234567Z"),
+            parse_iso("2026-11-20T09:10:00.123Z")
         );
         assert_eq!(
-            parse_iso_8601("2026-11-20"),
-            parse_iso_8601("2026-11-20T00:00:00.000Z")
+            parse_iso("2026-11-20"),
+            parse_iso("2026-11-20T00:00:00.000Z")
         );
         for bad in [
             "yesterday",
@@ -197,7 +197,7 @@ mod tests {
             "2026-11-20T09:10:00.Z",
             "+275760-09-13T00:00:00.000Z",
         ] {
-            assert_eq!(parse_iso_8601(bad), None, "{bad}");
+            assert_eq!(parse_iso(bad), None, "{bad}");
         }
     }
 }

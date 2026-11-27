@@ -53,7 +53,10 @@ pub struct Request {
 #[derive(Debug)]
 pub enum ClientReply {
     Result(Box<RawValue>),
-    Failure { code: i64, message: String },
+    /// The client answered with an error; its words are all a refusal needs.
+    Failure {
+        message: String,
+    },
 }
 
 /// What the session acts on; every other line, and every notification but one, is dropped.
@@ -161,9 +164,9 @@ fn answer_to_server(members: &Members<'_>) -> Option<Inbound> {
         }
         (None, Some(error)) => {
             let fields: Members<'_> = serde_json::from_str(error.get()).ok()?;
-            let code: i64 = fields.get("code")?.get().parse().ok()?;
+            // As in the schema, the code must be an integer, though nothing reads it.
+            fields.get("code")?.get().parse::<i64>().ok()?;
             ClientReply::Failure {
-                code,
                 message: string_value(fields.get("message")?)?,
             }
         }
@@ -286,9 +289,7 @@ mod tests {
         let (_, failure) =
             reply(r#"{"jsonrpc":"2.0","id":"q","error":{"code":-32601,"message":"no"}}"#)
                 .expect("an error");
-        assert!(
-            matches!(failure, ClientReply::Failure { code: -32601, message } if message == "no")
-        );
+        assert!(matches!(failure, ClientReply::Failure { message } if message == "no"));
         for dropped in [
             r#"{"jsonrpc":"2.0","id":0,"result":5}"#,
             r#"{"jsonrpc":"2.0","id":0,"result":[]}"#,

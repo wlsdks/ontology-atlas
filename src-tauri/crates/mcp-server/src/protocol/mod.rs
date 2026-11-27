@@ -80,6 +80,8 @@ struct State {
 pub struct Session {
     config: Config,
     audit: AuditLog,
+    /// Held by the one write in progress, from its approval to its audit line.
+    write_lock: Mutex<()>,
     output: Mutex<Box<dyn Write + Send>>,
     state: Mutex<State>,
     wakeup: Condvar,
@@ -94,6 +96,7 @@ impl Session {
     pub fn new(config: Config, output: Box<dyn Write + Send>) -> Arc<Self> {
         Arc::new(Self {
             audit: AuditLog::new(config.vault_root.clone()),
+            write_lock: Mutex::new(()),
             config,
             output: Mutex::new(output),
             state: Mutex::new(State::default()),
@@ -138,6 +141,11 @@ impl Session {
 
     pub fn config(&self) -> &Config {
         &self.config
+    }
+
+    /// Waits for any write in progress to finish, then is the write in progress until dropped.
+    pub(crate) fn lock_writes(&self) -> MutexGuard<'_, ()> {
+        lock(&self.write_lock)
     }
 
     pub fn audit(&self) -> &AuditLog {

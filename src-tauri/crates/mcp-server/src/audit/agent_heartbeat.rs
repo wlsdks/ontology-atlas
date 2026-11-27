@@ -5,8 +5,8 @@ use answer_format::whitespace::trim;
 use serde_json::Value;
 
 use super::record_shapes::is_id;
-use super::utc_time::parse_iso_8601;
-use super::vault_sidecar::VaultSidecar;
+use answer_format::iso_time::parse_iso;
+use confined_files::VaultSidecar;
 
 const HEARTBEAT_FILE: &str = "agent-activity.json";
 /// A heartbeat is a few hundred bytes; a larger file is not the app's and is not read.
@@ -72,6 +72,6 @@ pub fn press(sidecar: &VaultSidecar, now_ms: i64) -> PressRead {
 fn press_of(heartbeat: &Value, now_ms: i64) -> Option<String> {
     let press = heartbeat.get("mapAnalysis")?;
     let id = press.get("id")?.as_str().filter(|id| is_id(id))?;
-    let until = parse_iso_8601(press.get("until")?.as_str()?)?;
+    let until = parse_iso(press.get("until")?.as_str()?)?;
     (until > now_ms && until <= now_ms + PRESS_MAX_AHEAD_MS).then(|| id.to_string())
 }

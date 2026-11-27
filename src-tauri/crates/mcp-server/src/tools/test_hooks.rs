@@ -1,6 +1,11 @@
 //! Tools only a test build has, to exercise what a real tool would: an unexpected stop, a call that
 //! waits for a person, and arguments as the handler receives them.
 
+#![allow(
+    clippy::disallowed_methods,
+    reason = "a test build's tool writes a file the way a handler's caller sees it written"
+)]
+
 use std::time::{Duration, Instant};
 
 use serde::Serialize;
@@ -9,10 +14,12 @@ use confined_files::{PlanEntry, Reservations, ReservedForPerson};
 
 use crate::answer::ToolOutput;
 use crate::arguments::Arguments;
-use crate::audit::{ActivityContent, ConceptEffect, ShareMeasure, WriteDone, WriteRecord};
+use crate::audit::{
+    ActivityContent, ConceptEffect, ShareCounts, ShareMeasure, WriteDone, WriteRecord,
+};
 use crate::dispatch::CallContext;
 use crate::error::ToolError;
-use crate::write_checkpoint::WritePermit;
+use crate::write_checkpoint::Permit;
 
 /// A held call gives up after this, so a test that forgets to cancel it still ends.
 const HOLD_LIMIT: Duration = Duration::from_secs(20);
@@ -95,21 +102,29 @@ fn write_marker(arguments: &Arguments) -> Result<ToolOutput, ToolError> {
     ToolOutput::json(&Written { written: true })
 }
 
-/// Writes `text` to the file named by `slug`, the way a real write tool does: its path comes from
-/// the permit and its plan goes through the permit. It says it changed a concept, so the audit
-/// lines have something to record.
+#[allow(
+    clippy::panic,
+    reason = "the point of this test-only share measurement is to panic while an audit line is written"
+)]
+fn measure_that_panics() -> ShareCounts {
+    panic!("planted share measurement failure");
+}
+
+/// Writes `text` (or, with `append`, adds it to what the file holds after a pause, as a tool that
+/// reads before it writes does) to the file named by `slug`, the way a real write tool does: its
+/// path and its plan come from the permit, and a dry run gets no way to write. It says it changed a
+/// concept, so the audit lines have something to record; `measurePanics` makes the measuring of the
+/// share, which runs while the audit line is written, panic.
 pub fn write_through_checkpoint(
-    permit: &WritePermit<'_>,
+    permit: &Permit<'_>,
     arguments: &Arguments,
 ) -> Result<WriteDone, ToolError> {
     let slug = arguments
         .string("slug")
         .ok_or_else(|| ToolError::invalid("slug must be a string."))?;
     let text = arguments.string("text").unwrap_or_default();
-    let path = permit
-        .vault()
-        .write_path(&slug)
-        .map_err(|error| ToolError::invalid(error.to_string()))?;
+    let appended: Option<String> = arguments.read("append")?;
+    let measure_panics: bool = arguments.read("measurePanics")?.unwrap_or(false);
     let reserved = |_: &std::path::Path, text: &str| {
         text.contains("review_state: human_decides")
             .then(|| ReservedForPerson {
@@ -117,26 +132,51 @@ pub fn write_through_checkpoint(
                 note: None,
             })
     };
-    let dry_run = arguments.is_dry_run();
-    if !dry_run {
-        permit.apply(
-            vec![PlanEntry::write(path, text)],
-            Reservations::Refuse(&reserved),
-        )?;
-    }
-    let output = ToolOutput::json(&Written { written: !dry_run })?;
-    let record = if dry_run {
-        WriteRecord::Nothing
+    let Permit::Apply(write) = permit else {
+        let output = ToolOutput::json(&Written { written: false })?;
+        return Ok(WriteDone {
+            output,
+            record: WriteRecord::Nothing,
+        });
+    };
+    let path = write
+        .write_path(&slug)
+        .map_err(|error| ToolError::invalid(error.to_string()))?;
+    let entry = match appended {
+        Some(appended) => {
+            let before = permit
+                .vault()
+                .read_path(&slug)
+                .ok()
+                .and_then(|file| file.read_text().ok());
+            // Long enough for a second call to read the same text if nothing kept it out.
+            std::thread::sleep(Duration::from_millis(150));
+            match before {
+                Some(before) => {
+                    PlanEntry::write(path, format!("{before}{appended}")).expecting_text(before)
+                }
+                None => PlanEntry::write(path, appended).expecting_absent(),
+            }
+        }
+        None => PlanEntry::write(path, text),
+    };
+    write.apply(vec![entry], Reservations::Refuse(&reserved))?;
+    let output = ToolOutput::json(&Written { written: true })?;
+    let share = if measure_panics {
+        ShareMeasure::Measure(Box::new(measure_that_panics))
     } else {
-        WriteRecord::Wrote {
+        ShareMeasure::Unchanged
+    };
+    Ok(WriteDone {
+        output,
+        record: WriteRecord::Wrote {
             activity: ActivityContent {
                 target: slug.clone(),
                 summary: format!("test write {slug}"),
                 why: arguments.string("why"),
             },
             concepts: ConceptEffect::new(vec![slug], vec![], vec![]),
-            share: ShareMeasure::Unchanged,
-        }
-    };
-    Ok(WriteDone { output, record })
+            share,
+        },
+    })
 }

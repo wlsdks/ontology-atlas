@@ -15,13 +15,14 @@ pub enum Action {
     Cancel,
 }
 
-impl Action {
-    pub fn word(self) -> &'static str {
-        match self {
+/// The word the protocol and the refusal use for it.
+impl std::fmt::Display for Action {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str(match self {
             Self::Accept => "accept",
             Self::Decline => "decline",
             Self::Cancel => "cancel",
-        }
+        })
     }
 }
 

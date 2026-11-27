@@ -166,6 +166,7 @@ mod tests {
     use std::io::Write;
     use std::sync::{Arc, Mutex};
 
+    use super::super::message::Inbound;
     use super::*;
     use crate::runtime::{Config, Modes};
 
@@ -311,14 +312,34 @@ mod tests {
     }
 
     #[test]
-    fn no_more_than_eight_questions_wait_for_a_person_at_once() {
+    fn no_more_than_eight_questions_wait_and_answers_nobody_asked_for_take_no_place() {
         let session = session(Written::default());
+        // A client that answers requests the server never made, or answers twice, must not use up
+        // the places real questions wait in.
+        let strays = (0..i64::try_from(MAX_OPEN_REQUESTS).unwrap_or(8) + 4)
+            .map(|number| Inbound::Answer {
+                id: Id::Number(100 + number),
+                reply: ClientReply::Failure {
+                    message: "nobody asked".to_string(),
+                },
+            })
+            .collect();
+        session.deliver(strays);
+        assert!(lock(&session.state).server_requests.is_empty());
+        let cancelled = AtomicBool::new(false);
+        assert!(matches!(
+            session.ask_client(
+                "q",
+                &serde_json::json!({}),
+                wait(Duration::from_millis(30), &cancelled)
+            ),
+            ClientAnswer::TimedOut
+        ));
         for number in 0..i64::try_from(MAX_OPEN_REQUESTS).unwrap_or(8) {
             lock(&session.state)
                 .server_requests
                 .insert(Id::Number(number), None);
         }
-        let cancelled = AtomicBool::new(false);
         assert!(matches!(
             session.ask_client(
                 "q",

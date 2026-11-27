@@ -11,7 +11,7 @@ use crate::arguments::Arguments;
 use crate::audit::WriteDone;
 use crate::dispatch::CallContext;
 use crate::error::ToolError;
-use crate::write_checkpoint::WritePermit;
+use crate::write_checkpoint::Permit;
 use crate::write_tool::WriteTool;
 
 #[cfg(feature = "test-hooks")]
@@ -19,7 +19,7 @@ mod test_hooks;
 
 /// A write tool's handler. It receives the proof that the checkpoint passed, and answers with what
 /// the audit lines record, so it cannot finish without saying.
-pub type WriteHandler = fn(&WritePermit<'_>, &Arguments) -> Result<WriteDone, ToolError>;
+pub type WriteHandler = fn(&Permit<'_>, &Arguments) -> Result<WriteDone, ToolError>;
 
 /// The result of read tool `name`, or `None` when this build does not handle it.
 pub fn call(
