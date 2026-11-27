@@ -17,7 +17,8 @@ decisions: []
   longer follow what AI agents do, and plan the tools and features that fit that fact. Keep
   repeating the definition of this problem."
 - This document defines that problem and builds nothing. It writes the definition six times, and
-  each round shows the evidence that broke the one before.
+  each round shows the evidence that broke the one before. Round 7 tests the sixth against two
+  measurements and keeps it.
 - **The definition that survived.** A person who directs coding agents cannot read what the agents
   change, and no tool gives that back. The harm is not the unread code: when the person merges,
   releases, promises something or asks for the next change, nothing tells them which of the few
@@ -116,8 +117,8 @@ lines every second with no pause. Today's 3,456 lines are one line every eight s
 - When one import is followed from each file, 21% of changed product files reach a concept
   (`docs/specs/2026-11-23-review-agent-work-by-meaning.md:58-70`).
 
-**Unknown:** how many of the 52 `fix` changes corrected an earlier change's mistake, and what
-caught each; how any of this reads on another repository or for another person.
+**Unknown:** how any of this reads on another repository or for another person. What caught the
+52 `fix` changes is measured in round 7.
 
 ## Patterns that already worked
 
@@ -233,6 +234,46 @@ while Atlas can serve only a sliver of it. A second objection is weaker but not 
 agents caught both of today's misses without the person, so perhaps a person needs no picture of
 the code, only a list of gates. The reply is finding 4: someone still has to say what the gates
 are for. Criterion 2 measures who catches what, and it can overturn this definition.
+
+**Round 7: round 6 tested against criteria 2 and 3.** Measured on 2026-11-27 with
+`pnpm who-catches-what`. The rule for "what caught it" was written and committed before any fix
+was opened (`scripts/records/who-catches-what-rule.md`, SHA-256 `d1470b67...50df`).
+- **Nearly every fix corrected an earlier change.** 50 of the 52 `fix` changes changed lines an
+  earlier merged change wrote. One only added lines; one could not be traced. Half of these
+  mistakes were more than 4.7 days old when fixed, and 20 were more than 30 days old. Those ages
+  are often too young: in 20 of the 50, the last change to touch the line was a move, a split or a
+  release step, not the change that made the mistake.
+- **Most mistakes shipped first.** In 42 of the 50, a stable release was tagged between the
+  mistake and its fix. There were 21 stable release tags in these seven and a half days, so a
+  mistake older than a few hours almost always ships.
+- **Who caught them, by the script:** a gate 19, an agent 3, the owner 6, an outside user 0, luck
+  0, and 24 where the record does not say. A person re-read 20 of the 52, drawn with a fixed seed.
+  The script was wrong on 8 of the 20. By hand, the 20 were: a gate 11, an agent 2, the owner 1,
+  luck 1, and 5 where the record does not say.
+- **What the gates caught was breakage:** a red lint step, a failed browser test, a build that ran
+  out of time. Six of the other nine were the app saying something untrue: a working sign-in shown
+  as missing, merged work shown as not merged, a repair button that changed nothing. No test knew
+  the right answer. Someone looked at the app, or the record does not say who found it.
+- **One fix in four does not say what found the mistake** (5 of the 20 read by hand). Round 6's
+  silence is in the record too: after the fix, nobody can tell a check from a person from chance.
+- **The noise count.** Today's vault has 94 concepts: 35 checked (37%), 59 stale (63%), and none
+  that could not be dated. "Checked" only means the document was saved after its code last
+  changed, apart from comments, imports and whitespace; nobody is recorded as having read it. The
+  spec's "not looked at since the code changed" is the stale count. At 63% it is three times the
+  one-in-five limit, so that state must be narrowed before any probe.
+- **What this does to round 6:** it is kept. Gates caught the most, which supports the objection
+  that a list of gates may be enough. The objection still fails: the gates caught what broke and
+  missed what became untrue, and 42 of 50 mistakes shipped before anyone fixed them. Experiment 0
+  (do nothing) dies by its own sealed line, but only on its release part. Luck and outside users
+  together were 1 of the 20.
+- **Limits.** The sealed rule missed in four ways, and it stays as sealed; a better rule needs a
+  new seal. Commit bodies wrap at 80 characters, and the rule ends a sentence at a line break. Its
+  check words lack "run", as in "the browser run failed". It allows one word between "the" and
+  "review", so "the independent security review" was missed. It also matched sentences that
+  describe the fix, not the find. Which earlier change made the mistake was wrong in 6 of the 20:
+  the line was last touched by a folder move, a comment cleanup or the previous release's version
+  lines. One merge that carried two fixes (#3674 and #3675) is outside the 52, as in the first
+  count.
 
 ### Five layers, and whether accepting the fact changes what a tool should do
 
@@ -452,3 +493,7 @@ The brief asks for three. Each has a default, and nothing waits on them.
 
 - 2026-11-27: first draft. Six rounds of the definition, five layers, eleven research findings,
   eight patterns and four experiments; no option chosen and no copy written.
+- 2026-11-27: round 7 from criteria 2 and 3, measured by `pnpm who-catches-what` under a rule
+  sealed before any fix was opened. Round 6 is kept. 50 of 52 fixes corrected an earlier change,
+  42 of those shipped in a release first, and 59 of 94 concepts are stale, over the one-in-five
+  limit. The script's class was wrong on 8 of 20 fixes read by hand.
