@@ -10,7 +10,7 @@ path: src/features/library/lib/sources/add-sources.ts
 created_by: "agent:claude-code"
 ---
 
-Brings raw source documents into the open folder so later pages have originals to cite, with the same single action on the desktop app and in the browser.
+Brings raw source documents into the open folder so later pages have originals to cite, with one action in the desktop app.
 
 ## Includes
 - Choosing files and copying them into the folder's sources directory.
@@ -21,4 +21,4 @@ Brings raw source documents into the open folder so later pages have originals t
 - Producing any page from them.
 
 ## Uncertainty
-- Read from the module header and its imports of the desktop file bridge. The browser path was not traced, so whether the two surfaces really behave identically rests on the header's claim rather than on anything measured here.
+- Read from the module header and its imports of the desktop file bridge. The copy runs in the app through the native source picker and importer; it was not run against the installed app for this revision.

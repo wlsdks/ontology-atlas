@@ -354,7 +354,7 @@ export interface ConceptReviewTarget {
   mtime?: number | string;
 }
 
-/** Null when nothing can read the file (the bundled sample), which is not an unreadable file. */
+/** Null when nothing can read the file (no folder is open), which is not an unreadable file. */
 export type ReadConceptBody = ((slug: string) => Promise<string | null>) | null;
 
 type ConfirmedCheck = "current" | "changed-since-review" | "unreadable" | "unknown";

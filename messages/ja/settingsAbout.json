@@ -26,8 +26,6 @@
     "diagnostics": "不具合 バグ 報告 デバッグ サポート システム情報　bug report debug support system info",
     "logs": "ログ クラッシュ デバッグ　finder log logs crash debug"
   },
-  "webVersion": "Webサイトのバージョン{version}",
-  "webVersionCaption": "このページはWebサイトです。デスクトップアプリは自身でアップデートを確認します。",
   "on": "オン",
   "off": "オフ",
   "whatsNewCaption": "各バージョンの変更点",
@@ -53,11 +51,9 @@
   "diagnostic": {
     "build": "バージョン",
     "buildApp": "アプリ{version}",
-    "buildWeb": "Webサイト{version}",
     "buildUnknown": "不明",
     "surface": "実行環境",
     "surfaceDesktop": "デスクトップ",
-    "surfaceWeb": "Web",
     "userAgent": "ユーザエージェント",
     "language": "画面の言語",
     "textSize": "文字サイズ",

@@ -284,14 +284,12 @@
     "agentFallback": "코딩 에이전트",
     "bodyWikiOnly": "이 폴더에는 위키 문서는 있지만 자료가 아직 없어요. 위키 문서의 바탕이 된 문서를 넣으면 문장마다 어느 자료에서 왔는지 적을 수 있어요.",
     "where": "자료실에는 「{folder}」 폴더 안 sources 폴더의 파일만 나와요. {fileManagerName}에서 직접 넣어도 돼요.",
-    "whereWeb": "자료실에는 「{folder}」 폴더 안 sources 폴더의 파일만 나와요.",
     "copyNote": "sources 폴더 밖의 파일은 복사해서 넣어요. 원래 파일은 옮기거나 지우지 않아요.",
     "reveal": "{fileManager, select, finder {Finder에서 보기} explorer {파일 탐색기에서 보기} other {파일 관리자에서 보기}}",
     "fileManagerName": "{fileManager, select, finder {Finder} explorer {파일 탐색기} other {파일 관리자}}",
     "privacy": "Atlas는 자료를 어디에도 보내지 않고, 에이전트에게 맡긴 일만 그 에이전트의 서비스를 거쳐요.",
     "noAgent": "아직 연결한 코딩 에이전트가 없어요. 자료는 지금 넣고, 에이전트는 나중에 연결해도 돼요.",
     "noAgentLink": "에이전트 연결하기",
-    "web": "브라우저에서는 자료를 넣고 읽을 수 있어요. 위키 문서 쓰기는 Atlas 앱에서 할 수 있어요.",
     "drop": {
       "title": "파일이나 폴더를 끌어다 놓으면 sources 폴더로 복사해요",
       "or": "또는",
@@ -432,7 +430,6 @@
     "unknownAuthor": "미상",
     "transfer": "코딩 에이전트가 제공자에게 직접 요청하며 Atlas는 그 통신을 기록하지 않아요. 서식에 맞는 위키 문서는 자동으로 저장할 수 있지만, 저장한 답은 항상 따로 검토해야 해요.",
     "compileFailed": "에이전트를 실행하지 못했어요: {reason}",
-    "compileWebGetApp": "앱 받기",
     "agentMissing": "코딩 에이전트를 연결하면 위키 검사와 위키 문서 만들기를 맡길 수 있어요.",
     "agentMissingDoor": "에이전트 연결하기",
     "offTemplateAriaLabel": "이 문서가 위키 서식과 다른 점",
@@ -612,7 +609,6 @@
     "clearSearch": "검색 지우기",
     "title": "「{folders}」에서 찾은 문서",
     "preamble": "파일 이름·형식·크기만 보고 골랐어요. 「넣기」를 누르기 전에는 아무것도 복사하지 않아요.",
-    "webLimit": "여기서는 지금 연 폴더만 읽을 수 있어요. 연결한 코드 폴더는 앱에서만 읽을 수 있어요.",
     "walkedRoots": "함께 읽은 위치: {roots}",
     "walking": "폴더 목록을 읽는 중…",
     "empty": "「{folders}」에서 문서로 보이는 파일을 찾지 못했어요. 라이선스·안내 파일, 이름이 무작위 영문·숫자로 된 파일, 빌드·테스트 파일, 빈 파일, public·output·build 같은 폴더는 건너뛰어요.",
@@ -624,7 +620,6 @@
     "cancel": "취소",
     "close": "닫기",
     "add": "{count, plural, =0 {고른 것 넣기} other {#개 넣기}}",
-    "webGetApp": "앱 받기",
     "emptyAllDeclined": "여기 남은 것은 전에 넘긴 {count, number}개뿐이에요."
   },
   "source": {
@@ -1113,7 +1108,6 @@
     "writer": "<name>{agent}</name>가 써요",
     "writerAnyAgent": "연결한 코딩 에이전트가 써요",
     "batchReturned": "지난 요청의 자료 {count, number}개는 아직 위키 문서가 없어 목록 맨 뒤로 옮겼어요.",
-    "webLine": "위키 문서는 앱에서만 써요. 읽기는 여기서도 돼요.",
     "allDone": "더 쓸 위키 문서가 없어요"
   },
   "sourcesHome": {
@@ -1145,7 +1139,6 @@
       "lead": "「{action}」⁠를 누르면 에이전트가 아래 자료를 위에서부터 읽고 위키 문서를 써요.",
       "leadRunning": "에이전트가 위에서부터 위키 문서를 쓰고 있어요. 다 쓴 자료는 목록에서 빠져요.",
       "privacy": "Atlas는 자료를 어디에도 보내지 않고, 에이전트에게 맡긴 일만 그 에이전트의 서비스를 거쳐요.",
-      "webNote": "앱에서는 이 자료부터 위키 문서를 써요.",
       "waitingTitle": "여기서 위키 문서를 쓸 자료",
       "nextEmpty": "여기 있는 자료는 모두 지금 내용과 맞는 위키 문서가 있어요.",
       "unreadable": "여기서 읽을 수 없는 자료 {count, number}개",

@@ -38,10 +38,9 @@ const RUNTIME = {
  * A small in-memory stand-in for the Rust side.
  *
  * With the runtime signal injected, Docs takes the **app's** folder path: the native
- * picker, then `TauriDirectoryHandle`, which reads every entry over `invoke`. Stubbing
- * `showDirectoryPicker` would therefore prove nothing — that door is not the one the app
- * walks through. So the commands the walk actually calls are answered from a map, which
- * exercises the real handle, the real walk, and the real library model.
+ * picker, then `TauriDirectoryHandle`, which reads every entry over `invoke`. So the
+ * commands the walk calls are answered from a map, which exercises the real handle, the
+ * real walk, and the real library model.
  *
  * Everything downstream of the dock stays with installed-app measurement: the adapter
  * launch, the turn, and the writes. `acp_start` is deliberately left unanswered, so a

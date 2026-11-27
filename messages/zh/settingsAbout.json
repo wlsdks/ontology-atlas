@@ -26,8 +26,6 @@
     "diagnostics": "错误 报告 调试 支持 bug",
     "logs": "日志 崩溃 调试 log"
   },
-  "webVersion": "网站版本 {version}",
-  "webVersionCaption": "此页面是网站。桌面应用会自行检查更新。",
   "on": "开",
   "off": "关",
   "whatsNewCaption": "每个版本的变化",
@@ -53,11 +51,9 @@
   "diagnostic": {
     "build": "版本",
     "buildApp": "应用 {version}",
-    "buildWeb": "网站 {version}",
     "buildUnknown": "未知",
     "surface": "运行环境",
     "surfaceDesktop": "桌面",
-    "surfaceWeb": "网页",
     "userAgent": "用户代理",
     "language": "界面语言",
     "textSize": "文字大小",

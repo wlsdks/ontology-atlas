@@ -7,7 +7,6 @@ import {
   appliesTo,
   column,
   matches,
-  matchesAll,
   missingColumns,
   sourceWordOffenders,
 } from './locale-vocabulary.mjs';
@@ -43,10 +42,7 @@ test('asking for a missing column throws instead of answering empty', () => {
   assert.equal(appliesTo('internalTerms', 'ja'), false);
 });
 
-test('the installed-app and folder forms match the phrases the readiness gate reads', () => {
-  assert.equal(matchesAll('installedApp', 'ko', '설치된 앱에서 여세요'), true);
-  assert.equal(matchesAll('installedApp', 'ko', '앱에서 여세요'), false);
-  assert.equal(matchesAll('installedApp', 'en', 'Open it in the installed app'), true);
+test('the folder forms match the phrases the readiness gate reads', () => {
   assert.equal(matches('folderWord', 'ko', '폴더 열기'), true);
   assert.equal(matches('folderWord', 'en', 'Open a Folder'), true);
 });

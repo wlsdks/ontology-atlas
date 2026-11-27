@@ -48,8 +48,6 @@
   "moduleCount": "{count, plural, one {# module} other {# modules}}",
   "trafficEdge": "{from} → {to}: {count, plural, one {# import} other {# imports}}",
   "roleNotInProfile": "This profile has no layer called “{role}”. The link may be for a different profile.",
-  "sourceListingUnavailable": "Source modules appear once a project source folder is connected. A browser cannot read a source folder; open this ontology folder in the desktop app and this fills in.",
-  "getInstalledApp": "Get the app",
   "sourceListingUnbound": "No source folder is connected yet. Open the folder this profile describes and each layer lists its real modules.",
   "connectedAgent": "connected agent",
   "draftWithAgent": "Draft with {agent}",

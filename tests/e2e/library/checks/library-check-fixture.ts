@@ -78,10 +78,9 @@ export const LIBRARY_CHECK_VAULT: Record<string, string> = {
 /**
  * The app's own bridge, answered from a map.
  *
- * Stubbing `showDirectoryPicker` would prove nothing: with the desktop signal present the
- * folder is taken through `TauriDirectoryHandle`, so the commands the walk actually calls
- * are what this answers — which exercises the real handle, the real walk and the real
- * library model.
+ * With the desktop signal present the folder is taken through `TauriDirectoryHandle`, so
+ * the commands the walk calls are what this answers — which exercises the real handle, the
+ * real walk and the real library model.
  */
 export async function installLibraryCheckBridge(page: Page) {
   await page.addInitScript(

@@ -41,7 +41,6 @@
     "some": "第 {number, number} 次分析之后，代码里新增了 {added, number} 个文件，变更了 {changed, number} 个文件。上面的比例还没有计入它们。",
     "behind": "有 {count, number} 个概念是在它们指向的代码变更之前写的。",
     "unknownCommit": "无法统计变更的文件：第 {number, number} 次分析读取的提交（{commit}）不在这个仓库的历史里。",
-    "noGit": "无法统计变更的文件：连接的代码文件夹不是 Git 仓库。",
-    "web": "要统计分析之后变更的文件，需要能读取代码 Git 历史的桌面应用。"
+    "noGit": "无法统计变更的文件：连接的代码文件夹不是 Git 仓库。"
   }
 }

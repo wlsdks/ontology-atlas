@@ -54,8 +54,6 @@
   "setupStopped": "Setup stopped. A save already started may finish. Review the saved settings before continuing.",
   "setupFolderUnavailable": "This folder is unavailable. Reopen the folder to resume setup, or close this window.",
   "setupRuntimeUnavailable": "Atlas could not find the local tool this service needs. Review the service settings in Agents, or use Add files.",
-  "webSetupTitle": "Save service access in the app",
-  "webSetupBody": "A browser cannot store this access token in the Mac keychain. Open this folder in the app, or download the documents from {service} and use Add files here.",
   "addFiles": "Add files",
   "whatLabel": "What should it bring?",
   "whatNext": "A conversation opens next. It searches, shows you at most {limit} documents, and waits for you to pick; each one you pick is written under {folder} and asks your permission first. Nothing outside that folder is touched.",
@@ -63,8 +61,6 @@
   "whatRuntime": "This works in a Claude conversation. Codex has not been checked for it yet, so a Codex conversation can use only this folder.",
   "revokeWhere": "Where to take it back in {service}",
   "noAgentTitle": "Bringing documents in needs a coding agent the app can start",
-  "noAgentGetApp": "Get the app",
-  "noAgentBodyWeb": "A browser cannot start a coding agent. Open this folder in the app to review the service settings, or download the documents and use Add files here.",
   "noAgentBodyRuntime": "No coding agent is ready on this Mac yet. The service setup is saved, but access has not been checked. Set up a coding agent, then return here to choose documents.",
   "noAgentSeeRuntimes": "See agents"
 }

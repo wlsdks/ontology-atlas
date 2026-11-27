@@ -89,7 +89,6 @@
   "fieldHeaderKeys": "请求头名称",
   "webTitle": "查找已注册的内容需要桌面应用",
   "webBody": "读取 ~/.claude.json 或 ~/.codex/config.toml 需要在这台电脑上运行程序，而此界面没有地方保存令牌。仍可手动添加 MCP 服务器，列表会保存在你的文件夹中。",
-  "webGetApp": "获取应用",
   "transport": {
     "stdio": "程序",
     "http": "地址"

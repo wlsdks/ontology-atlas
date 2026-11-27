@@ -4,7 +4,6 @@
   "bulletAnyFolder": "Any markdown folder works: no special format required.",
   "bulletLocal": "Atlas opens this folder locally and does not upload it to an Atlas backend. A coding agent you later connect may send prompts and context to its own provider.",
   "bulletStarter": "Pick an empty folder and Atlas adds starter documents.",
-  "bulletPermission": "After you pick, the browser asks you to Allow. That grants this page local file access; it is separate from any coding agent connection.",
   "actionPickExisting": "Choose existing folder",
   "actionCreateNew": "Start fresh with an empty folder",
   "actionCancel": "Not now"

@@ -146,11 +146,11 @@ export function SessionChangeSummary({
   const rows = changeset
     ? (
         [
-          ["webNodesAdded", changeset.addedNodes.length],
-          ["webNodesChanged", changeset.changedNodes.length],
-          ["webNodesRemoved", changeset.removedNodes.length],
-          ["webEdgesAdded", changeset.addedEdges.length],
-          ["webEdgesRemoved", changeset.removedEdges.length],
+          ["sessionNodesAdded", changeset.addedNodes.length],
+          ["sessionNodesChanged", changeset.changedNodes.length],
+          ["sessionNodesRemoved", changeset.removedNodes.length],
+          ["sessionEdgesAdded", changeset.addedEdges.length],
+          ["sessionEdgesRemoved", changeset.removedEdges.length],
         ] as const
       ).filter(([, count]) => count > 0)
     : [];
@@ -172,7 +172,7 @@ export function SessionChangeSummary({
           ))}
         </ul>
       ) : (
-        <p className="text-body text-[color:var(--color-text-quaternary)]">{t("webNoChanges")}</p>
+        <p className="text-body text-[color:var(--color-text-quaternary)]">{t("sessionNoChanges")}</p>
       )}
     </div>
   );

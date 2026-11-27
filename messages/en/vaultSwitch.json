@@ -40,7 +40,6 @@
     "eyebrow": "WHICH FOLDER",
     "title": "Choose the folder to work in",
     "bodyDesktop": "Pick up where you left off in a recent folder, or open another.",
-    "bodyWeb": "Your browser needs a click to reopen a folder. Choose one below or pick another.",
     "listTitle": "RECENT FOLDERS",
     "releaseValve": "When only one folder is left in this list, the next launch opens it directly.",
     "helpLabel": "About choosing a folder",

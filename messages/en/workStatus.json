@@ -207,7 +207,6 @@
     "body": "Merged and long-untouched worktrees wait on the shelf below."
   },
   "web": {
-    "title": "Workshop runs in the desktop app",
     "body": "A browser cannot run git or read this computer's processes. Workshop opens in the Atlas app."
   },
   "notRepository": "{folder} is not a Git repository. Choose the folder that holds your project's .git.",

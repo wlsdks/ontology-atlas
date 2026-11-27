@@ -28,12 +28,6 @@
     "automations": "Schedule ontology reviews and document checks that run on your computer and leave proposals for you to review.",
     "git": "Review your folder's Git history, read each change as a document, and restore a single file."
   },
-  "projectTitles": {
-    "ontologyAtlas": "How Ontology Atlas is built: its own ontology"
-  },
-  "projectDescriptions": {
-    "ontologyAtlas": "Ontology Atlas described by its own ontology: the domains it is made of, the capabilities each one owns, and how they depend on each other."
-  },
   "guideDescriptions": {
     "whatIsAnOntology": "What an ontology is: concepts, kinds, relations and agreed meaning, how it differs from a taxonomy, schema or knowledge graph, and one for a codebase.",
     "atlasCompared": "How Ontology Atlas compares with code graphs, repository wikis, Obsidian and Notion, CLAUDE.md and AGENTS.md, and graph databases, and when to use each.",

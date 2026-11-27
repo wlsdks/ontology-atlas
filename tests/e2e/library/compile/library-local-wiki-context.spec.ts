@@ -124,8 +124,6 @@ async function openLocalCompile(page: Page, selectPage = false, options: Paramet
     await page.keyboard.press('Escape');
     await expect(page.getByTestId('library-guide-popover')).toHaveCount(0);
   }
-  // This is the installed-shell local route; the web degradation copy must not be present.
-  await expect(page.getByTestId("library-compile-web-limit")).toHaveCount(0);
   const endpoint = await page.evaluate(() => {
     const raw = window.localStorage.getItem("ontology-atlas:local-endpoint");
     return raw ? (JSON.parse(raw) as { baseUrl?: unknown; model?: unknown }) : null;

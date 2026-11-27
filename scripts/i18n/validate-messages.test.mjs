@@ -304,12 +304,8 @@ describe('i18n message catalog', () => {
       ].join('\n'),
       /문서 기록|기록 찾기/,
     );
-    assert.equal(commands.sourceServer, '샘플 폴더 보기');
-    assert.equal(commands.sourceLocal, '내 폴더 열기');
     assert.equal(commands.viewFolderTopology, undefined);
     assert.equal(commands.scaffoldTopology, undefined);
-    assert.doesNotMatch(commands.sourceServer, /소스|Source/);
-    assert.doesNotMatch(commands.sourceLocal, /소스|Source/);
   });
 
   it('keeps Korean docs vault welcome contract understandable without frontmatter jargon', async () => {

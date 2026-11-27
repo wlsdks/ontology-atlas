@@ -13,13 +13,13 @@ created_by: "agent:unknown"
 
 ## Definition
 
-Lets a visitor of the hosted website compare the macOS and Windows installers, read their trust status, and decide whether to install the desktop app or continue on the web, on one page.
+Lets a visitor of the website compare the macOS and Windows installers, read their trust status, and decide whether to install the desktop app, on one page. The website opens no folder; the app is the only place Atlas works on a person's files.
 
 ## Includes
 
 - The per-platform installers with published release facts (URL, size, checksum) generated from the GitHub release.
 - The signed and notarized macOS DMGs, and the unsigned Windows x64 beta with its SmartScreen warning placed ahead of its own button.
-- The web fallback for a visitor who cannot install.
+- A link to the read-only sample map (`/sample`) for a visitor who cannot install, and the MCP server's source-checkout guide for connecting a coding agent without the app.
 
 ## Excludes
 

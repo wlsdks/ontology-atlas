@@ -111,7 +111,6 @@ export const ACCEPTED = {
       'settings.projectForm.fields.tagsPlaceholder': 'an example tag list',
     },
     'keep-terms': {
-      'agentConnect.manualIssueRelative': 'the Korean text writes the platform name in Hangul',
       'analysisWorkbench.relationNotesPrompt': 'the Korean prompt names the field without the word frontmatter',
       'docsVault.desktopWelcome.contractFilesBody': 'the Korean text names the command git diff in lowercase',
       'gatewayNav.readFullSource': 'the Korean text says repository where English names GitHub',

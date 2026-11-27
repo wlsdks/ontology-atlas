@@ -2,7 +2,6 @@
   "title": "Changes",
   "sourcePrompt": "Choose a Git repository to see its commits and PR descriptions. An ontology is optional.",
   "chooseRepository": "Choose Git repository",
-  "webBody": "A local Git repository can only be read in the installed app. This page shows no history in a browser.",
   "sourceUnavailable": "Cannot read this repository, or its folder permission expired. Choose it again; your dates are kept.",
   "noHistory": "This folder has no Git commits to read. Choose another repository, or try again after the first commit.",
   "loading": "Reading commits for this repository and period…",

@@ -89,9 +89,6 @@ test.describe("the structural check is the app's own", () => {
     await expect(page.getByTestId("library-index").getByTestId("library-agent-missing")).toHaveCount(0);
     await expect(page.getByTestId("library-lint")).toHaveCount(0);
 
-    /* The installed app must not offer its own download (`.claude/rules/surfaces.md`). */
-    await expect(page.getByTestId("library-compile-web-limit")).toHaveCount(0);
-    await expect(page.getByTestId("library-compile-web-get-app")).toHaveCount(0);
     /*
      * The reason is on screen once per screen: the home makes no agent claim, and the blocked press is
      * Check the wiki, whose sentence stands in the guide.

@@ -42,7 +42,6 @@
   "noRecords": "Choose at least one complete PR to prepare a summary.",
   "original": "Open PR",
   "return": "Back to summary",
-  "web": "Reading local Git history and running a coding agent need the installed app.",
   "publicChoice": "Public GitHub",
   "githubAccount": "GitHub CLI account",
   "privateTransfer": "GitHub CLI will use {account} on github.com to request PRs from {repository}. The account's existing permissions apply. Atlas keeps private PR descriptions only until you close the app; sending them to an agent may copy them elsewhere.",

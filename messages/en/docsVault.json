@@ -11,7 +11,6 @@
     "localBadge": "Local",
     "paletteTooltip": "Search · commands · tags (⌘K)",
     "paletteAriaLabel": "Open palette (search · commands · tags)",
-    "sourceAriaLabel": "Ontology folder",
     "vaultToolsMovedHint": "Coding agent setup and check tools moved to Settings: open the gear (⚙) at the top right.",
     "contractToggleLabel": "Folder checks",
     "contractToggleHide": "Close folder checks",
@@ -21,9 +20,7 @@
     "vaultPillSampleLabel": "Built-in sample (Atlas's own documents)",
     "docListCollapse": "Collapse document list",
     "docListExpand": "Expand document list",
-    "vaultChipLocalPending": "No folder yet",
-    "sourcePickSample": "View the sample",
-    "sourcePickLocal": "Open my folder"
+    "vaultChipLocalPending": "No folder yet"
   },
   "tabs": {
     "stripAriaLabel": "Open documents",
@@ -128,22 +125,11 @@
     "backToTop": "Back to top",
     "backToTopAria": "Scroll to top of document"
   },
-  "sampleNotice": {
-    "title": "This is a read-only sample",
-    "body": "This doc is Atlas's own example, so editing is locked."
-  },
-  "sampleWelcome": {
-    "title": "What is this sample?",
-    "body": "You're browsing Atlas's own documentation as a read-only sample. Pick anything from the list on the left. Most of it is developer reference material. Open your own markdown folder and it fills this screen instead.",
-    "openFolderCta": "Open my folder",
-    "dismissAria": "Dismiss"
-  },
   "backlinksStrip": {
     "openInOntology": "Open in the map",
     "empty": "No documents link here yet"
   },
   "vaultStatus": {
-    "unsupportedTooltip": "Local ontology folder editing is available in the installed desktop app.",
     "permissionNeededBanner": "Folder access is paused: allow access again to keep editing.",
     "errorBanner": "The folder could not be read ({message}). Choose it again, or choose another folder.",
     "rootRejectedBanner": "This folder can't be used as a map. Pick a folder that holds your documents, not a system folder or your whole home folder.",
@@ -335,8 +321,6 @@
     "openPalette": "Open palette (search · commands · tags)",
     "findTags": "Find tags",
     "viewDoc": "View · Document",
-    "sourceServer": "View sample folder",
-    "sourceLocal": "Open a local folder",
     "pinDoc": "Pin this doc",
     "unpinDoc": "Unpin",
     "copyUrl": "Copy current document URL",

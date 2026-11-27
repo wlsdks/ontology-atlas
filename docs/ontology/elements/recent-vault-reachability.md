@@ -21,5 +21,5 @@ Checks whether each folder a person has opened before can still be opened now, s
 - Remembering the list, which is stored elsewhere.
 
 ## Uncertainty
-- Read from the feature barrel, which notes this hook is used only by the recent-folder list inside the feature. Its implementation was not read, and the difference between desktop absolute paths and browser handles was not exercised.
+- Read from the feature barrel, which notes this hook is used only by the recent-folder list inside the feature. The probe reads each record's absolute path through the native bridge.
 - Read 2026-09-26: `use-recent-vault-reachability.ts` itself (bundle #1883).

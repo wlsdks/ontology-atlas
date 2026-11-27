@@ -42,7 +42,6 @@
   "noRecords": "要約を準備するには、完全なPRを1件以上選んでください。",
   "original": "PRを開く",
   "return": "要約に戻る",
-  "web": "ローカルGit履歴の読み取りとコーディングエージェントの実行には、インストールされたアプリが必要です。",
   "publicChoice": "公開GitHub",
   "githubAccount": "GitHub CLIアカウント",
   "privateTransfer": "GitHub CLIがgithub.comの{account}アカウントで{repository}のPRをリクエストします。アカウントの既存の権限が適用されます。Atlasは非公開のPR説明をアプリを閉じるまでだけ保持します。エージェントに送ると、ほかの場所にコピーされることがあります。",

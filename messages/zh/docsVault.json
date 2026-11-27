@@ -11,7 +11,6 @@
     "localBadge": "本地",
     "paletteTooltip": "搜索 · 命令 · 标签（⌘K）",
     "paletteAriaLabel": "打开面板（搜索 · 命令 · 标签）",
-    "sourceAriaLabel": "本体文件夹",
     "vaultToolsMovedHint": "编码智能体的设置与检查工具已移到设置：点右上角的齿轮（⚙）。",
     "contractToggleLabel": "文件夹检查",
     "contractToggleHide": "关闭文件夹检查",
@@ -21,9 +20,7 @@
     "vaultPillSampleLabel": "内置示例（Atlas 自己的文档）",
     "docListCollapse": "收起文档列表",
     "docListExpand": "展开文档列表",
-    "vaultChipLocalPending": "尚无文件夹",
-    "sourcePickSample": "查看示例",
-    "sourcePickLocal": "打开我的文件夹"
+    "vaultChipLocalPending": "尚无文件夹"
   },
   "tabs": {
     "stripAriaLabel": "已打开的文档",
@@ -128,22 +125,11 @@
     "backToTop": "回到顶部",
     "backToTopAria": "滚动到文档顶部"
   },
-  "sampleNotice": {
-    "title": "这是只读示例",
-    "body": "这是 Atlas 自带的示例文档，因此已锁定编辑。"
-  },
-  "sampleWelcome": {
-    "title": "这个示例是什么？",
-    "body": "你正在以只读示例的方式浏览 Atlas 自己的文档。可以从左侧列表中任选一篇，其中大部分是开发参考资料。打开你自己的 Markdown 文件夹后，这里就会换成你的内容。",
-    "openFolderCta": "打开我的文件夹",
-    "dismissAria": "关闭"
-  },
   "backlinksStrip": {
     "openInOntology": "在地图中打开",
     "empty": "还没有文档链接到这里"
   },
   "vaultStatus": {
-    "unsupportedTooltip": "本地本体文件夹的编辑功能仅在已安装的桌面应用中可用。",
     "permissionNeededBanner": "文件夹访问已暂停：请重新授予文件夹访问权限才能继续编辑。",
     "errorBanner": "无法读取该文件夹（{message}）。请重新选择文件夹，或选择另一个文件夹。",
     "rootRejectedBanner": "这个文件夹不能用作地图。请选择存放你文档的文件夹，而不是系统文件夹或整个主目录。",
@@ -335,8 +321,6 @@
     "openPalette": "打开面板（搜索 · 命令 · 标签）",
     "findTags": "查找标签",
     "viewDoc": "视图 · 文档",
-    "sourceServer": "查看示例文件夹",
-    "sourceLocal": "打开本地文件夹",
     "pinDoc": "固定此文档",
     "unpinDoc": "取消固定",
     "copyUrl": "复制当前文档的链接",

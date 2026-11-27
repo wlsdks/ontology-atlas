@@ -41,7 +41,6 @@
     "some": "Since analysis {number, number}, {added, plural, one {# new file} other {# new files}} and {changed, plural, one {# changed file} other {# changed files}} in the code. The share above does not count them yet.",
     "behind": "{count, plural, one {# concept was} other {# concepts were}} written before the code they point at changed.",
     "unknownCommit": "Atlas cannot count changed files: commit {commit}, which analysis {number, number} read, is not in this repository's history.",
-    "noGit": "Atlas cannot count changed files: the connected code folder is not a Git repository.",
-    "web": "Counting files changed since an analysis needs the desktop app, which reads the code's Git history."
+    "noGit": "Atlas cannot count changed files: the connected code folder is not a Git repository."
   }
 }

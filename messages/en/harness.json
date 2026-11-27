@@ -28,11 +28,8 @@
   "hookMissingHint": "The config names this path and the file is not there. Nothing errors and nothing is blocked.",
   "hookUnwired": "Not wired",
   "hookApprovalGateHint": "Codex hashes every hook entry and will not run a new or changed one until a person trusts it in /hooks. That approval lives in no file, so we cannot read it.",
-  "browserOnly": "A browser cannot read this",
-  "browserOnlyBody": "Harness files live in dot directories such as .claude, which a browser cannot see. The desktop app reads all of them.",
   "noSource": "No repository is connected",
   "connectSourceAction": "Connect source folder",
-  "browserAction": "Get the app",
   "noSourceBody": "Connect a source folder to a project and the files, hooks and checks an agent meets in that repository fill in here.",
   "noSourceNote": "When more than one folder is connected, Atlas does not pick which one to read.",
   "connectFoundBody": "This ontology folder sits inside the {name} repository. Connect it and the files, hooks and checks an agent meets there fill in here.",
@@ -148,7 +145,6 @@
       "differs": "How it differs",
       "sameName": "When names match",
       "notRead": "What Atlas does not read",
-      "web": "In this browser",
       "where": "Where it lives",
       "command": "Command",
       "runs": "When it runs"
@@ -286,8 +282,6 @@
       "claude": "It runs together with the hooks in every other file. The same hook in two files runs once.",
       "codex": "It runs together with the hooks in every other file. The same command in two files can run twice."
     },
-    "webNote": "Only what each file is. The desktop app also shows what is in yours.",
-    "webStageNote": "What each settings file is and who it affects can be seen in the browser too.",
     "notRead": {
       "claude": "A policy your organisation sends without a file, whether you trusted this folder in Claude Code, and the skills, subagents and instruction files in your home folder. A settings folder moved with CLAUDE_CONFIG_DIR is read only after you choose its file with Show another settings file.",
       "codex": "Codex's record of which hooks you reviewed, whether you trusted this folder in Codex, and the skills, subagents and instruction files in your home folder. A settings folder moved with CODEX_HOME is read only after you choose its file with Show another settings file."

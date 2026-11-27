@@ -186,7 +186,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
     result.stdout,
     // Check the marker, not the sentence, so better copy is not blocked by the gate
     // (`.claude/rules/documentation.md`).
-  /✓ .*(?:demotion|degrad).*(?:FSA|File System Access)/,
+  /✓ the shortcut and open-label copy name the folder they open/,
   );
   assert.match(
     result.stdout,

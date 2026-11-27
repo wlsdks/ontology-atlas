@@ -130,9 +130,8 @@ function isLocaleRoot(pathname: string): boolean {
 }
 
 /**
- * In the installed app a selected local vault always wins over the bundled sample: a folder
- * load or switch shows the opening pane until `load()` publishes the new manifest (on the map,
- * until a concept arrives), and a same-vault refresh keeps its pixels.
+ * In the installed app a folder load or switch shows the opening pane until `load()` publishes the
+ * new manifest (on the map, until a concept arrives), and a same-vault refresh keeps its pixels.
  *
  * A route change is deliberately not a case: a neutral pane there replaces the departing screen
  * React would keep, and leaves blank frames. `local-vault-route-identity.spec.ts` proves the
