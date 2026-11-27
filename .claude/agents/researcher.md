@@ -1,7 +1,7 @@
 ---
 name: researcher
 description: Answers one research question from public sources, citing title, year and link for each claim, and returns a short ranked answer. Use for prior art, techniques, libraries, standards or field reports that the repository cannot answer; not for writing the product spec (spec-writer), a design verdict (design-reviewer), debugging (investigator), or a question the code answers (read it or run its pnpm command). Never edits the repository.
-model: fable
+model: opus
 effort: high
 maxTurns: 150
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch

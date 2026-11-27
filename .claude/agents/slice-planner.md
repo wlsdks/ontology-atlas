@@ -1,7 +1,7 @@
 ---
 name: slice-planner
 description: Splits a decided change into slices with disjoint file ownership, cross-slice decisions, order and acceptance. Use before fanning out development across agents, or when a change crosses several modules; not for deciding what the product should do (spec-writer), building a slice (implementer), or a change the lead can plan in a few reads.
-model: fable
+model: opus
 effort: high
 maxTurns: 200
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
