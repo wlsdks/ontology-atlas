@@ -43,10 +43,8 @@ const EMPTY_STATUSES: Record<SecretProvider, SecretStatus | null> = {
 const AUDIT_TAIL = 5;
 
 export function useAiConnection({
-  enabled,
   vaultHandle,
 }: {
-  enabled: boolean;
   vaultHandle: FileSystemDirectoryHandle | null;
 }): AiConnectionState {
   // Detected once at mount; false during static export, where there is no window.
@@ -65,7 +63,7 @@ export function useAiConnection({
   const jevEpoch = useRef(0);
 
   useEffect(() => {
-    if (!enabled || !bridgeAvailable) return undefined;
+    if (!bridgeAvailable) return undefined;
     let cancelled = false;
     const initialEpochs = { ...statusEpochs.current };
     const initialJevEpoch = jevEpoch.current;
@@ -98,7 +96,7 @@ export function useAiConnection({
     return () => {
       cancelled = true;
     };
-  }, [enabled, bridgeAvailable]);
+  }, [bridgeAvailable]);
 
   // Native root paths and browser handle identity distinguish same-name vaults.
   const vaultHandleRef = useRef(vaultHandle);
@@ -111,7 +109,7 @@ export function useAiConnection({
 
   useEffect(() => {
     const handle = vaultHandleRef.current;
-    if (!enabled || !handle) {
+    if (!handle) {
       setAuditEntries((previous) => (previous.length === 0 ? previous : []));
       setAuditTotal(0);
       setAuditError(null);
@@ -136,7 +134,7 @@ export function useAiConnection({
       cancelled = true;
       controller.abort();
     };
-  }, [enabled, vaultKey, auditNonce]);
+  }, [vaultKey, auditNonce]);
 
   const applyStatus = useCallback((provider: SecretProvider, next: SecretStatus) => {
     statusEpochs.current[provider] = (statusEpochs.current[provider] ?? 0) + 1;

@@ -18,7 +18,6 @@ import {
   destinationsForVaultShape,
   type MobileDestinationId,
 } from '@/shared/config/destinations';
-import { shouldHideBottomTabBar } from '../lib/is-tab-active';
 import { isTauriVaultRuntime } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 
 /** The runtime never changes after load, so subscribing is a formality. */
@@ -73,7 +72,7 @@ export function BottomTabBar() {
 
   const activeId = resolveActiveNavDestination(pathname);
   const desktopWithoutVault = desktopRuntime === true && !vault.manifest && !vault.partialTotal;
-  if ((desktopWithoutVault && activeId !== 'planning') || shouldHideBottomTabBar(pathname, vault.status === 'loaded')) {
+  if (desktopWithoutVault && activeId !== 'planning') {
     return null;
   }
 

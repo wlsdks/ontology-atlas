@@ -9,7 +9,6 @@ import {
   OUTBOUND_DESTINATION_PLACEHOLDERS,
   OUTBOUND_HOST_EXCEPTIONS,
   OUTBOUND_PATHS,
-  WEB_OUTBOUND_PATHS,
 } from '@/widgets/app-settings-menu/model/outbound-paths';
 
 const ROOT = process.cwd();
@@ -76,8 +75,7 @@ function scannedHosts(): Set<string> {
 }
 
 const placeholders = new Set<string>(OUTBOUND_DESTINATION_PLACEHOLDERS);
-const allRows = [...OUTBOUND_PATHS, ...WEB_OUTBOUND_PATHS];
-const rowHosts = new Set(allRows.flatMap((row) => row.hosts).filter((host) => !placeholders.has(host)));
+const rowHosts = new Set(OUTBOUND_PATHS.flatMap((row) => row.hosts).filter((host) => !placeholders.has(host)));
 const exceptedHosts = new Set(OUTBOUND_HOST_EXCEPTIONS.map((exception) => exception.host));
 
 function remoteSources(policy: Map<string, string[]>, directive: string): string[] {
@@ -137,7 +135,7 @@ describe('outbound inventory', () => {
 
   it('gives every exception a reason and keeps ids unique', () => {
     for (const exception of OUTBOUND_HOST_EXCEPTIONS) expect(exception.reason.trim()).not.toBe('');
-    const ids = allRows.map((row) => row.id);
+    const ids = OUTBOUND_PATHS.map((row) => row.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
 

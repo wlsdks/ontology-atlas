@@ -9,7 +9,7 @@ it('preserves newer save and clear results after a delayed initial keychain snap
   let resolveJev!: (status: unknown) => void;
   bridge.secretStatus.mockImplementation(() => new Promise(resolve => { resolveSecret = resolve; }));
   bridge.jevSecretStatus.mockImplementation(() => new Promise(resolve => { resolveJev = resolve; }));
-  const { result } = renderHook(() => useAiConnection({ enabled: true, vaultHandle: null }));
+  const { result } = renderHook(() => useAiConnection({ vaultHandle: null }));
   await waitFor(() => expect(resolveSecret).toBeTypeOf('function'));
   act(() => result.current.applyStatus('openai', { provider: 'openai', stored: false, last4: null }));
   await act(async () => resolveSecret({ provider: 'openai', stored: true, last4: 'old1' }));
@@ -24,7 +24,7 @@ it('preserves newer save and clear results after a delayed initial keychain snap
 it('publishes the model key before a delayed external-check lookup finishes', async () => {
   bridge.secretStatus.mockResolvedValue({ provider: 'openai', stored: false, last4: null });
   bridge.jevSecretStatus.mockImplementation(() => new Promise(() => {}));
-  const { result } = renderHook(() => useAiConnection({ enabled: true, vaultHandle: null }));
+  const { result } = renderHook(() => useAiConnection({ vaultHandle: null }));
   await waitFor(() => expect(result.current.statuses.openai).toEqual({ provider: 'openai', stored: false, last4: null }));
   expect(result.current.keysRead).toBe(true);
   expect(result.current.jevRead).toBe(false);
@@ -33,7 +33,7 @@ it('publishes the model key before a delayed external-check lookup finishes', as
 it('publishes the external-check key before a delayed model lookup finishes', async () => {
   bridge.secretStatus.mockImplementation(() => new Promise(() => {}));
   bridge.jevSecretStatus.mockResolvedValue({ stored: false, last4: null });
-  const { result } = renderHook(() => useAiConnection({ enabled: true, vaultHandle: null }));
+  const { result } = renderHook(() => useAiConnection({ vaultHandle: null }));
   await waitFor(() => expect(result.current.jevStatus).toEqual({ stored: false, last4: null }));
   expect(result.current.keysRead).toBe(false);
   expect(result.current.jevRead).toBe(true);
@@ -46,7 +46,7 @@ it('makes an answered model key available without waiting for another provider',
       ? new Promise(() => {})
       : Promise.resolve({ provider, stored: false, last4: null }));
     bridge.jevSecretStatus.mockResolvedValue({ stored: false, last4: null });
-    const { result } = renderHook(() => useAiConnection({ enabled: true, vaultHandle: null }));
+    const { result } = renderHook(() => useAiConnection({ vaultHandle: null }));
     await waitFor(() => expect(result.current.keyReads.anthropic).toBe(true));
     expect(result.current.statuses.anthropic).toEqual({ provider: 'anthropic', stored: false, last4: null });
     expect(result.current.keyReads.openai).toBe(false);
