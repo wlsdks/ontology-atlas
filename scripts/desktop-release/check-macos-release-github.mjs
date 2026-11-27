@@ -376,7 +376,7 @@ console.log(
   `[desktop-release-github] ${options.repo} has the protected ${SIGNING_ENVIRONMENT} environment, reviewed ${PUBLICATION_ENVIRONMENT} environment, and all required split-scope signing secret names`,
 );
 if (options.tag) {
-  console.log(`[desktop-release-github] ${options.tag} matches package, Tauri, and Cargo versions`);
+  console.log(`[desktop-release-github] ${options.tag} matches package, Tauri, Cargo, and MCP server versions`);
   console.log(`[desktop-release-github] ${options.tag} has no existing local Git tag`);
   console.log(`[desktop-release-github] ${options.tag} has no existing Git tag`);
   console.log(`[desktop-release-github] ${options.tag} has no existing GitHub Release`);

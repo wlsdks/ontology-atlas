@@ -48,8 +48,9 @@ pnpm desktop:release-preflight            # local pre-tag gate; its steps are th
   missing prerequisite. An ad-hoc signed local bundle is a warning, not a block.
 - `desktop:check` (`scripts/desktop/check-desktop-readiness.mjs`) owns the list of what
   it enforces. The security-relevant parts:
-  - `package.json`, `src-tauri/tauri.conf.json`, and `src-tauri/Cargo.toml`
-    carry one version, so bundle metadata, DMG filename, and tag agree.
+  - `package.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`, and
+    `mcp/package.json` carry one version, so bundle metadata, DMG filename,
+    tag, and the MCP Registry entry agree.
   - No Firebase SDK, Admin, or CLI dependency in the root package.
   - The WebView CSP is enabled; `connect-src` is exactly
     `'self' ipc: http://ipc.localhost` (`'self'` is load-bearing for App Router

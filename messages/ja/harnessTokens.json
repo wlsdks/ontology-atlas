@@ -1,26 +1,26 @@
 {
   "stage": {
     "title": "トークンの使い道",
-    "body": "このコンピューター上にある、このリポジトリの直近30日分の Claude Code セッションを一度に調べ、コンテキストトークンがどこに使われたかと、項目ごとの変更点を示します。保持するのは件数、時刻、短いセッション ID、モデル・effort・エージェント・ツールサーバーの名前で、ファイルは変更しません。",
-    "files": "直近30日のセッションファイル {files} 件、{size}",
+    "body": "このコンピューター上にある、このリポジトリの直近30日分のClaude Codeセッションを一度に調べ、コンテキストトークンがどこに使われたかと、項目ごとの変更点を示します。保持するのは件数、時刻、短いセッションID、モデル・effort・エージェント・ツールサーバーの名前で、ファイルは変更しません。",
+    "files": "直近30日のセッションファイル{files}件、{size}",
     "start": "トークンの使い方を調べる",
     "local": "どこにも何も送信しません。"
   },
   "run": {
-    "reading": "セッションファイル {total} 件中 {done} 件を読み込み中",
+    "reading": "セッションファイル{total}件中{done}件を読み込み中",
     "stop": "停止",
-    "stopped": "停止しました。数値はセッションファイル {total} 件中 {done} 件分です。",
+    "stopped": "停止しました。数値はセッションファイル{total}件中{done}件分です。",
     "again": "もう一度調べる",
-    "inspected": "直近30日 · {time} に調査"
+    "inspected": "直近30日 · {time}に調査"
   },
   "strip": {
     "title": "日ごとのターンあたりコンテキスト",
-    "usual": "{date} より前の通常の範囲",
-    "dayTip": "{date}：ターンあたり {perTurn} · {turns} ターン",
+    "usual": "{date}より前の通常の範囲",
+    "dayTip": "{date}：ターンあたり{perTurn} · {turns}ターン",
     "fewTurns": "500ターン未満：比較から除外"
   },
   "split": {
-    "total": "{turns} ターンでコンテキストトークン {tokens}",
+    "total": "{turns}ターンでコンテキストトークン{tokens}",
     "start": "開始時に読み込んだ分",
     "work": "作業",
     "long": "ターンごとの200K超過分"
@@ -30,42 +30,42 @@
     "start": "開始時に読み込んだ分",
     "compaction": "自動コンパクト",
     "cacheMiss": "キャッシュミス",
-    "model": "モデルと effort"
+    "model": "モデルとeffort"
   },
   "row": {
-    "tokens": "{tokens} トークン",
-    "share": "{model}：ターンの {share}",
+    "tokens": "{tokens}トークン",
+    "share": "{model}：ターンの{share}",
     "none": "直近30日はなし"
   },
   "detail": {
-    "longContext": "{turns} ターン（全体の {share}）が200Kを超えるコンテキストで実行されました。ターンごとにコンテキスト全体を読み直すため、これらのターンは200Kを超えた部分だけで {tokens} トークンを処理しました。",
-    "start": "セッションは最初の応答の前に {median} トークンのコンテキストを持って始まり、以降のすべてのターンがそれを運びました。ツール一覧だけでリクエストごとに約 {toolTokens} トークンでした。",
-    "toolGroup": "{name}：約 {tokens} トークン · 30日間で{calls, plural, =0 {呼び出しなし} other {#回呼び出し}}",
+    "longContext": "{turns}ターン（全体の{share}）が200Kを超えるコンテキストで実行されました。ターンごとにコンテキスト全体を読み直すため、これらのターンは200Kを超えた部分だけで{tokens}トークンを処理しました。",
+    "start": "セッションは最初の応答の前に{median}トークンのコンテキストを持って始まり、以降のすべてのターンがそれを運びました。ツール一覧だけでリクエストごとに約{toolTokens}トークンでした。",
+    "toolGroup": "{name}：約{tokens}トークン · 30日間で{calls, plural, =0 {呼び出しなし} other {#回呼び出し}}",
     "builtIn": "組み込みツール",
     "estimated": "ツール一覧のサイズからの概算",
-    "compaction": "Claude Code は {runs} 件のセッションで {count} 回コンパクトしました。前は平均 {before} トークン、後は平均 {after} トークンでした。",
-    "cacheMiss": "Claude Code はキャッシュミスを {count} 回記録し、{tokens} トークンをキャッシュに書き直しました。",
-    "cacheReason": "{reason}：{count} ターン · {tokens} トークン",
-    "model": "{agent} · {model} · effort {effort} · {turns} ターン · {tokens} トークン",
+    "compaction": "Claude Codeは{runs}件のセッションで{count}回コンパクトしました。前は平均{before}トークン、後は平均{after}トークンでした。",
+    "cacheMiss": "Claude Codeはキャッシュミスを{count}回記録し、{tokens}トークンをキャッシュに書き直しました。",
+    "cacheReason": "{reason}：{count}ターン · {tokens}トークン",
+    "model": "{agent} · {model} · effort {effort} · {turns}ターン · {tokens}トークン",
     "mainSession": "メインセッション"
   },
   "fix": {
     "title": "変えること",
-    "longContext": "新しいタスクは新しいセッションで始めるか、/clear を実行してください。.claude/settings.json の autoCompactWindow（現在 {window}）を下げると早めにコンパクトしますが、会話の残りは少なくなります。",
-    "start": "このリポジトリでほとんど呼ばないツールサーバーは、Claude Code の /mcp でオフにしてください。開始時に読み込まれるメモリの目次は「改善」で確認できます。",
-    "compaction": "タスクが終わったら新しいセッションを始めるか、自分で /compact を実行して、要約がタスクの間に入るようにしてください。",
+    "longContext": "新しいタスクは新しいセッションで始めるか、/clearを実行してください。.claude/settings.jsonのautoCompactWindow（現在{window}）を下げると早めにコンパクトしますが、会話の残りは少なくなります。",
+    "start": "このリポジトリでほとんど呼ばないツールサーバーは、Claude Codeの /mcpでオフにしてください。開始時に読み込まれるメモリの目次は「改善」で確認できます。",
+    "compaction": "タスクが終わったら新しいセッションを始めるか、自分で /compactを実行して、要約がタスクの間に入るようにしてください。",
     "systemChanged": "セッションの途中でシステムプロンプトが変わりました。たとえば指示ファイルやメモリファイルを編集したときです。これらはセッションの合間に編集してください。",
     "toolsChanged": "セッションの途中でツール一覧が変わりました。たとえばツールサーバーが遅れて接続したり、切り替えられたりしたときです。ツールサーバーは始める前に決めておいてください。",
     "modelChanged": "セッションの途中でモデルを変えると、キャッシュが作り直されます。モデルはタスクの合間に切り替えてください。",
-    "otherReason": "Claude Code はこの理由をこれ以上説明しないため、Atlas は変更を提案しません。",
-    "model": "各エージェントのモデルと effort は .claude/agents/{agent}.md の model: と effort: の行です。メインセッションは /model と /effort で決めます。",
+    "otherReason": "Claude Codeはこの理由をこれ以上説明しないため、Atlasは変更を提案しません。",
+    "model": "各エージェントのモデルとeffortは .claude/agents/{agent}.mdのmodel: とeffort: の行です。メインセッションは /modelと /effortで決めます。",
     "copied": "コピーしました"
   },
   "evidence": {
     "title": "発生した場所",
-    "row": "{session} · ターン {turn} · {time} · {tokens} トークン",
-    "session": "セッション {id}",
-    "subagent": "セッション {id} の {agent}"
+    "row": "{session} · ターン{turn} · {time} · {tokens}トークン",
+    "session": "セッション{id}",
+    "subagent": "セッション{id}の{agent}"
   },
   "compare": {
     "pick": "比較の基準日",
@@ -73,41 +73,41 @@
     "tick": "{date} · {subject}",
     "clear": "クリア",
     "none": "日付を選ぶと、その前後を比較します。",
-    "tooFew": "{date} 以降で500ターン以上の日は {days} 日だけです。判断には3日必要です。",
-    "same": "検出できる差はありません。{date} 以降の平均 {after} は通常の範囲（{low}〜{high}）に収まっています。",
-    "lower": "{date} 以降は下がりました。以前 {before}、以降の平均 {after} で、通常の範囲を下回っています。",
-    "higher": "{date} 以降は上がりました。以前 {before}、以降の平均 {after} で、通常の範囲を上回っています。",
-    "left": "500ターン未満の {days} 日は除外しました。",
-    "tooFewBefore": "{date} より前で500ターン以上の日は {days} 日だけです。通常の範囲を知るには7日必要です。"
+    "tooFew": "{date}以降で500ターン以上の日は{days}日だけです。判断には3日必要です。",
+    "same": "検出できる差はありません。{date}以降の平均{after}は通常の範囲（{low}〜{high}）に収まっています。",
+    "lower": "{date}以降は下がりました。以前{before}、以降の平均{after}で、通常の範囲を下回っています。",
+    "higher": "{date}以降は上がりました。以前{before}、以降の平均{after}で、通常の範囲を上回っています。",
+    "left": "500ターン未満の{days}日は除外しました。",
+    "tooFewBefore": "{date}より前で500ターン以上の日は{days}日だけです。通常の範囲を知るには7日必要です。"
   },
   "money": {
-    "title": "Claude Code の推定",
-    "total": "直近30日で {amount}",
-    "split": "{date} より前 {before} · 以降 {after}",
-    "note": "Claude Code がセッションファイルに残した、API 価格での推定です。実際の請求額ではありません。",
-    "partial": "Claude Code が一部のモデルの価格を出せなかったため、この推定は実際より低くなります。",
-    "none": "これらのセッションには Claude Code の費用推定がありません。"
+    "title": "Claude Codeの推定",
+    "total": "直近30日で{amount}",
+    "split": "{date}より前{before} · 以降{after}",
+    "note": "Claude Codeがセッションファイルに残した、API価格での推定です。実際の請求額ではありません。",
+    "partial": "Claude Codeが一部のモデルの価格を出せなかったため、この推定は実際より低くなります。",
+    "none": "これらのセッションにはClaude Codeの費用推定がありません。"
   },
   "partial": {
-    "files": "{count} 件のファイルを読めませんでした（{reason}）。その数値は含まれていません。",
-    "lines": "4 MiB を超える {count} 行をスキップしました。",
-    "unknown": "{count} 件の記録に Atlas が必要とする数値がありませんでした。その数値は不明と表示します。"
+    "files": "{count}件のファイルを読めませんでした（{reason}）。その数値は含まれていません。",
+    "lines": "4 MiBを超える{count}行をスキップしました。",
+    "unknown": "{count}件の記録にAtlasが必要とする数値がありませんでした。その数値は不明と表示します。"
   },
   "unknown": "不明",
   "empty": {
-    "title": "直近30日、このリポジトリの Claude Code セッションはありません",
-    "body": "{paths} を探しました。Claude Code は会話ごとにそこへセッションファイルを書きます。"
+    "title": "直近30日、このリポジトリのClaude Codeセッションはありません",
+    "body": "{paths}を探しました。Claude Codeは会話ごとにそこへセッションファイルを書きます。"
   },
   "error": {
-    "home": "{path} を読めませんでした：{reason}。そこは調べていません。"
+    "home": "{path}を読めませんでした：{reason}。そこは調べていません。"
   },
   "web": {
     "title": "トークンの使い方を調べるにはアプリが必要です",
-    "body": "Claude Code はセッションファイルをホームフォルダーに置いていて、ブラウザーではそのフォルダーを開けません。アプリはこのコンピューター上でそれを読み、件数、時刻、短いセッション ID、モデル・effort・エージェント・ツールサーバーの名前を保持します。"
+    "body": "Claude Codeはセッションファイルをホームフォルダーに置いていて、ブラウザーではそのフォルダーを開けません。アプリはこのコンピューター上でそれを読み、件数、時刻、短いセッションID、モデル・effort・エージェント・ツールサーバーの名前を保持します。"
   },
   "card": {
-    "running": "トークンの使い方を調査中 · {total} 件中 {done} 件",
-    "done": "トークンの使い方を調べました：{count} 項目",
+    "running": "トークンの使い方を調査中 · {total}件中{done}件",
+    "done": "トークンの使い方を調べました：{count}項目",
     "open": "開く"
   },
   "action": {

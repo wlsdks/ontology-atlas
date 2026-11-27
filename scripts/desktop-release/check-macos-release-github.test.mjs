@@ -192,7 +192,7 @@ test("desktop GitHub release gate proves workflows, secrets, tag version, and cl
 
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /all required split-scope signing secret names/);
-    assert.match(result.stdout, new RegExp(`${APP_TAG_PATTERN} matches package, Tauri, and Cargo versions`));
+    assert.match(result.stdout, new RegExp(`${APP_TAG_PATTERN} matches package, Tauri, Cargo, and MCP server versions`));
     assert.match(result.stdout, new RegExp(`${APP_TAG_PATTERN} has no existing local Git tag`));
     assert.match(result.stdout, new RegExp(`${APP_TAG_PATTERN} has no existing Git tag`));
     assert.match(result.stdout, new RegExp(`${APP_TAG_PATTERN} has no existing GitHub Release`));
