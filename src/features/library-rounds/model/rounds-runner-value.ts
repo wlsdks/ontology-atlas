@@ -1,5 +1,12 @@
 import type { RoundPassEntry, RoundPassOutcome, RoundRecord, RoundState } from '@/entities/library-round';
 
+export interface RecheckUndoOutcome {
+  outcome: 'undone' | 'nothing' | 'gone' | 'refused';
+  undone: string[];
+  skipped: string[];
+  detail: string | null;
+}
+
 export type RoundsStoreStatus = 'no-vault' | 'loading' | 'ok' | 'missing' | 'malformed' | 'unavailable';
 
 export interface RoundUnrecorded {
@@ -21,6 +28,8 @@ export interface RoundsRunnerValue {
   /** `enabled` is whether it would attach on this Mac, so the sheet offers only what a pass can reach. */
   connectors: { id: string; name: string; enabled: boolean }[];
   lastTickAt: string | null;
+  /** Whether the open folder sits in a Git repository, which a recheck needs; `null` until known. */
+  inRepository: boolean | null;
   /** Bumps on every ledger or state write, so a screen can re-read without a folder watcher. */
   revision: number;
   /** None of these runs here, by the clock or by "Run now", whatever the folder's switch says. */
@@ -34,5 +43,10 @@ export interface RoundsRunnerValue {
   remove(id: string): Promise<boolean>;
   setEnabled(id: string, enabled: boolean): Promise<boolean>;
   runNow(id: string): void;
+  /**
+   * Puts back the documents a recheck run marked, or the given ones of them, and commits that.
+   * `null` without a desktop folder or while another run is going.
+   */
+  undoRecheck(runId: string, paths?: readonly string[]): Promise<RecheckUndoOutcome | null>;
   refresh(): Promise<void>;
 }

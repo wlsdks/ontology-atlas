@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import type { RoundRecord } from '@/entities/library-round';
+import { isOntologyRoundKind, type RoundRecord } from '@/entities/library-round';
 import { NewRoundSheet, useLibraryRounds, useVaultFolders } from '@/views/library';
 import { AutomationsPage } from '@/views/automations';
 
@@ -18,7 +18,7 @@ export function AutomationsWorkspace() {
   };
   // Read the folder list from disk only while the sheet is up, as the Library screen does.
   const folders = useVaultFolders(documentsSheetOpen);
-  const documentRounds = (runner?.rounds ?? []).filter((round) => round.kind !== 'ontology');
+  const documentRounds = (runner?.rounds ?? []).filter((round) => !isOntologyRoundKind(round.kind));
 
   return (
     <>

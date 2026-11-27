@@ -7,6 +7,7 @@
 
 import {
   CREATED_BY_KEY,
+  EVIDENCE_CHECKED_KEY,
   HUMAN_ONLY_REVIEW_KEYS,
   REVIEW_NOTE_KEY,
   REVIEW_STATES,
@@ -59,7 +60,20 @@ function requireValidFrontmatterPatch(frontmatter) {
         'Patching an existing node is not authorship; leave the field as it is (or absent, which means unknown).',
     );
   }
+  refuseRecheckMark(frontmatter, 'frontmatter');
   requireAgentWritableReviewFields(frontmatter);
+}
+
+/**
+ * `evidence_checked` says an agent reread the concept against its code at that commit, and only the
+ * desktop app's recheck writes it after the read; from a write tool it would clear a stale concept unread.
+ */
+function refuseRecheckMark(fields, label) {
+  if (!Object.prototype.hasOwnProperty.call(fields ?? {}, EVIDENCE_CHECKED_KEY)) return;
+  throw new Error(
+    `${label}.${EVIDENCE_CHECKED_KEY} is written only by the desktop app's recheck, after it gives an agent the concept and what changed in its code. ` +
+      'A write tool setting it would mark the concept current without that read; leave it as it is. If the concept is out of date, change its body or path instead.',
+  );
 }
 
 /**
@@ -142,6 +156,7 @@ export {
   ADD_CONCEPT_KINDS,
   assertGraphNodeEndpoint,
   destructivePreviewState,
+  refuseRecheckMark,
   requireNodeNotReservedForHuman,
   requireValidFrontmatterPatch,
 };

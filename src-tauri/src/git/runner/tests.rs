@@ -14,7 +14,14 @@ fn a_waited_command_drains_output_larger_than_a_pipe_buffer() {
         .stderr(Stdio::piped())
         .spawn()
         .unwrap();
-    let run = wait_with_deadline(&mut child, "probe", std::time::Duration::from_secs(20)).unwrap();
+    let run = wait_with_deadline(
+        &mut child,
+        "probe",
+        std::time::Duration::from_secs(20),
+        "git-network-timeout",
+        false,
+    )
+    .unwrap();
     assert!(run.success);
     assert_eq!(run.stdout.len(), 200_000);
     assert_eq!(run.stderr.len(), 100_000);

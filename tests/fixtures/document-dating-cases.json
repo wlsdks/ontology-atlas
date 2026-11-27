@@ -1,0 +1,73 @@
+{
+  "about": "Which commit dates a concept document and a cited file, after each history. A document is dated by the first commit at which it held its present bytes; a cited file by its newest commit. Run by tests/contract/analysis/evidence-drift-parity.contract.test.ts (MCP walk) and src-tauri/src/git/evidence/tests.rs (both desktop walks). Each commit step is one minute after the previous one.",
+  "document": "docs/capabilities/pay.md",
+  "code": "src/pay.ts",
+  "cases": [
+    {
+      "name": "a recheck mark dates the document by the run's commit",
+      "steps": [
+        { "commit": "A", "files": { "docs/capabilities/pay.md": "---\nkind: capability\n---\nPays.\n", "src/pay.ts": "pay(1);\n" } },
+        { "commit": "B", "files": { "src/pay.ts": "pay(2);\n" } },
+        { "commit": "M", "files": { "docs/capabilities/pay.md": "---\nkind: capability\nevidence_checked: 0000000000000000000000000000000000000000\n---\nPays.\n" } }
+      ],
+      "dates": { "document": "M", "code": "B" },
+      "verdict": "current"
+    },
+    {
+      "name": "a git revert of the run's commit returns the earlier date",
+      "steps": [
+        { "commit": "A", "files": { "docs/capabilities/pay.md": "---\nkind: capability\n---\nPays.\n", "src/pay.ts": "pay(1);\n" } },
+        { "commit": "B", "files": { "src/pay.ts": "pay(2);\n" } },
+        { "commit": "M", "files": { "docs/capabilities/pay.md": "---\nkind: capability\nevidence_checked: 0000000000000000000000000000000000000000\n---\nPays.\n" } },
+        { "revert": "M", "as": "R" }
+      ],
+      "dates": { "document": "A", "code": "B" },
+      "verdict": "stale"
+    },
+    {
+      "name": "restoring the document from the run's parent and committing returns the earlier date",
+      "steps": [
+        { "commit": "A", "files": { "docs/capabilities/pay.md": "---\nkind: capability\n---\nPays.\n", "src/pay.ts": "pay(1);\n" } },
+        { "commit": "B", "files": { "src/pay.ts": "pay(2);\n" } },
+        { "commit": "M", "files": { "docs/capabilities/pay.md": "---\nkind: capability\nevidence_checked: 0000000000000000000000000000000000000000\n---\nPays.\n" } },
+        { "restore": "docs/capabilities/pay.md", "from": "B", "as": "U" }
+      ],
+      "dates": { "document": "A", "code": "B" },
+      "verdict": "stale"
+    },
+    {
+      "name": "a rebase of the run's commit keeps its bytes and the verdict",
+      "steps": [
+        { "commit": "A", "files": { "docs/capabilities/pay.md": "---\nkind: capability\n---\nPays.\n", "src/pay.ts": "pay(1);\n" } },
+        { "commit": "B", "files": { "src/pay.ts": "pay(2);\n" } },
+        { "commit": "M", "files": { "docs/capabilities/pay.md": "---\nkind: capability\nevidence_checked: 0000000000000000000000000000000000000000\n---\nPays.\n" } },
+        { "reset": "B" },
+        { "commit": "C", "files": { "README.md": "other work\n" } },
+        { "cherryPick": "M", "as": "M2" }
+      ],
+      "dates": { "document": "M2", "code": "B" },
+      "verdict": "current"
+    },
+    {
+      "name": "a document edited and edited back is dated by its first commit with those bytes",
+      "steps": [
+        { "commit": "A", "files": { "docs/capabilities/pay.md": "Pays.\n", "src/pay.ts": "pay(1);\n" } },
+        { "commit": "B", "files": { "src/pay.ts": "pay(2);\n" } },
+        { "commit": "C", "files": { "docs/capabilities/pay.md": "Pays twice.\n" } },
+        { "commit": "D", "files": { "docs/capabilities/pay.md": "Pays.\n" } }
+      ],
+      "dates": { "document": "A", "code": "B" },
+      "verdict": "stale"
+    },
+    {
+      "name": "a cited file changed back is still dated by its newest commit",
+      "steps": [
+        { "commit": "A", "files": { "docs/capabilities/pay.md": "Pays.\n", "src/pay.ts": "pay(1);\n" } },
+        { "commit": "B", "files": { "src/pay.ts": "pay(2);\n" } },
+        { "commit": "C", "files": { "src/pay.ts": "pay(1);\n" } }
+      ],
+      "dates": { "document": "A", "code": "C" },
+      "verdict": "stale"
+    }
+  ]
+}

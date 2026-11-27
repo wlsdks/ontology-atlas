@@ -22,7 +22,7 @@ export interface EvidenceVerdict {
 
 export function judgeEvidence(input: {
   docChangedAt: string | null | undefined;
-  /** The document's newest commit, the revision `unchangedPairs` was read at. */
+  /** The commit that dates the document, the revision `unchangedPairs` was read at. */
   docCommit?: string | null;
   /** Pairs from `unchangedEvidencePairs`: files that changed only in comments, import paths or layout. */
   unchangedPairs?: ReadonlySet<string> | null;

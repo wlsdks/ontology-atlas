@@ -113,6 +113,32 @@ describe('round ledger', () => {
     expect(parseRoundPassEntry(JSON.stringify(pass()))).not.toHaveProperty('leftAsIs');
   });
 
+  it('keeps a recheck run with each concept it settled, and drops a concept or reason it cannot read', () => {
+    const recheck = {
+      head: 'a'.repeat(40),
+      commit: 'b'.repeat(40),
+      concepts: [
+        { slug: 'capabilities/pay', path: 'capabilities/pay.md', outcome: 'accurate', files: ['src/pay.ts'], basis: 'c1 src/pay.ts@c2' },
+        { slug: 'capabilities/ship', path: 'capabilities/ship.md', outcome: 'outdated', files: ['src/ship.ts'], reason: 'Ships twice now', passage: 'ships once' },
+        { slug: 'capabilities/keys', path: 'capabilities/keys.md', outcome: 'left', files: [], leftReason: 'refused-path', leftPath: '.env.local' },
+      ],
+      sentBytes: 2048,
+      waiting: 3,
+      skippedUncommitted: 1,
+      ignored: 1,
+    };
+    const line = JSON.stringify({
+      ...pass({ kind: 'recheck', outcome: 'rechecked' }),
+      recheck: { ...recheck, concepts: [...recheck.concepts, { slug: 'x', path: 'x.md', outcome: 'perfect' }], hold: { reason: 'weather' }, error: 'sunspots' },
+    });
+    const entry = parseRoundPassEntry(line);
+    expect(entry).toMatchObject({ kind: 'recheck', outcome: 'rechecked', recheck });
+    expect(entry?.recheck).not.toHaveProperty('hold');
+    expect(entry?.recheck).not.toHaveProperty('error');
+    const undo = parseRoundPassEntry(JSON.stringify({ ...pass({ kind: 'recheck', outcome: 'rechecked' }), recheck: { undoOf: 'p0', undone: ['capabilities/pay.md'], concepts: [] } }));
+    expect(undo?.recheck).toMatchObject({ undoOf: 'p0', undone: ['capabilities/pay.md'], sentBytes: 0 });
+  });
+
   it('rejects an entry with an outcome it does not know', () => {
     expect(parseRoundPassEntry(JSON.stringify(pass({ outcome: 'exploded' as RoundPassEntry['outcome'] })))).toBeNull();
   });

@@ -9,6 +9,7 @@ pub(crate) mod commits;
 pub(crate) mod document;
 pub(crate) mod evidence;
 pub(crate) mod history;
+pub(crate) mod recheck;
 pub(crate) mod releases;
 pub(crate) mod remote;
 mod repo;

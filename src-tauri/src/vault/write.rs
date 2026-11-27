@@ -100,19 +100,28 @@ fn write_vault_text_file_after_validation(
         let parent_relative = relative.parent().unwrap_or_else(|| Path::new(""));
         let parent_relative = parent_relative.to_string_lossy();
         resolve_directory_target_inside(&root_path, &parent_relative)?;
+        use std::os::unix::fs::PermissionsExt;
         let target = root.join(&relative);
-        match fs::symlink_metadata(&target) {
+        let existing_mode = match fs::symlink_metadata(&target) {
             Ok(metadata) if metadata.file_type().is_symlink() => {
                 return Err("resolved path must stay inside the selected vault".into());
             }
-            Ok(_) => {}
-            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Ok(metadata) => Some(metadata.permissions().mode() & 0o7777),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
             Err(error) => return Err(error.to_string()),
-        }
+        };
         let root_handle = confined_files::open_absolute_directory_no_follow(&root)?;
         let (parent, file_name) = confined_files::open_entry_parent(&root_handle, &relative_path)?;
         after_validation();
-        confined_files::write_entry_atomically(&parent, &file_name, &content, 0o666)
+        // A replaced file keeps its mode, so Git sees no mode change beside the new text.
+        confined_files::write_entry_atomically_with(&parent, &file_name, 0o666, |file| {
+            use std::io::Write;
+            file.write_all(content.as_bytes())?;
+            if let Some(mode) = existing_mode {
+                file.set_permissions(fs::Permissions::from_mode(mode))?;
+            }
+            Ok(())
+        })
     }
 
     #[cfg(not(unix))]

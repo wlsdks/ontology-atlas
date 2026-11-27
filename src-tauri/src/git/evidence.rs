@@ -23,15 +23,62 @@ pub struct PathLastChange {
     last_commit: Option<String>,
 }
 
-/// The newest commit touching one wanted path.
+/// The commit that dates one wanted path.
 #[derive(Debug, Clone)]
-struct NewestCommit {
+struct DatingCommit {
     at: String,
     hash: String,
 }
 
+/// How a wanted path is dated. A concept document is dated by its bytes, so a commit that only
+/// puts back earlier bytes (an undo, a revert) returns the earlier date; a cited file by its newest commit.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Dating {
+    NewestCommit,
+    FirstCommitWithPresentBytes,
+}
+
+/// One path a commit touched in `git log --raw --no-abbrev` output, and the blob it left there.
+pub(crate) fn raw_touch(line: &str) -> Option<(&str, &str)> {
+    let (status, path) = line.strip_prefix(':')?.split_once('\t')?;
+    let blob = status.split(' ').nth(3)?;
+    Some((blob, path))
+}
+
+/// Per path, the blob its newest touch left and the commit dating it so far.
+#[derive(Clone)]
+pub(crate) struct DatingState<T: Clone> {
+    present: Option<String>,
+    pub(crate) dated: Option<T>,
+}
+
+impl<T: Clone> Default for DatingState<T> {
+    fn default() -> Self {
+        Self {
+            present: None,
+            dated: None,
+        }
+    }
+}
+
+impl<T: Clone> DatingState<T> {
+    /// Called newest commit first. O(1) per touch.
+    pub(crate) fn touched(&mut self, dating: Dating, blob: &str, exact: bool, commit: &T) {
+        match (&self.present, dating, exact) {
+            (None, _, _) => {
+                self.present = Some(blob.to_string());
+                self.dated = Some(commit.clone());
+            }
+            (Some(present), Dating::FirstCommitWithPresentBytes, true) if present == blob => {
+                self.dated = Some(commit.clone());
+            }
+            _ => {}
+        }
+    }
+}
+
 /// One `git log --name-only` walk matched in memory, not one process per concept.
-const MAX_EVIDENCE_PATHS: usize = 512;
+pub(crate) const MAX_EVIDENCE_PATHS: usize = 512;
 const EVIDENCE_WALK_COMMITS: &str = "--max-count=3000";
 
 /// Date vault-relative documents and repository-relative paths under the vault grant.
@@ -50,27 +97,34 @@ pub fn git_paths_last_change(
         format!("{pathspec}/")
     };
 
-    // (key as the caller wrote it, repository-relative path)
-    let mut wanted: Vec<(String, String)> = Vec::new();
-    let mut push = |key: &str, resolved: String| {
+    let mut wanted: Vec<WantedPath> = Vec::new();
+    let mut push = |key: &str, resolved: String, dating: Dating| {
         if wanted.len() >= MAX_EVIDENCE_PATHS {
             return;
         }
-        if wanted.iter().any(|(k, _)| k == key) {
+        if wanted.iter().any(|path| path.key == key) {
             return;
         }
-        wanted.push((key.to_string(), resolved));
+        wanted.push(WantedPath {
+            key: key.to_string(),
+            resolved,
+            dating,
+        });
     };
     // Documents first: the cap is shared, and implementation paths must not starve
     // concept documents.
     for raw in &vault_paths {
         if let Some(clean) = safe_relative_path(raw) {
-            push(raw, format!("{prefix}{clean}"));
+            push(
+                raw,
+                format!("{prefix}{clean}"),
+                Dating::FirstCommitWithPresentBytes,
+            );
         }
     }
     for raw in &repo_paths {
         if let Some(clean) = safe_relative_path(raw) {
-            push(raw, clean);
+            push(raw, clean, Dating::NewestCommit);
         }
     }
     if wanted.is_empty() {
@@ -82,25 +136,33 @@ pub fn git_paths_last_change(
     Ok(wanted
         .iter()
         .enumerate()
-        .map(|(index, (key, resolved))| {
-            let on_disk = repo_root.join(resolved);
-            let newest = last.get(&index);
+        .map(|(index, path)| {
+            let on_disk = repo_root.join(&path.resolved);
+            let dated = last.get(index).and_then(|state| state.dated.as_ref());
             PathLastChange {
-                path: key.clone(),
+                path: path.key.clone(),
                 exists: on_disk.exists(),
                 is_dir: on_disk.is_dir(),
-                last_changed_at: newest.map(|commit| commit.at.clone()),
-                last_commit: newest.map(|commit| commit.hash.clone()),
+                last_changed_at: dated.map(|commit| commit.at.clone()),
+                last_commit: dated.map(|commit| commit.hash.clone()),
             }
         })
         .collect())
 }
 
-/// The newest commit of each wanted path, by its index. O(log lines x wanted).
+struct WantedPath {
+    /// As the caller wrote it.
+    key: String,
+    /// Repository-relative.
+    resolved: String,
+    dating: Dating,
+}
+
+/// The dating commit of each wanted path, by its index, from one walk. O(log lines x wanted).
 fn last_changes(
     repo_root: &std::path::Path,
-    wanted: &[(String, String)],
-) -> Result<std::collections::HashMap<usize, NewestCommit>, String> {
+    wanted: &[WantedPath],
+) -> Result<Vec<DatingState<DatingCommit>>, String> {
     const REC: char = '\x1e';
     let format = format!("--pretty=format:{REC}%H %cI");
     let mut args: Vec<&str> = vec![
@@ -110,48 +172,46 @@ fn last_changes(
         "log",
         EVIDENCE_WALK_COMMITS,
         &format,
-        "--name-only",
+        "--raw",
+        "--no-abbrev",
         "--no-renames",
         "--",
     ];
-    for (_, resolved) in wanted {
-        args.push(resolved.as_str());
+    for path in wanted {
+        args.push(path.resolved.as_str());
     }
     let out = run_git(repo_root, &args)?;
 
-    let mut last: std::collections::HashMap<usize, NewestCommit> = std::collections::HashMap::new();
+    let mut last = vec![DatingState::<DatingCommit>::default(); wanted.len()];
     if out.success {
-        let mut current: Option<NewestCommit> = None;
+        let mut current: Option<DatingCommit> = None;
         for line in out.stdout.lines() {
-            let line = line.trim();
-            if line.is_empty() {
-                continue;
-            }
             if let Some(rest) = line.strip_prefix(REC) {
-                current = rest.trim().split_once(' ').map(|(hash, at)| NewestCommit {
+                current = rest.trim().split_once(' ').map(|(hash, at)| DatingCommit {
                     at: at.to_string(),
                     hash: hash.to_string(),
                 });
                 continue;
             }
-            let Some(time) = current.as_ref() else {
+            let (Some(commit), Some((blob, touched))) = (current.as_ref(), raw_touch(line)) else {
                 continue;
             };
-            for (index, (_, resolved)) in wanted.iter().enumerate() {
-                if last.contains_key(&index) {
-                    continue;
-                }
-                let under = line.len() > resolved.len()
-                    && line.starts_with(resolved.as_str())
-                    && line.as_bytes().get(resolved.len()) == Some(&b'/');
-                if line == resolved || under {
-                    last.insert(index, time.clone());
+            for (path, state) in wanted.iter().zip(last.iter_mut()) {
+                let exact = touched == path.resolved;
+                if exact || is_under(touched, &path.resolved) {
+                    state.touched(path.dating, blob, exact, commit);
                 }
             }
         }
     }
 
     Ok(last)
+}
+
+pub(crate) fn is_under(candidate: &str, folder: &str) -> bool {
+    candidate
+        .strip_prefix(folder)
+        .is_some_and(|rest| rest.starts_with('/'))
 }
 
 fn safe_relative_path(raw: &str) -> Option<String> {

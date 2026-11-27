@@ -65,6 +65,8 @@ export function useScheduledRunCopy(run: ScheduledRun, elapsed: string | null, m
       return { title: t('staleTitle', { count: result.stale }), line: t('staleBody', { name }), figures: null, tint, moru };
     case 'redrafted':
       return { title: t('redraftedTitle', { count: result.written }), line: t('redraftedBody', { name }), figures: null, tint, moru };
+    case 'rechecked':
+      return { title: t('recheckedTitle', { name }), line: t('recheckedBody', { count: result.written }), figures: null, tint, moru };
     case 'reviewed':
       return { title: t('reviewedTitle', { name }), line: result.summary || t('reviewedBody'), figures: null, tint, moru };
     case 'refused':

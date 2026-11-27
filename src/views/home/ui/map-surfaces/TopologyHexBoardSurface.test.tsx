@@ -20,6 +20,7 @@ vi.mock("@/widgets/ontology-map", () => ({
 vi.mock("@/features/vault-ontology", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/features/vault-ontology")>()),
   useMapEvidenceStates: () => ({ availability: "no-paths", states: new Map(), movedPaths: new Map(), stalePaths: new Map() }),
+  useRecheckedConcepts: () => new Set(),
 }));
 
 const insightNode = (id: string, kind: string) =>

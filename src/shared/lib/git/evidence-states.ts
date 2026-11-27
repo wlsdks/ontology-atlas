@@ -14,7 +14,7 @@ export interface EvidenceChange {
   /** A folder path. Its change time says only that something under it moved. */
   isDir?: boolean;
   lastChangedAt: string | null;
-  /** Hash of that newest commit; a concept document's is where its cited files are re-read. */
+  /** Hash of that commit; a concept document's is where its cited files are re-read. */
   lastCommit?: string | null;
 }
 
@@ -33,7 +33,7 @@ export interface EvidenceRow {
    * search first.
    */
   slug: string | null;
-  /** ISO time of the concept document's own newest commit, when the walk supplied one. */
+  /** ISO time of the commit that dates the concept document, when the walk supplied one. */
   docChangedAt: string | null;
   /** Files cited by this concept that changed after the document. */
   moved: readonly { path: string; changedAt: string }[];
@@ -63,7 +63,7 @@ export interface EvidenceStates {
 /**
  * Compares each concept's document with the code it cites through the one rule the MCP server uses,
  * so the screen and an agent agree. `unchangedPairs` (`unchangedEvidencePairs`) names the moved
- * files whose only change since the document's newest commit is in comments, imports or whitespace.
+ * files whose only change since the commit that dates the document is in comments, imports or whitespace.
  */
 export function resolveEvidenceStates(
   concepts: readonly EvidenceConceptInput[],

@@ -1,4 +1,4 @@
-import type { RoundKind } from '@/entities/library-round';
+import { isOntologyRoundKind, type RoundKind } from '@/entities/library-round';
 import { isWikiFurnitureSlug } from '@/shared/lib/library/wiki-page-schema';
 
 import { pageIdentity } from './pass-pages';
@@ -132,8 +132,8 @@ export function judgeRoundScope({
     return { decision: 'reject', reason: relative };
   }
 
-  // Ontology rounds are read-only reviews: they may inspect source evidence but never edit the vault.
-  if (round.kind === 'ontology' || node?.(relative) || unsafe?.(relative)) {
+  // Ontology checks and rechecks are read-only turns: a recheck's mark is Atlas's own write afterwards.
+  if (isOntologyRoundKind(round.kind) || node?.(relative) || unsafe?.(relative)) {
     return { decision: 'reject', reason: relative || request.toolName || 'ontology review is read-only' };
   }
 

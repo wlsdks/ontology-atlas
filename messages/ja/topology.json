@@ -26,7 +26,8 @@
     "evidenceReading": "Gitの履歴から根拠を読み取り中",
     "evidenceAppOnly": "デスクトップアプリがGitの履歴を読み取り、古いケイパビリティに印を付けます",
     "evidenceUnreadable": "Gitの履歴を読み取れなかったため、根拠は不明です",
-    "evidenceNoPaths": "コードのパスを書いたケイパビリティがないため、根拠は不明です"
+    "evidenceNoPaths": "コードのパスを書いたケイパビリティがないため、根拠は不明です",
+    "evidenceChecked": "ケイパビリティ{count}件は、文書の編集ではなく、エージェントが文書をコードと再確認したため古くありません。"
   },
   "widgetError": {
     "mapTitle": "マップを描画できませんでした。",

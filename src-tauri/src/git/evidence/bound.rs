@@ -6,6 +6,7 @@ use serde::Serialize;
 
 use super::super::repo::{require_repo_root, vault_pathspec};
 use super::super::runner::{run_git_read as run_git, validate_vault_dir};
+use super::{Dating, DatingState};
 use crate::gray_area::scope::{resolve_binding_metadata, verify_identity};
 
 #[derive(Debug, Serialize)]
@@ -234,12 +235,9 @@ fn dirty_paths(root: &Path, paths: &[Wanted]) -> Result<HashSet<String>, String>
     Ok(dirty)
 }
 fn matches_path(path: &str, candidate: &str) -> bool {
-    candidate == path
-        || candidate
-            .strip_prefix(path)
-            .is_some_and(|suffix| suffix.starts_with('/'))
+    candidate == path || super::is_under(candidate, path)
 }
-fn walk(root: &Path, paths: &[Wanted]) -> Result<Vec<BoundPathChange>, String> {
+fn walk(root: &Path, paths: &[Wanted], dating: Dating) -> Result<Vec<BoundPathChange>, String> {
     if paths.is_empty() {
         return Ok(vec![]);
     }
@@ -255,7 +253,8 @@ fn walk(root: &Path, paths: &[Wanted]) -> Result<Vec<BoundPathChange>, String> {
         "log",
         super::EVIDENCE_WALK_COMMITS,
         "--format=%x1e%cI",
-        "--name-only",
+        "--raw",
+        "--no-abbrev",
         "--no-renames",
         "--",
     ];
@@ -270,17 +269,17 @@ fn walk(root: &Path, paths: &[Wanted]) -> Result<Vec<BoundPathChange>, String> {
         output.stdout
     };
     let after = dirty_paths(root, paths)?;
-    let mut dates = vec![None; paths.len()];
-    let mut time = None;
+    let mut dates = vec![DatingState::<Option<String>>::default(); paths.len()];
+    let mut time: Option<String> = None;
     for line in history.lines() {
         if let Some(value) = line.strip_prefix('\x1e') {
             time = chrono::DateTime::parse_from_rfc3339(value)
                 .ok()
                 .map(|_| value.to_string());
-        } else if !line.is_empty() {
+        } else if let Some((blob, touched)) = super::raw_touch(line) {
             for (path, date) in paths.iter().zip(dates.iter_mut()) {
-                if date.is_none() && matches_path(&path.resolved, line) {
-                    *date = time.clone();
+                if matches_path(&path.resolved, touched) {
+                    date.touched(dating, blob, touched == path.resolved, &time);
                 }
             }
         }
@@ -300,7 +299,7 @@ fn walk(root: &Path, paths: &[Wanted]) -> Result<Vec<BoundPathChange>, String> {
                 last_changed_at: if !path.exists || dirty || path.is_dir {
                     None
                 } else {
-                    date.clone()
+                    date.dated.clone().flatten()
                 },
                 dirty,
             }
@@ -365,11 +364,15 @@ fn measure(
         &mut remaining,
         &mut result.omitted_source_paths,
     );
-    result.vault_changes = match walk(&before.vault_repo, &vault_wanted) {
+    result.vault_changes = match walk(
+        &before.vault_repo,
+        &vault_wanted,
+        Dating::FirstCommitWithPresentBytes,
+    ) {
         Ok(rows) => rows,
         Err(reason) => return BoundEvidenceDates::unavailable(&reason),
     };
-    result.source_changes = match walk(&before.source, &source_wanted) {
+    result.source_changes = match walk(&before.source, &source_wanted, Dating::NewestCommit) {
         Ok(rows) => rows,
         Err(reason) => return BoundEvidenceDates::unavailable(&reason),
     };

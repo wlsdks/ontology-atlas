@@ -574,3 +574,45 @@ fn unavailable_confined_reads_never_publish_bound_dates() {
     assert!(result.vault_changes.is_empty() && result.source_changes.is_empty());
     assert!(result.omitted_vault_paths.is_empty() && result.omitted_source_paths.is_empty());
 }
+
+#[test]
+fn the_bound_walk_dates_documents_by_their_bytes_as_the_shared_cases_say() {
+    for case in super::super::tests::dating_cases("bound") {
+        let time_of = |label: &str| {
+            let hash = case.labels.get(label).unwrap();
+            let out = Command::new("git")
+                .args(["show", "-s", "--format=%cI", hash])
+                .current_dir(&case.root)
+                .output()
+                .unwrap();
+            String::from_utf8_lossy(&out.stdout).trim().to_string()
+        };
+        let wanted_one = |path: &str| {
+            vec![Wanted {
+                key: path.to_string(),
+                resolved: path.to_string(),
+                exists: true,
+                is_dir: false,
+            }]
+        };
+        let document = walk(
+            &case.root,
+            &wanted_one(&case.document),
+            Dating::FirstCommitWithPresentBytes,
+        )
+        .unwrap();
+        let code = walk(&case.root, &wanted_one(&case.code), Dating::NewestCommit).unwrap();
+        assert_eq!(
+            document[0].last_changed_at.as_deref(),
+            Some(time_of(&case.document_label).as_str()),
+            "{}: document",
+            case.name
+        );
+        assert_eq!(
+            code[0].last_changed_at.as_deref(),
+            Some(time_of(&case.code_label).as_str()),
+            "{}: code",
+            case.name
+        );
+    }
+}

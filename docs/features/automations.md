@@ -91,9 +91,43 @@ go back, a time the clock shows twice runs both times, so an hourly schedule run
 schedule whose time passed while it was paused runs it at the next boundary, not as a
 catch-up. A round paused or removed while it waited behind another pass does not run.
 
-Ontology schedules stay read-only: they may inspect evidence and propose changes,
-never write concepts, relations, files, or meaning receipts. An Atlas write the agent asks
-for during a pass is refused at once and named in the run's tool activity. Document rounds
+An ontology check stays read-only: it may inspect evidence and propose changes, never write
+concepts, relations, files, or meaning receipts. An Atlas write the agent asks for during a
+pass is refused at once and named in the run's tool activity.
+
+A recheck is the Ontology lane's second kind, chosen in the same sheet ("What it does") and
+fixed once saved. It needs the folder to be in a Git repository; outside one the sheet says
+so and cannot save. Each run first asks Git whether it may commit: with no commit yet, a
+detached `HEAD`, a merge, rebase, cherry-pick, revert or bisect in progress, or the remote's
+recorded default branch checked out, it holds with no agent turn. With no remote, or none
+recorded, it commits on the checked-out branch. It then takes the concepts whose cited code
+changed after their document (the rule `validate_vault` uses, every kind), longest-waiting
+document first, up to its "Concepts per run" (1 to 25, default 10) and 200 kB of documents
+and diffs; the rest wait for the next run. It skips a concept whose document or moved file
+has uncommitted changes, one raised with `review_state: human_decides`, and one it left "Not
+decided" before whose document and files have not changed since. A concept citing a path the
+code reader refuses is listed "Not decided" and nothing of it is sent. One read-only agent
+turn reads each document with the diff of its moved files from the document's commit, cut at
+400 lines; for a cut diff the agent must read the file through `analyze_repo_structure`
+`sourceReads`, or its "still accurate" is not taken. The agent answers in one JSON block;
+Atlas, never the agent, writes `evidence_checked: <HEAD at the start>` into each document the
+agent calls still accurate, only when the result differs from the document by that one
+line, and commits exactly those documents (`docs: recheck N concepts against the code`,
+slugs by outcome in the body) while `HEAD` is still the start commit. Atlas never pushes. A
+document is dated by the first commit at which it held its present bytes, so the mark's
+commit makes the concept current and a revert or restore makes it stale again. "Out of date"
+and "cannot tell" change nothing and keep the concept stale. A reply Atlas cannot read, a
+moved `HEAD`, Stop, or no ready agent changes no document. When Git refuses the commit (a
+hook or signing), Atlas puts back each document that still holds what it wrote, names one a
+person changed since, keeps the new text under `.ontology-atlas/undone/<run>/`, and holds the
+schedule's clock runs until a **Run now** commits. A run interrupted between writing and
+committing is put back the next time the folder opens. The run history states what the run
+sent, what waits and what it skipped; **View results** opens a centred dialog listing each
+concept by outcome with its reason and the files sent, **Undo this concept** and **Undo this
+run**, each committing the documents' earlier text and leaving one changed since. A recheck
+that came with the folder never runs here and has no allow press: its row says to remove it
+and schedule your own. On the map's hex view, the evidence line counts the capabilities that
+are current because of a mark naming a commit the repository has. Document rounds
 keep their previously approved Library scope, and a page they write lands only as a draft,
 judged as the agent's edit tool applies the write and against the page as the pass's earlier
 writes left it, under whatever letter case or Unicode form the path is spelled in. A write to a
@@ -119,6 +153,7 @@ allowed it exactly as it now reads: its kind, cadence, places, focus or query, w
 does to a stale page, and its cap. `rounds.json` travels with the folder, so a clone can
 arrive with a round switched on; such a round, or one the folder changed since, shows
 "Off on this Mac" on its row and, in a full-width strip always open under that row, its whole
-definition in words and one press that allows it; Run now waits until then. Saving,
+definition in words and one press that allows it; Run now waits until then. A recheck is the
+exception above: a folder cannot hand this Mac a schedule that commits. Saving,
 editing or resuming a schedule here allows it, pausing keeps the allowance, and removing
 forgets it.

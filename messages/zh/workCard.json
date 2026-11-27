@@ -26,6 +26,8 @@
     "redraftedBody": "{name} · 已重写草稿。运行历史逐一列出。",
     "reviewedTitle": "{name} · 审阅完成",
     "reviewedBody": "提议在运行历史中。",
+    "recheckedTitle": "{name} · 重新检查完成",
+    "recheckedBody": "{count, plural, =0 {没有文档被记录为仍然正确。每个概念都在运行历史中。} other {已将 # 个文档记录为仍然正确并提交。每个概念都在运行历史中。}}",
     "refusedTitle": "{name} 已被拦截",
     "refusedBody": "它请求了计划不允许的操作。运行历史中写明了是什么。",
     "failedTitle": "{name} 提前结束",
