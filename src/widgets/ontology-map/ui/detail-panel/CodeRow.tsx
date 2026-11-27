@@ -53,8 +53,9 @@ export function CodeRow({ row }: { row: NonNullable<OntologyMapDetailPanelProps[
         ) : null}
       </button>
       {row.changedEvidence ? (
-        <p data-testid="map-detail-panel-code-changed" className="mt-1 flex min-w-0 items-center gap-2 text-label leading-label text-[color:var(--map-panel-text-secondary)]">
-          <span aria-hidden className={CHANGED_DOT_CLASS} />
+        <p data-testid="map-detail-panel-code-changed" className="mt-1 flex min-w-0 items-start gap-1.5 text-label leading-label text-[color:var(--map-panel-text-secondary)]">
+          {/* The dot sits in the glyph's column and the words under the row's label, as the row lays them out. */}
+          <span aria-hidden className={GROUP_GLYPH_SLOT}><span className={CHANGED_DOT_CLASS} /></span>
           <span className="min-w-0 break-words">
             {t(row.changedEvidence.gone ? "row.gone" : "row.changed", { path: row.changedEvidence.path })}
           </span>
