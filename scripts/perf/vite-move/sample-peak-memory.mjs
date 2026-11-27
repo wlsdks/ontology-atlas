@@ -2,7 +2,7 @@ import { setTimeout as sleep } from 'node:timers/promises';
 import { createProcessTableReader } from './read-process-table.mjs';
 import { sumProcessTree } from './sum-process-tree.mjs';
 
-export const SAMPLE_INTERVAL_MS = 100;
+const SAMPLE_INTERVAL_MS = 100;
 
 /**
  * Samples the resident memory of `rootPid` and its descendants until `stop()` is called.

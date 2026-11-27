@@ -1,5 +1,5 @@
 /** The middle value; the mean of the two middle values for an even count; null for none. */
-export function median(values) {
+function median(values) {
   if (values.length === 0) return null;
   const sorted = [...values].sort((a, b) => a - b);
   const middle = Math.floor(sorted.length / 2);
