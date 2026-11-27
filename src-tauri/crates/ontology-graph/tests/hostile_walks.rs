@@ -186,21 +186,26 @@ fn a_hub_fifty_thousand_nodes_lean_on_is_counted_exactly_and_listed_within_limit
             ..at("subgraph", 0)
         },
     );
+    // The hub and the nine nearest of its dependents are shown, and the nine edges among them
+    // are all of the edges among what is shown; every dependent is counted in the totals.
     assert_eq!(subgraph["totalNodes"], MANY);
     assert_eq!(len(&subgraph["nodes"]), 10);
-    assert!(len(&subgraph["edges"]) <= 10);
+    assert_eq!(len(&subgraph["edges"]), 9);
+    assert_eq!(subgraph["totalEdges"], MANY - 1);
+    assert_eq!(subgraph["limited"], true);
 
     let pattern = answer(
         &graph,
         &QueryRequest {
-            pattern: Some(vec!["depends_on".to_string(); 3]),
+            pattern: Some(vec!["depends_on".to_string()]),
             direction: Some(Direction::Incoming),
             limit,
             ..at("pattern_walk", 0)
         },
     );
     assert_eq!(pattern["paths"]["limited"], true);
-    assert!(len(&pattern["paths"]["rows"]) <= 10);
+    assert_eq!(len(&pattern["paths"]["rows"]), 10);
+    assert_eq!(pattern["layers"][0]["totalPaths"], 10);
 }
 
 #[test]
