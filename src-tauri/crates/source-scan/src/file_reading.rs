@@ -32,17 +32,17 @@ pub fn read_file(
 ) -> FileReading {
     let parsed = match parse_bounded(language, text, ParseLimits::for_imports(max_bytes)) {
         Ok(parsed) => parsed,
-        Err(ParseRefusal::TooLarge) => return FileReading::Unreadable(UnresolvedReason::FileTooLarge),
+        Err(ParseRefusal::TooLarge) => {
+            return FileReading::Unreadable(UnresolvedReason::FileTooLarge)
+        }
         Err(_) => return FileReading::Unreadable(UnresolvedReason::SourceNotParsed),
     };
     match language {
         SourceLanguage::Rust => FileReading::Rust(read_rust_dependencies(&parsed)),
         SourceLanguage::Python => FileReading::Python(read_python_imports(&parsed)),
-        SourceLanguage::Java | SourceLanguage::Kotlin => FileReading::Jvm(Box::new(read_jvm_source(
-            &parsed,
-            file_name,
-            language == SourceLanguage::Kotlin,
-        ))),
+        SourceLanguage::Java | SourceLanguage::Kotlin => FileReading::Jvm(Box::new(
+            read_jvm_source(&parsed, file_name, language == SourceLanguage::Kotlin),
+        )),
         _ => {
             let (side, regular): (Vec<_>, Vec<_>) = read_script_imports(&parsed)
                 .into_iter()

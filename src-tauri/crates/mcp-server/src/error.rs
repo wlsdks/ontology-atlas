@@ -15,8 +15,7 @@ use thiserror::Error;
 pub use details::{
     AllowedValueDetails, CompactUnavailableDetails, LargeResponseDetails, MissingNodeDetails,
     ProfileMissingDetails, ProfileNotFoundDetails, ProfileRequiredDetails, ReceivedValue,
-    UnknownArgumentDetails, UnknownField,
-    UnknownToolDetails,
+    UnknownArgumentDetails, UnknownField, UnknownToolDetails,
 };
 
 /// The `errorCode` values an agent branches on. The set is shared with the JavaScript server and

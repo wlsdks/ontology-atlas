@@ -57,32 +57,32 @@ pub fn module_of(
         }
         facts.kind(&path).is_some()
     };
-    if parts.len() >= 3
-        && source_folder_starts_at(parts[0], source_folders)
-        && exists(&[parts[0], parts[1], "__init__.py"])
-    {
-        let module_part = parts[2];
-        let raw_name = if module_part == "__init__.py" {
-            parts[1]
-        } else {
-            strip_source_extension(module_part)
-        };
-        return non_empty(flat_python_name(raw_name)).map(|name| format!("elements/{name}"));
+    let first = parts.first().copied().unwrap_or("");
+    let second = parts.get(1).copied();
+    let third = parts.get(2).copied();
+    if let (Some(second), Some(third)) = (second, third) {
+        if source_folder_starts_at(first, source_folders) && exists(&[first, second, "__init__.py"])
+        {
+            let raw_name = if third == "__init__.py" {
+                second
+            } else {
+                strip_source_extension(third)
+            };
+            return non_empty(flat_python_name(raw_name)).map(|name| format!("elements/{name}"));
+        }
     }
-    if parts.len() >= 2 && exists(&[parts[0], "__init__.py"]) {
-        let module_part = parts[1];
-        let raw_name = if module_part == "__init__.py" {
-            parts[0]
-        } else {
-            strip_source_extension(module_part)
-        };
-        return non_empty(flat_python_name(raw_name)).map(|name| format!("elements/{name}"));
+    if let Some(second) = second {
+        if exists(&[first, "__init__.py"]) {
+            let raw_name = if second == "__init__.py" {
+                first
+            } else {
+                strip_source_extension(second)
+            };
+            return non_empty(flat_python_name(raw_name)).map(|name| format!("elements/{name}"));
+        }
     }
-    if parts.len() < 2 || !source_folder_starts_at(parts[0], source_folders) {
-        return None;
-    }
-    let folder = parts[0];
-    let next = parts[1];
+    let next = second.filter(|_| source_folder_starts_at(first, source_folders))?;
+    let folder = first;
     if extension == RUST_EXTENSION {
         return non_empty(ontology_source_name(next)).map(|name| format!("elements/{name}"));
     }
@@ -97,12 +97,13 @@ pub fn module_of(
             }
         ));
     }
-    if next == "features" && parts.len() > 2 && !parts[2].is_empty() {
-        return Some(format!("capabilities/{}", ontology_source_name(parts[2])));
+    let named_third = third.filter(|name| !name.is_empty());
+    if let (true, Some(third)) = (next == "features", named_third) {
+        return Some(format!("capabilities/{}", ontology_source_name(third)));
     }
     const ELEMENT_BUCKETS: [&str; 3] = ["entities", "widgets", "views"];
-    if ELEMENT_BUCKETS.contains(&next) && parts.len() > 2 && !parts[2].is_empty() {
-        let name = ontology_source_name(parts[2]);
+    if let (true, Some(third)) = (ELEMENT_BUCKETS.contains(&next), named_third) {
+        let name = ontology_source_name(third);
         let collides = ELEMENT_BUCKETS
             .iter()
             .filter(|bucket| exists(&[folder, bucket, &name]))
@@ -122,7 +123,7 @@ pub fn module_of(
             }
         ));
     }
-    if SUPPORT_ELEMENT_BUCKETS.contains(&next) && parts.len() > 2 && !parts[2].is_empty() {
+    if SUPPORT_ELEMENT_BUCKETS.contains(&next) && named_third.is_some() {
         return Some(format!("elements/{}", ontology_source_name(last)));
     }
     if is_module_extension(extname(next)) {
@@ -223,18 +224,12 @@ fn ontology_source_name(segment: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use confined_files::{DiskSource, ScanRoots};
+    use crate::planted_tree::PlantedTree;
 
     fn module(files: &[&str], path: &str, packages: &[WorkspacePackage]) -> Option<String> {
-        let directory = tempfile::tempdir().expect("temp dir");
-        let root = std::fs::canonicalize(directory.path()).expect("real path");
-        for name in files {
-            let file = root.join(name);
-            std::fs::create_dir_all(file.parent().expect("parent")).expect("folder");
-            std::fs::write(file, "").expect("file");
-        }
-        let scan = ScanRoots::new(root.clone(), root.clone()).expect("roots");
-        let source = DiskSource::new(&scan.allow(&root, "rootPath").expect("allowed"), 1 << 20);
+        let planted: Vec<(&str, &str)> = files.iter().map(|name| (*name, "")).collect();
+        let tree = PlantedTree::new(&planted);
+        let source = tree.source();
         let folders: Vec<String> = ["src", "lib", "apps", "packages"]
             .iter()
             .map(|folder| (*folder).to_string())
@@ -245,11 +240,26 @@ mod tests {
     #[test]
     fn a_layer_folder_names_its_module_the_way_the_ontology_does() {
         let files = ["src/entities/user/a.ts", "src/widgets/user/b.ts"];
-        assert_eq!(module(&files, "src/features/Check_In/x.ts", &[]).as_deref(), Some("capabilities/check-in"));
-        assert_eq!(module(&files, "src/entities/user/a.ts", &[]).as_deref(), Some("elements/user-entity"));
-        assert_eq!(module(&files, "src/utils/deep/string_tools.test.ts", &[]).as_deref(), Some("elements/string-tools"));
-        assert_eq!(module(&files, "src/billing/x.ts", &[]).as_deref(), Some("capabilities/billing"));
-        assert_eq!(module(&files, "lib/net/x.ts", &[]).as_deref(), Some("elements/net"));
+        assert_eq!(
+            module(&files, "src/features/Check_In/x.ts", &[]).as_deref(),
+            Some("capabilities/check-in")
+        );
+        assert_eq!(
+            module(&files, "src/entities/user/a.ts", &[]).as_deref(),
+            Some("elements/user-entity")
+        );
+        assert_eq!(
+            module(&files, "src/utils/deep/string_tools.test.ts", &[]).as_deref(),
+            Some("elements/string-tools")
+        );
+        assert_eq!(
+            module(&files, "src/billing/x.ts", &[]).as_deref(),
+            Some("capabilities/billing")
+        );
+        assert_eq!(
+            module(&files, "lib/net/x.ts", &[]).as_deref(),
+            Some("elements/net")
+        );
         assert_eq!(module(&files, "README.md", &[]), None);
         assert_eq!(module(&files, "scripts/x.ts", &[]), None);
     }
@@ -261,7 +271,13 @@ mod tests {
             name: Some("@acme/core".into()),
             slug: "core".into(),
         };
-        assert_eq!(module(&[], "packages/core/src/x.ts", &[package]).as_deref(), Some("elements/core"));
-        assert_eq!(module(&["pkg/__init__.py"], "pkg/data_loader.py", &[]).as_deref(), Some("elements/data-loader"));
+        assert_eq!(
+            module(&[], "packages/core/src/x.ts", &[package]).as_deref(),
+            Some("elements/core")
+        );
+        assert_eq!(
+            module(&["pkg/__init__.py"], "pkg/data_loader.py", &[]).as_deref(),
+            Some("elements/data-loader")
+        );
     }
 }

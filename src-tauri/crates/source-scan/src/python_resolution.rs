@@ -22,9 +22,7 @@ pub fn discover_root_packages(facts: &PathFacts<'_>, ignore: &IgnoredNames) -> V
                 && !name.starts_with('.')
         })
         .map(|(name, _)| facts.root().join(name))
-        .filter(|path| {
-            facts.is_own_directory(path) && facts.is_own_file(&path.join("__init__.py"))
-        })
+        .filter(|path| facts.is_own_directory(path) && facts.is_own_file(&path.join("__init__.py")))
         .collect()
 }
 
@@ -70,7 +68,9 @@ impl<'facts, 'files> PythonResolver<'facts, 'files> {
         let parts: Vec<&str> = module.split('.').collect();
         let mut found = None;
         for search_root in &self.search_roots {
-            let base = parts.iter().fold(search_root.clone(), |path, part| path.join(part));
+            let base = parts
+                .iter()
+                .fold(search_root.clone(), |path, part| path.join(part));
             let file = with_suffix(&base, ".py");
             let entry = base.join("__init__.py");
             let hit = if self.facts.is_own_file(&file) {
@@ -85,7 +85,9 @@ impl<'facts, 'files> PythonResolver<'facts, 'files> {
                 break;
             }
         }
-        self.memo.borrow_mut().insert(module.to_string(), found.clone());
+        self.memo
+            .borrow_mut()
+            .insert(module.to_string(), found.clone());
         found
     }
 
@@ -143,7 +145,10 @@ impl<'facts, 'files> PythonResolver<'facts, 'files> {
         if !module.starts_with('.') {
             return Some(module.to_string());
         }
-        let dots = module.chars().take_while(|character| *character == '.').count();
+        let dots = module
+            .chars()
+            .take_while(|character| *character == '.')
+            .count();
         let suffix = &module[dots..];
         let folder = file.parent().unwrap_or(self.facts.root());
         let relative = self.facts.relative(folder)?;
@@ -171,20 +176,14 @@ fn with_suffix(path: &Path, suffix: &str) -> PathBuf {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::python_imports::PythonImport;
     use crate::import_edges::ImportUsage;
-    use confined_files::{DiskSource, ScanRoots};
+    use crate::planted_tree::PlantedTree;
+    use crate::python_imports::PythonImport;
 
     fn place(files: &[(&str, &str)], from: &str, module: &str, names: &[&str]) -> Findings {
-        let directory = tempfile::tempdir().expect("temp dir");
-        let root = std::fs::canonicalize(directory.path()).expect("real path");
-        for (name, text) in files {
-            let path = root.join(name);
-            std::fs::create_dir_all(path.parent().expect("parent")).expect("folder");
-            std::fs::write(path, text).expect("file");
-        }
-        let scan = ScanRoots::new(root.clone(), root.clone()).expect("roots");
-        let source = DiskSource::new(&scan.allow(&root, "rootPath").expect("allowed"), 1 << 20);
+        let tree = PlantedTree::new(files);
+        let root = tree.root().to_path_buf();
+        let source = tree.source();
         let facts = PathFacts::new(&source);
         let resolver = PythonResolver::new(&facts, &["src".to_string()]);
         let mut findings = Findings::default();
@@ -227,6 +226,9 @@ mod tests {
         let gone = place(&files, "pkg/a.py", "pkg.gone", &[]);
         assert_eq!(gone.unresolved[0].reason, UnresolvedReason::AliasNotFound);
         let too_high = place(&files, "pkg/a.py", "....x", &[]);
-        assert_eq!(too_high.unresolved[0].reason, UnresolvedReason::RelativeNotFound);
+        assert_eq!(
+            too_high.unresolved[0].reason,
+            UnresolvedReason::RelativeNotFound
+        );
     }
 }

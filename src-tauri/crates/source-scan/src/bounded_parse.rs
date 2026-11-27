@@ -65,7 +65,9 @@ impl<'text> ParsedSource<'text> {
 
     /// The source text of `node`.
     pub fn text_of(&self, node: Node<'_>) -> &'text str {
-        self.text.get(node.start_byte()..node.end_byte()).unwrap_or("")
+        self.text
+            .get(node.start_byte()..node.end_byte())
+            .unwrap_or("")
     }
 
     pub fn text(&self) -> &'text str {

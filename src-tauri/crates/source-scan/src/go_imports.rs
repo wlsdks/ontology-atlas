@@ -54,7 +54,11 @@ pub fn read_go_imports(parsed: &ParsedSource<'_>) -> (Vec<GoImport>, bool) {
                 "import_spec" => specs.push(child),
                 "import_spec_list" => {
                     let mut list = child.walk();
-                    specs.extend(child.children(&mut list).filter(|node| node.kind() == "import_spec"));
+                    specs.extend(
+                        child
+                            .children(&mut list)
+                            .filter(|node| node.kind() == "import_spec"),
+                    );
                 }
                 _ => {}
             }
@@ -92,7 +96,11 @@ fn literal_path(literal: &str) -> Option<String> {
                 .map(|inner| (inner, false))
         })?;
     let (text, interpreted) = inner;
-    let forbidden: &[char] = if interpreted { &['"', '\\', '\r', '\n'] } else { &['\r', '\n'] };
+    let forbidden: &[char] = if interpreted {
+        &['"', '\\', '\r', '\n']
+    } else {
+        &['\r', '\n']
+    };
     (!text.is_empty() && !text.contains(forbidden)).then(|| text.to_string())
 }
 
@@ -190,9 +198,9 @@ fn is_safe_module_path(module_path: &str) -> bool {
     !module_path.is_empty()
         && !module_path.starts_with('/')
         && !module_path.contains('\\')
-        && module_path
-            .split('/')
-            .all(|segment| !segment.is_empty() && segment != "." && segment != ".." && !segment.contains('\0'))
+        && module_path.split('/').all(|segment| {
+            !segment.is_empty() && segment != "." && segment != ".." && !segment.contains('\0')
+        })
 }
 
 struct GoLayout<'facts, 'files> {
@@ -231,12 +239,14 @@ impl GoLayout<'_, '_> {
     }
 
     fn has_production_source(&self, directory: &Path) -> bool {
-        list_sorted(self.facts.files(), directory).into_iter().any(|(name, kind)| {
-            extension_of(&name) == Some(GO_EXTENSION)
-                && !name.ends_with("_test.go")
-                && kind == EntryKind::File
-                && self.facts.is_own_file(&directory.join(&name))
-        })
+        list_sorted(self.facts.files(), directory)
+            .into_iter()
+            .any(|(name, kind)| {
+                extension_of(&name) == Some(GO_EXTENSION)
+                    && !name.ends_with("_test.go")
+                    && kind == EntryKind::File
+                    && self.facts.is_own_file(&directory.join(&name))
+            })
     }
 
     /// The folder a module-local import path names, when it is a real folder of this module.
@@ -249,7 +259,11 @@ impl GoLayout<'_, '_> {
         } else {
             &spec[module_path.len() + 1..]
         };
-        let segments: Vec<&str> = if suffix.is_empty() { Vec::new() } else { suffix.split('/').collect() };
+        let segments: Vec<&str> = if suffix.is_empty() {
+            Vec::new()
+        } else {
+            suffix.split('/').collect()
+        };
         if segments
             .iter()
             .any(|segment| segment.is_empty() || *segment == "." || *segment == "..")
@@ -298,11 +312,12 @@ fn list_go_files(
                     }
                     let path = directory.join(&name);
                     match kind {
-                        EntryKind::Directory => {
-                            if depth < GO_WALK_MAX_DEPTH && !layout.in_nested_module(&path) {
-                                in_order.push(Pending::Folder(path, depth + 1));
-                            }
+                        EntryKind::Directory
+                            if depth < GO_WALK_MAX_DEPTH && !layout.in_nested_module(&path) =>
+                        {
+                            in_order.push(Pending::Folder(path, depth + 1));
                         }
+                        EntryKind::Directory => {}
                         EntryKind::File if extension_of(&name) == Some(GO_EXTENSION) => {
                             in_order.push(Pending::File(path));
                         }
@@ -375,7 +390,9 @@ pub fn scan_go_packages(
                 continue;
             }
         };
-        let Some(from_package) = file.parent().and_then(|directory| layout.package_path(directory))
+        let Some(from_package) = file
+            .parent()
+            .and_then(|directory| layout.package_path(directory))
         else {
             continue;
         };
@@ -416,7 +433,11 @@ pub fn scan_go_packages(
                 from_package: from_package.clone(),
                 to_package,
                 import_spec: import.path,
-                kind: if import.blank { ImportKind::Side } else { ImportKind::Static },
+                kind: if import.blank {
+                    ImportKind::Side
+                } else {
+                    ImportKind::Static
+                },
                 source_role: if from_file.ends_with("_test.go") {
                     SourceRole::Test
                 } else {
@@ -427,7 +448,8 @@ pub fn scan_go_packages(
         }
     }
     evidence.skipped.sort_by(|left, right| {
-        compare_text(&left.file, &right.file).then_with(|| compare_text(&left.reason, &right.reason))
+        compare_text(&left.file, &right.file)
+            .then_with(|| compare_text(&left.reason, &right.reason))
     });
     evidence
         .package_imports
@@ -449,7 +471,9 @@ fn collapse(imports: &[GoPackageImport]) -> Vec<GoModuleEdge> {
             });
             edges.len() - 1
         });
-        edges[at].stats.add(import.clone());
+        if let Some(edge) = edges.get_mut(at) {
+            edge.stats.add(import.clone());
+        }
     }
     edges.sort_by(|left, right| {
         right
@@ -465,20 +489,17 @@ fn collapse(imports: &[GoPackageImport]) -> Vec<GoModuleEdge> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use confined_files::{DiskSource, ScanRoots};
+    use crate::planted_tree::PlantedTree;
 
     fn scan(files: &[(&str, &str)], max_files: usize) -> GoPackageEvidence {
-        let directory = tempfile::tempdir().expect("temp dir");
-        let root = std::fs::canonicalize(directory.path()).expect("real path");
-        for (name, text) in files {
-            let path = root.join(name);
-            std::fs::create_dir_all(path.parent().expect("parent")).expect("folder");
-            std::fs::write(path, text).expect("file");
-        }
-        let scan_roots = ScanRoots::new(root.clone(), root.clone()).expect("roots");
-        let source = DiskSource::new(&scan_roots.allow(&root, "rootPath").expect("allowed"), 1 << 20);
-        scan_go_packages(&PathFacts::new(&source), &IgnoredNames::defaults(), max_files)
-            .expect("a module")
+        let tree = PlantedTree::new(files);
+        let source = tree.source();
+        scan_go_packages(
+            &PathFacts::new(&source),
+            &IgnoredNames::defaults(),
+            max_files,
+        )
+        .expect("a module")
     }
 
     #[test]
@@ -491,7 +512,16 @@ mod tests {
         .expect("parses");
         let (imports, limited) = read_go_imports(&parsed);
         let found: Vec<(&str, bool)> = imports.iter().map(|i| (i.path.as_str(), i.blank)).collect();
-        assert_eq!(found, [("one", false), ("two", true), ("three", false), ("four", false), ("six", false)]);
+        assert_eq!(
+            found,
+            [
+                ("one", false),
+                ("two", true),
+                ("three", false),
+                ("four", false),
+                ("six", false)
+            ]
+        );
         assert!(!limited);
     }
 
@@ -511,7 +541,13 @@ mod tests {
         let imports: Vec<(&str, &str, &str)> = evidence
             .package_imports
             .iter()
-            .map(|row| (row.from_file.as_str(), row.to_package.as_str(), row.kind.word()))
+            .map(|row| {
+                (
+                    row.from_file.as_str(),
+                    row.to_package.as_str(),
+                    row.kind.word(),
+                )
+            })
             .collect();
         assert_eq!(
             imports,
@@ -537,6 +573,8 @@ mod tests {
         assert!(evidence.file_scan_limited);
         assert_eq!(evidence.files_scanned, 2);
         assert_eq!(evidence.skipped.len(), 1);
-        assert!(evidence.skipped[0].reason.contains("exceeds 262144 byte limit"));
+        assert!(evidence.skipped[0]
+            .reason
+            .contains("exceeds 262144 byte limit"));
     }
 }

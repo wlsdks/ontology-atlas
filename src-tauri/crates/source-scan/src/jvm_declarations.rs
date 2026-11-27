@@ -88,10 +88,8 @@ pub fn read_jvm_source(parsed: &ParsedSource<'_>, file_name: &str, kotlin: bool)
                     top_level_members += 1;
                 }
             }
-            "file_annotation" => {
-                if facade_annotation.is_none() {
-                    facade_annotation = jvm_name_of(parsed, *node);
-                }
+            "file_annotation" if facade_annotation.is_none() => {
+                facade_annotation = jvm_name_of(parsed, *node);
             }
             _ => {}
         }
@@ -288,7 +286,10 @@ fn capitalised_reference(parsed: &ParsedSource<'_>, node: Node<'_>) -> Option<St
     if before == Some(&b'.') {
         return None;
     }
-    let name: String = text.chars().take_while(|character| is_identifier_character(*character)).collect();
+    let name: String = text
+        .chars()
+        .take_while(|character| is_identifier_character(*character))
+        .collect();
     Some(name)
 }
 
@@ -299,7 +300,8 @@ mod tests {
     use crate::source_language::SourceLanguage;
 
     fn read(language: SourceLanguage, name: &str, source: &str) -> JvmFile {
-        let parsed = parse_bounded(language, source, ParseLimits::for_imports(1 << 20)).expect("parses");
+        let parsed =
+            parse_bounded(language, source, ParseLimits::for_imports(1 << 20)).expect("parses");
         read_jvm_source(&parsed, name, language == SourceLanguage::Kotlin)
     }
 
@@ -312,11 +314,26 @@ mod tests {
              public class A<T> extends Base { enum Mode { ON } Helper h; void m() { Maths.max(1); foo.Bar.baz(); } }\n",
         );
         assert_eq!(file.package.as_deref(), Some("com.acme.core"));
-        let imports: Vec<_> = file.imports.iter().map(|i| (i.spec.as_str(), i.wildcard)).collect();
-        assert_eq!(imports, [("com.acme.util.Helper", false), ("com.acme.util.Maths.max", false), ("com.acme.util", true)]);
+        let imports: Vec<_> = file
+            .imports
+            .iter()
+            .map(|i| (i.spec.as_str(), i.wildcard))
+            .collect();
+        assert_eq!(
+            imports,
+            [
+                ("com.acme.util.Helper", false),
+                ("com.acme.util.Maths.max", false),
+                ("com.acme.util", true)
+            ]
+        );
         assert_eq!(file.types, ["A"]);
         assert_eq!(file.declarations, ["A"]);
-        assert_eq!(file.type_references, ["Base", "Helper", "Maths"], "A, T, Mode and ON are the file's own; Bar follows a dot");
+        assert_eq!(
+            file.type_references,
+            ["Base", "Helper", "Maths"],
+            "A, T, Mode and ON are the file's own; Bar follows a dot"
+        );
     }
 
     #[test]
@@ -338,10 +355,18 @@ mod tests {
 
     #[test]
     fn a_name_in_any_script_is_read_whole_in_a_declaration_and_in_a_kotlin_template() {
-        let java = read(SourceLanguage::Java, "Caf\u{e9}.java", "package p;\nclass Caf\u{e9} { Na\u{ef}ve n; }\n");
+        let java = read(
+            SourceLanguage::Java,
+            "Caf\u{e9}.java",
+            "package p;\nclass Caf\u{e9} { Na\u{ef}ve n; }\n",
+        );
         assert_eq!(java.types, ["Caf\u{e9}"]);
         assert_eq!(java.type_references, ["Na\u{ef}ve"]);
-        let kotlin = read(SourceLanguage::Kotlin, "caf\u{e9}.kt", "package p\nfun f() = \"${Na\u{ef}ve()}\"\n");
+        let kotlin = read(
+            SourceLanguage::Kotlin,
+            "caf\u{e9}.kt",
+            "package p\nfun f() = \"${Na\u{ef}ve()}\"\n",
+        );
         assert_eq!(kotlin.types, ["Caf\u{e9}Kt"]);
         assert_eq!(kotlin.type_references, ["Na\u{ef}ve"]);
     }

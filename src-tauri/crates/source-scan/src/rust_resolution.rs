@@ -9,9 +9,7 @@ use std::path::{Path, PathBuf};
 
 use crate::import_edges::{Findings, ImportKind, ImportUsage, UnresolvedReason};
 use crate::path_facts::{resolve_below, PathFacts};
-use crate::rust_dependencies::{
-    RustDependency, UsePath, MAX_DEPENDENCIES_PER_FILE,
-};
+use crate::rust_dependencies::{RustDependency, UsePath, MAX_DEPENDENCIES_PER_FILE};
 use crate::source_walk::IgnoredNames;
 
 /// Crates the compiler ships; importing one is not a dependency worth listing.
@@ -41,9 +39,9 @@ pub fn read_root_package_name(facts: &PathFacts<'_>, max_bytes: usize) -> Option
         }
         if let Some(name) = string_assignment(trimmed, "name") {
             if !name.is_empty()
-                && name
-                    .chars()
-                    .all(|character| character.is_ascii_alphanumeric() || matches!(character, '_' | '-'))
+                && name.chars().all(|character| {
+                    character.is_ascii_alphanumeric() || matches!(character, '_' | '-')
+                })
             {
                 return Some(name.to_string());
             }
@@ -60,7 +58,11 @@ fn table_name(line: &str) -> Option<&str> {
 }
 
 fn string_assignment<'line>(line: &'line str, key: &str) -> Option<&'line str> {
-    let rest = line.strip_prefix(key)?.trim_start().strip_prefix('=')?.trim_start();
+    let rest = line
+        .strip_prefix(key)?
+        .trim_start()
+        .strip_prefix('=')?
+        .trim_start();
     let rest = rest.strip_prefix('"')?;
     let close = rest.find('"')?;
     let after = rest[close + 1..].trim();
@@ -94,7 +96,9 @@ impl<'facts, 'files> RustResolver<'facts, 'files> {
         from: &str,
         dependencies: &[RustDependency],
     ) {
-        let admitted = &dependencies[..dependencies.len().min(MAX_DEPENDENCIES_PER_FILE)];
+        let admitted = dependencies
+            .get(..MAX_DEPENDENCIES_PER_FILE)
+            .unwrap_or(dependencies);
         if dependencies.len() > admitted.len() {
             findings.could_not_place(
                 from,
@@ -204,15 +208,11 @@ impl<'facts, 'files> RustResolver<'facts, 'files> {
     fn use_path(&self, file: &Path, segments: &[String]) -> UsePlacement {
         let valid = |segment: &String| {
             segment == "*"
-                || segment
-                    .chars()
-                    .enumerate()
-                    .all(|(index, character)| {
-                        character == '_'
-                            || character.is_ascii_alphabetic()
-                            || (index > 0 && character.is_ascii_digit())
-                    })
-                    && !segment.is_empty()
+                || segment.chars().enumerate().all(|(index, character)| {
+                    character == '_'
+                        || character.is_ascii_alphabetic()
+                        || (index > 0 && character.is_ascii_digit())
+                }) && !segment.is_empty()
         };
         let Some(prefix) = segments.first() else {
             return UsePlacement::Unresolved(UnresolvedReason::UnsupportedStaticForm);
@@ -227,20 +227,27 @@ impl<'facts, 'files> RustResolver<'facts, 'files> {
             None => UsePlacement::Unresolved(UnresolvedReason::AliasNotFound),
         };
         match prefix.as_str() {
-            "crate" => found(self.module_segments(&source_root, &segments[1..], Some(&crate_root))),
+            "crate" => found(self.module_segments(
+                &source_root,
+                segments.get(1..).unwrap_or_default(),
+                Some(&crate_root),
+            )),
             "self" => found(self.module_segments(
                 &child_module_directory(file),
-                &segments[1..],
+                segments.get(1..).unwrap_or_default(),
                 Some(file),
             )),
             "super" => {
-                let levels = segments.iter().take_while(|segment| *segment == "super").count();
+                let levels = segments
+                    .iter()
+                    .take_while(|segment| *segment == "super")
+                    .count();
                 let Some(parent) = self.ancestor_module_file(file, levels) else {
                     return UsePlacement::Unresolved(UnresolvedReason::AliasNotFound);
                 };
                 found(self.module_segments(
                     &child_module_directory(&parent),
-                    &segments[levels..],
+                    segments.get(levels..).unwrap_or_default(),
                     Some(&parent),
                 ))
             }
@@ -249,7 +256,11 @@ impl<'facts, 'files> RustResolver<'facts, 'files> {
                 .as_ref()
                 .is_some_and(|name| own == name.replace('-', "_")) =>
             {
-                found(self.module_segments(&source_root, &segments[1..], Some(&crate_root)))
+                found(self.module_segments(
+                    &source_root,
+                    segments.get(1..).unwrap_or_default(),
+                    Some(&crate_root),
+                ))
             }
             _ => match self.module_segments(&source_root, segments, None) {
                 Some(target) => UsePlacement::Local(target),
@@ -277,8 +288,9 @@ impl<'facts, 'files> RustResolver<'facts, 'files> {
             .filter(|segment| segment.as_str() != "*" && segment.as_str() != "self")
             .collect();
         for length in (1..=clean.len()).rev() {
-            let joined = clean[..length]
+            let joined = clean
                 .iter()
+                .take(length)
                 .map(|segment| segment.as_str())
                 .collect::<Vec<_>>()
                 .join("/");
@@ -325,29 +337,30 @@ impl<'facts, 'files> RustResolver<'facts, 'files> {
         for _ in 0..levels {
             let parent_directory = current.parent()?.to_path_buf();
             let file_name = current.file_name()?.to_string_lossy().into_owned();
-            let candidates: Vec<PathBuf> = if matches!(file_name.as_str(), "lib.rs" | "main.rs" | "mod.rs") {
-                let directory_name = parent_directory
-                    .file_name()
-                    .map(|name| name.to_string_lossy().into_owned())
-                    .unwrap_or_default();
-                let grandparent = parent_directory
-                    .parent()
-                    .unwrap_or(&parent_directory)
-                    .to_path_buf();
-                vec![
-                    with_suffix(&parent_directory, ".rs"),
-                    grandparent.join(format!("{directory_name}.rs")),
-                    grandparent.join("mod.rs"),
-                    grandparent.join("lib.rs"),
-                    grandparent.join("main.rs"),
-                ]
-            } else {
-                vec![
-                    parent_directory.join("mod.rs"),
-                    parent_directory.join("lib.rs"),
-                    parent_directory.join("main.rs"),
-                ]
-            };
+            let candidates: Vec<PathBuf> =
+                if matches!(file_name.as_str(), "lib.rs" | "main.rs" | "mod.rs") {
+                    let directory_name = parent_directory
+                        .file_name()
+                        .map(|name| name.to_string_lossy().into_owned())
+                        .unwrap_or_default();
+                    let grandparent = parent_directory
+                        .parent()
+                        .unwrap_or(&parent_directory)
+                        .to_path_buf();
+                    vec![
+                        with_suffix(&parent_directory, ".rs"),
+                        grandparent.join(format!("{directory_name}.rs")),
+                        grandparent.join("mod.rs"),
+                        grandparent.join("lib.rs"),
+                        grandparent.join("main.rs"),
+                    ]
+                } else {
+                    vec![
+                        parent_directory.join("mod.rs"),
+                        parent_directory.join("lib.rs"),
+                        parent_directory.join("main.rs"),
+                    ]
+                };
             current = self.first_file(&candidates)?;
         }
         Some(current)
@@ -375,10 +388,10 @@ fn is_absolute_literal(literal: &str) -> bool {
     literal.starts_with('/')
         || literal.starts_with('\\')
         || Path::new(literal).is_absolute()
-        || (literal.len() >= 3
-            && literal.as_bytes()[1] == b':'
-            && matches!(literal.as_bytes()[2], b'/' | b'\\')
-            && literal.as_bytes()[0].is_ascii_alphabetic())
+        || matches!(
+            literal.as_bytes(),
+            [drive, b':', b'/' | b'\\', ..] if drive.is_ascii_alphabetic()
+        )
 }
 
 /// The folder a file's child modules live in: its own for `mod.rs`, `lib.rs` and `main.rs`, else
@@ -406,29 +419,30 @@ fn with_suffix(path: &Path, suffix: &str) -> PathBuf {
 mod tests {
     use super::*;
     use crate::bounded_parse::{parse_bounded, ParseLimits};
+    use crate::planted_tree::PlantedTree;
     use crate::rust_dependencies::read_rust_dependencies;
     use crate::source_language::SourceLanguage;
-    use confined_files::{DiskSource, ScanRoots};
 
     fn scan(files: &[(&str, &str)], from: &str, cargo: Option<&str>) -> Findings {
-        let directory = tempfile::tempdir().expect("temp dir");
-        let root = std::fs::canonicalize(directory.path()).expect("real path");
-        for (name, text) in files {
-            let path = root.join(name);
-            std::fs::create_dir_all(path.parent().expect("parent")).expect("folder");
-            std::fs::write(path, text).expect("file");
-        }
-        if let Some(cargo) = cargo {
-            std::fs::write(root.join("Cargo.toml"), cargo).expect("manifest");
-        }
-        let scan_roots = ScanRoots::new(root.clone(), root.clone()).expect("roots");
-        let source = DiskSource::new(&scan_roots.allow(&root, "rootPath").expect("allowed"), 1 << 20);
+        let mut planted = files.to_vec();
+        planted.extend(cargo.map(|manifest| ("Cargo.toml", manifest)));
+        let tree = PlantedTree::new(&planted);
+        let root = tree.root().to_path_buf();
+        let source = tree.source();
         let facts = PathFacts::new(&source);
         let package = read_root_package_name(&facts, 256 * 1024);
         let resolver = RustResolver::new(&facts, package);
-        let text = std::fs::read_to_string(root.join(from)).expect("source");
-        let parsed = parse_bounded(SourceLanguage::Rust, &text, ParseLimits::for_imports(256 * 1024))
-            .expect("parses");
+        let text = files
+            .iter()
+            .find(|(name, _)| *name == from)
+            .map(|(_, text)| *text)
+            .expect("source");
+        let parsed = parse_bounded(
+            SourceLanguage::Rust,
+            text,
+            ParseLimits::for_imports(256 * 1024),
+        )
+        .expect("parses");
         let mut findings = Findings::default();
         resolver.place(
             &mut findings,
@@ -450,15 +464,28 @@ mod tests {
         let lib = scan(&files, "src/lib.rs", Some("[package]\nname = \"my-pkg\"\n"));
         let edges: Vec<_> = lib.edges.iter().map(|edge| edge.to.as_str()).collect();
         assert_eq!(edges, ["src/a.rs", "src/a.rs", "src/a.rs"]);
-        assert_eq!(lib.external.iter().map(|e| e.spec.as_str()).collect::<Vec<_>>(), ["serde"]);
+        assert_eq!(
+            lib.external
+                .iter()
+                .map(|e| e.spec.as_str())
+                .collect::<Vec<_>>(),
+            ["serde"]
+        );
         let inner = scan(&files, "src/a.rs", None);
         let targets: Vec<_> = inner.edges.iter().map(|edge| edge.to.as_str()).collect();
-        assert_eq!(targets, ["src/a/b.rs", "src/a/b.rs"], "`super::a` is the file itself, not an edge");
+        assert_eq!(
+            targets,
+            ["src/a/b.rs", "src/a/b.rs"],
+            "`super::a` is the file itself, not an edge"
+        );
     }
 
     #[test]
     fn a_missing_module_and_a_conditional_one_are_reported_not_guessed() {
-        let files = [("src/lib.rs", "mod gone;\n#[cfg(test)] mod tests;\nuse crate::nope::x;\n")];
+        let files = [(
+            "src/lib.rs",
+            "mod gone;\n#[cfg(test)] mod tests;\nuse crate::nope::x;\n",
+        )];
         let lib = scan(&files, "src/lib.rs", None);
         let reasons: Vec<_> = lib.unresolved.iter().map(|row| row.reason).collect();
         assert_eq!(

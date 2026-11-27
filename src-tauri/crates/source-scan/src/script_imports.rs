@@ -116,7 +116,7 @@ fn call_expression(parsed: &ParsedSource<'_>, node: Node<'_>) -> Option<ScriptIm
 }
 
 fn children(node: Node<'_>) -> impl Iterator<Item = Node<'_>> {
-    (0..node.child_count()).filter_map(move |index| node.child(index as u32))
+    (0..node.child_count()).filter_map(move |index| node.child(index))
 }
 
 /// `import type ...` and `export type ...`: the keyword is a token of the statement itself.
@@ -257,7 +257,11 @@ mod tests {
         let usages: Vec<_> = found.iter().map(|row| row.2).collect();
         assert_eq!(
             usages,
-            [ImportUsage::TypeOnly, ImportUsage::TypeOnly, ImportUsage::Value]
+            [
+                ImportUsage::TypeOnly,
+                ImportUsage::TypeOnly,
+                ImportUsage::Value
+            ]
         );
     }
 

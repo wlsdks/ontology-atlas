@@ -45,7 +45,10 @@ struct Pattern {
     exclude: bool,
 }
 
-pub fn discover_workspace_packages(facts: &PathFacts<'_>, ignore: &IgnoredNames) -> WorkspaceDiscovery {
+pub fn discover_workspace_packages(
+    facts: &PathFacts<'_>,
+    ignore: &IgnoredNames,
+) -> WorkspaceDiscovery {
     let (has_declaration, patterns) = read_declarations(facts);
     if patterns.is_empty() {
         return WorkspaceDiscovery {
@@ -58,7 +61,10 @@ pub fn discover_workspace_packages(facts: &PathFacts<'_>, ignore: &IgnoredNames)
     let mut candidates = package_directories(facts, ignore);
     for declaration in &included {
         if let Some(literal) = declared_literal_package(facts, ignore, &declaration.text) {
-            if !candidates.iter().any(|candidate| candidate.path == literal.path) {
+            if !candidates
+                .iter()
+                .any(|candidate| candidate.path == literal.path)
+            {
                 candidates.push(literal);
             }
         }
@@ -245,7 +251,12 @@ fn normalize_pattern(value: &str) -> Option<(String, bool)> {
     let globstars = kept.iter().filter(|segment| **segment == "**").count();
     let wildcards: usize = kept
         .iter()
-        .map(|segment| segment.chars().filter(|character| *character == '*').count())
+        .map(|segment| {
+            segment
+                .chars()
+                .filter(|character| *character == '*')
+                .count()
+        })
         .sum();
     if kept.len() > PATTERN_MAX_SEGMENTS
         || globstars > PATTERN_MAX_GLOBSTARS
@@ -296,7 +307,14 @@ fn visit_folder(
             continue;
         }
         if kind == confined_files::EntryKind::Directory
-            && !visit_folder(facts, ignore, &directory.join(&name), depth + 1, seen, candidates)
+            && !visit_folder(
+                facts,
+                ignore,
+                &directory.join(&name),
+                depth + 1,
+                seen,
+                candidates,
+            )
         {
             return false;
         }
@@ -352,7 +370,11 @@ fn assign_slugs(packages: Vec<Candidate>) -> Vec<WorkspacePackage> {
             let base = bases.get(index).cloned().unwrap_or_default();
             let shared = bases.iter().filter(|other| **other == base).count() > 1;
             WorkspacePackage {
-                slug: if shared { path_slug(&package.path) } else { base },
+                slug: if shared {
+                    path_slug(&package.path)
+                } else {
+                    base
+                },
                 path: package.path,
                 name: package.name,
             }

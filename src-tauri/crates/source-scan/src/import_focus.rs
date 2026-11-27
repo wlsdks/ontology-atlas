@@ -260,21 +260,65 @@ mod tests {
         ];
         let first = build_import_impact_focus(&edges, &request("./a.ts", None, 2)).expect("page");
         assert_eq!(first.focus_path, "a.ts");
-        assert_eq!((first.summary.incoming, first.summary.outgoing, first.summary.selected), (1, 2, 3));
+        assert_eq!(
+            (
+                first.summary.incoming,
+                first.summary.outgoing,
+                first.summary.selected
+            ),
+            (1, 2, 3)
+        );
         assert!(first.cursor.has_more);
         let cursor = first.cursor.next_after_edge_id.clone().expect("a cursor");
-        let rest = build_import_impact_focus(&edges, &request("a.ts", Some(&cursor), 2)).expect("page");
+        let rest =
+            build_import_impact_focus(&edges, &request("a.ts", Some(&cursor), 2)).expect("page");
         assert_eq!(rest.edges.len(), 1);
-        let ids: Vec<&str> = first.edges.iter().chain(&rest.edges).map(|e| e.edge_id.as_str()).collect();
-        assert_eq!(ids.iter().collect::<std::collections::HashSet<_>>().len(), 3);
-        assert!(ids[0].starts_with("import-impact:") && ids[0].len() == "import-impact:".len() + 20);
+        let ids: Vec<&str> = first
+            .edges
+            .iter()
+            .chain(&rest.edges)
+            .map(|e| e.edge_id.as_str())
+            .collect();
+        assert_eq!(
+            ids.iter().collect::<std::collections::HashSet<_>>().len(),
+            3
+        );
+        assert!(
+            ids[0].starts_with("import-impact:") && ids[0].len() == "import-impact:".len() + 20
+        );
     }
 
     #[test]
     fn a_path_outside_the_repository_and_a_lost_cursor_are_refused_by_kind() {
         let edges = vec![edge("a.ts", "b.ts", ImportKind::Static)];
-        assert!(build_import_impact_focus(&edges, &request("../x.ts", None, 5)).expect_err("outside").is_invalid());
-        assert!(build_import_impact_focus(&edges, &request("/etc/x", None, 5)).expect_err("rooted").is_invalid());
-        assert!(build_import_impact_focus(&edges, &request("a.ts", Some("import-impact:0"), 5)).expect_err("lost").is_not_found());
+        assert!(
+            build_import_impact_focus(&edges, &request("../x.ts", None, 5))
+                .expect_err("outside")
+                .is_invalid()
+        );
+        assert!(
+            build_import_impact_focus(&edges, &request("/etc/x", None, 5))
+                .expect_err("rooted")
+                .is_invalid()
+        );
+        assert!(
+            build_import_impact_focus(&edges, &request("a.ts", Some("import-impact:0"), 5))
+                .expect_err("lost")
+                .is_not_found()
+        );
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn a_drive_path_and_a_backslash_root_are_rooted_on_windows() {
+        let edges = vec![edge("a.ts", "b.ts", ImportKind::Static)];
+        for rooted in ["C:\\x\\a.ts", "c:/x/a.ts", "\\x\\a.ts"] {
+            assert!(
+                build_import_impact_focus(&edges, &request(rooted, None, 5))
+                    .expect_err("rooted")
+                    .is_invalid(),
+                "{rooted}"
+            );
+        }
     }
 }

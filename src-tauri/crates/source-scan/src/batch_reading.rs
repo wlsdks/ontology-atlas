@@ -113,7 +113,10 @@ mod tests {
         });
         files.push(pending("c.ts", "import './c';"));
         let readings = read_batch(&files);
-        assert!(matches!(readings.get(1), Some(FileReading::Unreadable(UnresolvedReason::FileTooLarge))));
+        assert!(matches!(
+            readings.get(1),
+            Some(FileReading::Unreadable(UnresolvedReason::FileTooLarge))
+        ));
         assert!(matches!(readings.get(2), Some(FileReading::Script(_))));
     }
 }

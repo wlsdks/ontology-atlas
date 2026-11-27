@@ -30,7 +30,9 @@ use crate::rust_resolution::{read_root_package_name, RustResolver};
 use crate::script_resolution::{read_tsconfig_aliases, ScriptResolver};
 use crate::source_language::{extension_of, SourceLanguage};
 use crate::source_walk::{is_scanned_extension, walk, IgnoredNames, RUST_EXTENSION};
-use crate::workspace_packages::{discover_workspace_packages, WorkspaceDiscovery, WorkspacePackage};
+use crate::workspace_packages::{
+    discover_workspace_packages, WorkspaceDiscovery, WorkspacePackage,
+};
 
 /// The most a script, Python or JVM file may weigh and still be read.
 pub const SOURCE_FILE_MAX_BYTES: usize = 2 * 1024 * 1024;
@@ -98,8 +100,7 @@ pub fn scan_imports(
     let discovery = discover_workspace_packages(&facts, &ignore);
     let workspace_packages = discovery.packages.clone();
     let scan_folders = folders_to_scan(&source_folders, explicit_folders, &discovery);
-    let (roots, configured_root_exists) =
-        scan_roots(&facts, &ignore, &scan_folders, &discovery);
+    let (roots, configured_root_exists) = scan_roots(&facts, &ignore, &scan_folders, &discovery);
 
     let mut scan_roots_list = prune_nested_roots(&facts, roots);
     if scan_roots_list.is_empty() && !configured_root_exists {
@@ -304,9 +305,7 @@ fn prune_nested_roots(facts: &PathFacts<'_>, roots: Vec<PathBuf>) -> Vec<PathBuf
     let mut retained: Vec<String> = Vec::new();
     for candidate in relative {
         let nested = retained.iter().any(|parent| {
-            parent == "."
-                || *parent == candidate
-                || candidate.starts_with(&format!("{parent}/"))
+            parent == "." || *parent == candidate || candidate.starts_with(&format!("{parent}/"))
         });
         if !nested {
             retained.push(candidate);
@@ -356,8 +355,10 @@ fn group_by_module(
             });
             groups.len() - 1
         });
-        groups[at].stats.add(edge.clone());
+        if let Some(group) = groups.get_mut(at) {
+            group.stats.add(edge.clone());
+        }
     }
-    groups.sort_by(|left, right| right.stats.count.cmp(&left.stats.count));
+    groups.sort_by_key(|group| std::cmp::Reverse(group.stats.count));
     groups
 }

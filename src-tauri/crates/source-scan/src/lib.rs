@@ -31,6 +31,8 @@ mod module_grouping;
 mod path_dating;
 mod path_facts;
 mod path_pattern;
+#[cfg(test)]
+mod planted_tree;
 mod python_imports;
 mod python_resolution;
 mod review_refusal;
@@ -66,6 +68,10 @@ pub use import_delivery::{
     choose_automatic_import_delivery, resolve_import_review_mode, CompactDelivery, Delivery,
     DeliveryRefusal, ModeArguments, ReviewMode, AUTOMATIC_LIMIT_BYTES,
 };
+pub use import_edges::{
+    ExternalImport, ImportEdge, ImportKind, ImportUsage, SourceRole, UnresolvedImport,
+    UnresolvedReason,
+};
 pub use import_focus::{
     build_import_impact_focus, FocusDirection, FocusRequest, ImportImpactFocus,
     DEFAULT_FOCUS_LIMIT, MAX_FOCUS_LIMIT,
@@ -75,14 +81,10 @@ pub use import_reconciliation::{
     VaultEdge, VaultFacts,
 };
 pub use import_review::{build_next_relation_review, NextRelationReview};
-pub use review_refusal::ReviewRefusal;
-pub use source_stamp::{read_git_source_state, GitSourceState, SourceStateError};
-pub use import_edges::{
-    ExternalImport, ImportEdge, ImportKind, ImportUsage, SourceRole, UnresolvedImport,
-    UnresolvedReason,
-};
 pub use import_scan::{
     scan_imports, ImportScan, ImportScanOptions, ModuleEdge, DEFAULT_MAX_FILES, MAX_MAX_FILES,
     SOURCE_FILE_MAX_BYTES,
 };
+pub use review_refusal::ReviewRefusal;
 pub use source_language::{extension_of, SourceLanguage};
+pub use source_stamp::{read_git_source_state, GitSourceState, SourceStateError};

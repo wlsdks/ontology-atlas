@@ -40,8 +40,8 @@ fn source_set_of(path: &str) -> Option<SourceSet> {
         return None;
     }
     Some(SourceSet {
-        module: parts[..src].join("/"),
-        set: parts[src + 1].to_string(),
+        module: parts.get(..src)?.join("/"),
+        set: (*parts.get(src + 1)?).to_string(),
     })
 }
 
@@ -125,7 +125,11 @@ pub fn place_jvm_imports(
     for source in sources {
         let package = source.file.package.as_deref();
         if let Some(found) = source_root_of(&source.path, package) {
-            roots.insert(if found == "." { root.to_path_buf() } else { absolute(&found) });
+            roots.insert(if found == "." {
+                root.to_path_buf()
+            } else {
+                absolute(&found)
+            });
         }
         source_sets.insert(absolute(&source.path), source_set_of(&source.path));
         for name in &source.file.declarations {
@@ -133,14 +137,20 @@ pub fn place_jvm_imports(
                 Some(package) => format!("{package}.{name}"),
                 None => name.clone(),
             };
-            declared_in.entry(qualified).or_default().push(absolute(&source.path));
+            declared_in
+                .entry(qualified)
+                .or_default()
+                .push(absolute(&source.path));
         }
         let Some(package) = package else {
             continue;
         };
         let by_name = types_by_package.entry(package).or_default();
         for name in &source.file.types {
-            by_name.entry(name).or_default().push(absolute(&source.path));
+            by_name
+                .entry(name)
+                .or_default()
+                .push(absolute(&source.path));
         }
     }
     roots.extend(discover_source_roots(facts, ignore));
@@ -164,11 +174,9 @@ pub fn place_jvm_imports(
         let from = &source.path;
         for import in &source.file.imports {
             let key = format!("{}{}", if import.wildcard { "*" } else { "" }, import.spec);
-            if !resolved.contains_key(&key) {
-                let targets = resolver.targets_of(import);
-                resolved.insert(key.clone(), targets);
-            }
-            let targets = &resolved[&key];
+            let targets = resolved
+                .entry(key)
+                .or_insert_with(|| resolver.targets_of(import));
             if targets.is_empty() {
                 findings.leads_outside(
                     from,
@@ -242,7 +250,10 @@ impl TypeResolver<'_, '_, '_> {
         if let Some(held) = self.roots_holding.get(&key) {
             return held.clone();
         }
-        let parent = self.roots_with_folder(&segments[..segments.len() - 1]);
+        let Some((_, parent_segments)) = segments.split_last() else {
+            return Vec::new();
+        };
+        let parent = self.roots_with_folder(parent_segments);
         let held: Vec<PathBuf> = parent
             .into_iter()
             .filter(|root| {
@@ -259,13 +270,15 @@ impl TypeResolver<'_, '_, '_> {
 
     fn type_files(&mut self, parts: &[&str]) -> Vec<PathBuf> {
         for length in (2..=parts.len()).rev() {
-            if let Some(declared) = self.declared_in.get(&parts[..length].join(".")) {
+            let named = parts.get(..length).unwrap_or_default();
+            if let Some(declared) = self.declared_in.get(&named.join(".")) {
                 return declared.clone();
             }
-            for root in self.roots_with_folder(&parts[..length - 1]) {
+            let folder = parts.get(..length - 1).unwrap_or_default();
+            for root in self.roots_with_folder(folder) {
                 for extension in JVM_EXTENSIONS {
                     let mut file = root.clone();
-                    for part in &parts[..length] {
+                    for part in named {
                         file.push(part);
                     }
                     let mut name = file.into_os_string();
@@ -298,10 +311,7 @@ impl TypeResolver<'_, '_, '_> {
 /// A name a path may hold: not empty, not a way up, no separator or NUL (a Kotlin name in
 /// backticks may spell anything).
 fn is_plain_part(part: &str) -> bool {
-    !part.is_empty()
-        && part != "."
-        && part != ".."
-        && !part.contains(['/', '\\', '\0'])
+    !part.is_empty() && part != "." && part != ".." && !part.contains(['/', '\\', '\0'])
 }
 
 /// Files of the same package declaring a type this file names without importing it, matched by
@@ -356,7 +366,11 @@ fn same_package_targets(
                 _ => false,
             })
             .collect();
-        let chosen = if same_set.is_empty() { declaring } else { same_set };
+        let chosen = if same_set.is_empty() {
+            declaring
+        } else {
+            same_set
+        };
         targets.extend(chosen.into_iter().cloned());
     }
     targets
@@ -377,26 +391,24 @@ mod tests {
     use super::*;
     use crate::bounded_parse::{parse_bounded, ParseLimits};
     use crate::jvm_declarations::read_jvm_source;
+    use crate::planted_tree::PlantedTree;
     use crate::source_language::SourceLanguage;
-    use confined_files::{DiskSource, ScanRoots};
 
     fn scan(files: &[(&str, &str)]) -> Findings {
-        let directory = tempfile::tempdir().expect("temp dir");
-        let root = std::fs::canonicalize(directory.path()).expect("real path");
-        for (name, text) in files {
-            let path = root.join(name);
-            std::fs::create_dir_all(path.parent().expect("parent")).expect("folder");
-            std::fs::write(path, text).expect("file");
-        }
-        let scan_roots = ScanRoots::new(root.clone(), root.clone()).expect("roots");
-        let source = DiskSource::new(&scan_roots.allow(&root, "rootPath").expect("allowed"), 1 << 20);
+        let tree = PlantedTree::new(files);
+        let source = tree.source();
         let facts = PathFacts::new(&source);
         let sources: Vec<JvmSource> = files
             .iter()
             .map(|(name, text)| {
                 let kotlin = name.ends_with(".kt");
-                let language = if kotlin { SourceLanguage::Kotlin } else { SourceLanguage::Java };
-                let parsed = parse_bounded(language, text, ParseLimits::for_imports(1 << 20)).expect("parses");
+                let language = if kotlin {
+                    SourceLanguage::Kotlin
+                } else {
+                    SourceLanguage::Java
+                };
+                let parsed = parse_bounded(language, text, ParseLimits::for_imports(1 << 20))
+                    .expect("parses");
                 let base = name.rsplit('/').next().expect("name");
                 JvmSource {
                     path: (*name).to_string(),
@@ -416,7 +428,11 @@ mod tests {
             ("app/src/main/java/com/acme/B.java", "package com.acme;\nclass B {}\n"),
             ("app/src/main/java/com/acme/util/Helper.java", "package com.acme.util;\nclass Helper {}\n"),
         ]);
-        let edges: Vec<_> = findings.edges.iter().map(|e| (e.from.as_str(), e.to.as_str())).collect();
+        let edges: Vec<_> = findings
+            .edges
+            .iter()
+            .map(|e| (e.from.as_str(), e.to.as_str()))
+            .collect();
         assert_eq!(
             edges,
             [
@@ -432,15 +448,43 @@ mod tests {
     #[test]
     fn a_test_source_set_reaches_main_but_main_never_reaches_a_test_twin() {
         let findings = scan(&[
-            ("m/src/main/java/p/Main.java", "package p;\nclass Main { Helper h; }\n"),
-            ("m/src/main/java/p/Helper.java", "package p;\nclass Helper {}\n"),
-            ("m/src/test/java/p/Helper.java", "package p;\nclass Helper {}\n"),
-            ("m/src/test/java/p/MainTest.java", "package p;\nclass MainTest { Main m; Helper h; }\n"),
+            (
+                "m/src/main/java/p/Main.java",
+                "package p;\nclass Main { Helper h; }\n",
+            ),
+            (
+                "m/src/main/java/p/Helper.java",
+                "package p;\nclass Helper {}\n",
+            ),
+            (
+                "m/src/test/java/p/Helper.java",
+                "package p;\nclass Helper {}\n",
+            ),
+            (
+                "m/src/test/java/p/MainTest.java",
+                "package p;\nclass MainTest { Main m; Helper h; }\n",
+            ),
         ]);
-        let edges: Vec<_> = findings.edges.iter().map(|e| (e.from.as_str(), e.to.as_str())).collect();
-        assert!(edges.contains(&("m/src/main/java/p/Main.java", "m/src/main/java/p/Helper.java")));
-        assert!(!edges.contains(&("m/src/main/java/p/Main.java", "m/src/test/java/p/Helper.java")));
-        assert!(edges.contains(&("m/src/test/java/p/MainTest.java", "m/src/test/java/p/Helper.java")));
-        assert!(!edges.contains(&("m/src/test/java/p/MainTest.java", "m/src/main/java/p/Helper.java")));
+        let edges: Vec<_> = findings
+            .edges
+            .iter()
+            .map(|e| (e.from.as_str(), e.to.as_str()))
+            .collect();
+        assert!(edges.contains(&(
+            "m/src/main/java/p/Main.java",
+            "m/src/main/java/p/Helper.java"
+        )));
+        assert!(!edges.contains(&(
+            "m/src/main/java/p/Main.java",
+            "m/src/test/java/p/Helper.java"
+        )));
+        assert!(edges.contains(&(
+            "m/src/test/java/p/MainTest.java",
+            "m/src/test/java/p/Helper.java"
+        )));
+        assert!(!edges.contains(&(
+            "m/src/test/java/p/MainTest.java",
+            "m/src/main/java/p/Helper.java"
+        )));
     }
 }

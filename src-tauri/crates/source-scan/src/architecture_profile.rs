@@ -206,7 +206,10 @@ fn parse_patterns(value: Option<&Value>) -> Result<Vec<ProfilePattern>, ProfileE
 
 fn parse_dependency_usages(value: Option<&Value>) -> Result<Vec<String>, ProfileError> {
     let Some(value) = value else {
-        return Ok(DEPENDENCY_USAGE_VALUES.iter().map(|usage| (*usage).to_string()).collect());
+        return Ok(DEPENDENCY_USAGE_VALUES
+            .iter()
+            .map(|usage| (*usage).to_string())
+            .collect());
     };
     let usages = string_array(Some(value), "dependency_usages", false)?;
     if let Some(unsupported) = usages
@@ -483,7 +486,10 @@ mod tests {
 
     #[test]
     fn a_profile_is_read_with_its_roles_in_rank_order_and_its_rules() {
-        let profile = parse(&profile_text("dependency_policy: lower-only\nallow_views: [data]\n")).expect("reads");
+        let profile = parse(&profile_text(
+            "dependency_policy: lower-only\nallow_views: [data]\n",
+        ))
+        .expect("reads");
         let ids: Vec<&str> = profile.roles.iter().map(|role| role.id.as_str()).collect();
         assert_eq!(ids, ["views", "data"]);
         assert_eq!(profile.dependency_policy, DependencyPolicy::LowerOnly);
@@ -494,15 +500,25 @@ mod tests {
     #[test]
     fn each_refusal_names_the_key_and_carries_the_kind_an_agent_branches_on() {
         let bad_policy = parse(&profile_text("dependency_policy: strict\n")).expect_err("refused");
-        assert_eq!(bad_policy.message, "dependency_policy must be explicit or lower-only.");
+        assert_eq!(
+            bad_policy.message,
+            "dependency_policy must be explicit or lower-only."
+        );
         assert_eq!(bad_policy.kind, ProfileErrorKind::Invalid);
         let renamed = parse(&profile_text("type_only_dependencies: [x]\n")).expect_err("refused");
         assert_eq!(renamed.kind, ProfileErrorKind::Failed);
-        let orphan = parse(&profile_text("summary_ghost: A role nobody has.\n")).expect_err("refused");
-        assert_eq!(orphan.message, "summary_ghost describes a role that does not exist.");
+        let orphan =
+            parse(&profile_text("summary_ghost: A role nobody has.\n")).expect_err("refused");
+        assert_eq!(
+            orphan.message,
+            "summary_ghost describes a role that does not exist."
+        );
         assert_eq!(orphan.kind, ProfileErrorKind::NotFound);
         let unknown = parse(&profile_text("allow_views: [nope]\n")).expect_err("refused");
-        assert_eq!(unknown.message, "allow_views references unknown role: nope.");
+        assert_eq!(
+            unknown.message,
+            "allow_views references unknown role: nope."
+        );
     }
 
     #[test]
@@ -512,12 +528,20 @@ mod tests {
         let other = Document::from_text(&profile_text("dependency_policy: lower-only\n"));
         let documents = |a: &Document, b: &Document| {
             find_architecture_profiles(&[
-                ProfileDocument { slug: "a", frontmatter: a.frontmatter() },
-                ProfileDocument { slug: "b", frontmatter: b.frontmatter() },
+                ProfileDocument {
+                    slug: "a",
+                    frontmatter: a.frontmatter(),
+                },
+                ProfileDocument {
+                    slug: "b",
+                    frontmatter: b.frontmatter(),
+                },
             ])
         };
         assert_eq!(documents(&first, &mirror).expect("one record").len(), 1);
         let conflict = documents(&first, &other).expect_err("conflict");
-        assert!(conflict.message.starts_with("Duplicate architecture profile slug: layers. a and b both declare it"));
+        assert!(conflict
+            .message
+            .starts_with("Duplicate architecture profile slug: layers. a and b both declare it"));
     }
 }

@@ -255,7 +255,10 @@ fn code_edges(module_edges: &[ModuleEdge], vault: &VaultFacts) -> Vec<(String, C
         }
         let key = pair_key(&from, &to);
         let stats = &module.stats;
-        let previous = index.get(&key).and_then(|at| merged.get(*at)).map(|(_, edge)| edge);
+        let previous = index
+            .get(&key)
+            .and_then(|at| merged.get(*at))
+            .map(|(_, edge)| edge);
         let mut evidence: Vec<ImportEdge> = previous
             .map(|edge| edge.evidence.clone())
             .unwrap_or_default();
@@ -271,11 +274,15 @@ fn code_edges(module_edges: &[ModuleEdge], vault: &VaultFacts) -> Vec<(String, C
             to,
             count,
             source_role_counts: add_roles(
-                previous.map(|edge| edge.source_role_counts).unwrap_or_default(),
+                previous
+                    .map(|edge| edge.source_role_counts)
+                    .unwrap_or_default(),
                 stats.source_role_counts,
             ),
             import_usage_counts: add_usages(
-                previous.map(|edge| edge.import_usage_counts).unwrap_or_default(),
+                previous
+                    .map(|edge| edge.import_usage_counts)
+                    .unwrap_or_default(),
                 stats.import_usage_counts,
             ),
             product_value_count: previous.map_or(0, |edge| edge.product_value_count)
@@ -517,22 +524,38 @@ mod tests {
                 vault_edge("a", "d", "implements"),
             ],
             &["a", "b", "c", "d", "native"],
-            &[("a", "src/a.ts"), ("b", "src/b.ts"), ("c", "src/c.ts"), ("d", "src/d"), ("native", "src/n.c")],
+            &[
+                ("a", "src/a.ts"),
+                ("b", "src/b.ts"),
+                ("c", "src/c.ts"),
+                ("d", "src/d"),
+                ("native", "src/n.c"),
+            ],
         );
         let found = reconcile_import_edges(&modules, &vault);
         assert_eq!(found.in_both.len(), 1);
         assert_eq!(found.in_code_missing_from_vault[0].to, "c");
         assert_eq!(
-            found.in_code_missing_from_vault[0].review.required[0],
-            "product_meaning_evidence",
+            found.in_code_missing_from_vault[0].review.required[0], "product_meaning_evidence",
             "a test-only edge is not framed as a product dependency"
         );
-        assert_eq!(found.in_code_missing_endpoint_absent[0].absent_endpoints, Some(vec!["ghost".to_string()]));
-        assert_eq!(found.in_vault_not_in_code[0].to, "d", "a directory may hold readable files");
-        assert_eq!(found.not_judgeable_by_imports[0].reason, UnjudgeableReason::LanguageNotScanned);
+        assert_eq!(
+            found.in_code_missing_endpoint_absent[0].absent_endpoints,
+            Some(vec!["ghost".to_string()])
+        );
+        assert_eq!(
+            found.in_vault_not_in_code[0].to, "d",
+            "a directory may hold readable files"
+        );
+        assert_eq!(
+            found.not_judgeable_by_imports[0].reason,
+            UnjudgeableReason::LanguageNotScanned
+        );
         assert_eq!(found.not_judgeable_by_imports[0].unreadable, ["native"]);
         let summary = summarize_reconciliation(&found, 0);
-        assert!(summary.hint.starts_with("1 import-backed candidate(s) are missing"));
+        assert!(summary
+            .hint
+            .starts_with("1 import-backed candidate(s) are missing"));
     }
 
     #[test]
@@ -540,6 +563,9 @@ mod tests {
         let vault = facts(vec![vault_edge("a", "b", "dependencies")], &["a", "b"], &[]);
         let modules = vec![module("a", "b", SourceRole::Production, ImportUsage::Value)];
         let summary = summarize_reconciliation(&reconcile_import_edges(&modules, &vault), 0);
-        assert_eq!(summary.hint, "code import graph and vault depends_on edges are in sync (1 shared, no drift).");
+        assert_eq!(
+            summary.hint,
+            "code import graph and vault depends_on edges are in sync (1 shared, no drift)."
+        );
     }
 }

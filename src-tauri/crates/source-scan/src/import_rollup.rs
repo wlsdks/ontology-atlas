@@ -8,7 +8,9 @@ use serde::{Serialize, Serializer};
 
 use answer_format::collation::compare_text;
 
-use crate::import_edges::{ImportEdge, ImportKind, ImportUsage, RoleCounts, SourceRole, UsageCounts};
+use crate::import_edges::{
+    ImportEdge, ImportKind, ImportUsage, RoleCounts, SourceRole, UsageCounts,
+};
 
 /// Evidence rows kept per group; `evidenceLimited` says when more edges stood behind the count.
 pub const EVIDENCE_LIMIT: usize = 5;
@@ -132,22 +134,42 @@ mod tests {
     #[test]
     fn evidence_keeps_product_values_first_and_the_counts_name_every_edge() {
         let mut stats = EdgeStats::default();
-        stats.add(edge("z.test.ts", SourceRole::Test, ImportUsage::Value, ImportKind::Static));
+        stats.add(edge(
+            "z.test.ts",
+            SourceRole::Test,
+            ImportUsage::Value,
+            ImportKind::Static,
+        ));
         for index in 0..6 {
             stats.add(edge(
                 &format!("a{index}.ts"),
                 SourceRole::Production,
                 ImportUsage::Value,
-                if index == 0 { ImportKind::Side } else { ImportKind::Static },
+                if index == 0 {
+                    ImportKind::Side
+                } else {
+                    ImportKind::Static
+                },
             ));
         }
-        stats.add(edge("a.ts", SourceRole::Production, ImportUsage::TypeOnly, ImportKind::Static));
+        stats.add(edge(
+            "a.ts",
+            SourceRole::Production,
+            ImportUsage::TypeOnly,
+            ImportKind::Static,
+        ));
         assert_eq!(stats.count, 8);
         assert_eq!(stats.product_value_count, 6);
         assert_eq!(stats.evidence.len(), EVIDENCE_LIMIT);
-        assert!(stats.evidence.iter().all(|row| row.source_role == SourceRole::Production));
+        assert!(stats
+            .evidence
+            .iter()
+            .all(|row| row.source_role == SourceRole::Production));
         assert!(stats.evidence_limited);
         let text = serde_json::to_string(&stats.kind_counts).expect("serializes");
-        assert_eq!(text, r#"{"side":1,"static":7}"#, "kinds are written in the order of their names");
+        assert_eq!(
+            text, r#"{"side":1,"static":7}"#,
+            "kinds are written in the order of their names"
+        );
     }
 }

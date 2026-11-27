@@ -17,9 +17,8 @@ use crate::script_imports::ScriptImport;
 use crate::source_walk::IgnoredNames;
 use crate::workspace_packages::WorkspacePackage;
 
-const RESOLVE_EXTENSIONS: [&str; 8] = [
-    ".ts", ".tsx", ".mts", ".js", ".jsx", ".mjs", ".cjs", ".cts",
-];
+const RESOLVE_EXTENSIONS: [&str; 8] =
+    [".ts", ".tsx", ".mts", ".js", ".jsx", ".mjs", ".cjs", ".cts"];
 
 /// One `compilerOptions.paths` entry of the root `tsconfig.json`.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -67,7 +66,9 @@ pub fn read_tsconfig_aliases(facts: &PathFacts<'_>) -> Vec<PathAlias> {
             let star = pattern.find('*');
             Some(PathAlias {
                 pattern: pattern.clone(),
-                prefix: star.map_or(pattern.as_str(), |index| &pattern[..index]).to_string(),
+                prefix: star
+                    .map_or(pattern.as_str(), |index| &pattern[..index])
+                    .to_string(),
                 suffix: star.map_or("", |index| &pattern[index + 1..]).to_string(),
                 wildcard: star.is_some(),
                 targets: targets
@@ -79,9 +80,11 @@ pub fn read_tsconfig_aliases(facts: &PathFacts<'_>) -> Vec<PathAlias> {
         })
         .collect();
     aliases.sort_by(|left, right| {
-        right.prefix.len().cmp(&left.prefix.len()).then_with(|| {
-            answer_format::collation::compare_text(&left.pattern, &right.pattern)
-        })
+        right
+            .prefix
+            .len()
+            .cmp(&left.prefix.len())
+            .then_with(|| answer_format::collation::compare_text(&left.pattern, &right.pattern))
     });
     aliases
 }
@@ -204,8 +207,11 @@ impl<'facts, 'files> ScriptResolver<'facts, 'files> {
             .iter()
             .filter_map(|package| {
                 let name = package.name.as_deref().filter(|name| !name.is_empty())?;
-                (spec == name || spec.strip_prefix(name).is_some_and(|rest| rest.starts_with('/')))
-                    .then_some((package, name))
+                (spec == name
+                    || spec
+                        .strip_prefix(name)
+                        .is_some_and(|rest| rest.starts_with('/')))
+                .then_some((package, name))
             })
             .min_by(|left, right| {
                 right.1.len().cmp(&left.1.len()).then_with(|| {
@@ -230,10 +236,7 @@ impl<'facts, 'files> ScriptResolver<'facts, 'files> {
         } else {
             let mut found = self.entry_candidates(&package_root, subpath);
             for folder in ["", "src", "source", "lib"] {
-                found.push(resolve_below(
-                    &package_root,
-                    &join_name(folder, subpath),
-                ));
+                found.push(resolve_below(&package_root, &join_name(folder, subpath)));
             }
             found
         };
@@ -292,13 +295,13 @@ impl<'facts, 'files> ScriptResolver<'facts, 'files> {
             };
             for target in &alias.targets {
                 let mapped = match target.find('*') {
-                    Some(star) => format!("{}{wildcard_value}{}", &target[..star], &target[star + 1..]),
+                    Some(star) => {
+                        format!("{}{wildcard_value}{}", &target[..star], &target[star + 1..])
+                    }
                     None => target.clone(),
                 };
-                let base = resolve_below(
-                    &resolve_below(self.facts.root(), &alias.base_url),
-                    &mapped,
-                );
+                let base =
+                    resolve_below(&resolve_below(self.facts.root(), &alias.base_url), &mapped);
                 if let Some(resolved) = resolve_candidate(self.facts, &base) {
                     return Placement::File(resolved);
                 }
@@ -445,31 +448,15 @@ fn collect_export_strings(value: &Json, entries: &mut Vec<String>) {
 mod tests {
     use super::*;
     use crate::import_edges::{ImportKind, ImportUsage};
+    use crate::planted_tree::PlantedTree;
     use crate::source_walk::IgnoredNames;
-    use confined_files::{DiskSource, ScanRoots};
 
-    struct Repo {
-        _directory: tempfile::TempDir,
-        root: PathBuf,
+    fn repo(files: &[(&str, &str)]) -> PlantedTree {
+        PlantedTree::new(files)
     }
 
-    fn repo(files: &[(&str, &str)]) -> Repo {
-        let directory = tempfile::tempdir().expect("temp dir");
-        let root = std::fs::canonicalize(directory.path()).expect("real path");
-        for (name, text) in files {
-            let path = root.join(name);
-            std::fs::create_dir_all(path.parent().expect("parent")).expect("folder");
-            std::fs::write(path, text).expect("file");
-        }
-        Repo {
-            _directory: directory,
-            root,
-        }
-    }
-
-    fn resolve(repo: &Repo, from: &str, spec: &str) -> Findings {
-        let scan = ScanRoots::new(repo.root.clone(), repo.root.clone()).expect("roots");
-        let source = DiskSource::new(&scan.allow(&repo.root, "rootPath").expect("allowed"), 1 << 20);
+    fn resolve(repo: &PlantedTree, from: &str, spec: &str) -> Findings {
+        let source = repo.source();
         let facts = PathFacts::new(&source);
         let aliases = read_tsconfig_aliases(&facts);
         let resolver = ScriptResolver::new(&facts, aliases, Vec::new());
@@ -482,7 +469,7 @@ mod tests {
         resolver.place(
             &mut findings,
             &IgnoredNames::defaults(),
-            &repo.root.join(from),
+            &repo.root().join(from),
             from,
             &import,
         );
@@ -502,10 +489,19 @@ mod tests {
             ("src/c.ts", ""),
         ]);
         assert_eq!(target(&resolve(&repo, "src/a.ts", "./b")), Some("src/b.ts"));
-        assert_eq!(target(&resolve(&repo, "src/a.ts", "./util")), Some("src/util/index.tsx"));
-        assert_eq!(target(&resolve(&repo, "src/a.ts", "./c.js")), Some("src/c.ts"));
+        assert_eq!(
+            target(&resolve(&repo, "src/a.ts", "./util")),
+            Some("src/util/index.tsx")
+        );
+        assert_eq!(
+            target(&resolve(&repo, "src/a.ts", "./c.js")),
+            Some("src/c.ts")
+        );
         let missing = resolve(&repo, "src/a.ts", "./nope");
-        assert_eq!(missing.unresolved[0].reason, UnresolvedReason::RelativeNotFound);
+        assert_eq!(
+            missing.unresolved[0].reason,
+            UnresolvedReason::RelativeNotFound
+        );
     }
 
     #[test]
@@ -513,7 +509,10 @@ mod tests {
         let repo = repo(&[("src/a.ts", "")]);
         let climbing = resolve(&repo, "src/a.ts", "../../../../../../etc/hosts");
         assert!(climbing.edges.is_empty());
-        assert_eq!(climbing.unresolved[0].reason, UnresolvedReason::RelativeNotFound);
+        assert_eq!(
+            climbing.unresolved[0].reason,
+            UnresolvedReason::RelativeNotFound
+        );
     }
 
     #[test]
@@ -530,7 +529,10 @@ mod tests {
         assert_eq!(target(&resolve(&repo, "src/a.ts", "~/x")), Some("lib/x.ts"));
         assert_eq!(target(&resolve(&repo, "src/a.ts", "@/y")), Some("src/y.ts"));
         let unknown = resolve(&repo, "src/a.ts", "@/nope");
-        assert_eq!(unknown.unresolved[0].reason, UnresolvedReason::AliasNotFound);
+        assert_eq!(
+            unknown.unresolved[0].reason,
+            UnresolvedReason::AliasNotFound
+        );
         let package = resolve(&repo, "src/a.ts", "left-pad");
         assert_eq!(package.external[0].spec, "left-pad");
     }

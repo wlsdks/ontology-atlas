@@ -51,10 +51,11 @@ fn holds_c_source(
             continue;
         }
         match kind {
-            EntryKind::Directory if descend => {
-                if holds_c_source(facts, &directory.join(&name), depth + 1, true, seen) {
-                    return true;
-                }
+            EntryKind::Directory
+                if descend
+                    && holds_c_source(facts, &directory.join(&name), depth + 1, true, seen) =>
+            {
+                return true;
             }
             EntryKind::File => {
                 let lowered = name.to_lowercase();
@@ -71,18 +72,12 @@ fn holds_c_source(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use confined_files::{DiskSource, ScanRoots};
+    use crate::planted_tree::PlantedTree;
 
     fn detect(files: &[&str]) -> bool {
-        let directory = tempfile::tempdir().expect("temp dir");
-        let root = std::fs::canonicalize(directory.path()).expect("real path");
-        for name in files {
-            let path = root.join(name);
-            std::fs::create_dir_all(path.parent().expect("parent")).expect("folder");
-            std::fs::write(path, "").expect("file");
-        }
-        let scan = ScanRoots::new(root.clone(), root.clone()).expect("roots");
-        let source = DiskSource::new(&scan.allow(&root, "rootPath").expect("allowed"), 1 << 20);
+        let planted: Vec<(&str, &str)> = files.iter().map(|name| (*name, "")).collect();
+        let tree = PlantedTree::new(&planted);
+        let source = tree.source();
         detect_autotools_c(&PathFacts::new(&source))
     }
 

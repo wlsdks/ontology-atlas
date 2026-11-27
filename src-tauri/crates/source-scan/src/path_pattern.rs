@@ -78,7 +78,11 @@ impl PathPattern {
             let at = |offset: usize| normalized.get(index + offset).copied();
             if character == STAR && at(1) == Some(STAR) {
                 if at(2) == Some(SLASH) {
-                    steps.extend([Step::OptionalFolders, Step::AcrossFolders, Step::Literal(SLASH)]);
+                    steps.extend([
+                        Step::OptionalFolders,
+                        Step::AcrossFolders,
+                        Step::Literal(SLASH),
+                    ]);
                     index += 3;
                     // Repeated `**/` add nothing.
                     while normalized.get(index..index + 3) == Some(&[STAR, STAR, SLASH]) {

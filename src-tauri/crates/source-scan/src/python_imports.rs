@@ -74,7 +74,9 @@ fn imported_name(parsed: &ParsedSource<'_>, node: Node<'_>) -> Option<String> {
 }
 
 fn compact(text: &str) -> String {
-    text.chars().filter(|character| !character.is_whitespace()).collect()
+    text.chars()
+        .filter(|character| !character.is_whitespace())
+        .collect()
 }
 
 /// Type-only when the statement stands in the body of an `if TYPE_CHECKING:`.

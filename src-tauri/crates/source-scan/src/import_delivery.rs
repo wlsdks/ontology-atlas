@@ -175,7 +175,10 @@ mod tests {
             has_focus_path: true,
             ..ModeArguments::default()
         };
-        assert_eq!(resolve_import_review_mode(&focus).expect("focus"), Some(ReviewMode::Focus));
+        assert_eq!(
+            resolve_import_review_mode(&focus).expect("focus"),
+            Some(ReviewMode::Focus)
+        );
         let lone_limit = ModeArguments {
             has_focus_options: true,
             ..ModeArguments::default()
@@ -187,7 +190,9 @@ mod tests {
             ..ModeArguments::default()
         };
         assert_eq!(
-            resolve_import_review_mode(&next_without_reconcile).expect_err("refused").message(),
+            resolve_import_review_mode(&next_without_reconcile)
+                .expect_err("refused")
+                .message(),
             "reviewMode \"next\" requires reconcile:true because the review queue is a vault diff."
         );
     }
@@ -195,8 +200,14 @@ mod tests {
     #[test]
     fn a_reply_over_the_limit_is_compact_unless_full_was_asked_or_nothing_can_be_reviewed() {
         let over = AUTOMATIC_LIMIT_BYTES + 1;
-        assert!(matches!(choose_automatic_import_delivery(None, None, true, AUTOMATIC_LIMIT_BYTES), Ok(Delivery::Whole)));
-        assert!(matches!(choose_automatic_import_delivery(None, None, true, over), Ok(Delivery::Compact(_))));
+        assert!(matches!(
+            choose_automatic_import_delivery(None, None, true, AUTOMATIC_LIMIT_BYTES),
+            Ok(Delivery::Whole)
+        ));
+        assert!(matches!(
+            choose_automatic_import_delivery(None, None, true, over),
+            Ok(Delivery::Compact(_))
+        ));
         assert!(matches!(
             choose_automatic_import_delivery(Some(ReviewMode::Full), None, true, over),
             Err(DeliveryRefusal::LargeResponseConfirmationRequired { .. })

@@ -222,7 +222,12 @@ mod tests {
         ] {
             assert_eq!(source_role_of(path), SourceRole::Test, "{path}");
         }
-        for path in ["src/a.ts", "src/testing/a.ts", "src/test.ts.bak", "src/contest.rs"] {
+        for path in [
+            "src/a.ts",
+            "src/testing/a.ts",
+            "src/test.ts.bak",
+            "src/contest.rs",
+        ] {
             assert_eq!(source_role_of(path), SourceRole::Production, "{path}");
         }
     }

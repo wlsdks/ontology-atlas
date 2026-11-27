@@ -44,7 +44,12 @@ fn select_profile<'a>(
     profiles: &'a [ArchitectureProfile],
     profile_slug: Option<&str>,
 ) -> Result<&'a ArchitectureProfile, ToolError> {
-    let slugs = || profiles.iter().map(|profile| profile.slug.clone()).collect();
+    let slugs = || {
+        profiles
+            .iter()
+            .map(|profile| profile.slug.clone())
+            .collect()
+    };
     match (profiles, profile_slug) {
         ([], _) => Err(ToolError::profile_missing(
             "No architecture-profile/v1 document exists in the active vault. Add a reviewed Markdown profile under architecture/ before inspecting source conformance.",
@@ -61,10 +66,13 @@ fn select_profile<'a>(
 /// When and by what the measurement was made, and the commit it saw; `None` for a folder that is
 /// not under git, which has no commit to name.
 fn measured_stamp(root: &Path) -> Result<Option<MeasuredStamp>, ToolError> {
-    let state = read_git_source_state(root).map_err(|error| ToolError::failed(error.to_string()))?;
+    let state =
+        read_git_source_state(root).map_err(|error| ToolError::failed(error.to_string()))?;
     let now_ms = SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .map_or(0, |elapsed| i64::try_from(elapsed.as_millis()).unwrap_or(i64::MAX));
+        .map_or(0, |elapsed| {
+            i64::try_from(elapsed.as_millis()).unwrap_or(i64::MAX)
+        });
     Ok(state.map(|state| {
         MeasuredStamp::of_git(
             answer_format::iso_time::to_iso_string(now_ms),

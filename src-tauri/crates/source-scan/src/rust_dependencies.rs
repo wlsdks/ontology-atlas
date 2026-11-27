@@ -128,7 +128,11 @@ fn path_attribute_of(attribute: &str) -> Option<String> {
         .strip_prefix('[')?
         .strip_suffix(']')?
         .trim();
-    let after_name = inner.strip_prefix("path")?.trim_start().strip_prefix('=')?.trim();
+    let after_name = inner
+        .strip_prefix("path")?
+        .trim_start()
+        .strip_prefix('=')?
+        .trim();
     let literal = after_name.strip_prefix('"')?.strip_suffix('"')?;
     (!literal.is_empty() && !literal.contains(['"', '\r', '\n'])).then(|| literal.to_string())
 }
@@ -143,15 +147,20 @@ fn include_of(parsed: &ParsedSource<'_>, node: Node<'_>) -> Option<RustDependenc
     {
         return None;
     }
-    let statement_position = node
-        .parent()
-        .is_some_and(|parent| matches!(parent.kind(), "source_file" | "declaration_list" | "expression_statement" | "block"));
+    let statement_position = node.parent().is_some_and(|parent| {
+        matches!(
+            parent.kind(),
+            "source_file" | "declaration_list" | "expression_statement" | "block"
+        )
+    });
     if !statement_position {
         return None;
     }
     let tree = node.child_by_field_name("token_tree").or_else(|| {
         let mut cursor = node.walk();
-        let found = node.children(&mut cursor).find(|child| child.kind() == "token_tree");
+        let found = node
+            .children(&mut cursor)
+            .find(|child| child.kind() == "token_tree");
         found
     })?;
     let body = parsed.text_of(tree);
@@ -176,7 +185,10 @@ fn exact_string_literal(argument: &str) -> Option<String> {
         return unescape_json_string(inner);
     }
     let rest = trimmed.strip_prefix('r')?;
-    let hashes = rest.chars().take_while(|character| *character == '#').count();
+    let hashes = rest
+        .chars()
+        .take_while(|character| *character == '#')
+        .count();
     if hashes > 255 {
         return None;
     }
@@ -296,7 +308,11 @@ fn segments_of(parsed: &ParsedSource<'_>, node: Node<'_>) -> Option<Vec<String>>
                 current = None;
             }
             "scoped_identifier" => {
-                reversed.push(parsed.text_of(part.child_by_field_name("name")?).to_string());
+                reversed.push(
+                    parsed
+                        .text_of(part.child_by_field_name("name")?)
+                        .to_string(),
+                );
                 current = part.child_by_field_name("path");
             }
             _ => return None,
@@ -339,10 +355,18 @@ mod tests {
     fn a_use_tree_is_expanded_with_self_and_star_dropped_from_the_end() {
         assert_eq!(
             paths("pub use crate::a::{b, c::{self, d as e}, f::*};"),
-            ["crate::a::b", "crate::a::c", "crate::a::c::d", "crate::a::f"]
+            [
+                "crate::a::b",
+                "crate::a::c",
+                "crate::a::c::d",
+                "crate::a::f"
+            ]
         );
         assert_eq!(paths("use ::std::fs;"), ["std::fs"]);
-        assert_eq!(paths("use serde::{Serialize, Serialize};"), ["serde::Serialize"]);
+        assert_eq!(
+            paths("use serde::{Serialize, Serialize};"),
+            ["serde::Serialize"]
+        );
     }
 
     #[test]
@@ -355,7 +379,12 @@ mod tests {
         let kinds: Vec<String> = found
             .iter()
             .map(|dependency| match dependency {
-                RustDependency::Module { name, path_attribute, conditional, .. } => {
+                RustDependency::Module {
+                    name,
+                    path_attribute,
+                    conditional,
+                    ..
+                } => {
                     format!("mod {name} {path_attribute:?} {conditional}")
                 }
                 RustDependency::Include { literal, .. } => format!("include {literal:?}"),
@@ -379,7 +408,10 @@ mod tests {
     fn an_include_with_anything_but_one_literal_has_no_literal() {
         let found = read("include!(concat!(\"a\", \"b\"));\ninclude!(\"bad\\x41\");");
         for dependency in found {
-            assert!(matches!(dependency, RustDependency::Include { literal: None, .. }));
+            assert!(matches!(
+                dependency,
+                RustDependency::Include { literal: None, .. }
+            ));
         }
     }
 }
