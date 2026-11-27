@@ -16,7 +16,11 @@ mod evidence_texts;
 mod folder_placement;
 mod go_imports;
 mod import_coverage;
+mod import_delivery;
 mod import_edges;
+mod import_focus;
+mod import_reconciliation;
+mod import_review;
 mod import_rollup;
 mod import_scan;
 mod jvm_declarations;
@@ -27,11 +31,13 @@ mod path_facts;
 mod path_pattern;
 mod python_imports;
 mod python_resolution;
+mod review_refusal;
 mod rust_dependencies;
 mod rust_resolution;
 mod script_imports;
 mod script_resolution;
 mod source_language;
+mod source_stamp;
 mod source_walk;
 mod workspace_packages;
 
@@ -54,6 +60,21 @@ pub use architecture_profile::{
 pub use bounded_parse::{parse_bounded, walk, ParseLimits, ParseRefusal, ParsedSource, Visit};
 pub use go_imports::GoPackageEvidence;
 pub use import_coverage::ImportCoverage;
+pub use import_delivery::{
+    choose_automatic_import_delivery, resolve_import_review_mode, CompactDelivery, Delivery,
+    DeliveryRefusal, ModeArguments, ReviewMode, AUTOMATIC_LIMIT_BYTES,
+};
+pub use import_focus::{
+    build_import_impact_focus, FocusDirection, FocusRequest, ImportImpactFocus,
+    DEFAULT_FOCUS_LIMIT, MAX_FOCUS_LIMIT,
+};
+pub use import_reconciliation::{
+    reconcile_import_edges, summarize_reconciliation, Reconciliation, ReconciliationSummary,
+    VaultEdge, VaultFacts,
+};
+pub use import_review::{build_next_relation_review, NextRelationReview};
+pub use review_refusal::ReviewRefusal;
+pub use source_stamp::{read_git_source_state, GitSourceState, SourceStateError};
 pub use import_edges::{
     ExternalImport, ImportEdge, ImportKind, ImportUsage, SourceRole, UnresolvedImport,
     UnresolvedReason,
