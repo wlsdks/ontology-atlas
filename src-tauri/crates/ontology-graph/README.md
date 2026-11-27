@@ -38,7 +38,7 @@ from the whole graph.
 | `name_counts.rs` | counts by kind, domain or relation, in the order of the names |
 | `walks/graph_walk.rs` | `traversal_steps`: the edges a walk may follow from a node, in the order walks use |
 | `walks/neighbors.rs`, `walks/paths.rs` | `neighbors`, `path`, `all_paths`: breadth-first, shortest and budgeted iterative search |
-| `walks/dependency_order.rs` | `cycles` (bounded Johnson search) and `topological_order` (layered Kahn) |
+| `walks/dependency_cycles.rs`, `walks/topological_order.rs` | `cycles` (bounded Johnson search) and `topological_order` (layered Kahn); `find_cycles` and `order_dependencies` give selection the typed facts, so it never reads the written answer |
 | `walks/neighborhood.rs`, `walks/hop.rs`, `walks/row_page.rs` | `Neighborhood`: the exact breadth-first search that `reachability`, `impact`, `blast_radius`, `subgraph` and `builder_context` cut; `Hop`; the page of rows an answer cuts at `limit` |
 | `walks/reachability.rs`, `walks/lineage.rs` | `reachability` and `lineage`: what a node reaches, and its containers and contents |
 | `walks/pattern_walk.rs` | `pattern_walk`: simple paths that follow a list of relations, a layer at a time |

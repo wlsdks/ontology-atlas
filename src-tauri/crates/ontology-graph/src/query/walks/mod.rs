@@ -10,7 +10,7 @@ mod blast_radius;
 mod builder_context;
 mod builder_focus;
 mod containment_tree;
-mod dependency_order;
+pub(in crate::query) mod dependency_cycles;
 mod dependency_qualification;
 mod explain_relation;
 mod graph_walk;
@@ -27,6 +27,7 @@ mod reachability;
 mod relation_check;
 mod row_page;
 mod subgraph;
+pub(in crate::query) mod topological_order;
 
 use serde::Serialize;
 
@@ -89,8 +90,8 @@ pub enum WalkAnswer<'a> {
     Neighbors(neighbors::NeighborsAnswer<'a>),
     Path(paths::PathAnswer<'a>),
     AllPaths(paths::AllPathsAnswer<'a>),
-    Cycles(dependency_order::CyclesAnswer<'a>),
-    TopologicalOrder(dependency_order::TopologicalOrderAnswer<'a>),
+    Cycles(dependency_cycles::CyclesAnswer<'a>),
+    TopologicalOrder(topological_order::TopologicalOrderAnswer<'a>),
     ExplainRelation(explain_relation::ExplainRelationAnswer<'a>),
     Reachability(reachability::ReachabilityAnswer<'a>),
     PatternWalk(pattern_walk::PatternWalkAnswer<'a>),
@@ -114,9 +115,9 @@ pub fn run<'a>(
         WalkOperation::Neighbors => WalkAnswer::Neighbors(neighbors::neighbors(graph, request)?),
         WalkOperation::Path => WalkAnswer::Path(paths::path(graph, request)?),
         WalkOperation::AllPaths => WalkAnswer::AllPaths(paths::all_paths(graph, request)?),
-        WalkOperation::Cycles => WalkAnswer::Cycles(dependency_order::cycles(graph, request)?),
+        WalkOperation::Cycles => WalkAnswer::Cycles(dependency_cycles::cycles(graph, request)?),
         WalkOperation::TopologicalOrder => {
-            WalkAnswer::TopologicalOrder(dependency_order::topological_order(graph, request)?)
+            WalkAnswer::TopologicalOrder(topological_order::topological_order(graph, request)?)
         }
         WalkOperation::ExplainRelation => {
             WalkAnswer::ExplainRelation(explain_relation::explain_relation(graph, request)?)
