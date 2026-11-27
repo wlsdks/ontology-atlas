@@ -100,7 +100,7 @@ export type PickOutcome =
   | { outcome: 'already-listed'; path: string }
   | { outcome: 'refused'; reason: PickRefusal; path: string; repository?: string };
 
-export function isHarnessScopesAvailable(): boolean {
+function isHarnessScopesAvailable(): boolean {
   return typeof window !== 'undefined' && isTauri();
 }
 
