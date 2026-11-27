@@ -72,7 +72,7 @@ const FAMILY: [(&str, &[&str]); 5] = [
         ],
     ),
     (
-        "source-evidence",
+        "source-scan",
         &["confined-files", "hardened-git", "vault-document"],
     ),
     (
@@ -82,7 +82,7 @@ const FAMILY: [(&str, &[&str]); 5] = [
             "hardened-git",
             "vault-document",
             "ontology-graph",
-            "source-evidence",
+            "source-scan",
             "answer-format",
             "indexmap",
             "regex",
@@ -223,7 +223,7 @@ fn a_dependency_that_wraps_the_disk_is_named_and_a_listed_or_dev_one_is_not() {
     }
     let fine = json!({ "packages": [
         package("vault-document", &[("confined-files", None), ("tempfile", Some("dev"))]),
-        package("source-evidence", &[("hardened-git", None)]),
+        package("source-scan", &[("hardened-git", None)]),
         package("confined-files", &[("walkdir", None)]),
         package("ontology-atlas", &[("tauri", None)]),
     ]});

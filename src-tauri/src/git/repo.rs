@@ -1,5 +1,8 @@
 use std::fs;
-use std::path::{Component, Path, PathBuf};
+use std::path::{Path, PathBuf};
+
+use hardened_git::RepoPath;
+use source_scan::{place_folder, FolderPlacementError};
 
 use super::runner::run_git;
 use crate::coded_error::coded;
@@ -39,23 +42,26 @@ pub(super) fn require_repo_root(vault_dir: &Path) -> Result<PathBuf, String> {
     }
 }
 
-/// "." when the vault is the repo root.
+/// Where the vault lies below the repository's top, as git is asked about it: `.` when the vault
+/// is the top, and also when it is not inside the repository (callers reach here only with a
+/// vault `find_repo_root` found inside it).
+pub(super) fn vault_place(repo_root: &Path, vault_dir: &Path) -> RepoPath {
+    place_folder(repo_root, vault_dir)
+        .map(|placed| placed.path)
+        .unwrap_or_else(|_| RepoPath::root())
+}
+
+/// [`vault_place`] as the text a pathspec argument takes. A vault whose folder name is not text
+/// cannot be written in one, so its lossy spelling is used, which names nothing and therefore
+/// never widens a snapshot to the whole repository.
 pub(super) fn vault_pathspec(repo_root: &Path, vault_dir: &Path) -> String {
-    match vault_dir.strip_prefix(repo_root) {
-        Ok(rel) => {
-            let mut parts: Vec<String> = Vec::new();
-            for component in rel.components() {
-                if let Component::Normal(part) = component {
-                    parts.push(part.to_string_lossy().into_owned());
-                }
-            }
-            if parts.is_empty() {
-                ".".into()
-            } else {
-                parts.join("/")
-            }
-        }
-        Err(_) => ".".into(),
+    match place_folder(repo_root, vault_dir) {
+        Ok(placed) => placed.path.as_str().to_string(),
+        Err(FolderPlacementError::NotAskable { real }) => real
+            .strip_prefix(fs::canonicalize(repo_root).unwrap_or_else(|_| repo_root.to_path_buf()))
+            .map(|below| below.to_string_lossy().replace('\\', "/"))
+            .unwrap_or_else(|_| ".".into()),
+        Err(FolderPlacementError::Outside { .. }) => ".".into(),
     }
 }
 

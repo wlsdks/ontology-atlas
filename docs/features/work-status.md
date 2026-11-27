@@ -241,7 +241,9 @@ Git; Git answers that through the hardened runner at most once per worktree in
 ten seconds, and never twice for one path until that worktree's `.gitignore`
 changes. No file is opened and no file name is kept: per worktree the app holds
 the time of the last counted change and counts in ten-second steps for an hour
-(99 at most per step). Why:
+(99 at most per step). When macOS says it dropped notices it names a folder,
+often `/`: each room holding that folder or inside it counts one change in
+that step, and nothing is rescanned. Why:
 [the decision](../records/decisions/2026-11-25-work-status-file-change-notices-1c163935-120b-4f73-9c2e-9cf11f023ee3.md).
 
 The page asks every two seconds while visible, and the app answers from memory.

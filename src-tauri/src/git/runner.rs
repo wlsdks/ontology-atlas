@@ -94,6 +94,18 @@ fn search_path_from(home: Option<&Path>, path_env: Option<&OsStr>) -> OsString {
     path_without_relative_or_node_modules_bin(&dirs)
 }
 
+/// A repository read through `hardened-git`, which carries the same hardening as this module's
+/// runners, started with the search path the app's own runs use so a Dock launch still finds `git`.
+pub(crate) fn hardened_repository(root: &Path) -> hardened_git::Repository {
+    let repository = hardened_git::Repository::at(root);
+    let search_path = git_search_path();
+    if search_path.is_empty() {
+        repository
+    } else {
+        repository.with_search_path(search_path)
+    }
+}
+
 /// The root of every runner: base hardening, literal paths, no credential prompt.
 fn git_command() -> Command {
     let mut command = Command::new("git");
@@ -273,15 +285,7 @@ fn filter_overrides_for(cwd: &Path) -> Arc<Vec<String>> {
 /// Every invocation carries the base hardening, per-repo filter neutralisers, and
 /// the diff-family guard so no call site can forget them.
 pub(super) fn run_git(cwd: &Path, args: &[&str]) -> Result<GitRun, String> {
-    run_git_with_read_policy(cwd, args, false)
-}
-
-pub(super) fn run_git_read(cwd: &Path, args: &[&str]) -> Result<GitRun, String> {
-    run_git_with_read_policy(cwd, args, true)
-}
-
-fn run_git_with_read_policy(cwd: &Path, args: &[&str], local_read: bool) -> Result<GitRun, String> {
-    let output = read_policy_command(cwd, args, local_read)
+    let output = read_policy_command(cwd, args, false)
         .output()
         .map_err(|err| coded("git-not-runnable", err))?;
     Ok(GitRun {
@@ -289,39 +293,6 @@ fn run_git_with_read_policy(cwd: &Path, args: &[&str], local_read: bool) -> Resu
         stdout: String::from_utf8_lossy(&output.stdout).into_owned(),
         stderr: String::from_utf8_lossy(&output.stderr).into_owned(),
     })
-}
-
-/// A local read that takes its request on stdin (`cat-file --batch`) and answers raw bytes.
-/// The request is written from its own thread while the output drains, so neither pipe
-/// can fill and block the other side.
-pub(super) fn run_git_read_with_input(
-    cwd: &Path,
-    args: &[&str],
-    input: Vec<u8>,
-) -> Result<(bool, Vec<u8>), String> {
-    use std::io::Write;
-    use std::process::Stdio;
-
-    let mut command = read_policy_command(cwd, args, true);
-    command
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::null());
-    let mut child = command
-        .spawn()
-        .map_err(|err| coded("git-not-runnable", err))?;
-    let writer = child.stdin.take().map(|mut stdin| {
-        std::thread::spawn(move || {
-            let _ = stdin.write_all(&input);
-        })
-    });
-    let output = child
-        .wait_with_output()
-        .map_err(|err| coded("git-not-runnable", err))?;
-    if let Some(writer) = writer {
-        let _ = writer.join();
-    }
-    Ok((output.status.success(), output.stdout))
 }
 
 fn read_policy_command(cwd: &Path, args: &[&str], local_read: bool) -> Command {

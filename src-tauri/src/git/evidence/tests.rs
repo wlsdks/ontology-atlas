@@ -3,30 +3,9 @@ use super::*;
 fn repo_path(path: &str) -> WantedPath {
     WantedPath {
         key: path.to_string(),
-        resolved: path.to_string(),
+        resolved: RepoPath::new(path).unwrap(),
         dating: Dating::NewestCommit,
     }
-}
-
-#[test]
-fn safe_relative_path_refuses_escapes_and_options() {
-    assert_eq!(
-        safe_relative_path("src/widgets/app-nav-rail/"),
-        Some("src/widgets/app-nav-rail".into())
-    );
-    assert_eq!(
-        safe_relative_path("  mcp/src/index.js "),
-        Some("mcp/src/index.js".into())
-    );
-    assert_eq!(safe_relative_path("../secrets"), None);
-    assert_eq!(safe_relative_path("src/../../etc"), None);
-    assert_eq!(safe_relative_path("/etc/passwd"), None);
-    assert_eq!(safe_relative_path("--output=x"), None);
-    assert_eq!(safe_relative_path(""), None);
-    assert_eq!(
-        safe_relative_path("docs/..hidden/a.md"),
-        Some("docs/..hidden/a.md".into())
-    );
 }
 
 #[test]
@@ -37,9 +16,9 @@ fn the_walk_names_the_newest_commit_beside_its_time() {
     scratch.commit("other.md", "unrelated");
     let wanted = [repo_path("pay.md")];
     let last = last_changes(&scratch.work, &wanted).unwrap();
-    let newest = last[0].dated.as_ref().expect("pay.md is dated");
-    assert_eq!(newest.hash, first);
-    assert!(!newest.at.is_empty());
+    let newest = last[0].as_ref().expect("pay.md is dated");
+    assert_eq!(newest.commit.as_str(), first);
+    assert!(!newest.committed_at.is_empty());
 }
 
 #[test]
@@ -53,7 +32,7 @@ fn a_path_written_as_pathspec_magic_hides_no_other_path() {
         let wanted = [repo_path("src/pay.ts"), repo_path(planted)];
         let last = last_changes(&scratch.work, &wanted).unwrap();
         assert!(
-            last[0].dated.is_some(),
+            last[0].is_some(),
             "{planted}: src/pay.ts keeps its change date"
         );
     }
@@ -173,13 +152,17 @@ fn the_desktop_walk_dates_documents_by_their_bytes_as_the_shared_cases_say() {
         let wanted = [
             WantedPath {
                 key: case.document.clone(),
-                resolved: case.document.clone(),
+                resolved: RepoPath::new(&case.document).unwrap(),
                 dating: Dating::FirstCommitWithPresentBytes,
             },
             repo_path(&case.code),
         ];
         let last = last_changes(&case.root, &wanted).unwrap();
-        let hash = |index: usize| last[index].dated.as_ref().map(|commit| commit.hash.clone());
+        let hash = |index: usize| {
+            last[index]
+                .as_ref()
+                .map(|commit| commit.commit.as_str().to_string())
+        };
         assert_eq!(
             hash(0),
             case.labels.get(&case.document_label).cloned(),
