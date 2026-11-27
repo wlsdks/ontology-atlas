@@ -1,6 +1,6 @@
 {
   "serverName": "ontology-atlas-mcp",
-  "serverVersion": "0.13.0",
+  "serverVersion": "2.7.15",
   "toolInventoryPlaceholder": "__ONTOLOGY_ATLAS_ACTIVE_TOOL_INVENTORY__",
   "readTools": [
     "connection_info",
