@@ -1,84 +1,127 @@
 {
   "stage": {
-    "title": "에이전트 메모리를 오늘 코드와 대조",
-    "body": "Claude Code는 이 메모를 세션마다 읽어요. Atlas는 메모에 적힌 파일 경로를 하나씩 이 저장소의 Git 기록과 대조해요.",
+    "title": "에이전트가 읽는 파일 개선",
+    "body": "한 번 실행하면 Claude Code 메모리를 이 저장소의 Git 기록과 대조하고, 바꿀 내용을 한 줄씩 제안해요. 바꾸기로 하기 전에는 아무것도 바뀌지 않아요.",
     "folder": "{path}의 메모 {count}개",
-    "indexSize": "세션 시작 때 읽는 양: {used} / {limit}",
+    "indexSize": "목차: {lines} / {lineLimit}줄 · {bytes} / {byteLimit}",
     "start": "메모리 점검",
-    "local": "이 컴퓨터의 파일만 읽어요. 아무것도 보내지 않고, 바꾸기로 하기 전에는 어떤 메모도 바뀌지 않아요."
+    "startWithAgent": "메모리와 세션 점검",
+    "local": "이 컴퓨터의 파일만 읽어요. 아무것도 보내지 않고, 바꾸기로 하기 전에는 아무것도 바뀌지 않아요."
+  },
+  "folders": {
+    "title": "Claude Code가 이 저장소의 메모리를 {count}개 폴더에 두고 있어요. 점검할 폴더를 골라 주세요.",
+    "row": "{path} · 메모 {count}개 · {date} 변경"
+  },
+  "lanes": {
+    "paths": "경로",
+    "index": "목차",
+    "notes": "낡은 메모",
+    "corrections": "반복된 정정",
+    "count": "{total}개 중 {done}개"
   },
   "run": {
-    "progress": "메모 {total}개 중 {done}개 확인",
     "checkingNote": "{note} 확인 중",
     "askingGit": "Git 기록에서 {path} 찾는 중",
+    "readingSessions": "세션 {total}개 중 {done}개 읽는 중",
+    "sending": "{agent} 응답 기다리는 중",
     "stop": "멈추기",
-    "stopped": "메모 {total}개 중 {done}개에서 멈췄어요. 지금까지 찾은 것은 목록에 남아 있어요."
+    "stopped": "멈췄어요. 지금까지 찾은 것은 목록에 남아 있어요."
   },
   "groups": {
     "moved": "옮겨짐, 새 위치 알려짐",
     "gone": "이 저장소에서 사라짐",
-    "notJudged": "경로 {count}개는 이 저장소 밖의 파일을 가리켜서 확인하지 않았어요"
+    "notJudged": "경로 {count}개는 이 저장소 밖의 파일을 가리켜서 확인하지 않았어요",
+    "duplicate": "목차에 두 번 있음",
+    "dangling": "목차가 없는 메모를 가리킴",
+    "unlisted": "목차에 없는 메모",
+    "similar": "거의 같은 내용의 메모",
+    "overLimit": "읽히지 않음: 한도를 넘음",
+    "stale": "가리키는 파일이 모두 사라짐",
+    "rules": "제안된 규칙"
   },
   "detail": {
     "line": "{note} {line}번째 줄",
     "now": "지금",
     "afterKeep": "바꾸면",
-    "movedBody": "{old}는 {date}에 커밋 {commit}에서 {new}로 옮겨졌어요: {subject}",
-    "goneBody": "{old}는 {date}에 커밋 {commit}에서 삭제됐어요: {subject}. Git에 새 위치가 없어서 Atlas는 바꿀 내용을 제안하지 않아요. 이 줄은 직접 고치거나 지워 주세요.",
+    "moved": "{old}는 {date}에 커밋 {commit}에서 {new}로 옮겨졌어요: {subject}",
+    "gone": "{old}는 {date}에 커밋 {commit}에서 삭제됐어요: {subject}. Git에 새 위치가 없어서 Atlas는 바꿀 내용을 제안하지 않아요. 이 줄은 직접 고쳐 주세요.",
+    "duplicate": "{note}가 {first}번째 줄과 {line}번째 줄에 두 번 있어요. 바꾸면 두 번째 항목을 지워요.",
+    "dangling": "{line}번째 줄이 폴더에 없는 {note}를 가리켜요. 바꾸면 그 항목을 지워요.",
+    "unlisted": "{note}는 폴더에 있지만 목차에 없어서 Claude Code가 세션 시작 때 보지 못해요. 바꾸면 목차 끝에 이 항목을 더해요.",
+    "similar": "{first}와 {second}는 거의 같은 내용이에요. Atlas는 바꿀 내용을 제안하지 않아요. 같다면 직접 합쳐 주세요.",
+    "overLimit": "Claude Code는 목차의 처음 {lineLimit}줄 또는 {byteLimit}까지만 읽어요. {line}번째 줄부터는 읽히지 않아요.",
+    "stale": "이 메모가 가리키는 파일이 모두 사라졌어요: {paths}. 바꾸면 {note}와 목차 항목을 지워요. 되돌리기로 둘 다 되살릴 수 있어요.",
+    "rule": "세션 {sessions}개에서 이 점을 {count}번 정정했어요.",
+    "ruleEvidence": "{date} · {file}에 {tool} 실행 뒤",
+    "ruleTarget": "추가할 곳",
+    "ruleTargetMemory": "Claude Code 메모리, 새 메모로",
     "hiddenLine": "이 줄에는 키나 토큰이 있는 것 같아서 보여 주지 않아요. 편집기에서 {note}를 열어 주세요."
   },
   "action": {
     "keep": "바꾸기",
     "leave": "그대로 두기",
-    "keepAll": "옮겨진 {count}개 모두 바꾸기",
-    "copyPath": "새 경로 복사",
+    "copy": "복사",
+    "keepAll": "{count}개 모두 바꾸기",
     "checkAgain": "다시 점검"
   },
   "keepAll": {
-    "title": "메모 {files}개에서 {count}줄 바꾸기",
-    "body": "각 줄에서 보이는 경로만 바뀌어요. 메모의 나머지 글자는 그대로예요. 되돌리기 한 번으로 모두 원래대로 돌아가요.",
+    "title": "파일 {files}개에서 {count}곳 바꾸기",
+    "body": "모두 Git 기록이나 폴더 안의 파일을 따르고, 경로 하나나 목차 항목 하나만 바꿔요. 메모 삭제와 규칙 추가는 이 목록에 들어가지 않아요. 되돌리기 한 번으로 모두 원래대로 돌아가요.",
     "confirm": "{count}개 모두 바꾸기",
     "cancel": "취소"
   },
   "toast": {
     "kept": "{note} {line}번째 줄을 바꿨어요.",
-    "keptAll": "메모 {files}개에서 {count}줄을 바꿨어요.",
+    "keptAll": "파일 {files}개에서 {count}곳을 바꿨어요.",
+    "deleted": "{note}와 목차 항목을 지웠어요.",
+    "ruleAdded": "{file}에 규칙을 더했어요.",
     "undo": "되돌리기",
-    "undone": "{note}를 원래대로 돌렸어요."
+    "undone": "{file}를 원래대로 돌렸어요."
   },
   "kept": {
     "tag": "바꿈"
   },
   "done": {
-    "cleanTitle": "메모에 적힌 경로가 모두 그 자리에 있어요",
-    "cleanBody": "메모 {notes}개의 경로 {paths}개를 커밋 {commit} 기준 Git과 대조했어요.",
-    "foundTitle": "{count}줄이 없는 파일을 가리켜요"
+    "cleanTitle": "바꿀 것이 없어요",
+    "cleanBody": "경로 {paths}개, 목차, 메모 {notes}개를 커밋 {commit} 기준 Git과 대조했어요.",
+    "foundTitle": "살펴볼 변경 {count}개"
   },
   "empty": {
     "title": "이 저장소의 Claude Code 메모리가 없어요",
-    "body": "Atlas가 {path}를 확인했지만 메모가 없어요. Claude Code는 자동 메모리(auto memory)를 켜면 이곳에 메모를 써요. 설정 파일에 autoMemoryDirectory가 있으면 메모는 다른 곳에 있고, Atlas는 그곳을 읽지 않아요."
+    "body": "Atlas가 {paths}를 확인했지만 메모가 없어요. Claude Code는 자동 메모리(auto memory)를 켜면 이곳에 메모를 써요."
   },
   "partial": {
-    "body": "메모 {count}개를 읽지 못했어요: {reason}. 그 메모의 경로는 목록에 없어요."
+    "body": "파일 {count}개를 읽지 못했어요: {reason}. 그 안의 내용은 목록에 없어요."
   },
   "error": {
     "git": "이 저장소의 Git 기록을 읽지 못해서 어떤 경로도 판단하지 않았어요: {reason}",
     "folder": "{path}를 열지 못했어요: {reason}. 바뀐 것은 없어요.",
-    "link": "{path}는 링크예요. Atlas는 실제 폴더를 거쳐서만 메모리를 열기 때문에 아무것도 읽지 않았어요.",
-    "changedSince": "점검 뒤에 {note}가 바뀌어서 Atlas는 바꾸지 않았어요. 메모리를 다시 점검하면 지금 줄을 볼 수 있어요.",
-    "writeFailed": "{note}에 쓰지 못했어요: {reason}. 메모는 그대로예요.",
-    "undoChanged": "Atlas가 쓴 뒤에 {note}가 바뀌었고 {line}번째 줄에 새 경로가 더 이상 없어서 아무것도 되돌리지 않았어요."
+    "changedSince": "점검 뒤에 {file}가 바뀌어서 Atlas는 바꾸지 않았어요. 다시 점검하면 지금 줄을 볼 수 있어요.",
+    "writeFailed": "{file}에 쓰지 못했어요: {reason}. 파일은 그대로예요.",
+    "undoChanged": "Atlas가 쓴 뒤에 {file}가 바뀌어 Atlas가 바꾼 부분이 더 이상 없어서 아무것도 되돌리지 않았어요."
   },
   "managed": {
-    "body": "이 Mac의 Claude Code는 조직이 관리해서 Atlas는 여기서 메모리 파일을 바꾸지 않아요. 대신 새 경로를 하나씩 복사해 주세요."
+    "body": "이 Mac의 Claude Code는 조직이 관리해서 Atlas는 여기서 파일을 바꾸지 않아요. 대신 변경을 하나씩 복사해 주세요."
+  },
+  "agent": {
+    "switch": "내 에이전트로 반복된 정정도 찾기",
+    "what": "Atlas가 이 컴퓨터에 있는 이 저장소의 최근 30일 Claude Code 세션을 읽고, 에이전트가 작업한 직후 내가 입력한 메시지를 골라 {agent}에 보내 묶게 해요. {agent}는 이를 {provider}에 보내요. 그 밖에는 아무것도 보내지 않아요.",
+    "logNote": "보낼 때마다 이 컴퓨터의 {logPath}에 기록해요. {agent}가 직접 {provider}에 보내는 내용은 이 기록에 없어요.",
+    "preview": "보낼 내용 보기",
+    "previewTitle": "세션 {sessions}개의 메시지 {count}개, {size}",
+    "none": "에이전트 탭에서 에이전트를 연결하면 반복해서 한 정정을 규칙 제안으로 바꿀 수 있어요.",
+    "openAgents": "에이전트 열기",
+    "failed": "{agent}가 끝내지 못했어요: {reason}. 다른 줄은 모두 끝났어요.",
+    "dropped": "제안 {count}개를 버렸어요: 세션 글을 그대로 옮겼거나, 명령이나 링크가 들어 있었거나, 정정이 두 번 미만이었어요.",
+    "noRepeat": "최근 30일 동안 두 번 나온 정정이 없어요."
   },
   "web": {
-    "title": "에이전트 메모리 점검은 앱에서 할 수 있어요",
+    "title": "에이전트 메모리 개선은 앱에서 할 수 있어요",
     "body": "Claude Code는 이 메모를 홈 폴더에 두는데, 브라우저는 그 폴더를 열 수 없어요. 앱은 메모를 읽고, 바꾸기로 한 줄만 바꿔요."
   },
   "card": {
-    "running": "메모리 점검 중 · {total}개 중 {done}개",
-    "found": "Claude Code 메모리에서 살펴볼 줄 {count}개",
+    "running": "에이전트 메모리 개선 중 · {total}개 중 {done}개",
+    "found": "Claude Code 메모리에서 살펴볼 변경 {count}개",
     "open": "열기"
   }
 }

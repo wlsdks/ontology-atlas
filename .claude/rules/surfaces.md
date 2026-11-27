@@ -163,6 +163,34 @@ The sixth written exception, for Work status only:
 Another folder, a kept name or path, or a watch while hidden needs a new
 decision record.
 
+### Reading and changing Claude Code's memory folder
+
+The seventh written exception, for Harness › Improve only; specified, not yet
+built (`docs/specs/2026-11-27-harness-self-improvement.md`, slice 1):
+
+| | |
+|---|---|
+| Folder | the connected repository's Claude Code memory folder, found under `~/.claude`, `CLAUDE_CONFIG_DIR`, an `autoMemoryDirectory` setting or a known profile home; each resolved to its real path and deduplicated; the person picks when more than one holds notes |
+| Read | that folder's listing and its `.md` files, at most 2,000 of at most 1 MiB; the repository's Git history for cited paths |
+| Write | after a Keep, one cited path, one index entry removed or appended, or one note deleted with its index entry; only when the file matches what was read; a version saved first in the app's data folder (mode 0600, 90 days); atomic; no link followed below the real path; nothing under managed Claude Code settings |
+| Never | note text in a log, an error or a request; a secret-shaped line on the page; a command, link or instruction taken from a note; Codex memory |
+| Platforms | macOS |
+| Record | `docs/records/decisions/2026-11-27-harness-improve-memory-writes-d73dd377-6669-4ae0-8797-7cf76edd9fce.md` |
+
+### Reading session files for Harness › Improve
+
+The eighth written exception; specified, not yet built (the same spec, slice 2):
+
+| | |
+|---|---|
+| When | only while the person's switch is on for that run |
+| Read | session files under the candidate config homes whose folder encodes the repository's main checkout or a worktree Git lists, changed in the last 30 days, at most 400; per line only typed message text, a tool call's name and `file_path`, and whether a result is the interrupt or rejection marker; a line over 4 MiB skipped; never a tool's output, a command line, an environment value or a subagent file |
+| Sent | at most 300 typed messages, 600 characters each, secret-shaped lines removed, to the agent the person chose, in an ACP session whose working folder is empty and whose every permission request is answered `reject_once`; one line with the request's SHA-256 written first to `improve-sends.jsonl` in the app's data folder; the agent's own provider traffic is not in that log |
+| Platforms | macOS |
+| Record | `docs/records/decisions/2026-11-27-harness-improve-corrections-to-agent-4919ff56-3a5b-474c-a93e-e7b662172b73.md` |
+
+Another folder, field or recipient for either needs a new decision record.
+
 ### Folder watch is latency, not degradation
 
 The app applies the changed paths the OS watcher's `vault-changed` event

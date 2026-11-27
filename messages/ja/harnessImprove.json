@@ -1,84 +1,127 @@
 {
   "stage": {
-    "title": "エージェントのメモリを今日のコードと照合",
-    "body": "Claude Codeはこのメモをセッションごとに読みます。Atlasはメモに書かれたファイルパスを一つずつ、このリポジトリのGit履歴と照合します。",
+    "title": "エージェントが読むファイルを改善",
+    "body": "一度の実行でClaude CodeのメモリをこのリポジトリのGit履歴と照合し、変更を一行ずつ提案します。確定するまで何も変わりません。",
     "folder": "{path}のメモ{count}件",
-    "indexSize": "セッション開始時に読み込まれる量：{used} / {limit}",
+    "indexSize": "目次：{lines} / {lineLimit}行 · {bytes} / {byteLimit}",
     "start": "メモリを点検",
-    "local": "このコンピューターのファイルだけを読みます。何も送信せず、変更を確定するまでメモは変わりません。"
+    "startWithAgent": "メモリとセッションを点検",
+    "local": "このコンピューターのファイルだけを読みます。何も送信せず、確定するまで何も変わりません。"
+  },
+  "folders": {
+    "title": "Claude Codeはこのリポジトリのメモリを{count}個のフォルダーに置いています。点検するフォルダーを選んでください。",
+    "row": "{path} · メモ{count}件 · {date}に変更"
+  },
+  "lanes": {
+    "paths": "パス",
+    "index": "目次",
+    "notes": "古いメモ",
+    "corrections": "繰り返された訂正",
+    "count": "{total}件中{done}件"
   },
   "run": {
-    "progress": "メモ{total}件中{done}件を確認",
     "checkingNote": "{note}を確認中",
     "askingGit": "Git履歴で{path}を検索中",
+    "readingSessions": "セッション{total}件中{done}件を読み込み中",
+    "sending": "{agent}の応答を待っています",
     "stop": "停止",
-    "stopped": "メモ{total}件中{done}件で停止しました。ここまでに見つかったものは一覧に残ります。"
+    "stopped": "停止しました。ここまでに見つかったものは一覧に残ります。"
   },
   "groups": {
     "moved": "移動済み、新しい場所が判明",
     "gone": "このリポジトリにはもうない",
-    "notJudged": "パス{count}件はこのリポジトリ外のファイルを指すため確認していません"
+    "notJudged": "パス{count}件はこのリポジトリ外のファイルを指すため確認していません",
+    "duplicate": "目次に二度ある",
+    "dangling": "目次が存在しないメモを指している",
+    "unlisted": "目次にないメモ",
+    "similar": "ほぼ同じ内容のメモ",
+    "overLimit": "読み込まれない：上限を超えている",
+    "stale": "指すファイルがすべてなくなった",
+    "rules": "提案されたルール"
   },
   "detail": {
     "line": "{note}の{line}行目",
     "now": "現在",
     "afterKeep": "確定後",
-    "movedBody": "{old}は{date}にコミット{commit}で{new}へ移動しました：{subject}",
-    "goneBody": "{old}は{date}にコミット{commit}で削除されました：{subject}。Gitに新しい場所の記録がないため、Atlasは変更を提案しません。この行はご自身で書き直すか削除してください。",
+    "moved": "{old}は{date}にコミット{commit}で{new}へ移動しました：{subject}",
+    "gone": "{old}は{date}にコミット{commit}で削除されました：{subject}。Gitに新しい場所の記録がないため、Atlasは変更を提案しません。この行はご自身で編集してください。",
+    "duplicate": "{note}は{first}行目と{line}行目に二度あります。確定すると二つ目の項目を削除します。",
+    "dangling": "{line}行目はフォルダーにない{note}を指しています。確定するとその項目を削除します。",
+    "unlisted": "{note}はフォルダーにありますが目次にないため、Claude Codeはセッション開始時に見つけられません。確定すると目次の末尾にこの項目を追加します。",
+    "similar": "{first}と{second}はほぼ同じ内容です。Atlasは変更を提案しません。同じならご自身で統合してください。",
+    "overLimit": "Claude Codeは目次の最初の{lineLimit}行または{byteLimit}までを読み込みます。{line}行目以降は読み込まれません。",
+    "stale": "このメモが指すファイルはすべてなくなりました：{paths}。確定すると{note}と目次の項目を削除します。元に戻すで両方を復元できます。",
+    "rule": "セッション{sessions}件で、この点を{count}回訂正しています。",
+    "ruleEvidence": "{date} · {file}への{tool}の後",
+    "ruleTarget": "追加先",
+    "ruleTargetMemory": "Claude Codeのメモリ（新しいメモとして）",
     "hiddenLine": "この行にはキーやトークンが含まれているようなので表示しません。エディターで{note}を開いてください。"
   },
   "action": {
     "keep": "確定",
     "leave": "そのままにする",
-    "keepAll": "移動{count}件をすべて確定",
-    "copyPath": "新しいパスをコピー",
+    "copy": "コピー",
+    "keepAll": "{count}件をすべて確定",
     "checkAgain": "もう一度点検"
   },
   "keepAll": {
-    "title": "メモ{files}件の{count}行を変更",
-    "body": "各行で表示されたパスだけが変わります。メモのほかの文字はそのままです。元に戻すを一度押せば、すべて元に戻ります。",
+    "title": "ファイル{files}件で{count}か所を変更",
+    "body": "どれもGit履歴かフォルダー内のファイルに基づき、パス一つか目次の項目一つだけを変えます。メモの削除とルールの追加はこの一覧に入りません。元に戻すを一度押せば、すべて元に戻ります。",
     "confirm": "{count}件をすべて確定",
     "cancel": "キャンセル"
   },
   "toast": {
     "kept": "{note}の{line}行目を変更しました。",
-    "keptAll": "メモ{files}件の{count}行を変更しました。",
+    "keptAll": "ファイル{files}件で{count}か所を変更しました。",
+    "deleted": "{note}と目次の項目を削除しました。",
+    "ruleAdded": "{file}にルールを追加しました。",
     "undo": "元に戻す",
-    "undone": "{note}を元に戻しました。"
+    "undone": "{file}を元に戻しました。"
   },
   "kept": {
     "tag": "確定済み"
   },
   "done": {
-    "cleanTitle": "メモに書かれたパスはすべてその場所にあります",
-    "cleanBody": "メモ{notes}件のパス{paths}件を、コミット{commit}時点のGitと照合しました。",
-    "foundTitle": "{count}行が存在しないファイルを指しています"
+    "cleanTitle": "変更するものはありません",
+    "cleanBody": "パス{paths}件、目次、メモ{notes}件をコミット{commit}時点のGitと照合しました。",
+    "foundTitle": "確認する変更{count}件"
   },
   "empty": {
     "title": "このリポジトリのClaude Codeメモリはありません",
-    "body": "Atlasは{path}を確認しましたが、メモはありませんでした。Claude Codeはauto memoryをオンにするとここにメモを書きます。設定ファイルでautoMemoryDirectoryが指定されている場合、メモは別の場所にあり、Atlasはそこを読みません。"
+    "body": "Atlasは{paths}を確認しましたが、メモはありませんでした。Claude Codeはauto memoryをオンにするとここにメモを書きます。"
   },
   "partial": {
-    "body": "メモ{count}件を読めませんでした：{reason}。それらのパスは一覧にありません。"
+    "body": "ファイル{count}件を読めませんでした：{reason}。その内容は一覧にありません。"
   },
   "error": {
     "git": "このリポジトリのGit履歴を読めなかったため、どのパスも判定していません：{reason}",
     "folder": "{path}を開けませんでした：{reason}。何も変更していません。",
-    "link": "{path}はリンクです。Atlasは実際のフォルダーを経由してのみメモリを開くため、何も読んでいません。",
-    "changedSince": "点検後に{note}が変更されたため、Atlasは変更しませんでした。もう一度点検すると現在の行を確認できます。",
-    "writeFailed": "{note}に書き込めませんでした：{reason}。メモは変わっていません。",
-    "undoChanged": "Atlasが書き込んだ後に{note}が変更され、{line}行目に新しいパスがもうないため、何も元に戻していません。"
+    "changedSince": "点検後に{file}が変更されたため、Atlasは変更しませんでした。もう一度点検すると現在の行を確認できます。",
+    "writeFailed": "{file}に書き込めませんでした：{reason}。ファイルは変わっていません。",
+    "undoChanged": "Atlasが書き込んだ後に{file}が変更され、Atlasの変更がもう残っていないため、何も元に戻していません。"
   },
   "managed": {
-    "body": "このMacのClaude Codeは組織が管理しているため、Atlasはここでメモリファイルを変更しません。代わりに新しいパスを一つずつコピーしてください。"
+    "body": "このMacのClaude Codeは組織が管理しているため、Atlasはここでファイルを変更しません。代わりに変更を一つずつコピーしてください。"
+  },
+  "agent": {
+    "switch": "自分のエージェントで繰り返された訂正も探す",
+    "what": "Atlasはこのコンピューター上の、このリポジトリの直近30日間のClaude Codeセッションを読み、エージェントが作業した直後にあなたが入力したメッセージを選んで、まとめるために{agent}へ送ります。{agent}はそれを{provider}へ送ります。ほかには何も送りません。",
+    "logNote": "送信のたびに、このコンピューターの{logPath}に記録します。{agent}自身が{provider}へ送る内容はこの記録に含まれません。",
+    "preview": "送信内容を見る",
+    "previewTitle": "セッション{sessions}件のメッセージ{count}件、{size}",
+    "none": "エージェント画面でエージェントを接続すると、繰り返した訂正をルールの提案に変えられます。",
+    "openAgents": "エージェントを開く",
+    "failed": "{agent}が完了しませんでした：{reason}。ほかのレーンはすべて完了しています。",
+    "dropped": "提案{count}件を破棄しました：セッションの文章をそのまま写した、コマンドやリンクを含んでいた、または訂正が二回未満でした。",
+    "noRepeat": "直近30日間に二度出た訂正はありません。"
   },
   "web": {
-    "title": "エージェントのメモリ点検にはアプリが必要です",
+    "title": "エージェントのメモリ改善にはアプリが必要です",
     "body": "Claude Codeはこのメモをホームフォルダーに置いていますが、ブラウザーはそこを開けません。アプリはメモを読み、確定した行だけを変更します。"
   },
   "card": {
-    "running": "メモリを点検中 · {total}件中{done}件",
-    "found": "Claude Codeのメモリで確認する行{count}件",
+    "running": "エージェントのメモリを改善中 · {total}件中{done}件",
+    "found": "Claude Codeのメモリで確認する変更{count}件",
     "open": "開く"
   }
 }
