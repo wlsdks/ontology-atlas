@@ -797,6 +797,13 @@ const SELECTION_RICH = [
   { operation: 'workspace_brief' }, { operation: 'workspace_brief', limit: 1 }, { operation: 'workspace_brief', limit: 3, includeExternal: false },
 ];
 add('graph', 'graph-selection-rich', { vault: 'selection-rich' }, SELECTION_RICH.map(query));
+// A list inside an answer is cut at `limit`: the domains of a matrix, and the neighbours a similar
+// node shares with the source.
+add('graph', 'graph-selection-limited-lists', { vault: 'selection-rich' }, [
+  { operation: 'domain_matrix', limit: 1 }, { operation: 'domain_matrix', limit: 2 }, { operation: 'domain_matrix', project: 'alpha', limit: 1 },
+  { operation: 'domain_matrix', limit: 100 }, { operation: 'similar_nodes', slug: 'capabilities/invoice', limit: 1 },
+  { operation: 'similar_nodes', slug: 'capabilities/pay', limit: 1 }, { operation: 'similar_nodes', slug: 'capabilities/invoice', limit: 100 },
+].map(query));
 add('graph', 'graph-selection-storefront', { vault: 'storefront' }, [
   { operation: 'match_nodes', kind: 'capability', minDegree: 3, sort: 'degree', limit: 15 }, { operation: 'match_nodes', domain: 'domains/order', sort: 'inDegree' },
   { operation: 'match_edges', type: 'depends_on', fromKind: 'capability', toKind: 'capability', limit: 20 }, { operation: 'match_edges', toKind: 'external' },
@@ -828,9 +835,9 @@ add('graph', 'graph-selection-tangle', { vault: 'tangle' }, [
   { operation: 'recommend_relations', kind: 'capability' }, { operation: 'similar_nodes', slug: 'capabilities/a' },
 ].map(query));
 add('graph', 'graph-selection-edge-names', { vault: 'edge-names' }, [
-  { operation: 'match_nodes', sort: 'slug' }, { operation: 'match_edges' }, { operation: 'node_profile', slug: 'capabilities/가나다' },
-  { operation: 'domain_profile', domain: 'domains/결제' }, { operation: 'health' }, { operation: 'growth_plan' }, { operation: 'maintenance_plan' }, { operation: 'workspace_brief' },
-  { operation: 'recommend_relations', kind: 'capability' }, { operation: 'similar_nodes', slug: 'capabilities/주문-취소' },
+  { operation: 'match_nodes', sort: 'slug' }, { operation: 'match_edges' }, { operation: 'node_profile', slug: 'capabilities/\uac00\ub098\ub2e4' },
+  { operation: 'domain_profile', domain: 'domains/\uacb0\uc81c' }, { operation: 'health' }, { operation: 'growth_plan' }, { operation: 'maintenance_plan' }, { operation: 'workspace_brief' },
+  { operation: 'recommend_relations', kind: 'capability' }, { operation: 'similar_nodes', slug: 'capabilities/\uc8fc\ubb38-\ucde8\uc18c' },
 ].map(query));
 add('graph', 'graph-selection-ambiguous-and-dangling', { vault: 'ambiguous-dangling' }, [
   { operation: 'match_nodes' }, { operation: 'match_edges' }, { operation: 'match_edges', toKind: 'unresolved' }, { operation: 'node_profile', slug: 'capabilities/a' },
