@@ -5,8 +5,8 @@
 ## Commit messages
 
 - The whole message is English: prefix, subject, and body.
-- A conventional prefix with an optional `(scope)`; `.githooks/commit-msg`
-  enforces the prefix list and the language.
+- A conventional prefix with an optional `(scope)`; the prefix list lives in
+  `.githooks/commit-msg-language.mjs`, which enforces it and the language.
 - The body explains **why**; the diff already says what. Lines stay within 80
   characters.
 
@@ -39,7 +39,9 @@
   the last push, or it falls back to its train code, a live fallback.
   `pnpm pr:ci <number>` starts that run early; `--plan <n...>` previews.
   Preserve original commits with merge commits; never squash or rebase during
-  landing.
+  landing. Disable main's linear-history requirement.
+- Never `gh pr merge` or `gh pr update-branch`; `block-manual-landing.sh`
+  refuses them.
 - Several branches merge through one integration branch (`/integrate`), each
   by `git merge --no-ff`; never squash, rebase or cherry-pick a component.
   Its CI run is Checks; rendered slices attach their local spec runs.

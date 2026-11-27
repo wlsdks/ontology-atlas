@@ -214,7 +214,7 @@ What each contributor command answers, sorted by command.
 | `pnpm perf:vault-open -- --files=10000 --files=50000 --shape=key --shape=all --check` | The installed app's reopen from cached rows on generated vaults: a build from files against a reopen with one changed file, heap held, and the rows and index sizes against their limits; also proves a manifest from rows equals one from files; a few minutes |
 | `pnpm pr:ci <n>` | Mark a finished draft ready so its CI runs before `pnpm pr:land` |
 | `pnpm pr:land --plan <n...>` | Dry-run a merge |
-| `pnpm pr:land <n>` | Merge a pull request on its own CI run; a head behind `main` falls back to the dormant train code, so merge `origin/main` first. While `main`'s nightly browser run is red it names the failing specs and still merges |
+| `pnpm pr:land <n>` | Merge a pull request on its own CI run; a head behind `main` falls back to the dormant train code, so merge `origin/main` first. While `main`'s nightly browser run is red it names the failing specs and still merges. Disable main's linear-history requirement so its merge commits are accepted |
 | `pnpm review:facts -- --base=<ref>` | The mechanical facts a reviewer would otherwise count by hand: line growth, 800-line files, export and dependency changes, untouched sibling tests, security paths |
 | `pnpm seo:check` | After `pnpm build`: every sitemap URL in `out/` canonicalizes to itself, every other indexable page consolidates into a sitemap URL, `/` and each locale root point at `/{locale}/download/`, and titles and descriptions are unique per locale |
 | `pnpm typecheck` | Types across every file, with Next's generated route and page types |
