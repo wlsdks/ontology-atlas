@@ -191,9 +191,9 @@ dry run, `confirm`, `overwrite`, `force`, the consent question) and the lines in
 
 The Rust server is not held to the JavaScript server's answers. Each difference is judged on
 whether it is better for the person or the agent, and is kept only as an entry here, mirrored with its request
-ids in the harness manifest (`declaredChanges`) and summarised in the merge's change record. An
-entry names the tool, the field's JSON path, before, after and why. The harness treats it as an
-expected difference only at its request ids and paths; a difference elsewhere fails, and so does an
+ids in `tests/differential/declared-changes.json` (read by `--a=node --b=rust`) and summarised in the
+merge's change record. An entry names the row, the case, the request id and the field's JSON path;
+the harness treats it as an expected difference only there; a difference elsewhere fails, and so does an
 entry whose difference no longer appears. Refusals, limits, error text, tool descriptions and
 answer content may all be listed. Two things are shared with other programs and stay stable:
 
@@ -214,8 +214,9 @@ merge.
 |---|---|---|---|---|
 | 1 | every limited text field | a cut through an emoji emits half of it | the cut falls before it | half a character is not text |
 | 2 | `infer_imports` edges; outlines in `read_source` and `find_evidence` | line scanners per language | `tree-sitter` parse for TS/JS, Python, Go, Java, Kotlin, Rust, C; other languages keep a Rust scanner with today's rules | a parser sees multi-line imports and nested declarations a scanner misses |
-| 3 | every answer that repeats a string the agent sent (tool name, argument name or value, method) holding a lone surrogate escape such as a half emoji | the half is kept and written back as the escape, `"\ud800"` | it reads as U+FFFD and is written as that character; a request `id` is the exception and is written back exactly as sent | a Rust string cannot hold half a character, and half of an emoji is not text, the reason of row 1 |
-| 4 | `unknown_argument` `structuredContent`: `receivedArguments`, `unknownArguments`, and the fields beside them | for an argument name with a comma, edge spaces or a quote, the fields are read back out of the message text: a comma splits the name, edge spaces are trimmed, a quote drops the fields | the names are written as the agent sent them; the message, the code and every other name are unchanged | the fields come from the typed error and are never parsed out of message text; the code is unaffected |
+| 3 | every answer that repeats a string the agent sent (tool name, method), and every argument holding a lone surrogate escape such as half an emoji | the half is kept and written back as the escape, `"\ud800"`, and a handler receives it | a name is read with U+FFFD and written as that character; an argument that holds one is refused as `invalid_arguments`, naming it, before any handler runs; a request `id` is written back exactly as sent | half of an emoji is not text; the JavaScript server stores such a value in the vault as U+FFFD without saying so, so a refusal tells the agent what it sent instead of saving something else |
+| 4 | `unknown_tool` and `unknown_argument` `structuredContent`: `receivedTool`, `receivedArgument`, `receivedArguments`, `unknownArguments`, `toolName` and the fields beside them | the fields are read back out of the message text, so a name with a full stop, a comma, a quote, edge spaces or nothing in it gets the wrong fields or none | the fields are always written, from the typed values the message was made from; the message, the code and every other name are unchanged | a field is never parsed out of message text, and an agent repairing a call is given the name it sent |
+| 5 | `unknown_argument` message and fields | unknown arguments are listed with integer-like names first, as a script object orders them, and a `__proto__` argument is dropped without a word so the call runs | they are listed in the order sent, and `__proto__` is an argument like any other, so it is refused as unknown | that order is an accident of JavaScript objects no client can rely on (a JavaScript client reorders keys again), and an argument ignored in silence runs a call the agent did not write |
 
 Slices add rows only with a corpus case for each; the lead reviews each row in the slice's pull
 request.
@@ -283,7 +284,7 @@ workspace lints against `unwrap`, indexing and `panic` (`src-tauri/Cargo.toml:22
 
 | Crate | Owns | App twin it replaces |
 |---|---|---|
-| `answer-format` | text agents read as JavaScript wrote it: UTF-16 length and cuts, number text, the `'en'` order, an object's key order (integer-like keys first) | none; takes `js_text.rs` and the key order out of `mcp-server` |
+| `answer-format` | text agents read as JavaScript wrote it: UTF-16 length and cuts, whitespace, number text, `JSON.stringify` for typed answers. The `'en'` order and integer-first key order join when the first family needs them | none; takes `js_text.rs` out of `mcp-server` |
 | `confined-files` | the one type that opens, walks, reads and writes files under a vault or source root; slug and root paths, credential and hidden names, snapshot limits | `src-tauri/src/confined_files.rs` may fold in (not read closely) |
 | `hardened-git` | the one table and runner for spawning `git` | the hardening table of `git/runner.rs` |
 | `vault-document` | frontmatter, schema, documents, writes, side files, validation, Markdown tree, library, wiki | `vault/walk.rs`, `git/document.rs` kinds, `vault/temporary_files/names.rs` |
@@ -309,8 +310,8 @@ dependency is explained in its pull request and passes `pnpm licenses:check` (al
 - **Concurrency**: threads, and `rayon` for per-file work; no `tokio`. Every list is sorted after a
   parallel step, so ties never depend on scheduling.
 - **JSON**: `serde_json` with typed `#[derive(Serialize)]` answers, whose field order is the key
-  order; `indexmap` for keyed maps, through `answer-format` where JavaScript's integer-key rule
-  applies; `preserve_order` enabled nowhere (Cargo would switch it on for the app's maps too);
+  order; `indexmap` for keyed maps, in the order sent (JavaScript's integer-first order is added to
+  `answer-format` only by a family whose written files need it); `preserve_order` enabled nowhere (Cargo would switch it on for the app's maps too);
   `ryu-js` for number text; `tools/list` sent as a verbatim `RawValue` of the generated surface.
   The branch's own value type is deleted.
 - **Errors**: one `thiserror` enum per `errorCode`; the code comes from the variant, never from
@@ -657,3 +658,26 @@ None — the owner delegated the open points and the lead decided them on 2026-1
   different versions share one vault through Git and the app writes the same files; a write changes
   only the lines it means to change. Everything else stays judged on merit.
 - 2026-11-27 (owner: fix what was wrong before; ask "why this way, in Rust/Vite?" and weigh several approaches): every slice brief starts with a "Questioned" step. Before building, the slice lists the existing behaviours and structures it touches, asks of each whether it was right and whether the target platform offers a better way, weighs at least two approaches for each non-trivial one, and records the choice and the reason in its report and pull request. Old defects found this way are fixed in the slice, not carried over. The reviewer checks that the questioning happened and that the chosen approach is the better one, not only that the code works.
+- 2026-11-28 (slice 1b, review round; each item questioned, two approaches weighed, choice and why):
+  a name of nine million characters held the session ten seconds, because every allowed name was
+  compared in full: an edit distance is never below the difference in length, so a name longer than
+  the longest allowed one plus its allowance is refused from its byte count, a candidate too far in
+  length is skipped, and the test asserts well under 100 ms. Half a surrogate pair in an argument:
+  refuse at the door as `invalid_arguments` naming it (chosen) against an `Arguments::is_malformed`
+  flag each handler must remember; one place that cannot be forgotten wins, and a write no longer
+  stores U+FFFD in the user's Markdown unannounced (row 3). Unknown-name fields are always written
+  (row 4). JavaScript's integer-first key order is dropped from the shell, with `__proto__`
+  handling (row 5): it served only byte equality, and key order is not something a JavaScript
+  client keeps; a family whose written vault files need the order (the app's editor writes
+  integer-like frontmatter keys first) adds it to `answer-format` with that reason. A call's
+  answer is held once as the JSON text it was written to and is both `content` and
+  `structuredContent`, then written straight to standard output after a dry run proves it can be
+  written (replacing a copy for each of five stages and an empty line on failure). The error type
+  is one struct with a code, not a variant and a match per code; API no caller uses (repair
+  fields, growth hint, slug and conflict details, row failures, `prompt`) is deleted and each
+  family adds what it uses. The collation module and the ICU crates are removed until a caller
+  exists; that slice adds the `'en'` order with a `cargo bloat` figure and a data set baked for
+  `und` and `en` only. Windows: a carriage return before a newline on standard input is part of
+  the line end and none is ever written, checked from the bytes the program writes; the worker
+  stack is 8 MiB on every platform in place of 256 MiB; tests for a vault path with backslashes,
+  slashes and a verbatim prefix are `cfg(windows)` and run in CI only.

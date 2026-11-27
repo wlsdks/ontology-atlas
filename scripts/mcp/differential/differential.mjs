@@ -127,9 +127,14 @@ async function main() {
   const localeA = koVsEn ? LOCALES[0] : (values['locale-a'] ?? LOCALES[1]);
   const localeB = values['locale-b'] ?? LOCALES[1];
   const nodeVsBun = serverA.label.startsWith('node') && serverB.label === 'bun';
-  const listName = koVsEn ? 'locale' : nodeVsBun ? 'node-vs-bun' : null;
+  const nodeVsRust = serverA.label.startsWith('node') && serverB.label === 'rust';
+  const listName = koVsEn ? 'locale' : nodeVsBun ? 'node-vs-bun' : nodeVsRust ? 'node-vs-rust' : null;
   const known = listName ? loadExpectedDifferences(repoRoot, listName) : [];
-  const knownReason = koVsEn ? 'differs by locale until the sort order is pinned' : 'differs between Node and Bun (the Bun binary is the reference)';
+  const knownReason = koVsEn
+    ? 'differs by locale until the sort order is pinned'
+    : nodeVsRust
+      ? 'differs as the specification declares (declared-changes.json)'
+      : 'differs between Node and Bun (the Bun binary is the reference)';
 
   const results = await runPairs({
     repoRoot,
