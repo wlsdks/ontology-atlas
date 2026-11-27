@@ -1,7 +1,7 @@
 {
   "source": "https://cdn.agentclientprotocol.com/registry/v1/latest/registry.json",
   "registryVersion": "1.0.0",
-  "npmDependencyCutoff": "2026-11-25T01:04:13.869Z",
+  "npmDependencyCutoff": "2026-11-27T02:23:55.026Z",
   "agents": [
     {
       "id": "claude-acp",
@@ -15,7 +15,7 @@
       "cli": "claude",
       "launch": {
         "kind": "npx",
-        "package": "@agentclientprotocol/claude-agent-acp@0.110.0",
+        "package": "@agentclientprotocol/claude-agent-acp@0.113.0",
         "args": []
       }
     },
@@ -31,7 +31,7 @@
       "cli": "codex",
       "launch": {
         "kind": "npx",
-        "package": "@agentclientprotocol/codex-acp@2.12.0",
+        "package": "@agentclientprotocol/codex-acp@2.12.1",
         "args": []
       }
     },
@@ -135,7 +135,7 @@
       "cli": "cline",
       "launch": {
         "kind": "npx",
-        "package": "cline@3.0.75",
+        "package": "cline@3.0.76",
         "args": [
           "--acp"
         ]
@@ -153,7 +153,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@tencent-ai/codebuddy-code@2.186.0",
+        "package": "@tencent-ai/codebuddy-code@2.187.0",
         "args": [
           "--acp"
         ]
@@ -276,7 +276,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "dimcode@0.5.32",
+        "package": "dimcode@0.5.35",
         "args": [
           "acp"
         ]
@@ -294,7 +294,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "dirac-cli@0.6.1",
+        "package": "dirac-cli@0.6.3",
         "args": [
           "--acp"
         ]
@@ -312,7 +312,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "droid@1.19.0",
+        "package": "droid@1.21.1",
         "args": [
           "exec",
           "--output-format",
@@ -368,7 +368,7 @@
       "cli": "copilot",
       "launch": {
         "kind": "npx",
-        "package": "@github/copilot@1.0.115",
+        "package": "@github/copilot@1.0.116",
         "args": [
           "--acp"
         ]
@@ -436,7 +436,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@xai-official/grok@1.0.93",
+        "package": "@xai-official/grok@1.0.94",
         "args": [
           "agent",
           "stdio"
@@ -547,7 +547,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@moonshot-ai/kimi-code@2.7.3",
+        "package": "@moonshot-ai/kimi-code@2.8.1",
         "args": [
           "acp"
         ]
@@ -567,8 +567,7 @@
         "kind": "binary",
         "command": "kirocli/bin/kiro-cli",
         "args": [
-          "acp",
-          "--agent-engine=v3"
+          "acp"
         ]
       }
     },
@@ -584,7 +583,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@minimax-ai/code-acp@0.7.9",
+        "package": "@minimax-ai/code-acp@0.7.10",
         "args": [
           "acp"
         ]
@@ -654,7 +653,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@compass-ai/nova@1.1.68",
+        "package": "@compass-ai/nova@1.1.69",
         "args": [
           "acp"
         ]
@@ -742,7 +741,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@qoder-ai/qodercli@1.1.97",
+        "package": "@qoder-ai/qodercli@1.1.99",
         "args": [
           "--acp"
         ]
@@ -760,7 +759,7 @@
       "cli": "qwen",
       "launch": {
         "kind": "npx",
-        "package": "@qwen-code/qwen-code@0.28.4",
+        "package": "@qwen-code/qwen-code@0.28.7",
         "args": [
           "--acp",
           "--experimental-skills"
