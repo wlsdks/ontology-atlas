@@ -3,4 +3,4 @@
  * no `package.json` beside it. `scripts/packaging/check-package-contracts.test.mjs` requires it
  * to equal `mcp/package.json`'s version: bump both.
  */
-export const SERVER_VERSION = '0.13.0';
+export const SERVER_VERSION = '2.7.15';
