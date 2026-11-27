@@ -444,3 +444,90 @@ fn a_required_filter_still_lets_a_snapshot_succeed() {
     );
     let _ = fs::remove_dir_all(&base);
 }
+
+#[test]
+fn every_runner_hands_git_the_rebuilt_search_path() {
+    use std::ffi::OsStr;
+    let cwd = std::env::temp_dir();
+    for command in [
+        hardened_base_command(),
+        read_policy_command(&cwd, &["commit", "-m", "x"], false),
+        read_policy_command(&cwd, &["log"], true),
+    ] {
+        let envs: HashMap<&OsStr, Option<&OsStr>> = command.get_envs().collect();
+        assert_eq!(envs.get(OsStr::new("PATH")), Some(&Some(git_search_path())));
+    }
+}
+
+#[test]
+fn the_git_search_path_holds_no_relative_or_node_modules_bin_entry() {
+    let base = std::env::temp_dir().join(format!("atlas-git-path-clean-{}", std::process::id()));
+    let home = base.join("home");
+    let kept = base.join("tools").join("bin");
+    let path_env = std::env::join_paths([
+        base.join("vault").join("node_modules").join(".bin"),
+        PathBuf::from("node_modules").join(".bin"),
+        PathBuf::from("relative").join("bin"),
+        kept.clone(),
+    ])
+    .unwrap();
+
+    let search_path = search_path_from(Some(&home), Some(&path_env));
+    let entries: Vec<PathBuf> = std::env::split_paths(&search_path).collect();
+
+    assert_eq!(entries.first(), Some(&kept), "the inherited PATH leads");
+    assert!(entries.contains(&home.join(".local/bin")));
+    for entry in &entries {
+        assert!(entry.has_root(), "relative entry {entry:?}");
+        assert!(!entry.ends_with("node_modules/.bin"), "{entry:?}");
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn a_commit_hook_finds_a_program_installed_only_in_a_known_directory() {
+    use std::ffi::OsStr;
+    use std::os::unix::fs::PermissionsExt;
+    let base = std::env::temp_dir().join(format!("atlas-git-hook-path-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&base);
+    let home = base.join("home");
+    let tools = home.join(".local/bin");
+    fs::create_dir_all(&tools).unwrap();
+    let program = tools.join("atlas-fake-node");
+    fs::write(&program, b"#!/bin/sh\nexit 0\n").unwrap();
+    fs::set_permissions(&program, fs::Permissions::from_mode(0o755)).unwrap();
+
+    let repo = base.join("repo");
+    fs::create_dir_all(&repo).unwrap();
+    plain_git(&repo, &["init", "-q"]);
+    seed_identity(&repo);
+    let hooks = repo.join(".git/hooks");
+    fs::create_dir_all(&hooks).unwrap();
+    let hook = hooks.join("pre-commit");
+    fs::write(&hook, b"#!/bin/sh\nexec atlas-fake-node\n").unwrap();
+    fs::set_permissions(&hook, fs::Permissions::from_mode(0o755)).unwrap();
+    fs::write(repo.join("note.md"), b"# one\n").unwrap();
+    plain_git(&repo, &["add", "-A"]);
+
+    // What a Dock launch inherits: the hook's program is in none of these.
+    let launch_path = OsStr::new("/usr/bin:/bin");
+    let commit = |path: &OsStr| {
+        read_policy_command(&repo, &["commit", "-qm", "one"], false)
+            .env("PATH", path)
+            .output()
+            .unwrap()
+    };
+
+    let bare = commit(launch_path);
+    assert!(
+        !bare.status.success(),
+        "the fixture is live: the launch PATH alone cannot find the program"
+    );
+    let rebuilt = commit(&search_path_from(Some(&home), Some(launch_path)));
+    assert!(
+        rebuilt.status.success(),
+        "the rebuilt PATH finds it: {}",
+        String::from_utf8_lossy(&rebuilt.stderr)
+    );
+    let _ = fs::remove_dir_all(&base);
+}

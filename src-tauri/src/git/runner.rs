@@ -1,9 +1,12 @@
 use std::collections::HashMap;
+use std::ffi::{OsStr, OsString};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::{Arc, Mutex, OnceLock};
 
+use crate::acp::detection::command_lookup::{candidate_bin_dirs, FsProbe};
+use crate::acp::detection::search_path::path_without_relative_or_node_modules_bin;
 use crate::coded_error::coded;
 
 #[cfg(test)]
@@ -65,10 +68,39 @@ fn read_pathspecs_literally(command: &mut Command) {
         .env_remove("GIT_ICASE_PATHSPECS");
 }
 
+/// A Dock or Finder launch hands the app a minimal PATH, so a commit hook that runs
+/// `node` fails with "command not found". Git gets the search path runtime detection
+/// rebuilds from known install locations, never from a login shell (see `acp.rs`).
+/// Computed once: the directories it reads change only when the person installs.
+fn git_search_path() -> &'static OsStr {
+    static SEARCH_PATH: OnceLock<OsString> = OnceLock::new();
+    SEARCH_PATH.get_or_init(|| {
+        let home = std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" })
+            .filter(|value| !value.is_empty())
+            .map(PathBuf::from);
+        search_path_from(home.as_deref(), std::env::var_os("PATH").as_deref())
+    })
+}
+
+/// The app's own installs are left out: a hook must behave as it does in the terminal.
+fn search_path_from(home: Option<&Path>, path_env: Option<&OsStr>) -> OsString {
+    let (is_executable, list_dir, read_text, login_ok) =
+        crate::acp::detection::login_probe::real_probe();
+    let probe = FsProbe {
+        is_executable: &is_executable,
+        list_dir: &list_dir,
+        read_text: &read_text,
+        login_ok: &login_ok,
+    };
+    let dirs = candidate_bin_dirs(home, path_env, &probe, None, None);
+    path_without_relative_or_node_modules_bin(&dirs)
+}
+
 /// The root of every runner: base hardening, literal paths, no credential prompt.
 fn git_command() -> Command {
     let mut command = Command::new("git");
     crate::child_process::no_console::hide_console(&mut command);
+    command.env("PATH", git_search_path());
     command.args(BASE_HARDENING);
     read_pathspecs_literally(&mut command);
     silence_git_credential_prompts(&mut command);
