@@ -54,8 +54,7 @@ person acts on what they believe about the code:
 | asks for the next change | the code is the way they last saw it | the owner asked the agent "what did you do this session?" |
 
 These three are told in full in the spec "Changes beside the center"
-(`2026-11-27-changes-beside-the-center.md` under `docs/specs` on branch
-`docs/changes-beside-the-center`, not merged yet). Not observed: anyone but the owner, a person
+([`2026-11-27-changes-beside-the-center.md`](2026-11-27-changes-beside-the-center.md)). Not observed: anyone but the owner, a person
 learning agents, a person who does not write code, and what the owner looks at before pressing
 release. Acceptance criterion 1 captures the last.
 
