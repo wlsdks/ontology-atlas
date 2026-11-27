@@ -49,6 +49,7 @@ const MUST_NOT_BLOCK_THE_MAIN_THREAD: { file: string; fn: string; because: strin
   { file: 'git/history.rs', fn: 'vault_node_revisions', because: 'runs git' },
   { file: 'git/history.rs', fn: 'vault_node_revision_content', because: 'reads a bounded historical Git body' },
   { file: 'git/evidence.rs', fn: 'git_paths_last_change', because: 'runs git' },
+  { file: 'git/evidence/text.rs', fn: 'git_evidence_text_pairs', because: 'runs git and reads up to 256 files of 1 MiB' },
   { file: 'git/document.rs', fn: 'git_document_diff', because: 'runs git' },
   { file: 'git/setup.rs', fn: 'git_probe', because: 'runs git' },
   { file: 'git/setup.rs', fn: 'git_init', because: 'runs git' },

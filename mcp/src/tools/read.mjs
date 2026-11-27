@@ -50,7 +50,8 @@ import {
   requireOptionalPositiveInteger,
   requireOptionalRelationTypeArray,
 } from '../server/validate.mjs';
-import { namesHiddenOrCredentialFile, readStableFile } from '../evidence-search/source-evidence.mjs';
+import { namesHiddenOrCredentialFile } from '../evidence-search/credential-names.mjs';
+import { readStableFile } from '../evidence-search/source-evidence.mjs';
 import { READ_SOURCE_MAX_FILE_BYTES, readSourceText } from '../library/source-text.mjs';
 import {
   suppressLibraryKindIssues,
