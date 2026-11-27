@@ -59,6 +59,7 @@ impl IgnoredNames {
         )
     }
 
+    #[cfg(test)]
     pub fn defaults() -> Self {
         Self::with_defaults(&[])
     }
@@ -85,8 +86,18 @@ pub fn list_sorted(files: &dyn SourceFiles, directory: &Path) -> Vec<(String, En
     entries
 }
 
-/// The files below `directory` whose extension passes `wanted`, folders before the next name's
-/// files in name order, at most `max_files` in `found` altogether.
+/// Folders deeper than this below a walk's start are not entered: no repository nests source
+/// this deep, and a hostile tree must not walk the scan forever.
+pub const WALK_MAX_DEPTH: usize = 128;
+
+enum Step {
+    Folder(PathBuf, usize),
+    File(PathBuf),
+}
+
+/// The files below `directory` whose extension passes `wanted`, in name order with a folder's
+/// files where its name falls, at most `max_files` in `found` altogether. A stack stands in for
+/// recursion, so a tree thousands of folders deep costs the same stack as a flat one.
 pub fn walk(
     files: &dyn SourceFiles,
     directory: &Path,
@@ -95,45 +106,33 @@ pub fn walk(
     wanted: &dyn Fn(&str) -> bool,
     found: &mut Vec<PathBuf>,
 ) {
-    if found.len() >= max_files {
-        return;
-    }
-    for (name, kind) in list_sorted(files, directory) {
-        if ignore.has(&name) || name.starts_with('.') {
-            continue;
+    let mut stack = vec![Step::Folder(directory.to_path_buf(), 0)];
+    while let Some(step) = stack.pop() {
+        if found.len() >= max_files {
+            return;
         }
-        let path = directory.join(&name);
-        match kind {
-            EntryKind::Directory => {
-                walk(files, &path, ignore, max_files, wanted, found);
-                if found.len() >= max_files {
-                    return;
-                }
-            }
-            EntryKind::File => {
-                if extension_of(&name).is_some_and(wanted) {
-                    found.push(path);
-                    if found.len() >= max_files {
-                        return;
+        match step {
+            Step::File(path) => found.push(path),
+            Step::Folder(folder, depth) => {
+                let mut in_order: Vec<Step> = Vec::new();
+                for (name, kind) in list_sorted(files, &folder) {
+                    if ignore.has(&name) || name.starts_with('.') {
+                        continue;
+                    }
+                    let path = folder.join(&name);
+                    match kind {
+                        EntryKind::Directory if depth < WALK_MAX_DEPTH => {
+                            in_order.push(Step::Folder(path, depth + 1));
+                        }
+                        EntryKind::File if extension_of(&name).is_some_and(wanted) => {
+                            in_order.push(Step::File(path));
+                        }
+                        _ => {}
                     }
                 }
+                stack.extend(in_order.into_iter().rev());
             }
-            EntryKind::Symlink | EntryKind::Other => {}
         }
     }
 }
 
-/// The source files of a repository the way a reconciliation reads them: module files only,
-/// under the default ignore set, at most `max_files`.
-pub fn list_source_files(files: &dyn SourceFiles, max_files: usize) -> Vec<PathBuf> {
-    let mut found = Vec::new();
-    walk(
-        files,
-        files.root(),
-        &IgnoredNames::defaults(),
-        max_files,
-        &is_module_extension,
-        &mut found,
-    );
-    found
-}

@@ -7,13 +7,18 @@
 //! The crate runs `git` only through `hardened-git` and reads files only through
 //! `confined-files`, so the app and the MCP server share one implementation of each rule.
 
+mod autotools_c;
 mod bounded_parse;
 mod config_json;
 mod evidence_texts;
 mod folder_placement;
 mod go_imports;
+mod import_coverage;
 mod import_edges;
 mod import_rollup;
+mod import_scan;
+mod jvm_declarations;
+mod jvm_resolution;
 mod module_grouping;
 mod path_dating;
 mod path_facts;
@@ -36,4 +41,14 @@ pub use path_dating::{
 };
 
 pub use bounded_parse::{parse_bounded, walk, ParseLimits, ParseRefusal, ParsedSource, Visit};
+pub use go_imports::GoPackageEvidence;
+pub use import_coverage::ImportCoverage;
+pub use import_edges::{
+    ExternalImport, ImportEdge, ImportKind, ImportUsage, SourceRole, UnresolvedImport,
+    UnresolvedReason,
+};
+pub use import_scan::{
+    scan_imports, ImportScan, ImportScanOptions, ModuleEdge, DEFAULT_MAX_FILES, MAX_MAX_FILES,
+    SOURCE_FILE_MAX_BYTES,
+};
 pub use source_language::{extension_of, SourceLanguage};

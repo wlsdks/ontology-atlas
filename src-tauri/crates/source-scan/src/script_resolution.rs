@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 use crate::config_json::Json;
-use crate::import_edges::{Findings, ImportKind, ImportUsage, UnresolvedReason};
+use crate::import_edges::{Findings, UnresolvedReason};
 use crate::path_facts::{resolve_below, PathFacts};
 use crate::script_imports::ScriptImport;
 use crate::source_walk::IgnoredNames;
@@ -444,6 +444,7 @@ fn collect_export_strings(value: &Json, entries: &mut Vec<String>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::import_edges::{ImportKind, ImportUsage};
     use crate::source_walk::IgnoredNames;
     use confined_files::{DiskSource, ScanRoots};
 

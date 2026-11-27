@@ -117,6 +117,11 @@ pub fn relative_slash(root: &Path, path: &Path) -> Option<String> {
     })
 }
 
+/// `name` joined onto `base` as Node's `path.join` joins it: a leading `/` does not leave `base`.
+pub fn join_below(base: &Path, name: &str) -> PathBuf {
+    resolve_below(base, &format!("./{name}"))
+}
+
 /// `name` (a `/`-separated path below `base`, possibly with `..`) as the absolute path Node's
 /// `path.resolve(base, name)` gives.
 pub fn resolve_below(base: &Path, name: &str) -> PathBuf {
