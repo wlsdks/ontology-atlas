@@ -4,7 +4,7 @@ doc_type: spec
 status: draft
 area: mcp
 date: 2026-11-27
-decisions: []
+decisions: [6c76a2d9-e080-4b3a-97cc-dd8e2780a7de]
 ---
 
 # The MCP server moves to Rust
