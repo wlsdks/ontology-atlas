@@ -1,0 +1,122 @@
+{
+  "stage": {
+    "title": "Where your tokens go",
+    "body": "One inspection reads this repository's Claude Code sessions from the last 30 days on this computer and shows where context tokens went, with a change for each finding. It reads counts, model names and times. It shows a message only when you open one turn, and it changes no file.",
+    "files": "{files, plural, one {# session file} other {# session files}}, {size}, in the last 30 days",
+    "start": "Inspect token use",
+    "local": "Nothing is sent anywhere."
+  },
+  "run": {
+    "reading": "Reading {done} of {total} session files",
+    "stop": "Stop",
+    "stopped": "Stopped. The figures cover {done} of {total} session files.",
+    "again": "Inspect again",
+    "inspected": "Last 30 days · inspected at {time}"
+  },
+  "strip": {
+    "title": "Context per turn, by day",
+    "usual": "Usual range before {date}",
+    "dayTip": "{date}: {perTurn} per turn · {turns, plural, one {# turn} other {# turns}}",
+    "fewTurns": "Under 500 turns: not compared"
+  },
+  "split": {
+    "total": "{tokens} context tokens in {turns, plural, one {# turn} other {# turns}}",
+    "start": "Loaded at start",
+    "work": "Work",
+    "long": "Beyond 200K per turn"
+  },
+  "kinds": {
+    "longContext": "Long context",
+    "start": "Loaded at start",
+    "compaction": "Automatic compaction",
+    "cacheMiss": "Cache misses",
+    "model": "Model and effort"
+  },
+  "row": {
+    "tokens": "{tokens} tokens",
+    "share": "{model}: {share} of turns",
+    "none": "None in 30 days"
+  },
+  "detail": {
+    "longContext": "{turns, plural, one {# turn} other {# turns}} ({share} of all) ran with more than 200K tokens of context. Every turn reads the whole context again, so these turns processed {tokens} tokens beyond the first 200K each.",
+    "start": "Sessions began with {median} tokens of context before the first answer, and every later turn carried them. The tool list alone was about {toolTokens} tokens per request.",
+    "toolGroup": "{name}: about {tokens} tokens · {calls, plural, =0 {never called} one {called once} other {called # times}} in 30 days",
+    "builtIn": "Built-in tools",
+    "estimated": "Estimated from the size of the tool list",
+    "compaction": "Claude Code compacted {count, plural, one {once} other {# times}} in {runs, plural, one {# session} other {# sessions}}, at {before} tokens on average, leaving {after} after each.",
+    "cacheMiss": "Claude Code reported {count, plural, one {# cache miss} other {# cache misses}}, and {tokens} tokens were written to the cache again.",
+    "cacheReason": "{reason}: {count, plural, one {# turn} other {# turns}} · {tokens} tokens",
+    "model": "{agent} · {model} · {effort} effort · {turns, plural, one {# turn} other {# turns}} · {tokens} tokens",
+    "mainSession": "Main session"
+  },
+  "fix": {
+    "title": "What to change",
+    "longContext": "Start a new session for a new task, or run /clear. autoCompactWindow in .claude/settings.json is {window}; a lower value compacts sooner and keeps less of the conversation.",
+    "start": "Turn off a tool server you rarely call here with /mcp in Claude Code. Improve checks the memory index Claude Code loads at start.",
+    "compaction": "At the end of a task, start a new session or run /compact yourself, so the summary falls between tasks.",
+    "systemChanged": "The system prompt changed during a session, for example after an instruction or memory file was edited. Edit them between sessions.",
+    "toolsChanged": "The tool list changed during a session, for example when a tool server connected late or was switched. Set tool servers before you start.",
+    "modelChanged": "The model changed during a session, which starts a new cache. Switch models between tasks.",
+    "otherReason": "Claude Code says no more about this reason, so Atlas proposes no change.",
+    "model": "Each agent's model and effort are the model: and effort: lines in .claude/agents/{agent}.md. The main session uses /model and /effort.",
+    "copied": "Copied"
+  },
+  "evidence": {
+    "title": "Where it happened",
+    "row": "{session} · turn {turn} · {time} · {tokens} tokens",
+    "session": "Session {id}",
+    "subagent": "{agent} in session {id}",
+    "showMessage": "Show the message before this turn",
+    "message": "Read from {file} just now. Atlas keeps it only while this panel is open.",
+    "noMessage": "No message you typed comes before this turn; an agent started it.",
+    "hidden": "This message looks like it holds a key or token, so Atlas does not show it.",
+    "changed": "This session file changed or moved after the inspection. Inspect again to open this turn."
+  },
+  "compare": {
+    "pick": "Compare from",
+    "pickHint": "Pick a date, or a commit that changed agent files",
+    "tick": "{date} · {subject}",
+    "clear": "Clear",
+    "none": "Pick a date to compare the days before and after it.",
+    "tooFew": "Only {days, plural, one {# day} other {# days}} after {date} had 500 turns or more; 3 are needed to judge.",
+    "same": "No detectable difference: since {date} the daily figure stayed inside the usual range, {low} to {high}.",
+    "lower": "Lower since {date}: {after} against {before} before, below the usual range.",
+    "higher": "Higher since {date}: {after} against {before} before, above the usual range.",
+    "left": "{days, plural, one {# day} other {# days}} with under 500 turns left out."
+  },
+  "money": {
+    "title": "Claude Code's estimate",
+    "total": "{amount} in the last 30 days",
+    "split": "{before} before {date} · {after} since",
+    "note": "Claude Code's own estimate from its session files, at API prices. It is not your bill.",
+    "partial": "Claude Code could not price every model, so this estimate is low.",
+    "none": "Claude Code wrote no cost estimate in these sessions."
+  },
+  "partial": {
+    "files": "{count, plural, one {# file was} other {# files were}} not read: {reason}. Their figures are not included.",
+    "lines": "{count, plural, one {# line over 4 MiB was} other {# lines over 4 MiB were}} skipped.",
+    "unknown": "{count, plural, one {# record had} other {# records had}} a shape Atlas does not know; figures that need them show as unknown.",
+    "elsewhere": "{count, plural, one {# session file ran} other {# session files ran}} in a folder that is no longer this repository, so they are not counted."
+  },
+  "unknown": "unknown",
+  "empty": {
+    "title": "No Claude Code sessions for this repository in the last 30 days",
+    "body": "Atlas looked in {paths}. Claude Code writes a session file there for each conversation."
+  },
+  "error": {
+    "home": "Could not read {path}: {reason}. Nothing there was inspected."
+  },
+  "web": {
+    "title": "Inspecting token use needs the app",
+    "body": "Claude Code keeps its session files in your home folder, which a browser cannot open. The app reads their counts on this computer."
+  },
+  "card": {
+    "running": "Inspecting token use · {done} of {total}",
+    "done": "Token use inspected: {count, plural, one {# finding} other {# findings}}",
+    "open": "Open"
+  },
+  "action": {
+    "copy": "Copy",
+    "openImprove": "Open Improve"
+  }
+}
