@@ -148,6 +148,15 @@ DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.`;
 
+const LGPL_2_1_TEXT = fs.readFileSync(path.join(REPO_ROOT, "scripts/data/licenses/LGPL-2.1.txt"), "utf8");
+const SIDECAR = "the ontology-atlas-mcp sidecar";
+
+/** LGPL libraries Bun compiles into the sidecar; section 6 asks for the license text with every copy. */
+const STATICALLY_LINKED = [
+  { name: "JavaScriptCore and WebKit", holder: "Apple Inc. and the WebKit contributors", license: "LGPL-2.1", binary: SIDECAR, source: "https://github.com/oven-sh/webkit", text: LGPL_2_1_TEXT },
+  { name: "TinyCC", holder: "Fabrice Bellard and the TinyCC contributors", license: "LGPL-2.1", binary: SIDECAR, source: "https://github.com/oven-sh/tinycc", text: LGPL_2_1_TEXT },
+];
+
 const SUPPLIED_LICENSE_TEXTS = new Map([["npm pretendard", PRETENDARD_LICENSE]]);
 
 /** The hand-written part. Everything below the inventory heading is generated. */
@@ -207,34 +216,41 @@ that over-lists is only noise, and no obligation is created by appearing here.
 
 ---
 
-## JavaScriptCore and WebKit (LGPL-2.1)
+## JavaScriptCore, WebKit and TinyCC (LGPL-2.1)
 
 The \`ontology-atlas-mcp\` sidecar is compiled with [Bun](https://bun.sh) using
-\`bun build --compile\`. Bun statically links JavaScriptCore and WebKit, which are
-licensed under the GNU Lesser General Public License, version 2.1.
+\`bun build --compile\`. Bun statically links JavaScriptCore and WebKit, and the
+TinyCC compiler, which are licensed under the GNU Lesser General Public License,
+version 2.1. The full license text is reproduced under "Statically linked
+libraries" in \`public/third-party-licenses.txt\`, which the desktop app shows in
+Settings, About, Third-party licences.
 
 Because the linking is static rather than dynamic, LGPL-2.1 section 6 applies: a
 recipient must be able to modify the library and relink the application against
 their modified version. That is possible here, and this is how:
 
 - The WebKit source Bun links is published at <https://github.com/oven-sh/webkit>,
-  pinned by \`WEBKIT_VERSION\` in Bun's build scripts. Bun documents the relink
+  pinned by \`WEBKIT_VERSION\` in Bun's build scripts. Bun links TinyCC from its
+  published fork at <https://github.com/oven-sh/tinycc>. Bun documents the relink
   procedure in its [\`LICENSE.md\`](https://github.com/oven-sh/bun/blob/main/LICENSE.md).
 - The sidecar's own source is this repository's \`mcp/\` directory, published under
   the MIT License with no additional restriction.
 - The sidecar is rebuilt from that source by \`pnpm mcp:build-binary\`, which runs
   \`bun build --compile\` with the Bun release named in \`.bun-version\`.
-  Substituting a Bun built against a modified WebKit, with \`.bun-version\` set to
-  the version it reports, reproduces the sidecar with the modified library.
+  Substituting a Bun built against a modified WebKit or TinyCC, with \`.bun-version\`
+  set to the version it reports, reproduces the sidecar with the modified library.
+- The terms for the sidecar permit modifying it for your own use and reverse
+  engineering to debug such modifications, as LGPL-2.1 section 6 requires; the MIT
+  License already grants both.
 
-No part of JavaScriptCore or WebKit was modified for this distribution.
+No part of JavaScriptCore, WebKit or TinyCC was modified for this distribution.
 
 ## Bun runtime (MIT)
 
 The compiled sidecar embeds the Bun runtime, which is MIT licensed, together with
-the libraries Bun statically links. Bun's complete third-party inventory, including
-BoringSSL, brotli, libarchive, lol-html, ls-hpack, mimalloc, tinycc, zlib and
-zstd, is published in its [\`LICENSE.md\`](https://github.com/oven-sh/bun/blob/main/LICENSE.md).
+the libraries Bun statically links. Apart from the LGPL libraries above, Bun's
+complete third-party inventory, including BoringSSL, brotli, libarchive, lol-html,
+ls-hpack, mimalloc, zlib and zstd, is published in its [\`LICENSE.md\`](https://github.com/oven-sh/bun/blob/main/LICENSE.md).
 
 ## SQLite (public domain)
 
@@ -358,6 +374,7 @@ export function buildOutputs({ web, mcp, rust, adapted, readText }) {
     [NOTICE_FILE]: buildNotice({ rustCrates: rust, npmPackages, mcpPackages: mcp, adapted }),
     [LICENSES_FILE]: renderThirdPartyLicenses({
       sections,
+      linked: STATICALLY_LINKED,
       adapted,
       readText: readText ?? ((pkg) => packageLicenseText(pkg, SUPPLIED_LICENSE_TEXTS)),
     }),
