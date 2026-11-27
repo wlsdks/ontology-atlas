@@ -181,6 +181,21 @@ The seventh and eighth written exceptions, specified and not yet built
 
 Another folder, field, recipient or file needs a new decision record.
 
+### Workshop › Asked, not done: typed messages to a local model
+
+The ninth, specified and not yet built
+(`docs/specs/2026-11-27-missed-requests.md`):
+
+| | |
+|---|---|
+| Read | after Check now or with its nightly switch on: Claude Code session lines whose `cwd` is the checkout, a path under it or a listed worktree; typed text, time, ids, `gitBranch` |
+| When | on Check now, or once a day after 01:00 with Atlas open, on power, 10 min without input; stops at the next message on input |
+| Send | one message at a time to the Agents › Models runner, loopback only; never off this computer |
+| Write | app data only: findings, marks, a run log without text |
+| Never | agent text, tool fields, the vault, Git, memory or instruction files |
+| Gate | the spec's criteria 2, 3 and 6 |
+| Record | `RECORD_ID` |
+
 ### Folder watch is latency, not degradation
 
 The app applies the changed paths the OS watcher's `vault-changed` event

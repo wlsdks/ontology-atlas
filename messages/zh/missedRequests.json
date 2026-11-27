@@ -1,0 +1,66 @@
+{
+  "header": {
+    "fact": "{count, plural, other {已请求但未完成 # 项}}",
+    "entry": "已请求但未完成"
+  },
+  "stage": {
+    "title": "找出请求过却没有落实的事",
+    "body": "Atlas 读取你在这个仓库里对 Claude Code 输入的消息，挑出其中的请求，再逐条与 {branch} 上的提交比对。超过 2 天仍没有匹配提交的请求会列在这里。",
+    "local": "你的消息只发给这台电脑上 {address} 的 {model}。不会发到其他任何地方，也不会写入你的仓库或代理的记忆。",
+    "scope": "读取这个仓库 {worktrees, plural, other {# 个文件夹}}中最近 14 天的 {count, plural, other {# 个会话}}。",
+    "start": "立即检查",
+    "nightly": "每晚检查",
+    "nightlyNote": "每天最多一次，在凌晨 1 点之后、Atlas 打开、这台电脑接通电源且 10 分钟无人使用时运行。碰到键盘或鼠标就会停止。"
+  },
+  "model": {
+    "noneTitle": "需要在这台电脑上运行的模型",
+    "noneBody": "从消息中挑出请求，需要一个在这台电脑上运行的语言模型，例如 Ollama 或 LM Studio 中的模型。请在“代理 › 模型”中添加它的地址，然后回来。",
+    "noneAction": "打开模型",
+    "notLocal": "{address} 不在这台电脑上。只有 localhost、127.0.0.1 或 ::1 上的模型可以读取你的消息。",
+    "using": "{address} 上的 {model}"
+  },
+  "run": {
+    "reading": "正在读取会话：{done} / {total}",
+    "sorting": "正在挑出请求：消息 {done} / {total}",
+    "checking": "正在与 Git 比对请求：{done} / {total}",
+    "paused": "你使用电脑时已暂停。下次电脑接通电源且空闲时继续。",
+    "waiting": "正在等待电脑接通电源并空闲",
+    "stop": "停止",
+    "stopped": "已停止。已检查的请求保留在列表中。",
+    "last": "上次检查 {time} · 新消息 {count, plural, other {# 条}}"
+  },
+  "list": {
+    "title": "已请求但未完成",
+    "onBranch": "在 {branch} 上，尚未合并",
+    "noMatch": "没有匹配的提交",
+    "row": "{date} · {worktree}",
+    "young": "{count, plural, other {# 个请求还不到 2 天，稍后再检查。}}",
+    "emptyTitle": "你请求的事都没有遗漏",
+    "emptyBody": "从 {from} 到 {to} 的每个请求，要么在 {branch} 上有匹配的提交，要么已由你标记。"
+  },
+  "detail": {
+    "youWrote": "你在 {date} 于 {worktree} 输入",
+    "readAs": "Atlas 理解的请求：{ask}",
+    "closest": "{branch} 上最接近的提交",
+    "closestBranch": "{branch} 上有匹配的提交，但尚未合并到 {base}",
+    "noneMatch": "这些提交都没有做你请求的事。",
+    "copy": "复制请求",
+    "copied": "已复制",
+    "resume": "复制继续会话的命令",
+    "done": "已在别处完成",
+    "notNeeded": "不需要",
+    "marked": "已标记，它会离开列表。",
+    "undo": "撤销"
+  },
+  "error": {
+    "model": "{address} 上的 {model} 没有响应，检查停在第 {done} / {total} 条消息。已找到的请求保留在列表中。启动模型后按“立即检查”即可继续。",
+    "reply": "{count, plural, other {# 条消息收到了 Atlas 无法读取的回答，已略过。}}",
+    "git": "Git 无法读取 {repository}，因此没有检查任何请求。已找到的请求会保留，等 Git 响应后再检查。",
+    "unreadable": "{count, plural, other {# 个会话文件无法读取，已跳过。}} {path}",
+    "noSessions": "在 {paths} 中没有找到这个仓库的 Claude Code 会话。"
+  },
+  "web": {
+    "title": "“已请求但未完成”在应用中运行",
+    "body": "它需要读取 Claude Code 的会话文件，并在这台电脑上运行模型，而浏览器两者都无法打开。所以这个页面无法检查你的请求。"
+  }
+}
