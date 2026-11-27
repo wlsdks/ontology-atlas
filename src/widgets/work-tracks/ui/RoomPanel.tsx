@@ -41,22 +41,19 @@ export function cleanupCommand(room: RoomEntry): string | null {
  * means, the commits the base branch does not have yet, what is not committed, and the folder. It
  * reads nothing of its own: every line comes from the room's entry, so it moves with the room.
  */
-export function RoomPanel({ room, live, tracks, copy, id, onClose, replaced = false }: {
+export function RoomPanel({ room, live, tracks, copy, id, onClose }: {
   /** The pressed room, or none: the panel leaves with its last room still drawn. */
   room: RoomEntry | null;
   /** The session list, the file-change pulse and load, for every room. */
   live: BuildingLive;
   /** Every worktree, so a room can name the folder an agent's own load counts in. */
   tracks: WorkTracks;
-  /** Another panel takes this one's place: it goes at once, so the building never makes room for two. */
-  replaced?: boolean;
   copy: RoomCopy;
   id: string;
   onClose: () => void;
 }) {
   const [drawn, setDrawn] = useState(room);
   if (room !== null && room !== drawn) setDrawn(room);
-  if (replaced && room === null) return null;
   return (
     <Surface
       open={room !== null}

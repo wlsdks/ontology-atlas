@@ -395,6 +395,9 @@ mod with_posix_paths {
         };
         let repo = base.join("repo");
         let records = repo.join(".git/worktrees");
+        write(repo.join(".git/HEAD"), "ref: refs/heads/main\n".to_string());
+        std::fs::create_dir_all(repo.join(".git/objects")).expect("objects");
+        std::fs::create_dir_all(repo.join(".git/refs")).expect("refs");
         for (id, folder, points_back) in [
             ("inside", repo.join("trees/inside"), false),
             ("away", base.join("away"), true),

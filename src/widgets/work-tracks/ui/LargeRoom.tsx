@@ -10,6 +10,8 @@ import { useRise } from '../model/use-rise';
 import { SCREEN_H, SCREEN_ROW_H, type RoomUnit } from '../model/building-layout';
 import { listRowsBeside, type RoomLive } from '../model/room-live';
 import { ActivityStrip } from './ActivityStrip';
+import { RoomComplete } from './RoomComplete';
+import { RoomPulse } from './RoomPulse';
 import { BranchName } from './BranchName';
 import { CommitLog } from './CommitLog';
 import { SessionLineRow } from './SessionLineRow';
@@ -130,24 +132,12 @@ function AreaList({ areas, rows }: { areas: readonly ScreenArea[]; rows: number 
 }
 
 /**
- * Where a room says its state, once: atop its screen when it needs a person and no session line
- * says so already, else on the wall under the screen. The fact beside the state (its time) is
- * always on the wall.
- */
-type StateHome = 'screen' | 'wall';
-
-function stateHome(screen: MonitorCopy): StateHome {
-  const sessionRows = screen.sessionLines.length + (screen.moreSessions ? 1 : 0);
-  return screen.state.tone === 'warning' && sessionRows === 0 ? 'screen' : 'wall';
-}
-
-/**
  * What the screen says: the branch, the newest commits with their times, then what is not committed and the count.
  * With `fileColumns`, on a screen wide enough: the commits and the uncommitted files stand side by side, each
  * under a line saying what it lists, and a room with no commits gives the files the commits' share and says so
  * on their line. With `areas`, the folders those files are in stand in a last column.
  */
-function ScreenText({ screen, rows: screenRows, fileColumns, areas, home }: { screen: MonitorCopy; rows: number; fileColumns: number; areas: boolean; home: StateHome }) {
+function ScreenText({ screen, rows: screenRows, fileColumns, areas }: { screen: MonitorCopy; rows: number; fileColumns: number; areas: boolean }) {
   const sessionRows = screen.sessionLines.length + (screen.moreSessions ? 1 : 0);
   // The session lines say who waits; the lists below give them their height, and the panel keeps the rest.
   const rows = listRowsBeside(screenRows, sessionRows);
@@ -155,8 +145,6 @@ function ScreenText({ screen, rows: screenRows, fileColumns, areas, home }: { sc
     <>
       <div className={styles.screenHead}>
         <BranchName branch={screen.branch} className={cn(styles.screenBranch, 'font-mono font-[var(--font-weight-strong)]')} />
-        {/* A room that needs a person says so at the top of its screen, in amber, not only by its frame and light. */}
-        {home === 'screen' ? <span className={cn(styles.screenAlert, 'text-body leading-body font-[var(--font-weight-strong)]')}>{screen.state.lead}</span> : null}
       </div>
       {sessionRows > 0 ? (
         <ul className={cn(styles.sessionLines, LABEL)} data-testid="work-room-sessions">
@@ -241,7 +229,7 @@ function ScreenFoot({ screen }: { screen: MonitorCopy }) {
  * state and its time, then how long the session has worked, the last minute's file changes and the
  * load.
  */
-function WallFacts({ screen, home }: { screen: MonitorCopy; home: StateHome }) {
+function WallFacts({ screen }: { screen: MonitorCopy }) {
   const details = [
     screen.worked ? { key: 'worked', value: screen.worked, className: 'text-[color:var(--color-text-tertiary)]', testId: undefined } : null,
     screen.lastMinute ? { key: 'minute', value: screen.lastMinute, className: 'text-[color:var(--color-text-secondary)]', testId: 'work-room-last-minute' } : null,
@@ -252,7 +240,7 @@ function WallFacts({ screen, home }: { screen: MonitorCopy; home: StateHome }) {
       <div className={styles.wallFactsText}>
         <span className={styles.wallLine}>
           {/* The time beside the state gives way first; the state is cut only when it alone is wider than the wall. */}
-          {home === 'wall' ? <span className={cn(STATE_TONE[screen.state.tone], 'flex max-w-full flex-none text-title leading-title font-[var(--font-weight-strong)]')}><SwapText value={screen.state.lead} /></span> : null}
+          <span className={cn(STATE_TONE[screen.state.tone], 'flex max-w-full flex-none text-title leading-title font-[var(--font-weight-strong)]')}><SwapText value={screen.state.lead} /></span>
           {screen.state.rest ? <span className="flex min-w-0 text-body leading-body text-[color:var(--color-text-secondary)]"><SwapText value={screen.state.rest} /></span> : null}
         </span>
         {details.length > 0 ? (
@@ -274,18 +262,17 @@ function WallFacts({ screen, home }: { screen: MonitorCopy; home: StateHome }) {
 function Monitor({ room, live, copy, rows, fileColumns, areas }: { room: RoomEntry; live: RoomLive; copy: RoomCopy; rows: number; fileColumns: number; areas: boolean }) {
   const look = roomLook(room.state);
   const screen = copy.monitor(room, live);
-  const home = stateHome(screen);
   const { leaving, serial } = useScreenSwap(room.state.kind, screen);
   return (
     <div className={styles.monitor} data-off={look.monitorOff}>
       <i className={cn(styles.screenFrame, styles.notched)} />
       <div className={styles.screen} data-testid="work-room-monitor" data-room-part>
         <div key={`now:${serial}`} ref={serial > 0 ? enterScreen : undefined} className={styles.screenText}>
-          <ScreenText screen={screen} rows={rows} fileColumns={fileColumns} areas={areas} home={home} />
+          <ScreenText screen={screen} rows={rows} fileColumns={fileColumns} areas={areas} />
         </div>
         {leaving ? (
           <div key={`was:${serial}`} ref={leaveScreen} aria-hidden className={cn(styles.screenText, 'pointer-events-none')}>
-            <ScreenText screen={leaving} rows={rows} fileColumns={fileColumns} areas={areas} home={stateHome(leaving)} />
+            <ScreenText screen={leaving} rows={rows} fileColumns={fileColumns} areas={areas} />
           </div>
         ) : null}
       </div>
@@ -383,15 +370,21 @@ export function LargeRoom({ room, live, unit, rows, fileColumns, areas, copy, re
         data-lit={look.running}
         data-tone={tone}
         data-dark={retiring}
+        data-fresh={live.pulse?.changedJustNow ?? false}
       >
+        <i aria-hidden data-room-light className={styles.light} />
         <i className={styles.track} />
+        {retiring ? <i aria-hidden className={styles.railRun} /> : null}
         <div className={styles.sideWall}>
           <span className={cn(styles.mainPlate, LABEL, 'font-mono font-[var(--font-weight-strong)]')}>main</span>
           <i className={styles.hatch} data-open={room.stage === 'main'} />
         </div>
         <Cart room={room} landing={landed} />
-        <WallFacts screen={wallScreen} home={stateHome(wallScreen)} />
+        <WallFacts screen={wallScreen} />
         <Monitor room={room} live={live} copy={copy} rows={rows} fileColumns={sameFolder ? 0 : fileColumns} areas={!sameFolder && areas} />
+        <i aria-hidden className={styles.rim} />
+        <RoomPulse flash={live.flash} />
+        {retiring ? <RoomComplete ring /> : null}
         <i className={styles.dim} />
       </div>
     </div>

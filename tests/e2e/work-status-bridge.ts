@@ -56,8 +56,8 @@ export interface OpenOptions {
   pulse?: unknown;
   /** The first load sample; `null` answers as a system without load. */
   load?: unknown;
-  /** How many changes the base branch took in, one an hour back from now; two of two days by default. */
-  landedCount?: number;
+  /** How many changes the base branch took in today; eleven by default. */
+  mergedToday?: number;
   width?: number;
   height?: number;
   /** The page's locale; English by default. */
@@ -66,19 +66,9 @@ export interface OpenOptions {
 
 export async function openWorkStatus(page: Page, rows: Row[], activity: Activity = {}, options: OpenOptions = {}) {
   await seedFirstRunSeen(page);
-  await page.addInitScript(({ initial, reads, pulse, load, landedCount }: { initial: Row[]; reads: Activity; pulse: unknown; load: unknown; landedCount: number | null }) => {
+  await page.addInitScript(({ initial, reads, pulse, load, mergedToday }: { initial: Row[]; reads: Activity; pulse: unknown; load: unknown; mergedToday: number }) => {
     const state = { rows: initial, version: 1, activity: reads, activityVersion: 1, sessionStatus: "read", pulse, load };
     const calls = { asks: 0, forgets: 0, pulseAsks: 0, pulsePauses: 0, loadSamples: 0, namesOn: null as boolean | null, pulseOn: null as boolean | null, loadOn: null as boolean | null, sent: [] as string[] };
-    const nowS = Math.floor(Date.now() / 1000);
-    const LANDED_STUB = [
-      { hash: "a".repeat(40), subject: "fix(map): keep a selected element's ring off its capability's disc (#12)", at: nowS - 3600, merge: true, files: 1, insertions: 30, deletions: 4 },
-      { hash: "b".repeat(40), subject: "docs: say what landed", at: nowS - 2 * 86400, merge: false, files: 2, insertions: 5, deletions: 1 },
-    ];
-    if (landedCount !== null) {
-      LANDED_STUB.splice(0, LANDED_STUB.length, ...Array.from({ length: landedCount }, (_, index) => (
-        { hash: index.toString(16).padStart(40, "c"), subject: `fix: landed change ${index + 1} (#${100 + index})`, at: nowS - (index + 1) * 3600, merge: true, files: 1, insertions: 10, deletions: 2 }
-      )));
-    }
     const target = window as unknown as Record<string, unknown>;
     // How the session-list read went, and what the page asked of the bridge.
     target.__workStatusSessionRead = (status: string) => { state.sessionStatus = status; };
@@ -156,17 +146,14 @@ export async function openWorkStatus(page: Page, rows: Row[], activity: Activity
           const read = state.activity[args.worktreeId ?? ""];
           return answer(read ? { stamp: `s${state.activityVersion}`, ...structuredClone(read) } : null);
         }
-        if (command === "work_status_landed") return answer({ changes: structuredClone(LANDED_STUB), weekCount: 2 });
-        if (command === "work_status_landed_detail") {
-          return answer({ hash: (args as { hash?: string }).hash, commits: [{ hash: "e1e1e1e", subject: "fix(map): keep the ring off the disc", at: Math.floor(Date.now() / 1000) - 7200 }], commitCount: 1, files: [{ path: "src/map/plan.ts", insertions: 30, deletions: 4 }], fileCount: 1 });
-        }
+        if (command === "work_status_merged_count") return answer(mergedToday);
         if (command === "work_status_read") {
           return answer({ status: "ready", root: "/Users/probe/repo", repository: "repo", host: "github.com", baseBranch: "main", worktrees: structuredClone(state.rows) });
         }
         return Promise.reject(new Error(`unstubbed native command: ${command}`));
       },
     };
-  }, { initial: rows, reads: activity, pulse: "pulse" in options ? options.pulse : { worktrees: {} }, load: "load" in options ? options.load : { status: "read", worktrees: {}, outside: [], sessions: {}, mac: null }, landedCount: options.landedCount ?? null });
+  }, { initial: rows, reads: activity, pulse: "pulse" in options ? options.pulse : { worktrees: {} }, load: "load" in options ? options.load : { status: "read", worktrees: {}, outside: [], sessions: {}, mac: null }, mergedToday: options.mergedToday ?? 11 });
   await page.setViewportSize({ width: options.width ?? 1920, height: options.height ?? 1080 });
   await page.goto(`/${options.locale ?? "en"}/work-status/`);
   await page.getByTestId("work-status-choose").click();

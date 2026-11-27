@@ -44,5 +44,25 @@
     --work-room-dark: rgba(12, 12, 11, 0.58);
     --work-shelf-crate: #8c897f;
     --work-shelf-crate-old: #4d4b46;
+
+    /*
+     * A room's light, mixed into its light colour (its session's ink, warning amber, or success
+     * emerald for a merge). `-glow-*` is the soft light inside the frame, reaching `-glow-reach` in
+     * and painted under the room's words; `-rim-*` is the frame's hairline, brightest along the top
+     * and fading down the sides. Rest levels hold still; a counted change adds `-fresh` to the glow
+     * for a minute, a pulse flares to `-flare` and a merge to `-complete`, the brightest on the page.
+     * `-spark-length` is the light that runs once around the frame for each counted change.
+     */
+    --work-room-glow-reach: 36px;
+    --work-room-glow-rest: 9%;
+    --work-room-glow-fresh: 13%;
+    --work-room-glow-alert: 13%;
+    --work-room-glow-flare: 26%;
+    --work-room-glow-complete: 40%;
+    --work-room-rim-top: 64%;
+    --work-room-rim-foot: 6%;
+    --work-room-rim-alert-top: 92%;
+    --work-room-rim-alert-foot: 30%;
+    --work-room-spark-length: 160px;
   }
 }
