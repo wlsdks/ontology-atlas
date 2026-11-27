@@ -4,6 +4,8 @@ import { reportWebviewError } from '@/shared/lib/failures/report-webview-error';
 import { ROUTE_ERROR_PICK, pickStandaloneMessages } from '@/i18n/standalone-messages';
 import { RouteErrorScreen, StandaloneMessagesProvider } from '@/views/terminal-state';
 
+import { BootPictureRemover } from './BootPictureRemover';
+
 const messages = pickStandaloneMessages(ROUTE_ERROR_PICK);
 
 /** A screen that threw, or a tab that asked for a file a deploy removed; reloading recovers. */
@@ -15,6 +17,7 @@ export default function StandaloneRouteError({ error, reset }: { error: Error; r
   }, [error]);
   return (
     <StandaloneMessagesProvider messages={messages}>
+      <BootPictureRemover />
       <RouteErrorScreen onRetry={reset} />
     </StandaloneMessagesProvider>
   );

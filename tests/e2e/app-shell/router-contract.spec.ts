@@ -51,6 +51,8 @@ test.describe('router contract', () => {
     await page.goto('/en/projects/?guides=off');
     await waitForPageSettled(page);
     const documents = countDocumentRequests(page);
+    // The title is set when the screen mounts, after the document settles.
+    await expect.poll(() => page.title()).toContain(en.metadata.pages.projects);
     const titleBefore = await page.title();
 
     await page.getByTestId('app-nav-rail-item-automations').click();
