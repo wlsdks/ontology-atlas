@@ -1,8 +1,11 @@
 import { expect, test } from '@playwright/test';
+import { installDesktopRailRuntime, mountDesktopVault } from '../desktop-rail-arrival-harness';
 
 test.use({ viewport: { width: 2560, height: 1440 } });
 
 test('the missing-project portrait stays centred over its title where the workbench zooms', async ({ page }) => {
+  await installDesktopRailRuntime(page);
+  await mountDesktopVault(page, 'ko');
   await page.goto('/ko/project/fallback/?slug=missing-project&guides=off');
   const portrait = page.locator('[data-brand-portrait="curious"]');
   await expect(portrait).toBeVisible();

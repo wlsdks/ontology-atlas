@@ -1,15 +1,13 @@
 import { expect, test } from "@playwright/test";
 
-import { FIXTURE_VAULT } from "../fixture-vault";
+import { installDesktopRailRuntime, mountDesktopVault } from "../desktop-rail-arrival-harness";
 import { seedFirstRunSeen } from "../first-run-seed";
-import { stubDirectoryPicker } from "../vault-picker-stub";
 
 for (const populated of [false, true]) {
   test(`service import preserves keyboard continuity from the ${populated ? 'index' : 'empty stage'}`, async ({ page }) => {
-    await seedFirstRunSeen(page);
-    await stubDirectoryPicker(page, { ...FIXTURE_VAULT, ...(populated ? { 'sources/base.pdf': '%PDF-1.7 base\n' } : {}) });
+    await installDesktopRailRuntime(page, populated ? { 'sources/base.pdf': '%PDF-1.7 base\n' } : {});
+    await mountDesktopVault(page);
     await page.goto('/en/library/?guides=off');
-    await page.getByTestId('library-open-vault').click();
     const opener = page.getByTestId(populated ? 'library-import-open' : 'library-start-import');
     await opener.evaluate((button) => {
       (document.activeElement as HTMLElement)?.blur();
@@ -24,13 +22,11 @@ for (const populated of [false, true]) {
     const notion = dialog.locator('[data-service="notion"]');
     await notion.focus();
     await page.keyboard.press('Enter');
-    await expect(dialog.getByTestId('library-import-web-setup')).toBeVisible();
-    await expect(dialog.getByTestId('library-import-token')).toHaveCount(0);
+    await expect(dialog.getByTestId('library-import-token')).toBeVisible();
     await dialog.getByRole('button', { name: 'Back', exact: true }).click();
     await expect(notion).toBeFocused();
     await page.keyboard.press('Enter');
-    await expect(dialog.getByTestId('library-import-web-setup')).toBeVisible();
-    await expect(dialog.getByTestId('library-import-token')).toHaveCount(0);
+    await expect(dialog.getByTestId('library-import-token')).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(opener).toBeFocused();
   });
@@ -41,17 +37,11 @@ for (const populated of [false, true]) {
  * exists, the picker names services, and the first step says who keeps what comes back.
  */
 
-test("the library has a door for importing from a service, avoids jargon, and on the web says what happened instead of showing an unpressable button", async ({ page }) => {
+test("the library has a door for importing from a service, avoids jargon, and asks for the token in the app", async ({ page }) => {
   test.setTimeout(300_000);
   await page.setViewportSize({ width: 1512, height: 982 });
-  await stubDirectoryPicker(page, { ...FIXTURE_VAULT });
-  await seedFirstRunSeen(page);
-  await page.goto("/ko/topology/?guides=off");
-  await page.waitForLoadState("networkidle");
-  await page.getByTestId("first-run-starter-open").click();
-  await expect(page.getByTestId("vault-guide-sheet")).toBeVisible();
-  await page.getByTestId("vault-guide-pick-existing").click();
-  await expect(page.getByTestId("first-run-starter")).toHaveCount(0, { timeout: 30_000 });
+  await installDesktopRailRuntime(page);
+  await mountDesktopVault(page, "ko");
 
   await page.goto("/ko/library/");
   await page.waitForLoadState("networkidle");
@@ -79,18 +69,8 @@ test("the library has a door for importing from a service, avoids jargon, and on
   await page.locator('[data-testid="library-import-service"][data-service="notion"]').click();
   await expect(page.getByTestId("library-import-step")).toHaveAttribute("data-step", "connect");
 
-  await expect(dialog.getByTestId("library-import-web-setup")).toBeVisible();
-  await expect(dialog.getByTestId("library-import-token")).toHaveCount(0);
-  await expect(dialog.getByTestId("library-import-connect")).toHaveCount(0);
+  await expect(dialog.getByTestId("library-import-token")).toBeVisible();
   await expect(dialog.getByTestId("library-import-connected")).toHaveCount(0);
-  await expect(dialog.getByTestId("library-import-no-agent-app")).toHaveAttribute("href", /download/);
-  await page.evaluate(() => {
-    const target = window as unknown as {showOpenFilePicker: () => Promise<FileSystemFileHandle[]>; __filesAsked?: boolean};
-    target.showOpenFilePicker = async () => { target.__filesAsked = true; return []; };
-  });
-  await dialog.getByTestId("library-import-add-files").click();
-  expect(await page.evaluate(() => (window as unknown as {__filesAsked?: boolean}).__filesAsked)).toBe(true);
-  await expect(dialog).toBeHidden();
 });
 
 // The bridge below is isolated in-memory fixture data. No OS keychain or service is called.

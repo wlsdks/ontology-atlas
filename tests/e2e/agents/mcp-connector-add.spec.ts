@@ -1,37 +1,24 @@
 import { expect, test } from "@playwright/test";
 
-import { FIXTURE_VAULT } from "../fixture-vault";
-import { seedFirstRunSeen } from "../first-run-seed";
+import { installDesktopRailRuntime, mountDesktopVault } from "../desktop-rail-arrival-harness";
 import { waitForBoxStill } from "../settle";
-import { stubDirectoryPicker } from "../vault-picker-stub";
 
 /**
- * The add-a-connector dialog, in the browser, against a real folder.
+ * The add-a-connector dialog, in the installed app, against a folder.
  *
  * **Why this is worth an e2e rather than only a component test.** One list under one search, a
  * press that attaches or asks in place, and a by-hand form folded at the bottom of the same scroll
  * box are exactly the kind of thing that passes in jsdom and fails on a rendered page: the dialog
  * owns the scroll, the unfolded form has to come into view, and a press has to land where the
  * row says. The component tests own the writes and the refusals; this owns the journey.
- *
- * ⚠️ **The web is the honest surface for this spec.** Scanning this machine's agent config files
- * goes through Tauri, which a browser cannot do — so here that group is its degradation card,
- * after the catalogue. It is checked, because the card having somewhere to go is the contract
- * `.claude/rules/surfaces.md` sets.
  */
 
 async function openConnectorsWithVault(
   page: import("@playwright/test").Page,
   extraFiles: Record<string, string> = {},
 ) {
-  await stubDirectoryPicker(page, { ...FIXTURE_VAULT, ...extraFiles });
-  await seedFirstRunSeen(page);
-  await page.goto("/ko/topology/?guides=off");
-  await page.waitForLoadState("networkidle");
-  await page.getByTestId("first-run-starter-open").click();
-  await expect(page.getByTestId("vault-guide-sheet")).toBeVisible();
-  await page.getByTestId("vault-guide-pick-existing").click();
-  await expect(page.getByTestId("first-run-starter")).toHaveCount(0, { timeout: 30_000 });
+  await installDesktopRailRuntime(page, extraFiles, undefined, { writable: true });
+  await mountDesktopVault(page, "ko");
   await page.goto("/ko/agents/?tab=mcp&mcp=connectors");
   await page.waitForLoadState("networkidle");
   await expect(page.getByTestId("connectors-panel")).toBeVisible();
@@ -112,15 +99,12 @@ test("the add dialog is one list under one search, with manual entry as a collap
   await expect(dialog).toBeVisible();
 
   /*
-   * One list: the catalogue as a group with its capture date, the by-hand form folded under it,
-   * and on the web the card saying why this machine cannot be scanned.
+   * One list: the catalogue as a group with its capture date, and the by-hand form folded under it.
    */
   await expect(page.getByTestId("connectors-catalogue-section")).toBeVisible();
   await expect(page.getByTestId("connectors-catalogue-item")).not.toHaveCount(0);
   await expect(page.getByTestId("connectors-custom-toggle")).toHaveAttribute("aria-expanded", "false");
   await expect(page.getByTestId("connectors-custom-name")).toHaveCount(0);
-  await expect(page.getByTestId("connectors-discovery-unavailable")).toBeVisible();
-  await expect(page.getByTestId("connectors-web-get-app")).toHaveAttribute("href", /download/);
 
   // Closing is the corner control and Escape; there is no button under the list.
   await expect(page.getByTestId("connectors-add-close")).toBeVisible();
@@ -177,7 +161,7 @@ test("a row that asks nothing connects with one press, shows the address to be r
   ).toHaveAttribute("data-catalogue-attached", "true");
 });
 
-test("a row that needs a token asks in place, and on the web without a keychain states the reason instead of a field", async ({ page }) => {
+test("a row that needs a token asks in place, with a field for the token and a press to attach it", async ({ page }) => {
   test.setTimeout(300_000);
   await page.setViewportSize({ width: 1512, height: 982 });
   await openConnectorsWithVault(page);
@@ -194,9 +178,9 @@ test("a row that needs a token asks in place, and on the web without a keychain 
   await expect(ask).toBeVisible();
   await expect(ask).toContainText("@notionhq/notion-mcp-server");
   await expect(ask).toContainText("NOTION_TOKEN");
-  // A browser has no keychain: no field, no press, and the sentence says what to do instead.
-  await expect(page.getByTestId("connectors-catalogue-ask-value")).toHaveCount(0);
-  await expect(page.getByTestId("connectors-catalogue-ask-add")).toHaveCount(0);
+  // The app holds the token in the keychain, so the row offers the field and the press itself.
+  await expect(page.getByTestId("connectors-catalogue-ask-value")).toBeVisible();
+  await expect(page.getByTestId("connectors-catalogue-ask-add")).toBeVisible();
   // The same facts can still go into the by-hand form, filled in and unfolded.
   await page.getByTestId("connectors-catalogue-ask-edit").click();
   await expect(page.getByTestId("connectors-custom-toggle")).toHaveAttribute("aria-expanded", "true");
@@ -209,13 +193,8 @@ test("a row that needs a token asks in place, and on the web without a keychain 
 test("an install link only opens the dialog prefilled and connects nothing", async ({ page }) => {
   test.setTimeout(300_000);
   await page.setViewportSize({ width: 1512, height: 982 });
-  await stubDirectoryPicker(page, { ...FIXTURE_VAULT });
-  await seedFirstRunSeen(page);
-  await page.goto("/ko/topology/?guides=off");
-  await page.waitForLoadState("networkidle");
-  await page.getByTestId("first-run-starter-open").click();
-  await page.getByTestId("vault-guide-pick-existing").click();
-  await expect(page.getByTestId("first-run-starter")).toHaveCount(0, { timeout: 30_000 });
+  await installDesktopRailRuntime(page, {}, undefined, { writable: true });
+  await mountDesktopVault(page, "ko");
 
   /*
    * The Cursor/VS Code shape, carrying a value it is not allowed to set. The value is dropped

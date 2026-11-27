@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
-import { seedFirstRunSeen } from '../../first-run-seed';
+import { installDesktopRailRuntime, mountDesktopVault } from '../../desktop-rail-arrival-harness';
 import { installLibraryWorkHarness } from '../../library-work-harness';
-import { stubDirectoryPicker } from '../../vault-picker-stub';
+import { hashServedFilesLikeTheDisk } from '../served-file-hashes';
 import { digest, wiki } from './library-question-desk-harness';
 
 const refund = '# Refund handling\nRefund approval queues a stock restoration job.\nThe job may complete in the next inventory batch.\n';
@@ -233,23 +233,28 @@ test('keeps the report scroll viewport and focused citations above mobile naviga
 
 test('Wiki question desk finds contradictory leads and keeps the no-key source path usable', async ({ page }) => {
   await page.setViewportSize({ width: 1512, height: 901 });
-  await seedFirstRunSeen(page);
-  await stubDirectoryPicker(page, {
+  await installDesktopRailRuntime(page, {
     'sources/refund-handling.md': refund,
     'sources/inventory-state.md': inventory,
     'wiki/refund-overview.md': wiki('Refund overview', 'sources/refund-handling.md', 'f'.repeat(64), 'Refund approval immediately restores stock.'),
     'wiki/inventory-state.md': wiki('Inventory state', 'sources/inventory-state.md', digest(inventory), 'Refund approval does not immediately restore inventory.'),
-  });
-  await page.goto('/en/library/?tab=wiki&guides=off', { waitUntil: 'domcontentloaded' });
-  // A press before hydration is lost on a cold dev server, and the folder never opens.
-  await page.waitForLoadState('networkidle');
-  await page.getByRole('button', { name: /^Open (?:a|my) folder/ }).first().click();
+  }, undefined, { replaceFixture: true });
+  await hashServedFilesLikeTheDisk(page);
+  await mountDesktopVault(page, 'en');
+  await page.goto('/en/library/?tab=wiki&guides=off');
   await page.getByTestId('library-workspace-wiki').click();
   await expect(page.getByTestId('library-question-desk')).toBeVisible();
   await page.getByTestId('question-desk-input').fill('Does refund approval immediately restore stock?');
   await page.getByTestId('question-desk-search').click();
   const results = page.getByTestId('question-desk-results');
   await expect(results).toBeVisible();
+  // The app reads the wiki pages in the background after the folder opens. A search begun before that ends says the folder
+  // changed after it, and searching again reads every page.
+  const outdated = page.getByText('The folder changed after this search. Search again to use the current files.');
+  await expect(async () => {
+    if (await outdated.isVisible()) await page.getByTestId('question-desk-search').click();
+    await expect(outdated).toBeHidden({ timeout: 2_000 });
+  }).toPass({ timeout: 20_000 });
   await page.getByTestId('question-desk-coverage-info').click();
   const coverage = page.getByTestId('question-desk-coverage-info-popover');
   await expect(coverage).toContainText('Wiki 2/2 · Sources 2/2');
@@ -261,11 +266,11 @@ test('Wiki question desk finds contradictory leads and keeps the no-key source p
   // inventory line says the same sentence as the claim citing it, so that pair is one row.
   await expect(results.getByRole('button', { name: 'Refund approval queues a stock restoration job.' })).toHaveCount(1);
   await expect(results.getByRole('button', { name: 'Refund approval does not immediately restore inventory.' })).toHaveCount(1);
-  await expect(page.getByTestId('question-desk-results-head')).toHaveText('5 passages found');
+  await expect(page.getByTestId('question-desk-results-head')).toContainText('5 passages found');
   const stale = page.getByTestId('question-desk-lead').filter({ has: page.getByRole('button', { name: 'Refund approval immediately restores stock.' }) });
   await expect(stale).toContainText('Source needs review');
-  await expect(page.getByTestId('question-desk-summarize')).toHaveCount(0);
-  await expect(page.getByText('Check claim with Jev')).toHaveCount(0);
+  // With no coding agent connected the report press is offered but cannot be used, and says why.
+  await expect(page.getByTestId('question-desk-summarize')).toBeDisabled();
   await page.setViewportSize({ width: 1040, height: 720 });
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.setViewportSize({ width: 390, height: 844 });

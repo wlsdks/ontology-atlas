@@ -1,15 +1,9 @@
 import { expect, test } from '@playwright/test';
-import { stubDirectoryPicker } from '../vault-picker-stub';
-import { seedFirstRunSeen } from '../first-run-seed';
-import { FIXTURE_VAULT } from '../fixture-vault';
+import { installDesktopRailRuntime, mountDesktopVault } from '../desktop-rail-arrival-harness';
 
 async function openEditor(page: import('@playwright/test').Page) {
-  await seedFirstRunSeen(page);
-  await stubDirectoryPicker(page, FIXTURE_VAULT);
-  await page.goto('/ko/topology/?guides=off');
-  await page.getByTestId('first-run-starter-open').click();
-  await page.getByTestId('vault-guide-pick-existing').click();
-  await expect(page.getByTestId('first-run-starter')).toBeHidden();
+  await installDesktopRailRuntime(page);
+  await mountDesktopVault(page, 'ko');
   await page.goto('/ko/project/fallback/?slug=storefront&mode=edit&returnTo=%2Fproject%2Ffallback%2F%3Fslug%3Dstorefront&guides=off');
   await expect(page.getByRole('heading', { level: 1, name: '온라인 상점', exact: true })).toBeVisible();
   await expect(page.getByRole('textbox', { name: '이름', exact: true })).toHaveValue('Online Store');

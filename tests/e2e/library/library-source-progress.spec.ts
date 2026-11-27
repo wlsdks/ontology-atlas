@@ -2,10 +2,10 @@ import { createHash } from "node:crypto";
 
 import { expect, test, type Page } from "@playwright/test";
 
-import { seedFirstRunSeen } from "../first-run-seed";
+import { installDesktopRailRuntime, mountDesktopVault } from "../desktop-rail-arrival-harness";
+import { hashServedFilesLikeTheDisk } from "./served-file-hashes";
 import { installLibraryWorkHarness } from "../library-work-harness";
 import { waitFrames } from "../settle";
-import { stubDirectoryPicker } from "../vault-picker-stub";
 
 /**
  * The Sources home's progress band and its state presses, drawn from a real folder: 37 sources, 10
@@ -109,13 +109,10 @@ function buildVault(): Record<string, string> {
 async function openSources(page: Page, { vault = buildVault(), locale = "en" }: { vault?: Record<string, string>; locale?: string } = {}) {
   // Tall enough that the windowed list draws every row, so a count of rows is a count of the list.
   await page.setViewportSize({ width: 1440, height: 2000 });
-  await seedFirstRunSeen(page);
-  await stubDirectoryPicker(page, vault);
+  await installDesktopRailRuntime(page, vault, undefined, { replaceFixture: true, writable: true });
+  await hashServedFilesLikeTheDisk(page);
+  await mountDesktopVault(page, locale);
   await page.goto(`/${locale}/library/?tab=sources`);
-  await page.waitForLoadState("networkidle");
-  const picker = page.getByTestId("library-open-vault");
-  await picker.waitFor({ timeout: 25_000 });
-  await picker.click();
   await page.locator('[data-testid="library-page"][data-library-state="nothing-open"]').waitFor({ timeout: 25_000 });
   // Hashes are read lazily; the band counts once no source is still being checked.
   await expect(page.getByTestId("library-source-states-checking")).toHaveCount(0, { timeout: 25_000 });
@@ -177,7 +174,7 @@ test.describe("source progress on the Sources home", () => {
     await expect(rows(page)).toHaveCount(HANGUL_WAITING + HANGUL_COMPILED);
   });
 
-  test("the band counts what has a page and, on the web, offers the app instead of Continue", async ({ page }) => {
+  test("the band counts what has a page and draws its chart and swatches", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await openSources(page);
     const band = page.getByTestId("library-progress");
@@ -197,10 +194,6 @@ test.describe("source progress on the Sources home", () => {
     const segment = (index: number) => band.getByTestId("library-progress-bar").locator("span.motion-progress-segment").nth(index).evaluate((node) => getComputedStyle(node).backgroundColor);
     expect(await swatch("compiled")).toBe(await segment(0));
 
-    // On the web nothing here can write: one line says so, and the one action is the app.
-    await expect(band.getByTestId("library-progress-continue")).toHaveCount(0);
-    await expect(band.getByTestId("library-progress-blocked")).toHaveText("Only the app writes wiki pages. Reading works here.");
-    await expect(band.getByTestId("library-progress-get-app")).toHaveAttribute("href", /\/download\/?$/);
     // The press replaced the home strip's clause.
     await expect(page.getByTestId("library-strip-compile")).toHaveCount(0);
   });

@@ -1,10 +1,13 @@
 import { expect, test } from "@playwright/test";
+import { installDesktopRailRuntime } from "../desktop-rail-arrival-harness";
 import { waitForPageSettled } from "../settle";
 
 test("returning from Library releases retired renderers and their detached panes", async ({ page, browserName }) => {
   test.skip(browserName !== "chromium", "DOM ownership is measured through Chromium CDP");
   const cdp = await page.context().newCDPSession(page);
-  await page.goto("/en/topology/?guides=off");
+  // The constellation is the Library's no-folder stage, and with no folder open the rail has no Map, so the round trip leaves for Planning.
+  await installDesktopRailRuntime(page);
+  await page.goto("/en/planning/?guides=off");
   let visits = 0;
   const cycle = async () => {
     await page.locator('nav a[href*="/en/library/"]').first().click();
@@ -15,7 +18,7 @@ test("returning from Library releases retired renderers and their detached panes
       return gl !== null && gl !== undefined && gl.getParameter(gl.CURRENT_PROGRAM) !== null;
     });
     visits += 1;
-    await page.locator('nav a[href*="/en/topology/"]').first().click();
+    await page.locator('nav a[href*="/en/planning/"]').first().click();
     await waitForPageSettled(page);
     await expect(page.getByTestId("library-constellation")).toHaveCount(0);
   };

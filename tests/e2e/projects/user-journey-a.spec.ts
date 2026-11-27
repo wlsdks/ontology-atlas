@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { useDogfoodSample } from "../sample-source";
+import { atlasSampleFiles, installDesktopRailRuntime, mountDesktopVault } from "../desktop-rail-arrival-harness";
 
 /**
  * Replays the public-visitor journey (guide §2.A) as one flow.
@@ -20,8 +20,9 @@ import { useDogfoodSample } from "../sample-source";
 const FINDING_LIMIT = 15;
 
 test("public journeys A1, A2 and A5 in one flow", async ({ page }) => {
-  // This journey walks the dogfood project (`/project/ontology-atlas/`), so it is selected explicitly.
-  await useDogfoodSample(page);
+  // This journey walks the dogfood project (`/project/ontology-atlas/`), so the folder holds the Atlas sample.
+  await installDesktopRailRuntime(page, atlasSampleFiles(), undefined, { replaceFixture: true });
+  await mountDesktopVault(page, "en");
   const consoleErrors: string[] = [];
   const pageErrors: string[] = [];
   /** Time budgets — machine-dependent, so they are **reported only**. */
@@ -67,10 +68,10 @@ test("public journeys A1, A2 and A5 in one flow", async ({ page }) => {
     );
   }
 
-  // Assert the persistent nav rail brand link by accessible name: it is icon-only with no text child.
+  // The app's rail starts directly with its destinations and carries no brand link, so the root's first screen is the Map heading.
   const landingStart = Date.now();
   await page.goto("/en/", { waitUntil: "domcontentloaded" });
-  const productName = page.getByRole("link", { name: "Ontology Atlas", exact: true }).first();
+  const productName = page.getByRole("heading", { name: "Map", level: 1, exact: true });
   await expect(productName).toBeVisible({ timeout: 10_000 });
   const landingTtfb = Date.now() - landingStart;
   if (landingTtfb > 5_000) {

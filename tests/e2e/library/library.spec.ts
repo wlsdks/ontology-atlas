@@ -2,8 +2,10 @@ import { createHash } from "node:crypto";
 
 import { expect, test } from "@playwright/test";
 
+import { installDesktopRailRuntime, mountDesktopVault } from "../desktop-rail-arrival-harness";
 import { seedFirstRunSeen } from "../first-run-seed";
-import { stubDirectoryPicker } from "../vault-picker-stub";
+import { hashServedFilesLikeTheDisk } from "./served-file-hashes";
+import { proposedDocumentFiles, serveSourceIntake } from "./served-source-intake";
 
 /**
  * Proves what only a rendered folder can: a non-Markdown source is a Library row and never in the
@@ -172,14 +174,15 @@ async function openLibrary(
   vault: Record<string, string> = VAULT,
 ) {
   await seedFirstRunSeen(page);
-  await stubDirectoryPicker(page, vault);
+  await installDesktopRailRuntime(page, vault, undefined, {
+    replaceFixture: true,
+    writable: true,
+    externalFiles: proposedDocumentFiles(vault),
+  });
+  await hashServedFilesLikeTheDisk(page);
+  await serveSourceIntake(page, vault);
+  await mountDesktopVault(page, "en");
   await page.goto("/en/library/");
-  await page.waitForLoadState("networkidle");
-  // The stage is drawn only after the IndexedDB handle restore has decided there is no
-  // folder. Waiting on the control rather than on a duration is what stops the flake.
-  const picker = page.getByTestId("library-open-vault");
-  await picker.waitFor({ timeout: 25_000 });
-  await picker.click();
   /* The folder decides which shape arrives, so wait on the state rather than on a box only one has. */
   await page
     .locator(
@@ -556,8 +559,8 @@ test.describe("the Library pane", () => {
     });
     expect(reachable, "the home's first row is covered by another surface").toBe(true);
 
-    // The next step is the progress band's door (on the web, Get the app), not a header door or a second header row.
-    await expect(page.getByTestId("library-progress-get-app")).toBeVisible();
+    // The next step is the progress band's door (in the app, Continue), not a header door or a second header row.
+    await expect(page.getByTestId("library-progress-continue")).toBeVisible();
     await expect(page.getByTestId("library-doors")).not.toContainText("Write wiki page:");
     await expect(page.getByTestId("library-status-strip")).toHaveCount(0);
     await expect(page.getByTestId("library-needs-compile")).toHaveCount(0);

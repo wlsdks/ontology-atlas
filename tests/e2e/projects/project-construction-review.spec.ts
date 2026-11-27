@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { seedFirstRunSeen } from "../first-run-seed";
+import { installDesktopRailRuntime, mountDesktopVault } from "../desktop-rail-arrival-harness";
 
 const PLAN_DIGEST = `sha256:${"a".repeat(64)}`;
 const SOURCE_DIGEST = `sha256:${"b".repeat(64)}`;
@@ -54,7 +54,8 @@ async function openJson(page: import("@playwright/test").Page, value: unknown) {
 
 test.describe("project ontology construction review", () => {
   test.beforeEach(async ({ page }) => {
-    await seedFirstRunSeen(page);
+    await installDesktopRailRuntime(page);
+    await mountDesktopVault(page, "ko");
     await page.goto("/ko/project/storefront/?guides=off");
     await expect(page.getByTestId("construction-review-ingress")).toBeAttached();
   });

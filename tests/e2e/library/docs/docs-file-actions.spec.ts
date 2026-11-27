@@ -1,6 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { seedFirstRunSeen } from "../../first-run-seed";
-import { stubDirectoryPicker } from "../../vault-picker-stub";
+import { installDesktopRailRuntime, mountDesktopVault } from "../../desktop-rail-arrival-harness";
 import { HEALTHY_VAULT } from "../../fixtures/broken-vault";
 
 const UNTITLED_BODY = "capabilities/refund.md";
@@ -22,14 +21,8 @@ const VAULT = {
 };
 
 async function openCheckout(page: Page) {
-  await stubDirectoryPicker(page, VAULT);
-  await seedFirstRunSeen(page);
-  await page.goto("/ko/topology/?guides=off");
-  await page.waitForLoadState("networkidle");
-  await page.getByTestId("first-run-starter-open").click();
-  await expect(page.getByTestId("vault-guide-sheet")).toBeVisible();
-  await page.getByTestId("vault-guide-pick-existing").click();
-  await expect(page.getByTestId("first-run-starter")).toHaveCount(0, { timeout: 20_000 });
+  await installDesktopRailRuntime(page, VAULT, undefined, { replaceFixture: true });
+  await mountDesktopVault(page, "ko");
   await page.goto("/ko/docs/?guides=off&slug=capabilities%2Fcheckout");
   await expect(page.getByTestId("docs-editor-path")).toHaveText("capabilities/checkout.md", {
     timeout: 20_000,

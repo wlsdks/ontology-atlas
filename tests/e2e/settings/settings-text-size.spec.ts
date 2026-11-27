@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { TEXT_SIZE_ROOT_PERCENT, TEXT_SIZES, type TextSize } from "../../../src/shared/lib/preferences/text-size";
-import { CUT_TEXT, DEFAULT_ROOT_PX, TEXT_ZOOM_ROUTES, TEXT_ZOOM_WIDTHS } from "./text-zoom-probes";
+import { CUT_TEXT, DEFAULT_ROOT_PX, openRouteInApp, TEXT_ZOOM_ROUTES, TEXT_ZOOM_WIDTHS } from "./text-zoom-probes";
 
 const STEPS = TEXT_SIZES.filter((size): size is Exclude<TextSize, "default"> => size !== "default");
 
@@ -17,7 +17,7 @@ for (const size of STEPS) {
   test(`${size} sizes the root before the first paint and keeps rem breakpoints`, async ({ page }) => {
     await seedTextSize(page, size);
     await page.setViewportSize({ width: 1040, height: 900 });
-    await page.goto("/ko/docs/?guides=off", { waitUntil: "domcontentloaded" });
+    await openRouteInApp(page, "/ko/docs/?guides=off");
     const state = await page.evaluate(() => ({
       attribute: document.documentElement.getAttribute("data-text-size"),
       root: getComputedStyle(document.documentElement).fontSize,
@@ -33,7 +33,7 @@ for (const size of STEPS) {
       test(`${size} · ${route} · ${width}px leaves no text cut off`, async ({ page }) => {
         await seedTextSize(page, size);
         await page.setViewportSize({ width, height: 900 });
-        await page.goto(route, { waitUntil: "domcontentloaded" });
+        await openRouteInApp(page, route);
         await expect(page.locator("main").first()).toBeVisible({ timeout: 30_000 });
         await page.evaluate(
           () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
@@ -50,6 +50,6 @@ for (const size of STEPS) {
 
 test("default leaves the root attribute off", async ({ page }) => {
   await seedTextSize(page, "default");
-  await page.goto("/ko/docs/?guides=off", { waitUntil: "domcontentloaded" });
+  await openRouteInApp(page, "/ko/docs/?guides=off");
   expect(await page.evaluate(() => document.documentElement.hasAttribute("data-text-size"))).toBe(false);
 });

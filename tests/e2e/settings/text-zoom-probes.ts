@@ -1,7 +1,34 @@
+import { expect, type Page } from "@playwright/test";
+
+import { installDesktopRailRuntime, knownDesktopFolderPaths, mountDesktopVault } from "../desktop-rail-arrival-harness";
+
 /**
  * `tests/e2e/settings/text-zoom-layout.spec.ts` measures the **layout** with the browser launched at a
  * 32px default font size.
  */
+
+/**
+ * Opens a route in the installed app: the faked runtime serves the Storefront folder, which a
+ * person opens at the first-run screen, and the route is then entered as a fresh load of the page.
+ */
+export async function openRouteInApp(page: Page, route: string): Promise<void> {
+  await installDesktopRailRuntime(page);
+  await mountDesktopVault(page, "ko");
+  await page.goto(route, { waitUntil: "domcontentloaded" });
+}
+
+/**
+ * The same, for a browser whose own text size is 200%: every `rem` breakpoint then reads the window
+ * as below `lg`, the rail is hidden, and the folder is open once the first-run screen is gone.
+ */
+export async function openRouteInAppAtBrowserZoom(page: Page, route: string): Promise<void> {
+  await installDesktopRailRuntime(page);
+  await page.goto("/ko/?guides=off");
+  await page.waitForLoadState("networkidle");
+  await page.getByTestId("first-run-open").click();
+  await expect.poll(() => knownDesktopFolderPaths(page), { timeout: 60_000 }).not.toEqual([]);
+  await page.goto(route, { waitUntil: "domcontentloaded" });
+}
 
 /** The four routes both specs sweep. */
 export const TEXT_ZOOM_ROUTES = [
