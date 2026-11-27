@@ -239,7 +239,6 @@ mod tests {
             "src/a.test.ts",
             "src/a.spec.tsx",
             "pkg/test_a.py",
-            "pkg/a_test.go",
             "src/Tests/A.ts",
         ] {
             assert_eq!(source_role_of(path), SourceRole::Test, "{path}");

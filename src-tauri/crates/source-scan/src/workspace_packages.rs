@@ -63,7 +63,7 @@ pub fn discover_workspace_packages(facts: &PathFacts<'_>, ignore: &IgnoredNames)
             }
         }
     }
-    let mut budget = MATCH_BUDGET(PATTERN_MATCH_STATE_LIMIT);
+    let mut budget = MatchBudget::of(PATTERN_MATCH_STATE_LIMIT);
     let mut packages: Vec<Candidate> = Vec::new();
     'candidates: for candidate in candidates {
         let mut matches_an_include = false;
@@ -418,7 +418,7 @@ impl MatchBudget {
 
 /// Whether `candidate` (a `/`-separated path) matches `pattern`, with `**` for any number of
 /// folders and `*` inside one name. Stops, saying so in `budget`, after too many steps.
-fn pattern_matches(pattern: &str, candidate: &str, budget: &mut MATCH_BUDGET_STATE) -> bool {
+fn pattern_matches(pattern: &str, candidate: &str, budget: &mut MatchBudget) -> bool {
     let pattern_segments: Vec<&str> = if pattern == "." {
         Vec::new()
     } else {
@@ -501,7 +501,7 @@ mod tests {
     use super::*;
 
     fn matches(pattern: &str, candidate: &str) -> bool {
-        let mut budget = MATCH_BUDGET(1000);
+        let mut budget = MatchBudget::of(1000);
         pattern_matches(pattern, candidate, &mut budget)
     }
 

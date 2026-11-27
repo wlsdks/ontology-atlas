@@ -8,10 +8,17 @@
 //! `confined-files`, so the app and the MCP server share one implementation of each rule.
 
 mod bounded_parse;
+mod config_json;
 mod evidence_texts;
 mod folder_placement;
+mod import_edges;
 mod path_dating;
+mod path_facts;
+mod script_imports;
+mod script_resolution;
 mod source_language;
+mod source_walk;
+mod workspace_packages;
 
 pub use evidence_texts::{
     read_evidence_pairs, EvidenceFiles, EvidenceReading, EvidenceRequest, MAX_EVIDENCE_PAIRS,
