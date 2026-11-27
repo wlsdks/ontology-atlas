@@ -10,9 +10,9 @@ import { useVaultDocs } from "./use-vault-docs";
 
 const NO_SELECTION = () => null;
 
-export function useSelectedProjectSlug(options?: { demand?: boolean }): string | null {
+export function useSelectedProjectSlug(): string | null {
   const scope = useVaultSessionIdentityScope();
-  const docs = useVaultDocs(options);
+  const docs = useVaultDocs();
   const read = useCallback(() => readSelectedProject(scope), [scope]);
   const recorded = useSyncExternalStore(subscribeSelectedProject, read, NO_SELECTION);
   return useMemo(() => resolveSelectedProjectSlug(recorded, docs), [recorded, docs]);
@@ -20,11 +20,10 @@ export function useSelectedProjectSlug(options?: { demand?: boolean }): string |
 
 /**
  * Where the Projects door leads: the selected project's page, or null for the list. Every door reads
- * this hook. A door is on every screen, so it never starts the sample's download itself: a screen
- * that draws the sample does, and the door follows once it has arrived.
+ * this hook.
  */
 export function useProjectsDoorHref(): string | null {
-  const slug = useSelectedProjectSlug({ demand: false });
+  const slug = useSelectedProjectSlug();
   return slug ? buildProjectRuntimeDetailHref(slug) : null;
 }
 

@@ -1,9 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useSyncExternalStore } from 'react';
-import { useDataSourceMode } from '@/entities/vault-session';
 import { useLocalVault } from '@/entities/vault-session';
-import { useStaticVaultSource } from '@/entities/vault-session';
 import type { VaultDoc, VaultManifest } from '@/entities/docs-vault';
 import { selectOpenVaultHandle } from '@/shared/lib/vault-folder/select-open-vault-handle';
 import { gitDiff, gitPathsLastChange, isGitBridgeAvailable } from '@/shared/lib/git/tauri-git';
@@ -116,12 +114,9 @@ export interface VaultDocDates {
 }
 
 export function useVaultDocDates(): VaultDocDates {
-  const mode = useDataSourceMode();
   const vault = useLocalVault();
-  // With two bundled vaults the manifest arrives as a module constant, so the memo re-runs only per sample.
-  const staticSource = useStaticVaultSource();
-  const manifest = mode === 'local' && vault.status === 'loaded' ? vault.manifest : null;
-  const handle = mode === 'local' ? selectOpenVaultHandle(vault.status, vault.handle) : null;
+  const manifest = vault.status === 'loaded' ? vault.manifest : null;
+  const handle = selectOpenVaultHandle(vault.status, vault.handle);
   const root = handle ? (getTauriVaultRootPath(handle) ?? null) : null;
   const bridge = isGitBridgeAvailable();
 
@@ -131,7 +126,6 @@ export function useVaultDocDates(): VaultDocDates {
   }, [bridge, root, manifest]);
 
   return useMemo<VaultDocDates>(() => {
-    if (mode === 'static') return { index: manifestToFreshnessIndex(staticSource.manifest), reading: false };
     if (!manifest) return { index: EMPTY_FRESHNESS_INDEX, reading: false };
     if (!bridge || !root) return { index: manifestToFreshnessIndex(manifest), reading: false };
     if (!walk || walk.root !== root) return { index: EMPTY_FRESHNESS_INDEX, reading: true };
@@ -141,18 +135,15 @@ export function useVaultDocDates(): VaultDocDates {
     const pending = new Set(walk.git.pending);
     for (const doc of manifest.docs) if (walk.fileDates.get(doc.path) !== doc.updatedAt) pending.add(doc.path);
     return { index: resolveDocChangeDates(manifest.docs, { committedAt: walk.git.committedAt, pending }), reading: false };
-  }, [mode, staticSource.manifest, manifest, bridge, root, walk]);
+  }, [manifest, bridge, root, walk]);
 }
 
 /** The manifest's own file dates, for "was this file written since I opened it", which a commit must not answer. */
 export function useVaultDocFileDates(): ReadonlyMap<string, string> {
-  const mode = useDataSourceMode();
   const vault = useLocalVault();
-  const staticSource = useStaticVaultSource();
 
   return useMemo(() => {
-    if (mode === 'static') return manifestToFreshnessIndex(staticSource.manifest);
     if (vault.status !== 'loaded' || !vault.manifest) return EMPTY_FRESHNESS_INDEX;
     return manifestToFreshnessIndex(vault.manifest);
-  }, [mode, vault.status, vault.manifest, staticSource.manifest]);
+  }, [vault.status, vault.manifest]);
 }

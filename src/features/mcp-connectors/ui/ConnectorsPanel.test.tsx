@@ -602,23 +602,19 @@ describe('connectors panel explains what runs before enabling', () => {
     expect(bridge.secretSets).toEqual([]);
   });
 
-  it('explains in the browser what is unavailable and what still works', async () => {
+  it('explains without the app runtime what is unavailable and what still works', async () => {
     bridge.discoveryAvailable = false;
     bridge.secretsAvailable = false;
     const vault = fakeVault(seeded(stdioRecord));
     draw(<Panel handle={vault.handle} />);
     await waitFor(() => expect(screen.getByTestId('connectors-list')).toBeInTheDocument());
     /*
-     * The browser card stands in the add dialog where the scan would be: a reason and a place to
-     * go beside a list that still works.
+     * The reason card stands in the add dialog where the scan would be, beside a list that
+     * still works.
      */
     openAdd();
     await waitFor(() =>
       expect(screen.getByTestId('connectors-discovery-unavailable')).toBeInTheDocument(),
-    );
-    expect(screen.getByTestId('connectors-web-get-app')).toHaveAttribute(
-      'href',
-      expect.stringContaining('/download'),
     );
     fireEvent.keyDown(document, { key: 'Escape' });
 

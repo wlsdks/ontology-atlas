@@ -1,6 +1,5 @@
 import {
   VAULT_SOURCES_DIR,
-  discoverCandidatesInHandle,
   type SourceCandidate,
   type SourceDiscoveryReport,
 } from "@/entities/docs-vault";
@@ -21,8 +20,6 @@ interface DiscoveryRootPlan {
 }
 
 export interface DiscoveryOutcome extends SourceDiscoveryReport {
-  /** False in a browser, where the missing project roots are stated on screen. */
-  projectRootsReachable: boolean;
   /** Bound project roots that were walked, by label. */
   walkedRoots: string[];
 }
@@ -60,32 +57,20 @@ export async function discoverSources({
   vaultLabel,
 }: {
   handle: FileSystemDirectoryHandle;
-  /** Absolute path, or null on the web. */
+  /** Absolute path of the open folder; null when it has none, which discovers nothing. */
   vaultRootPath: string | null;
   vaultLabel: string;
 }): Promise<DiscoveryOutcome> {
-  if (vaultRootPath) {
-    const projectRoots = await readBoundProjectRoots(handle);
-    const roots = [
-      { rootPath: vaultRootPath, label: vaultLabel, skipRelative: [VAULT_SOURCES_DIR], openFolder: true },
-      ...projectRoots,
-    ];
-    const report = await discoverTauriSourceCandidates(roots);
-    if (report) {
-      return {
-        ...report,
-        projectRootsReachable: true,
-        walkedRoots: projectRoots.map((root) => root.label),
-      };
-    }
-  }
-
-  // The browser half: the open folder only, and the dialog says that is the limit.
-  const report = await discoverCandidatesInHandle(handle, {
-    rootLabel: vaultLabel,
-    skipRelative: [VAULT_SOURCES_DIR],
-  });
-  return { ...report, projectRootsReachable: false, walkedRoots: [] };
+  const none: DiscoveryOutcome = { candidates: [], truncated: false, unreadableRoots: [], walkedRoots: [] };
+  if (!vaultRootPath) return none;
+  const projectRoots = await readBoundProjectRoots(handle);
+  const roots = [
+    { rootPath: vaultRootPath, label: vaultLabel, skipRelative: [VAULT_SOURCES_DIR], openFolder: true },
+    ...projectRoots,
+  ];
+  const report = await discoverTauriSourceCandidates(roots);
+  if (!report) return none;
+  return { ...report, walkedRoots: projectRoots.map((root) => root.label) };
 }
 
 /** Drops names already in `sources/`; the import still refuses by sha256. */

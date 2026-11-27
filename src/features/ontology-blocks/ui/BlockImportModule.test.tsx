@@ -120,8 +120,7 @@ function makeVault(overrides: Partial<MockVault> = {}): MockVault {
 }
 
 function stubPicker(handle: unknown) {
-  (window as unknown as { showDirectoryPicker?: () => Promise<unknown> }).showDirectoryPicker =
-    vi.fn(async () => handle);
+  tauriMocks.pickTauriVaultDirectory.mockResolvedValue(handle);
 }
 
 async function openPreview() {
@@ -134,7 +133,7 @@ async function openPreview() {
 describe('BlockImportModule', () => {
   beforeEach(() => {
     mocks.vault = makeVault();
-    tauriMocks.isTauriVaultRuntime.mockReturnValue(false);
+    tauriMocks.isTauriVaultRuntime.mockReturnValue(true);
     tauriMocks.pickTauriVaultDirectory.mockReset();
     stubPicker(fakeBlockDir(BLOCK_FILES));
   });
@@ -266,11 +265,7 @@ describe('BlockImportModule', () => {
     expect(mocks.vault.createDoc).not.toHaveBeenCalled();
   });
 
-  it('uses the native Tauri folder picker when the WebView has no browser picker', async () => {
-    delete (window as unknown as { showDirectoryPicker?: unknown }).showDirectoryPicker;
-    tauriMocks.isTauriVaultRuntime.mockReturnValue(true);
-    tauriMocks.pickTauriVaultDirectory.mockResolvedValue(fakeBlockDir(BLOCK_FILES));
-
+  it('asks the native folder picker, titled for the import', async () => {
     render(<BlockImportModule />);
     const button = screen.getByTestId('block-import-open');
     expect(button).toBeEnabled();

@@ -2,23 +2,21 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { ArrowUpRight, Check, CircleAlert, Copy, Info, Plug } from "lucide-react";
+import { ArrowUpRight, Check, CircleAlert, Copy, Plug } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { BrandMark } from '@/shared/ui/marks/brand-mark';
-import { Link } from "@/i18n/navigation";
-import { AGENT_GRAPH_WORKFLOW_HREF, type AgentServerAvailability } from "@/shared/config";
+import { type AgentServerAvailability } from "@/shared/config";
 import { copyText } from "@/shared/lib/clipboard/copy-text";
 import { Chip } from "@/shared/ui/controls/controls";
 import { useToast } from "@/shared/ui";
 
 /**
  * One-click connect controls for Claude Code, Cursor, Antigravity and Codex. The installed app
- * writes the config files into the folder; the web has no absolute path for a deeplink, so it
- * copies the config with instructions. Feature layer, so widgets can use it.
+ * writes the config files into the folder, or copies the config where the folder is read-only.
+ * Feature layer, so widgets can use it.
  */
 
 import type { AgentClientId } from "@/entities/vault-session";
-import { WebManualConnectPanel } from "./WebManualConnectPanel";
 import { RowStateBadge } from "./RowStateBadge";
 import { controlClass } from '@/shared/ui/control-class';
 
@@ -47,11 +45,11 @@ type AgentClientConfigState = "missing" | "invalid" | "ready";
 
 export interface AgentClientControlsProps {
   /**
-   * Without a known server launch (a web session), no config is written or copied: a config that
-   * will not connect is a trap.
+   * Without a known server launch (the bundled binary was not found), no config is written or
+   * copied: a config that will not connect is a trap.
    */
   serverAvailability: AgentServerAvailability;
-  /** Writes the config for the given tool, so a button can never write for every tool at once; installed app only, null on the web. */
+  /** Writes the config for the given tool, so a button can never write for every tool at once; null where the folder cannot be edited. */
   onWriteConfigs: ((client: AgentClientId) => void | Promise<void>) | null;
   cursorDeeplink: string | null;
   mcpJsonSnippet: string;
@@ -62,7 +60,6 @@ export interface AgentClientControlsProps {
   mcpJsonState?: AgentClientConfigState;
   codexConfigState?: AgentClientConfigState;
   codexConfigSnippet?: string;
-  needsManualPath: boolean;
 }
 
 export function useAgentClientControls({
@@ -76,7 +73,6 @@ export function useAgentClientControls({
   mcpJsonState,
   codexConfigState = "missing",
   codexConfigSnippet,
-  needsManualPath,
 }: AgentClientControlsProps): AgentClientControls {
   const t = useTranslations("agentConnect");
   const ts = useTranslations("agentConnect.short");
@@ -123,59 +119,7 @@ export function useAgentClientControls({
     }
   }
 
-  if (!serverAvailability.launch) {
-    /**
-     * The web is not a dead end: MCP attaches to the folder, so a web user can connect; the browser
-     * only cannot write the config (a handle, not a path), so the person supplies the path here.
-     * The "why plus where" contract of `.claude/rules/surfaces.md` holds; the app stays easier.
-     */
-    return {
-      controls: null,
-      manualPathNote: null,
-      serverUnavailable: (
-        <>
-        <div
-          role="status"
-          data-testid="agent-server-unavailable"
-          className="rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5"
-        >
-          <div className="flex items-start gap-2">
-            <Info
-              size={ICON_SIZE.md}
-              aria-hidden
-              className="mt-0.5 shrink-0 text-[color:var(--color-text-quaternary)]"
-            />
-            <div className="min-w-0">
-              <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-                {t("serverUnavailableTitle")}
-              </p>
-              <p className="mt-1 text-body leading-prose text-[color:var(--color-text-tertiary)]">
-                {t("serverUnavailableDesc")}
-              </p>
-              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-                <Link
-                  href="/download/"
-                  data-testid="agent-connect-web-get-app"
-                  className={controlClass({ shape: "link", tone: "accent", className: "text-label font-[var(--font-weight-signature)] hover:text-[color:var(--color-text-primary)]" })}
-                >
-                  {t("serverUnavailableGetApp")}
-                </Link>
-                {/* Only for someone who wants to read more; not the primary path. */}
-                <Link
-                  href={AGENT_GRAPH_WORKFLOW_HREF}
-                  className={controlClass({ shape: "link", tone: "secondary", className: "text-label hover:text-[color:var(--color-text-secondary)]" })}
-                >
-                  {t("serverUnavailableSource")}
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-        <WebManualConnectPanel />
-        </>
-      ),
-    };
-  }
+  if (!serverAvailability.launch) return { controls: null };
 
   /**
    * Per-tool render fragments. Render order comes from `AGENT_CLIENTS`, not from here, so one
@@ -321,32 +265,17 @@ export function useAgentClientControls({
   };
 
   return {
-    serverUnavailable: null,
     controls: {
       "claude-code": clientRenderers.claudeCode(),
       codex: clientRenderers.codex(),
       cursor: clientRenderers.cursor(),
       antigravity: clientRenderers.antigravity(),
     },
-    manualPathNote: needsManualPath ? (
-      <p className="text-body leading-body text-[color:var(--color-text-quaternary)]">
-        {t("deeplinkWebNote")}{" "}
-        <Link
-          href="/download/"
-          data-testid="agent-client-app-cta"
-          className={controlClass({ shape: "link", tone: "accent", className: "font-[var(--font-weight-signature)] hover:text-[color:var(--color-text-primary)]" })}
-        >
-          {t("deeplinkWebNoteCta")}
-        </Link>
-      </p>
-    ) : null,
   };
 }
 
 export interface AgentClientControls {
-  serverUnavailable: React.ReactNode | null;
   controls: Record<AgentClientId, React.ReactNode> | null;
-  manualPathNote: React.ReactNode | null;
 }
 
 /**

@@ -3,33 +3,27 @@
 import { useMemo } from 'react';
 import { useDataSourceMode } from '@/entities/vault-session';
 import { useLocalVault } from '@/entities/vault-session';
-import { useStaticVaultSource, useStaticVaultStatus } from '@/entities/vault-session';
 import { deriveProjectsFromVault } from '@/entities/docs-vault';
 import type { Project } from '@/entities/project';
+import type { DataSourceMode } from '@/shared/lib/vault-folder/data-source-mode';
 
 export interface UseProjectsState {
   projects: Project[];
   loaded: boolean;
   error: string | null;
-  mode: 'static' | 'local';
+  mode: DataSourceMode;
 }
 
-/** `demand: false` reads whatever sample is already there without starting its download (a closed palette). */
-export function useProjects(options?: { demand?: boolean }): UseProjectsState {
+const NO_PROJECTS: Project[] = [];
+
+export function useProjects(): UseProjectsState {
   const mode = useDataSourceMode();
   const vault = useLocalVault();
-  const staticSource = useStaticVaultSource(undefined, options);
-  const staticStatus = useStaticVaultStatus(undefined, options);
 
   const localProjects = useMemo(() => {
-    if (mode !== 'local' || !vault.manifest) return [];
+    if (mode !== 'local' || !vault.manifest) return NO_PROJECTS;
     return deriveProjectsFromVault(vault.manifest);
   }, [mode, vault.manifest]);
-
-  const staticProjects = useMemo(() => {
-    if (mode !== 'static') return [];
-    return deriveProjectsFromVault(staticSource.manifest);
-  }, [mode, staticSource.manifest]);
 
   if (mode === 'local') {
     return {
@@ -39,11 +33,6 @@ export function useProjects(options?: { demand?: boolean }): UseProjectsState {
       mode,
     };
   }
-  return {
-    projects: staticProjects,
-    // A sample still on its way is not an empty list: a screen that reads `loaded` must not call the project missing.
-    loaded: staticStatus !== 'loading',
-    error: null,
-    mode,
-  };
+  // With no folder open nothing is on its way, so the empty list is final.
+  return { projects: NO_PROJECTS, loaded: true, error: null, mode };
 }

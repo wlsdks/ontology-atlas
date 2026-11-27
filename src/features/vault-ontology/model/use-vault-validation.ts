@@ -1,8 +1,6 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useDataSourceMode } from '@/entities/vault-session';
-import { useStaticVaultSource } from '@/entities/vault-session';
 import { useLocalVault } from '@/entities/vault-session';
 import type { VaultManifest } from '@/entities/docs-vault';
 import {
@@ -35,15 +33,12 @@ const EMPTY_SUMMARY: VaultValidationSummary = {
 };
 
 export function useVaultValidationSummary(): VaultValidationSummary {
-  const mode = useDataSourceMode();
-  const { manifest: staticManifest } = useStaticVaultSource();
   const vault = useLocalVault();
 
   return useMemo(() => {
-    if (mode === 'static') return manifestValidation(staticManifest);
     if (vault.status === 'loaded' && vault.manifest) {
       return manifestValidation(vault.manifest);
     }
     return EMPTY_SUMMARY;
-  }, [mode, staticManifest, vault.status, vault.manifest]);
+  }, [vault.status, vault.manifest]);
 }

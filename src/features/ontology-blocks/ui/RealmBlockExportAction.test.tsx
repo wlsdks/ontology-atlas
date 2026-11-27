@@ -121,26 +121,24 @@ function fakeTargetDir() {
 describe('RealmBlockExportAction', () => {
   beforeEach(() => {
     mocks.vault = makeVault();
-    tauriMocks.isTauriVaultRuntime.mockReturnValue(false);
+    tauriMocks.isTauriVaultRuntime.mockReturnValue(true);
     tauriMocks.pickTauriVaultDirectory.mockReset();
-    delete (window as unknown as { showDirectoryPicker?: unknown }).showDirectoryPicker;
   });
 
   it('is disabled with a "open your folder" hint (not hidden) when no vault is loaded', () => {
     // Without a vault it stays in place, disabled with a hint, rather than vanishing.
     mocks.vault = { ...makeVault(), status: 'idle', manifest: null };
-    const picker = vi.fn();
-    (window as unknown as { showDirectoryPicker: () => Promise<unknown> }).showDirectoryPicker = picker;
     render(<RealmBlockExportAction rootTitle="Views" census={census} subtree={subtree} />);
     const button = screen.getByTestId('realm-block-export');
     expect(button).toBeInTheDocument();
     expect(button).toBeDisabled();
     expect(button).toHaveAttribute('title', 'vaultRequiredHint');
     fireEvent.click(button);
-    expect(picker).not.toHaveBeenCalled();
+    expect(tauriMocks.pickTauriVaultDirectory).not.toHaveBeenCalled();
   });
 
-  it('is disabled with a hint when the environment has no directory picker', () => {
+  it('is disabled with a hint when there is no app runtime to pick a folder', () => {
+    tauriMocks.isTauriVaultRuntime.mockReturnValue(false);
     render(<RealmBlockExportAction rootTitle="Views" census={census} subtree={subtree} />);
     const button = screen.getByTestId('realm-block-export');
     expect(button).toBeDisabled();
@@ -149,8 +147,7 @@ describe('RealmBlockExportAction', () => {
 
   it('copies only the realm docs verbatim + writes block-manifest.json into the picked folder', async () => {
     const target = fakeTargetDir();
-    (window as unknown as { showDirectoryPicker: () => Promise<unknown> }).showDirectoryPicker =
-      vi.fn(async () => target.handle);
+    tauriMocks.pickTauriVaultDirectory.mockResolvedValue(target.handle);
 
     render(<RealmBlockExportAction rootTitle="Views" census={census} subtree={subtree} />);
     fireEvent.click(screen.getByTestId('realm-block-export'));
@@ -190,8 +187,7 @@ describe('RealmBlockExportAction', () => {
     const target = fakeTargetDir();
     const views = mocks.vault.manifest?.docs.find((doc) => doc.slug === 'domains/views');
     if (views) delete views.frontmatter.uid;
-    (window as unknown as { showDirectoryPicker: () => Promise<unknown> }).showDirectoryPicker =
-      vi.fn(async () => target.handle);
+    tauriMocks.pickTauriVaultDirectory.mockResolvedValue(target.handle);
 
     render(<RealmBlockExportAction rootTitle="Views" census={census} subtree={subtree} />);
     fireEvent.click(screen.getByTestId('realm-block-export'));

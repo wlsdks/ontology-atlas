@@ -16,8 +16,7 @@ interface MockVault {
 
 const mocks = vi.hoisted(() => ({
   vault: null as unknown as MockVault,
-  sampleModeSettled: true,
-  desktop: true,
+  noFolderSettled: true,
   rootPath: '/Users/dana/my-product' as string | null,
   requestAgentChat: vi.fn(),
   /** `null` is a cancel, which must never be a failure. */
@@ -33,12 +32,8 @@ vi.mock('@/entities/vault-session/model/vault-provider/LocalVaultProvider', asyn
   useLocalVault: () => mocks.vault,
 }));
 
-vi.mock('./use-first-run-sample-mode-settled', () => ({
-  useFirstRunSampleModeSettled: () => mocks.sampleModeSettled,
-}));
-
-vi.mock('@/shared/lib/desktop-shell/desktop-shell', () => ({
-  isDesktopShell: () => mocks.desktop,
+vi.mock('./use-first-run-no-folder-settled', () => ({
+  useFirstRunNoFolderSettled: () => mocks.noFolderSettled,
 }));
 
 vi.mock('@/shared/lib/agent-chat/agent-chat-intent', () => ({
@@ -92,8 +87,7 @@ function makeVault(): MockVault {
 describe('useFirstRunStarter', () => {
   beforeEach(() => {
     mocks.vault = makeVault();
-    mocks.sampleModeSettled = true;
-    mocks.desktop = true;
+    mocks.noFolderSettled = true;
     mocks.rootPath = '/Users/dana/my-product';
     mocks.requestAgentChat.mockClear();
     window.sessionStorage.removeItem(FIRST_RUN_STARTER_DISMISSED_KEY);
@@ -111,7 +105,7 @@ describe('useFirstRunStarter', () => {
   });
 
   it('is not visible once a vault is active (sample mode not settled to static)', () => {
-    mocks.sampleModeSettled = false;
+    mocks.noFolderSettled = false;
     const { result } = renderHook(() => useFirstRunStarter());
     expect(result.current.visible).toBe(false);
   });
@@ -189,7 +183,7 @@ describe('useFirstRunStarter', () => {
   });
 
   it('does nothing on Escape when not visible', () => {
-    mocks.sampleModeSettled = false;
+    mocks.noFolderSettled = false;
     renderHook(() => useFirstRunStarter());
 
     const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
@@ -207,7 +201,7 @@ describe('first-run card states failures it can explain', () => {
     mocks.vault = makeVault();
     mocks.vault.status = 'error';
     mocks.vault.errorMessage = null;
-    mocks.sampleModeSettled = true;
+    mocks.noFolderSettled = true;
   });
 
   it('states why a location cannot be accepted', () => {
@@ -261,8 +255,7 @@ describe('first-run card states failures it can explain', () => {
 describe('build a map from my code', () => {
   beforeEach(() => {
     mocks.vault = makeVault();
-    mocks.sampleModeSettled = true;
-    mocks.desktop = true;
+    mocks.noFolderSettled = true;
     mocks.rootPath = '/Users/dana/my-product';
     mocks.pickedProject = '/Users/dana/my-product';
     mocks.projectEntries = ['src', 'package.json'];
@@ -375,20 +368,5 @@ describe('build a map from my code', () => {
       mocks.requestAgentChat,
       'opened chat for a folder that was not created',
     ).not.toHaveBeenCalled();
-  });
-
-  it('offers no build-from-code door on the web', async () => {
-    mocks.desktop = false;
-    const { result } = renderHook(() => useFirstRunStarter());
-    expect(result.current.canBuildFromCode).toBe(false);
-
-    await act(async () => {
-      await result.current.build.chooseProject();
-    });
-    await act(async () => {
-      await result.current.build.confirm();
-    });
-    // Refused here too, so a request that arrived another way cannot promise a chat that cannot open.
-    expect(mocks.requestAgentChat).not.toHaveBeenCalled();
   });
 });

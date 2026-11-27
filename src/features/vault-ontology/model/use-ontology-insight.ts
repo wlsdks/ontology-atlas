@@ -2,12 +2,7 @@
 
 import { useMemo } from 'react';
 import { useLocale } from 'next-intl';
-import {
-  useArrivingManifest,
-  useDataSourceMode,
-  useStaticVaultSource,
-  useStaticVaultStatus,
-} from '@/entities/vault-session';
+import { useArrivingManifest } from '@/entities/vault-session';
 import {
   type KnowledgeGraphNode,
   type KnowledgeGraphEdge,
@@ -17,9 +12,6 @@ import {
 } from '@/entities/knowledge-graph';
 import {
   deriveArrivedOntology,
-  deriveOntologyFromVault,
-  type StaticVaultSource,
-  type VaultManifest,
   type VaultOntologyDerivation,
 } from '@/entities/docs-vault';
 import { useVaultOntology } from './use-vault-ontology';
@@ -114,35 +106,6 @@ export function derivationToInsight(
   };
 }
 
-// The bundled sample is taken only through `useStaticVaultSource`
-// (tests/contract/vault-data/static-vault-source.contract.test.ts). Derived once per loaded sample
-// and locale, then cached on the manifest object, which is stable once the sample has arrived.
-const sampleInsightCache = new WeakMap<
-  VaultManifest,
-  Map<string, { insight: KnowledgeProjectInsight; error: null }>
->();
-function sampleInsight(
-  sample: StaticVaultSource,
-  locale: string,
-): { insight: KnowledgeProjectInsight; error: null } {
-  let byLocale = sampleInsightCache.get(sample.manifest);
-  if (!byLocale) {
-    byLocale = new Map();
-    sampleInsightCache.set(sample.manifest, byLocale);
-  }
-  let cached = byLocale.get(locale);
-  if (!cached) {
-    cached = {
-      insight: derivationToInsight(deriveOntologyFromVault(sample.manifest), locale, {
-        agentSlugPrefix: sample.agentSlugPrefix,
-      }),
-      error: null,
-    };
-    byLocale.set(locale, cached);
-  }
-  return cached;
-}
-
 const localInsightCache = new WeakMap<VaultOntologyDerivation, Map<string, KnowledgeProjectInsight>>();
 function localInsight(d: VaultOntologyDerivation, locale: string): KnowledgeProjectInsight {
   let byLocale = localInsightCache.get(d);
@@ -158,27 +121,17 @@ function localInsight(d: VaultOntologyDerivation, locale: string): KnowledgeProj
   return insight;
 }
 
-export function useOntologyInsight(options?: { demand?: boolean }): {
+export function useOntologyInsight(): {
   insight: KnowledgeProjectInsight | null;
   error: Error | null;
 } {
-  const mode = useDataSourceMode();
   const vault = useVaultOntology();
-  const sample = useStaticVaultSource(undefined, options);
-  const sampleStatus = useStaticVaultStatus(undefined, options);
   const locale = useLocale();
 
-  return useMemo(() => {
-    if (mode === 'static') {
-      // A sample still on its way is no insight yet, not an empty one.
-      if (sampleStatus === 'loading') return { insight: null, error: null };
-      return sampleInsight(sample, locale);
-    }
-    return {
-      insight: localInsight(vault, locale),
-      error: null,
-    };
-  }, [mode, vault, sample, sampleStatus, locale]);
+  return useMemo(
+    () => ({ insight: localInsight(vault, locale), error: null }),
+    [vault, locale],
+  );
 }
 
 export function useArrivingOntologyInsight(): KnowledgeProjectInsight | null {

@@ -1,4 +1,4 @@
-export { useProjectMutations, ProjectStaticModeError } from './model/use-project-mutations';
+export { useProjectMutations, ProjectNoFolderError } from './model/use-project-mutations';
 export type {
   ProjectFrontmatterPatch,
 } from './model/use-project-mutations';

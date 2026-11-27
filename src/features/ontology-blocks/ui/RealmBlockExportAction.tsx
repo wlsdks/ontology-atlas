@@ -33,24 +33,14 @@ export function RealmBlockExportAction({
   const [exportedCount, setExportedCount] = useState(0);
 
   const vaultLoaded = status === "loaded" && Boolean(manifest);
-  // Supported only when callable; the app's Tauri shim implements the same handle contract.
-  const supported =
-    (typeof window !== "undefined" && typeof window.showDirectoryPicker === "function") ||
-    isTauriVaultRuntime();
+  // Only the app can pick a folder; elsewhere the control says so instead of failing.
+  const supported = isTauriVaultRuntime();
 
   const runExport = async () => {
     if (phase === "exporting" || !vaultLoaded || !manifest) return;
     setPhase("exporting");
     try {
-      const target = (isTauriVaultRuntime()
-        ? await pickTauriVaultDirectory(t("exportAria"))
-        : await (
-            window as unknown as {
-              showDirectoryPicker: (options?: {
-                mode?: "read" | "readwrite";
-              }) => Promise<BlockDirectoryHandleLike>;
-            }
-          ).showDirectoryPicker({ mode: "readwrite" })) as BlockDirectoryHandleLike | null;
+      const target = (await pickTauriVaultDirectory(t("exportAria"))) as BlockDirectoryHandleLike | null;
       if (!target) {
         setPhase("idle");
         return;

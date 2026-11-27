@@ -3,10 +3,8 @@
 import { FolderOpen } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-import { Link } from "@/i18n/navigation";
 import { cn } from "@/shared/lib/cn";
 import { buttonVariants } from "@/shared/ui/controls/button";
-import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 
 import { useLocalVault } from "@/entities/vault-session";
@@ -23,29 +21,6 @@ export function OpenVaultCta({ testId, variant, tone, className, onOpen }: OpenV
   const t = useTranslations("openVaultCta");
   const vault = useLocalVault();
   const emphasis = variant ?? (tone === "accent" ? "primary" : "outline");
-
-  if (vault.status === "unsupported") {
-    return (
-      <Link
-        href="/download/"
-        data-testid={testId}
-        data-open-vault-cta="download"
-        data-open-vault-emphasis={emphasis}
-        className={controlClass({
-          shape: "chip",
-          size: "md",
-          tone,
-          hoverInk: "strong",
-          hoverSurface: "lift",
-          hoverBorder: "strong",
-          className,
-        })}
-      >
-        <FolderOpen size={ICON_SIZE.sm} aria-hidden />
-        {t("unsupportedLabel")}
-      </Link>
-    );
-  }
 
   const busy = vault.status === "opening";
   return (

@@ -158,24 +158,14 @@ export function BlockImportModule({
     return () => window.removeEventListener("keydown", handler);
   }, [open, busy]);
 
-  // Supported only when callable, not merely present, or a raw JS error shows where copy belongs.
-  const supported =
-    (typeof window !== "undefined" && typeof window.showDirectoryPicker === "function") ||
-    isTauriVaultRuntime();
+  // Only the app can pick a folder; elsewhere the control says so instead of failing.
+  const supported = isTauriVaultRuntime();
 
   const pickBlockFolder = async () => {
     if (!vaultLoaded) return;
     dispatchImportUi({ type: "set-inline-text", inlineText: null });
     try {
-      const directory = (isTauriVaultRuntime()
-        ? await pickTauriVaultDirectory(t("importAria"))
-        : await (
-            window as unknown as {
-              showDirectoryPicker: (options?: {
-                mode?: "read" | "readwrite";
-              }) => Promise<unknown>;
-            }
-          ).showDirectoryPicker({ mode: "read" })) as BlockDirectoryHandleLike | null;
+      const directory = (await pickTauriVaultDirectory(t("importAria"))) as BlockDirectoryHandleLike | null;
       if (!directory) return;
       const { files, manifestRaw } = await readBlockDirectory(directory);
       if (files.length === 0) {

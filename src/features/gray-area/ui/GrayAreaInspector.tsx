@@ -6,7 +6,6 @@ import { cn } from '@/shared/lib/cn';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { copyText } from '@/shared/lib/clipboard/copy-text';
 import { useHeldValue } from '@/shared/lib/render-timing/use-presence';
-import { Link } from '@/i18n/navigation';
 import { checkGrayAreaEvidence, grayAreaSourceAccessRequired, readGrayAreaEvidence, previewGrayAreaScope, type GrayAreaScopePreview, type GrayAreaSnapshot, type GrayAreaWitness } from '@/shared/lib/project-source/tauri-gray-area';
 import { Button, Chip, CloseButton, Disclosure, RowButton, Surface, controlClass } from '@/shared/ui';
 import { ArrowRight, Check, ChevronDown, Copy, FileSearch, RefreshCw } from 'lucide-react';
@@ -148,7 +147,7 @@ export function GrayAreaInspector({ open, vaultPath, vaultHandle, selection, onC
         <div className="space-y-3 text-body text-[color:var(--color-text-secondary)]" data-testid={current?.error||proposal?.error ? 'gray-area-unavailable' : nativeRuntime ? 'gray-area-local-folder-required' : 'gray-area-web-limit'}>
           <p>{scopeUnavailable?t('continuation.narrowScope'):current?.error||proposal?.error ? String(current?.error??proposal?.error).includes('unsupported_platform')?t('platformLimit'):t('unavailable') : nativeRuntime ? t('localFolderRequired') : t('webLimit')}</p>
           {!scopeUnavailable?<p className="text-caption">{current?.error||proposal?.error ? t('connectHint') : t('webStillWorks')}</p>:null}
-          {scopeUnavailable?<Button variant="outline" onClick={()=>onNarrowScope?onNarrowScope():onClose()}>{t('continuation.chooseScopeAction')}</Button>:current?.error||proposal?.error ? <Button variant="outline" onClick={()=>setAttempt(n=>n+1)}><RefreshCw size={14}/>{t('retry')}</Button> : !nativeRuntime ? <Link href="/download" data-testid="gray-area-get-app" className={cn(controlClass({shape:'link',tone:'accent'}),'text-body')}>{t('getApp')}</Link> : null}
+          {scopeUnavailable?<Button variant="outline" onClick={()=>onNarrowScope?onNarrowScope():onClose()}>{t('continuation.chooseScopeAction')}</Button>:current?.error||proposal?.error ? <Button variant="outline" onClick={()=>setAttempt(n=>n+1)}><RefreshCw size={14}/>{t('retry')}</Button> : null}
         </div>}
     </div>
   </Surface>;

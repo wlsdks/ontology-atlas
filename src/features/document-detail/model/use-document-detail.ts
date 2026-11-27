@@ -1,19 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
-import { bundledSamples, type DocumentRef, type VaultDocDetail } from '@/entities/docs-vault';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { DocumentRef, VaultDocDetail } from '@/entities/docs-vault';
 import { useGrantedVaultFiles } from '@/entities/vault-session';
 import { useLatestRef } from '@/shared/lib/use-latest-ref';
 import { documentStoreFor, type ResolvedDocumentStore } from './document-store-for';
 
 export type DocumentDetailAnswer = VaultDocDetail | null;
-/** For a surface that shows no outline: a bundled sample then never fetches its headings chunk. */
-export type DocumentSummaryAnswer = Omit<VaultDocDetail, 'headings'> | null;
-
-interface DetailOptions {
-  headings?: boolean;
-}
-
 interface Shown {
   origin: object;
   paths: string;
@@ -25,16 +18,9 @@ function sameAnswers(a: readonly DocumentDetailAnswer[], b: readonly DocumentDet
   return a.length === b.length && a.every((detail, index) => detail === b[index]);
 }
 
-const getServerSample = () => null;
-
-function useResolvedStore(doc: DocumentRef | undefined, headings: boolean): ResolvedDocumentStore | null {
+function useResolvedStore(doc: DocumentRef | undefined): ResolvedDocumentStore | null {
   const local = useGrantedVaultFiles();
-  const dogfood = useSyncExternalStore(bundledSamples.subscribe, () => bundledSamples.peek('dogfood'), getServerSample);
-  const storefront = useSyncExternalStore(bundledSamples.subscribe, () => bundledSamples.peek('storefront'), getServerSample);
-  return useMemo(
-    () => (doc ? documentStoreFor(doc, local, [dogfood, storefront], { headings }) : null),
-    [doc, local, dogfood, storefront, headings],
-  );
+  return useMemo(() => (doc ? documentStoreFor(doc, local) : null), [doc, local]);
 }
 
 function stampedKey(docs: readonly DocumentRef[]): string {
@@ -42,20 +28,8 @@ function stampedKey(docs: readonly DocumentRef[]): string {
 }
 
 /** `undefined` until every answer is known; a save never empties a surface because the answer for the version already shown stays. */
-export function useDocumentDetails(docs: readonly DocumentRef[] | null | undefined): DocumentDetailAnswer[] | undefined;
-export function useDocumentDetails(
-  docs: readonly DocumentRef[] | null | undefined,
-  options: { headings: false },
-): DocumentSummaryAnswer[] | undefined;
-export function useDocumentDetails(
-  docs: readonly DocumentRef[] | null | undefined,
-  { headings = true }: DetailOptions = {},
-): DocumentDetailAnswer[] | undefined {
-  return useDetailsFrom(docs, headings);
-}
-
-function useDetailsFrom(docs: readonly DocumentRef[] | null | undefined, headings: boolean): DocumentDetailAnswer[] | undefined {
-  const resolved = useResolvedStore(docs?.[0], headings);
+export function useDocumentDetails(docs: readonly DocumentRef[] | null | undefined): DocumentDetailAnswer[] | undefined {
+  const resolved = useResolvedStore(docs?.[0]);
   const key = docs ? stampedKey(docs) : '';
   const paths = docs ? docs.map((doc) => doc.path).join('\n') : '';
   const [shown, setShown] = useState<Shown | null>(null);
@@ -97,17 +71,9 @@ function useDetailsFrom(docs: readonly DocumentRef[] | null | undefined, heading
   return kept && kept.paths === paths ? kept.value : undefined;
 }
 
-export function useDocumentDetail(doc: DocumentRef | null | undefined): DocumentDetailAnswer | undefined;
-export function useDocumentDetail(
-  doc: DocumentRef | null | undefined,
-  options: { headings: false },
-): DocumentSummaryAnswer | undefined;
-export function useDocumentDetail(
-  doc: DocumentRef | null | undefined,
-  { headings = true }: DetailOptions = {},
-): DocumentDetailAnswer | undefined {
+export function useDocumentDetail(doc: DocumentRef | null | undefined): DocumentDetailAnswer | undefined {
   const docs = useMemo(() => (doc ? [doc] : null), [doc]);
-  return useDetailsFrom(docs, headings)?.[0];
+  return useDocumentDetails(docs)?.[0];
 }
 
 /** Its detail derives from the same text, arriving with the body instead of after it. */
@@ -115,7 +81,7 @@ export function useAdoptDocumentText(): (doc: DocumentRef, text: Promise<string>
   const local = useGrantedVaultFiles();
   return useCallback(
     (doc: DocumentRef, text: Promise<string>) => {
-      documentStoreFor(doc, local, [], { headings: true })?.store.adoptText(doc, text);
+      documentStoreFor(doc, local)?.store.adoptText(doc, text);
     },
     [local],
   );
