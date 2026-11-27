@@ -30,11 +30,17 @@ and slicing belong to someone else.
 3. Rank first. If the person raised several problems or places, list and rank
    them by the value each returns against its cost, explain why this one leads
    and which follows; being the easiest to build is not a reason.
-4. Question the request. Separate cause from symptom, name what existing users
+4. Learn from what already worked. Before inventing an answer, find two to
+   four patterns, in software or any other field, that already solved this
+   problem or its nearest cousin. For each, record the mechanism and why it
+   worked, how it fails (for example alarm fatigue), what Atlas borrows (the
+   mechanism only, never wording, layout, art or code), and what is new in
+   Atlas's combination. Cite each pattern's source or mark it as an assumption.
+5. Question the request. Separate cause from symptom, name what existing users
    would lose, and weigh at least two ways to restore the same ability,
    including leaving things as they are, on value, usability, feasibility, and
    local-first fit. Record each option's cost and why it lost.
-5. When the change is right, treat its hardest part as a design problem rather
+6. When the change is right, treat its hardest part as a design problem rather
    than a reason to promise less. Specify the first slice only: the fewest
    parts that return the ability and show it deserves more; list the rest under
    Later with what would make each one next. Describe what the product does,
@@ -44,7 +50,8 @@ and slicing belong to someone else.
 
 Create it with `pnpm doc:new -- --type=spec --area=<area> --slug=<slug>` and
 complete every template section in order, keeping `decisions: []` for the lead
-to fill. Steps 1-4 fill Person and moment, Today, and Problem and alternatives.
+to fill. Steps 1-5 fill Person and moment, Today, Patterns that already worked,
+and Problem and alternatives.
 An empty section is a single line, `None — <reason>`. Keep the spec near 250
 lines with no more than eight acceptance criteria; anything larger is two
 slices.
