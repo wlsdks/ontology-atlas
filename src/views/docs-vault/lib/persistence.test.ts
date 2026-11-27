@@ -395,6 +395,26 @@ describe("capability-gated local vault source", () => {
       }),
     ).toBe(false);
   });
+
+  it("shows the welcome when the only known folder failed to restore, not a loading frame", () => {
+    expect(
+      shouldShowDesktopVaultWelcome({
+        isDesktopRuntime: true,
+        source: "local",
+        localVaultStatus: "error",
+        hasLocalManifest: false,
+      }),
+    ).toBe(true);
+    // A folder already read stays on screen when a later refresh fails.
+    expect(
+      shouldShowDesktopVaultWelcome({
+        isDesktopRuntime: true,
+        source: "local",
+        localVaultStatus: "error",
+        hasLocalManifest: true,
+      }),
+    ).toBe(false);
+  });
 });
 
 describe("scheduleStateSync", () => {
