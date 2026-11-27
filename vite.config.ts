@@ -12,8 +12,11 @@ import { atlasIndexHtml } from './scripts/vite/atlas-index-html';
 
 const root = __dirname;
 
-/** Where the installed app's files are written; the website's folder is a separate build. */
+/** Where the installed app's files are written. */
 const APP_FOLDER = process.env.ATLAS_APP_FOLDER ?? 'src-tauri/target/desktop-frontend-vite';
+
+/** Where the website's files are written: the same bundle with everything in `public/`, then the prerendered pages. */
+const SITE_FOLDER = process.env.ATLAS_SITE_FOLDER ?? 'src-tauri/target/site-vite';
 
 /**
  * Until the Next build is gone, source files still import `next/*` and `next-intl`; these answer them
@@ -21,7 +24,7 @@ const APP_FOLDER = process.env.ATLAS_APP_FOLDER ?? 'src-tauri/target/desktop-fro
  */
 const nextShims = (name: string) => path.join(root, 'src/app/next-shims', name);
 
-export default defineConfig(({ command }) => ({
+export default defineConfig(({ command, mode }) => ({
   root,
   plugins: [
     tanstackRouter({
@@ -35,7 +38,7 @@ export default defineConfig(({ command }) => ({
     react(),
     tailwindcss(),
     atlasIndexHtml(root),
-    atlasAppFolder(),
+    ...(mode === 'site' ? [] : [atlasAppFolder()]),
   ],
   resolve: {
     alias: [
@@ -65,8 +68,10 @@ export default defineConfig(({ command }) => ({
     'process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION': JSON.stringify(process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION),
   },
   build: {
-    outDir: APP_FOLDER,
+    outDir: mode === 'site' ? SITE_FOLDER : APP_FOLDER,
     emptyOutDir: true,
+    // The prerender links the entry's files, which the manifest names.
+    manifest: mode === 'site',
     // Every asset is a file the WebView's `'self'` policy covers; none becomes an inline `data:` address.
     assetsInlineLimit: 0,
     target: 'es2022',

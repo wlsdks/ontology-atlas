@@ -2,14 +2,21 @@ import { createFileRoute } from '@tanstack/react-router';
 import { Suspense } from 'react';
 import { ProjectFallbackClient } from '@/app/[locale]/project/fallback/ProjectFallbackClient';
 import { RouteLoadingFallback } from '@/shared/ui';
-import { PageTitle } from '@/app-providers/router/PageTitle';
+import { ScreenTitle } from '../../../-site/ScreenTitle';
+import type { ScreenHead } from '../../../-site/screen-metadata';
 
-export const Route = createFileRoute('/$locale/_app/project/fallback')({ component: ProjectFallbackRoute });
+const head: ScreenHead = {
+  kind: 'title-only',
+  title: { namespace: 'projectPages.detail', key: 'topBarProjectsLabel' },
+  follow: false,
+};
+
+export const Route = createFileRoute('/$locale/_app/project/fallback')({ staticData: { head }, component: ProjectFallbackRoute });
 
 function ProjectFallbackRoute() {
   return (
     <>
-      <PageTitle namespace="projectPages" messageKey="detail.topBarProjectsLabel" />
+      <ScreenTitle head={head} />
       <Suspense fallback={<RouteLoadingFallback />}><ProjectFallbackClient /></Suspense>
     </>
   );

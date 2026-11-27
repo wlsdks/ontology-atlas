@@ -2,14 +2,22 @@ import { createFileRoute } from '@tanstack/react-router';
 import { Suspense } from 'react';
 import { OntologyEditRedirectPage } from '@/views/ontology-edit-redirect';
 import { RouteLoadingFallback } from '@/shared/ui';
-import { PageTitle } from '@/app-providers/router/PageTitle';
+import { ScreenTitle } from '../../../-site/ScreenTitle';
+import type { ScreenHead } from '../../../-site/screen-metadata';
 
-export const Route = createFileRoute('/$locale/_app/ontology/edit')({ component: OntologyEditRoute });
+const head: ScreenHead = {
+  kind: 'title-only',
+  title: { namespace: 'metadata', key: 'pages.topology' },
+  description: { namespace: 'metadata', key: 'descriptions.topology' },
+  follow: true,
+};
+
+export const Route = createFileRoute('/$locale/_app/ontology/edit')({ staticData: { head }, component: OntologyEditRoute });
 
 function OntologyEditRoute() {
   return (
     <>
-      <PageTitle namespace="metadata" messageKey="pages.topology" />
+      <ScreenTitle head={head} />
       <Suspense fallback={<RouteLoadingFallback />}><OntologyEditRedirectPage /></Suspense>
     </>
   );

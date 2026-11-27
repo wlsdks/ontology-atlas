@@ -1,4 +1,4 @@
-import { getTranslations } from 'next-intl/server';
+import { useTranslations } from 'next-intl';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { controlClass } from '@/shared/ui/control-class';
 
@@ -8,8 +8,8 @@ import { controlClass } from '@/shared/ui/control-class';
  * one-way change under `AGENTS.md`. `MapEntryFallback` stays where the map description is true. Both
  * links are real destinations.
  */
-export async function GatewayEntryFallback({ locale }: { locale: string }) {
-  const t = await getTranslations({ locale, namespace: 'download' });
+export function GatewayEntryFallback({ locale }: { locale: string }) {
+  const t = useTranslations('download');
 
   return (
     <main

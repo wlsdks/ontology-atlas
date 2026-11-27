@@ -6,6 +6,11 @@ import { stripLocalePrefix } from "@/shared/lib/navigation/nav-destination";
 import { isTauriVaultRuntime } from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
 import { OldBrowserFolderCleanup } from "./OldBrowserFolderCleanup";
 
+/** The app-only face is hidden under the installed app's `data-shell`; the workbench face is hidden everywhere else, except at the locale root. */
+export const APP_ONLY_FACE_CLASS = "flex min-h-full flex-1 flex-col [html[data-shell=desktop]_&]:hidden";
+export const workbenchFaceClass = (atEntry: boolean) =>
+  atEntry ? "contents" : "contents [html:not([data-shell=desktop])_&]:hidden";
+
 /** A promise that never settles: a component that reads it keeps the server's HTML and never mounts. */
 const NEVER_SETTLES = new Promise<never>(() => undefined);
 
@@ -41,14 +46,11 @@ export function AppAddressFaces({ appOnly, children }: { appOnly: ReactNode; chi
     <>
       <OldBrowserFolderCleanup />
       {atEntry || !showAppOnly ? null : (
-        <div data-face="app-only" className="flex min-h-full flex-1 flex-col [html[data-shell=desktop]_&]:hidden">
+        <div data-face="app-only" className={APP_ONLY_FACE_CLASS}>
           {appOnly}
         </div>
       )}
-      <div
-        data-face="workbench"
-        className={atEntry ? "contents" : "contents [html:not([data-shell=desktop])_&]:hidden"}
-      >
+      <div data-face="workbench" className={workbenchFaceClass(atEntry)}>
         <Suspense fallback={null}>
           <InstalledAppOnly>{children}</InstalledAppOnly>
         </Suspense>

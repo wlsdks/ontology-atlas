@@ -2,6 +2,8 @@ import { useRouter as useTanStackRouter } from '@tanstack/react-router';
 import { forwardRef, useMemo, type AnchorHTMLAttributes, type MouseEvent } from 'react';
 import { useLocale } from 'use-intl';
 
+import { isTauriVaultRuntime } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
+
 import { navigateToAddress, type AddressNavigation } from '../router/navigate-to-address';
 import { useCommittedAddress } from '../router/use-committed-address';
 
@@ -23,6 +25,13 @@ const isInternal = (address: string) => address.startsWith('/') && !address.star
 function withLocale(address: string, locale: string): string {
   if (!isInternal(address)) return address;
   return address === '/' ? `/${locale}/` : `/${locale}${address}`;
+}
+
+/** An in-app address ends its path with a slash, as Next's `trailingSlash` wrote every link; query and hash stay as written. */
+function withTrailingSlash(address: string): string {
+  if (!isInternal(address)) return address;
+  const [, path = '', rest = ''] = /^([^?#]*)(.*)$/.exec(address) ?? [];
+  return path.endsWith('/') || /\.[a-z0-9]+$/i.test(path) ? address : `${path}/${rest}`;
 }
 
 function withoutLocale(pathname: string, locales: readonly string[]): string {
@@ -60,11 +69,13 @@ export function createNavigation(routing: Routing) {
   ) {
     const router = useTanStackRouter();
     const current = useLocale();
-    const address = withLocale(href, locale ?? current);
+    const address = withTrailingSlash(withLocale(href, locale ?? current));
     const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
       onClick?.(event);
       if (event.defaultPrevented || event.button !== 0) return;
       if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      // In a plain browser a link between pages is a page load: each public page is its own prerendered document.
+      if (!isTauriVaultRuntime()) return;
       if (!isInternal(address) || (rest.target !== undefined && rest.target !== '_self') || rest.download !== undefined) return;
       event.preventDefault();
       navigateToAddress(router, address, { ...(replace === undefined ? {} : { replace }), ...(scroll === undefined ? {} : { scroll }) });

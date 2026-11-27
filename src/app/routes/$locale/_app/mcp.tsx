@@ -2,14 +2,21 @@ import { createFileRoute } from '@tanstack/react-router';
 import { Suspense } from 'react';
 import { McpRedirectPage } from '@/views/mcp-redirect';
 import { RouteLoadingFallback } from '@/shared/ui';
-import { PageTitle } from '@/app-providers/router/PageTitle';
+import { ScreenTitle } from '../../-site/ScreenTitle';
+import type { ScreenHead } from '../../-site/screen-metadata';
 
-export const Route = createFileRoute('/$locale/_app/mcp')({ component: McpRoute });
+const head: ScreenHead = {
+  kind: 'title-only',
+  title: { namespace: 'mcp', key: 'title' },
+  follow: true,
+};
+
+export const Route = createFileRoute('/$locale/_app/mcp')({ staticData: { head }, component: McpRoute });
 
 function McpRoute() {
   return (
     <>
-      <PageTitle namespace="mcp" messageKey="title" />
+      <ScreenTitle head={head} />
       <Suspense fallback={<RouteLoadingFallback />}><McpRedirectPage /></Suspense>
     </>
   );

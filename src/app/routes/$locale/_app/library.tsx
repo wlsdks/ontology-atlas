@@ -2,14 +2,22 @@ import { createFileRoute } from '@tanstack/react-router';
 import { Suspense } from 'react';
 import { LibraryWorkspace } from '@/app-providers/library-workspace';
 import { RouteLoadingFallback } from '@/shared/ui';
-import { PageTitle } from '@/app-providers/router/PageTitle';
+import { ScreenTitle } from '../../-site/ScreenTitle';
+import type { ScreenHead } from '../../-site/screen-metadata';
 
-export const Route = createFileRoute('/$locale/_app/library')({ component: LibraryRoute });
+const head: ScreenHead = {
+  kind: 'card',
+  path: 'library',
+  title: { namespace: 'library', key: 'title' },
+  description: { namespace: 'metadata', key: 'descriptions.library' },
+};
+
+export const Route = createFileRoute('/$locale/_app/library')({ staticData: { head }, component: LibraryRoute });
 
 function LibraryRoute() {
   return (
     <>
-      <PageTitle namespace="library" messageKey="title" />
+      <ScreenTitle head={head} />
       <Suspense fallback={<RouteLoadingFallback />}><LibraryWorkspace /></Suspense>
     </>
   );
