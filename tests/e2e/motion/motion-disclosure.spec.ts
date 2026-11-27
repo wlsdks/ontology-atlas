@@ -141,15 +141,24 @@ test.describe("Disclosure motion", () => {
     const box = page.locator(`[id="${await time.getAttribute("id")}-error-box"]`);
     await expect(box).toHaveAttribute("data-state", "closed");
 
+    const animation = await page.context().newCDPSession(page);
+    await animation.send("Animation.enable");
+    await animation.send("Animation.setPlaybackRate", { playbackRate: PLAYBACK });
     const track = await box.evaluate(
       (element, windowMs) =>
-        new Promise<number[]>((resolve) => {
-          const heights = [element.getBoundingClientRect().height];
-          const start = performance.now();
+        new Promise<{ height: number[]; time: number[] }>((resolve) => {
+          const now = () => Number(document.timeline.currentTime);
+          const track = { height: [] as number[], time: [] as number[] };
+          const read = () => {
+            track.time.push(now());
+            track.height.push(element.getBoundingClientRect().height);
+          };
+          read();
+          const start = now();
           const frame = () => {
-            heights.push(element.getBoundingClientRect().height);
-            if (performance.now() - start < windowMs) requestAnimationFrame(frame);
-            else resolve(heights);
+            read();
+            if (now() - start < windowMs) requestAnimationFrame(frame);
+            else resolve(track);
           };
           const input = document.querySelector<HTMLInputElement>('[data-testid="library-rounds-time"]')!;
           const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!;
@@ -161,7 +170,7 @@ test.describe("Disclosure motion", () => {
     );
     await expect(box).toHaveAttribute("data-state", "open");
     await expect(box.getByRole("alert")).toBeVisible();
-    expect(track.at(-1)!).toBeGreaterThan(track[0]!);
-    expect(maxStepShare(track)).toBeLessThanOrEqual(MAX_HEIGHT_STEP);
+    expect(track.height.at(-1)!).toBeGreaterThan(track.height[0]!);
+    expect(peakSharePerFrame(track.height, track.time)).toBeLessThanOrEqual(MAX_HEIGHT_STEP);
   });
 });
