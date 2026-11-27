@@ -2,7 +2,10 @@
 //! the order and with the sentences the JavaScript server used, into the `QueryRequest` the
 //! operations answer from (`ontology_graph::run_query`).
 
-use ontology_graph::{Direction, Operation, QueryError, QueryRequest, RELATION_TYPE_VALUES};
+use ontology_graph::{
+    Direction, NodeSort, Operation, QueryError, QueryRequest, SelectionArguments,
+    RELATION_TYPE_VALUES,
+};
 use serde_json::Value;
 
 use super::argument_checks::{
@@ -12,6 +15,9 @@ use super::argument_checks::{
 use crate::answer::ToolOutput;
 use crate::arguments::Arguments;
 use crate::dispatch::CallContext;
+use vault_document::slug_not_found_hint;
+
+use super::read_vault::open_root;
 use crate::error::{MissingNodeDetails, ReceivedValue, ToolError};
 
 const NODE_KINDS: [&str; 6] = [
@@ -74,6 +80,7 @@ const BOOLEAN_ARGUMENTS: [&str; 7] = [
     "hasIncoming",
     "hasOutgoing",
 ];
+const DEGREE_ARGUMENTS: [&str; 4] = ["minDegree", "maxDegree", "minInDegree", "minOutDegree"];
 const MAINTENANCE_PHASES: usize = 5;
 const MAINTENANCE_SEVERITIES: usize = 3;
 const MAINTENANCE_KINDS: usize = 20;
@@ -202,6 +209,7 @@ fn read_request(arguments: &Arguments) -> Result<QueryRequest, ToolError> {
     let mut limit = None;
     let mut node_limit = None;
     let mut item_limit = None;
+    let mut counts: Vec<(&str, Option<usize>)> = Vec::with_capacity(COUNT_ARGUMENTS.len());
     for key in COUNT_ARGUMENTS {
         let size = if key == "limit" {
             limit_sent
@@ -217,21 +225,27 @@ fn read_request(arguments: &Arguments) -> Result<QueryRequest, ToolError> {
             "itemLimit" => item_limit = size,
             _ => {}
         }
+        counts.push((key, size));
     }
     let iterations =
         optional_positive_integer(arguments, "iterations", Some(ITERATIONS_MAX))?.map(count);
     let max_hops = optional_non_negative_integer(arguments, "maxHops", Some(HOPS_MAX))?.map(count);
     let depth = optional_non_negative_integer(arguments, "depth", Some(HOPS_MAX))?.map(count);
-    for key in ["minDegree", "maxDegree", "minInDegree", "minOutDegree"] {
-        optional_non_negative_integer(arguments, key, None)?;
+    let mut degrees: Vec<(&str, Option<usize>)> = Vec::with_capacity(DEGREE_ARGUMENTS.len());
+    for key in DEGREE_ARGUMENTS {
+        degrees.push((
+            key,
+            optional_non_negative_integer(arguments, key, None)?.map(count),
+        ));
     }
     let direction =
         optional_one_of(arguments, "direction", &Direction::ALLOWED)?.and_then(Direction::parse);
-    optional_one_of(
+    let sort = optional_one_of(
         arguments,
         "sort",
         &["degree", "inDegree", "outDegree", "slug"],
-    )?;
+    )?
+    .and_then(NodeSort::parse);
     if is("recommend_relations") {
         check_kind(&texts, &["capability", "element"])?;
     } else if is("match_nodes") {
@@ -245,6 +259,7 @@ fn read_request(arguments: &Arguments) -> Result<QueryRequest, ToolError> {
     let mut include_orphans = None;
     let mut include_external = None;
     let mut include_unresolved = None;
+    let mut flags: Vec<(&str, Option<bool>)> = Vec::with_capacity(BOOLEAN_ARGUMENTS.len());
     for key in BOOLEAN_ARGUMENTS {
         let flag = optional_boolean(arguments, key)?;
         match key {
@@ -254,15 +269,16 @@ fn read_request(arguments: &Arguments) -> Result<QueryRequest, ToolError> {
             "includeUnresolved" => include_unresolved = flag,
             _ => {}
         }
+        flags.push((key, flag));
     }
     let relations = RELATION_TYPE_VALUES.len();
     let types = optional_text_list(arguments, "types", relations)?;
     let pattern = optional_text_list(arguments, "pattern", relations)?;
-    optional_text_list(arguments, "phases", MAINTENANCE_PHASES)?;
-    optional_text_list(arguments, "severities", MAINTENANCE_SEVERITIES)?;
-    optional_text_list(arguments, "kinds", MAINTENANCE_KINDS)?;
-    optional_text_list(arguments, "dependencyTypes", relations)?;
-    optional_text_list(arguments, "componentTypes", relations)?;
+    let phases = optional_text_list(arguments, "phases", MAINTENANCE_PHASES)?;
+    let severities = optional_text_list(arguments, "severities", MAINTENANCE_SEVERITIES)?;
+    let kinds = optional_text_list(arguments, "kinds", MAINTENANCE_KINDS)?;
+    let dependency_types = optional_text_list(arguments, "dependencyTypes", relations)?;
+    let component_types = optional_text_list(arguments, "componentTypes", relations)?;
     if is("meaning_repair_review") {
         check_meaning_repair(arguments, &texts)?;
     }
@@ -292,6 +308,52 @@ fn read_request(arguments: &Arguments) -> Result<QueryRequest, ToolError> {
     request.project = text_of(&texts, "project").cloned();
     request.relation_type = text_of(&texts, "type").cloned();
     request.relation = text_of(&texts, "relation").cloned();
+    let text = |name: &str| text_of(&texts, name).cloned();
+    let size = |name: &str| {
+        counts
+            .iter()
+            .find(|(key, _)| *key == name)
+            .and_then(|(_, n)| *n)
+    };
+    let degree = |name: &str| {
+        degrees
+            .iter()
+            .find(|(key, _)| *key == name)
+            .and_then(|(_, n)| *n)
+    };
+    let flag = |name: &str| {
+        flags
+            .iter()
+            .find(|(key, _)| *key == name)
+            .and_then(|(_, f)| *f)
+    };
+    request.selection.arguments = SelectionArguments {
+        kind: text("kind"),
+        domain: text("domain"),
+        slug_contains: text("slugContains"),
+        min_degree: degree("minDegree"),
+        max_degree: degree("maxDegree"),
+        min_in_degree: degree("minInDegree"),
+        min_out_degree: degree("minOutDegree"),
+        has_incoming: flag("hasIncoming"),
+        has_outgoing: flag("hasOutgoing"),
+        sort,
+        from_kind: text("fromKind"),
+        to_kind: text("toKind"),
+        candidate_slug: text("candidateSlug"),
+        title: text("title"),
+        component_limit: size("componentLimit"),
+        cycle_limit: size("cycleLimit"),
+        recommendation_limit: size("recommendationLimit"),
+        order_limit: size("orderLimit"),
+        phases,
+        severities,
+        kinds,
+        dependency_types,
+        component_types,
+        executable_only: flag("executableOnly"),
+        after_action_id: text("afterActionId"),
+    };
     Ok(request)
 }
 
@@ -371,7 +433,9 @@ fn check_meaning_repair(
     Ok(())
 }
 
-fn refusal(error: QueryError) -> ToolError {
+/// The refusal an agent reads. `node_profile` alone adds a growth hint to a name that is no node, so a
+/// vault that lacks it is told what to add.
+fn refusal(error: QueryError, operation: &str) -> ToolError {
     match error {
         QueryError::Invalid(message) => ToolError::invalid(message),
         QueryError::NotAnsweredYet(_) | QueryError::Failed(_) => {
@@ -388,6 +452,8 @@ fn refusal(error: QueryError) -> ToolError {
                 similar: similar.clone(),
             }
             .to_string();
+            let growth_hint = (operation == "node_profile")
+                .then(|| slug_not_found_hint(&name, None, &similar, &[]));
             ToolError::missing_node(
                 message,
                 MissingNodeDetails {
@@ -396,6 +462,7 @@ fn refusal(error: QueryError) -> ToolError {
                     recovery_tools: vec!["list_concepts", "find_evidence"],
                     create_tool: Some("add_concepts"),
                     similar_slugs: Some(similar),
+                    growth_hint,
                     ..MissingNodeDetails::default()
                 },
             )
@@ -408,9 +475,27 @@ fn refusal(error: QueryError) -> ToolError {
     }
 }
 
+/// The vault's own list of references that are intentional code, read for the operations that
+/// would otherwise propose to turn them into nodes.
+fn read_ignore_patterns(context: &CallContext<'_>) -> Result<Vec<String>, ToolError> {
+    let text = open_root(context)?
+        .read_top_file(".ontology-atlasignore")
+        .map_err(|error| ToolError::failed(error.to_string()))?;
+    Ok(text.map_or_else(Vec::new, |text| {
+        ontology_graph::parse_ignore_patterns(&text)
+    }))
+}
+
 pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutput, ToolError> {
-    let request = read_request(arguments)?;
+    let mut request = read_request(arguments)?;
+    if matches!(
+        request.operation.name(),
+        "growth_plan" | "maintenance_plan" | "workspace_brief"
+    ) {
+        request.selection.outside.ignore_patterns = read_ignore_patterns(context)?;
+    }
     let graph = context.compiled_graph().read(context)?;
-    let answer = ontology_graph::run_query(&graph, &request).map_err(refusal)?;
+    let answer = ontology_graph::run_query(&graph, &request)
+        .map_err(|error| refusal(error, request.operation.name()))?;
     ToolOutput::json(&answer)
 }

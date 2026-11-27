@@ -1,0 +1,84 @@
+//! What the dependency walks say, as `health` and `maintenance_plan` need it: whether dependencies
+//! loop and whether they can be put in order. The walks own the search and the written rows; this
+//! asks them with the defaults a call of `cycles` or `topological_order` has and keeps the facts
+//! as typed values, so the two never disagree about what a cycle is.
+
+use crate::compiled_graph::CompiledGraph;
+use crate::query::query_error::QueryError;
+use crate::query::relation_set::RelationSet;
+use crate::query::walks::dependency_cycles::{
+    find_cycles, CycleRow, DEFAULT_CYCLE_DEPTH, DEFAULT_SEARCH_BUDGET,
+};
+use crate::query::walks::topological_order::{order_dependencies, BlockedRow};
+
+/// The relations the dependency walks read unless the call names others.
+pub fn default_types() -> Vec<String> {
+    vec!["dependencies".to_string()]
+}
+
+pub struct CycleReport<'a> {
+    pub total: usize,
+    pub exact: bool,
+    pub limited: bool,
+    pub cycles: Vec<CycleRow<'a>>,
+}
+
+/// The cycles among `types`, at most `limit` of them, up to `max_hops` edges long. Each name in
+/// `types` is judged under `argument`, the name the call gave it.
+pub fn cycles<'a>(
+    graph: &'a CompiledGraph,
+    limit: usize,
+    max_hops: Option<usize>,
+    types: &[String],
+    argument: &str,
+) -> Result<CycleReport<'a>, QueryError> {
+    let relations = RelationSet::parse(Some(types), argument)?;
+    let found = find_cycles(
+        graph,
+        relations.as_ref(),
+        max_hops.unwrap_or(DEFAULT_CYCLE_DEPTH),
+        limit,
+        DEFAULT_SEARCH_BUDGET,
+    );
+    let cycles: Vec<CycleRow<'a>> = found
+        .cycles
+        .iter()
+        .map(|cycle| CycleRow::of(graph, cycle))
+        .collect();
+    Ok(CycleReport {
+        total: found.total,
+        exact: !found.truncated,
+        limited: found.total > cycles.len() || found.truncated,
+        cycles,
+    })
+}
+
+pub struct OrderReport<'a> {
+    pub acyclic: bool,
+    pub total_nodes: usize,
+    pub ordered_count: usize,
+    pub blocked: Vec<BlockedRow<'a>>,
+}
+
+/// Whether `types` can be put in prerequisite order, and what is blocked when they cannot: the
+/// first `limit` blocked nodes.
+pub fn order<'a>(
+    graph: &'a CompiledGraph,
+    limit: usize,
+    types: &[String],
+    argument: &str,
+) -> Result<OrderReport<'a>, QueryError> {
+    let relations = RelationSet::parse(Some(types), argument)?;
+    let found = order_dependencies(graph, relations.as_ref(), false);
+    Ok(OrderReport {
+        acyclic: found.is_acyclic(),
+        total_nodes: found.total_nodes,
+        ordered_count: found.ordered_count(),
+        blocked: found
+            .blocked
+            .iter()
+            .take(limit)
+            .map(|blocked| BlockedRow::of(graph, blocked))
+            .collect(),
+    })
+}

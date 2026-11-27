@@ -6,6 +6,7 @@ use serde::Serialize;
 
 use crate::query::operation::Operation;
 use crate::query::query_error::QueryError;
+use crate::query::selection::SelectionRequest;
 
 /// The way an operation may follow an edge. `Both` and `Undirected` both follow an edge either way;
 /// `neighbors` reads an absent direction as `Both` and a path search reads it as `Undirected`.
@@ -76,6 +77,8 @@ pub struct QueryRequest {
     pub include_isolated: Option<bool>,
     pub include_external: Option<bool>,
     pub include_unresolved: Option<bool>,
+    /// What only the selection operations read, and the facts from beside the graph they need.
+    pub selection: SelectionRequest,
     pub item_limit: Option<usize>,
     pub include_orphans: Option<bool>,
     /// `pattern`: the relations a `pattern_walk` takes one step each.
@@ -108,6 +111,7 @@ impl QueryRequest {
             include_isolated: None,
             include_external: None,
             include_unresolved: None,
+            selection: SelectionRequest::default(),
             item_limit: None,
             include_orphans: None,
             pattern: None,

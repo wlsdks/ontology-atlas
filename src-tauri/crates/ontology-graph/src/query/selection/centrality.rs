@@ -67,7 +67,7 @@ fn page_rank(graph: &CompiledGraph, outgoing: &[Vec<NodeId>], iterations: usize)
 
 /// `Number(value.toFixed(6))`: six decimals, a tie rounding up. The decimal expansion of the
 /// number is exact, so the seventh digit decides.
-fn round_score(value: f64) -> f64 {
+pub(super) fn round_score(value: f64) -> f64 {
     let written = format!("{value:.30}");
     let Some((whole, fraction)) = written.split_once('.') else {
         return value;

@@ -55,7 +55,7 @@ pub use source_snapshot::{
     MAX_TRANSPORT_BYTES, SNAPSHOT_CONTRACT, SNAPSHOT_DESCRIPTOR,
 };
 pub use stable_read::{FileSnapshot, FileStamp, StableReadError, MAX_ATTEMPTS};
-pub use vault_root::{ConfinedPath, SlugError, VaultRoot, WritablePath};
+pub use vault_root::{ConfinedPath, SlugError, VaultRoot, WritablePath, TOP_FILE_MAX_BYTES};
 pub use vault_sidecar::{Revision, SidecarError, Stored, StoredTail, Unsafe, VaultSidecar};
 pub use write_plan::{
     apply_all_or_nothing, Applied, ApplyOptions, PlanEntry, PlannedOperation, Reservations,

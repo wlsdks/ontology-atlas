@@ -2,16 +2,20 @@
 //! here, from a slug that passed every rule, so a function that takes one needs no check of its
 //! own.
 
-use std::io;
+use std::io::{self, Read};
 use std::path::{Path, PathBuf};
 
 use icu_normalizer::ComposingNormalizerBorrowed;
 
 use crate::confined_root::{ensure_vault_root, resolve_path, VaultRootError};
 use crate::markdown_walk::list_markdown_files;
+use crate::plain_file;
 use crate::real_paths::{is_within, real_path, segments_below};
 use crate::slug_rules::{unwritable_slug_reason, UnwritableReason, VAULT_SOURCES_DIR};
 use crate::stable_read::{FileSnapshot, FileStamp, StableReadError};
+
+/// The most bytes of a top-level declarative file that is read: a few hundred lines of patterns.
+pub const TOP_FILE_MAX_BYTES: u64 = 64 * 1024;
 
 /// Why a slug cannot name a file. The server writes the sentence an agent reads; the text here
 /// says what happened, with the slug and the reason as values.
@@ -161,6 +165,58 @@ impl VaultRoot {
 
     pub fn path(&self) -> &Path {
         &self.root
+    }
+
+    /// The text of a declarative file that lives at the top of the vault, such as
+    /// `.ontology-atlasignore`: `None` when there is no such file. `name` is one file name; a name
+    /// with a separator or a `..` is refused, so no call can reach outside the vault through it.
+    ///
+    /// The file is opened without following a link and without waiting for a writer, and must be a
+    /// plain file of at most [`TOP_FILE_MAX_BYTES`]: a stranger's vault may plant a link to a file
+    /// elsewhere, or a pipe nobody writes to, at the name. Those are refused, not skipped, so the
+    /// person is told why the file is not read.
+    pub fn read_top_file(&self, name: &str) -> io::Result<Option<String>> {
+        let is_one_name =
+            !name.is_empty() && name != ".." && name != "." && !name.contains(['/', '\\', '\0']);
+        if !is_one_name {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "a top-level file is named by one file name",
+            ));
+        }
+        let refused = |reason: &str| {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("{name} is {reason}, so it is not read"),
+            )
+        };
+        let mut file = match plain_file::open_read(&self.root.join(name)) {
+            Ok(file) => file,
+            Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(None),
+            Err(error) if plain_file::is_link_refusal(&error) => {
+                return Err(refused("a link"));
+            }
+            Err(error) => return Err(error),
+        };
+        let facts = plain_file::facts_of(&file)?;
+        if !facts.plain {
+            return Err(refused(
+                "not a plain file (a link, a pipe, a folder or a file with another name)",
+            ));
+        }
+        if facts.size > TOP_FILE_MAX_BYTES {
+            return Err(refused(&format!("over {TOP_FILE_MAX_BYTES} bytes")));
+        }
+        let mut bytes = Vec::new();
+        file.by_ref()
+            .take(TOP_FILE_MAX_BYTES + 1)
+            .read_to_end(&mut bytes)?;
+        if bytes.len() as u64 > TOP_FILE_MAX_BYTES {
+            return Err(refused(&format!("over {TOP_FILE_MAX_BYTES} bytes")));
+        }
+        String::from_utf8(bytes)
+            .map(Some)
+            .map_err(|_| refused("not UTF-8 text"))
     }
 
     /// Every Markdown file of the vault, in UTF-16 order (see [`list_markdown_files`]).

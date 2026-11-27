@@ -757,6 +757,125 @@ walksCase('empty', 'empty', [
   { operation: 'builder_context', slug: 'domain:x' },
 ]);
 
+// The selection operations: match_nodes, match_edges, node_profile, domain_profile, domain_matrix,
+// similar_nodes, recommend_relations, growth_plan, maintenance_plan, health and workspace_brief.
+const query = (args) => call('query_ontology', args);
+const SELECTION_RICH = [
+  { operation: 'match_nodes' }, { operation: 'match_nodes', kind: 'capability', sort: 'degree' },
+  { operation: 'match_nodes', kind: 'capability', sort: 'inDegree', limit: 2 }, { operation: 'match_nodes', sort: 'outDegree', minOutDegree: 1 },
+  { operation: 'match_nodes', sort: 'slug', slugContains: 'INVOICE' }, { operation: 'match_nodes', domain: 'domains/billing' },
+  { operation: 'match_nodes', domain: 'billing', kind: 'element' }, { operation: 'match_nodes', hasIncoming: true, hasOutgoing: false },
+  { operation: 'match_nodes', hasIncoming: false, hasOutgoing: false }, { operation: 'match_nodes', minDegree: 2, maxDegree: 3 },
+  { operation: 'match_nodes', minDegree: 99 }, { operation: 'match_nodes', domain: 'domains/nowhere' },
+  { operation: 'match_nodes', kind: 'domain', limit: 1 }, { operation: 'match_nodes', kind: 'bogus' }, { operation: 'match_nodes', sort: 'bogus' },
+  { operation: 'match_edges' }, { operation: 'match_edges', type: 'depends_on' }, { operation: 'match_edges', relation: 'depends_on', limit: 2 },
+  { operation: 'match_edges', fromKind: 'capability', toKind: 'unresolved' }, { operation: 'match_edges', fromKind: 'capability', toKind: 'external' },
+  { operation: 'match_edges', fromKind: 'domain', toKind: 'capability', includeExternal: false }, { operation: 'match_edges', slug: 'capabilities/ship' },
+  { operation: 'match_edges', type: 'bogus' }, { operation: 'match_edges', fromKind: 'bogus' }, { operation: 'match_edges', toKind: 'element', includeUnresolved: false },
+  { operation: 'node_profile', slug: 'capabilities/invoice' }, { operation: 'node_profile', slug: 'capabilities/ship', limit: 1 },
+  { operation: 'node_profile', slug: 'domains/billing' }, { operation: 'node_profile', slug: 'alpha' }, { operation: 'node_profile', slug: 'loose-capability' },
+  { operation: 'node_profile', slug: 'capabilities/orphan-cap' }, { operation: 'node_profile', slug: 'capabilities/invoic' }, { operation: 'node_profile' },
+  { operation: 'domain_profile', domain: 'domains/billing' }, { operation: 'domain_profile', slug: 'domains/billing', itemLimit: 1 },
+  { operation: 'domain_profile', domain: 'domains/empty-domain' }, { operation: 'domain_profile', domain: 'domains/shipping', limit: 1 },
+  { operation: 'domain_profile', domain: 'capabilities/invoice' }, { operation: 'domain_profile', domain: 'domains/billin' }, { operation: 'domain_profile' },
+  { operation: 'domain_matrix' }, { operation: 'domain_matrix', limit: 1 }, { operation: 'domain_matrix', types: ['depends_on'] }, { operation: 'domain_matrix', types: ['bogus'] },
+  { operation: 'similar_nodes', slug: 'capabilities/invoice-export' }, { operation: 'similar_nodes', slug: 'capabilities/invoice', limit: 2 },
+  { operation: 'similar_nodes', slug: 'capabilities/invoice', kind: 'capability' }, { operation: 'similar_nodes', title: 'Invoice Exports' },
+  { operation: 'similar_nodes', slug: 'capabilities/nothing-like-it' }, { operation: 'similar_nodes' },
+  { operation: 'recommend_relations', slug: 'capabilities/orphan-cap' }, { operation: 'recommend_relations', slug: 'capabilities/invoice-import' },
+  { operation: 'recommend_relations', kind: 'capability' }, { operation: 'recommend_relations', kind: 'element', limit: 1 }, { operation: 'recommend_relations', kind: 'domain' },
+  { operation: 'recommend_relations', slug: 'domains/billing' }, { operation: 'recommend_relations', candidateSlug: 'capabilities/pay' },
+  { operation: 'health' }, { operation: 'health', limit: 1 }, { operation: 'health', cycleLimit: 1, componentLimit: 1, recommendationLimit: 1, orderLimit: 1 },
+  { operation: 'health', nodeLimit: 1 }, { operation: 'health', dependencyTypes: ['depends_on'] }, { operation: 'health', componentTypes: ['depends_on'] },
+  { operation: 'health', maxHops: 2 }, { operation: 'health', dependencyTypes: ['bogus'] },
+  { operation: 'growth_plan' }, { operation: 'growth_plan', limit: 1 }, { operation: 'growth_plan', includeExternal: false }, { operation: 'growth_plan', includeUnresolved: false },
+  { operation: 'growth_plan', recommendationLimit: 1 }, { operation: 'growth_plan', itemLimit: 1 },
+  { operation: 'maintenance_plan' }, { operation: 'maintenance_plan', limit: 2 }, { operation: 'maintenance_plan', phases: ['repair'] },
+  { operation: 'maintenance_plan', severities: ['warn', 'fail'] }, { operation: 'maintenance_plan', kinds: ['repair_dangling_reference'] },
+  { operation: 'maintenance_plan', executableOnly: true }, { operation: 'maintenance_plan', project: 'alpha' }, { operation: 'maintenance_plan', project: 'nowhere' },
+  { operation: 'maintenance_plan', phases: ['bogus'] }, { operation: 'maintenance_plan', afterActionId: 'maint_00000000' }, { operation: 'maintenance_plan', limit: 1, itemLimit: 1 },
+  { operation: 'workspace_brief' }, { operation: 'workspace_brief', limit: 1 }, { operation: 'workspace_brief', limit: 3, includeExternal: false },
+];
+add('graph', 'graph-selection-rich', { vault: 'selection-rich' }, SELECTION_RICH.map(query));
+// A list inside an answer is cut at `limit`: the domains of a matrix, and the neighbours a similar
+// node shares with the source.
+add('graph', 'graph-selection-limited-lists', { vault: 'selection-rich' }, [
+  { operation: 'domain_matrix', limit: 1 }, { operation: 'domain_matrix', limit: 2 }, { operation: 'domain_matrix', project: 'alpha', limit: 1 },
+  { operation: 'domain_matrix', limit: 100 }, { operation: 'similar_nodes', slug: 'capabilities/invoice', limit: 1 },
+  { operation: 'similar_nodes', slug: 'capabilities/pay', limit: 1 }, { operation: 'similar_nodes', slug: 'capabilities/invoice', limit: 100 },
+].map(query));
+add('graph', 'graph-selection-storefront', { vault: 'storefront' }, [
+  { operation: 'match_nodes', kind: 'capability', minDegree: 3, sort: 'degree', limit: 15 }, { operation: 'match_nodes', domain: 'domains/order', sort: 'inDegree' },
+  { operation: 'match_edges', type: 'depends_on', fromKind: 'capability', toKind: 'capability', limit: 20 }, { operation: 'match_edges', toKind: 'external' },
+  { operation: 'node_profile', slug: 'capabilities/checkout' }, { operation: 'node_profile', slug: 'domains/order' }, { operation: 'node_profile', slug: 'storefront' },
+  { operation: 'domain_profile', domain: 'domains/order' }, { operation: 'domain_profile', domain: 'domains/customer', itemLimit: 3, limit: 5 },
+  { operation: 'domain_matrix' }, { operation: 'domain_matrix', types: ['depends_on', 'relates'] },
+  { operation: 'similar_nodes', slug: 'capabilities/coupon-redeem' }, { operation: 'similar_nodes', slug: 'capabilities/order-cancel', limit: 3 },
+  { operation: 'recommend_relations', slug: 'capabilities/cart' }, { operation: 'recommend_relations', kind: 'capability', limit: 10 }, { operation: 'recommend_relations', kind: 'element' },
+  { operation: 'health' }, { operation: 'health', limit: 3 }, { operation: 'growth_plan' }, { operation: 'growth_plan', limit: 3 },
+  { operation: 'maintenance_plan' }, { operation: 'maintenance_plan', limit: 5 }, { operation: 'maintenance_plan', phases: ['link', 'materialize'] }, { operation: 'maintenance_plan', project: 'storefront' },
+  { operation: 'workspace_brief' }, { operation: 'workspace_brief', limit: 4 },
+].map(query));
+add('graph', 'graph-selection-atlas-ontology', { vault: 'atlas-ontology' }, [
+  { operation: 'match_nodes', kind: 'capability', sort: 'degree', limit: 20 }, { operation: 'match_nodes', slugContains: 'vault', limit: 50 },
+  { operation: 'match_edges', type: 'depends_on', limit: 30 }, { operation: 'match_edges', toKind: 'unresolved' }, { operation: 'match_edges', toKind: 'external', limit: 5 },
+  { operation: 'domain_matrix' }, { operation: 'recommend_relations', kind: 'capability', limit: 20 },
+  { operation: 'health' }, { operation: 'health', limit: 25 }, { operation: 'growth_plan' }, { operation: 'growth_plan', limit: 25 },
+  { operation: 'maintenance_plan' }, { operation: 'maintenance_plan', limit: 50 }, { operation: 'workspace_brief' }, { operation: 'workspace_brief', limit: 25 },
+].map(query));
+add('graph', 'graph-selection-miniature-repo', { vault: 'miniature-repo' }, [
+  { operation: 'match_nodes' }, { operation: 'match_edges' }, { operation: 'domain_matrix' }, { operation: 'recommend_relations', kind: 'capability' },
+  { operation: 'health' }, { operation: 'growth_plan' }, { operation: 'maintenance_plan' }, { operation: 'workspace_brief' },
+  { operation: 'node_profile', slug: 'capabilities/charge-card' }, { operation: 'similar_nodes', slug: 'capabilities/charge-card' },
+].map(query));
+add('graph', 'graph-selection-tangle', { vault: 'tangle' }, [
+  { operation: 'match_nodes', sort: 'degree' }, { operation: 'match_edges' }, { operation: 'domain_matrix' }, { operation: 'domain_profile', domain: 'domains/loops' },
+  { operation: 'health' }, { operation: 'health', limit: 1 }, { operation: 'health', cycleLimit: 1, orderLimit: 2 }, { operation: 'health', maxHops: 3 },
+  { operation: 'growth_plan' }, { operation: 'maintenance_plan' }, { operation: 'maintenance_plan', limit: 1 }, { operation: 'workspace_brief' }, { operation: 'workspace_brief', limit: 2 },
+  { operation: 'recommend_relations', kind: 'capability' }, { operation: 'similar_nodes', slug: 'capabilities/a' },
+].map(query));
+add('graph', 'graph-selection-edge-names', { vault: 'edge-names' }, [
+  { operation: 'match_nodes', sort: 'slug' }, { operation: 'match_edges' }, { operation: 'node_profile', slug: 'capabilities/\uac00\ub098\ub2e4' },
+  { operation: 'domain_profile', domain: 'domains/\uacb0\uc81c' }, { operation: 'health' }, { operation: 'growth_plan' }, { operation: 'maintenance_plan' }, { operation: 'workspace_brief' },
+  { operation: 'recommend_relations', kind: 'capability' }, { operation: 'similar_nodes', slug: 'capabilities/\uc8fc\ubb38-\ucde8\uc18c' },
+].map(query));
+add('graph', 'graph-selection-ambiguous-and-dangling', { vault: 'ambiguous-dangling' }, [
+  { operation: 'match_nodes' }, { operation: 'match_edges' }, { operation: 'match_edges', toKind: 'unresolved' }, { operation: 'node_profile', slug: 'capabilities/a' },
+  { operation: 'health' }, { operation: 'growth_plan' }, { operation: 'maintenance_plan' }, { operation: 'workspace_brief' }, { operation: 'recommend_relations', slug: 'capabilities/c' },
+].map(query));
+add('graph', 'graph-selection-empty', { vault: 'empty' }, [
+  { operation: 'match_nodes' }, { operation: 'match_edges' }, { operation: 'node_profile', slug: 'x' }, { operation: 'domain_profile', domain: 'x' }, { operation: 'domain_matrix' },
+  { operation: 'similar_nodes', slug: 'x' }, { operation: 'recommend_relations', kind: 'capability' }, { operation: 'health' }, { operation: 'growth_plan' },
+  { operation: 'maintenance_plan' }, { operation: 'workspace_brief' },
+].map(query));
+add('graph', 'graph-selection-one-node', { vault: 'one-node' }, [
+  { operation: 'match_nodes' }, { operation: 'node_profile', slug: 'only' }, { operation: 'domain_matrix' }, { operation: 'health' }, { operation: 'growth_plan' },
+  { operation: 'maintenance_plan' }, { operation: 'workspace_brief' },
+].map(query));
+// A call that is wrong is refused with the sentence the JavaScript server used.
+add('graph', 'graph-selection-refusals', { vault: 'storefront' }, [
+  { operation: 'match_nodes', limit: 0 }, { operation: 'match_nodes', limit: 501 }, { operation: 'match_nodes', limit: 1.5 }, { operation: 'match_nodes', minDegree: -1 },
+  { operation: 'match_nodes', minDegree: 'x' }, { operation: 'match_nodes', hasIncoming: 'yes' }, { operation: 'match_nodes', kind: '' }, { operation: 'match_nodes', slugContains: 5 },
+  { operation: 'domain_profile', itemLimit: 0 }, { operation: 'domain_profile', domain: 'capabilities/cart' }, { operation: 'node_profile', slug: ['a'] },
+  { operation: 'health', cycleLimit: 0 }, { operation: 'health', componentLimit: 501 }, { operation: 'health', orderLimit: 'x' }, { operation: 'health', recommendationLimit: 0 },
+  { operation: 'maintenance_plan', phases: 'repair' }, { operation: 'maintenance_plan', phases: ['a', 'b', 'c', 'd', 'e', 'f'] }, { operation: 'maintenance_plan', severities: [] },
+  { operation: 'maintenance_plan', kinds: [1] }, { operation: 'maintenance_plan', executableOnly: 'true' }, { operation: 'maintenance_plan', project: 'no-such-project' },
+  { operation: 'maintenance_plan', project: 'domains/order' }, { operation: 'workspace_brief', limit: 'many' }, { operation: 'recommend_relations', kind: 'project' },
+  { operation: 'recommend_relations', slug: 'capabilities/nope' }, { operation: 'similar_nodes', slug: 'capabilities/nope' },
+].map(query));
+add('graph', 'graph-selection-chain', { vault: 'selection-chain' }, [
+  { operation: 'match_nodes', sort: 'degree', limit: 5 }, { operation: 'match_edges', limit: 5 }, { operation: 'node_profile', slug: 'capabilities/link-5000', limit: 5 },
+  { operation: 'domain_profile', domain: 'domains/links', limit: 5, itemLimit: 5 }, { operation: 'similar_nodes', slug: 'capabilities/link-77', limit: 5 },
+  { operation: 'recommend_relations', slug: 'capabilities/link-9999' }, { operation: 'health', limit: 5 }, { operation: 'growth_plan', limit: 5 },
+  { operation: 'maintenance_plan', limit: 5 }, { operation: 'workspace_brief', limit: 5 },
+].map(query));
+add('graph', 'graph-selection-hub', { vault: 'selection-hub' }, [
+  { operation: 'match_nodes', sort: 'inDegree', limit: 5 }, { operation: 'match_edges', limit: 5 }, { operation: 'node_profile', slug: 'capabilities/hub-core', limit: 5 },
+  { operation: 'domain_profile', domain: 'domains/spokes', limit: 5, itemLimit: 5 }, { operation: 'similar_nodes', slug: 'capabilities/spoke-1', limit: 5 },
+  { operation: 'recommend_relations', slug: 'capabilities/hub-core' }, { operation: 'health', limit: 5 }, { operation: 'growth_plan', limit: 5 },
+  { operation: 'maintenance_plan', limit: 5 }, { operation: 'workspace_brief', limit: 5 },
+].map(query));
+
 // ---------------------------------------------------------------------------------------------
 // git: reads and staleness
 // ---------------------------------------------------------------------------------------------

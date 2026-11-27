@@ -1240,6 +1240,838 @@
       "path": "result.content[0].text",
       "change": 36,
       "reason": "The answer adds one coverage sentence saying how many source files named like a credential were not read; the JavaScript server left them out without a word (row 36). The harness names only the text of the answer; the edges are the same and the sentence is checked by `source-scan/tests/scans_imports.rs`."
+    },
+    {
+      "case": "graph/graph-selection-ambiguous-and-dangling",
+      "where": "answer",
+      "id": 7,
+      "path": "result.content[0].text",
+      "change": 31,
+      "reason": "A maintenance action for a dependency cycle takes its address from the cycle it names; the JavaScript server hashed the cycle as null, so every cycle of one length shared an address and afterActionId skipped the others (row 31)."
+    },
+    {
+      "case": "graph/graph-selection-refusals",
+      "where": "answer",
+      "id": 17,
+      "path": "result.structuredContent.errorCode",
+      "change": 22,
+      "reason": "A missing required name (slug, domain) is refused as invalid_arguments (row 22); the JavaScript server answered tool_error."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 27,
+      "path": "result.content[0].text",
+      "change": 30,
+      "reason": "A lineage list says limited only when a node past the limit exists; the JavaScript walk said limited as soon as it had found as many nodes as the limit, even when the list was complete (row 30)."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 33,
+      "path": "result.structuredContent.errorCode",
+      "change": 22,
+      "reason": "A missing required name (slug, domain) is refused as invalid_arguments (row 22); the JavaScript server answered tool_error."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 40,
+      "path": "result.structuredContent.errorCode",
+      "change": 22,
+      "reason": "A missing required name (slug, domain) is refused as invalid_arguments (row 22); the JavaScript server answered tool_error."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 60,
+      "path": "result.content[0].text",
+      "change": 24,
+      "reason": "health cuts dependencyOrder.blocked at orderLimit and says it was limited, as topological_order does (row 24); the JavaScript server listed every blocked node."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 72,
+      "path": "result.content[0].text",
+      "change": 31,
+      "reason": "A maintenance action for a dependency cycle takes its address from the cycle it names; the JavaScript server hashed the cycle as null, so every cycle of one length shared an address and afterActionId skipped the others (row 31)."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 73,
+      "path": "result.content[0].text",
+      "change": 31,
+      "reason": "A maintenance action for a dependency cycle takes its address from the cycle it names; the JavaScript server hashed the cycle as null, so every cycle of one length shared an address and afterActionId skipped the others (row 31)."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 74,
+      "path": "result.content[0].text",
+      "change": 31,
+      "reason": "A maintenance action for a dependency cycle takes its address from the cycle it names; the JavaScript server hashed the cycle as null, so every cycle of one length shared an address and afterActionId skipped the others (row 31)."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 75,
+      "path": "result.content[0].text",
+      "change": 31,
+      "reason": "A maintenance action for a dependency cycle takes its address from the cycle it names; the JavaScript server hashed the cycle as null, so every cycle of one length shared an address and afterActionId skipped the others (row 31)."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 78,
+      "path": "result.content[0].text",
+      "change": 31,
+      "reason": "A maintenance action for a dependency cycle takes its address from the cycle it names; the JavaScript server hashed the cycle as null, so every cycle of one length shared an address and afterActionId skipped the others (row 31)."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 79,
+      "path": "result.content[0].text",
+      "change": 31,
+      "reason": "A maintenance action for a dependency cycle takes its address from the cycle it names; the JavaScript server hashed the cycle as null, so every cycle of one length shared an address and afterActionId skipped the others (row 31)."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 82,
+      "path": "result.content[0].text",
+      "change": 31,
+      "reason": "A maintenance action for a dependency cycle takes its address from the cycle it names; the JavaScript server hashed the cycle as null, so every cycle of one length shared an address and afterActionId skipped the others (row 31)."
+    },
+    {
+      "case": "graph/graph-selection-tangle",
+      "where": "answer",
+      "id": 7,
+      "path": "result.content[0].text",
+      "change": 24,
+      "reason": "health cuts dependencyOrder.blocked at orderLimit and says it was limited, as topological_order does (row 24); the JavaScript server listed every blocked node."
+    },
+    {
+      "case": "graph/graph-selection-tangle",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text",
+      "change": 31,
+      "reason": "A maintenance action for a dependency cycle takes its address from the cycle it names; the JavaScript server hashed the cycle as null, so every cycle of one length shared an address and afterActionId skipped the others (row 31)."
+    },
+    {
+      "case": "graph/graph-selection-tangle",
+      "where": "answer",
+      "id": 11,
+      "path": "result.content[0].text",
+      "change": 31,
+      "reason": "A maintenance action for a dependency cycle takes its address from the cycle it names; the JavaScript server hashed the cycle as null, so every cycle of one length shared an address and afterActionId skipped the others (row 31)."
+    },
+    {
+      "case": "graph/graph-selection-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text",
+      "change": 25,
+      "reason": "The nodes of a health component are in the order of the graph, the collation of slugs (row 25); the JavaScript server sorted them by UTF-16 code unit."
+    },
+    {
+      "case": "graph/graph-selection-ambiguous-and-dangling",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/graph-selection-empty",
+      "where": "answer",
+      "id": 8,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/query-ontology-empty-and-one",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/graph-selection-atlas-ontology",
+      "where": "answer",
+      "id": 8,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/graph-selection-atlas-ontology",
+      "where": "answer",
+      "id": 9,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/graph-selection-chain",
+      "where": "answer",
+      "id": 7,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/graph-selection-hub",
+      "where": "answer",
+      "id": 7,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/graph-selection-miniature-repo",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/graph-selection-one-node",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 58,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 59,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 61,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 62,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 63,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 64,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 17,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 18,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/graph-selection-tangle",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/graph-selection-tangle",
+      "where": "answer",
+      "id": 6,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/graph-selection-tangle",
+      "where": "answer",
+      "id": 8,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/query-ontology-atlas-ontology",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/query-ontology-edge-names",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text",
+      "change": 25,
+      "reason": "The nodes of a health component are in the order of the graph, the collation of slugs (row 25); the JavaScript server sorted them by UTF-16 code unit. The outside checks of row 33 also differ in this answer and are hidden behind this entry."
+    },
+    {
+      "case": "graph/query-ontology-miniature-repo",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/graph-selection-ambiguous-and-dangling",
+      "where": "answer",
+      "id": 8,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/graph-selection-empty",
+      "where": "answer",
+      "id": 11,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/query-ontology-empty-and-one",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/graph-selection-atlas-ontology",
+      "where": "answer",
+      "id": 14,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/graph-selection-atlas-ontology",
+      "where": "answer",
+      "id": 15,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/graph-selection-chain",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/graph-selection-edge-names",
+      "where": "answer",
+      "id": 8,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/graph-selection-hub",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/graph-selection-miniature-repo",
+      "where": "answer",
+      "id": 8,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/graph-selection-one-node",
+      "where": "answer",
+      "id": 7,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 83,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 84,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 85,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 25,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 26,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/graph-selection-tangle",
+      "where": "answer",
+      "id": 12,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/graph-selection-tangle",
+      "where": "answer",
+      "id": 13,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/query-ontology-atlas-ontology",
+      "where": "answer",
+      "id": 7,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/query-ontology-miniature-repo",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/graph-selection-atlas-ontology",
+      "where": "answer",
+      "id": 6,
+      "path": "result.content[0].text",
+      "change": 32,
+      "reason": "`domain_matrix` and `similar_nodes` write their lists as pages cut at `limit` (`total`, `limited`, `rows`), as the connections of `domain_matrix` already were (row 32); the JavaScript server wrote a bare list of every row."
+    },
+    {
+      "case": "graph/graph-selection-empty",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text",
+      "change": 32,
+      "reason": "`domain_matrix` and `similar_nodes` write their lists as pages cut at `limit` (`total`, `limited`, `rows`), as the connections of `domain_matrix` already were (row 32); the JavaScript server wrote a bare list of every row."
+    },
+    {
+      "case": "graph/graph-selection-limited-lists",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text",
+      "change": 32,
+      "reason": "`domain_matrix` and `similar_nodes` write their lists as pages cut at `limit` (`total`, `limited`, `rows`), as the connections of `domain_matrix` already were (row 32); the JavaScript server wrote a bare list of every row."
+    },
+    {
+      "case": "graph/graph-selection-limited-lists",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text",
+      "change": 32,
+      "reason": "`domain_matrix` and `similar_nodes` write their lists as pages cut at `limit` (`total`, `limited`, `rows`), as the connections of `domain_matrix` already were (row 32); the JavaScript server wrote a bare list of every row."
+    },
+    {
+      "case": "graph/graph-selection-limited-lists",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text",
+      "change": 32,
+      "reason": "`domain_matrix` and `similar_nodes` write their lists as pages cut at `limit` (`total`, `limited`, `rows`), as the connections of `domain_matrix` already were (row 32); the JavaScript server wrote a bare list of every row."
+    },
+    {
+      "case": "graph/graph-selection-limited-lists",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text",
+      "change": 32,
+      "reason": "`domain_matrix` and `similar_nodes` write their lists as pages cut at `limit` (`total`, `limited`, `rows`), as the connections of `domain_matrix` already were (row 32); the JavaScript server wrote a bare list of every row."
+    },
+    {
+      "case": "graph/graph-selection-miniature-repo",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text",
+      "change": 32,
+      "reason": "`domain_matrix` and `similar_nodes` write their lists as pages cut at `limit` (`total`, `limited`, `rows`), as the connections of `domain_matrix` already were (row 32); the JavaScript server wrote a bare list of every row."
+    },
+    {
+      "case": "graph/graph-selection-one-node",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text",
+      "change": 32,
+      "reason": "`domain_matrix` and `similar_nodes` write their lists as pages cut at `limit` (`total`, `limited`, `rows`), as the connections of `domain_matrix` already were (row 32); the JavaScript server wrote a bare list of every row."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 41,
+      "path": "result.content[0].text",
+      "change": 32,
+      "reason": "`domain_matrix` and `similar_nodes` write their lists as pages cut at `limit` (`total`, `limited`, `rows`), as the connections of `domain_matrix` already were (row 32); the JavaScript server wrote a bare list of every row."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 42,
+      "path": "result.content[0].text",
+      "change": 32,
+      "reason": "`domain_matrix` and `similar_nodes` write their lists as pages cut at `limit` (`total`, `limited`, `rows`), as the connections of `domain_matrix` already were (row 32); the JavaScript server wrote a bare list of every row."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 43,
+      "path": "result.content[0].text",
+      "change": 32,
+      "reason": "`domain_matrix` and `similar_nodes` write their lists as pages cut at `limit` (`total`, `limited`, `rows`), as the connections of `domain_matrix` already were (row 32); the JavaScript server wrote a bare list of every row."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text",
+      "change": 32,
+      "reason": "`domain_matrix` and `similar_nodes` write their lists as pages cut at `limit` (`total`, `limited`, `rows`), as the connections of `domain_matrix` already were (row 32); the JavaScript server wrote a bare list of every row."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 11,
+      "path": "result.content[0].text",
+      "change": 32,
+      "reason": "`domain_matrix` and `similar_nodes` write their lists as pages cut at `limit` (`total`, `limited`, `rows`), as the connections of `domain_matrix` already were (row 32); the JavaScript server wrote a bare list of every row."
+    },
+    {
+      "case": "graph/graph-selection-tangle",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text",
+      "change": 32,
+      "reason": "`domain_matrix` and `similar_nodes` write their lists as pages cut at `limit` (`total`, `limited`, `rows`), as the connections of `domain_matrix` already were (row 32); the JavaScript server wrote a bare list of every row."
+    },
+    {
+      "case": "graph/query-ontology-atlas-ontology",
+      "where": "answer",
+      "id": 8,
+      "path": "result.content[0].text",
+      "change": 32,
+      "reason": "`domain_matrix` and `similar_nodes` write their lists as pages cut at `limit` (`total`, `limited`, `rows`), as the connections of `domain_matrix` already were (row 32); the JavaScript server wrote a bare list of every row."
+    },
+    {
+      "case": "graph/query-ontology-edge-names",
+      "where": "answer",
+      "id": 13,
+      "path": "result.content[0].text",
+      "change": 32,
+      "reason": "`domain_matrix` and `similar_nodes` write their lists as pages cut at `limit` (`total`, `limited`, `rows`), as the connections of `domain_matrix` already were (row 32); the JavaScript server wrote a bare list of every row."
+    },
+    {
+      "case": "graph/query-ontology-empty-and-one",
+      "where": "answer",
+      "id": 12,
+      "path": "result.content[0].text",
+      "change": 32,
+      "reason": "`domain_matrix` and `similar_nodes` write their lists as pages cut at `limit` (`total`, `limited`, `rows`), as the connections of `domain_matrix` already were (row 32); the JavaScript server wrote a bare list of every row."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 12,
+      "path": "result.content[0].text",
+      "change": 32,
+      "reason": "`domain_matrix` and `similar_nodes` write their lists as pages cut at `limit` (`total`, `limited`, `rows`), as the connections of `domain_matrix` already were (row 32); the JavaScript server wrote a bare list of every row."
+    },
+    {
+      "case": "graph/graph-selection-atlas-ontology",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/graph-selection-atlas-ontology",
+      "where": "answer",
+      "id": 11,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/query-ontology-atlas-ontology",
+      "where": "answer",
+      "id": 9,
+      "path": "result.content[0].text",
+      "change": 37,
+      "reason": "A check no graph can make (the vault validation, the meaning review, the next reads of uncertainty prose) arrives from the tool layer, and until slices 9 and 11 hand it over the Rust answer carries none of them nor the status and actions they raise (row 37); this is a named gap, not a wanted change."
+    },
+    {
+      "case": "graph/graph-selection-chain",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text",
+      "change": 32,
+      "reason": "`domain_matrix` and `similar_nodes` write their lists as pages cut at `limit` (`total`, `limited`, `rows`), as the connections of `domain_matrix` already were (row 32); the JavaScript server wrote a bare list of every row."
+    },
+    {
+      "case": "graph/graph-selection-edge-names",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text",
+      "change": 32,
+      "reason": "`domain_matrix` and `similar_nodes` write their lists as pages cut at `limit` (`total`, `limited`, `rows`), as the connections of `domain_matrix` already were (row 32); the JavaScript server wrote a bare list of every row."
+    },
+    {
+      "case": "graph/graph-selection-hub",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text",
+      "change": 32,
+      "reason": "`domain_matrix` and `similar_nodes` write their lists as pages cut at `limit` (`total`, `limited`, `rows`), as the connections of `domain_matrix` already were (row 32); the JavaScript server wrote a bare list of every row."
+    },
+    {
+      "case": "graph/graph-selection-limited-lists",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text",
+      "change": 32,
+      "reason": "`domain_matrix` and `similar_nodes` write their lists as pages cut at `limit` (`total`, `limited`, `rows`), as the connections of `domain_matrix` already were (row 32); the JavaScript server wrote a bare list of every row."
+    },
+    {
+      "case": "graph/graph-selection-limited-lists",
+      "where": "answer",
+      "id": 6,
+      "path": "result.content[0].text",
+      "change": 32,
+      "reason": "`domain_matrix` and `similar_nodes` write their lists as pages cut at `limit` (`total`, `limited`, `rows`), as the connections of `domain_matrix` already were (row 32); the JavaScript server wrote a bare list of every row."
+    },
+    {
+      "case": "graph/graph-selection-limited-lists",
+      "where": "answer",
+      "id": 7,
+      "path": "result.content[0].text",
+      "change": 32,
+      "reason": "`domain_matrix` and `similar_nodes` write their lists as pages cut at `limit` (`total`, `limited`, `rows`), as the connections of `domain_matrix` already were (row 32); the JavaScript server wrote a bare list of every row."
+    },
+    {
+      "case": "graph/graph-selection-miniature-repo",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text",
+      "change": 32,
+      "reason": "`domain_matrix` and `similar_nodes` write their lists as pages cut at `limit` (`total`, `limited`, `rows`), as the connections of `domain_matrix` already were (row 32); the JavaScript server wrote a bare list of every row."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 45,
+      "path": "result.content[0].text",
+      "change": 32,
+      "reason": "`domain_matrix` and `similar_nodes` write their lists as pages cut at `limit` (`total`, `limited`, `rows`), as the connections of `domain_matrix` already were (row 32); the JavaScript server wrote a bare list of every row."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 46,
+      "path": "result.content[0].text",
+      "change": 32,
+      "reason": "`domain_matrix` and `similar_nodes` write their lists as pages cut at `limit` (`total`, `limited`, `rows`), as the connections of `domain_matrix` already were (row 32); the JavaScript server wrote a bare list of every row."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 47,
+      "path": "result.content[0].text",
+      "change": 32,
+      "reason": "`domain_matrix` and `similar_nodes` write their lists as pages cut at `limit` (`total`, `limited`, `rows`), as the connections of `domain_matrix` already were (row 32); the JavaScript server wrote a bare list of every row."
+    },
+    {
+      "case": "graph/graph-selection-rich",
+      "where": "answer",
+      "id": 48,
+      "path": "result.content[0].text",
+      "change": 32,
+      "reason": "`domain_matrix` and `similar_nodes` write their lists as pages cut at `limit` (`total`, `limited`, `rows`), as the connections of `domain_matrix` already were (row 32); the JavaScript server wrote a bare list of every row."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 12,
+      "path": "result.content[0].text",
+      "change": 32,
+      "reason": "`domain_matrix` and `similar_nodes` write their lists as pages cut at `limit` (`total`, `limited`, `rows`), as the connections of `domain_matrix` already were (row 32); the JavaScript server wrote a bare list of every row."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 13,
+      "path": "result.content[0].text",
+      "change": 32,
+      "reason": "`domain_matrix` and `similar_nodes` write their lists as pages cut at `limit` (`total`, `limited`, `rows`), as the connections of `domain_matrix` already were (row 32); the JavaScript server wrote a bare list of every row."
+    },
+    {
+      "case": "graph/graph-selection-tangle",
+      "where": "answer",
+      "id": 15,
+      "path": "result.content[0].text",
+      "change": 32,
+      "reason": "`domain_matrix` and `similar_nodes` write their lists as pages cut at `limit` (`total`, `limited`, `rows`), as the connections of `domain_matrix` already were (row 32); the JavaScript server wrote a bare list of every row."
+    },
+    {
+      "case": "graph/query-ontology-edge-names",
+      "where": "answer",
+      "id": 8,
+      "path": "result.content[0].text",
+      "change": 32,
+      "reason": "`domain_matrix` and `similar_nodes` write their lists as pages cut at `limit` (`total`, `limited`, `rows`), as the connections of `domain_matrix` already were (row 32); the JavaScript server wrote a bare list of every row."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 28,
+      "path": "result.content[0].text",
+      "change": 32,
+      "reason": "`domain_matrix` and `similar_nodes` write their lists as pages cut at `limit` (`total`, `limited`, `rows`), as the connections of `domain_matrix` already were (row 32); the JavaScript server wrote a bare list of every row."
+    },
+    {
+      "case": "graph/graph-selection-storefront",
+      "where": "answer",
+      "id": 7,
+      "path": "result.content[0].text",
+      "change": 30,
+      "reason": "A lineage list counts every node the shared walk reaches and says limited only when a node past the limit exists (row 30); the JavaScript walk stopped at the limit and counted what it had found."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 38,
+      "path": "result.content[0].text",
+      "change": 27,
+      "reason": "The edges of lineage are a page (total, limited, rows) cut at limit and counted whole, as every walk's totals are (row 27); the JavaScript server listed every edge."
+    },
+    {
+      "case": "graph/query-ontology-atlas-ontology",
+      "where": "answer",
+      "id": 10,
+      "path": "result.structuredContent.errorCode",
+      "change": 22,
+      "reason": "An argument that only another argument allows, sent alone (`task` without `detail` `compact`), is a wrong call and answers invalid_arguments (row 22); the JavaScript server answered tool_error."
+    },
+    {
+      "case": "graph/query-ontology-miniature-repo",
+      "where": "answer",
+      "id": 9,
+      "path": "result.structuredContent.errorCode",
+      "change": 22,
+      "reason": "An argument that only another argument allows, sent alone (`task` without `detail` `compact`), is a wrong call and answers invalid_arguments (row 22); the JavaScript server answered tool_error."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 40,
+      "path": "result.structuredContent.errorCode",
+      "change": 22,
+      "reason": "An argument that only another argument allows, sent alone (`task` without `detail` `compact`), is a wrong call and answers invalid_arguments (row 22); the JavaScript server answered tool_error."
+    },
+    {
+      "case": "graph/query-ontology-storefront",
+      "where": "answer",
+      "id": 41,
+      "path": "result.structuredContent.errorCode",
+      "change": 22,
+      "reason": "An argument that only another argument allows, sent alone (`task` without `detail` `compact`), is a wrong call and answers invalid_arguments (row 22); the JavaScript server answered tool_error."
     }
   ]
 }

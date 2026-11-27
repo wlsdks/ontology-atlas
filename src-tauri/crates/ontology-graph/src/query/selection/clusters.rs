@@ -93,7 +93,7 @@ pub(crate) fn connected_components(
 }
 
 #[derive(Serialize)]
-struct ComponentRow<'a> {
+pub(super) struct ComponentRow<'a> {
     id: usize,
     size: usize,
     kinds: IndexMap<String, usize>,
@@ -102,28 +102,28 @@ struct ComponentRow<'a> {
     nodes: Vec<NodeSummary<'a>>,
 }
 
+/// The groups as `components` and `health` write them: how many, the largest, and the first
+/// `limit` with their first `node_limit` nodes.
 #[derive(Serialize)]
 pub struct ComponentsAnswer<'a> {
     operation: &'static str,
     #[serde(rename = "totalComponents")]
-    total_components: usize,
+    pub(super) total_components: usize,
     #[serde(rename = "largestSize")]
-    largest_size: usize,
+    pub(super) largest_size: usize,
     #[serde(rename = "singletonCount")]
-    singleton_count: usize,
-    limited: bool,
-    components: Vec<ComponentRow<'a>>,
+    pub(super) singleton_count: usize,
+    pub(super) limited: bool,
+    pub(super) components: Vec<ComponentRow<'a>>,
 }
 
-pub fn components<'a>(
+pub(super) fn describe_components<'a>(
     graph: &'a CompiledGraph,
-    request: &QueryRequest,
-) -> Result<ComponentsAnswer<'a>, QueryError> {
-    let limit = request.limit.unwrap_or(DEFAULT_GROUP_LIMIT);
-    let node_limit = request.node_limit.unwrap_or(DEFAULT_NODE_LIMIT);
-    let types = RelationSet::parse(request.types.as_deref(), "types")?;
-    let groups = connected_components(graph, types.as_ref());
-    Ok(ComponentsAnswer {
+    groups: &[Vec<NodeId>],
+    limit: usize,
+    node_limit: usize,
+) -> ComponentsAnswer<'a> {
+    ComponentsAnswer {
         operation: "components",
         total_components: groups.len(),
         largest_size: groups.first().map_or(0, Vec::len),
@@ -141,7 +141,18 @@ pub fn components<'a>(
                 nodes: summaries(graph, group.iter().take(node_limit).copied()),
             })
             .collect(),
-    })
+    }
+}
+
+pub fn components<'a>(
+    graph: &'a CompiledGraph,
+    request: &QueryRequest,
+) -> Result<ComponentsAnswer<'a>, QueryError> {
+    let limit = request.limit.unwrap_or(DEFAULT_GROUP_LIMIT);
+    let node_limit = request.node_limit.unwrap_or(DEFAULT_NODE_LIMIT);
+    let types = RelationSet::parse(request.types.as_deref(), "types")?;
+    let groups = connected_components(graph, types.as_ref());
+    Ok(describe_components(graph, &groups, limit, node_limit))
 }
 
 /// The label each node ends with: the node whose slug names its community.

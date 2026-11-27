@@ -12,6 +12,10 @@ use serde_json::ser::{CompactFormatter, Formatter, PrettyFormatter};
 use serde_json::value::RawValue;
 use serde_json::Serializer;
 
+/// JSON text kept as written, for an answer that embeds a part another crate wrote. The crates
+/// that only carry such a part name it here and need no JSON library of their own.
+pub use serde_json::value::RawValue as RawJson;
+
 /// Any `serde_json` formatter, with a number written as JavaScript writes it. Every other part of
 /// the layout is the inner formatter's.
 struct JsNumbers<F>(F);

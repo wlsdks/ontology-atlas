@@ -30,10 +30,10 @@ from the whole graph.
 | `node_summary.rs` | `NodeIdentity`, `NodeSummary`: the node row every answer writes |
 | `node_mask.rs` | `NodeMask`: a set of nodes, one flag each |
 | `step.rs` | `Step`: the edge a walk takes and the node it leads to |
-| `containment_steps.rs` | `containment_steps`, `children`, `has_parent`: what a node holds and what holds it, from its own edges |
-| `domain_lookup.rs` | `DomainLookup`: the domain a node belongs to, for every node from one search down from the domains |
-| `project_root.rs` | `project_roots`, `project_root`: the project nodes of a graph, and which one a call means |
-| `scope.rs` | `Scope`, `ScopeEdges`: a node and everything it holds, and where the edges that start inside end |
+| `containment_steps.rs` | `containment_steps`, `children`, `parents`, `has_children`, `has_parent`: what a node holds and what holds it, from its own edges |
+| `domain_lookup.rs` | `DomainLookup`: the domain a node belongs to, for every node from one search down from the domains, within a scope when one is given; `named_domain` |
+| `project_root.rs` | `project_roots`, `project_root`, `project_named_or_only`: the project nodes of a graph, and which one a call means |
+| `scope.rs` | `Scope`, `ScopeEdges`: a node and everything it holds (or the whole graph), and where the edges that start inside end |
 | `edge_rows.rs` | the edge rows of an answer: directed, on a path, compiled |
 | `name_counts.rs` | counts by kind, domain or relation, in the order of the names |
 | `walks/graph_walk.rs` | `traversal_steps`: the edges a walk may follow from a node, in the order walks use |
@@ -45,10 +45,23 @@ from the whole graph.
 | `walks/impact.rs`, `walks/blast_radius.rs`, `walks/dependency_qualification.rs` | `impact` and `blast_radius` over declared `depends_on` edges, and whether each edge carries a reason |
 | `walks/subgraph.rs`, `walks/builder_context.rs`, `walks/builder_focus.rs` | `subgraph`, and `builder_context`: the same cut with the workbench's focus name, canvas position and handoff |
 | `walks/explain_relation.rs`, `walks/relation_check.rs` | `explain_relation` and `relation_check`: how two nodes relate, and whether a proposed edge fits the graph's patterns |
-| `walks/containment_tree.rs`, `walks/project_scope.rs`, `walks/project_map.rs` | `containment_tree`, `project_scope` and `project_map`: what holds what, and what each project holds |
+| `walks/containment_tree.rs`, `walks/project_scope.rs`, `walks/project_map.rs` | `containment_tree`, `project_scope` and `project_map`: what holds what, and what each project holds; `fitted_map` is the map cut to a character bound, which `workspace_brief` carries once per project |
 | `selection/clusters.rs` | `components` and `communities` (label propagation) |
 | `selection/centrality.rs` | `centrality`: PageRank and degree rankings |
 | `selection/graph_summary.rs` | `overview`, `schema`, `facets` |
+| `selection/match_nodes.rs`, `selection/match_edges.rs` | `match_nodes`, `match_edges`: the rows that pass a condition, by degree or slug |
+| `selection/node_profile.rs`, `selection/domain_profile.rs`, `selection/domain_matrix.rs` | one node, one domain, and the domain-to-domain edge table |
+| `selection/similar_nodes.rs`, `selection/relation_recommendations.rs` | `similar_nodes` and `recommend_relations` (the domain links a capability or element lacks) |
+| `selection/health.rs`, `selection/workspace_brief.rs` | `health`: the verdict and its checks; `workspace_brief`: the first page of a vault |
+| `selection/growth_plan.rs`, `selection/growth_candidates.rs` | `growth_plan` and the groups it lists: external files, dangling references, unassigned nodes, empty domains |
+| `selection/maintenance_plan.rs`, `selection/maintenance_action.rs` | `maintenance_plan`: every action in order, with its address (`maint_` and an FNV-1a hash) |
+| `selection/outside_checks.rs` | the validation and meaning-review checks `health` and `workspace_brief` carry when the tool layer hands them over |
+| `selection/selection_request.rs` | `SelectionArguments`, `OutsideFacts`: what only the selection operations read, beside the arguments `QueryRequest` carries for every family |
+
+`OutsideFacts` is the seam to what a graph cannot know: the vault's `.ontology-atlasignore`, the
+summaries whose members changed since they were written (Git), the reads an `## Uncertainty`
+section asks for, and the validation and meaning-review results. An operation given none of them
+answers without them and says so (no check, no rows) instead of guessing.
 
 Every list and table of an answer is in the order of the graph: nodes by the collation of their
 slugs (a `NodeId` is that position), edges by the collation of `from:via:to:ref`. Tables keyed by

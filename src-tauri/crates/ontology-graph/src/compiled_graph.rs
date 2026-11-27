@@ -109,6 +109,11 @@ impl Node {
             .filter(|path| !answer_format::whitespace::trim(path).is_empty())
     }
 
+    /// The body as readers see it, read from the file again when the cache did not keep it.
+    pub fn body(&self) -> Result<Cow<'_, str>, vault_document::FileReadError> {
+        self.document.body()
+    }
+
     /// Where the workbench placed the node: `canvasPosition` when it holds a finite `x` and `y`.
     pub fn canvas_position(&self) -> Option<(f64, f64)> {
         let Some(Value::Map(members)) = self.document.frontmatter().get("canvasPosition") else {
