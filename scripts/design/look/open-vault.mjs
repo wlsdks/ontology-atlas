@@ -2,12 +2,10 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { FIRST_RUN_SEEN_ENTRIES } from "../../../src/shared/lib/preferences/first-run-seen.ts";
-import { FIXTURE_VAULT } from "../../../tests/e2e/fixture-vault.ts";
-import { stubDirectoryPicker } from "../../../tests/e2e/vault-picker-stub.ts";
+import { loadDesktopHarness, openFolderInApp } from "../../lib/desktop-app/open-folder-in-app.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
-const ATTACH_TIMEOUT_MS = 30_000;
+const RAIL_TIMEOUT_MS = 60_000;
 const SKIPPED_DIRECTORIES = new Set(["node_modules"]);
 
 export const VAULT_DIR_ENV = "UI_LOOK_VAULT_DIR";
@@ -32,18 +30,13 @@ export function routeLocale(route) {
   return first && existsSync(path.join(ROOT, "messages", `${first}.json`)) ? first : "en";
 }
 
-/** `ui:audit --setup` hook: attaches a vault through the map's folder picker, then opens the route. */
+/** `ui:audit --setup` hook: opens a vault in the faked app runtime, then the route. */
 export default async function openVault(page, { url, route }) {
   const vaultDir = process.env[VAULT_DIR_ENV];
-  await stubDirectoryPicker(page, vaultDir ? readVaultFiles(vaultDir) : FIXTURE_VAULT);
-  await page.addInitScript((entries) => {
-    for (const [key, value] of entries) window.localStorage.setItem(key, value);
-  }, FIRST_RUN_SEEN_ENTRIES);
-
-  await page.goto(`${url}/${routeLocale(route)}/topology/?guides=off`, { waitUntil: "networkidle" });
-  await page.getByTestId("first-run-starter-open").click();
-  await page.getByTestId("vault-guide-pick-existing").click();
-  await page.getByTestId("first-run-starter").waitFor({ state: "detached", timeout: ATTACH_TIMEOUT_MS });
+  const files = vaultDir ? readVaultFiles(vaultDir) : (await loadDesktopHarness()).storefrontFiles();
+  await openFolderInApp(page, files, { baseUrl: url, locale: routeLocale(route) });
 
   await page.goto(`${url}${route}`, { waitUntil: "networkidle" });
+  // The folder is read again on this load; the screen is ready once the rail replaces its placeholder.
+  await page.getByTestId("app-nav-rail").waitFor({ timeout: RAIL_TIMEOUT_MS });
 }
