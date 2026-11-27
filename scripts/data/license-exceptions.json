@@ -18,6 +18,12 @@
       "package": "argparse",
       "license": "PSF-2.0",
       "reason": "A dependency of markdown-it's command-line entry, which the MCP server never imports, so the sidecar bundle leaves it out. PSF-2.0 is the Python Software Foundation part of the allowed Python-2.0 license: permissive, asking only that the license text travel with the code, which third-party-licenses.txt does."
+    },
+    {
+      "ecosystem": "cargo",
+      "package": "xxhash-rust",
+      "license": "BSL-1.0",
+      "reason": "notify 9 pulls it in only for PollWatcher's content comparison, and the app never builds a PollWatcher. BSL-1.0 is permissive and puts no notice duty on binaries: its text must travel only with source copies, and third-party-licenses.txt carries it anyway."
     }
   ]
 }

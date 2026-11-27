@@ -1,8 +1,8 @@
 use super::scope::canonical_root;
 use super::walk::vault_change_is_visible;
-use notify_debouncer_full::notify::{RecommendedWatcher, RecursiveMode, Watcher};
+use notify_debouncer_full::notify::{RecommendedWatcher, RecursiveMode};
 use notify_debouncer_full::{
-    new_debouncer_opt, DebounceEventResult, DebouncedEvent, Debouncer, NoCache,
+    new_debouncer_opt, Config, DebounceEventResult, DebouncedEvent, Debouncer, NoCache,
 };
 use serde::Serialize;
 use std::collections::BTreeSet;
@@ -205,8 +205,7 @@ pub(crate) async fn start_vault_watch(
     let app_handle = app.clone();
     let watched_root = canonical.clone();
     let mut debouncer = new_debouncer_opt::<_, RecommendedWatcher, NoCache>(
-        Duration::from_millis(500),
-        None,
+        Config::default().with_timeout(Duration::from_millis(500)),
         move |result: DebounceEventResult| match result {
             Ok(events) => {
                 if let Some(batch) = VaultChangeBatch::from_events(&watched_root, &events) {
@@ -222,11 +221,9 @@ pub(crate) async fn start_vault_watch(
             }
         },
         NoCache,
-        notify_debouncer_full::notify::Config::default(),
     )
     .map_err(|err| err.to_string())?;
     debouncer
-        .watcher()
         .watch(&canonical, RecursiveMode::Recursive)
         .map_err(|err| err.to_string())?;
     log::info!("vault watcher started at {}", canonical.display());
@@ -401,6 +398,56 @@ mod tests {
             Some("notes/deep/a.md")
         );
         assert_eq!(relative_change_path(&root, Path::new("other/a.md")), None);
+    }
+
+    /// The payload names paths in UTF-8 only; the walk lists such a note lossily, so a reread finds it.
+    #[cfg(unix)]
+    #[test]
+    fn a_note_whose_name_is_not_utf8_asks_for_a_rescan() {
+        use std::os::unix::ffi::OsStrExt;
+        let root = vault("not-utf8");
+        let note = root.join(std::ffi::OsStr::from_bytes(b"caf\xe9.md"));
+        let event = Event::new(EventKind::Any).add_path(note);
+        let reported =
+            VaultChangeBatch::from_events(&root, &[DebouncedEvent::new(event, Instant::now())])
+                .unwrap();
+        assert!(reported.rescan && reported.changes.is_empty());
+    }
+
+    /// A panic escaping the FSEvents callback aborts the process or unwinds through macOS's run
+    /// loop and ends the watch; it must end only that one notice, and later notices still arrive.
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn a_panic_inside_the_fsevents_callback_leaves_the_app_and_the_watch_running() {
+        use notify_debouncer_full::notify::{recommended_watcher, Watcher};
+        use std::sync::atomic::{AtomicBool, Ordering};
+        use std::sync::mpsc;
+        let root = vault("callback-panic");
+        let (notices, received) = mpsc::channel();
+        let panicked = AtomicBool::new(false);
+        let mut watcher =
+            recommended_watcher(move |event: notify_debouncer_full::notify::Result<Event>| {
+                let _ = notices.send(event.is_ok());
+                if !panicked.swap(true, Ordering::SeqCst) {
+                    panic!("a handler panic inside the FSEvents callback");
+                }
+            })
+            .unwrap();
+        watcher.watch(&root, RecursiveMode::Recursive).unwrap();
+        // macOS can deliver seconds late under load, so keep writing until two notices arrive.
+        let deadline = Instant::now() + Duration::from_secs(30);
+        let mut arrived = 0;
+        let mut write = 0;
+        while arrived < 2 && Instant::now() < deadline {
+            fs::write(root.join(format!("note-{write}.md")), "x").unwrap();
+            write += 1;
+            if received.recv_timeout(Duration::from_millis(500)) == Ok(true) {
+                arrived += 1;
+            }
+        }
+        assert_eq!(arrived, 2, "a notice after the panic arrives");
+        drop(watcher);
+        let _ = fs::remove_dir_all(&root);
     }
 
     #[cfg(unix)]

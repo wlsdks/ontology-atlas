@@ -14,7 +14,7 @@ mod ignore_check;
 mod tests;
 
 use std::collections::BTreeMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
@@ -77,12 +77,14 @@ fn now_ms() -> i64 {
 static ASKING: Mutex<()> = Mutex::new(());
 
 /// The counts of each drawn worktree. `listed` is every worktree Git lists for the repository;
-/// `drawn` the ids the page draws as rooms, of which only listed ones are watched. Asks Git
-/// about waiting paths through `check` with no lock held, starts or moves the watcher, and
-/// answers from memory. `None` while switched off, also when switched off during the ask.
+/// `drawn` the ids the page draws as rooms, of which only listed ones are watched, within
+/// `soft_open_file_limit` (see `affordable_roots`). Asks Git about waiting paths through `check`
+/// with no lock held, starts or moves the watcher, and answers from memory. `None` while switched
+/// off, also when switched off during the ask.
 pub(crate) fn pulse_read(
     listed: Vec<(PathBuf, String)>,
     drawn: &[String],
+    soft_open_file_limit: u64,
     mut check: impl FnMut(&VerdictBatch) -> Option<Verdict>,
 ) -> Option<PulseRead> {
     let _asking = ASKING.lock().ok()?;
@@ -103,7 +105,7 @@ pub(crate) fn pulse_read(
             (batch, verdict)
         })
         .collect();
-    let accepted = watch(&roots);
+    let accepted = watch(&roots, soft_open_file_limit);
     let mut state = state().lock().ok()?;
     if state.off {
         return None;
@@ -138,8 +140,30 @@ fn outermost(mut folders: Vec<PathBuf>) -> Vec<PathBuf> {
     kept
 }
 
-/// Watches exactly `roots`, rebuilding the watcher when they change; the roots macOS accepted.
-fn watch(roots: &[PathBuf]) -> Vec<PathBuf> {
+/// Open files macOS holds while it watches `root`: one per folder on its path and three for the
+/// stream, as measured on macOS 27, plus one to spare.
+fn watch_cost(root: &Path) -> u64 {
+    root.components().count() as u64 + 4
+}
+
+/// The leading `roots` whose summed `watch_cost` fits in half the soft limit on open files, which
+/// leaves the rest to the vault's watcher and the app. Past the limit `FSEventStreamCreate` fails,
+/// and notify 9 then frees the stream's context twice.
+fn affordable_roots(
+    roots: &[PathBuf],
+    soft_open_file_limit: u64,
+) -> impl Iterator<Item = &PathBuf> {
+    let budget = soft_open_file_limit / 2;
+    let mut spent = 0;
+    roots.iter().take_while(move |root| {
+        spent += watch_cost(root);
+        spent <= budget
+    })
+}
+
+/// Watches exactly `roots`, rebuilding the watcher when they change; the roots macOS accepted
+/// among the affordable ones.
+fn watch(roots: &[PathBuf], soft_open_file_limit: u64) -> Vec<PathBuf> {
     let Ok(mut live) = WATCHER.lock() else {
         return vec![];
     };
@@ -166,8 +190,7 @@ fn watch(roots: &[PathBuf]) -> Vec<PathBuf> {
     ) else {
         return vec![];
     };
-    let accepted: Vec<PathBuf> = roots
-        .iter()
+    let accepted: Vec<PathBuf> = affordable_roots(roots, soft_open_file_limit)
         .filter(|root| watcher.watch(root, RecursiveMode::Recursive).is_ok())
         .cloned()
         .collect();

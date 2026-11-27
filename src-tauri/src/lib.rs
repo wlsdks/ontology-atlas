@@ -37,6 +37,8 @@ use acp::session::{terminate_all_acp_sessions, AcpSessions};
 use app_shell::answer_deep_link;
 use app_shell::app_log::{install_panic_logger, QuietStderr};
 #[cfg(target_os = "macos")]
+use app_shell::open_file_limit::raise_open_file_limit;
+#[cfg(target_os = "macos")]
 use app_shell::tray::install_native_tray;
 #[cfg(target_os = "macos")]
 use app_shell::window::disable_webview_frame_rate_cap;
@@ -94,6 +96,8 @@ pub fn run_embed_worker() -> i32 {
 }
 
 pub fn run() {
+    #[cfg(target_os = "macos")]
+    raise_open_file_limit();
     install_panic_logger();
     if let Some(path) = std::env::var_os("PATH") {
         std::env::set_var(
@@ -522,8 +526,8 @@ mod log_tests {
     /// by the crate the watchers use, so a rename or a new watcher crate must be named here too.
     #[test]
     fn the_watcher_crates_never_reach_the_app_log() {
-        let watcher = std::any::type_name::<notify_debouncer_full::notify::Event>();
-        let debouncer = std::any::type_name::<notify_debouncer_full::DebouncedEvent>();
+        let watcher = std::any::type_name::<notify_debouncer_full::notify::RecommendedWatcher>();
+        let debouncer = std::any::type_name::<notify_debouncer_full::NoCache>();
         for type_path in [watcher, debouncer] {
             let crate_name = type_path.split("::").next().unwrap_or_default();
             assert!(
@@ -583,6 +587,30 @@ mod shutdown_tests {
         assert!(
             code.contains(&[".run(|app_handle,event|{letunfinished=", &call].concat()),
             "the event loop no longer hands each event to the shutdown step"
+        );
+    }
+}
+
+#[cfg(test)]
+mod startup_tests {
+    /// `run` needs a live event loop, so its first step is pinned in the code above the tests:
+    /// the open-file limit rises before any file or FSEvents stream opens. `open_file_limit`'s
+    /// own test proves what the raise does.
+    #[test]
+    fn the_app_raises_the_open_file_limit_before_anything_else() {
+        let file = include_str!("lib.rs");
+        let (code, _) = file
+            .split_once("mod log_tests {")
+            .expect("the tests follow the code they pin");
+        let code: String = code.split_whitespace().collect();
+        let first = [
+            "pubfnrun(){",
+            "#[cfg(target_os=\"macos\")]",
+            "raise_open_file_limit();",
+        ];
+        assert!(
+            code.contains(&first.concat()),
+            "`run` no longer raises the open-file limit first"
         );
     }
 }
