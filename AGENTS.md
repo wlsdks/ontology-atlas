@@ -94,7 +94,7 @@ Read the named authority only for its subject:
 | Architecture/routes/module ownership | `docs/ARCHITECTURE.md`, `.claude/rules/architecture.md` |
 | UI values and the rendered-work loop | `docs/DESIGN-SYSTEM.md`, `docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md`, `.claude/rules/design.md` |
 | Gates | `.claude/rules/design-gates.md` |
-| Storage/surface boundaries | `.claude/rules/local-first.md`, `.claude/rules/surfaces.md`, `.claude/rules/forbidden.md` |
+| Storage/surface boundaries | `.claude/rules/local-first.md`, `.claude/rules/surfaces.md` (exceptions: `surface-exceptions.md`), `.claude/rules/forbidden.md` |
 | Tests, docs, Git | `.claude/rules/testing.md`, `.claude/rules/documentation.md`, `.claude/rules/git.md` |
 
 Routes are locale-prefixed; use `@/i18n/navigation`. `/` is the gateway in a
