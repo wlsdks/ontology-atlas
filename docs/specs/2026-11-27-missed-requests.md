@@ -4,7 +4,7 @@ doc_type: spec
 status: draft
 area: git
 date: 2026-11-27
-decisions: [RECORD_ID]
+decisions: [19077fe5]
 ---
 
 # Asked, not done — requests you typed to Claude Code that never reached Git

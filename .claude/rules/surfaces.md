@@ -200,7 +200,7 @@ Another read, signal or target needs a new record.
 ### Workshop › Asked, not done
 
 The tenth, specified, not built (`docs/specs/2026-11-27-missed-requests.md`,
-`RECORD_ID`): after a press or its nightly switch, this repository's typed
+`19077fe5`): after a press or its nightly switch, this repository's typed
 Claude Code messages go one at a time to a loopback model;
 results stay in app data; never agent text or tool fields.
 
