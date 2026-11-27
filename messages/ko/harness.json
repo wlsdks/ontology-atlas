@@ -4,7 +4,8 @@
   "viewsAria": "하네스 보기",
   "views": {
     "overview": "구성",
-    "architecture": "아키텍처"
+    "architecture": "아키텍처",
+    "improve": "개선"
   },
   "retry": "다시 읽기",
   "toolsSource": "출처",

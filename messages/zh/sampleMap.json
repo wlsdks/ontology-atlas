@@ -1,0 +1,9 @@
+{
+  "title": "示例地图",
+  "lead": "这是示例网店代码中的概念及其之间的关系。在应用中，Ontology Atlas 会根据你文件夹里的 Markdown 文件，用同样的方式画出你自己的代码。",
+  "readOnly": "此页面不会打开文件夹，因此这里无法编辑任何内容。",
+  "size": "{concepts, number} 个概念 · {relations, number} 个关系",
+  "download": "下载应用",
+  "loadFailed": "示例地图未能加载。请检查网络连接后重试。",
+  "retry": "重试"
+}
