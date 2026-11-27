@@ -55,9 +55,8 @@ vi.mock('@/features/vault-ontology', () => ({
 }));
 
 /** git history — the basis for continuity across sessions. The default is "not a git folder". */
-const gitBridge = vi.hoisted(() => ({ available: false, commits: [] as unknown[] }));
+const gitBridge = vi.hoisted(() => ({ commits: [] as unknown[] }));
 vi.mock('@/shared/lib/git/tauri-git', () => ({
-  isGitBridgeAvailable: () => gitBridge.available,
   gitHistory: vi.fn(async () => gitBridge.commits),
 }));
 
@@ -146,7 +145,6 @@ function loadQueueFolder() {
 describe('VaultAgentPanel', () => {
   beforeEach(() => {
     conceptFacts.map = new Map();
-    gitBridge.available = false;
     gitBridge.commits = [];
   });
 

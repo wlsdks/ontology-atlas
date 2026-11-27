@@ -1,6 +1,6 @@
 import { isGuardedRuntime, type InvestigationSendGuard } from "@/features/acp-session";
 import type { GrayAreaSnapshot } from '@/shared/lib/project-source/tauri-gray-area';
-import { detectAcpRuntimes, isAcpBridgeAvailable } from "@/shared/lib/agent-chat/tauri-acp";
+import { detectAcpRuntimes } from "@/shared/lib/agent-chat/tauri-acp";
 import { keptAwayRuntimeId, useChatWidth, useRememberedTool } from "@/widgets/acp-chat-panel";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -44,7 +44,6 @@ export function useAcpRuntimeController(setAcpChatOpen: (open: boolean) => void,
   const chatWidth = useChatWidth();
 
   useEffect(() => {
-    if (!isAcpBridgeAvailable()) return;
     let cancelled = false;
     const apply = (list: Awaited<ReturnType<typeof detectAcpRuntimes>>) => {
       if (cancelled) return;

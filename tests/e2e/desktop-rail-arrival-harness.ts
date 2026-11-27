@@ -7,10 +7,9 @@ import {
   DISCOVERY_MIN_FILE_BYTES,
   discoveryAcceptsDirectory,
   discoveryAcceptsFile,
-  discoveryExtension,
   discoverySkipReason,
-  type DiscoverySkipReason,
 } from "./source-discovery-rules";
+import { discoveryExtension, type DiscoverySkipReason } from "../../src/entities/docs-vault/lib/library/source-candidate";
 import { FIXTURE_VAULT } from "./fixture-vault";
 import { seedFirstRunSeen } from "./first-run-seed";
 import { dogfoodVaultFiles } from "./map/dogfood-vault-files";

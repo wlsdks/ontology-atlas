@@ -10,7 +10,6 @@ const bridge = vi.hoisted(() => {
 });
 
 vi.mock('@/shared/lib/agent-chat/tauri-acp', () => ({
-  isAcpBridgeAvailable: () => true,
   prepareAcpAdapter: async () => 'ready',
   startAcpSession: async () => 'acp-1-999',
   sendAcpLine: async (_id: string, line: string) => {

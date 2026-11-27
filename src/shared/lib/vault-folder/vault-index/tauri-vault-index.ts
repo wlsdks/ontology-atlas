@@ -57,10 +57,6 @@ function getInvoke(): Invoke | null {
 
 const enabled = () => vaultIndexPreference.read() === 'on';
 
-export function isVaultIndexAvailable(): boolean {
-  return getInvoke() !== null;
-}
-
 export async function vaultIndexStatus(rootPath: string | null): Promise<VaultIndexStatus | null> {
   const invoke = getInvoke();
   if (!invoke) return null;

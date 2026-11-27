@@ -14,7 +14,6 @@ import type { TaskBaselineCaptureResult } from '@/features/acp-session';
  */
 const bridge = vi.hoisted(() => {
   const state = {
-    available: true,
     sent: [] as Array<Record<string, unknown>>,
     listener: null as ((line: string) => void) | null,
     verdict: 'ask' as 'ask' | 'allow-inside-vault',
@@ -36,7 +35,6 @@ const bridge = vi.hoisted(() => {
 });
 
 vi.mock('@/shared/lib/agent-chat/tauri-acp', () => ({
-  isAcpBridgeAvailable: () => bridge.available,
   prepareAcpAdapter: async () => 'ready',
   startAcpSession: () => {
     bridge.starts += 1;
@@ -200,7 +198,6 @@ async function startUserTurn(text: string) {
 afterEach(() => {
   cleanup();
   window.localStorage.clear();
-  bridge.available = true;
   bridge.sent = [];
   bridge.listener = null;
   bridge.verdictCalls = [];

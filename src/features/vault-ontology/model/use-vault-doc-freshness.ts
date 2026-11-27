@@ -4,7 +4,7 @@ import { useEffect, useMemo, useSyncExternalStore } from 'react';
 import { useLocalVault } from '@/entities/vault-session';
 import type { VaultDoc, VaultManifest } from '@/entities/docs-vault';
 import { selectOpenVaultHandle } from '@/shared/lib/vault-folder/select-open-vault-handle';
-import { gitDiff, gitPathsLastChange, isGitBridgeAvailable } from '@/shared/lib/git/tauri-git';
+import { gitDiff, gitPathsLastChange } from '@/shared/lib/git/tauri-git';
 import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 
 export function manifestToFreshnessIndex(manifest: VaultManifest): Map<string, string> {
@@ -118,16 +118,15 @@ export function useVaultDocDates(): VaultDocDates {
   const manifest = vault.status === 'loaded' ? vault.manifest : null;
   const handle = selectOpenVaultHandle(vault.status, vault.handle);
   const root = handle ? (getTauriVaultRootPath(handle) ?? null) : null;
-  const bridge = isGitBridgeAvailable();
 
   const walk = useSyncExternalStore(subscribeWalk, settledWalkSnapshot, noWalkOnServer);
   useEffect(() => {
-    if (bridge && root && manifest) requestDocGitState(root, manifest);
-  }, [bridge, root, manifest]);
+    if (root && manifest) requestDocGitState(root, manifest);
+  }, [root, manifest]);
 
   return useMemo<VaultDocDates>(() => {
     if (!manifest) return { index: EMPTY_FRESHNESS_INDEX, reading: false };
-    if (!bridge || !root) return { index: manifestToFreshnessIndex(manifest), reading: false };
+    if (!root) return { index: manifestToFreshnessIndex(manifest), reading: false };
     if (!walk || walk.root !== root) return { index: EMPTY_FRESHNESS_INDEX, reading: true };
     // Git could not be read for this folder (no repository): its files' dates are all there is.
     if (!walk.git) return { index: manifestToFreshnessIndex(manifest), reading: false };
@@ -135,7 +134,7 @@ export function useVaultDocDates(): VaultDocDates {
     const pending = new Set(walk.git.pending);
     for (const doc of manifest.docs) if (walk.fileDates.get(doc.path) !== doc.updatedAt) pending.add(doc.path);
     return { index: resolveDocChangeDates(manifest.docs, { committedAt: walk.git.committedAt, pending }), reading: false };
-  }, [manifest, bridge, root, walk]);
+  }, [manifest, root, walk]);
 }
 
 /** The manifest's own file dates, for "was this file written since I opened it", which a commit must not answer. */

@@ -14,10 +14,6 @@ function getInvoke(): TauriInvoke | null {
   return (command, args) => tauriInvoke(command, args);
 }
 
-export function isAcpBridgeAvailable(): boolean {
-  return getInvoke() !== null;
-}
-
 /** Rust `AcpRuntimeStatus` (serde camelCase). */
 export interface AcpRuntimeStatus {
   id: string;
