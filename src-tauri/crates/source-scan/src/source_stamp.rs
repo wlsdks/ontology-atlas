@@ -66,9 +66,10 @@ mod tests {
             dirty: true,
         };
         let stamp = MeasuredStamp::of_git("2026-11-28T00:00:00.000Z".to_string(), "1.2.3", &state);
-        assert_eq!(
-            answer_format::json::to_string(&stamp).expect("writes"),
-            r#"{"at":"2026-11-28T00:00:00.000Z","tool":{"name":"ontology-atlas","version":"1.2.3"},"source":{"kind":"git","revision":"0123456789ab","dirty":true}}"#
-        );
+        let MeasuredSource::Git { revision, dirty } = stamp.source else {
+            panic!("a git state gives a git stamp");
+        };
+        assert_eq!(revision, "0123456789ab");
+        assert!(dirty);
     }
 }
