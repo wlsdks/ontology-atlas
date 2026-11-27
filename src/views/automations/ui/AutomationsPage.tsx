@@ -3,7 +3,7 @@
 import { Plus } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore, useTransition, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition, type CSSProperties } from "react";
 
 import { OpenVaultCta } from "@/features/docs-vault-local";
 import { isOntologyRoundKind, type RoundPassEntry, type RoundRecord } from "@/entities/library-round";
@@ -11,7 +11,7 @@ import { useLocalVault } from "@/entities/vault-session";
 import type { RoundsRunnerValue } from "@/features/library-rounds";
 import { isScheduledActive, useAutomationsStage, useScheduledRuns } from "@/features/work-run";
 import { useRouter } from "@/i18n/navigation";
-import { isTauriVaultRuntime } from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
+import { useHydrated } from "@/shared/lib/render-timing/use-hydrated";
 import { cn } from "@/shared/lib/cn";
 import { usePanelPresence } from "@/shared/lib/render-timing/use-presence";
 import { usePrefersReducedMotion } from "@/shared/lib/render-timing/use-prefers-reduced-motion";
@@ -19,7 +19,7 @@ import { MOTION } from "@/shared/motion";
 import { SPRING, springEasing, springSettleMs } from "@/shared/motion/spring";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { RoundsLedger } from "@/widgets/round-ledger";
-import { Button, FeatureStage, GetAppLink, PageHeaderBar, TabBar, useToast, WaitStage } from "@/shared/ui";
+import { Button, FeatureStage, PageHeaderBar, TabBar, useToast, WaitStage } from "@/shared/ui";
 import { BrandPortrait } from "@/shared/ui/marks/moru/brand-portrait";
 
 import { PAGE_FRAME_FORM, PAGE_LEDE, PAGE_STAGE_FILL, PAGE_WAIT_LIFT } from "@/shared/ui/tokens/page-frame";
@@ -34,9 +34,6 @@ import listStyles from "./automation-list-frame.module.css";
 import { NewOntologyRoundSheet } from "./NewOntologyRoundSheet";
 
 type AutomationLane = "ontology" | "documents";
-
-const subscribeToRuntime = () => () => {};
-const serverRuntimeSnapshot = (): boolean | null => null;
 
 const EMPTY_RUNNER_ROUNDS: RoundRecord[] = [];
 const EMPTY_LEDGER: RoundPassEntry[] = [];
@@ -59,7 +56,7 @@ export function AutomationsPage({
   const t = useTranslations("automations");
   const tRounds = useTranslations("library.rounds");
   const locale = useLocale();
-  const desktop = useSyncExternalStore(subscribeToRuntime, isTauriVaultRuntime, serverRuntimeSnapshot);
+  const hydrated = useHydrated();
   const params = useSearchParams();
   const router = useRouter();
   const toast = useToast();
@@ -79,7 +76,7 @@ export function AutomationsPage({
   const selected = rounds.find((round) => round.id === (selectedId === undefined ? requestedRound : selectedId)) ?? null;
   const history = useLaneHistory(runner, lane, rounds, selected);
   // This screen is the stage of every scheduled run: the card stands down and results read here.
-  useAutomationsStage(desktop === true);
+  useAutomationsStage(hydrated);
   const scheduledRuns = useScheduledRuns();
   const stagedRun = scheduledRuns.findLast(isScheduledActive) ?? null;
   const landedRunId = params.get("run");
@@ -109,8 +106,8 @@ export function AutomationsPage({
     setOntologySheetOpen(true);
   };
 
-  const ready = desktop === true && (runner?.storeStatus === "ok" || runner?.storeStatus === "missing");
-  const state = desktop === null ? "loading" : !desktop || !runner ? "app-required" : runner.storeStatus === "no-vault" ? "no-vault"
+  const ready = hydrated && (runner?.storeStatus === "ok" || runner?.storeStatus === "missing");
+  const state = !hydrated || !runner ? "loading" : runner.storeStatus === "no-vault" ? "no-vault"
     : runner.storeStatus === "loading" ? "loading" : ready ? "ready" : runner.storeStatus === "unavailable" ? "unavailable" : "malformed";
   const add = lane === "ontology" ? () => {
     setEditingOntology(null);
@@ -146,17 +143,15 @@ export function AutomationsPage({
   const loading = state === "loading";
   const staged = !loading && empty;
   const broken = state === "malformed" || state === "unavailable";
-  const stageCopy = state === "app-required"
-    ? { body: t("appRequiredDescription"), action: <GetAppLink data-testid="automations-get-app">{t("getApp")}</GetAppLink> }
-    : state === "no-vault"
-      ? { body: t("openFolderDescription"),
-        action: <OpenVaultCta testId="automations-open-vault" className="atlas-touch-floor atlas-touch-floor-wide" /> }
-      : { body: lane === "ontology" ? t("recheck.facts.runs") : t(`${lane}.facts.runs.body`),
-        action: <Button size="lg" data-testid="automations-stage-new" disabled={lanePending} onClick={() => {
-          // The header button outlives this stage, so it is the sheet's return point.
-          newButtonRef.current?.focus({ preventScroll: true });
-          add();
-        }}><Plus size={ICON_SIZE.lg} aria-hidden />{t(`${lane}.new`)}</Button> };
+  const stageCopy = state === "no-vault"
+    ? { body: t("openFolderDescription"),
+      action: <OpenVaultCta testId="automations-open-vault" className="atlas-touch-floor atlas-touch-floor-wide" /> }
+    : { body: lane === "ontology" ? t("recheck.facts.runs") : t(`${lane}.facts.runs.body`),
+      action: <Button size="lg" data-testid="automations-stage-new" disabled={lanePending} onClick={() => {
+        // The header button outlives this stage, so it is the sheet's return point.
+        newButtonRef.current?.focus({ preventScroll: true });
+        add();
+      }}><Plus size={ICON_SIZE.lg} aria-hidden />{t(`${lane}.new`)}</Button> };
 
   return (
     <main id="main" tabIndex={-1} data-testid="automations" data-automations-state={state} data-automations-lane={lane}

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocalVault } from '@/entities/vault-session';
 import { vaultImageUrl } from '@/shared/lib/library/open-vault-file';
 import { readStrictUtf8Text } from '@/shared/lib/vault-folder/strict-utf8-text';
-import { scheduleStateSync, type DocsVaultSource as Source } from '../lib/persistence';
+import { scheduleStateSync } from '../lib/persistence';
 
 function readVaultFileText(handles: Pick<Map<string, { getFile(): Promise<File> }>, 'get'>) {
   return async (slug: string) => {
@@ -17,11 +17,9 @@ function readVaultFileText(handles: Pick<Map<string, { getFile(): Promise<File> 
 
 
 export function useDocAccess({
-  source,
   isLocalSourceLoaded,
   selectedSlug,
 }: {
-  source: Source;
   isLocalSourceLoaded: boolean;
   selectedSlug: string | null;
 }) {
@@ -30,22 +28,20 @@ export function useDocAccess({
   const getDocContent = useMemo<
     ((slug: string) => Promise<string>) | undefined
   >(() => {
-    if (source !== 'local') return undefined;
     if (localVault.fileHandles.size === 0) return undefined;
     return readVaultFileText(localVault.fileHandles);
-  }, [source, localVault.fileHandles]);
+  }, [localVault.fileHandles]);
 
   const resolveImage = useMemo<
     ((path: string) => Promise<string | null>) | undefined
   >(() => {
-    if (source !== 'local') return undefined;
     const handles = localVault.imageHandles;
     return async (path: string) => {
       const fh = handles.get(path);
       if (!fh) return null;
       return vaultImageUrl(await fh.getFile());
     };
-  }, [source, localVault.imageHandles]);
+  }, [localVault.imageHandles]);
 
   const canEditCurrent = isLocalSourceLoaded;
   const editResolver = useMemo<

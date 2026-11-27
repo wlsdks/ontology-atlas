@@ -10,7 +10,7 @@ import {
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { Link } from "@/i18n/navigation";
 import type { OntologyChangeset } from "@/entities/knowledge-graph";
-import { buttonVariants, FeatureStage, GetAppLink } from "@/shared/ui";
+import { buttonVariants, FeatureStage } from "@/shared/ui";
 import { cn } from "@/shared/lib/cn";
 import type { Translator } from "../lib/translator";
 import { GitHistoryArtwork } from "./GitHistoryArtwork";
@@ -194,15 +194,7 @@ export function WebSetup({
       body={t("webDesktopHint")}
       note={t("scopeNotice")}
     >
-      <GetAppLink data-testid="atlas-git-web-get-app" className="shrink-0">{t("webGetApp")}</GetAppLink>
-
       <SessionChangeSummary t={t} changeset={sessionChangeset} title={t("webSummaryTitle")} />
-
-      {/*
-       * No CLI escape here: it needs a source checkout, and plain `git commit` already works.
-       * The degradation card (`surfaces.md`) is complete: why in the body, where in `/download`,
-       * what works here in the session summary below.
-       */}
     </SetupFrame>
   );
 }

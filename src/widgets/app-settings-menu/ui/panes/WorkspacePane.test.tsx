@@ -32,7 +32,6 @@ const vault = vi.hoisted(() => ({
   scaffoldOntology: vi.fn(),
 }));
 
-vi.mock('@/shared/lib/desktop-shell/desktop-shell', () => ({ isDesktopShell: () => env.desktop }));
 vi.mock('@/entities/vault-session', () => ({ useLocalVault: () => vault }));
 vi.mock('@/features/mcp-connectors', () => ({ useVaultConnectors: () => env.connectors }));
 vi.mock('@/features/ontology-blocks', () => ({ BlockImportModule: () => null }));
@@ -153,15 +152,6 @@ describe('the Ontology folder pane', () => {
     fireEvent.click(screen.getByTestId('app-settings-folder-door-connectors'));
     expect(onClose).toHaveBeenCalled();
     expect(env.push).toHaveBeenCalledWith(expect.stringContaining('/agents/'));
-  });
-
-  it('draws no schedules or Git door on the web', () => {
-    env.desktop = false;
-    mount();
-    expect(screen.queryByTestId('app-settings-folder-door-schedules')).toBeNull();
-    expect(screen.queryByTestId('app-settings-folder-door-git')).toBeNull();
-    expect(env.gitStatus).not.toHaveBeenCalled();
-    expect(screen.getByTestId('app-settings-folder-door-connectors').textContent).toContain('2 in this folder');
   });
 
   it('forgets a recent folder only after the second press', async () => {

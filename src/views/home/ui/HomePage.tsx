@@ -29,7 +29,6 @@ import { TopologyIndexSlot } from "./map-panels/TopologyIndexSlot";
 import { TopologyInspectorSurfaces } from "./map-panels/TopologyInspectorSurfaces";
 import { TopologyUtilityOverlays } from "./map-overlays/TopologyUtilityOverlays";
 
-import { VaultSourceHydrationBoundary } from "@/entities/vault-session";
 import { useChatSuggestions } from "@/features/acp-session";
 import { useFirstRunSampleModeKnown, useFirstRunSampleModeSettled } from "@/features/first-run-starter";
 import { useProjects } from "@/features/project-data-source";
@@ -258,17 +257,9 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   // connects.
   const sampleModeSettled = useFirstRunSampleModeSettled();
   const sampleModeKnown = useFirstRunSampleModeKnown();
-  // Without File System Access the pill and ⌘O open the same sheet in its unsupported mode,
-  // instead of silently doing nothing.
-  const fsaUnsupported = vaultStatus === "unsupported";
-  const [unsupportedGuideOpen, setUnsupportedGuideOpen] = useState(false);
   const requestVaultOpen = useCallback(() => {
-    if (fsaUnsupported) {
-      setUnsupportedGuideOpen(true);
-      return;
-    }
     void openVault();
-  }, [fsaUnsupported, openVault, setUnsupportedGuideOpen]);
+  }, [openVault]);
   const topologyAuthoring = useTopologyAuthoring({ setRouteState, meaningEditorIntent, meaningEditParam, toast, topologyVaultReadModel, topologyPreferences });
   const {
     bootstrapOpen, nodeEditTarget, agentActivityStatus, agentFocusNodeId,
@@ -495,213 +486,209 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   });
 
   return (
-    <VaultSourceHydrationBoundary>
-      <main
-        id="main"
-        tabIndex={-1}
-        // The right-pinned inspector stands in by the panel's width (`app/globals.css`), so the
-        // two never cover each other.
-        data-agent-panel-open={agentDockOpen ? 'true' : 'false'}
-        // The coding-agent panel is sized by drag and writes nothing to `--agent-panel-width`,
-        // which the reservation reads, so the right number is filled in here. The two branches
-        // never open at once.
-        style={
-          acpDockFrameOpen || runtimeChatOpen || meaningWorkbenchOpen
-            ? ({ '--agent-panel-width': `${chatWidth.width}px` } as CSSProperties)
-            : undefined
-        }
-        className="relative flex h-full w-full overflow-hidden bg-[color:var(--color-canvas)]"
-      >
-        <div className="relative h-full flex-1 overflow-hidden" inert={reviewUsesSheet && (meaningWorkbenchOpen || acpDockFrameOpen)}>
-          <h1 className="sr-only">
-            {t('srHeading')}
-          </h1>
-          {topologySceneControls.topologyRenderState.renderCanvas && <GestureHint
-            disabled={drawerOpen}
-          />}
-          <LiveAnnouncer
-            message={(() => {
-              if (!selectedProject) return "";
-              const deps = selectedProject.dependencies.length;
-              const referenced = reverseDeps.get(selectedProject.slug)?.length ?? 0;
-              return t('selectionAnnouncement', {
-                name: selectedProject.name,
-                deps,
-                referenced,
-              });
-            })()}
-          />
-          <>
-            <TopologyCommandChrome
-              grayAreaAction={grayArea.action}
-              routeState={routeState}
-              setRouteState={setRouteState}
-              setVaultAgentPrefill={setVaultAgentPrefill}
-              setOntologySearchOpen={setOntologySearchOpen}
-              setTopologyRelayoutToken={setTopologyRelayoutToken}
-              toast={toast}
-              expandAllActive={expandAllActive}
-              analysisMode={analysisMode}
-              footprintTrailEntries={footprintTrailEntries}
-              footprintTrailStepCaptions={footprintTrailStepCaptions}
-              footprintPacketCopied={footprintPacketCopied}
-              copyFootprintPacket={copyFootprintPacket}
-              clearFootprintTrail={clearFootprintTrail}
-              handleFootprintLens={handleFootprintLens}
-              handleFootprintBrush={handleFootprintBrush}
-              agentDockTouchedRef={agentDockTouchedRef}
-              sampleModeSettled={sampleModeSettled}
-              sampleModeKnown={sampleModeKnown}
-              requestVaultOpen={requestVaultOpen}
-              topologyPreferences={topologyPreferences}
-              topologyInspectorState={topologyInspectorState}
-              topologyAuthoring={topologyAuthoring}
-              topologyCanvasFocus={topologyCanvasFocus}
-              topologyVaultReadModel={topologyVaultReadModel}
-              topologyGraphProjection={topologyGraphProjection}
-              topologyAgentOrchestration={topologyAgentOrchestration}
-              topologySceneControls={topologySceneControls}
-              topologyRouteControls={topologyRouteControls}
-              topologyNavigationActions={topologyNavigationActions}
-              homeWorkbenchController={homeWorkbenchController}
-              topologyAgentActivity={topologyAgentActivity}
-              topologyCreateIntent={topologyCreateIntent}
-              topologyIndexPresentation={topologyIndexPresentation}
-              topologyExplorationLenses={topologyExplorationLenses}
-            />
-            <TopologyBlockingOverlays
-              t={t} bootstrapOpen={bootstrapOpen} bootstrapPlan={bootstrapPlan}
-              closeBootstrap={() => setBootstrapOpen(false)} runBootstrap={runBootstrap}
-              closeCreateNode={closeCreateNode}
-              createNodePending={Boolean(createNodePending)} openDocsDrawer={() => setDocsDrawerOpen(true)}
-            />
-            {!topologyGraphProjection.isSynthetic && <TopologyIndexSlot
-              indexSlotFrames={indexSlotFrames}
-              setRouteState={setRouteState}
-              recentWindow={recentWindow}
-              topologyCanvasFocus={topologyCanvasFocus}
-              topologyInspectorState={topologyInspectorState}
-              topologySceneControls={topologySceneControls}
-              topologyGraphProjection={topologyGraphProjection}
-              topologyVaultReadModel={topologyVaultReadModel}
-              topologyNavigationActions={topologyNavigationActions}
-              topologyRouteControls={topologyRouteControls}
-              topologyPreferences={topologyPreferences}
-              topologyAuthoring={topologyAuthoring}
-              topologySourceReadiness={topologySourceReadiness}
-              acpRuntimeController={acpRuntimeController}
-              topologyAgentOrchestration={topologyAgentOrchestration}
-              topologyCreateIntent={topologyCreateIntent}
-            />}
-          </>
-          <TopologyCanvasSurface
-            localGraphRoot={localGraphRoot}
-            acpRuntimeLabel={acpRuntimeLabel}
-            router={router}
-            mapEntryTicket={mapEntryTicket}
+    <main
+      id="main"
+      tabIndex={-1}
+      // The right-pinned inspector stands in by the panel's width (`app/globals.css`), so the
+      // two never cover each other.
+      data-agent-panel-open={agentDockOpen ? 'true' : 'false'}
+      // The coding-agent panel is sized by drag and writes nothing to `--agent-panel-width`,
+      // which the reservation reads, so the right number is filled in here. The two branches
+      // never open at once.
+      style={
+        acpDockFrameOpen || runtimeChatOpen || meaningWorkbenchOpen
+          ? ({ '--agent-panel-width': `${chatWidth.width}px` } as CSSProperties)
+          : undefined
+      }
+      className="relative flex h-full w-full overflow-hidden bg-[color:var(--color-canvas)]"
+    >
+      <div className="relative h-full flex-1 overflow-hidden" inert={reviewUsesSheet && (meaningWorkbenchOpen || acpDockFrameOpen)}>
+        <h1 className="sr-only">
+          {t('srHeading')}
+        </h1>
+        {topologySceneControls.topologyRenderState.renderCanvas && <GestureHint
+          disabled={drawerOpen}
+        />}
+        <LiveAnnouncer
+          message={(() => {
+            if (!selectedProject) return "";
+            const deps = selectedProject.dependencies.length;
+            const referenced = reverseDeps.get(selectedProject.slug)?.length ?? 0;
+            return t('selectionAnnouncement', {
+              name: selectedProject.name,
+              deps,
+              referenced,
+            });
+          })()}
+        />
+        <>
+          <TopologyCommandChrome
+            grayAreaAction={grayArea.action}
+            routeState={routeState}
+            setRouteState={setRouteState}
+            setVaultAgentPrefill={setVaultAgentPrefill}
+            setOntologySearchOpen={setOntologySearchOpen}
+            setTopologyRelayoutToken={setTopologyRelayoutToken}
+            toast={toast}
             expandAllActive={expandAllActive}
-            mapAssemblesOnOpen={!isDeeplinkRouteState(routeState)}
-            combinedFitToken={combinedFitToken}
-            growthReplayToken={growthReplayToken}
-            setGrowthReplaying={setGrowthReplaying}
-            topologyRelayoutToken={topologyRelayoutToken}
-            setTopologyVisibleCount={setTopologyVisibleCount}
-            footprintVisitedIds={footprintVisitedIds}
-            footprintLensActiveRef={footprintLensActiveRef}
-            footprintBrushNodeIdRef={footprintBrushNodeIdRef}
-            ontologySearchOpen={ontologySearchOpen}
-            setFitViewToken={setFitViewToken}
-            setShortcutsOpen={setShortcutsOpen}
             analysisMode={analysisMode}
-            growthReplaying={growthReplaying}
-            setGrowthReplayToken={setGrowthReplayToken}
-            renderProjects={renderProjects}
-            leftPanelCollapsed={leftPanelCollapsed}
-            localGraphStack={localGraphStack}
-            setLocalGraphStack={setLocalGraphStack}
-            heldLocalGraphStack={heldLocalGraphStack}
-            topologyVisibleCount={topologyVisibleCount}
-            readoutStepsAside={readoutStepsAside}
-            unsupportedGuideOpen={unsupportedGuideOpen}
-            setUnsupportedGuideOpen={setUnsupportedGuideOpen}
+            footprintTrailEntries={footprintTrailEntries}
+            footprintTrailStepCaptions={footprintTrailStepCaptions}
+            footprintPacketCopied={footprintPacketCopied}
+            copyFootprintPacket={copyFootprintPacket}
+            clearFootprintTrail={clearFootprintTrail}
+            handleFootprintLens={handleFootprintLens}
+            handleFootprintBrush={handleFootprintBrush}
+            agentDockTouchedRef={agentDockTouchedRef}
+            sampleModeSettled={sampleModeSettled}
+            sampleModeKnown={sampleModeKnown}
             requestVaultOpen={requestVaultOpen}
-            topologyCanvasFocus={topologyCanvasFocus}
-            topologySceneControls={topologySceneControls}
-            topologyAuthoring={topologyAuthoring}
-            acpRuntimeController={acpRuntimeController}
-            topologyVaultReadModel={topologyVaultReadModel}
-            topologyAgentOrchestration={topologyAgentOrchestration}
             topologyPreferences={topologyPreferences}
-            topologyGraphProjection={topologyGraphProjection}
-            topologyAnalysisReview={topologyAnalysisReview}
-            topologyNavigationActions={topologyNavigationActions}
-            topologyRouteControls={topologyRouteControls}
             topologyInspectorState={topologyInspectorState}
+            topologyAuthoring={topologyAuthoring}
+            topologyCanvasFocus={topologyCanvasFocus}
+            topologyVaultReadModel={topologyVaultReadModel}
+            topologyGraphProjection={topologyGraphProjection}
+            topologyAgentOrchestration={topologyAgentOrchestration}
+            topologySceneControls={topologySceneControls}
+            topologyRouteControls={topologyRouteControls}
+            topologyNavigationActions={topologyNavigationActions}
+            homeWorkbenchController={homeWorkbenchController}
+            topologyAgentActivity={topologyAgentActivity}
             topologyCreateIntent={topologyCreateIntent}
             topologyIndexPresentation={topologyIndexPresentation}
             topologyExplorationLenses={topologyExplorationLenses}
-            impactLensActive={impactMode !== "none" && selectedSlug !== null}
-            selectionReframeToken={codeReaderRoom.seatToken}
           />
-          <TopologyInspectorSurfaces
-            topologyKeyboard={topologyKeyboard}
-            grayAreaOpen={grayArea.open}
-            grayAreaAction={grayArea.action}
-            projectsError={projectsError}
-            heldProjectsError={heldProjectsError}
-            renderProjects={renderProjects}
-            impactMode={impactMode}
-            tEditProvenance={tEditProvenance}
-            tSummaryFreshness={tSummaryFreshness}
+          <TopologyBlockingOverlays
+            t={t} bootstrapOpen={bootstrapOpen} bootstrapPlan={bootstrapPlan}
+            closeBootstrap={() => setBootstrapOpen(false)} runBootstrap={runBootstrap}
+            closeCreateNode={closeCreateNode}
+            createNodePending={Boolean(createNodePending)} openDocsDrawer={() => setDocsDrawerOpen(true)}
+          />
+          {!topologyGraphProjection.isSynthetic && <TopologyIndexSlot
+            indexSlotFrames={indexSlotFrames}
+            setRouteState={setRouteState}
+            recentWindow={recentWindow}
+            topologyCanvasFocus={topologyCanvasFocus}
+            topologyInspectorState={topologyInspectorState}
+            topologySceneControls={topologySceneControls}
+            topologyGraphProjection={topologyGraphProjection}
+            topologyVaultReadModel={topologyVaultReadModel}
+            topologyNavigationActions={topologyNavigationActions}
+            topologyRouteControls={topologyRouteControls}
             topologyPreferences={topologyPreferences}
             topologyAuthoring={topologyAuthoring}
-            topologyNavigationActions={topologyNavigationActions}
-            topologyInspectorState={topologyInspectorState}
-            topologyCanvasFocus={topologyCanvasFocus}
-            topologyVaultReadModel={topologyVaultReadModel}
             topologySourceReadiness={topologySourceReadiness}
-            topologySourceActions={topologySourceActions}
-            topologyGraphProjection={topologyGraphProjection}
-            topologyAgentOrchestration={topologyAgentOrchestration}
-            homeWorkbenchController={homeWorkbenchController}
             acpRuntimeController={acpRuntimeController}
-            topologyRouteControls={topologyRouteControls}
-            topologyExplorationLenses={topologyExplorationLenses}
+            topologyAgentOrchestration={topologyAgentOrchestration}
             topologyCreateIntent={topologyCreateIntent}
-            codeReaderRoom={codeReaderRoom}
-          />
-          {/* Node and project selections go through `handleSelect`, since the palette's
-             default would leave the map for `/ontology/?node=`. The hotkeys come from
-             the `useTypingShortcuts` call above. */}
-          <TopologyUtilityOverlays
-            ontologySearchOpen={ontologySearchOpen}
-            setOntologySearchOpen={setOntologySearchOpen}
-            shortcutsOpen={shortcutsOpen}
-            setShortcutsOpen={setShortcutsOpen}
-            docsDrawerOpen={docsDrawerOpen}
-            setDocsDrawerOpen={setDocsDrawerOpen}
-            topologyAuthoring={topologyAuthoring}
-            topologyNavigationActions={topologyNavigationActions}
-            topologyRouteControls={topologyRouteControls}
-          />
-        </div>
-        {grayArea.inspector}
-        <TopologyAgentDock
-          vaultAgentPrefill={vaultAgentPrefill}
-          chatSuggestions={chatSuggestions}
-          routeState={routeState}
+          />}
+        </>
+        <TopologyCanvasSurface
+          localGraphRoot={localGraphRoot}
+          acpRuntimeLabel={acpRuntimeLabel}
+          router={router}
+          mapEntryTicket={mapEntryTicket}
+          expandAllActive={expandAllActive}
+          mapAssemblesOnOpen={!isDeeplinkRouteState(routeState)}
+          combinedFitToken={combinedFitToken}
+          growthReplayToken={growthReplayToken}
+          setGrowthReplaying={setGrowthReplaying}
+          topologyRelayoutToken={topologyRelayoutToken}
+          setTopologyVisibleCount={setTopologyVisibleCount}
+          footprintVisitedIds={footprintVisitedIds}
+          footprintLensActiveRef={footprintLensActiveRef}
+          footprintBrushNodeIdRef={footprintBrushNodeIdRef}
+          ontologySearchOpen={ontologySearchOpen}
+          setFitViewToken={setFitViewToken}
+          setShortcutsOpen={setShortcutsOpen}
+          analysisMode={analysisMode}
+          growthReplaying={growthReplaying}
+          setGrowthReplayToken={setGrowthReplayToken}
+          renderProjects={renderProjects}
+          leftPanelCollapsed={leftPanelCollapsed}
+          localGraphStack={localGraphStack}
+          setLocalGraphStack={setLocalGraphStack}
+          heldLocalGraphStack={heldLocalGraphStack}
+          topologyVisibleCount={topologyVisibleCount}
+          readoutStepsAside={readoutStepsAside}
+          requestVaultOpen={requestVaultOpen}
+          topologyCanvasFocus={topologyCanvasFocus}
+          topologySceneControls={topologySceneControls}
+          topologyAuthoring={topologyAuthoring}
+          acpRuntimeController={acpRuntimeController}
           topologyVaultReadModel={topologyVaultReadModel}
-          topologyPreferences={topologyPreferences}
           topologyAgentOrchestration={topologyAgentOrchestration}
+          topologyPreferences={topologyPreferences}
+          topologyGraphProjection={topologyGraphProjection}
+          topologyAnalysisReview={topologyAnalysisReview}
           topologyNavigationActions={topologyNavigationActions}
+          topologyRouteControls={topologyRouteControls}
+          topologyInspectorState={topologyInspectorState}
+          topologyCreateIntent={topologyCreateIntent}
+          topologyIndexPresentation={topologyIndexPresentation}
+          topologyExplorationLenses={topologyExplorationLenses}
+          impactLensActive={impactMode !== "none" && selectedSlug !== null}
+          selectionReframeToken={codeReaderRoom.seatToken}
+        />
+        <TopologyInspectorSurfaces
+          topologyKeyboard={topologyKeyboard}
+          grayAreaOpen={grayArea.open}
+          grayAreaAction={grayArea.action}
+          projectsError={projectsError}
+          heldProjectsError={heldProjectsError}
+          renderProjects={renderProjects}
+          impactMode={impactMode}
+          tEditProvenance={tEditProvenance}
+          tSummaryFreshness={tSummaryFreshness}
+          topologyPreferences={topologyPreferences}
+          topologyAuthoring={topologyAuthoring}
+          topologyNavigationActions={topologyNavigationActions}
+          topologyInspectorState={topologyInspectorState}
+          topologyCanvasFocus={topologyCanvasFocus}
+          topologyVaultReadModel={topologyVaultReadModel}
+          topologySourceReadiness={topologySourceReadiness}
+          topologySourceActions={topologySourceActions}
+          topologyGraphProjection={topologyGraphProjection}
+          topologyAgentOrchestration={topologyAgentOrchestration}
           homeWorkbenchController={homeWorkbenchController}
           acpRuntimeController={acpRuntimeController}
-          topologyAgentActivity={topologyAgentActivity}
-          topologyAnalysisReview={topologyAnalysisReview}
-          topologyAuthoring={topologyAuthoring}
-          topologyCanvasFocus={topologyCanvasFocus}
+          topologyRouteControls={topologyRouteControls}
+          topologyExplorationLenses={topologyExplorationLenses}
+          topologyCreateIntent={topologyCreateIntent}
+          codeReaderRoom={codeReaderRoom}
         />
-      </main>
-    </VaultSourceHydrationBoundary>
+        {/* Node and project selections go through `handleSelect`, since the palette's
+           default would leave the map for `/ontology/?node=`. The hotkeys come from
+           the `useTypingShortcuts` call above. */}
+        <TopologyUtilityOverlays
+          ontologySearchOpen={ontologySearchOpen}
+          setOntologySearchOpen={setOntologySearchOpen}
+          shortcutsOpen={shortcutsOpen}
+          setShortcutsOpen={setShortcutsOpen}
+          docsDrawerOpen={docsDrawerOpen}
+          setDocsDrawerOpen={setDocsDrawerOpen}
+          topologyAuthoring={topologyAuthoring}
+          topologyNavigationActions={topologyNavigationActions}
+          topologyRouteControls={topologyRouteControls}
+        />
+      </div>
+      {grayArea.inspector}
+      <TopologyAgentDock
+        vaultAgentPrefill={vaultAgentPrefill}
+        chatSuggestions={chatSuggestions}
+        routeState={routeState}
+        topologyVaultReadModel={topologyVaultReadModel}
+        topologyPreferences={topologyPreferences}
+        topologyAgentOrchestration={topologyAgentOrchestration}
+        topologyNavigationActions={topologyNavigationActions}
+        homeWorkbenchController={homeWorkbenchController}
+        acpRuntimeController={acpRuntimeController}
+        topologyAgentActivity={topologyAgentActivity}
+        topologyAnalysisReview={topologyAnalysisReview}
+        topologyAuthoring={topologyAuthoring}
+        topologyCanvasFocus={topologyCanvasFocus}
+      />
+    </main>
   );
 }

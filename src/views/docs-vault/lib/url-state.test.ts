@@ -53,44 +53,6 @@ describe('replaceDocsVaultUrlState', () => {
     expect(params.get('view')).toBeNull();
   });
 
-  it("removes the local intent query for null", () => {
-    window.history.replaceState(
-      {},
-      '',
-      `${ORIGINAL_HREF}?intent=local&slug=README`,
-    );
-    replaceDocsVaultUrlState({ intent: null });
-    const params = new URL(window.location.href).searchParams;
-    expect(params.get('intent')).toBeNull();
-    expect(params.get('slug')).toBe('README');
-  });
-
-  it("sets the local intent query", () => {
-    replaceDocsVaultUrlState({ intent: 'local' });
-    expect(currentSearch()).toBe('?intent=local');
-  });
-
-  it('sets the server source for a packaged docs deep link', () => {
-    replaceDocsVaultUrlState({
-      source: 'server',
-      sample: 'dogfood',
-      slug: 'AGENT-GRAPH-WORKFLOW',
-    });
-    expect(currentSearch()).toBe(
-      '?source=server&sample=dogfood&slug=AGENT-GRAPH-WORKFLOW',
-    );
-  });
-
-  it('clears the deep-link source override for null', () => {
-    window.history.replaceState(
-      {},
-      '',
-      `${ORIGINAL_HREF}?source=server&sample=dogfood&slug=AGENT-GRAPH-WORKFLOW`,
-    );
-    replaceDocsVaultUrlState({ source: null, sample: null, slug: null });
-    expect(currentSearch()).toBe('');
-  });
-
   it('omits the default order from the URL', () => {
     window.history.replaceState({}, '', `${ORIGINAL_HREF}?sort=recent&group=docs`);
     replaceDocsVaultUrlState({ sort: 'name', group: 'folders' });

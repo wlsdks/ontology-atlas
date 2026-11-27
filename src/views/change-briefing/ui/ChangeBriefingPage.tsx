@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type MouseEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { ArrowLeft, CalendarDays, ChevronLeft, ChevronRight, RefreshCw, Settings2 } from 'lucide-react';
 import type { VaultDoc } from '@/entities/docs-vault';
 import { useLocalVault, useVaultSessionIdentityScope } from '@/entities/vault-session';
 import { translateOntologyDeeplinkToTopologyParam } from '@/entities/knowledge-graph';
 import { Link } from '@/i18n/navigation';
-import { isGitBridgeAvailable } from '@/shared/lib/git/tauri-git';
+import { useHydrated } from '@/shared/lib/render-timing/use-hydrated';
 import { useArrivalMemory } from '@/shared/lib/navigation/route-arrival-memory';
 import { readArrivalMemory, writeArrivalMemory } from '@/shared/lib/navigation/route-arrival-memory-store';
 import { pickTauriSourceDirectory } from '@/shared/lib/vault-folder/native-vault/tauri-project-source';
@@ -39,8 +39,6 @@ import { PublicPullInventory } from './PublicPullInventory';
 import { ReleasesView } from './releases/ReleasesView';
 import { briefingStatus, needsSourceChoice } from '../model/briefing-status';
 
-const subscribe = () => () => {};
-const webSnapshot = () => false;
 const NO_DOCS: VaultDoc[] = [];
 const PERIODS: BriefingPeriod[] = ['day', 'week', 'month', 'year', 'custom'];
 type BriefingSection = 'prs' | 'commits' | 'files' | 'mixed';
@@ -58,7 +56,7 @@ export function ChangeBriefingPage() {
   const [clearedAt, setClearedAt] = useArrivalMemory('git-pr:cleared-at', 0);
   const [sourceChoice, setSourceChoice] = useArrivalMemory<string | null>("source-briefing:repository", null);
   const memory = sourceChoice ? `source-briefing:${sourceChoice}` : vault.handle ? `${identity}:change-briefing` : "source-briefing:unselected";
-  const native = useSyncExternalStore(subscribe, isGitBridgeAvailable, webSnapshot);
+  const hydrated = useHydrated();
   const today = localDate(new Date());
   const [period, setPeriod] = useArrivalMemory<BriefingPeriod>(memory && `${memory}:period`, 'day');
   const [grouping, setGrouping] = useArrivalMemory<Grouping>(`${memory}:grouping`, 'date');
@@ -102,7 +100,7 @@ export function ChangeBriefingPage() {
   const docs = useMemo(() => vault.manifest?.docs ?? [], [vault.manifest]);
   const projects = docs.filter(doc => doc.frontmatter.kind === 'project');
   const project = sourceChoice ? '' : projects.some(doc => doc.slug === projectChoice) ? projectChoice : projects[0]?.slug ?? '';
-  const root = native ? sourceChoice ?? (vault.handle && project ? getTauriVaultRootPath(vault.handle) ?? null : null) : null;
+  const root = hydrated ? sourceChoice ?? (vault.handle && project ? getTauriVaultRootPath(vault.handle) ?? null : null) : null;
   const latestKey = JSON.stringify([root, project, today]);
   const latestDay = latest?.key === latestKey ? latest.day : undefined;
   const anchor = chosenAnchor ?? latestDay ?? today;
@@ -391,9 +389,10 @@ export function ChangeBriefingPage() {
     setMode('summary');
     refresh();
   }
-  if (!native) return <main ref={mainRef} id="main" data-briefing-surface className="flex min-h-full flex-col bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]">
+  /* The exported HTML cannot know the folder, so it holds the frame and no stage: the folder-less stage would flash at a restored one. */
+  if (!hydrated) return <main ref={mainRef} id="main" data-briefing-surface className="flex min-h-full flex-col bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]">
     <PageHeaderBar frame="page" title={git('title')} />
-    <div className={`${PAGE_FRAME_FORM} ${PAGE_STAGE_FILL}`}><BriefingRepositoryStage /></div>
+    <div className={`${PAGE_FRAME_FORM} ${PAGE_STAGE_FILL}`} />
   </main>;
   if (!root) return <main ref={mainRef} id="main" data-briefing-surface className="flex min-h-full flex-col bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]">
     <PageHeaderBar frame="page" title={git('title')} actions={<IconButton className="atlas-touch-floor atlas-touch-floor-wide" label={git('briefingSettings')} data-testid="briefing-settings" onClick={() => setSettingsOpen(true)}><Settings2 size={16} aria-hidden /></IconButton>} />

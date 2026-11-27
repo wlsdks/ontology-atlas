@@ -44,7 +44,6 @@ export function HarnessConnectSource({ vaultHandle, projectSlug, docs, onConnect
   const connectsHere = source.canRunSourceAction && source.view?.nextAction.id === 'connect_source';
   if (!connectsHere) {
     return <HarnessUnreadStage
-      state="no-source"
       title={t('noSource')}
       body={t('noSourceBody')}
       note={(source.view?.bindingCardinality ?? 0) > 1 ? t('noSourceNote') : undefined}
@@ -55,7 +54,6 @@ export function HarnessConnectSource({ vaultHandle, projectSlug, docs, onConnect
   const proposed = source.proposalSettled ? source.proposedRoot : null;
   const pick = () => { void source.runNextAction(); };
   return <HarnessUnreadStage
-    state="no-source"
     title={t('noSource')}
     body={proposed ? t('connectFoundBody', { name: folderName(proposed.rootPath) }) : t('noSourceBody')}
     note={source.error

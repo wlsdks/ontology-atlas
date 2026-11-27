@@ -8,13 +8,11 @@ import {
   buildDocsVaultHref,
   type VaultDoc,
 } from '@/entities/docs-vault';
-import { useStaticVaultSource } from '@/entities/vault-session';
 import { useDelayedVisible } from '@/shared/lib/render-timing/use-presence';
 import { useArrivalMemory } from '@/shared/lib/navigation/route-arrival-memory';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { normalizeOriginalPaths, rewriteWikilinks } from '@/shared/lib/library/source-citation';
 import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
-import { fetchServerDocContent } from '../lib/server-doc-content';
 import { readerTree } from '../lib/viewer/reader-tree';
 import { buildTopologyProjectHref } from '@/entities/project';
 import { createMatchHighlighter } from './viewer/create-match-highlighter';
@@ -29,19 +27,8 @@ interface Props {
   getDocHref?: (slug: string, hash?: string) => string;
   getProjectHref?: (slug: string) => string;
   getDocContent?: (slug: string) => Promise<string>;
-  /**
-   * Bundled bodies from the same vault as the parent's static manifest, so a route-scoped sample
-   * override is respected.
-   */
-  bundledContent?: Record<string, string>;
   highlightQuery?: string;
   resolveImage?: (path: string) => Promise<string | null>;
-  /**
-   * Base for turning a vault-escaping `.md` link into a GitHub blob URL; set only for the bundled
-   * docs vault.
-   */
-  repoBlobBase?: string;
-  vaultRepoRoot?: string;
   knownOriginalPaths?: ReadonlySet<string>;
   onSourceNavigate?: (path: string, anchor?: string) => void;
   /**
@@ -80,11 +67,8 @@ export function DocsVaultViewer({
   // Map links point to /topology; a locale-less root redirect would drop the query.
   getProjectHref = buildTopologyProjectHref,
   getDocContent,
-  bundledContent: bundledContentOverride,
   highlightQuery,
   resolveImage,
-  repoBlobBase,
-  vaultRepoRoot,
   knownOriginalPaths,
   onSourceNavigate,
   namedSourcePath,
@@ -104,15 +88,11 @@ export function DocsVaultViewer({
    * runs and replaces it.
    */
   const [raw, setRaw] = useArrivalMemory<string | null>(
-    `docs-vault-body:${getDocContent ? 'local' : 'bundled'}:${doc.slug}:${doc.mtime ?? 0}`,
+    `docs-vault-body:${doc.slug}:${doc.mtime ?? 0}`,
     null,
   );
   const [error, setError] = useState<string | null>(null);
   const showSkeleton = useDelayedVisible(raw === null && error === null);
-  // Bundled bodies must come from the same vault as the manifest, or title and content point at
-  // different documents.
-  const { content: preferredBundledContent } = useStaticVaultSource();
-  const bundledContent = bundledContentOverride ?? preferredBundledContent;
 
   useEffect(() => {
     if (!raw || !highlightQuery) return;
@@ -131,15 +111,10 @@ export function DocsVaultViewer({
   // Remounted through key={doc.slug} and the memory is keyed by slug and mtime, so no reset is
   // needed here.
   useEffect(() => {
+    // No reader yet: the folder's files have not arrived, and the effect runs again when they do.
+    if (!getDocContent) return;
     let cancelled = false;
-    const fetcher = getDocContent
-      ? getDocContent(doc.slug)
-      : fetchServerDocContent(doc.slug, {
-          bundledContent,
-          locationHref:
-            typeof window === 'undefined' ? undefined : window.location.href,
-        });
-    fetcher
+    getDocContent(doc.slug)
       .then((text) => {
         if (cancelled) return;
         /* The body as the question desk reads it (BOM and CRLF normalised), so a claim's line agrees. */
@@ -159,7 +134,7 @@ export function DocsVaultViewer({
     return () => {
       cancelled = true;
     };
-  }, [bundledContent, doc.slug, getDocContent, setRaw]);
+  }, [doc.slug, getDocContent, setRaw]);
 
   const drawnCitations = useRef<ReadonlyMap<string, number>>(NO_CITATIONS);
   useLayoutEffect(() => {
@@ -206,8 +181,6 @@ export function DocsVaultViewer({
         onCitationPress,
         onConceptNavigate,
         linkTargets,
-        repoBlobBase,
-        vaultRepoRoot,
       },
       highlightChildren,
       markSourceLines,
@@ -217,8 +190,8 @@ export function DocsVaultViewer({
     [
       basePath, doc.slug, getDocHref, getProjectHref, highlightChildren, libraryT, linkTargets,
       markSourceLines, namedSource, normalizedOriginalPaths, normalizedVaultSlugs, onCitationPress,
-      onConceptNavigate, onNavigate, onSourceNavigate, reducedMotion, repoBlobBase, resolveImage, t,
-      vaultRepoRoot, vaultSlugs,
+      onConceptNavigate, onNavigate, onSourceNavigate, reducedMotion, resolveImage, t,
+      vaultSlugs,
     ],
   );
   /* Only the Library reader reshapes the tree; every other surface parses exactly as before. */

@@ -5,7 +5,7 @@
     reason: "scheduled",
     step: "start",
     baseUrl,
-    bridgeMissing: false,
+    browserPageShown: false,
     sheetOpen: false,
     aiViewOpen: false,
     localRowFound: false,
@@ -63,6 +63,14 @@
       return;
     }
 
+    // The page meant for browsers replaces the whole app, so no rail or tab can follow it.
+    if (document.querySelector('[data-testid="app-only-page"]')) {
+      result.browserPageShown = true;
+      result.step = "app-only-page";
+      result.reason = "the window rendered the page meant for browsers";
+      return;
+    }
+
     // Model connections live on the Agents destination's models tab; `sheetOpen`
     // keeps its payload name and means the destination was reached.
     const aiView = find("ai-connection-view");
@@ -92,13 +100,6 @@
     }
     result.sheetOpen = true;
     result.aiViewOpen = true;
-
-    if (document.querySelector('[data-testid="ai-connection-web-degraded"]')) {
-      result.bridgeMissing = true;
-      result.step = "ai-connection-view";
-      result.reason = "AI connection rendered its web-degraded card";
-      return;
-    }
 
     const localRow = document.querySelector('[data-testid="ai-provider-local-custom"]');
     if (!localRow) {

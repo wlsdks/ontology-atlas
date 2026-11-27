@@ -2,8 +2,8 @@
 
 import { useMemo } from "react";
 import { useLocale } from "next-intl";
-import { buildDocsVaultHref, findRelatedDocs } from "@/entities/docs-vault";
-import { useStaticVaultSource } from "@/entities/vault-session";
+import { buildDocsVaultHref, findRelatedDocs, type VaultDoc } from "@/entities/docs-vault";
+import { useLocalVault } from "@/entities/vault-session";
 import { useDocumentDetails } from "@/features/document-detail";
 import { useTaxonomy } from "@/features/taxonomy";
 import {
@@ -31,6 +31,7 @@ import {
 type IntegrityIssue = ReturnType<typeof getProjectIntegrityIssues>[number];
 
 const RELATED_DOCS_LIMIT = 5;
+const NO_DOCS: VaultDoc[] = [];
 
 export interface ProjectDrawerModel {
   isContainerNode: boolean;
@@ -123,16 +124,16 @@ export function useProjectDrawerModel({
   const dependencyRelations = project ? buildDependencyRelations(project, bySlug) : [];
   const referencedByRelations = project ? buildReferencedByRelations(project, referencedBy) : [];
 
-  // Reads the chosen sample rather than the bundled manifest so it matches the rest of the screen.
-  const { manifest: staticManifest } = useStaticVaultSource(undefined, { demand: Boolean(project) });
+  // The documents of the open folder, the same ones the rest of the screen reads.
+  const folderDocs = useLocalVault().manifest?.docs ?? NO_DOCS;
   const relatedDocs = useMemo(() => {
     if (!project) return [];
     return findRelatedDocs(
-      staticManifest.docs,
+      folderDocs,
       { projectSlug: project.slug, projectName: project.name },
       RELATED_DOCS_LIMIT,
     );
-  }, [project, staticManifest]);
+  }, [project, folderDocs]);
   const relatedDocRefs = useMemo(
     () => (relatedDocs.length > 0 ? relatedDocs.map((match) => match.doc) : null),
     [relatedDocs],

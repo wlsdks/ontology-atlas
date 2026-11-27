@@ -31,7 +31,7 @@ import {
 } from '@/entities/project';
 import { useTaxonomy } from '@/features/taxonomy';
 import { buildDocsVaultHref, type VaultDoc } from '@/entities/docs-vault';
-import { useStaticVaultSource } from '@/entities/vault-session';
+import { useLocalVault } from '@/entities/vault-session';
 import { fieldClass } from '@/shared/ui/control-class';
 import { transientSurface } from "@/shared/ui/surfaces/transient-surface";
 
@@ -74,6 +74,7 @@ const MATCH_FIELD_KEYS = {
 
 const RECENT_SEARCH_KEY = 'demo:recent-search-slugs:v1';
 const RECENT_MAX = 5;
+const NO_DOCS: VaultDoc[] = [];
 
 function readRecentSlugs(): string[] {
   if (typeof window === 'undefined') return [];
@@ -210,13 +211,12 @@ function SearchPaletteDialog({
     return rankProjectMatches(filteredProjects, query).slice(0, 20);
   }, [filteredProjects, query]);
 
-  // Search the vault on screen, not the bundled manifest; the hook runs outside useMemo and passes
-  // only its value.
-  const { manifest: staticManifest } = useStaticVaultSource(undefined, { demand: true });
+  // Search the open folder's documents; the hook runs outside useMemo and passes only its value.
+  const folderDocs = useLocalVault().manifest?.docs ?? NO_DOCS;
   const docResults = useMemo(() => {
     if (!query.trim()) return [];
-    return matchVaultDocs(query, staticManifest.docs);
-  }, [query, staticManifest]);
+    return matchVaultDocs(query, folderDocs);
+  }, [query, folderDocs]);
   const rows = useMemo<PaletteRow[]>(
     () => [
       ...docResults.map((doc) => ({ kind: 'doc' as const, doc })),

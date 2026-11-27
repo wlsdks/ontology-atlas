@@ -11,7 +11,7 @@ import { DESTINATION_HREF } from '@/shared/config/destinations';
 import { useArrivalMemory } from '@/shared/lib/navigation/route-arrival-memory';
 import { cn } from '@/shared/lib/cn';
 import { controlClass } from '@/shared/ui/control-class';
-import { Chip, Dialog, Disclosure, FeatureStage, GetAppLink, InfoHint, Surface } from '@/shared/ui';
+import { Chip, Dialog, InfoHint, Surface } from '@/shared/ui';
 import { Input } from '@/shared/ui/fields/input';
 import { TermHint } from '@/shared/ui/hints/term-hint';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
@@ -29,8 +29,6 @@ import {
   SettingsGroupHeading,
   SettingsRow,
 } from '../settings-primitives';
-import { APP_CODING_TOOLS } from '../../model/app-coding-tools';
-import { AgentConversationArtwork } from './AgentConversationArtwork';
 
 /**
  * The coding agents this machine can invoke: each row says whether the tool can be used here and
@@ -97,68 +95,6 @@ export function AcpRuntimeSettings({
       cancelled = true;
     };
   }, [setRuntimes]);
-
-  // A browser cannot spawn a process — impossible in principle, so the reason and
-  // the place to go are stated together (`.claude/rules/surfaces.md`).
-  if (!isAcpBridgeAvailable()) {
-    return (
-      <div className="my-auto flex min-w-0 flex-col items-center">
-        <FeatureStage
-          data-testid="app-settings-runtimes-web"
-          className="my-0"
-          art={(motionState) => <AgentConversationArtwork {...motionState} tools={APP_CODING_TOOLS} />}
-          title={t('webTitle')}
-          body={<>{t('webBody')} {t('webLabel')}</>}
-          action={<GetAppLink data-testid="app-settings-runtimes-get-app">{t('webGetApp')}</GetAppLink>}
-          note={
-            <span className="flex flex-col items-center gap-1">
-              <span className="text-balance">{t('webCaption')}</span>
-              {/* Another destination, so it stays a link under the tab's one press. */}
-              <Link
-                href={DESTINATION_HREF.mcp}
-                data-testid="app-settings-runtimes-mcp-link"
-                className={controlClass({ shape: 'link', size: 'lg', tone: 'default', hoverInk: 'strong', className: 'atlas-touch-floor' })}
-              >
-                {t('webMcpLink')}
-              </Link>
-            </span>
-          }
-        />
-        {/*
-          The tools the app would look for, from the bundled registry: marks and names only,
-          since a browser has no state to report and nothing to press.
-        */}
-        <Disclosure
-          className="w-full max-w-[var(--measure-stage-column)] text-center"
-          summaryClassName="atlas-touch-floor"
-          summaryTestId="app-settings-runtimes-web-tools-toggle"
-          summary={t('webToolsHeading', { count: APP_CODING_TOOLS.length })}
-        >
-          <ul
-            data-testid="app-settings-runtimes-web-tools"
-            aria-label={t('webToolsHeading', { count: APP_CODING_TOOLS.length })}
-            className="mt-3 grid min-w-0 grid-cols-2 gap-x-4 gap-y-2 text-left md:grid-cols-3"
-          >
-            {APP_CODING_TOOLS.map((tool) => (
-              <li
-                key={tool.id}
-                data-testid={`app-settings-runtimes-web-tool-${tool.id}`}
-                className="flex min-w-0 items-center gap-2.5"
-              >
-                {/* Stepped back like the desktop shelf's marks, so they do not outweigh the press above. */}
-                <span className="flex shrink-0 opacity-55">
-                  <ProductMark icon={tool.icon} ink={tool.brandInk} monogram={tool.name} />
-                </span>
-                <span className="min-w-0 truncate text-body text-[color:var(--color-text-secondary)]">
-                  {tool.name}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </Disclosure>
-      </div>
-    );
-  }
 
   const ready = (runtimes ?? []).filter((r) => isRuntimeUsable(r.state));
   const others = (runtimes ?? []).filter((r) => !isRuntimeUsable(r.state));

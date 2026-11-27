@@ -177,7 +177,6 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
 
   // Things that *define* the scope (they are the answer to "which vault")
   { key: "demo:sample-source:v1", kind: "storage", scope: "global", note: "which built-in sample this is; an input to the scope, not state inside the scope" },
-  { key: "demo:docs-vault:source", kind: "storage", scope: "global", note: "which of local|server is being viewed" },
   { key: "docs-vault:current-handle", kind: "storage", scope: "global", note: "IndexedDB: current vault handle" },
   { key: "docs-vault:fs-handle:", kind: "storage", scope: "global", note: "IndexedDB store prefix: vault handle storage" },
   { key: "docs-vault:fs-handle:recent", kind: "storage", scope: "global", note: "IndexedDB: recent vault handles" },

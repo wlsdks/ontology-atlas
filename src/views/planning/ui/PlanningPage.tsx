@@ -16,7 +16,6 @@ import { editablePlanningText, planningTextForDisk, type PlanningEditableText } 
 import { planningSourceFor, type HomePlanningSelection, type PlanningSelection } from '@/shared/lib/planning/source';
 import { beginPlanningReturn, clearPlanningReturn } from '@/shared/lib/planning/navigation';
 import { readPlanningMemory, writePlanningMemory } from '@/shared/lib/planning/memory';
-import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { MOTION } from '@/shared/motion';
@@ -477,7 +476,7 @@ export function PlanningPage() {
       </> : undefined}
     />
     {!panes ? <div className={`relative ${PAGE_FRAME_FORM} ${PAGE_STAGE_FILL}`}>
-      {arrival === 'unsupported' ? <PlanningFolderStage door={{ kind: 'unsupported', offersApp: !isDesktopShell() }} />
+      {arrival === 'unsupported' ? <PlanningFolderStage door={{ kind: 'unsupported' }} />
         : arrival === 'picker' ? <PlanningFolderStage door={{ kind: 'choose', onChoose: () => void choose(true), unavailable: status === 'unavailable' }} />
         : holdsCreateStage && vaultRoot ? <PlanningFolderStage door={{ kind: 'create', folder: vaultRoot.name, onCreate: () => void openHome(true), onChoose: available ? () => void choose(true) : null, failed: createFailed, creating: creatingHome || homePending }} />
         : firstDocumentStage && workbench?.kind === 'home' ? <PlanningFolderStage door={{

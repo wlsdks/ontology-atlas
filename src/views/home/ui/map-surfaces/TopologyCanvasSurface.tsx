@@ -12,7 +12,6 @@ import type { useTopologyPreferences } from "../../model/use-topology-preference
 import type { useTopologySceneControls } from "../../model/map-canvas/use-topology-scene-controls";
 import type { useTopologyVaultReadModel } from "../../model/use-topology-vault-read-model";
 
-import { VaultOpenGuideSheet } from "@/features/docs-vault-local";
 import { useLiftClearOfWorkCard } from "@/features/work-run";
 import { RecentChangesNeedsVaultDialog } from "@/features/vault-ontology";
 import { DESTINATION_HREF } from "@/shared/config/destinations";
@@ -59,8 +58,6 @@ type TopologyCanvasSurfaceProps = TopologyMapRendererProps & {
   heldLocalGraphStack: string[];
   topologyVisibleCount: number | null;
   readoutStepsAside: boolean;
-  unsupportedGuideOpen: boolean;
-  setUnsupportedGuideOpen: React.Dispatch<React.SetStateAction<boolean>>;
   requestVaultOpen: () => void;
   topologyInspectorState: Pick<
     ReturnType<typeof useTopologyInspectorState>,
@@ -110,8 +107,8 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
   const {
     localGraphRoot, acpRuntimeLabel, router, setFitViewToken, setShortcutsOpen, analysisMode, growthReplaying,
     setGrowthReplayToken, renderProjects, leftPanelCollapsed, localGraphStack, setLocalGraphStack,
-    heldLocalGraphStack, topologyVisibleCount, readoutStepsAside, unsupportedGuideOpen,
-    setUnsupportedGuideOpen, requestVaultOpen, topologyCanvasFocus, topologySceneControls, topologyAuthoring,
+    heldLocalGraphStack, topologyVisibleCount, readoutStepsAside,
+    requestVaultOpen, topologyCanvasFocus, topologySceneControls, topologyAuthoring,
     acpRuntimeController, topologyVaultReadModel, topologyAgentOrchestration, topologyPreferences,
     topologyGraphProjection, topologyNavigationActions, topologyInspectorState,
     topologyCreateIntent, topologyIndexPresentation,
@@ -228,9 +225,6 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
                 reason={topologyOverlayState.emptyReason}
                 canCreateNode={canCreateNode}
                 onCreateNode={openCreateNode}
-                // Decided by capability, from the same source as `OpenVaultCta`: a web browser
-                // with File System Access can pick a folder too.
-                canPickFolder={vault.status !== 'unsupported'}
                 docsFoundCount={bootstrapPlan?.elements.length ?? 0}
                 onStartFromDocs={
                   bootstrapPlan && bootstrapPlan.elements.length > 0
@@ -455,14 +449,6 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
           />
           <FrameMeter />
         </div>
-
-        {/* Only on an unsupported browser, so the direct tile-to-picker path is unchanged
-           elsewhere. */}
-        <VaultOpenGuideSheet
-          open={unsupportedGuideOpen}
-          unsupported
-          onClose={() => setUnsupportedGuideOpen(false)}
-        />
 
         <RecentChangesNeedsVaultDialog
           open={recentNeedsVaultOpen}

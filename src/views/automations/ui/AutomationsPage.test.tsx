@@ -9,7 +9,6 @@ import type { RoundsRunnerValue } from '@/features/library-rounds';
 import { AutomationsPage } from './AutomationsPage';
 
 const mocks = vi.hoisted(() => ({ push: vi.fn(), open: vi.fn() }));
-vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', () => ({ isTauriVaultRuntime: () => true }));
 vi.mock('@/entities/vault-session', () => ({ useLocalVault: () => ({ status: 'idle', open: mocks.open }) }));
 let search = '';
 

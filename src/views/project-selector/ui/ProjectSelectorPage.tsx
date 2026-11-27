@@ -9,7 +9,9 @@ import { framerSpring, SPRING } from "@/shared/motion/spring";
 import { usePrefersReducedMotion } from "@/shared/lib/render-timing/use-prefers-reduced-motion";
 import { buildProjectRuntimeDetailHref, buildTopologyProjectNodeHref, projectDisplayName, type Project } from "@/entities/project";
 import { OpenVaultCta } from "@/features/docs-vault-local";
-import { useDataSourceMode, VaultSourceHydrationBoundary, useLocalVault, useVaultIdentityScope } from "@/entities/vault-session";
+import { useDataSourceMode, useLocalVault, useVaultIdentityScope } from "@/entities/vault-session";
+import { useHydrated } from "@/shared/lib/render-timing/use-hydrated";
+import { RouteLoadingFallback } from "@/shared/ui/fallbacks/route-loading-fallback";
 import { Link } from "@/i18n/navigation";
 import { Copy, Plus } from "lucide-react";
 import { useDocumentTitle } from "@/shared/lib/public-pages/use-document-title";
@@ -47,12 +49,18 @@ const NEW_PROJECT_HREF = `/project/new/?returnTo=${encodeURIComponent("/projects
 const TILE_SURFACE =
   "rounded-card border bg-[color:var(--color-panel)] shadow-[inset_0_1px_0_var(--color-overlay-1)]";
 
+/** The exported page holds the neutral frame: the remembered folder is known after hydration. */
 export function ProjectSelectorPage() {
+  const hydrated = useHydrated();
+  return hydrated ? <ProjectSelectorContent /> : <RouteLoadingFallback />;
+}
+
+function ProjectSelectorContent() {
   const t = useTranslations("projectPages.selector");
   useDocumentTitle(t("documentTitle"));
   const { projects, loaded } = useProjects();
   const dataSourceMode = useDataSourceMode();
-  // The sample is not the person's folder, so nothing in it is their selection.
+  // Without a folder there is no selection.
   const selection = useSelectedProjectSlug();
   const selectedSlug = dataSourceMode === "static" ? null : selection;
   const orderedProjects = useMemo(() => selectedFirst(projects, selectedSlug), [projects, selectedSlug]);
@@ -86,113 +94,109 @@ export function ProjectSelectorPage() {
   const riseTransition = reducedMotion ? MOTION.fast : MOTION.base;
 
   return (
-    <VaultSourceHydrationBoundary>
-      <div className="flex min-h-full w-full">
-        <main
-          id="main"
-          tabIndex={-1}
-          className={cn(
-            "flex min-w-0 flex-1 flex-col bg-[color:var(--color-canvas)]",
-            !(placedOnStage || loading) && "max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]",
-          )}
-        >
-          <PageHeaderBar
-            frame="page"
-            title={t("headerTitle")}
-            meta={
-              loading ? null : (
-                <span
-                  data-testid="project-selector-count"
-                  className="text-label tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-tertiary)] max-sm:sr-only"
-                >
-                  {dataSourceMode === "static"
-                    ? t("projectCountSample", { count: projects.length })
-                    : t("projectCount", { count: projects.length })}
-                </span>
-              )
-            }
-            actions={
-              <>
-                {dataSourceMode === "static" ? <OpenVaultCta testId="project-selector-open-vault" /> : null}
-                <div className="lg:hidden">
-                  <AppSettingsMenu mode={dataSourceMode} triggerVariant="chrome-tile" />
-                </div>
-              </>
-            }
-          />
-          <div className={cn(PAGE_FRAME, "relative", placedOnStage || loading ? PAGE_STAGE_FILL : "pt-8 md:pt-10 pb-6 md:pb-10")}>
-            {loading ? (
-              <WaitStage
-                mark="mascot"
-                delayed
-                data-testid="project-selector-loading"
-                className={PAGE_WAIT_LIFT}
-                title={openingName ? tSwitch("openingNamed", { name: openingName }) : tSwitch("openingUnnamed")}
-              />
-            ) : (
+    <div className="flex min-h-full w-full">
+      <main
+        id="main"
+        tabIndex={-1}
+        className={cn(
+          "flex min-w-0 flex-1 flex-col bg-[color:var(--color-canvas)]",
+          !(placedOnStage || loading) && "max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]",
+        )}
+      >
+        <PageHeaderBar
+          frame="page"
+          title={t("headerTitle")}
+          meta={
+            loading ? null : (
+              <span
+                data-testid="project-selector-count"
+                className="text-label tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-tertiary)] max-sm:sr-only"
+              >
+                {t("projectCount", { count: projects.length })}
+              </span>
+            )
+          }
+          actions={
             <>
-            {stage.mounted ? (
-              <div
-                data-placement={empty ? "stage" : undefined}
-                inert={stage.exiting}
-                aria-hidden={stage.exiting || undefined}
-                className={cn(
-                  "flex min-w-0 flex-1 flex-col",
-                  stage.exiting && cn("motion-swap-out pointer-events-none absolute inset-x-0 top-0 min-h-full px-5 md:px-10", PAGE_STAGE_FILL),
-                )}
-              >
-                <FirstProjectStage t={t} />
+              {dataSourceMode === "static" ? <OpenVaultCta testId="project-selector-open-vault" /> : null}
+              <div className="lg:hidden">
+                <AppSettingsMenu mode={dataSourceMode} triggerVariant="chrome-tile" />
               </div>
-            ) : null}
-            {empty ? null : (
-            <motion.div
-              data-placement={placedOnStage ? "stage" : "list"}
-              className={cn("min-w-0", placedOnStage && "my-auto")}
-              initial={stage.exiting ? { opacity: 0 } : false}
-              animate={{ opacity: 1 }}
-              layout={reducedMotion ? false : "position"}
-              layoutDependency={placedOnStage}
-              transition={{ default: TILE_SPRING, opacity: riseTransition }}
-            >
-            <p className={`mt-2 max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] ${PAGE_LEDE}`}>
-              {dataSourceMode === "static" ? t("ledeSample") : projects.length === 1 ? t("ledeSole") : t("lede")}
-            </p>
-
-              <ul
-                data-testid="project-selector-grid"
-                className="mt-7 grid list-none grid-cols-1 gap-[var(--card-gap)] p-0 md:grid-cols-2"
-              >
-                {orderedProjects.map((project) => {
-                  const doc = findProjectDocInList(docs, project.slug);
-                  return (
-                    <motion.li
-                      key={project.slug}
-                      className="flex min-w-0"
-                      initial={rising.has(project.slug) ? riseStart : false}
-                      animate={OVERLAY_SETTLED}
-                      transition={riseTransition}
-                    >
-                      <ProjectCard
-                        project={project}
-                        description={resolveAuthoredDescription(doc, project)}
-                        selected={project.slug === selectedSlug}
-                        t={t}
-                      />
-                    </motion.li>
-                  );
-                })}
-              </ul>
-              <motion.div layout={reducedMotion ? false : "position"} layoutDependency={setKey} transition={TILE_SPRING}>
-                <NextProjectSection t={t} />
-              </motion.div>
-            </motion.div>
-            )}
             </>
-            )}
-          </div>
-        </main>
-      </div>
-    </VaultSourceHydrationBoundary>
+          }
+        />
+        <div className={cn(PAGE_FRAME, "relative", placedOnStage || loading ? PAGE_STAGE_FILL : "pt-8 md:pt-10 pb-6 md:pb-10")}>
+          {loading ? (
+            <WaitStage
+              mark="mascot"
+              delayed
+              data-testid="project-selector-loading"
+              className={PAGE_WAIT_LIFT}
+              title={openingName ? tSwitch("openingNamed", { name: openingName }) : tSwitch("openingUnnamed")}
+            />
+          ) : (
+          <>
+          {stage.mounted ? (
+            <div
+              data-placement={empty ? "stage" : undefined}
+              inert={stage.exiting}
+              aria-hidden={stage.exiting || undefined}
+              className={cn(
+                "flex min-w-0 flex-1 flex-col",
+                stage.exiting && cn("motion-swap-out pointer-events-none absolute inset-x-0 top-0 min-h-full px-5 md:px-10", PAGE_STAGE_FILL),
+              )}
+            >
+              <FirstProjectStage t={t} />
+            </div>
+          ) : null}
+          {empty ? null : (
+          <motion.div
+            data-placement={placedOnStage ? "stage" : "list"}
+            className={cn("min-w-0", placedOnStage && "my-auto")}
+            initial={stage.exiting ? { opacity: 0 } : false}
+            animate={{ opacity: 1 }}
+            layout={reducedMotion ? false : "position"}
+            layoutDependency={placedOnStage}
+            transition={{ default: TILE_SPRING, opacity: riseTransition }}
+          >
+          <p className={`mt-2 max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] ${PAGE_LEDE}`}>
+            {projects.length === 1 ? t("ledeSole") : t("lede")}
+          </p>
+
+            <ul
+              data-testid="project-selector-grid"
+              className="mt-7 grid list-none grid-cols-1 gap-[var(--card-gap)] p-0 md:grid-cols-2"
+            >
+              {orderedProjects.map((project) => {
+                const doc = findProjectDocInList(docs, project.slug);
+                return (
+                  <motion.li
+                    key={project.slug}
+                    className="flex min-w-0"
+                    initial={rising.has(project.slug) ? riseStart : false}
+                    animate={OVERLAY_SETTLED}
+                    transition={riseTransition}
+                  >
+                    <ProjectCard
+                      project={project}
+                      description={resolveAuthoredDescription(doc, project)}
+                      selected={project.slug === selectedSlug}
+                      t={t}
+                    />
+                  </motion.li>
+                );
+              })}
+            </ul>
+            <motion.div layout={reducedMotion ? false : "position"} layoutDependency={setKey} transition={TILE_SPRING}>
+              <NextProjectSection t={t} />
+            </motion.div>
+          </motion.div>
+          )}
+          </>
+          )}
+        </div>
+      </main>
+    </div>
   );
 }
 

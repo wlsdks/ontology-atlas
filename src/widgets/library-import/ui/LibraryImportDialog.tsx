@@ -44,7 +44,6 @@ type LibraryImportProps = {
   /** Whether an in-app conversation can start here; when it cannot, the last press is not offered. */
   canRunAgent: boolean;
   /** A browser starts no program, while the app may lack a verified coding tool; the remedies differ. */
-  agentGap: 'browser' | 'runtime';
   destination?: ImportDestination;
   testIdPrefix?: string;
 };
@@ -65,7 +64,6 @@ function LibraryImportFlow({
   onBrief,
   onOpenAdvanced,
   canRunAgent,
-  agentGap,
   destination = 'sources',
   testIdPrefix = 'library-import',
 }: LibraryImportProps) {
@@ -300,7 +298,6 @@ function LibraryImportFlow({
           onWhatChange={setWhat}
           requestField={requestField}
           canRunAgent={canRunAgent}
-          agentGap={agentGap}
           onBack={() => setStep('connect')}
           onBring={bring}
         />

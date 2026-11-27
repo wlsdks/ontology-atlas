@@ -19,7 +19,7 @@ import { useLatestRef } from '@/shared/lib/use-latest-ref';
 import { MOTION } from '@/shared/motion';
 import { notMappedAreas } from '@/shared/lib/vault-document/not-mapped-areas';
 import { widestProjectLine, type MappingProjectLine } from '@/shared/lib/vault-document/mapping-share';
-import { getTauriVaultRootPath, isTauriVaultRuntime } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { createVaultTextReader } from '@/shared/lib/vault-folder/vault-text-reader';
 
 /**
@@ -157,7 +157,7 @@ export function useFolderMappingFigures(): { resting: MappingProjectLine | null;
   const reader = useMemo<MappingFiguresReader>(() => {
     const readNotes = async (slugs: readonly string[]) => {
       if (!granted) return slugs.map(() => null);
-      const nativeRoot = isTauriVaultRuntime() ? getTauriVaultRootPath(granted.root) ?? null : null;
+      const nativeRoot = getTauriVaultRootPath(granted.root) ?? null;
       return createVaultTextReader(nativeRoot, granted.fileHandles)(slugs.map((slug) => ({ slug, path: `${slug}.md` })));
     };
     return {

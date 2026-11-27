@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { useDocsVaultAddress } from './use-docs-vault-url';
-import type { useDocsVaultSource } from './use-docs-vault-source';
+import type { useDocsVaultFolder } from './use-docs-vault-folder';
 import type { useVaultManifest } from './use-vault-manifest';
 
 export function useQuerySlugVerdict({
@@ -12,11 +12,11 @@ export function useQuerySlugVerdict({
 }: {
   address: ReturnType<typeof useDocsVaultAddress>;
   vault: ReturnType<typeof useVaultManifest>;
-  src: ReturnType<typeof useDocsVaultSource>;
+  src: ReturnType<typeof useDocsVaultFolder>;
 }) {
   const { replaceUrlState } = address;
-  const { normalizedQuerySlug, docsBySlug, staticVault } = vault;
-  const { recentKey, source, vaultScopeSettled } = src;
+  const { normalizedQuerySlug, docsBySlug } = vault;
+  const { recentKey, vaultScopeSettled } = src;
   const [missingQuerySlug, setMissingQuerySlug] = useState<string | null>(null);
   /**
    * Slugs the app itself just renamed or deleted are not "missing"; `useSearchParams` still
@@ -40,11 +40,8 @@ export function useQuerySlugVerdict({
     setMissingQuerySlug((previousValue) => previousValue ?? normalizedQuerySlug);
   }, [normalizedQuerySlug, docsBySlug, vaultScopeSettled]);
 
-  /**
-   * `?slug=` means something only inside one vault, so a vault switch clears it. It is not
-   * the `recentKey`, which collapses both samples into `'server'` and hides a sample switch.
-   */
-  const vaultScope = source === 'local' ? recentKey : `sample:${staticVault.source}`;
+  /** `?slug=` means something only inside one vault, so a vault switch clears it. */
+  const vaultScope = recentKey;
   /**
    * A scope change before settling is boot, not a vault switch; clearing then would delete
    * a deeplink someone just handed over.

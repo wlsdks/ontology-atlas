@@ -6,7 +6,6 @@ import { FileText } from 'lucide-react';
 import { useLocalVault } from '@/entities/vault-session';
 import { forgetRememberedChoices, standingChoiceKept } from '@/features/acp-session';
 import { useUpdateAutoCheck } from '@/features/app-update';
-import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import {
   forgetMachineApprovals,
   useMachineApprovalList,
@@ -19,7 +18,6 @@ import type { SettingsSectionId } from '../../model/catalog/settings-catalog-ent
 import {
   OUTBOUND_DESTINATION_PLACEHOLDERS,
   OUTBOUND_PATHS,
-  WEB_OUTBOUND_PATHS,
   type OutboundDestinationPlaceholder,
   type OutboundPath,
 } from '../../model/outbound-paths';
@@ -62,13 +60,12 @@ const STATUS = 'inline-flex shrink-0 items-center gap-1 text-label leading-label
 
 export function PrivacyLead() {
   const t = useTranslations('settingsPrivacy');
-  const [desktop] = useState(() => isDesktopShell());
   return (
     <p
       className="max-w-[var(--git-setup-measure)] text-body leading-body text-balance text-[color:var(--color-text-tertiary)]"
       data-testid="app-settings-privacy-lead"
     >
-      {desktop ? t('leadDesktop') : t('leadWeb')}
+      {t('leadDesktop')}
     </p>
   );
 }
@@ -120,13 +117,12 @@ export function PrivacyPane({
   onClose: () => void;
 }) {
   const t = useTranslations('settingsPrivacy');
-  const [desktop] = useState(() => isDesktopShell());
   const autoCheck = useUpdateAutoCheck();
   const approvals = useMachineApprovalList();
   const { recentVaults, forgetRecent } = useLocalVault();
   const [forgetFailed, setForgetFailed] = useState(false);
 
-  const paths = desktop ? OUTBOUND_PATHS : WEB_OUTBOUND_PATHS;
+  const paths = OUTBOUND_PATHS;
   const folders = byFolder(approvals);
   const recordLog = paths.find((path) => path.recordedIn)?.recordedIn;
 
@@ -181,66 +177,64 @@ export function PrivacyPane({
         );
       })}
 
-      {desktop ? (
-        <SettingsGroup label={t('allowances.title')} testId="app-settings-privacy-allowances">
-          {folders.length === 0 ? (
-            <SettingsRow
-              settingId="allowances"
-              testId="app-settings-allowances-empty"
-              label={t('allowances.title')}
-              caption={t('allowances.empty')}
-              control={null}
-            />
-          ) : (
-            <>
-              {folders.map((entry) => (
-                <SettingsRow
-                  key={entry.folder}
-                  settingId="allowances"
-                  testId="app-settings-allowances-folder"
-                  label={folderName(entry.folder)}
-                  caption={[
-                    entry.folder,
-                    entry.connectors + entry.rounds > 0
-                      ? t('allowances.counts', {
-                          connectors: entry.connectors,
-                          rounds: entry.rounds,
-                          both: entry.connectors > 0 && entry.rounds > 0 ? 'yes' : 'no',
-                        })
-                      : null,
-                    entry.autoApprove ? t('allowances.autoApprove') : null,
-                  ].filter(Boolean).join(' · ')}
-                  control={
-                    <ArmedChip
-                      label={t('allowances.forget')}
-                      armedLabel={t('allowances.forgetArmed')}
-                      onConfirm={() => forgetMachineApprovals({ folder: entry.folder })}
-                      testId="app-settings-allowances-forget"
-                      ariaLabel={t('allowances.forgetAria', { name: folderName(entry.folder) })}
-                    />
-                  }
-                />
-              ))}
+      <SettingsGroup label={t('allowances.title')} testId="app-settings-privacy-allowances">
+        {folders.length === 0 ? (
+          <SettingsRow
+            settingId="allowances"
+            testId="app-settings-allowances-empty"
+            label={t('allowances.title')}
+            caption={t('allowances.empty')}
+            control={null}
+          />
+        ) : (
+          <>
+            {folders.map((entry) => (
               <SettingsRow
+                key={entry.folder}
                 settingId="allowances"
-                testId="app-settings-allowances-all"
-                label={t('allowances.forgetAll')}
-                caption={t('allowances.caption')}
+                testId="app-settings-allowances-folder"
+                label={folderName(entry.folder)}
+                caption={[
+                  entry.folder,
+                  entry.connectors + entry.rounds > 0
+                    ? t('allowances.counts', {
+                        connectors: entry.connectors,
+                        rounds: entry.rounds,
+                        both: entry.connectors > 0 && entry.rounds > 0 ? 'yes' : 'no',
+                      })
+                    : null,
+                  entry.autoApprove ? t('allowances.autoApprove') : null,
+                ].filter(Boolean).join(' · ')}
                 control={
                   <ArmedChip
-                    label={t('allowances.forgetAll')}
-                    armedLabel={t('allowances.forgetAllArmed')}
-                    onConfirm={() => forgetMachineApprovals()}
-                    testId="app-settings-allowances-forget-all"
+                    label={t('allowances.forget')}
+                    armedLabel={t('allowances.forgetArmed')}
+                    onConfirm={() => forgetMachineApprovals({ folder: entry.folder })}
+                    testId="app-settings-allowances-forget"
+                    ariaLabel={t('allowances.forgetAria', { name: folderName(entry.folder) })}
                   />
                 }
               />
-            </>
-          )}
-        </SettingsGroup>
-      ) : null}
+            ))}
+            <SettingsRow
+              settingId="allowances"
+              testId="app-settings-allowances-all"
+              label={t('allowances.forgetAll')}
+              caption={t('allowances.caption')}
+              control={
+                <ArmedChip
+                  label={t('allowances.forgetAll')}
+                  armedLabel={t('allowances.forgetAllArmed')}
+                  onConfirm={() => forgetMachineApprovals()}
+                  testId="app-settings-allowances-forget-all"
+                />
+              }
+            />
+          </>
+        )}
+      </SettingsGroup>
 
-      {desktop ? <StoredHereSettings /> : null}
+      <StoredHereSettings />
 
       <SettingsGroup label={t('recent.title')} testId="app-settings-privacy-recent">
         <SettingsRow
@@ -250,9 +244,7 @@ export function PrivacyPane({
           caption={
             forgetFailed
               ? t('recent.failed')
-              : `${t('recent.count', { count: recentVaults.length })} · ${
-                  desktop ? t('recent.captionDesktop') : t('recent.captionWeb')
-                }`
+              : `${t('recent.count', { count: recentVaults.length })} · ${t('recent.captionDesktop')}`
           }
           captionTone={forgetFailed ? 'danger' : 'neutral'}
           control={

@@ -5,7 +5,6 @@ import { useLocale, useTranslations } from "next-intl";
 import { useLocalVault, useVaultIdentityScope, useVaultSessionIdentityScope } from "@/entities/vault-session";
 import { isWikiPage } from "@/entities/docs-vault";
 import { opensLocally } from "@/features/vault-agent";
-import { isAcpBridgeAvailable } from "@/shared/lib/agent-chat/tauri-acp";
 import {
   FindDocumentsDialog,
   questionDeskListingVersion,
@@ -315,7 +314,6 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null, showHo
       onAddFiles={handleAddFiles}
       onBrief={(brief) => { importHeadsToPlanningRef.current = importDestination === "planning"; agent.start(brief, "import"); }}
       canRunAgent={agent.route === "agent"}
-      agentGap={isAcpBridgeAvailable() ? "runtime" : "browser"}
       destination={importDestination}
       onOpenAdvanced={openConnectorSettings}
     />
@@ -591,7 +589,6 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null, showHo
                   blocked={turns.compileBlocked
                     ? { reason: turns.compileBlocked, door: agentDoor ? <AgentDoor testId="library-progress-blocked-door" /> : null }
                     : null}
-                  inApp={nativeVaultRootPath !== null}
                   filter={sourceFilter}
                   workLine={nativeVaultRootPath !== null ? (
                     <LibraryWorkLine
@@ -616,7 +613,6 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null, showHo
                   sources={model.sources}
                   pages={model.wikiPages}
                   batch={overviewBatch}
-                  inApp={nativeVaultRootPath !== null}
                   readingCount={localVault.partialTotal > 0 ? model.sources.length : null}
                   pick={sourcePick}
                   onPick={setSourcePick}
@@ -669,7 +665,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null, showHo
           toast.show(t(result.state === 'saved' ? 'answers.saved' : 'answers.savedNeedsReview'), result.state === 'saved' ? 'success' : 'error');
         }); }} t={t} /> : null}
       <LibraryHomePopovers
-        t={t} nativeVaultRootPath={nativeVaultRootPath} homeSurface={homeSurface}
+        t={t} homeSurface={homeSurface}
         setHomeSurface={setHomeSurface} guideDoorRef={guideDoorRef} questionsDoorRef={questionsDoorRef}
         compileClauseRef={compileClauseRef} overflowDoorRef={overflowDoorRef} choose={choose} busy={busy}
         model={model} retainedAnswers={retainedAnswers} knownOriginalPaths={knownOriginalPaths}

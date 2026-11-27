@@ -11,13 +11,11 @@ import { OUTBOUND_DESTINATION_PLACEHOLDERS, OUTBOUND_PATHS } from '../../model/o
 import { PRIVACY_CATALOG } from '../../model/catalog/privacy';
 import { PrivacyLead, PrivacyPane } from './PrivacyPane';
 
-const shell = vi.hoisted(() => ({ desktop: true }));
 const vault = vi.hoisted(() => ({
   recentVaults: [] as { id: string; name: string }[],
   forgetRecent: vi.fn(async () => {}),
 }));
 
-vi.mock('@/shared/lib/desktop-shell/desktop-shell', () => ({ isDesktopShell: () => shell.desktop }));
 vi.mock('@/entities/vault-session', () => ({ useLocalVault: () => vault }));
 
 function withScope(messages: typeof enMessages, scope: string) {
@@ -42,7 +40,6 @@ beforeEach(() => {
   let clock = Date.parse('2026-10-02T00:00:00Z');
   vi.spyOn(Date, 'now').mockImplementation(() => (clock += 1000));
   window.localStorage.clear();
-  shell.desktop = true;
   vault.recentVaults = [];
   vault.forgetRecent.mockReset();
 });
@@ -77,15 +74,6 @@ describe('Privacy · data says what can leave and what this computer remembers',
     expect(screen.getByTestId('app-settings-outbound-update-state').textContent).toBe('Automatic check off');
     fireEvent.click(screen.getByTestId('app-settings-outbound-update-change'));
     expect(onShowSection).toHaveBeenCalledWith('about');
-  });
-
-  it('on the web lists the website files, says the folder is never uploaded, and hides allowances', () => {
-    shell.desktop = false;
-    mount();
-    expect(screen.getByTestId('app-settings-outbound-website-files')).toBeTruthy();
-    expect(screen.queryByTestId('app-settings-outbound-update-check')).toBeNull();
-    expect(screen.getByTestId('app-settings-privacy-lead').textContent).toContain('never uploaded');
-    expect(screen.queryByTestId('app-settings-privacy-allowances')).toBeNull();
   });
 
   it('names allowed folders without the allowed definitions, and forgets one folder after two presses', () => {

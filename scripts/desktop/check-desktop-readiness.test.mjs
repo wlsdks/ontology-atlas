@@ -180,7 +180,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ the hosted download page does not route into the browser workbench, and \/docs's own local-source tab stays desktop-only/,
+    /✓ the hosted download page does not route into the workbench, and \/docs offers no disabled local-source tab/,
   );
   assert.match(
     result.stdout,
@@ -198,7 +198,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ the topology empty state routes hosted users to the app download while preserving desktop vault picking/,
+    /✓ the topology empty state sends folder work to \/docs\/ and never offers the app's own download/,
   );
   assert.match(
     result.stdout,

@@ -2,16 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   resolveDocLink,
   githubBlobUrl,
-  ONTOLOGY_ATLAS_REPO_BLOB_BASE,
-  DOCS_VAULT_REPO_ROOT,
 } from './resolve-doc-link';
 
 const vault = new Set(['README', 'ontology/project', 'ontology/README', 'guides/setup']);
-
-const serverConfig = {
-  repoBlobBase: ONTOLOGY_ATLAS_REPO_BLOB_BASE,
-  vaultRepoRoot: DOCS_VAULT_REPO_ROOT,
-};
 
 describe('resolveDocLink', () => {
   it('resolves a relative link inside the vault to an internal route', () => {
@@ -20,7 +13,6 @@ describe('resolveDocLink', () => {
         href: './README.md',
         fromSlug: 'ontology/project',
         vaultSlugs: vault,
-        ...serverConfig,
       }),
     ).toEqual({ kind: 'internal', slug: 'ontology/README', anchor: undefined });
     // Anchor preserved
@@ -29,51 +21,8 @@ describe('resolveDocLink', () => {
         href: '../guides/setup.md#install',
         fromSlug: 'ontology/project',
         vaultSlugs: vault,
-        ...serverConfig,
       }),
     ).toEqual({ kind: 'internal', slug: 'guides/setup', anchor: 'install' });
-  });
-
-  it('sends a relative link that leaves the vault root to an external GitHub blob', () => {
-    // `../mcp/README.md` in docs/README.md → mcp/README.md at the repo root
-    expect(
-      resolveDocLink({
-        href: '../mcp/README.md',
-        fromSlug: 'README',
-        vaultSlugs: vault,
-        ...serverConfig,
-      }),
-    ).toEqual({
-      kind: 'external',
-      url: 'https://github.com/wlsdks/ontology-atlas/blob/main/mcp/README.md',
-    });
-    // Anchors are kept on an external URL too
-    expect(
-      resolveDocLink({
-        href: '../mcp/README.md#tools',
-        fromSlug: 'README',
-        vaultSlugs: vault,
-        ...serverConfig,
-      }),
-    ).toEqual({
-      kind: 'external',
-      url: 'https://github.com/wlsdks/ontology-atlas/blob/main/mcp/README.md#tools',
-    });
-  });
-
-  it('normalizes a vault-escaping link from a nested doc to the repo root', () => {
-    // `../../cli/README.md` in docs/ontology/project.md → cli/README.md
-    expect(
-      resolveDocLink({
-        href: '../../cli/README.md',
-        fromSlug: 'ontology/project',
-        vaultSlugs: vault,
-        ...serverConfig,
-      }),
-    ).toEqual({
-      kind: 'external',
-      url: 'https://github.com/wlsdks/ontology-atlas/blob/main/cli/README.md',
-    });
   });
 
   it('passes through absolute URLs, anchor-only links and non-md links', () => {
@@ -82,7 +31,6 @@ describe('resolveDocLink', () => {
         href: 'https://example.com/x.md',
         fromSlug: 'README',
         vaultSlugs: vault,
-        ...serverConfig,
       }),
     ).toEqual({ kind: 'passthrough' });
     expect(
@@ -90,7 +38,6 @@ describe('resolveDocLink', () => {
         href: '#section',
         fromSlug: 'README',
         vaultSlugs: vault,
-        ...serverConfig,
       }),
     ).toEqual({ kind: 'passthrough' });
     expect(
@@ -98,12 +45,11 @@ describe('resolveDocLink', () => {
         href: '../assets/logo.png',
         fromSlug: 'README',
         vaultSlugs: vault,
-        ...serverConfig,
       }),
     ).toEqual({ kind: 'passthrough' });
   });
 
-  it('marks a vault-external link unresolved when there is no repoBlobBase', () => {
+  it('marks a link that leaves the vault, and a link to an unknown slug, unresolved', () => {
     expect(
       resolveDocLink({
         href: '../mcp/README.md',
@@ -119,20 +65,6 @@ describe('resolveDocLink', () => {
         vaultSlugs: vault,
       }),
     ).toEqual({ kind: 'unresolved' });
-  });
-
-  it('sends an unknown internal slug to external when repo info exists', () => {
-    expect(
-      resolveDocLink({
-        href: './missing-doc.md',
-        fromSlug: 'README',
-        vaultSlugs: vault,
-        ...serverConfig,
-      }),
-    ).toEqual({
-      kind: 'external',
-      url: 'https://github.com/wlsdks/ontology-atlas/blob/main/docs/missing-doc.md',
-    });
   });
 });
 

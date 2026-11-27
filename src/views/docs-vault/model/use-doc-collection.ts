@@ -18,7 +18,7 @@ import {
 import { scheduleStateSync } from '../lib/persistence';
 import { settleDocsVaultAddress } from '../lib/url-state';
 import type { useDocsVaultAddress } from './use-docs-vault-url';
-import type { useDocsVaultSource } from './use-docs-vault-source';
+import type { useDocsVaultFolder } from './use-docs-vault-folder';
 import type { useDocTabs } from './use-doc-tabs';
 import type { useVaultManifest } from './use-vault-manifest';
 
@@ -32,18 +32,16 @@ export function useDocCollection({
   selectedSlug,
   setSelectedSlug,
   setActiveTag,
-  setSampleWelcomeDismissed,
 }: {
   address: ReturnType<typeof useDocsVaultAddress>;
   vault: ReturnType<typeof useVaultManifest>;
-  src: ReturnType<typeof useDocsVaultSource>;
+  src: ReturnType<typeof useDocsVaultFolder>;
   tabs: ReturnType<typeof useDocTabs>;
   documentScope: 'all' | 'ontology';
   initialCollection: DocsVaultDocCollection;
   selectedSlug: string | null;
   setSelectedSlug: (slug: string | null) => void;
   setActiveTag: (tag: string | null) => void;
-  setSampleWelcomeDismissed: (dismissed: boolean) => void;
 }) {
   const { routePathname, replaceUrlState, generalDocsHref } = address;
   const {
@@ -222,9 +220,8 @@ export function useDocCollection({
       setHighlightQuery(query);
       setRecentSlugs(pushRecentDoc(recentKey, slug));
       replaceUrlState({ slug });
-      setSampleWelcomeDismissed(true);
     },
-    [documentScope, generalDocsHref, recentKey, rememberActiveSlug, replaceUrlState, router, scopedDocSlugs, setRecentSlugs, setSampleWelcomeDismissed, setSelectedSlug],
+    [documentScope, generalDocsHref, recentKey, rememberActiveSlug, replaceUrlState, router, scopedDocSlugs, setRecentSlugs, setSelectedSlug],
   );
 
   const handleCloseDocTab = useCallback(

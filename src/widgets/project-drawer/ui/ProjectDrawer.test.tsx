@@ -4,6 +4,8 @@ import { NextIntlClientProvider } from "next-intl";
 import koMessages from "../../../../messages/ko.json";
 import { TaxonomyProvider } from "@/features/taxonomy";
 import type { Project } from "@/entities/project";
+import type { VaultDoc } from "@/entities/docs-vault";
+import { LocalVaultContext, type LocalVaultValue } from "@/entities/vault-session/model/vault-provider/local-vault-context";
 import { ProjectDrawer } from "./ProjectDrawer";
 
 // jsdom has no Element.scrollTo; the mode-switch and details paths call it, so it is a no-op stub.
@@ -63,23 +65,49 @@ function makeProject(overrides: Partial<Project> = {}): Project {
   };
 }
 
+/** An open folder holding one document that names the project, readable through its file handle. */
+function folderNaming(name: string): LocalVaultValue {
+  const doc = {
+    slug: "notes/launch",
+    path: "notes/launch.md",
+    title: `${name} launch`,
+    tags: [],
+    frontmatter: {},
+    headings: [],
+    linksOut: [],
+    mtime: 1,
+    updatedAt: "2026-01-01T00:00:00.000Z",
+  } as unknown as VaultDoc;
+  const file = { getFile: async () => new File([`# ${name} launch\n\nThe plan for ${name}.`], "launch.md") } as unknown as FileSystemFileHandle;
+  return {
+    status: "loaded",
+    isReloadingSameVault: false,
+    handle: {} as FileSystemDirectoryHandle,
+    fileHandles: new Map([["notes/launch", file]]),
+    manifest: { docs: [doc] },
+  } as unknown as LocalVaultValue;
+}
+
 function renderDrawer(
   props: Partial<React.ComponentProps<typeof ProjectDrawer>> = {},
+  folder: LocalVaultValue | null = null,
 ) {
   const project = props.project ?? makeProject();
   const result = render(
-    <NextIntlClientProvider locale="ko" messages={koMessages}>
-      <TaxonomyProvider>
-        <ProjectDrawer
-          project={project}
-          allProjects={props.allProjects ?? (project ? [project] : [])}
-          impactMode={props.impactMode ?? "none"}
-          onChangeImpactMode={props.onChangeImpactMode ?? vi.fn()}
-          onClose={props.onClose ?? vi.fn()}
-          onSelectProject={props.onSelectProject ?? vi.fn()}
-        />
-      </TaxonomyProvider>
-    </NextIntlClientProvider>,
+    <LocalVaultContext.Provider value={folder ?? ({ status: "idle", manifest: null } as unknown as LocalVaultValue)}>
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <TaxonomyProvider>
+          <ProjectDrawer
+            project={project}
+            allProjects={props.allProjects ?? (project ? [project] : [])}
+            impactMode={props.impactMode ?? "none"}
+            onChangeImpactMode={props.onChangeImpactMode ?? vi.fn()}
+            onClose={props.onClose ?? vi.fn()}
+            onSelectProject={props.onSelectProject ?? vi.fn()}
+          />
+        </TaxonomyProvider>
+      </NextIntlClientProvider>
+    </LocalVaultContext.Provider>,
   );
   // The pills sit in a closed <details>, hidden from the accessibility tree, so it is opened before
   // role queries.
@@ -91,7 +119,7 @@ describe("ProjectDrawer related documents", () => {
   it("shows the section only once every row has its excerpt, never empty first", async () => {
     const dependency = makeProject({ slug: "payments", name: "Payments" });
     const project = makeProject({ slug: "storefront", name: "Online Store", dependencies: ["payments"] });
-    renderDrawer({ project, allProjects: [project, dependency] });
+    renderDrawer({ project, allProjects: [project, dependency] }, folderNaming("Online Store"));
     expect(screen.queryByTestId("project-drawer-related-docs")).toBeNull();
     const section = await screen.findByTestId("project-drawer-related-docs");
     const rows = within(section).getAllByRole("listitem");

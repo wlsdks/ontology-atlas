@@ -10,13 +10,11 @@ import { useVaultConnectors } from '@/features/mcp-connectors';
 import { BlockImportModule } from '@/features/ontology-blocks';
 import { DESTINATION_HREF, MCP_CONNECTORS_HREF } from '@/shared/config/destinations';
 import { cn } from '@/shared/lib/cn';
-import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import { createVaultFileProjectSourceStore } from '@/shared/lib/project-source/project-source-store';
 import { gitStatus, type GitStatusResult } from '@/shared/lib/git/tauri-git';
 import { openTauriVaultInFinder } from '@/shared/lib/vault-folder/native-vault/tauri-vault-location';
 import {
   getTauriVaultRootPath,
-  isTauriVaultRuntime,
 } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { useCopyFeedback } from '@/shared/lib/clipboard/use-copy-feedback';
 import { vaultValidationCounts } from '../../model/vault-validation-counts';
@@ -47,7 +45,6 @@ const NOTHING_READ: Kept = { rounds: null, projectSources: null, git: null };
 function useKeptInFolder(
   handle: FileSystemDirectoryHandle | null,
   root: string | null,
-  desktop: boolean,
 ): Kept {
   const [kept, setKept] = useState<{ handle: FileSystemDirectoryHandle; value: Kept } | null>(null);
   useEffect(() => {
@@ -64,28 +61,26 @@ function useKeptInFolder(
       .read()
       .then((result) => merge({ projectSources: result.bindings.length }))
       .catch(() => merge({ projectSources: 'failed' }));
-    if (desktop) {
-      void createVaultFileRoundStore(handle)
-        .read()
-        .then(({ state }) =>
-          merge({
-            rounds: {
-              count: state.rounds.length,
-              paused: state.rounds.filter((round) => !round.enabled).length,
-            },
-          }),
-        )
-        .catch(() => merge({ rounds: 'failed' }));
-      if (root) {
-        void gitStatus(root)
-          .then((status) => merge({ git: status && status.initialized ? status : 'none' }))
-          .catch(() => merge({ git: 'failed' }));
-      }
+    void createVaultFileRoundStore(handle)
+      .read()
+      .then(({ state }) =>
+        merge({
+          rounds: {
+            count: state.rounds.length,
+            paused: state.rounds.filter((round) => !round.enabled).length,
+          },
+        }),
+      )
+      .catch(() => merge({ rounds: 'failed' }));
+    if (root) {
+      void gitStatus(root)
+        .then((status) => merge({ git: status && status.initialized ? status : 'none' }))
+        .catch(() => merge({ git: 'failed' }));
     }
     return () => {
       cancelled = true;
     };
-  }, [handle, root, desktop]);
+  }, [handle, root]);
   return kept && kept.handle === handle ? kept.value : NOTHING_READ;
 }
 
@@ -101,26 +96,22 @@ export function WorkspacePane({
   const tPicker = useTranslations('featuresMisc.localVaultPicker');
   const { state: copyState, copy } = useCopyFeedback();
   const localVault = useLocalVault();
-  const [desktop] = useState(() => isDesktopShell());
   const scopeTag = (
     <span className={SETTINGS_SECTION_LABEL}>
       {tNav(`settingsMenu.scope.${SETTINGS_SECTION_SCOPE.workspace}`)}
     </span>
   );
 
-  const isDesktopRuntime = isTauriVaultRuntime();
   const isLoaded = localVault.status === 'loaded';
   const loadedHandle = isLoaded ? localVault.handle : null;
   const vaultRootPath = loadedHandle ? (getTauriVaultRootPath(loadedHandle) ?? null) : null;
-  const showVaultManagement = localVault.status !== 'unsupported';
   const vaultBusy = localVault.status === 'opening' || localVault.status === 'loading';
   const validation = isLoaded && localVault.manifest ? vaultValidationCounts(localVault.manifest) : null;
 
   const connectors = useVaultConnectors(loadedHandle);
-  const kept = useKeptInFolder(loadedHandle, vaultRootPath, desktop);
+  const kept = useKeptInFolder(loadedHandle, vaultRootPath);
 
-  const vaultHref =
-    mode === 'local' ? '/docs/' : isDesktopRuntime ? '/docs/?intent=local' : '/download/';
+  const vaultHref = '/docs/';
   const handleVaultNavigate = (event: ReactMouseEvent<HTMLAnchorElement>) => {
     if (
       event.defaultPrevented ||
@@ -164,7 +155,7 @@ export function WorkspacePane({
     ? t('kept.noFolder')
     : connectors.status === 'loading'
       ? reading
-      : desktop && connectors.connectors.length > 0
+      : connectors.connectors.length > 0
         ? t('kept.connectorsAllowed', {
             total: connectors.connectors.length,
             count: connectors.connectors.filter(connectors.allowedHere).length,
@@ -202,66 +193,64 @@ export function WorkspacePane({
       <SettingsGroup>
         <VaultShapeSettings />
         <OntologyResetSettings />
-        {showVaultManagement ? (
-          <SettingsRow
-            testId="app-settings-workspace-folder"
-            settingId="folder"
-            label={t('folderLabel')}
-            caption={folderCaption}
-            captionTone={
-              localVault.status === 'error'
-                ? 'danger'
-                : localVault.status === 'permission-needed'
-                  ? 'warning'
-                  : 'neutral'
-            }
-            control={
-              <>
-                <span
-                  className={cn(
-                    'max-w-[10rem] truncate text-body',
-                    isLoaded
-                      ? 'text-[color:var(--color-text-primary)]'
-                      : 'text-[color:var(--color-text-quaternary)]',
-                  )}
-                >
-                  {isLoaded && localVault.handle
-                    ? localVault.handle.name
-                    : localVault.status === 'permission-needed'
-                      ? (localVault.handle?.name ?? t('folderEmpty'))
-                      : t('folderEmpty')}
-                </span>
-                {localVault.status === 'permission-needed' ? (
-                  <Chip
-                    size="lg"
-                    tone="warning"
-                    hoverSurface="lift"
-                    onClick={() => localVault.requestPermission()}
-                    className="shrink-0 border-[color:var(--color-amber-source-a35)]"
-                  >
-                    {t('folderPermissionAction')}
-                  </Chip>
-                ) : (
-                  <Chip
-                    size="lg"
-                    tone="accent"
-                    hoverSurface="lift"
-                    onClick={() => void localVault.open()}
-                    disabled={vaultBusy}
-                    data-testid="app-settings-open-folder"
-                    className="shrink-0 border-[color:var(--color-indigo-line-a32)]"
-                  >
-                    {vaultBusy
-                      ? t('folderOpening')
-                      : isLoaded || localVault.status === 'error'
-                        ? t('folderChange')
-                        : t('folderOpen')}
-                  </Chip>
+        <SettingsRow
+          testId="app-settings-workspace-folder"
+          settingId="folder"
+          label={t('folderLabel')}
+          caption={folderCaption}
+          captionTone={
+            localVault.status === 'error'
+              ? 'danger'
+              : localVault.status === 'permission-needed'
+                ? 'warning'
+                : 'neutral'
+          }
+          control={
+            <>
+              <span
+                className={cn(
+                  'max-w-[10rem] truncate text-body',
+                  isLoaded
+                    ? 'text-[color:var(--color-text-primary)]'
+                    : 'text-[color:var(--color-text-quaternary)]',
                 )}
-              </>
-            }
-          />
-        ) : null}
+              >
+                {isLoaded && localVault.handle
+                  ? localVault.handle.name
+                  : localVault.status === 'permission-needed'
+                    ? (localVault.handle?.name ?? t('folderEmpty'))
+                    : t('folderEmpty')}
+              </span>
+              {localVault.status === 'permission-needed' ? (
+                <Chip
+                  size="lg"
+                  tone="warning"
+                  hoverSurface="lift"
+                  onClick={() => localVault.requestPermission()}
+                  className="shrink-0 border-[color:var(--color-amber-source-a35)]"
+                >
+                  {t('folderPermissionAction')}
+                </Chip>
+              ) : (
+                <Chip
+                  size="lg"
+                  tone="accent"
+                  hoverSurface="lift"
+                  onClick={() => void localVault.open()}
+                  disabled={vaultBusy}
+                  data-testid="app-settings-open-folder"
+                  className="shrink-0 border-[color:var(--color-indigo-line-a32)]"
+                >
+                  {vaultBusy
+                    ? t('folderOpening')
+                    : isLoaded || localVault.status === 'error'
+                      ? t('folderChange')
+                      : t('folderOpen')}
+                </Chip>
+              )}
+            </>
+          }
+        />
         {vaultRootPath ? (
           <SettingsRow
             testId="app-settings-vault-path"
@@ -298,7 +287,7 @@ export function WorkspacePane({
             }
           />
         ) : null}
-        {showVaultManagement && !isLoaded && localVault.recentVaults.length > 0
+        {!isLoaded && localVault.recentVaults.length > 0
           ? localVault.recentVaults.map((record) => (
               <div
                 key={record.desktopRootPath ?? `${record.id}:${record.name}`}
@@ -400,28 +389,24 @@ export function WorkspacePane({
             href={MCP_CONNECTORS_HREF}
             onLeave={onClose}
           />
-          {desktop ? (
-            <SettingsDoorRow
-              settingId="folder-schedules"
-              testId="app-settings-folder-door-schedules"
-              label={t('kept.schedules')}
-              caption={schedulesCaption}
-              icon={CalendarClock}
-              href={DESTINATION_HREF.automations}
-              onLeave={onClose}
-            />
-          ) : null}
-          {desktop ? (
-            <SettingsDoorRow
-              settingId="folder-git"
-              testId="app-settings-folder-door-git"
-              label={t('kept.git')}
-              caption={gitCaption}
-              icon={History}
-              href={DESTINATION_HREF.git}
-              onLeave={onClose}
-            />
-          ) : null}
+          <SettingsDoorRow
+            settingId="folder-schedules"
+            testId="app-settings-folder-door-schedules"
+            label={t('kept.schedules')}
+            caption={schedulesCaption}
+            icon={CalendarClock}
+            href={DESTINATION_HREF.automations}
+            onLeave={onClose}
+          />
+          <SettingsDoorRow
+            settingId="folder-git"
+            testId="app-settings-folder-door-git"
+            label={t('kept.git')}
+            caption={gitCaption}
+            icon={History}
+            href={DESTINATION_HREF.git}
+            onLeave={onClose}
+          />
           <SettingsDoorRow
             settingId="folder-project-sources"
             testId="app-settings-folder-door-projects"

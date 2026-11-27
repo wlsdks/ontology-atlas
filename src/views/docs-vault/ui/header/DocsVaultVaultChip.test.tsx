@@ -1,13 +1,14 @@
 import { createRef } from 'react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { DocsVaultVaultChip } from './DocsVaultVaultChip';
 
 const t = ((key: string) => key) as never;
 
-describe('DocsVaultVaultChip — installed app source boundary', () => {
-  it('omits the sample source choice when the installed shell forbids bundled vaults', () => {
+describe('DocsVaultVaultChip menu', () => {
+  it('offers one switch-folder action and no choice of document source', () => {
+    const onSwap = vi.fn();
     render(
       <DocsVaultVaultChip
         label="atlas"
@@ -17,10 +18,7 @@ describe('DocsVaultVaultChip — installed app source boundary', () => {
         isLocalSourceLoaded
         open
         onToggle={vi.fn()}
-        onSwap={vi.fn()}
-        isSample={false}
-        onUseSample={vi.fn()}
-        allowSample={false}
+        onSwap={onSwap}
         onOpenAudit={vi.fn()}
         menuRef={createRef<HTMLDivElement>()}
         t={t}
@@ -28,6 +26,9 @@ describe('DocsVaultVaultChip — installed app source boundary', () => {
     );
 
     expect(screen.queryByTestId('vault-chip-use-sample')).not.toBeInTheDocument();
-    expect(screen.getByTestId('vault-chip-use-local')).toHaveAttribute('role', 'menuitem');
+    const swap = screen.getByTestId('vault-chip-use-local');
+    expect(swap).toHaveAttribute('role', 'menuitem');
+    fireEvent.click(swap);
+    expect(onSwap).toHaveBeenCalledOnce();
   });
 });

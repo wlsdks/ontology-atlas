@@ -39,12 +39,7 @@ import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/native-vault/ta
 import { describeVaultShape } from "@/shared/lib/vault-folder/vault-shape";
 import { destinationsForVaultShape, FOLDER_OPTIONAL_DESTINATIONS } from "@/shared/config/destinations";
 import { AppUpdateProvider, UpdateToast, useAppUpdateContext } from "@/features/app-update";
-import { isDesktopShell } from "@/shared/lib/desktop-shell/desktop-shell";
-import {
-  isGatewaySurface,
-  resolveActiveNavDestination,
-  stripLocalePrefix,
-} from "@/shared/lib/navigation/nav-destination";
+import { resolveActiveNavDestination, stripLocalePrefix } from "@/shared/lib/navigation/nav-destination";
 import { useInstallNotice } from "@/features/acp-doctor";
 import { VaultSwitchRailTile } from "@/features/vault-switch";
 import { useProjectsDoorHref } from "@/features/project-data-source";
@@ -102,8 +97,7 @@ function ShellColumn({ children }: { children: ReactNode }) {
       busy={busy}
       slotClassName={stripLocalePrefix(pathname).replace(/\/+$/, "") === "/planning" ? "max-lg:mb-[var(--topology-mobile-bottom-tab-reserve)]" : ""}
       footer={
-        /* Owned by the shell so every screen surfaces an update and a long run. Outside a desktop
-           shell neither exists, so there is no branch here to drift from them. */
+        /* Owned by the shell so every screen surfaces an update and a long run. */
         <>
           <MeaningRunSeat />
           <WorkRunSeat />
@@ -154,20 +148,19 @@ function VaultRouteIdentityBoundary({
   const router = useRouter();
   const vault = useLocalVault();
   const hydrated = useHydrated();
-  const desktop = hydrated && isDesktopShell();
   const destination = resolveActiveNavDestination(pathname);
   const workbenchDestination = !isLocaleRoot(pathname) && destination !== null;
   const arriving = useArrivingManifest();
   const mapHasArrived = destination === "map" && arriving !== null && describeVaultShape(arriving.docs).map;
   const localReady = vault.status === "loaded" || vault.isReloadingSameVault === true || mapHasArrived;
   const localLoadPending =
-    desktop &&
+    hydrated &&
     (vault.status === "opening" || vault.status === "loading") &&
     !localReady;
   const sourceOnlyDestination = destination !== null && FOLDER_OPTIONAL_DESTINATIONS.has(destination);
   // Resolve the remembered folder before exposing controls that a restore would replace.
-  const sourceRestorePending = desktop && sourceOnlyDestination && !localReady && !vault.restoreAttempted;
-  const desktopWithoutVault = desktop && workbenchDestination && !sourceOnlyDestination && !vault.manifest && !vault.partialTotal;
+  const sourceRestorePending = hydrated && sourceOnlyDestination && !localReady && !vault.restoreAttempted;
+  const desktopWithoutVault = hydrated && workbenchDestination && !sourceOnlyDestination && !vault.manifest && !vault.partialTotal;
 
   useEffect(() => {
     if (!desktopWithoutVault || !vault.restoreAttempted) return;
@@ -253,12 +246,12 @@ function AppNavRailSlot() {
    */
   const projectsDoorHref = useProjectsDoorHref();
 
-  // Gateway routes hide the rail with `lg:hidden`, not an unmount, decided during render so it never
-  // paints for a frame. `useHydrated()` forces a re-render because hydration does not correct a
-  // `lg:hidden` baked in prerender.
+  // Prerendered HTML freezes "no folder yet" and `/` is where that is not yet known, so its rail is
+  // hidden until the page hydrates: showing it for the first frame would flash it at a first run.
+  // `useHydrated()` forces a re-render because hydration does not repair a `lg:hidden` baked in
+  // prerender.
   const hydrated = useHydrated();
-  const desktopWithoutVault = hydrated && isDesktopShell() && !vault.manifest && !vault.partialTotal;
-  const gateway = isGatewaySurface(pathname, { desktop: hydrated && isDesktopShell() });
+  const desktopWithoutVault = hydrated && !vault.manifest && !vault.partialTotal;
 
   const atAgents = resolveActiveNavDestination(pathname) === "agents";
   const installNotice = useInstallNotice(atAgents);
@@ -290,7 +283,6 @@ function AppNavRailSlot() {
     onBlockedByOverlay: () => {
       toast.show(tShortcutRows("navBlockedByOverlay"), "info");
     },
-    disabled: gateway,
     hrefOverrides: { docs: contextHrefs?.docs, map: mapReturnHref },
     visible: desktopWithoutVault ? FOLDER_OPTIONAL_DESTINATIONS : visibleDestinations,
   });
@@ -302,7 +294,7 @@ function AppNavRailSlot() {
   const sourceOnlyDestination = FOLDER_OPTIONAL_DESTINATIONS.has(resolveActiveNavDestination(pathname)!);
   const sourceOnly = desktopWithoutVault && sourceOnlyDestination;
   const shownDestinations = sourceOnly ? FOLDER_OPTIONAL_DESTINATIONS : visibleDestinations;
-  const railHidden = hidden || gateway || (desktopWithoutVault && !sourceOnlyDestination);
+  const railHidden = hidden || (!hydrated && isLocaleRoot(pathname)) || (desktopWithoutVault && !sourceOnlyDestination);
 
   return (
     <>

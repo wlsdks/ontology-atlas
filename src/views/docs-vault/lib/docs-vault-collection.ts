@@ -1,5 +1,4 @@
 import type { VaultDoc } from '@/entities/docs-vault';
-import type { DocsVaultSource } from './persistence';
 
 export type DocsVaultCollection = 'all' | 'guides' | 'ontology';
 
@@ -124,16 +123,4 @@ export function shouldDeferDocsVaultDefaultSelection({
 }): boolean {
   if (!selectionReady) return true;
   return Boolean(normalizedQuerySlug && selectedSlug !== normalizedQuerySlug);
-}
-
-export function shouldShowSampleWelcomeNote({
-  source,
-  normalizedQuerySlug,
-  dismissed,
-}: {
-  source: DocsVaultSource;
-  normalizedQuerySlug: string | null;
-  dismissed: boolean;
-}): boolean {
-  return source === 'server' && !normalizedQuerySlug && !dismissed;
 }

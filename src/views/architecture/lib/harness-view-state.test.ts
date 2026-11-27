@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 import {
   buildHarnessViewHref,
   DEFAULT_HARNESS_VIEW,
-  defaultViewForSurface,
   HARNESS_VIEW_ORDER,
   parseHarnessView,
   resolveAddressView,
@@ -68,37 +67,11 @@ describe('resolveAddressView', () => {
     expect(resolveAddressView(new URLSearchParams('focus=main'))).toBe('overview');
     expect(resolveAddressView(null)).toBe('overview');
   });
-
-  it('sends a surface that cannot read the harness to the view it can answer', () => {
-    expect(resolveAddressView(new URLSearchParams(''), false)).toBe('architecture');
-    expect(resolveAddressView(null, false)).toBe('architecture');
-    expect(resolveAddressView(new URLSearchParams('view=overview'), false)).toBe('overview');
-  });
-});
-
-describe('defaultViewForSurface', () => {
-  it('gives the app the harness and the browser the blueprint', () => {
-    expect(defaultViewForSurface(true)).toBe('overview');
-    expect(defaultViewForSurface(false)).toBe('architecture');
-  });
 });
 
 describe('buildHarnessViewHref', () => {
   it('leaves the default view at the plain address a person copies', () => {
     expect(buildHarnessViewHref('overview')).toBe('/architecture/');
-  });
-
-  it('writes the view a surface does not arrive on, so a refresh reopens what was pressed', () => {
-    /* On the web the plain address means the blueprint, so the overview must be written out. */
-    expect(buildHarnessViewHref('overview', '/architecture/', '', 'architecture')).toBe(
-      '/architecture/?view=overview',
-    );
-    expect(buildHarnessViewHref('overview', '/architecture/', '', 'overview')).toBe(
-      '/architecture/',
-    );
-    expect(buildHarnessViewHref('architecture', '/architecture/', '', 'architecture')).toBe(
-      '/architecture/',
-    );
   });
 
   it('names the other views in the query', () => {

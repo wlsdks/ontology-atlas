@@ -44,7 +44,6 @@ function Harness({
         sources={sources}
         pages={pages}
         batch={batch ?? nextBatch(sources)}
-        inApp
         readingCount={readingCount}
         pick={pick}
         onPick={setPick}

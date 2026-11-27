@@ -698,7 +698,7 @@ describe("AtlasGitPanel setup mode", () => {
     renderPanel(<AtlasGitPanel vaultPath={null} />);
 
     expect(await screen.findByTestId("atlas-git-pick-vault")).toBeInTheDocument();
-    expect(screen.queryByTestId("atlas-git-web-get-app")).not.toBeInTheDocument();
+    expect(document.querySelector('[data-setup-state="web"]')).toBeNull();
     expect(tauriApiMock.invoke).not.toHaveBeenCalled();
   });
 
@@ -1482,9 +1482,9 @@ describe("AtlasGitPanel follows the folder while open", () => {
     await waitFor(() => expect(statusCalls()).toBeGreaterThanOrEqual(before + 2));
   });
 
-  it("does not subscribe to the watcher in the browser fallback", async () => {
+  it("does not subscribe to the watcher while no bridge answers", async () => {
     renderPanel(<AtlasGitPanel vaultPath={null} />);
-    await screen.findByTestId("atlas-git-web-get-app");
+    await waitFor(() => expect(document.querySelector('[data-setup-state="web"]')).not.toBeNull());
     expect(tauriEventMock.listen).not.toHaveBeenCalled();
   });
 });

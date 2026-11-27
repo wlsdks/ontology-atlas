@@ -52,21 +52,6 @@ function renderViewer(
 }
 
 describe("DocsVaultViewer", () => {
-  it("uses the parent-selected bundled content instead of re-reading another sample preference", async () => {
-    renderViewer("ignored", {
-      getDocContent: undefined,
-      bundledContent: {
-        README: "# Route-owned packaged workflow",
-      },
-    });
-
-    expect(
-      await screen.findByRole("heading", {
-        name: "Route-owned packaged workflow",
-      }),
-    ).toBeInTheDocument();
-  });
-
   it("shows the section copy anchor on hover and on keyboard focus", async () => {
     renderViewer("## Section One\n\nBody text.");
 
@@ -112,23 +97,6 @@ describe("DocsVaultViewer", () => {
     expect(cell.className).toContain("[&_a]:rounded-chip");
   });
 
-  it("routes a vault-external relative .md link to GitHub blob instead of a dead app 404", async () => {
-    // `../mcp/README.md` in docs/README.md leaves the vault (docs/) and must not route into the
-    // app.
-    renderViewer("See [MCP docs](../mcp/README.md) for setup.", {
-      repoBlobBase: "https://github.com/wlsdks/ontology-atlas/blob/main",
-      vaultRepoRoot: "docs",
-    });
-
-    const link = await screen.findByRole("link", { name: /MCP docs/ });
-    expect(link).toHaveProperty(
-      "href",
-      "https://github.com/wlsdks/ontology-atlas/blob/main/mcp/README.md",
-    );
-    expect(link.getAttribute("target")).toBe("_blank");
-    expect(link.getAttribute("rel")).toBe("noreferrer noopener");
-  });
-
   it("opens a direct https link in a new tab without handing it the opener", async () => {
     renderViewer("Read [the site](https://example.com) first.");
     const link = await screen.findByRole("link", { name: /the site/ });
@@ -137,8 +105,7 @@ describe("DocsVaultViewer", () => {
     expect(link.getAttribute("rel")).toBe("noreferrer noopener");
   });
 
-  it("renders a vault-external link as non-routing text when repo location is unknown (local vault)", async () => {
-    // Without repoBlobBase (a local vault) the link renders as non-routing text, not a dead 404.
+  it("renders a vault-external link as non-routing text, not a dead 404", async () => {
     renderViewer("See [MCP docs](../mcp/README.md) for setup.");
 
     const label = await screen.findByText("MCP docs");

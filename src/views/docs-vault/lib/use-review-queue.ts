@@ -28,11 +28,9 @@ export function reviewQueueKey(docs: VaultDoc[], locale: string): string {
 export function useReviewQueue({
   docs,
   getDocContent,
-  bundledContent,
 }: {
   docs: VaultDoc[];
   getDocContent: ((slug: string) => Promise<string>) | undefined;
-  bundledContent: Record<string, string> | undefined;
 }): ReviewQueueRow[] {
   const locale = useLocale();
   const key = useMemo(() => reviewQueueKey(docs, locale), [docs, locale]);
@@ -42,9 +40,7 @@ export function useReviewQueue({
     let cancelled = false;
     void (async () => {
       const next = await buildReviewQueue(docs, async (slug) => {
-        const raw = getDocContent
-          ? await getDocContent(slug).catch(() => null)
-          : (bundledContent?.[slug] ?? null);
+        const raw = getDocContent ? await getDocContent(slug).catch(() => null) : null;
         // An unreadable file is not evidence of drift, so `buildReviewQueue` drops the row on null.
         return raw === null ? null : parseFrontmatter(raw).body;
       });
@@ -61,7 +57,7 @@ export function useReviewQueue({
     return () => {
       cancelled = true;
     };
-  }, [docs, getDocContent, bundledContent, locale, key]);
+  }, [docs, getDocContent, locale, key]);
 
   return rows;
 }

@@ -7,7 +7,7 @@ import { scheduleStateSync } from '../lib/persistence';
 import { settleDocsVaultAddress } from '../lib/url-state';
 import { useOpenDocTabs } from '../lib/doc-tabs/use-open-doc-tabs';
 import type { useDocsVaultAddress } from './use-docs-vault-url';
-import type { useDocsVaultSource } from './use-docs-vault-source';
+import type { useDocsVaultFolder } from './use-docs-vault-folder';
 import type { useVaultManifest } from './use-vault-manifest';
 
 export function useDocTabs({
@@ -19,7 +19,7 @@ export function useDocTabs({
 }: {
   address: ReturnType<typeof useDocsVaultAddress>;
   vault: ReturnType<typeof useVaultManifest>;
-  src: ReturnType<typeof useDocsVaultSource>;
+  src: ReturnType<typeof useDocsVaultFolder>;
   selectedSlug: string | null;
   setSelectedSlug: (slug: string | null) => void;
 }) {

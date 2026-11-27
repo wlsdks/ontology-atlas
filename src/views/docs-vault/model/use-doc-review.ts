@@ -6,21 +6,16 @@ import { VaultConflictError, useLocalVault } from '@/entities/vault-session';
 import { useToast } from '@/shared/ui';
 import { useReviewQueue } from '../lib/use-review-queue';
 import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
-import { reviewDigest, type StaticVaultSource, type VaultManifest } from '@/entities/docs-vault';
-import type { DocsVaultSource as Source } from '../lib/persistence';
+import { reviewDigest, type VaultManifest } from '@/entities/docs-vault';
 
 export function useDocReview({
   scopedDocs,
   getDocContent,
-  source,
-  staticVault,
   selectedSlug,
   selectedDoc,
 }: {
   scopedDocs: VaultManifest['docs'];
   getDocContent: ((slug: string) => Promise<string>) | undefined;
-  source: Source;
-  staticVault: StaticVaultSource;
   selectedSlug: string | null;
   selectedDoc: VaultManifest['docs'][number] | null;
 }) {
@@ -30,7 +25,6 @@ export function useDocReview({
   const reviewQueue = useReviewQueue({
     docs: scopedDocs,
     getDocContent,
-    bundledContent: source === 'local' ? undefined : staticVault.content,
   });
   const selectedReviewRow = useMemo(
     () => reviewQueue.find((row) => row.slug === selectedSlug),

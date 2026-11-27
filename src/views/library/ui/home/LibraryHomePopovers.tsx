@@ -19,13 +19,12 @@ import type { useLibraryTurns } from "../../model/turns/use-library-turns";
 import type { libraryHomeStrip } from "../../model/home/library-home-strip";
 
 export function LibraryHomePopovers({
-  t, nativeVaultRootPath, homeSurface, setHomeSurface, guideDoorRef, questionsDoorRef,
+  t, homeSurface, setHomeSurface, guideDoorRef, questionsDoorRef,
   compileClauseRef, overflowDoorRef, choose, busy, model, retainedAnswers, knownOriginalPaths,
   retainedAnswerSlugs, agent, closeHomeSurface, handleCompile, sources, home, turns, agentDoor,
   homeStrip, compileBatch, folderName,
 }: {
   t: ReturnType<typeof useTranslations<"library">>;
-  nativeVaultRootPath: string | null;
   /** The open folder's name, for Usage's rows. */
   folderName: string;
   homeSurface: LibraryHomeSurface;
@@ -83,7 +82,6 @@ export function LibraryHomePopovers({
           brain={agent.brain}
           brainChoosable={agent.brainChoosable}
           onChooseBrain={agent.chooseBrain}
-          inApp={nativeVaultRootPath !== null}
           onAddFiles={handleAddFiles}
           addFilesFeedback={homeSurface === 'guide' ? sourceImportFeedback : 'idle'}
           onFindDocuments={handleFindDocuments}

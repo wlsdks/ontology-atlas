@@ -215,9 +215,9 @@ test("AI settings verification fails loudly instead of passing on missing elemen
     [
       {
         ...PASSING_MARKERS,
-        aiSettingsVerification: { attempted: true, bridgeMissing: true, reason: "web degraded" },
+        aiSettingsVerification: { attempted: true, browserPageShown: true, reason: "the window rendered the page meant for browsers" },
       },
-      /web-degraded AI card/,
+      /page meant for browsers/,
     ],
   ];
 

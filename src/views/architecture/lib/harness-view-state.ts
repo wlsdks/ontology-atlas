@@ -27,34 +27,25 @@ export function parseHarnessView(raw: string | null | undefined): HarnessView {
  */
 const BLUEPRINT_ONLY_PARAMS = ['role', 'stage'] as const;
 
-export function resolveAddressView(
-  params: URLSearchParams | null | undefined,
-  canReadHarness = true,
-): HarnessView {
+export function resolveAddressView(params: URLSearchParams | null | undefined): HarnessView {
   const raw = params?.get('view');
   if (raw) return parseHarnessView(raw);
   if (params && BLUEPRINT_ONLY_PARAMS.some((name) => params.has(name))) return 'architecture';
-  return defaultViewForSurface(canReadHarness);
-}
-
-/** The browser cannot see dot directories: the app arrives on the overview, the browser on the blueprint. */
-export function defaultViewForSurface(canReadHarness: boolean): HarnessView {
-  return canReadHarness ? DEFAULT_HARNESS_VIEW : 'architecture';
+  return DEFAULT_HARNESS_VIEW;
 }
 
 /**
  * The address for a view, keeping every other parameter so it agrees with `buildArchitectureHref`
- * (tab switches `replaceState`, so a dropped `role` is lost for Back too). The surface's own
- * arrival view omits `?view=`, and the caller says which view that is.
+ * (tab switches `replaceState`, so a dropped `role` is lost for Back too). The arrival view omits
+ * `?view=`.
  */
 export function buildHarnessViewHref(
   view: HarnessView,
   pathname = '/architecture/',
   search = '',
-  surfaceDefault: HarnessView = DEFAULT_HARNESS_VIEW,
 ): string {
   const params = new URLSearchParams(search);
-  if (view === surfaceDefault) params.delete('view');
+  if (view === DEFAULT_HARNESS_VIEW) params.delete('view');
   else params.set('view', view);
   const query = params.toString();
   return query ? `${pathname}?${query}` : pathname;

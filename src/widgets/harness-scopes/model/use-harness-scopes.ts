@@ -14,7 +14,7 @@ import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/ta
 
 /**
  * The agent settings of every scope for the connected repository, read through the app's bridge.
- * The browser and a folder with no connected repository get `unavailable`: nothing is read there.
+ * A folder with no connected repository gets `unavailable`: nothing is read there.
  */
 export type HarnessScopesState =
   | { status: 'unavailable' }
@@ -38,13 +38,12 @@ export interface HarnessScopesRead {
 export function useHarnessScopes(
   handle: FileSystemDirectoryHandle | null,
   projectSlugs: readonly string[],
-  enabled: boolean,
   /** Bumped by Read files again. */
   reloadNonce: number,
 ): HarnessScopesRead {
   const vaultPath = handle ? (getTauriVaultRootPath(handle) ?? null) : null;
   const slugKey = projectSlugs.join('\0');
-  const active = enabled && handle !== null && vaultPath !== null;
+  const active = handle !== null && vaultPath !== null;
   const [pickNonce, setPickNonce] = useState(0);
   const [lastPick, setLastPick] = useState<PickOutcome | null>(null);
   const key = `${vaultPath ?? ''}\0${slugKey}\0${reloadNonce}\0${pickNonce}`;

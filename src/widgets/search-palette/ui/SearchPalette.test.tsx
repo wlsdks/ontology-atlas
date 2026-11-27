@@ -10,6 +10,7 @@ import {
 import { NextIntlClientProvider } from "next-intl";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import type { Project } from "@/entities/project";
+import { LocalVaultContext, type LocalVaultValue } from "@/entities/vault-session/model/vault-provider/local-vault-context";
 import enMessages from "../../../../messages/en.json";
 import { SearchPalette } from "./SearchPalette";
 
@@ -38,9 +39,11 @@ beforeAll(() => {
 
 function render(ui: React.ReactElement) {
   return rtlRender(
-    <NextIntlClientProvider locale="en" messages={enMessages}>
-      {ui}
-    </NextIntlClientProvider>,
+    <LocalVaultContext.Provider value={{ status: "idle", manifest: null } as unknown as LocalVaultValue}>
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        {ui}
+      </NextIntlClientProvider>
+    </LocalVaultContext.Provider>,
   );
 }
 

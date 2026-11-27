@@ -7,7 +7,6 @@ import { AppShell } from "./AppShell";
 
 const shellMocks = vi.hoisted(() => ({
   pathname: "/ontology/studio",
-  desktop: false,
   replace: vi.fn(),
   vault: {
     status: "idle",
@@ -61,10 +60,6 @@ vi.mock("@/shared/lib/vault-folder/native-vault/tauri-vault-runtime", async (imp
   getTauriVaultRootPath: (handle: { rootPath?: string }) => handle.rootPath,
 }));
 
-vi.mock("@/shared/lib/desktop-shell/desktop-shell", () => ({
-  isDesktopShell: () => shellMocks.desktop,
-}));
-
 vi.mock("@/features/vault-ontology", () => ({
   useOntologyInsight: () => ({ insight: null }),
 }));
@@ -78,7 +73,6 @@ vi.mock("@/i18n/navigation", () => ({
 
 beforeEach(() => {
   shellMocks.pathname = "/ontology/studio";
-  shellMocks.desktop = false;
   shellMocks.replace.mockClear();
   shellMocks.vault.status = "idle";
   shellMocks.vault.handle = null;
@@ -143,7 +137,6 @@ describe("AppShell rail utility tier", () => {
 
 describe("a folder that is opening", () => {
   const opening = () => {
-    shellMocks.desktop = true;
     shellMocks.vault.status = "opening";
     render(
       <AppShell>
@@ -172,7 +165,6 @@ describe("a folder that is opening", () => {
     ["keeps the map's orbit when its last read found concepts", 12, false],
   ])("on the map, %s", (_condition, conceptCount, named) => {
     shellMocks.pathname = "/ko/topology";
-    shellMocks.desktop = true;
     shellMocks.vault.status = "loading";
     shellMocks.vault.handle = { name: "notes", rootPath: "/Users/probe/notes" };
     shellMocks.vault.recentVaults = [{ desktopRootPath: "/Users/probe/notes", docCount: 450, conceptCount }];
@@ -190,7 +182,6 @@ describe("a folder that is opening", () => {
     ["only wiki pages have arrived", [{ slug: "wiki/plan" }]],
   ])("keeps the map waiting while the folder arrives and %s", (_condition, docs) => {
     shellMocks.pathname = "/ko/topology";
-    shellMocks.desktop = true;
     shellMocks.vault.status = "loading";
     shellMocks.vault.partialTotal = 450;
     shellMocks.arriving = { docs };
@@ -205,7 +196,6 @@ describe("a folder that is opening", () => {
 
   it("draws the map once an arriving part brings a concept", () => {
     shellMocks.pathname = "/ko/topology";
-    shellMocks.desktop = true;
     shellMocks.vault.status = "loading";
     shellMocks.vault.partialTotal = 450;
     shellMocks.arriving = { docs: [{ slug: "domains/reading", frontmatter: { kind: "domain" } }] };
@@ -228,7 +218,6 @@ describe("a folder that is opening", () => {
 
 describe("shell column owns the viewport", () => {
   it("hides the rail and bundled destinations in the installed app without a vault", () => {
-    shellMocks.desktop = true;
     shellMocks.pathname = "/ko/projects";
 
     render(
@@ -284,7 +273,6 @@ describe("shell column owns the viewport", () => {
 
 describe("folder-optional cold arrival", () => {
   it.each(["/ko/agents", "/ko/changes", "/ko/library", "/ko/planning"])("waits for restoration before exposing controls on %s", (pathname) => {
-    shellMocks.desktop = true;
     shellMocks.pathname = pathname;
     shellMocks.vault.restoreAttempted = false;
     const content = <AppShell><input aria-label="Source question" /></AppShell>;

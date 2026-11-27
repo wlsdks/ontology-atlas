@@ -7,11 +7,9 @@ import {
   Bot,
   FileText,
   Link2,
-  Package,
   Pencil,
   Plus,
   Printer,
-  Save,
   Search,
   Star,
   Trash2,
@@ -26,7 +24,7 @@ import type { VaultCommand } from '@/widgets/docs-vault';
 import type { DocsVaultView } from '../lib/persistence';
 import type { useDocAccess } from './use-doc-access';
 import type { useDocWriteActions } from './use-doc-write-actions';
-import type { useDocsVaultSource } from './use-docs-vault-source';
+import type { useDocsVaultFolder } from './use-docs-vault-folder';
 import type { useDocsVaultAddress } from './use-docs-vault-url';
 
 export function useDocsVaultCommands({
@@ -41,7 +39,7 @@ export function useDocsVaultCommands({
   handleViewChange,
   legacyDocumentMode,
 }: {
-  src: ReturnType<typeof useDocsVaultSource>;
+  src: ReturnType<typeof useDocsVaultFolder>;
   access: ReturnType<typeof useDocAccess>;
   address: ReturnType<typeof useDocsVaultAddress>;
   writes: ReturnType<typeof useDocWriteActions>;
@@ -53,7 +51,7 @@ export function useDocsVaultCommands({
   legacyDocumentMode: boolean;
 }) {
   const { view, projectsListHref } = address;
-  const { source, installedShell, pinnedSet, handleSourceChange, handleTogglePin } = src;
+  const { pinnedSet, handleTogglePin } = src;
   const { canEditCurrent, editing, setEditing } = access;
   const {
     handleOpenNewDocDialog,
@@ -125,20 +123,6 @@ export function useDocsVaultCommands({
         onRun: () => handleViewChange('doc'),
       },
       {
-        id: 'source-server',
-        label: t('commands.sourceServer'),
-        icon: <Package size={ICON_SIZE.sm} aria-hidden />,
-        visible: !installedShell && source !== 'server',
-        onRun: () => handleSourceChange('server'),
-      },
-      {
-        id: 'source-local',
-        label: t('commands.sourceLocal'),
-        icon: <Save size={ICON_SIZE.sm} aria-hidden />,
-        visible: source !== 'local' && localVault.isSupported,
-        onRun: () => handleSourceChange('local'),
-      },
-      {
         id: 'pin-toggle',
         label: pinnedSet.has(selectedSlug ?? '') ? t('commands.unpinDoc') : t('commands.pinDoc'),
         icon: <Star size={ICON_SIZE.sm} aria-hidden />,
@@ -156,7 +140,7 @@ export function useDocsVaultCommands({
         id: 'copy-agent-verify-prompt',
         label: t('commands.copyAgentVerifyPrompt'),
         icon: <Bot size={ICON_SIZE.sm} aria-hidden />,
-        visible: source === 'local' && localVault.status === 'loaded',
+        visible: localVault.status === 'loaded',
         onRun: () => void handleCopyAgentVerifyPrompt(),
       },
       {
@@ -215,14 +199,14 @@ export function useDocsVaultCommands({
         id: 'local-refresh',
         label: t('commands.localRefresh'),
         icon: '↻',
-        visible: source === 'local' && localVault.status === 'loaded',
+        visible: localVault.status === 'loaded',
         onRun: () => void localVault.refresh(),
       },
       {
         id: 'local-close',
         label: t('commands.localClose'),
         icon: '✖',
-        visible: source === 'local' && localVault.status === 'loaded',
+        visible: localVault.status === 'loaded',
         onRun: () => void localVault.close(),
       },
       {
@@ -245,8 +229,6 @@ export function useDocsVaultCommands({
   }, [
     router,
     view,
-    source,
-    installedShell,
     selectedSlug,
     pinnedSet,
     canEditCurrent,
@@ -262,7 +244,6 @@ export function useDocsVaultCommands({
     handleInsertToc,
     handleViewChange,
     handleRenameCurrent,
-    handleSourceChange,
     handleTogglePin,
     legacyDocumentMode,
     setPaletteQuery,

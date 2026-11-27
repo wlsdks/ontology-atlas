@@ -143,9 +143,7 @@ export function useTopologyVaultReadModel({
    */
   const deeplinkSourceReady =
     vault.restoreAttempted &&
-    (vault.status === "idle" ||
-      vault.status === "loaded" ||
-      vault.status === "unsupported");
+    (vault.status === "idle" || vault.status === "loaded");
   /**
    * The first render reads a `sample:` identity before restore; recording it would make the restore
    * look like a vault switch and erase the arrival deep link. Only values seen

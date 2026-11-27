@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { buildDocsVaultHref } from '@/entities/docs-vault';
-import { Chip } from '@/shared/ui';
+import { Chip, RouteLoadingFallback } from '@/shared/ui';
+import { useHydrated } from '@/shared/lib/render-timing/use-hydrated';
 import { useOntologyInsight } from '@/features/vault-ontology';
 
 import {
@@ -12,13 +13,7 @@ import {
   type ArchitectureHandoffContext,
   type ArchitectureProfile,
 } from '@/entities/architecture-profile';
-import {
-  useAgentServer,
-  useDataSourceMode,
-  VaultSourceHydrationBoundary,
-} from '@/entities/vault-session';
-import { useLocalVault } from '@/entities/vault-session';
-import { useStaticVaultSource } from '@/entities/vault-session';
+import { useAgentServer, useDataSourceMode, useLocalVault } from '@/entities/vault-session';
 import { createVaultFileProjectSourceStore } from '@/shared/lib/project-source/project-source-store';
 import {
   type AcpTurnActivity,
@@ -34,10 +29,7 @@ import { useVaultConnectors } from '@/features/mcp-connectors';
 import { bridgePort } from '@/features/harness-report';
 import { detectAcpRuntimes, isAcpBridgeAvailable } from '@/shared/lib/agent-chat/tauri-acp';
 import { useRememberedTool } from '@/widgets/acp-chat-panel';
-import {
-  getTauriVaultRootPath,
-  isTauriVaultRuntime,
-} from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { deriveRoleConcepts, type RoleConcept } from '../model/role-concepts';
 import {
   deriveRoleSourceModules,
@@ -61,7 +53,6 @@ import {
 } from '../model/architecture-agent';
 
 const subscribeDesktopRuntime = () => () => undefined;
-const readDesktopRuntime = () => isTauriVaultRuntime();
 const readServerDesktopRuntime = () => false;
 
 type VaultDoc = { slug: string; frontmatter: Record<string, unknown> };
@@ -91,6 +82,7 @@ export function ArchitecturePage({
   const locale = useLocale();
   const router = useRouter();
   const mode = useDataSourceMode();
+  const hydrated = useHydrated();
   const localVault = useLocalVault();
   const { insight } = useOntologyInsight();
   const agentServer = useAgentServer();
@@ -99,11 +91,7 @@ export function ArchitecturePage({
     isAcpBridgeAvailable,
     readServerDesktopRuntime,
   );
-  const { manifest: staticManifest } = useStaticVaultSource();
-  const docs = useMemo(
-    () => mode === 'static' ? staticManifest.docs : localVault.manifest?.docs ?? EMPTY_DOCS,
-    [localVault.manifest, mode, staticManifest.docs],
-  );
+  const docs = localVault.manifest?.docs ?? EMPTY_DOCS;
   /* The report, not the list: an unreadable document is named instead of failing every profile. */
   const profileReport = useMemo(() => deriveArchitectureProfilesReport(docs), [docs]);
   const profiles = profileReport.profiles;
@@ -235,17 +223,6 @@ export function ArchitecturePage({
   const sourceModulesByProfile = loaded ? loadedHandoffContexts.modules : undefined;
   const sourceListingCapable =
     mode === 'local' && !!localVault.handle && getTauriVaultRootPath(localVault.handle) != null;
-  /* Two absences need two messages: a browser can never list a folder; an app without a bound one can. */
-  const desktopRuntime = useSyncExternalStore(
-    subscribeDesktopRuntime,
-    readDesktopRuntime,
-    readServerDesktopRuntime,
-  );
-  const sourceUnavailableReason = sourceListingCapable
-    ? null
-    : desktopRuntime
-      ? ('unbound' as const)
-      : ('browser' as const);
   const { records: recordsByProfile, loaded: recordsLoaded } = useArchitectureRecords(
     mode === 'local' && localVault.status === 'loaded' ? localVault.handle : null,
     profiles.map((profile) => profile.slug),
@@ -326,66 +303,63 @@ export function ArchitecturePage({
     roleIds: new Set(reviewProfile?.roles.map((role) => role.id) ?? []), parentRunId: analysisParentRunId, parentRequestText: analysisParentRequestText,
   }), [mode, localVault.handle, localVault.status, localVault.fileHandles, reviewProfile, docs, insight, handoffContexts, draftHandoffContext, analysisParentRunId, analysisParentRequestText]);
 
+  if (!hydrated) return <RouteLoadingFallback />;
+
   return (
-    <VaultSourceHydrationBoundary>
-      <div
-        className="relative flex min-h-0 flex-1 overflow-hidden"
-        role={harnessPanelId ? 'tabpanel' : undefined}
-        id={harnessPanelId}
-        aria-labelledby={harnessPanelLabelledBy}
-        tabIndex={harnessPanelId ? -1 : undefined}
-      >
-        <ArchitectureWorkbench
-          embedded={embedded}
-          profiles={profiles}
-          profileProblems={profileProblems}
-          handoffContexts={handoffContexts}
-          draftHandoffContext={draftHandoffContext}
-          draftSource={draftSource}
-          sourceModulesByProfile={sourceModulesByProfile}
-          sourceListingCapable={sourceListingCapable}
-          sourceUnavailableReason={sourceUnavailableReason}
-          /* The installed app must never offer its own download. */
-          offersInstalledApp={!desktopRuntime}
-          recordsByProfile={recordsByProfile}
-          recordsLoaded={recordsLoaded}
-          conceptsByProfile={conceptsByProfile}
-          agentRoute={agentRoute}
-          agentLabel={acpRuntime?.label ?? null}
-          onAgentRequest={agentRoute === 'agent' ? startAgent : undefined}
-          contextDockOpen={agentOpen}
-          onOpenReview={(profileSlug, roleId) => {
-            setSectionRequest((current) => ({ tab: 'history', nonce: current.nonce + 1 }));
-            setReviewScope({ profileSlug, roleId }); setAgentOpen(true);
-          }}
-          agentActivity={agentActivity}
-        />
-        <ArchitectureAgentDock
-            open={agentOpen}
-            runtime={acpRuntime}
-            runtimes={acpRuntimes}
-            onRuntimeChange={chooseAcpRuntime}
-            vaultRoot={gitVaultPath}
-            mcpServers={acpMcpServers}
-            openingRequest={agentOpeningRequest}
-            knownSlugs={knownSlugs}
-            analysisContext={analysisContext}
-            sectionRequest={sectionRequest}
-            onOpeningRequestSent={(nonce) => setAgentOpeningRequest((current) => current?.nonce === nonce ? null : current)}
-            contextLabel={reviewRole ? `${reviewProfile?.title} · ${reviewRole.id}` : reviewProfile?.title ?? tReview('wholeProject')}
-            facts={<div className="space-y-3"><p>{tReview('architectureCriteria')}</p>{reviewRole ? <p>{reviewRole.summaries[locale] ?? reviewRole.summary ?? tReview('definitionMissing')}</p> : null}{reviewProfile?.documentSlug ? <Chip onClick={() => router.push(buildDocsVaultHref({ slug: reviewProfile.documentSlug! }))}>{tReview('openDefinition')}</Chip> : null}</div>}
-            onAnalysisRequest={agentRoute === 'agent' ? (text, parentRunId) => {
-              setAnalysisParentRunId(parentRunId);
-              const inspection = analysisContext.sourceRoot && reviewProfile ? `\nInspect this exact connected source: inspect_architecture(${JSON.stringify({ rootPath: analysisContext.sourceRoot, profileSlug: reviewProfile.slug })}).` : '\nNo connected source is available. Report source-dependent conclusions as unknown; do not guess a repository.';
-              const requestText = `${reviewProfile?.title ?? tReview('architectureTitle')}${reviewRole ? ` · ${reviewRole.id}` : ''}\n${text}${inspection}`;
-              setAnalysisParentRequestText(parentRunId ? requestText : null);
-              setAgentOpeningRequest({ kind: 'improve', text: requestText, nonce: ++requestSerial.current, profileSlug: reviewProfile?.slug ?? null, roleId: reviewRole?.id ?? null, scopeKey: JSON.stringify([gitVaultPath, reviewProfile?.slug ?? null]) });
-            } : undefined}
-            onEvidence={(slug) => router.push(buildDocsVaultHref({ slug }))}
-            onTurnActivityChange={setAgentActivity}
-            onClose={() => { setAgentOpen(false); setAgentOpeningRequest(null); setAnalysisParentRunId(null); setAnalysisParentRequestText(null); }}
-        />
-      </div>
-    </VaultSourceHydrationBoundary>
+    <div
+      className="relative flex min-h-0 flex-1 overflow-hidden"
+      role={harnessPanelId ? 'tabpanel' : undefined}
+      id={harnessPanelId}
+      aria-labelledby={harnessPanelLabelledBy}
+      tabIndex={harnessPanelId ? -1 : undefined}
+    >
+      <ArchitectureWorkbench
+        embedded={embedded}
+        profiles={profiles}
+        profileProblems={profileProblems}
+        handoffContexts={handoffContexts}
+        draftHandoffContext={draftHandoffContext}
+        draftSource={draftSource}
+        sourceModulesByProfile={sourceModulesByProfile}
+        sourceListingCapable={sourceListingCapable}
+        recordsByProfile={recordsByProfile}
+        recordsLoaded={recordsLoaded}
+        conceptsByProfile={conceptsByProfile}
+        agentRoute={agentRoute}
+        agentLabel={acpRuntime?.label ?? null}
+        onAgentRequest={agentRoute === 'agent' ? startAgent : undefined}
+        contextDockOpen={agentOpen}
+        onOpenReview={(profileSlug, roleId) => {
+          setSectionRequest((current) => ({ tab: 'history', nonce: current.nonce + 1 }));
+          setReviewScope({ profileSlug, roleId }); setAgentOpen(true);
+        }}
+        agentActivity={agentActivity}
+      />
+      <ArchitectureAgentDock
+          open={agentOpen}
+          runtime={acpRuntime}
+          runtimes={acpRuntimes}
+          onRuntimeChange={chooseAcpRuntime}
+          vaultRoot={gitVaultPath}
+          mcpServers={acpMcpServers}
+          openingRequest={agentOpeningRequest}
+          knownSlugs={knownSlugs}
+          analysisContext={analysisContext}
+          sectionRequest={sectionRequest}
+          onOpeningRequestSent={(nonce) => setAgentOpeningRequest((current) => current?.nonce === nonce ? null : current)}
+          contextLabel={reviewRole ? `${reviewProfile?.title} · ${reviewRole.id}` : reviewProfile?.title ?? tReview('wholeProject')}
+          facts={<div className="space-y-3"><p>{tReview('architectureCriteria')}</p>{reviewRole ? <p>{reviewRole.summaries[locale] ?? reviewRole.summary ?? tReview('definitionMissing')}</p> : null}{reviewProfile?.documentSlug ? <Chip onClick={() => router.push(buildDocsVaultHref({ slug: reviewProfile.documentSlug! }))}>{tReview('openDefinition')}</Chip> : null}</div>}
+          onAnalysisRequest={agentRoute === 'agent' ? (text, parentRunId) => {
+            setAnalysisParentRunId(parentRunId);
+            const inspection = analysisContext.sourceRoot && reviewProfile ? `\nInspect this exact connected source: inspect_architecture(${JSON.stringify({ rootPath: analysisContext.sourceRoot, profileSlug: reviewProfile.slug })}).` : '\nNo connected source is available. Report source-dependent conclusions as unknown; do not guess a repository.';
+            const requestText = `${reviewProfile?.title ?? tReview('architectureTitle')}${reviewRole ? ` · ${reviewRole.id}` : ''}\n${text}${inspection}`;
+            setAnalysisParentRequestText(parentRunId ? requestText : null);
+            setAgentOpeningRequest({ kind: 'improve', text: requestText, nonce: ++requestSerial.current, profileSlug: reviewProfile?.slug ?? null, roleId: reviewRole?.id ?? null, scopeKey: JSON.stringify([gitVaultPath, reviewProfile?.slug ?? null]) });
+          } : undefined}
+          onEvidence={(slug) => router.push(buildDocsVaultHref({ slug }))}
+          onTurnActivityChange={setAgentActivity}
+          onClose={() => { setAgentOpen(false); setAgentOpeningRequest(null); setAnalysisParentRunId(null); setAnalysisParentRequestText(null); }}
+      />
+    </div>
   );
 }

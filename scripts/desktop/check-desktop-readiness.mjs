@@ -722,25 +722,17 @@ if (
   );
 }
 
-// `/` renders the topology map directly and local vault work on the web root bypasses `/docs`, so this
-// only asserts that `/docs` keeps its own local-source tab desktop-gated.
+// The app is the only runtime, so `/docs` has no local-source tab to lock: the check is that the
+// download page sends nobody into the workbench and the docs chip offers no disabled local source.
 if (
   !downloadPage.includes('/docs/?intent=local') &&
-  docsVaultPage.includes("shouldHonorLocalIntent(intent, isDesktopRuntime)") &&
-  docsVaultPage.includes("isDocsVaultLocalSourceDisabled") &&
-  // The visual signal is `disabled`; a screen reader hears why via aria-describedby: both are required.
-  // What is guarded is "it says why it is locked", not "it is in that spot": the requirement is the reason
-  // (`localSourceDisabled`) plus the wiring that reads it out, so moving the UI does not turn the gate red
-  // (.claude/rules/design-gates.md).
-  docsVaultPage.includes("vaultStatus.unsupportedTooltip") &&
-  docsVaultPage.includes("localSourceDisabled") &&
-  vaultChipSurface.includes("aria-describedby") &&
-  vaultChipSurface.includes("localDisabledReason")
+  !docsVaultPage.includes("localSourceDisabled") &&
+  !vaultChipSurface.includes("localDisabledReason")
 ) {
-  pass("the hosted download page does not route into the browser workbench, and /docs's own local-source tab stays desktop-only");
+  pass("the hosted download page does not route into the workbench, and /docs offers no disabled local-source tab");
 } else {
   fail(
-    "the hosted download page must stay promo/download-first, and src/views/docs-vault/ui/DocsVaultPage.tsx must only honor ?intent=local / local vault work in the Tauri desktop runtime",
+    "the hosted download page must stay promo/download-first, and src/views/docs-vault must not carry a locked local-source tab: the app is the only runtime that opens a folder",
   );
 }
 
@@ -841,13 +833,13 @@ if (
 if (
   // The hub is the map: both `/` and `/ontology` converge on this empty state.
   // Measure the destination, not the formatting.
-  /showPickerPath\s*\?\s*['"]\/docs\/\?intent=local['"]\s*:\s*['"]\/download\/['"]/.test(topologyEmptyState) &&
-  /Install the desktop app/i.test(enMessages.topology?.empty?.bodyNoProjectsDownload ?? "")
+  /['"]\/docs\/['"]/.test(topologyEmptyState) &&
+  !topologyEmptyState.includes("/download")
 ) {
-  pass("the topology empty state routes hosted users to the app download while preserving desktop vault picking");
+  pass("the topology empty state sends folder work to /docs/ and never offers the app's own download");
 } else {
   fail(
-    "The hosted static topology empty state must route writable local work to /download/, while Tauri desktop keeps /docs/?intent=local",
+    "The topology empty state must route local folder work to /docs/ and must not link /download: the installed app never offers its own download",
   );
 }
 
@@ -1630,7 +1622,6 @@ if (
 if (
   docsVaultPage.includes("DesktopVaultWelcome") &&
   docsVaultPage.includes("shouldShowDesktopVaultWelcome") &&
-  docsVaultPage.includes("isTauriVaultRuntime()") &&
   docsVaultPage.includes("openLocalVault()")
 ) {
   pass("desktop docs intent shows a vault setup welcome before opening the native picker");

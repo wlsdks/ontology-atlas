@@ -6,7 +6,6 @@ import { Settings } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { cn } from '@/shared/lib/cn';
-import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import { OPEN_SETTINGS_EVENT, useSurfaceRequest } from '@/shared/lib/keyboard/surface-requests';
 import { useDialogFocusTrap } from '@/shared/lib/overlays/use-dialog-focus-trap';
 import { usePanelPresence } from '@/shared/lib/render-timing/use-presence';
@@ -166,9 +165,8 @@ export function AppSettingsMenu({
   });
   const titleId = useId();
   const listId = useId();
-  const desktop = isDesktopShell();
 
-  const searchItems = useSettingsSearchItems(desktop);
+  const searchItems = useSettingsSearchItems();
   const searching = query.trim() !== '';
   const groups = searching ? groupSettingsResults(searchSettings(searchItems, query)) : [];
   const ordered = orderedSettingsResults(groups);
@@ -187,14 +185,23 @@ export function AppSettingsMenu({
 
   const triggerVisible = () => triggerRef.current !== null && triggerRef.current.offsetParent !== null;
 
+  /*
+   * The trigger may mount hidden (the rail waits while the remembered folder restores), so the
+   * intent is not taken at mount: the observer fires each time the trigger's box changes, and the
+   * first time this instance is on screen it takes the intent and reopens.
+   */
   useEffect(() => {
-    const timer = window.setTimeout(() => {
+    const trigger = triggerRef.current;
+    if (!trigger) return undefined;
+    const watch = new ResizeObserver(() => {
       const reopen = consumeSettingsLocaleFocus(locale, triggerVariant, triggerVisible);
       if (!reopen) return;
+      watch.disconnect();
       setSection(reopen);
       setOpen(true);
-    }, 0);
-    return () => window.clearTimeout(timer);
+    });
+    watch.observe(trigger);
+    return () => watch.disconnect();
   }, [locale, triggerVariant, setOpen]);
 
   useSurfaceRequest(OPEN_SETTINGS_EVENT, () => {

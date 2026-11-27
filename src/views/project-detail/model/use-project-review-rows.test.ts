@@ -3,12 +3,14 @@ import { describe, expect, it, vi } from "vitest";
 import type { VaultDoc } from "@/entities/docs-vault";
 import { useProjectReviewRows } from "./use-project-review-rows";
 
-const source = vi.hoisted(() => ({ content: {} as Record<string, string> }));
+const folder = vi.hoisted(() => ({
+  fileHandles: new Map([
+    ["capabilities/checkout", { getFile: async () => ({ text: async () => "---\nkind: capability\n---\nCheckout takes payment.\n" }) }],
+  ]),
+}));
 
 vi.mock("@/entities/vault-session", () => ({
-  useDataSourceMode: () => "static",
-  useLocalVault: () => ({ fileHandles: new Map() }),
-  useStaticVaultSource: () => source,
+  useLocalVault: () => folder,
 }));
 
 const raised = (note: string, mtime: number): VaultDoc =>
@@ -19,8 +21,6 @@ const raised = (note: string, mtime: number): VaultDoc =>
     mtime,
     frontmatter: { kind: "capability", review_state: "human_decides", review_note: note },
   }) as unknown as VaultDoc;
-
-source.content["capabilities/checkout"] = "---\nkind: capability\n---\nCheckout takes payment.\n";
 
 describe("useProjectReviewRows", () => {
   it("reads before the first queue arrives, so no answer is mistaken for an empty queue", async () => {

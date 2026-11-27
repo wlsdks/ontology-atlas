@@ -12,7 +12,6 @@ import {
   Blocks,
   Bot,
   CalendarClock,
-  Download,
   FolderKanban,
   GitFork,
   // Aliased: a bare `History` can resolve to the DOM History constructor under some HMR states.
@@ -33,7 +32,6 @@ import {
   rememberRouteFocusIntent,
 } from "@/shared/ui/routing/route-focus-manager";
 import { resolveActiveNavRailItem, type AppNavRailItemId } from "../lib/resolve-active-item";
-import { shouldShowGetAppTile } from "@/shared/lib/navigation/show-get-app-tile";
 import { isTauriVaultRuntime } from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
 
 /** The runtime never changes after load, so subscribing is a formality — a no-op. */
@@ -116,18 +114,13 @@ export function AppNavRail({
   const tWork = useTranslations("workCard");
   const pathname = usePathname() ?? "/";
   const router = useRouter();
-  /** The web-only download tile; the decision lives in `@/shared/lib/navigation/show-get-app-tile`. */
-  // The server snapshot is `null` (unknown), so prerendered HTML never asserts web and the tile
-  // does not flicker at hydration.
+  // The server snapshot is `null` (unknown), so prerendered HTML never asserts the app and the
+  // usage tile does not flicker at hydration.
   const desktopRuntime = useSyncExternalStore(
     subscribeToRuntime,
     isTauriVaultRuntime,
     getServerRuntimeSnapshot,
   );
-  const showGetApp = shouldShowGetAppTile({
-    mounted: desktopRuntime !== null,
-    isDesktopApp: desktopRuntime === true,
-  });
 
   const activeId = resolveActiveNavRailItem(pathname);
   const mapEntryPending = useMapNavigationPending() !== null;
@@ -316,27 +309,6 @@ export function AppNavRail({
         data-testid="app-nav-rail-utility-tier"
         className="mt-auto flex w-full shrink-0 flex-col items-center gap-1 pt-2"
       >
-        {/*
-         * Web-only download tile; the OS is not guessed because a wrong guess is a dead-end
-         * CTA (@/shared/lib/navigation/show-get-app-tile).
-         */}
-        {showGetApp ? (
-          <Link
-            href="/download/"
-            title={t("getAppTitle")}
-            aria-label={t("getApp")}
-            data-testid="app-nav-rail-get-app"
-            className={controlClass({ shape: "card", tone: "muted", className: "group relative min-h-0 p-0 h-[var(--app-nav-rail-tile-height)] w-[var(--app-nav-rail-tile-width)] justify-center border-0 transition-[color,background-color,translate] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] active:translate-y-px motion-reduce:translate-none active:bg-[color:var(--color-overlay-3)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset" })}
-          >
-            {/*
-             * `min-h-0 p-0`: the card shape's own padding would override the rail tile geometry.
-             */}
-            <Download
-              aria-hidden
-              className="h-[var(--app-nav-rail-utility-icon-size)] w-[var(--app-nav-rail-utility-icon-size)] shrink-0"
-            />
-          </Link>
-        ) : null}
         {/* Only the app runs an agent inside Atlas, so only the app has usage to show. */}
         {desktopRuntime === true ? <AgentUsageTile /> : null}
         {settingsSlot}

@@ -23,8 +23,6 @@ export const SETTINGS_SECTION_SCOPE: Readonly<Record<SettingsSectionId, Settings
   about: 'app',
 };
 
-type SettingsSurface = 'both' | 'desktop';
-
 export type SettingId = string;
 
 export interface SettingsCatalogEntry {
@@ -32,6 +30,5 @@ export interface SettingsCatalogEntry {
   section: SettingsSectionId;
   labelKey: string;
   keywordsKey?: string;
-  surface: SettingsSurface;
   href?: string;
 }

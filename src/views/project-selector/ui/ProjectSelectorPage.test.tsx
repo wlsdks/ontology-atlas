@@ -97,10 +97,6 @@ vi.mock("@/entities/vault-session/model/vault-source/use-data-source-mode", asyn
   ...(await importOriginal<typeof import("@/entities/vault-session/model/vault-source/use-data-source-mode")>()),
   useDataSourceMode: () => page.mode,
 }));
-vi.mock("@/entities/vault-session/ui/VaultSourceHydrationBoundary", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/entities/vault-session/ui/VaultSourceHydrationBoundary")>()),
-  VaultSourceHydrationBoundary: ({ children }: { children: ReactNode }) => children,
-}));
 
 
 vi.mock("@/widgets/app-settings-menu", () => ({
@@ -263,7 +259,7 @@ describe("ProjectSelectorPage", () => {
   it("agrees in number with the count it labels", () => {
     renderPage();
     const header = screen.getByRole("main").textContent ?? "";
-    expect(screen.getByTestId("project-selector-count")).toHaveTextContent(/^1 sample project$/);
+    expect(screen.getByTestId("project-selector-count")).toHaveTextContent(/^1 project$/);
     expect(header).not.toContain("domain");
     expect(header).not.toContain("1 CONCEPTS");
     expect(header).not.toContain("1 RELATIONS");

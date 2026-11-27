@@ -17,7 +17,7 @@ import { useTranslations } from 'next-intl';
 
 import { controlClass } from '@/shared/ui/control-class';
 
-import { settingsCatalogFor } from '../model/catalog';
+import { SETTINGS_CATALOG } from '../model/catalog';
 import { SETTINGS_SECTION_SCOPE, type SettingsSectionId } from '../model/catalog/settings-catalog-entry';
 import { SETTINGS_NAV_GROUPS } from '../model/settings-sections';
 import type { SettingsSearchItem } from '../model/settings-search';
@@ -39,13 +39,13 @@ const NAV_ROW_HOVER =
 
 const DESTINATION_SEGMENTS = ['agents', 'automations', 'git', 'projects'] as const;
 
-export function useSettingsSearchItems(desktop: boolean): SettingsSearchItem[] {
+export function useSettingsSearchItems(): SettingsSearchItem[] {
   const t = useTranslations();
   const tNav = useTranslations('nav.settingsMenu');
   const tRail = useTranslations('navRail');
   return useMemo(
     () =>
-      settingsCatalogFor(desktop).map((entry) => {
+      SETTINGS_CATALOG.map((entry) => {
         const label = t(entry.labelKey);
         const segment = entry.href?.split(/[/?]/).find(Boolean);
         const place = DESTINATION_SEGMENTS.find((id) => id === segment);
@@ -59,7 +59,7 @@ export function useSettingsSearchItems(desktop: boolean): SettingsSearchItem[] {
           opensLabel: entry.href ? (place ? tRail(place) : label) : undefined,
         };
       }),
-    [desktop, t, tNav, tRail],
+    [t, tNav, tRail],
   );
 }
 

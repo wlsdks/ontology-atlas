@@ -30,7 +30,7 @@ import { reclassifyMoveTarget } from '../lib/doc-actions/kind-folder-move';
 import { buildDocsVaultPopoutHtml } from '../lib/doc-actions/popout-template';
 import type { useDocAccess } from './use-doc-access';
 import type { useDocsVaultAddress } from './use-docs-vault-url';
-import type { useDocsVaultSource } from './use-docs-vault-source';
+import type { useDocsVaultFolder } from './use-docs-vault-folder';
 import type { useQuerySlugVerdict } from './use-query-slug-verdict';
 import type { useVaultManifest } from './use-vault-manifest';
 
@@ -103,7 +103,7 @@ export function useDocWriteActions({
 }: {
   address: ReturnType<typeof useDocsVaultAddress>;
   vault: ReturnType<typeof useVaultManifest>;
-  src: ReturnType<typeof useDocsVaultSource>;
+  src: ReturnType<typeof useDocsVaultFolder>;
   appTouchedSlugsRef: ReturnType<typeof useQuerySlugVerdict>['appTouchedSlugsRef'];
   access: ReturnType<typeof useDocAccess>;
   selectedSlug: string | null;

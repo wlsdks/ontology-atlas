@@ -19,7 +19,6 @@ import {
 import { replaceDocsVaultUrlState } from '../lib/url-state';
 import {
   parseDocsVaultView as parseView,
-  parseDocsVaultSource,
   scheduleStateSync,
   type DocsVaultView,
 } from '../lib/persistence';
@@ -30,9 +29,6 @@ export function useDocsVaultAddress() {
   const routePathname = usePathname();
   const querySlug = searchParams?.get('slug') ?? null;
   const queryView = parseView(searchParams?.get('view'));
-  const querySource = parseDocsVaultSource(searchParams?.get('source'));
-  const querySample =
-    searchParams?.get('sample') === 'dogfood' ? ('dogfood' as const) : null;
   const queryDogfood = searchParams?.get('dogfood') ?? null;
   const queryTreeSort = parseDocsTreeSort(searchParams?.get('sort'));
   const queryTreeGroup = parseDocsTreeGroup(searchParams?.get('group'));
@@ -86,8 +82,6 @@ export function useDocsVaultAddress() {
     queryView,
     view,
     setView,
-    querySource,
-    querySample,
     queryDogfood,
     queryTreeSort,
     queryTreeGroup,

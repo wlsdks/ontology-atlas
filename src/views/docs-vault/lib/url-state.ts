@@ -13,23 +13,12 @@ import type { DocsVaultView } from './persistence';
 interface DocsVaultUrlState {
   slug?: string | null;
   view?: DocsVaultView;
-  intent?: 'local' | null;
-  source?: 'server' | 'local' | null;
-  sample?: 'dogfood' | null;
   sort?: DocsTreeSort;
   group?: DocsTreeGroup;
 }
 
 function docsVaultHref(next: DocsVaultUrlState): string {
   const url = new URL(window.location.href);
-  if ('source' in next) {
-    if (next.source) url.searchParams.set('source', next.source);
-    else url.searchParams.delete('source');
-  }
-  if ('sample' in next) {
-    if (next.sample) url.searchParams.set('sample', next.sample);
-    else url.searchParams.delete('sample');
-  }
   if ('slug' in next) {
     if (next.slug) url.searchParams.set('slug', next.slug);
     else url.searchParams.delete('slug');
@@ -40,10 +29,6 @@ function docsVaultHref(next: DocsVaultUrlState): string {
     } else {
       url.searchParams.delete('view');
     }
-  }
-  if ('intent' in next) {
-    if (next.intent === 'local') url.searchParams.set('intent', 'local');
-    else url.searchParams.delete('intent');
   }
   if ('sort' in next && next.sort) {
     const value = serializeDocsTreeSort(next.sort);

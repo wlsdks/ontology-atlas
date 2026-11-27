@@ -22,12 +22,12 @@ function raisedDoc(slug: string, note: string): VaultDoc {
 describe('useReviewQueue', () => {
   it('draws the rows it already computed on the first frame of a remount, so the tree below does not drop', async () => {
     const docs = [raisedDoc('capabilities/checkout', 'One capability or two?')];
-    const first = renderHook(() => useReviewQueue({ docs, getDocContent: undefined, bundledContent: {} }));
+    const first = renderHook(() => useReviewQueue({ docs, getDocContent: undefined }));
     await waitFor(() => expect(first.result.current).toHaveLength(1));
     first.unmount();
 
     const again = renderHook(() =>
-      useReviewQueue({ docs: [raisedDoc('capabilities/checkout', 'One capability or two?')], getDocContent: undefined, bundledContent: {} }),
+      useReviewQueue({ docs: [raisedDoc('capabilities/checkout', 'One capability or two?')], getDocContent: undefined }),
     );
     expect(again.result.current.map((row) => row.slug)).toEqual(['capabilities/checkout']);
   });
@@ -37,7 +37,7 @@ describe('useReviewQueue', () => {
     const after = reviewQueueKey([raisedDoc('capabilities/checkout', 'Split it.')], 'en');
     expect(after).not.toBe(before);
     const fresh = renderHook(() =>
-      useReviewQueue({ docs: [raisedDoc('capabilities/checkout', 'Split it.')], getDocContent: undefined, bundledContent: {} }),
+      useReviewQueue({ docs: [raisedDoc('capabilities/checkout', 'Split it.')], getDocContent: undefined }),
     );
     expect(fresh.result.current).toEqual([]);
   });

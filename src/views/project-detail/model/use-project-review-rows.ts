@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { buildReviewQueue, type ReviewQueueRow, type VaultDoc } from "@/entities/docs-vault";
-import { useDataSourceMode, useLocalVault, useStaticVaultSource } from "@/entities/vault-session";
+import { useLocalVault } from "@/entities/vault-session";
 import { parseFrontmatter } from "@/shared/lib/vault-document/parse-frontmatter";
 
 const NO_ROWS: ReviewQueueRow[] = [];
@@ -26,25 +26,20 @@ export interface ProjectReviewRows {
 /**
  * The folder's review queue by the rule `/docs` uses (`buildReviewQueue`): raised documents, and
  * confirmed ones whose meaning changed since or could not be read. Bodies are read from the open
- * folder, or from the bundled sample's content.
+ * folder.
  */
 export function useProjectReviewRows(docs: readonly VaultDoc[]): ProjectReviewRows {
-  const mode = useDataSourceMode();
   const vault = useLocalVault();
-  const staticSource = useStaticVaultSource();
   const key = useMemo(() => reviewMarksKey(docs), [docs]);
   const [result, setResult] = useState<{ key: string; rows: ReviewQueueRow[] } | null>(null);
 
   const fileHandles = vault.fileHandles;
-  const bundled = mode === "local" ? null : staticSource.content;
   useEffect(() => {
     if (!key) return;
     let cancelled = false;
     const marked = docs.filter((doc) => doc.frontmatter?.review_state !== undefined);
     void buildReviewQueue(marked, async (slug) => {
-      const raw = bundled
-        ? (bundled[slug] ?? null)
-        : await fileHandles.get(slug)?.getFile().then((file) => file.text()).catch(() => null) ?? null;
+      const raw = await fileHandles.get(slug)?.getFile().then((file) => file.text()).catch(() => null) ?? null;
       return raw === null ? null : parseFrontmatter(raw).body;
     }).then((rows) => {
       if (!cancelled) setResult({ key, rows });
@@ -52,7 +47,7 @@ export function useProjectReviewRows(docs: readonly VaultDoc[]): ProjectReviewRo
     return () => {
       cancelled = true;
     };
-  }, [key, docs, bundled, fileHandles]);
+  }, [key, docs, fileHandles]);
 
   if (!key) return { rows: NO_ROWS, reading: false };
   return { rows: result?.rows ?? NO_ROWS, reading: result === null };
