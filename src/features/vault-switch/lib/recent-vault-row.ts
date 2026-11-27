@@ -1,15 +1,10 @@
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 
 /** `unknown` is distinct from `ready`: claiming reachability because nothing said otherwise is the failure. */
-export type RecentVaultReachability =
-  | 'ready'
-  | 'needs-permission'
-  | 'missing'
-  | 'blocked'
-  | 'unknown';
+export type RecentVaultReachability = 'ready' | 'missing' | 'unknown';
 
 export function canOpenReachability(state: RecentVaultReachability): boolean {
-  return state === 'ready' || state === 'needs-permission' || state === 'unknown';
+  return state !== 'missing';
 }
 
 /** Null `counts` renders "not counted yet", never `0 documents`. */

@@ -44,7 +44,6 @@ vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-location', () => ({
   vaultRootRejectionReason: () => null,
 }));
 vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', () => ({
-  isTauriVaultRuntime: () => true,
   getTauriVaultRootPath: (handle: { __picked?: boolean; name?: string } | null) =>
     handle?.__picked ? mocks.pickedPath : (handle?.name ?? null),
 }));

@@ -37,15 +37,13 @@ describe('recentVaultRowKey', () => {
 
 describe('canOpenReachability', () => {
   it('allows a press that can still lead to an opened folder', () => {
-    // Pressable: the press grants permission, and an unanswered probe must not strand a folder.
+    // An unanswered probe must not strand a folder that is still there.
     expect(canOpenReachability('ready')).toBe(true);
-    expect(canOpenReachability('needs-permission')).toBe(true);
     expect(canOpenReachability('unknown')).toBe(true);
   });
 
   it('refuses a press that is already known to fail', () => {
     expect(canOpenReachability('missing')).toBe(false);
-    expect(canOpenReachability('blocked')).toBe(false);
   });
 });
 
@@ -138,7 +136,7 @@ describe('partitionRecentVaultRows', () => {
       ],
       reachability: {
         '/tmp/qa-run-a': 'missing',
-        '/Users/dana/walled': 'blocked',
+        '/Users/dana/walled': 'unknown',
         '/tmp/qa-run-b': 'missing',
         '/Users/dana/atlas': 'ready',
       },

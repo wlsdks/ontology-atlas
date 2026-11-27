@@ -106,7 +106,6 @@ function createFakeVaultHandle() {
 
 function runtime(overrides: Partial<ProjectSourceRuntime> = {}): ProjectSourceRuntime {
   return {
-    available: () => true,
     pickRoot: async () => inspection.rootPath,
     inspect: async () => inspection,
     rootPathOf: () => null,
@@ -451,10 +450,10 @@ describe("project source model", () => {
     expect(result.current.proposedRoot).toBeNull();
   });
 
-  it("degrades honestly on web without probing a private root", async () => {
+  it("stays unmeasured and settles with no proposal when the native side answers nothing", async () => {
     const vault = createFakeVaultHandle();
-    const inspect = vi.fn(async () => inspection);
-    const sourceRuntime = runtime({ available: () => false, inspect });
+    const inspect = vi.fn(async () => null);
+    const sourceRuntime = runtime({ inspect });
     const { result } = renderHook(() => useProjectSourceModel({
       projectSlug: "music",
       vaultHandle: vault.handle,
@@ -464,9 +463,6 @@ describe("project source model", () => {
     }));
 
     await waitFor(() => expect(result.current.view?.status).toBe("not_measured"));
-    expect(result.current.runtimeAvailable).toBe(false);
-    expect(result.current.canRunSourceAction).toBe(false);
-    expect(inspect).not.toHaveBeenCalled();
     // A surface that cannot measure does not wait: the degraded notice shows on the first frame.
     expect(result.current.proposalSettled).toBe(true);
     expect(result.current.proposedRoot).toBeNull();

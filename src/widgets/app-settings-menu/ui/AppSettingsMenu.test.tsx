@@ -42,7 +42,6 @@ function reportTriggerLayout() {
 }
 
 const mocks = vi.hoisted(() => ({
-  isDesktopRuntime: false,
   vaultRootPath: null as string | null,
   vaultStatus: 'idle' as string,
   vaultErrorCode: null as string | null,
@@ -67,8 +66,8 @@ vi.mock('@/features/app-update', async (importOriginal) => {
 vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-location', () => ({
   openTauriVaultInFinder: (...args: unknown[]) => mocks.revealInFinder(...args),
 }));
-vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', () => ({
-  isTauriVaultRuntime: () => mocks.isDesktopRuntime,
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime')>()),
   getTauriVaultRootPath: () => mocks.vaultRootPath,
 }));
 
@@ -175,7 +174,6 @@ function openSheet(ui?: ReactNode, section?: string) {
 /** The workspace link always goes to `/docs/`, where the folder is opened or read; it never offers the app's own download. */
 describe('AppSettingsMenu folder action', () => {
   beforeEach(() => {
-    mocks.isDesktopRuntime = false;
     mocks.rememberRouteFocusIntent.mockClear();
   });
 
@@ -224,7 +222,6 @@ describe('AppSettingsMenu pending update sign', () => {
 /** The default screen has no tabs, no empty panels and no long MCP proof text. */
 describe('AppSettingsMenu single-sheet recomposition', () => {
   beforeEach(() => {
-    mocks.isDesktopRuntime = false;
     mocks.locale = 'en';
     window.sessionStorage.clear();
   });
@@ -557,7 +554,6 @@ describe('AppSettingsMenu screenControls injection', () => {
 /** `open`/`onOpenChange` make the sheet controlled, so ⌘K never stacks over it; omitted, it manages itself. */
 describe('AppSettingsMenu controlled open', () => {
   beforeEach(() => {
-    mocks.isDesktopRuntime = false;
   });
 
   it('stays uncontrolled (self-managed) when open/onOpenChange are omitted — existing behavior unchanged', () => {
@@ -629,7 +625,6 @@ describe('AppSettingsMenu controlled open', () => {
 
 describe('AppSettingsMenu appearance pickers', () => {
   beforeEach(() => {
-    mocks.isDesktopRuntime = false;
     window.localStorage.clear();
   });
 
@@ -930,7 +925,6 @@ describe('AppSettingsMenu import module placement', () => {
 
 describe('AppSettingsMenu search and requests', () => {
   beforeEach(() => {
-    mocks.isDesktopRuntime = false;
     mocks.locale = 'en';
     window.sessionStorage.clear();
     routerPush.mockClear();

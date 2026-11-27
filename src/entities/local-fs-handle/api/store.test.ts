@@ -198,29 +198,6 @@ describe('local-fs-handle store', () => {
     expect((await getLocalFsHandle('current'))?.name).toBe('Current');
   });
 
-  it('does not restore a desktop path record in the browser', async () => {
-    await putLocalFsHandle({
-      id: CURRENT_LOCAL_FS_HANDLE_ID,
-      handle: fakeHandle('Desktop Vault'),
-      desktopRootPath: '/Users/dana/vaults/desktop',
-      name: 'Desktop Vault',
-      createdAt: 1,
-      lastAccessedAt: 1,
-    });
-    await putLocalFsHandle({
-      id: 'browser',
-      handle: fakeHandle('Browser Vault'),
-      name: 'Browser Vault',
-      createdAt: 2,
-      lastAccessedAt: 2,
-    });
-
-    expect(await getLocalFsHandle()).toBeUndefined();
-    expect((await listRecentLocalFsHandles()).map((record) => record.name)).toEqual([
-      'Browser Vault',
-    ]);
-  });
-
   it('web FSA records with different folders both stay in the recent list', async () => {
     // Web records all share id 'current', so identity must come from the folder, not the id.
     await putLocalFsHandle({

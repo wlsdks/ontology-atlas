@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 
 const tauri = vi.hoisted(() => ({
-  isTauriVaultRuntime: vi.fn(() => true),
   tauriVaultPathExists: vi.fn(async () => true),
   listTauriDirectoryNames: vi.fn(async () => [] as string[]),
   createTauriVaultHandle: vi.fn(),
@@ -76,7 +75,6 @@ function builtVault() {
 }
 
 async function openVault() {
-  tauri.isTauriVaultRuntime.mockReturnValue(true);
   store.getLocalFsHandle.mockResolvedValue(savedVault('/Users/dana/vault'));
   const hook = renderHook(() => useLocalVaultInternal());
   await vi.waitFor(() => expect(hook.result.current.status).toBe('loaded'));

@@ -43,7 +43,6 @@ export { deriveSourceProgress } from './lib/library/source-progress';
 export type { SourceProgress, SourceProgressPoint } from './lib/library/source-progress';
 export {
   candidateKey,
-  discoverySkipReason,
   withoutVaultOwnedMarkdown,
 } from './lib/library/source-discovery';
 export { sourceFolderOf } from './lib/library/source-folder';

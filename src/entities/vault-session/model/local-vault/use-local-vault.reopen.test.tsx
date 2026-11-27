@@ -15,7 +15,6 @@ import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
  */
 
 const tauri = vi.hoisted(() => ({
-  isTauriVaultRuntime: vi.fn(() => true),
   tauriVaultPathExists: vi.fn(async () => true),
   listTauriDirectoryNames: vi.fn<(rootPath: string) => Promise<string[]>>(
     async () => [],
@@ -116,7 +115,6 @@ async function mountHook() {
 }
 
 beforeEach(() => {
-  tauri.isTauriVaultRuntime.mockReturnValue(true);
   tauri.tauriVaultPathExists.mockResolvedValue(true);
   tauri.listTauriDirectoryNames.mockResolvedValue([]);
   store.getLocalFsHandle.mockResolvedValue(undefined);

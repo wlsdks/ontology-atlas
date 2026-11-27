@@ -2,20 +2,14 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 
-/** A stored folder's condition is read before the press; on the desktop a gone folder rejects rather than answering false. */
+/** A stored folder's condition is read before the press; a gone folder rejects rather than answering false. */
 
 const tauri = vi.hoisted(() => ({
-  isTauriVaultRuntime: vi.fn(() => true),
   tauriVaultPathExists: vi.fn<(rootPath: string, kind?: string) => Promise<boolean>>(
     async () => true,
   ),
 }));
 vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-files', () => tauri);
-vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', () => tauri);
-
-vi.mock('@/entities/local-fs-handle', () => ({
-  verifyHandlePermission: vi.fn(async () => 'granted' as const),
-}));
 
 import { useRecentVaultReachability } from './use-recent-vault-reachability';
 
@@ -33,10 +27,9 @@ function record(name: string): LocalFsHandleRecord {
 
 afterEach(() => {
   vi.clearAllMocks();
-  tauri.isTauriVaultRuntime.mockReturnValue(true);
 });
 
-describe('useRecentVaultReachability on the desktop', () => {
+describe('useRecentVaultReachability', () => {
   it('reports a folder whose path resolves as ready', async () => {
     tauri.tauriVaultPathExists.mockResolvedValue(true);
     const records = [record('atlas')];
@@ -66,6 +59,14 @@ describe('useRecentVaultReachability on the desktop', () => {
     await waitFor(() =>
       expect(hook.result.current?.['/Users/dana/vaults/renamed']).toBe('missing'),
     );
+  });
+
+  it('reports a record that holds no path as unknown, without asking the native side', async () => {
+    const pathless = { ...record('pathless'), desktopRootPath: undefined };
+    const hook = renderHook(() => useRecentVaultReachability([pathless]));
+
+    await waitFor(() => expect(hook.result.current).toEqual({ 'fsa:pathless': 'unknown' }));
+    expect(tauri.tauriVaultPathExists).not.toHaveBeenCalled();
   });
 
   it('still reports an unrecognised rejection as unknown, never as ready', async () => {

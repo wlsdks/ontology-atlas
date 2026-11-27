@@ -3,10 +3,7 @@
 import { useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import {
-  getTauriVaultRootPath,
-  isTauriVaultRuntime,
-} from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
+import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
 import { parseVaultChangeBatch } from "@/shared/lib/vault-folder/vault-change-batch";
 import { useLocalVault } from "./local-vault-context";
 
@@ -22,7 +19,7 @@ export function TauriVaultWatchBridge() {
   }, [applyVaultChangeBatch, handle]);
 
   useEffect(() => {
-    if (!isTauriVaultRuntime() || status !== "loaded" || !rootPath) return;
+    if (status !== "loaded" || !rootPath) return;
     let cancelled = false;
     let unlisten: (() => void) | undefined;
     void (async () => {
