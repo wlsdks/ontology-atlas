@@ -2,13 +2,16 @@ import { expect, test } from "@playwright/test";
 import { installDesktopRailRuntime, mountDesktopVault } from "../desktop-rail-arrival-harness";
 
 /**
- * In the installed app the search palette finds the open folder's own documents: before, it listed
- * only the bundled projects and an app with a folder open searched an empty list.
+ * In the installed app a project page's search palette finds the open folder's own documents:
+ * before, it listed only the bundled projects and an app with a folder open searched an empty list.
  */
 
 test("search finds a document of the open folder by its title and opens it", async ({ page }) => {
   await installDesktopRailRuntime(page);
   await mountDesktopVault(page);
+  // The palette is the project page's own: the map's Cmd+K opens the concept search instead.
+  await page.goto("/en/project/fallback/?slug=storefront&guides=off");
+  await expect(page.getByTestId("project-detail-actions")).toBeVisible({ timeout: 30_000 });
 
   const input = page.locator("input#project-search-input");
   const shortcut = process.platform === "darwin" ? "Meta+k" : "Control+k";
