@@ -79,6 +79,7 @@ const FAMILY: [(&str, &[&str]); 5] = [
             "confined-files",
             "hardened-git",
             "indexmap",
+            "rayon",
             "serde",
             "serde_json",
             "sha2",
