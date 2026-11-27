@@ -246,7 +246,6 @@
     "headMoved": "The repository moved to another commit during this run, so Atlas changed no document. Run it again.",
     "offHere": "This recheck came with the folder and was never allowed on this Mac, so it does not run here. To recheck here, remove it and schedule your own.",
     "sent": "Sent {size} of documents and code changes to the agent.",
-    "heldNoDefault": "Not run: Atlas could not tell which branch is the remote's default, so it cannot tell whether {branch} is a working branch. Run {command} in this repository, then run it again.",
     "edits": {
       "factsWrites": "An ontology check changes nothing. A recheck edits only the documents of concepts whose code changed, commits them, and lists every change under Run history, where one press undoes it.",
       "sheetDescription": "At the chosen time the agent rereads each concept whose code changed after its document. Atlas records the documents that are still accurate, edits only the sentences that are not, and commits those documents so you can undo the whole run.",

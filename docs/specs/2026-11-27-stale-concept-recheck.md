@@ -184,9 +184,10 @@ Steps are slice 1 unless marked.
    number asks to allow again.
 2. When the time comes or the person presses **Run now**, Atlas checks Git first and holds, with
    no agent turn and no commit, when: HEAD is detached; an operation is in progress; the vault is
-   outside its repository; the checked-out branch is the remote's default branch; no remote
-   default branch is known; or Git refused this schedule's last commit (then only **Run now**
-   tries again, and the clock resumes once a run commits).
+   outside its repository; a remote default branch is known and is the checked-out branch; or
+   Git refused this schedule's last commit (then only **Run now** tries again, and the clock
+   resumes once a run commits). With no remote, or no remote default known, the run goes ahead
+   on the checked-out branch.
 3. Atlas finds the stale concepts of every kind from Git with no agent; with none the run ends
    "No changes". It takes them longest-waiting document first until the cap or 200 KB of documents
    and diffs. It skips a concept whose document or cited file has uncommitted changes, one raised
@@ -251,7 +252,7 @@ The web cell of an Automations row is what `automations.appRequiredDescription` 
 | Loading | Out of scope — Automations needs the app | Existing running stage; **Stop** ends as `recheck.stopped` |
 | Done | Out of scope — Automations needs the app | "Rechecked" with `recheck.summary` and `recheck.sent`; **View results** |
 | Partial | Out of scope — Automations needs the app | Summary plus `recheck.waiting`, `.skippedUncommitted`, `.ignored`; **Run now** |
-| Held | Out of scope — Automations needs the app | `recheck.heldGit`, `.heldBranch`, `.heldNoDefault` or `.heldRefused`; finish in Git, switch branch, or **Run now** |
+| Held | Out of scope — Automations needs the app | `recheck.heldGit`, `.heldBranch` or `.heldRefused`; finish in Git, switch branch, or **Run now** |
 | Error | Out of scope — Automations needs the app | `recheck.noAgent` with **Open Agents**, `.replyUnreadable`, `.headMoved`, `.commitRefused`, `.interrupted`; **Run now** |
 | Undone | Out of scope — Automations needs the app | Concept reads "Undone"; `recheck.undo.done`, `.skipped`, `.failed` or `.gone` |
 | Came with a clone | Out of scope — Automations needs the app | `recheck.offHere`; no Allow, no Run now; the person removes it and schedules their own |
@@ -288,7 +289,6 @@ all four because the catalogue test requires equal keys. No live string changed.
 | `recheck.noAgent` | Run history | "No coding agent was ready on this Mac, so nothing was rechecked. Open Agents to sign in, then run it again." |
 | `recheck.heldGit` | Row, run history | "Not run: Git cannot commit in this repository right now ({detail}). Finish that in Git, then run it again." |
 | `recheck.heldBranch` | Row, run history | "Not run: {branch} is the remote's default branch, and a recheck commits only on a working branch. Switch to a working branch, then run it again." |
-| `recheck.heldNoDefault` | Row, run history; `{command}` is `git remote set-head origin --auto` | "Not run: Atlas could not tell which branch is the remote's default, so it cannot tell whether {branch} is a working branch. Run {command} in this repository, then run it again." |
 | `recheck.heldRefused` | Row, run history | "Not run: Git refused this schedule's last commit ({detail}). Fix what Git reported, then press Run now. The schedule runs by the clock again once a run commits." |
 | `recheck.replyUnreadable` | Run history | "The agent's reply could not be read, so no document was changed. Run it again." |
 | `recheck.headMoved` | Run history | "The repository moved to another commit during this run, so Atlas changed no document. Run it again." |
@@ -338,9 +338,8 @@ all four because the catalogue test requires equal keys. No live string changed.
   unbound source means a cut diff can only end "Not decided".
 - **Signed commits and hooks.** A commit that needs a signature prompt or a hook that fails is a
   refused commit: put back, held, never retried by the clock.
-- **A repository with no remote, or a clone whose remote default was never recorded.** Held on
-  every run with `recheck.heldNoDefault`. The command it names repairs the second case; in the
-  first the recheck cannot run (Later 5).
+- **A repository with no remote, or a clone whose remote default was never recorded.** Not
+  held: the run commits on the checked-out branch, whatever its name.
 - **Folder moved or unreadable:** the existing state (`docs/features/automations.md:44-47`).
   **The run's commit squashed or rebased away:** `recheck.undo.gone`; its concepts stay current.
 - **A recheck that arrives with a clone:** never runs and cannot be allowed from its row
@@ -396,8 +395,9 @@ all four because the catalogue test requires equal keys. No live string changed.
    and committing, then `git status --porcelain` equals its value before the run; after the
    refused commit the next clock run spends no agent turn and reads `recheck.heldRefused`, and a
    Run now that commits lets the clock run again. `recheck-pass.test.ts`.
-7. **Slice 1.** Given nothing stale, no agent, the remote's default branch checked out, or no
-   remote default known, then no agent turn is spent and nothing is committed; given a concept
+7. **Slice 1.** Given nothing stale, no agent, or the remote's default branch checked out, then
+   no agent turn is spent and nothing is committed; given a repository with no remote, and one
+   whose remote default is not recorded, a run commits on the checked-out branch; given a concept
    citing `.env.production`, no byte of that file is sent and it reads
    `recheck.reason.refusedPath`; given a cut diff answered "still accurate" without the read, it
    reads `recheck.reason.cutUnread`; given 25 concepts of 20 KB each, the run sends at most
@@ -436,7 +436,6 @@ all four because the catalogue test requires equal keys. No live string changed.
 3. Show "checked against the code at <commit>" on the concept; next when the owner asks why a
    concept stopped counting.
 4. Recheck concepts whose file is gone and repair `path:`; next when `missing` is counted.
-5. A recheck in a repository with no remote; next when someone without a remote asks for it.
 
 ## Owner question
 
@@ -445,8 +444,10 @@ None. The owner delegated three choices to the lead, who decided them on 2026-11
 1. **The count that is read** is all concepts, as `validate_vault` counts them. Reverse by
    filtering the run to capabilities and comparing the project page in criterion 1.
 2. **A run commits on the checked-out branch** and is held, with no commit and no agent turn,
-   when that branch is the remote's default branch as `src-tauri/src/git/base_line.rs:152-158`
-   reads it, or when no remote default is known. Reverse by removing those two holds in Flow 2.
+   only when a remote default branch is known, as `src-tauri/src/git/base_line.rs:152-158`
+   reads it, and is that branch. With no remote, or no default known, the run commits on the
+   checked-out branch, so a repository without a remote can still recheck. Reverse by removing
+   the hold in Flow 2.
 3. **Slice 2 may rewrite sentences in a concept a person confirmed**, which then reads as changed
    since review: the 2026-11-18 direction removed the approval step, and the change is seen and
    undone afterwards. Reverse by adding confirmed concepts to the skips in Flow 3.
@@ -466,3 +467,6 @@ None. The owner delegated three choices to the lead, who decided them on 2026-11
   into two slices: slice 1 marks "still accurate" only and lists out-of-date concepts unchanged,
   slice 2 adds sentence edits; each criterion names its slice, slice 2's strings moved under
   `recheck.edits`, and a one-minute summary opens the spec.
+- 2026-11-27: lead decision: a run is held only when a remote default branch is known and is the
+  checked-out branch; with no remote, or no default known, it commits on the checked-out branch.
+  `recheck.heldNoDefault` and the "can never run" edge case and Later item removed.
