@@ -38,6 +38,12 @@
       "witness": "pkill"
     },
     {
+      "key": "frontend:runtime:dependencies:package.json:@fontsource-variable/jetbrains-mono",
+      "reason": "The Vite build's font rules read this package's woff2 file by path from CSS, which the dead-code scan does not follow.",
+      "consumer": "src/app/fonts.css",
+      "witness": "@fontsource-variable/jetbrains-mono"
+    },
+    {
       "key": "frontend:runtime:dependencies:package.json:jsonc-parser",
       "reason": "Root installation supplies this parser to the source-checkout init command as well as the nested cli manifest.",
       "consumer": "cli/src/lib/agent-setup/agent-config.mjs",

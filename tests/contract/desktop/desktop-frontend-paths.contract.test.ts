@@ -105,6 +105,10 @@ describe("what the desktop bundle leaves out has no way in from the app", () => 
     // links `/download` has to be read for that gate and added here.
     const reviewed = new Set([
       "src/app/providers/GatewayHandOverScript.tsx",
+      // The boot script hands a plain browser to /download; its `else` branch runs only when `window.isTauri` is absent.
+      "src/i18n/boot-script.ts",
+      // Generated route table: it names the route's address, and links nothing.
+      "src/app/route-tree.gen.ts",
       "src/shared/lib/navigation/nav-destination.ts",
       "src/views/terminal-state/ui/NotFoundScreen.tsx",
       "src/widgets/gateway-chrome/ui/GatewayNav.tsx",

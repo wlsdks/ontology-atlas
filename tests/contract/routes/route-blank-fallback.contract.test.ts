@@ -19,6 +19,8 @@ const APPROVED_FALLBACKS = [
   "RouteLoadingFallback",
   "MapEntryFallback",
   "GatewayEntryFallback",
+  // The Vite app's client form of `MapEntryFallback`, which is a server component and cannot render there.
+  "MapEntryPending",
 ] as const;
 
 /**
@@ -26,7 +28,15 @@ const APPROVED_FALLBACKS = [
  * for a dehydrated boundary that suspends, so the page stays as exported. `AppAddressFaces` is that
  * boundary: a plain browser keeps the app's screen as inert HTML under the app-only page.
  */
-const HYDRATION_HOLDS = [join("src", "app", "providers", "AppAddressFaces.tsx")];
+const HYDRATION_HOLDS = [
+  join("src", "app", "providers", "AppAddressFaces.tsx"),
+  // `next/dynamic` has no default fallback; this stands in for it, and a call that wants one passes `loading`.
+  join("src", "app", "next-shims", "next-dynamic.tsx"),
+  // The not-found and error screens load as one chunk with their own words, and stand where the loading
+  // picture of `index.html` or the screen they replace already is; they cannot read the workbench's messages.
+  join("src", "app", "routes", "__root.tsx"),
+  join("src", "app", "routes", "$locale", "_app", "route.tsx"),
+];
 
 /**
  * Places where the fallback is the page content: [route, the fallback that route must use]. The
