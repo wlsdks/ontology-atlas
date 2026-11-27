@@ -1,9 +1,9 @@
 'use client';
 
 import { useLocale, useTranslations } from 'next-intl';
-import { usePathname, useRouter } from 'next/navigation';
 import { useTransition } from 'react';
 import { LOCALE_NAME_KEY } from '@/i18n/locales';
+import { usePathname, useRouter } from '@/i18n/navigation';
 import { routing } from '@/i18n/routing';
 import { SegmentedControl } from '@/shared/ui/fields/segmented-control';
 
@@ -12,24 +12,6 @@ const STORAGE_KEY = 'ontology-atlas:locale';
 export interface LocaleSwitchProps {
   locales?: readonly string[];
   onSwitchStart?: (nextLocale: string) => void;
-}
-
-/** `rawSearch` and `rawHash` come directly from `window.location` so duplicate keys, ordering and encoding survive a language-only transition byte-for-byte. */
-export function buildLocaleTarget(
-  pathname: string,
-  currentLocale: string,
-  nextLocale: string,
-  rawSearch = '',
-  rawHash = '',
-): string {
-  const segments = pathname.split('/');
-  if (segments[1] === currentLocale) {
-    segments[1] = nextLocale;
-  } else {
-    segments.splice(1, 0, nextLocale);
-  }
-  const localizedPath = segments.join('/') || `/${nextLocale}/`;
-  return `${localizedPath}${rawSearch}${rawHash}`;
 }
 
 /** Persists the choice in localStorage so the root `/` redirect picks it up next visit. */
@@ -48,15 +30,10 @@ export function LocaleSwitch({ onSwitchStart, locales = routing.locales }: Local
     } catch {
       // localStorage unavailable — proceed without persistence
     }
-    const target = buildLocaleTarget(
-      pathname,
-      locale,
-      next,
-      window.location.search,
-      window.location.hash,
-    );
+    /* Raw from `window.location`, so duplicate keys, order and encoding survive a language-only switch byte for byte. */
+    const target = `${pathname}${window.location.search}${window.location.hash}`;
     startTransition(() => {
-      router.replace(target, { scroll: false });
+      router.replace(target, { locale: next, scroll: false });
     });
   }
 

@@ -34,6 +34,7 @@ import { ArchitectureImportMatrix } from './ArchitectureImportMatrix';
 import { ArchitectureRoleDetail } from './ArchitectureRoleDetail';
 import { ArchitectureVerdict } from './ArchitectureVerdict';
 import { HARNESS_GUTTER_LEFT } from './harness-frame';
+import { guardedHistoryWrite } from '@/shared/lib/navigation/history-write-guard';
 
 const EMPTY_PROFILE_PROBLEMS: ReadonlyArray<ArchitectureProfileProblem> = [];
 const EMPTY_EDGES: ArchitectureRecord['brief']['conformance']['violations'] = [];
@@ -51,7 +52,7 @@ function buildArchitectureHref(role: string | null, pathname: string): string {
 }
 
 function writeArchitectureAddress(role: string | null): void {
-  window.history.replaceState(window.history.state, '', buildArchitectureHref(role, window.location.pathname));
+  guardedHistoryWrite('replace', buildArchitectureHref(role, window.location.pathname));
 }
 
 function readArchitectureRole(): string | null {

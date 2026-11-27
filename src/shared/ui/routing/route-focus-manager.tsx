@@ -3,6 +3,7 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { usePathname } from '@/i18n/navigation';
 import { stripLocalePrefix } from '@/shared/lib/navigation/nav-destination';
+import { guardedHistoryWrite } from '@/shared/lib/navigation/history-write-guard';
 
 const ROUTE_FOCUS_INTENT_KEY = 'ontology-atlas:route-focus-intent';
 const ROUTE_FOCUS_INTENT_MAX_AGE_MS = 10_000;
@@ -38,11 +39,7 @@ function clearRouteFocusQueryMarker() {
   const url = new URL(window.location.href);
   if (url.searchParams.get(ROUTE_FOCUS_QUERY_KEY) !== ROUTE_FOCUS_QUERY_VALUE) return;
   url.searchParams.delete(ROUTE_FOCUS_QUERY_KEY);
-  window.history.replaceState(
-    window.history.state,
-    '',
-    `${url.pathname}${url.search}${url.hash}`,
-  );
+  guardedHistoryWrite('replace', `${url.pathname}${url.search}${url.hash}`);
   window.dispatchEvent(new Event('app:urlchange'));
 }
 

@@ -20,6 +20,7 @@ import { TermHint } from '@/shared/ui/hints/term-hint';
 import { PAGE_FRAME_FORM, PAGE_LEDE, PAGE_STAGE_FILL } from '@/shared/ui/tokens/page-frame';
 
 import { AGENTS_TAB_PARAM, buildAgentsTabHref, parseAgentsTab, type AgentsTab } from '../lib/agents-tab-state';
+import { guardedHistoryWrite } from '@/shared/lib/navigation/history-write-guard';
 
 /** The MCP tab is `children` from the app layer, so neither view imports the other. */
 export function AgentsPage({
@@ -71,12 +72,8 @@ export function AgentsPage({
     const nextTab = parseAgentsTab(next);
     capturePanelHeight();
     setTabState(nextTab);
-    /* Native history, not the router: a router navigation moves WebView focus off the strip. */
-    window.history.replaceState(
-      window.history.state,
-      '',
-      buildAgentsTabHref(nextTab, new URL(window.location.href)),
-    );
+    /* The history door, not a router navigation: that would move WebView focus off the strip. */
+    guardedHistoryWrite('replace', buildAgentsTabHref(nextTab, new URL(window.location.href)));
   };
 
   const staged = tab !== 'mcp' && !isAcpBridgeAvailable();

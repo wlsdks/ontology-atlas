@@ -43,10 +43,33 @@ const shared = createHistoryWriteGuard(HISTORY_WRITE_BUDGET, HISTORY_WRITE_WINDO
   );
 });
 
+/** The history of the router that owns the window; `flush` makes the write land before the caller returns. */
+export interface RouterHistoryWriter {
+  push(url: string): void;
+  replace(url: string): void;
+  flush(): void;
+}
+
+let routerHistory: RouterHistoryWriter | null = null;
+
+/** Called once by the entry that mounts the router; where none is set, the browser's own history is written. */
+export function setRouterHistory(writer: RouterHistoryWriter | null): void {
+  routerHistory = writer;
+}
+
+/**
+ * The one door every direct address write goes through. Under a router the write is the router's, so
+ * its history keys stay and Back and Forward land where they should.
+ */
 export function guardedHistoryWrite(mode: 'replace' | 'push', url: string): boolean {
   if (typeof window === 'undefined') return false;
   if (!shared.allow(Date.now())) return false;
-  if (mode === 'replace') window.history.replaceState({}, '', url);
-  else window.history.pushState({}, '', url);
+  if (routerHistory) {
+    // The router takes a path; callers may hold the absolute form `URL.toString()` gives.
+    const target = new URL(url, window.location.href);
+    routerHistory[mode](`${target.pathname}${target.search}${target.hash}`);
+    routerHistory.flush();
+  } else if (mode === 'replace') window.history.replaceState(window.history.state, '', url);
+  else window.history.pushState(window.history.state, '', url);
   return true;
 }
