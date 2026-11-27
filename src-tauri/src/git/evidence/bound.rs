@@ -2,11 +2,12 @@ use std::collections::HashSet;
 use std::fs;
 use std::path::{Component, Path, PathBuf};
 
+use hardened_git::RepoPath;
 use serde::Serialize;
+use source_scan::{date_paths, Dating, WantedPath, DATING_WINDOW_COMMITS};
 
-use super::super::repo::{require_repo_root, vault_pathspec};
-use super::super::runner::{run_git_read as run_git, validate_vault_dir};
-use super::{Dating, DatingState};
+use super::super::repo::{require_repo_root, vault_place};
+use super::super::runner::{hardened_repository, validate_vault_dir};
 use crate::gray_area::scope::{resolve_binding_metadata, verify_identity};
 
 #[derive(Debug, Serialize)]
@@ -66,11 +67,11 @@ fn root_object(path: &Path) -> Result<(u64, u64), String> {
     }
 }
 fn head(root: &Path) -> Result<String, String> {
-    let result = run_git(root, &["rev-parse", "--verify", "HEAD"]).map_err(|_| "unreadable")?;
-    if !result.success || result.stdout.trim().is_empty() {
-        return Err("no-history".into());
+    match hardened_repository(root).head() {
+        Ok(Some(commit)) => Ok(commit.as_str().to_string()),
+        Ok(None) => Err("no-history".into()),
+        Err(_) => Err("unreadable".into()),
     }
-    Ok(result.stdout.trim().into())
 }
 fn identity(vault_path: &str, project: &str) -> Result<Identity, String> {
     let vault = validate_vault_dir(vault_path).map_err(|_| "unreadable")?;
@@ -139,7 +140,7 @@ fn path_kind(root: &Path, raw: &str) -> Option<(bool, bool)> {
 
 struct Wanted {
     key: String,
-    resolved: String,
+    resolved: RepoPath,
     exists: bool,
     is_dir: bool,
 }
@@ -160,7 +161,7 @@ fn wanted_with(
     omitted: &mut Vec<String>,
     mut inspect: impl FnMut(&Path, &str) -> Option<(bool, bool)>,
 ) -> Vec<Wanted> {
-    let prefix = vault_pathspec(repo, root);
+    let prefix = vault_place(repo, root);
     let mut seen = HashSet::new();
     paths
         .iter()
@@ -173,125 +174,81 @@ fn wanted_with(
                 return None;
             }
             *remaining -= 1;
-            let Some((exists, is_dir)) = inspect(root, raw) else {
+            let (Some((exists, is_dir)), Some(named)) = (inspect(root, raw), RepoPath::new(raw))
+            else {
                 omitted.push(raw.clone());
                 return None;
             };
             Some(Wanted {
                 key: raw.clone(),
-                resolved: if prefix == "." {
-                    raw.clone()
-                } else {
-                    format!("{prefix}/{raw}")
-                },
+                resolved: prefix.join(&named),
                 exists,
                 is_dir,
             })
         })
         .collect()
 }
+/// The names of the files below `paths` that differ from the last commit. A rename is two rows,
+/// so the old name and the new one are both dirty.
 fn dirty_paths(root: &Path, paths: &[Wanted]) -> Result<HashSet<String>, String> {
-    if paths.is_empty() {
-        return Ok(HashSet::new());
-    }
-    let files: Vec<&str> = paths
+    let files: Vec<RepoPath> = paths
         .iter()
         .filter(|path| !path.is_dir)
-        .map(|p| p.resolved.as_str())
+        .map(|path| path.resolved.clone())
         .collect();
     if files.is_empty() {
         return Ok(HashSet::new());
     }
-    let mut args = vec![
-        "status",
-        "--porcelain=v1",
-        "-z",
-        "--untracked-files=all",
-        "--",
-    ];
-    args.extend(&files);
-    let output = run_git(root, &args).map_err(|_| "unreadable")?;
-    if !output.success {
-        return Err("unreadable".into());
-    }
-    let mut records = output.stdout.split('\0');
-    let mut dirty = HashSet::new();
-    while let Some(record) = records.next() {
-        if record.len() < 4 {
-            continue;
-        }
-        dirty.insert(record[3..].to_string());
-        if record
-            .as_bytes()
-            .iter()
-            .take(2)
-            .any(|c| matches!(c, b'R' | b'C'))
-        {
-            if let Some(previous) = records.next() {
-                dirty.insert(previous.into());
-            }
-        }
-    }
-    Ok(dirty)
-}
-fn matches_path(path: &str, candidate: &str) -> bool {
-    candidate == path || super::is_under(candidate, path)
+    let tree = hardened_repository(root)
+        .working_tree(&files)
+        .map_err(|_| "unreadable")?;
+    Ok(tree.rows.into_iter().map(|row| row.path).collect())
 }
 fn walk(root: &Path, paths: &[Wanted], dating: Dating) -> Result<Vec<BoundPathChange>, String> {
     if paths.is_empty() {
         return Ok(vec![]);
     }
     let before = dirty_paths(root, paths)?;
-    let files: Vec<&str> = paths
+    let asked: Vec<(usize, WantedPath)> = paths
         .iter()
-        .filter(|path| !path.is_dir)
-        .map(|p| p.resolved.as_str())
+        .enumerate()
+        .filter(|(_, path)| !path.is_dir)
+        .map(|(position, path)| {
+            (
+                position,
+                WantedPath {
+                    key: path.key.clone(),
+                    resolved: path.resolved.clone(),
+                    dating,
+                },
+            )
+        })
         .collect();
-    let mut args = vec![
-        "-c",
-        "core.quotepath=false",
-        "log",
-        super::EVIDENCE_WALK_COMMITS,
-        "--format=%x1e%cI",
-        "--raw",
-        "--no-abbrev",
-        "--no-renames",
-        "--",
-    ];
-    args.extend(&files);
-    let history = if files.is_empty() {
-        String::new()
-    } else {
-        let output = run_git(root, &args).map_err(|_| "unreadable")?;
-        if !output.success {
-            return Err("unreadable".into());
-        }
-        output.stdout
-    };
-    let after = dirty_paths(root, paths)?;
-    let mut dates = vec![DatingState::<Option<String>>::default(); paths.len()];
-    let mut time: Option<String> = None;
-    for line in history.lines() {
-        if let Some(value) = line.strip_prefix('\x1e') {
-            time = chrono::DateTime::parse_from_rfc3339(value)
-                .ok()
-                .map(|_| value.to_string());
-        } else if let Some((blob, touched)) = super::raw_touch(line) {
-            for (path, date) in paths.iter().zip(dates.iter_mut()) {
-                if matches_path(&path.resolved, touched) {
-                    date.touched(dating, blob, touched == path.resolved, &time);
-                }
+    let mut dated: Vec<Option<String>> = vec![None; paths.len()];
+    if !asked.is_empty() {
+        let wanted: Vec<WantedPath> = asked.iter().map(|(_, path)| path.clone()).collect();
+        let found = date_paths(&hardened_repository(root), &wanted, DATING_WINDOW_COMMITS)
+            .map_err(|_| "unreadable")?;
+        for ((position, _), commit) in asked.iter().zip(found) {
+            // A commit time that is not RFC 3339 still dates the path: it is the commit that
+            // changed it, and an older one must not stand in.
+            let time = commit
+                .map(|commit| commit.committed_at)
+                .filter(|time| chrono::DateTime::parse_from_rfc3339(time).is_ok());
+            if let Some(slot) = dated.get_mut(*position) {
+                *slot = time;
             }
         }
     }
+    let after = dirty_paths(root, paths)?;
     Ok(paths
         .iter()
-        .zip(&dates)
+        .zip(dated)
         .map(|(path, date)| {
             let dirty = before
                 .iter()
                 .chain(after.iter())
-                .any(|candidate| matches_path(&path.resolved, candidate));
+                .any(|candidate| path.resolved.holds(candidate));
             BoundPathChange {
                 path: path.key.clone(),
                 exists: path.exists,
@@ -299,7 +256,7 @@ fn walk(root: &Path, paths: &[Wanted], dating: Dating) -> Result<Vec<BoundPathCh
                 last_changed_at: if !path.exists || dirty || path.is_dir {
                     None
                 } else {
-                    date.dated.clone().flatten()
+                    date
                 },
                 dirty,
             }
@@ -349,7 +306,7 @@ fn measure(
         Err(reason) => return BoundEvidenceDates::unavailable(&reason),
     };
     let mut result = BoundEvidenceDates::unavailable("measured");
-    let mut remaining = super::MAX_EVIDENCE_PATHS;
+    let mut remaining = source_scan::MAX_DATED_PATHS;
     let vault_wanted = wanted(
         &before.vault,
         &before.vault_repo,
@@ -396,10 +353,7 @@ fn measure(
             Err(reason) => return BoundEvidenceDates::unavailable(&reason),
         };
         for (path, row) in wanted.iter().zip(rows.iter_mut()) {
-            if dirty
-                .iter()
-                .any(|candidate| matches_path(&path.resolved, candidate))
-            {
+            if dirty.iter().any(|candidate| path.resolved.holds(candidate)) {
                 row.dirty = true;
                 row.last_changed_at = None;
             }

@@ -30,10 +30,13 @@ fn vault_pathspec_returns_dot_when_vault_is_repo_root() {
 }
 
 #[test]
-fn vault_pathspec_returns_relative_when_vault_nested() {
+fn vault_pathspec_returns_relative_when_vault_nested_and_keeps_its_spelling() {
     let root = Path::new("/repo");
-    assert_eq!(
-        vault_pathspec(root, Path::new("/repo/docs/ontology")),
-        "docs/ontology"
-    );
+    for (vault, spelled) in [
+        ("/repo/docs/ontology", "docs/ontology"),
+        ("/repo/ notes", " notes"),
+        ("/repo/-drafts/a b", "-drafts/a b"),
+    ] {
+        assert_eq!(vault_pathspec(root, Path::new(vault)), spelled, "{vault}");
+    }
 }

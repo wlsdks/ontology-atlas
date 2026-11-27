@@ -1,7 +1,7 @@
 [package]
-name = "source-evidence"
+name = "source-scan"
 version = "0.1.0"
-description = "Staleness, evidence search, imports, survey, meaning, construction and project source"
+description = "Staleness of cited paths and files under a source root; imports, outlines and search join as their tools are ported"
 edition = "2021"
 license = "MIT"
 publish = false
@@ -9,7 +9,6 @@ publish = false
 [dependencies]
 confined-files = { path = "../confined-files" }
 hardened-git = { path = "../hardened-git" }
-vault-document = { path = "../vault-document" }
 
 [lints]
 workspace = true

@@ -248,6 +248,11 @@ merge.
 | 14 | `query_concepts` filter nested deeper than 32 levels of `NOT` and brackets, or holding more than 256 clauses | the filter is read by recursion until the process's stack ends, so a filter of a hundred thousand clauses ends the whole server | refused as `invalid_arguments` naming `filter`, before the vault is read. Corpus: `query-concepts-filter-bounds` | a filter no agent wrote by hand must not end every agent's session |
 | 15 | `query_concepts` zero-row `growthHint.reason` | the `kind=` and `domain=` names are found by scanning the filter's text, so a name inside a quoted title counts as a kind and a domain with a non-ASCII letter is cut where the letters stop | the names are the ones the parsed filter requires, whole. Corpus: `query-concepts-zero-row-names` | the hint names what the filter asked for |
 | 16 | order of `find_backlinks` matches and of the kinds in `kind_census` | by UTF-16 code unit, the default sort | by the one collation every other list uses (`Intl.Collator('en')`). Corpus: `backlinks-and-orphans-edge-names` | one order for every list an agent reads |
+| 17 | `git_status` and `git_history` `reason` when `git` is not installed (the program is not found) | `not-a-git-repository`, because every failed first call reads as no repository | `git-not-available`; a missing repository keeps `not-a-git-repository`, and a `git` that is found and cannot start is a `tool_error` with the operating system's words. Corpus: `no-git-executable` | an agent told "not a repository" on a machine with no git is led to run `git init` |
+| 18 | `git_status` `files` for a file renamed in the working tree or index | one row for the new path, as `modified`, when the person's `status.renames` or `diff.renames` allows it, and an `added` row for the new path and a `deleted` row for the old when it does not | always two rows, the old path `deleted` and the new one `added` or `untracked`, whatever the person configured; `counts` follow. A history read never follows a rename either (`log.follow` is set off). Corpus: `git-status-staged-rename` | the answer must not depend on a setting of the person's, and the old path is not lost |
+| 19 | `git_history` when `git log` fails on a repository that has a commit | the failure is swallowed: no commits, `historyComplete: true` | `tool_error` carrying git's words. A branch with no commit has no history and answers as before. Corpus: `git-history-with-a-missing-commit` (the branch names a commit that is not there) | an empty list that reads as a complete history is a false answer |
+| 20 | `git_status` and `git_history` for a vault in a folder of its repository | the place is `relative(gitRoot, vault)`, so on Windows it is written with backslashes: git reads that as the same folder, but `isInsidePathspec` (`git-tools.mjs`) compares it with the `/` paths git prints, so every row counts as outside the vault and `vaultPathspec` shows backslashes. A vault path spelled in other letters than the disk holds (macOS and Windows keep the case but find a name without it) is placed by Node's `realpathSync`, which does not correct the case | the place is built from the real names below the top, as a `/` path, letters compared without case on Windows; a real folder called ` notes` or `-drafts` keeps its spelling. Corpus: `git-reads-in-a-nested-vault`, declared on Windows only (the two servers agree elsewhere) | the same vault must answer the same on every platform |
+| 21 | `git_status` and `git_history` when the repository's own config cannot be read in time (the hardened run refuses to start `git`) | `not-a-git-repository`, because the refusal reads as a failed first call | a `tool_error` that says the config did not finish reading. No corpus case (it needs a config that names a pipe nobody writes): `hardened-git`'s `a_config_that_never_finishes_reading_refuses_the_run_instead_of_hanging` states the refusal | a repository that cannot be read safely is not a folder with no repository
 
 Slices add rows only with a corpus case for each; the lead reviews each row in the slice's pull
 request.
@@ -643,6 +648,15 @@ block as a blank line, where YAML 1.2 reads one quote, the break and a space. Th
 JavaScript server and the Rust reader agree on the dialect today (`vault-document`'s oracle test
 names the three places), so each is changed in the same pull request or none is.
 
+The app's own `git/runner.rs` still holds a second copy of the hardening table (base flags,
+hooks, `ext::` transport, per-repository filter overrides, diff guard) and of the credential-prompt
+silencing, for the commit, remote, briefing and status modules (64 call sites in 20 files). It
+folds into `hardened-git` when those modules move to the typed reads, next when a slice touches
+one of them: the commit keeps the person's hooks, the network verbs keep transports and the
+process-group deadline kills a hook's children, none of which `hardened-git` runs today, so the
+fold needs those three modes in its runner first. Until then a change to the table is made in both
+places, and the app tests state the app's copy.
+
 After the merge: the app's screens ask Rust through Tauri commands and the twins go, next when the
 workbench removal has merged; the app calls the crates in-process where it spawns the bundled
 server today (the gray-area reader); `gix` for Git read hot paths, next when a profile shows Git
@@ -738,6 +752,23 @@ None — the owner delegated the open points and the lead decided them on 2026-1
   the zero-row hint reads the parsed filter (row 15); `find_backlinks` and the kind census use the
   one collation (row 16). The reads keep a document cache between calls, revalidated by stat, with
   a racy window of two seconds. The `''` dialect point is recorded under Later for a joint fix.
+- 2026-11-28: slice 5 (git reads and staleness). `source-evidence` is renamed `source-scan`
+  (the survey half gets `repository-survey` in slice 8). `hardened-git` reads `HEAD` and the
+  changed paths from one `status`, so a commit between two runs cannot split them; every read
+  sets `GIT_OPTIONAL_LOCKS=0`, because `status` otherwise rewrites the index under
+  `index.lock` and can fail a commit the person makes at that moment. History dating uses
+  `log -z`, so no path is read through C-style quoting. `git_status` and `git_history` answer
+  as JavaScript does except rows 17 to 21. A vault is placed under its repository by
+  `source-scan`'s `place_folder` from real paths (`confined-files`), as a `RepoPath` built from
+  the real folder names, so a folder called ` notes` or `-drafts` is not trimmed or refused; the
+  names an agent wrote are checked as written before they go under it. `git log --stdin` carries
+  the paths of a dating walk, so no list of them reaches a command-line limit. The app's three
+  evidence commands call
+  `source-scan` for dating and text pairs; its `git/runner.rs` stays for the other git modules.
+  Not done here: node revisions and the stale-parent clock (their callers are `query_ontology`
+  health and `get_concepts`, slice 4), the comparable-code normaliser and import reconciliation
+  (slice 6), and `detect-drift` (slice 9); the app's screens still run the shared JavaScript
+  comparison.
 - 2026-11-28 (lessons from two public migration reports, Anthropic's Messages API move to Rust,
   2026-11-25, and claude.com's "How Anthropic runs large-scale code migrations", 2026-07-16):
   their tests passed about 98% while only about a quarter of real inputs matched, so the corpus is

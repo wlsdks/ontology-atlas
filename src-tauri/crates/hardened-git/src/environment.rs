@@ -21,8 +21,14 @@ const INHERITED_LOCATION_ENV: [&str; 4] = [
 
 /// A local read must never fetch: in a partial clone a missing object is fetched through a
 /// transport the repository's config names (`uploadpack`, `core.sshCommand`). The protocol list
-/// also covers Git before 2.45.
-const LOCAL_READ_ENV: [(&str, &str); 2] = [("GIT_NO_LAZY_FETCH", "1"), ("GIT_ALLOW_PROTOCOL", "")];
+/// also covers Git before 2.45. It must not write either: `status` refreshes the index as a side
+/// effect and takes `.git/index.lock` to do it, so a read made while the person commits would
+/// make their commit fail with "index.lock exists" (`GIT_OPTIONAL_LOCKS`, git(1)).
+const LOCAL_READ_ENV: [(&str, &str); 3] = [
+    ("GIT_NO_LAZY_FETCH", "1"),
+    ("GIT_ALLOW_PROTOCOL", ""),
+    ("GIT_OPTIONAL_LOCKS", "0"),
+];
 
 fn is_removed(name: &OsStr) -> bool {
     let matches = |listed: &&str| {
@@ -110,6 +116,7 @@ mod tests {
                 ("GIT_TRACE", "0"),
                 ("GIT_NO_LAZY_FETCH", "1"),
                 ("GIT_ALLOW_PROTOCOL", ""),
+                ("GIT_OPTIONAL_LOCKS", "0"),
             ]))
         );
     }
@@ -136,7 +143,8 @@ mod tests {
             sorted(env),
             sorted(pairs(&[
                 ("GIT_NO_LAZY_FETCH", "1"),
-                ("GIT_ALLOW_PROTOCOL", "")
+                ("GIT_ALLOW_PROTOCOL", ""),
+                ("GIT_OPTIONAL_LOCKS", "0")
             ]))
         );
     }

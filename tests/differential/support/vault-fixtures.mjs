@@ -40,6 +40,20 @@ export const GIT_ENV = {
   GIT_TERMINAL_PROMPT: '0',
 };
 
+/**
+ * The arguments every harness-run `git` starts with: nothing the repository's own settings name is
+ * run (a hostile fixture would otherwise run it here).
+ */
+export const HARDENED_GIT_ARGS = [
+  '--no-optional-locks',
+  '-c', 'core.fsmonitor=false',
+  '-c', 'core.hooksPath=/dev/null',
+  '-c', 'filter.x.clean=cat',
+  '-c', 'filter.x.smudge=cat',
+  '-c', 'diff.external=',
+  '-c', 'core.sshCommand=',
+];
+
 function uid(label) {
   const bytes = createHash('sha256').update(`fixture-uid:${label}`).digest();
   bytes[6] = (bytes[6] & 0x0f) | 0x40;
@@ -386,6 +400,26 @@ const FIXTURE_BUILDERS = {
       write(dir, 'repo/.gitattributes', '*.md filter=x\n');
       write(dir, 'repo/.git/hooks/post-index-change', '#!/bin/sh\ntouch ../hook-ran.txt\n');
       chmodSync(path.join(dir, 'repo/.git/hooks/post-index-change'), 0o755);
+    },
+  },
+
+  // A vault two folders below the top of its repository: a path the server must write with `/`
+  // whatever the platform, with one commit that touches the vault and one that does not.
+  'nested-docs-repo': {
+    vaultRel: 'repo/docs/ontology',
+    build(dir) {
+      write(dir, 'repo/src/app.ts', 'export const app = 1;\n');
+      write(dir, 'repo/docs/ontology/nested.md', projectNode('nested', 'Nested', ['domains/inside']));
+      write(dir, 'repo/docs/ontology/domains/inside.md', domainNode('domains/inside', 'Inside'));
+      git(path.join(dir, 'repo'), ['init', '--quiet', '--initial-branch=main']);
+      commit(path.join(dir, 'repo'), 'chore: first commit', '2026-01-10T09:00:00+00:00');
+      write(dir, 'repo/src/app.ts', 'export const app = 2;\n');
+      commit(path.join(dir, 'repo'), 'feat: change code beside the vault', '2026-02-10T09:00:00+00:00');
+      write(dir, 'repo/docs/ontology/domains/inside.md', domainNode('domains/inside', 'Inside Changed'));
+      git(path.join(dir, 'repo'), ['add', 'docs/ontology/domains/inside.md']);
+      write(dir, 'repo/src/app.ts', 'export const app = 3;\n');
+      git(path.join(dir, 'repo'), ['add', 'src/app.ts']);
+      write(dir, 'repo/docs/ontology/untracked.md', '# Untracked\n');
     },
   },
 

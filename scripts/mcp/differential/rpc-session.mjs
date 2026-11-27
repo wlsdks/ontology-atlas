@@ -7,7 +7,7 @@ import {
 import path from 'node:path';
 
 import { nodeAtPath, parseOrdered } from './ordered-json.mjs';
-import { GIT_ENV, PLANTED_BASE_MS } from '../../../tests/differential/support/vault-fixtures.mjs';
+import { GIT_ENV, HARDENED_GIT_ARGS, PLANTED_BASE_MS } from '../../../tests/differential/support/vault-fixtures.mjs';
 
 const DEFAULT_STEP_TIMEOUT_MS = 90_000;
 const EXIT_GRACE_MS = 8_000;
@@ -256,6 +256,15 @@ export async function runSession({ server, steps, env, cwd, vaultPath, handshake
     if (step.$ === 'write-file') {
       mkdirSync(path.dirname(path.join(vaultPath, step.path)), { recursive: true });
       writeFileSync(path.join(vaultPath, step.path), step.text);
+      continue;
+    }
+    if (step.$ === 'git') {
+      // The repository's own git, run the way the harness reads it, in the folder that holds the
+      // vault: a step plants a staged rename or the like between two requests.
+      execFileSync('git', [...HARDENED_GIT_ARGS, '-C', parentPath, ...step.args], {
+        env: { ...process.env, ...GIT_ENV },
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
       continue;
     }
     if (step.$ === 'mkdir') {

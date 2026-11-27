@@ -206,6 +206,64 @@
       "path": "result.content[0].text",
       "change": 15,
       "reason": "The kind and domain a zero-row hint reports missing are the ones the parsed filter requires, whole: a name inside a quoted title is not a kind, and a domain with a non-ASCII letter is not cut where the letters stop (row 15)."
+    },
+    {
+      "case": "git/no-git-executable",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text",
+      "change": 17,
+      "reason": "A machine whose git cannot start is told so instead of that the folder is no repository, so an agent is not led to run git init (row 17)."
+    },
+    {
+      "case": "git/no-git-executable",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text",
+      "change": 17,
+      "reason": "A machine whose git cannot start is told so instead of that the folder is no repository, so an agent is not led to run git init (row 17)."
+    },
+    {
+      "case": "git/git-status-staged-rename",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text",
+      "change": 18,
+      "reason": "A rename is two rows, the old name deleted and the new one added, whatever status.renames the person configured; JavaScript lets that setting decide (row 18)."
+    },
+    {
+      "case": "git/git-status-staged-rename",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text",
+      "change": 18,
+      "reason": "A rename is two rows, the old name deleted and the new one added, whatever status.renames the person configured; JavaScript lets that setting decide (row 18)."
+    },
+    {
+      "case": "git/git-history-with-a-missing-commit",
+      "where": "answer",
+      "id": 1,
+      "path": "result.isError",
+      "change": 19,
+      "reason": "A git log that fails on a repository that has a commit is an error with git's words, not an empty history that reads as complete (row 19)."
+    },
+    {
+      "case": "git/git-reads-in-a-nested-vault",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text",
+      "change": 20,
+      "platform": "win32",
+      "reason": "On Windows the JavaScript server writes the vault's place with backslashes and then counts every row as outside the vault; the Rust server writes it with / (row 20). Elsewhere the two agree, so this entry applies on Windows only."
+    },
+    {
+      "case": "git/git-reads-in-a-nested-vault",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text",
+      "change": 20,
+      "platform": "win32",
+      "reason": "On Windows the JavaScript server writes the vault's place with backslashes and then counts every row as outside the vault; the Rust server writes it with / (row 20). Elsewhere the two agree, so this entry applies on Windows only."
     }
   ]
 }
