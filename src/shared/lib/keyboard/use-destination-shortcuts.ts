@@ -138,6 +138,12 @@ export function useDestinationShortcuts({
       leaderAt.current = matchesLetter(event, NAV_LEADER_KEY) ? now : null;
     };
     window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    // The listener needs the hydrated shell (router, visible destinations), so it cannot be installed
+    // earlier. This mark tells a script or a test that a `G` pressed now is heard.
+    document.documentElement.dataset.destinationShortcuts = 'live';
+    return () => {
+      window.removeEventListener('keydown', handler);
+      delete document.documentElement.dataset.destinationShortcuts;
+    };
   }, [disabled, visible]);
 }
