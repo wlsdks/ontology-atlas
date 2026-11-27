@@ -2,5 +2,6 @@
   "title": "Ontology Atlas는 설치한 앱에서 실행돼요",
   "body": "이 주소는 앱의 화면이에요. Ontology Atlas는 컴퓨터에 설치한 앱에서만 마크다운 폴더를 읽고 고쳐요.",
   "download": "앱 받기",
-  "sample": "예시 지도 보기"
+  "sample": "예시 지도 보기",
+  "otherComputers": "앱은 Apple Silicon Mac과 Windows x64 베타에서 실행돼요. Intel Mac, Linux, 휴대폰에서는 <sample>예시 지도</sample>를 보거나, <guide>소스 코드에서 MCP 서버를 실행</guide>해 코딩 에이전트를 연결할 수 있어요."
 }

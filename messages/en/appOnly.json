@@ -2,5 +2,6 @@
   "title": "Ontology Atlas runs in the installed app",
   "body": "This address opens a screen of the app. Ontology Atlas reads and edits your Markdown folder only in the app installed on your computer.",
   "download": "Get the app",
-  "sample": "See a sample map"
+  "sample": "See a sample map",
+  "otherComputers": "The app runs on Apple Silicon Macs and, as a beta, on Windows x64. On an Intel Mac, Linux or a phone, <sample>see a sample map</sample>, or <guide>run the MCP server from the source code</guide> to connect a coding agent."
 }
