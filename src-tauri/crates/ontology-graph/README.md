@@ -15,7 +15,9 @@ It reads documents that `vault-document` already read; it never opens a file.
 `src/query/` holds the operations of `query_ontology` that read the graph alone, one function per
 operation from the graph and a `QueryRequest` to a typed answer. `Operation` names every operation
 the tool offers; the ones no module answers yet are `Operation::Pending`, which `run` refuses by
-name, and the differential corpus shows which those are. A family of operations is a folder with
+name, and the differential corpus shows which those are. `analysis_history` and
+`analysis_record` are `Operation::Analysis`: they read the vault's record files, not the graph, so
+`mcp-server` answers them and `run` refuses them by name. A family of operations is a folder with
 its own `run` and its own answer type: `walks/` follows edges from a node, `selection/` picks nodes
 from the whole graph.
 
@@ -23,6 +25,8 @@ from the whole graph.
 |---|---|
 | `mod.rs` | `run`: the family an operation belongs to, and the `compiledSummary` that closes every answer |
 | `operation.rs` | `Operation`: every operation, its name, and whether a plan may target it |
+| `analysis_operation.rs` | `AnalysisOperation`: the two operations that read the analysis records |
+| `operation_defaults.rs` | `Expansion` and the defaults of every operation (direction, depth, limit), which an operation applies and a plan states, so the two cannot disagree |
 | `request.rs` | `QueryRequest`, `Direction`: what a call asked, read once by the tool layer, and the defaults and caps a walk applies to `depth` and `direction` |
 | `query_error.rs` | `QueryError`: an invalid call, a value not allowed, an unknown node, an operation not answered yet |
 | `relation_set.rs` | `RelationSet`: the relation names a call may select, with their aliases |
@@ -36,6 +40,7 @@ from the whole graph.
 | `scope.rs` | `Scope`, `ScopeEdges`: a node and everything it holds (or the whole graph), and where the edges that start inside end |
 | `edge_rows.rs` | the edge rows of an answer: directed, on a path, compiled |
 | `name_counts.rs` | counts by kind, domain or relation, in the order of the names |
+| `plan/` | `query_plan`: what another operation would cost on this graph, from the same edges and filters the operation uses; `cost_class.rs` (the class of a count), `traversal_estimate.rs` (a bounded search counted level by level), `cost_estimate.rs` (one shape per way of reading the graph), `planned_arguments.rs` (the arguments as the operation takes them and the call to send), `execution_advice.rs` (run, narrow or review, and the narrower call) |
 | `walks/graph_walk.rs` | `traversal_steps`: the edges a walk may follow from a node, in the order walks use |
 | `walks/neighbors.rs`, `walks/paths.rs` | `neighbors`, `path`, `all_paths`: breadth-first, shortest and budgeted iterative search |
 | `walks/dependency_cycles.rs`, `walks/topological_order.rs` | `cycles` (bounded Johnson search) and `topological_order` (layered Kahn); `find_cycles` and `order_dependencies` give selection the typed facts, so it never reads the written answer |

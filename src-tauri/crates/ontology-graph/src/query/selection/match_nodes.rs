@@ -9,11 +9,10 @@ use super::follow_up::NodeFollowUp;
 use super::graph_summary::DegreeRow;
 use super::selection_request::{NodeSort, SelectionArguments};
 use crate::compiled_graph::{CompiledGraph, Node, NodeId};
+use crate::query::operation_defaults::MATCH_NODES_LIMIT;
 use crate::query::query_error::QueryError;
 use crate::query::request::QueryRequest;
 use vault_document::frontmatter::Value;
-
-const DEFAULT_LIMIT: usize = 100;
 
 /// The conditions of one call, `None` meaning any.
 struct NodeFilters<'a> {
@@ -109,11 +108,27 @@ pub struct MatchNodesAnswer<'a> {
     follow_up: Option<NodeFollowUp<'a>>,
 }
 
+/// How many nodes a call's conditions let through, which `query_plan` reports without ranking them.
+pub(in crate::query) fn count_matching_nodes(
+    graph: &CompiledGraph,
+    request: &QueryRequest,
+) -> usize {
+    let arguments = &request.selection.arguments;
+    let filters = NodeFilters {
+        arguments,
+        slug_contains: arguments.slug_contains.as_deref().map(str::to_lowercase),
+    };
+    graph
+        .node_ids()
+        .filter(|id| filters.accepts(graph.node(*id)))
+        .count()
+}
+
 pub fn match_nodes<'a>(
     graph: &'a CompiledGraph,
     request: &QueryRequest,
 ) -> Result<MatchNodesAnswer<'a>, QueryError> {
-    let limit = request.limit.unwrap_or(DEFAULT_LIMIT);
+    let limit = request.limit.unwrap_or(MATCH_NODES_LIMIT);
     let arguments = &request.selection.arguments;
     let sort = arguments.sort.unwrap_or_default();
     let slug_contains = arguments.slug_contains.as_deref().map(str::to_lowercase);

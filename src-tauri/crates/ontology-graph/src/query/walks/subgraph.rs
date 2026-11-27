@@ -7,12 +7,10 @@ use crate::compiled_graph::{CompiledGraph, EdgeId, NodeId};
 use crate::query::edge_rows::PathEdge;
 use crate::query::node_mask::NodeMask;
 use crate::query::node_resolution::resolve;
+use crate::query::operation_defaults::{Expansion, SUBGRAPH};
 use crate::query::query_error::QueryError;
 use crate::query::relation_set::{allowed, RelationSet};
 use crate::query::request::{Direction, QueryRequest};
-
-const DEFAULT_DEPTH: usize = 2;
-const DEFAULT_LIMIT: usize = 100;
 
 /// The cut of the neighborhood of a node that `subgraph` and `builder_context` answer with: the
 /// first `limit` nodes, nearest first and the seed before any, and the first `limit` of the edges
@@ -37,12 +35,12 @@ impl Subgraph {
         graph: &CompiledGraph,
         request: &QueryRequest,
         name: Option<&str>,
-        default_depth: usize,
+        defaults: &Expansion,
     ) -> Result<Self, QueryError> {
         let seed = resolve(graph, name, "slug")?;
-        let direction = request.direction_undirected_as_both(Direction::Both);
-        let depth = request.depth_or(default_depth);
-        let limit = request.limit.unwrap_or(DEFAULT_LIMIT);
+        let direction = defaults.direction(request);
+        let depth = defaults.depth(request);
+        let limit = defaults.limit(request);
         let types = RelationSet::parse(request.types.as_deref(), "types")?;
         let neighborhood = Neighborhood::explore(graph, seed, direction, depth, types.as_ref());
 
@@ -131,7 +129,7 @@ pub fn subgraph<'a>(
     request: &QueryRequest,
 ) -> Result<SubgraphAnswer<'a>, QueryError> {
     let name = request.slug.as_deref().or(request.seed.as_deref());
-    let slice = Subgraph::of_call(graph, request, name, DEFAULT_DEPTH)?;
+    let slice = Subgraph::of_call(graph, request, name, &SUBGRAPH)?;
     Ok(SubgraphAnswer {
         operation: "subgraph",
         seed: graph.node(slice.seed).slug(),

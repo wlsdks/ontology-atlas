@@ -9,11 +9,10 @@ use crate::compiled_graph::{CompiledGraph, Edge, EdgeId, NodeId, Target};
 use crate::query::edge_rows::CompiledEdge;
 use crate::query::node_resolution::resolve;
 use crate::query::node_summary::NodeSummary;
+use crate::query::operation_defaults::MATCH_EDGES_LIMIT;
 use crate::query::query_error::QueryError;
 use crate::query::relation_set::{RelationSet, RELATION_TYPE_VALUES};
 use crate::query::request::QueryRequest;
-
-const DEFAULT_LIMIT: usize = 100;
 
 /// The relations a `match_edges` call filters by: `types` when it names any, else the one in
 /// `type` or its alias `relation`.
@@ -121,11 +120,22 @@ pub struct MatchEdgesAnswer<'a> {
     follow_up: Option<EdgeFollowUp<'a>>,
 }
 
-pub fn match_edges<'a>(
-    graph: &'a CompiledGraph,
+/// The edges a call's conditions let through, and the names it resolved on the way.
+pub(in crate::query) struct EdgeScan {
+    pub types: Option<RelationSet>,
+    pub from: Option<NodeId>,
+    pub to: Option<NodeId>,
+    pub include_external: bool,
+    pub include_unresolved: bool,
+    pub matched: Vec<EdgeId>,
+}
+
+/// One pass over every edge of the graph; `match_edges` writes rows from it and `query_plan`
+/// counts it.
+pub(in crate::query) fn scan_edges(
+    graph: &CompiledGraph,
     request: &QueryRequest,
-) -> Result<MatchEdgesAnswer<'a>, QueryError> {
-    let limit = request.limit.unwrap_or(DEFAULT_LIMIT);
+) -> Result<EdgeScan, QueryError> {
     let arguments = &request.selection.arguments;
     let types = relation_filter(request)?;
     let from = request
@@ -152,6 +162,31 @@ pub fn match_edges<'a>(
         .edge_ids()
         .filter(|id| conditions.accepts(graph.edge(*id)))
         .collect();
+    Ok(EdgeScan {
+        types: conditions.types,
+        from,
+        to,
+        include_external: conditions.include_external,
+        include_unresolved: conditions.include_unresolved,
+        matched,
+    })
+}
+
+pub fn match_edges<'a>(
+    graph: &'a CompiledGraph,
+    request: &QueryRequest,
+) -> Result<MatchEdgesAnswer<'a>, QueryError> {
+    let limit = request.limit.unwrap_or(MATCH_EDGES_LIMIT);
+    let arguments = &request.selection.arguments;
+    let scan = scan_edges(graph, request)?;
+    let EdgeScan {
+        types,
+        from,
+        to,
+        include_external,
+        include_unresolved,
+        matched,
+    } = scan;
     let rows: Vec<EdgeMatch<'a>> = matched
         .iter()
         .take(limit)
@@ -181,9 +216,9 @@ pub fn match_edges<'a>(
             to: to.map(|node| graph.node(node).slug().to_string()),
             from_kind: arguments.from_kind.clone(),
             to_kind: arguments.to_kind.clone(),
-            relations: EchoedRelations::of(conditions.types.as_ref()),
-            include_external: conditions.include_external,
-            include_unresolved: conditions.include_unresolved,
+            relations: EchoedRelations::of(types.as_ref()),
+            include_external,
+            include_unresolved,
         },
         total_matches: matched.len(),
         limited: matched.len() > limit,

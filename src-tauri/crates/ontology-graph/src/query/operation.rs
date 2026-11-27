@@ -2,27 +2,22 @@
 //! operations is an enum of its own, owned by the module that answers it; the operations nobody
 //! answers yet are `PendingOperation`, which a slice empties as it ports them.
 
+use crate::query::analysis_operation::AnalysisOperation;
 use crate::query::selection::SelectionOperation;
 use crate::query::walks::WalkOperation;
 
 /// Operations that no module answers yet.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PendingOperation {
-    QueryPlan,
     AgentBrief,
     MeaningRepairReview,
-    AnalysisHistory,
-    AnalysisRecord,
 }
 
 impl PendingOperation {
     pub const fn name(self) -> &'static str {
         match self {
-            Self::QueryPlan => "query_plan",
             Self::AgentBrief => "agent_brief",
             Self::MeaningRepairReview => "meaning_repair_review",
-            Self::AnalysisHistory => "analysis_history",
-            Self::AnalysisRecord => "analysis_record",
         }
     }
 }
@@ -31,6 +26,10 @@ impl PendingOperation {
 pub enum Operation {
     Walk(WalkOperation),
     Selection(SelectionOperation),
+    /// Describes what another operation would cost, and runs none.
+    QueryPlan,
+    /// Reads the vault's analysis records, not the graph.
+    Analysis(AnalysisOperation),
     Pending(PendingOperation),
 }
 
@@ -40,7 +39,7 @@ impl Operation {
         Self::Walk(WalkOperation::Neighbors),
         Self::Walk(WalkOperation::Path),
         Self::Walk(WalkOperation::AllPaths),
-        Self::Pending(PendingOperation::QueryPlan),
+        Self::QueryPlan,
         Self::Selection(SelectionOperation::Centrality),
         Self::Selection(SelectionOperation::Communities),
         Self::Selection(SelectionOperation::SimilarNodes),
@@ -72,8 +71,8 @@ impl Operation {
         Self::Selection(SelectionOperation::MaintenancePlan),
         Self::Pending(PendingOperation::AgentBrief),
         Self::Pending(PendingOperation::MeaningRepairReview),
-        Self::Pending(PendingOperation::AnalysisHistory),
-        Self::Pending(PendingOperation::AnalysisRecord),
+        Self::Analysis(AnalysisOperation::History),
+        Self::Analysis(AnalysisOperation::Record),
         Self::Selection(SelectionOperation::WorkspaceBrief),
         Self::Selection(SelectionOperation::Health),
     ];
@@ -82,6 +81,8 @@ impl Operation {
         match self {
             Self::Walk(operation) => operation.name(),
             Self::Selection(operation) => operation.name(),
+            Self::QueryPlan => "query_plan",
+            Self::Analysis(operation) => operation.name(),
             Self::Pending(operation) => operation.name(),
         }
     }
@@ -101,12 +102,9 @@ impl Operation {
     pub fn can_be_planned(self) -> bool {
         !matches!(
             self,
-            Self::Pending(
-                PendingOperation::QueryPlan
-                    | PendingOperation::MeaningRepairReview
-                    | PendingOperation::AnalysisHistory
-                    | PendingOperation::AnalysisRecord
-            )
+            Self::QueryPlan
+                | Self::Analysis(_)
+                | Self::Pending(PendingOperation::MeaningRepairReview)
         )
     }
 

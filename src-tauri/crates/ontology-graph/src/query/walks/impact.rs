@@ -7,12 +7,10 @@ use super::dependency_qualification::{DependencyEdge, Qualification};
 use super::neighborhood::{Neighborhood, NodeAtDistance};
 use crate::compiled_graph::{CompiledGraph, NodeId};
 use crate::query::node_resolution::resolve;
+use crate::query::operation_defaults::DEPENDENCY_IMPACT;
 use crate::query::query_error::QueryError;
 use crate::query::relation_set::RelationSet;
 use crate::query::request::{Direction, QueryRequest};
-
-const DEFAULT_DEPTH: usize = 2;
-const DEFAULT_LIMIT: usize = 100;
 
 /// The search `impact` and `blast_radius` share: from a node along declared dependencies, incoming
 /// unless the call says otherwise.
@@ -27,9 +25,9 @@ pub struct DependencyWalk {
 impl DependencyWalk {
     pub fn run(graph: &CompiledGraph, request: &QueryRequest) -> Result<Self, QueryError> {
         let center = resolve(graph, request.slug.as_deref(), "slug")?;
-        let direction = request.direction_undirected_as_both(Direction::Incoming);
-        let depth = request.depth_or(DEFAULT_DEPTH);
-        let limit = request.limit.unwrap_or(DEFAULT_LIMIT);
+        let direction = DEPENDENCY_IMPACT.direction(request);
+        let depth = DEPENDENCY_IMPACT.depth(request);
+        let limit = DEPENDENCY_IMPACT.limit(request);
         refuse_structural_types(request)?;
         let types = RelationSet::dependencies();
         let neighborhood = Neighborhood::explore(graph, center, direction, depth, Some(&types));
@@ -44,7 +42,7 @@ impl DependencyWalk {
 }
 
 /// A call that names `types` may name `depends_on` and nothing else.
-fn refuse_structural_types(request: &QueryRequest) -> Result<(), QueryError> {
+pub(in crate::query) fn refuse_structural_types(request: &QueryRequest) -> Result<(), QueryError> {
     RelationSet::parse(request.types.as_deref(), "types")?;
     let mut structural: Vec<&str> = Vec::new();
     for name in request.types.as_deref().unwrap_or_default() {

@@ -7,11 +7,10 @@ use super::graph_walk::edge_order_key;
 use crate::compiled_graph::{CompiledGraph, EdgeId, Node, NodeId};
 use crate::query::edge_rows::DirectedEdge;
 use crate::query::node_resolution::resolve;
+use crate::query::operation_defaults::NEIGHBORS_LIMIT;
 use crate::query::query_error::QueryError;
 use crate::query::relation_set::{allowed, RelationSet};
 use crate::query::request::{Direction, QueryRequest};
-
-const DEFAULT_LIMIT: usize = 100;
 
 #[derive(Serialize)]
 pub struct NeighborsAnswer<'a> {
@@ -24,6 +23,71 @@ pub struct NeighborsAnswer<'a> {
     nodes: Vec<&'a Node>,
 }
 
+/// The edges a call's filters let through: the relation is allowed, and an edge to code or to a
+/// missing name is kept only when the call asked for those.
+struct EdgeFilter<'a> {
+    graph: &'a CompiledGraph,
+    types: Option<&'a RelationSet>,
+    include_external: bool,
+    include_unresolved: bool,
+}
+
+impl<'a> EdgeFilter<'a> {
+    fn of_call(
+        graph: &'a CompiledGraph,
+        request: &QueryRequest,
+        types: Option<&'a RelationSet>,
+    ) -> Self {
+        Self {
+            graph,
+            types,
+            include_external: request.include_external.unwrap_or(false),
+            include_unresolved: request.include_unresolved.unwrap_or(false),
+        }
+    }
+
+    fn passes(&self, id: EdgeId) -> bool {
+        let edge = self.graph.edge(id);
+        allowed(self.types, edge.via)
+            && match edge.target {
+                crate::compiled_graph::Target::Node(_) => true,
+                crate::compiled_graph::Target::External => self.include_external,
+                crate::compiled_graph::Target::Unresolved => self.include_unresolved,
+            }
+    }
+}
+
+/// How many edges around `center` the call's direction and filters let through: the number of rows
+/// `neighbors` would list without a limit.
+pub(in crate::query) fn count_filtered_edges(
+    graph: &CompiledGraph,
+    center: NodeId,
+    request: &QueryRequest,
+    types: Option<&RelationSet>,
+) -> usize {
+    let direction = request.direction_undirected_as_both(Direction::Both);
+    let filter = EdgeFilter::of_call(graph, request, types);
+    let leaving = if direction.follows_outgoing() {
+        graph
+            .outgoing(center)
+            .iter()
+            .filter(|id| filter.passes(**id))
+            .count()
+    } else {
+        0
+    };
+    let entering = if direction.follows_incoming() {
+        graph
+            .incoming(center)
+            .iter()
+            .filter(|id| filter.passes(**id))
+            .count()
+    } else {
+        0
+    };
+    leaving + entering
+}
+
 /// The edges of `center` that `direction` follows and the call's filters allow, entering edges
 /// before leaving ones, each group in edge order.
 fn filtered_edges(
@@ -33,17 +97,8 @@ fn filtered_edges(
     types: Option<&RelationSet>,
 ) -> Vec<(&'static str, EdgeId)> {
     let direction = request.direction_undirected_as_both(Direction::Both);
-    let include_external = request.include_external.unwrap_or(false);
-    let include_unresolved = request.include_unresolved.unwrap_or(false);
-    let passes = |id: EdgeId| {
-        let edge = graph.edge(id);
-        allowed(types, edge.via)
-            && match edge.target {
-                crate::compiled_graph::Target::Node(_) => true,
-                crate::compiled_graph::Target::External => include_external,
-                crate::compiled_graph::Target::Unresolved => include_unresolved,
-            }
-    };
+    let filter = EdgeFilter::of_call(graph, request, types);
+    let passes = |id: EdgeId| filter.passes(id);
     let mut keyed: Vec<(String, &'static str, EdgeId)> = Vec::new();
     if direction.follows_outgoing() {
         for &id in graph.outgoing(center) {
@@ -76,7 +131,7 @@ pub fn neighbors<'a>(
     request: &QueryRequest,
 ) -> Result<NeighborsAnswer<'a>, QueryError> {
     let center = resolve(graph, request.slug.as_deref(), "slug")?;
-    let limit = request.limit.unwrap_or(DEFAULT_LIMIT);
+    let limit = request.limit.unwrap_or(NEIGHBORS_LIMIT);
     let types = RelationSet::parse(request.types.as_deref(), "types")?;
     let all = filtered_edges(graph, center, request, types.as_ref());
     let rows = all.get(..limit.min(all.len())).unwrap_or_default();

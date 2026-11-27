@@ -11,12 +11,12 @@ use serde::Serialize;
 use super::clusters::DEFAULT_ITERATIONS;
 use crate::compiled_graph::{CompiledGraph, EdgeId, NodeId};
 use crate::query::node_summary::NodeIdentity;
+use crate::query::operation_defaults::CENTRALITY_LIMIT;
 use crate::query::query_error::QueryError;
 use crate::query::relation_set::{allowed, RelationSet};
 use crate::query::request::QueryRequest;
 
 const DAMPING: f64 = 0.85;
-const DEFAULT_LIMIT: usize = 10;
 
 /// The share of rank each node holds after `iterations` rounds. A node with no outgoing edge
 /// spreads its rank over every node.
@@ -189,7 +189,7 @@ pub fn centrality<'a>(
     graph: &'a CompiledGraph,
     request: &QueryRequest,
 ) -> Result<CentralityAnswer<'a>, QueryError> {
-    let limit = request.limit.unwrap_or(DEFAULT_LIMIT);
+    let limit = request.limit.unwrap_or(CENTRALITY_LIMIT);
     let iterations = request.iterations.unwrap_or(DEFAULT_ITERATIONS);
     let types = RelationSet::parse(request.types.as_deref(), "types")?;
     let count = graph.nodes().len();

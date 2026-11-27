@@ -16,13 +16,10 @@ use crate::query::edge_rows::PathEdge;
 use crate::query::name_counts::sorted_counts;
 use crate::query::node_resolution::resolve;
 use crate::query::node_summary::{summaries, NodeSummary};
+use crate::query::operation_defaults::{ALL_PATHS_LIMIT, ALL_PATHS_SEARCH_BUDGET, PATH_MAX_HOPS};
 use crate::query::query_error::QueryError;
 use crate::query::relation_set::RelationSet;
 use crate::query::request::{Direction, QueryRequest};
-
-const DEFAULT_MAX_HOPS: usize = 5;
-const DEFAULT_ALL_PATHS_LIMIT: usize = 25;
-const DEFAULT_SEARCH_BUDGET: usize = 5000;
 
 #[derive(Serialize)]
 #[serde(untagged)]
@@ -152,7 +149,7 @@ pub fn path<'a>(
 ) -> Result<PathAnswer<'a>, QueryError> {
     let from = resolve(graph, request.from.as_deref(), "from")?;
     let to = resolve(graph, request.to.as_deref(), "to")?;
-    let max_hops = request.max_hops.unwrap_or(DEFAULT_MAX_HOPS);
+    let max_hops = request.max_hops.unwrap_or(PATH_MAX_HOPS);
     let direction = Direction::for_paths(request.direction);
     let types = RelationSet::parse(request.types.as_deref(), "types")?;
     let from_slug = graph.node(from).slug();
@@ -281,10 +278,10 @@ pub fn all_paths<'a>(
 ) -> Result<AllPathsAnswer<'a>, QueryError> {
     let from = resolve(graph, request.from.as_deref(), "from")?;
     let to = resolve(graph, request.to.as_deref(), "to")?;
-    let max_hops = request.max_hops.unwrap_or(DEFAULT_MAX_HOPS);
+    let max_hops = request.max_hops.unwrap_or(PATH_MAX_HOPS);
     let direction = Direction::for_paths(request.direction);
-    let limit = request.limit.unwrap_or(DEFAULT_ALL_PATHS_LIMIT);
-    let search_budget = request.search_budget(DEFAULT_SEARCH_BUDGET)?;
+    let limit = request.limit.unwrap_or(ALL_PATHS_LIMIT);
+    let search_budget = request.search_budget(ALL_PATHS_SEARCH_BUDGET)?;
     let types = RelationSet::parse(request.types.as_deref(), "types")?;
 
     let mut matches: Vec<Walk> = Vec::new();
