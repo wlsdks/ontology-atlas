@@ -4995,6 +4995,7 @@ dependencies = [
  "confined-files",
  "hardened-git",
  "indexmap 2.14.0",
+ "rayon",
  "serde",
  "serde_json",
  "sha2 0.11.1",

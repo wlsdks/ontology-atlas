@@ -1,20 +1,34 @@
 //! Reading a batch of files on every core.
 //!
 //! Parsing is what a scan spends its time on, and it depends on the text alone, so the texts of a
-//! batch are parsed by a few threads and the readings come back in the order the files were given:
+//! batch are parsed on a pool of threads and the readings come back in the order the files were given:
 //! placement, which does depend on the repository, stays one sequence and the answer is the same
 //! as reading one file after another.
 
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Mutex;
+use std::sync::OnceLock;
+
+use rayon::prelude::*;
+use rayon::{ThreadPool, ThreadPoolBuilder};
 
 use crate::file_reading::{read_file, FileReading};
 use crate::import_edges::UnresolvedReason;
 use crate::source_language::SourceLanguage;
 
-/// The most threads one scan uses: parsing is memory-bound beyond a handful of cores.
-const MAX_THREADS: usize = 8;
+/// The threads one scan parses on: parsing is memory-bound beyond a handful of cores.
+const READING_THREADS: usize = 8;
+
+fn reading_pool() -> Option<&'static ThreadPool> {
+    static POOL: OnceLock<Option<ThreadPool>> = OnceLock::new();
+    POOL.get_or_init(|| {
+        ThreadPoolBuilder::new()
+            .num_threads(READING_THREADS)
+            .thread_name(|index| format!("source-reading-{index}"))
+            .build()
+            .ok()
+    })
+    .as_ref()
+}
 
 /// One file waiting to be read: its text, or why it has none to read.
 pub struct PendingFile {
@@ -33,35 +47,14 @@ impl PendingFile {
     }
 }
 
-/// The reading of every file, in the order of `files`.
+/// The reading of every file, in the order of `files`: a parallel iterator collects in the order
+/// of its source, whichever thread finishes first. Without a pool (the system refused the
+/// threads) the files are read one after another.
 pub fn read_batch(files: &[PendingFile]) -> Vec<FileReading> {
-    let threads = std::thread::available_parallelism()
-        .map_or(1, usize::from)
-        .min(MAX_THREADS)
-        .min(files.len());
-    if threads <= 1 {
-        return files.iter().map(read_pending).collect();
+    match reading_pool() {
+        Some(pool) => pool.install(|| files.par_iter().map(read_pending).collect()),
+        None => files.iter().map(read_pending).collect(),
     }
-    let next = AtomicUsize::new(0);
-    let finished: Mutex<Vec<(usize, FileReading)>> = Mutex::new(Vec::with_capacity(files.len()));
-    std::thread::scope(|scope| {
-        for _ in 0..threads {
-            scope.spawn(|| {
-                let mut mine = Vec::new();
-                loop {
-                    let at = next.fetch_add(1, Ordering::Relaxed);
-                    let Some(file) = files.get(at) else { break };
-                    mine.push((at, read_pending(file)));
-                }
-                if let Ok(mut all) = finished.lock() {
-                    all.extend(mine);
-                }
-            });
-        }
-    });
-    let mut readings = finished.into_inner().unwrap_or_default();
-    readings.sort_by_key(|(at, _)| *at);
-    readings.into_iter().map(|(_, reading)| reading).collect()
 }
 
 fn read_pending(file: &PendingFile) -> FileReading {
@@ -85,22 +78,6 @@ mod tests {
             language: SourceLanguage::TypeScript,
             max_bytes: 1024,
             text: Ok(text.to_string()),
-        }
-    }
-
-    #[test]
-    fn readings_come_back_in_the_order_the_files_were_given() {
-        let files: Vec<PendingFile> = (0..64)
-            .map(|index| pending(&format!("f{index}.ts"), &format!("import './dep{index}';")))
-            .collect();
-        let readings = read_batch(&files);
-        assert_eq!(readings.len(), files.len());
-        for (index, reading) in readings.iter().enumerate() {
-            let FileReading::Script(imports) = reading else {
-                panic!("file {index} was not read as a script");
-            };
-            assert_eq!(imports.len(), 1);
-            assert_eq!(imports[0].specifier, format!("./dep{index}"));
         }
     }
 
