@@ -397,3 +397,27 @@ fn only_a_commit_of_this_repository_counts_as_a_mark() {
     .unwrap();
     assert_eq!(known, vec![head]);
 }
+
+#[test]
+fn uncommitted_documents_and_cited_files_are_named_as_asked() {
+    let (scratch, vault) = vault_in_repository("recheck-uncommitted");
+    fs::write(scratch.work.join("pay.ts"), "pay(1);\n").unwrap();
+    scratch.git(&["add", "pay.ts"]);
+    scratch.git(&["commit", "-qm", "code"]);
+    fs::write(scratch.work.join("docs/capabilities/pay.md"), "edited\n").unwrap();
+    fs::write(scratch.work.join("pay.ts"), "pay(2);\n").unwrap();
+    scratch.git(&["add", "pay.ts"]);
+    let named = git_uncommitted_paths(
+        vault,
+        vec![
+            "capabilities/pay.md".into(),
+            "capabilities/refund.md".into(),
+        ],
+        vec!["pay.ts".into(), "one.md".into()],
+    )
+    .unwrap();
+    assert_eq!(
+        named,
+        vec!["capabilities/pay.md".to_string(), "pay.ts".to_string()]
+    );
+}

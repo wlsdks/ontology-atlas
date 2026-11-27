@@ -78,7 +78,7 @@ impl<T: Clone> DatingState<T> {
 }
 
 /// One `git log --name-only` walk matched in memory, not one process per concept.
-const MAX_EVIDENCE_PATHS: usize = 512;
+pub(crate) const MAX_EVIDENCE_PATHS: usize = 512;
 const EVIDENCE_WALK_COMMITS: &str = "--max-count=3000";
 
 /// Date vault-relative documents and repository-relative paths under the vault grant.

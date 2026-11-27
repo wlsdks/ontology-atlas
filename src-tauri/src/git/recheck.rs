@@ -258,6 +258,59 @@ pub fn git_known_commits(vault_path: String, hashes: Vec<String>) -> Result<Vec<
         .collect())
 }
 
+/// Which of the given paths have uncommitted changes, staged or not, as the caller wrote them:
+/// `vault_paths` vault-relative, `repo_paths` repository-relative. A run skips those concepts.
+#[tauri::command(async)]
+pub fn git_uncommitted_paths(
+    vault_path: String,
+    vault_paths: Vec<String>,
+    repo_paths: Vec<String>,
+) -> Result<Vec<String>, String> {
+    let vault = open_vault(&vault_path)?;
+    let prefix = if vault.pathspec == "." {
+        String::new()
+    } else {
+        format!("{}/", vault.pathspec)
+    };
+    let wanted: Vec<(String, String)> = vault_paths
+        .iter()
+        .map(|path| (path.clone(), format!("{prefix}{path}")))
+        .chain(repo_paths.iter().map(|path| (path.clone(), path.clone())))
+        .filter(|(key, _)| {
+            !key.is_empty() && !key.starts_with('-') && normalize_relative_path(key).is_ok()
+        })
+        .take(super::evidence::MAX_EVIDENCE_PATHS)
+        .collect();
+    if wanted.is_empty() {
+        return Ok(Vec::new());
+    }
+    let mut args = vec![
+        "-c",
+        "core.quotepath=false",
+        "status",
+        "--porcelain=v1",
+        "-z",
+        "--untracked-files=no",
+        "--",
+    ];
+    args.extend(wanted.iter().map(|(_, resolved)| resolved.as_str()));
+    let out = run_git(&vault.repo_root, &args)?;
+    if !out.success {
+        return Err(short_detail(&out.stderr));
+    }
+    let changed: std::collections::HashSet<&str> = out
+        .stdout
+        .split('\0')
+        .filter_map(|record| record.get(3..))
+        .filter(|path| !path.is_empty())
+        .collect();
+    Ok(wanted
+        .into_iter()
+        .filter(|(_, resolved)| changed.contains(resolved.as_str()))
+        .map(|(key, _)| key)
+        .collect())
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RecheckDocument {
