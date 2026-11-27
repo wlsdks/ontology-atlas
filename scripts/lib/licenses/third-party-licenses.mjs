@@ -94,6 +94,24 @@ function renderSection(number, { title, intro, packages }, readText) {
   return lines;
 }
 
+/**
+ * Libraries compiled into a shipped binary rather than installed as packages, grouped by the
+ * license text they share, so a copyleft license that asks for its own text travels in full.
+ */
+function renderLinked(number, libraries) {
+  const lines = [RULE, `${number}. Statically linked libraries (${libraries.length})`, RULE, ''];
+  lines.push('Libraries compiled into a shipped binary. NOTICE.md says how to relink them.', '');
+  const groups = new Map();
+  for (const library of libraries) {
+    if (!groups.has(library.text)) groups.set(library.text, { label: library.license, users: [] });
+    groups.get(library.text).users.push(`${library.name} (${library.holder}), in ${library.binary}; source: ${library.source}`);
+  }
+  for (const [text, group] of groups) {
+    lines.push(DIVIDER, `License: ${group.label}`, 'Used by:', ...group.users.map((user) => `  ${user}`), '', normalizeLicenseText(text), '');
+  }
+  return lines;
+}
+
 function renderAdapted(number, markers) {
   const lines = [RULE, `${number}. Adapted code (${markers.length})`, RULE, ''];
   if (markers.length === 0) {
@@ -107,10 +125,13 @@ function renderAdapted(number, markers) {
   return lines;
 }
 
-export function renderThirdPartyLicenses({ sections, adapted, readText }) {
+export function renderThirdPartyLicenses({ sections, linked = [], adapted, readText }) {
+  const linkedNumber = sections.length + 1;
+  const adaptedNumber = sections.length + (linked.length > 0 ? 2 : 1);
   const contents = [
     ...sections.map((section, index) => `  ${index + 1}. ${section.title} (${distinctNames(section.packages).length})`),
-    `  ${sections.length + 1}. Adapted code (${adapted.length})`,
+    ...(linked.length > 0 ? [`  ${linkedNumber}. Statically linked libraries (${linked.length})`] : []),
+    `  ${adaptedNumber}. Adapted code (${adapted.length})`,
   ];
   const lines = [
     'Third-party licenses for Ontology Atlas',
@@ -131,6 +152,7 @@ export function renderThirdPartyLicenses({ sections, adapted, readText }) {
     '',
   ];
   sections.forEach((section, index) => lines.push(...renderSection(index + 1, section, readText)));
-  lines.push(...renderAdapted(sections.length + 1, adapted));
+  if (linked.length > 0) lines.push(...renderLinked(linkedNumber, linked));
+  lines.push(...renderAdapted(adaptedNumber, adapted));
   return `${lines.join('\n').replace(/\n+$/, '')}\n`;
 }

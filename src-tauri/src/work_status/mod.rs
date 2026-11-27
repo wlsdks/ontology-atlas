@@ -10,8 +10,8 @@ mod agent_sessions;
 mod file_pulse;
 mod fingerprint;
 mod git_read;
-mod landed;
 mod load;
+mod merged_count;
 mod worktrees;
 
 use std::collections::BTreeMap;
@@ -155,23 +155,19 @@ pub fn work_status_activity(
     activity::read_activity(&root, &worktree_id, base_branch.as_deref())
 }
 
-/// The newest changes the base branch took in, merges and squashed commits alike, with how much
-/// each changed: the record of finished work, which outlives the worktrees it was done in. One `git log`.
+/// How many changes the base branch took in since `since_epoch_s`, merges and squashed commits
+/// alike; the page passes the start of the person's day. One `git rev-list --count`.
 #[tauri::command(async)]
-pub fn work_status_landed(
+pub fn work_status_merged_count(
     repository_path: String,
     base_branch: String,
-) -> Option<landed::LandedRead> {
-    landed::read_landed(&granted_root(&repository_path).ok()?, &base_branch)
-}
-
-/// One finished change opened: the branch commits a merge brought and the files it changed.
-#[tauri::command(async)]
-pub fn work_status_landed_detail(
-    repository_path: String,
-    hash: String,
-) -> Option<landed::LandedDetail> {
-    landed::read_detail(&granted_root(&repository_path).ok()?, &hash)
+    since_epoch_s: i64,
+) -> Option<u32> {
+    merged_count::read_merged_count(
+        &granted_root(&repository_path).ok()?,
+        &base_branch,
+        since_epoch_s,
+    )
 }
 
 /// The person switched session names on or off. Off holds in Rust: the list is read without
