@@ -203,10 +203,9 @@ The tenth, specified, not built (`docs/specs/2026-11-28-harness-token-inspector.
 
 | | |
 |---|---|
-| Read | Claude Code session files in `projects/` folders named for this repository, lines whose `cwd` is in it: ids, model, usage, effort, times, cache misses, compactions, `cost-state`, tool groups, sizes and call names |
-| When | after Inspect token use; an opened turn re-reads its file for the typed message before it (280 characters, until closed) |
-| Never | other text, a path or a full session id in a payload, log, error or file; a stored figure |
-| Gate, record | the spec's criteria 2 to 4; `d55c209e` |
+| Read | after Inspect token use, Claude Code session files (regular, no link below `projects/`) in folders whose name begins with this repository's encoding, counted when their first `cwd` is in it: ids, model, usage, effort, times, cache misses, compactions, `cost-state`, tool groups, sizes and call names |
+| Never | message, tool or error text, a session-file path or a full session id in a payload, log or file; a stored figure |
+| Gate, record | `no_planted_text_leaves_any_inspector_result`; `d55c209e` |
 
 Another file, field or stored figure needs a new record.
 
