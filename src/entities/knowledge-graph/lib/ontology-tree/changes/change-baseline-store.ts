@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "../../../model";
+import type { DataSourceMode } from "@/shared/lib/vault-folder/data-source-mode";
 import {
   forgetGraphSignatures,
   snapshotOntology,
@@ -154,7 +155,7 @@ export function useChangeBaseline(): OntologySnapshot | null {
 
 /** Auto-mark once a local vault loads with nodes; the caller does it once per mount so Clear sticks. */
 export function shouldAutoMarkBaseline(input: {
-  mode: "static" | "local";
+  mode: DataSourceMode;
   hasBaseline: boolean;
   nodeCount: number;
 }): boolean {

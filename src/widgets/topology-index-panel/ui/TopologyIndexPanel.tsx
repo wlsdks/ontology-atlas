@@ -365,7 +365,6 @@ export function TopologyIndexPanel({
        * states, so there is one scroll.
        */}
       <FirstRunStarterModule
-        concepts={totalConcepts}
         /*
          * Pass lens, not lensActive (which also needs an empty search and computed changes):
          * pressing the lens must collapse the card even with zero highlights.
@@ -388,8 +387,6 @@ export function TopologyIndexPanel({
           totalConcepts <= UNBUILT_MAP_CONCEPT_CEILING
         }
         agentAvailable={agentAvailable}
-        relations={totalRelations}
-        domains={domainCount}
         onEnablePlainMode={onEnablePlainMode}
         audiencePlain={plainMode}
       >

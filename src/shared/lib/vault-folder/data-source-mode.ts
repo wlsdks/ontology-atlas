@@ -1,17 +1,17 @@
 /**
- * Which data source is in play: `static` (the dogfood manifest baked by `pnpm build`, the fallback
- * with no vault selected) or `local` (the user's own `.md` vault via the File System Access API).
- * Pure: the mode follows from the vault-loaded flag alone.
+ * Which data source is in play: `local` (the user's own `.md` folder is open) or `no-folder` (the
+ * app has not opened one: first run, a folder being restored, or a destination that opens without
+ * one). Pure: the mode follows from the folder-loaded flag alone.
  */
 
-export type DataSourceMode = 'static' | 'local';
+export type DataSourceMode = 'no-folder' | 'local';
 
 interface ModeInputs {
   vaultLoaded: boolean;
 }
 
 export function getDataSourceMode({ vaultLoaded }: ModeInputs): DataSourceMode {
-  return vaultLoaded ? 'local' : 'static';
+  return vaultLoaded ? 'local' : 'no-folder';
 }
 
 /**

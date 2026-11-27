@@ -1,9 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useDataSourceMode } from '@/entities/vault-session';
 import { useLocalVault } from '@/entities/vault-session';
-import { useStaticVaultSource } from '@/entities/vault-session';
 import type { VaultManifest } from '@/entities/docs-vault';
 
 export interface VaultConceptFacts {
@@ -44,17 +42,14 @@ function cachedFacts(manifest: VaultManifest): Map<string, VaultConceptFacts> {
 }
 
 export function useVaultConceptFacts(): ReadonlyMap<string, VaultConceptFacts> {
-  const mode = useDataSourceMode();
   const vault = useLocalVault();
-  const staticSource = useStaticVaultSource();
 
   const arriving = vault.partialTotal > 0;
   return useMemo(() => {
     if (arriving) return EMPTY_FACTS;
-    if (mode === 'static') return cachedFacts(staticSource.manifest);
     // By manifest presence, not `status`: status is 'loading' on every save and poll, and an
     // empty map then makes rows vanish.
     if (!vault.manifest) return EMPTY_FACTS;
     return cachedFacts(vault.manifest);
-  }, [arriving, mode, vault.manifest, staticSource.manifest]);
+  }, [arriving, vault.manifest]);
 }

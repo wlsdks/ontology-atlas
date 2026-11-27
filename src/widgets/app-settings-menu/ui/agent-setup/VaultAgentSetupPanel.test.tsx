@@ -746,7 +746,6 @@ describe('VaultAgentSetupPanel', () => {
       />,
     );
     expect(container).toBeEmptyDOMElement();
-    expect(screen.queryByTestId('agent-server-unavailable')).toBeNull();
     expect(screen.queryByTestId('agent-setup-steps')).toBeNull();
   });
 
@@ -981,11 +980,8 @@ describe('VaultAgentSetupPanel', () => {
       />,
     );
 
-    // A browser can connect; the one thing it cannot do is save the config automatically.
-    const card = screen.getByTestId('agent-server-unavailable');
-    expect(card).toHaveTextContent('설정 파일을 저장하지 못해요');
-    expect(card).not.toHaveTextContent('연결할 수 없어요');
-    expect(screen.getByTestId('web-manual-connect')).toBeInTheDocument();
+    // No runnable server: no per-tool row, no button, nothing written.
+    expect(screen.queryByTestId('agent-setup-steps')).not.toBeInTheDocument();
     expect(screen.queryByTestId('agent-setup-step-2')).not.toBeInTheDocument();
     expect(screen.queryByTestId('agent-setup-step-3')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Claude Code에 연결' })).not.toBeInTheDocument();

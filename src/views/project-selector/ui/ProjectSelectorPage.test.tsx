@@ -21,7 +21,7 @@ const page = vi.hoisted(() => {
     },
   ];
   return {
-    mode: "static" as "static" | "local",
+    mode: "no-folder" as "no-folder" | "local",
     vault: { agentActivityStatus: undefined } as Record<string, unknown>,
     oneProject,
     projects: oneProject as unknown[],
@@ -52,7 +52,7 @@ vi.mock("@/features/project-data-source", () => ({
     projects: page.projects,
     loaded: true,
     error: null,
-    mode: "static",
+    mode: "no-folder",
   }),
   useVaultDocs: () => [
     {
@@ -141,7 +141,7 @@ function stubClipboard() {
 }
 
 afterEach(() => {
-  page.mode = "static";
+  page.mode = "no-folder";
   page.vault = { agentActivityStatus: undefined };
   page.projects = page.oneProject;
   page.selectedSlug = "ontology-atlas";

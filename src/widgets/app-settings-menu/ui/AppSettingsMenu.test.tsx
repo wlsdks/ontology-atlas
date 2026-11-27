@@ -4,7 +4,6 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { MouseEventHandler, ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { requestSettingsOpen } from '@/shared/lib/keyboard/surface-requests';
-import { AGENT_GRAPH_WORKFLOW_HREF } from '@/shared/config';
 import { AppSettingsMenu } from './AppSettingsMenu';
 
 /**
@@ -167,7 +166,7 @@ vi.mock('next-intl', () => ({
 
 /** Open the sheet on a section, by clicking the LNB; defaults to the Screen section. */
 function openSheet(ui?: ReactNode, section?: string) {
-  const view = render(ui ?? <AppSettingsMenu mode="static" />);
+  const view = render(ui ?? <AppSettingsMenu mode="no-folder" />);
   fireEvent.click(screen.getByTestId('app-settings-trigger'));
   if (section && section !== 'screen') fireEvent.click(screen.getByTestId(`app-settings-nav-${section}`));
   return view;
@@ -210,13 +209,13 @@ describe('AppSettingsMenu pending update sign', () => {
   });
 
   it('marks the trigger and names the version only while one is pending', () => {
-    const view = render(<AppSettingsMenu mode="static" />);
+    const view = render(<AppSettingsMenu mode="no-folder" />);
     const trigger = screen.getByTestId('app-settings-trigger');
     expect(screen.queryByTestId('app-settings-update-badge')).not.toBeInTheDocument();
     expect(trigger).toHaveAttribute('aria-label', 'nav.settingsMenu.triggerAria');
 
     mocks.updatePendingVersion = '2.1.0';
-    view.rerender(<AppSettingsMenu mode="static" />);
+    view.rerender(<AppSettingsMenu mode="no-folder" />);
     expect(screen.getByTestId('app-settings-update-badge')).toBeInTheDocument();
     expect(trigger).toHaveAttribute('aria-label', 'appUpdate.settingsTriggerPending');
   });
@@ -324,13 +323,6 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
     expect(row.className).not.toMatch(/text-\[color:var\(--color-indigo/);
   });
 
-  it('targets the packaged Agent Graph Workflow instead of the active local README', () => {
-    expect(AGENT_GRAPH_WORKFLOW_HREF).toBe(
-      '/docs/?source=server&sample=dogfood&slug=AGENT-GRAPH-WORKFLOW',
-    );
-  });
-
-
   it('points at Agents → Models instead of drawing a key pane', () => {
     openSheet(undefined, 'agents');
     expect(screen.queryByTestId('ai-connection-view')).toBeNull();
@@ -411,7 +403,7 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
     const pageEscape = vi.fn();
     render(
       <div onKeyDown={(event) => event.key === 'Escape' && !event.defaultPrevented && pageEscape()}>
-        <AppSettingsMenu mode="static" />
+        <AppSettingsMenu mode="no-folder" />
       </div>,
     );
     const trigger = screen.getByTestId('app-settings-trigger');
@@ -479,7 +471,7 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
 
   it('reopens the sheet on the same pane after a locale navigation remount', async () => {
     const spy = renderedTriggers();
-    const first = render(<AppSettingsMenu mode="static" />);
+    const first = render(<AppSettingsMenu mode="no-folder" />);
     fireEvent.click(screen.getByTestId('app-settings-trigger'));
     fireEvent.click(screen.getByTestId('app-settings-nav-map'));
     fireEvent.click(screen.getByTestId('app-settings-nav-screen'));
@@ -487,7 +479,7 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
     first.unmount();
 
     mocks.locale = 'ko';
-    render(<AppSettingsMenu mode="static" />);
+    render(<AppSettingsMenu mode="no-folder" />);
     reportTriggerLayout();
 
     await waitFor(() => {
@@ -500,7 +492,7 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
   it('restores the exact responsive trigger variant when two settings entries remount', async () => {
     const spy = renderedTriggers();
     const first = render(
-      <AppSettingsMenu mode="static" triggerVariant="chrome-tile" />,
+      <AppSettingsMenu mode="no-folder" triggerVariant="chrome-tile" />,
     );
     fireEvent.click(screen.getByTestId('app-settings-trigger'));
     fireEvent.click(screen.getByTestId('locale-switch'));
@@ -509,8 +501,8 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
     mocks.locale = 'ko';
     render(
       <>
-        <AppSettingsMenu mode="static" triggerVariant="rail-tile" />
-        <AppSettingsMenu mode="static" triggerVariant="chrome-tile" />
+        <AppSettingsMenu mode="no-folder" triggerVariant="rail-tile" />
+        <AppSettingsMenu mode="no-folder" triggerVariant="chrome-tile" />
       </>,
     );
     reportTriggerLayout();
@@ -528,14 +520,14 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
   });
 
   it('a hidden instance does not take the locale intent from the visible one', async () => {
-    const first = render(<AppSettingsMenu mode="static" triggerVariant="chrome-tile" />);
+    const first = render(<AppSettingsMenu mode="no-folder" triggerVariant="chrome-tile" />);
     fireEvent.click(screen.getByTestId('app-settings-trigger'));
     fireEvent.click(screen.getByTestId('locale-switch'));
     first.unmount();
 
     mocks.locale = 'ko';
     // jsdom: offsetParent is null, so this instance counts as not on screen.
-    render(<AppSettingsMenu mode="static" triggerVariant="chrome-tile" />);
+    render(<AppSettingsMenu mode="no-folder" triggerVariant="chrome-tile" />);
     reportTriggerLayout();
     expect(screen.getByTestId('app-settings-trigger')).toHaveAttribute('aria-expanded', 'false');
     expect(window.sessionStorage.getItem('ontology-atlas:settings-locale-focus')).not.toBeNull();
@@ -554,7 +546,7 @@ describe('AppSettingsMenu screenControls injection', () => {
   it('reports the INDEX choice to the map', () => {
     const onIndexCollapsedChange = vi.fn();
     openSheet(
-      <AppSettingsMenu mode="static" screenControls={{ indexCollapsed: false, onIndexCollapsedChange }} />,
+      <AppSettingsMenu mode="no-folder" screenControls={{ indexCollapsed: false, onIndexCollapsedChange }} />,
       'map',
     );
     fireEvent.click(screen.getByRole('radio', { name: 'nav.settingsMenu.indexDefaultCollapsed' }));
@@ -569,7 +561,7 @@ describe('AppSettingsMenu controlled open', () => {
   });
 
   it('stays uncontrolled (self-managed) when open/onOpenChange are omitted — existing behavior unchanged', () => {
-    render(<AppSettingsMenu mode="static" />);
+    render(<AppSettingsMenu mode="no-folder" />);
     expect(screen.getByTestId('app-settings-trigger')).toHaveAttribute('aria-expanded', 'false');
     fireEvent.click(screen.getByTestId('app-settings-trigger'));
     expect(screen.getByTestId('app-settings-trigger')).toHaveAttribute('aria-expanded', 'true');
@@ -577,14 +569,14 @@ describe('AppSettingsMenu controlled open', () => {
   });
 
   it('renders open when the controlled `open` prop is true, without needing a trigger click', () => {
-    render(<AppSettingsMenu mode="static" open onOpenChange={() => {}} />);
+    render(<AppSettingsMenu mode="no-folder" open onOpenChange={() => {}} />);
     expect(screen.getByTestId('app-settings-trigger')).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByTestId('app-settings-popover')).toBeInTheDocument();
   });
 
   it('clicking the trigger reports the toggle via onOpenChange instead of managing its own state', () => {
     const onOpenChange = vi.fn();
-    render(<AppSettingsMenu mode="static" open={false} onOpenChange={onOpenChange} />);
+    render(<AppSettingsMenu mode="no-folder" open={false} onOpenChange={onOpenChange} />);
     fireEvent.click(screen.getByTestId('app-settings-trigger'));
     expect(onOpenChange).toHaveBeenCalledWith(true);
     // controlled — the prop the test passed in never changed, so the component
@@ -594,7 +586,7 @@ describe('AppSettingsMenu controlled open', () => {
 
   it('⌘K while controlled-open reports close via onOpenChange (Guardian B2 — palette wins, settings demotes)', () => {
     const onOpenChange = vi.fn();
-    render(<AppSettingsMenu mode="static" open onOpenChange={onOpenChange} />);
+    render(<AppSettingsMenu mode="no-folder" open onOpenChange={onOpenChange} />);
     fireEvent.keyDown(screen.getByTestId('app-settings-popover'), {
       key: 'k',
       metaKey: true,
@@ -605,14 +597,14 @@ describe('AppSettingsMenu controlled open', () => {
 
   it('the close button reports close via onOpenChange when controlled', () => {
     const onOpenChange = vi.fn();
-    render(<AppSettingsMenu mode="static" open onOpenChange={onOpenChange} />);
+    render(<AppSettingsMenu mode="no-folder" open onOpenChange={onOpenChange} />);
     fireEvent.click(screen.getByLabelText('nav.settingsMenu.closeLabel'));
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
   it('Escape from an agent section closes at once — no intermediate step remains', () => {
     const onOpenChange = vi.fn();
-    render(<AppSettingsMenu mode="static" open onOpenChange={onOpenChange} />);
+    render(<AppSettingsMenu mode="no-folder" open onOpenChange={onOpenChange} />);
     fireEvent.click(screen.getByTestId('app-settings-nav-workspace'));
     expect(screen.getByTestId('app-settings-pane-workspace')).toBeInTheDocument();
     fireEvent.keyDown(screen.getByTestId('app-settings-popover'), {
@@ -624,7 +616,7 @@ describe('AppSettingsMenu controlled open', () => {
 
   /** Every pane opens with one head — the section's name and the sentence saying what it decides. */
   it('opens each pane with its own head', () => {
-    render(<AppSettingsMenu mode="static" open onOpenChange={vi.fn()} />);
+    render(<AppSettingsMenu mode="no-folder" open onOpenChange={vi.fn()} />);
     const screenHead = screen.getByTestId('app-settings-pane-head');
     expect(screenHead).toHaveTextContent('nav.settingsMenu.section.screen');
     expect(screenHead).toHaveTextContent('nav.settingsMenu.sectionPurpose.screen');
@@ -982,7 +974,7 @@ describe('AppSettingsMenu search and requests', () => {
   });
 
   it('opens only a visible instance on a settings request', () => {
-    render(<AppSettingsMenu mode="static" />);
+    render(<AppSettingsMenu mode="no-folder" />);
     act(() => {
       expect(requestSettingsOpen()).toBe(false);
     });
@@ -1005,7 +997,7 @@ describe('AppSettingsMenu search and requests', () => {
     const spy = vi
       .spyOn(HTMLElement.prototype, 'offsetParent', 'get')
       .mockImplementation(() => document.body);
-    render(<AppSettingsMenu mode="static" />);
+    render(<AppSettingsMenu mode="no-folder" />);
     reportTriggerLayout();
     await waitFor(() => expect(screen.getByTestId('app-settings-pane-map')).toBeInTheDocument());
     spy.mockRestore();
@@ -1016,7 +1008,7 @@ describe('AppSettingsMenu search and requests', () => {
       'ontology-atlas:settings-locale-focus',
       JSON.stringify({ locale: 'en', triggerVariant: 'header-pill', section: 'agents', createdAt: Date.now() }),
     );
-    render(<AppSettingsMenu mode="static" />);
+    render(<AppSettingsMenu mode="no-folder" />);
     reportTriggerLayout();
     expect(screen.getByTestId('app-settings-trigger')).toHaveAttribute('aria-expanded', 'false');
     expect(window.sessionStorage.getItem('ontology-atlas:settings-locale-focus')).not.toBeNull();

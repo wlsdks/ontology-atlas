@@ -6,7 +6,7 @@ describe('getDataSourceMode', () => {
     expect(getDataSourceMode({ vaultLoaded: true })).toBe('local');
   });
 
-  it('no vault selected gives static (build-time dogfood manifest)', () => {
-    expect(getDataSourceMode({ vaultLoaded: false })).toBe('static');
+  it('no folder open gives no-folder (the first-run and restoring state)', () => {
+    expect(getDataSourceMode({ vaultLoaded: false })).toBe('no-folder');
   });
 });

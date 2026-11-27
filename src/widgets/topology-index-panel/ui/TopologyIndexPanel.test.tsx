@@ -672,7 +672,7 @@ describe("TopologyIndexPanel", () => {
     expect(census).toHaveTextContent("6");
   });
 
-  it("passes the same census totals through to the first-run starter module", () => {
+  it("leaves the first-run starter in plain-mode defaults until HomePage supplies callbacks", () => {
     const treeResult = buildFixtureTree();
     render(
       <TopologyIndexPanel
@@ -689,9 +689,6 @@ describe("TopologyIndexPanel", () => {
     );
 
     expect(firstRunStarterProps.current).toMatchObject({
-      concepts: 102,
-      relations: 478,
-      domains: 6,
       // Plain-mode callbacks exist only when HomePage supplies them.
       onEnablePlainMode: undefined,
       audiencePlain: false,

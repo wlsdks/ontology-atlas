@@ -1,11 +1,5 @@
-import {
-  createDocumentStore,
-  type DocumentRef,
-  type DocumentStore,
-  type StaticVaultSource,
-} from '@/entities/docs-vault';
+import { createDocumentStore, type DocumentRef, type DocumentStore } from '@/entities/docs-vault';
 import type { GrantedVaultFiles } from '@/entities/vault-session';
-import { bundledDocsBySlug, createBundledDetailReader } from './bundled-detail-reader';
 import {
   getTauriVaultRootPath,
   isTauriVaultRuntime,
@@ -22,7 +16,6 @@ export interface ResolvedDocumentStore {
  * cache and its handles unreachable, so nothing of an earlier folder outlives it.
  */
 const localStores = new WeakMap<ReadonlyMap<string, FileSystemFileHandle>, DocumentStore>();
-const bundledStores = { withHeadings: new WeakMap<StaticVaultSource, DocumentStore>(), withoutHeadings: new WeakMap<StaticVaultSource, DocumentStore>() };
 
 function localStoreFor({ root, fileHandles }: GrantedVaultFiles): DocumentStore {
   let store = localStores.get(fileHandles);
@@ -34,35 +27,11 @@ function localStoreFor({ root, fileHandles }: GrantedVaultFiles): DocumentStore 
   return store;
 }
 
-function bundledStoreFor(sample: StaticVaultSource, headings: boolean): DocumentStore {
-  const stores = headings ? bundledStores.withHeadings : bundledStores.withoutHeadings;
-  let store = stores.get(sample);
-  if (!store) {
-    store = createDocumentStore({ readDetails: createBundledDetailReader(sample, { headings }) });
-    stores.set(sample, store);
-  }
-  return store;
-}
-
-function sampleHolding(doc: DocumentRef, samples: readonly (StaticVaultSource | null)[]): StaticVaultSource | null {
-  const loaded = samples.filter((sample): sample is StaticVaultSource => sample !== null);
-  return (
-    loaded.find((sample) => bundledDocsBySlug(sample).get(doc.slug) === doc) ??
-    loaded.find((sample) => bundledDocsBySlug(sample).get(doc.slug)?.path === doc.path) ??
-    null
-  );
-}
-
-/** `null`: no source can read this document now. */
+/** `null`: no folder is open or the document has no file stamp, so nothing can read it now. */
 export function documentStoreFor(
   doc: DocumentRef,
   local: GrantedVaultFiles | null,
-  samples: readonly (StaticVaultSource | null)[],
-  { headings }: { headings: boolean },
 ): ResolvedDocumentStore | null {
-  if (doc.mtime !== undefined) {
-    return local ? { store: localStoreFor(local), origin: local.root } : null;
-  }
-  const sample = sampleHolding(doc, samples);
-  return sample ? { store: bundledStoreFor(sample, headings), origin: sample } : null;
+  if (doc.mtime === undefined || !local) return null;
+  return { store: localStoreFor(local), origin: local.root };
 }

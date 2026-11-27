@@ -6,10 +6,9 @@ import { useTranslations } from "next-intl";
 import { FilePlus2, SearchX } from "lucide-react";
 
 import { candidateKey, formatSourceBytes, type SourceCandidate } from "@/entities/docs-vault";
-import { Button, Checkbox, Chip, CloseButton, Dialog, EmptyState, controlClass } from "@/shared/ui";
+import { Button, Checkbox, Chip, CloseButton, Dialog, EmptyState } from "@/shared/ui";
 import { Input } from '@/shared/ui/fields/input';
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
-import { Link } from "@/i18n/navigation";
 
 import type { DiscoveryOutcome } from "../lib/sources/discover-sources";
 
@@ -112,28 +111,6 @@ export function FindDocumentsDialog({
       <p className="mt-2 text-body text-[color:var(--color-text-secondary)] [word-break:keep-all]">
         {t("preamble")}
       </p>
-      {outcome && !outcome.projectRootsReachable ? (
-        // Degradation grammar from `.claude/rules/surfaces.md`: the open folder is still walked below.
-        <p
-          data-testid="find-documents-web-limit"
-          className="mt-2 text-label text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
-        >
-          {t("webLimit")}{" "}
-          <Link
-            href="/download"
-            data-testid="find-documents-web-get-app"
-            // `cn` merging is required on `<Link>`, or the base border-transparent wins by source order.
-            className={controlClass({
-              shape: "link",
-              tone: "accent",
-              hoverInk: "strong",
-              className: "atlas-touch-floor atlas-touch-floor-wide rounded-chip px-1.5 py-0.5",
-            })}
-          >
-            {t("webGetApp")}
-          </Link>
-        </p>
-      ) : null}
       {outcome && outcome.walkedRoots.length > 0 ? (
         <p className="mt-2 text-label text-[color:var(--color-text-tertiary)]">
           {t("walkedRoots", { roots: outcome.walkedRoots.join(", ") })}

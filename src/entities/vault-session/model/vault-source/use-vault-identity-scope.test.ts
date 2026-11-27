@@ -5,7 +5,6 @@ const mocks = vi.hoisted(() => ({
   mode: 'local',
   status: 'loaded',
   handle: null as FileSystemDirectoryHandle | null,
-  sampleSource: 'dogfood',
 }));
 
 vi.mock('./use-data-source-mode', () => ({
@@ -13,9 +12,6 @@ vi.mock('./use-data-source-mode', () => ({
 }));
 vi.mock('../vault-provider/LocalVaultProvider', () => ({
   useLocalVault: () => ({ status: mocks.status, handle: mocks.handle }),
-}));
-vi.mock('./use-sample-source', () => ({
-  useSampleSource: () => [mocks.sampleSource],
 }));
 
 

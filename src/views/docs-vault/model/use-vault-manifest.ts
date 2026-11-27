@@ -1,42 +1,25 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useLocalVault } from '@/entities/vault-session';
-import {
-  deriveOntologyFromVault,
-  type VaultManifest,
-} from '@/entities/docs-vault';
+import { useOpenFolderManifest } from '@/entities/vault-session';
+import { deriveOntologyFromVault } from '@/entities/docs-vault';
 import {
   isAuthorableOntologyDocument,
   resolveDocsVaultSlugAlias,
 } from '../lib/docs-vault-collection';
 
-/** What the screen reads while no folder is: nothing, never a stand-in. */
-const NO_FOLDER_MANIFEST: VaultManifest = {
-  version: '',
-  generatedAt: '',
-  docs: [],
-  backlinkSources: {},
-  tags: {},
-  tree: { name: 'root', path: '', type: 'dir' },
-};
-
 export function useVaultManifest({
-  isLocalSourceLoaded,
   querySlug,
   selectedSlug,
   legacyEntry,
   documentScope,
 }: {
-  isLocalSourceLoaded: boolean;
   querySlug: string | null;
   selectedSlug: string | null;
   legacyEntry: boolean;
   documentScope: 'all' | 'ontology';
 }) {
-  const localVault = useLocalVault();
-  const manifest: VaultManifest =
-    isLocalSourceLoaded && localVault.manifest ? localVault.manifest : NO_FOLDER_MANIFEST;
+  const manifest = useOpenFolderManifest();
   const normalizedQuerySlug = useMemo(
     () => resolveDocsVaultSlugAlias(querySlug, manifest.docs, manifest.aliases),
     [manifest.aliases, manifest.docs, querySlug],

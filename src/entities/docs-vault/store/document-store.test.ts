@@ -74,11 +74,4 @@ describe('createDocumentStore', () => {
     expect(reader.filesRead()).toBe(0);
     expect(detail?.headings.map((heading) => heading.text)).toEqual(['Open']);
   });
-
-  it('serves a source that already holds details without deriving', async () => {
-    const store = createDocumentStore({
-      readDetails: async (docs) => docs.map((doc) => ({ headings: [], excerpt: doc.slug, wordCount: 3 })),
-    });
-    expect(await store.detail(ref('held'))).toEqual({ headings: [], excerpt: 'held', wordCount: 3 });
-  });
 });

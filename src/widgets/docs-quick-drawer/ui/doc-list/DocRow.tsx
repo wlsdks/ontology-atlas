@@ -28,7 +28,7 @@ export function DocRow({
   const t = useTranslations("vaultWidgets.docsDrawer");
   // The preview is read on a mouse hover only; touch never shows it, so it never reads.
   const [previewing, setPreviewing] = useState(false);
-  const excerpt = useDocumentDetail(previewing ? doc.source : null, { headings: false })?.excerpt.trim() ?? "";
+  const excerpt = useDocumentDetail(previewing ? doc.source : null)?.excerpt.trim() ?? "";
   return (
     <div
       className="group flex flex-col rounded-card transition-colors hover:bg-[color:var(--color-indigo-a10)]"

@@ -92,7 +92,6 @@ export function useLibrarySources({
     const feedback = beginSourceImport();
     setBusy(true);
     void addSources({
-      root: handle,
       vaultRootPath: nativeVaultRootPath,
       dialogTitle: t("sources.addTooltip"),
       onImportStart: feedback.importing,

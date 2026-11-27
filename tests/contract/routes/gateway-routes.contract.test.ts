@@ -2,7 +2,7 @@ import { existsSync, readdirSync } from 'node:fs';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { isGatewayRoute, isGatewaySurface } from '@/shared/lib/navigation/nav-destination';
+import { isGatewayRoute } from '@/shared/lib/navigation/nav-destination';
 
 const repoRoot = resolve(__dirname, '../../..');
 
@@ -46,22 +46,6 @@ describe('gateway route registration', () => {
   it('`/docs` stays a workbench, since the guide and its name were split', () => {
     expect(isGatewayRoute('/docs')).toBe(false);
     expect(isGatewayRoute('/guide')).toBe(true);
-  });
-
-  /**
-   * `/` alone is decided by the **visitor**, not the path. Breaking this branch while
-   * registering a new route makes the installed app recommend installing itself.
-   */
-  it('the `/` verdict is decided by the visitor context, and the registered list did not swallow this branch', () => {
-    expect(isGatewaySurface('/', { desktop: false })).toBe(true);
-    expect(isGatewaySurface('/', { desktop: true })).toBe(false);
-  });
-
-  it('gateway reading is gateway chrome inside the app too, not a workbench', () => {
-    const app = { desktop: true };
-    expect(isGatewaySurface('/guide', app)).toBe(true);
-    expect(isGatewaySurface('/changelog', app)).toBe(true);
-    expect(isGatewaySurface('/sample', app)).toBe(true);
   });
 });
 

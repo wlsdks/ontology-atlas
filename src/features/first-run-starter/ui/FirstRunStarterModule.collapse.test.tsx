@@ -27,7 +27,7 @@ vi.mock("@/entities/vault-session/model/vault-provider/LocalVaultProvider", asyn
 }));
 vi.mock("@/entities/vault-session/model/vault-source/use-data-source-mode", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/entities/vault-session/model/vault-source/use-data-source-mode")>()),
-  useDataSourceMode: () => "static",
+  useDataSourceMode: () => "no-folder",
 }));
 
 vi.mock("@/i18n/navigation", () => ({
@@ -41,7 +41,7 @@ vi.mock("@/i18n/navigation", () => ({
 function mount(nodeSelected: boolean) {
   return render(
     <NextIntlClientProvider locale="ko" messages={koMessages}>
-      <FirstRunStarterModule concepts={125} relations={258} domains={9} nodeSelected={nodeSelected} />
+      <FirstRunStarterModule nodeSelected={nodeSelected} />
     </NextIntlClientProvider>,
   );
 }

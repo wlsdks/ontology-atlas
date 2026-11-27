@@ -10,6 +10,7 @@ import {
   projectToFrontmatter,
 } from '@/entities/docs-vault';
 import type { ProjectInput } from '@/entities/project';
+import type { DataSourceMode } from '@/shared/lib/vault-folder/data-source-mode';
 
 export interface ProjectFrontmatterPatch {
   name?: string;
@@ -30,17 +31,17 @@ export interface ProjectMutations {
   canCreate: boolean;
   canEdit: boolean;
   canDelete: boolean;
-  mode: 'static' | 'local';
+  mode: DataSourceMode;
 }
 
-const STATIC_REJECTION =
-  'Cannot mutate projects in static demo mode. Open a markdown folder first.';
+const NO_FOLDER_REJECTION =
+  'Cannot change projects before a folder is open. Open a markdown folder first.';
 
-/** Static-mode rejection, caught by `ProjectEditorPage` for localized copy; buttons are disabled up front. */
-export class ProjectStaticModeError extends Error {
+/** Refusal while no folder is open, caught by `ProjectEditorPage` for localized copy; buttons are disabled up front. */
+export class ProjectNoFolderError extends Error {
   constructor() {
-    super(STATIC_REJECTION);
-    this.name = 'ProjectStaticModeError';
+    super(NO_FOLDER_REJECTION);
+    this.name = 'ProjectNoFolderError';
   }
 }
 
@@ -50,7 +51,7 @@ export function useProjectMutations(): ProjectMutations {
 
   const createProject = useCallback(
     async (input: ProjectInput) => {
-      if (mode === 'static') throw new ProjectStaticModeError();
+      if (mode === 'no-folder') throw new ProjectNoFolderError();
       const existing = vault.manifest
         ? findProjectVaultDoc(vault.manifest, input.slug)
         : null;
@@ -66,7 +67,7 @@ export function useProjectMutations(): ProjectMutations {
 
   const updateProject = useCallback(
     async (input: ProjectInput) => {
-      if (mode === 'static') throw new ProjectStaticModeError();
+      if (mode === 'no-folder') throw new ProjectNoFolderError();
       const existing = vault.manifest
         ? findProjectVaultDoc(vault.manifest, input.slug)
         : null;
@@ -100,7 +101,7 @@ export function useProjectMutations(): ProjectMutations {
 
   const patchProject = useCallback(
     async (slug: string, patch: ProjectFrontmatterPatch) => {
-      if (mode === 'static') throw new ProjectStaticModeError();
+      if (mode === 'no-folder') throw new ProjectNoFolderError();
       const existing = vault.manifest
         ? findProjectVaultDoc(vault.manifest, slug)
         : null;
@@ -145,7 +146,7 @@ export function useProjectMutations(): ProjectMutations {
 
   const deleteProject = useCallback(
     async (slug: string) => {
-      if (mode === 'static') throw new ProjectStaticModeError();
+      if (mode === 'no-folder') throw new ProjectNoFolderError();
       const existing = vault.manifest
         ? findProjectVaultDoc(vault.manifest, slug)
         : null;
@@ -158,9 +159,9 @@ export function useProjectMutations(): ProjectMutations {
 
   const capabilities = useMemo(
     () => ({
-      canCreate: mode !== 'static',
-      canEdit: mode !== 'static',
-      canDelete: mode !== 'static',
+      canCreate: mode !== 'no-folder',
+      canEdit: mode !== 'no-folder',
+      canDelete: mode !== 'no-folder',
     }),
     [mode],
   );

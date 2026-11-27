@@ -47,9 +47,9 @@ export function MountedGlobalSearch({
     if (isControlled) onOpenChange?.(next);
     else setInternalOpen(next);
   };
-  const { insight } = useOntologyInsight({ demand: open });
+  const { insight } = useOntologyInsight();
   const nodes = insight?.nodes ?? EMPTY_NODES;
-  const { projects } = useProjects({ demand: open });
+  const { projects } = useProjects();
 
   useGlobalSearchHotkey(open, setOpen, { disabled: isControlled && !bindHotkey });
 

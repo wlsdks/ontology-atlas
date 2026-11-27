@@ -62,8 +62,6 @@ vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-location', () => ({
   pickTauriVaultDirectory: vi.fn(),
 }));
 vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', () => ({
-  // `isSupported()` falls back to the Tauri runtime check when showDirectoryPicker is absent.
-  // Pinned true to produce a "supported" state without touching window globals.
   isTauriVaultRuntime: vi.fn(() => true),
   getTauriVaultRootPath: vi.fn(() => null),
 }));

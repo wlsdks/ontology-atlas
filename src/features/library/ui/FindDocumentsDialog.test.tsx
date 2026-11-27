@@ -18,7 +18,7 @@ function mount() {
   const props: FindDocumentsDialogProps = {
     open: true, onClose: vi.fn(), declinedCount: 0, onForgetDeclined: vi.fn(),
     busy: false, onAdd: vi.fn(),
-    outcome: { candidates: [first, second, third], truncated: false, unreadableRoots: [], projectRootsReachable: true, walkedRoots: [] },
+    outcome: { candidates: [first, second, third], truncated: false, unreadableRoots: [], walkedRoots: [] },
     folders: "vault",
   };
   const view = (value: FindDocumentsDialogProps) => <NextIntlClientProvider locale="en" messages={{ library: messages.library }}><FindDocumentsDialog {...value} /></NextIntlClientProvider>;

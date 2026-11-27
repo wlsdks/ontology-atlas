@@ -15,7 +15,7 @@ import { useOntologyInsight } from "../model/use-ontology-insight";
 /** Per scope, not per mount, or a folder switch compares one vault's baseline against another's graph. Once, so an explicit Clear is not re-marked. */
 export function OntologyLiveBaselineInit() {
   const mode = useDataSourceMode();
-  const { insight } = useOntologyInsight({ demand: false });
+  const { insight } = useOntologyInsight();
   const vaultScope = useVaultIdentityScope();
   const handledScopeRef = useRef<string | null>(null);
 

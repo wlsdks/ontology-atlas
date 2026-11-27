@@ -1,13 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import {
-  useDataSourceMode,
-  useLocalVault,
-  useStaticVaultSource,
-  useStaticVaultStatus,
-} from '@/entities/vault-session';
-import { extractProjectBody, findProjectVaultDoc, fetchServerDocContent } from '@/entities/docs-vault';
+import { useLocalVault } from '@/entities/vault-session';
+import { extractProjectBody, findProjectVaultDoc } from '@/entities/docs-vault';
 
 export interface UseProjectBodyState {
   body: string | null;
@@ -15,12 +10,7 @@ export interface UseProjectBodyState {
 }
 
 export function useProjectBody(slug: string | null): UseProjectBodyState {
-  const mode = useDataSourceMode();
   const vault = useLocalVault();
-  // Manifest and content are taken as one stable pair from the resolver.
-  const staticSource = useStaticVaultSource();
-  // The empty sample has no project document yet; that is not a finding, so nothing settles on it.
-  const sampleLoading = useStaticVaultStatus() === 'loading';
   const [resolved, setResolved] = useState<{ slug: string; body: string | null } | null>(
     null,
   );
@@ -32,34 +22,6 @@ export function useProjectBody(slug: string | null): UseProjectBodyState {
       window.queueMicrotask(() => {
         if (!cancelled) setResolved(null);
       });
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    if (mode === 'static') {
-      if (sampleLoading) return;
-      const doc = findProjectVaultDoc(staticSource.manifest, slug);
-      if (!doc) {
-        window.queueMicrotask(() => {
-          if (!cancelled) setResolved({ slug, body: null });
-        });
-        return () => {
-          cancelled = true;
-        };
-      }
-
-  // Project docs come from the exported raw asset, keeping content.json out of the initial chunk.
-      fetchServerDocContent(doc.slug, {
-        bundledContent: staticSource.content,
-        locationHref: typeof window === 'undefined' ? undefined : window.location.href,
-      })
-        .then((raw) => {
-          if (!cancelled) setResolved({ slug, body: extractProjectBody(raw) ?? null });
-        })
-        .catch(() => {
-          if (!cancelled) setResolved({ slug, body: null });
-        });
       return () => {
         cancelled = true;
       };
@@ -86,8 +48,8 @@ export function useProjectBody(slug: string | null): UseProjectBodyState {
     return () => {
       cancelled = true;
     };
-  }, [slug, mode, vault.manifest, vault.fileHandles, staticSource, sampleLoading]);
+  }, [slug, vault.manifest, vault.fileHandles]);
 
   const current = resolved && resolved.slug === slug ? resolved : null;
-  return { body: current ? current.body : null, settled: slug === null || (current !== null && !(mode === 'static' && sampleLoading)) };
+  return { body: current ? current.body : null, settled: slug === null || current !== null };
 }

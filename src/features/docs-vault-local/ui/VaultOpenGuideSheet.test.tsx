@@ -34,7 +34,6 @@ describe("VaultOpenGuideSheet", () => {
     expect(screen.getByText("bulletAnyFolder")).toBeInTheDocument();
     expect(screen.getByText("bulletLocal")).toBeInTheDocument();
     expect(screen.getByText("bulletStarter")).toBeInTheDocument();
-    expect(screen.getByText("bulletPermission")).toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId("vault-guide-pick-existing"));
     expect(onPick).toHaveBeenCalledTimes(1);
@@ -108,19 +107,6 @@ describe("VaultOpenGuideSheet", () => {
     );
     expect(document.activeElement).toBe(opener);
     opener.remove();
-  });
-
-  it("drops both FSA CTAs and keeps only the macOS app path when unsupported", () => {
-    render(<VaultOpenGuideSheet open unsupported onClose={vi.fn()} />);
-    expect(screen.getByTestId("vault-guide-pick-existing")).not.toBeVisible();
-    expect(screen.getByTestId("vault-guide-create-new")).not.toBeVisible();
-    // The reason replaces a subtitle announcing an OS picker that will never come.
-    expect(screen.queryByText("subtitle")).not.toBeInTheDocument();
-    expect(screen.getByText("unsupportedNotice")).toBeInTheDocument();
-    expect(screen.getByTestId("vault-guide-unsupported-cta")).toHaveAttribute(
-      "href",
-      expect.stringContaining("/download"),
-    );
   });
 
   it("renders nothing when closed", () => {

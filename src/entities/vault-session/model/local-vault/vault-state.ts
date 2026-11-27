@@ -13,7 +13,6 @@ type Status =
   | 'loading'
   | 'loaded'
   | 'permission-needed'
-  | 'unsupported'
   | 'error';
 
 /**

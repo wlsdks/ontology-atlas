@@ -33,7 +33,7 @@ vi.mock("@/features/project-data-source", () => ({
     ],
     loaded: true,
     error: null,
-    mode: "static",
+    mode: "no-folder",
   }),
   useVaultDocs: () => [
     {
@@ -65,7 +65,7 @@ vi.mock("@/entities/vault-session/model/vault-provider/LocalVaultProvider", asyn
 }));
 vi.mock("@/entities/vault-session/model/vault-source/use-data-source-mode", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/entities/vault-session/model/vault-source/use-data-source-mode")>()),
-  useDataSourceMode: () => "static",
+  useDataSourceMode: () => "no-folder",
 }));
 
 

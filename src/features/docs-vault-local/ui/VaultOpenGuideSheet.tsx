@@ -3,11 +3,8 @@
 import type { ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import { isDesktopShell } from "@/shared/lib/desktop-shell/desktop-shell";
-import { useHydrated } from "@/shared/lib/render-timing/use-hydrated";
-import { FolderOpen, HardDrive, ShieldCheck, Sparkles } from "lucide-react";
+import { FolderOpen, HardDrive, Sparkles } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
-import { Link } from "@/i18n/navigation";
 import {
   EXIT_TRANSITION,
   MOTION,
@@ -31,22 +28,13 @@ export interface VaultOpenGuideSheetProps {
   onClose: () => void;
   onPickExisting?: () => void;
   onCreateNew?: () => void;
-  /**
-   * Without the File System Access API both buttons would do nothing, so an honest notice and the
-   * macOS app path replace them before anything is pressed.
-   */
-  unsupported?: boolean;
   lastSection?: ReactNode;
 }
 
 const BULLETS = [
-  { icon: FolderOpen, key: "bulletAnyFolder", browserOnly: false },
-  { icon: HardDrive, key: "bulletLocal", browserOnly: false },
-  { icon: Sparkles, key: "bulletStarter", browserOnly: false },
-  // Announces the browser's permission prompt after folder selection, which first-time users took
-  // for a malfunction. Browser-only: the installed app opens an OS folder window without it;
-  // claiming a prompt that never comes breaks `.claude/rules/surfaces.md`.
-  { icon: ShieldCheck, key: "bulletPermission", browserOnly: true },
+  { icon: FolderOpen, key: "bulletAnyFolder" },
+  { icon: HardDrive, key: "bulletLocal" },
+  { icon: Sparkles, key: "bulletStarter" },
 ] as const;
 
 export function VaultOpenGuideSheet({
@@ -54,19 +42,9 @@ export function VaultOpenGuideSheet({
   onClose,
   onPickExisting,
   onCreateNew,
-  unsupported = false,
   lastSection,
 }: VaultOpenGuideSheetProps) {
   const t = useTranslations("vaultOpenGuide");
-  /*
-   * `isDesktopShell()` is false in a static prerender; `useHydrated()` re-renders once after
-   * hydration so the installed app gets the right value (see `use-hydrated.ts`).
-   */
-  const hydrated = useHydrated();
-  const desktop = hydrated && isDesktopShell();
-  const bullets = BULLETS.filter((bullet) => !bullet.browserOnly || !desktop);
-  // Reuses the first-run card's unsupported notice key, so the two copies cannot drift.
-  const tUnsupported = useTranslations("firstRunStarter");
   useBodyScrollLock(open);
   const dialogRef = useDialogFocusTrap<HTMLElement>({
     open,
@@ -116,11 +94,7 @@ export function VaultOpenGuideSheet({
                   {t("title")}
                 </h2>
                 <p className="mt-1 text-label leading-prose text-[color:var(--color-text-tertiary)]">
-                  {/* Unsupported: the slot says why instead of promising a picker that will never come. */}
-                  {/* The count comes from the rendered list, so it stays right as items change at runtime. */}
-                  {unsupported
-                    ? tUnsupported("unsupportedNotice")
-                    : t("subtitle", { count: bullets.length })}
+                  {t("subtitle", { count: BULLETS.length })}
                 </p>
               </div>
               <CloseButton
@@ -130,10 +104,8 @@ export function VaultOpenGuideSheet({
               />
             </header>
 
-            {/* Unsupported: these bullets describe the browser picker flow, so one notice and one
-               place to go replace them. */}
-            <ul hidden={unsupported} className="flex flex-col gap-2.5 px-5 py-4">
-              {bullets.map(({ icon: Icon, key }) => (
+            <ul className="flex flex-col gap-2.5 px-5 py-4">
+              {BULLETS.map(({ icon: Icon, key }) => (
                 <li key={key} className="flex items-start gap-2.5">
                   <Icon
                     size={14}
@@ -148,25 +120,8 @@ export function VaultOpenGuideSheet({
             </ul>
 
             <div className="flex flex-col gap-2 border-t border-[color:var(--color-border-soft)] px-5 py-4">
-              {unsupported ? (
-                <Link
-                  href="/download/"
-                  data-testid="vault-guide-unsupported-cta"
-                  className={controlClass({
-                    shape: "chip",
-                    size: "lg",
-                    tone: "onAccent",
-                    className:
-                      "w-full justify-center",
-                  })}
-                >
-                  <HardDrive size={ICON_SIZE.md} aria-hidden />
-                  {tUnsupported("unsupportedCta")}
-                </Link>
-              ) : null}
               <button
                 type="button"
-                hidden={unsupported}
                 onClick={onPickExisting}
                 data-testid="vault-guide-pick-existing"
                 className={controlClass({
@@ -182,7 +137,6 @@ export function VaultOpenGuideSheet({
               </button>
               <button
                 type="button"
-                hidden={unsupported}
                 onClick={onCreateNew}
                 data-testid="vault-guide-create-new"
                 className={controlClass({

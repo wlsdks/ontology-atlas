@@ -15,14 +15,12 @@ const CLIENT_TESTID: Record<string, string> = {
 };
 
 function Harness(props: AgentClientControlsProps) {
-  const { serverUnavailable, controls, manualPathNote } = useAgentClientControls(props);
+  const { controls } = useAgentClientControls(props);
   return (
     <div data-testid="agent-client-buttons">
-      {serverUnavailable}
       {controls
         ? AGENT_CLIENTS.map((client) => <span key={client.id}>{controls[client.id]}</span>)
         : null}
-      {manualPathNote}
     </div>
   );
 }
@@ -41,7 +39,6 @@ function renderButtons() {
         cursorDeeplink={null}
         mcpJsonSnippet="{}"
         codexCommand="codex mcp add"
-        needsManualPath={false}
       />
     </NextIntlClientProvider>,
   );
@@ -88,7 +85,6 @@ describe("useAgentClientControls does not show a failed write as success", () =>
           cursorDeeplink={null}
           mcpJsonSnippet="{}"
           codexCommand="codex mcp add"
-          needsManualPath={false}
         />
       </NextIntlClientProvider>,
     );

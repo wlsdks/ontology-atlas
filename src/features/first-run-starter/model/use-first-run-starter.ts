@@ -7,7 +7,6 @@ import {
   readFirstRunStarterDismissed,
   writeFirstRunStarterDismissed,
 } from './first-run-starter-dismiss';
-import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import { requestAgentChat } from '@/shared/lib/agent-chat/agent-chat-intent';
 import { useFailureSentence } from '@/shared/lib/failures/use-failure-sentence';
 import type { FailureCopy } from '@/shared/lib/failures/use-failure-sentence';
@@ -16,18 +15,18 @@ import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/ta
 import { buildFromCodePrompt } from './build-from-code-prompt';
 import type { ProjectVaultLocation } from './project-vault-location';
 import { useBuildFromCode } from './use-build-from-code';
-import { useFirstRunSampleModeSettled } from './use-first-run-sample-mode-settled';
+import { useFirstRunNoFolderSettled } from './use-first-run-no-folder-settled';
 
-/** `visible` needs `useFirstRunSampleModeSettled()` and `!dismissed`. Escape is registered in the capture phase so `preventDefault()` stops the bubble-phase `topology-esc-ladder` in `HomePage.tsx`. */
+/** `visible` needs `useFirstRunNoFolderSettled()` and `!dismissed`. Escape is registered in the capture phase so `preventDefault()` stops the bubble-phase `topology-esc-ladder` in `HomePage.tsx`. */
 export function useFirstRunStarter({ mapSelectionActive = false }: { mapSelectionActive?: boolean } = {}) {
   const vault = useLocalVault();
   const locale = useLocale();
-  const sampleModeSettled = useFirstRunSampleModeSettled();
+  const noFolderSettled = useFirstRunNoFolderSettled();
   const [dismissed, setDismissed] = useState(() => readFirstRunStarterDismissed());
   const { handleCreate, scaffolding, actionError, setActionError } =
     useVaultCreateFlow(vault, locale);
 
-  const visible = sampleModeSettled && !dismissed;
+  const visible = noFolderSettled && !dismissed;
 
   const dismiss = useCallback(() => {
     writeFirstRunStarterDismissed();
@@ -52,9 +51,6 @@ export function useFirstRunStarter({ mapSelectionActive = false }: { mapSelectio
   const build = useBuildFromCode({
     openRecord: vault.openRecent,
     handoff: useCallback((location: ProjectVaultLocation) => {
-      // A second guard: the door is not drawn on the web, but a request arriving another way still
-      // must not promise a conversation that cannot open.
-      if (!isDesktopShell()) return;
       requestAgentChat(null, buildFromCodePrompt(location.projectRoot, null));
     }, []),
   });
@@ -107,20 +103,17 @@ export function useFirstRunStarter({ mapSelectionActive = false }: { mapSelectio
   return {
     visible,
     dismissed,
-    sampleModeSettled,
+    noFolderSettled,
     dismiss,
     undismiss,
     openFolder,
     /** The screen must render `build.location` before `confirm`. */
     build,
-    canBuildFromCode: isDesktopShell(),
     createVault: handleCreate,
     busy,
     scaffolding,
     /** Always the reader's language, never a thrown message. */
     errorText,
     errorDetail,
-    /** Browsers without File System Access degrade the primary CTA before it is pressed; `use-local-vault` sets 'unsupported' after hydration. */
-    fsaUnsupported: vault.status === 'unsupported',
   };
 }

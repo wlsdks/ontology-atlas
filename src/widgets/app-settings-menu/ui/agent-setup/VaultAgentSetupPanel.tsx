@@ -148,7 +148,6 @@ export function VaultAgentSetupPanel({
     mcpJsonState,
     codexConfigState,
     codexConfigSnippet: buildCodexConfigTomlTemplate(vaultNameForConfig, '.'),
-    needsManualPath: vaultRootPath === null,
   });
 
   if (localVault.status !== 'loaded' || !agentStatus) return null;
@@ -205,6 +204,7 @@ export function VaultAgentSetupPanel({
         </p>
       ) : null}
 
+      {clientRows ? (
       <SettingsGroup
         label={tMcp('shareHeading')}
         testId="agent-setup-steps"
@@ -280,14 +280,8 @@ export function VaultAgentSetupPanel({
             />
             );
           })
-        ) : (
-          /* No launchable server (a browser): the degradation card and the by-hand panel are
-             the group's whole body — there is no per-tool button to put on a row. */
-          <div className="flex flex-col gap-2 p-3">{clientControls.serverUnavailable}</div>
-        )}
+        ) : null}
       </SettingsGroup>
-      {clientControls.manualPathNote ? (
-        <div className="mt-2 px-1">{clientControls.manualPathNote}</div>
       ) : null}
 
       {/*

@@ -1,6 +1,5 @@
-// File System Access API augmentation. `entries`, `queryPermission`,
-// `requestPermission` and `showDirectoryPicker` are not fully in `lib.dom` yet,
-// so a minimal declaration lives here.
+// File System Access API augmentation. `entries`, `queryPermission` and `requestPermission`
+// are not fully in `lib.dom` yet, so a minimal declaration lives here.
 
 interface FileSystemPermissionDescriptor {
   mode?: 'read' | 'readwrite';
@@ -25,11 +24,4 @@ interface FileSystemFileHandle {
   requestPermission?(
     descriptor?: FileSystemPermissionDescriptor,
   ): Promise<'granted' | 'prompt' | 'denied'>;
-}
-
-interface Window {
-  showDirectoryPicker?: (options?: {
-    mode?: 'read' | 'readwrite';
-    startIn?: string | FileSystemHandle;
-  }) => Promise<FileSystemDirectoryHandle>;
 }

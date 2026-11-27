@@ -235,7 +235,7 @@ export function discoveryAcceptsDirectory(relativePath: string): boolean {
 }
 
 export interface SourceCandidate {
-  /** Absolute root in the app; the folder handle's name on the web. */
+  /** Absolute root of the walked folder. */
   rootPath: string;
   /** The root's on-screen name. */
   rootLabel: string;
@@ -253,62 +253,6 @@ export interface SourceDiscoveryReport {
   truncated: boolean;
   /** Roots that could not be read. */
   unreadableRoots: string[];
-}
-
-/** The web walk, limited to the opened folder's handle, so Atlas's own folders are always skipped. */
-export async function discoverCandidatesInHandle(
-  root: FileSystemDirectoryHandle,
-  options: { rootLabel: string; skipRelative?: readonly string[] } = { rootLabel: '' },
-): Promise<SourceDiscoveryReport> {
-  const report: SourceDiscoveryReport = {
-    candidates: [],
-    truncated: false,
-    unreadableRoots: [],
-  };
-  const skip = options.skipRelative ?? [];
-
-  const walk = async (
-    directory: FileSystemDirectoryHandle,
-    prefix: string,
-    depth: number,
-  ): Promise<void> => {
-    if (depth > DISCOVERY_MAX_DEPTH || report.truncated) return;
-    for await (const [name, handle] of directory.entries()) {
-      if (report.candidates.length >= DISCOVERY_MAX_CANDIDATES) {
-        report.truncated = true;
-        return;
-      }
-      const relative = prefix ? `${prefix}/${name}` : name;
-      if (skip.some((path) => relative === path || relative.startsWith(`${path}/`))) continue;
-      if (!prefix && (DISCOVERY_VAULT_OWNED_DIRS as readonly string[]).includes(name.toLowerCase())) continue;
-      if (handle.kind === 'directory') {
-        if (!discoveryAcceptsDirectory(relative)) continue;
-        await walk(handle as FileSystemDirectoryHandle, relative, depth + 1);
-        continue;
-      }
-      if (!discoveryAcceptsFile(name)) continue;
-      // `getFile()` on an FSA handle returns metadata; bytes are read only on demand.
-      const file = await (handle as FileSystemFileHandle).getFile();
-      if (file.size < DISCOVERY_MIN_FILE_BYTES) continue;
-      report.candidates.push({
-        rootPath: root.name,
-        rootLabel: options.rootLabel || root.name,
-        relativePath: relative,
-        name,
-        extension: discoveryExtension(name),
-        size: file.size,
-        mtime: file.lastModified,
-      });
-    }
-  };
-
-  try {
-    await walk(root, '', 0);
-  } catch {
-    report.unreadableRoots.push(options.rootLabel || root.name);
-  }
-  report.candidates.sort((a, b) => b.mtime - a.mtime || a.name.localeCompare(b.name));
-  return report;
 }
 
 /** Root plus relative path, since discovery never reads content to hash. */

@@ -1,69 +1,31 @@
-import type { SampleSource } from '@/shared/lib/vault-folder/sample-source';
-import { bundledVaultManifest, type BundledVaultManifest } from './bundled-manifest';
-import { DOGFOOD_AGENT_SLUG_PREFIX } from './dogfood-slug-prefix';
+import { bundledVaultManifest } from './bundled-manifest';
 import type { StaticVaultSource } from './static-vault-source';
 
-/** Each sample is fetched with `import()` the first time a screen shows it, so no route ships its JSON up front and the installed app never fetches one. Build-time callers and `/download` keep the synchronous `resolveStaticVaultSource`. */
+/**
+ * The site's sample map (`/sample`) is the one bundled vault that arrives at run time: fetched with `import()` when the page asks, so no other route ships its JSON and the installed app never fetches it. Build-time callers and `/download` keep the synchronous `resolveStaticVaultSource`.
+ */
+type LoadableSample = 'storefront';
 
-const loaded = new Map<SampleSource, StaticVaultSource>();
-const inflight = new Map<SampleSource, Promise<StaticVaultSource | null>>();
-const failed = new Set<SampleSource>();
+const loaded = new Map<LoadableSample, StaticVaultSource>();
+const inflight = new Map<LoadableSample, Promise<StaticVaultSource | null>>();
+const failed = new Set<LoadableSample>();
 const listeners = new Set<() => void>();
 
 // The build fixes the JSON's schema, so the adapter casts it once.
-async function importSource(source: SampleSource): Promise<StaticVaultSource> {
-  if (source === 'storefront') {
-    const [manifest, content] = await Promise.all([
-      import('../../data/sample-storefront.manifest.json'),
-      import('../../data/sample-storefront.content.json'),
-    ]);
-    return {
-      source: 'storefront',
-      manifest: bundledVaultManifest(manifest.default),
-      content: content.default as Record<string, string>,
-    };
-  }
-  const [manifest, content, changelog] = await Promise.all([
-    import('../../data/manifest.json'),
-    import('../../data/gateway-content.json'),
-    import('../../data/gateway-changelog.json'),
+async function importSource(): Promise<StaticVaultSource> {
+  const [manifest, content] = await Promise.all([
+    import('../../data/sample-storefront.manifest.json'),
+    import('../../data/sample-storefront.content.json'),
   ]);
   return {
-    source: 'dogfood',
+    source: 'storefront',
     manifest: bundledVaultManifest(manifest.default),
     content: content.default as Record<string, string>,
-    contentPreviews: {
-      CHANGELOG: changelog.default as { body: string; omittedSections: number },
-    },
-    agentSlugPrefix: DOGFOOD_AGENT_SLUG_PREFIX,
   };
 }
 
-const EMPTY_MANIFEST: BundledVaultManifest = {
-  version: '',
-  generatedAt: '',
-  docs: [],
-  backlinkSources: {},
-  tags: {},
-  tree: { name: 'root', path: '', type: 'dir' },
-};
-
-const EMPTY: Record<SampleSource, StaticVaultSource> = {
-  dogfood: {
-    source: 'dogfood',
-    manifest: EMPTY_MANIFEST,
-    content: {},
-    agentSlugPrefix: DOGFOOD_AGENT_SLUG_PREFIX,
-  },
-  storefront: { source: 'storefront', manifest: EMPTY_MANIFEST, content: {} },
-};
-
-export function emptyStaticVaultSource(source: SampleSource): StaticVaultSource {
-  return EMPTY[source];
-}
-
 /** The sample if it has arrived, else null. Stable between calls so a store snapshot can return it. */
-export function peekStaticVaultSource(source: SampleSource): StaticVaultSource | null {
+export function peekStaticVaultSource(source: LoadableSample): StaticVaultSource | null {
   return loaded.get(source) ?? null;
 }
 
@@ -73,7 +35,7 @@ export function peekStaticVaultSource(source: SampleSource): StaticVaultSource |
  */
 export type StaticVaultSourceState = 'idle' | 'loading' | 'ready' | 'failed';
 
-export function staticVaultSourceState(source: SampleSource): StaticVaultSourceState {
+export function staticVaultSourceState(source: LoadableSample): StaticVaultSourceState {
   if (loaded.has(source)) return 'ready';
   if (failed.has(source)) return 'failed';
   return inflight.has(source) ? 'loading' : 'idle';
@@ -92,27 +54,27 @@ function notify(): void {
 
 const RETRY_DELAY_MS = 300;
 
-async function importWithRetry(source: SampleSource): Promise<StaticVaultSource> {
+async function importWithRetry(): Promise<StaticVaultSource> {
   try {
-    return await importSource(source);
+    return await importSource();
   } catch {
     // A chunk that failed once is often a dropped connection; one more try before saying so.
     await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
-    return importSource(source);
+    return importSource();
   }
 }
 
 /**
  * Starts the import once per sample. The promise never rejects: it resolves to the sample, or to
- * null after the failure is recorded, so a suspended screen wakes either way and reads the state.
+ * null after the failure is recorded, so a waiting screen wakes either way and reads the state.
  */
-export function loadStaticVaultSource(source: SampleSource): Promise<StaticVaultSource | null> {
+export function loadStaticVaultSource(source: LoadableSample): Promise<StaticVaultSource | null> {
   const ready = loaded.get(source);
   if (ready) return Promise.resolve(ready);
   if (failed.has(source)) return Promise.resolve(null);
   let pending = inflight.get(source);
   if (!pending) {
-    pending = importWithRetry(source).then(
+    pending = importWithRetry().then(
       (value) => {
         loaded.set(source, value);
         inflight.delete(source);
@@ -131,13 +93,12 @@ export function loadStaticVaultSource(source: SampleSource): Promise<StaticVault
   return pending;
 }
 
-export function retryStaticVaultSource(source: SampleSource): Promise<StaticVaultSource | null> {
+export function retryStaticVaultSource(source: LoadableSample): Promise<StaticVaultSource | null> {
   failed.delete(source);
   return loadStaticVaultSource(source);
 }
 
 export const bundledSamples = {
-  empty: emptyStaticVaultSource,
   peek: peekStaticVaultSource,
   state: staticVaultSourceState,
   subscribe: subscribeStaticVaultSource,

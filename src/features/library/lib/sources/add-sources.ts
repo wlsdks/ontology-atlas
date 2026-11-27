@@ -242,48 +242,22 @@ export async function addSourcesInBrowser(
   }
 }
 
-/** Whether this browser can open a file picker at all. */
-function browserCanPickFiles(): boolean {
-  return typeof window !== "undefined" && "showOpenFilePicker" in window;
-}
-
-/** Native path with an absolute root, browser path otherwise. */
+/** Picks files with the app's native dialog and copies them below `sources/`; nothing outside the app. */
 export async function addSources({
-  root,
   vaultRootPath,
   dialogTitle,
   onImportStart,
 }: {
-  root: FileSystemDirectoryHandle;
   vaultRootPath: string | null;
   dialogTitle: string;
   onImportStart?: () => void;
 }): Promise<AddSourcesOutcome> {
-  const importing = () => {
-    try { onImportStart?.(); } catch { /* Feedback cannot change the file operation. */ }
-  };
-  if (vaultRootPath) {
-    const picked = await pickTauriSourceFiles(dialogTitle);
-    if (!picked || picked.length === 0) return EMPTY;
-    importing();
-    const results = await importTauriSourceFiles(vaultRootPath, picked);
-    return { results: results ?? [], cancelled: false };
-  }
-
-  if (!browserCanPickFiles()) return EMPTY;
-  type PickerWindow = Window & {
-    showOpenFilePicker: (options?: { multiple?: boolean }) => Promise<FileSystemFileHandle[]>;
-  };
-  let handles: FileSystemFileHandle[];
-  try {
-    handles = await (window as unknown as PickerWindow).showOpenFilePicker({ multiple: true });
-  } catch {
-    // A dismissed picker is not a failure and must not raise anything on screen.
-    return EMPTY;
-  }
-  const files = await Promise.all(handles.map((handle) => handle.getFile()));
-  if (files.length > 0) importing();
-  return addSourcesInBrowser(root, files);
+  if (!vaultRootPath) return EMPTY;
+  const picked = await pickTauriSourceFiles(dialogTitle);
+  if (!picked || picked.length === 0) return EMPTY;
+  try { onImportStart?.(); } catch { /* Feedback cannot change the file operation. */ }
+  const results = await importTauriSourceFiles(vaultRootPath, picked);
+  return { results: results ?? [], cancelled: false };
 }
 
 /** One sentence naming what happened, for the toast the person actually reads. */

@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 
-import { useDataSourceMode, useLocalVault, useStaticVaultSource } from '@/entities/vault-session';
+import { useLocalVault } from '@/entities/vault-session';
 import { useVaultHealth } from '@/features/vault-ontology';
 
 import { chatSuggestions, type ChatSuggestion } from './chat-suggestions';
@@ -19,13 +19,11 @@ export function useChatSuggestions(
   changedSource: readonly string[] | null = null,
 ): ChatSuggestion[] {
   const health = useVaultHealth();
-  const mode = useDataSourceMode();
   const vault = useLocalVault();
-  const staticSource = useStaticVaultSource();
 
-  // The choice follows the manifest's presence, not `status`, so rows do not vanish during the
-  // re-read after a save (as in `use-vault-concept-facts`).
-  const manifest = mode === 'static' ? staticSource.manifest : (vault.manifest ?? null);
+  // The manifest's presence, not `status`, so rows do not vanish during the re-read after a save
+  // (as in `use-vault-concept-facts`).
+  const manifest = vault.manifest ?? null;
 
   return useMemo(() => {
     const docs = manifest?.docs ?? [];

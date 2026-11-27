@@ -67,17 +67,6 @@ export async function scanPlanningHome(directory: FileSystemDirectoryHandle): Pr
   return inventory;
 }
 
-/**
- * The name a picked file takes at the top of the home folder, or null when the home scan would
- * not list it. Leading dots are dropped and separators refused, as the native import does.
- */
-export function planningHomeFileName(pickedName: string): string | null {
-  const trimmed = pickedName.trim();
-  if (/[/\\\0]/.test(trimmed)) return null;
-  const name = trimmed.replace(/^\.+/, '');
-  return name && !skippedEverywhere(name) && SUPPORTED_FILE.test(name) && !deniedImageName(name) ? name : null;
-}
-
 function pathParts(path: string): string[] {
   const parts = path.split('/');
   const name = parts[parts.length - 1];

@@ -7,10 +7,9 @@ import {
   pinnedDocsStorageKey,
   recentDocsStorageKey,
   vaultScopeKey,
-  type VaultManifest,
   type VaultTreeNode,
 } from "@/entities/docs-vault";
-import { useLocalVault } from "@/entities/vault-session";
+import { useLocalVault, useOpenFolderManifest } from "@/entities/vault-session";
 import { useBodyScrollLock } from "@/shared/lib/overlays/use-body-scroll-lock";
 import {
   buildFlatDocs,
@@ -60,16 +59,6 @@ export interface DocsQuickDrawerModel {
  * State and derived lists of the quick drawer: which manifest is active, the saved pins and recents,
  * the search and tag filter, and the arrow-key focus over the filtered tree.
  */
-/** What the drawer lists while no folder is open: nothing, never a stand-in. */
-const NO_FOLDER_MANIFEST: VaultManifest = {
-  version: "",
-  generatedAt: "",
-  docs: [],
-  backlinkSources: {},
-  tags: {},
-  tree: { name: "root", path: "", type: "dir" },
-};
-
 export function useDocsQuickDrawer({
   open,
   onClose,
@@ -84,8 +73,7 @@ export function useDocsQuickDrawer({
   // Same rule as /docs: the open folder's manifest and its scoped pins, or nothing while none is open.
   const localVault = useLocalVault();
   const isLocalLoaded = localVault.status === "loaded" && Boolean(localVault.manifest);
-  const activeManifest: VaultManifest =
-    isLocalLoaded && localVault.manifest ? localVault.manifest : NO_FOLDER_MANIFEST;
+  const activeManifest = useOpenFolderManifest();
   const scope = vaultScopeKey({
     isLocalLoaded,
     handleName: localVault.handle?.name ?? null,

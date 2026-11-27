@@ -39,7 +39,7 @@ export function resolveActiveNavDestination(pathname: string): AppNavDestination
 
 /**
  * Routes that are website pages by path alone. `/` is absent because the installed app opens its
- * work entry there (`isGatewaySurface`). A new website page needs a line here, or that screen wears
+ * work entry there. A new website page needs a line here, or that screen wears
  * the workbench rail.
  */
 const GATEWAY_ROUTE_PREFIXES = ["/download", "/guide", "/changelog", "/sample"] as const;
@@ -52,23 +52,6 @@ const GATEWAY_ROUTE_PREFIXES = ["/download", "/guide", "/changelog", "/sample"] 
 export function isGatewayRoute(pathname: string): boolean {
   const path = stripLocalePrefix(pathname || "/");
   return GATEWAY_ROUTE_PREFIXES.some((prefix) => path.startsWith(prefix));
-}
-
-export interface GatewayContext {
-  /** The installed app: its `/` is the work entry, never the website's gateway. */
-  desktop: boolean;
-}
-
-/**
- * Is this surface a gateway right now. A browser has no folder to open, so there `/` is the gateway
- * (it hands over to `/download`); in the installed app `/` is where work starts, so the app never
- * tells its own user to download itself. Before the page knows which one it is (`desktop` false),
- * `/` leans towards the gateway: the other way flashes the rail on a visitor's first frame.
- */
-export function isGatewaySurface(pathname: string, ctx: GatewayContext): boolean {
-  const path = stripLocalePrefix(pathname || "/");
-  if (GATEWAY_ROUTE_PREFIXES.some((prefix) => path.startsWith(prefix))) return true;
-  return path === "/" && !ctx.desktop;
 }
 
 /** `/ko/foo` → `/foo`, so route matching never trips over a locale prefix. */

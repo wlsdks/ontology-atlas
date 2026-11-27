@@ -11,9 +11,9 @@ import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/native-vault/ta
  * Vault path plus session changeset, so the git destination and the rail badge read
  * the same value; it lives in the widget, the lowest layer both can import.
  */
-export function useAtlasGitContext(options?: { demand?: boolean }) {
+export function useAtlasGitContext() {
   const localVault = useLocalVault();
-  const { insight } = useOntologyInsight(options);
+  const { insight } = useOntologyInsight();
   const changeBaseline = useChangeBaseline();
 
   const changeset = useMemo(
@@ -21,7 +21,7 @@ export function useAtlasGitContext(options?: { demand?: boolean }) {
     [changeBaseline, insight],
   );
 
-  // Null for a web handle; the destination then shows only the session changeset.
+  // Null without an app runtime; the destination then shows only the session changeset.
   const vaultPath = localVault.handle ? (getTauriVaultRootPath(localVault.handle) ?? null) : null;
   // Passed in rather than read by the widget, which would force tests to supply a provider.
   const graph = useMemo(

@@ -262,7 +262,7 @@ function AppNavRailSlot() {
     [vault.manifest],
   );
   // The badge reads the Git workbench's changeset, or the rail and destination could disagree.
-  const { changeset: gitChangeset } = useAtlasGitContext({ demand: false });
+  const { changeset: gitChangeset } = useAtlasGitContext();
   const gitDirtyCount = gitChangeset.touchedNodeIds.size;
 
   const toast = useToast();

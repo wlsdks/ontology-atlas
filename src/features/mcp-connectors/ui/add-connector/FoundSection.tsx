@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Info, Plus } from 'lucide-react';
 
-import { Link } from '@/i18n/navigation';
 import { Chip, ServiceMark, resolveServiceMark } from '@/shared/ui';
 import { badgeClass } from '@/shared/ui/badge-class';
 import { controlClass } from '@/shared/ui/control-class';
@@ -64,17 +63,6 @@ export function FoundSection({
             <p className="mt-1 break-keep text-label leading-prose text-[color:var(--color-text-tertiary)]">
               {t('webBody')}
             </p>
-            <Link
-              href="/download/"
-              data-testid="connectors-web-get-app"
-              className={controlClass({
-                shape: 'link',
-                tone: 'accent',
-                className: 'mt-2 text-label font-[var(--font-weight-signature)]',
-              })}
-            >
-              {t('webGetApp')}
-            </Link>
           </div>
         </div>
       </div>

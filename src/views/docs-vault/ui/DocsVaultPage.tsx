@@ -129,7 +129,6 @@ function DocsVaultContent({
     useDocReadingScrollSpy(selectedSlug, src.recentKey);
   const backToTop = useBackToTop(articleScrollRef, selectedSlug);
   const vault = useVaultManifest({
-    isLocalSourceLoaded,
     querySlug: address.querySlug,
     selectedSlug,
     legacyEntry,

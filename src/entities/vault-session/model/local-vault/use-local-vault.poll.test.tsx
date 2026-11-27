@@ -75,10 +75,9 @@ function builtVault() {
   };
 }
 
-async function openVault(surface: 'app' | 'web') {
-  tauri.isTauriVaultRuntime.mockReturnValue(surface === 'app');
-  if (surface === 'web') Object.defineProperty(window, 'showDirectoryPicker', { value: vi.fn(), configurable: true });
-  store.getLocalFsHandle.mockResolvedValue(savedVault(surface === 'app' ? '/Users/dana/vault' : undefined));
+async function openVault() {
+  tauri.isTauriVaultRuntime.mockReturnValue(true);
+  store.getLocalFsHandle.mockResolvedValue(savedVault('/Users/dana/vault'));
   const hook = renderHook(() => useLocalVaultInternal());
   await vi.waitFor(() => expect(hook.result.current.status).toBe('loaded'));
   docsVault.computeLocalVaultFingerprintWithStamps.mockClear();
@@ -100,20 +99,13 @@ afterEach(() => {
   vi.useRealTimers();
   vi.clearAllMocks();
   sidecars.clear();
-  Reflect.deleteProperty(window, 'showDirectoryPicker');
 });
 
 describe('keeping an open vault current', () => {
   it('checks an idle app folder once a minute, since its watcher reports changes at once', async () => {
-    await openVault('app');
+    await openVault();
     await idleMinutes(10);
     expect(docsVault.computeLocalVaultFingerprintWithStamps).toHaveBeenCalledTimes(10);
-  });
-
-  it('checks an idle web folder every five seconds, since the web has no folder events', async () => {
-    await openVault('web');
-    await idleMinutes(10);
-    expect(docsVault.computeLocalVaultFingerprintWithStamps).toHaveBeenCalledTimes(120);
   });
 
   it('marks a quiet agent heartbeat stale when it passes five minutes, between two checks', async () => {
@@ -122,7 +114,7 @@ describe('keeping an open vault current', () => {
       '.ontology-atlas/agent-activity.json',
       JSON.stringify({ agent: 'claude', state: 'editing', updatedAt: new Date(Date.now() - writtenBeforeOpenMs).toISOString() }),
     );
-    const hook = await openVault('app');
+    const hook = await openVault();
     expect(hook.result.current.agentActivityStatus.stale).toBe(false);
 
     await act(async () => {
@@ -136,13 +128,13 @@ describe('keeping an open vault current', () => {
     tauri.readTauriVaultTextTail.mockResolvedValue(
       [1, 2].map((n) => JSON.stringify({ v: 1, at: `2026-09-27T00:0${n}:00Z`, summary: `entry ${n}` })).join('\n'),
     );
-    const hook = await openVault('app');
+    const hook = await openVault();
     expect(hook.result.current.agentActivityLog).toHaveLength(2);
     expect(tauri.readTauriVaultTextTail).toHaveBeenCalledWith('/Users/dana/vault', '.ontology-atlas/activity.jsonl', 50);
   });
 
   it('checks the folder when the app window regains focus', async () => {
-    await openVault('app');
+    await openVault();
 
     act(() => {
       window.dispatchEvent(new Event('focus'));

@@ -47,7 +47,7 @@ vi.mock("@/entities/vault-session/model/vault-opening/vault-arrival", async (imp
 }));
 vi.mock("@/entities/vault-session/model/vault-source/use-data-source-mode", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/entities/vault-session/model/vault-source/use-data-source-mode")>()),
-  useDataSourceMode: () => "static",
+  useDataSourceMode: () => "no-folder",
 }));
 
 vi.mock("@/entities/vault-session/model/vault-source/use-vault-identity-scope", async (importOriginal) => {

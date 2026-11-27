@@ -18,7 +18,7 @@ interface MockVault {
 
 const mocks = vi.hoisted(() => ({
   vault: null as unknown as MockVault,
-  mode: "static" as "static" | "local",
+  mode: "no-folder" as "no-folder" | "local",
 }));
 
 vi.mock("@/entities/vault-session/model/vault-provider/LocalVaultProvider", async (importOriginal) => ({
@@ -54,7 +54,7 @@ function renderWithLocale(locale: "ko" | "en") {
   const messages = locale === "ko" ? koMessages : enMessages;
   return render(
     <NextIntlClientProvider locale={locale} messages={messages}>
-      <FirstRunStarterModule concepts={12} relations={20} domains={4} />
+      <FirstRunStarterModule />
     </NextIntlClientProvider>,
   );
 }
@@ -62,9 +62,8 @@ function renderWithLocale(locale: "ko" | "en") {
 describe("FirstRunStarterModule three-term glossary", () => {
   beforeEach(() => {
     mocks.vault = makeVault();
-    mocks.mode = "static";
+    mocks.mode = "no-folder";
     window.sessionStorage.removeItem(FIRST_RUN_STARTER_DISMISSED_KEY);
-    window.localStorage.removeItem("demo:sample-source:v1");
   });
 
   it.each(["ko", "en"] as const)(
@@ -108,11 +107,8 @@ describe("FirstRunStarterModule three-term glossary", () => {
     expect(positions[1]).toBeLessThan(positions[2]);
   });
 
-  it.each(["ko", "en"] as const)("names the sample with the switch's own word (%s)", (locale) => {
+  it.each(["ko", "en"] as const)("names the close button with its own word (%s)", (locale) => {
     renderWithLocale(locale);
-    const checked = screen.getAllByRole("radio").find((radio) => radio.getAttribute("aria-checked") === "true");
-    expect(checked?.textContent).toBeTruthy();
-    expect(screen.getByTestId("first-run-starter-sample-line")).toHaveTextContent(checked!.textContent!);
     const close = screen.getByTestId("first-run-starter-dismiss");
     expect(close.getAttribute("aria-label")).toContain(close.textContent);
   });

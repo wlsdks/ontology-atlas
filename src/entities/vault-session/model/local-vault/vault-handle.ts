@@ -56,17 +56,6 @@ export async function resolveVaultHandle(handle: FileSystemDirectoryHandle): Pro
   };
 }
 
-/**
- * Capability is decided by whether `showDirectoryPicker` can be called, not by `in`: a stubbed
- * key must read as unsupported, not throw `is not a function`.
- */
-export function isSupported(): boolean {
-  if (typeof window === 'undefined') return false;
-  const picker = (window as unknown as { showDirectoryPicker?: unknown })
-    .showDirectoryPicker;
-  return typeof picker === 'function' || isTauriVaultRuntime();
-}
-
 export function verifyRead(
   handle: FileSystemDirectoryHandle,
   ask = false,

@@ -1,21 +1,9 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { bundledSamples, type DocumentRef } from '@/entities/docs-vault';
+import type { DocumentRef } from '@/entities/docs-vault';
 import { LocalVaultContext, type LocalVaultValue } from '@/entities/vault-session/model/vault-provider/local-vault-context';
-import { useAdoptDocumentText, useDocumentDetail, useDocumentDetails } from './use-document-detail';
-
-const headingsChunk = vi.hoisted(() => ({ loads: 0 }));
-vi.mock('@/entities/docs-vault/lib/bundled-vault/static-headings', async (original) => {
-  const actual = await original<typeof import('@/entities/docs-vault/lib/bundled-vault/static-headings')>();
-  return {
-    ...actual,
-    importStaticVaultHeadings: (...args: Parameters<typeof actual.importStaticVaultHeadings>) => {
-      headingsChunk.loads += 1;
-      return actual.importStaticVaultHeadings(...args);
-    },
-  };
-});
+import { useAdoptDocumentText, useDocumentDetail } from './use-document-detail';
 
 /** A file whose read resolves when the test says so, to observe what shows while it is pending. */
 function heldFile(text: string) {
@@ -163,18 +151,5 @@ describe('useDocumentDetail', () => {
     act(() => result.current.adopt(docAt(1), Promise.resolve('# Adopted')));
     await waitFor(() => expect(result.current.detail?.headings[0]?.text).toBe('Adopted'));
     expect(file.getFile).not.toHaveBeenCalled();
-  });
-});
-
-describe('useDocumentDetails on a bundled sample', () => {
-  it('serves the inline excerpt without fetching the headings chunk when no outline is shown', async () => {
-    const sample = bundledSamples.peek('storefront');
-    expect(sample, 'the shared setup loads both samples').not.toBeNull();
-    const docs = sample!.manifest.docs.slice(0, 5);
-    const loadsBefore = headingsChunk.loads;
-    const { result } = renderHook(() => useDocumentDetails(docs, { headings: false }));
-    await waitFor(() => expect(result.current).toBeDefined());
-    expect(result.current?.map((detail) => detail?.excerpt)).toEqual(docs.map((doc) => doc.excerpt));
-    expect(headingsChunk.loads).toBe(loadsBefore);
   });
 });

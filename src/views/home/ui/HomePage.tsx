@@ -30,7 +30,7 @@ import { TopologyInspectorSurfaces } from "./map-panels/TopologyInspectorSurface
 import { TopologyUtilityOverlays } from "./map-overlays/TopologyUtilityOverlays";
 
 import { useChatSuggestions } from "@/features/acp-session";
-import { useFirstRunSampleModeKnown, useFirstRunSampleModeSettled } from "@/features/first-run-starter";
+import { useFirstRunRestoreKnown, useFirstRunNoFolderSettled } from "@/features/first-run-starter";
 import { useProjects } from "@/features/project-data-source";
 import { useRouter } from "@/i18n/navigation";
 import { cancelMapNavigation, readMapNavigationPending } from "@/shared/lib/navigation/map-navigation-pending";
@@ -238,7 +238,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   const navRailSettingsSlot = useMemo(
     () => (
       <AppSettingsMenu
-        mode={vaultStatus === 'loaded' ? 'local' : 'static'}
+        mode={vaultStatus === 'loaded' ? 'local' : 'no-folder'}
         triggerVariant="rail-tile"
         screenControls={{
           indexCollapsed: indexPanelCollapsedStored,
@@ -255,8 +255,8 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   useNavRailSettingsSlot(navRailSettingsSlot);
   // In sample mode a quiet "switch to my data ⌘O" pill stays in the top row until a real vault
   // connects.
-  const sampleModeSettled = useFirstRunSampleModeSettled();
-  const sampleModeKnown = useFirstRunSampleModeKnown();
+  const noFolderSettled = useFirstRunNoFolderSettled();
+  const restoreKnown = useFirstRunRestoreKnown();
   const requestVaultOpen = useCallback(() => {
     void openVault();
   }, [openVault]);
@@ -465,7 +465,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   });
   const topologyKeyboard = useTopologyKeyboard({
     setOntologySearchOpen, setShortcutsOpen, setDocsDrawerOpen, ontologySearchOpen,
-    localGraphRoot, setLocalGraphStack, setRouteState, sampleModeSettled, requestVaultOpen,
+    localGraphRoot, setLocalGraphStack, setRouteState, noFolderSettled, requestVaultOpen,
     topologyGraphProjection, topologyNavigationActions, topologyAuthoring, topologyCanvasFocus,
     topologyInspectorState, topologyRouteControls, topologyExplorationLenses, topologyAgentOrchestration,
     homeWorkbenchController
@@ -540,8 +540,8 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
             handleFootprintLens={handleFootprintLens}
             handleFootprintBrush={handleFootprintBrush}
             agentDockTouchedRef={agentDockTouchedRef}
-            sampleModeSettled={sampleModeSettled}
-            sampleModeKnown={sampleModeKnown}
+            noFolderSettled={noFolderSettled}
+            restoreKnown={restoreKnown}
             requestVaultOpen={requestVaultOpen}
             topologyPreferences={topologyPreferences}
             topologyInspectorState={topologyInspectorState}

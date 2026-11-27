@@ -56,13 +56,12 @@ export async function resolveSourceBinding(
 export function useHarnessReport(
   handle: FileSystemDirectoryHandle | null,
   projectSlugs: readonly string[],
-  enabled: boolean,
   reloadNonce = 0,
 ): HarnessReportState {
   const [snapshot, setSnapshot] = useState<HarnessReportSnapshot | null>(null);
   const slugKey = projectSlugs.join('\0');
   /* The gate is computed in render and demotes the return value, avoiding a setState cascade. */
-  const supported = enabled && !!handle && !!getTauriVaultRootPath(handle);
+  const supported = !!handle && !!getTauriVaultRootPath(handle);
 
   useEffect(() => {
     if (!supported || !handle) return;

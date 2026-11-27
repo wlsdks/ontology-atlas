@@ -6,7 +6,7 @@ import koMessages from '../../../../messages/ko.json';
 import type { HarnessReport } from '@/entities/agent-files';
 
 const state = {
-  mode: 'local' as 'local' | 'static',
+  mode: 'local' as 'local' | 'no-folder',
   docs: [] as Array<{
     slug: string;
     title: string;
@@ -27,6 +27,7 @@ const state = {
 vi.mock('@/entities/vault-session', () => ({
   useDataSourceMode: () => state.mode,
   useLocalVault: () => ({ status: 'loaded', handle: {}, manifest: { docs: state.docs } }),
+  useOpenFolderManifest: () => ({ docs: state.docs }),
 }));
 // The report sits behind its feature's public API, so this mock names the slice, not the file.
 vi.mock('@/features/harness-report', async (importOriginal) => ({

@@ -16,14 +16,6 @@ vi.mock('next-intl', async (importOriginal) => ({
   ...(await importOriginal<typeof import('next-intl')>()),
   useLocale: () => mocks.locale,
 }));
-vi.mock('@/entities/vault-session/model/vault-source/use-data-source-mode', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/entities/vault-session/model/vault-source/use-data-source-mode')>()),
-  useDataSourceMode: () => 'local',
-}));
-vi.mock('@/entities/vault-session/model/vault-source/use-sample-source', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/entities/vault-session/model/vault-source/use-sample-source')>()),
-  useSampleSource: () => ['dogfood'],
-}));
 vi.mock('@/entities/vault-session/model/vault-provider/LocalVaultProvider', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/entities/vault-session/model/vault-provider/LocalVaultProvider')>()),
   useLocalVault: () => mocks.vault,

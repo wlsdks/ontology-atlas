@@ -1,5 +1,4 @@
-// Adaptive poll cadence: the FS Access API has no directory-change event, so after a detected change poll fast for a short
-// window, then decay to the idle interval. Pure, so it is testable without the hook or timers.
+// Adaptive poll cadence: after a detected change poll fast for a short window, then decay to the idle interval. Pure, so it is testable without the hook or timers.
 
 export interface PollCadenceConfig {
   burstMs: number;
@@ -14,9 +13,8 @@ export const DEFAULT_POLL_CADENCE: PollCadenceConfig = {
 };
 
 /**
- * A web poll walks the whole folder with `getFile()` per entry, so the delay is at least poll time
- * times this factor, capping polling at a twentieth of wall time. `MAX_POLL_DELAY_MS` keeps the web
- * delayed, not unavailable (`.claude/rules/surfaces.md`).
+ * A poll walks the whole folder, so the delay is at least poll time times this factor, capping
+ * polling at a twentieth of wall time. `MAX_POLL_DELAY_MS` keeps a slow folder delayed, not stopped.
  */
 const POLL_COST_SHARE = 20;
 export const MAX_POLL_DELAY_MS = 60_000;

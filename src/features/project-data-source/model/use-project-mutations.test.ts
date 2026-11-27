@@ -5,7 +5,7 @@ import type { VaultManifest } from "@/entities/docs-vault";
 import { useProjectMutations } from "./use-project-mutations";
 
 const mocks = vi.hoisted(() => ({
-  mode: "local" as "local" | "static",
+  mode: "local" as "local" | "no-folder",
   vault: {
     manifest: null as VaultManifest | null,
     fileHandles: new Map<string, unknown>(),

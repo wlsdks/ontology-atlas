@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 
-import { useDataSourceMode, useLocalVault } from '@/entities/vault-session';
+import { useDataSourceMode, useLocalVault, useOpenFolderManifest } from '@/entities/vault-session';
 import { useHydrated } from '@/shared/lib/render-timing/use-hydrated';
 import { RefreshCw } from 'lucide-react';
 
@@ -47,13 +47,6 @@ function failedReasonKey(code: string | null) {
   return 'failedBody';
 }
 
-const EMPTY_DOCS: Array<{
-  slug: string;
-  title: string;
-  description?: string;
-  frontmatter: Record<string, unknown>;
-}> = [];
-
 function HarnessPageInner() {
   const t = useTranslations('harness');
   const searchParams = useSearchParams();
@@ -71,7 +64,7 @@ function HarnessPageInner() {
   }, []);
   const mode = useDataSourceMode();
   const localVault = useLocalVault();
-  const docs = localVault.manifest?.docs ?? EMPTY_DOCS;
+  const docs = useOpenFolderManifest().docs;
   const projectSlugs = useMemo(
     () =>
       docs
@@ -101,7 +94,6 @@ function HarnessPageInner() {
   const reportState = useHarnessReport(
     mode === 'local' && localVault.status === 'loaded' ? localVault.handle : null,
     projectSlugs,
-    true,
     reloadNonce,
   );
   const scopesRead = useHarnessScopes(

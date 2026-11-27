@@ -6,10 +6,9 @@ export const DETAIL_READ_BATCH = 64;
 
 /** Reads each document's file, in order; `null` for a file the source cannot or will not read. */
 export type ReadDocumentTexts = (docs: readonly DocumentRef[]) => Promise<readonly (string | null)[]>;
-/** Answers details without a file, for a source that already holds them (the bundled samples). */
-export type ReadDocumentDetails = (docs: readonly DocumentRef[]) => Promise<readonly (VaultDocDetail | null)[]>;
-
-export type DocumentStoreSource = { readTexts: ReadDocumentTexts } | { readDetails: ReadDocumentDetails };
+export interface DocumentStoreSource {
+  readTexts: ReadDocumentTexts;
+}
 
 export interface DocumentStore {
   /** The cached answer, without reading or touching recency; `undefined` when not cached. */
@@ -30,7 +29,6 @@ export function createDocumentStore(
   const inflight = new Map<string, Promise<VaultDocDetail | null>>();
 
   const load = async (docs: readonly DocumentRef[]): Promise<readonly (VaultDocDetail | null)[]> => {
-    if ('readDetails' in source) return source.readDetails(docs);
     const texts = await source.readTexts(docs);
     return docs.map((_, index) => {
       const text = texts[index];

@@ -107,7 +107,7 @@ interface AppSettingsScreenControls {
 }
 
 export interface AppSettingsMenuProps {
-  mode: 'static' | 'local';
+  mode: 'no-folder' | 'local';
   open?: boolean;
   onOpenChange?: (next: boolean) => void;
   /** The map's INDEX default; the Map pane draws that row only where the map injects it. */

@@ -10,7 +10,7 @@ import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { useLocale, useTranslations } from "next-intl";
 import { ProjectForm } from "@/features/project-edit";
 import {
-  ProjectStaticModeError,
+  ProjectNoFolderError,
   useProjects,
   useProjectMutations,
 } from "@/features/project-data-source";
@@ -103,7 +103,7 @@ function EditorContent({
     if (found) {
       window.queueMicrotask(() => {
         setProject(found);
-        // The static fallback can precede a rehydrating vault; recover when the real project arrives.
+        // The empty state can precede a rehydrating vault; recover when the real project arrives.
         setLoadError(null);
         setLoading(false);
       });
@@ -147,7 +147,7 @@ function EditorContent({
         throw new Error(t("vaultConflict"));
       }
       // The writeDisabled gate normally blocks this; never show the raw English message.
-      if (error instanceof ProjectStaticModeError) {
+      if (error instanceof ProjectNoFolderError) {
         throw new Error(t("demoModeSaveFailed"));
       }
       throw error;
@@ -389,7 +389,7 @@ function EditorContent({
 }
 
 export function ProjectEditorPage(props: Props) {
-  // Entry is never blocked; static mode rejects the write inside `useProjectMutations`.
+  // Entry is never blocked; no folder rejects the write inside `useProjectMutations`.
   return (
     <EditorContent
       key={`${props.slug ?? `new-${props.mode}`}:${props.duplicateFromSlug ?? ""}`}

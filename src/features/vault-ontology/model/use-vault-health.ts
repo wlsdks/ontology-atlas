@@ -1,34 +1,30 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useDataSourceMode, useStaticVaultSource, useLocalVault } from '@/entities/vault-session';
+import { useLocalVault } from '@/entities/vault-session';
 import type { VaultManifest } from '@/entities/docs-vault';
 import { computeVaultHealth, type VaultHealthResult } from '@/entities/knowledge-graph';
 
-/** Browser twin of MCP `query_ontology` health. */
-const staticHealthCache = new WeakMap<VaultManifest, VaultHealthResult>();
+/** Twin of MCP `query_ontology` health, computed from the open folder's manifest. */
+const manifestHealthCache = new WeakMap<VaultManifest, VaultHealthResult>();
 function manifestHealth(manifest: VaultManifest): VaultHealthResult {
-  const cached = staticHealthCache.get(manifest);
+  const cached = manifestHealthCache.get(manifest);
   if (cached) return cached;
   const result = computeVaultHealth(manifest.docs);
-  staticHealthCache.set(manifest, result);
+  manifestHealthCache.set(manifest, result);
   return result;
 }
 
 function useHealthManifest(): VaultManifest | null {
-  const mode = useDataSourceMode();
-  // The manifest only through the hook (tests/contract/vault-data/static-vault-source.contract.test.ts).
-  const { manifest: staticManifest } = useStaticVaultSource();
   const vault = useLocalVault();
   // A same-folder refresh keeps its manifest, or ACP would recommend bootstrap after a write;
   // the flag is false while switching folders, so another vault's health never leaks.
   const localManifestUsable = vault.status === 'loaded' || vault.isReloadingSameVault;
 
-  return useMemo(() => {
-    if (mode === 'static') return staticManifest;
-    if (localManifestUsable && vault.manifest) return vault.manifest;
-    return null;
-  }, [mode, staticManifest, localManifestUsable, vault.manifest]);
+  return useMemo(
+    () => (localManifestUsable && vault.manifest ? vault.manifest : null),
+    [localManifestUsable, vault.manifest],
+  );
 }
 
 export function useVaultHealth(): VaultHealthResult {
