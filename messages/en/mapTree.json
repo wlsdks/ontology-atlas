@@ -1,7 +1,7 @@
 {
   "canvasAriaLabel": "3D view: the project is the trunk, each domain a bough, each capability a branch, each element a leaf. Arrow keys move to the next concept.",
   "listLabel": "Concepts in the 3D view",
-  "evidenceAppOnly": "The desktop app reads Git history to mark stale concepts",
+  "evidenceNeedsFolder": "Open a folder to mark stale concepts from its Git history",
   "evidenceNoPaths": "No concept names a code path, so evidence is unknown",
   "foldedCapabilities": "{count} capabilities · zoom in to see them",
   "foldedElements": "{count} elements · zoom in to see them"

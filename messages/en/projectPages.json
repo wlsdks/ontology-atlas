@@ -175,7 +175,7 @@
     "compositionStaleLegend": "source changed after the document",
     "toCheckEvidenceMeasured": "{stale} of {measured, plural, one {# capability} other {# capabilities}} that name a source file have one that changed after their document was written.",
     "toCheckEvidenceReading": "Reading Git history to compare source files with their documents.",
-    "toCheckEvidenceAppOnly": "The desktop app reads Git history to find capabilities whose source file changed after their document.",
+    "toCheckEvidenceNeedsFolder": "Open a folder to find, from its Git history, capabilities whose source file changed after their document.",
     "toCheckEvidenceUnreadable": "Git history could not be read, so it is unknown whether source files changed after their documents.",
     "toCheckEvidenceNoPaths": "No capability names a source file, so there is nothing to compare with Git history.",
     "toCheckRaisedNote": "Needs a decision: “{note}”",

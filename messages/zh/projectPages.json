@@ -175,7 +175,7 @@
     "compositionStaleLegend": "文档写成后代码文件有改动的能力",
     "toCheckEvidenceMeasured": "写明代码文件的 {measured} 个能力中有 {stale} 个在文档写成后该文件有改动。",
     "toCheckEvidenceReading": "正在读取 Git 历史，以比较代码文件和文档。",
-    "toCheckEvidenceAppOnly": "文档写成后代码文件有改动的能力，由桌面应用从 Git 历史中找出。",
+    "toCheckEvidenceNeedsFolder": "打开文件夹后，会从 Git 历史中找出文档写成后代码文件有改动的能力。",
     "toCheckEvidenceUnreadable": "无法读取 Git 历史，因此不知道代码文件是否在文档写成后有改动。",
     "toCheckEvidenceNoPaths": "没有能力写明代码文件，因此没有可与 Git 历史比较的内容。",
     "toCheckRaisedNote": "需要决定：“{note}”",

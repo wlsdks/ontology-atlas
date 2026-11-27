@@ -88,7 +88,7 @@ export function TopologyHexBoardSurface({
   const note: Record<MapEvidenceAvailability, string> = {
     measured: t("evidenceMeasured", { stale: staleTotal, total: capabilityCount }),
     reading: t("evidenceReading"),
-    "app-only": t("evidenceAppOnly"),
+    "app-only": t("evidenceNeedsFolder"),
     unreadable: t("evidenceUnreadable"),
     "no-paths": t("evidenceNoPaths"),
   };

@@ -175,7 +175,7 @@
     "compositionStaleLegend": "文書を書いた後にコードファイルが変わったケイパビリティ",
     "toCheckEvidenceMeasured": "コードファイルを書いたケイパビリティ{measured}件中{stale}件は、文書を書いた後にそのファイルが変更されました。",
     "toCheckEvidenceReading": "コードファイルと文書を比べるため、Gitの履歴を読み取っています。",
-    "toCheckEvidenceAppOnly": "文書を書いた後にコードファイルが変わったケイパビリティは、デスクトップアプリがGitの履歴から見つけます。",
+    "toCheckEvidenceNeedsFolder": "フォルダを開くと、文書を書いた後にコードファイルが変わったケイパビリティをGitの履歴から見つけます。",
     "toCheckEvidenceUnreadable": "Gitの履歴を読み取れなかったため、文書を書いた後にコードファイルが変わったかは分かりません。",
     "toCheckEvidenceNoPaths": "コードファイルを書いたケイパビリティがないため、Gitの履歴と比べるものがありません。",
     "toCheckRaisedNote": "判断が必要：「{note}」",

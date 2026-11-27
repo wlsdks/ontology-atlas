@@ -175,7 +175,7 @@
     "compositionStaleLegend": "문서를 쓴 뒤 근거 파일이 바뀐 역량",
     "toCheckEvidenceMeasured": "근거 파일을 적은 역량 {measured}개 중 {stale}개는 문서를 쓴 뒤에 그 파일이 바뀌었어요.",
     "toCheckEvidenceReading": "근거 파일과 문서를 비교하려고 Git 기록을 읽는 중이에요.",
-    "toCheckEvidenceAppOnly": "문서를 쓴 뒤 근거 파일이 바뀐 역량은 데스크톱 앱이 Git 기록으로 찾아요.",
+    "toCheckEvidenceNeedsFolder": "폴더를 열면 문서를 쓴 뒤 근거 파일이 바뀐 역량을 Git 기록으로 찾아요.",
     "toCheckEvidenceUnreadable": "Git 기록을 읽지 못해서 문서를 쓴 뒤 근거 파일이 바뀌었는지 알 수 없어요.",
     "toCheckEvidenceNoPaths": "근거 파일을 적은 역량이 없어서 Git 기록과 비교할 것이 없어요.",
     "toCheckRaisedNote": "결정 필요: “{note}”",

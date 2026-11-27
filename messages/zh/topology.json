@@ -24,7 +24,7 @@
     "legendUsers": "被依赖",
     "evidenceMeasured": "已从 Git 历史读取依据：{total} 个能力中 {stale} 个过时",
     "evidenceReading": "正在从 Git 历史读取依据",
-    "evidenceAppOnly": "桌面应用会读取 Git 历史，标记过时的能力",
+    "evidenceNeedsFolder": "打开文件夹后，会根据 Git 历史标记过时的能力",
     "evidenceUnreadable": "无法读取 Git 历史，依据未知",
     "evidenceNoPaths": "没有能力写明代码路径，依据未知",
     "evidenceChecked": "有 {count} 个能力不算过时，是因为智能体对照代码重新检查了文档，而不是因为文档被编辑过。"

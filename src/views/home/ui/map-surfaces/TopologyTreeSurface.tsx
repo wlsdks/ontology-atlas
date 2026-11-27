@@ -77,7 +77,7 @@ export function TopologyTreeSurface({
   );
   const note: Record<Exclude<MapEvidenceAvailability, "measured">, string> = {
     reading: tHex("evidenceReading"),
-    "app-only": t("evidenceAppOnly"),
+    "app-only": t("evidenceNeedsFolder"),
     unreadable: tHex("evidenceUnreadable"),
     "no-paths": t("evidenceNoPaths"),
   };

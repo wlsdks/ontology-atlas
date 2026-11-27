@@ -49,7 +49,7 @@ describe("the tree's legend", () => {
     evidence.current = { availability: "app-only", states: new Map([["capability:a", "stale"]]), movedPaths: new Map(), stalePaths: new Map() };
     renderSurface();
     expect(screen.queryByTestId("tree-map-legend-stale")).toBeNull();
-    expect(screen.getByTestId("tree-map-evidence-note").textContent).toBe(en.mapTree.evidenceAppOnly);
+    expect(screen.getByTestId("tree-map-evidence-note").textContent).toBe(en.mapTree.evidenceNeedsFolder);
   });
 
   it("counts the stale concepts of every kind when evidence was measured", () => {

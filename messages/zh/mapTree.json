@@ -1,7 +1,7 @@
 {
   "canvasAriaLabel": "3D 视图：项目是树干，领域是大枝，能力是枝，元素是叶。方向键可移到相邻概念。",
   "listLabel": "3D 视图中的概念",
-  "evidenceAppOnly": "桌面应用会读取 Git 历史，标记过时的概念",
+  "evidenceNeedsFolder": "打开文件夹后，会根据 Git 历史标记过时的概念",
   "evidenceNoPaths": "没有概念写明代码路径，依据未知",
   "foldedCapabilities": "{count} 个能力 · 放大后显示",
   "foldedElements": "{count} 个元素 · 放大后显示"

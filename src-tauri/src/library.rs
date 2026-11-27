@@ -1,6 +1,6 @@
 //! Raw sources are copied, measured and hashed, never parsed (`docs/DECISIONS.md`).
 //! Discovery returns metadata for granted roots only, so no credential is scanned
-//! (`.claude/rules/local-first.md`); mirrored in `source-discovery.ts`, or they drift.
+//! (`.claude/rules/local-first.md`); mirrored in `tests/e2e/source-discovery-rules.ts`, or they drift.
 
 pub(crate) mod discovery_rules;
 pub(crate) mod dropped;

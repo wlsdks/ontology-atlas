@@ -34,7 +34,7 @@ export function TopologyNeuralLegend({
   for (const id of nodeIds) if (evidence.states.get(id) === "stale") stale += 1;
   const note: Record<Exclude<MapEvidenceAvailability, "measured">, string> = {
     reading: tHex("evidenceReading"),
-    "app-only": tTree("evidenceAppOnly"),
+    "app-only": tTree("evidenceNeedsFolder"),
     unreadable: tHex("evidenceUnreadable"),
     "no-paths": tTree("evidenceNoPaths"),
   };

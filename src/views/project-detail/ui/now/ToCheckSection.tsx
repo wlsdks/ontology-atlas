@@ -54,7 +54,7 @@ export function ToCheckSection({
   const evidenceLine =
     availability === "measured" ? t("toCheckEvidenceMeasured", { stale: staleCount, measured: comparedCount })
       : availability === "reading" ? t("toCheckEvidenceReading")
-        : availability === "app-only" ? t("toCheckEvidenceAppOnly")
+        : availability === "app-only" ? t("toCheckEvidenceNeedsFolder")
           : availability === "unreadable" ? t("toCheckEvidenceUnreadable")
             : t("toCheckEvidenceNoPaths");
   // Every sentence the line can become after it starts reading; the widest count stands in for the stale one.

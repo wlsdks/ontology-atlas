@@ -1,7 +1,7 @@
 {
   "canvasAriaLabel": "3D 보기: 프로젝트가 줄기, 도메인이 큰 가지, 역량이 가지, 요소가 잎이에요. 화살표 키로 옆 개념으로 이동해요.",
   "listLabel": "3D 보기의 개념 목록",
-  "evidenceAppOnly": "오래됨 표시는 데스크톱 앱이 Git 기록으로 읽어요",
+  "evidenceNeedsFolder": "폴더를 열면 Git 기록으로 오래된 개념을 표시해요",
   "evidenceNoPaths": "코드 경로를 적은 문서가 없어서 근거 상태를 알 수 없어요",
   "foldedCapabilities": "역량 {count}개 · 확대하면 보여요",
   "foldedElements": "요소 {count}개 · 확대하면 보여요"

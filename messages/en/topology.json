@@ -24,7 +24,7 @@
     "legendUsers": "used by",
     "evidenceMeasured": "Evidence read from Git history: {stale} stale of {total} capabilities",
     "evidenceReading": "Reading evidence from Git history",
-    "evidenceAppOnly": "The desktop app reads Git history to mark stale capabilities",
+    "evidenceNeedsFolder": "Open a folder to mark stale capabilities from its Git history",
     "evidenceUnreadable": "Git history could not be read, so evidence is unknown",
     "evidenceNoPaths": "No capability names a code path, so evidence is unknown",
     "evidenceChecked": "{count, plural, one {# capability is} other {# capabilities are}} not stale because an agent rechecked the document against the code, not because someone edited it."
