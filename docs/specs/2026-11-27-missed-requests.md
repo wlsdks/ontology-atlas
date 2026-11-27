@@ -51,9 +51,8 @@ check, research, plan). The *base branch* is the one Workshop counts merges on. 
    and the really important things that were missed in them? Could a local LLM analyse them
    slowly, at dawn or so, without taking much CPU?" The same day, at 14:49, he asked the lead to
    switch five agent definitions from Fable to Opus. At 14:52 the lead answered that it had changed
-   them; the commit was made at 23:50 on `chore/agents-opus-default`, and `origin/main` at
-   `ea6698fdb4` still has `model: fable` in all five. Only a context summary carried the item in
-   between. No capture exists of him meeting a lost request in Atlas; criterion 1 takes one.
+   them; Git had no such commit until 23:50, on `chore/agents-opus-default`, merged at 00:05 the
+   next day (#4014). Only a context summary carried the item in between. No capture exists of him meeting a lost request in Atlas; criterion 1 takes one.
 2. **Someone learning coding agents (not observed)** may never have looked inside a session file;
    the dialog names what it reads and where.
 3. **Someone who wants an ontology without agents** has no sessions: the header shows nothing.
@@ -63,8 +62,8 @@ check, research, plan). The *base branch* is the one Workshop counts merges on. 
 Read at `origin/main` `ea6698fdb4` and on the owner's Mac, 2026-11-27, by scratchpad scripts.
 
 - **No Atlas code reads session text.** Workshop runs `claude agents --json` for states and names
-  only (`.claude/rules/surfaces.md:127-145`). Harness Improve's session read is specified, not
-  built (`.claude/rules/surfaces.md:166-182`).
+  only (`.claude/rules/surfaces.md:127-146`). Harness Improve's session read is specified, not
+  built (`.claude/rules/surfaces.md:167-184`).
 - **Workshop's header** ends with "11 merged today", a link to Changes
   (`docs/features/work-status.md:473-478`). Workshop draws no Moru (`:482`).
 - **Automations** keeps schedules in the vault's `.ontology-atlas/rounds.json`, which "travels with
@@ -131,7 +130,7 @@ outside judge, and a model that never leaves the computer.
 
 **Ranked by value against cost.** The owner named four kinds of missed item.
 
-1. **A request with no matching commit.** The commonest real loss (3 of 21 Git-judgeable tasks, 3
+1. **A request with no matching commit.** The commonest real loss (3 of 19 Git-judgeable tasks, 3
    to 6 days old), the one in his example, and judged by Git, outside the model. Reads typed
    messages only.
 2. **A question the agent said it would ask and never did.** Needs the agent's text (5,228 agent
@@ -163,7 +162,8 @@ drops it, and the agent that dropped it cannot know.
    model in use (`model.using`), `stage.local`, **Check now**, and the switch **Check every night**,
    off. With no runner set in Agents › Models, or one that does not answer, the stage shows
    `model.none*` instead and **Check now** is absent; an address off this computer shows
-   `model.notLocal`; without search by meaning's model, `model.search*`.
+   `model.notLocal`; without search by meaning's model, `model.search*`. A model never checked
+   before first gets the bundled check of 40 example messages; one that fails shows `model.weak*`.
 3. When they press **Check now**, Atlas reads the session files in the background (`run.reading`),
    then sends each typed message, one at a time, to the model (`run.sorting`), then checks each
    code request at least 2 days old against Git (`run.checking`). Requests appear in the list as each is
@@ -280,7 +280,7 @@ Keys are in `messages/<locale>/missedRequests.json` (en, ko, ja, zh). The Englis
 - **First run** on a computer whose model is loading: the first call waits up to 60 s (the local
   chat timeout, `src-tauri/src/llm/chat.rs:28`), then `error.model`.
 - **Hangul and other scripts:** cuts at 80, 600 and 2,000 characters never split a Hangul syllable
-  or a surrogate pair; matching uses the English ask, so a Korean message finds English commits.
+  or a surrogate pair; bge-m3 places a Korean message near the English commit that did it.
 - **Moved, renamed or removed folders:** a worktree Git no longer lists is not read; a renamed
   checkout is a new repository folder. A session file that cannot be opened is skipped and named
   (`error.unreadable`).
@@ -339,7 +339,7 @@ Keys are in `messages/<locale>/missedRequests.json` (en, ko, ja, zh). The Englis
 
 ## Risks
 
-1. **It cries wolf.** Many requests are done without a commit, or the word match misses the commit.
+1. **It cries wolf.** Many requests are done without a commit, or the search misses the commit.
    Answer: only "not done" is listed, the 2-day wait, criterion 4's bar, and the Done elsewhere
    count, which shows the false-alarm rate on this computer.
 2. **Most people have no local model, or a small one.** Then it is empty for them. Answer: the
@@ -370,3 +370,5 @@ person's own choice.
 ## Revisions
 
 - 2026-11-27: first draft.
+- 2026-11-28: after measuring, Git is asked only about code requests, commits are found with
+  bge-m3 instead of word match, and a model must pass a bundled check; merged `origin/main`.
