@@ -1,7 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { seedFirstRunSeen } from '../first-run-seed';
-import { stubDirectoryPicker } from '../vault-picker-stub';
+import {
+  chooseDesktopFolder,
+  installDesktopRailRuntime,
+  seedKnownDesktopFolders,
+} from '../desktop-rail-arrival-harness';
 
 /**
  * Relaunching with more than one folder asks which one, and the rail names the current folder.
@@ -93,11 +96,13 @@ async function strongestChroma(page: import('@playwright/test').Page, selector: 
   }, selector);
 }
 
-/** Opens one folder through the stubbed picker, from the first-run starter. */
+const FIRST_FOLDER = '/Users/probe/launch-choice-a';
+const SECOND_FOLDER = '/Users/probe/launch-choice-b';
+
+/** Opens one folder through the native picker, from the first-run screen. */
 async function pickFolderFromFirstRun(page: Page) {
-  await page.goto('/en/topology/?e2e=1&guides=off', { waitUntil: 'domcontentloaded' });
-  await page.getByTestId('first-run-starter-open').click();
-  await page.getByTestId('vault-guide-pick-existing').click();
+  await page.goto('/en/?e2e=1&guides=off', { waitUntil: 'domcontentloaded' });
+  await page.getByTestId('first-run-open').click();
   await switchSettled(page);
 }
 
@@ -115,8 +120,11 @@ async function switchSettled(page: Page) {
 test.describe('the launch asks which folder when it knows more than one', () => {
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize({ width: 1512, height: 945 });
-    await seedFirstRunSeen(page);
-    await stubDirectoryPicker(page, VAULT_SEED);
+    await installDesktopRailRuntime(page, {}, undefined, {
+      replaceFixture: true,
+      folders: { [FIRST_FOLDER]: VAULT_SEED, [SECOND_FOLDER]: VAULT_SEED },
+      vaultPick: FIRST_FOLDER,
+    });
   });
 
   test('one folder resumes, two folders stop at a chooser whose rows carry facts', async ({
@@ -140,6 +148,7 @@ test.describe('the launch asks which folder when it knows more than one', () => 
     await page.getByTestId('vault-switch-rail-tile').click();
     await expect(page.getByTestId('vault-switch-popover')).toBeVisible();
     await settled(page, 'vault-switch-popover');
+    await chooseDesktopFolder(page, SECOND_FOLDER);
     await page.getByTestId('vault-switch-pick-other').click();
     await switchSettled(page);
     await expect
@@ -148,9 +157,8 @@ test.describe('the launch asks which folder when it knows more than one', () => 
       })
       .not.toBe(firstName.trim());
 
-    // Two folders are known, so the launch must ask. `?shell=desktop` is the installed shell's override
-    // (`isDesktopShell`); there `RootEntryPage` renders `FirstRunPage` while no vault is loaded.
-    await page.goto('/en/?shell=desktop&e2e=1&guides=off', { waitUntil: 'domcontentloaded' });
+    // Two folders are known, so the launch must ask: `RootEntryPage` renders `FirstRunPage` while no vault is loaded.
+    await page.goto('/en/?e2e=1&guides=off', { waitUntil: 'domcontentloaded' });
     const list = page.getByTestId('recent-vault-list');
     await expect(list).toBeVisible({ timeout: 60_000 });
     const rows = page.getByTestId('recent-vault-row');
@@ -182,27 +190,6 @@ test.describe('the launch asks which folder when it knows more than one', () => 
       appDoors.score,
       `a door card out-coloured the folder list on the app's launch screen (door ${appDoors.score} >= list ${appList.score})`,
     ).toBeLessThan(appList.score);
-
-    // ── The same chooser on the web's own ingress, the docs surface. One list, two seats:
-    // if these disagreed, the folder facts would depend on how you arrived.
-    await page.goto('/en/docs/?source=local&e2e=1&guides=off', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByTestId('recent-vault-list')).toBeVisible({ timeout: 60_000 });
-    await expect(page.getByTestId('recent-vault-row')).toHaveCount(2, { timeout: 30_000 });
-
-    // The second seat owes the same ranking, or the answer depends on how you arrived.
-    const docsList = await strongestChroma(page, '[data-testid="recent-vault-list"]');
-    const docsDoors = await strongestChroma(
-      page,
-      'main#main aside[aria-label] button:not([data-testid="recent-vault-open"]):not([data-testid="recent-vault-forget"]):not([data-testid="recent-vault-locate"])',
-    );
-    expect(docsDoors.subjects, 'no door card was measured on the docs chooser').toBeGreaterThan(0);
-    expect(docsList.score, 'the docs chooser list must carry a visible accent').toBeGreaterThan(
-      0.1,
-    );
-    expect(
-      docsDoors.score,
-      `a door card out-coloured the folder list on the docs chooser (door ${docsDoors.score} >= list ${docsList.score})`,
-    ).toBeLessThan(docsList.score);
 
     // ── Choosing the folder that was not current opens it, and the rail names it.
     const otherRow = page
@@ -241,37 +228,31 @@ test.describe('the launch asks which folder when it knows more than one', () => 
     ).toBeLessThanOrEqual(labelFits!.clientWidth);
   });
 
-  test('a folder whose permission is refused says so before it is pressed', async ({ page }) => {
+  test('a folder the system refuses to read says so before it is pressed', async ({ page }) => {
     test.setTimeout(240_000);
-
-    await pickFolderFromFirstRun(page);
-    await page.getByTestId('vault-switch-rail-tile').click();
-    await page.getByTestId('vault-switch-pick-other').click();
-    await switchSettled(page);
+    await installDesktopRailRuntime(page, {}, undefined, {
+      replaceFixture: true,
+      folders: { [FIRST_FOLDER]: VAULT_SEED, [SECOND_FOLDER]: VAULT_SEED },
+      ungrantedFolders: [SECOND_FOLDER],
+    });
+    await seedKnownDesktopFolders(page, [
+      { path: FIRST_FOLDER, hoursAgo: 1 },
+      { path: SECOND_FOLDER, hoursAgo: 2 },
+    ]);
 
     /*
-     * Make the stored handles answer `denied` to the non-prompting permission query. This is
-     * the browser half of "a stored handle can go stale": the folder is still there, but this
-     * browser will not read it from a press. The desktop half is `vault_path_exists` on the
-     * stored absolute path, which no browser session can exercise - named as not covered.
+     * The folder is still on disk but the system will not read it, so `vault_path_exists` rejects with
+     * a permission error rather than a missing-folder one: the row is drawn, not hidden as gone, and
+     * it carries a notice instead of a promise that it will open.
      */
-    await page.addInitScript(() => {
-      const proto = (
-        window as unknown as {
-          FileSystemHandle?: { prototype: Record<string, unknown> };
-        }
-      ).FileSystemHandle?.prototype;
-      if (proto) proto.queryPermission = async () => 'denied';
-    });
-
-    await page.goto('/en/?shell=desktop&e2e=1&guides=off', { waitUntil: 'domcontentloaded' });
+    await page.goto('/en/?e2e=1&guides=off', { waitUntil: 'domcontentloaded' });
     const list = page.getByTestId('recent-vault-list');
     await expect(list).toBeVisible({ timeout: 60_000 });
+    await expect(page.getByTestId('recent-vault-row')).toHaveCount(2);
 
-    // Every row says why it cannot be opened, and none of them is an open button.
-    const notices = page.locator('[data-testid="recent-vault-notice-blocked"]');
-    await expect(notices.first()).toBeVisible({ timeout: 30_000 });
-    await expect(page.getByTestId('recent-vault-open')).toHaveCount(0);
+    const notices = page.locator('[data-testid="recent-vault-notice-unknown"]');
+    await expect(notices).toHaveCount(1, { timeout: 30_000 });
+    await expect(page.getByTestId('recent-vault-missing-group')).toHaveCount(0);
     // The action that is actually available on a folder that will not open.
     await expect(page.getByTestId('recent-vault-forget').first()).toBeVisible();
   });

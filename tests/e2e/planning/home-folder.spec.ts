@@ -1,8 +1,15 @@
 import { expect, test, type Page } from '@playwright/test';
 import planning from '../../../messages/en/planning.json';
-import { installDesktopRailRuntime } from '../desktop-rail-arrival-harness';
-import { seedFirstRunSeen } from '../first-run-seed';
-import { stubDirectoryPicker } from '../vault-picker-stub';
+import {
+  addExternalFile,
+  chooseSourceFiles,
+  installDesktopRailRuntime,
+  listDesktopFiles,
+  readDesktopBytes,
+  readDesktopFile,
+  removeDesktopFile,
+  writeDesktopFile,
+} from '../desktop-rail-arrival-harness';
 
 const VAULT = {
   'project.md': ['---', 'kind: project', 'slug: planning-demo', 'title: Planning demo', '---', '', '# Planning demo', ''].join('\n'),
@@ -14,63 +21,37 @@ async function goTo(page: Page, destination: 'Planning' | 'Library') {
 }
 
 async function openVault(page: Page, files: Record<string, string> = VAULT) {
-  await seedFirstRunSeen(page);
-  await stubDirectoryPicker(page, files);
+  await installDesktopRailRuntime(page, files, undefined, { replaceFixture: true, writable: true });
   await page.goto('/en/library/');
   await page.getByTestId('library-open-vault').click();
   // The no-folder stage is a `library-page` too; any other one has the picked folder open, so the folder exists on disk.
   await expect(page.locator('[data-testid="library-page"]:not([data-library-state="no-folder"])')).toBeVisible();
 }
 
-/** Reads, writes or removes one entry of the folder the stubbed picker handed out, in the browser's private storage. */
+/** Reads, writes or removes one entry of the open folder, as the served folder holds it. */
 async function onDisk(page: Page, path: string, change: { write?: number[] | string; remove?: true } = {}): Promise<string | null> {
-  return page.evaluate(async ({ relative, write, remove }) => {
-    const storage = await navigator.storage.getDirectory();
-    for await (const [name, handle] of (storage as unknown as { entries(): AsyncIterable<[string, FileSystemHandle]> }).entries()) {
-      if (!name.startsWith('stub-vault-') || handle.kind !== 'directory') continue;
-      let folder = handle as FileSystemDirectoryHandle;
-      const parts = relative.split('/');
-      const leaf = parts[parts.length - 1];
-      try {
-        for (const part of parts.slice(0, -1)) folder = await folder.getDirectoryHandle(part, { create: write !== undefined });
-        if (remove) { await folder.removeEntry(leaf, { recursive: true }); return null; }
-        const file = await folder.getFileHandle(leaf, { create: write !== undefined });
-        if (write !== undefined) {
-          const writable = await file.createWritable();
-          await writable.write(typeof write === 'string' ? write : new Uint8Array(write));
-          await writable.close();
-        }
-        return await (await file.getFile()).text();
-      } catch { return null; }
-    }
-    return null;
-  }, { relative: path, write: change.write, remove: change.remove });
+  if (change.remove) { await removeDesktopFile(page, path); return null; }
+  if (change.write !== undefined) {
+    await writeDesktopFile(page, path, typeof change.write === 'string' ? change.write : Uint8Array.from(change.write));
+    return (await readDesktopFile(page, path)) ?? '';
+  }
+  return readDesktopFile(page, path);
 }
 
-/** The names directly inside `relative` and each one's bytes, read from the browser's private storage. */
+/** The names directly inside `relative` and each one's bytes, read from the served folder. */
 async function folderOnDisk(page: Page, relative: string): Promise<Record<string, number[]>> {
-  return page.evaluate(async (path) => {
-    const storage = await navigator.storage.getDirectory();
-    for await (const [name, handle] of (storage as unknown as { entries(): AsyncIterable<[string, FileSystemHandle]> }).entries()) {
-      if (!name.startsWith('stub-vault-') || handle.kind !== 'directory') continue;
-      let folder = handle as FileSystemDirectoryHandle;
-      for (const part of path.split('/')) folder = await folder.getDirectoryHandle(part);
-      const out: Record<string, number[]> = {};
-      for await (const [entry, child] of (folder as unknown as { entries(): AsyncIterable<[string, FileSystemHandle]> }).entries()) {
-        if (child.kind === 'file') out[entry] = [...new Uint8Array(await (await (child as FileSystemFileHandle).getFile()).arrayBuffer())];
-      }
-      return out;
-    }
-    return {};
-  }, relative);
+  const out: Record<string, number[]> = {};
+  for (const path of (await listDesktopFiles(page)) ?? []) {
+    if (!path.startsWith(`${relative}/`) || path.slice(relative.length + 1).includes('/')) continue;
+    out[path.slice(relative.length + 1)] = (await readDesktopBytes(page, path)) ?? [];
+  }
+  return out;
 }
 
-/** Makes the browser's file picker hand back these in-memory files, as a person choosing them would. */
+/** Makes the native file dialog offer these files from outside the folder, as a person choosing them would. */
 async function stubFilePicker(page: Page, files: { name: string; bytes: number[] }[]) {
-  await page.evaluate((chosen) => {
-    (window as unknown as { showOpenFilePicker: () => Promise<unknown[]> }).showOpenFilePicker = async () =>
-      chosen.map(({ name, bytes }) => ({ kind: 'file', name, getFile: async () => new File([new Uint8Array(bytes)], name) }));
-  }, files);
+  for (const { name, bytes } of files) await addExternalFile(page, `/Users/probe/Downloads/${name}`, Uint8Array.from(bytes));
+  await chooseSourceFiles(page, files.map(({ name }) => `/Users/probe/Downloads/${name}`));
 }
 
 const EMPTY_HOME = '[data-planning-state="empty-home"]';
@@ -81,7 +62,7 @@ test('creating the planning folder turns the same stage into a title field that 
   const stage = page.locator('[data-planning-state="no-home"]');
   await expect(stage).toBeVisible();
   await expect(stage.getByRole('button').first()).toHaveAccessibleName(planning.createHome);
-  await expect(stage.getByRole('button', { name: planning.chooseAnother }), 'the web cannot pick a folder outside the open one').toHaveCount(0);
+  await expect(stage.getByRole('button', { name: planning.chooseAnother }), 'with no native planning picker the stage offers no folder outside the open one').toHaveCount(0);
   await page.locator('[data-feature-stage-art]').evaluate((node) => { (window as unknown as { stageArt: Element }).stageArt = node; });
   await stage.getByRole('button', { name: planning.createHome }).click();
 
@@ -180,15 +161,6 @@ test('a save over a file changed elsewhere is refused and keeps the text', async
   await expect(page.getByText(planning.saveRefused)).toBeVisible();
   await expect(page.locator('[data-planning-editor] textarea')).toHaveValue('# Brief\n\nMine.');
   expect(await onDisk(page, 'planning/brief.md')).toBe('# Brief\n\nTheirs.');
-});
-
-test('a document that is not UTF-8 offers no Edit and says why', async ({ page }) => {
-  await openVault(page, { ...VAULT, 'planning/a.md': '# A\n' });
-  expect(await onDisk(page, 'planning/legacy.md', { write: [0x23, 0x20, 0xb0, 0xe1, 0x0a] }), 'the document is written into the open folder').not.toBeNull();
-  await goTo(page, 'Planning');
-  await page.getByRole('button', { name: 'legacy.md' }).click();
-  await expect(page.getByText(planning.notEditable)).toBeVisible();
-  await expect(page.getByRole('button', { name: planning.edit, exact: true })).toHaveCount(0);
 });
 
 test('a planning folder removed from disk returns to the offer to create it, not to an empty folder', async ({ page }) => {

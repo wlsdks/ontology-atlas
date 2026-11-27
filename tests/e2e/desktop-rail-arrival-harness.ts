@@ -2,11 +2,59 @@ import type { Page } from "@playwright/test";
 
 import { FIXTURE_VAULT } from "./fixture-vault";
 import { seedFirstRunSeen } from "./first-run-seed";
+import { dogfoodVaultFiles } from "./map/dogfood-vault-files";
 
 /**
- * Every native answer is delayed by `NATIVE_LATENCY_MS`: a stub that resolves in the same
- * microtask hides the window a flash lives in. The Tauri runtime signal is injected because
- * the app ships the same export.
+ * The faked app runtime: the installed app's native bridge (`window.__TAURI_INTERNALS__`) answered
+ * from folders held in the page, so a spec runs the screens the app runs. Every native answer is
+ * delayed by `NATIVE_LATENCY_MS`: a stub that resolves in the same microtask hides the window a
+ * flash lives in. The Tauri runtime signal is injected because the app ships the same export.
+ *
+ * ## Moving a spec onto it
+ *
+ * Call `installDesktopRailRuntime(page, extraFiles, undefined, options)` before the first
+ * `page.goto`, then open the folder the way a person does: `mountDesktopVault(page)`, or press
+ * `first-run-open` / `first-run-starter-open` and then `vault-guide-pick-existing` on the screen
+ * under test. `tests/contract/e2e/app-route-runtime.contract.test.ts` lists the specs not yet
+ * moved; a spec leaves its list when it installs this runtime and names none of the browser doors.
+ *
+ * | The spec used | It now does |
+ * |---|---|
+ * | `stubDirectoryPicker(page, files)` | `installDesktopRailRuntime(page, files, undefined, { replaceFixture: true })`; the picker is `pick_vault_directory`. |
+ * | `writeFolderBeforePick` | put the files in `extraFiles`, or `writeDesktopFile` before the press. |
+ * | `useDogfoodSample` or `demo:sample-source` (the bundled Atlas sample) | `{ replaceFixture: true }` with `atlasSampleFiles()` as `extraFiles`. |
+ * | the Storefront sample (`/project/storefront`, the bundled Online Store) | the default: with no `replaceFixture` the folder holds `storefrontFiles()`. |
+ * | `?shell=desktop` | drop it: the runtime is the desktop shell. |
+ * | a browser handle written through OPFS | `writeDesktopFile` / `removeDesktopFile` / `renameDesktopFile`, read back with `readDesktopFile`. |
+ * | `showOpenFilePicker` stubbed | `externalFiles` + `chooseSourceFiles` (`pick_source_files`, then `import_source_files`). |
+ * | a records seed in IndexedDB (`demo-kv`) | `seedKnownDesktopFolders`, which writes the app's records with `desktopRootPath`. |
+ * | `queryPermission` patched to `denied` | the app has no permission prompt: a folder it holds no grant for is `ungrantedFolders`, one that vanished is a root `folders` does not serve. |
+ *
+ * Seeding: `storefrontFiles()` is the shared fixture folder (Storefront), `atlasSampleFiles()` is
+ * the product's own vault (`docs/ontology`), and any `Record<path, text>` is a folder. Texts are
+ * served as written: a `{{NOW-<ms>}}` token is not resolved here, so build the text in the spec.
+ *
+ * Several folders: `options.folders` serves each by its absolute path and makes every command
+ * check the `rootPath` it names. `chooseDesktopFolder(page, rootA, rootB)` sets what the next
+ * picker presses answer, in order, the last one repeating; `null` is a cancelled dialog.
+ *
+ * Writing and reload: `options.writable` (implied by `folders`) lets the app write, create,
+ * remove and ensure directories, and keeps every change across `page.reload()` and `page.goto()`
+ * in the same tab: changes are laid over the seed from this tab's sessionStorage, so the seed
+ * never overwrites them. Tests write and read the same store: `writeDesktopFile`,
+ * `readDesktopFile`, `readDesktopBytes`, `removeDesktopFile`, `renameDesktopFile`,
+ * `listDesktopFiles`; a write after the page opened changes `vault_fingerprint` and sends the
+ * app's `vault-changed` event, which is how the app notices an outside edit.
+ * `refuseDesktopWrites` makes matching writes fail. `options.binaryFiles` seeds files that hold
+ * bytes: an image, or a `.md` that is not UTF-8, which a text read refuses as the disk does.
+ *
+ * Source pickers: `chooseSourceFolder` answers `pick_source_directory`, `chooseSourceFiles`
+ * answers `pick_source_files`; `import_source_files` then copies from `externalFiles` into
+ * `sources/` or `planning/`, refusing a repeat of bytes already there and renaming a taken name.
+ *
+ * What it does not do: it has no Git beyond the canned `commits`, no agent beyond
+ * `runtimeResponses`; `library-work-harness.ts` is the fake for the agent protocol, the Library's
+ * wiki writes and search by meaning, with its own small file store.
  */
 
 /**
@@ -101,11 +149,46 @@ export interface DesktopRuntimeOptions {
    */
   models?: ModelsStubOptions;
   /**
-   * Let `write_vault_text_file` land in the served files instead of rejecting as unstubbed, and
-   * expose them as `window.__stubFiles`, so a flow that writes (the first-run starter) can be read
-   * back from the "disk" rather than from the screen.
+   * Let writes land in the served files instead of rejecting as unstubbed: `write_vault_text_file`,
+   * `create_vault_text_file`, `remove_vault_entry` and `ensure_vault_directory`. The default
+   * folder's files are exposed as `window.__stubFiles`, so a flow that writes (the first-run
+   * starter) can be read back from the "disk" rather than from the screen. Writes also survive a
+   * reload of the page (see "Reload" in the file's guide). Implied by `folders`.
    */
   writable?: boolean;
+  /**
+   * More folders than the default one, each served by its absolute path: every native command
+   * names the folder it works in (`rootPath`), and the fake answers from that folder's files.
+   * With this option a command naming a folder that is not served fails as a vanished folder does
+   * (`No such file or directory (os error 2)`); without it every command is answered from the
+   * default folder whatever `rootPath` says. `DESKTOP_VAULT_ROOT` stays served (the shared
+   * fixture plus `extraFiles`) unless `replaceFixture` is set and it is not listed here.
+   */
+  folders?: Record<string, Record<string, string>>;
+  /**
+   * Folders that exist but that the app holds no grant for: every command naming one rejects
+   * with `vault-root-not-granted`, as `src-tauri/src/vault/scope.rs` does. The recent list draws
+   * such a row as one it cannot vouch for (`unknown`) and the launch counts it as present, not
+   * as a vanished folder.
+   */
+  ungrantedFolders?: readonly string[];
+  /**
+   * The folder `pick_vault_directory` answers, or `null` for a cancelled dialog. Default
+   * `DESKTOP_VAULT_ROOT`. A test changes it later with `chooseDesktopFolder`.
+   */
+  vaultPick?: string | null;
+  /**
+   * Files that exist outside every served folder, by absolute path, for `pick_source_files` and
+   * `import_source_files` to offer and copy. A value is text, or `{ bytes }` for a binary file.
+   */
+  externalFiles?: Record<string, string | { bytes: number[] }>;
+  /**
+   * Files of the default folder that hold bytes, not text, by vault-relative path: an image, or a
+   * `.md` that is not UTF-8, which `read_vault_text_file` refuses as the disk does.
+   */
+  binaryFiles?: Record<string, number[]>;
+  /** Answers of `pick_source_directory` (a path, or `null` cancelled) and `pick_source_files`. */
+  sourcePick?: { folder?: string | null; files?: string[] };
   /** The answer to `ensure_default_vault_parent_dir` ("Just start"). Unstubbed without it. */
   defaultVaultParent?: string;
   holdReadsUntilReleased?: readonly string[];
@@ -152,16 +235,245 @@ export async function installDesktopRailRuntime(
         audit?: Record<string, unknown>[];
       };
       writable?: boolean;
+      folders?: Record<string, Record<string, string>>;
+      ungrantedFolders?: string[];
+      vaultPick: string | null;
+      externalFiles?: Record<string, string | { bytes: number[] }>;
+      binaryFiles?: Record<string, number[]>;
+      sourcePick?: { folder?: string | null; files?: string[] };
       defaultVaultParent?: string;
       holdReadsUntilReleased?: string[];
     }) => {
       const { root, latency, files, commits, pending, diff } = input;
-      const held = new Set(input.holdReadsUntilReleased ?? []);
-      const heldReads = Promise.withResolvers<void>();
+      let held = new Set(input.holdReadsUntilReleased ?? []);
+      let heldReads = Promise.withResolvers<void>();
       (window as unknown as { __releaseHeldReads: () => void }).__releaseHeldReads = () => heldReads.resolve();
+      (window as unknown as { __holdReads: (paths: string[]) => void }).__holdReads = (paths) => {
+        held = new Set(paths);
+        heldReads = Promise.withResolvers<void>();
+      };
       const afterHeldReads = <T>(paths: string[], read: () => Promise<T>): Promise<T> =>
         paths.some((path) => held.has(path)) ? heldReads.promise.then(read) : read();
       if (input.writable) (window as unknown as { __stubFiles: typeof files }).__stubFiles = files;
+
+      /**
+       * The served folders. A folder is its text files, its binary files (bytes, by path) and the
+       * directories that hold no file. `files` above is the default folder's text map, shared with
+       * `window.__stubFiles` and the sent-log helpers.
+       */
+      interface Folder {
+        files: Record<string, string>;
+        binaries: Record<string, number[]>;
+        dirs: Set<string>;
+      }
+      const folders = new Map<string, Folder>([[root, { files, binaries: { ...(input.binaryFiles ?? {}) }, dirs: new Set() }]]);
+      for (const [folderRoot, seed] of Object.entries(input.folders ?? {})) {
+        if (folderRoot === root) Object.assign(files, seed);
+        else folders.set(folderRoot, { files: { ...seed }, binaries: {}, dirs: new Set() });
+      }
+      const strictRoots = input.folders !== undefined;
+      const persist = Boolean(input.writable) || strictRoots;
+      const external = new Map<string, string | { bytes: number[] }>(Object.entries(input.externalFiles ?? {}));
+      const enoent = (path: string) => new Error(`No such file or directory (os error 2): ${path}`);
+
+      /**
+       * Everything a test changed after the page loaded, kept in this tab's sessionStorage and laid
+       * over the seed on every load, so a reload shows the writes without seeding over them.
+       */
+      const STATE_KEY = "__desktopFake:v1";
+      interface Overlay {
+        folders: Record<string, { files: Record<string, string | null>; binaries: Record<string, number[] | null>; dirs: Record<string, boolean> }>;
+        vaultPicks?: (string | null)[];
+        sourceFolder?: string | null;
+        sourceFiles?: string[];
+        external?: Record<string, string | { bytes: number[] } | null>;
+      }
+      let overlay: Overlay = { folders: {} };
+      try {
+        overlay = JSON.parse(window.sessionStorage.getItem(STATE_KEY) ?? "null") ?? overlay;
+      } catch {
+        /* private mode: writes live for this document only */
+      }
+      const overlayOf = (folderRoot: string) =>
+        (overlay.folders[folderRoot] ??= { files: {}, binaries: {}, dirs: {} });
+      const save = () => {
+        if (!persist) return;
+        try {
+          window.sessionStorage.setItem(STATE_KEY, JSON.stringify(overlay));
+        } catch {
+          /* private mode */
+        }
+      };
+      for (const [folderRoot, changes] of Object.entries(overlay.folders)) {
+        let folder = folders.get(folderRoot);
+        if (!folder) folders.set(folderRoot, (folder = { files: {}, binaries: {}, dirs: new Set() }));
+        for (const [path, text] of Object.entries(changes.files)) {
+          if (text === null) delete folder.files[path];
+          else folder.files[path] = text;
+        }
+        for (const [path, bytes] of Object.entries(changes.binaries)) {
+          if (bytes === null) delete folder.binaries[path];
+          else folder.binaries[path] = bytes;
+        }
+        for (const [path, present] of Object.entries(changes.dirs)) {
+          if (present) folder.dirs.add(path);
+          else folder.dirs.delete(path);
+        }
+      }
+      for (const [path, value] of Object.entries(overlay.external ?? {})) {
+        if (value === null) external.delete(path);
+        else external.set(path, value);
+      }
+      const vaultPicks: (string | null)[] = overlay.vaultPicks ?? [input.vaultPick];
+      let sourceFolder: string | null | undefined =
+        overlay.sourceFolder !== undefined ? overlay.sourceFolder : input.sourcePick?.folder;
+      let sourceFiles: string[] | undefined = overlay.sourceFiles ?? input.sourcePick?.files;
+      /** Bumped by every change after load, so the folder's fingerprint moves when a file does. */
+      let revision = 0;
+
+      const hasEntry = (folder: Folder, path: string) => path in folder.files || path in folder.binaries;
+      const isDirectory = (folder: Folder, path: string) =>
+        path === "" ||
+        folder.dirs.has(path) ||
+        [...Object.keys(folder.files), ...Object.keys(folder.binaries), ...folder.dirs].some((entry) =>
+          entry.startsWith(`${path}/`),
+        );
+      const exists = (folder: Folder, path: string) => hasEntry(folder, path) || isDirectory(folder, path);
+      const putText = (folderRoot: string, folder: Folder, path: string, text: string) => {
+        delete folder.binaries[path];
+        folder.files[path] = text;
+        const changes = overlayOf(folderRoot);
+        changes.files[path] = text;
+        changes.binaries[path] = null;
+        revision += 1;
+        save();
+      };
+      const putBytes = (folderRoot: string, folder: Folder, path: string, bytes: number[]) => {
+        delete folder.files[path];
+        folder.binaries[path] = bytes;
+        const changes = overlayOf(folderRoot);
+        changes.binaries[path] = bytes;
+        changes.files[path] = null;
+        revision += 1;
+        save();
+      };
+      const dropEntry = (folderRoot: string, folder: Folder, path: string) => {
+        delete folder.files[path];
+        delete folder.binaries[path];
+        const changes = overlayOf(folderRoot);
+        changes.files[path] = null;
+        changes.binaries[path] = null;
+        revision += 1;
+        save();
+      };
+      const dropDirectory = (folderRoot: string, folder: Folder, path: string) => {
+        for (const entry of [...Object.keys(folder.files), ...Object.keys(folder.binaries)]) {
+          if (entry.startsWith(`${path}/`)) dropEntry(folderRoot, folder, entry);
+        }
+        for (const dir of [...folder.dirs]) {
+          if (dir === path || dir.startsWith(`${path}/`)) {
+            folder.dirs.delete(dir);
+            overlayOf(folderRoot).dirs[dir] = false;
+          }
+        }
+        revision += 1;
+        save();
+      };
+      const addDirectory = (folderRoot: string, folder: Folder, path: string) => {
+        if (!path || isDirectory(folder, path)) return;
+        folder.dirs.add(path);
+        overlayOf(folderRoot).dirs[path] = true;
+        revision += 1;
+        save();
+      };
+      const decodeText = (bytes: number[]): string | null => {
+        try {
+          return new TextDecoder("utf-8", { fatal: true }).decode(Uint8Array.from(bytes));
+        } catch {
+          return null;
+        }
+      };
+      const bytesOf = (folder: Folder, path: string): number[] | null =>
+        path in folder.binaries
+          ? folder.binaries[path]
+          : path in folder.files
+            ? [...new TextEncoder().encode(folder.files[path])]
+            : null;
+      let failWrites: RegExp[] = [];
+      const refusedWrite = (path: string): Promise<never> | null =>
+        failWrites.some((pattern) => pattern.test(path)) ? Promise.reject(new Error(`QA write denied: ${path}`)) : null;
+      const folderRootOf = (args: Record<string, unknown>) => (typeof args.rootPath === "string" ? args.rootPath : root);
+
+      /** What a test drives from the Playwright side; see the exported helpers below the install. */
+      (window as unknown as { __desktopFake: unknown }).__desktopFake = {
+        roots: () => [...folders.keys()],
+        read: (folderRoot: string, path: string) => {
+          const folder = folders.get(folderRoot);
+          if (!folder || !hasEntry(folder, path)) return null;
+          return path in folder.files ? folder.files[path] : decodeText(folder.binaries[path]);
+        },
+        readBytes: (folderRoot: string, path: string) => {
+          const folder = folders.get(folderRoot);
+          return folder ? bytesOf(folder, path) : null;
+        },
+        write: (folderRoot: string, path: string, value: string | { bytes: number[] }) => {
+          let folder = folders.get(folderRoot);
+          if (!folder) folders.set(folderRoot, (folder = { files: {}, binaries: {}, dirs: new Set() }));
+          if (typeof value === "string") putText(folderRoot, folder, path, value);
+          else putBytes(folderRoot, folder, path, value.bytes);
+          reportChange(folderRoot, [{ path, kind: "file", lastModified: Date.now(), size: bytesOf(folder, path)?.length ?? 0 }]);
+        },
+        remove: (folderRoot: string, path: string) => {
+          const folder = folders.get(folderRoot);
+          if (!folder) return;
+          if (hasEntry(folder, path)) {
+            dropEntry(folderRoot, folder, path);
+            reportChange(folderRoot, [{ path, kind: "missing" }]);
+          } else {
+            dropDirectory(folderRoot, folder, path);
+            reportChange(folderRoot, [], true);
+          }
+        },
+        rename: (folderRoot: string, from: string, to: string) => {
+          const folder = folders.get(folderRoot);
+          if (!folder || !hasEntry(folder, from)) throw enoent(from);
+          if (exists(folder, to)) throw new Error(`File exists (os error 17): ${to}`);
+          if (from in folder.files) putText(folderRoot, folder, to, folder.files[from]);
+          else putBytes(folderRoot, folder, to, folder.binaries[from]);
+          dropEntry(folderRoot, folder, from);
+          reportChange(folderRoot, [
+            { path: to, kind: "file", lastModified: Date.now(), size: bytesOf(folder, to)?.length ?? 0 },
+            { path: from, kind: "missing" },
+          ]);
+        },
+        list: (folderRoot: string) => {
+          const folder = folders.get(folderRoot);
+          return folder ? [...Object.keys(folder.files), ...Object.keys(folder.binaries)].sort() : null;
+        },
+        pickVault: (picks: (string | null)[]) => {
+          vaultPicks.splice(0, vaultPicks.length, ...picks);
+          overlay.vaultPicks = [...picks];
+          save();
+        },
+        pickSourceFolder: (path: string | null) => {
+          sourceFolder = path;
+          overlay.sourceFolder = path;
+          save();
+        },
+        pickSourceFiles: (paths: string[]) => {
+          sourceFiles = paths;
+          overlay.sourceFiles = paths;
+          save();
+        },
+        addExternal: (path: string, value: string | { bytes: number[] }) => {
+          external.set(path, value);
+          (overlay.external ??= {})[path] = value;
+          save();
+        },
+        failWrites: (patterns: string[]) => {
+          failWrites = patterns.map((pattern) => new RegExp(pattern));
+        },
+      };
       const AUDIT = ".ontology-atlas/llm-audit.jsonl";
       const auditReads = new Map<string, { raw: string; bytes: Uint8Array; cursor: number } | null>();
       let auditReadId = 0;
@@ -180,6 +492,16 @@ export async function installDesktopRailRuntime(
       const mtime = Date.now();
       const callbacks = new Map<number, (event: { event: string; payload: unknown }) => void>();
       let nextCallback = 1;
+      /** The handlers the app registered through `listen`, by event name. */
+      const listeners = new Map<string, Set<number>>();
+      const emitEvent = (event: string, payload: unknown) => {
+        for (const id of listeners.get(event) ?? []) {
+          (callbacks.get(id) as ((event: unknown) => void) | undefined)?.({ event, id, payload });
+        }
+      };
+      /** What the native watcher reports when a file changes outside the app. */
+      const reportChange = (folderRoot: string, changes: { path: string; kind: string; lastModified?: number; size?: number }[], rescan = false) =>
+        emitEvent("vault-changed", { root: folderRoot, changes: rescan ? [] : changes, rescan });
 
       /** Counts what the arriving screen asked the native side for, per command. */
       const calls: { command: string; at: number }[] = [];
@@ -242,6 +564,13 @@ export async function installDesktopRailRuntime(
       };
 
       const answer = (command: string, args: Record<string, unknown>): Promise<unknown> | null => {
+        /** The folder a command works in; `null` when it names one that is not served (strict mode). */
+        const target: Folder | null =
+          folders.get(folderRootOf(args)) ?? (strictRoots && typeof args.rootPath === "string" ? null : (folders.get(root) as Folder));
+        const gone = (): Promise<never> => Promise.reject(enoent(String(args.rootPath)));
+        if (typeof args.rootPath === "string" && (input.ungrantedFolders ?? []).includes(args.rootPath)) {
+          return Promise.reject(new Error("vault-root-not-granted"));
+        }
         switch (command) {
           case "git_probe":
             return slow({ installed: true, version: "git version 2.49.0", path: "/usr/bin/git" });
@@ -273,43 +602,106 @@ export async function installDesktopRailRuntime(
             const asked = [...((args.repoPaths as string[]) ?? []), ...((args.vaultPaths as string[]) ?? [])];
             return slow(asked.map((path) => ({ path, ...(changes[path] ?? { exists: false, isDir: false, lastChangedAt: null }) })));
           }
-          case "pick_vault_directory":
-            return slow(root);
+          case "pick_vault_directory": {
+            // The last answer stays until a test sets another, so a second press opens the same folder.
+            const picked = vaultPicks.length > 1 ? (vaultPicks.shift() as string | null) : (vaultPicks[0] ?? null);
+            overlay.vaultPicks = [...vaultPicks];
+            save();
+            return slow(picked);
+          }
+          case "pick_source_directory":
+            return sourceFolder === undefined ? null : slow(sourceFolder);
+          case "pick_source_files":
+            return sourceFiles === undefined ? null : slow(sourceFiles);
+          case "import_source_files": {
+            if (!target) return gone();
+            const destination = String(args.destination ?? "sources");
+            const taken = (name: string) => exists(target, `${destination}/${name}`);
+            const sameBytes = (left: number[], right: number[] | null) =>
+              right !== null && left.length === right.length && left.every((byte, at) => byte === right[at]);
+            const results = ((args.sourcePaths as string[]) ?? []).map((sourcePath) => {
+              const pickedName = sourcePath.slice(sourcePath.lastIndexOf("/") + 1);
+              const source = external.get(sourcePath);
+              if (source === undefined) {
+                return { pickedName, status: "failed", relativePath: null, sha256: null, size: null, reason: "source-not-found" };
+              }
+              if (destination === "planning" && !/\.(md|png|jpe?g|webp|avif)$/i.test(pickedName)) {
+                return { pickedName, status: "failed", relativePath: null, sha256: null, size: null, reason: "unsupported-type" };
+              }
+              const bytes = typeof source === "string" ? [...new TextEncoder().encode(source)] : source.bytes;
+              const folderPrefix = `${destination}/`;
+              const duplicate = [...Object.keys(target.files), ...Object.keys(target.binaries)].some(
+                (path) => path.startsWith(folderPrefix) && sameBytes(bytes, bytesOf(target, path)),
+              );
+              if (duplicate) return { pickedName, status: "duplicate", relativePath: null, sha256: null, size: bytes.length, reason: null };
+              const dot = pickedName.lastIndexOf(".");
+              const stem = dot > 0 ? pickedName.slice(0, dot) : pickedName;
+              const extension = dot > 0 ? pickedName.slice(dot) : "";
+              let name = pickedName;
+              for (let suffix = 2; taken(name); suffix += 1) name = `${stem} (${suffix})${extension}`;
+              const relativePath = `${destination}/${name}`;
+              if (typeof source === "string") putText(folderRootOf(args), target, relativePath, source);
+              else putBytes(folderRootOf(args), target, relativePath, source.bytes);
+              return {
+                pickedName,
+                status: name === pickedName ? "added" : "renamed",
+                relativePath,
+                sha256: "0".repeat(64),
+                size: bytes.length,
+                reason: null,
+              };
+            });
+            return slow(results);
+          }
           case "vault_path_exists": {
+            if (!target) return gone();
             const path = relative(args.relativePath);
-            if (args.kind === "directory") {
-              return slow(path === "" || Object.keys(files).some((file) => file.startsWith(`${path}/`)));
-            }
-            return slow(path in files);
+            if (args.kind === "directory") return slow(isDirectory(target, path));
+            return slow(hasEntry(target, path));
           }
           case "list_vault_directory": {
+            if (!target) return gone();
             const directory = relative(args.relativePath);
+            // A folder that is gone cannot be listed; a writable fake answers as the disk does.
+            if (persist && !isDirectory(target, directory)) return Promise.reject(enoent(directory));
             const prefix = directory ? `${directory}/` : "";
             const entries = new Map<string, "file" | "directory">();
-            for (const file of Object.keys(files)) {
+            for (const file of [...Object.keys(target.files), ...Object.keys(target.binaries), ...target.dirs]) {
               if (!file.startsWith(prefix)) continue;
               const rest = file.slice(prefix.length);
               if (!rest) continue;
               const [name, child] = rest.split("/");
-              entries.set(name, child ? "directory" : "file");
+              const isDirectoryEntry = child !== undefined || target.dirs.has(file);
+              entries.set(name, isDirectoryEntry ? "directory" : "file");
             }
             return slow([...entries].map(([name, kind]) => ({ name, kind })));
           }
           case "read_vault_text_file": {
+            if (!target) return gone();
             const path = relative(args.relativePath);
-            if (!(path in files)) return Promise.reject(new Error(`No such file or directory (os error 2): ${path}`));
-            return afterHeldReads([path], () => slow({ text: files[path], lastModified: mtime }));
+            if (path in target.binaries) {
+              const decoded = decodeText(target.binaries[path]);
+              if (decoded === null) return Promise.reject(new Error("stream did not contain valid UTF-8"));
+              return afterHeldReads([path], () => slow({ text: decoded, lastModified: mtime }));
+            }
+            if (!(path in target.files)) return Promise.reject(enoent(path));
+            return afterHeldReads([path], () => slow({ text: target.files[path], lastModified: mtime }));
           }
           case "read_vault_text_files": {
+            if (!target) return gone();
             const asked = (args.relativePaths as string[]) ?? [];
             return afterHeldReads(asked.map(relative), () =>
               slow(
                 textFrames(
                   asked.map((relativePath) => {
                     const path = relative(relativePath);
-                    return path in files
-                      ? { relativePath, text: files[path], error: null }
-                      : { relativePath, text: null, error: `missing ${path}` };
+                    const text = path in target.files ? target.files[path] : path in target.binaries ? decodeText(target.binaries[path]) : null;
+                    if (text !== null) return { relativePath, text, error: null };
+                    return {
+                      relativePath,
+                      text: null,
+                      error: path in target.binaries ? "stream did not contain valid UTF-8" : `missing ${path}`,
+                    };
                   }),
                 ),
               ),
@@ -352,18 +744,20 @@ export async function installDesktopRailRuntime(
             auditReads.delete(String(args.readerId));
             return slow(null);
           case "read_vault_binary_file": {
+            if (!target) return gone();
             const path = relative(args.relativePath);
-            if (!(path in files)) return Promise.reject(new Error(`No such file or directory (os error 2): ${path}`));
-            const body = new TextEncoder().encode(files[path]);
+            const body = bytesOf(target, path);
+            if (body === null) return Promise.reject(enoent(path));
             const stamped = new Uint8Array(8 + body.length);
             new DataView(stamped.buffer).setBigUint64(0, BigInt(mtime), true);
             stamped.set(body, 8);
             return slow(stamped.buffer);
           }
           case "read_vault_text_tail": {
+            if (!target) return gone();
             const path = relative(args.relativePath);
-            if (!(path in files)) return Promise.reject(new Error(`No such file or directory (os error 2): ${path}`));
-            const lines = files[path].split(/\r?\n/);
+            if (!(path in target.files)) return Promise.reject(enoent(path));
+            const lines = target.files[path].split(/\r?\n/);
             if (lines.at(-1) === "") lines.pop();
             return slow(lines.slice(Math.max(0, lines.length - Number(args.maxLines))).join("\n"));
           }
@@ -380,15 +774,22 @@ export async function installDesktopRailRuntime(
             files[key] = String(args.content);
             return slow({ written: true, currentContent: files[key] });
           }
-          case "vault_fingerprint":
-            return slow(`fixture-${Object.keys(files).length}`);
+          case "vault_fingerprint": {
+            if (!target) return gone();
+            const count = Object.keys(target.files).length + Object.keys(target.binaries).length;
+            return slow(revision === 0 ? `fixture-${count}` : `fixture-${count}-r${revision}`);
+          }
           case "hash_vault_files":
             return slow((args.relativePaths as string[]).map((relativePath) => ({ relativePath, hash: "0".repeat(64) })));
           case "plugin:event|listen": {
             const id = Number(args.handler);
+            const name = String(args.event);
+            if (!listeners.has(name)) listeners.set(name, new Set());
+            listeners.get(name)?.add(id);
             return Promise.resolve(id);
           }
           case "plugin:event|unlisten":
+            for (const handlers of listeners.values()) handlers.delete(Number(args.eventId));
             return Promise.resolve(null);
           case "acp_prepare_adapter":
             return Promise.resolve("ready");
@@ -509,13 +910,43 @@ export async function installDesktopRailRuntime(
             });
           }
           case "start_vault_watch":
-          case "ensure_vault_directory":
-            return Promise.resolve(null);
+            return Promise.resolve(typeof args.rootPath === "string" ? args.rootPath : null);
+          case "ensure_vault_directory": {
+            if (persist && target) addDirectory(folderRootOf(args), target, relative(args.relativePath));
+            return persist && !target ? gone() : Promise.resolve(null);
+          }
           case "ensure_default_vault_parent_dir":
             return input.defaultVaultParent ? slow(input.defaultVaultParent) : null;
           case "write_vault_text_file": {
-            if (!input.writable) return null;
-            files[relative(args.relativePath)] = String(args.content ?? "");
+            if (!persist) return null;
+            if (!target) return gone();
+            const path = relative(args.relativePath);
+            const refused = refusedWrite(path);
+            if (refused) return refused;
+            putText(folderRootOf(args), target, path, String(args.content ?? ""));
+            return slow(null);
+          }
+          case "create_vault_text_file": {
+            if (!persist) return null;
+            if (!target) return gone();
+            const path = relative(args.relativePath);
+            const refused = refusedWrite(path);
+            if (refused) return refused;
+            if (hasEntry(target, path)) return slow(false);
+            putText(folderRootOf(args), target, path, String(args.content ?? ""));
+            return slow(true);
+          }
+          case "remove_vault_entry": {
+            if (!persist) return null;
+            if (!target) return gone();
+            const path = relative(args.relativePath);
+            if (path === "") return Promise.reject(new Error("refusing to remove the selected vault root"));
+            if (hasEntry(target, path)) dropEntry(folderRootOf(args), target, path);
+            else if (isDirectory(target, path)) {
+              const holdsFiles = [...Object.keys(target.files), ...Object.keys(target.binaries)].some((entry) => entry.startsWith(`${path}/`));
+              if (holdsFiles && !args.recursive) return Promise.reject(new Error("Directory not empty (os error 66)"));
+              dropDirectory(folderRootOf(args), target, path);
+            } else return Promise.reject(enoent(path));
             return slow(null);
           }
           default:
@@ -563,6 +994,12 @@ export async function installDesktopRailRuntime(
       gitPathChanges: options.gitPathChanges,
       models: options.models,
       writable: options.writable,
+      folders: options.folders,
+      ungrantedFolders: options.ungrantedFolders ? [...options.ungrantedFolders] : undefined,
+      vaultPick: options.vaultPick === undefined ? DESKTOP_VAULT_ROOT : options.vaultPick,
+      externalFiles: options.externalFiles,
+      binaryFiles: options.binaryFiles,
+      sourcePick: options.sourcePick,
       defaultVaultParent: options.defaultVaultParent,
       holdReadsUntilReleased: options.holdReadsUntilReleased ? [...options.holdReadsUntilReleased] : undefined,
     },
@@ -573,9 +1010,200 @@ export async function installDesktopRailRuntime(
  * Opens the installed-app entry point and mounts the fixture vault through the native picker,
  * leaving the rail on screen with a settled workbench.
  */
-export async function mountDesktopVault(page: Page): Promise<void> {
-  await page.goto("/en/?guides=off");
+export async function mountDesktopVault(page: Page, locale: string = "en"): Promise<void> {
+  await page.goto(`/${locale}/?guides=off`);
   await page.waitForLoadState("networkidle");
   await page.getByTestId("first-run-open").click();
   await page.getByTestId("app-nav-rail").waitFor({ timeout: 60_000 });
+}
+
+/**
+ * Holds every read of these vault-relative paths until `releaseDesktopReads`, so a folder arrives
+ * in parts. It replaces an earlier hold, so a spec that opens several folders arms each in turn.
+ */
+export async function holdDesktopReads(page: Page, paths: readonly string[]): Promise<void> {
+  await page.evaluate((held) => (window as unknown as { __holdReads: (paths: string[]) => void }).__holdReads(held), [...paths]);
+}
+
+/** Lets every held read answer, and every read after it. */
+export async function releaseDesktopReads(page: Page): Promise<void> {
+  await page.evaluate(() => (window as unknown as { __releaseHeldReads: () => void }).__releaseHeldReads());
+}
+
+/** The Storefront folder: the shared fixture vault every install serves unless `replaceFixture` is set. */
+export function storefrontFiles(): Record<string, string> {
+  return { ...FIXTURE_VAULT };
+}
+
+/** The product's own vault (`docs/ontology`) as a folder, for specs that measured the Atlas sample. */
+export function atlasSampleFiles(): Record<string, string> {
+  return dogfoodVaultFiles();
+}
+
+interface DesktopFakeWindow {
+  __desktopFake: {
+    roots(): string[];
+    read(root: string, path: string): string | null;
+    readBytes(root: string, path: string): number[] | null;
+    write(root: string, path: string, value: string | { bytes: number[] }): void;
+    remove(root: string, path: string): void;
+    rename(root: string, from: string, to: string): void;
+    list(root: string): string[] | null;
+    pickVault(picks: (string | null)[]): void;
+    pickSourceFolder(path: string | null): void;
+    pickSourceFiles(paths: string[]): void;
+    addExternal(path: string, value: string | { bytes: number[] }): void;
+    failWrites(patterns: string[]): void;
+  };
+}
+
+type FileBody = string | { bytes: number[] };
+
+const bodyOf = (content: string | Uint8Array): FileBody => (typeof content === "string" ? content : { bytes: [...content] });
+
+/** What the next presses of the folder picker answer, in order; the last one repeats. `null` cancels. */
+export async function chooseDesktopFolder(page: Page, ...picks: (string | null)[]): Promise<void> {
+  await page.evaluate((answers) => (window as unknown as DesktopFakeWindow).__desktopFake.pickVault(answers), picks);
+}
+
+/** What `pick_source_directory` (the connected code folder dialog) answers; `null` cancels. */
+export async function chooseSourceFolder(page: Page, path: string | null): Promise<void> {
+  await page.evaluate((answer) => (window as unknown as DesktopFakeWindow).__desktopFake.pickSourceFolder(answer), path);
+}
+
+/** What `pick_source_files` (the add-documents dialog) answers: absolute paths, as `externalFiles` names them. */
+export async function chooseSourceFiles(page: Page, paths: string[]): Promise<void> {
+  await page.evaluate((answer) => (window as unknown as DesktopFakeWindow).__desktopFake.pickSourceFiles(answer), paths);
+}
+
+/** A file that lives outside every served folder, for `chooseSourceFiles` to offer. */
+export async function addExternalFile(page: Page, path: string, content: string | Uint8Array): Promise<void> {
+  await page.evaluate(
+    ({ at, body }) => (window as unknown as DesktopFakeWindow).__desktopFake.addExternal(at, body),
+    { at: path, body: bodyOf(content) },
+  );
+}
+
+/** Creates or replaces one file as an outside editor would; text, or raw bytes for a binary file. */
+export async function writeDesktopFile(
+  page: Page,
+  path: string,
+  content: string | Uint8Array,
+  root: string = DESKTOP_VAULT_ROOT,
+): Promise<void> {
+  await page.evaluate(
+    ({ folder, at, body }) => (window as unknown as DesktopFakeWindow).__desktopFake.write(folder, at, body),
+    { folder: root, at: path, body: bodyOf(content) },
+  );
+}
+
+/** The text of one file in a served folder, or `null` when it is absent or is not UTF-8. */
+export async function readDesktopFile(page: Page, path: string, root: string = DESKTOP_VAULT_ROOT): Promise<string | null> {
+  return page.evaluate(
+    ({ folder, at }) => (window as unknown as DesktopFakeWindow).__desktopFake.read(folder, at),
+    { folder: root, at: path },
+  );
+}
+
+/** The bytes of one file in a served folder, or `null` when it is absent. */
+export async function readDesktopBytes(page: Page, path: string, root: string = DESKTOP_VAULT_ROOT): Promise<number[] | null> {
+  return page.evaluate(
+    ({ folder, at }) => (window as unknown as DesktopFakeWindow).__desktopFake.readBytes(folder, at),
+    { folder: root, at: path },
+  );
+}
+
+/** Removes a file, or a folder with everything under it. */
+export async function removeDesktopFile(page: Page, path: string, root: string = DESKTOP_VAULT_ROOT): Promise<void> {
+  await page.evaluate(
+    ({ folder, at }) => (window as unknown as DesktopFakeWindow).__desktopFake.remove(folder, at),
+    { folder: root, at: path },
+  );
+}
+
+/** Moves one file to a new path; fails when the source is absent or the target exists. */
+export async function renameDesktopFile(page: Page, from: string, to: string, root: string = DESKTOP_VAULT_ROOT): Promise<void> {
+  await page.evaluate(
+    ({ folder, source, target }) => (window as unknown as DesktopFakeWindow).__desktopFake.rename(folder, source, target),
+    { folder: root, source: from, target: to },
+  );
+}
+
+/** Every file path of a served folder, sorted; `null` when the folder is not served. */
+export async function listDesktopFiles(page: Page, root: string = DESKTOP_VAULT_ROOT): Promise<string[] | null> {
+  return page.evaluate((folder) => (window as unknown as DesktopFakeWindow).__desktopFake.list(folder), root);
+}
+
+/** Makes every write and create whose vault-relative path matches one of `patterns` fail; none lifts it. */
+export async function refuseDesktopWrites(page: Page, patterns: readonly RegExp[]): Promise<void> {
+  await page.evaluate(
+    (sources) => (window as unknown as DesktopFakeWindow).__desktopFake.failWrites(sources),
+    patterns.map((pattern) => pattern.source),
+  );
+}
+
+/** One folder the app has opened before, as its recent list records it. */
+export interface KnownDesktopFolder {
+  /** The absolute path; the app probes it with `vault_path_exists`, so serve it or it reads as gone. */
+  path: string;
+  /** Hours since the folder was last opened; default 0. */
+  hoursAgo?: number;
+  /** Document and concept counts the row shows; omit for a folder never counted. */
+  counts?: { documents: number; concepts: number };
+}
+
+/**
+ * Seeds the app's recent-folder records (`desktopRootPath` records; the first listed is the
+ * current one) before any script runs, once per tab: a page that already holds records keeps them.
+ * Serve every path that should read as present.
+ */
+export async function seedKnownDesktopFolders(page: Page, known: readonly KnownDesktopFolder[]): Promise<void> {
+  await page.addInitScript((folders: readonly KnownDesktopFolder[]) => {
+    const now = Date.now();
+    const records = folders.map((folder) => {
+      const name = folder.path.split("/").pop();
+      return {
+        id: "current",
+        handle: { name },
+        desktopRootPath: folder.path,
+        name,
+        createdAt: now - 90 * 24 * 3600_000,
+        lastAccessedAt: now - (folder.hoursAgo ?? 0) * 3600_000,
+        ...(folder.counts ? { docCount: folder.counts.documents, conceptCount: folder.counts.concepts, countedAt: now } : {}),
+      };
+    });
+    const request = indexedDB.open("demo-kv", 1);
+    request.onupgradeneeded = () => request.result.createObjectStore("kv");
+    request.onsuccess = () => {
+      const db = request.result;
+      const tx = db.transaction("kv", "readwrite");
+      const store = tx.objectStore("kv");
+      const existing = store.get("docs-vault:fs-handle:recent");
+      existing.onsuccess = () => {
+        if (existing.result) return;
+        store.put(records, "docs-vault:fs-handle:recent");
+        if (records[0]) store.put(records[0], "docs-vault:fs-handle:current");
+      };
+      tx.oncomplete = () => db.close();
+    };
+  }, known);
+}
+
+/** The absolute paths of the folders the app remembers, in the app's order. */
+export async function knownDesktopFolderPaths(page: Page): Promise<string[]> {
+  return page.evaluate(
+    () =>
+      new Promise<string[]>((resolve, reject) => {
+        const request = indexedDB.open("demo-kv", 1);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+          const db = request.result;
+          const get = db.transaction("kv", "readonly").objectStore("kv").get("docs-vault:fs-handle:recent");
+          get.onsuccess = () => {
+            db.close();
+            resolve(((get.result ?? []) as { desktopRootPath: string }[]).map((entry) => entry.desktopRootPath));
+          };
+        };
+      }),
+  );
 }

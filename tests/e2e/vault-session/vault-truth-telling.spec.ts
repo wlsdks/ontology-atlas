@@ -1,7 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
-import { seedFirstRunSeen } from "../first-run-seed";
+import { installDesktopRailRuntime } from "../desktop-rail-arrival-harness";
 import { waitForAnimationsDone } from "../settle";
-import { stubDirectoryPicker } from "../vault-picker-stub";
 import { BROKEN_VAULT } from "../fixtures/broken-vault";
 
 /**
@@ -10,14 +9,11 @@ import { BROKEN_VAULT } from "../fixtures/broken-vault";
  */
 
 async function loadVault(page: Page, seed: Record<string, string>) {
-  await stubDirectoryPicker(page, seed);
-  await seedFirstRunSeen(page);
-  await page.goto("/ko/topology/?guides=off");
+  await installDesktopRailRuntime(page, seed, undefined, { replaceFixture: true });
+  await page.goto("/ko/?guides=off");
   await page.waitForLoadState("networkidle");
-  await page.getByTestId("first-run-starter-open").click();
-  await expect(page.getByTestId("vault-guide-sheet")).toBeVisible();
-  await page.getByTestId("vault-guide-pick-existing").click();
-  await expect(page.getByTestId("first-run-starter")).toHaveCount(0, { timeout: 20_000 });
+  await page.getByTestId("first-run-open").click();
+  await page.getByTestId("app-nav-rail").waitFor({ timeout: 60_000 });
 }
 
 /**

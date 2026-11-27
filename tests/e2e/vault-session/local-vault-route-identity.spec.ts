@@ -1,8 +1,14 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { seedFirstRunSeen } from '../first-run-seed';
+import {
+  DESKTOP_VAULT_ROOT,
+  chooseDesktopFolder,
+  installDesktopRailRuntime,
+  storefrontFiles,
+} from '../desktop-rail-arrival-harness';
 import { waitFrames } from '../settle';
-import { stubDirectoryPicker } from '../vault-picker-stub';
+
+const LOCAL_ONLY_ROOT = '/Users/probe/local-only';
 
 const PROJECT_UID = '10000000-0000-4000-8000-000000000001';
 
@@ -122,6 +128,12 @@ async function expectLocalOnlyTransition(
     await tab.click();
     await expect(tab).toHaveAttribute('aria-selected', 'true');
   }
+  if (destination === 'architecture') {
+    // The app arrives on the Harness overview; the reviewed profile is on its blueprint tab.
+    const blueprint = page.locator('#harness-tab-architecture');
+    await blueprint.click();
+    await expect(blueprint).toHaveAttribute('aria-selected', 'true');
+  }
   await expect(page.locator('main')).toContainText(localMarker, { timeout: 20_000 });
   // Keep sampling for a run of drawn frames after arrival, so a late flash of the sample is caught.
   await waitFrames(page, 15);
@@ -140,28 +152,23 @@ async function expectLocalOnlyTransition(
 test('switching the LNB in a chosen local vault draws the bundled sample in no frame', async ({ page }) => {
   test.setTimeout(120_000);
   await page.setViewportSize({ width: 1512, height: 949 });
-  await stubDirectoryPicker(page, LOCAL_ONLY_VAULT);
-  await seedFirstRunSeen(page);
-
-  // Start from the Storefront docs source with its order slug already loaded.
-  await page.goto('/ko/docs/?guides=off&slug=domains%2Forder', { waitUntil: 'domcontentloaded' });
-  await expect(page.getByRole('heading', { name: /Orders/ }).first()).toBeVisible({ timeout: 20_000 });
-
-  // Mount the local vault through the web seam first, then switch the same already-running shared
-  // bundle into its installed-shell branch. This avoids replacing the real FSA read with a fake
-  // native picker while still exercising the desktop render boundary in a production static export.
-  await page.goto('/ko/topology/?guides=off');
-  await page.getByTestId('first-run-starter-open').click();
-  await expect(page.getByTestId('vault-guide-sheet')).toBeVisible();
-  await page.getByTestId('vault-guide-pick-existing').click();
-  await expect(page.getByText('로컬 전용 프로젝트').first()).toBeVisible({ timeout: 30_000 });
-  await page.evaluate(() => {
-    (window as unknown as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__ = {
-      invoke: () => Promise.reject(new Error('stub')),
-      transformCallback: (callback: unknown) => callback,
-    };
-    (window as unknown as { isTauri?: boolean }).isTauri = true;
+  await installDesktopRailRuntime(page, {}, undefined, {
+    replaceFixture: true,
+    folders: { [DESKTOP_VAULT_ROOT]: storefrontFiles(), [LOCAL_ONLY_ROOT]: LOCAL_ONLY_VAULT },
+    vaultPick: DESKTOP_VAULT_ROOT,
   });
+
+  // Start from the Storefront folder with its order document loaded.
+  await page.goto('/ko/?guides=off');
+  await page.getByTestId('first-run-open').click();
+  await page.getByTestId('app-nav-rail').waitFor({ timeout: 60_000 });
+  await expect(page.getByText(/온라인 상점|Online Store/).first()).toBeVisible({ timeout: 20_000 });
+
+  // Switch to the local-only folder through the rail, the way a person does.
+  await chooseDesktopFolder(page, LOCAL_ONLY_ROOT);
+  await page.getByTestId('vault-switch-rail-tile').click();
+  await page.getByTestId('vault-switch-pick-other').click();
+  await expect(page.getByText('로컬 전용 프로젝트').first()).toBeVisible({ timeout: 30_000 });
 
   await expectLocalOnlyTransition(page, 'architecture', 'Local Only Architecture');
   const installedRail = page.getByTestId('app-nav-rail');
@@ -178,17 +185,9 @@ test('switching the LNB in a chosen local vault draws the bundled sample in no f
 });
 
 test('the destination prerender of the installed shell puts no bundled sample in even before hydration', async ({ page }) => {
+  await installDesktopRailRuntime(page, {}, undefined, { replaceFixture: true });
   await page.addInitScript(() => {
-    const state = window as unknown as {
-      __TAURI_INTERNALS__?: unknown;
-      isTauri?: boolean;
-      __initialVaultTexts?: string[];
-    };
-    state.__TAURI_INTERNALS__ = {
-      invoke: () => Promise.reject(new Error('stub')),
-      transformCallback: (callback: unknown) => callback,
-    };
-    state.isTauri = true;
+    const state = window as unknown as { __initialVaultTexts?: string[] };
     state.__initialVaultTexts = [];
     const observer = new MutationObserver(() => {
       const text = document.body?.innerText;

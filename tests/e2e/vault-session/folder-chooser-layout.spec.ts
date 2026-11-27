@@ -1,41 +1,20 @@
 import { expect, test, type Page } from '@playwright/test';
-import { seedFirstRunSeen } from '../first-run-seed';
+import { installDesktopRailRuntime, seedKnownDesktopFolders } from '../desktop-rail-arrival-harness';
 import { waitForAnimationsDone } from '../settle';
 
 test.beforeEach(async ({ page }) => { await page.emulateMedia({ reducedMotion: 'reduce' }); });
 
 async function seedChooser(page: Page, longNames = false) {
-  await seedFirstRunSeen(page);
-  await page.addInitScript(() => {
-    (FileSystemHandle.prototype as FileSystemHandle & { queryPermission: () => Promise<'denied' | 'granted'> }).queryPermission = async function () {
-      return this.name.includes('unavailable') ? 'denied' : 'granted';
-    };
+  const names = ['current-project', 'unavailable-project', 'another-project', 'long-project-name-with-a-distinct-ending-one', 'long-project-name-with-a-distinct-ending-two']
+    .map(name => longNames ? `${name}${' workspace architecture implementation review and maintenance records with source evidence'.repeat(2)}` : name);
+  const paths = names.map(name => `/Users/probe/${name}`);
+  // The OS refuses the second folder, so the list names it without hiding it as a vanished one.
+  await installDesktopRailRuntime(page, {}, undefined, {
+    replaceFixture: true,
+    folders: Object.fromEntries(paths.map(path => [path, {}])),
+    ungrantedFolders: [paths[1]],
   });
-  await page.goto('/en/?shell=desktop&guides=off');
-  await page.evaluate(async (longNames) => {
-    const root = await navigator.storage.getDirectory();
-    const names = ['current-project', 'unavailable-project', 'another-project', 'long-project-name-with-a-distinct-ending-one', 'long-project-name-with-a-distinct-ending-two']
-      .map(name => longNames ? `${name}${' workspace architecture implementation review and maintenance records with source evidence'.repeat(2)}` : name);
-    const records = await Promise.all(names.map(async (name, index) => ({
-      id: 'current', name, handle: await root.getDirectoryHandle(name, { create: true }),
-      createdAt: 1, lastAccessedAt: Date.now() - index * 3600000,
-      docCount: 12, conceptCount: 7, countedAt: Date.now() - index * 3600000,
-    })));
-    const db = await new Promise<IDBDatabase>((resolve, reject) => {
-      const request = indexedDB.open('demo-kv', 1);
-      request.onupgradeneeded = () => request.result.createObjectStore('kv');
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-    });
-    await new Promise<void>((resolve, reject) => {
-      const tx = db.transaction('kv', 'readwrite');
-      tx.objectStore('kv').put(records, 'docs-vault:fs-handle:recent');
-      tx.objectStore('kv').put(records[0], 'docs-vault:fs-handle:current');
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-    });
-    db.close();
-  }, longNames);
+  await seedKnownDesktopFolders(page, paths.map((path, index) => ({ path, hoursAgo: index, counts: { documents: 12, concepts: 7 } })));
 }
 
 test('the chooser stays fixed while its folder list scrolls and every action remains reachable', async ({ page }) => {
@@ -46,9 +25,9 @@ test('the chooser stays fixed while its folder list scrolls and every action rem
   for (const [locale, sizes] of [['ko', [[1040, 720], [1512, 900], [2560, 1440]]], ['en', [[1040, 720]]]] as const) {
     for (const [width, height] of sizes) {
       await page.setViewportSize({ width, height });
-      await page.goto(`/${locale}/?shell=desktop&guides=off`);
+      await page.goto(`/${locale}/?guides=off`);
       await expect(page.getByTestId('recent-vault-row')).toHaveCount(5);
-      await expect(page.getByTestId('recent-vault-notice-blocked')).toHaveCount(1);
+      await expect(page.getByTestId('recent-vault-notice-unknown')).toHaveCount(1);
       await page.evaluate(() => document.fonts.ready);
       const list = page.getByTestId('recent-vault-list');
       const geometry = await list.evaluate(el => ({
@@ -104,7 +83,7 @@ test('the chooser stays fixed while its folder list scrolls and every action rem
 
 test('creation disclosure is accessible and can be cancelled without opening a folder', async ({ page }) => {
   await seedChooser(page);
-  await page.goto('/ko/?shell=desktop&guides=off');
+  await page.goto('/ko/?guides=off');
   await expect(page.getByTestId('recent-vault-row')).toHaveCount(5);
   await page.getByTestId('first-run-create-menu').click();
   await expect(page.getByTestId('first-run-create')).toBeVisible();
@@ -155,14 +134,20 @@ test('keyboard creation returns focus without writing', async ({ browser }) => {
   const context = await browser.newContext({ baseURL: String(test.info().project.use.baseURL), reducedMotion: 'reduce', viewport: { width: 1512, height: 900 } });
   const page = await context.newPage();
   await seedChooser(page);
-  await page.goto('/ko/?shell=desktop&guides=off');
+  await page.goto('/ko/?guides=off');
   await expect(page.getByTestId('recent-vault-row')).toHaveCount(5);
   await page.getByTestId('first-run-open').focus();
   await page.keyboard.press('Tab');
   await expect(page.getByTestId('first-run-create-menu')).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(page.getByTestId('first-run-create')).toBeVisible();
+  // The app lists its own doors (a code project, just start) before the create option.
   await page.keyboard.press('Tab');
+  await expect(page.getByTestId('first-run-code-project')).toBeFocused();
+  for (let tabs = 0; tabs < 3; tabs++) {
+    if (await page.getByTestId('first-run-create').evaluate((element) => element === document.activeElement)) break;
+    await page.keyboard.press('Tab');
+  }
   await expect(page.getByTestId('first-run-create')).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(page.getByTestId('first-run-shape')).toBeFocused();
