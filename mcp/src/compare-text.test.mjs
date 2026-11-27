@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { describe, it } from 'node:test';
@@ -61,12 +61,42 @@ async function listConceptSlugs(vaultRoot, locale) {
   return rows.map((row) => row.slug);
 }
 
+function sourceFiles(directory) {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(directory, entry.name);
+    if (entry.isDirectory()) return entry.name === 'node_modules' ? [] : sourceFiles(path);
+    return /\.(mjs|mts|js)$/.test(entry.name) && !/\.test\.(mjs|mts|js)$/.test(entry.name) ? [path] : [];
+  });
+}
+
+function topLevelArgumentCount(source, openIndex) {
+  let depth = 0;
+  let commas = 0;
+  let sawArgument = false;
+  for (let index = openIndex; index < source.length; index += 1) {
+    const char = source[index];
+    if (char === "'" || char === '"' || char === '`') {
+      const quote = char;
+      for (index += 1; index < source.length && source[index] !== quote; index += 1) {
+        if (source[index] === '\\') index += 1;
+      }
+      sawArgument = true;
+    } else if ('([{'.includes(char)) depth += 1;
+    else if (')]}'.includes(char)) {
+      depth -= 1;
+      if (depth === 0) return sawArgument ? commas + 1 : 0;
+    } else if (char === ',' && depth === 1 && !/^\s*\)/.test(source.slice(index + 1))) commas += 1;
+    else if (depth >= 1 && !/\s/.test(char)) sawArgument = true;
+  }
+  return 0;
+}
+
 describe('text order does not depend on the launching locale', () => {
   it('sorts a mixed list into one fixed order', () => {
     assert.deepEqual([...MIXED_NAMES].sort(compareText), ['_x', '-x', 'a', 'b', 'z', 'Z', '가']);
   });
 
-  it('the launch locales really do disagree when left unpinned', () => {
+  it('the launch locales really do disagree when left unpinned', { skip: process.platform === 'win32' && 'ICU ignores LANG on Windows' }, () => {
     const unpinned = "console.log(JSON.stringify(['b','가','a'].sort((a, b) => a.localeCompare(b))))";
     assert.notEqual(withLocale(LOCALES[0], unpinned), withLocale(LOCALES[1], unpinned));
   });
@@ -106,5 +136,19 @@ describe('text order does not depend on the launching locale', () => {
     } finally {
       rmSync(vaultRoot, { recursive: true, force: true });
     }
+  });
+
+  it('no source file calls localeCompare without a locale', () => {
+    const unpinned = [];
+    for (const file of sourceFiles(currentDir)) {
+      const source = readFileSync(file, 'utf8');
+      for (const match of source.matchAll(/\.localeCompare\(/g)) {
+        const openIndex = match.index + match[0].length - 1;
+        if (topLevelArgumentCount(source, openIndex) < 2) {
+          unpinned.push(`${file.slice(currentDir.length + 1)}:${source.slice(0, match.index).split('\n').length}`);
+        }
+      }
+    }
+    assert.deepEqual(unpinned, [], `localeCompare needs a locale; use compareText: ${unpinned.join(', ')}`);
   });
 });
