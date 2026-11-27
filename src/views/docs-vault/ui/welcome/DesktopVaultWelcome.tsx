@@ -25,7 +25,6 @@ export function DesktopVaultWelcome({
   onForgetRecent,
   currentVaultKey,
   choosing = false,
-  canResumeWithoutGesture = false,
   showDogfoodHint,
   t,
 }: {
@@ -41,11 +40,6 @@ export function DesktopVaultWelcome({
    * than guess, so it asks which folder instead of teaching what a vault is.
    */
   choosing?: boolean;
-  /**
-   * The installed app can; a browser needs a click for File System Access permission.
-   * The `AGENTS.md` contract requires the difference to be said on screen.
-   */
-  canResumeWithoutGesture?: boolean;
   showDogfoodHint: boolean;
   t: ReturnType<typeof useTranslations>;
 }) {
@@ -144,9 +138,7 @@ export function DesktopVaultWelcome({
             </h2>
             <p className="max-w-2xl text-body-lg leading-title text-[color:var(--color-text-tertiary)]">
               {choosing
-                ? canResumeWithoutGesture
-                  ? tSwitch("choose.bodyDesktop")
-                  : tSwitch("choose.bodyWeb")
+                ? tSwitch("choose.bodyDesktop")
                 : showDogfoodHint
                   ? t("desktopWelcome.dogfoodBody")
                   : t("desktopWelcome.body")}

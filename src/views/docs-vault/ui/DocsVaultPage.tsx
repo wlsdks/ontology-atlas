@@ -462,7 +462,6 @@ function DocsVaultContent({
               : null
           }
           choosing={localVault.awaitingVaultChoice}
-          canResumeWithoutGesture
           showDogfoodHint={showDogfoodHint}
           t={t}
         />

@@ -196,9 +196,7 @@ export function FirstRunPage() {
               {choosingFor
                 ? t("shapeTitle")
                 : choosingFolder
-                ? isTauriVaultRuntime()
-                  ? tSwitch("choose.bodyDesktop")
-                  : tSwitch("choose.bodyWeb")
+                ? tSwitch("choose.bodyDesktop")
                 : t("subtitle")}
             </p>
           </div>
@@ -406,7 +404,7 @@ export function FirstRunPage() {
       <Dialog open={chooserHelpOpen} onClose={()=>setChooserHelpOpen(false)} labelledBy="folder-chooser-help-title" size="sm">
         <h2 id="folder-chooser-help-title" className="text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{tSwitch('choose.helpLabel')}</h2>
         <div className="mt-4 grid gap-3 text-body-lg text-[color:var(--color-text-secondary)]">
-          <p>{isTauriVaultRuntime()?tSwitch('choose.bodyDesktop'):tSwitch('choose.bodyWeb')}</p>
+          <p>{tSwitch('choose.bodyDesktop')}</p>
           <p>{tSwitch('choose.releaseValve')}</p>
           <p>{t('trustLine')}</p>
         </div>

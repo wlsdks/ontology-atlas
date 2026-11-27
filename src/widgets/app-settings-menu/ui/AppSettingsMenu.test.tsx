@@ -17,7 +17,9 @@ beforeEach(() => {
   vi.stubGlobal(
     'ResizeObserver',
     class {
-      constructor(private readonly callback: () => void) {
+      private readonly callback: () => void;
+      constructor(callback: () => void) {
+        this.callback = callback;
         triggerWatchers.callbacks.add(callback);
       }
       observe() {}
