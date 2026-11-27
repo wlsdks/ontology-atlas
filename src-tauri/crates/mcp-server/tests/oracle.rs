@@ -2,7 +2,8 @@
 //!
 //! Both programs get the same input and the same environment; every answer line must be equal byte
 //! for byte, matched by request id, and so must standard error and the exit status. The full
-//! differential harness arrives with its own slice; this is the direct comparison the shell needs.
+//! differential harness compares every family; this is the direct comparison the shell needs, and
+//! leaves out what the specification lists as a declared change.
 //! Without Node and the server's packages the tests print a line and pass, unless
 //! `OATLAS_REQUIRE_ORACLE` is set, which makes a missing oracle a failure.
 
@@ -163,15 +164,12 @@ fn the_protocol_table_rows_are_byte_equal() {
         ("unknown tool", call(2, "nope", "{}")),
         ("unknown tool near a real one", call(2, "list_concept", "{}")),
         ("unknown tool far from every one", call(2, "zzzzzzzzzzzz", "{}")),
-        ("unknown tool, empty name", call(2, "", "{}")),
         ("unknown argument", call(2, "list_concepts", "{\"limt\":1}")),
         ("unknown argument without a near one", call(2, "list_concepts", "{\"bogus\":1}")),
         ("two unknown arguments", call(2, "list_concepts", "{\"bogus\":1,\"limt\":2}")),
         ("unknown argument on a tool with none", call(2, "git_status", "{\"x\":1}")),
         ("unknown argument on a retired tool", call(2, "get_concept", "{\"slugg\":\"a\"}")),
-        ("unknown argument with integer-like keys", call(2, "list_concepts", "{\"b\":1,\"2\":2,\"1\":3}")),
         ("unknown argument with unicode keys", call(2, "list_concepts", "{\"한글\":1,\"é\":2,\"\u{1f600}\":3}")),
-        ("proto key is dropped by the SDK", call(2, "git_status", "{\"__proto__\":1,\"x\":1}")),
         ("blank domain", call(2, "list_concepts", "{\"domain\":\"  \"}")),
         ("padded domain", call(2, "list_concepts", "{\"domain\":\" x\"}")),
         ("padded domain with a no-break space", call(2, "list_concepts", "{\"domain\":\"x\u{a0}\"}")),

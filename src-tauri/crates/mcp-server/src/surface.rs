@@ -10,7 +10,7 @@ use std::collections::{HashMap, HashSet};
 use std::sync::OnceLock;
 
 use answer_format::utf16;
-use answer_format::OrderedMap;
+use indexmap::IndexMap;
 use serde::de::IgnoredAny;
 use serde::{Deserialize, Serialize};
 use serde_json::value::RawValue;
@@ -46,7 +46,7 @@ struct ToolHeader {
 #[derive(Default, Deserialize)]
 struct InputSchema {
     #[serde(default)]
-    properties: OrderedMap<IgnoredAny>,
+    properties: IndexMap<String, IgnoredAny>,
 }
 
 #[derive(Default, Deserialize)]
@@ -115,12 +115,7 @@ impl Surface {
             tools.push(ToolDef {
                 name: header.name,
                 advertised,
-                argument_names: header
-                    .input_schema
-                    .properties
-                    .keys()
-                    .map(str::to_string)
-                    .collect(),
+                argument_names: header.input_schema.properties.keys().cloned().collect(),
                 read_only: header.annotations.read_only,
             });
         }

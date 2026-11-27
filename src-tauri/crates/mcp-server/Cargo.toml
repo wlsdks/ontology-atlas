@@ -28,7 +28,10 @@ source-evidence = { path = "../source-evidence" }
 # generator wrote and keeps what an agent nests in its arguments unread until a handler wants it.
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["raw_value"] }
-# One variant per `errorCode`, each with its message.
+# Arguments and parameters keep the order the agent sent them in. `serde` only: `serde_json`'s
+# `preserve_order`, which Cargo would switch on for the app's maps too, stays off.
+indexmap = { version = "2", features = ["serde"] }
+# The errors a request or a call fails with, each with its message.
 thiserror = "2"
 # Edit distance for "did you mean"; MIT, already in the lockfile through the app's dependencies.
 strsim = "0.11"

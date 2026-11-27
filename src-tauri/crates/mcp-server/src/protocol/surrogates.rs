@@ -78,6 +78,11 @@ pub fn without_lone(text: &str) -> Cow<'_, str> {
     Cow::Owned(out)
 }
 
+/// Whether `text` holds an escaped lone surrogate.
+pub fn contains_lone(text: &str) -> bool {
+    matches!(without_lone(text), Cow::Owned(_))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

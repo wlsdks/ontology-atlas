@@ -7,17 +7,19 @@
 //! accepted.
 
 use std::collections::HashMap;
+use std::fmt;
 
 use answer_format::json::to_string_indented;
-use answer_format::OrderedMap;
+use indexmap::IndexMap;
 use serde::Serialize;
 use serde_json::value::RawValue;
 
+use super::capabilities::ClientCapabilities;
 use super::message::Params;
 use crate::arguments::Arguments;
-use crate::json_text::{string_value, Kind};
+use crate::raw_json::{string_value, Kind};
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 struct Issue {
     expected: &'static str,
     code: &'static str,
@@ -25,9 +27,17 @@ struct Issue {
     message: String,
 }
 
-/// What the check found wrong: the issues, in the schema's order.
-#[derive(Default)]
+/// What the check found wrong: the issues, in the schema's order. Displayed as the SDK shows them,
+/// as indented JSON.
+#[derive(Debug, Default)]
 pub struct Issues(Vec<Issue>);
+
+impl fmt::Display for Issues {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let text = to_string_indented(&self.0, 2).map_err(|_| fmt::Error)?;
+        formatter.write_str(&text)
+    }
+}
 
 impl Issues {
     fn push(&mut self, expected: &'static str, path: &[&'static str], received: &'static str) {
@@ -39,11 +49,11 @@ impl Issues {
         });
     }
 
-    fn into_result<T>(self, value: impl FnOnce() -> T) -> Result<T, String> {
+    fn into_result<T>(self, value: impl FnOnce() -> T) -> Result<T, Self> {
         if self.0.is_empty() {
             Ok(value())
         } else {
-            Err(to_string_indented(&self.0, 2).unwrap_or_default())
+            Err(self)
         }
     }
 }
@@ -76,16 +86,16 @@ fn expect_string(
     issues.push("string", &full_path, received(value));
 }
 
-fn missing_params() -> String {
+fn missing_params() -> Issues {
     let mut issues = Issues::default();
     issues.push("object", &["params"], "undefined");
-    to_string_indented(&issues.0, 2).unwrap_or_default()
+    issues
 }
 
 fn params_members(params: &Params) -> Members<'_> {
     params
         .iter()
-        .map(|(key, raw)| (key.to_string(), &**raw))
+        .map(|(key, raw)| (key.to_string(), raw))
         .collect()
 }
 
@@ -93,12 +103,11 @@ fn params_members(params: &Params) -> Members<'_> {
 #[derive(Debug)]
 pub struct Initialize {
     pub protocol_version: String,
-    /// The capabilities the client announced, as sent.
-    pub capabilities: Box<RawValue>,
+    pub capabilities: ClientCapabilities,
 }
 
 /// Checks `initialize` params. An invalid one is answered with error -32603 and these words.
-pub fn initialize(params: Option<&Params>) -> Result<Initialize, String> {
+pub fn initialize(params: Option<&Params>) -> Result<Initialize, Issues> {
     let Some(params) = params else {
         return Err(missing_params());
     };
@@ -139,7 +148,8 @@ pub fn initialize(params: Option<&Params>) -> Result<Initialize, String> {
             .get("protocolVersion")
             .and_then(|raw| string_value(raw))
             .unwrap_or_default(),
-        capabilities: capabilities.map_or_else(|| RawValue::NULL.to_owned(), |raw| raw.to_owned()),
+        capabilities: capabilities
+            .map_or_else(ClientCapabilities::default, ClientCapabilities::announced),
     })
 }
 
@@ -150,7 +160,7 @@ fn members_of_object(raw: Option<&RawValue>) -> Option<Members<'_>> {
 }
 
 /// Checks `tools/list` params (an optional cursor). An invalid one is answered with error -32603.
-pub fn tools_list(params: Option<&Params>) -> Result<(), String> {
+pub fn tools_list(params: Option<&Params>) -> Result<(), Issues> {
     let mut issues = Issues::default();
     if let Some(params) = params {
         expect_string(
@@ -174,7 +184,7 @@ pub struct ToolCall {
 
 /// Checks `tools/call` params. An invalid one is answered with error -32602 and
 /// `Invalid tools/call request: ` before these words.
-pub fn tools_call(params: Option<&Params>) -> Result<ToolCall, String> {
+pub fn tools_call(params: Option<&Params>) -> Result<ToolCall, Issues> {
     let Some(params) = params else {
         return Err(missing_params());
     };
@@ -204,15 +214,15 @@ pub fn tools_call(params: Option<&Params>) -> Result<ToolCall, String> {
             .get("name")
             .and_then(|raw| string_value(raw))
             .unwrap_or_default(),
-        arguments: arguments.and_then(read_arguments),
+        arguments: arguments
+            .and_then(read_arguments)
+            .map(|arguments| arguments.with_malformed(params.malformed_arguments.clone())),
     })
 }
 
-/// The `arguments` members. The SDK copies them into a fresh object by assignment, so an own
-/// `__proto__` key (which `JSON.parse` makes) sets a prototype instead of a property and is gone.
+/// The `arguments` members, in the order sent; `__proto__` is a name like any other.
 fn read_arguments(raw: &RawValue) -> Option<Arguments> {
-    let mut fields: OrderedMap<Box<RawValue>> = serde_json::from_str(raw.get()).ok()?;
-    fields.remove("__proto__");
+    let fields: IndexMap<String, Box<RawValue>> = serde_json::from_str(raw.get()).ok()?;
     Some(Arguments::from_fields(fields))
 }
 
@@ -221,12 +231,14 @@ mod tests {
     use super::*;
 
     fn params(text: &str) -> Params {
-        serde_json::from_str(text).expect("params")
+        Params::from_fields(serde_json::from_str(text).expect("params"))
     }
 
     #[test]
     fn initialize_names_every_missing_field_in_schema_order() {
-        let message = initialize(Some(&params("{}"))).expect_err("invalid");
+        let message = initialize(Some(&params("{}")))
+            .expect_err("invalid")
+            .to_string();
         let issues: Vec<serde_json::Value> =
             serde_json::from_str(&message).expect("issues are JSON");
         let paths: Vec<String> = issues
@@ -248,7 +260,8 @@ mod tests {
         let message = initialize(Some(&params(
             r#"{"protocolVersion":5,"capabilities":{},"clientInfo":{"name":"t","version":"1"}}"#,
         )))
-        .expect_err("invalid");
+        .expect_err("invalid")
+        .to_string();
         assert_eq!(
             message,
             "[\n  {\n    \"expected\": \"string\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"params\",\n      \"protocolVersion\"\n    ],\n    \"message\": \"Invalid input: expected string, received number\"\n  }\n]"
@@ -256,32 +269,18 @@ mod tests {
     }
 
     #[test]
-    fn a_valid_initialize_keeps_the_version_and_the_capabilities_as_sent() {
-        let kept = initialize(Some(&params(
-            r#"{"protocolVersion":"2025-11-25","capabilities":{"elicitation":{}},"clientInfo":{"name":"t","version":"1"}}"#,
-        )))
-        .expect("valid");
-        assert_eq!(kept.protocol_version, "2025-11-25");
-        assert_eq!(kept.capabilities.get(), r#"{"elicitation":{}}"#);
-    }
-
-    #[test]
-    fn a_missing_params_is_an_object_expected() {
-        let message = initialize(None).expect_err("invalid");
-        assert!(
-            message.contains("\"expected\": \"object\"") && message.contains("received undefined")
-        );
-    }
-
-    #[test]
     fn tools_call_wants_a_name_and_a_record_of_arguments() {
-        let wrong_name = tools_call(Some(&params(r#"{"name":5}"#))).expect_err("invalid");
+        let wrong_name = tools_call(Some(&params(r#"{"name":5}"#)))
+            .expect_err("invalid")
+            .to_string();
         assert!(wrong_name.contains("expected string, received number"));
-        let array =
-            tools_call(Some(&params(r#"{"name":"x","arguments":[]}"#))).expect_err("invalid");
+        let array = tools_call(Some(&params(r#"{"name":"x","arguments":[]}"#)))
+            .expect_err("invalid")
+            .to_string();
         assert!(array.contains("\"expected\": \"record\"") && array.contains("received array"));
-        let null =
-            tools_call(Some(&params(r#"{"name":"x","arguments":null}"#))).expect_err("invalid");
+        let null = tools_call(Some(&params(r#"{"name":"x","arguments":null}"#)))
+            .expect_err("invalid")
+            .to_string();
         assert!(null.contains("received null"));
         let valid = tools_call(Some(&params(r#"{"name":"x"}"#))).expect("valid");
         assert_eq!(
@@ -291,13 +290,13 @@ mod tests {
     }
 
     #[test]
-    fn the_proto_argument_is_dropped_as_the_sdk_drops_it() {
+    fn the_proto_argument_is_an_argument_like_any_other() {
         let call = tools_call(Some(&params(
             r#"{"name":"x","arguments":{"__proto__":1,"a":2}}"#,
         )))
         .expect("valid");
         let arguments = call.arguments.expect("arguments");
-        assert_eq!(arguments.keys().collect::<Vec<_>>(), ["a"]);
+        assert_eq!(arguments.keys().collect::<Vec<_>>(), ["__proto__", "a"]);
     }
 
     #[test]

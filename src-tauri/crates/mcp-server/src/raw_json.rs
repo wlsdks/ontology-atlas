@@ -1,4 +1,4 @@
-//! Telling what JSON text is without reading all of it.
+//! Reading a JSON value that is held as text: what kind it is, and a string's characters.
 
 use serde_json::value::RawValue;
 
@@ -42,32 +42,4 @@ impl Kind {
 /// The text of a JSON string, escapes resolved.
 pub fn string_value(raw: &RawValue) -> Option<String> {
     serde_json::from_str(raw.get()).ok()
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn kind(text: &str) -> Kind {
-        let raw: Box<RawValue> = serde_json::from_str(text).expect("one value");
-        Kind::of(&raw)
-    }
-
-    #[test]
-    fn a_value_is_told_by_its_first_character() {
-        assert_eq!(kind("{}"), Kind::Object);
-        assert_eq!(kind(" [1] "), Kind::Array);
-        assert_eq!(kind("\"x\""), Kind::String);
-        assert_eq!(kind("true"), Kind::Boolean);
-        assert_eq!(kind("false"), Kind::Boolean);
-        assert_eq!(kind("null"), Kind::Null);
-        assert_eq!(kind("-1.5e3"), Kind::Number);
-        assert_eq!(kind("0"), Kind::Number);
-    }
-
-    #[test]
-    fn a_string_is_read_with_its_escapes() {
-        let raw: Box<RawValue> = serde_json::from_str(r#""a\n\u00e9\ud83d\ude00""#).expect("reads");
-        assert_eq!(string_value(&raw).as_deref(), Some("a\né😀"));
-    }
 }

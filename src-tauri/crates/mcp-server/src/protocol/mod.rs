@@ -13,6 +13,7 @@
 //! that panics outside a handler is caught here, so one bad request is one error answer and the
 //! session goes on.
 
+mod capabilities;
 mod id;
 mod message;
 mod methods;
@@ -26,22 +27,22 @@ use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Condvar, Mutex, MutexGuard, PoisonError};
 
-use serde_json::value::RawValue;
-
+pub use capabilities::ClientCapabilities;
 pub use id::Id;
 pub use message::{Params, Request};
 pub use methods::SUPPORTED_PROTOCOL_VERSIONS;
-pub use reply::RpcError;
+pub use reply::{Answer, RpcError};
 
 use message::{read_line, Inbound};
 use methods::handle_request;
-use reply::{error_line, result_line};
+use reply::write_reply;
 
 use crate::runtime::Config;
 
-/// Each thread reserves this much stack, untouched until used, so a handler that recurses deeply
-/// has room.
-const THREAD_STACK_BYTES: usize = 256 * 1024 * 1024;
+/// The stack of a worker. A handler keeps its nesting in the heap, so this only has to hold what a
+/// handler's own calls need, and the same size on every platform: a thread starts with 2 MiB on
+/// Linux and macOS and 1 MiB on Windows.
+const WORKER_STACK_BYTES: usize = 8 * 1024 * 1024;
 /// The SDK's `STDIO_DEFAULT_MAX_BUFFER_SIZE`: more unread bytes than this end the session.
 const MAX_BUFFER_BYTES: usize = 10 * 1024 * 1024;
 const READ_CHUNK_BYTES: usize = 64 * 1024;
@@ -64,11 +65,11 @@ struct State {
     /// The cancel flag of each request being answered, by id; a later request with the same id
     /// replaces it, as the SDK's abort controllers do.
     in_flight: HashMap<Id, Arc<AtomicBool>>,
-    client_capabilities: Option<Box<RawValue>>,
+    client_capabilities: ClientCapabilities,
 }
 
 pub struct Session {
-    pub config: Config,
+    config: Config,
     output: Mutex<Box<dyn Write + Send>>,
     state: Mutex<State>,
     wakeup: Condvar,
@@ -93,7 +94,7 @@ impl Session {
         let session = Arc::clone(self);
         std::thread::Builder::new()
             .name("mcp-worker".to_string())
-            .stack_size(THREAD_STACK_BYTES)
+            .stack_size(WORKER_STACK_BYTES)
             .spawn(move || session.work_loop())
             .map(drop)
     }
@@ -109,7 +110,6 @@ impl Session {
         let reader_session = Arc::clone(self);
         let reader = std::thread::Builder::new()
             .name("mcp-reader".to_string())
-            .stack_size(THREAD_STACK_BYTES)
             .spawn(move || reader_session.read_loop(input));
         if reader.is_err() || self.spawn_worker().is_err() {
             self.close();
@@ -125,17 +125,21 @@ impl Session {
         }
     }
 
+    pub fn config(&self) -> &Config {
+        &self.config
+    }
+
     pub fn is_closed(&self) -> bool {
         lock(&self.state).closed
     }
 
-    /// The capabilities the client announced in `initialize`, as it sent them.
-    pub fn client_capabilities(&self) -> Option<Box<RawValue>> {
-        lock(&self.state).client_capabilities.clone()
+    /// What the client announced in `initialize`; nothing until it has.
+    pub fn client_capabilities(&self) -> ClientCapabilities {
+        lock(&self.state).client_capabilities
     }
 
-    fn set_client_capabilities(&self, capabilities: Box<RawValue>) {
-        lock(&self.state).client_capabilities = Some(capabilities);
+    fn set_client_capabilities(&self, capabilities: ClientCapabilities) {
+        lock(&self.state).client_capabilities = capabilities;
     }
 
     fn close(&self) {
@@ -143,14 +147,9 @@ impl Session {
         self.wakeup.notify_all();
     }
 
-    /// Writes one answer line. A closed standard output ends the session; nothing panics.
-    fn send(&self, line: &str) {
-        let written = {
-            let mut output = lock(&self.output);
-            output
-                .write_all(line.as_bytes())
-                .and_then(|()| output.flush())
-        };
+    /// Writes the answer to one request. A closed standard output ends the session; nothing panics.
+    fn send(&self, id: &Id, outcome: &Result<Answer, RpcError>) {
+        let written = write_reply(&mut **lock(&self.output), id, outcome);
         if written.is_err() {
             // Nobody reads the answers any more: stop starting work, finish what is running.
             {
@@ -176,18 +175,20 @@ impl Session {
             state.allowed -= 1;
             state.running -= 1;
         }
-        let result = wait();
-        if replaced {
-            lock(&self.state).allowed -= 1;
-        }
-        self.wakeup.notify_all();
-        result
+        // Dropped when the wait ends, however it ends: a wait that panics gives the place back too.
+        let _place = OffQueuePlace {
+            session: self,
+            replaced,
+        };
+        wait()
     }
 
     // The reader.
 
     fn read_loop(self: &Arc<Self>, mut input: impl Read) {
         let mut pending: Vec<u8> = Vec::new();
+        // How much of `pending` is known to hold no line end, so each byte is looked at once.
+        let mut searched = 0;
         let mut chunk = vec![0u8; READ_CHUNK_BYTES];
         loop {
             let count = match input.read(&mut chunk) {
@@ -200,7 +201,7 @@ impl Session {
                 break;
             }
             pending.extend_from_slice(chunk.get(..count).unwrap_or_default());
-            self.deliver(take_messages(&mut pending));
+            self.deliver(take_messages(&mut pending, &mut searched));
         }
         self.close();
     }
@@ -285,28 +286,42 @@ impl Session {
                 &job.cancelled,
             )
         }))
-        .unwrap_or_else(|_| Err(RpcError::unexpected()));
+        .unwrap_or(Err(RpcError::Unexpected));
         if job.cancelled.load(Ordering::SeqCst) {
             return;
         }
-        let line = match outcome {
-            Ok(result) => result_line(&request.id, &*result),
-            Err(error) => error_line(&request.id, &error),
-        };
-        self.send(&line);
+        self.send(&request.id, &outcome);
+    }
+}
+
+/// The place a call waiting off the queue holds: while it lives, one more worker may run.
+struct OffQueuePlace<'a> {
+    session: &'a Session,
+    replaced: bool,
+}
+
+impl Drop for OffQueuePlace<'_> {
+    fn drop(&mut self) {
+        if self.replaced {
+            lock(&self.session.state).allowed -= 1;
+        }
+        self.session.wakeup.notify_all();
     }
 }
 
 /// Every complete line in `pending`, read as a message; the lines are removed and a partial last
 /// line stays. A line that is not JSON, or not a valid message, is dropped without an answer.
-fn take_messages(pending: &mut Vec<u8>) -> Vec<Inbound> {
+/// `searched` is how many bytes of `pending` an earlier call found to hold no line end; it is
+/// updated, so a long line arriving in pieces is scanned once, not once per piece.
+fn take_messages(pending: &mut Vec<u8>, searched: &mut usize) -> Vec<Inbound> {
     let mut messages = Vec::new();
     let mut start = 0;
+    let mut from = *searched;
     while let Some(offset) = pending
-        .get(start..)
+        .get(from..)
         .and_then(|rest| rest.iter().position(|byte| *byte == b'\n'))
     {
-        let end = start + offset;
+        let end = from + offset;
         let mut line = pending.get(start..end).unwrap_or_default();
         if let Some(without_return) = line.strip_suffix(b"\r") {
             line = without_return;
@@ -315,39 +330,83 @@ fn take_messages(pending: &mut Vec<u8>) -> Vec<Inbound> {
             messages.push(message);
         }
         start = end + 1;
+        from = start;
     }
     pending.drain(..start);
+    *searched = pending.len();
     messages
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::runtime::Modes;
+    use std::time::{Duration, Instant};
+
+    const PING: &[u8] = b"{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"ping\"}";
 
     #[test]
-    fn complete_lines_become_messages_and_a_partial_line_waits() {
-        let mut pending = b"{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"ping\"}\r\nnot json\n{\"jsonrpc\":\"2.0\",\"id\":2,\"me".to_vec();
-        let messages = take_messages(&mut pending);
-        assert_eq!(messages.len(), 1);
-        assert_eq!(pending, b"{\"jsonrpc\":\"2.0\",\"id\":2,\"me");
-        pending.extend_from_slice(b"thod\":\"ping\"}\n");
-        assert_eq!(take_messages(&mut pending).len(), 1);
+    fn lines_end_at_a_newline_with_or_without_a_carriage_return_and_a_partial_line_waits() {
+        let mut pending = [PING, b"\r\nnot json\n", PING, b"\n", &PING[..20]].concat();
+        let mut searched = 0;
+        assert_eq!(take_messages(&mut pending, &mut searched).len(), 2);
+        assert_eq!(pending, &PING[..20]);
+        assert_eq!(searched, 20);
+        pending.extend_from_slice(&PING[20..]);
+        assert!(take_messages(&mut pending, &mut searched).is_empty());
+        pending.extend_from_slice(b"\r\n");
+        assert_eq!(take_messages(&mut pending, &mut searched).len(), 1);
         assert!(pending.is_empty());
     }
 
     #[test]
-    fn a_line_without_its_newline_is_never_read() {
-        let mut pending = b"{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"ping\"}".to_vec();
-        assert!(take_messages(&mut pending).is_empty());
-        assert!(!pending.is_empty());
+    fn a_long_line_arriving_in_small_pieces_is_scanned_once() {
+        let mut pending = Vec::new();
+        let mut searched = 0;
+        let started = Instant::now();
+        for _ in 0..4096 {
+            pending.extend_from_slice(&[b'x'; 1024]);
+            assert!(take_messages(&mut pending, &mut searched).is_empty());
+        }
+        assert_eq!(searched, 4096 * 1024);
+        assert!(started.elapsed() < Duration::from_secs(2));
+    }
+
+    fn session() -> Arc<Session> {
+        let config = Config {
+            modes: Modes::FULL,
+            vault_root: std::env::temp_dir(),
+        };
+        Session::new(config, Box::new(std::io::sink()))
     }
 
     #[test]
-    fn invalid_utf8_is_replaced_not_fatal() {
-        let mut pending = b"{\"jsonrpc\":\"2.0\",\"id\":\"\xff\",\"method\":\"ping\"}\n".to_vec();
-        let messages = take_messages(&mut pending);
-        assert!(
-            matches!(messages.first(), Some(Inbound::Request(request)) if request.id == Id::text("\u{fffd}"))
-        );
+    fn a_wait_that_panics_gives_its_place_back() {
+        let session = session();
+        {
+            let mut state = lock(&session.state);
+            state.running = 1;
+            state.allowed = 1;
+        }
+        let stopped = catch_unwind(AssertUnwindSafe(|| {
+            session.wait_off_queue(|| panic!("the wait stopped"));
+        }));
+        assert!(stopped.is_err());
+        let started = Instant::now();
+        loop {
+            let (running, allowed) = {
+                let state = lock(&session.state);
+                (state.running, state.allowed)
+            };
+            if (running, allowed) == (1, 1) {
+                break;
+            }
+            assert!(
+                started.elapsed() < Duration::from_secs(5),
+                "running {running}, allowed {allowed}"
+            );
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        session.close();
     }
 }

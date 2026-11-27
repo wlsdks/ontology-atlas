@@ -6,16 +6,14 @@
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
-use answer_format::json::to_raw;
-use serde::Serialize;
-use serde_json::value::RawValue;
-
 use super::message::Params;
 use super::params::{initialize, tools_call, tools_list};
-use super::reply::RpcError;
+use super::reply::{Answer, RpcError};
 use super::Session;
 use crate::dispatch::{call_tool, CallContext};
 use crate::surface::Surface;
+use answer_format::json::to_raw;
+use serde::Serialize;
 
 /// The protocol versions the server negotiates, newest first. The SDK's legacy list; a client that
 /// names a version not here is answered with the first.
@@ -59,22 +57,24 @@ struct InitializeResult<'a> {
     instructions: String,
 }
 
-fn written<T: Serialize + ?Sized>(result: &T) -> Result<Box<RawValue>, RpcError> {
-    to_raw(result).map_err(|_| RpcError::unexpected())
+fn written<T: Serialize + ?Sized>(result: &T) -> Result<Answer, RpcError> {
+    to_raw(result)
+        .map(Answer::Raw)
+        .map_err(|_| RpcError::Unexpected)
 }
 
-/// The result of one request, as JSON ready to send.
+/// The result of one request, ready to be written.
 pub fn handle_request(
     session: &Arc<Session>,
     method: &str,
     params: Option<&Params>,
     cancelled: &AtomicBool,
-) -> Result<Box<RawValue>, RpcError> {
+) -> Result<Answer, RpcError> {
     let surface = Surface::embedded();
     match method {
         "ping" => written(&Empty {}),
         "initialize" => {
-            let initialize = initialize(params).map_err(RpcError::Internal)?;
+            let initialize = initialize(params).map_err(RpcError::InvalidRequest)?;
             let version = negotiated_version(&initialize.protocol_version);
             session.set_client_capabilities(initialize.capabilities);
             written(&InitializeResult {
@@ -84,19 +84,21 @@ pub fn handle_request(
                     name: &surface.server_name,
                     version: &surface.server_version,
                 },
-                instructions: surface.instructions(&session.config.modes),
+                instructions: surface.instructions(&session.config().modes),
             })
         }
         "tools/list" => {
-            tools_list(params).map_err(RpcError::Internal)?;
-            written(&surface.tools_list(&session.config.modes))
+            tools_list(params).map_err(RpcError::InvalidRequest)?;
+            written(&surface.tools_list(&session.config().modes))
         }
         "tools/call" => {
-            let call = tools_call(params).map_err(|issues| {
-                RpcError::InvalidParams(format!("Invalid tools/call request: {issues}"))
-            })?;
-            let context = CallContext { session, cancelled };
-            written(&call_tool(&context, &call.name, call.arguments))
+            let call = tools_call(params).map_err(RpcError::InvalidToolCall)?;
+            let context = CallContext::new(session, cancelled);
+            Ok(Answer::Call(call_tool(
+                &context,
+                &call.name,
+                call.arguments,
+            )))
         }
         _ => Err(RpcError::MethodNotFound),
     }

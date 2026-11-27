@@ -220,6 +220,39 @@ mod tests {
         assert!(matches!(error, StartupError::InvalidProfile(_)));
     }
 
+    #[cfg(windows)]
+    #[test]
+    fn a_vault_named_with_backslashes_forward_slashes_or_a_verbatim_prefix_is_a_folder() {
+        let folder = std::env::temp_dir();
+        let backslashes = folder.to_string_lossy().into_owned();
+        let forward = backslashes.replace('\\', "/");
+        let verbatim = format!(r"\\?\{backslashes}");
+        for named in [backslashes, forward, verbatim] {
+            let config = Config::from_lookup(
+                |name| (name == "OATLAS_VAULT").then(|| named.clone()),
+                &folder,
+            );
+            assert!(config.is_ok(), "{named}: {config:?}");
+        }
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn a_missing_vault_on_a_drive_is_reported_with_the_path_as_written() {
+        let error = Config::from_lookup(
+            |name| (name == "OATLAS_VAULT").then(|| r"C:\definitely\not\here".to_string()),
+            &std::env::temp_dir(),
+        )
+        .expect_err("missing vault");
+        let lines = error.lines();
+        assert!(lines
+            .first()
+            .is_some_and(|line| line.contains("vault root validation failed")));
+        assert!(lines
+            .get(1)
+            .is_some_and(|line| line.contains(r"definitely\not\here")));
+    }
+
     #[test]
     fn an_unset_vault_is_the_working_folder() {
         let cwd = std::env::temp_dir();

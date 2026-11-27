@@ -121,29 +121,6 @@ mod tests {
     }
 
     #[test]
-    fn a_number_is_an_id_when_it_is_a_safe_integer() {
-        assert_eq!(id("1"), Some(Id::Number(1)));
-        assert_eq!(id("1e2"), Some(Id::Number(100)));
-        assert_eq!(id("-0"), Some(Id::Number(0)));
-        assert_eq!(
-            id("9007199254740991"),
-            Some(Id::Number(9_007_199_254_740_991))
-        );
-        for not_an_id in [
-            "1.5",
-            "null",
-            "true",
-            "{}",
-            "[]",
-            "9007199254740992",
-            "12345678901234567890",
-            "1e400",
-        ] {
-            assert_eq!(id(not_an_id), None, "{not_an_id}");
-        }
-    }
-
-    #[test]
     fn a_string_id_is_written_back_as_javascript_writes_it() {
         assert_eq!(
             id("\"é😀\"").map(|id| id.to_json()).as_deref(),

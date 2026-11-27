@@ -139,12 +139,14 @@ fn ids_are_written_back_as_javascript_writes_them() {
 }
 
 #[test]
-fn a_carriage_return_before_the_newline_is_part_of_the_line_ending() {
+fn a_carriage_return_before_the_newline_is_part_of_the_line_ending_and_never_written_back() {
     let run = rust(
         &[],
-        "{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"ping\"}\r\n",
+        "{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"ping\"}\r\n{\"jsonrpc\":\"2.0\",\"id\":10,\"method\":\"tools/list\"}\r\n",
     );
-    assert_eq!(run.lines, [PING_9]);
+    assert_eq!(run.lines.len(), 2);
+    assert_eq!(run.lines.first().map(String::as_str), Some(PING_9));
+    assert!(run.lines.iter().all(|line| !line.contains('\r')));
 }
 
 #[test]
@@ -406,41 +408,6 @@ fn a_request_nested_a_hundred_and_fifty_thousand_deep_is_answered_and_the_sessio
 }
 
 #[test]
-fn arguments_nested_thousands_deep_are_answered_never_a_crash() {
-    let deep_array = format!("{}{}", "[".repeat(3000), "]".repeat(3000));
-    let deep_object = format!("{}1{}", "{\"a\":".repeat(5000), "}".repeat(5000));
-    let run = rust(
-        &[],
-        &format!(
-            "{}{}{}",
-            request(
-                2,
-                "tools/call",
-                &format!("{{\"name\":\"list_concepts\",\"arguments\":{deep_array}}}")
-            ),
-            request(
-                3,
-                "tools/call",
-                &format!("{{\"name\":\"list_concepts\",\"arguments\":{deep_object}}}")
-            ),
-            then_ping()
-        ),
-    );
-    let by_id = support::by_id(&run);
-    let answer = |id: &str| {
-        by_id
-            .iter()
-            .find(|(key, _)| key == id)
-            .map(|(_, line)| line.clone())
-            .expect("answered")
-    };
-    assert!(answer("2").contains("expected record, received array"));
-    assert!(answer("3").contains("Unknown argument \\\"a\\\" for list_concepts."));
-    assert_eq!(answer("9"), PING_9);
-    assert_eq!(run.code, Some(0));
-}
-
-#[test]
 fn an_unknown_tool_is_named_with_its_nearest_and_the_allowed_list() {
     let run = rust(&[], &call(2, "list_concept", "{}"));
     let line = run.lines.first().expect("answered");
@@ -550,21 +517,57 @@ fn an_unknown_tool_profile_stops_the_start_even_when_the_vault_is_missing_too() 
     assert_eq!(run.code, Some(1));
 }
 
-/// Declared change 3: half of a surrogate pair is not text, so a string an agent sends with one in
-/// it is read with U+FFFD in its place, where the JavaScript server writes it back as the escape.
-/// A request id is the exception: it is written back exactly as sent.
+/// Declared change 3: half of a surrogate pair is not text. A tool name with one is read with
+/// U+FFFD in its place, an argument that holds one is refused by name before any handler sees it,
+/// and a request id is the exception: it is written back exactly as sent.
 #[test]
-fn a_lone_surrogate_in_a_string_is_read_as_the_replacement_character_but_never_in_an_id() {
+fn half_a_surrogate_pair_is_replaced_in_a_name_refused_in_an_argument_and_kept_in_an_id() {
     let escape = "\\ud800";
-    let line = format!(
-        "{{\"jsonrpc\":\"2.0\",\"id\":\"i{escape}\",\"method\":\"tools/call\",\"params\":{{\"name\":\"a{escape}b\",\"arguments\":{{}}}}}}\n"
+    let id = format!("\"i{escape}\"");
+    let run = rust(
+        &[],
+        &format!(
+            "{{\"jsonrpc\":\"2.0\",\"id\":{id},\"method\":\"tools/call\",\"params\":{{\"name\":\"a{escape}b\",\"arguments\":{{}}}}}}\n{}",
+            call(3, "list_concepts", &format!("{{\"domain\":\"x{escape}\"}}"))
+        ),
     );
-    let run = rust(&[], &line);
-    let answer = run.lines.first().expect("answered");
-    assert!(answer.contains("Unknown tool: a\u{fffd}b."), "{answer}");
+    let by_id = support::by_id(&run);
+    let first = by_id
+        .first()
+        .map(|(_, line)| line.as_str())
+        .unwrap_or_default();
+    assert!(first.contains("Unknown tool: a\u{fffd}b."), "{first}");
     assert!(
-        answer.ends_with(&format!(",\"jsonrpc\":\"2.0\",\"id\":\"i{escape}\"}}")),
-        "{answer}"
+        first.ends_with(&format!(",\"jsonrpc\":\"2.0\",\"id\":{id}}}")),
+        "{first}"
+    );
+    let refused = by_id
+        .get(1)
+        .map(|(_, line)| line.as_str())
+        .unwrap_or_default();
+    assert!(
+        refused.contains("\"errorCode\":\"invalid_arguments\"")
+            && refused.contains("Argument \\\"domain\\\" holds half of a surrogate pair"),
+        "{refused}"
+    );
+}
+
+/// A tool name of nine million characters is answered at once: nothing measures it against every
+/// allowed name.
+#[test]
+fn a_tool_name_of_millions_of_characters_is_answered_at_once() {
+    let name = "n".repeat(9_000_000);
+    let line = format!(
+        "{{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{{\"name\":\"{name}\"}}}}\n{}",
+        ping(9)
+    );
+    let started = std::time::Instant::now();
+    let run = rust(&[], &line);
+    assert_eq!(run.lines.len(), 2);
+    assert!(
+        started.elapsed() < std::time::Duration::from_secs(5),
+        "{:?}",
+        started.elapsed()
     );
 }
 

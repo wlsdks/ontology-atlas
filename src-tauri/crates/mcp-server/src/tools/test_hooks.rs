@@ -24,6 +24,7 @@ pub fn call(
         "__test_hold" => Some(hold(context)),
         "__test_write_marker" => Some(write_marker(arguments)),
         "__test_echo" => Some(ToolOutput::json(&Echo { echo: arguments })),
+        "__test_large_answer" => Some(large_answer(arguments)),
         _ => None,
     }
 }
@@ -31,6 +32,19 @@ pub fn call(
 #[derive(Serialize)]
 struct Echo<'a> {
     echo: &'a Arguments,
+}
+
+#[derive(Serialize)]
+struct Large {
+    data: String,
+}
+
+/// An answer of the number of bytes named by `bytes`, to see what a large answer costs.
+fn large_answer(arguments: &Arguments) -> Result<ToolOutput, ToolError> {
+    let bytes: usize = arguments.read("bytes")?.unwrap_or(1024);
+    ToolOutput::json(&Large {
+        data: "x".repeat(bytes),
+    })
 }
 
 #[derive(Serialize)]
@@ -51,7 +65,7 @@ fn stop_unexpectedly() -> Result<ToolOutput, ToolError> {
 /// does, and says which.
 fn hold(context: &CallContext<'_>) -> Result<ToolOutput, ToolError> {
     let started = Instant::now();
-    let cancelled = context.session.wait_off_queue(|| {
+    let cancelled = context.wait_off_queue(|| {
         while !context.is_cancelled() && started.elapsed() < HOLD_LIMIT {
             std::thread::sleep(HOLD_POLL);
         }

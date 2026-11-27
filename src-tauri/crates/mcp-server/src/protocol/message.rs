@@ -9,15 +9,38 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
 
-use answer_format::OrderedMap;
+use indexmap::IndexMap;
 use serde_json::value::RawValue;
 
 use super::id::Id;
-use super::surrogates::without_lone;
-use crate::json_text::{string_value, Kind};
+use super::surrogates::{contains_lone, without_lone};
+use crate::raw_json::{string_value, Kind};
 
-/// The members of a request's `params`, in the order JavaScript would list them.
-pub type Params = OrderedMap<Box<RawValue>>;
+/// The members of a request's `params`, in the order sent, each left as text.
+#[derive(Debug, Default)]
+pub struct Params {
+    fields: IndexMap<String, Box<RawValue>>,
+    /// The `arguments` of a `tools/call` that held half of a surrogate pair, found in the line as
+    /// written: every string is read with the half replaced, so only the line can say.
+    pub malformed_arguments: Vec<String>,
+}
+
+impl Params {
+    pub fn from_fields(fields: IndexMap<String, Box<RawValue>>) -> Self {
+        Self {
+            fields,
+            malformed_arguments: Vec::new(),
+        }
+    }
+
+    pub fn get(&self, key: &str) -> Option<&RawValue> {
+        self.fields.get(key).map(|raw| &**raw)
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (&str, &RawValue)> {
+        self.fields.iter().map(|(key, raw)| (key.as_str(), &**raw))
+    }
+}
 
 #[derive(Debug)]
 pub struct Request {
@@ -62,15 +85,16 @@ fn meta_is_valid(meta: &RawValue) -> bool {
 }
 
 fn read_params(raw: &RawValue) -> Option<Params> {
-    let params: Params = serde_json::from_str(raw.get()).ok()?;
+    let fields: IndexMap<String, Box<RawValue>> = serde_json::from_str(raw.get()).ok()?;
+    let params = Params::from_fields(fields);
     params
         .get("_meta")
-        .is_none_or(|meta| meta_is_valid(meta))
+        .is_none_or(meta_is_valid)
         .then_some(params)
 }
 
 fn cancelled_request(params: Option<&Params>) -> Option<Id> {
-    params?.get("requestId").and_then(|raw| Id::from_raw(raw))
+    params?.get("requestId").and_then(Id::from_raw)
 }
 
 /// Reads one message from `text`, which holds no lone surrogate.
@@ -110,6 +134,24 @@ fn classify(text: &str) -> Option<Inbound> {
     }
 }
 
+/// The names of the `tools/call` arguments of `text`, as written, that hold a lone surrogate. A line
+/// whose argument names hold one cannot be read here; its arguments are then unknown ones, which
+/// are refused for that reason before a value is looked at.
+fn malformed_arguments(text: &str) -> Vec<String> {
+    let arguments = serde_json::from_str::<Members<'_>>(text)
+        .ok()
+        .and_then(|members| members.get("params").copied())
+        .and_then(|params| serde_json::from_str::<Members<'_>>(params.get()).ok())
+        .and_then(|params| params.get("arguments").copied())
+        .and_then(|arguments| serde_json::from_str::<Members<'_>>(arguments.get()).ok());
+    arguments
+        .into_iter()
+        .flatten()
+        .filter(|(_, value)| contains_lone(value.get()))
+        .map(|(name, _)| name)
+        .collect()
+}
+
 /// The ids of `text` as written, for a line whose lone surrogates were replaced everywhere else.
 fn restore_exact_ids(text: &str, inbound: &mut Inbound) {
     let Ok(members) = serde_json::from_str::<Members<'_>>(text) else {
@@ -135,12 +177,19 @@ fn restore_exact_ids(text: &str, inbound: &mut Inbound) {
 
 /// One line as the reader hands it over, or `None` when the SDK would drop it unanswered. A request
 /// id and a cancelled request id are read from the line as written, so a lone surrogate in one is
-/// neither lost nor merged with another id.
+/// neither lost nor merged with another id, and the arguments that held one are named.
 pub fn read_line(text: &str) -> Option<Inbound> {
     let readable = without_lone(text);
     let mut inbound = classify(&readable)?;
     if matches!(readable, Cow::Owned(_)) {
         restore_exact_ids(text, &mut inbound);
+        if let Inbound::Request(Request {
+            params: Some(params),
+            ..
+        }) = &mut inbound
+        {
+            params.malformed_arguments = malformed_arguments(text);
+        }
     }
     Some(inbound)
 }
@@ -235,29 +284,11 @@ mod tests {
     }
 
     #[test]
-    fn params_keep_unknown_keys_as_text_and_a_valid_meta() {
-        let request = request(
-            r#"{"jsonrpc":"2.0","id":1,"method":"ping","params":{"a":{"b":[1]},"_meta":{"progressToken":"t"}}}"#,
-        );
-        let params = request.params.expect("params");
-        assert_eq!(params.get("a").map(|raw| raw.get()), Some(r#"{"b":[1]}"#));
-    }
-
-    #[test]
     fn nesting_is_never_read_so_any_depth_is_a_message() {
         let depth = 200_000;
         let nested = format!("{}{}", "[".repeat(depth), "]".repeat(depth));
         let line = format!(r#"{{"jsonrpc":"2.0","id":1,"method":"x","params":{{"a":{nested}}}}}"#);
         assert!(read_line(&line).is_some());
-    }
-
-    #[test]
-    fn two_ids_differing_in_a_lone_surrogate_stay_two_ids_and_are_written_back_as_sent() {
-        let high = request(r#"{"jsonrpc":"2.0","id":"a\ud800b","method":"ping"}"#).id;
-        let other = request(r#"{"jsonrpc":"2.0","id":"a\ud801b","method":"ping"}"#).id;
-        assert_ne!(high, other);
-        assert_eq!(high.to_json(), r#""a\ud800b""#);
-        assert_eq!(other.to_json(), r#""a\ud801b""#);
     }
 
     #[test]

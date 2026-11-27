@@ -3,39 +3,31 @@
 //! `serde_json` already escapes strings, orders a struct's fields as declared and indents as
 //! `JSON.stringify(value, null, 2)` does; what differs is the text of a fractional or very large
 //! number (`1e+21`, not `1e21`), which these writers take from [`crate::number`]. Fields come out
-//! in declaration order, so a typed answer's field order is its key order; a map whose order
-//! matters is an [`crate::OrderedMap`].
+//! in declaration order, so a typed answer's field order is its key order.
 
 use std::io;
 
 use serde::Serialize;
-use serde_json::ser::{Formatter, PrettyFormatter};
+use serde_json::ser::{CompactFormatter, Formatter, PrettyFormatter};
 use serde_json::value::RawValue;
 use serde_json::Serializer;
 
-/// `serde_json`'s compact writer with JavaScript's number text.
-struct CompactFormatter;
+/// Any `serde_json` formatter, with a number written as JavaScript writes it. Every other part of
+/// the layout is the inner formatter's.
+struct JsNumbers<F>(F);
 
-impl Formatter for CompactFormatter {
-    fn write_f64<W>(&mut self, writer: &mut W, value: f64) -> io::Result<()>
-    where
-        W: ?Sized + io::Write,
-    {
-        writer.write_all(crate::number::text(value).as_bytes())
-    }
-
-    fn write_f32<W>(&mut self, writer: &mut W, value: f32) -> io::Result<()>
-    where
-        W: ?Sized + io::Write,
-    {
-        self.write_f64(writer, f64::from(value))
-    }
+macro_rules! delegate {
+    ($($method:ident($($argument:ident: $kind:ty),*);)*) => {$(
+        fn $method<W>(&mut self, writer: &mut W $(, $argument: $kind)*) -> io::Result<()>
+        where
+            W: ?Sized + io::Write,
+        {
+            self.0.$method(writer $(, $argument)*)
+        }
+    )*};
 }
 
-/// The indenting writer with JavaScript's number text.
-struct IndentedFormatter<'a>(PrettyFormatter<'a>);
-
-impl Formatter for IndentedFormatter<'_> {
+impl<F: Formatter> Formatter for JsNumbers<F> {
     fn write_f64<W>(&mut self, writer: &mut W, value: f64) -> io::Result<()>
     where
         W: ?Sized + io::Write,
@@ -50,67 +42,16 @@ impl Formatter for IndentedFormatter<'_> {
         self.write_f64(writer, f64::from(value))
     }
 
-    fn begin_array<W>(&mut self, writer: &mut W) -> io::Result<()>
-    where
-        W: ?Sized + io::Write,
-    {
-        self.0.begin_array(writer)
-    }
-
-    fn end_array<W>(&mut self, writer: &mut W) -> io::Result<()>
-    where
-        W: ?Sized + io::Write,
-    {
-        self.0.end_array(writer)
-    }
-
-    fn begin_array_value<W>(&mut self, writer: &mut W, first: bool) -> io::Result<()>
-    where
-        W: ?Sized + io::Write,
-    {
-        self.0.begin_array_value(writer, first)
-    }
-
-    fn end_array_value<W>(&mut self, writer: &mut W) -> io::Result<()>
-    where
-        W: ?Sized + io::Write,
-    {
-        self.0.end_array_value(writer)
-    }
-
-    fn begin_object<W>(&mut self, writer: &mut W) -> io::Result<()>
-    where
-        W: ?Sized + io::Write,
-    {
-        self.0.begin_object(writer)
-    }
-
-    fn end_object<W>(&mut self, writer: &mut W) -> io::Result<()>
-    where
-        W: ?Sized + io::Write,
-    {
-        self.0.end_object(writer)
-    }
-
-    fn begin_object_key<W>(&mut self, writer: &mut W, first: bool) -> io::Result<()>
-    where
-        W: ?Sized + io::Write,
-    {
-        self.0.begin_object_key(writer, first)
-    }
-
-    fn begin_object_value<W>(&mut self, writer: &mut W) -> io::Result<()>
-    where
-        W: ?Sized + io::Write,
-    {
-        self.0.begin_object_value(writer)
-    }
-
-    fn end_object_value<W>(&mut self, writer: &mut W) -> io::Result<()>
-    where
-        W: ?Sized + io::Write,
-    {
-        self.0.end_object_value(writer)
+    delegate! {
+        begin_array();
+        end_array();
+        begin_array_value(first: bool);
+        end_array_value();
+        begin_object();
+        end_object();
+        begin_object_key(first: bool);
+        begin_object_value();
+        end_object_value();
     }
 }
 
@@ -122,11 +63,19 @@ fn into_text(bytes: Vec<u8>) -> String {
 /// `JSON.stringify(value)`.
 pub fn to_string<T: Serialize + ?Sized>(value: &T) -> Result<String, serde_json::Error> {
     let mut bytes = Vec::new();
-    value.serialize(&mut Serializer::with_formatter(
-        &mut bytes,
-        CompactFormatter,
-    ))?;
+    to_writer(&mut bytes, value)?;
     Ok(into_text(bytes))
+}
+
+/// `JSON.stringify(value)`, written straight to `writer` without holding the text.
+pub fn to_writer<W: io::Write, T: Serialize + ?Sized>(
+    writer: W,
+    value: &T,
+) -> Result<(), serde_json::Error> {
+    value.serialize(&mut Serializer::with_formatter(
+        writer,
+        JsNumbers(CompactFormatter),
+    ))
 }
 
 /// `JSON.stringify(value, null, indent)` with an indent of `indent` spaces.
@@ -135,7 +84,7 @@ pub fn to_string_indented<T: Serialize + ?Sized>(
     indent: usize,
 ) -> Result<String, serde_json::Error> {
     let unit = " ".repeat(indent);
-    let formatter = IndentedFormatter(PrettyFormatter::with_indent(unit.as_bytes()));
+    let formatter = JsNumbers(PrettyFormatter::with_indent(unit.as_bytes()));
     let mut bytes = Vec::new();
     value.serialize(&mut Serializer::with_formatter(&mut bytes, formatter))?;
     Ok(into_text(bytes))
@@ -143,7 +92,10 @@ pub fn to_string_indented<T: Serialize + ?Sized>(
 
 /// The value as JSON kept as written, for an answer that embeds it unchanged.
 pub fn to_raw<T: Serialize + ?Sized>(value: &T) -> Result<Box<RawValue>, serde_json::Error> {
-    RawValue::from_string(to_string(value)?)
+    let mut text = to_string(value)?;
+    // At exactly its length the text becomes the raw value without being copied.
+    text.shrink_to_fit();
+    RawValue::from_string(text)
 }
 
 /// A string as `JSON.stringify` writes it, quotes included.
@@ -154,7 +106,6 @@ pub fn quote(text: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::OrderedMap;
 
     #[derive(Serialize)]
     struct Answer<'a> {
@@ -201,19 +152,6 @@ mod tests {
         assert_eq!(
             to_string(&[9_007_199_254_740_993_f64]).expect("writes"),
             "[9007199254740992]"
-        );
-    }
-
-    #[test]
-    fn an_ordered_map_lists_integer_keys_first() {
-        let mut map = OrderedMap::new();
-        map.insert("b".to_string(), 1);
-        map.insert("2".to_string(), 2);
-        map.insert("a".to_string(), 3);
-        map.insert("1".to_string(), 4);
-        assert_eq!(
-            to_string(&map).expect("writes"),
-            r#"{"1":4,"2":2,"b":1,"a":3}"#
         );
     }
 

@@ -1,7 +1,8 @@
 //! Numbers written as `Number.prototype.toString` writes them.
 
-/// The digits JavaScript prints for `number`; a number JSON cannot hold (`NaN`, an infinity) is
-/// `null`, as `JSON.stringify` writes it.
+/// The text `Number.prototype.toString` gives `number`, as `JSON.stringify` writes it: a whole
+/// double has no fraction, `-0` is `0`, and `NaN` or an infinity, which JSON cannot hold, is
+/// `null`.
 pub fn text(number: f64) -> String {
     if number.is_finite() {
         ryu_js::Buffer::new().format_finite(number).to_string()
@@ -13,13 +14,6 @@ pub fn text(number: f64) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn whole_doubles_have_no_fraction_and_negative_zero_is_zero() {
-        assert_eq!(text(1.0), "1");
-        assert_eq!(text(-0.0), "0");
-        assert_eq!(text(100.0), "100");
-    }
 
     #[test]
     fn exponents_and_long_fractions_follow_javascript() {

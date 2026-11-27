@@ -104,9 +104,12 @@ pub fn run_to_end(program: Program, environment: &[(&str, &str)], input: &[u8]) 
         let _ = stderr.read_to_string(&mut text);
         text
     });
-    let lines: Vec<String> = BufReader::new(stdout)
-        .lines()
-        .map_while(Result::ok)
+    // Split on `\n` alone, so a `\r` the server wrote stays in the line for a test to see.
+    let mut bytes = Vec::new();
+    let _ = BufReader::new(stdout).read_to_end(&mut bytes);
+    let lines: Vec<String> = String::from_utf8_lossy(&bytes)
+        .split_terminator('\n')
+        .map(str::to_string)
         .collect();
     let _ = writer.join();
     let status = child.wait().expect("wait");
