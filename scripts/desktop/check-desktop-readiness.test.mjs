@@ -66,7 +66,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop package, Tauri, and Rust crate versions stay aligned for release tags/,
+    /✓ desktop package, Tauri, Rust crate and MCP server versions stay aligned for release tags/,
   );
   assert.match(
     result.stdout,

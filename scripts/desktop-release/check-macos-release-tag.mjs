@@ -3,15 +3,9 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { parseReleaseTag } from "../lib/release-tag.mjs";
+import { APP_VERSION_FILE_LIST, readAppVersions, versionMismatches } from "../lib/release-versions.mjs";
 
 const root = process.cwd();
-const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-const tauriConfig = JSON.parse(
-  fs.readFileSync(path.join(root, "src-tauri", "tauri.conf.json"), "utf8"),
-);
-const mcpPkg = JSON.parse(fs.readFileSync(path.join(root, "mcp", "package.json"), "utf8"));
-const cargoToml = fs.readFileSync(path.join(root, "src-tauri", "Cargo.toml"), "utf8");
-const cargoVersion = cargoToml.match(/\[package\][\s\S]*?\nversion\s*=\s*"([^"]+)"/)?.[1];
 
 /**
  * `/download` derives RELEASE_VERSION from package.json through next.config.ts; this
@@ -107,19 +101,11 @@ if (!releaseFactsDerived || !nextConfigFeedsVersion) {
   );
 }
 
-const versions = {
-  package: pkg.version,
-  tauri: tauriConfig.version,
-  cargo: cargoVersion,
-  mcp: mcpPkg.version,
-};
-const mismatches = Object.entries(versions)
-  .filter(([, version]) => version !== tagVersion)
-  .map(([source, version]) => `${source}=${version ?? "missing"}`);
+const mismatches = versionMismatches(readAppVersions(root), tagVersion);
 
 if (mismatches.length > 0) {
   fail(
-    `release tag ${tag} does not match macOS app versions: ${mismatches.join(", ")}. Update package.json, src-tauri/tauri.conf.json, src-tauri/Cargo.toml and mcp/package.json together before tagging (mcp/src/server-version.mjs follows mcp/package.json); the download page follows package.json on its own.`,
+    `release tag ${tag} does not match macOS app versions: ${mismatches.join(", ")}. Update ${APP_VERSION_FILE_LIST} together before tagging (mcp/src/server-version.mjs follows mcp/package.json); the download page follows package.json on its own.`,
   );
 }
 

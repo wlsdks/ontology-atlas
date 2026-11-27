@@ -6,6 +6,7 @@ import { checkPullRequest } from "./release-status/pull-request-check.mjs";
 import { checkGithubRelease, checkReleaseTagSlot, checkReleaseWorkflow } from "./release-status/public-release-checks.mjs";
 import { checkSigningSecrets } from "./release-status/signing-secrets-check.mjs";
 import { renderAndExit } from "./release-status/status-report.mjs";
+import { APP_VERSION_FILE_LIST } from "../lib/release-versions.mjs";
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
@@ -30,7 +31,7 @@ async function main() {
       "version_alignment",
       "Version alignment",
       tagAlignment.message.replace(/^\[desktop-release-tag\]\s*/, ""),
-      `Run pnpm desktop:release-tag -- --tag=${options.tag} and update package.json, src-tauri/tauri.conf.json, and src-tauri/Cargo.toml together before tagging.`,
+      `Run pnpm desktop:release-tag -- --tag=${options.tag} and update ${APP_VERSION_FILE_LIST} together before tagging.`,
       [`pnpm desktop:release-tag -- --tag=${options.tag}`],
     ));
   }

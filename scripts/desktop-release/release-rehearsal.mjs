@@ -14,6 +14,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { readAppVersions, versionMismatches } from "../lib/release-versions.mjs";
 
 export const RELEASE_WORKFLOW_PATH = ".github/workflows/release-macos.yml";
 const FULL_SHA = /^[0-9a-f]{40}$/i;
@@ -193,17 +194,8 @@ export function admissionCheckCommands(tag, sha) {
 }
 
 export function checkVersionsAgree(root = process.cwd()) {
-  const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")).version;
-  const tauri = JSON.parse(
-    fs.readFileSync(path.join(root, "src-tauri", "tauri.conf.json"), "utf8"),
-  ).version;
-  const cargo = fs
-    .readFileSync(path.join(root, "src-tauri", "Cargo.toml"), "utf8")
-    .match(/\[package\][\s\S]*?\nversion\s*=\s*"([^"]+)"/)?.[1];
-  const mcp = JSON.parse(fs.readFileSync(path.join(root, "mcp", "package.json"), "utf8")).version;
-  const versions = { package: pkg, tauri, cargo, mcp };
-  const distinct = new Set(Object.values(versions));
-  return { versions, agree: distinct.size === 1 && !distinct.has(undefined) };
+  const versions = readAppVersions(root);
+  return { versions, agree: versions.package !== undefined && versionMismatches(versions, versions.package).length === 0 };
 }
 
 function color(code, text) {
