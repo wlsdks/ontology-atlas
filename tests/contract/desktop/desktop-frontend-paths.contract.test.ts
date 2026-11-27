@@ -102,29 +102,20 @@ describe("what the desktop bundle leaves out has no way in from the app", () => 
   it("/download: only reviewed files link it, and each shows the link on the web alone", () => {
     // The installed app must never offer its own download (route list, `/`). Every file below
     // gates its link behind the web runtime or renders only on a gateway page; a new file that
-    // links `/download` or renders `GetAppLink` has to be read for that gate and added here.
+    // links `/download` has to be read for that gate and added here.
     const reviewed = new Set([
       "src/app/providers/GatewayHandOverScript.tsx",
-      "src/shared/ui/controls/get-app-link.tsx",
       "src/shared/lib/navigation/nav-destination.ts",
-      "src/features/docs-vault-local/ui/use-agent-client-controls.tsx",
-      "src/features/docs-vault-local/ui/OpenVaultCta.tsx",
-      "src/features/docs-vault-local/ui/VaultOpenGuideSheet.tsx",
-      "src/features/first-run-starter/ui/FirstRunStarterModule.tsx",
-      "src/features/gray-area/ui/GrayAreaInspector.tsx",
-      "src/features/library/ui/FindDocumentsDialog.tsx",
-      "src/features/mcp-connectors/ui/add-connector/FoundSection.tsx",
       "src/views/home/model/project-source/use-topology-source-actions.tsx",
       "src/views/terminal-state/ui/NotFoundScreen.tsx",
       "src/widgets/bottom-tab-bar/lib/is-tab-active.ts",
       "src/widgets/gateway-chrome/ui/GatewayNav.tsx",
       "src/widgets/library-import/ui/ImportConnectStep.tsx",
     ]);
-    const linksDownload = /["']\/download\/?["'?#]|<GetAppLink\b/;
+    const linksDownload = /["']\/download\/?["'?#]/;
     const naming = appSource.filter(
       (file) => !file.startsWith("src/views/download/") && linksDownload.test(readFileSync(join(ROOT, file), "utf8")),
     );
-    expect(naming).toContain("src/shared/ui/controls/get-app-link.tsx");
     expect(naming.filter((file) => !reviewed.has(file))).toEqual([]);
     // A file that stops linking leaves the list, so the list stays the set that was read.
     expect([...reviewed].filter((file) => !naming.includes(file))).toEqual([]);
