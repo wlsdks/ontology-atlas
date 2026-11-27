@@ -205,7 +205,7 @@
     "contract-node:tests/contract/settings/expand-settings.contract.test.ts": 14.537,
     "contract-node:tests/contract/settings/guide-auto-start-gate.contract.test.ts": 0.166,
     "contract-node:tests/contract/settings/settings-catalog.contract.test.ts": 0.232,
-    "contract-node:tests/contract/settings/settings-section-reference.contract.test.ts": 0.117,
+    "contract-node:tests/contract/settings/settings-section-keys.contract.test.ts": 0.117,
     "contract-node:tests/contract/settings/text-size-boot.contract.test.ts": 0.452,
     "contract-node:tests/contract/typography/cjk-line-rules.contract.test.ts": 0.084,
     "contract-node:tests/contract/typography/dead-typography-class.contract.test.ts": 0.442,
