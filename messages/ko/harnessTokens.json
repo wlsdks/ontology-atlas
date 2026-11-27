@@ -1,0 +1,123 @@
+{
+  "stage": {
+    "title": "토큰이 어디에 쓰이는지",
+    "body": "이 컴퓨터에 있는 이 저장소의 최근 30일 Claude Code 세션을 한 번에 살펴, 컨텍스트 토큰이 어디에 쓰였는지와 항목마다 바꿀 점을 보여 줘요. 개수, 시각, 짧은 세션 ID, 그리고 모델, effort, 에이전트, 도구 서버 이름을 가지고 있고, 파일은 바꾸지 않아요.",
+    "files": "최근 30일 세션 파일 {files}개, {size}",
+    "start": "토큰 사용 살펴보기",
+    "local": "아무것도 밖으로 보내지 않아요."
+  },
+  "run": {
+    "reading": "세션 파일 {total}개 중 {done}개 읽는 중",
+    "stop": "멈추기",
+    "stopped": "멈췄어요. 수치는 세션 파일 {total}개 중 {done}개 기준이에요.",
+    "again": "다시 살펴보기",
+    "inspected": "최근 30일 · {time}에 살펴봄"
+  },
+  "strip": {
+    "title": "하루별 턴당 컨텍스트",
+    "usual": "{date} 이전의 보통 범위",
+    "dayTip": "{date}: 턴당 {perTurn} · {turns}턴",
+    "fewTurns": "500턴 미만: 비교에서 빠짐"
+  },
+  "split": {
+    "total": "{turns}턴, 컨텍스트 토큰 {tokens}개",
+    "start": "시작할 때 불러온 것",
+    "work": "작업",
+    "long": "턴당 200K 초과분"
+  },
+  "kinds": {
+    "longContext": "긴 컨텍스트",
+    "start": "시작할 때 불러온 것",
+    "compaction": "자동 압축",
+    "cacheMiss": "캐시 미스",
+    "model": "모델과 effort"
+  },
+  "row": {
+    "tokens": "토큰 {tokens}개",
+    "share": "{model}: 턴의 {share}",
+    "none": "최근 30일에 없음"
+  },
+  "detail": {
+    "longContext": "{turns}턴(전체의 {share})이 200K가 넘는 컨텍스트로 돌았어요. 턴마다 컨텍스트 전체를 다시 읽기 때문에, 이 턴들은 200K 초과분만으로 토큰 {tokens}개를 처리했어요.",
+    "start": "세션은 첫 답 전에 이미 컨텍스트 토큰 {median}개를 싣고 시작했고, 이후 모든 턴이 이를 다시 실었어요. 도구 목록만 요청마다 토큰 약 {toolTokens}개였어요.",
+    "toolGroup": "{name}: 토큰 약 {tokens}개 · 30일 동안 {calls, plural, =0 {호출 없음} other {#번 호출}}",
+    "builtIn": "기본 도구",
+    "estimated": "도구 목록 크기로 어림한 값",
+    "compaction": "Claude Code가 세션 {runs}개에서 {count}번 압축했어요. 압축 전 평균 토큰 {before}개, 압축 후 평균 {after}개였어요.",
+    "cacheMiss": "Claude Code가 캐시 미스를 {count}번 기록했고, 토큰 {tokens}개를 캐시에 다시 썼어요.",
+    "cacheReason": "{reason}: {count}턴 · 토큰 {tokens}개",
+    "model": "{agent} · {model} · effort {effort} · {turns}턴 · 토큰 {tokens}개",
+    "mainSession": "메인 세션"
+  },
+  "fix": {
+    "title": "바꿀 점",
+    "longContext": "새 작업은 새 세션에서 시작하거나 /clear를 실행하세요. .claude/settings.json의 autoCompactWindow(지금 {window})를 낮추면 더 일찍 압축하지만 대화를 덜 남겨요.",
+    "start": "이 저장소에서 거의 부르지 않는 도구 서버는 Claude Code의 /mcp에서 끄세요. 시작할 때 불러오는 메모리 목차는 개선에서 점검해요.",
+    "compaction": "작업이 끝나면 새 세션을 시작하거나 직접 /compact를 실행해, 요약이 작업 사이에 오게 하세요.",
+    "systemChanged": "세션 도중 시스템 프롬프트가 바뀌었어요. 예를 들어 지시 파일이나 메모리 파일을 고쳤을 때요. 이런 파일은 세션 사이에 고치세요.",
+    "toolsChanged": "세션 도중 도구 목록이 바뀌었어요. 예를 들어 도구 서버가 늦게 연결되거나 켜고 꺼졌을 때요. 도구 서버는 시작 전에 정해 두세요.",
+    "modelChanged": "세션 도중 모델을 바꾸면 캐시를 새로 만들어요. 모델은 작업 사이에 바꾸세요.",
+    "otherReason": "Claude Code가 이 이유를 더 설명하지 않아서 Atlas는 바꿀 점을 제안하지 않아요.",
+    "model": "에이전트마다 모델과 effort는 .claude/agents/{agent}.md 파일의 model:과 effort: 줄이에요. 메인 세션은 /model과 /effort로 정해요.",
+    "copied": "복사했어요"
+  },
+  "evidence": {
+    "title": "일어난 곳",
+    "row": "{session} · {turn}번째 턴 · {time} · 토큰 {tokens}개",
+    "session": "세션 {id}",
+    "subagent": "세션 {id}의 {agent}"
+  },
+  "compare": {
+    "pick": "비교 기준일",
+    "pickHint": "날짜나 에이전트 파일을 바꾼 커밋을 고르세요",
+    "tick": "{date} · {subject}",
+    "clear": "지우기",
+    "none": "날짜를 고르면 그 전후를 비교해요.",
+    "tooFew": "{date} 이후 500턴 이상인 날이 {days}일뿐이에요. 판단하려면 3일이 필요해요.",
+    "same": "차이를 알 수 없어요. {date} 이후 평균 {after}, 보통 범위({low}~{high}) 안이에요.",
+    "lower": "{date} 이후 낮아졌어요. 이전 {before}, 이후 평균 {after}. 보통 범위보다 아래예요.",
+    "higher": "{date} 이후 높아졌어요. 이전 {before}, 이후 평균 {after}. 보통 범위보다 위예요.",
+    "left": "500턴 미만인 {days}일은 뺐어요.",
+    "tooFewBefore": "{date} 이전 500턴 이상인 날이 {days}일뿐이에요. 보통 범위를 알려면 7일이 필요해요."
+  },
+  "money": {
+    "title": "Claude Code의 추정",
+    "total": "최근 30일 {amount}",
+    "split": "{date} 이전 {before} · 이후 {after}",
+    "note": "Claude Code가 세션 파일에 남긴 API 가격 기준 추정이에요. 실제 청구액이 아니에요.",
+    "partial": "Claude Code가 일부 모델의 가격을 매기지 못해서 이 추정은 실제보다 낮아요.",
+    "none": "이 세션들에는 Claude Code의 비용 추정이 없어요."
+  },
+  "partial": {
+    "files": "파일 {count}개를 읽지 못했어요({reason}). 그 수치는 빠져 있어요.",
+    "lines": "4 MiB 넘는 줄 {count}개는 건너뛰었어요.",
+    "unknown": "기록 {count}개에 Atlas가 필요한 수치가 없었어요. 그 수치는 알 수 없음으로 보여요."
+  },
+  "unknown": "알 수 없음",
+  "empty": {
+    "title": "최근 30일 동안 이 저장소의 Claude Code 세션이 없어요",
+    "body": "{paths}에서 찾아봤어요. Claude Code는 대화마다 그곳에 세션 파일을 남겨요."
+  },
+  "error": {
+    "home": "{path} 폴더를 읽지 못했어요: {reason}. 그 안은 살펴보지 않았어요."
+  },
+  "web": {
+    "title": "토큰 사용 살펴보기는 앱에서 할 수 있어요",
+    "body": "Claude Code는 세션 파일을 홈 폴더에 두는데, 브라우저는 그 폴더를 열 수 없어요. 앱은 이 컴퓨터에서 그 파일을 읽고 개수, 시각, 짧은 세션 ID, 그리고 모델, effort, 에이전트, 도구 서버 이름을 가지고 있어요."
+  },
+  "card": {
+    "running": "토큰 사용 살펴보는 중 · {total}개 중 {done}개",
+    "done": "토큰 사용을 살펴봤어요: 항목 {count}개",
+    "open": "열기"
+  },
+  "action": {
+    "copy": "복사",
+    "openImprove": "개선 열기"
+  },
+  "reason": {
+    "notFound": "찾을 수 없음",
+    "denied": "권한 없음",
+    "notRegular": "일반 파일이 아님",
+    "unreadable": "읽을 수 없음"
+  }
+}

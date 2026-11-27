@@ -1,0 +1,123 @@
+{
+  "stage": {
+    "title": "Token 用在了哪里",
+    "body": "一次检查会读取本机上此仓库最近 30 天的 Claude Code 会话，显示上下文 token 用在了哪里，并为每项发现给出要改之处。保留的是数量、时间、短会话 ID，以及模型、effort、智能体和工具服务器的名称，且不修改任何文件。",
+    "files": "最近 30 天 {files} 个会话文件，{size}",
+    "start": "检查 token 用量",
+    "local": "不会向任何地方发送数据。"
+  },
+  "run": {
+    "reading": "正在读取会话文件：{done}/{total}",
+    "stop": "停止",
+    "stopped": "已停止。数值只涵盖 {total} 个会话文件中的 {done} 个。",
+    "again": "再次检查",
+    "inspected": "最近 30 天 · 检查于 {time}"
+  },
+  "strip": {
+    "title": "每日每轮上下文",
+    "usual": "{date} 之前的常见范围",
+    "dayTip": "{date}：每轮 {perTurn} · {turns} 轮",
+    "fewTurns": "少于 500 轮：不参与比较"
+  },
+  "split": {
+    "total": "{turns} 轮共处理上下文 token {tokens}",
+    "start": "开始时载入",
+    "work": "工作",
+    "long": "每轮超出 200K 的部分"
+  },
+  "kinds": {
+    "longContext": "长上下文",
+    "start": "开始时载入",
+    "compaction": "自动压缩",
+    "cacheMiss": "缓存未命中",
+    "model": "模型与 effort"
+  },
+  "row": {
+    "tokens": "{tokens} token",
+    "share": "{model}：占轮次 {share}",
+    "none": "最近 30 天没有"
+  },
+  "detail": {
+    "longContext": "有 {turns} 轮（占全部的 {share}）在超过 200K 的上下文中运行。每一轮都会重新读取全部上下文，因此仅超出 200K 的部分就处理了 {tokens} token。",
+    "start": "会话在第一次回答之前就带着 {median} token 的上下文开始，之后每一轮都重复携带。仅工具列表每次请求就约有 {toolTokens} token。",
+    "toolGroup": "{name}：约 {tokens} token · 30 天内{calls, plural, =0 {从未调用} other {调用 # 次}}",
+    "builtIn": "内置工具",
+    "estimated": "按工具列表大小估算",
+    "compaction": "Claude Code 在 {runs} 个会话中压缩了 {count} 次，压缩前平均 {before} token，压缩后平均 {after} token。",
+    "cacheMiss": "Claude Code 记录了 {count} 次缓存未命中，{tokens} token 被重新写入缓存。",
+    "cacheReason": "{reason}：{count} 轮 · {tokens} token",
+    "model": "{agent} · {model} · effort {effort} · {turns} 轮 · {tokens} token",
+    "mainSession": "主会话"
+  },
+  "fix": {
+    "title": "要改什么",
+    "longContext": "新任务请在新会话中开始，或运行 /clear。.claude/settings.json 中的 autoCompactWindow（当前为 {window}）调低后会更早压缩，但保留的对话更少。",
+    "start": "在 Claude Code 中用 /mcp 关闭此仓库很少调用的工具服务器。开始时载入的记忆目录可在“改进”中检查。",
+    "compaction": "任务结束时开始新会话，或自己运行 /compact，让摘要落在任务之间。",
+    "systemChanged": "会话进行中系统提示发生了变化，例如编辑了指令文件或记忆文件。请在会话之间编辑它们。",
+    "toolsChanged": "会话进行中工具列表发生了变化，例如工具服务器连接较晚或被切换。请在开始前设好工具服务器。",
+    "modelChanged": "会话中途更换模型会重新建立缓存。请在任务之间切换模型。",
+    "otherReason": "Claude Code 没有进一步说明这个原因，因此 Atlas 不提出修改。",
+    "model": "每个智能体的模型和 effort 是 .claude/agents/{agent}.md 中的 model: 和 effort: 行。主会话用 /model 和 /effort 设置。",
+    "copied": "已复制"
+  },
+  "evidence": {
+    "title": "发生位置",
+    "row": "{session} · 第 {turn} 轮 · {time} · {tokens} token",
+    "session": "会话 {id}",
+    "subagent": "会话 {id} 中的 {agent}"
+  },
+  "compare": {
+    "pick": "比较基准日",
+    "pickHint": "选择一个日期，或一次修改了智能体文件的提交",
+    "tick": "{date} · {subject}",
+    "clear": "清除",
+    "none": "选择日期后，会比较其前后。",
+    "tooFew": "{date} 之后只有 {days} 天达到 500 轮以上；判断需要 3 天。",
+    "same": "没有可检测的差异：{date} 之后的平均值 {after} 在常见范围（{low} 至 {high}）内。",
+    "lower": "{date} 之后下降：之前 {before}，之后平均 {after}，低于常见范围。",
+    "higher": "{date} 之后上升：之前 {before}，之后平均 {after}，高于常见范围。",
+    "left": "已排除少于 500 轮的 {days} 天。",
+    "tooFewBefore": "{date} 之前只有 {days} 天达到 500 轮以上；要了解常见范围需要 7 天。"
+  },
+  "money": {
+    "title": "Claude Code 的估算",
+    "total": "最近 30 天 {amount}",
+    "split": "{date} 之前 {before} · 之后 {after}",
+    "note": "这是 Claude Code 在会话文件中按 API 价格记录的估算，不是你的账单。",
+    "partial": "Claude Code 未能为部分模型计价，因此此估算偏低。",
+    "none": "这些会话中没有 Claude Code 的费用估算。"
+  },
+  "partial": {
+    "files": "有 {count} 个文件未能读取（{reason}）。其数值未计入。",
+    "lines": "跳过了 {count} 行超过 4 MiB 的内容。",
+    "unknown": "有 {count} 条记录缺少 Atlas 需要的数值；这些数值显示为未知。"
+  },
+  "unknown": "未知",
+  "empty": {
+    "title": "最近 30 天没有此仓库的 Claude Code 会话",
+    "body": "已在 {paths} 中查找。Claude Code 会为每次对话在那里写入会话文件。"
+  },
+  "error": {
+    "home": "无法读取 {path}：{reason}。其中内容未检查。"
+  },
+  "web": {
+    "title": "检查 token 用量需要使用应用",
+    "body": "Claude Code 把会话文件放在你的主文件夹中，浏览器无法打开该文件夹。应用在本机读取这些文件，保留数量、时间、短会话 ID，以及模型、effort、智能体和工具服务器的名称。"
+  },
+  "card": {
+    "running": "正在检查 token 用量 · {done}/{total}",
+    "done": "已检查 token 用量：{count} 项发现",
+    "open": "打开"
+  },
+  "action": {
+    "copy": "复制",
+    "openImprove": "打开“改进”"
+  },
+  "reason": {
+    "notFound": "未找到",
+    "denied": "无权限",
+    "notRegular": "不是普通文件",
+    "unreadable": "无法读取"
+  }
+}

@@ -103,7 +103,7 @@ The third written exception, for Work status only:
 | Never read | arguments or environment (`KERN_PROCARGS2`, `/proc/<pid>/environ`), open files, another user's processes, a per-program GPU figure |
 | Platforms | macOS and Linux for the agent processes; the load read on macOS only; Windows reads none |
 | Gate | `src-tauri/src/work_status/worktrees/tests.rs`; for load, the tests under `src-tauri/src/work_status/load/` |
-| Record | `docs/records/decisions/2026-11-22-work-status-agent-processes-87d3ada9-4740-430a-8cee-a580ce7e638e.md`; load: `docs/records/decisions/2026-11-25-work-status-load-read-43842310-f121-42ab-973d-4b72806a0f94.md`; per session: `docs/records/decisions/2026-11-25-work-status-session-load-635500f0-5355-46c2-a37f-93d4cac16afc.md` |
+| Record | `87d3ada9`; load: `43842310`; per session: `635500f0` |
 
 A new field, a signal or a send needs a new decision record.
 
@@ -139,8 +139,8 @@ The fifth written exception, for Work status only:
 | Subagents | with each list, in `~/.claude`, a visible `CLAUDE_CONFIG_DIR` and Orca profile homes: `projects/<cwd>/<sessionId>/subagents/`; `agentType`, `model`, worktree and file times from `agent-*.meta.json` (another key: unknown); from the session's `.jsonl`, its `cwd` (a listed worktree, else skip) and `<task-notification>` ids and statuses; the page gets type, model, worktree id or unknown. Never `description` or other text (`67a26c36`) |
 | Never read | a session's `id`; `sessionId` stays in Rust; any field outside the documented ones makes its entry unknown |
 | Platforms | macOS; no other platform runs it |
-| Gate | `src-tauri/src/work_status/agent_sessions/tests.rs` (`the_program_cannot_open_a_connection`, and the planted-name tests of criterion 2 in `docs/specs/2026-11-25-work-status-live.md`); `src/shared/lib/work-status/signals/sessions.test.ts` |
-| Record | `docs/records/decisions/2026-11-23-work-status-session-list-no-network-929c2179-7882-4c40-a4bc-83cfbb2612cf.md`; names: `docs/records/decisions/2026-11-25-work-status-session-names-3c8614d6-9b02-4b18-9e12-95d935c9434c.md` |
+| Gate | `src-tauri/src/work_status/agent_sessions/tests.rs` (`the_program_cannot_open_a_connection` and the planted-name tests); `src/shared/lib/work-status/signals/sessions.test.ts` |
+| Record | `929c2179`; names: `3c8614d6` |
 
 Another program, argument or variable, or a run without the sandbox, needs a
 new decision record.
@@ -151,7 +151,7 @@ The sixth written exception, for Work status only:
 
 | | |
 |---|---|
-| Watch | the OS's file-change notices, through the `notify` crate the app already ships, for the folder of each worktree drawn as a room; one watcher for every room; never a shelf worktree's own folder or a folder Git does not list for this repository; a notice from a worktree nested inside a watched folder is dropped, never counted |
+| Watch | the OS's file-change notices (the shipped `notify` crate) for the folder of each worktree drawn as a room; one watcher for every room; never a shelf worktree's own folder or a folder Git does not list for this repository; a notice from a worktree nested inside a watched folder is dropped, never counted |
 | When | while Work status is visible and its Watch file changes switch (on by default) is on; hidden or switched off, no watcher is alive, and switched off, no count is held |
 | Counted | a notice whose path is not under `.git`, not under a fixed list of dependency and build folder names, and not ignored by Git; Git gives that verdict through `runner.rs`, at most one call per worktree in 10 s, never twice for one path until that worktree's `.gitignore` changes |
 | Kept in Rust memory | per worktree: the time of the last counted change, counts per 10 s step for 60 minutes (99 at most), and a one-way hash of each path Git already judged (4,096 at most) |
@@ -159,14 +159,14 @@ The sixth written exception, for Work status only:
 | Never | a file opened or stat'ed; a name or path from a notice in a payload, log, file or the network |
 | Platforms | macOS; no other platform watches |
 | Gate | the tests under `src-tauri/src/work_status/file_pulse/` |
-| Record | `docs/records/decisions/2026-11-25-work-status-file-change-notices-1c163935-120b-4f73-9c2e-9cf11f023ee3.md` |
+| Record | `1c163935` |
 
 Another folder, a kept name or path, or a watch while hidden needs a new
 decision record.
 
 ### Harness › Improve: agent memory and session files
 
-The seventh and eighth written exceptions, specified and not yet built
+The seventh and eighth, specified, not built
 (`docs/specs/2026-11-27-harness-self-improvement.md`):
 
 | | |
@@ -197,6 +197,18 @@ The ninth, specified, not built (`docs/specs/2026-11-27-workshop-control-tower-c
 
 Another read, signal or target needs a new record.
 
+### Harness › Tokens: session usage figures
+
+The tenth, specified, not built (`docs/specs/2026-11-28-harness-token-inspector.md`):
+
+| | |
+|---|---|
+| Read | after Inspect token use, Claude Code session files (regular, no link below `projects/`) in folders whose name begins with this repository's encoding, counted when their first `cwd` is in it: ids, model, usage, effort, times, cache misses, compactions, `cost-state`, tool groups, sizes and call names |
+| Never | message, tool or error text, a session-file path or a full session id in a payload, log or file; a stored figure |
+| Gate, record | `no_planted_text_leaves_any_inspector_result`; `d55c209e` |
+
+Another file, field or stored figure needs a new record.
+
 ### Folder watch is latency, not degradation
 
 The app applies the changed paths the OS watcher's `vault-changed` event
@@ -224,7 +236,7 @@ absolute path; `WebManualConnectPanel.tsx` renders the config locally instead).
 
 A degradation card states why the ability is unavailable, where it works
 (usually `/download/`), and what remains possible here, as
-in `atlas-git-web-get-app` and `ai-connection-web-degraded`. "Coming soon" is
+in `atlas-git-web-get-app`. "Coming soon" is
 not a reason, and calling an available path unavailable is equally false.
 
 ## Web smoke and the degradation registry
