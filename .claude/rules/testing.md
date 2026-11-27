@@ -109,7 +109,9 @@ in the repository or `~/scratch`; a probe worth keeping becomes a `pnpm` script.
 An app screen is only ever opened in the installed app or, in a test, in a
 browser that installs the faked app runtime (`installDesktopRailRuntime`,
 `tests/e2e/desktop-rail-arrival-harness.ts`); a plain browser reaches only the
-website's pages and the app-only page.
+website's pages and the app-only page. The measuring tools (`pnpm ui:look`,
+`scripts/design/measure-*.mjs`, `scripts/perf/perf-node-drag.mjs`) open their
+folder the same way, through `scripts/lib/desktop-app/open-folder-in-app.mjs`.
 
 | Target | Accepted proof |
 |---|---|
