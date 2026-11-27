@@ -85,6 +85,8 @@ export function TopologyIndexTreeRow({
 }: TopologyIndexTreeRowProps) {
   const { node, children } = entry;
   const hasChildren = children.length > 0;
+  const addKinds = onAddInGroup && addLabels ? (ADD_KINDS_BY_GROUP[node.kind] ?? []) : [];
+  const groupSize = children.length + addKinds.length;
   const open = isOpen(node.id);
   const selected = selectedId === node.id;
   const holdsSelection = selectionHolderId === node.id;
@@ -261,7 +263,7 @@ export function TopologyIndexTreeRow({
               entry={child}
               depth={depth + 1}
               position={childIndex + 1}
-              setSize={children.length}
+              setSize={groupSize}
               isOpen={isOpen}
               onToggleOpen={onToggleOpen}
               onSelect={onSelect}
@@ -280,12 +282,14 @@ export function TopologyIndexTreeRow({
             />
           ))}
           {onAddInGroup && addLabels
-            ? (ADD_KINDS_BY_GROUP[node.kind] ?? []).map((kind) => (
+            ? addKinds.map((kind, kindIndex) => (
                 <TopologyIndexAddRow
                   key={kind}
                   parent={node}
                   kind={kind}
                   depth={depth + 1}
+                  position={children.length + kindIndex + 1}
+                  setSize={groupSize}
                   onAdd={onAddInGroup}
                   labels={addLabels[kind]}
                 />

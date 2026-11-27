@@ -464,4 +464,40 @@ describe('RouteFocusManager', () => {
       vi.useRealTimers();
     }
   });
+
+  /*
+   * A client navigation renders before Next writes the new address, so the first render of the
+   * map can still read the marker of the page being left, then lose it on the next render.
+   */
+  it('still lands on the heading when the first render reads the marker of the page being left', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      route.pathname = '/ko/agents/';
+      window.history.replaceState({}, '', '/ko/agents/?focus=main');
+      const page = (title: string) => (
+        <>
+          <RouteFocusManager />
+          <nav>
+            <button type="button">에이전트 레일</button>
+          </nav>
+          <Surface title={title} />
+        </>
+      );
+      const view = render(page('에이전트'));
+      act(() => screen.getByRole('button', { name: '에이전트 레일' }).focus());
+
+      route.pathname = '/ko/topology/';
+      view.rerender(page('지도'));
+      act(() => window.history.replaceState({}, '', '/ko/topology/'));
+      // The shell renders again on the new address, as it does when the map wait ends.
+      view.rerender(page('지도'));
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2_500);
+      });
+      expect(screen.getByRole('heading', { name: '지도' })).toHaveFocus();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

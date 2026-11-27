@@ -4,7 +4,7 @@ import { FIXTURE_VAULT } from "../../fixture-vault";
 import { FRAME_INTERVAL_BUDGET_MS, PERF_BARS } from "../../motion-sampler";
 import { installDesktopRailRuntime, readDesktopFile, writeDesktopFile } from "../../desktop-rail-arrival-harness";
 import { openMapOnApp } from "../open-map-on-app";
-import { waitForAnimationsDone } from "../../settle";
+import { waitForAnimationsDone, waitForBoxStill } from "../../settle";
 
 /**
  * The map analysis chip reads the project note's `Not mapped yet` line and
@@ -214,6 +214,44 @@ test.describe("the map analysis chip", () => {
     if (PERF_BARS) expect(Math.max(...intervals), "a frame interval while the share moved").toBeLessThanOrEqual(FRAME_INTERVAL_BUDGET_MS);
   });
 
+  /**
+   * Whether anything covers the chip or a control is painted over it. A control counts by the part
+   * its clipping ancestors leave painted: the closed agent dock keeps its controls mounted in a
+   * zero-width column, where its box reaches over the map but nothing of it is drawn.
+   */
+  const coverage = (page: Page) =>
+    page.evaluate(() => {
+      const root = document.querySelector<HTMLElement>('[data-testid="map-analysis-chip"]')!;
+      const box = root.querySelector("button")!.getBoundingClientRect();
+      const points = [
+        [box.left + 2, box.top + 2],
+        [box.right - 2, box.top + 2],
+        [box.left + 2, box.bottom - 2],
+        [box.right - 2, box.bottom - 2],
+        [box.left + box.width / 2, box.top + box.height / 2],
+      ];
+      const hidden = points.filter(([x, y]) => !root.contains(document.elementFromPoint(x!, y!))).map(([x, y]) => `${Math.round(x!)},${Math.round(y!)}`);
+      const painted = (control: Element) => {
+        const own = control.getBoundingClientRect();
+        let [left, top, right, bottom] = [own.left, own.top, own.right, own.bottom];
+        for (let clip = control.parentElement; clip; clip = clip.parentElement) {
+          const style = getComputedStyle(clip);
+          if (style.overflowX === "visible" && style.overflowY === "visible") continue;
+          const edge = clip.getBoundingClientRect();
+          [left, top, right, bottom] = [Math.max(left, edge.left), Math.max(top, edge.top), Math.min(right, edge.right), Math.min(bottom, edge.bottom)];
+        }
+        return { left, top, right, bottom };
+      };
+      const overlapping = [...document.querySelectorAll<HTMLElement>("button, a[href], input")]
+        .filter((control) => !root.contains(control) && control.checkVisibility())
+        .filter((control) => {
+          const other = painted(control);
+          return other.left < other.right && other.top < other.bottom && other.left < box.right && other.right > box.left && other.top < box.bottom && other.bottom > box.top;
+        })
+        .map((control) => control.getAttribute("data-testid") ?? control.getAttribute("aria-label") ?? control.tagName);
+      return { hidden, overlapping };
+    });
+
   for (const size of [
     { width: 1040, height: 720 },
     { width: 1512, height: 900 },
@@ -223,28 +261,22 @@ test.describe("the map analysis chip", () => {
       await openPlantedFolder(page, { "storefront.md": withLine(38), [RECORD_PATH]: record({ number: 3, agoMs: 4 * DAY_MS }) }, size);
       await expect(chip(page)).toBeVisible();
       await waitForAnimationsDone(chip(page));
-      const covered = await page.evaluate(() => {
-        const root = document.querySelector<HTMLElement>('[data-testid="map-analysis-chip"]')!;
-        const box = root.querySelector("button")!.getBoundingClientRect();
-        const points = [
-          [box.left + 2, box.top + 2],
-          [box.right - 2, box.top + 2],
-          [box.left + 2, box.bottom - 2],
-          [box.right - 2, box.bottom - 2],
-          [box.left + box.width / 2, box.top + box.height / 2],
-        ];
-        const hidden = points.filter(([x, y]) => !root.contains(document.elementFromPoint(x!, y!))).map(([x, y]) => `${Math.round(x!)},${Math.round(y!)}`);
-        const overlapping = [...document.querySelectorAll<HTMLElement>("button, a[href], input")]
-          .filter((control) => !root.contains(control) && control.checkVisibility())
-          .filter((control) => {
-            const other = control.getBoundingClientRect();
-            return other.width > 0 && other.left < box.right && other.right > box.left && other.top < box.bottom && other.bottom > box.top;
-          })
-          .map((control) => control.getAttribute("data-testid") ?? control.getAttribute("aria-label") ?? control.tagName);
-        return { hidden, overlapping, width: box.width };
-      });
+      const covered = await coverage(page);
       expect(covered.hidden, "another surface covers the chip").toEqual([]);
       expect(covered.overlapping, "the chip overlaps a control").toEqual([]);
     });
   }
+
+  test("overlaps no control at the app's minimum window with the agent dock open", async ({ page }) => {
+    await openPlantedFolder(page, { "storefront.md": withLine(38), [RECORD_PATH]: record({ number: 3, agoMs: 4 * DAY_MS }) }, { width: 1040, height: 720 });
+    await expect(chip(page)).toBeVisible();
+    await page.getByTestId("topology-vault-agent-toggle").click();
+    const dock = page.getByTestId("vault-agent-panel");
+    await expect(dock).toHaveAttribute("data-agent-panel-state", "open");
+    await waitForBoxStill(dock);
+    await waitForAnimationsDone(chip(page));
+    const covered = await coverage(page);
+    expect(covered.hidden, "another surface covers the chip").toEqual([]);
+    expect(covered.overlapping, "the chip overlaps a control").toEqual([]);
+  });
 });
