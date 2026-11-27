@@ -1,4 +1,4 @@
-/** IndexedDB store for `LocalFsHandleRecord`; the legacy raw-handle key migrates on first read. */
+/** IndexedDB store for `LocalFsHandleRecord`: the app's remembered folders, each keyed by its absolute path. */
 
 import { idbDel, idbGet, idbSet } from '@/shared/lib/vault-folder/idb-kv';
 import { createTauriVaultHandle } from '@/shared/lib/vault-folder/native-vault/tauri-vault-handle';
@@ -8,7 +8,6 @@ import type { LocalFsHandleRecord } from '../model/local-fs-handle-record';
 export const CURRENT_LOCAL_FS_HANDLE_ID = 'current';
 
 const KEY_PREFIX = 'docs-vault:fs-handle:';
-const LEGACY_KEY = 'docs-vault:current-handle';
 const RECENT_KEY = 'docs-vault:fs-handle:recent';
 const MAX_RECENT_HANDLES = 5;
 
@@ -26,11 +25,9 @@ function normalizeStoredRecord(record: LocalFsHandleRecord): LocalFsHandleRecord
   return record;
 }
 
+/** Every record the app writes carries its folder's path (`toStoredRecord`), so the path is the identity. */
 function recordIdentity(record: LocalFsHandleRecord): string {
-  // Web records all use id 'current', so the folder name is the identity; same-named folders still collapse.
-  if (record.desktopRootPath) return record.desktopRootPath;
-  const folderName = record.handle?.name;
-  return folderName ? `fsa:${folderName}` : record.id;
+  return record.desktopRootPath ?? record.id;
 }
 
 function toStoredRecord(record: LocalFsHandleRecord): LocalFsHandleRecord {
@@ -72,34 +69,11 @@ async function rememberRecentLocalFsHandle(record: LocalFsHandleRecord): Promise
   await idbSet(RECENT_KEY, next);
 }
 
-/** For id 'current', a legacy raw handle is migrated and its key deleted. */
 export async function getLocalFsHandle(
   id: string = CURRENT_LOCAL_FS_HANDLE_ID,
 ): Promise<LocalFsHandleRecord | undefined> {
   const stored = await idbGet<LocalFsHandleRecord>(recordKey(id));
-  if (stored) return normalizeStoredRecord(stored);
-
-  if (id === CURRENT_LOCAL_FS_HANDLE_ID) {
-    return queueHandleWrite(async () => {
-      const current = await idbGet<LocalFsHandleRecord>(recordKey(id));
-      if (current) return normalizeStoredRecord(current);
-      const legacy = await idbGet<FileSystemDirectoryHandle>(LEGACY_KEY);
-      if (!legacy) return undefined;
-      const now = Date.now();
-      const migrated: LocalFsHandleRecord = {
-        id: CURRENT_LOCAL_FS_HANDLE_ID,
-        handle: legacy,
-        name: legacy.name,
-        createdAt: now,
-        lastAccessedAt: now,
-      };
-      await idbSet(recordKey(CURRENT_LOCAL_FS_HANDLE_ID), migrated);
-      await rememberRecentLocalFsHandle(migrated);
-      await idbDel(LEGACY_KEY);
-      return migrated;
-    });
-  }
-  return undefined;
+  return stored ? normalizeStoredRecord(stored) : undefined;
 }
 
 export async function putLocalFsHandle(record: LocalFsHandleRecord): Promise<void> {

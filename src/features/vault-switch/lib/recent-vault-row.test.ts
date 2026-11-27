@@ -29,9 +29,8 @@ describe('recentVaultRowKey', () => {
     ).toBe('/Users/dana/atlas');
   });
 
-  it('falls back to the folder name in a browser session, not the record id', () => {
-    // Every web record's id is 'current', so the key must follow the store's `recordIdentity`.
-    expect(recentVaultRowKey(record({ name: 'atlas' }))).toBe('fsa:atlas');
+  it('falls back to the record id when a record holds no path', () => {
+    expect(recentVaultRowKey(record({ name: 'atlas' }))).toBe('current');
   });
 });
 

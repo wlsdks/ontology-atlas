@@ -101,28 +101,6 @@ describe('local-fs-handle store', () => {
     expect(await getLocalFsHandle()).toBeUndefined();
   });
 
-  it('migrates the legacy key', async () => {
-    memory.set('docs-vault:current-handle', fakeHandle('OldVault'));
-    const restored = await getLocalFsHandle();
-    expect(restored?.name).toBe('OldVault');
-    expect(restored?.id).toBe(CURRENT_LOCAL_FS_HANDLE_ID);
-    expect(memory.get('docs-vault:current-handle')).toBeUndefined();
-    expect(
-      memory.get('docs-vault:fs-handle:current'),
-    ).toBeDefined();
-    expect((await listRecentLocalFsHandles()).map((record) => record.name)).toEqual([
-      'OldVault',
-    ]);
-  });
-
-  it('migrates once and reads the record afterwards', async () => {
-    memory.set('docs-vault:current-handle', fakeHandle('OldVault'));
-    const first = await getLocalFsHandle();
-    const second = await getLocalFsHandle();
-    expect(first?.name).toBe(second?.name);
-    expect(memory.get('docs-vault:current-handle')).toBeUndefined();
-  });
-
   it('stores several ids separately', async () => {
     await putLocalFsHandle({
       id: 'current',
@@ -198,33 +176,23 @@ describe('local-fs-handle store', () => {
     expect((await getLocalFsHandle('current'))?.name).toBe('Current');
   });
 
-  it('web FSA records with different folders both stay in the recent list', async () => {
-    // Web records all share id 'current', so identity must come from the folder, not the id.
-    await putLocalFsHandle({
+  it('keeps folders at different paths apart and collapses a reopened path', async () => {
+    // Every record shares id 'current', so identity must come from the folder's path, not the id.
+    tauriApiMock.runtimeAvailable = true;
+    const record = (path: string, name: string, lastAccessedAt: number) => ({
       id: CURRENT_LOCAL_FS_HANDLE_ID,
-      handle: fakeHandle('vault-a'),
-      name: 'Vault A',
+      handle: fakeHandle(name),
+      desktopRootPath: path,
+      name,
       createdAt: 1,
-      lastAccessedAt: 1,
+      lastAccessedAt,
     });
-    await putLocalFsHandle({
-      id: CURRENT_LOCAL_FS_HANDLE_ID,
-      handle: fakeHandle('vault-b'),
-      name: 'Vault B',
-      createdAt: 2,
-      lastAccessedAt: 2,
-    });
-    // Re-opening the same folder updates its entry instead of adding a copy.
-    await putLocalFsHandle({
-      id: CURRENT_LOCAL_FS_HANDLE_ID,
-      handle: fakeHandle('vault-a'),
-      name: 'Vault A',
-      createdAt: 1,
-      lastAccessedAt: 3,
-    });
+    await putLocalFsHandle(record('/Users/dana/vault-a', 'Vault A', 1));
+    await putLocalFsHandle(record('/Users/dana/vault-b', 'Vault B', 2));
+    await putLocalFsHandle(record('/Users/dana/vault-a', 'Vault A', 3));
 
     const recent = await listRecentLocalFsHandles();
-    expect(recent.map((record) => record.name)).toEqual(['Vault A', 'Vault B']);
+    expect(recent.map((item) => item.name)).toEqual(['Vault A', 'Vault B']);
   });
 
   it('restores a desktop path record as a handle shim in Tauri', async () => {
@@ -281,21 +249,6 @@ describe('recordLocalFsHandleContents', () => {
 });
 
 describe('the recent list survives concurrent writers', () => {
-  it('rechecks current selection before queued legacy migration', async () => {
-    memory.set('docs-vault:current-handle', fakeHandle('Legacy'));
-    let began!: () => void;
-    let release!: () => void;
-    const started = new Promise<void>((resolve) => { began = resolve; });
-    const blocked = new Promise<void>((resolve) => { release = resolve; });
-    vi.mocked(idbGet).mockImplementationOnce(async () => { began(); await blocked; return undefined; });
-    const restoring = getLocalFsHandle();
-    await started;
-    await putLocalFsHandle({ id: 'current', handle: fakeHandle('New'), name: 'New', createdAt: 2, lastAccessedAt: 2 });
-    release();
-    expect((await restoring)?.name).toBe('New');
-    expect((await getLocalFsHandle())?.name).toBe('New');
-  });
-
   it('allows a later record write after an earlier queued write rejects', async () => {
     vi.mocked(idbSet).mockRejectedValueOnce(new Error('Fixture storage rejection'));
     await expect(putLocalFsHandle({ id: 'current', handle: fakeHandle('Failed'), name: 'Failed', createdAt: 1, lastAccessedAt: 1 })).rejects.toThrow('Fixture storage rejection');

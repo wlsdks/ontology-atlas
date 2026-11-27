@@ -65,7 +65,7 @@ describe('useRecentVaultReachability', () => {
     const pathless = { ...record('pathless'), desktopRootPath: undefined };
     const hook = renderHook(() => useRecentVaultReachability([pathless]));
 
-    await waitFor(() => expect(hook.result.current).toEqual({ 'fsa:pathless': 'unknown' }));
+    await waitFor(() => expect(hook.result.current).toEqual({ current: 'unknown' }));
     expect(tauri.tauriVaultPathExists).not.toHaveBeenCalled();
   });
 
