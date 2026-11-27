@@ -82,6 +82,52 @@ the remaining height, the shared empty stage says nothing was merged and, when
 history holds a newer change, offers the latest changes. While history is read, the waiting mark stands in the centre of the
 content area.
 
+## By release
+
+**By date | By release** sits first in the period bar; By date is the default and reads as above.
+By release lists the repository's releases beside the digest, read from the tags of the copy on
+this computer. Atlas never fetches, creates, moves or deletes a tag.
+
+- **What a release is.** One release per tagged commit; several tags on one commit are one release
+  with every name, and lightweight and annotated tags are alike, dated by the tagged commit. A tag
+  name is the text before its version number (`v`, `web@`, or nothing) and the version; tags
+  sharing that text form one sequence, and a name without a version stands alone. A release holds
+  the first-parent changes after the nearest earlier tag of its sequence on the line behind it, up
+  to its own tag; a release without a pre-release suffix skips its own version's pre-releases, and
+  one with no earlier tag starts at the first commit. Unreleased is the read branch's changes after
+  the newest release on it. A tag on a tree or a file is not a release.
+- **The list** is drawn as the branch: one line with a mark per release, rows of one height, newest
+  first by position on the read branch. A filled disc in three sizes marks which number changed
+  (major, minor, patch); a ring marks a pre-release; Unreleased is the line's open, dashed top
+  end; a tag off the branch sits beside the line on a short stub at its date and says so. Each row
+  names its tags in the mono face, its date, its count and a bar whose length is the square root
+  of the count against the largest, split into kinds as group bars are. The selected row alone
+  carries the accent, and the line thickens from the selected release to where its span starts.
+  Forty rows are drawn, then Show more. Find a release filters by any name in one Unicode form;
+  with two or more sequences a chooser narrows to one. Where the list and a 640px pane do not fit
+  side by side, the list becomes one Select above the pane.
+- **Progress.** Names and dates arrive in one read and paint first; counts and bars fill newest
+  first as a walk of the read branch arrives in steps of 20,000 changes, and selecting or typing
+  works throughout. Unreleased is selected on arrival when it holds a change, otherwise the newest
+  release. A tag off the branch, or one past the counted depth, is counted when selected.
+- **The pane** shows the tag names and date, Since (every earlier release on the same line and the
+  first commit), then the digest above for the span, with the recorded concepts whose files changed
+  under the headline (name and change count, most first, twelve then Show more, each opening the
+  map), or a plain statement that none did. A repository picked alone draws no concept strip.
+  Read commit opens the span in Originals, whose patches compare the span's own ends.
+- **Limits and states.** Tags are read up to 10,000, the walk up to 100,000 changes, and a span
+  keeps the 2,000-change, 8 MiB and 20,000-path limits, each saying what it left out: a span cut
+  short, releases beyond the counted depth, a shallow clone, and names that are not text. A
+  repository without tags shows the empty stage and says to fetch tags in the repository. A tag
+  or branch that moves between reads makes the next read stale with Refresh, keeping the release
+  and Since by name. A reload of the ontology folder does not read the tags again; Refresh does.
+  The basis under the pane says what was read.
+- **Reads.** The list, the walk and a span are three bounded local reads, project-bound or picked
+  as the date reads are. A tag name is display text only: it is cut at 256 characters, loses
+  control characters, is not listed when it is not UTF-8, and never returns to Git as an argument.
+  The walk and a span take only commit hashes the list issued, and the list's snapshot ties them to
+  the tags and branch it read.
+
 ## Originals
 
 Originals, in the header, holds the pull request, commit and file readers for

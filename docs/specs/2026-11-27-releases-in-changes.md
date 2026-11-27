@@ -355,3 +355,14 @@ by a Later line or a one-word catalogue change; nothing here spends money, publi
 - 2026-11-27: the owner delegated the open questions to the lead, who decided them: one
   repository, read-only first, pre-releases as their own rows counted into their final release,
   and the Korean word as `README.ko.md` spells it. The Owner question is now None.
+- 2026-11-27: first slice built, with these departures. The list and walk live in
+  `src-tauri/src/git/releases.rs` (tests in `releases/tests.rs`, as criterion 2 names) and the span
+  joins `briefing.rs`; the walk returns each commit's type and the tagged commits it met, and the
+  page derives starts and counts (`release-list.ts`). A reload of the ontology folder no longer
+  re-reads tags, since they live in the code folder; Refresh does. A name without a version, which
+  stands alone, counts from the first commit. Off-branch Since offers the releases in that tag's
+  own history. `tag-limit` past 10,000 tags is returned but has no catalogue line yet. Criterion 1
+  could not run on other repositories: every clone under the reference folder is a one-commit
+  shallow copy with no tags, and fetching history needs the network. Below 640 px the date
+  navigation moves under the other period controls, so the new control keeps the bar at two lines
+  down to about 350 px; at 320 px it takes three.
