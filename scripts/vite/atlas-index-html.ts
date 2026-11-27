@@ -5,6 +5,7 @@ import type { Plugin } from 'vite';
 import { buildBootScript } from '../../src/i18n/boot-script';
 import { LOCALE_META } from '../../src/i18n/locales';
 import { routing } from '../../src/i18n/routing';
+import { WEB_CONTENT_SECURITY_POLICY } from '../../src/shared/config/site/web-content-security-policy';
 
 const BOOT_SCRIPT_MARK = '<!--atlas:boot-script-->';
 const LOADING_PICTURE_MARK = '<!--atlas:loading-picture-->';
@@ -107,16 +108,29 @@ export function atlasIndexHtml(root: string): Plugin {
     load: (id) => (id === `\0${BOOT_CSS_ID}` ? bootPictureCss(codes) : null),
     transformIndexHtml: {
       order: 'pre',
-      handler(html) {
+      handler(html, context) {
         const script = buildBootScript({
           htmlLang: Object.fromEntries(codes.map((code) => [code, LOCALE_META[code as LocaleCode].htmlLang])),
           defaultLocale: routing.defaultLocale,
           storageKey: STORAGE_KEY,
         });
         const words = Object.fromEntries(codes.map((code) => [code, readLoadingWords(root, code)]));
-        return html
+        const page = html
           .replace(BOOT_SCRIPT_MARK, `<script>${script}</script>`)
           .replace(LOADING_PICTURE_MARK, loadingPicture(words));
+        // The built document states its own policy, as the website's export does; the dev server's
+        // hot-reload client would break under it.
+        if (context.server) return page;
+        return {
+          html: page,
+          tags: [
+            {
+              tag: 'meta',
+              attrs: { 'http-equiv': 'Content-Security-Policy', content: WEB_CONTENT_SECURITY_POLICY },
+              injectTo: 'head-prepend' as const,
+            },
+          ],
+        };
       },
     },
   };

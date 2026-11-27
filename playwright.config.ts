@@ -100,7 +100,7 @@ export default defineConfig({
     // navigation that only fails in production.
     command: servesStaticExport
       ? viteAppFolder
-        ? `pnpm exec vite preview --port ${webServerPort} --outDir ${viteAppFolder}`
+        ? `pnpm exec vite preview --host ${new URL(baseURL).hostname} --port ${webServerPort} --outDir ${viteAppFolder}`
         : `node scripts/web/serve-static-export.mjs --port=${webServerPort}`
       : `pnpm dev -p ${webServerPort}`,
     url: webServerOrigin,
