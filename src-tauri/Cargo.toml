@@ -7,7 +7,17 @@ edition = "2021"
 license = "MIT"
 
 [workspace]
-members = ["crates/vault-index"]
+# The six `mcp-server` family crates depend on neither `tauri` nor an async runtime, so the app can
+# link them; `mcp-server` alone builds the `ontology-atlas-mcp` program.
+members = [
+  "crates/vault-index",
+  "crates/confined-files",
+  "crates/hardened-git",
+  "crates/vault-document",
+  "crates/ontology-graph",
+  "crates/source-evidence",
+  "crates/mcp-server",
+]
 
 # A panic in a sync Tauri command runs on the main thread and takes the app down, so non-test code
 # reports an error instead. `clippy.toml` lets tests keep using these.

@@ -197,8 +197,12 @@ jobs:
       - name: Build and verify Windows MCP sidecar
         run: pnpm mcp:build-binary
 
+      # The Rust MCP server's differential tests compare it with the JavaScript server; a missing
+      # Node or `mcp/node_modules` here must fail the job, not skip the comparison.
       - name: Native bridge tests on Windows
         run: pnpm test:desktop:bridge
+        env:
+          OATLAS_REQUIRE_ORACLE: '1'
 
       # A panic in a sync Tauri command aborts the whole app, so `unwrap`, slice indexing and `panic!`
       # outside tests are findings (`[workspace.lints.clippy]` in `src-tauri/Cargo.toml`) and `-D warnings`
@@ -347,5 +351,9 @@ jobs:
 
       # Before this step a `cfg(unix)` or macOS-only test first ran at release. The workspace
       # includes vault-index's FAT32 and exFAT test, which mounts images with `hdiutil`.
+      # `OATLAS_REQUIRE_ORACLE` makes a missing Node or `mcp/node_modules` fail the Rust MCP
+      # server's comparison with the JavaScript server instead of skipping it.
       - name: Rust tests on macOS
         run: cargo test --manifest-path src-tauri/Cargo.toml --workspace
+        env:
+          OATLAS_REQUIRE_ORACLE: '1'

@@ -76,6 +76,8 @@
     "mcp:registry:check": "node scripts/packaging/build-server-json.mjs --check",
     "test:mcp:bundle": "node --test scripts/packaging/mcp-bundle.test.mjs",
     "acp:registry": "node scripts/registry-snapshots/build-acp-registry.mjs",
+    "mcp:surface": "node scripts/mcp/surface/generate-surface.mjs",
+    "mcp:surface:check": "node scripts/mcp/surface/generate-surface.mjs --check && node --test scripts/mcp/surface/generate-surface.test.mjs",
     "mcp:catalogue": "node scripts/registry-snapshots/build-mcp-catalogue.mjs",
     "mcp:catalogue:check": "node scripts/registry-snapshots/build-mcp-catalogue.mjs --check && node --test scripts/registry-snapshots/build-mcp-catalogue.test.mjs",
     "acp:registry:check": "node scripts/registry-snapshots/build-acp-registry.mjs --check",

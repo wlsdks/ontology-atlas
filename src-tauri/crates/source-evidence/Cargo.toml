@@ -1,0 +1,15 @@
+[package]
+name = "source-evidence"
+version = "0.1.0"
+description = "Staleness, evidence search, imports, survey, meaning, construction and project source"
+edition = "2021"
+license = "MIT"
+publish = false
+
+[dependencies]
+confined-files = { path = "../confined-files" }
+hardened-git = { path = "../hardened-git" }
+vault-document = { path = "../vault-document" }
+
+[lints]
+workspace = true
