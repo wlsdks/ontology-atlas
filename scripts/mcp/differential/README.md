@@ -96,7 +96,8 @@ Nothing, except what a committed list names:
   may grow against the base ref.
 - `declared-changes.json`, read by `--a=node --b=rust`: the same entries, each also naming the row of
   the specification's table of declared changes (`change`) and a reason. A run fails when an entry no
-  longer differs, and an entry without a row and a reason is refused. It grows with the table, so the
+  longer differs, and an entry without a row and a reason is refused. An entry with `platform`
+  (`process.platform`, such as `win32`) is looked for on that platform only. It grows with the table, so the
   base-ref check skips it. A difference is reported once per request (the first differing path), so an
   entry hides the rest of that request's answer; the Rust program's own tests state each declared
   answer in full.
@@ -107,7 +108,8 @@ A case file starts with a header line (`case`, `vault` fixture name, optional `e
 `snapshot`, `mustNotExist`, `folder: "invariants"`), then one step per line: a JSON-RPC request (with
 optional `timeoutMs`, `settleMs`, `noWait`), a `{"raw": "..."}` line, a notification (`notify`), or a
 directive `{"$": ...}`: `await`, `wait`, `touch`, `write-file`, `mkdir`, `remove`, `symlink`, `chmod`,
-`close-stdin`, `close-stdout`, `kill`, `kill-after-first-write`.
+`git` (`args`: one `git` run in the folder that holds the vault, hardened as the harness reads the
+repository), `close-stdin`, `close-stdout`, `kill`, `kill-after-first-write`.
 
 Strings in a request may hold `$VAULT`, `$PARENT`; a whole value may be `$MTIME(<path>)` (the planted
 time of a file the server has not written) or `$ANSWER(<request id>, <path>)` (a value out of an

@@ -51,9 +51,9 @@ fn every_read_answers_what_git_says_about_a_repository() {
     assert_eq!(reader.operation_in_progress().expect("operation"), None);
     let facts = reader.facts().expect("facts").expect("inside a repository");
     assert_eq!(
-        facts.top_level,
-        dunce::canonicalize(&repo).expect("real"),
-        "the top is a real path"
+        std::fs::canonicalize(&facts.top_level).expect("the top exists"),
+        std::fs::canonicalize(&repo).expect("the repository exists"),
+        "the top is the folder asked about"
     );
     assert!(!facts.shallow);
 
@@ -169,13 +169,13 @@ fn every_read_answers_what_git_says_about_a_repository() {
     assert_eq!(listed, ["docs/guide.md", "note.md", "untracked file.md"]);
 }
 
-/// Git for Windows prints the top of a repository as `C:/Users/me/repo` (forward slashes), and
-/// `std::fs::canonicalize` answers a verbatim `\\?\` path on Windows (its documentation), which
-/// Windows tools and a person comparing paths do not expect. The top must come back as the plain
-/// path both sides name, with no prefix and no line ending left on it.
+/// Git for Windows prints the top of a repository as `C:/Users/me/repo`, with forward slashes
+/// and a line feed alone, because it writes standard output in binary mode (`mingw_startup` in
+/// git's `compat/mingw.c`). The top is kept as printed: no carriage return and no `\\?\` prefix on
+/// it, and a path Windows opens.
 #[cfg(windows)]
 #[test]
-fn a_windows_top_level_is_a_plain_path_with_no_prefix_or_line_ending() {
+fn a_windows_top_level_is_a_path_windows_opens_with_no_line_ending_on_it() {
     let base = TempDir::new("typed-windows-top");
     let repo = new_repository(&base, "repo");
     let facts = repository(&repo)
@@ -187,10 +187,7 @@ fn a_windows_top_level_is_a_plain_path_with_no_prefix_or_line_ending() {
         !printed.contains('\r') && !printed.starts_with(r"\\?\"),
         "{printed}"
     );
-    assert_eq!(
-        facts.top_level,
-        dunce::canonicalize(&repo).expect("the real path")
-    );
+    assert!(facts.top_level.is_dir(), "{printed}");
 }
 
 #[test]
@@ -240,8 +237,15 @@ fn a_rename_is_two_rows_and_odd_names_are_read_whole() {
     plain_git(&repo, &["add", "-A"]);
     plain_git(&repo, &["commit", "-qm", "seed"]);
     plain_git(&repo, &["mv", "old name.md", "new name.md"]);
-    // The person's own `status.renames` setting must not decide what the answer holds.
-    plain_git(&repo, &["config", "status.renames", "copies"]);
+    // The person's own rename settings must not decide what the answer holds: not `status`'s, not
+    // `diff`'s, and not `log.follow`, which would add the history of the old name to the new one.
+    for (key, value) in [
+        ("status.renames", "copies"),
+        ("diff.renames", "copies"),
+        ("log.follow", "true"),
+    ] {
+        plain_git(&repo, &["config", key, value]);
+    }
     std::fs::write(repo.join("tab\tname.md"), "x\n").expect("tab");
     let reader = repository(&repo);
     let mut rows: Vec<(String, ChangeKind)> = reader
@@ -259,6 +263,41 @@ fn a_rename_is_two_rows_and_odd_names_are_read_whole() {
             ("old name.md".to_string(), ChangeKind::Deleted),
             ("tab\tname.md".to_string(), ChangeKind::Untracked),
         ]
+    );
+    plain_git(&repo, &["commit", "-qm", "rename"]);
+    let renamed = reader.history(&path("new name.md"), 5).expect("log");
+    assert_eq!(
+        renamed
+            .iter()
+            .map(|commit| commit.subject.as_str())
+            .collect::<Vec<_>>(),
+        ["rename"],
+        "the new name has its own history, not the old name's"
+    );
+    let dated = reader
+        .touch_history(&[path("new name.md"), path("old name.md")], 5)
+        .expect("touch history");
+    let first_commit: Vec<&str> = dated
+        .first()
+        .map(|commit| {
+            commit
+                .touches
+                .iter()
+                .map(|touch| touch.path.as_str())
+                .collect()
+        })
+        .unwrap_or_default();
+    assert_eq!(
+        first_commit.len(),
+        2,
+        "one commit touched both names: {first_commit:?}"
+    );
+    assert_eq!(
+        reader
+            .file_commits(&path("new name.md"), 5)
+            .expect("file commits")
+            .len(),
+        1
     );
     let touches = reader
         .touch_history(&[path("한글 파일.md")], 5)

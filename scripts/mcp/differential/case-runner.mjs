@@ -20,6 +20,7 @@ import { FIXED_CLOCK_MS, serverEnvironment } from './servers.mjs';
 import { buildSourceSnapshot } from '../../../tests/differential/support/source-snapshot.mjs';
 import {
   GIT_ENV,
+  HARDENED_GIT_ARGS,
   SECRET_SENTINEL,
   buildFixture,
   plantMtimes,
@@ -85,18 +86,8 @@ function gitState(caseDir) {
   if (!existsSync(path.join(repo, '.git'))) return null;
   const run = (args) => {
     try {
-      // The harness reads the repository the way the server must: nothing the repository's own
-      // settings name is run (a hostile fixture would otherwise run it here).
-      const hardened = [
-        '--no-optional-locks',
-        '-c', 'core.fsmonitor=false',
-        '-c', 'core.hooksPath=/dev/null',
-        '-c', 'filter.x.clean=cat',
-        '-c', 'filter.x.smudge=cat',
-        '-c', 'diff.external=',
-        '-c', 'core.sshCommand=',
-      ];
-      return execFileSync('git', [...hardened, '-C', repo, ...args], {
+      // The harness reads the repository the way the server must.
+      return execFileSync('git', [...HARDENED_GIT_ARGS, '-C', repo, ...args], {
         env: { ...process.env, ...GIT_ENV },
         encoding: 'utf8',
         stdio: ['ignore', 'pipe', 'pipe'],

@@ -1,4 +1,4 @@
-# The clippy.toml of every family crate (vault-document, ontology-graph, source-evidence). A family
+# The clippy.toml of every family crate (vault-document, ontology-graph, source-scan). A family
 # crate reaches the disk through `confined-files` and runs `git` through `hardened-git`, so the
 # standard library's own entry points are disallowed there. Clippy resolves each path to the item,
 # so an alias (`use std as s`), a macro expansion, a `#[path]` module and a raw string cannot hide

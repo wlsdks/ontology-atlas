@@ -21,6 +21,11 @@ pub(crate) const BASE_HARDENING: [&str; 4] = [
 /// spawned with [`crate::git_env`].
 pub(crate) const LITERAL_PATHSPECS: &str = "--literal-pathspecs";
 
+/// A person's `log.follow=true` makes `git log -- <one path>` follow renames, so a file's history
+/// would silently include the history of the file it was renamed from. Every read asks for the
+/// history of the name it gave, whatever the person configured.
+const LOG_HARDENING: [&str; 2] = ["-c", "log.follow=false"];
+
 /// Repository hooks run a repository-controlled command (`post-index-change` on `status`,
 /// `post-checkout` on `restore`, `post-merge` on `pull`), so they are disabled for every verb
 /// except the snapshot commit, which must run the person's own pre-commit hook.
@@ -102,6 +107,7 @@ pub fn hardened_git_argv<S: AsRef<str>>(
     let mut argv: Vec<OsString> = Vec::with_capacity(args.len() + 16);
     argv.extend(BASE_HARDENING.iter().map(OsString::from));
     argv.push(OsString::from(LITERAL_PATHSPECS));
+    argv.extend(LOG_HARDENING.iter().map(OsString::from));
     if subcommand != Some("commit") {
         argv.extend(HOOKS_HARDENING.iter().map(OsString::from));
     }
@@ -253,7 +259,7 @@ mod tests {
     }
 
     #[test]
-    fn every_run_refuses_a_bare_repository_and_the_fsmonitor_hook() {
+    fn every_run_refuses_a_bare_repository_the_fsmonitor_hook_and_a_followed_rename() {
         let argv =
             strings(&hardened_git_argv(&std::env::temp_dir(), &["status"], false).expect("argv"));
         assert!(argv.starts_with(&[
@@ -262,5 +268,6 @@ mod tests {
             "-c".to_string(),
             "core.fsmonitor=false".to_string(),
         ]));
+        assert!(argv.contains(&"log.follow=false".to_string()));
     }
 }

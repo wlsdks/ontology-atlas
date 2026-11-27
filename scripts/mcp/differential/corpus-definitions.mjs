@@ -527,6 +527,27 @@ add('git', 'no-git-executable', { vault: 'miniature-repo', env: { PATH: '/usr/bi
   call('validate_vault', {}),
 ]);
 add('git', 'unborn-branch-and-detached-head', { vault: 'one-node' }, [call('git_status', {}), call('git_history', {})]);
+// A rename staged inside the vault, and one from outside into it: the server must report two rows
+// for each, whatever `status.renames` says.
+add('git', 'git-status-staged-rename', { vault: 'miniature-repo' }, [
+  call('git_status', {}),
+  { $: 'git', args: ['mv', 'ontology/domains/payment.md', 'ontology/domains/payment-moved.md'] },
+  call('git_status', {}),
+  { $: 'git', args: ['mv', 'src/order/cancel.ts', 'ontology/cancel-moved.ts'] },
+  call('git_status', {}),
+]);
+// The branch names a commit that is not in the repository: the history cannot be read, and that
+// must not look like a repository with nothing in it.
+add('git', 'git-history-with-a-missing-commit', { vault: 'miniature-repo' }, [
+  { $: 'write-file', path: '../.git/refs/heads/main', text: '1111111111111111111111111111111111111111\n' },
+  call('git_history', {}),
+]);
+// A vault two folders below the top. On Windows the JavaScript server writes its place with
+// backslashes and so counts every row as outside the vault; elsewhere the two servers agree.
+add('git', 'git-reads-in-a-nested-vault', { vault: 'nested-docs-repo' }, [
+  call('git_status', {}),
+  call('git_history', {}),
+]);
 
 // ---------------------------------------------------------------------------------------------
 // imports: infer_imports and inspect_architecture

@@ -49,15 +49,35 @@ pub(crate) fn parse_touch_history(text: &str) -> Vec<TouchedCommit> {
         let Some(meta) = token.trim_start_matches('\n').strip_prefix(':') else {
             continue;
         };
-        let path = tokens.next();
-        let blob = meta.split(' ').nth(3).filter(|blob| !blob.is_empty());
-        if let (false, Some(path), Some(blob), Some(current)) =
-            (skipping, path, blob, commits.last_mut())
-        {
-            current.touches.push(Touch {
-                blob: blob.to_string(),
-                path: path.to_string(),
-            });
+        let fields: Vec<&str> = meta.split(' ').collect();
+        let (Some(old_blob), Some(new_blob), Some(status)) =
+            (fields.get(2), fields.get(3), fields.get(4))
+        else {
+            continue;
+        };
+        // A rename or copy lists two paths. The command asks for none (`--no-renames`), but a
+        // setting or a future default that did would otherwise shift every token after it.
+        let moved = status.starts_with(['R', 'C']);
+        let first = tokens.next();
+        let second = if moved { tokens.next() } else { None };
+        let Some(current) = commits.last_mut().filter(|_| !skipping) else {
+            continue;
+        };
+        let mut touch = |blob: &str, path: Option<&str>| {
+            if let Some(path) = path.filter(|_| !blob.is_empty()) {
+                current.touches.push(Touch {
+                    blob: blob.to_string(),
+                    path: path.to_string(),
+                });
+            }
+        };
+        if moved {
+            if status.starts_with('R') {
+                touch(old_blob, first);
+            }
+            touch(new_blob, second);
+        } else {
+            touch(new_blob, first);
         }
     }
     commits
@@ -97,6 +117,31 @@ mod tests {
             "a tab stays a tab and a name that starts with the separator stays a name"
         );
         assert_eq!(commits.get(1).map(|c| c.touches.len()), Some(0));
+    }
+
+    #[test]
+    fn a_rename_or_a_copy_reads_two_paths_so_the_next_entry_stays_in_step() {
+        let text = format!(
+            "\u{1e}{A} 2026-01-02T00:00:00Z\0\n:100644 100644 {BLOB} {BLOB} R100\0old name.md\0new\tname.md\0\
+             :100644 100644 {BLOB} {BLOB} C075\0from.md\0copy.md\0\
+             :100644 100644 {BLOB} {BLOB} M\0plain.md\0"
+        );
+        let commits = parse_touch_history(&text);
+        let touched: Vec<&str> = commits
+            .first()
+            .map(|commit| {
+                commit
+                    .touches
+                    .iter()
+                    .map(|touch| touch.path.as_str())
+                    .collect()
+            })
+            .unwrap_or_default();
+        assert_eq!(
+            touched,
+            ["old name.md", "new\tname.md", "copy.md", "plain.md"],
+            "a rename touches both names, a copy only the new one"
+        );
     }
 
     #[test]
