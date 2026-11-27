@@ -60,7 +60,6 @@ interface TopologyInspectorSurfacesProps {
     | "projectSourceLabels"
     | "copyV2NodeHandoff"
     | "projectSourceErrorLabel"
-    | "projectSourceDegraded"
     | "projectSourceProposal"
     | "handleProjectSourceConfirmProposal"
     | "projectSourceNextActionAvailable"
@@ -177,7 +176,7 @@ export function TopologyInspectorSurfaces({
   const { summaryFreshness, summaryHistoryUnavailable, llmBridgeAvailable, setNeedsVaultReason, selectedOntologyNode, vault, gitVaultPath, ontologyInsight } = topologyVaultReadModel;
   const { projectSource } = topologySourceReadiness;
   const {
-    projectSourceLabels, copyV2NodeHandoff, projectSourceErrorLabel, projectSourceDegraded,
+    projectSourceLabels, copyV2NodeHandoff, projectSourceErrorLabel,
     projectSourceProposal, handleProjectSourceConfirmProposal, projectSourceNextActionAvailable,
     handleProjectSourceAction
   } = topologySourceActions;
@@ -503,7 +502,6 @@ export function TopologyInspectorSurfaces({
               projectSourceLoading={projectSource.loading}
               projectSourceBusy={projectSource.busy}
               projectSourceError={projectSourceErrorLabel}
-              projectSourceDegraded={projectSourceDegraded}
               projectSourceProposal={projectSourceProposal}
               onProjectSourceConfirmProposal={projectSourceProposal
                 ? handleProjectSourceConfirmProposal

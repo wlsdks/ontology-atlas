@@ -180,7 +180,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ the hosted download page does not route into the workbench, and \/docs offers no disabled local-source tab/,
+    /✓ the hosted download page does not route into the workbench/,
   );
   assert.match(
     result.stdout,
@@ -203,10 +203,6 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   assert.match(
     result.stdout,
     /✓ hosted download page states per-platform installability from the generated release state and keeps release-pipeline status internal/,
-  );
-  assert.match(
-    result.stdout,
-    /✓ mobile bottom navigation hides only on the standalone download page, keeping global nav on the root map/,
   );
   assert.match(
     result.stdout,
@@ -294,7 +290,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop docs intent shows a vault setup welcome before opening the native picker/,
+    /✓ the app.s docs screen shows a vault setup welcome while no folder is open, and opens the native picker only after an explicit press/,
   );
   assert.match(
     result.stdout,
@@ -813,7 +809,6 @@ const withoutComments = (file, source) =>
 test("desktop readiness verdicts survive deleting comments and comments that name a forbidden string", () => {
   const strip = (file, appended = "") => [file, (source) => withoutComments(file, source) + appended];
   const result = readinessWith(Object.fromEntries([
-    strip("src/widgets/bottom-tab-bar/lib/is-tab-active.ts", "// normalized === '/' && !hasLoadedVault\n"),
     strip("src/widgets/topology-controls/ui/TopologyEmptyState.tsx"),
     strip("src/views/download/model/macos-release.generated.ts"),
     strip(

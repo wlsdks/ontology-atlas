@@ -113,7 +113,6 @@ function renderPanel(
     onEnterRealm?: () => void;
     projectSourceBusy?: boolean;
     projectSourceError?: string | null;
-    projectSourceDegraded?: OntologyMapDetailPanelProps["projectSourceDegraded"];
     projectSourceProposal?: OntologyMapDetailPanelProps["projectSourceProposal"];
     onProjectSourceConfirmProposal?: () => void | Promise<void>;
     updatedAtLabel?: string | null;
@@ -182,7 +181,6 @@ function panelElement(
       onProjectSourceAction={overrides.onProjectSourceAction}
       projectSourceBusy={overrides.projectSourceBusy}
       projectSourceError={overrides.projectSourceError}
-      projectSourceDegraded={overrides.projectSourceDegraded}
       projectSourceProposal={overrides.projectSourceProposal}
       onProjectSourceConfirmProposal={overrides.onProjectSourceConfirmProposal}
       showHandoff={overrides.showHandoff}
@@ -484,7 +482,7 @@ describe("OntologyMapDetailPanel — project source receipt", () => {
     expect(action.className).toContain("--map-panel-primary-surface");
   });
 
-  it("degrades honestly where the action cannot run: why, where, and what still works", () => {
+  it("draws no remedy where the action cannot run, and offers no download in its place", () => {
     const projectSource: ProjectSourceView = {
       contractVersion: 1,
       projectSlug: "views",
@@ -497,30 +495,10 @@ describe("OntologyMapDetailPanel — project source receipt", () => {
       receipt: null,
     };
 
-    renderPanel(vi.fn(), {
-      kind: "project",
-      projectSource,
-      projectSourceDegraded: {
-        why: "A browser cannot tell where the folder sits on your disk.",
-        ctaLabel: "Get the macOS app",
-        href: "/download/",
-        stillWorks: "Reading the map still works here.",
-      },
-    });
+    renderPanel(vi.fn(), { kind: "project", projectSource });
 
-    const remedy = screen.getByTestId("map-project-source-remedy");
-    expect(remedy).toHaveAttribute("data-remedy-mode", "degraded");
-    // What cannot be executed is not drawn as a button.
     expect(screen.queryByTestId("map-project-source-action")).not.toBeInTheDocument();
-    // ① why ② where to — a destination that actually opens, not a sentence ③ what works here too.
-    expect(screen.getByTestId("map-project-source-degraded-why")).toBeInTheDocument();
-    expect(screen.getByTestId("map-project-source-degraded-cta")).toHaveAttribute(
-      "href",
-      expect.stringContaining("/download/") as unknown as string,
-    );
-    expect(
-      screen.getByTestId("map-project-source-degraded-still-works"),
-    ).toHaveTextContent("Reading the map still works here.");
+    expect(document.querySelector('a[href*="/download"]')).toBeNull();
   });
 
   it("keeps the remedy block out of a healthy receipt so the box always means work", () => {

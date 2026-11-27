@@ -106,11 +106,8 @@ describe("what the desktop bundle leaves out has no way in from the app", () => 
     const reviewed = new Set([
       "src/app/providers/GatewayHandOverScript.tsx",
       "src/shared/lib/navigation/nav-destination.ts",
-      "src/views/home/model/project-source/use-topology-source-actions.tsx",
       "src/views/terminal-state/ui/NotFoundScreen.tsx",
-      "src/widgets/bottom-tab-bar/lib/is-tab-active.ts",
       "src/widgets/gateway-chrome/ui/GatewayNav.tsx",
-      "src/widgets/library-import/ui/ImportConnectStep.tsx",
     ]);
     const linksDownload = /["']\/download\/?["'?#]/;
     const naming = appSource.filter(

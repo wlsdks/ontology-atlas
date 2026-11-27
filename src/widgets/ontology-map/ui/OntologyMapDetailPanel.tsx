@@ -96,7 +96,6 @@ export function OntologyMapDetailPanel({
   onProjectSourceAction,
   projectSourceBusy = false,
   projectSourceError = null,
-  projectSourceDegraded = null,
   projectSourceProposal = null,
   onProjectSourceConfirmProposal,
 }: OntologyMapDetailPanelProps) {
@@ -119,7 +118,7 @@ export function OntologyMapDetailPanel({
     showProjectSource
     && projectSource.topGap
     && labels.sourceAction
-    && (onProjectSourceAction || projectSourceDegraded),
+    && onProjectSourceAction,
   );
   /*
    * The remedy arrives after the panel opens (the vault root is measured first), so it pushes its
@@ -446,7 +445,6 @@ export function OntologyMapDetailPanel({
                             busyLabel={labels.sourceBusy}
                             busy={projectSourceBusy}
                             onAction={onProjectSourceAction}
-                            degraded={projectSourceDegraded}
                             proposal={projectSourceProposal}
                             onConfirmProposal={onProjectSourceConfirmProposal}
                           />

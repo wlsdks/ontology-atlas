@@ -11,7 +11,7 @@ describe('audit loading lifecycle', () => {
       if (fail) throw new Error('read denied');
       return JSON.stringify({ v: 1, at: 'now', provider });
     } }) }) }) }) as unknown as FileSystemDirectoryHandle;
-    const { result, rerender } = renderHook(({ vaultHandle }) => useAiConnection({ enabled: true, vaultHandle }), { initialProps: { vaultHandle: folder('first') } });
+    const { result, rerender } = renderHook(({ vaultHandle }) => useAiConnection({ vaultHandle }), { initialProps: { vaultHandle: folder('first') } });
     await waitFor(() => expect(result.current.auditEntries[0]?.provider).toBe('first'));
     rerender({ vaultHandle: folder('second') });
     await waitFor(() => expect(result.current.auditEntries[0]?.provider).toBe('second'));
@@ -32,14 +32,14 @@ describe('audit loading lifecycle', () => {
         controller.close();
       } }));
     const vaultHandle = { name: 'vault', getDirectoryHandle: async () => ({ getFileHandle: async () => ({ getFile: async () => ({ stream }) }) }) } as unknown as FileSystemDirectoryHandle;
-    const { result, rerender } = renderHook(({ enabled }) => useAiConnection({ enabled, vaultHandle }), { initialProps: { enabled: true } });
+    const { result, rerender } = renderHook(({ vaultHandle }) => useAiConnection({ vaultHandle }), { initialProps: { vaultHandle: vaultHandle as FileSystemDirectoryHandle | null } });
     expect(result.current.auditTotal).toBeNull();
     await waitFor(() => expect(stream).toHaveBeenCalledTimes(1));
     act(() => result.current.refreshAudit());
     await waitFor(() => expect(cancel).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(result.current.auditTotal).toBe(1));
     expect(result.current.auditEntries.map(entry => entry.provider)).toEqual(['local']);
-    rerender({ enabled: false });
+    rerender({ vaultHandle: null });
     await waitFor(() => expect(result.current.auditTotal).toBe(0));
     expect(result.current.auditEntries).toEqual([]);
   });

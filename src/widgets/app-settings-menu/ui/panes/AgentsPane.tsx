@@ -9,7 +9,7 @@ import { SettingsDoorRow, SettingsGroup } from '../settings-primitives';
 
 function ModelsDoor({ onLeave }: { onLeave: () => void }) {
   const t = useTranslations('settingsAgents');
-  const { statuses, keysRead } = useAiConnection({ enabled: true, vaultHandle: null });
+  const { statuses, keysRead } = useAiConnection({ vaultHandle: null });
   const keyCount = Object.values(statuses).filter((status) => status?.stored).length;
   const caption = keysRead ? t('modelsCaptionKeys', { count: keyCount }) : undefined;
   return (

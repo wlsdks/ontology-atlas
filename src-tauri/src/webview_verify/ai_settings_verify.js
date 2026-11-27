@@ -22,8 +22,10 @@
   window.__ontologyAtlasAiSettingsVerify = result;
 
   const MAX_ATTEMPTS = 90;
+  const BROWSER_PAGE_GRACE_POLLS = 20;
   const CLICK_COOLDOWN = 8;
   const lastClick = {};
+  let browserPagePolls = 0;
 
   const visible = (el) => {
     if (!el) return false;
@@ -63,11 +65,20 @@
       return;
     }
 
-    // The page meant for browsers replaces the whole app, so no rail or tab can follow it.
+    // Before hydration the page meant for browsers sits in the DOM, hidden, so seeing it early
+    // proves nothing. Only a page that outlives the grace period means the window never became
+    // the app.
     if (document.querySelector('[data-testid="app-only-page"]')) {
-      result.browserPageShown = true;
-      result.step = "app-only-page";
-      result.reason = "the window rendered the page meant for browsers";
+      browserPagePolls += 1;
+      result.step = "wait-for-hydration";
+      result.reason = "the page meant for browsers is still in the DOM";
+      if (browserPagePolls > BROWSER_PAGE_GRACE_POLLS) {
+        result.browserPageShown = true;
+        result.step = "app-only-page";
+        result.reason = "the window rendered the page meant for browsers";
+        return;
+      }
+      again();
       return;
     }
 

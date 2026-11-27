@@ -132,7 +132,7 @@ export function SetupFrame({
 
 /**
  * What changed this session, independent of git: `computeOntologyChangeset` against the
- * per-vault `change-baseline-store` baseline, which survives a reload. Shown on desktop and web.
+ * per-vault `change-baseline-store` baseline, which survives a reload.
  */
 export function SessionChangeSummary({
   t,
@@ -175,27 +175,6 @@ export function SessionChangeSummary({
         <p className="text-body text-[color:var(--color-text-quaternary)]">{t("webNoChanges")}</p>
       )}
     </div>
-  );
-}
-
-export function WebSetup({
-  t,
-  sessionChangeset,
-}: {
-  t: Translator;
-  sessionChangeset: OntologyChangeset | null;
-}) {
-  return (
-    <SetupFrame
-      t={t}
-      step={1}
-      state="web"
-      title={t("webTitle")}
-      body={t("webDesktopHint")}
-      note={t("scopeNotice")}
-    >
-      <SessionChangeSummary t={t} changeset={sessionChangeset} title={t("webSummaryTitle")} />
-    </SetupFrame>
   );
 }
 

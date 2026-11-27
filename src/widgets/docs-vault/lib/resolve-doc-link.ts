@@ -81,7 +81,7 @@ export function resolveDocLink({
   return { kind: 'unresolved' };
 }
 
-export const ONTOLOGY_ATLAS_REPO_BLOB_BASE =
+const ONTOLOGY_ATLAS_REPO_BLOB_BASE =
   'https://github.com/wlsdks/ontology-atlas/blob/main';
 
 export function githubBlobUrl(

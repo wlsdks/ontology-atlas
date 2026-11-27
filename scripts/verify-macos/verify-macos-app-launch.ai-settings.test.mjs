@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
 import {
+  AI_SETTINGS_BROWSER_PAGE_GRACE_POLLS,
   AI_SETTINGS_LISTBOX_MAX_ROWS,
   authorityOfBaseUrl,
   isSafeAiSettingsBaseUrl,
@@ -217,7 +218,7 @@ test("AI settings verification fails loudly instead of passing on missing elemen
         ...PASSING_MARKERS,
         aiSettingsVerification: { attempted: true, browserPageShown: true, reason: "the window rendered the page meant for browsers" },
       },
-      /page meant for browsers/,
+      /still rendered the page meant for browsers after 20 polls/,
     ],
   ];
 
@@ -424,6 +425,18 @@ test("model list row cap matches the shipped rule", () => {
     AI_SETTINGS_LISTBOX_MAX_ROWS,
     "verifier row cap drifted from the shipped rule — the gate would judge by a number the app does not use",
   );
+});
+
+/**
+ * The page meant for browsers is in the DOM, hidden, until hydration. The verifier waits this many
+ * polls before calling it a failure; the contract names the same number in its message.
+ */
+test("browser page grace period matches the verifier script", () => {
+  const source = fs.readFileSync("src-tauri/src/webview_verify/ai_settings_verify.js", "utf8");
+  const match = source.match(/const BROWSER_PAGE_GRACE_POLLS = (\d+);/);
+  assert.ok(match, "ai_settings_verify.js should declare BROWSER_PAGE_GRACE_POLLS");
+  assert.equal(Number(match[1]), AI_SETTINGS_BROWSER_PAGE_GRACE_POLLS);
+  assert.match(source, /browserPagePolls > BROWSER_PAGE_GRACE_POLLS/);
 });
 
 test("AI settings web surface testids still exist in the shipped panel", () => {

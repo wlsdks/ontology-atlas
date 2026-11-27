@@ -86,12 +86,6 @@ export function useTopologySourceActions({ toast, v2DatasheetModel, topologyPref
       || projectSourceNextAction === "repair_source_path"
       || projectSourceNextAction === "review_inventory_limit"),
   );
-  const projectSourceNeedsNativeRuntime = Boolean(
-    projectSourceNextAction === "connect_source"
-    || projectSourceNextAction === "repair_source_binding"
-    || projectSourceNextAction === "measure_source"
-    || projectSourceNextAction === "remeasure_source",
-  );
   const projectSourceLabels = useMemo(() => {
     const view = projectSource.view;
     if (!view) return null;
@@ -103,8 +97,7 @@ export function useTopologySourceActions({ toast, v2DatasheetModel, topologyPref
       measuredAt: projectSourceMeasuredAtLabel,
       currentness: t(`nodeDatasheet.sourceCurrent_${view.currentness}`),
       gap: t(`nodeDatasheet.sourceGap_${view.topGap?.id ?? "none"}`),
-      // Always an action label; `projectSourceDegraded` owns the notice for surfaces that cannot
-      // act.
+      // Always an action label.
       action: view.nextAction.id === "record_source_role" && !askAgent
         ? t("nodeDatasheet.sourceAction_record_source_role_copy")
         : t(`nodeDatasheet.sourceAction_${view.nextAction.id}`),
@@ -123,17 +116,6 @@ export function useTopologySourceActions({ toast, v2DatasheetModel, topologyPref
     askAgent,
     t,
   ]);
-  const projectSourceDegraded = useMemo(
-    () => !projectSource.runtimeAvailable && projectSourceNeedsNativeRuntime
-      ? {
-        why: t("nodeDatasheet.sourceDegradedWhy"),
-        ctaLabel: t("nodeDatasheet.sourceDegradedCta"),
-        href: "/download/",
-        stillWorks: t("nodeDatasheet.sourceDegradedStillWorks"),
-      }
-      : null,
-    [projectSource.runtimeAvailable, projectSourceNeedsNativeRuntime, t],
-  );
   // No binding exists yet, so the connect path reads its own failure sentence without "unchanged"
   // reassurance.
   const projectSourceUnbound = projectSource.view?.nextAction.id === "connect_source";
@@ -172,7 +154,7 @@ export function useTopologySourceActions({ toast, v2DatasheetModel, topologyPref
     await projectSource.runNextAction({ rootPath });
   }, [projectSource]);
   return {
-    projectSourceLabels, copyV2NodeHandoff, projectSourceErrorLabel, projectSourceDegraded,
+    projectSourceLabels, copyV2NodeHandoff, projectSourceErrorLabel,
     projectSourceProposal, handleProjectSourceConfirmProposal, projectSourceNextActionAvailable,
     handleProjectSourceAction
   } as const;

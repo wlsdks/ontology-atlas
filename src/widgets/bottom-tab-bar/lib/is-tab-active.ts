@@ -14,11 +14,3 @@ export function isBottomTabActive(
   return normalized === href || normalized === href.replace(/\/$/, '');
 }
 
-export function shouldHideBottomTabBar(pathname: string, _hasLoadedVault: boolean): boolean {
-  const normalized = stripLocalePrefix(pathname).replace(/\/$/, '') || '/';
-  // `/download` is the one standalone page with its own header nav. Keep the bar on `/` regardless
-  // of vault state: below `lg` nothing else covers navigation for first-run visitors.
-  if (normalized === '/download') return true;
-  return false;
-}
-

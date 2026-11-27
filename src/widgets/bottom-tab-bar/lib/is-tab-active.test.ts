@@ -1,16 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
-import { isBottomTabActive, shouldHideBottomTabBar } from "./is-tab-active";
+import { isBottomTabActive } from "./is-tab-active";
 
 vi.mock("@/i18n/routing", () => ({
   routing: { locales: ["en", "ko", "ja", "zh"] },
 }));
 
 describe("locale prefixes", () => {
-  it("matches tabs and hides the bar under every routable locale", () => {
+  it("matches tabs under every routable locale", () => {
     expect(isBottomTabActive("/ja/library/", "/library", ["/library"])).toBe(true);
     expect(isBottomTabActive("/zh/", "/", [])).toBe(true);
-    expect(shouldHideBottomTabBar("/zh/download/", false)).toBe(true);
-    expect(shouldHideBottomTabBar("/ja/library/", false)).toBe(false);
   });
 });
 
@@ -61,12 +59,5 @@ describe("isBottomTabActive", () => {
 
   it('keeps the home tab inactive on other paths', () => {
     expect(isBottomTabActive("/docs", "/", [])).toBe(false);
-  });
-});
-
-describe("shouldHideBottomTabBar", () => {
-  it("hides the bar on /download only, whether or not a vault is loaded", () => {
-    expect(shouldHideBottomTabBar("/", true)).toBe(false);
-    expect(shouldHideBottomTabBar("/download", true)).toBe(true);
   });
 });

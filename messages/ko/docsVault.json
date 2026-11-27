@@ -144,13 +144,13 @@
   },
   "vaultStatus": {
     "unsupportedTooltip": "로컬 온톨로지 폴더 편집은 설치된 데스크톱 앱에서 사용할 수 있어요.",
-    "permissionNeededBanner": "온톨로지 폴더 접근이 멈췄어요. 폴더 접근을 다시 허용해 주세요. 그동안 샘플 문서를 보여줘요.",
-    "errorBanner": "온톨로지 폴더에 접근할 수 없어요 ({message}). 샘플 문서를 대신 보여줘요. 폴더를 다시 고르거나 새로고침하세요.",
+    "permissionNeededBanner": "온톨로지 폴더 접근이 멈췄어요. 편집을 이어가려면 접근을 다시 허용해 주세요.",
+    "errorBanner": "폴더를 읽지 못했어요 ({message}). 폴더를 다시 고르거나 다른 폴더를 골라 주세요.",
     "rootRejectedBanner": "이 폴더는 지도로 만들 수 없어요. 시스템 폴더나 홈 폴더 전체 말고, 문서가 들어 있는 폴더를 골라 주세요.",
-    "pathMissingBanner": "그 폴더를 찾지 못했어요. 옮겼거나 지워진 것 같아요. 샘플 문서를 대신 보여줘요. 폴더를 다시 골라 주세요.",
+    "pathMissingBanner": "그 폴더를 찾지 못했어요. 옮겼거나 지워진 것 같아요. 폴더를 다시 골라 주세요.",
     "grantNeededBanner": "이번 업데이트 후에는 온톨로지 폴더를 한 번 다시 골라 접근을 확인해 주세요. 문서는 그대로 있어요.",
     "permissionDeniedBanner": "macOS가 이 앱의 폴더 읽기를 허용하지 않았어요. 시스템 설정에서 허용하거나 다른 곳의 폴더를 골라 주세요.",
-    "unknownErrorBanner": "그 폴더를 읽지 못했고, 이유를 알 수 없어요. 샘플 문서를 대신 보여줘요. 폴더를 다시 골라 주세요.",
+    "unknownErrorBanner": "그 폴더를 읽지 못했고, 이유를 알 수 없어요. 폴더를 다시 골라 주세요.",
     "openPicker": "폴더 다시 선택",
     "openFallback": "이 문서 열기",
     "missingSlugBanner": "「{slug}」 문서를 이 폴더에서 못 찾았어요. 대신 다른 문서를 열었어요. 다른 폴더의 문서라면 폴더를 바꿔 주세요."

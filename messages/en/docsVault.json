@@ -144,13 +144,13 @@
   },
   "vaultStatus": {
     "unsupportedTooltip": "Local ontology folder editing is available in the installed desktop app.",
-    "permissionNeededBanner": "Folder access is paused: allow access again to keep editing. Showing sample documents until then.",
-    "errorBanner": "The ontology folder is unavailable ({message}). Showing sample documents: choose the folder again or refresh.",
+    "permissionNeededBanner": "Folder access is paused: allow access again to keep editing.",
+    "errorBanner": "The folder could not be read ({message}). Choose it again, or choose another folder.",
     "rootRejectedBanner": "This folder can't be used as a map. Pick a folder that holds your documents, not a system folder or your whole home folder.",
-    "pathMissingBanner": "That folder is gone. It looks like it was moved or deleted. Showing sample documents: choose it again.",
+    "pathMissingBanner": "That folder is gone. It looks like it was moved or deleted. Choose it again.",
     "grantNeededBanner": "After this update, choose your ontology folder once to confirm access. Your documents are still there.",
     "permissionDeniedBanner": "Your Mac is not letting this app read that folder. Allow it in System Settings, or choose a folder somewhere else.",
-    "unknownErrorBanner": "That folder could not be read, and no reason was given. Showing sample documents: choose the folder again.",
+    "unknownErrorBanner": "That folder could not be read, and no reason was given. Choose the folder again.",
     "openPicker": "Choose folder",
     "openFallback": "Open this document",
     "missingSlugBanner": "Couldn't find “{slug}” in this folder, so another document is open instead. If it lives in a different folder, switch folders."

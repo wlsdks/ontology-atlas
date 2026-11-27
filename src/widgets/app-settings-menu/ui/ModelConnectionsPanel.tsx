@@ -147,7 +147,7 @@ export function ModelConnections() {
   const localVault = useLocalVault();
   const handle = localVault.status === 'loaded' ? (localVault.handle ?? null) : null;
   const vaultRootPath = handle ? (getTauriVaultRootPath(handle) ?? null) : null;
-  const connection = useAiConnection({ enabled: true, vaultHandle: handle });
+  const connection = useAiConnection({ vaultHandle: handle });
   return (
     <ModelConnectionsPanel connection={connection} vaultRootPath={vaultRootPath} />
   );

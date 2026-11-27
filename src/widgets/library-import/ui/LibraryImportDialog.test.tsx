@@ -7,13 +7,11 @@ import { createConnectorStore } from '@/shared/lib/connectors/connector-store';
 import { LibraryImportDialog } from './LibraryImportDialog';
 import type { ConnectorSecretStatus } from '@/shared/lib/connectors/tauri-connector-secrets';
 
-const bridge = vi.hoisted(() => ({ available: true }));
 const secretSet = vi.fn<(ref: string, value: string) => Promise<ConnectorSecretStatus | null>>();
 const secretStatus = vi.fn<(ref: string) => Promise<ConnectorSecretStatus | null>>();
 const resolveRuntimes = vi.fn();
 vi.mock('@/shared/lib/connectors/tauri-connector-secrets', async (original) => ({
   ...await original<typeof import('@/shared/lib/connectors/tauri-connector-secrets')>(),
-  isConnectorSecretBridgeAvailable: () => bridge.available,
   connectorSecretSet: (ref: string, value: string) => secretSet(ref, value),
   connectorSecretStatus: (ref: string) => secretStatus(ref),
 }));
@@ -47,7 +45,6 @@ const enter = async () => {
 const save = () => fireEvent.click(screen.getByTestId('library-import-connect'));
 
 beforeEach(() => {
-  bridge.available = true;
   secretSet.mockReset(); secretStatus.mockReset(); resolveRuntimes.mockReset();
   secretSet.mockImplementation(async (secretRef) => ({ secretRef, stored: true, last4: 'alue' }));
   secretStatus.mockImplementation(async (secretRef) => ({ secretRef, stored: true, last4: 'alue' }));
@@ -129,17 +126,6 @@ describe('service setup', () => {
     await act(async () => { finish([{ name: 'npx', path: null }]); });
     await screen.findByTestId('library-import-failed'); expect(writes).toHaveLength(0);
     expect(screen.getByTestId('library-import-connect')).toBeDisabled();
-  });
-  it('offers browser remedies without token collection, writes or secret lookups', async () => {
-    bridge.available = false;
-    const { onAddFiles, onClose, writes } = draw(); pick();
-    expect(screen.getByTestId('library-import-web-setup')).toBeInTheDocument();
-    expect(screen.queryByTestId('library-import-token')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('library-import-connect')).not.toBeInTheDocument();
-    expect(screen.getByTestId('library-import-no-agent-app')).toHaveAttribute('href', expect.stringContaining('/download'));
-    fireEvent.click(screen.getByTestId('library-import-add-files'));
-    expect(onClose).toHaveBeenCalledBefore(onAddFiles); expect(writes).toHaveLength(0);
-    expect(secretStatus).not.toHaveBeenCalled(); expect(secretSet).not.toHaveBeenCalled();
   });
   it('hands a bounded document request to the agent only after an explicit Bring press', async () => {
     const { onBrief, onClose } = draw(); await enter(); save(); await screen.findByTestId('library-import-connected');

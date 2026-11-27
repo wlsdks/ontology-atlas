@@ -15,10 +15,10 @@ vi.mock('next-intl', () => ({
 }));
 vi.mock('@/i18n/navigation', () => ({ useRouter: () => ({ push: mocks.push }) }));
 vi.mock('../../model/use-ai-connection', () => ({
-  useAiConnection: ({ enabled }: { enabled: boolean }) => ({
-    keysRead: enabled && mocks.keysRead,
+  useAiConnection: () => ({
+    keysRead: mocks.keysRead,
     statuses: Object.fromEntries(
-      Object.entries(mocks.stored).map(([provider, stored]) => [provider, enabled ? { provider, stored } : null]),
+      Object.entries(mocks.stored).map(([provider, stored]) => [provider, { provider, stored }]),
     ),
   }),
 }));

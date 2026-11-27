@@ -113,14 +113,4 @@ export const OUTBOUND_PATHS: readonly OutboundPath[] = [
   },
 ];
 
-export const WEB_OUTBOUND_PATHS: readonly OutboundPath[] = [
-  {
-    id: 'website-files',
-    trigger: 'automatic',
-    hosts: ['ontologyatlas.com'],
-    carries: 'no-folder-content',
-    recordedIn: null,
-  },
-];
-
 export const OUTBOUND_HOST_EXCEPTIONS: readonly { host: string; reason: string }[] = [];

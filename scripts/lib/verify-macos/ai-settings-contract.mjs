@@ -10,6 +10,13 @@ export const AI_SETTINGS_DEFAULT_BASE_URL = "http://localhost:11434";
 export const AI_SETTINGS_PAYLOAD_TIMEOUT_MS = 45000;
 
 /**
+ * Polls the verifier waits for the page meant for browsers to leave the DOM before it reports the
+ * window as a browser page. Must equal `BROWSER_PAGE_GRACE_POLLS` in
+ * `src-tauri/src/webview_verify/ai_settings_verify.js`; the verifier test catches drift.
+ */
+export const AI_SETTINGS_BROWSER_PAGE_GRACE_POLLS = 20;
+
+/**
  * Clock slack allowed when deciding whether an audit line belongs to this run.
  * The app writes its process's time while the verifier reads Node's, so the two
  * are not assumed to be the same clock.
@@ -42,7 +49,7 @@ export function validateAiSettingsMarkers(markers, { expectedBaseUrl = null } = 
     return `WebView AI settings verifier did not start: ${run.reason || "unknown reason"}`;
   }
   if (run.browserPageShown === true) {
-    return "installed app rendered the page meant for browsers";
+    return `installed app still rendered the page meant for browsers after ${AI_SETTINGS_BROWSER_PAGE_GRACE_POLLS} polls`;
   }
   if (markers.aiSettingsSheetOpen !== true) {
     return `WebView did not reach the Agents destination (verifier stopped at ${run.step || "unknown step"}: ${run.reason || "unknown reason"})`;
