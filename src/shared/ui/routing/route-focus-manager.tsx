@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { usePathname } from '@/i18n/navigation';
 import { stripLocalePrefix } from '@/shared/lib/navigation/nav-destination';
 
@@ -102,12 +102,25 @@ export function RouteFocusManager() {
     typeof window !== 'undefined' &&
     new URLSearchParams(window.location.search).get(ROUTE_FOCUS_QUERY_KEY) ===
       ROUTE_FOCUS_QUERY_VALUE;
+  /*
+   * The arrival re-runs when a marker appears, never when one goes. A client navigation renders
+   * before Next writes the new address, so a destination's first render can read the marker of the
+   * page being left; re-running when it then vanished would cancel the arrival in progress.
+   */
+  const [urlIntent, setUrlIntent] = useState({ present: hasUrlFocusIntent, appearances: 0 });
+  if (urlIntent.present !== hasUrlFocusIntent) {
+    setUrlIntent({
+      present: hasUrlFocusIntent,
+      appearances: urlIntent.appearances + (hasUrlFocusIntent ? 1 : 0),
+    });
+  }
+  const readUrlFocusIntent = useEffectEvent(() => hasUrlFocusIntent);
 
   useEffect(() => {
     const previousSurface = previousSurfaceRef.current;
     previousSurfaceRef.current = surfacePath;
     const hasExplicitIntent =
-      consumeRouteFocusIntent(surfacePath) || hasUrlFocusIntent;
+      consumeRouteFocusIntent(surfacePath) || readUrlFocusIntent();
     if (
       (previousSurface === null || previousSurface === surfacePath) &&
       !hasExplicitIntent
@@ -199,7 +212,7 @@ export function RouteFocusManager() {
       stop();
     }, 2_000);
     return stop;
-  }, [hasUrlFocusIntent, surfacePath]);
+  }, [surfacePath, urlIntent.appearances]);
 
   return null;
 }
