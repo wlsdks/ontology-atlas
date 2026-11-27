@@ -1,6 +1,5 @@
 export {
   addSources,
-  addSourcesInBrowser,
   copyNeedsConfirm,
   dismissSourceCopy,
   readSourceCopy,
@@ -8,7 +7,6 @@ export {
   stopSourceCopy,
   subscribeSourceCopy,
   summarizeAddSources,
-  type BrowserSourcePick,
   type SkippedUnlisted,
   type SourceCopyJob,
   type SourceCopyPlan,

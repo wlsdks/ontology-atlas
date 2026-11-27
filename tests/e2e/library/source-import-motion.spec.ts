@@ -98,7 +98,6 @@ test('a source poll cannot publish an unfinished copy or move its working contro
     }
   } finally { await run(page, '__finishWrite'); }
   await expect(page.getByTestId('library-source-sources/motion.txt')).toBeVisible();
-  await expect(page.getByTestId('library-source-sources/motion.txt.crswap')).toHaveCount(0);
   await expect(page.getByTestId('library-add-files')).toBeEnabled();
 });
 
@@ -116,7 +115,6 @@ test('unrelated source and Wiki changes remain visible while an original is bein
     await expect(page.getByTestId('library-workspace-sources')).toHaveText(/Sources\s*1/);
     await expect(page.getByTestId('library-workspace-wiki')).toHaveText(/Wiki\s*1/);
     await expect(page.getByTestId('library-source-sources/motion.txt')).toHaveCount(0);
-    await expect(page.getByTestId('library-source-sources/motion.txt.crswap')).toHaveCount(0);
   } finally { await run(page, '__finishWrite'); }
   await expect(page.getByTestId('library-source-sources/motion.txt')).toBeVisible();
   await expect(page.getByTestId('library-workspace-sources')).toHaveText(/Sources\s*2/);

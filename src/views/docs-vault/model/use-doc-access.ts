@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useLocalVault } from '@/entities/vault-session';
-import { vaultImageUrl } from '@/shared/lib/library/open-vault-file';
+import { vaultImageUrl } from '@/shared/lib/library/vault-image-url';
 import { readStrictUtf8Text } from '@/shared/lib/vault-folder/strict-utf8-text';
 import { scheduleStateSync } from '../lib/persistence';
 

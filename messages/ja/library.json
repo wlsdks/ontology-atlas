@@ -396,8 +396,6 @@
     "failed": "{count, number}件をコピーできませんでした",
     "failedReason": "追加できませんでした：{reason}",
     "revealFailed": "{fileManagerName}で表示できませんでした：{reason}",
-    "openFailed": "そのファイルを開けませんでした。",
-    "savedInstead": "{name}はこのページで開くとコードが実行される可能性がある種類のファイルなので、代わりにダウンロードしました。",
     "needsCompileSplit": "Wikiページがまだないもの{notCompiled, number}件 · 資料のバージョン確認が必要なもの{stale, number}件",
     "staleOnly": "要確認の資料のバージョン{count, number}件",
     "partialOnly": "一部のみ読み込み済み{count, number}件",

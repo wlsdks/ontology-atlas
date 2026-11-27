@@ -6,9 +6,7 @@ import {
   discoveryAcceptsDirectory,
   discoveryAcceptsFile,
   discoveryExtension,
-  walkDroppedFolder,
   withoutVaultOwnedMarkdown,
-  type DroppedEntry,
   type SourceCandidate,
 } from './source-discovery';
 import discoveryCases from '../../../../../tests/fixtures/source-discovery-cases.json';
@@ -138,62 +136,6 @@ describe('Markdown the vault owns is never offered', () => {
     ]);
   });
 
-});
-
-describe('a dropped folder keeps documents and counts what it skipped', () => {
-  function droppedFolder(name: string, files: Record<string, number>): DroppedEntry & { kind: 'directory' } {
-    const build = (dirName: string, prefix: string): DroppedEntry & { kind: 'directory' } => ({
-      kind: 'directory',
-      name: dirName,
-      async *children() {
-        const seen = new Set<string>();
-        for (const [path, size] of Object.entries(files)) {
-          if (prefix && !path.startsWith(`${prefix}/`)) continue;
-          const rest = prefix ? path.slice(prefix.length + 1) : path;
-          const slash = rest.indexOf('/');
-          if (slash < 0) {
-            yield { kind: 'file', name: rest, getFile: async () => new File(['x'.repeat(size)], rest) };
-          } else if (!seen.has(rest.slice(0, slash))) {
-            const child = rest.slice(0, slash);
-            seen.add(child);
-            yield build(child, prefix ? `${prefix}/${child}` : child);
-          }
-        }
-      },
-    });
-    return build(name, '');
-  }
-
-  it('copies the two documents and names the secret and licence files it passed over', async () => {
-    const walk = await walkDroppedFolder(
-      droppedFolder('contracts', {
-        '.env': 200,
-        id_rsa: 400,
-        'LICENSE.txt': 900,
-        'node_modules/x.md': 300,
-        '.DS_Store': 300,
-        'lease.pdf': 500,
-        'notes/renewal.md': 300,
-      }),
-    );
-    expect(walk.files.map((row) => row.relativePath).sort()).toEqual([
-      'contracts/lease.pdf',
-      'contracts/notes/renewal.md',
-    ]);
-    expect(walk.skipped.map((row) => [row.relativePath, row.reason]).sort()).toEqual([
-      ['contracts/.env', 'secretName'],
-      ['contracts/LICENSE.txt', 'licence'],
-      ['contracts/id_rsa', 'secretName'],
-    ]);
-    expect(walk.totalBytes).toBe(800);
-  });
-
-  it('names a thousand skipped files and counts every one', async () => {
-    const files = Object.fromEntries(Array.from({ length: 1_005 }, (_, index) => [`secret-${index}.txt`, 80]));
-    const walk = await walkDroppedFolder(droppedFolder('keys', files));
-    expect(walk.skipped).toHaveLength(1_000);
-    expect(walk.skippedCounts.secretName).toBe(1_005);
-  });
 });
 
 describe('a candidate keeps a stable identity so a refusal can be remembered', () => {

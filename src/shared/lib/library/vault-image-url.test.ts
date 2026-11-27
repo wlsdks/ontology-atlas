@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
-import { handOverVaultFile, vaultImageUrl } from './open-vault-file';
+import { vaultImageUrl } from './vault-image-url';
 
 const created: Blob[] = [];
 
@@ -12,41 +12,6 @@ beforeEach(() => {
       return `blob:atlas/${created.length}`;
     },
     revokeObjectURL: () => {},
-  });
-});
-
-function handoff() {
-  return { open: vi.fn(), save: vi.fn() };
-}
-
-describe('handing a vault file to the person', () => {
-  it.each(['report.html', 'report.HTM', 'diagram.svg', 'page.xhtml', 'feed.xml', 'tool.exe', 'README', 'x.constructor'])(
-    'saves %s to downloads instead of opening it in this origin',
-    (name) => {
-      const how = handoff();
-      expect(handOverVaultFile(new File(['<script>alert(1)</script>'], name, { type: 'text/html' }), how)).toBe('saved');
-      expect(how.open).not.toHaveBeenCalled();
-      expect(how.save).toHaveBeenCalledWith('blob:atlas/1', name);
-      expect(created[0]?.type).toBe('application/octet-stream');
-    },
-  );
-
-  it.each([
-    ['paper.PDF', 'application/pdf'],
-    ['shot.png', 'image/png'],
-    ['photo.jpg', 'image/jpeg'],
-    ['notes.md', 'text/plain;charset=utf-8'],
-    ['config.yml', 'text/plain;charset=utf-8'],
-  ])('opens %s as %s', (name, type) => {
-    const how = handoff();
-    expect(handOverVaultFile(new File(['x'], name), how)).toBe('opened');
-    expect(how.open).toHaveBeenCalledWith('blob:atlas/1');
-    expect(created[0]?.type).toBe(type);
-  });
-
-  it('shows a file by the type its name allows, not the type it claims', () => {
-    handOverVaultFile(new File(['<script>alert(1)</script>'], 'evil.png', { type: 'text/html' }), handoff());
-    expect(created[0]?.type).toBe('image/png');
   });
 });
 
