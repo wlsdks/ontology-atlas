@@ -55,7 +55,9 @@ async function measure(page: Page): Promise<{ clips: Clip[]; pageScroll: number 
         .trim();
       if (!own) continue;
       const rect = element.getBoundingClientRect();
-      if (rect.width <= 2 || rect.height <= 2) continue;
+      // Only a line with no height is out of sight (an `sr-only` label is 1px square). Text squeezed
+      // to no width still stands on its line: a branch name cut to 0px beside its arrow passed here.
+      if (rect.height <= 2) continue;
       if (element.closest('[data-testid="docs-editor-path"]')) continue;
       const style = getComputedStyle(element);
       if (style.visibility === 'hidden' || style.display === 'none') continue;
