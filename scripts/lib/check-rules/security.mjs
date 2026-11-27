@@ -69,6 +69,7 @@ export const rules = [
       /^src\/features\/mcp-connectors\/ui\/(?!.*\.test\.tsx?$).+\.tsx?$/,
       /^src\/widgets\/acp-chat-panel\/(?!.*\.test\.tsx?$).+\.tsx?$/,
       /^src\/shared\/ui\/(?:document\/(?:lang-boot-script|json-ld)|ontology-node\/node-explanation-edit)\.tsx$/,
+      /^src\/app\/providers\/GatewayHandOverScript\.tsx$/,
       /^src\/widgets\/docs-vault\/ui\/(?:(?:DocsVaultBacklinks|DocsVaultEditor|DocsVaultViewer)\.tsx|(?:editor|viewer)\/(?!.*\.test\.tsx?$)[^/]+\.tsx?)$/,
       /^src\/widgets\/docs-vault\/lib\/(?:editor|viewer)\/(?!.*\.test\.ts$)[^/]+\.ts$/,
       /^src\/features\/project-edit\/ui\/MarkdownField\.tsx$/,

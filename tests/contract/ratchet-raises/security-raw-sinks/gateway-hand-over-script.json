@@ -1,0 +1,5 @@
+{
+  "gate": "security-raw-sinks",
+  "raise": 1,
+  "why": "GatewayHandOverScript puts one inline head script on the locale root that sends a plain browser to the download page before the body parses. Its text is a constant built from the build-time locale list and reads no vault, URL or user data; a script child cannot replace the raw sink because React escapes script text and would break the code."
+}

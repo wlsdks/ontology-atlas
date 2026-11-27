@@ -27,7 +27,6 @@ const LAYERS = ["views", "widgets", "features", "entities"] as const;
 
 /** `layer:from->to` → maximum number of distinct imported names allowed. */
 const LEDGER: Record<string, number> = {
-  "views:root-entry->download": 1,
   "views:root-entry->first-run": 1,
   "views:root-entry->home": 1,
   "widgets:project-drawer->public-quick-actions": 1,
