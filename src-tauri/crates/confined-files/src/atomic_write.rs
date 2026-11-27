@@ -44,15 +44,27 @@ impl VaultConflict {
     pub const CODE: &'static str = "VAULT_CONFLICT";
 }
 
-/// How a caller classifies a failed write, as the server's error codes do.
+/// Which public `errorCode` a failed write answers with. The set is stable: agents branch on it,
+/// so an existing code keeps its meaning and a new one may be added.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WriteErrorClass {
-    /// The file changed since it was read: `vault_conflict`.
+    /// The file changed since it was read (a stale expectation): `vault_conflict`.
     VaultConflict,
-    /// A name was taken, or a file differed: `conflict`.
+    /// A name was taken (`EEXIST`): `conflict`.
     Conflict,
     /// Anything else: `tool_error`.
     ToolError,
+}
+
+impl WriteErrorClass {
+    /// The code as the answer prints it.
+    pub fn public_code(self) -> &'static str {
+        match self {
+            Self::VaultConflict => "vault_conflict",
+            Self::Conflict => "conflict",
+            Self::ToolError => "tool_error",
+        }
+    }
 }
 
 /// Why a write or a plan did not happen.
@@ -135,17 +147,16 @@ fn access_error_name(code: OsErrorCode) -> &'static str {
 
 impl WriteError {
     /// The class the server reports for this error, from the variant and not from its text.
+    /// [`WriteErrorClass::public_code`] is the `errorCode` an agent sees.
     pub fn class(&self) -> WriteErrorClass {
         match self {
             Self::Conflict(_) => WriteErrorClass::VaultConflict,
             Self::Io(failure) if failure.code() == OsErrorCode::AlreadyExists => {
                 WriteErrorClass::Conflict
             }
-            Self::RolledBack { cause } | Self::Inconsistent { cause, .. } => match cause.class() {
-                // The sentence of a rolled-back conflict says "conflict", not the code.
-                WriteErrorClass::VaultConflict => WriteErrorClass::Conflict,
-                other => other,
-            },
+            // Rolling back changes nothing about why the write failed: a stale write that was
+            // rolled back is still a `vault_conflict`.
+            Self::RolledBack { cause } | Self::Inconsistent { cause, .. } => cause.class(),
             _ => WriteErrorClass::ToolError,
         }
     }

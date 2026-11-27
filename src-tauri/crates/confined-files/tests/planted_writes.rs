@@ -577,7 +577,20 @@ fn a_taken_name_classifies_as_a_conflict_by_its_code_not_by_its_wording() {
             current_modified: None,
         })),
     };
-    assert_eq!(rolled_back_conflict.class(), WriteErrorClass::Conflict);
+    assert_eq!(
+        rolled_back_conflict.class(),
+        WriteErrorClass::VaultConflict,
+        "a stale write that was rolled back is still a vault_conflict"
+    );
+    let inconsistent = WriteError::Inconsistent {
+        cause: Box::new(WriteError::Conflict(confined_files::VaultConflict {
+            slug: "a".to_string(),
+            expected_modified: None,
+            current_modified: None,
+        })),
+        unrecovered: vec![],
+    };
+    assert_eq!(inconsistent.class(), WriteErrorClass::VaultConflict);
     #[cfg(unix)]
     {
         let raw = WriteError::Io(IoFailure::new(
@@ -587,6 +600,34 @@ fn a_taken_name_classifies_as_a_conflict_by_its_code_not_by_its_wording() {
         ));
         assert_eq!(raw.class(), WriteErrorClass::Conflict, "EEXIST is 17");
     }
+}
+
+/// The public `errorCode` strings agents branch on are pinned: an existing code keeps its meaning.
+#[test]
+fn the_public_error_codes_are_pinned() {
+    assert_eq!(
+        WriteErrorClass::VaultConflict.public_code(),
+        "vault_conflict"
+    );
+    assert_eq!(WriteErrorClass::Conflict.public_code(), "conflict");
+    assert_eq!(WriteErrorClass::ToolError.public_code(), "tool_error");
+    let stale = WriteError::Conflict(confined_files::VaultConflict {
+        slug: "a".to_string(),
+        expected_modified: None,
+        current_modified: None,
+    });
+    let taken = WriteError::Io(IoFailure::new(
+        "mkdir",
+        "/vault/a",
+        std::io::Error::from(std::io::ErrorKind::AlreadyExists),
+    ));
+    assert_eq!(stale.class().public_code(), "vault_conflict");
+    assert_eq!(taken.class().public_code(), "conflict");
+    let rolled_back = |cause| WriteError::RolledBack {
+        cause: Box::new(cause),
+    };
+    assert_eq!(rolled_back(stale).class().public_code(), "vault_conflict");
+    assert_eq!(rolled_back(taken).class().public_code(), "conflict");
 }
 
 #[test]
