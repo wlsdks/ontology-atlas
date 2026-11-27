@@ -73,8 +73,8 @@ ships (`committed-media.contract.test.ts`). Skill design:
 
 Delegate only large, independent, parallelizable work; finish what a handful of
 tool calls can do yourself, and never delegate to verify or double-check your
-own work. Opus builds and investigates; Fable specs, plans, reviews,
-researches and judges design (`docs/engineering/agent-effort.md`). Disclose shared-context reviews. Subagents do not stash,
+own work. Agents run on Opus; Fable needs the owner's yes per task
+(`docs/engineering/agent-effort.md`). Disclose shared-context reviews. Subagents do not stash,
 delete worktrees, or run `git add -A`.
 
 Before reversing an existing product or architecture choice, find

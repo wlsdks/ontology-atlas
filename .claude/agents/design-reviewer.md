@@ -1,7 +1,7 @@
 ---
 name: design-reviewer
 description: Gives a design verdict on a built or proposed screen, with mockups kept in the session scratchpad or attached to the pull request, never committed. Use when the owner or a workflow asks for a design verdict, design directions, or a mockup; not for editing product code (the correction the owner picks goes to implementer), code correctness or security review (code-reviewer), or writing the product spec (spec-writer).
-model: fable
+model: opus
 effort: high
 maxTurns: 300
 tools: Read, Grep, Glob, Bash, Write, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__evaluate_script, mcp__chrome-devtools__list_console_messages
