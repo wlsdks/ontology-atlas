@@ -522,8 +522,8 @@ mod log_tests {
     /// by the crate the watchers use, so a rename or a new watcher crate must be named here too.
     #[test]
     fn the_watcher_crates_never_reach_the_app_log() {
-        let watcher = std::any::type_name::<notify_debouncer_full::notify::Event>();
-        let debouncer = std::any::type_name::<notify_debouncer_full::DebouncedEvent>();
+        let watcher = std::any::type_name::<notify_debouncer_full::notify::RecommendedWatcher>();
+        let debouncer = std::any::type_name::<notify_debouncer_full::NoCache>();
         for type_path in [watcher, debouncer] {
             let crate_name = type_path.split("::").next().unwrap_or_default();
             assert!(
