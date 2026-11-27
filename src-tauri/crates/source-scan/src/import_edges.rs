@@ -2,9 +2,6 @@
 //! lead outside the repository, the ones that could not be placed, and the counts that summarize
 //! a group of edges.
 
-use std::cmp::Ordering;
-use std::collections::BTreeMap;
-
 use serde::Serialize;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
@@ -168,24 +165,6 @@ impl UsageCounts {
             ImportUsage::Unknown => self.unknown += 1,
         }
     }
-}
-
-/// The kinds a group of edges used, only those that occur, in the order of their names.
-pub type KindCounts = BTreeMap<ImportKind, usize>;
-
-/// The edges of a group that an agent reads first: product code importing a value, then by path.
-pub fn compare_evidence(
-    left: (&str, &str, ImportKind, SourceRole, ImportUsage),
-    right: (&str, &str, ImportKind, SourceRole, ImportUsage),
-) -> Ordering {
-    let priority = |row: &(&str, &str, ImportKind, SourceRole, ImportUsage)| {
-        usize::from(!(row.3 == SourceRole::Production && row.4 == ImportUsage::Value))
-    };
-    priority(&left)
-        .cmp(&priority(&right))
-        .then_with(|| answer_format::collation::compare_text(left.0, right.0))
-        .then_with(|| answer_format::collation::compare_text(left.1, right.1))
-        .then_with(|| answer_format::collation::compare_text(left.2.word(), right.2.word()))
 }
 
 /// Whether a file is a test, by where it lives and what it is called, over its `/`- or
