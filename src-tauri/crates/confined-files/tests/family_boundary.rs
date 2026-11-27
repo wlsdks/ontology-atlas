@@ -62,7 +62,14 @@ const FAMILY: [(&str, &[&str]); 5] = [
     ),
     (
         "ontology-graph",
-        &["answer-format", "serde", "sha2", "thiserror", "vault-document"],
+        &[
+            "answer-format",
+            "serde",
+            "sha2",
+            "strsim",
+            "thiserror",
+            "vault-document",
+        ],
     ),
     (
         "source-evidence",

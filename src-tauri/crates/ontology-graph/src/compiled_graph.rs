@@ -264,6 +264,9 @@ pub struct CompiledGraph {
     pub(crate) by_alias: HashMap<String, NodeId>,
     pub(crate) outgoing: Vec<Vec<EdgeId>>,
     pub(crate) incoming: Vec<Vec<EdgeId>>,
+    /// Where each node's slug stands in UTF-16 code unit order, which is how most lists of slugs
+    /// are ordered; the nodes themselves are in collation order.
+    pub(crate) code_unit_rank: Vec<u32>,
 }
 
 impl CompiledGraph {
@@ -365,6 +368,16 @@ impl CompiledGraph {
             .get(name)
             .or_else(|| self.by_alias.get(name))
             .copied()
+    }
+
+    /// Puts nodes in the order a JavaScript `sort()` puts their slugs: by UTF-16 code unit.
+    pub fn sort_by_code_units(&self, nodes: &mut [NodeId]) {
+        nodes.sort_by_key(|node| {
+            self.code_unit_rank
+                .get(node.index())
+                .copied()
+                .unwrap_or(u32::MAX)
+        });
     }
 
     /// The `compareText` order of two nodes.

@@ -248,6 +248,7 @@ merge.
 | 14 | `query_concepts` filter nested deeper than 32 levels of `NOT` and brackets, or holding more than 256 clauses | the filter is read by recursion until the process's stack ends, so a filter of a hundred thousand clauses ends the whole server | refused as `invalid_arguments` naming `filter`, before the vault is read. Corpus: `query-concepts-filter-bounds` | a filter no agent wrote by hand must not end every agent's session |
 | 15 | `query_concepts` zero-row `growthHint.reason` | the `kind=` and `domain=` names are found by scanning the filter's text, so a name inside a quoted title counts as a kind and a domain with a non-ASCII letter is cut where the letters stop | the names are the ones the parsed filter requires, whole. Corpus: `query-concepts-zero-row-names` | the hint names what the filter asked for |
 | 16 | order of `find_backlinks` matches and of the kinds in `kind_census` | by UTF-16 code unit, the default sort | by the one collation every other list uses (`Intl.Collator('en')`). Corpus: `backlinks-and-orphans-edge-names` | one order for every list an agent reads |
+| 17 | `query_ontology` refusal of a missing required name (`slug`, `from`, `to`) | `errorCode` `tool_error`, because the script server's classifier knew only "must be" sentences | `invalid_arguments`. Corpus: `query-ontology-storefront` | a call that omits a required argument is a wrong call, as every other tool already says |
 
 Slices add rows only with a corpus case for each; the lead reviews each row in the slice's pull
 request.

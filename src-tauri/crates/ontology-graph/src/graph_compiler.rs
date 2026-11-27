@@ -375,6 +375,20 @@ pub fn compile(documents: &[LoadedDocument]) -> Result<CompiledGraph, IdentityEr
         .iter()
         .fold(0.0_f64, |most, node| most.max(node.mtime));
 
+    let mut by_code_units: Vec<usize> = (0..nodes.len()).collect();
+    by_code_units.sort_by(|left, right| {
+        utf16::compare(
+            nodes.get(*left).map_or("", |node| node.slug.as_str()),
+            nodes.get(*right).map_or("", |node| node.slug.as_str()),
+        )
+    });
+    let mut code_unit_rank = vec![0_u32; nodes.len()];
+    for (rank, index) in by_code_units.into_iter().enumerate() {
+        if let Some(slot) = code_unit_rank.get_mut(index) {
+            *slot = u32::try_from(rank).unwrap_or(u32::MAX);
+        }
+    }
+
     let mut graph = CompiledGraph {
         nodes,
         edges,
@@ -390,6 +404,7 @@ pub fn compile(documents: &[LoadedDocument]) -> Result<CompiledGraph, IdentityEr
         by_alias,
         outgoing,
         incoming,
+        code_unit_rank,
     };
     graph.graph_hash = hash_graph(&graph);
     Ok(graph)

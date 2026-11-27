@@ -5,6 +5,10 @@
     clippy::disallowed_types,
     reason = "these tests plant the files of a temporary vault, which the document cache then reads"
 )]
+#![allow(
+    dead_code,
+    reason = "each test file uses the part of this module it needs"
+)]
 
 use std::fs;
 

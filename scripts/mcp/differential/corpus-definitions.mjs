@@ -463,6 +463,25 @@ const QUERY_STOREFRONT = [
   { operation: 'overview', limit: 1 }, { operation: 'centrality', iterations: 3, limit: 3 }, { operation: 'match_nodes', limit: 2, cursor: 'x' },
 ];
 add('graph', 'query-ontology-storefront', { vault: 'storefront' }, QUERY_STOREFRONT.map((args) => call('query_ontology', args)));
+add('graph', 'query-ontology-tangle', { vault: 'tangle' }, [
+  { operation: 'overview' }, { operation: 'schema' }, { operation: 'facets' }, { operation: 'components' },
+  { operation: 'cycles' }, { operation: 'cycles', maxHops: 3 }, { operation: 'cycles', limit: 1 },
+  { operation: 'cycles', searchBudget: 5 }, { operation: 'cycles', types: ['depends_on'] },
+  { operation: 'topological_order' }, { operation: 'topological_order', limit: 2 },
+  { operation: 'centrality' }, { operation: 'centrality', iterations: 1, limit: 4 }, { operation: 'centrality', types: ['depends_on'] },
+  { operation: 'communities' }, { operation: 'communities', iterations: 1 }, { operation: 'communities', limit: 1, nodeLimit: 2 },
+  { operation: 'neighbors', slug: 'capabilities/b' }, { operation: 'neighbors', slug: 'capabilities/b', direction: 'in', depth: 3 },
+  { operation: 'neighbors', slug: 'capabilities/b', direction: 'both', depth: 20, limit: 3 },
+  { operation: 'path', from: 'capabilities/l', to: 'capabilities/g' }, { operation: 'path', from: 'capabilities/g', to: 'capabilities/l' },
+  { operation: 'path', from: 'capabilities/a', to: 'capabilities/a' }, { operation: 'path', from: 'capabilities/a', to: 'capabilities/h' },
+  { operation: 'path', from: 'capabilities/a', to: 'capabilities/g', direction: 'both', maxHops: 2 },
+  { operation: 'all_paths', from: 'capabilities/l', to: 'capabilities/g' },
+  { operation: 'all_paths', from: 'capabilities/a', to: 'capabilities/e', maxHops: 5, limit: 3 },
+  { operation: 'all_paths', from: 'capabilities/a', to: 'capabilities/g', searchBudget: 4 },
+  { operation: 'all_paths', from: 'capabilities/a', to: 'capabilities/a' },
+  { operation: 'neighbors', slug: 'capabilites/b' }, { operation: 'path', from: 'capabilities/a', to: 'capabilities/z' },
+  { operation: 'cycles', maxHops: 21 }, { operation: 'topological_order', types: ['bogus'] }, { operation: 'neighbors', slug: 'capabilities/b', direction: 'up' },
+].map((args) => call('query_ontology', args)));
 add('graph', 'query-ontology-edge-names', { vault: 'edge-names' }, [
   { operation: 'overview' }, { operation: 'health' }, { operation: 'communities' }, { operation: 'centrality' }, { operation: 'containment_tree' },
   { operation: 'match_nodes', sort: 'title' }, { operation: 'match_nodes', sort: 'slug', limit: 30 }, { operation: 'similar_nodes', slug: 'capabilities/\uc8fc\ubb38-\ucde8\uc18c' },

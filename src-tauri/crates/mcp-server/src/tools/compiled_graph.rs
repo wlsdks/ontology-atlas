@@ -21,12 +21,6 @@ struct Compiled {
 /// One graph for the process: a server has one vault.
 static KEPT: Mutex<Option<Compiled>> = Mutex::new(None);
 
-/// What a graph tool reads: the documents of this call and the graph compiled from them.
-pub struct ReadGraph {
-    pub documents: Vec<LoadedDocument>,
-    pub graph: Arc<CompiledGraph>,
-}
-
 fn is_current(kept: &Compiled, documents: &[LoadedDocument]) -> bool {
     kept.documents.len() == documents.len()
         && kept
@@ -37,16 +31,13 @@ fn is_current(kept: &Compiled, documents: &[LoadedDocument]) -> bool {
 }
 
 /// The graph of the vault as it is now.
-pub fn read_graph(context: &CallContext<'_>) -> Result<ReadGraph, ToolError> {
+pub fn read_graph(context: &CallContext<'_>) -> Result<Arc<CompiledGraph>, ToolError> {
     let read = read_vault(context)?;
     let documents = read.vault.documents().to_vec();
     {
         let kept = KEPT.lock().unwrap_or_else(PoisonError::into_inner);
         if let Some(kept) = kept.as_ref().filter(|kept| is_current(kept, &documents)) {
-            return Ok(ReadGraph {
-                graph: Arc::clone(&kept.graph),
-                documents,
-            });
+            return Ok(Arc::clone(&kept.graph));
         }
     }
     let graph = Arc::new(
@@ -55,8 +46,8 @@ pub fn read_graph(context: &CallContext<'_>) -> Result<ReadGraph, ToolError> {
     );
     let mut kept = KEPT.lock().unwrap_or_else(PoisonError::into_inner);
     *kept = Some(Compiled {
-        documents: documents.clone(),
+        documents,
         graph: Arc::clone(&graph),
     });
-    Ok(ReadGraph { documents, graph })
+    Ok(graph)
 }

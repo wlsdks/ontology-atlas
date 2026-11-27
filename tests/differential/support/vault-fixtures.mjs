@@ -128,6 +128,33 @@ const FIXTURE_BUILDERS = {
     },
   },
 
+  // A graph built to make walks disagree: two rings sharing a node, a diamond of equal-length
+  // paths, a chain, a second component and a node nothing touches.
+  tangle: {
+    vaultRel: 'vault',
+    build(dir) {
+      const v = (name) => `vault/${name}`;
+      const slugs = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l'].map((name) => `capabilities/${name}`);
+      const edges = {
+        a: ['b'], b: ['c', 'd'], c: ['a', 'e'], d: ['a', 'e'], e: ['f', 'b'], f: ['g'],
+        g: [], h: ['i'], i: ['j'], j: ['h'], k: [], l: ['k', 'a'],
+      };
+      write(dir, v('tangle.md'), projectNode('tangle', 'Tangle', ['domains/loops', 'domains/rest']));
+      write(dir, v('domains/loops.md'), domainNode('domains/loops', 'Loops', slugs.slice(0, 10)));
+      write(dir, v('domains/rest.md'), domainNode('domains/rest', 'Rest', slugs.slice(10)));
+      for (const [name, targets] of Object.entries(edges)) {
+        const domain = 'kl'.includes(name) ? 'domains/rest' : 'domains/loops';
+        write(
+          dir,
+          v(`capabilities/${name}.md`),
+          capabilityNode(`capabilities/${name}`, `Capability ${name.toUpperCase()}`, domain, {
+            dependencies: `[${targets.map((target) => `capabilities/${target}`).join(', ')}]`,
+          }),
+        );
+      }
+    },
+  },
+
   'edge-names': {
     vaultRel: 'vault',
     build(dir) {

@@ -32,6 +32,6 @@ pub fn call(context: &CallContext<'_>, arguments: &Arguments) -> Result<ToolOutp
         edges_limit: optional_positive_integer(arguments, "edgesLimit", page_max)?.map(count),
         edges_offset: optional_non_negative_integer(arguments, "edgesOffset", None)?.map(count),
     };
-    let read = read_graph(context)?;
-    ToolOutput::json(&compile_answer(&read.graph, &request))
+    let graph = read_graph(context)?;
+    ToolOutput::json(&compile_answer(&graph, &request))
 }

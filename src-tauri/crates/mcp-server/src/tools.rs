@@ -24,6 +24,7 @@ mod find_orphans;
 mod get_concepts;
 mod list_concepts;
 mod query_concepts;
+mod query_ontology;
 mod read_vault;
 #[cfg(feature = "test-hooks")]
 mod test_hooks;
@@ -50,6 +51,7 @@ pub fn call(
         "find_orphans" => Some(find_orphans::call(context, arguments)),
         "query_concepts" => Some(query_concepts::call(context, arguments)),
         "compile_ontology" => Some(compile_ontology::call(context, arguments)),
+        "query_ontology" => Some(query_ontology::call(context, arguments)),
         _ => None,
     }
 }
