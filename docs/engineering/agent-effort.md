@@ -7,10 +7,12 @@ area: harness
 
 # Agent model and effort routing
 
-Owner rule (2026-11-12): the harness runs on two models. Opus builds and
-debugs; Fable writes specs, plans slices, reviews, researches and gives design
-verdicts. Owner rule (2026-11-27): each agent's name says what it does, and
-each agent has one role.
+Owner rule (2026-11-27): every agent runs on Opus, including specs, slice
+plans, reviews, research and design verdicts. Fable runs only with the owner's
+yes for one task: when the lead or an agent judges a task too complex for Opus,
+it asks the owner first, naming the task and why Opus is not enough, and waits.
+This replaces the 2026-11-12 split (Opus builds, Fable judges). Owner rule
+(2026-11-27): each agent's name says what it does, and each agent has one role.
 
 Effort follows Anthropic's Fable 5.2 prompting guide
 (<https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-fable-5-2>):
@@ -25,11 +27,11 @@ more than the run; no comparison has been made for either yet.
 | decide, plan small changes, talk to the owner | lead session | the owner's choice · high from `.claude/settings.json` | none |
 | build one slice from `/delegate`, deciding inside its owned files | `implementer` | Opus · high | 300 |
 | root cause of a reproduced failure or flake, then the fix | `investigator` | Opus · xhigh | 250 |
-| the product spec: person and moment, problem, patterns that already worked, options, first slice and its acceptance | `spec-writer` | Fable · high | 250 |
-| split a decided change into slices: file ownership, cross-slice decisions, order, acceptance | `slice-planner` | Fable · high | 200 |
-| independent review of a diff or a routed decision: correctness, security, contracts; never edits | `code-reviewer` | Fable · xhigh | 150 |
-| design verdict and mockups (scratchpad or pull request, never committed); never edits product code | `design-reviewer` | Fable · high | 300 |
-| one research question from public sources, each claim cited, ranked short answer; never edits | `researcher` | Fable · high | 150 |
+| the product spec: person and moment, problem, patterns that already worked, options, first slice and its acceptance | `spec-writer` | Opus · high | 250 |
+| split a decided change into slices: file ownership, cross-slice decisions, order, acceptance | `slice-planner` | Opus · high | 200 |
+| independent review of a diff or a routed decision: correctness, security, contracts; never edits | `code-reviewer` | Opus · xhigh | 150 |
+| design verdict and mockups (scratchpad or pull request, never committed); never edits product code | `design-reviewer` | Opus · high | 300 |
+| one research question from public sources, each claim cited, ranked short answer; never edits | `researcher` | Opus · high | 150 |
 
 The correction the owner picks after a design verdict goes to `implementer`.
 Sealed-probe grading and five-second tests stay on `general-purpose`.

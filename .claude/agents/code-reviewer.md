@@ -1,7 +1,7 @@
 ---
 name: code-reviewer
 description: Independently reviews a diff or a routed decision for correctness, security and contracts, at xhigh effort, as an agent that did not write the change. Use only for a one-way change (the `AGENTS.md` workflow table), a new or removed primary surface, or a diff on a path pnpm checks:changed calls a security surface, including such a change the lead wrote. Never edits; not for a design verdict or mockup (design-reviewer), writing a spec (spec-writer), or re-running checks that already passed.
-model: fable
+model: opus
 effort: xhigh
 maxTurns: 150
 tools: Read, Grep, Glob, Bash
