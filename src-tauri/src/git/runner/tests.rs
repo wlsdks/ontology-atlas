@@ -449,14 +449,33 @@ fn a_required_filter_still_lets_a_snapshot_succeed() {
 fn every_runner_hands_git_the_rebuilt_search_path() {
     use std::ffi::OsStr;
     let cwd = std::env::temp_dir();
+    let expected = git_search_path();
+    assert!(!expected.is_empty());
     for command in [
         hardened_base_command(),
         read_policy_command(&cwd, &["commit", "-m", "x"], false),
         read_policy_command(&cwd, &["log"], true),
     ] {
         let envs: HashMap<&OsStr, Option<&OsStr>> = command.get_envs().collect();
-        assert_eq!(envs.get(OsStr::new("PATH")), Some(&Some(git_search_path())));
+        assert_eq!(
+            envs.get(OsStr::new("PATH")),
+            Some(&Some(expected.as_os_str()))
+        );
     }
+}
+
+/// A home whose name holds the separator once emptied the whole PATH, and Git with
+/// an empty PATH ran a `git` planted in the opened folder.
+#[cfg(unix)]
+#[test]
+fn a_home_named_with_the_separator_never_empties_the_git_search_path() {
+    use std::ffi::OsStr;
+    let home = std::env::temp_dir().join("atlas-odd:home");
+    let search_path = search_path_from(Some(&home), Some(OsStr::new("/usr/bin:/bin")));
+    let entries: Vec<PathBuf> = std::env::split_paths(&search_path).collect();
+    assert_eq!(entries.first(), Some(&PathBuf::from("/usr/bin")));
+    assert!(entries.contains(&PathBuf::from("/bin")));
+    assert!(entries.iter().all(|entry| !entry.starts_with(&home)));
 }
 
 #[test]
