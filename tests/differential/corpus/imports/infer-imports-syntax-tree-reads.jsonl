@@ -10,3 +10,9 @@
 {"$":"write-file","path":"../parser/jvm/src/main/java/com/acme/Naïve.java","text":"package com.acme;\nclass Naïve {}\n"}
 {"$":"write-file","path":"../parser/jvm/src/main/kotlin/com/acme/Use.kt","text":"package com.acme\nfun use() = \"${Naïve()}\"\n"}
 {"id":3,"method":"tools/call","params":{"name":"infer_imports","arguments":{"rootPath":"$PARENT/parser/jvm","reconcile":false}}}
+{"$":"write-file","path":"../parser/script/a.ts","text":"// import 'in-comment';\nconst note = \"import 'in-string'\";\nimport type { T } from './b';\nexport type U = import('./b').T;\nconst later = await import('./b');\n"}
+{"$":"write-file","path":"../parser/script/b.ts","text":"export type T = 1;\n"}
+{"id":4,"method":"tools/call","params":{"name":"infer_imports","arguments":{"rootPath":"$PARENT/parser/script","reconcile":false}}}
+{"$":"write-file","path":"../parser/hidden/a.ts","text":"import data from './.hidden/data.json';\n"}
+{"$":"write-file","path":"../parser/hidden/.hidden/data.json","text":"{}\n"}
+{"id":5,"method":"tools/call","params":{"name":"infer_imports","arguments":{"rootPath":"$PARENT/parser/hidden","reconcile":false}}}

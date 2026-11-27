@@ -646,7 +646,7 @@ add('imports', 'inspect-architecture-storefront-profile', { vault: 'storefront' 
   call('inspect_architecture', { profileSlug: 'storefront-services' }),
   call('inspect_architecture', { rootPath: '$VAULT', profileSlug: 'architecture/storefront-services' }),
 ]);
-// Where the syntax tree reads what the line scanners did not (rows 2, 33, 34 and 35 of the table).
+// Where the syntax tree reads what the line scanners did not (rows 2, 33, 34 and 36 of the table).
 const plant = (path, text) => ({ $: 'write-file', path: `../parser/${path}`, text });
 add('imports', 'infer-imports-syntax-tree-reads', { vault: 'miniature-repo' }, [
   plant('binary/a.ts', '\u0000\u0001\u0002 import { b } from \'./b\';\n'),
@@ -659,6 +659,27 @@ add('imports', 'infer-imports-syntax-tree-reads', { vault: 'miniature-repo' }, [
   plant('jvm/src/main/java/com/acme/Naïve.java', 'package com.acme;\nclass Naïve {}\n'),
   plant('jvm/src/main/kotlin/com/acme/Use.kt', 'package com.acme\nfun use() = "${Naïve()}"\n'),
   call('infer_imports', { rootPath: '$PARENT/parser/jvm', reconcile: false }),
+  plant('script/a.ts', '// import \'in-comment\';\nconst note = "import \'in-string\'";\nimport type { T } from \'./b\';\nexport type U = import(\'./b\').T;\nconst later = await import(\'./b\');\n'),
+  plant('script/b.ts', 'export type T = 1;\n'),
+  call('infer_imports', { rootPath: '$PARENT/parser/script', reconcile: false }),
+  plant('hidden/a.ts', 'import data from \'./.hidden/data.json\';\n'),
+  plant('hidden/.hidden/data.json', '{}\n'),
+  call('infer_imports', { rootPath: '$PARENT/parser/hidden', reconcile: false }),
+]);
+add('imports', 'infer-imports-review-and-focus-pages', { vault: 'miniature-repo' }, [
+  call('infer_imports', { rootPath: '$PARENT', reviewMode: 'next' }, { as: 'review-1' }),
+  call('infer_imports', { rootPath: '$PARENT', reviewMode: 'next', afterReviewId: answerOf('review-1', 'result.structuredContent.nextReview.reviewId') }),
+  call('infer_imports', { rootPath: '$PARENT', reviewMode: 'next', afterReviewId: 'import-review:nope:nope' }),
+  call('infer_imports', { rootPath: '$PARENT', reviewMode: 'next', reconcile: false }),
+  call('infer_imports', { rootPath: '$PARENT', focusPath: 'src/payment/charge.ts', focusLimit: 1 }, { as: 'focus-1' }),
+  call('infer_imports', { rootPath: '$PARENT', focusPath: 'src/payment/charge.ts', focusLimit: 1, focusAfterEdgeId: answerOf('focus-1', 'result.structuredContent.focusReview.cursor.nextAfterEdgeId') }),
+  call('infer_imports', { rootPath: '$PARENT', focusPath: 'src/payment/charge.ts', focusDirection: 'incoming' }),
+  call('infer_imports', { rootPath: '$PARENT', focusPath: 'src/payment/charge.ts', focusAfterEdgeId: 'import-impact:nothing' }),
+  call('infer_imports', { rootPath: '$PARENT', focusPath: '../outside.ts' }),
+  call('infer_imports', { rootPath: '$PARENT', focusPath: 'src/order/placement.ts', reviewMode: 'full' }),
+  call('infer_imports', { rootPath: '$PARENT', allowLargeResponse: true }),
+  call('infer_imports', { rootPath: '$PARENT', focusDirection: 'both' }),
+  call('infer_imports', { rootPath: '$PARENT', reviewMode: 'focus' }),
 ]);
 add('imports', 'infer-imports-atlas-ontology-vault-as-root',{ vault: 'atlas-ontology' }, [call('infer_imports', { rootPath: '$VAULT' }), call('inspect_architecture', { rootPath: '$VAULT' })]);
 
