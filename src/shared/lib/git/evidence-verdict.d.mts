@@ -22,5 +22,24 @@ export interface EvidenceVerdict {
 
 export function judgeEvidence(input: {
   docChangedAt: string | null | undefined;
+  /** The document's newest commit, the revision `unchangedPairs` was read at. */
+  docCommit?: string | null;
+  /** Pairs from `unchangedEvidencePairs`: files that changed only in comments, imports or whitespace. */
+  unchangedPairs?: ReadonlySet<string> | null;
   entries: readonly EvidenceEntry[];
 }): EvidenceVerdict;
+
+export interface EvidenceTextPair {
+  commit: string;
+  path: string;
+}
+
+export function movedEvidencePairs(
+  concepts: readonly { docPath: string | null; evidencePaths: readonly string[] }[],
+  changes: ReadonlyMap<string, EvidencePathChange & { lastCommit?: string | null }>,
+  sourceChanges?: ReadonlyMap<string, EvidencePathChange>,
+): EvidenceTextPair[];
+
+export function unchangedEvidencePairs(
+  readings: readonly (EvidenceTextPair & { before: string | null | undefined; after: string | null | undefined })[],
+): Set<string>;

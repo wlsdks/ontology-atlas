@@ -2,7 +2,7 @@
 title: "Evidence staleness ignores comment and whitespace edits"
 doc_type: spec
 status: draft
-area: ontology
+area: ontology-model
 date: 2026-11-27
 decisions: []
 ---
@@ -56,16 +56,25 @@ can only move a concept from stale to current, never hide a newly moved file.
 
 1. The date rule runs first, unchanged. Only a (concept, file) pair it calls moved is examined.
 2. For that pair, read the file at the concept document's newest commit and the file in the
-   working tree. Normalize both: remove comments when the extension's comment syntax is known,
-   then remove all whitespace. Equal results mean the pair is not moved.
+   working tree. Normalize both: remove comments when the extension's comment syntax is known
+   (a JSX comment child `{/* ... */}` included), remove module import and re-export
+   declarations (JS/TS `import ... from '...'`, bare `import '...'`, `export {...} from '...'`,
+   `export * from '...'`; Rust `use ...;`), then remove all whitespace. Equal results mean the
+   pair is not moved. A pure import-path move cannot change behaviour without some other line
+   changing, except a bare side-effect import pointing elsewhere; that case is accepted. A
+   dynamic `import('...')` is code and stays.
 3. Comment syntax is known for: `.js .mjs .cjs .ts .tsx .jsx .mts .cts .rs .java .kt .kts .go
-   .swift .c .h .cc .cpp .hpp .cs .scala .dart .css .scss` (`//` line and `/* */` block),
-   `.py .sh .bash .zsh .rb .toml .yaml .yml` (`#` line). String and template literals are kept
-   intact, so `"http://x"` is not a comment. Any other extension compares whitespace only.
-4. If either read fails, the file is larger than 1 MiB, it is binary, or the document has no
-   commit, the pair stays moved: uncertainty never turns into current.
+   .swift .c .h .cc .cpp .hpp .cs .scala .dart .scss` (`//` line and `/* */` block), `.css`
+   (`/* */` only: `url(http://x)` is a value), `.py .sh .bash .zsh .rb .toml .yaml .yml`
+   (`#` line). String, template and regex literals are kept intact, so `"http://x"` is not a
+   comment. A file holding a construct the scanner does not delimit (an unterminated string, a
+   heredoc, a C++ or Swift raw string) compares whitespace only, as does any other extension.
+4. If either read fails, the file is larger than 1 MiB, it is binary or not UTF-8, the document
+   has no commit, or the pair falls past the first 256 moved pairs, the pair stays moved:
+   uncertainty never turns into current.
 5. The map, the project page and `validate_vault` give the same verdict: both surfaces call one
-   normalizer kept identical by the existing parity contract.
+   normalizer (`mcp/src/drift/comparable-code.mjs`, bridged into the app) kept identical by the
+   existing parity contract.
 
 ## Out of scope
 
@@ -76,10 +85,12 @@ can only move a concept from stale to current, never hide a newly moved file.
 
 ## Acceptance
 
-1. On `docs/ontology` at the merge base, `validate_vault` reports 10 fewer stale concepts than
-   before, and the map's stale count matches it.
-2. A fixture repository where a cited file gains only a comment keeps the concept current; one
-   where the same file changes a string literal containing `//` makes it stale.
+1. On `docs/ontology` at the merge base, `validate_vault` reports about 21 fewer stale concepts
+   than before (measured 72 → 51 on the lead's checkout; 76 → 56 on this branch's base, where
+   the vault had moved on), and the map's stale count matches it.
+2. A fixture repository where a cited file gains only a comment or a moved import keeps the
+   concept current; one where the same file changes a string literal containing `//` makes it
+   stale.
 3. A read failure or a binary file keeps the concept stale.
 4. `tests/contract/analysis/evidence-drift-parity.contract.test.ts` passes with the shared
    normalizer, and one case table runs through both implementations.
@@ -87,3 +98,7 @@ can only move a concept from stale to current, never hide a newly moved file.
 ## Revisions
 
 - 2026-11-27: first draft from the measurement above.
+- 2026-11-27: JSX comment children and module import and `use` declarations are ignored too
+  (measured: 11 stale concepts clear by comments, JSX comments and whitespace, 10 more by
+  import lines). CSS reads only block comments; constructs the scanner cannot delimit fall back
+  to whitespace only; reads stop at 256 pairs.

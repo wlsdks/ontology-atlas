@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs';
-import { relative, resolve, sep } from 'node:path';
+import { isAbsolute, relative, resolve, sep } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { gitEnv, hardenedGitArgv } from './hardened-git.mjs';
 
@@ -597,21 +597,7 @@ export function collectPathLastChanges({ repoRoot, vaultRoot, repoPaths = [], va
   if (!scope.ok) return scope;
   const { gitRoot, vaultRelative } = scope;
   const prefix = vaultRelative === '.' ? '' : `${vaultRelative}/`;
-  /*
-   * A `path:` is written against the caller's repository root, which in a monorepo
-   * package is not the Git toplevel; resolving against the toplevel loses every
-   * cited file.
-   */
-  const repoPrefix = (() => {
-    try {
-      const relative_ = relative(gitRoot, realpathSync(resolve(repoRoot)));
-      if (!relative_ || relative_ === '.') return '';
-      if (relative_ === '..' || relative_.startsWith(`..${sep}`)) return '';
-      return `${relative_.split(sep).join('/')}/`;
-    } catch {
-      return '';
-    }
-  })();
+  const repoPrefix = repoPathPrefix(gitRoot, repoRoot);
   const wanted = [];
   const seen = new Set();
   const push = (key, resolved) => {
@@ -662,9 +648,157 @@ export function collectPathLastChanges({ repoRoot, vaultRoot, repoPaths = [], va
     } catch {
       isDir = false;
     }
-    changes.set(key, { exists: existsSync(onDisk), isDir, lastChangedAt: last.get(key) ?? null });
+    const newest = last.get(key);
+    changes.set(key, {
+      exists: existsSync(onDisk),
+      isDir,
+      lastChangedAt: newest?.at ?? null,
+      lastCommit: newest?.commit ?? null,
+    });
   }
   return { operation: 'path_last_changes', ok: true, repoRoot: gitRoot, changes };
+}
+
+/*
+ * A `path:` is written against the caller's repository root, which in a monorepo
+ * package is not the Git toplevel; resolving against the toplevel loses every
+ * cited file.
+ */
+function repoPathPrefix(gitRoot, repoRoot) {
+  try {
+    const relative_ = relative(gitRoot, realpathSync(resolve(repoRoot)));
+    if (!relative_ || relative_ === '.') return '';
+    if (relative_ === '..' || relative_.startsWith(`..${sep}`)) return '';
+    return `${relative_.split(sep).join('/')}/`;
+  } catch {
+    return '';
+  }
+}
+
+/** A file larger than this is never re-read: it stays moved. */
+const MAX_EVIDENCE_TEXT_BYTES = 1024 * 1024;
+const MAX_EVIDENCE_TEXT_PAIRS = 256;
+/** Committed bytes one call reads at most, as the desktop app's reader; later pairs stay moved. */
+const MAX_EVIDENCE_COMMITTED_BYTES = 32 * 1024 * 1024;
+/** Git's own binary test: a NUL byte in the first 8000 bytes. */
+const BINARY_PROBE_BYTES = 8000;
+const COMMIT_HASH = /^[0-9a-f]{40}([0-9a-f]{24})?$/;
+
+/**
+ * Each cited file at a commit and in the working tree, as text, so the caller can ask
+ * whether only comments, imports or whitespace changed. `pairs` hold a commit hash and a
+ * `path:` value. A side that cannot be read, is binary, is not UTF-8 or exceeds
+ * 1 MiB is `null`; the caller keeps such a pair moved. One `git cat-file
+ * --batch-check` and one `--batch` serve every pair.
+ */
+export function readEvidenceTextPairs({ repoRoot, vaultRoot, pairs = [] }) {
+  const scope = resolveVaultGitScope({ repoRoot, vaultRoot, operation: 'evidence_text_pairs' });
+  if (!scope.ok) return scope;
+  const { gitRoot } = scope;
+  const repoPrefix = repoPathPrefix(gitRoot, repoRoot);
+  const requests = [];
+  for (const pair of pairs.slice(0, MAX_EVIDENCE_TEXT_PAIRS)) {
+    const clean = safeRelativePath(pair?.path);
+    const commit = typeof pair?.commit === 'string' ? pair.commit.trim().toLowerCase() : '';
+    if (!clean || /[\r\n]/.test(clean) || !COMMIT_HASH.test(commit)) {
+      requests.push({ pair, spec: null, resolved: null });
+      continue;
+    }
+    const resolved = `${repoPrefix}${clean}`;
+    requests.push({ pair, spec: `${commit}:${resolved}`, resolved });
+  }
+  const specs = requests.filter((request) => request.spec).map((request) => request.spec);
+  const blobs = readCommittedTexts(gitRoot, specs);
+  const readings = requests.map(({ pair, spec, resolved }) => ({
+    commit: pair?.commit ?? '',
+    path: pair?.path ?? '',
+    before: spec ? (blobs.get(spec) ?? null) : null,
+    after: resolved ? readWorkingText(gitRoot, resolved) : null,
+  }));
+  return { operation: 'evidence_text_pairs', ok: true, repoRoot: gitRoot, readings };
+}
+
+function evidenceText(bytes) {
+  if (!bytes || bytes.length > MAX_EVIDENCE_TEXT_BYTES) return null;
+  if (bytes.subarray(0, BINARY_PROBE_BYTES).includes(0)) return null;
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+  } catch {
+    return null;
+  }
+}
+
+/** Committed blobs by `<commit>:<path>`; sizes are checked before any content is read. */
+function readCommittedTexts(gitRoot, specs) {
+  const texts = new Map();
+  const unique = [...new Set(specs)];
+  if (unique.length === 0) return texts;
+  const input = Buffer.from(`${unique.join('\n')}\n`, 'utf8');
+  const check = spawnGitBatch(gitRoot, ['cat-file', '--batch-check'], input);
+  if (!check) return texts;
+  const headers = check.toString('utf8').split('\n');
+  let budget = MAX_EVIDENCE_COMMITTED_BYTES;
+  const readable = unique.filter((_, index) => {
+    const parts = (headers[index] ?? '').split(' ');
+    const size = Number(parts[2]);
+    const blob = parts.length === 3 && /^[0-9a-f]+$/i.test(parts[0]) && parts[1] === 'blob' && Number.isSafeInteger(size);
+    if (!blob || size > MAX_EVIDENCE_TEXT_BYTES || size > budget) return false;
+    budget -= size;
+    return true;
+  });
+  if (readable.length === 0) return texts;
+  const out = spawnGitBatch(gitRoot, ['cat-file', '--batch'], Buffer.from(`${readable.join('\n')}\n`, 'utf8'));
+  if (!out) return texts;
+  let offset = 0;
+  for (const spec of readable) {
+    const headerEnd = out.indexOf(0x0a, offset);
+    if (headerEnd < 0) break;
+    const parts = out.subarray(offset, headerEnd).toString('utf8').split(' ');
+    offset = headerEnd + 1;
+    if (parts.length !== 3 || parts[1] !== 'blob') {
+      if (parts.at(-1) === 'missing') continue;
+      break;
+    }
+    const size = Number(parts[2]);
+    if (!Number.isSafeInteger(size) || size < 0 || offset + size > out.length) break;
+    const text = evidenceText(out.subarray(offset, offset + size));
+    if (text !== null) texts.set(spec, text);
+    offset += size;
+    if (out[offset] === 0x0a) offset += 1;
+  }
+  return texts;
+}
+
+function spawnGitBatch(cwd, args, input) {
+  let argv;
+  try {
+    argv = hardenedGitArgv(cwd, args);
+  } catch {
+    return null;
+  }
+  const result = spawnSync('git', argv, {
+    encoding: null,
+    env: gitEnv(),
+    input,
+    maxBuffer: MAX_GIT_BATCH_OUTPUT,
+    stdio: ['pipe', 'pipe', 'pipe'],
+  });
+  return result.status === 0 && Buffer.isBuffer(result.stdout) ? result.stdout : null;
+}
+
+/** The working-tree file, only when it resolves inside the repository. */
+function readWorkingText(gitRoot, resolved) {
+  try {
+    const real = realpathSync(resolve(gitRoot, resolved));
+    const inside = relative(gitRoot, real);
+    // A Windows path on another drive comes back absolute, not under `..`.
+    if (!inside || inside === '..' || inside.startsWith(`..${sep}`) || isAbsolute(inside)) return null;
+    const stats = statSync(real);
+    if (!stats.isFile() || stats.size > MAX_EVIDENCE_TEXT_BYTES) return null;
+    return evidenceText(readFileSync(real));
+  } catch {
+    return null;
+  }
 }
 
 function pathHistoryState(gitRoot) {
@@ -697,7 +831,7 @@ function walkPathLastChanges(gitRoot, wanted, commitLimit) {
       'core.quotepath=false',
       'log',
       `--max-count=${commitLimit}`,
-      `--pretty=format:${REC}%cI`,
+      `--pretty=format:${REC}%H %cI`,
       '--name-only',
       '--no-renames',
       '--',
@@ -705,20 +839,22 @@ function walkPathLastChanges(gitRoot, wanted, commitLimit) {
     ],
     { allowFailure: true },
   );
+  // Per key, the newest commit touching it: its time, and its hash for re-reading the file there.
   const last = new Map();
   if (log.ok) {
-    let currentTime = null;
+    let current = null;
     for (const rawLine of log.stdout.split('\n')) {
       const line = rawLine.trim();
       if (!line) continue;
       if (line.startsWith(REC)) {
-        currentTime = line.slice(1).trim();
+        const [commit, at] = line.slice(1).trim().split(' ');
+        current = commit && at ? { commit, at } : null;
         continue;
       }
-      if (!currentTime) continue;
+      if (!current) continue;
       for (const { key, resolved } of wanted) {
         if (last.has(key)) continue;
-        if (line === resolved || line.startsWith(`${resolved}/`)) last.set(key, currentTime);
+        if (line === resolved || line.startsWith(`${resolved}/`)) last.set(key, current);
       }
     }
   }

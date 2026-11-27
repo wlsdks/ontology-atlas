@@ -4,10 +4,16 @@ import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { useDataSourceMode, useLocalVault } from '@/entities/vault-session';
 import type { VaultDoc } from '@/entities/docs-vault';
 import type { KnowledgeGraphNode } from '@/entities/knowledge-graph';
-import { buildEvidenceConcepts, resolveEvidenceStates } from '@/shared/lib/git/evidence-states';
+import { buildEvidenceConcepts, resolveEvidenceStates, type EvidenceConceptInput } from '@/shared/lib/git/evidence-states';
+import { movedEvidencePairs, unchangedEvidencePairs } from '@/shared/lib/git/evidence-verdict.mjs';
 import { selectOpenVaultHandle } from '@/shared/lib/vault-folder/select-open-vault-handle';
 import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
-import { gitPathsLastChange, isGitBridgeAvailable, type GitPathLastChange } from '@/shared/lib/git/tauri-git';
+import {
+  gitEvidenceTextPairs,
+  gitPathsLastChange,
+  isGitBridgeAvailable,
+  type GitPathLastChange,
+} from '@/shared/lib/git/tauri-git';
 
 type MapEvidenceState = 'current' | 'stale' | 'unknown';
 
@@ -35,9 +41,19 @@ const NO_PATHS: ReadonlyMap<string, string> = new Map();
 const NO_STALE_PATHS: ReadonlyMap<string, StaleEvidencePath> = new Map();
 const NO_CONCEPTS: ReturnType<typeof buildEvidenceConcepts> = [];
 
+/**
+ * One walk's answer: the dates, and the moved files whose only change since their concept's document
+ * is in comments, imports or whitespace (`unchangedEvidencePairs`, the rule `validate_vault` uses).
+ */
+interface WalkAnswer {
+  changes: WalkChanges;
+  unchangedPairs: ReadonlySet<string>;
+}
+
 /** Stale-while-revalidate: a screen that mounts reads the folder's last answer at once and walks Git again in the background, joining a walk in flight for the same paths. Only a successful walk replaces the answer. */
-const answers = new Map<string, { key: string; changes: WalkChanges }>();
-const inFlight = new Map<string, Promise<WalkChanges | null>>();
+const answers = new Map<string, { key: string; answer: WalkAnswer }>();
+const inFlight = new Map<string, Promise<WalkAnswer | null>>();
+const NO_UNCHANGED_PAIRS: ReadonlySet<string> = new Set();
 const answerListeners = new Set<() => void>();
 
 function subscribeToAnswers(listener: () => void): () => void {
@@ -63,16 +79,43 @@ async function walkInBatches(rootPath: string, repoPaths: readonly string[], vau
   return batches.some((rows) => rows === null) ? null : batches.flatMap((rows) => rows ?? []);
 }
 
-function revalidate(key: string, rootPath: string, repoPaths: string[], vaultPaths: string[]): Promise<WalkChanges | null> {
+/**
+ * Re-reads each file the dates call moved, at its concept document's newest commit and on disk. Any
+ * failure answers no pair, so every pair stays moved.
+ */
+async function readUnchangedPairs(
+  rootPath: string,
+  concepts: readonly EvidenceConceptInput[],
+  changes: WalkChanges,
+): Promise<ReadonlySet<string>> {
+  const pairs = movedEvidencePairs(concepts, changes);
+  if (pairs.length === 0) return NO_UNCHANGED_PAIRS;
+  try {
+    const readings = await gitEvidenceTextPairs(rootPath, pairs);
+    return readings ? unchangedEvidencePairs(readings) : NO_UNCHANGED_PAIRS;
+  } catch {
+    return NO_UNCHANGED_PAIRS;
+  }
+}
+
+function revalidate(
+  key: string,
+  rootPath: string,
+  repoPaths: string[],
+  vaultPaths: string[],
+  concepts: readonly EvidenceConceptInput[],
+): Promise<WalkAnswer | null> {
   const running = inFlight.get(key);
   if (running) return running;
   const walk = walkInBatches(rootPath, repoPaths, vaultPaths)
-    .then((rows): WalkChanges | null => {
+    .then(async (rows): Promise<WalkAnswer | null> => {
       if (!rows) return null;
       const changes: WalkChanges = new Map(rows.map((row) => [row.path, row]));
-      answers.set(rootPath, { key, changes });
+      // Published once, after the re-read, so a comment-only file never flashes stale.
+      const answer: WalkAnswer = { changes, unchangedPairs: await readUnchangedPairs(rootPath, concepts, changes) };
+      answers.set(rootPath, { key, answer });
       for (const listener of answerListeners) listener();
-      return changes;
+      return answer;
     })
     .catch(() => null)
     .finally(() => inFlight.delete(key));
@@ -127,11 +170,11 @@ export function useMapEvidenceStates({
     [nativeRootPath, repoPaths, vaultPaths],
   );
   // While a walk runs, the last answer stands; with none yet, the screen reads.
-  const changes = useSyncExternalStore(
+  const walked = useSyncExternalStore(
     subscribeToAnswers,
     () => {
-      const answer = nativeRootPath ? answers.get(nativeRootPath) : undefined;
-      return answer?.key === key ? answer.changes : null;
+      const stored = nativeRootPath ? answers.get(nativeRootPath) : undefined;
+      return stored?.key === key ? stored.answer : null;
     },
     () => null,
   );
@@ -140,23 +183,23 @@ export function useMapEvidenceStates({
   useEffect(() => {
     if (!enabled || !nativeRootPath || !bridge || noPaths) return;
     let cancelled = false;
-    void revalidate(key, nativeRootPath, repoPaths, vaultPaths).then((changes) => {
-      if (!cancelled) setFailedKey(changes ? null : key);
+    void revalidate(key, nativeRootPath, repoPaths, vaultPaths, concepts).then((answer) => {
+      if (!cancelled) setFailedKey(answer ? null : key);
     });
     return () => {
       cancelled = true;
     };
     // A new read of the folder walks again: a document or a commit may have changed the answer.
-  }, [enabled, nativeRootPath, bridge, noPaths, key, repoPaths, vaultPaths, loadedAt]);
+  }, [enabled, nativeRootPath, bridge, noPaths, key, repoPaths, vaultPaths, concepts, loadedAt]);
 
-  const reading = changes === null && failedKey !== key;
+  const reading = walked === null && failedKey !== key;
   return useMemo<MapEvidence>(() => {
     if (!bridge || !nativeRootPath) return unmeasured('app-only');
     if (!enabled) return unmeasured('reading');
     if (noPaths) return unmeasured('no-paths');
     if (reading) return unmeasured('reading');
-    if (!changes) return unmeasured('unreadable');
-    const resolved = resolveEvidenceStates(concepts, changes);
+    if (!walked) return unmeasured('unreadable');
+    const resolved = resolveEvidenceStates(concepts, walked.changes, walked.changes, walked.unchangedPairs);
     const states = new Map<string, MapEvidenceState>();
     for (const id of resolved.current) states.set(id, 'current');
     for (const id of resolved.stale) states.set(id, 'stale');
@@ -173,7 +216,7 @@ export function useMapEvidenceStates({
       else if (gone) stalePaths.set(row.id, { path: gone, gone: true, changedAt: null });
     }
     return { availability: 'measured', states, movedPaths, stalePaths };
-  }, [bridge, nativeRootPath, enabled, noPaths, reading, changes, concepts]);
+  }, [bridge, nativeRootPath, enabled, noPaths, reading, walked, concepts]);
 }
 
 function unmeasured(availability: Exclude<MapEvidenceAvailability, 'measured'>): MapEvidence {

@@ -6,6 +6,7 @@ import { resetSharedEvidenceWalk, useMapEvidenceStates } from "./use-map-evidenc
 const git = vi.hoisted(() => ({
   bridge: true,
   walk: vi.fn(),
+  texts: vi.fn(),
   root: "/vault",
   docs: [] as { slug: string; frontmatter: Record<string, unknown> }[],
   vault: null as unknown,
@@ -41,6 +42,7 @@ vi.mock("@/shared/lib/git/evidence-states", async (importOriginal) => {
 vi.mock("@/shared/lib/git/tauri-git", () => ({
   isGitBridgeAvailable: () => git.bridge,
   gitPathsLastChange: git.walk,
+  gitEvidenceTextPairs: git.texts,
 }));
 
 const node = (slug: string): KnowledgeGraphNode => ({
@@ -73,9 +75,40 @@ beforeEach(() => {
   git.vault = { status: "ready", handle: { name: "vault" }, manifest: { get docs() { return git.docs; } }, lastLoadedAt: 1 };
   git.walk.mockReset();
   git.walk.mockResolvedValue(WALK);
+  git.texts.mockReset();
+  git.texts.mockResolvedValue([]);
 });
 
 describe("useMapEvidenceStates", () => {
+  const PAY_COMMIT = "b".repeat(40);
+  const COMMITTED_WALK = WALK.map((row) => (row.path === "capabilities/pay.md" ? { ...row, lastCommit: PAY_COMMIT } : row));
+
+  it("keeps a capability current when its moved file changed only in comments since its document", async () => {
+    git.walk.mockResolvedValue(COMMITTED_WALK);
+    git.texts.mockResolvedValue([
+      { path: "src/pay.ts", commit: PAY_COMMIT, before: "// old\nexport const pay = 1;\n", after: "// new\nexport const pay = 1;\n" },
+    ]);
+    const map = renderHook(() => useMapEvidenceStates({ nodes: NODES, enabled: true }));
+    await waitFor(() => expect(map.result.current.availability).toBe("measured"));
+    expect(git.texts).toHaveBeenCalledWith("/vault", [{ commit: PAY_COMMIT, path: "src/pay.ts" }]);
+    expect(map.result.current.states.get("capability:pay")).toBe("current");
+  });
+
+  it("keeps it stale when the code changed or the old file could not be read", async () => {
+    git.walk.mockResolvedValue(COMMITTED_WALK);
+    git.texts
+      .mockResolvedValueOnce([{ path: "src/pay.ts", commit: PAY_COMMIT, before: "export const pay = 1;\n", after: "export const pay = 2;\n" }])
+      .mockRejectedValueOnce(new Error("git-not-runnable"));
+    const first = renderHook(() => useMapEvidenceStates({ nodes: NODES, enabled: true }));
+    await waitFor(() => expect(first.result.current.availability).toBe("measured"));
+    expect(first.result.current.states.get("capability:pay")).toBe("stale");
+    first.unmount();
+    resetSharedEvidenceWalk();
+    const second = renderHook(() => useMapEvidenceStates({ nodes: NODES, enabled: true }));
+    await waitFor(() => expect(second.result.current.availability).toBe("measured"));
+    expect(second.result.current.states.get("capability:pay")).toBe("stale");
+  });
+
   it("walks Git once for two screens reading the same folder load, and both read the same states", async () => {
     const map = renderHook(() => useMapEvidenceStates({ nodes: NODES, enabled: true }));
     const page = renderHook(() => useMapEvidenceStates({ nodes: NODES, enabled: true }));

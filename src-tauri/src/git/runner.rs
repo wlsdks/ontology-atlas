@@ -257,6 +257,39 @@ fn run_git_with_read_policy(cwd: &Path, args: &[&str], local_read: bool) -> Resu
     })
 }
 
+/// A local read that takes its request on stdin (`cat-file --batch`) and answers raw bytes.
+/// The request is written from its own thread while the output drains, so neither pipe
+/// can fill and block the other side.
+pub(super) fn run_git_read_with_input(
+    cwd: &Path,
+    args: &[&str],
+    input: Vec<u8>,
+) -> Result<(bool, Vec<u8>), String> {
+    use std::io::Write;
+    use std::process::Stdio;
+
+    let mut command = read_policy_command(cwd, args, true);
+    command
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null());
+    let mut child = command
+        .spawn()
+        .map_err(|err| coded("git-not-runnable", err))?;
+    let writer = child.stdin.take().map(|mut stdin| {
+        std::thread::spawn(move || {
+            let _ = stdin.write_all(&input);
+        })
+    });
+    let output = child
+        .wait_with_output()
+        .map_err(|err| coded("git-not-runnable", err))?;
+    if let Some(writer) = writer {
+        let _ = writer.join();
+    }
+    Ok((output.status.success(), output.stdout))
+}
+
 fn read_policy_command(cwd: &Path, args: &[&str], local_read: bool) -> Command {
     let mut command = git_command();
     if local_read {

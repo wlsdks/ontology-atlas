@@ -44,12 +44,22 @@ export function evidenceConceptsFromDocs(docs = []) {
   return out;
 }
 
-export function resolveEvidenceStates(concepts, changes) {
+/**
+ * `unchangedPairs` (from `unchangedEvidencePairs`) names the moved files whose only
+ * change since the document's newest commit is in comments, import lines or whitespace.
+ *
+ * @param {readonly {slug: string, kind: string, docPath: string|null, evidencePaths: readonly string[]}[]} concepts
+ * @param {ReadonlyMap<string, {exists: boolean, isDir?: boolean, lastChangedAt: string|null, lastCommit?: string|null}>} changes
+ * @param {{ unchangedPairs?: ReadonlySet<string> | null }} [options]
+ */
+export function resolveEvidenceStates(concepts, changes, { unchangedPairs = null } = {}) {
   const states = { current: [], stale: [], missing: [], unknown: [] };
   for (const concept of concepts) {
     const doc = changes.get(concept.docPath);
     const { verdict, reason, moved, folders, gone } = judgeEvidence({
       docChangedAt: concept.docPath ? (doc?.lastChangedAt ?? null) : null,
+      docCommit: concept.docPath ? (doc?.lastCommit ?? null) : null,
+      unchangedPairs,
       entries: (concept.evidencePaths ?? []).map((path) => ({ path, change: changes.get(path) ?? null })),
     });
     const row = { slug: concept.slug, kind: concept.kind };

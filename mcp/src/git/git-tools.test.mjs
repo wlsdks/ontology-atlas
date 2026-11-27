@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -13,6 +13,7 @@ import {
   inspectVaultGitHistory,
   snapshotVaultGit,
   collectPathLastChanges,
+  readEvidenceTextPairs,
 } from './git-tools.mjs';
 import { revisionClocks } from './stale-parent.mjs';
 
@@ -89,7 +90,9 @@ test('collectPathLastChanges reuses one history walk while keeping filesystem fa
     const input = { repoRoot: root, vaultRoot: vault, repoPaths: ['outside.txt'], vaultPaths: ['project.md'] };
     const first = collectPathLastChanges(input);
     const expectedDate = first.changes.get('outside.txt').lastChangedAt;
+    const expectedCommit = first.changes.get('outside.txt').lastCommit;
     assert.ok(expectedDate, 'the fixture must yield an actual committed date');
+    assert.equal(expectedCommit, git(root, 'rev-parse', 'HEAD'), 'the walk names the commit it dated');
     first.changes.get('outside.txt').lastChangedAt = 'caller mutation';
     const second = collectPathLastChanges(input);
     assert.equal(second.changes.get('outside.txt').lastChangedAt, expectedDate);
@@ -98,7 +101,7 @@ test('collectPathLastChanges reuses one history walk while keeping filesystem fa
     assert.equal(collectPathLastChanges(input).changes.get('outside.txt').exists, false);
     mkdirSync(join(root, 'outside.txt'));
     const replaced = collectPathLastChanges(input).changes.get('outside.txt');
-    assert.deepEqual(replaced, { exists: true, isDir: true, lastChangedAt: expectedDate });
+    assert.deepEqual(replaced, { exists: true, isDir: true, lastChangedAt: expectedDate, lastCommit: expectedCommit });
     const walks = readFileSync(tracePath, 'utf8').split('\n').filter((line) => /built-in: git log /.test(line));
     assert.equal(walks.length, 1, 'unchanged committed history must not be walked for every read');
   } finally {
@@ -750,9 +753,39 @@ test('collectPathLastChanges dates repo paths and vault documents in one walk an
     assert.equal(result.changes.get('src').lastChangedAt, pay.lastChangedAt);
     assert.equal(result.changes.get('src').isDir, true);
     assert.equal(pay.isDir, false);
-    assert.deepEqual(result.changes.get('src/gone.ts'), { exists: false, isDir: false, lastChangedAt: null });
-    assert.deepEqual(result.changes.get('never.md'), { exists: false, isDir: false, lastChangedAt: null });
+    assert.deepEqual(result.changes.get('src/gone.ts'), { exists: false, isDir: false, lastChangedAt: null, lastCommit: null });
+    assert.deepEqual(result.changes.get('never.md'), { exists: false, isDir: false, lastChangedAt: null, lastCommit: null });
   } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('readEvidenceTextPairs reads both sides inside the repository and refuses everything else', () => {
+  const { root, vault } = makeRepo();
+  const outsideRepo = `${root}-secret.txt`;
+  try {
+    const head = git(root, 'rev-parse', 'HEAD');
+    writeFileSync(join(root, 'outside.txt'), 'outside v2\n');
+    writeFileSync(outsideRepo, 'secret\n');
+    symlinkSync(outsideRepo, join(root, 'link.txt'));
+    writeFileSync(join(root, 'big.txt'), 'a'.repeat(1024 * 1024 + 1));
+    const pairs = [
+      { commit: head, path: 'outside.txt' },
+      { commit: head, path: '../secret.txt' },
+      { commit: head, path: '/etc/passwd' },
+      { commit: 'HEAD', path: 'outside.txt' },
+      { commit: head, path: 'link.txt' },
+      { commit: head, path: 'big.txt' },
+    ];
+    const { ok, readings } = readEvidenceTextPairs({ repoRoot: root, vaultRoot: vault, pairs });
+    assert.equal(ok, true);
+    assert.deepEqual(readings[0], { commit: head, path: 'outside.txt', before: 'outside v1\n', after: 'outside v2\n' });
+    for (const reading of readings.slice(1)) {
+      assert.equal(reading.before, null, reading.path);
+      assert.equal(reading.after, null, reading.path);
+    }
+  } finally {
+    rmSync(outsideRepo, { force: true });
     rmSync(root, { recursive: true, force: true });
   }
 });
