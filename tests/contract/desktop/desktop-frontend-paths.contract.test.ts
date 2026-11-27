@@ -8,6 +8,7 @@ import {
   isDesktopFrontendPath,
 } from "../../../scripts/desktop/stage-desktop-frontend.mjs";
 import { listLocales } from "../../../scripts/i18n/build-messages.mjs";
+import { architectureRoutes } from "../architecture-routes";
 import { buildProjectEditHref, buildProjectRuntimeDetailHref } from "@/entities/project";
 import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { SETTINGS_CATALOG } from "@/widgets/app-settings-menu/model/catalog";
@@ -24,16 +25,6 @@ import { SETTINGS_CATALOG } from "@/widgets/app-settings-menu/model/catalog";
 
 const ROOT = process.cwd();
 const locales: string[] = listLocales(ROOT);
-const architecture = readFileSync(join(ROOT, "docs/ARCHITECTURE.md"), "utf8");
-
-function routeList(): string[] {
-  const section = architecture.split(/^## Routes$/m)[1] ?? "";
-  const block = section.split("```")[1] ?? "";
-  return block
-    .split("\n")
-    .filter((line) => line.startsWith("/"))
-    .map((line) => line.split(/\s+/)[0]);
-}
 
 /** `app/[locale]/project/[slug]/page.tsx` → `/project/[slug]`; route groups add no segment. */
 function exportedRoutes(): string[] {
@@ -73,7 +64,7 @@ const appSource = [...sourceFiles("src"), ...sourceFiles("app")].filter(
 );
 
 describe("the desktop bundle carries every screen the app can open", () => {
-  const listed = routeList();
+  const listed = architectureRoutes(ROOT);
 
   it("the architecture route list names every page the export builds", () => {
     expect(listed.length).toBeGreaterThan(10);

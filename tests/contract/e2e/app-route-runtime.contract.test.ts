@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { pendingSpecs } from "./app-route-runtime-classifier";
+import { classifySpec, pendingSpecs } from "./app-route-runtime-classifier";
 
 /**
  * Every end-to-end spec that reaches an app screen runs on the faked app runtime
@@ -34,5 +34,29 @@ describe("every app-route spec runs on the faked app runtime", () => {
   it("names only specs that exist, sorted, once each", () => {
     expect(pending.filter((spec) => !existsSync(join(ROOT, spec)))).toEqual([]);
     expect(pending).toEqual([...new Set(pending)].sort());
+  });
+});
+
+/**
+ * The classifier counts a spec as moved only when something it reaches calls a function that installs
+ * the runtime. Three planted specs (`planted-specs/`, kept as `.txt` so no runner collects them) hold it
+ * to that.
+ */
+describe("the classifier asks for an installer call", () => {
+  const planted = (name: string) => classifySpec(`tests/contract/e2e/planted-specs/${name}.spec.ts.txt`);
+
+  it("lists a spec that imports a module with the bridge but only for its fixture data", () => {
+    const verdict = planted("reads-fixture-data-only");
+    expect(verdict.visitedRoute).toBe("/en/library");
+    expect(verdict.installers).toEqual([]);
+    expect(verdict.pending).toBe("no faked runtime");
+  });
+
+  it("passes a spec that calls the installer", () => {
+    expect(planted("installs-the-runtime").pending).toBeNull();
+  });
+
+  it("passes a spec that installs through a wrapper of the installer", () => {
+    expect(planted("installs-through-a-wrapper").pending).toBeNull();
   });
 });
