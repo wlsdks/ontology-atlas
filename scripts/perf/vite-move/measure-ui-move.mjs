@@ -16,7 +16,10 @@ import { measureBuild } from './measure-build.mjs';
 import { measureDevStart } from './measure-dev-start.mjs';
 import { summarizeSamples } from './summarize-samples.mjs';
 
+// pnpm hands a literal `--` on to the script (`pnpm perf:ui-move -- --out=…`).
+const args = process.argv.slice(2).filter((argument, index) => !(index === 0 && argument === '--'));
 const { values: options } = parseArgs({
+  args,
   options: {
     out: { type: 'string' },
     label: { type: 'string', default: 'next' },
