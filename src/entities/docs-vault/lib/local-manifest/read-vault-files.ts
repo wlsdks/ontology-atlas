@@ -45,9 +45,13 @@ interface MarkdownFile {
 }
 
 
+/**
+ * The app's text read refuses a document that is not UTF-8; its handle then reads the bytes, which
+ * `text()` decodes as a browser does, so one such document never stops the folder from opening.
+ */
 export async function manifestFile(entry: WalkEntry, nativeRoot: string | null): Promise<Pick<File, 'lastModified' | 'text'>> {
   if (entry.kind === 'md' && nativeRoot) {
-    const native = await readTauriVaultTextFile(nativeRoot, entry.relativePath);
+    const native = await readTauriVaultTextFile(nativeRoot, entry.relativePath).catch(() => null);
     if (native) return { lastModified: native.lastModified, text: async () => native.text };
   }
   return entry.handle.getFile();

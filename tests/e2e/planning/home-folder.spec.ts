@@ -20,8 +20,8 @@ async function goTo(page: Page, destination: 'Planning' | 'Library') {
   await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('link', { name: destination, exact: true }).click();
 }
 
-async function openVault(page: Page, files: Record<string, string> = VAULT) {
-  await installDesktopRailRuntime(page, files, undefined, { replaceFixture: true, writable: true });
+async function openVault(page: Page, files: Record<string, string> = VAULT, binaryFiles?: Record<string, number[]>) {
+  await installDesktopRailRuntime(page, files, undefined, { replaceFixture: true, writable: true, binaryFiles });
   await page.goto('/en/library/');
   await page.getByTestId('library-open-vault').click();
   // The no-folder stage is a `library-page` too; any other one has the picked folder open, so the folder exists on disk.
@@ -161,6 +161,28 @@ test('a save over a file changed elsewhere is refused and keeps the text', async
   await expect(page.getByText(planning.saveRefused)).toBeVisible();
   await expect(page.locator('[data-planning-editor] textarea')).toHaveValue('# Brief\n\nMine.');
   expect(await onDisk(page, 'planning/brief.md')).toBe('# Brief\n\nTheirs.');
+});
+
+/** `# ` then two bytes that are not UTF-8: an older editor's encoding. */
+const NOT_UTF8 = [0x23, 0x20, 0xb0, 0xe1, 0x0a];
+
+test('a document that is not UTF-8 offers no Edit and says why', async ({ page }) => {
+  await openVault(page, { ...VAULT, 'planning/a.md': '# A\n' });
+  expect(await onDisk(page, 'planning/legacy.md', { write: NOT_UTF8 }), 'the document is written into the open folder').not.toBeNull();
+  await goTo(page, 'Planning');
+  await page.getByRole('button', { name: 'legacy.md' }).click();
+  await expect(page.getByText(planning.notEditable)).toBeVisible();
+  await expect(page.getByRole('button', { name: planning.edit, exact: true })).toHaveCount(0);
+});
+
+test('a folder that already holds a document that is not UTF-8 opens, and only that document is read-only', async ({ page }) => {
+  await openVault(page, { ...VAULT, 'planning/a.md': '# A\n' }, { 'planning/legacy.md': NOT_UTF8 });
+  await goTo(page, 'Planning');
+  await page.getByRole('button', { name: 'legacy.md' }).click();
+  await expect(page.getByText(planning.notEditable)).toBeVisible();
+  await expect(page.getByRole('button', { name: planning.edit, exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'a.md' }).click();
+  await expect(page.getByRole('button', { name: planning.edit, exact: true })).toBeVisible();
 });
 
 test('a planning folder removed from disk returns to the offer to create it, not to an empty folder', async ({ page }) => {

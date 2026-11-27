@@ -10,5 +10,6 @@
   "answer-draft-mismatch": "What you reviewed and what was about to be saved no longer match, so nothing was saved. Open the comparison again, then save.",
   "answer-draft-invalid": "The agent's draft cannot become a new version. Ask again for one body with its citations.",
   "answer-revision-exists": "A page already exists at that address, so nothing was overwritten. Open it in the Library to see what is there.",
-  "answer-turn-incomplete": "The refresh did not finish. The previous answer is unchanged. Ask again when you are ready."
+  "answer-turn-incomplete": "The refresh did not finish. The previous answer is unchanged. Ask again when you are ready.",
+  "not-utf8": "This file is not UTF-8, so it cannot be edited here. Saving it would replace the characters it cannot decode."
 }
