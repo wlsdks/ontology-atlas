@@ -35,7 +35,7 @@ export const REHEARSAL_SKIPS = {
   "Restore the unsigned app bundle that build-macos archived":
     "It checks the archive digest that build-macos reported and unpacks it on the signing runner. This machine never left the build's working tree.",
   "Verify release tag version":
-    "A real tag name is required. Instead, the check below confirms that the package.json, tauri.conf.json and Cargo.toml versions agree with each other.",
+    "A real tag name is required. Instead, the check below confirms that the package.json, tauri.conf.json, Cargo.toml and mcp/package.json versions agree with each other.",
   "Require signed release credentials":
     "All five Apple secrets must be registered on the repository for the runner to pass this gate. This machine holds no Actions secret, so checking the real values only holds in the tag workflow.",
   "Import Apple Developer ID certificate":
@@ -48,11 +48,11 @@ export const REHEARSAL_SKIPS = {
   "Cleanup Apple signing keychain": "It removes a keychain that only the signing path creates.",
 };
 
-/** What to run instead for steps whose runner command cannot be used verbatim: tag/version consistency is checkable among the three files without a tag name, and the unsigned build mostly proves the signed one. */
+/** What to run instead for steps whose runner command cannot be used verbatim: tag/version consistency is checkable among the four files without a tag name, and the unsigned build mostly proves the signed one. */
 export const REHEARSAL_SUBSTITUTES = {
   "Verify release tag version": {
     argv: ["node", "scripts/desktop-release/release-rehearsal.mjs", "--check-versions"],
-    note: "Instead of a tag name, it checks that the package.json, tauri.conf.json and Cargo.toml versions agree with each other.",
+    note: "Instead of a tag name, it checks that the package.json, tauri.conf.json, Cargo.toml and mcp/package.json versions agree with each other.",
   },
   "Build release app bundle": {
     argv: ["pnpm", "desktop:release-artifact:unsigned"],
@@ -200,7 +200,8 @@ export function checkVersionsAgree(root = process.cwd()) {
   const cargo = fs
     .readFileSync(path.join(root, "src-tauri", "Cargo.toml"), "utf8")
     .match(/\[package\][\s\S]*?\nversion\s*=\s*"([^"]+)"/)?.[1];
-  const versions = { package: pkg, tauri, cargo };
+  const mcp = JSON.parse(fs.readFileSync(path.join(root, "mcp", "package.json"), "utf8")).version;
+  const versions = { package: pkg, tauri, cargo, mcp };
   const distinct = new Set(Object.values(versions));
   return { versions, agree: distinct.size === 1 && !distinct.has(undefined) };
 }
@@ -270,7 +271,7 @@ function main() {
       );
       return 1;
     }
-    console.log(`[rehearsal] package.json · tauri.conf.json · Cargo.toml all ${versions.package}`);
+    console.log(`[rehearsal] package.json · tauri.conf.json · Cargo.toml · mcp/package.json all ${versions.package}`);
     return 0;
   }
   if (argv.includes("--help") || argv.includes("-h")) {

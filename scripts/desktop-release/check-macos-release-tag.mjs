@@ -9,6 +9,7 @@ const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"))
 const tauriConfig = JSON.parse(
   fs.readFileSync(path.join(root, "src-tauri", "tauri.conf.json"), "utf8"),
 );
+const mcpPkg = JSON.parse(fs.readFileSync(path.join(root, "mcp", "package.json"), "utf8"));
 const cargoToml = fs.readFileSync(path.join(root, "src-tauri", "Cargo.toml"), "utf8");
 const cargoVersion = cargoToml.match(/\[package\][\s\S]*?\nversion\s*=\s*"([^"]+)"/)?.[1];
 
@@ -34,8 +35,9 @@ function printHelp() {
 
 Fails unless the release tag is vMAJOR.MINOR.PATCH (a stable release) or
 vMAJOR.MINOR.PATCH-beta.N with N from 1 (a beta release), and its X.Y.Z matches
-every version declaration: package.json, src-tauri/tauri.conf.json and
-src-tauri/Cargo.toml. A beta carries no suffix in those files; only the tag does.
+every version declaration: package.json, src-tauri/tauri.conf.json,
+src-tauri/Cargo.toml and mcp/package.json (the MCP server ships the app's
+version, so the registry takes each release). A beta carries no suffix in those files; only the tag does.
 It also fails unless /download still derives its version from package.json.
 --github-output appends channel=stable|beta and version=X.Y.Z to $GITHUB_OUTPUT.
 In GitHub Actions the tag can also come from GITHUB_REF_NAME.
@@ -109,6 +111,7 @@ const versions = {
   package: pkg.version,
   tauri: tauriConfig.version,
   cargo: cargoVersion,
+  mcp: mcpPkg.version,
 };
 const mismatches = Object.entries(versions)
   .filter(([, version]) => version !== tagVersion)
@@ -116,7 +119,7 @@ const mismatches = Object.entries(versions)
 
 if (mismatches.length > 0) {
   fail(
-    `release tag ${tag} does not match macOS app versions: ${mismatches.join(", ")}. Update package.json, src-tauri/tauri.conf.json and src-tauri/Cargo.toml together before tagging; the download page follows package.json on its own.`,
+    `release tag ${tag} does not match macOS app versions: ${mismatches.join(", ")}. Update package.json, src-tauri/tauri.conf.json, src-tauri/Cargo.toml and mcp/package.json together before tagging (mcp/src/server-version.mjs follows mcp/package.json); the download page follows package.json on its own.`,
   );
 }
 
@@ -127,5 +130,5 @@ if (githubOutput) {
 }
 
 console.log(
-  `[desktop-release-tag] ${tag} matches package, Tauri and Cargo versions, and /download derives its own from package.json (a ${parsedTag.channel} release)`,
+  `[desktop-release-tag] ${tag} matches package, Tauri, Cargo and MCP server versions, and /download derives its own from package.json (a ${parsedTag.channel} release)`,
 );
