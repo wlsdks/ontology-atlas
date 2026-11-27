@@ -479,7 +479,7 @@ fn standard_input_reaches_git_and_is_then_closed() {
 /// plants a config the read cannot hold; it needs no shell and runs on every platform.
 #[test]
 fn a_config_read_that_reaches_its_limit_is_refused_not_trusted() {
-    use hardened_git::filter_overrides::discover_filter_overrides_with_limit;
+    use hardened_git::discover_filter_overrides_with_limit;
     use hardened_git::HardeningError;
 
     let base = TempDir::new("config-limit");

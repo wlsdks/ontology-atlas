@@ -1,0 +1,299 @@
+{
+  "about": "Answers that differ between ko_KR and en_US until fix/mcp-sort-locale pins localeCompare to 'en' (measured on the Node server). One entry is one request (case, request id, path inside the answer); a case with a late-clock twin lists both. --ko-vs-en reports these as expected and fails when one no longer differs, so the list only shrinks and is deleted with that fix. Regenerate with --ko-vs-en --record-expected=<file> after the fix.",
+  "differences": [
+    {
+      "case": "graph/compile-ontology-edge-names",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "graph/compile-ontology-edge-names",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "graph/compile-ontology-edge-names",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "graph/compile-ontology-edge-names",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "graph/compile-ontology-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "graph/compile-ontology-edge-names",
+      "where": "answer",
+      "id": 7,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "graph/compile-ontology-edge-names",
+      "where": "answer",
+      "id": 8,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "graph/query-ontology-edge-names",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "graph/query-ontology-edge-names",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "graph/query-ontology-edge-names",
+      "where": "answer",
+      "id": 11,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "graph/query-ontology-edge-names",
+      "where": "answer",
+      "id": 12,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "graph/query-ontology-edge-names",
+      "where": "answer",
+      "id": 13,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "graph/query-ontology-edge-names",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "graph/query-ontology-edge-names",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "graph/query-ontology-edge-names",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "graph/query-ontology-edge-names",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "graph/query-ontology-edge-names",
+      "where": "answer",
+      "id": 7,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "graph/query-ontology-edge-names",
+      "where": "answer",
+      "id": 8,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "graph/query-ontology-edge-names",
+      "where": "answer",
+      "id": 9,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "meaning/validate-vault-edge-names",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "meaning/validate-vault-edge-names",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "meaning/validate-vault-edge-names",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "meaning/validate-vault-edge-names",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "vault-read/list-concepts-edge-names-late-clock",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "vault-read/list-concepts-edge-names-late-clock",
+      "where": "answer",
+      "id": 13,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "vault-read/list-concepts-edge-names-late-clock",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "vault-read/list-concepts-edge-names-late-clock",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "vault-read/list-concepts-edge-names-late-clock",
+      "where": "answer",
+      "id": 6,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "vault-read/list-concepts-edge-names-late-clock",
+      "where": "answer",
+      "id": 7,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "vault-read/list-concepts-edge-names",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "vault-read/list-concepts-edge-names",
+      "where": "answer",
+      "id": 13,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "vault-read/list-concepts-edge-names",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "vault-read/list-concepts-edge-names",
+      "where": "answer",
+      "id": 4,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "vault-read/list-concepts-edge-names",
+      "where": "answer",
+      "id": 6,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "vault-read/list-concepts-edge-names",
+      "where": "answer",
+      "id": 7,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "writes/add-concepts-hangul-and-emoji-late-clock",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "writes/add-concepts-hangul-and-emoji-late-clock",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "writes/add-concepts-hangul-and-emoji",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "writes/add-concepts-hangul-and-emoji",
+      "where": "answer",
+      "id": 2,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "writes/rename-concept-hangul-and-normalization-late-clock",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "writes/rename-concept-hangul-and-normalization-late-clock",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "writes/rename-concept-hangul-and-normalization-late-clock",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "writes/rename-concept-hangul-and-normalization",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "writes/rename-concept-hangul-and-normalization",
+      "where": "answer",
+      "id": 3,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "writes/rename-concept-hangul-and-normalization",
+      "where": "answer",
+      "id": 5,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "writes/rename-concept-late-clock",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "writes/rename-concept-late-clock",
+      "where": "answer",
+      "id": 8,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "writes/rename-concept",
+      "where": "answer",
+      "id": 10,
+      "path": "result.content[0].text"
+    },
+    {
+      "case": "writes/rename-concept",
+      "where": "answer",
+      "id": 8,
+      "path": "result.content[0].text"
+    }
+  ]
+}

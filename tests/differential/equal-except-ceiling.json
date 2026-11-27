@@ -1,0 +1,16 @@
+{
+  "about": "The most each family's equalExcept list may hold. Empty at the start: a slice that needs a named field edits this file in the same pull request and says why; no check lets the list grow silently, and it is empty at the cut-over.",
+  "families": {
+    "shell": [],
+    "safety": [],
+    "vault-read": [],
+    "graph": [],
+    "git": [],
+    "imports": [],
+    "evidence": [],
+    "survey": [],
+    "meaning": [],
+    "writes": [],
+    "library": []
+  }
+}

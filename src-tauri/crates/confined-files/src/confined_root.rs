@@ -1,32 +1,16 @@
-//! The vault or source root a file operation is confined to. This first piece names a root and
-//! checks that it is a folder, and resolves a path against it as Node does; the reading and writing
-//! methods arrive with the safety family.
+//! Naming a root: that it is a folder, and a path resolved against it lexically as Node does.
+//! [`crate::VaultRoot`] and [`crate::ScanRoots`] build the confinement on these two.
 
 use std::path::{Component, Path, PathBuf};
 
 /// Why a folder cannot be a vault root. The text is what the server prints, word for word.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum VaultRootError {
+    #[error("Vault root not found: {}", .0.display())]
     NotFound(PathBuf),
+    #[error("Vault root is not a directory: {}", .0.display())]
     NotADirectory(PathBuf),
 }
-
-impl std::fmt::Display for VaultRootError {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::NotFound(path) => write!(formatter, "Vault root not found: {}", path.display()),
-            Self::NotADirectory(path) => {
-                write!(
-                    formatter,
-                    "Vault root is not a directory: {}",
-                    path.display()
-                )
-            }
-        }
-    }
-}
-
-impl std::error::Error for VaultRootError {}
 
 /// Requires an existing directory; a folder with no frontmatter is an empty vault. A symbolic
 /// link is followed, as a person who linked their vault folder expects.
@@ -174,7 +158,8 @@ mod drive_rules {
 }
 
 /// Drive letters, UNC and verbatim paths exist only on Windows, so these run on the Windows jobs.
-#[cfg(all(test, windows))]
+#[cfg(test)]
+#[cfg(windows)]
 mod windows_paths {
     use super::*;
 
@@ -234,7 +219,8 @@ mod windows_paths {
     }
 }
 
-#[cfg(all(test, unix))]
+#[cfg(test)]
+#[cfg(unix)]
 mod tests {
     use super::*;
 

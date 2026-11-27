@@ -1,0 +1,48 @@
+{
+  "about": "Differences between the Node server and the Bun twin (the Node source compiled by the pinned Bun in .bun-version), each with the runtime reason. One entry is one request or one path. Regenerate with --a=node --b=bun --record-expected=<file>; a run fails when an entry no longer differs, so the list may only shrink.",
+  "differences": [
+    {
+      "case": "safety/hostile-slugs-on-writes",
+      "where": "answer",
+      "id": 39,
+      "path": "result.content[0].text",
+      "reason": "The operating-system error text for a 5,000-character slug names the failing call differently in each runtime."
+    },
+    {
+      "case": "shell/arguments-nested-thousands-deep",
+      "where": "folder",
+      "path": "vault/.ontology-atlas",
+      "reason": "The runtimes have different call-stack depths; Node fails a request nested thousands deep with a stack-overflow error, Bun answers it."
+    },
+    {
+      "case": "shell/arguments-nested-thousands-deep",
+      "where": "folder",
+      "path": "vault/.ontology-atlas/activity.jsonl",
+      "reason": "The runtimes have different call-stack depths; Node fails a request nested thousands deep with a stack-overflow error, Bun answers it."
+    },
+    {
+      "case": "shell/arguments-nested-thousands-deep",
+      "where": "folder",
+      "path": "vault/.ontology-atlas/map-analysis.jsonl",
+      "reason": "The runtimes have different call-stack depths; Node fails a request nested thousands deep with a stack-overflow error, Bun answers it."
+    },
+    {
+      "case": "shell/arguments-nested-thousands-deep",
+      "where": "folder",
+      "path": "vault/only.md",
+      "reason": "The runtimes have different call-stack depths; Node fails a request nested thousands deep with a stack-overflow error, Bun answers it."
+    },
+    {
+      "case": "shell/arguments-nested-thousands-deep",
+      "where": "server-message",
+      "path": "message 2",
+      "reason": "The runtimes have different call-stack depths; Node fails a request nested thousands deep with a stack-overflow error, Bun answers it."
+    },
+    {
+      "case": "shell/tools-list-profile-unknown",
+      "where": "stderr",
+      "path": "stderr",
+      "reason": "An uncaught startup error is reported on stderr in each runtime's own format; the exit code and stdout agree."
+    }
+  ]
+}

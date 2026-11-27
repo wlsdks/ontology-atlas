@@ -6,5 +6,17 @@ edition = "2021"
 license = "MIT"
 publish = false
 
+[dependencies]
+# One `Error` derive per error type; the app already links this version (through tauri).
+thiserror = "2"
+
+[features]
+# Lets a test start a read from its own environment (`Repository::with_environment`). The
+# released program never enables it; the crate's own tests do, through the dev-dependency below.
+test-hooks = []
+
+[dev-dependencies]
+hardened-git = { path = ".", features = ["test-hooks"] }
+
 [lints]
 workspace = true
