@@ -505,3 +505,7 @@ old browser database is deleted without a notice (reverse: Later 4).
   pages never render it. The locale root hands a browser to `/download/` from a script in the document
   head (`GatewayHandOverScript`), not from the workbench, so no app code is fetched on the way; the
   installed app, once hydrated, drops the app-only page from its document so its first `main` is its own.
+- 2026-11-28: the plain-browser half of `app-document-load.spec.ts` moved to
+  `tests/e2e/gateway/app-address-in-a-browser.spec.ts`, because what a browser sees at an app address
+  is the public site's behaviour and the per-test runtime check rightly lists it otherwise; the
+  dehydrated-HTML hold is now proven there ("keeps the app-only page and mounts nothing").

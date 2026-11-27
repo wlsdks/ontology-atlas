@@ -7,7 +7,7 @@ import "./atlas-map-probe";
 /**
  * Web surface smoke: asks only whether the website still does its own jobs. A browser reads the
  * gateway, looks at a sample map and learns that every other address belongs to the app. Whether the
- * app-only page is the whole document of an app address, from the first byte, is `app-shell/app-document-load.spec.ts`.
+ * app-only page is the whole document of an app address, from the first byte, is `gateway/app-address-in-a-browser.spec.ts`.
  */
 
 /**

@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 /**
  * Smoke for `/download/`. The app's own addresses are the app-only page in a browser
- * (`app-shell/app-document-load.spec.ts`); first-paint and scroll checks live in web-surface-smoke
+ * (`gateway/app-address-in-a-browser.spec.ts`); first-paint and scroll checks live in web-surface-smoke
  * and overflow-sweep specs.
  */
 test.describe("ontology view UI", () => {
