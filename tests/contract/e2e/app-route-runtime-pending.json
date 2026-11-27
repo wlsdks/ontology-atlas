@@ -10,7 +10,6 @@
     "tests/e2e/map/neural/map-neural-lit.spec.ts",
     "tests/e2e/map/neural/map-neural-painter.spec.ts",
     "tests/e2e/map/neural/map-neural-turn-selected.spec.ts",
-    "tests/e2e/settings/settings-reading.spec.ts",
-    "tests/e2e/settings/text-zoom-layout.spec.ts"
+    "tests/e2e/settings/settings-reading.spec.ts"
   ]
 }

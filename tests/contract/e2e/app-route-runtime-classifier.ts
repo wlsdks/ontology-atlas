@@ -96,7 +96,7 @@ function routeReader(routes: string[]): RouteReader {
   const names = [...firstSegments].map(escapeRegExp).join("|");
   const locales = LOCALES.join("|");
   /* A path in quotes, with or without a locale. The root is a visit only when a locale names it (`"/en/"`). */
-  const quoted = new RegExp(`^["'\`](?:/(?:${locales}))?/(?:${names})(?=[/?#"'\`$\\\\]|$)|^["'\`]/(?:${locales})(?=[/?#"'\`])`);
+  const quoted = new RegExp(`^["'\`](?:/(?:${locales}))?/(?:${names})(?=[/?#"'\`$\\\\]|$)|^["'\`]/(?:${locales})/?(?=["'\`?#])`);
   /* The same path after a `${...}` in a template: a locale must name it, or any bare route would match a file path. */
   const afterExpression = new RegExp(`^/(?:${locales})(?:/(?:${names})(?=[/?#]|$)|/?(?=[?#]|$))`);
   /* What may follow a locale expression: a route name, the root, or another expression (`/${locale}/${route}/`). */

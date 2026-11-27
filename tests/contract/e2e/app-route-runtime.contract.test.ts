@@ -42,7 +42,7 @@ describe("every app-route test runs on the faked app runtime", () => {
  * The classifier judges each test by what that test reaches: its own body, the `beforeEach` hooks around
  * it, and the functions they name. Planted specs (`planted-specs/`, kept as `.txt` so no runner collects
  * them) hold it to that; each of the first five once passed the check although a test still opened an app
- * address in a plain browser.
+ * address in a plain browser, and the sixth once failed it for a public page.
  */
 describe("the classifier judges each test by what it reaches", () => {
   const planted = (name: string) => classifySpec(`tests/contract/e2e/planted-specs/${name}.spec.ts.txt`).tests;
@@ -78,6 +78,12 @@ describe("the classifier judges each test by what it reaches", () => {
     const [test] = planted("visits-through-a-locale-template");
     expect(test.visitedRoute).toContain("library");
     expect(test.pending).toBe("no faked runtime");
+  });
+
+  it("does not list a test that visits only a public page under a locale", () => {
+    const [test] = planted("visits-only-a-public-page");
+    expect(test.visitedRoute).toBeNull();
+    expect(test.pending).toBeNull();
   });
 
   it("lists a spec that imports a module with the bridge but only for its fixture data", () => {
