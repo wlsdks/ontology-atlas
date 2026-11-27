@@ -282,17 +282,20 @@ impl Pulse {
         }
     }
 
-    /// macOS dropped notices under `path`, or everywhere when it names none: that step counts
-    /// one change, and nothing is rescanned. A folder under `.git` or a build folder counts none.
+    /// macOS dropped notices under `path`, or everywhere when it names none: each room that may
+    /// hold them counts one change in that step, and nothing is rescanned. Those are the room
+    /// holding `path` and every room inside it, since macOS names a folder above the watched ones
+    /// (often `/`) for a drop and a parent folder for a coalesced change. A folder under `.git` or
+    /// a build folder of the room holding it counts none there. O(listed worktrees + rooms).
     pub(crate) fn dropped_notices(&mut self, path: Option<&Path>, at_ms: i64) {
-        let Some(path) = path else {
-            for room in self.rooms.values_mut() {
-                room.count(RESCAN_HASH, at_ms, at_ms);
-            }
-            return;
-        };
-        if let Some((room, relative)) = self.room_for(path) {
-            if !is_skipped(&relative) {
+        let holder = path.and_then(|path| {
+            let (room, relative) = self.room_for(path)?;
+            (!is_skipped(&relative)).then(|| room.id.clone())
+        });
+        for room in self.rooms.values_mut() {
+            let may_hold = path.is_none_or(|path| room.folder.starts_with(path))
+                || holder.as_ref() == Some(&room.id);
+            if may_hold {
                 room.count(RESCAN_HASH, at_ms, at_ms);
             }
         }
