@@ -717,6 +717,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "confined-files"
+version = "0.1.0"
+
+[[package]]
 name = "const-random"
 version = "0.1.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2100,6 +2104,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "hardened-git"
+version = "0.1.0"
+
+[[package]]
 name = "hashbrown"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2844,6 +2852,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "mcp-server"
+version = "0.1.0"
+dependencies = [
+ "confined-files",
+ "hardened-git",
+ "mcp-server",
+ "ontology-graph",
+ "regex",
+ "ryu-js",
+ "source-evidence",
+ "vault-document",
+]
+
+[[package]]
 name = "memchr"
 version = "2.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3382,6 +3404,13 @@ dependencies = [
  "vault-index",
  "windows-sys 0.61.2",
  "zip",
+]
+
+[[package]]
+name = "ontology-graph"
+version = "0.1.0"
+dependencies = [
+ "vault-document",
 ]
 
 [[package]]
@@ -4178,6 +4207,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9774ba4a74de5f7b1c1451ed6cd5285a32eddb5cccb8cc655a4e50009e06477f"
 
 [[package]]
+name = "ryu-js"
+version = "1.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1f232fd0249f55adbe7f15bee58bbbd3d40708000b84e6482066d2ba599e08a9"
+
+[[package]]
 name = "safetensors"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4643,6 +4678,15 @@ dependencies = [
  "gobject-sys",
  "libc",
  "system-deps",
+]
+
+[[package]]
+name = "source-evidence"
+version = "0.1.0"
+dependencies = [
+ "confined-files",
+ "hardened-git",
+ "vault-document",
 ]
 
 [[package]]
@@ -5817,6 +5861,13 @@ dependencies = [
  "js-sys",
  "serde_core",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "vault-document"
+version = "0.1.0"
+dependencies = [
+ "confined-files",
 ]
 
 [[package]]

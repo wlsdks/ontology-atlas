@@ -1,0 +1,10 @@
+[package]
+name = "confined-files"
+version = "0.1.0"
+description = "The one type that opens, reads and writes files under a vault or source root"
+edition = "2021"
+license = "MIT"
+publish = false
+
+[lints]
+workspace = true

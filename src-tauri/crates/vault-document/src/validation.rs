@@ -1,0 +1,1 @@
+//! Vault validation findings.

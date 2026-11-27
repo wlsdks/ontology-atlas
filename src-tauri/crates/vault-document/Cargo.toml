@@ -1,0 +1,13 @@
+[package]
+name = "vault-document"
+version = "0.1.0"
+description = "Frontmatter, schema, documents, writes, side files, validation, Markdown tree, library and wiki of a vault"
+edition = "2021"
+license = "MIT"
+publish = false
+
+[dependencies]
+confined-files = { path = "../confined-files" }
+
+[lints]
+workspace = true

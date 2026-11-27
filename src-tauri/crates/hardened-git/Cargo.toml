@@ -1,0 +1,10 @@
+[package]
+name = "hardened-git"
+version = "0.1.0"
+description = "The one table and runner for spawning the person's own git against an untrusted repository"
+edition = "2021"
+license = "MIT"
+publish = false
+
+[lints]
+workspace = true

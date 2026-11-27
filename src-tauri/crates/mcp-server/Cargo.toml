@@ -1,0 +1,40 @@
+[package]
+name = "mcp-server"
+version = "0.1.0"
+description = "The ontology-atlas-mcp program: stdio protocol loop, tool registry, answer envelope and tool handlers"
+edition = "2021"
+license = "MIT"
+publish = false
+
+[lib]
+name = "mcp_server"
+path = "src/lib.rs"
+
+[[bin]]
+name = "ontology-atlas-mcp"
+path = "src/main.rs"
+
+[dependencies]
+confined-files = { path = "../confined-files" }
+hardened-git = { path = "../hardened-git" }
+vault-document = { path = "../vault-document" }
+ontology-graph = { path = "../ontology-graph" }
+source-evidence = { path = "../source-evidence" }
+# Writes a number as JavaScript's `Number.prototype.toString` does, so an answer's digits equal the
+# JavaScript server's. Apache-2.0 option of `Apache-2.0 OR BSL-1.0`; no dependencies of its own.
+ryu-js = "1"
+# Linear-time patterns for the answer envelope's error classification (already in the lockfile
+# through the app). Only the features the patterns need: case folding and Perl classes.
+regex = { version = "1", default-features = false, features = ["std", "perf", "unicode-case", "unicode-perl"] }
+
+[features]
+# Pause points and answers only a test build has: tools not yet ported reply `not_ported`, and
+# `__test_*` tools exercise cancellation, panics and a call that waits off the queue. The release
+# build never enables it; the crate's own tests do, through the dev-dependency below.
+test-hooks = []
+
+[dev-dependencies]
+mcp-server = { path = ".", features = ["test-hooks"] }
+
+[lints]
+workspace = true
