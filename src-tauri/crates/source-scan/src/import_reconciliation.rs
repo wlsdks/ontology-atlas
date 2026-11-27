@@ -14,7 +14,7 @@ use serde::Serialize;
 use answer_format::collation::compare_text;
 
 use crate::import_coverage::SUPPORTED_EXTENSIONS;
-use crate::import_edges::{ImportEdge, RoleCounts, SourceRole, UsageCounts};
+use crate::import_edges::{ImportEdge, RoleCounts, UsageCounts};
 use crate::import_rollup::EVIDENCE_LIMIT;
 use crate::import_scan::ModuleEdge;
 
@@ -462,7 +462,7 @@ pub fn summarize_reconciliation(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::import_edges::{ImportKind, ImportUsage};
+    use crate::import_edges::{ImportKind, ImportUsage, SourceRole};
     use crate::import_rollup::EdgeStats;
 
     fn module(from: &str, to: &str, role: SourceRole, usage: ImportUsage) -> ModuleEdge {

@@ -13,7 +13,9 @@ use serde::Serialize;
 use thiserror::Error;
 
 pub use details::{
-    AllowedValueDetails, MissingNodeDetails, ReceivedValue, UnknownArgumentDetails, UnknownField,
+    AllowedValueDetails, CompactUnavailableDetails, LargeResponseDetails, MissingNodeDetails,
+    ProfileMissingDetails, ProfileNotFoundDetails, ProfileRequiredDetails, ReceivedValue,
+    UnknownArgumentDetails, UnknownField,
     UnknownToolDetails,
 };
 
@@ -45,6 +47,11 @@ enum Details {
     UnknownArgument(UnknownArgumentDetails),
     AllowedValue(AllowedValueDetails),
     MissingNode(MissingNodeDetails),
+    ProfileMissing(ProfileMissingDetails),
+    ProfileNotFound(ProfileNotFoundDetails),
+    ProfileRequired(ProfileRequiredDetails),
+    LargeResponse(LargeResponseDetails),
+    CompactUnavailable(CompactUnavailableDetails),
 }
 
 /// A handler's failure: a code, the words, and the fields the code derives from the call.
