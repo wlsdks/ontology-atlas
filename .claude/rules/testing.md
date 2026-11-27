@@ -104,13 +104,18 @@ The final report names what ran and why that scope was enough.
 Keep measurements, captures and probe scripts in the session scratchpad, never
 in the repository or `~/scratch`; a probe worth keeping becomes a `pnpm` script.
 
-## Verify web and app separately
+## Verify the app and the website separately
+
+An app screen is only ever opened in the installed app or, in a test, in a
+browser that installs the faked app runtime (`installDesktopRailRuntime`,
+`tests/e2e/desktop-rail-arrival-harness.ts`); a plain browser reaches only the
+website's pages and the app-only page.
 
 | Target | Accepted proof |
 |---|---|
-| Shared map, docs, library and project screens | Browser proof covers the shared bundle; recheck the installed app only when font rendering, scrolling or window chrome changed |
+| Shared map, docs, library and project screens | A browser spec on the faked app runtime covers the shared bundle; recheck the installed app only when font rendering, scrolling or window chrome changed |
 | Desktop-only keychain, Git, updater and absolute-path abilities | Installed-app evidence only |
-| The web surface itself | `tests/e2e/web-surface-smoke.spec.ts` |
+| The website itself: gateway, `/sample`, the app-only page | `tests/e2e/web-surface-smoke.spec.ts` |
 
 A desktop bridge change (`src/shared/lib/**/tauri-*.ts`, `src-tauri/**`) still runs
 web smoke.

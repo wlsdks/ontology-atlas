@@ -53,10 +53,11 @@ a vault is chosen, and a selected vault always wins. Server-runtime bans:
 - Routes live under `app/[locale]/` (the gateway pages under
   `app/(gateway)/[locale]/`), their views under `src/views/`. The route
   list lives only in `docs/ARCHITECTURE.md`.
-- `isGatewaySurface()` alone decides, for both shell chrome and content,
-  whether `/` shows the gateway (vault-less web visitor) or the map/first-run
-  flow (installed app, or web with a vault). Never make `/` the gateway
-  unconditionally: it would tell an app user to download the app.
+- `src/shared/lib/navigation/nav-destination.ts` alone decides, for both shell
+  chrome and content, whether `/` shows the gateway (a plain browser) or the
+  map/first-run flow (the installed app, marked `data-shell="desktop"` by the
+  boot script). Never make `/` the gateway inside the app: it would tell an
+  app user to download the app.
 - Every link that promises the map points to `/topology`
   (`map-destination-route.contract.test.ts`).
 - In-app navigation uses `Link`, `useRouter` and `usePathname` from

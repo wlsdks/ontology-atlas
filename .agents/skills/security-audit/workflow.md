@@ -35,7 +35,7 @@ builds its inventory with commands, never from memory.
   grant, the CSP, a secret leaving Rust, an unsigned update. Inventory: every
   `#[tauri::command]` in `src-tauri/src`, the capability files, and
   `src-tauri/tauri.conf.json`.
-- **Web renderer and connectors.** Input: vault Markdown, agent and ACP
+- **Renderer and connectors.** Input: vault Markdown, agent and ACP
   output, connector config, wiki pages. Reach: injected HTML, a `javascript:`
   or `file:` URL in a link or `window.open`, the external-link door, an env or
   header value leaving connector discovery. Inventory: every
