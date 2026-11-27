@@ -198,7 +198,14 @@ Steps are slice 1 unless marked.
    document's commit to `HEAD`, cut at 400 lines per concept. For a cut diff the agent reads the
    current file with `analyze_repo_structure` `sourceReads` on the bound project source. It
    answers per concept: still accurate; out of date, naming the text and the reason; or cannot
-   tell, with a reason. `## Uncertainty` is read like any claim.
+   tell, with a reason. `## Uncertainty` is read like any claim. "Still accurate" needs both: no
+   sentence is contradicted, and the change adds, removes or changes no behaviour in the described
+   code that the definition, Includes, Excludes or Uncertainty would need to mention (a new
+   condition or exclusion, a changed cap, a finding demoted or promoted, a rule moved to a file
+   the document names). Renames, comment and import edits, moves of unnamed helpers and changes
+   outside the described code do not count. A claim not confirmed against the diff or the current
+   code is "cannot tell"; the brief says when in doubt, cannot tell, because a wrong "still
+   accurate" hides an outdated description and a wrong "cannot tell" only leaves it for a person.
 5. Atlas applies the reply itself, only if `HEAD` is still the start commit. The document comes
    from the run's list, never from the reply. For "still accurate" Atlas adds `evidence_checked`
    through the line patcher and then compares before and after: the body is byte-identical and
@@ -470,3 +477,9 @@ None. The owner delegated three choices to the lead, who decided them on 2026-11
 - 2026-11-27: lead decision: a run is held only when a remote default branch is known and is the
   checked-out branch; with no remote, or no default known, it commits on the checked-out branch.
   `recheck.heldNoDefault` and the "can never run" edge case and Later item removed.
+- 2026-11-27: Probe 2 failed: replaying the 20 judged concepts through the shipped brief, the
+  default model called 2 of the 5 partly outdated ones still accurate (source-inspection-probe,
+  wiki-pages); both had gained or demoted behaviour no sentence contradicted. Lead decision: Flow
+  step 4 and the brief now require both no contradicted sentence and no behaviour change the
+  document would need to mention, and send an unconfirmed claim to "cannot tell"; re-probed on the
+  same 20 and on a hold-out of 10 never-judged pairs.
