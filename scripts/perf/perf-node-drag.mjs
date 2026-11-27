@@ -1,21 +1,25 @@
 /**
  * Node-drag frame cost harness. Uses the CDP mouse (`page.mouse`) only: a synthetic pointer has
  * `isTrusted: false`, so `setPointerCapture` is refused and the gesture becomes a background pan.
- * `work` is synchronous rAF callback time, not the frame gap.
+ * `work` is synchronous rAF callback time, not the frame gap. Usage:
+ * `node scripts/perf/perf-node-drag.mjs [baseUrl] [--headless]`; the window is visible unless
+ * `--headless` is given, because a real display pipeline is what a device runs. Each row opens its
+ * own generated folder in the faked app runtime (`scripts/lib/desktop-app/open-folder-in-app.mjs`).
  */
 
 import { chromium } from "@playwright/test";
-import { rmSync } from "node:fs";
 
-const BASE = process.argv[2] ?? "http://localhost:4173";
-// A fresh profile per run: deleting a fixed path pulls it from under a Chrome still holding it, the
-// window closes itself and the symptom reads as "Target page has been closed".
-const PROFILE = `/tmp/atlas-perf-${process.pid}`;
+import { openFolderInApp } from "../lib/desktop-app/open-folder-in-app.mjs";
+import { scaleVaultFiles } from "./lib/vaults.mjs";
+
+const ARGS = process.argv.slice(2);
+const BASE = ARGS.find((arg) => !arg.startsWith("--")) ?? "http://localhost:4173";
+const HEADLESS = ARGS.includes("--headless");
 
 /** Vault sizes measured — the small one is the control for "does cost scale with node count". */
 const CASES = [
-  { q: "synth=3000&t=freeze", label: "3000 nodes" },
-  { q: "synth=31&t=freeze", label: "31 nodes (control)" },
+  { files: () => scaleVaultFiles(3000, "all"), label: "3000 files" },
+  { files: () => scaleVaultFiles(31, "all"), label: "31 files (control)" },
 ];
 
 const stat = (xs) => {
@@ -93,35 +97,35 @@ async function dragNode(page, box, target, moves) {
   return { work, backing, grabbed };
 }
 
-// Delete the profile before launching, not after: deleting afterwards pulls it from under the running
-// browser (the same "Target page has been closed" symptom).
-const ctx = await chromium.launchPersistentContext(PROFILE, {
-  headless: false, // A real display pipeline is needed to take the same path as a real device
-  viewport: null,
+const browser = await chromium.launch({
+  headless: HEADLESS, // Headed by default: a real display pipeline takes the same path as a real device
   args: ["--start-maximized", "--force-device-scale-factor=2"],
 });
-
-// The on-screen meter runs too, so a person can visually confirm that the
-// harness numbers and the on-screen numbers say the same thing.
-await ctx.addInitScript(() => {
-  try {
-    localStorage.setItem("atlas.appearance.frameMeter", "on");
-  } catch {
-    // Private mode and similar — only the meter is missing; the measurement still runs.
-  }
-});
-
-const page = ctx.pages()[0] ?? (await ctx.newPage());
 const rows = [];
 
-for (const { q, label } of CASES) {
-  await page.goto(`${BASE}/ko/topology?${q}&guides=off&e2e=1`, { waitUntil: "networkidle" });
+for (const { files, label } of CASES) {
+  // A fresh context per row: the app restores the folder it last opened.
+  const ctx = await browser.newContext({ viewport: HEADLESS ? { width: 1512, height: 900 } : null });
+  // The on-screen meter runs too, so a person can visually confirm that the
+  // harness numbers and the on-screen numbers say the same thing.
+  await ctx.addInitScript(() => {
+    try {
+      localStorage.setItem("atlas.appearance.frameMeter", "on");
+    } catch {
+      // Private mode and similar — only the meter is missing; the measurement still runs.
+    }
+  });
+  const page = await ctx.newPage();
+  await openFolderInApp(page, files(), { baseUrl: BASE, locale: "ko" });
+  await page.goto(`${BASE}/ko/topology/?guides=off&e2e=1`, { waitUntil: "networkidle" });
+  await page.getByTestId("app-nav-rail").waitFor({ timeout: 60_000 });
   await page.waitForTimeout(4000);
 
   const box = await page.locator("canvas").first().boundingBox();
   const target = await pickDraggable(page);
   if (target.error) {
     rows.push({ label, error: target.error });
+    await ctx.close();
     continue;
   }
   // A real mouse. Synthetic events are isTrusted:false, so setPointerCapture is
@@ -129,26 +133,26 @@ for (const { q, label } of CASES) {
   // the reason this harness exists.
   const r = await dragNode(page, box, target, 45);
   rows.push({ label, ...r, target });
+  await ctx.close();
 }
 
-await ctx.close();
-rmSync(PROFILE, { recursive: true, force: true });
+await browser.close();
 
 console.log("\n  node drag — app rAF callback time (ms)\n");
 for (const r of rows) {
   if (r.error) {
-    console.log(`  ${r.label.padEnd(16)} ❌ ${r.error}`);
+    console.log(`  ${r.label.padEnd(20)} ❌ ${r.error}`);
     continue;
   }
   const ok = r.grabbed?.kind === "node";
   console.log(
-    `  ${r.label.padEnd(16)} ${ok ? "node grabbed ✓" : `❌ ${r.grabbed?.kind} (pushed the background — this number is invalid)`}` +
+    `  ${r.label.padEnd(20)} ${ok ? "node grabbed ✓" : `❌ ${r.grabbed?.kind} (pushed the background — this number is invalid)`}` +
       `  [${r.target.kind} ${r.target.label}]`,
   );
   // Read p95 as the representative value: dragging at human speed mixes idle frames into the sample and
   // drags the median down; the cost occurs only on dragging frames.
   console.log(
-    `  ${"".padEnd(16)} p95 ${String(r.work.p95).padStart(6)} · worst ${String(r.work.max).padStart(6)} ` +
+    `  ${"".padEnd(20)} p95 ${String(r.work.p95).padStart(6)} · worst ${String(r.work.max).padStart(6)} ` +
       `(median ${r.work.med} — includes idle frames, so it is only for reference) · backing ${r.backing?.width}x${r.backing?.height}\n`,
   );
 }
