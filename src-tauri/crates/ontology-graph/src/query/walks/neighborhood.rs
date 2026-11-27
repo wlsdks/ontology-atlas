@@ -3,11 +3,14 @@
 //!
 //! The search visits each node once and takes each edge at most twice, so its cost is the size of
 //! what it reaches and never more; a node holds one parent, so no path is kept per node. An answer
-//! cuts the list it writes at `limit` after counting, which is why its totals are exact.
+//! cuts the list it writes at `limit` after counting, which is why its totals are exact. An edge
+//! the search takes from both of its ends is listed once.
+
+use std::collections::HashSet;
 
 use serde::Serialize;
 
-use crate::compiled_graph::{CompiledGraph, Node, NodeId};
+use crate::compiled_graph::{CompiledGraph, EdgeId, Node, NodeId};
 use crate::query::relation_set::RelationSet;
 use crate::query::request::{Direction, DEPTH_MAX};
 use crate::query::step::Step;
@@ -50,6 +53,8 @@ pub struct Neighborhood {
 
 impl Neighborhood {
     /// Everything within `depth` of `seed` along the edges `direction` follows and `types` allows.
+    /// A walk that follows edges both ways meets an edge from each end; it lists the edge once,
+    /// from the node it starts at, as a subgraph does.
     pub fn explore(
         graph: &CompiledGraph,
         seed: NodeId,
@@ -57,9 +62,13 @@ impl Neighborhood {
         depth: usize,
         types: Option<&RelationSet>,
     ) -> Self {
-        Self::explore_by(graph.nodes().len(), seed, depth, |node| {
+        let mut found = Self::explore_by(graph.nodes().len(), seed, depth, |node| {
             traversal_steps(graph, node, direction, types)
-        })
+        });
+        if direction.follows_outgoing() && direction.follows_incoming() {
+            found.hops = each_edge_once_from_its_start(graph, &found.hops);
+        }
+        found
     }
 
     /// Everything within `depth` of `seed` along the steps `steps_of` gives for each node, in the
@@ -161,6 +170,23 @@ impl Neighborhood {
         hops.reverse();
         hops
     }
+}
+
+/// `hops` with each edge once, written from the node it starts at, in the order each was first
+/// taken.
+fn each_edge_once_from_its_start(graph: &CompiledGraph, hops: &[Hop]) -> Vec<Hop> {
+    let mut taken: HashSet<EdgeId> = HashSet::with_capacity(hops.len());
+    hops.iter()
+        .filter(|hop| taken.insert(hop.edge))
+        .map(|hop| {
+            let edge = graph.edge(hop.edge);
+            Hop {
+                edge: hop.edge,
+                entered: edge.from,
+                left: edge.to().unwrap_or(hop.left),
+            }
+        })
+        .collect()
 }
 
 /// The edges among `hops` whose two ends both pass `keep`, in the order of the graph.
