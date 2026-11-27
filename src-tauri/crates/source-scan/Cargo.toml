@@ -9,7 +9,6 @@ publish = false
 [dependencies]
 confined-files = { path = "../confined-files" }
 hardened-git = { path = "../hardened-git" }
-vault-document = { path = "../vault-document" }
 
 [lints]
 workspace = true

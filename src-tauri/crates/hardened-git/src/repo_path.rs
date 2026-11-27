@@ -11,7 +11,18 @@ pub struct RepoPath(String);
 /// A folder that is not below the repository's top level once both are real paths.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 #[error("the folder is outside the repository")]
-pub struct OutsideRepository;
+pub struct OutsideRepository {
+    /// The folder's real path, which is what an answer says about it.
+    pub real: PathBuf,
+}
+
+/// A folder inside a repository: the real path it was reached at, and where it lies below the
+/// top.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PlacedFolder {
+    pub real: PathBuf,
+    pub path: RepoPath,
+}
 
 impl RepoPath {
     /// Trailing slashes are dropped. `None` for an empty path, an absolute one, one that starts
@@ -48,11 +59,14 @@ impl RepoPath {
     /// `/var` through `/private/var`, a Windows path may carry a `\\?\` prefix). Windows compares
     /// letters without regard to case, because NTFS keeps a name's case but looks it up without
     /// it (Microsoft, "Case Sensitivity" in the file-name documentation).
-    pub fn of_folder(top_level: &Path, folder: &Path) -> Result<Self, OutsideRepository> {
+    pub fn of_folder(top_level: &Path, folder: &Path) -> Result<PlacedFolder, OutsideRepository> {
         let real = dunce::canonicalize(folder).unwrap_or_else(|_| folder.to_path_buf());
         let top = dunce::canonicalize(top_level).unwrap_or_else(|_| top_level.to_path_buf());
-        let relative = below(&top, &real).ok_or(OutsideRepository)?;
-        Self::from_path(&relative).ok_or(OutsideRepository)
+        let placed = below(&top, &real).and_then(|relative| Self::from_path(&relative));
+        match placed {
+            Some(path) => Ok(PlacedFolder { real, path }),
+            None => Err(OutsideRepository { real }),
+        }
     }
 
     pub fn as_str(&self) -> &str {
@@ -153,12 +167,12 @@ mod tests {
         std::fs::create_dir_all(&vault).expect("vault");
         std::os::unix::fs::symlink(&top, base.join("alias")).expect("link");
         let through_link = base.join("alias/docs/ontology");
-        assert_eq!(
-            RepoPath::of_folder(&top, &through_link).map(|p| p.0),
-            Ok("docs/ontology".to_string())
-        );
-        assert_eq!(RepoPath::of_folder(&top, &top).map(|p| p.0), Ok(".".into()));
-        assert_eq!(RepoPath::of_folder(&vault, &top), Err(OutsideRepository));
+        let placed = RepoPath::of_folder(&top, &through_link).expect("inside");
+        assert_eq!(placed.path.as_str(), "docs/ontology");
+        assert_eq!(placed.real, dunce::canonicalize(&vault).expect("real"));
+        let at_top = RepoPath::of_folder(&top, &top).expect("inside");
+        assert_eq!(at_top.path.as_str(), ".");
+        assert!(RepoPath::of_folder(&vault, &top).is_err());
         let _ = std::fs::remove_dir_all(&base);
     }
 

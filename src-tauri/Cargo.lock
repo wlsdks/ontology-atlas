@@ -4981,7 +4981,6 @@ version = "0.1.0"
 dependencies = [
  "confined-files",
  "hardened-git",
- "vault-document",
 ]
 
 [[package]]

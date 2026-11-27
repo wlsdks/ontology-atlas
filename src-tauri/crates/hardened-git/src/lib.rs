@@ -24,7 +24,7 @@ pub use filter_overrides::clear_filter_cache;
 /// The config read with a time limit a test can shorten; only a test build has it.
 #[cfg(feature = "test-hooks")]
 pub use filter_overrides::discover_filter_overrides_with_limit;
-pub use repo_path::{OutsideRepository, RepoPath};
+pub use repo_path::{OutsideRepository, PlacedFolder, RepoPath};
 pub use repository::{
     BlobAt, CommitId, CommitSummary, GitReadError, OperationInProgress, Repository, RepositoryFacts,
 };

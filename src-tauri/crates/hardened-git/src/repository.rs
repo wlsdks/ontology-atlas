@@ -11,7 +11,7 @@ use std::time::Duration;
 use crate::repo_path::RepoPath;
 use crate::runner::{run_git, GitInvocation, GitOutput, GitRunError};
 use crate::touch_history::{parse_touch_history, TouchedCommit};
-use crate::working_tree::{parse_working_tree, WorkingTree};
+use crate::working_tree::{parse_working_tree, HeadState, WorkingTree};
 
 /// One read's bound per stream.
 const MAX_READ_OUTPUT: usize = 4 * 1024 * 1024;
@@ -222,6 +222,24 @@ impl Repository {
             .success()
             .then(|| CommitId::new(&output.stdout_text()))
             .flatten())
+    }
+
+    /// Where `HEAD` points, without reading the working tree: two cheap runs, for a caller that
+    /// needs the head and not the changed files.
+    pub fn head_state(&self) -> Result<HeadState, GitReadError> {
+        let commit = self.head()?;
+        let output = self.read(&["symbolic-ref", "--quiet", "--short", "HEAD"])?;
+        let text = output.stdout_text();
+        let branch = (output.success() && !text.trim().is_empty()).then(|| text.trim().to_string());
+        match (commit, branch) {
+            (Some(commit), Some(branch)) => Ok(HeadState::Branch { branch, commit }),
+            (Some(commit), None) => Ok(HeadState::Detached { commit }),
+            (None, Some(branch)) => Ok(HeadState::Unborn { branch }),
+            (None, None) => Err(GitReadError::Failed {
+                subcommand: "symbolic-ref".to_string(),
+                message: "HEAD names neither a branch nor a commit".to_string(),
+            }),
+        }
     }
 
     /// The merge, cherry-pick, revert or rebase in progress, from the marker files `git` leaves
