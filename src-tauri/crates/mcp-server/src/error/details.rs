@@ -231,6 +231,170 @@ impl ToolError {
     }
 }
 
+/// The vault holds no architecture profile; profiles live in `architecture/`.
+#[derive(Debug, Serialize)]
+pub struct ProfileMissingDetails {
+    #[serde(rename = "profileDirectory")]
+    pub directory: &'static str,
+}
+
+/// The profile an agent named is not one of the vault's.
+#[derive(Debug, Serialize)]
+pub struct ProfileNotFoundDetails {
+    #[serde(rename = "profileSlug")]
+    pub slug: String,
+    #[serde(rename = "availableProfileSlugs")]
+    pub available: Vec<String>,
+}
+
+/// Several profiles exist and the call named none.
+#[derive(Debug, Serialize)]
+pub struct ProfileRequiredDetails {
+    #[serde(rename = "availableProfileSlugs")]
+    pub available: Vec<String>,
+}
+
+impl ToolError {
+    /// No architecture profile is in the vault.
+    pub fn profile_missing(message: impl Into<String>) -> Self {
+        Self {
+            details: Some(Box::new(Details::ProfileMissing(ProfileMissingDetails {
+                directory: "architecture/",
+            }))),
+            ..Self::new(ErrorCode::ArchitectureProfileMissing, message)
+        }
+    }
+
+    /// `slug` names no profile; `available` are the slugs that exist.
+    pub fn profile_not_found(slug: &str, available: Vec<String>) -> Self {
+        Self {
+            details: Some(Box::new(Details::ProfileNotFound(ProfileNotFoundDetails {
+                slug: slug.to_string(),
+                available,
+            }))),
+            ..Self::new(
+                ErrorCode::ArchitectureProfileNotFound,
+                format!("Architecture profile not found: {slug}."),
+            )
+        }
+    }
+
+    /// Several profiles exist and none was named.
+    pub fn profile_required(available: Vec<String>) -> Self {
+        let message = format!(
+            "Multiple architecture profiles exist; pass profileSlug. Available profiles: {}.",
+            available.join(", ")
+        );
+        Self {
+            details: Some(Box::new(Details::ProfileRequired(ProfileRequiredDetails {
+                available,
+            }))),
+            ..Self::new(ErrorCode::ArchitectureProfileRequired, message)
+        }
+    }
+}
+
+/// The arguments that fetch a whole import scan.
+#[derive(Debug, Serialize)]
+pub struct FullImportArguments {
+    #[serde(rename = "reviewMode")]
+    pub review_mode: &'static str,
+    #[serde(rename = "allowLargeResponse")]
+    pub allow_large_response: bool,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CompactImportArguments {
+    #[serde(rename = "reviewMode")]
+    pub review_mode: &'static str,
+}
+
+/// An import scan too large to send without the caller's confirmation.
+#[derive(Debug, Serialize)]
+pub struct LargeResponseDetails {
+    #[serde(rename = "largeResponseConfirmationRequired")]
+    pub confirmation_required: bool,
+    #[serde(rename = "estimatedFullResponseBytes")]
+    pub estimated_bytes: usize,
+    #[serde(rename = "automaticLimitBytes")]
+    pub limit_bytes: usize,
+    #[serde(rename = "retryArguments")]
+    pub retry: FullImportArguments,
+    #[serde(rename = "boundedAlternative")]
+    pub bounded_alternative: CompactImportArguments,
+}
+
+/// What a compact import review needs that this call lacks.
+#[derive(Debug, Serialize)]
+pub struct CompactRequirements {
+    pub reconcile: bool,
+    #[serde(rename = "loadableActiveVault")]
+    pub loadable_active_vault: bool,
+}
+
+/// An import scan too large to send whole, with no vault to review it against.
+#[derive(Debug, Serialize)]
+pub struct CompactUnavailableDetails {
+    #[serde(rename = "estimatedFullResponseBytes")]
+    pub estimated_bytes: usize,
+    #[serde(rename = "automaticLimitBytes")]
+    pub limit_bytes: usize,
+    #[serde(rename = "requiredForCompact")]
+    pub required: CompactRequirements,
+    #[serde(rename = "explicitFullOverride")]
+    pub explicit_full: FullImportArguments,
+}
+
+impl ToolError {
+    /// An explicit whole-scan request over the delivery limit: the caller must confirm it.
+    pub fn large_response(
+        message: impl Into<String>,
+        estimated_bytes: usize,
+        limit_bytes: usize,
+    ) -> Self {
+        Self {
+            details: Some(Box::new(Details::LargeResponse(LargeResponseDetails {
+                confirmation_required: true,
+                estimated_bytes,
+                limit_bytes,
+                retry: FullImportArguments {
+                    review_mode: "full",
+                    allow_large_response: true,
+                },
+                bounded_alternative: CompactImportArguments {
+                    review_mode: "next",
+                },
+            }))),
+            ..Self::failed(message)
+        }
+    }
+
+    /// A scan over the delivery limit that cannot be sent compactly either.
+    pub fn compact_unavailable(
+        message: impl Into<String>,
+        estimated_bytes: usize,
+        limit_bytes: usize,
+    ) -> Self {
+        Self {
+            details: Some(Box::new(Details::CompactUnavailable(
+                CompactUnavailableDetails {
+                    estimated_bytes,
+                    limit_bytes,
+                    required: CompactRequirements {
+                        reconcile: true,
+                        loadable_active_vault: true,
+                    },
+                    explicit_full: FullImportArguments {
+                        review_mode: "full",
+                        allow_large_response: true,
+                    },
+                },
+            ))),
+            ..Self::failed(message)
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

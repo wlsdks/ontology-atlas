@@ -855,12 +855,87 @@ add('imports', 'inspect-architecture-miniature-repo', { vault: 'miniature-repo' 
   call('inspect_architecture', { rootPath: '$PARENT', maxFiles: 0 }),
 ]);
 add('imports', 'inspect-architecture-storefront-profile', { vault: 'storefront' }, [
-  call('inspect_architecture', {}),
   call('inspect_architecture', { profileSlug: 'architecture/storefront-services' }),
-  call('inspect_architecture', { profileSlug: 'storefront-services' }),
   call('inspect_architecture', { rootPath: '$VAULT', profileSlug: 'architecture/storefront-services' }),
 ]);
-add('imports', 'infer-imports-atlas-ontology-vault-as-root', { vault: 'atlas-ontology' }, [call('infer_imports', { rootPath: '$VAULT' }), call('inspect_architecture', { rootPath: '$VAULT' })]);
+// A brief for a folder that is not under git: it is the one answer in which the Node server adds a
+// `measured` stamp the Rust server does not yet (row 35), so each request stands alone and the
+// other answers of the tool are compared whole in the cases above.
+add('imports', 'inspect-architecture-folder-without-git', { vault: 'storefront' }, [
+  call('inspect_architecture', {}),
+]);
+add('imports', 'inspect-architecture-profile-by-slug-without-git', { vault: 'storefront' }, [
+  call('inspect_architecture', { profileSlug: 'storefront-services' }),
+]);
+// Where the syntax tree reads what the line scanners did not (rows 2, 33 and 34 of the table, and a hidden folder an import may name).
+const plant = (path, text) => ({ $: 'write-file', path: `../parser/${path}`, text });
+add('imports', 'infer-imports-syntax-tree-reads', { vault: 'miniature-repo' }, [
+  plant('binary/a.ts', '\u0000\u0001\u0002 import { b } from \'./b\';\n'),
+  plant('binary/b.ts', 'export const b = 1;\n'),
+  call('infer_imports', { rootPath: '$PARENT/parser/binary', reconcile: false }),
+  plant('rust/lib.rs', '#![allow(dead_code)]\nmod util;\n#[cfg(unix)]\nuse crate::util::tool;\nuse crate::\n    util::other;\nmacro_rules! m { () => { use crate::ghost::x; } }\n'),
+  plant('rust/util.rs', 'pub fn tool() {}\npub fn other() {}\n'),
+  call('infer_imports', { rootPath: '$PARENT/parser/rust', reconcile: false }),
+  plant('jvm/src/main/java/com/acme/Café.java', 'package com.acme;\nclass Café { Naïve n; }\n'),
+  plant('jvm/src/main/java/com/acme/Naïve.java', 'package com.acme;\nclass Naïve {}\n'),
+  plant('jvm/src/main/kotlin/com/acme/Use.kt', 'package com.acme\nfun use() = "${Naïve()}"\n'),
+  call('infer_imports', { rootPath: '$PARENT/parser/jvm', reconcile: false }),
+  plant('script/a.ts', '// import \'in-comment\';\nconst note = "import \'in-string\'";\nimport type { T } from \'./b\';\nexport type U = import(\'./b\').T;\nconst later = await import(\'./b\');\n'),
+  plant('script/b.ts', 'export type T = 1;\n'),
+  call('infer_imports', { rootPath: '$PARENT/parser/script', reconcile: false }),
+  plant('hidden/a.ts', 'import data from \'./.hidden/data.json\';\n'),
+  plant('hidden/.hidden/data.json', '{}\n'),
+  call('infer_imports', { rootPath: '$PARENT/parser/hidden', reconcile: false }),
+]);
+// A source file named like a credential is never opened (row 36); the answer says how many it did not read.
+add('imports', 'infer-imports-credential-named-source-files', { vault: 'miniature-repo' }, [
+  plant('credentials/src/a.ts', 'export const a = 1;\n'),
+  plant('credentials/src/ok.ts', "import { a } from './a';\n"),
+  plant('credentials/src/secrets.ts', "import { a } from './a';\n"),
+  plant('credentials/src/credentials.py', 'import os\n'),
+  plant('credentials/src/keys/server.pem', '-----BEGIN-----\n'),
+  call('infer_imports', { rootPath: '$PARENT/parser/credentials', reconcile: false }),
+]);
+// The per-file limit of 256 Rust statements and 256 Go imports, and a tree 130 folders deep.
+const limitLines = (count, line) => Array.from({ length: count }, (_, index) => line(index)).join('\n');
+add('imports', 'infer-imports-per-file-limits-and-depth', { vault: 'miniature-repo' }, [
+  plant('limits/rust/lib.rs', `${limitLines(300, (index) => `use crate_${index}::item;`)}\n`),
+  call('infer_imports', { rootPath: '$PARENT/parser/limits/rust', reconcile: false }),
+  plant('limits/go/go.mod', 'module example.com/app\n'),
+  plant('limits/go/main.go', `package main\n\nimport (\n${limitLines(300, (index) => `\t"example.com/app/pkg${index}"`)}\n)\n`),
+  call('infer_imports', { rootPath: '$PARENT/parser/limits/go', reconcile: false }),
+  plant(`limits/deep/${'d/'.repeat(130)}a.ts`, "import './b';\n"),
+  plant(`limits/deep/${'d/'.repeat(130)}b.ts`, 'export const b = 1;\n'),
+  call('infer_imports', { rootPath: '$PARENT/parser/limits/deep', reconcile: false }),
+]);
+add('imports', 'infer-imports-review-and-focus-pages', { vault: 'miniature-repo' }, [
+  call('infer_imports', { rootPath: '$PARENT', reviewMode: 'next' }, { as: 'review-1' }),
+  call('infer_imports', { rootPath: '$PARENT', reviewMode: 'next', afterReviewId: answerOf('review-1', 'result.structuredContent.nextReview.reviewId') }),
+  call('infer_imports', { rootPath: '$PARENT', reviewMode: 'next', afterReviewId: 'import-review:nope:nope' }),
+  call('infer_imports', { rootPath: '$PARENT', reviewMode: 'next', reconcile: false }),
+  call('infer_imports', { rootPath: '$PARENT', focusPath: 'src/payment/charge.ts', focusLimit: 1 }, { as: 'focus-1' }),
+  call('infer_imports', { rootPath: '$PARENT', focusPath: 'src/payment/charge.ts', focusLimit: 1, focusAfterEdgeId: answerOf('focus-1', 'result.structuredContent.focusReview.cursor.nextAfterEdgeId') }),
+  call('infer_imports', { rootPath: '$PARENT', focusPath: 'src/payment/charge.ts', focusDirection: 'incoming' }),
+  call('infer_imports', { rootPath: '$PARENT', focusPath: 'src/payment/charge.ts', focusAfterEdgeId: 'import-impact:nothing' }),
+  call('infer_imports', { rootPath: '$PARENT', focusPath: '../outside.ts' }),
+  call('infer_imports', { rootPath: '$PARENT', focusPath: 'src/order/placement.ts', reviewMode: 'full' }),
+  call('infer_imports', { rootPath: '$PARENT', allowLargeResponse: true }),
+  call('infer_imports', { rootPath: '$PARENT', focusDirection: 'both' }),
+  call('infer_imports', { rootPath: '$PARENT', reviewMode: 'focus' }),
+]);
+// The vault is read through the kept graph: a node and a source file added between two scans are
+// in the second answer, and a relation the vault never had shows as drift.
+const auditNode = '---\nuid: 33333333-4444-4555-8666-777777777777\nslug: capabilities/audit-order\nkind: capability\ntitle: Audit Order\ndescription: "Audit Order: what a person can do here."\ndomain: domains/order\ndependencies: [capabilities/charge-card]\nelements: []\npath: src/order/audit.ts\nsymbol: auditOrder\n---\n\n# Audit Order\n\nA fixture node about Audit Order.\n';
+add('imports', 'infer-imports-after-a-vault-write', { vault: 'miniature-repo' }, [
+  call('infer_imports', { rootPath: '$PARENT' }),
+  { $: 'write-file', path: 'capabilities/audit-order.md', text: auditNode },
+  call('infer_imports', { rootPath: '$PARENT' }),
+  { $: 'write-file', path: '../src/order/audit.ts', text: "import { charge } from '../payment/charge';\nexport const audit = charge;\n" },
+  call('infer_imports', { rootPath: '$PARENT', reviewMode: 'full', allowLargeResponse: true }),
+  call('infer_imports', { rootPath: '$PARENT', reviewMode: 'next' }),
+]);
+add('imports', 'infer-imports-atlas-ontology-vault-as-root',{ vault: 'atlas-ontology' }, [call('infer_imports', { rootPath: '$VAULT' })]);
+add('imports', 'inspect-architecture-atlas-ontology-vault-as-root',{ vault: 'atlas-ontology' }, [call('inspect_architecture', { rootPath: '$VAULT' })]);
 
 // ---------------------------------------------------------------------------------------------
 // evidence: find_evidence, read_source, the agent brief

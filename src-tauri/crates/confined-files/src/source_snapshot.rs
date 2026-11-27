@@ -15,7 +15,8 @@ use sha2::{Digest, Sha256};
 
 use crate::confined_root::resolve_path;
 use crate::source_access::{
-    absolute, address, DirectoryEntry, EntryKind, Refusal, SourceFiles, SourceReadError,
+    absolute, address, DirectoryEntry, DirectoryListing, EntryKind, Refusal, SourceFiles,
+    SourceReadError,
 };
 
 pub const SNAPSHOT_CONTRACT: &str = "confinedSourceSnapshot:v1";
@@ -446,6 +447,11 @@ impl SourceFiles for SnapshotSource<'_> {
         self.kind(path)
     }
 
+    /// A census lists no hidden entry, so a hidden path is refused here as it is for `kind`.
+    fn regular_file_exists(&self, path: &Path) -> Result<bool, SourceReadError> {
+        Ok(self.kind(path)?.is_some_and(EntryKind::is_file))
+    }
+
     fn read_text(&self, path: &Path) -> Result<Cow<'_, str>, SourceReadError> {
         let (name, entry) = self.get(path)?;
         let entry = entry.ok_or(SourceReadError::Absent)?;
@@ -458,7 +464,7 @@ impl SourceFiles for SnapshotSource<'_> {
         Ok(Cow::Borrowed(text))
     }
 
-    fn list_directory(&self, path: &Path) -> Result<Vec<DirectoryEntry>, SourceReadError> {
+    fn list_directory(&self, path: &Path) -> Result<DirectoryListing, SourceReadError> {
         let (name, entry) = self.get(path)?;
         let entry = entry.ok_or(SourceReadError::Absent)?;
         let Some(children) = entry
@@ -473,7 +479,7 @@ impl SourceFiles for SnapshotSource<'_> {
         self.recorded()
             .directories
             .insert(name.clone(), names.clone());
-        names
+        let entries = names
             .into_iter()
             .map(|child_name| {
                 let child = if name == "." {
@@ -489,7 +495,11 @@ impl SourceFiles for SnapshotSource<'_> {
                     None => Err(self.refuse(Refusal::IncompleteDirectory)),
                 }
             })
-            .collect()
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(DirectoryListing {
+            entries,
+            credential_named_files: Vec::new(),
+        })
     }
 }
 
@@ -681,6 +691,7 @@ mod tests {
         let listed = source.list_directory(Path::new("/repo")).expect("list");
         assert_eq!(
             listed
+                .entries
                 .iter()
                 .map(|entry| entry.name.as_str())
                 .collect::<Vec<_>>(),

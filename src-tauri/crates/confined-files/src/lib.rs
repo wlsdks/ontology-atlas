@@ -43,7 +43,9 @@ pub use slug_rules::{
     is_vault_source_path, raw_source_file_for_slug, unwritable_slug_reason, UnwritableReason,
     AGENT_INSTRUCTION_FILE_STEMS, VAULT_SOURCES_DIR,
 };
-pub use source_access::{DirectoryEntry, EntryKind, Refusal, SourceFiles, SourceReadError};
+pub use source_access::{
+    DirectoryEntry, DirectoryListing, EntryKind, Refusal, SourceFiles, SourceReadError,
+};
 pub use source_disk::{
     evidence_text, DiskSource, ReadBudget, MAX_EVIDENCE_READ_BYTES, MAX_EVIDENCE_TEXT_BYTES,
 };

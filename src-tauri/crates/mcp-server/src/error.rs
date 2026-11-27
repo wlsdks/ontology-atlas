@@ -13,8 +13,9 @@ use serde::Serialize;
 use thiserror::Error;
 
 pub use details::{
-    AllowedValueDetails, MissingNodeDetails, ReceivedValue, UnknownArgumentDetails, UnknownField,
-    UnknownToolDetails,
+    AllowedValueDetails, CompactUnavailableDetails, LargeResponseDetails, MissingNodeDetails,
+    ProfileMissingDetails, ProfileNotFoundDetails, ProfileRequiredDetails, ReceivedValue,
+    UnknownArgumentDetails, UnknownField, UnknownToolDetails,
 };
 
 /// The `errorCode` values an agent branches on. The set is shared with the JavaScript server and
@@ -45,6 +46,11 @@ enum Details {
     UnknownArgument(UnknownArgumentDetails),
     AllowedValue(AllowedValueDetails),
     MissingNode(MissingNodeDetails),
+    ProfileMissing(ProfileMissingDetails),
+    ProfileNotFound(ProfileNotFoundDetails),
+    ProfileRequired(ProfileRequiredDetails),
+    LargeResponse(LargeResponseDetails),
+    CompactUnavailable(CompactUnavailableDetails),
 }
 
 /// A handler's failure: a code, the words, and the fields the code derives from the call.
@@ -105,6 +111,19 @@ impl ToolError {
     }
 }
 
+/// The one place a refusal of the source-reading crate becomes a code: the kind it carries, never
+/// the words it says.
+impl From<source_scan::SourceScanError> for ToolError {
+    fn from(error: source_scan::SourceScanError) -> Self {
+        let message = error.to_string();
+        match error.code() {
+            source_scan::ScanErrorCode::Invalid => Self::invalid(message),
+            source_scan::ScanErrorCode::NotFound => Self::new(ErrorCode::NotFound, message),
+            source_scan::ScanErrorCode::Failed => Self::failed(message),
+        }
+    }
+}
+
 /// A failed row of a batch answer: the words and code of the failure and the fields its code
 /// derives, written after the row's own `ok` and the name it was asked for.
 #[derive(Serialize)]
@@ -131,6 +150,30 @@ pub struct Structured<'a> {
 mod tests {
     use super::*;
     use answer_format::json::to_string;
+
+    #[test]
+    fn a_refusal_of_the_source_reader_gets_its_code_from_its_kind_not_its_words() {
+        use source_scan::SourceScanError;
+        let sentence = "profile must be invalid, missing and not found all at once";
+        let codes: Vec<ErrorCode> = [
+            SourceScanError::invalid(sentence),
+            SourceScanError::not_found(sentence),
+            SourceScanError::failed(sentence),
+            SourceScanError::NoCommit,
+        ]
+        .into_iter()
+        .map(|error| ToolError::from(error).code())
+        .collect();
+        assert_eq!(
+            codes,
+            [
+                ErrorCode::InvalidArguments,
+                ErrorCode::NotFound,
+                ErrorCode::ToolError,
+                ErrorCode::ToolError
+            ]
+        );
+    }
 
     #[test]
     fn every_code_is_written_as_agents_know_it() {

@@ -24,12 +24,18 @@ mod find_orphans;
 mod get_concepts;
 mod git_history;
 mod git_status;
+mod import_answers;
+mod import_scan_target;
+mod infer_imports;
+mod inspect_architecture;
 mod list_concepts;
 mod query_concepts;
 mod query_ontology;
 mod read_vault;
+mod reply_bytes;
 #[cfg(feature = "test-hooks")]
 mod test_hooks;
+mod vault_facts;
 mod vault_repository;
 
 pub use compiled_graph::KeptGraph;
@@ -59,6 +65,8 @@ pub fn call(
         "query_ontology" => Some(query_ontology::call(context, arguments)),
         "git_status" => Some(git_status::call(context)),
         "git_history" => Some(git_history::call(context, arguments)),
+        "infer_imports" => Some(infer_imports::call(context, arguments)),
+        "inspect_architecture" => Some(inspect_architecture::call(context, arguments)),
         _ => None,
     }
 }
