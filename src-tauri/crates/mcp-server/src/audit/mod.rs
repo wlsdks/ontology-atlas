@@ -39,7 +39,9 @@ pub struct AuditLog {
     recorder: Mutex<MapAnalysisRecorder>,
 }
 
-fn now_ms() -> i64 {
+/// The server's one clock, in milliseconds since the epoch: every time it writes to an audit file
+/// or reports in an answer comes from here, so a test or a pinned run replaces it in one place.
+pub(crate) fn now_ms() -> i64 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map_or(0, |elapsed| {

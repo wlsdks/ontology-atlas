@@ -2,7 +2,6 @@
 //! vault, answered as a brief an agent plans a change from. Read-only.
 
 use std::path::Path;
-use std::time::{SystemTime, UNIX_EPOCH};
 
 use source_scan::{
     build_architecture_brief, find_architecture_profiles, read_git_source_state,
@@ -58,14 +57,9 @@ fn select_profile<'a>(
 /// not under git, which has no commit to name.
 fn measured_stamp(root: &Path) -> Result<Option<MeasuredStamp>, ToolError> {
     let state = read_git_source_state(root)?;
-    let now_ms = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_or(0, |elapsed| {
-            i64::try_from(elapsed.as_millis()).unwrap_or(i64::MAX)
-        });
     Ok(state.map(|state| {
         MeasuredStamp::of_git(
-            answer_format::iso_time::to_iso_string(now_ms),
+            answer_format::iso_time::to_iso_string(crate::audit::now_ms()),
             &Surface::embedded().server_version,
             &state,
         )
