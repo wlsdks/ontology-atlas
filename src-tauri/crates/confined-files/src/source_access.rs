@@ -214,9 +214,9 @@ pub(crate) fn address_seeing_hidden(
 }
 
 /// A name no question may touch even when hidden folders are seen through: a credential, or the
-/// repository's own `.git`.
+/// repository's own `.git`, in any letter case (a case-folding disk opens `.GIT` as `.git`).
 pub(crate) fn is_never_shown(part: &str) -> bool {
-    is_credential_name(part) || part == ".git"
+    is_credential_name(part) || part.eq_ignore_ascii_case(".git")
 }
 
 /// The absolute path of a `/`-separated name below `root`.

@@ -647,6 +647,24 @@ mod tests {
     }
 
     #[test]
+    fn a_hidden_file_is_refused_by_its_name_alone_so_a_missing_one_answers_as_an_existing_one() {
+        let tree = tree();
+        std::fs::write(tree.root.join("src/.env"), "KEY=1").expect("env");
+        let exists = |name: &str| tree.source.regular_file_exists(&tree.root.join(name));
+        let present = refusal(exists("src/.env"));
+        let missing = refusal(exists("src/.missing-env"));
+        assert_eq!(present, Refusal::PrivateOrHiddenPath);
+        assert_eq!(missing, present);
+        for folded in [".GIT/config", "src/.Git/HEAD", ".GiT"] {
+            assert_eq!(
+                refusal(exists(folded)),
+                Refusal::PrivateOrHiddenPath,
+                "{folded}: git's folder is refused in any letter case, present or not"
+            );
+        }
+    }
+
+    #[test]
     fn a_link_is_followed_only_while_it_stays_inside_the_root_and_off_the_credentials() {
         let tree = tree();
         std::fs::create_dir_all(tree.root.join(".generated")).expect("folder");
