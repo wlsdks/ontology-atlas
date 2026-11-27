@@ -105,6 +105,8 @@ fn a_secret_file_is_never_read_as_asked_or_through_a_link() {
         std::os::unix::fs::symlink(".git/config", scratch.work.join("git.ts")).unwrap();
     }
 
+    // Windows runners cannot create the links, so there the link names stay plain files.
+    let linked = ["notes.ts", "creds.ts", "git.ts"];
     let asked = [
         request(".env.local", &commit),
         request("config/credentials.json", &commit),
@@ -116,7 +118,9 @@ fn a_secret_file_is_never_read_as_asked_or_through_a_link() {
     ];
     let pairs = read_text_pairs(&scratch.work, &asked);
     for pair in &pairs {
-        assert_eq!(pair.after, None, "{} must not be read", pair.path);
+        if cfg!(unix) || !linked.contains(&pair.path.as_str()) {
+            assert_eq!(pair.after, None, "{} must not be read", pair.path);
+        }
         for side in [&pair.before, &pair.after].into_iter().flatten() {
             assert!(!side.contains("planted"), "{} leaked", pair.path);
         }
