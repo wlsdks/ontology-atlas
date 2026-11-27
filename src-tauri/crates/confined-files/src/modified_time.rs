@@ -22,6 +22,14 @@ impl ModifiedTime {
         metadata.modified().ok().map(Self::from_system_time)
     }
 
+    /// From nanoseconds since the epoch (negative before it), the way libuv splits a time into
+    /// seconds and a positive nanosecond part.
+    pub fn from_nanoseconds(nanoseconds: i128) -> Self {
+        let seconds = nanoseconds.div_euclid(1_000_000_000);
+        let remainder = nanoseconds.rem_euclid(1_000_000_000);
+        Self(seconds as f64 * 1000.0 + remainder as f64 / 1_000_000.0)
+    }
+
     pub fn from_system_time(time: SystemTime) -> Self {
         let (seconds, nanoseconds) = match time.duration_since(SystemTime::UNIX_EPOCH) {
             Ok(after) => (after.as_secs() as f64, f64::from(after.subsec_nanos())),

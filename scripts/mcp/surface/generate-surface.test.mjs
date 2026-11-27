@@ -45,11 +45,11 @@ test('a missing surface file also fails --check', () => {
   });
 });
 
-test('generating into a folder writes exactly the three files the Rust server embeds', () => {
+test('generating into a folder writes exactly the four files the Rust server embeds', () => {
   const folder = mkdtempSync(join(tmpdir(), 'mcp-surface-'));
   try {
     assert.equal(run('--out-dir', folder).status, 0);
-    assert.deepEqual(readdirSync(folder).sort(), ['instructions.txt', 'registry.json', 'tools.json']);
+    assert.deepEqual(readdirSync(folder).sort(), ['guides.json', 'instructions.txt', 'registry.json', 'tools.json']);
     for (const name of readdirSync(folder)) {
       assert.equal(readFileSync(join(folder, name), 'utf8'), readFileSync(join(COMMITTED, name), 'utf8'), name);
     }

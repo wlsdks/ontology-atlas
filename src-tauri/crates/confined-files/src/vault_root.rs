@@ -11,6 +11,7 @@ use crate::confined_root::{ensure_vault_root, resolve_path, VaultRootError};
 use crate::markdown_walk::list_markdown_files;
 use crate::real_paths::{is_within, real_path, segments_below};
 use crate::slug_rules::{unwritable_slug_reason, UnwritableReason, VAULT_SOURCES_DIR};
+use crate::stable_read::{FileSnapshot, FileStamp, StableReadError};
 
 /// Why a slug cannot name a file. The server writes the sentence an agent reads; the text here
 /// says what happened, with the slug and the reason as values.
@@ -77,6 +78,37 @@ impl ConfinedPath {
 
     pub fn read_bytes(&self) -> io::Result<Vec<u8>> {
         std::fs::read(&self.path)
+    }
+
+    /// The file as one snapshot: its bytes and the stamp of the version they belong to, read
+    /// without blocking. `None` when nothing is there or what is there is not a regular file (a
+    /// pipe, a folder). An error is the operating system's refusal, or a file that would not hold
+    /// still (see [`crate::stable_read`]).
+    pub fn read_snapshot(&self) -> Result<Option<FileSnapshot>, StableReadError> {
+        crate::stable_read::read_stable(&self.path, &|_| {})
+    }
+
+    /// [`ConfinedPath::read_snapshot`], calling `after_read` with the attempt between the read and
+    /// the second look at the file; a test parks a racing edit there.
+    #[cfg(feature = "test-hooks")]
+    pub fn read_snapshot_pausing(
+        &self,
+        after_read: &dyn Fn(usize),
+    ) -> Result<Option<FileSnapshot>, StableReadError> {
+        crate::stable_read::read_stable(&self.path, after_read)
+    }
+
+    /// The stamp of the file now, from one look at the name; `None` when nothing regular is there.
+    pub fn stamp(&self) -> Result<Option<FileStamp>, StableReadError> {
+        crate::stable_read::stamp_of(&self.path)
+    }
+
+    /// The stamp of each file now, in the order given, as [`ConfinedPath::stamp`] says it for one.
+    /// Files listed together in one folder are asked about together, which costs a fraction of one
+    /// look per file.
+    pub fn stamps(files: &[ConfinedPath]) -> Vec<Result<Option<FileStamp>, StableReadError>> {
+        let paths: Vec<&Path> = files.iter().map(ConfinedPath::as_path).collect();
+        crate::stable_read::stamps_of(&paths)
     }
 
     /// Whether anything is there, through links, as Node's `existsSync` says.

@@ -39,6 +39,8 @@ use message::{read_line, Inbound};
 use methods::handle_request;
 use reply::write_reply;
 
+use vault_document::DocumentCache;
+
 use crate::audit::AuditLog;
 use crate::runtime::Config;
 
@@ -80,6 +82,8 @@ struct State {
 pub struct Session {
     config: Config,
     audit: AuditLog,
+    /// What the reads have read of each vault file, kept while the file is as it was.
+    documents: DocumentCache,
     /// Held by the one write in progress, from its approval to its audit line.
     write_lock: Mutex<()>,
     output: Mutex<Box<dyn Write + Send>>,
@@ -96,6 +100,7 @@ impl Session {
     pub fn new(config: Config, output: Box<dyn Write + Send>) -> Arc<Self> {
         Arc::new(Self {
             audit: AuditLog::new(config.vault_root.clone()),
+            documents: DocumentCache::new(),
             write_lock: Mutex::new(()),
             config,
             output: Mutex::new(output),
@@ -150,6 +155,10 @@ impl Session {
 
     pub fn audit(&self) -> &AuditLog {
         &self.audit
+    }
+
+    pub fn documents(&self) -> &DocumentCache {
+        &self.documents
     }
 
     pub fn is_closed(&self) -> bool {
@@ -413,10 +422,7 @@ mod tests {
     }
 
     fn session() -> Arc<Session> {
-        let config = Config {
-            modes: Modes::FULL,
-            vault_root: std::env::temp_dir(),
-        };
+        let config = Config::at_vault(Modes::FULL, std::env::temp_dir());
         Session::new(config, Box::new(std::io::sink()))
     }
 

@@ -24,6 +24,8 @@ use std::path::Path;
 pub(crate) struct FileFacts {
     /// A regular file with one name that is not a link.
     pub plain: bool,
+    /// A regular file, whatever its names: not a folder, a pipe, a device or a link itself.
+    pub regular: bool,
     pub size: u64,
     pub modified_ns: i128,
     /// The inode change time on Unix (`ctime`) and the NTFS change time (`ChangeTime`) on Windows.
@@ -51,6 +53,18 @@ mod platform {
 
     pub(super) fn open_read(path: &Path) -> io::Result<File> {
         open(path, OFlags::RDONLY | OFlags::NONBLOCK, Mode::empty())
+    }
+
+    /// Follows a link, as a vault file reached through one is read; `O_NONBLOCK` still keeps a pipe
+    /// at the name from hanging the open.
+    pub(super) fn open_following(path: &Path) -> io::Result<File> {
+        let descriptor: OwnedFd = rustix::fs::open(
+            path,
+            OFlags::RDONLY | OFlags::NONBLOCK | OFlags::CLOEXEC,
+            Mode::empty(),
+        )
+        .map_err(io::Error::from)?;
+        Ok(File::from(descriptor))
     }
 
     pub(super) fn open_append(path: &Path) -> io::Result<File> {
@@ -83,15 +97,78 @@ mod platform {
     }
 
     pub(super) fn facts(metadata: &Metadata, _file: &File) -> io::Result<FileFacts> {
-        Ok(FileFacts {
+        Ok(facts_of_metadata(metadata))
+    }
+
+    /// One `stat` of the name, following a link, with no open: a pipe at the name is not opened.
+    pub(super) fn facts_at(path: &Path) -> io::Result<FileFacts> {
+        std::fs::metadata(path).map(|metadata| facts_of_metadata(&metadata))
+    }
+
+    /// The facts of each path, following links, with one `stat` relative to the folder the path is
+    /// in: consecutive paths in one folder (a sorted listing) reuse its open handle, so the kernel
+    /// resolves one name per file instead of every folder above it.
+    pub(super) fn facts_of_paths(paths: &[&Path]) -> Vec<io::Result<FileFacts>> {
+        let mut folder: Option<(&Path, OwnedFd)> = None;
+        paths
+            .iter()
+            .map(|path| {
+                let (Some(parent), Some(name)) = (path.parent(), path.file_name()) else {
+                    return facts_at(path);
+                };
+                if folder.as_ref().is_none_or(|(open, _)| *open != parent) {
+                    match rustix::fs::open(
+                        parent,
+                        OFlags::RDONLY | OFlags::DIRECTORY | OFlags::CLOEXEC,
+                        Mode::empty(),
+                    ) {
+                        Ok(descriptor) => folder = Some((parent, descriptor)),
+                        // The folder is gone or closed to us: the one-file question answers.
+                        Err(_) => return facts_at(path),
+                    }
+                }
+                let Some((_, descriptor)) = folder.as_ref() else {
+                    return facts_at(path);
+                };
+                rustix::fs::statat(descriptor, name, rustix::fs::AtFlags::empty())
+                    .map(|stat| facts_of_stat(&stat))
+                    .map_err(io::Error::from)
+            })
+            .collect()
+    }
+
+    #[allow(
+        clippy::cast_sign_loss,
+        clippy::cast_possible_truncation,
+        clippy::unnecessary_cast,
+        reason = "the same casts `std::os::unix::fs::MetadataExt` makes, so a stamp read this way equals one read from a handle"
+    )]
+    fn facts_of_stat(stat: &rustix::fs::Stat) -> FileFacts {
+        let regular = rustix::fs::FileType::from_raw_mode(stat.st_mode as rustix::fs::RawMode)
+            == rustix::fs::FileType::RegularFile;
+        FileFacts {
+            plain: regular && stat.st_nlink == 1,
+            regular,
+            size: stat.st_size as u64,
+            modified_ns: i128::from(stat.st_mtime as i64) * 1_000_000_000
+                + i128::from(stat.st_mtime_nsec as i64),
+            changed_ns: i128::from(stat.st_ctime as i64) * 1_000_000_000
+                + i128::from(stat.st_ctime_nsec as i64),
+            identity: (stat.st_dev as u64, stat.st_ino as u64),
+        }
+    }
+
+    fn facts_of_metadata(metadata: &Metadata) -> FileFacts {
+        FileFacts {
             plain: metadata.is_file() && metadata.nlink() == 1,
+            regular: metadata.is_file(),
             size: metadata.size(),
             modified_ns: i128::from(metadata.mtime()) * 1_000_000_000
                 + i128::from(metadata.mtime_nsec()),
             changed_ns: i128::from(metadata.ctime()) * 1_000_000_000
                 + i128::from(metadata.ctime_nsec()),
             identity: (metadata.dev(), metadata.ino()),
-        })
+        }
     }
 }
 
@@ -126,6 +203,11 @@ mod platform {
         options().read(true).open(path)
     }
 
+    /// Follows a link, as a vault file reached through one is read.
+    pub(super) fn open_following(path: &Path) -> io::Result<File> {
+        OpenOptions::new().read(true).open(path)
+    }
+
     /// `FILE_APPEND_DATA` without `FILE_WRITE_DATA`, which `append(true)` asks for.
     pub(super) fn open_append(path: &Path) -> io::Result<File> {
         options().read(true).append(true).open(path)
@@ -146,6 +228,16 @@ mod platform {
     /// A link is opened as itself on Windows and refused by [`facts`], never by the open.
     pub(super) fn is_link_refusal(_: &io::Error) -> bool {
         false
+    }
+
+    /// The facts of the file at `path`, following a link, from a handle opened for the look.
+    pub(super) fn facts_at(path: &Path) -> io::Result<FileFacts> {
+        let file = open_following(path)?;
+        facts(&file.metadata()?, &file)
+    }
+
+    pub(super) fn facts_of_paths(paths: &[&Path]) -> Vec<io::Result<FileFacts>> {
+        paths.iter().map(|path| facts_at(path)).collect()
     }
 
     fn ticks_to_ns(ticks: u64) -> i128 {
@@ -189,10 +281,10 @@ mod platform {
         };
         let written = u64::from(info.ftLastWriteTime.dwHighDateTime) << 32
             | u64::from(info.ftLastWriteTime.dwLowDateTime);
+        let regular = info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY == 0 && !is_link;
         Ok(FileFacts {
-            plain: info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY == 0
-                && !is_link
-                && info.nNumberOfLinks == 1,
+            plain: regular && info.nNumberOfLinks == 1,
+            regular,
             size: u64::from(info.nFileSizeHigh) << 32 | u64::from(info.nFileSizeLow),
             modified_ns: ticks_to_ns(written),
             changed_ns,
@@ -206,6 +298,10 @@ mod platform {
 
 pub(crate) fn open_read(path: &Path) -> io::Result<File> {
     platform::open_read(path)
+}
+
+pub(crate) fn open_following(path: &Path) -> io::Result<File> {
+    platform::open_following(path)
 }
 
 pub(crate) fn open_append(path: &Path) -> io::Result<File> {
@@ -223,6 +319,17 @@ pub(crate) fn create_new(path: &Path) -> io::Result<File> {
 /// Whether an open failed because the name is a link the open refused to follow.
 pub(crate) fn is_link_refusal(error: &io::Error) -> bool {
     platform::is_link_refusal(error)
+}
+
+/// The facts of the file at `path`, following a link. On Unix one `stat` and no open.
+pub(crate) fn facts_at(path: &Path) -> io::Result<FileFacts> {
+    platform::facts_at(path)
+}
+
+/// [`facts_at`] for each path, in order; on Unix, consecutive paths in one folder share one open
+/// handle to it.
+pub(crate) fn facts_of_paths(paths: &[&Path]) -> Vec<io::Result<FileFacts>> {
+    platform::facts_of_paths(paths)
 }
 
 /// The facts of the file `file` is open on.

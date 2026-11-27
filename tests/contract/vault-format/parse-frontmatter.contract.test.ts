@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { CASES } from "../../fixtures/frontmatter-cases.mjs";
+import CASES from "../../fixtures/frontmatter-cases.json";
 import { parseFrontmatter as parseTs } from "@/shared/lib/vault-document/parse-frontmatter";
 import { parseFrontmatter as parseMcp } from "../../../mcp/src/parser.mjs";
 import { parseFrontmatter as parseScripts } from "../../../scripts/lib/parse-frontmatter.mjs";
 
 /**
  * The frontmatter parser ships in three packages that cannot share a module, so the same fixture
- * matrix runs through all three: src/shared/lib, mcp/src and scripts/lib.
+ * matrix runs through all three: src/shared/lib, mcp/src and scripts/lib. The matrix is
+ * tests/fixtures/frontmatter-cases.json, the one source of truth; the Rust reader runs it too, in
+ * src-tauri/crates/vault-document/tests/frontmatter_cases.rs. A case is added there and nowhere else.
  */
 
 const PARSERS = {

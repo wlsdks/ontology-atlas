@@ -7,7 +7,34 @@ license = "MIT"
 publish = false
 
 [dependencies]
+answer-format = { path = "../answer-format" }
 confined-files = { path = "../confined-files" }
+# A key and a value keep the order the file wrote them in.
+indexmap = { version = "2", features = ["serde"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# The review digest of a node is a SHA-256; the workspace links this exact version already.
+sha2 = { version = "0.11.1", default-features = false }
+# NFC for the references a node names, as the vault walk normalises slugs; the same pin as
+# `confined-files`.
+icu_normalizer = { version = "=2.2.0", default-features = false, features = ["compiled_data"] }
+# The words of a name that means two documents.
+thiserror = "2"
+# The evidence-limit phrasings of an exclusion are ten patterns tested together; MIT OR Apache-2.0. ASCII
+# patterns only, so the Unicode tables stay out.
+regex = { version = "1", default-features = false, features = ["std", "perf"] }
+# Reads and checks every file of a large vault on all the cores: one `par_iter`, results in order.
+# MIT OR Apache-2.0; the app already links it (through the image crates).
+rayon = "1"
+# CommonMark with source offsets; MIT.
+pulldown-cmark = { version = "0.13", default-features = false }
+
+[dev-dependencies]
+proptest = "1"
+tempfile = "3"
+# The YAML 1.2 oracle of the frontmatter property test: where it and our parser both accept a
+# document they must agree. MIT OR Apache-2.0; a dev dependency only, never linked into the program.
+saphyr = "0.4"
 
 [lints]
 workspace = true

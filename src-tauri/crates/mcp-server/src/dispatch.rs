@@ -53,6 +53,11 @@ impl<'a> CallContext<'a> {
         self.session.audit()
     }
 
+    /// What the reads have read of each vault file so far.
+    pub fn documents(&self) -> &vault_document::DocumentCache {
+        self.session.documents()
+    }
+
     pub fn config(&self) -> &Config {
         self.session.config()
     }

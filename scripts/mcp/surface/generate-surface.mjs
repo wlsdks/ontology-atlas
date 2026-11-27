@@ -73,6 +73,8 @@ export async function buildSurfaceFiles() {
     pathToFileURL(join(SERVER_SOURCE, 'server', 'tool-schemas', 'field-primitives.mjs')).href
   );
 
+  const guides = await buildGuides();
+
   // One advertised tool per line keeps a registry change a readable diff.
   const tools = `[\n${[...full.TOOL_BY_NAME.values()].map((tool) => JSON.stringify(tool)).join(',\n')}\n]\n`;
 
@@ -94,7 +96,31 @@ export async function buildSurfaceFiles() {
     'tools.json': tools,
     'registry.json': registry,
     'instructions.txt': SERVER_INSTRUCTIONS_TEMPLATE,
+    'guides.json': guides,
   };
+}
+
+/** The construction card and the long-form guides `connection_info` hands out, one text per topic. */
+async function buildGuides() {
+  const load = (...segments) => import(pathToFileURL(join(SERVER_SOURCE, ...segments)).href);
+  const card = await load('construction', 'construction-card.mjs');
+  const rules = await load('construction', 'construction-rules.mjs');
+  const instructions = await load('server', 'instructions.mjs');
+  return `${JSON.stringify(
+    {
+      card: card.CONSTRUCTION_CARD_EN,
+      topics: [...card.CONSTRUCTION_GUIDE_TOPICS],
+      texts: {
+        meta_model: rules.META_MODEL_RULES_EN,
+        construction: card.CONSTRUCTION_GUIDE_EN,
+        write_safety: instructions.WRITE_SAFETY_SECTION_EN,
+        workflows: instructions.WORKFLOWS_SECTION_EN,
+        competency: card.COMPETENCY_ANSWERS_GUIDE_EN,
+      },
+    },
+    null,
+    2,
+  )}\n`;
 }
 
 function parseArguments(argv) {

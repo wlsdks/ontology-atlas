@@ -33,6 +33,13 @@ pub struct ToolDef {
     pub read_only: bool,
 }
 
+impl ToolDef {
+    /// The tool exactly as `tools/list` sends it, for the hash that tells a client the set changed.
+    pub fn advertised_text(&self) -> &'static str {
+        self.advertised.get()
+    }
+}
+
 /// What the server reads of a tool in `surface/tools.json`.
 #[derive(Deserialize)]
 struct ToolHeader {
