@@ -142,7 +142,14 @@ export interface OntologyMapDetailPanelProps {
    * The concept's code in the app: the file its document names and how many line ranges it cites.
    * Absent where no code reader exists (web) or the document names no code.
    */
-  codeRow?: { path: string; citeCount: number; readerOpen: boolean; onToggle: () => void };
+  codeRow?: {
+    path: string;
+    citeCount: number;
+    readerOpen: boolean;
+    onToggle: () => void;
+    /** The cited file that changed or left its path after the document was written. */
+    changedEvidence?: { path: string; gone: boolean } | null;
+  };
   /** Quiet this panel's filled control while another surface owns the primary next step. */
   suppressPrimaryAction?: boolean;
   onClose: () => void;

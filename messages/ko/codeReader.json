@@ -2,7 +2,9 @@
   "row": {
     "label": "코드",
     "open": "{path} 읽기",
-    "cites": "문서가 가리키는 구간 {count}개"
+    "cites": "문서가 가리키는 구간 {count}개",
+    "changed": "이 문서를 쓴 뒤에 {path} 파일이 바뀌었어요.",
+    "gone": "{path} 파일이 이 저장소의 그 경로에 없어요."
   },
   "title": "{concept} 개념의 코드",
   "lines": {
