@@ -16,7 +16,7 @@ const DEFAULT_LIMIT: usize = 100;
 
 /// The cut of the neighborhood of a node that `subgraph` and `builder_context` answer with: the
 /// first `limit` nodes, nearest first and the seed before any, and the first `limit` of the edges
-/// among them. Both totals count everything found.
+/// among them. Both totals count everything found: every node reached, and every edge among them.
 pub struct Subgraph {
     pub seed: NodeId,
     pub direction: Direction,
@@ -57,29 +57,38 @@ impl Subgraph {
             )
             .take(limit)
             .collect();
-        let shown = NodeMask::of(graph, nodes.iter().map(|&(node, _)| node));
-        let mut among: Vec<EdgeId> = Vec::new();
-        for &(node, _) in &nodes {
-            for &id in graph.outgoing(node) {
+        let reached = NodeMask::of(graph, neighborhood.reached().iter().map(|row| row.node));
+        let mut among_reached: Vec<EdgeId> = Vec::new();
+        for row in neighborhood.reached() {
+            for &id in graph.outgoing(row.node) {
                 let edge = graph.edge(id);
                 if allowed(types.as_ref(), edge.via)
-                    && edge.to().is_some_and(|to| shown.contains(to))
+                    && edge.to().is_some_and(|to| reached.contains(to))
                 {
-                    among.push(id);
+                    among_reached.push(id);
                 }
             }
         }
-        among.sort_unstable();
-        let total_edges = among.len();
+        among_reached.sort_unstable();
+        let shown = NodeMask::of(graph, nodes.iter().map(|&(node, _)| node));
+        let edges: Vec<EdgeId> = among_reached
+            .iter()
+            .copied()
+            .filter(|&id| {
+                let edge = graph.edge(id);
+                shown.contains(edge.from) && edge.to().is_some_and(|to| shown.contains(to))
+            })
+            .take(limit)
+            .collect();
         Ok(Self {
             seed,
             direction,
             depth,
             total_nodes,
-            total_edges,
-            limited: total_nodes > limit || total_edges > limit,
+            total_edges: among_reached.len(),
+            limited: nodes.len() < total_nodes || edges.len() < among_reached.len(),
             nodes,
-            edges: among.into_iter().take(limit).collect(),
+            edges,
         })
     }
 

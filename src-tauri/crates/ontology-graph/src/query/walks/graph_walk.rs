@@ -51,3 +51,23 @@ pub fn traversal_steps(
     steps.sort_unstable_by_key(|step| (step.next, step.edge));
     steps
 }
+
+/// Whether a walk could take any step from `node`: `traversal_steps` is not empty.
+pub fn has_traversal_step(
+    graph: &CompiledGraph,
+    node: NodeId,
+    direction: Direction,
+    types: Option<&RelationSet>,
+) -> bool {
+    let leaves = direction.follows_outgoing()
+        && graph.outgoing(node).iter().any(|&id| {
+            let edge = graph.edge(id);
+            edge.to().is_some() && allowed(types, edge.via)
+        });
+    let enters = direction.follows_incoming()
+        && graph
+            .incoming(node)
+            .iter()
+            .any(|&id| allowed(types, graph.edge(id).via));
+    leaves || enters
+}

@@ -4,9 +4,9 @@
 use indexmap::IndexMap;
 use serde::Serialize;
 
-use super::graph_walk::traversal_steps;
+use super::graph_walk::has_traversal_step;
 use super::hop::{path_edges, Hop};
-use super::neighborhood::{hops_between, Neighborhood};
+use super::neighborhood::{hops_between, Neighborhood, Reached};
 use super::row_page::RowPage;
 use crate::compiled_graph::{CompiledGraph, NodeId};
 use crate::query::edge_rows::PathEdge;
@@ -84,24 +84,34 @@ pub fn reachability<'a>(
 
     let neighborhood = Neighborhood::explore(graph, start, direction, depth, types.as_ref());
     let nearest = neighborhood.nearest_first();
-    let shown: Vec<usize> = nearest.iter().copied().take(limit).collect();
-    let shown_nodes: Vec<NodeId> = shown
+    let reached: Vec<&Reached> = nearest
         .iter()
         .filter_map(|&place| neighborhood.reached().get(place))
-        .map(|row| row.node)
         .collect();
+    let shown = reached.get(..limit.min(reached.len())).unwrap_or_default();
     let visible = NodeMask::of(
         graph,
-        std::iter::once(start).chain(shown_nodes.iter().copied()),
+        std::iter::once(start).chain(shown.iter().map(|row| row.node)),
     );
-    let among = hops_between(graph, neighborhood.hops(), |node| visible.contains(node));
-
-    let rows: Vec<ReachedRow<'a>> = shown
+    // Every edge the search took is counted; the rows written are those between nodes shown.
+    let traversed = hops_between(graph, neighborhood.hops(), |_| true);
+    let among_shown: Vec<Hop> = traversed
         .iter()
-        .filter_map(|&place| {
-            let row = neighborhood.reached().get(place)?;
+        .copied()
+        .filter(|hop| {
+            let edge = graph.edge(hop.edge);
+            visible.contains(edge.from) && edge.to().is_some_and(|to| visible.contains(to))
+        })
+        .take(limit)
+        .collect();
+
+    let rows: Vec<ReachedRow<'a>> = nearest
+        .iter()
+        .take(limit)
+        .zip(shown)
+        .map(|(&place, row)| {
             let hops = neighborhood.hops_to(place);
-            Some(ReachedRow {
+            ReachedRow {
                 slug: graph.node(row.node).slug(),
                 distance: row.distance,
                 path: nodes_along(start, &hops)
@@ -109,15 +119,12 @@ pub fn reachability<'a>(
                     .collect(),
                 edges: path_edges(graph, hops.iter().copied()),
                 node: NodeSummary::of(graph, row.node),
-            })
+            }
         })
         .collect();
 
     let mut layers: Vec<Layer<'a>> = Vec::new();
-    for &place in &shown {
-        let Some(row) = neighborhood.reached().get(place) else {
-            continue;
-        };
+    for (index, row) in reached.iter().enumerate() {
         if layers
             .last()
             .is_none_or(|layer| layer.distance != row.distance)
@@ -130,19 +137,17 @@ pub fn reachability<'a>(
         }
         if let Some(layer) = layers.last_mut() {
             layer.total += 1;
-            layer.nodes.push(NodeSummary::of(graph, row.node));
+            if index < limit {
+                layer.nodes.push(NodeSummary::of(graph, row.node));
+            }
         }
     }
 
-    let terminal: Vec<NodeId> = shown_nodes
+    let terminal: Vec<NodeId> = reached
         .iter()
-        .copied()
-        .filter(|&node| traversal_steps(graph, node, direction, types.as_ref()).is_empty())
+        .map(|row| row.node)
+        .filter(|&node| !has_traversal_step(graph, node, direction, types.as_ref()))
         .collect();
-    let reached_nodes = nearest
-        .iter()
-        .filter_map(|&place| neighborhood.reached().get(place))
-        .map(|row| row.node);
 
     Ok(ReachabilityAnswer {
         operation: "reachability",
@@ -151,20 +156,19 @@ pub fn reachability<'a>(
         direction,
         depth,
         summary: ReachabilitySummary {
-            reachable_nodes: nearest.len(),
-            traversed_edges: among.len(),
+            reachable_nodes: reached.len(),
+            traversed_edges: traversed.len(),
             layers: layers.len(),
             terminal_nodes: terminal.len(),
         },
-        by_kind: kind_counts(graph, reached_nodes),
-        by_relation: sorted_counts(among.iter().map(|hop| graph.edge(hop.edge).via)),
+        by_kind: kind_counts(graph, reached.iter().map(|row| row.node)),
+        by_relation: sorted_counts(traversed.iter().map(|hop| graph.edge(hop.edge).via)),
         layers,
-        paths: RowPage::new(nearest.len(), limit, rows),
-        terminal_nodes: summaries(graph, terminal),
-        edges: RowPage::new(
-            among.len(),
-            limit,
-            path_edges(graph, among.iter().copied().take(limit)),
+        paths: RowPage::new(reached.len(), limit, rows),
+        terminal_nodes: summaries(graph, terminal.iter().copied().take(limit)),
+        edges: RowPage::partial(
+            traversed.len(),
+            path_edges(graph, among_shown.iter().copied()),
         ),
     })
 }

@@ -20,6 +20,16 @@ impl<T> RowPage<T> {
         }
     }
 
+    /// `rows` are the part of `total` that was written, however it was chosen: some are missing
+    /// when there are fewer rows than `total`.
+    pub fn partial(total: usize, rows: Vec<T>) -> Self {
+        Self {
+            total,
+            limited: rows.len() < total,
+            rows,
+        }
+    }
+
     /// `rows` are what was kept of `total` found, and `cut` says the search itself stopped early,
     /// so more may exist than `total` counts.
     pub fn counted(total: usize, limit: usize, cut: bool, rows: Vec<T>) -> Self {

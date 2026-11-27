@@ -79,3 +79,60 @@ fn an_edge_a_walk_meets_from_both_ends_is_listed_and_counted_once() {
     assert_eq!(blast["summary"]["affectedEdges"], 3);
     assert_eq!(rows(&blast["edges"]["rows"]).len(), 3);
 }
+
+/// `hub` with five capabilities that depend on it, and the first of them also on the second.
+fn hub_with_five_dependents() -> CompiledGraph {
+    compiled(&[
+        capability("hub", 1, &[]),
+        capability("n1", 2, &["hub", "n2"]),
+        capability("n2", 3, &["hub"]),
+        capability("n3", 4, &["hub"]),
+        capability("n4", 5, &["hub"]),
+        capability("n5", 6, &["hub"]),
+    ])
+}
+
+#[test]
+fn a_limit_cuts_the_lists_an_answer_writes_and_not_what_it_counts() {
+    let graph = hub_with_five_dependents();
+    let from_hub = |operation: &str| QueryRequest {
+        slug: Some("capabilities/hub".to_string()),
+        limit: Some(2),
+        ..call(operation)
+    };
+
+    let reach = answer(
+        &graph,
+        &QueryRequest {
+            direction: Some(Direction::Incoming),
+            ..from_hub("reachability")
+        },
+    );
+    assert_eq!(reach["summary"]["reachableNodes"], 5);
+    assert_eq!(reach["summary"]["traversedEdges"], 6);
+    assert_eq!(reach["summary"]["layers"], 1);
+    assert_eq!(reach["summary"]["terminalNodes"], 4);
+    assert_eq!(reach["byRelation"]["dependencies"], 6);
+    assert_eq!(reach["layers"][0]["total"], 5);
+    assert_eq!(rows(&reach["layers"][0]["nodes"]).len(), 2);
+    assert_eq!(rows(&reach["terminalNodes"]).len(), 2);
+    // Three edges join the hub and the two nodes shown; two are written and the page says so.
+    assert_eq!(reach["edges"]["total"], 6);
+    assert_eq!(rows(&reach["edges"]["rows"]).len(), 2);
+    assert_eq!(reach["edges"]["limited"], true);
+
+    for operation in ["subgraph", "builder_context"] {
+        let slice = answer(
+            &graph,
+            &QueryRequest {
+                depth: Some(2),
+                ..from_hub(operation)
+            },
+        );
+        assert_eq!(slice["totalNodes"], 6, "{operation}");
+        assert_eq!(slice["totalEdges"], 6, "{operation}");
+        assert_eq!(rows(&slice["nodes"]).len(), 2, "{operation}");
+        assert_eq!(rows(&slice["edges"]).len(), 1, "{operation}");
+        assert_eq!(slice["limited"], true, "{operation}");
+    }
+}
