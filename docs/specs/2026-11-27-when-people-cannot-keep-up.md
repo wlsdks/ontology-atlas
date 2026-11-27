@@ -18,7 +18,7 @@ decisions: []
   repeating the definition of this problem."
 - This document defines that problem and builds nothing. It writes the definition six times, and
   each round shows the evidence that broke the one before. Round 7 tests the sixth against two
-  measurements and keeps it.
+  measurements and keeps it. Round 8 tries to narrow what "stale" means and finds no safe rule yet.
 - **The definition that survived.** A person who directs coding agents cannot read what the agents
   change, and no tool gives that back. The harm is not the unread code: when the person merges,
   releases, promises something or asks for the next change, nothing tells them which of the few
@@ -275,6 +275,35 @@ was opened (`scripts/records/who-catches-what-rule.md`, SHA-256 `d1470b67...50df
   lines. One merge that carried two fixes (#3674 and #3675) is outside the 52, as in the first
   count.
 
+**Round 8: what "stale" should mean.** Measured on 2026-11-27. A concept should read stale only
+when its code changed in a way that could make its text untrue. Before any rule was changed, 25 of
+the 59 stale concepts were drawn with a fixed seed. Each was read beside the code that changed,
+and judged: could this change make a sentence in it untrue? The answers were saved, and their
+SHA-256 (`57e3e022...6b11`) was written down before any rule was tried.
+- **10 of the 25 could have become untrue.** The other 15 could not. Their code gained a renamed
+  variable, a new function the text does not speak about, or a moved file the text never names.
+- **Six narrower rules were tried against those answers.** Counting only the lines a concept
+  cites changed nothing: 2 of 94 concepts cite lines, and neither cites a changed file. Skipping
+  test files changed nothing, because no concept cites one. Following files that Git saw renamed
+  changed nothing, because all seven also changed inside. Ignoring the files of a concept's parts
+  cleared 1, but would hide changes in code the concept is built from. Reading only the functions
+  a concept names lost 2 of the 10 that were at risk.
+- **One rule was built, then dropped.** It said a JavaScript or TypeScript file whose only change
+  is a renamed parameter or local variable no longer counts as changed. On the answers it kept
+  all 10 at risk and cleared 3 of the 15, so stale would go from 59 to 56 of 94. An independent
+  review then found edits it wrongly called unchanged: a renamed object key or class field, and a
+  renamed global that now throws an error at run time. It also found a deeply nested file that
+  crashed the check. Telling a local from a global needs a real JavaScript parser, not a guess
+  from the text. Hiding a real change is worse than a false alarm, so the rule did not ship and
+  stale stays at 59.
+- **What is still uncertain.** 59 is three times the one-in-five limit, so no probe should
+  start on this count. In the sample, 4 in 10 stale concepts were really at risk. If the vault is
+  like the sample, about 24 of 94 are at risk, but 25 concepts are few: the true share could be
+  anywhere from about 15% to 37%. Most of the 15 stale but not at risk are changes to code
+  the text does not speak about. Only a concept that cites the lines it describes can tell those
+  apart, and almost none do yet.
+  One person judged all 25, and 4 of the 10 "at risk" answers were close calls.
+
 ### Five layers, and whether accepting the fact changes what a tool should do
 
 | Layer | In this repository | If we accept that people cannot keep up | Does it need Atlas? |
@@ -497,3 +526,8 @@ The brief asks for three. Each has a default, and nothing waits on them.
   sealed before any fix was opened. Round 6 is kept. 50 of 52 fixes corrected an earlier change,
   42 of those shipped in a release first, and 59 of 94 concepts are stale, over the one-in-five
   limit. The script's class was wrong on 8 of 20 fixes read by hand.
+- 2026-11-27: round 8. 25 stale concepts were judged at risk or not before any rule changed, and
+  the narrower rules were scored against those answers. None shipped: the best one, ignoring
+  renamed local variables, cleared 3 but was found by review to hide real changes. Stale stays at
+  59 of 94, over the one-in-five limit. The next lever is concepts that cite the lines they
+  describe.
