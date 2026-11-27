@@ -4983,8 +4983,10 @@ dependencies = [
 name = "source-scan"
 version = "0.1.0"
 dependencies = [
+ "answer-format",
  "confined-files",
  "hardened-git",
+ "serde",
  "tree-sitter",
  "tree-sitter-go",
  "tree-sitter-java",

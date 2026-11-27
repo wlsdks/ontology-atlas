@@ -6,8 +6,10 @@
 //! The crate runs `git` only through `hardened-git` and reads files only through
 //! `confined-files`, so the app and the MCP server share one implementation of each rule.
 
+mod bounded_parse;
 mod evidence_texts;
 mod path_dating;
+mod source_language;
 
 pub use evidence_texts::{
     read_evidence_pairs, EvidenceFiles, EvidenceReading, EvidenceRequest, MAX_EVIDENCE_PAIRS,
@@ -15,3 +17,6 @@ pub use evidence_texts::{
 pub use path_dating::{
     date_paths, Dating, DatingCommit, WantedPath, DATING_WINDOW_COMMITS, MAX_DATED_PATHS,
 };
+
+pub use bounded_parse::{parse_bounded, walk, ParseLimits, ParseRefusal, ParsedSource, Visit};
+pub use source_language::{extension_of, SourceLanguage};
