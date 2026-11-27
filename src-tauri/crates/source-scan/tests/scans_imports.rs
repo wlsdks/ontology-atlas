@@ -99,6 +99,43 @@ fn hostile_files_cost_a_bounded_time_and_are_named_not_skipped_silently() {
 }
 
 #[test]
+fn the_coverage_says_how_many_source_files_were_not_read_for_the_name_they_carry() {
+    let scratch = Scratch::new("credential-names");
+    let root = scratch.path();
+    write(root, "go.mod", "module example.com/app\n");
+    write(root, "main.go", "package main\n");
+    write(
+        root,
+        "secret.go",
+        "package main\nimport \"example.com/app/store\"\n",
+    );
+    write(root, "store/store.go", "package store\n");
+    write(root, "src/a.ts", "export const a = 1;\n");
+    write(root, "src/secrets.ts", "import './a';\n");
+    write(root, "src/credentials.py", "import os\n");
+    write(root, "src/keys/server.pem", "-----BEGIN-----\n");
+    write(root, "src/notes/secrets.md", "not source\n");
+
+    let found = scan(root, &ImportScanOptions::default());
+    assert!(
+        found.edges.is_empty(),
+        "what a credential-named file imports is not read"
+    );
+    let sentences: Vec<&String> = found
+        .coverage
+        .limitations
+        .iter()
+        .filter(|line| line.contains("credential"))
+        .collect();
+    assert_eq!(sentences.len(), 1, "{sentences:?}");
+    assert!(
+        sentences[0].starts_with("3 source files named like a credential were not read"),
+        "secrets.ts, credentials.py and secret.go count; a key and a note are not source: {}",
+        sentences[0]
+    );
+}
+
+#[test]
 fn a_repository_of_every_language_gives_edges_modules_and_go_package_evidence() {
     let scratch = Scratch::new("languages");
     let root = scratch.path();

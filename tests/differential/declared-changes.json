@@ -464,6 +464,14 @@
       "path": "result.content[0].text",
       "change": 35,
       "reason": "Unfinished, not decided: a scan root that is not inside a git repository gets no `measured` stamp from the Rust server until slice 11 ports the app's folder probe once for both tools; the JavaScript server stamps it (row 35). The harness names only the text of the answer, so a second difference in this one answer would not show: the brief's judgement is proven by the `architecture_conformance` unit tests and a repository's stamp by `mcp-server/tests/inspects_architecture.rs`."
+    },
+    {
+      "case": "imports/infer-imports-credential-named-source-files",
+      "where": "answer",
+      "id": 1,
+      "path": "result.content[0].text",
+      "change": 36,
+      "reason": "The answer adds one coverage sentence saying how many source files named like a credential were not read; the JavaScript server left them out without a word (row 36). The harness names only the text of the answer; the edges are the same and the sentence is checked by `source-scan/tests/scans_imports.rs`."
     }
   ]
 }

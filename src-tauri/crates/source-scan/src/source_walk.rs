@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 
 use confined_files::{EntryKind, SourceFiles};
 
-use crate::source_language::extension_of;
+use crate::source_language::{extension_of, extension_of_file};
 
 /// Folders that hold what a build made or a tool cached, never what a person wrote.
 pub const DEFAULT_IGNORE: [&str; 10] = [
@@ -76,14 +76,22 @@ impl IgnoredNames {
 
 /// The names in `directory` in UTF-16 order, with what each is; empty when it cannot be listed.
 pub fn list_sorted(files: &dyn SourceFiles, directory: &Path) -> Vec<(String, EntryKind)> {
-    let mut entries: Vec<(String, EntryKind)> = files
-        .list_directory(directory)
-        .unwrap_or_default()
+    list_folder(files, directory).0
+}
+
+/// [`list_sorted`], and the credential-named files the listing leaves out.
+fn list_folder(
+    files: &dyn SourceFiles,
+    directory: &Path,
+) -> (Vec<(String, EntryKind)>, Vec<String>) {
+    let listing = files.list_directory(directory).unwrap_or_default();
+    let mut entries: Vec<(String, EntryKind)> = listing
+        .entries
         .into_iter()
         .map(|entry| (entry.name, entry.kind))
         .collect();
     entries.sort_by(|left, right| answer_format::utf16::compare(&left.0, &right.0));
-    entries
+    (entries, listing.credential_named_files)
 }
 
 /// Folders deeper than this below a walk's start are not entered. Every file system ends a path
@@ -133,6 +141,13 @@ struct Pending {
     depth: usize,
 }
 
+/// What a walk saw and did not show.
+#[derive(Debug, Default)]
+pub struct WalkReport {
+    /// The credential-named files of the folders it listed, never opened.
+    pub credential_named_files: Vec<PathBuf>,
+}
+
 /// Walks the folders below `start` in name order, with a folder's names where its own name falls:
 /// each file and folder `admit` accepts is shown to `visit` (a folder before what it holds), and
 /// a folder is entered when it is within `limits`. A stack stands in for recursion, so a tree
@@ -144,14 +159,15 @@ pub fn walk_sorted(
     limits: WalkLimits,
     admit: &dyn Fn(&Entry<'_>) -> bool,
     visit: &mut dyn FnMut(&Entry<'_>) -> Flow,
-) {
+) -> WalkReport {
+    let mut report = WalkReport::default();
     let mut stack: Vec<Pending> = Vec::new();
-    push_listing(files, start, 0, &mut stack);
+    push_listing(files, start, 0, &mut stack, &mut report);
     let mut looked_at = 0usize;
     while let Some(pending) = stack.pop() {
         looked_at += 1;
         if looked_at > limits.max_entries {
-            return;
+            return report;
         }
         let entry = Entry {
             path: &pending.path,
@@ -163,17 +179,33 @@ pub fn walk_sorted(
             continue;
         }
         if visit(&entry) == Flow::Stop {
-            return;
+            return report;
         }
         if entry.kind == EntryKind::Directory && pending.depth < limits.deepest_folder {
-            push_listing(files, &pending.path, pending.depth + 1, &mut stack);
+            push_listing(
+                files,
+                &pending.path,
+                pending.depth + 1,
+                &mut stack,
+                &mut report,
+            );
         }
     }
+    report
 }
 
 /// The names of `folder` onto the stack, so that the first in name order is taken first.
-fn push_listing(files: &dyn SourceFiles, folder: &Path, depth: usize, stack: &mut Vec<Pending>) {
-    let listed = list_sorted(files, folder);
+fn push_listing(
+    files: &dyn SourceFiles,
+    folder: &Path,
+    depth: usize,
+    stack: &mut Vec<Pending>,
+    report: &mut WalkReport,
+) {
+    let (listed, credential_named) = list_folder(files, folder);
+    report
+        .credential_named_files
+        .extend(credential_named.iter().map(|name| folder.join(name)));
     stack.extend(listed.into_iter().rev().map(|(name, kind)| Pending {
         path: folder.join(&name),
         name,
@@ -184,7 +216,8 @@ fn push_listing(files: &dyn SourceFiles, folder: &Path, depth: usize, stack: &mu
 
 /// The files below `directory` whose extension passes `wanted`, in name order with a folder's
 /// files where its name falls, at most `max_files` in `found` altogether. Hidden names and the
-/// ignored ones are skipped.
+/// ignored ones are skipped. Returns the files of a wanted extension that were left unread
+/// because their name is a credential's.
 pub fn list_source_files(
     files: &dyn SourceFiles,
     directory: &Path,
@@ -192,7 +225,7 @@ pub fn list_source_files(
     max_files: usize,
     wanted: &dyn Fn(&str) -> bool,
     found: &mut Vec<PathBuf>,
-) {
+) -> Vec<PathBuf> {
     let admit = |entry: &Entry<'_>| {
         !ignore.has(entry.name)
             && !entry.name.starts_with('.')
@@ -201,7 +234,7 @@ pub fn list_source_files(
                 _ => true,
             }
     };
-    walk_sorted(
+    let report = walk_sorted(
         files,
         directory,
         WalkLimits::UNBOUNDED_NAMES,
@@ -219,4 +252,9 @@ pub fn list_source_files(
             Flow::Continue
         },
     );
+    report
+        .credential_named_files
+        .into_iter()
+        .filter(|file| extension_of_file(file).is_some_and(wanted))
+        .collect()
 }

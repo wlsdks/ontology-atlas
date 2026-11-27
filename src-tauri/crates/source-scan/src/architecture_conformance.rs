@@ -566,7 +566,7 @@ mod tests {
     }
 
     fn scan(edges: &[(&str, &str, ImportUsage)], languages_all_supported: bool) -> ImportScan {
-        let mut coverage = ImportCoverage::new(!languages_all_supported, false);
+        let mut coverage = ImportCoverage::new(!languages_all_supported, false, 0);
         coverage.all_detected_languages_supported = languages_all_supported;
         ImportScan {
             root_path: "/repo".to_string(),

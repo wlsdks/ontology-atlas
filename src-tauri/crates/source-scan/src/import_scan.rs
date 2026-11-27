@@ -109,10 +109,14 @@ pub fn scan_imports(
 
     let mut listed: Vec<PathBuf> = Vec::new();
     let wanted = |extension: &str| is_scanned_extension(extension);
+    let mut credential_named_files = 0;
     for root in &scan_roots_list {
-        list_source_files(files, root, &ignore, max_files, &wanted, &mut listed);
+        credential_named_files +=
+            list_source_files(files, root, &ignore, max_files, &wanted, &mut listed).len();
     }
     let go = scan_go_packages(&facts, &ignore, max_files.saturating_sub(listed.len()));
+    credential_named_files += go.as_ref().map_or(0, |go| go.credential_named_files);
+    let go = go.map(|go| go.evidence);
 
     let mut findings = Findings::default();
     let python = PythonResolver::new(&facts, &source_folders);
@@ -173,7 +177,7 @@ pub fn scan_imports(
     ImportScan {
         root_path: root_label.to_string(),
         files_scanned: listed.len() + go.as_ref().map_or(0, |go| go.files_scanned),
-        coverage: ImportCoverage::new(detect_autotools_c(&facts), has_jvm),
+        coverage: ImportCoverage::new(detect_autotools_c(&facts), has_jvm, credential_named_files),
         edges: findings.edges,
         external_imports: findings.external,
         unresolved: findings.unresolved,

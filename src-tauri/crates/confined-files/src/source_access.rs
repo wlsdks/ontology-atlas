@@ -49,6 +49,16 @@ pub struct DirectoryEntry {
     pub kind: EntryKind,
 }
 
+/// What a listed directory gives a scan: the names it may look at, and the files it may not.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct DirectoryListing {
+    pub entries: Vec<DirectoryEntry>,
+    /// Regular files named like a credential (`secrets.ts`, `id_rsa`), which are never opened and
+    /// so are not among `entries`; the names let a scan say how many it did not read. A hidden
+    /// name is in neither list, and a census lists none.
+    pub credential_named_files: Vec<String>,
+}
+
 /// Why a read or a census entry was refused.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
 pub enum Refusal {
@@ -125,8 +135,9 @@ pub trait SourceFiles {
     /// The text of a regular file, as Node's `readFileSync(path, 'utf8')` decodes it.
     fn read_text(&self, path: &Path) -> Result<Cow<'_, str>, SourceReadError>;
 
-    /// The names in a directory, in byte order of the name.
-    fn list_directory(&self, path: &Path) -> Result<Vec<DirectoryEntry>, SourceReadError>;
+    /// The names in a directory, in byte order of the name; hidden and credential names are
+    /// not among them.
+    fn list_directory(&self, path: &Path) -> Result<DirectoryListing, SourceReadError>;
 }
 
 /// `path` folded lexically against `root` (a relative path is taken below it) and checked to be

@@ -23,7 +23,7 @@ use crate::file_reading::FileReading;
 use crate::import_edges::{ImportKind, ImportUsage, SourceRole, UnresolvedReason};
 use crate::import_rollup::{evidence_priority, EdgeStats, EvidenceRow};
 use crate::path_facts::{resolve_below, PathFacts};
-use crate::source_language::extension_of;
+use crate::source_language::{extension_of, extension_of_file};
 use crate::source_walk::{
     list_sorted, walk_sorted, Entry, Flow, IgnoredNames, WalkLimits, GO_EXTENSION,
 };
@@ -278,13 +278,14 @@ impl GoLayout<'_, '_> {
 }
 
 /// The Go files of the module in name order, a folder's files where its name falls, and whether
-/// more than `max_files` were found. Nested modules, `vendor`, `testdata` and the folders a Go
-/// tool skips (`_` and `.`) are not entered.
+/// more than `max_files` were found, and how many Go files were left unread for a credential's
+/// name. Nested modules, `vendor`, `testdata` and the folders a Go tool skips (`_` and `.`) are
+/// not entered.
 fn list_go_files(
     layout: &GoLayout<'_, '_>,
     ignore: &IgnoredNames,
     max_files: usize,
-) -> (Vec<PathBuf>, bool) {
+) -> (Vec<PathBuf>, bool, usize) {
     let detection_limit = max_files + 1;
     let mut files: Vec<PathBuf> = Vec::new();
     let admit = |entry: &Entry<'_>| {
@@ -302,7 +303,7 @@ fn list_go_files(
             _ => extension_of(name) == Some(GO_EXTENSION),
         }
     };
-    walk_sorted(
+    let report = walk_sorted(
         layout.facts.files(),
         layout.facts.root(),
         WalkLimits::UNBOUNDED_NAMES,
@@ -319,14 +320,25 @@ fn list_go_files(
     );
     let limited = files.len() > max_files;
     files.truncate(max_files);
-    (files, limited)
+    let credential_named = report
+        .credential_named_files
+        .iter()
+        .filter(|file| extension_of_file(file) == Some(GO_EXTENSION))
+        .count();
+    (files, limited, credential_named)
+}
+
+/// The Go evidence of a module, and how many of its Go files were not read.
+pub struct GoScan {
+    pub evidence: GoPackageEvidence,
+    pub credential_named_files: usize,
 }
 
 pub fn scan_go_packages(
     facts: &PathFacts<'_>,
     ignore: &IgnoredNames,
     max_files: usize,
-) -> Option<GoPackageEvidence> {
+) -> Option<GoScan> {
     let module_path = read_root_module(facts)?;
     let mut evidence = GoPackageEvidence {
         contract: "goPackageImports:v1",
@@ -348,13 +360,16 @@ pub fn scan_go_packages(
     };
     if max_files == 0 {
         evidence.file_scan_limited = true;
-        return Some(evidence);
+        return Some(GoScan {
+            evidence,
+            credential_named_files: 0,
+        });
     }
     let layout = GoLayout {
         facts,
         nested_module: RefCell::default(),
     };
-    let (files, limited) = list_go_files(&layout, ignore, max_files);
+    let (files, limited, credential_named_files) = list_go_files(&layout, ignore, max_files);
     evidence.files_scanned = files.len();
     evidence.file_scan_limited = limited;
     let mut targets: HashMap<String, Option<String>> = HashMap::new();
@@ -437,7 +452,10 @@ pub fn scan_go_packages(
         .package_imports
         .sort_by(|left, right| left.compare(right));
     evidence.module_edges = collapse(&evidence.package_imports);
-    Some(evidence)
+    Some(GoScan {
+        evidence,
+        credential_named_files,
+    })
 }
 
 fn collapse(imports: &[GoPackageImport]) -> Vec<GoModuleEdge> {
@@ -484,6 +502,7 @@ mod tests {
             max_files,
         )
         .expect("a module")
+        .evidence
     }
 
     #[test]

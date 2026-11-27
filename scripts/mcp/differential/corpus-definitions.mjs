@@ -673,6 +673,15 @@ add('imports', 'infer-imports-syntax-tree-reads', { vault: 'miniature-repo' }, [
   plant('hidden/.hidden/data.json', '{}\n'),
   call('infer_imports', { rootPath: '$PARENT/parser/hidden', reconcile: false }),
 ]);
+// A source file named like a credential is never opened (row 36); the answer says how many it did not read.
+add('imports', 'infer-imports-credential-named-source-files', { vault: 'miniature-repo' }, [
+  plant('credentials/src/a.ts', 'export const a = 1;\n'),
+  plant('credentials/src/ok.ts', "import { a } from './a';\n"),
+  plant('credentials/src/secrets.ts', "import { a } from './a';\n"),
+  plant('credentials/src/credentials.py', 'import os\n'),
+  plant('credentials/src/keys/server.pem', '-----BEGIN-----\n'),
+  call('infer_imports', { rootPath: '$PARENT/parser/credentials', reconcile: false }),
+]);
 // The per-file limit of 256 Rust statements and 256 Go imports, and a tree 130 folders deep.
 const limitLines = (count, line) => Array.from({ length: count }, (_, index) => line(index)).join('\n');
 add('imports', 'infer-imports-per-file-limits-and-depth', { vault: 'miniature-repo' }, [
