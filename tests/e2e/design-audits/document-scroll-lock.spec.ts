@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { seedFirstRunSeen } from "../first-run-seed";
+import { installDesktopRailRuntime, mountDesktopVault } from "../desktop-rail-arrival-harness";
 
 /**
  * The document does not scroll; the shell owns the viewport. Any document scroll range means an
@@ -26,8 +26,9 @@ test.describe("document scroll lock: the shell owns the viewport", () => {
   for (const { w, h } of WIDTHS) {
     for (const route of ROUTES) {
       test(`${route} @ ${w}×${h}: document scroll range is 0`, async ({ page }) => {
-        await seedFirstRunSeen(page);
+        await installDesktopRailRuntime(page);
         await page.setViewportSize({ width: w, height: h });
+        await mountDesktopVault(page, "ko");
         await page.goto(
           route === "/ko/docs/?guides=off"
             ? "/ko/library/?tab=ontology&guides=off"

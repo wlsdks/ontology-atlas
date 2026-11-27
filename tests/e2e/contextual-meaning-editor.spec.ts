@@ -1,19 +1,13 @@
 import { expect, test } from '@playwright/test';
 import type {} from './atlas-map-probe';
 
-import { FIXTURE_VAULT } from './fixture-vault';
-import { seedFirstRunSeen } from './first-run-seed';
+import { installDesktopRailRuntime, mountDesktopVault, readDesktopFile, writeDesktopFile } from './desktop-rail-arrival-harness';
 import { waitForAnimationsDone, waitForBoxStill, waitForDomQuiet } from './settle';
-import { stubDirectoryPicker } from './vault-picker-stub';
 
 async function mountFixture(page: import('@playwright/test').Page) {
-  await stubDirectoryPicker(page, { ...FIXTURE_VAULT });
-  await seedFirstRunSeen(page);
+  await installDesktopRailRuntime(page, {}, undefined, { writable: true });
+  await mountDesktopVault(page, 'ko');
   await page.goto('/ko/topology/?guides=off&e2e=1', { waitUntil: 'domcontentloaded' });
-  await page.getByTestId('first-run-starter-open').click();
-  await expect(page.getByTestId('vault-guide-sheet')).toBeVisible();
-  await page.getByTestId('vault-guide-pick-existing').click();
-  await expect(page.getByTestId('first-run-starter')).toHaveCount(0, { timeout: 30_000 });
   const indexSearch = page.getByTestId('topology-index-search');
   await indexSearch.fill('딥링크 표적 문서');
   await expect(page.getByTestId('topology-index-tree')).toContainText('딥링크 표적 문서', {
@@ -73,6 +67,9 @@ test('map relation editor previews one relation and writes it at once without le
   expect(panelFit.overflow).toBeLessThanOrEqual(1);
 
   await why.press('Enter');
+  // The installed app's file watcher reports the app's own write back to it; the fake reports only a test's writes, so the test reports this one.
+  await expect.poll(() => readDesktopFile(page, 'capabilities/checkout.md')).toContain('capabilities/tax-report');
+  await writeDesktopFile(page, 'capabilities/checkout.md', (await readDesktopFile(page, 'capabilities/checkout.md')) ?? '');
   const written = page.getByTestId('meaning-editor-relation-row').filter({ hasText: '세금 신고 자료' });
   await expect(written, 'the written relation is listed once the folder rereads it').toHaveAttribute(
     'data-relation',

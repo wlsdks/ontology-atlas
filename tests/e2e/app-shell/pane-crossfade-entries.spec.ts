@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { seedFirstRunSeen } from '../first-run-seed';
+import { installDesktopRailRuntime, mountDesktopVault } from '../desktop-rail-arrival-harness';
 import { startSampling, stopSampling } from '../motion-sampler';
 
 const CROSSFADE = [{ name: 'crossfade', selector: 'html.route-crossfade' }];
@@ -16,7 +16,8 @@ async function crossfadeRanWhile(page: Page, move: () => Promise<void>, arrived:
 
 test.beforeEach(async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
-  await seedFirstRunSeen(page);
+  await installDesktopRailRuntime(page);
+  await mountDesktopVault(page);
 });
 
 test('a link inside the pane that leads to another screen crossfades the pane', async ({ page }) => {

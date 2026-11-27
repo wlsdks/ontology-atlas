@@ -1,5 +1,6 @@
 import { waitForDocumentPaint } from '../visual-ready';
 import { test, expect } from "@playwright/test";
+import { installDesktopRailRuntime, mountDesktopVault } from "../desktop-rail-arrival-harness";
 
 /**
  * Viewports follow the responsive sweep matrix: the app floor 1040 and desktop 1280, 1440, 1512,
@@ -74,7 +75,9 @@ function isOverflowing({
 
 for (const vp of VIEWPORTS) {
   test(`overflow sweep — ${vp.label}`, async ({ page }) => {
+    await installDesktopRailRuntime(page);
     await page.setViewportSize({ width: vp.w, height: vp.h });
+    await mountDesktopVault(page);
     const violations: Array<{
       route: string;
       scroll: number;
@@ -108,7 +111,9 @@ for (const vp of VIEWPORTS) {
  * as redundant turns this red.
  */
 test("instrument probe: catches an overflowing element for real, which documentElement alone cannot", async ({ page }) => {
+  await installDesktopRailRuntime(page);
   await page.setViewportSize({ width: 1040, height: 720 });
+  await mountDesktopVault(page, "ko");
   await page.goto("/ko/library/?tab=ontology&guides=off", { waitUntil: "domcontentloaded" });
   await waitForDocumentPaint(page);
   await expect(
@@ -151,7 +156,9 @@ test("instrument probe: catches an overflowing element for real, which documentE
 for (const url of ROUTES) {
   test(`overflow sweep — resize transition 1920↔2560 — ${url}`, async ({ page }) => {
     const violations: Array<{ step: string; scroll: number; client: number }> = [];
+    await installDesktopRailRuntime(page);
     await page.setViewportSize({ width: 1920, height: 1080 });
+    await mountDesktopVault(page);
     await page.goto(url, { waitUntil: "domcontentloaded" });
     await waitForDocumentPaint(page);
     await waitForOverflowSurface(page, url);

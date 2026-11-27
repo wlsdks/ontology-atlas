@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { seedFirstRunSeen } from "../first-run-seed";
+import { installDesktopRailRuntime, mountDesktopVault } from "../desktop-rail-arrival-harness";
 import { waitForPageSettled } from "../settle";
 
 /**
@@ -92,7 +92,8 @@ for (const route of ROUTES) {
   test(`the focus indicator is visible: ${route}`, async ({ page }) => {
     test.setTimeout(120_000);
     await page.setViewportSize({ width: 1512, height: 900 });
-    await seedFirstRunSeen(page);
+    await installDesktopRailRuntime(page);
+    await mountDesktopVault(page, "ko");
     const destination = route === "/ko/docs/" ? "/ko/library/?tab=ontology" : route;
     await page.goto(`${destination}${destination.includes("?") ? "&" : "?"}guides=off`, {
       waitUntil: "domcontentloaded",

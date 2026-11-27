@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { AUDITED_ROUTES } from '../audited-routes';
+import { installDesktopRailRuntime, mountDesktopVault } from '../desktop-rail-arrival-harness';
 import { waitForPageSettled } from '../settle';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports -- Playwright specs load as CJS (using `import.meta` stops the file loading at all).
@@ -82,6 +83,8 @@ test('contrast ratchet: combinations below WCAG 1.4.3 do not grow', async ({ pag
   // Routes went 5 → 17. At 2.5s of settle time per route this exceeds the default 60s.
   test.setTimeout(240_000);
   await page.setViewportSize({ width: 1512, height: 900 });
+  await installDesktopRailRuntime(page);
+  await mountDesktopVault(page, 'ko');
   const failures: string[] = [];
   const thinRuns: string[] = [];
   let measured = 0;

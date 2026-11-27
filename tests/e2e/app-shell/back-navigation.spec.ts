@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { installDesktopRailRuntime, mountDesktopVault } from "../desktop-rail-arrival-harness";
 
 /**
  * Regression guard for browser back returning to the previous state during the main
@@ -6,6 +7,11 @@ import { expect, test } from "@playwright/test";
  *
  * Only public, login-free paths are verified.
  */
+
+test.beforeEach(async ({ page }) => {
+  await installDesktopRailRuntime(page);
+  await mountDesktopVault(page, "en");
+});
 
 test("the home CTA on the 404 page navigates home without preserving history", async ({ page }) => {
   await page.goto("/en/");

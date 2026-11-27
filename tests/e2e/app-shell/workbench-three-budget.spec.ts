@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { seedFirstRunSeen } from "../first-run-seed";
+import { installDesktopRailRuntime, mountDesktopVault } from "../desktop-rail-arrival-harness";
 
 const THREE_SIGNATURE = /__THREE__|THREE\.WebGLRenderer/;
 const CHUNK_PATH = /\/_next\/static\/chunks\/[\w.-]+\.js/g;
@@ -30,7 +30,8 @@ test.describe("three.js loads only where a scene draws", () => {
   test.skip(!process.env.PLAYWRIGHT_STATIC, "only the static export prefetches routes and preloads their chunks");
 
   test("/automations loads none of it while the rail prefetches the Library", async ({ page }) => {
-    await seedFirstRunSeen(page);
+    await installDesktopRailRuntime(page);
+    await mountDesktopVault(page, "en");
     const scripts = recordScripts(page);
     const libraryPage = page.waitForResponse((response) =>
       /\/en\/library\/__next\..*__PAGE__\.txt$/.test(decodeURIComponent(new URL(response.url()).pathname)),
@@ -46,7 +47,7 @@ test.describe("three.js loads only where a scene draws", () => {
   });
 
   test("the Library still loads it for its constellation", async ({ page }) => {
-    await seedFirstRunSeen(page);
+    await installDesktopRailRuntime(page);
     const scripts = recordScripts(page);
     await page.goto("/en/library/?guides=off");
     await expect.poll(() => scripts.carryingThree(), { message: "the signature still matches three.js" }).not.toEqual([]);
