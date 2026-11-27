@@ -1,6 +1,6 @@
 ---
 name: implementer
-description: Builds one planned slice from a written brief. Use for development work with owned files, an acceptance command and a time budget; never for planning, review, or product or design judgment.
+description: Builds one planned slice from a written brief. Use for development work with owned files, an acceptance command and a time budget; not for splitting work (slice-planner), a failure's root cause (investigator), review (code-reviewer), or product or design judgment (spec-writer, design-reviewer).
 model: opus
 effort: high
 maxTurns: 300

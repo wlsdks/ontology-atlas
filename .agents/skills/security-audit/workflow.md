@@ -17,10 +17,10 @@ them. It never reads credentials or scans anything outside this repository.
 A red line is the first finding. A green floor proves only what those gates
 cover.
 
-## 1. One reviewer per area
+## 1. One code-reviewer per area
 
-Give each area to its own read-only reviewer agent, briefed with
-the current host's reviewer brief, in parallel. Each gets
+Give each area to its own read-only `code-reviewer` agent, briefed with
+the current host's `code-reviewer` brief, in parallel. Each gets
 its area below, this skill, `SECURITY.md`, and the report shape in §3, and
 builds its inventory with commands, never from memory.
 

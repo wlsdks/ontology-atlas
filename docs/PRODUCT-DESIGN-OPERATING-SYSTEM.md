@@ -33,7 +33,7 @@ not pass.
 
 Before building, name every class the change touches; the `/ui-proof` table
 (`.agents/skills/ui-proof/workflow.md`) gives each class its look, its measured
-proof, and whether one `reviewer` follows. Do not substitute "small",
+proof, and whether one `code-reviewer` follows. Do not substitute "small",
 "meaningful", or "safe" for a class. Classes compose: a topology drag animation
 is both a map-gesture and a timing change, so it takes map performance and a
 recording, but not responsive or installed-app proof unless those also changed.
@@ -91,26 +91,27 @@ Review runs only for a new or removed primary surface, a navigation or
 grouping change, or a one-way change (`AGENTS.md`); it is not a generic quality
 layer. Token, ramp and primitive changes get the rendered inventory over
 `tests/e2e/audited-routes.ts` instead: a second seat of the same model adds a
-correlated view, not an independent one. One `reviewer` that did not build the
+correlated view, not an independent one. One `code-reviewer` that did not build the
 change judges the built artifact and proof packet. The questions each lens asks
-live in `.claude/agents/reviewer.md` and its Codex brief.
+live in `.claude/agents/code-reviewer.md` and its Codex brief.
 
 Every review starts with `moment` and `evidence`; the brief adds only the UI
 lenses the surface has.
 
-The reviewer judges from the `/ui-build` §0-B captures, and for motion from
+The `code-reviewer` judges from the `/ui-build` §0-B captures, and for motion from
 a real recording; a missing capture is a finding. The author answers a finding
 once, only on a material conflict, and a one-way disagreement takes one second
-opinion, as in the reviewer brief. The owner decides,
-`design-guardian` applies the chosen correction and reruns only the proofs it
-invalidates, and "unchanged" is a valid verdict.
+opinion, as in the `code-reviewer` brief. The owner decides, an `implementer`
+applies the chosen correction and reruns only the proofs it invalidates, and
+"unchanged" is a valid verdict.
 
 ## No-Human-Designer Working Mode
 
 When no human designer is present, the accountable builder still cannot approve
 its own unmeasured pixels. The captures and instruments provide the independent
-facts; the owner chooses and `design-guardian` applies the smallest correction.
-If no independent reviewer can run, disclose lost independence. If Computer Use, recording, or a
+facts; the owner chooses and an `implementer` applies the smallest correction,
+with a `design-reviewer` verdict when the owner asks for one.
+If no independent `code-reviewer` can run, disclose lost independence. If Computer Use, recording, or a
 required runtime is unavailable, defer that proof rather than judge a diff by
 eye.
 
@@ -123,7 +124,7 @@ eye.
    values in `docs/DESIGN-SYSTEM.md`; look at each coherent visual slice with
    `pnpm ui:look`.
 4. Run the `/ui-proof` rows for those classes against the final observed state.
-5. When a row names one, give one `reviewer` the built artifact, proof packet,
+5. When a row names one, give one `code-reviewer` the built artifact, proof packet,
    and lenses.
 6. The owner decides; apply that one decision and remeasure only changed proof.
 
