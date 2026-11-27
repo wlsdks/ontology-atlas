@@ -119,7 +119,10 @@ pub fn reachability<'a>(
         let Some(row) = neighborhood.reached().get(place) else {
             continue;
         };
-        if layers.last().is_none_or(|layer| layer.distance != row.distance) {
+        if layers
+            .last()
+            .is_none_or(|layer| layer.distance != row.distance)
+        {
             layers.push(Layer {
                 distance: row.distance,
                 total: 0,

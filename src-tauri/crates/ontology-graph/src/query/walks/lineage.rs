@@ -62,13 +62,10 @@ impl Reach {
     }
 
     fn shown(&self, limit: usize) -> impl Iterator<Item = (NodeId, usize, Hop)> + '_ {
-        self.nearest
-            .iter()
-            .take(limit)
-            .filter_map(|&place| {
-                let row = self.neighborhood.reached().get(place)?;
-                Some((row.node, row.distance, row.arrived_by?))
-            })
+        self.nearest.iter().take(limit).filter_map(|&place| {
+            let row = self.neighborhood.reached().get(place)?;
+            Some((row.node, row.distance, row.arrived_by?))
+        })
     }
 
     fn side<'a>(&self, graph: &'a CompiledGraph, limit: usize) -> Side<'a> {
@@ -107,7 +104,9 @@ pub fn lineage<'a>(
     let mut seen: HashSet<Hop> = HashSet::new();
     let mut hops: Vec<Hop> = Vec::new();
     for reach in [&ancestors, &descendants] {
-        for hop in hops_between(graph, reach.neighborhood.hops(), |node| is_set(&visible, node)) {
+        for hop in hops_between(graph, reach.neighborhood.hops(), |node| {
+            is_set(&visible, node)
+        }) {
             if seen.insert(hop) {
                 hops.push(hop);
             }

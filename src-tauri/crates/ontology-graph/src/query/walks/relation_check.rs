@@ -322,8 +322,14 @@ pub fn relation_check<'a>(
             relation,
             to_kind,
         ),
-        matching_edges: existing.iter().map(|&id| CompiledEdge::of(graph, id)).collect(),
-        inverse_edges: inverse.iter().map(|&id| CompiledEdge::of(graph, id)).collect(),
+        matching_edges: existing
+            .iter()
+            .map(|&id| CompiledEdge::of(graph, id))
+            .collect(),
+        inverse_edges: inverse
+            .iter()
+            .map(|&id| CompiledEdge::of(graph, id))
+            .collect(),
         schema_pattern: matched,
         nearby_patterns: nearby,
         proposed_action,

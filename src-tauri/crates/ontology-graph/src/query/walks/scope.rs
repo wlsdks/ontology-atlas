@@ -149,12 +149,7 @@ pub struct ScopeEdgeGroup<'a> {
 }
 
 impl<'a> ScopeEdgeGroup<'a> {
-    pub fn of(
-        graph: &'a CompiledGraph,
-        ids: &[EdgeId],
-        scope: &Scope,
-        limit: usize,
-    ) -> Self {
+    pub fn of(graph: &'a CompiledGraph, ids: &[EdgeId], scope: &Scope, limit: usize) -> Self {
         Self {
             total: ids.len(),
             by_relation: sorted_counts(ids.iter().map(|&id| graph.edge(id).via)),

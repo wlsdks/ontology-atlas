@@ -105,12 +105,17 @@ fn a_chain_ten_thousand_long_is_walked_twenty_hops_and_no_further() {
 }
 
 #[test]
-fn a_containment_ring_and_a_containment_chain_ten_thousand_long_are_cut_at_the_depth() {
+fn a_containment_ring_and_chain_ten_thousand_long_stop_at_the_depth() {
+    // The ring is longer than the depth, so the walk stops before it closes and says no cycle;
+    // a short ring is closed within the depth and found once.
     let ring = vault(CHAIN, "contains", |number| vec![(number + 1) % CHAIN]);
     let tree = answer(&ring, &at("containment_tree", 0));
-    assert_eq!(tree["limited"], false);
+    assert_eq!(tree["emittedNodes"], 21);
+    assert_eq!(len(&tree["cycles"]), 0);
+    let short = vault(10, "contains", |number| vec![(number + 1) % 10]);
+    let tree = answer(&short, &at("containment_tree", 0));
     assert_eq!(len(&tree["cycles"]), 1);
-    assert_eq!(tree["cycles"][0]["from"], slug(CHAIN - 1));
+    assert_eq!(tree["cycles"][0]["from"], slug(9));
     assert_eq!(tree["cycles"][0]["to"], slug(0));
 
     let chain = vault(CHAIN, "contains", |number| {
@@ -148,12 +153,24 @@ fn a_hub_fifty_thousand_nodes_lean_on_is_counted_exactly_and_listed_within_limit
     assert_eq!(len(&reach["paths"]["rows"]), 10);
     assert_eq!(len(&reach["edges"]["rows"]), 10);
 
-    let impact = answer(&graph, &QueryRequest { limit, ..at("impact", 0) });
+    let impact = answer(
+        &graph,
+        &QueryRequest {
+            limit,
+            ..at("impact", 0)
+        },
+    );
     assert_eq!(impact["total"], MANY - 1);
     assert_eq!(len(&impact["nodes"]), 10);
     assert_eq!(len(&impact["edges"]), 10);
 
-    let blast = answer(&graph, &QueryRequest { limit, ..at("blast_radius", 0) });
+    let blast = answer(
+        &graph,
+        &QueryRequest {
+            limit,
+            ..at("blast_radius", 0)
+        },
+    );
     assert_eq!(blast["summary"]["affectedNodes"], MANY - 1);
     assert_eq!(len(&blast["nodes"]["rows"]), 10);
 

@@ -63,7 +63,8 @@ impl Subgraph {
         for &(node, _) in &nodes {
             for &id in graph.outgoing(node) {
                 let edge = graph.edge(id);
-                if allowed(types.as_ref(), edge.via) && edge.to().is_some_and(|to| is_set(&shown, to))
+                if allowed(types.as_ref(), edge.via)
+                    && edge.to().is_some_and(|to| is_set(&shown, to))
                 {
                     among.push(id);
                 }

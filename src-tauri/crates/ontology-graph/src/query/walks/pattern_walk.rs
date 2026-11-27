@@ -170,7 +170,8 @@ pub fn pattern_walk<'a>(
     let mut end_nodes: Vec<NodeId> = paths.iter().map(|walk| walk.end(start)).collect();
     end_nodes.sort_unstable();
     end_nodes.dedup();
-    let edges = distinct_hops_in_graph_order(paths.iter().flat_map(|walk| walk.hops.iter().copied()));
+    let edges =
+        distinct_hops_in_graph_order(paths.iter().flat_map(|walk| walk.hops.iter().copied()));
     Ok(PatternWalkAnswer {
         operation: "pattern_walk",
         start: graph.node(start).slug(),

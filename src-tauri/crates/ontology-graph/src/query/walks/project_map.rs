@@ -149,12 +149,7 @@ struct MapFacts {
 }
 
 impl MapFacts {
-    fn gather(
-        graph: &CompiledGraph,
-        project: NodeId,
-        limit: usize,
-        item_limit: usize,
-    ) -> Self {
+    fn gather(graph: &CompiledGraph, project: NodeId, limit: usize, item_limit: usize) -> Self {
         let scope = Scope::of(graph, project);
         let of_kind = |kind: &str| -> Vec<NodeId> {
             scope
@@ -260,7 +255,6 @@ impl MapFacts {
             narrowed_to_fit: None,
         }
     }
-
 }
 
 fn written_length(answer: &ProjectMapAnswer<'_>) -> usize {

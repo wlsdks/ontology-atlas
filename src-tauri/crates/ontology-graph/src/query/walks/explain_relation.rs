@@ -174,7 +174,11 @@ pub fn explain_relation<'a>(
     let mut common: Vec<NodeId> = from_neighbors
         .iter()
         .map(|(node, _)| *node)
-        .filter(|node| to_neighbors.binary_search_by_key(node, |(other, _)| *other).is_ok())
+        .filter(|node| {
+            to_neighbors
+                .binary_search_by_key(node, |(other, _)| *other)
+                .is_ok()
+        })
         .collect();
     common.sort_by_key(|&node| (std::cmp::Reverse(graph.node(node).degree()), node));
     let edges_of = |neighbors: &[(NodeId, Vec<EdgeId>)], neighbor: NodeId| -> Vec<EdgeId> {
@@ -191,8 +195,20 @@ pub fn explain_relation<'a>(
         .map(|&neighbor| CommonNeighbor {
             slug: graph.node(neighbor).slug(),
             node: NodeSummary::of(graph, neighbor),
-            from_edges: neighbor_edges(graph, from, neighbor, &edges_of(&from_neighbors, neighbor), limit),
-            to_edges: neighbor_edges(graph, to, neighbor, &edges_of(&to_neighbors, neighbor), limit),
+            from_edges: neighbor_edges(
+                graph,
+                from,
+                neighbor,
+                &edges_of(&from_neighbors, neighbor),
+                limit,
+            ),
+            to_edges: neighbor_edges(
+                graph,
+                to,
+                neighbor,
+                &edges_of(&to_neighbors, neighbor),
+                limit,
+            ),
         })
         .collect();
 
@@ -248,15 +264,22 @@ pub fn explain_relation<'a>(
                 direction,
                 max_hops,
                 hop_count: Some(found.hops.len() - 1),
-                hops: found.hops.iter().map(|node| graph.node(*node).slug()).collect(),
+                hops: found
+                    .hops
+                    .iter()
+                    .map(|node| graph.node(*node).slug())
+                    .collect(),
                 nodes: summaries(graph, found.hops.iter().copied()),
                 edges: path_edges(
                     graph,
-                    found.edges.iter().map(|&(edge, entered, left)| super::hop::Hop {
-                        edge,
-                        entered,
-                        left,
-                    }),
+                    found
+                        .edges
+                        .iter()
+                        .map(|&(edge, entered, left)| super::hop::Hop {
+                            edge,
+                            entered,
+                            left,
+                        }),
                 ),
             },
             None => ShortestPath {

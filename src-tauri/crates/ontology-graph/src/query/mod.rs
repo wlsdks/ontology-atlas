@@ -32,8 +32,8 @@ pub use walks::WalkOperation;
 #[derive(Serialize)]
 #[serde(untagged)]
 pub enum OperationAnswer<'a> {
-    Walk(walks::WalkAnswer<'a>),
-    Selection(selection::SelectionAnswer<'a>),
+    Walk(Box<walks::WalkAnswer<'a>>),
+    Selection(Box<selection::SelectionAnswer<'a>>),
 }
 
 /// The counts of the graph an answer was read from, which close every answer.
@@ -68,9 +68,11 @@ pub fn run<'a>(
     request: &QueryRequest,
 ) -> Result<QueryAnswer<'a>, QueryError> {
     let answer = match request.operation {
-        Operation::Walk(operation) => OperationAnswer::Walk(walks::run(graph, operation, request)?),
+        Operation::Walk(operation) => {
+            OperationAnswer::Walk(Box::new(walks::run(graph, operation, request)?))
+        }
         Operation::Selection(operation) => {
-            OperationAnswer::Selection(selection::run(graph, operation, request)?)
+            OperationAnswer::Selection(Box::new(selection::run(graph, operation, request)?))
         }
         Operation::Pending(operation) => {
             return Err(QueryError::NotAnsweredYet(operation.name()));

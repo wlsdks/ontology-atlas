@@ -138,10 +138,7 @@ impl Neighborhood {
                 });
             }
         }
-        Self {
-            reached,
-            hops,
-        }
+        Self { reached, hops }
     }
 
     /// Every node reached, the seed first.

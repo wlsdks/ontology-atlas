@@ -63,7 +63,10 @@ mod tests {
     #[test]
     fn a_focus_name_reads_back_as_the_slug_it_was_made_from() {
         assert_eq!(slug_of_focus("domain:order"), "domains/order");
-        assert_eq!(slug_of_focus(" /ontology/capability:cart "), "capabilities/cart");
+        assert_eq!(
+            slug_of_focus(" /ontology/capability:cart "),
+            "capabilities/cart"
+        );
         assert_eq!(slug_of_focus("project:storefront"), "storefront");
         assert_eq!(slug_of_focus("domains/order"), "domains/order");
         assert_eq!(slug_of_focus("document:readme"), "document:readme");
@@ -73,7 +76,10 @@ mod tests {
 
     #[test]
     fn a_uri_component_is_written_as_the_browser_writes_it() {
-        assert_eq!(encode_uri_component("domain:a b/\u{c8fc}"), "domain%3Aa%20b%2F%EC%A3%BC");
+        assert_eq!(
+            encode_uri_component("domain:a b/\u{c8fc}"),
+            "domain%3Aa%20b%2F%EC%A3%BC"
+        );
         assert_eq!(encode_uri_component("A-z_0.!~*'()"), "A-z_0.!~*'()");
     }
 }

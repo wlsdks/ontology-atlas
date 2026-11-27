@@ -72,9 +72,7 @@ fn builder_node(graph: &CompiledGraph, node: NodeId, distance: usize) -> Builder
         slug: row.slug(),
         distance,
         node: NodeSummary::of(graph, node),
-        canvas_position: row
-            .canvas_position()
-            .map(|(x, y)| CanvasPosition { x, y }),
+        canvas_position: row.canvas_position().map(|(x, y)| CanvasPosition { x, y }),
         expected_mtime: row.mtime,
     }
 }
