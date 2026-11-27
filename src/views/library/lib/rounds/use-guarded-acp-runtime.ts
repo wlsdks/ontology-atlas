@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { isGuardedRuntime } from "@/features/acp-session";
-import { detectAcpRuntimes, isAcpBridgeAvailable } from "@/shared/lib/agent-chat/tauri-acp";
+import { detectAcpRuntimes } from "@/shared/lib/agent-chat/tauri-acp";
 
 type DetectedRuntimes = Awaited<ReturnType<typeof detectAcpRuntimes>>;
 
@@ -24,7 +24,6 @@ export function pickGuardedRuntime(detected: DetectedRuntimes): GuardedAcpRuntim
 export function useGuardedAcpRuntime(rootPath: string | null): GuardedAcpRuntime | null {
   const [runtime, setRuntime] = useState<GuardedAcpRuntime | null>(null);
   useEffect(() => {
-    if (!isAcpBridgeAvailable()) return;
     let cancelled = false;
     const apply = (detected: DetectedRuntimes) => {
       if (!cancelled) setRuntime(pickGuardedRuntime(detected));

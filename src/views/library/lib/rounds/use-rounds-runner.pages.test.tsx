@@ -58,7 +58,6 @@ vi.mock('@/features/library', async () => ({
 vi.mock('@/features/mcp-connectors', () => ({ useVaultConnectors: () => ({ connectors: [], allowedHere: () => false, isOnHere: () => false }) }));
 vi.mock('@/shared/lib/agent-chat/tauri-acp', () => ({
   detectAcpRuntimes: vi.fn(async () => [{ id: 'claude-acp', label: 'Claude', state: 'ready', verified: true, isolated: true }]),
-  isAcpBridgeAvailable: () => true,
 }));
 vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-files', () => ({
   readTauriVaultText: async (_root: string, path: string) => {

@@ -23,10 +23,6 @@ function getInvoke(): TauriInvoke | null {
   }
 }
 
-export function isAgentDoctorAvailable(): boolean {
-  return getInvoke() !== null;
-}
-
 export async function diagnoseAgent(runtimeId: string): Promise<AcpCheck[]> {
   const invoke = getInvoke();
   if (!invoke) return [];
@@ -114,7 +110,7 @@ export async function listenInstallProgress(
   runtimeId: string | null,
   onProgress: (progress: AcpInstallProgress) => void,
 ): Promise<() => void> {
-  if (!isAgentDoctorAvailable()) return () => undefined;
+  if (getInvoke() === null) return () => undefined;
   try {
     const { listen } = await import('@tauri-apps/api/event');
     const unlisten = await listen<AcpInstallProgress>('acp-install://progress', (event) => {

@@ -1,9 +1,17 @@
 /**
- * Rules for proposing documents; `src-tauri/src/library/discovery_rules.rs` holds the same constants
- * (`source-discovery-rules.contract.test.ts`). Metadata only; secrets never reach the list
- * (`.claude/rules/local-first.md`): an extension allow-list, not a deny-list, so an unforeseen
- * name stays hidden, plus a name deny-list for secrets in document formats.
+ * TypeScript copy of the discovery rules Rust walks with (`src-tauri/src/library/discovery_rules.rs`).
+ * The installed app never runs it: only the faked app runtime answers the discovery call from it
+ * (`desktop-rail-arrival-harness.ts`), and `source-discovery-rules.contract.test.ts` holds it equal
+ * to Rust. Metadata only; secrets never reach the list (`.claude/rules/local-first.md`): an
+ * extension allow-list, not a deny-list, so an unforeseen name stays hidden, plus a name deny-list
+ * for secrets in document formats.
  */
+
+import {
+  discoveryExtension,
+  isMarkdownName,
+  type DiscoverySkipReason,
+} from '../../src/entities/docs-vault/lib/library/source-candidate';
 
 /** Allow-list; must equal Rust `DISCOVERY_DOCUMENT_EXTENSIONS`. `log` is absent: logs are output. */
 export const DISCOVERY_DOCUMENT_EXTENSIONS = [
@@ -27,12 +35,6 @@ export const DISCOVERY_DOCUMENT_EXTENSIONS = [
   'html',
   'htm',
 ] as const;
-
-/**
- * Must equal Rust `DISCOVERY_MARKDOWN_EXTENSIONS`. Markdown is offered only from the open folder,
- * and never a file the vault index knows as a node (`withoutVaultOwnedMarkdown`).
- */
-export const DISCOVERY_MARKDOWN_EXTENSIONS = ['md', 'markdown'] as const;
 
 /** Must equal Rust `DISCOVERY_GUIDE_STEMS`: repository guides, refused as Markdown. */
 export const DISCOVERY_GUIDE_STEMS = [
@@ -145,12 +147,6 @@ export const DISCOVERY_MAX_DEPTH = 8;
 /** How many candidates one run returns. **Must equal** Rust `DISCOVERY_MAX_CANDIDATES`. */
 export const DISCOVERY_MAX_CANDIDATES = 500;
 
-/** `'Plan.PDF'` → `'pdf'`; `''` without an extension. */
-export function discoveryExtension(name: string): string {
-  const at = name.lastIndexOf('.');
-  return at > 0 ? name.slice(at + 1).toLowerCase() : '';
-}
-
 function namesANotice(stem: string): boolean {
   const startsWithANotice = DISCOVERY_NOTICE_STEMS.some((notice) => {
     if (!stem.startsWith(notice)) return false;
@@ -179,9 +175,6 @@ function looksLikeAHash(stem: string): boolean {
   return UUID_STEM.test(stem);
 }
 
-/** Why a folder walk passes a file over; mirrors Rust `SkipReason`. */
-export type DiscoverySkipReason = 'secretName' | 'licence' | 'notDocument';
-
 function stemOf(lowered: string, extension: string): string {
   return extension ? lowered.slice(0, lowered.length - extension.length - 1) : lowered;
 }
@@ -203,10 +196,6 @@ export function discoverySkipReason(name: string): DiscoverySkipReason | null {
     return 'notDocument';
   }
   return null;
-}
-
-export function isMarkdownName(name: string): boolean {
-  return (DISCOVERY_MARKDOWN_EXTENSIONS as readonly string[]).includes(discoveryExtension(name));
 }
 
 function namesARepositoryGuide(lowered: string): boolean {
@@ -232,59 +221,4 @@ export function discoveryAcceptsDirectory(relativePath: string): boolean {
   return !DISCOVERY_PRUNE_DIR_PATHS.some(
     (path) => normalized === path || normalized.endsWith(`/${path}`),
   );
-}
-
-export interface SourceCandidate {
-  /** Absolute root of the walked folder. */
-  rootPath: string;
-  /** The root's on-screen name. */
-  rootLabel: string;
-  /** Path relative to that root. */
-  relativePath: string;
-  name: string;
-  extension: string;
-  size: number;
-  mtime: number;
-}
-
-export interface SourceDiscoveryReport {
-  candidates: SourceCandidate[];
-  /** Whether the walk stopped at the cap. */
-  truncated: boolean;
-  /** Roots that could not be read. */
-  unreadableRoots: string[];
-}
-
-/** Root plus relative path, since discovery never reads content to hash. */
-export function candidateKey(candidate: SourceCandidate): string {
-  // NUL cannot appear in a path, so keys never collide.
-  return `${candidate.rootPath}\u0000${candidate.relativePath}`;
-}
-
-/**
- * Markdown the vault already owns is never offered: a `.md` file is kept only when the vault index
- * holds it without `kind:`, so nothing new is read and an unread file is not guessed at. Markdown
- * from any root but the open folder is dropped too: a bound code root's Markdown is developer
- * documentation.
- */
-export function withoutVaultOwnedMarkdown(
-  candidates: readonly SourceCandidate[],
-  {
-    openRootPath,
-    docs,
-  }: {
-    openRootPath: string;
-    docs: readonly { path: string; frontmatter: Record<string, unknown> }[];
-  },
-): SourceCandidate[] {
-  const unowned = new Set<string>();
-  for (const doc of docs) {
-    const kind = doc.frontmatter.kind;
-    if (typeof kind !== 'string' || kind.trim() === '') unowned.add(doc.path);
-  }
-  return candidates.filter((candidate) => {
-    if (!isMarkdownName(candidate.name)) return true;
-    if (candidate.rootPath !== openRootPath) return false;
-    return candidate.extension !== 'md' || unowned.has(candidate.relativePath);
-  });
 }

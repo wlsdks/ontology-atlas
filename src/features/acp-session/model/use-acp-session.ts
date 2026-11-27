@@ -5,7 +5,6 @@ import { useLocale } from 'next-intl';
 
 import {
   acpPermissionVerdict,
-  isAcpBridgeAvailable,
   listenToAcpSession,
   prepareAcpAdapter,
   sendAcpLine,
@@ -334,7 +333,7 @@ export function useAcpSession({
   }), [approvalSettleMs, autoApproveNow, emitWorkReceipt, mcpServers, push, runtimeId, setApprovedOntologyWriteTracked, vaultRoot]);
 
   const start = useCallback(async () => {
-    if (!isAcpBridgeAvailable() || !vaultRoot) return;
+    if (!vaultRoot) return;
     // Take the lock before the first await: `clientRef` fills only after spawn, so a second `start()`
     // (dev double invocation, a new `mcpServers` array each render) would start two adapters.
     if (clientRef.current || startingRef.current) return;

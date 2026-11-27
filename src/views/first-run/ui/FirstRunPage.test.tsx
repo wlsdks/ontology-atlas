@@ -43,14 +43,12 @@ vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-location', () => tau
 vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', () => tauriFsMocks);
 
 const agentMocks = vi.hoisted(() => ({
-  isAcpBridgeAvailable: vi.fn(() => true),
   detectAcpRuntimes: vi.fn(async () => [] as unknown[]),
   requestAgentChat: vi.fn(() => false),
   queueAgentChatIntent: vi.fn(),
 }));
 
 vi.mock('@/shared/lib/agent-chat/tauri-acp', () => ({
-  isAcpBridgeAvailable: agentMocks.isAcpBridgeAvailable,
   detectAcpRuntimes: agentMocks.detectAcpRuntimes,
 }));
 

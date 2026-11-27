@@ -22,9 +22,7 @@ export interface RecentVaultRow {
 export function recentVaultRowKey(record: LocalFsHandleRecord): string {
   // The store's identity rule (`recordIdentity` in `entities/local-fs-handle/api/store.ts`),
   // recomputed to keep this module pure; a divergence only warns about a React key.
-  if (record.desktopRootPath) return record.desktopRootPath;
-  const folderName = record.handle?.name;
-  return folderName ? `fsa:${folderName}` : record.id;
+  return record.desktopRootPath ?? record.id;
 }
 
 export function partitionRecentVaultRows(rows: readonly RecentVaultRow[]): {

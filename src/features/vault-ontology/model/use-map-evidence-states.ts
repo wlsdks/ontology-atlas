@@ -11,7 +11,6 @@ import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/ta
 import {
   gitEvidenceTextPairs,
   gitPathsLastChange,
-  isGitBridgeAvailable,
   type GitPathLastChange,
 } from '@/shared/lib/git/tauri-git';
 
@@ -189,10 +188,9 @@ export function useMapEvidenceStates({
   const handle = mode === 'local' ? selectOpenVaultHandle(vault.status, vault.handle) : null;
   const docs = (mode === 'local' ? vault.manifest?.docs : null) ?? EMPTY_DOCS;
   const nativeRootPath = handle ? (getTauriVaultRootPath(handle) ?? null) : null;
-  const bridge = isGitBridgeAvailable();
 
-  // Nothing is built on the web or for a view that draws no evidence.
-  const measurable = enabled && bridge && nativeRootPath !== null;
+  // Nothing is built without a loaded folder or for a view that draws no evidence.
+  const measurable = enabled && nativeRootPath !== null;
   const concepts = useMemo(
     () =>
       measurable
@@ -229,7 +227,7 @@ export function useMapEvidenceStates({
   const [failedKey, setFailedKey] = useState<string | null>(null);
   const loadedAt = vault.lastLoadedAt;
   useEffect(() => {
-    if (!enabled || !nativeRootPath || !bridge || noPaths) return;
+    if (!enabled || !nativeRootPath || noPaths) return;
     let cancelled = false;
     void revalidate(key, nativeRootPath, repoPaths, vaultPaths, concepts).then((answer) => {
       if (!cancelled) setFailedKey(answer ? null : key);
@@ -238,11 +236,11 @@ export function useMapEvidenceStates({
       cancelled = true;
     };
     // A new read of the folder walks again: a document or a commit may have changed the answer.
-  }, [enabled, nativeRootPath, bridge, noPaths, key, repoPaths, vaultPaths, concepts, loadedAt]);
+  }, [enabled, nativeRootPath, noPaths, key, repoPaths, vaultPaths, concepts, loadedAt]);
 
   const reading = walked === null && failedKey !== key;
   return useMemo<MapEvidence>(() => {
-    if (!bridge || !nativeRootPath) return unmeasured('app-only');
+    if (!nativeRootPath) return unmeasured('app-only');
     if (!enabled) return unmeasured('reading');
     if (noPaths) return unmeasured('no-paths');
     if (reading) return unmeasured('reading');
@@ -264,7 +262,7 @@ export function useMapEvidenceStates({
       else if (gone) stalePaths.set(row.id, { path: gone, gone: true, changedAt: null });
     }
     return { availability: 'measured', states, movedPaths, stalePaths };
-  }, [bridge, nativeRootPath, enabled, noPaths, reading, walked, concepts]);
+  }, [nativeRootPath, enabled, noPaths, reading, walked, concepts]);
 }
 
 function unmeasured(availability: Exclude<MapEvidenceAvailability, 'measured'>): MapEvidence {

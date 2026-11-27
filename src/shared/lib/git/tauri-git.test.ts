@@ -20,7 +20,6 @@ import {
   gitPushOnly,
   gitSnapshot,
   gitStatus,
-  isGitBridgeAvailable,
 } from './tauri-git';
 
 afterEach(() => {
@@ -29,13 +28,7 @@ afterEach(() => {
 });
 
 describe('tauri git bridge', () => {
-  it('reports availability from the Tauri runtime at call time', () => {
-    expect(isGitBridgeAvailable()).toBe(false);
-    tauriApiMock.runtimeAvailable = true;
-    expect(isGitBridgeAvailable()).toBe(true);
-  });
-
-  it('degrades honestly on the web: every wrapper returns null with zero invokes', async () => {
+  it('answers null outside the app: every wrapper returns null with zero invokes', async () => {
     expect(await gitStatus('/v')).toBeNull();
     expect(await gitSnapshot('/v')).toBeNull();
     expect(await gitHistory('/v')).toBeNull();

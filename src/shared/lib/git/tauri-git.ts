@@ -199,10 +199,6 @@ export async function gitProbe(): Promise<GitProbeResult | null> {
   return invoke<GitProbeResult>('git_probe');
 }
 
-export function isGitBridgeAvailable(): boolean {
-  return getInvoke() !== null;
-}
-
 /**
  * Start tracking this folder (`git init`) only when the user presses it; never call automatically.
  * The Rust side only inits, it never chains into add, commit or push.

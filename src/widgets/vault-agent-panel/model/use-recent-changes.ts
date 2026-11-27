@@ -2,7 +2,7 @@
 
 import { useEffect, type Dispatch, type SetStateAction } from 'react';
 
-import { gitHistory, isGitBridgeAvailable } from '@/shared/lib/git/tauri-git';
+import { gitHistory } from '@/shared/lib/git/tauri-git';
 
 /**
  * Continuity between sessions: this folder's recent commit subjects, so a new conversation inherits
@@ -25,7 +25,7 @@ export function useRecentChanges({
     void (async () => {
       // A state that cannot be read (closed, no folder, not git) is **empty history**,
       // not an error. That block simply drops out of the context.
-      if (!open || !vaultPath || !isGitBridgeAvailable()) {
+      if (!open || !vaultPath) {
         if (!cancelled) setRecentChanges((current) => (current.length === 0 ? current : []));
         return;
       }

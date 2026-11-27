@@ -1,6 +1,6 @@
 'use client';
 
-import { isAgentDoctorAvailable, useAgentDoctor } from '@/features/acp-doctor';
+import { useAgentDoctor } from '@/features/acp-doctor';
 import { MessageSquare, RefreshCw, Search } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
@@ -15,7 +15,7 @@ import { Chip, Dialog, InfoHint, Surface } from '@/shared/ui';
 import { Input } from '@/shared/ui/fields/input';
 import { TermHint } from '@/shared/ui/hints/term-hint';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
-import { detectAcpRuntimes, isAcpBridgeAvailable, type AcpRuntimeStatus } from '@/shared/lib/agent-chat/tauri-acp';
+import { detectAcpRuntimes, type AcpRuntimeStatus } from '@/shared/lib/agent-chat/tauri-acp';
 import { isGuardedRuntime } from '@/features/acp-session';
 import { AGENT_CLIENTS } from '@/entities/vault-session';
 import { RowStateBadge } from '@/features/docs-vault-local';
@@ -78,7 +78,6 @@ export function AcpRuntimeSettings({
   // The first pass skips the button path: setting state in an effect body costs a render, and a
   // response after this pane closes would touch a vanished screen. "Searching" is `runtimes === null`.
   useEffect(() => {
-    if (!isAcpBridgeAvailable()) return;
     let cancelled = false;
     /*
      * Two passes: a disk-only scan draws at once, then the login check corrects it. A row
@@ -581,11 +580,11 @@ function RuntimeRow({
 
   /*
    * The doctor is offered only for gated tools: an unmeasured tool has no app-owned config or
-   * credential links to check, and the web has no process or keychain.
+   * credential links to check.
    */
   const doctor = useAgentDoctor(runtime.id, onRuntimesChanged);
   const mark = runtimeMark(runtime);
-  const showDoctor = guarded && isAgentDoctorAvailable();
+  const showDoctor = guarded;
 
   /*
    * Filled while it is the tab's one chat; beside another chat each takes the tint, so no tool

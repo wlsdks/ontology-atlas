@@ -9,7 +9,6 @@ import {
   readLocalEndpoint,
   subscribeLocalEndpointChange,
 } from "@/shared/lib/llm-connection/local-endpoint";
-import { isLlmChatBridgeAvailable } from "@/shared/lib/llm-connection/tauri-llm";
 import { useVaultAgentRuntime } from "@/widgets/acp-chat-panel";
 
 import type { LibrarySourceRow, WikiRetrievalPage } from "@/entities/docs-vault";
@@ -71,7 +70,7 @@ export function useLibraryAgent(
   useEffect(() => {
     const read = () => {
       const settings = readLocalEndpoint();
-      if (!isLlmChatBridgeAvailable() || !isLocalEndpointReady(settings)) {
+      if (!isLocalEndpointReady(settings)) {
         setLocalModel(null);
         setLocalEndpoint(null);
         return;

@@ -3,20 +3,19 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import type { VaultDoc } from '@/entities/docs-vault';
 
 const bridge = vi.hoisted(() => ({
-  available: true,
+  handle: { rootPath: '/vault' } as { rootPath: string } | null,
   search: vi.fn(),
   status: vi.fn(),
   updated: [] as Array<() => void>,
 }));
 
 vi.mock('@/entities/vault-session', () => ({
-  useLocalVault: () => ({ handle: { rootPath: '/vault' } }),
+  useLocalVault: () => ({ handle: bridge.handle }),
 }));
 vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', () => ({
   getTauriVaultRootPath: (handle: { rootPath: string }) => handle.rootPath,
 }));
 vi.mock('@/shared/lib/vault-folder/vault-index/tauri-vault-index', () => ({
-  isVaultIndexAvailable: () => bridge.available,
   onVaultIndexUpdated: async (onUpdate: () => void) => {
     bridge.updated.push(onUpdate);
     return () => undefined;
@@ -44,7 +43,7 @@ function doc(slug: string): VaultDoc {
 const ready = { state: 'ready', indexed: 2, total: 2, sizeBytes: 1, allBytes: 1, vaults: 1 };
 
 afterEach(() => {
-  bridge.available = true;
+  bridge.handle = { rootPath: '/vault' };
   bridge.search.mockReset();
   bridge.status.mockReset();
   bridge.updated = [];
@@ -80,8 +79,8 @@ describe('useVaultTextSearch', () => {
     await waitFor(() => expect(result.current.bodyIndex?.get('wiki/a')?.raw).toBe('fernbrake'));
   });
 
-  it('answers nothing on the web', async () => {
-    bridge.available = false;
+  it('answers nothing while no folder is open', async () => {
+    bridge.handle = null;
     const { result } = renderHook(() => useVaultTextSearch({ query: '지도', docs: [doc('a')], getDocContent: vi.fn() }));
     await new Promise((resolve) => setTimeout(resolve, 200));
     expect(result.current).toEqual({ bodyIndex: undefined, status: null });

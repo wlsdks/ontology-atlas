@@ -32,7 +32,7 @@ interface Options {
 
 /**
  * The palette's search inside documents: the index's best hits, with each hit file read to show
- * its matching line. On the web, or with no folder open, both results are absent and search covers
+ * its matching line. With no folder open, both results are absent and search covers
  * titles, summaries and tags.
  */
 export function useVaultTextSearch({ query, docs, getDocContent }: Options): {
